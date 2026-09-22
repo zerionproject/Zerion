@@ -2098,6 +2098,12 @@
 	<string name="wallet_xmr_offline_retry">Unable to connect · Tap to retry</string>
 	<string name="wallet_xmr_checking">Checking for new blocks…</string>
 	<string name="wallet_xmr_busy">The wallet is busy with another operation. Try again in a moment.</string>
+	<string name="wallet_xmr_check_relay">Check status</string>
+	<string name="wallet_xmr_release_unresolved">Release unresolved send</string>
+	<string name="wallet_xmr_release_unresolved_body">Zerion could not confirm whether your last transaction reached the Monero network. If it has been absent from the network for at least three days you can release it and send again. Only one of the two transactions can ever be paid out, so no funds can be lost, but check your history afterwards to see which one went through.</string>
+	<string name="wallet_xmr_release_done">Unresolved send released.</string>
+	<string name="wallet_xmr_release_not_yet">The last transaction cannot be released yet: it is either still visible on the network, not yet three days old, or the node did not answer.</string>
+	<string name="wallet_xmr_delete_unresolved_body">This wallet has a send whose outcome is still unresolved. Deleting it removes the wallet from this device; it can only be restored from its recovery phrase, and the outcome of that send must then be checked in the restored wallet. Make sure you have the recovery phrase before continuing.</string>
 	<string name="wallet_xmr_phrase_title">Recovery phrase</string>
 	<string name="wallet_xmr_phrase_intro">Write these 25 words down in order and keep them offline. Anyone with this phrase can access your wallet.</string>
 	<string name="wallet_xmr_phrase_verify_action">Verify backup</string>

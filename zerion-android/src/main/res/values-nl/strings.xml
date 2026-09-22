@@ -1902,4 +1902,10 @@
 	<string name="wallet_sp_birthday_hint">Startblok (optioneel)</string>
 	<string name="wallet_sp_scanning">Scannen via Tor…</string>
 	<string name="wallet_sp_move_hint">Bitcoin-adres om geld naartoe te verplaatsen</string>
+	<string name="wallet_xmr_check_relay">Status controleren</string>
+	<string name="wallet_xmr_release_unresolved">Onafgeronde verzending vrijgeven</string>
+	<string name="wallet_xmr_release_unresolved_body">Zerion kon niet bevestigen of je laatste transactie het Monero-netwerk heeft bereikt. Als die minstens drie dagen niet op het netwerk is gezien, kun je haar vrijgeven en opnieuw verzenden. Slechts een van beide transacties kan ooit worden uitbetaald, dus er kan geen geld verloren gaan, maar controleer daarna je geschiedenis om te zien welke is doorgegaan.</string>
+	<string name="wallet_xmr_release_done">Onafgeronde verzending vrijgegeven.</string>
+	<string name="wallet_xmr_release_not_yet">De laatste transactie kan nog niet worden vrijgegeven: ze is nog zichtbaar op het netwerk, nog geen drie dagen oud, of de node gaf geen antwoord.</string>
+	<string name="wallet_xmr_delete_unresolved_body">Deze portemonnee heeft een verzending waarvan de uitkomst nog onbekend is. Verwijderen haalt de portemonnee van dit apparaat; ze kan alleen worden hersteld met de herstelzin, en de uitkomst van die verzending moet daarna in de herstelde portemonnee worden gecontroleerd. Zorg dat je de herstelzin hebt voordat je doorgaat.</string>
 </resources>

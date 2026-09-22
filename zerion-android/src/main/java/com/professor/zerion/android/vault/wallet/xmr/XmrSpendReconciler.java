@@ -52,6 +52,41 @@ public final class XmrSpendReconciler {
 	 * positively accepted or definitively rejected; any unresolved txid keeps the
 	 * whole journal quarantined.
 	 */
+	/**
+	 * How long an unresolved relay must have been absent from the network
+	 * before the user may release it. Monero relay pools drop a transaction
+	 * after three days, so a transaction still MISSED after this window, on a
+	 * daemon that answered, is one no node in the relay path is holding.
+	 */
+	public static final long RELAY_EXPIRY_MS = 3L * 24 * 60 * 60 * 1000;
+
+	/**
+	 * Whether an unresolved journal may be released by an explicit,
+	 * password-gated user decision. This is not negative proof (no such proof
+	 * exists for a signed transaction), which is why it is never automatic:
+	 * it requires that the journal is at least {@code expiryMs} old, that the
+	 * daemon answered for every journal txid and reported none of them in its
+	 * pool or a block (a LOOKUP_ERROR, IN_POOL or MINED answer, or a missing
+	 * answer, blocks the release), and that the wallet's own outgoing history
+	 * does not contain any of them. Releasing then lets the user spend the
+	 * same inputs again; if the old transaction were ever to land first, the
+	 * network rejects the newer one as a double spend, so at most one of the
+	 * two can ever pay out and no funds are lost.
+	 */
+	public static boolean releasable(XmrSpendJournal journal,
+			List<XmrTxLookup> lookups, Set<String> outgoingHistoryTxids,
+			long nowMs, long expiryMs) {
+		if (nowMs - journal.createdAtMs() < expiryMs) return false;
+		java.util.Map<String, XmrTxLookup.Result> answers =
+				new java.util.HashMap<>();
+		for (XmrTxLookup l : lookups) answers.put(l.txid, l.result);
+		for (String txid : journal.txids()) {
+			if (outgoingHistoryTxids.contains(txid)) return false;
+			if (answers.get(txid) != XmrTxLookup.Result.MISSED) return false;
+		}
+		return true;
+	}
+
 	public static Outcome decide(XmrSpendJournal journal,
 			Set<String> acceptedTxids) {
 		Set<String> rejected = new HashSet<>(journal.rejectedTxids());

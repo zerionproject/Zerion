@@ -203,6 +203,13 @@ public class XmrWalletDetailFragment extends BaseFragment {
 					ev == null ? null : ev.getIfNotHandled();
 			if (e != null) toast(messageFor(e));
 		});
+		viewModel.getSpendReleased().observe(getViewLifecycleOwner(), ev -> {
+			String id = ev == null ? null : ev.getIfNotHandled();
+			if (id != null && id.equals(walletId)) {
+				toast(getString(R.string.wallet_xmr_release_done));
+				viewModel.refreshNow();
+			}
+		});
 		viewModel.getSendState().observe(getViewLifecycleOwner(), st -> {
 			if (st != null) onSendState(st);
 		});
@@ -221,6 +228,8 @@ public class XmrWalletDetailFragment extends BaseFragment {
 				return getString(R.string.wallet_offline);
 			case BUSY:
 				return getString(R.string.wallet_xmr_busy);
+			case RELAY_UNRESOLVED:
+				return getString(R.string.wallet_xmr_release_not_yet);
 			default:
 				return getString(R.string.wallet_xmr_generic_error);
 		}
@@ -841,7 +850,23 @@ public class XmrWalletDetailFragment extends BaseFragment {
 				getString(R.string.wallet_xmr_send_quarantine), null,
 				getString(R.string.wallet_xmr_send_quarantine_body), null,
 				getString(R.string.wallet_xmr_send_done), this::finishSend,
-				null, null);
+				getString(R.string.wallet_xmr_check_relay), () -> {
+					finishSend();
+					viewModel.refreshNow();
+				});
+	}
+
+	private void showReleaseUnresolved() {
+		track(new MaterialAlertDialogBuilder(requireContext())
+				.setTitle(R.string.wallet_xmr_release_unresolved)
+				.setMessage(R.string.wallet_xmr_release_unresolved_body)
+				.setPositiveButton(R.string.wallet_xmr_release_unresolved,
+						(d, w) -> promptPassword(
+								R.string.wallet_xmr_release_unresolved,
+								pw -> viewModel.releaseUnresolvedSend(
+										walletId, pw)))
+				.setNegativeButton(android.R.string.cancel, null)
+				.create()).show();
 	}
 
 	private void showSendResult(String glyph, int badgeColorRes,
@@ -1098,13 +1123,17 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	}
 
 	private void showSettings() {
-		String[] items = {
-				getString(R.string.wallet_xmr_node_settings),
-				getString(R.string.wallet_show_recovery),
-				getString(R.string.wallet_rename),
-				getString(R.string.wallet_xmr_rescan),
-				getString(R.string.wallet_delete)
-		};
+		final boolean quarantined = viewModel.isSpendQuarantined(walletId);
+		java.util.List<String> list = new java.util.ArrayList<>();
+		list.add(getString(R.string.wallet_xmr_node_settings));
+		list.add(getString(R.string.wallet_show_recovery));
+		list.add(getString(R.string.wallet_rename));
+		list.add(getString(R.string.wallet_xmr_rescan));
+		if (quarantined) {
+			list.add(getString(R.string.wallet_xmr_release_unresolved));
+		}
+		list.add(getString(R.string.wallet_delete));
+		String[] items = list.toArray(new String[0]);
 		track(new MaterialAlertDialogBuilder(requireContext())
 				.setTitle(walletName)
 				.setItems(items, (d, which) -> {
@@ -1112,6 +1141,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 					else if (which == 1) showRecovery();
 					else if (which == 2) showRename();
 					else if (which == 3) showRescan();
+					else if (quarantined && which == 4) showReleaseUnresolved();
 					else showDelete();
 				})
 				.create()).show();
@@ -1227,6 +1257,18 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	}
 
 	private void showDelete() {
+		if (viewModel.isSpendQuarantined(walletId)) {
+			track(new MaterialAlertDialogBuilder(requireContext())
+					.setTitle(R.string.wallet_delete)
+					.setMessage(R.string.wallet_xmr_delete_unresolved_body)
+					.setPositiveButton(R.string.wallet_delete, (d, w) ->
+							promptPassword(R.string.wallet_delete, pw ->
+									viewModel.deleteWalletAcknowledgingUnresolvedSend(
+											walletId, pw)))
+					.setNegativeButton(android.R.string.cancel, null)
+					.create()).show();
+			return;
+		}
 		promptPassword(R.string.wallet_delete, pw -> {
 			viewModel.deleteWallet(walletId, pw);
 		});

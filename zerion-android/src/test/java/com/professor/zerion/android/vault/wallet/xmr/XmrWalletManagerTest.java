@@ -793,6 +793,270 @@ public class XmrWalletManagerTest {
 		}
 	}
 
+	private static final long MINED = 2_500_000L;
+	private static final long DAY_MS = 24L * 60 * 60 * 1000;
+
+	private void openExisting(Live live, String id) throws Exception {
+		live.id = id;
+		live.m.setTorSocksPort(9050);
+		live.m.setSyncNodes(java.util.Collections.singletonList(
+				XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+		live.m.openWalletForView(id);
+		awaitTrue(live.m::isSessionValid, 10_000);
+	}
+
+	/** Drives one send to a terminal relay state and returns the prepared tx. */
+	private FakeMoneroEngine.FakePrepared relay(Live live, boolean accepted,
+			XmrSendUiState.Kind expected) throws Exception {
+		FakeMoneroEngine.FakePrepared p = live.reachReview();
+		p.commitResult = accepted;
+		live.m.confirmSend("pass".toCharArray());
+		awaitTrue(() -> live.kind() == expected, 10_000);
+		return p;
+	}
+
+	/** XMR-01: an accepted relay the daemon can see resolves at once. */
+	@Test(timeout = 20_000)
+	public void relaySuccessResolvesTheJournalFromTheDaemon() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {MINED};
+			relay(live, true, XmrSendUiState.Kind.SUCCESS);
+			assertFalse("positive daemon evidence clears the journal",
+					live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: a daemon rejection is uncertain, never auto-released: the node
+	 *  may have broadcast and lied, so only positive evidence or the expiry
+	 *  gated release may end it. */
+	@Test(timeout = 20_000)
+	public void daemonRejectionStaysUncertainAndIsNeverAutoReleased()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			for (int i = 0; i < 3; i++) {
+				live.m.refreshNow();
+				Thread.sleep(300);
+			}
+			assertTrue("MISSED answers never resolve anything",
+					live.m.isSpendQuarantined(live.id));
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+		}
+	}
+
+	/** XMR-01: a timeout after submission resolves when the daemon later
+	 *  reports the transaction; the reservation is held until convergence. */
+	@Test(timeout = 20_000)
+	public void timeoutAfterSubmissionResolvesWhenTheDaemonSeesIt()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_IN_POOL};
+			live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			assertEquals("the reservation outlives the quarantine",
+					XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+		}
+	}
+
+	/** XMR-01: losing the connection before submission leaves no journal. */
+	@Test(timeout = 20_000)
+	public void connectionLossBeforeSubmissionLeavesNoJournal()
+			throws Exception {
+		try (Live live = new Live()) {
+			live.openView();
+			engine.failSpendInit = true;
+			try {
+				live.m.prepareSend(live.id, "w", DEST, 1000, 0,
+						"pass".toCharArray());
+				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED,
+						10_000);
+			} finally {
+				engine.failSpendInit = false;
+			}
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			assertTrue(live.m.pendingSendsFor(live.id).isEmpty());
+		}
+	}
+
+	/** XMR-01: a commit that throws after the journal is durable is uncertain,
+	 *  not a plain failure, so it can never be silently forgotten. */
+	@Test(timeout = 20_000)
+	public void connectionLossAfterPossibleSubmissionIsUncertain()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			p.commitThrows = true;
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
+					10_000);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			assertEquals(1, live.m.pendingSendsFor(live.id).size());
+		}
+	}
+
+	/** XMR-01: restart while uncertain, then the view open reconciles. */
+	@Test(timeout = 30_000)
+	public void restartWhileUncertainReconcilesOnOpen() throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			id = live.id;
+		}
+		assertTrue(new XmrWalletManager(tmpBase, vault, store, engine,
+				Runnable::run).isSpendQuarantined(id));
+		engine.lookupCodes = new long[] {MINED};
+		try (Live again = new Live()) {
+			openExisting(again, id);
+			awaitTrue(() -> !again.m.isSpendQuarantined(id), 10_000);
+		}
+	}
+
+	/** XMR-01: after a node switch reconciliation runs against the new daemon. */
+	@Test(timeout = 30_000)
+	public void nodeSwitchWhileUncertainStillReconciles() throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			id = live.id;
+		}
+		engine.lookupCodes = new long[] {MINED};
+		try (Live again = new Live()) {
+			again.id = id;
+			again.m.setTorSocksPort(9050);
+			again.m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse("4iv75ceaj2xjqne6d5d35xxk7lkcj6zdtpsbp7sq6sobp44b7txqrcid.onion:18089",
+							XmrNode.Source.VETTED, false)));
+			again.m.openWalletForView(id);
+			awaitTrue(again.m::isSessionValid, 10_000);
+			awaitTrue(() -> !again.m.isSpendQuarantined(id), 10_000);
+		}
+	}
+
+	/** XMR-01: a transaction that never appears stays quarantined until the
+	 *  password-gated, expiry-gated release; the release drops the reservation. */
+	@Test(timeout = 30_000)
+	public void transactionNeverAppearsIsReleasableOnlyAfterExpiry()
+			throws Exception {
+		try (Live live = new Live()) {
+			java.util.concurrent.atomic.AtomicLong wall =
+					new java.util.concurrent.atomic.AtomicLong(
+							System.currentTimeMillis());
+			live.m.setWallClock(wall::get);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals(XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertTrue("too early: still quarantined",
+					live.m.isSpendQuarantined(live.id));
+
+			wall.addAndGet(3 * DAY_MS + 1000);
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<String> e = live.m.getSpendReleased().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			assertTrue("release drops the reservation",
+					live.m.pendingSendsFor(live.id).isEmpty());
+		}
+	}
+
+	/** XMR-01: the release is refused when the daemon did not answer. */
+	@Test(timeout = 30_000)
+	public void releaseIsRefusedWithoutAnAnsweringDaemon() throws Exception {
+		try (Live live = new Live()) {
+			java.util.concurrent.atomic.AtomicLong wall =
+					new java.util.concurrent.atomic.AtomicLong(
+							System.currentTimeMillis());
+			live.m.setWallClock(wall::get);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			wall.addAndGet(3 * DAY_MS + 1000);
+			engine.lookupCodes = null;
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals(XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertTrue(live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: a wrong password never releases anything. */
+	@Test(timeout = 30_000)
+	public void releaseRequiresTheWalletPassword() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			store.throwOnLoad = new javax.crypto.AEADBadTagException("bad");
+			try {
+				live.m.releaseUnresolvedSend(live.id, "wrong".toCharArray());
+				awaitTrue(() -> {
+					Event<XmrError> e = live.m.getError().getValue();
+					return e != null && !e.isHandled();
+				}, 10_000);
+				assertEquals(XmrError.WRONG_PASSWORD,
+						live.m.getError().getValue().getIfNotHandled());
+			} finally {
+				store.throwOnLoad = null;
+			}
+			assertTrue(live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: reconciliation is idempotent under repetition. */
+	@Test(timeout = 30_000)
+	public void repeatedReconciliationIsIdempotent() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			for (int i = 0; i < 5; i++) live.m.refreshNow();
+			Thread.sleep(500);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			engine.lookupCodes = new long[] {MINED};
+			for (int i = 0; i < 3; i++) live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			for (int i = 0; i < 3; i++) live.m.refreshNow();
+			Thread.sleep(300);
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			Event<XmrError> e = live.m.getError().getValue();
+			assertTrue("no error is raised by repeated reconciliation",
+					e == null || e.isHandled());
+		}
+	}
+
+	/** XMR-01: a quarantined wallet is deletable only with the acknowledgement. */
+	@Test
+	public void deleteWhileQuarantinedRequiresAcknowledgement() throws Exception {
+		store.secret = FakeMoneroEngine.FAKE_SEED.toCharArray();
+		store.journals.put("A", journalFor("A"));
+		mgr.deleteWallet("A", "pass".toCharArray());
+		assertEquals(XmrError.SPEND_QUARANTINED, lastError());
+		assertFalse(store.deleted.contains("A"));
+		mgr.deleteWallet("A", "pass".toCharArray(), true);
+		assertTrue("acknowledged delete proceeds", store.deleted.contains("A"));
+		assertFalse("the journal is removed with the wallet",
+				store.journals.containsKey("A"));
+	}
+
 	private static final class FakeVaultGate implements VaultGate {
 		boolean unlocked = true;
 		long generation = 5;

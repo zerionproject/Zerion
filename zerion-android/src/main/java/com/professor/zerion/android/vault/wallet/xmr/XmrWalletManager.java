@@ -152,6 +152,158 @@ public final class XmrWalletManager {
 
 	private final XmrSpendJournalStore journalStore;
 
+	private static final long LOOKUP_TIMEOUT_MS = 15_000;
+	private volatile java.util.function.LongSupplier wallClock =
+			System::currentTimeMillis;
+	private volatile long relayExpiryMs = XmrSpendReconciler.RELAY_EXPIRY_MS;
+	private final MutableLiveData<Event<String>> spendReleased =
+			new MutableLiveData<>();
+
+	void setWallClock(java.util.function.LongSupplier clock) {
+		this.wallClock = clock;
+	}
+
+	void setRelayExpiryMs(long ms) {
+		this.relayExpiryMs = ms;
+	}
+
+	/** Fires with the wallet id when an unresolved send was released. */
+	public LiveData<Event<String>> getSpendReleased() {
+		return spendReleased;
+	}
+
+	/**
+	 * Positive-only reconciliation against the daemon the given session is
+	 * connected to: looks every journal txid up in the daemon's pool and
+	 * chain and in the session's own outgoing history, and clears the journal
+	 * only when every txid is positively accepted. A MISSED or errored answer
+	 * resolves nothing. Runs on the session executor; returns the lookups so
+	 * a caller may apply the release rule to the same evidence. This is the
+	 * production reconciliation path: it runs right after every relay on the
+	 * spend session, after every view-session open, and on every user refresh,
+	 * so an uncertain relay that did reach the network can never leave the
+	 * wallet quarantined for longer than the next connection.
+	 */
+	private List<XmrTxLookup> reconcileSpendJournalFromDaemon(String walletId,
+			@Nullable MoneroEngine.Session s) {
+		if (s == null) return java.util.Collections.emptyList();
+		XmrSpendJournalStore.Status st = journalStore.read(walletId);
+		if (st.kind != XmrSpendJournalStore.Kind.PRESENT || st.journal == null) {
+			return java.util.Collections.emptyList();
+		}
+		List<XmrTxLookup> lookups;
+		try {
+			lookups = s.lookupTxs(st.journal.txids(), LOOKUP_TIMEOUT_MS);
+		} catch (Throwable e) {
+			lookups = java.util.Collections.emptyList();
+		}
+		try {
+			reconcileSpendJournal(walletId, XmrSpendReconciler.acceptedFrom(
+					lookups, outgoingHistoryTxids(s)));
+		} catch (Exception ignored) {
+		}
+		return lookups;
+	}
+
+	/** Reconcile the open wallet's journal against its current daemon. */
+	private void reconcileIfQuarantined(String walletId) {
+		if (!walletId.equals(openWalletId()) || !isSessionValid()) return;
+		if (!journalStore.isQuarantined(walletId)) return;
+		reconcileSpendJournalFromDaemon(walletId, openSession);
+	}
+
+	/**
+	 * Password-gated release of an unresolved send after the expiry window.
+	 * Re-authenticates with the wallet password, then on the session thread
+	 * re-runs the daemon reconciliation on the open session: positive
+	 * evidence resolves the journal normally; otherwise the release rule of
+	 * {@link XmrSpendReconciler#releasable} must hold on that fresh evidence
+	 * (journal older than the expiry, every txid MISSED by an answering
+	 * daemon, none in history), and only then the journal is cleared and the
+	 * pending reservation dropped. Anything else reports
+	 * {@link XmrError#RELAY_UNRESOLVED} and changes nothing. Never automatic,
+	 * never a re-broadcast.
+	 */
+	public void releaseUnresolvedSend(String walletId, char[] walletPassword) {
+		busy.postValue(true);
+		cryptoExecutor.execute(() -> {
+			char[] seed = null;
+			try {
+				if (walletPassword.length == 0) {
+					fail(XmrError.EMPTY_PASSWORD);
+					return;
+				}
+				try {
+					seed = walletStore.loadMnemonicChars(walletId, walletPassword);
+				} catch (Throwable t) {
+					fail(isWrongPassword(t) ? XmrError.WRONG_PASSWORD
+							: XmrError.CORRUPTED_ITEM);
+					return;
+				}
+				syncManager.submit(() -> releaseOnSession(walletId));
+			} finally {
+				if (seed != null) java.util.Arrays.fill(seed, '\0');
+				java.util.Arrays.fill(walletPassword, '\0');
+				busy.postValue(false);
+			}
+		});
+	}
+
+	private void releaseOnSession(String walletId) {
+		MoneroEngine.Session s = openSession;
+		if (s == null || !walletId.equals(openWalletId()) || !isSessionValid()) {
+			fail(XmrError.SESSION_INVALIDATED);
+			return;
+		}
+		XmrSpendJournalStore.Status st = journalStore.read(walletId);
+		if (st.kind == XmrSpendJournalStore.Kind.ABSENT) {
+			spendReleased.postValue(new Event<>(walletId));
+			return;
+		}
+		if (st.kind == XmrSpendJournalStore.Kind.CORRUPTED
+				|| st.journal == null) {
+			fail(XmrError.JOURNAL_CORRUPTED);
+			return;
+		}
+		List<XmrTxLookup> lookups = reconcileSpendJournalFromDaemon(walletId, s);
+		if (!journalStore.isQuarantined(walletId)) {
+			spendReleased.postValue(new Event<>(walletId));
+			return;
+		}
+		Set<String> history = outgoingHistoryTxids(s);
+		if (!XmrSpendReconciler.releasable(st.journal, lookups, history,
+				wallClock.getAsLong(), relayExpiryMs)) {
+			fail(XmrError.RELAY_UNRESOLVED);
+			return;
+		}
+		try {
+			journalStore.clear(walletId);
+		} catch (Exception e) {
+			fail(XmrError.STORAGE_COMMIT_FAILED);
+			return;
+		}
+		dropPendingSends(walletId, new java.util.HashSet<>(st.journal.txids()));
+		spendReleased.postValue(new Event<>(walletId));
+	}
+
+	/** Remove the outstanding-send records whose txids all belong to the
+	 *  released journal, dropping their reservation; others are untouched. */
+	private void dropPendingSends(String walletId, Set<String> released) {
+		List<XmrPendingSend> cur = readPendingSends(walletId);
+		if (cur.isEmpty()) return;
+		List<XmrPendingSend> next = new java.util.ArrayList<>(cur.size());
+		boolean changed = false;
+		for (XmrPendingSend p : cur) {
+			if (p.txids.length > 0 && released.containsAll(
+					java.util.Arrays.asList(p.txids))) {
+				changed = true;
+			} else {
+				next.add(p);
+			}
+		}
+		if (changed) persistPendingSends(walletId, next);
+	}
+
 	/**
 	 * True when an unresolved spend journal makes this wallet spend-quarantined:
 	 * a present or an unreadable/corrupt journal both block a new spend. Reading
@@ -746,6 +898,12 @@ public final class XmrWalletManager {
 				sendState.postValue(XmrSendUiState.relaying());
 				XmrSendFlow.RelayResult result = flow.confirmAndRelay();
 				terminal = true;
+				XmrSendSnapshot relayed = flow.snapshot();
+				if (relayed != null && (result == XmrSendFlow.RelayResult.SUCCESS
+						|| result == XmrSendFlow.RelayResult.RELAY_UNCERTAIN)) {
+					reconcileSpendJournalFromDaemon(relayed.walletId(),
+							spendSession);
+				}
 				switch (result) {
 					case SUCCESS: {
 						XmrSendSnapshot snap = flow.snapshot();
@@ -859,6 +1017,10 @@ public final class XmrWalletManager {
 	 * offline the connection is re-established through the normal failover.
 	 */
 	public void refreshNow() {
+		String id = openWalletId();
+		if (id != null) {
+			syncManager.submit(() -> reconcileIfQuarantined(id));
+		}
 		if (syncManager.isActive()) {
 			syncManager.requestRefresh();
 		} else {
@@ -1624,6 +1786,7 @@ public final class XmrWalletManager {
 		} catch (Throwable ignored) {
 		}
 		syncManager.start(walletId, epoch, s, syncNodes, torSocksPort);
+		syncManager.submit(() -> reconcileIfQuarantined(walletId));
 	}
 
 	/**
@@ -1783,6 +1946,19 @@ public final class XmrWalletManager {
 	 * handle is not required to remove the secrets that make the files usable.
 	 */
 	public void deleteWallet(String walletId, char[] walletPassword) {
+		deleteWallet(walletId, walletPassword, false);
+	}
+
+	/**
+	 * Delete with an explicit acknowledgement that an unresolved relay may
+	 * exist. Without the acknowledgement a quarantined wallet still refuses to
+	 * delete, so the unresolved state cannot be discarded by accident; with it
+	 * the user has been told the wallet is only recoverable from its recovery
+	 * phrase and that the outcome of the last send must be checked from the
+	 * restored wallet. A wallet is never left undeletable.
+	 */
+	public void deleteWallet(String walletId, char[] walletPassword,
+			boolean acknowledgeUnresolvedSpend) {
 		busy.postValue(true);
 		cryptoExecutor.execute(() -> {
 			if (walletPassword.length == 0) {
@@ -1795,7 +1971,8 @@ public final class XmrWalletManager {
 			}
 			char[] seed = null;
 			try {
-				if (journalStore.isQuarantined(walletId)) {
+				if (!acknowledgeUnresolvedSpend
+						&& journalStore.isQuarantined(walletId)) {
 					fail(XmrError.SPEND_QUARANTINED, walletPassword, null);
 					return;
 				}

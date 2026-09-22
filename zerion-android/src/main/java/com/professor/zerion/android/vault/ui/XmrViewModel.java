@@ -217,6 +217,19 @@ public class XmrViewModel extends AndroidViewModel {
 		manager.deleteWallet(walletId, password);
 	}
 
+	public void deleteWalletAcknowledgingUnresolvedSend(String walletId,
+			char[] password) {
+		manager.deleteWallet(walletId, password, true);
+	}
+
+	public void releaseUnresolvedSend(String walletId, char[] password) {
+		manager.releaseUnresolvedSend(walletId, password);
+	}
+
+	public LiveData<Event<String>> getSpendReleased() {
+		return manager.getSpendReleased();
+	}
+
 	public void rescan(String walletId, char[] password, long restoreHeight) {
 		manager.rescan(walletId, password, restoreHeight);
 	}

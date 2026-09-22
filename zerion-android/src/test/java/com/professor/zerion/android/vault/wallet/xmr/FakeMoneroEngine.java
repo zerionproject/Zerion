@@ -101,6 +101,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		public boolean disposed;
 		public int commits;
 		public boolean commitResult = true;
+		public boolean commitThrows = false;
 		public int inspections;
 		@Nullable
 		public Runnable onInspect;
@@ -166,6 +167,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		public boolean commit() {
 			if (disposed) return false;
 			commits++;
+			if (commitThrows) throw new IllegalStateException("circuit dropped");
 			return commitResult;
 		}
 
@@ -184,6 +186,8 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	}
 
 	volatile boolean refreshIdle = true;
+	/** When set, spend (non-background) sessions fail to connect. */
+	volatile boolean failSpendInit = false;
 	/** Used by sessions the manager opens itself (the spend session of a send)
 	 *  when the test cannot reach the session object before prepare runs. */
 	@Nullable
@@ -260,7 +264,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		@Override
 		public boolean init(String d, String p, boolean t) {
 			lastProxy = p;
-			return true;
+			return background || !failSpendInit;
 		}
 
 		@Override

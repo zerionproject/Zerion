@@ -136,4 +136,51 @@ public class XmrSpendReconcilerTest {
 				XmrSpendReconciler.decide(journal, accepted));
 		assertFalse(accepted.contains(T1));
 	}
+
+	private static XmrSpendJournal twoTxJournal(long createdAt) throws Exception {
+		return XmrSpendJournal.create(XmrSpendJournal.State.UNCERTAIN, "w",
+				"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				java.util.Arrays.asList(
+						"1111111111111111111111111111111111111111111111111111111111111111",
+						"2222222222222222222222222222222222222222222222222222222222222222"),
+				"tor:abc.onion:18089", createdAt, java.util.Collections.emptyList());
+	}
+
+	private static XmrTxLookup look(String id, XmrTxLookup.Result r) {
+		return new XmrTxLookup(id, r, -1);
+	}
+
+	@Test
+	public void releasableOnlyAfterExpiryWithEveryTxidMissedAndUnseen()
+			throws Exception {
+		long created = 1_000_000L;
+		long expiry = 100L;
+		XmrSpendJournal j = twoTxJournal(created);
+		String a = "1111111111111111111111111111111111111111111111111111111111111111";
+		String b = "2222222222222222222222222222222222222222222222222222222222222222";
+		java.util.List<XmrTxLookup> allMissed = java.util.Arrays.asList(
+				look(a, XmrTxLookup.Result.MISSED), look(b, XmrTxLookup.Result.MISSED));
+		java.util.Set<String> none = new java.util.HashSet<>();
+
+		assertTrue(XmrSpendReconciler.releasable(j, allMissed, none,
+				created + expiry, expiry));
+		assertFalse("before the expiry window", XmrSpendReconciler.releasable(
+				j, allMissed, none, created + expiry - 1, expiry));
+		assertFalse("a lookup error blocks", XmrSpendReconciler.releasable(j,
+				java.util.Arrays.asList(look(a, XmrTxLookup.Result.MISSED),
+						look(b, XmrTxLookup.Result.LOOKUP_ERROR)),
+				none, created + expiry, expiry));
+		assertFalse("a pool sighting blocks", XmrSpendReconciler.releasable(j,
+				java.util.Arrays.asList(look(a, XmrTxLookup.Result.IN_POOL),
+						look(b, XmrTxLookup.Result.MISSED)),
+				none, created + expiry, expiry));
+		assertFalse("a missing answer blocks", XmrSpendReconciler.releasable(j,
+				java.util.Collections.singletonList(
+						look(a, XmrTxLookup.Result.MISSED)),
+				none, created + expiry, expiry));
+		java.util.Set<String> seen = new java.util.HashSet<>();
+		seen.add(b);
+		assertFalse("history evidence blocks", XmrSpendReconciler.releasable(
+				j, allMissed, seen, created + expiry, expiry));
+	}
 }

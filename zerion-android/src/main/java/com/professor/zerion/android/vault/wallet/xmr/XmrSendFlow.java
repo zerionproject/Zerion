@@ -180,7 +180,11 @@ public final class XmrSendFlow {
 	 * object and generation, consumes the authorization once, captures the
 	 * connected relay endpoint, writes the journal durably, and only then
 	 * relays. A journal write failure means no relay. It never reconstructs a
-	 * different transaction or changes node.
+	 * different transaction or changes node. Once the journal is durable, a
+	 * commit that throws (the circuit dropped while or after the request was
+	 * sent) is an uncertain relay exactly like a commit that returned false:
+	 * the transaction may have reached the network, so the journal stays and
+	 * the send is never reported as a plain failure.
 	 */
 	public RelayResult confirmAndRelay() {
 		if (state != State.AUTHORIZED || snapshot == null || prepared == null
@@ -220,7 +224,12 @@ public final class XmrSendFlow {
 			return RelayResult.FAILED;
 		}
 
-		boolean relayed = p.commit();
+		boolean relayed;
+		try {
+			relayed = p.commit();
+		} catch (Throwable connectionLost) {
+			relayed = false;
+		}
 		disposePrepared();
 
 		if (relayed) {
