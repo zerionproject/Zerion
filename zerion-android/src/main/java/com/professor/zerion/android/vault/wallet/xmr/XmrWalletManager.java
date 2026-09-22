@@ -1760,13 +1760,6 @@ public final class XmrWalletManager {
 						fail(XmrError.CORRUPTED_ITEM, walletPassword, null);
 						return;
 					}
-					String recoveredId =
-							repairZeroSealedSeed(walletId, walletPassword);
-					if (recoveredId != null) {
-						loadWallets();
-						openWallet(recoveredId, walletPassword.clone());
-						return;
-					}
 					fail(XmrError.WRONG_PASSWORD, walletPassword, null);
 					return;
 				}
@@ -2145,41 +2138,6 @@ public final class XmrWalletManager {
 		});
 	}
 
-	/**
-	 * A rename re-seals the seed under a new wallet id. The subaddress ledger
-	 * (issued count, cached addresses, labels) and the backup-verified flag
-	 * belong to the wallet, not the id, so they move to the new id; the file
-	 * password and cache identity do not (the new id rebuilds its own cache).
-	 */
-	private void carryOverWalletState(String fromId, String toId)
-			throws Exception {
-		synchronized (walletStore.settingsMonitor()) {
-			if (walletStore.readSettings() == null) return;
-			org.json.JSONObject o = settingsObject();
-			org.json.JSONObject xmr = o.optJSONObject("xmr");
-			if (xmr == null) return;
-			org.json.JSONObject from = xmr.optJSONObject(fromId);
-			if (from == null) return;
-			org.json.JSONObject to = xmr.optJSONObject(toId);
-			if (to == null) to = new org.json.JSONObject();
-			if (from.has("recv")) to.put("recv", from.get("recv"));
-			if (from.has("bv")) to.put("bv", from.get("bv"));
-			String ps = from.optString("ps", "");
-			if (!ps.isEmpty()) {
-				List<XmrPendingSend> rebound = new java.util.ArrayList<>();
-				for (XmrPendingSend p : XmrPendingSend.listFromJson(ps)) {
-					rebound.add(p.rebind(toId));
-				}
-				if (!rebound.isEmpty()) {
-					to.put("ps", XmrPendingSend.listToJson(rebound));
-				}
-			}
-			xmr.put(toId, to);
-			o.put("xmr", xmr);
-			walletStore.writeSettings(o.toString());
-		}
-	}
-
 	private void removeMetadata(String walletId) throws Exception {
 		synchronized (walletStore.settingsMonitor()) {
 			if (walletStore.readSettings() == null) return;
@@ -2193,22 +2151,6 @@ public final class XmrWalletManager {
 		}
 	}
 
-	private void writeRenameJournal(String from, String toName,
-			@Nullable String to) throws Exception {
-		synchronized (walletStore.settingsMonitor()) {
-			org.json.JSONObject o = settingsObject();
-			org.json.JSONObject xmr = o.optJSONObject("xmr");
-			if (xmr == null) xmr = new org.json.JSONObject();
-			org.json.JSONObject rn = new org.json.JSONObject();
-			rn.put("from", from);
-			rn.put("toName", toName);
-			if (to != null) rn.put("to", to);
-			xmr.put(RENAME_KEY, rn);
-			o.put("xmr", xmr);
-			walletStore.writeSettings(o.toString());
-		}
-	}
-
 	private void clearRenameJournal() throws Exception {
 		synchronized (walletStore.settingsMonitor()) {
 			org.json.JSONObject o = settingsObject();
@@ -2218,13 +2160,6 @@ public final class XmrWalletManager {
 				o.put("xmr", xmr);
 				walletStore.writeSettings(o.toString());
 			}
-		}
-	}
-
-	private void clearRenameJournalQuiet() {
-		try {
-			clearRenameJournal();
-		} catch (Throwable ignored) {
 		}
 	}
 
@@ -2268,69 +2203,6 @@ public final class XmrWalletManager {
 		} catch (Throwable ignored) {
 		}
 		return null;
-	}
-
-	/**
-	 * One-time recovery for a wallet whose seed was sealed under an all-zero
-	 * password of the same length by a rename before the password-preservation
-	 * fix. The zero-length password is tried only after the entered password has
-	 * already failed, and it can only ever decrypt a wallet that really was
-	 * zero-sealed (AES-GCM authenticates), so a correctly sealed wallet can never
-	 * be opened with a wrong password this way. On success the recovered seed is
-	 * re-sealed under the entered (real) password as a new wallet item, the same
-	 * display name is kept, wallet state is carried over, and the corrupted item
-	 * is removed; a crash mid-repair is reconciled by the rename journal. Returns
-	 * the recovered wallet id, or null when the wallet was not zero-sealed.
-	 */
-	@Nullable
-	private String repairZeroSealedSeed(String walletId, char[] walletPassword) {
-		if (walletPassword.length == 0) return null;
-		if (journalStore.isQuarantined(walletId)) return null;
-		char[] zeroPw = new char[walletPassword.length];
-		char[] seed;
-		try {
-			seed = walletStore.loadMnemonicChars(walletId, zeroPw);
-		} catch (Throwable notZeroSealed) {
-			return null;
-		}
-		if (seed == null || seed.length == 0) return null;
-		try {
-			String name = displayNameOf(walletId);
-			if (name == null) return null;
-			long height = readRestoreHeight(walletId);
-			String newId = walletStore.createWallet(WalletCoin.XMR, name, seed,
-					walletPassword.clone());
-			try {
-				writeRenameJournal(walletId, name, newId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				persistRestoreHeight(newId, height);
-			} catch (Throwable ignored) {
-			}
-			try {
-				carryOverWalletState(walletId, newId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				walletStore.deleteWallet(walletId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				removeMetadata(walletId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				shred(liveDir(walletId));
-			} catch (Throwable ignored) {
-			}
-			clearRenameJournalQuiet();
-			return newId;
-		} catch (Throwable reseal) {
-			return null;
-		} finally {
-			java.util.Arrays.fill(seed, '\0');
-		}
 	}
 
 	public void revealSeed(String walletId, char[] walletPassword) {
