@@ -24,17 +24,18 @@ import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
  * Handles transport connections to established contacts. Every connection after
  * the initial pairing resumes the contact's stored session rather than running a
  * handshake: the root key and role were fixed at pairing, and the post-quantum
- * ratchet state is restored from what was persisted when the previous connection
- * ended.
+ * ratchet starts fresh on every connection.
  *
  * <p>Outgoing connections carry the dialled contact id. Incoming connections are
  * anonymous, so the stream tag is peeked and recognised to a contact before the
  * session is resumed; a tag that matches no known contact is rejected (first-time
  * pairing arrives on the separate rendezvous path, not here).
  *
- * <p>The live connection is handed to the {@link ZppConnectionRunner} for the
- * duration of the session, and the evolved Mode 3-Full state is persisted when it
- * ends.
+ * <p>The socket a pairing ran on is handed over with its contact id known, so
+ * the first session needs no tag lookup. The live connection is handed to the
+ * {@link ZppConnectionRunner} for the duration of the session; when it ends the
+ * contact's tag window advances and the session's ML-KEM key material is
+ * zeroized. Nothing of the session is persisted.
  */
 @NotNullByDefault
 public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
@@ -127,18 +128,22 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		runResumed(transportId, contactId, stored, bufferedIn, out, true);
 	}
 
+	@Override
+	public void handlePaired(TransportId transportId, int contactId,
+			boolean incoming, InputStream in, OutputStream out)
+			throws IOException {
+		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
+		if (stored == null) throw new FormatException();
+		runResumed(transportId, contactId, stored, in, out, incoming);
+	}
+
 	private void runResumed(TransportId transportId, int contactId,
 			StoredContactSession stored, InputStream in, OutputStream out,
 			boolean incoming) throws IOException {
-		if (!acquireSession(contactId, transportId)) {
-			// A different transport already has a live session for this
-			// contact; stand down so we do not resume the same ratchet twice.
-			return;
-		}
+		if (!acquireSession(contactId, transportId)) return;
 		try {
 			ZwfDuplexConnection connection = establisher.resume(contactId,
-					stored.getRootKey(), stored.isAlice(),
-					stored.getMode3FullState(), in, out);
+					stored.getRootKey(), stored.isAlice(), in, out);
 			ContactId c = new ContactId(contactId);
 			AtomicBoolean closed = new AtomicBoolean(false);
 			InterruptibleConnection ic = new InterruptibleConnection() {
@@ -178,8 +183,8 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 			} finally {
 				connectionRegistry.unregisterConnection(c, transportId, ic,
 						incoming, exception);
-				sessionProvider.saveMode3FullState(contactId,
-						connection.currentMode3FullState());
+				sessionProvider.sessionClosed(contactId);
+				connection.destroyKeyMaterial();
 			}
 		} finally {
 			releaseSession(contactId, transportId);

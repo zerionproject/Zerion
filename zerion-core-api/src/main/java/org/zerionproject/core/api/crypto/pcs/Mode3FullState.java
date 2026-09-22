@@ -90,6 +90,17 @@ public class Mode3FullState {
 		return messageCounter;
 	}
 
+	/**
+	 * Zeroizes every ML-KEM decapsulation key this state holds: the active
+	 * key pair and the retained ones. Called once the connection that owned
+	 * the state has ended. The state is never persisted or resumed, so
+	 * nothing may use it afterwards.
+	 */
+	public void destroy() {
+		zeroize(ourActiveKeyPair);
+		for (MlKemKeyPair kp : recentKeyPairs.values()) zeroize(kp);
+	}
+
 	@Nullable
 	public MlKemKeyPair findKeypairById(KpId kpId) {
 		KpId currentId = KpId.of(ourActiveKeyPair.getEncapsulationKey());

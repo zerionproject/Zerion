@@ -108,6 +108,12 @@ public class ZtpTorTransportTest {
 		AtomicInteger firstByte = new AtomicInteger(-1);
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
 			}
@@ -169,6 +175,12 @@ public class ZtpTorTransportTest {
 		AtomicInteger gotContact = new AtomicInteger(-1);
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
 				gotContact.set(contactId);
@@ -219,6 +231,12 @@ public class ZtpTorTransportTest {
 			}
 		};
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
 			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
@@ -292,6 +310,12 @@ public class ZtpTorTransportTest {
 		RecordingTor tor = new RecordingTor();
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
 			}
@@ -319,6 +343,12 @@ public class ZtpTorTransportTest {
 		ExecutorService exec = Executors.newCachedThreadPool();
 		RecordingTor tor = new RecordingTor();
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
 			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
@@ -358,6 +388,12 @@ public class ZtpTorTransportTest {
 		tor.failPadding = true;
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {
 			}
@@ -385,6 +421,12 @@ public class ZtpTorTransportTest {
 	private static ZtpConnectionHandler tagReadingHandler(
 			CountDownLatch tagsRead) {
 		return new ZtpConnectionHandler() {
+			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
 			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {

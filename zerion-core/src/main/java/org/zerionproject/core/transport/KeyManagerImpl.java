@@ -9,9 +9,6 @@ import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.TransportCrypto;
-import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
-import org.zerionproject.core.api.crypto.pcs.PqRatchetState;
-import org.zerionproject.core.crypto.pcs.PcsStateManager;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.DbException;
@@ -48,7 +45,6 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 	private final Executor dbExecutor;
 	private final PluginConfig pluginConfig;
 	private final TransportCrypto transportCrypto;
-	private final PcsStateManager pcsStateManager;
 
 	private final ConcurrentHashMap<TransportId, TransportKeyManager> managers;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -58,13 +54,11 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 			@DatabaseExecutor Executor dbExecutor,
 			PluginConfig pluginConfig,
 			TransportCrypto transportCrypto,
-			TransportKeyManagerFactory transportKeyManagerFactory,
-			PcsStateManager pcsStateManager) {
+			TransportKeyManagerFactory transportKeyManagerFactory) {
 		this.db = db;
 		this.dbExecutor = dbExecutor;
 		this.pluginConfig = pluginConfig;
 		this.transportCrypto = transportCrypto;
-		this.pcsStateManager = pcsStateManager;
 		managers = new ConcurrentHashMap<>();
 		for (PluginFactory<?> f : pluginConfig.getSimplexFactories()) {
 			TransportKeyManager m = transportKeyManagerFactory.
@@ -213,9 +207,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 				db.transactionWithNullableResult(false, txn -> {
 					Contact contact = db.getContact(txn, c);
 					boolean classical = contact.isClassical();
-					StreamContext baseCtx = m.getStreamContext(txn, c, classical);
-					if (baseCtx == null) return null;
-					return enrichWithPcsState(txn, baseCtx, c, contact.isMode3Capable());
+					return m.getStreamContext(txn, c, classical);
 				}));
 	}
 
@@ -240,12 +232,10 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 					if (tempCtx == null) return null;
 
 					boolean classical;
-					boolean mode3Capable = false;
 					if (tempCtx.getContactId() != null) {
 						org.zerionproject.core.api.contact.Contact contact =
 								db.getContact(txn, tempCtx.getContactId());
 						classical = contact.isClassical();
-						mode3Capable = contact.isMode3Capable();
 					} else if (tempCtx.getPendingContactId() != null) {
 						org.zerionproject.core.api.contact.PendingContact pending =
 								db.getPendingContact(txn, tempCtx.getPendingContactId());
@@ -253,13 +243,7 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 					} else {
 						classical = false;
 					}
-					StreamContext baseCtx = m.getStreamContext(txn, tag, classical);
-					if (baseCtx == null) return null;
-					if (baseCtx.getContactId() != null) {
-						return enrichWithPcsReceiveState(txn, baseCtx,
-								baseCtx.getContactId(), mode3Capable);
-					}
-					return baseCtx;
+					return m.getStreamContext(txn, tag, classical);
 				}));
 	}
 
@@ -336,67 +320,4 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 		T run(TransportKeyManager m) throws DbException;
 	}
 
-	private StreamContext enrichWithPcsState(Transaction txn,
-			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
-			throws DbException {
-		if (!mode3Capable) {
-			return baseCtx;
-		}
-		if (!pcsStateManager.hasState(txn, contactId)) {
-			return baseCtx;
-		}
-		PcsSessionState pcsState = pcsStateManager.loadSendState(txn, contactId);
-		if (pcsState == null) {
-			return baseCtx;
-		}
-		PqRatchetState pqState = null;
-		if (pcsState.isMode2()) {
-			pcsState = pcsState.enableMode3();
-			pqState = pcsStateManager.loadPqState(txn, contactId);
-		}
-		return new StreamContext(
-				baseCtx.getContactId(),
-				baseCtx.getPendingContactId(),
-				baseCtx.getTransportId(),
-				baseCtx.getTagKey(),
-				baseCtx.getHeaderKey(),
-				baseCtx.getStreamNumber(),
-				baseCtx.isHandshakeMode(),
-				baseCtx.isClassical(),
-				true,
-				pcsState,
-				pqState);
-	}
-
-	private StreamContext enrichWithPcsReceiveState(Transaction txn,
-			StreamContext baseCtx, ContactId contactId, boolean mode3Capable)
-			throws DbException {
-		if (!mode3Capable) {
-			return baseCtx;
-		}
-		if (!pcsStateManager.hasState(txn, contactId)) {
-			return baseCtx;
-		}
-		PcsSessionState pcsState = pcsStateManager.loadReceiveState(txn, contactId);
-		if (pcsState == null) {
-			return baseCtx;
-		}
-		PqRatchetState pqState = null;
-		if (pcsState.isMode2()) {
-			pcsState = pcsState.enableMode3();
-			pqState = pcsStateManager.loadPqState(txn, contactId);
-		}
-		return new StreamContext(
-				baseCtx.getContactId(),
-				baseCtx.getPendingContactId(),
-				baseCtx.getTransportId(),
-				baseCtx.getTagKey(),
-				baseCtx.getHeaderKey(),
-				baseCtx.getStreamNumber(),
-				baseCtx.isHandshakeMode(),
-				baseCtx.isClassical(),
-				true,
-				pcsState,
-				pqState);
-	}
 }

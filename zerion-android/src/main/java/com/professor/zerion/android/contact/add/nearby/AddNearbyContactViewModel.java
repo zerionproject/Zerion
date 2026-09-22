@@ -30,7 +30,8 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.plugin.duplex.DuplexTransportConnection;
 import org.zerionproject.core.api.system.AndroidExecutor;
-import org.zerionproject.core.api.connection.ConnectionManager;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.transport.ZtpConnectionHandler;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ public class AddNearbyContactViewModel extends DbViewModel
 	private final PayloadEncoder payloadEncoder;
 	private final PayloadParser payloadParser;
 	private final ContactExchangeManager contactExchangeManager;
-	private final ConnectionManager connectionManager;
+	private final ZtpConnectionHandler connectionHandler;
 	private final EventBus eventBus;
 	private final Executor ioExecutor;
 
@@ -80,14 +81,14 @@ public class AddNearbyContactViewModel extends DbViewModel
 			Provider<KeyAgreementTask> taskProvider,
 			PayloadEncoder payloadEncoder, PayloadParser payloadParser,
 			ContactExchangeManager contactExchangeManager,
-			ConnectionManager connectionManager, EventBus eventBus,
+			ZtpConnectionHandler connectionHandler, EventBus eventBus,
 			@IoExecutor Executor ioExecutor) {
 		super(application, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.taskProvider = taskProvider;
 		this.payloadEncoder = payloadEncoder;
 		this.payloadParser = payloadParser;
 		this.contactExchangeManager = contactExchangeManager;
-		this.connectionManager = connectionManager;
+		this.connectionHandler = connectionHandler;
 		this.eventBus = eventBus;
 		this.ioExecutor = ioExecutor;
 		eventBus.addListener(this);
@@ -185,20 +186,54 @@ public class AddNearbyContactViewModel extends DbViewModel
 	private void exchangeContacts(KeyAgreementResult r) {
 		DuplexTransportConnection conn = r.getConnection();
 		SecretKey masterKey = r.getMasterKey();
+		boolean alice = r.wasAlice();
+		Contact contact;
 		try {
-			Contact contact = contactExchangeManager.exchangeContacts(conn,
-					masterKey, r.wasAlice(), true);
-			connectionManager.manageOutgoingConnection(contact.getId(),
-					r.getTransportId(), conn);
-			contactName.postValue(contact.getAuthor().getName());
-			state.postValue(PairingState.SUCCESS);
+			contact = contactExchangeManager.exchangeContacts(conn, masterKey,
+					alice, true);
 		} catch (Exception ex) {
-			try {
-				conn.getReader().dispose(true, false);
-				conn.getWriter().dispose(true);
-			} catch (Exception ignored) {
-			}
+			dispose(conn, true);
 			state.postValue(PairingState.FAILED);
+			return;
+		}
+		contactName.postValue(contact.getAuthor().getName());
+		state.postValue(PairingState.SUCCESS);
+		TransportId transportId = r.getTransportId();
+		ioExecutor.execute(() ->
+				runPairedSession(contact, transportId, conn, alice));
+	}
+
+	/**
+	 * Carries the first session with the new contact over the socket the
+	 * pairing ran on. Both sides committed the session inputs during the
+	 * exchange, so the handler resumes without a tag lookup; the side that
+	 * played Alice registers the connection as dialled and the other side as
+	 * accepted. The streams are disposed when the session ends.
+	 */
+	private void runPairedSession(Contact contact, TransportId transportId,
+			DuplexTransportConnection conn, boolean alice) {
+		boolean exception = false;
+		try {
+			connectionHandler.handlePaired(transportId,
+					contact.getId().getInt(), !alice,
+					conn.getReader().getInputStream(),
+					conn.getWriter().getOutputStream());
+		} catch (IOException e) {
+			exception = true;
+		} finally {
+			dispose(conn, exception);
+		}
+	}
+
+	private static void dispose(DuplexTransportConnection conn,
+			boolean exception) {
+		try {
+			conn.getReader().dispose(exception, true);
+		} catch (IOException ignored) {
+		}
+		try {
+			conn.getWriter().dispose(exception);
+		} catch (IOException ignored) {
 		}
 	}
 

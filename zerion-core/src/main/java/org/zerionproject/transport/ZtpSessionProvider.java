@@ -1,16 +1,15 @@
 package org.zerionproject.transport;
 
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
 /**
- * Resolves a transport connection to a contact and persists the post-quantum
- * ratchet state across connections. This is the seam between the transport and
- * the contact/identity database: the transport knows about sockets and tags, and
- * this provider knows about contacts, their stored root keys, roles, and Mode
- * 3-Full state.
+ * Resolves a transport connection to a contact and supplies the stored inputs
+ * that every connection to an established contact starts from. This is the
+ * seam between the transport and the contact/identity database: the transport
+ * knows about sockets and tags, and this provider knows about contacts, their
+ * stored root keys and roles.
  */
 @NotNullByDefault
 public interface ZtpSessionProvider {
@@ -31,8 +30,10 @@ public interface ZtpSessionProvider {
 	StoredContactSession getStoredSession(int contactId);
 
 	/**
-	 * Persists the Mode 3-Full ratchet state after a connection to
-	 * {@code contactId} has ended, so the next connection resumes from it.
+	 * Called after a connection to {@code contactId} has ended, so the
+	 * contact's tag window can advance past the streams the connection
+	 * accepted. No ratchet state is persisted: the next connection starts
+	 * a fresh Mode 3-Full ratchet.
 	 */
-	void saveMode3FullState(int contactId, Mode3FullState state);
+	void sessionClosed(int contactId);
 }

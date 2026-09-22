@@ -40,7 +40,7 @@ import static org.zerionproject.wire.ZwfConstants.WIRE_VERSION;
 /**
  * Send side of a Zerion 3.0 (ZWF) Mode 3-Full stream.
  *
- * <p>The Mode 3-Full frame format (see {@code PcsStreamEncrypterImpl}) rides the
+ * <p>The Mode 3-Full frame format rides the
  * native wire layer. The cryptography — per-message classical chain key,
  * per-frame ML-KEM re-encapsulation and hybrid body key — is unchanged. It
  * differs from that format in that:

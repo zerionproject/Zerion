@@ -175,6 +175,16 @@ public class ZwfDuplexConnection {
 	}
 
 	/**
+	 * Zeroizes the ML-KEM decapsulation keys of the shared Mode 3-Full state
+	 * once the connection has ended. The state is never persisted or resumed,
+	 * so no later connection can need it.
+	 */
+	public void destroyKeyMaterial() {
+		org.zerionproject.core.api.crypto.pcs.Mode3FullState s = sharedM3f.get();
+		if (s != null) s.destroy();
+	}
+
+	/**
 	 * True once this side has learned the peer's advertised ML-KEM key, so an
 	 * application frame it now sends carries a real post-quantum secret. The send
 	 * scheduler gates application records on this so the classical-only opening

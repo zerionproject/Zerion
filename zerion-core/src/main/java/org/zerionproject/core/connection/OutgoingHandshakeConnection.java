@@ -1,6 +1,5 @@
 package org.zerionproject.core.connection;
 
-import org.zerionproject.core.api.connection.ConnectionManager;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactExchangeManager;
@@ -15,10 +14,12 @@ import org.zerionproject.core.api.transport.StreamContext;
 import org.zerionproject.core.api.transport.StreamReaderFactory;
 import org.zerionproject.core.api.transport.StreamWriter;
 import org.zerionproject.core.api.transport.StreamWriterFactory;
+import org.zerionproject.transport.ZtpConnectionHandler;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.Executor;
 
 @NotNullByDefault
 class OutgoingHandshakeConnection extends HandshakeConnection
@@ -30,14 +31,14 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 			StreamWriterFactory streamWriterFactory,
 			HandshakeManager handshakeManager,
 			ContactExchangeManager contactExchangeManager,
-			ConnectionManager connectionManager,
+			ZtpConnectionHandler connectionHandler, Executor ioExecutor,
 			PendingContactId pendingContactId,
 			TransportId transportId, DuplexTransportConnection connection,
 			boolean classical) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, handshakeManager, contactExchangeManager,
-				connectionManager, pendingContactId, transportId, connection,
-				classical);
+				connectionHandler, ioExecutor, pendingContactId, transportId,
+				connection, classical);
 	}
 
 	@Override
@@ -86,8 +87,7 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 					result.getTheirEphX25519());
 			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
-			connectionManager.manageOutgoingConnection(contact.getId(),
-					transportId, connection);
+			runPairedSession(contact.getId(), false);
 		} catch (IOException | DbException e) {
 			onError();
 			connectionRegistry.unregisterConnection(pendingContactId, false);

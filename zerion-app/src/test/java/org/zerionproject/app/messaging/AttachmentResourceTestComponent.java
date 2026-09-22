@@ -28,6 +28,7 @@ import dagger.Component;
 		AutoDeleteModule.class,
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		org.zerionproject.transport.ZerionTransportModule.class,
 		DatabaseModule.class,
 		BriarClientModule.class,
 		ConversationModule.class,

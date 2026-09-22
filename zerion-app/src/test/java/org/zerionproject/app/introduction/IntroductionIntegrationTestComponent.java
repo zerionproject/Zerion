@@ -23,6 +23,7 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		org.zerionproject.transport.ZerionTransportModule.class,
 		DatabaseModule.class,
 		AttachmentModule.class,
 		AutoDeleteModule.class,

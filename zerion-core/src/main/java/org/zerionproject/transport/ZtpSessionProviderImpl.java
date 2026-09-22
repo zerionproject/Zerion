@@ -1,7 +1,5 @@
 package org.zerionproject.transport;
 
-import org.zerionproject.core.crypto.pcs.PcsPersistenceException;
-
 import org.zerionproject.core.api.Bytes;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -10,7 +8,6 @@ import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -26,7 +23,6 @@ import org.zerionproject.wire.ZwfStreamCounter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
@@ -39,8 +35,10 @@ import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 /**
  * Bridges the transport to the contact/identity database: it recognises an
  * incoming stream tag to a contact, loads the stored inputs to resume a
- * contact's session, and persists the post-quantum ratchet state after a
- * connection ends.
+ * contact's session, and advances the contact's tag window after a
+ * connection ends. No ratchet state is persisted: every connection starts a
+ * fresh Mode 3-Full ratchet, and a state blob left behind by an earlier
+ * release is stripped from the database at startup.
  *
  * <p>A single tag recogniser is seeded with every established contact at startup
  * and kept current as contacts are added and removed, so an anonymous incoming
@@ -91,6 +89,7 @@ public class ZtpSessionProviderImpl
 		try {
 			Collection<Contact> contacts = contactManager.getContacts();
 			for (Contact c : contacts) {
+				pcsStateManager.stripPersistedMode3FullState(c.getId());
 				registerContact(c.getId());
 			}
 		} catch (DbException e) {
@@ -117,28 +116,15 @@ public class ZtpSessionProviderImpl
 		if (send == null) return null;
 		SecretKey rootKey = send.getRootKey();
 		if (rootKey == null) return null;
-		Mode3FullState m3f = pcsStateManager.loadSharedMode3FullState(cid);
-		if (m3f == null) return null;
 		Boolean alice = computeAlice(cid);
 		if (alice == null) return null;
-		return new StoredContactSession(rootKey, alice, m3f);
+		return new StoredContactSession(rootKey, alice);
 	}
 
 	@Override
-	public void saveMode3FullState(int contactId, Mode3FullState state) {
+	public void sessionClosed(int contactId) {
 		recogniser.advanceTo(contactId,
 				counter.currentRecvHighWater(contactId));
-		ContactId cid = new ContactId(contactId);
-		PcsSessionState send = pcsStateManager.loadSendState(cid);
-		if (send == null) return;
-		Mode3FullState stripped = new Mode3FullState(
-				state.getTheirActivePqPk(), state.getOurActiveKeyPair(),
-				new LinkedHashMap<>(), state.getMessageCounter());
-		try {
-			pcsStateManager.saveSendState(cid,
-					send.withMode3FullState(stripped));
-		} catch (PcsPersistenceException ignored) {
-		}
 	}
 
 	@Override
