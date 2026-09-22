@@ -50,6 +50,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	@Nullable
 	private volatile SecretKey key = null;
+	private volatile boolean opened = false;
 
 	@Inject
 	SqlCipherDatabase(DatabaseConfig config, MessageFactory messageFactory,
@@ -68,7 +69,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	private boolean openInternal(SecretKey key,
 			@Nullable MigrationListener listener) throws DbException {
-		this.key = key;
+		this.key = new SecretKey(key.getBytes().clone());
+		this.opened = false;
 		try {
 			System.loadLibrary("sqlcipher");
 		} catch (UnsatisfiedLinkError e) {
@@ -128,7 +130,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 			dir.mkdirs();
 			SqlCipherRecoveryFiles.markSetupIncomplete(dir);
 		}
-		super.open(DRIVER_CLASS, reopen, key, listener);
+		super.open(DRIVER_CLASS, reopen, this.key, listener);
+		opened = true;
 
 		boolean compactNow = needsCompaction;
 		needsCompaction = false;
@@ -210,9 +213,23 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 	}
 
+	/**
+	 * Closes the database and clears the clean-shutdown flag while the private
+	 * key copy is still valid, then zeroes that copy. The key copied at open
+	 * is owned here, so a caller clearing its own key object before close (the
+	 * account manager's service stop runs before the database close) cannot
+	 * prevent the final dirty-flag write. Idempotent: a second close, or a
+	 * close after a failed open, only clears the key and returns.
+	 */
 	@Override
 	public void close() throws DbException {
 		synchronized (DB_OPEN_LOCK) {
+			SecretKey k = key;
+			if (k == null) return;
+			if (!opened) {
+				clearKey();
+				return;
+			}
 			closeAllConnections();
 			Connection c = null;
 			try {
@@ -225,12 +242,16 @@ class SqlCipherDatabase extends JdbcDatabase {
 				}
 				throw new DbException(e);
 			} finally {
-				if (key != null) {
-					key.clear();
-					key = null;
-				}
+				opened = false;
+				clearKey();
 			}
 		}
+	}
+
+	private void clearKey() {
+		SecretKey k = key;
+		key = null;
+		if (k != null) k.clear();
 	}
 
 	@Override
