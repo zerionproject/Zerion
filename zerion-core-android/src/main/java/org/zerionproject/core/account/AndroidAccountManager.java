@@ -149,73 +149,46 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@GuardedBy("stateChangeLock")
 	private void encryptAndReplaceDatabaseKey(SecretKey key, char[] password) {
 		byte[] plaintext = key.getBytes();
-		byte[] ciphertext = crypto.encryptWithPassword(plaintext, password,
-				databaseConfig.getKeyStrengthener());
+		byte[] ciphertext;
+		try {
+			ciphertext = crypto.encryptWithPassword(plaintext, password,
+					databaseConfig.getKeyStrengthener());
+		} catch (org.zerionproject.core.api.crypto
+				.KeyStrengthenerException keepExisting) {
+			return;
+		}
 		storeEncryptedDatabaseKey(
 				org.zerionproject.core.util.StringUtils.toHexString(
 						ciphertext));
 	}
 
+	/**
+	 * One sign-in attempt is tried against every profile, so the throttle is
+	 * global: its state lives outside the profile directories and runs on
+	 * the device's monotonic clock, which keeps counting across a force-stop
+	 * and is re-anchored on the boot identifier after a reboot.
+	 */
+	@Override
+	protected LoginThrottle createLoginThrottle(File ignored) {
+		return new LoginThrottle(
+				LoginThrottle.fileStore(profileManager.getLockoutFile()),
+				android.os.SystemClock::elapsedRealtime,
+				LoginThrottle.linuxBootId(), LoginThrottle.SIGN_IN);
+	}
+
 	@GuardedBy("stateChangeLock")
 	private void checkGlobalLockout() throws DecryptionException {
-		File lockoutFile = profileManager.getLockoutFile();
-		if (!lockoutFile.exists()) return;
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-				new FileInputStream(lockoutFile), UTF_8))) {
-			String line = reader.readLine();
-			if (line == null) return;
-			String[] parts = line.split(",");
-			if (parts.length != 2) return;
-			int attempts = Integer.parseInt(parts[0]);
-			long lastFailTime = Long.parseLong(parts[1]);
-			if (attempts >= 10) {
-				long elapsed = System.currentTimeMillis() - lastFailTime;
-				if (elapsed < 5L * 60 * 1000) {
-					throw new DecryptionException(INVALID_CIPHERTEXT);
-				}
-				resetGlobalLockout();
-			}
-		} catch (IOException | NumberFormatException e) {
-
-			lockoutFile.delete();
-		}
+		checkLockout();
 	}
 
 	@GuardedBy("stateChangeLock")
 	private void recordGlobalFailedAttempt() {
-		File lockoutFile = profileManager.getLockoutFile();
-		int attempts = 0;
-		if (lockoutFile.exists()) {
-			try (BufferedReader reader = new BufferedReader(
-					new InputStreamReader(new FileInputStream(lockoutFile),
-							UTF_8))) {
-				String line = reader.readLine();
-				if (line != null) {
-					String[] parts = line.split(",");
-					if (parts.length == 2) {
-						attempts = Integer.parseInt(parts[0]);
-					}
-				}
-			} catch (IOException | NumberFormatException ignored) {
-			}
-		}
-		attempts++;
-		try (java.io.FileOutputStream out =
-				new java.io.FileOutputStream(lockoutFile)) {
-			String data = attempts + "," + System.currentTimeMillis();
-			out.write(data.getBytes(UTF_8));
-			out.flush();
-		} catch (IOException ignored) {
-		}
+		recordFailedAttempt();
 	}
 
 	@GuardedBy("stateChangeLock")
 	private void resetGlobalLockout() {
-		File lockoutFile = profileManager.getLockoutFile();
-		if (lockoutFile.exists()) {
-
-			lockoutFile.delete();
-		}
+		resetLockout();
 	}
 
 	public String getActiveProfileId() {
@@ -310,7 +283,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 					out.getFD().sync();
 				}
 				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
-						null);
+						databaseConfig.getKeyStrengthener());
 				boolean ok = storeEncryptedDatabaseKey(
 						org.zerionproject.core.util.StringUtils.toHexString(
 								ciphertext));

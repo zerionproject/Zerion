@@ -79,6 +79,43 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 				"   ".toCharArray(), new byte[10], new byte[32]));
 	}
 
+	/** AND-09: an imported profile is wrapped with the keystore strengthener
+	 *  from the start, exactly like a created one. */
+	@Test
+	public void testImportProfileWrapsTheKeyWithTheStrengthener()
+			throws Exception {
+		org.zerionproject.core.api.crypto.KeyStrengthener strengthener =
+				context.mock(org.zerionproject.core.api.crypto
+						.KeyStrengthener.class);
+		byte[] dbKey = new byte[32];
+		byte[] wrapped = new byte[40];
+		char[] password = "secret".toCharArray();
+		File profileDb = new File(testDir, "profiles/p1/db");
+		context.checking(new Expectations() {{
+			oneOf(profileManager).generateProfileId();
+			will(returnValue("p1"));
+			oneOf(profileManager).createProfileDir("p1");
+			will(returnValue(true));
+			allowing(profileManager).getActiveProfileId();
+			will(returnValue(null));
+			allowing(profileManager).setActiveProfileId(
+					with(any(String.class)));
+			allowing(profileManager).setActiveProfileId(null);
+			oneOf(profileManager).getDbDir("p1");
+			will(returnValue(profileDb));
+			allowing(databaseConfig).getKeyStrengthener();
+			will(returnValue(strengthener));
+			oneOf(crypto).encryptWithPassword(dbKey, password, strengthener);
+			will(returnValue(wrapped));
+			oneOf(profileManager).writeDisplayName("p1", "Alice");
+			will(returnValue(true));
+		}});
+		assertTrue(profileDb.mkdirs());
+		assertTrue(keyDir.mkdirs());
+		org.junit.Assert.assertEquals("p1", accountManager.importProfile(
+				"Alice", password, new byte[10], dbKey));
+	}
+
 	@Test
 	public void testDeleteAccountClearsSharedPrefsAndDeletesFiles()
 			throws Exception {
@@ -130,6 +167,8 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			will(returnValue(
 					new File[] {externalMediaDir1, externalMediaDir2}));
 			oneOf(profileManager).deleteProfileMetadataKey();
+			allowing(profileManager).getLockoutFile();
+			will(returnValue(new File(testDir, "login.lockout")));
 		}});
 
 		assertTrue(dbDir.mkdirs());

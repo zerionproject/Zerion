@@ -23,6 +23,15 @@ public interface AccountManager {
 
 	void signIn(char[] password) throws DecryptionException;
 
+	/**
+	 * Milliseconds until the next sign-in attempt is accepted, or zero. The
+	 * lockout is kept on a monotonic clock and survives a restart.
+	 */
+	long signInLockoutRemainingMs();
+
+	/** Consecutive failed sign-in attempts still counted against the account. */
+	int failedSignInAttempts();
+
 	void changePassword(char[] oldPassword, char[] newPassword)
 			throws DecryptionException;
 }

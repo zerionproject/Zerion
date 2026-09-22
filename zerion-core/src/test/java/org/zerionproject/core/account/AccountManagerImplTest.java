@@ -381,6 +381,144 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyBackupFile));
 	}
 
+	/** AND-06: the sign-in throttle is one persisted, monotonic counter. */
+	@Test
+	public void lockoutIsEnforcedBeforeTheKeyIsTouchedAndSurvivesRestart()
+			throws Exception {
+		java.util.concurrent.atomic.AtomicLong mono =
+				new java.util.concurrent.atomic.AtomicLong(1_000);
+		AccountManagerImpl m = throttled(mono);
+		context.checking(new Expectations() {{
+			exactly(3).of(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(throwException(new DecryptionException(INVALID_PASSWORD)));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		for (int i = 0; i < 3; i++) {
+			try {
+				m.signIn(password);
+				fail();
+			} catch (DecryptionException expected) {
+			}
+		}
+		assertEquals(3, m.failedSignInAttempts());
+		assertTrue(m.signInLockoutRemainingMs() > 0);
+		try {
+			m.signIn(password);
+			fail("the fourth attempt must be refused without a decryption");
+		} catch (DecryptionException expected) {
+			assertEquals(org.zerionproject.core.api.crypto.DecryptionResult
+					.INVALID_CIPHERTEXT, expected.getDecryptionResult());
+		}
+		AccountManagerImpl restarted = throttled(mono);
+		assertTrue("the lockout is read back from the key directory",
+				restarted.signInLockoutRemainingMs() > 0);
+		mono.addAndGet(restarted.signInLockoutRemainingMs() + 1);
+		assertEquals(0, restarted.signInLockoutRemainingMs());
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
+		}});
+		restarted.signIn(password);
+		assertEquals(0, restarted.failedSignInAttempts());
+		assertFalse(new File(keyDir, "login.lockout").exists());
+	}
+
+	private AccountManagerImpl throttled(
+			java.util.concurrent.atomic.AtomicLong mono) {
+		return new AccountManagerImpl(databaseConfig, crypto,
+				identityManager) {
+			@Override
+			protected LoginThrottle createLoginThrottle(File stateFile) {
+				return new LoginThrottle(LoginThrottle.fileStore(stateFile),
+						mono::get, () -> "boot", LoginThrottle.SIGN_IN);
+			}
+		};
+	}
+
+	/** STO-06: both key files are written through synced temporaries and
+	 *  atomic renames; no temporary file survives and neither file is
+	 *  ever empty. */
+	@Test
+	public void storingTheKeyLeavesCompleteFilesAndNoTemporaries()
+			throws Exception {
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		synchronized (accountManager.stateChangeLock) {
+			assertTrue(accountManager.storeEncryptedDatabaseKey(
+					newEncryptedKeyHex));
+		}
+		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyBackupFile));
+		String[] names = keyDir.list();
+		assertNotNull(names);
+		for (String n : names) {
+			assertFalse(n, n.endsWith(".tmp"));
+			assertTrue(n, new File(keyDir, n).length() > 0);
+		}
+	}
+
+	/** AND-09: a strengthener that fails during the sign-in upgrade leaves
+	 *  the stored key as it is instead of writing a password-only key. */
+	@Test
+	public void strengthenerFailureDuringUpgradeKeepsTheStoredKey()
+			throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(false));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
+			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
+					keyStrengthener);
+			will(throwException(new org.zerionproject.core.api.crypto
+					.KeyStrengthenerException(new RuntimeException())));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		accountManager.signIn(password);
+		assertTrue(accountManager.hasDatabaseKey());
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
+	}
+
+	/** AND-09: a password change never silently drops the device binding. */
+	@Test
+	public void changePasswordReportsAStrengthenerFailure() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
+			oneOf(crypto).encryptWithPassword(key.getBytes(), newPassword,
+					keyStrengthener);
+			will(throwException(new org.zerionproject.core.api.crypto
+					.KeyStrengthenerException(new RuntimeException())));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		try {
+			accountManager.changePassword(password, newPassword);
+			fail();
+		} catch (DecryptionException expected) {
+			assertEquals(org.zerionproject.core.api.crypto.DecryptionResult
+					.KEY_STRENGTHENER_ERROR, expected.getDecryptionResult());
+		}
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
+	}
+
 	private void storeDatabaseKey(File f, String hex) throws IOException {
 		f.getParentFile().mkdirs();
 		FileOutputStream out = new FileOutputStream(f);

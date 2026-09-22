@@ -30,7 +30,8 @@ public abstract class LoginModule {
 	@Provides
 	@Singleton
 	static BruteForceProtection provideBruteForceProtection(
-			@AppModule.SecurePrefs SharedPreferences securePrefs) {
-		return new BruteForceProtection(securePrefs);
+			@AppModule.SecurePrefs SharedPreferences securePrefs,
+			org.zerionproject.core.api.account.AccountManager accountManager) {
+		return new BruteForceProtection(securePrefs, accountManager);
 	}
 }

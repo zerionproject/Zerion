@@ -372,7 +372,9 @@ class CryptoComponentImpl implements CryptoComponent {
 				key = keyStrengthener.strengthenKey(kdfKey);
 				strengthened = true;
 			} catch (RuntimeException e) {
-				key = kdfKey;
+				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
+				throw new org.zerionproject.core.api.crypto
+						.KeyStrengthenerException(e);
 			}
 		}
 		byte[] iv = new byte[STORAGE_IV_BYTES];

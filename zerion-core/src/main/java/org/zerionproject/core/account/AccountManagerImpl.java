@@ -18,7 +18,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import javax.annotation.Nullable;
@@ -35,8 +34,6 @@ class AccountManagerImpl implements AccountManager, Service {
 	private static final String DB_KEY_FILENAME = "db.key";
 	private static final String DB_KEY_BACKUP_FILENAME = "db.key.bak";
 	private static final String LOCKOUT_FILENAME = "login.lockout";
-	private static final int MAX_FAILED_ATTEMPTS = 10;
-	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 
 	protected final DatabaseConfig databaseConfig;
 	protected final CryptoComponent crypto;
@@ -119,35 +116,26 @@ class AccountManagerImpl implements AccountManager, Service {
 		}
 	}
 
+	/**
+	 * Writes the key to the primary file and then to the backup, each through
+	 * a synced temporary file and an atomic rename, so at every instant at
+	 * least one of the two files holds a complete key: the primary is
+	 * replaced in one step and the old backup is left untouched until the
+	 * new primary is durable.
+	 */
 	@GuardedBy("stateChangeLock")
 	boolean storeEncryptedDatabaseKey(String hex) {
 		databaseConfig.getDatabaseKeyDirectory().mkdirs();
 		File dbKeyFile = dbKeyFile();
 		File dbKeyBackupFile = dbKeyBackupFile();
-		if (dbKeyBackupFile.exists() && !dbKeyFile.exists()) {
-			dbKeyBackupFile.renameTo(dbKeyFile);
-		}
+		byte[] bytes = hex.getBytes(UTF_8);
 		try {
-			writeDbKeyToFile(hex, dbKeyBackupFile);
-			if (dbKeyFile.exists()) {
-				dbKeyFile.delete();
-			}
-			if (!dbKeyBackupFile.renameTo(dbKeyFile)) {
-				return false;
-			}
-			writeDbKeyToFile(hex, dbKeyBackupFile);
+			LoginThrottle.writeDurably(dbKeyFile, bytes);
+			LoginThrottle.writeDurably(dbKeyBackupFile, bytes);
 			return true;
 		} catch (IOException e) {
 			return false;
 		}
-	}
-
-	@GuardedBy("stateChangeLock")
-	private void writeDbKeyToFile(String key, File f) throws IOException {
-		FileOutputStream out = new FileOutputStream(f);
-		out.write(key.getBytes(UTF_8));
-		out.flush();
-		out.close();
 	}
 
 	@Override
@@ -174,6 +162,7 @@ class AccountManagerImpl implements AccountManager, Service {
 			}
 			if (!stored) return false;
 			databaseKey = key;
+			loginThrottle().reset();
 			return true;
 		}
 	}
@@ -197,6 +186,7 @@ class AccountManagerImpl implements AccountManager, Service {
 	@Override
 	public void deleteAccount() {
 		synchronized (stateChangeLock) {
+			loginThrottle().reset();
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseKeyDirectory());
 			IoUtils.deleteFileOrDir(databaseConfig.getDatabaseDirectory());
 			if (databaseKey != null) {
@@ -221,68 +211,52 @@ class AccountManagerImpl implements AccountManager, Service {
 		}
 	}
 
+	@Nullable
+	private LoginThrottle loginThrottle;
+
+	/** The single failed-attempt throttle for this account; created lazily. */
+	@GuardedBy("stateChangeLock")
+	protected LoginThrottle loginThrottle() {
+		LoginThrottle t = loginThrottle;
+		if (t == null) {
+			t = createLoginThrottle(lockoutFile());
+			loginThrottle = t;
+		}
+		return t;
+	}
+
+	protected LoginThrottle createLoginThrottle(File stateFile) {
+		return LoginThrottle.inFile(stateFile, LoginThrottle.SIGN_IN);
+	}
+
 	@GuardedBy("stateChangeLock")
 	protected void checkLockout() throws DecryptionException {
-		File lockoutFile = lockoutFile();
-		if (!lockoutFile.exists()) return;
-		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					new FileInputStream(lockoutFile), UTF_8));
-			String line = reader.readLine();
-			reader.close();
-			if (line == null) return;
-			String[] parts = line.split(",");
-			if (parts.length != 2) return;
-			int attempts = Integer.parseInt(parts[0]);
-			long lastFailTime = Long.parseLong(parts[1]);
-			if (attempts >= MAX_FAILED_ATTEMPTS) {
-				long elapsed = System.currentTimeMillis() - lastFailTime;
-				if (elapsed < LOCKOUT_DURATION_MS) {
-					throw new DecryptionException(INVALID_CIPHERTEXT);
-				}
-					resetLockout();
-			}
-		} catch (IOException | NumberFormatException e) {
-			lockoutFile.delete();
+		if (loginThrottle().remainingLockoutMs() > 0) {
+			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
 	}
 
 	@GuardedBy("stateChangeLock")
 	protected void recordFailedAttempt() {
-		File lockoutFile = lockoutFile();
-		int attempts = 0;
-		if (lockoutFile.exists()) {
-			try {
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(
-								new FileInputStream(lockoutFile), UTF_8));
-				String line = reader.readLine();
-				reader.close();
-				if (line != null) {
-					String[] parts = line.split(",");
-					if (parts.length == 2) {
-						attempts = Integer.parseInt(parts[0]);
-					}
-				}
-			} catch (IOException | NumberFormatException e) {
-			}
-		}
-		attempts++;
-		try {
-			FileOutputStream out = new FileOutputStream(lockoutFile);
-			String data = attempts + "," + System.currentTimeMillis();
-			out.write(data.getBytes(UTF_8));
-			out.flush();
-			out.close();
-		} catch (IOException e) {
-		}
+		loginThrottle().recordFailure();
 	}
 
 	@GuardedBy("stateChangeLock")
 	protected void resetLockout() {
-		File lockoutFile = lockoutFile();
-		if (lockoutFile.exists()) {
-			lockoutFile.delete();
+		loginThrottle().reset();
+	}
+
+	@Override
+	public long signInLockoutRemainingMs() {
+		synchronized (stateChangeLock) {
+			return loginThrottle().remainingLockoutMs();
+		}
+	}
+
+	@Override
+	public int failedSignInAttempts() {
+		synchronized (stateChangeLock) {
+			return loginThrottle().failures();
 		}
 	}
 
@@ -313,7 +287,11 @@ class AccountManagerImpl implements AccountManager, Service {
 				!crypto.isEncryptedWithStrengthenedKey(ciphertext);
 		boolean needsKdfUpgrade = crypto.isEncryptedWithLegacyKdf(ciphertext);
 		if (needsStrengthenerUpgrade || needsKdfUpgrade) {
-			encryptAndStoreDatabaseKey(key, password);
+			try {
+				encryptAndStoreDatabaseKey(key, password);
+			} catch (org.zerionproject.core.api.crypto
+					.KeyStrengthenerException keepExisting) {
+			}
 		}
 		return key;
 	}
@@ -327,7 +305,13 @@ class AccountManagerImpl implements AccountManager, Service {
 		}
 		synchronized (stateChangeLock) {
 			SecretKey key = loadAndDecryptDatabaseKey(oldPassword);
-			encryptAndStoreDatabaseKey(key, newPassword);
+			try {
+				encryptAndStoreDatabaseKey(key, newPassword);
+			} catch (org.zerionproject.core.api.crypto
+					.KeyStrengthenerException e) {
+				throw new DecryptionException(org.zerionproject.core.api
+						.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR);
+			}
 			if (databaseKey == null) {
 				databaseKey = key;
 			} else {

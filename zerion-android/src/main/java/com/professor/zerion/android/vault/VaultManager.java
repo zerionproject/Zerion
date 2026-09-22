@@ -48,8 +48,7 @@ public class VaultManager
 	private byte[] vaultMasterKey;
 	private volatile long lastActivityTime;
 	private volatile boolean isUnlocked = false;
-	private volatile int failedAttempts = 0;
-	private volatile long backoffUntil = 0;
+	private final org.zerionproject.core.account.LoginThrottle unlockThrottle;
 	private volatile long lockGeneration = 0;
 	private volatile Runnable onLockListener = null;
 
@@ -57,9 +56,7 @@ public class VaultManager
 	private volatile long cacheTimestamp = 0;
 	private static final long CACHE_VALIDITY_MS = 10000;
 
-	private static final int MAX_FAILED_ATTEMPTS = 10;
-	private static final long INITIAL_BACKOFF_MS = 1000;
-	private static final long BACKOFF_RESET_MS = 60000;
+	private static final String UNLOCK_THROTTLE_FILE = "unlock.throttle";
 
 	@Inject
 	public VaultManager(Context context) {
@@ -73,6 +70,13 @@ public class VaultManager
 		this.argon2 = new Argon2();
 		this.fileIO = new SecureFileIO(context);
 		this.metadataStripper = new MetadataStripper(context);
+		this.unlockThrottle = new org.zerionproject.core.account.LoginThrottle(
+				org.zerionproject.core.account.LoginThrottle.fileStore(
+						new java.io.File(fileIO.getVaultDir(),
+								UNLOCK_THROTTLE_FILE)),
+				android.os.SystemClock::elapsedRealtime,
+				org.zerionproject.core.account.LoginThrottle.linuxBootId(),
+				org.zerionproject.core.account.LoginThrottle.VAULT);
 
 		this.lastActivityTime = System.currentTimeMillis();
 	}
@@ -131,14 +135,9 @@ public class VaultManager
 
 		long unlockStartRealtime = android.os.SystemClock.elapsedRealtime();
 		try {
-			long now = System.currentTimeMillis();
-			if (backoffUntil > 0 && now - backoffUntil > BACKOFF_RESET_MS) {
-				failedAttempts = 0;
-				backoffUntil = 0;
-			}
-
-			if (now < backoffUntil) {
-				long waitSeconds = (backoffUntil - now) / 1000;
+			long waitMs = unlockThrottle.remainingLockoutMs();
+			if (waitMs > 0) {
+				long waitSeconds = (waitMs + 999) / 1000;
 				throw new SecurityException(
 						"Too many failed attempts. Wait " + waitSeconds
 								+ " seconds");
@@ -271,8 +270,7 @@ public class VaultManager
 
 			SecureMemory.shredAll(passwordKey, randomSecret, combined);
 
-			failedAttempts = 0;
-			backoffUntil = 0;
+			unlockThrottle.reset();
 			isUnlocked = true;
 			updateActivity();
 
@@ -298,10 +296,7 @@ public class VaultManager
 	 * {@code MAX_FAILED_ATTEMPTS} caps the exponent so the delay cannot overflow.
 	 */
 	private boolean registerFailedUnlock() {
-		failedAttempts++;
-		int n = Math.min(failedAttempts, MAX_FAILED_ATTEMPTS);
-		long backoffMs = INITIAL_BACKOFF_MS * (2L * n - 1L);
-		backoffUntil = System.currentTimeMillis() + backoffMs;
+		unlockThrottle.recordFailure();
 		return false;
 	}
 
