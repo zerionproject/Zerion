@@ -28,6 +28,7 @@ public enum XmrError {
 	WALLET_NEEDS_PASSWORD,
 	NODE_UNREACHABLE,
 	RELAY_UNRESOLVED,
+	SPEND_CACHE_INCOMPLETE,
 	UNKNOWN;
 
 	public static final class XmrException extends Exception {

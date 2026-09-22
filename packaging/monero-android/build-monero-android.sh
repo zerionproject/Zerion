@@ -284,8 +284,12 @@ echo "wallet.cpp refresh-thread history patch verified"
 # class definition. Each patch must apply exactly once.
 WALLET_API_H=/build/monero/src/wallet/api/wallet.h
 PENDING_TX_H=/build/monero/src/wallet/api/pending_transaction.h
-sed -i '/^class WalletImpl : public Wallet$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${WALLET_API_H}"
-sed -i '/^class PendingTransactionImpl : public PendingTransaction$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${PENDING_TX_H}"
+if ! grep -q 'friend struct ZerionWalletAccess;' "${WALLET_API_H}"; then
+  sed -i '/^class WalletImpl : public Wallet$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${WALLET_API_H}"
+fi
+if ! grep -q 'friend struct ZerionWalletAccess;' "${PENDING_TX_H}"; then
+  sed -i '/^class PendingTransactionImpl : public PendingTransaction$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${PENDING_TX_H}"
+fi
 for H in "${WALLET_API_H}" "${PENDING_TX_H}"; do
   PATCH_COUNT=$(grep -c 'friend struct ZerionWalletAccess;' "${H}")
   [ "${PATCH_COUNT}" = "1" ] || { echo "friend patch count=${PATCH_COUNT} in ${H} (expected 1)"; exit 4; }

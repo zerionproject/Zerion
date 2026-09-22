@@ -76,11 +76,26 @@ public final class XmrSpendReconciler {
 	public static boolean releasable(XmrSpendJournal journal,
 			List<XmrTxLookup> lookups, Set<String> outgoingHistoryTxids,
 			long nowMs, long expiryMs) {
-		if (nowMs - journal.createdAtMs() < expiryMs) return false;
+		return releasableTxids(journal.txids(), journal.createdAtMs(), lookups,
+				outgoingHistoryTxids, nowMs, expiryMs);
+	}
+
+	/**
+	 * The same rule for any set of relayed txids with a known creation
+	 * time: after the expiry window, every txid answered as missed by the
+	 * daemon and none of them in the wallet's own outgoing history. Used for
+	 * a journal and for a relay-uncertain reservation whose journal was
+	 * already cleared by an earlier positive answer the network then forgot.
+	 */
+	public static boolean releasableTxids(List<String> txids, long createdAtMs,
+			List<XmrTxLookup> lookups, Set<String> outgoingHistoryTxids,
+			long nowMs, long expiryMs) {
+		if (txids.isEmpty()) return false;
+		if (nowMs - createdAtMs < expiryMs) return false;
 		java.util.Map<String, XmrTxLookup.Result> answers =
 				new java.util.HashMap<>();
 		for (XmrTxLookup l : lookups) answers.put(l.txid, l.result);
-		for (String txid : journal.txids()) {
+		for (String txid : txids) {
 			if (outgoingHistoryTxids.contains(txid)) return false;
 			if (answers.get(txid) != XmrTxLookup.Result.MISSED) return false;
 		}

@@ -102,7 +102,7 @@ Monero v0.18.5.1 hard-requires these; all are built from source, none prebuilt:
 | Component | Pin |
 |---|---|
 | libiconv | 1.17 (Boost.Locale backend on Android) |
-| expat | 2.6.4 (unbound dependency) |
+| expat | 2.8.5 (unbound dependency) |
 | unbound | 1.22.0 (built, DNS never invoked - onion/IP daemons only) |
 | ZeroMQ | 4.3.5 |
 
@@ -342,9 +342,10 @@ Wrapper history (pinned Monero and dependency versions unchanged throughout):
     `invoke_http_json` connection: same proxy/Tor path, no failover, no retry;
     returns factual per-index codes only — pool / mined-height / missed /
     error).
-  These reach `WalletImpl`'s private `m_refreshMutex2` and `m_wallet` under the
-  same `#define private public` around `wallet.h` already used for
-  `stopRefresh`. Superseded SHAs: `66441ba1…` / `a4d3beb6…`.
+  These reach `WalletImpl`'s private `m_refreshMutex2` and `m_wallet` through
+  the `ZerionWalletAccess` friend struct the recipe declares in `wallet.h` and
+  `pending_transaction.h` (r5; earlier builds redefined the access specifier
+  around the header). Superseded SHAs: `66441ba1…` / `a4d3beb6…`.
 - JNI sentinel normalization (2026-09-01) rebuilt both ABIs (arm64
   `6b5458bd33cc21b0ad7d2b329bc4b265b37b9c2852b90bfb1b2da0e290dea037`, armv7
   `c45bf4c949ba43fa43272f3b202531b74d5af45ad86fd3568109e1226ef8f151`). The sole
@@ -383,5 +384,7 @@ Wrapper history (pinned Monero and dependency versions unchanged throughout):
 Earlier SHAs (`f38ee41d…`/`1b39c004…`, then `d5b903e3…`/`4aeb8443…`) are
 superseded.
 
-The NDK r27b zip hash is captured to `/opt/ndk.sha256` inside the image at
-build time; pin it here once the image is rebuilt with the value echoed.
+The NDK r27b zip hash is pinned in the Dockerfile (`NDK_SHA256`
+`33e16af1a6bbabe12cad54b2117085c07eab7e4fa67cdd831805f0e94fd826c1`) and
+checked with `sha256sum -c` before unpacking; the image build fails on a
+mismatch. The same value is recorded to `/opt/ndk.sha256` for the manifest.

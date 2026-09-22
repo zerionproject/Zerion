@@ -43,6 +43,15 @@ public final class XmrBirthday {
 	}
 
 	/**
+	 * The height of the newest verified checkpoint: a daemon reporting a
+	 * lower tip is behind the chain this build already knows about, so its
+	 * height is not evidence of anything.
+	 */
+	public static long latestCheckpointHeight() {
+		return CHECKPOINTS[CHECKPOINTS.length - 1][1];
+	}
+
+	/**
 	 * The block height to restore/rescan from for a user-chosen calendar date,
 	 * conservatively early (see the class invariant). Never below zero; a date
 	 * older than the reach of the checkpoint table floors at genesis.

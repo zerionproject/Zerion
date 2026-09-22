@@ -1810,6 +1810,7 @@
 	<string name="wallet_scan_unsupported">Dit betaalverzoek vereist een functie die de wallet niet ondersteunt</string>
 	<string name="wallet_server_inconsistent">De server meldde een lege wallet waar geschiedenis bestond. De laatst geverifieerde toestand blijft behouden.</string>
 	<string name="wallet_sp_oracle_https">Het orakeladres moet https gebruiken</string>
+	<string name="wallet_xmr_spend_cache_incomplete">De gescande toestand van de wallet is onvolledig. Scan de wallet opnieuw via de instellingen voordat je verzendt.</string>
 	<string name="wallet_send_failed">De transactie kon niet worden verzonden</string>
 	<string name="wallet_network_failed">Kon het Bitcoin-netwerk niet bereiken via Tor</string>
 	<string name="wallet_amount_invalid">Voer een geldig bedrag in</string>

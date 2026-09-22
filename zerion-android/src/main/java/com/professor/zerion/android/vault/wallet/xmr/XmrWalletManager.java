@@ -257,7 +257,7 @@ public final class XmrWalletManager {
 		}
 		XmrSpendJournalStore.Status st = journalStore.read(walletId);
 		if (st.kind == XmrSpendJournalStore.Kind.ABSENT) {
-			spendReleased.postValue(new Event<>(walletId));
+			releaseStaleUncertainRecords(walletId, s);
 			return;
 		}
 		if (st.kind == XmrSpendJournalStore.Kind.CORRUPTED
@@ -283,6 +283,54 @@ public final class XmrWalletManager {
 			return;
 		}
 		dropPendingSends(walletId, new java.util.HashSet<>(st.journal.txids()));
+		spendReleased.postValue(new Event<>(walletId));
+	}
+
+	/**
+	 * The journal is gone (a daemon once answered positively) but a
+	 * relay-uncertain record still reserves the inputs because the spend
+	 * wallet never observed the transaction: it was evicted from the pool or
+	 * the node lied. Such a record is dropped by the password-gated release
+	 * under the journal's own rule, after the expiry window and only while
+	 * the daemon now reports every txid as missed and none is in the
+	 * wallet's outgoing history; otherwise the release is refused as
+	 * unresolved rather than reported as done.
+	 */
+	private void releaseStaleUncertainRecords(String walletId,
+			MoneroEngine.Session s) {
+		List<XmrPendingSend> stale = new java.util.ArrayList<>();
+		for (XmrPendingSend p : readPendingSends(walletId)) {
+			if (p.uncertain && !p.converged && p.txids.length > 0) stale.add(p);
+		}
+		if (stale.isEmpty()) {
+			spendReleased.postValue(new Event<>(walletId));
+			return;
+		}
+		List<String> ids = new java.util.ArrayList<>();
+		for (XmrPendingSend p : stale) {
+			ids.addAll(java.util.Arrays.asList(p.txids));
+		}
+		List<XmrTxLookup> lookups;
+		try {
+			lookups = s.lookupTxs(ids, LOOKUP_TIMEOUT_MS);
+		} catch (Throwable e) {
+			lookups = java.util.Collections.emptyList();
+		}
+		Set<String> history = outgoingHistoryTxids(s);
+		long now = wallClock.getAsLong();
+		Set<String> released = new java.util.HashSet<>();
+		for (XmrPendingSend p : stale) {
+			if (XmrSpendReconciler.releasableTxids(
+					java.util.Arrays.asList(p.txids), p.createdAtMs, lookups,
+					history, now, relayExpiryMs)) {
+				released.addAll(java.util.Arrays.asList(p.txids));
+			}
+		}
+		if (released.isEmpty()) {
+			fail(XmrError.RELAY_UNRESOLVED);
+			return;
+		}
+		dropPendingSends(walletId, released);
 		spendReleased.postValue(new Event<>(walletId));
 	}
 
@@ -779,16 +827,32 @@ public final class XmrWalletManager {
 	 * Cancel a send that has sat at review for longer than the TTL. Runs the
 	 * ordinary cancel path, so the native transaction is freed, the
 	 * authorization killed, the spend session closed and the slot released on
-	 * the session executor. A flow that has moved past review (authorizing or
-	 * relaying) is never interrupted here; a flow that already ended is a no-op.
+	 * the session executor. A flow that is authorizing or relaying is never
+	 * interrupted; instead the watchdog re-arms itself so a flow that drops
+	 * back to review (a wrong password) is still bounded, and the wrong
+	 * password path re-arms it as well. A flow that already ended is a no-op.
+	 * Returns whether a follow-up check was scheduled.
 	 */
-	void expireStaleSendFlow() {
+		boolean expireStaleSendFlow() {
 		XmrSendFlow flow = sendFlow;
 		long at = reviewReadyAtMs;
-		if (flow == null || at < 0) return;
-		if (flow.state() != XmrSendFlow.State.REVIEW_READY) return;
-		if (sendClock.nowMonotonicMs() - at < spendSessionTtlMs) return;
+		if (flow == null || at < 0) return false;
+		XmrSendFlow.State state = flow.state();
+		if (state == XmrSendFlow.State.AUTHENTICATING
+				|| state == XmrSendFlow.State.AUTHORIZED
+				|| state == XmrSendFlow.State.RELAYING) {
+			try {
+				sendWatchdog.schedule(this::expireStaleSendFlow,
+						spendSessionTtlMs,
+						java.util.concurrent.TimeUnit.MILLISECONDS);
+			} catch (RuntimeException ignored) {
+			}
+			return true;
+		}
+		if (state != XmrSendFlow.State.REVIEW_READY) return false;
+		if (sendClock.nowMonotonicMs() - at < spendSessionTtlMs) return false;
 		cancelSend();
+		return false;
 	}
 
 	private void armSendWatchdog() {
@@ -956,6 +1020,7 @@ public final class XmrWalletManager {
 						sendState.postValue(XmrSendUiState.review(
 								reviewFrom(snap, "")));
 					}
+					armSendWatchdog();
 					return;
 				}
 				final long changeAtomic = flow.changeAtomic();
@@ -1898,32 +1963,17 @@ public final class XmrWalletManager {
 	}
 
 	/**
-	 * Converge the view-only background wallet's own balance with a just-relayed
-	 * spend, so the spent funds can never reappear as spendable:
-	 * <ol>
-	 * <li>durably record the send with its balance reservation active;
-	 * <li>close the running background session so its keys-file lock is released
-	 *     (an open background wallet holds it, blocking the cache write);
-	 * <li>write the spend wallet's post-relay state - its spent outputs marked by
-	 *     wallet2 commit_tx - into the background cache (a store on the
-	 *     CustomPassword main wallet updates w.background);
-	 * <li>mark the send converged so its reservation is released, exactly once,
-	 *     without ever double-subtracting;
-	 * <li>reopen the background session from the converged cache so its in-memory
-	 *     balance canonically excludes the spent outputs.
-	 * </ol>
-	 * On any failure the send stays reserved (not converged): the displayed
-	 * balance is conservatively reduced and never shows the spent funds as
-	 * spendable. An uncertain relay is never converged here: wallet2 marks
-	 * outputs spent only after the daemon accepted the transaction, so on an
-	 * uncertain commit the stored cache carries no spent flags and releasing
-	 * the reservation would show funds that may be gone. The reservation is
-	 * then held until the spend wallet itself observes the outgoing
-	 * transaction (convergence on the password-gated open) or the user
-	 * releases the unresolved send after the expiry window. Returns whether it
-	 * converged (and thus already reopened sync).
+	 * After a relay, write the spend wallet's state into the background cache
+	 * and reopen the view from it. The reservation for the send is released
+	 * only once the reopened view itself reports the relayed txids as
+	 * outgoing: the library reports a store as successful even when the
+	 * background cache rewrite failed, so the store's own result is not
+	 * trusted for convergence. On an uncertain commit the stored cache
+	 * carries no spent flags and the reservation is held until the spend
+	 * wallet observes the transaction or the user releases the unresolved
+	 * send after the expiry window. Returns whether the store succeeded.
 	 */
-	private boolean convergeAfterRelay(@Nullable XmrSendSnapshot snap,
+		private boolean convergeAfterRelay(@Nullable XmrSendSnapshot snap,
 			long changeAtomic, boolean uncertain) {
 		final String id = openWalletId;
 		final long epoch = sessionEpoch;
@@ -1939,7 +1989,6 @@ public final class XmrWalletManager {
 			}
 		}
 		boolean ok = propagateSpendStateToBackground();
-		if (ok && !uncertain && id != null) markSendConverged(id, justSent);
 		if (id == null || epoch < 0 || !vaultManager.isUnlocked()
 				|| epoch != vaultManager.getLockGeneration()) {
 			return ok;
@@ -1947,6 +1996,14 @@ public final class XmrWalletManager {
 		try {
 			activateBackgroundSession(id, epoch);
 		} catch (Throwable reopenFailed) {
+			return ok;
+		}
+		if (ok && !uncertain) {
+			MoneroEngine.Session view = openSession;
+			if (view != null && !justSent.isEmpty()
+					&& outgoingHistoryTxids(view).containsAll(justSent)) {
+				markSendConverged(id, justSent);
+			}
 		}
 		return ok;
 	}
@@ -2375,12 +2432,15 @@ public final class XmrWalletManager {
 
 	/**
 	 * Close the open native session. When {@code persist} is true (lock / close
-	 * session) the encrypted scan cache is flushed first so scanning can resume;
-	 * when false (delete / rename / rescan, where the cache is about to be
-	 * shredded anyway) it is closed without a wasteful final write. Either way the
+	 * session) the refresh loop is paused and allowed to finish its block
+	 * batch first, then the encrypted scan cache is flushed so scanning can
+	 * resume; a flush the library could not complete is reported instead of
+	 * silently dropping the progress since the last periodic store. When
+	 * false (delete / rename / rescan, where the cache is about to be
+	 * shredded anyway) it is closed without a final write. Either way the
 	 * unlocked session, its decrypted secrets and native handles are destroyed.
 	 */
-	private synchronized void closeCurrentSession(boolean persist) {
+		private synchronized void closeCurrentSession(boolean persist) {
 		syncManager.stop();
 		MoneroEngine.Session s = openSession;
 		File dir = openWorkDir;
@@ -2392,7 +2452,14 @@ public final class XmrWalletManager {
 		if (s != null) {
 			try {
 				if (persist) {
-					s.closePersisting();
+					try {
+						s.pauseRefresh();
+						s.waitRefreshIdle(SEND_REFRESH_IDLE_TIMEOUT_MS);
+					} catch (Throwable ignored) {
+					}
+					if (!s.closePersisting()) {
+						error.postValue(new Event<>(XmrError.STORAGE_COMMIT_FAILED));
+					}
 				} else {
 					s.close();
 				}
@@ -2819,16 +2886,15 @@ public final class XmrWalletManager {
 	 * as soon as the spend is done.
 	 */
 	/**
-	 * Open the spend-capable main wallet for a send and bring it ready to
-	 * construct a transaction. Opening the main file merges the outputs the
-	 * view-only background wallet has already scanned (wallet2
-	 * process_background_cache_on_open), so no full re-scan is needed; the
-	 * session is then connected to the same node the sync loop was using and
-	 * refreshed to the tip, so the transaction can fetch decoys and relay.
-	 * Returns null on a wrong password, a non-spendable open, or if it cannot
-	 * connect (a send must never be built against a disconnected wallet).
+	 * Open the spend wallet for one send. The main cache must already carry
+	 * the scanned state merged from the background cache: a wallet still at
+	 * genesis means that merge failed, and initialising it would let the
+	 * library fast-forward it to the daemon tip and then write that empty
+	 * view back over the background cache, hiding every output until a
+	 * rescan. Such a wallet is refused. The recovering marker is set before
+	 * init for the same reason, as the view path does.
 	 */
-	private MoneroEngine.Session openSpendSession(String walletId,
+		private MoneroEngine.Session openSpendSession(String walletId,
 			char[] walletPassword, XmrNode node) throws XmrError.XmrException {
 		byte[] salt = loadKekSalt(walletId);
 		if (salt == null) {
@@ -2843,10 +2909,16 @@ public final class XmrWalletManager {
 				if (s != null) s.close();
 				throw new XmrError.XmrException(XmrError.WRONG_PASSWORD);
 			}
+			if (s.blockchainHeight() <= 1) {
+				s.close();
+				throw new XmrError.XmrException(
+						XmrError.SPEND_CACHE_INCOMPLETE);
+			}
 			String proxy = node.usesTor()
 					? XmrTorIsolation.relayProxy(torSocksPort, walletId) : "";
 			boolean connected;
 			try {
+				s.setRecoveringFromSeed(true);
 				connected = s.init(node.address(), proxy, node.trusted)
 						&& s.connectionStatus() == 1;
 			} catch (Throwable e) {
@@ -2926,6 +2998,7 @@ public final class XmrWalletManager {
 	private void correctClockHeightOnce(@Nullable String walletId,
 			long daemonHeight) {
 		if (walletId == null || daemonHeight <= 0) return;
+		if (daemonHeight < XmrBirthday.latestCheckpointHeight()) return;
 		if (!heightFromClock(walletId)) return;
 		long cap = Math.max(0, daemonHeight - XmrBirthday.BASE_MARGIN_BLOCKS);
 		long persisted = readRestoreHeight(walletId);

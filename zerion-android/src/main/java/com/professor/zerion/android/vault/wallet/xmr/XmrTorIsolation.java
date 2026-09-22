@@ -15,8 +15,10 @@ import java.security.SecureRandom;
  * vendored wallet2 parses {@code socks5://user:pass@host:port} and performs
  * SOCKS5 username/password authentication, and Tor isolates streams by those
  * credentials (IsolateSOCKSAuth), so distinct credentials yield distinct
- * circuits. The username is a keyed digest of the wallet identity and the
- * purpose (never the raw wallet id); the password is drawn once per process so
+ * circuits. The username is a digest of the wallet identity and the purpose
+ * (never the raw wallet id, and not secret: it is stable across processes and
+ * devices, and only the loopback gate and the local Tor ever see it); the
+ * password is drawn once per process so
  * circuits are not shared across process lifetimes. Neither is persisted:
  * wallet2 keeps the proxy string in memory only and nothing here writes it.
  */

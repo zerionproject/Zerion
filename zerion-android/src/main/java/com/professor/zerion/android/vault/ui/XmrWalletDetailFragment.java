@@ -1025,6 +1025,8 @@ public class XmrWalletDetailFragment extends BaseFragment {
 				return getString(R.string.wallet_xmr_send_quarantine);
 			case NODE_UNREACHABLE:
 				return getString(R.string.wallet_xmr_node_unreachable);
+			case SPEND_CACHE_INCOMPLETE:
+				return getString(R.string.wallet_xmr_spend_cache_incomplete);
 			case BUSY:
 				return getString(R.string.wallet_xmr_busy);
 			case SESSION_INVALIDATED:

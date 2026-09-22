@@ -2017,6 +2017,7 @@
 	<string name="wallet_xmr_send_amount_label">Amount</string>
 	<string name="wallet_xmr_send_continue">Continue</string>
 	<string name="wallet_xmr_copied">Copied</string>
+	<string name="wallet_xmr_spend_cache_incomplete">The wallet\'s scanned state is incomplete. Rescan the wallet from its settings before sending.</string>
 	<string name="wallet_xmr_node_unreachable">Could not reach a Monero node. Check your connection and try again.</string>
 	<string name="wallet_xmr_open_failed">Could not open the wallet. Please try again.</string>
 	<string name="wallet_xmr_opening">Opening wallet</string>
