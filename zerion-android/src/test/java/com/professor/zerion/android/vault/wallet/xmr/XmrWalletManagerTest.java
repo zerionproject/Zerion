@@ -740,6 +740,59 @@ public class XmrWalletManagerTest {
 		}
 	}
 
+	/** XMR-05: an uncertain relay must keep the balance reservation, durably,
+	 *  because wallet2 marks inputs spent only after the daemon accepted the
+	 *  transaction and the funds may nevertheless be gone. */
+	@Test(timeout = 20_000)
+	public void uncertainRelayKeepsTheReservationAcrossRestart()
+			throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			p.commitResult = false;
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
+					10_000);
+			assertEquals("relayed exactly once", 1, p.commits);
+			id = live.id;
+			List<XmrPendingSend> pending = live.m.pendingSendsFor(id);
+			assertEquals(1, pending.size());
+			XmrPendingSend r = pending.get(0);
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					r.reservationState());
+			assertFalse("never converged on the uncertain path", r.converged);
+			assertEquals("the consumed inputs stay reserved",
+					p.amount + p.fee + p.change, r.reservationDebit());
+			assertTrue("the journal quarantines the wallet",
+					live.m.isSpendQuarantined(id));
+		}
+		XmrWalletManager restarted = new XmrWalletManager(tmpBase, vault, store,
+				engine, Runnable::run);
+		List<XmrPendingSend> after = restarted.pendingSendsFor(id);
+		assertEquals(1, after.size());
+		assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+				after.get(0).reservationState());
+		assertTrue(after.get(0).reservationDebit() > 0);
+		assertTrue(restarted.isSpendQuarantined(id));
+	}
+
+	/** XMR-05 contrast: an accepted relay converges and releases exactly once. */
+	@Test(timeout = 20_000)
+	public void acceptedRelayConvergesAndReleasesTheReservation()
+			throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.SUCCESS, 10_000);
+			assertEquals(1, p.commits);
+			List<XmrPendingSend> pending = live.m.pendingSendsFor(live.id);
+			assertEquals(1, pending.size());
+			assertEquals(XmrPendingSend.ReservationState.CONVERGED,
+					pending.get(0).reservationState());
+			assertEquals(0, pending.get(0).reservationDebit());
+		}
+	}
+
 	private static final class FakeVaultGate implements VaultGate {
 		boolean unlocked = true;
 		long generation = 5;

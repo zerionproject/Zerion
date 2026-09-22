@@ -326,6 +326,11 @@ public final class XmrWalletManager {
 		return out;
 	}
 
+	/** The durable outstanding-send records of a wallet; for tests only. */
+	List<XmrPendingSend> pendingSendsFor(String walletId) {
+		return readPendingSends(walletId);
+	}
+
 	private List<XmrPendingSend> readPendingSends(String walletId) {
 		try {
 			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
@@ -1681,7 +1686,14 @@ public final class XmrWalletManager {
 	 * </ol>
 	 * On any failure the send stays reserved (not converged): the displayed
 	 * balance is conservatively reduced and never shows the spent funds as
-	 * spendable. Returns whether it converged (and thus already reopened sync).
+	 * spendable. An uncertain relay is never converged here: wallet2 marks
+	 * outputs spent only after the daemon accepted the transaction, so on an
+	 * uncertain commit the stored cache carries no spent flags and releasing
+	 * the reservation would show funds that may be gone. The reservation is
+	 * then held until the spend wallet itself observes the outgoing
+	 * transaction (convergence on the password-gated open) or the user
+	 * releases the unresolved send after the expiry window. Returns whether it
+	 * converged (and thus already reopened sync).
 	 */
 	private boolean convergeAfterRelay(@Nullable XmrSendSnapshot snap,
 			long changeAtomic, boolean uncertain) {
@@ -1699,7 +1711,7 @@ public final class XmrWalletManager {
 			}
 		}
 		boolean ok = propagateSpendStateToBackground();
-		if (ok && id != null) markSendConverged(id, justSent);
+		if (ok && !uncertain && id != null) markSendConverged(id, justSent);
 		if (id == null || epoch < 0 || !vaultManager.isUnlocked()
 				|| epoch != vaultManager.getLockGeneration()) {
 			return ok;

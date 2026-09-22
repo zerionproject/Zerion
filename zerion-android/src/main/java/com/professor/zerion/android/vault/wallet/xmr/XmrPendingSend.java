@@ -92,6 +92,24 @@ public final class XmrPendingSend {
 		return converged ? 0 : reservedInputAtomic;
 	}
 
+	/**
+	 * The explicit lifecycle state of the reservation this record carries.
+	 * RESERVED: the relay was accepted and the spend is not yet reflected in the
+	 * view-only cache, so the consumed inputs are still reserved. RELAY_UNCERTAIN:
+	 * the relay outcome is unknown; the reservation is held exactly as if the
+	 * spend happened, because releasing it could show funds that are gone.
+	 * CONVERGED: the spend wallet's post-relay state has been written into the
+	 * cache, so the reservation is released. A record leaves the outstanding set
+	 * only through convergence or an explicit, expiry-gated release.
+	 */
+	public enum ReservationState { RESERVED, RELAY_UNCERTAIN, CONVERGED }
+
+	public ReservationState reservationState() {
+		if (converged) return ReservationState.CONVERGED;
+		return uncertain ? ReservationState.RELAY_UNCERTAIN
+				: ReservationState.RESERVED;
+	}
+
 	/** A copy bound to a new wallet id, used when a rename re-seals the wallet
 	 *  under a new id so its outgoing history is carried over, not orphaned. */
 	public XmrPendingSend rebind(String newWalletId) {

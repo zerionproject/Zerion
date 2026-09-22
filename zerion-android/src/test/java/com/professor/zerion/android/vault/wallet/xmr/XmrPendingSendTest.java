@@ -168,4 +168,24 @@ public class XmrPendingSendTest {
 		XmrPendingSend back = XmrPendingSend.fromJson(p.toJson());
 		assertTrue(back.uncertain);
 	}
+
+	@Test
+	public void reservationStateFollowsTheUncertainAndConvergedFlags() {
+		String[] ids = {
+				"1111111111111111111111111111111111111111111111111111111111111111"};
+		XmrPendingSend reserved = new XmrPendingSend("w", ids, 10, 1, 11, 15,
+				1L, false, false);
+		XmrPendingSend uncertain = new XmrPendingSend("w", ids, 10, 1, 11, 15,
+				1L, true, false);
+		XmrPendingSend converged = new XmrPendingSend("w", ids, 10, 1, 11, 15,
+				1L, true, true);
+		assertEquals(XmrPendingSend.ReservationState.RESERVED,
+				reserved.reservationState());
+		assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+				uncertain.reservationState());
+		assertEquals(XmrPendingSend.ReservationState.CONVERGED,
+				converged.reservationState());
+		assertEquals(15, uncertain.reservationDebit());
+		assertEquals(0, converged.reservationDebit());
+	}
 }
