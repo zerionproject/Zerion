@@ -32,6 +32,10 @@ def getStdout = { command, defaultValue ->
     }
 }
 
+// Single switch for the Payjoin native library: packaging and the supply-chain
+// gate (native/payjoin/verify-payjoin-native.gradle) both follow it.
+rootProject.ext.payjoinNativeEnabled = false
+
 android {
     compileSdk 36
     buildToolsVersion '36.0.0'
@@ -49,10 +53,13 @@ android {
             // Payjoin is build-gated OFF (PayjoinFeature.PRODUCTION_ENABLED = false,
             // no runtime override) and no production code loads its native library,
             // so the Rust libpayjoin_ffi.so is dormant attack surface and dead weight
-            // in the shipped APK. Exclude it from packaging until a variant actually
-            // enables the feature; the UniFFI bindings still compile, and the .so
-            // stays in src/main/jniLibs so re-enabling is a one-line change here.
-            excludes += ['**/libpayjoin_ffi.so']
+            // in the shipped APK. payjoinNativeEnabled (below) is the single switch:
+            // off, the library is excluded from packaging and the gate refuses any
+            // libpayjoin artifact; on, the gate requires both ABIs to match
+            // native/payjoin/MANIFEST.txt. The UniFFI bindings compile either way.
+            if (!rootProject.ext.payjoinNativeEnabled) {
+                excludes += ['**/libpayjoin_ffi.so']
+            }
         }
         // Always strip the embedded VCS info so the release APK stays byte-reproducible
         // regardless of which commit it was built from (removes F-Droid repro commit-fragility).

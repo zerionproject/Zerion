@@ -40,11 +40,22 @@ renamed by hand.
 
 ```
 export ANDROID_NDK_HOME='<pinned NDK path>'   # 27.1.12297006
-bash build-android.sh <output-dir>            # default: ./jniLibs
+bash build-android.sh [output-dir] [source-dir]   # defaults: ./jniLibs, ./upstream
 ```
 
+`fetch-source.sh` (called by the build) clones `payjoin/payjoin-ffi` at the
+revision recorded in `MANIFEST.txt` into `./upstream`, refuses any other
+commit, and lays the committed inputs over it: `Cargo.lock`,
+`rust-toolchain.toml`, `uniffi.toml` and `hardening.rs`, which becomes
+`tests/hardening.rs` of the crate and runs with `cargo test`. The build script
+checks the NDK revision and the `cargo-ndk` version against the manifest and
+carries the determinism flags in `CARGO_ENCODED_RUSTFLAGS`, so a checkout path
+with a space is fine. Nothing in this directory refers to a path outside the
+repository. `upstream/`, `repro/` and `jniLibs/` are ignored by git.
+
 Produces `<output-dir>/<abi>/libpayjoin_ffi.so` for both ABIs and prints each
-SHA-256.
+SHA-256. Built from this recipe on 2026-09-22 (Rust 1.91.1, cargo-ndk 4.1.2,
+NDK 27.1.12297006), both libraries matched `MANIFEST.txt` byte for byte.
 
 ## Bindings
 
@@ -63,14 +74,19 @@ edited.
 
 ## Reproducibility
 
-`verify-reproducible.sh` builds the pinned source from two different absolute
-paths and compares SHA-256. A matching hash across both build directories is the
-acceptance criterion. If hashes differ, the remaining nondeterministic input is
-investigated and documented; new hashes are not accepted without explanation.
+`verify-reproducible.sh` builds the pinned source from two different
+directories under `./repro` and compares the SHA-256 of each library with the
+other build and with `MANIFEST.txt`; it exits non-zero on any difference. A
+matching hash is the acceptance criterion. If hashes differ, the remaining
+nondeterministic input is investigated and documented; new hashes are not
+accepted without explanation.
 
 ## Verification at package time
 
-`verify-payjoin-native.gradle` checks every packaged `libpayjoin_ffi.so` against
-`MANIFEST.txt` and rejects any unexpected native artifact (including a stray
-`libbitcoin_ffi*.so`). It is wired into release/bundle assembly. There is no
+`verify-payjoin-native.gradle` is wired into release/bundle assembly and keyed
+on `rootProject.ext.payjoinNativeEnabled` in `zerion-android/build.gradle`,
+the single switch that also decides packaging. With the switch off (the
+shipped state) any `libpayjoin*` or `libbitcoin_ffi*` artifact under
+`src/main/jniLibs` fails the build; with it on, both ABIs must be present and
+match `MANIFEST.txt`, and any stray artifact fails the build. There is no
 runtime downloading of native libraries.
