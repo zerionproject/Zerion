@@ -30,13 +30,26 @@ public final class XmrNodeConfig {
 
 	public final Mode mode;
 	public final String ownNode;
+	/**
+	 * Whether the own node runs as a trusted daemon. Off unless the user
+	 * switched it on: a trusted daemon is given more of the wallet's trust
+	 * than a public node ever is, and choosing the own-node tier is not by
+	 * itself that decision.
+	 */
+	public final boolean ownTrusted;
 	public final List<String> customNodes;
 	public final String directNode;
 
 	public XmrNodeConfig(Mode mode, String ownNode, List<String> customNodes,
 			String directNode) {
+		this(mode, ownNode, false, customNodes, directNode);
+	}
+
+	public XmrNodeConfig(Mode mode, String ownNode, boolean ownTrusted,
+			List<String> customNodes, String directNode) {
 		this.mode = mode;
 		this.ownNode = ownNode;
+		this.ownTrusted = ownTrusted;
 		this.customNodes = customNodes;
 		this.directNode = directNode;
 	}
@@ -52,7 +65,7 @@ public final class XmrNodeConfig {
 				case OWN:
 					if (!ownNode.isEmpty()) {
 						XmrNode own = XmrNode.parse(ownNode,
-								XmrNode.Source.USER_OWNED, true);
+								XmrNode.Source.USER_OWNED, ownTrusted);
 						return XmrNodeSelector.failoverOrder(own,
 								new ArrayList<>(), false, null);
 					}
@@ -98,7 +111,8 @@ public final class XmrNodeConfig {
 					}
 				}
 				return new XmrNodeConfig(mode, n.optString("own", ""),
-						custom, n.optString("direct", ""));
+						n.optBoolean("ownTrusted", false), custom,
+						n.optString("direct", ""));
 			}
 		} catch (Exception e) {
 			return vettedDefault();
@@ -115,6 +129,7 @@ public final class XmrNodeConfig {
 			JSONObject n = new JSONObject();
 			n.put("mode", mode.name());
 			n.put("own", ownNode);
+			n.put("ownTrusted", ownTrusted);
 			n.put("direct", directNode);
 			JSONArray arr = new JSONArray();
 			for (String c : customNodes) arr.put(c);

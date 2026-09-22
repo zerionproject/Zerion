@@ -56,6 +56,91 @@ public class XmrNodeConfigTest {
 		assertTrue(order.get(0).usesTor());
 	}
 
+	/** JNI-02: an own node is untrusted unless the user says so; the flag is
+	 *  persisted with the node and read back, never defaulted to trusted. */
+	@Test
+	public void ownNodeIsUntrustedUnlessExplicitlyMarked() throws Exception {
+		XmrNodeConfig plain = new XmrNodeConfig(XmrNodeConfig.Mode.OWN, ONION,
+				new ArrayList<>(), "");
+		assertFalse(plain.ownTrusted);
+		assertFalse(plain.toFailoverList().get(0).trusted);
+		XmrNodeConfig trusted = new XmrNodeConfig(XmrNodeConfig.Mode.OWN, ONION,
+				true, new ArrayList<>(), "");
+		assertTrue(trusted.toFailoverList().get(0).trusted);
+		SettingsOnlyStore store = new SettingsOnlyStore();
+		trusted.save(store);
+		XmrNodeConfig loaded = XmrNodeConfig.load(store);
+		assertEquals(XmrNodeConfig.Mode.OWN, loaded.mode);
+		assertTrue("trust survives the round trip", loaded.ownTrusted);
+		assertTrue(loaded.toFailoverList().get(0).trusted);
+		plain.save(store);
+		assertFalse(XmrNodeConfig.load(store).ownTrusted);
+		store.settings = "{\"xmr\":{\"_nodes\":{\"mode\":\"OWN\",\"own\":\""
+				+ ONION + "\"}}}";
+		assertFalse("a record without the flag is untrusted",
+				XmrNodeConfig.load(store).ownTrusted);
+	}
+
+	@Test
+	public void customNodesAreNeverTrustedEvenWhenOwnIs() {
+		XmrNodeConfig cfg = new XmrNodeConfig(XmrNodeConfig.Mode.CUSTOM, ONION,
+				true, Arrays.asList(ONION), "");
+		for (XmrNode n : cfg.toFailoverList()) assertFalse(n.trusted);
+	}
+
+	private static final class SettingsOnlyStore implements XmrStore {
+		String settings;
+		private final Object monitor = new Object();
+
+		@Override
+		public String createWallet(com.professor.zerion.android.vault.wallet.WalletCoin coin,
+				String name, char[] mnemonic, char[] password) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public char[] loadMnemonicChars(String walletId, char[] password) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public java.util.List<com.professor.zerion.android.vault.wallet.WalletRecord> listWallets() {
+			return new ArrayList<>();
+		}
+
+		@Override
+		public void deleteWallet(String walletId) {
+		}
+
+		@Override
+		public String readSettings() {
+			return settings;
+		}
+
+		@Override
+		public void writeSettings(String json) {
+			settings = json;
+		}
+
+		@Override
+		public Object settingsMonitor() {
+			return monitor;
+		}
+
+		@Override
+		public String readSpendJournal(String walletId) {
+			return null;
+		}
+
+		@Override
+		public void writeSpendJournal(String walletId, String journal) {
+		}
+
+		@Override
+		public void removeSpendJournal(String walletId) {
+		}
+	}
+
 	@Test
 	public void malformedNodeFallsBackToVettedNeverEmpty() {
 		XmrNodeConfig cfg = new XmrNodeConfig(XmrNodeConfig.Mode.OWN,

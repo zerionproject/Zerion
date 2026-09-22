@@ -2148,7 +2148,8 @@
 	<string name="wallet_xmr_node_own_hint">yournode.onion:18089</string>
 	<string name="wallet_xmr_node_custom_hint">host.onion or IP : port</string>
 	<string name="wallet_xmr_node_direct_hint">host or IP : port (clearnet)</string>
-	<string name="wallet_xmr_node_direct_ack">A direct connection does not use Tor. The node you connect to can see your IP address and can link it to your Monero activity. Only continue if you understand and accept this reduced privacy.</string>
+	<string name="wallet_xmr_node_direct_ack">A direct connection does not use Tor. The node you connect to can see your IP address and can link it to your Monero activity, and a node given as a hostname is looked up through the device\'s DNS resolver. Only continue if you understand and accept this reduced privacy.</string>
+	<string name="wallet_xmr_node_trust_label">Trust this node as my own daemon (skips the checks made against public nodes)</string>
 	<string name="wallet_xmr_node_direct_accept">I understand, use Direct</string>
 	<string name="wallet_xmr_node_invalid">That node address is not valid.</string>
 	<string name="wallet_xmr_node_saved">Node updated. It applies the next time the wallet syncs.</string>

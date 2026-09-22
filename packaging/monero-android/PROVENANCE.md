@@ -41,9 +41,13 @@ become the expected gate on subsequent builds.
 ## Build flags relevant to security / compatibility
 
 - `-DUNBOUND_ENABLED=OFF` and `-DUSE_DEVICE_TREZOR=OFF`: no bundled DNS resolver
-  and no hardware-wallet transport. Daemon addresses passed from Java are onion
-  or IP only (never a hostname needing DNS), so there is no clearnet DNS path;
-  this is verified again in Java before `init` is called.
+  and no hardware-wallet transport. Every Tor-mode daemon address (the vetted
+  set, custom nodes and the own node) is handed to the SOCKS proxy unresolved,
+  so Tor resolves it remotely and no local DNS query is made. The one exception
+  is the explicit Direct mode, which the user must acknowledge as
+  reduced-privacy: a Direct node given as a hostname is resolved by the
+  device's own resolver (`XmrNode.requiresLocalDns()`), and the
+  acknowledgement text says so.
 - `-DSTATIC=ON -DBUILD_TESTS=OFF`: fully static link into a single `.so`.
 - `-Wl,-z,max-page-size=16384` (arm64): 16 KB-aligned LOAD segments for Android
   15+ 16 KB page-size devices. armeabi-v7a is 32-bit (4 KB pages, not subject to
