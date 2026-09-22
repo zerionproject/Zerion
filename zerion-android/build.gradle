@@ -204,7 +204,13 @@ android {
     }
 
     sourceSets {
-        main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
+        /* The UniFFI bindings and their JNA runtime exist only for the
+           native Payjoin library; while that library is switched off
+           neither is compiled or packaged, so the release carries no
+           dormant native bridge. */
+        if (rootProject.ext.payjoinNativeEnabled) {
+            main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
+        }
     }
 
     testOptions {
@@ -225,7 +231,12 @@ android {
     }
     namespace 'com.professor.zerion'
     lint {
-        abortOnError false
+        /* Lint is not part of the release path: its own toolchain (Groovy,
+           resolved by the annotation extraction) is signed by keys the
+           strict dependency verification does not trust, and the release
+           gates are enforceNoLogs, dependency verification, the native hash
+           gates and the wallet regression. A lint run itself fails on errors. */
+        abortOnError true
         checkReleaseBuilds false
         warning 'MissingTranslation', 'MissingDefaultResource', 'ImpliedQuantity', 'ExtraTranslation', 'InvalidPackage', 'MissingPermission'
     }
@@ -312,8 +323,11 @@ dependencies {
 
     // force kotlin standard lib to latest version to prevent jetifier issues
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    // JNA runtime for the Payjoin native library UniFFI bindings
-    implementation 'net.java.dev.jna:jna:5.17.0@aar'
+    /* JNA runtime for the Payjoin native library UniFFI bindings; packaged
+       only together with the native library it drives. */
+    if (rootProject.ext.payjoinNativeEnabled) {
+        implementation 'net.java.dev.jna:jna:5.17.0@aar'
+    }
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
@@ -382,7 +396,8 @@ task enforceNoLogs {
         // The zero-log policy is enforced only for release/bundle builds (what ships).
         def requestedTasks = gradle.startParameter.taskNames.join(' ').toLowerCase()
         boolean releaseBuild = requestedTasks.contains('release') ||
-                requestedTasks.contains('bundle')
+                requestedTasks.contains('bundle') ||
+                project.hasProperty('enforceNoLogs')
         if (!releaseBuild) {
             println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
             return
