@@ -1292,6 +1292,7 @@
 		<item quantity="other">%1$d custom bridges</item>
 	</plurals>
 	<string name="tor_custom_bridges_dialog_message">If Tor cannot connect where you are, paste bridge lines here, one per line. They are tried before the built-in bridges. You can get bridges from bridges.torproject.org or the GetBridgesBot on Telegram.</string>
+	<string name="tor_custom_bridges_invalid">One of the lines is not a bridge line. Nothing was saved.</string>
 	<string name="tor_custom_bridges_hint">Paste bridge lines, one per line</string>
 
 	<!-- Backup and transfer -->

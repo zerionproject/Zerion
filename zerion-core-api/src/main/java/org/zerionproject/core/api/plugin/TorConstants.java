@@ -17,8 +17,6 @@ public interface TorConstants {
 	int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
 	String PREF_TOR_NETWORK = "network2";
 	String PREF_TOR_PORT = "port";
-	String PREF_TOR_MOBILE = "useMobileData";
-	String PREF_TOR_ONLY_WHEN_CHARGING = "onlyWhenCharging";
 	String PREF_TOR_CUSTOM_BRIDGES = "customBridges";
 	String HS_PRIVATE_KEY_V3 = "onionPrivKey3";
 	int PREF_TOR_NETWORK_AUTOMATIC = 0;
@@ -26,8 +24,6 @@ public interface TorConstants {
 	int PREF_TOR_NETWORK_WITH_BRIDGES = 2;
 	boolean DEFAULT_PREF_PLUGIN_ENABLE = true;
 	int DEFAULT_PREF_TOR_NETWORK = PREF_TOR_NETWORK_AUTOMATIC;
-	boolean DEFAULT_PREF_TOR_MOBILE = true;
-	boolean DEFAULT_PREF_TOR_ONLY_WHEN_CHARGING = false;
 
 	int REASON_BATTERY = 2;
 

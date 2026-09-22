@@ -53,10 +53,21 @@ public class ZtpTorTransportRecoveryTest {
 				Collections.synchronizedList(new ArrayList<>());
 		volatile TorState state = TorState.CONNECTING;
 		volatile int failStarts = 0;
+		volatile boolean refuseBridges = false;
+		@Nullable
+		volatile java.util.concurrent.CountDownLatch holdStart = null;
 		private int onions = 0;
 
 		public void start() throws IOException {
 			calls.add("start");
+			java.util.concurrent.CountDownLatch hold = holdStart;
+			if (hold != null) {
+				try {
+					hold.await(10, java.util.concurrent.TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
 			if (failStarts > 0) {
 				failStarts--;
 				throw new IOException("start failed");
@@ -95,10 +106,13 @@ public class ZtpTorTransportRecoveryTest {
 			calls.add("network:" + enable);
 		}
 
-		public void enableBridges(List<String> bridges) {
+		public void enableBridges(List<String> bridges) throws IOException {
+			calls.add("bridges:" + bridges.size());
+			if (refuseBridges) throw new IOException("552 rejected");
 		}
 
 		public void disableBridges() {
+			calls.add("bridges:off");
 		}
 
 		public void enableConnectionPadding(boolean enable) {
@@ -137,6 +151,29 @@ public class ZtpTorTransportRecoveryTest {
 		}
 
 		public void broadcast(Event e) {
+		}
+	}
+
+	private static class WithBridges implements SettingsManager {
+		public Settings getSettings(String namespace) {
+			Settings s = new Settings();
+			s.putInt(org.zerionproject.core.api.plugin.TorConstants
+					.PREF_TOR_NETWORK, org.zerionproject.core.api.plugin
+					.TorConstants.PREF_TOR_NETWORK_WITH_BRIDGES);
+			s.put(org.zerionproject.core.api.plugin.TorConstants
+					.PREF_TOR_CUSTOM_BRIDGES, "obfs4 1.2.3.4:443 ABCDEF");
+			return s;
+		}
+
+		public Settings getSettings(Transaction txn, String namespace) {
+			return getSettings(namespace);
+		}
+
+		public void mergeSettings(Settings s, String namespace) {
+		}
+
+		public void mergeSettings(Transaction txn, Settings s,
+				String namespace) {
 		}
 	}
 
@@ -222,6 +259,12 @@ public class ZtpTorTransportRecoveryTest {
 
 	private ZtpTorTransport started(@Nullable String privateKey)
 			throws Exception {
+		return started(privateKey, new NoSettings(), new TorProcessWatch());
+	}
+
+	private ZtpTorTransport started(@Nullable String privateKey,
+			SettingsManager settings, TorProcessWatch watch)
+			throws Exception {
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
 			public void handlePaired(TransportId transportId, int contactId,
@@ -240,11 +283,11 @@ public class ZtpTorTransportRecoveryTest {
 			}
 		};
 		TorBridgeConfigurator bridges = new TorBridgeConfigurator(
-				new NoSettings(), new NoBridges(), () -> "", tor,
+				settings, new NoBridges(), () -> "", tor,
 				new NoEvents(), exec);
 		ZtpTorTransport t = new ZtpTorTransport(tor, refusingFactory,
 				refusingFactory, exec, handler, bridges, () -> {
-				});
+				}, watch);
 		t.clock = now::get;
 		t.sleeper = sleeps::add;
 		t.start(privateKey);
@@ -259,6 +302,76 @@ public class ZtpTorTransportRecoveryTest {
 	public void tearDown() throws Exception {
 		if (transport != null) transport.stop();
 		exec.shutdownNow();
+	}
+
+	/**
+	 * A2-REG-NET-03: the transport is a singleton the plugin manager stops
+	 * and starts across offline and pause cycles; the process watch must
+	 * report a dead Tor to the transport after any such cycle, not only in
+	 * its first life.
+	 */
+	@Test
+	public void aTorDeathIsStillDetectedAfterAStopStartCycle()
+			throws Exception {
+		TorProcessWatch watch = new TorProcessWatch();
+		ZtpTorTransport t = started(null, new NoSettings(), watch);
+		t.stop();
+		transport = null;
+		t.start(null);
+		transport = t;
+		tor.calls.clear();
+		watch.controlConnectionLost();
+		waitUntil(() -> tor.calls.contains("start"));
+		waitUntil(() -> !t.isTorDead());
+	}
+
+	/**
+	 * A2-NET-03: after Tor refused the bridge configuration the network is
+	 * disabled, and a later connectivity report must not enable it without
+	 * bridges; once the configuration is accepted again the enable goes
+	 * through, with the bridges cleared and re-applied so the wrapper's
+	 * memory of the refused list cannot report it as already applied.
+	 */
+	@Test
+	public void theNetworkStaysDisabledWhileBridgesAreRefused()
+			throws Exception {
+		ZtpTorTransport t = started(null, new WithBridges(),
+				new TorProcessWatch());
+		tor.state = TorState.CONNECTED;
+		tor.refuseBridges = true;
+		tor.calls.clear();
+		t.setNetworkEnabled(true);
+		assertTrue(tor.calls.toString(), tor.calls.contains("network:false"));
+		assertFalse(tor.calls.toString(), tor.calls.contains("network:true"));
+		tor.refuseBridges = false;
+		tor.calls.clear();
+		t.setNetworkEnabled(true);
+		assertEquals(asList("bridges:off", "bridges:1", "network:true"),
+				tor.calls);
+	}
+
+	/**
+	 * A2-NET-05: a stop that lands while a dead Tor is being restarted must
+	 * not leave the restarted Tor running with the network enabled.
+	 */
+	@Test
+	public void aStopDuringARestartLeavesTorStopped() throws Exception {
+		TorProcessWatch watch = new TorProcessWatch();
+		ZtpTorTransport t = started(null, new NoSettings(), watch);
+		java.util.concurrent.CountDownLatch hold =
+				new java.util.concurrent.CountDownLatch(1);
+		tor.holdStart = hold;
+		tor.calls.clear();
+		watch.controlConnectionLost();
+		waitUntil(() -> tor.calls.contains("start"));
+		t.stop();
+		transport = null;
+		hold.countDown();
+		waitUntil(() -> tor.calls.indexOf("stop") >= 0
+				&& tor.calls.lastIndexOf("stop") > tor.calls.indexOf("start"));
+		assertFalse("the network was not enabled after the stop",
+				tor.calls.subList(tor.calls.indexOf("start"),
+						tor.calls.size()).contains("network:true"));
 	}
 
 	@Test
@@ -317,7 +430,7 @@ public class ZtpTorTransportRecoveryTest {
 		t.onControlConnectionLost();
 		waitUntil(() -> !t.isTorDead());
 
-		assertEquals(asList("stop", "start", "network:true",
+		assertEquals(asList("stop", "start", "bridges:off", "network:true",
 				"publish:" + t.getLocalPort() + ":80:main-key",
 				"publish:4444:80:channel-key"), tor.calls);
 		assertTrue(sleeps.isEmpty());

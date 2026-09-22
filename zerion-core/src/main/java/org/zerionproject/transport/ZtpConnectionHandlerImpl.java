@@ -174,6 +174,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 				connectionRegistry.registerOutgoingConnection(c, transportId,
 						ic, new Priority(nonce));
 			}
+			sessionProvider.sessionEstablished(contactId);
 			boolean exception = false;
 			try {
 				connectionRunner.run(contactId, connection);

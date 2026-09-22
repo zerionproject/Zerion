@@ -1,6 +1,7 @@
 package org.zerionproject.sync;
 
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,6 +67,28 @@ public class ZppPacingRegimeTest {
 	 * receipt extends the window; once that window has passed, receipts fall
 	 * back to the rationed activation.
 	 */
+	/**
+	 * A2-REG-NET-04: a protocol reply the peer provoked (an offer answered
+	 * with a request, a delivery answered with an ack) is a real frame but
+	 * not local activity; only a message this side produced opens the reply
+	 * window in which receipts extend the active regime.
+	 */
+	@Test
+	public void provokedRepliesDoNotCountAsLocalActivity() throws Exception {
+		java.util.List<byte[]> sent = new java.util.ArrayList<>();
+		ZppSendScheduler scheduler = new ZppSendScheduler(sent::add,
+				() -> true);
+		scheduler.enqueueRecord(new byte[] {0x10, 1, 2}, false);
+		assertTrue(scheduler.tick());
+		assertFalse("a reply is not user originated",
+				scheduler.lastRealFrameWasUserOriginated());
+		scheduler.enqueueRecord(new byte[] {0x10, 3, 4}, true);
+		assertTrue(scheduler.tick());
+		assertTrue(scheduler.lastRealFrameWasUserOriginated());
+		assertFalse("cover is never real", scheduler.tick());
+		assertEquals(3, sent.size());
+	}
+
 	@Test
 	public void receiptsAloneActivateOncePerInterval() {
 		AtomicLong now = new AtomicLong(1_000_000L);

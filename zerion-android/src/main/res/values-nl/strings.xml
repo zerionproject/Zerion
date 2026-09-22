@@ -1361,6 +1361,7 @@
 	<string name="tor_info_message">Zerion gebruikt uitsluitend het Tor-netwerk voor veilige, anonieme communicatie. Alle verbindingen lopen via Tor.</string>
 	<string name="tor_custom_bridges_title">Aangepaste bridges</string>
 	<string name="tor_custom_bridges_summary_none">Niet ingesteld</string>
+	<string name="tor_custom_bridges_invalid">Een van de regels is geen bridge-regel. Er is niets opgeslagen.</string>
 	<string name="tor_custom_bridges_dialog_message">Als Tor geen verbinding kan maken waar jij bent, plak hier dan bridge-regels, één per regel. Ze worden vóór de ingebouwde bridges geprobeerd. Je kunt bridges krijgen via bridges.torproject.org of de GetBridgesBot op Telegram.</string>
 	<string name="tor_custom_bridges_hint">Plak bridge-regels, één per regel</string>
 	<string name="backup_settings_title">Back-up &amp; overdracht</string>

@@ -518,7 +518,8 @@ public class ZtpTorTransportTest {
 		ZtpTorTransport.PreambleDeadlineInputStream in =
 				new ZtpTorTransport.PreambleDeadlineInputStream(
 						new java.io.ByteArrayInputStream(data), 16,
-						signals::incrementAndGet);
+						signals::incrementAndGet, System::currentTimeMillis,
+						5_000L);
 		byte[] buf = new byte[10];
 		assertEquals(10, in.read(buf, 0, 10));
 		assertEquals(0, signals.get());

@@ -56,7 +56,6 @@ public class ZwfDuplexConnection {
 	private final OutputStream out;
 	private final BufferedInputStream in;
 	private final ZwfTagRecogniser recogniser;
-	// Shared across both directions; access serialised by the lock.
 	private final java.util.concurrent.atomic.AtomicReference<
 			org.zerionproject.core.api.crypto.pcs.Mode3FullState> sharedM3f;
 	private final java.util.concurrent.locks.Lock directionLock =
@@ -153,7 +152,6 @@ public class ZwfDuplexConnection {
 			throw fe;
 		}
 		if (!recvStreamCommitted) {
-			// Commit the stream id only after the first frame authenticates, so an unauthenticated stream cannot slide the window.
 			if (!counter.acceptRecvStreamId(contactId, pendingStreamId)) {
 				throw new FormatException();
 			}

@@ -81,6 +81,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final SocketFactory fastSocketFactory;
 	private final Executor ioExecutor;
 	private final ZtpConnectionHandler handler;
+	@Nullable
 	private final TorBridgeConfigurator bridgeConfigurator;
 	private final TorPrivacyConfigurator privacyConfigurator;
 	private final TorProcessWatch processWatch;
@@ -145,6 +146,8 @@ public class ZtpTorTransport implements OverlayTransport {
 		if (!running.compareAndSet(false, true)) {
 			throw new IllegalStateException("already started");
 		}
+		torDead.set(false);
+		processWatch.setListener(this::onControlConnectionLost);
 		try {
 			startTor();
 		} catch (IOException | InterruptedException e) {
@@ -171,12 +174,16 @@ public class ZtpTorTransport implements OverlayTransport {
 			}
 			throw e;
 		}
-		if (!bridgeConfigurator.apply()) {
+		if (!bridgesApplied()) {
 			try {
 				tor.stop();
 			} catch (IOException ignored) {
 			}
 			throw new IOException("bridge configuration failed");
+		}
+		if (!running.get()) {
+			tor.stop();
+			throw new IOException("stopped during start");
 		}
 		tor.enableNetwork(true);
 	}
@@ -254,6 +261,14 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 		if (!running.get()) return;
 		startTor();
+		if (!running.get()) {
+			try {
+				tor.enableNetwork(false);
+			} catch (IOException ignored) {
+			}
+			tor.stop();
+			return;
+		}
 		List<PublishedService> services;
 		synchronized (published) {
 			services = new ArrayList<>(published.values());
@@ -324,7 +339,8 @@ public class ZtpTorTransport implements OverlayTransport {
 			} catch (java.net.SocketException ignored) {
 			}
 			InputStream in = new PreambleDeadlineInputStream(
-					socket.getInputStream(), TAG_LENGTH, onTagDelivered);
+					socket.getInputStream(), TAG_LENGTH, onTagDelivered,
+					clock, TAG_READ_TIMEOUT_MS);
 			handler.handleIncoming(TorConstants.ID, in,
 					socket.getOutputStream());
 		} catch (IOException e) {
@@ -340,25 +356,44 @@ public class ZtpTorTransport implements OverlayTransport {
 	/**
 	 * Counts the bytes delivered to the reader and runs the callback once the
 	 * preamble length has been reached, so the accept path can move a
-	 * connection from the short pre-tag budget to the session budget.
+	 * connection from the short pre-tag budget to the session budget. The
+	 * preamble must arrive in full within a wall-clock deadline measured
+	 * from the accept: the socket's read timeout only bounds the gap
+	 * between bytes, so a peer dripping one byte per timeout would
+	 * otherwise hold a pre-tag slot for the whole preamble length times
+	 * the timeout.
 	 */
 	static final class PreambleDeadlineInputStream
 			extends java.io.FilterInputStream {
 
 		private final int preambleLength;
 		private final Runnable onPreambleDelivered;
+		private final LongSupplier clock;
+		private final long deadlineMs;
+		private final long startedMs;
 		private long delivered = 0;
 		private boolean signalled = false;
 
 		PreambleDeadlineInputStream(InputStream in, int preambleLength,
-				Runnable onPreambleDelivered) {
+				Runnable onPreambleDelivered, LongSupplier clock,
+				long deadlineMs) {
 			super(in);
 			this.preambleLength = preambleLength;
 			this.onPreambleDelivered = onPreambleDelivered;
+			this.clock = clock;
+			this.deadlineMs = deadlineMs;
+			this.startedMs = clock.getAsLong();
+		}
+
+		private void checkDeadline() throws IOException {
+			if (!signalled && clock.getAsLong() - startedMs > deadlineMs) {
+				throw new IOException("preamble deadline passed");
+			}
 		}
 
 		@Override
 		public int read() throws IOException {
+			checkDeadline();
 			int b = in.read();
 			if (b >= 0) count(1);
 			return b;
@@ -366,6 +401,7 @@ public class ZtpTorTransport implements OverlayTransport {
 
 		@Override
 		public int read(byte[] b, int off, int len) throws IOException {
+			checkDeadline();
 			int n = in.read(b, off, len);
 			if (n > 0) count(n);
 			return n;
@@ -461,11 +497,29 @@ public class ZtpTorTransport implements OverlayTransport {
 	@Override
 	public void setNetworkEnabled(boolean enabled) {
 		if (!running.get()) return;
+		if (enabled && !bridgesApplied()) {
+			try {
+				tor.enableNetwork(false);
+			} catch (IOException e) {
+			}
+			return;
+		}
 		if (enabled && isNetworkDegraded() && restartNetworkNow()) return;
 		try {
 			tor.enableNetwork(enabled);
 		} catch (IOException e) {
 		}
+	}
+
+	/**
+	 * The bridge configuration is re-applied before every enable: a
+	 * configuration Tor refused after the start (a mistyped line, a control
+	 * port hiccup) has disabled the network, and an enable that skipped the
+	 * check would connect without the bridges the user asked for.
+	 */
+	private boolean bridgesApplied() {
+		TorBridgeConfigurator b = bridgeConfigurator;
+		return b == null || b.apply();
 	}
 
 	@Override
@@ -489,7 +543,7 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 		try {
 			tor.enableNetwork(false);
-			tor.enableNetwork(true);
+			if (bridgesApplied()) tor.enableNetwork(true);
 		} catch (IOException e) {
 		}
 		return true;

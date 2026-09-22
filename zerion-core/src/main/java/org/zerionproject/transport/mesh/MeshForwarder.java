@@ -152,13 +152,44 @@ public class MeshForwarder {
 				seen.put(idHex, new SeenEntry(now, UNKNOWN_PEER));
 				return true;
 			}
-			if (seen.size() >= SEEN_CAP) return false;
 			int held = seenPerPeer.getOrDefault(peer, 0);
 			if (held >= SEEN_PER_PEER_CAP) return false;
+			if (seen.size() >= SEEN_CAP && !evictFromHeaviestPeer(held)) {
+				return false;
+			}
 			seenPerPeer.put(peer, held + 1);
 			seen.put(idHex, new SeenEntry(now, peer));
 			return true;
 		}
+	}
+
+	/**
+	 * When the set is full of unexpired foreign entries, the peer holding
+	 * the most of them gives up its oldest so a peer holding fewer can be
+	 * admitted; peer identities are cheap to invent on a radio link, so a
+	 * flood spread over many identities must not shut out every other
+	 * neighbour for the whole lifetime of its entries.
+	 */
+	private boolean evictFromHeaviestPeer(int newcomerHeld) {
+		String heaviest = null;
+		int most = newcomerHeld;
+		for (Map.Entry<String, Integer> e : seenPerPeer.entrySet()) {
+			if (e.getValue() > most) {
+				most = e.getValue();
+				heaviest = e.getKey();
+			}
+		}
+		if (heaviest == null) return false;
+		Iterator<Map.Entry<String, SeenEntry>> it = seen.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry<String, SeenEntry> e = it.next();
+			if (e.getValue().peer.equals(heaviest)) {
+				release(e.getValue());
+				it.remove();
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void expire(long now) {

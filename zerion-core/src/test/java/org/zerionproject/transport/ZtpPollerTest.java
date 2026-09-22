@@ -19,6 +19,7 @@ import org.zerionproject.core.api.system.TaskScheduler;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Before;
+import static org.junit.Assert.assertFalse;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -138,10 +139,17 @@ public class ZtpPollerTest {
 		ContactManager contactManager = context.mock(ContactManager.class);
 		TransportPropertyManager tpm =
 				context.mock(TransportPropertyManager.class);
-		Contact a = getContact(dialled, getAuthor(),
-				new AuthorId(getRandomId()), true);
-		Contact b = getContact(dialsUs, getAuthor(),
-				new AuthorId(getRandomId()), true);
+		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		byte[] high = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		java.util.Arrays.fill(high, (byte) 0xFF);
+		Contact a = getContact(dialled, new org.zerionproject.core.api.identity
+				.Author(new AuthorId(high), org.zerionproject.core.api.identity
+				.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey()),
+				new AuthorId(low), true);
+		Contact b = getContact(dialsUs, new org.zerionproject.core.api.identity
+				.Author(new AuthorId(low), org.zerionproject.core.api.identity
+				.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey()),
+				new AuthorId(high), true);
 		TransportProperties ours = new TransportProperties();
 		ours.put(KEY, "mmmm");
 		TransportProperties afterUs = new TransportProperties();
@@ -151,6 +159,10 @@ public class ZtpPollerTest {
 		context.checking(new Expectations() {{
 			allowing(contactManager).getContacts();
 			will(returnValue(Arrays.asList(a, b)));
+			allowing(contactManager).getContact(dialled);
+			will(returnValue(a));
+			allowing(contactManager).getContact(dialsUs);
+			will(returnValue(b));
 			allowing(tpm).getLocalProperties(ID);
 			will(returnValue(ours));
 			allowing(tpm).getRemoteProperties(dialled, ID);
@@ -167,6 +179,91 @@ public class ZtpPollerTest {
 	public void onlyTheDesignatedDiallerDials() {
 		scheduler.runSweep();
 		assertEquals(Collections.singletonList(1), transport.dials);
+	}
+
+	/**
+	 * A2-NET-01: the dialer rule rests on the two author ids, which both
+	 * sides see identically and which do not move when an onion rotates;
+	 * the addresses play no part in it.
+	 */
+	@Test
+	public void theDialerRuleIgnoresAddresses() {
+		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		byte[] high = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		java.util.Arrays.fill(high, (byte) 0xFF);
+		org.zerionproject.core.api.identity.Author them =
+				new org.zerionproject.core.api.identity.Author(
+						new AuthorId(high), org.zerionproject.core.api.identity
+						.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey());
+		assertTrue(ZtpPoller.isDesignatedDialer(
+				getContact(dialled, them, new AuthorId(low), true)));
+		org.zerionproject.core.api.identity.Author themLow =
+				new org.zerionproject.core.api.identity.Author(
+						new AuthorId(low), org.zerionproject.core.api.identity
+						.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey());
+		assertFalse(ZtpPoller.isDesignatedDialer(
+				getContact(dialsUs, themLow, new AuthorId(high), true)));
+	}
+
+	/**
+	 * A2-NET-01: a dial to a contact's announced next onion reports its
+	 * outcome to the rotation, so three failures fall back to the onion
+	 * the contact still publishes and a session confirms the move.
+	 */
+	@Test
+	public void dialsToAPendingOnionReportTheirOutcome() throws Exception {
+		Mockery context = new Mockery();
+		ContactManager contactManager = context.mock(ContactManager.class);
+		TransportPropertyManager tpm =
+				context.mock(TransportPropertyManager.class);
+		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		byte[] high = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		java.util.Arrays.fill(high, (byte) 0xFF);
+		Contact a = getContact(dialled, new org.zerionproject.core.api.identity
+				.Author(new AuthorId(high), org.zerionproject.core.api.identity
+				.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey()),
+				new AuthorId(low), true);
+		TransportProperties pending = new TransportProperties();
+		pending.put(KEY, "pendingonion");
+		context.checking(new Expectations() {{
+			allowing(contactManager).getContacts();
+			will(returnValue(Collections.singletonList(a)));
+			allowing(contactManager).getContact(dialled);
+			will(returnValue(a));
+			allowing(tpm).getRemoteProperties(dialled, ID);
+			will(returnValue(pending));
+		}});
+		List<String> hooks = Collections.synchronizedList(new ArrayList<>());
+		org.zerionproject.core.plugin.tor.B4OnionRotation rotation =
+				new org.zerionproject.core.plugin.tor.B4OnionRotation(null,
+						null, null, null) {
+					@Override
+					public String getPendingOnionForContact(ContactId cid) {
+						return "pendingonion";
+					}
+
+					@Override
+					public void onPendingDialFailed(ContactId cid) {
+						hooks.add("failed:" + cid.getInt());
+					}
+
+					@Override
+					public void onSuccessfulConnect(ContactId cid,
+							String dialedOnion) {
+						hooks.add("connected:" + cid.getInt() + ":"
+								+ dialedOnion);
+					}
+				};
+		ZtpPoller p = new ZtpPoller(Runnable::run, scheduler, contactManager,
+				tpm, new NoEvents(), transport, () -> rotation);
+		p.start();
+		scheduler.runSweep();
+		assertEquals(Collections.singletonList("failed:1"), hooks);
+		transport.dialResult = CONNECTED_SESSION_MS;
+		p.pollNow();
+		assertEquals(Arrays.asList("failed:1", "connected:1:pendingonion"),
+				hooks);
+		p.stop();
 	}
 
 	@Test

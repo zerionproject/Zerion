@@ -94,6 +94,28 @@ public class ZtpTorTransportInboundLimitTest {
 		exec.shutdownNow();
 	}
 
+	/**
+	 * A2-REG-NET-01: the tag must arrive in full within the deadline
+	 * measured from the accept; a peer dripping one byte per read timeout
+	 * loses its slot at the deadline instead of holding it for sixteen
+	 * timeouts.
+	 */
+	@Test(timeout = 30_000)
+	public void aDrippingPeerLosesItsSlotAtTheDeadline() throws Exception {
+		java.util.concurrent.atomic.AtomicLong now =
+				new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+		transport.clock = now::get;
+		Socket dripper = open();
+		dripper.getOutputStream().write(1);
+		dripper.getOutputStream().flush();
+		Thread.sleep(200);
+		now.addAndGet(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 1);
+		dripper.getOutputStream().write(2);
+		dripper.getOutputStream().flush();
+		assertClosedByTheTransport(dripper);
+		assertEquals("no tag ever reached the handler", 0, entered.get());
+	}
+
 	@Test(timeout = 30_000)
 	public void preTagSlotsAreBoundedAndFreedWhenTheTagArrives()
 			throws Exception {

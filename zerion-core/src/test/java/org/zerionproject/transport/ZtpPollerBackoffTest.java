@@ -109,7 +109,16 @@ public class ZtpPollerBackoffTest {
 		ContactManager contactManager = context.mock(ContactManager.class);
 		TransportPropertyManager tpm =
 				context.mock(TransportPropertyManager.class);
-		Contact contact = getContact();
+		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		byte[] high = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		java.util.Arrays.fill(high, (byte) 0xFF);
+		Contact contact = getContact(new ContactId(1),
+				new org.zerionproject.core.api.identity.Author(
+						new org.zerionproject.core.api.identity.AuthorId(high),
+						org.zerionproject.core.api.identity.Author.FORMAT_VERSION,
+						"them", org.zerionproject.core.test.TestUtils.getAuthor()
+								.getPublicKey()),
+				new org.zerionproject.core.api.identity.AuthorId(low), true);
 		TransportProperties ours = new TransportProperties();
 		ours.put(KEY, "aaaa");
 		TransportProperties theirs = new TransportProperties();
@@ -117,6 +126,8 @@ public class ZtpPollerBackoffTest {
 		context.checking(new Expectations() {{
 			allowing(contactManager).getContacts();
 			will(returnValue(Collections.singletonList(contact)));
+			allowing(contactManager).getContact(with(any(ContactId.class)));
+			will(returnValue(contact));
 			allowing(tpm).getLocalProperties(ID);
 			will(returnValue(ours));
 			allowing(tpm).getRemoteProperties(

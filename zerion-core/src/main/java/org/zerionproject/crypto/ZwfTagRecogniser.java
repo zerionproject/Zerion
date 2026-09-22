@@ -115,7 +115,25 @@ public class ZwfTagRecogniser {
 		return null;
 	}
 
-	// Must hold lock.
+	/**
+	 * The search of {@link #recogniseBeyondWindow} over every registered
+	 * contact, for an anonymous inbound connection whose tag fell outside
+	 * every precomputed window. The caller rations these searches.
+	 */
+	@Nullable
+	public Match recogniseBeyondWindowAny(byte[] tag, long maxGap) {
+		java.util.List<Integer> contacts;
+		synchronized (lock) {
+			contacts = new java.util.ArrayList<>(tagKeys.keySet());
+		}
+		for (int contactId : contacts) {
+			Match m = recogniseBeyondWindow(contactId, tag, maxGap);
+			if (m != null) return m;
+		}
+		return null;
+	}
+
+	/** Must hold the lock. */
 	private void addWindow(int contactId, long hw) {
 		SecretKey key = tagKeys.get(contactId);
 		if (key == null) return;
@@ -125,7 +143,7 @@ public class ZwfTagRecogniser {
 		}
 	}
 
-	// Must hold lock.
+	/** Must hold the lock. */
 	private void removeWindow(int contactId, long hw) {
 		SecretKey key = tagKeys.get(contactId);
 		if (key == null) return;

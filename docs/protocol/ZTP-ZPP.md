@@ -47,16 +47,25 @@ Everything below the connection handler is identical for Tor and I2P.
 ZPP runs over a ZWF duplex connection and shapes its timing. The send side emits
 exactly one fixed-size ZWF frame per time slot. That frame carries the next queued
 record if there is one, or a cover record if the queue is empty. Because a real
-record and a cover record are both a 4096-byte ZWF frame, an observer cannot tell
-whether a slot carried a message or was idle. This defeats timing and
-statistical-disclosure analysis.
+record and a cover record are both a 4096-byte ZWF frame, an observer of one slot
+cannot tell whether it carried a message or was idle.
 
-Timing:
+Timing has two regimes, and the regime is observable:
 
-- The base interval is a configured tick interval.
-- Each slot adds uniform zero-mean jitter of up to one third of the tick
-  interval.
-- The interval is clamped to at least 1 millisecond, so the sender never bursts.
+- The active regime sends one frame every 750 ms. It holds for two minutes after
+  the last real record this side sent and while records are queued.
+- The idle regime sends one frame every 4 s.
+- Each slot adds uniform zero-mean jitter of up to one third of the interval,
+  clamped to at least 1 millisecond, so the sender never bursts.
+- A receipt while this side is idle can snap the next slot to the active spacing,
+  at most once per ten minutes unless this side sent a message of its own within
+  the last ten minutes. Only messages count as local activity; offers, requests
+  and acks that a peer's records provoke do not, so a peer cannot hold this side
+  at the active cadence by sending records that demand replies.
+
+An observer of a client's link therefore learns when a conversation starts and
+ends at the granularity of the regimes, and at a snap that a particular inbound
+frame was real. Within a regime, individual frames are indistinguishable.
 
 The receive side decodes each frame and drops cover before delivering the record
 to the sink.

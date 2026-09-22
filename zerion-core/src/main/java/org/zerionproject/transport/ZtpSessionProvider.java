@@ -36,4 +36,8 @@ public interface ZtpSessionProvider {
 	 * a fresh Mode 3-Full ratchet.
 	 */
 	void sessionClosed(int contactId);
+
+	/** A resumed session with the contact has been registered. */
+	default void sessionEstablished(int contactId) {
+	}
 }

@@ -153,11 +153,10 @@ public class ZppOutgoingSource implements EventListener {
 			Ack a = db.transactionWithNullableResult(false, txn ->
 					db.generateAck(txn, contactId, MAX_MESSAGE_IDS));
 			if (a != null) {
-				enqueue(codec.encodeAck(a));
+				enqueue(codec.encodeAck(a), false);
 				generateAck();
 			}
 		} catch (DbException | IOException e) {
-			// Drop this generation pass; a later event or timer retries.
 		}
 	}
 
@@ -176,11 +175,10 @@ public class ZppOutgoingSource implements EventListener {
 						return batch;
 					});
 			if (b != null) {
-				for (Message m : b) enqueue(codec.encodeMessage(m));
+				for (Message m : b) enqueue(codec.encodeMessage(m), true);
 				generateBatch();
 			}
 		} catch (DbException | IOException e) {
-			// Drop this generation pass.
 		}
 	}
 
@@ -197,11 +195,10 @@ public class ZppOutgoingSource implements EventListener {
 				return offer;
 			});
 			if (o != null) {
-				enqueue(codec.encodeOffer(o));
+				enqueue(codec.encodeOffer(o), false);
 				generateOffer();
 			}
 		} catch (DbException | IOException e) {
-			// Drop this generation pass.
 		}
 	}
 
@@ -214,19 +211,25 @@ public class ZppOutgoingSource implements EventListener {
 			Request r = db.transactionWithNullableResult(false, txn ->
 					db.generateRequest(txn, contactId, MAX_MESSAGE_IDS));
 			if (r != null) {
-				enqueue(codec.encodeRequest(r));
+				enqueue(codec.encodeRequest(r), false);
 				generateRequest();
 			}
 		} catch (DbException | IOException e) {
-			// Drop this generation pass.
 		}
 	}
 
-	private void enqueue(byte[] syncRecord) throws IOException {
+	/**
+	 * Queues one sync record, fragmented as needed. Only a message batch is
+	 * content this side produced; acks, offers and requests are replies the
+	 * peer's records provoke and must not count as local activity for the
+	 * pacing gate.
+	 */
+	private void enqueue(byte[] syncRecord, boolean userOriginated)
+			throws IOException {
 		long id = messageIdCounter.getAndIncrement();
 		for (byte[] frame : ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
 				syncRecord, id, maxRecordBytes)) {
-			scheduler.enqueueRecord(frame);
+			scheduler.enqueueRecord(frame, userOriginated);
 		}
 	}
 

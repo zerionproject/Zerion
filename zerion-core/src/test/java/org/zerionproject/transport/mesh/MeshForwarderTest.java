@@ -243,9 +243,49 @@ public class MeshForwarderTest {
 		assertEquals("own frame relayed at the cap", before + 1,
 				broadcasts.get());
 		now.addAndGet(25);
-		node.onReceive(frameWithId(id, "late"), "ble", "late-peer");
-		assertEquals("a foreign frame is refused while the set is full",
-				MeshForwarder.SEEN_CAP, cb.delivered.size());
+		node.onReceive(frameWithId(id++, "late"), "ble", "late-peer");
+		assertEquals("A2-NET-06: a neighbour holding fewer entries is admitted"
+				+ " at the expense of the heaviest holder",
+				MeshForwarder.SEEN_CAP + 1, cb.delivered.size());
+	}
+
+	/**
+	 * A2-NET-06: a flood spread over many invented identities fills the set
+	 * but cannot shut out a real neighbour: its frame is admitted by evicting
+	 * the oldest entry of whichever identity holds the most.
+	 */
+	@Test
+	public void aFloodOverManyIdentitiesCannotShutOutANeighbour() {
+		Collector cb = new Collector();
+		MeshForwarder node = new MeshForwarder(cb, random);
+		AtomicLong now = new AtomicLong(1_000_000L);
+		node.clock = now::get;
+		node.addLink(new MeshLink() {
+			@Override
+			public String getId() {
+				return "out";
+			}
+
+			@Override
+			public void broadcast(byte[] frame) {
+			}
+		});
+		int identities = 64;
+		int perIdentity = MeshForwarder.SEEN_CAP / identities;
+		int id = 50_000;
+		for (int p = 0; p < identities; p++) {
+			for (int i = 0; i < perIdentity; i++) {
+				now.addAndGet(30);
+				node.onReceive(frameWithId(id++, "flood"), "ble", "fake" + p);
+			}
+		}
+		assertEquals(MeshForwarder.SEEN_CAP, cb.delivered.size());
+		for (int i = 0; i < 20; i++) {
+			now.addAndGet(30);
+			node.onReceive(frameWithId(id++, "real " + i), "ble", "neighbour");
+		}
+		assertEquals("every real frame got in", MeshForwarder.SEEN_CAP + 20,
+				cb.delivered.size());
 	}
 
 	@Test

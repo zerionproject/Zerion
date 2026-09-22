@@ -467,6 +467,13 @@ public class ConnectionsFragment extends Fragment {
 					for (String line : lines) {
 						String trimmed = line.trim();
 						if (trimmed.isEmpty()) continue;
+						if (!org.zerionproject.transport.TorBridgeConfigurator
+								.isPlausibleBridgeLine(trimmed)) {
+							android.widget.Toast.makeText(context,
+									R.string.tor_custom_bridges_invalid,
+									android.widget.Toast.LENGTH_LONG).show();
+							return;
+						}
 						if (sb.length() > 0) sb.append('\n');
 						sb.append(trimmed);
 					}

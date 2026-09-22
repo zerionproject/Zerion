@@ -138,7 +138,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				long now = System.currentTimeMillis();
 				if (realSent) {
 					clock.lastRealMs = now;
-					gate.noteLocalSend();
+					if (scheduler.lastRealFrameWasUserOriginated()) {
+						gate.noteLocalSend();
+					}
 				}
 				boolean active = scheduler.getQueueDepth() > 0
 						|| now - clock.lastRealMs < pacing.idleAfterMs();

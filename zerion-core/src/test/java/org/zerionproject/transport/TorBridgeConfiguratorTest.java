@@ -43,6 +43,32 @@ public class TorBridgeConfiguratorTest {
 		}
 	}
 
+	/** A2-NET-03: only lines shaped like bridge lines are accepted. */
+	@Test
+	public void onlyPlausibleBridgeLinesAreAccepted() {
+		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"obfs4 192.0.2.1:443 0123456789ABCDEF0123456789ABCDEF01234567"
+						+ " cert=abc/def+ghi iat-mode=0"));
+		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"192.0.2.1:9001 0123456789ABCDEF0123456789ABCDEF01234567"));
+		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72"
+						+ " fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72"
+						+ " url=https://example.invalid/ front=cdn.example"));
+		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"[2001:db8::1]:443 0123456789ABCDEF0123456789ABCDEF01234567"));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine(""));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine("hello"));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"obfs4 192.0.2.1 nope"));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"obfs4 192.0.2.1:99999 nope"));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"obfs4 192.0.2.1:443 \"quoted\""));
+		assertFalse(TorBridgeConfigurator.isPlausibleBridgeLine(
+				"obfs4 192.0.2.1:443 x\ry"));
+	}
+
 	@Test
 	public void emptyInputYieldsNoBridges() {
 		assertTrue(TorBridgeConfigurator.parseCustomBridges("").isEmpty());

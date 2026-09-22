@@ -11,6 +11,7 @@ import org.zerionproject.core.api.keyagreement.KeyAgreementListener;
 import org.zerionproject.core.api.plugin.ConnectionHandler;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginCallback;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.plugin.PluginException;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
@@ -188,6 +189,11 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			}
 
 			@Override
+			public boolean isPublished(String onion) {
+				return transport.publishedOnions().contains(onion);
+			}
+
+			@Override
 			public void removeHiddenService(String onion) throws IOException {
 				transport.removeHiddenService(onion);
 			}
@@ -204,6 +210,11 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 				callback.mergeLocalProperties(p);
 			}
 		});
+		try {
+			b4OnionRotation.republishPendingOnion();
+		} catch (DbException e) {
+			throw new PluginException(e);
+		}
 		b4OnionRotation.startPeriodicEvaluation();
 		poller.start();
 	}
@@ -372,7 +383,6 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		try {
 			s.setTcpNoDelay(true);
 		} catch (java.net.SocketException ignored) {
-			// Best effort; not fatal.
 		}
 	}
 

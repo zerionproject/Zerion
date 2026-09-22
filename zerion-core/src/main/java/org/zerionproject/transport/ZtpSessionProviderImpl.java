@@ -64,12 +64,42 @@ public class ZtpSessionProviderImpl
 	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
 			.B4OnionRotation> onionRotation;
 
+	/**
+	 * How far past a contact's receive window an anonymous inbound tag is
+	 * searched. A contact burns a send id on every dial that dies before
+	 * its first frame is answered, so its counter runs ahead of our window
+	 * whenever our inbound slots were held by someone else; a search across
+	 * every contact is what lets it back in without a re-pairing.
+	 */
+	static final long INBOUND_SEARCH_GAP = 1L << 14;
+	/**
+	 * A search costs one tag computation per id and contact, so a stranger's
+	 * random tags may trigger at most one search per interval; a genuine
+	 * contact retries within a minute and gets the next one.
+	 */
+	static final long INBOUND_SEARCH_INTERVAL_MS = 10_000L;
+	private final java.util.concurrent.atomic.AtomicLong nextSearchAtMs =
+			new java.util.concurrent.atomic.AtomicLong(0);
+	volatile java.util.function.LongSupplier clock = System::currentTimeMillis;
+
 	@Inject
 	public ZtpSessionProviderImpl(CryptoComponent crypto,
 			ContactManager contactManager,
 			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
 			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
 			@DatabaseExecutor Executor dbExecutor,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> onionRotation) {
+		this(new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), contactManager,
+				pcsStateManager, sessionFactory, counter, db, eventBus,
+				dbExecutor, onionRotation);
+	}
+
+	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
+			ContactManager contactManager,
+			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
+			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
+			Executor dbExecutor,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> onionRotation) {
 		this.onionRotation = onionRotation;
@@ -80,7 +110,7 @@ public class ZtpSessionProviderImpl
 		this.db = db;
 		this.eventBus = eventBus;
 		this.dbExecutor = dbExecutor;
-		this.recogniser = new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE);
+		this.recogniser = recogniser;
 	}
 
 	@Override
@@ -105,7 +135,27 @@ public class ZtpSessionProviderImpl
 	@Override
 	public int recogniseIncoming(byte[] tag) {
 		ZwfTagRecogniser.Match m = recogniser.recognise(tag);
+		if (m != null) return m.contactId;
+		long now = clock.getAsLong();
+		long next = nextSearchAtMs.get();
+		if (now < next) return -1;
+		if (!nextSearchAtMs.compareAndSet(next,
+				now + INBOUND_SEARCH_INTERVAL_MS)) {
+			return -1;
+		}
+		m = recogniser.recogniseBeyondWindowAny(tag, INBOUND_SEARCH_GAP);
 		return m == null ? -1 : m.contactId;
+	}
+
+	@Override
+	public void sessionEstablished(int contactId) {
+		ContactId cid = new ContactId(contactId);
+		dbExecutor.execute(() -> {
+			try {
+				onionRotation.get().onPeerSyncSessionEstablished(cid);
+			} catch (DbException | RuntimeException ignored) {
+			}
+		});
 	}
 
 	@Override
