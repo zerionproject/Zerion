@@ -44,7 +44,7 @@ public class ZtpTorTransportTest {
 	 * No-op Tor: these tests drive accept/dial directly, never start Tor.
 	 * It reports itself connected, since the transport dials only then.
 	 */
-	private static class StubTor implements TorWrapper {
+	static class StubTor implements TorWrapper {
 		public void start() {
 		}
 
