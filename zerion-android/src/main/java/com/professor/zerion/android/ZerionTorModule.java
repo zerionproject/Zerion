@@ -26,8 +26,10 @@ public class ZerionTorModule {
 			@IoExecutor Executor ioExecutor, ZtpConnectionHandler handler,
 			TorBridgeConfigurator bridgeConfigurator,
 			org.zerionproject.transport.TorPrivacyConfiguratorImpl
-					privacyConfigurator) {
+					privacyConfigurator,
+			org.zerionproject.transport.TorProcessWatch processWatch) {
 		return new ZtpTorTransport(tor, torSocketFactory, fastSocketFactory,
-				ioExecutor, handler, bridgeConfigurator, privacyConfigurator);
+				ioExecutor, handler, bridgeConfigurator, privacyConfigurator,
+				processWatch);
 	}
 }

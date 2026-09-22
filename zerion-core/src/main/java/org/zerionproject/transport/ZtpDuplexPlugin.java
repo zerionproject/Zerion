@@ -183,13 +183,13 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			@Override
 			public HiddenServiceProperties publishHiddenService(
 					@Nullable String privKey) throws IOException {
-				return tor.publishHiddenService(transport.getLocalPort(),
+				return transport.publishHiddenService(transport.getLocalPort(),
 						REMOTE_ONION_PORT, privKey);
 			}
 
 			@Override
 			public void removeHiddenService(String onion) throws IOException {
-				tor.removeHiddenService(onion);
+				transport.removeHiddenService(onion);
 			}
 
 			@Override
@@ -311,7 +311,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			ss.bind(new InetSocketAddress("127.0.0.1", 0));
 			int port = ss.getLocalPort();
 			try {
-				tor.publishHiddenService(port, REMOTE_ONION_PORT, blob);
+				transport.publishHiddenService(port, REMOTE_ONION_PORT, blob);
 			} catch (IOException e) {
 				tryToClose(ss);
 				return null;
@@ -343,7 +343,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 				@Override
 				public void close() throws IOException {
 					try {
-						tor.removeHiddenService(localOnion);
+						transport.removeHiddenService(localOnion);
 					} finally {
 						tryToClose(ss);
 					}
@@ -357,15 +357,14 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	@Override
 	public ChannelOnionHandle publishChannelOnion(int localPort,
 			@Nullable String privateKey) throws IOException {
-		HiddenServiceProperties hs =
-				tor.publishHiddenService(localPort, REMOTE_ONION_PORT,
-						privateKey);
+		HiddenServiceProperties hs = transport.publishHiddenService(localPort,
+				REMOTE_ONION_PORT, privateKey);
 		return new ChannelOnionHandle(hs.onion, hs.privKey);
 	}
 
 	@Override
 	public void removeChannelOnion(String onion) throws IOException {
-		tor.removeHiddenService(onion);
+		transport.removeHiddenService(onion);
 	}
 
 	private static void configureSocket(Socket s) throws IOException {

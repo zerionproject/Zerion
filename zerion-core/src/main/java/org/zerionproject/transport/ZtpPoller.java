@@ -55,6 +55,8 @@ public class ZtpPoller implements EventListener {
 	private final AtomicLong backoffEpoch = new AtomicLong();
 	private volatile long nextRestartAt = 0;
 	private volatile long restartBackoffMs = MIN_RESTART_BACKOFF_MS;
+	@Nullable
+	private volatile Boolean lastReportedConnected = null;
 	private final Random backoffJitter = new Random();
 	private volatile boolean running = false;
 	@Nullable
@@ -137,6 +139,19 @@ public class ZtpPoller implements EventListener {
 			// retried next sweep
 		}
 		scheduleRepoll();
+	}
+
+	/**
+	 * Connectivity reports arrive for screen and doze changes as well as
+	 * for real network changes. Only a change of the connected state is a
+	 * reason to forget every contact's dial backoff; a repeated report of
+	 * the same state, as the screen turns on and off, is not. Returns true
+	 * if the state changed.
+	 */
+	private boolean recordConnectivity(boolean connected) {
+		Boolean previous = lastReportedConnected;
+		lastReportedConnected = connected;
+		return previous == null || previous != connected;
 	}
 
 	private void clearAllBackoff() {
@@ -238,7 +253,8 @@ public class ZtpPoller implements EventListener {
 		} else if (e instanceof NetworkStatusEvent) {
 			boolean connected =
 					((NetworkStatusEvent) e).getStatus().isConnected();
-			if (connected) clearAllBackoff();
+			if (connected && recordConnectivity(true)) clearAllBackoff();
+			else if (!connected) recordConnectivity(false);
 			ioExecutor.execute(() -> transport.setNetworkEnabled(connected));
 		}
 	}

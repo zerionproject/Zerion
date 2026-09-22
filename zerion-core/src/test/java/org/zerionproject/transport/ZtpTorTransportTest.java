@@ -40,7 +40,10 @@ import static org.junit.Assert.fail;
  */
 public class ZtpTorTransportTest {
 
-	/** No-op Tor: these tests drive accept/dial directly, never start Tor. */
+	/**
+	 * No-op Tor: these tests drive accept/dial directly, never start Tor.
+	 * It reports itself connected, since the transport dials only then.
+	 */
 	private static class StubTor implements TorWrapper {
 		public void start() {
 		}
@@ -52,7 +55,7 @@ public class ZtpTorTransportTest {
 		}
 
 		public TorState getTorState() {
-			return TorState.STOPPED;
+			return TorState.CONNECTED;
 		}
 
 		public boolean isTorRunning() {
@@ -62,7 +65,16 @@ public class ZtpTorTransportTest {
 		@Nullable
 		public HiddenServiceProperties publishHiddenService(int localPort,
 				int remotePort, @Nullable String privateKey) {
-			return null;
+			try {
+				java.lang.reflect.Constructor<HiddenServiceProperties> c =
+						HiddenServiceProperties.class.getDeclaredConstructor(
+								String.class, String.class);
+				c.setAccessible(true);
+				return c.newInstance("onion",
+						privateKey == null ? "generated" : privateKey);
+			} catch (ReflectiveOperationException e) {
+				throw new AssertionError(e);
+			}
 		}
 
 		public void removeHiddenService(String onion) {

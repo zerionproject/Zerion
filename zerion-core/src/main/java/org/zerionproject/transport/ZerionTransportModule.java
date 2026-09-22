@@ -89,6 +89,12 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	@Singleton
+	TorProcessWatch provideTorProcessWatch() {
+		return new TorProcessWatch();
+	}
+
+	@Provides
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry,
 			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
