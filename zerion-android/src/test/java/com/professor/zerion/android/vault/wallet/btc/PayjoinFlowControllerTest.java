@@ -26,10 +26,10 @@ public class PayjoinFlowControllerTest {
 			"2222222222222222222222222222222222222222222222222222222222222222";
 
 	private static PayjoinFinalTx finalTx(long changeSat) {
-		String changeAddr = BtcKeys.changeAddress(MNEMONIC, 0, 0);
+		String changeAddr = TestKeys.changeAddress(MNEMONIC, 0, 0);
 		List<PayjoinFinalTx.Entry> entries = new ArrayList<>(Arrays.asList(
 				PayjoinFinalTx.Entry.owned(TX0, 0, 100000, 0xfffffffdL,
-						BtcKeys.receiveKey(MNEMONIC, 0, 0))));
+						TestKeys.receiveKey(MNEMONIC, 0, 0))));
 		List<BtcTx.Output> outputs = new ArrayList<>(Arrays.asList(
 				new BtcTx.Output(DEST, 60000),
 				new BtcTx.Output(changeAddr, changeSat)));

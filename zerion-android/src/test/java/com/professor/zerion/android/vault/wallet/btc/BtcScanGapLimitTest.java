@@ -18,7 +18,7 @@ public class BtcScanGapLimitTest {
 			"2222222222222222222222222222222222222222222222222222222222222222";
 
 	private static BtcWallet wallet(FakeElectrum e) {
-		return new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		return new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 	}
 
@@ -67,7 +67,7 @@ public class BtcScanGapLimitTest {
 			public void close() {
 			}
 		};
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "w",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "w",
 				(ep, port, tag) -> endless, (url, tag) -> null);
 		w.scan();
 		assertTrue("both chains stop at the cap: " + calls[0],
@@ -85,7 +85,7 @@ public class BtcScanGapLimitTest {
 				+ "7130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f355"
 				+ "04e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac00000000";
 		int many = BtcWallet.MAX_TX_CACHE + 100;
-		String sh = BtcKeys.scriptHash(MNEMONIC, 0, 0);
+		String sh = TestKeys.scriptHash(MNEMONIC, 0, 0);
 		for (int i = 0; i < many; i++) {
 			String id = String.format("%064x", i + 1);
 			e.addHistoryOnly(sh, id);
@@ -121,8 +121,8 @@ public class BtcScanGapLimitTest {
 	public void changeAddressAdvancesPastASignedChangeOutput()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1),
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1),
 				"3".repeat(64), 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.SendPlan first = w.planSend(
@@ -151,7 +151,7 @@ public class BtcScanGapLimitTest {
 	@Test
 	public void scanReportsUsedReceiveIndexes() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addHistoryOnly(BtcKeys.scriptHash(MNEMONIC, 0, 3), TXID);
+		e.addHistoryOnly(TestKeys.scriptHash(MNEMONIC, 0, 3), TXID);
 		BtcWallet.ScanResult r = wallet(e).scan();
 		assertTrue(r.usedReceiveIndexes.contains(3));
 		assertEquals(1, r.usedReceiveIndexes.size());
@@ -161,8 +161,8 @@ public class BtcScanGapLimitTest {
 	@Test
 	public void sumsBalanceAcrossUsedAddressesWithinGap() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 10000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 5), TXID, 1, 20000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 10000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 5), TXID, 1, 20000);
 		BtcWallet.ScanResult r = wallet(e).scan();
 		assertEquals(30000L, r.balanceSat);
 	}
@@ -170,8 +170,8 @@ public class BtcScanGapLimitTest {
 	@Test
 	public void utxoBeyondGapLimitIsNotDiscovered() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 10000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 40), TXID, 0, 999999);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 10000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 40), TXID, 0, 999999);
 		BtcWallet.ScanResult r = wallet(e).scan();
 		assertEquals(10000L, r.balanceSat);
 	}
@@ -179,9 +179,9 @@ public class BtcScanGapLimitTest {
 	@Test
 	public void freshReceiveAddressIsFirstUnused() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addHistoryOnly(BtcKeys.scriptHash(MNEMONIC, 0, 0), TXID);
+		e.addHistoryOnly(TestKeys.scriptHash(MNEMONIC, 0, 0), TXID);
 		BtcWallet.ScanResult r = wallet(e).scan();
-		assertEquals(BtcKeys.address(MNEMONIC, 0, 1), r.receiveAddress);
+		assertEquals(TestKeys.address(MNEMONIC, 0, 1), r.receiveAddress);
 	}
 
 	@Test
@@ -189,13 +189,13 @@ public class BtcScanGapLimitTest {
 		FakeElectrum e = new FakeElectrum();
 		BtcWallet.ScanResult r = wallet(e).scan();
 		assertEquals(0L, r.balanceSat);
-		assertEquals(BtcKeys.address(MNEMONIC, 0, 0), r.receiveAddress);
+		assertEquals(TestKeys.address(MNEMONIC, 0, 0), r.receiveAddress);
 	}
 
 	@Test
 	public void changeChainIsScannedForBalance() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.changeScriptHash(MNEMONIC, 0, 0), TXID, 0, 12345);
+		e.addUtxo(TestKeys.changeScriptHash(MNEMONIC, 0, 0), TXID, 0, 12345);
 		BtcWallet.ScanResult r = wallet(e).scan();
 		assertEquals(12345L, r.balanceSat);
 	}

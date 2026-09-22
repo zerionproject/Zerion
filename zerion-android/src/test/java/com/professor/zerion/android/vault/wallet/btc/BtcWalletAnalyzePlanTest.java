@@ -22,7 +22,7 @@ public class BtcWalletAnalyzePlanTest {
 			"3333333333333333333333333333333333333333333333333333333333333333";
 
 	private static BtcWallet wallet(FakeElectrum e) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyStore(new BtcWalletPrivacyTest.MemStore());
 		return w;
@@ -40,7 +40,7 @@ public class BtcWalletAnalyzePlanTest {
 	@Test
 	public void singleClusterPlanIsHigh() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		PrivacyAnalyzer.Analysis a =
 				w.analyzePlan(w.planSend(DEST, 40000, 1.0, false, null, false));
@@ -52,8 +52,8 @@ public class BtcWalletAnalyzePlanTest {
 	@Test
 	public void multiClusterPlanIsLow() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 30000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 30000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 30000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 30000);
 		BtcWallet w = wallet(e);
 		PrivacyAnalyzer.Analysis a =
 				w.analyzePlan(w.planSend(DEST, 50000, 1.0, false, null, false));
@@ -64,8 +64,8 @@ public class BtcWalletAnalyzePlanTest {
 	@Test
 	public void addressReuseDetectedFromLocalState() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 50000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX1, 1, 50000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 50000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX1, 1, 50000);
 		BtcWallet w = wallet(e);
 		PrivacyAnalyzer.Analysis a =
 				w.analyzePlan(w.planSend(DEST, 40000, 1.0, false, null, false));
@@ -76,8 +76,8 @@ public class BtcWalletAnalyzePlanTest {
 	@Test
 	public void analysisWorksWithoutPrivacyMetadata() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		PrivacyAnalyzer.Analysis a =
 				w.analyzePlan(w.planSend(DEST, 40000, 1.0, false, null, false));

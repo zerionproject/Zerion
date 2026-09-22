@@ -209,9 +209,8 @@ public class VaultViewModel extends AndroidViewModel {
 		walletBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				List<String> words = Arrays.asList(
-						new String(mnemonic).trim().split("\\s+"));
-				new MnemonicCode().check(words);
+				com.professor.zerion.android.vault.wallet.btc.Bip39Seed
+						.check(mnemonic);
 				walletStore.createWallet(WalletCoin.BTC, name, mnemonic, password);
 				postBtcWallets();
 			} catch (Throwable e) {
@@ -1759,14 +1758,18 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void revealSeed(String walletId, char[] password) {
 		CRYPTO_EXECUTOR.execute(() -> {
+			char[] mnemonic = null;
 			try {
-				String mnemonic = walletStore.loadMnemonic(walletId, password);
-				walletSeedReveal.postValue(mnemonic);
+				mnemonic = walletStore.loadMnemonicChars(walletId, password);
+				walletSeedReveal.postValue(new String(mnemonic));
 			} catch (Exception e) {
 				walletError.postValue(new Event<>(getApplication().getString(
 						isWrongPassword(e) ? R.string.wallet_wrong_password
 								: R.string.wallet_open_failed)));
 			} finally {
+				if (mnemonic != null) {
+					SecureMemory.shred(mnemonic);
+				}
 				if (password != null) {
 					SecureMemory.shred(password);
 				}
@@ -1872,19 +1875,21 @@ public class VaultViewModel extends AndroidViewModel {
 	public void openBtcWallet(String walletId, @Nullable char[] password) {
 		walletBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
-			String mnemonic = null;
+			char[] mnemonic = null;
 			try {
 				if (!walletSessionValid()) {
 					walletBusy.postValue(false);
 					return;
 				}
-				mnemonic = walletStore.loadMnemonic(walletId, password);
+				mnemonic = walletStore.loadMnemonicChars(walletId, password);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 						scanEp = routedScanEndpoint(walletId);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 						bcastEp = routedBroadcastEndpoint(walletId, scanEp);
 				BtcWallet w = new BtcWallet(mnemonic, 0, torSocksPort,
 						scanEp, bcastEp, walletId);
+				SecureMemory.shred(mnemonic);
+				mnemonic = null;
 				w.setPendingLog(pendingLogFor(walletId));
 				w.setPrivacyStore(privacyStoreFor(walletId));
 				boolean epm = isExtremeMode(walletId);
@@ -1904,11 +1909,14 @@ public class VaultViewModel extends AndroidViewModel {
 				String firstAddr = w.receiveAddressAt(persistedIndex);
 
 				if (!walletSessionValid()) {
+					w.close();
 					walletBusy.postValue(false);
 					return;
 				}
 				sendGate.clear();
+				BtcWallet previous = openBtc;
 				openBtc = w;
+				if (previous != null && previous != w) previous.close();
 				currentWalletId = walletId;
 				lastTxids = null;
 				lastSummaries = null;
@@ -1925,6 +1933,9 @@ public class VaultViewModel extends AndroidViewModel {
 								: R.string.wallet_open_failed)));
 				walletBusy.postValue(false);
 			} finally {
+				if (mnemonic != null) {
+					SecureMemory.shred(mnemonic);
+				}
 				if (password != null) {
 					SecureMemory.shred(password);
 				}
@@ -1951,7 +1962,9 @@ public class VaultViewModel extends AndroidViewModel {
 		scanEpoch++;
 		sendGate.clear();
 		spUtxos.clear();
+		BtcWallet previous = openBtc;
 		openBtc = null;
+		if (previous != null) previous.close();
 		currentWalletId = null;
 		lastTxids = null;
 		lastSummaries = null;
@@ -2400,15 +2413,16 @@ public class VaultViewModel extends AndroidViewModel {
 		new SecureRandom().nextBytes(entropy);
 		List<String> words = new MnemonicCode().toMnemonic(entropy);
 		Arrays.fill(entropy, (byte) 0);
-		StringBuilder sb = new StringBuilder();
+		int length = words.size() - 1;
+		for (String w : words) length += w.length();
+		char[] out = new char[length];
+		int pos = 0;
 		for (int i = 0; i < words.size(); i++) {
-			if (i > 0) {
-				sb.append(' ');
-			}
-			sb.append(words.get(i));
+			if (i > 0) out[pos++] = ' ';
+			String w = words.get(i);
+			w.getChars(0, w.length(), out, pos);
+			pos += w.length();
 		}
-		char[] out = new char[sb.length()];
-		sb.getChars(0, sb.length(), out, 0);
 		return out;
 	}
 

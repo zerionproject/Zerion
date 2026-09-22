@@ -31,11 +31,11 @@ public class PayjoinFinalTxTest {
 	}
 
 	private static ECKey ownedKey() {
-		return BtcKeys.receiveKey(MNEMONIC, 0, 0);
+		return TestKeys.receiveKey(MNEMONIC, 0, 0);
 	}
 
 	private static PayjoinFinalTx tx(long changeSat) {
-		String changeAddr = BtcKeys.changeAddress(MNEMONIC, 0, 0);
+		String changeAddr = TestKeys.changeAddress(MNEMONIC, 0, 0);
 		List<PayjoinFinalTx.Entry> entries = new ArrayList<>(Arrays.asList(
 				PayjoinFinalTx.Entry.owned(TX0, 0, 100000, SEQ, ownedKey()),
 				PayjoinFinalTx.Entry.foreign(FOREIGN_TX, 0, 20000, SEQ,

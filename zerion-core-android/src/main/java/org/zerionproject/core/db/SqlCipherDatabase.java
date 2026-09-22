@@ -265,13 +265,29 @@ class SqlCipherDatabase extends JdbcDatabase {
 		if (key == null) throw new DbClosedException();
 		File dbFile = new File(config.getDatabaseDirectory(),
 				SQLCIPHER_FILE);
-		String hexKey = StringUtils.toHexString(key.getBytes());
+		byte[] passphrase = StringUtils.toHexString(key.getBytes())
+				.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+		try {
+			return openWithPassphrase(dbFile, passphrase);
+		} finally {
+			java.util.Arrays.fill(passphrase, (byte) 0);
+		}
+	}
 
+	/**
+	 * The passphrase is the same hex text the string overload used to
+	 * take, handed over as bytes: the library derives the same key from
+	 * either (its string overload encodes to UTF-8 bytes first), so every
+	 * existing database opens unchanged, and the bytes can be wiped once
+	 * the connection exists instead of living on as an immutable string.
+	 */
+	private Connection openWithPassphrase(File dbFile, byte[] passphrase)
+			throws DbException, SQLException {
 		for (int attempt = 1; attempt <= OPEN_RETRY_MAX; attempt++) {
 			SQLiteDatabase db = null;
 			try {
 				db = SQLiteDatabase.openOrCreateDatabase(
-								dbFile.getAbsolutePath(), hexKey,
+								dbFile.getAbsolutePath(), passphrase,
 								null, null, null);
 				runPragma(db, "PRAGMA cipher_memory_security = ON");
 				runPragma(db, "PRAGMA secure_delete = ON");

@@ -33,7 +33,7 @@ public class SpSweepPlanTest {
 			"bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
 
 	private static BtcWallet wallet(FakeElectrum backend) {
-		return new BtcWallet(MNEMONIC, 0, 9999, "primary.onion", 50001,
+		return new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "primary.onion", 50001,
 				"walletA", (endpoint, socksPort, tag) -> backend,
 				(url, tag) -> null);
 	}

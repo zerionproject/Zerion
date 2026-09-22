@@ -16,6 +16,7 @@ import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyStore;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -177,7 +178,7 @@ public class BtcWallet {
 		}
 	}
 
-	private final String mnemonic;
+	private final BtcKeys.Account keys;
 	private final int account;
 	private final int socksPort;
 	private volatile ElectrumEndpoint scanEndpoint;
@@ -280,14 +281,19 @@ public class BtcWallet {
 		throw last;
 	}
 
-	public BtcWallet(String mnemonic, int account, int socksPort, String host,
+	/**
+	 * Opens the wallet from its mnemonic characters. The account keys are
+	 * derived once here; the caller keeps ownership of the array and wipes
+	 * it, and the wallet never holds the mnemonic in any form.
+	 */
+	public BtcWallet(char[] mnemonic, int account, int socksPort, String host,
 			int port, String isolationTag) {
 		this(mnemonic, account, socksPort,
 				ElectrumEndpoint.parse(host + ":" + port),
 				ElectrumEndpoint.parse(host + ":" + port), isolationTag);
 	}
 
-	public BtcWallet(String mnemonic, int account, int socksPort,
+	public BtcWallet(char[] mnemonic, int account, int socksPort,
 			ElectrumEndpoint scanEndpoint, ElectrumEndpoint broadcastEndpoint,
 			String isolationTag) {
 		this(mnemonic, account, socksPort, scanEndpoint, broadcastEndpoint,
@@ -295,7 +301,7 @@ public class BtcWallet {
 				(url, tag) -> TorHttp.get(url, socksPort, tag));
 	}
 
-	BtcWallet(String mnemonic, int account, int socksPort, String host,
+	BtcWallet(char[] mnemonic, int account, int socksPort, String host,
 			int port, String isolationTag, ElectrumRpc.Factory electrumFactory,
 			SilentPaymentScanner.Fetcher spFetcher) {
 		this(mnemonic, account, socksPort,
@@ -304,11 +310,11 @@ public class BtcWallet {
 				electrumFactory, spFetcher);
 	}
 
-	BtcWallet(String mnemonic, int account, int socksPort,
+	BtcWallet(char[] mnemonic, int account, int socksPort,
 			ElectrumEndpoint scanEndpoint, ElectrumEndpoint broadcastEndpoint,
 			String isolationTag, ElectrumRpc.Factory electrumFactory,
 			SilentPaymentScanner.Fetcher spFetcher) {
-		this.mnemonic = mnemonic;
+		this.keys = deriveAccount(mnemonic, account);
 		this.account = account;
 		this.socksPort = socksPort;
 		this.scanEndpoint = scanEndpoint;
@@ -318,12 +324,30 @@ public class BtcWallet {
 		this.spFetcher = spFetcher;
 	}
 
+	private static BtcKeys.Account deriveAccount(char[] mnemonic, int account) {
+		try {
+			return BtcKeys.Account.fromMnemonic(mnemonic, account);
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	public String firstReceiveAddress() {
-		return BtcKeys.address(mnemonic, account, 0);
+		return keys.address(0);
 	}
 
 	public String receiveAddressAt(int index) {
-		return BtcKeys.address(mnemonic, account, index);
+		return keys.address(index);
+	}
+
+	/**
+	 * Drops the account keys. Every derivation and signature fails
+	 * afterwards; the caller opens a new wallet from the mnemonic instead.
+	 */
+	public void close() {
+		keys.close();
+		txCache.clear();
+		lastScan = null;
 	}
 
 	public ScanResult scan() throws IOException {
@@ -370,8 +394,7 @@ public class BtcWallet {
 				lastChangeUsed = ch[2];
 			}
 
-			Set<String> owned = BtcKeys.ownedAddresses(mnemonic, account,
-					receiveProbed, changeProbed);
+			Set<String> owned = keys.ownedAddresses(receiveProbed, changeProbed);
 
 			long total = balance[0];
 			Set<String> reserved = reconcilePending(c, utxos);
@@ -390,9 +413,9 @@ public class BtcWallet {
 			}
 
 			ScanResult result = new ScanResult(total,
-					BtcKeys.address(mnemonic, account, freshReceive),
+					keys.address(freshReceive),
 					freshReceive,
-					BtcKeys.changeAddress(mnemonic, account, freshChange),
+					keys.changeAddress(freshChange),
 					freshChange, history, utxos, owned, usedReceive);
 			lastScan = result;
 			return result;
@@ -420,8 +443,8 @@ public class BtcWallet {
 				? (gap < GAP_LIMIT || i <= floor)
 				: i <= bound); i++) {
 			probed = i + 1;
-			String sh = change ? BtcKeys.changeScriptHash(mnemonic, account, i)
-					: BtcKeys.scriptHash(mnemonic, account, i);
+			String sh = change ? keys.changeScriptHash(i)
+					: keys.scriptHash(i);
 			List<ElectrumClient.HistItem> h = c.getHistory(sh);
 			if (h.isEmpty()) {
 				if (fresh < 0 && (!change || i >= floor)) {
@@ -436,8 +459,8 @@ public class BtcWallet {
 					hist.addAll(h);
 				}
 				String addr = change
-						? BtcKeys.changeAddress(mnemonic, account, i)
-						: BtcKeys.address(mnemonic, account, i);
+						? keys.changeAddress(i)
+						: keys.address(i);
 				com.professor.zerion.android.vault.wallet.btc.privacy.UtxoOrigin
 						origin = change
 						? com.professor.zerion.android.vault.wallet.btc.privacy
@@ -446,8 +469,8 @@ public class BtcWallet {
 								.UtxoOrigin.RECEIVE;
 				for (ElectrumClient.Utxo u : c.listUnspent(sh)) {
 					utxos.add(new OwnedUtxo(u.txHash, u.txPos, u.value,
-							change ? BtcKeys.changeKey(mnemonic, account, i)
-									: BtcKeys.receiveKey(mnemonic, account, i),
+							change ? keys.changeKey(i)
+									: keys.receiveKey(i),
 							addr, origin));
 					balance[0] += u.value;
 				}
@@ -1158,7 +1181,7 @@ public class BtcWallet {
 	}
 
 	public String silentPaymentAddress() {
-		return BtcKeys.silentPaymentAddress(mnemonic, account);
+		return keys.silentPaymentAddress();
 	}
 
 	public SpScanResult scanSilentPayments(String oracle, int fromHeight,
@@ -1172,8 +1195,8 @@ public class BtcWallet {
 		if (tip == null) {
 			throw new IOException("Could not reach the oracle over Tor");
 		}
-		byte[] scanPriv = BtcKeys.silentScanPriv(mnemonic, account);
-		byte[] spendPub = BtcKeys.silentSpendPub(mnemonic, account);
+		byte[] scanPriv = keys.silentScanPriv();
+		byte[] spendPub = keys.silentSpendPub();
 		int from = Math.max(fromHeight, 1);
 		int cap = Math.min(tip, from + maxBlocks - 1);
 		List<SilentPaymentScanner.Found> found = new ArrayList<>();
@@ -1238,7 +1261,7 @@ public class BtcWallet {
 			throw new IOException("Silent Payments self-check failed");
 		}
 		java.math.BigInteger spendPriv =
-				BtcKeys.silentSpendPriv(mnemonic, account);
+				keys.silentSpendPriv();
 		java.math.BigInteger curveN = org.bitcoinj.core.ECKey.CURVE.getN();
 		double rate = sanitizeRate(feeRate);
 		List<String> outpoints = new ArrayList<>();

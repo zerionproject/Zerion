@@ -23,7 +23,7 @@ public class BtcWalletTxStateTest {
 			"2222222222222222222222222222222222222222222222222222222222222222";
 
 	private static BtcWallet wallet(FakeElectrum e, PendingLog log) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPendingLog(log);
 		return w;
@@ -31,7 +31,7 @@ public class BtcWalletTxStateTest {
 
 	private static FakeElectrum funded() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		return e;
 	}
 

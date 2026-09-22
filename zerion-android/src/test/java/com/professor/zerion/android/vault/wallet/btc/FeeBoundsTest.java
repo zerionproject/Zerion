@@ -48,8 +48,8 @@ public class FeeBoundsTest {
 	public void nanRateGivenToAPlanCannotProduceAZeroFee()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "w",
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "w",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		BtcWallet.SendPlan p = w.planSend(DEST, 40000, Double.NaN, false,
 				null, false);
@@ -66,8 +66,8 @@ public class FeeBoundsTest {
 	public void planReportsEffectiveRateAndShareOfAmount()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "w",
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "w",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		BtcWallet.SendPlan p = w.planSend(DEST, 10000, 100.0, false, null,
 				false);

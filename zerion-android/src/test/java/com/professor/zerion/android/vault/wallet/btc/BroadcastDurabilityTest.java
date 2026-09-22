@@ -46,7 +46,7 @@ public class BroadcastDurabilityTest {
 	}
 
 	private static BtcWallet wallet(FakeElectrum e, PendingLog log) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPendingLog(log);
 		return w;
@@ -65,7 +65,7 @@ public class BroadcastDurabilityTest {
 	public void connectionFailureBeforeSendingIsFailedNotPossiblySent()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		MemLog log = new MemLog();
 		final boolean[] refuse = {false};
 		FakeElectrum.RecordingFactory scanFactory =
@@ -76,7 +76,7 @@ public class BroadcastDurabilityTest {
 			}
 			return scanFactory.open(ep, port, tag);
 		};
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001,
 				"walletA", factory, (url, tag) -> null);
 		w.setPendingLog(log);
 		BtcWallet.SendPlan plan = w.planSend(DEST, 40000, 2.0, false, null,
@@ -107,7 +107,7 @@ public class BroadcastDurabilityTest {
 	public void agedSentInputsStayReservedWhileTheTransactionIsLive()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		MemLog log = new MemLog();
 		String txid = "4".repeat(64);
 		e.txs.put(txid, "01000000000000000000");
@@ -123,7 +123,7 @@ public class BroadcastDurabilityTest {
 	public void agedSentInputsAreReleasedOnlyWhenProvablyAbsent()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		MemLog log = new MemLog();
 		String txid = "5".repeat(64);
 		long threeHoursAgo = System.currentTimeMillis() - 3L * 60 * 60 * 1000;
@@ -141,7 +141,7 @@ public class BroadcastDurabilityTest {
 	@Test
 	public void successfulSendIsRecordedThenMarkedSent() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		MemLog log = new MemLog();
 		wallet(e, log).send(DEST, 50000, 1.0, false);
 		assertEquals(PendingTx.SENT, log.only().state);
@@ -153,7 +153,7 @@ public class BroadcastDurabilityTest {
 	@Test
 	public void lostAckIsRecordedAsPossiblySentNotFailed() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.broadcastError = new IOException("connection closed");
 		MemLog log = new MemLog();
 		assertThrows(IOException.class,
@@ -166,7 +166,7 @@ public class BroadcastDurabilityTest {
 	public void reservedInputIsExcludedSoRetryCannotDoubleSpend()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.broadcastError = new IOException("connection closed");
 		MemLog log = new MemLog();
 		assertThrows(IOException.class,
@@ -183,7 +183,7 @@ public class BroadcastDurabilityTest {
 	@Test
 	public void reconcileMarksSentWhenTxIsOnChain() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.txs.put("theTxid", "00");
 		MemLog log = new MemLog();
 		log.put(new PendingTx("p1", "theTxid", "", Arrays.asList(outpoint0()),
@@ -208,7 +208,7 @@ public class BroadcastDurabilityTest {
 	public void reconcileReleasesAfterGraceAndRepeatedDefinitiveMisses()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		MemLog log = new MemLog();
 		log.put(new PendingTx("p1", "unknownTxid", "",
 				Arrays.asList(outpoint0()), PendingTx.POSSIBLY_SENT, 0L, -50000L));
@@ -226,7 +226,7 @@ public class BroadcastDurabilityTest {
 	public void txidMismatchIsUncertainAndKeepsInputsReserved()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.returnWrongTxid = true;
 		MemLog log = new MemLog();
 		assertThrows(BroadcastUncertainException.class,
@@ -237,7 +237,7 @@ public class BroadcastDurabilityTest {
 	@Test
 	public void reconcileNeverFailsOnTransportErrors() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.transportErrorOnGetTransaction = true;
 		MemLog log = new MemLog();
 		log.put(new PendingTx("p1", "unknownTxid", "",

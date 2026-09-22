@@ -23,7 +23,7 @@ public class BtcCoinSelectionTest {
 			"3333333333333333333333333333333333333333333333333333333333333333";
 
 	private static BtcWallet wallet(FakeElectrum e) {
-		return new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		return new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 	}
 
@@ -35,7 +35,7 @@ public class BtcCoinSelectionTest {
 	@Test
 	public void selectsInputBuildsChangeAndBroadcasts() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		String txid = wallet(e).send(DEST, 50000, 1.0, false);
 		assertEquals(e.lastBroadcastTxid(), txid);
 		assertEquals(1, e.broadcasts.size());
@@ -58,7 +58,7 @@ public class BtcCoinSelectionTest {
 	@Test
 	public void insufficientFundsIncludingFeeThrows() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		assertThrows(IOException.class, () -> wallet(e).send(DEST, 100000, 1.0,
 				false));
 	}
@@ -68,7 +68,7 @@ public class BtcCoinSelectionTest {
 		FakeElectrum e = new FakeElectrum();
 		long amount = 50000;
 		long fee = 2 * BtcTx.estimateVBytes(1, 2);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0,
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0,
 				amount + fee + 100);
 		wallet(e).send(DEST, amount, 2.0, false);
 		Transaction tx = lastTx(e);
@@ -79,8 +79,8 @@ public class BtcCoinSelectionTest {
 	@Test
 	public void sweepSpendsEveryUtxo() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 40000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 60000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 40000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 60000);
 		wallet(e).send(DEST, 0, 2.0, true);
 		Transaction tx = lastTx(e);
 		assertEquals(2, tx.getInputs().size());
@@ -92,7 +92,7 @@ public class BtcCoinSelectionTest {
 	@Test
 	public void belowDustAmountThrows() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		assertThrows(IOException.class, () -> wallet(e).send(DEST, 100, 1.0,
 				false));
 	}

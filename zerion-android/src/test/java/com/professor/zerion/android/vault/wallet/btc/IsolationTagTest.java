@@ -18,7 +18,7 @@ public class IsolationTagTest {
 	public void electrumUsesWalletIdAsIsolationTag() throws IOException {
 		FakeElectrum.RecordingFactory factory =
 				new FakeElectrum.RecordingFactory(new FakeElectrum());
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001,
 				"wallet-A", factory, (url, tag) -> null);
 		w.feeOptions();
 		assertEquals("wallet-A", factory.lastIsolationTag);
@@ -30,9 +30,9 @@ public class IsolationTagTest {
 				new FakeElectrum.RecordingFactory(new FakeElectrum());
 		FakeElectrum.RecordingFactory fb =
 				new FakeElectrum.RecordingFactory(new FakeElectrum());
-		new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "wallet-A", fa,
+		new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "wallet-A", fa,
 				(url, tag) -> null).feeOptions();
-		new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "wallet-B", fb,
+		new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "wallet-B", fb,
 				(url, tag) -> null).feeOptions();
 		assertEquals("wallet-A", fa.lastIsolationTag);
 		assertEquals("wallet-B", fb.lastIsolationTag);
@@ -49,7 +49,7 @@ public class IsolationTagTest {
 			}
 			return "[]";
 		};
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001,
 				"wallet-A", new FakeElectrum.RecordingFactory(new FakeElectrum()),
 				recording);
 		w.setSilentPaymentsEnabled(true);

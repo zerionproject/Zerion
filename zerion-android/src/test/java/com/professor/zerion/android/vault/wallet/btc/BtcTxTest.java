@@ -21,7 +21,7 @@ public class BtcTxTest {
 
 	@Test
 	public void signsSpendableP2WPKH() {
-		ECKey key = BtcKeys.receiveKey(MNEMONIC, 0, 0);
+		ECKey key = TestKeys.receiveKey(MNEMONIC, 0, 0);
 		long value = 100_000L;
 		Script scriptPubKey = ScriptBuilder.createP2WPKHOutputScript(key);
 		String prevTxid =
@@ -30,7 +30,7 @@ public class BtcTxTest {
 		List<BtcTx.Input> inputs = Collections.singletonList(
 				new BtcTx.Input(prevTxid, 0, value, key));
 		List<BtcTx.Output> outputs = Collections.singletonList(
-				new BtcTx.Output(BtcKeys.address(MNEMONIC, 0, 1), 90_000L));
+				new BtcTx.Output(TestKeys.address(MNEMONIC, 0, 1), 90_000L));
 
 		String rawHex = BtcTx.buildAndSign(inputs, outputs);
 		Transaction tx = new Transaction(BtcKeys.PARAMS, Utils.HEX.decode(rawHex));

@@ -54,7 +54,7 @@ public class ElectrumFallbackTest {
 	public void scanFallsBackToTlsWhenOnionUnavailable() throws IOException {
 		FakeElectrum e = new FakeElectrum();
 		SelectiveFactory f = new SelectiveFactory(e, "egserver.onion");
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, onion(), onion(),
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, onion(), onion(),
 				"walletA", f, (url, tag) -> null);
 		w.setFallback(tls(), tls());
 		BtcWallet.ScanResult r = w.scan();
@@ -67,7 +67,7 @@ public class ElectrumFallbackTest {
 	public void noFallbackConfiguredStillFailsClosed() {
 		FakeElectrum e = new FakeElectrum();
 		SelectiveFactory f = new SelectiveFactory(e, "egserver.onion");
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, onion(), onion(),
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, onion(), onion(),
 				"walletA", f, (url, tag) -> null);
 		assertThrows(IOException.class, w::scan);
 	}
@@ -75,9 +75,9 @@ public class ElectrumFallbackTest {
 	@Test
 	public void broadcastFallsBackToTls() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		SelectiveFactory f = new SelectiveFactory(e, "egserver.onion");
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, onion(), onion(),
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, onion(), onion(),
 				"walletA", f, (url, tag) -> null);
 		w.setFallback(tls(), tls());
 		String txid = w.send(DEST, 50000, 1.0, false);

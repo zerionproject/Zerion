@@ -95,32 +95,11 @@ public class WalletStore
 		return Access.NO_PASSWORD;
 	}
 
-	public String loadMnemonic(String walletId, @Nullable char[] password)
-			throws Exception {
-		boolean walletProtected = vaultManager.itemHasExtraPassword(walletId);
-		Access access = accessFor(walletProtected, password);
-		if (access == Access.REJECT) {
-			throw new SecurityException("Wallet password required");
-		}
-		byte[] content = access == Access.WITH_PASSWORD
-				? vaultManager.getItemContentWithPassword(walletId, password)
-				: vaultManager.getItemContent(walletId);
-		try {
-			if (content.length < 1) {
-				throw new IllegalStateException("Empty wallet content");
-			}
-			return new String(content, 1, content.length - 1,
-					StandardCharsets.UTF_8);
-		} finally {
-			SecureMemory.shred(content);
-		}
-	}
-
 	/**
-	 * Same fail-closed decrypt as {@link #loadMnemonic} but returns the secret
-	 * as a mutable {@code char[]} the caller must wipe, so no immutable String
-	 * copy of the mnemonic is created. Used by the XMR layer; the BTC path is
-	 * unchanged.
+	 * Decrypts the wallet secret, failing closed when a wallet password is
+	 * required and absent, and returns it as a mutable {@code char[]} the
+	 * caller must wipe. No immutable String copy of the mnemonic is created
+	 * on any wallet path.
 	 */
 	public char[] loadMnemonicChars(String walletId, @Nullable char[] password)
 			throws Exception {

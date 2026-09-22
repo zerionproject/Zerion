@@ -16,7 +16,7 @@ public class SpCursorTest {
 	private static final String ORACLE = "https://oracle.example.org";
 
 	private static BtcWallet wallet(SilentPaymentScanner.Fetcher fetcher) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(new FakeElectrum()), fetcher);
 		w.setSilentPaymentsEnabled(true);
 		return w;

@@ -24,8 +24,8 @@ public class BtcTxFingerprintTest {
 			"26aa6e6d8b9e49bb0630aac301db6757c02e3619feb4ee0eea81eb1672947024";
 
 	private static Transaction build() {
-		ECKey k = BtcKeys.receiveKey(MNEMONIC, 0, 0);
-		String change = BtcKeys.changeAddress(MNEMONIC, 0, 0);
+		ECKey k = TestKeys.receiveKey(MNEMONIC, 0, 0);
+		String change = TestKeys.changeAddress(MNEMONIC, 0, 0);
 		List<BtcTx.Input> ins = Arrays.asList(
 				new BtcTx.Input(TX_B, 1, 100000, k),
 				new BtcTx.Input(TX_A, 0, 100000, k));

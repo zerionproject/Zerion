@@ -20,7 +20,7 @@ public class PayjoinFallbackTest {
 			"2222222222222222222222222222222222222222222222222222222222222222";
 
 	private static BtcWallet wallet(FakeElectrum e) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyStore(new BtcWalletPrivacyTest.MemStore());
 		return w;
@@ -29,7 +29,7 @@ public class PayjoinFallbackTest {
 	@Test
 	public void oldPayjoinAuthCannotSendNormalFallbackPlan() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.SendPlan normal =
 				w.planSend(DEST, 40000, 1.0, false, null, false);
@@ -43,7 +43,7 @@ public class PayjoinFallbackTest {
 	@Test
 	public void explicitFallbackRebuildRequiresFreshAuth() throws Exception {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		SendGate gate = new SendGate();
 		BtcWallet.SendPlan fresh =
@@ -58,7 +58,7 @@ public class PayjoinFallbackTest {
 	@Test
 	public void reviewDoesNotTouchDurableBroadcastState() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		w.scan();
 		assertTrue(w.pendingSummaries().isEmpty());
