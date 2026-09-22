@@ -3,6 +3,9 @@ package com.professor.zerion.android.account;
 import com.professor.zerion.R;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
 import org.junit.Rule;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.espresso.Espresso;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
@@ -35,6 +38,17 @@ public class SetupActivityTest {
 	@Rule
 	public ActivityScenarioRule<SetupActivity> rule =
 			new ActivityScenarioRule<>(SetupActivity.class);
+
+	/**
+	 * The scenario rule launches the activity before the test body runs, but
+	 * on the first run in a fresh process the activity is not always resumed
+	 * by then; wait for it so the view assertions find a resumed activity.
+	 */
+	@Before
+	public void waitForTheActivity() {
+		rule.getScenario().moveToState(Lifecycle.State.RESUMED);
+		Espresso.onIdle();
+	}
 
 	@Test
 	public void testPasswordMatchUI() {

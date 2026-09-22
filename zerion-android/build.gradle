@@ -387,18 +387,27 @@ task enforceNoLogs {
             println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
             return
         }
-        def srcDir = file("src/main/java")
+        // Every module that ships in the release, Java and Kotlin alike.
+        def srcDirs = []
+        rootProject.allprojects.each { p ->
+            ['src/main/java', 'src/main/kotlin'].each { d ->
+                def dir = p.file(d)
+                if (dir.isDirectory()) srcDirs << dir
+            }
+        }
         def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
                        'Log.wtf(', 'Log.println(', 'android.util.Log.println(',
                        'System.out.print', 'System.err.print',
-                       '.printStackTrace(', 'Timber.']
+                       '.printStackTrace(', 'Timber.', 'println(']
         def violations = []
-        srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
-            if (f.name.endsWith('.java')) {
-                f.eachLine { line, num ->
-                    banned.each { pattern ->
-                        if (line.contains(pattern)) {
-                            violations << "${f.path}:${num}: ${line.trim()}"
+        srcDirs.each { srcDir ->
+            srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+                if (f.name.endsWith('.java') || f.name.endsWith('.kt')) {
+                    f.eachLine { line, num ->
+                        banned.each { pattern ->
+                            if (line.contains(pattern)) {
+                                violations << "${f.path}:${num}: ${line.trim()}"
+                            }
                         }
                     }
                 }

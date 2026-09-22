@@ -540,4 +540,26 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	public void tearDown() {
 		deleteTestDirectory(testDir);
 	}
+
+	@Test
+	public void testStoringTheDbKeyLeavesOnlyTheKeyAndItsBackup()
+			throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(identityManager).createIdentity(authorName);
+			will(returnValue(identity));
+			oneOf(identityManager).registerIdentity(identity);
+			oneOf(crypto).generateSecretKey();
+			will(returnValue(key));
+			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
+					keyStrengthener);
+			will(returnValue(encryptedKey));
+		}});
+
+		assertTrue(accountManager.createAccount(authorName, password));
+
+		String[] files = keyDir.list();
+		assertNotNull(files);
+		java.util.Arrays.sort(files);
+		assertArrayEquals(new String[] {"db.key", "db.key.bak"}, files);
+	}
 }
