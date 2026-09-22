@@ -116,9 +116,9 @@ class GroupTrManagerImpl
 	private static final int EPOCH_BUFFER_TOLERANCE = 5;
 	private static final int MAX_BUFFERED_POSTS_PER_GROUP = 500;
 
-	private final java.util.Map<String, byte[]> mlDsaPubKeyCache =
-			new java.util.concurrent.ConcurrentHashMap<>();
-	private static final byte[] NEGATIVE_CACHE_SENTINEL = new byte[0];
+	private final MlDsaKeyDirectory mlDsaKeys = new MlDsaKeyDirectory(
+			this::lookupMemberMlDsaPubKey, this::lookupLocalMlDsaPubKey,
+			this::lookupContactMlDsaPubKey);
 
 	private final java.util.Map<String,
 			java.util.concurrent.locks.ReentrantLock> groupLocks =
@@ -264,7 +264,7 @@ class GroupTrManagerImpl
 				.ContactRemovedEvent
 				|| e instanceof org.zerionproject.core.api.contact.event
 				.ContactAddedEvent) {
-			mlDsaPubKeyCache.clear();
+			mlDsaKeys.invalidate();
 		}
 	}
 
@@ -1522,32 +1522,24 @@ class GroupTrManagerImpl
 	@javax.annotation.Nullable
 	private byte[] lookupPeerMlDsaPubKey(byte[] ed25519PubKey)
 			throws DbException {
-		String key = toHexString(ed25519PubKey);
-		byte[] cached = mlDsaPubKeyCache.get(key);
-		if (cached != null) {
-			return cached == NEGATIVE_CACHE_SENTINEL ? null : cached;
-		}
-		byte[] fromMember = lookupMemberMlDsaPubKey(ed25519PubKey);
-		if (fromMember != null) {
-			byte[] existing = mlDsaPubKeyCache.putIfAbsent(key, fromMember);
-			if (existing != null
-					&& existing != NEGATIVE_CACHE_SENTINEL) {
-				return existing;
-			}
-			return fromMember;
-		}
+		return mlDsaKeys.lookup(ed25519PubKey);
+	}
+
+	@javax.annotation.Nullable
+	private byte[] lookupLocalMlDsaPubKey(byte[] ed25519PubKey)
+			throws DbException {
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
-		if (Arrays.equals(la.getPublicKey().getEncoded(), ed25519PubKey)) {
-			byte[] local = identityManager.getLocalMlDsaSigPublicKey();
-			byte[] existing = mlDsaPubKeyCache.putIfAbsent(key,
-					local != null ? local : NEGATIVE_CACHE_SENTINEL);
-			if (existing != null && existing != NEGATIVE_CACHE_SENTINEL) {
-				return existing;
-			}
-			return local;
+		if (!Arrays.equals(la.getPublicKey().getEncoded(), ed25519PubKey)) {
+			return null;
 		}
-		byte[] result = db.transactionWithNullableResult(true, txn -> {
+		return identityManager.getLocalMlDsaSigPublicKey();
+	}
+
+	@javax.annotation.Nullable
+	private byte[] lookupContactMlDsaPubKey(byte[] ed25519PubKey)
+			throws DbException {
+		return db.transactionWithNullableResult(true, txn -> {
 			for (Contact c : contactManager.getContacts(txn)) {
 				byte[] p = c.getAuthor().getPublicKey().getEncoded();
 				if (Arrays.equals(p, ed25519PubKey)) {
@@ -1556,12 +1548,6 @@ class GroupTrManagerImpl
 			}
 			return null;
 		});
-		byte[] existing = mlDsaPubKeyCache.putIfAbsent(key,
-				result != null ? result : NEGATIVE_CACHE_SENTINEL);
-		if (existing != null && existing != NEGATIVE_CACHE_SENTINEL) {
-			return existing;
-		}
-		return result;
 	}
 
 	@javax.annotation.Nullable
@@ -1726,7 +1712,7 @@ class GroupTrManagerImpl
 			postCache.remove(hex);
 			futureBuffer.remove(hex);
 			historyLoaded.remove(hex);
-			mlDsaPubKeyCache.clear();
+			mlDsaKeys.invalidate();
 			DbException sweepFailure = null;
 			for (int attempt = 0; attempt < 3; attempt++) {
 				try {
