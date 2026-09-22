@@ -61,7 +61,9 @@ scripts/sign-release.sh zerion-android/build/outputs/bundle/officialRelease/zeri
 - APK: v2 and v3 signatures on, v1 and v4 off (minimum SDK 29), then verifies
   the file and refuses to finish unless the signer certificate is the release
   certificate above and a v2 or v3 signature verified.
-- AAB: `jarsigner` with SHA-256 digests, then `jarsigner -verify -strict`.
+- AAB: `jarsigner` with SHA-256 digests, then `jarsigner -verify -strict` and a
+  check that the signer certificate read back with `keytool -printcert` is the
+  release certificate above.
 - Prints the SHA-256 of the signed file; that value goes into the GitHub
   release text and the website.
 

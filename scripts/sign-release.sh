@@ -102,10 +102,16 @@ case "$ARTIFACT" in
 		"$JARSIGNER" -keystore "$KS" -storepass:env ZERION_SIGN_STORE_PASS \
 			-keypass:env ZERION_SIGN_KEY_PASS -sigalg SHA256withRSA \
 			-digestalg SHA-256 "$ARTIFACT" "$KEY_ALIAS"
-		"$JARSIGNER" -verify "$ARTIFACT" | grep -q '^jar verified' || {
+		"$JARSIGNER" -verify -strict "$ARTIFACT" | grep -q '^jar verified' || {
 			echo "ERROR: bundle signature verification failed" >&2
 			exit 1
 		}
+		KEYTOOL="$(find_tool keytool)" || { echo "ERROR: keytool not found (PATH or JAVA_HOME)" >&2; exit 1; }
+		BUNDLE_CERT="$("$KEYTOOL" -printcert -jarfile "$ARTIFACT" | grep -m1 'SHA256:' | sed -E 's/.*SHA256: *//' | tr -d ':' | tr 'A-F' 'a-f')"
+		if [ "$BUNDLE_CERT" != "$EXPECTED_CERT" ]; then
+			echo "ERROR: bundle signed with certificate $BUNDLE_CERT, expected $EXPECTED_CERT" >&2
+			exit 1
+		fi
 		;;
 	*)
 		echo "ERROR: $ARTIFACT is neither an .apk nor an .aab" >&2

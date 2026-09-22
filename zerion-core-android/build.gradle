@@ -1,9 +1,14 @@
 apply plugin: 'com.android.library'
 
-def torBinariesDir = "$projectDir/src/main/jniLibs"
+/* The Tor and lyrebird libraries are unpacked from their verified jars into
+   the build directory, never into the source tree, so nothing another process
+   drops next to the sources can be packaged: the directory is emptied before
+   each unpack and only the jars' own .so files land in it. */
+def torBinariesDir = "$buildDir/tor-jni"
 
 task unpackTorBinaries {
 	doLast {
+		delete torBinariesDir
 		configurations.releaseRuntimeClasspath.each { file ->
 			if (file.name.startsWith('tor-android') || file.name.startsWith('lyrebird-android')) {
 				copy {
@@ -25,6 +30,12 @@ tasks.matching { it.name == 'mergeDebugJniLibFolders' }.configureEach {
 }
 
 android {
+
+	sourceSets {
+		main {
+			jniLibs.srcDirs = [torBinariesDir]
+		}
+	}
 	compileSdkVersion 36
 	buildToolsVersion '36.0.0'
 	packagingOptions {

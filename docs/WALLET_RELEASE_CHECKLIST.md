@@ -72,12 +72,13 @@ after the user's own funded acceptance on their device, never before.
 
 ## Native reproducibility and integrity
 
-- [ ] `libzmonero.so` rebuilt reproducibly (full build or `relink.sh`); per-ABI
+- [ ] `libzmonero.so` rebuilt reproducibly from a fresh container with the
+      committed recipe (`relink.sh` links in the same pinned order and only
+      against caches the current recipe built); two fresh builds agree; per-ABI
       SHA-256 matches `jniLibs` and is recorded in `PROVENANCE.md`. The library is
       loaded from the signed APK, so the APK signature plus these published,
-      reproducible hashes are its integrity control — not a runtime self-hash (it
-      is not in the `TorBinaryIntegrity` pin set, and `PROVENANCE.md` must not
-      claim it is).
+      reproducible hashes are its integrity control; there is no runtime
+      self-hash.
 - [ ] **Build-time native integrity gates (enforced, not just recorded):**
       `verify-monero-native.gradle` runs on every assemble/bundle and fails the
       build if a packaged `libzmonero.so` does not match the accepted per-ABI

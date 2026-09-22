@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+
+/* Single switch for the Payjoin native library: packaging, the supply-chain
+   gate (native/payjoin/verify-payjoin-native.gradle) and the Kotlin toolchain
+   all follow it. The only Kotlin sources are the UniFFI bindings, so while the
+   library is off the Kotlin plugin, its compiler and build-tools classpaths
+   are not part of the build at all. */
+rootProject.ext.payjoinNativeEnabled = false
+if (rootProject.ext.payjoinNativeEnabled) {
+    apply plugin: 'kotlin-android'
+}
 
 // Load keystore properties for signing (skip for F-Droid builds)
 // Supports environment variables (ZERION_STORE_FILE, ZERION_STORE_PASSWORD,
@@ -199,8 +208,10 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
+    if (rootProject.ext.payjoinNativeEnabled) {
+        kotlinOptions {
+            jvmTarget = '17'
+        }
     }
 
     sourceSets {
@@ -392,12 +403,15 @@ dependencies {
 
 task enforceNoLogs {
     doLast {
-        // Dev diagnostics are permitted in DEBUG builds and stripped before release.
-        // The zero-log policy is enforced only for release/bundle builds (what ships).
-        def requestedTasks = gradle.startParameter.taskNames.join(' ').toLowerCase()
-        boolean releaseBuild = requestedTasks.contains('release') ||
-                requestedTasks.contains('bundle') ||
-                project.hasProperty('enforceNoLogs')
+        /* Dev diagnostics are permitted in DEBUG builds and stripped before
+           release. The zero-log policy is enforced whenever a release or
+           bundle task is in the task graph, whatever the invoked task was
+           called: `assemble` or `build` pull the release assembly in as a
+           dependency and must not skip the check. */
+        boolean releaseBuild = project.hasProperty('enforceNoLogs') ||
+                gradle.taskGraph.allTasks.any { t ->
+                    t.name.toLowerCase() ==~ /(assemble|bundle|package)\w*release/
+                }
         if (!releaseBuild) {
             println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
             return
@@ -496,6 +510,7 @@ project.afterEvaluate {
         useJUnit()
         filter {
             includeTestsMatching 'com.professor.zerion.android.vault.wallet.btc.*'
+            includeTestsMatching 'com.professor.zerion.android.vault.wallet.xmr.*'
             includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
         }
     }

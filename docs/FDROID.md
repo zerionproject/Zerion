@@ -13,13 +13,15 @@ document describes how each native component is built.
 | `libpayjoin_ffi.so` | (not loaded) | `zerion-android/native/payjoin/` (Rust) | **Excluded from the APK** (`zerion-android/build.gradle` packaging `excludes`). Dormant; not built or shipped. |
 
 The `.so` files are **not** committed (`.gitignore`); the build produces them.
-Two Gradle gates enforce integrity on every `assemble*/bundle*`:
+Two Gradle gates enforce integrity:
 
-- `zerion-android/native/monero/verify-monero-native.gradle` — fails the build
-  if a shipped ABI's `libzmonero.so` is missing, and verifies it against the
-  per-ABI SHA-256 pinned in `packaging/monero-android/PROVENANCE.md`.
-- `zerion-android/native/payjoin/verify-payjoin-native.gradle` — inert unless a
-  Payjoin `.so` is present.
+- `zerion-android/native/monero/verify-monero-native.gradle` runs on every
+  `assemble*/bundle*`; it fails the build if a shipped ABI's `libzmonero.so` is
+  missing, if a stray `libzmonero*` file is present, or if a library does not
+  match the per-ABI SHA-256 pinned in `packaging/monero-android/PROVENANCE.md`.
+- `zerion-android/native/payjoin/verify-payjoin-native.gradle` runs on the
+  release assemble and bundle tasks; while the Payjoin library is switched off
+  it fails the build if any Payjoin `.so` is present at all.
 
 ## Building `libzmonero.so`
 
@@ -29,11 +31,11 @@ The reproducible build is defined by `packaging/monero-android/Dockerfile` and
 | Component | Pin |
 |---|---|
 | Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
-| OpenSSL | `1.1.1w` |
+| OpenSSL | `3.5.8` |
 | Boost | `1.84.0` |
 | libsodium | `1.0.19` |
 | Android NDK | r27b (`ndkVersion 27.1.12297006`) |
-| Base image | `debian:bookworm-20250630-slim` |
+| Base image | `debian:bookworm-20250630-slim`, pinned by digest `sha256:6ac2c08566499cc2415926653cf2ed7c3aedac445675a013cc09469c9e118fdd`, with apt pinned to a dated snapshot |
 
 The build compiles Monero's `wallet_api` and its dependencies from source, then
 links the small, auditable JNI wrapper (`packaging/monero-android/jni/zmonero.cpp`)
@@ -74,9 +76,9 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
 `commit` with the release tag being published.
 
 ```yaml
-  - versionName: 3.0.11
-    versionCode: 31100
-    commit: v3.0.11
+  - versionName: <next version>
+    versionCode: <next code>
+    commit: v<next version>
     subdir: zerion-android
     submodules: true
     sudo:
@@ -96,8 +98,6 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
     gradleprops:
       - fdroid
     postbuild:
-      - $$reproducible-apk-tools$$/inplace-fix.py --zipalign fix-newlines $$OUT$$
-        'assets/i2p/certificates/reseed/*.crt' 'assets/i2p/certificates/ssl/*.crt'
       - mv $$OUT$$ unaligned.apk
       - $$reproducible-apk-tools$$/zipalign.py --page-size 4 --pad-like-apksigner
         --replace unaligned.apk $$OUT$$
@@ -108,8 +108,10 @@ Gradle dependency verification only checks the checksums and signatures of the
 artifacts it resolves, so it never changes the APK bytes and cannot affect
 reproducibility; removing it would build the published APK from unverified
 dependencies. If F-Droid's resolver ever needs an artifact the metadata does
-not list, the build fails with the missing coordinate and the entry is added by
-hand (the metadata is never regenerated wholesale).
+not list by checksum or by a trusted signing key, the build fails with the
+missing coordinate and the entry is added by hand (the metadata is never
+regenerated wholesale). Every artifact on the release configurations carries a
+checksum entry; a trusted key alone is not relied on for the shipped classpath.
 
 `fdroid-build.sh` fetches every dependency archive with a pinned SHA-256 and
 clones Monero at the pinned commit. If the F-Droid maintainers prefer declared

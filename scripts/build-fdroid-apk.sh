@@ -73,9 +73,7 @@ if [ -z "$BUILT" ]; then
 fi
 cp "$BUILT" "$OUT_APK"
 
-echo "==> Post-build: normalise reseed cert newlines + zipalign (reproducible-apk-tools ${RAT_COMMIT})"
-python3 "$RAT_DIR/inplace-fix.py" --zipalign fix-newlines "$OUT_APK" \
-	'assets/i2p/certificates/reseed/*.crt' 'assets/i2p/certificates/ssl/*.crt'
+echo "==> Post-build: zipalign (reproducible-apk-tools ${RAT_COMMIT})"
 mv "$OUT_APK" "$REPO_ROOT/unaligned.apk"
 python3 "$RAT_DIR/zipalign.py" --page-size 4 --pad-like-apksigner \
 	--replace "$REPO_ROOT/unaligned.apk" "$OUT_APK"

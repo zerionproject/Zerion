@@ -29,8 +29,8 @@ hashes, and never replaced by an opaque prebuilt download.
 | Boost | `1.84.0` (archives.boost.io) |
 | libsodium | `1.0.19` |
 | Android NDK | r27b (== Android Studio `ndkVersion 27.1.12297006`) |
-| Base image | `debian:bookworm-20250630-slim` |
-| Android API | 24 (minSdk of the app) |
+| Base image | `debian:bookworm-20250630-slim` pinned by digest `sha256:6ac2c08566499cc2415926653cf2ed7c3aedac445675a013cc09469c9e118fdd`; apt from the 2026-09-21 snapshot |
+| Android API | 24 (the NDK platform the library is built against; the app's minSdk is 29) |
 | ABIs | arm64-v8a, armeabi-v7a |
 
 The build records the SHA-256 of every downloaded source tarball to
@@ -85,9 +85,8 @@ directory. Its integrity therefore rests on the **APK signature** (the whole
 package, this library included, is signed and cannot be modified without
 re-signing) together with the reproducible build and the per-ABI SHA-256 hashes
 published above, which anyone can recompute from the pinned source and image to
-verify a shipped APK. It is **not** part of the `TorBinaryIntegrity` runtime
-pin set: that mechanism exists for the Tor binaries (`libtor.so` /
-`liblyrebird.so`), and a runtime self-hash of a library loaded from the same
+verify a shipped APK. There is no runtime self-hash of it: the earlier
+`TorBinaryIntegrity` pin set was removed, and a runtime self-hash of a library loaded from the same
 signed APK would add nothing over the signature (an attacker able to replace the
 in-APK library could equally patch the check). Adding the Monero library to that
 runtime set remains available as optional defense-in-depth but is not what
