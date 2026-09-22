@@ -1363,13 +1363,6 @@
 	<string name="welcome_receive">Receive from another phone</string>
 
 	<!-- Orbot Proxy Settings -->
-	<string name="proxy_section_title">PROXY</string>
-	<string name="orbot_proxy_title">Use Orbot proxy</string>
-	<string name="orbot_proxy_summary">Route Tor traffic through Orbot app</string>
-	<string name="orbot_proxy_settings">Proxy settings</string>
-	<string name="orbot_host_label">Host address</string>
-	<string name="orbot_port_label">Port</string>
-	<string name="orbot_info_message">Orbot provides additional privacy by using its own Tor connection. Install Orbot from F-Droid or Google Play and start it before enabling this option.</string>
 
 	<!-- Settings Profiles -->
 	<string name="profiles_settings_title">Profiles</string>

@@ -1517,13 +1517,6 @@
 	<string name="welcome_create">إنشاء حساب جديد</string>
 	<string name="welcome_import_file">الاستيراد من ملف نسخة احتياطية</string>
 	<string name="welcome_receive">الاستقبال من هاتف آخر</string>
-	<string name="proxy_section_title">الوكيل</string>
-	<string name="orbot_proxy_title">استخدام وكيل Orbot</string>
-	<string name="orbot_proxy_summary">توجيه حركة مرور Tor عبر تطبيق Orbot</string>
-	<string name="orbot_proxy_settings">إعدادات الوكيل</string>
-	<string name="orbot_host_label">عنوان المضيف</string>
-	<string name="orbot_port_label">المنفذ</string>
-	<string name="orbot_info_message">يوفّر Orbot خصوصية إضافية باستخدام اتصال Tor الخاص به. ثبّت Orbot من F-Droid أو Google Play وشغّله قبل تفعيل هذا الخيار.</string>
 	<string name="profiles_settings_title">الملفات الشخصية</string>
 	<string name="profiles_settings_summary">أنشئ ملفات شخصية مخفية أو بدّلها أو احذفها</string>
 	<string name="profiles_section_current">الملف الشخصي الحالي</string>

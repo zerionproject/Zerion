@@ -16,25 +16,15 @@ import static org.zerionproject.core.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_PREF_TOR_NETWORK;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
-import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_ENABLED;
-import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_HOST;
-import static com.professor.zerion.android.settings.ConnectionsFragment.PREF_KEY_ORBOT_PORT;
 import static com.professor.zerion.android.settings.SettingsViewModel.TOR_NAMESPACE;
 
 @NotNullByDefault
 class ConnectionsManager {
 
-	private static final String DEFAULT_ORBOT_HOST = "127.0.0.1";
-	private static final int DEFAULT_ORBOT_PORT = 9050;
-
 	final ConnectionsStore torStore;
 
 	private final MutableLiveData<Boolean> torEnabled = new MutableLiveData<>();
 	private final MutableLiveData<String> torNetwork = new MutableLiveData<>();
-	private final MutableLiveData<Boolean> torMobile = new MutableLiveData<>();
-	private final MutableLiveData<Boolean> orbotEnabled = new MutableLiveData<>();
-	private final MutableLiveData<String> orbotHost = new MutableLiveData<>();
-	private final MutableLiveData<Integer> orbotPort = new MutableLiveData<>();
 	private final MutableLiveData<String> customBridges = new MutableLiveData<>();
 
 	ConnectionsManager(Application app, SettingsManager settingsManager,
@@ -51,11 +41,6 @@ class ConnectionsManager {
 				DEFAULT_PREF_TOR_NETWORK);
 		torNetwork.postValue(Integer.toString(torNetworkSetting));
 
-		torMobile.postValue(true);
-		orbotEnabled.postValue(settings.getBoolean(PREF_KEY_ORBOT_ENABLED, false));
-		String host = settings.get(PREF_KEY_ORBOT_HOST);
-		orbotHost.postValue(host != null ? host : DEFAULT_ORBOT_HOST);
-		orbotPort.postValue(settings.getInt(PREF_KEY_ORBOT_PORT, DEFAULT_ORBOT_PORT));
 		customBridges.postValue(settings.get(PREF_TOR_CUSTOM_BRIDGES));
 	}
 
@@ -65,22 +50,6 @@ class ConnectionsManager {
 
 	LiveData<String> torNetwork() {
 		return torNetwork;
-	}
-
-	LiveData<Boolean> torMobile() {
-		return torMobile;
-	}
-
-	LiveData<Boolean> orbotEnabled() {
-		return orbotEnabled;
-	}
-
-	LiveData<String> orbotHost() {
-		return orbotHost;
-	}
-
-	LiveData<Integer> orbotPort() {
-		return orbotPort;
 	}
 
 	LiveData<String> customBridges() {

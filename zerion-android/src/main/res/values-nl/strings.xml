@@ -1425,13 +1425,6 @@
 	<string name="welcome_create">Nieuw account aanmaken</string>
 	<string name="welcome_import_file">Importeren uit back-upbestand</string>
 	<string name="welcome_receive">Ontvangen van een andere telefoon</string>
-	<string name="proxy_section_title">PROXY</string>
-	<string name="orbot_proxy_title">Orbot-proxy gebruiken</string>
-	<string name="orbot_proxy_summary">Route Tor-verkeer via de Orbot-app</string>
-	<string name="orbot_proxy_settings">Proxy-instellingen</string>
-	<string name="orbot_host_label">Hostadres</string>
-	<string name="orbot_port_label">Poort</string>
-	<string name="orbot_info_message">Orbot biedt extra privacy door zijn eigen Tor-verbinding te gebruiken. Installeer Orbot via F-Droid of Google Play en start het voordat je deze optie inschakelt.</string>
 	<string name="profiles_settings_title">Profielen</string>
 	<string name="profiles_settings_summary">Maak, wissel of verwijder verborgen profielen</string>
 	<string name="profiles_section_current">Huidig profiel</string>

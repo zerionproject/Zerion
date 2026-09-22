@@ -4,7 +4,6 @@ import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Application;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
@@ -26,7 +25,6 @@ import androidx.annotation.NonNull;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
-import static com.professor.zerion.android.settings.DisplayFragment.PREF_THEME;
 
 public class ZerionApplicationImpl extends Application
 		implements ZerionApplication {
@@ -38,16 +36,12 @@ public class ZerionApplicationImpl extends Application
 	}
 
 	private AndroidComponent applicationComponent;
-	private volatile SharedPreferences prefs;
-
 	@Override
 	protected void attachBaseContext(Context base) {
-		if (prefs == null)
-			prefs = EarlyPrefs.get(base);
-		Localizer.initialize(prefs);
+		Localizer.initialize(EarlyPrefs.language(base));
 		super.attachBaseContext(
 				Localizer.getInstance().applyLocaleToContext(base));
-		setTheme(base, prefs);
+		setTheme(base);
 	}
 
 	@Override
@@ -149,11 +143,11 @@ public class ZerionApplicationImpl extends Application
 		Localizer.getInstance().applyLocaleToContext(this);
 	}
 
-	private void setTheme(Context ctx, SharedPreferences prefs) {
-		String theme = prefs.getString(PREF_THEME, null);
+	private void setTheme(Context ctx) {
+		String theme = EarlyPrefs.theme(ctx);
 		if (theme == null) {
 			theme = getString(R.string.pref_theme_dark_value);
-			prefs.edit().putString(PREF_THEME, theme).apply();
+			EarlyPrefs.setTheme(ctx, theme);
 		}
 		UiUtils.setTheme(ctx, theme);
 	}
@@ -180,14 +174,6 @@ public class ZerionApplicationImpl extends Application
 	}
 
 	@Deprecated
-	@Override
-	public SharedPreferences getDefaultSharedPreferences() {
-		if (applicationComponent != null) {
-			return applicationComponent.uiPreferences();
-		}
-		return prefs;
-	}
-
 	@Override
 	public boolean isRunningInBackground() {
 		RunningAppProcessInfo info = new RunningAppProcessInfo();

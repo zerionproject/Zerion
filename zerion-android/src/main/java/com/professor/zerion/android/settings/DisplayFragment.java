@@ -135,12 +135,12 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void loadCurrentSettings() {
-		SharedPreferences earlyPrefs = EarlyPrefs.get(requireContext());
-		currentLanguage = earlyPrefs.getString(PREF_LANGUAGE, "default");
+		currentLanguage = EarlyPrefs.language(requireContext());
 		updateLanguageDisplay();
 
-		currentTheme = earlyPrefs.getString(PREF_THEME,
-				getString(R.string.pref_theme_dark_value));
+		String storedTheme = EarlyPrefs.theme(requireContext());
+		currentTheme = storedTheme != null ? storedTheme
+				: getString(R.string.pref_theme_dark_value);
 		updateThemeDisplay();
 
 		SharedPreferences securePrefs = getAndroidComponent(requireContext())
@@ -153,9 +153,8 @@ public class DisplayFragment extends Fragment {
 		updateNavSizeDisplay();
 
 		currentTextSize = securePrefs.getInt(PREF_TEXT_SIZE, TEXT_SIZE_MEDIUM);
-		currentGuiTextSize = com.professor.zerion.android.EarlyPrefs
-				.get(requireContext())
-				.getInt(ChatPreferences.PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		currentGuiTextSize = EarlyPrefs.guiTextSize(requireContext(),
+				TEXT_SIZE_MEDIUM);
 		updateTextSizeDisplay();
 		updateGuiTextSizeDisplay();
 
@@ -258,12 +257,8 @@ public class DisplayFragment extends Fragment {
 				.setTitle(R.string.pref_language_title)
 				.setMessage(R.string.pref_language_changed)
 				.setPositiveButton(android.R.string.ok, (d, i) -> {
-					SharedPreferences earlyPrefs =
-							EarlyPrefs.get(requireContext());
-					earlyPrefs.edit()
-							.putString(PREF_LANGUAGE, newLanguage)
-							.commit();
-					Localizer.forceReinitialize(earlyPrefs);
+					EarlyPrefs.setLanguage(requireContext(), newLanguage);
+					Localizer.forceReinitialize(newLanguage);
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
 					intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
 					requireActivity().startActivity(intent);
@@ -300,9 +295,7 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void onThemeChanged(String newTheme) {
-		EarlyPrefs.get(requireContext()).edit()
-				.putString(PREF_THEME, newTheme)
-				.commit();
+		EarlyPrefs.setTheme(requireContext(), newTheme);
 
 		FragmentActivity activity = requireActivity();
 		UiUtils.setTheme(activity, newTheme);
@@ -405,11 +398,7 @@ public class DisplayFragment extends Fragment {
 						(dialog, which) -> {
 					if (which != currentGuiTextSize) {
 						currentGuiTextSize = which;
-						com.professor.zerion.android.EarlyPrefs
-								.get(requireContext()).edit()
-								.putInt(ChatPreferences.PREF_GUI_TEXT_SIZE,
-										which)
-								.commit();
+						EarlyPrefs.setGuiTextSize(requireContext(), which);
 						ChatPreferences.invalidateGuiFontScale();
 						updateGuiTextSizeDisplay();
 						dialog.dismiss();
