@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import static com.professor.zerion.android.backup.BackupException.Reason.CORRUPT;
 import static com.professor.zerion.android.backup.BackupException.Reason.NOT_A_BACKUP;
+import static com.professor.zerion.android.backup.BackupException.Reason.UNSUPPORTED_VERSION;
 import static com.professor.zerion.android.backup.BackupException.Reason.WRONG_PASSPHRASE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -52,6 +53,38 @@ public class BackupCryptoTest {
 			fail("expected CORRUPT");
 		} catch (BackupException e) {
 			assertEquals(CORRUPT, e.reason);
+		}
+	}
+
+	@Test
+	public void anUnknownVersionByteIsRefusedBeforeAnyKeyDerivation()
+			throws BackupException {
+		BackupCrypto crypto = new BackupCrypto();
+		BackupBundle bundle = new BackupBundle("Alice", new byte[32],
+				new byte[16], null);
+		byte[] sealed = crypto.seal(bundle.toBytes(),
+				"passphrase".toCharArray(), (byte) 0);
+		int versionOffset = 4;
+		for (int version : new int[] {0, 3, 4, 0x7F, 0x80, 0xFF}) {
+			byte[] edited = sealed.clone();
+			edited[versionOffset] = (byte) version;
+			long start = System.nanoTime();
+			try {
+				crypto.open(edited, "passphrase".toCharArray());
+				fail("expected UNSUPPORTED_VERSION for " + version);
+			} catch (BackupException e) {
+				assertEquals(UNSUPPORTED_VERSION, e.reason);
+			}
+			assertTrue("version check must not run the passphrase KDF",
+					System.nanoTime() - start < 200_000_000L);
+		}
+		byte[] downgraded = sealed.clone();
+		downgraded[versionOffset] = 1;
+		try {
+			crypto.open(downgraded, "passphrase".toCharArray());
+			fail("a version 2 file relabelled as version 1 must not open");
+		} catch (BackupException e) {
+			assertTrue(e.reason == CORRUPT || e.reason == WRONG_PASSPHRASE);
 		}
 	}
 

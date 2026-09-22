@@ -1215,54 +1215,102 @@ class GroupTrManagerImpl
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
 			if (s == null) return;
-			if (s.isDissolved()) return;
-			byte[] sig = e.getRecordSig();
-			byte[] signedInput = e.getSignedInput();
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
+			byte[] signer = membershipEventSigner(s, e.getKind(),
+					senderPubKey, e.getTargetPubKey(), e.getEpoch(),
+					e.getToEpoch());
+			if (signer == null) return;
+			if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_MEMBERSHIP,
+					e.getSignedInput(), signer)) return;
 			switch (e.getKind()) {
 				case MEMBER_ADDED:
-					if (senderPubKey == null
-							|| !Arrays.equals(senderPubKey,
-									s.getCreatorPubKey())) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, senderPubKey)) return;
 					applyMemberAdded(s, e);
 					break;
 				case MEMBER_REMOVED:
-					if (Arrays.equals(e.getTargetPubKey(),
-							s.getCreatorPubKey())) return;
-					if (e.getToEpoch() <= s.getEpoch()) return;
-					if (senderPubKey == null
-							|| !Arrays.equals(senderPubKey,
-									s.getCreatorPubKey())) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, senderPubKey)) return;
 					applyMemberRemoved(s, e);
 					break;
 				case MEMBER_LEFT:
-					if (Arrays.equals(e.getTargetPubKey(),
-							s.getCreatorPubKey())) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, e.getTargetPubKey())) return;
 					applyMemberLeft(s, e);
 					break;
 				case GROUP_DISSOLVED:
-					if (e.getEpoch() <= s.getEpoch()) return;
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, s.getCreatorPubKey())) return;
 					s.setDissolved(true);
 					s.setEpoch(e.getEpoch());
 					persist(s);
 					removeFromDevice(s.getGroupId());
 					break;
 				case ROLE_CHANGED:
-					if (!verify(sig, SIGNING_LABEL_GROUP_MEMBERSHIP,
-							signedInput, s.getCreatorPubKey())) return;
 					applyRoleChanged(s, e);
 					break;
 			}
 		} catch (DbException | FormatException ex) {
 		}
+	}
+
+	/**
+	 * The key a membership record must carry a signature from, or null when
+	 * the record is refused before any signature is checked. The group must
+	 * be live; only the creator adds and removes members, dissolves the group
+	 * and changes roles; the creator is never removed and never reported as
+	 * leaving; a member signs its own leaving; and a removal or dissolution
+	 * must advance the epoch, so a replayed record cannot roll it back.
+	 */
+	@Nullable
+	static byte[] membershipEventSigner(GroupTrState s,
+			GroupMembershipChangedEvent.ChangeKind kind,
+			@Nullable byte[] senderPubKey, @Nullable byte[] targetPubKey,
+			long epoch, long toEpoch) {
+		if (s.isDissolved()) return null;
+		byte[] creator = s.getCreatorPubKey();
+		boolean senderIsCreator = senderPubKey != null
+				&& Arrays.equals(senderPubKey, creator);
+		switch (kind) {
+			case MEMBER_ADDED:
+				return senderIsCreator ? creator : null;
+			case MEMBER_REMOVED:
+				if (targetPubKey == null) return null;
+				if (Arrays.equals(targetPubKey, creator)) return null;
+				if (toEpoch <= s.getEpoch()) return null;
+				return senderIsCreator ? creator : null;
+			case MEMBER_LEFT:
+				if (targetPubKey == null) return null;
+				if (Arrays.equals(targetPubKey, creator)) return null;
+				return targetPubKey;
+			case GROUP_DISSOLVED:
+				return epoch > s.getEpoch() ? creator : null;
+			case ROLE_CHANGED:
+				return creator;
+			default:
+				return null;
+		}
+	}
+
+	/**
+	 * An epoch commit is admitted only from the creator, only for a live
+	 * group, and only when it continues exactly from the current epoch to the
+	 * next one, so a replayed, skipped or backwards commit is refused.
+	 */
+	static boolean epochCommitAccepted(GroupTrState s, long fromEpoch,
+			long toEpoch, @Nullable byte[] senderPubKey) {
+		if (s.isDissolved()) return false;
+		if (fromEpoch != s.getEpoch()) return false;
+		if (toEpoch != fromEpoch + 1) return false;
+		return senderPubKey != null
+				&& Arrays.equals(senderPubKey, s.getCreatorPubKey());
+	}
+
+	/**
+	 * A member list snapshot is admitted only for a live group, only when it
+	 * advances the epoch, and only when its canonical member list is a whole
+	 * number of fixed size records within the group size bound.
+	 */
+	static boolean snapshotShapeAccepted(GroupTrState s, long epoch,
+			int memberCanonicalLength) {
+		if (s.isDissolved()) return false;
+		if (epoch <= s.getEpoch()) return false;
+		if (memberCanonicalLength % 37 != 0) return false;
+		return memberCanonicalLength / 37
+				<= org.zerionproject.app.grouptr.GroupTrConstants
+				.MAX_GROUP_MEMBERS;
 	}
 
 	@javax.annotation.Nullable
@@ -1286,13 +1334,10 @@ class GroupTrManagerImpl
 	private void handleEpochCommit(GroupEpochCommitEvent e) {
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
-			if (s == null || s.isDissolved()) return;
-			if (e.getFromEpoch() != s.getEpoch()) return;
-			if (e.getToEpoch() != e.getFromEpoch() + 1) return;
+			if (s == null) return;
 			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
-			if (senderPubKey == null
-					|| !Arrays.equals(senderPubKey, s.getCreatorPubKey()))
-				return;
+			if (!epochCommitAccepted(s, e.getFromEpoch(), e.getToEpoch(),
+					senderPubKey)) return;
 			if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_EPOCH_COMMIT,
 					e.getSignedInput(), senderPubKey)) return;
 			s.setEpoch(e.getToEpoch());
@@ -1327,16 +1372,13 @@ class GroupTrManagerImpl
 		lock.lock();
 		try {
 			GroupTrState s = getGroup(e.getGroupId());
-			if (s == null || s.isDissolved()) return;
-			if (e.getEpoch() <= s.getEpoch()) return;
+			if (s == null) return;
+			byte[] mc = e.getMemberCanonical();
+			if (!snapshotShapeAccepted(s, e.getEpoch(), mc.length)) return;
 			if (!verify(e.getRecordSig(),
 					"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT",
 					e.getSignedInput(), s.getCreatorPubKey())) return;
-			byte[] mc = e.getMemberCanonical();
-			if (mc.length % 37 != 0) return;
 			int n = mc.length / 37;
-			if (n > org.zerionproject.app.grouptr.GroupTrConstants
-					.MAX_GROUP_MEMBERS) return;
 			List<GroupTrMember> reconciled = new ArrayList<>(n);
 			List<GroupTrMember> prev = s.getMembers();
 			java.util.Map<String, String> contactNames =
