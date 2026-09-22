@@ -291,19 +291,15 @@ class GroupTrManagerImpl
 			return;
 		}
 		if (s == null || s.isDissolved()) return;
-		boolean senderIsMember = false;
 		byte[] senderPub = e.getSenderPubKey();
-		if (Arrays.equals(senderPub, s.getCreatorPubKey())) {
-			senderIsMember = true;
-		} else {
-			for (GroupTrMember m : s.getMembers()) {
-				if (Arrays.equals(m.getPubKey(), senderPub)) {
-					senderIsMember = true;
-					break;
-				}
-			}
+		byte[] deliveringPub;
+		try {
+			Contact dc = contactManager.getContact(e.getContactId());
+			deliveringPub = dc.getAuthor().getPublicKey().getEncoded();
+		} catch (DbException ex) {
+			return;
 		}
-		if (!senderIsMember) return;
+		if (!groupPostDeliveryAccepted(s, senderPub, deliveringPub)) return;
 		GroupTrPost p = new GroupTrPost(e.getGroupId(),
 				senderPub, e.getSenderName(),
 				e.getCiphertext(), e.getTimestamp(), postEpoch, false,
@@ -315,6 +311,9 @@ class GroupTrManagerImpl
 			bufferFuturePost(key, p);
 			return;
 		}
+		byte[] identity = crypto.hash(
+				"org.zerionproject/GROUP_POST_SEEN", signedInput);
+		if (!markGroupPostSeen(e.getGroupId(), identity)) return;
 		deliverToCache(key, p);
 		try {
 			byte[] localPub =
@@ -422,6 +421,62 @@ class GroupTrManagerImpl
 		}
 	}
 
+	private static final String SEEN_NAMESPACE_PREFIX = "grouptr-seen:";
+	private static final String SEEN_KEY = "seen";
+	private static final int MAX_SEEN_POSTS_PER_GROUP = 512;
+
+	/**
+	 * Records a post's identity in a persistent, bounded per-group seen-set,
+	 * returning false when the identity was already present. This stops a
+	 * removed member or a relay from resurrecting an old signed post once it
+	 * has aged out of the in-memory cache: the identity survives across cache
+	 * eviction and restarts. Fails open on a database error so a transient
+	 * failure never silently drops a legitimate post.
+	 */
+	private boolean markGroupPostSeen(byte[] groupId, byte[] identity) {
+		String ns = SEEN_NAMESPACE_PREFIX + toHexString(groupId);
+		String id = toHexString(identity);
+		try {
+			return db.transactionWithResult(false, txn -> {
+				Settings s = settingsManager.getSettings(txn, ns);
+				java.util.LinkedHashSet<String> set =
+						parseSeen(s.get(SEEN_KEY));
+				if (!set.add(id)) return false;
+				while (set.size() > MAX_SEEN_POSTS_PER_GROUP) {
+					set.remove(set.iterator().next());
+				}
+				Settings upd = new Settings();
+				upd.put(SEEN_KEY, joinSeen(set));
+				settingsManager.mergeSettings(txn, upd, ns);
+				return true;
+			});
+		} catch (DbException e) {
+			return true;
+		}
+	}
+
+	private static java.util.LinkedHashSet<String> parseSeen(
+			@Nullable String csv) {
+		java.util.LinkedHashSet<String> set =
+				new java.util.LinkedHashSet<>();
+		if (csv == null || csv.isEmpty()) return set;
+		for (String p : csv.split(",")) {
+			if (!p.isEmpty()) set.add(p);
+		}
+		return set;
+	}
+
+	private static String joinSeen(java.util.LinkedHashSet<String> set) {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (String s : set) {
+			if (!first) sb.append(',');
+			sb.append(s);
+			first = false;
+		}
+		return sb.toString();
+	}
+
 	private static final String UNREAD_NAMESPACE = "grouptr-unread";
 
 	private void incrementUnread(byte[] groupId) {
@@ -501,6 +556,21 @@ class GroupTrManagerImpl
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	/**
+	 * A relayed group post is accepted only when both the signing key and the
+	 * contact that delivered it are current members. Requiring the delivering
+	 * contact to be a member stops a removed member, or any non-member that
+	 * once relayed group traffic, from re-injecting old signed posts of a
+	 * member and resurrecting them. The delivering contact is the
+	 * authenticated original sender on both the direct and the mesh paths, so
+	 * legitimate relay through non-member intermediaries is unaffected.
+	 */
+	static boolean groupPostDeliveryAccepted(@Nullable GroupTrState s,
+			byte[] signerPubKey, byte[] deliveringPubKey) {
+		return isMemberOrCreator(s, signerPubKey)
+				&& isMemberOrCreator(s, deliveringPubKey);
 	}
 
 	private static boolean isMemberOrCreator(@Nullable GroupTrState s,
