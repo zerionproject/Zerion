@@ -273,4 +273,73 @@ public class ZwfDuplexConnectionTest {
 		}
 		sender.join(10_000);
 	}
+
+	/**
+	 * A stream this side refuses must not move the receive window: the peer
+	 * burned the id it allocated, but the next id it sends is still within
+	 * the window of the unchanged high-water mark and opens.
+	 */
+	@Test(timeout = 60_000)
+	public void aRefusedStreamDoesNotAdvanceTheReceiveWindow()
+			throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		MemStore bobStore = new MemStore();
+		ZwfDuplexConnection[] far = pair(rootKey,
+				ZwfDuplexConnection.MAX_RECV_STREAM_GAP + 10_000, bobStore);
+		Thread farSender = new Thread(() -> {
+			try {
+				far[0].sendMessage("refused".getBytes(StandardCharsets.UTF_8));
+			} catch (Throwable ignored) {
+			}
+		});
+		farSender.start();
+		try {
+			far[1].receiveMessage();
+			fail("a stream beyond the recovery bound must be refused");
+		} catch (org.zerionproject.core.api.FormatException expected) {
+		}
+		farSender.join(10_000);
+		assertEquals(0, bobStore.loadHighWater(2,
+				org.zerionproject.wire.ZwfConstants.DIRECTION_RECV));
+
+		ZwfDuplexConnection[] near = pair(rootKey, 5, bobStore);
+		List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+		Thread nearSender = new Thread(() -> {
+			try {
+				near[0].sendMessage("accepted".getBytes(StandardCharsets.UTF_8));
+			} catch (Throwable t) {
+				errors.add(t);
+			}
+		});
+		nearSender.start();
+		assertEquals("accepted", new String(near[1].receiveMessage(),
+				StandardCharsets.UTF_8));
+		nearSender.join(10_000);
+		assertTrue(errors.isEmpty());
+		assertTrue(bobStore.loadHighWater(2,
+				org.zerionproject.wire.ZwfConstants.DIRECTION_RECV) >= 6);
+	}
+
+	private ZwfDuplexConnection[] pair(SecretKey rootKey,
+			long senderSendHighWater, MemStore bobStore) throws Exception {
+		ZwfSession aliceSession = sessionFactory.deriveSession(rootKey, true);
+		ZwfSession bobSession = sessionFactory.deriveSession(rootKey, false);
+		PipedOutputStream aOut = new PipedOutputStream();
+		PipedInputStream bIn = new PipedInputStream(aOut, 1 << 20);
+		PipedOutputStream bOut = new PipedOutputStream();
+		PipedInputStream aIn = new PipedInputStream(bOut, 1 << 20);
+		MemStore aliceStore = new MemStore();
+		aliceStore.storeHighWater(1,
+				org.zerionproject.wire.ZwfConstants.DIRECTION_SEND,
+				senderSendHighWater);
+		ZwfDuplexConnection alice = new ZwfDuplexConnection(1, aliceSession,
+				new ZwfStreamCounter(aliceStore), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), aIn, aOut);
+		ZwfDuplexConnection bob = new ZwfDuplexConnection(2, bobSession,
+				new ZwfStreamCounter(bobStore), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), bIn, bOut);
+		return new ZwfDuplexConnection[] {alice, bob};
+	}
 }
