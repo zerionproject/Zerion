@@ -16,24 +16,37 @@ public class SendGateTest {
 		return new BtcWallet.SendPlan("bc1qdest", 100, 10, -110, false,
 				Arrays.asList("t:0"), fp, new ArrayList<>(), new ArrayList<>(),
 				new ArrayList<>(), false, null, new java.util.HashSet<>(),
-				false, 110);
+				false, 110, -1);
+	}
+
+	/** BTC-07: a plan is released only to the wallet it was prepared for. */
+	@Test
+	public void planFromAnotherWalletIsRefusedAndCleared() {
+		SendGate g = new SendGate();
+		g.prepare(plan("A"), "wallet-1");
+		assertThrows(SendGate.AuthorizationException.class,
+				() -> g.authorize("A", true, "wallet-2"));
+		assertNull("a wallet switch drops the plan", g.pending());
+		g.prepare(plan("A"), "wallet-1");
+		assertThrows(SendGate.AuthorizationException.class,
+				() -> g.authorize("A", true, null));
 	}
 
 	@Test
 	public void authorizeWithoutPreparedPlanFails() {
 		SendGate g = new SendGate();
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w"));
 	}
 
 	@Test
 	public void wrongAuthenticationBlocksSigningButKeepsPlan()
 			throws SendGate.AuthorizationException {
 		SendGate g = new SendGate();
-		g.prepare(plan("A"));
+		g.prepare(plan("A"), "w");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", false));
-		BtcWallet.SendPlan p = g.authorize("A", true);
+				() -> g.authorize("A", false, "w"));
+		BtcWallet.SendPlan p = g.authorize("A", true, "w");
 		assertEquals("A", p.fingerprint);
 	}
 
@@ -42,28 +55,28 @@ public class SendGateTest {
 			throws SendGate.AuthorizationException {
 		SendGate g = new SendGate();
 		BtcWallet.SendPlan a = plan("A");
-		g.prepare(a);
-		assertSame(a, g.authorize("A", true));
+		g.prepare(a, "w");
+		assertSame(a, g.authorize("A", true, "w"));
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w"));
 	}
 
 	@Test
 	public void changedTransactionInvalidatesAuthorization() {
 		SendGate g = new SendGate();
-		g.prepare(plan("A"));
-		g.prepare(plan("B"));
+		g.prepare(plan("A"), "w");
+		g.prepare(plan("B"), "w");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w"));
 		assertNull(g.pending());
 	}
 
 	@Test
 	public void clearInvalidatesAuthorization() {
 		SendGate g = new SendGate();
-		g.prepare(plan("A"));
+		g.prepare(plan("A"), "w");
 		g.clear();
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> g.authorize("A", true));
+				() -> g.authorize("A", true, "w"));
 	}
 }

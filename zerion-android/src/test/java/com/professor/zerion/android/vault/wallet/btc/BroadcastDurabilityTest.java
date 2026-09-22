@@ -98,6 +98,46 @@ public class BroadcastDurabilityTest {
 		assertEquals("inputs stay spendable", 100000, r.balanceSat);
 	}
 
+	/**
+	 * BTC-11: a sent transaction whose inputs are still unspent stays
+	 * reserved while the network can still confirm it, however old it is;
+	 * it is released only once both servers say it is absent.
+	 */
+	@Test
+	public void agedSentInputsStayReservedWhileTheTransactionIsLive()
+			throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		MemLog log = new MemLog();
+		String txid = "4".repeat(64);
+		e.txs.put(txid, "01000000000000000000");
+		long threeHoursAgo = System.currentTimeMillis() - 3L * 60 * 60 * 1000;
+		log.put(new PendingTx("p1", txid, "00", java.util.Arrays.asList(
+				outpoint0()), PendingTx.SENT, threeHoursAgo, -100000));
+		BtcWallet w = wallet(e, log);
+		assertEquals("live sent inputs stay reserved", 0,
+				w.scan().balanceSat);
+	}
+
+	@Test
+	public void agedSentInputsAreReleasedOnlyWhenProvablyAbsent()
+			throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		MemLog log = new MemLog();
+		String txid = "5".repeat(64);
+		long threeHoursAgo = System.currentTimeMillis() - 3L * 60 * 60 * 1000;
+		log.put(new PendingTx("p1", txid, "00", java.util.Arrays.asList(
+				outpoint0()), PendingTx.SENT, threeHoursAgo, -100000));
+		BtcWallet w = wallet(e, log);
+		assertEquals("first miss keeps the reservation", 0,
+				w.scan().balanceSat);
+		assertEquals(0, w.scan().balanceSat);
+		assertEquals("third definitive miss after the grace releases",
+				100000, w.scan().balanceSat);
+		assertEquals(PendingTx.FAILED, log.only().state);
+	}
+
 	@Test
 	public void successfulSendIsRecordedThenMarkedSent() throws IOException {
 		FakeElectrum e = new FakeElectrum();

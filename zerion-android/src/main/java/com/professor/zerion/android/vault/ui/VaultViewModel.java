@@ -345,6 +345,35 @@ public class VaultViewModel extends AndroidViewModel {
 		return 0;
 	}
 
+	private int readChangeIndex(String walletId) {
+		try {
+			org.json.JSONObject chg = settingsObject().optJSONObject("chg");
+			if (chg != null) {
+				return Math.max(0, chg.optInt(walletId, 0));
+			}
+		} catch (Throwable ignored) {
+		}
+		return 0;
+	}
+
+	private void persistChangeIndex(String walletId, int index) {
+		try {
+			synchronized (walletStore.settingsLock) {
+				org.json.JSONObject o = settingsObject();
+				org.json.JSONObject chg = o.optJSONObject("chg");
+				if (chg == null) {
+					chg = new org.json.JSONObject();
+				}
+				if (index > chg.optInt(walletId, 0)) {
+					chg.put(walletId, index);
+					o.put("chg", chg);
+					walletStore.writeSettings(o.toString());
+				}
+			}
+		} catch (Throwable ignored) {
+		}
+	}
+
 	private void persistReceiveIndex(String walletId, int index) {
 		try {
 			synchronized (walletStore.settingsLock) {
@@ -552,25 +581,26 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 			broadcastEndpointFor(
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scan) {
+			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scan,
+			String routing) {
 		try {
 			String json = walletStore.readSettings();
 			if (json != null) {
 				org.json.JSONObject o = new org.json.JSONObject(json);
-				String selected = o.optString("node", preferredDefaultNode());
-				java.util.List<String> candidates = new java.util.ArrayList<>();
-				candidates.add(preferredDefaultNode());
+				String selected = normalizeNode(
+						o.optString("node", preferredDefaultNode()));
+				java.util.List<String> userNodes = new java.util.ArrayList<>();
 				org.json.JSONArray arr = o.optJSONArray("nodes");
 				if (arr != null) {
 					for (int i = 0; i < arr.length(); i++) {
-						candidates.add(arr.getString(i));
+						userNodes.add(arr.getString(i));
 					}
 				}
-				for (String n : candidates) {
-					if (!n.equals(selected)) {
-						return endpointFromNodeString(n);
-					}
-				}
+				String chosen = com.professor.zerion.android.vault.wallet.btc
+						.BroadcastRouting.chooseBroadcastNode(selected,
+								preferredDefaultNode(), userNodes, routing);
+				if (chosen.equals(selected)) return scan;
+				return endpointFromNodeString(chosen);
 			}
 		} catch (Throwable ignored) {
 		}
@@ -715,10 +745,11 @@ public class VaultViewModel extends AndroidViewModel {
 	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 			routedBroadcastEndpoint(String walletId,
 			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scanEp) {
-		if (ROUTING_DIRECT.equals(readWalletRouting(walletId))) {
+		String routing = readWalletRouting(walletId);
+		if (ROUTING_DIRECT.equals(routing)) {
 			return scanEp;
 		}
-		return broadcastEndpointFor(scanEp);
+		return broadcastEndpointFor(scanEp, routing);
 	}
 
 	private java.util.List<com.professor.zerion.android.vault.wallet.btc
@@ -1869,6 +1900,7 @@ public class VaultViewModel extends AndroidViewModel {
 				w.setFallbacks(fbs, fbs);
 				int persistedIndex = readReceiveIndex(walletId);
 				w.setMinReceiveProbe(persistedIndex);
+				w.setMinChangeProbe(readChangeIndex(walletId));
 				String firstAddr = w.receiveAddressAt(persistedIndex);
 
 				if (!walletSessionValid()) {
@@ -2033,7 +2065,7 @@ public class VaultViewModel extends AndroidViewModel {
 						walletPreparing.postValue(false);
 					}
 				}
-				sendGate.prepare(plan);
+				sendGate.prepare(plan, w.walletId());
 				walletSendReview.postValue(new Event<>(
 						new SendReview(plan, w.analyzePlan(plan))));
 			} catch (com.professor.zerion.android.vault.wallet.btc.privacy
@@ -2063,8 +2095,9 @@ public class VaultViewModel extends AndroidViewModel {
 			BtcWallet.SendPlan plan = null;
 			try {
 				boolean authed = verifyWalletCredential(credential);
-				plan = sendGate.authorize(reviewedFingerprint, authed);
 				BtcWallet w = openBtc;
+				plan = sendGate.authorize(reviewedFingerprint, authed,
+						w == null ? null : w.walletId());
 				if (w == null) {
 					walletError.postValue(new Event<>(getApplication()
 							.getString(R.string.wallet_open_failed)));
@@ -2078,6 +2111,7 @@ public class VaultViewModel extends AndroidViewModel {
 					return;
 				}
 				String txid = w.signPlan(plan);
+				persistChangeIndex(w.walletId(), w.minChangeProbe());
 				w.invalidateCachedScan();
 				btcTxid.postValue(new Event<>(txid));
 				postLocalTxState(w, plan.netSat);
@@ -2091,6 +2125,7 @@ public class VaultViewModel extends AndroidViewModel {
 					.BroadcastUncertainException e) {
 				BtcWallet w = openBtc;
 				if (w != null && plan != null) {
+					persistChangeIndex(w.walletId(), w.minChangeProbe());
 					w.invalidateCachedScan();
 					postLocalTxState(w, plan.netSat);
 				}
@@ -2313,12 +2348,18 @@ public class VaultViewModel extends AndroidViewModel {
 			lastBalance = r.balanceSat;
 			btcBalanceSat.postValue(r.balanceSat);
 
-			if (r.receiveIndex > receiveIndex.get()) {
-				receiveIndex.set(r.receiveIndex);
-				btcReceiveAddress.postValue(r.receiveAddress);
+			int shown = receiveIndex.get();
+			int next = r.usedReceiveIndexes.contains(shown)
+					? BtcWallet.nextUnusedAtOrAbove(r.usedReceiveIndexes,
+							shown + 1)
+					: Math.max(shown, r.receiveIndex);
+			if (next != shown) {
+				receiveIndex.set(next);
+				w.setMinReceiveProbe(next);
+				btcReceiveAddress.postValue(w.receiveAddressAt(next));
 				String scanId = currentWalletId;
 				if (scanId != null && scanEpoch == epoch && openBtc == w) {
-					persistReceiveIndex(scanId, r.receiveIndex);
+					persistReceiveIndex(scanId, next);
 				}
 			}
 

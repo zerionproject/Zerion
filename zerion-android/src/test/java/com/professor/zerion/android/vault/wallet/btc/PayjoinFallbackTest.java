@@ -34,9 +34,9 @@ public class PayjoinFallbackTest {
 		BtcWallet.SendPlan normal =
 				w.planSend(DEST, 40000, 1.0, false, null, false);
 		SendGate gate = new SendGate();
-		gate.prepare(normal);
+		gate.prepare(normal, "w");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> gate.authorize("payjoin-final-fingerprint", true));
+				() -> gate.authorize("payjoin-final-fingerprint", true, "w"));
 		assertNull(gate.pending());
 	}
 
@@ -48,10 +48,10 @@ public class PayjoinFallbackTest {
 		SendGate gate = new SendGate();
 		BtcWallet.SendPlan fresh =
 				w.planSend(DEST, 40000, 1.0, false, null, false);
-		gate.prepare(fresh);
+		gate.prepare(fresh, "w");
 		assertThrows(SendGate.AuthorizationException.class,
-				() -> gate.authorize(fresh.fingerprint, false));
-		BtcWallet.SendPlan authed = gate.authorize(fresh.fingerprint, true);
+				() -> gate.authorize(fresh.fingerprint, false, "w"));
+		BtcWallet.SendPlan authed = gate.authorize(fresh.fingerprint, true, "w");
 		assertSame(fresh, authed);
 	}
 

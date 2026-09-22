@@ -112,6 +112,52 @@ public class BtcScanGapLimitTest {
 		assertTrue(kept.containsKey("newest"));
 	}
 
+	/**
+	 * BTC-11: two sends before the scan server has seen the first must not
+	 * pay change to the same address; the signed change index becomes the
+	 * floor for the next plan.
+	 */
+	@Test
+	public void changeAddressAdvancesPastASignedChangeOutput()
+			throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TXID, 0, 100000);
+		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1),
+				"3".repeat(64), 0, 100000);
+		BtcWallet w = wallet(e);
+		BtcWallet.SendPlan first = w.planSend(
+				"bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", 30000, 2.0,
+				false, null, false);
+		assertTrue(first.changeIndex >= 0);
+		w.signPlan(first);
+		BtcWallet.SendPlan second = w.planSend(
+				"bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", 30000, 2.0,
+				false, null, false);
+		assertTrue(second.changeIndex > first.changeIndex);
+		assertEquals(first.changeIndex + 1, w.minChangeProbe());
+	}
+
+	/** BTC-05: the next unused index at or above the displayed one. */
+	@Test
+	public void nextUnusedReceiveIndex() {
+		java.util.Set<Integer> used = new java.util.HashSet<>(
+				java.util.Arrays.asList(3, 4, 6));
+		assertEquals(5, BtcWallet.nextUnusedAtOrAbove(used, 3));
+		assertEquals(5, BtcWallet.nextUnusedAtOrAbove(used, 5));
+		assertEquals(7, BtcWallet.nextUnusedAtOrAbove(used, 6));
+		assertEquals(0, BtcWallet.nextUnusedAtOrAbove(used, -2));
+	}
+
+	@Test
+	public void scanReportsUsedReceiveIndexes() throws IOException {
+		FakeElectrum e = new FakeElectrum();
+		e.addHistoryOnly(BtcKeys.scriptHash(MNEMONIC, 0, 3), TXID);
+		BtcWallet.ScanResult r = wallet(e).scan();
+		assertTrue(r.usedReceiveIndexes.contains(3));
+		assertEquals(1, r.usedReceiveIndexes.size());
+		assertEquals(0, r.receiveIndex);
+	}
+
 	@Test
 	public void sumsBalanceAcrossUsedAddressesWithinGap() throws IOException {
 		FakeElectrum e = new FakeElectrum();

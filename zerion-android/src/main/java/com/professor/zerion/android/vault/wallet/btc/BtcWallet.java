@@ -41,9 +41,40 @@ public class BtcWallet {
 	static final int MAX_HISTORY_TXS = 1000;
 
 	private volatile int minReceiveProbe = -1;
+	private volatile int minChangeProbe = -1;
 
 	public void setMinReceiveProbe(int index) {
 		if (index > minReceiveProbe) minReceiveProbe = index;
+	}
+
+	/**
+	 * The lowest change index the next plan may use. Persisted by the
+	 * caller and advanced past every change output this wallet has signed,
+	 * so two sends before the scan server has seen the first never share a
+	 * change address.
+	 */
+	public void setMinChangeProbe(int index) {
+		if (index > minChangeProbe) minChangeProbe = index;
+	}
+
+	public int minChangeProbe() {
+		return minChangeProbe;
+	}
+
+	/** The wallet id this instance was opened for. */
+	public String walletId() {
+		return isolationTag;
+	}
+
+	/**
+	 * The smallest receive index at or above {@code shown} that has not
+	 * been used, so a displayed address that received funds is replaced by
+	 * the next unused one rather than staying on screen.
+	 */
+	public static int nextUnusedAtOrAbove(Set<Integer> used, int shown) {
+		int i = Math.max(shown, 0);
+		while (used.contains(i)) i++;
+		return i;
 	}
 
 	public int lastReceiveUsedIndex() {
@@ -62,7 +93,6 @@ public class BtcWallet {
 	/** Above this share of the amount the review flags the fee as high. */
 	public static final int HIGH_FEE_PERCENT = 20;
 	private static final long PENDING_GRACE_MS = 30L * 60L * 1000L;
-	private static final long SENT_VISIBILITY_MS = 2L * 60L * 60L * 1000L;
 	private static final int PENDING_FAIL_MISSES = 3;
 
 	private final Map<String, Integer> pendingMisses =
@@ -95,21 +125,26 @@ public class BtcWallet {
 		public final String receiveAddress;
 		public final int receiveIndex;
 		public final String changeAddress;
+		public final int changeIndex;
 		public final List<ElectrumClient.HistItem> history;
 		public final List<OwnedUtxo> utxos;
 		public final Set<String> ownedAddresses;
+		/** Receive indexes with history within the probed range. */
+		public final Set<Integer> usedReceiveIndexes;
 
 		ScanResult(long balanceSat, String receiveAddress, int receiveIndex,
-				String changeAddress,
+				String changeAddress, int changeIndex,
 				List<ElectrumClient.HistItem> history, List<OwnedUtxo> utxos,
-				Set<String> ownedAddresses) {
+				Set<String> ownedAddresses, Set<Integer> usedReceiveIndexes) {
 			this.balanceSat = balanceSat;
 			this.receiveAddress = receiveAddress;
 			this.receiveIndex = receiveIndex;
 			this.changeAddress = changeAddress;
+			this.changeIndex = changeIndex;
 			this.history = history;
 			this.utxos = utxos;
 			this.ownedAddresses = ownedAddresses;
+			this.usedReceiveIndexes = usedReceiveIndexes;
 		}
 	}
 
@@ -300,7 +335,8 @@ public class BtcWallet {
 			return scan();
 		}
 		return doScan(Math.max(lastReceiveUsed + POLL_LOOKAHEAD,
-				minReceiveProbe), lastChangeUsed + POLL_LOOKAHEAD);
+				minReceiveProbe), Math.max(lastChangeUsed + POLL_LOOKAHEAD,
+				minChangeProbe));
 	}
 
 	private synchronized ScanResult doScan(int receiveBound, int changeBound)
@@ -310,12 +346,13 @@ public class BtcWallet {
 			List<ElectrumClient.HistItem> history = new ArrayList<>();
 			long[] balance = {0};
 
+			Set<Integer> usedReceive = new java.util.HashSet<>();
 			int[] r = probeChain(c, false, receiveBound, utxos, history,
-					balance);
+					balance, usedReceive);
 			int freshReceive = r[0];
 			int receiveProbed = r[1];
 			int[] ch = probeChain(c, true, changeBound, utxos, history,
-					balance);
+					balance, null);
 			Set<String> seenTx = new java.util.HashSet<>();
 			List<ElectrumClient.HistItem> dedup = new ArrayList<>();
 			for (ElectrumClient.HistItem h : history) {
@@ -356,7 +393,7 @@ public class BtcWallet {
 					BtcKeys.address(mnemonic, account, freshReceive),
 					freshReceive,
 					BtcKeys.changeAddress(mnemonic, account, freshChange),
-					history, utxos, owned);
+					freshChange, history, utxos, owned, usedReceive);
 			lastScan = result;
 			return result;
 		}
@@ -373,26 +410,28 @@ public class BtcWallet {
 
 	private int[] probeChain(ElectrumRpc c, boolean change, int bound,
 			List<OwnedUtxo> utxos, @Nullable List<ElectrumClient.HistItem> hist,
-			long[] balance) throws IOException {
+			long[] balance, @Nullable Set<Integer> usedOut) throws IOException {
 		int fresh = -1;
 		int probed = 0;
 		int maxUsed = -1;
 		int gap = 0;
+		int floor = change ? minChangeProbe : minReceiveProbe;
 		for (int i = 0; i < MAX_CHAIN_INDEX && (bound < 0
-				? (gap < GAP_LIMIT || (!change && i <= minReceiveProbe))
+				? (gap < GAP_LIMIT || i <= floor)
 				: i <= bound); i++) {
 			probed = i + 1;
 			String sh = change ? BtcKeys.changeScriptHash(mnemonic, account, i)
 					: BtcKeys.scriptHash(mnemonic, account, i);
 			List<ElectrumClient.HistItem> h = c.getHistory(sh);
 			if (h.isEmpty()) {
-				if (fresh < 0) {
+				if (fresh < 0 && (!change || i >= floor)) {
 					fresh = i;
 				}
 				gap++;
 			} else {
 				gap = 0;
 				maxUsed = i;
+				if (usedOut != null) usedOut.add(i);
 				if (hist != null) {
 					hist.addAll(h);
 				}
@@ -415,7 +454,8 @@ public class BtcWallet {
 			}
 		}
 		if (fresh < 0) {
-			fresh = bound < 0 ? 0 : bound + 1;
+			fresh = bound < 0 ? probed : bound + 1;
+			if (change && fresh < floor) fresh = floor;
 		}
 		return new int[]{fresh, probed, maxUsed};
 	}
@@ -451,18 +491,14 @@ public class BtcWallet {
 					break;
 				}
 			}
-			if (PendingTx.SENT.equals(p.state)) {
-				if (anyInputStillLive
-						&& now - p.createdAt < SENT_VISIBILITY_MS) {
-					for (String op : p.outpoints) {
-						if (liveOutpoints.contains(op)) {
-							reserved.add(op);
-						}
-					}
-				}
+			if (PendingTx.FAILED.equals(p.state)) {
 				continue;
 			}
-			if (PendingTx.FAILED.equals(p.state)) {
+			if (!anyInputStillLive) {
+				if (!PendingTx.SENT.equals(p.state)) {
+					pendingMisses.remove(p.txid);
+					safePut(p.withState(PendingTx.SENT));
+				}
 				continue;
 			}
 			Boolean onChain;
@@ -770,6 +806,8 @@ public class BtcWallet {
 		public final String fingerprint;
 		/** The estimated size the fee was computed for. */
 		public final int vbytes;
+		/** The change index this plan pays to, or -1 without change. */
+		public final int changeIndex;
 		final List<BtcTx.Input> inputs;
 		final List<BtcTx.Output> outputs;
 		final List<PrivacyMeta> inputMetas;
@@ -784,7 +822,7 @@ public class BtcWallet {
 				List<BtcTx.Input> inputs, List<BtcTx.Output> outputs,
 				List<PrivacyMeta> inputMetas, boolean hasChange,
 				@Nullable String changeCluster, Set<String> reusedOutpoints,
-				boolean manual, int vbytes) {
+				boolean manual, int vbytes, int changeIndex) {
 			this.toAddress = toAddress;
 			this.amountSat = amountSat;
 			this.feeSat = feeSat;
@@ -800,6 +838,7 @@ public class BtcWallet {
 			this.reusedOutpoints = reusedOutpoints;
 			this.manual = manual;
 			this.vbytes = vbytes;
+			this.changeIndex = changeIndex;
 		}
 
 		/** The effective fee rate of this plan in sat/vB. */
@@ -857,6 +896,7 @@ public class BtcWallet {
 		long feeSat;
 		long externalSat;
 		long changeSat = 0;
+		int changeIndex = -1;
 
 		if (sweep) {
 			for (OwnedUtxo u : sorted) {
@@ -913,6 +953,7 @@ public class BtcWallet {
 			changeSat = inSat - amountSat - feeSat;
 			if (changeSat > DUST) {
 				outputs.add(new BtcTx.Output(scan.changeAddress, changeSat));
+				changeIndex = scan.changeIndex;
 				recordChangeIsolation(scan, inputs);
 			} else {
 				feeSat += changeSat;
@@ -972,7 +1013,7 @@ public class BtcWallet {
 
 		return new SendPlan(toAddress, externalSat, feeSat, netSat, sweep,
 				outpoints, fingerprint, inputs, outputs, inputMetas, hasChange,
-				changeCluster, reused, manual, planVBytes);
+				changeCluster, reused, manual, planVBytes, changeIndex);
 	}
 
 	public com.professor.zerion.android.vault.wallet.btc.privacy
@@ -1002,6 +1043,7 @@ public class BtcWallet {
 
 	public String signPlan(SendPlan plan) throws IOException {
 		String rawHex = BtcTx.buildAndSign(plan.inputs, plan.outputs);
+		if (plan.changeIndex >= 0) setMinChangeProbe(plan.changeIndex + 1);
 		return broadcastTracked(rawHex, plan.outpoints, plan.netSat);
 	}
 
