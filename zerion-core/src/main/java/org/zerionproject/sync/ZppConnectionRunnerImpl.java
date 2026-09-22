@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 
 /**
  * Drives a live connection with the Zerion Pull Protocol's constant-rate rhythm.
@@ -31,6 +32,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * activity onset cannot produce a frame spacing tighter than the active
  * cadence.
  *
+ * <p>A received record extends the active regime only while this side is
+ * itself taking part: within {@link #REPLY_WINDOW_MS} of its own last real
+ * send every receipt extends the window, otherwise receipts alone may start
+ * one active window per {@link #RECEIVE_ACTIVATION_INTERVAL_MS}. A peer that
+ * merely keeps sending therefore cannot hold this side at the active cadence
+ * indefinitely; its records are still delivered, only the cover cadence
+ * stays idle.
+ *
  * <p>The scheduler is registered while the connection is open so the message
  * layer can enqueue records for the contact, and unregistered when it ends.
  */
@@ -38,6 +47,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 
 	private static final int JITTER_DIVISOR = 3;
+	static final long REPLY_WINDOW_MS = 10 * 60_000L;
+	static final long RECEIVE_ACTIVATION_INTERVAL_MS = 10 * 60_000L;
 
 	private final ZppRecordSink recordSink;
 	private final ZppConnectionRegistry registry;
@@ -79,10 +90,14 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				new ZppSendScheduler(connection::sendMessage,
 						connection::isPqReady);
 		SlotClock clock = new SlotClock();
+		ReceiveActivityGate gate = new ReceiveActivityGate(
+				System::currentTimeMillis, REPLY_WINDOW_MS,
+				RECEIVE_ACTIVATION_INTERVAL_MS);
 		scheduler.setWakeListener(clock::noteActivity);
 		registry.onConnectionOpened(contactId, scheduler,
 				connection.getMaxMessageLength());
-		Thread ticker = new Thread(() -> tickLoop(scheduler, clock, running),
+		Thread ticker = new Thread(
+				() -> tickLoop(scheduler, clock, gate, running),
 				"zpp-send-" + contactId);
 		ticker.start();
 		try {
@@ -97,7 +112,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					break;
 				}
 				if (record.length >= 2 && !ZmmRecord.isCover(record)) {
-					clock.noteActivity();
+					if (gate.admitReceipt()) clock.noteActivity();
 					recordSink.deliver(contactId, ZmmRecord.getType(record),
 							ZmmRecord.getPayload(record));
 				}
@@ -116,12 +131,15 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	}
 
 	private void tickLoop(ZppSendScheduler scheduler, SlotClock clock,
-			AtomicBoolean running) {
+			ReceiveActivityGate gate, AtomicBoolean running) {
 		try {
 			while (running.get()) {
 				boolean realSent = scheduler.tick();
 				long now = System.currentTimeMillis();
-				if (realSent) clock.lastRealMs = now;
+				if (realSent) {
+					clock.lastRealMs = now;
+					gate.noteLocalSend();
+				}
 				boolean active = scheduler.getQueueDepth() > 0
 						|| now - clock.lastRealMs < pacing.idleAfterMs();
 				long activeDelay = computeInterval(pacing.activeIntervalMs(),
@@ -136,6 +154,50 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			running.set(false);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	/**
+	 * Decides whether a received record may extend the active regime. The
+	 * peer's records never carry the decision on their own: receipts extend
+	 * the regime while this side has sent a real record within the reply
+	 * window, and otherwise start at most one active window per activation
+	 * interval.
+	 */
+	static final class ReceiveActivityGate {
+
+		private final LongSupplier clock;
+		private final long replyWindowMs;
+		private final long activationIntervalMs;
+		private long lastLocalSendMs;
+		private long lastActivationMs;
+		private boolean everSent = false;
+		private boolean everActivated = false;
+
+		ReceiveActivityGate(LongSupplier clock, long replyWindowMs,
+				long activationIntervalMs) {
+			this.clock = clock;
+			this.replyWindowMs = replyWindowMs;
+			this.activationIntervalMs = activationIntervalMs;
+		}
+
+		synchronized void noteLocalSend() {
+			lastLocalSendMs = clock.getAsLong();
+			everSent = true;
+		}
+
+		synchronized boolean admitReceipt() {
+			long now = clock.getAsLong();
+			if (everSent && now - lastLocalSendMs <= replyWindowMs) {
+				return true;
+			}
+			if (!everActivated
+					|| now - lastActivationMs >= activationIntervalMs) {
+				everActivated = true;
+				lastActivationMs = now;
+				return true;
+			}
+			return false;
 		}
 	}
 

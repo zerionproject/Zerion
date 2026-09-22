@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -56,6 +57,59 @@ public class ZppPacingRegimeTest {
 		long elapsed = System.currentTimeMillis() - start;
 		waker.join();
 		assertTrue("active gap was shortened: " + elapsed, elapsed >= 130);
+	}
+
+	/**
+	 * NET-10: a peer that only sends cannot hold this side at the active
+	 * cadence. Without a local real send, receipts start one active window
+	 * per activation interval; within the reply window of a local send every
+	 * receipt extends the window; once that window has passed, receipts fall
+	 * back to the rationed activation.
+	 */
+	@Test
+	public void receiptsAloneActivateOncePerInterval() {
+		AtomicLong now = new AtomicLong(1_000_000L);
+		ZppConnectionRunnerImpl.ReceiveActivityGate gate =
+				new ZppConnectionRunnerImpl.ReceiveActivityGate(now::get,
+						10_000L, 60_000L);
+		assertTrue("first receipt opens one window", gate.admitReceipt());
+		for (int i = 0; i < 59; i++) {
+			now.addAndGet(1_000L);
+			assertFalse("receipt " + i + " must not extend",
+					gate.admitReceipt());
+		}
+		now.addAndGet(1_000L);
+		assertTrue("next window after the interval", gate.admitReceipt());
+		now.addAndGet(1_000L);
+		assertFalse(gate.admitReceipt());
+	}
+
+	@Test
+	public void receiptsExtendWhileThisSideIsReplying() {
+		AtomicLong now = new AtomicLong(1_000_000L);
+		ZppConnectionRunnerImpl.ReceiveActivityGate gate =
+				new ZppConnectionRunnerImpl.ReceiveActivityGate(now::get,
+						10_000L, 60_000L);
+		gate.noteLocalSend();
+		for (int i = 0; i < 10; i++) {
+			now.addAndGet(1_000L);
+			assertTrue("within the reply window", gate.admitReceipt());
+		}
+		now.addAndGet(1L);
+		assertTrue("reply window over: one rationed activation",
+				gate.admitReceipt());
+		now.addAndGet(1_000L);
+		assertFalse("then rationed", gate.admitReceipt());
+		gate.noteLocalSend();
+		assertTrue("a reply re-opens the window", gate.admitReceipt());
+	}
+
+	@Test
+	public void idleCadenceDoesNotDependOnTheNetworkType() {
+		ZppPacingPolicy policy = new ZppPacingPolicy();
+		assertTrue(policy.idleIntervalMs() == ZppPacingPolicy.IDLE_INTERVAL_MS);
+		assertTrue(policy.activeIntervalMs()
+				== ZppPacingPolicy.ACTIVE_INTERVAL_MS);
 	}
 
 	@Test

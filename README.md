@@ -138,7 +138,7 @@ APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6
 - Fixes: password dots invisible on the light-theme sign-in screen, a stale "Invalid password" message after successfully unlocking the vault
 
 **v3.0.8 (September 2026):**
-- Idle data usage cut by five to ten times: the constant-rate cover traffic now has an active and an idle rate (slower still on mobile data, with a setting to control it); within each rate real and cover frames remain indistinguishable and sending never bursts
+- Idle data usage cut by five to ten times: the constant-rate cover traffic now has an active and an idle rate, the same on every network type; within each rate real and cover frames remain indistinguishable and sending never bursts
 - Storage cleanup: cancelled or failed media uploads no longer leave data behind, orphaned attachment chunks are reclaimed automatically including space leaked by older versions, channel attachment caches are garbage collected, and the encrypted database compacts itself when deletions free significant space
 - Vault: auto-lock timeout and hide-content settings now work as configured, photos taken into the vault save at full resolution, and unsaved note changes warn before closing
 - A full-app hygiene pass: fixed a crash in chats containing voice-call history, password dialogs keep your input when validation fails, notification switches reflect the real system state, dates on older group messages, tappable links in groups and channels, smoother media scrolling in group chats, and more texts moved to translations

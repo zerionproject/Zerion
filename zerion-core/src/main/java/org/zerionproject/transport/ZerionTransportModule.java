@@ -84,17 +84,8 @@ public class ZerionTransportModule {
 
 	@Provides
 	@Singleton
-	org.zerionproject.sync.ZppPacingPolicy providePacingPolicy(
-			org.zerionproject.core.api.network.NetworkManager networkManager,
-			org.zerionproject.core.api.settings.SettingsManager settingsManager,
-			@org.zerionproject.core.api.db.DatabaseExecutor
-					java.util.concurrent.Executor dbExecutor,
-			org.zerionproject.core.api.event.EventBus eventBus) {
-		org.zerionproject.sync.ZppPacingPolicy policy =
-				new org.zerionproject.sync.ZppPacingPolicy(networkManager,
-						settingsManager, dbExecutor);
-		eventBus.addListener(policy);
-		return policy;
+	org.zerionproject.sync.ZppPacingPolicy providePacingPolicy() {
+		return new org.zerionproject.sync.ZppPacingPolicy();
 	}
 
 	@Provides
