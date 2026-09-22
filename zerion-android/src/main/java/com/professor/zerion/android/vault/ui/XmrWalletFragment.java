@@ -272,10 +272,9 @@ public class XmrWalletFragment extends BaseFragment {
 		EditText name = field(box, getString(R.string.wallet_name_hint), false);
 		EditText seed = field(box, getString(R.string.wallet_xmr_seed_hint),
 				false);
-		seed.setInputType(InputType.TYPE_CLASS_TEXT
-				| InputType.TYPE_TEXT_FLAG_MULTI_LINE
-				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		seed.setMinLines(3);
+		seed.setMaxLines(8);
+		IncognitoInputHelper.configureIncognitoInput(seed, false);
 		TextView heightNote = new TextView(requireContext());
 		heightNote.setText(R.string.wallet_xmr_restore_height_note);
 		heightNote.setTextSize(12);
