@@ -479,6 +479,9 @@
 	<string name="hardened_block_disable_title">Turn off hardened mode?</string>
 	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there. Only turn this off if you understand the risk.</string>
 	<string name="hardened_block_disable_confirm">Turn off</string>
+	<string name="hardened_block_password_hint">Account password</string>
+	<string name="hardened_block_password_wrong">Wrong password. Hardened mode stays on.</string>
+	<string name="hardened_block_password_locked">Too many wrong passwords. Try again in %1$d minutes.</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
 	<string name="channels_create_require_approval">Review new subscribers before they can read</string>

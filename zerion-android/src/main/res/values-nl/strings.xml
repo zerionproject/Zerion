@@ -934,6 +934,9 @@
 	<string name="hardened_block_disable_title">Verstevigde modus uitschakelen?</string>
 	<string name="hardened_block_disable_message">Zerion zal op dit apparaat starten. De reden waarom het weigerde is er nog steeds. Schakel dit alleen uit als je het risico begrijpt.</string>
 	<string name="hardened_block_disable_confirm">Uitschakelen</string>
+	<string name="hardened_block_password_hint">Accountwachtwoord</string>
+	<string name="hardened_block_password_wrong">Verkeerd wachtwoord. Hardened mode blijft aan.</string>
+	<string name="hardened_block_password_locked">Te veel verkeerde wachtwoorden. Probeer het over %1$d minuten opnieuw.</string>
 	<string name="channels_comments_count">%1$d opmerkingen</string>
 	<string name="channels_comments_count_one">1 opmerking</string>
 	<string name="channels_create_require_approval">Beoordeel nieuwe abonnees voordat ze kunnen lezen</string>
