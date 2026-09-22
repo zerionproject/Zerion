@@ -447,6 +447,7 @@ class PrivateMessageValidator implements MessageValidator {
 		String text = body.getOptionalString(1);
 		if (text != null) {
 			checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+			VoiceMemoFormatCheck.requireCurrentFormat(text);
 		}
 		String previewUrl = body.getString(2);
 		checkLength(previewUrl, 1, 2048);

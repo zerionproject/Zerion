@@ -34,11 +34,14 @@ public class AsyncMeshIntegrationTest {
 	private CryptoComponent crypto;
 	private AsyncSealedSender sealer;
 
+	private AsyncMeshDelivery.Identity sender;
+
 	@Before
 	public void setUp() {
 		crypto = new CryptoComponentImpl(() -> null,
 				new ScryptKdf(new SystemClock()));
 		sealer = new AsyncSealedSender(crypto);
+		sender = newIdentity();
 	}
 
 	private AsyncMeshDelivery.Identity newIdentity() {
@@ -194,12 +197,74 @@ public class AsyncMeshIntegrationTest {
 		r.delivery.onFrame(sealTo(r, "b".getBytes(), 200L, now, false));
 		r.delivery.onFrame(sealTo(r, "c".getBytes(), 300L, now, false));
 		assertEquals(3, r.opened.size());
-		assertEquals(now + 100_000L, r.store.seenFloor());
+		assertEquals(now + 100_000L, r.store.seenFloor(sender.sigPub));
 
 		r.delivery.onFrame(sealTo(r, "too old".getBytes(), 100L, now, false));
 		assertEquals("at the floor: refused unseen", 3, r.opened.size());
 		r.delivery.onFrame(sealTo(r, "later".getBytes(), 400L, now, false));
 		assertEquals(4, r.opened.size());
+	}
+
+	/**
+	 * A sender that floods the recipient with long-lived envelopes raises
+	 * only its own floor: another sender's ordinary envelope still opens.
+	 */
+	@Test
+	public void aFloodFromOneSenderDoesNotBlockAnotherSender()
+			throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 4);
+		long now = System.currentTimeMillis();
+		long month = 30L * 24 * 3600;
+		for (int i = 0; i < 8; i++) {
+			r.delivery.onFrame(sealTo(r, ("flood " + i).getBytes(),
+					month - 60 + i, now, false));
+		}
+		assertEquals("later expiries raise the floor, all open", 8,
+				r.opened.size());
+		AsyncMeshDelivery.Identity other = newIdentity();
+		r.delivery.onFrame(sealFrom(other, r, "hello".getBytes(),
+				7L * 24 * 3600, now, false));
+		assertEquals("the other sender's week-long envelope opened", 9,
+				r.opened.size());
+		r.delivery.onFrame(sealTo(r, "late".getBytes(), 7L * 24 * 3600,
+				now, false));
+		assertEquals("the flooding sender is held at its own floor", 9,
+				r.opened.size());
+	}
+
+	/**
+	 * The envelope timestamp is in milliseconds: a value in seconds looks
+	 * decades old and is refused, which is what every honest sender must
+	 * avoid and what the sending side is tested to avoid.
+	 */
+	@Test
+	public void anEnvelopeStampedInSecondsIsRefused() throws Exception {
+		Recipient r = new Recipient(new SystemClock());
+		long now = System.currentTimeMillis();
+		r.delivery.onFrame(sealTo(r, "seconds".getBytes(), 3600L,
+				now / 1000L, false));
+		assertEquals(0, r.opened.size());
+		r.delivery.onFrame(sealTo(r, "millis".getBytes(), 3600L, now,
+				false));
+		assertEquals(1, r.opened.size());
+	}
+
+	/**
+	 * Nothing is recorded for a sender the listener does not know, so a
+	 * stranger cannot fill the replay store; a repeat still costs no second
+	 * open thanks to the in-memory record.
+	 */
+	@Test
+	public void aStrangersEnvelopeIsNeitherRecordedNorReopened()
+			throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 4, false);
+		long now = System.currentTimeMillis();
+		byte[] env = sealTo(r, "stranger".getBytes(), 3600L, now, false);
+		r.delivery.onFrame(env);
+		r.delivery.onFrame(env);
+		assertEquals(0, r.opened.size());
+		assertFalse(r.store.isSeen(AsyncEnvelope.decode(env).getDedupId()));
+		assertEquals(Long.MIN_VALUE, r.store.seenFloor(sender.sigPub));
 	}
 
 	/** Seals a message to {@code r} and returns the raw envelope bytes. */
@@ -210,7 +275,13 @@ public class AsyncMeshIntegrationTest {
 
 	private byte[] sealTo(Recipient r, byte[] payload, long ttlSeconds,
 			long sendTimestamp, boolean preferOneTime) throws Exception {
-		AsyncMeshDelivery.Identity sId = newIdentity();
+		return sealFrom(sender, r, payload, ttlSeconds, sendTimestamp,
+				preferOneTime);
+	}
+
+	private byte[] sealFrom(AsyncMeshDelivery.Identity sId, Recipient r,
+			byte[] payload, long ttlSeconds, long sendTimestamp,
+			boolean preferOneTime) throws Exception {
 		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
 		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
@@ -237,6 +308,11 @@ public class AsyncMeshIntegrationTest {
 
 		Recipient(org.zerionproject.core.api.system.Clock clock, int maxSeen)
 				throws Exception {
+			this(clock, maxSeen, true);
+		}
+
+		Recipient(org.zerionproject.core.api.system.Clock clock, int maxSeen,
+				boolean knowsSenders) throws Exception {
 			store = new AsyncPrekeyStore(crypto,
 					new InMemorySettingsManager(), new SystemClock(), maxSeen);
 			AsyncMeshDelivery.Identity id = newIdentity();
@@ -246,8 +322,18 @@ public class AsyncMeshIntegrationTest {
 			bundle = AsyncPrekeyBundle.create(crypto, id.sigPub, id.sigPriv,
 					id.agreePub, spk.id, spk.pub, spk.expiry, otks);
 			delivery = new AsyncMeshDelivery(crypto, sealer, store,
-					(senderPub, type, payload, ts) -> opened.add(payload),
-					id, clock);
+					new AsyncMeshDelivery.OpenedListener() {
+						@Override
+						public boolean onOpened(byte[] senderPub, int type,
+								byte[] payload, long ts) {
+							return opened.add(payload);
+						}
+
+						@Override
+						public boolean knowsSender(byte[] senderPub) {
+							return knowsSenders;
+						}
+					}, id, clock);
 		}
 	}
 

@@ -37,6 +37,7 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 	public static final int MESH_ATTACH_ACK = 8;
 
 	private static final int MAX_REASSEMBLY = 8;
+	private static final int MAX_REASSEMBLY_PER_CONTACT = 2;
 	private static final long REASSEMBLY_TTL_MS = 5 * 60_000;
 	private static final int MAX_CHUNK_DATA_BYTES =
 			MeshPadding.MAX_DATA_BYTES - MeshAttachmentSender.CHUNK_HEADER_BYTES;
@@ -87,6 +88,15 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 			this.totalSize = totalSize;
 			this.chunks = new byte[chunkCount][];
 			this.firstSeenMs = firstSeenMs;
+		}
+	}
+
+	@Override
+	public boolean knowsSender(byte[] senderIdentitySigPub) {
+		try {
+			return resolveContact(senderIdentitySigPub) != null;
+		} catch (DbException e) {
+			return false;
 		}
 	}
 
@@ -153,9 +163,13 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 		String key = StringUtils.toHexString(attachId);
 		long now = System.currentTimeMillis();
 		evictStaleReassemblies(now);
-		if (!reassemblies.containsKey(key)
-				&& reassemblies.size() >= MAX_REASSEMBLY) {
-			return;
+		if (!reassemblies.containsKey(key)) {
+			if (reassemblies.size() >= MAX_REASSEMBLY) return;
+			int mine = 0;
+			for (Reassembly r : reassemblies.values()) {
+				if (r.contactId.equals(contactId)) mine++;
+			}
+			if (mine >= MAX_REASSEMBLY_PER_CONTACT) return;
 		}
 		reassemblies.computeIfAbsent(key, k -> new Reassembly(contactId,
 				contentType, composeMs, totalSize, chunkCount, now));

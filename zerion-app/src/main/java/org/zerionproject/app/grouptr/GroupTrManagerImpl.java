@@ -307,12 +307,13 @@ class GroupTrManagerImpl
 		if (postEpoch < localEpoch - 1L) {
 			return;
 		}
+		byte[] identity = crypto.hash(
+				"org.zerionproject/GROUP_POST_SEEN", signedInput);
 		if (postEpoch > localEpoch + EPOCH_BUFFER_TOLERANCE) {
+			bufferedIdentity.put(p, identity);
 			bufferFuturePost(key, p);
 			return;
 		}
-		byte[] identity = crypto.hash(
-				"org.zerionproject/GROUP_POST_SEEN", signedInput);
 		if (!markGroupPostSeen(e.getGroupId(), identity)) return;
 		deliverToCache(key, p);
 		try {
@@ -344,6 +345,10 @@ class GroupTrManagerImpl
 				&& Arrays.equals(a.getBody(), b.getBody());
 	}
 
+	/** The seen identity of every buffered post, consulted on release. */
+	private final java.util.Map<GroupTrPost, byte[]> bufferedIdentity =
+			new java.util.concurrent.ConcurrentHashMap<>();
+
 	private void bufferFuturePost(String key, GroupTrPost p) {
 		java.util.TreeMap<Long, java.util.List<GroupTrPost>> bucket =
 				futureBuffer.computeIfAbsent(key,
@@ -358,7 +363,9 @@ class GroupTrManagerImpl
 						first = bucket.firstEntry();
 				if (first != null) {
 					java.util.List<GroupTrPost> oldest = first.getValue();
-					if (!oldest.isEmpty()) oldest.remove(0);
+					if (!oldest.isEmpty()) {
+						bufferedIdentity.remove(oldest.remove(0));
+					}
 					if (oldest.isEmpty()) bucket.remove(first.getKey());
 				}
 			}
@@ -390,7 +397,13 @@ class GroupTrManagerImpl
 			}
 			if (bucket.isEmpty()) futureBuffer.remove(key);
 		}
-		for (GroupTrPost p : released) deliverToCache(key, p);
+		for (GroupTrPost p : released) {
+			byte[] identity = bufferedIdentity.remove(p);
+			if (identity != null && !markGroupPostSeen(groupId, identity)) {
+				continue;
+			}
+			deliverToCache(key, p);
+		}
 	}
 
 	private void cacheLocalPost(byte[] groupId, byte[] senderPub,
@@ -550,12 +563,23 @@ class GroupTrManagerImpl
 				q = postCache.get(key);
 			}
 			if (q == null) return java.util.Collections.emptyList();
+			long now = clock.currentTimeMillis();
 			synchronized (q) {
-				return new ArrayList<>(q);
+				List<GroupTrPost> live = new ArrayList<>(q.size());
+				for (GroupTrPost p : q) {
+					if (!expired(p, now)) live.add(p);
+				}
+				return live;
 			}
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	/** A post whose auto-delete timer has run out is no longer shown. */
+	static boolean expired(GroupTrPost p, long now) {
+		long timer = p.getAutoDeleteTimerMs();
+		return timer > 0 && now - p.getTimestamp() > timer;
 	}
 
 	/**
@@ -979,10 +1003,13 @@ class GroupTrManagerImpl
 		settingsManager.mergeSettings(out, SETTINGS_NS_INVITES_SENT);
 	}
 
+	static final int MAX_PENDING_INVITES = 64;
+
 	private void persistInviteReceived(byte[] grouptrGroupId,
 			String groupName, byte[] salt, String creatorName,
 			byte[] creatorPubKey, ContactId contactId, long inviteTimestamp)
 			throws DbException {
+		if (getPendingInvites().size() >= MAX_PENDING_INVITES) return;
 		try {
 			BdfList list = BdfList.of(groupName, salt, creatorName,
 					creatorPubKey, (long) contactId.getInt(), inviteTimestamp);
@@ -1030,6 +1057,8 @@ class GroupTrManagerImpl
 			throws DbException {
 		Settings s = settingsManager.getSettings(SETTINGS_NS_OFFERS_PENDING);
 		List<GroupTrPendingInvite> result = new ArrayList<>();
+		Settings stale = new Settings();
+		long now = clock.currentTimeMillis();
 		for (Map.Entry<String, String> e : s.entrySet()) {
 			String key = e.getKey();
 			String value = e.getValue();
@@ -1040,11 +1069,18 @@ class GroupTrManagerImpl
 				String groupName = list.getString(0);
 				String creatorName = list.getString(2);
 				long inviteTs = list.getLong(5);
+				if (!inviteOfferTimely(now, inviteTs)) {
+					stale.put(key, "");
+					continue;
+				}
 				result.add(new GroupTrPendingInvite(fromHexString(key),
 						groupName, creatorName, inviteTs));
 			} catch (FormatException ex) {
-				continue;
+				stale.put(key, "");
 			}
+		}
+		if (!stale.isEmpty()) {
+			settingsManager.mergeSettings(stale, SETTINGS_NS_OFFERS_PENDING);
 		}
 		return result;
 	}

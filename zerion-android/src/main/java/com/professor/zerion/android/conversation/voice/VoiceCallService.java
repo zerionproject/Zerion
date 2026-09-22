@@ -199,6 +199,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private byte[] remoteEphemeralSecret;
 
 	private volatile boolean isVideoCall = false;
+	private final VideoAutoAccept videoAutoAccept = new VideoAutoAccept();
 	private volatile boolean videoEnabled = false;
 	private final VideoConsentGate consentGate = new VideoConsentGate();
 	@Nullable
@@ -270,10 +271,6 @@ public class VoiceCallService extends Service implements EventListener {
 					&& callState != CallState.FAILED;
 
 			if (alreadyActive) {
-				boolean newVideoFlag = intent.getBooleanExtra("auto_video", false);
-				if (newVideoFlag && !isVideoCall) {
-					isVideoCall = true;
-				}
 				return START_NOT_STICKY;
 			}
 
@@ -288,6 +285,7 @@ public class VoiceCallService extends Service implements EventListener {
 					VoiceCallActivity.EXTRA_IS_INCOMING, false);
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
 			isVideoCall = intent.getBooleanExtra("auto_video", false);
+			videoAutoAccept.callStarted(isVideoCall && isIncoming);
 
 			if (isIncoming) {
 				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
@@ -1835,6 +1833,7 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 				consentGate.onRemoteReject();
+				videoAutoAccept.videoEnded();
 				clearVideoNonces();
 				if (callActivity != null) {
 					callActivity.onVideoRejected();
@@ -1868,7 +1867,7 @@ public class VoiceCallService extends Service implements EventListener {
 		if (decision != VideoConsentGate.OfferDecision.PROMPT_USER) return;
 		remoteVideoNonce = nonce;
 		scheduleRemoteOfferTimeout();
-		if (isVideoCall) {
+		if (videoAutoAccept.consumeForOffer()) {
 			acceptVideoOffer();
 			return;
 		}
@@ -2296,6 +2295,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void stopVideoStreaming() {
 		videoEnabled = false;
+		videoAutoAccept.videoEnded();
 		consentGate.reset();
 		clearVideoNonces();
 		cancelRemoteOfferTimeout();

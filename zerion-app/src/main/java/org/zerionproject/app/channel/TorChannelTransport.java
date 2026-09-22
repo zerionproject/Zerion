@@ -23,7 +23,7 @@ public class TorChannelTransport implements ChannelTransport {
 	private static final int READ_TIMEOUT_MS = 120_000;
 	private static final int REMOTE_PORT = 80;
 	private static final int MAX_REQUEST_BYTES = 256 * 1024;
-	private static final int MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
+	private static final int MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
 	private static final int READ_CHUNK_BYTES = 64 * 1024;
 	private static final int MAX_CONCURRENT_HANDLERS = 16;
 	private static final long SERVER_READ_DEADLINE_MS = READ_TIMEOUT_MS;

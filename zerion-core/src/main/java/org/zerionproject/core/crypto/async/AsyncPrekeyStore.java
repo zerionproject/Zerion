@@ -43,8 +43,15 @@ public class AsyncPrekeyStore {
 	private static final String SPK_PREV_ID = "spkPrevId";
 	private static final String SPK_PREV_PUB = "spkPrevPub";
 	private static final String SPK_PREV_PRIV = "spkPrevPriv";
-	private static final String SEEN = "seen";
-	private static final String SEEN_FLOOR = "seenFloor";
+	private static final String SEEN_PREFIX = "seen.";
+	private static final String FLOOR_PREFIX = "floor.";
+	private static final String SEEN_SENDER_LABEL =
+			"org.zerionproject.async/SEEN_SENDER";
+	/** Senders with a replay record; the least recently expiring go first. */
+	public static final int MAX_SEEN_SENDERS = 256;
+	/** The global record and floor of releases before senders were kept apart. */
+	private static final String LEGACY_SEEN = "seen";
+	private static final String LEGACY_FLOOR = "seenFloor";
 
 	private static final long SPK_LIFETIME_SECONDS = 7L * 24 * 3600;
 	public static final int MAX_SEEN = 4096;
@@ -239,33 +246,54 @@ public class AsyncPrekeyStore {
 	 * rather than a decapsulation and two signature verifications each.
 	 */
 	public boolean isSeen(byte[] dedupId) throws DbException {
+		String h = StringUtils.toHexString(dedupId);
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
-			return parseSeen(s.get(SEEN)).containsKey(
-					StringUtils.toHexString(dedupId));
+			if (parseSeen(s.get(LEGACY_SEEN)).containsKey(h)) return true;
+			for (Map.Entry<String, String> e : s.entrySet()) {
+				if (e.getKey().startsWith(SEEN_PREFIX)
+						&& parseSeen(e.getValue()).containsKey(h)) {
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 
+	private String senderKey(byte[] senderSigPub) {
+		byte[] h = crypto.hash(SEEN_SENDER_LABEL, senderSigPub);
+		return StringUtils.toHexString(java.util.Arrays.copyOf(h, 16));
+	}
+
 	/**
-	 * Records an envelope dedup id together with the envelope's expiry and
-	 * returns true if the envelope is new. The set is bounded, but eviction
-	 * can never re-admit a replay: an entry leaves the set only once it has
-	 * expired, or, when the set is full, by raising a floor to the evicted
-	 * entry's expiry, after which every envelope expiring at or before the
-	 * floor is rejected whether or not it is remembered. An envelope whose
-	 * expiry is at or below the floor is therefore refused here even if it
-	 * was never seen, which is the price of the bound under a flood.
+	 * Records an envelope dedup id together with the envelope's expiry under
+	 * the sender that sealed it and returns true if the envelope is new. Each
+	 * sender's set is bounded, but eviction can never re-admit a replay: an
+	 * entry leaves the set only once it has expired, or, when the set is
+	 * full, by raising that sender's floor to the evicted entry's expiry,
+	 * after which every envelope from that sender expiring at or before the
+	 * floor is rejected whether or not it is remembered. A sender that floods
+	 * its own set therefore raises only its own floor; other senders'
+	 * envelopes are unaffected. The number of senders with a record is
+	 * bounded too, the least recently expiring record leaving first.
 	 */
-	public boolean checkAndMarkSeen(byte[] dedupId, long expiryMs)
-			throws DbException {
+	public boolean checkAndMarkSeen(byte[] senderSigPub, byte[] dedupId,
+			long expiryMs) throws DbException {
+		String sender = senderKey(senderSigPub);
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
 			long now = clock.currentTimeMillis();
-			long floor = s.getLong(SEEN_FLOOR, Long.MIN_VALUE);
-			if (expiryMs <= floor || expiryMs <= now) return false;
-			LinkedHashMap<String, Long> set = parseSeen(s.get(SEEN));
+			long floor = s.getLong(FLOOR_PREFIX + sender, Long.MIN_VALUE);
+			long legacyFloor = s.getLong(LEGACY_FLOOR, Long.MIN_VALUE);
+			if (expiryMs <= floor || expiryMs <= legacyFloor
+					|| expiryMs <= now) {
+				return false;
+			}
+			LinkedHashMap<String, Long> set =
+					parseSeen(s.get(SEEN_PREFIX + sender));
 			String h = StringUtils.toHexString(dedupId);
 			if (set.containsKey(h)) return false;
+			if (parseSeen(s.get(LEGACY_SEEN)).containsKey(h)) return false;
 			set.put(h, expiryMs);
 			set.values().removeIf(expiry -> expiry <= now);
 			boolean admitted = true;
@@ -283,18 +311,52 @@ public class AsyncPrekeyStore {
 				if (h.equals(oldest)) admitted = false;
 			}
 			Settings upd = new Settings();
-			upd.put(SEEN, joinSeen(set));
-			upd.putLong(SEEN_FLOOR, floor);
+			upd.put(SEEN_PREFIX + sender, joinSeen(set));
+			upd.putLong(FLOOR_PREFIX + sender, floor);
+			evictSurplusSenders(s, sender, upd);
 			settingsManager.mergeSettings(upd, NS);
 			return admitted;
 		}
 	}
 
-	/** The expiry at or below which every envelope is refused. */
-	public long seenFloor() throws DbException {
+	/**
+	 * Keeps the number of senders with a non-empty record within the bound
+	 * by dropping, until it fits, the record whose latest expiry is the
+	 * earliest, never the record being written.
+	 */
+	private void evictSurplusSenders(Settings s, String keep, Settings upd) {
+		java.util.Map<String, Long> latest = new java.util.HashMap<>();
+		for (Map.Entry<String, String> e : s.entrySet()) {
+			if (!e.getKey().startsWith(SEEN_PREFIX)) continue;
+			String sender = e.getKey().substring(SEEN_PREFIX.length());
+			if (sender.equals(keep)) continue;
+			LinkedHashMap<String, Long> set = parseSeen(e.getValue());
+			if (set.isEmpty()) continue;
+			long max = Long.MIN_VALUE;
+			for (long v : set.values()) max = Math.max(max, v);
+			latest.put(sender, max);
+		}
+		while (latest.size() + 1 > MAX_SEEN_SENDERS) {
+			String oldest = null;
+			long oldestMax = Long.MAX_VALUE;
+			for (Map.Entry<String, Long> e : latest.entrySet()) {
+				if (e.getValue() < oldestMax) {
+					oldestMax = e.getValue();
+					oldest = e.getKey();
+				}
+			}
+			latest.remove(oldest);
+			upd.put(SEEN_PREFIX + oldest, "");
+			upd.putLong(FLOOR_PREFIX + oldest, Long.MIN_VALUE);
+		}
+	}
+
+	/** The expiry at or below which every envelope of a sender is refused. */
+	public long seenFloor(byte[] senderSigPub) throws DbException {
 		synchronized (lock) {
 			return settingsManager.getSettings(NS)
-					.getLong(SEEN_FLOOR, Long.MIN_VALUE);
+					.getLong(FLOOR_PREFIX + senderKey(senderSigPub),
+							Long.MIN_VALUE);
 		}
 	}
 

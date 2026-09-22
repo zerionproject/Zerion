@@ -20,7 +20,30 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	public interface OpenedListener {
 		boolean onOpened(byte[] senderIdentitySigPub, int messageType,
 				byte[] payload, long sendTimestamp);
+
+		/**
+		 * True when the sender is known; only a known sender's envelopes
+		 * are recorded in the replay store, so a stranger cannot fill it.
+		 */
+		default boolean knowsSender(byte[] senderIdentitySigPub) {
+			return true;
+		}
 	}
+
+	/**
+	 * Recently opened envelopes, by dedup id, so a repeat of an envelope from
+	 * a stranger costs a map lookup rather than another open. In memory
+	 * only; the durable record is the per-sender store.
+	 */
+	private static final int RECENTLY_OPENED = 1024;
+	private final java.util.LinkedHashMap<String, Boolean> recentlyOpened =
+			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						java.util.Map.Entry<String, Boolean> eldest) {
+					return size() > RECENTLY_OPENED;
+				}
+			};
 
 	private static final long MAX_TTL_SECONDS = 30L * 24 * 60 * 60;
 	private static final long CLOCK_SKEW_TOLERANCE_MS = 60L * 1000;
@@ -151,6 +174,11 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		try {
 			long ttl = env.getTtl();
 			if (ttl < 0 || ttl > MAX_TTL_SECONDS) return;
+			String dedupHex = org.zerionproject.core.util.StringUtils
+					.toHexString(env.getDedupId());
+			synchronized (recentlyOpened) {
+				if (recentlyOpened.containsKey(dedupHex)) return;
+			}
 			if (store.isSeen(env.getDedupId())) return;
 			KeyPair prekey = store.resolvePrekey(env.getPrekeyKind(),
 					env.getPrekeyId(), env.getSignedPrekeyId());
@@ -167,7 +195,14 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
 				return;
 			}
-			if (!store.checkAndMarkSeen(env.getDedupId(), expiry)) return;
+			synchronized (recentlyOpened) {
+				recentlyOpened.put(dedupHex, Boolean.TRUE);
+			}
+			if (!listener.knowsSender(m.getSenderIdentitySigPub())) return;
+			if (!store.checkAndMarkSeen(m.getSenderIdentitySigPub(),
+					env.getDedupId(), expiry)) {
+				return;
+			}
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
 			if (accepted && env.getPrekeyKind()

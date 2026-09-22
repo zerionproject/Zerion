@@ -1520,16 +1520,34 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private void incomingReaction(Transaction txn, Message m,
-			BdfDictionary meta) throws DbException, FormatException {
+			BdfDictionary meta) throws DbException, FormatException,
+			InvalidMessageException {
 		GroupId groupId = m.getGroupId();
 		byte[] targetIdBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
 		MessageId targetId = new MessageId(targetIdBytes);
 		String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
 		ContactId contactId = getContactId(txn, groupId);
+		Message target;
+		try {
+			target = db.getMessage(txn, targetId);
+		} catch (NoSuchMessageException e) {
+			throw new InvalidMessageException();
+		}
+		if (!target.getGroupId().equals(groupId)) {
+			throw new InvalidMessageException();
+		}
+		BdfDictionary targetMeta =
+				clientHelper.getMessageMetadataAsDictionary(txn, targetId);
+		long targetType = targetMeta.getLong(MSG_KEY_MSG_TYPE, -1L);
+		if (targetType == MessageTypes.MESSAGE_REACTION
+				|| targetType == MessageTypes.TYPING_INDICATOR) {
+			throw new InvalidMessageException();
+		}
 
 		BdfDictionary query = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE,
-						MessageTypes.MESSAGE_REACTION));
+						MessageTypes.MESSAGE_REACTION),
+				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, targetIdBytes));
 		Map<MessageId, BdfDictionary> existing =
 				clientHelper.getMessageMetadataAsDictionary(
 						txn, groupId, query);
@@ -1824,6 +1842,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				NO_AUTO_DELETE_TIMER);
 		if (ttl != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), ttl);
+			db.startCleanupTimer(txn, m.getId());
 		}
 		String senderName = meta.getOptionalString("groupSenderName");
 		if (senderName == null) senderName = "";

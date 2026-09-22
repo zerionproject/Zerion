@@ -226,6 +226,23 @@ public class ChannelPullProtocolReplayTest {
 		}
 	}
 
+	@Test
+	public void thePublisherAnswersWithOneOrderedBoundedBatch()
+			throws Exception {
+		List<ChannelPost> posts = chain(publisher, 0, 12);
+		List<ChannelPost> shuffled = new ArrayList<>(posts);
+		java.util.Collections.shuffle(shuffled, random);
+		List<ChannelPost> batch = ChannelManagerImpl.nextBatch(shuffled, 2L,
+				4);
+		assertEquals(4, batch.size());
+		for (int i = 0; i < 4; i++) {
+			assertEquals(3L + i, batch.get(i).getSeqNum());
+		}
+		assertEquals(0, ChannelManagerImpl.nextBatch(shuffled, 11L, 4).size());
+		assertEquals(12, ChannelManagerImpl.nextBatch(shuffled, -1L, 100)
+				.size());
+	}
+
 	private ChannelState state(long manifestSeq) {
 		HybridSignaturePublicKey pub =
 				(HybridSignaturePublicKey) publisher.getPublic();

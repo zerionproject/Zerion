@@ -114,6 +114,8 @@ class ChannelPullCodec {
 		return writeDict(d);
 	}
 
+	private static final int MAX_AUTHOR_NAME_CHARS = 64;
+
 	PullResponse decodePullResponse(byte[] data, byte[] channelId)
 			throws IOException {
 		BdfDictionary d = readDict(data);
@@ -170,12 +172,18 @@ class ChannelPullCodec {
 			if (!(o instanceof BdfDictionary)) continue;
 			BdfDictionary cd = (BdfDictionary) o;
 			byte[] cSig = cd.getOptionalRaw("sig");
+			String cBody = cd.getString("body");
+			String cName = cd.getString("name");
+			if (cBody.length() > ChannelConstants.MAX_COMMENT_BODY_CHARS
+					|| cName.length() > MAX_AUTHOR_NAME_CHARS) {
+				throw new FormatException();
+			}
 			comments.add(
 					new org.zerionproject.app.api.channel.ChannelComment(
 							cd.getLong("seq"),
 							cd.getLong("id"),
-							cd.getString("body"),
-							cd.getString("name"),
+							cBody,
+							cName,
 							cd.getRaw("ed"),
 							cd.getRaw("ml"),
 							cd.getLong("ts"),
