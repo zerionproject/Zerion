@@ -90,8 +90,6 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
       - official
     srclibs:
       - reproducible-apk-tools@v0.3.0
-    rm:
-      - libs/gradle-witness.jar
     prebuild: sed -i "/include ':bramble-java'/d" ../settings.gradle
     build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh
     ndk: r27b
