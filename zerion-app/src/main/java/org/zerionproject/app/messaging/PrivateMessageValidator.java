@@ -58,6 +58,7 @@ import static org.zerionproject.app.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_COUNT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_INDEX;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_DATA_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ROOT_HASH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TOTAL_SIZE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
@@ -382,6 +383,7 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT_CHUNK);
 		meta.put(MSG_KEY_CHUNK_INDEX, chunkIndex);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) headerLength);
+		meta.put(MSG_KEY_CHUNK_DATA_LENGTH, chunkDataLength);
 		return new BdfMessageContext(meta);
 	}
 
