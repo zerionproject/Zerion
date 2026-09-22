@@ -64,6 +64,10 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private static final int REQUEST_FILE_PICK = 1003;
+	private static final int REQUEST_EXPORT_PLAIN = 1004;
+
+	@Nullable
+	private VaultItem pendingPlainExport;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -215,13 +219,35 @@ public class VaultDocumentsFragment extends BaseFragment {
 				.setMessage(R.string.vault_document_export_warning_message)
 				.setPositiveButton(R.string.vault_document_export_anyway,
 						(dialog, which) -> {
-					performDocumentExport(item);
+					launchPlainExportPicker(item);
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
-	private void performDocumentExport(VaultItem item) {
+	/**
+	 * The unencrypted copy is written only to a location the user picks in
+	 * the system document picker; nothing is placed in shared storage on
+	 * the app's own initiative.
+	 */
+	private void launchPlainExportPicker(VaultItem item) {
+		pendingPlainExport = item;
+		Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+		intent.addCategory(Intent.CATEGORY_OPENABLE);
+		intent.setType("application/octet-stream");
+		intent.putExtra(Intent.EXTRA_TITLE, new java.io.File(item.name).getName());
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+		try {
+			startActivityForResult(intent, REQUEST_EXPORT_PLAIN);
+		} catch (Exception e) {
+			pendingPlainExport = null;
+			showSnackbar(getString(R.string.vault_no_file_picker));
+		}
+	}
+
+	private void performDocumentExport(VaultItem item, Uri target) {
 		Activity a = getActivity();
 		if (a == null) return;
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
@@ -229,27 +255,19 @@ public class VaultDocumentsFragment extends BaseFragment {
 			public void onContentRetrieved(byte[] content) {
 				new Thread(() -> {
 					try {
-						java.io.File exportDir = new java.io.File(
-								android.os.Environment.getExternalStoragePublicDirectory(
-										android.os.Environment.DIRECTORY_DOWNLOADS),
-								"Zerion"
-						);
-						if (!exportDir.exists()) {
-							exportDir.mkdirs();
+						try (java.io.OutputStream out = a.getContentResolver()
+								.openOutputStream(target, "wt")) {
+							if (out == null) throw new java.io.IOException();
+							out.write(content);
+							out.flush();
+						} finally {
+							java.util.Arrays.fill(content, (byte) 0);
 						}
-
-						java.io.File exportFile = new java.io.File(exportDir, item.name);
-						java.io.FileOutputStream fos = new java.io.FileOutputStream(exportFile);
-						fos.write(content);
-						fos.close();
-
-						java.util.Arrays.fill(content, (byte) 0);
 
 						a.runOnUiThread(() -> {
 							if (isAdded()) {
 								Toast.makeText(a,
-										getString(R.string.vault_document_exported_to,
-												exportFile.getPath()),
+										getString(R.string.vault_document_exported),
 										Toast.LENGTH_LONG).show();
 							}
 						});
@@ -612,6 +630,16 @@ public class VaultDocumentsFragment extends BaseFragment {
 	public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 
+		if (requestCode == REQUEST_EXPORT_PLAIN) {
+			VaultItem item = pendingPlainExport;
+			pendingPlainExport = null;
+			Uri target = data == null ? null : data.getData();
+			if (resultCode == Activity.RESULT_OK && item != null
+					&& target != null) {
+				performDocumentExport(item, target);
+			}
+			return;
+		}
 		if (resultCode == Activity.RESULT_OK && data != null) {
 			if (requestCode == REQUEST_FILE_PICK) {
 				Uri fileUri = data.getData();

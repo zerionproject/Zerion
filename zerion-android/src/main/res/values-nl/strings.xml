@@ -1672,7 +1672,8 @@
 	<string name="vault_document_open_error">Kan document niet openen: activiteit niet gereed</string>
 	<string name="vault_document_details_title">Documentdetails</string>
 	<string name="vault_document_export_warning_title">Beveiligingswaarschuwing</string>
-	<string name="vault_document_export_warning_message">Bij exporteren wordt een ONVERSLEUTELDE kopie opgeslagen in je map Downloads.\n\n• Bestand wordt NIET versleuteld\n• Andere apps hebben er toegang toe\n• Bestand blijft bestaan na export\n\nDoorgaan?</string>
+	<string name="vault_document_export_warning_message">Bij exporteren wordt een ONVERSLEUTELDE kopie opgeslagen op een locatie die je hierna kiest.\n\n• Bestand wordt NIET versleuteld\n• Andere apps hebben er toegang toe\n• Bestand blijft bestaan na export\n\nDoorgaan?</string>
+	<string name="vault_document_exported">Document geëxporteerd</string>
 	<string name="vault_document_export_anyway">Toch exporteren</string>
 	<string name="vault_document_exported_to">Document geëxporteerd naar: %1$s</string>
 	<string name="vault_document_export_failed">Exporteren van document mislukt</string>

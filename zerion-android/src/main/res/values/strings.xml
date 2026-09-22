@@ -1891,7 +1891,8 @@
 	<string name="vault_document_open_error">Cannot open document: activity not ready</string>
 	<string name="vault_document_details_title">Document details</string>
 	<string name="vault_document_export_warning_title">Security warning</string>
-	<string name="vault_document_export_warning_message">Exporting will save an UNENCRYPTED copy to your Downloads folder.\n\n• File will NOT be encrypted\n• Other apps can access it\n• File persists after export\n\nContinue?</string>
+	<string name="vault_document_export_warning_message">Exporting saves an UNENCRYPTED copy to a location you choose next.\n\n• File will NOT be encrypted\n• Other apps can access it\n• File persists after export\n\nContinue?</string>
+	<string name="vault_document_exported">Document exported</string>
 	<string name="vault_document_export_anyway">Export anyway</string>
 	<string name="vault_document_exported_to">Document exported to: %1$s</string>
 	<string name="vault_document_export_failed">Failed to export document</string>
