@@ -122,10 +122,60 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
-## Accepted hashes (clean rebuild with the history patch, 2026-09-21)
+## Accepted hashes (clean rebuild with the gated shim, 2026-09-22)
 
-These are the values the Gradle gate enforces since the transaction history
-race fix (JNI-01). `build-monero-android.sh` gained a second documented
+These are the values the Gradle gate enforces since the JNI shim gained
+wallet-level synchronisation and the remaining shim findings of the 3.0.11
+assessment were fixed (JNI-02, JNI-03, JNI-04, JNI-06 and the asynchronous
+rescan used by XMR-10). Only `jni/zmonero.cpp` changed; the build script,
+its two documented patches, the dependency set and the Monero commit are
+unchanged. Produced by `docker build -t zerion-monero-build:r3 .` from this
+directory and one fresh container per ABI, each from an empty `/build`.
+
+What the shim now does:
+
+- Wallet-level synchronisation (JNI-04). Everything the Java side polls
+  (balances, scanned height, subaddress count, transaction history) is
+  mutated by the wallet API's refresh thread with no lock a caller could
+  take. The API serialises its own refresh passes on
+  `WalletImpl::m_refreshMutex2`; the shim uses that mutex as the wallet
+  gate. A read that can take it reads live state with no refresh in flight
+  and refreshes the shim's snapshot; a read that cannot is served from the
+  snapshot the refresh thread itself keeps through a `WalletListener`
+  installed at open, whose callbacks run on the refresh thread between
+  blocks, where the state is consistent (figures every 100 blocks or once a
+  second, plus on every money event, and figures and history at the end of
+  each pass). `init`, `store`, subaddress creation, the refresh-from height
+  and transaction creation take the gate or fail closed (the Java side
+  quiesces the refresh thread before each of them, so in practice the gate
+  is free); relay takes it unconditionally. The wallet's own
+  `TransactionHistory` is therefore rebuilt only under the gate, on either
+  thread, which also excludes the JNI-01 race structurally; the build
+  script's history patch stays as a second line.
+- Logging is silenced in `JNI_OnLoad`, before any address validator can run
+  (JNI-06); the validators silence again explicitly. `wallet2::get_seed`
+  prints to stdout only for a non-deterministic wallet, which Zerion never
+  creates, and never prints the seed.
+- A persisting close stores under the gate, always frees the wallet
+  (closing without a store and deleting it directly if the API's close
+  fails), and reports whether the cache was written (JNI-03).
+- The trusted-daemon flag is applied after `init`, which otherwise
+  overrides it from loopback detection, and can be read back (JNI-02).
+- `nRescanBlockchain` hands the rescan to the refresh thread instead of
+  running it on the caller.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `62471e48ce317f26f6acfc1e55cfcc764f7e121b0202dce7a6aaff1e87085b86`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `07296eaee22a6541ea2787c3f6adc01fd2ec0d4685971c92bea93f21752abe36`**
+
+They supersede `d02388a8…` / `79e72e60…` (history patch build), listed
+below for the record.
+
+## Previous hashes (clean rebuild with the history patch, 2026-09-21)
+
+These were the values the Gradle gate enforced after the transaction
+history race fix (JNI-01). `build-monero-android.sh` gained a second documented
 patch: the wallet API refresh thread no longer refreshes the transaction
 history when it finds it empty (`WalletImpl::doRefresh` in
 `src/wallet/api/wallet.cpp`), because the JNI shim refreshes and reads the
