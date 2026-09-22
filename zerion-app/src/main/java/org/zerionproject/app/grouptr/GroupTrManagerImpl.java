@@ -1079,10 +1079,55 @@ class GroupTrManagerImpl
 		}
 	}
 
-	private static final long INVITE_OFFER_MAX_AGE_MS =
+	static final long INVITE_OFFER_MAX_AGE_MS =
 			7L * 24L * 60L * 60L * 1000L;
-	private static final long INVITE_OFFER_FUTURE_SKEW_MS =
+	static final long INVITE_OFFER_FUTURE_SKEW_MS =
 			5L * 60L * 1000L;
+
+	/**
+	 * An offer is considered only while it is neither stale nor from the
+	 * future. Compared without subtraction on the untrusted value, so an
+	 * extreme timestamp cannot wrap the age check.
+	 */
+	static boolean inviteOfferTimely(long now, long inviteTs) {
+		if (inviteTs < 0) return false;
+		if (inviteTs > now + INVITE_OFFER_FUTURE_SKEW_MS) return false;
+		return inviteTs >= now - INVITE_OFFER_MAX_AGE_MS;
+	}
+
+	/**
+	 * Whether an invite offer is considered at all, before its signature is
+	 * checked: it must come from the contact it names as creator, we must
+	 * not already be a member of a live group under that id, no offer for
+	 * that id may already be pending, and the group id must be the one
+	 * derived from the offer's own creator, name and salt.
+	 */
+	static boolean inviteOfferAdmissible(@Nullable byte[] senderPubKey,
+			byte[] creatorPubKey, @Nullable GroupTrState existing,
+			byte[] selfPubKey, boolean offerAlreadyPending,
+			byte[] derivedGroupId, byte[] groupId) {
+		if (senderPubKey == null
+				|| !Arrays.equals(senderPubKey, creatorPubKey)) return false;
+		if (existing != null && !existing.isDissolved()) {
+			for (GroupTrMember m : existing.getMembers()) {
+				if (Arrays.equals(m.getPubKey(), selfPubKey)) return false;
+			}
+		}
+		if (offerAlreadyPending) return false;
+		return Arrays.equals(derivedGroupId, groupId);
+	}
+
+	/**
+	 * An accept or decline is considered only from the contact the invite was
+	 * sent to, identified by the key recorded when the invite left, and only
+	 * for a group we still hold.
+	 */
+	static boolean inviteResponseAdmissible(@Nullable byte[] invitedPubKey,
+			@Nullable byte[] responderPubKey, @Nullable GroupTrState group) {
+		if (invitedPubKey == null || responderPubKey == null) return false;
+		if (!Arrays.equals(responderPubKey, invitedPubKey)) return false;
+		return group != null;
+	}
 
 	private void handleGrouptrInviteOffer(
 			org.zerionproject.app.api.messaging.event
@@ -1090,29 +1135,20 @@ class GroupTrManagerImpl
 		byte[] grouptrGid = ev.getGrouptrGroupId();
 		byte[] creatorPub = ev.getCreatorPubKey();
 		try {
-			long now = clock.currentTimeMillis();
-			long inviteTs = ev.getInviteTimestamp();
-			if (inviteTs > now + INVITE_OFFER_FUTURE_SKEW_MS) return;
-			if (now - inviteTs > INVITE_OFFER_MAX_AGE_MS) return;
+			if (!inviteOfferTimely(clock.currentTimeMillis(),
+					ev.getInviteTimestamp())) return;
 			byte[] senderPub = lookupSenderPubKey(ev.getContactId());
 			if (senderPub == null
 					|| !Arrays.equals(senderPub, creatorPub)) return;
 			GroupTrState existing = getGroup(grouptrGid);
-			if (existing != null && !existing.isDissolved()) {
-				LocalAuthor laCheck = db.transactionWithResult(true,
-						identityManager::getLocalAuthor);
-				byte[] selfPub = laCheck.getPublicKey().getEncoded();
-				for (GroupTrMember m : existing.getMembers()) {
-					if (Arrays.equals(m.getPubKey(), selfPub)) return;
-				}
-			}
-			if (loadInviteReceived(grouptrGid) != null) return;
 			LocalAuthor la = db.transactionWithResult(true,
 					identityManager::getLocalAuthor);
 			byte[] localPub = la.getPublicKey().getEncoded();
 			byte[] derived = deriveGroupId(ev.getCreatorName(), creatorPub,
 					ev.getGroupName(), ev.getSalt());
-			if (!Arrays.equals(derived, grouptrGid)) return;
+			if (!inviteOfferAdmissible(senderPub, creatorPub, existing,
+					localPub, loadInviteReceived(grouptrGid) != null,
+					derived, grouptrGid)) return;
 			byte[] signed = offerSignedInputBound(grouptrGid, creatorPub,
 					localPub, ev.getInviteTimestamp(), ev.getGroupName(),
 					ev.getSalt(), ev.getCreatorName());
@@ -1135,15 +1171,15 @@ class GroupTrManagerImpl
 		PendingInviteSent pis = loadInviteSent(grouptrGid, contactId);
 		if (pis == null) return;
 		byte[] responderPub = lookupSenderPubKey(contactId);
-		if (responderPub == null
-				|| !Arrays.equals(responderPub, pis.contactPubKey)) return;
 		GroupTrState s;
 		try {
 			s = getGroup(grouptrGid);
 		} catch (DbException ex) {
 			return;
 		}
-		if (s == null) return;
+		if (!inviteResponseAdmissible(pis.contactPubKey, responderPub, s)) {
+			return;
+		}
 		byte[] signed = offerSignedInputBound(grouptrGid, responderPub,
 				s.getCreatorPubKey(), ev.getInviteTimestamp(),
 				s.getName(), s.getSalt(), s.getCreatorName());

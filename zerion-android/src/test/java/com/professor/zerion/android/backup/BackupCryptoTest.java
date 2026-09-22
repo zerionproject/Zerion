@@ -89,6 +89,32 @@ public class BackupCryptoTest {
 	}
 
 	@Test
+	public void aBundleWithAnUnknownFormatVersionIsRefused() {
+		BackupBundle bundle = new BackupBundle("Alice", new byte[32],
+				new byte[16], null);
+		byte[] bytes = bundle.toBytes();
+		for (int version : new int[] {0, 2, -1, 0x7FFFFFFF}) {
+			byte[] edited = bytes.clone();
+			edited[0] = (byte) (version >>> 24);
+			edited[1] = (byte) (version >>> 16);
+			edited[2] = (byte) (version >>> 8);
+			edited[3] = (byte) version;
+			try {
+				BackupBundle.fromBytes(edited);
+				fail("expected UNSUPPORTED_VERSION for " + version);
+			} catch (BackupException e) {
+				assertEquals(UNSUPPORTED_VERSION, e.reason);
+			}
+		}
+		try {
+			BackupBundle.fromBytes(Arrays.copyOf(bytes, bytes.length - 3));
+			fail("expected CORRUPT");
+		} catch (BackupException e) {
+			assertEquals(CORRUPT, e.reason);
+		}
+	}
+
+	@Test
 	public void rejectsNonBackupBytes() {
 		BackupCrypto crypto = new BackupCrypto();
 		try {
