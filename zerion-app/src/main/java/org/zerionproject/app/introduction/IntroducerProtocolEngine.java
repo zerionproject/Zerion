@@ -257,7 +257,8 @@ class IntroducerProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-				m.getTransportProperties(), false, m.getMlDsaPubKey());
+				m.getTransportProperties(), false, m.getMlDsaPubKey(),
+				m.getMlKemEphemeralPublicKey());
 		IntroducerState state = AWAIT_AUTHS;
 		Introducee introduceeA, introduceeB;
 		Author sender, other;
@@ -304,7 +305,8 @@ class IntroducerProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
-				m.getTransportProperties(), false, m.getMlDsaPubKey());
+				m.getTransportProperties(), false, m.getMlDsaPubKey(),
+				m.getMlKemEphemeralPublicKey());
 
 		Introducee introduceeA, introduceeB;
 		Author sender, other;
@@ -422,7 +424,7 @@ class IntroducerProtocolEngine
 		Introducee i = getOtherIntroducee(s, m.getGroupId());
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
 		Message sent = sendAuthMessage(txn, i, localTimestamp, m.getMac(),
-				m.getSignature());
+				m.getSignature(), m.getKemCiphertext());
 		IntroducerState state = AWAIT_ACTIVATES;
 		Introducee introduceeA, introduceeB;
 		if (senderIsAlice) {

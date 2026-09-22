@@ -120,23 +120,13 @@ class IntroductionValidator extends BdfMessageValidator {
 		clientHelper
 				.parseAndValidateTransportPropertiesMap(transportProperties);
 
-		long timer = NO_AUTO_DELETE_TIMER;
-		if (body.size() >= 7) {
-			timer = validateAutoDeleteTimer(body.getOptionalLong(6));
-		}
-		if (body.size() >= 8) {
-			byte[] mlDsaPubKey = body.getOptionalRaw(7);
-			if (mlDsaPubKey != null) {
-				checkLength(mlDsaPubKey, ML_DSA_65_PUBLIC_KEY_BYTES);
-			}
-		}
-		if (body.size() == 9) {
-			byte[] mlKemEphemeralPublicKey = body.getOptionalRaw(8);
-			if (mlKemEphemeralPublicKey != null) {
-				checkLength(mlKemEphemeralPublicKey,
-						INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
-			}
-		}
+		checkSize(body, 9);
+		long timer = validateAutoDeleteTimer(body.getOptionalLong(6));
+		byte[] mlDsaPubKey = body.getRaw(7);
+		checkLength(mlDsaPubKey, ML_DSA_65_PUBLIC_KEY_BYTES);
+		byte[] mlKemEphemeralPublicKey = body.getRaw(8);
+		checkLength(mlKemEphemeralPublicKey,
+				INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
 		BdfDictionary meta = messageEncoder.encodeMetadata(ACCEPT, sessionId,
@@ -177,7 +167,7 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAuthMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 5, 6);
+		checkSize(body, 6);
 
 		byte[] sessionIdBytes = body.getRaw(1);
 		checkLength(sessionIdBytes, UniqueId.LENGTH);
@@ -192,12 +182,8 @@ class IntroductionValidator extends BdfMessageValidator {
 		checkLength(signature, 1, Math.max(MAX_SIGNATURE_BYTES,
 				HYBRID_SIGNATURE_BYTES));
 
-		if (body.size() == 6) {
-			byte[] kemCiphertext = body.getOptionalRaw(5);
-			if (kemCiphertext != null) {
-				checkLength(kemCiphertext, INTRODUCTION_KEM_CIPHERTEXT_BYTES);
-			}
-		}
+		byte[] kemCiphertext = body.getRaw(5);
+		checkLength(kemCiphertext, INTRODUCTION_KEM_CIPHERTEXT_BYTES);
 
 		SessionId sessionId = new SessionId(sessionIdBytes);
 		BdfDictionary meta = messageEncoder.encodeMetadata(AUTH, sessionId,

@@ -111,6 +111,15 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 	private final byte[] remoteMac = getRandomBytes(MAC_BYTES);
 	private final byte[] localMac = getRandomBytes(MAC_BYTES);
 	private final byte[] remoteSignature = getRandomBytes(MAX_SIGNATURE_BYTES);
+	private final byte[] localMlKemPriv = getRandomBytes(32);
+	private final byte[] ownKemSecret = getRandomBytes(32);
+	private final byte[] peerKemSecret = getRandomBytes(32);
+	private final byte[] kemCiphertext = getRandomBytes(
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_KEM_CIPHERTEXT_BYTES);
+	private final SecretKey peerPreMasterKey = getSecretKey();
+	private final SecretKey peerMacKey = getSecretKey();
+	private final SecretKey finalMasterKey = getSecretKey();
 
 	private final IntroduceeProtocolEngine engine =
 			new IntroduceeProtocolEngine(db, clientHelper, contactManager,
@@ -130,7 +139,7 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 
 		AuthMessage authMessage = new AuthMessage(new MessageId(getRandomId()),
 				contactGroupId, remoteAuthTimestamp, lastRemoteMessageId,
-				sessionId, remoteMac, remoteSignature);
+				sessionId, remoteMac, remoteSignature, kemCiphertext);
 
 		Message activateMessage = getMessage(contactGroupId, 1234, now);
 		BdfDictionary activateMeta = new BdfDictionary();
@@ -139,20 +148,34 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 
 			oneOf(identityManager).getLocalAuthor(txn);
 			will(returnValue(localIntroducee));
-			oneOf(crypto).verifyAuthMac(remoteMac, session,
-					localIntroducee.getId());
-			oneOf(crypto).verifySignature(remoteSignature, session);
+			oneOf(crypto).decapsulateMlKem(localMlKemPriv, kemCiphertext);
+			will(returnValue(peerKemSecret));
+			oneOf(crypto).derivePreMasterKey(session, peerKemSecret);
+			will(returnValue(peerPreMasterKey));
+			oneOf(crypto).deriveMacKey(peerPreMasterKey, !alice);
+			will(returnValue(peerMacKey));
+			oneOf(crypto).verifyAuthMacWithKey(remoteMac, session,
+					localIntroducee.getId(), peerMacKey);
+			oneOf(crypto).verifySignatureWithKey(remoteSignature, session,
+					peerMacKey);
+			oneOf(crypto).deriveFinalMasterKey(session,
+					alice ? ownKemSecret : peerKemSecret,
+					alice ? peerKemSecret : ownKemSecret);
+			will(returnValue(finalMasterKey));
 
-			oneOf(contactManager).addContact(txn, remoteIntroducee,
-					localIntroducee.getId(), masterKey, false, (byte[]) null);
+			oneOf(contactManager).addContact(with(txn), with(remoteIntroducee),
+					with(localIntroducee.getId()),
+					with(any(SecretKey.class)), with(false),
+					with(aNull(byte[].class)));
 			will(returnValue(contactId));
-			oneOf(keyManager).addRotationKeys(txn, contactId, masterKey,
-					remoteAcceptTimestamp, alice, false);
+			oneOf(keyManager).addRotationKeys(with(txn), with(contactId),
+					with(any(SecretKey.class)), with(remoteAcceptTimestamp),
+					with(alice), with(false));
 			will(returnValue(emptyMap()));
 			oneOf(transportPropertyManager).addRemoteProperties(txn, contactId,
 					emptyMap());
 
-			oneOf(crypto).activateMac(session);
+			oneOf(crypto).activateMac(with(any(IntroduceeSession.class)));
 			will(returnValue(localMac));
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
@@ -197,7 +220,7 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 
 		AuthMessage authMessage = new AuthMessage(new MessageId(getRandomId()),
 				contactGroupId, remoteAuthTimestamp, lastRemoteMessageId,
-				sessionId, remoteMac, remoteSignature);
+				sessionId, remoteMac, remoteSignature, kemCiphertext);
 
 		BdfDictionary query = new BdfDictionary();
 		Message abortMessage = getMessage(contactGroupId, 123, now);
@@ -207,9 +230,20 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 
 			oneOf(identityManager).getLocalAuthor(txn);
 			will(returnValue(localIntroducee));
-			oneOf(crypto).verifyAuthMac(remoteMac, session,
-					localIntroducee.getId());
-			oneOf(crypto).verifySignature(remoteSignature, session);
+			oneOf(crypto).decapsulateMlKem(localMlKemPriv, kemCiphertext);
+			will(returnValue(peerKemSecret));
+			oneOf(crypto).derivePreMasterKey(session, peerKemSecret);
+			will(returnValue(peerPreMasterKey));
+			oneOf(crypto).deriveMacKey(peerPreMasterKey, !alice);
+			will(returnValue(peerMacKey));
+			oneOf(crypto).verifyAuthMacWithKey(remoteMac, session,
+					localIntroducee.getId(), peerMacKey);
+			oneOf(crypto).verifySignatureWithKey(remoteSignature, session,
+					peerMacKey);
+			oneOf(crypto).deriveFinalMasterKey(session,
+					alice ? ownKemSecret : peerKemSecret,
+					alice ? peerKemSecret : ownKemSecret);
+			will(returnValue(finalMasterKey));
 
 			oneOf(messageParser).getRequestsAvailableToAnswerQuery(sessionId);
 			will(returnValue(query));
@@ -247,12 +281,49 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		assertNull(afterRemote.macKey);
 	}
 
+	/** PROTO-12: an AUTH without the KEM ciphertext aborts the session. */
+	@Test
+	public void testAuthWithoutKemCiphertextAbortsSession() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		IntroduceeSession session =
+				createAwaitAuthSession(MIN_REASONABLE_TIME_MS);
+		AuthMessage classical = new AuthMessage(new MessageId(getRandomId()),
+				contactGroupId, remoteAuthTimestamp, lastRemoteMessageId,
+				sessionId, remoteMac, remoteSignature);
+		BdfDictionary query = new BdfDictionary();
+		Message abortMessage = getMessage(contactGroupId, 123, now);
+		BdfDictionary abortMeta = new BdfDictionary();
+		context.checking(new Expectations() {{
+			oneOf(identityManager).getLocalAuthor(txn);
+			will(returnValue(localIntroducee));
+			oneOf(messageParser).getRequestsAvailableToAnswerQuery(sessionId);
+			will(returnValue(query));
+			oneOf(clientHelper).getMessageIds(txn, contactGroupId, query);
+			will(returnValue(emptyList()));
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(now));
+			oneOf(messageEncoder).encodeAbortMessage(contactGroupId, now,
+					lastLocalMessageId, sessionId);
+			will(returnValue(abortMessage));
+			oneOf(messageEncoder).encodeMetadata(ABORT, sessionId, now,
+					true, true, false, NO_AUTO_DELETE_TIMER, false);
+			will(returnValue(abortMeta));
+			oneOf(clientHelper).addLocalMessage(txn, abortMessage, abortMeta,
+					true, false);
+		}});
+		IntroduceeSession after =
+				engine.onAuthMessage(txn, session, classical);
+		assertEquals(START, after.getState());
+		assertNull(after.getMasterKey());
+	}
+
 	private IntroduceeSession createAwaitAuthSession(
 			long remoteAcceptTimestamp) {
 		IntroduceeSession.Local local = new IntroduceeSession.Local(alice,
 				lastLocalMessageId, localAcceptTimestamp, localPublicKey,
 				localPrivateKey, emptyMap(), localAcceptTimestamp,
-				localMacKey.getBytes(), null);
+				localMacKey.getBytes(), null, null, localMlKemPriv,
+				ownKemSecret);
 		IntroduceeSession.Remote remote = new IntroduceeSession.Remote(!alice,
 				remoteIntroducee, lastRemoteMessageId, remotePublicKey,
 				emptyMap(), remoteAcceptTimestamp, remoteMacKey.getBytes(),

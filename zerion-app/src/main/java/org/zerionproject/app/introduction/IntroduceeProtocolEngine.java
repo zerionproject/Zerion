@@ -374,6 +374,7 @@ class IntroduceeProtocolEngine
 		boolean hybrid = INTRODUCTION_HYBRID_KEM_ENABLED
 				&& s.getRemote().mlKemEphemeralPublicKey != null
 				&& s.getLocal().mlKemEphemeralPrivateKey != null;
+		if (!hybrid) return abort(txn, s, s.getLastRemoteMessageId());
 		try {
 			if (hybrid) {
 				byte[][] encap = crypto.encapsulateMlKem(
@@ -414,6 +415,7 @@ class IntroduceeProtocolEngine
 				&& m.getKemCiphertext() != null
 				&& s.getLocal().mlKemEphemeralPrivateKey != null
 				&& s.getLocal().ownKemSecret != null;
+		if (!hybrid) return abort(txn, s, m.getMessageId());
 		try {
 			if (hybrid) {
 				byte[] peerKemSecret = crypto.decapsulateMlKem(
