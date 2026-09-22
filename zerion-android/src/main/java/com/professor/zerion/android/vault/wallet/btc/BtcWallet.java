@@ -39,8 +39,17 @@ public class BtcWallet {
 		return lastReceiveUsed;
 	}
 	private static final long DUST = 294L;
-	private static final double MIN_FEE_RATE = 2.0;
-	private static final double MAX_FEE_RATE = 1000.0;
+	static final double MIN_FEE_RATE = 2.0;
+	/**
+	 * The highest rate a server estimate or a caller may set. A hostile
+	 * server used to be able to push every option to 1000 sat/vB; the
+	 * ceiling now sits at the top of what a congested mempool has ever
+	 * needed, and the review shows the effective rate and the fee's share
+	 * of the amount so that an excessive suggestion is visible.
+	 */
+	static final double MAX_FEE_RATE = 200.0;
+	/** Above this share of the amount the review flags the fee as high. */
+	public static final int HIGH_FEE_PERCENT = 20;
 	private static final long PENDING_GRACE_MS = 30L * 60L * 1000L;
 	private static final long SENT_VISIBILITY_MS = 2L * 60L * 60L * 1000L;
 	private static final int PENDING_FAIL_MISSES = 3;
@@ -509,14 +518,24 @@ public class BtcWallet {
 
 	static double rateFor(ElectrumRpc c, int blocks) throws IOException {
 		double btcPerKb = c.estimateFeeBtcPerKb(blocks);
-		double rate = btcPerKb * 1e8 / 1000.0;
-		if (rate < MIN_FEE_RATE) {
-			rate = MIN_FEE_RATE;
-		}
-		if (rate > MAX_FEE_RATE) {
-			rate = MAX_FEE_RATE;
-		}
+		return sanitizeRate(btcPerKb * 1e8 / 1000.0);
+	}
+
+	/**
+	 * Clamps a fee rate into the accepted range. A value that is not a
+	 * finite number (a server can answer NaN, which no ordinary comparison
+	 * rejects) counts as unknown and takes the floor; an infinite or
+	 * excessive value takes the ceiling.
+	 */
+	static double sanitizeRate(double rate) {
+		if (!(rate >= MIN_FEE_RATE)) return MIN_FEE_RATE;
+		if (rate > MAX_FEE_RATE) return MAX_FEE_RATE;
 		return rate;
+	}
+
+	/** The fee no plan may go below for its size. */
+	static long minimumFeeSat(int vbytes) {
+		return (long) Math.ceil(vbytes * MIN_FEE_RATE);
 	}
 
 	public List<TxSummary> history(ScanResult scan) throws IOException {
@@ -702,6 +721,8 @@ public class BtcWallet {
 		public final boolean sweep;
 		public final List<String> outpoints;
 		public final String fingerprint;
+		/** The estimated size the fee was computed for. */
+		public final int vbytes;
 		final List<BtcTx.Input> inputs;
 		final List<BtcTx.Output> outputs;
 		final List<PrivacyMeta> inputMetas;
@@ -716,7 +737,7 @@ public class BtcWallet {
 				List<BtcTx.Input> inputs, List<BtcTx.Output> outputs,
 				List<PrivacyMeta> inputMetas, boolean hasChange,
 				@Nullable String changeCluster, Set<String> reusedOutpoints,
-				boolean manual) {
+				boolean manual, int vbytes) {
 			this.toAddress = toAddress;
 			this.amountSat = amountSat;
 			this.feeSat = feeSat;
@@ -731,6 +752,19 @@ public class BtcWallet {
 			this.changeCluster = changeCluster;
 			this.reusedOutpoints = reusedOutpoints;
 			this.manual = manual;
+			this.vbytes = vbytes;
+		}
+
+		/** The effective fee rate of this plan in sat/vB. */
+		public double feeRateSatPerVb() {
+			return vbytes <= 0 ? 0 : (double) feeSat / vbytes;
+		}
+
+		/** The fee as a percentage of the amount, or 0 for a sweep. */
+		public int feePercentOfAmount() {
+			if (sweep || amountSat <= 0) return 0;
+			return (int) Math.min(Integer.MAX_VALUE,
+					feeSat * 100L / amountSat);
 		}
 	}
 
@@ -766,7 +800,7 @@ public class BtcWallet {
 		if (!BtcKeys.isValidAddress(toAddress)) {
 			throw new IOException("Not a valid Bitcoin address");
 		}
-		double rate = Math.max(feeRate, 1.0);
+		double rate = sanitizeRate(feeRate);
 		List<OwnedUtxo> sorted =
 				orderedCandidates(scan.utxos, amountSat, manualOutpoints);
 
@@ -848,6 +882,10 @@ public class BtcWallet {
 			}
 		}
 
+		int planVBytes = BtcTx.estimateVBytes(inputs.size(), outputs.size());
+		if (feeSat < minimumFeeSat(planVBytes)) {
+			throw new IOException("Fee below the relay minimum");
+		}
 		List<String> outpoints = new ArrayList<>();
 		for (BtcTx.Input in : inputs) {
 			outpoints.add(in.txHash + ":" + in.txPos);
@@ -887,7 +925,7 @@ public class BtcWallet {
 
 		return new SendPlan(toAddress, externalSat, feeSat, netSat, sweep,
 				outpoints, fingerprint, inputs, outputs, inputMetas, hasChange,
-				changeCluster, reused, manual);
+				changeCluster, reused, manual, planVBytes);
 	}
 
 	public com.professor.zerion.android.vault.wallet.btc.privacy
@@ -1097,7 +1135,7 @@ public class BtcWallet {
 		java.math.BigInteger spendPriv =
 				BtcKeys.silentSpendPriv(mnemonic, account);
 		java.math.BigInteger curveN = org.bitcoinj.core.ECKey.CURVE.getN();
-		double rate = Math.max(feeRate, 1.0);
+		double rate = sanitizeRate(feeRate);
 		List<String> outpoints = new ArrayList<>();
 		try (ElectrumRpc c = openScan()) {
 			List<BtcTx.TaprootInput> inputs = new ArrayList<>();

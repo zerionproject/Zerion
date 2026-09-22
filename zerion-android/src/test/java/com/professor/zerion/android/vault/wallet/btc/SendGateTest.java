@@ -16,7 +16,7 @@ public class SendGateTest {
 		return new BtcWallet.SendPlan("bc1qdest", 100, 10, -110, false,
 				Arrays.asList("t:0"), fp, new ArrayList<>(), new ArrayList<>(),
 				new ArrayList<>(), false, null, new java.util.HashSet<>(),
-				false);
+				false, 110);
 	}
 
 	@Test

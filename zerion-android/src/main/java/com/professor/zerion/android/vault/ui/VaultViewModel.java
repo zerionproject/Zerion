@@ -1962,6 +1962,8 @@ public class VaultViewModel extends AndroidViewModel {
 		public final long feeSat;
 		public final boolean sweep;
 		public final String fingerprint;
+		public final double feeRateSatPerVb;
+		public final int feePercentOfAmount;
 		public final com.professor.zerion.android.vault.wallet.btc.privacy
 				.PrivacyAnalyzer.Analysis analysis;
 
@@ -1973,6 +1975,8 @@ public class VaultViewModel extends AndroidViewModel {
 			this.feeSat = p.feeSat;
 			this.sweep = p.sweep;
 			this.fingerprint = p.fingerprint;
+			this.feeRateSatPerVb = p.feeRateSatPerVb();
+			this.feePercentOfAmount = p.feePercentOfAmount();
 			this.analysis = analysis;
 		}
 	}

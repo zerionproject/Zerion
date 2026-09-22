@@ -2237,6 +2237,8 @@
 	<string name="wallet_password_confirm_hint">Confirm password</string>
 	<string name="wallet_password_mismatch">Passwords do not match</string>
 	<string name="wallet_send_fee_label">Network fee</string>
+	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% of the amount</string>
+	<string name="wallet_send_fee_high_warning">High fee: %1$d%% of the amount. A node can suggest excessive rates; choose a lower rate if this is unexpected.</string>
 	<string name="wallet_fee_economy">Economy</string>
 	<string name="wallet_fee_normal">Normal</string>
 	<string name="wallet_fee_priority">Priority</string>

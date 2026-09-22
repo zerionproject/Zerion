@@ -67,10 +67,10 @@ public class BtcCoinSelectionTest {
 	public void dustChangeIsDroppedToFee() throws IOException {
 		FakeElectrum e = new FakeElectrum();
 		long amount = 50000;
-		long fee = BtcTx.estimateVBytes(1, 2);
+		long fee = 2 * BtcTx.estimateVBytes(1, 2);
 		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0,
 				amount + fee + 100);
-		wallet(e).send(DEST, amount, 1.0, false);
+		wallet(e).send(DEST, amount, 2.0, false);
 		Transaction tx = lastTx(e);
 		assertEquals(1, tx.getOutputs().size());
 		assertEquals(amount, tx.getOutput(0).getValue().value);
@@ -81,11 +81,11 @@ public class BtcCoinSelectionTest {
 		FakeElectrum e = new FakeElectrum();
 		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 40000);
 		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 60000);
-		wallet(e).send(DEST, 0, 1.0, true);
+		wallet(e).send(DEST, 0, 2.0, true);
 		Transaction tx = lastTx(e);
 		assertEquals(2, tx.getInputs().size());
 		assertEquals(1, tx.getOutputs().size());
-		long fee = BtcTx.estimateVBytes(2, 1);
+		long fee = 2 * BtcTx.estimateVBytes(2, 1);
 		assertEquals(100000L - fee, tx.getOutput(0).getValue().value);
 	}
 

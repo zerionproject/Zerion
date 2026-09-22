@@ -1281,12 +1281,26 @@ public class VaultWalletFragment extends BaseFragment {
 		TextView summary = new TextView(ctx);
 		String amountLine = review.sweep ? getString(R.string.wallet_send_all)
 				: formatBtc(review.amountSat);
+		String rateText = String.format(java.util.Locale.US, "%.1f",
+				review.feeRateSatPerVb);
+		String feeDetail = review.sweep
+				? getString(R.string.wallet_send_fee, rateText)
+				: getString(R.string.wallet_send_fee_rate_detail, rateText,
+						review.feePercentOfAmount);
+		String highFee = !review.sweep && review.feePercentOfAmount
+				>= com.professor.zerion.android.vault.wallet.btc.BtcWallet
+				.HIGH_FEE_PERCENT
+				? getString(R.string.wallet_send_fee_high_warning,
+						review.feePercentOfAmount) + "\n\n"
+				: "";
 		summary.setText(getString(R.string.wallet_send_to) + ":\n"
 				+ review.toAddress + "\n\n"
 				+ getString(R.string.wallet_send_amount_label) + ":  "
 				+ amountLine + "\n"
 				+ getString(R.string.wallet_send_fee_label) + ":  "
-				+ review.feeSat + " sats\n\n"
+				+ formatBtc(review.feeSat) + " (" + review.feeSat + " sat, "
+				+ feeDetail + ")\n\n"
+				+ highFee
 				+ getString(R.string.wallet_auth_send_message));
 		summary.setTextColor(colorRes(R.color.zerion_text_primary));
 		summary.setTextSize(13);

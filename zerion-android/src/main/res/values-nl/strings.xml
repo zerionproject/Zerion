@@ -1822,6 +1822,8 @@
 	<string name="wallet_password_confirm_hint">Wachtwoord bevestigen</string>
 	<string name="wallet_password_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="wallet_send_fee_label">Netwerkkosten</string>
+	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% van het bedrag</string>
+	<string name="wallet_send_fee_high_warning">Hoge kosten: %1$d%% van het bedrag. Een node kan te hoge tarieven voorstellen; kies een lager tarief als dit onverwacht is.</string>
 	<string name="wallet_fee_economy">Zuinig</string>
 	<string name="wallet_fee_normal">Normaal</string>
 	<string name="wallet_fee_priority">Prioriteit</string>
