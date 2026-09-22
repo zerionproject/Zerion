@@ -2,6 +2,7 @@ package org.zerionproject.core.crypto;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.crypto.async.AsyncEnvelope;
 import org.zerionproject.core.crypto.async.AsyncMeshDelivery;
 import org.zerionproject.core.crypto.async.AsyncPrekeyBundle;
 import org.zerionproject.core.crypto.async.AsyncPrekeyStore;
@@ -18,6 +19,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -153,9 +155,61 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(0, r.opened.size());
 	}
 
+	/**
+	 * CRY-08: an envelope sealed to the reusable signed prekey must stay
+	 * rejected after the seen-set has been filled past its bound by newer
+	 * envelopes. Eviction raises the floor to the evicted expiry, so the
+	 * old envelope is refused whether or not it is still remembered.
+	 */
+	@Test
+	public void replayAfterSeenSetEvictionIsStillRejected() throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 4);
+		long now = System.currentTimeMillis();
+		byte[] old = sealTo(r, "old".getBytes(), 600L, now, false);
+		r.delivery.onFrame(old);
+		assertEquals(1, r.opened.size());
+
+		for (int i = 0; i < 6; i++) {
+			r.delivery.onFrame(sealTo(r, ("newer " + i).getBytes(),
+					3600L + i, now, false));
+		}
+		assertEquals(7, r.opened.size());
+		assertFalse("the old envelope must have been evicted",
+				r.store.isSeen(AsyncEnvelope.decode(old).getDedupId()));
+
+		r.delivery.onFrame(old);
+		assertEquals("evicted envelope replayed", 7, r.opened.size());
+	}
+
+	/**
+	 * CRY-08: the floor refuses only what expires at or before the oldest
+	 * evicted entry; a fresh envelope expiring later still opens.
+	 */
+	@Test
+	public void envelopesAboveTheFloorStillOpenAfterEviction()
+			throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 2);
+		long now = System.currentTimeMillis();
+		r.delivery.onFrame(sealTo(r, "a".getBytes(), 100L, now, false));
+		r.delivery.onFrame(sealTo(r, "b".getBytes(), 200L, now, false));
+		r.delivery.onFrame(sealTo(r, "c".getBytes(), 300L, now, false));
+		assertEquals(3, r.opened.size());
+		assertEquals(now + 100_000L, r.store.seenFloor());
+
+		r.delivery.onFrame(sealTo(r, "too old".getBytes(), 100L, now, false));
+		assertEquals("at the floor: refused unseen", 3, r.opened.size());
+		r.delivery.onFrame(sealTo(r, "later".getBytes(), 400L, now, false));
+		assertEquals(4, r.opened.size());
+	}
+
 	/** Seals a message to {@code r} and returns the raw envelope bytes. */
 	private byte[] sealTo(Recipient r, byte[] payload, long ttlSeconds,
 			long sendTimestamp) throws Exception {
+		return sealTo(r, payload, ttlSeconds, sendTimestamp, true);
+	}
+
+	private byte[] sealTo(Recipient r, byte[] payload, long ttlSeconds,
+			long sendTimestamp, boolean preferOneTime) throws Exception {
 		AsyncMeshDelivery.Identity sId = newIdentity();
 		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
@@ -166,7 +220,7 @@ public class AsyncMeshIntegrationTest {
 		MeshForwarder relay = new MeshForwarder(captured::add, random);
 		connect(sForwarder, "s-r", relay, "r-s");
 		sDelivery.send(sForwarder, r.bundle, 9, payload, ttlSeconds,
-				sendTimestamp, true);
+				sendTimestamp, preferOneTime);
 		return captured.get(0);
 	}
 
@@ -178,8 +232,13 @@ public class AsyncMeshIntegrationTest {
 
 		Recipient(org.zerionproject.core.api.system.Clock clock)
 				throws Exception {
+			this(clock, AsyncPrekeyStore.MAX_SEEN);
+		}
+
+		Recipient(org.zerionproject.core.api.system.Clock clock, int maxSeen)
+				throws Exception {
 			store = new AsyncPrekeyStore(crypto,
-					new InMemorySettingsManager(), new SystemClock());
+					new InMemorySettingsManager(), new SystemClock(), maxSeen);
 			AsyncMeshDelivery.Identity id = newIdentity();
 			List<AsyncPrekeyBundle.OneTimePrekey> otks =
 					store.generateOneTimePrekeys(5);

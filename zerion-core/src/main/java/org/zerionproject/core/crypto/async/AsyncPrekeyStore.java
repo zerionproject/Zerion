@@ -13,8 +13,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -42,21 +44,38 @@ public class AsyncPrekeyStore {
 	private static final String SPK_PREV_PUB = "spkPrevPub";
 	private static final String SPK_PREV_PRIV = "spkPrevPriv";
 	private static final String SEEN = "seen";
+	private static final String SEEN_FLOOR = "seenFloor";
 
 	private static final long SPK_LIFETIME_SECONDS = 7L * 24 * 3600;
-	private static final int MAX_SEEN = 4096;
+	public static final int MAX_SEEN = 4096;
+
+	/**
+	 * The longest an envelope may live, mirrored from the delivery layer so
+	 * that a seen-set entry written before expiries were recorded is kept for
+	 * the whole window rather than dropped.
+	 */
+	static final long MAX_ENVELOPE_LIFETIME_MS = 30L * 24 * 60 * 60 * 1000;
 
 	private final CryptoComponent crypto;
 	private final SettingsManager settingsManager;
 	private final Clock clock;
+	private final int maxSeen;
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
 
 	public AsyncPrekeyStore(CryptoComponent crypto,
 			SettingsManager settingsManager, Clock clock) {
+		this(crypto, settingsManager, clock, MAX_SEEN);
+	}
+
+	/** As above with an explicit bound on the envelope seen-set. */
+	public AsyncPrekeyStore(CryptoComponent crypto,
+			SettingsManager settingsManager, Clock clock, int maxSeen) {
+		if (maxSeen < 1) throw new IllegalArgumentException();
 		this.crypto = crypto;
 		this.settingsManager = settingsManager;
 		this.clock = clock;
+		this.maxSeen = maxSeen;
 	}
 
 	public static class SignedPrekey {
@@ -222,25 +241,92 @@ public class AsyncPrekeyStore {
 	public boolean isSeen(byte[] dedupId) throws DbException {
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
-			return parseList(s.get(SEEN)).contains(
+			return parseSeen(s.get(SEEN)).containsKey(
 					StringUtils.toHexString(dedupId));
 		}
 	}
 
-	/** Records an envelope dedup id, returning true if it is new (not a replay).
-	 * The seen-set is bounded and evicts oldest first. */
-	public boolean checkAndMarkSeen(byte[] dedupId) throws DbException {
+	/**
+	 * Records an envelope dedup id together with the envelope's expiry and
+	 * returns true if the envelope is new. The set is bounded, but eviction
+	 * can never re-admit a replay: an entry leaves the set only once it has
+	 * expired, or, when the set is full, by raising a floor to the evicted
+	 * entry's expiry, after which every envelope expiring at or before the
+	 * floor is rejected whether or not it is remembered. An envelope whose
+	 * expiry is at or below the floor is therefore refused here even if it
+	 * was never seen, which is the price of the bound under a flood.
+	 */
+	public boolean checkAndMarkSeen(byte[] dedupId, long expiryMs)
+			throws DbException {
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
-			LinkedHashSet<String> set = parseList(s.get(SEEN));
+			long now = clock.currentTimeMillis();
+			long floor = s.getLong(SEEN_FLOOR, Long.MIN_VALUE);
+			if (expiryMs <= floor || expiryMs <= now) return false;
+			LinkedHashMap<String, Long> set = parseSeen(s.get(SEEN));
 			String h = StringUtils.toHexString(dedupId);
-			if (!set.add(h)) return false;
-			while (set.size() > MAX_SEEN) set.remove(set.iterator().next());
+			if (set.containsKey(h)) return false;
+			set.put(h, expiryMs);
+			set.values().removeIf(expiry -> expiry <= now);
+			boolean admitted = true;
+			while (set.size() > maxSeen) {
+				String oldest = null;
+				long oldestExpiry = Long.MAX_VALUE;
+				for (Map.Entry<String, Long> e : set.entrySet()) {
+					if (e.getValue() < oldestExpiry) {
+						oldestExpiry = e.getValue();
+						oldest = e.getKey();
+					}
+				}
+				set.remove(oldest);
+				if (oldestExpiry > floor) floor = oldestExpiry;
+				if (h.equals(oldest)) admitted = false;
+			}
 			Settings upd = new Settings();
-			upd.put(SEEN, joinList(set));
+			upd.put(SEEN, joinSeen(set));
+			upd.putLong(SEEN_FLOOR, floor);
 			settingsManager.mergeSettings(upd, NS);
-			return true;
+			return admitted;
 		}
+	}
+
+	/** The expiry at or below which every envelope is refused. */
+	public long seenFloor() throws DbException {
+		synchronized (lock) {
+			return settingsManager.getSettings(NS)
+					.getLong(SEEN_FLOOR, Long.MIN_VALUE);
+		}
+	}
+
+	private LinkedHashMap<String, Long> parseSeen(@Nullable String csv) {
+		LinkedHashMap<String, Long> set = new LinkedHashMap<>();
+		if (csv == null || csv.isEmpty()) return set;
+		long legacyExpiry = clock.currentTimeMillis()
+				+ MAX_ENVELOPE_LIFETIME_MS;
+		for (String p : csv.split(",")) {
+			if (p.isEmpty()) continue;
+			int sep = p.indexOf(':');
+			if (sep < 0) {
+				set.put(p, legacyExpiry);
+				continue;
+			}
+			try {
+				set.put(p.substring(0, sep),
+						Long.parseLong(p.substring(sep + 1)));
+			} catch (NumberFormatException e) {
+				set.put(p.substring(0, sep), legacyExpiry);
+			}
+		}
+		return set;
+	}
+
+	private static String joinSeen(LinkedHashMap<String, Long> set) {
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, Long> e : set.entrySet()) {
+			if (sb.length() > 0) sb.append(',');
+			sb.append(e.getKey()).append(':').append(e.getValue());
+		}
+		return sb.toString();
 	}
 
 	private KeyPair keyPair(String pubHex, String privHex)

@@ -167,7 +167,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
 				return;
 			}
-			if (!store.checkAndMarkSeen(env.getDedupId())) return;
+			if (!store.checkAndMarkSeen(env.getDedupId(), expiry)) return;
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
 			if (accepted && env.getPrekeyKind()
