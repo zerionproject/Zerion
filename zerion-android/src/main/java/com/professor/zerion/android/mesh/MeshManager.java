@@ -89,7 +89,7 @@ public class MeshManager {
 		AsyncMeshDelivery meshDelivery = new AsyncMeshDelivery(crypto, sealer,
 				prekeyStore, (senderPub, type, payload, ts) ->
 						openedHandler.onOfflineMessage(senderPub, type, payload,
-								ts), identity);
+								ts), identity, clock);
 		delivery = meshDelivery;
 		MeshForwarder meshForwarder =
 				new MeshForwarder(meshDelivery, new SecureRandom());

@@ -84,7 +84,7 @@ public class AsyncMeshIntegrationTest {
 		List<byte[]> rOpened = new ArrayList<>();
 		AsyncMeshDelivery rDelivery = new AsyncMeshDelivery(crypto, sealer,
 				rStore, (senderPub, type, payload, ts) -> rOpened.add(payload),
-				rId);
+				rId, new SystemClock());
 		MeshForwarder rForwarder = new MeshForwarder(rDelivery, random);
 
 		// Sender S: identity, its own store and delivery (as a mesh node).
@@ -92,7 +92,8 @@ public class AsyncMeshIntegrationTest {
 		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
 		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
-				sStore, (senderPub, type, payload, ts) -> true, sId);
+				sStore, (senderPub, type, payload, ts) -> true, sId,
+				new SystemClock());
 		MeshForwarder sForwarder = new MeshForwarder(sDelivery, random);
 
 		// A relay in the middle that cannot open anything.
@@ -103,7 +104,7 @@ public class AsyncMeshIntegrationTest {
 		AsyncMeshDelivery relayDelivery = new AsyncMeshDelivery(crypto, sealer,
 				relayStore,
 				(senderPub, type, payload, ts) -> relayOpened.add(payload),
-				relayId);
+				relayId, new SystemClock());
 		MeshForwarder relayForwarder =
 				new MeshForwarder(relayDelivery, random);
 
@@ -111,10 +112,102 @@ public class AsyncMeshIntegrationTest {
 		connect(relayForwarder, "r-x", rForwarder, "x-r");
 
 		byte[] payload = "offline mesh hello".getBytes();
-		sDelivery.send(sForwarder, bundle, 9, payload, 3600L, 1234567890L, true);
+		sDelivery.send(sForwarder, bundle, 9, payload, 3600L,
+				System.currentTimeMillis(), true);
 
 		assertEquals(1, rOpened.size());
 		assertArrayEquals(payload, rOpened.get(0));
 		assertEquals(0, relayOpened.size());
+	}
+
+	/**
+	 * PROTO-09: replaying one captured valid envelope under fresh frame ids
+	 * must open (decapsulate and verify) it at most once. The dedup id is
+	 * checked before the open, so repeats cost a settings read, not crypto.
+	 */
+	@Test
+	public void replayedEnvelopeIsOpenedOnlyOnce() throws Exception {
+		Recipient r = new Recipient(new SystemClock());
+		byte[] envelope = sealTo(r, "replay me".getBytes(), 3600L,
+				System.currentTimeMillis());
+
+		for (int i = 0; i < 1000; i++) r.delivery.onFrame(envelope);
+
+		assertEquals(1, r.opened.size());
+	}
+
+	/**
+	 * PROTO-09: an envelope whose time-to-live has elapsed against the clock
+	 * is rejected rather than delivered, closing the unbounded replay window.
+	 */
+	@Test
+	public void expiredEnvelopeIsRejected() throws Exception {
+		long base = System.currentTimeMillis();
+		MutableClock clock = new MutableClock(base);
+		Recipient r = new Recipient(clock);
+		byte[] envelope = sealTo(r, "too late".getBytes(), 1L, base);
+
+		clock.now = base + 5_000L;
+		r.delivery.onFrame(envelope);
+
+		assertEquals(0, r.opened.size());
+	}
+
+	/** Seals a message to {@code r} and returns the raw envelope bytes. */
+	private byte[] sealTo(Recipient r, byte[] payload, long ttlSeconds,
+			long sendTimestamp) throws Exception {
+		AsyncMeshDelivery.Identity sId = newIdentity();
+		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
+				new InMemorySettingsManager(), new SystemClock());
+		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
+				sStore, (a, b, c, d) -> true, sId, new SystemClock());
+		MeshForwarder sForwarder = new MeshForwarder(sDelivery, random);
+		List<byte[]> captured = new ArrayList<>();
+		MeshForwarder relay = new MeshForwarder(captured::add, random);
+		connect(sForwarder, "s-r", relay, "r-s");
+		sDelivery.send(sForwarder, r.bundle, 9, payload, ttlSeconds,
+				sendTimestamp, true);
+		return captured.get(0);
+	}
+
+	private final class Recipient {
+		final AsyncPrekeyStore store;
+		final AsyncPrekeyBundle bundle;
+		final AsyncMeshDelivery delivery;
+		final List<byte[]> opened = new ArrayList<>();
+
+		Recipient(org.zerionproject.core.api.system.Clock clock)
+				throws Exception {
+			store = new AsyncPrekeyStore(crypto,
+					new InMemorySettingsManager(), new SystemClock());
+			AsyncMeshDelivery.Identity id = newIdentity();
+			List<AsyncPrekeyBundle.OneTimePrekey> otks =
+					store.generateOneTimePrekeys(5);
+			AsyncPrekeyStore.SignedPrekey spk = store.getSignedPrekey();
+			bundle = AsyncPrekeyBundle.create(crypto, id.sigPub, id.sigPriv,
+					id.agreePub, spk.id, spk.pub, spk.expiry, otks);
+			delivery = new AsyncMeshDelivery(crypto, sealer, store,
+					(senderPub, type, payload, ts) -> opened.add(payload),
+					id, clock);
+		}
+	}
+
+	private static final class MutableClock
+			implements org.zerionproject.core.api.system.Clock {
+		volatile long now;
+
+		MutableClock(long now) {
+			this.now = now;
+		}
+
+		@Override
+		public long currentTimeMillis() {
+			return now;
+		}
+
+		@Override
+		public void sleep(long milliseconds) throws InterruptedException {
+			Thread.sleep(milliseconds);
+		}
 	}
 }

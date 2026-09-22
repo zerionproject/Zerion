@@ -213,6 +213,20 @@ public class AsyncPrekeyStore {
 		}
 	}
 
+	/**
+	 * Reports whether an envelope dedup id has already been recorded, without
+	 * marking it. Used to reject a replay before the expensive envelope open,
+	 * so a flood of repeats of one captured envelope costs a settings read
+	 * rather than a decapsulation and two signature verifications each.
+	 */
+	public boolean isSeen(byte[] dedupId) throws DbException {
+		synchronized (lock) {
+			Settings s = settingsManager.getSettings(NS);
+			return parseList(s.get(SEEN)).contains(
+					StringUtils.toHexString(dedupId));
+		}
+	}
+
 	/** Records an envelope dedup id, returning true if it is new (not a replay).
 	 * The seen-set is bounded and evicts oldest first. */
 	public boolean checkAndMarkSeen(byte[] dedupId) throws DbException {

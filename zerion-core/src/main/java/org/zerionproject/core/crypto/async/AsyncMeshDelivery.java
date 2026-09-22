@@ -22,21 +22,27 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 				byte[] payload, long sendTimestamp);
 	}
 
+	private static final long MAX_TTL_SECONDS = 30L * 24 * 60 * 60;
+	private static final long CLOCK_SKEW_TOLERANCE_MS = 60L * 1000;
+
 	private final CryptoComponent crypto;
 	private final AsyncSealedSender sealer;
 	private final AsyncPrekeyStore store;
 	private final OpenedListener listener;
 	private final Identity identity;
+	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
 
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
-			Identity identity) {
+			Identity identity,
+			org.zerionproject.core.api.system.Clock clock) {
 		this.crypto = crypto;
 		this.sealer = sealer;
 		this.store = store;
 		this.listener = listener;
 		this.identity = identity;
+		this.clock = clock;
 	}
 
 	public static class Identity {
@@ -143,6 +149,9 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			return;
 		}
 		try {
+			long ttl = env.getTtl();
+			if (ttl < 0 || ttl > MAX_TTL_SECONDS) return;
+			if (store.isSeen(env.getDedupId())) return;
 			KeyPair prekey = store.resolvePrekey(env.getPrekeyKind(),
 					env.getPrekeyId(), env.getSignedPrekeyId());
 			if (prekey == null) return;
@@ -152,6 +161,12 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			o.recipientIdentitySigPub = identity.sigPub;
 			o.recipientIdentityAgreePub = identity.agreePub;
 			AsyncSealedSender.OpenedMessage m = sealer.open(envelopeBytes, o);
+			long now = clock.currentTimeMillis();
+			long expiry = m.getSendTimestamp() + ttl * 1000L;
+			if (now > expiry
+					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
+				return;
+			}
 			if (!store.checkAndMarkSeen(env.getDedupId())) return;
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
