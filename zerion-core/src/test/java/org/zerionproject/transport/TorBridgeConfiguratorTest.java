@@ -40,8 +40,6 @@ public class TorBridgeConfiguratorTest {
 			assertTrue(line, line.toLowerCase(java.util.Locale.US)
 					.startsWith("bridge "));
 			assertFalse(line, line.contains("\n") || line.contains("\r"));
-			assertEquals(line, 1, line.split("\\s+").length
-					- line.split("\\s+").length + 1);
 		}
 	}
 

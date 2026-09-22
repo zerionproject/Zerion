@@ -14,7 +14,10 @@ import javax.annotation.Nullable;
  * send path unchanged. A request whose Payjoin data is present but malformed is
  * reported as malformed so the caller can reject the Payjoin attempt; nothing
  * here trusts the endpoint. The endpoint is validated again by the native
- * Payjoin implementation before it is used.
+ * Payjoin implementation before it is used. A request that marks a parameter
+ * as required with the {@code req-} prefix defined by BIP21, and that this
+ * code does not understand, is reported as malformed as that BIP demands,
+ * so it is never paid as if the parameter were absent.
  */
 @NotNullByDefault
 public final class PayjoinUri {
@@ -56,12 +59,15 @@ public final class PayjoinUri {
 		long amountSat = 0;
 		String pj = null;
 		boolean pjos = false;
+		boolean unknownRequired = false;
 		if (!query.isEmpty()) {
 			for (String pair : query.split("&")) {
 				int eq = pair.indexOf('=');
 				String key = eq < 0 ? pair : pair.substring(0, eq);
 				String value = eq < 0 ? "" : decode(pair.substring(eq + 1));
-				if (key.equalsIgnoreCase("amount")) {
+				if (key.regionMatches(true, 0, "req-", 0, 4)) {
+					unknownRequired = true;
+				} else if (key.equalsIgnoreCase("amount")) {
 					amountSat = parseAmount(value);
 				} else if (key.equalsIgnoreCase("pj")) {
 					pj = value;
@@ -71,6 +77,10 @@ public final class PayjoinUri {
 			}
 		}
 
+		if (unknownRequired) {
+			return new PayjoinUri(Kind.MALFORMED, address, amountSat, null,
+					false);
+		}
 		if (pj == null) {
 			return new PayjoinUri(Kind.NORMAL, address, amountSat, null, false);
 		}
@@ -106,6 +116,7 @@ public final class PayjoinUri {
 	private static long parseAmount(String value) {
 		try {
 			BigDecimal btc = new BigDecimal(value);
+			if (btc.signum() < 0) return 0;
 			return btc.movePointRight(8).longValueExact();
 		} catch (Exception e) {
 			return 0;

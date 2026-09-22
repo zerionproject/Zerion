@@ -465,7 +465,11 @@ public class ElectrumClient implements ElectrumRpc {
 			e++;
 		}
 		try {
-			return Double.parseDouble(r.substring(s, e).trim());
+			double fee = Double.parseDouble(r.substring(s, e).trim());
+			if (Double.isNaN(fee) || Double.isInfinite(fee) || fee < 0) {
+				return 0.0;
+			}
+			return fee;
 		} catch (NumberFormatException ex) {
 			return 0.0;
 		}
