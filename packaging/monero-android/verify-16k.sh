@@ -4,7 +4,7 @@
 # 32-bit (4 KB pages) and is not subject to the rule. Mirrors the BTC gate.
 set -euo pipefail
 
-NDK="${ANDROID_NDK_HOME:-C:/Users/Iron/AppData/Local/Android/Sdk/ndk/27.1.12297006}"
+NDK="${ANDROID_NDK_HOME:?set ANDROID_NDK_HOME to NDK 27.1.12297006}"
 READELF="$(ls "${NDK}"/toolchains/llvm/prebuilt/*/bin/llvm-readelf* 2>/dev/null | head -1)"
 JNI="zerion-android/src/main/jniLibs"
 
