@@ -211,6 +211,7 @@ public class VoiceCallService extends Service implements EventListener {
 	@Nullable
 	private volatile Runnable remoteOfferTimeoutRunnable;
 	private static final long REMOTE_OFFER_TIMEOUT_MS = 60_000;
+	private static final long VIDEO_SETUP_TIMEOUT_MS = 60_000;
 	private static final int VIDEO_NONCE_BYTES = 16;
 	private static final String VIDEO_OFFER_PREFIX = "REQUEST:";
 	private static final String VIDEO_ACCEPT_PREFIX = "ACCEPT:";
@@ -2051,7 +2052,7 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private void connectVideoToRemote(String remoteOnion) {
-		scheduleVideoSetupTimeout(25_000);
+		scheduleVideoSetupTimeout(VIDEO_SETUP_TIMEOUT_MS);
 		executorService.execute(() -> {
 			try {
 				videoTorConnection = connectionManager.connectToRemote(
@@ -2127,7 +2128,7 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 		byte[] nonce = newVideoNonce();
 		localVideoNonce = nonce;
-		scheduleVideoSetupTimeout(25_000);
+		scheduleVideoSetupTimeout(VIDEO_SETUP_TIMEOUT_MS);
 
 		sendVoiceSignal(VoiceSignalType.VIDEO_ACCEPT, VIDEO_ACCEPT_PREFIX
 				+ org.zerionproject.core.util.StringUtils.toHexString(nonce));
