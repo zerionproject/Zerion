@@ -70,13 +70,14 @@ The recipe below is what the F-Droid build needs on top of the 3.0.3 entry:
 the Debian packages the native build uses, a writable `/build` (the build
 runs as `vagrant` and the path is part of the reproducible output, because
 Monero's logging macros embed source paths), NDK r27b, and a `build:` step
-that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
-`commit` with the release tag being published.
+that produces `libzmonero.so` for both ABIs before Gradle runs. `commit` is
+the full hash of the release commit (F-Droid does not accept a tag name), the
+same value recorded in `docs/release-manifest.json`.
 
 ```yaml
   - versionName: 3.0.11
     versionCode: 31100
-    commit: v3.0.11
+    commit: 6e24cdd8476b9ce96fb27ecae81203256bd52cfa
     subdir: zerion-android
     submodules: true
     sudo:
@@ -93,7 +94,6 @@ that produces `libzmonero.so` for both ABIs before Gradle runs. Replace
     rm:
       - libs/gradle-witness.jar
       - gradle/verification-metadata.xml
-    prebuild: sed -i "/include ':bramble-java'/d" ../settings.gradle
     build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh
     ndk: r27b
     gradleprops:

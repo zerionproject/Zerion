@@ -3,8 +3,9 @@
 ZWF is the wire format Zerion uses on an online connection between two paired
 contacts. It carries a stream of fixed-size frames, each protected by an
 authenticated cipher and by the Mode 3-Full ratchet. The ratchet gives forward
-secrecy and post-compromise security against both classical and quantum
-adversaries.
+secrecy and post-compromise security within a connection; both properties rest
+on the ML-KEM layer alone (see "The ratchet" below and the security claims
+matrix), not on an independent classical ratchet.
 
 ZWF sits directly on a raw byte stream. That stream can come from Tor, from I2P,
 or from any other carrier that provides an ordered reliable channel. The carrier
@@ -128,8 +129,15 @@ was made against.
 
 ## The ratchet
 
-Zerion runs a Double-Ratchet style construction with a post-quantum layer folded
-into the chain.
+Zerion runs a symmetric chain per stream with a post-quantum layer folded into
+it. The frame header still carries an X25519 ratchet public key and the flags
+still name a DH ratchet, but that classical ratchet is inert: the receive side
+never parses the peer's key and the send side never advances the root, so the
+field is fixed for the life of a session and contributes no secret. Forward
+secrecy before the first ML-KEM secret is mixed in is therefore limited to the
+chain advance under a key a root-key holder can reconstruct; from the first
+post-quantum contribution onward, every key depends on an ML-KEM secret. This is
+a documented design deferral, not a hybrid classical-plus-post-quantum ratchet.
 
 Chain seeding. The per-stream initial chain key is
 `KDF(PCS_STREAM_CHAIN, rootKey, streamId, salt)` where the salt is the random
@@ -183,8 +191,8 @@ connection's ratchet does not extend to the next. Within a single connection,
 both directions share one Mode 3-Full state under a lock, so a peer key learned
 while receiving is available to the sender on the same connection.
 
-## Relationship to Briar
+## Component provenance
 
-Briar's transport security protocol is not used on this path. ZWF and Mode 3-Full
-replace it. The database and identity storage that hold the root key and the
-persisted session are inherited Briar components.
+ZWF and Mode 3-Full are Zerion's own protocol work. The provenance of the
+database and identity storage that hold the root key is recorded in
+[README.md](README.md) in this directory and in the repository's NOTICE.md.

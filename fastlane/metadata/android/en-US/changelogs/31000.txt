@@ -1,0 +1,1 @@
+Fixes a bug where updating to 3.0.9 could show a database error after signing in. No data was affected: the failed upgrade rolled back and this version opens the account normally. The upgrade step is now idempotent and self-healing and is covered by a regression test. Otherwise identical to 3.0.9.

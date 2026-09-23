@@ -9,7 +9,7 @@ release blocker, not a refactor.
 - **Device-local, self-custodial.** Keys and seeds live only on the device,
   sealed in the vault. There is no server that holds funds or can move them.
 - **Adversaries considered:** a network observer / malicious node (mitigated by
-  Tor-only transport and no clearnet fallback); an attacker with the vault master
+  Tor by default and no silent clearnet fallback); an attacker with the vault master
   key but not the wallet password (mitigated by per-wallet password sealing and,
   for XMR, Store-1); a hostile daemon returning malformed data (mitigated by
   strict parsing that drops bad rows); UI compromise attempting to authorize a

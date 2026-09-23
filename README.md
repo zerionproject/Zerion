@@ -1,386 +1,132 @@
 # Zerion
 
-**Anonymous. Encrypted. Post-Quantum Ready.**
+**No identity. Encrypted. Post-quantum on every message.**
 
 <p align="center">
   <img src="zerion-android/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png" width="120" height="120">
 </p>
 
-Zerion is a secure messaging app and encrypted vault designed for people who need private, anonymous, censorship-resistant communication.
+Zerion is a private messenger with an encrypted vault and optional self-custodial Bitcoin and Monero wallets. There is no phone number, no account and no Zerion server: online messaging runs between the two devices' Tor onion services, every message carries a fresh post-quantum encapsulation, and traffic within a connection is shaped into fixed-size frames at a paced, cover-filled cadence. It is free software under the GPLv3.
 
-Unlike traditional messengers, Zerion uses no servers, no accounts, no phone numbers, and no cloud services. All communication flows directly between devices using the Tor network, protecting users from surveillance, metadata collection, and IP exposure.
+This README describes the current release, **3.0.11**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
 
-With hybrid post-quantum cryptography on **every message** (Mode 3-Full: per-frame ML-KEM-768 encapsulation mixed into the body AEAD key), post-compromise security via a per-message ML-KEM-768 ratchet, hardware-backed vault protection, and advanced anti-forensics features, Zerion provides strong security even against sophisticated adversaries - including "harvest now, decrypt later" attacks by future quantum adversaries.
+## Architecture
 
----
+- **ZTP** runs Tor, publishes each device's v3 onion service, dials contacts' onions and accepts inbound connections.
+- **ZWF** frames every connection into fixed 4096-byte authenticated frames.
+- **ZPP** paces the frames: one frame per interval, a cover frame when there is nothing to send.
+- **ZMM** carries application records (messages, groups, channels, calls, acknowledgements) inside the frames.
+- **Mode 3-Full** is the message ratchet: a forward-secret symmetric chain per stream with a fresh ML-KEM-768 encapsulation mixed into every frame.
+- **Bluetooth mesh** (opt-in) carries sealed-sender envelopes between nearby phones with no internet.
+- **I2P** (opt-in) is a second carrier for the same frame stream.
 
-## Why Zerion?
+Each device holds its own contacts, messages, keys and state in an encrypted database. Nothing is stored anywhere else. The protocol documents are in [docs/protocol/](docs/protocol/README.md) and the full description in the [technical whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md).
 
-- **Truly anonymous** - No phone number, email, or registration
-- **End-to-end encrypted** messaging, groups, voice notes, P2P voice and video calls
-- **Per-message post-quantum hybrid ratchet (Mode 3-Full)** - Every frame in both directions carries a fresh ML-KEM-768 encapsulation against the peer's current ML-KEM public key; the shared secret is mixed into the body AEAD key on every frame
-- **Post-Compromise Security** - per-message ML-KEM-768 post-quantum ratchet for per-message key evolution (the classical X25519 DH ratchet is carried and authenticated but inert in this build; see whitepaper §6.3)
-- **Tor-only online networking** - Your IP address is never exposed to contacts
-- **Direct peer-to-peer architecture** - No central servers
-- **Offline Bluetooth mesh** - Message nearby devices with no internet at all, sealed with the same post-quantum encryption so relays carry only ciphertext
-- **Optional I2P transport** - A second anonymity network alongside Tor, off by default
-- **Encrypted Vault** for passwords, documents, media, and notes
-- **Non-custodial Bitcoin & Monero wallets** inside the vault - self-custodial, keys never leave the device, network only over Tor
-- **Channels** - one-to-many broadcast (public or private) with optional discussion threads, reactions, and editor delegations
-- **Post-quantum hardened end-to-end** - Hybrid ML-KEM-768 + X25519 at handshake, introductions, and on every transport frame; ML-DSA-65 + Ed25519 on every signed record
-- **Zerion-only** - Purpose-built for Zerion-to-Zerion communication with maximum security
-- **Downgrade attack protection** - PQ contacts stay PQ-secure forever
-- **Anti-forensics protection** against mobile extraction tools
-- **Open-source and auditable**
+## Privacy model
 
-**Zerion collects zero personal data. Not by policy - by cryptographic design.**
+- No phone number, email or registration. Contacts are added by exchanging a link or scanning a code; identities are cryptographic keys.
+- No central Zerion messaging server, directory, relay or message store. Messages travel between the two devices through Tor relays (guard, middle, rendezvous). The app also uses the Tor network, Tor bridges if configured, Electrum servers and Monero nodes for the wallets (default set in code, user-replaceable), a price endpoint over Tor, and the download stores; I2P routers only when I2P is enabled.
+- Tor hides each device's network location from contacts and from the relays. It does not hide that the device uses Tor, when connections open and close, or defeat an adversary who can watch the whole network. The [threat model](docs/ZERION_TECHNICAL_WHITEPAPER.md#2-threat-model) states these limits.
+- Zerion runs no servers, so the project holds no data about its users. What a contact or a Tor relay can observe is part of the threat model.
 
----
+## Cryptography
 
-## Core Features
+| Purpose | Primitive |
+|---|---|
+| Message AEAD on the wire | XSalsa20-Poly1305 (24-byte nonce, 16-byte tag) |
+| Post-quantum key encapsulation | ML-KEM-768 |
+| Classical key agreement | X25519 |
+| Signatures on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify) |
+| Hashing, MAC and key derivation in the messaging core | keyed BLAKE2b-256 |
+| Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; sender key pair rotates every 16 own sends |
+| Calls and vault AEAD | AES-256-GCM |
+| Vault chunk keys, call endpoint keys | HKDF-SHA256 |
+| Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
+| Identifiers and fingerprints | SHA-256 (SHA-512 in the Tor rendezvous derivation, SHA3-256 for the ML-KEM key-seed hash) |
+| Database at rest | SQLCipher (AES-256), key derived from the password and a device-bound keystore factor |
 
-### Encrypted Messaging
+The canonical list with the source file behind each row is [docs/crypto-primitives.json](docs/crypto-primitives.json). Post-compromise security rests on the ML-KEM layer: the X25519 field carried in each frame is authenticated but drives no ratchet (whitepaper §6.3).
 
-Private one-to-one chats and groups with end-to-end encryption using XSalsa20-Poly1305 (256-bit keys).
-Disappearing messages and metadata removal ensure conversations remain confidential.
-Photos, videos, voice notes, documents, and stickers; securely introduce two of your contacts to each other; translated into 35+ languages.
+## Traffic analysis protections
 
-### Post-Compromise Security (PCS)
+Within a live connection every frame is 4096 bytes and a real frame is indistinguishable from a cover frame. Frames are sent one per interval with zero-mean jitter: 750 ms while messages flowed in the last two minutes or are queued, 4 s afterwards, 8 s on a metered network unless the user disables the reduction. Within a rate an observer learns neither message sizes nor counts nor timing; the switch between the two rates reveals the coarse onset and end of activity. Connection existence, lifetime and reconnects are visible to an observer of the Tor link, and a global observer is out of scope.
 
-Zerion's post-compromise security rests on a per-message post-quantum (ML-KEM-768) ratchet:
+## Calls
 
-- **Forward secrecy**: Past messages stay private even if your device is later compromised
-- **Post-compromise recovery**: After a device compromise, security is re-established as the post-quantum ratchet advances on subsequent frames; each side rotates its ML-KEM-768 key pair at least once every 16 of its own sends
-- **Per-message keys**: Every message uses a unique encryption key derived from the current chain state
+Voice calls (on by default) and video calls (off by default) run between the two devices over Tor onion services: no VoIP server, no STUN or TURN. Audio is Opus in fixed 20 ms frames; video is H.264 in padded frames. Call media is designed to be encrypted with AES-256-GCM under a per-call key on top of the Tor layer. **In 3.0.11 that per-call key is derived incorrectly** (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity), and video nonces can repeat when video is stopped and restarted within a call. In 3.0.11 call confidentiality therefore rests on the Tor onion-service encryption between the two devices. We have no indication that this was exploited; using it would require an adversary inside the Tor connection or at an endpoint. Both defects are fixed on the `security-r1` branch and ship in 3.0.12, which is not yet released. Details: [SECURITY.md](SECURITY.md).
 
-**Ratchet Modes:**
-- **Mode 2 (Double Ratchet)**: legacy classical mode. In this build the classical X25519 DH ratchet does not run (whitepaper §6.3), so this mode provides forward secrecy but no active post-compromise ratchet.
-- **Mode 3 (Triple Ratchet, per-epoch PQ)**: Adds ML-KEM-768 post-quantum ratchet every 25 messages or 24 hours. Retained as a fallback path.
-- **Mode 3-Full (Triple Ratchet, per-message PQ - current default since v1.7)**: Every single frame in both directions carries a fresh ML-KEM-768 encapsulation. The per-stream chain key and the per-message body AEAD key combine a one-way classical symmetric chain (forward secrecy) with a fresh ML-KEM-768 encapsulation (post-compromise security) on every frame. A classical X25519 public key is carried and AEAD-authenticated in each frame but, in this build, drives no active DH ratchet (whitepaper §6.3), so post-compromise security rests on the post-quantum layer.
+## Pairing
 
-### P2P Voice & Video Calls
+A contact is added by link (the normal path) or nearby (QR code or Bluetooth). Link pairing meets at a rendezvous derived from the link and runs a hybrid key agreement: X25519 plus an ML-KEM-768 encapsulation to the peer's ephemeral key, so the pairing secret is confidential against a future quantum adversary. Authentication of the pairing is classical in 3.0.11 (X25519 ownership proofs bound to the out-of-band commitment, an Ed25519 signature on the contact record, and the B.3 proof binding the static ML-KEM key); the ML-DSA-65 half of the identity does not participate. An adversary would need to break the classical primitives or the out-of-band commitment to impersonate a peer today; a future quantum adversary active during a pairing could. Nearby pairing is a classical X25519 key agreement in 3.0.11. Both are addressed in 3.0.12 (not yet released). A post-quantum contact cannot later be re-added as classical, and the pairing key rotates after every completed contact addition.
 
-Real peer-to-peer encrypted voice and video calls routed exclusively through Tor hidden services.
-No STUN, no TURN, no VoIP servers - just private communication between devices.
+## Vault
 
-- **Voice calls**: Opus codec at 24 kbps (16 kHz mono), AES-256-GCM encrypted
-- **Video calls**: H.264 Main Profile (Level 3.1) at 640×480, AES-256-GCM encrypted with padded frames; adaptive frame rate and bitrate that step down under poor network conditions
-- Camera switching, video pause/resume, and correct portrait orientation
-- All frame metadata encrypted inside the payload - zero plaintext metadata on wire
+A separate encrypted store for passwords, notes, documents and media, locked with its own password. The key is derived with Argon2id and combined with a random secret wrapped by a key in the Android Keystore (StrongBox where the device has it), so the vault is bound to the device: neither the password alone nor a copied data directory alone opens it. Items are AES-256-GCM encrypted, vault screens block screenshots, and there is no recovery path.
 
-### Channels
+## Bitcoin and Monero
 
-A one-to-many broadcast layer (one person writes, many people read) served from the publisher's own Tor onion. Subscribers pull posts directly over Tor and verify their signatures. There is no central server holding posts or the subscriber list.
+Optional wallets inside the vault, each sealed under its own password. Keys are generated on the device and never leave it. Bitcoin: BIP84 native SegWit through an Electrum client, fresh address per receive, coin control, and a single-use send gate that broadcasts exactly the reviewed transaction. Monero: Monero's `wallet2` built from pinned source, view-only at rest with the spend key in memory only while a transaction is signed, fresh subaddresses on receive. Wallet traffic goes over Tor by default with per-wallet and per-purpose circuit isolation and no silent clearnet fallback; a direct node is an explicit opt-in behind a warning and exposes the device address to that node. See [docs/WALLET_ARCHITECTURE.md](docs/WALLET_ARCHITECTURE.md).
 
-- **Public channels**: anyone with the invite link can subscribe
-- **Private channels**: subscribers request to join and the owner approves
-- **Discussion threads**: the owner decides, per channel, whether subscribers can reply under a post
-- **Reactions, pinned posts, and attachments**
-- **Editor delegations**: let trusted people post without sharing your identity key
-- **No subscriber-to-subscriber metadata**: subscribers never see one another
+## Network
 
-### Secure Vault
+Tor is mandatory and always on; online messaging never bypasses it. By default every connection the app makes goes through Tor. Two explicit opt-ins do not: I2P participation (when enabled, the user's network can see that the device uses I2P, although the reseed goes through Tor) and a direct wallet node. The Bluetooth mesh is local radio: it hides content, not proximity. The onion address rotates on a schedule announced to contacts; in 3.0.11 the announced address was not republished after a restart in every case; corrected on the `security-r1` branch for 3.0.12, which is not yet released.
 
-A hardware-backed encrypted vault for passwords, notes, photos, videos, and documents.
-Uses Argon2id, AES-256-GCM, and StrongBox/Keystore integration for strong protection.
+## Platforms
 
-### Non-custodial Wallets
+| Platform | Status | Version |
+|---|---|---|
+| Android 10 and later | AVAILABLE | 3.0.11 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest) and [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion); [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while its build of 3.0.11 is pending |
+| Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
+| Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
+| macOS | IN DEVELOPMENT | none published |
+| iOS | IN DEVELOPMENT | none published |
 
-Optional self-custodial Bitcoin and Monero wallets that live inside the vault (since 3.0.4). The seed is generated on the device, sealed as a vault item under its own Argon2id-derived password, and never leaves the phone; there is no custodian, account, or server.
+APK signing certificate SHA-256: `D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8`. The desktop client has its own documentation and security posture in its repository.
 
-- **Bitcoin**: BIP84 native SegWit (bitcoinj, mainnet), fresh address per receive, coin control with per-output freezing and labels, a cluster-aware privacy analyser, and review-then-sign authorisation (the reviewed transaction is fingerprinted and is exactly what gets broadcast).
-- **Monero**: built on Monero's own `wallet2`, run view-only at rest so the spend key is in memory only for the instant a payment is signed; fresh subaddresses on receive.
-- **Tor by default**: the Electrum client, Monero nodes, broadcast, and price lookups all go over Tor with per-wallet and per-purpose stream isolation, and no silent clearnet fallback.
-- **Reproducible native provenance**: the Monero and Argon2 native libraries are built from pinned upstream source with published, per-ABI SHA-256 hashes, verified by build-time gates.
+## Security reviews
 
-### Post-Quantum Security
+Zerion has received independent focused security reviews (the Monero wallet native integration and the Bitcoin wallet with the dormant PayJoin component, both by ZeroTrace; the 3.0.6 transport properties; one reported ratchet issue) and internal assessments. It has not received an independent security assessment or penetration test of the whole product. The full history with dates, scope, outcome and publication status, the terms used, and the known limitations of the current release are in [SECURITY.md](SECURITY.md). [docs/protocol/SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md) lists every security claim with the code and test behind it.
 
-All Zerion contacts use full post-quantum security:
-- **ML-KEM-768 + X25519** hybrid key encapsulation for quantum-resistant key exchange
-- **ML-DSA-65 + Ed25519** hybrid signatures for quantum-resistant authentication
-- **PCS Mode 3-Full (per-message ML-KEM-768 post-quantum ratchet)** for per-message key evolution with quantum-resistant post-compromise security
+## Build
 
-### Downgrade Attack Protection
+JDK 21 and the Android SDK (API 36, NDK r27b for the Monero library). The Monero library is built from pinned source by `packaging/monero-android/`; see [docs/FDROID.md](docs/FDROID.md).
 
-Once a contact is established with post-quantum security, it stays that way.
-Any attempt to reconnect with weaker security is automatically blocked.
-
----
-
-## Download Zerion
-
-**[Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion)** - Get it on the Play Store
-
-**[Download APK](https://github.com/zerionproject/Zerion/releases/latest)** - latest release (direct from GitHub)
-
-**[F-Droid](https://f-droid.org/packages/com.professor.zerion/)** - Get it on F-Droid
 ```
-APK signing fingerprint: D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8
+./gradlew :zerion-android:assembleOfficialDebug
+./gradlew :zerion-core:test :zerion-app:test :zerion-android:testOfficialDebugUnitTest
+./gradlew clean :zerion-android:assembleOfficialRelease -Pfdroid
 ```
 
----
+The release build runs the zero-log source gate, the native hash gates and the wallet regression tests. Dependencies are verified by checksum and signature under `gradle/verification-metadata.xml` and strictly locked. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Changelog
+## Security reporting
 
-**v3.0.11 (Latest release, September 2026):**
-- Fixes a bug where the app could stay offline to contacts after a spell without signal, such as in an elevator or a garage, until it was force closed. The app now notices when a link that stayed attached stops or resumes passing traffic, and it restarts Tor's network when Tor is stuck reconnecting, so contacts can reach you again without a restart
-- Upgrades Tor to 0.4.9.12
-- Builds the Monero wallet library from a clean tree on every release and records the resulting hashes, so the F-Droid build can be verified against the published APK
-
-**v3.0.10 (September 2026):**
-- Fixes a bug where updating to 3.0.9 could show a database error after signing in. No data was affected: the failed database upgrade rolled back and left the account, contacts, messages and wallets intact, and installing this version opens the account normally. The database upgrade step is now idempotent and self-healing, and is covered by a regression test that runs it against a real database. Functionally identical to 3.0.9 otherwise
-
-**v3.0.9 (September 2026):**
-- Rotating pairing links: the handshake key behind your pairing link rotates after every successful contact addition, so a previously shared link stops identifying you once its pairings resolve; pairings in flight are bound to the key they started with and are unaffected (database schema v67)
-- Fixes from an independent Bitcoin wallet security review: strict custom-node classification so a hostile hostname can never bypass the selected Tor routing policy (enforced again at the socket boundary), pending payments keep their coins reserved through every reconciliation state with node responses verified against the requested transaction, and the reviewed fee now always equals the exact final fee
-- Devices with unreliable secure-element firmware no longer crash-loop until a phone restart: key store failures are handled safely everywhere, transient failures no longer discard keys, and a clear explanation screen appears when the device key store is unresponsive; there is never a fallback to unencrypted storage
-- Separate text size settings for chats and for the rest of the interface
-- Fixes: password dots invisible on the light-theme sign-in screen, a stale "Invalid password" message after successfully unlocking the vault
-
-**v3.0.8 (September 2026):**
-- Idle data usage cut by five to ten times: the constant-rate cover traffic now has an active and an idle rate (slower still on mobile data, with a setting to control it); within each rate real and cover frames remain indistinguishable and sending never bursts
-- Storage cleanup: cancelled or failed media uploads no longer leave data behind, orphaned attachment chunks are reclaimed automatically including space leaked by older versions, channel attachment caches are garbage collected, and the encrypted database compacts itself when deletions free significant space
-- Vault: auto-lock timeout and hide-content settings now work as configured, photos taken into the vault save at full resolution, and unsaved note changes warn before closing
-- A full-app hygiene pass: fixed a crash in chats containing voice-call history, password dialogs keep your input when validation fails, notification switches reflect the real system state, dates on older group messages, tappable links in groups and channels, smoother media scrolling in group chats, and more texts moved to translations
-
-**v3.0.7 (September 2026):**
-- Security hardening from protocol review: stream replay protection across restarts, stricter post-quantum ratchet state handling, connection session caps with real socket teardown, onion address rotation wired end to end, and retained ratchet keys stripped from persisted state
-- Vault: asks for the password every time you enter it, locks when you leave, and gains a chat button to return to the messaging environment
-- Fixed a crash after account creation on devices whose key store accepts generating a hardware-backed key but fails when using it; candidate keys are now probed before selection
-- Fixed in a Monero wallet security review: a native wallet lifetime race between refresh interruption and wallet destruction, plus documentation claims rescoped to what the code enforces
-- Fixes: sign-in visibility in light theme, language changes apply immediately, password change no longer succeeds with a mismatched confirmation
-
-**v3.0.6 (September 2026):**
-- F-Droid buildability: all native libraries now build from pinned upstream source with published per-ABI hashes; no prebuilt binaries remain in the repository
-- 16 KB memory-page compatibility: updated the one bundled library that was not aligned for Android devices with 16 KB pages
-- No protocol change and no database upgrade
-
-**v3.0.4 (September 2026):**
-- Optional non-custodial Bitcoin and Monero wallets inside the vault: self-custodial (the seed is generated on-device and never leaves it), each with its own Argon2id-derived password. The Monero wallet runs view-only at rest so the spend key is in memory only while a payment is signed. All wallet traffic (Electrum, Monero nodes, broadcast, price) is Tor-only with per-wallet and per-purpose stream isolation
-- The native wallet libraries (Monero `wallet2`, Argon2) are built reproducibly from pinned upstream source with published per-ABI hashes and build-time verification gates
-- The wallet foundation (vault, Bitcoin and Monero wallets, and the native boundary) went through extensive internal security and code review across multiple independent adversarial passes, with the findings fixed
-- Play Store review fixes: a complete Light theme option, user control over background connections, and localisation updates
-- Both people still need matching versions to message; no messaging protocol or database change
-
-**v3.0.3 (August 2026):**
-- Require a typed confirmation before wiping an account, and clearer contact-trust labelling; the disappearing-messages timer refreshes correctly on returning to a conversation. No protocol change, no database upgrade
-
-**v3.0.1 (August 2026):**
-- Fixes a startup bug where the app could fail to launch and show a black screen on some installs, including from Google Play, because a new integrity self-check did not recognise Google Play's app-signing key
-- Optional hardened mode is now off by default; it is still available under Security settings
-- No protocol change and no database upgrade from 3.0.0
-
-**v3.0.0 (August 2026):**
-- A network protocol written in-house: fixed-size 4096-byte frames, paced cover traffic so active use is indistinguishable from idle within a live connection, and per-message hybrid post-quantum encryption, all over Tor with no servers
-- Keeps the post-quantum ratchet and the delivery database from the 2.x line
-- Two new transports: a Bluetooth offline mesh for messaging with no internet at all (one-to-one and group, with replies and photos) and an opt-in embedded I2P transport; Tor stays mandatory and always on for online messaging
-- Both people need this version to message each other
-
-**v2.0.7 (July 2026):**
-- Fixes a display bug where the decoy calculator keypad could render blank in portrait on some narrower screens (reported on HyperOS and GrapheneOS). No protocol change, no database upgrade, signing key unchanged
-
-**v2.0.6 (July 2026):**
-- Adding a contact is reliable again; connections recover immediately after a drop so contacts stay online more consistently; voice memos deliver reliably
-- Contact pairing and the per-message post-quantum encryption were audited and hardened, and the release went through a full code and security review
-- Both people need this version to add each other. No database upgrade
-
-**v2.0.5 (June 2026):**
-- Account backup reliability fix: backups work reliably across devices and report a clear error if anything goes wrong. No change to backup encryption, no protocol change, no database upgrade
-
-**v2.0.4 (June 2026):**
-- Back up your whole account to an encrypted file, or move it straight to a new phone over Tor
-- Faster, more reliable connections through bridges in censored regions; quicker message delivery; smoother group chats with Enter-to-send and a tappable key fingerprint; app lock can hold for up to 24 hours in the background
-- Full code and security review. No protocol change, no database upgrade
-
-**v2.0.3 (June 2026):**
-- Voice calls work cleanly in both directions and are on by default; opt-in video-calling beta
-- Mute a channel, search and sort the vault, save channel post drafts, set a default disappearing timer, see pending group invites
-- Lower battery and memory use, faster start, and a set of crash fixes. No protocol change, no database upgrade
-
-**v2.0.2 (June 2026):**
-- Channels now raise system notifications for new posts (subscribers) and new comments (owners), with a global Channels toggle and per-channel mute
-- Group chats are resilient under concurrent admin actions - adding a member while another is removed, or messaging during a membership change, no longer splits the member list; invitees see the current roster immediately on accept
-- At-rest encrypted preferences moved to an in-tree implementation, replacing the deprecated AndroidX `security-crypto` library (one-time settings reset on upgrade; conversations, channels, groups, contacts, and vault are unaffected)
-- Exit from the foreground notification now reliably reopens cleanly on next launch
-
-**v2.0.1 (June 2026):**
-- Build hygiene for F-Droid main-repo distribution: the PhotoView library moved from a vendored binary to source, keeping a single signing key across Play Store, GitHub, and F-Droid so users can switch channels without reinstalling
-
-**v2.0.0 (June 2026):**
-- **Channels** - a publisher-to-subscriber broadcast layer with optional discussion threads; public or private, owner-approved subscribers, reactions, pinned posts, attachments, and editor delegations (post without sharing your identity key); subscribers never see one another
-- **Hardened mode (opt-in)** - refuse to start on tampered devices, under a debugger/root/hooking framework, or when USB debugging/file transfer is enabled
-- Cache wipe on sign-out, 60-second clipboard auto-clear, plain-language copy throughout
-
-**v1.7.0 (May 2026):**
-- **Headline:** Mode 3-Full per-message hybrid ratchet is now the default. Every frame in both directions carries a fresh ML-KEM-768 encapsulation; the decapsulated secret is mixed into the body AEAD key on every message. A single compromised key cannot decrypt any other message in the conversation, past or future.
-- Group chat unread counter - Groups list now shows an unread badge per group (1, 2, 3, …, 99+); clears on open
-- Multi-profile end-to-end polish: profile create, sign-in, switch and recovery paths reliable across the full lifecycle; profiles with missing display names heal automatically on next login
-- Internationalisation: vault confirmation keywords and dialog strings route through string resources; case-insensitive confirmation match
-- Accessibility: voice call control buttons (mute, speaker, video, switch camera, end, accept, decline) labelled for screen readers
-- Streamlined the per-chat actions menu so every item maps to a real, user-visible behaviour
-- Build-time zero-logging guarantee: a Gradle gate fails the build if any production source file references a logger, `Timber`, `android.util.Log`, or `System.err`/`System.out`
-- Wire-compatible with 1.6.x peers (Mode 2 fallback when the peer is older); no vault or DB schema changes; signing key unchanged
-
-**v1.6.2 (May 2026):**
-- Native group-invite protocol replaces the legacy carrier (`OFFER`/`ACCEPT`/`DECLINE` on the 1:1 channel)
-- Kick reliability fix: invitee epoch desync that silently dropped `MEMBER_REMOVED` is closed; removed users are purged from the local device atomically
-- Tor-only transport - Bluetooth, Wi-Fi LAN, removable-drive sync, and dev-reporting subsystems removed
-- All `SharedPreferences` routed through Android Keystore-backed `EncryptedSharedPreferences`
-- Hybrid Ed25519 + ML-DSA-65 signatures extended to private-group and invitation contexts
-- Carry-forward downgrade-lock token reconstruction fix
-- Vault, biometric, and lock-screen audit findings patched
-- Supply-chain: `junit-bom-5.11.4` pinned by SHA-256 in dependency-verification metadata
-
-**v1.6.0 (May 2026):**
-- PCS Mode 3 post-quantum ratchet now completes end-to-end (responder dispatch, shared-secret persistence, state callbacks); ML-KEM-768 mixed into the root key every 25 messages or 24 hours, both directions
-- Hybrid Ed25519 + ML-DSA-65 signatures on every group record (3,373 bytes)
-- Vault password KDF migrated from PBKDF2 placeholder to real Argon2id
-- DB schema v62 → v63 (nullable ML-DSA columns, lazy-backfill on first login)
-- Critical/high/medium audit findings patched before tag
-
-**v1.5.0 (May 2026):**
-- B.3 hybrid pairing: ML-KEM-768 + X25519 contact handshake with downgrade defense
-- B.4 onion rotation: Tor v3 onion address rotates every 5–14 days to defeat long-term linkability
-- Hybrid identity proofs at first pair (Ed25519 + ML-DSA-65)
-- Per-direction PQ epoch infrastructure (groundwork for the v1.6.0 completion fix)
-
-**v1.2.0:**
-- Security hardening: video call camera deadlock fixed, password handling uses char[] throughout
-- Registration Lock: protect your account with PIN or password (PBKDF2-SHA256)
-- App icon changer: disguise as Calculator, Notes, or Weather
-- Chat text size chooser and bubble color picker
-- Navigation bar size setting
-- Invite Friends sharing feature
-- Edge-to-edge rendering for Android 15 (SDK 35)
-- Link previews default OFF (fetched via Tor when enabled)
-- Removed QR/zxing dependency, Bluetooth, Wi-Fi hotspot dead code
-- Cleaned 2,100+ dead localized strings across 47 languages
-
-**v1.0.10:**
-- Now available on Google Play Store
-- Fixed local self-view rotation during video calls
-- Fixed camera switch race condition
-- Vault UI refinements
-
-**v1.0.9:**
-- UI/UX improvements: rich empty states with icons across all list screens
-- Conversation empty state with contextual action prompt
-- zVault branding: updated all labels to match minimalist style
-
-**v1.0.8:**
-- Auto-wipe on max login attempts is now immediate (no confirmation dialog required)
-- Forensic tool detection (Cellebrite, GrayKey, ADB, USB data transfer) now triggers immediate app lock
-- Message clipboard auto-clears after 60 seconds
-- Emergency file corruption now overwrites entire file contents with secure flush
-
-**v1.0.7:**
-- Fixed self-view rotation during video calls (front camera formula corrected)
-- Fixed spurious "Camera error" toast appearing after hanging up a video call
-- Fixed call timer overlapping local video preview pip
-
-**v1.0.6:**
-- Video call security: AES-GCM authentication failure detection (stream integrity)
-- Video encoder drain thread: clean shutdown with EOS flag
-- Video decoder: consecutive failure tracking, codec error detection
-- Auth screen: FLAG_SECURE added to prevent screenshot leakage
-- Password handling: char[] passed directly to strength estimator, no String copy
-
-**v1.0.5:**
-- Video call quality: 640x480 @ 24fps / 600kbps, H.264 Main Profile Level 3.1
-- Remote video rotation: per-frame rotation metadata
-- Camera switch: async callback ensures correct transform after front/back switch
-- Video call UX: mute/speaker active state indicators, auto-speaker on video start
-- VoiceCallService: fix SecretKey zeroing, TorConnection/AudioRecord threading races
-
-**v1.0.4:**
-- P2P encrypted video calls over Tor
-- Crypto-protocol hardening: 8 vulnerabilities fixed
-- Voice signal ephemeral cleanup, zero-log CI enforcement
-
-**Planned:**
-- Multi-device sync
-- File transfer improvements
-- UI/UX refinements
-
----
+Report vulnerabilities through a private GitHub security advisory or to `support@zerion.chat`; see [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
-**Overview**
-- [Overview](docs/ZERION_OVERVIEW.md): plain-language introduction and how Zerion compares
-- [Technical Whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md): full architecture, crypto, transport, vault, non-custodial wallets and anti-forensics
-- [Offline Mesh and I2P](docs/ZERION_MESH_AND_I2P.md): the Bluetooth mesh and I2P transports and their threat models
+- [Overview](docs/ZERION_OVERVIEW.md), [Technical whitepaper](docs/ZERION_TECHNICAL_WHITEPAPER.md) (architecture, threat model, cryptography, limitations)
+- [Protocol index](docs/protocol/README.md): [ZTP and ZPP](docs/protocol/ZTP-ZPP.md), [ZWF and Mode 3-Full](docs/protocol/ZWF-MODE3FULL.md), [Sealed-sender envelope](docs/protocol/ASYNC-SEALED-SENDER.md), [Mesh transport](docs/protocol/MESH-TRANSPORT.md), [Embedded I2P](docs/protocol/EMBEDDED-I2P.md)
+- [Security claims](docs/protocol/SECURITY_CLAIMS.md), [Claims matrix (protocol invariants)](docs/protocol/SECURITY_CLAIMS_MATRIX.md), [SECURITY.md](SECURITY.md)
+- [Mesh and I2P](docs/ZERION_MESH_AND_I2P.md), [Wallet architecture](docs/WALLET_ARCHITECTURE.md), [Bitcoin](docs/BTC_ARCHITECTURE.md), [Monero](docs/XMR_ARCHITECTURE.md), [Wallet security invariants](docs/WALLET_SECURITY_INVARIANTS.md)
+- [F-Droid and native builds](docs/FDROID.md), [Native provenance](packaging/monero-android/PROVENANCE.md)
 
-**Protocol specifications (3.0)**
-- [Protocol index](docs/protocol/README.md): overview of the Zerion 3.0 protocol specifications
-- [ZTP and ZPP](docs/protocol/ZTP-ZPP.md): online transport and message-pull rhythm over Tor
-- [ZWF and Mode 3-Full](docs/protocol/ZWF-MODE3FULL.md): the wire format, fixed-size frames, cover traffic, and per-message post-quantum ratchet
-- [Async Sealed-Sender Envelope](docs/protocol/ASYNC-SEALED-SENDER.md): sender-anonymous store-and-forward messaging
-- [Mesh Transport](docs/protocol/MESH-TRANSPORT.md): flooding over Bluetooth Low Energy
-- [Embedded I2P Carrier](docs/protocol/EMBEDDED-I2P.md): the opt-in in-app I2P router
+How large language models are used in development, and what they are not used for: [zerion.chat/blog/llm-use-in-zerion.html](https://zerion.chat/blog/llm-use-in-zerion.html).
 
-**Wire formats**
-- [Introduction / pairing signatures](docs/wire/F2_INTRODUCTION_HYBRID_SIG.md): hybrid-signed pairing record spec
-- [Contact-add record placement](docs/wire/B3_RECORD_PLACEMENT.md): hybrid pairing record layout
-- [GroupTr Wire Protocol](docs/wire/GROUPTR_WIRE_PROTOCOL.md): group invite and membership records
-- [Channels Wire Protocol](docs/wire/CHANNELS_WIRE_PROTOCOL.md): publisher-to-subscriber broadcast records
+## Support
 
----
+Zerion has no investors, no ads, no subscription and no telemetry. Donations fund development, security reviews and infrastructure. The addresses below are the ones published on [zerion.chat/donate.html](https://zerion.chat/donate.html).
 
-## Development & Auditing
+Bitcoin: `bc1q5hfmyzkadwww9r96sff2ew36ctksmyapucx4kq`
 
-Transparency on how Zerion is built.
+Monero: `89GAQXYpdb13ReGi1c86PrFqxheEBfoB3ekoSL1AWUcV9DfH9PKnfaRRmoispTUSymKK3ykPK4tdYX1uiLxTNjPC8eGX9V4`
 
-Large language models are used in two specific areas during Zerion's development:
-
-- **Internal audits and security testing.** Pre-release codebase reviews, static-analysis sweeps, lock-leak detection, race-condition hunts, dependency CVE checks, and adversarial reviews of new code paths. Any finding is subsequently reviewed by the project's pentesters and developers before it is acted on. Findings that turn out to be wrong are discarded.
-- **Tooling and routine work.** Validator scripts that pin invariants into static checks, release-note drafting, and documentation. Minimal, scoped use.
-
-**LLMs are not used for the cryptography.** The cryptographic primitives, key management, session-state and ratchet logic, and wire-protocol framing are authored and owned by the project's developers and reviewed by pentesters. The low-level primitives come from established libraries (Bouncy Castle, the Tor daemon, SQLCipher). The LLM does not have commit authority. Every commit and rationale is in this public git history.
-
-Full statement: [zerion.chat/blog/llm-use-in-zerion.html](https://zerion.chat/blog/llm-use-in-zerion.html)
-
----
-
-## Support Zerion
-
-Zerion has no investors, no ads, no subscription, and no telemetry. The project is funded entirely by donations from people who value private communication. If Zerion is useful to you, please consider supporting development:
-
-**Bitcoin (BTC)**
-```
-bc1qkjgzqmgrgtq3wh2qhrtmsg50cfrlcsssn5u97y
-```
-
-**Bitcoin Lightning**
-```
-Zerion@cake.cash
-```
-
-**Monero (XMR)**
-```
-83yVsTFT8tt8m9UBQ5KUP9hKHcNASFRvN3ewzUraTFb2TXq1BkeCvUucUusTA1dmgsJjWKGLt3s9AMF5bp15Qh1P9fNY4bF
-```
-
-**Ethereum / USDT (ERC-20)**
-```
-0xE80e802736d759847918EcBD90457E6aAa5Cca45
-```
-
-Donations fund security audits, infrastructure (F-Droid repo, onion-rotation testing, signing keys), and continued development of new privacy features. Thank you.
-
-More details and copy-to-clipboard buttons: [zerion.chat/donate.html](https://zerion.chat/donate.html)
-
----
-
-## Origins
-
-Zerion began as a fork of [Briar](https://briarproject.org), the peer-to-peer messaging project by the Briar Project, and would not exist without their work. We are grateful for it.
-
-Since version 3.0 the transport and synchronisation stack has been replaced with Zerion's own protocols (ZTP, ZWF, ZPP, ZMM) carrying a hybrid post-quantum ratchet; Briar is credited for the identity, storage and Tor-integration foundations the project grew from. Zerion has diverged from upstream Briar in both wire protocol and feature set. It is an independent project and is **not affiliated with, nor endorsed by, the Briar Project**.
-
-- Briar: https://briarproject.org
-- Briar source: https://code.briarproject.org/briar/briar
+Ethereum / USDT (ERC-20): `0x8F639ec074a4d89546e61bDd84F081EE61E1FCF6`
 
 ## License
 
-Zerion is free and open-source under the **GNU General Public License v3.0 (GPLv3)** - the same license as Briar, the upstream project it is derived from. See [LICENSE.txt](LICENSE.txt) for the full text. Modifications to Briar's original files are recorded in this repository's public git history.
+Zerion is free and open-source software under the GNU General Public License v3.0; see [LICENSE.txt](LICENSE.txt). Third-party software notices and attribution are in [NOTICE.md](NOTICE.md).
+
+## Releases
+
+[GitHub Releases](https://github.com/zerionproject/Zerion/releases) carry every version's APK and notes; [CHANGELOG.md](CHANGELOG.md) is the release history.

@@ -1,0 +1,56 @@
+{
+  "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact.",
+  "android": {
+    "version": "3.0.11",
+    "versionCode": 31100,
+    "tag": "v3.0.11",
+    "commit": "6e24cdd8476b9ce96fb27ecae81203256bd52cfa",
+    "minAndroid": "10",
+    "minApi": 29,
+    "apk": {
+      "name": "zerion-3.0.11.apk",
+      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.11/zerion-3.0.11.apk",
+      "sha256": "5b7b24ea25c2cacdcf0458486b6f4467236f9e127a7514e66ff0246f52ff750f",
+      "sizeBytes": 81565731,
+      "verified": "2026-09-23"
+    },
+    "signingCertSha256": "d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
+    "channels": {
+      "github": {
+        "version": "3.0.11",
+        "url": "https://github.com/zerionproject/Zerion/releases/latest"
+      },
+      "play": {
+        "version": "3.0.11",
+        "url": "https://play.google.com/store/apps/details?id=com.professor.zerion"
+      },
+      "fdroid": {
+        "version": "3.0.3",
+        "url": "https://f-droid.org/packages/com.professor.zerion/",
+        "checked": "2026-09-23",
+        "note": "The 3.0.11 entry is merged in fdroiddata; F-Droid's build of it is pending."
+      }
+    }
+  },
+  "desktop": {
+    "version": "1.0.1",
+    "tag": "v1.0.1",
+    "repo": "https://github.com/zerionproject/Zerion-Desktop",
+    "url": "https://github.com/zerionproject/Zerion-Desktop/releases/latest",
+    "artifacts": [
+      "Zerion-1.0.1.msi",
+      "Zerion-1.0.1-windows-x64.zip",
+      "zerion_1.0.1_amd64.deb",
+      "Zerion-1.0.1-linux-x64.tar.gz",
+      "Zerion-1.0.1.flatpak",
+      "Zerion-1.0.1-aarch64.flatpak"
+    ]
+  },
+  "platforms": {
+    "android": "AVAILABLE",
+    "windows": "AVAILABLE",
+    "linux": "AVAILABLE",
+    "macos": "IN DEVELOPMENT",
+    "ios": "IN DEVELOPMENT"
+  }
+}

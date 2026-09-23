@@ -1,0 +1,24 @@
+{
+  "$comment": "Canonical cryptographic primitives as implemented on this branch. Each entry names the source that uses the primitive. scripts/check-docs.py verifies that the public documents and the website name these primitives and none that are absent here.",
+  "primitives": [
+    {"purpose": "Message AEAD on the wire (ZWF)", "primitive": "XSalsa20-Poly1305", "params": "256-bit key, 24-byte nonce, 16-byte tag", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/XSalsa20Poly1305AuthenticatedCipher.java"},
+    {"purpose": "Post-quantum key encapsulation", "primitive": "ML-KEM-768", "params": "encapsulation key 1184 B, ciphertext 1088 B, shared secret 32 B", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/pcs/MlKemProviderImpl.java"},
+    {"purpose": "Classical key agreement", "primitive": "X25519", "params": "32-byte public key", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/HybridKeyAgreement.java"},
+    {"purpose": "Post-quantum signature", "primitive": "ML-DSA-65", "params": "public key 1952 B, signature 3309 B", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/HybridSignature.java"},
+    {"purpose": "Classical signature", "primitive": "Ed25519", "params": "64-byte signature", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/HybridSignature.java"},
+    {"purpose": "Hash, MAC and key derivation in the messaging core", "primitive": "BLAKE2b-256", "params": "keyed, domain-separated labels", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/CryptoComponentImpl.java"},
+    {"purpose": "Message ratchet", "primitive": "Mode 3-Full", "params": "per-message ML-KEM-768 over a forward-secret symmetric chain; sender key pair rotates every 16 own sends; receiver retains 32 key pairs", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/pcs/Mode3FullRatchetImpl.java"},
+    {"purpose": "Call and vault AEAD", "primitive": "AES-256-GCM", "params": "12-byte nonce, 16-byte tag", "source": "zerion-android/src/main/java/com/professor/zerion/android/vault/crypto/VaultCrypto.java"},
+    {"purpose": "Vault chunk keys and call endpoint keys", "primitive": "HKDF-SHA256", "params": "HMAC-SHA256 extract and expand", "source": "zerion-android/src/main/java/com/professor/zerion/android/vault/crypto/VaultCrypto.java"},
+    {"purpose": "Account database key", "primitive": "Argon2id", "params": "64 to 256 MiB adapted to the device (default 128 MiB), 3 iterations, parallelism 1, plus a keystore HMAC factor", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/Argon2idKdf.java"},
+    {"purpose": "Vault master password", "primitive": "Argon2id", "params": "256 MiB, 3 iterations", "source": "zerion-android/src/main/java/com/professor/zerion/android/vault/crypto/VaultCrypto.java"},
+    {"purpose": "Per-wallet password", "primitive": "Argon2id", "params": "64 MiB, 3 iterations", "source": "zerion-android/src/main/java/com/professor/zerion/android/vault/crypto/Argon2.java"},
+    {"purpose": "Legacy account key files", "primitive": "scrypt", "params": "read-only for files written before Argon2id", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/ScryptKdf.java"},
+    {"purpose": "Duress password, Bitcoin section credential", "primitive": "PBKDF2-HMAC-SHA256", "params": "200 000 and 120 000 iterations", "source": "zerion-android/src/main/java/com/professor/zerion/android/panic/WipePasswordManager.java"},
+    {"purpose": "Identifiers and fingerprints", "primitive": "SHA-256", "params": "ML-KEM key-pair ids, TLS pins, transaction fingerprints, mesh discovery", "source": "zerion-core-api/src/main/java/org/zerionproject/core/api/crypto/pcs/KpId.java"},
+    {"purpose": "Tor rendezvous derivation", "primitive": "SHA-512", "params": "", "source": "zerion-core/src/main/java/org/zerionproject/core/plugin/tor/TorRendezvousCryptoImpl.java"},
+    {"purpose": "ML-KEM key-seed hash", "primitive": "SHA3-256", "params": "", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/pcs/MlKemProviderImpl.java"},
+    {"purpose": "Database at rest", "primitive": "SQLCipher (AES-256)", "params": "schema version 67", "source": "zerion-core/src/main/java/org/zerionproject/core/db/JdbcDatabase.java"}
+  ],
+  "absent": ["Triple Ratchet", "HKDF-BLAKE2b", "PBKDF2-SHA256 for the vault", "military-grade"]
+}

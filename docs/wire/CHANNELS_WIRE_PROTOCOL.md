@@ -55,7 +55,7 @@ Consequences:
 In Zerion 3.0 these records are carried inside ZWF frames over the ZPP constant-rate transport, tagged by the ZMM record registry; the record format below is unchanged.
 
 Every RPC is a single **BdfDictionary** (not a BdfList), written with the
-Bramble `BdfWriter` and read with `BdfReader`. Each dictionary carries a
+`BdfWriter` and read with `BdfReader`. Each dictionary carries a
 `"type"` string key whose value is one of the `WIRE_TYPE_*` constants below.
 The publisher dispatches inbound requests on that type
 (`ChannelManagerImpl.handlePublisherRequest` via

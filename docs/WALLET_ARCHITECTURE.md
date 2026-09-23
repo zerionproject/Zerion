@@ -9,7 +9,6 @@ This is derived from the current production code, not from historical plans.
 - Monero specifics: `XMR_ARCHITECTURE.md`
 - Non-negotiable invariants and threat model: `WALLET_SECURITY_INVARIANTS.md`
 - Native (Monero) JNI boundary: `XMR_JNI_CONTRACT.md`
-- Release gates: `WALLET_RELEASE_CHECKLIST.md`
 - Native supply chain: `packaging/monero-android/PROVENANCE.md` (Monero) and
   `zerion-android/src/main/cpp/PROVENANCE.md` (Argon2)
 
@@ -169,11 +168,10 @@ zeroed password) recover automatically when opened with the real password.
 
 ## Release model
 
-Wallets ship only after the gates in `WALLET_RELEASE_CHECKLIST.md`: clean source
-(no developer comments, no logging), reproducible hash-pinned native libraries,
-device regression on the developer test device, and — for a freeze — the user's
-own funded acceptance on their device. Developers never broadcast a funded
-transaction; freeze happens only after the user reports a pass.
+Wallets ship only after clean source (no developer comments, no logging),
+reproducible hash-pinned native libraries, device regression on a test device
+and a funded acceptance test on a real device. No automated test ever
+broadcasts a funded transaction.
 
 ## Feature status
 

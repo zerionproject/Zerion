@@ -1,0 +1,50 @@
+name: Documentation consistency
+
+on:
+  push:
+    paths:
+      - "README.md"
+      - "SECURITY.md"
+      - "CONTRIBUTING.md"
+      - "docs/**"
+      - "fastlane/**"
+      - "scripts/check-docs.py"
+      - "scripts/render-release-refs.py"
+      - ".github/workflows/docs-consistency.yml"
+  pull_request:
+    paths:
+      - "README.md"
+      - "SECURITY.md"
+      - "CONTRIBUTING.md"
+      - "docs/**"
+      - "fastlane/**"
+      - "scripts/check-docs.py"
+      - "scripts/render-release-refs.py"
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check documents against the release manifest, the crypto list and the live website
+        run: python3 scripts/check-docs.py
+      - name: Verify the published APK hash against the manifest
+        run: |
+          python3 - <<'EOF'
+          import json, hashlib, urllib.request
+          m = json.load(open("docs/release-manifest.json"))["android"]["apk"]
+          data = urllib.request.urlopen(m["url"], timeout=300).read()
+          h = hashlib.sha256(data).hexdigest()
+          assert len(data) == m["sizeBytes"], "size differs: %d" % len(data)
+          assert h == m["sha256"], "hash differs: %s" % h
+          print("published APK matches the manifest")
+          EOF

@@ -7,9 +7,10 @@ the pull protocol (ZPP), and the Mode 3-Full ratchet are covered in
 [ZERION_TECHNICAL_WHITEPAPER.md](ZERION_TECHNICAL_WHITEPAPER.md); this document
 assumes that background.
 
-Neither transport weakens the Tor-only guarantee of the shipped release. Tor is
-always on and is the anonymity floor. The mesh is off by default; I2P is a
-debug-build-only opt-in, also off by default. A fresh install runs Tor and
+Neither transport weakens the guarantee that online messaging runs over Tor,
+which is mandatory and always on. The mesh is off by default. I2P is compiled
+into the release build and is off by default; the user enables it behind a
+consent screen that states its privacy property. A fresh install runs Tor and
 nothing else.
 
 ---
@@ -313,16 +314,18 @@ the two are contacts and can exchange prekeys and messages over the mesh.
 
 ## 15. Status and default
 
-I2P is an **opt-in, debug-build-only** transport. It is off by default
+I2P is an **opt-in** transport. It is off by default
 (`I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE = false`), and the plugin enforces this
 at startup: without the explicit preference, `I2pDuplexPlugin.start()` sets the
-plugin to `DISABLED` and returns. Release builds do not contain the I2P plugin at
-all. Tor stays mandatory and always on when I2P is enabled; I2P is an additional
-path, not a replacement.
+plugin to `DISABLED` and returns. The router and the plugin are part of the
+release build (`AppModule.shouldEnableI2p()` registers the plugin factory in
+every build), so a user who accepts the consent screen can turn it on. Tor stays
+mandatory and always on when I2P is enabled; I2P is an additional path, not a
+replacement.
 
 I2P is present so that Zerion can be reached over a second anonymity network with
-a different topology from Tor. It is gated to debug builds until a packet-capture
-audit confirms the residual exposure below.
+a different topology from Tor. Its residual exposure (participation is visible
+to the user's network, Section 20) is stated on the consent screen.
 
 ## 16. Embedded in-process router
 

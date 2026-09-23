@@ -42,7 +42,7 @@ Three independent protections under Security settings, all off by default:
 
 PRIVACY AND SECURITY
 
-• Tor-only transport. No Wi-Fi, Bluetooth, or LAN exposure
+• Tor, mandatory and always on. Online messaging never bypasses it; an optional Bluetooth mesh for offline messaging and an optional I2P transport are off by default
 • No phone number, no email, no central server
 • No telemetry, no analytics, no crash reporting
 • No logging of any kind, verified at build time
@@ -50,7 +50,7 @@ PRIVACY AND SECURITY
 • Screenshots blocked inside the app
 • Notifications never reveal message contents
 • The clipboard auto-clears after you copy something sensitive
-• Fully open source, GPL v3, security-reviewed before each release
+• Fully open source, GPL v3, reviewed internally before each release
 
 
 UNDER THE HOOD
@@ -75,7 +75,7 @@ People who want to talk to other people without a third party in the middle. Jou
 WHAT IT WON'T DO
 
 • It won't message people who aren't on Zerion
-• It won't work without an internet connection (Tor needs one)
+• Online messaging needs an internet connection for Tor; the optional Bluetooth mesh can carry messages between nearby phones without one
 • It won't restore your account if you forget the password. There is no recovery, and that's the point
 
 

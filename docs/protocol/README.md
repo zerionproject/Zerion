@@ -4,12 +4,19 @@ This directory documents the protocols that Zerion defines and implements. It
 covers the wire formats, the cryptographic constructions, and the message flow
 for each layer of the stack.
 
-Zerion is built on the Briar and Bramble framework. Briar provides the parts
-that Zerion reuses without change: the local database, the synchronisation
-bookkeeping, identity storage, the plugin and lifecycle machinery, and the Tor
-onion wrapper. The protocols described here are Zerion's own work and replace or
-sit above those inherited parts. Where a document refers to inherited Briar
-behaviour it says so.
+## Zerion protocol components
+
+| Component | Where | Document |
+| --- | --- | --- |
+| ZTP, the Tor transport seam | `zerion-core/.../transport/Ztp*` | ZTP-ZPP.md |
+| ZWF, the fixed-size wire format | `zerion-core/.../crypto/ZwfMode3FullStream*`, `zerion-wire` | ZWF-MODE3FULL.md |
+| ZPP, the paced cover-traffic scheduler | `zerion-core/.../sync/Zpp*` | ZTP-ZPP.md |
+| ZMM, application records and fragmentation | `zerion-core/.../message` | ZTP-ZPP.md |
+| Mode 3-Full, the per-message post-quantum ratchet | `core/crypto/pcs` | ZWF-MODE3FULL.md |
+| Async sealed-sender envelope | `core/crypto/async` | ASYNC-SEALED-SENDER.md |
+| Bluetooth mesh transport | `zerion-core/.../transport/mesh`, `zerion-android/.../mesh` | MESH-TRANSPORT.md |
+| Embedded I2P carrier | `zerion-core/.../transport/i2p`, `zerion-android/.../i2p`, `i2p-embedded` | EMBEDDED-I2P.md |
+| Onion address rotation | `zerion-core/.../transport/B4OnionRotation` | ZTP-ZPP.md |
 
 ## Protocol stack
 
@@ -60,7 +67,10 @@ All layers share one primitive set.
 | Key agreement (classical) | X25519 |
 | Signature (post-quantum) | ML-DSA-65 |
 | Signature (classical) | Ed25519 |
-| Hashing and key derivation | SHA-256 and SHA-512 based KDF and MAC |
+| Hashing, MAC and key derivation (messaging core) | keyed BLAKE2b-256 with domain-separated labels (`CryptoComponentImpl`) |
+| Identifiers and fingerprints | SHA-256 (ML-KEM key-pair ids, mesh discovery); SHA-512 in the Tor rendezvous derivation; SHA3-256 for the ML-KEM key-seed hash |
+| Password stretching | Argon2id (account database key, vault, wallets); PBKDF2-HMAC-SHA256 (duress password, Bitcoin section credential); legacy scrypt files still open |
+| Vault and calls | AES-256-GCM; HKDF-SHA256 and HMAC-SHA256 for vault chunk keys and call endpoint keys |
 
 Public keys and signatures are hybrid: a classical key concatenated with a
 post-quantum key, so a break of either family alone does not break the
@@ -72,3 +82,26 @@ construction. Sizes are listed in each document and are fixed by
 Byte layouts are shown as field tables with fixed offsets. Integers are
 big-endian unless stated otherwise. Lengths are in bytes. A field written as
 `name:N` is N bytes wide; `name:uintK` is a K-bit big-endian unsigned integer.
+
+## Component provenance
+
+This section is a provenance record, kept separate from the description of the
+current architecture above. The components listed here contain code derived
+from Briar's Bramble library, adapted and extended by Zerion; the licence record
+is [NOTICE.md](../../NOTICE.md). Bramble's transport and synchronisation stack is
+not used: the online path is ZTP, ZWF, ZPP and ZMM. Zerion is an independent
+project and is not affiliated with or endorsed by the Briar Project.
+
+| Component | Where | Notes |
+| --- | --- | --- |
+| Database and settings layer | `zerion-core/.../core/db`, `core/settings` | SQLCipher-backed on Android; schema extended by Zerion |
+| BDF data encoding | `core/data` | unchanged encoding rules |
+| Record layer | `core/record` | used by the pairing handshake and the nearby key agreement; payload caps added by Zerion |
+| Identity and contact management | `core/identity`, `core/contact` | extended with hybrid post-quantum identity keys, downgrade protection and rotating pairing keys |
+| Pairing rendezvous and handshake framework | `core/rendezvous`, `core/contact/HandshakeManagerImpl` | extended with an ML-KEM-768 encapsulation to the peer's ephemeral key |
+| Nearby key agreement (QR / Bluetooth) | `core/keyagreement` | BQP version 4; classical X25519 in 3.0.11 |
+| Sync bookkeeping and validation pipeline | `core/sync` | message validation, delivery and dependency tracking; the Bramble sync transport is not used |
+| Plugin and lifecycle machinery, event bus | `core/plugin`, `core/lifecycle`, `core/event` | hosts Zerion's transports |
+| Tor onion wrapper | `org.briarproject:onionwrapper-core` and `-android` 0.1.4 (Maven) | third-party library; the `onionwrapper/` source tree in the repository is a copy of the same version and is not part of the build |
+| Messaging, introduction and group frameworks | `zerion-app/.../messaging`, `introduction`, `client` | introductions carry hybrid signatures; groups are Zerion's `grouptr` |
+
