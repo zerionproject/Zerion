@@ -210,6 +210,29 @@ public class TorPrivacyConfiguratorImplTest {
 		assertTrue(setconfs.isEmpty());
 	}
 
+	/**
+	 * DV-04: an account reset deletes the files directory after the socket
+	 * path was chosen, so the configurator must create the directory and
+	 * clear a stale socket itself before Tor is asked to bind there.
+	 */
+	@Test(timeout = 20_000)
+	public void testCreatesTheSocketDirectoryAndClearsAStaleSocket()
+			throws Exception {
+		File dir = new File(torDir, "zs");
+		socketFile = new File(dir, "socks");
+		LISTENER = "unix:" + socketFile.getAbsolutePath();
+		assertFalse(dir.exists());
+		configurator().applyAndVerify();
+		assertTrue(dir.isDirectory());
+		assertFalse(socketFile.exists());
+		assertTrue(setconfs.get(0).contains("SocksPort=\"" + LISTENER));
+		setconfs.clear();
+		assertTrue(socketFile.createNewFile());
+		configurator().applyAndVerify();
+		assertFalse(socketFile.exists());
+		assertEquals(1, setconfs.size());
+	}
+
 	@Test(timeout = 20_000)
 	public void testFailsClosedWithoutTheControlCookie() throws Exception {
 		assertTrue(new File(torDir, ".tor/control_auth_cookie").delete());

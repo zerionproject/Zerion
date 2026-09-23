@@ -36,6 +36,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * The recovery contract of the Tor transport after a dead network spell:
@@ -54,6 +55,7 @@ public class ZtpTorTransportRecoveryTest {
 		volatile TorState state = TorState.CONNECTING;
 		volatile int failStarts = 0;
 		volatile boolean refuseBridges = false;
+		volatile boolean refuseEnable = false;
 		@Nullable
 		volatile java.util.concurrent.CountDownLatch holdStart = null;
 		private int onions = 0;
@@ -101,9 +103,12 @@ public class ZtpTorTransportRecoveryTest {
 			calls.add("remove:" + onion);
 		}
 
-		public void enableNetwork(boolean enable) {
+		public void enableNetwork(boolean enable) throws IOException {
 			enableCalls.add(enable);
 			calls.add("network:" + enable);
+			if (enable && refuseEnable) {
+				throw new IOException("Failed to bind one of the listener ports");
+			}
 		}
 
 		public void enableBridges(List<String> bridges) throws IOException {
@@ -265,6 +270,17 @@ public class ZtpTorTransportRecoveryTest {
 	private ZtpTorTransport started(@Nullable String privateKey,
 			SettingsManager settings, TorProcessWatch watch)
 			throws Exception {
+		ZtpTorTransport t = built(settings, watch);
+		t.start(privateKey);
+		assertEquals(asList(true), tor.enableCalls);
+		tor.enableCalls.clear();
+		tor.calls.clear();
+		transport = t;
+		return t;
+	}
+
+	private ZtpTorTransport built(SettingsManager settings,
+			TorProcessWatch watch) {
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
 			public void handlePaired(TransportId transportId, int contactId,
@@ -290,11 +306,6 @@ public class ZtpTorTransportRecoveryTest {
 				}, watch);
 		t.clock = now::get;
 		t.sleeper = sleeps::add;
-		t.start(privateKey);
-		assertEquals(asList(true), tor.enableCalls);
-		tor.enableCalls.clear();
-		tor.calls.clear();
-		transport = t;
 		return t;
 	}
 
@@ -372,6 +383,33 @@ public class ZtpTorTransportRecoveryTest {
 		assertFalse("the network was not enabled after the stop",
 				tor.calls.subList(tor.calls.indexOf("start"),
 						tor.calls.size()).contains("network:true"));
+	}
+
+	/**
+	 * DV-04: Tor refuses to enable the network when its SOCKS listener
+	 * cannot bind. The start must then fail with Tor stopped instead of
+	 * leaving a Tor process running with the network disabled and the
+	 * transport reporting itself as started.
+	 */
+	@Test
+	public void torIsStoppedWhenTheNetworkCannotBeEnabled()
+			throws Exception {
+		ZtpTorTransport t = built(new NoSettings(), new TorProcessWatch());
+		tor.refuseEnable = true;
+		try {
+			t.start(null);
+			fail();
+		} catch (IOException expected) {
+		}
+		assertEquals(asList("start", "bridges:off", "network:true", "stop"),
+				tor.calls);
+		tor.refuseEnable = false;
+		tor.calls.clear();
+		t.start(null);
+		transport = t;
+		assertEquals(asList("start", "bridges:off", "network:true"),
+				tor.calls.subList(0, 3));
+		assertFalse(tor.calls.contains("stop"));
 	}
 
 	@Test

@@ -18,8 +18,12 @@ import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -66,6 +70,7 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	}
 
 	private final File torDirectory;
+	private final File socksPath;
 	private final String listener;
 	private final ControlConnectionFactory connectionFactory;
 
@@ -79,6 +84,7 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	TorPrivacyConfiguratorImpl(File torDirectory, File socksPath,
 			ControlConnectionFactory connectionFactory) {
 		this.torDirectory = torDirectory;
+		this.socksPath = socksPath;
 		this.listener = listenerFor(socksPath);
 		this.connectionFactory = connectionFactory;
 	}
@@ -94,6 +100,7 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 
 	@Override
 	public void applyAndVerify() throws IOException {
+		prepareSocketDirectory();
 		byte[] cookie = readCookie();
 		try (ControlConnection c = connectionFactory.open()) {
 			requireOk(c.send("AUTHENTICATE "
@@ -118,6 +125,43 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		} finally {
 			Arrays.fill(cookie, (byte) 0);
 		}
+	}
+
+	/**
+	 * Tor binds the Unix socket itself, but only into a directory that
+	 * exists. The directory is created here, right before the SETCONF that
+	 * needs it, because an account reset wipes the files directory after
+	 * the path was chosen at startup and Tor would otherwise refuse to
+	 * enable the network. The directory is restricted to the owner and a
+	 * stale socket file from an earlier process is removed so the bind
+	 * cannot fail on it either.
+	 */
+	private void prepareSocketDirectory() throws IOException {
+		File dir = socksPath.getAbsoluteFile().getParentFile();
+		if (dir == null) throw new IOException("Tor socket directory");
+		if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) {
+			throw new IOException("Tor socket directory");
+		}
+		ownerOnly(dir);
+		if (socksPath.exists() && !socksPath.delete()) {
+			throw new IOException("stale Tor socket");
+		}
+	}
+
+	/**
+	 * Restricts the directory to its owner. Only a POSIX file system can
+	 * express that, so on other hosts the directory is left as created.
+	 */
+	private static void ownerOnly(File dir) throws IOException {
+		Path p = dir.toPath();
+		if (!p.getFileSystem().supportedFileAttributeViews()
+				.contains("posix")) {
+			return;
+		}
+		Files.setPosixFilePermissions(p, EnumSet.of(
+				PosixFilePermission.OWNER_READ,
+				PosixFilePermission.OWNER_WRITE,
+				PosixFilePermission.OWNER_EXECUTE));
 	}
 
 	private byte[] readCookie() throws IOException {

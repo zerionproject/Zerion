@@ -185,7 +185,15 @@ public class ZtpTorTransport implements OverlayTransport {
 			tor.stop();
 			throw new IOException("stopped during start");
 		}
-		tor.enableNetwork(true);
+		try {
+			tor.enableNetwork(true);
+		} catch (IOException e) {
+			try {
+				tor.stop();
+			} catch (IOException | InterruptedException ignored) {
+			}
+			throw e;
+		}
 	}
 
 	/**
