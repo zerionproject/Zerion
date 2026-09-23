@@ -63,7 +63,7 @@ Zerion's post-compromise security rests on a per-message post-quantum (ML-KEM-76
 Real peer-to-peer encrypted voice and video calls routed exclusively through Tor hidden services.
 No STUN, no TURN, no VoIP servers - just private communication between devices.
 
-- **Voice calls**: Opus codec at 24 kbps (16 kHz mono), AES-256-GCM encrypted
+- **Voice calls**: uncompressed 16 kHz mono PCM (256 kbps) in fixed 20 ms frames, AES-256-GCM encrypted
 - **Video calls**: H.264 Main Profile (Level 3.1) at 640×480, AES-256-GCM encrypted with padded frames; adaptive frame rate and bitrate that step down under poor network conditions
 - Camera switching, video pause/resume, and correct portrait orientation
 - All frame metadata encrypted inside the payload - zero plaintext metadata on wire
