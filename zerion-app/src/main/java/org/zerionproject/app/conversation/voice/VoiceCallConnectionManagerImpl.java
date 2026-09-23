@@ -51,12 +51,15 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 			Executors.newSingleThreadScheduledExecutor();
 
 	/**
-	 * How long one dial may take before the next attempt starts. A fresh
-	 * rendezvous point often needs well over ten seconds to become
-	 * reachable, so this is generous; the call setup timeout in the
-	 * service still bounds the whole sequence.
+	 * How long one dial may take before the next attempt starts. A dial
+	 * that is abandoned can still complete and reach the callee, which
+	 * would adopt that orphan instead of the connection of the next
+	 * attempt, so this is at least as long as every setup timeout in the
+	 * service: an attempt is only abandoned once the setup it belonged to
+	 * has already given up and closed its endpoint. Attempts that fail
+	 * quickly are still retried.
 	 */
-	static final long DIAL_TIMEOUT_MS = 30_000;
+	static final long DIAL_TIMEOUT_MS = 60_000;
 	private static final Object ABANDONED = new Object();
 
 	private final long dialTimeoutMs;

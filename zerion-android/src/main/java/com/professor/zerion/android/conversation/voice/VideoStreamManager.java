@@ -48,6 +48,21 @@ class VideoStreamManager {
 		void onVideoStarted();
 		void onVideoStopped();
 		void onVideoError(String reason);
+		void onVideoLinkLost();
+	}
+
+	private volatile boolean linkLostReported = false;
+
+	/**
+	 * A send or receive failure means the video link is gone, which is the
+	 * normal end of the video when the other side stops it or hangs up; it
+	 * is reported once and apart from camera errors.
+	 */
+	private void reportLinkLost() {
+		if (!running || linkLostReported) return;
+		linkLostReported = true;
+		VideoStateCallback c = stateCallback;
+		if (c != null) c.onVideoLinkLost();
 	}
 
 	interface VideoRotationCallback {
@@ -98,9 +113,7 @@ class VideoStreamManager {
 				sendEncryptedFrame(data, offset, length, pts,
 						isKeyFrame);
 			} catch (Exception e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Send failed");
-				}
+				reportLinkLost();
 			}
 		});
 
@@ -132,9 +145,7 @@ class VideoStreamManager {
 			try {
 				receiveLoop();
 			} catch (IOException e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Receive failed");
-				}
+				reportLinkLost();
 			}
 		}, "VideoStream-Receive");
 		receiveThread.setDaemon(true);
@@ -280,9 +291,7 @@ class VideoStreamManager {
 				sendEncryptedFrame(data, offset, length, pts,
 						isKeyFrame);
 			} catch (Exception e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Send failed");
-				}
+				reportLinkLost();
 			}
 		});
 

@@ -2269,11 +2269,27 @@ public class VoiceCallService extends Service implements EventListener {
 
 				@Override
 				public void onVideoError(String reason) {
+					if (isShuttingDown
+							|| callState == CallState.DISCONNECTED) {
+						return;
+					}
 					mainHandler.post(() -> {
 						if (callActivity != null) {
 							callActivity.showVideoError(
 									"Camera error: " + reason);
 						}
+					});
+				}
+
+				@Override
+				public void onVideoLinkLost() {
+					if (isShuttingDown
+							|| callState != CallState.CONNECTED
+							|| !videoEnabled) {
+						return;
+					}
+					executorService.execute(() -> {
+						if (videoEnabled) stopVideoStreaming();
 					});
 				}
 			});
