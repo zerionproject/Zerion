@@ -15,9 +15,11 @@ import org.zerionproject.core.api.network.event.NetworkStatusEvent;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.Plugin.State;
 import org.zerionproject.core.api.plugin.I2pConstants;
+import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
 import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
 import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.event.TransportStateEvent;
@@ -77,6 +79,23 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Boolean> torOnionPublished =
 			new MutableLiveData<>(false);
 
+	/**
+	 * How long after Tor reports a circuit the address is assumed to be
+	 * published when no contact connection has shown it. The wrapper's
+	 * descriptor upload notification is only delivered while its logging
+	 * is enabled, which it never is here, so a contact connection over Tor
+	 * is the proof used instead, and a lone device without contacts online
+	 * falls back to this grace period.
+	 */
+	private static final long PUBLISH_GRACE_MS = 60_000;
+	private final android.os.Handler mainHandler =
+			new android.os.Handler(android.os.Looper.getMainLooper());
+	private final Runnable assumePublished = () -> {
+		if (torPluginState.getValue() == State.ACTIVE) {
+			torOnionPublished.setValue(true);
+		}
+	};
+
 	private final MutableLiveData<B4OnionRotation.RotationPhase>
 			rotationPhase = new MutableLiveData<>(
 			B4OnionRotation.RotationPhase.IDLE);
@@ -93,7 +112,8 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			PluginManager pluginManager, EventBus eventBus,
 			NetworkManager networkManager,
 			TransportPropertyManager transportPropertyManager,
-			B4OnionRotation b4OnionRotation) {
+			B4OnionRotation b4OnionRotation,
+			ConnectionRegistry connectionRegistry) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.app = app;
 		this.settingsManager = settingsManager;
@@ -105,6 +125,12 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
+		boolean reachable = !connectionRegistry
+				.getConnectedContacts(TorConstants.ID).isEmpty();
+		torOnionPublished.setValue(reachable);
+		if (!reachable && torPluginState.getValue() == State.ACTIVE) {
+			mainHandler.postDelayed(assumePublished, PUBLISH_GRACE_MS);
+		}
 		loadSettings();
 		loadLocalOnion();
 		loadRotationState();
@@ -113,6 +139,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	@Override
 	protected void onCleared() {
 		super.onCleared();
+		mainHandler.removeCallbacks(assumePublished);
 		eventBus.removeListener(this);
 	}
 
@@ -137,7 +164,10 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				torPluginState.postValue(t.getState());
 				if (t.getState() == State.ACTIVE) {
 					loadLocalOnion();
+					mainHandler.removeCallbacks(assumePublished);
+					mainHandler.postDelayed(assumePublished, PUBLISH_GRACE_MS);
 				} else {
+					mainHandler.removeCallbacks(assumePublished);
 					torOnionPublished.postValue(false);
 					if (t.getState() == State.STARTING_STOPPING) {
 						torBootstrap.postValue(0);
@@ -150,6 +180,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			torBootstrap.postValue(((TorBootstrapEvent) e).getPercentage());
 		} else if (e instanceof TorOnionPublishedEvent) {
 			torOnionPublished.postValue(true);
+		} else if (e instanceof ConnectionOpenedEvent) {
+			ConnectionOpenedEvent c = (ConnectionOpenedEvent) e;
+			if (c.getTransportId().equals(TorConstants.ID)) {
+				torOnionPublished.postValue(true);
+			}
 		}
 	}
 
@@ -166,6 +201,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	 * state and the bootstrap and publication events of the new instance.
 	 */
 	void restartTor() {
+		mainHandler.removeCallbacks(assumePublished);
 		torOnionPublished.setValue(false);
 		torBootstrap.setValue(0);
 		pluginManager.restartPlugin(TorConstants.ID);
