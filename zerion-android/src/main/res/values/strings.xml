@@ -534,6 +534,11 @@
 	<string name="not_available">Not available</string>
 	<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
 	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services…</string>
+	<string name="tor_hidden_services_publishing">Publishing your address to the Tor network…</string>
+	<string name="tor_status_publishing">Publishing</string>
+	<string name="tor_status_bootstrapping">Building circuits (%1$d%%)</string>
+	<string name="tor_restart">Restart Tor</string>
+	<string name="tor_restarting">Restarting Tor…</string>
 	<string name="tor_your_onion_label">Your onion address</string>
 	<string name="tor_onion_copy">Copy</string>
 	<string name="tor_onion_copied">Onion address copied</string>

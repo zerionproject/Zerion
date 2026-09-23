@@ -12,6 +12,9 @@ import org.zerionproject.core.api.plugin.ConnectionHandler;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginCallback;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
+import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.PluginException;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
@@ -84,6 +87,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	private final TorRendezvousCrypto torRendezvousCrypto;
 	private final PluginCallback callback;
 	private final B4OnionRotation b4OnionRotation;
+	private final EventBus eventBus;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	@Nullable
@@ -93,7 +97,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			SocketFactory socketFactory, TorWrapper tor,
 			ZtpTorTransport transport, ZtpPoller poller,
 			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
-			B4OnionRotation b4OnionRotation) {
+			B4OnionRotation b4OnionRotation, EventBus eventBus) {
+		this.eventBus = eventBus;
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
@@ -118,10 +123,12 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 			@Override
 			public void onBootstrapPercentage(int percentage) {
+				eventBus.broadcast(new TorBootstrapEvent(percentage));
 			}
 
 			@Override
 			public void onHsDescriptorUpload(String onion) {
+				eventBus.broadcast(new TorOnionPublishedEvent(onion));
 			}
 
 			@Override

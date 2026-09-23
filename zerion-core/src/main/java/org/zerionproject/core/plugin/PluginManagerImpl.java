@@ -347,7 +347,8 @@ class PluginManagerImpl implements PluginManager, Service, EventListener {
 		}
 	}
 
-	private void restartPlugin(TransportId t) {
+	@Override
+	public void restartPlugin(TransportId t) {
 		if (isConnectionsPaused()) return;
 		if (isOfflineMode()) return;
 		DuplexPluginFactory factory = null;

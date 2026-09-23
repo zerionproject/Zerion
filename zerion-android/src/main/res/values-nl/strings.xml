@@ -969,6 +969,11 @@
 	<string name="not_available">Niet beschikbaar</string>
 	<string name="tor_hidden_services_active">Beveiligde verbinding via Tor hidden services</string>
 	<string name="tor_hidden_services_connecting">Verbinden met Tor hidden services…</string>
+	<string name="tor_hidden_services_publishing">Je adres wordt gepubliceerd op het Tor-netwerk…</string>
+	<string name="tor_status_publishing">Publiceren</string>
+	<string name="tor_status_bootstrapping">Circuits opbouwen (%1$d%%)</string>
+	<string name="tor_restart">Tor herstarten</string>
+	<string name="tor_restarting">Tor wordt herstart…</string>
 	<string name="tor_your_onion_label">Je onion-adres</string>
 	<string name="tor_onion_copy">Kopiëren</string>
 	<string name="tor_onion_copied">Onion-adres gekopieerd</string>

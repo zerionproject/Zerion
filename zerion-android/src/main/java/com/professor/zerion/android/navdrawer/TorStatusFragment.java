@@ -57,6 +57,9 @@ public class TorStatusFragment extends BaseFragment {
 	private ImageView torStatusIcon;
 	private TextView torStatusText;
 	private TextView torOnionAddress;
+	private MaterialButton torRestartButton;
+	private int torBootstrap = 0;
+	private boolean torOnionPublished = false;
 	private LinearLayout onionCard;
 	private TextView onionAddressValue;
 	private MaterialButton onionCopyButton;
@@ -91,6 +94,12 @@ public class TorStatusFragment extends BaseFragment {
 		torStatusIcon = v.findViewById(R.id.torStatusIcon);
 		torStatusText = v.findViewById(R.id.torStatusText);
 		torOnionAddress = v.findViewById(R.id.torOnionAddress);
+		torRestartButton = v.findViewById(R.id.torRestartButton);
+		torRestartButton.setOnClickListener(view -> {
+			Toast.makeText(requireContext(), R.string.tor_restarting,
+					Toast.LENGTH_SHORT).show();
+			viewModel.restartTor();
+		});
 		onionCard = v.findViewById(R.id.onionCard);
 		onionAddressValue = v.findViewById(R.id.onionAddressValue);
 		onionCopyButton = v.findViewById(R.id.onionCopyButton);
@@ -126,6 +135,18 @@ public class TorStatusFragment extends BaseFragment {
 						lastTorState = state;
 						updateTorStatus(state);
 					}
+				});
+
+		viewModel.getTorBootstrap().observe(getViewLifecycleOwner(),
+				percentage -> {
+					torBootstrap = percentage == null ? 0 : percentage;
+					if (lastTorState != null) updateTorStatus(lastTorState);
+				});
+
+		viewModel.getTorOnionPublished().observe(getViewLifecycleOwner(),
+				published -> {
+					torOnionPublished = Boolean.TRUE.equals(published);
+					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
 
 		viewModel.getLocalOnion().observe(getViewLifecycleOwner(), onion -> {
@@ -266,8 +287,10 @@ public class TorStatusFragment extends BaseFragment {
 			torOnionAddress.setText(R.string.offline_mode_transport_off);
 			torStatusIcon.setColorFilter(
 					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
+			torRestartButton.setVisibility(View.GONE);
 			return;
 		}
+		torRestartButton.setVisibility(View.VISIBLE);
 		boolean online = lastNetworkStatus != null
 				&& lastNetworkStatus.isConnected();
 		if (state == null
@@ -280,15 +303,29 @@ public class TorStatusFragment extends BaseFragment {
 					ContextCompat.getColor(ctx, R.color.zerion_destructive));
 		} else if (state
 				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE
-				&& online) {
+				&& online && torOnionPublished) {
 			torStatusText.setText(R.string.connected);
 			torStatusText.setTextColor(
 					ContextCompat.getColor(ctx, R.color.zerion_success));
 			torOnionAddress.setText(R.string.tor_hidden_services_active);
 			torStatusIcon.setColorFilter(
 					ContextCompat.getColor(ctx, R.color.zerion_primary_accent));
+		} else if (state
+				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE
+				&& online) {
+			torStatusText.setText(R.string.tor_status_publishing);
+			torStatusText.setTextColor(
+					ContextCompat.getColor(ctx, R.color.zerion_warning));
+			torOnionAddress.setText(R.string.tor_hidden_services_publishing);
+			torStatusIcon.setColorFilter(
+					ContextCompat.getColor(ctx, R.color.zerion_warning));
 		} else {
-			torStatusText.setText(R.string.connecting);
+			if (torBootstrap > 0 && torBootstrap < 100) {
+				torStatusText.setText(getString(
+						R.string.tor_status_bootstrapping, torBootstrap));
+			} else {
+				torStatusText.setText(R.string.connecting);
+			}
 			torStatusText.setTextColor(
 					ContextCompat.getColor(ctx, R.color.zerion_warning));
 			torOnionAddress.setText(R.string.tor_hidden_services_connecting);

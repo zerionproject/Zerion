@@ -18,6 +18,8 @@ import org.zerionproject.core.api.plugin.I2pConstants;
 import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
+import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.event.TransportStateEvent;
 import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
@@ -68,6 +70,12 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 
 	private final MutableLiveData<String> torLocalOnion =
 			new MutableLiveData<>();
+
+	private final MutableLiveData<Integer> torBootstrap =
+			new MutableLiveData<>(0);
+
+	private final MutableLiveData<Boolean> torOnionPublished =
+			new MutableLiveData<>(false);
 
 	private final MutableLiveData<B4OnionRotation.RotationPhase>
 			rotationPhase = new MutableLiveData<>(
@@ -129,11 +137,38 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				torPluginState.postValue(t.getState());
 				if (t.getState() == State.ACTIVE) {
 					loadLocalOnion();
+				} else {
+					torOnionPublished.postValue(false);
+					if (t.getState() == State.STARTING_STOPPING) {
+						torBootstrap.postValue(0);
+					}
 				}
 			} else if (t.getTransportId().equals(I2pConstants.ID)) {
 				i2pPluginState.postValue(t.getState());
 			}
+		} else if (e instanceof TorBootstrapEvent) {
+			torBootstrap.postValue(((TorBootstrapEvent) e).getPercentage());
+		} else if (e instanceof TorOnionPublishedEvent) {
+			torOnionPublished.postValue(true);
 		}
+	}
+
+	LiveData<Integer> getTorBootstrap() {
+		return torBootstrap;
+	}
+
+	LiveData<Boolean> getTorOnionPublished() {
+		return torOnionPublished;
+	}
+
+	/**
+	 * Stops Tor and starts it again. The status screen follows the plugin
+	 * state and the bootstrap and publication events of the new instance.
+	 */
+	void restartTor() {
+		torOnionPublished.setValue(false);
+		torBootstrap.setValue(0);
+		pluginManager.restartPlugin(TorConstants.ID);
 	}
 
 	LiveData<String> getLocalOnion() {

@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import static org.zerionproject.core.test.TestUtils.getTransportId;
+import static org.junit.Assert.assertTrue;
 
 public class PluginManagerImplTest extends BrambleMockTestCase {
 
@@ -113,6 +114,84 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 
 		p.startService();
 		p.stopService();
+	}
+
+	/**
+	 * A restart stops the running plugin of the transport and starts a
+	 * fresh one from its factory, so the Tor process and its listeners
+	 * are rebuilt on request without touching the other plugins.
+	 */
+	@Test
+	public void testRestartPluginStopsTheOldAndStartsAFreshOne()
+			throws Exception {
+		Executor ioExecutor = Executors.newSingleThreadExecutor();
+		EventBus eventBus = context.mock(EventBus.class);
+		PluginConfig pluginConfig = context.mock(PluginConfig.class);
+		ConnectionManager connectionManager =
+				context.mock(ConnectionManager.class);
+		SettingsManager settingsManager =
+				context.mock(SettingsManager.class);
+		TransportPropertyManager transportPropertyManager =
+				context.mock(TransportPropertyManager.class);
+		DuplexPluginFactory duplexFactory =
+				context.mock(DuplexPluginFactory.class);
+		DuplexPlugin duplexPlugin = context.mock(DuplexPlugin.class, "old");
+		DuplexPlugin freshPlugin = context.mock(DuplexPlugin.class, "fresh");
+		TransportId duplexId = getTransportId();
+		java.util.concurrent.CountDownLatch restarted =
+				new java.util.concurrent.CountDownLatch(1);
+
+		context.checking(new Expectations() {{
+			allowing(duplexPlugin).getId();
+			will(returnValue(duplexId));
+			allowing(freshPlugin).getId();
+			will(returnValue(duplexId));
+			allowing(pluginConfig).shouldPoll();
+			will(returnValue(false));
+			oneOf(eventBus).addListener(with(any(EventListener.class)));
+			allowing(settingsManager).getSettings(with(any(String.class)));
+			will(returnValue(new Settings()));
+			oneOf(pluginConfig).getSimplexFactories();
+			will(returnValue(java.util.Collections.emptyList()));
+			allowing(pluginConfig).getDuplexFactories();
+			will(returnValue(java.util.Collections.singletonList(
+					duplexFactory)));
+			allowing(duplexFactory).getId();
+			will(returnValue(duplexId));
+			oneOf(duplexFactory).createPlugin(with(any(PluginCallback.class)));
+			will(returnValue(duplexPlugin));
+			oneOf(duplexPlugin).start();
+			oneOf(duplexPlugin).stop();
+			oneOf(duplexFactory).createPlugin(with(any(PluginCallback.class)));
+			will(returnValue(freshPlugin));
+			oneOf(freshPlugin).start();
+			will(new org.jmock.api.Action() {
+				@Override
+				public Object invoke(org.jmock.api.Invocation invocation) {
+					restarted.countDown();
+					return null;
+				}
+
+				@Override
+				public void describeTo(
+						org.hamcrest.Description description) {
+					description.appendText("counts the fresh start");
+				}
+			});
+			oneOf(eventBus).removeListener(with(any(EventListener.class)));
+			oneOf(freshPlugin).stop();
+		}});
+
+		PluginManagerImpl p = new PluginManagerImpl(ioExecutor, ioExecutor,
+				eventBus, pluginConfig, connectionManager, settingsManager,
+				transportPropertyManager);
+
+		p.startService();
+		p.restartPlugin(duplexId);
+		assertTrue(restarted.await(10,
+				java.util.concurrent.TimeUnit.SECONDS));
+		p.stopService();
+		context.assertIsSatisfied();
 	}
 
 	@Test
