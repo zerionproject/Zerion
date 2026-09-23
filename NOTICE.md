@@ -19,7 +19,7 @@ Zerion is an independent project and is not affiliated with or endorsed by the B
 
 ## Libraries from the Briar Project
 
-The application depends on these libraries published by the Briar Project (GPLv3 unless stated): `onionwrapper` (Tor lifecycle and onion-service control; a copy is vendored under `onionwrapper/` with its own [LICENSE.txt](onionwrapper/LICENSE.txt)), `tor-android` and `lyrebird-android` (packaged Tor and pluggable-transport binaries), `jtorctl` (BSD), `dont-kill-me-lib`, `socks-socket`, `null-safety`.
+The application depends on these libraries published by the Briar Project (GPLv3 unless stated): `onionwrapper` 0.1.4 (Tor lifecycle and onion-service control, used as the published Maven artifact; the `onionwrapper/` source tree in this repository is a copy of the same version with its own [LICENSE.txt](onionwrapper/LICENSE.txt) and is not part of the build), `tor-android` and `lyrebird-android` (packaged Tor and pluggable-transport binaries), `jtorctl` (BSD), `dont-kill-me-lib`, `socks-socket`, `null-safety`.
 
 ## Other third-party components
 

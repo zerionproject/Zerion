@@ -20,7 +20,7 @@ Zerion v1.5.0 production (`com.professor.zerion`).
 
 ## 1. What's actually on the wire today
 
-Both platforms use the upstream Bramble two-stage handshake unchanged:
+Both platforms use the same two-stage handshake:
 
 ### Stage 1 - over-Tor handshake (record stream)
 
@@ -348,7 +348,7 @@ What this **doesn't** fix:
   `B3_B4_SPEC_v1.5.0.md` Q2 / file-level audit findings.
 - ~~**Onion concurrent hidden services for B.4** - onionwrapper PR needed.~~
   **DONE - shipped in v1.5.0.** B.4 onion rotation is live; the concurrent
-  hidden-services API exists in the Zerion onionwrapper fork. Mode 3-Full
+  hidden-services API exists in onionwrapper 0.1.4. Mode 3-Full
   per-message also shipped (default since v1.7), superseding the open PCS
   notes here.
 - **Rotating the long-term Ed25519 key** - out of scope; would break
