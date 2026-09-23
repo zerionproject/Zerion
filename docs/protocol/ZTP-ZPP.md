@@ -42,21 +42,29 @@ On the wire, an online connection is therefore:
 
 Everything below the connection handler is identical for Tor and I2P.
 
-## ZPP: constant-rate pull protocol
+## ZPP: paced pull protocol with two constant rates
 
 ZPP runs over a ZWF duplex connection and shapes its timing. The send side emits
-exactly one fixed-size ZWF frame per time slot. That frame carries the next queued
+exactly one fixed-size ZWF frame per interval. That frame carries the next queued
 record if there is one, or a cover record if the queue is empty. Because a real
 record and a cover record are both a 4096-byte ZWF frame, an observer cannot tell
-whether a slot carried a message or was idle. This defeats timing and
-statistical-disclosure analysis.
+whether an interval carried a message or was idle, or how large a message was.
 
-Timing:
+Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
 
-- The base interval is a configured tick interval.
-- Each slot adds uniform zero-mean jitter of up to one third of the tick
-  interval.
-- The interval is clamped to at least 1 millisecond, so the sender never bursts.
+- Two constant base intervals. The active interval, 750 ms, applies while
+  application records flowed in the last two minutes or are queued. The idle
+  interval, 4 s, applies afterwards; on a metered network it is 8 s unless the
+  user disables the mobile-data reduction in Settings.
+- Each interval adds uniform zero-mean jitter of up to one third of its length.
+- A frame is never sent closer than the active spacing, so the onset of
+  activity cannot burst, and a stall lengthens the cadence rather than causing a
+  catch-up burst.
+
+What this hides and what it does not: within a rate, message timing, size and
+count are hidden. The switch from the idle to the active rate, and back after
+two quiet minutes, reveals the coarse onset and end of activity. Connection
+existence, lifetime and reconnects are visible to an observer of the Tor link.
 
 The receive side decodes each frame and drops cover before delivering the record
 to the sink.

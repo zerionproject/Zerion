@@ -1,18 +1,23 @@
 # Contributing to Zerion
 
-Zerion is a Tor-only, metadata-free secure messenger. A few of the rules below
-are **non-negotiable** because they are part of the threat model, not style
-preferences. Please read these before opening a pull request.
+Zerion is a secure messenger whose online messaging runs over Tor with no
+central server and whose transport is built to leak as little metadata as the
+threat model in `docs/ZERION_TECHNICAL_WHITEPAPER.md` allows. A few of the
+rules below are **non-negotiable** because they are part of that threat model,
+not style preferences. Please read these before opening a pull request.
 
 ## Repository layout
 
 * `zerion-android` - the Android app
-* `bramble-*` - the transport/protocol stack (cross-platform)
-* `briar-*` - messaging, groups, channels, and sync
-* `*-api` - public interfaces and shared types
-* `*-core` - cross-platform implementations
-* `*-android` - Android-specific implementations
-* `onionwrapper` / `onionwrapper-java` - Tor onion-service wrapper (shared / JVM)
+* `zerion-core-api`, `zerion-core`, `zerion-core-android` - identity, storage,
+  pairing, the ZTP/ZWF/ZPP/ZMM transport stack, the Mode 3-Full ratchet, the
+  mesh and I2P transports (cross-platform core, Android bindings)
+* `zerion-wire` - wire-format constants shared with other clients
+* `zerion-app-api`, `zerion-app` - messaging, introductions, groups, channels,
+  calls
+* `i2p-embedded` - the shaded I2P router (release builds carry it; the
+  transport is off unless the user enables it)
+* `onionwrapper` - the Tor onion-service wrapper (a vendored copy of the Briar Project's onionwrapper library)
 
 ## Non-negotiable rules
 
@@ -28,9 +33,8 @@ commit.
 ### 2. No plaintext at rest
 
 Never call `Context.getSharedPreferences()` directly - it writes plaintext XML.
-Preferences go through Keystore-backed `EncryptedSharedPreferences` (or the
-in-tree encrypted-prefs implementation); sensitive metadata goes through the
-SQLCipher-backed `Settings`.
+Preferences go through the in-tree Keystore-backed `ZerionEncryptedPrefs`;
+sensitive metadata goes through the SQLCipher-backed `Settings`.
 
 ### 3. Don't change on-wire bytes casually
 
@@ -61,6 +65,16 @@ produce a non-reproducible APK.
 For any change to crypto, ratchet, or wire format: run the full unit suite,
 build a debug APK, and smoke-test on two emulators before proposing it. A tag is
 the end of validation, not the start.
+
+## Documentation
+
+Public documents, the store description and the website are checked against
+`docs/release-manifest.json` (versions, hashes, channels, platform status) and
+`docs/crypto-primitives.json` (the primitives the code uses) by
+`scripts/check-docs.py`, which also refuses the stale phrases listed in it.
+Run it before changing any document; the website's release block is rendered
+from the manifest by `scripts/render-release-refs.py`, never edited by hand.
+Historical posts and changelog entries keep their text and carry a dated note.
 
 ## Code style
 
