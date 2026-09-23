@@ -66,6 +66,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.nio.ByteBuffer;
 
@@ -136,6 +137,7 @@ public class VoiceCallService extends Service implements EventListener {
 	private AudioRecord audioRecord;
 	private AudioTrack audioTrack;
 	private volatile boolean isRecording = false;
+	private final AtomicInteger streamGeneration = new AtomicInteger();
 	private volatile boolean isMuted = false;
 	private volatile boolean isSpeakerOn = false;
 	private AudioManager audioManager;
@@ -642,6 +644,7 @@ public class VoiceCallService extends Service implements EventListener {
 		deriveAudioEncryptionKeys();
 
 		isRecording = true;
+		final int generation = streamGeneration.incrementAndGet();
 
 		audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 		audioManager.setSpeakerphoneOn(false);
@@ -712,8 +715,8 @@ public class VoiceCallService extends Service implements EventListener {
 			playoutStarted = false;
 		}
 
-		startHeartbeat();
-		startPlayoutThread();
+		startHeartbeat(generation);
+		startPlayoutThread(generation);
 
 		final int MAX_ENCRYPTED_FRAME_SIZE = (BUFFER_SIZE * 8) + 64;
 
@@ -762,8 +765,12 @@ public class VoiceCallService extends Service implements EventListener {
 					throw new IOException("AudioRecord not initialized");
 				}
 
-				while (!isShuttingDown && isRecording && (torConnection != null)) {
+				while (streaming(generation) && torConnection != null) {
 					int read = recorder.read(readBuffer, readOffset, frameSize - readOffset);
+					if (read < 0) {
+						if (streaming(generation)) handleConnectionError(generation);
+						break;
+					}
 
 					if (read > 0) {
 						readOffset += read;
@@ -825,10 +832,10 @@ public class VoiceCallService extends Service implements EventListener {
 					}
 				}
 			} catch (IOException e) {
-				handleConnectionError();
+				handleConnectionError(generation);
 			} catch (Exception e) {
 				if (!isShuttingDown) {
-					handleConnectionError();
+					handleConnectionError(generation);
 				}
 			}
 		});
@@ -861,7 +868,7 @@ public class VoiceCallService extends Service implements EventListener {
 					int syncMarker = dataIn.readInt();
 				} catch (IOException e) {
 					if (!isShuttingDown) {
-						handleConnectionError();
+						handleConnectionError(generation);
 					}
 					return;
 				}
@@ -875,11 +882,11 @@ public class VoiceCallService extends Service implements EventListener {
 				long lastReceiveTime = System.currentTimeMillis();
 				final int READ_TIMEOUT_MS = 30000;
 
-				while (!isShuttingDown && isRecording && (torConnection != null)) {
+				while (streaming(generation) && torConnection != null) {
 					try {
 						if (System.currentTimeMillis() - lastReceiveTime > READ_TIMEOUT_MS) {
 							if (!isShuttingDown && callState == CallState.CONNECTED) {
-								handleConnectionError();
+								handleConnectionError(generation);
 							}
 							break;
 						}
@@ -993,22 +1000,22 @@ public class VoiceCallService extends Service implements EventListener {
 
 					} catch (IOException e) {
 						if (!isShuttingDown && callState == CallState.CONNECTED) {
-							handleConnectionError();
+							handleConnectionError(generation);
 						}
 						break;
 					}
 				}
 			} catch (EOFException | SocketException e) {
 				if (!isShuttingDown && callState == CallState.CONNECTED) {
-					handleConnectionError();
+					handleConnectionError(generation);
 				}
 			} catch (IOException e) {
 				if (callState == CallState.CONNECTED) {
-					handleConnectionError();
+					handleConnectionError(generation);
 				}
 			} catch (Exception e) {
 				if (!isShuttingDown && callState == CallState.CONNECTED) {
-					handleConnectionError();
+					handleConnectionError(generation);
 				}
 			}
 		});
@@ -1053,10 +1060,10 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	private void startHeartbeat() {
+	private void startHeartbeat(int generation) {
 		executorService.execute(() -> {
 			try {
-				while (!isShuttingDown && isRecording && (torConnection != null)) {
+				while (streaming(generation) && torConnection != null) {
 					Thread.sleep(10000);
 
 					if (torConnection != null) {
@@ -1077,12 +1084,12 @@ public class VoiceCallService extends Service implements EventListener {
 		});
 	}
 
-	private void startPlayoutThread() {
+	private void startPlayoutThread(int generation) {
 		executorService.execute(() -> {
 			final int PCM_FRAME = (SAMPLE_RATE / 1000) * OPUS_FRAME_DURATION_MS * 2;
 			final byte[] playBuffer = new byte[PCM_FRAME];
 
-			while (!isShuttingDown && isRecording) {
+			while (streaming(generation)) {
 				if (!playoutStarted) {
 					try { Thread.sleep(5); } catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
@@ -1186,7 +1193,25 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
+	/**
+	 * Whether the loops started for the given streaming generation should
+	 * keep running. A reconnect or a stop starts a new generation, so the
+	 * capture, playout, reader and keepalive loops of a replaced connection
+	 * wind down instead of running beside the new ones, and an error they
+	 * report late cannot restart a reconnect on the connection that
+	 * replaced theirs.
+	 */
+	private boolean streaming(int generation) {
+		return !isShuttingDown && isRecording
+				&& streamGeneration.get() == generation;
+	}
+
 	private void handleConnectionError() {
+		handleConnectionError(streamGeneration.get());
+	}
+
+	private void handleConnectionError(int generation) {
+		if (generation != streamGeneration.get()) return;
 		if (callState != CallState.CONNECTED && callState != CallState.CONNECTING) {
 			return;
 		}
@@ -1210,6 +1235,7 @@ public class VoiceCallService extends Service implements EventListener {
 			updateCallActivity();
 
 			isRecording = false;
+			streamGeneration.incrementAndGet();
 			cleanupStreamsForReconnect();
 
 			long delay = reconnectAttempts * 2000L;
@@ -1384,6 +1410,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 		synchronized (streamLock) {
 			isRecording = false;
+			streamGeneration.incrementAndGet();
 
 			if (audioRecord != null) {
 				try {
