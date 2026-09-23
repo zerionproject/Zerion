@@ -81,7 +81,7 @@ scheduleProfileCreation(displayName, password):
 
 ## Switch profile
 
-Just a normal sign-out: `signOut(removeFromRecentApps=true, deleteAccount=false)`. On Android that runs Bramble's `LifecycleManager.stopServices()` → DB close → activity tear-down via the existing exit path. The user reopens the app and types the target profile's password. There's no special "switch profile" mode - the password-only login already handles it.
+Just a normal sign-out: `signOut(removeFromRecentApps=true, deleteAccount=false)`. On Android that runs the core `LifecycleManager.stopServices()` → DB close → activity tear-down via the existing exit path. The user reopens the app and types the target profile's password. There's no special "switch profile" mode - the password-only login already handles it.
 
 iOS parity: present the same logout-and-relaunch path, no "live switch."
 
@@ -128,4 +128,4 @@ iOS should do the equivalent on its own data root and pick a stable "default" pr
 - Wrong-password feedback time scales with profile count (N × Argon2id per failed attempt). This is intentional - guessing is slow, and the time-leak of N is acceptable since the device's filesystem already reveals profile count to an attacker with root/forensic access.
 - Each profile's onion key is independent → contacts in profile A cannot correlate it with profile B's onion.
 - An attacker who briefly observes the unlocked phone screen sees only the active profile; no UI hint exists that other profiles are present (assuming the user is not on Settings → Profiles).
-- Deleting the active profile while logged in is supported. The wipe runs first, then the standard signOut path closes services. There is a brief window where the DB file is gone but services haven't yet finished shutting down - Bramble's DB layer treats this as a hard crash on next access, which is fine.
+- Deleting the active profile while logged in is supported. The wipe runs first, then the standard signOut path closes services. There is a brief window where the DB file is gone but services haven't yet finished shutting down - the DB layer treats this as a hard crash on next access, which is fine.

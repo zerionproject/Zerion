@@ -94,7 +94,6 @@ same value recorded in `docs/release-manifest.json`.
     rm:
       - libs/gradle-witness.jar
       - gradle/verification-metadata.xml
-    prebuild: sed -i "/include ':bramble-java'/d" ../settings.gradle
     build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh
     ndk: r27b
     gradleprops:

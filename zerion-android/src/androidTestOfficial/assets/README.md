@@ -23,4 +23,4 @@ false positive. These are plain image files with no executable code. They only
 exist so the tests can prove the app is safe against this kind of input, and
 they never ship to users.
 
-Most of these come from the upstream Briar project, which Zerion is based on.
+Most of these are inherited from the Briar project's test assets.

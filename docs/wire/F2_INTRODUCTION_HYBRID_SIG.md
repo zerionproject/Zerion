@@ -12,7 +12,7 @@ v1.6; shipped and current as of v2.0.x). Android implementation: commit
 `11f0e95` (dev + master).
 
 ## TL;DR
-The Briar introduction protocol's `AuthMessage` signs the AUTH nonce with the introducee's Ed25519 author key. We now optionally sign with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key in the **AcceptMessage** (new optional slot). When both sides advertise a key, AuthMessage carries a 3373-byte hybrid signature; otherwise it stays at 64-byte Ed25519. The receiver length-dispatches.
+The introduction protocol's `AuthMessage` signs the AUTH nonce with the introducee's Ed25519 author key. We now optionally sign with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key in the **AcceptMessage** (new optional slot). When both sides advertise a key, AuthMessage carries a 3373-byte hybrid signature; otherwise it stays at 64-byte Ed25519. The receiver length-dispatches.
 
 Backward-compatible in both directions - v1.5 ↔ v1.6 introductions still complete.
 
@@ -79,7 +79,7 @@ Label binding (must match exactly):
 - `"org.zerionproject.app.introduction/AUTH_NONCE"`
 - `"org.zerionproject.app.introduction/AUTH_SIGN"`
 
-The hybrid `sign` and `verify` helpers must use the same label-binding rule we use elsewhere in v1.6 (label || 0x00 || toSign as the actual signing input for each component algorithm - same as `crypto.hybridSign` / `crypto.verifyHybridSignature` in Bramble).
+The hybrid `sign` and `verify` helpers must use the same label-binding rule we use elsewhere in v1.6 (label || 0x00 || toSign as the actual signing input for each component algorithm - same as `crypto.hybridSign` / `crypto.verifyHybridSignature` in the Android core).
 
 ---
 
@@ -124,7 +124,7 @@ The introducer relays each introducee's AcceptMessage to the other introducee. T
 sendAcceptMessage(otherIntroducee, ..., transportProperties, mlDsaPubKey: m.mlDsaPubKey)
 ```
 
-If the introducer is on v1.5 and doesn't know about slot 7, BdfList parsing should ignore the extra slot - verify your iOS BdfList parser tolerates extra trailing entries (Android Bramble does).
+If the introducer is on v1.5 and doesn't know about slot 7, BdfList parsing should ignore the extra slot - verify your iOS BdfList parser tolerates extra trailing entries (the Android core does).
 
 ---
 

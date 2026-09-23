@@ -79,8 +79,8 @@ are sealed the same way as messages, so they are indistinguishable from content 
 the wire. The number of presence frames sent in a round is padded up to a fixed
 step, so the count of frames does not reveal the number of contacts.
 
-## Relationship to Briar
+## Component provenance
 
-The mesh is Zerion's own work. Briar has no Bluetooth mesh of this kind. The mesh
-reuses inherited storage for contact bundles and the seen-store, and it reuses the
+The mesh is Zerion's own work. The mesh
+reuses the core storage for contact bundles and the seen-store, and it reuses the
 identity keys held by the inherited identity manager.

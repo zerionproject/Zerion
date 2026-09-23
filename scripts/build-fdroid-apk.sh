@@ -40,7 +40,6 @@ fi
 # Mirror the F-Droid recipe: these files are removed for the build. They affect
 # only build-time dependency verification, never the APK bytes.
 rm -f libs/gradle-witness.jar gradle/verification-metadata.xml
-sed -i "/include ':bramble-java'/d" settings.gradle || true
 
 echo "==> assembleOfficialRelease -Pfdroid"
 ./gradlew clean :zerion-android:assembleOfficialRelease -Pfdroid

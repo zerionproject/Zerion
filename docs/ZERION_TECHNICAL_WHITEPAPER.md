@@ -4,7 +4,7 @@
 
 Zerion is an end-to-end encrypted, peer-to-peer messenger for Android that runs entirely over Tor, with no servers and no accounts. Zerion's protocol stack, ZTP, ZWF, ZPP and ZMM, carries a hybrid post-quantum ratchet (Mode 3-Full) in which every message is protected by a fresh ML-KEM-768 key encapsulation layered over a classical symmetric chain. While a connection is live, traffic is shaped into fixed-size frames sent at a paced, jittered cadence with two constant rates: an active rate while messages flow and a slower idle rate once the connection has carried only cover for a while, so an observer of an established connection cannot distinguish messages from cover traffic or infer message sizes or timing within a rate regime; the regime transitions reveal at most the coarse onset and end of activity, and the existence and lifetime of connections is outside this property.
 
-Parts of the source tree originate in Briar's Bramble library and the application depends on libraries published by the Briar Project; the provenance record is [NOTICE.md](../NOTICE.md). Zerion is an independent project and is not affiliated with or endorsed by the Briar Project. The transport, wire format and ratchet described here are Zerion's own work.
+Third-party software notices and attribution are recorded in [NOTICE.md](../NOTICE.md).
 
 This document describes the protocol as implemented in the 3.0 source tree, current as of 3.0.11. Since 3.0.4 the vault also hosts optional, self-custodial Bitcoin and Monero wallets, described in [§9](#9-the-encrypted-vault-and-non-custodial-wallets); since 3.0.8 the cover-traffic cadence has an active and an idle rate ([§5.2](#52-zpp-paced-cover-traffic)); since 3.0.9 the pairing key rotates ([§4](#4-identity-and-pairing-key-exchange)). Where the implementation makes a deliberate trade-off or falls short of an idealised design, this document says so plainly (see [§11, Security Properties and Limitations](#11-security-properties-and-limitations)). Every claim in this document is cross-referenced from [`docs/protocol/SECURITY_CLAIMS.md`](protocol/SECURITY_CLAIMS.md), which names the enforcing code and test for each.
 
@@ -59,7 +59,7 @@ The protocol stack, from the socket up:
 - **ZPP** (Zerion Pull Protocol), the paced send scheduler that makes real traffic indistinguishable from cover traffic within a live connection.
 - **ZMM** (Zerion Message Module), application message records and fragmentation over the frame stream.
 
-Identity, contacts, the message database and the pairing handshake live in the `org.zerionproject.core` packages (parts of that code are Bramble-derived, see [NOTICE.md](../NOTICE.md)); the ratchet and the four protocols above are Zerion's own.
+Identity, contacts, the message database and the pairing handshake live in the `org.zerionproject.core` packages (component provenance is recorded in [docs/protocol/README.md](protocol/README.md) and [NOTICE.md](../NOTICE.md)); the ratchet and the four protocols above are Zerion's own.
 
 ## 4. Identity and pairing (key exchange)
 
@@ -234,4 +234,4 @@ Zerion is designed to resist not only the network adversary but also examination
 
 ---
 
-*Zerion is licensed under the GPLv3. Parts of the source tree originate in Briar's Bramble library; the provenance record is [NOTICE.md](../NOTICE.md). The transport (ZTP/ZWF/ZPP/ZMM) and the Mode 3-Full ratchet described here are Zerion's own work. Zerion is not affiliated with or endorsed by the Briar Project.*
+*Zerion is licensed under the GPLv3. Third-party software notices and attribution are recorded in [NOTICE.md](../NOTICE.md).*

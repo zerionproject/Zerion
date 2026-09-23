@@ -69,7 +69,7 @@ Optional wallets inside the vault, each sealed under its own password. Keys are 
 
 ## Network
 
-Tor is mandatory and always on; online messaging never bypasses it. By default every connection the app makes goes through Tor. Two explicit opt-ins do not: I2P participation (when enabled, the user's network can see that the device uses I2P, although the reseed goes through Tor) and a direct wallet node. The Bluetooth mesh is local radio: it hides content, not proximity. The onion address rotates on a schedule announced to contacts; in 3.0.11 the announced address was not republished after a restart in every case, corrected in 3.0.12.
+Tor is mandatory and always on; online messaging never bypasses it. By default every connection the app makes goes through Tor. Two explicit opt-ins do not: I2P participation (when enabled, the user's network can see that the device uses I2P, although the reseed goes through Tor) and a direct wallet node. The Bluetooth mesh is local radio: it hides content, not proximity. The onion address rotates on a schedule announced to contacts; in 3.0.11 the announced address was not republished after a restart in every case; corrected on the `security-r1` branch for 3.0.12, which is not yet released.
 
 ## Platforms
 
@@ -125,7 +125,7 @@ Ethereum / USDT (ERC-20): `0x8F639ec074a4d89546e61bDd84F081EE61E1FCF6`
 
 ## License
 
-Zerion is free and open-source software under the GNU General Public License v3.0; see [LICENSE.txt](LICENSE.txt). Parts of the source tree originate in Briar's Bramble library and the application depends on libraries published by the Briar Project; the provenance record the licence requires is [NOTICE.md](NOTICE.md). Zerion is an independent project and is not affiliated with or endorsed by the Briar Project.
+Zerion is free and open-source software under the GNU General Public License v3.0; see [LICENSE.txt](LICENSE.txt). Third-party software notices and attribution are in [NOTICE.md](NOTICE.md).
 
 ## Releases
 

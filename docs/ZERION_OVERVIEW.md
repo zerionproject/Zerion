@@ -22,20 +22,20 @@ This is the plain-language overview. For the cryptographic detail, see the [Tech
 
 ## How Zerion compares
 
-| | **Zerion** | Signal | SimpleX | Cwtch | Briar |
-|---|---|---|---|---|---|
-| No central messaging server | Yes | No | No | Yes | Yes |
-| No phone number / account | Yes | No | Yes | Yes | Yes |
-| Runs over Tor by default | Yes | No | Optional | Yes | Yes |
-| Post-quantum key exchange | Yes | Yes | No | No | No |
-| **Post-quantum on every message** | **Yes** | No | No | No | No |
-| Paced cover traffic within a connection | Yes | No | No | No | No |
-| Built-in encrypted vault | Yes | No | No | No | No |
-| Built-in non-custodial BTC/XMR wallet | Yes | No | No | No | No |
-| Anti-forensics (decoy, panic, no logs) | Yes | Partial | No | No | Partial |
-| Open source | Yes | Yes | Yes | Yes | Yes |
+| | **Zerion** | Signal | SimpleX | Cwtch |
+|---|---|---|---|---|
+| No central messaging server | Yes | No | No | Yes |
+| No phone number / account | Yes | No | Yes | Yes |
+| Runs over Tor by default | Yes | No | Optional | Yes |
+| Post-quantum key exchange | Yes | Yes | No | No |
+| **Post-quantum on every message** | **Yes** | No | No | No |
+| Paced cover traffic within a connection | Yes | No | No | No |
+| Built-in encrypted vault | Yes | No | No | No |
+| Built-in non-custodial BTC/XMR wallet | Yes | No | No | No |
+| Anti-forensics (decoy, panic, no logs) | Yes | Partial | No | No |
+| Open source | Yes | Yes | Yes | Yes |
 
-Signal is excellent and well audited, but it needs your phone number and runs on its own servers. SimpleX removes accounts but still relies on relay servers and has no post-quantum ratchet. Cwtch and Briar pioneered serverless messaging over Tor, but neither offers post-quantum protection. Zerion's aim is to combine the serverless, Tor-native model with post-quantum security on every message and a built-in vault.
+Signal is excellent and well audited, but it needs your phone number and runs on its own servers. SimpleX removes accounts but still relies on relay servers and has no post-quantum ratchet. Cwtch runs serverless over Tor but has no post-quantum protection. Zerion's aim is to combine the serverless, Tor-native model with post-quantum security on every message and a built-in vault.
 
 ## Honest about the trade-offs
 
@@ -49,4 +49,4 @@ Zerion's protocol, source, and this documentation are open for anyone to review.
 
 ## License and attribution
 
-Zerion is released under the GPLv3. Parts of the source tree originate in Briar's Bramble library and the application depends on libraries published by the Briar Project; the provenance record is [NOTICE.md](../NOTICE.md). Zerion is an independent project and is not affiliated with or endorsed by the Briar Project. Zerion runs on the Tor network and thanks the Tor Project for it.
+Zerion is released under the GPLv3. Third-party software notices and attribution are recorded in [NOTICE.md](../NOTICE.md). Zerion runs on the Tor network and thanks the Tor Project for it.

@@ -82,9 +82,8 @@ type nor the record length is visible on the wire. A cover record has the cover
 type and an empty payload. The receive side identifies cover by comparing the type
 word and does not deliver it.
 
-## Relationship to Briar
+## Component provenance
 
-Briar's own synchronisation transport is not used on this path. ZTP and ZPP
-replace it with a constant-rate stream. The onion wrapper that provides the Tor
-carrier, and the database that stores contacts and sessions, are inherited Briar
-and Bramble components.
+ZTP and ZPP are Zerion's own protocol work. The provenance of the Tor onion
+wrapper and of the database and contact layer they build on is recorded in
+[README.md](README.md) in this directory and in the repository's NOTICE.md.

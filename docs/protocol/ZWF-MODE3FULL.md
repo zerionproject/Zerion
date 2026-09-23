@@ -191,8 +191,8 @@ connection's ratchet does not extend to the next. Within a single connection,
 both directions share one Mode 3-Full state under a lock, so a peer key learned
 while receiving is available to the sender on the same connection.
 
-## Relationship to Briar
+## Component provenance
 
-Briar's transport security protocol is not used on this path. ZWF and Mode 3-Full
-replace it. The database and identity storage that hold the root key and the
-persisted session are inherited Briar components.
+ZWF and Mode 3-Full are Zerion's own protocol work. The provenance of the
+database and identity storage that hold the root key is recorded in
+[README.md](README.md) in this directory and in the repository's NOTICE.md.

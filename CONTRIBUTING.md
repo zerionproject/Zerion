@@ -17,7 +17,7 @@ not style preferences. Please read these before opening a pull request.
   calls
 * `i2p-embedded` - the shaded I2P router (release builds carry it; the
   transport is off unless the user enables it)
-* `onionwrapper` - the Tor onion-service wrapper (a vendored copy of the Briar Project's onionwrapper library)
+* `onionwrapper` - the Tor onion-service wrapper (vendored third-party module, see NOTICE.md)
 
 ## Non-negotiable rules
 

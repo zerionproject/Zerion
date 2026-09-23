@@ -76,3 +76,4 @@ zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc
 zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc.exe
 # Signing sidecar artifacts
 *.idsig
+__pycache__/

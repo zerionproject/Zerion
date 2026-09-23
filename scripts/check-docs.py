@@ -47,6 +47,7 @@ FORBIDDEN = [
     (r"built on the Briar Project and its Bramble", "describes Zerion as built on Bramble"),
     (r"(began|started) as a fork of (the )?Briar|fork of Briar|Briar[- ]based|Briar fork", "provenance belongs in NOTICE.md, not in the product description"),
     (r"inherited Bramble", "name the component, not its origin"),
+    (r"\bBriar\b|\bBramble\b", "third-party provenance belongs in NOTICE.md and the provenance table of the protocol index only"),
     (r"fixed in the next release", "name the branch and 3.0.12, and say it is not yet released"),
     (r"Android[- ]only", "platform status must use the status words"),
     (r"coming soon", "platform status must use the status words"),
@@ -79,8 +80,23 @@ def visible_text(html):
     return re.sub(r"[ \t]+", " ", t)
 
 
+PROVENANCE_SECTIONS = {"docs/protocol/README.md": "## Component provenance"}
+PROVENANCE_ONLY_DOCS = sorted(glob.glob("docs/wire/*.md"))
+
+
+def strip_provenance_section(name, text):
+    heading = PROVENANCE_SECTIONS.get(name)
+    if not heading or heading not in text:
+        return text
+    start = text.index(heading)
+    end = text.find("\n## ", start + len(heading))
+    return text[:start] + (text[end:] if end >= 0 else "")
+
+
 def check_forbidden(name, text):
-    for pattern, why in FORBIDDEN:
+    text = strip_provenance_section(name, text)
+    for entry in FORBIDDEN:
+        pattern, why = entry[0], entry[1]
         for m in re.finditer(pattern, text, flags=re.I):
             window = text[max(0, m.start() - 160): m.end() + 60]
             if any(re.search(a, window, flags=re.I) for a in ALLOW_CONTEXT):
@@ -194,6 +210,10 @@ def main():
             check_links(name, text)
         check_manifest_refs(name, text, m)
         check_crypto(name, scan, crypto)
+    for name in PROVENANCE_ONLY_DOCS:
+        text = open(name, encoding="utf-8").read()
+        for m in re.finditer(r"\bBriar\b|\bBramble\b", text):
+            errors.append("%s: forbidden phrase %r (design notes describe Zerion's implementation, not its origin)" % (name, m.group(0)))
     check_claims_matrix()
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
     import importlib.util

@@ -47,7 +47,7 @@ All GroupTr records ride over the same pairwise messaging channel as private mes
 In Zerion 3.0 these records are carried inside ZWF frames over the ZPP constant-rate transport, tagged by the ZMM record registry; the record format below is unchanged.
 
 ```
-Alice's pairwise messaging Group with Peter (Briar contact group)
+Alice's pairwise messaging Group with Peter (pairwise contact group)
                     |
                     |  GROUP_MEMBER_ADDED record (msgType 33)
                     v
@@ -487,7 +487,7 @@ Out-of-order future-epoch events are buffered (up to 5 epochs ahead, 500 events 
 
 Concrete checklist:
 
-1. **Do not reuse the legacy Briar private-group invitation carrier** (the upstream `privategroup.invitation` client). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
+1. **Do not reuse the legacy private-group invitation carrier** (the `privategroup.invitation` client inherited from upstream). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
 2. **In the iOS group-create UI**: `createGroup(name)` must be purely local. Do NOT send anything over the wire when a group is created. The group is invisible to peers until the first `addMember` call.
 3. **In the iOS "add member" handler**: build the msgType-33 record exactly as specified above, sign with the hybrid key, and send it to the new member AND every other existing member over their pairwise messaging channels.
 4. **In the iOS private-message receive path**: when a record's first BdfList element is `33L`, route to a membership handler. Do NOT show it as a visible chat message. Do NOT require any user "accept" action. Just verify the signature and apply.
