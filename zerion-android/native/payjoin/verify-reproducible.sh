@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-SRC="/c/Users/Iron/AppData/Local/Temp/claude/c--Users-Iron-Desktop-Zerion-App/432c17e9-e9a8-4ad0-a3c6-1b639fbb4eb9/scratchpad/pj/payjoin-ffi"
-BASE="/c/Users/Iron/AppData/Local/Temp/claude/c--Users-Iron-Desktop-Zerion-App/432c17e9-e9a8-4ad0-a3c6-1b639fbb4eb9/scratchpad/pj"
-export ANDROID_NDK_HOME='C:\Users\Iron\AppData\Local\Android\Sdk\ndk\27.1.12297006'
+SRC="${PAYJOIN_FFI_SRC:?set PAYJOIN_FFI_SRC to the payjoin-ffi source checkout}"
+BASE="${PAYJOIN_REPRO_DIR:-$(mktemp -d)}"
+export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:?set ANDROID_NDK_HOME to NDK 27.1.12297006}"
 
 seed_copy() {
   local dest="$1"

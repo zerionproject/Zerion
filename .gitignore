@@ -48,7 +48,6 @@ nul
 .vs/
 .vscode/
 
-.claude/
 
 # Pentest and security audit data (sensitive)
 PentestZerion/
