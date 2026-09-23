@@ -69,6 +69,40 @@ public class VoiceCallExecutorsTest {
 		}
 	}
 
+	/**
+	 * DV-06: a call keeps several loops blocked at once (heartbeat, playout,
+	 * capture, the network reader, video) and still needs its signalling
+	 * and teardown tasks to run while they block. Every one of them must
+	 * get a thread up to the maximum; a pool that queues behind its core
+	 * threads leaves audio silent in one direction and never sends the
+	 * hang-up.
+	 */
+	@Test
+	public void concurrentLoopsAllRunUpToTheMaximum() throws Exception {
+		ThreadPoolExecutor pool =
+				(ThreadPoolExecutor) VoiceCallExecutors.bounded();
+		try {
+			CountDownLatch release = new CountDownLatch(1);
+			CountDownLatch started =
+					new CountDownLatch(VoiceCallExecutors.MAX_THREADS);
+			for (int i = 0; i < VoiceCallExecutors.MAX_THREADS; i++) {
+				pool.execute(() -> {
+					started.countDown();
+					try {
+						release.await(30, TimeUnit.SECONDS);
+					} catch (InterruptedException ignored) {
+					}
+				});
+			}
+			assertTrue("only " + (VoiceCallExecutors.MAX_THREADS
+							- started.getCount()) + " loops got a thread",
+					started.await(5, TimeUnit.SECONDS));
+			release.countDown();
+		} finally {
+			pool.shutdownNow();
+		}
+	}
+
 	@Test
 	public void theDefaultPoolUsesDaemonThreads() throws Exception {
 		ThreadPoolExecutor pool =

@@ -11,18 +11,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The executor behind a call. A call needs a handful of long-lived loops
- * (capture, playback, the network reader, the keepalive) and a few short
- * tasks (signalling, teardown), so the pool is bounded well above that and
- * queues anything beyond it instead of creating a thread per task; a peer
- * or a fault that floods the service with work cannot make it create threads
- * without limit. Work that would exceed the queue is dropped rather than run
- * on the caller.
+ * (capture, playback, the network reader, the keepalive, video) that block
+ * at the same time, and a few short tasks (signalling, teardown) that must
+ * run while they block, so every task gets a thread up to the maximum and
+ * only work beyond that is queued; a pool that queued behind a couple of
+ * core threads left the loops waiting on each other, which silenced one
+ * direction and held back the hang-up. Idle threads still time out. A peer
+ * or a fault that floods the service with work cannot make it create
+ * threads without limit, and work that would exceed the queue is dropped
+ * rather than run on the caller.
  */
 @NotNullByDefault
 final class VoiceCallExecutors {
 
-	static final int CORE_THREADS = 2;
 	static final int MAX_THREADS = 8;
+	static final int CORE_THREADS = MAX_THREADS;
 	static final int QUEUE_CAPACITY = 64;
 	static final long IDLE_SECONDS = 30;
 
