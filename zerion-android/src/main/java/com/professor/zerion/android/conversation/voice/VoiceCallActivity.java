@@ -17,6 +17,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.view.Surface;
 import android.view.TextureView;
@@ -935,12 +936,15 @@ public class VoiceCallActivity extends AppCompatActivity {
 						remoteVideoRotation, false));
 	}
 
+	/**
+	 * The self-preview is a camera output drawn straight into its texture,
+	 * and the camera framework already turns that output into the device's
+	 * natural orientation, so the view only compensates for the display
+	 * being rotated away from that orientation. Rotating by the sensor
+	 * orientation on top of that laid the preview on its side.
+	 */
 	private void applyLocalVideoTransform() {
-		if (localVideoSurface == null || !isBound
-				|| voiceCallService == null) return;
-		int sensorOrientation =
-				voiceCallService.getCameraSensorOrientation();
-		boolean isFront = voiceCallService.isCameraFront();
+		if (localVideoSurface == null) return;
 		int displayRotation = 0;
 		if (android.os.Build.VERSION.SDK_INT
 				>= android.os.Build.VERSION_CODES.R) {
@@ -953,9 +957,31 @@ public class VoiceCallActivity extends AppCompatActivity {
 					.getDefaultDisplay().getRotation() * 90;
 		}
 
-		final int rotation = (sensorOrientation - displayRotation + 360) % 360;
+		final int rotation = displayRotation;
 		localVideoSurface.post(() ->
-				applyVideoTransform(localVideoSurface, rotation, false));
+				applyPreviewTransform(localVideoSurface, rotation));
+	}
+
+	private void applyPreviewTransform(TextureView tv, int displayRotation) {
+		if (tv == null || tv.getWidth() == 0 || tv.getHeight() == 0) return;
+		float viewWidth = tv.getWidth();
+		float viewHeight = tv.getHeight();
+		float centerX = viewWidth / 2f;
+		float centerY = viewHeight / 2f;
+		Matrix matrix = new Matrix();
+		if (displayRotation == 90 || displayRotation == 270) {
+			RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+			RectF bufferRect = new RectF(0, 0, viewHeight, viewWidth);
+			bufferRect.offset(centerX - bufferRect.centerX(),
+					centerY - bufferRect.centerY());
+			matrix.setRectToRect(viewRect, bufferRect,
+					Matrix.ScaleToFit.FILL);
+			matrix.postRotate(displayRotation == 90 ? -90 : 90,
+					centerX, centerY);
+		} else if (displayRotation == 180) {
+			matrix.postRotate(180, centerX, centerY);
+		}
+		tv.setTransform(matrix);
 	}
 
 	public void onVideoRejected() {
