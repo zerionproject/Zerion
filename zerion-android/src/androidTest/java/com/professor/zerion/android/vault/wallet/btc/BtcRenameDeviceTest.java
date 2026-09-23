@@ -7,6 +7,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Application;
+import java.net.InetSocketAddress;
+import org.zerionproject.core.socks.TcpTorSocksConnector;
+import com.professor.zerion.android.vault.net.TorSocksGate;
 import android.content.Context;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -54,7 +57,8 @@ public class BtcRenameDeviceTest {
 		}
 		store = new WalletStore(vault);
 		vm = new VaultViewModel((Application) ctx.getApplicationContext(), vault,
-				Runnable::run, store, 0);
+				Runnable::run, store, new TorSocksGate(new TcpTorSocksConnector(
+						new InetSocketAddress("127.0.0.1", 9)), p -> false));
 	}
 
 	private boolean safeUnlock() {
