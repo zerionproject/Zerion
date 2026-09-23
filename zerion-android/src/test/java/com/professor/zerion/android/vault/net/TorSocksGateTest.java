@@ -184,4 +184,13 @@ public class TorSocksGateTest {
 		}
 		assertTrue(seenCredentials.isEmpty());
 	}
+	@Test
+	public void relayListensOnTheIpv4LoopbackTheNativeWalletDials() throws Exception {
+		assertTrue(gate.address() instanceof java.net.Inet4Address);
+		assertEquals("127.0.0.1", gate.address().getHostAddress());
+		java.net.Socket c = new java.net.Socket();
+		c.connect(new InetSocketAddress("127.0.0.1", gate.port()), 2000);
+		assertTrue(c.isConnected());
+		c.close();
+	}
 }

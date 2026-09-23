@@ -47,6 +47,8 @@ public final class TorSocksGate {
 	});
 	private final Semaphore connections = new Semaphore(MAX_CONNECTIONS);
 
+	static final InetAddress IPV4_LOOPBACK = ipv4Loopback();
+
 	/**
 	 * @param passwordAccepted accepts the passwords of in-process clients
 	 * that hold their own per-process secret, such as the native wallet;
@@ -57,13 +59,24 @@ public final class TorSocksGate {
 		this.upstream = upstream;
 		this.passwordAccepted = p -> constantTimeEquals(processSecret, p)
 				|| passwordAccepted.test(p);
-		server = new ServerSocket(0, MAX_CONNECTIONS,
-				InetAddress.getLoopbackAddress());
+		server = new ServerSocket(0, MAX_CONNECTIONS, IPV4_LOOPBACK);
 		pool.execute(this::acceptLoop);
 	}
 
 	public int port() {
 		return server.getLocalPort();
+	}
+
+	public InetAddress address() {
+		return server.getInetAddress();
+	}
+
+	private static InetAddress ipv4Loopback() {
+		try {
+			return InetAddress.getByAddress("127.0.0.1", new byte[] {127, 0, 0, 1});
+		} catch (java.net.UnknownHostException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	/**
