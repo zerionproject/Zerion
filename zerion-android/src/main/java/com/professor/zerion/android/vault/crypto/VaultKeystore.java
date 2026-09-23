@@ -109,52 +109,6 @@ public class VaultKeystore {
 		return keyGenerator.generateKey();
 	}
 
-	public SecretKey getOrCreateBiometricKey() throws NoSuchAlgorithmException,
-			NoSuchProviderException, InvalidAlgorithmParameterException,
-			UnrecoverableKeyException, KeyStoreException {
-
-		if (!hasSecureLockScreen) {
-			throw new IllegalStateException("Biometric authentication requires secure lock screen");
-		}
-
-		String alias = VAULT_BIOMETRIC_KEY_ALIAS;
-
-		if (keyStore.containsAlias(alias)) {
-			return (SecretKey) keyStore.getKey(alias, null);
-		}
-
-		KeyGenerator keyGenerator = KeyGenerator.getInstance(
-				KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER);
-
-		KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(
-				alias,
-				KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
-				.setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-				.setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-				.setKeySize(256)
-				.setUserAuthenticationRequired(true)
-				.setUserAuthenticationValidityDurationSeconds(-1)
-				.setRandomizedEncryptionRequired(true);
-
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-			builder.setUserAuthenticationParameters(0,
-					KeyProperties.AUTH_BIOMETRIC_STRONG);
-		}
-
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && hasStrongBox) {
-			builder.setIsStrongBoxBacked(true);
-		}
-
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-			builder.setInvalidatedByBiometricEnrollment(true);
-		}
-
-		keyGenerator.init(builder.build());
-		SecretKey key = keyGenerator.generateKey();
-
-		return key;
-	}
-
 	public byte[] wrapSecret(byte[] secret, SecretKey key) throws
 			NoSuchPaddingException, NoSuchAlgorithmException,
 			InvalidKeyException, BadPaddingException,
@@ -225,7 +179,4 @@ public class VaultKeystore {
 		return keyStore.containsAlias(VAULT_KEY_ALIAS);
 	}
 
-	public boolean hasBiometricKey() throws KeyStoreException {
-		return keyStore.containsAlias(VAULT_BIOMETRIC_KEY_ALIAS);
-	}
 }

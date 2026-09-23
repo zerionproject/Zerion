@@ -12,7 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -207,7 +207,7 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 	}
 
 	private void confirmCopy() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_phrase_copy_action)
 				.setMessage(R.string.wallet_xmr_phrase_copy_warning)
 				.setPositiveButton(R.string.wallet_xmr_phrase_copy_confirm,

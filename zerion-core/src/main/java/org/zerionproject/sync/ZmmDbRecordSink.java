@@ -48,7 +48,6 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 		try {
 			applyRecord(new ContactId(contactId), record.payload);
 		} catch (IOException | DbException | RuntimeException e) {
-			// Malformed or transient DB error: drop the record, keep the session.
 		}
 	}
 
@@ -59,7 +58,6 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 
 	private void applyRecord(ContactId c, byte[] recordBytes)
 			throws IOException, DbException {
-		// Parse outside the transaction (I/O), apply inside it (DB).
 		SyncRecordReader reader = codec.newReader(recordBytes);
 		if (reader.hasAck()) {
 			Ack a = reader.readAck();

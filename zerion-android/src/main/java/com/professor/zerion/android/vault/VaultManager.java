@@ -48,8 +48,7 @@ public class VaultManager
 	private byte[] vaultMasterKey;
 	private volatile long lastActivityTime;
 	private volatile boolean isUnlocked = false;
-	private volatile int failedAttempts = 0;
-	private volatile long backoffUntil = 0;
+	private final org.zerionproject.core.account.LoginThrottle unlockThrottle;
 	private volatile long lockGeneration = 0;
 	private volatile Runnable onLockListener = null;
 
@@ -57,9 +56,7 @@ public class VaultManager
 	private volatile long cacheTimestamp = 0;
 	private static final long CACHE_VALIDITY_MS = 10000;
 
-	private static final int MAX_FAILED_ATTEMPTS = 10;
-	private static final long INITIAL_BACKOFF_MS = 1000;
-	private static final long BACKOFF_RESET_MS = 60000;
+	private static final String UNLOCK_THROTTLE_FILE = "unlock.throttle";
 
 	@Inject
 	public VaultManager(Context context) {
@@ -73,8 +70,15 @@ public class VaultManager
 		this.argon2 = new Argon2();
 		this.fileIO = new SecureFileIO(context);
 		this.metadataStripper = new MetadataStripper(context);
+		this.unlockThrottle = new org.zerionproject.core.account.LoginThrottle(
+				org.zerionproject.core.account.LoginThrottle.fileStore(
+						new java.io.File(fileIO.getVaultDir(),
+								UNLOCK_THROTTLE_FILE)),
+				android.os.SystemClock::elapsedRealtime,
+				org.zerionproject.core.account.LoginThrottle.linuxBootId(),
+				org.zerionproject.core.account.LoginThrottle.VAULT);
 
-		this.lastActivityTime = System.currentTimeMillis();
+		this.lastActivityTime = android.os.SystemClock.elapsedRealtime();
 	}
 
 	public boolean vaultExists() {
@@ -131,14 +135,9 @@ public class VaultManager
 
 		long unlockStartRealtime = android.os.SystemClock.elapsedRealtime();
 		try {
-			long now = System.currentTimeMillis();
-			if (backoffUntil > 0 && now - backoffUntil > BACKOFF_RESET_MS) {
-				failedAttempts = 0;
-				backoffUntil = 0;
-			}
-
-			if (now < backoffUntil) {
-				long waitSeconds = (backoffUntil - now) / 1000;
+			long waitMs = unlockThrottle.remainingLockoutMs();
+			if (waitMs > 0) {
+				long waitSeconds = (waitMs + 999) / 1000;
 				throw new SecurityException(
 						"Too many failed attempts. Wait " + waitSeconds
 								+ " seconds");
@@ -271,8 +270,7 @@ public class VaultManager
 
 			SecureMemory.shredAll(passwordKey, randomSecret, combined);
 
-			failedAttempts = 0;
-			backoffUntil = 0;
+			unlockThrottle.reset();
 			isUnlocked = true;
 			updateActivity();
 
@@ -298,10 +296,7 @@ public class VaultManager
 	 * {@code MAX_FAILED_ATTEMPTS} caps the exponent so the delay cannot overflow.
 	 */
 	private boolean registerFailedUnlock() {
-		failedAttempts++;
-		int n = Math.min(failedAttempts, MAX_FAILED_ATTEMPTS);
-		long backoffMs = INITIAL_BACKOFF_MS * (2L * n - 1L);
-		backoffUntil = System.currentTimeMillis() + backoffMs;
+		unlockThrottle.recordFailure();
 		return false;
 	}
 
@@ -366,17 +361,34 @@ public class VaultManager
 	}
 
 	public synchronized void checkAutoLock() {
-		if (isUnlocked && System.currentTimeMillis() - lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
+		if (isUnlocked && android.os.SystemClock.elapsedRealtime()
+				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
 			lockVault();
 		}
 	}
 
 	public synchronized void updateActivity() {
-		lastActivityTime = System.currentTimeMillis();
+		lastActivityTime = android.os.SystemClock.elapsedRealtime();
+	}
+
+	/**
+	 * Runs a vault access that must not count as user activity, such as a
+	 * credential check, and restores the inactivity timer afterwards so a
+	 * guessing run cannot keep the vault unlocked.
+	 */
+	public synchronized <T> T withoutActivityRefresh(
+			java.util.concurrent.Callable<T> access) throws Exception {
+		long saved = lastActivityTime;
+		try {
+			return access.call();
+		} finally {
+			lastActivityTime = saved;
+		}
 	}
 
 	public synchronized boolean isUnlocked() {
-		if (this.isUnlocked && System.currentTimeMillis() - lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
+		if (this.isUnlocked && android.os.SystemClock.elapsedRealtime()
+				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
 			lockVault();
 			return false;
 		}
@@ -798,7 +810,30 @@ public class VaultManager
 		currentHeader = null;
 	}
 
+	/**
+	 * Every check of the master password outside an unlock goes through the
+	 * unlock throttle and its time floor as well, so a password change or
+	 * a verification prompt on an unlocked vault is not a faster oracle
+	 * than the unlock screen.
+	 */
 	private synchronized boolean verifyPassword(char[] candidate)
+			throws Exception {
+		if (unlockThrottle.remainingLockoutMs() > 0) {
+			throw new SecurityException("Too many failed attempts");
+		}
+		long start = android.os.SystemClock.elapsedRealtime();
+		boolean ok = false;
+		try {
+			ok = verifyPasswordUnthrottled(candidate);
+			return ok;
+		} finally {
+			if (ok) unlockThrottle.reset();
+			else unlockThrottle.recordFailure();
+			enforceUnlockTimeFloor(start);
+		}
+	}
+
+	private boolean verifyPasswordUnthrottled(char[] candidate)
 			throws Exception {
 		if (currentHeader == null) loadVaultHeader();
 		if (currentHeader.passwordVerificationMac == null
@@ -1234,7 +1269,9 @@ public class VaultManager
 		int memoryKb = dis.readInt();
 		int iterations = dis.readInt();
 		int parallelism = dis.readInt();
-		if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
+		try {
+			Argon2.requireSaneParams(memoryKb, iterations, parallelism);
+		} catch (IllegalArgumentException e) {
 			throw new IOException("Invalid Argon2 params in export header");
 		}
 		Argon2.Argon2Params params = new Argon2.Argon2Params(memoryKb,

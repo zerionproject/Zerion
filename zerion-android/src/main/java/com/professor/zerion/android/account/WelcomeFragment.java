@@ -16,7 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountBackupManager;
 import com.professor.zerion.android.backup.BackupException;
@@ -142,7 +142,7 @@ public class WelcomeFragment extends Fragment {
 		layout.addView(newPass);
 		layout.addView(confirm);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(context)
+				new SecureAlertDialogBuilder(context)
 						.setTitle(R.string.welcome_import_file)
 						.setMessage(R.string.backup_import_warning)
 						.setView(layout)

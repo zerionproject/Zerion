@@ -12,6 +12,7 @@ import android.widget.ProgressBar;
 
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -234,7 +235,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		int pad = Math.round(24 * getResources().getDisplayMetrics().density);
 		til.setPadding(pad, 0, pad, 0);
 
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_lost_password);
 		builder.setBackgroundInsetStart(25);
@@ -308,7 +309,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 						result.attemptsRemaining, result.attemptsRemaining);
 				setError(input, warningMsg, true);
 
-				MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+				MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 						requireContext(), R.style.ZerionDialogTheme);
 				builder.setTitle(R.string.dialog_title_critical_warning);
 				builder.setMessage(getResources().getQuantityString(R.plurals.dialog_message_critical_warning,
@@ -331,7 +332,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		signInButton.setVisibility(VISIBLE);
 		progress.setVisibility(INVISIBLE);
 
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 				requireContext(), R.style.ZerionDialogTheme);
 		builder.setTitle(R.string.dialog_title_cannot_check_password);
 		builder.setMessage(R.string.dialog_message_cannot_check_password);

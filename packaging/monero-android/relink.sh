@@ -34,7 +34,27 @@ for stamp in "${DEPS}/.recipe.sha256" "${MONERO}/.recipe.sha256"; do
     || { echo "relink refused: cached inputs in $(dirname "${stamp}") were not built by the current recipe" >&2; exit 4; }
 done
 
-LIBS=$(find ${MB} -name '*.a' | tr '\n' ' ')
+# The same fixed archive order as the full recipe: an unsorted directory
+# enumeration is not reproducible across hosts even with identical inputs.
+LIBS=""
+for lib in \
+  lib/libwallet_api.a lib/libwallet.a \
+  external/db_drivers/liblmdb/liblmdb.a external/easylogging++/libeasylogging.a \
+  external/randomx/librandomx.a contrib/epee/src/libepee.a \
+  src/multisig/libmultisig.a src/cryptonote_basic/libcryptonote_format_utils_basic.a \
+  src/cryptonote_basic/libcryptonote_basic.a src/mnemonics/libmnemonics.a \
+  src/libversion.a src/cryptonote_core/libcryptonote_core.a \
+  src/blockchain_db/libblockchain_db.a src/ringct/libringct_basic.a \
+  src/ringct/libringct.a src/blocks/libblocks.a src/checkpoints/libcheckpoints.a \
+  src/crypto/libcncrypto.a src/hardforks/libhardforks.a \
+  src/device_trezor/libdevice_trezor.a src/rpc/librpc_base.a \
+  src/device/libdevice.a src/net/libnet.a src/common/libcommon.a; do
+  [ -f "${MB}/${lib}" ] || { echo "pinned Monero archive missing: ${lib}" >&2; exit 3; }
+  LIBS="${LIBS} ${MB}/${lib}"
+done
+FOUND=$(find ${MB} -name '*.a' | sort | tr '\n' ' ')
+PINNED=$(echo ${LIBS} | tr ' ' '\n' | sort | tr '\n' ' ')
+[ "${FOUND}" = "${PINNED}" ] || { echo "relink refused: archive set differs from the pinned list" >&2; exit 3; }
 echo "=== relink ${ABI} (PAGE=${PAGE}) ==="
 ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   -Wl,-z,max-page-size=${PAGE} -Wl,-z,common-page-size=${PAGE} \

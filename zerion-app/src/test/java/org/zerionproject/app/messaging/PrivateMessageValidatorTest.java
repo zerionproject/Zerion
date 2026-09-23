@@ -37,6 +37,7 @@ import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHM
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
 import static org.zerionproject.app.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT;
+import static org.zerionproject.app.messaging.MessageTypes.LINK_PREVIEW_MESSAGE;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.zerionproject.app.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
@@ -45,6 +46,9 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_TEX
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_LOCAL;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_URL;
 import static org.junit.Assert.assertEquals;
 
 public class PrivateMessageValidatorTest extends BrambleMockTestCase {
@@ -605,5 +609,54 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	private BdfList getAttachmentHeader() {
 		return BdfList.of(new MessageId(getRandomId()),
 				getRandomString(MAX_CONTENT_TYPE_BYTES));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsLegacyMessageCarryingARetiredVoiceMemoFormat()
+			throws Exception {
+		testRejectsLegacyMessage(BdfList.of(voiceMemoText(1)));
+	}
+
+	@Test
+	public void testAcceptsLegacyMessageCarryingACurrentVoiceMemo()
+			throws Exception {
+		testAcceptsLegacyMessage(BdfList.of(voiceMemoText(2)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsPrivateMessageCarryingARetiredVoiceMemoFormat()
+			throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, voiceMemoText(1),
+				new BdfList()));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsRetiredVoiceMemoInsideALinkPreview()
+			throws Exception {
+		testRejectsPrivateMessage(BdfList.of(LINK_PREVIEW_MESSAGE,
+				voiceMemoText(1), "https://example.invalid/x", "title", null));
+	}
+
+	@Test
+	public void testAcceptsCurrentVoiceMemoInsideALinkPreview()
+			throws Exception {
+		BdfDictionary meta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_READ, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, LINK_PREVIEW_MESSAGE),
+				new BdfEntry(MSG_KEY_HAS_TEXT, true),
+				new BdfEntry(MSG_KEY_PREVIEW_URL, "https://example.invalid/x"),
+				new BdfEntry(MSG_KEY_PREVIEW_TITLE, "title"),
+				new BdfEntry(MSG_KEY_HAS_PREVIEW_IMAGE, false));
+		testAcceptsPrivateMessage(BdfList.of(LINK_PREVIEW_MESSAGE,
+				voiceMemoText(2), "https://example.invalid/x", "title", null),
+				meta);
+	}
+
+	private static String voiceMemoText(int formatVersion) {
+		return "[VOICE:1200:" + java.util.Base64.getEncoder().withoutPadding()
+				.encodeToString(new byte[] {(byte) formatVersion, 1, 2, 3, 4})
+				+ "]";
 	}
 }

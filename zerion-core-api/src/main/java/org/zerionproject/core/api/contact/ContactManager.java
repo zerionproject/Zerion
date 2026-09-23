@@ -124,6 +124,18 @@ public interface ContactManager {
 	boolean contactExists(AuthorId remoteAuthorId, AuthorId localAuthorId)
 			throws DbException;
 
+	/**
+	 * Derives a key for {@code label} and {@code inputs} from the secret
+	 * shared with contact {@code c} at pairing, which both sides hold. Used
+	 * for keys that either side must be able to derive again later, such as
+	 * the wrap key of a stored voice memo.
+	 */
+	SecretKey deriveContactKey(ContactId c, String label, byte[]... inputs)
+			throws DbException;
+
+	SecretKey deriveContactKey(Transaction txn, ContactId c, String label,
+			byte[]... inputs) throws DbException;
+
 	interface ContactHook {
 
 		void addingContact(Transaction txn, Contact c) throws DbException;

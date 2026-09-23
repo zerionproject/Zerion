@@ -1444,13 +1444,6 @@ copies des messages que vous envoyez.
 	<string name="welcome_create">Créer un nouveau compte</string>
 	<string name="welcome_import_file">Importer depuis un fichier de sauvegarde</string>
 	<string name="welcome_receive">Recevoir depuis un autre téléphone</string>
-	<string name="proxy_section_title">PROXY</string>
-	<string name="orbot_proxy_title">Utiliser le proxy Orbot</string>
-	<string name="orbot_proxy_summary">Acheminer le trafic Tor via l\'application Orbot</string>
-	<string name="orbot_proxy_settings">Paramètres du proxy</string>
-	<string name="orbot_host_label">Adresse de l\'hôte</string>
-	<string name="orbot_port_label">Port</string>
-	<string name="orbot_info_message">Orbot offre une confidentialité supplémentaire en utilisant sa propre connexion Tor. Installez Orbot depuis F-Droid ou Google Play et lancez-le avant d\'activer cette option.</string>
 	<string name="profiles_settings_title">Profils</string>
 	<string name="profiles_settings_summary">Créer, changer ou supprimer des profils cachés</string>
 	<string name="profiles_section_current">Profil actuel</string>

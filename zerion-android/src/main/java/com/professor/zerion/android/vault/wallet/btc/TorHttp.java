@@ -57,10 +57,14 @@ public final class TorHttp {
 			}
 		}
 
-		Socket socket = new Socket();
+		Socket socket;
 		try {
-			socket.connect(new InetSocketAddress("127.0.0.1", socksPort),
-					30_000);
+			socket = com.professor.zerion.android.vault.net.TorSockets.open(
+					socksPort, 30_000);
+		} catch (IOException e) {
+			return null;
+		}
+		try {
 			socket.setSoTimeout(45_000);
 			TorSocks.connect(socket, host, port, "zw-" + isolationTag,
 					isolationTag);

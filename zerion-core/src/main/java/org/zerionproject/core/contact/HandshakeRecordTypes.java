@@ -13,4 +13,6 @@ interface HandshakeRecordTypes {
 	byte RECORD_TYPE_KEM_CIPHERTEXT = 4;
 
 	byte RECORD_TYPE_MODE3_CAPABILITY = 5;
+
+	byte RECORD_TYPE_STATIC_KEM_CIPHERTEXT = 6;
 }

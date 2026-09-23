@@ -159,6 +159,9 @@ public interface AndroidComponent
 
 	LockManager lockManager();
 
+	com.professor.zerion.android.security.AntiForensics antiForensics();
+
+
 	LocationUtils locationUtils();
 
 	CircumventionProvider circumventionProvider();

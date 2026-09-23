@@ -24,7 +24,7 @@ REPO="$(cd "${HERE}/../.." && pwd)"
 : "${ANDROID_NDK_HOME:?set ANDROID_NDK_HOME to the android-ndk-r27b directory}"
 
 # Pinned versions, identical to packaging/monero-android/Dockerfile.
-export OPENSSL_VERSION=1.1.1w
+export OPENSSL_VERSION=3.5.8
 export SODIUM_VERSION=1.0.19
 export BOOST_VERSION=1.84.0
 export BOOST_UNDERSCORE=1_84_0

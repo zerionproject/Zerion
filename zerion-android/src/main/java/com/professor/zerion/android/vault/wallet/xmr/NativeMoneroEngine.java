@@ -83,15 +83,41 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		}
 	}
 
+	/** The longest string any native parser is handed: an address with room. */
+	static final int MAX_ADDRESS_CHARS = 256;
+	/** A daemon or proxy address: scheme, credentials, host, port. */
+	static final int MAX_ENDPOINT_CHARS = 512;
+	/** A subaddress label, user text kept short before it reaches the wallet. */
+	static final int MAX_LABEL_CHARS = 256;
+
+	/**
+	 * Whether a string may be handed to the native parsers: present, no
+	 * longer than {@code max}, and printable ASCII only. Addresses and
+	 * endpoints are base58 and URL text, so anything else is refused here on
+	 * the JVM side rather than being decoded by native code.
+	 */
+	static boolean acceptableJniString(@Nullable String s, int max) {
+		if (s == null || s.length() > max) return false;
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c < 0x20 || c > 0x7E) return false;
+		}
+		return true;
+	}
+
 	@Override
 	public boolean validateAddress(String address) {
 		return NativeMonero.isAvailable()
+				&& acceptableJniString(address, MAX_ADDRESS_CHARS)
 				&& NativeMonero.nValidateAddress(address);
 	}
 
 	@Override
 	public AddressKind addressKind(String address) {
 		if (!NativeMonero.isAvailable()) return AddressKind.INVALID;
+		if (!acceptableJniString(address, MAX_ADDRESS_CHARS)) {
+			return AddressKind.INVALID;
+		}
 		switch (NativeMonero.nAddressKind(address)) {
 			case 1:
 				return AddressKind.STANDARD;
@@ -151,6 +177,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		@Override
 		public void addSubaddress(long account, String label) {
 			if (closed.get()) return;
+			if (label == null || label.length() > MAX_LABEL_CHARS) return;
 			NativeMonero.nAddSubaddress(h, account, label);
 		}
 
@@ -164,6 +191,10 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		public boolean init(String daemonAddress, String proxyAddress,
 				boolean trustedDaemon) {
 			if (closed.get()) return false;
+			if (!acceptableJniString(daemonAddress, MAX_ENDPOINT_CHARS)
+					|| !acceptableJniString(proxyAddress, MAX_ENDPOINT_CHARS)) {
+				return false;
+			}
 			return NativeMonero.nInit(h, daemonAddress, proxyAddress,
 					trustedDaemon);
 		}
@@ -186,6 +217,8 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			return NativeMonero.nRefresh(h);
 		}
 
+		private final Object historyLock = new Object();
+
 		@Override
 		public void setAutoRefreshInterval(int millis) {
 			if (closed.get()) return;
@@ -200,13 +233,42 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void pauseRefresh() {
-			if (!interruptLock.tryLock()) return;
+			interruptLock.lock();
 			try {
 				if (closed.get()) return;
 				NativeMonero.nPauseRefresh(h);
 			} finally {
 				interruptLock.unlock();
 			}
+		}
+
+		@Override
+		public void interruptRefresh() {
+			if (!interruptLock.tryLock()) return;
+			try {
+				if (closed.get()) return;
+				NativeMonero.nPauseRefresh(h);
+				NativeMonero.nStop(h);
+			} finally {
+				interruptLock.unlock();
+			}
+		}
+
+		@Override
+		public boolean rescanBlockchain() {
+			interruptLock.lock();
+			try {
+				if (closed.get()) return false;
+				return NativeMonero.nRescanBlockchain(h);
+			} finally {
+				interruptLock.unlock();
+			}
+		}
+
+		@Override
+		public boolean trustedDaemon() {
+			if (closed.get()) return false;
+			return NativeMonero.nTrustedDaemon(h);
 		}
 
 		@Override
@@ -229,7 +291,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void stopRefresh() {
-			if (!interruptLock.tryLock()) return;
+			interruptLock.lock();
 			try {
 				if (closed.get()) return;
 				NativeMonero.nStop(h);
@@ -256,11 +318,20 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			return NativeMonero.nUnlockedBalance(h, account);
 		}
 
+		/**
+		 * The native history is refreshed and read by this call alone (the
+		 * wallet's refresh thread no longer touches it), so two readers must
+		 * not run at once.
+		 */
 		@Override
 		public java.util.List<XmrTxInfo> history() {
 			java.util.List<XmrTxInfo> out = new java.util.ArrayList<>();
 			if (closed.get()) return out;
-			String snapshot = NativeMonero.nHistory(h);
+			String snapshot;
+			synchronized (historyLock) {
+				if (closed.get()) return out;
+				snapshot = NativeMonero.nHistory(h);
+			}
 
 			if (snapshot == null) {
 				throw new IllegalStateException("xmr history unavailable");
@@ -279,6 +350,7 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		public Prepared prepare(String address, long amountAtomic, int priority,
 				long account) {
 			if (closed.get()) return null;
+			if (!acceptableJniString(address, MAX_ADDRESS_CHARS)) return null;
 			long tx = NativeMonero.nPrepare(h, address, amountAtomic, priority,
 					account);
 			if (tx == 0) return null;
@@ -376,16 +448,17 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		}
 
 		@Override
-		public void closePersisting() {
+		public boolean closePersisting() {
 			if (closed.compareAndSet(false, true)) {
 				interruptLock.lock();
 				try {
 					quiesce();
-					NativeMonero.nClose(h, true);
+					return NativeMonero.nClose(h, true);
 				} finally {
 					interruptLock.unlock();
 				}
 			}
+			return false;
 		}
 
 		@Override
@@ -407,12 +480,15 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		 * caller's interrupt cannot run a whole catch-up before the join returns.
 		 *
 		 * The interrupt lock held by the closing caller excludes the cross-thread
-		 * refresh interrupts issued by XmrSyncManager.stop(): an interrupt that
-		 * already borrowed the native pointer completes before nClose destroys
-		 * the wallet, and one that arrives later skips via tryLock or sees the
-		 * closed flag inside the lock. Interrupts never block on the lock, so
-		 * the ability to cancel a refresh that occupies the session executor is
-		 * preserved and the refresh thread joined here never takes this lock.
+		 * refresh interrupts issued by XmrSyncManager.stop() through
+		 * interruptRefresh(): an interrupt that already borrowed the native
+		 * pointer completes before nClose destroys the wallet, and one that
+		 * arrives later skips via tryLock or sees the closed flag inside the
+		 * lock. Only that cross-thread interrupt skips; the executor-side pause
+		 * and stop that precede a store, a prepare or a failover take the lock
+		 * and are never skipped, so a store can never run into a refresh that a
+		 * skipped pause left running. The refresh thread joined here never
+		 * takes this lock.
 		 */
 		private void quiesce() {
 			NativeMonero.nPauseRefresh(h);

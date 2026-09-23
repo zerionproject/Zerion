@@ -29,7 +29,7 @@ public class BtcWalletExtremePrivacyTest {
 			"3333333333333333333333333333333333333333333333333333333333333333";
 
 	private static BtcWallet wallet(FakeElectrum e, PrivacyEngine.Policy policy) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyStore(new BtcWalletPrivacyTest.MemStore());
 		w.setPrivacyPolicy(policy);
@@ -38,8 +38,8 @@ public class BtcWalletExtremePrivacyTest {
 
 	private static FakeElectrum twoClusters(long a, long b) {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, a);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, b);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, a);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, b);
 		return e;
 	}
 
@@ -128,8 +128,8 @@ public class BtcWalletExtremePrivacyTest {
 	public void strictSpendableWithoutMetadataSingleCluster()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyPolicy(PrivacyEngine.Policy.STRICT);
 		String txid = w.send(DEST, 40000, 1.0, false);

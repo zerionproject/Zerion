@@ -11,7 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
@@ -48,7 +48,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 	AccountTransferManager transferManager;
 
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
-	private final BlockingQueue<Boolean> sasResult = new ArrayBlockingQueue<>(1);
+	private final BlockingQueue<String> codeResult = new ArrayBlockingQueue<>(1);
 
 	@Nullable
 	private TextView statusText;
@@ -104,7 +104,7 @@ public class TransferSendFragment extends Fragment implements Callback {
 		android.app.Activity activity = getActivity();
 		if (activity != null && activity.isChangingConfigurations()) return;
 		transferManager.cancel();
-		sasResult.offer(false);
+		codeResult.offer("");
 	}
 
 	private void start() {
@@ -132,15 +132,20 @@ public class TransferSendFragment extends Fragment implements Callback {
 	}
 
 	@Override
-	public boolean onSasConfirm(String safetyNumber) {
-		sasResult.clear();
-		mainHandler.post(() -> showSasDialog(safetyNumber));
+	public void onShowConfirmationCode(String code) {
+	}
+
+	@Override
+	@Nullable
+	public String onEnterConfirmationCode() {
+		codeResult.clear();
+		mainHandler.post(this::showCodeDialog);
 		try {
-			Boolean r = sasResult.poll(5, TimeUnit.MINUTES);
-			return r != null && r;
+			String r = codeResult.poll(5, TimeUnit.MINUTES);
+			return r == null || r.isEmpty() ? null : r;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			return false;
+			return null;
 		}
 	}
 
@@ -151,25 +156,40 @@ public class TransferSendFragment extends Fragment implements Callback {
 		setStatus(getString(R.string.transfer_send_show_qr));
 	}
 
-	private void showSasDialog(String sas) {
+	private void showCodeDialog() {
 		if (!isAdded()) {
-			sasResult.offer(false);
+			codeResult.offer("");
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.transfer_sas_title)
-				.setMessage(getString(R.string.transfer_sas_message, sas))
+		android.widget.EditText input =
+				new android.widget.EditText(requireContext());
+		input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+		input.setHint(R.string.transfer_code_hint);
+		input.setFilters(new android.text.InputFilter[] {
+				new android.text.InputFilter.LengthFilter(
+						AccountTransferManager.CODE_DIGITS)});
+		int pad = (int) (20 * getResources().getDisplayMetrics().density);
+		android.widget.FrameLayout box =
+				new android.widget.FrameLayout(requireContext());
+		box.setPadding(pad, 0, pad, 0);
+		box.addView(input);
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.transfer_code_title)
+				.setMessage(R.string.transfer_code_message)
+				.setView(box)
 				.setCancelable(false)
-				.setPositiveButton(R.string.transfer_sas_matches,
-						(d, w) -> sasResult.offer(true))
+				.setPositiveButton(R.string.transfer_code_confirm, (d, w) -> {
+					android.text.Editable e = input.getText();
+					codeResult.offer(e == null ? "" : e.toString());
+				})
 				.setNegativeButton(R.string.cancel,
-						(d, w) -> sasResult.offer(false))
+						(d, w) -> codeResult.offer(""))
 				.show();
 	}
 
 	private void finishResult(boolean success) {
 		if (!isAdded()) return;
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(success ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)
 				.setMessage(success ? R.string.transfer_send_done_message

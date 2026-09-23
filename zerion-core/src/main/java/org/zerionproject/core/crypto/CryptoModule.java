@@ -6,12 +6,7 @@ import org.zerionproject.core.api.crypto.PasswordStrengthEstimator;
 import org.zerionproject.core.api.crypto.StreamDecrypterFactory;
 import org.zerionproject.core.api.crypto.StreamEncrypterFactory;
 import org.zerionproject.core.api.crypto.TransportCrypto;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
-import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
-import org.zerionproject.core.api.crypto.pcs.PqRatchet;
-import org.zerionproject.core.api.crypto.pcs.SkippedKeyStore;
 import org.zerionproject.core.api.system.SecureRandomProvider;
-import org.zerionproject.core.crypto.pcs.PcsStateManager;
 
 import java.security.SecureRandom;
 
@@ -52,24 +47,16 @@ public class CryptoModule {
 
 	@Provides
 	StreamDecrypterFactory provideStreamDecrypterFactory(
-			Provider<AuthenticatedCipher> cipherProvider,
-			PcsRatchet pcsRatchet, PqRatchet pqRatchet,
-			SkippedKeyStore skippedKeyStore,
-			PcsStateManager pcsStateManager,
-			Mode3FullRatchet mode3FullRatchet) {
-		return new StreamDecrypterFactoryImpl(cipherProvider, pcsRatchet,
-				pqRatchet, skippedKeyStore, pcsStateManager, mode3FullRatchet);
+			Provider<AuthenticatedCipher> cipherProvider) {
+		return new StreamDecrypterFactoryImpl(cipherProvider);
 	}
 
 	@Provides
 	StreamEncrypterFactory provideStreamEncrypterFactory(
 			CryptoComponent crypto, TransportCrypto transportCrypto,
-			Provider<AuthenticatedCipher> cipherProvider, PcsRatchet pcsRatchet,
-			PqRatchet pqRatchet, PcsStateManager pcsStateManager,
-			Mode3FullRatchet mode3FullRatchet) {
+			Provider<AuthenticatedCipher> cipherProvider) {
 		return new StreamEncrypterFactoryImpl(crypto, transportCrypto,
-				cipherProvider, pcsRatchet, pqRatchet, pcsStateManager,
-				mode3FullRatchet);
+				cipherProvider);
 	}
 
 	@Provides

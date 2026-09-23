@@ -127,11 +127,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
 
-	private static final long MIN_CALL_LAUNCH_INTERVAL_MS = 3000L;
-	private final Object callLaunchLock = new Object();
-	private long lastCallLaunchMs = 0L;
-	@Nullable
-	private String lastLaunchedCallId = null;
+	private final com.professor.zerion.android.conversation.voice
+			.CallSignalGate callSignalGate;
 	private final VoiceSignalFactory voiceSignalFactory;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
@@ -177,6 +174,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		this.conversationManager = conversationManager;
 		this.voiceSignalFactory = voiceSignalFactory;
 		this.uiPrefs = uiPrefs;
+		this.callSignalGate = new com.professor.zerion.android.conversation
+				.voice.CallSignalGate(clock::currentTimeMillis);
 		appContext = app.getApplicationContext();
 		notificationManager = (NotificationManager)
 				appContext.getSystemService(NOTIFICATION_SERVICE);
@@ -377,11 +376,24 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		return b.build();
 	}
 
+	private volatile boolean appLocked = false;
+
+	/**
+	 * The app lock also governs the notification shade: while locked, the
+	 * contact notifications are re-posted without their reply action, and
+	 * they get it back when the lock is lifted.
+	 */
 	@UiThread
 	@Override
 	public void updateForegroundNotification(boolean locked) {
 		Notification n = getForegroundNotification(locked);
 		notificationManager.notify(ONGOING_NOTIFICATION_ID, n);
+		if (appLocked == locked) return;
+		appLocked = locked;
+		for (int id : new java.util.ArrayList<>(activeContactNotificationIds)) {
+			postContactNotification(
+					new ContactId(id - CONTACT_NOTIFICATION_ID_BASE), false);
+		}
 	}
 
 	@Override
@@ -443,7 +455,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		boolean quickReplyEnabled = uiPrefs.getBoolean(
 				com.professor.zerion.android.settings.NotificationsFragment
 						.PREF_NOTIFY_QUICK_REPLY, true);
-		if (quickReplyEnabled) {
+		if (quickReplyEnabled && !appLocked) {
 			RemoteInput remoteInput = new RemoteInput.Builder(
 					NotificationQuickReplyReceiver.KEY_REPLY_TEXT)
 					.setLabel(appContext.getString(
@@ -943,9 +955,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 						event.getMessageHeader().getId());
 			} catch (DbException e) {
 			}
-			if (text != null && isVoiceCallSignal(text)) {
-				launchIncomingCall(event, text);
-			}
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 							.parse(text);
@@ -962,79 +971,18 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		});
 	}
 
-	private void launchIncomingCall(PrivateMessageReceivedEvent event,
-			String messageText) {
-		String decoded = decodeVoiceCallSignal(messageText);
-		if (decoded == null) return;
-		String[] parts = decoded.split(":");
-		if (parts.length < 2) return;
-		if (!"CALL_OFFER".equals(parts[1])) return;
-		if (!uiPrefs.getBoolean(
-				com.professor.zerion.android.settings.SecurityFragment
-						.PREF_VOICE_CALLS_ENABLED, true)) {
-			return;
-		}
-		String remoteCallId = parts.length > 2 ? parts[2] : null;
-		synchronized (callLaunchLock) {
-			long now = clock.currentTimeMillis();
-			if (remoteCallId != null &&
-					remoteCallId.equals(lastLaunchedCallId)) return;
-			if (now - lastCallLaunchMs < MIN_CALL_LAUNCH_INTERVAL_MS) return;
-			lastCallLaunchMs = now;
-			lastLaunchedCallId = remoteCallId;
-		}
-		ContactId contactId = event.getContactId();
-		try {
-			contactManager.getContact(contactId);
-		} catch (DbException e) {
-			return;
-		}
-		androidExecutor.runOnUiThread(() -> {
-			Intent intent = new Intent(appContext,
-					com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
-			intent.putExtra("contact_id", contactId.getInt());
-			intent.putExtra("is_incoming", true);
-			if (remoteCallId != null) {
-				intent.putExtra("call_id", remoteCallId);
-			}
-			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			appContext.startActivity(intent);
-		});
-	}
-
-	private boolean isVoiceCallSignal(String text) {
-		if (text == null || text.isEmpty()) {
-			return false;
-		}
-		try {
-			byte[] decodedBytes = android.util.Base64.decode(text, android.util.Base64.NO_WRAP);
-			String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-			boolean isSignal = decoded.startsWith("VOICE_CALL:");
-			java.util.Arrays.fill(decodedBytes, (byte) 0);
-			return isSignal;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	@Nullable
-	private String decodeVoiceCallSignal(String text) {
-		try {
-			byte[] decodedBytes = android.util.Base64.decode(text, android.util.Base64.NO_WRAP);
-			String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-			java.util.Arrays.fill(decodedBytes, (byte) 0);
-			return decoded;
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
 	private void handleIncomingVoiceCall(ContactId contactId,
 			VoiceSignalHeader header) {
 		androidExecutor.runOnBackgroundThread(() -> {
 			try {
 				Contact contact = contactManager.getContact(contactId);
 				String callId = header.getCallId();
+				if (!callSignalGate.admitOffer(
+						String.valueOf(contactId.getInt()),
+						callId == null ? "" : callId,
+						header.getTimestamp())) {
+					return;
+				}
 				String rawPayload = header.getPayload();
 
 				boolean isVideoCall = false;

@@ -11,6 +11,11 @@ API=24
 NDK="${ANDROID_NDK_HOME}"
 TC="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 JOBS="$(nproc)"
+# Every build embeds the same clock: OpenSSL writes its build date into
+# libcrypto unless SOURCE_DATE_EPOCH is set, and the F-Droid build server
+# sets a per-commit value, so the recipe pins one value of its own; two
+# builds of the same inputs then produce the same bytes on every host.
+export SOURCE_DATE_EPOCH=1735689600
 OUT=/build/out/${ABI};   mkdir -p "${OUT}"
 DEPS=/build/deps/${ABI}; mkdir -p "${DEPS}/lib" "${DEPS}/include"
 SRC=/build/src/${ABI};   mkdir -p "${SRC}"
@@ -77,7 +82,7 @@ if [ -f "${DEPS}/lib/libcrypto.a" ] && [ -f "${DEPS}/lib/libssl.a" ]; then
 else
   cd ${SRC}
   [ -f openssl.tar.gz ] || curl -fsSL -o openssl.tar.gz https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
-  verify_sha256 openssl.tar.gz cf3098950cb4d853ad95c0841f1f9c6d3dc102dccfcacd521d93925208b76ac8
+  verify_sha256 openssl.tar.gz a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
   rm -rf openssl-${OPENSSL_VERSION}; tar xf openssl.tar.gz
   cd openssl-${OPENSSL_VERSION}
   ANDROID_NDK_ROOT=${NDK} ./Configure ${OSSL_ARCH} -D__ANDROID_API__=${API} \
@@ -150,7 +155,7 @@ EOF
 fi
 [ -f "${DEPS}/lib/libboost_locale.a" ] || { echo "Boost locale build failed"; exit 3; }
 
-EXPAT_VERSION=2.6.4
+EXPAT_VERSION=2.8.5
 UNBOUND_VERSION=1.22.0
 echo "=== [3a] expat ${EXPAT_VERSION} (${ABI}) ==="
 if [ -f "${DEPS}/lib/libexpat.a" ]; then
@@ -160,7 +165,7 @@ else
   EXPAT_TAG=R_$(echo ${EXPAT_VERSION} | tr . _)
   [ -f expat.tar.bz2 ] || curl -fsSL -o expat.tar.bz2 \
     https://github.com/libexpat/libexpat/releases/download/${EXPAT_TAG}/expat-${EXPAT_VERSION}.tar.bz2
-  verify_sha256 expat.tar.bz2 8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada
+  verify_sha256 expat.tar.bz2 952c03c33a6b337f12dae7a9b0f9dee86f867550d35c994d6bdaaddd37dc8454
   rm -rf expat-${EXPAT_VERSION}; tar xf expat.tar.bz2
   cd expat-${EXPAT_VERSION}
   ./configure --host=${BINTRIPLE} --prefix=${DEPS} --disable-shared \
@@ -254,6 +259,42 @@ if grep -q 'jit_compiler_a64' "${RANDOMX_CMAKE}"; then
   echo "RandomX a64 JIT sources still in CMake source list"; exit 4;
 fi
 echo "RandomX interpreter patches verified (common.hpp + CMakeLists)"
+# Documented minimal patch (JNI-01): the wallet API refresh thread refreshes
+# the transaction history whenever it finds it empty, while the API caller
+# refreshes it explicitly before reading it. Both rebuild the same
+# TransactionInfo objects under the history lock, so a caller iterating the
+# objects it just obtained could dereference objects the refresh thread had
+# deleted in between. The refresh thread no longer touches the history; the
+# API caller (the JNI shim) is its only reader and its only writer.
+WALLET_API_CPP=/build/monero/src/wallet/api/wallet.cpp
+if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
+  sed -i 's|if (m_history->count() == 0) {|if (false) { // Zerion: history is refreshed only by the API caller|' "${WALLET_API_CPP}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: history is refreshed only by the API caller' "${WALLET_API_CPP}")
+[ "${PATCH_COUNT}" = "1" ] || { echo "wallet.cpp history patch count=${PATCH_COUNT} (expected 1)"; exit 4; }
+if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
+  echo "unpatched refresh-thread history refresh still present"; exit 4;
+fi
+echo "wallet.cpp refresh-thread history patch verified"
+# Documented minimal patch (JNI-07): the shim reads two private members of
+# the wallet API, the refresh mutex the history gate serialises on and the
+# constructed transactions whose change it reports. Instead of redefining
+# the access specifier around the headers, both classes declare the shim's
+# accessor struct a friend, so every translation unit compiles the same
+# class definition. Each patch must apply exactly once.
+WALLET_API_H=/build/monero/src/wallet/api/wallet.h
+PENDING_TX_H=/build/monero/src/wallet/api/pending_transaction.h
+if ! grep -q 'friend struct ZerionWalletAccess;' "${WALLET_API_H}"; then
+  sed -i '/^class WalletImpl : public Wallet$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${WALLET_API_H}"
+fi
+if ! grep -q 'friend struct ZerionWalletAccess;' "${PENDING_TX_H}"; then
+  sed -i '/^class PendingTransactionImpl : public PendingTransaction$/{n;s/^{$/{\n    friend struct ZerionWalletAccess;/}' "${PENDING_TX_H}"
+fi
+for H in "${WALLET_API_H}" "${PENDING_TX_H}"; do
+  PATCH_COUNT=$(grep -c 'friend struct ZerionWalletAccess;' "${H}")
+  [ "${PATCH_COUNT}" = "1" ] || { echo "friend patch count=${PATCH_COUNT} in ${H} (expected 1)"; exit 4; }
+done
+echo "wallet API friend patches verified (wallet.h + pending_transaction.h)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its

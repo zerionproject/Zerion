@@ -19,7 +19,7 @@ public class BtcWalletStabilizationTest {
 					+ "abandon abandon abandon about";
 
 	private static BtcWallet wallet(ElectrumRpc.Factory f) {
-		return new BtcWallet(MNEMONIC, 0, 9999, "primary.onion", 50001,
+		return new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "primary.onion", 50001,
 				"walletA", f, (url, tag) -> null);
 	}
 
@@ -88,7 +88,7 @@ public class BtcWalletStabilizationTest {
 		FakeElectrum backend = new FakeElectrum();
 		String txid =
 				"2222222222222222222222222222222222222222222222222222222222222222";
-		backend.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), txid, 0, 100000);
+		backend.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), txid, 0, 100000);
 		int[] opens = {0};
 		ElectrumRpc.Factory f = (endpoint, socksPort, tag) -> {
 			opens[0]++;
@@ -100,7 +100,7 @@ public class BtcWalletStabilizationTest {
 		int opensAfterScan = opens[0];
 
 		BtcWallet.SendPlan plan = w.planSend(scan,
-				BtcKeys.address(MNEMONIC, 0, 0), 10000, 5.0, false, null, true);
+				TestKeys.address(MNEMONIC, 0, 0), 10000, 5.0, false, null, true);
 
 		assertNotNull(plan);
 		assertEquals("planning from a cached scan opens no new connection",
@@ -122,12 +122,12 @@ public class BtcWalletStabilizationTest {
 		FakeElectrum backend = new FakeElectrum();
 		String txid =
 				"3333333333333333333333333333333333333333333333333333333333333333";
-		backend.addHistoryOnly(BtcKeys.scriptHash(MNEMONIC, 0, 0), txid);
-		backend.addHistoryOnly(BtcKeys.scriptHash(MNEMONIC, 0, 1), txid);
+		backend.addHistoryOnly(TestKeys.scriptHash(MNEMONIC, 0, 0), txid);
+		backend.addHistoryOnly(TestKeys.scriptHash(MNEMONIC, 0, 1), txid);
 		BtcWallet.ScanResult r =
 				wallet((endpoint, socksPort, tag) -> backend).scan();
 		assertEquals("fresh receive index skips used addresses", 2,
 				r.receiveIndex);
-		assertEquals(BtcKeys.address(MNEMONIC, 0, 2), r.receiveAddress);
+		assertEquals(TestKeys.address(MNEMONIC, 0, 2), r.receiveAddress);
 	}
 }

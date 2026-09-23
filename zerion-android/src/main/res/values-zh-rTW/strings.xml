@@ -1435,13 +1435,6 @@
 	<string name="welcome_create">建立新帳戶</string>
 	<string name="welcome_import_file">從備份檔匯入</string>
 	<string name="welcome_receive">從另一支手機接收</string>
-	<string name="proxy_section_title">代理伺服器</string>
-	<string name="orbot_proxy_title">使用 Orbot 代理</string>
-	<string name="orbot_proxy_summary">透過 Orbot 應用程式路由 Tor 流量</string>
-	<string name="orbot_proxy_settings">代理設定</string>
-	<string name="orbot_host_label">主機位址</string>
-	<string name="orbot_port_label">連接埠</string>
-	<string name="orbot_info_message">Orbot 透過它自己的 Tor 連線提供額外的隱私保護。請從 F-Droid 或 Google Play 安裝 Orbot，並在啟用此選項前先啟動它。</string>
 	<string name="profiles_settings_title">設定檔</string>
 	<string name="profiles_settings_summary">建立、切換或刪除隱藏設定檔</string>
 	<string name="profiles_section_current">目前的設定檔</string>

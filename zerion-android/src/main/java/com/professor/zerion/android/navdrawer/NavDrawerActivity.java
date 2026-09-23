@@ -18,11 +18,10 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;
-import com.professor.zerion.android.StartupFailureActivity;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.chat.ChatsFragment;
@@ -56,8 +55,6 @@ import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static org.zerionproject.core.api.lifecycle.LifecycleManager.LifecycleState.RUNNING;
-import static com.professor.zerion.android.ZerionService.EXTRA_STARTUP_FAILED;
-import static com.professor.zerion.android.ZerionService.EXTRA_START_RESULT;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_PASSWORD;
 import static com.professor.zerion.android.navdrawer.IntentRouter.handleExternalIntent;
@@ -136,7 +133,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
-		exitIfStartupFailed(getIntent());
 		setContentView(R.layout.activity_nav_drawer);
 
 		ZerionApplication app = (ZerionApplication) getApplication();
@@ -176,7 +172,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			if (isFinishing() || isDestroyed()) return;
 			if (!getLifecycle().getCurrentState().isAtLeast(
 					androidx.lifecycle.Lifecycle.State.RESUMED)) return;
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.post_update_notice_title)
 					.setMessage(R.string.post_update_notice_message)
 					.setCancelable(false)
@@ -578,7 +574,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	protected void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
-		exitIfStartupFailed(intent);
 
 		if ("zerion-content".equals(intent.getScheme())) {
 			handleContentIntent(intent);
@@ -593,23 +588,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 			switchTab(TAB_CONTACTS);
 		} else if (GROUP_URI.equals(uri)) {
 			switchTab(TAB_GROUPS);
-		}
-	}
-
-	private void exitIfStartupFailed(Intent intent) {
-
-		if (intent.getComponent() != null
-				&& getPackageName().equals(
-						intent.getComponent().getPackageName())
-				&& intent.getBooleanExtra(EXTRA_STARTUP_FAILED, false)) {
-			Intent i = new Intent(this, StartupFailureActivity.class);
-			String resultName = intent.getStringExtra(EXTRA_START_RESULT);
-			if (resultName != null) {
-				i.putExtra(EXTRA_START_RESULT, resultName);
-			}
-			startActivity(i);
-			finish();
-			System.exit(0);
 		}
 	}
 

@@ -58,7 +58,6 @@ public class ZwfStreamCounter {
 			long current = current(key, contactId, DIRECTION_SEND);
 			long next = current + 1;
 			if (next < 0) throw new IllegalStateException("stream id overflow");
-			// Persist before returning: a returned id must never be reused.
 			store.storeHighWater(contactId, DIRECTION_SEND, next);
 			cache.put(key, next);
 			return next;
@@ -116,7 +115,7 @@ public class ZwfStreamCounter {
 		}
 	}
 
-	// Must be called while holding `lock`.
+	/** Must be called while holding the lock. */
 	private long current(long key, int contactId, int direction) {
 		Long cached = cache.get(key);
 		if (cached != null) return cached;

@@ -13,6 +13,11 @@ class RecordReaderFactoryImpl implements RecordReaderFactory {
 	}
 
 	@Override
+	public RecordReader createRecordReader(InputStream in, int maxPayloadBytes) {
+		return new RecordReaderImpl(in, maxPayloadBytes);
+	}
+
+	@Override
 	public RecordReader createRecordReader(InputStream in, boolean classical) {
 		if (classical) {
 			return new ClassicalRecordReaderImpl(in);

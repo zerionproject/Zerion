@@ -97,6 +97,16 @@ public class VaultHeader {
 		return buffer.array();
 	}
 
+	static final int MAX_FIELD_LENGTH = 128;
+	static final int MAX_BLOB_LENGTH = 4096;
+
+	private static int boundedLength(int length, int max) {
+		if (length < 0 || length > max) {
+			throw new IllegalArgumentException("Vault header field too long");
+		}
+		return length;
+	}
+
 	public static VaultHeader fromBytes(byte[] data) {
 		ByteBuffer buffer = ByteBuffer.wrap(data);
 
@@ -112,24 +122,31 @@ public class VaultHeader {
 		}
 
 		int saltLength = buffer.getInt();
-		byte[] salt = new byte[saltLength];
+		byte[] salt = new byte[boundedLength(saltLength, MAX_FIELD_LENGTH)];
 		buffer.get(salt);
 
 		int kdfMemoryKb = buffer.getInt();
 		int kdfIterations = buffer.getInt();
 		int kdfParallelism = buffer.getInt();
+		com.professor.zerion.android.vault.crypto.Argon2.requireSaneParams(
+				kdfMemoryKb, kdfIterations, kdfParallelism);
 
 		int blobLength = buffer.getInt();
-		byte[] wrappedKeystoreBlob = new byte[blobLength];
+		byte[] wrappedKeystoreBlob =
+				new byte[boundedLength(blobLength, MAX_BLOB_LENGTH)];
 		buffer.get(wrappedKeystoreBlob);
 
 		int bioSaltLength = buffer.getInt();
-		byte[] biometricTokenSalt = new byte[bioSaltLength];
+		byte[] biometricTokenSalt =
+				new byte[boundedLength(bioSaltLength, MAX_FIELD_LENGTH)];
 		buffer.get(biometricTokenSalt);
 
 		byte[] passwordVerificationMac = new byte[0];
 		if (buffer.remaining() >= 4) {
 			int macLength = buffer.getInt();
+			if (macLength > MAX_FIELD_LENGTH) {
+				throw new IllegalArgumentException("Vault header field too long");
+			}
 			if (macLength > 0 && buffer.remaining() >= macLength) {
 				passwordVerificationMac = new byte[macLength];
 				buffer.get(passwordVerificationMac);

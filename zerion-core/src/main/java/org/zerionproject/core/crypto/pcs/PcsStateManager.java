@@ -9,7 +9,6 @@ import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.DhRatchetState;
 import org.zerionproject.core.api.crypto.pcs.MlKemKeyPair;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.api.crypto.pcs.PqEpochState;
 import org.zerionproject.core.api.crypto.pcs.PqRatchet;
@@ -23,6 +22,7 @@ import org.zerionproject.core.api.lifecycle.ServiceException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -75,20 +75,31 @@ public class PcsStateManager implements Service {
 		return loadState(contactId, PCS_DIRECTION_SEND);
 	}
 
-	@Nullable
-	public Mode3FullState loadSharedMode3FullState(ContactId contactId) {
-		try {
-			return db.transactionWithNullableResult(true, txn -> {
-				Object[] row = db.getPcsMode2SessionState(txn, contactId,
-						PCS_DIRECTION_SEND);
-				if (row == null) return null;
-				byte[] blob = (byte[]) row[8];
-				if (blob == null) return null;
-				return Mode3FullStateCodec.decode(blob);
-			});
-		} catch (DbException e) {
-			return null;
-		}
+	/**
+	 * Removes any Mode 3-Full ratchet blob still stored for
+	 * {@code contactId}. Earlier releases persisted the in-memory ratchet
+	 * state, including ML-KEM decapsulation keys, when a connection ended,
+	 * although no connection ever resumed from it. Nothing writes the blob
+	 * any more; this clears what an upgraded database still holds, zeroizing
+	 * the loaded copy before the row is rewritten without it.
+	 */
+	public void stripPersistedMode3FullState(ContactId contactId)
+			throws DbException {
+		db.transaction(false, txn -> {
+			stripPersistedMode3FullState(txn, contactId, PCS_DIRECTION_SEND);
+			stripPersistedMode3FullState(txn, contactId,
+					PCS_DIRECTION_RECEIVE);
+		});
+	}
+
+	private void stripPersistedMode3FullState(Transaction txn,
+			ContactId contactId, int direction) throws DbException {
+		Object[] row = db.getPcsMode2SessionState(txn, contactId, direction);
+		if (row == null) return;
+		byte[] blob = (byte[]) row[8];
+		if (blob == null) return;
+		Arrays.fill(blob, (byte) 0);
+		rewriteWithoutMode3FullState(txn, contactId, direction, row);
 	}
 
 	@Nullable
@@ -230,7 +241,6 @@ public class PcsStateManager implements Service {
 		byte[] dhPublicKeyBytes = (byte[]) result[5];
 		byte[] dhRemotePublicKeyBytes = (byte[]) result[6];
 		boolean mode2Enabled = (Boolean) result[7];
-		byte[] mode3FullStateBlob = (byte[]) result[8];
 
 		SecretKey chainKey = new SecretKey(chainKeyBytes);
 
@@ -256,13 +266,8 @@ public class PcsStateManager implements Service {
 			}
 		}
 
-		Mode3FullState mode3FullState = null;
-		if (mode3FullStateBlob != null) {
-			mode3FullState = Mode3FullStateCodec.decode(mode3FullStateBlob);
-		}
-
 		return new PcsSessionState(chainKey, messageNumber, previousChainLength,
-				rootKey, dhState, mode3FullState != null, 0, mode3FullState);
+				rootKey, dhState, false, 0, null);
 	}
 
 	private void saveState(ContactId contactId, int direction,
@@ -293,106 +298,45 @@ public class PcsStateManager implements Service {
 			dhRemotePublicKey = dhState.getDhRemotePublicKey();
 		}
 
-		Mode3FullState mode3FullState = state.getMode3FullState();
-		Mode3FullState merged = mode3FullState;
-		if (mode3FullState != null) {
-			Object[] currentRow = db.getPcsMode2SessionState(txn, contactId,
-					direction);
-			Mode3FullState currentBlob = null;
-			if (currentRow != null) {
-				byte[] curBytes = (byte[]) currentRow[8];
-				if (curBytes != null) {
-					currentBlob = Mode3FullStateCodec.decode(curBytes);
-				}
-			}
-			if (currentBlob != null) {
-				if (direction == PCS_DIRECTION_SEND) {
-					merged = new Mode3FullState(
-							currentBlob.getTheirActivePqPk(),
-							mode3FullState.getOurActiveKeyPair(),
-							mode3FullState.getRecentKeyPairs(),
-							mode3FullState.getMessageCounter());
-				} else {
-					merged = new Mode3FullState(
-							mode3FullState.getTheirActivePqPk(),
-							currentBlob.getOurActiveKeyPair(),
-							currentBlob.getRecentKeyPairs(),
-							mode3FullState.getMessageCounter());
-				}
-			}
-		}
-		byte[] mode3FullStateBlob = merged != null
-				? Mode3FullStateCodec.encode(merged)
-				: null;
-
 		db.setPcsMode2SessionState(txn, contactId, direction,
 				state.getChainKey(), state.getMessageNumber(),
 				state.getPreviousChainLength(), state.getRootKey(),
 				dhPrivateKey, dhPublicKey, dhRemotePublicKey, state.isMode2(),
-				mode3FullStateBlob);
-
-		if (merged != null) {
-			propagateSharedMode3FullFields(txn, contactId, direction, merged);
-		}
+				null);
 	}
 
-	private void propagateSharedMode3FullFields(Transaction txn,
-			ContactId contactId, int direction, Mode3FullState source)
+	private void rewriteWithoutMode3FullState(Transaction txn,
+			ContactId contactId, int direction, Object[] row)
 			throws DbException {
-		int otherDirection = direction == PCS_DIRECTION_SEND
-				? PCS_DIRECTION_RECEIVE : PCS_DIRECTION_SEND;
-		Object[] otherRow = db.getPcsMode2SessionState(txn, contactId,
-				otherDirection);
-		if (otherRow == null) return;
-		byte[] otherBlob = (byte[]) otherRow[8];
-		if (otherBlob == null) return;
-		Mode3FullState otherState = Mode3FullStateCodec.decode(otherBlob);
-		if (otherState == null) return;
-		Mode3FullState merged;
-		if (direction == PCS_DIRECTION_SEND) {
-			merged = new Mode3FullState(
-					otherState.getTheirActivePqPk(),
-					source.getOurActiveKeyPair(),
-					source.getRecentKeyPairs(),
-					otherState.getMessageCounter());
-		} else {
-			merged = new Mode3FullState(
-					source.getTheirActivePqPk(),
-					otherState.getOurActiveKeyPair(),
-					otherState.getRecentKeyPairs(),
-					otherState.getMessageCounter());
-		}
-		byte[] mergedBlob = Mode3FullStateCodec.encode(merged);
-		byte[] chainKeyBytes = (byte[]) otherRow[0];
-		int otherMsgNum = (Integer) otherRow[1];
-		int otherPrev = (Integer) otherRow[2];
-		byte[] rootKeyBytes = (byte[]) otherRow[3];
-		byte[] otherDhPriv = (byte[]) otherRow[4];
-		byte[] otherDhPub = (byte[]) otherRow[5];
-		byte[] otherDhRemote = (byte[]) otherRow[6];
-		boolean otherMode2 = (Boolean) otherRow[7];
-		SecretKey otherChainKey = new SecretKey(chainKeyBytes);
-		SecretKey otherRootKey = rootKeyBytes != null
-				? new SecretKey(rootKeyBytes) : null;
-		PrivateKey otherDhPrivKey = null;
-		PublicKey otherDhPubKey = null;
-		PublicKey otherDhRemoteKey = null;
-		if (otherDhPriv != null && otherDhPub != null) {
+		SecretKey chainKey = new SecretKey((byte[]) row[0]);
+		int messageNumber = (Integer) row[1];
+		int previousChainLength = (Integer) row[2];
+		byte[] rootKeyBytes = (byte[]) row[3];
+		byte[] dhPrivateKeyBytes = (byte[]) row[4];
+		byte[] dhPublicKeyBytes = (byte[]) row[5];
+		byte[] dhRemotePublicKeyBytes = (byte[]) row[6];
+		boolean mode2Enabled = (Boolean) row[7];
+		SecretKey rootKey = rootKeyBytes == null ? null
+				: new SecretKey(rootKeyBytes);
+		PrivateKey dhPrivateKey = null;
+		PublicKey dhPublicKey = null;
+		PublicKey dhRemotePublicKey = null;
+		if (dhPrivateKeyBytes != null && dhPublicKeyBytes != null) {
 			try {
-				KeyParser kp = crypto.getAgreementKeyParser();
-				otherDhPrivKey = kp.parsePrivateKey(otherDhPriv);
-				otherDhPubKey = kp.parsePublicKey(otherDhPub);
-				if (otherDhRemote != null) {
-					otherDhRemoteKey = kp.parsePublicKey(otherDhRemote);
+				KeyParser keyParser = crypto.getAgreementKeyParser();
+				dhPrivateKey = keyParser.parsePrivateKey(dhPrivateKeyBytes);
+				dhPublicKey = keyParser.parsePublicKey(dhPublicKeyBytes);
+				if (dhRemotePublicKeyBytes != null) {
+					dhRemotePublicKey =
+							keyParser.parsePublicKey(dhRemotePublicKeyBytes);
 				}
 			} catch (GeneralSecurityException e) {
-				return;
+				throw new DbException(e);
 			}
 		}
-		db.setPcsMode2SessionState(txn, contactId, otherDirection,
-				otherChainKey, otherMsgNum, otherPrev, otherRootKey,
-				otherDhPrivKey, otherDhPubKey, otherDhRemoteKey,
-				otherMode2, mergedBlob);
+		db.setPcsMode2SessionState(txn, contactId, direction, chainKey,
+				messageNumber, previousChainLength, rootKey, dhPrivateKey,
+				dhPublicKey, dhRemotePublicKey, mode2Enabled, null);
 	}
 
 	@Nullable

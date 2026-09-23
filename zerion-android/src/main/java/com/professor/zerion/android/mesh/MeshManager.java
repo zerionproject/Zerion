@@ -36,6 +36,11 @@ public class MeshManager {
 	public interface OpenedHandler {
 		boolean onOfflineMessage(byte[] senderIdentitySigPub, int messageType,
 				byte[] payload, long sendTimestamp);
+
+		/** True when the sender is a contact whose envelopes are recorded. */
+		default boolean knowsSender(byte[] senderIdentitySigPub) {
+			return true;
+		}
 	}
 
 	private final Context context;
@@ -87,9 +92,19 @@ public class MeshManager {
 		AsyncMeshDelivery.Identity identity = loadIdentity();
 		AsyncSealedSender sealer = new AsyncSealedSender(crypto);
 		AsyncMeshDelivery meshDelivery = new AsyncMeshDelivery(crypto, sealer,
-				prekeyStore, (senderPub, type, payload, ts) ->
-						openedHandler.onOfflineMessage(senderPub, type, payload,
-								ts), identity);
+				prekeyStore, new AsyncMeshDelivery.OpenedListener() {
+					@Override
+					public boolean onOpened(byte[] senderPub, int type,
+							byte[] payload, long ts) {
+						return openedHandler.onOfflineMessage(senderPub, type,
+								payload, ts);
+					}
+
+					@Override
+					public boolean knowsSender(byte[] senderPub) {
+						return openedHandler.knowsSender(senderPub);
+					}
+				}, identity, clock);
 		delivery = meshDelivery;
 		MeshForwarder meshForwarder =
 				new MeshForwarder(meshDelivery, new SecureRandom());
@@ -216,7 +231,7 @@ public class MeshManager {
 			throw new IllegalStateException("mesh not running");
 		}
 		d.send(f, recipientBundle, messageType, payload, ttlSeconds,
-				clock.currentTimeMillis() / 1000L, preferOneTime);
+				sendTimestampMs(clock), preferOneTime);
 	}
 
 	public void sendCover() throws GeneralSecurityException {
@@ -232,7 +247,17 @@ public class MeshManager {
 		byte[] dummy = new byte[coverRandom.nextInt(MAX_COVER_PAYLOAD_BYTES)];
 		coverRandom.nextBytes(dummy);
 		d.sendCover(f, MeshPadding.pad(dummy), ttlSeconds,
-				clock.currentTimeMillis() / 1000L, oneTimeKind);
+				sendTimestampMs(clock), oneTimeKind);
+	}
+
+	/**
+	 * The send timestamp of an envelope is in milliseconds, the unit the
+	 * delivery layer compares against its own clock together with the
+	 * time-to-live in seconds. A value in seconds looks decades old there
+	 * and is refused after the full open.
+	 */
+	static long sendTimestampMs(Clock clock) {
+		return clock.currentTimeMillis();
 	}
 
 	private final SecureRandom coverRandom = new SecureRandom();

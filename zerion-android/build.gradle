@@ -1,5 +1,14 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+
+/* Single switch for the Payjoin native library: packaging, the supply-chain
+   gate (native/payjoin/verify-payjoin-native.gradle) and the Kotlin toolchain
+   all follow it. The only Kotlin sources are the UniFFI bindings, so while the
+   library is off the Kotlin plugin, its compiler and build-tools classpaths
+   are not part of the build at all. */
+rootProject.ext.payjoinNativeEnabled = false
+if (rootProject.ext.payjoinNativeEnabled) {
+    apply plugin: 'kotlin-android'
+}
 
 // Load keystore properties for signing (skip for F-Droid builds)
 // Supports environment variables (ZERION_STORE_FILE, ZERION_STORE_PASSWORD,
@@ -32,6 +41,10 @@ def getStdout = { command, defaultValue ->
     }
 }
 
+// Single switch for the Payjoin native library: packaging and the supply-chain
+// gate (native/payjoin/verify-payjoin-native.gradle) both follow it.
+rootProject.ext.payjoinNativeEnabled = false
+
 android {
     compileSdk 36
     buildToolsVersion '36.0.0'
@@ -49,10 +62,13 @@ android {
             // Payjoin is build-gated OFF (PayjoinFeature.PRODUCTION_ENABLED = false,
             // no runtime override) and no production code loads its native library,
             // so the Rust libpayjoin_ffi.so is dormant attack surface and dead weight
-            // in the shipped APK. Exclude it from packaging until a variant actually
-            // enables the feature; the UniFFI bindings still compile, and the .so
-            // stays in src/main/jniLibs so re-enabling is a one-line change here.
-            excludes += ['**/libpayjoin_ffi.so']
+            // in the shipped APK. payjoinNativeEnabled (below) is the single switch:
+            // off, the library is excluded from packaging and the gate refuses any
+            // libpayjoin artifact; on, the gate requires both ABIs to match
+            // native/payjoin/MANIFEST.txt. The UniFFI bindings compile either way.
+            if (!rootProject.ext.payjoinNativeEnabled) {
+                excludes += ['**/libpayjoin_ffi.so']
+            }
         }
         // Always strip the embedded VCS info so the release APK stays byte-reproducible
         // regardless of which commit it was built from (removes F-Droid repro commit-fragility).
@@ -192,12 +208,20 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = '17'
+    if (rootProject.ext.payjoinNativeEnabled) {
+        kotlinOptions {
+            jvmTarget = '17'
+        }
     }
 
     sourceSets {
-        main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
+        /* The UniFFI bindings and their JNA runtime exist only for the
+           native Payjoin library; while that library is switched off
+           neither is compiled or packaged, so the release carries no
+           dormant native bridge. */
+        if (rootProject.ext.payjoinNativeEnabled) {
+            main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
+        }
     }
 
     testOptions {
@@ -218,7 +242,12 @@ android {
     }
     namespace 'com.professor.zerion'
     lint {
-        abortOnError false
+        /* Lint is not part of the release path: its own toolchain (Groovy,
+           resolved by the annotation extraction) is signed by keys the
+           strict dependency verification does not trust, and the release
+           gates are enforceNoLogs, dependency verification, the native hash
+           gates and the wallet regression. A lint run itself fails on errors. */
+        abortOnError true
         checkReleaseBuilds false
         warning 'MissingTranslation', 'MissingDefaultResource', 'ImpliedQuantity', 'ExtraTranslation', 'InvalidPackage', 'MissingPermission'
     }
@@ -280,7 +309,7 @@ dependencies {
 
     // Embedded I2P router with its bundled crypto relocated into an isolated
     // namespace so it never collides with the app's own Bouncy Castle.
-    implementation project(path: ':i2p-embedded', configuration: 'shadow')
+    debugImplementation project(path: ':i2p-embedded', configuration: 'shadow')
 
     implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
 
@@ -305,8 +334,11 @@ dependencies {
 
     // force kotlin standard lib to latest version to prevent jetifier issues
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    // JNA runtime for the Payjoin native library UniFFI bindings
-    implementation 'net.java.dev.jna:jna:5.17.0@aar'
+    /* JNA runtime for the Payjoin native library UniFFI bindings; packaged
+       only together with the native library it drives. */
+    if (rootProject.ext.payjoinNativeEnabled) {
+        implementation 'net.java.dev.jna:jna:5.17.0@aar'
+    }
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
@@ -371,27 +403,40 @@ dependencies {
 
 task enforceNoLogs {
     doLast {
-        // Dev diagnostics are permitted in DEBUG builds and stripped before release.
-        // The zero-log policy is enforced only for release/bundle builds (what ships).
-        def requestedTasks = gradle.startParameter.taskNames.join(' ').toLowerCase()
-        boolean releaseBuild = requestedTasks.contains('release') ||
-                requestedTasks.contains('bundle')
+        /* Dev diagnostics are permitted in DEBUG builds and stripped before
+           release. The zero-log policy is enforced whenever a release or
+           bundle task is in the task graph, whatever the invoked task was
+           called: `assemble` or `build` pull the release assembly in as a
+           dependency and must not skip the check. */
+        boolean releaseBuild = project.hasProperty('enforceNoLogs') ||
+                gradle.taskGraph.allTasks.any { t ->
+                    t.name.toLowerCase() ==~ /(assemble|bundle|package)\w*release/
+                }
         if (!releaseBuild) {
             println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
             return
         }
-        def srcDir = file("src/main/java")
+        // Every module that ships in the release, Java and Kotlin alike.
+        def srcDirs = []
+        rootProject.allprojects.each { p ->
+            ['src/main/java', 'src/main/kotlin'].each { d ->
+                def dir = p.file(d)
+                if (dir.isDirectory()) srcDirs << dir
+            }
+        }
         def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
                        'Log.wtf(', 'Log.println(', 'android.util.Log.println(',
                        'System.out.print', 'System.err.print',
-                       '.printStackTrace(', 'Timber.']
+                       '.printStackTrace(', 'Timber.', 'println(']
         def violations = []
-        srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
-            if (f.name.endsWith('.java')) {
-                f.eachLine { line, num ->
-                    banned.each { pattern ->
-                        if (line.contains(pattern)) {
-                            violations << "${f.path}:${num}: ${line.trim()}"
+        srcDirs.each { srcDir ->
+            srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+                if (f.name.endsWith('.java') || f.name.endsWith('.kt')) {
+                    f.eachLine { line, num ->
+                        banned.each { pattern ->
+                            if (line.contains(pattern)) {
+                                violations << "${f.path}:${num}: ${line.trim()}"
+                            }
                         }
                     }
                 }
@@ -465,6 +510,7 @@ project.afterEvaluate {
         useJUnit()
         filter {
             includeTestsMatching 'com.professor.zerion.android.vault.wallet.btc.*'
+            includeTestsMatching 'com.professor.zerion.android.vault.wallet.xmr.*'
             includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
         }
     }

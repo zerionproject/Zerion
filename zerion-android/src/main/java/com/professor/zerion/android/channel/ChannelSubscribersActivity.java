@@ -15,7 +15,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -154,7 +154,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		} else {
 			rotateBox = null;
 		}
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setView(container)
 				.setPositiveButton(R.string.channels_subscribers_ban,
 						(d, w) -> doBan(sub,

@@ -38,6 +38,11 @@ public final class SecureBootGuard {
 	private SecureBootGuard() {
 	}
 
+	/**
+	 * Hardened Mode treats every abnormal answer (no signing info, no
+	 * signer, an exception from the package manager) as a mismatch: a
+	 * hooked or repackaged process must not pass by breaking the check.
+	 */
 	public static int verifyAppSignature(Context ctx) {
 		if (com.professor.zerion.BuildConfig.DEBUG) return RESULT_OK;
 		try {
@@ -46,24 +51,45 @@ public final class SecureBootGuard {
 							android.content.pm.PackageManager
 									.GET_SIGNING_CERTIFICATES);
 			android.content.pm.SigningInfo si = pi.signingInfo;
-			if (si == null) return RESULT_OK;
-			android.content.pm.Signature[] sigs = si.getApkContentsSigners();
-			if (sigs == null || sigs.length == 0) return RESULT_OK;
+			if (si == null) return RESULT_SIGNATURE_MISMATCH;
+			return classifySigners(si.getApkContentsSigners());
+		} catch (Exception e) {
+			return RESULT_SIGNATURE_MISMATCH;
+		}
+	}
+
+	static int classifySigners(
+			@androidx.annotation.Nullable android.content.pm.Signature[] sigs) {
+		if (sigs == null || sigs.length == 0) return RESULT_SIGNATURE_MISMATCH;
+		java.util.List<String> digests = new java.util.ArrayList<>();
+		try {
 			java.security.MessageDigest md =
 					java.security.MessageDigest.getInstance("SHA-256");
 			for (android.content.pm.Signature s : sigs) {
-				String hex = org.zerionproject.core.util.StringUtils
-						.toHexString(md.digest(s.toByteArray()));
-				for (String accepted : ACCEPTED_CERT_SHA256) {
-					if (accepted.equalsIgnoreCase(hex)) {
-						return RESULT_OK;
-					}
+				if (s == null) continue;
+				digests.add(org.zerionproject.core.util.StringUtils
+						.toHexString(md.digest(s.toByteArray())));
+			}
+		} catch (Exception e) {
+			return RESULT_SIGNATURE_MISMATCH;
+		}
+		return classifyDigests(digests);
+	}
+
+	static int classifyDigests(
+			@androidx.annotation.Nullable java.util.List<String> digests) {
+		if (digests == null || digests.isEmpty()) {
+			return RESULT_SIGNATURE_MISMATCH;
+		}
+		for (String hex : digests) {
+			if (hex == null) return RESULT_SIGNATURE_MISMATCH;
+			for (String accepted : ACCEPTED_CERT_SHA256) {
+				if (accepted.equalsIgnoreCase(hex)) {
+					return RESULT_OK;
 				}
 			}
-			return RESULT_SIGNATURE_MISMATCH;
-		} catch (Exception e) {
-			return RESULT_OK;
 		}
+		return RESULT_SIGNATURE_MISMATCH;
 	}
 
 	public static int evaluateStrictBoot() {
@@ -91,9 +117,11 @@ public final class SecureBootGuard {
 		return RESULT_OK;
 	}
 
-	// USB or wireless debugging enabled. Read from Settings.Global, which an
-	// app can read directly; a socket probe of adbd is blocked by SELinux for
-	// untrusted apps on modern Android and misses USB debugging entirely.
+	/**
+	 * USB or wireless debugging enabled, read from Settings.Global, which an
+	 * app can read directly; a socket probe of adbd is blocked by SELinux
+	 * for untrusted apps on modern Android and misses USB debugging.
+	 */
 	public static boolean adbEnabled(Context ctx) {
 		try {
 			android.content.ContentResolver cr = ctx.getContentResolver();
@@ -185,18 +213,9 @@ public final class SecureBootGuard {
 			} catch (Exception ignored) {
 			}
 		}
-		if (procMapsContainsAny(new String[]{
+		return procMapsContainsAny(new String[]{
 				"frida-agent", "frida-gadget", "libfrida", "gum-js-loop",
-				"gmain", "linjector"})) {
-			return true;
-		}
-		try (java.net.Socket s = new java.net.Socket()) {
-			s.connect(new java.net.InetSocketAddress("127.0.0.1", 27042),
-					250);
-			return true;
-		} catch (Exception ignored) {
-		}
-		return false;
+				"gmain", "linjector"});
 	}
 
 	private static boolean xposedArtifactsPresent() {

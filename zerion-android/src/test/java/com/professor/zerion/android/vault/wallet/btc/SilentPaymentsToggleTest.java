@@ -24,7 +24,7 @@ public class SilentPaymentsToggleTest {
 			}
 			return "[]";
 		};
-		return new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "wallet-A",
+		return new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "wallet-A",
 				new FakeElectrum.RecordingFactory(new FakeElectrum()), counting);
 	}
 

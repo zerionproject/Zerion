@@ -2,7 +2,7 @@ package org.zerionproject.core.api.keyagreement;
 
 public interface KeyAgreementConstants {
 
-	byte PROTOCOL_VERSION = 4;
+	byte PROTOCOL_VERSION = 5;
 
 	int COMMIT_LENGTH = 16;
 
@@ -14,6 +14,9 @@ public interface KeyAgreementConstants {
 
 	String SHARED_SECRET_LABEL =
 			"org.zerionproject.core.keyagreement/SHARED_SECRET";
+
+	String HYBRID_SHARED_SECRET_LABEL =
+			"org.zerionproject.core.keyagreement/HYBRID_SHARED_SECRET_V5";
 
 	String MASTER_KEY_LABEL =
 			"org.zerionproject.core.keyagreement/MASTER_SECRET";

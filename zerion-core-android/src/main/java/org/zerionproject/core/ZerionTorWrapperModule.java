@@ -3,7 +3,6 @@ package org.zerionproject.core;
 import android.app.Application;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.onionwrapper.AndroidTorWrapper;
 import org.briarproject.onionwrapper.TorWrapper;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -37,10 +36,19 @@ public class ZerionTorWrapperModule {
 			@IoExecutor Executor ioExecutor,
 			@EventExecutor Executor eventExecutor,
 			@TorDirectory File torDirectory, @TorSocksPort int torSocksPort,
-			@TorControlPort int torControlPort) {
-		return new AndroidTorWrapper(app, wakeLockManager, ioExecutor,
+			@TorControlPort int torControlPort,
+			org.zerionproject.transport.TorProcessWatch processWatch) {
+		return new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
 				eventExecutor, architecture(), torDirectory, torSocksPort,
-				torControlPort);
+				torControlPort, processWatch);
+	}
+
+	@Provides
+	@Singleton
+	org.zerionproject.core.socks.TorSocksConnector provideTorSocksConnector(
+			@org.zerionproject.core.api.plugin.TorSocksPath File socksPath) {
+		return new org.zerionproject.core.socks.UnixTorSocksConnector(
+				socksPath);
 	}
 
 	private static String architecture() {

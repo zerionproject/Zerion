@@ -324,40 +324,6 @@ public class AppModule {
 		void init() {
 			SecurePrefsHolder.initialize(application);
 			preferencesMigration.migrateVaultSettingsIfNeeded();
-			pinTorBinary(application);
-		}
-
-		private static void pinTorBinary(Application app) {
-			try {
-				android.content.SharedPreferences prefs =
-						SecurePrefsHolder.getSecurePrefs();
-				if (prefs == null) return;
-				int versionCode;
-				try {
-					versionCode = app.getPackageManager().getPackageInfo(
-							app.getPackageName(), 0).versionCode;
-				} catch (android.content.pm.PackageManager
-						.NameNotFoundException e) {
-					return;
-				}
-				String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
-				if (nativeLibDir == null) return;
-				java.io.File dir = new java.io.File(nativeLibDir);
-				java.io.File[] files = dir.listFiles();
-				if (files == null) return;
-				for (java.io.File f : files) {
-					String n = f.getName();
-					if (n.startsWith("libtor") || n.startsWith("liblyrebird")) {
-						com.professor.zerion.android.security
-								.TorBinaryIntegrity.verifyOrPin(prefs, f,
-								versionCode);
-					}
-				}
-			} catch (com.professor.zerion.android.security
-					.TorBinaryIntegrity.IntegrityException tampered) {
-				throw tampered;
-			} catch (RuntimeException ignored) {
-			}
 		}
 	}
 
@@ -450,6 +416,61 @@ public class AppModule {
 	int provideTorSocksPort(TorPortManager portManager) {
 		int port = portManager.getSocksPort();
 		return IS_DEBUG_BUILD ? port + 2 : port;
+	}
+
+	/**
+	 * Where Tor listens for SOCKS once configured: a Unix domain socket in a
+	 * short path under the app's private files directory (a Unix socket
+	 * path is limited to about a hundred bytes, which the per-profile Tor
+	 * directory may exceed), named by a digest of that Tor directory so each
+	 * profile has its own.
+	 */
+	@Provides
+	@Singleton
+	@org.zerionproject.core.api.plugin.TorSocksPath
+	File provideTorSocksPath(Application app, @TorDirectory File torDir) {
+		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
+		try {
+			StrictMode.allowThreadDiskWrites();
+			File dir = new File(app.getFilesDir(), "zs");
+			if (!dir.isDirectory() && !dir.mkdirs()) {
+				throw new IllegalStateException("socket directory");
+			}
+			String name;
+			try {
+				java.security.MessageDigest md =
+						java.security.MessageDigest.getInstance("SHA-256");
+				byte[] h = md.digest(torDir.getAbsolutePath()
+						.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+				name = org.zerionproject.core.util.StringUtils.toHexString(h)
+						.substring(0, 12).toLowerCase(java.util.Locale.US);
+			} catch (java.security.NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
+			return new File(dir, name);
+		} finally {
+			StrictMode.setThreadPolicy(oldPolicy);
+		}
+	}
+
+	/**
+	 * The loopback relay through which the native Monero wallet reaches
+	 * Tor's Unix socket listener; it verifies the wallet's process secret
+	 * before relaying. Installing the connector for the wallet helpers
+	 * happens here too, so nothing in the vault can dial a loopback port.
+	 */
+	@Provides
+	@Singleton
+	com.professor.zerion.android.vault.net.TorSocksGate provideTorSocksGate(
+			org.zerionproject.core.socks.TorSocksConnector connector) {
+		com.professor.zerion.android.vault.net.TorSockets.install(connector);
+		try {
+			return new com.professor.zerion.android.vault.net.TorSocksGate(
+					connector, com.professor.zerion.android.vault.wallet.xmr
+							.XmrTorIsolation::isProcessSecret);
+		} catch (java.io.IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@Provides
@@ -558,13 +579,13 @@ public class AppModule {
 	com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager
 			provideXmrWalletManager(Context context, VaultManager vaultManager,
 			com.professor.zerion.android.vault.wallet.WalletStore walletStore,
-			@TorSocksPort int torSocksPort) {
+			com.professor.zerion.android.vault.net.TorSocksGate gate) {
 		com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager m =
 				new com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager(
 						context, vaultManager, walletStore,
 						new com.professor.zerion.android.vault.wallet.xmr
 								.NativeMoneroEngine());
-		m.setTorSocksPort(torSocksPort);
+		m.setTorSocksPort(gate.port());
 		m.reloadNodeConfig();
 		vaultManager.addLockListener(() ->
 				com.professor.zerion.android.util.SecureClipboard
@@ -581,8 +602,8 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	AntiForensics provideAntiForensics(Context context) {
-		return new AntiForensics(context);
+	AntiForensics provideAntiForensics(Application app) {
+		return new AntiForensics(app);
 	}
 
 	@Provides
@@ -705,7 +726,7 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnableI2p() {
-				return true;
+				return IS_DEBUG_BUILD;
 			}
 		};
 	}
@@ -718,6 +739,10 @@ public class AppModule {
 		return (thread, throwable) -> {
 			if (IS_DEBUG_BUILD && previous != null) {
 				previous.uncaughtException(thread, throwable);
+				return;
+			}
+			if (!UncaughtExceptionPolicy.endsProcess(thread,
+					android.os.Looper.getMainLooper().getThread())) {
 				return;
 			}
 			try {

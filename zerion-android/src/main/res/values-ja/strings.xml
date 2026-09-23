@@ -1461,13 +1461,6 @@
 	<string name="welcome_create">新しいアカウントを作成</string>
 	<string name="welcome_import_file">バックアップファイルからインポート</string>
 	<string name="welcome_receive">別の端末から受信</string>
-	<string name="proxy_section_title">プロキシ</string>
-	<string name="orbot_proxy_title">Orbot プロキシを使用</string>
-	<string name="orbot_proxy_summary">Tor のトラフィックを Orbot アプリ経由でルーティング</string>
-	<string name="orbot_proxy_settings">プロキシの設定</string>
-	<string name="orbot_host_label">ホストアドレス</string>
-	<string name="orbot_port_label">ポート</string>
-	<string name="orbot_info_message">Orbot は独自の Tor 接続を使用することで追加のプライバシーを提供します。F-Droid または Google Play から Orbot をインストールし、このオプションを有効にする前に起動してください。</string>
 	<string name="profiles_settings_title">プロフィール</string>
 	<string name="profiles_settings_summary">隠しプロフィールの作成、切り替え、削除</string>
 	<string name="profiles_section_current">現在のプロフィール</string>

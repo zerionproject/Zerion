@@ -79,6 +79,9 @@ public class B4OnionRotation {
 		HiddenServiceProperties publishHiddenService(@Nullable String privKey)
 				throws IOException;
 
+		/** Whether the transport currently publishes this onion. */
+		boolean isPublished(String onion);
+
 		void removeHiddenService(String onion) throws IOException;
 
 		void updateTorCurrentPrivKey(String newPrivKey);
@@ -116,6 +119,15 @@ public class B4OnionRotation {
 
 	@Nullable
 	private volatile B4TorAdapter adapter;
+	@Nullable
+	private volatile java.util.concurrent.ScheduledFuture<?> periodic;
+
+	/**
+	 * A peer whose session with us starts this long after the announcement
+	 * has had the announcement over an authenticated session and dials the
+	 * next onion from then on; the old onion is retired once every peer has.
+	 */
+	static final long MIGRATION_GRACE_MS = 24L * 60 * 60 * 1000;
 
 	@Inject
 	public B4OnionRotation(DatabaseComponent db,
@@ -133,14 +145,47 @@ public class B4OnionRotation {
 	}
 
 	public void startPeriodicEvaluation() {
-		scheduler.scheduleWithFixedDelay(() -> {
+		java.util.concurrent.ScheduledFuture<?> previous = periodic;
+		if (previous != null) previous.cancel(false);
+		periodic = scheduler.scheduleWithFixedDelay(() -> {
 			try {
+				republishPendingOnion();
 				resumeIfPromotionInterrupted();
 				evaluateTrigger();
 				evaluateForceExpire();
 			} catch (DbException | RuntimeException ignored) {
 			}
 		}, 60, 6 * 60 * 60, TimeUnit.SECONDS);
+	}
+
+	/**
+	 * The next onion is published only in the memory of the process that
+	 * rotated; every later process must publish it again from the stored
+	 * key while the rotation is announcing, otherwise peers that already
+	 * moved to it dial a dark address until promotion.
+	 */
+	public void republishPendingOnion() throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		B4TorAdapter ad = adapter;
+		if (ad == null) return;
+		synchronized (rotationLock) {
+			String[] next = db.transactionWithResult(true, txn -> {
+				if (loadPhase(txn) != RotationPhase.ANNOUNCING) {
+					return new String[2];
+				}
+				return new String[] {
+						loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY),
+						loadEncryptedString(txn,
+								B4_ALICE_ONION3_NEXT_PRIVKEY_KEY)};
+			});
+			if (next[0] == null || next[1] == null) return;
+			if (ad.isPublished(next[0])) return;
+			try {
+				ad.publishHiddenService(next[1]);
+			} catch (IOException e) {
+				throw new DbException(e);
+			}
+		}
 	}
 
 	public void evaluateTrigger() throws DbException {
@@ -321,33 +366,47 @@ public class B4OnionRotation {
 		}
 	}
 
-	public void onInboundConnectionOnNewOnion(ContactId cid)
+	/**
+	 * A session with a peer carries our transport properties, and with them
+	 * the announcement. The first session after the announcement marks the
+	 * peer as having received it; a session that starts after the migration
+	 * grace marks the peer as migrated, since it dials the next onion from
+	 * the moment it has the announcement. Both onions share one listener,
+	 * so an inbound connection cannot say which onion it arrived on; the
+	 * session itself is the evidence. Once every peer has migrated the old
+	 * onion is retired.
+	 */
+	public void onPeerSyncSessionEstablished(ContactId cid)
 			throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		boolean shouldComplete;
 		synchronized (rotationLock) {
 			shouldComplete = db.transactionWithResult(false, txn -> {
 				if (loadPhase(txn) != RotationPhase.ANNOUNCING) return false;
-				setPeerState(txn, cid, PeerRotationState.MIGRATED);
-				return shouldRetireOldOnion(txn);
+				PeerRotationState state = loadPeerState(txn, cid);
+				if (state == PeerRotationState.MIGRATED) return false;
+				long announcedAt = loadAnnouncedAtMs(txn);
+				long now = clock.currentTimeMillis();
+				if (announcedAt > 0 && now - announcedAt >= MIGRATION_GRACE_MS) {
+					setPeerState(txn, cid, PeerRotationState.MIGRATED);
+					return shouldRetireOldOnion(txn);
+				}
+				if (state == PeerRotationState.CURRENT) {
+					setPeerState(txn, cid, PeerRotationState.PRE_ANNOUNCED);
+				}
+				return false;
 			});
 			if (shouldComplete) executePromotion();
 		}
 	}
 
-	public void onPeerSyncSessionEstablished(ContactId cid)
-			throws DbException {
-		if (!B4_ROTATION_ENABLED) return;
-		final boolean[] transitioned = new boolean[1];
-		synchronized (rotationLock) {
-			db.transaction(false, txn -> {
-				if (loadPhase(txn) != RotationPhase.ANNOUNCING) return;
-				PeerRotationState state = loadPeerState(txn, cid);
-				if (state == PeerRotationState.CURRENT) {
-					setPeerState(txn, cid, PeerRotationState.PRE_ANNOUNCED);
-					transitioned[0] = true;
-				}
-			});
+	private long loadAnnouncedAtMs(Transaction txn) throws DbException {
+		String raw = loadEncryptedString(txn, B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY);
+		if (raw == null) return 0L;
+		try {
+			return Long.parseLong(raw);
+		} catch (NumberFormatException e) {
+			return 0L;
 		}
 	}
 
@@ -425,6 +484,9 @@ public class B4OnionRotation {
 
 	public void shutdown() {
 		adapter = null;
+		java.util.concurrent.ScheduledFuture<?> p = periodic;
+		if (p != null) p.cancel(false);
+		periodic = null;
 	}
 
 	public boolean forceCompleteRotation() throws DbException {
@@ -581,6 +643,13 @@ public class B4OnionRotation {
 		}
 
 		if (newOnion != null && newPrivKey != null) {
+			if (!ad.isPublished(newOnion)) {
+				try {
+					ad.publishHiddenService(newPrivKey);
+				} catch (IOException e) {
+					throw new DbException(e);
+				}
+			}
 			ad.updateTorCurrentPrivKey(newPrivKey);
 			TransportProperties props = new TransportProperties();
 			props.put(WIRE_KEY_ONION3, newOnion);

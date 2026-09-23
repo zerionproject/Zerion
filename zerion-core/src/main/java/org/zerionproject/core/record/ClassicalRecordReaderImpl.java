@@ -46,11 +46,15 @@ class ClassicalRecordReaderImpl implements RecordReader {
 	@Override
 	public Record readRecord(RecordPredicate accept, RecordPredicate ignore)
 			throws IOException {
+		int ignored = 0;
 		while (true) {
 			if (eof()) return null;
 			Record r = readRecord();
 			if (accept.test(r)) return r;
 			if (!ignore.test(r)) throw new FormatException();
+			if (++ignored > RecordReaderImpl.MAX_IGNORED_RECORDS) {
+				throw new FormatException();
+			}
 		}
 	}
 

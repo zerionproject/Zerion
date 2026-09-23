@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.backup.AccountTransferManager;
 import com.professor.zerion.android.backup.AccountTransferManager.Callback;
@@ -27,10 +27,7 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.Arrays;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -56,7 +53,6 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	AccountTransferManager transferManager;
 
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
-	private final BlockingQueue<Boolean> sasResult = new ArrayBlockingQueue<>(1);
 
 	@Nullable
 	private TextView statusText;
@@ -130,7 +126,6 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 		android.app.Activity activity = getActivity();
 		if (activity != null && activity.isChangingConfigurations()) return;
 		transferManager.cancel();
-		sasResult.offer(false);
 	}
 
 	private void onScanResult(ActivityResult result) {
@@ -157,7 +152,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 				R.string.backup_new_password_confirm_hint);
 		layout.addView(pass);
 		layout.addView(confirm);
-		new MaterialAlertDialogBuilder(context)
+		new SecureAlertDialogBuilder(context)
 				.setTitle(R.string.transfer_receive_title)
 				.setMessage(R.string.transfer_receive_password_message)
 				.setView(layout)
@@ -210,32 +205,17 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	}
 
 	@Override
-	public boolean onSasConfirm(String safetyNumber) {
-		sasResult.clear();
-		mainHandler.post(() -> showSasDialog(safetyNumber));
-		try {
-			Boolean r = sasResult.poll(5, TimeUnit.MINUTES);
-			return r != null && r;
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			return false;
-		}
+	public void onShowConfirmationCode(String code) {
+		String grouped = code.length() == 6
+				? code.substring(0, 3) + " " + code.substring(3) : code;
+		mainHandler.post(() -> setStatus(
+				getString(R.string.transfer_code_show, grouped)));
 	}
 
-	private void showSasDialog(String sas) {
-		if (!isAdded()) {
-			sasResult.offer(false);
-			return;
-		}
-		new MaterialAlertDialogBuilder(requireContext())
-				.setTitle(R.string.transfer_sas_title)
-				.setMessage(getString(R.string.transfer_sas_message, sas))
-				.setCancelable(false)
-				.setPositiveButton(R.string.transfer_sas_matches,
-						(d, w) -> sasResult.offer(true))
-				.setNegativeButton(R.string.cancel,
-						(d, w) -> sasResult.offer(false))
-				.show();
+	@Override
+	@Nullable
+	public String onEnterConfirmationCode() {
+		return null;
 	}
 
 	private void finishResult(boolean success) {
@@ -252,7 +232,7 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 			requireActivity().finish();
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(success ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)
 				.setMessage(success ? R.string.transfer_receive_done_message

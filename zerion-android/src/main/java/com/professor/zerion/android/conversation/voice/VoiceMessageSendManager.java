@@ -79,8 +79,9 @@ public class VoiceMessageSendManager implements EventListener {
 		return VoiceMessageChunkFormat.newMemoId();
 	}
 
-	public List<String> split(String fullVoiceText, String memoId) {
-		assembler.putComplete(memoId, fullVoiceText);
+	public List<String> split(ContactId contactId, String fullVoiceText,
+			String memoId) {
+		assembler.putComplete(contactId, memoId, fullVoiceText);
 		return VoiceMessageChunkFormat.split(fullVoiceText, memoId);
 	}
 

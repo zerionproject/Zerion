@@ -52,6 +52,7 @@ import static org.zerionproject.core.api.identity.Author.FORMAT_VERSION;
 import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.zerionproject.core.api.identity.AuthorConstants.MAX_PUBLIC_KEY_LENGTH;
 import static org.zerionproject.core.api.properties.TransportPropertyConstants.MAX_PROPERTIES_PER_TRANSPORT;
+import static org.zerionproject.core.api.plugin.TransportId.MAX_TRANSPORT_ID_LENGTH;
 import static org.zerionproject.core.api.properties.TransportPropertyConstants.MAX_PROPERTY_LENGTH;
 import static org.zerionproject.core.util.ValidationUtils.checkLength;
 import static org.zerionproject.core.util.ValidationUtils.checkSize;
@@ -409,6 +410,7 @@ class ClientHelperImpl implements ClientHelper {
 			BdfDictionary properties) throws FormatException {
 		Map<TransportId, TransportProperties> tpMap = new HashMap<>();
 		for (String key : properties.keySet()) {
+			checkLength(key, 1, MAX_TRANSPORT_ID_LENGTH);
 			TransportId transportId = new TransportId(key);
 			TransportProperties transportProperties =
 					parseAndValidateTransportProperties(

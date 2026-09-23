@@ -333,7 +333,7 @@ public class GroupTrListFragment extends BaseFragment
 		int msgRes = s.isDissolved()
 				? R.string.grouptr_remove_local_dissolved_msg
 				: R.string.grouptr_remove_local_active_msg;
-		new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(getString(
 						R.string.grouptr_remove_local_title, name))
 				.setMessage(msgRes)

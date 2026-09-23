@@ -64,7 +64,28 @@ class ConnectionRegistryImpl implements ConnectionRegistry, EventListener {
 			closeConnections(((TransportInactiveEvent) e).getTransportId());
 		} else if (e instanceof CloseSyncConnectionsEvent) {
 			closeConnections(((CloseSyncConnectionsEvent) e).getTransportId());
+		} else if (e instanceof org.zerionproject.core.api.contact.event
+				.ContactRemovedEvent) {
+			closeContactConnections(((org.zerionproject.core.api.contact.event
+					.ContactRemovedEvent) e).getContactId());
 		}
+	}
+
+	/**
+	 * A removed contact's live sessions are ended at once: the ratchet and
+	 * the records it could still deliver belong to a relationship that no
+	 * longer exists, and the sessions would otherwise hold inbound permits,
+	 * ticker threads and cover bandwidth until the peer hangs up.
+	 */
+	private void closeContactConnections(ContactId c) {
+		List<InterruptibleConnection> toClose = new ArrayList<>();
+		synchronized (lock) {
+			List<ConnectionRecord> recs = contactConnections.get(c);
+			if (recs != null) {
+				for (ConnectionRecord rec : recs) toClose.add(rec.conn);
+			}
+		}
+		for (InterruptibleConnection conn : toClose) conn.forceClose();
 	}
 
 	private void closeConnections(TransportId t) {

@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.WindowManager;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -80,7 +80,7 @@ public class SetupActivity extends BaseActivity
 		} else if (state == CREATED) {
 			showApp();
 		} else if (state == FAILED) {
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.setup_failed_title)
 				.setMessage(R.string.setup_failed_message)
 				.setPositiveButton(R.string.setup_failed_retry, (dialog, which) -> recreate())

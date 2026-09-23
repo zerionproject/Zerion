@@ -70,6 +70,16 @@ public class TorBridgeConfigurator implements EventListener {
 		}
 	}
 
+	/** Whether the last bridge apply was refused by Tor. */
+	private volatile boolean lastApplyFailed = false;
+
+	/**
+	 * Applies the bridge setting the user chose. Returns false when bridges
+	 * are wanted but none could be configured, in which case the caller
+	 * keeps the network disabled. After a refusal the bridges are cleared
+	 * before the next attempt, because the wrapper remembers the last list
+	 * it was handed and would report an identical list as already applied.
+	 */
 	public boolean apply() {
 		Settings s;
 		try {
@@ -100,13 +110,62 @@ public class TorBridgeConfigurator implements EventListener {
 				bridges.addAll(circumventionProvider.getBridges(type, country));
 			}
 		}
-		if (bridges.isEmpty()) return false;
-		try {
-			tor.enableBridges(bridges);
-			return true;
-		} catch (IOException e) {
+		if (bridges.isEmpty()) {
+			lastApplyFailed = true;
 			return false;
 		}
+		try {
+			if (lastApplyFailed) {
+				try {
+					tor.disableBridges();
+				} catch (IOException ignored) {
+				}
+			}
+			tor.enableBridges(bridges);
+			lastApplyFailed = false;
+			return true;
+		} catch (IOException e) {
+			lastApplyFailed = true;
+			return false;
+		}
+	}
+
+	/**
+	 * A bridge line as Tor accepts it: an optional pluggable transport name,
+	 * an address with a port, and optional further tokens (a fingerprint,
+	 * key=value arguments). Nothing else, and in particular no character
+	 * that could end the line or the option early.
+	 */
+	public static boolean isPlausibleBridgeLine(String line) {
+		String t = line.trim();
+		if (t.isEmpty() || t.length() > 512) return false;
+		for (int i = 0; i < t.length(); i++) {
+			char c = t.charAt(i);
+			if (c < 0x20 || c == 0x7F || c == '"' || c == '\\') return false;
+		}
+		String[] tokens = t.split(" +");
+		int i = looksLikeAddress(tokens[0]) ? 0 : 1;
+		if (i == 1 && !tokens[0].matches("[A-Za-z0-9_]+")) return false;
+		if (i >= tokens.length) return false;
+		if (!looksLikeAddress(tokens[i])) return false;
+		for (int k = i + 1; k < tokens.length; k++) {
+			if (!tokens[k].matches("[A-Za-z0-9_.:=/+-]+")) return false;
+		}
+		return true;
+	}
+
+	private static boolean looksLikeAddress(String s) {
+		int colon = s.lastIndexOf(':');
+		if (colon <= 0 || colon == s.length() - 1) return false;
+		String host = s.substring(0, colon);
+		String port = s.substring(colon + 1);
+		if (!port.matches("[0-9]{1,5}")) return false;
+		int p = Integer.parseInt(port);
+		if (p < 1 || p > 65535) return false;
+		if (host.startsWith("[") && host.endsWith("]")) {
+			return host.substring(1, host.length() - 1).matches("[0-9A-Fa-f:.]+");
+		}
+		return host.matches("[A-Za-z0-9.-]+");
 	}
 
 	static List<String> parseCustomBridges(String value) {

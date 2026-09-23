@@ -56,11 +56,18 @@ public class ZwfDuplexConnection {
 	private final OutputStream out;
 	private final BufferedInputStream in;
 	private final ZwfTagRecogniser recogniser;
-	// Shared across both directions; access serialised by the lock.
 	private final java.util.concurrent.atomic.AtomicReference<
 			org.zerionproject.core.api.crypto.pcs.Mode3FullState> sharedM3f;
 	private final java.util.concurrent.locks.Lock directionLock =
 			new java.util.concurrent.locks.ReentrantLock();
+
+	/**
+	 * How far past the receive window a known contact's stream id may lie and
+	 * still be recognised. Each id costs one keyed hash, so the bound keeps a
+	 * recovery search to a fraction of a second while covering many more
+	 * failed connection attempts than a peer can plausibly accumulate.
+	 */
+	static final long MAX_RECV_STREAM_GAP = 1L << 16;
 
 	private ZwfMode3FullStreamEncrypter encrypter;
 	private ZwfMode3FullStreamDecrypter decrypter;
@@ -124,6 +131,10 @@ public class ZwfDuplexConnection {
 			byte[] tag = peekTag();
 			ZwfTagRecogniser.Match match = recogniser.recognise(tag);
 			if (match == null) {
+				match = recogniser.recogniseBeyondWindow(contactId, tag,
+						MAX_RECV_STREAM_GAP);
+			}
+			if (match == null) {
 				throw new FormatException();
 			}
 			pendingStreamId = match.streamId;
@@ -141,7 +152,6 @@ public class ZwfDuplexConnection {
 			throw fe;
 		}
 		if (!recvStreamCommitted) {
-			// Commit the stream id only after the first frame authenticates, so an unauthenticated stream cannot slide the window.
 			if (!counter.acceptRecvStreamId(contactId, pendingStreamId)) {
 				throw new FormatException();
 			}
@@ -160,6 +170,16 @@ public class ZwfDuplexConnection {
 	public org.zerionproject.core.api.crypto.pcs.Mode3FullState
 			currentMode3FullState() {
 		return sharedM3f.get();
+	}
+
+	/**
+	 * Zeroizes the ML-KEM decapsulation keys of the shared Mode 3-Full state
+	 * once the connection has ended. The state is never persisted or resumed,
+	 * so no later connection can need it.
+	 */
+	public void destroyKeyMaterial() {
+		org.zerionproject.core.api.crypto.pcs.Mode3FullState s = sharedM3f.get();
+		if (s != null) s.destroy();
 	}
 
 	/**

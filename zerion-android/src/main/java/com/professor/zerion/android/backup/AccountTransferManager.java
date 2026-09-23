@@ -1,6 +1,5 @@
 package com.professor.zerion.android.backup;
 
-import com.professor.zerion.android.contact.identity.ContactSafetyNumber;
 import com.professor.zerion.android.vault.crypto.VaultCrypto;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
@@ -28,6 +27,7 @@ import javax.inject.Inject;
 import javax.net.SocketFactory;
 
 import static com.professor.zerion.android.backup.TransferException.Reason.CANCELLED;
+import static com.professor.zerion.android.backup.TransferException.Reason.CODE_MISMATCH;
 import static com.professor.zerion.android.backup.TransferException.Reason.CONNECT_FAILED;
 import static com.professor.zerion.android.backup.TransferException.Reason.IO_ERROR;
 import static com.professor.zerion.android.backup.TransferException.Reason.PROTOCOL;
@@ -39,8 +39,14 @@ public class AccountTransferManager {
 
 	private static final int PUBKEY_LEN = 32;
 	private static final int MAX_BUNDLE_BYTES = 512 * 1024 * 1024;
+	private static final int MAX_LENGTH_HEADER_BYTES = 256;
 	private static final byte[] AAD =
-			"Zerion-Account-Transfer-v1".getBytes(StandardCharsets.UTF_8);
+			"Zerion-Account-Transfer-v2".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] AAD_LENGTH =
+			"Zerion-Account-Transfer-v2-length".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] CODE_LABEL =
+			"Zerion-Account-Transfer-v2-code".getBytes(StandardCharsets.UTF_8);
+	public static final int CODE_DIGITS = 6;
 	private static final String SESSION_LABEL =
 			"com.professor.zerion.transfer/sessionKey";
 	private static final byte GO = (byte) 0x42;
@@ -55,12 +61,24 @@ public class AccountTransferManager {
 		TRANSFERRING, IMPORTING, DONE
 	}
 
+	/**
+	 * The new phone shows a confirmation code derived from the session; the
+	 * old phone asks the user to type it and streams the account only when
+	 * it matches. A connection from anyone other than the phone the user is
+	 * holding cannot produce a code the user can type, so the one-time
+	 * address in the QR is not enough to receive the account.
+	 */
 	public interface Callback {
 		void onStatus(Status status);
 
 		void onPairingReady(String qrPayload);
 
-		boolean onSasConfirm(String safetyNumber);
+		/** New phone: show this code so the user can type it on the old one. */
+		void onShowConfirmationCode(String code);
+
+		/** Old phone: return the code the user typed, or null to cancel. */
+		@Nullable
+		String onEnterConfirmationCode();
 	}
 
 	private final CryptoComponent crypto;
@@ -175,11 +193,17 @@ public class AccountTransferManager {
 			byte[] theirPub = readFrame(in, PUBKEY_LEN, PUBKEY_LEN);
 			SecretKey sessionKey = deriveSession(myKp, myPub, theirPub);
 			try {
-				String sas = ContactSafetyNumber.forKeys(myPub, theirPub);
-				if (!cb.onSasConfirm(sas)) {
+				String expected = confirmationCode(sessionKey);
+				String typed = cb.onEnterConfirmationCode();
+				if (typed == null) {
 					out.write(0);
 					out.flush();
 					throw new TransferException(CANCELLED);
+				}
+				if (!codesMatch(expected, typed)) {
+					out.write(0);
+					out.flush();
+					throw new TransferException(CODE_MISMATCH);
 				}
 				out.write(GO);
 				out.flush();
@@ -188,6 +212,8 @@ public class AccountTransferManager {
 				try {
 					byte[] sealed = vaultCrypto.encrypt(bundleBytes,
 							sessionKey.getBytes(), AAD).toBytes();
+					writeFrame(out, vaultCrypto.encrypt(int32(sealed.length),
+							sessionKey.getBytes(), AAD_LENGTH).toBytes());
 					writeFrame(out, sealed);
 					out.flush();
 				} finally {
@@ -216,14 +242,18 @@ public class AccountTransferManager {
 			out.flush();
 			SecretKey sessionKey = deriveSession(myKp, myPub, theirPub);
 			try {
-				String sas = ContactSafetyNumber.forKeys(myPub, theirPub);
-				if (!cb.onSasConfirm(sas)) {
-					throw new TransferException(CANCELLED);
-				}
+				cb.onShowConfirmationCode(confirmationCode(sessionKey));
 				int go = in.read();
 				if (go != (GO & 0xFF)) throw new TransferException(CANCELLED);
 				cb.onStatus(Status.IMPORTING);
-				byte[] sealed = readFrame(in, 1, MAX_BUNDLE_BYTES);
+				byte[] lengthHeader = readFrame(in, 1, MAX_LENGTH_HEADER_BYTES);
+				int length = int32(vaultCrypto.decrypt(
+						VaultCrypto.EncryptedData.fromBytes(lengthHeader),
+						sessionKey.getBytes(), AAD_LENGTH));
+				if (length < 1 || length > MAX_BUNDLE_BYTES) {
+					throw new TransferException(PROTOCOL);
+				}
+				byte[] sealed = readFrame(in, length, length);
 				byte[] bundleBytes = vaultCrypto.decrypt(
 						VaultCrypto.EncryptedData.fromBytes(sealed),
 						sessionKey.getBytes(), AAD);
@@ -241,6 +271,50 @@ public class AccountTransferManager {
 		} catch (BackupException | IOException | RuntimeException e) {
 			throw new TransferException(PROTOCOL);
 		}
+	}
+
+	/**
+	 * Six decimal digits derived from the session key: only the two phones
+	 * that share the session can show or check it. Read from a keyed hash so
+	 * the code reveals nothing about the key.
+	 */
+	static String confirmationCode(SecretKey sessionKey) {
+		try {
+			javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+			mac.init(new javax.crypto.spec.SecretKeySpec(sessionKey.getBytes(),
+					"HmacSHA256"));
+			byte[] h = mac.doFinal(CODE_LABEL);
+			long v = ((h[0] & 0xFFL) << 24) | ((h[1] & 0xFFL) << 16)
+					| ((h[2] & 0xFFL) << 8) | (h[3] & 0xFFL);
+			String digits = Long.toString(v % 1_000_000L);
+			StringBuilder sb = new StringBuilder(CODE_DIGITS);
+			for (int i = digits.length(); i < CODE_DIGITS; i++) sb.append('0');
+			return sb.append(digits).toString();
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	static boolean codesMatch(String expected, String typed) {
+		StringBuilder sb = new StringBuilder(CODE_DIGITS);
+		for (int i = 0; i < typed.length(); i++) {
+			char c = typed.charAt(i);
+			if (c >= '0' && c <= '9') sb.append(c);
+		}
+		byte[] a = expected.getBytes(StandardCharsets.US_ASCII);
+		byte[] b = sb.toString().getBytes(StandardCharsets.US_ASCII);
+		return java.security.MessageDigest.isEqual(a, b);
+	}
+
+	private static byte[] int32(int v) {
+		return new byte[] {(byte) (v >>> 24), (byte) (v >>> 16),
+				(byte) (v >>> 8), (byte) v};
+	}
+
+	private static int int32(byte[] b) throws TransferException {
+		if (b.length != 4) throw new TransferException(PROTOCOL);
+		return ((b[0] & 0xFF) << 24) | ((b[1] & 0xFF) << 16)
+				| ((b[2] & 0xFF) << 8) | (b[3] & 0xFF);
 	}
 
 	private SecretKey deriveSession(KeyPair myKp, byte[] myPub, byte[] theirPub)

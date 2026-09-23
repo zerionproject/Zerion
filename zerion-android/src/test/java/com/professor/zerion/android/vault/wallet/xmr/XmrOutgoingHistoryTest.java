@@ -21,9 +21,14 @@ public class XmrOutgoingHistoryTest {
 			"3333333333333333333333333333333333333333333333333333333333333333";
 
 	private static XmrPendingSend send(String txid, boolean converged, long ts) {
+		return send(txid, converged, ts, false);
+	}
+
+	private static XmrPendingSend send(String txid, boolean converged, long ts,
+			boolean uncertain) {
 		return new XmrPendingSend("w1", new String[]{txid}, 3_000_000_000_000L,
-				10_000_000L, 3_010_000_000_000L, 3_010_000_000_000L, ts, false,
-				converged);
+				10_000_000L, 3_010_000_000_000L, 3_010_000_000_000L, ts,
+				uncertain, converged);
 	}
 
 	private static XmrTxInfo canonical(String txid, int dir, long amount,
@@ -45,6 +50,29 @@ public class XmrOutgoingHistoryTest {
 		assertEquals(1, merged.size());
 		assertEquals(XmrTxInfo.Direction.OUT, merged.get(0).direction);
 		assertTrue(merged.get(0).pending);
+	}
+
+	/** XMR-06: a send whose relay outcome is unknown is shown as unresolved,
+	 *  never as a plain pending send the user would take as on its way. */
+	@Test
+	public void uncertainSendIsMarkedUnresolvedUntilTheChainReportsIt() {
+		List<XmrTxInfo> merged = XmrWalletManager.mergeOutgoingHistory("w1",
+				Arrays.asList(send(T1, false, 1_700_000_000L, true),
+						send(T2, false, 1_700_000_100L)),
+				Collections.emptyList());
+		assertEquals(2, merged.size());
+		XmrTxInfo unresolved = find(merged, T1);
+		XmrTxInfo plain = find(merged, T2);
+		assertTrue(unresolved.pending);
+		assertTrue("unknown relay outcome is surfaced", unresolved.uncertain);
+		assertFalse("an accepted relay is not flagged", plain.uncertain);
+		XmrTxInfo mined = canonical(T1, 1, 3_000_000_000_000L, 3_750_000L,
+				1_700_000_500L, 6);
+		List<XmrTxInfo> resolved = XmrWalletManager.mergeOutgoingHistory("w1",
+				Collections.singletonList(send(T1, true, 1_700_000_000L, true)),
+				Collections.singletonList(mined));
+		assertFalse("once the chain reports it the row is no longer uncertain",
+				find(resolved, T1).uncertain);
 	}
 
 	@Test

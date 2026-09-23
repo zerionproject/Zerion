@@ -30,6 +30,30 @@ public class VaultItemKdfParamsTest {
 		assertEquals(1, restored.extraPasswordParallelism);
 	}
 
+	/** STO-04: item metadata carrying absurd KDF parameters is refused. */
+	@Test
+	public void oversizedKdfParamsInMetadataAreRefused() {
+		VaultItem item = VaultItem.createNewWithPassword(
+				VaultItem.ItemType.WALLET, "BTC\nMain", 32,
+				bytes(48, 1), bytes(12, 2), bytes(32, 3),
+				Integer.MAX_VALUE, 3, 1);
+		byte[] metadata = item.serializeMetadata();
+		try {
+			VaultItem.deserializeMetadata(metadata);
+			org.junit.Assert.fail("a 2 TB memory cost must be refused");
+		} catch (IllegalArgumentException expected) {
+		}
+		VaultItem tooManyPasses = VaultItem.createNewWithPassword(
+				VaultItem.ItemType.WALLET, "BTC\nMain", 32,
+				bytes(48, 1), bytes(12, 2), bytes(32, 3),
+				64 * 1024, 11, 1);
+		try {
+			VaultItem.deserializeMetadata(tooManyPasses.serializeMetadata());
+			org.junit.Assert.fail("eleven passes must be refused");
+		} catch (IllegalArgumentException expected) {
+		}
+	}
+
 	@Test
 	public void legacyVersionOneDefaultsTo256MbParams() {
 		VaultItem legacy = VaultItem.createNew(

@@ -43,14 +43,20 @@ public class VoiceMessageViewHolder {
 	@Nullable
 	private MediaPlayer mediaPlayer;
 	@Nullable
-	private volatile java.io.File currentTempFile;
+	private volatile InMemoryAudio currentAudio;
 	private boolean isPlaying = false;
 	private int duration = 0;
 	private int loadingState = STATE_LOADING;
 	private volatile boolean released = false;
 
+	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			voiceMemoKeys;
+
 	public VoiceMessageViewHolder(View view, AttachmentReader attachmentReader,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+					voiceMemoKeys) {
+		this.voiceMemoKeys = voiceMemoKeys;
 		this.playPauseButton = view.findViewById(R.id.playPauseButton);
 		this.progressBar = view.findViewById(R.id.voiceProgress);
 		this.durationText = view.findViewById(R.id.voiceDuration);
@@ -101,8 +107,14 @@ public class VoiceMessageViewHolder {
 		});
 	}
 
-	public void bindEncryptedVoice(String messageText, org.zerionproject.core.api.sync.GroupId groupId,
-	                                 org.zerionproject.core.api.sync.MessageId messageId) {
+	/**
+	 * Decrypts and prepares a memo. The memo is opened under the identity of
+	 * the message that carries it: its timestamp, and the sender and recipient
+	 * author ids as seen from this device.
+	 */
+	public void bindEncryptedVoice(String messageText,
+			org.zerionproject.core.api.sync.GroupId groupId, long timestamp,
+			boolean incoming) {
 		released = false;
 		stop();
 		isPlaying = false;
@@ -120,13 +132,13 @@ public class VoiceMessageViewHolder {
 			try {
 				com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.ParsedPayload payload =
 					com.professor.zerion.android.conversation.voice.VoiceMessagePayloadParser.parse(parsed.getPayload());
-				byte[] formatVersion = new byte[]{1};
-				byte[] groupIdBytes = groupId.getBytes();
-				byte[] emptyMessageId = new byte[0];
+				byte[] senderId = incoming ? voiceMemoKeys.remoteAuthorId()
+						: voiceMemoKeys.localAuthorId();
+				byte[] recipientId = incoming ? voiceMemoKeys.localAuthorId()
+						: voiceMemoKeys.remoteAuthorId();
 				byte[] decryptedMuLaw = com.professor.zerion.android.conversation.voice.StreamingAudioDecryptor.decryptAll(
-					payload.wrappedKey, payload.iv, payload.chunks, payload.tags,
-					payload.chunks.size(), payload.durationMs, payload.globalMAC,
-					formatVersion, groupIdBytes, emptyMessageId);
+					payload, groupId.getBytes(), timestamp, senderId,
+					recipientId, voiceMemoKeys);
 
 				payload.zeroize();
 				byte[] decryptedPcm = com.professor.zerion.android.conversation.voice.AudioCodec.muLawToPcm(decryptedMuLaw);
@@ -175,18 +187,16 @@ public class VoiceMessageViewHolder {
 			return;
 		}
 		try {
-			java.io.File tempFile = java.io.File.createTempFile("voice",
-					extension, playPauseButton.getContext().getCacheDir());
-			currentTempFile = tempFile;
-
-			java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
+			java.io.ByteArrayOutputStream bytes =
+					new java.io.ByteArrayOutputStream();
 			byte[] buffer = new byte[8192];
 			int bytesRead;
 			while ((bytesRead = audioStream.read(buffer)) != -1) {
-				fos.write(buffer, 0, bytesRead);
+				bytes.write(buffer, 0, bytesRead);
 			}
-			fos.close();
 			audioStream.close();
+			InMemoryAudio audio = new InMemoryAudio(bytes.toByteArray());
+			currentAudio = audio;
 
 			uiHandler.post(() -> {
 				if (released) {
@@ -195,7 +205,7 @@ public class VoiceMessageViewHolder {
 				}
 				try {
 					mediaPlayer = new MediaPlayer();
-					mediaPlayer.setDataSource(tempFile.getAbsolutePath());
+					mediaPlayer.setDataSource(audio);
 					mediaPlayer.setOnPreparedListener(mp -> {
 						duration = mp.getDuration();
 						updateDurationText(duration);
@@ -218,7 +228,7 @@ public class VoiceMessageViewHolder {
 						return true;
 					});
 
-				} catch (IOException e) {
+				} catch (RuntimeException e) {
 					showErrorState(durationText.getContext().getString(R.string.voice_msg_failed_to_load));
 					cleanupTempFile();
 				}
@@ -270,10 +280,39 @@ public class VoiceMessageViewHolder {
 		cleanupTempFile();
 	}
 
+	/** The decoded audio never touches the file system; it is wiped on release. */
 	private void cleanupTempFile() {
-		if (currentTempFile != null) {
-			SecureMemory.secureDeleteFile(currentTempFile, 50L * 1024 * 1024, false);
-			currentTempFile = null;
+		InMemoryAudio audio = currentAudio;
+		if (audio != null) {
+			audio.close();
+			currentAudio = null;
+		}
+	}
+
+	private static final class InMemoryAudio extends android.media.MediaDataSource {
+
+		private final byte[] data;
+
+		InMemoryAudio(byte[] data) {
+			this.data = data;
+		}
+
+		@Override
+		public int readAt(long position, byte[] buffer, int offset, int size) {
+			if (position >= data.length) return -1;
+			int n = (int) Math.min(size, data.length - position);
+			System.arraycopy(data, (int) position, buffer, offset, n);
+			return n;
+		}
+
+		@Override
+		public long getSize() {
+			return data.length;
+		}
+
+		@Override
+		public void close() {
+			java.util.Arrays.fill(data, (byte) 0);
 		}
 	}
 

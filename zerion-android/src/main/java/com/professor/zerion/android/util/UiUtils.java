@@ -25,7 +25,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.zerionproject.core.api.contact.Contact;
@@ -304,7 +304,7 @@ public class UiUtils {
 	}
 
 	public static void showOnboardingDialog(Context ctx, String text) {
-		new MaterialAlertDialogBuilder(ctx, R.style.OnboardingDialogTheme)
+		new SecureAlertDialogBuilder(ctx, R.style.OnboardingDialogTheme)
 				.setMessage(text)
 				.setNeutralButton(R.string.got_it,
 						(dialog, which) -> dialog.cancel())

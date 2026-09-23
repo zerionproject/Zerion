@@ -28,11 +28,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
  * fresh initial state on each side; the peers' ML-KEM public keys are advertised
  * in-band in the first frames (the first message per direction is the
  * zero-ciphertext sentinel, after which the per-message post-quantum path
- * engages). For an ongoing contact, {@link #resumeSession} injects the persisted
- * Mode 3-Full state instead, so the peer's advertised key, our key pair, the
- * recent-key set, and the message counter carry across reconnections and the
- * post-quantum path stays engaged from the first frame rather than falling back
- * to the sentinel.
+ * engages). Every later connection starts the same way: no Mode 3-Full state
+ * is carried across connections, so the peer's key is re-learned in-band and
+ * nothing of a finished connection's key material survives it.
  */
 @NotNullByDefault
 public class ZwfSessionFactory {
@@ -59,22 +57,6 @@ public class ZwfSessionFactory {
 	 */
 	public ZwfSession deriveSession(SecretKey rootKey, boolean alice) {
 		return deriveSession(rootKey, alice, mode3FullRatchet.createInitialState());
-	}
-
-	/**
-	 * Resumes the session for an ongoing contact, seeding the Mode 3-Full ratchet
-	 * from the state persisted at the end of the previous connection.
-	 *
-	 * <p>The per-direction root, tag, and header keys are re-derived
-	 * deterministically from the same root key, and a fresh outgoing stream id
-	 * (from the persistent per-contact counter) keeps every reconnection's chain
-	 * and nonce space distinct. Only the post-quantum Mode 3-Full state is carried
-	 * over, so the peer's advertised ML-KEM key stays engaged instead of resetting
-	 * to the classical sentinel.
-	 */
-	public ZwfSession resumeSession(SecretKey rootKey, boolean alice,
-			Mode3FullState persistedMode3Full) {
-		return deriveSession(rootKey, alice, persistedMode3Full);
 	}
 
 	/**

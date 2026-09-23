@@ -151,8 +151,6 @@
 	<string name="vault_settings_change_master">Change master password</string>
 	<string name="vault_settings_change_master_summary">Update your vault password</string>
 	<string name="vault_settings_autolock">Auto-lock timeout</string>
-	<string name="vault_settings_biometric">Biometric unlock</string>
-	<string name="vault_settings_biometric_summary">Use fingerprint or face unlock</string>
 	<string name="vault_settings_clear_clipboard">Clear clipboard after</string>
 	<string name="vault_settings_hide_content">Hide content in app switcher</string>
 	<string name="vault_settings_hide_content_summary">Blur vault content when switching apps</string>
@@ -479,6 +477,12 @@
 	<string name="hardened_block_disable_title">Turn off hardened mode?</string>
 	<string name="hardened_block_disable_message">Zerion will start on this device. The reason it refused is still there. Only turn this off if you understand the risk.</string>
 	<string name="hardened_block_disable_confirm">Turn off</string>
+	<string name="settings_password_required_title">Confirm your account password</string>
+	<string name="settings_password_required_message">This setting protects your account. Enter your account password to change it.</string>
+	<string name="settings_password_wrong">Wrong password. The setting was not changed.</string>
+	<string name="hardened_block_password_hint">Account password</string>
+	<string name="hardened_block_password_wrong">Wrong password. Hardened mode stays on.</string>
+	<string name="hardened_block_password_locked">Too many wrong passwords. Try again in %1$d minutes.</string>
 	<string name="channels_comments_count">%1$d comments</string>
 	<string name="channels_comments_count_one">1 comment</string>
 	<string name="channels_create_require_approval">Review new subscribers before they can read</string>
@@ -530,6 +534,11 @@
 	<string name="not_available">Not available</string>
 	<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
 	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services…</string>
+	<string name="tor_hidden_services_publishing">Publishing your address to the Tor network…</string>
+	<string name="tor_status_publishing">Publishing</string>
+	<string name="tor_status_bootstrapping">Building circuits (%1$d%%)</string>
+	<string name="tor_restart">Restart Tor</string>
+	<string name="tor_restarting">Restarting Tor…</string>
 	<string name="tor_your_onion_label">Your onion address</string>
 	<string name="tor_onion_copy">Copy</string>
 	<string name="tor_onion_copied">Onion address copied</string>
@@ -947,8 +956,6 @@
 	<string name="keystore_unavailable_title">Secure storage unavailable</string>
 	<string name="keystore_unavailable_message">The secure key store on this device is not responding, so nothing can run safely right now. Restart the device and try again.</string>
 	<string name="keystore_unavailable_close">Close</string>
-	<string name="reduce_mobile_data_title">Reduce data on mobile networks</string>
-	<string name="reduce_mobile_data_summary">Slows the idle cover-traffic rate on mobile data. Messages still send at full speed.</string>
 	<string name="vault_unlock_first_settings">Unlock the vault first to access settings</string>
 	<string name="dialog_password_hint">Password</string>
 	<string name="dialog_password_confirm_hint">Confirm password</string>
@@ -960,6 +967,7 @@
 	<string name="voice_msg_decrypting">Decrypting…</string>
 	<string name="voice_msg_failed_to_load">Failed to load</string>
 	<string name="voice_msg_verification_failed">Verification failed</string>
+	<string name="voice_msg_peer_update_required">This contact\'s app must be updated before it can receive voice messages.</string>
 	<string name="max_attachments_allowed">Maximum %d attachments allowed</string>
 	<string name="image_mesh_not_supported">Image could not be sent over mesh</string>
 	<string name="call_event_outgoing">Outgoing secure voice call</string>
@@ -1289,6 +1297,7 @@
 		<item quantity="other">%1$d custom bridges</item>
 	</plurals>
 	<string name="tor_custom_bridges_dialog_message">If Tor cannot connect where you are, paste bridge lines here, one per line. They are tried before the built-in bridges. You can get bridges from bridges.torproject.org or the GetBridgesBot on Telegram.</string>
+	<string name="tor_custom_bridges_invalid">One of the lines is not a bridge line. Nothing was saved.</string>
 	<string name="tor_custom_bridges_hint">Paste bridge lines, one per line</string>
 
 	<!-- Backup and transfer -->
@@ -1334,9 +1343,11 @@
 	<string name="transfer_send_title">Send to a new phone</string>
 	<string name="transfer_receive_password_message">Set a password to protect the received account on this phone. You will sign in with it.</string>
 	<string name="transfer_receive_show_qr">Scan this code with the old phone</string>
-	<string name="transfer_sas_title">Check the safety number</string>
-	<string name="transfer_sas_message">Both phones must show the same number:\n\n%1$s\n\nDoes it match on the other phone?</string>
-	<string name="transfer_sas_matches">It matches</string>
+	<string name="transfer_code_title">Enter the code from the new phone</string>
+	<string name="transfer_code_message">The new phone now shows a 6-digit code. Type it here. The account is sent only to the phone that shows this code.</string>
+	<string name="transfer_code_hint">6-digit code</string>
+	<string name="transfer_code_confirm">Send account</string>
+	<string name="transfer_code_show">Enter this code on the old phone:\n\n%1$s</string>
 	<string name="transfer_done_title">Done</string>
 	<string name="transfer_failed_title">Transfer failed</string>
 	<string name="transfer_failed_message">The transfer did not complete. Make sure both phones are connected to Tor and try again.</string>
@@ -1351,6 +1362,7 @@
 	<string name="transfer_status_working">Working</string>
 	<string name="transfer_send_show_qr">Scan this code with the new phone</string>
 	<string name="backup_password_empty">Enter a passphrase</string>
+	<string name="backup_password_too_short">The passphrase must be at least 8 characters. The file contains your database key, so anyone with the file can try passphrases offline.</string>
 	<string name="backup_passwords_mismatch">Passwords do not match</string>
 
 	<!-- First-run welcome -->
@@ -1361,13 +1373,6 @@
 	<string name="welcome_receive">Receive from another phone</string>
 
 	<!-- Orbot Proxy Settings -->
-	<string name="proxy_section_title">PROXY</string>
-	<string name="orbot_proxy_title">Use Orbot proxy</string>
-	<string name="orbot_proxy_summary">Route Tor traffic through Orbot app</string>
-	<string name="orbot_proxy_settings">Proxy settings</string>
-	<string name="orbot_host_label">Host address</string>
-	<string name="orbot_port_label">Port</string>
-	<string name="orbot_info_message">Orbot provides additional privacy by using its own Tor connection. Install Orbot from F-Droid or Google Play and start it before enabling this option.</string>
 
 	<!-- Settings Profiles -->
 	<string name="profiles_settings_title">Profiles</string>
@@ -1412,7 +1417,7 @@
 	<!-- Settings Security and Panic -->
 	<string name="security_settings_title">Security</string>
 	<string name="pref_lock_title">App lock</string>
-	<string name="pref_lock_summary">Optional. Adds an extra device-level lock when you reopen Zerion, using your device screen lock or biometrics. This is separate from your account encryption password and does not change how your data is encrypted.</string>
+	<string name="pref_lock_summary">Optional. Adds an extra device-level lock when you reopen Zerion, using your device screen lock or biometrics. This is separate from your account encryption password and does not change how your data is encrypted. While locked, Zerion stays signed in and connected in the background; sign out to close the account completely.</string>
 	<string name="pref_lock_disabled_summary">To use this feature, set up a screen lock for your device</string>
 	<string name="pref_lock_timeout_title">App lock inactivity timeout</string>
 	<string name="pref_default_disappearing_title">Default disappearing timer</string>
@@ -1797,6 +1802,11 @@
 
 	<!-- Wipe Password strings -->
 	<string name="wipe_password_title">Wipe Password</string>
+	<string name="pref_wipe_on_failed_logins_title">Erase after repeated wrong passwords</string>
+	<string name="pref_wipe_on_failed_logins_summary">Erase this account, the vault and the wallet keys after six wrong passwords in a row. Off by default: a wrong password then only locks the app for a growing time.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_title">Erase after six wrong passwords?</string>
+	<string name="pref_wipe_on_failed_logins_confirm_message">Anyone who enters six wrong passwords in a row, including you, erases this account, the vault and the wallet keys. There is no way to recover them afterwards.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_button">Enable</string>
 	<string name="wipe_password_summary">Set a password that immediately wipes all data when entered</string>
 	<string name="wipe_password_summary_enabled">Wipe password is active</string>
 	<string name="wipe_password_summary_disabled">No wipe password set</string>
@@ -1878,17 +1888,13 @@
 	<string name="vault_no_file_picker">No file picker available</string>
 	<string name="vault_settings_wipe_message">This will permanently delete all vault data. This action cannot be undone. Are you absolutely sure?</string>
 	<string name="vault_wipe_button">Wipe vault</string>
-	<string name="vault_biometric_enabled">Biometric authentication enabled</string>
-	<string name="vault_biometric_no_fingerprints">No fingerprints enrolled</string>
-	<string name="vault_biometric_no_hardware">Biometric hardware not available</string>
-	<string name="vault_biometric_unsupported">Biometric authentication not supported on this device</string>
-	<string name="vault_biometric_disabled">Biometric authentication disabled</string>
 
 	<string name="vault_document_opening">Opening %1$s…</string>
 	<string name="vault_document_open_error">Cannot open document: activity not ready</string>
 	<string name="vault_document_details_title">Document details</string>
 	<string name="vault_document_export_warning_title">Security warning</string>
-	<string name="vault_document_export_warning_message">Exporting will save an UNENCRYPTED copy to your Downloads folder.\n\n• File will NOT be encrypted\n• Other apps can access it\n• File persists after export\n\nContinue?</string>
+	<string name="vault_document_export_warning_message">Exporting saves an UNENCRYPTED copy to a location you choose next.\n\n• File will NOT be encrypted\n• Other apps can access it\n• File persists after export\n\nContinue?</string>
+	<string name="vault_document_exported">Document exported</string>
 	<string name="vault_document_export_anyway">Export anyway</string>
 	<string name="vault_document_exported_to">Document exported to: %1$s</string>
 	<string name="vault_document_export_failed">Failed to export document</string>
@@ -2017,6 +2023,7 @@
 	<string name="wallet_xmr_send_amount_label">Amount</string>
 	<string name="wallet_xmr_send_continue">Continue</string>
 	<string name="wallet_xmr_copied">Copied</string>
+	<string name="wallet_xmr_spend_cache_incomplete">The wallet\'s scanned state is incomplete. Rescan the wallet from its settings before sending.</string>
 	<string name="wallet_xmr_node_unreachable">Could not reach a Monero node. Check your connection and try again.</string>
 	<string name="wallet_xmr_open_failed">Could not open the wallet. Please try again.</string>
 	<string name="wallet_xmr_opening">Opening wallet</string>
@@ -2066,6 +2073,7 @@
 	<string name="wallet_xmr_tx_state_pending">Pending</string>
 	<string name="wallet_xmr_tx_state_confirmed">Confirmed</string>
 	<string name="wallet_xmr_tx_state_failed">Failed</string>
+	<string name="wallet_xmr_tx_state_unresolved">Unresolved: check status</string>
 	<string name="wallet_xmr_tx_confirmations">Confirmations</string>
 	<string name="wallet_xmr_tx_id">Transaction ID</string>
 	<string name="wallet_xmr_tx_date">Date</string>
@@ -2093,6 +2101,12 @@
 	<string name="wallet_xmr_offline_retry">Unable to connect · Tap to retry</string>
 	<string name="wallet_xmr_checking">Checking for new blocks…</string>
 	<string name="wallet_xmr_busy">The wallet is busy with another operation. Try again in a moment.</string>
+	<string name="wallet_xmr_check_relay">Check status</string>
+	<string name="wallet_xmr_release_unresolved">Release unresolved send</string>
+	<string name="wallet_xmr_release_unresolved_body">Zerion could not confirm whether your last transaction reached the Monero network. If it has been absent from the network for at least three days you can release it and send again. Only one of the two transactions can ever be paid out, so no funds can be lost, but check your history afterwards to see which one went through.</string>
+	<string name="wallet_xmr_release_done">Unresolved send released.</string>
+	<string name="wallet_xmr_release_not_yet">The last transaction cannot be released yet: it is either still visible on the network, not yet three days old, or the node did not answer.</string>
+	<string name="wallet_xmr_delete_unresolved_body">This wallet has a send whose outcome is still unresolved. Deleting it removes the wallet from this device; it can only be restored from its recovery phrase, and the outcome of that send must then be checked in the restored wallet. Make sure you have the recovery phrase before continuing.</string>
 	<string name="wallet_xmr_phrase_title">Recovery phrase</string>
 	<string name="wallet_xmr_phrase_intro">Write these 25 words down in order and keep them offline. Anyone with this phrase can access your wallet.</string>
 	<string name="wallet_xmr_phrase_verify_action">Verify backup</string>
@@ -2138,7 +2152,8 @@
 	<string name="wallet_xmr_node_own_hint">yournode.onion:18089</string>
 	<string name="wallet_xmr_node_custom_hint">host.onion or IP : port</string>
 	<string name="wallet_xmr_node_direct_hint">host or IP : port (clearnet)</string>
-	<string name="wallet_xmr_node_direct_ack">A direct connection does not use Tor. The node you connect to can see your IP address and can link it to your Monero activity. Only continue if you understand and accept this reduced privacy.</string>
+	<string name="wallet_xmr_node_direct_ack">A direct connection does not use Tor. The node you connect to can see your IP address and can link it to your Monero activity, and a node given as a hostname is looked up through the device\'s DNS resolver. Only continue if you understand and accept this reduced privacy.</string>
+	<string name="wallet_xmr_node_trust_label">Trust this node as my own daemon (skips the checks made against public nodes)</string>
 	<string name="wallet_xmr_node_direct_accept">I understand, use Direct</string>
 	<string name="wallet_xmr_node_invalid">That node address is not valid.</string>
 	<string name="wallet_xmr_node_saved">Node updated. It applies the next time the wallet syncs.</string>
@@ -2228,6 +2243,8 @@
 	<string name="wallet_password_confirm_hint">Confirm password</string>
 	<string name="wallet_password_mismatch">Passwords do not match</string>
 	<string name="wallet_send_fee_label">Network fee</string>
+	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% of the amount</string>
+	<string name="wallet_send_fee_high_warning">High fee: %1$d%% of the amount. A node can suggest excessive rates; choose a lower rate if this is unexpected.</string>
 	<string name="wallet_fee_economy">Economy</string>
 	<string name="wallet_fee_normal">Normal</string>
 	<string name="wallet_fee_priority">Priority</string>
@@ -2305,6 +2322,11 @@
 	<string name="wallet_pin_not_tls">This server does not use TLS, so there is no certificate to pin.</string>
 	<string name="wallet_pin_read_failed">Could not read the server certificate over Tor.</string>
 	<string name="wallet_pin_confirm_title">Confirm certificate</string>
+	<string name="wallet_pin_confirm_ca_valid">The certificate is issued by a trusted authority and matches the server name. Pinning it adds a check; it does not replace one.</string>
+	<string name="wallet_pin_confirm_self_signed">The certificate is not issued by a trusted authority. Compare the fingerprint with your server through another channel before confirming; an attacker on the path could present their own certificate.</string>
+	<string name="wallet_scan_unsupported">This payment request requires a feature the wallet does not support</string>
+	<string name="wallet_server_inconsistent">The server reported an empty wallet where history existed. The last verified state is kept.</string>
+	<string name="wallet_sp_oracle_https">The oracle address must use https</string>
 	<string name="wallet_pin_confirm_msg">Pin this certificate for %1$s? Only confirm if the fingerprint matches your server. Future connections will be rejected if it changes.\n\n%2$s</string>
 	<string name="wallet_pin_confirm_button">Pin</string>
 	<string name="wallet_pin_saved">Certificate pinned</string>

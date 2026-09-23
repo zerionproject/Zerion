@@ -25,22 +25,22 @@ public final class PayjoinGate {
 	@Nullable
 	private String pendingFingerprint;
 
-	public void prepare(PayjoinFinalTx tx) {
+	public synchronized void prepare(PayjoinFinalTx tx) {
 		this.pending = tx;
 		this.pendingFingerprint = tx.fingerprint();
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		this.pending = null;
 		this.pendingFingerprint = null;
 	}
 
 	@Nullable
-	public PayjoinFinalTx pending() {
+	public synchronized PayjoinFinalTx pending() {
 		return pending;
 	}
 
-	public PayjoinFinalTx authorize(String reviewedFingerprint,
+	public synchronized PayjoinFinalTx authorize(String reviewedFingerprint,
 			boolean authenticated) throws AuthorizationException {
 		PayjoinFinalTx p = pending;
 		String fp = pendingFingerprint;

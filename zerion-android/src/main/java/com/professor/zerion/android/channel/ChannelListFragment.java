@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.checkbox.MaterialCheckBox;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -333,7 +333,7 @@ public class ChannelListFragment extends BaseFragment
 		MaterialCheckBox approvalCheckbox = view.findViewById(
 				R.id.channelCreateRequireApprovalCheckbox);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_create_title)
 				.setView(view)
 				.setPositiveButton(R.string.channels_create_action,
@@ -385,7 +385,7 @@ public class ChannelListFragment extends BaseFragment
 		TextInputEditText linkInput =
 				view.findViewById(R.id.channelJoinLinkInput);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_join_title)
 				.setView(view)
 				.setPositiveButton(R.string.channels_join_action,
@@ -462,7 +462,7 @@ public class ChannelListFragment extends BaseFragment
 				R.layout.dialog_apply_to_join, null);
 		TextInputEditText nameInput =
 				view.findViewById(R.id.channelApplyNameInput);
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_apply_title)
 				.setView(view)
 				.setPositiveButton(R.string.channels_apply_action,
@@ -558,7 +558,7 @@ public class ChannelListFragment extends BaseFragment
 			actions.add(() -> confirmLeave(s));
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(s.getName())
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
@@ -570,7 +570,7 @@ public class ChannelListFragment extends BaseFragment
 				R.layout.dialog_announce_channel, null);
 		TextInputEditText nameInput =
 				view.findViewById(R.id.channelAnnounceNameInput);
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_announce_title)
 				.setMessage(R.string.channels_announce_message)
 				.setView(view)
@@ -666,7 +666,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void confirmRotate(ChannelState s) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_invite_rotate_confirm_title)
 				.setMessage(R.string.channels_invite_rotate_confirm_message)
 				.setPositiveButton(R.string.channels_action_rotate_capability,
@@ -687,7 +687,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void confirmLeave(ChannelState s) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_leave_confirm_title)
 				.setMessage(R.string.channels_leave_confirm_message)
 				.setPositiveButton(R.string.channels_leave_confirm_action,
@@ -697,7 +697,7 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void confirmDelete(ChannelState s) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_delete_confirm_title)
 				.setMessage(R.string.channels_delete_confirm_message)
 				.setPositiveButton(R.string.channels_delete_confirm_action,

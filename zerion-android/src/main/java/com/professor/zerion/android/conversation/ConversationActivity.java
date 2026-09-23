@@ -20,7 +20,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.zerionproject.core.api.FeatureFlags;
@@ -302,7 +302,8 @@ public class ConversationActivity extends ZerionActivity
 		visitor = new ConversationVisitor(this, this, this,
 				viewModel.getContactDisplayName(), viewModel, groupTrManager);
 		adapter = new ConversationAdapter(this, this,
-				attachmentRetriever.getAttachmentReader(), dbExecutor);
+				attachmentRetriever.getAttachmentReader(), dbExecutor,
+				viewModel.voiceMemoKeys());
 		list = findViewById(R.id.conversationView);
 		layoutManager = new LinearLayoutManager(this);
 		list.setLayoutManager(layoutManager);
@@ -522,7 +523,7 @@ public class ConversationActivity extends ZerionActivity
 
 	private boolean requireVerifiedToSendMedia() {
 		if (contactVerified) return true;
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.verify_to_send_media_title)
 				.setMessage(R.string.verify_to_send_media_message)
 				.setPositiveButton(R.string.verify_to_send_media_open_info,
@@ -1649,8 +1650,15 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
-		viewModel.onEncryptionInit(iv, sessionKey);
+	public com.professor.zerion.android.conversation.voice.VoiceMemoKeys
+			getVoiceMemoKeys() {
+		return viewModel.voiceMemoKeys();
+	}
+
+	@Override
+	public void onEncryptionInit(byte[] iv, byte[] sessionKey,
+			long timestamp) {
+		viewModel.onEncryptionInit(iv, sessionKey, timestamp);
 	}
 
 	@Override
@@ -1716,7 +1724,7 @@ public class ConversationActivity extends ZerionActivity
 			radioGroup.check(getRadioIdForTimer(currentTimer));
 		}
 
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setView(dialogView)
 				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
 					viewModel.setAutoDeleteTimer(getTimerForRadioId(
@@ -1755,7 +1763,7 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void askToClearChat() {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.clear_chat_dialog_title)
 				.setMessage(R.string.clear_chat_dialog_message)
 				.setPositiveButton(R.string.clear_chat,
@@ -1765,7 +1773,7 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void askToRemoveContact() {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.dialog_title_delete_contact)
 				.setMessage(R.string.dialog_message_delete_contact)
 				.setPositiveButton(R.string.delete_contact,
@@ -1852,7 +1860,7 @@ public class ConversationActivity extends ZerionActivity
 				names[i] = UiUtils.getContactDisplayName(
 						contacts.get(i));
 			}
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.forward_to)
 					.setItems(names, (dialog, which) -> {
 						ContactId recipientId =
@@ -1876,7 +1884,7 @@ public class ConversationActivity extends ZerionActivity
 		Collection<MessageId> selected = getSelection();
 		if (selected.isEmpty()) return;
 
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.conversation_delete_title)
 				.setMessage(getResources().getQuantityString(R.plurals.conversation_delete_message,
 						selected.size(), selected.size()))
@@ -2024,7 +2032,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onReactionClicked(ConversationItem item) {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setItems(REACTION_EMOJIS, (dialog, which) ->
 						viewModel.sendReaction(item.getId(),
 								REACTION_EMOJIS[which]))
@@ -2065,7 +2073,7 @@ public class ConversationActivity extends ZerionActivity
 				getString(R.string.secret_note_timer_12h)
 		};
 		int[] countdowns = { 10, 60, 300, 600, 3600, 43200 };
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.secret_note_timer_title)
 				.setItems(labels, (dialog, which) -> {
 					viewModel.sendSecretNote(text, countdowns[which]);

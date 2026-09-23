@@ -39,7 +39,7 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_
 import static org.zerionproject.core.contact.HandshakeConstants.PROOF_BYTES;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
-import static org.zerionproject.core.contact.HandshakeConstants.FS_MINOR_VERSION;
+import static org.zerionproject.core.contact.HandshakeConstants.KCI_MINOR_VERSION;
 import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
@@ -49,6 +49,7 @@ import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_KE
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_MINOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_MODE3_CAPABILITY;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_PROOF_OF_OWNERSHIP;
+import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_STATIC_KEM_CIPHERTEXT;
 import static org.zerionproject.core.util.ValidationUtils.checkLength;
 
 @Immutable
@@ -58,13 +59,21 @@ class HandshakeManagerImpl implements HandshakeManager {
 			r.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 					!isKnownRecordType(r.getRecordType());
 
+	/**
+	 * The largest handshake record is a hybrid public key of 1216 bytes;
+	 * an unauthenticated peer may not make this side allocate more per
+	 * record than that order of magnitude.
+	 */
+	static final int HANDSHAKE_MAX_RECORD_PAYLOAD_BYTES = 4096;
+
 	private static boolean isKnownRecordType(byte type) {
 		return type == RECORD_TYPE_EPHEMERAL_PUBLIC_KEY ||
 				type == RECORD_TYPE_PROOF_OF_OWNERSHIP ||
 				type == RECORD_TYPE_MINOR_VERSION ||
 				type == RECORD_TYPE_HYBRID_STATIC_KEY ||
 				type == RECORD_TYPE_KEM_CIPHERTEXT ||
-				type == RECORD_TYPE_MODE3_CAPABILITY;
+				type == RECORD_TYPE_MODE3_CAPABILITY ||
+				type == RECORD_TYPE_STATIC_KEM_CIPHERTEXT;
 	}
 
 	private final TransactionManager db;
@@ -149,7 +158,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 				HYBRID_COMMITMENT_BYTES);
 		KeyPair ourHybridStaticKeyPair = ctx.hybridKeyPair;
 
-		RecordReader recordReader = recordReaderFactory.createRecordReader(in, false);
+		RecordReader recordReader = recordReaderFactory.createRecordReader(in,
+				HANDSHAKE_MAX_RECORD_PAYLOAD_BYTES);
 		RecordWriter recordWriter = recordWriterFactory
 				.createRecordWriter(out.getOutputStream(), false);
 
@@ -190,40 +200,62 @@ class HandshakeManagerImpl implements HandshakeManager {
 			sendHybridStaticKey(recordWriter, ourHybridEphemeralKeyPair.getPublic());
 		}
 
-		boolean useFs = theirMinorVersion >= FS_MINOR_VERSION;
-		if (!useFs) {
+		if (theirMinorVersion < KCI_MINOR_VERSION) {
 			throw new FormatException();
 		}
 
-		byte[] kemCiphertext;
-		byte[] kemSecret;
-		try {
-			if (alice) {
-				PublicKey kemTarget = theirHybridEphemeralKey;
-				HybridEncapsulationResult encResult =
-						handshakeCrypto.hybridEncapsulate(kemTarget);
-				kemCiphertext = encResult.getCiphertext();
-				kemSecret = encResult.getSharedSecret();
-				sendKemCiphertext(recordWriter, kemCiphertext);
-			} else {
-				kemCiphertext = receiveKemCiphertext(recordReader);
-				kemSecret = new byte[0];
-			}
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		}
-
+		byte[] ephemeralKemCiphertext;
+		byte[] ephemeralKemSecret = new byte[0];
+		byte[] staticKemCiphertextToAlice;
+		byte[] staticKemCiphertextToBob;
+		byte[] kemSecretToAlice = new byte[0];
+		byte[] kemSecretToBob = new byte[0];
 		SecretKey masterKey;
 		try {
-			masterKey = handshakeCrypto.deriveHybridMasterKeyFs(
+			if (alice) {
+				HybridEncapsulationResult ephemeral =
+						handshakeCrypto.hybridEncapsulate(
+								theirHybridEphemeralKey);
+				ephemeralKemCiphertext = ephemeral.getCiphertext();
+				ephemeralKemSecret = ephemeral.getSharedSecret();
+				HybridEncapsulationResult toBob =
+						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+				staticKemCiphertextToBob = toBob.getCiphertext();
+				kemSecretToBob = toBob.getSharedSecret();
+				sendKemCiphertext(recordWriter, ephemeralKemCiphertext);
+				sendStaticKemCiphertext(recordWriter, staticKemCiphertextToBob);
+				staticKemCiphertextToAlice =
+						receiveStaticKemCiphertext(recordReader);
+				kemSecretToAlice = handshakeCrypto.hybridDecapsulate(
+						ourHybridStaticKeyPair, staticKemCiphertextToAlice);
+			} else {
+				ephemeralKemCiphertext = receiveKemCiphertext(recordReader);
+				staticKemCiphertextToBob =
+						receiveStaticKemCiphertext(recordReader);
+				ephemeralKemSecret = handshakeCrypto.hybridDecapsulate(
+						ourHybridEphemeralKeyPair, ephemeralKemCiphertext);
+				kemSecretToBob = handshakeCrypto.hybridDecapsulate(
+						ourHybridStaticKeyPair, staticKemCiphertextToBob);
+				HybridEncapsulationResult toAlice =
+						handshakeCrypto.hybridEncapsulate(theirHybridStaticKey);
+				staticKemCiphertextToAlice = toAlice.getCiphertext();
+				kemSecretToAlice = toAlice.getSharedSecret();
+				sendStaticKemCiphertext(recordWriter,
+						staticKemCiphertextToAlice);
+			}
+			masterKey = handshakeCrypto.deriveHybridMasterKeyPqAuth(
 					theirHybridStaticKey, theirHybridEphemeralKey,
 					ourHybridStaticKeyPair, ourHybridEphemeralKeyPair,
-					kemCiphertext, kemSecret, alice,
+					ephemeralKemCiphertext, ephemeralKemSecret,
+					staticKemCiphertextToAlice, kemSecretToAlice,
+					staticKemCiphertextToBob, kemSecretToBob, alice,
 					PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		} finally {
-			Arrays.fill(kemSecret, (byte) 0);
+			Arrays.fill(ephemeralKemSecret, (byte) 0);
+			Arrays.fill(kemSecretToAlice, (byte) 0);
+			Arrays.fill(kemSecretToBob, (byte) 0);
 			org.zerionproject.core.api.crypto.PrivateKey ephPriv =
 					ourHybridEphemeralKeyPair.getPrivate();
 			if (ephPriv instanceof
@@ -243,15 +275,15 @@ class HandshakeManagerImpl implements HandshakeManager {
 			theirProof = receiveProof(recordReader);
 			sendProof(recordWriter, ourProof);
 		}
-		sendMode3Capability(recordWriter, masterKey);
-		out.sendEndOfStream();
-		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
-		recordReader.readRecord(r -> false, IGNORE);
 		boolean ownershipOk =
 				handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof);
 		if (!ownershipOk) {
 			throw new FormatException();
 		}
+		sendMode3Capability(recordWriter, masterKey);
+		out.sendEndOfStream();
+		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
+		recordReader.readRecord(r -> false, IGNORE);
 
 		byte[] ourStaticHybridPub =
 				ourHybridStaticKeyPair.getPublic().getEncoded();
@@ -279,7 +311,20 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] key = rec.getPayload();
 		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
 				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-		return new HybridAgreementPublicKey(key);
+		return parseHybridKey(key);
+	}
+
+	/**
+	 * A peer's hybrid key is parsed, not just measured: the ML-KEM half
+	 * must pass the same checks the encapsulation performs, so a malformed
+	 * key is a format error here rather than an unchecked failure later.
+	 */
+	private PublicKey parseHybridKey(byte[] key) throws FormatException {
+		try {
+			return crypto.getHybridAgreementKeyParser().parsePublicKey(key);
+		} catch (GeneralSecurityException e) {
+			throw new FormatException();
+		}
 	}
 
 	private EphemeralExchange receiveHybridEphemeral(RecordReader r)
@@ -301,8 +346,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] key = keyRecord.getPayload();
 		checkLength(key, HYBRID_AGREEMENT_PUBLIC_KEY_BYTES,
 				HYBRID_AGREEMENT_PUBLIC_KEY_BYTES);
-		return new EphemeralExchange(new HybridAgreementPublicKey(key),
-				minorVersion);
+		return new EphemeralExchange(parseHybridKey(key), minorVersion);
 	}
 
 	private void sendKemCiphertext(RecordWriter w, byte[] ciphertext)
@@ -314,6 +358,23 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 	private byte[] receiveKemCiphertext(RecordReader r) throws IOException {
 		Record rec = readRecord(r, singletonList(RECORD_TYPE_KEM_CIPHERTEXT));
+		byte[] ciphertext = rec.getPayload();
+		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
+				ML_KEM_768_CIPHERTEXT_BYTES);
+		return ciphertext;
+	}
+
+	private void sendStaticKemCiphertext(RecordWriter w, byte[] ciphertext)
+			throws IOException {
+		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
+				RECORD_TYPE_STATIC_KEM_CIPHERTEXT, ciphertext));
+		w.flush();
+	}
+
+	private byte[] receiveStaticKemCiphertext(RecordReader r)
+			throws IOException {
+		Record rec = readRecord(r,
+				singletonList(RECORD_TYPE_STATIC_KEM_CIPHERTEXT));
 		byte[] ciphertext = rec.getPayload();
 		checkLength(ciphertext, ML_KEM_768_CIPHERTEXT_BYTES,
 				ML_KEM_768_CIPHERTEXT_BYTES);

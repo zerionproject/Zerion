@@ -268,6 +268,27 @@ public class XmrWalletManagerTest {
 		assertTrue(engine.closeCount > before);
 	}
 
+	/** JNI-03: a persisting close whose cache write fails still frees the
+	 *  native wallet and invalidates the session; nothing stays open. */
+	@Test
+	public void closeStillInvalidatesWhenThePersistingCloseFails() {
+		mgr.createWallet("w", "pass".toCharArray());
+		Event<String> reveal = mgr.getSeedReveal().getValue();
+		String id = reveal == null ? null : reveal.getIfNotHandled();
+		assertNotNull(id);
+		mgr.openWalletForView(id);
+		assertTrue(mgr.isSessionValid());
+		FakeMoneroEngine.FakeSession bg = engine.lastBackgroundOpened;
+		assertNotNull(bg);
+		bg.persistFails = true;
+		int before = engine.closeCount;
+		mgr.closeSession();
+		assertFalse(mgr.isSessionValid());
+		assertTrue("the native wallet is closed despite the failed store",
+				bg.closed);
+		assertTrue(engine.closeCount > before);
+	}
+
 	@Test
 	public void switchingWalletsClosesOldHandle() {
 		store.secret = FakeMoneroEngine.FAKE_SEED.toCharArray();
@@ -548,6 +569,832 @@ public class XmrWalletManagerTest {
 		assertEquals("lock generation tracks the vault", 5, g.lockGeneration());
 	}
 
+	private static final String NODE =
+			"2chk3x3x2iyreog6y2vhljpraqmwiqdmmafhiiab443t7xyfeadqfuad.onion:18089";
+	private static final String DEST =
+			"42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm";
+
+	private static void awaitTrue(java.util.function.BooleanSupplier c,
+			long timeoutMs) throws InterruptedException {
+		long deadline = System.currentTimeMillis() + timeoutMs;
+		while (!c.getAsBoolean()) {
+			if (System.currentTimeMillis() > deadline) {
+				fail("condition not met within " + timeoutMs + " ms");
+			}
+			Thread.sleep(20);
+		}
+	}
+
+	/**
+	 * XMR-04: the view-only sync session and the spend-capable relay session
+	 * of one wallet must each be initialised with their own SOCKS5 isolation
+	 * credential, so a node cannot link syncing to relaying over one circuit.
+	 */
+	@Test(timeout = 20_000)
+	public void syncAndRelaySessionsCarryDistinctIsolationCredentials()
+			throws Exception {
+		java.util.concurrent.ExecutorService session =
+				java.util.concurrent.Executors.newSingleThreadExecutor();
+		XmrWalletManager m = new XmrWalletManager(tmpBase, vault, store,
+				engine, Runnable::run, session);
+		try {
+			m.createWallet("w", "pass".toCharArray());
+			Event<String> reveal = m.getSeedReveal().getValue();
+			String id = reveal == null ? null : reveal.getIfNotHandled();
+			assertNotNull(id);
+			m.setTorSocksPort(9050);
+			m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+			m.openWalletForView(id);
+			awaitTrue(m::isSessionValid, 10_000);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			awaitTrue(() -> view.lastProxy != null, 10_000);
+			assertEquals(XmrTorIsolation.syncProxy(9050, id), view.lastProxy);
+
+			m.prepareSend(id, "w", DEST, 1000, 0, "pass".toCharArray());
+			awaitTrue(() -> engine.lastSpendOpened != null
+					&& engine.lastSpendOpened.lastProxy != null, 10_000);
+			FakeMoneroEngine.FakeSession spend = engine.lastSpendOpened;
+			assertEquals(XmrTorIsolation.relayProxy(9050, id), spend.lastProxy);
+			assertFalse("relay and sync credentials must differ",
+					spend.lastProxy.equals(view.lastProxy));
+		} finally {
+			m.closeSession();
+			session.shutdownNow();
+		}
+	}
+
+	private static final String T1 =
+			"1111111111111111111111111111111111111111111111111111111111111111";
+
+	/** A live manager with a real session thread so the sync loop and the send
+	 *  flow run as in production; the test observes through LiveData. */
+	private final class Live implements AutoCloseable {
+		final java.util.concurrent.ExecutorService session =
+				java.util.concurrent.Executors.newSingleThreadExecutor();
+		final XmrWalletManager m;
+		final java.util.concurrent.atomic.AtomicLong clock =
+				new java.util.concurrent.atomic.AtomicLong(1_000_000L);
+		String id;
+
+		Live() {
+			m = new XmrWalletManager(tmpBase, vault, store, engine,
+					Runnable::run, session);
+			m.setSendClock(clock::get);
+		}
+
+		void openView() throws Exception {
+			m.createWallet("w", "pass".toCharArray());
+			Event<String> reveal = m.getSeedReveal().getValue();
+			id = reveal == null ? null : reveal.getIfNotHandled();
+			assertNotNull(id);
+			m.setTorSocksPort(9050);
+			m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+			m.openWalletForView(id);
+			awaitTrue(m::isSessionValid, 10_000);
+		}
+
+		FakeMoneroEngine.FakePrepared reachReview() throws Exception {
+			openView();
+			FakeMoneroEngine.FakePrepared p = new FakeMoneroEngine.FakePrepared();
+			p.ids.add(T1);
+			p.count = 1;
+			p.amount = 1_000_000_000_000L;
+			p.fee = 30_000_000L;
+			p.dust = 0;
+			p.change = 500_000_000L;
+			engine.preparedForNewSessions = p;
+			m.prepareSend(id, "w", DEST, p.amount, 0, "pass".toCharArray());
+			awaitTrue(() -> kind() == XmrSendUiState.Kind.REVIEW, 10_000);
+			return p;
+		}
+
+		@Nullable
+		XmrSendUiState.Kind kind() {
+			XmrSendUiState st = m.getSendState().getValue();
+			return st == null ? null : st.kind;
+		}
+
+		@Override
+		public void close() {
+			m.closeSession();
+			session.shutdownNow();
+		}
+	}
+
+	/** XMR-03: a review nobody answers must not hold the spend session, the
+	 *  signed transaction and the exclusive slot for the process lifetime. */
+	@Test(timeout = 20_000)
+	public void orphanedReviewIsReleasedByTheWatchdog() throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			assertTrue("review holds the exclusive slot", live.m.isExclusiveBusy());
+			assertNotNull(engine.lastSpendOpened);
+			assertFalse("spend session stays open at review",
+					engine.lastSpendOpened.closed);
+
+			live.m.expireStaleSendFlow();
+			assertTrue("the watchdog must not fire before the TTL",
+					live.m.isExclusiveBusy());
+
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			live.m.expireStaleSendFlow();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue("the signed transaction is freed", p.disposed);
+			assertEquals(XmrSendUiState.Kind.CANCELLED, live.kind());
+
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, 10_000);
+			assertEquals("a cancelled flow never relays", 0, p.commits);
+		}
+	}
+
+	/** XMR-03: while a review is orphaned every other XMR wallet is blocked. */
+	@Test(timeout = 20_000)
+	public void orphanedReviewBlocksOtherWalletsUntilReleased() throws Exception {
+		try (Live live = new Live()) {
+			live.reachReview();
+			live.m.openWalletForView("A");
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			Event<XmrError> busy = live.m.getError().getValue();
+			assertNotNull(busy);
+			assertEquals(XmrError.BUSY, busy.getIfNotHandled());
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			live.m.expireStaleSendFlow();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+		}
+	}
+
+	/** XMR-03: an explicit session close tears down an active flow. */
+	@Test(timeout = 20_000)
+	public void explicitCloseTearsDownAnActiveReview() throws Exception {
+		Live live = new Live();
+		try {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			live.m.closeSession();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue(p.disposed);
+		} finally {
+			live.session.shutdownNow();
+		}
+	}
+
+	/** XMR-03: the vault lock always wins over an active review. */
+	@Test(timeout = 20_000)
+	public void vaultLockDestroysSpendCapabilityDuringReview() throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			vault.fireLock();
+			awaitTrue(() -> !live.m.isExclusiveBusy(), 10_000);
+			awaitTrue(() -> engine.lastSpendOpened.closed, 10_000);
+			assertTrue("lock frees the signed transaction", p.disposed);
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, 10_000);
+			assertEquals("no relay after lock", 0, p.commits);
+		}
+	}
+
+	/** XMR-05: an uncertain relay must keep the balance reservation, durably,
+	 *  because wallet2 marks inputs spent only after the daemon accepted the
+	 *  transaction and the funds may nevertheless be gone. */
+	@Test(timeout = 20_000)
+	public void uncertainRelayKeepsTheReservationAcrossRestart()
+			throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			p.commitResult = false;
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
+					10_000);
+			assertEquals("relayed exactly once", 1, p.commits);
+			id = live.id;
+			List<XmrPendingSend> pending = live.m.pendingSendsFor(id);
+			assertEquals(1, pending.size());
+			XmrPendingSend r = pending.get(0);
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					r.reservationState());
+			assertFalse("never converged on the uncertain path", r.converged);
+			assertEquals("the consumed inputs stay reserved",
+					p.amount + p.fee + p.change, r.reservationDebit());
+			assertTrue("the journal quarantines the wallet",
+					live.m.isSpendQuarantined(id));
+		}
+		XmrWalletManager restarted = new XmrWalletManager(tmpBase, vault, store,
+				engine, Runnable::run);
+		List<XmrPendingSend> after = restarted.pendingSendsFor(id);
+		assertEquals(1, after.size());
+		assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+				after.get(0).reservationState());
+		assertTrue(after.get(0).reservationDebit() > 0);
+		assertTrue(restarted.isSpendQuarantined(id));
+	}
+
+	/** XMR-05 contrast: an accepted relay converges and releases exactly once. */
+	@Test(timeout = 20_000)
+	public void acceptedRelayConvergesAndReleasesTheReservation()
+			throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.SUCCESS, 10_000);
+			assertEquals(1, p.commits);
+			List<XmrPendingSend> pending = live.m.pendingSendsFor(live.id);
+			assertEquals(1, pending.size());
+			assertEquals(XmrPendingSend.ReservationState.CONVERGED,
+					pending.get(0).reservationState());
+			assertEquals(0, pending.get(0).reservationDebit());
+		}
+	}
+
+	private static final long MINED = 2_500_000L;
+	private static final long DAY_MS = 24L * 60 * 60 * 1000;
+
+	/** XMR-07: the spend wallet opened for a later send is the first place
+	 *  a spend the view-only cache cannot see becomes visible; a reservation
+	 *  it reports as spent converges there, and the view is rebuilt from the
+	 *  spend wallet's state when the send is abandoned. */
+	@Test(timeout = 30_000)
+	public void laterSendConvergesAnObservedSpendAndRebuildsTheView()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_IN_POOL};
+			live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+			assertTrue(live.m.pendingSendsFor(live.id).get(0)
+					.reservationDebit() > 0);
+			FakeMoneroEngine.FakeSession firstView = engine.lastBackgroundOpened;
+			assertNotNull(firstView);
+
+			engine.spendOutgoingForNewSessions = java.util.Collections
+					.singletonList(XmrTxInfo.parse(T1 + ",1,1000000000000,"
+							+ "30000000,3750000,1700000500,6,0,0,0"));
+			FakeMoneroEngine.FakePrepared p2 = new FakeMoneroEngine.FakePrepared();
+			p2.ids.add("2222222222222222222222222222222222222222222222222222222222222222");
+			p2.count = 1;
+			p2.amount = 1_000_000L;
+			p2.fee = 30_000_000L;
+			p2.change = 0;
+			engine.preparedForNewSessions = p2;
+			live.m.prepareSend(live.id, "w", DEST, p2.amount, 0,
+					"pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.REVIEW, 10_000);
+			assertEquals("the spend wallet's report converges the send",
+					XmrPendingSend.ReservationState.CONVERGED,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+			assertEquals(0, live.m.pendingSendsFor(live.id).get(0)
+					.reservationDebit());
+			FakeMoneroEngine.FakeSession spend = engine.lastSpendOpened;
+			assertNotNull(spend);
+			int storesBefore = spend.storeCalls;
+
+			live.m.cancelSend();
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.CANCELLED,
+					10_000);
+			awaitTrue(() -> engine.lastBackgroundOpened != firstView, 10_000);
+			assertTrue("the spend state was written to the cache",
+					spend.storeCalls > storesBefore);
+			assertTrue("the old view is closed", firstView.closed);
+			awaitTrue(live.m::isSessionValid, 10_000);
+			assertFalse("the rebuilt view is live",
+					engine.lastBackgroundOpened.closed);
+			assertFalse(live.m.isExclusiveBusy());
+			assertTrue(p2.disposed);
+		}
+	}
+
+	/** XMR-10: a wallet created while the clock ran ahead persists a restore
+	 *  height above the chain tip; the first daemon height caps it below the
+	 *  tip and rescans, once, and the marker never survives the correction. */
+	@Test(timeout = 30_000)
+	public void clockAheadRestoreHeightIsCappedByTheFirstDaemonHeight()
+			throws Exception {
+		long daemon = XmrBirthday.latestCheckpointHeight() + 2_100L;
+		long cap = daemon - XmrBirthday.BASE_MARGIN_BLOCKS;
+		engine.daemonHeightForNewSessions = daemon;
+		try (Live live = new Live()) {
+			live.openView();
+			assertTrue("the clock estimate is far above the fake tip",
+					XmrBirthday.estimateHeight(System.currentTimeMillis())
+							> daemon);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			awaitTrue(() -> view.rescanCalls.get() > 0, 10_000);
+			assertEquals(cap, view.refreshFromHeight);
+			assertTrue(view.refreshLog.contains("rescan@" + cap));
+			org.json.JSONObject w = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(live.id);
+			assertEquals(cap, w.getLong("h"));
+			assertFalse("the clock marker is consumed", w.has("hEst"));
+			Thread.sleep(700);
+			assertEquals("the correction runs once", 1, view.rescanCalls.get());
+		}
+	}
+
+	/** A2-XMR-02: a daemon reporting a tip below the newest checkpoint this
+	 *  build knows is behind the chain, so its height corrects nothing and
+	 *  the clock marker survives for an honest node to consume. */
+	@Test(timeout = 30_000)
+	public void anImplausiblyLowDaemonHeightNeverLowersTheRestoreHeight()
+			throws Exception {
+		engine.daemonHeightForNewSessions = 2_000L;
+		try (Live live = new Live()) {
+			live.openView();
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			long before = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(live.id).getLong("h");
+			Thread.sleep(700);
+			assertEquals("no rescan", 0, view.rescanCalls.get());
+			org.json.JSONObject w = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(live.id);
+			assertEquals("the persisted height is untouched", before,
+					w.getLong("h"));
+			assertTrue("the marker waits for a plausible node",
+					w.optBoolean("hEst", false));
+		}
+	}
+
+	/** A2-XMR-01: a relay-uncertain reservation whose journal a positive
+	 *  answer already cleared, but which the spend wallet never observed,
+	 *  is released under the journal's own rule once the daemon reports the
+	 *  transaction as missed after the expiry window. */
+	@Test(timeout = 30_000)
+	public void aStaleUncertainReservationIsReleasedAfterTheDaemonForgetsIt()
+			throws Exception {
+		try (Live live = new Live()) {
+			java.util.concurrent.atomic.AtomicLong wall =
+					new java.util.concurrent.atomic.AtomicLong(
+							System.currentTimeMillis());
+			live.m.setWallClock(wall::get);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_IN_POOL};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals("still in the pool: not releasable",
+					XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertEquals(1, live.m.pendingSendsFor(live.id).size());
+
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals("missed but not expired: not releasable",
+					XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertEquals(1, live.m.pendingSendsFor(live.id).size());
+
+			wall.addAndGet(3 * DAY_MS + 1000);
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> live.m.pendingSendsFor(live.id).isEmpty(), 10_000);
+			assertEquals(live.id, live.m.getSpendReleased().getValue()
+					.getIfNotHandled());
+		}
+	}
+
+	/** A2-XMR-03: a spend wallet still at genesis had its background cache
+	 *  merge fail; initialising it would fast-forward and then overwrite the
+	 *  background cache with an empty view, so the send is refused. */
+	@Test(timeout = 20_000)
+	public void aSpendWalletAtGenesisIsRefused() throws Exception {
+		try (Live live = new Live()) {
+			live.openView();
+			engine.spendBlockchainHeightForNewSessions = 0;
+			FakeMoneroEngine.FakePrepared p = new FakeMoneroEngine.FakePrepared();
+			p.ids.add(T1);
+			p.count = 1;
+			p.amount = 1_000_000L;
+			engine.preparedForNewSessions = p;
+			live.m.prepareSend(live.id, "w", DEST, p.amount, 0,
+					"pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, 10_000);
+			assertEquals(XmrError.SPEND_CACHE_INCOMPLETE,
+					live.m.getSendState().getValue().error);
+			assertTrue(engine.lastSpendOpened.closed);
+			assertFalse("the spend wallet was never initialised",
+					engine.lastSpendOpened.refreshLog.contains("init"));
+			assertFalse(live.m.isExclusiveBusy());
+		}
+	}
+
+	/** A2-XMR-03: the spend session carries the recovering marker before
+	 *  init, like the view session, so the library never treats it as new. */
+	@Test(timeout = 20_000)
+	public void theSpendSessionIsMarkedRecoveringBeforeInit() throws Exception {
+		try (Live live = new Live()) {
+			live.reachReview();
+			FakeMoneroEngine.FakeSession spend = engine.lastSpendOpened;
+			assertNotNull(spend);
+			int marker = spend.refreshLog.indexOf("recovering");
+			int init = spend.refreshLog.indexOf("init");
+			assertTrue("marker set: " + spend.refreshLog, marker >= 0);
+			assertTrue("before init: " + spend.refreshLog,
+					init < 0 || marker < init);
+		}
+	}
+
+	/** A2-XMR-04: a wrong password re-arms the watchdog, and a watchdog that
+	 *  fires while the flow is authorizing schedules a follow-up instead of
+	 *  silently ending. */
+	@Test(timeout = 30_000)
+	public void theWatchdogSurvivesAWrongPasswordAndABusyFlow()
+			throws Exception {
+		try (Live live = new Live()) {
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			store.throwOnLoad = new javax.crypto.AEADBadTagException("bad");
+			try {
+				live.m.confirmSend("wrong".toCharArray());
+				awaitTrue(() -> {
+					Event<XmrError> e = live.m.getError().getValue();
+					return e != null && !e.isHandled();
+				}, 10_000);
+				assertEquals(XmrError.WRONG_PASSWORD,
+						live.m.getError().getValue().getIfNotHandled());
+				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.REVIEW,
+						10_000);
+			} finally {
+				store.throwOnLoad = null;
+			}
+			assertFalse(live.m.expireStaleSendFlow());
+			assertTrue("re-armed at the wrong password, not expired yet",
+					live.m.isExclusiveBusy());
+			assertEquals(0, p.commits);
+
+			java.util.concurrent.CountDownLatch hold =
+					new java.util.concurrent.CountDownLatch(1);
+			store.holdLoad = hold;
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.AUTHENTICATING,
+					10_000);
+			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
+			assertTrue("a busy flow schedules a follow-up",
+					live.m.expireStaleSendFlow());
+			assertTrue(live.m.isExclusiveBusy());
+			store.holdLoad = null;
+			hold.countDown();
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.SUCCESS, 10_000);
+			assertEquals(1, p.commits);
+			assertFalse(live.m.expireStaleSendFlow());
+		}
+	}
+
+	/** A2-XMR-05: a store the library reports as done although the background
+	 *  cache rewrite failed must not release the reservation; the reopened
+	 *  view decides. */
+	@Test(timeout = 20_000)
+	public void aStoreThatMissedTheBackgroundCacheDoesNotConverge()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.storeSkipsBackgroundCache = true;
+			try {
+				FakeMoneroEngine.FakePrepared p = live.reachReview();
+				live.m.confirmSend("pass".toCharArray());
+				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.SUCCESS,
+						10_000);
+				assertEquals(1, p.commits);
+				List<XmrPendingSend> pending = live.m.pendingSendsFor(live.id);
+				assertEquals(1, pending.size());
+				assertFalse("not converged on the store's word alone",
+						pending.get(0).converged);
+				assertTrue(pending.get(0).reservationDebit() > 0);
+			} finally {
+				engine.storeSkipsBackgroundCache = false;
+			}
+		}
+	}
+
+	/** A2-XMR-06: a persisting close the library could not complete is
+	 *  reported instead of silently dropping the scan progress. */
+	@Test(timeout = 20_000)
+	public void aFailedPersistingCloseIsReported() throws Exception {
+		try (Live live = new Live()) {
+			live.openView();
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			view.persistFails = true;
+			live.m.closeSession();
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals(XmrError.STORAGE_COMMIT_FAILED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertTrue("the refresh loop was paused before the close",
+					view.refreshLog.contains("pause"));
+		}
+	}
+
+	/** XMR-10 contrast: a height the user chose is never capped. */
+	@Test(timeout = 30_000)
+	public void importedRestoreHeightIsNeverCappedByTheDaemon()
+			throws Exception {
+		engine.daemonHeightForNewSessions = 1_000_000L;
+		try (Live live = new Live()) {
+			live.m.importWallet("w", FakeMoneroEngine.FAKE_SEED.toCharArray(),
+					3_000_000L, "pass".toCharArray());
+			String id = null;
+			for (com.professor.zerion.android.vault.wallet.WalletRecord r
+					: store.records) {
+				if (r.id.startsWith("id-")) id = r.id;
+			}
+			assertNotNull(id);
+			openExisting(live, id);
+			awaitTrue(() -> live.m.getSyncStatus().getValue() != null
+					&& live.m.getSyncStatus().getValue().daemonHeight
+					== 1_000_000L, 10_000);
+			Thread.sleep(700);
+			FakeMoneroEngine.FakeSession view = engine.lastBackgroundOpened;
+			assertNotNull(view);
+			assertEquals(0, view.rescanCalls.get());
+			org.json.JSONObject w = new org.json.JSONObject(store.settings)
+					.getJSONObject("xmr").getJSONObject(id);
+			assertEquals(3_000_000L, w.getLong("h"));
+		}
+	}
+
+	private void openExisting(Live live, String id) throws Exception {
+		live.id = id;
+		live.m.setTorSocksPort(9050);
+		live.m.setSyncNodes(java.util.Collections.singletonList(
+				XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+		live.m.openWalletForView(id);
+		awaitTrue(live.m::isSessionValid, 10_000);
+	}
+
+	/** Drives one send to a terminal relay state and returns the prepared tx. */
+	private FakeMoneroEngine.FakePrepared relay(Live live, boolean accepted,
+			XmrSendUiState.Kind expected) throws Exception {
+		FakeMoneroEngine.FakePrepared p = live.reachReview();
+		p.commitResult = accepted;
+		live.m.confirmSend("pass".toCharArray());
+		awaitTrue(() -> live.kind() == expected, 10_000);
+		return p;
+	}
+
+	/** XMR-01: an accepted relay the daemon can see resolves at once. */
+	@Test(timeout = 20_000)
+	public void relaySuccessResolvesTheJournalFromTheDaemon() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {MINED};
+			relay(live, true, XmrSendUiState.Kind.SUCCESS);
+			assertFalse("positive daemon evidence clears the journal",
+					live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: a daemon rejection is uncertain, never auto-released: the node
+	 *  may have broadcast and lied, so only positive evidence or the expiry
+	 *  gated release may end it. */
+	@Test(timeout = 20_000)
+	public void daemonRejectionStaysUncertainAndIsNeverAutoReleased()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			for (int i = 0; i < 3; i++) {
+				live.m.refreshNow();
+				Thread.sleep(300);
+			}
+			assertTrue("MISSED answers never resolve anything",
+					live.m.isSpendQuarantined(live.id));
+			assertEquals(XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+		}
+	}
+
+	/** XMR-01: a timeout after submission resolves when the daemon later
+	 *  reports the transaction; the reservation is held until convergence. */
+	@Test(timeout = 20_000)
+	public void timeoutAfterSubmissionResolvesWhenTheDaemonSeesIt()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_IN_POOL};
+			live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			assertEquals("the reservation outlives the quarantine",
+					XmrPendingSend.ReservationState.RELAY_UNCERTAIN,
+					live.m.pendingSendsFor(live.id).get(0).reservationState());
+		}
+	}
+
+	/** XMR-01: losing the connection before submission leaves no journal. */
+	@Test(timeout = 20_000)
+	public void connectionLossBeforeSubmissionLeavesNoJournal()
+			throws Exception {
+		try (Live live = new Live()) {
+			live.openView();
+			engine.failSpendInit = true;
+			try {
+				live.m.prepareSend(live.id, "w", DEST, 1000, 0,
+						"pass".toCharArray());
+				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED,
+						10_000);
+			} finally {
+				engine.failSpendInit = false;
+			}
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			assertTrue(live.m.pendingSendsFor(live.id).isEmpty());
+		}
+	}
+
+	/** XMR-01: a commit that throws after the journal is durable is uncertain,
+	 *  not a plain failure, so it can never be silently forgotten. */
+	@Test(timeout = 20_000)
+	public void connectionLossAfterPossibleSubmissionIsUncertain()
+			throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			FakeMoneroEngine.FakePrepared p = live.reachReview();
+			p.commitThrows = true;
+			live.m.confirmSend("pass".toCharArray());
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
+					10_000);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			assertEquals(1, live.m.pendingSendsFor(live.id).size());
+		}
+	}
+
+	/** XMR-01: restart while uncertain, then the view open reconciles. */
+	@Test(timeout = 30_000)
+	public void restartWhileUncertainReconcilesOnOpen() throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			id = live.id;
+		}
+		assertTrue(new XmrWalletManager(tmpBase, vault, store, engine,
+				Runnable::run).isSpendQuarantined(id));
+		engine.lookupCodes = new long[] {MINED};
+		try (Live again = new Live()) {
+			openExisting(again, id);
+			awaitTrue(() -> !again.m.isSpendQuarantined(id), 10_000);
+		}
+	}
+
+	/** XMR-01: after a node switch reconciliation runs against the new daemon. */
+	@Test(timeout = 30_000)
+	public void nodeSwitchWhileUncertainStillReconciles() throws Exception {
+		String id;
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			id = live.id;
+		}
+		engine.lookupCodes = new long[] {MINED};
+		try (Live again = new Live()) {
+			again.id = id;
+			again.m.setTorSocksPort(9050);
+			again.m.setSyncNodes(java.util.Collections.singletonList(
+					XmrNode.parse("4iv75ceaj2xjqne6d5d35xxk7lkcj6zdtpsbp7sq6sobp44b7txqrcid.onion:18089",
+							XmrNode.Source.VETTED, false)));
+			again.m.openWalletForView(id);
+			awaitTrue(again.m::isSessionValid, 10_000);
+			awaitTrue(() -> !again.m.isSpendQuarantined(id), 10_000);
+		}
+	}
+
+	/** XMR-01: a transaction that never appears stays quarantined until the
+	 *  password-gated, expiry-gated release; the release drops the reservation. */
+	@Test(timeout = 30_000)
+	public void transactionNeverAppearsIsReleasableOnlyAfterExpiry()
+			throws Exception {
+		try (Live live = new Live()) {
+			java.util.concurrent.atomic.AtomicLong wall =
+					new java.util.concurrent.atomic.AtomicLong(
+							System.currentTimeMillis());
+			live.m.setWallClock(wall::get);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals(XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertTrue("too early: still quarantined",
+					live.m.isSpendQuarantined(live.id));
+
+			wall.addAndGet(3 * DAY_MS + 1000);
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<String> e = live.m.getSpendReleased().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			assertTrue("release drops the reservation",
+					live.m.pendingSendsFor(live.id).isEmpty());
+		}
+	}
+
+	/** XMR-01: the release is refused when the daemon did not answer. */
+	@Test(timeout = 30_000)
+	public void releaseIsRefusedWithoutAnAnsweringDaemon() throws Exception {
+		try (Live live = new Live()) {
+			java.util.concurrent.atomic.AtomicLong wall =
+					new java.util.concurrent.atomic.AtomicLong(
+							System.currentTimeMillis());
+			live.m.setWallClock(wall::get);
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			wall.addAndGet(3 * DAY_MS + 1000);
+			engine.lookupCodes = null;
+			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
+			awaitTrue(() -> {
+				Event<XmrError> e = live.m.getError().getValue();
+				return e != null && !e.isHandled();
+			}, 10_000);
+			assertEquals(XmrError.RELAY_UNRESOLVED,
+					live.m.getError().getValue().getIfNotHandled());
+			assertTrue(live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: a wrong password never releases anything. */
+	@Test(timeout = 30_000)
+	public void releaseRequiresTheWalletPassword() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			store.throwOnLoad = new javax.crypto.AEADBadTagException("bad");
+			try {
+				live.m.releaseUnresolvedSend(live.id, "wrong".toCharArray());
+				awaitTrue(() -> {
+					Event<XmrError> e = live.m.getError().getValue();
+					return e != null && !e.isHandled();
+				}, 10_000);
+				assertEquals(XmrError.WRONG_PASSWORD,
+						live.m.getError().getValue().getIfNotHandled());
+			} finally {
+				store.throwOnLoad = null;
+			}
+			assertTrue(live.m.isSpendQuarantined(live.id));
+		}
+	}
+
+	/** XMR-01: reconciliation is idempotent under repetition. */
+	@Test(timeout = 30_000)
+	public void repeatedReconciliationIsIdempotent() throws Exception {
+		try (Live live = new Live()) {
+			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
+			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
+			for (int i = 0; i < 5; i++) live.m.refreshNow();
+			Thread.sleep(500);
+			assertTrue(live.m.isSpendQuarantined(live.id));
+			engine.lookupCodes = new long[] {MINED};
+			for (int i = 0; i < 3; i++) live.m.refreshNow();
+			awaitTrue(() -> !live.m.isSpendQuarantined(live.id), 10_000);
+			for (int i = 0; i < 3; i++) live.m.refreshNow();
+			Thread.sleep(300);
+			assertFalse(live.m.isSpendQuarantined(live.id));
+			Event<XmrError> e = live.m.getError().getValue();
+			assertTrue("no error is raised by repeated reconciliation",
+					e == null || e.isHandled());
+		}
+	}
+
+	/** XMR-01: a quarantined wallet is deletable only with the acknowledgement. */
+	@Test
+	public void deleteWhileQuarantinedRequiresAcknowledgement() throws Exception {
+		store.secret = FakeMoneroEngine.FAKE_SEED.toCharArray();
+		store.journals.put("A", journalFor("A"));
+		mgr.deleteWallet("A", "pass".toCharArray());
+		assertEquals(XmrError.SPEND_QUARANTINED, lastError());
+		assertFalse(store.deleted.contains("A"));
+		mgr.deleteWallet("A", "pass".toCharArray(), true);
+		assertTrue("acknowledged delete proceeds", store.deleted.contains("A"));
+		assertFalse("the journal is removed with the wallet",
+				store.journals.containsKey("A"));
+	}
+
 	private static final class FakeVaultGate implements VaultGate {
 		boolean unlocked = true;
 		long generation = 5;
@@ -595,6 +1442,8 @@ public class XmrWalletManagerTest {
 		@Nullable
 		Exception throwOnLoad;
 		@Nullable
+		volatile java.util.concurrent.CountDownLatch holdLoad;
+		@Nullable
 		String settings;
 		@Nullable
 		char[] lastCreatePassword;
@@ -614,6 +1463,8 @@ public class XmrWalletManagerTest {
 		@Override
 		public char[] loadMnemonicChars(String walletId,
 				@Nullable char[] password) throws Exception {
+			java.util.concurrent.CountDownLatch hold = holdLoad;
+			if (hold != null) hold.await();
 			if (throwOnLoad != null) throw throwOnLoad;
 			return secret == null ? new char[0] : secret.clone();
 		}
@@ -653,6 +1504,27 @@ public class XmrWalletManagerTest {
 		@Override
 		public Object settingsMonitor() {
 			return monitor;
+		}
+
+		private final java.util.Map<String, byte[]> walletSecrets =
+				new java.util.HashMap<>();
+
+		@Override
+		@Nullable
+		public byte[] readWalletSecret(String walletId, String name) {
+			byte[] v = walletSecrets.get(walletId + "/" + name);
+			return v == null ? null : v.clone();
+		}
+
+		@Override
+		public void writeWalletSecret(String walletId, String name,
+				byte[] value) {
+			walletSecrets.put(walletId + "/" + name, value.clone());
+		}
+
+		@Override
+		public void removeWalletSecret(String walletId, String name) {
+			walletSecrets.remove(walletId + "/" + name);
 		}
 
 		final java.util.Map<String, String> journals =

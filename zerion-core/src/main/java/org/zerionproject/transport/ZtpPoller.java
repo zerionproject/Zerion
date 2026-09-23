@@ -55,23 +55,37 @@ public class ZtpPoller implements EventListener {
 	private final AtomicLong backoffEpoch = new AtomicLong();
 	private volatile long nextRestartAt = 0;
 	private volatile long restartBackoffMs = MIN_RESTART_BACKOFF_MS;
+	@Nullable
+	private volatile Boolean lastReportedConnected = null;
 	private final Random backoffJitter = new Random();
 	private volatile boolean running = false;
 	@Nullable
-	private volatile String ourAddress;
-	@Nullable
 	private volatile Cancellable repollTask;
+	@Nullable
+	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
+			.B4OnionRotation> rotation;
 
 	public ZtpPoller(Executor ioExecutor,
 			TaskScheduler taskScheduler, ContactManager contactManager,
 			TransportPropertyManager transportPropertyManager, EventBus eventBus,
 			OverlayTransport transport) {
+		this(ioExecutor, taskScheduler, contactManager,
+				transportPropertyManager, eventBus, transport, null);
+	}
+
+	public ZtpPoller(Executor ioExecutor,
+			TaskScheduler taskScheduler, ContactManager contactManager,
+			TransportPropertyManager transportPropertyManager, EventBus eventBus,
+			OverlayTransport transport,
+			@Nullable javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> rotation) {
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
 		this.contactManager = contactManager;
 		this.transportPropertyManager = transportPropertyManager;
 		this.eventBus = eventBus;
 		this.transport = transport;
+		this.rotation = rotation;
 	}
 
 	public void start() {
@@ -100,13 +114,11 @@ public class ZtpPoller implements EventListener {
 			clearAllBackoff();
 			nextRestartAt = 0;
 			restartBackoffMs = MIN_RESTART_BACKOFF_MS;
-			refreshOurAddress();
 			try {
 				for (Contact c : contactManager.getContacts()) {
-					connect(c.getId().getInt(), false);
+					connect(c, false);
 				}
 			} catch (DbException e) {
-				// retried next sweep
 			}
 		});
 	}
@@ -128,15 +140,26 @@ public class ZtpPoller implements EventListener {
 				transport.restartNetwork();
 			}
 		}
-		refreshOurAddress();
 		try {
 			for (Contact c : contactManager.getContacts()) {
-				connect(c.getId().getInt(), false);
+				connect(c, false);
 			}
 		} catch (DbException e) {
-			// retried next sweep
 		}
 		scheduleRepoll();
+	}
+
+	/**
+	 * Connectivity reports arrive for screen and doze changes as well as
+	 * for real network changes. Only a change of the connected state is a
+	 * reason to forget every contact's dial backoff; a repeated report of
+	 * the same state, as the screen turns on and off, is not. Returns true
+	 * if the state changed.
+	 */
+	private boolean recordConnectivity(boolean connected) {
+		Boolean previous = lastReportedConnected;
+		lastReportedConnected = connected;
+		return previous == null || previous != connected;
 	}
 
 	private void clearAllBackoff() {
@@ -145,19 +168,21 @@ public class ZtpPoller implements EventListener {
 		failStreak.clear();
 	}
 
-	private void refreshOurAddress() {
-		try {
-			String a = transportPropertyManager
-					.getLocalProperties(transport.getTransportId())
-					.get(transport.getAddressPropertyKey());
-			if (a != null) ourAddress = a;
-		} catch (DbException e) {
-			// keep previous value
-		}
-	}
-
 	private void connect(int contactId, boolean urgent) {
 		if (!running) return;
+		Contact c;
+		try {
+			c = contactManager.getContact(new ContactId(contactId));
+		} catch (DbException | RuntimeException e) {
+			return;
+		}
+		connect(c, urgent);
+	}
+
+	private void connect(Contact contact, boolean urgent) {
+		if (!running) return;
+		int contactId = contact.getId().getInt();
+		if (!isDesignatedDialer(contact)) return;
 		if (!urgent) {
 			Long next = nextDialAt.get(contactId);
 			if (next != null && System.currentTimeMillis() < next) {
@@ -171,10 +196,10 @@ public class ZtpPoller implements EventListener {
 			if (!connecting.add(contactId)) return;
 			boolean dialed = false;
 			long sessionMs = OverlayTransport.DIAL_NOT_CONNECTED;
+			String address = null;
 			try {
-				String address = getPeerAddress(contactId);
+				address = getPeerAddress(contactId);
 				if (address == null) return;
-				if (!isDesignatedDialer(address)) return;
 				dialed = true;
 				boolean fast = failStreak.getOrDefault(contactId, 0)
 						< FAST_DIAL_BURST;
@@ -182,9 +207,33 @@ public class ZtpPoller implements EventListener {
 			} catch (Exception e) {
 			} finally {
 				connecting.remove(contactId);
-				if (dialed) recordDialOutcome(contactId, sessionMs, epoch);
+				if (dialed) {
+					recordDialOutcome(contactId, sessionMs, epoch);
+					reportPendingOnionOutcome(contact.getId(), address,
+							sessionMs >= MIN_CONNECTED_MS);
+				}
 			}
 		});
+	}
+
+	/**
+	 * A dial to a contact's announced next onion feeds the rotation logic:
+	 * a session confirms the move, repeated failures make the property
+	 * manager fall back to the onion the contact still publishes.
+	 */
+	private void reportPendingOnionOutcome(ContactId cid,
+			@Nullable String address, boolean connected) {
+		javax.inject.Provider<org.zerionproject.core.plugin.tor
+				.B4OnionRotation> r = rotation;
+		if (r == null || address == null) return;
+		try {
+			org.zerionproject.core.plugin.tor.B4OnionRotation b4 = r.get();
+			String pending = b4.getPendingOnionForContact(cid);
+			if (pending == null || !pending.equals(address)) return;
+			if (connected) b4.onSuccessfulConnect(cid, address);
+			else b4.onPendingDialFailed(cid);
+		} catch (DbException | RuntimeException ignored) {
+		}
 	}
 
 	private void recordDialOutcome(int contactId, long sessionMs, long epoch) {
@@ -202,9 +251,17 @@ public class ZtpPoller implements EventListener {
 		}
 	}
 
-	private boolean isDesignatedDialer(String peerAddress) {
-		String mine = ourAddress;
-		return mine == null || mine.compareTo(peerAddress) < 0;
+	/**
+	 * Exactly one side of a contact pair dials: the side whose own author id
+	 * sorts before the peer's. Both sides compare the same two ids, so they
+	 * always agree, and the rule does not move when either side's onion
+	 * address changes, unlike a comparison of addresses, which during an
+	 * onion rotation is evaluated on different addresses by the two sides.
+	 */
+	static boolean isDesignatedDialer(Contact contact) {
+		byte[] ours = contact.getLocalAuthorId().getBytes();
+		byte[] theirs = contact.getAuthor().getId().getBytes();
+		return org.zerionproject.core.api.Bytes.compare(ours, theirs) < 0;
 	}
 
 	@Nullable
@@ -238,7 +295,8 @@ public class ZtpPoller implements EventListener {
 		} else if (e instanceof NetworkStatusEvent) {
 			boolean connected =
 					((NetworkStatusEvent) e).getStatus().isConnected();
-			if (connected) clearAllBackoff();
+			if (connected && recordConnectivity(true)) clearAllBackoff();
+			else if (!connected) recordConnectivity(false);
 			ioExecutor.execute(() -> transport.setNetworkEnabled(connected));
 		}
 	}

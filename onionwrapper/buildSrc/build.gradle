@@ -1,7 +1,0 @@
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    api 'org.briarproject:null-safety:0.1'
-}

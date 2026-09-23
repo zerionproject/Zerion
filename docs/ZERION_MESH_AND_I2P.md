@@ -357,7 +357,8 @@ direct connection:
 router.reseedSSLProxyEnable = true
 router.reseedSSLProxyType    = SOCKS5
 router.reseedSSLProxyHost    = 127.0.0.1
-router.reseedSSLProxyPort    = <Tor SOCKS port>
+router.reseedSSLProxyPort    = <authenticated loopback relay to Tor's Unix socket listener>
+router.reseedSSLProxy.authEnable = true (username zi2p-reseed, per-process secret)
 router.reseedSSLRequired     = true
 ```
 

@@ -73,6 +73,15 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 	private final PublicKey ephemeralPublicKey = getAgreementPublicKey();
 	private final byte[] mac = getRandomBytes(MAC_BYTES);
 	private final byte[] signature = getRandomBytes(MAX_SIGNATURE_BYTES);
+	private final byte[] mlDsaPubKey = getRandomBytes(
+			org.zerionproject.core.api.crypto.PostQuantumConstants
+					.ML_DSA_65_PUBLIC_KEY_BYTES);
+	private final byte[] mlKemPubKey = getRandomBytes(
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
+	private final byte[] kemCiphertext = getRandomBytes(
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_KEM_CIPHERTEXT_BYTES);
 
 	public MessageEncoderParserIntegrationTest() {
 		IntroductionIntegrationTestComponent component =
@@ -207,7 +216,8 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		Message m = messageEncoder
 				.encodeAcceptMessage(groupId, timestamp, previousMsgId,
 						sessionId, ephemeralPublicKey, acceptTimestamp,
-						transportProperties, null);
+						transportProperties, NO_AUTO_DELETE_TIMER, mlDsaPubKey,
+						mlKemPubKey);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
@@ -222,6 +232,8 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		assertEquals(acceptTimestamp, am.getAcceptTimestamp());
 		assertEquals(transportProperties, am.getTransportProperties());
 		assertEquals(NO_AUTO_DELETE_TIMER, am.getAutoDeleteTimer());
+		assertArrayEquals(mlDsaPubKey, am.getMlDsaPubKey());
+		assertArrayEquals(mlKemPubKey, am.getMlKemEphemeralPublicKey());
 	}
 
 	@Test
@@ -233,7 +245,7 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
 				previousMsgId, sessionId, ephemeralPublicKey,
 				acceptTimestamp, transportProperties, MAX_AUTO_DELETE_TIMER_MS,
-				null);
+				mlDsaPubKey, mlKemPubKey);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
@@ -259,7 +271,7 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
 				previousMsgId, sessionId, ephemeralPublicKey,
 				acceptTimestamp, transportProperties, NO_AUTO_DELETE_TIMER,
-				null);
+				mlDsaPubKey, mlKemPubKey);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AcceptMessage am =
 				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
@@ -329,7 +341,7 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 	public void testAuthMessage() throws Exception {
 		Message m = messageEncoder
 				.encodeAuthMessage(groupId, timestamp, previousMsgId,
-						sessionId, mac, signature);
+						sessionId, mac, signature, kemCiphertext);
 		validator.validateMessage(m, group, clientHelper.toList(m));
 		AuthMessage am =
 				messageParser.parseAuthMessage(m, clientHelper.toList(m));
@@ -341,7 +353,34 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		assertEquals(sessionId, am.getSessionId());
 		assertArrayEquals(mac, am.getMac());
 		assertArrayEquals(signature, am.getSignature());
+		assertArrayEquals(kemCiphertext, am.getKemCiphertext());
 		assertEquals(NO_AUTO_DELETE_TIMER, am.getAutoDeleteTimer());
+	}
+
+	/** PROTO-12: what an older or stripping peer sends is refused. */
+	@Test(expected = org.zerionproject.core.api.FormatException.class)
+	public void testAcceptMessageWithoutPqFieldsIsRefused() throws Exception {
+		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
+				previousMsgId, sessionId, ephemeralPublicKey, 1337L,
+				getTransportPropertiesMap(2), null);
+		validator.validateMessage(m, group, clientHelper.toList(m));
+	}
+
+	@Test(expected = org.zerionproject.core.api.FormatException.class)
+	public void testAcceptMessageWithoutMlKemKeyIsRefused() throws Exception {
+		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
+				previousMsgId, sessionId, ephemeralPublicKey, 1337L,
+				getTransportPropertiesMap(2), NO_AUTO_DELETE_TIMER,
+				mlDsaPubKey, null);
+		validator.validateMessage(m, group, clientHelper.toList(m));
+	}
+
+	@Test(expected = org.zerionproject.core.api.FormatException.class)
+	public void testAuthMessageWithoutKemCiphertextIsRefused()
+			throws Exception {
+		Message m = messageEncoder.encodeAuthMessage(groupId, timestamp,
+				previousMsgId, sessionId, mac, signature);
+		validator.validateMessage(m, group, clientHelper.toList(m));
 	}
 
 	@Test

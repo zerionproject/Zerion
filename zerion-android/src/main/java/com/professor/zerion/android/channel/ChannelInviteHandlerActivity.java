@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -71,7 +71,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		if (link.requiresApproval()) {
 			showApplyDialog(link);
 		} else {
-			new MaterialAlertDialogBuilder(this)
+			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.channels_join_title)
 					.setMessage(data.toString())
 					.setCancelable(false)
@@ -88,7 +88,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				R.layout.dialog_apply_to_join, null);
 		TextInputEditText nameInput =
 				view.findViewById(R.id.channelApplyNameInput);
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_apply_title)
 				.setView(view)
 				.setCancelable(false)

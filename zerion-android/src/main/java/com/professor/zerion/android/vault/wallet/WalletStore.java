@@ -95,32 +95,11 @@ public class WalletStore
 		return Access.NO_PASSWORD;
 	}
 
-	public String loadMnemonic(String walletId, @Nullable char[] password)
-			throws Exception {
-		boolean walletProtected = vaultManager.itemHasExtraPassword(walletId);
-		Access access = accessFor(walletProtected, password);
-		if (access == Access.REJECT) {
-			throw new SecurityException("Wallet password required");
-		}
-		byte[] content = access == Access.WITH_PASSWORD
-				? vaultManager.getItemContentWithPassword(walletId, password)
-				: vaultManager.getItemContent(walletId);
-		try {
-			if (content.length < 1) {
-				throw new IllegalStateException("Empty wallet content");
-			}
-			return new String(content, 1, content.length - 1,
-					StandardCharsets.UTF_8);
-		} finally {
-			SecureMemory.shred(content);
-		}
-	}
-
 	/**
-	 * Same fail-closed decrypt as {@link #loadMnemonic} but returns the secret
-	 * as a mutable {@code char[]} the caller must wipe, so no immutable String
-	 * copy of the mnemonic is created. Used by the XMR layer; the BTC path is
-	 * unchanged.
+	 * Decrypts the wallet secret, failing closed when a wallet password is
+	 * required and absent, and returns it as a mutable {@code char[]} the
+	 * caller must wipe. No immutable String copy of the mnemonic is created
+	 * on any wallet path.
 	 */
 	public char[] loadMnemonicChars(String walletId, @Nullable char[] password)
 			throws Exception {
@@ -150,6 +129,55 @@ public class WalletStore
 
 	public void deleteWallet(String walletId) throws Exception {
 		vaultManager.deleteItem(walletId);
+	}
+
+	private static final String SECRET_CODE = "SEC";
+
+	private static String secretName(String walletId, String name) {
+		return SECRET_CODE + NAME_SEP + walletId + NAME_SEP + name;
+	}
+
+	@Override
+	@Nullable
+	public byte[] readWalletSecret(String walletId, String name)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				return vaultManager.getItemContent(item.id);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public void writeWalletSecret(String walletId, String name, byte[] value)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		List<VaultItem> stale = new ArrayList<>();
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				stale.add(item);
+			}
+		}
+		vaultManager.addItem(VaultItem.ItemType.WALLET, wanted, value);
+		for (VaultItem item : stale) {
+			vaultManager.deleteItem(item.id);
+		}
+	}
+
+	@Override
+	public void removeWalletSecret(String walletId, String name)
+			throws Exception {
+		String wanted = secretName(walletId, name);
+		for (VaultItem item : vaultManager.listItems()) {
+			if (item.type == VaultItem.ItemType.WALLET
+					&& wanted.equals(item.name)) {
+				vaultManager.deleteItem(item.id);
+			}
+		}
 	}
 
 	private static final String CONFIG_CODE = "CFG";
@@ -190,6 +218,19 @@ public class WalletStore
 	}
 
 	@Nullable
+	/** Reads the settings without counting the read as user activity. */
+	public String readSettingsQuiet() throws Exception {
+		return vaultManager.withoutActivityRefresh(this::readSettings);
+	}
+
+	/** Writes the settings without counting the write as user activity. */
+	public void writeSettingsQuiet(String json) throws Exception {
+		vaultManager.withoutActivityRefresh(() -> {
+			writeSettings(json);
+			return null;
+		});
+	}
+
 	public String readSettings() throws Exception {
 		synchronized (settingsLock) {
 			VaultItem newest = null;

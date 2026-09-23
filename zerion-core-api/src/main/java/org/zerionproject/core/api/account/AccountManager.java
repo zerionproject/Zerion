@@ -21,7 +21,26 @@ public interface AccountManager {
 
 	void deleteAccount();
 
+	/**
+	 * Removes the encrypted database key files of the active account and
+	 * forgets the loaded key, leaving the database unreadable even to the
+	 * holder of the password, while the rest of the account is still being
+	 * shut down and deleted. A panic purge calls this first so the window
+	 * between the trigger and the end of the graceful shutdown holds no
+	 * usable copy of the data.
+	 */
+	void shredDatabaseKey();
+
 	void signIn(char[] password) throws DecryptionException;
+
+	/**
+	 * Milliseconds until the next sign-in attempt is accepted, or zero. The
+	 * lockout is kept on a monotonic clock and survives a restart.
+	 */
+	long signInLockoutRemainingMs();
+
+	/** Consecutive failed sign-in attempts still counted against the account. */
+	int failedSignInAttempts();
 
 	void changePassword(char[] oldPassword, char[] newPassword)
 			throws DecryptionException;

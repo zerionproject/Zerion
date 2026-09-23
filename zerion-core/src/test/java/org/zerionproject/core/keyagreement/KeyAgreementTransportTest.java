@@ -174,7 +174,8 @@ public class KeyAgreementTransportTest extends BrambleMockTestCase {
 			will(returnValue(transportConnectionReader));
 			allowing(transportConnectionReader).getInputStream();
 			will(returnValue(inputStream));
-			oneOf(recordReaderFactory).createRecordReader(inputStream);
+			oneOf(recordReaderFactory).createRecordReader(inputStream,
+					KeyAgreementTransport.MAX_RECORD_PAYLOAD_BYTES);
 			will(returnValue(recordReader));
 			allowing(duplexTransportConnection).getWriter();
 			will(returnValue(transportConnectionWriter));

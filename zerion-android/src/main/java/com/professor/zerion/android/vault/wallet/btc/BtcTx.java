@@ -45,12 +45,66 @@ public final class BtcTx {
 	}
 
 	private static final long RBF_SEQUENCE = 0xfffffffdL;
+	private static final java.security.SecureRandom AUX_RANDOM =
+			new java.security.SecureRandom();
 
 	private BtcTx() {
 	}
 
 	public static int estimateVBytes(int numInputs, int numOutputs) {
 		return 11 + numInputs * 68 + numOutputs * 31;
+	}
+
+	/** The size of the wallet's own change output, which is always P2WPKH. */
+	public static final int CHANGE_OUTPUT_VBYTES = 31;
+
+	/**
+	 * Size estimate for a transaction spending P2WPKH inputs to the given
+	 * outputs, sized by the script type of each destination.
+	 */
+	public static int estimateVBytes(int numInputs, List<Output> outputs) {
+		int size = 11 + numInputs * 68;
+		for (Output o : outputs) size += outputVBytes(o.address);
+		return size;
+	}
+
+	/**
+	 * The virtual size of an output paying the address, by its script type:
+	 * 34 for P2PKH, 32 for P2SH, 31 for P2WPKH, 43 for P2WSH and P2TR. An
+	 * address whose type is not recognised is sized as the largest, so a
+	 * fee is never estimated below what the destination costs.
+	 */
+	public static int outputVBytes(String address) {
+		Script.ScriptType type = scriptTypeOf(address);
+		if (type == Script.ScriptType.P2PKH) return 34;
+		if (type == Script.ScriptType.P2SH) return 32;
+		if (type == Script.ScriptType.P2WPKH) return 31;
+		return 43;
+	}
+
+	/**
+	 * The value at or below which an output to the address is dust for the
+	 * network's default relay policy: 546 sat for P2PKH, 540 for P2SH, 294
+	 * for P2WPKH and 330 for P2WSH and P2TR. An unrecognised type takes the
+	 * highest threshold.
+	 */
+	public static long dustThresholdSat(String address) {
+		Script.ScriptType type = scriptTypeOf(address);
+		if (type == Script.ScriptType.P2WPKH) return 294L;
+		if (type == Script.ScriptType.P2WSH
+				|| type == Script.ScriptType.P2TR) return 330L;
+		if (type == Script.ScriptType.P2SH) return 540L;
+		return 546L;
+	}
+
+	@javax.annotation.Nullable
+	private static Script.ScriptType scriptTypeOf(String address) {
+		try {
+			return Address.fromString(BtcKeys.PARAMS, address.trim())
+					.getOutputScriptType();
+		} catch (RuntimeException unknownType) {
+			return null;
+		}
 	}
 
 	public static String buildAndSign(List<Input> inputs, List<Output> outputs) {
@@ -167,8 +221,10 @@ public final class BtcTx {
 		}
 		for (int i = 0; i < inputs.size(); i++) {
 			byte[] sighash = TaprootSign.keyPathSigHash(tx, prevouts, i, 0);
+			byte[] aux = new byte[32];
+			AUX_RANDOM.nextBytes(aux);
 			byte[] sig = TaprootSign.schnorrSign(inputs.get(i).privKey, sighash,
-					new byte[32]);
+					aux);
 			byte[] spk = inputs.get(i).scriptPubKey;
 			byte[] xonly = java.util.Arrays.copyOfRange(spk, 2, 34);
 			if (!TaprootSign.schnorrVerify(xonly, sighash, sig)) {

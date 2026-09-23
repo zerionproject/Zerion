@@ -372,7 +372,9 @@ class CryptoComponentImpl implements CryptoComponent {
 				key = keyStrengthener.strengthenKey(kdfKey);
 				strengthened = true;
 			} catch (RuntimeException e) {
-				key = kdfKey;
+				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
+				throw new org.zerionproject.core.api.crypto
+						.KeyStrengthenerException(e);
 			}
 		}
 		byte[] iv = new byte[STORAGE_IV_BYTES];
@@ -403,6 +405,17 @@ class CryptoComponentImpl implements CryptoComponent {
 				java.util.Arrays.fill(key.getBytes(), (byte) 0);
 			}
 		}
+	}
+
+	/**
+	 * The legacy scrypt formats carry the cost in the ciphertext. A cost
+	 * that is not a power of two within the range the derivation ever wrote
+	 * is a tampered or corrupt file, and would otherwise reach the library
+	 * as an unchecked argument error or an allocation of arbitrary size.
+	 */
+	static boolean validScryptCost(long cost) {
+		return cost >= ScryptKdf.MIN_COST && cost <= ScryptKdf.MAX_COST
+				&& (cost & (cost - 1)) == 0;
 	}
 
 	@Override
@@ -438,8 +451,16 @@ class CryptoComponentImpl implements CryptoComponent {
 		boolean isArgon2id =
 				formatVersion == PBKDF_FORMAT_ARGON2ID ||
 				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+		if (!isArgon2id && !validScryptCost(cost)) {
+			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
 		PasswordBasedKdf kdf = isArgon2id ? argon2idKdf : scryptKdf;
-		SecretKey kdfKey = kdf.deriveKey(password, salt, (int) cost);
+		SecretKey kdfKey;
+		try {
+			kdfKey = kdf.deriveKey(password, salt, (int) cost);
+		} catch (RuntimeException e) {
+			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
 		SecretKey key = kdfKey;
 		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED ||
 				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
@@ -646,6 +667,31 @@ class CryptoComponentImpl implements CryptoComponent {
 				(HybridAgreementPublicKey) theirStaticPublicKey,
 				(HybridAgreementPublicKey) theirEphemeralPublicKey,
 				ourStaticKeyPair, ourEphemeralKeyPair, kemSecret, inputs);
+	}
+
+	@Override
+	public byte[] hybridDecapsulate(KeyPair ourKeyPair, byte[] kemCiphertext)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(ourKeyPair.getPublic());
+		return hybridKeyAgreement.decapsulate(ourKeyPair, kemCiphertext);
+	}
+
+	@Override
+	public SecretKey deriveHybridSharedSecretPqAuth(String label,
+			PublicKey theirStaticPublicKey, PublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair, KeyPair ourEphemeralKeyPair,
+			byte[] ephemeralKemSecret, byte[] kemSecretToAlice,
+			byte[] kemSecretToBob, byte[]... inputs)
+			throws GeneralSecurityException {
+		requireHybridAgreementKey(theirStaticPublicKey);
+		requireHybridAgreementKey(theirEphemeralPublicKey);
+		requireHybridAgreementKey(ourStaticKeyPair.getPublic());
+		requireHybridAgreementKey(ourEphemeralKeyPair.getPublic());
+		return hybridKeyAgreement.deriveSharedSecretPqAuth(label,
+				(HybridAgreementPublicKey) theirStaticPublicKey,
+				(HybridAgreementPublicKey) theirEphemeralPublicKey,
+				ourStaticKeyPair, ourEphemeralKeyPair, ephemeralKemSecret,
+				kemSecretToAlice, kemSecretToBob, inputs);
 	}
 
 	private byte[] createLabeledMessage(String label, byte[] message) {

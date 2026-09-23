@@ -8,6 +8,16 @@ import java.util.UUID;
  * The rotating BLE discovery identity used by the offline mesh: a service UUID
  * derived from a shared secret and a 10-minute epoch, plus the session-nonce
  * tie-break that decides which of two peers dials out. Stateless.
+ *
+ * <p>The secret is a constant shipped in the app, and deliberately so: the
+ * mesh is an open store-and-forward network in which every participant
+ * relays for every other, so every participant must be able to find every
+ * other, contacts and strangers alike. The rotation keeps the advertised
+ * UUID from being a fixed beacon, and the secret keeps the mesh invisible to
+ * scanners that do not carry the app; it cannot and does not hide from
+ * someone who has the app that a mesh participant is nearby, which is the
+ * price of the mesh being open and the reason it is off by default. The
+ * UUID is the same for every participant and identifies none of them.
  */
 final class MeshDiscovery {
 

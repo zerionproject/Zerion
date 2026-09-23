@@ -61,11 +61,6 @@ public class PreferencesMigration {
 			editor.putInt("autolock_timeout", autolockTimeout);
 		}
 
-		if (oldPrefs.contains("biometric_enabled")) {
-			boolean biometricEnabled = oldPrefs.getBoolean("biometric_enabled", false);
-			editor.putBoolean("biometric_enabled", biometricEnabled);
-		}
-
 		if (oldPrefs.contains("clipboard_clear_enabled")) {
 			boolean clipboardClearEnabled = oldPrefs.getBoolean("clipboard_clear_enabled", true);
 			editor.putBoolean("clipboard_clear_enabled", clipboardClearEnabled);

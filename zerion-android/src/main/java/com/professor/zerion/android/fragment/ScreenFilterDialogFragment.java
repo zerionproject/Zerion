@@ -14,6 +14,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.BaseActivity;
@@ -76,7 +77,7 @@ public class ScreenFilterDialogFragment extends DialogFragment {
 	public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
 		Activity activity = getActivity();
 		if (activity == null) throw new IllegalStateException();
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 				activity, R.style.ZerionDialogThemeNoFilter);
 		builder.setTitle(R.string.screen_filter_title);
 		Bundle args = getArguments();

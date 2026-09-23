@@ -84,7 +84,7 @@ public class VaultViewModel extends AndroidViewModel {
 	private final MutableLiveData<double[]> btcFeeOptions = new MutableLiveData<>();
 	private final MutableLiveData<com.professor.zerion.android.vault.wallet.btc
 			.BtcPrice.Rates> btcRates = new MutableLiveData<>();
-	private final MutableLiveData<String> walletSeedReveal = new MutableLiveData<>();
+	private final MutableLiveData<char[]> walletSeedReveal = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> walletGateGranted = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> walletGateBusy = new MutableLiveData<>(false);
 	private final MutableLiveData<String> walletAuthState = new MutableLiveData<>();
@@ -103,12 +103,12 @@ public class VaultViewModel extends AndroidViewModel {
 	@Inject
 	public VaultViewModel(Application application, VaultManager vaultManager,
 			@DatabaseExecutor Executor dbExecutor, WalletStore walletStore,
-			@TorSocksPort int torSocksPort) {
+			com.professor.zerion.android.vault.net.TorSocksGate torGate) {
 		super(application);
 		this.vaultManager = vaultManager;
 		this.dbExecutor = dbExecutor;
 		this.walletStore = walletStore;
-		this.torSocksPort = torSocksPort;
+		this.torSocksPort = torGate.port();
 		vaultManager.setOnLockListener(() -> {
 			resetWalletSession();
 			vaultState.postValue(VaultState.LOCKED);
@@ -188,7 +188,7 @@ public class VaultViewModel extends AndroidViewModel {
 				mnemonic = generateMnemonic();
 				walletStore.createWallet(WalletCoin.BTC, name, mnemonic, password);
 				postBtcWallets();
-				walletSeedReveal.postValue(new String(mnemonic));
+				walletSeedReveal.postValue(mnemonic.clone());
 			} catch (Throwable e) {
 				walletError.postValue(new Event<>(
 						getApplication().getString(R.string.wallet_create_failed)));
@@ -209,9 +209,8 @@ public class VaultViewModel extends AndroidViewModel {
 		walletBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				List<String> words = Arrays.asList(
-						new String(mnemonic).trim().split("\\s+"));
-				new MnemonicCode().check(words);
+				com.professor.zerion.android.vault.wallet.btc.Bip39Seed
+						.check(mnemonic);
 				walletStore.createWallet(WalletCoin.BTC, name, mnemonic, password);
 				postBtcWallets();
 			} catch (Throwable e) {
@@ -345,6 +344,35 @@ public class VaultViewModel extends AndroidViewModel {
 		return 0;
 	}
 
+	private int readChangeIndex(String walletId) {
+		try {
+			org.json.JSONObject chg = settingsObject().optJSONObject("chg");
+			if (chg != null) {
+				return Math.max(0, chg.optInt(walletId, 0));
+			}
+		} catch (Throwable ignored) {
+		}
+		return 0;
+	}
+
+	private void persistChangeIndex(String walletId, int index) {
+		try {
+			synchronized (walletStore.settingsLock) {
+				org.json.JSONObject o = settingsObject();
+				org.json.JSONObject chg = o.optJSONObject("chg");
+				if (chg == null) {
+					chg = new org.json.JSONObject();
+				}
+				if (index > chg.optInt(walletId, 0)) {
+					chg.put(walletId, index);
+					o.put("chg", chg);
+					walletStore.writeSettings(o.toString());
+				}
+			}
+		} catch (Throwable ignored) {
+		}
+	}
+
 	private void persistReceiveIndex(String walletId, int index) {
 		try {
 			synchronized (walletStore.settingsLock) {
@@ -468,8 +496,10 @@ public class VaultViewModel extends AndroidViewModel {
 					walletPinPrompt.postValue(node + "|none");
 					return;
 				}
-				String fp = ElectrumClient.captureCertSha256(ep, torSocksPort);
-				walletPinPrompt.postValue(node + "|" + fp);
+				ElectrumClient.CapturedCert cert =
+						ElectrumClient.captureCert(ep, torSocksPort);
+				walletPinPrompt.postValue(node + "|"
+						+ (cert.caValid ? "ca" : "self") + "|" + cert.sha256);
 			} catch (Throwable e) {
 				walletPinPrompt.postValue(node + "|error");
 			}
@@ -552,25 +582,26 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 			broadcastEndpointFor(
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scan) {
+			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scan,
+			String routing) {
 		try {
 			String json = walletStore.readSettings();
 			if (json != null) {
 				org.json.JSONObject o = new org.json.JSONObject(json);
-				String selected = o.optString("node", preferredDefaultNode());
-				java.util.List<String> candidates = new java.util.ArrayList<>();
-				candidates.add(preferredDefaultNode());
+				String selected = normalizeNode(
+						o.optString("node", preferredDefaultNode()));
+				java.util.List<String> userNodes = new java.util.ArrayList<>();
 				org.json.JSONArray arr = o.optJSONArray("nodes");
 				if (arr != null) {
 					for (int i = 0; i < arr.length(); i++) {
-						candidates.add(arr.getString(i));
+						userNodes.add(arr.getString(i));
 					}
 				}
-				for (String n : candidates) {
-					if (!n.equals(selected)) {
-						return endpointFromNodeString(n);
-					}
-				}
+				String chosen = com.professor.zerion.android.vault.wallet.btc
+						.BroadcastRouting.chooseBroadcastNode(selected,
+								preferredDefaultNode(), userNodes, routing);
+				if (chosen.equals(selected)) return scan;
+				return endpointFromNodeString(chosen);
 			}
 		} catch (Throwable ignored) {
 		}
@@ -715,10 +746,11 @@ public class VaultViewModel extends AndroidViewModel {
 	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 			routedBroadcastEndpoint(String walletId,
 			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scanEp) {
-		if (ROUTING_DIRECT.equals(readWalletRouting(walletId))) {
+		String routing = readWalletRouting(walletId);
+		if (ROUTING_DIRECT.equals(routing)) {
 			return scanEp;
 		}
-		return broadcastEndpointFor(scanEp);
+		return broadcastEndpointFor(scanEp, routing);
 	}
 
 	private java.util.List<com.professor.zerion.android.vault.wallet.btc
@@ -767,7 +799,8 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				try (ElectrumClient c = new ElectrumClient(
 						endpointFromNodeString(node), torSocksPort,
-						"nodecheck")) {
+						com.professor.zerion.android.vault.wallet.btc
+								.TorIsolation.ephemeral("nodecheck"))) {
 					ok = c.blockHeight() > 0;
 				}
 			} catch (Throwable ignored) {
@@ -931,6 +964,11 @@ public class VaultViewModel extends AndroidViewModel {
 		if (id == null) {
 			return;
 		}
+		if (oracle.trim().regionMatches(true, 0, "http://", 0, 7)) {
+			walletError.postValue(new Event<>(getApplication()
+					.getString(R.string.wallet_sp_oracle_https)));
+			return;
+		}
 		WALLET_EXECUTOR.execute(() -> {
 			try {
 				mutateWalletPrivacy(id, w -> {
@@ -997,7 +1035,62 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	public void sweepSp(String toAddress, double feeRate, char[] credential) {
+	public static final class SpSweepReview {
+		public final String toAddress;
+		public final long amountSat;
+		public final long feeSat;
+		public final int inputCount;
+		public final String fingerprint;
+
+		SpSweepReview(BtcWallet.SpSweepPlan p) {
+			this.toAddress = p.toAddress;
+			this.amountSat = p.amountSat;
+			this.feeSat = p.feeSat;
+			this.inputCount = p.outpoints.size();
+			this.fingerprint = p.fingerprint;
+		}
+	}
+
+	private final com.professor.zerion.android.vault.wallet.btc.SpSweepGate
+			spSweepGate =
+			new com.professor.zerion.android.vault.wallet.btc.SpSweepGate();
+	private final MutableLiveData<Event<SpSweepReview>> spSweepReview =
+			new MutableLiveData<>();
+
+	public LiveData<Event<SpSweepReview>> getSpSweepReview() {
+		return spSweepReview;
+	}
+
+	/**
+	 * Plans the sweep and hands the destination, amount and fee to the user
+	 * for review; nothing is signed until {@link #authorizeSpSweep} receives
+	 * the credential together with the reviewed fingerprint.
+	 */
+	public void prepareSpSweep(String toAddress, double feeRate) {
+		BtcWallet w = openBtc;
+		if (w == null) return;
+		spBusy.postValue(true);
+		WALLET_EXECUTOR.execute(() -> {
+			try {
+				BtcWallet.SpSweepPlan plan = w.planSweepSilentPayments(
+						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
+				spSweepGate.prepare(plan, w.walletId());
+				spSweepReview.postValue(new Event<>(new SpSweepReview(plan)));
+			} catch (Throwable e) {
+				walletError.postValue(new Event<>(e.getMessage() != null
+						? e.getMessage()
+						: getApplication().getString(R.string.wallet_send_failed)));
+			} finally {
+				spBusy.postValue(false);
+			}
+		});
+	}
+
+	public void cancelSpSweep() {
+		WALLET_EXECUTOR.execute(spSweepGate::clear);
+	}
+
+	public void authorizeSpSweep(char[] credential, String reviewedFingerprint) {
 		if (!sending.compareAndSet(false, true)) {
 			SecureMemory.shred(credential);
 			return;
@@ -1011,14 +1104,25 @@ public class VaultViewModel extends AndroidViewModel {
 		spBusy.postValue(true);
 		WALLET_EXECUTOR.execute(() -> {
 			try {
-				if (!verifyWalletCredential(credential)) {
+				boolean authed = verifyWalletCredential(credential);
+				BtcWallet.SpSweepPlan plan;
+				try {
+					plan = spSweepGate.authorize(reviewedFingerprint, authed,
+							w.walletId());
+				} catch (com.professor.zerion.android.vault.wallet.btc.SendGate
+						.AuthorizationException e) {
 					walletError.postValue(new Event<>(getApplication()
 							.getString(R.string.wallet_auth_send_failed)));
 					return;
 				}
+				if (!walletSessionValid()) {
+					spSweepGate.clear();
+					walletError.postValue(new Event<>(getApplication()
+							.getString(R.string.wallet_send_failed)));
+					return;
+				}
 				String id = currentWalletId;
-				String txid = w.sweepSilentPayments(
-						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
+				String txid = w.signSpSweep(plan);
 				spUtxos.clear();
 				if (id != null) {
 					mutateWalletPrivacy(id, wp ->
@@ -1140,11 +1244,6 @@ public class VaultViewModel extends AndroidViewModel {
 		walletGateBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				if (vaultManager.verifyMasterPassword(credential)) {
-					walletError.postValue(new Event<>(getApplication().getString(
-							R.string.wallet_auth_same_as_vault)));
-					return;
-				}
 				byte[] salt = new byte[16];
 				new SecureRandom().nextBytes(salt);
 				int iter = 120_000;
@@ -1182,51 +1281,62 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	private volatile int walletGateFailures = 0;
-	private volatile long walletGateBackoffUntil = 0;
+	private final com.professor.zerion.android.vault.wallet.btc
+			.WalletCredentialThrottle credentialThrottle =
+			new com.professor.zerion.android.vault.wallet.btc
+					.WalletCredentialThrottle(
+					android.os.SystemClock::elapsedRealtime);
+	private volatile boolean credentialFailuresRestored = false;
+
+	private static final String KEY_AUTH_FAILURES = "authFailures";
 
 	public void verifyWalletAuth(char[] credential) {
 		walletGateBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
-			if (System.currentTimeMillis() < walletGateBackoffUntil) {
-				SecureMemory.shred(credential);
-				walletError.postValue(new Event<>(getApplication().getString(
-						R.string.wallet_auth_too_many)));
-				walletGateGranted.postValue(false);
-				walletGateBusy.postValue(false);
-				return;
-			}
-			boolean ok = false;
-			try {
-				org.json.JSONObject o = settingsObject();
-				byte[] salt = android.util.Base64.decode(
-						o.getString("authSalt"), android.util.Base64.NO_WRAP);
-				int iter = o.getInt("authIter");
-				byte[] expected = android.util.Base64.decode(
-						o.getString("authHash"), android.util.Base64.NO_WRAP);
-				byte[] hash = pbkdf2(credential, salt, iter, expected.length);
-				ok = java.security.MessageDigest.isEqual(hash, expected);
-			} catch (Throwable ignored) {
-			} finally {
-				SecureMemory.shred(credential);
-			}
+			boolean ok = verifyWalletCredential(credential);
 			if (ok) {
-				walletGateFailures = 0;
-				walletGateBackoffUntil = 0;
 				walletSectionUnlocked = true;
 				walletAuthGeneration = vaultManager.getLockGeneration();
-			} else {
-				walletGateFailures++;
-				if (walletGateFailures >= 3) {
-					long delay = Math.min(300_000L,
-							1000L << Math.min(walletGateFailures - 3, 8));
-					walletGateBackoffUntil =
-							System.currentTimeMillis() + delay;
-				}
+			} else if (credentialThrottle.isThrottled()) {
+				walletError.postValue(new Event<>(getApplication().getString(
+						R.string.wallet_auth_too_many)));
 			}
 			walletGateGranted.postValue(ok);
 			walletGateBusy.postValue(false);
 		});
+	}
+
+	/**
+	 * Settings read for a credential check: it must not refresh the vault's
+	 * inactivity timer, otherwise a guessing run would keep the vault open.
+	 */
+	private org.json.JSONObject settingsObjectQuiet() throws Exception {
+		String json = walletStore.readSettingsQuiet();
+		return json == null ? new org.json.JSONObject()
+				: new org.json.JSONObject(json);
+	}
+
+	private void restoreCredentialFailures() {
+		if (credentialFailuresRestored) return;
+		try {
+			credentialThrottle.restoreFailures(
+					settingsObjectQuiet().optInt(KEY_AUTH_FAILURES, 0));
+		} catch (Throwable ignored) {
+		}
+		credentialFailuresRestored = true;
+	}
+
+	private void persistCredentialFailures(int failures) {
+		try {
+			synchronized (walletStore.settingsLock) {
+				org.json.JSONObject o = settingsObjectQuiet();
+				if (o.optInt(KEY_AUTH_FAILURES, 0) != failures) {
+					o.put(KEY_AUTH_FAILURES, failures);
+					walletStore.writeSettingsQuiet(o.toString());
+				}
+			}
+		} catch (Throwable ignored) {
+		}
 	}
 
 	private org.json.JSONObject settingsObject() throws Exception {
@@ -1557,8 +1667,9 @@ public class VaultViewModel extends AndroidViewModel {
 									continue;
 								}
 								String st = r.optString("state");
-								boolean resolved = "sent".equals(st)
-										|| "failed".equals(st);
+								boolean resolved = com.professor.zerion.android
+										.vault.wallet.btc.PendingTx.SETTLED
+										.equals(st) || "failed".equals(st);
 								if (resolved && r.optLong("createdAt") < cutoff) {
 									continue;
 								}
@@ -1642,7 +1753,11 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	public LiveData<String> getWalletSeedReveal() {
+	/**
+	 * The phrase is handed to the screen as characters the dialog wipes on
+	 * dismissal; no String copy of a mnemonic is created on this path.
+	 */
+	public LiveData<char[]> getWalletSeedReveal() {
 		return walletSeedReveal;
 	}
 
@@ -1652,14 +1767,18 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void revealSeed(String walletId, char[] password) {
 		CRYPTO_EXECUTOR.execute(() -> {
+			char[] mnemonic = null;
 			try {
-				String mnemonic = walletStore.loadMnemonic(walletId, password);
-				walletSeedReveal.postValue(mnemonic);
+				mnemonic = walletStore.loadMnemonicChars(walletId, password);
+				walletSeedReveal.postValue(mnemonic.clone());
 			} catch (Exception e) {
 				walletError.postValue(new Event<>(getApplication().getString(
 						isWrongPassword(e) ? R.string.wallet_wrong_password
 								: R.string.wallet_open_failed)));
 			} finally {
+				if (mnemonic != null) {
+					SecureMemory.shred(mnemonic);
+				}
 				if (password != null) {
 					SecureMemory.shred(password);
 				}
@@ -1765,19 +1884,21 @@ public class VaultViewModel extends AndroidViewModel {
 	public void openBtcWallet(String walletId, @Nullable char[] password) {
 		walletBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
-			String mnemonic = null;
+			char[] mnemonic = null;
 			try {
 				if (!walletSessionValid()) {
 					walletBusy.postValue(false);
 					return;
 				}
-				mnemonic = walletStore.loadMnemonic(walletId, password);
+				mnemonic = walletStore.loadMnemonicChars(walletId, password);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 						scanEp = routedScanEndpoint(walletId);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
 						bcastEp = routedBroadcastEndpoint(walletId, scanEp);
 				BtcWallet w = new BtcWallet(mnemonic, 0, torSocksPort,
 						scanEp, bcastEp, walletId);
+				SecureMemory.shred(mnemonic);
+				mnemonic = null;
 				w.setPendingLog(pendingLogFor(walletId));
 				w.setPrivacyStore(privacyStoreFor(walletId));
 				boolean epm = isExtremeMode(walletId);
@@ -1793,14 +1914,18 @@ public class VaultViewModel extends AndroidViewModel {
 				w.setFallbacks(fbs, fbs);
 				int persistedIndex = readReceiveIndex(walletId);
 				w.setMinReceiveProbe(persistedIndex);
+				w.setMinChangeProbe(readChangeIndex(walletId));
 				String firstAddr = w.receiveAddressAt(persistedIndex);
 
 				if (!walletSessionValid()) {
+					w.close();
 					walletBusy.postValue(false);
 					return;
 				}
-				sendGate.clear();
+				dropReviewedPlans();
+				BtcWallet previous = openBtc;
 				openBtc = w;
+				if (previous != null && previous != w) previous.close();
 				currentWalletId = walletId;
 				lastTxids = null;
 				lastSummaries = null;
@@ -1817,6 +1942,9 @@ public class VaultViewModel extends AndroidViewModel {
 								: R.string.wallet_open_failed)));
 				walletBusy.postValue(false);
 			} finally {
+				if (mnemonic != null) {
+					SecureMemory.shred(mnemonic);
+				}
 				if (password != null) {
 					SecureMemory.shred(password);
 				}
@@ -1839,11 +1967,24 @@ public class VaultViewModel extends AndroidViewModel {
 		WALLET_EXECUTOR.execute(() -> scanOpenBtc(false));
 	}
 
+	/**
+	 * Drops every reviewed plan. Called wherever the send gate was already
+	 * cleared: a failed credential, a section relock, a wallet close. The
+	 * sweep plan carries spend-capable keys, so it must not outlive any of
+	 * those events either.
+	 */
+	void dropReviewedPlans() {
+		sendGate.clear();
+		spSweepGate.clear();
+	}
+
 	public void closeBtcWallet() {
 		scanEpoch++;
-		sendGate.clear();
+		dropReviewedPlans();
 		spUtxos.clear();
+		BtcWallet previous = openBtc;
 		openBtc = null;
+		if (previous != null) previous.close();
 		currentWalletId = null;
 		lastTxids = null;
 		lastSummaries = null;
@@ -1886,6 +2027,8 @@ public class VaultViewModel extends AndroidViewModel {
 		public final long feeSat;
 		public final boolean sweep;
 		public final String fingerprint;
+		public final double feeRateSatPerVb;
+		public final int feePercentOfAmount;
 		public final com.professor.zerion.android.vault.wallet.btc.privacy
 				.PrivacyAnalyzer.Analysis analysis;
 
@@ -1897,6 +2040,8 @@ public class VaultViewModel extends AndroidViewModel {
 			this.feeSat = p.feeSat;
 			this.sweep = p.sweep;
 			this.fingerprint = p.fingerprint;
+			this.feeRateSatPerVb = p.feeRateSatPerVb();
+			this.feePercentOfAmount = p.feePercentOfAmount();
 			this.analysis = analysis;
 		}
 	}
@@ -1953,7 +2098,7 @@ public class VaultViewModel extends AndroidViewModel {
 						walletPreparing.postValue(false);
 					}
 				}
-				sendGate.prepare(plan);
+				sendGate.prepare(plan, w.walletId());
 				walletSendReview.postValue(new Event<>(
 						new SendReview(plan, w.analyzePlan(plan))));
 			} catch (com.professor.zerion.android.vault.wallet.btc.privacy
@@ -1983,8 +2128,9 @@ public class VaultViewModel extends AndroidViewModel {
 			BtcWallet.SendPlan plan = null;
 			try {
 				boolean authed = verifyWalletCredential(credential);
-				plan = sendGate.authorize(reviewedFingerprint, authed);
 				BtcWallet w = openBtc;
+				plan = sendGate.authorize(reviewedFingerprint, authed,
+						w == null ? null : w.walletId());
 				if (w == null) {
 					walletError.postValue(new Event<>(getApplication()
 							.getString(R.string.wallet_open_failed)));
@@ -1998,6 +2144,7 @@ public class VaultViewModel extends AndroidViewModel {
 					return;
 				}
 				String txid = w.signPlan(plan);
+				persistChangeIndex(w.walletId(), w.minChangeProbe());
 				w.invalidateCachedScan();
 				btcTxid.postValue(new Event<>(txid));
 				postLocalTxState(w, plan.netSat);
@@ -2011,6 +2158,7 @@ public class VaultViewModel extends AndroidViewModel {
 					.BroadcastUncertainException e) {
 				BtcWallet w = openBtc;
 				if (w != null && plan != null) {
+					persistChangeIndex(w.walletId(), w.minChangeProbe());
 					w.invalidateCachedScan();
 					postLocalTxState(w, plan.netSat);
 				}
@@ -2173,10 +2321,21 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	private boolean verifyWalletCredential(char[] credential) {
+	/**
+	 * The one credential check behind the section gate and every
+	 * transaction authorisation. A wrong credential counts against the shared
+	 * throttle, drops any reviewed transaction, and after three failures locks
+	 * the wallet section again; the check itself never counts as activity.
+	 */
+	private synchronized boolean verifyWalletCredential(char[] credential) {
+		restoreCredentialFailures();
+		if (credentialThrottle.isThrottled()) {
+			SecureMemory.shred(credential);
+			return false;
+		}
 		boolean ok = false;
 		try {
-			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject o = settingsObjectQuiet();
 			byte[] salt = android.util.Base64.decode(
 					o.getString("authSalt"), android.util.Base64.NO_WRAP);
 			int iter = o.getInt("authIter");
@@ -2187,6 +2346,15 @@ public class VaultViewModel extends AndroidViewModel {
 		} catch (Throwable ignored) {
 		} finally {
 			SecureMemory.shred(credential);
+		}
+		if (ok) {
+			credentialThrottle.recordSuccess();
+			persistCredentialFailures(0);
+		} else {
+			boolean relock = credentialThrottle.recordFailure();
+			persistCredentialFailures(credentialThrottle.failures());
+			dropReviewedPlans();
+			if (relock) resetWalletSession();
 		}
 		return ok;
 	}
@@ -2210,22 +2378,34 @@ public class VaultViewModel extends AndroidViewModel {
 			if (scanEpoch != epoch || openBtc != w) {
 				return;
 			}
-			lastBalance = r.balanceSat;
-			btcBalanceSat.postValue(r.balanceSat);
-
-			if (r.receiveIndex > receiveIndex.get()) {
-				receiveIndex.set(r.receiveIndex);
-				btcReceiveAddress.postValue(r.receiveAddress);
-				String scanId = currentWalletId;
-				if (scanId != null && scanEpoch == epoch && openBtc == w) {
-					persistReceiveIndex(scanId, r.receiveIndex);
-				}
-			}
-
 			java.util.Set<String> txids = new java.util.HashSet<>();
 			for (ElectrumClient.HistItem h : r.history) {
 				txids.add(h.txHash);
 			}
+			if (BtcWallet.emptiedAfterHistory(lastTxids, txids)) {
+				walletOnline.postValue(false);
+				walletError.postValue(new Event<>(getApplication()
+						.getString(R.string.wallet_server_inconsistent)));
+				return;
+			}
+			lastBalance = r.balanceSat;
+			btcBalanceSat.postValue(r.balanceSat);
+
+			int shown = receiveIndex.get();
+			int next = r.usedReceiveIndexes.contains(shown)
+					? BtcWallet.nextUnusedAtOrAbove(r.usedReceiveIndexes,
+							shown + 1)
+					: Math.max(shown, r.receiveIndex);
+			if (next != shown) {
+				receiveIndex.set(next);
+				w.setMinReceiveProbe(next);
+				btcReceiveAddress.postValue(w.receiveAddressAt(next));
+				String scanId = currentWalletId;
+				if (scanId != null && scanEpoch == epoch && openBtc == w) {
+					persistReceiveIndex(scanId, next);
+				}
+			}
+
 			if (force || lastSummaries == null || !txids.equals(lastTxids)) {
 				List<BtcWallet.TxSummary> summaries = BtcWallet.mergePending(
 						w.history(r), w.pendingSummaries());
@@ -2259,15 +2439,16 @@ public class VaultViewModel extends AndroidViewModel {
 		new SecureRandom().nextBytes(entropy);
 		List<String> words = new MnemonicCode().toMnemonic(entropy);
 		Arrays.fill(entropy, (byte) 0);
-		StringBuilder sb = new StringBuilder();
+		int length = words.size() - 1;
+		for (String w : words) length += w.length();
+		char[] out = new char[length];
+		int pos = 0;
 		for (int i = 0; i < words.size(); i++) {
-			if (i > 0) {
-				sb.append(' ');
-			}
-			sb.append(words.get(i));
+			if (i > 0) out[pos++] = ' ';
+			String w = words.get(i);
+			w.getChars(0, w.length(), out, pos);
+			pos += w.length();
 		}
-		char[] out = new char[sb.length()];
-		sb.getChars(0, sb.length(), out, 0);
 		return out;
 	}
 
@@ -3142,7 +3323,8 @@ public class VaultViewModel extends AndroidViewModel {
 				vaultManager.changePassword(currentPassword, newPassword);
 				successMessage.postValue("Password changed successfully");
 			} catch (SecurityException e) {
-				errorMessage.postValue("Invalid current password");
+				errorMessage.postValue(e.getMessage() != null
+						? e.getMessage() : "Invalid current password");
 			} catch (Exception e) {
 				errorMessage.postValue("Failed to change password");
 			} finally {

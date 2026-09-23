@@ -12,8 +12,8 @@ import java.nio.charset.StandardCharsets;
 import static java.lang.Math.min;
 
 class ScryptKdf implements PasswordBasedKdf {
-	private static final int MIN_COST = 256;
-	private static final int MAX_COST = 1024 * 1024;
+	static final int MIN_COST = 256;
+	static final int MAX_COST = 1024 * 1024;
 	private static final int BLOCK_SIZE = 8;
 	private static final int PARALLELIZATION = 1;
 	private static final int TARGET_MS = 1000;

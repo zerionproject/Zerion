@@ -14,4 +14,7 @@ interface ContactExchangeConstants {
 	String BOB_NONCE_LABEL = "org.zerionproject.core.contact/BOB_NONCE";
 
 	String SIGNING_LABEL = "org.zerionproject.app.contact/EXCHANGE";
+
+	String HYBRID_SIGNING_LABEL =
+			"org.zerionproject.app.contact/EXCHANGE_HYBRID";
 }

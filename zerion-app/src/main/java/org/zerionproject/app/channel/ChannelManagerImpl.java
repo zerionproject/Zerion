@@ -555,13 +555,9 @@ class ChannelManagerImpl
 					&& !challengeOk) {
 				return new byte[0];
 			}
-			java.util.List<ChannelPost> all =
-					store.getPosts(channelId);
-			java.util.List<ChannelPost> toSend =
-					new java.util.ArrayList<>();
-			for (ChannelPost p : all) {
-				if (p.getSeqNum() > req.sinceSeqNum) toSend.add(p);
-			}
+			java.util.List<ChannelPost> toSend = nextBatch(
+					store.getPosts(channelId), req.sinceSeqNum,
+					(int) ChannelConstants.PULL_BATCH_MAX_POSTS);
 			byte[] envelope = null;
 			if (challengeOk && s.getContentKey() != null) {
 				try {
@@ -756,19 +752,49 @@ class ChannelManagerImpl
 		pullAndApply(channelId, false);
 	}
 
+	/**
+	 * The posts after {@code sinceSeqNum} in sequence order, at most
+	 * {@code max} of them, so a subscriber that is many posts behind can
+	 * catch up in bounded rounds instead of receiving a response it must
+	 * refuse.
+	 */
+	static java.util.List<ChannelPost> nextBatch(
+			java.util.List<ChannelPost> all, long sinceSeqNum, int max) {
+		java.util.List<ChannelPost> after = new java.util.ArrayList<>();
+		for (ChannelPost p : all) {
+			if (p.getSeqNum() > sinceSeqNum) after.add(p);
+		}
+		after.sort((a, b) -> Long.compare(a.getSeqNum(), b.getSeqNum()));
+		return after.size() > max ? new java.util.ArrayList<>(
+				after.subList(0, max)) : after;
+	}
+
+	private static final int MAX_PULL_ROUNDS = 64;
+
 	private void pullAndApply(byte[] channelId, boolean isBootstrap)
+			throws DbException {
+		for (int round = 0; round < MAX_PULL_ROUNDS; round++) {
+			int accepted = pullOnce(channelId, isBootstrap && round == 0);
+			if (accepted < ChannelConstants.PULL_BATCH_MAX_POSTS) return;
+		}
+	}
+
+	private int pullOnce(byte[] channelId, boolean isBootstrap)
 			throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
-		if (s.weArePublisher()) return;
+		if (s.weArePublisher()) return 0;
 		pollApprovalStatusIfPending(channelId);
 		s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		byte[] requestBytes;
 		try {
-			if (isBootstrap || s.getJoinCapability() == null) {
+			if (isBootstrap) {
 				requestBytes = pullProtocol.buildBootstrapRequest(
 						channelId);
+			} else if (s.getJoinCapability() == null) {
+				requestBytes = pullProtocol.buildPublicRequest(channelId,
+						s.getHighestKnownPostSeq());
 			} else {
 				byte[] nonce = hmacChallenge().freshNonce();
 				requestBytes = pullProtocol.buildAuthenticatedRequest(
@@ -795,7 +821,7 @@ class ChannelManagerImpl
 			if (cur == null) throw new DbException();
 			if (isTombstone) {
 				applyTombstoneIfValid(cur, responseBytes);
-				return;
+				return 0;
 			}
 			java.util.List<ChannelPost> existing =
 					store.getPosts(channelId);
@@ -819,6 +845,7 @@ class ChannelManagerImpl
 					|| !r.comments.isEmpty()) {
 				lastChannelActivityMs = clock.currentTimeMillis();
 			}
+			return r.acceptedPosts.size();
 		} finally {
 			lock.unlock();
 		}

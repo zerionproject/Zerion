@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.professor.zerion.R;
 
@@ -39,6 +39,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
@@ -48,13 +49,7 @@ import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 public class ConnectionsFragment extends Fragment {
 
 	static final String PREF_KEY_TOR_NETWORK = "pref_key_tor_network";
-	static final String PREF_KEY_TOR_MOBILE_DATA = "pref_key_tor_mobile_data";
-	static final String PREF_KEY_ORBOT_ENABLED = "pref_key_orbot_enabled";
-	static final String PREF_KEY_ORBOT_HOST = "pref_key_orbot_host";
-	static final String PREF_KEY_ORBOT_PORT = "pref_key_orbot_port";
 
-	private static final String DEFAULT_ORBOT_HOST = "127.0.0.1";
-	private static final int DEFAULT_ORBOT_PORT = 9050;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -102,16 +97,11 @@ public class ConnectionsFragment extends Fragment {
 	private TextView torNetworkValue;
 	private View customBridgesCard;
 	private TextView customBridgesValue;
-	private SwitchMaterial orbotProxySwitch;
-	private View orbotSettingsCard;
-	private TextView orbotProxyValue;
 	private View rotateOnionCard;
 	private View forceCompleteRotationCard;
 
 	private String[] torNetworkEntries;
 	private String[] torNetworkValues;
-	private String orbotHost = DEFAULT_ORBOT_HOST;
-	private int orbotPort = DEFAULT_ORBOT_PORT;
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -137,9 +127,6 @@ public class ConnectionsFragment extends Fragment {
 
 		torNetworkCard = view.findViewById(R.id.tor_network_card);
 		torNetworkValue = view.findViewById(R.id.tor_network_value);
-		orbotProxySwitch = view.findViewById(R.id.orbot_proxy_switch);
-		orbotSettingsCard = view.findViewById(R.id.orbot_settings_card);
-		orbotProxyValue = view.findViewById(R.id.orbot_proxy_value);
 		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
 		forceCompleteRotationCard =
 				view.findViewById(R.id.force_complete_rotation_card);
@@ -158,14 +145,6 @@ public class ConnectionsFragment extends Fragment {
 		customBridgesCard = view.findViewById(R.id.custom_bridges_card);
 		customBridgesValue = view.findViewById(R.id.custom_bridges_value);
 		customBridgesCard.setOnClickListener(v -> showCustomBridgesDialog());
-		orbotProxySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-			if (buttonView.isPressed()) {
-				connectionsManager.torStore.putBoolean(PREF_KEY_ORBOT_ENABLED, isChecked);
-				updateOrbotSettingsVisibility(isChecked);
-			}
-		});
-		orbotSettingsCard.setOnClickListener(v -> showOrbotSettingsDialog());
-
 		i2pSwitch = view.findViewById(R.id.i2p_switch);
 		i2pSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onI2pToggle(isChecked);
@@ -176,6 +155,10 @@ public class ConnectionsFragment extends Fragment {
 		i2pDirectReseedSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onDirectReseedToggle(isChecked);
 		});
+		if (!IS_DEBUG_BUILD) {
+			view.findViewById(R.id.i2p_card).setVisibility(View.GONE);
+			i2pDirectReseedCard.setVisibility(View.GONE);
+		}
 
 		meshSwitch = view.findViewById(R.id.mesh_switch);
 		meshSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -187,49 +170,6 @@ public class ConnectionsFragment extends Fragment {
 		offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
 		offlineModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onOfflineModeToggle(isChecked);
-		});
-
-		SwitchMaterial reduceDataSwitch =
-				view.findViewById(R.id.reduce_data_switch);
-		dbExecutor.execute(() -> {
-			boolean reduce;
-			try {
-				reduce = settingsManager.getSettings(
-						org.zerionproject.core.api.sync.ZppPacingConstants
-								.SETTINGS_NAMESPACE)
-						.getBoolean(
-								org.zerionproject.core.api.sync
-										.ZppPacingConstants
-										.PREF_REDUCE_MOBILE_DATA,
-								org.zerionproject.core.api.sync
-										.ZppPacingConstants
-										.DEFAULT_REDUCE_MOBILE_DATA);
-			} catch (org.zerionproject.core.api.db.DbException e) {
-				return;
-			}
-			boolean finalReduce = reduce;
-			android.app.Activity activity = getActivity();
-			if (activity == null) return;
-			activity.runOnUiThread(() -> {
-				if (!isAdded()) return;
-				reduceDataSwitch.setChecked(finalReduce);
-			});
-		});
-		reduceDataSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-			if (!buttonView.isPressed()) return;
-			dbExecutor.execute(() -> {
-				try {
-					org.zerionproject.core.api.settings.Settings out =
-							new org.zerionproject.core.api.settings.Settings();
-					out.putBoolean(
-							org.zerionproject.core.api.sync.ZppPacingConstants
-									.PREF_REDUCE_MOBILE_DATA, isChecked);
-					settingsManager.mergeSettings(out,
-							org.zerionproject.core.api.sync.ZppPacingConstants
-									.SETTINGS_NAMESPACE);
-				} catch (org.zerionproject.core.api.db.DbException e) {
-				}
-			});
 		});
 
 		setupBackgroundConnections(view);
@@ -301,7 +241,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginViewModel.enableTransport(I2pConstants.ID, false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.i2p_enable_warning_title)
 				.setMessage(R.string.i2p_enable_warning_message)
 				.setPositiveButton(R.string.i2p_enable_warning_confirm,
@@ -318,7 +258,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginViewModel.setDirectReseed(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.i2p_direct_reseed_warning_title)
 				.setMessage(R.string.i2p_direct_reseed_warning_message)
 				.setPositiveButton(R.string.i2p_direct_reseed_warning_confirm,
@@ -367,7 +307,7 @@ public class ConnectionsFragment extends Fragment {
 			pluginManager.setOfflineMode(false);
 			return;
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.offline_mode_confirm_title)
 				.setMessage(R.string.offline_mode_confirm_message)
 				.setPositiveButton(R.string.offline_mode_confirm_button,
@@ -421,28 +361,6 @@ public class ConnectionsFragment extends Fragment {
 			updateTorNetworkDisplay(value);
 		});
 
-		connectionsManager.orbotEnabled().observe(getViewLifecycleOwner(), enabled -> {
-			orbotProxySwitch.setOnCheckedChangeListener(null);
-			orbotProxySwitch.setChecked(enabled);
-			updateOrbotSettingsVisibility(enabled);
-			orbotProxySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-				if (buttonView.isPressed()) {
-					connectionsManager.torStore.putBoolean(PREF_KEY_ORBOT_ENABLED, isChecked);
-					updateOrbotSettingsVisibility(isChecked);
-				}
-			});
-		});
-
-		connectionsManager.orbotHost().observe(getViewLifecycleOwner(), host -> {
-			orbotHost = host != null ? host : DEFAULT_ORBOT_HOST;
-			updateOrbotProxyDisplay();
-		});
-
-		connectionsManager.orbotPort().observe(getViewLifecycleOwner(), port -> {
-			orbotPort = port != null ? port : DEFAULT_ORBOT_PORT;
-			updateOrbotProxyDisplay();
-		});
-
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
 				this::updateCustomBridgesDisplay);
 
@@ -457,7 +375,7 @@ public class ConnectionsFragment extends Fragment {
 								}
 							});
 					i2pDirectReseedCard.setVisibility(
-							Boolean.TRUE.equals(enabled)
+							IS_DEBUG_BUILD && Boolean.TRUE.equals(enabled)
 									? View.VISIBLE : View.GONE);
 				});
 
@@ -484,14 +402,6 @@ public class ConnectionsFragment extends Fragment {
 		}
 	}
 
-	private void updateOrbotSettingsVisibility(boolean visible) {
-		orbotSettingsCard.setVisibility(visible ? View.VISIBLE : View.GONE);
-	}
-
-	private void updateOrbotProxyDisplay() {
-		orbotProxyValue.setText(orbotHost + ":" + orbotPort);
-	}
-
 	private void showTorNetworkDialog() {
 		String currentValue = connectionsManager.torNetwork().getValue();
 		if (currentValue == null) currentValue = "0";
@@ -504,7 +414,7 @@ public class ConnectionsFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.tor_network_setting)
 				.setSingleChoiceItems(torNetworkEntries, selectedIndex, (dialog, which) -> {
 					String newValue = torNetworkValues[which];
@@ -547,7 +457,7 @@ public class ConnectionsFragment extends Fragment {
 		input.setLayoutParams(lp);
 		layout.addView(input);
 
-		new MaterialAlertDialogBuilder(context)
+		new SecureAlertDialogBuilder(context)
 				.setTitle(R.string.tor_custom_bridges_title)
 				.setView(layout)
 				.setPositiveButton(R.string.ok, (dialog, which) -> {
@@ -557,6 +467,13 @@ public class ConnectionsFragment extends Fragment {
 					for (String line : lines) {
 						String trimmed = line.trim();
 						if (trimmed.isEmpty()) continue;
+						if (!org.zerionproject.transport.TorBridgeConfigurator
+								.isPlausibleBridgeLine(trimmed)) {
+							android.widget.Toast.makeText(context,
+									R.string.tor_custom_bridges_invalid,
+									android.widget.Toast.LENGTH_LONG).show();
+							return;
+						}
 						if (sb.length() > 0) sb.append('\n');
 						sb.append(trimmed);
 					}
@@ -584,68 +501,6 @@ public class ConnectionsFragment extends Fragment {
 			customBridgesValue.setText(getResources().getQuantityString(
 					R.plurals.tor_custom_bridges_summary_set, count, count));
 		}
-	}
-
-	private void showOrbotSettingsDialog() {
-		Context context = requireContext();
-
-		LinearLayout layout = new LinearLayout(context);
-		layout.setOrientation(LinearLayout.VERTICAL);
-		int padding = (int) (16 * getResources().getDisplayMetrics().density);
-		layout.setPadding(padding, padding, padding, 0);
-		TextView hostLabel = new TextView(context);
-		hostLabel.setText(R.string.orbot_host_label);
-		layout.addView(hostLabel);
-
-		EditText hostInput = new EditText(context);
-		hostInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-		hostInput.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
-		hostInput.setPrivateImeOptions("nm");
-		hostInput.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
-		hostInput.setText(orbotHost);
-		hostInput.setHint(DEFAULT_ORBOT_HOST);
-		layout.addView(hostInput);
-		TextView portLabel = new TextView(context);
-		portLabel.setText(R.string.orbot_port_label);
-		LinearLayout.LayoutParams portLabelParams = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.WRAP_CONTENT,
-				LinearLayout.LayoutParams.WRAP_CONTENT);
-		portLabelParams.topMargin = padding;
-		portLabel.setLayoutParams(portLabelParams);
-		layout.addView(portLabel);
-
-		EditText portInput = new EditText(context);
-		portInput.setInputType(InputType.TYPE_CLASS_NUMBER);
-		portInput.setImeOptions(EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
-		portInput.setPrivateImeOptions("nm");
-		portInput.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
-		portInput.setText(String.valueOf(orbotPort));
-		portInput.setHint(String.valueOf(DEFAULT_ORBOT_PORT));
-		layout.addView(portInput);
-
-		new MaterialAlertDialogBuilder(context)
-				.setTitle(R.string.orbot_proxy_settings)
-				.setView(layout)
-				.setPositiveButton(R.string.ok, (dialog, which) -> {
-					String newHost = hostInput.getText().toString().trim();
-					if (newHost.isEmpty()) newHost = DEFAULT_ORBOT_HOST;
-
-					int newPort = DEFAULT_ORBOT_PORT;
-					try {
-						newPort = Integer.parseInt(portInput.getText().toString().trim());
-						if (newPort < 1 || newPort > 65535) newPort = DEFAULT_ORBOT_PORT;
-					} catch (NumberFormatException e) {
-					}
-
-					connectionsManager.torStore.putString(PREF_KEY_ORBOT_HOST, newHost);
-					connectionsManager.torStore.putInt(PREF_KEY_ORBOT_PORT, newPort);
-
-					orbotHost = newHost;
-					orbotPort = newPort;
-					updateOrbotProxyDisplay();
-				})
-				.setNegativeButton(R.string.cancel, null)
-				.show();
 	}
 
 	@Override
@@ -680,7 +535,7 @@ public class ConnectionsFragment extends Fragment {
 	}
 
 	private void showRotateOnionDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_rotate_onion_confirm_title)
 				.setMessage(R.string.pref_rotate_onion_confirm_message)
 				.setPositiveButton(R.string.pref_rotate_onion_confirm_action,
@@ -690,7 +545,7 @@ public class ConnectionsFragment extends Fragment {
 	}
 
 	private void showForceCompleteRotationDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_force_complete_rotation_confirm_title)
 				.setMessage(
 						R.string.pref_force_complete_rotation_confirm_message)
@@ -747,7 +602,7 @@ public class ConnectionsFragment extends Fragment {
 							.get(com.professor.zerion.android.navdrawer
 									.PluginViewModel.class)
 							.refreshTorState();
-					new MaterialAlertDialogBuilder(requireContext())
+					new SecureAlertDialogBuilder(requireContext())
 							.setTitle(R.string.pref_rotate_onion_success_title)
 							.setMessage(getString(
 									R.string.pref_rotate_onion_success_message,

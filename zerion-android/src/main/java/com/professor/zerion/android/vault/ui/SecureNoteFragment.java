@@ -15,7 +15,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
@@ -302,7 +302,7 @@ public class SecureNoteFragment extends BaseFragment {
 		passwordInput.setHint(getString(R.string.vault_onboarding_password_hint));
 		IncognitoInputHelper.configurePasswordField(passwordInput);
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_password_required_title)
 				.setMessage(R.string.secure_note_password_protected_message)
 				.setView(passwordInput)
@@ -401,7 +401,7 @@ public class SecureNoteFragment extends BaseFragment {
 			return;
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_delete_note)
 				.setMessage(R.string.vault_delete_confirm_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
@@ -522,7 +522,7 @@ public class SecureNoteFragment extends BaseFragment {
 
 		if (hasChanges) {
 			isShowingUnsavedDialog = true;
-			new MaterialAlertDialogBuilder(requireContext())
+			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.vault_unsaved_changes_title)
 					.setMessage(R.string.vault_unsaved_changes_message)
 					.setPositiveButton(R.string.vault_button_save, (dialog, which) -> {

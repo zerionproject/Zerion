@@ -58,6 +58,7 @@ import static org.zerionproject.app.messaging.MessageTypes.VOICE_SIGNAL;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_COUNT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_INDEX;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_DATA_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ROOT_HASH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TOTAL_SIZE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
@@ -219,6 +220,7 @@ class PrivateMessageValidator implements MessageValidator {
 		checkSize(body, 1);
 		String text = body.getString(0);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		VoiceMemoFormatCheck.requireCurrentFormat(text);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -231,6 +233,7 @@ class PrivateMessageValidator implements MessageValidator {
 		checkSize(body, 3, 5);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		VoiceMemoFormatCheck.requireCurrentFormat(text);
 		BdfList headers = body.getList(2);
 		if (text == null) checkSize(headers, 1, MAX_ATTACHMENTS_PER_MESSAGE);
 		else checkSize(headers, 0, MAX_ATTACHMENTS_PER_MESSAGE);
@@ -382,6 +385,7 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, ATTACHMENT_CHUNK);
 		meta.put(MSG_KEY_CHUNK_INDEX, chunkIndex);
 		meta.put(MSG_KEY_DESCRIPTOR_LENGTH, (int) headerLength);
+		meta.put(MSG_KEY_CHUNK_DATA_LENGTH, chunkDataLength);
 		return new BdfMessageContext(meta);
 	}
 
@@ -443,6 +447,7 @@ class PrivateMessageValidator implements MessageValidator {
 		String text = body.getOptionalString(1);
 		if (text != null) {
 			checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+			VoiceMemoFormatCheck.requireCurrentFormat(text);
 		}
 		String previewUrl = body.getString(2);
 		checkLength(previewUrl, 1, 2048);

@@ -27,6 +27,9 @@ public final class CacheSweeper {
 
 	private static final String[] TEMP_DIRS = {
 			"vault_share",
+			"zenc_share",
+			"media_docs",
+			"camera_photos",
 			"grouptr_view",
 	};
 
@@ -36,6 +39,12 @@ public final class CacheSweeper {
 	};
 
 	private CacheSweeper() {
+	}
+
+	/** Sweeps on a background thread; used at lock and sign-out. */
+	public static void sweepAsync(Context ctx) {
+		Context app = ctx.getApplicationContext();
+		new Thread(() -> sweep(app), "CacheSweep").start();
 	}
 
 	public static void sweep(Context ctx) {

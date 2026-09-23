@@ -14,7 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
@@ -152,8 +152,7 @@ public class XmrWalletFragment extends BaseFragment {
 		t.setText(R.string.wallet_xmr_opening);
 		t.setPadding(dp(16), 0, 0, 0);
 		box.addView(t);
-		openingDialog = new com.google.android.material.dialog
-				.MaterialAlertDialogBuilder(requireContext())
+		openingDialog = new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setView(box)
 				.setCancelable(false)
 				.create();
@@ -232,7 +231,7 @@ public class XmrWalletFragment extends BaseFragment {
 				getString(R.string.wallet_xmr_add_create),
 				getString(R.string.wallet_xmr_add_import)
 		};
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_add_title)
 				.setItems(items, (d, which) -> {
 					if (which == 0) showCreateDialog();
@@ -247,7 +246,7 @@ public class XmrWalletFragment extends BaseFragment {
 		EditText pw = field(box, getString(R.string.wallet_password_prompt), true);
 		EditText confirm = field(box,
 				getString(R.string.wallet_confirm_password), true);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_add_create)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, wch) -> {
@@ -273,10 +272,9 @@ public class XmrWalletFragment extends BaseFragment {
 		EditText name = field(box, getString(R.string.wallet_name_hint), false);
 		EditText seed = field(box, getString(R.string.wallet_xmr_seed_hint),
 				false);
-		seed.setInputType(InputType.TYPE_CLASS_TEXT
-				| InputType.TYPE_TEXT_FLAG_MULTI_LINE
-				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		seed.setMinLines(3);
+		seed.setMaxLines(8);
+		IncognitoInputHelper.configureIncognitoInput(seed, false);
 		TextView heightNote = new TextView(requireContext());
 		heightNote.setText(R.string.wallet_xmr_restore_height_note);
 		heightNote.setTextSize(12);
@@ -286,7 +284,7 @@ public class XmrWalletFragment extends BaseFragment {
 				getString(R.string.wallet_xmr_restore_height_hint), false);
 		height.setInputType(InputType.TYPE_CLASS_NUMBER);
 		EditText pw = field(box, getString(R.string.wallet_password_prompt), true);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_xmr_add_import)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, wch) -> {
@@ -329,7 +327,7 @@ public class XmrWalletFragment extends BaseFragment {
 	private void showUnlockDialog(WalletRecord w) {
 		LinearLayout box = column();
 		EditText pw = field(box, getString(R.string.wallet_password_prompt), true);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(w.name)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, wch) -> {
@@ -346,7 +344,7 @@ public class XmrWalletFragment extends BaseFragment {
 	}
 
 	private void confirmDelete(WalletRecord w) {
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_delete)
 				.setMessage(R.string.wallet_delete_warning_strong)
 				.setPositiveButton(R.string.wallet_delete,
@@ -358,7 +356,7 @@ public class XmrWalletFragment extends BaseFragment {
 	private void promptDeleteAuth(WalletRecord w) {
 		LinearLayout box = column();
 		EditText pw = field(box, getString(R.string.wallet_password_prompt), true);
-		track(new MaterialAlertDialogBuilder(requireContext())
+		track(new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wallet_delete)
 				.setMessage(R.string.wallet_delete_auth_hint)
 				.setView(box)

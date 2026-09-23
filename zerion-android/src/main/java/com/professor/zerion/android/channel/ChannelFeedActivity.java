@@ -594,7 +594,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			labels.add(getString(R.string.channels_action_delete));
 			actions.add(() -> confirmDelete(post));
 		}
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this)
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
@@ -617,7 +617,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			"😮", "😢", "🔥"};
 
 	private void showReactionPicker(ChannelPost post) {
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this)
 				.setItems(REACTION_EMOJIS, (d, which) ->
 						sendReaction(post, REACTION_EMOJIS[which]))
@@ -639,7 +639,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	}
 
 	private void confirmDelete(ChannelPost post) {
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this)
 				.setMessage(R.string.channels_post_delete_confirm)
 				.setPositiveButton(R.string.channels_action_delete,
@@ -1111,7 +1111,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		int message = target
 				? R.string.channels_discussions_confirm_enable_message
 				: R.string.channels_discussions_confirm_disable_message;
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(this)
 				.setTitle(title)
 				.setMessage(message)
 				.setPositiveButton(android.R.string.ok,

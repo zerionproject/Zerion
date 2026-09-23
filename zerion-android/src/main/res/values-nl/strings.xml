@@ -339,7 +339,7 @@
   
   <string name="security_settings_title">Beveiliging</string>
   <string name="pref_lock_title">App-vergrendeling</string>
-  <string name="pref_lock_summary">Gebruik de schermvergrendeling van het apparaat om Zerion te beschermen terwijl je bent ingelogd</string>
+  <string name="pref_lock_summary">Gebruik de schermvergrendeling van het apparaat om Zerion te beschermen terwijl je bent ingelogd. Vergrendeld blijft Zerion op de achtergrond ingelogd en verbonden; meld je af om het account volledig te sluiten.</string>
   <string name="pref_lock_disabled_summary">Stel een schermvergrendeling in op je apparaat om deze feature te gebruiken</string>
   <string name="pref_lock_timeout_title">App-vergrendeling inactiviteitstime-out</string>
   
@@ -515,6 +515,11 @@
 	<string name="login_data_wiped_message">Alle gegevens zijn permanent verwijderd vanwege herhaalde mislukte inlogpogingen. Dit is een beveiligingsfunctie om uw gegevens te beschermen.</string>
 
 	<string name="wipe_password_title">Wiswachtwoord</string>
+	<string name="pref_wipe_on_failed_logins_title">Wissen na herhaald verkeerde wachtwoorden</string>
+	<string name="pref_wipe_on_failed_logins_summary">Wis dit account, de kluis en de walletsleutels na zes verkeerde wachtwoorden op rij. Standaard uit: een verkeerd wachtwoord vergrendelt de app dan alleen steeds langer.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_title">Wissen na zes verkeerde wachtwoorden?</string>
+	<string name="pref_wipe_on_failed_logins_confirm_message">Iedereen die zes keer op rij een verkeerd wachtwoord invoert, ook jijzelf, wist dit account, de kluis en de walletsleutels. Herstel is daarna niet mogelijk.</string>
+	<string name="pref_wipe_on_failed_logins_confirm_button">Inschakelen</string>
 	<string name="wipe_password_summary">Stel een wachtwoord in dat alle gegevens onmiddellijk wist bij invoer</string>
 	<string name="wipe_password_summary_enabled">Wiswachtwoord is actief</string>
 	<string name="wipe_password_summary_disabled">Geen wiswachtwoord ingesteld</string>
@@ -685,8 +690,6 @@
 	<string name="vault_settings_change_master">Hoofdwachtwoord wijzigen</string>
 	<string name="vault_settings_change_master_summary">Werk je kluiswachtwoord bij</string>
 	<string name="vault_settings_autolock">Time-out voor automatisch vergrendelen</string>
-	<string name="vault_settings_biometric">Biometrisch ontgrendelen</string>
-	<string name="vault_settings_biometric_summary">Gebruik vingerafdruk- of gezichtsontgrendeling</string>
 	<string name="vault_settings_clear_clipboard">Klembord wissen na</string>
 	<string name="vault_settings_hide_content">Inhoud verbergen in app-overzicht</string>
 	<string name="vault_settings_hide_content_summary">Vervaag kluisinhoud bij het wisselen van apps</string>
@@ -929,6 +932,12 @@
 	<string name="hardened_block_disable_title">Verstevigde modus uitschakelen?</string>
 	<string name="hardened_block_disable_message">Zerion zal op dit apparaat starten. De reden waarom het weigerde is er nog steeds. Schakel dit alleen uit als je het risico begrijpt.</string>
 	<string name="hardened_block_disable_confirm">Uitschakelen</string>
+	<string name="settings_password_required_title">Bevestig je accountwachtwoord</string>
+	<string name="settings_password_required_message">Deze instelling beschermt je account. Voer je accountwachtwoord in om die te wijzigen.</string>
+	<string name="settings_password_wrong">Verkeerd wachtwoord. De instelling is niet gewijzigd.</string>
+	<string name="hardened_block_password_hint">Accountwachtwoord</string>
+	<string name="hardened_block_password_wrong">Verkeerd wachtwoord. Hardened mode blijft aan.</string>
+	<string name="hardened_block_password_locked">Te veel verkeerde wachtwoorden. Probeer het over %1$d minuten opnieuw.</string>
 	<string name="channels_comments_count">%1$d opmerkingen</string>
 	<string name="channels_comments_count_one">1 opmerking</string>
 	<string name="channels_create_require_approval">Beoordeel nieuwe abonnees voordat ze kunnen lezen</string>
@@ -960,6 +969,11 @@
 	<string name="not_available">Niet beschikbaar</string>
 	<string name="tor_hidden_services_active">Beveiligde verbinding via Tor hidden services</string>
 	<string name="tor_hidden_services_connecting">Verbinden met Tor hidden services…</string>
+	<string name="tor_hidden_services_publishing">Je adres wordt gepubliceerd op het Tor-netwerk…</string>
+	<string name="tor_status_publishing">Publiceren</string>
+	<string name="tor_status_bootstrapping">Circuits opbouwen (%1$d%%)</string>
+	<string name="tor_restart">Tor herstarten</string>
+	<string name="tor_restarting">Tor wordt herstart…</string>
 	<string name="tor_your_onion_label">Je onion-adres</string>
 	<string name="tor_onion_copy">Kopiëren</string>
 	<string name="tor_onion_copied">Onion-adres gekopieerd</string>
@@ -980,6 +994,7 @@
 	<string name="slide_to_cancel">← Schuif om te annuleren</string>
 	<string name="voice_message_too_short">Spraakbericht te kort</string>
 	<string name="voice_message_too_long">Spraakbericht te lang. Houd het onder 30 seconden.</string>
+	<string name="voice_msg_peer_update_required">De app van dit contact moet worden bijgewerkt voordat die spraakberichten kan ontvangen.</string>
 	<string name="microphone_permission_required">Microfoontoestemming is vereist voor spraakberichten</string>
 	<string name="hold_to_record">Ingedrukt houden om op te nemen, loslaten om te verzenden</string>
 	<string name="voice_message_loading">Laden…</string>
@@ -1351,6 +1366,7 @@
 	<string name="tor_info_message">Zerion gebruikt uitsluitend het Tor-netwerk voor veilige, anonieme communicatie. Alle verbindingen lopen via Tor.</string>
 	<string name="tor_custom_bridges_title">Aangepaste bridges</string>
 	<string name="tor_custom_bridges_summary_none">Niet ingesteld</string>
+	<string name="tor_custom_bridges_invalid">Een van de regels is geen bridge-regel. Er is niets opgeslagen.</string>
 	<string name="tor_custom_bridges_dialog_message">Als Tor geen verbinding kan maken waar jij bent, plak hier dan bridge-regels, één per regel. Ze worden vóór de ingebouwde bridges geprobeerd. Je kunt bridges krijgen via bridges.torproject.org of de GetBridgesBot op Telegram.</string>
 	<string name="tor_custom_bridges_hint">Plak bridge-regels, één per regel</string>
 	<string name="backup_settings_title">Back-up &amp; overdracht</string>
@@ -1393,9 +1409,11 @@
 	<string name="transfer_send_title">Naar een nieuwe telefoon sturen</string>
 	<string name="transfer_receive_password_message">Stel een wachtwoord in om het ontvangen account op deze telefoon te beschermen. Je logt hiermee in.</string>
 	<string name="transfer_receive_show_qr">Scan deze code met de oude telefoon</string>
-	<string name="transfer_sas_title">Controleer het veiligheidsnummer</string>
-	<string name="transfer_sas_message">Beide telefoons moeten hetzelfde nummer tonen:\n\n%1$s\n\nKomt het overeen op de andere telefoon?</string>
-	<string name="transfer_sas_matches">Het komt overeen</string>
+	<string name="transfer_code_title">Voer de code van de nieuwe telefoon in</string>
+	<string name="transfer_code_message">De nieuwe telefoon toont nu een code van 6 cijfers. Typ die hier. Het account wordt alleen naar de telefoon gestuurd die deze code toont.</string>
+	<string name="transfer_code_hint">Code van 6 cijfers</string>
+	<string name="transfer_code_confirm">Account versturen</string>
+	<string name="transfer_code_show">Voer deze code in op de oude telefoon:\n\n%1$s</string>
 	<string name="transfer_done_title">Klaar</string>
 	<string name="transfer_failed_title">Overdracht mislukt</string>
 	<string name="transfer_failed_message">De overdracht is niet voltooid. Zorg dat beide telefoons met Tor verbonden zijn en probeer opnieuw.</string>
@@ -1410,19 +1428,13 @@
 	<string name="transfer_status_working">Bezig</string>
 	<string name="transfer_send_show_qr">Scan deze code met de nieuwe telefoon</string>
 	<string name="backup_password_empty">Voer een wachtwoordzin in</string>
+	<string name="backup_password_too_short">De wachtwoordzin moet minimaal 8 tekens bevatten. Het bestand bevat je databasesleutel, dus iedereen met het bestand kan offline wachtwoordzinnen proberen.</string>
 	<string name="backup_passwords_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="welcome_title">Welkom bij Zerion</string>
 	<string name="welcome_subtitle">Maak een nieuw account aan of breng een bestaand account over van een andere telefoon.</string>
 	<string name="welcome_create">Nieuw account aanmaken</string>
 	<string name="welcome_import_file">Importeren uit back-upbestand</string>
 	<string name="welcome_receive">Ontvangen van een andere telefoon</string>
-	<string name="proxy_section_title">PROXY</string>
-	<string name="orbot_proxy_title">Orbot-proxy gebruiken</string>
-	<string name="orbot_proxy_summary">Route Tor-verkeer via de Orbot-app</string>
-	<string name="orbot_proxy_settings">Proxy-instellingen</string>
-	<string name="orbot_host_label">Hostadres</string>
-	<string name="orbot_port_label">Poort</string>
-	<string name="orbot_info_message">Orbot biedt extra privacy door zijn eigen Tor-verbinding te gebruiken. Installeer Orbot via F-Droid of Google Play en start het voordat je deze optie inschakelt.</string>
 	<string name="profiles_settings_title">Profielen</string>
 	<string name="profiles_settings_summary">Maak, wissel of verwijder verborgen profielen</string>
 	<string name="profiles_section_current">Huidig profiel</string>
@@ -1658,16 +1670,12 @@
 	<string name="vault_no_file_picker">Geen bestandskiezer beschikbaar</string>
 	<string name="vault_settings_wipe_message">Hiermee worden alle kluisgegevens permanent verwijderd. Dit kan niet ongedaan worden gemaakt. Weet je het heel zeker?</string>
 	<string name="vault_wipe_button">Kluis wissen</string>
-	<string name="vault_biometric_enabled">Biometrische authenticatie ingeschakeld</string>
-	<string name="vault_biometric_no_fingerprints">Geen vingerafdrukken geregistreerd</string>
-	<string name="vault_biometric_no_hardware">Biometrische hardware niet beschikbaar</string>
-	<string name="vault_biometric_unsupported">Biometrische authenticatie wordt niet ondersteund op dit apparaat</string>
-	<string name="vault_biometric_disabled">Biometrische authenticatie uitgeschakeld</string>
 	<string name="vault_document_opening">%1$s openen…</string>
 	<string name="vault_document_open_error">Kan document niet openen: activiteit niet gereed</string>
 	<string name="vault_document_details_title">Documentdetails</string>
 	<string name="vault_document_export_warning_title">Beveiligingswaarschuwing</string>
-	<string name="vault_document_export_warning_message">Bij exporteren wordt een ONVERSLEUTELDE kopie opgeslagen in je map Downloads.\n\n• Bestand wordt NIET versleuteld\n• Andere apps hebben er toegang toe\n• Bestand blijft bestaan na export\n\nDoorgaan?</string>
+	<string name="vault_document_export_warning_message">Bij exporteren wordt een ONVERSLEUTELDE kopie opgeslagen op een locatie die je hierna kiest.\n\n• Bestand wordt NIET versleuteld\n• Andere apps hebben er toegang toe\n• Bestand blijft bestaan na export\n\nDoorgaan?</string>
+	<string name="vault_document_exported">Document geëxporteerd</string>
 	<string name="vault_document_export_anyway">Toch exporteren</string>
 	<string name="vault_document_exported_to">Document geëxporteerd naar: %1$s</string>
 	<string name="vault_document_export_failed">Exporteren van document mislukt</string>
@@ -1803,6 +1811,12 @@
 	<string name="wallet_import_invalid">Die herstelzin is ongeldig</string>
 	<string name="wallet_delete_failed">Kon de portemonnee niet verwijderen</string>
 	<string name="wallet_open_failed">Kon de portemonnee niet openen</string>
+	<string name="wallet_pin_confirm_ca_valid">Het certificaat is uitgegeven door een vertrouwde autoriteit en komt overeen met de servernaam. Vastpinnen voegt een controle toe en vervangt er geen.</string>
+	<string name="wallet_pin_confirm_self_signed">Het certificaat is niet uitgegeven door een vertrouwde autoriteit. Vergelijk de vingerafdruk via een ander kanaal met je server voordat je bevestigt; een aanvaller op de route kan een eigen certificaat aanbieden.</string>
+	<string name="wallet_scan_unsupported">Dit betaalverzoek vereist een functie die de wallet niet ondersteunt</string>
+	<string name="wallet_server_inconsistent">De server meldde een lege wallet waar geschiedenis bestond. De laatst geverifieerde toestand blijft behouden.</string>
+	<string name="wallet_sp_oracle_https">Het orakeladres moet https gebruiken</string>
+	<string name="wallet_xmr_spend_cache_incomplete">De gescande toestand van de wallet is onvolledig. Scan de wallet opnieuw via de instellingen voordat je verzendt.</string>
 	<string name="wallet_send_failed">De transactie kon niet worden verzonden</string>
 	<string name="wallet_network_failed">Kon het Bitcoin-netwerk niet bereiken via Tor</string>
 	<string name="wallet_amount_invalid">Voer een geldig bedrag in</string>
@@ -1817,6 +1831,8 @@
 	<string name="wallet_password_confirm_hint">Wachtwoord bevestigen</string>
 	<string name="wallet_password_mismatch">Wachtwoorden komen niet overeen</string>
 	<string name="wallet_send_fee_label">Netwerkkosten</string>
+	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% van het bedrag</string>
+	<string name="wallet_send_fee_high_warning">Hoge kosten: %1$d%% van het bedrag. Een node kan te hoge tarieven voorstellen; kies een lager tarief als dit onverwacht is.</string>
 	<string name="wallet_fee_economy">Zuinig</string>
 	<string name="wallet_fee_normal">Normaal</string>
 	<string name="wallet_fee_priority">Prioriteit</string>
@@ -1897,4 +1913,12 @@
 	<string name="wallet_sp_birthday_hint">Startblok (optioneel)</string>
 	<string name="wallet_sp_scanning">Scannen via Tor…</string>
 	<string name="wallet_sp_move_hint">Bitcoin-adres om geld naartoe te verplaatsen</string>
+	<string name="wallet_xmr_tx_state_unresolved">Onopgelost: controleer status</string>
+	<string name="wallet_xmr_node_trust_label">Deze node vertrouwen als eigen daemon (slaat de controles voor publieke nodes over)</string>
+	<string name="wallet_xmr_check_relay">Status controleren</string>
+	<string name="wallet_xmr_release_unresolved">Onafgeronde verzending vrijgeven</string>
+	<string name="wallet_xmr_release_unresolved_body">Zerion kon niet bevestigen of je laatste transactie het Monero-netwerk heeft bereikt. Als die minstens drie dagen niet op het netwerk is gezien, kun je haar vrijgeven en opnieuw verzenden. Slechts een van beide transacties kan ooit worden uitbetaald, dus er kan geen geld verloren gaan, maar controleer daarna je geschiedenis om te zien welke is doorgegaan.</string>
+	<string name="wallet_xmr_release_done">Onafgeronde verzending vrijgegeven.</string>
+	<string name="wallet_xmr_release_not_yet">De laatste transactie kan nog niet worden vrijgegeven: ze is nog zichtbaar op het netwerk, nog geen drie dagen oud, of de node gaf geen antwoord.</string>
+	<string name="wallet_xmr_delete_unresolved_body">Deze portemonnee heeft een verzending waarvan de uitkomst nog onbekend is. Verwijderen haalt de portemonnee van dit apparaat; ze kan alleen worden hersteld met de herstelzin, en de uitkomst van die verzending moet daarna in de herstelde portemonnee worden gecontroleerd. Zorg dat je de herstelzin hebt voordat je doorgaat.</string>
 </resources>

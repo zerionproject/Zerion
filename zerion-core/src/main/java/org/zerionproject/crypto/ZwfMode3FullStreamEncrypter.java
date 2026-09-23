@@ -40,7 +40,7 @@ import static org.zerionproject.wire.ZwfConstants.WIRE_VERSION;
 /**
  * Send side of a Zerion 3.0 (ZWF) Mode 3-Full stream.
  *
- * <p>The Mode 3-Full frame format (see {@code PcsStreamEncrypterImpl}) rides the
+ * <p>The Mode 3-Full frame format rides the
  * native wire layer. The cryptography — per-message classical chain key,
  * per-frame ML-KEM re-encapsulation and hybrid body key — is unchanged. It
  * differs from that format in that:
@@ -216,14 +216,18 @@ public class ZwfMode3FullStreamEncrypter {
 							m3fState.getMessageCounter());
 					m3fState = new Mode3FullState(fresh.getTheirActivePqPk(),
 							fresh.getOurActiveKeyPair(), fresh.getRecentKeyPairs(),
-							mergedCounter);
+							mergedCounter, fresh.getPeerUsedKpId());
 					sendState = sendState.withMode3FullState(m3fState);
 				}
 			}
-			mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
-					ownSendsSinceRotation);
-				ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
-						: ownSendsSinceRotation + 1;
+			try {
+				mode3FullSend = mode3FullRatchet.pqEncapsulateSend(m3fState,
+						ownSendsSinceRotation);
+			} catch (RuntimeException e) {
+				throw new IOException("Mode 3-Full peer key rejected");
+			}
+			ownSendsSinceRotation = mode3FullSend.isRotated() ? 0
+					: ownSendsSinceRotation + 1;
 			sendState = sendState.withMode3FullState(mode3FullSend.getNewState());
 			if (m3fCallback != null) {
 				m3fCallback.accept(mode3FullSend.getNewState());

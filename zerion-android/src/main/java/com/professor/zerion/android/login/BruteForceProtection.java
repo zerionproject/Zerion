@@ -2,113 +2,90 @@ package com.professor.zerion.android.login;
 
 import android.content.SharedPreferences;
 
+import org.zerionproject.core.account.LoginThrottle;
+import org.zerionproject.core.api.account.AccountManager;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+/**
+ * Sign-in failure policy shown to the user. The counting and the lockout
+ * timing live in the account manager's single persisted throttle, which
+ * runs on the monotonic clock and survives restarts; this class only turns
+ * that state into what the login screen shows and applies the opt-in
+ * erase policy, whose flag is the one thing it stores itself.
+ */
 @ThreadSafe
 @NotNullByDefault
 public final class BruteForceProtection {
 
-	private static final String KEY_FAILED_ATTEMPTS = "bf_fa";
-	private static final String KEY_LOCKOUT_UNTIL = "bf_lu";
-	private static final String KEY_LAST_FAILED = "bf_lf";
+	private static final String KEY_WIPE_ON_FAILURES = "bf_wipe";
 
-	private int failedAttempts = 0;
-	private long lockoutUntilWallClock = 0;
-	private long lastFailedWallClock = 0;
-
-	private static final int ATTEMPTS_BEFORE_FIRST_LOCKOUT = 3;
-	private static final int ATTEMPTS_BEFORE_WIPE = 6;
-	private static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
+	static final int ATTEMPTS_BEFORE_FIRST_LOCKOUT = 3;
+	static final int ATTEMPTS_BEFORE_WIPE = 6;
+	static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
+	static final long MAX_LOCKOUT_MS = 24 * 60 * 60 * 1000;
 
 	private final SharedPreferences prefs;
+	private final AccountManager accountManager;
 
-	public BruteForceProtection(SharedPreferences prefs) {
+	public BruteForceProtection(SharedPreferences prefs,
+			AccountManager accountManager) {
 		this.prefs = prefs;
-		loadState();
+		this.accountManager = accountManager;
 	}
 
+	public synchronized boolean isWipeOnRepeatedFailures() {
+		return prefs.getBoolean(KEY_WIPE_ON_FAILURES, false);
+	}
+
+	public synchronized void setWipeOnRepeatedFailures(boolean enabled) {
+		prefs.edit().putBoolean(KEY_WIPE_ON_FAILURES, enabled).commit();
+	}
+
+	/**
+	 * Called after the account manager refused a password; the manager has
+	 * already counted the failure and started any lockout.
+	 */
 	public synchronized FailureResult recordFailedAttempt() {
-		long now = System.currentTimeMillis();
-
-		failedAttempts++;
-		lastFailedWallClock = now;
-
-		if (failedAttempts >= ATTEMPTS_BEFORE_WIPE) {
-			saveState();
+		int failedAttempts = accountManager.failedSignInAttempts();
+		long lockout = accountManager.signInLockoutRemainingMs();
+		boolean wipe = isWipeOnRepeatedFailures();
+		if (wipe && failedAttempts >= ATTEMPTS_BEFORE_WIPE) {
 			return FailureResult.wipeData();
 		}
-
 		if (failedAttempts >= ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
-			lockoutUntilWallClock = now + LOCKOUT_DURATION_MS;
-			saveState();
-			if (failedAttempts == ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
-				return FailureResult.lockout(LOCKOUT_DURATION_MS);
+			if (wipe && failedAttempts > ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
+				return FailureResult.finalWarning(
+						ATTEMPTS_BEFORE_WIPE - failedAttempts);
 			}
-			return FailureResult.finalWarning(
-					ATTEMPTS_BEFORE_WIPE - failedAttempts);
+			return FailureResult.lockout(lockout);
 		}
-
-		saveState();
-		int remaining = ATTEMPTS_BEFORE_FIRST_LOCKOUT - failedAttempts;
-		return FailureResult.normalFailure(remaining);
+		return FailureResult.normalFailure(
+				ATTEMPTS_BEFORE_FIRST_LOCKOUT - failedAttempts);
 	}
 
+	static long lockoutDurationFor(int failedAttempts) {
+		return LoginThrottle.SIGN_IN.lockoutMs(failedAttempts);
+	}
+
+	/** The manager resets its throttle on a successful sign-in. */
 	public synchronized void recordSuccessfulLogin() {
-		failedAttempts = 0;
-		lastFailedWallClock = 0;
-		lockoutUntilWallClock = 0;
-		saveState();
 	}
 
 	public synchronized LockStatus checkLockStatus() {
-		long now = System.currentTimeMillis();
-
-		if (lockoutUntilWallClock == 0) {
-			return LockStatus.notLocked();
-		}
-
-		if (now < lockoutUntilWallClock) {
-			long remainingMs = lockoutUntilWallClock - now;
-			return LockStatus.locked(remainingMs);
-		} else {
-			lockoutUntilWallClock = 0;
-			saveState();
-			return LockStatus.notLocked();
-		}
+		long remaining = accountManager.signInLockoutRemainingMs();
+		if (remaining > 0) return LockStatus.locked(remaining);
+		return LockStatus.notLocked();
 	}
 
+	/** The manager clears its throttle when the account is deleted. */
 	public synchronized void clear() {
-		failedAttempts = 0;
-		lastFailedWallClock = 0;
-		lockoutUntilWallClock = 0;
-		deleteState();
-	}
-
-	private void loadState() {
-		failedAttempts = prefs.getInt(KEY_FAILED_ATTEMPTS, 0);
-		lockoutUntilWallClock = prefs.getLong(KEY_LOCKOUT_UNTIL, 0);
-		lastFailedWallClock = prefs.getLong(KEY_LAST_FAILED, 0);
-	}
-
-	private void saveState() {
-		prefs.edit()
-				.putInt(KEY_FAILED_ATTEMPTS, failedAttempts)
-				.putLong(KEY_LOCKOUT_UNTIL, lockoutUntilWallClock)
-				.putLong(KEY_LAST_FAILED, lastFailedWallClock)
-				.commit();
-	}
-
-	private void deleteState() {
-		prefs.edit()
-				.remove(KEY_FAILED_ATTEMPTS)
-				.remove(KEY_LOCKOUT_UNTIL)
-				.remove(KEY_LAST_FAILED)
-				.commit();
 	}
 
 	public static final class FailureResult {
+
 		public enum Type {
 			NORMAL_FAILURE,
 			LOCKOUT,
@@ -147,6 +124,7 @@ public final class BruteForceProtection {
 	}
 
 	public static final class LockStatus {
+
 		public final boolean isLocked;
 		public final long remainingMs;
 

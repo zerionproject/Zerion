@@ -33,13 +33,18 @@ The forwarder floods frames, deduplicates them, and limits the rate.
   links.
 - On receiving a frame, the forwarder applies a rate limit, decodes it,
   deduplicates on the message id against a seen set, delivers the payload to the
-  local listener, and rebroadcasts the decremented frame on every link except the
-  one it arrived on.
+  local listener, and rebroadcasts the decremented frame on every link,
+  excluding only the peer it arrived from on the arriving link.
 - A store holds recent frames so that a device joining a link is caught up.
 
-Limits: the seen set holds 8192 message ids as a least-recently-used set, the
-store holds up to 2 MiB, and the forwarder accepts at most 200 frames per second.
-The maximum hop count is 7.
+Limits: the seen set holds 8192 message ids for 15 minutes each; nothing leaves
+before it has expired, so a flood cannot flush another neighbour's ids. Each
+neighbour may hold at most 1024 entries and send at most 50 frames per second;
+the forwarder accepts at most 200 frames per second in total. When the set is
+full of unexpired entries, the neighbour holding the most entries gives up its
+oldest so a neighbour holding fewer is admitted; neighbour identities on a radio
+link are cheap to invent, so this bounds what a flood spread over many
+identities can shut out. The store holds up to 2 MiB. The maximum hop count is 7.
 
 ## Bluetooth Low Energy link
 

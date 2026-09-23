@@ -27,17 +27,22 @@ public class ZtpPollerFactory {
 	private final ContactManager contactManager;
 	private final TransportPropertyManager transportPropertyManager;
 	private final EventBus eventBus;
+	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
+			.B4OnionRotation> rotation;
 
 	@Inject
 	public ZtpPollerFactory(@IoExecutor Executor ioExecutor,
 			TaskScheduler taskScheduler, ContactManager contactManager,
 			TransportPropertyManager transportPropertyManager,
-			EventBus eventBus) {
+			EventBus eventBus,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> rotation) {
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
 		this.contactManager = contactManager;
 		this.transportPropertyManager = transportPropertyManager;
 		this.eventBus = eventBus;
+		this.rotation = rotation;
 	}
 
 	/**
@@ -50,6 +55,6 @@ public class ZtpPollerFactory {
 	 */
 	public ZtpPoller create(OverlayTransport transport) {
 		return new ZtpPoller(ioExecutor, taskScheduler, contactManager,
-				transportPropertyManager, eventBus, transport);
+				transportPropertyManager, eventBus, transport, rotation);
 	}
 }

@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -53,6 +53,13 @@ public class SecurityFragment extends Fragment {
 	@Inject
 	com.professor.zerion.android.security.SecurityManager securityManager;
 
+	@Inject
+	com.professor.zerion.android.login.BruteForceProtection
+			bruteForceProtection;
+
+	@Inject
+	org.zerionproject.core.api.account.AccountManager accountManager;
+
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -61,6 +68,7 @@ public class SecurityFragment extends Fragment {
 	private SwitchMaterial typingIndicatorsSwitch;
 	private SwitchMaterial voiceCallsSwitch;
 	private SwitchMaterial videoCallsSwitch;
+	private SwitchMaterial wipeOnFailedLoginsSwitch;
 	private View lockTimeoutCard;
 	private TextView lockTimeoutValue;
 	private View defaultTimerCard;
@@ -196,14 +204,34 @@ public class SecurityFragment extends Fragment {
 			startActivity(intent);
 		});
 
-		wipePasswordCard.setOnClickListener(v -> {
+		wipeOnFailedLoginsSwitch =
+				view.findViewById(R.id.wipe_on_failed_logins_switch);
+		if (wipeOnFailedLoginsSwitch != null) {
+			wipeOnFailedLoginsSwitch.setChecked(
+					bruteForceProtection.isWipeOnRepeatedFailures());
+			wipeOnFailedLoginsSwitch.setOnCheckedChangeListener(
+					(buttonView, isChecked) -> {
+				if (!buttonView.isPressed()) return;
+				if (isChecked) {
+					withAccountPassword(this::showWipeOnFailedLoginsDialog,
+							() -> wipeOnFailedLoginsSwitch.setChecked(false));
+				} else {
+					withAccountPassword(() -> bruteForceProtection
+									.setWipeOnRepeatedFailures(false),
+							() -> wipeOnFailedLoginsSwitch.setChecked(true));
+				}
+			});
+		}
+
+		wipePasswordCard.setOnClickListener(v -> withAccountPassword(() -> {
 			WipePasswordManager mgr = getWipePasswordManager();
 			if (mgr != null && mgr.isWipePasswordEnabled()) {
 				showWipePasswordRemoveDialog();
 			} else {
 				showWipePasswordSetDialog();
 			}
-		});
+		}, () -> {
+		}));
 
 		View hardenedCard = view.findViewById(R.id.hardened_mode_card);
 		if (hardenedCard != null) {
@@ -219,6 +247,23 @@ public class SecurityFragment extends Fragment {
 		updateWipePasswordSummary();
 	}
 
+	/**
+	 * Runs {@code granted} only after the account password is re-entered
+	 * through the sign-in throttle; {@code refused} restores the control.
+	 */
+	private void withAccountPassword(Runnable granted, Runnable refused) {
+		if (!isAdded()) return;
+		AccountPasswordGate.prompt(requireContext(), accountManager,
+				kdfExecutor, mainHandler,
+				R.string.settings_password_required_title,
+				R.string.settings_password_required_message,
+				() -> {
+					if (isAdded()) granted.run();
+				}, () -> {
+					if (isAdded()) refused.run();
+				});
+	}
+
 	private String buildHardenedSummary() {
 		int count = 0;
 		if (uiPrefs.getBoolean(com.professor.zerion.android.security
@@ -232,8 +277,24 @@ public class SecurityFragment extends Fragment {
 		return getString(R.string.hardened_mode_summary_format, count);
 	}
 
+	private void showWipeOnFailedLoginsDialog() {
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				requireContext())
+				.setTitle(R.string.pref_wipe_on_failed_logins_confirm_title)
+				.setMessage(R.string.pref_wipe_on_failed_logins_confirm_message)
+				.setPositiveButton(
+						R.string.pref_wipe_on_failed_logins_confirm_button,
+						(d, w) -> bruteForceProtection
+								.setWipeOnRepeatedFailures(true))
+				.setNegativeButton(android.R.string.cancel,
+						(d, w) -> wipeOnFailedLoginsSwitch.setChecked(false))
+				.setOnCancelListener(
+						d -> wipeOnFailedLoginsSwitch.setChecked(false))
+				.show();
+	}
+
 	private void showVideoCallsBetaDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.video_calls_beta_warning_title)
 				.setMessage(R.string.video_calls_beta_warning_message)
 				.setCancelable(false)
@@ -271,7 +332,7 @@ public class SecurityFragment extends Fragment {
 						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
 						false)
 		};
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.hardened_mode_dialog_title)
 				.setMultiChoiceItems(labels, checked,
 						(d, which, isChecked) -> checked[which] = isChecked)
@@ -287,7 +348,7 @@ public class SecurityFragment extends Fragment {
 						.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC,
 						false);
 		if (enablingDestructive) {
-			new MaterialAlertDialogBuilder(requireContext())
+			new SecureAlertDialogBuilder(requireContext())
 					.setTitle(R.string.hardened_mode_usb_confirm_title)
 					.setMessage(R.string.hardened_mode_usb_confirm_message)
 					.setPositiveButton(
@@ -305,7 +366,7 @@ public class SecurityFragment extends Fragment {
 				getString(R.string.hardened_mode_usb_scope_signout),
 				getString(R.string.hardened_mode_usb_scope_wipe)
 		};
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.hardened_mode_usb_scope_title)
 				.setSingleChoiceItems(scope, 0, null)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -403,7 +464,7 @@ public class SecurityFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_lock_timeout_title)
 				.setSingleChoiceItems(timeoutEntries, selectedIndex, (dialog, which) -> {
 					String newValue = timeoutValues[which];
@@ -446,7 +507,7 @@ public class SecurityFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_default_disappearing_title)
 				.setSingleChoiceItems(entries, selectedIndex,
 						(dialog, which) -> {
@@ -490,10 +551,13 @@ public class SecurityFragment extends Fragment {
 						Toast.LENGTH_LONG).show();
 				return;
 			}
-			com.professor.zerion.android.decoy.DecoyConfig
-					.setEnabled(requireContext(), isChecked);
+			withAccountPassword(() -> com.professor.zerion.android.decoy
+							.DecoyConfig.setEnabled(requireContext(), isChecked),
+					() -> decoySwitch.setChecked(!isChecked));
 		});
-		decoySetCodeCard.setOnClickListener(v -> showDecoySetCodeDialog());
+		decoySetCodeCard.setOnClickListener(v ->
+				withAccountPassword(this::showDecoySetCodeDialog, () -> {
+				}));
 		updateDecoyCodeSummary();
 	}
 
@@ -538,7 +602,7 @@ public class SecurityFragment extends Fragment {
 		}
 		warningText.setText(R.string.decoy_set_code_warning);
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.decoy_set_code_title)
 						.setView(dialogView)
 						.setPositiveButton(R.string.decoy_set_code_save, null)
@@ -634,7 +698,7 @@ public class SecurityFragment extends Fragment {
 		}
 
 		androidx.appcompat.app.AlertDialog wdlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.wipe_password_dialog_title)
 						.setMessage(R.string.wipe_password_dialog_message)
 						.setView(dialogView)
@@ -697,7 +761,7 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showWipePasswordRemoveDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.wipe_password_remove_title)
 				.setMessage(R.string.wipe_password_remove_message)
 				.setIcon(R.drawable.ic_warning)

@@ -90,33 +90,37 @@ public class AndroidAccountManager extends AccountManagerImpl
 			} else {
 				order.addAll(profiles);
 			}
+			SecretKey matchedKey = null;
+			String matchedId = null;
+			boolean matchedNeedsUpgrade = false;
+			int attempts = 0;
 			for (String id : order) {
 				profileManager.setActiveProfileId(id);
 				String hex = loadEncryptedDatabaseKey();
 				if (hex == null) continue;
+				attempts++;
 				try {
 					byte[] ciphertext = fromHexString(hex);
 					KeyStrengthener strengthener =
 							databaseConfig.getKeyStrengthener();
 					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
 							password, strengthener);
-					SecretKey key = new SecretKey(plaintext);
+					if (matchedKey != null) {
+						java.util.Arrays.fill(plaintext, (byte) 0);
+						continue;
+					}
+					matchedKey = new SecretKey(plaintext);
+					matchedId = id;
 					boolean needsStrengthenerUpgrade = strengthener != null
 							&& !crypto.isEncryptedWithStrengthenedKey(
 									ciphertext);
 					boolean needsKdfUpgrade =
 							crypto.isEncryptedWithLegacyKdf(ciphertext);
-					if (needsStrengthenerUpgrade || needsKdfUpgrade) {
-						encryptAndReplaceDatabaseKey(key, password);
-					}
-					materializePendingIdentityIfPresent(id);
-					setDatabaseKey(key);
-					profileManager.setActiveProfileId(id);
-					profileManager.writeLastActiveProfileId(id);
-					resetGlobalLockout();
-					return;
+					matchedNeedsUpgrade =
+							needsStrengthenerUpgrade || needsKdfUpgrade;
 				} catch (DecryptionException e) {
 					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
+						if (matchedKey != null) matchedKey.clear();
 						profileManager.setActiveProfileId(previousActive);
 						throw e;
 					}
@@ -124,9 +128,52 @@ public class AndroidAccountManager extends AccountManagerImpl
 						ignored) {
 				}
 			}
+			padSignInAttempts(attempts, order, password);
+			if (matchedKey != null) {
+				profileManager.setActiveProfileId(matchedId);
+				if (matchedNeedsUpgrade) {
+					encryptAndReplaceDatabaseKey(matchedKey, password);
+				}
+				materializePendingIdentityIfPresent(matchedId);
+				setDatabaseKey(matchedKey);
+				profileManager.writeLastActiveProfileId(matchedId);
+				resetGlobalLockout();
+				return;
+			}
 			profileManager.setActiveProfileId(previousActive);
 			recordGlobalFailedAttempt();
 			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
+	}
+
+	/**
+	 * The password is tried against every profile, so the work does not
+	 * reveal which profile matched; and once a second profile has ever
+	 * existed the derivation runs at least this many times, so a device with
+	 * one visible profile and a device that also holds a hidden one take the
+	 * same time to sign in.
+	 */
+	static final int MIN_TIMED_ATTEMPTS = 2;
+
+	@GuardedBy("stateChangeLock")
+	private void padSignInAttempts(int attempts, List<String> order,
+			char[] password) {
+		if (order.isEmpty()) return;
+		int minimum = profileManager.hasEverHadMultipleProfiles()
+				? MIN_TIMED_ATTEMPTS : 1;
+		if (attempts >= minimum) return;
+		profileManager.setActiveProfileId(order.get(0));
+		String hex = loadEncryptedDatabaseKey();
+		if (hex == null) return;
+		for (int i = attempts; i < minimum; i++) {
+			try {
+				byte[] plaintext = crypto.decryptWithPassword(
+						fromHexString(hex), password,
+						databaseConfig.getKeyStrengthener());
+				java.util.Arrays.fill(plaintext, (byte) 0);
+			} catch (DecryptionException
+					| org.zerionproject.core.api.FormatException ignored) {
+			}
 		}
 	}
 
@@ -149,73 +196,46 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@GuardedBy("stateChangeLock")
 	private void encryptAndReplaceDatabaseKey(SecretKey key, char[] password) {
 		byte[] plaintext = key.getBytes();
-		byte[] ciphertext = crypto.encryptWithPassword(plaintext, password,
-				databaseConfig.getKeyStrengthener());
+		byte[] ciphertext;
+		try {
+			ciphertext = crypto.encryptWithPassword(plaintext, password,
+					databaseConfig.getKeyStrengthener());
+		} catch (org.zerionproject.core.api.crypto
+				.KeyStrengthenerException keepExisting) {
+			return;
+		}
 		storeEncryptedDatabaseKey(
 				org.zerionproject.core.util.StringUtils.toHexString(
 						ciphertext));
 	}
 
+	/**
+	 * One sign-in attempt is tried against every profile, so the throttle is
+	 * global: its state lives outside the profile directories and runs on
+	 * the device's monotonic clock, which keeps counting across a force-stop
+	 * and is re-anchored on the boot identifier after a reboot.
+	 */
+	@Override
+	protected LoginThrottle createLoginThrottle(File ignored) {
+		return new LoginThrottle(
+				LoginThrottle.fileStore(profileManager.getLockoutFile()),
+				android.os.SystemClock::elapsedRealtime,
+				LoginThrottle.linuxBootId(), LoginThrottle.SIGN_IN);
+	}
+
 	@GuardedBy("stateChangeLock")
 	private void checkGlobalLockout() throws DecryptionException {
-		File lockoutFile = profileManager.getLockoutFile();
-		if (!lockoutFile.exists()) return;
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-				new FileInputStream(lockoutFile), UTF_8))) {
-			String line = reader.readLine();
-			if (line == null) return;
-			String[] parts = line.split(",");
-			if (parts.length != 2) return;
-			int attempts = Integer.parseInt(parts[0]);
-			long lastFailTime = Long.parseLong(parts[1]);
-			if (attempts >= 10) {
-				long elapsed = System.currentTimeMillis() - lastFailTime;
-				if (elapsed < 5L * 60 * 1000) {
-					throw new DecryptionException(INVALID_CIPHERTEXT);
-				}
-				resetGlobalLockout();
-			}
-		} catch (IOException | NumberFormatException e) {
-
-			lockoutFile.delete();
-		}
+		checkLockout();
 	}
 
 	@GuardedBy("stateChangeLock")
 	private void recordGlobalFailedAttempt() {
-		File lockoutFile = profileManager.getLockoutFile();
-		int attempts = 0;
-		if (lockoutFile.exists()) {
-			try (BufferedReader reader = new BufferedReader(
-					new InputStreamReader(new FileInputStream(lockoutFile),
-							UTF_8))) {
-				String line = reader.readLine();
-				if (line != null) {
-					String[] parts = line.split(",");
-					if (parts.length == 2) {
-						attempts = Integer.parseInt(parts[0]);
-					}
-				}
-			} catch (IOException | NumberFormatException ignored) {
-			}
-		}
-		attempts++;
-		try (java.io.FileOutputStream out =
-				new java.io.FileOutputStream(lockoutFile)) {
-			String data = attempts + "," + System.currentTimeMillis();
-			out.write(data.getBytes(UTF_8));
-			out.flush();
-		} catch (IOException ignored) {
-		}
+		recordFailedAttempt();
 	}
 
 	@GuardedBy("stateChangeLock")
 	private void resetGlobalLockout() {
-		File lockoutFile = profileManager.getLockoutFile();
-		if (lockoutFile.exists()) {
-
-			lockoutFile.delete();
-		}
+		resetLockout();
 	}
 
 	public String getActiveProfileId() {
@@ -310,7 +330,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 					out.getFD().sync();
 				}
 				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
-						null);
+						databaseConfig.getKeyStrengthener());
 				boolean ok = storeEncryptedDatabaseKey(
 						org.zerionproject.core.util.StringUtils.toHexString(
 								ciphertext));

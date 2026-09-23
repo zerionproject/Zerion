@@ -2,7 +2,6 @@ package com.professor.zerion.android;
 
 import android.app.LocaleManager;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.LocaleList;
@@ -14,7 +13,6 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 
 import static android.os.Build.VERSION.SDK_INT;
-import static com.professor.zerion.android.settings.DisplayFragment.PREF_LANGUAGE;
 
 @NotNullByDefault
 public class Localizer {
@@ -24,9 +22,8 @@ public class Localizer {
 	private final Locale systemLocale;
 	private final Locale locale;
 
-	private Localizer(SharedPreferences sharedPreferences) {
-		this(Locale.getDefault(), getLocaleFromTag(
-				sharedPreferences.getString(PREF_LANGUAGE, "default")));
+	private Localizer(String languageTag) {
+		this(Locale.getDefault(), getLocaleFromTag(languageTag));
 	}
 
 	private Localizer(Locale systemLocale, @Nullable Locale userLocale) {
@@ -35,9 +32,9 @@ public class Localizer {
 		else locale = userLocale;
 	}
 
-	public static synchronized void initialize(SharedPreferences prefs) {
+	public static synchronized void initialize(String languageTag) {
 		if (INSTANCE == null)
-			INSTANCE = new Localizer(prefs);
+			INSTANCE = new Localizer(languageTag);
 	}
 
 	public static synchronized void reinitialize() {
@@ -45,8 +42,8 @@ public class Localizer {
 			INSTANCE = new Localizer(INSTANCE.systemLocale, null);
 	}
 
-	public static synchronized void forceReinitialize(SharedPreferences prefs) {
-		INSTANCE = new Localizer(prefs);
+	public static synchronized void forceReinitialize(String languageTag) {
+		INSTANCE = new Localizer(languageTag);
 	}
 
 	public static synchronized Localizer getInstance() {

@@ -1,7 +1,7 @@
 package org.zerionproject.core.connection;
 
-import org.zerionproject.core.api.connection.ConnectionManager;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactExchangeManager;
 import org.zerionproject.core.api.contact.HandshakeManager;
 import org.zerionproject.core.api.contact.HandshakeManager.HandshakeResult;
@@ -14,10 +14,12 @@ import org.zerionproject.core.api.transport.StreamContext;
 import org.zerionproject.core.api.transport.StreamReaderFactory;
 import org.zerionproject.core.api.transport.StreamWriter;
 import org.zerionproject.core.api.transport.StreamWriterFactory;
+import org.zerionproject.transport.ZtpConnectionHandler;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.Executor;
 
 @NotNullByDefault
 class IncomingHandshakeConnection extends HandshakeConnection
@@ -29,14 +31,14 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			StreamWriterFactory streamWriterFactory,
 			HandshakeManager handshakeManager,
 			ContactExchangeManager contactExchangeManager,
-			ConnectionManager connectionManager,
+			ZtpConnectionHandler connectionHandler, Executor ioExecutor,
 			PendingContactId pendingContactId,
 			TransportId transportId, DuplexTransportConnection connection,
 			boolean classical) {
 		super(keyManager, connectionRegistry, streamReaderFactory,
 				streamWriterFactory, handshakeManager, contactExchangeManager,
-				connectionManager, pendingContactId, transportId, connection,
-				classical);
+				connectionHandler, ioExecutor, pendingContactId, transportId,
+				connection, classical);
 	}
 
 	@Override
@@ -48,7 +50,8 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			return;
 		}
 		PendingContactId inPendingContactId = ctxIn.getPendingContactId();
-		if (inPendingContactId == null) {
+		if (inPendingContactId == null
+				|| !inPendingContactId.equals(pendingContactId)) {
 			onError(true);
 			return;
 		}
@@ -70,17 +73,17 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			out.getOutputStream().flush();
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
-			contactExchangeManager.exchangeContacts(pendingContactId,
-					connection, result.getMasterKey(), result.isAlice(), true,
-					classical,
+			Contact contact = contactExchangeManager.exchangeContacts(
+					pendingContactId, connection, result.getMasterKey(),
+					result.isAlice(), true, classical,
 					result.getOurStaticHybridPub(),
 					result.getTheirStaticHybridPub(),
 					result.getOurEphX25519(),
 					result.getTheirEphX25519());
 			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
-			connectionManager.manageIncomingConnection(transportId, connection);
-		} catch (IOException | DbException e) {
+			runPairedSession(contact.getId(), true);
+		} catch (IOException | DbException | RuntimeException e) {
 			onError(true);
 			connectionRegistry.unregisterConnection(pendingContactId, false);
 		}

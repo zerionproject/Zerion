@@ -98,10 +98,42 @@ public final class TestAndroidKeyStore {
 		}
 	}
 
+	/** Fault injection: the next N key lookups throw as a keystore may. */
+	public static volatile int failKeyLookups = 0;
+
 	public static final class InMemoryKeyStoreSpi extends KeyStoreSpi {
 		@Override
-		public Key engineGetKey(String alias, char[] password) {
+		public Key engineGetKey(String alias, char[] password)
+				throws java.security.UnrecoverableKeyException {
+			if (failKeyLookups > 0) {
+				failKeyLookups--;
+				throw new java.security.UnrecoverableKeyException(
+						"keystore temporarily unavailable");
+			}
 			return STORE.get(alias);
+		}
+
+		/**
+		 * The platform keystore hands back a secret key entry without a
+		 * protection parameter; the JDK default would refuse, which would
+		 * make every fresh strengthener look like a first run.
+		 */
+		@Override
+		public java.security.KeyStore.Entry engineGetEntry(String alias,
+				java.security.KeyStore.ProtectionParameter protParam)
+				throws java.security.UnrecoverableEntryException {
+			if (!STORE.containsKey(alias)) return null;
+			try {
+				Key key = engineGetKey(alias, null);
+				if (key instanceof javax.crypto.SecretKey) {
+					return new java.security.KeyStore.SecretKeyEntry(
+							(javax.crypto.SecretKey) key);
+				}
+				return null;
+			} catch (java.security.UnrecoverableKeyException e) {
+				throw new java.security.UnrecoverableEntryException(
+						e.getMessage());
+			}
 		}
 
 		@Override

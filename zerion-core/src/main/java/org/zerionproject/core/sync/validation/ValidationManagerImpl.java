@@ -148,13 +148,13 @@ class ValidationManagerImpl implements ValidationManager, Service,
 
 	@DatabaseExecutor
 	private void deliverNextPendingMessage(Queue<MessageId> pending) {
+		MessageId id = pending.poll();
+		if (id == null) throw new AssertionError();
 		try {
 			Queue<MessageId> toShare = new LinkedList<>();
 			Queue<MessageId> invalidate = new LinkedList<>();
 			db.transaction(false, txn -> {
 				boolean anyInvalid = false, allDelivered = true;
-				MessageId id = pending.poll();
-				if (id == null) throw new AssertionError();
 				if (db.getMessageState(txn, id) == PENDING) {
 					Map<MessageId, MessageState> states =
 							db.getMessageDependencies(txn, id);
@@ -197,6 +197,9 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		} catch (NoSuchGroupException e) {
 			deliverNextPendingMessageAsync(pending);
 		} catch (DbException e) {
+		} catch (RuntimeException e) {
+			invalidateAfterFailure(id);
+			deliverNextPendingMessageAsync(pending);
 		}
 	}
 
@@ -215,7 +218,7 @@ class ValidationManagerImpl implements ValidationManager, Service,
 				MessageContext context = v.validateMessage(m, g);
 				storeMessageContextAsync(m, g.getClientId(),
 						g.getMajorVersion(), context);
-			} catch (InvalidMessageException e) {
+			} catch (InvalidMessageException | RuntimeException e) {
 				Queue<MessageId> invalidate = new LinkedList<>();
 				invalidate.add(m.getId());
 				invalidateNextMessageAsync(invalidate);
@@ -285,7 +288,22 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		} catch (NoSuchMessageException e) {
 		} catch (NoSuchGroupException e) {
 		} catch (DbException e) {
+		} catch (RuntimeException e) {
+			invalidateAfterFailure(m.getId());
 		}
+	}
+
+	/**
+	 * A validator or incoming message hook that fails with an unchecked
+	 * exception has already had its transaction rolled back. The message is
+	 * marked invalid in a fresh transaction so that it is never validated or
+	 * delivered again, including at the next start, and the executor thread
+	 * survives.
+	 */
+	private void invalidateAfterFailure(MessageId id) {
+		Queue<MessageId> invalidate = new LinkedList<>();
+		invalidate.add(id);
+		invalidateNextMessageAsync(invalidate);
 	}
 
 	@DatabaseExecutor
