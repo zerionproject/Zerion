@@ -1,10 +1,9 @@
 {
-  "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact.",
+  "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact. The release reference is the tag: a commit hash is deliberately absent, because this file ships inside the release commit and cannot name that commit's own hash. Consumers resolve the tag (F-Droid records its own resolved hash in fdroiddata).",
   "android": {
     "version": "3.0.11",
     "versionCode": 31100,
     "tag": "v3.0.11",
-    "commit": "6e24cdd8476b9ce96fb27ecae81203256bd52cfa",
     "minAndroid": "10",
     "minApi": 29,
     "apk": {
