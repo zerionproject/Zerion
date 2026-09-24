@@ -513,6 +513,13 @@ project.afterEvaluate {
             includeTestsMatching 'com.professor.zerion.android.vault.wallet.xmr.*'
             includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
         }
+        // This suite derives wallet keys with Argon2id, which is deliberately
+        // memory hard. Running it beside R8, which saturates the cores and
+        // takes gigabytes, starved those derivations enough to expire a
+        // thirty-second wait on one release build in three while every run
+        // without R8 passed. Ordering it after R8 removes the contention
+        // instead of hiding it behind a longer deadline.
+        mustRunAfter tasks.matching { it.name.startsWith('minify') }
     }
     tasks.matching {
         (it.name.startsWith('assemble') || it.name.startsWith('bundle')) &&
