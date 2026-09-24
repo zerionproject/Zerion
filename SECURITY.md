@@ -30,9 +30,9 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | September 2026 | independent focused review | ZeroTrace | Bitcoin wallet and the dormant PayJoin component | two Medium and one Low fixed in 3.0.9; one PayJoin blocker open by design while the feature stays disabled | fixes public; report private |
 | September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation on the `security-r1` branch, not yet released | not published |
 
-## Known limitations of the current release (3.0.11)
+## Limitations of the previous release (3.0.11), fixed in 3.0.12
 
-Recorded here so that no document overstates the shipped build. All are corrected on the `security-r1` branch and ship in 3.0.12, which is not yet released; 3.0.11 stays the current version until then. None of them is known to have been exploited.
+Recorded here so that no document overstates what 3.0.11 shipped. All four are fixed in 3.0.12, the current release; the entries are kept as the history of the previous one. None of them is known to have been exploited.
 
 - Call media: the per-call key derivation has a defect (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity) and video nonces can repeat when video is restarted within a call. In 3.0.11 call confidentiality rests on the Tor onion-service layer between the two devices; using the defect would require an adversary inside that connection or at an endpoint.
 - Pairing: post-quantum protection at link pairing is confidentiality only; authentication is classical (X25519 ownership proofs bound to the out-of-band commitment and an Ed25519 signature), so only an adversary with a quantum computer active during the pairing could impersonate a peer. Nearby (QR/Bluetooth) pairing is classical.
