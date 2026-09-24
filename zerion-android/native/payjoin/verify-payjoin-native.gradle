@@ -2,7 +2,9 @@
 // Verifies every packaged libpayjoin_ffi.so against the pinned SHA-256 in
 // MANIFEST.txt and rejects any unexpected native artifact in the Payjoin ABI
 // directories. Wired into release/bundle assembly so an unpinned or unexpected
-// binary fails the build. Inert until the .so are actually packaged.
+// binary fails the build. rootProject.ext.payjoinNativeEnabled decides the
+// direction of the failure: off, any libpayjoin artifact under jniLibs is an
+// error; on, both ABIs must be present and match the manifest.
 
 def payjoinJniDir = { -> file("${projectDir}/src/main/jniLibs") }
 def payjoinManifest = { -> file("${rootDir}/zerion-android/native/payjoin/MANIFEST.txt") }
@@ -34,10 +36,17 @@ tasks.register('verifyPayjoinNativeArtifacts') {
         def jni = payjoinJniDir()
         def supportedAbis = ['arm64-v8a', 'armeabi-v7a']
         def expected = parseManifestHashes(payjoinManifest())
-        def anyPresent = supportedAbis.any { abi ->
-            new File(jni, "${abi}/${payjoinExpectedLib}").exists()
+        def enabled = rootProject.ext.has('payjoinNativeEnabled') &&
+                rootProject.ext.payjoinNativeEnabled
+        def present = supportedAbis.findAll { abi ->
+            (new File(jni, abi).listFiles() ?: []).any {
+                it.name.startsWith('libpayjoin') || it.name.startsWith('libbitcoin_ffi')
+            }
         }
-        if (!anyPresent) {
+        if (!enabled) {
+            if (!present.isEmpty()) {
+                throw new GradleException("Payjoin is disabled but native artifacts are present for ${present}; remove them or enable payjoinNativeEnabled.")
+            }
             return
         }
         if (expected.isEmpty()) {

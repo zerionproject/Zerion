@@ -16,6 +16,7 @@ import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyStore;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,21 +29,81 @@ import java.util.Set;
 public class BtcWallet {
 
 	public static final int GAP_LIMIT = 20;
+	/**
+	 * The most addresses probed on one chain in a full scan. The gap limit
+	 * ends an honest scan long before this; a server answering non-empty
+	 * history for every script hash would otherwise keep the scan running
+	 * forever.
+	 */
+	static final int MAX_CHAIN_INDEX = 2000;
+	/**
+	 * History items and unspent outputs a single scan accepts in total,
+	 * over both chains; a server answering the per-call maximum for every
+	 * index would otherwise make the scan build millions of objects.
+	 */
+	static final int MAX_SCAN_ITEMS = 50_000;
+	/** Parsed transactions kept between scans. */
+	static final int MAX_TX_CACHE = 512;
+	/** A transaction larger than this is parsed but not kept in the cache. */
+	static final int MAX_CACHED_TX_BYTES = 64 * 1024;
+	/** Transactions the history view fetches, newest first. */
+	static final int MAX_HISTORY_TXS = 1000;
+	/** Raw transaction bytes one history fetch parses before it stops. */
+	static final long MAX_HISTORY_BYTES = 8L * 1024 * 1024;
 
 	private volatile int minReceiveProbe = -1;
+	private volatile int minChangeProbe = -1;
 
 	public void setMinReceiveProbe(int index) {
 		if (index > minReceiveProbe) minReceiveProbe = index;
+	}
+
+	/**
+	 * The lowest change index the next plan may use. Persisted by the
+	 * caller and advanced past every change output this wallet has signed,
+	 * so two sends before the scan server has seen the first never share a
+	 * change address.
+	 */
+	public void setMinChangeProbe(int index) {
+		if (index > minChangeProbe) minChangeProbe = index;
+	}
+
+	public int minChangeProbe() {
+		return minChangeProbe;
+	}
+
+	/** The wallet id this instance was opened for. */
+	public String walletId() {
+		return isolationTag;
+	}
+
+	/**
+	 * The smallest receive index at or above {@code shown} that has not
+	 * been used, so a displayed address that received funds is replaced by
+	 * the next unused one rather than staying on screen.
+	 */
+	public static int nextUnusedAtOrAbove(Set<Integer> used, int shown) {
+		int i = Math.max(shown, 0);
+		while (used.contains(i)) i++;
+		return i;
 	}
 
 	public int lastReceiveUsedIndex() {
 		return lastReceiveUsed;
 	}
 	private static final long DUST = 294L;
-	private static final double MIN_FEE_RATE = 2.0;
-	private static final double MAX_FEE_RATE = 1000.0;
+	static final double MIN_FEE_RATE = 2.0;
+	/**
+	 * The highest rate a server estimate or a caller may set. A hostile
+	 * server used to be able to push every option to 1000 sat/vB; the
+	 * ceiling now sits at the top of what a congested mempool has ever
+	 * needed, and the review shows the effective rate and the fee's share
+	 * of the amount so that an excessive suggestion is visible.
+	 */
+	static final double MAX_FEE_RATE = 200.0;
+	/** Above this share of the amount the review flags the fee as high. */
+	public static final int HIGH_FEE_PERCENT = 20;
 	private static final long PENDING_GRACE_MS = 30L * 60L * 1000L;
-	private static final long SENT_VISIBILITY_MS = 2L * 60L * 60L * 1000L;
 	private static final int PENDING_FAIL_MISSES = 3;
 
 	private final Map<String, Integer> pendingMisses =
@@ -75,21 +136,26 @@ public class BtcWallet {
 		public final String receiveAddress;
 		public final int receiveIndex;
 		public final String changeAddress;
+		public final int changeIndex;
 		public final List<ElectrumClient.HistItem> history;
 		public final List<OwnedUtxo> utxos;
 		public final Set<String> ownedAddresses;
+		/** Receive indexes with history within the probed range. */
+		public final Set<Integer> usedReceiveIndexes;
 
 		ScanResult(long balanceSat, String receiveAddress, int receiveIndex,
-				String changeAddress,
+				String changeAddress, int changeIndex,
 				List<ElectrumClient.HistItem> history, List<OwnedUtxo> utxos,
-				Set<String> ownedAddresses) {
+				Set<String> ownedAddresses, Set<Integer> usedReceiveIndexes) {
 			this.balanceSat = balanceSat;
 			this.receiveAddress = receiveAddress;
 			this.receiveIndex = receiveIndex;
 			this.changeAddress = changeAddress;
+			this.changeIndex = changeIndex;
 			this.history = history;
 			this.utxos = utxos;
 			this.ownedAddresses = ownedAddresses;
+			this.usedReceiveIndexes = usedReceiveIndexes;
 		}
 	}
 
@@ -122,7 +188,7 @@ public class BtcWallet {
 		}
 	}
 
-	private final String mnemonic;
+	private final BtcKeys.Account keys;
 	private final int account;
 	private final int socksPort;
 	private volatile ElectrumEndpoint scanEndpoint;
@@ -131,7 +197,14 @@ public class BtcWallet {
 	private final ElectrumRpc.Factory electrumFactory;
 	private final SilentPaymentScanner.Fetcher spFetcher;
 	private final Map<String, Transaction> txCache =
-			new java.util.concurrent.ConcurrentHashMap<>();
+			java.util.Collections.synchronizedMap(
+					new LinkedHashMap<String, Transaction>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						Map.Entry<String, Transaction> eldest) {
+					return size() > MAX_TX_CACHE;
+				}
+			});
 	@Nullable
 	private volatile ScanResult lastScan;
 	private PendingLog pendingLog = PendingLog.NONE;
@@ -218,14 +291,19 @@ public class BtcWallet {
 		throw last;
 	}
 
-	public BtcWallet(String mnemonic, int account, int socksPort, String host,
+	/**
+	 * Opens the wallet from its mnemonic characters. The account keys are
+	 * derived once here; the caller keeps ownership of the array and wipes
+	 * it, and the wallet never holds the mnemonic in any form.
+	 */
+	public BtcWallet(char[] mnemonic, int account, int socksPort, String host,
 			int port, String isolationTag) {
 		this(mnemonic, account, socksPort,
 				ElectrumEndpoint.parse(host + ":" + port),
 				ElectrumEndpoint.parse(host + ":" + port), isolationTag);
 	}
 
-	public BtcWallet(String mnemonic, int account, int socksPort,
+	public BtcWallet(char[] mnemonic, int account, int socksPort,
 			ElectrumEndpoint scanEndpoint, ElectrumEndpoint broadcastEndpoint,
 			String isolationTag) {
 		this(mnemonic, account, socksPort, scanEndpoint, broadcastEndpoint,
@@ -233,7 +311,7 @@ public class BtcWallet {
 				(url, tag) -> TorHttp.get(url, socksPort, tag));
 	}
 
-	BtcWallet(String mnemonic, int account, int socksPort, String host,
+	BtcWallet(char[] mnemonic, int account, int socksPort, String host,
 			int port, String isolationTag, ElectrumRpc.Factory electrumFactory,
 			SilentPaymentScanner.Fetcher spFetcher) {
 		this(mnemonic, account, socksPort,
@@ -242,11 +320,11 @@ public class BtcWallet {
 				electrumFactory, spFetcher);
 	}
 
-	BtcWallet(String mnemonic, int account, int socksPort,
+	BtcWallet(char[] mnemonic, int account, int socksPort,
 			ElectrumEndpoint scanEndpoint, ElectrumEndpoint broadcastEndpoint,
 			String isolationTag, ElectrumRpc.Factory electrumFactory,
 			SilentPaymentScanner.Fetcher spFetcher) {
-		this.mnemonic = mnemonic;
+		this.keys = deriveAccount(mnemonic, account);
 		this.account = account;
 		this.socksPort = socksPort;
 		this.scanEndpoint = scanEndpoint;
@@ -256,12 +334,30 @@ public class BtcWallet {
 		this.spFetcher = spFetcher;
 	}
 
+	private static BtcKeys.Account deriveAccount(char[] mnemonic, int account) {
+		try {
+			return BtcKeys.Account.fromMnemonic(mnemonic, account);
+		} catch (GeneralSecurityException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	public String firstReceiveAddress() {
-		return BtcKeys.address(mnemonic, account, 0);
+		return keys.address(0);
 	}
 
 	public String receiveAddressAt(int index) {
-		return BtcKeys.address(mnemonic, account, index);
+		return keys.address(index);
+	}
+
+	/**
+	 * Drops the account keys. Every derivation and signature fails
+	 * afterwards; the caller opens a new wallet from the mnemonic instead.
+	 */
+	public void close() {
+		keys.close();
+		txCache.clear();
+		lastScan = null;
 	}
 
 	public ScanResult scan() throws IOException {
@@ -273,7 +369,8 @@ public class BtcWallet {
 			return scan();
 		}
 		return doScan(Math.max(lastReceiveUsed + POLL_LOOKAHEAD,
-				minReceiveProbe), lastChangeUsed + POLL_LOOKAHEAD);
+				minReceiveProbe), Math.max(lastChangeUsed + POLL_LOOKAHEAD,
+				minChangeProbe));
 	}
 
 	private synchronized ScanResult doScan(int receiveBound, int changeBound)
@@ -283,12 +380,13 @@ public class BtcWallet {
 			List<ElectrumClient.HistItem> history = new ArrayList<>();
 			long[] balance = {0};
 
+			Set<Integer> usedReceive = new java.util.HashSet<>();
 			int[] r = probeChain(c, false, receiveBound, utxos, history,
-					balance);
+					balance, usedReceive);
 			int freshReceive = r[0];
 			int receiveProbed = r[1];
 			int[] ch = probeChain(c, true, changeBound, utxos, history,
-					balance);
+					balance, null);
 			Set<String> seenTx = new java.util.HashSet<>();
 			List<ElectrumClient.HistItem> dedup = new ArrayList<>();
 			for (ElectrumClient.HistItem h : history) {
@@ -306,8 +404,7 @@ public class BtcWallet {
 				lastChangeUsed = ch[2];
 			}
 
-			Set<String> owned = BtcKeys.ownedAddresses(mnemonic, account,
-					receiveProbed, changeProbed);
+			Set<String> owned = keys.ownedAddresses(receiveProbed, changeProbed);
 
 			long total = balance[0];
 			Set<String> reserved = reconcilePending(c, utxos);
@@ -326,10 +423,10 @@ public class BtcWallet {
 			}
 
 			ScanResult result = new ScanResult(total,
-					BtcKeys.address(mnemonic, account, freshReceive),
+					keys.address(freshReceive),
 					freshReceive,
-					BtcKeys.changeAddress(mnemonic, account, freshChange),
-					history, utxos, owned);
+					keys.changeAddress(freshChange),
+					freshChange, history, utxos, owned, usedReceive);
 			lastScan = result;
 			return result;
 		}
@@ -346,49 +443,59 @@ public class BtcWallet {
 
 	private int[] probeChain(ElectrumRpc c, boolean change, int bound,
 			List<OwnedUtxo> utxos, @Nullable List<ElectrumClient.HistItem> hist,
-			long[] balance) throws IOException {
+			long[] balance, @Nullable Set<Integer> usedOut) throws IOException {
 		int fresh = -1;
 		int probed = 0;
 		int maxUsed = -1;
 		int gap = 0;
-		for (int i = 0; bound < 0
-				? (gap < GAP_LIMIT || (!change && i <= minReceiveProbe))
-				: i <= bound; i++) {
+		int floor = change ? minChangeProbe : minReceiveProbe;
+		for (int i = 0; i < MAX_CHAIN_INDEX && (bound < 0
+				? (gap < GAP_LIMIT || i <= floor)
+				: i <= bound); i++) {
 			probed = i + 1;
-			String sh = change ? BtcKeys.changeScriptHash(mnemonic, account, i)
-					: BtcKeys.scriptHash(mnemonic, account, i);
+			String sh = change ? keys.changeScriptHash(i)
+					: keys.scriptHash(i);
 			List<ElectrumClient.HistItem> h = c.getHistory(sh);
 			if (h.isEmpty()) {
-				if (fresh < 0) {
+				if (fresh < 0 && (!change || i >= floor)) {
 					fresh = i;
 				}
 				gap++;
 			} else {
 				gap = 0;
 				maxUsed = i;
+				if (usedOut != null) usedOut.add(i);
 				if (hist != null) {
+					if (hist.size() + h.size() > MAX_SCAN_ITEMS) {
+						throw new IOException("Server returned too much history");
+					}
 					hist.addAll(h);
 				}
 				String addr = change
-						? BtcKeys.changeAddress(mnemonic, account, i)
-						: BtcKeys.address(mnemonic, account, i);
+						? keys.changeAddress(i)
+						: keys.address(i);
+				DeterministicKey key = change ? keys.changeKey(i)
+						: keys.receiveKey(i);
 				com.professor.zerion.android.vault.wallet.btc.privacy.UtxoOrigin
 						origin = change
 						? com.professor.zerion.android.vault.wallet.btc.privacy
 								.UtxoOrigin.CHANGE
 						: com.professor.zerion.android.vault.wallet.btc.privacy
 								.UtxoOrigin.RECEIVE;
-				for (ElectrumClient.Utxo u : c.listUnspent(sh)) {
-					utxos.add(new OwnedUtxo(u.txHash, u.txPos, u.value,
-							change ? BtcKeys.changeKey(mnemonic, account, i)
-									: BtcKeys.receiveKey(mnemonic, account, i),
+				List<ElectrumClient.Utxo> unspent = c.listUnspent(sh);
+				if (utxos.size() + unspent.size() > MAX_SCAN_ITEMS) {
+					throw new IOException("Server returned too many outputs");
+				}
+				for (ElectrumClient.Utxo u : unspent) {
+					utxos.add(new OwnedUtxo(u.txHash, u.txPos, u.value, key,
 							addr, origin));
 					balance[0] += u.value;
 				}
 			}
 		}
 		if (fresh < 0) {
-			fresh = bound < 0 ? 0 : bound + 1;
+			fresh = bound < 0 ? probed : bound + 1;
+			if (change && fresh < floor) fresh = floor;
 		}
 		return new int[]{fresh, probed, maxUsed};
 	}
@@ -424,18 +531,14 @@ public class BtcWallet {
 					break;
 				}
 			}
-			if (PendingTx.SENT.equals(p.state)) {
-				if (anyInputStillLive
-						&& now - p.createdAt < SENT_VISIBILITY_MS) {
-					for (String op : p.outpoints) {
-						if (liveOutpoints.contains(op)) {
-							reserved.add(op);
-						}
-					}
-				}
+			if (PendingTx.FAILED.equals(p.state)) {
 				continue;
 			}
-			if (PendingTx.FAILED.equals(p.state)) {
+			if (!anyInputStillLive) {
+				if (!PendingTx.SETTLED.equals(p.state)) {
+					pendingMisses.remove(p.txid);
+					safePut(p.withState(PendingTx.SETTLED));
+				}
 				continue;
 			}
 			Boolean onChain;
@@ -509,14 +612,24 @@ public class BtcWallet {
 
 	static double rateFor(ElectrumRpc c, int blocks) throws IOException {
 		double btcPerKb = c.estimateFeeBtcPerKb(blocks);
-		double rate = btcPerKb * 1e8 / 1000.0;
-		if (rate < MIN_FEE_RATE) {
-			rate = MIN_FEE_RATE;
-		}
-		if (rate > MAX_FEE_RATE) {
-			rate = MAX_FEE_RATE;
-		}
+		return sanitizeRate(btcPerKb * 1e8 / 1000.0);
+	}
+
+	/**
+	 * Clamps a fee rate into the accepted range. A value that is not a
+	 * finite number (a server can answer NaN, which no ordinary comparison
+	 * rejects) counts as unknown and takes the floor; an infinite or
+	 * excessive value takes the ceiling.
+	 */
+	static double sanitizeRate(double rate) {
+		if (!(rate >= MIN_FEE_RATE)) return MIN_FEE_RATE;
+		if (rate > MAX_FEE_RATE) return MAX_FEE_RATE;
 		return rate;
+	}
+
+	/** The fee no plan may go below for its size. */
+	static long minimumFeeSat(int vbytes) {
+		return (long) Math.ceil(vbytes * MIN_FEE_RATE);
 	}
 
 	public List<TxSummary> history(ScanResult scan) throws IOException {
@@ -531,10 +644,17 @@ public class BtcWallet {
 				}
 			}
 
+			heights = newestFirst(heights, MAX_HISTORY_TXS);
 			Map<String, Transaction> parsed = new HashMap<>();
 			Map<String, Long> ownedOutputs = new HashMap<>();
-			for (String txid : heights.keySet()) {
+			long parsedBytes = 0;
+			for (String txid : new ArrayList<>(heights.keySet())) {
+				if (parsedBytes > MAX_HISTORY_BYTES) {
+					heights.remove(txid);
+					continue;
+				}
 				Transaction t = fetchTx(c, txid);
+				parsedBytes += t.getMessageSize();
 				parsed.put(txid, t);
 				List<TransactionOutput> outs = t.getOutputs();
 				for (int i = 0; i < outs.size(); i++) {
@@ -593,7 +713,8 @@ public class BtcWallet {
 				state = STATE_BROADCASTING;
 			} else if (PendingTx.POSSIBLY_SENT.equals(p.state)) {
 				state = STATE_POSSIBLY_SENT;
-			} else if (PendingTx.SENT.equals(p.state)) {
+			} else if (PendingTx.SENT.equals(p.state)
+					|| PendingTx.SETTLED.equals(p.state)) {
 				state = STATE_PENDING;
 			} else if (PendingTx.FAILED.equals(p.state)) {
 				state = STATE_FAILED;
@@ -621,15 +742,57 @@ public class BtcWallet {
 		return out;
 	}
 
+	/**
+	 * Keeps the {@code limit} newest transactions (unconfirmed first, then
+	 * by height) in their original order, so a server cannot make the
+	 * history view fetch without bound.
+	 */
+	static LinkedHashMap<String, Integer> newestFirst(
+			LinkedHashMap<String, Integer> heights, int limit) {
+		if (heights.size() <= limit) return heights;
+		List<Map.Entry<String, Integer>> entries =
+				new ArrayList<>(heights.entrySet());
+		entries.sort((a, b) -> {
+			long ha = a.getValue() <= 0 ? Long.MAX_VALUE : a.getValue();
+			long hb = b.getValue() <= 0 ? Long.MAX_VALUE : b.getValue();
+			return Long.compare(hb, ha);
+		});
+		Set<String> keep = new java.util.HashSet<>();
+		for (int i = 0; i < limit; i++) keep.add(entries.get(i).getKey());
+		LinkedHashMap<String, Integer> out = new LinkedHashMap<>();
+		for (Map.Entry<String, Integer> e : heights.entrySet()) {
+			if (keep.contains(e.getKey())) out.put(e.getKey(), e.getValue());
+		}
+		return out;
+	}
+
+	int cachedTxCount() {
+		return txCache.size();
+	}
+
 	private Transaction fetchTx(ElectrumRpc c, String txid)
 			throws IOException {
 		Transaction t = txCache.get(txid);
 		if (t == null) {
 			t = new Transaction(BtcKeys.PARAMS,
 					Utils.HEX.decode(c.getTransaction(txid)));
-			txCache.put(txid, t);
+			if (t.getMessageSize() <= MAX_CACHED_TX_BYTES) {
+				txCache.put(txid, t);
+			}
 		}
 		return t;
+	}
+
+	/**
+	 * True when a scan reports no history at all for a wallet that had
+	 * history earlier in this session: a wallet's history never shrinks to
+	 * nothing, so the reply is a hidden or broken view and must not replace
+	 * the last verified state.
+	 */
+	public static boolean emptiedAfterHistory(@Nullable Set<String> previousTxids,
+			Set<String> nowTxids) {
+		return previousTxids != null && !previousTxids.isEmpty()
+				&& nowTxids.isEmpty();
 	}
 
 	@Nullable
@@ -702,6 +865,10 @@ public class BtcWallet {
 		public final boolean sweep;
 		public final List<String> outpoints;
 		public final String fingerprint;
+		/** The estimated size the fee was computed for. */
+		public final int vbytes;
+		/** The change index this plan pays to, or -1 without change. */
+		public final int changeIndex;
 		final List<BtcTx.Input> inputs;
 		final List<BtcTx.Output> outputs;
 		final List<PrivacyMeta> inputMetas;
@@ -716,7 +883,7 @@ public class BtcWallet {
 				List<BtcTx.Input> inputs, List<BtcTx.Output> outputs,
 				List<PrivacyMeta> inputMetas, boolean hasChange,
 				@Nullable String changeCluster, Set<String> reusedOutpoints,
-				boolean manual) {
+				boolean manual, int vbytes, int changeIndex) {
 			this.toAddress = toAddress;
 			this.amountSat = amountSat;
 			this.feeSat = feeSat;
@@ -731,22 +898,41 @@ public class BtcWallet {
 			this.changeCluster = changeCluster;
 			this.reusedOutpoints = reusedOutpoints;
 			this.manual = manual;
+			this.vbytes = vbytes;
+			this.changeIndex = changeIndex;
+		}
+
+		/** The effective fee rate of this plan in sat/vB. */
+		public double feeRateSatPerVb() {
+			return vbytes <= 0 ? 0 : (double) feeSat / vbytes;
+		}
+
+		/** The fee as a percentage of the amount, or 0 for a sweep. */
+		public int feePercentOfAmount() {
+			if (sweep || amountSat <= 0) return 0;
+			return (int) Math.min(Integer.MAX_VALUE,
+					feeSat * 100L / amountSat);
 		}
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	/**
+	 * Plans and signs in one step without the review gate. Production code
+	 * goes through {@link #planSend} and the gate; these entry points exist
+	 * for the wallet tests and are package private for that reason.
+	 */
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep) throws IOException {
 		return send(toAddress, amountSat, feeRate, sweep, null, false);
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep, @Nullable Set<String> manualOutpoints)
 			throws IOException {
 		return send(toAddress, amountSat, feeRate, sweep, manualOutpoints,
 				false);
 	}
 
-	public String send(String toAddress, long amountSat, double feeRate,
+	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep, @Nullable Set<String> manualOutpoints,
 			boolean allowClusterMerge) throws IOException {
 		return signPlan(planSend(toAddress, amountSat, feeRate, sweep,
@@ -766,7 +952,12 @@ public class BtcWallet {
 		if (!BtcKeys.isValidAddress(toAddress)) {
 			throw new IOException("Not a valid Bitcoin address");
 		}
-		double rate = Math.max(feeRate, 1.0);
+		if (!sweep && !BtcAmounts.sendable(amountSat)) {
+			throw new IOException("Amount out of range");
+		}
+		double rate = sanitizeRate(feeRate);
+		int destVBytes = BtcTx.outputVBytes(toAddress);
+		long destDust = BtcTx.dustThresholdSat(toAddress);
 		List<OwnedUtxo> sorted =
 				orderedCandidates(scan.utxos, amountSat, manualOutpoints);
 
@@ -776,6 +967,7 @@ public class BtcWallet {
 		long feeSat;
 		long externalSat;
 		long changeSat = 0;
+		int changeIndex = -1;
 
 		if (sweep) {
 			for (OwnedUtxo u : sorted) {
@@ -786,14 +978,14 @@ public class BtcWallet {
 				throw new IOException("No spendable coins");
 			}
 			feeSat = (long) Math.ceil(
-					BtcTx.estimateVBytes(inputs.size(), 1) * rate);
+					(11 + inputs.size() * 68 + destVBytes) * rate);
 			externalSat = inSat - feeSat;
-			if (externalSat <= DUST) {
+			if (externalSat <= destDust) {
 				throw new IOException("Balance is too low to send after the fee");
 			}
 			outputs.add(new BtcTx.Output(toAddress, externalSat));
 		} else {
-			if (amountSat <= DUST) {
+			if (amountSat <= destDust) {
 				throw new IOException("Amount is below the dust limit");
 			}
 			externalSat = amountSat;
@@ -804,8 +996,8 @@ public class BtcWallet {
 					inputs.add(toInput(u));
 					inSat += u.value;
 				}
-				feeSat = (long) Math.ceil(
-						BtcTx.estimateVBytes(inputs.size(), 2) * rate);
+				feeSat = (long) Math.ceil((11 + inputs.size() * 68
+						+ destVBytes + BtcTx.CHANGE_OUTPUT_VBYTES) * rate);
 				if (inSat < amountSat + feeSat) {
 					throw new IOException(
 							"Insufficient balance for amount plus fee");
@@ -814,8 +1006,8 @@ public class BtcWallet {
 				feeSat = 0;
 				while (true) {
 					int numInputs = Math.max(inputs.size(), 1);
-					feeSat = (long) Math.ceil(
-							BtcTx.estimateVBytes(numInputs, 2) * rate);
+					feeSat = (long) Math.ceil((11 + numInputs * 68
+							+ destVBytes + BtcTx.CHANGE_OUTPUT_VBYTES) * rate);
 					if (inSat >= amountSat + feeSat) {
 						break;
 					}
@@ -832,6 +1024,7 @@ public class BtcWallet {
 			changeSat = inSat - amountSat - feeSat;
 			if (changeSat > DUST) {
 				outputs.add(new BtcTx.Output(scan.changeAddress, changeSat));
+				changeIndex = scan.changeIndex;
 				recordChangeIsolation(scan, inputs);
 			} else {
 				feeSat += changeSat;
@@ -848,6 +1041,10 @@ public class BtcWallet {
 			}
 		}
 
+		int planVBytes = BtcTx.estimateVBytes(inputs.size(), outputs);
+		if (feeSat < minimumFeeSat(planVBytes)) {
+			throw new IOException("Fee below the relay minimum");
+		}
 		List<String> outpoints = new ArrayList<>();
 		for (BtcTx.Input in : inputs) {
 			outpoints.add(in.txHash + ":" + in.txPos);
@@ -887,7 +1084,7 @@ public class BtcWallet {
 
 		return new SendPlan(toAddress, externalSat, feeSat, netSat, sweep,
 				outpoints, fingerprint, inputs, outputs, inputMetas, hasChange,
-				changeCluster, reused, manual);
+				changeCluster, reused, manual, planVBytes, changeIndex);
 	}
 
 	public com.professor.zerion.android.vault.wallet.btc.privacy
@@ -917,6 +1114,7 @@ public class BtcWallet {
 
 	public String signPlan(SendPlan plan) throws IOException {
 		String rawHex = BtcTx.buildAndSign(plan.inputs, plan.outputs);
+		if (plan.changeIndex >= 0) setMinChangeProbe(plan.changeIndex + 1);
 		return broadcastTracked(rawHex, plan.outpoints, plan.netSat);
 	}
 
@@ -961,17 +1159,39 @@ public class BtcWallet {
 		}
 	}
 
-	private String broadcastTracked(String rawHex, List<String> outpoints,
+	/**
+	 * Journals the transaction, then broadcasts it. Only a connection that
+	 * could not be opened at all is a plain failure: no byte of the
+	 * transaction reached any server, so its inputs stay spendable. Once
+	 * the transaction has been written to a server, every outcome other
+	 * than the server echoing the local txid is uncertain, including a
+	 * server that answers with an error: a server can relay a transaction
+	 * and still claim to have refused it, so a claimed rejection keeps the
+	 * inputs reserved until the definitive-miss protocol in
+	 * {@link #reconcilePending} releases them. The journal entry is written
+	 * inside the connection scope so a persist failure closes the
+	 * connection and nothing is broadcast without a record.
+	 */
+		private String broadcastTracked(String rawHex, List<String> outpoints,
 			long netSat) throws IOException {
 		String localTxid = txidOf(rawHex);
+		ElectrumRpc c;
+		try {
+			c = openWithFallback(broadcastEndpoint, broadcastFallbacks,
+					TorIsolation.broadcast(isolationTag));
+		} catch (IOException e) {
+			safePut(new PendingTx(java.util.UUID.randomUUID().toString(),
+					localTxid, rawHex, outpoints, PendingTx.FAILED,
+					System.currentTimeMillis(), netSat));
+			throw e;
+		}
 		PendingTx pending = new PendingTx(
 				java.util.UUID.randomUUID().toString(), localTxid, rawHex,
 				outpoints, PendingTx.BROADCASTING, System.currentTimeMillis(),
 				netSat);
-		pendingLog.put(pending);
-		try (ElectrumRpc c = openWithFallback(broadcastEndpoint,
-				broadcastFallbacks, TorIsolation.broadcast(isolationTag))) {
-			String accepted = c.broadcast(rawHex);
+		try (ElectrumRpc conn = c) {
+			pendingLog.put(pending);
+			String accepted = conn.broadcast(rawHex);
 			if (!localTxid.equalsIgnoreCase(accepted)) {
 				safePut(pending.withState(PendingTx.POSSIBLY_SENT));
 				throw new BroadcastUncertainException(localTxid,
@@ -979,9 +1199,6 @@ public class BtcWallet {
 			}
 			safePut(pending.withState(PendingTx.SENT));
 			return localTxid;
-		} catch (ElectrumClient.ServerRejectedException e) {
-			safePut(pending.withState(PendingTx.FAILED));
-			throw e;
 		} catch (IOException e) {
 			safePut(pending.withState(PendingTx.POSSIBLY_SENT));
 			throw new BroadcastUncertainException(localTxid, e);
@@ -1015,7 +1232,7 @@ public class BtcWallet {
 	}
 
 	public String silentPaymentAddress() {
-		return BtcKeys.silentPaymentAddress(mnemonic, account);
+		return keys.silentPaymentAddress();
 	}
 
 	public SpScanResult scanSilentPayments(String oracle, int fromHeight,
@@ -1029,8 +1246,8 @@ public class BtcWallet {
 		if (tip == null) {
 			throw new IOException("Could not reach the oracle over Tor");
 		}
-		byte[] scanPriv = BtcKeys.silentScanPriv(mnemonic, account);
-		byte[] spendPub = BtcKeys.silentSpendPub(mnemonic, account);
+		byte[] scanPriv = keys.silentScanPriv();
+		byte[] spendPub = keys.silentSpendPub();
 		int from = Math.max(fromHeight, 1);
 		int cap = Math.min(tip, from + maxBlocks - 1);
 		List<SilentPaymentScanner.Found> found = new ArrayList<>();
@@ -1044,8 +1261,50 @@ public class BtcWallet {
 		return new SpScanResult(scannedTo, found);
 	}
 
+	/**
+	 * A Silent Payments sweep that has been planned but not signed: what the
+	 * user reviews (destination, amount, fee, inputs) is bound by the
+	 * fingerprint to what {@link #signSpSweep} signs and broadcasts.
+	 */
+	public static final class SpSweepPlan {
+		public final String toAddress;
+		public final long amountSat;
+		public final long feeSat;
+		public final List<String> outpoints;
+		public final String fingerprint;
+		final List<BtcTx.TaprootInput> inputs;
+		final List<BtcTx.Output> outputs;
+		final long spNetSat;
+
+		SpSweepPlan(String toAddress, long amountSat, long feeSat,
+				List<String> outpoints, String fingerprint,
+				List<BtcTx.TaprootInput> inputs, List<BtcTx.Output> outputs,
+				long spNetSat) {
+			this.toAddress = toAddress;
+			this.amountSat = amountSat;
+			this.feeSat = feeSat;
+			this.outpoints = outpoints;
+			this.fingerprint = fingerprint;
+			this.inputs = inputs;
+			this.outputs = outputs;
+			this.spNetSat = spNetSat;
+		}
+	}
+
 	public String sweepSilentPayments(List<SilentPaymentScanner.Found> found,
 			String toAddress, double feeRate) throws IOException {
+		return signSpSweep(planSweepSilentPayments(found, toAddress, feeRate));
+	}
+
+	/** Signs and broadcasts exactly the reviewed sweep plan. */
+	public String signSpSweep(SpSweepPlan plan) throws IOException {
+		String rawHex = BtcTx.buildAndSignTaproot(plan.inputs, plan.outputs);
+		return broadcastTracked(rawHex, plan.outpoints, plan.spNetSat);
+	}
+
+	public SpSweepPlan planSweepSilentPayments(
+			List<SilentPaymentScanner.Found> found, String toAddress,
+			double feeRate) throws IOException {
 		if (!BtcKeys.isValidAddress(toAddress)) {
 			throw new IOException("Not a valid Bitcoin address");
 		}
@@ -1053,12 +1312,10 @@ public class BtcWallet {
 			throw new IOException("Silent Payments self-check failed");
 		}
 		java.math.BigInteger spendPriv =
-				BtcKeys.silentSpendPriv(mnemonic, account);
+				keys.silentSpendPriv();
 		java.math.BigInteger curveN = org.bitcoinj.core.ECKey.CURVE.getN();
-		double rate = Math.max(feeRate, 1.0);
-		String rawHex;
+		double rate = sanitizeRate(feeRate);
 		List<String> outpoints = new ArrayList<>();
-		long spNetSat = 0;
 		try (ElectrumRpc c = openScan()) {
 			List<BtcTx.TaprootInput> inputs = new ArrayList<>();
 			long sumIn = 0;
@@ -1088,17 +1345,18 @@ public class BtcWallet {
 			if (inputs.isEmpty()) {
 				throw new IOException("No unspent silent payments found");
 			}
-			int vbytes = 11 + inputs.size() * 58 + 31;
+			int vbytes = 11 + inputs.size() * 58
+					+ BtcTx.outputVBytes(toAddress);
 			long fee = (long) Math.ceil(vbytes * rate);
 			long swept = sumIn - fee;
-			if (swept <= DUST) {
+			if (swept <= BtcTx.dustThresholdSat(toAddress)) {
 				throw new IOException("Amount is too low to send after the fee");
 			}
 			List<BtcTx.Output> outputs = new ArrayList<>();
 			outputs.add(new BtcTx.Output(toAddress, swept));
-			rawHex = BtcTx.buildAndSignTaproot(inputs, outputs);
-			spNetSat = -sumIn;
+			return new SpSweepPlan(toAddress, swept, fee, outpoints,
+					planFingerprint(outpoints, outputs), inputs, outputs,
+					-sumIn);
 		}
-		return broadcastTracked(rawHex, outpoints, spNetSat);
 	}
 }

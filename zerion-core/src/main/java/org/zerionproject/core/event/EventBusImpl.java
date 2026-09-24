@@ -39,7 +39,12 @@ class EventBusImpl implements EventBus {
 	@Override
 	public void broadcast(Event e) {
 		eventExecutor.execute(() -> {
-			for (EventListener l : listeners) l.eventOccurred(e);
+			for (EventListener l : listeners) {
+				try {
+					l.eventOccurred(e);
+				} catch (RuntimeException ignored) {
+				}
+			}
 		});
 	}
 }

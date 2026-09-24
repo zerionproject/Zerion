@@ -50,9 +50,14 @@ class MlKem768 {
 					"Invalid ML-KEM-768 public key length: " + publicKeyBytes.length);
 		}
 
-		MLKEMPublicKeyParameters publicKey = new MLKEMPublicKeyParameters(
-				MLKEMParameters.ml_kem_768, publicKeyBytes);
-
+		MLKEMPublicKeyParameters publicKey;
+		try {
+			publicKey = new MLKEMPublicKeyParameters(
+					MLKEMParameters.ml_kem_768, publicKeyBytes);
+		} catch (RuntimeException rejected) {
+			throw new GeneralSecurityException(
+					"Invalid ML-KEM-768 public key", rejected);
+		}
 		MLKEMGenerator encapsulator = new MLKEMGenerator(secureRandom);
 		SecretWithEncapsulation enc = encapsulator.generateEncapsulated(publicKey);
 

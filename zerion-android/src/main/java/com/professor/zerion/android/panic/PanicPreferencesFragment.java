@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
@@ -128,7 +129,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 
 		if (entries.size() <= 1) {
 			panicAppPref.setOnPreferenceClickListener(preference -> {
-				new MaterialAlertDialogBuilder(requireContext(),
+				new SecureAlertDialogBuilder(requireContext(),
 						R.style.ZerionDialogTheme)
 						.setTitle(R.string.panic_app_setting_title)
 						.setMessage(R.string.panic_app_none_installed)
@@ -193,7 +194,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 			a.finish();
 		};
 
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 				activity, R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.dialog_title_connect_panic_app));
 

@@ -15,7 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -235,7 +235,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 		if (passwordDialog != null && passwordDialog.isShowing()) {
 			passwordDialog.dismiss();
 		}
-		passwordDialog = new MaterialAlertDialogBuilder(requireContext())
+		passwordDialog = new SecureAlertDialogBuilder(requireContext())
 				.setTitle(entry.title)
 				.setView(dialogView)
 				.setPositiveButton(R.string.vault_button_close, null)
@@ -250,7 +250,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private void showPasswordOptions(com.professor.zerion.android.vault.model.VaultItem item) {
 		String[] options = {"View", "Delete"};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
@@ -266,7 +266,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 	}
 
 	private void confirmDeletePassword(com.professor.zerion.android.vault.model.VaultItem item) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_password_delete_title)
 				.setMessage(R.string.vault_password_delete_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {
@@ -297,7 +297,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 			showSnackbar(getString(R.string.vault_password_generated));
 		});
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_password_add_action)
 				.setView(dialogView)
 				.setPositiveButton(R.string.vault_button_save, (dialog, which) -> {

@@ -79,10 +79,7 @@ public final class TlsTrust {
 				if (chain == null || chain.length == 0) {
 					throw new CertificateException("no server certificate");
 				}
-				String actual = sha256Hex(chain[0].getEncoded());
-				if (!constEq(actual, pin)) {
-					throw new CertificateException("certificate pin mismatch");
-				}
+				verify(pin, chain[0].getEncoded(), false, false);
 			}
 
 			@Override

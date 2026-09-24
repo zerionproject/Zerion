@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import static org.zerionproject.core.util.IoUtils.isNonEmptyDirectory;
 
 @NotNullByDefault
 class SqlCipherDatabase extends JdbcDatabase {
@@ -51,6 +50,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	@Nullable
 	private volatile SecretKey key = null;
+	private volatile boolean opened = false;
 
 	@Inject
 	SqlCipherDatabase(DatabaseConfig config, MessageFactory messageFactory,
@@ -69,7 +69,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 
 	private boolean openInternal(SecretKey key,
 			@Nullable MigrationListener listener) throws DbException {
-		this.key = key;
+		this.key = new SecretKey(key.getBytes().clone());
+		this.opened = false;
 		try {
 			System.loadLibrary("sqlcipher");
 		} catch (UnsatisfiedLinkError e) {
@@ -77,41 +78,61 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 
 		File dir = config.getDatabaseDirectory();
-		boolean reopen = isNonEmptyDirectory(dir);
+		File dbFile = new File(dir, SQLCIPHER_FILE);
+		boolean reopen = false;
 
-		if (reopen) {
-			File dbFile = new File(dir, SQLCIPHER_FILE);
-			if (!dbFile.exists()) {
-				reopen = false;
-			} else {
-				Connection c = null;
-				boolean valid = false;
-				try {
-					c = createConnection();
-					valid = hasValidSchema(c);
-				} catch (SQLException | DbException e) {
-					valid = false;
+		if (dbFile.exists()) {
+			Connection c = null;
+			SqlCipherOpenPolicy.Probe probe;
+			Throwable failure = null;
+			try {
+				c = createConnection();
+				probe = probeSchema(c);
+				if (probe == SqlCipherOpenPolicy.Probe.FAILED) {
+					failure = new SQLException("expected tables are missing");
 				}
-				if (valid) {
-					seedPooledConnection(c);
-				} else {
-					if (c != null) {
-						try {
-							c.close();
-						} catch (SQLException ignored) {
-						}
+			} catch (SQLException | DbException | RuntimeException e) {
+				probe = SqlCipherOpenPolicy.Probe.FAILED;
+				failure = e;
+			}
+			boolean marker = SqlCipherRecoveryFiles.setupMarker(dir).exists();
+			SqlCipherOpenPolicy.Action action =
+					SqlCipherOpenPolicy.decide(marker, probe);
+			if (action == SqlCipherOpenPolicy.Action.REOPEN) {
+				seedPooledConnection(c);
+				SqlCipherRecoveryFiles.markSetupComplete(dir);
+				reopen = true;
+			} else {
+				if (c != null) {
+					try {
+						c.close();
+					} catch (SQLException ignored) {
 					}
-					dbFile.delete();
-					new File(dbFile.getPath() + "-wal").delete();
-					new File(dbFile.getPath() + "-shm").delete();
-					new File(dbFile.getPath() + "-journal").delete();
-					reopen = false;
+				}
+				if (action == SqlCipherOpenPolicy.Action.RESET_EMPTY) {
+					SqlCipherRecoveryFiles.deleteEmpty(dbFile);
+				} else if (action ==
+						SqlCipherOpenPolicy.Action.QUARANTINE_INCOMPLETE) {
+					if (!SqlCipherRecoveryFiles.quarantine(dbFile,
+							System.currentTimeMillis())) {
+						throw new DbOpenFailureException(
+								SqlCipherOpenPolicy.classify(failure),
+								failure);
+					}
+					SqlCipherRecoveryFiles.markSetupComplete(dir);
+				} else {
+					throw new DbOpenFailureException(
+							SqlCipherOpenPolicy.classify(failure), failure);
 				}
 			}
 		}
 
-		if (!reopen) dir.mkdirs();
-		super.open(DRIVER_CLASS, reopen, key, listener);
+		if (!reopen) {
+			dir.mkdirs();
+			SqlCipherRecoveryFiles.markSetupIncomplete(dir);
+		}
+		super.open(DRIVER_CLASS, reopen, this.key, listener);
+		opened = true;
 
 		boolean compactNow = needsCompaction;
 		needsCompaction = false;
@@ -122,8 +143,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 			if (!compactNow) compactNow = freeSpaceExceedsThreshold(vacuumDb);
 			if (compactNow) {
 				vacuumDb.execSQL("VACUUM");
-				File dbFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
-				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(dbFile, "rw")) {
+				File vacuumFile = new File(config.getDatabaseDirectory(), SQLCIPHER_FILE);
+				try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(vacuumFile, "rw")) {
 					raf.getFD().sync();
 				}
 			}
@@ -167,33 +188,57 @@ class SqlCipherDatabase extends JdbcDatabase {
 	}
 
 	/**
-	 * Validates an existing database on a real connection: it must have the
-	 * settings table and at least one local identity, otherwise it is treated
-	 * as incomplete (e.g. account setup was interrupted) and wiped. Running the
-	 * check on the connection that {@link #open} will reuse avoids a second key
-	 * derivation on cold start.
+	 * Probes an existing database on a real connection: it must have the
+	 * settings and identity tables, and is empty only when it has both and
+	 * no identity row. What happens next is decided by
+	 * {@link SqlCipherOpenPolicy}; a probe that throws or finds a table
+	 * missing never leads to deletion. Running the check on the connection
+	 * that {@link #open} will reuse avoids a second key derivation.
 	 */
-	private boolean hasValidSchema(Connection c) {
-		try {
-			try (java.sql.PreparedStatement ps = c.prepareStatement(
-					"SELECT count(*) FROM sqlite_master"
-							+ " WHERE type='table' AND name='settings'");
-					java.sql.ResultSet rs = ps.executeQuery()) {
-				if (!rs.next() || rs.getInt(1) == 0) return false;
-			}
+	private SqlCipherOpenPolicy.Probe probeSchema(Connection c)
+			throws SQLException {
+		boolean settings = tableExists(c, "settings");
+		boolean identities = tableExists(c, "localAuthors");
+		long rows = 0;
+		if (settings && identities) {
 			try (java.sql.PreparedStatement ps = c.prepareStatement(
 					"SELECT count(*) FROM localAuthors");
 					java.sql.ResultSet rs = ps.executeQuery()) {
+				rows = rs.next() ? rs.getLong(1) : 0;
+			}
+		}
+		return SqlCipherOpenPolicy.probe(settings, identities, rows);
+	}
+
+	private static boolean tableExists(Connection c, String table)
+			throws SQLException {
+		try (java.sql.PreparedStatement ps = c.prepareStatement(
+				"SELECT count(*) FROM sqlite_master"
+						+ " WHERE type='table' AND name=?")) {
+			ps.setString(1, table);
+			try (java.sql.ResultSet rs = ps.executeQuery()) {
 				return rs.next() && rs.getInt(1) > 0;
 			}
-		} catch (SQLException e) {
-			return false;
 		}
 	}
 
+	/**
+	 * Closes the database and clears the clean-shutdown flag while the private
+	 * key copy is still valid, then zeroes that copy. The key copied at open
+	 * is owned here, so a caller clearing its own key object before close (the
+	 * account manager's service stop runs before the database close) cannot
+	 * prevent the final dirty-flag write. Idempotent: a second close, or a
+	 * close after a failed open, only clears the key and returns.
+	 */
 	@Override
 	public void close() throws DbException {
 		synchronized (DB_OPEN_LOCK) {
+			SecretKey k = key;
+			if (k == null) return;
+			if (!opened) {
+				clearKey();
+				return;
+			}
 			closeAllConnections();
 			Connection c = null;
 			try {
@@ -206,12 +251,16 @@ class SqlCipherDatabase extends JdbcDatabase {
 				}
 				throw new DbException(e);
 			} finally {
-				if (key != null) {
-					key.clear();
-					key = null;
-				}
+				opened = false;
+				clearKey();
 			}
 		}
+	}
+
+	private void clearKey() {
+		SecretKey k = key;
+		key = null;
+		if (k != null) k.clear();
 	}
 
 	@Override
@@ -225,13 +274,41 @@ class SqlCipherDatabase extends JdbcDatabase {
 		if (key == null) throw new DbClosedException();
 		File dbFile = new File(config.getDatabaseDirectory(),
 				SQLCIPHER_FILE);
-		String hexKey = StringUtils.toHexString(key.getBytes());
+		byte[] passphrase = hexPassphrase(key.getBytes());
+		try {
+			return openWithPassphrase(dbFile, passphrase);
+		} finally {
+			java.util.Arrays.fill(passphrase, (byte) 0);
+		}
+	}
 
+	private static final byte[] HEX_UPPER = {
+			'0', '1', '2', '3', '4', '5', '6', '7',
+			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+	/**
+	 * The passphrase is the upper-case hex text of the key, as the string
+	 * overload used to take it, encoded straight into a byte array: no
+	 * String ever holds the key, and the bytes are wiped once the
+	 * connection exists. Every existing database opens unchanged because
+	 * the library derives the same key from the same UTF-8 bytes.
+	 */
+	static byte[] hexPassphrase(byte[] keyBytes) {
+		byte[] hex = new byte[keyBytes.length * 2];
+		for (int i = 0, j = 0; i < keyBytes.length; i++) {
+			hex[j++] = HEX_UPPER[(keyBytes[i] >> 4) & 0xF];
+			hex[j++] = HEX_UPPER[keyBytes[i] & 0xF];
+		}
+		return hex;
+	}
+
+	private Connection openWithPassphrase(File dbFile, byte[] passphrase)
+			throws DbException, SQLException {
 		for (int attempt = 1; attempt <= OPEN_RETRY_MAX; attempt++) {
 			SQLiteDatabase db = null;
 			try {
 				db = SQLiteDatabase.openOrCreateDatabase(
-								dbFile.getAbsolutePath(), hexKey,
+								dbFile.getAbsolutePath(), passphrase,
 								null, null, null);
 				runPragma(db, "PRAGMA cipher_memory_security = ON");
 				runPragma(db, "PRAGMA secure_delete = ON");
@@ -262,6 +339,13 @@ class SqlCipherDatabase extends JdbcDatabase {
 			}
 		}
 		throw new SQLException("Failed to open database");
+	}
+
+	@Override
+	public void addIdentity(Connection txn, org.zerionproject.core.api.identity.Identity i)
+			throws DbException {
+		super.addIdentity(txn, i);
+		SqlCipherRecoveryFiles.markSetupComplete(config.getDatabaseDirectory());
 	}
 
 	@Override

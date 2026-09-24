@@ -25,6 +25,26 @@ public class Argon2 {
 	public static final int BACKUP_ITERATIONS = 8;
 
 	public static final int WALLET_MEMORY_KB = 64 * 1024;
+
+	/** The largest memory cost this app ever writes; nothing above is accepted. */
+	public static final int MAX_MEMORY_KB = DEFAULT_MEMORY_KB;
+	public static final int MIN_MEMORY_KB = 1024;
+	public static final int MAX_ITERATIONS = 10;
+	public static final int MAX_PARALLELISM = 4;
+
+	/**
+	 * Rejects parameters read from a file, header or import that would
+	 * make the derivation allocate or run beyond what this app itself
+	 * produces; a crafted header must fail, never exhaust memory.
+	 */
+	public static void requireSaneParams(int memoryKb, int iterations,
+			int parallelism) {
+		if (memoryKb < MIN_MEMORY_KB || memoryKb > MAX_MEMORY_KB
+				|| iterations < 1 || iterations > MAX_ITERATIONS
+				|| parallelism < 1 || parallelism > MAX_PARALLELISM) {
+			throw new IllegalArgumentException("Argon2 parameters out of range");
+		}
+	}
 	public static final int WALLET_ITERATIONS = 3;
 
 	private final SecureRandom secureRandom = new SecureRandom();

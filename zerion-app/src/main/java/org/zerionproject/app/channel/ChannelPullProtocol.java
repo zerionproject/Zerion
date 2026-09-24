@@ -49,6 +49,13 @@ class ChannelPullProtocol {
 		return pullCodec.encodePullRequest(channelId, -1L, null, null);
 	}
 
+	/** A public channel is pulled from the last post held, unauthenticated. */
+	byte[] buildPublicRequest(byte[] channelId, long sinceSeqNum)
+			throws IOException {
+		return pullCodec.encodePullRequest(channelId, sinceSeqNum, null,
+				null);
+	}
+
 	byte[] buildAuthenticatedRequest(byte[] channelId,
 			long sinceSeqNum, byte[] capability, byte[] publisherNonce)
 			throws IOException {

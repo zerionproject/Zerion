@@ -26,7 +26,7 @@ import static com.professor.zerion.android.conversation.ConversationRequestItem.
 import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.INTRODUCTION;
 import static com.professor.zerion.android.util.UiUtils.getContactDisplayName;
 
-import com.professor.zerion.android.conversation.voice.VoiceCallSignal;
+import com.professor.zerion.android.conversation.voice.LegacyCallSignal;
 
 @NotNullByDefault
 class ConversationVisitor implements
@@ -73,7 +73,7 @@ class ConversationVisitor implements
 				if (text.startsWith("VOICE_CALL:")) {
 					return parseVoiceCallMessage(text, h);
 				}
-				if (VoiceCallSignal.isSignal(text)) {
+				if (LegacyCallSignal.isSignal(text)) {
 					return null;
 				}
 				if (ConversationSecretNoteItem.isSecretNoteText(text)) {
@@ -114,7 +114,7 @@ class ConversationVisitor implements
 		if (h.hasText()) {
 			String text = textCache.getText(h.getId());
 			if (text != null && !text.startsWith("VOICE_CALL:") &&
-					!VoiceCallSignal.isSignal(text) &&
+					!LegacyCallSignal.isSignal(text) &&
 					!ConversationSecretNoteItem.isSecretNoteText(text)) {
 				item.setText(text);
 			}

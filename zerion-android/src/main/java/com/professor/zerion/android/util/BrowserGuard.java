@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.widget.Toast;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -17,7 +17,7 @@ public final class BrowserGuard {
 	}
 
 	public static void openUrl(Context ctx, String url) {
-		new MaterialAlertDialogBuilder(ctx)
+		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.browser_warning_title)
 				.setMessage(ctx.getString(R.string.browser_warning_message)
 						+ "\n\n" + url)

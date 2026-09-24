@@ -10,7 +10,6 @@ import java.util.List;
 @NotNullByDefault
 public class VoiceMessagePayloadParser {
 
-	private static final byte EXPECTED_FORMAT_VERSION = 1;
 	private static final int IV_LENGTH = 12;
 	private static final int WRAPPED_KEY_LENGTH = 80;
 	private static final int TAG_LENGTH = 16;
@@ -69,9 +68,8 @@ public class VoiceMessagePayloadParser {
 		int offset = 0;
 
 		byte formatVersion = payload[offset++];
-		if (formatVersion != EXPECTED_FORMAT_VERSION) {
-			throw new IllegalArgumentException("Unsupported format version: " + formatVersion +
-				" (expected " + EXPECTED_FORMAT_VERSION + ")");
+		if (!isSupported(formatVersion)) {
+			throw new IllegalArgumentException("Unsupported format version: " + formatVersion);
 		}
 
 		byte[] iv = Arrays.copyOfRange(payload, offset, offset + IV_LENGTH);
@@ -148,11 +146,20 @@ public class VoiceMessagePayloadParser {
 		}
 
 		byte formatVersion = parseFormatVersion(payload);
-		if (formatVersion != EXPECTED_FORMAT_VERSION) {
+		if (!isSupported(formatVersion)) {
 			throw new IllegalArgumentException("Unsupported format version: " + formatVersion);
 		}
 
 		return bytesToInt(payload, payload.length - TAG_LENGTH - INT_LENGTH);
+	}
+
+	/**
+	 * Format 2 is the current format. Format 1 is parsed only so memos stored
+	 * before the format changed can still be played.
+	 */
+	public static boolean isSupported(byte formatVersion) {
+		return formatVersion == VoiceMemoCrypto.FORMAT_VERSION
+				|| formatVersion == VoiceMemoCrypto.LEGACY_FORMAT_VERSION;
 	}
 
 	public static byte parseFormatVersion(byte[] payload) {

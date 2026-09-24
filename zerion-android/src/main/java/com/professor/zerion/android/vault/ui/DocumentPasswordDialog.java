@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -113,7 +114,7 @@ public class DocumentPasswordDialog extends DialogFragment {
 			}
 		});
 
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(context)
 				.setTitle(title)
 				.setView(view)
 				.setPositiveButton(android.R.string.ok, (dialog, which) -> {

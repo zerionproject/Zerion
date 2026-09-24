@@ -28,7 +28,8 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 		void onRecordingError(Exception e);
 
 		GroupId getGroupIdForRecording();
-		void onEncryptionInit(byte[] iv, byte[] sessionKey);
+		VoiceMemoKeys getVoiceMemoKeys();
+		void onEncryptionInit(byte[] iv, byte[] sessionKey, long timestamp);
 		void onEncryptedChunk(byte[] encrypted, int len, byte[] tagPart);
 		void onEncryptionFinal(byte[] globalMAC, int totalDurationMs, int chunkCount);
 		void cancelVoiceRecordingInViewModel();
@@ -218,16 +219,18 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 			GroupId groupId = host.getGroupIdForRecording();
 			byte[] groupIdBytes = groupId.getBytes();
 
-			voiceRecorder.startStreamingRecording(groupIdBytes, new EncryptedChunkCallback() {
+			voiceRecorder.startStreamingRecording(groupIdBytes,
+					host.getVoiceMemoKeys(), new EncryptedChunkCallback() {
 				@Override
 				public void onRecordingStarted() {
 				}
 
 				@Override
-				public void onEncryptionInit(byte[] iv, byte[] sessionKey) {
+				public void onEncryptionInit(byte[] iv, byte[] sessionKey,
+						long timestamp) {
 					byte[] ivCopy = Arrays.copyOf(iv, iv.length);
 					byte[] sessionKeyCopy = Arrays.copyOf(sessionKey, sessionKey.length);
-					host.onEncryptionInit(ivCopy, sessionKeyCopy);
+					host.onEncryptionInit(ivCopy, sessionKeyCopy, timestamp);
 					Arrays.fill(iv, (byte) 0);
 					Arrays.fill(sessionKey, (byte) 0);
 				}

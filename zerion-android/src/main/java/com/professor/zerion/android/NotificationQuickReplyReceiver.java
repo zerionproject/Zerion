@@ -35,6 +35,8 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 	Provider<ConversationManager> conversationManagerProvider;
 	@Inject
 	Provider<PrivateMessageFactory> privateMessageFactoryProvider;
+	@Inject
+	com.professor.zerion.android.api.LockManager lockManager;
 
 	@Override
 	public void onReceive(Context ctx, Intent intent) {
@@ -42,6 +44,8 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 				(ZerionApplication) ctx.getApplicationContext();
 		AndroidComponent component = app.getApplicationComponent();
 		component.inject(this);
+
+		if (lockManager.isLocked()) return;
 
 		Bundle remoteInputResults = RemoteInput.getResultsFromIntent(intent);
 		if (remoteInputResults == null) return;

@@ -119,8 +119,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobKeyBytes = audioKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
 		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
 		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
-		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
-		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
 
 		return new AudioKeys(txKey, rxKey);
 	}
@@ -164,33 +162,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			return new AudioKeys(txKey, rxKey);
 		} finally {
 			java.util.Arrays.fill(combined, (byte) 0);
-			if (aliceKeyBytes != null) {
-				java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
-			}
-			if (bobKeyBytes != null) {
-				java.util.Arrays.fill(bobKeyBytes, (byte) 0);
-			}
 		}
-	}
-
-	@Override
-	public VideoKeys deriveVideoKeys(SecretKey voiceCallKey, boolean alice) {
-		SecretKey videoSourceKey = crypto.deriveKey(
-				VIDEO_KEY_LABEL,
-				voiceCallKey,
-				new byte[0]
-		);
-
-		KeyMaterialSource videoKeyMaterial =
-				new VoiceCallKeyMaterialSource(videoSourceKey);
-		byte[] aliceKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
-		byte[] bobKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
-		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
-		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
-		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
-		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
-
-		return new VideoKeys(txKey, rxKey);
 	}
 
 	@Override
@@ -218,8 +190,6 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 		byte[] bobKeyBytes = videoKeyMaterial.getKeyMaterial(AES_KEY_BYTES);
 		SecretKey txKey = new SecretKey(alice ? aliceKeyBytes : bobKeyBytes);
 		SecretKey rxKey = new SecretKey(alice ? bobKeyBytes : aliceKeyBytes);
-		java.util.Arrays.fill(aliceKeyBytes, (byte) 0);
-		java.util.Arrays.fill(bobKeyBytes, (byte) 0);
 
 		return new VideoKeys(txKey, rxKey);
 	}

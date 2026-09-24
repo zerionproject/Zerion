@@ -152,7 +152,7 @@ public class VaultDashboardFragment extends BaseFragment {
 		android.view.View view = getLayoutInflater().inflate(
 				R.layout.dialog_coin_selector, null);
 		androidx.appcompat.app.AlertDialog dialog =
-				new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 						requireContext())
 						.setTitle(R.string.wallet_choose_coin)
 						.setView(view)
@@ -230,7 +230,7 @@ public class VaultDashboardFragment extends BaseFragment {
 		applyType.run();
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 						ctx)
 						.setTitle(R.string.wallet_auth_setup_title)
 						.setMessage(R.string.wallet_auth_setup_message)
@@ -276,7 +276,7 @@ public class VaultDashboardFragment extends BaseFragment {
 		int pad = dp(20);
 		til.setPadding(pad, 0, pad, 0);
 		androidx.appcompat.app.AlertDialog dlg =
-				new com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx)
+				new com.professor.zerion.android.security.SecureAlertDialogBuilder(ctx)
 						.setTitle(R.string.wallet_auth_verify_title)
 						.setView(til)
 						.setPositiveButton(android.R.string.ok, null)
@@ -305,8 +305,7 @@ public class VaultDashboardFragment extends BaseFragment {
 				new android.widget.ProgressBar(requireContext());
 		int pad = Math.round(24 * getResources().getDisplayMetrics().density);
 		bar.setPadding(pad, pad, pad, pad);
-		gateProgress = new com.google.android.material.dialog
-				.MaterialAlertDialogBuilder(requireContext())
+		gateProgress = new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setMessage(R.string.wallet_verifying)
 				.setView(bar)
 				.setCancelable(false)

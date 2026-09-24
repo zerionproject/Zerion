@@ -163,7 +163,7 @@ public class TextSendController implements TextInputListener {
 		int message =
 				enabled ? R.string.auto_delete_changed_warning_message_enabled :
 						R.string.auto_delete_changed_warning_message_disabled;
-		new AlertDialog.Builder(ctx, R.style.ZerionDialogTheme)
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme)
 				.setTitle(R.string.auto_delete_changed_warning_title)
 				.setMessage(message)
 				.setPositiveButton(R.string.auto_delete_changed_warning_send,

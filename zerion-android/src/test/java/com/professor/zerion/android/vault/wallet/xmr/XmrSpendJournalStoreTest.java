@@ -172,5 +172,26 @@ public class XmrSpendJournalStoreTest {
 		public Object settingsMonitor() {
 			return this;
 		}
+
+		private final java.util.Map<String, byte[]> walletSecrets =
+				new java.util.HashMap<>();
+
+		@Override
+		@Nullable
+		public byte[] readWalletSecret(String walletId, String name) {
+			byte[] v = walletSecrets.get(walletId + "/" + name);
+			return v == null ? null : v.clone();
+		}
+
+		@Override
+		public void writeWalletSecret(String walletId, String name,
+				byte[] value) {
+			walletSecrets.put(walletId + "/" + name, value.clone());
+		}
+
+		@Override
+		public void removeWalletSecret(String walletId, String name) {
+			walletSecrets.remove(walletId + "/" + name);
+		}
 	}
 }

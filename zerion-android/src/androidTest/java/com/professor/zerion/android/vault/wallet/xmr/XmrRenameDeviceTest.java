@@ -205,7 +205,7 @@ public class XmrRenameDeviceTest {
 	}
 
 	@Test
-	public void recoversWalletZeroSealedByPreFixRename() {
+	public void zeroSealedWalletIsRefusedWithTheRealPassword() {
 		XmrWalletManager m = newManager();
 		AtomicReference<XmrError> err = new AtomicReference<>();
 		String origLabel = "Orig-" + System.nanoTime() % 100000;
@@ -214,27 +214,33 @@ public class XmrRenameDeviceTest {
 		assertNotNull("create failed: " + err.get(), seedId);
 		char[] seed = m.takePendingSeed(seedId);
 		assertNotNull("captured seed", seed);
-		assertEquals(25, new String(seed).trim().split("\\s+").length);
+		String origId = idOf(origLabel);
+		assertNotNull(origId);
 
-		String corruptedLabel = "Corrupt-" + System.nanoTime() % 100000;
+		String sealedLabel = "Sealed-" + System.nanoTime() % 100000;
 		char[] zeroPw = new char[W_PW.length];
-		String corruptedId;
+		String sealedId;
 		try {
-			corruptedId = store.createWallet(WalletCoin.XMR, corruptedLabel,
-					seed, zeroPw);
+			sealedId = store.createWallet(WalletCoin.XMR, sealedLabel, seed, zeroPw);
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		java.util.Arrays.fill(seed, '\0');
 
-		openExpectingSuccess(m, corruptedId,
-				"a wallet zero-sealed by the pre-fix rename recovers with the "
-				+ "real password");
+		openExpectingWrongPassword(m, sealedId,
+				"a wallet sealed under an all-zero password must not open with"
+						+ " the real password; the repair that re-sealed it was removed");
+		openExpectingSuccess(m, origId,
+				"the correctly sealed wallet still opens with its password");
+	}
 
-		String recoveredId = idOf(corruptedLabel);
-		assertNotNull("recovered wallet keeps its display name", recoveredId);
-		openExpectingSuccess(m, recoveredId,
-				"the recovered wallet opens again with the same password");
+	private void openExpectingWrongPassword(XmrWalletManager m, String id,
+			String msg) {
+		AtomicReference<XmrError> err = new AtomicReference<>();
+		String opened = await(m.getSessionOpened(), m.getError(),
+				() -> m.openWallet(id, W_PW.clone()), err);
+		assertNull(msg + " (session opened)", opened);
+		assertEquals(msg, XmrError.WRONG_PASSWORD, err.get());
 	}
 
 	@Test

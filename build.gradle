@@ -20,7 +20,22 @@ allprojects {
 	}
 	dependencyLocking {
 		lockAllConfigurations()
-		lockMode = LockMode.LENIENT
+		lockMode = LockMode.STRICT
+	}
+	tasks.register('resolveAndLockAll') {
+		notCompatibleWithConfigurationCache('resolves every configuration at execution time')
+		doFirst {
+			assert gradle.startParameter.writeDependencyLocks ||
+					!gradle.startParameter.lockedDependenciesToUpdate.isEmpty()
+		}
+		doLast {
+			configurations.findAll { it.canBeResolved }.each { c ->
+				try {
+					c.resolve()
+				} catch (Exception ignored) {
+				}
+			}
+		}
 	}
 }
 
@@ -46,10 +61,12 @@ buildscript {
 		mockwebserver_version = '4.10.0'
 		onionwrapper_version = '0.1.4'
 	}
+	configurations.classpath {
+		resolutionStrategy.activateDependencyLocking()
+	}
 	dependencies {
 		classpath 'com.android.tools.build:gradle:8.13.0'
 		classpath 'ru.vyarus:gradle-animalsniffer-plugin:2.0.1'
-		// classpath files('libs/gradle-witness.jar')
 		classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 		classpath 'com.gradleup.shadow:shadow-gradle-plugin:8.3.6'
 	}

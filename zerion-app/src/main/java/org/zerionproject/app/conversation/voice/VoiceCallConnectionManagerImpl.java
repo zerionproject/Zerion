@@ -50,11 +50,34 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 	private final ScheduledExecutorService cleanupScheduler =
 			Executors.newSingleThreadScheduledExecutor();
 
+	/**
+	 * How long one dial may take before the next attempt starts. A dial
+	 * that is abandoned can still complete and reach the callee, which
+	 * would adopt that orphan instead of the connection of the next
+	 * attempt, so this is at least as long as every setup timeout in the
+	 * service: an attempt is only abandoned once the setup it belonged to
+	 * has already given up and closed its endpoint. Attempts that fail
+	 * quickly are still retried.
+	 */
+	static final long DIAL_TIMEOUT_MS = 60_000;
+	private static final Object ABANDONED = new Object();
+
+	private final long dialTimeoutMs;
+	private final long[] retryDelaysMs;
+
 	@Inject
 	VoiceCallConnectionManagerImpl(PluginManager pluginManager,
 			VoiceCallCrypto crypto) {
+		this(pluginManager, crypto, DIAL_TIMEOUT_MS,
+				new long[] {0, 1000, 2000, 4000, 8000, 16000});
+	}
+
+	VoiceCallConnectionManagerImpl(PluginManager pluginManager,
+			VoiceCallCrypto crypto, long dialTimeoutMs, long[] retryDelaysMs) {
 		this.pluginManager = pluginManager;
 		this.crypto = crypto;
+		this.dialTimeoutMs = dialTimeoutMs;
+		this.retryDelaysMs = retryDelaysMs;
 
 		cleanupScheduler.scheduleAtFixedRate(this::cleanupExpiredEndpoints,
 				5, 5, TimeUnit.MINUTES);
@@ -160,9 +183,7 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		TransportProperties remoteProperties = new TransportProperties();
 		remoteProperties.put(TorConstants.PROP_ONION_V3, remoteOnion);
 
-		int maxAttempts = 6;
-		long[] delays = {0, 1000, 2000, 4000, 8000, 16000};
-		final long connectionTimeout = 10000;
+		int maxAttempts = retryDelaysMs.length;
 
 		DuplexTransportConnection conn = null;
 		IOException lastException = null;
@@ -170,42 +191,50 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		for (int attempt = 0; attempt < maxAttempts && conn == null; attempt++) {
 			if (attempt > 0) {
 				try {
-					Thread.sleep(delays[attempt]);
+					Thread.sleep(retryDelaysMs[attempt]);
 				} catch (InterruptedException e) {
 					throw new IOException("Connection interrupted", e);
 				}
 			}
 
+			java.util.concurrent.atomic.AtomicReference<Object> slot =
+					new java.util.concurrent.atomic.AtomicReference<>();
 			java.util.concurrent.ExecutorService executor =
 					java.util.concurrent.Executors.newSingleThreadExecutor();
 			try {
-				java.util.concurrent.Future<DuplexTransportConnection> future =
-						executor.submit(() -> torPlugin.createConnection(remoteProperties));
+				java.util.concurrent.Future<?> future = executor.submit(() -> {
+					DuplexTransportConnection c =
+							torPlugin.createConnection(remoteProperties);
+					if (c != null && !slot.compareAndSet(null, c)) {
+						tryToClose(c);
+					}
+					return c;
+				});
 
 				try {
-					conn = future.get(connectionTimeout, java.util.concurrent.TimeUnit.MILLISECONDS);
+					future.get(dialTimeoutMs, TimeUnit.MILLISECONDS);
 				} catch (java.util.concurrent.TimeoutException e) {
-					future.cancel(true);
-					lastException = new IOException("Connection timeout after " +
-							connectionTimeout + "ms");
+					lastException = new IOException("Connection timeout after "
+							+ dialTimeoutMs + "ms");
 				} catch (java.util.concurrent.ExecutionException e) {
-					lastException = new IOException("Connection attempt failed", e.getCause());
+					lastException = new IOException("Connection attempt failed",
+							e.getCause());
 				}
 
+				if (!slot.compareAndSet(null, ABANDONED)) {
+					conn = (DuplexTransportConnection) slot.get();
+				}
 				if (conn != null) {
 					break;
 				}
 			} catch (InterruptedException e) {
+				slot.compareAndSet(null, ABANDONED);
 				throw new IOException("Connection interrupted", e);
 			} catch (Exception e) {
+				slot.compareAndSet(null, ABANDONED);
 				lastException = new IOException("Connection attempt failed", e);
 			} finally {
-				executor.shutdownNow();
-				try {
-					executor.awaitTermination(2, TimeUnit.SECONDS);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
+				executor.shutdown();
 			}
 		}
 

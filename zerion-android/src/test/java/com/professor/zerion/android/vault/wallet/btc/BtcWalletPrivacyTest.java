@@ -53,7 +53,7 @@ public class BtcWalletPrivacyTest {
 	}
 
 	private static BtcWallet wallet(FakeElectrum e, PrivacyStore store) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyStore(store);
 		return w;
@@ -72,8 +72,8 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void frozenUtxoIsNotSpent() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 50000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 50000);
 		MemStore store = new MemStore();
 		store.setFrozen(TX0 + ":0", true);
 		wallet(e, store).send(DEST, 40000, 1.0, false);
@@ -85,8 +85,8 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void frozenUtxoExcludedFromSweep() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 50000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 50000);
 		MemStore store = new MemStore();
 		store.setFrozen(TX0 + ":0", true);
 		wallet(e, store).send(DEST, 0, 1.0, true);
@@ -98,8 +98,8 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void coinControlSpendsExactlyTheSelectedCoin() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 60000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 60000);
 		Set<String> manual = new HashSet<>();
 		manual.add(TX1 + ":0");
 		wallet(e, new MemStore()).send(DEST, 40000, 1.0, false, manual);
@@ -111,7 +111,7 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void coinControlUnavailableSelectionFailsClosed() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		Set<String> manual = new HashSet<>();
 		manual.add("ffff:0");
 		assertThrows(IOException.class, () ->
@@ -121,8 +121,8 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void fundsSpendableWithoutAnyPrivacyMetadata() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		String txid = w.send(DEST, 40000, 1.0, false);
 		assertEquals(e.lastBroadcastTxid(), txid);
@@ -131,9 +131,9 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void strictPolicyPrefersTightestSingleCluster() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 60000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 40000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 2), TX2, 0, 300000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 60000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 40000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 2), TX2, 0, 300000);
 		BtcWallet w = wallet(e, new MemStore());
 		w.setPrivacyPolicy(PrivacyEngine.Policy.STRICT);
 		w.send(DEST, 50000, 1.0, false);
@@ -145,8 +145,8 @@ public class BtcWalletPrivacyTest {
 	@Test
 	public void coinControlListReturnsClassifiedMetadata() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 60000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 40000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 60000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 40000);
 		List<PrivacyMeta> coins = wallet(e, new MemStore()).coinControl();
 		assertEquals(2, coins.size());
 		assertFalse(coins.get(0).clusterId.equals(coins.get(1).clusterId));

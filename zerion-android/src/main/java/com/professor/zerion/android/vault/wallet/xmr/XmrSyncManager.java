@@ -142,11 +142,7 @@ public final class XmrSyncManager {
 		if (t != null) {
 			t.cancelled = true;
 			try {
-				t.session.pauseRefresh();
-			} catch (Throwable ignored) {
-			}
-			try {
-				t.session.stopRefresh();
+				t.session.interruptRefresh();
 			} catch (Throwable ignored) {
 			}
 		}
@@ -455,9 +451,11 @@ public final class XmrSyncManager {
 			}
 		} catch (Throwable ignored) {
 		} finally {
-			try {
-				t.session.startRefresh();
-			} catch (Throwable ignored) {
+			if (live(t)) {
+				try {
+					t.session.startRefresh();
+				} catch (Throwable ignored) {
+				}
 			}
 		}
 		return stored;
@@ -468,14 +466,16 @@ public final class XmrSyncManager {
 	 * order, returning the first that connects or -1 when all have been tried.
 	 */
 	private int failover(Token t) {
-		try {
-			t.session.stopRefresh();
-		} catch (Throwable ignored) {
+		boolean idle = false;
+		for (int attempt = 0; attempt < 2 && !idle; attempt++) {
+			try {
+				t.session.pauseRefresh();
+				t.session.stopRefresh();
+				idle = t.session.waitRefreshIdle(STORE_QUIESCE_MS);
+			} catch (Throwable ignored) {
+			}
 		}
-		try {
-			t.session.pauseRefresh();
-		} catch (Throwable ignored) {
-		}
+		if (!idle) return -1;
 		return connectAnyFrom(t, t.nodeIndex + 1);
 	}
 
@@ -495,7 +495,8 @@ public final class XmrSyncManager {
 				continue;
 			}
 			publish(t, connectingStatus(t, node));
-			String proxy = node.usesTor() ? "127.0.0.1:" + t.torSocksPort : "";
+			String proxy = node.usesTor()
+					? XmrTorIsolation.syncProxy(t.torSocksPort, t.walletId) : "";
 			boolean ok;
 			try {
 

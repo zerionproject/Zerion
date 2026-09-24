@@ -25,6 +25,7 @@ import dagger.Component;
 @Component(modules = {
 		BrambleCoreIntegrationTestModule.class,
 		BrambleCoreModule.class,
+		org.zerionproject.transport.ZerionTransportModule.class,
 		DatabaseModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
@@ -34,6 +35,18 @@ interface ContactExchangeIntegrationTestComponent
 		extends BrambleCoreIntegrationTestEagerSingletons {
 
 	ConnectionManager getConnectionManager();
+
+	org.zerionproject.core.api.client.ClientHelper getClientHelper();
+
+	ContactExchangeCrypto getContactExchangeCrypto();
+
+	org.zerionproject.core.api.record.RecordReaderFactory getRecordReaderFactory();
+
+	org.zerionproject.core.api.record.RecordWriterFactory getRecordWriterFactory();
+
+	org.zerionproject.core.api.transport.StreamReaderFactory getStreamReaderFactory();
+
+	org.zerionproject.core.api.transport.StreamWriterFactory getStreamWriterFactory();
 
 	ContactExchangeManager getContactExchangeManager();
 

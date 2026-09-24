@@ -105,7 +105,8 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 		}});
 		return new TransportPropertyManagerImpl(db, clientHelper,
 				clientVersioningManager, metadataParser, contactGroupFactory,
-				clock, b4OnionRotation);
+				clock, b4OnionRotation,
+				() -> new org.zerionproject.core.test.PermissiveOnionClientAuth());
 	}
 
 	@Test

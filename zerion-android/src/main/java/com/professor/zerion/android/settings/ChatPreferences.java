@@ -85,8 +85,8 @@ public class ChatPreferences {
 	public static float getGuiFontScale(Context context) {
 		float cached = cachedGuiScale;
 		if (cached > 0f) return cached;
-		int index = com.professor.zerion.android.EarlyPrefs.get(context)
-				.getInt(PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		int index = com.professor.zerion.android.EarlyPrefs.guiTextSize(
+				context, TEXT_SIZE_MEDIUM);
 		if (index < 0 || index >= GUI_SCALES.length) index = TEXT_SIZE_MEDIUM;
 		float scale = GUI_SCALES[index];
 		cachedGuiScale = scale;

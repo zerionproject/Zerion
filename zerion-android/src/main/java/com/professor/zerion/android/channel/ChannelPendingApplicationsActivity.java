@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -121,7 +121,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 	}
 
 	private void confirmApprove(ChannelApplication app) {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_pending_approve)
 				.setMessage(app.getDisplayName())
 				.setPositiveButton(R.string.channels_pending_approve,
@@ -150,7 +150,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 	}
 
 	private void confirmDeny(ChannelApplication app) {
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_pending_deny)
 				.setMessage(app.getDisplayName())
 				.setPositiveButton(R.string.channels_pending_deny,

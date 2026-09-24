@@ -10,6 +10,8 @@ import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsException;
 import org.zerionproject.core.test.TestSecureRandomProvider;
 import org.junit.Before;
+import static org.junit.Assert.fail;
+import org.zerionproject.core.api.crypto.pcs.KpId;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -92,6 +94,45 @@ public class Mode3FullRatchetImplTest {
 		assertNull(result.getSharedSecret());
 		assertArrayEquals(peerPk,
 				result.getNewState().getTheirActivePqPk());
+	}
+
+	/**
+	 * A2-CRY-01: an advertised key that fails the library's modulus check is
+	 * refused at receipt with the protocol's own exception, so it is never
+	 * stored and never reaches the sender's encapsulation as an unchecked
+	 * failure.
+	 */
+	@Test
+	public void testAdvertisedKeyFailingTheModulusCheckIsRefused()
+			throws Exception {
+		Mode3FullState rState = ratchet.createInitialState();
+		byte[] zeroCt = new byte[MLKEM_CIPHERTEXT_SIZE];
+		byte[] bad = new byte[MLKEM_ENCAPSULATION_KEY_SIZE];
+		java.util.Arrays.fill(bad, (byte) 0xFF);
+		try {
+			ratchet.pqDecapsulateRecv(rState, null, zeroCt, bad);
+			fail();
+		} catch (PcsException expected) {
+		}
+		assertFalse(mlKemProvider.isValidEncapsulationKey(bad));
+		assertTrue(mlKemProvider.isValidEncapsulationKey(
+				mlKemProvider.generateKeyPair().getEncapsulationKey()));
+	}
+
+	/**
+	 * A2-CRY-08: a key pair another snapshot has retired and zeroized is no
+	 * longer found by id, so a stale lookup fails at once instead of
+	 * decapsulating under an all-zero key.
+	 */
+	@Test
+	public void testDestroyedKeyPairIsNotFoundById() {
+		Mode3FullState s = ratchet.createInitialState();
+		MlKemKeyPair active = s.getOurActiveKeyPair();
+		KpId id = KpId.of(active.getEncapsulationKey());
+		assertNotNull(s.findKeypairById(id));
+		s.destroy();
+		assertTrue(active.isDestroyed());
+		assertNull(s.findKeypairById(id));
 	}
 
 	@Test

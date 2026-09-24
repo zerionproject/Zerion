@@ -66,15 +66,29 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	 * storage.
 	 */
 	public static boolean isStorageFailed() {
+		if (valuesUnreadable) return true;
 		if (!storageFailed) return false;
+		if (INSTANCES.isEmpty()) return true;
 		for (ZerionEncryptedPrefs p : INSTANCES.values()) {
-			if (p.hmacMac() != null) {
-				storageFailed = false;
-				return false;
-			}
-			break;
+			if (p.hmacMac() == null) return true;
 		}
-		return true;
+		storageFailed = false;
+		return false;
+	}
+
+	/**
+	 * A stored value failed authentication: the key changed under the file
+	 * or the file was altered. Reads would otherwise return defaults, which
+	 * for the security toggles means "off", so this fails closed like a
+	 * keystore failure until the app is reinstalled or the data cleared.
+	 */
+	private static volatile boolean valuesUnreadable = false;
+
+	/** Test support: forgets cached instances and failure flags. */
+	static synchronized void resetForTests() {
+		INSTANCES.clear();
+		storageFailed = false;
+		valuesUnreadable = false;
 	}
 
 	private final SharedPreferences delegate;
@@ -366,6 +380,9 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 			byte[] value = Arrays.copyOfRange(plain, 3 + keyLen, plain.length);
 			Arrays.fill(plain, (byte) 0);
 			return new Decoded(type, prefKey, value);
+		} catch (javax.crypto.AEADBadTagException e) {
+			valuesUnreadable = true;
+			return null;
 		} catch (GeneralSecurityException | RuntimeException e) {
 			return null;
 		}

@@ -46,6 +46,7 @@ public class VoiceMessageRecorder {
 	private final AtomicBoolean isCancelled = new AtomicBoolean(false);
 	private ByteArrayOutputStream accumulatedPcm;
 	private byte[] currentGroupId;
+	private VoiceMemoKeys currentKeys;
 	private EncryptedChunkCallback currentEncryptedCallback;
 
 	private MediaRecorder mediaRecorder;
@@ -69,7 +70,8 @@ public class VoiceMessageRecorder {
 		this.mainHandler = new Handler(Looper.getMainLooper());
 	}
 
-	public boolean startStreamingRecording(byte[] groupId, EncryptedChunkCallback callback) {
+	public boolean startStreamingRecording(byte[] groupId, VoiceMemoKeys keys,
+			EncryptedChunkCallback callback) {
 		if (!checkAudioPermission()) {
 			callback.onError(new SecurityException("Audio recording permission not granted"));
 			return false;
@@ -82,7 +84,7 @@ public class VoiceMessageRecorder {
 
 		ioExecutor.execute(() -> {
 			try {
-				initializeStreamingRecording(groupId, callback);
+				initializeStreamingRecording(groupId, keys, callback);
 			} catch (Exception e) {
 				cleanup();
 				callback.onError(e);
@@ -93,7 +95,9 @@ public class VoiceMessageRecorder {
 	}
 
 	@android.annotation.SuppressLint("MissingPermission")
-	private void initializeStreamingRecording(byte[] groupId, EncryptedChunkCallback callback) throws Exception {
+	private void initializeStreamingRecording(byte[] groupId,
+			VoiceMemoKeys keys, EncryptedChunkCallback callback)
+			throws Exception {
 		int minBufferSize = AudioRecord.getMinBufferSize(
 				SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
 
@@ -115,6 +119,7 @@ public class VoiceMessageRecorder {
 			throw new IllegalStateException("AudioRecord initialization failed");
 		}
 		currentGroupId = Arrays.copyOf(groupId, groupId.length);
+		currentKeys = keys;
 		currentEncryptedCallback = callback;
 		accumulatedPcm = new ByteArrayOutputStream();
 
@@ -195,21 +200,29 @@ public class VoiceMessageRecorder {
 				Arrays.fill(muLawData, (byte) 0);
 				return;
 			}
+			long timestamp = currentKeys.nextOutgoingTimestamp();
+			byte[] senderId = currentKeys.localAuthorId();
+			byte[] recipientId = currentKeys.remoteAuthorId();
 			encryptor = new StreamingAudioEncryptor();
-			byte[] formatVersion = new byte[]{1};
-			byte[] messageIdPlaceholder = new byte[0];
-			encryptor.setAADContext(formatVersion, currentGroupId, messageIdPlaceholder);
+			encryptor.setAADContext(new byte[] {VoiceMemoCrypto.FORMAT_VERSION},
+					currentGroupId, VoiceMemoCrypto.messageBinding(timestamp,
+							senderId, recipientId));
 
 			byte[] iv = encryptor.getIV();
-			javax.crypto.SecretKey wrapKey = deriveWrapKey(currentGroupId);
-			byte[] encryptedSessionKey = encryptor.getEncryptedKey(wrapKey);
-			byte[] wrapKeyBytes = wrapKey.getEncoded();
-			byte[] wrappedKey = new byte[32 + encryptedSessionKey.length];
-			System.arraycopy(wrapKeyBytes, 0, wrappedKey, 0, 32);
-			System.arraycopy(encryptedSessionKey, 0, wrappedKey, 32, encryptedSessionKey.length);
-			java.util.Arrays.fill(wrapKeyBytes, (byte) 0);
-			java.util.Arrays.fill(encryptedSessionKey, (byte) 0);
-			mainHandler.post(() -> callback.onEncryptionInit(iv, wrappedKey));
+			byte[] salt = VoiceMemoCrypto.newSalt(new java.security.SecureRandom());
+			byte[] wrapKeyBytes = currentKeys.deriveWrapKey(salt);
+			byte[] sealedSessionKey;
+			try {
+				sealedSessionKey = encryptor.getEncryptedKey(
+						new javax.crypto.spec.SecretKeySpec(wrapKeyBytes, "AES"));
+			} finally {
+				Arrays.fill(wrapKeyBytes, (byte) 0);
+			}
+			byte[] wrappedKey = VoiceMemoCrypto.wrappedKeyField(salt,
+					sealedSessionKey);
+			Arrays.fill(sealedSessionKey, (byte) 0);
+			mainHandler.post(() -> callback.onEncryptionInit(iv, wrappedKey,
+					timestamp));
 			int chunkSize = 4096;
 			int totalChunks = 0;
 			int offset = 0;
@@ -340,6 +353,7 @@ public class VoiceMessageRecorder {
 			currentGroupId = null;
 		}
 		currentEncryptedCallback = null;
+		currentKeys = null;
 
 		isRecording.set(false);
 		isCancelled.set(false);
@@ -506,14 +520,6 @@ public class VoiceMessageRecorder {
 	private boolean checkAudioPermission() {
 		return ActivityCompat.checkSelfPermission(context,
 				Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
-	}
-
-	private javax.crypto.SecretKey deriveWrapKey(byte[] groupId) throws Exception {
-		byte[] keyMaterial = new byte[32];
-		java.security.SecureRandom.getInstanceStrong().nextBytes(keyMaterial);
-		javax.crypto.SecretKey key = new javax.crypto.spec.SecretKeySpec(keyMaterial, "AES");
-		java.util.Arrays.fill(keyMaterial, (byte) 0);
-		return key;
 	}
 
 	public boolean isRecording() {

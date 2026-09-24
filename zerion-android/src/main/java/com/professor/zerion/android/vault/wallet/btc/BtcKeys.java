@@ -7,16 +7,26 @@ import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.HDKeyDerivation;
-import org.bitcoinj.crypto.MnemonicCode;
 import org.bitcoinj.params.MainNetParams;
 import org.bitcoinj.script.ScriptBuilder;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
+/**
+ * Bitcoin key material. The mnemonic is never held as a string: an
+ * {@link Account} is derived once from the mnemonic characters, the seed
+ * is wiped as soon as the account-level keys exist, and every address,
+ * script hash and signing key comes from those account keys. Private
+ * scalars live inside the library's key objects as immutable big integers
+ * for the account's lifetime, which the JVM cannot wipe; closing the
+ * account drops every reference to them.
+ */
 @NotNullByDefault
 public final class BtcKeys {
 
@@ -25,111 +35,136 @@ public final class BtcKeys {
 	private BtcKeys() {
 	}
 
-	private static DeterministicKey deriveKey(String mnemonic, int account,
-			int change, int index) {
-		List<String> words = Arrays.asList(mnemonic.trim().split("\\s+"));
-		byte[] seed = MnemonicCode.toSeed(words, "");
-		DeterministicKey k = HDKeyDerivation.createMasterPrivateKey(seed);
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(84, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(account, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(change, false));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(index, false));
-		return k;
-	}
+	/** The account-level keys of one wallet, derived once. */
+	public static final class Account {
 
-	public static DeterministicKey receiveKey(String mnemonic, int account,
-			int index) {
-		return deriveKey(mnemonic, account, 0, index);
-	}
+		@Nullable
+		private volatile DeterministicKey account;
+		@Nullable
+		private volatile DeterministicKey silent;
+		@Nullable
+		private volatile DeterministicKey receiveChain;
+		@Nullable
+		private volatile DeterministicKey changeChain;
 
-	public static DeterministicKey changeKey(String mnemonic, int account,
-			int index) {
-		return deriveKey(mnemonic, account, 1, index);
-	}
-
-	public static String address(String mnemonic, int account, int index) {
-		return SegwitAddress.fromKey(PARAMS,
-				receiveKey(mnemonic, account, index)).toString();
-	}
-
-	public static String changeAddress(String mnemonic, int account, int index) {
-		return SegwitAddress.fromKey(PARAMS,
-				changeKey(mnemonic, account, index)).toString();
-	}
-
-	public static String scriptHash(String mnemonic, int account, int index) {
-		return scriptHashOf(SegwitAddress.fromKey(PARAMS,
-				receiveKey(mnemonic, account, index)));
-	}
-
-	public static String changeScriptHash(String mnemonic, int account,
-			int index) {
-		return scriptHashOf(SegwitAddress.fromKey(PARAMS,
-				changeKey(mnemonic, account, index)));
-	}
-
-	private static DeterministicKey accountKey(byte[] seed, int account) {
-		DeterministicKey k = HDKeyDerivation.createMasterPrivateKey(seed);
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(84, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(account, true));
-		return k;
-	}
-
-	public static Set<String> ownedAddresses(String mnemonic, int account,
-			int receiveCount, int changeCount) {
-		List<String> words = Arrays.asList(mnemonic.trim().split("\\s+"));
-		byte[] seed = MnemonicCode.toSeed(words, "");
-		DeterministicKey acct = accountKey(seed, account);
-		DeterministicKey recv =
-				HDKeyDerivation.deriveChildKey(acct, new ChildNumber(0, false));
-		DeterministicKey chg =
-				HDKeyDerivation.deriveChildKey(acct, new ChildNumber(1, false));
-		Set<String> out = new HashSet<>();
-		for (int i = 0; i < receiveCount; i++) {
-			out.add(SegwitAddress.fromKey(PARAMS,
-					HDKeyDerivation.deriveChildKey(recv, new ChildNumber(i, false)))
-					.toString());
+		private Account(DeterministicKey account, DeterministicKey silent) {
+			this.account = account;
+			this.silent = silent;
+			this.receiveChain = HDKeyDerivation.deriveChildKey(account,
+					new ChildNumber(0, false));
+			this.changeChain = HDKeyDerivation.deriveChildKey(account,
+					new ChildNumber(1, false));
 		}
-		for (int i = 0; i < changeCount; i++) {
-			out.add(SegwitAddress.fromKey(PARAMS,
-					HDKeyDerivation.deriveChildKey(chg, new ChildNumber(i, false)))
-					.toString());
+
+		/**
+		 * Derives the account keys from the mnemonic characters, which the
+		 * caller keeps and wipes. The seed exists only inside this call.
+		 */
+		public static Account fromMnemonic(char[] mnemonic, int account)
+				throws GeneralSecurityException {
+			byte[] seed = Bip39Seed.fromMnemonic(mnemonic);
+			try {
+				DeterministicKey master =
+						HDKeyDerivation.createMasterPrivateKey(seed);
+				DeterministicKey acct = purpose(master, 84, account);
+				DeterministicKey silent = purpose(master, 352, account);
+				return new Account(acct, silent);
+			} finally {
+				Arrays.fill(seed, (byte) 0);
+			}
 		}
-		return out;
-	}
 
-	private static DeterministicKey silentKey(String mnemonic, int account,
-			int branch) {
-		List<String> words = Arrays.asList(mnemonic.trim().split("\\s+"));
-		byte[] seed = MnemonicCode.toSeed(words, "");
-		DeterministicKey k = HDKeyDerivation.createMasterPrivateKey(seed);
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(352, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(account, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(branch, true));
-		k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, false));
-		return k;
-	}
+		private static DeterministicKey purpose(DeterministicKey master,
+				int purpose, int account) {
+			DeterministicKey k = HDKeyDerivation.deriveChildKey(master,
+					new ChildNumber(purpose, true));
+			k = HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, true));
+			return HDKeyDerivation.deriveChildKey(k,
+					new ChildNumber(account, true));
+		}
 
-	public static String silentPaymentAddress(String mnemonic, int account) {
-		byte[] scanPub = silentKey(mnemonic, account, 1).getPubKey();
-		byte[] spendPub = silentKey(mnemonic, account, 0).getPubKey();
-		return SilentPayment.encodeAddress(scanPub, spendPub, true);
-	}
+		private DeterministicKey chain(boolean change) {
+			DeterministicKey k = change ? changeChain : receiveChain;
+			if (k == null) throw new IllegalStateException("account closed");
+			return k;
+		}
 
-	public static byte[] silentScanPriv(String mnemonic, int account) {
-		return silentKey(mnemonic, account, 1).getPrivKeyBytes();
-	}
+		private DeterministicKey silentRoot() {
+			DeterministicKey k = silent;
+			if (k == null) throw new IllegalStateException("account closed");
+			return k;
+		}
 
-	public static byte[] silentSpendPub(String mnemonic, int account) {
-		return silentKey(mnemonic, account, 0).getPubKey();
-	}
+		/** Drops every key reference; the account is unusable afterwards. */
+		public void close() {
+			account = null;
+			silent = null;
+			receiveChain = null;
+			changeChain = null;
+		}
 
-	public static java.math.BigInteger silentSpendPriv(String mnemonic,
-			int account) {
-		return silentKey(mnemonic, account, 0).getPrivKey();
+		public boolean isClosed() {
+			return account == null;
+		}
+
+		public DeterministicKey receiveKey(int index) {
+			return HDKeyDerivation.deriveChildKey(chain(false),
+					new ChildNumber(index, false));
+		}
+
+		public DeterministicKey changeKey(int index) {
+			return HDKeyDerivation.deriveChildKey(chain(true),
+					new ChildNumber(index, false));
+		}
+
+		public String address(int index) {
+			return SegwitAddress.fromKey(PARAMS, receiveKey(index)).toString();
+		}
+
+		public String changeAddress(int index) {
+			return SegwitAddress.fromKey(PARAMS, changeKey(index)).toString();
+		}
+
+		public String scriptHash(int index) {
+			return scriptHashOf(SegwitAddress.fromKey(PARAMS,
+					receiveKey(index)));
+		}
+
+		public String changeScriptHash(int index) {
+			return scriptHashOf(SegwitAddress.fromKey(PARAMS,
+					changeKey(index)));
+		}
+
+		public Set<String> ownedAddresses(int receiveCount, int changeCount) {
+			Set<String> out = new HashSet<>();
+			for (int i = 0; i < receiveCount; i++) out.add(address(i));
+			for (int i = 0; i < changeCount; i++) out.add(changeAddress(i));
+			return out;
+		}
+
+		private DeterministicKey silentKey(int branch) {
+			DeterministicKey k = HDKeyDerivation.deriveChildKey(silentRoot(),
+					new ChildNumber(branch, true));
+			return HDKeyDerivation.deriveChildKey(k, new ChildNumber(0, false));
+		}
+
+		public String silentPaymentAddress() {
+			byte[] scanPub = silentKey(1).getPubKey();
+			byte[] spendPub = silentKey(0).getPubKey();
+			return SilentPayment.encodeAddress(scanPub, spendPub, true);
+		}
+
+		public byte[] silentScanPriv() {
+			return silentKey(1).getPrivKeyBytes();
+		}
+
+		public byte[] silentSpendPub() {
+			return silentKey(0).getPubKey();
+		}
+
+		public java.math.BigInteger silentSpendPriv() {
+			return silentKey(0).getPrivKey();
+		}
 	}
 
 	public static boolean isValidAddress(String address) {
@@ -150,7 +185,7 @@ public final class BtcKeys {
 		return toHex(reversed);
 	}
 
-	private static String scriptHashOf(SegwitAddress address) {
+	static String scriptHashOf(SegwitAddress address) {
 		byte[] program = ScriptBuilder.createOutputScript(address).getProgram();
 		byte[] hash = Sha256Hash.hash(program);
 		byte[] reversed = new byte[hash.length];

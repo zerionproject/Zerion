@@ -89,6 +89,14 @@ class ChannelReactionStore {
 			}
 		}
 		if (!replaced) {
+			int forPost = 0;
+			for (ChannelReaction r : existing) {
+				if (r.getPostSeqNum() == reaction.getPostSeqNum()) forPost++;
+			}
+			if (forPost >= org.zerionproject.app.api.channel.ChannelConstants
+					.MAX_REACTIONS_PER_POST) {
+				return false;
+			}
 			out.add(reaction);
 			changed = true;
 		}

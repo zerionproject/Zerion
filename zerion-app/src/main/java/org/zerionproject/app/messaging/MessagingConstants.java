@@ -11,6 +11,7 @@ interface MessagingConstants {
 	String MSG_KEY_AUTO_DELETE_TIMER = "autoDeleteTimer";
 	String MSG_KEY_CHUNK_INDEX = "chunkIndex";
 	String MSG_KEY_CHUNK_COUNT = "chunkCount";
+	String MSG_KEY_CHUNK_DATA_LENGTH = "chunkDataLength";
 	String MSG_KEY_MANIFEST_ID = "manifestId";
 	String MSG_KEY_TOTAL_SIZE = "totalSize";
 	String MSG_KEY_ROOT_HASH = "rootHash";

@@ -57,6 +57,10 @@ public class VaultRekeyRecoveryDeviceTest {
 		return new VaultManager(ctx);
 	}
 
+	private static void awaitUnlockThrottle() throws InterruptedException {
+		Thread.sleep(2500);
+	}
+
 	private String addSeed(VaultManager v) throws Exception {
 		VaultItem item = v.addItem(VaultItem.ItemType.WALLET, "XMR\nAcc", SEED);
 		return item.id;
@@ -79,6 +83,7 @@ public class VaultRekeyRecoveryDeviceTest {
 
 		assertFalse("old password no longer unlocks",
 				fresh().unlockVault(PW1.clone()));
+		awaitUnlockThrottle();
 		VaultManager reopened = fresh();
 		assertTrue("new password unlocks", reopened.unlockVault(PW2.clone()));
 		assertArrayEquals("item content survives the password change", SEED,

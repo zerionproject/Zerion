@@ -1,23 +1,22 @@
 {
-  "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact.",
+  "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact. The release reference is the tag: a commit hash is deliberately absent, because this file ships inside the release commit and cannot name that commit's own hash. Consumers resolve the tag (F-Droid records its own resolved hash in fdroiddata).",
   "android": {
-    "version": "3.0.11",
-    "versionCode": 31100,
-    "tag": "v3.0.11",
-    "commit": "6e24cdd8476b9ce96fb27ecae81203256bd52cfa",
+    "version": "3.0.12",
+    "versionCode": 31200,
+    "tag": "v3.0.12",
     "minAndroid": "10",
     "minApi": 29,
     "apk": {
-      "name": "zerion-3.0.11.apk",
-      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.11/zerion-3.0.11.apk",
-      "sha256": "5b7b24ea25c2cacdcf0458486b6f4467236f9e127a7514e66ff0246f52ff750f",
-      "sizeBytes": 81565731,
-      "verified": "2026-09-23"
+      "name": "zerion-3.0.12.apk",
+      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.12/zerion-3.0.12.apk",
+      "sha256": "c02b77be7631f9830f0b2afd6c7ee601096bd4d46d59dd5d52ffa13cb3f7552e",
+      "sizeBytes": 79868771,
+      "verified": "2026-09-24"
     },
     "signingCertSha256": "d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
     "channels": {
       "github": {
-        "version": "3.0.11",
+        "version": "3.0.12",
         "url": "https://github.com/zerionproject/Zerion/releases/latest"
       },
       "play": {
@@ -27,8 +26,8 @@
       "fdroid": {
         "version": "3.0.3",
         "url": "https://f-droid.org/packages/com.professor.zerion/",
-        "checked": "2026-09-23",
-        "note": "The 3.0.11 entry is merged in fdroiddata; F-Droid's build of it is pending."
+        "checked": "2026-09-24",
+        "note": "The 3.0.12 entry is submitted to fdroiddata; F-Droid's build of it is pending. 3.0.11 was merged there but disabled after its build failed on their server."
       }
     }
   },

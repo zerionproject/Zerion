@@ -67,6 +67,9 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	private final ContactGroupFactory contactGroupFactory;
 	private final Clock clock;
 	private final B4OnionRotation b4OnionRotation;
+	private final javax.inject.Provider<
+			org.zerionproject.core.api.plugin.OnionClientAuthManager>
+			onionClientAuthManager;
 	private final Group localGroup;
 
 	@Inject
@@ -75,7 +78,11 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			ClientVersioningManager clientVersioningManager,
 			MetadataParser metadataParser,
 			ContactGroupFactory contactGroupFactory, Clock clock,
-			B4OnionRotation b4OnionRotation) {
+			B4OnionRotation b4OnionRotation,
+			javax.inject.Provider<
+					org.zerionproject.core.api.plugin.OnionClientAuthManager>
+					onionClientAuthManager) {
+		this.onionClientAuthManager = onionClientAuthManager;
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.clientVersioningManager = clientVersioningManager;
@@ -327,6 +334,15 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				merged.putAll(remote);
 			}
 			if (TorConstants.ID.equals(t)) {
+				String authorized = onionClientAuthManager.get()
+						.getDialOnion(c.getId());
+				if (authorized != null) {
+					merged.put(org.zerionproject.core.api.plugin
+							.TorConstants.PROP_ONION_V3, authorized);
+					merged.remove(org.zerionproject.core.api.plugin
+							.B4Constants.B4_LOCAL_FALLBACK_ONION_KEY);
+					return merged;
+				}
 				String pending = b4OnionRotation
 						.getPendingOnionForContact(txn, c.getId());
 				if (pending != null && !pending.isEmpty()) {

@@ -8,15 +8,13 @@
 #include <map>
 #include <set>
 #include <mutex>
+#include <atomic>
 #include <utility>
 #include <limits>
 #include "wallet2_api.h"
 
-#define private public
 #include "wallet.h"
-
 #include "pending_transaction.h"
-#undef private
 
 using Monero::WalletManagerFactory;
 using Monero::WalletManager;
@@ -24,6 +22,31 @@ using Monero::Wallet;
 using Monero::PendingTransaction;
 using Monero::TransactionHistory;
 using Monero::TransactionInfo;
+
+namespace Monero {
+/*
+ * The two wallet API members the shim needs that the API keeps private: the
+ * refresh mutex the history gate serialises on, and the constructed
+ * transactions whose change the shim reports. Both classes declare this
+ * struct a friend through the documented header patch in the build script,
+ * so the accesses are ordinary C++ and every translation unit sees the same
+ * class definition.
+ */
+struct ZerionWalletAccess {
+    static boost::mutex &refreshMutex(WalletImpl *w) {
+        return w->m_refreshMutex2;
+    }
+
+    static const std::vector<tools::wallet2::pending_tx> &pendingTx(
+            PendingTransactionImpl *t) {
+        return t->m_pending_tx;
+    }
+
+    static void stopRefresh(WalletImpl *w) { w->stopRefresh(); }
+
+    static tools::wallet2 *wallet2(WalletImpl *w) { return w->m_wallet.get(); }
+};
+}
 
 namespace {
 
@@ -84,16 +107,149 @@ jbyteArray toByteArray(JNIEnv *env, std::string &s) {
     return a;
 }
 
-WalletManager *wm() {
-
+void silenceLogging() {
     static bool silenced = [] {
         WalletManagerFactory::setLogLevel(WalletManagerFactory::LogLevel_Silent);
         WalletManagerFactory::setLogCategories("");
         return true;
     }();
     (void) silenced;
+}
+
+WalletManager *wm() {
+    silenceLogging();
     return WalletManagerFactory::getWalletManager();
 }
+
+/*
+ * Every wallet2 state the Java side polls (balances, scanned height,
+ * subaddress count, transaction history) is mutated by the wallet API's
+ * refresh thread without wallet-level synchronisation. The API serialises
+ * its own refresh passes on WalletImpl::m_refreshMutex2, so that mutex is
+ * the wallet-level gate: a caller that can take it reads live state with no
+ * refresh in flight; a caller that cannot is served from the snapshot the
+ * refresh thread itself keeps through the listener callbacks, which run on
+ * the refresh thread between blocks where the state is consistent. Writes
+ * that reconfigure the wallet (init, store, subaddress creation, refresh
+ * height, transaction creation and relay) take the gate or fail closed.
+ */
+struct RefreshGuard {
+    Monero::WalletImpl *wi;
+    bool held;
+
+    RefreshGuard(Wallet *w, long waitMs)
+            : wi(static_cast<Monero::WalletImpl *>(w)), held(false) {
+        if (!wi) return;
+        if (waitMs < 0) {
+            Monero::ZerionWalletAccess::refreshMutex(wi).lock();
+            held = true;
+            return;
+        }
+        auto deadline = std::chrono::steady_clock::now()
+                + std::chrono::milliseconds(waitMs);
+        for (;;) {
+            if (Monero::ZerionWalletAccess::refreshMutex(wi).try_lock()) {
+                held = true;
+                return;
+            }
+            if (std::chrono::steady_clock::now() >= deadline) return;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+
+    ~RefreshGuard() {
+        if (held) Monero::ZerionWalletAccess::refreshMutex(wi).unlock();
+    }
+};
+
+std::string encodeHistory(Wallet *w) {
+    std::string out;
+    TransactionHistory *th = w->history();
+    if (!th) return out;
+    th->refresh();
+    for (TransactionInfo *ti : th->getAll()) {
+        if (!ti) continue;
+        out += ti->hash();                                        out += ",";
+        out += std::to_string(ti->direction());                   out += ",";
+        out += std::to_string((unsigned long long) ti->amount()); out += ",";
+        out += std::to_string((unsigned long long) ti->fee());    out += ",";
+        out += std::to_string((unsigned long long) ti->blockHeight()); out += ",";
+        out += std::to_string((long long) ti->timestamp());       out += ",";
+        out += std::to_string((unsigned long long) ti->confirmations()); out += ",";
+        out += std::to_string((unsigned long long) ti->unlockTime()); out += ",";
+        out += (ti->isPending() ? "1" : "0");                     out += ",";
+        out += (ti->isFailed() ? "1" : "0");                      out += "\n";
+    }
+    return out;
+}
+
+struct Snapshot : public Monero::WalletListener {
+    Wallet *w;
+    std::atomic<uint64_t> balance;
+    std::atomic<uint64_t> unlocked;
+    std::atomic<uint64_t> height;
+    std::atomic<uint64_t> subaddresses;
+    std::atomic<bool> synced;
+    std::mutex histMu;
+    std::string history;
+    uint64_t lastFiguresBlock;
+    std::chrono::steady_clock::time_point lastFiguresAt;
+
+    explicit Snapshot(Wallet *wallet)
+            : w(wallet), balance(0), unlocked(0), height(0), subaddresses(1),
+              synced(false), lastFiguresBlock(0),
+              lastFiguresAt(std::chrono::steady_clock::now()) {}
+
+    void takeFigures() {
+        try {
+            balance = w->balance(0);
+            unlocked = w->unlockedBalance(0);
+            height = w->blockChainHeight();
+            synced = w->synchronized();
+            subaddresses = w->numSubaddresses(0);
+        } catch (...) {
+        }
+    }
+
+    void takeHistory() {
+        try {
+            std::string s = encodeHistory(w);
+            setHistory(s);
+        } catch (...) {
+        }
+    }
+
+    void setHistory(const std::string &s) {
+        std::lock_guard<std::mutex> lk(histMu);
+        history = s;
+    }
+
+    std::string getHistory() {
+        std::lock_guard<std::mutex> lk(histMu);
+        return history;
+    }
+
+    void moneySpent(const std::string &, uint64_t) override { takeFigures(); }
+    void moneyReceived(const std::string &, uint64_t) override { takeFigures(); }
+    void unconfirmedMoneyReceived(const std::string &, uint64_t) override {
+        takeFigures();
+    }
+    void newBlock(uint64_t h) override {
+        height = h;
+        auto now = std::chrono::steady_clock::now();
+        if (h < lastFiguresBlock || h - lastFiguresBlock >= 100
+                || now - lastFiguresAt >= std::chrono::seconds(1)) {
+            lastFiguresBlock = h;
+            lastFiguresAt = now;
+            takeFigures();
+        }
+    }
+    void updated() override { takeFigures(); }
+    void refreshed() override {
+        takeFigures();
+        takeHistory();
+    }
+};
 
 enum HandleKind { KIND_WALLET = 1, KIND_TX = 2 };
 struct HandleEntry { void *ptr; HandleKind kind; jlong parent; };
@@ -131,6 +287,45 @@ PendingTransaction *regTxWithParent(jlong id, Wallet **parentOut) {
 void regRemove(jlong id) {
     std::lock_guard<std::mutex> lk(g_regMu);
     g_reg.erase(id);
+}
+
+std::map<jlong, Snapshot *> g_snaps;
+
+/* Installs the listener before any refresh thread exists and captures the
+ * opened cache's state so a read during the first refresh pass is served. */
+jlong registerWallet(Wallet *w) {
+    jlong id = regAdd(w, KIND_WALLET, 0);
+    if (!id) return 0;
+    Snapshot *snap = nullptr;
+    try {
+        snap = new Snapshot(w);
+        snap->takeFigures();
+        snap->takeHistory();
+        w->setListener(snap);
+    } catch (...) {
+        delete snap;
+        snap = nullptr;
+    }
+    if (snap) {
+        std::lock_guard<std::mutex> lk(g_regMu);
+        g_snaps[id] = snap;
+    }
+    return id;
+}
+
+Snapshot *snapOf(jlong id) {
+    std::lock_guard<std::mutex> lk(g_regMu);
+    auto it = g_snaps.find(id);
+    return it == g_snaps.end() ? nullptr : it->second;
+}
+
+Snapshot *takeSnap(jlong id) {
+    std::lock_guard<std::mutex> lk(g_regMu);
+    auto it = g_snaps.find(id);
+    if (it == g_snaps.end()) return nullptr;
+    Snapshot *s = it->second;
+    g_snaps.erase(it);
+    return s;
 }
 
 PendingTransaction *regTakeTx(jlong id, Wallet **parentOut) {
@@ -175,6 +370,11 @@ PendingTransaction *asTx(jlong h) { return regTxWithParent(h, nullptr); }
 
 extern "C" {
 
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *, void *) {
+    try { silenceLogging(); } catch (...) { }
+    return JNI_VERSION_1_6;
+}
+
 JNIEXPORT jlong JNICALL
 Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nCreate(
         JNIEnv *env, jclass, jstring path, jbyteArray password, jstring language) {
@@ -183,7 +383,7 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nCreate(
         Wallet *w = wm()->createWallet(toStd(env, path), pw,
                                        toStd(env, language), Monero::MAINNET);
         wipe(pw);
-        return regAdd(w, KIND_WALLET, 0);
+        return registerWallet(w);
     })
 }
 
@@ -199,7 +399,7 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nRestore(
                                          Monero::MAINNET,
                                          (uint64_t) restoreHeight, 1, off);
         wipe(pw); wipe(sd); wipe(off);
-        return regAdd(w, KIND_WALLET, 0);
+        return registerWallet(w);
     })
 }
 
@@ -210,7 +410,7 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nOpen(
         std::string pw = bytesToStd(env, password);
         Wallet *w = wm()->openWallet(toStd(env, path), pw, Monero::MAINNET);
         wipe(pw);
-        return regAdd(w, KIND_WALLET, 0);
+        return registerWallet(w);
     })
 }
 
@@ -237,7 +437,10 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nStore(
         JNIEnv *env, jclass, jlong h, jstring path) {
     JNI_GUARD(JNI_FALSE, {
         Wallet *w = asWallet(h);
-        return w && w->store(toStd(env, path)) ? JNI_TRUE : JNI_FALSE;
+        if (!w) return JNI_FALSE;
+        RefreshGuard g(w, 1000);
+        if (!g.held) return JNI_FALSE;
+        return w->store(toStd(env, path)) ? JNI_TRUE : JNI_FALSE;
     })
 }
 
@@ -248,11 +451,30 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nClose(
 
         TxOrphans orphans;
         Wallet *w = regTakeWallet(h, orphans);
-        if (!w) return JNI_FALSE;
+        Snapshot *snap = takeSnap(h);
+        if (!w) {
+            delete snap;
+            return JNI_FALSE;
+        }
         for (auto &o : orphans) {
             if (o.second) w->disposeTransaction(o.second);
         }
-        return wm()->closeWallet(w, store == JNI_TRUE) ? JNI_TRUE : JNI_FALSE;
+        bool stored = false;
+        if (store == JNI_TRUE) {
+            static_cast<Monero::WalletImpl *>(w)->pauseRefresh();
+            RefreshGuard g(w, 5000);
+            if (g.held && w->status() != Wallet::Status_Critical) {
+                stored = w->store("");
+            }
+        }
+        bool closed = wm()->closeWallet(w, false);
+        if (!closed) {
+            delete w;
+            closed = true;
+        }
+        delete snap;
+        if (store == JNI_TRUE && !stored) return JNI_FALSE;
+        return closed ? JNI_TRUE : JNI_FALSE;
     })
 }
 
@@ -283,7 +505,12 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nAddSubaddress(
         JNIEnv *env, jclass, jlong h, jlong account, jstring label) {
     JNI_GUARD_VOID({
         Wallet *w = asWallet(h);
-        if (w) w->addSubaddress((uint32_t) account, toStd(env, label));
+        if (!w) return;
+        RefreshGuard g(w, 5000);
+        if (!g.held) return;
+        w->addSubaddress((uint32_t) account, toStd(env, label));
+        Snapshot *snap = snapOf(h);
+        if (snap) snap->subaddresses = w->numSubaddresses(0);
     })
 }
 
@@ -292,7 +519,16 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nNumSubaddresses
         JNIEnv *, jclass, jlong h, jlong account) {
     JNI_GUARD(NLONG_ERR, {
         Wallet *w = asWallet(h);
-        return w ? (jlong) w->numSubaddresses((uint32_t) account) : NLONG_ERR;
+        if (!w) return NLONG_ERR;
+        Snapshot *snap = snapOf(h);
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            jlong v = (jlong) w->numSubaddresses((uint32_t) account);
+            if (snap && account == 0) snap->subaddresses = (uint64_t) v;
+            return v;
+        }
+        if (snap && account == 0) return (jlong) snap->subaddresses.load();
+        return NLONG_ERR;
     })
 }
 
@@ -300,6 +536,7 @@ JNIEXPORT jboolean JNICALL
 Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nValidateAddress(
         JNIEnv *env, jclass, jstring address) {
     JNI_GUARD(JNI_FALSE, {
+        silenceLogging();
         return Monero::Wallet::addressValid(toStd(env, address), Monero::MAINNET)
                ? JNI_TRUE : JNI_FALSE;
     })
@@ -312,9 +549,33 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nInit(
     JNI_GUARD(JNI_FALSE, {
         Wallet *w = asWallet(h);
         if (!w) return JNI_FALSE;
+        RefreshGuard g(w, 1000);
+        if (!g.held) return JNI_FALSE;
+        bool ok = w->init(toStd(env, daemonAddress), 0, "", "", false, false,
+                          toStd(env, proxyAddress));
         w->setTrustedDaemon(trusted == JNI_TRUE);
-        return w->init(toStd(env, daemonAddress), 0, "", "", false, false,
-                       toStd(env, proxyAddress)) ? JNI_TRUE : JNI_FALSE;
+        return ok ? JNI_TRUE : JNI_FALSE;
+    })
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nTrustedDaemon(
+        JNIEnv *, jclass, jlong h) {
+    JNI_GUARD(JNI_FALSE, {
+        Wallet *w = asWallet(h);
+        if (!w) return JNI_FALSE;
+        return w->trustedDaemon() ? JNI_TRUE : JNI_FALSE;
+    })
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nRescanBlockchain(
+        JNIEnv *, jclass, jlong h) {
+    JNI_GUARD(JNI_FALSE, {
+        Wallet *w = asWallet(h);
+        if (!w) return JNI_FALSE;
+        w->rescanBlockchainAsync();
+        return JNI_TRUE;
     })
 }
 
@@ -323,7 +584,9 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nSetRefreshFromH
         JNIEnv *, jclass, jlong h, jlong height) {
     JNI_GUARD_VOID({
         Wallet *w = asWallet(h);
-        if (w) w->setRefreshFromBlockHeight((uint64_t) height);
+        if (!w) return;
+        RefreshGuard g(w, -1);
+        w->setRefreshFromBlockHeight((uint64_t) height);
     })
 }
 
@@ -360,7 +623,15 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nBlockchainHeigh
         JNIEnv *, jclass, jlong h) {
     JNI_GUARD(NLONG_ERR, {
         Wallet *w = asWallet(h);
-        return w ? (jlong) w->blockChainHeight() : NLONG_ERR;
+        if (!w) return NLONG_ERR;
+        Snapshot *snap = snapOf(h);
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            jlong v = (jlong) w->blockChainHeight();
+            if (snap) snap->height = (uint64_t) v;
+            return v;
+        }
+        return snap ? (jlong) snap->height.load() : NLONG_ERR;
     })
 }
 
@@ -378,7 +649,15 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nSynchronized(
         JNIEnv *, jclass, jlong h) {
     JNI_GUARD(JNI_FALSE, {
         Wallet *w = asWallet(h);
-        return w && w->synchronized() ? JNI_TRUE : JNI_FALSE;
+        if (!w) return JNI_FALSE;
+        Snapshot *snap = snapOf(h);
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            bool v = w->synchronized();
+            if (snap) snap->synced = v;
+            return v ? JNI_TRUE : JNI_FALSE;
+        }
+        return snap && snap->synced.load() ? JNI_TRUE : JNI_FALSE;
     })
 }
 
@@ -387,7 +666,16 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nBalance(
         JNIEnv *, jclass, jlong h, jlong account) {
     JNI_GUARD(NLONG_ERR, {
         Wallet *w = asWallet(h);
-        return w ? (jlong) w->balance((uint32_t) account) : NLONG_ERR;
+        if (!w) return NLONG_ERR;
+        Snapshot *snap = snapOf(h);
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            jlong v = (jlong) w->balance((uint32_t) account);
+            if (snap && account == 0) snap->balance = (uint64_t) v;
+            return v;
+        }
+        if (snap && account == 0) return (jlong) snap->balance.load();
+        return NLONG_ERR;
     })
 }
 
@@ -396,7 +684,16 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nUnlockedBalance
         JNIEnv *, jclass, jlong h, jlong account) {
     JNI_GUARD(NLONG_ERR, {
         Wallet *w = asWallet(h);
-        return w ? (jlong) w->unlockedBalance((uint32_t) account) : NLONG_ERR;
+        if (!w) return NLONG_ERR;
+        Snapshot *snap = snapOf(h);
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            jlong v = (jlong) w->unlockedBalance((uint32_t) account);
+            if (snap && account == 0) snap->unlocked = (uint64_t) v;
+            return v;
+        }
+        if (snap && account == 0) return (jlong) snap->unlocked.load();
+        return NLONG_ERR;
     })
 }
 
@@ -407,22 +704,16 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nHistory(
     JNI_GUARD(nullptr, {
         Wallet *w = asWallet(h);
         if (!w) return (jstring) nullptr;
-        TransactionHistory *th = w->history();
-        if (!th) return (jstring) nullptr;
-        th->refresh();
+        Snapshot *snap = snapOf(h);
         std::string out;
-        for (TransactionInfo *ti : th->getAll()) {
-            if (!ti) continue;
-            out += ti->hash();                                        out += ",";
-            out += std::to_string(ti->direction());                   out += ",";
-            out += std::to_string((unsigned long long) ti->amount()); out += ",";
-            out += std::to_string((unsigned long long) ti->fee());    out += ",";
-            out += std::to_string((unsigned long long) ti->blockHeight()); out += ",";
-            out += std::to_string((long long) ti->timestamp());       out += ",";
-            out += std::to_string((unsigned long long) ti->confirmations()); out += ",";
-            out += std::to_string((unsigned long long) ti->unlockTime()); out += ",";
-            out += (ti->isPending() ? "1" : "0");                     out += ",";
-            out += (ti->isFailed() ? "1" : "0");                      out += "\n";
+        RefreshGuard g(w, 0);
+        if (g.held) {
+            out = encodeHistory(w);
+            if (snap) snap->setHistory(out);
+        } else if (snap) {
+            out = snap->getHistory();
+        } else {
+            return (jstring) nullptr;
         }
         return toJString(env, out);
     })
@@ -478,7 +769,10 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nStopRefreshThre
         JNIEnv *, jclass, jlong h) {
     JNI_GUARD_VOID({
         Wallet *w = asWallet(h);
-        if (w) static_cast<Monero::WalletImpl *>(w)->stopRefresh();
+        if (w) {
+            Monero::ZerionWalletAccess::stopRefresh(
+                    static_cast<Monero::WalletImpl *>(w));
+        }
     })
 }
 
@@ -489,6 +783,8 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nPrepare(
     JNI_GUARD(0, {
         Wallet *w = asWallet(h);
         if (!w) return 0;
+        RefreshGuard g(w, 5000);
+        if (!g.held) return 0;
         PendingTransaction *tx = w->createTransaction(
                 toStd(env, address), "", (uint64_t) amount, 0,
                 static_cast<PendingTransaction::Priority>(priority),
@@ -548,8 +844,11 @@ JNIEXPORT jboolean JNICALL
 Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nCommit(
         JNIEnv *, jclass, jlong tx) {
     JNI_GUARD(JNI_FALSE, {
-        PendingTransaction *t = asTx(tx);
-        return t && t->commit("", false) ? JNI_TRUE : JNI_FALSE;
+        Wallet *parent = nullptr;
+        PendingTransaction *t = regTxWithParent(tx, &parent);
+        if (!t || !parent) return JNI_FALSE;
+        RefreshGuard g(parent, -1);
+        return t->commit("", false) ? JNI_TRUE : JNI_FALSE;
     })
 }
 
@@ -614,7 +913,9 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nTxChange(
         Monero::PendingTransactionImpl *ti =
                 static_cast<Monero::PendingTransactionImpl *>(t);
         uint64_t change = 0;
-        for (const auto &ptx : ti->m_pending_tx) change += ptx.change_dts.amount;
+        for (const auto &ptx : Monero::ZerionWalletAccess::pendingTx(ti)) {
+            change += ptx.change_dts.amount;
+        }
         return (jlong) change;
     })
 }
@@ -646,8 +947,8 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nWaitRefreshIdle
         auto deadline = std::chrono::steady_clock::now()
                 + std::chrono::milliseconds(timeoutMs);
         for (;;) {
-            if (wi->m_refreshMutex2.try_lock()) {
-                wi->m_refreshMutex2.unlock();
+            if (Monero::ZerionWalletAccess::refreshMutex(wi).try_lock()) {
+                Monero::ZerionWalletAccess::refreshMutex(wi).unlock();
                 return JNI_TRUE;
             }
             if (std::chrono::steady_clock::now() >= deadline) return JNI_FALSE;
@@ -695,7 +996,7 @@ Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_nLookupTxs(
         }
         if (!req.txs_hashes.empty()) {
             Monero::WalletImpl *wi = static_cast<Monero::WalletImpl *>(w);
-            tools::wallet2 *w2 = wi->m_wallet.get();
+            tools::wallet2 *w2 = Monero::ZerionWalletAccess::wallet2(wi);
             if (timeoutMs < 1000) timeoutMs = 1000;
             if (timeoutMs > 30000) timeoutMs = 30000;
             bool r = w2 && w2->invoke_http_json("/get_transactions", req, res,

@@ -122,8 +122,8 @@ public final class XmrWalletManager {
 			XmrStore walletStore, MoneroEngine engine) {
 		this(new File(context.getApplicationContext().getNoBackupFilesDir(),
 				"xmr"), vaultManager, walletStore, engine,
-				Executors.newSingleThreadExecutor(),
-				Executors.newSingleThreadExecutor());
+				XmrSessionThreads.singleThread("XmrCrypto"),
+				XmrSessionThreads.singleThread("XmrSession"));
 	}
 
 	XmrWalletManager(File noBackupBase, VaultGate vaultManager,
@@ -151,6 +151,206 @@ public final class XmrWalletManager {
 	}
 
 	private final XmrSpendJournalStore journalStore;
+
+	private static final long LOOKUP_TIMEOUT_MS = 15_000;
+	private volatile java.util.function.LongSupplier wallClock =
+			System::currentTimeMillis;
+	private volatile long relayExpiryMs = XmrSpendReconciler.RELAY_EXPIRY_MS;
+	private final MutableLiveData<Event<String>> spendReleased =
+			new MutableLiveData<>();
+
+	void setWallClock(java.util.function.LongSupplier clock) {
+		this.wallClock = clock;
+	}
+
+	void setRelayExpiryMs(long ms) {
+		this.relayExpiryMs = ms;
+	}
+
+	/** Fires with the wallet id when an unresolved send was released. */
+	public LiveData<Event<String>> getSpendReleased() {
+		return spendReleased;
+	}
+
+	/**
+	 * Positive-only reconciliation against the daemon the given session is
+	 * connected to: looks every journal txid up in the daemon's pool and
+	 * chain and in the session's own outgoing history, and clears the journal
+	 * only when every txid is positively accepted. A MISSED or errored answer
+	 * resolves nothing. Runs on the session executor; returns the lookups so
+	 * a caller may apply the release rule to the same evidence. This is the
+	 * production reconciliation path: it runs right after every relay on the
+	 * spend session, after every view-session open, and on every user refresh,
+	 * so an uncertain relay that did reach the network can never leave the
+	 * wallet quarantined for longer than the next connection.
+	 */
+	private List<XmrTxLookup> reconcileSpendJournalFromDaemon(String walletId,
+			@Nullable MoneroEngine.Session s) {
+		if (s == null) return java.util.Collections.emptyList();
+		XmrSpendJournalStore.Status st = journalStore.read(walletId);
+		if (st.kind != XmrSpendJournalStore.Kind.PRESENT || st.journal == null) {
+			return java.util.Collections.emptyList();
+		}
+		List<XmrTxLookup> lookups;
+		try {
+			lookups = s.lookupTxs(st.journal.txids(), LOOKUP_TIMEOUT_MS);
+		} catch (Throwable e) {
+			lookups = java.util.Collections.emptyList();
+		}
+		try {
+			reconcileSpendJournal(walletId, XmrSpendReconciler.acceptedFrom(
+					lookups, outgoingHistoryTxids(s)));
+		} catch (Exception ignored) {
+		}
+		return lookups;
+	}
+
+	/** Reconcile the open wallet's journal against its current daemon. */
+	private void reconcileIfQuarantined(String walletId) {
+		if (!walletId.equals(openWalletId()) || !isSessionValid()) return;
+		if (!journalStore.isQuarantined(walletId)) return;
+		reconcileSpendJournalFromDaemon(walletId, openSession);
+	}
+
+	/**
+	 * Password-gated release of an unresolved send after the expiry window.
+	 * Re-authenticates with the wallet password, then on the session thread
+	 * re-runs the daemon reconciliation on the open session: positive
+	 * evidence resolves the journal normally; otherwise the release rule of
+	 * {@link XmrSpendReconciler#releasable} must hold on that fresh evidence
+	 * (journal older than the expiry, every txid MISSED by an answering
+	 * daemon, none in history), and only then the journal is cleared and the
+	 * pending reservation dropped. Anything else reports
+	 * {@link XmrError#RELAY_UNRESOLVED} and changes nothing. Never automatic,
+	 * never a re-broadcast.
+	 */
+	public void releaseUnresolvedSend(String walletId, char[] walletPassword) {
+		busy.postValue(true);
+		cryptoExecutor.execute(() -> {
+			char[] seed = null;
+			try {
+				if (walletPassword.length == 0) {
+					fail(XmrError.EMPTY_PASSWORD);
+					return;
+				}
+				try {
+					seed = walletStore.loadMnemonicChars(walletId, walletPassword);
+				} catch (Throwable t) {
+					fail(isWrongPassword(t) ? XmrError.WRONG_PASSWORD
+							: XmrError.CORRUPTED_ITEM);
+					return;
+				}
+				syncManager.submit(() -> releaseOnSession(walletId));
+			} finally {
+				if (seed != null) java.util.Arrays.fill(seed, '\0');
+				java.util.Arrays.fill(walletPassword, '\0');
+				busy.postValue(false);
+			}
+		});
+	}
+
+	private void releaseOnSession(String walletId) {
+		MoneroEngine.Session s = openSession;
+		if (s == null || !walletId.equals(openWalletId()) || !isSessionValid()) {
+			fail(XmrError.SESSION_INVALIDATED);
+			return;
+		}
+		XmrSpendJournalStore.Status st = journalStore.read(walletId);
+		if (st.kind == XmrSpendJournalStore.Kind.ABSENT) {
+			releaseStaleUncertainRecords(walletId, s);
+			return;
+		}
+		if (st.kind == XmrSpendJournalStore.Kind.CORRUPTED
+				|| st.journal == null) {
+			fail(XmrError.JOURNAL_CORRUPTED);
+			return;
+		}
+		List<XmrTxLookup> lookups = reconcileSpendJournalFromDaemon(walletId, s);
+		if (!journalStore.isQuarantined(walletId)) {
+			spendReleased.postValue(new Event<>(walletId));
+			return;
+		}
+		Set<String> history = outgoingHistoryTxids(s);
+		if (!XmrSpendReconciler.releasable(st.journal, lookups, history,
+				wallClock.getAsLong(), relayExpiryMs)) {
+			fail(XmrError.RELAY_UNRESOLVED);
+			return;
+		}
+		try {
+			journalStore.clear(walletId);
+		} catch (Exception e) {
+			fail(XmrError.STORAGE_COMMIT_FAILED);
+			return;
+		}
+		dropPendingSends(walletId, new java.util.HashSet<>(st.journal.txids()));
+		spendReleased.postValue(new Event<>(walletId));
+	}
+
+	/**
+	 * The journal is gone (a daemon once answered positively) but a
+	 * relay-uncertain record still reserves the inputs because the spend
+	 * wallet never observed the transaction: it was evicted from the pool or
+	 * the node lied. Such a record is dropped by the password-gated release
+	 * under the journal's own rule, after the expiry window and only while
+	 * the daemon now reports every txid as missed and none is in the
+	 * wallet's outgoing history; otherwise the release is refused as
+	 * unresolved rather than reported as done.
+	 */
+	private void releaseStaleUncertainRecords(String walletId,
+			MoneroEngine.Session s) {
+		List<XmrPendingSend> stale = new java.util.ArrayList<>();
+		for (XmrPendingSend p : readPendingSends(walletId)) {
+			if (p.uncertain && !p.converged && p.txids.length > 0) stale.add(p);
+		}
+		if (stale.isEmpty()) {
+			spendReleased.postValue(new Event<>(walletId));
+			return;
+		}
+		List<String> ids = new java.util.ArrayList<>();
+		for (XmrPendingSend p : stale) {
+			ids.addAll(java.util.Arrays.asList(p.txids));
+		}
+		List<XmrTxLookup> lookups;
+		try {
+			lookups = s.lookupTxs(ids, LOOKUP_TIMEOUT_MS);
+		} catch (Throwable e) {
+			lookups = java.util.Collections.emptyList();
+		}
+		Set<String> history = outgoingHistoryTxids(s);
+		long now = wallClock.getAsLong();
+		Set<String> released = new java.util.HashSet<>();
+		for (XmrPendingSend p : stale) {
+			if (XmrSpendReconciler.releasableTxids(
+					java.util.Arrays.asList(p.txids), p.createdAtMs, lookups,
+					history, now, relayExpiryMs)) {
+				released.addAll(java.util.Arrays.asList(p.txids));
+			}
+		}
+		if (released.isEmpty()) {
+			fail(XmrError.RELAY_UNRESOLVED);
+			return;
+		}
+		dropPendingSends(walletId, released);
+		spendReleased.postValue(new Event<>(walletId));
+	}
+
+	/** Remove the outstanding-send records whose txids all belong to the
+	 *  released journal, dropping their reservation; others are untouched. */
+	private void dropPendingSends(String walletId, Set<String> released) {
+		List<XmrPendingSend> cur = readPendingSends(walletId);
+		if (cur.isEmpty()) return;
+		List<XmrPendingSend> next = new java.util.ArrayList<>(cur.size());
+		boolean changed = false;
+		for (XmrPendingSend p : cur) {
+			if (p.txids.length > 0 && released.containsAll(
+					java.util.Arrays.asList(p.txids))) {
+				changed = true;
+			} else {
+				next.add(p);
+			}
+		}
+		if (changed) persistPendingSends(walletId, next);
+	}
 
 	/**
 	 * True when an unresolved spend journal makes this wallet spend-quarantined:
@@ -256,6 +456,7 @@ public final class XmrWalletManager {
 	 * transactions.
 	 */
 	private void publishStatusWithOverlay(XmrSyncStatus s) {
+		correctClockHeightOnce(openWalletId, s.daemonHeight);
 		long reserved = reservedFor(openWalletId);
 		if (reserved > 0) {
 			long bal = Math.max(s.balanceAtomic - reserved, 0);
@@ -324,6 +525,11 @@ public final class XmrWalletManager {
 			return t != 0 ? t : Long.compare(b.height, a.height);
 		});
 		return out;
+	}
+
+	/** The durable outstanding-send records of a wallet; for tests only. */
+	List<XmrPendingSend> pendingSendsFor(String walletId) {
+		return readPendingSends(walletId);
 	}
 
 	private List<XmrPendingSend> readPendingSends(String walletId) {
@@ -435,6 +641,68 @@ public final class XmrWalletManager {
 	 * resolves a stale spend-quarantine, so an uncertain relay that in fact
 	 * reached the network can never leave the wallet permanently unable to send.
 	 */
+	/**
+	 * The same reconciliation on a spend session that is already open, which
+	 * is the point in the shipped flow where the wallet password is
+	 * available: every send opens the spend wallet, whose open replays the
+	 * background cache with the spend key and marks externally spent outputs.
+	 * The pending sends and the spend journal converge on what that wallet
+	 * reports, and the view is rebuilt from the spend wallet's state once the
+	 * send ends, whether it relayed, failed or was cancelled.
+	 */
+	private void reconcileExternalSpendsOn(String walletId,
+			MoneroEngine.Session spend) {
+		try {
+			java.util.Set<String> spent = outgoingHistoryTxids(spend);
+			convergeObservedSends(walletId, spent);
+			try {
+				reconcileSpendJournal(walletId, XmrSpendReconciler.acceptedFrom(
+						java.util.Collections.emptyList(), spent));
+			} catch (Exception ignored) {
+			}
+			viewRebuildFromSpend = true;
+		} catch (Throwable ignored) {
+		}
+	}
+
+	/** Set once a spend session has reconciled; cleared when the view is rebuilt. */
+	private volatile boolean viewRebuildFromSpend = false;
+
+	/**
+	 * Ends a send that did not converge: when the spend session reconciled
+	 * external spends, its state is written to the background cache and the
+	 * view session is reopened from it, so the balance excludes what another
+	 * wallet with the same seed has spent; otherwise sync simply resumes.
+	 */
+	private void finishSendView(String walletId) {
+		boolean rebuild = viewRebuildFromSpend;
+		viewRebuildFromSpend = false;
+		if (rebuild) rebuild = propagateSpendStateToBackground();
+		closeSpendSession();
+		endExclusive();
+		if (!rebuild) {
+			rearmSyncIfIdle();
+			return;
+		}
+		final long epoch = sessionEpoch;
+		MoneroEngine.Session bg = openSession;
+		openSession = null;
+		if (bg != null) {
+			try {
+				bg.close();
+			} catch (Throwable ignored) {
+			}
+		}
+		if (epoch < 0 || !vaultManager.isUnlocked()
+				|| epoch != vaultManager.getLockGeneration()) {
+			return;
+		}
+		try {
+			activateBackgroundSession(walletId, epoch);
+		} catch (Throwable reopenFailed) {
+		}
+	}
+
 	private void reconcileExternalSpends(String walletId, char[] walletPassword) {
 		if (walletCv(walletId) < WALLET_V2) return;
 		byte[] salt = loadKekSalt(walletId);
@@ -534,6 +802,68 @@ public final class XmrWalletManager {
 
 	private static final long SEND_REFRESH_IDLE_TIMEOUT_MS = 5000;
 
+	/**
+	 * Bound on how long a reviewed-but-unconfirmed send may hold the spend
+	 * session, the signed transaction and the exclusive slot. A review that the
+	 * user never answers (the screen was re-created, the app went to the
+	 * background, the process kept running) previously kept the spend key in
+	 * memory and every other XMR wallet blocked until the vault locked.
+	 */
+	static final long SPEND_SESSION_TTL_MS = 180_000L;
+	private volatile long spendSessionTtlMs = SPEND_SESSION_TTL_MS;
+	private volatile long reviewReadyAtMs = -1L;
+	private final java.util.concurrent.ScheduledExecutorService sendWatchdog =
+			java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+				Thread t = new Thread(r, "XmrSendWatchdog");
+				t.setDaemon(true);
+				return t;
+			});
+
+	void setSpendSessionTtlMs(long ttlMs) {
+		this.spendSessionTtlMs = ttlMs;
+	}
+
+	/**
+	 * Cancel a send that has sat at review for longer than the TTL. Runs the
+	 * ordinary cancel path, so the native transaction is freed, the
+	 * authorization killed, the spend session closed and the slot released on
+	 * the session executor. A flow that is authorizing or relaying is never
+	 * interrupted; instead the watchdog re-arms itself so a flow that drops
+	 * back to review (a wrong password) is still bounded, and the wrong
+	 * password path re-arms it as well. A flow that already ended is a no-op.
+	 * Returns whether a follow-up check was scheduled.
+	 */
+		boolean expireStaleSendFlow() {
+		XmrSendFlow flow = sendFlow;
+		long at = reviewReadyAtMs;
+		if (flow == null || at < 0) return false;
+		XmrSendFlow.State state = flow.state();
+		if (state == XmrSendFlow.State.AUTHENTICATING
+				|| state == XmrSendFlow.State.AUTHORIZED
+				|| state == XmrSendFlow.State.RELAYING) {
+			try {
+				sendWatchdog.schedule(this::expireStaleSendFlow,
+						spendSessionTtlMs,
+						java.util.concurrent.TimeUnit.MILLISECONDS);
+			} catch (RuntimeException ignored) {
+			}
+			return true;
+		}
+		if (state != XmrSendFlow.State.REVIEW_READY) return false;
+		if (sendClock.nowMonotonicMs() - at < spendSessionTtlMs) return false;
+		cancelSend();
+		return false;
+	}
+
+	private void armSendWatchdog() {
+		reviewReadyAtMs = sendClock.nowMonotonicMs();
+		try {
+			sendWatchdog.schedule(this::expireStaleSendFlow,
+					spendSessionTtlMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
 	@Nullable
 	private volatile XmrSendFlow sendFlow;
 	private final MutableLiveData<XmrSendUiState> sendState =
@@ -606,6 +936,7 @@ public final class XmrWalletManager {
 							relayNode);
 					final MoneroEngine.Session sp = spend;
 					spendSession = sp;
+					reconcileExternalSpendsOn(walletId, sp);
 					XmrSendGate gate = new XmrSendGate(walletStore, sendGuard(),
 							sendClock);
 					XmrSendFlow flow = new XmrSendFlow(engine, sp, 0, walletId,
@@ -622,6 +953,7 @@ public final class XmrWalletManager {
 					if (snap == null) throw new XmrError.XmrException(
 							XmrError.UNKNOWN);
 					keepOpen = true;
+					armSendWatchdog();
 					sendState.postValue(XmrSendUiState.review(
 							reviewFrom(snap, walletLabel)));
 				} catch (XmrError.XmrException e) {
@@ -688,12 +1020,19 @@ public final class XmrWalletManager {
 						sendState.postValue(XmrSendUiState.review(
 								reviewFrom(snap, "")));
 					}
+					armSendWatchdog();
 					return;
 				}
 				final long changeAtomic = flow.changeAtomic();
 				sendState.postValue(XmrSendUiState.relaying());
 				XmrSendFlow.RelayResult result = flow.confirmAndRelay();
 				terminal = true;
+				XmrSendSnapshot relayed = flow.snapshot();
+				if (relayed != null && (result == XmrSendFlow.RelayResult.SUCCESS
+						|| result == XmrSendFlow.RelayResult.RELAY_UNCERTAIN)) {
+					reconcileSpendJournalFromDaemon(relayed.walletId(),
+							spendSession);
+				}
 				switch (result) {
 					case SUCCESS: {
 						XmrSendSnapshot snap = flow.snapshot();
@@ -721,10 +1060,13 @@ public final class XmrWalletManager {
 				java.util.Arrays.fill(walletPassword, '\0');
 				if (terminal) {
 					clearSendFlow();
-					closeSpendSession();
-					endExclusive();
-
-					if (!converged[0]) rearmSyncIfIdle();
+					if (converged[0]) {
+						viewRebuildFromSpend = false;
+						closeSpendSession();
+						endExclusive();
+					} else {
+						finishSendView(flow.walletId());
+					}
 				}
 				busy.postValue(false);
 			}
@@ -737,16 +1079,37 @@ public final class XmrWalletManager {
 		syncManager.submit(() -> {
 			XmrSendFlow flow = sendFlow;
 			if (flow != null) flow.cancel();
+			String id = flow != null ? flow.walletId() : openWalletId;
 			clearSendFlow();
-			closeSpendSession();
-			endExclusive();
 			sendState.postValue(XmrSendUiState.cancelled());
-			rearmSyncIfIdle();
+			if (id != null) finishSendView(id);
+			else {
+				closeSpendSession();
+				endExclusive();
+				rearmSyncIfIdle();
+			}
 		});
 	}
 
 	private void clearSendFlow() {
 		sendFlow = null;
+		reviewReadyAtMs = -1L;
+	}
+
+	/**
+	 * Tear down any active send on the session executor: free the native
+	 * transaction, drop the flow, release the exclusive slot and close the
+	 * transient spend session. Shared by the vault-lock path and the explicit
+	 * session close, so an orphaned flow can never outlive either.
+	 */
+	private void teardownSendFlowOnExecutor() {
+		XmrSendFlow flow = sendFlow;
+		if (flow != null) {
+			flow.disposeOnExecutor();
+			clearSendFlow();
+			endExclusive();
+		}
+		closeSpendSession();
 	}
 
 	private void invalidateSendFlow() {
@@ -790,6 +1153,10 @@ public final class XmrWalletManager {
 	 * offline the connection is re-established through the normal failover.
 	 */
 	public void refreshNow() {
+		String id = openWalletId();
+		if (id != null) {
+			syncManager.submit(() -> reconcileIfQuarantined(id));
+		}
 		if (syncManager.isActive()) {
 			syncManager.requestRefresh();
 		} else {
@@ -1274,6 +1641,7 @@ public final class XmrWalletManager {
 						System.currentTimeMillis());
 				try {
 					persistRestoreHeight(id, height);
+					persistHeightFromClock(id, true);
 				} catch (Throwable ignored) {
 				}
 				File live = liveDir(id);
@@ -1457,13 +1825,6 @@ public final class XmrWalletManager {
 						fail(XmrError.CORRUPTED_ITEM, walletPassword, null);
 						return;
 					}
-					String recoveredId =
-							repairZeroSealedSeed(walletId, walletPassword);
-					if (recoveredId != null) {
-						loadWallets();
-						openWallet(recoveredId, walletPassword.clone());
-						return;
-					}
 					fail(XmrError.WRONG_PASSWORD, walletPassword, null);
 					return;
 				}
@@ -1555,6 +1916,7 @@ public final class XmrWalletManager {
 		} catch (Throwable ignored) {
 		}
 		syncManager.start(walletId, epoch, s, syncNodes, torSocksPort);
+		syncManager.submit(() -> reconcileIfQuarantined(walletId));
 	}
 
 	/**
@@ -1601,25 +1963,17 @@ public final class XmrWalletManager {
 	}
 
 	/**
-	 * Converge the view-only background wallet's own balance with a just-relayed
-	 * spend, so the spent funds can never reappear as spendable:
-	 * <ol>
-	 * <li>durably record the send with its balance reservation active;
-	 * <li>close the running background session so its keys-file lock is released
-	 *     (an open background wallet holds it, blocking the cache write);
-	 * <li>write the spend wallet's post-relay state - its spent outputs marked by
-	 *     wallet2 commit_tx - into the background cache (a store on the
-	 *     CustomPassword main wallet updates w.background);
-	 * <li>mark the send converged so its reservation is released, exactly once,
-	 *     without ever double-subtracting;
-	 * <li>reopen the background session from the converged cache so its in-memory
-	 *     balance canonically excludes the spent outputs.
-	 * </ol>
-	 * On any failure the send stays reserved (not converged): the displayed
-	 * balance is conservatively reduced and never shows the spent funds as
-	 * spendable. Returns whether it converged (and thus already reopened sync).
+	 * After a relay, write the spend wallet's state into the background cache
+	 * and reopen the view from it. The reservation for the send is released
+	 * only once the reopened view itself reports the relayed txids as
+	 * outgoing: the library reports a store as successful even when the
+	 * background cache rewrite failed, so the store's own result is not
+	 * trusted for convergence. On an uncertain commit the stored cache
+	 * carries no spent flags and the reservation is held until the spend
+	 * wallet observes the transaction or the user releases the unresolved
+	 * send after the expiry window. Returns whether the store succeeded.
 	 */
-	private boolean convergeAfterRelay(@Nullable XmrSendSnapshot snap,
+		private boolean convergeAfterRelay(@Nullable XmrSendSnapshot snap,
 			long changeAtomic, boolean uncertain) {
 		final String id = openWalletId;
 		final long epoch = sessionEpoch;
@@ -1635,7 +1989,6 @@ public final class XmrWalletManager {
 			}
 		}
 		boolean ok = propagateSpendStateToBackground();
-		if (ok && id != null) markSendConverged(id, justSent);
 		if (id == null || epoch < 0 || !vaultManager.isUnlocked()
 				|| epoch != vaultManager.getLockGeneration()) {
 			return ok;
@@ -1643,6 +1996,14 @@ public final class XmrWalletManager {
 		try {
 			activateBackgroundSession(id, epoch);
 		} catch (Throwable reopenFailed) {
+			return ok;
+		}
+		if (ok && !uncertain) {
+			MoneroEngine.Session view = openSession;
+			if (view != null && !justSent.isEmpty()
+					&& outgoingHistoryTxids(view).containsAll(justSent)) {
+				markSendConverged(id, justSent);
+			}
 		}
 		return ok;
 	}
@@ -1707,6 +2068,19 @@ public final class XmrWalletManager {
 	 * handle is not required to remove the secrets that make the files usable.
 	 */
 	public void deleteWallet(String walletId, char[] walletPassword) {
+		deleteWallet(walletId, walletPassword, false);
+	}
+
+	/**
+	 * Delete with an explicit acknowledgement that an unresolved relay may
+	 * exist. Without the acknowledgement a quarantined wallet still refuses to
+	 * delete, so the unresolved state cannot be discarded by accident; with it
+	 * the user has been told the wallet is only recoverable from its recovery
+	 * phrase and that the outcome of the last send must be checked from the
+	 * restored wallet. A wallet is never left undeletable.
+	 */
+	public void deleteWallet(String walletId, char[] walletPassword,
+			boolean acknowledgeUnresolvedSpend) {
 		busy.postValue(true);
 		cryptoExecutor.execute(() -> {
 			if (walletPassword.length == 0) {
@@ -1719,7 +2093,8 @@ public final class XmrWalletManager {
 			}
 			char[] seed = null;
 			try {
-				if (journalStore.isQuarantined(walletId)) {
+				if (!acknowledgeUnresolvedSpend
+						&& journalStore.isQuarantined(walletId)) {
 					fail(XmrError.SPEND_QUARANTINED, walletPassword, null);
 					return;
 				}
@@ -1738,6 +2113,11 @@ public final class XmrWalletManager {
 				}
 				removeMetadata(walletId);
 				walletStore.deleteWallet(walletId);
+				try {
+					walletStore.removeWalletSecret(walletId,
+							BACKGROUND_PASSWORD_SECRET);
+				} catch (Throwable ignored) {
+				}
 				try {
 					postXmrWallets();
 				} catch (Throwable ignored) {
@@ -1815,41 +2195,6 @@ public final class XmrWalletManager {
 		});
 	}
 
-	/**
-	 * A rename re-seals the seed under a new wallet id. The subaddress ledger
-	 * (issued count, cached addresses, labels) and the backup-verified flag
-	 * belong to the wallet, not the id, so they move to the new id; the file
-	 * password and cache identity do not (the new id rebuilds its own cache).
-	 */
-	private void carryOverWalletState(String fromId, String toId)
-			throws Exception {
-		synchronized (walletStore.settingsMonitor()) {
-			if (walletStore.readSettings() == null) return;
-			org.json.JSONObject o = settingsObject();
-			org.json.JSONObject xmr = o.optJSONObject("xmr");
-			if (xmr == null) return;
-			org.json.JSONObject from = xmr.optJSONObject(fromId);
-			if (from == null) return;
-			org.json.JSONObject to = xmr.optJSONObject(toId);
-			if (to == null) to = new org.json.JSONObject();
-			if (from.has("recv")) to.put("recv", from.get("recv"));
-			if (from.has("bv")) to.put("bv", from.get("bv"));
-			String ps = from.optString("ps", "");
-			if (!ps.isEmpty()) {
-				List<XmrPendingSend> rebound = new java.util.ArrayList<>();
-				for (XmrPendingSend p : XmrPendingSend.listFromJson(ps)) {
-					rebound.add(p.rebind(toId));
-				}
-				if (!rebound.isEmpty()) {
-					to.put("ps", XmrPendingSend.listToJson(rebound));
-				}
-			}
-			xmr.put(toId, to);
-			o.put("xmr", xmr);
-			walletStore.writeSettings(o.toString());
-		}
-	}
-
 	private void removeMetadata(String walletId) throws Exception {
 		synchronized (walletStore.settingsMonitor()) {
 			if (walletStore.readSettings() == null) return;
@@ -1863,22 +2208,6 @@ public final class XmrWalletManager {
 		}
 	}
 
-	private void writeRenameJournal(String from, String toName,
-			@Nullable String to) throws Exception {
-		synchronized (walletStore.settingsMonitor()) {
-			org.json.JSONObject o = settingsObject();
-			org.json.JSONObject xmr = o.optJSONObject("xmr");
-			if (xmr == null) xmr = new org.json.JSONObject();
-			org.json.JSONObject rn = new org.json.JSONObject();
-			rn.put("from", from);
-			rn.put("toName", toName);
-			if (to != null) rn.put("to", to);
-			xmr.put(RENAME_KEY, rn);
-			o.put("xmr", xmr);
-			walletStore.writeSettings(o.toString());
-		}
-	}
-
 	private void clearRenameJournal() throws Exception {
 		synchronized (walletStore.settingsMonitor()) {
 			org.json.JSONObject o = settingsObject();
@@ -1888,13 +2217,6 @@ public final class XmrWalletManager {
 				o.put("xmr", xmr);
 				walletStore.writeSettings(o.toString());
 			}
-		}
-	}
-
-	private void clearRenameJournalQuiet() {
-		try {
-			clearRenameJournal();
-		} catch (Throwable ignored) {
 		}
 	}
 
@@ -1916,6 +2238,11 @@ public final class XmrWalletManager {
 				}
 				if (fromExists && toExists) {
 					walletStore.deleteWallet(from);
+					try {
+						walletStore.removeWalletSecret(from,
+								BACKGROUND_PASSWORD_SECRET);
+					} catch (Throwable ignored) {
+					}
 					removeMetadata(from);
 				}
 			}
@@ -1933,69 +2260,6 @@ public final class XmrWalletManager {
 		} catch (Throwable ignored) {
 		}
 		return null;
-	}
-
-	/**
-	 * One-time recovery for a wallet whose seed was sealed under an all-zero
-	 * password of the same length by a rename before the password-preservation
-	 * fix. The zero-length password is tried only after the entered password has
-	 * already failed, and it can only ever decrypt a wallet that really was
-	 * zero-sealed (AES-GCM authenticates), so a correctly sealed wallet can never
-	 * be opened with a wrong password this way. On success the recovered seed is
-	 * re-sealed under the entered (real) password as a new wallet item, the same
-	 * display name is kept, wallet state is carried over, and the corrupted item
-	 * is removed; a crash mid-repair is reconciled by the rename journal. Returns
-	 * the recovered wallet id, or null when the wallet was not zero-sealed.
-	 */
-	@Nullable
-	private String repairZeroSealedSeed(String walletId, char[] walletPassword) {
-		if (walletPassword.length == 0) return null;
-		if (journalStore.isQuarantined(walletId)) return null;
-		char[] zeroPw = new char[walletPassword.length];
-		char[] seed;
-		try {
-			seed = walletStore.loadMnemonicChars(walletId, zeroPw);
-		} catch (Throwable notZeroSealed) {
-			return null;
-		}
-		if (seed == null || seed.length == 0) return null;
-		try {
-			String name = displayNameOf(walletId);
-			if (name == null) return null;
-			long height = readRestoreHeight(walletId);
-			String newId = walletStore.createWallet(WalletCoin.XMR, name, seed,
-					walletPassword.clone());
-			try {
-				writeRenameJournal(walletId, name, newId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				persistRestoreHeight(newId, height);
-			} catch (Throwable ignored) {
-			}
-			try {
-				carryOverWalletState(walletId, newId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				walletStore.deleteWallet(walletId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				removeMetadata(walletId);
-			} catch (Throwable ignored) {
-			}
-			try {
-				shred(liveDir(walletId));
-			} catch (Throwable ignored) {
-			}
-			clearRenameJournalQuiet();
-			return newId;
-		} catch (Throwable reseal) {
-			return null;
-		} finally {
-			java.util.Arrays.fill(seed, '\0');
-		}
 	}
 
 	public void revealSeed(String walletId, char[] walletPassword) {
@@ -2145,7 +2409,11 @@ public final class XmrWalletManager {
 
 	public void closeSession() {
 		syncManager.stop();
-		sessionExecutor.execute(this::closeCurrentSession);
+		invalidateSendFlow();
+		sessionExecutor.execute(() -> {
+			teardownSendFlowOnExecutor();
+			closeCurrentSession();
+		});
 	}
 
 	private void invalidateSession() {
@@ -2153,13 +2421,7 @@ public final class XmrWalletManager {
 		wipePendingSeed();
 		invalidateSendFlow();
 		sessionExecutor.execute(() -> {
-			XmrSendFlow flow = sendFlow;
-			if (flow != null) {
-				flow.disposeOnExecutor();
-				clearSendFlow();
-				endExclusive();
-			}
-			closeSpendSession();
+			teardownSendFlowOnExecutor();
 			closeCurrentSession();
 		});
 	}
@@ -2170,12 +2432,15 @@ public final class XmrWalletManager {
 
 	/**
 	 * Close the open native session. When {@code persist} is true (lock / close
-	 * session) the encrypted scan cache is flushed first so scanning can resume;
-	 * when false (delete / rename / rescan, where the cache is about to be
-	 * shredded anyway) it is closed without a wasteful final write. Either way the
+	 * session) the refresh loop is paused and allowed to finish its block
+	 * batch first, then the encrypted scan cache is flushed so scanning can
+	 * resume; a flush the library could not complete is reported instead of
+	 * silently dropping the progress since the last periodic store. When
+	 * false (delete / rename / rescan, where the cache is about to be
+	 * shredded anyway) it is closed without a final write. Either way the
 	 * unlocked session, its decrypted secrets and native handles are destroyed.
 	 */
-	private synchronized void closeCurrentSession(boolean persist) {
+		private synchronized void closeCurrentSession(boolean persist) {
 		syncManager.stop();
 		MoneroEngine.Session s = openSession;
 		File dir = openWorkDir;
@@ -2187,7 +2452,14 @@ public final class XmrWalletManager {
 		if (s != null) {
 			try {
 				if (persist) {
-					s.closePersisting();
+					try {
+						s.pauseRefresh();
+						s.waitRefreshIdle(SEND_REFRESH_IDLE_TIMEOUT_MS);
+					} catch (Throwable ignored) {
+					}
+					if (!s.closePersisting()) {
+						error.postValue(new Event<>(XmrError.STORAGE_COMMIT_FAILED));
+					}
 				} else {
 					s.close();
 				}
@@ -2412,20 +2684,75 @@ public final class XmrWalletManager {
 		return walletCv(walletId) < WALLET_V2;
 	}
 
+	private static final String BACKGROUND_PASSWORD_SECRET = "bgp";
+
 	@Nullable
 	private char[] loadBackgroundPassword(String walletId) {
 		try {
-			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
-			if (xmr != null) {
-				org.json.JSONObject w = xmr.optJSONObject(walletId);
-				if (w != null) {
-					String bgp = w.optString("bgp", "");
-					if (!bgp.isEmpty()) return bgp.toCharArray();
+			byte[] stored = walletStore.readWalletSecret(walletId,
+					BACKGROUND_PASSWORD_SECRET);
+			if (stored != null) {
+				try {
+					return utf8ToChars(stored);
+				} finally {
+					java.util.Arrays.fill(stored, (byte) 0);
 				}
 			}
+			return moveBackgroundPasswordOutOfSettings(walletId);
 		} catch (Throwable ignored) {
 		}
 		return null;
+	}
+
+	/**
+	 * Wallets built before the background credential had its own vault item
+	 * carried it inside the settings JSON. On first use it is moved to its
+	 * item and removed from the JSON, so no later settings read or write
+	 * copies it into a String again.
+	 */
+	@Nullable
+	private char[] moveBackgroundPasswordOutOfSettings(String walletId)
+			throws Exception {
+		synchronized (walletStore.settingsMonitor()) {
+			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject xmr = o.optJSONObject("xmr");
+			if (xmr == null) return null;
+			org.json.JSONObject w = xmr.optJSONObject(walletId);
+			if (w == null) return null;
+			String legacy = w.optString(BACKGROUND_PASSWORD_SECRET, "");
+			if (legacy.isEmpty()) return null;
+			char[] chars = legacy.toCharArray();
+			byte[] bytes = charsToUtf8(chars);
+			try {
+				walletStore.writeWalletSecret(walletId,
+						BACKGROUND_PASSWORD_SECRET, bytes);
+			} finally {
+				java.util.Arrays.fill(bytes, (byte) 0);
+			}
+			w.remove(BACKGROUND_PASSWORD_SECRET);
+			xmr.put(walletId, w);
+			o.put("xmr", xmr);
+			walletStore.writeSettings(o.toString());
+			return chars;
+		}
+	}
+
+	private static byte[] charsToUtf8(char[] chars) {
+		java.nio.ByteBuffer bb = java.nio.charset.StandardCharsets.UTF_8
+				.encode(java.nio.CharBuffer.wrap(chars));
+		byte[] out = new byte[bb.remaining()];
+		bb.get(out);
+		java.util.Arrays.fill(bb.array(), (byte) 0);
+		return out;
+	}
+
+	private static char[] utf8ToChars(byte[] bytes) {
+		java.nio.CharBuffer cb = java.nio.charset.StandardCharsets.UTF_8
+				.decode(java.nio.ByteBuffer.wrap(bytes));
+		char[] out = new char[cb.remaining()];
+		cb.get(out);
+		java.util.Arrays.fill(cb.array(), '\0');
+		return out;
 	}
 
 	@Nullable
@@ -2461,7 +2788,14 @@ public final class XmrWalletManager {
 			if (xmr == null) xmr = new org.json.JSONObject();
 			org.json.JSONObject w = xmr.optJSONObject(walletId);
 			if (w == null) w = new org.json.JSONObject();
-			w.put("bgp", new String(backgroundPw));
+			byte[] bgpBytes = charsToUtf8(backgroundPw);
+			try {
+				walletStore.writeWalletSecret(walletId,
+						BACKGROUND_PASSWORD_SECRET, bgpBytes);
+			} finally {
+				java.util.Arrays.fill(bgpBytes, (byte) 0);
+			}
+			w.remove(BACKGROUND_PASSWORD_SECRET);
 			w.put("ks", java.util.Base64.getEncoder()
 					.encodeToString(kekSalt));
 			w.put("kv", XmrWalletKek.VERSION);
@@ -2552,16 +2886,15 @@ public final class XmrWalletManager {
 	 * as soon as the spend is done.
 	 */
 	/**
-	 * Open the spend-capable main wallet for a send and bring it ready to
-	 * construct a transaction. Opening the main file merges the outputs the
-	 * view-only background wallet has already scanned (wallet2
-	 * process_background_cache_on_open), so no full re-scan is needed; the
-	 * session is then connected to the same node the sync loop was using and
-	 * refreshed to the tip, so the transaction can fetch decoys and relay.
-	 * Returns null on a wrong password, a non-spendable open, or if it cannot
-	 * connect (a send must never be built against a disconnected wallet).
+	 * Open the spend wallet for one send. The main cache must already carry
+	 * the scanned state merged from the background cache: a wallet still at
+	 * genesis means that merge failed, and initialising it would let the
+	 * library fast-forward it to the daemon tip and then write that empty
+	 * view back over the background cache, hiding every output until a
+	 * rescan. Such a wallet is refused. The recovering marker is set before
+	 * init for the same reason, as the view path does.
 	 */
-	private MoneroEngine.Session openSpendSession(String walletId,
+		private MoneroEngine.Session openSpendSession(String walletId,
 			char[] walletPassword, XmrNode node) throws XmrError.XmrException {
 		byte[] salt = loadKekSalt(walletId);
 		if (salt == null) {
@@ -2576,9 +2909,16 @@ public final class XmrWalletManager {
 				if (s != null) s.close();
 				throw new XmrError.XmrException(XmrError.WRONG_PASSWORD);
 			}
-			String proxy = node.usesTor() ? "127.0.0.1:" + torSocksPort : "";
+			if (s.blockchainHeight() <= 1) {
+				s.close();
+				throw new XmrError.XmrException(
+						XmrError.SPEND_CACHE_INCOMPLETE);
+			}
+			String proxy = node.usesTor()
+					? XmrTorIsolation.relayProxy(torSocksPort, walletId) : "";
 			boolean connected;
 			try {
+				s.setRecoveringFromSeed(true);
 				connected = s.init(node.address(), proxy, node.trusted)
 						&& s.connectionStatus() == 1;
 			} catch (Throwable e) {
@@ -2644,6 +2984,78 @@ public final class XmrWalletManager {
 				}
 			}
 		} catch (Throwable ignored) {
+		}
+	}
+
+	/**
+	 * A wallet created while the device clock ran ahead persists a restore
+	 * height above the real chain tip, and the scan then waits for that
+	 * height and never sees payments made in between. The first daemon
+	 * height seen for such a wallet caps the persisted height a safety margin
+	 * below the tip and rescans the freshly created wallet from there; the
+	 * marker is cleared so this runs once per creation.
+	 */
+	private void correctClockHeightOnce(@Nullable String walletId,
+			long daemonHeight) {
+		if (walletId == null || daemonHeight <= 0) return;
+		if (daemonHeight < XmrBirthday.latestCheckpointHeight()) return;
+		if (!heightFromClock(walletId)) return;
+		long cap = Math.max(0, daemonHeight - XmrBirthday.BASE_MARGIN_BLOCKS);
+		long persisted = readRestoreHeight(walletId);
+		try {
+			persistHeightFromClock(walletId, false);
+			if (persisted <= cap) return;
+			persistRestoreHeight(walletId, cap);
+		} catch (Throwable ignored) {
+			return;
+		}
+		syncManager.submit(() -> {
+			MoneroEngine.Session s = openSession;
+			if (s == null || !walletId.equals(openWalletId)
+					|| !isSessionValid()) {
+				return;
+			}
+			try {
+				s.pauseRefresh();
+				s.stopRefresh();
+				s.waitRefreshIdle(SEND_REFRESH_IDLE_TIMEOUT_MS);
+				s.setRefreshFromHeight(cap);
+				s.rescanBlockchain();
+			} catch (Throwable ignored) {
+			} finally {
+				try {
+					s.startRefresh();
+				} catch (Throwable ignored) {
+				}
+			}
+		});
+	}
+
+	private boolean heightFromClock(String walletId) {
+		try {
+			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
+			if (xmr != null) {
+				org.json.JSONObject w = xmr.optJSONObject(walletId);
+				if (w != null) return w.optBoolean("hEst", false);
+			}
+		} catch (Throwable ignored) {
+		}
+		return false;
+	}
+
+	private void persistHeightFromClock(String walletId, boolean fromClock)
+			throws Exception {
+		synchronized (walletStore.settingsMonitor()) {
+			org.json.JSONObject o = settingsObject();
+			org.json.JSONObject xmr = o.optJSONObject("xmr");
+			if (xmr == null) xmr = new org.json.JSONObject();
+			org.json.JSONObject w = xmr.optJSONObject(walletId);
+			if (w == null) w = new org.json.JSONObject();
+			if (fromClock) w.put("hEst", true);
+			else w.remove("hEst");
+			xmr.put(walletId, w);
+			o.put("xmr", xmr);
+			walletStore.writeSettings(o.toString());
 		}
 	}
 

@@ -329,6 +329,24 @@ public class XmrCacheRebuildDeviceTest {
 			return monitor;
 		}
 
+		private final Map<String, byte[]> secrets = new HashMap<>();
+
+		@Override
+		public byte[] readWalletSecret(String walletId, String name) {
+			byte[] v = secrets.get(walletId + "/" + name);
+			return v == null ? null : v.clone();
+		}
+
+		@Override
+		public void writeWalletSecret(String walletId, String name, byte[] value) {
+			secrets.put(walletId + "/" + name, value.clone());
+		}
+
+		@Override
+		public void removeWalletSecret(String walletId, String name) {
+			secrets.remove(walletId + "/" + name);
+		}
+
 		final java.util.Map<String, String> journals =
 				new java.util.HashMap<>();
 

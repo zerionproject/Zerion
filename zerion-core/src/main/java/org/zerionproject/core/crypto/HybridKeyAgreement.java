@@ -4,6 +4,7 @@ import org.bouncycastle.crypto.digests.Blake2bDigest;
 import org.zerionproject.core.api.crypto.HybridAgreementPrivateKey;
 import org.zerionproject.core.api.crypto.HybridAgreementPublicKey;
 import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.util.ByteUtils;
 import org.zerionproject.core.util.StringUtils;
@@ -209,6 +210,147 @@ class HybridKeyAgreement {
 			if (ephemeralSecret != null) Arrays.fill(ephemeralSecret, (byte) 0);
 			if (kemSecret != null) Arrays.fill(kemSecret, (byte) 0);
 		}
+	}
+
+	byte[] decapsulate(KeyPair ourKeyPair, byte[] kemCiphertext)
+			throws GeneralSecurityException {
+		HybridAgreementPrivateKey ourPrivateKey =
+				(HybridAgreementPrivateKey) ourKeyPair.getPrivate();
+		byte[] ourMlKemPriv = ourPrivateKey.getMlKemPrivateKey();
+		try {
+			return mlKem768.decapsulate(ourMlKemPriv, kemCiphertext);
+		} finally {
+			Arrays.fill(ourMlKemPriv, (byte) 0);
+		}
+	}
+
+	SecretKey deriveSharedSecretPqAuth(String label,
+			HybridAgreementPublicKey theirStaticPublicKey,
+			HybridAgreementPublicKey theirEphemeralPublicKey,
+			KeyPair ourStaticKeyPair,
+			KeyPair ourEphemeralKeyPair,
+			byte[] ephemeralKemSecret,
+			byte[] kemSecretToAlice,
+			byte[] kemSecretToBob,
+			byte[]... inputs) throws GeneralSecurityException {
+		HybridAgreementPrivateKey ourStaticPrivate =
+				(HybridAgreementPrivateKey) ourStaticKeyPair.getPrivate();
+		HybridAgreementPrivateKey ourEphemeralPrivate =
+				(HybridAgreementPrivateKey) ourEphemeralKeyPair.getPrivate();
+		byte[] ourStaticX25519Priv = ourStaticPrivate.getX25519PrivateKey();
+		byte[] ourEphemeralX25519Priv =
+				ourEphemeralPrivate.getX25519PrivateKey();
+		byte[] staticSecret = null;
+		byte[] ephemeralSecret = null;
+		byte[][] crossTerms = null;
+		try {
+			staticSecret = curve25519.calculateAgreement(
+					theirStaticPublicKey.getX25519PublicKey(),
+					ourStaticX25519Priv);
+			if (isAllZeros(staticSecret)) {
+				throw new GeneralSecurityException(
+						"Invalid static X25519 shared secret");
+			}
+			ephemeralSecret = curve25519.calculateAgreement(
+					theirEphemeralPublicKey.getX25519PublicKey(),
+					ourEphemeralX25519Priv);
+			if (isAllZeros(ephemeralSecret)) {
+				throw new GeneralSecurityException(
+						"Invalid ephemeral X25519 shared secret");
+			}
+			crossTerms = staticEphemeralTerms(theirStaticPublicKey,
+					theirEphemeralPublicKey, ourStaticKeyPair.getPublic(),
+					ourStaticX25519Priv, ourEphemeralX25519Priv);
+			return combineSecretsPqAuth(label, staticSecret, ephemeralSecret,
+					crossTerms[0], crossTerms[1],
+					ephemeralKemSecret, kemSecretToAlice, kemSecretToBob,
+					theirStaticPublicKey.getEncoded(),
+					ourStaticKeyPair.getPublic().getEncoded(), inputs);
+		} finally {
+			Arrays.fill(ourStaticX25519Priv, (byte) 0);
+			Arrays.fill(ourEphemeralX25519Priv, (byte) 0);
+			if (staticSecret != null) Arrays.fill(staticSecret, (byte) 0);
+			if (ephemeralSecret != null) Arrays.fill(ephemeralSecret, (byte) 0);
+			if (crossTerms != null) {
+				Arrays.fill(crossTerms[0], (byte) 0);
+				Arrays.fill(crossTerms[1], (byte) 0);
+			}
+		}
+	}
+
+	/**
+	 * The two static-ephemeral X25519 agreements that give the handshake
+	 * key-compromise-impersonation resistance: with only a peer's static
+	 * private key, an impostor cannot compute the term that needs the
+	 * other party's static private key. The pair is returned in a
+	 * canonical order (the party with the lower static public key first:
+	 * its static key against the other party's ephemeral key, then its
+	 * ephemeral key against the other party's static key), so both sides
+	 * mix the same two secrets in the same positions.
+	 */
+	byte[][] staticEphemeralTerms(HybridAgreementPublicKey theirStatic,
+			HybridAgreementPublicKey theirEphemeral,
+			PublicKey ourStaticPublic, byte[] ourStaticX25519Priv,
+			byte[] ourEphemeralX25519Priv) throws GeneralSecurityException {
+		byte[] ourStaticTheirEphemeral = curve25519.calculateAgreement(
+				theirEphemeral.getX25519PublicKey(), ourStaticX25519Priv);
+		if (isAllZeros(ourStaticTheirEphemeral)) {
+			throw new GeneralSecurityException(
+					"Invalid static-ephemeral X25519 shared secret");
+		}
+		byte[] ourEphemeralTheirStatic = curve25519.calculateAgreement(
+				theirStatic.getX25519PublicKey(), ourEphemeralX25519Priv);
+		if (isAllZeros(ourEphemeralTheirStatic)) {
+			throw new GeneralSecurityException(
+					"Invalid ephemeral-static X25519 shared secret");
+		}
+		boolean weAreFirst = compareBytes(ourStaticPublic.getEncoded(),
+				theirStatic.getEncoded()) < 0;
+		return weAreFirst
+				? new byte[][] {ourStaticTheirEphemeral, ourEphemeralTheirStatic}
+				: new byte[][] {ourEphemeralTheirStatic, ourStaticTheirEphemeral};
+	}
+
+	private SecretKey combineSecretsPqAuth(String label,
+			byte[] staticX25519Secret,
+			byte[] ephemeralX25519Secret,
+			byte[] firstStaticEphemeralSecret,
+			byte[] secondStaticEphemeralSecret,
+			byte[] ephemeralKemSecret,
+			byte[] kemSecretToAlice,
+			byte[] kemSecretToBob,
+			byte[] theirStaticPublicKey,
+			byte[] ourStaticPublicKey,
+			byte[]... additionalInputs) {
+		Blake2bDigest digest = new Blake2bDigest(256);
+		byte[] length = new byte[INT_32_BYTES];
+		byte[] labelBytes = StringUtils.toUtf8(
+				HYBRID_SHARED_SECRET_LABEL + "/" + label);
+		byte[] firstKey, secondKey;
+		if (compareBytes(ourStaticPublicKey, theirStaticPublicKey) < 0) {
+			firstKey = ourStaticPublicKey;
+			secondKey = theirStaticPublicKey;
+		} else {
+			firstKey = theirStaticPublicKey;
+			secondKey = ourStaticPublicKey;
+		}
+		byte[][] parts = {labelBytes, staticX25519Secret,
+				ephemeralX25519Secret, firstStaticEphemeralSecret,
+				secondStaticEphemeralSecret, ephemeralKemSecret,
+				kemSecretToAlice, kemSecretToBob, firstKey, secondKey};
+		for (byte[] part : parts) {
+			ByteUtils.writeUint32(part.length, length, 0);
+			digest.update(length, 0, length.length);
+			digest.update(part, 0, part.length);
+		}
+		for (byte[] input : additionalInputs) {
+			ByteUtils.writeUint32(input.length, length, 0);
+			digest.update(length, 0, length.length);
+			digest.update(input, 0, input.length);
+		}
+		byte[] output = new byte[SecretKey.LENGTH];
+		digest.doFinal(output, 0);
+		return new SecretKey(output);
 	}
 
 	private SecretKey combineSecrets(String label,

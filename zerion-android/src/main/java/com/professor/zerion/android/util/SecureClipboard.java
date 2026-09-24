@@ -11,6 +11,11 @@ import android.os.PersistableBundle;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+
 /**
  * Bounded-lifetime clipboard copies. A value copied here is marked sensitive
  * for the system, cleared automatically after its lifetime, and clearable
@@ -23,6 +28,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
  * the content when it is readable. Only when neither can be read does a
  * sensitive copy whose lifetime has passed get cleared unconditionally; any
  * clear that could not run is retried when the app regains focus.
+ *
+ * <p>The copied value itself is not retained: ownership by content is decided
+ * by comparing a digest of the clipboard text with the digest recorded at copy
+ * time, so no field of this class holds a secret after the copy.
  */
 @NotNullByDefault
 public final class SecureClipboard {
@@ -32,7 +41,7 @@ public final class SecureClipboard {
 			new Handler(Looper.getMainLooper());
 
 	@androidx.annotation.Nullable
-	private static volatile String lastCopied;
+	private static volatile byte[] lastCopiedDigest;
 	private static volatile long lastTimestamp;
 	private static volatile long clearDeadline;
 	private static volatile boolean lastSensitive;
@@ -67,11 +76,12 @@ public final class SecureClipboard {
 			clip.getDescription().setExtras(extras);
 		}
 		cm.setPrimaryClip(clip);
-		lastCopied = text;
+		byte[] digest = digest(text);
+		lastCopiedDigest = digest;
 		lastSensitive = sensitive;
 		lastTimestamp = currentTimestamp(cm);
 		clearDeadline = System.currentTimeMillis() + clearAfterMs;
-		HANDLER.postDelayed(() -> clear(cm, text, sensitive), clearAfterMs);
+		HANDLER.postDelayed(() -> clear(cm, digest, sensitive), clearAfterMs);
 	}
 
 	/**
@@ -79,7 +89,7 @@ public final class SecureClipboard {
 	 * copied (for example on a vault lock). Safe to call from any thread.
 	 */
 	public static void clearIfOurs(Context ctx) {
-		String ours = lastCopied;
+		byte[] ours = lastCopiedDigest;
 		if (ours == null) return;
 		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(
 				Context.CLIPBOARD_SERVICE);
@@ -98,18 +108,18 @@ public final class SecureClipboard {
 	 * background.
 	 */
 	public static void onAppFocused(Context ctx) {
-		String ours = lastCopied;
+		byte[] ours = lastCopiedDigest;
 		if (ours == null || !lastSensitive) return;
 		if (System.currentTimeMillis() < clearDeadline) return;
 		clearIfOurs(ctx);
 	}
 
-	private static void clear(ClipboardManager cm, String text,
+	private static void clear(ClipboardManager cm, byte[] digest,
 			boolean sensitive) {
 		try {
-			Boolean stillOurs = holdsValue(cm, text);
+			Boolean stillOurs = holdsValue(cm, digest);
 			if (stillOurs != null && !stillOurs) {
-				forget(text);
+				forget(digest);
 				return;
 			}
 			if (stillOurs == null && !sensitive) {
@@ -120,14 +130,15 @@ public final class SecureClipboard {
 			} else {
 				cm.setPrimaryClip(ClipData.newPlainText("", "​"));
 			}
-			forget(text);
+			forget(digest);
 		} catch (SecurityException ignored) {
 		}
 	}
 
-	private static void forget(String text) {
-		if (text.equals(lastCopied)) {
-			lastCopied = null;
+	private static void forget(byte[] digest) {
+		byte[] current = lastCopiedDigest;
+		if (current != null && Arrays.equals(digest, current)) {
+			lastCopiedDigest = null;
 			lastTimestamp = 0;
 		}
 	}
@@ -138,7 +149,7 @@ public final class SecureClipboard {
 	 * is checked first, then the content itself.
 	 */
 	@androidx.annotation.Nullable
-	private static Boolean holdsValue(ClipboardManager cm, String text) {
+	private static Boolean holdsValue(ClipboardManager cm, byte[] digest) {
 		try {
 			long ts = currentTimestamp(cm);
 			long ours = lastTimestamp;
@@ -150,7 +161,7 @@ public final class SecureClipboard {
 			if (current == null || current.getItemCount() == 0) return null;
 			CharSequence currentText = current.getItemAt(0).getText();
 			if (currentText == null) return null;
-			return currentText.toString().equals(text);
+			return Arrays.equals(digest(currentText.toString()), digest);
 		} catch (SecurityException e) {
 			return null;
 		}
@@ -163,6 +174,15 @@ public final class SecureClipboard {
 			return d == null ? 0 : d.getTimestamp();
 		} catch (SecurityException e) {
 			return 0;
+		}
+	}
+
+	private static byte[] digest(String text) {
+		try {
+			return MessageDigest.getInstance("SHA-256")
+					.digest(text.getBytes(StandardCharsets.UTF_8));
+		} catch (NoSuchAlgorithmException e) {
+			throw new AssertionError(e);
 		}
 	}
 }

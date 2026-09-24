@@ -9,6 +9,7 @@ import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyPairGenerator;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMParameters;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMPublicKeyParameters;
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULATION_KEY_SIZE;
 import org.zerionproject.core.api.crypto.pcs.MlKemEncapsulation;
 import org.zerionproject.core.api.crypto.pcs.MlKemKeyPair;
 import org.zerionproject.core.api.crypto.pcs.MlKemProvider;
@@ -56,6 +57,20 @@ class MlKemProviderImpl implements MlKemProvider {
 
 		return new MlKemKeyPair(encapsulationKey, decapsulationKey,
 				ekSeed, ekVector);
+	}
+
+	@Override
+	public boolean isValidEncapsulationKey(byte[] encapsulationKey) {
+		if (encapsulationKey.length != MLKEM_ENCAPSULATION_KEY_SIZE) {
+			return false;
+		}
+		try {
+			new MLKEMPublicKeyParameters(MLKEMParameters.ml_kem_768,
+					encapsulationKey);
+			return true;
+		} catch (RuntimeException e) {
+			return false;
+		}
 	}
 
 	@Override

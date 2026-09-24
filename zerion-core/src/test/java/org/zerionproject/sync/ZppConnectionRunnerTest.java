@@ -154,12 +154,15 @@ public class ZppConnectionRunnerTest {
 		PipedOutputStream bOut = new PipedOutputStream();
 		PipedInputStream aIn = new PipedInputStream(bOut, 1 << 20);
 
-		ZwfDuplexConnection aliceConn = new ZwfDuplexConnection(1, aliceSession,
+		List<Throwable> ioFailures =
+				Collections.synchronizedList(new ArrayList<>());
+		ZwfDuplexConnection aliceConn = new RecordingConnection(1,
+				aliceSession, new ZwfStreamCounter(new MemStore()), crypto,
+				ratchet, mode3FullRatchet, cipherFactory(), aIn, aOut,
+				ioFailures);
+		ZwfDuplexConnection bobConn = new RecordingConnection(2, bobSession,
 				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
-				mode3FullRatchet, cipherFactory(), aIn, aOut);
-		ZwfDuplexConnection bobConn = new ZwfDuplexConnection(2, bobSession,
-				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
-				mode3FullRatchet, cipherFactory(), bIn, bOut);
+				mode3FullRatchet, cipherFactory(), bIn, bOut, ioFailures);
 
 		CapturingRegistry registry = new CapturingRegistry();
 		CollectingSink sink = new CollectingSink();
@@ -174,14 +177,14 @@ public class ZppConnectionRunnerTest {
 			} catch (Throwable t) {
 				errors.add(t);
 			}
-		});
+		}, "runner-alice");
 		Thread bobThread = new Thread(() -> {
 			try {
 				runner.run(2, bobConn);
 			} catch (Throwable t) {
 				errors.add(t);
 			}
-		});
+		}, "runner-bob");
 		aliceThread.start();
 		bobThread.start();
 
@@ -196,7 +199,7 @@ public class ZppConnectionRunnerTest {
 
 		// Bob receives them (delivered under bob's contact id 2), while idle
 		// slots keep emitting cover in both directions.
-		awaitReceived(sink, 2, n);
+		awaitReceived(sink, 2, n, errors, ioFailures);
 		Thread.sleep(60);
 
 		// Stop both runners by closing the pipes.
@@ -231,9 +234,19 @@ public class ZppConnectionRunnerTest {
 				aliceScheduler.getCoverFrameCount() > 0);
 	}
 
+	/**
+	 * Waits for a condition until the deadline that leaves the test timeout
+	 * a margin. The handshake behind the first real frame runs an ML-KEM key
+	 * exchange, whose cost under a loaded build host is not bounded by a
+	 * fixed iteration count, so the waits are bounded by wall-clock deadline
+	 * only and the test still fails if the records never arrive.
+	 */
+	private static final long WAIT_DEADLINE_MS = 20_000;
+
 	private static ZppSendScheduler awaitScheduler(CapturingRegistry registry,
 			int contactId) throws InterruptedException {
-		for (int i = 0; i < 2000; i++) {
+		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
+		while (System.currentTimeMillis() < deadline) {
 			ZppSendScheduler s = registry.schedulers.get(contactId);
 			if (s != null) return s;
 			Thread.sleep(2);
@@ -241,18 +254,107 @@ public class ZppConnectionRunnerTest {
 		throw new AssertionError("scheduler not registered for " + contactId);
 	}
 
+	/**
+	 * A runner that threw can never deliver, so its exception is reported as
+	 * the cause instead of a bare timeout.
+	 */
+	/**
+	 * Records the I/O failure that ends a direction, because the runner ends
+	 * the connection on any I/O failure without reporting it.
+	 */
+	private static final class RecordingConnection extends ZwfDuplexConnection {
+		private final int id;
+		private final List<Throwable> failures;
+
+		RecordingConnection(int contactId, ZwfSession session,
+				ZwfStreamCounter counter, CryptoComponent crypto,
+				PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
+				Supplier<AuthenticatedCipher> cipherFactory,
+				java.io.InputStream in, java.io.OutputStream out,
+				List<Throwable> failures) {
+			super(contactId, session, counter, crypto, ratchet,
+					mode3FullRatchet, cipherFactory, in, out);
+			this.id = contactId;
+			this.failures = failures;
+		}
+
+		@Override
+		public void sendMessage(byte[] payload) throws java.io.IOException {
+			try {
+				super.sendMessage(payload);
+			} catch (java.io.IOException e) {
+				failures.add(new java.io.IOException("send on " + id, e));
+				throw e;
+			}
+		}
+
+		@Override
+		public byte[] receiveMessage() throws java.io.IOException {
+			try {
+				byte[] m = super.receiveMessage();
+				if (m == null) {
+					failures.add(new java.io.EOFException("receive on " + id));
+				}
+				return m;
+			} catch (java.io.IOException e) {
+				failures.add(new java.io.IOException("receive on " + id, e));
+				throw e;
+			}
+		}
+	}
+
 	private static void awaitReceived(CollectingSink sink, int contactId,
-			int n) throws InterruptedException {
+			int n, List<Throwable> runnerErrors, List<Throwable> ioFailures)
+			throws InterruptedException {
 		String prefix = contactId + "|";
-		for (int i = 0; i < 2000; i++) {
+		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
+		while (System.currentTimeMillis() < deadline) {
 			long count;
 			synchronized (sink.received) {
 				count = sink.received.stream().filter(s -> s.startsWith(prefix))
 						.count();
 			}
 			if (count >= n) return;
+			synchronized (runnerErrors) {
+				if (!runnerErrors.isEmpty()) {
+					throw new AssertionError("runner threw before delivering "
+							+ n + " records: " + runnerErrors.get(0),
+							runnerErrors.get(0));
+				}
+			}
 			Thread.sleep(2);
 		}
-		throw new AssertionError("did not receive " + n + " records");
+		StringBuilder io = new StringBuilder();
+		synchronized (ioFailures) {
+			for (Throwable t : ioFailures) {
+				io.append(t).append(" caused by ").append(t.getCause())
+						.append('\n');
+				if (t.getCause() != null) {
+					for (StackTraceElement el : t.getCause().getStackTrace()) {
+						io.append("      ").append(el).append('\n');
+					}
+				}
+			}
+		}
+		throw new AssertionError("did not receive " + n + " records; io: "
+				+ io + " threads:\n" + threadDump());
+	}
+
+	/** Stacks of the runner and slot threads, for a stall that leaves no exception. */
+	private static String threadDump() {
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<Thread, StackTraceElement[]> e
+				: Thread.getAllStackTraces().entrySet()) {
+			String name = e.getKey().getName();
+			if (!name.startsWith("zpp-") && !name.startsWith("runner-")) continue;
+			sb.append(name).append(' ').append(e.getKey().getState())
+					.append('\n');
+			int i = 0;
+			for (StackTraceElement el : e.getValue()) {
+				sb.append("    ").append(el).append('\n');
+				if (++i == 12) break;
+			}
+		}
+		return sb.toString();
 	}
 }

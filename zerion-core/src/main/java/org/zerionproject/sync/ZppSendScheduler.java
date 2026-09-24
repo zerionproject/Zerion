@@ -33,9 +33,20 @@ public class ZppSendScheduler {
 
 	private final FrameSink sink;
 	private final BooleanSupplier pqReady;
-	private final Queue<byte[]> outgoing = new ConcurrentLinkedQueue<>();
+	private static final class Entry {
+		final byte[] record;
+		final boolean userOriginated;
+
+		Entry(byte[] record, boolean userOriginated) {
+			this.record = record;
+			this.userOriginated = userOriginated;
+		}
+	}
+
+	private final Queue<Entry> outgoing = new ConcurrentLinkedQueue<>();
 	private final AtomicLong realFrames = new AtomicLong();
 	private final AtomicLong coverFrames = new AtomicLong();
+	private volatile boolean lastRealUserOriginated = false;
 
 	@javax.annotation.Nullable
 	private volatile Runnable wakeListener;
@@ -80,9 +91,26 @@ public class ZppSendScheduler {
 	 * emitted pre-encoded.
 	 */
 	public void enqueueRecord(byte[] record) {
-		outgoing.add(record);
+		enqueueRecord(record, true);
+	}
+
+	/**
+	 * Queues a record and says whether it carries content this side
+	 * produced (a message) or a protocol reply the peer provoked (an
+	 * offer, request or ack). Only the former counts as local activity for
+	 * the pacing gate: a peer can provoke replies at will, and replies that
+	 * counted would let it hold this side at the active cadence for as long
+	 * as it likes.
+	 */
+	public void enqueueRecord(byte[] record, boolean userOriginated) {
+		outgoing.add(new Entry(record, userOriginated));
 		Runnable listener = wakeListener;
 		if (listener != null) listener.run();
+	}
+
+	/** Whether the last real frame sent carried content this side produced. */
+	public boolean lastRealFrameWasUserOriginated() {
+		return lastRealUserOriginated;
 	}
 
 	/**
@@ -96,9 +124,10 @@ public class ZppSendScheduler {
 	 * check is still encrypted with the post-quantum secret present.
 	 */
 	public boolean tick() throws IOException {
-		byte[] record = pqReady.getAsBoolean() ? outgoing.poll() : null;
+		Entry record = pqReady.getAsBoolean() ? outgoing.poll() : null;
 		if (record != null) {
-			sink.send(record);
+			lastRealUserOriginated = record.userOriginated;
+			sink.send(record.record);
 			realFrames.incrementAndGet();
 			return true;
 		} else {

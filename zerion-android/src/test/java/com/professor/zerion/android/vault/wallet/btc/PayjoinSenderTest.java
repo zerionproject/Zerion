@@ -40,7 +40,7 @@ public class PayjoinSenderTest {
 	private static final long SEQ = 0xfffffffdL;
 
 	private static BtcWallet wallet(FakeElectrum e) {
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "host", 50001, "walletA",
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "host", 50001, "walletA",
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 		w.setPrivacyStore(new BtcWalletPrivacyTest.MemStore());
 		return w;
@@ -111,7 +111,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void ownershipFromWalletStateSignsOnlyOwned() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -148,7 +148,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void spoofedOwnershipClaimIsNotSigned() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -173,8 +173,8 @@ public class PayjoinSenderTest {
 	@Test
 	public void extraOwnedInputRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u0 = scan.utxos.get(0);
@@ -201,7 +201,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void droppedOurInputRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -222,7 +222,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void validatorsDisagreeFailsClosed() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -253,7 +253,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void frozenOwnedInputRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -276,7 +276,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void silentPaymentInputRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -299,8 +299,8 @@ public class PayjoinSenderTest {
 	@Test
 	public void strictClusterMergeRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 1), TX1, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u0 = scan.utxos.get(0);
@@ -326,7 +326,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void changeNotOursRejected() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);
@@ -349,7 +349,7 @@ public class PayjoinSenderTest {
 	@Test
 	public void p3AnalyzesFinalTxNotAutoHigh() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		BtcWallet w = wallet(e);
 		BtcWallet.ScanResult scan = w.scan();
 		BtcWallet.OwnedUtxo u = firstUtxo(scan);

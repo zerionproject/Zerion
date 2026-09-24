@@ -1,5 +1,6 @@
 package com.professor.zerion.android.vault.wallet.btc;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import org.junit.Test;
@@ -30,9 +31,14 @@ public class ElectrumTransportFailClosedTest {
 	}
 
 	@Test
-	public void plaintextEndpointRequiresTorNoFallback() {
-		ElectrumEndpoint plain = new ElectrumEndpoint("electrum.example.org",
-				50001, ElectrumEndpoint.Mode.PLAINTEXT, false, null);
-		assertThrows(IOException.class, () -> new ElectrumClient(plain, 0, "w"));
+	public void plaintextToANonLocalHostCannotExist() {
+		assertThrows(IllegalArgumentException.class,
+				() -> new ElectrumEndpoint("electrum.example.org", 50001,
+						ElectrumEndpoint.Mode.PLAINTEXT, false, null));
+		ElectrumEndpoint clearnet = ElectrumEndpoint.fromUserInput(
+				"electrum.example.org", 50001, null);
+		assertEquals(ElectrumEndpoint.Mode.TLS, clearnet.mode);
+		assertThrows(IOException.class,
+				() -> new ElectrumClient(clearnet, 0, "w"));
 	}
 }

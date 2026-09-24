@@ -37,6 +37,14 @@ public class ChangePasswordViewModel extends ViewModel {
 		return strengthEstimator.estimateStrength(password);
 	}
 
+	long lockoutRemainingMs() {
+		try {
+			return accountManager.signInLockoutRemainingMs();
+		} catch (RuntimeException e) {
+			return 0;
+		}
+	}
+
 	LiveEvent<DecryptionResult> changePassword(char[] oldPassword,
 			char[] newPassword) {
 		MutableLiveEvent<DecryptionResult> result = new MutableLiveEvent<>();

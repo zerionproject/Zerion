@@ -36,6 +36,8 @@ class HyperSqlDatabase extends JdbcDatabase {
 
 	@Nullable
 	private volatile SecretKey key = null;
+	private volatile boolean opened = false;
+	private final Object closeLock = new Object();
 
 	@Inject
 	HyperSqlDatabase(DatabaseConfig config, MessageFactory messageFactory,
@@ -52,30 +54,60 @@ class HyperSqlDatabase extends JdbcDatabase {
 	@Override
 	public boolean open(SecretKey key, @Nullable MigrationListener listener)
 			throws DbException {
-		this.key = key;
+		this.key = new SecretKey(key.getBytes().clone());
+		this.opened = false;
 		File dir = config.getDatabaseDirectory();
 		boolean reopen = isNonEmptyDirectory(dir);
-		super.open("org.hsqldb.jdbc.JDBCDriver", reopen, key, listener);
+		super.open("org.hsqldb.jdbc.JDBCDriver", reopen, this.key, listener);
+		opened = true;
 		return reopen;
 	}
 
+	/**
+	 * Closes the database and clears the clean-shutdown flag while the private
+	 * key copy is still valid, then zeroes that copy. The key copied at open
+	 * is owned here, so a caller clearing its own key object before close
+	 * cannot prevent the final dirty-flag write. Idempotent: a second close,
+	 * or a close after a failed open, only clears the key and returns.
+	 */
 	@Override
 	public void close() throws DbException {
-		Connection c = null;
-		Statement s = null;
-		try {
-			closeAllConnections();
-			c = createConnection();
-			setDirty(c, false);
-			s = c.createStatement();
-			s.executeQuery("SHUTDOWN COMPACT");
-			s.close();
-			c.close();
-		} catch (SQLException e) {
-			tryToClose(s);
-			tryToClose(c);
-			throw new DbException(e);
+		synchronized (closeLock) {
+			if (key == null) return;
+			if (!opened) {
+				clearKey();
+				return;
+			}
+			Connection c = null;
+			Statement s = null;
+			try {
+				closeAllConnections();
+				c = createConnection();
+				setDirty(c, false);
+				s = c.createStatement();
+				s.executeQuery("SHUTDOWN COMPACT");
+				s.close();
+				c.close();
+			} catch (SQLException e) {
+				tryToClose(s);
+				tryToClose(c);
+				throw new DbException(e);
+			} finally {
+				opened = false;
+				clearKey();
+			}
 		}
+	}
+
+	private void clearKey() {
+		SecretKey k = key;
+		key = null;
+		if (k != null) k.clear();
+	}
+
+	/** Whether a private key copy is still held; for tests only. */
+	boolean holdsKey() {
+		return key != null;
 	}
 
 	@Override

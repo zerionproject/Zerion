@@ -98,8 +98,8 @@ project and is not affiliated with or endorsed by the Briar Project.
 | BDF data encoding | `core/data` | unchanged encoding rules |
 | Record layer | `core/record` | used by the pairing handshake and the nearby key agreement; payload caps added by Zerion |
 | Identity and contact management | `core/identity`, `core/contact` | extended with hybrid post-quantum identity keys, downgrade protection and rotating pairing keys |
-| Pairing rendezvous and handshake framework | `core/rendezvous`, `core/contact/HandshakeManagerImpl` | extended with an ML-KEM-768 encapsulation to the peer's ephemeral key |
-| Nearby key agreement (QR / Bluetooth) | `core/keyagreement` | BQP version 4; classical X25519 in 3.0.11 |
+| Pairing rendezvous and handshake framework | `core/rendezvous`, `core/contact/HandshakeManagerImpl` | extended with ML-KEM-768 encapsulations to the peer's ephemeral and committed static keys (post-quantum authentication, minor version 3) and static-ephemeral X25519 terms (minor version 4) |
+| Nearby key agreement (QR / Bluetooth) | `core/keyagreement` | BQP version 5: hybrid X25519 plus ML-KEM-768 (the released 3.0.11 speaks version 4, classical X25519) |
 | Sync bookkeeping and validation pipeline | `core/sync` | message validation, delivery and dependency tracking; the Bramble sync transport is not used |
 | Plugin and lifecycle machinery, event bus | `core/plugin`, `core/lifecycle`, `core/event` | hosts Zerion's transports |
 | Tor onion wrapper | `org.briarproject:onionwrapper-core` and `-android` 0.1.4 (Maven) | third-party library; the `onionwrapper/` source tree in the repository is a copy of the same version and is not part of the build |

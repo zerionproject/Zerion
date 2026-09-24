@@ -274,7 +274,7 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 					startActivity(i);
 					finish();
 				} else {
-					new androidx.appcompat.app.AlertDialog.Builder(this)
+					new com.professor.zerion.android.security.SecureAlertDialogBuilder(this)
 							.setTitle(R.string.grouptr_invite_partial)
 							.setMessage(failureSummary)
 							.setPositiveButton(android.R.string.ok, null)

@@ -13,7 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.professor.zerion.R;
@@ -179,7 +179,7 @@ public class ProfilesFragment extends Fragment {
 
 	private void showSwitchToProfileDialog(String displayName) {
 		String msg = getString(R.string.profiles_switch_to_message, displayName);
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(getString(R.string.profiles_switch_to_title,
 						displayName))
 				.setMessage(msg)
@@ -212,7 +212,7 @@ public class ProfilesFragment extends Fragment {
 				getString(R.string.profiles_add_password_confirm_hint));
 
 		androidx.appcompat.app.AlertDialog dlg =
-				new MaterialAlertDialogBuilder(requireContext())
+				new SecureAlertDialogBuilder(requireContext())
 						.setTitle(R.string.profiles_add_dialog_title)
 						.setMessage(R.string.profiles_add_dialog_message)
 						.setView(dialogView)
@@ -292,7 +292,7 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void showSwitchProfileDialog() {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.profiles_switch_dialog_title)
 				.setMessage(R.string.profiles_switch_dialog_message)
 				.setPositiveButton(R.string.profiles_switch_action,
@@ -307,12 +307,21 @@ public class ProfilesFragment extends Fragment {
 		if (isLast) {
 			msg += "\n\n" + getString(R.string.profiles_delete_last_warning);
 		}
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.profiles_delete_dialog_title)
 				.setMessage(msg)
 				.setIcon(R.drawable.ic_warning)
 				.setPositiveButton(R.string.profiles_delete_action,
-						(d, w) -> doDeleteActiveProfile())
+						(d, w) -> AccountPasswordGate.prompt(requireContext(),
+								accountManager, io,
+								new android.os.Handler(
+										android.os.Looper.getMainLooper()),
+								R.string.settings_password_required_title,
+								R.string.settings_password_required_message,
+								() -> {
+									if (isAdded()) doDeleteActiveProfile();
+								}, () -> {
+								}))
 				.setNegativeButton(R.string.cancel, null)
 				.show();
 	}

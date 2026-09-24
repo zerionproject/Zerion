@@ -40,7 +40,7 @@ Signal is excellent and well audited, but it needs your phone number and runs on
 ## Honest about the trade-offs
 
 - Because there is no server, both people generally need to be online at the same time to exchange messages. There is no always-on relay holding messages for you; your own device retries until the contact is reachable.
-- Post-quantum protection at pairing is confidentiality, not authentication, in 3.0.11, and nearby (QR/Bluetooth) pairing is classical. Messages themselves carry post-quantum protection on every frame regardless of how the contact was paired.
+- In the released 3.0.11, post-quantum protection at pairing is confidentiality, not authentication, and nearby (QR/Bluetooth) pairing is classical; the current source tree authenticates both pairing paths with the post-quantum key as well (3.0.12 is not yet released). Messages themselves carry post-quantum protection on every frame regardless of how the contact was paired.
 - Two features you can switch on bypass Tor: I2P (your network can see that you use I2P) and a direct wallet node (that node learns your address). Both are off by default.
 - Platform status (September 2026): Android AVAILABLE (3.0.11); Windows and Linux AVAILABLE through the separate desktop client (1.0.1); macOS and iOS IN DEVELOPMENT, nothing published. The table in the README is the reference.
 - Post-compromise "self-healing" comes from the post-quantum layer; the design deliberately relies on that rather than a second classical mechanism. The [Technical Whitepaper](ZERION_TECHNICAL_WHITEPAPER.md) documents this and the other trade-offs plainly.

@@ -1,7 +1,5 @@
 package org.zerionproject.transport;
 
-import org.zerionproject.core.crypto.pcs.PcsPersistenceException;
-
 import org.zerionproject.core.api.Bytes;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -10,7 +8,6 @@ import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -26,7 +23,6 @@ import org.zerionproject.wire.ZwfStreamCounter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
@@ -39,8 +35,10 @@ import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 /**
  * Bridges the transport to the contact/identity database: it recognises an
  * incoming stream tag to a contact, loads the stored inputs to resume a
- * contact's session, and persists the post-quantum ratchet state after a
- * connection ends.
+ * contact's session, and advances the contact's tag window after a
+ * connection ends. No ratchet state is persisted: every connection starts a
+ * fresh Mode 3-Full ratchet, and a state blob left behind by an earlier
+ * release is stripped from the database at startup.
  *
  * <p>A single tag recogniser is seeded with every established contact at startup
  * and kept current as contacts are added and removed, so an anonymous incoming
@@ -63,13 +61,48 @@ public class ZtpSessionProviderImpl
 	private final Executor dbExecutor;
 
 	private final ZwfTagRecogniser recogniser;
+	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
+			.B4OnionRotation> onionRotation;
+
+	/**
+	 * How far past a contact's receive window an anonymous inbound tag is
+	 * searched. A contact burns a send id on every dial that dies before
+	 * its first frame is answered, so its counter runs ahead of our window
+	 * whenever our inbound slots were held by someone else; a search across
+	 * every contact is what lets it back in without a re-pairing.
+	 */
+	static final long INBOUND_SEARCH_GAP = 1L << 14;
+	/**
+	 * A search costs one tag computation per id and contact, so a stranger's
+	 * random tags may trigger at most one search per interval; a genuine
+	 * contact retries within a minute and gets the next one.
+	 */
+	static final long INBOUND_SEARCH_INTERVAL_MS = 10_000L;
+	private final java.util.concurrent.atomic.AtomicLong nextSearchAtMs =
+			new java.util.concurrent.atomic.AtomicLong(0);
+	volatile java.util.function.LongSupplier clock = System::currentTimeMillis;
 
 	@Inject
 	public ZtpSessionProviderImpl(CryptoComponent crypto,
 			ContactManager contactManager,
 			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
 			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> onionRotation) {
+		this(new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), contactManager,
+				pcsStateManager, sessionFactory, counter, db, eventBus,
+				dbExecutor, onionRotation);
+	}
+
+	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
+			ContactManager contactManager,
+			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
+			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
+			Executor dbExecutor,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> onionRotation) {
+		this.onionRotation = onionRotation;
 		this.contactManager = contactManager;
 		this.pcsStateManager = pcsStateManager;
 		this.sessionFactory = sessionFactory;
@@ -77,7 +110,7 @@ public class ZtpSessionProviderImpl
 		this.db = db;
 		this.eventBus = eventBus;
 		this.dbExecutor = dbExecutor;
-		this.recogniser = new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE);
+		this.recogniser = recogniser;
 	}
 
 	@Override
@@ -86,6 +119,7 @@ public class ZtpSessionProviderImpl
 		try {
 			Collection<Contact> contacts = contactManager.getContacts();
 			for (Contact c : contacts) {
+				pcsStateManager.stripPersistedMode3FullState(c.getId());
 				registerContact(c.getId());
 			}
 		} catch (DbException e) {
@@ -101,7 +135,27 @@ public class ZtpSessionProviderImpl
 	@Override
 	public int recogniseIncoming(byte[] tag) {
 		ZwfTagRecogniser.Match m = recogniser.recognise(tag);
+		if (m != null) return m.contactId;
+		long now = clock.getAsLong();
+		long next = nextSearchAtMs.get();
+		if (now < next) return -1;
+		if (!nextSearchAtMs.compareAndSet(next,
+				now + INBOUND_SEARCH_INTERVAL_MS)) {
+			return -1;
+		}
+		m = recogniser.recogniseBeyondWindowAny(tag, INBOUND_SEARCH_GAP);
 		return m == null ? -1 : m.contactId;
+	}
+
+	@Override
+	public void sessionEstablished(int contactId) {
+		ContactId cid = new ContactId(contactId);
+		dbExecutor.execute(() -> {
+			try {
+				onionRotation.get().onPeerSyncSessionEstablished(cid);
+			} catch (DbException | RuntimeException ignored) {
+			}
+		});
 	}
 
 	@Override
@@ -112,28 +166,15 @@ public class ZtpSessionProviderImpl
 		if (send == null) return null;
 		SecretKey rootKey = send.getRootKey();
 		if (rootKey == null) return null;
-		Mode3FullState m3f = pcsStateManager.loadSharedMode3FullState(cid);
-		if (m3f == null) return null;
 		Boolean alice = computeAlice(cid);
 		if (alice == null) return null;
-		return new StoredContactSession(rootKey, alice, m3f);
+		return new StoredContactSession(rootKey, alice);
 	}
 
 	@Override
-	public void saveMode3FullState(int contactId, Mode3FullState state) {
+	public void sessionClosed(int contactId) {
 		recogniser.advanceTo(contactId,
 				counter.currentRecvHighWater(contactId));
-		ContactId cid = new ContactId(contactId);
-		PcsSessionState send = pcsStateManager.loadSendState(cid);
-		if (send == null) return;
-		Mode3FullState stripped = new Mode3FullState(
-				state.getTheirActivePqPk(), state.getOurActiveKeyPair(),
-				new LinkedHashMap<>(), state.getMessageCounter());
-		try {
-			pcsStateManager.saveSendState(cid,
-					send.withMode3FullState(stripped));
-		} catch (PcsPersistenceException ignored) {
-		}
 	}
 
 	@Override
@@ -144,6 +185,19 @@ public class ZtpSessionProviderImpl
 		} else if (e instanceof ContactRemovedEvent) {
 			ContactId cid = ((ContactRemovedEvent) e).getContactId();
 			recogniser.remove(cid.getInt());
+			dbExecutor.execute(this::rotateOnionAfterContactRemoval);
+		}
+	}
+
+	/**
+	 * A removed contact keeps our current onion address and could hold its
+	 * inbound slots until the address rotates on its own, so removal rotates
+	 * the address right away.
+	 */
+	private void rotateOnionAfterContactRemoval() {
+		try {
+			onionRotation.get().forceRotate();
+		} catch (DbException | RuntimeException ignored) {
 		}
 	}
 

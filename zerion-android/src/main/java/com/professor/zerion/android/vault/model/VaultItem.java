@@ -213,6 +213,8 @@ public class VaultItem {
 			extraMemoryKb = buffer.getInt();
 			extraIterations = buffer.getInt();
 			extraParallelism = buffer.getInt();
+			com.professor.zerion.android.vault.crypto.Argon2.requireSaneParams(
+					extraMemoryKb, extraIterations, extraParallelism);
 		}
 
 		return new VaultItem(

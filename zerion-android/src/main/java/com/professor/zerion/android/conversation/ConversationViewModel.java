@@ -39,6 +39,7 @@ import com.professor.zerion.android.util.UiUtils;
 import com.professor.zerion.android.view.TextSendController.SendState;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
+import com.professor.zerion.R;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.autodelete.AutoDeleteManager;
@@ -710,8 +711,73 @@ public class ConversationViewModel extends DbViewModel
 	private final java.util.List<byte[]> encryptedChunkTags = new java.util.ArrayList<>();
 	private byte[] currentIv;
 	private byte[] wrappedKey;
-	private long voiceRecordingStartTime;
+	private long voiceMemoTimestamp;
 	private GroupId voiceMessageGroupId;
+
+	/**
+	 * The inputs voice memos in this conversation are sealed and opened with:
+	 * the wrap key is derived from the pairing secret through the contact
+	 * manager, the author ids come from the contact, and an outgoing memo
+	 * takes the next message timestamp, refused when the peer's messaging
+	 * client is too old to receive the current memo format.
+	 */
+	com.professor.zerion.android.conversation.voice.VoiceMemoKeys voiceMemoKeys() {
+		return new ContactVoiceMemoKeys(requireNonNull(contactId));
+	}
+
+	private final class ContactVoiceMemoKeys implements
+			com.professor.zerion.android.conversation.voice.VoiceMemoKeys {
+
+		private final ContactId c;
+		@Nullable
+		private volatile Contact loaded;
+
+		private ContactVoiceMemoKeys(ContactId c) {
+			this.c = c;
+		}
+
+		private Contact contact() throws DbException {
+			Contact contact = loaded;
+			if (contact == null) {
+				contact = contactManager.getContact(c);
+				loaded = contact;
+			}
+			return contact;
+		}
+
+		@Override
+		public byte[] deriveWrapKey(byte[] salt) throws DbException {
+			return contactManager.deriveContactKey(c,
+					com.professor.zerion.android.conversation.voice
+							.VoiceMemoCrypto.WRAP_KEY_LABEL, salt).getBytes();
+		}
+
+		@Override
+		public byte[] localAuthorId() throws DbException {
+			return contact().getLocalAuthorId().getBytes();
+		}
+
+		@Override
+		public byte[] remoteAuthorId() throws DbException {
+			return contact().getAuthor().getId().getBytes();
+		}
+
+		@Override
+		public long nextOutgoingTimestamp() throws DbException {
+			return db.transactionWithResult(false, txn -> {
+				int peerMinor = clientVersioningManager.getClientMinorVersion(
+						txn, c, org.zerionproject.app.api.messaging
+								.MessagingManager.CLIENT_ID, 0);
+				if (peerMinor < org.zerionproject.app.api.messaging
+						.MessagingManager.VOICE_MEMO_V2_MIN_VERSION) {
+					throw new IllegalStateException(getApplication().getString(
+							R.string.voice_msg_peer_update_required));
+				}
+				return conversationManager.getTimestampForOutgoingMessage(txn,
+						c);
+			});
+		}
+	}
 
 	@UiThread
 	GroupId prepareVoiceRecording() {
@@ -726,11 +792,11 @@ public class ConversationViewModel extends DbViewModel
 	}
 
 	@UiThread
-	void onEncryptionInit(byte[] iv, byte[] sessionKey) {
+	void onEncryptionInit(byte[] iv, byte[] sessionKey, long timestamp) {
 		synchronized (encryptedVoiceChunks) {
 			currentIv = java.util.Arrays.copyOf(iv, iv.length);
 			wrappedKey = java.util.Arrays.copyOf(sessionKey, sessionKey.length);
-			voiceRecordingStartTime = System.currentTimeMillis();
+			voiceMemoTimestamp = timestamp;
 		}
 	}
 
@@ -749,6 +815,7 @@ public class ConversationViewModel extends DbViewModel
 		final byte[] wrappedKeyCopy;
 		final java.util.List<byte[]> chunksCopy;
 		final java.util.List<byte[]> tagsCopy;
+		final long timestamp;
 
 		synchronized (encryptedVoiceChunks) {
 			if (currentIv == null || wrappedKey == null || encryptedVoiceChunks.isEmpty()) {
@@ -758,6 +825,7 @@ public class ConversationViewModel extends DbViewModel
 
 			ivCopy = java.util.Arrays.copyOf(currentIv, currentIv.length);
 			wrappedKeyCopy = java.util.Arrays.copyOf(wrappedKey, wrappedKey.length);
+			timestamp = voiceMemoTimestamp;
 			chunksCopy = new java.util.ArrayList<>(encryptedVoiceChunks.size());
 			for (byte[] chunk : encryptedVoiceChunks) {
 				chunksCopy.add(java.util.Arrays.copyOf(chunk, chunk.length));
@@ -779,7 +847,8 @@ public class ConversationViewModel extends DbViewModel
 					chunksCopy,
 					tagsCopy,
 					totalDurationMs,
-					globalMACCopy
+					globalMACCopy,
+					timestamp
 				);
 			} catch (Exception e) {
 				handleException(e);
@@ -811,7 +880,7 @@ public class ConversationViewModel extends DbViewModel
 		}
 		encryptedVoiceChunks.clear();
 		encryptedChunkTags.clear();
-		voiceRecordingStartTime = 0;
+		voiceMemoTimestamp = 0;
 		voiceMessageGroupId = null;
 	}
 
@@ -821,7 +890,8 @@ public class ConversationViewModel extends DbViewModel
 	                                        java.util.List<byte[]> chunks,
 	                                        java.util.List<byte[]> tags,
 	                                        int durationMs,
-	                                        byte[] globalMAC) {
+	                                        byte[] globalMAC,
+	                                        long timestamp) {
 		byte[] payload = null;
 		try {
 			payload = com.professor.zerion.android.conversation.voice.VoiceMessagePayloadBuilder.build(
@@ -834,12 +904,8 @@ public class ConversationViewModel extends DbViewModel
 			String messageText = com.professor.zerion.android.conversation.voice.VoiceMessageFormat
 				.format(durationMs, payload);
 
-			int peerMinor = db.transactionWithResult(true, txn ->
-				clientVersioningManager.getClientMinorVersion(txn, cId,
-					org.zerionproject.app.api.messaging.MessagingManager.CLIENT_ID, 0));
 			boolean chunk = com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
-					.shouldChunk(messageText)
-				&& peerMinor >= org.zerionproject.app.api.messaging.MessagingManager.CHUNKED_VOICE_MIN_VERSION;
+					.shouldChunk(messageText);
 
 			final String firstText;
 			final String memoId;
@@ -847,7 +913,7 @@ public class ConversationViewModel extends DbViewModel
 			if (chunk) {
 				memoId = voiceSendManager.newMemoId();
 				java.util.List<String> parts =
-					voiceSendManager.split(messageText, memoId);
+					voiceSendManager.split(cId, messageText, memoId);
 				firstText = parts.get(0);
 				laterParts = new java.util.ArrayList<>(
 					parts.subList(1, parts.size()));
@@ -856,9 +922,6 @@ public class ConversationViewModel extends DbViewModel
 				firstText = messageText;
 				laterParts = null;
 			}
-
-			long timestamp = db.transactionWithResult(false, txn ->
-				conversationManager.getTimestampForOutgoingMessage(txn, cId));
 
 			PrivateMessage pm;
 			try {
@@ -931,16 +994,22 @@ public class ConversationViewModel extends DbViewModel
 	}
 
 	public void feedVoicePart(@Nullable String text) {
-		voiceAssembler.addPartText(text);
+		ContactId c = contactId;
+		if (c == null) return;
+		voiceAssembler.addPartText(c, text);
 	}
 
 	@Nullable
 	public String getReassembledVoiceMessage(String memoId) {
-		return voiceAssembler.getReassembled(memoId);
+		ContactId c = contactId;
+		if (c == null) return null;
+		return voiceAssembler.getReassembled(c, memoId);
 	}
 
 	public boolean isVoiceMemoFailed(String memoId) {
-		return voiceAssembler.isFailed(memoId);
+		ContactId c = contactId;
+		if (c == null) return false;
+		return voiceAssembler.isFailed(c, memoId);
 	}
 
 	public void rebuildVoiceMemo(String memoId) {
@@ -955,10 +1024,10 @@ public class ConversationViewModel extends DbViewModel
 							com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 									.parse(t);
 					if (p != null && p.memoId.equals(memoId)) {
-						voiceAssembler.addPartText(t);
+						voiceAssembler.addPartText(c, t);
 					}
 				}
-				if (voiceAssembler.getReassembled(memoId) != null) {
+				if (voiceAssembler.getReassembled(c, memoId) != null) {
 					voiceMemoRebuilt.postEvent(memoId);
 				}
 			} catch (DbException ignored) {
@@ -981,7 +1050,7 @@ public class ConversationViewModel extends DbViewModel
 				}
 				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
 					String t = e.getValue();
-					voiceAssembler.addPartText(t);
+					voiceAssembler.addPartText(c, t);
 					GroupId g = unread.get(e.getKey());
 					if (g != null) {
 						com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =

@@ -18,6 +18,7 @@ import org.zerionproject.core.api.sync.SyncSessionFactory;
 import org.zerionproject.core.api.transport.KeyManager;
 import org.zerionproject.core.api.transport.StreamReaderFactory;
 import org.zerionproject.core.api.transport.StreamWriterFactory;
+import org.zerionproject.transport.ZtpConnectionHandler;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.util.concurrent.Executor;
 
 import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 @ThreadSafe
 @NotNullByDefault
@@ -49,6 +51,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 	private final TransportPropertyManager transportPropertyManager;
 	private final SecureRandom secureRandom;
 	private final TaskScheduler scheduler;
+	private final Provider<ZtpConnectionHandler> connectionHandler;
 
 	@Inject
 	ConnectionManagerImpl(@IoExecutor Executor ioExecutor,
@@ -59,7 +62,8 @@ class ConnectionManagerImpl implements ConnectionManager {
 			ContactExchangeManager contactExchangeManager,
 			ConnectionRegistry connectionRegistry,
 			TransportPropertyManager transportPropertyManager,
-			SecureRandom secureRandom, TaskScheduler scheduler) {
+			SecureRandom secureRandom, TaskScheduler scheduler,
+			Provider<ZtpConnectionHandler> connectionHandler) {
 		this.ioExecutor = ioExecutor;
 		this.keyManager = keyManager;
 		this.streamReaderFactory = streamReaderFactory;
@@ -71,6 +75,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 		this.transportPropertyManager = transportPropertyManager;
 		this.secureRandom = secureRandom;
 		this.scheduler = scheduler;
+		this.connectionHandler = connectionHandler;
 	}
 
 	@Override
@@ -107,8 +112,8 @@ class ConnectionManagerImpl implements ConnectionManager {
 		}
 		Runnable conn = new IncomingHandshakeConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				handshakeManager, contactExchangeManager, this, p, t, d,
-				classical);
+				handshakeManager, contactExchangeManager,
+				connectionHandler.get(), ioExecutor, p, t, d, classical);
 		try {
 			ioExecutor.execute(() -> {
 				try {
@@ -186,7 +191,7 @@ class ConnectionManagerImpl implements ConnectionManager {
 			DuplexTransportConnection d, boolean classical) {
 		ioExecutor.execute(new OutgoingHandshakeConnection(keyManager,
 				connectionRegistry, streamReaderFactory, streamWriterFactory,
-				handshakeManager, contactExchangeManager, this, p, t, d,
-				classical));
+				handshakeManager, contactExchangeManager,
+				connectionHandler.get(), ioExecutor, p, t, d, classical));
 	}
 }

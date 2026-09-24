@@ -70,6 +70,31 @@ public interface MoneroEngine {
 		/** Pauses the background refresh thread (call before closing). */
 		void pauseRefresh();
 
+		/**
+		 * Cross-thread interrupt of a refresh in flight: pause and stop
+		 * without ever blocking the caller, skipping when the session is
+		 * busy closing. Executor-side callers use {@link #pauseRefresh()} and
+		 * {@link #stopRefresh()}, which are never skipped.
+		 */
+		default void interruptRefresh() {
+			pauseRefresh();
+			stopRefresh();
+		}
+
+		/**
+		 * Requests a rescan from the refresh-from height: the scanned cache
+		 * is discarded and rebuilt by the refresh thread on its next start.
+		 * The caller quiesces the refresh thread first and starts it after.
+		 */
+		default boolean rescanBlockchain() {
+			return false;
+		}
+
+		/** Whether the last init left the daemon trusted (read back). */
+		default boolean trustedDaemon() {
+			return false;
+		}
+
 		long blockchainHeight();
 
 		long daemonHeight();
@@ -164,7 +189,12 @@ public interface MoneroEngine {
 		 * lock/close path so scanning can resume from the persisted height next
 		 * time. {@link #close()} closes WITHOUT persisting (error/discard paths).
 		 */
-		void closePersisting();
+		/**
+		 * Closes the session, persisting the cache first. Returns false if
+		 * the cache could not be written; the native wallet and its key
+		 * material are freed either way.
+		 */
+		boolean closePersisting();
 
 		@Override
 		void close();

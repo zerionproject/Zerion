@@ -16,7 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 @NotNullByDefault
 public class EncryptedFileExporter {
 
-	private static final byte[] MAGIC_HEADER_V2 = "ZENC2\0".getBytes(StandardCharsets.US_ASCII);
+	static final byte[] MAGIC_HEADER_V2 = "ZENC2\0".getBytes(StandardCharsets.US_ASCII);
 	private static final int SALT_LENGTH = 32;
 	private static final int NONCE_LENGTH = 12;
 	private static final int KEY_LENGTH_BYTES = 32;
@@ -119,10 +119,8 @@ public class EncryptedFileExporter {
 			int memoryKb = buffer.getInt();
 			int iterations = buffer.getInt();
 			int parallelism = buffer.getInt();
-			if (memoryKb < 1024 || iterations < 1 || parallelism < 1) {
-				throw new IllegalArgumentException(
-						"Invalid Argon2 parameters in .zenc header");
-			}
+			com.professor.zerion.android.vault.crypto.Argon2.requireSaneParams(
+					memoryKb, iterations, parallelism);
 
 			int filenameLength = buffer.getInt();
 			if (filenameLength <= 0 || filenameLength > 1024) {

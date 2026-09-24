@@ -5,12 +5,17 @@ import org.briarproject.onionwrapper.TorWrapper;
 import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
 import org.briarproject.onionwrapper.TorWrapper.Observer;
 import org.briarproject.onionwrapper.TorWrapper.TorState;
+import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.keyagreement.KeyAgreementListener;
 import org.zerionproject.core.api.plugin.ConnectionHandler;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginCallback;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
+import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.PluginException;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
@@ -83,6 +88,10 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	private final TorRendezvousCrypto torRendezvousCrypto;
 	private final PluginCallback callback;
 	private final B4OnionRotation b4OnionRotation;
+	private final EventBus eventBus;
+	private final TorOnionServiceControl onionServiceControl;
+	private final org.zerionproject.core.plugin.tor.auth
+			.OnionClientAuthManagerImpl onionClientAuth;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	@Nullable
@@ -92,7 +101,13 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			SocketFactory socketFactory, TorWrapper tor,
 			ZtpTorTransport transport, ZtpPoller poller,
 			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
-			B4OnionRotation b4OnionRotation) {
+			B4OnionRotation b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth) {
+		this.eventBus = eventBus;
+		this.onionServiceControl = onionServiceControl;
+		this.onionClientAuth = onionClientAuth;
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
@@ -117,10 +132,12 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 			@Override
 			public void onBootstrapPercentage(int percentage) {
+				eventBus.broadcast(new TorBootstrapEvent(percentage));
 			}
 
 			@Override
 			public void onHsDescriptorUpload(String onion) {
+				eventBus.broadcast(new TorOnionPublishedEvent(onion));
 			}
 
 			@Override
@@ -178,18 +195,35 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		}
 		TransportProperties props = new TransportProperties();
 		props.put(PROP_ONION_V3, hs.onion);
+		props.put(org.zerionproject.core.api.plugin.TorConstants
+				.PROP_ONION_AUTH_SUPPORTED, String.valueOf(
+				org.zerionproject.core.plugin.tor.auth.OnionAuthRecords
+						.PROTOCOL_VERSION));
 		callback.mergeLocalProperties(props);
+		transport.setDialListener((contactId, onion) -> onionClientAuth
+				.dialSucceeded(new ContactId(contactId), onion));
+		onionClientAuth.attachTor(onionServiceControl,
+				transport.getAuthorizedLocalPort(),
+				c -> poller.dialNow(c.getInt()));
+		transport.setTorRestartedListener(() -> onionClientAuth.attachTor(
+				onionServiceControl, transport.getAuthorizedLocalPort(),
+				c -> poller.dialNow(c.getInt())));
 		b4OnionRotation.bindAdapter(new B4OnionRotation.B4TorAdapter() {
 			@Override
 			public HiddenServiceProperties publishHiddenService(
 					@Nullable String privKey) throws IOException {
-				return tor.publishHiddenService(transport.getLocalPort(),
+				return transport.publishHiddenService(transport.getLocalPort(),
 						REMOTE_ONION_PORT, privKey);
 			}
 
 			@Override
+			public boolean isPublished(String onion) {
+				return transport.publishedOnions().contains(onion);
+			}
+
+			@Override
 			public void removeHiddenService(String onion) throws IOException {
-				tor.removeHiddenService(onion);
+				transport.removeHiddenService(onion);
 			}
 
 			@Override
@@ -204,12 +238,20 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 				callback.mergeLocalProperties(p);
 			}
 		});
+		try {
+			b4OnionRotation.republishPendingOnion();
+		} catch (DbException e) {
+			throw new PluginException(e);
+		}
 		b4OnionRotation.startPeriodicEvaluation();
 		poller.start();
 	}
 
 	@Override
 	public void stop() throws PluginException {
+		onionClientAuth.detachTor();
+		transport.setTorRestartedListener(null);
+		transport.setDialListener(null);
 		b4OnionRotation.shutdown();
 		poller.stop();
 		try {
@@ -311,7 +353,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			ss.bind(new InetSocketAddress("127.0.0.1", 0));
 			int port = ss.getLocalPort();
 			try {
-				tor.publishHiddenService(port, REMOTE_ONION_PORT, blob);
+				transport.publishHiddenService(port, REMOTE_ONION_PORT, blob);
 			} catch (IOException e) {
 				tryToClose(ss);
 				return null;
@@ -343,7 +385,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 				@Override
 				public void close() throws IOException {
 					try {
-						tor.removeHiddenService(localOnion);
+						transport.removeHiddenService(localOnion);
 					} finally {
 						tryToClose(ss);
 					}
@@ -357,15 +399,14 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	@Override
 	public ChannelOnionHandle publishChannelOnion(int localPort,
 			@Nullable String privateKey) throws IOException {
-		HiddenServiceProperties hs =
-				tor.publishHiddenService(localPort, REMOTE_ONION_PORT,
-						privateKey);
+		HiddenServiceProperties hs = transport.publishHiddenService(localPort,
+				REMOTE_ONION_PORT, privateKey);
 		return new ChannelOnionHandle(hs.onion, hs.privKey);
 	}
 
 	@Override
 	public void removeChannelOnion(String onion) throws IOException {
-		tor.removeHiddenService(onion);
+		transport.removeHiddenService(onion);
 	}
 
 	private static void configureSocket(Socket s) throws IOException {
@@ -373,7 +414,6 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		try {
 			s.setTcpNoDelay(true);
 		} catch (java.net.SocketException ignored) {
-			// Best effort; not fatal.
 		}
 	}
 

@@ -49,7 +49,7 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 		this.keyAgreementCrypto = keyAgreementCrypto;
 		this.eventBus = eventBus;
 		this.payloadEncoder = payloadEncoder;
-		localKeyPair = crypto.generateAgreementKeyPair();
+		localKeyPair = crypto.generateHybridAgreementKeyPair();
 		connector = new KeyAgreementConnector(this, keyAgreementCrypto,
 				pluginManager, connectionChooser, recordReaderFactory,
 				recordWriterFactory);

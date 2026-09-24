@@ -5,6 +5,7 @@ import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.InterruptibleConnection;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContactId;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.PluginConfig;
@@ -61,6 +62,28 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 
 	public ConnectionRegistryImplTest() throws FormatException {
 
+	}
+
+	/** A2-NET-04: a removed contact's live connections are force-closed. */
+	@Test
+	public void testContactRemovalClosesItsConnections() {
+		context.checking(new Expectations() {{
+			allowing(eventBus).addListener(with(any(EventListener.class)));
+			allowing(pluginConfig).getTransportPreferences();
+			will(returnValue(emptyMap()));
+			allowing(eventBus).broadcast(with(any(Event.class)));
+		}});
+		ConnectionRegistryImpl c =
+				new ConnectionRegistryImpl(eventBus, pluginConfig);
+		c.registerIncomingConnection(contactId1, transportId1, conn1);
+		c.registerIncomingConnection(contactId2, transportId1, conn2);
+		context.checking(new Expectations() {{
+			oneOf(conn1).forceClose();
+			never(conn2).forceClose();
+		}});
+		c.eventOccurred(new org.zerionproject.core.api.contact.event
+				.ContactRemovedEvent(contactId1));
+		context.assertIsSatisfied();
 	}
 
 	@Test

@@ -264,7 +264,7 @@ public class SettingsFragment extends Fragment {
 		android.view.View dlgView = android.view.LayoutInflater.from(ctx)
 				.inflate(R.layout.dialog_my_identity, null);
 		myIdentityDialog =
-				new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+				new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 						ctx, R.style.ZerionDialogTheme)
 						.setView(dlgView)
 						.setTitle(R.string.settings_my_identity_title)

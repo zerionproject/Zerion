@@ -1491,13 +1491,6 @@
 	<string name="welcome_create">Создать новую учётную запись</string>
 	<string name="welcome_import_file">Импортировать из файла резервной копии</string>
 	<string name="welcome_receive">Получить с другого телефона</string>
-	<string name="proxy_section_title">ПРОКСИ</string>
-	<string name="orbot_proxy_title">Использовать прокси Orbot</string>
-	<string name="orbot_proxy_summary">Маршрутизировать трафик Tor через приложение Orbot</string>
-	<string name="orbot_proxy_settings">Настройки прокси</string>
-	<string name="orbot_host_label">Адрес хоста</string>
-	<string name="orbot_port_label">Порт</string>
-	<string name="orbot_info_message">Orbot обеспечивает дополнительную приватность, используя собственное подключение к Tor. Установите Orbot из F-Droid или Google Play и запустите его перед включением этой опции.</string>
 	<string name="profiles_settings_title">Профили</string>
 	<string name="profiles_settings_summary">Создание, переключение или удаление скрытых профилей</string>
 	<string name="profiles_section_current">Текущий профиль</string>

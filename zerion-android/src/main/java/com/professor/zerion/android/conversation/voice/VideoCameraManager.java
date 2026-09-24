@@ -33,6 +33,7 @@ class VideoCameraManager {
 	private CameraDevice cameraDevice;
 	@Nullable
 	private CameraCaptureSession captureSession;
+	private int sessionGeneration = 0;
 	@Nullable
 	private HandlerThread cameraThread;
 	@Nullable
@@ -178,8 +179,17 @@ class VideoCameraManager {
 		createCaptureSessionInternal(camera, encoderSurface, usePreview);
 	}
 
+	/**
+	 * Sessions are configured asynchronously, and a preview surface that
+	 * arrives while the first session is still being configured replaces
+	 * it with a second one. The callbacks of a replaced session are
+	 * ignored and the session closed, so a late "configured" for it does
+	 * not start a preview on a closed session and report a camera error
+	 * while the current session works.
+	 */
 	private void createCaptureSessionInternal(CameraDevice camera,
 			Surface encoderSurface, boolean includePreview) {
+		final int generation = ++sessionGeneration;
 		try {
 			java.util.List<Surface> targets = new java.util.ArrayList<>();
 			targets.add(encoderSurface);
@@ -194,6 +204,14 @@ class VideoCameraManager {
 						@Override
 						public void onConfigured(
 								CameraCaptureSession session) {
+							if (generation != sessionGeneration
+									|| cameraDevice != camera) {
+								try {
+									session.close();
+								} catch (Exception ignored) {
+								}
+								return;
+							}
 							captureSession = session;
 							startPreview(session, camera,
 									encoderSurface, triedPreview);
@@ -202,6 +220,10 @@ class VideoCameraManager {
 						@Override
 						public void onConfigureFailed(
 								CameraCaptureSession session) {
+							if (generation != sessionGeneration
+									|| cameraDevice != camera) {
+								return;
+							}
 							if (triedPreview) {
 								createCaptureSessionInternal(
 										camera, encoderSurface,
@@ -241,6 +263,9 @@ class VideoCameraManager {
 						useFrontCamera);
 			}
 		} catch (Exception e) {
+			if (session != captureSession || cameraDevice != camera) {
+				return;
+			}
 			if (includePreview) {
 				startPreview(session, camera, encoderSurface, false);
 			} else if (errorCallback != null) {
@@ -275,6 +300,7 @@ class VideoCameraManager {
 	}
 
 	private void stopCamera() {
+		sessionGeneration++;
 		if (captureSession != null) {
 			try {
 				captureSession.stopRepeating();

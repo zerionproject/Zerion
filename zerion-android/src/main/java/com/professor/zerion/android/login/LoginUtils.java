@@ -3,6 +3,7 @@ package com.professor.zerion.android.login;
 import android.content.Context;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -16,7 +17,7 @@ class LoginUtils {
 
 	static AlertDialog createKeyStrengthenerErrorDialog(Context ctx) {
 		MaterialAlertDialogBuilder builder =
-				new MaterialAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
+				new SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
 		builder.setIcon(getDialogIcon(ctx, R.drawable.alerts_and_states_error));
 		builder.setTitle(R.string.dialog_title_cannot_check_password);
 		builder.setMessage(R.string.dialog_message_cannot_check_password);

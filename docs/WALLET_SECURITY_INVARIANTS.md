@@ -58,7 +58,11 @@ release blocker, not a refactor.
 5. **Last-known-good over empty.** A valid, complete update is published; an
    invalid, error, or transient update retains the last known good state plus a
    degraded status indication. A hostile or broken endpoint must never be able to
-   turn a wallet with history into an empty wallet.
+   turn a wallet with history into an empty wallet. For Bitcoin the baseline is
+   the history seen earlier in the same session (`BtcWallet.emptiedAfterHistory`);
+   a scan that reports no history where history existed is refused and the last
+   verified state stays on screen. The first scan after opening a wallet has no
+   baseline and is published as received.
 
 6. **Secret buffers have consistent, non-consuming ownership.** A `char[]`/
    `byte[]` secret is owned by the top-level caller, which wipes it in its own
@@ -116,8 +120,9 @@ release blocker, not a refactor.
    different wallet holding the same seed has spent stays unspent in the view
    cache. Zerion reconciles this with the supported wallet2 mechanism: the
    background wallet records the spending transaction as a plausible spend in the
-   background cache, and on every wallet entry — once the wallet password is
-   supplied — the spend wallet is opened locally, which runs wallet2
+   background cache, and whenever the wallet password is supplied (on a
+   password-gated wallet open, and in the shipped flow on every send, whose
+   spend session is the spend wallet) the spend wallet is opened locally, which runs wallet2
    `process_background_cache_on_open` to replay that plausible spend with the
    spend key present, resolve its key image and mark the output spent; the store
    regenerates the background cache with the spent flag, so the reopened view

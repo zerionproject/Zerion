@@ -2,10 +2,13 @@
 
 Release notes for every published version. The current architecture and its security properties are described in [README.md](README.md), [SECURITY.md](SECURITY.md) and [docs/](docs/); an entry below describes its own release only and is not updated afterwards. Artifacts and hashes are on [GitHub Releases](https://github.com/zerionproject/Zerion/releases); the values for the current release are in [docs/release-manifest.json](docs/release-manifest.json).
 
-## Unreleased (3.0.12, in preparation)
+## 3.0.12 (September 2026)
 
-- Security fixes from the September 2026 internal assessments (see the known limitations of 3.0.11 in [SECURITY.md](SECURITY.md)): call key derivation and video nonce handling, post-quantum authentication at pairing, onion rotation republishing, dependency verification during the release build, and the remaining findings recorded there. Not yet released; 3.0.11 remains the current version until 3.0.12 is published.
-- Documentation cleanup: current architecture only in the README, release history moved here, provenance recorded in NOTICE.md, release metadata in a single manifest, documentation consistency checks.
+- Security fixes from the September 2026 internal assessments (see the known limitations of 3.0.11 in [SECURITY.md](SECURITY.md)): call key derivation and video nonce handling, post-quantum authentication at pairing, post-quantum nearby pairing, onion rotation republishing, dependency verification during the release build, and the remaining findings recorded there.
+- Client authorization of your contact address: each pair of contacts whose apps support it moves to a second onion address whose descriptor can only be read by the holder of a key generated for that one contact. Someone who learns the address without the key cannot read it and cannot connect. Once both sides have proven the new path, that address becomes the only way they reach each other, and removing a contact withdraws their key and changes the address for everyone else.
+- Calls: fixed a call that could keep ringing on one phone after the other had given up, a self view that appeared rotated, a video call that reported a camera error when the video link was simply lost, and a first video attempt that could fail with a broken connection. Video setup now has a full minute before it gives up.
+- Network status now shows what Tor is actually doing, building circuits or publishing your address, offers a Restart Tor button, and reports how many contacts have client authorization locked in.
+- Documentation cleanup: current architecture only in the README, release history moved here, provenance recorded in NOTICE.md, release metadata in a single manifest, documentation consistency checks. The call audio format, the pairing authentication and the new address protection are described as the code implements them.
 
 ## 3.0.11 (September 2026)
 

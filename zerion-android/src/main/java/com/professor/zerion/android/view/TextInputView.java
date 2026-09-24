@@ -183,8 +183,9 @@ public class TextInputView extends LinearLayout {
 						.VoiceMessageChunkFormat.isPart(rawText)) {
 			displayText = getContext().getString(R.string.voice_message);
 		} else if (com.professor.zerion.android.conversation.voice
-				.VoiceCallSignal.isSignal(rawText)
-				|| rawText.startsWith("VOICE_CALL:")) {
+				.LegacyCallSignal.isSignal(rawText)
+				|| com.professor.zerion.android.conversation.voice
+						.LegacyCallSignal.isCallEventText(rawText)) {
 			displayText = getContext().getString(R.string.voice_call);
 		} else {
 			displayText = rawText;

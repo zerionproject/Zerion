@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.MenuItem;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.zerionproject.core.api.contact.PendingContactId;
@@ -111,7 +112,7 @@ public class PendingContactListActivity extends ZerionActivity
 		}
 		OnClickListener removeListener = (dialog, which) ->
 				removePendingContact(item.getPendingContact().getId());
-		MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(
 				PendingContactListActivity.this, R.style.ZerionDialogTheme);
 		builder.setTitle(
 				getString(R.string.dialog_title_remove_pending_contact));

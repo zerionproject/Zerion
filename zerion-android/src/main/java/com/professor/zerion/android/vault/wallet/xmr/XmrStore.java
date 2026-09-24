@@ -34,6 +34,18 @@ public interface XmrStore {
 	Object settingsMonitor();
 
 	/**
+	 * A per-wallet secret kept as its own vault item, as bytes the caller
+	 * wipes, so it never passes through the settings JSON or a String.
+	 */
+	@Nullable
+	byte[] readWalletSecret(String walletId, String name) throws Exception;
+
+	void writeWalletSecret(String walletId, String name, byte[] value)
+			throws Exception;
+
+	void removeWalletSecret(String walletId, String name) throws Exception;
+
+	/**
 	 * Read the durable spend-journal string for a wallet, or null if none. Kept
 	 * out of the settings blob so its reader can be strictly fail-closed and does
 	 * not share the settings JSON's lenient parsing.

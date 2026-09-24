@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import com.professor.zerion.R;
@@ -182,7 +182,7 @@ public class VaultListFragment extends BaseFragment {
 	private void showItemOptionsDialog(VaultItem item) {
 		String[] options = {"Open", "Delete"};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
 				.setItems(options, (dialog, which) -> {
 					switch (which) {
@@ -200,7 +200,7 @@ public class VaultListFragment extends BaseFragment {
 	}
 
 	private void confirmDelete(VaultItem item) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_delete_confirm)
 				.setMessage(R.string.vault_delete_confirm_message)
 				.setPositiveButton(android.R.string.yes, (dialog, which) -> {

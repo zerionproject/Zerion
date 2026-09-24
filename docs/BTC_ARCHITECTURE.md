@@ -13,7 +13,7 @@ and the vault UI in `vault/ui/`. Bitcoin primitives use bitcoinj on mainnet.
 ## Storage and security
 
 - **Self-custodial, device-local.** Keys are derived on-device from a BIP39
-  mnemonic (`BtcKeys.deriveKey`, `MnemonicCode.toSeed`); nothing is custodial.
+  mnemonic (`Bip39Seed`, `BtcKeys.Account`); nothing is custodial.
 - **Seed sealing.** The mnemonic is stored as a vault `WALLET` item
   (`WalletStore.createWallet`) as `[version byte][UTF-8 mnemonic]`, encrypted by
   the vault (`VaultManager.addItem` / `addItemWithPassword`); plaintext buffers
@@ -27,7 +27,9 @@ and the vault UI in `vault/ui/`. Bitcoin primitives use bitcoinj on mainnet.
   path.
 - **Wallet-section authentication.** The BTC section has its own credential
   (PBKDF2, 120,000 iterations, 32-byte hash) distinct from the vault master
-  password, with exponential backoff after repeated failures.
+  password, behind the shared credential throttle (`WalletCredentialThrottle`)
+  that relocks the section after three failures; the check is serialised so
+  two executors cannot share one throttle window.
 - **Transaction-specific authorization.** `SendGate` holds one pending plan and
   authorizes a send only when the reviewed transaction fingerprint (SHA-256 over
   sorted inputs+outputs) matches the plan and the credential re-check passes;
@@ -52,9 +54,14 @@ and the vault UI in `vault/ui/`. Bitcoin primitives use bitcoinj on mainnet.
   own nodes, including a LAN/local node. There is no separate "vetted tier" naming
   on BTC (that is an XMR concept); BTC distinguishes built-in-default from
   user-added.
-- **TLS.** Port 50002 is TLS. If a certificate pin is set (captured trust-on-first-
-  use, stored per node, SHA-256), the client fails closed on mismatch; otherwise
-  standard CA validation plus explicit hostname verification.
+- **TLS.** Every non-onion, non-LAN endpoint is TLS on any port; only TLS 1.2
+  and 1.3 are offered. If a certificate pin is set (stored per node, SHA-256),
+  the client fails closed on mismatch; otherwise standard CA validation plus
+  explicit hostname verification. Pin capture first performs the same
+  CA-and-hostname check an unpinned connection performs and tells the user
+  whether it passed, so pinning a public server is presented as adding a check
+  and pinning a self-signed one as something to confirm out of band. Each
+  capture and node health check uses its own circuit.
 - **No automatic clearnet/plaintext fallback.** Fallbacks are only other
   configured Electrum endpoints over the same SOCKS proxy; no path downgrades a
   Tor connection to direct or plaintext on failure. A PLAINTEXT mode exists only
@@ -80,8 +87,16 @@ signed transaction (the signature commits every input and output, and per-input
 value is bound by the segwit sighash, so any tampered UTXO value simply voids the
 signature); it cannot make the wallet spend more than the reviewed plan (the fee
 is fixed by the committed outpoints and outputs). Broadcast uncertainty is
-resolved conservatively (POSSIBLY_SENT, never a false FAILED that could free a
-still-live reservation).
+resolved conservatively: once the transaction has been written to a server,
+every outcome other than the server echoing the local txid, including a claimed
+rejection, is POSSIBLY_SENT and keeps the inputs reserved until the same
+definitive-miss protocol that governs SENT releases them. Only a connection that
+could not be opened at all is FAILED. A sent record whose inputs are still
+unspent is never pruned from the journal; a record is pruned seven days after it
+settled (inputs spent) or failed. Server error text never reaches the user. If a
+scan reports no history for a wallet that had history earlier in the session,
+the reply is refused and the last verified balance and history stay on screen;
+the first scan of a session has no baseline and is published as received.
 
 What it **may** influence (availability / observation, within local-validation
 limits): it can withhold or delay responses (denial of service), hide a

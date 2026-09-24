@@ -81,7 +81,8 @@ final class FakeElectrum implements ElectrumRpc {
 			throw broadcastError;
 		}
 		if (rejectBroadcast) {
-			throw new IOException("Broadcast rejected: bad-txns");
+			throw new ElectrumClient.ServerRejectedException(
+					"server refused the request");
 		}
 		if (returnWrongTxid) {
 			return "2222222222222222222222222222222222222222"

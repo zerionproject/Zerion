@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.ABORT;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.CONFIRM;
+import static org.zerionproject.core.api.keyagreement.RecordTypes.KEM_CIPHERTEXT;
 import static org.zerionproject.core.api.keyagreement.RecordTypes.KEY;
 
 @NotNullByDefault
@@ -30,8 +31,16 @@ class KeyAgreementTransport {
 					!isKnownRecordType(r.getRecordType());
 
 	private static boolean isKnownRecordType(byte type) {
-		return type == KEY || type == CONFIRM || type == ABORT;
+		return type == KEY || type == CONFIRM || type == ABORT
+				|| type == KEM_CIPHERTEXT;
 	}
+
+	/**
+	 * The largest key agreement record is a hybrid key plus ciphertext of
+	 * under 2.5 KiB; nothing an unauthenticated nearby peer sends may make
+	 * this side allocate more per record than a small multiple of that.
+	 */
+	static final int MAX_RECORD_PAYLOAD_BYTES = 8192;
 
 	private final KeyAgreementConnection kac;
 	private final RecordReader reader;
@@ -42,7 +51,8 @@ class KeyAgreementTransport {
 			throws IOException {
 		this.kac = kac;
 		InputStream in = kac.getConnection().getReader().getInputStream();
-		reader = recordReaderFactory.createRecordReader(in);
+		reader = recordReaderFactory.createRecordReader(in,
+				MAX_RECORD_PAYLOAD_BYTES);
 		OutputStream out = kac.getConnection().getWriter().getOutputStream();
 		writer = recordWriterFactory.createRecordWriter(out);
 	}
@@ -61,6 +71,14 @@ class KeyAgreementTransport {
 
 	byte[] receiveKey() throws AbortException {
 		return readRecord(KEY);
+	}
+
+	void sendKemCiphertext(byte[] ciphertext) throws IOException {
+		writeRecord(KEM_CIPHERTEXT, ciphertext);
+	}
+
+	byte[] receiveKemCiphertext() throws AbortException {
+		return readRecord(KEM_CIPHERTEXT);
 	}
 
 	void sendConfirm(byte[] confirm) throws IOException {

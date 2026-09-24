@@ -13,7 +13,7 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.color.MaterialColors;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.wallet.xmr.XmrNode;
 import com.professor.zerion.android.vault.wallet.xmr.XmrNodeConfig;
@@ -113,7 +113,7 @@ final class XmrNodeSettings {
 		scroll.addView(list);
 
 		String active = cfg.activeNodeLabel();
-		new MaterialAlertDialogBuilder(ctx)
+		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_xmr_node_title)
 				.setMessage(active == null ? null
 						: f.getString(R.string.wallet_xmr_node_active, active))
@@ -131,9 +131,9 @@ final class XmrNodeSettings {
 				save(f, vm, new XmrNodeConfig(mode, "", cfg.customNodes, ""));
 				break;
 			case OWN:
-				promptAddress(f, R.string.wallet_xmr_node_own_hint, cfg.ownNode,
-						addr -> save(f, vm, new XmrNodeConfig(mode, addr,
-								cfg.customNodes, "")));
+				promptOwnNode(f, cfg, (addr, trusted) -> save(f, vm,
+						new XmrNodeConfig(mode, addr, trusted, cfg.customNodes,
+								"")));
 				break;
 			case CUSTOM:
 				promptAddress(f, R.string.wallet_xmr_node_custom_hint,
@@ -146,7 +146,7 @@ final class XmrNodeSettings {
 						});
 				break;
 			case DIRECT:
-				new MaterialAlertDialogBuilder(f.requireContext())
+				new SecureAlertDialogBuilder(f.requireContext())
 						.setTitle(R.string.wallet_xmr_node_direct)
 						.setMessage(R.string.wallet_xmr_node_direct_ack)
 						.setPositiveButton(R.string.wallet_xmr_node_direct_accept,
@@ -165,6 +165,42 @@ final class XmrNodeSettings {
 		void accept(String address);
 	}
 
+	private interface OwnSink {
+		void accept(String address, boolean trusted);
+	}
+
+	/**
+	 * The own-node prompt carries an explicit trust switch, off by default:
+	 * trusting a daemon is a separate, informed choice from pointing the
+	 * wallet at it.
+	 */
+	private static void promptOwnNode(Fragment f, XmrNodeConfig cfg,
+			OwnSink sink) {
+		EditText input = new EditText(f.requireContext());
+		input.setHint(R.string.wallet_xmr_node_own_hint);
+		input.setText(cfg.ownNode);
+		input.setSingleLine(true);
+		android.widget.CheckBox trust =
+				new android.widget.CheckBox(f.requireContext());
+		trust.setText(R.string.wallet_xmr_node_trust_label);
+		trust.setChecked(cfg.ownTrusted);
+		int p = Math.round(20 * f.getResources().getDisplayMetrics().density);
+		LinearLayout box = new LinearLayout(f.requireContext());
+		box.setOrientation(LinearLayout.VERTICAL);
+		box.setPadding(p, p / 2, p, 0);
+		box.addView(input);
+		box.addView(trust);
+		new SecureAlertDialogBuilder(f.requireContext())
+				.setTitle(R.string.wallet_xmr_node_address)
+				.setView(box)
+				.setPositiveButton(android.R.string.ok, (d, w) -> {
+					String v = input.getText().toString().trim();
+					if (!v.isEmpty()) sink.accept(v, trust.isChecked());
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
 	private static void promptAddress(Fragment f, int hintRes, String current,
 			AddrSink sink) {
 		EditText input = new EditText(f.requireContext());
@@ -175,7 +211,7 @@ final class XmrNodeSettings {
 		FrameLayout box = new FrameLayout(f.requireContext());
 		box.setPadding(p, p / 2, p, 0);
 		box.addView(input);
-		new MaterialAlertDialogBuilder(f.requireContext())
+		new SecureAlertDialogBuilder(f.requireContext())
 				.setTitle(R.string.wallet_xmr_node_address)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
@@ -200,7 +236,8 @@ final class XmrNodeSettings {
 		try {
 			switch (cfg.mode) {
 				case OWN:
-					XmrNode.parse(cfg.ownNode, XmrNode.Source.USER_OWNED, true);
+					XmrNode.parse(cfg.ownNode, XmrNode.Source.USER_OWNED,
+							cfg.ownTrusted);
 					return true;
 				case CUSTOM:
 					XmrNode.parse(cfg.customNodes.isEmpty() ? ""

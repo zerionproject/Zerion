@@ -7,8 +7,6 @@ class CallIntents {
 
 	static final String ACTION_ACCEPT_CALL = "ACTION_ACCEPT_CALL";
 	static final String ACTION_DECLINE_CALL = "ACTION_DECLINE_CALL";
-	static final String ACTION_SIGNALING = "com.professor.zerion.VOICE_CALL_SIGNALING";
-	static final String EXTRA_SIGNALING_MESSAGE = "signaling_message";
 
 	private CallIntents() {
 	}

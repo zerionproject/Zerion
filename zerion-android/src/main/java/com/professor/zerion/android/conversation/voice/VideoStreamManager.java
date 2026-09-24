@@ -11,12 +11,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 @NotNullByDefault
 class VideoStreamManager {
@@ -32,11 +28,7 @@ class VideoStreamManager {
 	private final VideoCameraManager camera = new VideoCameraManager();
 
 	@Nullable
-	private byte[] txKeyBytes;
-	@Nullable
-	private byte[] rxKeyBytes;
-	private final AtomicLong txFrameCounter = new AtomicLong(0);
-	private final AtomicLong rxFrameCounter = new AtomicLong(0);
+	private volatile VideoFrameCipher cipher;
 
 	@Nullable
 	private DataOutputStream videoOut;
@@ -56,6 +48,21 @@ class VideoStreamManager {
 		void onVideoStarted();
 		void onVideoStopped();
 		void onVideoError(String reason);
+		void onVideoLinkLost();
+	}
+
+	private volatile boolean linkLostReported = false;
+
+	/**
+	 * A send or receive failure means the video link is gone, which is the
+	 * normal end of the video when the other side stops it or hangs up; it
+	 * is reported once and apart from camera errors.
+	 */
+	private void reportLinkLost() {
+		if (!running || linkLostReported) return;
+		linkLostReported = true;
+		VideoStateCallback c = stateCallback;
+		if (c != null) c.onVideoLinkLost();
 	}
 
 	interface VideoRotationCallback {
@@ -79,14 +86,20 @@ class VideoStreamManager {
 		camera.updatePreviewSurface(surface);
 	}
 
+	/**
+	 * Installs the keys of one video session. The cipher is single use: a
+	 * later session must create a new manager with freshly derived keys, so a
+	 * (key, nonce) pair can never be repeated across sessions.
+	 */
 	void initKeys(byte[] videoTxKey, byte[] videoRxKey) {
-		this.txKeyBytes = Arrays.copyOf(videoTxKey, videoTxKey.length);
-		this.rxKeyBytes = Arrays.copyOf(videoRxKey, videoRxKey.length);
+		if (cipher != null) throw new IllegalStateException(
+				"video session keys already installed");
+		cipher = new VideoFrameCipher(videoTxKey, videoRxKey);
 	}
 
 	void startSending(Context context, OutputStream outputStream)
 			throws IOException {
-		if (txKeyBytes == null) {
+		if (cipher == null) {
 			throw new IOException("Video TX key not initialized");
 		}
 		videoOut = new DataOutputStream(outputStream);
@@ -100,9 +113,7 @@ class VideoStreamManager {
 				sendEncryptedFrame(data, offset, length, pts,
 						isKeyFrame);
 			} catch (Exception e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Send failed");
-				}
+				reportLinkLost();
 			}
 		});
 
@@ -124,7 +135,7 @@ class VideoStreamManager {
 
 	void startReceiving(InputStream inputStream,
 			Surface decoderOutputSurface) throws IOException {
-		if (rxKeyBytes == null) {
+		if (cipher == null) {
 			throw new IOException("Video RX key not initialized");
 		}
 		videoIn = new DataInputStream(inputStream);
@@ -134,9 +145,7 @@ class VideoStreamManager {
 			try {
 				receiveLoop();
 			} catch (IOException e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Receive failed");
-				}
+				reportLinkLost();
 			}
 		}, "VideoStream-Receive");
 		receiveThread.setDaemon(true);
@@ -147,7 +156,8 @@ class VideoStreamManager {
 
 	private void sendEncryptedFrame(byte[] data, int offset, int length,
 			long presentationTimeUs, boolean isKeyFrame) throws Exception {
-		if (videoOut == null || txKeyBytes == null) return;
+		VideoFrameCipher c = cipher;
+		if (videoOut == null || c == null) return;
 
 		int totalPlain = INNER_META_SIZE + length;
 		int paddedLength = ((totalPlain + PAD_BOUNDARY - 1) / PAD_BOUNDARY)
@@ -165,9 +175,7 @@ class VideoStreamManager {
 		padded[13] = (byte) (camera.getSensorOrientation() / 90);
 		System.arraycopy(data, offset, padded, INNER_META_SIZE, length);
 
-		long counter = txFrameCounter.getAndIncrement();
-		byte[] nonce = buildNonce(txKeyBytes, counter);
-		byte[] encrypted = encryptGCM(padded, txKeyBytes, nonce);
+		byte[] encrypted = c.encrypt(padded);
 
 		synchronized (videoOut) {
 			videoOut.writeInt(VIDEO_FRAME_MARKER);
@@ -201,10 +209,9 @@ class VideoStreamManager {
 			videoIn.readFully(encrypted);
 
 			try {
-				long counter = rxFrameCounter.getAndIncrement();
-				byte[] nonce = buildNonce(rxKeyBytes, counter);
-				byte[] decrypted = decryptGCM(encrypted, rxKeyBytes,
-						nonce);
+				VideoFrameCipher c = cipher;
+				if (c == null) return;
+				byte[] decrypted = c.decrypt(encrypted);
 
 				if (decrypted == null ||
 						decrypted.length < INNER_META_SIZE) {
@@ -248,52 +255,6 @@ class VideoStreamManager {
 		}
 	}
 
-	private static byte[] buildNonce(byte[] keyBytes, long counter) {
-		byte[] nonce = new byte[NONCE_LENGTH];
-		try {
-			java.security.MessageDigest md =
-					java.security.MessageDigest.getInstance("SHA-256");
-			md.update("VIDEO_NONCE_SALT".getBytes(
-					java.nio.charset.StandardCharsets.UTF_8));
-			md.update(keyBytes);
-			byte[] counterBytes = new byte[8];
-			for (int i = 7; i >= 0; i--) {
-				counterBytes[i] = (byte) (counter & 0xFF);
-				counter >>= 8;
-			}
-			md.update(counterBytes);
-			byte[] hash = md.digest();
-			System.arraycopy(hash, 0, nonce, 0, NONCE_LENGTH);
-			Arrays.fill(hash, (byte) 0);
-			Arrays.fill(counterBytes, (byte) 0);
-		} catch (java.security.NoSuchAlgorithmException e) {
-			throw new IllegalStateException("SHA-256 required", e);
-		}
-		return nonce;
-	}
-
-	@Nullable
-	private static byte[] encryptGCM(byte[] plaintext, byte[] keyBytes,
-			byte[] nonce) throws Exception {
-		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		GCMParameterSpec gcmSpec = new GCMParameterSpec(
-				GCM_TAG_LENGTH, nonce);
-		cipher.init(Cipher.ENCRYPT_MODE, keySpec, gcmSpec);
-		return cipher.doFinal(plaintext);
-	}
-
-	@Nullable
-	private static byte[] decryptGCM(byte[] ciphertext, byte[] keyBytes,
-			byte[] nonce) throws Exception {
-		Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
-		GCMParameterSpec gcmSpec = new GCMParameterSpec(
-				GCM_TAG_LENGTH, nonce);
-		cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
-		return cipher.doFinal(ciphertext);
-	}
-
 	void setPreviewSurface(@Nullable Surface surface) {
 		camera.setPreviewSurface(surface);
 	}
@@ -317,7 +278,7 @@ class VideoStreamManager {
 	}
 
 	void resumeSending(Context context) throws IOException {
-		if (videoOut == null || txKeyBytes == null) {
+		if (videoOut == null || cipher == null) {
 			throw new IOException("Cannot resume: stream not initialized");
 		}
 		sendingPaused = false;
@@ -330,9 +291,7 @@ class VideoStreamManager {
 				sendEncryptedFrame(data, offset, length, pts,
 						isKeyFrame);
 			} catch (Exception e) {
-				if (running && stateCallback != null) {
-					stateCallback.onVideoError("Send failed");
-				}
+				reportLinkLost();
 			}
 		});
 
@@ -366,13 +325,10 @@ class VideoStreamManager {
 	}
 
 	private void zeroizeKeys() {
-		if (txKeyBytes != null) {
-			Arrays.fill(txKeyBytes, (byte) 0);
-			txKeyBytes = null;
-		}
-		if (rxKeyBytes != null) {
-			Arrays.fill(rxKeyBytes, (byte) 0);
-			rxKeyBytes = null;
+		VideoFrameCipher c = cipher;
+		if (c != null) {
+			c.close();
+			cipher = null;
 		}
 	}
 

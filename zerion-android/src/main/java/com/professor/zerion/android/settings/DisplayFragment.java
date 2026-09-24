@@ -10,7 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.EarlyPrefs;
@@ -135,12 +135,12 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void loadCurrentSettings() {
-		SharedPreferences earlyPrefs = EarlyPrefs.get(requireContext());
-		currentLanguage = earlyPrefs.getString(PREF_LANGUAGE, "default");
+		currentLanguage = EarlyPrefs.language(requireContext());
 		updateLanguageDisplay();
 
-		currentTheme = earlyPrefs.getString(PREF_THEME,
-				getString(R.string.pref_theme_dark_value));
+		String storedTheme = EarlyPrefs.theme(requireContext());
+		currentTheme = storedTheme != null ? storedTheme
+				: getString(R.string.pref_theme_dark_value);
 		updateThemeDisplay();
 
 		SharedPreferences securePrefs = getAndroidComponent(requireContext())
@@ -153,9 +153,8 @@ public class DisplayFragment extends Fragment {
 		updateNavSizeDisplay();
 
 		currentTextSize = securePrefs.getInt(PREF_TEXT_SIZE, TEXT_SIZE_MEDIUM);
-		currentGuiTextSize = com.professor.zerion.android.EarlyPrefs
-				.get(requireContext())
-				.getInt(ChatPreferences.PREF_GUI_TEXT_SIZE, TEXT_SIZE_MEDIUM);
+		currentGuiTextSize = EarlyPrefs.guiTextSize(requireContext(),
+				TEXT_SIZE_MEDIUM);
 		updateTextSizeDisplay();
 		updateGuiTextSizeDisplay();
 
@@ -240,7 +239,7 @@ public class DisplayFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_language_title)
 				.setSingleChoiceItems(languageEntries, selectedIndex, (dialog, which) -> {
 					String newLanguage = languageTags[which];
@@ -254,16 +253,12 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void showLanguageChangeConfirmation(String newLanguage) {
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_language_title)
 				.setMessage(R.string.pref_language_changed)
 				.setPositiveButton(android.R.string.ok, (d, i) -> {
-					SharedPreferences earlyPrefs =
-							EarlyPrefs.get(requireContext());
-					earlyPrefs.edit()
-							.putString(PREF_LANGUAGE, newLanguage)
-							.commit();
-					Localizer.forceReinitialize(earlyPrefs);
+					EarlyPrefs.setLanguage(requireContext(), newLanguage);
+					Localizer.forceReinitialize(newLanguage);
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
 					intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
 					requireActivity().startActivity(intent);
@@ -286,7 +281,7 @@ public class DisplayFragment extends Fragment {
 			}
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_theme_title)
 				.setSingleChoiceItems(themeEntries, selectedIndex, (dialog, which) -> {
 					String newTheme = themeValues[which];
@@ -300,9 +295,7 @@ public class DisplayFragment extends Fragment {
 	}
 
 	private void onThemeChanged(String newTheme) {
-		EarlyPrefs.get(requireContext()).edit()
-				.putString(PREF_THEME, newTheme)
-				.commit();
+		EarlyPrefs.setTheme(requireContext(), newTheme);
 
 		FragmentActivity activity = requireActivity();
 		UiUtils.setTheme(activity, newTheme);
@@ -337,7 +330,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_app_icon_weather)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_app_icon_title)
 				.setSingleChoiceItems(entries, currentAppIcon, (dialog, which) -> {
 					if (which != currentAppIcon) {
@@ -372,7 +365,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_nav_size_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_nav_size_title)
 				.setSingleChoiceItems(entries, currentNavSize, (dialog, which) -> {
 					if (which != currentNavSize) {
@@ -399,17 +392,13 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_text_size_extra_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_gui_text_size_title)
 				.setSingleChoiceItems(entries, currentGuiTextSize,
 						(dialog, which) -> {
 					if (which != currentGuiTextSize) {
 						currentGuiTextSize = which;
-						com.professor.zerion.android.EarlyPrefs
-								.get(requireContext()).edit()
-								.putInt(ChatPreferences.PREF_GUI_TEXT_SIZE,
-										which)
-								.commit();
+						EarlyPrefs.setGuiTextSize(requireContext(), which);
 						ChatPreferences.invalidateGuiFontScale();
 						updateGuiTextSizeDisplay();
 						dialog.dismiss();
@@ -490,7 +479,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_text_size_extra_large)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_text_size_title)
 				.setSingleChoiceItems(entries, currentTextSize, (dialog, which) -> {
 					if (which != currentTextSize) {
@@ -516,7 +505,7 @@ public class DisplayFragment extends Fragment {
 				getString(R.string.pref_bubble_color_cyan)
 		};
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_bubble_color_title)
 				.setSingleChoiceItems(entries, currentBubbleColor, (dialog, which) -> {
 					if (which != currentBubbleColor) {
@@ -564,7 +553,7 @@ public class DisplayFragment extends Fragment {
 			entries[i] = getString(labels[i]);
 		}
 
-		new MaterialAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.pref_accent_title)
 				.setSingleChoiceItems(entries, currentAccent, (dialog, which) -> {
 					if (which != currentAccent) {

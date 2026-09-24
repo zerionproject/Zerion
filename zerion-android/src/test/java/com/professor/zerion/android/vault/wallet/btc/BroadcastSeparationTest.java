@@ -21,9 +21,9 @@ public class BroadcastSeparationTest {
 	@Test
 	public void broadcastUsesDistinctEndpointAndCircuit() throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		FakeElectrum.RecordingFactory f = new FakeElectrum.RecordingFactory(e);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999,
 				ElectrumEndpoint.parse("scan.example.org:50002"),
 				ElectrumEndpoint.parse("bcast.example.org:50002"), "walletA", f,
 				(url, tag) -> null);
@@ -52,9 +52,9 @@ public class BroadcastSeparationTest {
 	public void singleEndpointStillBroadcastsOnSeparateCircuit()
 			throws IOException {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		FakeElectrum.RecordingFactory f = new FakeElectrum.RecordingFactory(e);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999, "one.example.org", 50002,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999, "one.example.org", 50002,
 				"walletA", f, (url, tag) -> null);
 
 		w.send(DEST, 50000, 1.0, false);
@@ -66,10 +66,10 @@ public class BroadcastSeparationTest {
 	@Test
 	public void broadcastFailureStillThrowsAfterDecoupling() {
 		FakeElectrum e = new FakeElectrum();
-		e.addUtxo(BtcKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
+		e.addUtxo(TestKeys.scriptHash(MNEMONIC, 0, 0), TX0, 0, 100000);
 		e.broadcastError = new IOException("connection closed");
 		FakeElectrum.RecordingFactory f = new FakeElectrum.RecordingFactory(e);
-		BtcWallet w = new BtcWallet(MNEMONIC, 0, 9999,
+		BtcWallet w = new BtcWallet(MNEMONIC.toCharArray(), 0, 9999,
 				ElectrumEndpoint.parse("scan.example.org:50002"),
 				ElectrumEndpoint.parse("bcast.example.org:50002"), "walletA", f,
 				(url, tag) -> null);

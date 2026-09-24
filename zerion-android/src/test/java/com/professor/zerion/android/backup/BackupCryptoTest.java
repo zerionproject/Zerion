@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import static com.professor.zerion.android.backup.BackupException.Reason.CORRUPT;
 import static com.professor.zerion.android.backup.BackupException.Reason.NOT_A_BACKUP;
+import static com.professor.zerion.android.backup.BackupException.Reason.UNSUPPORTED_VERSION;
 import static com.professor.zerion.android.backup.BackupException.Reason.WRONG_PASSPHRASE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -49,6 +50,64 @@ public class BackupCryptoTest {
 		tampered[tampered.length - 1] ^= (byte) 0xFF;
 		try {
 			crypto.open(tampered, "correct passphrase".toCharArray());
+			fail("expected CORRUPT");
+		} catch (BackupException e) {
+			assertEquals(CORRUPT, e.reason);
+		}
+	}
+
+	@Test
+	public void anUnknownVersionByteIsRefusedBeforeAnyKeyDerivation()
+			throws BackupException {
+		BackupCrypto crypto = new BackupCrypto();
+		BackupBundle bundle = new BackupBundle("Alice", new byte[32],
+				new byte[16], null);
+		byte[] sealed = crypto.seal(bundle.toBytes(),
+				"passphrase".toCharArray(), (byte) 0);
+		int versionOffset = 4;
+		for (int version : new int[] {0, 3, 4, 0x7F, 0x80, 0xFF}) {
+			byte[] edited = sealed.clone();
+			edited[versionOffset] = (byte) version;
+			long start = System.nanoTime();
+			try {
+				crypto.open(edited, "passphrase".toCharArray());
+				fail("expected UNSUPPORTED_VERSION for " + version);
+			} catch (BackupException e) {
+				assertEquals(UNSUPPORTED_VERSION, e.reason);
+			}
+			assertTrue("version check must not run the passphrase KDF",
+					System.nanoTime() - start < 200_000_000L);
+		}
+		byte[] downgraded = sealed.clone();
+		downgraded[versionOffset] = 1;
+		try {
+			crypto.open(downgraded, "passphrase".toCharArray());
+			fail("a version 2 file relabelled as version 1 must not open");
+		} catch (BackupException e) {
+			assertTrue(e.reason == CORRUPT || e.reason == WRONG_PASSPHRASE);
+		}
+	}
+
+	@Test
+	public void aBundleWithAnUnknownFormatVersionIsRefused() {
+		BackupBundle bundle = new BackupBundle("Alice", new byte[32],
+				new byte[16], null);
+		byte[] bytes = bundle.toBytes();
+		for (int version : new int[] {0, 2, -1, 0x7FFFFFFF}) {
+			byte[] edited = bytes.clone();
+			edited[0] = (byte) (version >>> 24);
+			edited[1] = (byte) (version >>> 16);
+			edited[2] = (byte) (version >>> 8);
+			edited[3] = (byte) version;
+			try {
+				BackupBundle.fromBytes(edited);
+				fail("expected UNSUPPORTED_VERSION for " + version);
+			} catch (BackupException e) {
+				assertEquals(UNSUPPORTED_VERSION, e.reason);
+			}
+		}
+		try {
+			BackupBundle.fromBytes(Arrays.copyOf(bytes, bytes.length - 3));
 			fail("expected CORRUPT");
 		} catch (BackupException e) {
 			assertEquals(CORRUPT, e.reason);

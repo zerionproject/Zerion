@@ -28,7 +28,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.content.ContextCompat;
 
@@ -648,7 +648,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				main.post(() -> {
 					if (isFinishing() || isDestroyed()) return;
 					if (current != null) editor.setText(current);
-					new MaterialAlertDialogBuilder(this)
+					new SecureAlertDialogBuilder(this)
 							.setTitle(R.string.grouptr_stealth_name_set)
 							.setMessage(R.string.grouptr_stealth_name_msg)
 							.setView(editor)
@@ -921,7 +921,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				24L * 60 * 60 * 1000, 7L * 24 * 60 * 60 * 1000,
 				30L * 24L * 60 * 60 * 1000
 		};
-		new MaterialAlertDialogBuilder(this)
+		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_default_ttl_set)
 				.setItems(labels, (d, which) -> {
 					long v = values[which];
@@ -954,7 +954,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 			org.zerionproject.app.api.grouptr.GroupTrPost p) {
 		String fp = com.professor.zerion.android.contact.identity
 				.IdentityFingerprint.forSigningPub(p.getSenderPubKey());
-		new com.google.android.material.dialog.MaterialAlertDialogBuilder(
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this, R.style.ZerionDialogTheme)
 				.setTitle(decorateName(p))
 				.setMessage(getString(R.string.grouptr_member_key_message, fp))

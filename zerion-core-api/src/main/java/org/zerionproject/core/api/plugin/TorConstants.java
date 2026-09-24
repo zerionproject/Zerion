@@ -6,6 +6,12 @@ public interface TorConstants {
 
 	TransportId ID = new TransportId("org.zerionproject.core.tor");
 	String PROP_ONION_V3 = "onion3";
+
+	/**
+	 * Advertises support for client authorization of the contact address,
+	 * with the protocol version. See docs/protocol/ONION_CLIENT_AUTH.md.
+	 */
+	String PROP_ONION_AUTH_SUPPORTED = "onion3auth";
 	int DEFAULT_SOCKS_PORT = 59060;
 	int DEFAULT_CONTROL_PORT = 59061;
 	int MIN_DYNAMIC_PORT = 59100;
@@ -17,8 +23,6 @@ public interface TorConstants {
 	int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
 	String PREF_TOR_NETWORK = "network2";
 	String PREF_TOR_PORT = "port";
-	String PREF_TOR_MOBILE = "useMobileData";
-	String PREF_TOR_ONLY_WHEN_CHARGING = "onlyWhenCharging";
 	String PREF_TOR_CUSTOM_BRIDGES = "customBridges";
 	String HS_PRIVATE_KEY_V3 = "onionPrivKey3";
 	int PREF_TOR_NETWORK_AUTOMATIC = 0;
@@ -26,8 +30,6 @@ public interface TorConstants {
 	int PREF_TOR_NETWORK_WITH_BRIDGES = 2;
 	boolean DEFAULT_PREF_PLUGIN_ENABLE = true;
 	int DEFAULT_PREF_TOR_NETWORK = PREF_TOR_NETWORK_AUTOMATIC;
-	boolean DEFAULT_PREF_TOR_MOBILE = true;
-	boolean DEFAULT_PREF_TOR_ONLY_WHEN_CHARGING = false;
 
 	int REASON_BATTERY = 2;
 

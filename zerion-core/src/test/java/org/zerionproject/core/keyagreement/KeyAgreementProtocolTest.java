@@ -1,6 +1,7 @@
 package org.zerionproject.core.keyagreement;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridEncapsulationResult;
 import org.zerionproject.core.api.crypto.KeyAgreementCrypto;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.KeyParser;
@@ -21,7 +22,8 @@ import static java.util.Collections.emptyList;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.COMMIT_LENGTH;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.MASTER_KEY_LABEL;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
-import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.SHARED_SECRET_LABEL;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.HYBRID_SHARED_SECRET_LABEL;
 import static org.zerionproject.core.test.TestUtils.getAgreementPrivateKey;
 import static org.zerionproject.core.test.TestUtils.getAgreementPublicKey;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
@@ -52,6 +54,10 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 	private final PublicKey badPubKey = getAgreementPublicKey();
 	private final byte[] badCommit = getRandomBytes(COMMIT_LENGTH);
 	private final byte[] badConfirm = getRandomBytes(SecretKey.LENGTH);
+
+	private final byte[] kemCiphertext =
+			getRandomBytes(ML_KEM_768_CIPHERTEXT_BYTES);
+	private final byte[] kemSecret = getRandomBytes(SecretKey.LENGTH);
 
 	@Mock
 	KeyAgreementProtocol.Callbacks callbacks;
@@ -85,7 +91,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			will(returnValue(alicePayload));
 			allowing(payloadEncoder).encode(theirPayload);
 			will(returnValue(bobPayload));
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
@@ -100,9 +106,15 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			oneOf(keyAgreementCrypto).deriveKeyCommitment(bobPubKey);
 			will(returnValue(bobCommit));
 
-			oneOf(crypto).deriveSharedSecret(SHARED_SECRET_LABEL, bobPubKey,
-					ourKeyPair, new byte[] {PROTOCOL_VERSION},
-					alicePubKey.getEncoded(), bobPubKey.getEncoded());
+			oneOf(crypto).hybridEncapsulate(bobPubKey);
+			will(returnValue(new HybridEncapsulationResult(kemCiphertext,
+					kemSecret)));
+			oneOf(transport).sendKemCiphertext(kemCiphertext);
+			oneOf(crypto).deriveHybridSharedSecretAsResponder(
+					HYBRID_SHARED_SECRET_LABEL, bobPubKey, ourKeyPair,
+					kemSecret, new byte[] {PROTOCOL_VERSION},
+					alicePubKey.getEncoded(), bobPubKey.getEncoded(),
+					kemCiphertext);
 			will(returnValue(sharedSecret));
 
 			oneOf(keyAgreementCrypto).deriveConfirmationRecord(sharedSecret,
@@ -145,7 +157,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			will(returnValue(bobPayload));
 			allowing(payloadEncoder).encode(theirPayload);
 			will(returnValue(alicePayload));
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).receiveKey();
@@ -159,9 +171,12 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 			oneOf(transport).sendKey(bobPubKey.getEncoded());
 
-			oneOf(crypto).deriveSharedSecret(SHARED_SECRET_LABEL, alicePubKey,
-					ourKeyPair, new byte[] {PROTOCOL_VERSION},
-					alicePubKey.getEncoded(), bobPubKey.getEncoded());
+			oneOf(transport).receiveKemCiphertext();
+			will(returnValue(kemCiphertext));
+			oneOf(crypto).deriveHybridSharedSecret(HYBRID_SHARED_SECRET_LABEL,
+					alicePubKey, ourKeyPair, kemCiphertext,
+					new byte[] {PROTOCOL_VERSION}, alicePubKey.getEncoded(),
+					bobPubKey.getEncoded(), kemCiphertext);
 			will(returnValue(sharedSecret));
 
 			oneOf(transport).receiveConfirm();
@@ -198,7 +213,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 		context.checking(new Expectations() {{
 
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
@@ -215,9 +230,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 			oneOf(transport).sendAbort(false);
 
-			never(crypto).deriveSharedSecret(SHARED_SECRET_LABEL, badPubKey,
-					ourKeyPair, new byte[] {PROTOCOL_VERSION},
-					alicePubKey.getEncoded(), bobPubKey.getEncoded());
+			never(crypto).hybridEncapsulate(badPubKey);
 		}});
 
 		protocol.perform();
@@ -236,7 +249,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 		context.checking(new Expectations() {{
 
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).receiveKey();
@@ -274,7 +287,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			will(returnValue(alicePayload));
 			allowing(payloadEncoder).encode(theirPayload);
 			will(returnValue(bobPayload));
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
@@ -289,9 +302,15 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			oneOf(keyAgreementCrypto).deriveKeyCommitment(bobPubKey);
 			will(returnValue(bobCommit));
 
-			oneOf(crypto).deriveSharedSecret(SHARED_SECRET_LABEL, bobPubKey,
-					ourKeyPair, new byte[] {PROTOCOL_VERSION},
-					alicePubKey.getEncoded(), bobPubKey.getEncoded());
+			oneOf(crypto).hybridEncapsulate(bobPubKey);
+			will(returnValue(new HybridEncapsulationResult(kemCiphertext,
+					kemSecret)));
+			oneOf(transport).sendKemCiphertext(kemCiphertext);
+			oneOf(crypto).deriveHybridSharedSecretAsResponder(
+					HYBRID_SHARED_SECRET_LABEL, bobPubKey, ourKeyPair,
+					kemSecret, new byte[] {PROTOCOL_VERSION},
+					alicePubKey.getEncoded(), bobPubKey.getEncoded(),
+					kemCiphertext);
 			will(returnValue(sharedSecret));
 
 			oneOf(keyAgreementCrypto).deriveConfirmationRecord(sharedSecret,
@@ -334,7 +353,7 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			will(returnValue(bobPayload));
 			allowing(payloadEncoder).encode(theirPayload);
 			will(returnValue(alicePayload));
-			allowing(crypto).getAgreementKeyParser();
+			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
 			oneOf(transport).receiveKey();
@@ -348,9 +367,12 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 			oneOf(transport).sendKey(bobPubKey.getEncoded());
 
-			oneOf(crypto).deriveSharedSecret(SHARED_SECRET_LABEL, alicePubKey,
-					ourKeyPair, new byte[] {PROTOCOL_VERSION},
-					alicePubKey.getEncoded(), bobPubKey.getEncoded());
+			oneOf(transport).receiveKemCiphertext();
+			will(returnValue(kemCiphertext));
+			oneOf(crypto).deriveHybridSharedSecret(HYBRID_SHARED_SECRET_LABEL,
+					alicePubKey, ourKeyPair, kemCiphertext,
+					new byte[] {PROTOCOL_VERSION}, alicePubKey.getEncoded(),
+					bobPubKey.getEncoded(), kemCiphertext);
 			will(returnValue(sharedSecret));
 
 			oneOf(transport).receiveConfirm();

@@ -78,14 +78,9 @@ public final class BtcPrice {
 
 	public static Rates fetch(int socksPort, String isolationTag)
 			throws IOException {
-		if (socksPort <= 0) {
-			throw new IOException("Tor is not ready");
-		}
-		Socket socket = new Socket();
+		Socket socket = com.professor.zerion.android.vault.net.TorSockets
+				.open(socksPort, 30_000);
 		try {
-			socket.connect(new InetSocketAddress("127.0.0.1", socksPort),
-					30_000);
-			socket.setSoTimeout(30_000);
 			TorSocks.connect(socket, HOST, PORT, "zw-" + isolationTag,
 					isolationTag);
 

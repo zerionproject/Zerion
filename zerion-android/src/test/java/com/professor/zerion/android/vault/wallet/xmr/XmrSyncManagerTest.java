@@ -73,8 +73,10 @@ public class XmrSyncManagerTest {
 				|| st.state == XmrSyncState.SYNCHRONIZING, 3000);
 		assertTrue(s.initCalls.size() >= 1);
 		for (String[] call : s.initCalls) {
-			assertEquals("Tor node must be given the SOCKS proxy",
-					"127.0.0.1:9050", call[1]);
+			assertEquals("Tor node must be given the isolated SOCKS5 proxy",
+					XmrTorIsolation.syncProxy(9050, "A"), call[1]);
+			assertTrue(call[1].startsWith("socks5://zx-")
+					&& call[1].endsWith("@127.0.0.1:9050"));
 		}
 	}
 
@@ -251,6 +253,59 @@ public class XmrSyncManagerTest {
 				5000);
 	}
 
+	/** JNI-04: a failover never re-initialises a wallet whose refresh thread
+	 *  is still running; when the thread will not go idle the loop ends
+	 *  offline instead of racing the reconnect against the scan. */
+	@Test
+	public void failoverRefusesToReconnectWhileTheRefreshIsBusy()
+			throws Exception {
+		Script s = new Script();
+		s.connect = 1;
+		s.wh = 100;
+		s.dh = 200;
+		manager().start("A", 1, s, nodes(N1, N2), 9050);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		s.refreshIdle = false;
+		s.status = 1;
+		s.connect = 0;
+		s.connectAfterInit = 1;
+		sink.await(st -> st.state == XmrSyncState.OFFLINE, 8000);
+		assertEquals("no init on a session whose refresh is still running",
+				1, s.initCalls.size());
+		assertTrue(s.stopRefreshCalled.get());
+		assertFalse(sync.isActive());
+	}
+
+	/** JNI-05: a stop that lands while the periodic store holds the refresh
+	 *  paused must not be followed by a restart of that refresh; the session
+	 *  is about to be closed and a running refresh would race the close. */
+	@Test
+	public void stopDuringThePeriodicStoreDoesNotRestartTheRefresh()
+			throws Exception {
+		Script s = new Script();
+		s.connect = 1;
+		s.wh = 2500;
+		s.dh = 5000;
+		final AtomicInteger startsAtStore = new AtomicInteger(-1);
+		s.storeHook = () -> {
+			current.set(false);
+			sync.stop();
+			startsAtStore.set(s.startRefreshCalls.get());
+		};
+		manager().start("A", 1, s, nodes(N1), 9050);
+		long deadline = System.currentTimeMillis() + 5000;
+		while (s.storeCalls.get() == 0
+				&& System.currentTimeMillis() < deadline) {
+			Thread.sleep(20);
+		}
+		assertEquals("the height jump triggered the store", 1,
+				s.storeCalls.get());
+		Thread.sleep(600);
+		assertEquals("no refresh restart after the stop",
+				startsAtStore.get(), s.startRefreshCalls.get());
+		assertFalse(sync.isActive());
+	}
+
 	@Test
 	public void allNodesUnavailableBecomesOfflineNotEndlessSpinner()
 			throws Exception {
@@ -378,6 +433,9 @@ public class XmrSyncManagerTest {
 		volatile int status = 0;
 		volatile long wh, dh, bal, unl;
 		volatile java.util.List<XmrTxInfo> hist = new ArrayList<>();
+		volatile boolean refreshIdle = true;
+		final AtomicInteger storeCalls = new AtomicInteger();
+		volatile Runnable storeHook;
 
 		@Override
 		public boolean init(String daemonAddress, String proxyAddress,
@@ -498,6 +556,9 @@ public class XmrSyncManagerTest {
 
 		@Override
 		public boolean store(String path) {
+			storeCalls.incrementAndGet();
+			Runnable r = storeHook;
+			if (r != null) r.run();
 			return true;
 		}
 
@@ -508,7 +569,7 @@ public class XmrSyncManagerTest {
 
 		@Override
 		public boolean waitRefreshIdle(long timeoutMs) {
-			return true;
+			return refreshIdle;
 		}
 
 		@Override
@@ -518,7 +579,8 @@ public class XmrSyncManagerTest {
 		}
 
 		@Override
-		public void closePersisting() {
+		public boolean closePersisting() {
+			return true;
 		}
 
 		@Override

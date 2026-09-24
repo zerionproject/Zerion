@@ -102,6 +102,8 @@ import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_PE
 import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_SENT;
 import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_DELIVERED;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_DATA_LENGTH;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MANIFEST_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_DESCRIPTION;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
@@ -176,6 +178,22 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private static final long EPHEMERAL_PURGE_AGE_MS = 5 * 60 * 1000;
+
+	/**
+	 * Bounds how long a received ephemeral record (typing indicator, voice
+	 * signal, mesh prekey bundle) survives. Without a cleanup timer these rows
+	 * were only removed on the next database open, so a contact could grow the
+	 * database at the connection cadence. The timer caps accumulation at the
+	 * records delivered within this window.
+	 */
+	private void startEphemeralCleanupTimer(Transaction txn, MessageId id)
+			throws DbException {
+		try {
+			db.setCleanupTimerDuration(txn, id, EPHEMERAL_PURGE_AGE_MS);
+			db.startCleanupTimer(txn, id);
+		} catch (NoSuchMessageException e) {
+		}
+	}
 
 	private void purgeStaleEphemeralMessages(Transaction txn)
 			throws DbException {
@@ -453,21 +471,30 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			throws DbException {
 		ContactId contactId = getContactId(txn, m.getGroupId());
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
-		BdfDictionary query = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
-				new BdfEntry(MSG_KEY_LOCAL, false));
 		try {
-			Map<MessageId, BdfDictionary> results = clientHelper
-					.getMessageMetadataAsDictionary(txn, m.getGroupId(), query);
-			for (BdfDictionary meta : results.values()) {
-				List<AttachmentHeader> headers =
-						parseAttachmentHeaders(m.getGroupId(), meta);
-				for (AttachmentHeader h : headers) {
-					if (h.getMessageId().equals(m.getId())) {
-						stopChunkCleanupTimers(txn, m.getId());
-						return;
+			BdfList manifestBody = clientHelper.toList(m.getBody());
+			long declaredTotal = manifestBody.getLong(2);
+			BdfList chunkIdList = manifestBody.getList(5);
+			List<MessageId> chunkIds = new ArrayList<>(chunkIdList.size());
+			for (int i = 0; i < chunkIdList.size(); i++) {
+				chunkIds.add(new MessageId(chunkIdList.getRaw(i)));
+			}
+			if (!chunkStorageWithinDeclaredSize(txn, declaredTotal,
+					chunkIds)) {
+				for (MessageId c : chunkIds) {
+					try {
+						db.removeMessage(txn, c);
+					} catch (NoSuchMessageException ignored) {
 					}
 				}
+				db.setCleanupTimerDuration(txn, m.getId(),
+						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
+				db.startCleanupTimer(txn, m.getId());
+				return;
+			}
+			if (isManifestOwned(txn, m.getGroupId(), m.getId())) {
+				stampAndStopChunkTimers(txn, m.getId(), chunkIds);
+				return;
 			}
 			db.setCleanupTimerDuration(txn, m.getId(),
 					MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
@@ -477,14 +504,75 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		}
 	}
 
-	private void stopChunkCleanupTimers(Transaction txn, MessageId manifestId)
+	/**
+	 * Confirms the delivered chunk data sums to the size the manifest
+	 * declared. All chunks are manifest dependencies, so they are present at
+	 * manifest delivery. A contact that ships more chunk data than declared
+	 * would otherwise store it durably, so a mismatch is rejected.
+	 */
+	private boolean chunkStorageWithinDeclaredSize(Transaction txn,
+			long declaredTotal, List<MessageId> chunkIds)
 			throws DbException, FormatException {
-		for (MessageId c : getManifestChunkIds(txn, manifestId)) {
+		if (declaredTotal < 0L) return false;
+		long assembled = 0L;
+		for (MessageId c : chunkIds) {
+			long dataLength;
+			try {
+				BdfDictionary chunkMeta =
+						clientHelper.getMessageMetadataAsDictionary(txn, c);
+				Long stored = chunkMeta.getOptionalLong(
+						MSG_KEY_CHUNK_DATA_LENGTH);
+				if (stored != null) {
+					dataLength = stored;
+				} else {
+					int descriptorLength =
+							chunkMeta.getInt(MSG_KEY_DESCRIPTOR_LENGTH);
+					dataLength = clientHelper.getMessage(txn, c).getBody()
+							.length - descriptorLength;
+				}
+			} catch (NoSuchMessageException e) {
+				return false;
+			}
+			if (dataLength < 0L) return false;
+			assembled += dataLength;
+			if (assembled > declaredTotal) return false;
+		}
+		return assembled == declaredTotal;
+	}
+
+	private boolean isManifestOwned(Transaction txn, GroupId g,
+			MessageId manifestId) throws DbException, FormatException {
+		BdfDictionary queryPm = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		Map<MessageId, BdfDictionary> pms = clientHelper
+				.getMessageMetadataAsDictionary(txn, g, queryPm);
+		for (BdfDictionary meta : pms.values()) {
+			for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
+				if (h.getMessageId().equals(manifestId)) return true;
+			}
+		}
+		return false;
+	}
+
+	private void stampAndStopChunkTimers(Transaction txn, MessageId manifestId,
+			List<MessageId> chunkIds) throws DbException, FormatException {
+		byte[] manifestIdBytes = manifestId.getBytes();
+		for (MessageId c : chunkIds) {
 			try {
 				db.stopCleanupTimer(txn, c);
+				BdfDictionary stamp = new BdfDictionary();
+				stamp.put(MSG_KEY_MANIFEST_ID, manifestIdBytes);
+				clientHelper.mergeMessageMetadata(txn, c, stamp);
 			} catch (NoSuchMessageException e) {
 			}
 		}
+	}
+
+	private void stopChunkCleanupTimers(Transaction txn, MessageId manifestId)
+			throws DbException, FormatException {
+		stampAndStopChunkTimers(txn, manifestId,
+				getManifestChunkIds(txn, manifestId));
 	}
 
 	private void incomingAttachmentChunk(Transaction txn, Message m)
@@ -492,8 +580,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		ContactId contactId = getContactId(txn, m.getGroupId());
 		txn.attach(new AttachmentReceivedEvent(m.getId(), contactId));
 		try {
-			if (!isChunkReferencedByOwnedManifest(txn, m.getGroupId(),
-					m.getId())) {
+			if (!isChunkOwned(txn, m.getGroupId(), m.getId())) {
 				db.setCleanupTimerDuration(txn, m.getId(),
 						MISSING_ATTACHMENT_CLEANUP_DURATION_MS);
 				db.startCleanupTimer(txn, m.getId());
@@ -503,32 +590,25 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		}
 	}
 
-	private boolean isChunkReferencedByOwnedManifest(Transaction txn,
-			GroupId g, MessageId chunkId)
+	/**
+	 * A chunk is owned when it carries the manifest-id stamp written at the
+	 * delivery of an owned manifest. The lookup is by the chunk's own
+	 * metadata, so it is constant work per chunk rather than a scan of every
+	 * private message and manifest in the conversation. A chunk normally
+	 * arrives before its manifest, so it is unstamped here and receives a
+	 * cleanup timer; the manifest delivery then stamps it and stops the timer.
+	 */
+	private boolean isChunkOwned(Transaction txn, GroupId g, MessageId chunkId)
 			throws DbException, FormatException {
-		BdfDictionary queryPm = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, PRIVATE_MESSAGE),
-				new BdfEntry(MSG_KEY_LOCAL, false));
-		Set<MessageId> owned = new HashSet<>();
-		Map<MessageId, BdfDictionary> pms = clientHelper
-				.getMessageMetadataAsDictionary(txn, g, queryPm);
-		for (BdfDictionary meta : pms.values()) {
-			for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
-				owned.add(h.getMessageId());
-			}
+		BdfDictionary meta;
+		try {
+			meta = clientHelper.getMessageMetadataAsDictionary(txn, chunkId);
+		} catch (NoSuchMessageException e) {
+			return false;
 		}
-		if (owned.isEmpty()) return false;
-		BdfDictionary queryManifest = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT_MANIFEST),
-				new BdfEntry(MSG_KEY_LOCAL, false));
-		for (MessageId manifestId :
-				clientHelper.getMessageIds(txn, g, queryManifest)) {
-			if (!owned.contains(manifestId)) continue;
-			for (MessageId c : getManifestChunkIds(txn, manifestId)) {
-				if (c.equals(chunkId)) return true;
-			}
-		}
-		return false;
+		byte[] manifestIdBytes = meta.getOptionalRaw(MSG_KEY_MANIFEST_ID);
+		if (manifestIdBytes == null) return false;
+		return isManifestOwned(txn, g, new MessageId(manifestIdBytes));
 	}
 
 	private void incomingVoiceSignal(Transaction txn, Message m,
@@ -554,7 +634,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		VoiceSignalReceivedEvent event =
 				new VoiceSignalReceivedEvent(header, contactId);
 		txn.attach(event);
-
+		if (!local) startEphemeralCleanupTimer(txn, m.getId());
 	}
 
 	@Override
@@ -639,9 +719,19 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			String text, long timestamp, byte[] meshSenderId,
 			@Nullable byte[] parentMeshSenderId) throws DbException {
 		try {
+			VoiceMemoFormatCheck.requireCurrentFormat(text);
+		} catch (FormatException e) {
+			return;
+		}
+		try {
 			GroupId groupId = getConversationId(txn, contactId);
 			Message m = clientHelper.createMessage(groupId, timestamp,
 					BdfList.of(text));
+			try {
+				clientHelper.getMessageMetadataAsDictionary(txn, m.getId());
+				return;
+			} catch (NoSuchMessageException expected) {
+			}
 			BdfDictionary meta = new BdfDictionary();
 			meta.put(MSG_KEY_TIMESTAMP, timestamp);
 			meta.put(MSG_KEY_LOCAL, false);
@@ -826,6 +916,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				try {
 					meta = privateMessageValidator.validateToBdf(m, g)
 							.getDictionary();
+					if (!isMeshGroupRecordType(
+							meta.getOptionalInt(MSG_KEY_MSG_TYPE))) {
+						return;
+					}
 					clientHelper.addLocalMessage(txn, m, meta, false, false);
 					dispatchIncoming(txn, m, meta);
 				} catch (InvalidMessageException e) {
@@ -834,6 +928,19 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				throw new DbException(e);
 			}
 		});
+	}
+
+	/**
+	 * The mesh group-record path carries group records only. Every other
+	 * private-message type (a call offer, a typing indicator, a prekey
+	 * bundle, a legacy text with no type) has its own online ordering,
+	 * acknowledgement and freshness rules that this store-and-forward path
+	 * does not provide, so it is refused here rather than dispatched.
+	 */
+	static boolean isMeshGroupRecordType(@Nullable Integer messageType) {
+		return messageType != null
+				&& messageType >= MessageTypes.GROUP_POST
+				&& messageType <= MessageTypes.GROUPTR_INVITE_DECLINE;
 	}
 
 	@Override
@@ -982,6 +1089,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		BdfList body = clientHelper.toList(m.getBody());
 		byte[] bundle = body.getRaw(1);
 		txn.attach(new PrekeyBundleReceivedEvent(contactId, bundle));
+		startEphemeralCleanupTimer(txn, m.getId());
 	}
 
 	private void shareAttachmentChunks(Transaction txn, MessageId attachmentId)
@@ -1412,16 +1520,34 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private void incomingReaction(Transaction txn, Message m,
-			BdfDictionary meta) throws DbException, FormatException {
+			BdfDictionary meta) throws DbException, FormatException,
+			InvalidMessageException {
 		GroupId groupId = m.getGroupId();
 		byte[] targetIdBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
 		MessageId targetId = new MessageId(targetIdBytes);
 		String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
 		ContactId contactId = getContactId(txn, groupId);
+		Message target;
+		try {
+			target = db.getMessage(txn, targetId);
+		} catch (NoSuchMessageException e) {
+			throw new InvalidMessageException();
+		}
+		if (!target.getGroupId().equals(groupId)) {
+			throw new InvalidMessageException();
+		}
+		BdfDictionary targetMeta =
+				clientHelper.getMessageMetadataAsDictionary(txn, targetId);
+		long targetType = targetMeta.getLong(MSG_KEY_MSG_TYPE, -1L);
+		if (targetType == MessageTypes.MESSAGE_REACTION
+				|| targetType == MessageTypes.TYPING_INDICATOR) {
+			throw new InvalidMessageException();
+		}
 
 		BdfDictionary query = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_MSG_TYPE,
-						MessageTypes.MESSAGE_REACTION));
+						MessageTypes.MESSAGE_REACTION),
+				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, targetIdBytes));
 		Map<MessageId, BdfDictionary> existing =
 				clientHelper.getMessageMetadataAsDictionary(
 						txn, groupId, query);
@@ -1452,7 +1578,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		TypingIndicatorReceivedEvent event =
 				new TypingIndicatorReceivedEvent(contactId, isTyping);
 		txn.attach(event);
-
+		if (!meta.getBoolean(MSG_KEY_LOCAL, false)) {
+			startEphemeralCleanupTimer(txn, m.getId());
+		}
 	}
 
 	private void incomingLinkPreviewMessage(Transaction txn, Message m,
@@ -1714,6 +1842,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				NO_AUTO_DELETE_TIMER);
 		if (ttl != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), ttl);
+			db.startCleanupTimer(txn, m.getId());
 		}
 		String senderName = meta.getOptionalString("groupSenderName");
 		if (senderName == null) senderName = "";

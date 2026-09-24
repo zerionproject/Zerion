@@ -20,23 +20,63 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	public interface OpenedListener {
 		boolean onOpened(byte[] senderIdentitySigPub, int messageType,
 				byte[] payload, long sendTimestamp);
+
+		/**
+		 * True when the sender is known; only a known sender's envelopes
+		 * are recorded in the replay store, so a stranger cannot fill it.
+		 */
+		default boolean knowsSender(byte[] senderIdentitySigPub) {
+			return true;
+		}
 	}
+
+	/**
+	 * Recently opened envelopes, by dedup id, so a repeat of an envelope from
+	 * a stranger costs a map lookup rather than another open. In memory
+	 * only; the durable record is the per-sender store.
+	 */
+	private static final int RECENTLY_OPENED = 1024;
+	private final java.util.LinkedHashMap<String, Boolean> recentlyOpened =
+			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						java.util.Map.Entry<String, Boolean> eldest) {
+					return size() > RECENTLY_OPENED;
+				}
+			};
+
+	private static final long MAX_TTL_SECONDS = 30L * 24 * 60 * 60;
+	private static final long CLOCK_SKEW_TOLERANCE_MS = 60L * 1000;
 
 	private final CryptoComponent crypto;
 	private final AsyncSealedSender sealer;
 	private final AsyncPrekeyStore store;
 	private final OpenedListener listener;
 	private final Identity identity;
+	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
+
+	/**
+	 * One-time prekeys this sender has already sealed to, by recipient and
+	 * key id. The recipient deletes a one-time key after its first use, so
+	 * a second envelope to the same key is silently lost; a sender that
+	 * remembers what it used picks another key or falls back to the signed
+	 * prekey. Bounded, and only as durable as the process.
+	 */
+	private static final int MAX_USED_ONE_TIME_KEYS = 4096;
+	private final java.util.LinkedHashSet<String> usedOneTimeKeys =
+			new java.util.LinkedHashSet<>();
 
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
-			Identity identity) {
+			Identity identity,
+			org.zerionproject.core.api.system.Clock clock) {
 		this.crypto = crypto;
 		this.sealer = sealer;
 		this.store = store;
 		this.listener = listener;
 		this.identity = identity;
+		this.clock = clock;
 	}
 
 	public static class Identity {
@@ -56,11 +96,13 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			byte[] payload, long ttlSeconds, long sendTimestamp,
 			boolean preferOneTime) throws GeneralSecurityException {
 		AsyncSealedSender.SealRequest r = new AsyncSealedSender.SealRequest();
-		List<AsyncPrekeyBundle.OneTimePrekey> otks =
-				recipientBundle.getOneTimePrekeys();
-		if (preferOneTime && !otks.isEmpty()) {
-			AsyncPrekeyBundle.OneTimePrekey otk =
-					otks.get(random.nextInt(otks.size()));
+		long nowSeconds = clock.currentTimeMillis() / 1000L;
+		if (recipientBundle.getSignedPrekeyExpiry() <= nowSeconds) {
+			throw new GeneralSecurityException("recipient signed prekey expired");
+		}
+		AsyncPrekeyBundle.OneTimePrekey otk = preferOneTime
+				? pickUnusedOneTimePrekey(recipientBundle) : null;
+		if (otk != null) {
 			r.prekeyKind = AsyncEnvelope.PREKEY_KIND_ONE_TIME;
 			r.prekeyId = otk.id;
 			r.recipientAgreementPub = parseAgreement(otk.pub);
@@ -83,6 +125,33 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		r.sendTimestamp = sendTimestamp;
 		byte[] envelope = sealer.seal(r);
 		return forwarder.originate(envelope);
+	}
+
+	@javax.annotation.Nullable
+	private AsyncPrekeyBundle.OneTimePrekey pickUnusedOneTimePrekey(
+			AsyncPrekeyBundle bundle) {
+		List<AsyncPrekeyBundle.OneTimePrekey> otks = bundle.getOneTimePrekeys();
+		if (otks.isEmpty()) return null;
+		String recipient = org.zerionproject.core.util.StringUtils.toHexString(
+				bundle.getIdentitySigPub());
+		int start = random.nextInt(otks.size());
+		synchronized (usedOneTimeKeys) {
+			for (int i = 0; i < otks.size(); i++) {
+				AsyncPrekeyBundle.OneTimePrekey otk =
+						otks.get((start + i) % otks.size());
+				String key = recipient + ":" + org.zerionproject.core.util
+						.StringUtils.toHexString(otk.id);
+				if (usedOneTimeKeys.contains(key)) continue;
+				if (usedOneTimeKeys.size() >= MAX_USED_ONE_TIME_KEYS) {
+					java.util.Iterator<String> it = usedOneTimeKeys.iterator();
+					it.next();
+					it.remove();
+				}
+				usedOneTimeKeys.add(key);
+				return otk;
+			}
+		}
+		return null;
 	}
 
 	public void sendCover(MeshForwarder forwarder, byte[] payload,
@@ -143,6 +212,14 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			return;
 		}
 		try {
+			long ttl = env.getTtl();
+			if (ttl < 0 || ttl > MAX_TTL_SECONDS) return;
+			String dedupHex = org.zerionproject.core.util.StringUtils
+					.toHexString(env.getDedupId());
+			synchronized (recentlyOpened) {
+				if (recentlyOpened.containsKey(dedupHex)) return;
+			}
+			if (store.isSeen(env.getDedupId())) return;
 			KeyPair prekey = store.resolvePrekey(env.getPrekeyKind(),
 					env.getPrekeyId(), env.getSignedPrekeyId());
 			if (prekey == null) return;
@@ -152,7 +229,20 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			o.recipientIdentitySigPub = identity.sigPub;
 			o.recipientIdentityAgreePub = identity.agreePub;
 			AsyncSealedSender.OpenedMessage m = sealer.open(envelopeBytes, o);
-			if (!store.checkAndMarkSeen(env.getDedupId())) return;
+			long now = clock.currentTimeMillis();
+			long expiry = m.getSendTimestamp() + ttl * 1000L;
+			if (now > expiry
+					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
+				return;
+			}
+			synchronized (recentlyOpened) {
+				recentlyOpened.put(dedupHex, Boolean.TRUE);
+			}
+			if (!listener.knowsSender(m.getSenderIdentitySigPub())) return;
+			if (!store.checkAndMarkSeen(m.getSenderIdentitySigPub(),
+					env.getDedupId(), expiry)) {
+				return;
+			}
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
 			if (accepted && env.getPrekeyKind()

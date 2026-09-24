@@ -89,6 +89,12 @@ public class I2pTransportTest {
 		TransportId[] seenId = new TransportId[1];
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
 			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) throws IOException {
 				seenId[0] = transportId;
@@ -120,6 +126,12 @@ public class I2pTransportTest {
 		AtomicInteger firstByte = new AtomicInteger(-1);
 		TransportId[] seenId = new TransportId[1];
 		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
 			@Override
 			public void handleOutgoing(TransportId transportId, int contactId,
 					InputStream in, OutputStream out) {

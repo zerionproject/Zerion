@@ -41,6 +41,15 @@ if [ ! -x "$BIN" ]; then
 		URL="https://github.com/jeremylong/DependencyCheck/releases/download/v${DC_VERSION}/dependency-check-${DC_VERSION}-release.zip"
 		curl -fsSL -o "$ZIP" "$URL"
 	fi
+	if [ -z "${DEPENDENCY_CHECK_SHA256:-}" ]; then
+		echo "ERROR: set DEPENDENCY_CHECK_SHA256 to the published SHA-256 of $(basename "$ZIP");" >&2
+		echo "       the tool runs on the release host and is not executed unverified." >&2
+		exit 1
+	fi
+	echo "${DEPENDENCY_CHECK_SHA256}  ${ZIP}" | sha256sum -c - || {
+		echo "ERROR: downloaded archive does not match DEPENDENCY_CHECK_SHA256" >&2
+		exit 1
+	}
 	(cd "$CLI_DIR" && unzip -q -o "$ZIP")
 fi
 

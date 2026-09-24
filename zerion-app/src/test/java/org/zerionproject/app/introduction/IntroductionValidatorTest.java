@@ -43,9 +43,13 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 
 	private final MessageEncoder messageEncoder =
 			context.mock(MessageEncoder.class);
+	private final byte[] rejectedMlKemPubKey = new byte[
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES];
 	private final IntroductionValidator validator =
 			new IntroductionValidator(messageEncoder, clientHelper,
-					metadataEncoder, clock);
+					metadataEncoder, clock,
+					k -> !java.util.Arrays.equals(k, rejectedMlKemPubKey));
 
 	private final SessionId sessionId = new SessionId(getRandomId());
 	private final MessageId previousMsgId = new MessageId(getRandomId());
@@ -61,6 +65,15 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 			singletonMap(transportId, new TransportProperties());
 	private final byte[] mac = getRandomBytes(MAC_BYTES);
 	private final byte[] signature = getRandomBytes(MAX_SIGNATURE_BYTES);
+	private final byte[] mlDsaPubKey = getRandomBytes(
+			org.zerionproject.core.api.crypto.PostQuantumConstants
+					.ML_DSA_65_PUBLIC_KEY_BYTES);
+	private final byte[] mlKemPubKey = getRandomBytes(
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
+	private final byte[] kemCiphertext = getRandomBytes(
+			org.zerionproject.app.api.introduction.IntroductionConstants
+					.INTRODUCTION_KEM_CIPHERTEXT_BYTES);
 
 	@Test
 	public void testAcceptsRequest() throws Exception {
@@ -186,7 +199,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testAcceptsAccept() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties);
+				acceptTimestamp, transportProperties, null, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		expectParseTransportProperties();
 		expectEncodeMetadata(ACCEPT, NO_AUTO_DELETE_TIMER);
@@ -215,7 +228,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 			throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, timer);
+				acceptTimestamp, transportProperties, timer, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		expectParseTransportProperties();
 		long autoDeleteTimer = timer == null ? NO_AUTO_DELETE_TIMER : timer;
@@ -248,7 +261,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testRejectsInvalidSessionIdForAccept() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), null,
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties);
+				acceptTimestamp, transportProperties, null, mlDsaPubKey, mlKemPubKey);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -256,7 +269,23 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testRejectsInvalidPreviousMsgIdForAccept() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(), 1,
 				ephemeralPublicKey.getEncoded(), acceptTimestamp,
-				transportProperties);
+				transportProperties, null, mlDsaPubKey, mlKemPubKey);
+		validator.validateMessage(message, group, body);
+	}
+
+	/**
+	 * A2-CRY-01: an accept whose ML-KEM key the encapsulation would reject
+	 * is an invalid message, refused by the validator before it reaches the
+	 * protocol engine.
+	 */
+	@Test(expected = FormatException.class)
+	public void testRejectsAcceptWithRejectedMlKemKey() throws Exception {
+		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
+				acceptTimestamp, transportProperties, null, mlDsaPubKey,
+				rejectedMlKemPubKey);
+		expectParsePublicKey();
+		expectParseTransportProperties();
 		validator.validateMessage(message, group, body);
 	}
 
@@ -265,7 +294,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(),
 				getRandomBytes(MAX_AGREEMENT_PUBLIC_KEY_BYTES + 1),
-				acceptTimestamp, transportProperties);
+				acceptTimestamp, transportProperties, null, mlDsaPubKey, mlKemPubKey);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -273,7 +302,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testRejectsNegativeTimestampForAccept() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				-1, transportProperties);
+				-1, transportProperties, null, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		validator.validateMessage(message, group, body);
 	}
@@ -283,7 +312,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 			throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, new BdfDictionary());
+				acceptTimestamp, new BdfDictionary(), null, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		validator.validateMessage(message, group, body);
 	}
@@ -293,7 +322,8 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 			throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, "foo");
+				acceptTimestamp, transportProperties, "foo", mlDsaPubKey,
+				mlKemPubKey);
 		expectParsePublicKey();
 		expectParseTransportProperties();
 		validator.validateMessage(message, group, body);
@@ -305,7 +335,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
 				acceptTimestamp, transportProperties,
-				MIN_AUTO_DELETE_TIMER_MS - 1);
+				MIN_AUTO_DELETE_TIMER_MS - 1, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		expectParseTransportProperties();
 		validator.validateMessage(message, group, body);
@@ -316,9 +346,55 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
 				acceptTimestamp, transportProperties,
-				MAX_AUTO_DELETE_TIMER_MS + 1);
+				MAX_AUTO_DELETE_TIMER_MS + 1, mlDsaPubKey, mlKemPubKey);
 		expectParsePublicKey();
 		expectParseTransportProperties();
+		validator.validateMessage(message, group, body);
+	}
+
+	/** PROTO-12: an ACCEPT without the post-quantum fields is a format error. */
+	@Test(expected = FormatException.class)
+	public void testRejectsAcceptWithoutPqFields() throws Exception {
+		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
+				acceptTimestamp, transportProperties, null);
+		expectParsePublicKey();
+		expectParseTransportProperties();
+		validator.validateMessage(message, group, body);
+	}
+
+	@Test(expected = FormatException.class)
+	public void testRejectsAcceptWithNullMlKemKey() throws Exception {
+		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
+				acceptTimestamp, transportProperties, null, mlDsaPubKey, null);
+		expectParsePublicKey();
+		expectParseTransportProperties();
+		validator.validateMessage(message, group, body);
+	}
+
+	@Test(expected = FormatException.class)
+	public void testRejectsAcceptWithNullMlDsaKey() throws Exception {
+		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
+				acceptTimestamp, transportProperties, null, null, mlKemPubKey);
+		expectParsePublicKey();
+		expectParseTransportProperties();
+		validator.validateMessage(message, group, body);
+	}
+
+	/** PROTO-12: an AUTH without the KEM ciphertext is a format error. */
+	@Test(expected = FormatException.class)
+	public void testRejectsAuthWithoutKemCiphertext() throws Exception {
+		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), mac, signature);
+		validator.validateMessage(message, group, body);
+	}
+
+	@Test(expected = FormatException.class)
+	public void testRejectsAuthWithNullKemCiphertext() throws Exception {
+		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), mac, signature, null);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -413,7 +489,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	@Test
 	public void testAcceptsAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), mac, signature);
+				previousMsgId.getBytes(), mac, signature, kemCiphertext);
 
 		expectEncodeMetadata(AUTH, NO_AUTO_DELETE_TIMER);
 		BdfMessageContext messageContext =
@@ -441,14 +517,14 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	@Test(expected = FormatException.class)
 	public void testRejectsInvalidPreviousMsgIdForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				1, getRandomBytes(MAC_BYTES), signature);
+				1, getRandomBytes(MAC_BYTES), signature, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
 	@Test(expected = FormatException.class)
 	public void testRejectsPreviousMsgIdNullForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(), null,
-				getRandomBytes(MAC_BYTES), signature);
+				getRandomBytes(MAC_BYTES), signature, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -456,7 +532,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testRejectsTooShortMacForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), getRandomBytes(MAC_BYTES - 1),
-				signature);
+				signature, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -464,21 +540,21 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	public void testRejectsTooLongMacForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), getRandomBytes(MAC_BYTES + 1),
-				signature);
+				signature, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
 	@Test(expected = FormatException.class)
 	public void testRejectsInvalidMacForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), null, signature);
+				previousMsgId.getBytes(), null, signature, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
 	@Test(expected = FormatException.class)
 	public void testRejectsTooShortSignatureForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), mac, getRandomBytes(0));
+				previousMsgId.getBytes(), mac, getRandomBytes(0), kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -495,7 +571,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	@Test(expected = FormatException.class)
 	public void testRejectsInvalidSignatureForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), mac, null);
+				previousMsgId.getBytes(), mac, null, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 

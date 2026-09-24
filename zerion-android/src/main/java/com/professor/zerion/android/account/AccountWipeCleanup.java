@@ -6,6 +6,7 @@ import android.os.Build;
 
 import com.professor.zerion.android.vault.VaultManager;
 
+import java.io.File;
 import java.security.KeyStore;
 
 public final class AccountWipeCleanup {
@@ -51,6 +52,7 @@ public final class AccountWipeCleanup {
 		clearAndDeletePrefs(app, PREFS_WIPE_PASSWORD);
 		clearAndDeletePrefs(app, PREFS_EARLY);
 		clearAndDeletePrefs(app, app.getPackageName() + PREFS_EARLY_SUFFIX);
+		clearAndDeleteEveryPrefsFile(app);
 
 		deleteKeyStoreEntry(KS_ALIAS_ZERION_PREFS_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_ZERION_PREFS_MASTER_LEGACY);
@@ -65,6 +67,32 @@ public final class AccountWipeCleanup {
 		if (vaultManager == null) return;
 		try {
 			vaultManager.wipeVault();
+		} catch (Exception ignored) {
+		}
+	}
+
+	/**
+	 * Nothing in the preferences directory should survive a wipe: a file
+	 * that is not on the list above (a legacy plaintext file, a library's
+	 * own file) would still show that the app was used and, at worst, what
+	 * it was used for.
+	 */
+	private static void clearAndDeleteEveryPrefsFile(Context context) {
+		try {
+			File dir = new File(context.getApplicationInfo().dataDir,
+					"shared_prefs");
+			File[] files = dir.listFiles();
+			if (files == null) return;
+			for (File f : files) {
+				String name = f.getName();
+				if (name.endsWith(".xml")) {
+					clearAndDeletePrefs(context,
+							name.substring(0, name.length() - 4));
+				}
+				if (f.exists() && !f.delete()) {
+					f.deleteOnExit();
+				}
+			}
 		} catch (Exception ignored) {
 		}
 	}
