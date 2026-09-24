@@ -120,10 +120,38 @@ public class ZtpTorTransportInboundLimitTest {
 	public void preTagSlotsAreBoundedAndFreedWhenTheTagArrives()
 			throws Exception {
 		for (int i = 0; i < PRE_TAG_SLOTS; i++) open();
-		assertClosedByTheTransport(open());
+		assertBoundReachedEventually();
 		sendTag(sockets.get(0));
 		waitForEntered(1);
 		assertKeptOpen(open());
+	}
+
+	/**
+	 * A connection is accepted on the transport's executor, so opening the
+	 * slots and then one more says nothing about whether the slots were
+	 * taken yet: the extra connection can win the race and be accepted
+	 * into a slot that is still free. What the bound promises is that once
+	 * the slots are taken, a further connection is refused, so the test
+	 * waits for that instead of assuming it has already happened.
+	 */
+	private void assertBoundReachedEventually() throws Exception {
+		long deadline = System.currentTimeMillis() + 10_000;
+		while (true) {
+			Socket beyond = open();
+			beyond.setSoTimeout(500);
+			boolean closed;
+			try {
+				closed = beyond.getInputStream().read() < 0;
+			} catch (SocketTimeoutException e) {
+				closed = false;
+			} catch (IOException e) {
+				closed = true;
+			}
+			if (closed) return;
+			if (System.currentTimeMillis() > deadline) {
+				fail("the pre-tag bound never refused a further connection");
+			}
+		}
 	}
 
 	@Test(timeout = 60_000)
