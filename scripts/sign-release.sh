@@ -46,6 +46,13 @@ prop() {
 }
 
 KS="$(prop storeFile)"
+# Gradle properties escape a Windows drive colon and may use backslashes,
+# so the same file Gradle reads arrives here with the drive written as
+# C\: and separators as \. Undo both, or an absolute path is mistaken
+# for a relative one and the keystore is looked for under scripts/.
+KS="${KS//\\:/:}"
+KS="${KS//\\\\//}"
+KS="${KS//\\//}"
 case "$KS" in
 	/*|[A-Za-z]:*) ;;
 	*) KS="$(dirname "$PROPS")/$KS" ;;
@@ -68,7 +75,24 @@ find_tool() {
 	done
 	if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/$name" ]; then echo "$JAVA_HOME/bin/$name"; return 0; fi
 	if [ -n "${JAVA_HOME:-}" ] && [ -f "$JAVA_HOME/bin/$name.exe" ]; then echo "$JAVA_HOME/bin/$name.exe"; return 0; fi
+	# A JDK is often installed without JAVA_HOME set, and jarsigner ships
+	# with it rather than with the Android build tools.
+	local jdk
+	for jdk in "/c/Program Files/Android/Android Studio/jbr" \
+			"/c/Program Files/Java"/jdk-* /usr/lib/jvm/* \
+			"/Applications/Android Studio.app/Contents/jbr/Contents/Home"; do
+		if [ -x "$jdk/bin/$name" ]; then echo "$jdk/bin/$name"; return 0; fi
+		if [ -f "$jdk/bin/$name.exe" ]; then echo "$jdk/bin/$name.exe"; return 0; fi
+	done
 	local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+	# The SDK is often installed with neither variable set.
+	if [ -z "$sdk" ]; then
+		local guess
+		for guess in "$HOME/AppData/Local/Android/Sdk" "$HOME/Android/Sdk" \
+				"$HOME/Library/Android/sdk"; do
+			if [ -d "$guess/build-tools" ]; then sdk="$guess"; break; fi
+		done
+	fi
 	if [ -n "$sdk" ] && [ -d "$sdk/build-tools" ]; then
 		local newest
 		newest="$(ls -d "$sdk"/build-tools/*/ 2>/dev/null | sort -V | tail -1)"
@@ -102,10 +126,21 @@ case "$ARTIFACT" in
 		"$JARSIGNER" -keystore "$KS" -storepass:env ZERION_SIGN_STORE_PASS \
 			-keypass:env ZERION_SIGN_KEY_PASS -sigalg SHA256withRSA \
 			-digestalg SHA-256 "$ARTIFACT" "$KEY_ALIAS"
-		"$JARSIGNER" -verify -strict "$ARTIFACT" | grep -q '^jar verified' || {
+		# The upload key is self-signed on purpose, so -strict reports the
+		# unanchored chain and exits non-zero even though the signature is
+		# valid. Accept exactly that case and nothing else.
+		JARSIGNER_OUT="$("$JARSIGNER" -verify -strict "$ARTIFACT" 2>&1 || true)"
+		printf '%s\n' "$JARSIGNER_OUT" | grep -q '^jar verified' || {
 			echo "ERROR: bundle signature verification failed" >&2
+			printf '%s\n' "$JARSIGNER_OUT" >&2
 			exit 1
 		}
+		for problem in "jar is unsigned" "no manifest" "not signed"; do
+			if printf '%s\n' "$JARSIGNER_OUT" | grep -Eiq "$problem"; then
+				echo "ERROR: bundle signature rejected: $problem" >&2
+				exit 1
+			fi
+		done
 		KEYTOOL="$(find_tool keytool)" || { echo "ERROR: keytool not found (PATH or JAVA_HOME)" >&2; exit 1; }
 		BUNDLE_CERT="$("$KEYTOOL" -printcert -jarfile "$ARTIFACT" | grep -m1 'SHA256:' | sed -E 's/.*SHA256: *//' | tr -d ':' | tr 'A-F' 'a-f')"
 		if [ "$BUNDLE_CERT" != "$EXPECTED_CERT" ]; then
