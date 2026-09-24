@@ -70,16 +70,19 @@ The recipe below is what the F-Droid build needs on top of the 3.0.3 entry:
 the Debian packages the native build uses, a writable `/build` (the build
 runs as `vagrant` and the path is part of the reproducible output, because
 Monero's logging macros embed source paths), NDK r27b, and a `build:` step
-that produces `libzmonero.so` for both ABIs before Gradle runs. `commit` is
-the release commit; fdroiddata records a resolved hash there, which its own
-update bot writes when `UpdateCheckMode: Tags` detects a new release tag, so
-the tag is the reference this project publishes and `docs/release-manifest.json`
-carries no commit hash of its own.
+that produces `libzmonero.so` for both ABIs before Gradle runs. `commit` must
+be the full forty-character hash of the release commit: the F-Droid maintainers
+ask for the hash and not a tag or branch name there, so `commit: v3.0.12`,
+`commit: master` and `commit: dev` are all wrong in fdroiddata even though
+`UpdateCheckMode: Tags` is what detects the release. The tag is the reference
+this project publishes, which is why `docs/release-manifest.json` carries no
+commit hash of its own, and the immutable per-release manifest attached to the
+GitHub release records the hash the F-Droid entry has to pin.
 
 ```yaml
   - versionName: 3.0.12
     versionCode: 31200
-    commit: <the v3.0.12 commit>
+    commit: <full 40-character hash of the v3.0.12 commit>
     subdir: zerion-android
     sudo:
       - apt-get update
