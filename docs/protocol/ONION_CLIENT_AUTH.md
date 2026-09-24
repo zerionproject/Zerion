@@ -352,16 +352,39 @@ the device check, not logged by the app):
 
 ## 10. iOS port
 
-To reach parity the iOS app must implement sections 2 to 7 with the same
-wire records (`AUTH_OFFER`, `AUTH_READY`, `AUTH_PROBE_SUCCESS`,
-`AUTH_COMMIT`, `AUTH_ROTATE`, `AUTH_ROTATE_ACK`; version 1) in the
-per-contact transport-properties group, advertise `onion3auth=1`, publish a
-detached authorized service over its Tor control connection, store its
-dialing private keys and per-contact state in its encrypted store, re-feed
-Tor after every Tor start, close revoked sessions itself, and apply the
-same monotonic state rules. Until it ships, an iOS contact stays `LEGACY`
-with every Android contact and keeps today's tag-gated open address.
+Implemented (2026-09-24, iOS branch `feature/zwf-wire-port`). The protocol
+lives in `Packages/ZerionProtocol/Sources/ZerionProtocol/OnionAuth/`:
+`OnionAuthRecords` (the same six records, version 1, byte for byte, pinned
+against Android by shared wire vectors), `OnionAuthRecord` and
+`OnionAuthStore` (per-contact state and the device's service record in the
+encrypted preferences, under the same key names Android uses),
+`OnionAuthCommitCheck` (the same nine verdicts) and
+`OnionClientAuthManager` (the state machine, the authorized service, its
+rotation, revocation and the re-feed after every Tor start). The app side is
+`TorOnionServiceControl` (the control commands, including the mandatory
+`Flags=Detach,V3Auth` and the exhaustive reply classification) and
+`OnionAuthCoordinator` (the encrypted store, the record sender over the
+ordinary outgoing path so a record survives an offline contact, and the
+hooks the dial path and the listeners call). The records travel in the
+per-contact group of the `org.zerionproject.core.onionauth` client, computed
+exactly as Android computes it.
+
+Platform differences that do not change the protocol:
+
+- The authorized service forwards to a second local listener
+  (`PermanentListener.authorized`), so an inbound connection is tagged by
+  the service it arrived through, as the Android transport does with its
+  second accept loop.
+- The probe is directional in the same way: the designated dialer's probe is
+  a dial that reached the peer's `onion3a`, the other side's probe is a
+  recognised connection through its own authorized listener. Which side
+  dials is still decided from the addresses both sides publish openly, so
+  substituting the authorized address as the dial target cannot flip that
+  decision.
+- iOS has no database transaction around the state changes; the manager
+  applies them under one lock and serialises every Tor-mutating sequence on
+  a gate, which gives the ordering the Android transaction gives.
 
 Encodings: `ClientAuthV3` takes the 32-byte public key in base32 without
-padding (52 characters); `ONION_CLIENT_AUTH_ADD` takes the 32-byte private
-key in base64.
+padding (52 characters, upper case); `ONION_CLIENT_AUTH_ADD` takes the
+32-byte private key in base64 and the bare 56-character address.
