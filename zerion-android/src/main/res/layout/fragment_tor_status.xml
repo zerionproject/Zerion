@@ -69,6 +69,15 @@
 					android:textSize="12sp"
 					tools:text="@string/tor_hidden_services_active" />
 
+				<TextView
+					android:id="@+id/torAuthSummary"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="4dp"
+					android:textColor="@color/zerion_text_secondary"
+					android:textSize="12sp"
+					tools:text="@string/tor_client_auth_summary" />
+
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/torRestartButton"
 					style="@style/Widget.Material3.Button.TonalButton"

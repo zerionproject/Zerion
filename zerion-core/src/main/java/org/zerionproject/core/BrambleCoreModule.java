@@ -45,6 +45,7 @@ import dagger.Module;
 		LifecycleModule.class,
 		PluginModule.class,
 		PropertiesModule.class,
+		org.zerionproject.core.plugin.tor.auth.OnionAuthModule.class,
 		RecordModule.class,
 		ReliabilityModule.class,
 		RendezvousModule.class,

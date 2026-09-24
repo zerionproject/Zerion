@@ -35,6 +35,16 @@ public interface ZtpConnectionHandler {
 			OutputStream out) throws IOException;
 
 	/**
+	 * As above, stating whether the connection arrived through the
+	 * device's authorized onion service rather than the open one.
+	 */
+	default void handleIncoming(TransportId transportId, InputStream in,
+			OutputStream out, boolean viaAuthorizedService)
+			throws IOException {
+		handleIncoming(transportId, in, out);
+	}
+
+	/**
 	 * Handles the socket on which {@code contactId} was just paired. The
 	 * pairing exchange committed the contact's session inputs on both sides
 	 * before returning, so the same socket carries the first resumed session.

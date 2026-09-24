@@ -6,6 +6,12 @@ public interface TorConstants {
 
 	TransportId ID = new TransportId("org.zerionproject.core.tor");
 	String PROP_ONION_V3 = "onion3";
+
+	/**
+	 * Advertises support for client authorization of the contact address,
+	 * with the protocol version. See docs/protocol/ONION_CLIENT_AUTH.md.
+	 */
+	String PROP_ONION_AUTH_SUPPORTED = "onion3auth";
 	int DEFAULT_SOCKS_PORT = 59060;
 	int DEFAULT_CONTROL_PORT = 59061;
 	int MIN_DYNAMIC_PORT = 59100;

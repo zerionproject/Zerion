@@ -58,6 +58,7 @@ public class TorStatusFragment extends BaseFragment {
 	private TextView torStatusText;
 	private TextView torOnionAddress;
 	private MaterialButton torRestartButton;
+	private TextView torAuthSummary;
 	private int torBootstrap = 0;
 	private boolean torOnionPublished = false;
 	private LinearLayout onionCard;
@@ -95,6 +96,7 @@ public class TorStatusFragment extends BaseFragment {
 		torStatusText = v.findViewById(R.id.torStatusText);
 		torOnionAddress = v.findViewById(R.id.torOnionAddress);
 		torRestartButton = v.findViewById(R.id.torRestartButton);
+		torAuthSummary = v.findViewById(R.id.torAuthSummary);
 		torRestartButton.setOnClickListener(view -> {
 			Toast.makeText(requireContext(), R.string.tor_restarting,
 					Toast.LENGTH_SHORT).show();
@@ -136,6 +138,16 @@ public class TorStatusFragment extends BaseFragment {
 						updateTorStatus(state);
 					}
 				});
+
+		viewModel.getOnionAuthCounts().observe(getViewLifecycleOwner(),
+				counts -> {
+					if (counts == null || counts.length < 3) return;
+					int total = counts[0] + counts[1] + counts[2];
+					torAuthSummary.setText(getString(
+							R.string.tor_client_auth_summary, counts[2],
+							counts[1], total));
+				});
+		viewModel.refreshTorState();
 
 		viewModel.getTorBootstrap().observe(getViewLifecycleOwner(),
 				percentage -> {

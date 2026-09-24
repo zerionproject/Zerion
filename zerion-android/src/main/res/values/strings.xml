@@ -539,6 +539,7 @@
 	<string name="tor_status_bootstrapping">Building circuits (%1$d%%)</string>
 	<string name="tor_restart">Restart Tor</string>
 	<string name="tor_restarting">Restarting Tor…</string>
+	<string name="tor_client_auth_summary">Client authorization: %1$d locked in, %2$d activating, of %3$d contacts</string>
 	<string name="tor_your_onion_label">Your onion address</string>
 	<string name="tor_onion_copy">Copy</string>
 	<string name="tor_onion_copied">Onion address copied</string>

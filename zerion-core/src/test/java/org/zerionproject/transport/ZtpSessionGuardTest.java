@@ -15,7 +15,8 @@ import static org.junit.Assert.assertTrue;
 public class ZtpSessionGuardTest {
 
 	private ZtpConnectionHandlerImpl newHandler() {
-		return new ZtpConnectionHandlerImpl(null, null, null, null);
+		return new ZtpConnectionHandlerImpl(null, null, null, null,
+				new org.zerionproject.core.test.PermissiveOnionClientAuth());
 	}
 
 	@Test

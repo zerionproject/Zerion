@@ -111,8 +111,10 @@ public class ZerionTransportModule {
 	@Singleton
 	ZtpConnectionHandler provideConnectionHandler(
 			ZtpConnectionEstablisher establisher, ZtpSessionProvider provider,
-			ZppConnectionRunner runner, ConnectionRegistry connectionRegistry) {
+			ZppConnectionRunner runner, ConnectionRegistry connectionRegistry,
+			org.zerionproject.core.api.plugin.OnionClientAuthManager
+					onionClientAuthManager) {
 		return new ZtpConnectionHandlerImpl(establisher, provider, runner,
-				connectionRegistry);
+				connectionRegistry, onionClientAuthManager);
 	}
 }

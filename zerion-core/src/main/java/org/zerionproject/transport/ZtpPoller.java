@@ -107,6 +107,15 @@ public class ZtpPoller implements EventListener {
 				REPOLL_INTERVAL_MS, MILLISECONDS);
 	}
 
+	/**
+	 * Dials one contact at once, past any backoff, at the address the
+	 * property manager currently gives for it. Used to probe a contact's
+	 * authorized address; the designated-dialer rule still applies.
+	 */
+	public void dialNow(int contactId) {
+		connect(contactId, true);
+	}
+
 	public void pollNow() {
 		if (!running) return;
 		ioExecutor.execute(() -> {

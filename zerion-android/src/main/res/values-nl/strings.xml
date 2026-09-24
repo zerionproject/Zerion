@@ -974,6 +974,7 @@
 	<string name="tor_status_bootstrapping">Circuits opbouwen (%1$d%%)</string>
 	<string name="tor_restart">Tor herstarten</string>
 	<string name="tor_restarting">Tor wordt herstart…</string>
+	<string name="tor_client_auth_summary">Clientautorisatie: %1$d vergrendeld, %2$d in activering, van %3$d contacten</string>
 	<string name="tor_your_onion_label">Je onion-adres</string>
 	<string name="tor_onion_copy">Kopiëren</string>
 	<string name="tor_onion_copied">Onion-adres gekopieerd</string>

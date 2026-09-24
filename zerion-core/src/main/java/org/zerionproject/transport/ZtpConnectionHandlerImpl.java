@@ -44,6 +44,8 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	private final ZtpSessionProvider sessionProvider;
 	private final ZppConnectionRunner connectionRunner;
 	private final ConnectionRegistry connectionRegistry;
+	private final org.zerionproject.core.api.plugin.OnionClientAuthManager
+			inboundPolicy;
 	private final SecureRandom random = new SecureRandom();
 
 	/**
@@ -61,7 +63,10 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	public ZtpConnectionHandlerImpl(ZtpConnectionEstablisher establisher,
 			ZtpSessionProvider sessionProvider,
 			ZppConnectionRunner connectionRunner,
-			ConnectionRegistry connectionRegistry) {
+			ConnectionRegistry connectionRegistry,
+			org.zerionproject.core.api.plugin.OnionClientAuthManager
+					inboundPolicy) {
+		this.inboundPolicy = inboundPolicy;
 		this.establisher = establisher;
 		this.sessionProvider = sessionProvider;
 		this.connectionRunner = connectionRunner;
@@ -117,11 +122,34 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	@Override
 	public void handleIncoming(TransportId transportId, InputStream in,
 			OutputStream out) throws IOException {
+		handleIncoming(transportId, in, out, false);
+	}
+
+	/**
+	 * A recognised contact that has committed to client authorization is
+	 * refused over the open service: the connection is closed before any
+	 * session runs, so the open address is not a way around the
+	 * authorized one.
+	 */
+	@Override
+	public void handleIncoming(TransportId transportId, InputStream in,
+			OutputStream out, boolean viaAuthorizedService)
+			throws IOException {
 		BufferedInputStream bufferedIn = new BufferedInputStream(in);
 		byte[] tag = peekTag(bufferedIn);
 		int contactId = sessionProvider.recogniseIncoming(tag);
 		if (contactId < 0) {
 			throw new FormatException();
+		}
+		if (org.zerionproject.core.api.plugin.TorConstants.ID
+				.equals(transportId)) {
+			ContactId c = new ContactId(contactId);
+			if (!inboundPolicy.acceptsInbound(c, viaAuthorizedService)) {
+				throw new FormatException();
+			}
+			if (viaAuthorizedService) {
+				inboundPolicy.inboundViaAuthorizedService(c);
+			}
 		}
 		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
 		if (stored == null) throw new FormatException();

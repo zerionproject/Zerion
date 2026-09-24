@@ -103,6 +103,22 @@ public class ZtpTorTransport implements OverlayTransport {
 	@Nullable
 	private volatile ServerSocket serverSocket;
 	private volatile int localPort;
+	@Nullable
+	private volatile ServerSocket authorizedServerSocket;
+	private volatile int authorizedLocalPort;
+	@Nullable
+	private volatile Runnable torRestartedListener;
+	@Nullable
+	private volatile DialListener dialListener;
+
+	/** Told which onion address a dial for a contact reached. */
+	public interface DialListener {
+		void dialSucceeded(int contactId, String onion);
+	}
+
+	public void setDialListener(@Nullable DialListener listener) {
+		this.dialListener = listener;
+	}
 
 	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
 			SocketFactory fastSocketFactory, Executor ioExecutor,
@@ -155,7 +171,30 @@ public class ZtpTorTransport implements OverlayTransport {
 			throw e;
 		}
 		startAccepting(0);
+		startAcceptingAuthorized();
 		return publishHiddenService(localPort, REMOTE_ONION_PORT, privateKey);
+	}
+
+	/**
+	 * The listener behind the authorized onion service. It is a separate
+	 * local port so that a connection can be told apart by the service it
+	 * came through, which the inbound policy needs.
+	 */
+	void startAcceptingAuthorized() throws IOException {
+		ServerSocket ss = new ServerSocket();
+		ss.bind(new InetSocketAddress("127.0.0.1", 0));
+		this.authorizedServerSocket = ss;
+		this.authorizedLocalPort = ss.getLocalPort();
+		ioExecutor.execute(() -> acceptLoop(ss, true));
+	}
+
+	public int getAuthorizedLocalPort() {
+		return authorizedLocalPort;
+	}
+
+	/** Called after Tor was restarted and the services republished. */
+	public void setTorRestartedListener(@Nullable Runnable listener) {
+		this.torRestartedListener = listener;
 	}
 
 	/**
@@ -286,6 +325,8 @@ public class ZtpTorTransport implements OverlayTransport {
 					s.remotePort, s.privateKey);
 			if (hs == null) throw new IOException("republish failed");
 		}
+		Runnable listener = torRestartedListener;
+		if (listener != null) listener.run();
 	}
 
 	void startAccepting(int port) throws IOException {
@@ -293,10 +334,10 @@ public class ZtpTorTransport implements OverlayTransport {
 		ss.bind(new InetSocketAddress("127.0.0.1", port));
 		this.serverSocket = ss;
 		this.localPort = ss.getLocalPort();
-		ioExecutor.execute(() -> acceptLoop(ss));
+		ioExecutor.execute(() -> acceptLoop(ss, false));
 	}
 
-	private void acceptLoop(ServerSocket ss) {
+	private void acceptLoop(ServerSocket ss, boolean authorized) {
 		while (!ss.isClosed()) {
 			Socket socket;
 			try {
@@ -315,11 +356,11 @@ public class ZtpTorTransport implements OverlayTransport {
 				closeQuietly(socket);
 				continue;
 			}
-			ioExecutor.execute(() -> handleAccepted(socket));
+			ioExecutor.execute(() -> handleAccepted(socket, authorized));
 		}
 	}
 
-	private void handleAccepted(Socket socket) {
+	private void handleAccepted(Socket socket, boolean authorized) {
 		if (!inboundLimiter.tryAcquire()) {
 			closeQuietly(socket);
 			return;
@@ -350,7 +391,7 @@ public class ZtpTorTransport implements OverlayTransport {
 					socket.getInputStream(), TAG_LENGTH, onTagDelivered,
 					clock, TAG_READ_TIMEOUT_MS);
 			handler.handleIncoming(TorConstants.ID, in,
-					socket.getOutputStream());
+					socket.getOutputStream(), authorized);
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
@@ -444,6 +485,8 @@ public class ZtpTorTransport implements OverlayTransport {
 			return DIAL_NOT_CONNECTED;
 		}
 		long connectedAt = System.currentTimeMillis();
+		DialListener listener = dialListener;
+		if (listener != null) listener.dialSucceeded(contactId, peerOnion);
 		try {
 			configureSocket(socket);
 			handler.handleOutgoing(TorConstants.ID, contactId,
@@ -562,6 +605,8 @@ public class ZtpTorTransport implements OverlayTransport {
 		processWatch.setListener(null);
 		ServerSocket ss = serverSocket;
 		if (ss != null) closeQuietly(ss);
+		ServerSocket ass = authorizedServerSocket;
+		if (ass != null) closeQuietly(ass);
 		published.clear();
 		tor.stop();
 	}

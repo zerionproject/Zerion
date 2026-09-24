@@ -304,7 +304,8 @@ public class ZtpConnectionHandlerTest {
 				crypto, ratchet, mode3FullRatchet, sessionFactory,
 				new ZwfStreamCounter(new MemStore()), cipherFactory());
 		return new ZtpConnectionHandlerImpl(establisher, provider, runner,
-				noOpConnectionRegistry());
+				noOpConnectionRegistry(),
+				new org.zerionproject.core.test.PermissiveOnionClientAuth());
 	}
 
 	private static void runBoth(Endpoint alice, Endpoint bob,
