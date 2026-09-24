@@ -104,6 +104,14 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			new MutableLiveData<>();
 
 	private final B4OnionRotation b4OnionRotation;
+	private final org.zerionproject.core.api.contact.ContactManager
+			contactManager;
+	private final org.zerionproject.core.api.plugin.OnionClientAuthManager
+			onionClientAuthManager;
+
+	/** Contacts at LEGACY, negotiating (or confirmed), and AUTH_REQUIRED. */
+	private final MutableLiveData<int[]> onionAuthCounts =
+			new MutableLiveData<>(new int[] {0, 0, 0});
 
 	@Inject
 	PluginViewModel(Application app, @DatabaseExecutor Executor dbExecutor,
@@ -113,8 +121,13 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			NetworkManager networkManager,
 			TransportPropertyManager transportPropertyManager,
 			B4OnionRotation b4OnionRotation,
-			ConnectionRegistry connectionRegistry) {
+			ConnectionRegistry connectionRegistry,
+			org.zerionproject.core.api.contact.ContactManager contactManager,
+			org.zerionproject.core.api.plugin.OnionClientAuthManager
+					onionClientAuthManager) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
+		this.contactManager = contactManager;
+		this.onionClientAuthManager = onionClientAuthManager;
 		this.app = app;
 		this.settingsManager = settingsManager;
 		this.pluginManager = pluginManager;
@@ -222,6 +235,38 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	public void refreshTorState() {
 		loadLocalOnion();
 		loadRotationState();
+		loadOnionAuthCounts();
+	}
+
+	LiveData<int[]> getOnionAuthCounts() {
+		return onionAuthCounts;
+	}
+
+	private void loadOnionAuthCounts() {
+		runOnDbThread(() -> {
+			try {
+				int[] counts = new int[3];
+				for (org.zerionproject.core.api.contact.Contact c :
+						contactManager.getContacts()) {
+					switch (onionClientAuthManager.getState(c.getId())) {
+						case AUTH_REQUIRED:
+							counts[2]++;
+							break;
+						case AUTH_NEGOTIATING:
+						case AUTH_CONFIRMED:
+							counts[1]++;
+							break;
+						case REVOKED:
+							break;
+						default:
+							counts[0]++;
+					}
+				}
+				onionAuthCounts.postValue(counts);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 
 	private void loadLocalOnion() {

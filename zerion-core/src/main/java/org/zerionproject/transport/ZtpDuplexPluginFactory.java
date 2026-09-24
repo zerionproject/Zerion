@@ -47,6 +47,9 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	private final CryptoComponent crypto;
 	private final Provider<B4OnionRotation> b4OnionRotation;
 	private final EventBus eventBus;
+	private final TorOnionServiceControl onionServiceControl;
+	private final org.zerionproject.core.plugin.tor.auth
+			.OnionClientAuthManagerImpl onionClientAuth;
 
 	@Inject
 	public ZtpDuplexPluginFactory(@IoExecutor Executor ioExecutor,
@@ -54,7 +57,12 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 			SocketFactory socketFactory, TorWrapper tor,
 			Provider<ZtpTorTransport> transport,
 			Provider<ZtpPollerFactory> pollerFactory, CryptoComponent crypto,
-			Provider<B4OnionRotation> b4OnionRotation, EventBus eventBus) {
+			Provider<B4OnionRotation> b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth) {
+		this.onionServiceControl = onionServiceControl;
+		this.onionClientAuth = onionClientAuth;
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
 		this.socketFactory = socketFactory;
@@ -83,6 +91,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 		return new ZtpDuplexPlugin(ioExecutor, wakefulIoExecutor, socketFactory,
 				tor, torTransport, poller,
 				new TorRendezvousCryptoImpl(crypto), callback,
-				b4OnionRotation.get(), eventBus);
+				b4OnionRotation.get(), eventBus, onionServiceControl,
+				onionClientAuth);
 	}
 }

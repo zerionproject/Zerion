@@ -53,20 +53,12 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 			"IsolateSOCKSAuth", "IsolateClientAddr", "IsolateDestAddr"
 	};
 
-	private static final String COOKIE_FILE = ".tor/control_auth_cookie";
-	private static final int COOKIE_BYTES = 32;
-	private static final int CONNECT_TIMEOUT_MS = 5_000;
-	private static final int READ_TIMEOUT_MS = 15_000;
-
-	interface ControlConnection extends Closeable {
-
-		/** Sends one command and returns every reply line, in order. */
-		List<String> send(String command) throws IOException;
+	interface ControlConnection extends TorControl.Connection {
 	}
 
 	interface ControlConnectionFactory {
 
-		ControlConnection open() throws IOException;
+		TorControl.Connection open() throws IOException;
 	}
 
 	private final File torDirectory;
@@ -78,7 +70,7 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	public TorPrivacyConfiguratorImpl(@TorDirectory File torDirectory,
 			@TorSocksPath File socksPath, @TorControlPort int controlPort) {
 		this(torDirectory, socksPath,
-				() -> new SocketControlConnection(controlPort));
+				() -> new TorControl.SocketConnection(controlPort));
 	}
 
 	TorPrivacyConfiguratorImpl(File torDirectory, File socksPath,
@@ -101,8 +93,8 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 	@Override
 	public void applyAndVerify() throws IOException {
 		prepareSocketDirectory();
-		byte[] cookie = readCookie();
-		try (ControlConnection c = connectionFactory.open()) {
+		byte[] cookie = TorControl.readCookie(torDirectory);
+		try (TorControl.Connection c = connectionFactory.open()) {
 			requireOk(c.send("AUTHENTICATE "
 					+ StringUtils.toHexString(cookie)), "authentication");
 			requireOk(c.send("SETCONF SocksPort=\"" + listener + " "
@@ -164,26 +156,9 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 				PosixFilePermission.OWNER_EXECUTE));
 	}
 
-	private byte[] readCookie() throws IOException {
-		File f = new File(torDirectory, COOKIE_FILE);
-		if (!f.isFile()) throw new IOException("Tor control cookie missing");
-		byte[] cookie = new byte[COOKIE_BYTES];
-		try (InputStream in = new FileInputStream(f)) {
-			int off = 0;
-			while (off < COOKIE_BYTES) {
-				int r = in.read(cookie, off, COOKIE_BYTES - off);
-				if (r < 0) throw new IOException("Tor control cookie short");
-				off += r;
-			}
-		}
-		return cookie;
-	}
-
 	private static void requireOk(List<String> reply, String what)
 			throws IOException {
-		if (reply.isEmpty() || !reply.get(reply.size() - 1).startsWith("250")) {
-			throw new IOException("Tor control " + what + " failed");
-		}
+		TorControl.requireOk(reply, what);
 	}
 
 	/**
@@ -256,52 +231,4 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		return line.trim();
 	}
 
-	/** Plain-text Tor control protocol over a loopback socket. */
-	private static final class SocketControlConnection
-			implements ControlConnection {
-
-		private final Socket socket;
-		private final BufferedReader in;
-		private final Writer out;
-
-		SocketControlConnection(int controlPort) throws IOException {
-			socket = new Socket();
-			socket.connect(new InetSocketAddress("127.0.0.1", controlPort),
-					CONNECT_TIMEOUT_MS);
-			socket.setSoTimeout(READ_TIMEOUT_MS);
-			in = new BufferedReader(new InputStreamReader(
-					socket.getInputStream(), StandardCharsets.US_ASCII));
-			out = new OutputStreamWriter(socket.getOutputStream(),
-					StandardCharsets.US_ASCII);
-		}
-
-		@Override
-		public List<String> send(String command) throws IOException {
-			out.write(command);
-			out.write("\r\n");
-			out.flush();
-			List<String> lines = new ArrayList<>();
-			while (true) {
-				String line = in.readLine();
-				if (line == null) throw new IOException("control closed");
-				lines.add(line);
-				if (line.length() < 4) throw new IOException("bad reply");
-				char sep = line.charAt(3);
-				if (sep == '+') {
-					String data;
-					while ((data = in.readLine()) != null && !data.equals(".")) {
-						lines.add(data);
-					}
-					if (data == null) throw new IOException("control closed");
-				} else if (sep == ' ') {
-					return lines;
-				}
-			}
-		}
-
-		@Override
-		public void close() throws IOException {
-			socket.close();
-		}
-	}
 }

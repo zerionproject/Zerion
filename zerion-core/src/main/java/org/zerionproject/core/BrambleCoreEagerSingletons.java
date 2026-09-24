@@ -38,6 +38,9 @@ public interface BrambleCoreEagerSingletons {
 
 	void inject(PropertiesModule.EagerSingletons init);
 
+	void inject(org.zerionproject.core.plugin.tor.auth.OnionAuthModule
+			.EagerSingletons init);
+
 	void inject(RendezvousModule.EagerSingletons init);
 
 	void inject(TransportKeyAgreementModule.EagerSingletons init);
@@ -62,6 +65,8 @@ public interface BrambleCoreEagerSingletons {
 			c.inject(new RendezvousModule.EagerSingletons());
 			c.inject(new PluginModule.EagerSingletons());
 			c.inject(new PropertiesModule.EagerSingletons());
+			c.inject(new org.zerionproject.core.plugin.tor.auth.OnionAuthModule
+					.EagerSingletons());
 			c.inject(new TransportKeyAgreementModule.EagerSingletons());
 			c.inject(new TransportModule.EagerSingletons());
 			c.inject(new ValidationModule.EagerSingletons());
