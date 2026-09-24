@@ -1,7 +1,7 @@
 package org.zerionproject.transport;
 
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.IoExecutor;

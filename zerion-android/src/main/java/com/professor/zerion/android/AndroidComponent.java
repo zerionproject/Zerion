@@ -57,8 +57,8 @@ import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.zerionproject.app.api.messaging.VoiceSignalFactory;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.test.TestDataCreator;
-import org.briarproject.onionwrapper.CircumventionProvider;
-import org.briarproject.onionwrapper.LocationUtils;
+import org.zerionproject.tor.CircumventionProvider;
+import org.zerionproject.tor.LocationUtils;
 
 import java.util.concurrent.Executor;
 

@@ -1,8 +1,8 @@
 package org.zerionproject.transport;
 
-import org.briarproject.onionwrapper.TorWrapper;
-import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
-import org.briarproject.onionwrapper.TorWrapper.TorState;
+import org.zerionproject.tor.TorWrapper;
+import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWrapper.TorState;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -109,6 +109,8 @@ public class ZtpTorTransport implements OverlayTransport {
 	@Nullable
 	private volatile Runnable torRestartedListener;
 	@Nullable
+	private volatile Runnable torReconfiguredListener;
+	@Nullable
 	private volatile DialListener dialListener;
 
 	/** Told which onion address a dial for a contact reached. */
@@ -195,6 +197,27 @@ public class ZtpTorTransport implements OverlayTransport {
 	/** Called after Tor was restarted and the services republished. */
 	public void setTorRestartedListener(@Nullable Runnable listener) {
 		this.torRestartedListener = listener;
+	}
+
+	/**
+	 * Called after every change to the configuration of the running Tor
+	 * process, such as the network being disabled or enabled or the
+	 * bridges being re-applied. Tor drops the client credentials it was
+	 * given over the control port on every such change, so the listener
+	 * is where they are installed again.
+	 */
+	public void setTorReconfiguredListener(@Nullable Runnable listener) {
+		this.torReconfiguredListener = listener;
+	}
+
+	private void torReconfigured() {
+		if (!running.get()) return;
+		Runnable listener = torReconfiguredListener;
+		if (listener == null) return;
+		try {
+			listener.run();
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	/**
@@ -553,6 +576,7 @@ public class ZtpTorTransport implements OverlayTransport {
 				tor.enableNetwork(false);
 			} catch (IOException e) {
 			}
+			torReconfigured();
 			return;
 		}
 		if (enabled && isNetworkDegraded() && restartNetworkNow()) return;
@@ -560,6 +584,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			tor.enableNetwork(enabled);
 		} catch (IOException e) {
 		}
+		torReconfigured();
 	}
 
 	/**
@@ -597,6 +622,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			if (bridgesApplied()) tor.enableNetwork(true);
 		} catch (IOException e) {
 		}
+		torReconfigured();
 		return true;
 	}
 

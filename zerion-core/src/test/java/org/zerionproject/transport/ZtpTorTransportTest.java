@@ -1,8 +1,8 @@
 package org.zerionproject.transport;
 
-import org.briarproject.onionwrapper.CircumventionProvider;
-import org.briarproject.onionwrapper.LocationUtils;
-import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.tor.CircumventionProvider;
+import org.zerionproject.tor.LocationUtils;
+import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.TransportId;

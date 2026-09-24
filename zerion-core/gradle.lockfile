@@ -36,7 +36,6 @@ org.bitlet:weupnp:0.1.4=compileClasspath,runtimeClasspath,testCompileClasspath,t
 org.bouncycastle:bcprov-jdk15to18:1.84=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.briarproject:jtorctl:0.5=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.briarproject:null-safety:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-org.briarproject:onionwrapper-core:0.1.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.briarproject:socks-socket:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.checkerframework:checker-compat-qual:2.5.5=annotationProcessor,testAnnotationProcessor
 org.checkerframework:checker-qual:3.41.0=annotationProcessor,testAnnotationProcessor

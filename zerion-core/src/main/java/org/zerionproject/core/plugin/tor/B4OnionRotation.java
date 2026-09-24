@@ -15,7 +15,7 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.crypto.FieldEncryption;
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;

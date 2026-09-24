@@ -30,8 +30,8 @@ import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
-import org.briarproject.onionwrapper.CircumventionProvider;
-import org.briarproject.onionwrapper.LocationUtils;
+import org.zerionproject.tor.CircumventionProvider;
+import org.zerionproject.tor.LocationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;

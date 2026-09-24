@@ -746,6 +746,38 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		return keys;
 	}
 
+	/**
+	 * After every reconfiguration of the running Tor process: only the
+	 * credentials, since the ephemeral services survive a reconfiguration
+	 * and the credentials do not. Runs under the service lock so that a
+	 * revocation in flight cannot be undone by a re-installation that read
+	 * the record before the revocation was committed. A record that has no
+	 * credential yet, or is legacy or revoked, installs nothing.
+	 */
+	@Override
+	public void refeedCredentials() {
+		ioExecutor.execute(() -> {
+			OnionServiceControl ctl = control();
+			if (ctl == null) return;
+			synchronized (serviceLock) {
+				try {
+					for (OnionAuthRecord r : db.transactionWithResult(true,
+							store::loadAll)) {
+						if (r.state == LEGACY || r.state == REVOKED) continue;
+						if (r.peerOnion == null || r.dialPrivateKey == null) {
+							continue;
+						}
+						try {
+							ctl.addClientKey(r.peerOnion, r.dialPrivateKey);
+						} catch (IOException ignored) {
+						}
+					}
+				} catch (DbException | RuntimeException ignored) {
+				}
+			}
+		});
+	}
+
 	/** After every Tor start: service and credentials from persisted state. */
 	private void refeedTor() {
 		ioExecutor.execute(() -> {

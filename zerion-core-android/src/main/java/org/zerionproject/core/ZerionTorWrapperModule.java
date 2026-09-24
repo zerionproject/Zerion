@@ -3,7 +3,9 @@ package org.zerionproject.core;
 import android.app.Application;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
-import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.tor.TorBinaryPins;
+import org.zerionproject.tor.TorBinaryVerifier;
+import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.TorControlPort;
@@ -22,7 +24,7 @@ import static org.zerionproject.core.util.AndroidUtils.getSupportedArchitectures
 
 /**
  * Provides the Android Tor wrapper for the native transport. It lives in the
- * Android Bramble module because that is where the {@code AndroidTorWrapper}
+ * Android core module because that is where the {@code AndroidTorWrapper}
  * implementation is on the classpath; the rest of the native transport wiring
  * consumes only the {@link TorWrapper} interface.
  */
@@ -40,7 +42,16 @@ public class ZerionTorWrapperModule {
 			org.zerionproject.transport.TorProcessWatch processWatch) {
 		return new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
 				eventExecutor, architecture(), torDirectory, torSocksPort,
-				torControlPort, processWatch);
+				torControlPort, shippedPins(), processWatch);
+	}
+
+	/**
+	 * The pins are read at every start rather than once here, so that a
+	 * build whose pin file is missing fails to start Tor instead of failing
+	 * to construct the application.
+	 */
+	private static TorBinaryVerifier shippedPins() {
+		return (tor, lyrebird) -> TorBinaryPins.shipped().verify(tor, lyrebird);
 	}
 
 	@Provides

@@ -1,9 +1,9 @@
 package org.zerionproject.transport;
 
-import org.briarproject.onionwrapper.CircumventionProvider;
-import org.briarproject.onionwrapper.CircumventionProvider.BridgeType;
-import org.briarproject.onionwrapper.LocationUtils;
-import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.tor.CircumventionProvider;
+import org.zerionproject.tor.CircumventionProvider.BridgeType;
+import org.zerionproject.tor.LocationUtils;
+import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;

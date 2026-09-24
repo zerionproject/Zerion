@@ -1,10 +1,10 @@
 package org.zerionproject.transport;
 
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.briarproject.onionwrapper.TorWrapper;
-import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
-import org.briarproject.onionwrapper.TorWrapper.Observer;
-import org.briarproject.onionwrapper.TorWrapper.TorState;
+import org.zerionproject.tor.TorWrapper;
+import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWrapper.Observer;
+import org.zerionproject.tor.TorWrapper.TorState;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.data.BdfList;
@@ -202,6 +202,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		callback.mergeLocalProperties(props);
 		transport.setDialListener((contactId, onion) -> onionClientAuth
 				.dialSucceeded(new ContactId(contactId), onion));
+		transport.setTorReconfiguredListener(
+				onionClientAuth::refeedCredentials);
 		onionClientAuth.attachTor(onionServiceControl,
 				transport.getAuthorizedLocalPort(),
 				c -> poller.dialNow(c.getInt()));
@@ -251,6 +253,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	public void stop() throws PluginException {
 		onionClientAuth.detachTor();
 		transport.setTorRestartedListener(null);
+		transport.setTorReconfiguredListener(null);
 		transport.setDialListener(null);
 		b4OnionRotation.shutdown();
 		poller.stop();

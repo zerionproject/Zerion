@@ -14,7 +14,7 @@ import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.crypto.FieldEncryption;
 import org.zerionproject.core.test.DbExpectations;
 import org.zerionproject.core.test.BrambleMockTestCase;
-import org.briarproject.onionwrapper.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 import org.jmock.Expectations;
 import org.junit.Test;
 

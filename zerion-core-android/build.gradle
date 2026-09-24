@@ -1,34 +1,92 @@
 apply plugin: 'com.android.library'
 
-/* The Tor and lyrebird libraries are unpacked from their verified jars into
-   the build directory, never into the source tree, so nothing another process
-   drops next to the sources can be packaged: the directory is emptied before
-   each unpack and only the jars' own .so files land in it. */
+/* The Tor and lyrebird executables are unpacked from their jars into the
+   build directory, never into the source tree, and only for the ABIs the
+   pin file lists. Before they can be merged into the library every file is
+   verified against the SHA-256 recorded in
+   src/main/resources/org/zerionproject/tor/binaries.sha256, the same file
+   the app reads at run time to verify the executable it is about to start.
+   A file that is missing, that does not match, or that is not listed fails
+   the build. The check does not depend on Gradle dependency verification,
+   so it also holds in builds that remove the verification metadata. */
 def torBinariesDir = "$buildDir/tor-jni"
+def torPinFile = file('src/main/resources/org/zerionproject/tor/binaries.sha256')
+
+def readTorPins = { ->
+	def pins = [:]
+	torPinFile.eachLine { line ->
+		def t = line.trim()
+		if (t.isEmpty() || t.startsWith('#')) return
+		def parts = t.split(/\s+/)
+		if (parts.length != 2 || !(parts[1] ==~ /[0-9a-f]{64}/)) {
+			throw new GradleException("Malformed Tor binary pin: ${line}")
+		}
+		pins[parts[0]] = parts[1]
+	}
+	if (pins.isEmpty()) throw new GradleException('Tor binary pin file is empty')
+	pins
+}
+
+def sha256Of = { File f ->
+	def md = java.security.MessageDigest.getInstance('SHA-256')
+	f.withInputStream { is ->
+		byte[] buf = new byte[65536]; int n
+		while ((n = is.read(buf)) != -1) md.update(buf, 0, n)
+	}
+	md.digest().collect { String.format('%02x', it) }.join()
+}
 
 task unpackTorBinaries {
+	inputs.file torPinFile
+	outputs.dir torBinariesDir
 	doLast {
+		def abis = readTorPins().keySet().collect { it.substring(0, it.indexOf('/')) }.unique()
 		delete torBinariesDir
 		configurations.releaseRuntimeClasspath.each { file ->
 			if (file.name.startsWith('tor-android') || file.name.startsWith('lyrebird-android')) {
 				copy {
 					from zipTree(file)
 					into torBinariesDir
-					include '**/*.so'
+					include abis.collect { "${it}/*.so" }
 				}
 			}
 		}
 	}
 }
 
-tasks.matching { it.name == 'mergeReleaseJniLibFolders' }.configureEach {
+task verifyTorNativeArtifacts {
+	group = 'verification'
+	description = 'Verifies the unpacked Tor and lyrebird executables against the pinned SHA-256 values.'
 	dependsOn unpackTorBinaries
+	inputs.file torPinFile
+	inputs.dir torBinariesDir
+	doLast {
+		def pins = readTorPins()
+		def root = file(torBinariesDir)
+		pins.each { rel, want ->
+			def lib = new File(root, rel)
+			if (!lib.isFile()) throw new GradleException("Missing Tor executable ${rel}")
+			def got = sha256Of(lib)
+			if (got != want) {
+				throw new GradleException("Tor executable SHA-256 mismatch for ${rel}: expected ${want}, got ${got} (a deliberate upgrade updates binaries.sha256 together with the dependency version)")
+			}
+		}
+		def stray = []
+		root.eachFileRecurse(groovy.io.FileType.FILES) { f ->
+			def rel = root.toPath().relativize(f.toPath()).toString().replace('\\', '/')
+			if (!pins.containsKey(rel)) stray << rel
+		}
+		if (!stray.isEmpty()) throw new GradleException("Unpinned file among the Tor executables: ${stray}")
+	}
 }
 
-tasks.matching { it.name == 'mergeDebugJniLibFolders' }.configureEach {
-	dependsOn unpackTorBinaries
+tasks.matching { it.name.startsWith('merge') && it.name.endsWith('JniLibFolders') }.configureEach {
+	dependsOn verifyTorNativeArtifacts
 }
 
+tasks.matching { it.name == 'check' }.configureEach {
+	dependsOn verifyTorNativeArtifacts
+}
 android {
 
 	sourceSets {
@@ -69,7 +127,6 @@ dependencies {
 	implementation 'androidx.annotation:annotation:1.5.0'
 	implementation 'net.zetetic:sqlcipher-android:4.13.0'
 	implementation 'androidx.sqlite:sqlite:2.4.0'
-	implementation "org.briarproject:onionwrapper-android:$onionwrapper_version"
 	implementation "org.briarproject:tor-android:$tor_version"
 	implementation "org.briarproject:lyrebird-android:$lyrebird_version"
 	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
