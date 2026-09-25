@@ -281,10 +281,11 @@ introduction points until the descriptor expires; those lead to a service
 being deleted and, at the app layer, to a tag that is no longer recognised.
 Regression tests cover both the closed sessions and the refused tag.
 
-## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12)
+## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12, re-confirmed on 0.4.9.13)
 
-Observed on 2026-09-24 against the Tor 0.4.9.12 that the app ships, on the
-Moto, over the app's own authenticated control port (replies observed by
+Observed on 2026-09-24 against the Tor 0.4.9.12 that 3.0.12 ships and on
+2026-09-25 against the Tor 0.4.9.13 built in tree for the next release, both
+on the Moto, over the app's own authenticated control port (replies observed by
 the device check, not logged by the app):
 
 - `ADD_ONION NEW:ED25519-V3 Flags=Detach,V3Auth ClientAuthV3=<key>

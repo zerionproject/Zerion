@@ -27,9 +27,9 @@ import static org.junit.Assert.fail;
 public class TorBinaryPinsTest {
 
 	private static final String TOR_ARM64 =
-			"bf36260486d44c2745fda8e4448668a1ee758db0aa79156299979916b03124a3";
+			"29eb99c78c803cdada5948c193308544f5c30414032c3334c3a83a124fcb9426";
 	private static final String TOR_ARM32 =
-			"e28eee1ce24a54c8518a5ea91de9365f7db3ea0a9c67a6c2c039b6a85e632485";
+			"418976d0958c8b422d71126e9fe34986657b96672b4fe6059107e41a0f7b8eaa";
 	private static final String LYREBIRD_ARM64 =
 			"34e258346e12648b7206941cd4af790ad61ca4c663e47426f3631ee98870dc5c";
 	private static final String LYREBIRD_ARM32 =

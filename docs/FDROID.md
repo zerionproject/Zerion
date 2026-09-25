@@ -46,8 +46,14 @@ Local / release build:
 ```
 # for each ABI, build the .so into zerion-android/src/main/jniLibs/<abi>/
 #   (see packaging/monero-android/Dockerfile for the exact pinned steps)
+# build the Tor executable into packaging/tor-android/out/<abi>/
+#   (packaging/tor-android/build-tor-android.sh, see its PROVENANCE.md; the
+#   Gradle build refuses to package without it and verifies its hash)
 ./gradlew :zerion-android:assembleOfficialRelease -Pfdroid
 ```
+
+Neither native artifact is tracked in git; both are build outputs that the
+pin gates verify, so a checkout without them cannot produce an APK.
 
 ## Notes for the F-Droid recipe
 
@@ -55,6 +61,8 @@ Local / release build:
   sources above into `zerion-android/src/main/jniLibs/<abi>/` before the Gradle
   step (a `prebuild`/`build` step replicating the Dockerfile, using F-Droid's
   NDK r27b).
+- Build the Tor executable the same way with `packaging/tor-android/fdroid-build.sh`
+  (the recipe's second `build:` line).
 - Then run the reproducible app build: `assembleOfficialRelease -Pfdroid`
   (`-Pfdroid` strips VCS/timestamp inputs for a reproducible APK).
 - `verify-monero-native.gradle` pins the expected `.so` SHA-256. A from-source
@@ -88,7 +96,7 @@ GitHub release records the hash the F-Droid entry has to pin.
       - apt-get update
       - apt-get install -y --no-install-recommends ca-certificates curl unzip git
         build-essential cmake pkg-config libtool automake autoconf gperf python3
-        file xz-utils
+        file xz-utils make patch perl
       - mkdir -p /build
       - chown vagrant:vagrant /build
     gradle:
@@ -97,8 +105,11 @@ GitHub release records the hash the F-Droid entry has to pin.
       - reproducible-apk-tools@v0.3.0
     rm:
       - gradle/verification-metadata.xml
-    build: ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh >
-      /tmp/libzmonero-build.log 2>&1 || (tail -n 300 /tmp/libzmonero-build.log; false)
+    build:
+      - ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh >
+        /tmp/libzmonero-build.log 2>&1 || (tail -n 300 /tmp/libzmonero-build.log; false)
+      - ../packaging/tor-android/fdroid-build.sh > /tmp/libtor-build.log 2>&1 ||
+        (tail -n 300 /tmp/libtor-build.log; false)
     ndk: r27b
     gradleprops:
       - fdroid
@@ -132,6 +143,8 @@ clones Monero at the pinned commit. If the F-Droid maintainers prefer declared
 inputs, the same archives can be supplied as srclibs; note that git checkouts
 of Boost, OpenSSL and libsodium are not byte-identical to the release
 tarballs, so the pinned hashes would have to be re-recorded from that build.
+
+The Tor executable is built the same way by `packaging/tor-android/fdroid-build.sh`: the Tor release tag, libevent, OpenSSL and zlib are cloned at pinned commits that the script asserts, NDK r29 is downloaded and verified by hash, and the two `libtor.so` files land in `packaging/tor-android/out/`, where the Gradle build reads them and verifies them against `binaries.sha256` before packaging. The pins, the recorded hashes and the reproduction evidence are in `packaging/tor-android/PROVENANCE.md`.
 
 ## Reproducibility of the shipped library
 

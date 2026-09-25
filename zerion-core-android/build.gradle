@@ -1,8 +1,10 @@
 apply plugin: 'com.android.library'
 
-/* The Tor and lyrebird executables are unpacked from their jars into the
-   build directory, never into the source tree, and only for the ABIs the
-   pin file lists. Before they can be merged into the library every file is
+/* The Tor executable is built from pinned source by packaging/tor-android
+   (see its PROVENANCE.md) and committed under packaging/tor-android/out; the
+   lyrebird executable is unpacked from its verified jar. Both land in the
+   build directory, never in the source tree, and only for the ABIs the pin
+   file lists. Before they can be merged into the library every file is
    verified against the SHA-256 recorded in
    src/main/resources/org/zerionproject/tor/binaries.sha256, the same file
    the app reads at run time to verify the executable it is about to start.
@@ -36,18 +38,29 @@ def sha256Of = { File f ->
 	md.digest().collect { String.format('%02x', it) }.join()
 }
 
+def torBuiltDir = file("${rootDir}/packaging/tor-android/out")
+
 task unpackTorBinaries {
 	inputs.file torPinFile
+	inputs.dir torBuiltDir
 	outputs.dir torBinariesDir
 	doLast {
 		def abis = readTorPins().keySet().collect { it.substring(0, it.indexOf('/')) }.unique()
 		delete torBinariesDir
+		abis.each { abi ->
+			def built = new File(torBuiltDir, "${abi}/libtor.so")
+			if (!built.isFile()) throw new GradleException("Missing built Tor executable ${built}; run packaging/tor-android/build-tor-android.sh")
+			copy {
+				from built
+				into new File(torBinariesDir, abi)
+			}
+		}
 		configurations.releaseRuntimeClasspath.each { file ->
-			if (file.name.startsWith('tor-android') || file.name.startsWith('lyrebird-android')) {
+			if (file.name.startsWith('lyrebird-android')) {
 				copy {
 					from zipTree(file)
 					into torBinariesDir
-					include abis.collect { "${it}/*.so" }
+					include abis.collect { "${it}/liblyrebird.so" }
 				}
 			}
 		}
@@ -127,7 +140,6 @@ dependencies {
 	implementation 'androidx.annotation:annotation:1.5.0'
 	implementation 'net.zetetic:sqlcipher-android:4.13.0'
 	implementation 'androidx.sqlite:sqlite:2.4.0'
-	implementation "org.briarproject:tor-android:$tor_version"
 	implementation "org.briarproject:lyrebird-android:$lyrebird_version"
 	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
 	compileOnly 'javax.annotation:jsr250-api:1.0'

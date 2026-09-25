@@ -1,10 +1,11 @@
 # SHA-256 of the Tor and lyrebird executables the app packages, one line per
-# ABI and library: <abi>/<library> <sha256>. The build verifies the files it
-# unpacks from org.briarproject:tor-android:0.4.9.12 and
+# ABI and library: <abi>/<library> <sha256>. The build verifies the Tor
+# executables built by packaging/tor-android (Tor 0.4.9.13, see its
+# PROVENANCE.md) and the files it unpacks from
 # org.briarproject:lyrebird-android:0.6.2 against these values before they
 # are packaged, and the app verifies the file it is about to execute against
 # them before every Tor start. Only the ABIs listed here are packaged.
-arm64-v8a/libtor.so bf36260486d44c2745fda8e4448668a1ee758db0aa79156299979916b03124a3
-armeabi-v7a/libtor.so e28eee1ce24a54c8518a5ea91de9365f7db3ea0a9c67a6c2c039b6a85e632485
+arm64-v8a/libtor.so 29eb99c78c803cdada5948c193308544f5c30414032c3334c3a83a124fcb9426
+armeabi-v7a/libtor.so 418976d0958c8b422d71126e9fe34986657b96672b4fe6059107e41a0f7b8eaa
 arm64-v8a/liblyrebird.so 34e258346e12648b7206941cd4af790ad61ca4c663e47426f3631ee98870dc5c
 armeabi-v7a/liblyrebird.so ec54b954399a75cddbc76862fbd887d91714531e21be03795708483809a2e7ed
