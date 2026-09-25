@@ -88,9 +88,9 @@ commit hash of its own, and the immutable per-release manifest attached to the
 GitHub release records the hash the F-Droid entry has to pin.
 
 ```yaml
-  - versionName: 3.0.12
-    versionCode: 31200
-    commit: <full 40-character hash of the v3.0.12 commit>
+  - versionName: 3.0.13
+    versionCode: 31300
+    commit: <full 40-character hash of the v3.0.13 commit>
     subdir: zerion-android
     sudo:
       - apt-get update

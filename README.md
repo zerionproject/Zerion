@@ -8,7 +8,7 @@
 
 Zerion is a private messenger with an encrypted vault and optional self-custodial Bitcoin and Monero wallets. There is no phone number, no account and no Zerion server: online messaging runs between the two devices' Tor onion services, every message carries a fresh post-quantum encapsulation, and traffic within a connection is shaped into fixed-size frames at a paced, cover-filled cadence. It is free software under the GPLv3.
 
-This README describes the current release, **3.0.12**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
+This README describes the current release, **3.0.13**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
 
 ## Architecture
 
@@ -57,7 +57,7 @@ Voice calls (on by default) and video calls (off by default) run between the two
 
 ## Pairing
 
-A contact is added by link (the normal path) or nearby (QR code or Bluetooth). Link pairing meets at a rendezvous derived from the link and runs a hybrid key agreement: static and ephemeral X25519 agreements, including the static-to-ephemeral terms that resist key-compromise impersonation, plus ML-KEM-768 encapsulations to the peer's ephemeral key and to the peer's committed static key. The static ML-KEM encapsulation makes the authentication post-quantum: completing the handshake requires the static ML-KEM private key behind the out-of-band commitment, a peer holding only the classical half cannot pair, and a peer offering the earlier, classically authenticated handshake version is refused. Nearby pairing (QR code or Bluetooth) is a hybrid X25519 plus ML-KEM-768 key agreement bound to the QR commitment (key-agreement protocol version 5). A post-quantum contact cannot later be re-added as classical, and the pairing key rotates after every completed contact addition. The released 3.0.11 authenticates link pairing classically and pairs nearby contacts classically; the current source tree does not, and 3.0.12 is not yet released ([SECURITY.md](SECURITY.md)).
+A contact is added by link (the normal path) or nearby (QR code or Bluetooth). Link pairing meets at a rendezvous derived from the link and runs a hybrid key agreement: static and ephemeral X25519 agreements, including the static-to-ephemeral terms that resist key-compromise impersonation, plus ML-KEM-768 encapsulations to the peer's ephemeral key and to the peer's committed static key. The static ML-KEM encapsulation makes the authentication post-quantum: completing the handshake requires the static ML-KEM private key behind the out-of-band commitment, a peer holding only the classical half cannot pair, and a peer offering the earlier, classically authenticated handshake version is refused. Nearby pairing (QR code or Bluetooth) is a hybrid X25519 plus ML-KEM-768 key agreement bound to the QR commitment (key-agreement protocol version 5). A post-quantum contact cannot later be re-added as classical, and the pairing key rotates after every completed contact addition. Since 3.0.12 both pairing paths are authenticated with the post-quantum key as well; 3.0.11 and earlier authenticated link pairing classically and paired nearby contacts classically ([SECURITY.md](SECURITY.md)).
 
 ## Vault
 
@@ -73,13 +73,13 @@ Tor is mandatory and always on; online messaging never bypasses it. By default e
 
 ### Tor client authorization
 
-Every pair of contacts whose apps both support it moves from the open onion service to a second, client-authorized onion service (Tor v3 client authorization): each side generates a random X25519 dialing key for the other, publishes the other's public half on its own authorized service and hands the private half to Tor as a credential for the other's service. Anyone who learns the authorized address but holds no credential cannot decrypt its descriptor and cannot connect. Once both sides have proven the authorized path and committed, the pair uses the authorized address only, with no fallback to the open one; removing a contact revokes their key and rotates the address for the remaining contacts. The open service stays published for contacts whose app does not support this yet. Design and wire format: [docs/protocol/ONION_CLIENT_AUTH.md](docs/protocol/ONION_CLIENT_AUTH.md). This is implemented in the source tree and is not in the released 3.0.11.
+Every pair of contacts whose apps both support it moves from the open onion service to a second, client-authorized onion service (Tor v3 client authorization): each side generates a random X25519 dialing key for the other, publishes the other's public half on its own authorized service and hands the private half to Tor as a credential for the other's service. Anyone who learns the authorized address but holds no credential cannot decrypt its descriptor and cannot connect. Once both sides have proven the authorized path and committed, the pair uses the authorized address only, with no fallback to the open one; removing a contact revokes their key and rotates the address for the remaining contacts. The open service stays published for contacts whose app does not support this yet. Design and wire format: [docs/protocol/ONION_CLIENT_AUTH.md](docs/protocol/ONION_CLIENT_AUTH.md). Client authorization shipped in 3.0.12; 3.0.11 and earlier do not have it.
 
 ## Platforms
 
 | Platform | Status | Version |
 |---|---|---|
-| Android 10 and later | AVAILABLE | 3.0.11 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest) and [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion); [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while its build of 3.0.11 is pending |
+| Android 10 and later | AVAILABLE | 3.0.13 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.11 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while the update to the current release is pending |
 | Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
 | Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
 | macOS | IN DEVELOPMENT | none published |
