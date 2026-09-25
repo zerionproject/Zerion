@@ -2646,15 +2646,15 @@ class ChannelManagerImpl
 			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
 				return safeAck(false);
 			}
+			java.util.Set<Long> posts = new java.util.HashSet<>();
+			for (ChannelPost p : store.getPosts(channelId)) {
+				posts.add(p.getSeqNum());
+			}
 			java.util.List<org.zerionproject.app.api.channel
 					.ChannelReaction> existing =
 					reactionStore.getReactions(channelId);
-			int perPost = 0;
-			for (org.zerionproject.app.api.channel.ChannelReaction r
-					: existing) {
-				if (r.getPostSeqNum() == req.postSeqNum) perPost++;
-			}
-			if (perPost >= ChannelConstants.MAX_REACTIONS_PER_POST) {
+			if (ChannelReactionPolicy.admit(existing, posts, req.postSeqNum,
+					req.signerEd25519) != ChannelReactionPolicy.Verdict.ADMIT) {
 				return safeAck(false);
 			}
 			reactionStore.putReaction(channelId,

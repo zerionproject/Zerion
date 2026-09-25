@@ -77,6 +77,13 @@ public final class ChannelConstants {
 			"org.zerionproject/CHANNEL_REACTION";
 	public static final int MAX_REACTION_EMOJI_BYTES = 32;
 	public static final int MAX_REACTIONS_PER_POST = 256;
+	/**
+	 * Ceiling on the reactions a channel stores in total and on the
+	 * reactions one signer may hold across a channel, so that valid
+	 * signatures alone cannot grow the publisher's state without bound.
+	 */
+	public static final int MAX_REACTIONS_PER_CHANNEL = 4096;
+	public static final int MAX_REACTIONS_PER_SIGNER_PER_CHANNEL = 128;
 	public static final String WIRE_TYPE_ANNOUNCE =
 			"ZERION_CHANNEL_ANNOUNCE_V1";
 	public static final String WIRE_TYPE_ANNOUNCE_ACK =

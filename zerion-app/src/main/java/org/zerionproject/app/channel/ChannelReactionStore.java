@@ -97,6 +97,10 @@ class ChannelReactionStore {
 					.MAX_REACTIONS_PER_POST) {
 				return false;
 			}
+			if (existing.size() >= org.zerionproject.app.api.channel
+					.ChannelConstants.MAX_REACTIONS_PER_CHANNEL) {
+				return false;
+			}
 			out.add(reaction);
 			changed = true;
 		}
