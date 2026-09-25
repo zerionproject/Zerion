@@ -1,8 +1,8 @@
 # Onion client authorization
 
-Status: revision 3, approved for implementation on `security-r1`; iOS port
-pending (section 10). The control-port primitives (`TorControl`,
-`TorOnionServiceControl`) exist; everything above them follows this document.
+Status: revision 3, shipped in Android 3.0.12; iOS port pending
+(section 10). The control-port primitives (`TorControl`,
+`TorOnionServiceControl`) and everything above them follow this document.
 
 ## 1. Why
 
