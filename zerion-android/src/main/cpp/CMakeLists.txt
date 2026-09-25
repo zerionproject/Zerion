@@ -22,7 +22,11 @@ target_include_directories(zargon2 PRIVATE
 
 target_compile_definitions(zargon2 PRIVATE ARGON2_NO_THREADS)
 
-target_compile_options(zargon2 PRIVATE -O3 -fvisibility=hidden)
+# No debug info: the release keeps native libraries unstripped so the pinned
+# prebuilt libraries stay byte-identical, and DWARF would embed the absolute
+# build directory, which differs between F-Droid's layout and any other
+# checkout and breaks the reproducible comparison.
+target_compile_options(zargon2 PRIVATE -O3 -g0 -fvisibility=hidden)
 
 # Android 15+ 16 KB page-size support: align ELF LOAD segments to 16 KB so the
 # library maps correctly on 16 KB-page devices.
