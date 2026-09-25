@@ -281,10 +281,11 @@ introduction points until the descriptor expires; those lead to a service
 being deleted and, at the app layer, to a tag that is no longer recognised.
 Regression tests cover both the closed sessions and the refused tag.
 
-## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12)
+## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12, re-confirmed on 0.4.9.13)
 
-Observed on 2026-09-24 against the Tor 0.4.9.12 that the app ships, on the
-Moto, over the app's own authenticated control port (replies observed by
+Observed on 2026-09-24 against the Tor 0.4.9.12 that 3.0.12 ships and on
+2026-09-25 against the Tor 0.4.9.13 built in tree for the next release, both
+on the Moto, over the app's own authenticated control port (replies observed by
 the device check, not logged by the app):
 
 - `ADD_ONION NEW:ED25519-V3 Flags=Detach,V3Auth ClientAuthV3=<key>
@@ -324,6 +325,23 @@ the device check, not logged by the app):
 - A detached service and non-permanent credentials do not survive a Tor
   restart; after every Tor start the app re-adds both from the database
   before any dial, and a dial to `onion3a` before that step is refused.
+- Non-permanent credentials also do not survive a configuration change
+  of the running process: every `SETCONF`, whatever the option and even
+  when the value does not change, makes Tor rebuild its client
+  authorization map from `ClientOnionAuthDir` and discard every credential
+  added over the control port (`hs_config_client_auth_all` in
+  `options_act`; observed on the Moto: a credential listed by
+  `ONION_CLIENT_AUTH_VIEW` is gone right after `SETCONF
+  ConnectionPadding=1`, while a `GETCONF` leaves it and the detached service
+  stays published). The app changes the configuration on every
+  connectivity change (`DisableNetwork`), on a network restart and when
+  bridges are re-applied, so after each such change the transport tells the
+  manager to install every credential again from the database
+  (`refeedCredentials`, finding SC-TOR-06). The service and the negotiation
+  state are not touched by that step; a pair at `AUTH_REQUIRED` is never
+  dialed at the open address while the credential is missing, so the gap
+  between the change and the re-installation is a failed dial, not a
+  fallback.
 - Cached descriptors are valid for at most their lifetime; rotation on
   revocation limits the window.
 
@@ -347,6 +365,7 @@ the device check, not logged by the app):
 | One contact's compromise reveals no other key | keys are random per direction; the test asserts no derivation from shared material and no key reuse across contacts |
 | Stale backup cannot resurrect revoked authorization | a restored row for a revoked contact stays revoked; a restored older `keyVersion` is answered by rotation, not by acceptance |
 | Tor restart restores `AUTH_REQUIRED` exactly | after a simulated restart the state, the republished service set and the re-added credentials match the database |
+| A reconfiguration of the running Tor re-installs every credential | after the network is disabled, enabled, bounced or the bridges are re-applied the transport announces the change and the manager re-adds the credential of every pair that holds one, and nothing else; revoked and legacy pairs stay without one (`ZtpTorTransportRefeedTest`, `OnionClientAuthManagerImplTest`) |
 | Rotation excludes removed contacts | the new authorized set after a revocation-driven rotation lacks the revoked key, and the old service is deleted |
 | Control commands | exact `ADD_ONION`, `DEL_ONION`, `ONION_CLIENT_AUTH_ADD/REMOVE` formats and reply handling (already in `TorOnionServiceControlTest`) |
 

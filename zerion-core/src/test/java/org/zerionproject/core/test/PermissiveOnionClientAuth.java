@@ -35,4 +35,8 @@ public class PermissiveOnionClientAuth implements OnionClientAuthManager {
 	@Override
 	public void resetNegotiation(ContactId c) {
 	}
+
+	@Override
+	public void refeedCredentials() {
+	}
 }

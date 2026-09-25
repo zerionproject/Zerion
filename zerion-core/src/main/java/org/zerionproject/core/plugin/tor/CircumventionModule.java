@@ -1,7 +1,7 @@
 package org.zerionproject.core.plugin.tor;
 
-import org.briarproject.onionwrapper.CircumventionProvider;
-import org.briarproject.onionwrapper.CircumventionProviderFactory;
+import org.zerionproject.tor.CircumventionProvider;
+import org.zerionproject.tor.CircumventionProviderFactory;
 
 import javax.inject.Singleton;
 

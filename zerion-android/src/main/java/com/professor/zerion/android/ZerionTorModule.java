@@ -1,6 +1,6 @@
 package com.professor.zerion.android;
 
-import org.briarproject.onionwrapper.TorWrapper;
+import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
 import org.zerionproject.transport.TorBridgeConfigurator;

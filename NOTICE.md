@@ -19,11 +19,13 @@ Zerion is an independent project and is not affiliated with or endorsed by the B
 
 ## Libraries from the Briar Project
 
-The application depends on these libraries published by the Briar Project (GPLv3 unless stated): `onionwrapper` 0.1.4 (Tor lifecycle and onion-service control, used as the published Maven artifact; the `onionwrapper/` source tree in this repository is a copy of the same version with its own [LICENSE.txt](onionwrapper/LICENSE.txt) and is not part of the build), `tor-android` and `lyrebird-android` (packaged Tor and pluggable-transport binaries), `jtorctl` (BSD), `dont-kill-me-lib`, `socks-socket`, `null-safety`.
+The application depends on these libraries published by the Briar Project (GPLv3 unless stated): `lyrebird-android` (packaged pluggable-transport binary), `jtorctl` (BSD), `dont-kill-me-lib`, `socks-socket`, `null-safety`.
+
+The embedded Tor process is run by `org.zerionproject.tor`, which is derived from the Briar Project's `onionwrapper` 0.1.4 (GPLv3) and modified by the Zerion Project: the Tor and lyrebird executables are verified against pinned hashes before they run, the SOCKS listener is isolated and connection padding enabled in the generated configuration, process shutdown is bounded, a start that fails or is interrupted leaves no process behind, and all logging is removed. The published library is no longer used.
 
 ## Other third-party components
 
-- Tor (BSD) and lyrebird (BSD), via the packages above.
+- Tor (BSD), built from the pinned official release source into `libtor.so` by [packaging/tor-android](packaging/tor-android/PROVENANCE.md) with a build makefile from the Guardian Project (BSD, vendored there); lyrebird (BSD) via the package above.
 - Bouncy Castle (MIT): classical and post-quantum primitives.
 - SQLCipher (BSD).
 - bitcoinj (Apache 2.0).

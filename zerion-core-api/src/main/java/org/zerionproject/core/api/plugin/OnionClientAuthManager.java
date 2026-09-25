@@ -49,6 +49,16 @@ public interface OnionClientAuthManager {
 	void rotateAuthorizedService() throws DbException;
 
 	/**
+	 * Installs again, from the database, the client credential of every
+	 * pair that holds one. Tor discards credentials added over the control
+	 * port whenever its configuration changes, so the transport calls this
+	 * after every reconfiguration of the running Tor process; the
+	 * authorized service and the negotiation state are left untouched.
+	 * Safe to call at any time, including with no Tor attached.
+	 */
+	void refeedCredentials();
+
+	/**
 	 * Aborts a negotiation that has not committed and returns the pair to
 	 * LEGACY, cleaning up keys and authorized entries. A pair at
 	 * AUTH_REQUIRED is not affected.

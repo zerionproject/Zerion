@@ -837,4 +837,94 @@ public class OnionClientAuthManagerImplTest {
 		manager.tickForTest();
 		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
 	}
+
+	/* SC-TOR-06: credentials re-installed after a Tor reconfiguration */
+
+	@Test
+	public void testRefeedCredentialsReinstallsOnlyTheCredentials()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertEquals(Collections.singletonList("CRED " + PEER_ONION),
+				control.commands);
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		assertEquals(onion, service().onion);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+	}
+
+	@Test
+	public void testRefeedCredentialsCoversEveryPairThatHoldsOne()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		peerAdvertisesSupport(c2);
+		receive(c2, g2, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(2)));
+		assertEquals(State.AUTH_NEGOTIATING, record(c2).state);
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertEquals(2, control.commands.size());
+		assertTrue(control.commands.contains("CRED " + PEER_ONION));
+		assertTrue(control.commands.contains("CRED " + PEER_ONION_2));
+	}
+
+	@Test
+	public void testRefeedCredentialsSkipsRevokedAndLegacyPairs()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		Transaction txn = new Transaction(null, false);
+		manager.removingContact(txn, c1);
+		commit(txn);
+		assertEquals(State.REVOKED, record(c1).state);
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertEquals(Collections.singletonList("CRED " + PEER_ONION_2),
+				control.commands);
+	}
+
+	@Test
+	public void testRefeedCredentialsInstallsNothingBeforeThePeerAnswered()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertTrue(control.commands.isEmpty());
+	}
+
+	@Test
+	public void testRefeedCredentialsSurvivesARefusalUnchanged()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		control.refuseCredentials = true;
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertTrue(control.commands.isEmpty());
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		assertEquals(onion, service().onion);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+	}
+
+	@Test
+	public void testRefeedCredentialsWithoutTorDoesNothing() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		manager.detachTor();
+		control.commands.clear();
+		manager.refeedCredentials();
+		assertTrue(control.commands.isEmpty());
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	@Test
+	public void testRefeedCredentialsIsIdempotent() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		control.commands.clear();
+		for (int i = 0; i < 3; i++) manager.refeedCredentials();
+		assertEquals(Collections.nCopies(3, "CRED " + PEER_ONION),
+				control.commands);
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
 }

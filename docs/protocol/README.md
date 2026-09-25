@@ -102,6 +102,7 @@ project and is not affiliated with or endorsed by the Briar Project.
 | Nearby key agreement (QR / Bluetooth) | `core/keyagreement` | BQP version 5: hybrid X25519 plus ML-KEM-768 (the released 3.0.11 speaks version 4, classical X25519) |
 | Sync bookkeeping and validation pipeline | `core/sync` | message validation, delivery and dependency tracking; the Bramble sync transport is not used |
 | Plugin and lifecycle machinery, event bus | `core/plugin`, `core/lifecycle`, `core/event` | hosts Zerion's transports |
-| Tor onion wrapper | `org.briarproject:onionwrapper-core` and `-android` 0.1.4 (Maven) | third-party library; the `onionwrapper/` source tree in the repository is a copy of the same version and is not part of the build |
+| Tor process wrapper | `org.zerionproject.tor` (in tree) | derived from the Briar Project's onionwrapper 0.1.4, modified as recorded in NOTICE.md: pinned executable verification, isolated SOCKS listener and padding in the generated configuration, bounded shutdown, no logging |
+| Tor executable | `packaging/tor-android` (built from the pinned Tor 0.4.9.13 release source with libevent, OpenSSL and zlib at pinned commits, NDK r29) | provenance and hashes in `packaging/tor-android/PROVENANCE.md`; the build and the app verify the bytes against the pin file before packaging and before every start |
 | Messaging, introduction and group frameworks | `zerion-app/.../messaging`, `introduction`, `client` | introductions carry hybrid signatures; groups are Zerion's `grouptr` |
 

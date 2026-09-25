@@ -7,8 +7,8 @@ import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
 import org.zerionproject.core.api.system.ResourceProvider;
 import org.zerionproject.core.api.system.SecureRandomProvider;
-import org.briarproject.onionwrapper.AndroidLocationUtilsFactory;
-import org.briarproject.onionwrapper.LocationUtils;
+import org.zerionproject.tor.AndroidLocationUtilsFactory;
+import org.zerionproject.tor.LocationUtils;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionHandler;

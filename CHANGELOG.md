@@ -2,6 +2,12 @@
 
 Release notes for every published version. The current architecture and its security properties are described in [README.md](README.md), [SECURITY.md](SECURITY.md) and [docs/](docs/); an entry below describes its own release only and is not updated afterwards. Artifacts and hashes are on [GitHub Releases](https://github.com/zerionproject/Zerion/releases); the values for the current release are in [docs/release-manifest.json](docs/release-manifest.json).
 
+## 3.0.13 (September 2026)
+
+- Tor updated to 0.4.9.13, the security release of 23 September 2026. The executable is now built from the signed upstream release source in this repository (`packaging/tor-android`), with its libraries at pinned commits, and is verified against a recorded hash by the build before packaging and by the app before every start; the same build reproduces the previously published 0.4.9.12 executables byte for byte.
+- The Tor process is run by an in-tree wrapper: the generated configuration isolates the SOCKS listener and enables connection padding from the start, a Tor process that does not stop is killed within a bound, a start that fails or is interrupted leaves no process behind, and the address-published state shown on the network screen comes from Tor itself.
+- Client authorization: credentials are re-installed after every network change. Tor discards them whenever its configuration changes, which after the first connectivity change following a Tor start left every locked-in contact unreachable until Tor was restarted; the protected path never fell back to the open address, it was unavailable. Fixed.
+- Documentation and provenance: NOTICE.md records the wrapper's derivation and the Tor build; the known limitations of 3.0.12 are recorded in [SECURITY.md](SECURITY.md).
 ## 3.0.12 (September 2026)
 
 - Security fixes from the September 2026 internal assessments (see the known limitations of 3.0.11 in [SECURITY.md](SECURITY.md)): call key derivation and video nonce handling, post-quantum authentication at pairing, post-quantum nearby pairing, onion rotation republishing, dependency verification during the release build, and the remaining findings recorded there.

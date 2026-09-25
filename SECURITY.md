@@ -28,11 +28,19 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | August to September 2026 | independent focused review | ZeroTrace | Monero wallet native integration and JNI boundary | one Low (native object lifetime race) fixed in 3.0.7; documentation rescoped | fixes public; report private |
 | September 2026 | independent focused review | a researcher (private) | 3.0.6 transport and privacy properties | PROTO and PRIV findings fixed in 3.0.7 | fixes public; report private |
 | September 2026 | independent focused review | ZeroTrace | Bitcoin wallet and the dormant PayJoin component | two Medium and one Low fixed in 3.0.9; one PayJoin blocker open by design while the feature stays disabled | fixes public; report private |
-| September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation on the `security-r1` branch, not yet released | not published |
+| September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation shipped in 3.0.12; the two assurance findings left open there and a runtime defect found afterwards are fixed in 3.0.13 | not published |
 
-## Limitations of the previous release (3.0.11), fixed in 3.0.12
+## Limitations of the previous release (3.0.12), fixed in 3.0.13
 
-Recorded here so that no document overstates what 3.0.11 shipped. All four are fixed in 3.0.12, the current release; the entries are kept as the history of the previous one. None of them is known to have been exploited.
+Recorded here so that no document overstates what 3.0.12 shipped. All are fixed in 3.0.13, the current release; the entries are kept as the history of the previous one. None of them is known to have been exploited.
+
+- Client authorization after a network change: Tor discards the credentials the app installs over its control port whenever its configuration changes, and the app changes it on every connectivity change. In 3.0.12, after the first such change following a Tor start, every locked-in contact was unreachable until Tor was restarted. The protected path never fell back to the open address; it was unavailable. Messages from such contacts still arrived.
+- Tor 0.4.9.12: the release carries the Tor version that preceded the 0.4.9.13 security release of 23 September 2026.
+- Assurance: the Tor wrapper hardening in the source tree was not compiled into 3.0.12 (the published library was used, with the transport applying the isolation and padding settings over the control port instead), and the Tor and lyrebird executables were verified only through the build's dependency verification, which the F-Droid build removes.
+
+## Limitations of 3.0.11, fixed in 3.0.12
+
+Kept as history. All four were fixed in 3.0.12. None of them is known to have been exploited.
 
 - Call media: the per-call key derivation has a defect (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity) and video nonces can repeat when video is restarted within a call. In 3.0.11 call confidentiality rests on the Tor onion-service layer between the two devices; using the defect would require an adversary inside that connection or at an endpoint.
 - Pairing: post-quantum protection at link pairing is confidentiality only; authentication is classical (X25519 ownership proofs bound to the out-of-band commitment and an Ed25519 signature), so only an adversary with a quantum computer active during the pairing could impersonate a peer. Nearby (QR/Bluetooth) pairing is classical.
