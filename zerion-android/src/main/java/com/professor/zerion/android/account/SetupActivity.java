@@ -80,9 +80,12 @@ public class SetupActivity extends BaseActivity
 		} else if (state == CREATED) {
 			showApp();
 		} else if (state == FAILED) {
+			String message = getString(R.string.setup_failed_message);
+			String reason = viewModel.getCreateAccountError();
+			if (reason != null) message += "\n\n" + reason;
 			new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.setup_failed_title)
-				.setMessage(R.string.setup_failed_message)
+				.setMessage(message)
 				.setPositiveButton(R.string.setup_failed_retry, (dialog, which) -> recreate())
 				.setNegativeButton(R.string.cancel, (dialog, which) -> finish())
 				.setCancelable(false)

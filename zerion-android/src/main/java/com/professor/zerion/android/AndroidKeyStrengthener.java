@@ -68,6 +68,13 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	@GuardedBy("this")
 	@Nullable
 	private GeneralSecurityException lookupFailure = null;
+	/**
+	 * Set by {@link #discardKeyBeforeFirstAccount()}: nothing depends on the
+	 * alias yet, so the next strengthening may generate a key regardless of
+	 * what the lookup says. Cleared as soon as a key has been generated.
+	 */
+	@GuardedBy("this")
+	private boolean freshInstall = false;
 
 	@Override
 	public synchronized boolean isInitialised() {
@@ -97,9 +104,20 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	 * every profile's stored key undecryptable for good.
 	 */
 	@Override
+	public synchronized void discardKeyBeforeFirstAccount() {
+		deleteKey();
+		storedKey = null;
+		lookupFailure = null;
+		freshInstall = true;
+	}
+
+	@Override
 	public synchronized SecretKey strengthenKey(SecretKey k) {
 		try {
-			if (!isInitialised()) {
+			if (freshInstall) {
+				initialise();
+				freshInstall = false;
+			} else if (!isInitialised()) {
 				if (lookupFailure != null) {
 					throw new org.zerionproject.core.api.crypto
 							.KeyStrengthenerException(lookupFailure);

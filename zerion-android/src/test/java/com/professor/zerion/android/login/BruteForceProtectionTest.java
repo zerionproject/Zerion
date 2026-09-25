@@ -207,6 +207,12 @@ public class BruteForceProtectionTest {
 		}
 
 		@Override
+		@Nullable
+		public String getLastCreateAccountError() {
+			return null;
+		}
+
+		@Override
 		public void deleteAccount() {
 			throttle.reset();
 		}
