@@ -9,8 +9,8 @@
     "apk": {
       "name": "zerion-3.0.14.apk",
       "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.14/zerion-3.0.14.apk",
-      "sha256": "10d5aac1362e09fc5c2ec6032d73209177d6521a219e9c613f010ae4f0a78d2b",
-      "sizeBytes": 79881142,
+      "sha256": "4c6a0e2f063a0e1a203ad54c1378da07900e8765889f1cb869188dd34fdfe108",
+      "sizeBytes": 79803318,
       "verified": "2026-09-25"
     },
     "signingCertSha256": "d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
