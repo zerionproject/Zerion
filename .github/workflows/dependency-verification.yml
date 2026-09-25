@@ -39,6 +39,7 @@ jobs:
         run: |
           export GRADLE_USER_HOME="$RUNNER_TEMP/gradle-home-clean"
           rm -rf "$GRADLE_USER_HOME"
+          chmod +x gradlew
           ./gradlew --no-daemon --dependency-verification strict \
             testClasses \
             :zerion-android:compileOfficialReleaseJavaWithJavac \
