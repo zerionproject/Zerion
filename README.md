@@ -53,7 +53,7 @@ Within a live connection every frame is 4096 bytes and a real frame is indisting
 
 ## Calls
 
-Voice calls (on by default) and video calls (off by default) run between the two devices over Tor onion services: no VoIP server, no STUN or TURN. Audio is uncompressed 16 kHz mono PCM (256 kbit/s) in fixed 20 ms frames, so no codec-dependent frame size can leak speech patterns; video is H.264 in padded frames. Call media is designed to be encrypted with AES-256-GCM under a per-call key on top of the Tor layer. **In 3.0.11 that per-call key is derived incorrectly** (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity), and video nonces can repeat when video is stopped and restarted within a call. In 3.0.11 call confidentiality therefore rests on the Tor onion-service encryption between the two devices. We have no indication that this was exploited; using it would require an adversary inside the Tor connection or at an endpoint. Both defects are fixed on the `security-r1` branch and ship in 3.0.12, which is not yet released. Details: [SECURITY.md](SECURITY.md).
+Voice calls (on by default) and video calls (off by default) run between the two devices over Tor onion services: no VoIP server, no STUN or TURN. Audio is uncompressed 16 kHz mono PCM (256 kbit/s) in fixed 20 ms frames, so no codec-dependent frame size can leak speech patterns; video is H.264 in padded frames. Call media is designed to be encrypted with AES-256-GCM under a per-call key on top of the Tor layer. **In 3.0.11 that per-call key is derived incorrectly** (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity), and video nonces can repeat when video is stopped and restarted within a call. In 3.0.11 call confidentiality therefore rests on the Tor onion-service encryption between the two devices. We have no indication that this was exploited; using it would require an adversary inside the Tor connection or at an endpoint. Both defects are fixed since 3.0.12. Details: [SECURITY.md](SECURITY.md).
 
 ## Pairing
 
@@ -69,7 +69,7 @@ Optional wallets inside the vault, each sealed under its own password. Keys are 
 
 ## Network
 
-Tor is mandatory and always on; online messaging never bypasses it. By default every connection the app makes goes through Tor. Two explicit opt-ins do not: I2P participation (when enabled, the user's network can see that the device uses I2P, although the reseed goes through Tor) and a direct wallet node. The Bluetooth mesh is local radio: it hides content, not proximity. The onion address rotates on a schedule announced to contacts; in 3.0.11 the announced address was not republished after a restart in every case; corrected on the `security-r1` branch for 3.0.12, which is not yet released.
+Tor is mandatory and always on; online messaging never bypasses it. By default every connection the app makes goes through Tor. Two explicit opt-ins do not: I2P participation (when enabled, the user's network can see that the device uses I2P, although the reseed goes through Tor) and a direct wallet node. The Bluetooth mesh is local radio: it hides content, not proximity. The onion address rotates on a schedule announced to contacts; in 3.0.11 the announced address was not republished after a restart in every case; corrected since 3.0.12.
 
 ### Tor client authorization
 

@@ -15,9 +15,11 @@ not style preferences. Please read these before opening a pull request.
 * `zerion-wire` - wire-format constants shared with other clients
 * `zerion-app-api`, `zerion-app` - messaging, introductions, groups, channels,
   calls
-* `i2p-embedded` - the shaded I2P router (release builds carry it; the
-  transport is off unless the user enables it)
-* `onionwrapper` - the Tor onion-service wrapper (vendored third-party module, see NOTICE.md)
+* `i2p-embedded` - the shaded I2P router (development builds only since
+  3.0.12; the release APK does not carry it)
+* the Tor process wrapper is the package `org.zerionproject.tor` in
+  `zerion-core` and `zerion-core-android` (derived from a third-party
+  library, see NOTICE.md)
 
 ## Non-negotiable rules
 
