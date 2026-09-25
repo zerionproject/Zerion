@@ -51,6 +51,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	private VaultViewModel viewModel;
 	private VaultViewModel.VaultState currentState = null;
 	private boolean isPickerMode = false;
+	private volatile boolean pickerResultDelivered = false;
 	private String pickerType = null;
 
 	@Override
@@ -185,6 +186,10 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	@Override
 	protected void onDestroy() {
 		lockHandler.removeCallbacks(childResultLockWatchdog);
+		if (isPickerMode && !pickerResultDelivered) {
+			com.professor.zerion.android.util.CacheSweeper
+					.sweepDirAsync(this, "vault_share");
+		}
 		super.onDestroy();
 	}
 
@@ -299,6 +304,7 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 							uris.add(uri);
 							Intent resultIntent = new Intent();
 							resultIntent.putParcelableArrayListExtra(RESULT_SELECTED_URIS, uris);
+							pickerResultDelivered = true;
 							setResult(RESULT_OK, resultIntent);
 							finish();
 						});

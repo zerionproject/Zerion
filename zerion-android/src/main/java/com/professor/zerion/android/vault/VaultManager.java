@@ -325,6 +325,8 @@ public class VaultManager
 			lockGeneration++;
 		}
 		isUnlocked = false;
+		com.professor.zerion.android.util.CacheSweeper
+				.sweepDirAsync(context, "vault_share");
 
 		SecureMemory.forceGarbageCollection();
 

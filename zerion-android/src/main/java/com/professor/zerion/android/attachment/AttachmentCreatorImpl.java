@@ -2,6 +2,7 @@ package com.professor.zerion.android.attachment;
 
 import android.app.Application;
 import android.net.Uri;
+import com.professor.zerion.android.util.CacheSweeper;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -182,8 +183,27 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	@Override
 	@IoExecutor
 	public void onAttachmentCreationFinished() {
+		releaseVaultShareFiles();
 		MutableLiveData<AttachmentResult> result = this.result;
 		if (result != null) result.postValue(getResult(true));
+	}
+
+	/**
+	 * A vault item shared into a chat is a decrypted copy under the app's
+	 * cache that exists only to be read once by the attachment task; once
+	 * the task has finished with every URI, or was abandoned, the copy is
+	 * removed instead of waiting for the next app lock.
+	 */
+	private void releaseVaultShareFiles() {
+		String provider = app.getPackageName() + ".fileprovider";
+		for (Uri u : uris) {
+			String path = u.getPath();
+			if (provider.equals(u.getAuthority()) && path != null
+					&& path.startsWith("/vault_share/")) {
+				CacheSweeper.sweepDirAsync(app, "vault_share");
+				return;
+			}
+		}
 	}
 
 	@Override
@@ -225,6 +245,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 
 	@UiThread
 	private void resetState() {
+		releaseVaultShareFiles();
 		task = null;
 		uris.clear();
 		itemResults.clear();

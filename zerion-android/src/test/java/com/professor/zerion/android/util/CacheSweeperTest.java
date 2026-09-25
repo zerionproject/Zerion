@@ -54,4 +54,21 @@ public class CacheSweeperTest {
 		for (File f : gone) assertFalse(f.getPath(), f.exists());
 		assertTrue(stays.exists());
 	}
+
+	/**
+	 * EXT-13-F07: the vault share directory can be removed on its own, for
+	 * vault lock, picker cancellation and attachment handoff, without
+	 * touching the rest of the cache.
+	 */
+	@Test
+	public void sweepsOneDirectoryOnItsOwn() throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File cache = ctx.getCacheDir();
+		File shared = touch(new File(cache, "vault_share"), "photo.jpg");
+		File other = touch(new File(cache, "grouptr_view"), "keep.bin");
+		CacheSweeper.sweepDir(ctx, "vault_share");
+		assertFalse(shared.exists());
+		assertFalse(new File(cache, "vault_share").exists());
+		assertTrue(other.exists());
+	}
 }

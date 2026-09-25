@@ -47,6 +47,22 @@ public final class CacheSweeper {
 		new Thread(() -> sweep(app), "CacheSweep").start();
 	}
 
+	/**
+	 * Removes one temporary directory under the cache on a background
+	 * thread; used when the content it held has been consumed or the
+	 * store it came from has locked.
+	 */
+	public static void sweepDirAsync(Context ctx, String name) {
+		Context app = ctx.getApplicationContext();
+		new Thread(() -> sweepDir(app, name), "CacheSweep-" + name).start();
+	}
+
+	public static void sweepDir(Context ctx, String name) {
+		File cache = ctx.getCacheDir();
+		if (cache == null) return;
+		SecureMemory.secureDeleteDir(new File(cache, name), 0L);
+	}
+
 	public static void sweep(Context ctx) {
 		sweepFilesDirs(ctx);
 		File cache = ctx.getCacheDir();
