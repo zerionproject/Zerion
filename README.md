@@ -8,7 +8,7 @@
 
 Zerion is a private messenger with an encrypted vault and optional self-custodial Bitcoin and Monero wallets. There is no phone number, no account and no Zerion server: online messaging runs between the two devices' Tor onion services, every message carries a fresh post-quantum encapsulation, and traffic within a connection is shaped into fixed-size frames at a paced, cover-filled cadence. It is free software under the GPLv3.
 
-This README describes the current release, **3.0.13**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
+This README describes the current release, **3.0.14**. Release history is in [CHANGELOG.md](CHANGELOG.md); the exact values for the current release (version, artifact hash, channels, platform status) are in [docs/release-manifest.json](docs/release-manifest.json).
 
 ## Architecture
 
@@ -79,7 +79,7 @@ Every pair of contacts whose apps both support it moves from the open onion serv
 
 | Platform | Status | Version |
 |---|---|---|
-| Android 10 and later | AVAILABLE | 3.0.13 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.11 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while the update to the current release is pending |
+| Android 10 and later | AVAILABLE | 3.0.14 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.11 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while the update to the current release is pending |
 | Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
 | Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
 | macOS | IN DEVELOPMENT | none published |

@@ -29,10 +29,18 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | September 2026 | independent focused review | a researcher (private) | 3.0.6 transport and privacy properties | PROTO and PRIV findings fixed in 3.0.7 | fixes public; report private |
 | September 2026 | independent focused review | ZeroTrace | Bitcoin wallet and the dormant PayJoin component | two Medium and one Low fixed in 3.0.9; one PayJoin blocker open by design while the feature stays disabled | fixes public; report private |
 | September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation shipped in 3.0.12; the two assurance findings left open there and a runtime defect found afterwards are fixed in 3.0.13 | not published |
+| September 2026 | release review | project | 3.0.13 setup path and build reproducibility, after the Google Play review of 3.0.13 failed at account creation | first-account key store failure and the build-path dependency of the Argon2 library fixed in 3.0.14 | not published |
 
-## Limitations of the previous release (3.0.12), fixed in 3.0.13
+## Limitations of the previous release (3.0.13), fixed in 3.0.14
 
-Recorded here so that no document overstates what 3.0.12 shipped. All are fixed in 3.0.13, the current release; the entries are kept as the history of the previous one. None of them is known to have been exploited.
+Recorded here so that no document overstates what 3.0.13 shipped. Both are fixed in 3.0.14, the current release; the entries are kept as the history of the previous one. Neither is a vulnerability.
+
+- First account on some devices: since 3.0.12 the app refuses to generate its Android key store key when the key store throws on the lookup of that key, so that a temporary key store failure can never replace the key that existing profiles depend on. On a fresh installation there is no profile to protect, but the guard still applied, and on devices whose key store throws when a key that was never created is looked up, account creation failed with "Setup Failed" on every attempt (Google Play's review device is such a device; 3.0.12 and 3.0.13 could not be set up there). No data was at risk: the failure happened before any profile existed. 3.0.14 generates the key for the first account regardless of the lookup and keeps the guard from then on; the dialog names the cause.
+- Reproducibility (REPRO-13-01): 3.0.13 was reproducible only under the original `/src` build layout; F-Droid's canonical build path exposed a DWARF path variance in `libzargon2.so`, the Argon2 library the app build compiles from source and packages unstripped. Every other entry of the APK is identical between the two layouts. Fixed in 3.0.14, which compiles that library without debug sections; the 3.0.13 release manifest's statement that the F-Droid recipe builds the same payload holds only for a build at `/src`.
+
+## Limitations of 3.0.12, fixed in 3.0.13
+
+Kept as history. All are fixed in 3.0.13. None of them is known to have been exploited.
 
 - Client authorization after a network change: Tor discards the credentials the app installs over its control port whenever its configuration changes, and the app changes it on every connectivity change. In 3.0.12, after the first such change following a Tor start, every locked-in contact was unreachable until Tor was restarted. The protected path never fell back to the open address; it was unavailable. Messages from such contacts still arrived.
 - Tor 0.4.9.12: the release carries the Tor version that preceded the 0.4.9.13 security release of 23 September 2026.

@@ -1,0 +1,1 @@
+Fixes account creation on a fresh installation failing with "Setup Failed" on devices whose key store cannot look up the app's key before it exists; the first account now always generates its key. The Argon2 library no longer embeds its build directory, so the build reproduces byte for byte in F-Droid's build environment. Otherwise identical to 3.0.13.

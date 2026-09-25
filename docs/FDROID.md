@@ -108,8 +108,8 @@ GitHub release records the hash the F-Droid entry has to pin.
     build:
       - ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh >
         /tmp/libzmonero-build.log 2>&1 || (tail -n 300 /tmp/libzmonero-build.log; false)
-      - ../packaging/tor-android/fdroid-build.sh > /tmp/libtor-build.log 2>&1 ||
-        (tail -n 300 /tmp/libtor-build.log; false)
+      - NDK_CACHE=/build ../packaging/tor-android/fdroid-build.sh > /tmp/libtor-build.log
+        2>&1 || (tail -n 300 /tmp/libtor-build.log; false)
     ndk: r27b
     gradleprops:
       - fdroid
