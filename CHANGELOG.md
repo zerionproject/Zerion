@@ -2,6 +2,12 @@
 
 Release notes for every published version. The current architecture and its security properties are described in [README.md](README.md), [SECURITY.md](SECURITY.md) and [docs/](docs/); an entry below describes its own release only and is not updated afterwards. Artifacts and hashes are on [GitHub Releases](https://github.com/zerionproject/Zerion/releases); the values for the current release are in [docs/release-manifest.json](docs/release-manifest.json).
 
+## 3.0.14 (September 2026)
+
+- Account creation on a fresh installation no longer fails with "Setup Failed" on devices whose Android key store throws when the app's key is looked up before it exists. Since 3.0.12 the app refused to generate a new key store key whenever the lookup failed, to protect the stored keys of existing profiles; before the first account there is nothing to protect, so the first account now generates a key regardless, and the guard applies from then on. Google Play's review device is one such device; 3.0.12 and 3.0.13 could not be set up there. The Setup Failed dialog now names the cause.
+- Reproducible builds: the Argon2 library compiled by the app build no longer carries its build directory in debug sections, so the same source builds the same bytes in F-Droid's build layout as anywhere else. 3.0.13 reproduced only from the directory it was built in (see [SECURITY.md](SECURITY.md)).
+- Functionally identical to 3.0.13 otherwise; documentation wording updated.
+
 ## 3.0.13 (September 2026)
 
 - Tor updated to 0.4.9.13, the security release of 23 September 2026. The executable is now built from the signed upstream release source in this repository (`packaging/tor-android`), with its libraries at pinned commits, and is verified against a recorded hash by the build before packaging and by the app before every start; the same build reproduces the previously published 0.4.9.12 executables byte for byte.

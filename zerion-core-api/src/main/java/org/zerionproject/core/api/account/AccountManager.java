@@ -19,6 +19,14 @@ public interface AccountManager {
 
 	boolean createAccount(String name, char[] password);
 
+	/**
+	 * Why the last {@link #createAccount} returned false: the class name of
+	 * the exception that stopped it, or a short description of the failed
+	 * step, so the user can report it. Null after a successful creation.
+	 */
+	@Nullable
+	String getLastCreateAccountError();
+
 	void deleteAccount();
 
 	/**

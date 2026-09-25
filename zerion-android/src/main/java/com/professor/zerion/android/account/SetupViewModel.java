@@ -99,6 +99,11 @@ class SetupViewModel extends AndroidViewModel {
 		createAccount();
 	}
 
+	@Nullable
+	String getCreateAccountError() {
+		return accountManager.getLastCreateAccountError();
+	}
+
 	private void createAccount() {
 		if (authorName == null) throw new IllegalStateException();
 		if (password == null) throw new IllegalStateException();

@@ -269,11 +269,13 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
 					keyStrengthener);
 			will(returnValue(encryptedKey));
+			oneOf(keyStrengthener).discardKeyBeforeFirstAccount();
 		}});
 
 		assertFalse(accountManager.hasDatabaseKey());
 
 		assertTrue(accountManager.createAccount(authorName, password));
+		assertNull(accountManager.getLastCreateAccountError());
 
 		assertTrue(accountManager.hasDatabaseKey());
 		SecretKey dbKey = accountManager.getDatabaseKey();
@@ -623,6 +625,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
 					keyStrengthener);
 			will(returnValue(encryptedKey));
+			oneOf(keyStrengthener).discardKeyBeforeFirstAccount();
 		}});
 
 		assertTrue(accountManager.createAccount(authorName, password));
@@ -631,5 +634,69 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertNotNull(files);
 		java.util.Arrays.sort(files);
 		assertArrayEquals(new String[] {"db.key", "db.key.bak"}, files);
+	}
+
+	/**
+	 * A fresh installation has no stored key that depends on the platform
+	 * key store, so the first account creation may discard whatever the
+	 * store holds under the alias and generate anew. Once a key file exists
+	 * the strengthener is left alone: replacing its key would make that
+	 * file undecryptable.
+	 */
+	@Test
+	public void theFirstAccountDiscardsTheStrengthenerKeyALaterOneDoesNot()
+			throws Exception {
+		context.checking(new Expectations() {{
+			exactly(2).of(identityManager).createIdentity(authorName);
+			will(returnValue(identity));
+			exactly(2).of(identityManager).registerIdentity(identity);
+			exactly(2).of(crypto).generateSecretKey();
+			will(returnValue(key));
+			exactly(2).of(crypto).encryptWithPassword(key.getBytes(),
+					password, keyStrengthener);
+			will(returnValue(encryptedKey));
+			oneOf(keyStrengthener).discardKeyBeforeFirstAccount();
+		}});
+
+		assertFalse(accountManager.accountExists());
+		assertTrue(accountManager.createAccount(authorName, password));
+		assertTrue(accountManager.accountExists());
+
+		accountManager.shredDatabaseKey();
+		keyDir.mkdirs();
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		assertTrue(accountManager.accountExists());
+		assertFalse(accountManager.hasDatabaseKey());
+		assertTrue(accountManager.createAccount(authorName, password));
+	}
+
+	@Test
+	public void aStrengthenerFailureIsReportedByItsCause() {
+		context.checking(new Expectations() {{
+			oneOf(identityManager).createIdentity(authorName);
+			will(returnValue(identity));
+			oneOf(identityManager).registerIdentity(identity);
+			oneOf(crypto).generateSecretKey();
+			will(returnValue(key));
+			oneOf(keyStrengthener).discardKeyBeforeFirstAccount();
+			oneOf(crypto).encryptWithPassword(key.getBytes(), password,
+					keyStrengthener);
+			will(throwException(new org.zerionproject.core.api.crypto
+					.KeyStrengthenerException(
+					new java.security.UnrecoverableKeyException("no"))));
+		}});
+
+		assertFalse(accountManager.createAccount(authorName, password));
+		assertEquals("KeyStrengthenerException (UnrecoverableKeyException)",
+				accountManager.getLastCreateAccountError());
+		assertFalse(accountManager.hasDatabaseKey());
+		assertFalse(keyFile.exists());
+	}
+
+	@Test
+	public void anEmptyPasswordIsReportedAsTheReason() {
+		assertFalse(accountManager.createAccount(authorName, new char[0]));
+		assertEquals("empty password",
+				accountManager.getLastCreateAccountError());
 	}
 }

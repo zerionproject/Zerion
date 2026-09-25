@@ -43,6 +43,8 @@ class AccountManagerImpl implements AccountManager, Service {
 
 	@Nullable
 	private volatile SecretKey databaseKey = null;
+	@Nullable
+	private volatile String lastCreateAccountError = null;
 
 	@Inject
 	AccountManagerImpl(DatabaseConfig databaseConfig, CryptoComponent crypto,
@@ -150,21 +152,47 @@ class AccountManagerImpl implements AccountManager, Service {
 		synchronized (stateChangeLock) {
 			if (hasDatabaseKey())
 				throw new AssertionError("Already have a database key");
-			if (isEmptyPassword(password)) return false;
+			if (isEmptyPassword(password)) {
+				lastCreateAccountError = "empty password";
+				return false;
+			}
+			KeyStrengthener strengthener = databaseConfig.getKeyStrengthener();
+			if (strengthener != null && !accountExists()) {
+				strengthener.discardKeyBeforeFirstAccount();
+			}
 			Identity identity = identityManager.createIdentity(name);
 			identityManager.registerIdentity(identity);
 			SecretKey key = crypto.generateSecretKey();
 			boolean stored;
 			try {
 				stored = encryptAndStoreDatabaseKey(key, password);
+				if (!stored) lastCreateAccountError = "key file not written";
 			} catch (RuntimeException e) {
 				stored = false;
+				lastCreateAccountError = describe(e);
 			}
 			if (!stored) return false;
+			lastCreateAccountError = null;
 			databaseKey = key;
 			loginThrottle().reset();
 			return true;
 		}
+	}
+
+	@Override
+	@Nullable
+	public String getLastCreateAccountError() {
+		return lastCreateAccountError;
+	}
+
+	private static String describe(Throwable t) {
+		Throwable root = t;
+		while (root.getCause() != null && root.getCause() != root) {
+			root = root.getCause();
+		}
+		String name = root.getClass().getSimpleName();
+		return root == t ? name : t.getClass().getSimpleName() + " (" + name
+				+ ")";
 	}
 
 	protected static boolean isEmptyPassword(char[] password) {

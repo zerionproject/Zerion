@@ -1,14 +1,14 @@
 {
   "$comment": "Single source of truth for every public version, artifact and platform reference. Documentation and the website are checked against this file (scripts/check-docs.py) and the website download block is rendered from it (scripts/render-release-refs.py). Change it only together with a release; never edit a hash by hand, compute it from the published artifact. The release reference is the tag: a commit hash is deliberately absent, because this file ships inside the release commit and cannot name that commit's own hash. Consumers resolve the tag (F-Droid records its own resolved hash in fdroiddata).",
   "android": {
-    "version": "3.0.13",
-    "versionCode": 31300,
-    "tag": "v3.0.13",
+    "version": "3.0.14",
+    "versionCode": 31400,
+    "tag": "v3.0.14",
     "minAndroid": "10",
     "minApi": 29,
     "apk": {
-      "name": "zerion-3.0.13.apk",
-      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.13/zerion-3.0.13.apk",
+      "name": "zerion-3.0.14.apk",
+      "url": "https://github.com/zerionproject/Zerion/releases/download/v3.0.14/zerion-3.0.14.apk",
       "sha256": "10d5aac1362e09fc5c2ec6032d73209177d6521a219e9c613f010ae4f0a78d2b",
       "sizeBytes": 79881142,
       "verified": "2026-09-25"
@@ -16,7 +16,7 @@
     "signingCertSha256": "d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
     "channels": {
       "github": {
-        "version": "3.0.13",
+        "version": "3.0.14",
         "url": "https://github.com/zerionproject/Zerion/releases/latest"
       },
       "play": {
@@ -27,7 +27,7 @@
         "version": "3.0.3",
         "url": "https://f-droid.org/packages/com.professor.zerion/",
         "checked": "2026-09-25",
-        "note": "The 3.0.13 entry is prepared for fdroiddata and pins the release commit; F-Droid's build of it is pending. 3.0.11 was merged there but disabled after its build failed on their server."
+        "note": "The 3.0.14 entry is prepared for fdroiddata and pins the release commit; F-Droid's build of it is pending. 3.0.11 was merged there but disabled after its build failed on their server; 3.0.12 and 3.0.13 were not submitted."
       }
     }
   },
