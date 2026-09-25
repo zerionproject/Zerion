@@ -14,10 +14,16 @@ public interface ZppRecordSink {
 	/** Handles one decoded record received from {@code contactId}. */
 	void deliver(int contactId, int type, byte[] payload);
 
+	/** A connection to {@code contactId} has opened. */
+	default void onConnected(int contactId) {
+	}
+
 	/**
-	 * The connection to {@code contactId} has ended. Any records only partially
-	 * reassembled for it are dropped, so a peer that disconnects mid-message does
-	 * not leave fragments buffered until the process restarts.
+	 * A connection to {@code contactId} has ended. Once the contact's last
+	 * connection has ended, any records only partially reassembled for it are
+	 * dropped, so a peer that disconnects mid-message does not leave fragments
+	 * buffered until the process restarts; while another connection to the
+	 * same contact is still open its partial records are kept.
 	 */
 	void onDisconnected(int contactId);
 }

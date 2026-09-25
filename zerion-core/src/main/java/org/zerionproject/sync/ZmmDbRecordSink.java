@@ -52,8 +52,13 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 	}
 
 	@Override
+	public void onConnected(int contactId) {
+		reassembler.sessionOpened(contactId);
+	}
+
+	@Override
 	public void onDisconnected(int contactId) {
-		reassembler.clearContact(contactId);
+		reassembler.sessionClosed(contactId);
 	}
 
 	private void applyRecord(ContactId c, byte[] recordBytes)

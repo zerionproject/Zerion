@@ -96,6 +96,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		scheduler.setWakeListener(clock::noteActivity);
 		registry.onConnectionOpened(contactId, scheduler,
 				connection.getMaxMessageLength());
+		recordSink.onConnected(contactId);
 		Thread ticker = new Thread(
 				() -> tickLoop(scheduler, clock, gate, running),
 				"zpp-send-" + contactId);

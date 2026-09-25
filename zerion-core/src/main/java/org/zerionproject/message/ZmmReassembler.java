@@ -65,6 +65,8 @@ public class ZmmReassembler {
 	private final Map<Integer, Integer> partialsPerContact = new HashMap<>();
 	@GuardedBy("lock")
 	private long totalBufferedBytes;
+	@GuardedBy("lock")
+	private final Map<Integer, Integer> liveSessions = new HashMap<>();
 
 	/**
 	 * Feeds one decoded record. Returns the completed message if this record was
@@ -127,7 +129,32 @@ public class ZmmReassembler {
 		}
 	}
 
-	/** Drops all partial reassembly state for a contact (its connection ended). */
+	/** A connection to the contact has opened. */
+	public void sessionOpened(int contactId) {
+		synchronized (lock) {
+			liveSessions.put(contactId,
+					liveSessions.getOrDefault(contactId, 0) + 1);
+		}
+	}
+
+	/**
+	 * A connection to the contact has ended. Partial records are dropped only
+	 * when this was the contact's last live connection: a second session to
+	 * the same contact keeps its fragments while the first one closes.
+	 */
+	public void sessionClosed(int contactId) {
+		synchronized (lock) {
+			int n = liveSessions.getOrDefault(contactId, 0) - 1;
+			if (n > 0) {
+				liveSessions.put(contactId, n);
+				return;
+			}
+			liveSessions.remove(contactId);
+			clearContact(contactId);
+		}
+	}
+
+	/** Drops all partial reassembly state for a contact. */
 	public void clearContact(int contactId) {
 		synchronized (lock) {
 			Iterator<Map.Entry<Long, Partial>> it = partials.entrySet().iterator();
