@@ -24,4 +24,14 @@ class LoginUtils {
 		builder.setPositiveButton(R.string.ok, null);
 		return builder.create();
 	}
+
+	static AlertDialog createKeyReplacementFailedDialog(Context ctx) {
+		MaterialAlertDialogBuilder builder =
+				new SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
+		builder.setIcon(getDialogIcon(ctx, R.drawable.alerts_and_states_error));
+		builder.setTitle(R.string.dialog_title_password_not_changed);
+		builder.setMessage(R.string.dialog_message_password_not_changed);
+		builder.setPositiveButton(R.string.ok, null);
+		return builder.create();
+	}
 }

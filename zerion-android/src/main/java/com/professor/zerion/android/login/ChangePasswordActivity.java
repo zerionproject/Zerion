@@ -29,10 +29,12 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_REPLACEMENT_FAILED;
 import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
 import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
 import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.STRONG;
+import static com.professor.zerion.android.login.LoginUtils.createKeyReplacementFailedDialog;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.setError;
@@ -214,6 +216,8 @@ public class ChangePasswordActivity extends ZerionActivity
 		progress.setVisibility(INVISIBLE);
 		if (result == KEY_STRENGTHENER_ERROR) {
 			createKeyStrengthenerErrorDialog(this).show();
+		} else if (result == KEY_REPLACEMENT_FAILED) {
+			createKeyReplacementFailedDialog(this).show();
 		} else if (viewModel.lockoutRemainingMs() > 0) {
 			setError(currentPasswordEntryWrapper, getString(
 					R.string.hardened_block_password_locked,

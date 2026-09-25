@@ -16,6 +16,8 @@ import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static org.zerionproject.core.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
 import static org.zerionproject.core.api.crypto.DecryptionResult.INVALID_PASSWORD;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_REPLACEMENT_FAILED;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getIdentity;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
@@ -372,6 +375,9 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			oneOf(crypto).encryptWithPassword(key.getBytes(), newPassword,
 					keyStrengthener);
 			will(returnValue(newEncryptedKey));
+			oneOf(crypto).decryptWithPassword(newEncryptedKey, newPassword,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
 		}});
 
 		storeDatabaseKey(keyFile, encryptedKeyHex);
@@ -698,5 +704,140 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertFalse(accountManager.createAccount(authorName, new char[0]));
 		assertEquals("empty password",
 				accountManager.getLastCreateAccountError());
+	}
+
+	private AccountManagerImpl failingKeyWrite(String failingFileName) {
+		return new AccountManagerImpl(databaseConfig, crypto,
+				identityManager) {
+			@Override
+			protected void writeKeyFile(File f, byte[] bytes)
+					throws IOException {
+				if (f.getName().equals(failingFileName)) {
+					throw new IOException("no space left on device");
+				}
+				super.writeKeyFile(f, bytes);
+			}
+		};
+	}
+
+	private void expectOldPasswordRightAndNewKeyEncrypted() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(encryptedKey, password,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+			oneOf(crypto).isEncryptedWithStrengthenedKey(encryptedKey);
+			will(returnValue(true));
+			oneOf(crypto).isEncryptedWithLegacyKdf(encryptedKey);
+			will(returnValue(false));
+			oneOf(crypto).encryptWithPassword(key.getBytes(), newPassword,
+					keyStrengthener);
+			will(returnValue(newEncryptedKey));
+		}});
+	}
+
+	/**
+	 * EXT-13-F03: a password change whose new key cannot be written
+	 * durably must fail, and fail closed: the files still hold the old
+	 * ciphertext, so the old password keeps unlocking the account.
+	 */
+	@Test
+	public void changePasswordFailsClosedWhenThePrimaryFileCannotBeWritten()
+			throws Exception {
+		AccountManagerImpl m = failingKeyWrite("db.key");
+		expectOldPasswordRightAndNewKeyEncrypted();
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		try {
+			m.changePassword(password, newPassword);
+			fail();
+		} catch (DecryptionException expected) {
+			assertEquals(KEY_REPLACEMENT_FAILED,
+					expected.getDecryptionResult());
+		}
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals("the backup is put back", encryptedKeyHex,
+				loadDatabaseKey(keyBackupFile));
+		assertFalse(m.hasDatabaseKey());
+	}
+
+	@Test
+	public void changePasswordFailsClosedWhenTheBackupCannotBeWritten()
+			throws Exception {
+		AccountManagerImpl m = failingKeyWrite("db.key.bak");
+		expectOldPasswordRightAndNewKeyEncrypted();
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		try {
+			m.changePassword(password, newPassword);
+			fail();
+		} catch (DecryptionException expected) {
+			assertEquals(KEY_REPLACEMENT_FAILED,
+					expected.getDecryptionResult());
+		}
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
+	}
+
+	/**
+	 * The change is complete only when the bytes on disk decrypt with the
+	 * new password to the same key; a stored value that does not is rolled
+	 * back to the old ciphertext.
+	 */
+	@Test
+	public void changePasswordRollsBackWhenTheStoredKeyDoesNotVerify()
+			throws Exception {
+		expectOldPasswordRightAndNewKeyEncrypted();
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(newEncryptedKey, newPassword,
+					keyStrengthener);
+			will(throwException(new DecryptionException(INVALID_PASSWORD)));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		try {
+			accountManager.changePassword(password, newPassword);
+			fail();
+		} catch (DecryptionException expected) {
+			assertEquals(KEY_REPLACEMENT_FAILED,
+					expected.getDecryptionResult());
+		}
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
+	}
+
+	@Test
+	public void changePasswordSucceedsOnlyWhenTheNewPasswordUnlocksTheStoredKey()
+			throws Exception {
+		expectOldPasswordRightAndNewKeyEncrypted();
+		context.checking(new Expectations() {{
+			oneOf(crypto).decryptWithPassword(newEncryptedKey, newPassword,
+					keyStrengthener);
+			will(returnValue(key.getBytes()));
+		}});
+		storeDatabaseKey(keyFile, encryptedKeyHex);
+		storeDatabaseKey(keyBackupFile, encryptedKeyHex);
+		accountManager.changePassword(password, newPassword);
+		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyFile));
+		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyBackupFile));
+		assertTrue(accountManager.hasDatabaseKey());
+	}
+
+	/** The backup is written first, so a partial write never replaces the
+	 * primary file, which is the one read first at sign-in. */
+	@Test
+	public void storingTheKeyWritesTheBackupBeforeThePrimary()
+			throws Exception {
+		List<String> order = new ArrayList<>();
+		AccountManagerImpl m = new AccountManagerImpl(databaseConfig, crypto,
+				identityManager) {
+			@Override
+			protected void writeKeyFile(File f, byte[] bytes)
+					throws IOException {
+				order.add(f.getName());
+				super.writeKeyFile(f, bytes);
+			}
+		};
+		assertTrue(m.storeEncryptedDatabaseKey(encryptedKeyHex));
+		assertEquals(java.util.Arrays.asList("db.key.bak", "db.key"), order);
 	}
 }

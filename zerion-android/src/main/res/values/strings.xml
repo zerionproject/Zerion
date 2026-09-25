@@ -1445,6 +1445,8 @@
 	<string name="choose_new_password">New password</string>
 	<string name="confirm_new_password">Confirm new password</string>
 	<string name="password_changed">Password has been changed.</string>
+	<string name="dialog_title_password_not_changed">Password not changed</string>
+	<string name="dialog_message_password_not_changed">The key could not be stored under the new password, so nothing was changed. Your current password still works. Check the free space on the device and try again.</string>
 	<string name="panic_setting">Panic button setup</string>
 	<string name="panic_setting_title">Panic button</string>
 	<string name="panic_setting_hint">Configure how Zerion will react when you use a panic button app</string>

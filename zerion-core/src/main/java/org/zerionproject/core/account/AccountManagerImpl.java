@@ -119,11 +119,15 @@ class AccountManagerImpl implements AccountManager, Service {
 	}
 
 	/**
-	 * Writes the key to the primary file and then to the backup, each through
+	 * Writes the key to the backup file and then to the primary, each through
 	 * a synced temporary file and an atomic rename, so at every instant at
-	 * least one of the two files holds a complete key: the primary is
-	 * replaced in one step and the old backup is left untouched until the
-	 * new primary is durable.
+	 * least one of the two files holds a complete key. The primary, which is
+	 * read first, is replaced last: a write that fails part way leaves the
+	 * primary at its previous value, so the credential that unlocked the
+	 * account before the call still does, and a backup that was already
+	 * replaced is put back. Returns false if either file could not be
+	 * written durably; the caller must then treat the stored key as
+	 * unchanged.
 	 */
 	@GuardedBy("stateChangeLock")
 	boolean storeEncryptedDatabaseKey(String hex) {
@@ -131,13 +135,29 @@ class AccountManagerImpl implements AccountManager, Service {
 		File dbKeyFile = dbKeyFile();
 		File dbKeyBackupFile = dbKeyBackupFile();
 		byte[] bytes = hex.getBytes(UTF_8);
+		String previousBackup = readDbKeyFromFile(dbKeyBackupFile);
 		try {
-			LoginThrottle.writeDurably(dbKeyFile, bytes);
-			LoginThrottle.writeDurably(dbKeyBackupFile, bytes);
-			return true;
+			writeKeyFile(dbKeyBackupFile, bytes);
 		} catch (IOException e) {
 			return false;
 		}
+		try {
+			writeKeyFile(dbKeyFile, bytes);
+			return true;
+		} catch (IOException e) {
+			if (previousBackup != null) {
+				try {
+					writeKeyFile(dbKeyBackupFile,
+							previousBackup.getBytes(UTF_8));
+				} catch (IOException ignored) {
+				}
+			}
+			return false;
+		}
+	}
+
+	protected void writeKeyFile(File f, byte[] bytes) throws IOException {
+		LoginThrottle.writeDurably(f, bytes);
 	}
 
 	@Override
@@ -305,6 +325,33 @@ class AccountManagerImpl implements AccountManager, Service {
 		if (old != null && old != key) old.clear();
 	}
 
+	/**
+	 * Reads the stored value back and decrypts it with the given password,
+	 * with no upgrade side effects: the change of password is complete only
+	 * when the bytes on disk yield the same key under the new password.
+	 */
+	@GuardedBy("stateChangeLock")
+	private boolean storedKeyDecryptsTo(SecretKey key, char[] password) {
+		String hex = loadEncryptedDatabaseKey();
+		if (hex == null) return false;
+		byte[] ciphertext;
+		try {
+			ciphertext = fromHexString(hex);
+		} catch (FormatException e) {
+			return false;
+		}
+		byte[] plaintext;
+		try {
+			plaintext = crypto.decryptWithPassword(ciphertext, password,
+					databaseConfig.getKeyStrengthener());
+		} catch (DecryptionException | RuntimeException e) {
+			return false;
+		}
+		boolean same = java.util.Arrays.equals(plaintext, key.getBytes());
+		java.util.Arrays.fill(plaintext, (byte) 0);
+		return same;
+	}
+
 	@GuardedBy("stateChangeLock")
 	private SecretKey loadAndDecryptDatabaseKey(char[] password)
 			throws DecryptionException {
@@ -352,12 +399,21 @@ class AccountManagerImpl implements AccountManager, Service {
 				throw e;
 			}
 			resetLockout();
+			String previous = loadEncryptedDatabaseKey();
+			boolean stored;
 			try {
-				encryptAndStoreDatabaseKey(key, newPassword);
+				stored = encryptAndStoreDatabaseKey(key, newPassword);
 			} catch (org.zerionproject.core.api.crypto
 					.KeyStrengthenerException e) {
+				if (databaseKey == null) key.clear();
 				throw new DecryptionException(org.zerionproject.core.api
 						.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR);
+			}
+			if (!stored || !storedKeyDecryptsTo(key, newPassword)) {
+				if (previous != null) storeEncryptedDatabaseKey(previous);
+				if (databaseKey == null) key.clear();
+				throw new DecryptionException(org.zerionproject.core.api
+						.crypto.DecryptionResult.KEY_REPLACEMENT_FAILED);
 			}
 			if (databaseKey == null) {
 				databaseKey = key;
