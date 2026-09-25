@@ -1,0 +1,55 @@
+name: Dependency verification
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    tags:
+      - "v*"
+    paths:
+      - "gradle/**"
+      - "**/build.gradle"
+      - "**/*.lockfile"
+      - "settings.gradle"
+      - ".github/workflows/dependency-verification.yml"
+  pull_request:
+    paths:
+      - "gradle/**"
+      - "**/build.gradle"
+      - "**/*.lockfile"
+      - "settings.gradle"
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  strict-from-clean-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Resolve every compile and test classpath with strict verification and no dependency cache
+        run: |
+          export GRADLE_USER_HOME="$RUNNER_TEMP/gradle-home-clean"
+          rm -rf "$GRADLE_USER_HOME"
+          ./gradlew --no-daemon --dependency-verification strict \
+            testClasses \
+            :zerion-android:compileOfficialReleaseJavaWithJavac \
+            :zerion-android:compileOfficialDebugJavaWithJavac
+      - name: Reject a tampered artifact
+        run: |
+          export GRADLE_USER_HOME="$RUNNER_TEMP/gradle-home-clean"
+          f=$(find "$GRADLE_USER_HOME/caches/modules-2/files-2.1/org.bouncycastle/bcprov-jdk15to18" -name "bcprov-jdk15to18-*.jar" | head -1)
+          test -n "$f"
+          printf 'x' >> "$f"
+          if ./gradlew --no-daemon --dependency-verification strict --offline :zerion-core:compileJava > tamper.log 2>&1; then
+            echo "strict verification accepted a modified artifact"; exit 1
+          fi
+          grep -q "Dependency verification failed" tamper.log
