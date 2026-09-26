@@ -336,7 +336,8 @@ class ChannelManagerImpl
 				s.getNextDelegationSeq(),
 				s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 	}
 
 	@Override
@@ -475,7 +476,8 @@ class ChannelManagerImpl
 				s.getRevokedDelegationSeqs(),
 				s.getNextDelegationSeq(), privKey,
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 	}
 
 	private byte[] handlePublisherRequest(byte[] channelId,
@@ -832,6 +834,7 @@ class ChannelManagerImpl
 				throw new DbException();
 			}
 			store.putChannel(r.mergedState);
+			withholdNewlyRevoked(channelId, cur, r.mergedState);
 			for (ChannelPost p : r.acceptedPosts) {
 				acceptIncomingPost(channelId, p);
 			}
@@ -986,7 +989,8 @@ class ChannelManagerImpl
 				s.getNextDelegationSeq(),
 				s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 	}
 
 	@Nullable
@@ -1387,7 +1391,8 @@ class ChannelManagerImpl
 				s.getNextDelegationSeq(),
 				s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 		store.putChannel(updated);
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -1483,6 +1488,7 @@ class ChannelManagerImpl
 		ChannelState updated = withDelegations(s, remaining, revoked,
 				s.getNextDelegationSeq());
 		store.putChannel(updated);
+		withholdRevoked(channelId, updated);
 		fireEvent(channelId,
 				org.zerionproject.app.api.channel.event
 						.ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -1896,7 +1902,8 @@ class ChannelManagerImpl
 					s.getNextDelegationSeq(),
 					s.getOnionPrivateKey(),
 					s.getPinnedPostSeq(),
-					required);
+					required,
+				s.getRetiredDelegations());
 			store.putChannel(updated);
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -2379,7 +2386,8 @@ class ChannelManagerImpl
 					s.getNextDelegationSeq(),
 					s.getOnionPrivateKey(),
 					s.getPinnedPostSeq(),
-					s.requiresApproval());
+					s.requiresApproval(),
+				s.getRetiredDelegations());
 			store.putChannel(updated);
 			java.util.Arrays.fill(ephPriv, (byte) 0);
 		}
@@ -2648,7 +2656,7 @@ class ChannelManagerImpl
 			}
 			java.util.Set<Long> posts = new java.util.HashSet<>();
 			for (ChannelPost p : store.getPosts(channelId)) {
-				posts.add(p.getSeqNum());
+				if (!p.isWithheld()) posts.add(p.getSeqNum());
 			}
 			java.util.List<org.zerionproject.app.api.channel
 					.ChannelReaction> existing =
@@ -2739,7 +2747,8 @@ class ChannelManagerImpl
 				s.getNextDelegationSeq(),
 				s.getOnionPrivateKey(),
 				seqNum,
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 		store.putChannel(updated);
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -2802,6 +2811,20 @@ class ChannelManagerImpl
 	private ChannelState withDelegations(ChannelState s,
 			java.util.List<ChannelDelegationCert> active,
 			java.util.List<Long> revoked, long nextSeq) {
+		java.util.List<ChannelDelegationCert> leaving =
+				new java.util.ArrayList<>();
+		for (ChannelDelegationCert c : s.getActiveDelegations()) {
+			boolean still = false;
+			for (ChannelDelegationCert a : active) {
+				if (a.getDelegationSeq() == c.getDelegationSeq()) {
+					still = true;
+					break;
+				}
+			}
+			if (!still) leaving.add(c);
+		}
+		java.util.List<ChannelDelegationCert> retired =
+				ChannelState.retire(s.getRetiredDelegations(), leaving);
 		return new ChannelState(s.getChannelId(), s.getSalt(),
 				s.getPublisherEd25519PubKey(),
 				s.getPublisherMlDsaPubKey(), s.getName(),
@@ -2813,7 +2836,8 @@ class ChannelManagerImpl
 				s.getContentKeyHash(), s.getContentKey(),
 				active, revoked, nextSeq, s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				retired);
 	}
 
 	@Override
@@ -2835,7 +2859,8 @@ class ChannelManagerImpl
 					s.getNextDelegationSeq(),
 					s.getOnionPrivateKey(),
 					s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 			store.putChannel(updated);
 			fireEvent(s.getChannelId(),
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -2862,6 +2887,21 @@ class ChannelManagerImpl
 				: existing.get(existing.size() - 1);
 		ChannelPostValidator.Result vr =
 				validator.validate(s, incoming, previous);
+		if (incoming.isWithheld()) {
+			boolean chainOk = validator.validateChain(incoming, previous)
+					== ChannelPostValidator.Result.OK;
+			boolean signerState = vr == ChannelPostValidator.Result.OK
+					|| vr == ChannelPostValidator.Result.DELEGATION_REVOKED
+					|| vr == ChannelPostValidator.Result.DELEGATION_NOT_FOUND;
+			if (!chainOk || !signerState || !incoming.signedByDelegate()) {
+				throw new DbException();
+			}
+			store.appendPost(channelId, incoming);
+			store.putChannel(withSeq(s, incoming.getSeqNum()));
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
+			return;
+		}
 		if (vr != ChannelPostValidator.Result.OK) {
 			throw new DbException();
 		}
@@ -2871,6 +2911,36 @@ class ChannelManagerImpl
 		store.setUnread(channelId, store.getUnread(channelId) + 1);
 		eventBus.broadcast(new ChannelPostReceivedEvent(channelId,
 				incoming.getSeqNum(), false));
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
+	}
+
+	/**
+	 * When a merged manifest revokes a delegation the subscriber did not
+	 * know as revoked, the stored posts are judged again under the new
+	 * state, so a revocation hides the delegate's earlier posts on a
+	 * subscriber that already held them exactly as on one that fetches
+	 * them later.
+	 */
+	private void withholdNewlyRevoked(byte[] channelId, ChannelState before,
+			ChannelState after) throws DbException {
+		for (Long seq : after.getRevokedDelegationSeqs()) {
+			if (seq != null && !before.getRevokedDelegationSeqs()
+					.contains(seq)) {
+				withholdRevoked(channelId, after);
+				return;
+			}
+		}
+	}
+
+	private void withholdRevoked(byte[] channelId, ChannelState state)
+			throws DbException {
+		List<ChannelPost> posts = store.getPosts(channelId);
+		List<ChannelPost> out = ChannelWithholding.withholdRevoked(validator,
+				state, posts);
+		if (out == null) return;
+		store.writePosts(channelId, out);
+		store.setUnread(channelId, ChannelWithholding.unreadCount(out));
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
 	}
@@ -2917,7 +2987,8 @@ class ChannelManagerImpl
 				s.getRevokedDelegationSeqs(),
 				s.getNextDelegationSeq(), s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 	}
 
 	private ChannelState withSeq(ChannelState s, long newHighSeq) {
@@ -2934,7 +3005,8 @@ class ChannelManagerImpl
 				s.getNextDelegationSeq(),
 				s.getOnionPrivateKey(),
 				s.getPinnedPostSeq(),
-				s.requiresApproval());
+				s.requiresApproval(),
+				s.getRetiredDelegations());
 	}
 
 	private void clearReturned(byte[] b) {

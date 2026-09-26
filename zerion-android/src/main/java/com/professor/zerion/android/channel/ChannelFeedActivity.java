@@ -524,7 +524,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			return;
 		}
 		pinnedBanner.setVisibility(View.VISIBLE);
-		pinnedBannerText.setText(target.getBody());
+		pinnedBannerText.setText(target.isWithheld()
+				? getString(R.string.channels_post_withheld)
+				: target.getBody());
 		final int idx = targetIndex;
 		pinnedBanner.setOnClickListener(v ->
 				recycler.smoothScrollToPosition(idx));
@@ -1214,10 +1216,15 @@ public class ChannelFeedActivity extends ZerionActivity
 					? commentCounts.get(p.getSeqNum()) : 0;
 			holder.bind(p, attachmentTapListener, thumbnails, reactions,
 					count, discussionsEnabled, commentTapListener);
-			holder.itemView.setOnLongClickListener(v -> {
-				longPressListener.onPostLongPress(p);
-				return true;
-			});
+			if (p.isWithheld()) {
+				holder.itemView.setOnLongClickListener(null);
+				holder.itemView.setLongClickable(false);
+			} else {
+				holder.itemView.setOnLongClickListener(v -> {
+					longPressListener.onPostLongPress(p);
+					return true;
+				});
+			}
 		}
 
 		@Override
@@ -1235,10 +1242,12 @@ public class ChannelFeedActivity extends ZerionActivity
 		private final TextView commentBadge;
 		private final LinearLayout attachments;
 		private final TextView reactionsView;
+		private final android.graphics.Typeface bodyTypeface;
 
 		PostViewHolder(@NonNull View itemView) {
 			super(itemView);
 			body = itemView.findViewById(R.id.channelPostBodyView);
+			bodyTypeface = body.getTypeface();
 			timestamp = itemView.findViewById(R.id.channelPostTimestampView);
 			signerBadge =
 					itemView.findViewById(R.id.channelPostSignerBadge);
@@ -1258,6 +1267,11 @@ public class ChannelFeedActivity extends ZerionActivity
 						.api.channel.ChannelReaction>> reactions,
 				int commentCount, boolean discussionsEnabled,
 				PostAdapter.OnCommentTap commentTapListener) {
+			if (p.isWithheld()) {
+				bindWithheld(p);
+				return;
+			}
+			body.setTypeface(bodyTypeface);
 			if (discussionsEnabled) {
 				commentBadge.setVisibility(View.VISIBLE);
 				String label = commentCount > 0
@@ -1324,6 +1338,23 @@ public class ChannelFeedActivity extends ZerionActivity
 			} else {
 				ttlLabel.setVisibility(View.GONE);
 			}
+		}
+
+		private void bindWithheld(ChannelPost p) {
+			commentBadge.setVisibility(View.GONE);
+			commentBadge.setOnClickListener(null);
+			body.setText(R.string.channels_post_withheld);
+			body.setTypeface(bodyTypeface, android.graphics.Typeface.ITALIC);
+			body.setVisibility(View.VISIBLE);
+			attachments.removeAllViews();
+			attachments.setVisibility(View.GONE);
+			reactionsView.setVisibility(View.GONE);
+			timestamp.setText(
+					com.professor.zerion.android.util.UiUtils.formatChannelHour(
+							itemView.getContext(),
+							p.getTimestampHourMs()));
+			signerBadge.setVisibility(View.GONE);
+			ttlLabel.setVisibility(View.GONE);
 		}
 
 		private void bindAttachments(ChannelPost p,

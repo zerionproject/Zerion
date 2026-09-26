@@ -23,6 +23,7 @@ public class ChannelPost {
 	private final byte[] delegateSignerEd25519PubKey;
 	@Nullable
 	private final byte[] delegateSignerMlDsaPubKey;
+	private final boolean withheld;
 
 	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
 			long timestampHourMs, String body,
@@ -38,6 +39,18 @@ public class ChannelPost {
 			byte[] signature, boolean read,
 			@Nullable byte[] delegateSignerEd25519PubKey,
 			@Nullable byte[] delegateSignerMlDsaPubKey) {
+		this(channelId, seqNum, prevHash, timestampHourMs, body,
+				attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				false);
+	}
+
+	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, String body,
+			List<ChannelAttachment> attachments, long ttlMs,
+			byte[] signature, boolean read,
+			@Nullable byte[] delegateSignerEd25519PubKey,
+			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld) {
 		this.channelId = channelId;
 		this.seqNum = seqNum;
 		this.prevHash = prevHash;
@@ -49,6 +62,26 @@ public class ChannelPost {
 		this.read = read;
 		this.delegateSignerEd25519PubKey = delegateSignerEd25519PubKey;
 		this.delegateSignerMlDsaPubKey = delegateSignerMlDsaPubKey;
+		this.withheld = withheld;
+	}
+
+	/**
+	 * A post that keeps its place in the chain but whose content is not
+	 * shown: it was signed by a delegate whose authorization the publisher
+	 * has since revoked, or by a delegate this subscriber can no longer
+	 * verify and that a later verified post commits to. The stored bytes are
+	 * the original, so the chain hash of the next post still verifies.
+	 */
+	public boolean isWithheld() {
+		return withheld;
+	}
+
+	public ChannelPost withheld() {
+		if (withheld) return this;
+		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
+				body, attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				true);
 	}
 
 	public byte[] getChannelId() {

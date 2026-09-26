@@ -147,6 +147,7 @@ class ChannelPullProtocol {
 		}
 
 		List<ChannelPost> accepted = new ArrayList<>();
+		List<ChannelPost> provisional = new ArrayList<>();
 		ChannelPost prev = existingPosts.isEmpty() ? null
 				: existingPosts.get(existingPosts.size() - 1);
 		long lastKnownSeq = prev == null ? -1L : prev.getSeqNum();
@@ -156,11 +157,25 @@ class ChannelPullProtocol {
 			}
 			ChannelPostValidator.Result vr = validator.validate(
 					mergedState, incoming, prev);
-			if (vr != ChannelPostValidator.Result.OK) {
+			if (vr == ChannelPostValidator.Result.OK) {
+				for (ChannelPost p : provisional) accepted.add(p.withheld());
+				provisional.clear();
+				accepted.add(incoming);
+				prev = incoming;
+			} else if (vr == ChannelPostValidator.Result.DELEGATION_REVOKED) {
+				for (ChannelPost p : provisional) accepted.add(p.withheld());
+				provisional.clear();
+				accepted.add(incoming.withheld());
+				prev = incoming;
+			} else if (vr == ChannelPostValidator.Result.DELEGATION_NOT_FOUND
+					&& incoming.signedByDelegate()
+					&& validator.validateChain(incoming, prev)
+					== ChannelPostValidator.Result.OK) {
+				provisional.add(incoming);
+				prev = incoming;
+			} else {
 				break;
 			}
-			accepted.add(incoming);
-			prev = incoming;
 		}
 
 		boolean wireDiscussions;
@@ -281,6 +296,19 @@ class ChannelPullProtocol {
 			byte[] joinCapRaw = manifest.getOptionalRaw("joinCapability");
 			byte[] joinCap = joinCapRaw != null
 					? joinCapRaw : local.getJoinCapability();
+			List<ChannelDelegationCert> leaving = new ArrayList<>();
+			for (ChannelDelegationCert c : local.getActiveDelegations()) {
+				boolean still = false;
+				for (ChannelDelegationCert a : active) {
+					if (a.getDelegationSeq() == c.getDelegationSeq()) {
+						still = true;
+						break;
+					}
+				}
+				if (!still) leaving.add(c);
+			}
+			List<ChannelDelegationCert> retired = ChannelState.retire(
+					local.getRetiredDelegations(), leaving);
 			return new ChannelState(local.getChannelId(),
 					manifest.getRaw("salt"),
 					manifest.getRaw("publisherEd25519"),
@@ -304,7 +332,8 @@ class ChannelPullProtocol {
 					local.getNextDelegationSeq(),
 					local.getOnionPrivateKey(),
 					wirePinnedPostSeq,
-					wireRequiresApproval);
+					wireRequiresApproval,
+					retired);
 		} catch (FormatException e) {
 			return null;
 		}

@@ -32,6 +32,15 @@ public class ChannelState {
 	private final byte[] contentKey;
 	private final List<ChannelDelegationCert> activeDelegations;
 	private final List<Long> revokedDelegationSeqs;
+	/**
+	 * Certificates that were active once and no longer are (revoked or
+	 * replaced), kept so that posts signed under them can still be verified
+	 * and, if revoked, withheld rather than blocking the chain. Bounded by
+	 * {@link #MAX_RETIRED_DELEGATIONS}, oldest sequence numbers dropped
+	 * first.
+	 */
+	private final List<ChannelDelegationCert> retiredDelegations;
+	public static final int MAX_RETIRED_DELEGATIONS = 64;
 	private final long nextDelegationSeq;
 	@Nullable
 	private final String onionPrivateKey;
@@ -135,6 +144,32 @@ public class ChannelState {
 			@Nullable String onionPrivateKey,
 			long pinnedPostSeq,
 			boolean requiresApproval) {
+		this(channelId, salt, publisherEd25519PubKey, publisherMlDsaPubKey,
+				name, description, avatarHash, createdAtHourMs,
+				publicChannel, joinCapability, currentOnion, manifestSeq,
+				weArePublisher, highestKnownPostSeq, contentKeyHash,
+				contentKey, activeDelegations, revokedDelegationSeqs,
+				nextDelegationSeq, onionPrivateKey, pinnedPostSeq,
+				requiresApproval,
+				Collections.<ChannelDelegationCert>emptyList());
+	}
+
+	public ChannelState(byte[] channelId, byte[] salt,
+			byte[] publisherEd25519PubKey, byte[] publisherMlDsaPubKey,
+			String name, String description, @Nullable byte[] avatarHash,
+			long createdAtHourMs, boolean publicChannel,
+			@Nullable byte[] joinCapability, String currentOnion,
+			long manifestSeq, boolean weArePublisher,
+			long highestKnownPostSeq,
+			@Nullable byte[] contentKeyHash,
+			@Nullable byte[] contentKey,
+			List<ChannelDelegationCert> activeDelegations,
+			List<Long> revokedDelegationSeqs,
+			long nextDelegationSeq,
+			@Nullable String onionPrivateKey,
+			long pinnedPostSeq,
+			boolean requiresApproval,
+			List<ChannelDelegationCert> retiredDelegations) {
 		this.channelId = channelId;
 		this.salt = salt;
 		this.publisherEd25519PubKey = publisherEd25519PubKey;
@@ -159,6 +194,8 @@ public class ChannelState {
 		this.onionPrivateKey = onionPrivateKey;
 		this.pinnedPostSeq = pinnedPostSeq;
 		this.requiresApproval = requiresApproval;
+		this.retiredDelegations =
+				Collections.unmodifiableList(retiredDelegations);
 	}
 
 	public long getPinnedPostSeq() {
@@ -248,6 +285,33 @@ public class ChannelState {
 
 	public List<Long> getRevokedDelegationSeqs() {
 		return revokedDelegationSeqs;
+	}
+
+	public List<ChannelDelegationCert> getRetiredDelegations() {
+		return retiredDelegations;
+	}
+
+	/**
+	 * The retired list after {@code retiring} certificates leave the active
+	 * set: existing retired certificates first, then the new ones, without
+	 * duplicates by sequence number, trimmed to the newest
+	 * {@link #MAX_RETIRED_DELEGATIONS} by sequence number.
+	 */
+	public static List<ChannelDelegationCert> retire(
+			List<ChannelDelegationCert> retired,
+			List<ChannelDelegationCert> retiring) {
+		java.util.Map<Long, ChannelDelegationCert> bySeq =
+				new java.util.TreeMap<>();
+		for (ChannelDelegationCert c : retired) {
+			bySeq.put(c.getDelegationSeq(), c);
+		}
+		for (ChannelDelegationCert c : retiring) {
+			bySeq.put(c.getDelegationSeq(), c);
+		}
+		List<ChannelDelegationCert> out = new java.util.ArrayList<>(
+				bySeq.values());
+		while (out.size() > MAX_RETIRED_DELEGATIONS) out.remove(0);
+		return out;
 	}
 
 	public long getNextDelegationSeq() {

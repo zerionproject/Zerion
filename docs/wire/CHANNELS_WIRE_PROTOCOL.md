@@ -272,6 +272,13 @@ In order, a manifest is rejected (merge returns null ⇒ pull fails) if any of:
 If all pass but `incomingSeq <= local.getManifestSeq()`, the local state is
 returned unchanged (stale manifest, ignored but not an error).
 
+A merged manifest replaces the local `activeDelegations` list. Every
+certificate that was active locally and is absent from the new list is kept
+locally as a **retired** certificate (`ChannelState.retiredDelegations`,
+newest 64 by `delegationSeq`, never sent on the wire). Retired certificates
+let the subscriber keep verifying posts that were signed under them, so a
+revocation or renewal never makes an already-published post unverifiable.
+
 ## 4. Posts
 
 Posts ride inside the pull response `posts` list. `ChannelPullCodec.postToWire`
@@ -332,9 +339,31 @@ after the delegation cert checks pass (see section 6).
 `ChannelPullProtocol.processSubscriberResponse`: `lastKnownSeq` is the
 seqNum of the last locally stored post (or `-1`). For each incoming post,
 **`if (incoming.getSeqNum() <= lastKnownSeq) continue;`** - already-known
-posts are silently skipped. The first post that fails validation **breaks**
-the loop (the rest of the batch is discarded - the chain must be contiguous).
-`PULL_BATCH_MAX_POSTS = 100`.
+posts are silently skipped. Each remaining post is validated against the
+merged state and the previously accepted post:
+
+- `OK`: accepted and shown.
+- `DELEGATION_REVOKED` (chain, certificate signature, window and post
+  signature all verified; only the delegation is revoked): accepted and
+  stored **withheld**. The original bytes are kept so the next post's
+  `prevHash` still verifies; the body, attachments, reactions and comments
+  are not shown, no unread count or notification is raised, and reactions
+  to the post are refused.
+- `DELEGATION_NOT_FOUND` for a delegate-signed post whose chain link is
+  valid (`validateChain`): the subscriber has never held that certificate
+  (it subscribed after the revocation) and cannot check the signature. The
+  post is held **provisionally**. It is accepted, withheld, only when a
+  later post in the same batch verifies (`OK` or `DELEGATION_REVOKED`) and
+  thereby commits to it through the hash chain. A provisional run that
+  reaches the end of the batch is discarded, so an unverifiable tail is
+  never stored.
+- anything else (`CHAIN_BROKEN`, `SEQ_OUT_OF_ORDER`, `BAD_SIGNATURE`,
+  `DELEGATION_OUT_OF_WINDOW`, `BODY_TOO_LARGE`): **breaks** the loop; the
+  rest of the batch is discarded (the chain must be contiguous).
+
+`PULL_BATCH_MAX_POSTS = 100`. Withholding is a subscriber-side view
+decision; nothing about it appears on the wire, and a mirror serves the
+original post bytes unchanged.
 
 ### TTL / purge
 
@@ -493,11 +522,33 @@ Delegation signed-input (`delegationSignedInput`): `channelId ||
 delegateeEd25519 || delegateeMlDsa || int64 validFrom || int64 validUntil ||
 int64 delegationSeq`, label `SIGNING_LABEL_DELEGATION =
 "org.zerionproject/CHANNEL_DELEGATION"`, signed by the **publisher**
-hybrid key. A delegate-signed post (`post.signedByDelegate()`) is accepted
-only if the cert exists in `activeDelegations`, is not in
+hybrid key. A delegate-signed post (`post.signedByDelegate()`) is shown
+only if the cert exists in `activeDelegations` (or, for a post published
+before a renewal, in the local retired list), is not in
 `revokedDelegationSeqs`, covers `post.timestampHourMs`
 (`coversTimestamp`), and the cert's own signature verifies against the
 publisher key (`ChannelPostValidator.checkDelegationIfApplicable`).
+
+A delegate key may hold several certificates over time (renewal issues a
+new `delegationSeq` for the same key). A post is judged under the earliest
+issued certificate held for its key, active or retired, whose window covers
+`post.timestampHourMs`: the authorization in force when the post was made.
+A later certificate for the same key neither rescues a post made under a
+revoked one nor invalidates a post made under an earlier one. If no held
+certificate covers the post, the newest one is used and the result is
+`DELEGATION_OUT_OF_WINDOW`.
+
+Revocation does not break the chain. `DELEGATION_REVOKED` is returned only
+when every other check, including the post signature under the revoked
+certificate, has passed; such a post is kept withheld (section 4,
+skip-known rule). When a merged manifest adds a sequence number to
+`revokedDelegationSeqs`, the subscriber judges its stored delegate-signed
+posts again under the merged state and withholds those now reported as
+revoked; the unread count is recomputed over posts that are neither read
+nor withheld. The publisher applies the same step to its own copy when it
+revokes. A withheld post is never shown again. Withheld posts are stored
+with an extra local key `withheld` (boolean, absent means false) that is
+never sent on the wire.
 
 ### Invite link format (`ChannelCodec.formatInviteLink` / `parseInviteLink`)
 

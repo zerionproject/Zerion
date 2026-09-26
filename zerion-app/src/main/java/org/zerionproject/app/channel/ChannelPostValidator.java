@@ -8,8 +8,11 @@ import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 @NotNullByDefault
@@ -39,8 +42,51 @@ class ChannelPostValidator {
 		this.chainVerifier = chainVerifier;
 	}
 
+	/**
+	 * The full check. {@code DELEGATION_REVOKED} is returned only when every
+	 * other check passed, including the post signature under the revoked
+	 * certificate: the post is authentic and in the chain, but its author's
+	 * authorization has been withdrawn, so the caller may keep the post in
+	 * the chain and withhold its content. {@code DELEGATION_NOT_FOUND} means
+	 * the post claims a delegate this state has never held a certificate
+	 * for, active or retired, so the signature cannot be checked at all.
+	 */
 	Result validate(ChannelState state, ChannelPost post,
 			ChannelPost previousOrNull) {
+		Result chain = validateChain(post, previousOrNull);
+		if (chain != Result.OK) return chain;
+
+		PublicKey signerHybrid = resolveSigner(state, post);
+		if (signerHybrid == null) {
+			return Result.DELEGATION_NOT_FOUND;
+		}
+
+		Result delegationCheck = checkDelegationIfApplicable(state, post);
+		if (delegationCheck != Result.OK
+				&& delegationCheck != Result.DELEGATION_REVOKED) {
+			return delegationCheck;
+		}
+
+		byte[] signedInput = codec.postSignedInput(
+				post.getChannelId(), post.getSeqNum(),
+				post.getPrevHash(), post.getTimestampHourMs(),
+				post.getBody(),
+				codec.attachmentsHash(post.getAttachments()),
+				post.getTtlMs());
+		if (!signatures.verifyPost(post.getSignature(),
+				signedInput, signerHybrid)) {
+			return Result.BAD_SIGNATURE;
+		}
+		return delegationCheck;
+	}
+
+	/**
+	 * Only the chain part of {@link #validate}: body bound, sequence
+	 * number and link to the previous post. Used for a post whose signer
+	 * cannot be resolved, to decide whether it may be held as a provisional
+	 * chain element until a verified successor commits to it.
+	 */
+	Result validateChain(ChannelPost post, ChannelPost previousOrNull) {
 		if (post.getBody().length()
 				> ChannelConstants.MAX_POST_BODY_CHARS) {
 			return Result.BODY_TOO_LARGE;
@@ -60,25 +106,6 @@ class ChannelPostValidator {
 				return Result.CHAIN_BROKEN;
 			}
 		}
-
-		PublicKey signerHybrid = resolveSigner(state, post);
-		if (signerHybrid == null) {
-			return Result.DELEGATION_NOT_FOUND;
-		}
-
-		Result delegationCheck = checkDelegationIfApplicable(state, post);
-		if (delegationCheck != Result.OK) return delegationCheck;
-
-		byte[] signedInput = codec.postSignedInput(
-				post.getChannelId(), post.getSeqNum(),
-				post.getPrevHash(), post.getTimestampHourMs(),
-				post.getBody(),
-				codec.attachmentsHash(post.getAttachments()),
-				post.getTtlMs());
-		if (!signatures.verifyPost(post.getSignature(),
-				signedInput, signerHybrid)) {
-			return Result.BAD_SIGNATURE;
-		}
 		return Result.OK;
 	}
 
@@ -91,7 +118,8 @@ class ChannelPostValidator {
 		}
 		byte[] dEd = post.getDelegateSignerEd25519PubKey();
 		if (dEd == null) return null;
-		ChannelDelegationCert cert = findDelegation(state, dEd);
+		ChannelDelegationCert cert = findDelegation(state, dEd,
+				post.getTimestampHourMs());
 		if (cert == null) return null;
 		return new HybridSignaturePublicKey(cert.getDelegateeEd25519PubKey(),
 				cert.getDelegateeMlDsaPubKey());
@@ -102,14 +130,9 @@ class ChannelPostValidator {
 		if (!post.signedByDelegate()) return Result.OK;
 		byte[] dEd = post.getDelegateSignerEd25519PubKey();
 		if (dEd == null) return Result.DELEGATION_NOT_FOUND;
-		ChannelDelegationCert cert = findDelegation(state, dEd);
+		ChannelDelegationCert cert = findDelegation(state, dEd,
+				post.getTimestampHourMs());
 		if (cert == null) return Result.DELEGATION_NOT_FOUND;
-		for (Long revokedSeq : state.getRevokedDelegationSeqs()) {
-			if (revokedSeq != null
-					&& revokedSeq == cert.getDelegationSeq()) {
-				return Result.DELEGATION_REVOKED;
-			}
-		}
 		if (!cert.coversTimestamp(post.getTimestampHourMs())) {
 			return Result.DELEGATION_OUT_OF_WINDOW;
 		}
@@ -127,18 +150,48 @@ class ChannelPostValidator {
 				certSignedInput, owner)) {
 			return Result.BAD_SIGNATURE;
 		}
+		for (Long revokedSeq : state.getRevokedDelegationSeqs()) {
+			if (revokedSeq != null
+					&& revokedSeq == cert.getDelegationSeq()) {
+				return Result.DELEGATION_REVOKED;
+			}
+		}
 		return Result.OK;
 	}
 
-	@javax.annotation.Nullable
+	/**
+	 * The certificate a post by this delegate is judged under. Of every
+	 * certificate held for the key, active or retired, the earliest issued
+	 * one whose window covers the post is chosen: the authorization that was
+	 * in force when the post was made. That keeps a subscriber's verdict
+	 * independent of when it happened to subscribe: a certificate issued
+	 * later for the same key neither rescues a post made under a revoked
+	 * one nor invalidates a post made under an earlier one. If no held
+	 * certificate covers the post, the newest one is returned so the
+	 * result is an out-of-window refusal rather than an unknown delegate.
+	 */
+	@Nullable
 	private ChannelDelegationCert findDelegation(ChannelState state,
-			byte[] delegateeEd25519) {
-		for (ChannelDelegationCert c : state.getActiveDelegations()) {
-			if (Arrays.equals(c.getDelegateeEd25519PubKey(),
+			byte[] delegateeEd25519, long timestampHourMs) {
+		ChannelDelegationCert covering = null;
+		ChannelDelegationCert newest = null;
+		List<ChannelDelegationCert> all = new ArrayList<>(
+				state.getActiveDelegations());
+		all.addAll(state.getRetiredDelegations());
+		for (ChannelDelegationCert c : all) {
+			if (!Arrays.equals(c.getDelegateeEd25519PubKey(),
 					delegateeEd25519)) {
-				return c;
+				continue;
+			}
+			if (newest == null
+					|| c.getDelegationSeq() > newest.getDelegationSeq()) {
+				newest = c;
+			}
+			if (c.coversTimestamp(timestampHourMs) && (covering == null
+					|| c.getDelegationSeq() < covering.getDelegationSeq())) {
+				covering = c;
 			}
 		}
-		return null;
+		return covering != null ? covering : newest;
 	}
 }

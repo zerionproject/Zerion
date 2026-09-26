@@ -263,6 +263,19 @@ class ChannelStore {
 			delegList.add(cd);
 		}
 		d.put("activeDelegations", delegList);
+		BdfList retiredList = new BdfList();
+		for (ChannelDelegationCert c : s.getRetiredDelegations()) {
+			BdfDictionary cd = new BdfDictionary();
+			cd.put("channelId", c.getChannelId());
+			cd.put("delegateeEd25519", c.getDelegateeEd25519PubKey());
+			cd.put("delegateeMlDsa", c.getDelegateeMlDsaPubKey());
+			cd.put("validFromHourMs", c.getValidFromHourMs());
+			cd.put("validUntilHourMs", c.getValidUntilHourMs());
+			cd.put("delegationSeq", c.getDelegationSeq());
+			cd.put("signature", c.getSignature());
+			retiredList.add(cd);
+		}
+		d.put("retiredDelegations", retiredList);
 		BdfList revokedList = new BdfList();
 		for (Long seq : s.getRevokedDelegationSeqs()) revokedList.add(seq);
 		d.put("revokedDelegationSeqs", revokedList);
@@ -297,6 +310,21 @@ class ChannelStore {
 		for (Object o : rawRevoked) {
 			if (o instanceof Long) revoked.add((Long) o);
 		}
+		List<ChannelDelegationCert> retired = new ArrayList<>();
+		BdfList rawRetired = d.getList("retiredDelegations",
+				new BdfList());
+		for (Object o : rawRetired) {
+			if (!(o instanceof BdfDictionary)) continue;
+			BdfDictionary cd = (BdfDictionary) o;
+			retired.add(new ChannelDelegationCert(
+					cd.getRaw("channelId"),
+					cd.getRaw("delegateeEd25519"),
+					cd.getRaw("delegateeMlDsa"),
+					cd.getLong("validFromHourMs"),
+					cd.getLong("validUntilHourMs"),
+					cd.getLong("delegationSeq"),
+					cd.getRaw("signature")));
+		}
 		return new ChannelState(
 				d.getRaw("channelId"),
 				d.getRaw("salt"),
@@ -320,7 +348,8 @@ class ChannelStore {
 				d.getOptionalString("onionPrivateKey"),
 				d.getLong("pinnedPostSeq",
 						ChannelState.NO_PINNED_POST),
-				d.getBoolean("requiresApproval", false));
+				d.getBoolean("requiresApproval", false),
+				retired);
 	}
 
 	private BdfDictionary postToDict(ChannelPost p) {
@@ -332,6 +361,7 @@ class ChannelStore {
 		d.put("ttlMs", p.getTtlMs());
 		d.put("signature", p.getSignature());
 		d.put("read", p.isRead());
+		if (p.isWithheld()) d.put("withheld", true);
 		BdfList atts = new BdfList();
 		for (ChannelPost.ChannelAttachment a : p.getAttachments()) {
 			BdfDictionary ad = new BdfDictionary();
@@ -384,7 +414,8 @@ class ChannelStore {
 				d.getRaw("signature"),
 				d.getBoolean("read"),
 				d.getOptionalRaw("delegateSignerEd25519"),
-				d.getOptionalRaw("delegateSignerMlDsa"));
+				d.getOptionalRaw("delegateSignerMlDsa"),
+				d.getBoolean("withheld", false));
 	}
 
 	private byte[] dictToBytes(BdfDictionary d) {
