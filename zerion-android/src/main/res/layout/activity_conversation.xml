@@ -9,7 +9,6 @@
     android:background="@drawable/bg_zerion_gradient"
     tools:context=".android.conversation.ConversationActivity">
 
-    <!-- TOP APP BAR - Modern 2025 Style -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
@@ -79,14 +78,12 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- MAIN CONTENT WRAPPER -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <!-- MESSAGE LIST AREA WITH EDGE-TO-EDGE BEHAVIOR -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -105,7 +102,6 @@
                 android:paddingEnd="8dp"
                 app:scrollToEnd="false" />
 
-            <!-- SCROLL TO BOTTOM FAB -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/scrollToBottomButton"
                 style="@style/Zerion.FAB.Small"
@@ -119,7 +115,6 @@
 
         </FrameLayout>
 
-        <!-- IMAGE PREVIEW AREA -->
         <com.professor.zerion.android.view.ImagePreview
             android:id="@+id/imagePreview"
             android:layout_width="match_parent"
@@ -128,7 +123,6 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
-        <!-- TYPING INDICATOR -->
         <TextView
             android:id="@+id/typingIndicator"
             android:layout_width="wrap_content"
@@ -142,7 +136,6 @@
             android:textStyle="italic"
             android:visibility="gone" />
 
-        <!-- VERIFY-TO-SEND-MEDIA BANNER -->
         <TextView
             android:id="@+id/verifyMediaBanner"
             android:layout_width="match_parent"
@@ -164,7 +157,26 @@
             android:focusable="true"
             android:visibility="gone" />
 
-        <!-- INPUT CONTAINER WITH NORMAL AND RECORDING MODES -->
+        <TextView
+            android:id="@+id/keysOutOfSyncBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="4dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:background="@drawable/bg_input_bar"
+            android:textColor="@color/zerion_text_primary"
+            android:textSize="12sp"
+            android:gravity="center_vertical"
+            android:text="@string/identity_keys_out_of_sync_banner"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
         <FrameLayout
             android:id="@+id/input_container"
             android:layout_width="match_parent"
@@ -173,7 +185,6 @@
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp">
 
-            <!-- MODERN FLOATING INPUT BAR -->
             <com.professor.zerion.android.view.TextInputView
                 android:id="@+id/text_input_container"
                 android:layout_width="match_parent"
@@ -182,7 +193,6 @@
                 android:elevation="8dp"
                 android:clipToPadding="false" />
 
-            <!-- VOICE RECORDING MODE (replaces text input when recording) -->
             <include
                 android:id="@+id/voiceRecordingOverlay"
                 layout="@layout/voice_recording_overlay" />

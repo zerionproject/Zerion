@@ -434,7 +434,7 @@ class IntroduceeProtocolEngine
 				SecretKey finalMaster = crypto.deriveFinalMasterKey(s,
 						aliceSs, bobSs);
 				java.util.Arrays.fill(peerKemSecret, (byte) 0);
-				s = IntroduceeSession.withMasterKey(s, finalMaster.getBytes());
+				s = withFinalKeys(crypto, s, finalMaster);
 			} else {
 				crypto.verifyAuthMac(m.getMac(), s, localAuthor.getId());
 				crypto.verifySignature(m.getSignature(), s);
@@ -466,6 +466,13 @@ class IntroduceeProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s);
 		Message sent = sendActivateMessage(txn, s, localTimestamp, mac);
 		return IntroduceeSession.awaitActivate(s, m, sent, keys);
+	}
+
+	static IntroduceeSession withFinalKeys(IntroductionCrypto crypto,
+			IntroduceeSession s, SecretKey finalMaster) {
+		return IntroduceeSession.withFinalKeys(s, finalMaster.getBytes(),
+				crypto.deriveActivateKey(finalMaster, true),
+				crypto.deriveActivateKey(finalMaster, false));
 	}
 
 	private IntroduceeSession onRemoteActivate(Transaction txn,

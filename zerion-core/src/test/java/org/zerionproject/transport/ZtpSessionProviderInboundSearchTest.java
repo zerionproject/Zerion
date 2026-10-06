@@ -14,13 +14,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 import static org.junit.Assert.assertEquals;
 
-/**
- * A2-NET-02 / A2-REG-NET-02: an inbound tag from a contact whose send
- * counter ran past our receive window (its dials died at our accept while
- * strangers held the pre-tag slots) is still attributed to the contact by a
- * bounded search across contacts, and a stranger's random tags can trigger
- * that search only once per interval.
- */
 public class ZtpSessionProviderInboundSearchTest {
 
 	private CryptoComponent crypto;
@@ -49,6 +42,31 @@ public class ZtpSessionProviderInboundSearchTest {
 
 	private byte[] tag(long streamId) {
 		return ZwfTag.computeTag(crypto, tagKey, streamId);
+	}
+
+	@Test
+	public void aContactThatDialsUsIsSearchedBeforeContactsWeDial() {
+		SecretKey[] keys = new SecretKey[6];
+		for (int i = 1; i <= 5; i++) {
+			byte[] b = new byte[32];
+			b[0] = (byte) i;
+			keys[i] = new SecretKey(b);
+			recogniser.register(i, keys[i], 0);
+		}
+		provider.peerDials.add(5);
+		byte[] far = ZwfTag.computeTag(crypto, keys[5], REPLAY_WINDOW_SIZE + 500);
+		assertEquals("found by the first search", 5,
+				provider.recogniseIncoming(far));
+		now.addAndGet(ZtpSessionProviderImpl.INBOUND_SEARCH_INTERVAL_MS);
+		byte[] ours = ZwfTag.computeTag(crypto, keys[2],
+				REPLAY_WINDOW_SIZE + 500);
+		int found = -1;
+		for (int i = 0; i < 12 && found < 0; i++) {
+			found = provider.recogniseIncoming(ours);
+			now.addAndGet(ZtpSessionProviderImpl.INBOUND_SEARCH_INTERVAL_MS);
+		}
+		assertEquals("a contact we dial is still found when it arrives", 2,
+				found);
 	}
 
 	@Test

@@ -31,12 +31,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * End-to-end plumbing test: two duplex connections over crossed pipes exchange
- * messages in both directions, exercising the whole native stack below the
- * message model - stream-id allocation, tag recognition, session-derived keys,
- * fixed-frame Mode3Full stream and chain.
- */
 public class ZwfDuplexConnectionTest {
 
 	private CryptoComponent crypto;
@@ -67,7 +61,7 @@ public class ZwfDuplexConnectionTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -195,8 +189,6 @@ public class ZwfDuplexConnectionTest {
 			assertEquals("b2a-" + i, aliceReceived.get(i));
 		}
 
-		// Per-message PQ engaged: each side learned the peer's ML-KEM key
-		// in-band, so subsequent sends encapsulate to it (not the sentinel).
 		assertNotNull("alice should have learned bob's ML-KEM key",
 				alice.currentMode3FullState().getTheirActivePqPk());
 		assertNotNull("bob should have learned alice's ML-KEM key",
@@ -226,11 +218,28 @@ public class ZwfDuplexConnectionTest {
 		return new ZwfDuplexConnection[] {alice, bob};
 	}
 
-	/**
-	 * The peer burned far more stream ids on failed attempts than the receive
-	 * window covers. On a connection to a known contact the receiver searches
-	 * beyond the window, accepts the stream, and the direction is usable again.
-	 */
+	@Test(timeout = 60_000)
+	public void noFrameIsWrittenAfterTheKeyMaterialIsDestroyed()
+			throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		ZwfSession session = sessionFactory.deriveSession(rootKey, true);
+		java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+		ZwfDuplexConnection c = new ZwfDuplexConnection(1, session,
+				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(),
+				new java.io.ByteArrayInputStream(new byte[0]), out);
+		c.destroyKeyMaterial();
+		assertTrue(c.isDestroyed());
+		try {
+			c.sendMessage("late".getBytes(StandardCharsets.UTF_8));
+			fail("a frame was written after the keys were destroyed");
+		} catch (java.io.IOException expected) {
+		}
+		assertEquals(0, out.size());
+	}
+
 	@Test(timeout = 60_000)
 	public void recoversFromAPeerCounterFarBeyondTheReceiveWindow()
 			throws Exception {
@@ -274,11 +283,6 @@ public class ZwfDuplexConnectionTest {
 		sender.join(10_000);
 	}
 
-	/**
-	 * A stream this side refuses must not move the receive window: the peer
-	 * burned the id it allocated, but the next id it sends is still within
-	 * the window of the unchanged high-water mark and opens.
-	 */
 	@Test(timeout = 60_000)
 	public void aRefusedStreamDoesNotAdvanceTheReceiveWindow()
 			throws Exception {

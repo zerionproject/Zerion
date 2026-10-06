@@ -22,12 +22,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
-/**
- * Enabling "erase after repeated failed logins" is an explicit opt-in: the
- * switch alone never turns the policy on. Cancelling or dismissing the
- * confirmation leaves the policy off and the switch off; only the confirm
- * button turns it on, and turning the switch off needs no confirmation.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class WipeOnFailedLoginsOptInTest {

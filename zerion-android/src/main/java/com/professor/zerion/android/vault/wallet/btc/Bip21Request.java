@@ -8,13 +8,6 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-/**
- * The address and optional amount of a scanned payment request. A plain
- * address is returned as is. A BIP21 URI yields its address and amount; a
- * URI carrying a parameter marked as required with the {@code req-} prefix
- * that this wallet does not understand is refused, as BIP21 demands, rather
- * than paid as if the parameter were absent.
- */
 @NotNullByDefault
 public final class Bip21Request {
 
@@ -27,7 +20,6 @@ public final class Bip21Request {
 		this.amount = amount;
 	}
 
-	/** Null when the request carries a required parameter we do not know. */
 	@Nullable
 	public static Bip21Request parse(String raw) {
 		String addr = raw.trim();

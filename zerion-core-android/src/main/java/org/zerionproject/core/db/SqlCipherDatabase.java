@@ -187,14 +187,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 	}
 
-	/**
-	 * Probes an existing database on a real connection: it must have the
-	 * settings and identity tables, and is empty only when it has both and
-	 * no identity row. What happens next is decided by
-	 * {@link SqlCipherOpenPolicy}; a probe that throws or finds a table
-	 * missing never leads to deletion. Running the check on the connection
-	 * that {@link #open} will reuse avoids a second key derivation.
-	 */
 	private SqlCipherOpenPolicy.Probe probeSchema(Connection c)
 			throws SQLException {
 		boolean settings = tableExists(c, "settings");
@@ -222,14 +214,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 		}
 	}
 
-	/**
-	 * Closes the database and clears the clean-shutdown flag while the private
-	 * key copy is still valid, then zeroes that copy. The key copied at open
-	 * is owned here, so a caller clearing its own key object before close (the
-	 * account manager's service stop runs before the database close) cannot
-	 * prevent the final dirty-flag write. Idempotent: a second close, or a
-	 * close after a failed open, only clears the key and returns.
-	 */
 	@Override
 	public void close() throws DbException {
 		synchronized (DB_OPEN_LOCK) {
@@ -286,13 +270,6 @@ class SqlCipherDatabase extends JdbcDatabase {
 			'0', '1', '2', '3', '4', '5', '6', '7',
 			'8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-	/**
-	 * The passphrase is the upper-case hex text of the key, as the string
-	 * overload used to take it, encoded straight into a byte array: no
-	 * String ever holds the key, and the bytes are wiped once the
-	 * connection exists. Every existing database opens unchanged because
-	 * the library derives the same key from the same UTF-8 bytes.
-	 */
 	static byte[] hexPassphrase(byte[] keyBytes) {
 		byte[] hex = new byte[keyBytes.length * 2];
 		for (int i = 0, j = 0; i < keyBytes.length; i++) {
@@ -314,6 +291,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 				runPragma(db, "PRAGMA secure_delete = ON");
 				runPragma(db, "PRAGMA busy_timeout = " + BUSY_TIMEOUT_MS);
 				runPragma(db, "PRAGMA journal_mode = WAL");
+				enforceForeignKeys(db);
 				return new SqlCipherConnection(db);
 			} catch (android.database.sqlite.SQLiteDatabaseLockedException e) {
 				if (db != null) {
@@ -352,6 +330,23 @@ class SqlCipherDatabase extends JdbcDatabase {
 	protected void compactAndClose() throws DbException {
 		needsCompaction = true;
 		closeAllConnections();
+	}
+
+	private static void enforceForeignKeys(SQLiteDatabase db)
+			throws SQLException {
+		db.setForeignKeyConstraintsEnabled(true);
+		if (queryForeignKeys(db) != 1) {
+			throw new SQLException("Foreign keys cannot be enforced");
+		}
+	}
+
+	private static long queryForeignKeys(SQLiteDatabase db) {
+		Cursor c = db.rawQuery("PRAGMA foreign_keys", null);
+		try {
+			return c.moveToFirst() ? c.getLong(0) : -1;
+		} finally {
+			c.close();
+		}
 	}
 
 	private static void runPragma(SQLiteDatabase db, String sql) {

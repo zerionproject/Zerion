@@ -13,7 +13,6 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
-		<!-- ====== ALERTS ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_alerts" />
@@ -216,7 +215,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== SOUNDS & VIBRATION ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_sounds_vibration" />

@@ -4,27 +4,11 @@ public interface PcsConstants {
 
 	int PCS_PROTOCOL_VERSION = 6;
 
-	int MAX_SKIP = 250;
-
-	int MAX_TOTAL_SKIP = 4000;
-
-	long MAX_SKIP_AGE_MS = 7L * 24 * 60 * 60 * 1000;
-
-	long SKIP_PRUNE_INTERVAL_MS = 60L * 60 * 1000;
-
-	long SKIP_CLOCK_REWIND_THRESHOLD_MS = 60L * 60 * 1000;
-
-	String PCS_ROOT_KDF_LABEL = "org.zerionproject/PCS_ROOT_KDF";
-
 	String PCS_CHAIN_KEY_LABEL = "org.zerionproject/PCS_CHAIN_KEY";
 
 	String PCS_STREAM_CHAIN_LABEL = "org.zerionproject/PCS_STREAM_CHAIN";
 
 	String PCS_MESSAGE_KEY_LABEL = "org.zerionproject/PCS_MESSAGE_KEY";
-
-	String PCS_DH_RATCHET_LABEL = "org.zerionproject/PCS_DH_RATCHET";
-
-	String PCS_DH_SECRET_LABEL = "org.zerionproject/PCS_DH_SECRET";
 
 	byte CHAIN_KEY_INPUT = 0x01;
 
@@ -81,12 +65,6 @@ public interface PcsConstants {
 
 	long PQ_EPOCH_TIME_THRESHOLD_MS = 24L * 60 * 60 * 1000;
 
-	String PCS_PQ_ROOT_UPDATE_LABEL = "org.zerionproject/PCS_PQ_ROOT_UPDATE";
-
-	String PCS_HYBRID_ROOT_LABEL = "org.zerionproject/PCS_HYBRID_ROOT";
-
-	String PCS_HYBRID_CHAIN_LABEL = "org.zerionproject/PCS_HYBRID_CHAIN";
-
 	int PQ_EPOCH_SIZE = 4;
 
 	int PQ_CHUNK_HEADER_SIZE = 4;
@@ -101,8 +79,6 @@ public interface PcsConstants {
 
 	int PCS_MODE3_HEADER_MAX_SIZE = PCS_MODE3_HEADER_MIN_SIZE +
 			PQ_CHUNK_HEADER_SIZE + PQ_CHUNK_SIZE;
-
-	boolean MODE3_FULL_ENABLED = true;
 
 	int MODE3_FULL_STREAM_FLAG = 0x1000;
 
@@ -122,20 +98,11 @@ public interface PcsConstants {
 
 	int MODE3_FULL_SEND_ROTATION_INTERVAL = 16;
 
-	String MODE3_FULL_CK_DH_LABEL =
-			"org.zerionproject/MODE3FULL_CK_DH";
-
 	String MODE3_FULL_CK_PQ_LABEL =
 			"org.zerionproject/MODE3FULL_CK_PQ";
 
 	String MODE3_FULL_MK_LABEL =
 			"org.zerionproject/MODE3FULL_MK";
-
-	String MODE3_FULL_PQ_ABSORB_LABEL =
-			"org.zerionproject/MODE3FULL_PQ_ABSORB";
-
-	String MODE3_FULL_INIT_SPLIT_LABEL =
-			"org.zerionproject/MODE3FULL_INIT_SPLIT";
 
 	byte FLAG_MODE3_FULL_FRAME = 0x10;
 

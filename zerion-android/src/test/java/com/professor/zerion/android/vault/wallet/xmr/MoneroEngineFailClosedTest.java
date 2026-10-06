@@ -5,14 +5,6 @@ import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
-/**
- * The native Monero library is not on the JVM unit-test classpath, so
- * {@link NativeMonero#isAvailable()} is false here. This pins the fail-closed
- * contract: when the engine is unavailable, no session is ever produced and
- * address validation never returns true, so the caller can never proceed to a
- * weaker path. The device-side lifecycle (create/restore/sync/prepare/commit)
- * is exercised by instrumented tests once libzmonero.so is built and shipped.
- */
 public class MoneroEngineFailClosedTest {
 
 	private final MoneroEngine engine = new NativeMoneroEngine();

@@ -10,6 +10,7 @@ import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -41,6 +42,8 @@ public class XSalsa20Poly1305AuthenticatedCipher implements AuthenticatedCipher 
 			xSalsa20Engine.init(encrypt, params);
 		} catch (IllegalArgumentException e) {
 			throw new GeneralSecurityException(e.getMessage());
+		} finally {
+			Arrays.fill(k.getKey(), (byte) 0);
 		}
 	}
 
@@ -49,13 +52,18 @@ public class XSalsa20Poly1305AuthenticatedCipher implements AuthenticatedCipher 
 			int outputOff) throws GeneralSecurityException {
 		if (!encrypting && len < MAC_LENGTH)
 			throw new GeneralSecurityException("Invalid MAC");
+		byte[] subKey = new byte[SUBKEY_LENGTH];
 		try {
 			byte[] zero = new byte[SUBKEY_LENGTH];
-			byte[] subKey = new byte[SUBKEY_LENGTH];
 			xSalsa20Engine.processBytes(zero, 0, SUBKEY_LENGTH, subKey, 0);
 			Poly1305KeyGenerator.clamp(subKey);
 			KeyParameter k = new KeyParameter(subKey);
-			poly1305.init(k);
+			try {
+				poly1305.init(k);
+			} finally {
+				Arrays.fill(k.getKey(), (byte) 0);
+				Arrays.fill(subKey, (byte) 0);
+			}
 			if (!encrypting) {
 				byte[] mac = new byte[MAC_LENGTH];
 				poly1305.update(input, inputOff + MAC_LENGTH, len - MAC_LENGTH);
@@ -78,6 +86,8 @@ public class XSalsa20Poly1305AuthenticatedCipher implements AuthenticatedCipher 
 			return encrypting ? processed + MAC_LENGTH : processed;
 		} catch (DataLengthException e) {
 			throw new GeneralSecurityException(e.getMessage());
+		} finally {
+			Arrays.fill(subKey, (byte) 0);
 		}
 	}
 

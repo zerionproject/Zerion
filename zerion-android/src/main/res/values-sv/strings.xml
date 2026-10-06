@@ -82,7 +82,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="tor_plugin_status_disabled_battery">Zerion är konfigurerat att inte använda internet vid batterianvändning</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion är konfigurerat att inte använda internet i detta landet</string>
   
-  <string name="transport_lan_long">Samma Wi-Fi-nätverk</string>
 
   <string name="reminder_notification_title">Utloggad från Zerion</string>
   <string name="reminder_notification_text">Tryck för att logga in igen.</string>
@@ -209,7 +208,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="connecting_to_device">Ansluter till enhet\u2026</string>
   <string name="authenticating_with_device">Autentiserar med enhet\u2026</string>
   <string name="connection_error_title">Kunde ej ansluta till din kontakt</string>
-  <string name="connection_error_feedback">Om det här problemet kvarstår, vänligen lämna <a href="feedback">synpunkter</a> så vi kan förbättra appen.</string>
   
   <string name="add_contact_remotely_title_case">Lägg till en kontakt på avstånd</string>
   <string name="add_contact_nearby_title">Lägg till en närvarande kontakt</string>
@@ -383,8 +381,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Använd mobildata</string>
-  <string name="tor_only_when_charging_title">Anslut till internet endast vid laddning</string>
-  <string name="tor_only_when_charging_summary">Avaktiverar anslutning över Internet när enheten går på batteri</string>
   
   <string name="security_settings_title">Säkerhet</string>
   <string name="pref_lock_title">Applås</string>
@@ -441,71 +437,8 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="choose_ringtone_title">Välj ringsignal</string>
   <string name="cannot_load_ringtone">Kan ej ladda ringsignal</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Mailbox-inställning</string>
-  <string name="mailbox_setup_intro">En Mailbox låter dina kontakter skicka dig meddelanden medan du är nedkopplad. Mailbox kommer att ta emot dina meddelanden och spara dem tills du är uppkopplad.\n
-		\nDu kan installera appen Zerion Mailbox på en extraenhet. Låt den vara ansluten till ström och Wi-Fi så att den alltid är uppkopplad.</string>
-  <string name="mailbox_setup_download">Installera först Mailbox-appen på en annan enhet genom att söka efter ”Zerion Mailbox” på Google Play eller där du hämtat Zerion.\n
-		\nLänka sedan din Mailbox med Zerion genom att skanna QR-koden som visas i Mailbox-appen.</string>
-  <string name="mailbox_setup_download_link">Dela hämtningslänk</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox redan länkad</string>
-  <string name="mailbox_setup_already_paired_description">Avlänka Mailbox på din andra enhet och försök igen.</string>
-  <string name="mailbox_setup_io_error_title">Kunde inte ansluta</string>
-  <string name="mailbox_setup_io_error_description">Säkerställ att båda enheterna är anslutna till internet och försök igen.</string>
-  <string name="mailbox_setup_assertion_error_title">Mailbox-fel</string>
-  <string name="mailbox_setup_assertion_error_description">Skicka återkoppling (med anonymiserad data) via Zerion-appen om felet kvarstår.</string>
-  <string name="mailbox_setup_camera_error_description">Kunde inte komma åt kamera. Försök igen, eventuellt efter att ha startat om enheten.</string>
-  <string name="mailbox_setup_paired_title">Ansluten</string>
-  <string name="mailbox_setup_paired_description">Din Mailbox har framgångsrikt länkats med Zerion.\n
-		\nHåll din Mailbox ansluten till ström och Wi-Fi så att den alltid är uppkopplad.</string>
-  <string name="tor_offline_title">Nedkopplad</string>
-  <string name="tor_offline_description">Säkerställ att denna enhet är uppkopplad och att anslutningar till internet är tillåtna.\n
-		\nEfteråt, vänta på att ikonen med en glob bland på skärmen för anslutningsinställningar blir grön.</string>
-  <string name="tor_offline_button_check">Kontrollera anslutningsinställningar</string>
-  <string name="mailbox_status_title">Mailbox-status</string>
-  <string name="mailbox_status_connected_title">Mailbox kör</string>
-  <string name="mailbox_status_problem_title">Zerion har problem med att ansluta till Mailbox</string>
-  <string name="mailbox_status_failure_title">Mailbox är ogilltänglig</string>
-  <string name="mailbox_status_app_too_old_title">Zerion är för gammal</string>
-  <string name="mailbox_status_app_too_old_message">Uppgradera Zerion till den senaste versionen av appen och försök igen.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox är för gammal</string>
-  <string name="mailbox_status_mailbox_too_old_message">Uppdatera din Mailbox till senaste versionen av appen och försök igen.</string>
-  <string name="mailbox_status_check_button">Kontrollera anslutning</string>
   
-  <string name="mailbox_status_connected_info">Senaste anslutning: %s</string>
   
-  <string name="mailbox_status_connected_never">Aldrig</string>
-  <string name="mailbox_status_unlink_button">Avlänka</string>
-  <string name="mailbox_status_unlink_dialog_title">Koppla ifrån Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_question">Är du säker på att du vill koppla ifrån din Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Om du kopplar från din Mailbox så kommer du inte att kunna ta emot meddelanden medan Zerion är bortkopplad från Internet.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Din Mailbox har kopplats från.</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Nästa gång du har tillgång till din Mailbox-enhet, vänligen öppna Mailbox-appen och trycka på \"Koppla från\"-knappen för att fullfölja proceduren.\n\nOm du inte längre har tillgång till din Mailbox-enhet behöver du inte oroa sig. Din data är krypterad och kommer förbli säkrad även om du inte gör detta.</string>
-  <string name="mailbox_status_unlink_success">Din Mailbox har kopplats från.</string>
-  <string name="mailbox_error_notification_channel_title">Problem med Zerion Mailbox</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox är otillgänglig</string>
-  <string name="mailbox_error_notification_text">Tryck för att fixa problemet</string>
-  <string name="mailbox_error_wizard_button">Fixa problemet</string>
-  <string name="mailbox_error_wizard_title">Felsökningsguide för Mailbox</string>
-  <string name="mailbox_error_wizard_question1">Har du tillgång till din Mailbox-enhet?</string>
-  <string name="mailbox_error_wizard_answer1">Ja, jag har den här.</string>
-  <string name="mailbox_error_wizard_answer2">Inte just nu, men jag kan komma åt den senare.</string>
-  <string name="mailbox_error_wizard_answer3">Nej, jag har inte längre tillgång till den.</string>
-  <string name="mailbox_error_wizard_info1_1">Kontrollera att Mailbox-enheten är påslagen och ansluten till Internet.</string>
-  <string name="mailbox_error_wizard_question1_1">Öppna Mailbox-appen. Vad ser du?</string>
-  <string name="mailbox_error_wizard_answer1_1">Jag ser instruktioner för hur man ställer in Mailbox.</string>
-  <string name="mailbox_error_wizard_answer1_2">Jag ser en QR-kod.</string>
-  <string name="mailbox_error_wizard_answer1_3">Jag ser \"Mailbox kör\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Jag ser \"Enheten är nedkopplad\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Vänligen koppla bort din Mailbox genom knappen nedan, följ sedan instruktionerna i Mailbox-enheten för att länka den igen.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Vänligen koppla bort din Mailbox genom knappen nedan, skanna sedan QR-koden för att länka den igen.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Vänligen använd knappen nedan för att kontrollera kopplingen mellan Zerion och Mailbox.\n\n
-		Om anslutningen misslyckas igen:\n
-		\u2022 Kontrollera att Mailbox- och Zerion-apparna är uppdaterade till senaste versionen.\n
-		\u2022 Starta om Mailbox- och Zerion-enheterna och försök igen.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Kontrollera att Mailbox-enheten är korrekt ansluten till Internet.\n\nKontrollera att Mailbox-enhetens klocka visar korrekt tid, datum och tidszon.\n\nKontrollera att Mailbox- och Zerion-apparna är uppdaterade till senaste versionen.\n\nStart om Mailbox- och Zerion-enheterna och försök igen.</string>
-  <string name="mailbox_error_wizard_info2">Vänligen kom tillbaka till den här sidan när du har tillgång till enheten.</string>
-  <string name="mailbox_error_wizard_info3">Vänligen koppla bort din Mailbox med knappen nedan.\n\nEfter att din gamla Mailbox kopplats bort så kan du ställa in en ny Mailbox när som helst.</string>
   
   <string name="about_title">Om</string>
   <string name="zerion_version">Version av Zerion: %s</string>
@@ -513,7 +446,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="links">Länkar</string>
   <string name="zerion_website">\u2020 <a href="">Webbplats</a></string>
   <string name="zerion_source_code">\u2020 <a href="">Källkod</a></string>
-  <string name="zerion_changelog">\u2020 <a href="">Ändringar</a></string>
   <string name="zerion_privacy_policy">\u2020 <a href="">Integritetspolicy</a></string>
   
   <string name="translator_thanks">Tack till att bidragsgivare vid Localization Lab</string>
@@ -532,43 +464,13 @@ Vänlige installera Zerion på en nyare enhet.</string>
   <string name="disappearing_messages_summary">Låt framtida meddelanden i denna konversation försvinna automatiskt efter 7\u00A0dagar.</string>
   
   <string name="pref_category_actions">Åtgärder</string>
-  <string name="send_feedback">Lämna synpunkter</string>
   
   <string name="link_warning_title">Länkvarning</string>
   <string name="link_warning_intro">Följande länk är på väg att öppnas i en extern app.</string>
   <string name="link_warning_text">Detta kan användas för att identifiera dig. Tänk efter om du litar på personen som skickade den här länken, och överväg att öppna den med Tor Browser.</string>
   <string name="link_warning_open_link">Öppna länk</string>
   
-  <string name="crash_report_title">Zerion-felrapport</string>
-  <string name="zerion_crashed">Zerion har tvyärr kraschat</string>
-  <string name="not_your_fault">Detta är inte ditt fel.</string>
-  <string name="please_send_report">Hjälp oss att förbättra Zerion genom att skicka en felrapport.</string>
-  <string name="report_is_encrypted">Vi lovar att felrapporten är krypterad och skickas säkert.</string>
-  <string name="feedback_title">Synpunkter</string>
-  <string name="describe_crash">Beskriv vad som hänt (valfritt)</string>
-  <string name="enter_feedback">Skriv ner dina synpunkter</string>
-  <string name="optional_contact_email">Din e-postadress (valfritt)</string>
-  <string name="privacy_policy">Genom att skicka data till oss så godkänner du vår <a href="">integritetspolicy</a></string>
-  <string name="include_debug_report_crash">Inkludera anonym data om krashen.</string>
-  <string name="include_debug_report_feedback">Inkludera anonym data om den här enheten</string>
-  <string name="dev_report_user_info">Användarinformation</string>
-  <string name="dev_report_basic_info">Grundläggande information</string>
-  <string name="dev_report_device_info">Enhetsinformation</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">Tidsinformation</string>
-  <string name="dev_report_memory">Minne</string>
-  <string name="dev_report_storage">Lagringsutrymme</string>
-  <string name="dev_report_connectivity">Anslutningar</string>
-  <string name="dev_report_network_usage">Nätverksanvändning</string>
-  <string name="dev_report_build_config">Byggkonfiguration</string>
-  <string name="dev_report_logcat">Applogg</string>
-  <string name="dev_report_device_features">Enhetsfunktioner</string>
-  <string name="send_report">Skicka rapport</string>
   <string name="close">Stäng</string>
-  <string name="dev_report_sending">Skickar återkoppling...</string>
-  <string name="dev_report_sent">Återkoppling skickad</string>
-  <string name="dev_report_saved">Rapporten har sparats. Den kommer skickas nästa gång du loggar in i Zerion.</string>
-  <string name="dev_report_error">Fel: Sändning av rapporten misslyckades</string>
   
   <string name="progress_title_logout">Loggar ur Zerion...</string>
   
@@ -723,7 +625,6 @@ Vänlige installera Zerion på en nyare enhet.</string>
 	<string name="wallet_receive_new">Ny adress</string>
 	<string name="wallet_node_hint">Tryck på en server för att använda den. Håll in en anpassad server för att ta bort den.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">En återanvändbar privat adress. Betalningar till den går inte att koppla samman på blockkedjan. Identifiering skannar offentliga data över Tor; dina nycklar lämnar aldrig enheten.</string>
 	<string name="wallet_sp_balance">Upptäckt: %1$s</string>
 	<string name="wallet_sp_scanned">Skannat till block %1$d</string>
 	<string name="wallet_sp_set_oracle">Skanningskälla</string>

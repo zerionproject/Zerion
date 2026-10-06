@@ -73,13 +73,6 @@ public class ChatPreferences {
 		return TEXT_SIZES_SP[index] / getGuiFontScale(context);
 	}
 
-	/**
-	 * The interface font scale chosen in display settings, independent of the
-	 * chat text size. Stored in the early preferences so it can be read when
-	 * an activity context is created, before injection. Chat message text
-	 * divides this scale back out, so the two settings stay independent while
-	 * the system accessibility font scale continues to apply to both.
-	 */
 	private static volatile float cachedGuiScale = -1f;
 
 	public static float getGuiFontScale(Context context) {

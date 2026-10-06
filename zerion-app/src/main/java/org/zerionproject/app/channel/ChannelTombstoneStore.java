@@ -37,20 +37,24 @@ class ChannelTombstoneStore {
 	}
 
 	void put(byte[] channelId, byte[] tombstoneBytes) throws DbException {
+		settingsManager.mergeSettings(encode(channelId, tombstoneBytes), NS);
+	}
+
+	static String namespace() {
+		return NS;
+	}
+
+	static Settings encode(byte[] channelId, byte[] tombstoneBytes) {
 		Settings out = new Settings();
 		out.put(ChannelStore.hex(channelId),
 				java.util.Base64.getEncoder()
 						.withoutPadding()
 						.encodeToString(tombstoneBytes));
-		settingsManager.mergeSettings(out, NS);
+		return out;
 	}
 
 	void remove(byte[] channelId) throws DbException {
-		Settings cur = settingsManager.getSettings(NS);
-		String key = ChannelStore.hex(channelId);
-		if (!cur.containsKey(key)) return;
-		Settings out = new Settings();
-		out.put(key, "");
-		settingsManager.mergeSettings(out, NS);
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 }

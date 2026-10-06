@@ -8,6 +8,8 @@ import android.util.Base64;
 
 import com.professor.zerion.android.security.ZerionEncryptedPrefs;
 
+import org.zerionproject.core.account.PasswordNormalizer;
+
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -107,15 +109,23 @@ public class WipePasswordManager {
 		}
 	}
 
-	public synchronized boolean setWipePassword(char[] password) {
+	public synchronized boolean setWipePassword(char[] typed) {
 		enforceNonUiThread();
 
 		if (!secureStorageAvailable) {
 			return false;
 		}
+		if (typed == null) return false;
+		char[] password = PasswordNormalizer.normalize(typed);
+		try {
+			return setNormalWipePassword(password);
+		} finally {
+			java.util.Arrays.fill(password, '\0');
+		}
+	}
 
-		if (password == null || password.length == 0 ||
-				isAllWhitespace(password)) {
+	private boolean setNormalWipePassword(char[] password) {
+		if (password.length == 0 || isAllWhitespace(password)) {
 			return false;
 		}
 
@@ -157,34 +167,51 @@ public class WipePasswordManager {
 		}
 	}
 
-	public synchronized boolean verifyWipePassword(char[] password) {
+	public synchronized boolean verifyWipePassword(char[] typed) {
 		enforceNonUiThread();
 
 		long startTime = SystemClock.elapsedRealtime();
+		char[] password = null;
+		char[] legacy = null;
 
 		try {
 			if (!secureStorageAvailable || !isWipePasswordEnabled() ||
-			    password == null || password.length == 0 ||
-			    isAllWhitespace(password)) {
+			    typed == null) {
 				return false;
 			}
+			password = PasswordNormalizer.normalize(typed);
+			if (password.length == 0 || isAllWhitespace(password)) {
+				return false;
+			}
+			legacy = PasswordNormalizer.legacyForm(typed, password);
 
 			int version = securePrefs.getInt(PREF_VERSION, HASH_VERSION_LEGACY);
 
 			boolean matches;
+			boolean storedAsTyped = false;
 			if (version == HASH_VERSION_CURRENT) {
 				matches = verifyPBKDF2Password(password);
+				if (!matches && legacy != null) {
+					matches = verifyPBKDF2Password(legacy);
+					storedAsTyped = matches;
+				}
 			} else {
 				matches = verifyLegacySHA256Password(password);
-				if (matches) {
-					setWipePassword(password);
+				if (!matches && legacy != null) {
+					matches = verifyLegacySHA256Password(legacy);
 				}
+				storedAsTyped = matches;
+			}
+			if (storedAsTyped) {
+				setNormalWipePassword(password);
 			}
 
 			return matches;
 		} catch (Exception e) {
 			return false;
 		} finally {
+			if (password != null) java.util.Arrays.fill(password, '\0');
+			if (legacy != null) java.util.Arrays.fill(legacy, '\0');
 			long elapsed = SystemClock.elapsedRealtime() - startTime;
 			long remainingDelay = VERIFICATION_DELAY_MS - elapsed;
 			if (remainingDelay > 0) {

@@ -18,11 +18,6 @@ final class TorUtils {
 	private TorUtils() {
 	}
 
-	/**
-	 * Copies the input to the output and closes both. A failure while
-	 * copying is reported to the caller after both streams are closed, so
-	 * that a partly written file is never mistaken for a complete one.
-	 */
 	static void copyAndClose(InputStream in, OutputStream out)
 			throws IOException {
 		byte[] buf = new byte[4096];

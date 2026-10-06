@@ -15,7 +15,6 @@
 		android:paddingBottom="16dp"
 		android:paddingHorizontal="20dp">
 
-		<!-- Heart icon -->
 		<ImageView
 			android:id="@+id/donationIcon"
 			android:layout_width="64dp"
@@ -24,7 +23,6 @@
 			android:src="@drawable/ic_donation_heart"
 			android:importantForAccessibility="no" />
 
-		<!-- Title -->
 		<TextView
 			android:id="@+id/donationTitle"
 			android:layout_width="match_parent"
@@ -37,7 +35,6 @@
 			android:textStyle="bold"
 			android:letterSpacing="0.005" />
 
-		<!-- Subtitle -->
 		<TextView
 			android:id="@+id/donationSubtitle"
 			android:layout_width="match_parent"
@@ -49,7 +46,6 @@
 			android:textColor="@color/zerion_text_secondary"
 			android:textSize="14sp" />
 
-		<!-- QR code -->
 		<ImageView
 			android:id="@+id/donationQr"
 			android:layout_width="200dp"
@@ -61,7 +57,6 @@
 			android:contentDescription="@string/donation_url_label"
 			tools:src="@tools:sample/avatars" />
 
-		<!-- URL label -->
 		<TextView
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
@@ -72,7 +67,6 @@
 			android:textAllCaps="true"
 			android:letterSpacing="0.05" />
 
-		<!-- URL pill (selectable, monospace) -->
 		<TextView
 			android:id="@+id/donationUrl"
 			android:layout_width="match_parent"
@@ -87,7 +81,6 @@
 			android:textSize="13sp"
 			tools:text="https://zerion.chat/donate.html" />
 
-		<!-- Copy link — primary action -->
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/buttonCopyLink"
 			android:layout_width="match_parent"
@@ -106,7 +99,6 @@
 			app:iconTint="@android:color/white"
 			app:iconSize="18dp" />
 
-		<!-- Open in browser — guarded text button -->
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/buttonOpenInBrowser"
 			style="@style/Widget.Material3.Button.TextButton"
@@ -119,7 +111,6 @@
 			android:textColor="@color/zerion_text_secondary"
 			android:textSize="13sp" />
 
-		<!-- Maybe later -->
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/buttonLater"
 			style="@style/Widget.Material3.Button.TextButton"

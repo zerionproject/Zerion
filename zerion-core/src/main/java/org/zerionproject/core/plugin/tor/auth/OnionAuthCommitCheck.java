@@ -9,16 +9,6 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
-/**
- * Whether a received AUTH_COMMIT may move a pair to AUTH_REQUIRED. A commit
- * names the receiver's authorized service and the fingerprint of the
- * sender's client key as the sender knows them, and carries the sender's
- * service generation. Every condition is bound to the persisted state: a
- * commit that is stale, from the future, for another service, for another
- * key, before both directions were proven, or for a revoked contact
- * changes nothing. The channel guarantees the record came from the contact
- * whose group it arrived in.
- */
 @NotNullByDefault
 public final class OnionAuthCommitCheck {
 
@@ -37,12 +27,6 @@ public final class OnionAuthCommitCheck {
 	private OnionAuthCommitCheck() {
 	}
 
-	/**
-	 * @param r the persisted record for the contact the commit came from
-	 * @param commit the received record
-	 * @param localGen this device's current authorized service generation
-	 * @param localOnion this device's current authorized service address
-	 */
 	public static Verdict check(OnionAuthRecord r,
 			OnionAuthRecords.Record commit, long localGen,
 			@Nullable String localOnion) {
@@ -72,7 +56,6 @@ public final class OnionAuthCommitCheck {
 		return Verdict.ACCEPT;
 	}
 
-	/** SHA-256 of a client public key, as carried in a commit. */
 	public static byte[] fingerprint(byte[] publicKey) {
 		try {
 			return MessageDigest.getInstance("SHA-256").digest(publicKey);

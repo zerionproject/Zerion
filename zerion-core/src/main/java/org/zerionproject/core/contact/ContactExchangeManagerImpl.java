@@ -74,6 +74,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 
 	private final DatabaseComponent db;
 	private final ClientHelper clientHelper;
+	static final int MAX_CONTACT_INFO_BYTES = 64 * 1024;
+
 	private final RecordReaderFactory recordReaderFactory;
 	private final RecordWriterFactory recordWriterFactory;
 	private final Clock clock;
@@ -158,8 +160,10 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				contactExchangeCrypto.deriveHeaderKey(masterKey, !alice);
 		InputStream streamReader = streamReaderFactory
 				.createContactExchangeStreamReader(in, remoteHeaderKey);
-		RecordReader recordReader =
-				recordReaderFactory.createRecordReader(streamReader, classical);
+		RecordReader recordReader = classical
+				? recordReaderFactory.createRecordReader(streamReader, true)
+				: recordReaderFactory.createRecordReader(streamReader,
+						MAX_CONTACT_INFO_BYTES);
 		StreamWriter streamWriter = streamWriterFactory
 				.createContactExchangeStreamWriter(out, localHeaderKey);
 		RecordWriter recordWriter = recordWriterFactory

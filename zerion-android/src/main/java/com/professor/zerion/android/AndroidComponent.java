@@ -197,6 +197,11 @@ public interface AndroidComponent
 	@AppModule.SecurePrefs
 	SharedPreferences securePreferences();
 
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePreferences();
+
+	com.professor.zerion.android.profile.ProfileStorage profileStorage();
+
 	void inject(SignInReminderReceiver briarService);
 
 	void inject(NotificationQuickReplyReceiver receiver);

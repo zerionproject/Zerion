@@ -118,7 +118,7 @@ class Mode3FullRatchetImpl implements Mode3FullRatchet {
 					kp.getDecapsulationKey(), ciphertext);
 		}
 
-		Mode3FullState newState = state.withRecvAdvance(theirNewPqPk,
+		Mode3FullState newState = state.withRecvAdvanceUnpruned(theirNewPqPk,
 				sharedSecret == null ? null : kpId);
 		return new PqRecvResult(sharedSecret, newState);
 	}

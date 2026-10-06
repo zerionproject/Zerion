@@ -83,7 +83,6 @@
   <string name="tor_plugin_status_disabled_battery"> Zerion jest skonfigurowany tak, aby nie korzystał z Internetu podczas pracy na baterii</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion został skonfigurowany tak, aby nie łączył się z Internetem w tym kraju</string>
   
-  <string name="transport_lan_long">Ta sama sieć Wi-Fi</string>
 
   <string name="reminder_notification_title">Wylogowano z Zerion</string>
   <string name="reminder_notification_text">Dotknij, aby zalogować się ponownie</string>
@@ -220,7 +219,6 @@
   <string name="connecting_to_device">Łączenie z urządzeniem\u2026</string>
   <string name="authenticating_with_device">Autoryzowanie z urządzeniem\u2026</string>
   <string name="connection_error_title">Nie udało się połączyć z kontaktem</string>
-  <string name="connection_error_feedback">Jeśli problem będzie występować dalej, proszę <a href="feedback">wysłać opinię</a> aby pomóc nam ulepszyć aplikację.</string>
   
   <string name="add_contact_remotely_title_case">Dodaj Kontakt na odległość</string>
   <string name="add_contact_nearby_title">Dodaj kontakt w pobliżu</string>
@@ -403,8 +401,6 @@
   
   <string name="tor_network_setting_summary">Automatycznie: %1$s (za %2$s)</string>
   <string name="tor_mobile_data_title">Używaj danych komórkowych</string>
-  <string name="tor_only_when_charging_title">Podłącz się do internetu tylko w czasie ładowania urządzenia</string>
-  <string name="tor_only_when_charging_summary">Wyłącza połączenie Internetowe, gdy urządzenie pracuje na baterii</string>
   
   <string name="security_settings_title">Bezpieczeństwo</string>
   <string name="pref_lock_title">Blokada aplikacji</string>
@@ -461,75 +457,9 @@
   <string name="choose_ringtone_title">Wybierz dzwonek</string>
   <string name="cannot_load_ringtone">Nie mogę załadować dzwonka</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Konfiguracja Mailbox</string>
-  <string name="mailbox_setup_intro">Mailbox umożliwia Twoim kontaktom wysyłanie Ci wiadomości, gdy jesteś offline. Mailbox odbierze Twoje wiadomości i przechowa je, dopóki nie będziesz online.\n
-		\nAplikację Zerion Mailbox można zainstalować na zapasowym urządzeniu. Podłącz je do zasilania i Wi-Fi, aby zawsze było online.</string>
-  <string name="mailbox_setup_download">Najpierw zainstaluj aplikację Mailbox na innym urządzeniu, wyszukując „Zerion Mailbox” w Google Play lub gdziekolwiek pobrałeś Zerion.\n
-		\nNastępnie połącz Mailbox z Zerion, skanując kod QR wyświetlony w aplikacji Mailbox.</string>
-  <string name="mailbox_setup_download_link">Udostępnij łącze pobierania</string>
-  <string name="mailbox_setup_connecting">Łączenie się ze Skrzynką odbiorczą…</string>
   
-  <string name="mailbox_setup_connecting_info">Może to potrwać do %1s</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox już podłączony</string>
-  <string name="mailbox_setup_already_paired_description">Odłącz Mailbox na drugim urządzeniu i spróbuj ponownie.</string>
-  <string name="mailbox_setup_io_error_title">Nie udało się połączyć</string>
-  <string name="mailbox_setup_io_error_description">Upewnij się, że oba urządzenia są połączone z internetem i spróbuj ponownie.</string>
-  <string name="mailbox_setup_assertion_error_title">Błąd Mailbox</string>
-  <string name="mailbox_setup_assertion_error_description">Jeśli problem będzie się powtarzał, prześlij zgłoszenie (z anonimowymi danymi) za pośrednictwem aplikacji Zerion.</string>
-  <string name="mailbox_setup_camera_error_description"> 
-Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urządzenia.</string>
-  <string name="mailbox_setup_paired_title">Połączony</string>
-  <string name="mailbox_setup_paired_description">Twój Mailbox został pomyślnie połączony z Zerion.\n
-\nUtrzymuj swój Mailbox podłączony do zasilania i Wi-Fi, aby zawsze był online.</string>
-  <string name="tor_offline_title">Offline</string>
-  <string name="tor_offline_description">Upewnij się, że to urządzenie jest w trybie online, a połączenia z Internetem są dozwolone.\n
-\nNastępnie poczekaj, aż ikona kuli ziemskiej na ekranie ustawień połączenia zmieni kolor na zielony.</string>
-  <string name="tor_offline_button_check">Sprawdź ustawienia połączenia </string>
-  <string name="mailbox_status_title">Status Mailbox</string>
-  <string name="mailbox_status_connected_title">Mailbox jest uruchomiony</string>
-  <string name="mailbox_status_problem_title">Zerion ma problemy z połączeniem się z Mailbox</string>
-  <string name="mailbox_status_failure_title">Skrzynka pocztowa jest niedostępna</string>
-  <string name="mailbox_status_app_too_old_title">Wersja Zerion jest zbyt stara</string>
-  <string name="mailbox_status_app_too_old_message">Zaktualizuj Zerion do najnowszej wersji i spróbuj ponownie.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox jest za stary</string>
-  <string name="mailbox_status_mailbox_too_old_message">Zaktualizuj Mailbox do najnowszej wersji aplikacji i spróbuj ponownie.</string>
-  <string name="mailbox_status_check_button">Sprawdź połączenie</string>
   
-  <string name="mailbox_status_connected_info">Ostatnie połączenie: %s</string>
   
-  <string name="mailbox_status_connected_never">Nigdy</string>
-  <string name="mailbox_status_unlink_button">Odłącz</string>
-  <string name="mailbox_status_unlink_dialog_title">Odłączyć skrzynkę odbiorczą?</string>
-  <string name="mailbox_status_unlink_dialog_question">Czy na pewno chcesz odłączyć swoją skrzynkę odbiorczą?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Jeżeli odłączysz swoją skrzynkę odbiorczą nie będziesz już otrzymywał(a) wiadomości kiedy Zerion będzie offline.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Twoja skrzynka odbiorcza została odłączona</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Gdy następnym razem będziesz mieć dostęp do swojego urządzenia Mailbox, otwórz aplikację Mailbox i dotknij przycisku \"Odłącz\" , aby dokończyć proces.\n\nJeśli nie masz już dostępu do swojego urządzenia Mailbox, nie martw się. Twoje dane są zaszyfrowane, więc pozostaną bezpieczne, nawet jeśli nie ukończysz tego procesu.</string>
-  <string name="mailbox_status_unlink_success">Twoja skrzynka odbiorcza została odłączona</string>
-  <string name="mailbox_error_notification_channel_title">Problem z Mailboxem Zeriona</string>
-  <string name="mailbox_error_notification_title">Skrzynka pocztowa Zerion jest niedostępna</string>
-  <string name="mailbox_error_notification_text">Naciśnij, aby rozwiązać problem.</string>
-  <string name="mailbox_error_wizard_button">Napraw problem</string>
-  <string name="mailbox_error_wizard_title">Kreator rozwiązywania problemów z Mailbox</string>
-  <string name="mailbox_error_wizard_question1">Czy masz dostęp do swojego urządzenia Mailbox?</string>
-  <string name="mailbox_error_wizard_answer1">Tak, mam teraz dostęp</string>
-  <string name="mailbox_error_wizard_answer2">Nie w tej chwili, ale będę miał(a) dostęp później</string>
-  <string name="mailbox_error_wizard_answer3">Nie, nie mam już dostępu do urządzenia.</string>
-  <string name="mailbox_error_wizard_info1_1">Sprawdź, czy urządzenie Mailbox jest włączone i podłączone do Internetu.</string>
-  <string name="mailbox_error_wizard_question1_1">Otwórz aplikację Mailbox. Co widzisz?</string>
-  <string name="mailbox_error_wizard_answer1_1">Widzę instrukcje dotyczące konfiguracji skrzynki pocztowej</string>
-  <string name="mailbox_error_wizard_answer1_2">Widzę kod QR</string>
-  <string name="mailbox_error_wizard_answer1_3">Widzę \"Mailbox jest uruchomiony\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Widzę \"Urządzenie offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Proszę odłączyć Twój Mailbox za pomocą poniższego przycisku, a następnie postępować zgodnie z instrukcjami na urządzeniu Mailbox, aby ponownie go połączyć.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Proszę odłączyć swój Mailbox za pomocą poniższego przycisku, a następnie zeskanować kod QR, aby połączyć go ponownie.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Proszę użyć poniższego przycisku, aby sprawdzić połączenie pomiędzy Zerion a Mailbox.\n\n
-		Jeśli połączenie ponownie się nie powiedzie:\n
-		\u2022 Sprawdź, czy aplikacje Mailbox i Zerion są zaktualizowane do najnowszej wersji.\n
-		\u2022 Uruchom ponownie urządzenia Mailbox i Zerion i spróbuj ponownie.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Sprawdź, czy urządzenie Mailbox jest prawidłowo podłączone do Internetu.\n\nSprawdź, czy zegar na urządzeniu Mailbox pokazuje właściwą godzinę, datę i strefę czasową.\n\nSprawdź, czy aplikacje Mailbox i Zerion są zaktualizowane do najnowszej wersji.\n\nUruchom ponownie urządzenia Mailbox i Zerion i spróbuj ponownie.</string>
-  <string name="mailbox_error_wizard_info2">Wróć do tego ekranu, gdy będziesz miał dostęp do urządzenia.</string>
-  <string name="mailbox_error_wizard_info3">Proszę odłączyć swój Mailbox za pomocą poniższego przycisku. Po odłączeniu starego Mailbox możesz w każdej chwili uruchomić nowy Mailbox</string>
   
   <string name="about_title">O programie...</string>
   <string name="zerion_version">Wersja Zerion: %s</string>
@@ -537,7 +467,6 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="links">Odnośniki</string>
   <string name="zerion_website">\u2022 <a href="">Strona internetowa</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Kod źródłowy</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Dziennik zmian</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Polityka prywatności</a></string>
   
   <string name="translator_thanks">Dziękujemy wszystkim wspierającym z Localization Lab</string>
@@ -556,43 +485,13 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
   <string name="disappearing_messages_summary">Spraw, aby przyszłe wiadomości w tej rozmowie automatycznie znikały po 7\u00A0dniach. </string>
   
   <string name="pref_category_actions">Czynności</string>
-  <string name="send_feedback">Wyślij opinię</string>
   
   <string name="link_warning_title">Ostrzeżenie o linku</string>
   <string name="link_warning_intro">Zaraz otworzysz następujący link w zewnętrznej aplikacji.</string>
   <string name="link_warning_text">Może to posłużyć do twojej identyfikacji. Zastanów się czy ufasz osobie która wysłała Ci ten link i rozważ otwarcie go za pomocą Przeglądarki Tor.</string>
   <string name="link_warning_open_link">Otwórz Link</string>
   
-  <string name="crash_report_title">Zgłoś awarię w Zerion</string>
-  <string name="zerion_crashed">Przepraszam, Zerion uległ awarii</string>
-  <string name="not_your_fault">To nie Twoja wina.</string>
-  <string name="please_send_report">Proszę pomóż nam ulepszać Zerion wysyłając raport z awarii.</string>
-  <string name="report_is_encrypted">Obiecujemy, że raport z awarii jest zaszyfrowany i wysyłany bezpiecznie.</string>
-  <string name="feedback_title">Twoja opinia</string>
-  <string name="describe_crash">Opisz co się stało (opcjonalne)</string>
-  <string name="enter_feedback">Napisz swoją opinię</string>
-  <string name="optional_contact_email">Twój adres email (opcjonalne)</string>
-  <string name="privacy_policy">Wysyłając nam dane zgadzasz się na naszą  <a href="">politykę prywatności</a></string>
-  <string name="include_debug_report_crash">Załącz anonimowe dane na temat awarii</string>
-  <string name="include_debug_report_feedback">Załącz anonimowe dane o tym urządzeniu</string>
-  <string name="dev_report_user_info">Informacje o użytkowniku</string>
-  <string name="dev_report_basic_info">Podstawowe informacje</string>
-  <string name="dev_report_device_info">Informacje o urządzeniu</string>
-  <string name="dev_report_stacktrace">Zrzut stosu</string>
-  <string name="dev_report_time_info">Informacje o czasie</string>
-  <string name="dev_report_memory">Pamięć</string>
-  <string name="dev_report_storage">Storage</string>
-  <string name="dev_report_connectivity">Łączenie</string>
-  <string name="dev_report_network_usage">Wykorzystanie sieci</string>
-  <string name="dev_report_build_config">Konfiguracja kompilacji</string>
-  <string name="dev_report_logcat">Dziennik aplikacji</string>
-  <string name="dev_report_device_features">Funkcje urządzenia</string>
-  <string name="send_report">Wyślij raport</string>
   <string name="close">Zamknij</string>
-  <string name="dev_report_sending">Wysyłanie opinii...</string>
-  <string name="dev_report_sent">Wysłano opinię</string>
-  <string name="dev_report_saved">Raport zapisany. Zostanie wysłany następnym razem kiedy zalogujesz się do Zerion.</string>
-  <string name="dev_report_error">Błąd: Nie powiodło się wysłanie raportu</string>
   
   <string name="progress_title_logout">Wylogowywanie z Zerion...</string>
   
@@ -747,7 +646,6 @@ Brak dostępu do aparatu. Spróbuj ponownie, może po ponownym uruchomieniu urz�
 	<string name="wallet_receive_new">Nowy adres</string>
 	<string name="wallet_node_hint">Dotknij serwer, aby go użyć. Przytrzymaj własny serwer, aby go usunąć.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Wielokrotnego użytku adres prywatny. Płatności na niego są niepowiązywalne w łańcuchu. Wykrywanie skanuje dane publiczne przez Tor; Twoje klucze nigdy nie opuszczają urządzenia.</string>
 	<string name="wallet_sp_balance">Wykryto: %1$s</string>
 	<string name="wallet_sp_scanned">Przeskanowano do bloku %1$d</string>
 	<string name="wallet_sp_set_oracle">Źródło skanowania</string>

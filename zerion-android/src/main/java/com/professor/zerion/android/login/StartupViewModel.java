@@ -20,14 +20,13 @@ import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.login.BruteForceProtection.FailureResult;
 import com.professor.zerion.android.login.BruteForceProtection.LockStatus;
-import com.professor.zerion.android.panic.WipePasswordManager;
 import com.professor.zerion.android.vault.VaultManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.util.Arrays;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import androidx.annotation.UiThread;
@@ -163,11 +162,45 @@ public class StartupViewModel extends AndroidViewModel
 		return accountManager.accountExists();
 	}
 
-	void checkAccountExistsAsync(java.util.function.Consumer<Boolean> callback) {
+	enum StartupDecision {
+		SIGN_IN,
+		ERASED,
+		NO_ACCOUNT,
+		DATA_WITHOUT_ACCOUNT
+	}
+
+	void decideStartAsync(
+			java.util.function.Consumer<StartupDecision> callback) {
 		ioExecutor.execute(() -> {
-			boolean exists = accountManager.accountExists();
-			mainHandler.post(() -> callback.accept(exists));
+			StartupDecision d;
+			if (accountManager.isEraseRequested()) {
+				completeErase();
+				d = StartupDecision.ERASED;
+			} else if (accountManager.accountExists()) {
+				d = StartupDecision.SIGN_IN;
+			} else if (LeftoverAccountData.present(getApplication())) {
+				d = StartupDecision.DATA_WITHOUT_ACCOUNT;
+			} else {
+				completeErase();
+				d = StartupDecision.NO_ACCOUNT;
+			}
+			StartupDecision decision = d;
+			mainHandler.post(() -> callback.accept(decision));
 		});
+	}
+
+	private void completeErase() {
+		try {
+			AccountWipeCleanup.wipe(getApplication(), vaultManager);
+		} catch (RuntimeException ignored) {
+		}
+		try {
+			accountManager.deleteAccount();
+		} catch (RuntimeException ignored) {
+		}
+		synchronized (bruteForceProtection) {
+			bruteForceProtection.clear();
+		}
 	}
 
 	void clearSignInNotification() {
@@ -175,102 +208,67 @@ public class StartupViewModel extends AndroidViewModel
 		notificationManager.clearSignInNotification();
 	}
 
-	/** Whether a password is the duress password, when one is set. */
-	interface DuressCheck {
-		boolean matches(char[] password);
-	}
+	@Nullable
+	private volatile AccountPasswordCheck.DuressCheck duressCheck = null;
 
-	private volatile DuressCheck duressCheck = password -> {
-		try {
-			WipePasswordManager wpm =
-					WipePasswordManager.getInstance(getApplication());
-			return wpm != null && wpm.isWipePasswordEnabled()
-					&& wpm.verifyWipePassword(password);
-		} catch (Exception e) {
-			return false;
-		}
-	};
-
-	void setDuressCheck(DuressCheck check) {
+	void setDuressCheck(AccountPasswordCheck.DuressCheck check) {
 		duressCheck = check;
 	}
 
-	/**
-	 * The duress password is honoured on every path that does not sign in:
-	 * a wrong password, an unavailable key strengthener and, above all, an
-	 * active lockout, which is exactly when a coerced user needs it after a
-	 * coercer's own guesses.
-	 */
+	private AccountPasswordCheck passwordCheck() {
+		AccountPasswordCheck.DuressCheck d = duressCheck;
+		return new AccountPasswordCheck(accountManager, d != null ? d
+				: AccountPasswordCheck.duressPasswordOf(getApplication()));
+	}
+
 	void validatePassword(char[] password) {
 		ioExecutor.execute(() -> {
-			synchronized (bruteForceProtection) {
-				LockStatus lockStatus = bruteForceProtection.checkLockStatus();
-				if (lockStatus.isLocked) {
-					boolean duress = duressCheck.matches(password);
-					Arrays.fill(password, '\0');
-					if (duress) {
-						wipeForDuress();
-					} else {
-						lockoutStatus.postEvent(lockStatus);
+			AccountPasswordCheck.Result r = passwordCheck().check(password,
+					accountManager::signIn);
+			switch (r.outcome) {
+				case GRANTED:
+					synchronized (bruteForceProtection) {
+						bruteForceProtection.recordSuccessfulLogin();
 					}
-					return;
-				}
-			}
-
-			boolean cryptographicFailure = false;
-			boolean strengthenerFailure = false;
-			DecryptionResult decryptionResult = null;
-
-			try {
-					accountManager.signIn(password);
-
-				synchronized (bruteForceProtection) {
-					bruteForceProtection.recordSuccessfulLogin();
-				}
-
-				passwordValidated.postEvent(SUCCESS);
-
-				mainHandler.post(() -> {
-					synchronized (stateLock) {
-						boolean hasKey;
-						synchronized (accountManager) {
-							hasKey = accountManager.hasDatabaseKey();
+					passwordValidated.postEvent(SUCCESS);
+					mainHandler.post(() -> {
+						synchronized (stateLock) {
+							boolean hasKey;
+							synchronized (accountManager) {
+								hasKey = accountManager.hasDatabaseKey();
+							}
+							if (hasKey) {
+								_state.setValue(SIGNED_IN);
+							}
 						}
-						if (hasKey) {
-							_state.setValue(SIGNED_IN);
-						}
-					}
-				});
-			} catch (DecryptionException e) {
-				decryptionResult = e.getDecryptionResult();
-				if (decryptionResult == DecryptionResult.KEY_STRENGTHENER_ERROR) {
-					strengthenerFailure = true;
-				} else {
-					cryptographicFailure = true;
-				}
-			} catch (Exception e) {
-				operationalFailure.postEvent(true);
-			}
-
-			boolean duressMatch = (cryptographicFailure || strengthenerFailure)
-					&& duressCheck.matches(password);
-			Arrays.fill(password, '\0');
-
-			if (duressMatch) {
-				wipeForDuress();
-				return;
-			}
-			if (strengthenerFailure) {
-				operationalFailure.postEvent(true);
-				return;
-			}
-			if (cryptographicFailure && decryptionResult != null) {
-				handleCryptographicFailure(decryptionResult);
+					});
+					break;
+				case ERASE:
+					erase(true);
+					break;
+				case LOCKED:
+					lockoutStatus.postEvent(LockStatus.locked(r.lockedMs));
+					break;
+				case DAMAGED:
+					passwordValidated.postEvent(
+							DecryptionResult.KEY_FILES_DAMAGED);
+					break;
+				case WRONG:
+					handleCryptographicFailure(r.result == null
+							? DecryptionResult.INVALID_PASSWORD : r.result);
+					break;
+				default:
+					operationalFailure.postEvent(true);
+					break;
 			}
 		});
 	}
 
-	private void wipeForDuress() {
+	private void erase(boolean notifyScreen) {
+		try {
+			accountManager.shredDatabaseKey();
+		} catch (RuntimeException ignored) {
+		}
 		try {
 			AccountWipeCleanup.wipe(getApplication(), vaultManager);
 			accountManager.deleteAccount();
@@ -279,7 +277,7 @@ public class StartupViewModel extends AndroidViewModel
 		synchronized (bruteForceProtection) {
 			bruteForceProtection.clear();
 		}
-		triggerWipe.postEvent(true);
+		if (notifyScreen) triggerWipe.postEvent(true);
 	}
 
 	private void handleCryptographicFailure(DecryptionResult result) {
@@ -291,7 +289,7 @@ public class StartupViewModel extends AndroidViewModel
 		passwordValidated.postEvent(result);
 
 		if (failureResult.type == FailureResult.Type.WIPE_DATA) {
-			triggerWipe.postEvent(true);
+			erase(true);
 		} else {
 			bruteForceFailure.postEvent(failureResult);
 		}
@@ -328,6 +326,7 @@ public class StartupViewModel extends AndroidViewModel
 	void deleteAccount() {
 		ioExecutor.execute(() -> {
 			try {
+				accountManager.shredDatabaseKey();
 				AccountWipeCleanup.wipe(getApplication(), vaultManager);
 				accountManager.deleteAccount();
 				synchronized (bruteForceProtection) {

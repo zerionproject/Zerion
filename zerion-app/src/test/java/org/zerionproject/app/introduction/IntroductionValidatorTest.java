@@ -273,11 +273,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	/**
-	 * A2-CRY-01: an accept whose ML-KEM key the encapsulation would reject
-	 * is an invalid message, refused by the validator before it reaches the
-	 * protocol engine.
-	 */
 	@Test(expected = FormatException.class)
 	public void testRejectsAcceptWithRejectedMlKemKey() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
@@ -352,7 +347,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	/** PROTO-12: an ACCEPT without the post-quantum fields is a format error. */
 	@Test(expected = FormatException.class)
 	public void testRejectsAcceptWithoutPqFields() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
@@ -383,7 +377,6 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	/** PROTO-12: an AUTH without the KEM ciphertext is a format error. */
 	@Test(expected = FormatException.class)
 	public void testRejectsAuthWithoutKemCiphertext() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),

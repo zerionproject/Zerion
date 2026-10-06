@@ -4,11 +4,6 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.event.Event;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Raised when a contact's async prekey bundle arrives over the encrypted
- * channel. The Android layer verifies it (signatures and identity match) and
- * stores it so offline mesh messages can be sealed to the contact.
- */
 @NotNullByDefault
 public class PrekeyBundleReceivedEvent extends Event {
 

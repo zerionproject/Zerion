@@ -16,22 +16,12 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 
+import com.professor.zerion.android.vault.ui.IncognitoInputHelper;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * The screenshot-protection policy for dialog windows. FLAG_SECURE is per
- * window and a dialog creates its own window, so protecting the host activity
- * alone leaves every dialog capturable. The policy has two parts. A dialog
- * inherits its host activity's protection, so the user's screenshot
- * preference (and any activity that forces protection) applies to dialogs
- * exactly as to the activity, and ordinary dialogs are not blocked when the
- * preference is off. Independently, a dialog that holds a secret is always
- * protected: one that contains a password-type input, or one its author
- * marks as secret, gets the flag regardless of the preference, matching the
- * forced protection of the vault activity.
- */
 @NotNullByDefault
 public final class SecureDialogs {
 
@@ -40,33 +30,28 @@ public final class SecureDialogs {
 	private SecureDialogs() {
 	}
 
-	/** Apply the host-inherit policy to a dialog; also protects it if it
-	 *  already shows a password-type input. */
 	public static void applyHostPolicy(Dialog dialog) {
 		Window w = dialog.getWindow();
 		if (w == null) return;
 		if (hostIsSecure(dialog.getContext())) protect(w);
 		View decor = w.peekDecorView();
+		if (decor != null && android.os.Build.VERSION.SDK_INT >= 30) {
+			decor.setFilterTouchesWhenObscured(true);
+		}
 		if (decor != null && containsSecretInput(decor)) protect(w);
+		if (decor != null) IncognitoInputHelper.install(decor);
 	}
 
-	/** Always protect a dialog, whatever the host or preference says. */
 	public static <T extends Dialog> T protectSecret(T dialog) {
 		Window w = dialog.getWindow();
 		if (w != null) protect(w);
 		return dialog;
 	}
 
-	/** Whether a window carries FLAG_SECURE. */
 	public static boolean isProtected(@Nullable Window w) {
 		return w != null && (w.getAttributes().flags & FLAG) != 0;
 	}
 
-	/**
-	 * Install the policy for every dialog fragment shown under the activity,
-	 * including nested fragment managers. The hook runs when the fragment
-	 * starts, which is when its dialog window exists and before it is drawn.
-	 */
 	public static void install(FragmentActivity activity) {
 		activity.getSupportFragmentManager().registerFragmentLifecycleCallbacks(
 				new FragmentManager.FragmentLifecycleCallbacks() {

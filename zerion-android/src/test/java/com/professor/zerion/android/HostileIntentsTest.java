@@ -24,13 +24,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Every exported activity is started with intents any installed app can
- * send: no action, a view intent with a malformed or oversized URI, extras of
- * the wrong type and size, a share intent with an oversized text, and the
- * panic trigger action from an untrusted sender. None may crash, and the
- * panic responder must finish without acting on an untrusted trigger.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class HostileIntentsTest {
@@ -46,6 +39,8 @@ public class HostileIntentsTest {
 	public void exportedActivitiesSurviveHostileIntents() {
 		List<Class<? extends Activity>> exported = new ArrayList<>();
 		exported.add(SplashScreenActivity.class);
+		exported.add(com.professor.zerion.android.navdrawer
+				.ExternalLinkActivity.class);
 		exported.add(NavDrawerActivity.class);
 		exported.add(ChannelInviteHandlerActivity.class);
 		exported.add(PanicResponderActivity.class);

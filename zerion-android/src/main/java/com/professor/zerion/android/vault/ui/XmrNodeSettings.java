@@ -23,26 +23,12 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Shared Monero node-settings flow, so the wallet list and the wallet detail
- * present identical node configuration. {@link #choose} shows the four-tier
- * selector (own / vetted / custom / direct) with a plain-language description of
- * each tier's privacy trade-off; {@link #apply} then prompts for the mode's node
- * address, validates it by parsing the actual node (a malformed address is
- * rejected, never silently downgraded), and for Direct mode requires an explicit
- * clearnet privacy acknowledgement first.
- */
 @NotNullByDefault
 final class XmrNodeSettings {
 
 	private XmrNodeSettings() {
 	}
 
-	/**
-	 * Present the four node tiers with title + description, preselecting the
-	 * current mode, and apply the chosen tier. The exact host / onion / port is
-	 * only ever shown in the per-mode address prompt, not in this overview.
-	 */
 	static void choose(Fragment f, XmrViewModel vm) {
 		Context ctx = f.requireContext();
 		XmrNodeConfig cfg = vm.getNodeConfig();
@@ -169,11 +155,6 @@ final class XmrNodeSettings {
 		void accept(String address, boolean trusted);
 	}
 
-	/**
-	 * The own-node prompt carries an explicit trust switch, off by default:
-	 * trusting a daemon is a separate, informed choice from pointing the
-	 * wallet at it.
-	 */
 	private static void promptOwnNode(Fragment f, XmrNodeConfig cfg,
 			OwnSink sink) {
 		EditText input = new EditText(f.requireContext());
@@ -231,7 +212,6 @@ final class XmrNodeSettings {
 		toast(f, R.string.wallet_xmr_node_saved);
 	}
 
-	/** Validate the mode's actual node by parsing it; never via the fallback. */
 	private static boolean valid(XmrNodeConfig cfg) {
 		try {
 			switch (cfg.mode) {

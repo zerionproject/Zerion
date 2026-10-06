@@ -32,6 +32,7 @@ import android.widget.Toast;
 
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -51,9 +52,12 @@ public class VoiceCallActivity extends AppCompatActivity {
 	public static final String EXTRA_IS_INCOMING = "is_incoming";
 	public static final String EXTRA_CALL_ID = "call_id";
 	public static final String EXTRA_CALLER_ADDRESS = "caller_address";
+	public static final String EXTRA_ANSWER = "answer_call";
 
 	private static final int REQUEST_AUDIO_PERMISSION = 1;
 	private static final int REQUEST_CAMERA_PERMISSION = 2;
+	private static final int REQUEST_UNLOCK_FOR_CALL = 3;
+	static final int REQUEST_CAMERA_FOR_VIDEO_OFFER = 4;
 
 	private TextView contactNameText;
 	private TextView callStatusText;
@@ -106,8 +110,12 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private Surface localSurface;
 	private Runnable onRemoteSurfaceReady;
 	private boolean autoVideo = false;
-	private boolean pendingVideoAfterPermission = false;
 	private int remoteVideoRotation = 270;
+	@Nullable
+	private Runnable afterUnlock;
+	private boolean holdsAppSession = false;
+	private boolean appSessionWanted = false;
+	private boolean answerWhenBound = false;
 
 	private final Runnable networkQualityUpdateRunnable = new Runnable() {
 		@Override
@@ -122,10 +130,22 @@ public class VoiceCallActivity extends AppCompatActivity {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			VoiceCallService.LocalBinder binder =
 					(VoiceCallService.LocalBinder) service;
-			voiceCallService = binder.getService();
+			VoiceCallService bound = binder.getService();
+			if (!bound.isCallFor(contactId.getInt(), callId)) {
+				unbindService(this);
+				refuseOtherCall(contactId.getInt(), callId, isIncoming);
+				finish();
+				return;
+			}
+			voiceCallService = bound;
 			isBound = true;
 			voiceCallService.setCallActivity(VoiceCallActivity.this);
+			showContactName();
 			updateCallState();
+			if (answerWhenBound) {
+				answerWhenBound = false;
+				acceptCall();
+			}
 		}
 
 		@Override
@@ -139,6 +159,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_voice_call);
+		if (android.os.Build.VERSION.SDK_INT >= 31) {
+			getWindow().setHideOverlayWindows(true);
+		}
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
 			setShowWhenLocked(true);
 			setTurnScreenOn(true);
@@ -146,7 +169,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 		getWindow().addFlags(
 				WindowManager.LayoutParams.FLAG_SECURE |
 				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
-				WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
 				WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
 				WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
 
@@ -185,6 +207,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 		if (isIncoming) {
 			showIncomingCallUI();
+			if (intent.getBooleanExtra(EXTRA_ANSWER, false)) requestAnswer();
 		} else {
 			showActiveCallUI();
 			callStatusText.setText(autoVideo ?
@@ -192,6 +215,229 @@ public class VoiceCallActivity extends AppCompatActivity {
 					: getString(R.string.voice_call_status_connecting_tor));
 			playDialTone();
 		}
+	}
+
+	@Override
+	protected void onNewIntent(Intent intent) {
+		super.onNewIntent(intent);
+		int cid = intent.getIntExtra(EXTRA_CONTACT_ID, -1);
+		String otherCallId = intent.getStringExtra(EXTRA_CALL_ID);
+		boolean sameCall = contactId != null
+				&& VoiceCallService.sameCall(contactId.getInt(), callId,
+						cid, otherCallId)
+				&& (voiceCallService == null
+						|| voiceCallService.isCallFor(cid, otherCallId));
+		if (!sameCall) {
+			refuseOtherCall(cid, otherCallId,
+					intent.getBooleanExtra(EXTRA_IS_INCOMING, false));
+			return;
+		}
+		setIntent(intent);
+		updateCallState();
+		if (isIncoming && intent.getBooleanExtra(EXTRA_ANSWER, false)) {
+			requestAnswer();
+		}
+	}
+
+	private static void refuseOtherCall(int cid, @Nullable String otherCallId,
+			boolean incoming) {
+		if (incoming && cid != -1) {
+			VoiceCallKeyHolder.clearFor(cid, otherCallId);
+		}
+	}
+
+	private void showContactName() {
+		VoiceCallService bound = voiceCallService;
+		String name = bound == null ? null : bound.getContactName();
+		if (name != null && !name.isEmpty()) contactName = name;
+		applyLockScreenPresentation();
+	}
+
+	private void applyLockScreenPresentation() {
+		boolean concealed = callerConcealed();
+		boolean ringing = incomingCallLayout != null
+				&& incomingCallLayout.getVisibility() == View.VISIBLE;
+		if (contactNameText != null) {
+			if (concealed) {
+				contactNameText.setText(ringing
+						? R.string.voice_call_locked_title
+						: R.string.contact);
+			} else if (contactName != null) {
+				contactNameText.setText(contactName);
+			}
+		}
+		TextView callTypeLabel = findViewById(R.id.call_type_label);
+		if (callTypeLabel != null && !isVideoActive) {
+			callTypeLabel.setVisibility(concealed ? View.GONE : View.VISIBLE);
+		}
+		if (ringing && callStatusText != null) {
+			callStatusText.setText(lockedForCall()
+					? getString(R.string.voice_call_locked_hint)
+					: getString(incomingStatus()));
+		}
+	}
+
+	private int incomingStatus() {
+		return autoVideo ? R.string.voice_call_status_incoming_video
+				: R.string.voice_call_status_incoming;
+	}
+
+	private boolean callerConcealed() {
+		return lockedForCall()
+				|| com.professor.zerion.android.decoy.DecoyGate.required(this);
+	}
+
+	private boolean lockedForCall() {
+		return keyguardLocked() || appLocked();
+	}
+
+	private boolean keyguardLocked() {
+		android.app.KeyguardManager keyguard =
+				(android.app.KeyguardManager) getSystemService(
+						Context.KEYGUARD_SERVICE);
+		return keyguard == null || keyguard.isKeyguardLocked();
+	}
+
+	private boolean appLocked() {
+		com.professor.zerion.android.api.LockManager lock = lockManager();
+		return lock == null || lock.isLocked();
+	}
+
+	@Nullable
+	private com.professor.zerion.android.api.LockManager lockManager() {
+		try {
+			return ((com.professor.zerion.android.ZerionApplication)
+					getApplication()).getApplicationComponent()
+					.lockManager();
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	private void runWhenUnlocked(Runnable action) {
+		if (keyguardLocked()) {
+			android.app.KeyguardManager keyguard =
+					(android.app.KeyguardManager) getSystemService(
+							Context.KEYGUARD_SERVICE);
+			if (keyguard == null) return;
+			afterUnlock = action;
+			keyguard.requestDismissKeyguard(this,
+					new android.app.KeyguardManager.KeyguardDismissCallback() {
+						@Override
+						public void onDismissSucceeded() {
+							runOnUiThread(() -> continueAfterUnlock());
+						}
+
+						@Override
+						public void onDismissCancelled() {
+							runOnUiThread(() -> afterUnlock = null);
+						}
+
+						@Override
+						public void onDismissError() {
+							runOnUiThread(() -> afterUnlock = null);
+						}
+					});
+			return;
+		}
+		if (appLocked()) {
+			afterUnlock = action;
+			holdAppSession();
+			try {
+				startActivityForResult(new Intent(this,
+						com.professor.zerion.android.account
+								.UnlockActivity.class),
+						REQUEST_UNLOCK_FOR_CALL);
+			} catch (RuntimeException e) {
+				afterUnlock = null;
+				releaseAppSession();
+			}
+			return;
+		}
+		action.run();
+	}
+
+	private void continueAfterUnlock() {
+		Runnable action = afterUnlock;
+		afterUnlock = null;
+		if (action != null && !isFinishing()) runWhenUnlocked(action);
+		applyLockScreenPresentation();
+	}
+
+	private void holdAppSession() {
+		appSessionWanted = true;
+		if (getLifecycle().getCurrentState().isAtLeast(
+				androidx.lifecycle.Lifecycle.State.STARTED)) {
+			acquireAppSession();
+		}
+	}
+
+	private void releaseAppSession() {
+		appSessionWanted = false;
+		dropAppSession();
+	}
+
+	private void acquireAppSession() {
+		if (holdsAppSession) return;
+		com.professor.zerion.android.api.LockManager lock = lockManager();
+		if (lock == null) return;
+		lock.onActivityStart();
+		holdsAppSession = true;
+	}
+
+	private void dropAppSession() {
+		if (!holdsAppSession) return;
+		holdsAppSession = false;
+		com.professor.zerion.android.api.LockManager lock = lockManager();
+		if (lock != null) lock.onActivityStop();
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		if (appSessionWanted) acquireAppSession();
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		dropAppSession();
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode,
+			@Nullable Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != REQUEST_UNLOCK_FOR_CALL) return;
+		if (resultCode == RESULT_OK) {
+			continueAfterUnlock();
+		} else {
+			afterUnlock = null;
+			releaseAppSession();
+			applyLockScreenPresentation();
+		}
+	}
+
+	private void requestAnswer() {
+		runWhenUnlocked(() -> {
+			if (isBound && voiceCallService != null) {
+				acceptCall();
+			} else {
+				answerWhenBound = true;
+			}
+		});
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		showContactName();
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus) showContactName();
 	}
 
 	private void initViews() {
@@ -206,6 +452,10 @@ public class VoiceCallActivity extends AppCompatActivity {
 		endCallButton = findViewById(R.id.end_call_button);
 		acceptCallButton = findViewById(R.id.accept_call_button);
 		declineCallButton = findViewById(R.id.decline_call_button);
+		if (android.os.Build.VERSION.SDK_INT >= 30) {
+			acceptCallButton.setFilterTouchesWhenObscured(true);
+			declineCallButton.setFilterTouchesWhenObscured(true);
+		}
 		muteButton = findViewById(R.id.mute_button);
 		speakerButton = findViewById(R.id.speaker_button);
 
@@ -215,7 +465,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		packetLossBadge = findViewById(R.id.packet_loss_badge);
 		codecBitrateDisplay = findViewById(R.id.codec_bitrate_display);
 
-		contactNameText.setText(contactName != null ? contactName : "Unknown");
+		contactNameText.setText(R.string.contact);
 
 		muteLabel = findViewById(R.id.mute_label);
 		speakerLabel = findViewById(R.id.speaker_label);
@@ -303,14 +553,15 @@ public class VoiceCallActivity extends AppCompatActivity {
 		}
 
 		endCallButton.setOnClickListener(v -> endCall());
-		acceptCallButton.setOnClickListener(v -> acceptCall());
+		acceptCallButton.setOnClickListener(v -> requestAnswer());
 		declineCallButton.setOnClickListener(v -> declineCall());
 		muteButton.setOnClickListener(v -> toggleMute());
 		speakerButton.setOnClickListener(v -> toggleSpeaker());
 
 		android.content.SharedPreferences prefs =
-				com.professor.zerion.android.AppModule.getUiPrefs();
-		boolean videoEnabled = prefs != null && prefs.getBoolean(
+				com.professor.zerion.android.AppModule.getAndroidComponent(this)
+						.profilePreferences();
+		boolean videoEnabled = prefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
 						.PREF_VIDEO_CALLS_ENABLED, false);
 
@@ -337,8 +588,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private void showIncomingCallUI() {
 		incomingCallLayout.setVisibility(View.VISIBLE);
 		activeCallLayout.setVisibility(View.GONE);
-		callStatusText.setText(autoVideo ?
-				"Incoming secure video call..." : "Incoming secure call...");
+		callStatusText.setText(incomingStatus());
+		applyLockScreenPresentation();
 		playRingtone();
 	}
 
@@ -445,6 +696,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 	public void onCallStateChanged(VoiceCallService.CallState state) {
 		runOnUiThread(() -> {
+			showContactName();
 			switch (state) {
 				case CONNECTING:
 					if (voiceCallService != null
@@ -475,6 +727,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 				default:
 					break;
 			}
+			applyLockScreenPresentation();
 		});
 	}
 
@@ -483,7 +736,10 @@ public class VoiceCallActivity extends AppCompatActivity {
 			stopRingtone();
 			stopDialTone();
 			callStatusText.setText(R.string.voice_call_status_connected);
-			callDuration.setBase(SystemClock.elapsedRealtime());
+			long start = isBound && voiceCallService != null
+					? voiceCallService.getConnectedAtRealtime() : 0L;
+			callDuration.setBase(start > 0 ? start
+					: SystemClock.elapsedRealtime());
 			callDuration.start();
 			callDuration.setVisibility(View.VISIBLE);
 
@@ -589,6 +845,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 							R.string.voice_call_reason_connection_failed));
 					break;
 			}
+			applyLockScreenPresentation();
 		}
 	}
 
@@ -645,6 +902,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 		}
 		stopRingtone();
 		stopDialTone();
+		afterUnlock = null;
+		releaseAppSession();
 	}
 
 	private void updateNetworkQuality() {
@@ -721,9 +980,14 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private void toggleVideo() {
 		if (!isBound || voiceCallService == null) return;
 
-		if (voiceCallService.isVideoEnabled()) {
+		if (voiceCallService.isVideoEnabled()
+				|| voiceCallService.isVideoRequested()) {
 			voiceCallService.endVideo();
 		} else {
+			if (lockedForCall()) {
+				runWhenUnlocked(this::toggleVideo);
+				return;
+			}
 			if (!hasCameraPermission()) {
 				requestCameraPermission();
 				return;
@@ -783,15 +1047,17 @@ public class VoiceCallActivity extends AppCompatActivity {
 					.setTitle(R.string.video_call)
 					.setMessage(R.string.video_offer_received)
 					.setPositiveButton(R.string.video_offer_accept,
-							(dialog, which) -> {
+							(dialog, which) -> runWhenUnlocked(() -> {
 						if (!hasCameraPermission()) {
-							requestCameraPermission();
+							ActivityCompat.requestPermissions(this,
+									new String[]{Manifest.permission.CAMERA},
+									REQUEST_CAMERA_FOR_VIDEO_OFFER);
 							return;
 						}
 						if (isBound && voiceCallService != null) {
 							voiceCallService.acceptVideoOffer();
 						}
-					})
+					}))
 					.setNegativeButton(R.string.video_offer_reject,
 							(dialog, which) -> {
 						if (isBound && voiceCallService != null) {
@@ -894,6 +1160,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (switchCameraContainer != null) {
 				switchCameraContainer.setVisibility(View.GONE);
 			}
+			applyLockScreenPresentation();
 		});
 	}
 
@@ -936,13 +1203,6 @@ public class VoiceCallActivity extends AppCompatActivity {
 						remoteVideoRotation, false));
 	}
 
-	/**
-	 * The self-preview is a camera output drawn straight into its texture,
-	 * and the camera framework already turns that output into the device's
-	 * natural orientation, so the view only compensates for the display
-	 * being rotated away from that orientation. Rotating by the sensor
-	 * orientation on top of that laid the preview on its side.
-	 */
 	private void applyLocalVideoTransform() {
 		if (localVideoSurface == null) return;
 		int displayRotation = 0;
@@ -1032,18 +1292,17 @@ public class VoiceCallActivity extends AppCompatActivity {
 		} else if (requestCode == REQUEST_CAMERA_PERMISSION) {
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				if (pendingVideoAfterPermission) {
-					pendingVideoAfterPermission = false;
-					if (isBound && voiceCallService != null) {
-						voiceCallService.requestVideoUpgrade();
-					}
-				} else {
-					if (isBound && voiceCallService != null) {
-						voiceCallService.resumeVideo();
-					}
+				if (isBound && voiceCallService != null) {
+					voiceCallService.resumeVideo();
 				}
+			}
+		} else if (requestCode == REQUEST_CAMERA_FOR_VIDEO_OFFER) {
+			if (!isBound || voiceCallService == null) return;
+			if (grantResults.length > 0 &&
+					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				voiceCallService.acceptVideoOffer();
 			} else {
-				pendingVideoAfterPermission = false;
+				voiceCallService.rejectVideoOffer();
 			}
 		}
 	}

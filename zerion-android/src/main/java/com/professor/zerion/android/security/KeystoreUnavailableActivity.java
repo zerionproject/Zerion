@@ -12,21 +12,17 @@ import com.professor.zerion.R;
 
 import javax.annotation.Nullable;
 
-/**
- * Shown instead of the normal UI when the Android Keystore is in a failed
- * state that survives app restarts but not a device reboot. The app fails
- * closed: no plaintext fallback for secure storage exists, so nothing can
- * safely run until the keystore recovers. This screen replaces what used to
- * be a crash loop with an explanation and a way out. It deliberately extends
- * the plain framework Activity and injects nothing, so it cannot itself fail
- * for the same reason it is reporting.
- */
 public class KeystoreUnavailableActivity extends Activity {
 
 	@Override
 	protected void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+		if (com.professor.zerion.android.util.AppTasks.startsAfresh(this,
+				savedInstanceState != null)) {
+			com.professor.zerion.android.util.AppTasks
+					.finishOtherTasks(this, false);
+		}
 
 		LinearLayout root = new LinearLayout(this);
 		root.setOrientation(LinearLayout.VERTICAL);

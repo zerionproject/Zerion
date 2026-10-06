@@ -10,6 +10,7 @@ import static android.content.Intent.ACTION_SEND;
 import static android.content.Intent.ACTION_VIEW;
 import static android.content.Intent.EXTRA_TEXT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.LINK_REGEX;
 
 class IntentRouter {
@@ -39,7 +40,7 @@ class IntentRouter {
 			Class<? extends ZerionActivity> activityClass) {
 
 		Intent clean = new Intent(ctx, activityClass);
-		clean.addFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		clean.addFlags(FLAG_ACTIVITY_CLEAR_TOP | FLAG_ACTIVITY_NEW_TASK);
 
 		if (original.getData() != null) {
 			clean.setData(original.getData());

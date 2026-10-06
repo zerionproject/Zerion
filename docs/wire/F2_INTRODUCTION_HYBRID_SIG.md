@@ -1,26 +1,32 @@
 # F-2: Introduction Protocol - Hybrid Ed25519 + ML-DSA-65 Signatures
 
-> **Shipped; current as of v2.0.x.** The hybrid Ed25519 + ML-DSA-65 introduction
-> signatures described here are the production wire format. The algorithm and
-> all size constants below are current. The v1.5 legacy-peer interop rows are
-> retained for history (annotated *historical*) and describe behaviour against
-> pre-hybrid peers. The open downgrade-fallback question in §3 / §9 remains
-> open - not yet tightened.
+> **Shipped; updated to the current Android code (3.0.x).** The hybrid
+> Ed25519 + ML-DSA-65 introduction signatures described here are the
+> production wire format. The downgrade fallback has been removed: Android
+> signs and accepts only hybrid signatures, and an introduction also requires
+> ML-KEM-768 keys and a KEM ciphertext. The v1.5 legacy-peer rows are retained
+> for history (annotated *historical*); those combinations no longer complete.
+>
+> Since 3.0.15 contacts added by introduction are stored with
+> `postQuantum=true`: their root key includes ML-KEM-768 secrets and AUTH is
+> hybrid-signed. Contacts introduced by 3.0.14 and earlier keep the
+> `postQuantum=false` flag they were stored with, so the app still labels them
+> "Classical Security".
 
 iOS-side parity for the Zerion introduction protocol (originally landed for
 v1.6; shipped and current as of v2.0.x). Android implementation: commit
 `11f0e95` (dev + master).
 
 ## TL;DR
-The introduction protocol's `AuthMessage` signs the AUTH nonce with the introducee's Ed25519 author key. We now optionally sign with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key in the **AcceptMessage** (new optional slot). When both sides advertise a key, AuthMessage carries a 3373-byte hybrid signature; otherwise it stays at 64-byte Ed25519. The receiver length-dispatches.
+The introduction protocol's `AuthMessage` signs the AUTH nonce with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key (and an ML-KEM-768 key) in the **AcceptMessage**. AuthMessage always carries a 3373-byte hybrid signature; a peer that does not advertise an ML-DSA-65 key cannot complete an introduction.
 
-Backward-compatible in both directions - v1.5 ↔ v1.6 introductions still complete.
+Not backward-compatible: a peer that does not send ML-DSA-65 and ML-KEM-768 keys fails validation or the session aborts.
 
 ---
 
 ## 1. Wire format changes
 
-### AcceptMessage body (new optional slot 7)
+### AcceptMessage body (slots 7 and 8)
 
 Legacy (v1.5):
 ```
@@ -28,85 +34,122 @@ Legacy (v1.5):
 [ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, autoDeleteTimer ] // size 7 - with timer
 ```
 
-v1.6 (new):
+Current:
 ```
-[ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, null|timer, mlDsaPubKey ]  // size 8
-```
-
-- **Slot 7 (new): `mlDsaPubKey`** - raw byte array, length must equal `ML_DSA_65_PUBLIC_KEY_BYTES = 1952`.
-- **Slot 6**: still `autoDeleteTimer` (Long) or `null` when no timer is set. When slot 7 is present, slot 6 must be present (use `null` if no timer).
-- Sender writes size 8 only if local identity has an ML-DSA-65 keypair.
-
-### AuthMessage body (signature length raised)
-
-No structural change - still:
-```
-[ AUTH.value, sessionId, prevMsgId, mac, signature ]   // size 5
+[ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, null|timer, mlDsaPubKey, mlKemEphemeralPublicKey ]  // size 9, the only accepted size
 ```
 
-But `signature` length range is now `1 .. HYBRID_SIGNATURE_BYTES = 3373` (was `1 .. 64`).
-- 64-byte signature: Ed25519 only (legacy or downgrade).
-- 3373-byte signature: hybrid (Ed25519 64 B || ML-DSA-65 3309 B).
+- **Slot 7: `mlDsaPubKey`** - raw byte array, exactly `ML_DSA_65_PUBLIC_KEY_BYTES = 1952`, required.
+- **Slot 8: `mlKemEphemeralPublicKey`** - ML-KEM-768 encapsulation key, exactly 1184 bytes, required and validated.
+- **Slot 6**: `autoDeleteTimer` (Long) or `null` when no timer is set.
+- The sender always writes 9 slots.
+
+### AuthMessage body
+
+```
+[ AUTH.value, sessionId, prevMsgId, mac, signature, kemCiphertext ]   // size 6, the only accepted size
+```
+
+- `mac`: 32 bytes.
+- `signature`: the validator accepts 1..3373 bytes, but only a 3373-byte hybrid signature (Ed25519 64 B || ML-DSA-65 3309 B) verifies.
+- `kemCiphertext`: exactly 1088 bytes (ML-KEM-768).
 
 ### Validator
-- AcceptMessage: accept body size **6, 7, or 8**. If size == 8, slot 7 (when non-null) MUST be exactly 1952 bytes.
-- AuthMessage: signature length range raised to `[1, 3373]`.
+- AcceptMessage: exactly 9 slots, slots 7 and 8 as above.
+- AuthMessage: exactly 6 slots, slot 5 exactly 1088 bytes.
 
 ---
 
 ## 2. Signing (AuthMessage construction)
 
 ```
-nonce = HMAC(macKey, label="org.zerionproject.app.introduction/AUTH_NONCE")
-```
-(Unchanged - same label, same MAC.)
-
-```
-IF localMlDsaPriv != nil AND remoteMlDsaPub != nil:
-    hybridPriv = HybridSignaturePrivateKey(ed25519PrivateKey, localMlDsaPriv)   // 32 || 4032 = 4064 bytes
-    signature  = hybridSign(label="org.zerionproject.app.introduction/AUTH_SIGN", toSign=nonce, hybridPriv)
-                 // = ed25519Sign(nonce) || mlDsa65Sign(nonce) = 64 || 3309 = 3373 bytes
-ELSE:
-    signature  = ed25519Sign(label="org.zerionproject.app.introduction/AUTH_SIGN", toSign=nonce, ed25519Priv)
-                 // = 64 bytes
+nonce = MAC(macKey, label="org.zerionproject.app.introduction/AUTH_NONCE")
 ```
 
-Decision rule for `IF`:
-- `localMlDsaPriv` comes from the local identity's ML-DSA-65 private key (already shipped in v1.6 identity model).
-- `remoteMlDsaPub` was learned from the peer's AcceptMessage slot 7. If the peer is v1.5 and sent no slot 7, this is `nil` → Ed25519 only.
+`MAC` is keyed BLAKE2b-256 (`crypto.mac`) over the length-prefixed label, with no other input. `macKey` is the sender's ALICE/BOB MAC key derived from the pre-master key: `PRE_MASTER_KEY(X25519 master key, the sender's own ML-KEM-768 encapsulation secret)`, whose ciphertext is sent in AuthMessage slot 5. The receiver decapsulates that ciphertext to derive the peer's MAC key.
+
+```
+IF localMlDsaPriv == nil OR remoteMlDsaPub == nil:
+    abort the introduction session          // no Ed25519-only signature is produced
+hybridPriv = HybridSignaturePrivateKey(ed25519PrivateKey, localMlDsaPriv)   // 32 || 4032 = 4064 bytes
+signature  = hybridSign(label="org.zerionproject.app.introduction/AUTH_SIGN", toSign=nonce, hybridPriv)
+             // Ed25519 (64) || ML-DSA-65 (3309) = 3373 bytes
+```
+
+- `localMlDsaPriv` comes from the local identity's ML-DSA-65 private key.
+- `remoteMlDsaPub` was learned from the peer's AcceptMessage slot 7, which the validator requires.
 
 Label binding (must match exactly):
 - `"org.zerionproject.app.introduction/AUTH_NONCE"`
 - `"org.zerionproject.app.introduction/AUTH_SIGN"`
 
-The hybrid `sign` and `verify` helpers must use the same label-binding rule we use elsewhere in v1.6 (label || 0x00 || toSign as the actual signing input for each component algorithm - same as `crypto.hybridSign` / `crypto.verifyHybridSignature` in the Android core).
+Both component algorithms sign `M = uint32_be(len(label_utf8)) || label_utf8 || uint32_be(len(toSign)) || toSign` (4-byte big-endian length prefixes, no separator byte), as in `crypto.hybridSign` / `crypto.verifyHybridSignature` in the Android core. ML-DSA-65 is used in pure mode with an empty context.
 
 ---
 
 ## 3. Verifying (AuthMessage receive)
 
 ```
-nonce = HMAC(remoteMacKey, label="...AUTH_NONCE")
+nonce = MAC(remoteMacKey, label="...AUTH_NONCE")
 
-IF signature.length == HYBRID_SIGNATURE_BYTES (3373) AND remoteMlDsaPub != nil:
-    hybridPub = HybridSignaturePublicKey(remoteAuthorPubKey, remoteMlDsaPub)   // 32 || 1952 = 1984 bytes
-    ok = verifyHybridSignature(signature, label="...AUTH_SIGN", signed=nonce, hybridPub)
-ELSE:
-    // Either peer is v1.5 (no ML-DSA pubkey), or peer downgraded for compat.
-    // Take first 64 bytes of signature; that's the Ed25519 component (or the whole sig if it was 64-byte already).
-    ed25519Sig = (signature.length == 3373) ? signature[0..64] : signature
-    ok = verifyEd25519(ed25519Sig, label="...AUTH_SIGN", signed=nonce, remoteAuthorPubKey)
-
-IF NOT ok: abort introduction session.
+IF remoteMlDsaPub == nil: abort
+IF signature.length != 3373: abort          // a 64-byte signature is rejected
+hybridPub = HybridSignaturePublicKey(remoteAuthorPubKey, remoteMlDsaPub)   // 32 || 1952 = 1984 bytes
+IF NOT verifyHybridSignature(signature, label="...AUTH_SIGN", signed=nonce, hybridPub): abort
+// both the Ed25519 half and the ML-DSA-65 half must verify; there is no fallback
 ```
 
-Order matters: hybrid is preferred when both conditions are true, fallback ONLY when the peer is legitimately legacy or downgraded. **Do not** accept a 64-byte sig from a peer that sent an ML-DSA pubkey - that would be a downgrade attack. (Android currently allows this fallback when `signature.length != 3373`; if/when we tighten, do it in both clients together.)
+Never verify only the first 64 bytes of a signature: the Ed25519 half of a hybrid signature is a valid standalone Ed25519 signature, so accepting it would let anyone strip the ML-DSA-65 half. Android rejects any signature that is not 3373 bytes and any session without the peer's ML-DSA-65 key.
+
+---
+
+## 3a. Key confirmation (ActivateMessage)
+
+Once an introducee has verified the peer's AUTH it derives the final master key
+
+```
+finalMaster = KDF(LABEL_MASTER_KEY, X25519 master key, aliceKemSecret, bobKemSecret)
+```
+
+which the new contact's root key is taken from, and from it the two ACTIVATE keys:
+
+```
+aliceActivateKey = KDF("org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY", finalMaster)
+bobActivateKey   = KDF("org.zerionproject.app.introduction/BOB_ACTIVATE_KEY", finalMaster)
+mac              = MAC(own activate key, label="org.zerionproject.app.introduction/ACTIVATE_MAC")
+```
+
+Each side MACs its ACTIVATE with its own key and verifies the peer's with the
+peer's key, so a verified ACTIVATE confirms that both introducees derived the
+same final master key.
+
+Compatibility: Android 3.0.14 and earlier keyed ACTIVATE with each side's own
+pre-master MAC key, which the peer cannot derive (each pre-master includes the
+sender's own ML-KEM secret). Every introduction therefore ended in an abort at
+ACTIVATE after the contact had been added, between any two Android releases
+since the ML-KEM pre-master was introduced. A 3.0.15 introducee and a 3.0.14
+introducee still abort at ACTIVATE in the same way; two 3.0.15 introducees
+complete. The contact added at AUTH stays in place in every case, as before;
+it reaches the peer only if both derived the same root key.
+
+---
+
+## 3b. Which contact may send a message of a session
+
+A message names its session by a session id the sender chooses. A message is
+accepted only from a contact that takes part in that session: in an
+introducer's session, from one of the two introducees (the message's group must
+be one of theirs); in an introducee's session, from the introducer. Any other
+message is refused as malformed, so a contact who learns the three author ids
+can no longer abort someone else's introduction (3.0.14 and earlier accepted it,
+and a foreign ABORT to an introducer left a message that failed validation at
+every start).
 
 ---
 
 ## 4. Session state additions
 
-Each side of the introduction (Local + Remote) needs an optional `mlDsaPubKey: Data?` field.
+Each side of the introduction (Local + Remote) carries an `mlDsaPubKey` field and an `mlKemEphemeralPublicKey` field; Local also holds `mlKemEphemeralPrivateKey` and `ownKemSecret`.
 
 - **Local.mlDsaPubKey**: set on `onLocalAccept` from the local identity. Persisted in session state.
 - **Remote.mlDsaPubKey**: set on `onRemoteAccept` from `AcceptMessage.mlDsaPubKey`. Persisted in session state.
@@ -124,16 +167,17 @@ The introducer relays each introducee's AcceptMessage to the other introducee. T
 sendAcceptMessage(otherIntroducee, ..., transportProperties, mlDsaPubKey: m.mlDsaPubKey)
 ```
 
-If the introducer is on v1.5 and doesn't know about slot 7, BdfList parsing should ignore the extra slot - verify your iOS BdfList parser tolerates extra trailing entries (the Android core does).
+The introducer forwards `mlDsaPubKey` and `mlKemEphemeralPublicKey` unchanged, and forwards each AuthMessage (including `kemCiphertext`) unchanged. Android rejects an Accept that does not have exactly 9 slots; extra or missing trailing entries are not tolerated.
 
 ---
 
 ## 6. Backward-compat matrix
 
-Four combinations. The v1.5 rows are *historical* - they describe interop with
-pre-hybrid (v1.5) peers; on a current all-v2.0.x fleet the hybrid row is the
-live path, but the legacy fallbacks remain in the code for any lingering legacy
-peer:
+Four combinations. The v1.5 rows are *historical*: current Android completes an
+introduction only on the hybrid path (both Accepts carry slots 7 and 8, AUTH
+carries a 3373-byte hybrid signature and a KEM ciphertext), and the legacy
+fallbacks have been removed from the code, so the v1.5 combinations no longer
+complete:
 
 | Sender | Receiver | Accept slot 7? | Auth sig | Verify path |
 |---|---|---|---|---|
@@ -142,24 +186,26 @@ peer:
 | v1.6 | v1.5 *(historical)* | receiver absent → sender sees `remoteMlDsaPub == nil` → 64 B | 64 B Ed25519 | Ed25519-only |
 | v1.6 | v1.6 *(current - live path on v2.0.x)* | present both ways | 3373 B hybrid | hybrid verify |
 
-A v1.6 sender NEVER ships a 3373-byte sig to a peer that didn't advertise an ML-DSA pubkey. This keeps a v1.5 receiver's validator (which caps signature at 64) from rejecting the AuthMessage.
+A current sender aborts instead of signing when the peer did not advertise an ML-DSA pubkey.
 
 ---
 
 ## 7. iOS structures to update (rough map)
 
-- `AcceptMessage` (struct/class): add `let mlDsaPubKey: Data?`
-- `MessageEncoder.encodeAcceptMessage(...)`: accept and emit the optional slot
-- `MessageParser.parseAcceptMessage(...)`: read optional slot 7 when body.count == 8
-- `IntroductionValidator.validateAcceptMessage(...)`: accept counts 6/7/8; if 8, validate `slot[7].count == 1952`
-- `IntroductionValidator.validateAuthMessage(...)`: raise signature max length to 3373
+- `AcceptMessage` (struct/class): `mlDsaPubKey` and `mlKemEphemeralPublicKey`, both required
+- `MessageEncoder.encodeAcceptMessage(...)`: always emit 9 slots
+- `MessageParser.parseAcceptMessage(...)`: read slots 7 and 8
+- `IntroductionValidator.validateAcceptMessage(...)`: accept count 9 only; `slot[7].count == 1952`, `slot[8].count == 1184` and a valid ML-KEM-768 key
+- `IntroductionValidator.validateAuthMessage(...)`: count 6 only, signature 1..3373, `slot[5].count == 1088`
 - `IntroduceeSession.Common` (or your equivalent): add `mlDsaPubKey: Data?`
 - `SessionEncoder` / `SessionDecoder`: persist + restore `"mlDsaPubKey"` key in both Local and Remote dicts
-- `IntroductionCrypto.sign(...)`: hybrid-sign when local ML-DSA priv + remote ML-DSA pub both present
-- `IntroductionCrypto.verifySignature(...)`: length-dispatch hybrid vs Ed25519-prefix fallback
+- `IntroductionCrypto.sign(...)`: hybrid-sign; fail when the local ML-DSA priv or the remote ML-DSA pub is missing
+- `IntroductionCrypto.verifySignature(...)`: hybrid only; reject any signature that is not 3373 bytes
 - `IntroduceeProtocolEngine.onLocalAccept`: fetch local ML-DSA pubkey from identity, pass through
 - `IntroduceeProtocolEngine.onRemoteAccept`: capture `m.mlDsaPubKey` into session.Remote
 - `IntroduceeProtocolEngine.onLocalAuth`: pass `local ML-DSA priv` + `session.Remote.mlDsaPubKey` to sign
+- `IntroduceeProtocolEngine.onRemoteAuth`: key ACTIVATE with the activate keys of section 3a
+- Message routing: check the sender of a message against the session, as in section 3b
 - `IntroducerProtocolEngine.onRemoteAccept` / `onRemoteAcceptWhenDeclined`: relay `m.mlDsaPubKey` to the outbound Accept
 
 ---
@@ -174,23 +220,29 @@ HYBRID_SIGNATURE_BYTES       = 3373    (64 Ed25519 + 3309 ML-DSA-65)
 HYBRID_SIGNATURE_PUBLIC_KEY_BYTES   = 1984   (32 + 1952)
 HYBRID_SIGNATURE_PRIVATE_KEY_BYTES  = 4064   (32 + 4032)
 KEY_TYPE_HYBRID_SIGNATURE    = "Hybrid-Ed25519-ML-DSA-65"
+INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES = 1184
+INTRODUCTION_KEM_CIPHERTEXT_BYTES    = 1088
 ```
 
 Labels (UTF-8, no trailing 0):
 ```
 LABEL_AUTH_SIGN  = "org.zerionproject.app.introduction/AUTH_SIGN"
 LABEL_AUTH_NONCE = "org.zerionproject.app.introduction/AUTH_NONCE"
+LABEL_PRE_MASTER_KEY = "org.zerionproject.app.introduction/PRE_MASTER_KEY"
+LABEL_ACTIVATE_MAC   = "org.zerionproject.app.introduction/ACTIVATE_MAC"
+LABEL_ALICE_ACTIVATE_KEY = "org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY"
+LABEL_BOB_ACTIVATE_KEY   = "org.zerionproject.app.introduction/BOB_ACTIVATE_KEY"
 ```
 
 ---
 
 ## 9. Interop test plan
 
-1. **v1.5 Android ↔ v1.5 iOS** (regression): introduction completes, AuthMessage sig is 64 B.
-2. **v1.6 Android ↔ v1.5 iOS**: Android Accept ships slot 7. iOS validator (legacy) parses body size 8 - verify iOS BdfList tolerates extra slot. iOS Accept ships size 6 or 7 (no slot 7). Android sees `remoteMlDsaPub == nil` → falls back to 64 B Ed25519. Introduction completes.
-3. **v1.5 Android ↔ v1.6 iOS**: symmetric to (2).
-4. **v1.6 Android ↔ v1.6 iOS**: both ship slot 7. AuthMessage sig is 3373 B. Hybrid verify on both sides. Introduction completes.
+1. **v1.5 Android ↔ v1.5 iOS** (*historical*): expected today: rejected or aborted.
+2. **Current Android ↔ v1.5 iOS**: iOS Accept without slots 7 and 8 fails Android validation; expected: rejected or aborted.
+3. **v1.5 Android ↔ current iOS**: symmetric to (2); expected: rejected or aborted.
+4. **Current Android ↔ current iOS**: both ship slots 7 and 8. AuthMessage sig is 3373 B with a KEM ciphertext. Hybrid verify on both sides. Introduction completes.
 5. **Negative tests**:
    - Tamper one byte of an ML-DSA pubkey advertised in Accept → AuthMessage hybrid verify fails → session aborts.
    - Send 3373-byte sig where the ML-DSA portion is random garbage → hybrid verify fails.
-   - Send 64-byte sig when peer DID advertise ML-DSA pubkey → currently accepted as Ed25519-only fallback. Flag this if iOS wants to tighten (we can tighten in both clients together).
+   - Send 64-byte sig, or a 3373-byte sig whose ML-DSA-65 half is invalid → rejected, session aborts.

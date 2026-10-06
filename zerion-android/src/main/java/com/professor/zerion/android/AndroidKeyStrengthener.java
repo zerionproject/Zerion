@@ -3,6 +3,7 @@ package com.professor.zerion.android;
 import android.security.keystore.KeyGenParameterSpec;
 
 import org.zerionproject.core.api.crypto.KeyStrengthener;
+import org.zerionproject.core.api.crypto.KeyStrengthenerException;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -12,7 +13,12 @@ import java.security.KeyStore;
 import java.security.KeyStore.Entry;
 import java.security.KeyStore.SecretKeyEntry;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
@@ -34,47 +40,55 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	private static final String KEY_STORE_TYPE = "AndroidKeyStore";
 	private static final String PROVIDER_NAME = "AndroidKeyStore";
 	private static final String KEY_ALIAS = "db";
+	private static final String GENERATION_ALIAS_PREFIX = "db_g";
 	private static final int KEY_BITS = 256;
-
-	private final List<AlgorithmParameterSpec> specs;
-
-	AndroidKeyStrengthener() {
-		KeyGenParameterSpec noStrongBox =
-				new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-						.setKeySize(KEY_BITS)
-						.build();
-		if (SDK_INT >= 28) {
-			KeyGenParameterSpec strongBoxUnlockedRequired =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setIsStrongBoxBacked(true)
-							.setUnlockedDeviceRequired(true)
-							.setKeySize(KEY_BITS)
-							.build();
-			KeyGenParameterSpec strongBox =
-					new KeyGenParameterSpec.Builder(KEY_ALIAS, PURPOSE_SIGN)
-							.setIsStrongBoxBacked(true)
-							.setKeySize(KEY_BITS)
-							.build();
-			specs = asList(strongBoxUnlockedRequired, strongBox, noStrongBox);
-		} else {
-			specs = singletonList(noStrongBox);
-		}
-	}
 
 	@GuardedBy("this")
 	@Nullable
 	private javax.crypto.SecretKey storedKey = null;
-	/** The last lookup threw: the key may exist but cannot be read now. */
 	@GuardedBy("this")
 	@Nullable
 	private GeneralSecurityException lookupFailure = null;
-	/**
-	 * Set by {@link #discardKeyBeforeFirstAccount()}: nothing depends on the
-	 * alias yet, so the next strengthening may generate a key regardless of
-	 * what the lookup says. Cleared as soon as a key has been generated.
-	 */
 	@GuardedBy("this")
 	private boolean freshInstall = false;
+	@GuardedBy("this")
+	private final Map<Integer, javax.crypto.SecretKey> generationKeys =
+			new HashMap<>();
+	@GuardedBy("this")
+	private int current = 0;
+
+	static String generationAlias(int generation) {
+		return generation == LEGACY_GENERATION ? KEY_ALIAS
+				: GENERATION_ALIAS_PREFIX + generation;
+	}
+
+	static int generationOf(String alias) {
+		if (alias.equals(KEY_ALIAS)) return LEGACY_GENERATION;
+		if (!alias.startsWith(GENERATION_ALIAS_PREFIX)) return -1;
+		String n = alias.substring(GENERATION_ALIAS_PREFIX.length());
+		if (n.isEmpty() || n.length() > 9) return -1;
+		for (int i = 0; i < n.length(); i++) {
+			if (n.charAt(i) < '0' || n.charAt(i) > '9') return -1;
+		}
+		int g = Integer.parseInt(n);
+		return g >= 1 ? g : -1;
+	}
+
+	private static List<AlgorithmParameterSpec> specs(String alias) {
+		KeyGenParameterSpec noStrongBox =
+				new KeyGenParameterSpec.Builder(alias, PURPOSE_SIGN)
+						.setKeySize(KEY_BITS)
+						.build();
+		if (SDK_INT >= 28) {
+			KeyGenParameterSpec strongBox =
+					new KeyGenParameterSpec.Builder(alias, PURPOSE_SIGN)
+							.setIsStrongBoxBacked(true)
+							.setKeySize(KEY_BITS)
+							.build();
+			return asList(strongBox, noStrongBox);
+		}
+		return singletonList(noStrongBox);
+	}
 
 	@Override
 	public synchronized boolean isInitialised() {
@@ -97,17 +111,15 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 		}
 	}
 
-	/**
-	 * A key is generated only when the alias is provably absent. A lookup
-	 * that threw, or an alias that exists but cannot be read, is a
-	 * temporary failure: generating a new key under the alias would make
-	 * every profile's stored key undecryptable for good.
-	 */
 	@Override
 	public synchronized void discardKeyBeforeFirstAccount() {
-		deleteKey();
+		for (String alias : strengthenerAliases()) deleteKey(alias);
+		deleteKey(KEY_ALIAS);
+		deleteKey(generationAlias(1));
 		storedKey = null;
 		lookupFailure = null;
+		generationKeys.clear();
+		current = 0;
 		freshInstall = true;
 	}
 
@@ -115,41 +127,171 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 	public synchronized SecretKey strengthenKey(SecretKey k) {
 		try {
 			if (freshInstall) {
-				initialise();
+				storedKey = generate(KEY_ALIAS);
 				freshInstall = false;
 			} else if (!isInitialised()) {
 				if (lookupFailure != null) {
-					throw new org.zerionproject.core.api.crypto
-							.KeyStrengthenerException(lookupFailure);
+					throw new KeyStrengthenerException(lookupFailure);
 				}
-				if (aliasMayExist()) {
-					throw new org.zerionproject.core.api.crypto
-							.KeyStrengthenerException(
+				if (aliasMayExist(KEY_ALIAS)) {
+					throw new KeyStrengthenerException(
 							new GeneralSecurityException(
 									"key entry present but unreadable"));
 				}
-				initialise();
+				storedKey = generate(KEY_ALIAS);
 			}
-			Mac mac = Mac.getInstance(KEY_ALGORITHM_HMAC_SHA256);
-			mac.init(storedKey);
-			return new SecretKey(mac.doFinal(k.getBytes()));
+			return mac(storedKey, k);
 		} catch (GeneralSecurityException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private boolean aliasMayExist() {
+	@Override
+	public synchronized int currentGeneration() {
+		if (current == 0) {
+			int newest = newestGeneration();
+			current = newest >= 1 ? newest : 1;
+		}
+		return current;
+	}
+
+	@Override
+	public synchronized boolean isInitialised(int generation) {
+		if (generation == LEGACY_GENERATION) return isInitialised();
+		try {
+			return loadGeneration(generation) != null;
+		} catch (GeneralSecurityException e) {
+			return false;
+		}
+	}
+
+	@Override
+	public synchronized SecretKey strengthenKey(SecretKey k, int generation) {
+		if (generation == LEGACY_GENERATION) return strengthenKey(k);
+		try {
+			javax.crypto.SecretKey key;
+			try {
+				key = loadGeneration(generation);
+			} catch (GeneralSecurityException e) {
+				if (!freshInstall) throw new KeyStrengthenerException(e);
+				key = null;
+			}
+			if (key == null) {
+				String alias = generationAlias(generation);
+				if (generation != currentGeneration()
+						|| (!freshInstall && aliasMayExist(alias))) {
+					throw new KeyStrengthenerException(
+							new GeneralSecurityException(
+									"key generation unavailable"));
+				}
+				key = generate(alias);
+				generationKeys.put(generation, key);
+				freshInstall = false;
+			}
+			return mac(key, k);
+		} catch (GeneralSecurityException e) {
+			throw new KeyStrengthenerException(e);
+		}
+	}
+
+	@Override
+	public synchronized boolean startNewGeneration() {
+		int next = Math.max(newestGeneration(), currentGeneration()) + 1;
+		String alias = generationAlias(next);
+		try {
+			deleteKey(alias);
+			javax.crypto.SecretKey key = generate(alias);
+			generationKeys.put(next, key);
+			current = next;
+			freshInstall = false;
+			return true;
+		} catch (GeneralSecurityException e) {
+			deleteKey(alias);
+			return false;
+		}
+	}
+
+	@Override
+	public synchronized void retainGenerations(Set<Integer> inUse) {
+		int keep = currentGeneration();
+		for (String alias : strengthenerAliases()) {
+			int g = generationOf(alias);
+			if (g < 0 || g == keep || inUse.contains(g)) continue;
+			deleteKey(alias);
+			if (g == LEGACY_GENERATION) {
+				storedKey = null;
+			} else {
+				generationKeys.remove(g);
+			}
+		}
+	}
+
+	@GuardedBy("this")
+	@Nullable
+	private javax.crypto.SecretKey loadGeneration(int generation)
+			throws GeneralSecurityException {
+		javax.crypto.SecretKey cached = generationKeys.get(generation);
+		if (cached != null) return cached;
 		try {
 			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
 			ks.load(null);
-			return ks.containsAlias(KEY_ALIAS);
+			Entry entry = ks.getEntry(generationAlias(generation), null);
+			if (entry instanceof SecretKeyEntry) {
+				javax.crypto.SecretKey key =
+						((SecretKeyEntry) entry).getSecretKey();
+				generationKeys.put(generation, key);
+				return key;
+			}
+			return null;
+		} catch (IOException e) {
+			throw new GeneralSecurityException(e);
+		}
+	}
+
+	@GuardedBy("this")
+	private int newestGeneration() {
+		int newest = 0;
+		for (String alias : strengthenerAliases()) {
+			newest = Math.max(newest, generationOf(alias));
+		}
+		return newest;
+	}
+
+	private static List<String> strengthenerAliases() {
+		List<String> out = new ArrayList<>();
+		try {
+			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
+			ks.load(null);
+			Enumeration<String> aliases = ks.aliases();
+			while (aliases.hasMoreElements()) {
+				String a = aliases.nextElement();
+				if (generationOf(a) >= 0) out.add(a);
+			}
+		} catch (GeneralSecurityException | IOException ignored) {
+		}
+		return out;
+	}
+
+	private static SecretKey mac(javax.crypto.SecretKey key, SecretKey k)
+			throws GeneralSecurityException {
+		Mac mac = Mac.getInstance(KEY_ALGORITHM_HMAC_SHA256);
+		mac.init(key);
+		return new SecretKey(mac.doFinal(k.getBytes()));
+	}
+
+	private static boolean aliasMayExist(String alias) {
+		try {
+			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
+			ks.load(null);
+			return ks.containsAlias(alias);
 		} catch (GeneralSecurityException | IOException e) {
 			return true;
 		}
 	}
 
-	private synchronized void initialise() throws GeneralSecurityException {
-		for (AlgorithmParameterSpec spec : specs) {
+	private static javax.crypto.SecretKey generate(String alias)
+			throws GeneralSecurityException {
+		for (AlgorithmParameterSpec spec : specs(alias)) {
 			try {
 				KeyGenerator kg = KeyGenerator.getInstance(
 						KEY_ALGORITHM_HMAC_SHA256, PROVIDER_NAME);
@@ -158,20 +300,19 @@ class AndroidKeyStrengthener implements KeyStrengthener {
 				Mac probe = Mac.getInstance(KEY_ALGORITHM_HMAC_SHA256);
 				probe.init(candidate);
 				probe.doFinal(new byte[1]);
-				storedKey = candidate;
-				return;
+				return candidate;
 			} catch (Exception e) {
-				deleteKey();
+				deleteKey(alias);
 			}
 		}
 		throw new GeneralSecurityException("Could not generate key");
 	}
 
-	private void deleteKey() {
+	private static void deleteKey(String alias) {
 		try {
 			KeyStore ks = KeyStore.getInstance(KEY_STORE_TYPE);
 			ks.load(null);
-			ks.deleteEntry(KEY_ALIAS);
+			ks.deleteEntry(alias);
 		} catch (GeneralSecurityException | IOException ignored) {
 		}
 	}

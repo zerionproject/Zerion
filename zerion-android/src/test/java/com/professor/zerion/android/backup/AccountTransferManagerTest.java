@@ -35,18 +35,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * A2-AND-03: the account leaves the old phone only for the peer whose
- * confirmation code the user typed, and the new phone reads the bundle
- * length only from an authenticated header, so neither the one-time address
- * nor a hostile endpoint is enough to receive the account or to make the
- * receiver allocate for an unauthenticated frame.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class AccountTransferManagerTest {
 
 	private CryptoComponent crypto;
+	private final AccountRetirement retirement = mock(AccountRetirement.class);
 	private final AtomicReference<Integer> publishedPort =
 			new AtomicReference<>();
 	private final AtomicReference<Integer> dialPort = new AtomicReference<>();
@@ -114,9 +108,9 @@ public class AccountTransferManagerTest {
 			return null;
 		}).when(backup).provisionFromBundle(any(), any());
 		AccountTransferManager sender = new AccountTransferManager(crypto,
-				publisher, loopback, backup);
+				publisher, loopback, backup, retirement);
 		AccountTransferManager receiver = new AccountTransferManager(crypto,
-				publisher, loopback, backup);
+				publisher, loopback, backup, retirement);
 		CompletableFuture<String> qr = new CompletableFuture<>();
 		CompletableFuture<String> shownCode = new CompletableFuture<>();
 		AtomicReference<Throwable> senderFailure = new AtomicReference<>();
@@ -186,7 +180,7 @@ public class AccountTransferManagerTest {
 			throws Exception {
 		AccountBackupManager backup = mock(AccountBackupManager.class);
 		AccountTransferManager sender = new AccountTransferManager(crypto,
-				publisher, loopback, backup);
+				publisher, loopback, backup, retirement);
 		CompletableFuture<String> qr = new CompletableFuture<>();
 		AtomicReference<Throwable> senderFailure = new AtomicReference<>();
 		Thread s = new Thread(() -> {
@@ -267,7 +261,7 @@ public class AccountTransferManagerTest {
 			h.setDaemon(true);
 			h.start();
 			AccountTransferManager receiver = new AccountTransferManager(
-					crypto, publisher, loopback, backup);
+					crypto, publisher, loopback, backup, retirement);
 			String payload = AccountTransferManager.LINK_PREFIX
 					+ Base32.encode(hostilePub) + ":hostile";
 			try {

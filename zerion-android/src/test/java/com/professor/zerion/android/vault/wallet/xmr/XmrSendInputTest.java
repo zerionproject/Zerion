@@ -6,11 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/**
- * The Send button gate: precondition blocks take priority, address validity is
- * the parser's, and the amount uses the exact converter. It only decides whether
- * the user may continue; the flow re-checks everything before construction.
- */
 public class XmrSendInputTest {
 
 	private static final String ADDR =

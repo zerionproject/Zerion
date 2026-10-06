@@ -3,54 +3,30 @@ package org.zerionproject.transport;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * A network transport that can dial a contact by a string address and run the
- * resulting connection through the shared session/ratchet stack. The poller
- * talks to a transport only through this interface, so a new transport (I2P,
- * mesh) needs to supply its id, the property key that holds a peer's address,
- * a dial method, and a network-enabled toggle; the session layer below is
- * unchanged.
- */
 @NotNullByDefault
 public interface OverlayTransport {
 
-	/** Returned by {@link #dial} when the socket never connected. */
 	long DIAL_NOT_CONNECTED = -1L;
 
-	/** This transport's id, used for property lookups and connection tagging. */
 	TransportId getTransportId();
 
-	/** The {@link org.zerionproject.core.api.properties.TransportProperties}
-	 * key under which a peer's (and our own) address is published. */
 	String getAddressPropertyKey();
 
-	/**
-	 * Dials a contact at {@code peerAddress} and runs the connection until it
-	 * ends. Returns the session duration in milliseconds, or
-	 * {@link #DIAL_NOT_CONNECTED} if the socket never connected. The connect
-	 * phase is excluded from the duration.
-	 *
-	 * @param fast use the shorter burst connect timeout for a re-dial right
-	 * after a drop, rather than the full first-connect timeout.
-	 */
 	long dial(int contactId, String peerAddress, boolean fast);
 
-	/** Enables or disables this transport's network on a connectivity change. */
+	default boolean isValidAddress(String peerAddress) {
+		return true;
+	}
+
 	void setNetworkEnabled(boolean enabled);
 
-	/**
-	 * True when the transport was reachable earlier in this run but has had
-	 * no working connection to its network for longer than its grace period,
-	 * so a restart of its network is warranted.
-	 */
 	default boolean isNetworkDegraded() {
 		return false;
 	}
 
-	/**
-	 * Restarts the transport's network so it drops stale state and
-	 * reconnects; implementations rate limit this themselves.
-	 */
 	default void restartNetwork() {
+	}
+
+	default void refreshPeerDescriptors() {
 	}
 }

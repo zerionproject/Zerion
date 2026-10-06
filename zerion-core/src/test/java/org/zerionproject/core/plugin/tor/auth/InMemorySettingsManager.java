@@ -7,7 +7,6 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Settings kept in memory, with the merge semantics of the real store. */
 class InMemorySettingsManager implements SettingsManager {
 
 	private final Map<String, Settings> byNamespace = new HashMap<>();

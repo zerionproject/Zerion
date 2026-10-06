@@ -20,7 +20,7 @@ dependencies {
 	testImplementation project(path: ':zerion-core-api', configuration: 'testOutput')
 	testImplementation project(path: ':zerion-core', configuration: 'testOutput')
 
-	testImplementation 'org.hsqldb:hsqldb:2.3.5' // test-only, not shipped; pinned for supply-chain verification
+	testImplementation 'org.hsqldb:hsqldb:2.3.5'
 	testImplementation 'net.jodah:concurrentunit:0.4.6'
 	testImplementation "junit:junit:$junit_version"
 	testImplementation "org.jmock:jmock:$jmock_version"
@@ -33,7 +33,6 @@ dependencies {
 	signature 'org.codehaus.mojo.signature:java16:1.1@signature'
 }
 
-// needed to make test output available to other modules
 configurations {
 	testOutput.extendsFrom(testCompile)
 }

@@ -13,24 +13,15 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * Reassembles chunked voice memos. Assemblies are scoped by the contact the
- * parts came from, so a memo id is only meaningful within one conversation
- * and one contact's parts can never displace or complete another contact's
- * memo. Eviction is per contact: a contact that floods fresh memo ids
- * evicts only its own in-progress assemblies. The number of contact scopes
- * is bounded too, least recently used first, which only ever costs memory
- * for a conversation the user has not touched in a long time.
- */
 @Singleton
 @NotNullByDefault
 public class VoiceChunkAssembler {
 
 	static final int MAX_ASSEMBLIES = 32;
-	static final int MAX_SCOPES = 64;
+	static final int MAX_SCOPES = 128;
 
 	private final Object lock = new Object();
-	private final Map<Integer, Scope> scopes =
+	private final Map<String, Scope> scopes =
 			new LinkedHashMap<>(16, 0.75f, true);
 
 	private static final class Scope {
@@ -73,13 +64,18 @@ public class VoiceChunkAssembler {
 	VoiceChunkAssembler() {
 	}
 
-	private Scope scope(ContactId contactId) {
-		Scope s = scopes.get(contactId.getInt());
+	private static String scopeKey(ContactId contactId, boolean local) {
+		return contactId.getInt() + (local ? ":sent" : ":received");
+	}
+
+	private Scope scope(ContactId contactId, boolean local) {
+		String key = scopeKey(contactId, local);
+		Scope s = scopes.get(key);
 		if (s == null) {
 			s = new Scope();
-			scopes.put(contactId.getInt(), s);
+			scopes.put(key, s);
 			while (scopes.size() > MAX_SCOPES) {
-				Iterator<Integer> it = scopes.keySet().iterator();
+				Iterator<String> it = scopes.keySet().iterator();
 				it.next();
 				it.remove();
 			}
@@ -88,15 +84,15 @@ public class VoiceChunkAssembler {
 	}
 
 	@Nullable
-	private Scope existingScope(ContactId contactId) {
-		return scopes.get(contactId.getInt());
+	private Scope existingScope(ContactId contactId, boolean local) {
+		return scopes.get(scopeKey(contactId, local));
 	}
 
 	public void putComplete(ContactId contactId, String memoId,
 			String fullVoiceText) {
 		int durationMs = VoiceMessageFormat.extractDuration(fullVoiceText);
 		synchronized (lock) {
-			Scope s = scope(contactId);
+			Scope s = scope(contactId, true);
 			Assembly a = new Assembly(1, durationMs);
 			a.reassembled = fullVoiceText;
 			a.received = 1;
@@ -105,11 +101,12 @@ public class VoiceChunkAssembler {
 		}
 	}
 
-	public void addPartText(ContactId contactId, @Nullable String partText) {
+	public void addPartText(ContactId contactId, boolean local,
+			@Nullable String partText) {
 		VoiceMessageChunkFormat.Part p = VoiceMessageChunkFormat.parse(partText);
 		if (p == null) return;
 		synchronized (lock) {
-			Scope s = scope(contactId);
+			Scope s = scope(contactId, local);
 			Assembly a = s.assemblies.get(p.memoId);
 			if (a == null) {
 				a = new Assembly(p.total, p.durationMs);
@@ -135,18 +132,20 @@ public class VoiceChunkAssembler {
 	}
 
 	@Nullable
-	public String getReassembled(ContactId contactId, String memoId) {
+	public String getReassembled(ContactId contactId, boolean local,
+			String memoId) {
 		synchronized (lock) {
-			Scope s = existingScope(contactId);
+			Scope s = existingScope(contactId, local);
 			if (s == null) return null;
 			Assembly a = s.assemblies.get(memoId);
 			return a == null ? null : a.reassembled;
 		}
 	}
 
-	public boolean isFailed(ContactId contactId, String memoId) {
+	public boolean isFailed(ContactId contactId, boolean local,
+			String memoId) {
 		synchronized (lock) {
-			Scope s = existingScope(contactId);
+			Scope s = existingScope(contactId, local);
 			if (s == null) return false;
 			Assembly a = s.assemblies.get(memoId);
 			return a != null && a.failed;

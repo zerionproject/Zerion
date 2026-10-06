@@ -6,21 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
 
-/**
- * A frame flooded across the offline mesh (Phase 3). It wraps an opaque payload
- * (a Phase 2 sealed-sender envelope) with the minimum a relaying node needs: a
- * message id for deduplication during a flood, and a remaining hop count that
- * bounds how far it travels. A relay never opens the payload; it only dedups,
- * decrements the hop count, and rebroadcasts.
- *
- * <pre>
- *   0   version      1
- *   1   hopsLeft     1     remaining hops (0 = do not relay further)
- *   2   messageId    16    dedup id, relay-visible
- *   18  payloadLen   4     uint32
- *   22  payload      var   opaque (a sealed-sender envelope)
- * </pre>
- */
 @NotNullByDefault
 public class MeshFrame {
 
@@ -64,8 +49,6 @@ public class MeshFrame {
 		return payload;
 	}
 
-	/** Returns a copy with the hop count decremented by one, or null if this
-	 * frame must not be relayed further. */
 	@javax.annotation.Nullable
 	public MeshFrame decremented() {
 		if (hopsLeft <= 0) return null;

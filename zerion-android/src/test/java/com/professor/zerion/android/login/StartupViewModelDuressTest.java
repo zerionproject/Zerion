@@ -25,10 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * A2-AND-01: the duress password must work while a sign-in lockout is
- * active, since a coercer's own wrong guesses are what start the lockout.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class StartupViewModelDuressTest {

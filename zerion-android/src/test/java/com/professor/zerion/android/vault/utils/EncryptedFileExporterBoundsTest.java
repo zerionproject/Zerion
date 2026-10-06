@@ -7,11 +7,6 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * STO-04: a crafted .zenc header cannot make the importer allocate or run
- * beyond the parameters the app itself produces; it is refused before any
- * derivation starts.
- */
 public class EncryptedFileExporterBoundsTest {
 
 	private static final String OUT_OF_RANGE = "Argon2 parameters out of range";

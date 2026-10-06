@@ -58,7 +58,7 @@ scripts/run-security-audit.*
 zerion-core-android/src/main/jniLibs/
 docs-internal/
 
-# Local-only validator / testing harness — keep off the public repo
+# Validator and testing harness, kept out of the repository
 scripts/android_validators/
 scripts/protocol_validators/
 scripts/*_validators/

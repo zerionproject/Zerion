@@ -45,6 +45,11 @@ public class DecoyCalculatorActivity extends Activity {
 	@Override
 	protected void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
+		if (com.professor.zerion.android.util.AppTasks.startsAfresh(this,
+				state != null)) {
+			com.professor.zerion.android.util.AppTasks
+					.finishOtherTasks(this, false);
+		}
 		unlockThrottle = new DecoyUnlockThrottle(
 				new java.io.File(getFilesDir(), "decoy.lockout"));
 		setContentView(R.layout.activity_decoy_calculator);

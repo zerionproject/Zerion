@@ -1,6 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
-	<!--Setup-->
 	<string name="setup_title">Dobrodosli u Zerion</string>
 	<string name="setup_name_explanation">Vas nadimak ce biti prikazan pored sadrzaja posta. Nemozete ga promijeniti poslije kreiranja racuna.</string>
 	<string name="setup_next">Dalje</string>
@@ -21,16 +20,12 @@
 	<string name="dnkm_huawei_protected_text">Molim dotaknite dugme ispod i provjerite da je Zerion zasticen na \"Protected Apps\" listi.</string>
 	<string name="dnkm_huawei_protected_button">Zastiti Zerion</string>
 	<string name="dnkm_huawei_protected_help">Ako Zerion nije dodat u listi zasticenih aplikacija - protected apps, nece moci da radi u pozadini.</string>
-	<string name="dnkm_warning_dozed">%s nije mogao da se pokrene u pozadini</string>
-	<!--Login-->
 	<string name="enter_password">Lozinka</string>
 	<string name="try_again">Pogrešna šifra, probajte opet</string>
 	<string name="sign_in_button">Prijavite se</string>
 	<string name="forgotten_password">Zaboravio sam šifru</string>
 	<string name="dialog_title_lost_password">Izgubljena šifra</string>
 	<string name="dialog_message_lost_password">Vaš Zerion račun je kriptovan i sačuvan na vašem uređaju, ne u server-oblaku, pa nemožemo resetovati vašu šifru. Želite li da izbrišete račun i počnete iz početka?\n\nPozor: Vaši identiteti, kontakti i poruke će biti premanentno izgubljeni.</string>
-	<string name="startup_failed_notification_title">Brirar nije mogao da startuje</string>
-  <string name="startup_failed_notification_text">Dotaknite za vise informacija.</string>
   <string name="startup_failed_activity_title">Zerion neuspješno startovanje</string>
   <string name="startup_failed_db_error">Iz nekog razloga, Zerion baza podataka je nepovratno korumpirana. Vaš račun, vaši podaci i svi kontakti su izgubljeni. Nažalost, morate reinstalirati Zerion ili podesiti novi račun tako što ćete izabrati  \'ZaboraviIi ste lozinku?\' .</string>
   <string name="startup_failed_data_too_old_error">Vaš račun je napravljen sa starom verzijom aplikacije i nemoze se otvoriti novom verzijom. Morate reinstalirati staru verziju ili podesiti podesiti novi račun tako što ćete izabrati  \'ZaboraviIi ste lozinku?\' kod unosa lozinke.</string>
@@ -46,18 +41,14 @@
   <string name="startup_open_database">Dekriptujem bazu...</string>
   <string name="startup_migrate_database">Ažuriram bazu...</string>
   <string name="startup_compact_database">Sabijanje baze</string>
-  <!--Navigation Drawer-->
   <string name="nav_drawer_open_description">Otvorite navigacionu fioku</string>
   <string name="nav_drawer_close_description">Zatvorite navigacionu fioku</string>
   <string name="contact_list_button">Kontakti</string>
   <string name="groups_button">Privatne Grupe</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Zaključaj aplikaciju</string>
   <string name="settings_button">Podešavanja</string>
   <string name="sign_out_button">Odjava</string>
-  <!--Transports-->
   <string name="transport_tor">Internet</string>
-  <!--Notifications-->
   <string name="reminder_notification_title">Odjavljeni ste iz Zeriona</string>
   <string name="reminder_notification_text">Dotaknite da se prijavite nazad.</string>
   <string name="reminder_notification_channel_title">Zerionov podsjetnik za prijavu</string>
@@ -74,7 +65,6 @@
     <item quantity="few">%d nove grupne poruke.</item>
     <item quantity="other">%d novih grupnih poruka.</item>
   </plurals>
-  <!--Misc-->
   <string name="now">sad</string>
   <string name="show">Pokazi</string>
   <string name="hide">Sakrij</string>
@@ -96,7 +86,6 @@
   <string name="fix">Sredi</string>
   <string name="help">Pomoć</string>
   <string name="sorry">Izvini</string>
-  <!--Contacts and Private Conversations-->
   <string name="no_contacts">Nema kontakata za prikazivanje</string>
   <string name="no_contacts_action">Taknite + ikonu da dodate kontakt</string>
   <string name="date_no_private_messages">Nema poruka.</string>
@@ -111,11 +100,9 @@
   <string name="dialog_title_delete_contact">Potvrdite brisanje kontakta</string>
   <string name="dialog_message_delete_contact">Jeste li sigurni da želite da uklonite ovaj kontakt i sve poruke koje ste razmijenili?</string>
   <string name="contact_deleted_toast">Kontakt izbrisan</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
   <string name="you">Vi</string>
   <string name="save_image">Sacuvaj sliku</string>
   <string name="dialog_title_save_image">Da sacuvam sliku?</string>
-  <!--Adding Contacts-->
   <string name="continue_button">Dalje</string>
   <string name="try_again_button">Probajte opet</string>
   <string name="waiting_for_contact_to_scan">Čekam da kontakt skenira i poveže se\u2026</string>
@@ -127,19 +114,11 @@
   <string name="authenticating_with_device">Autentikacija sa uređajem\u2026</string>
   <string name="connection_error_title">Nijesmo se mogli povezati sa vašim kontaktom</string>
   <string name="connection_error_explanation">Provjerite jeste li oboje povezani na ist Wi-Fi mrežu.</string>
-  <string name="connection_error_feedback">Ako se problem ponavlja, Molim vas <a href="feedback">pošaljite povratne informacije</a> kako bi pomogli poboljšanju aplikacije.</string>
-  <!--Adding Contacts Remotely-->
   <string name="paste_button">Zalepi</string>
   <string name="copy_button">Копирај</string>
   <string name="share_button">Дељење</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
   <string name="step_1">1 </string>
-  <!--This is a numeral indicating the second step in a series of screens-->
   <string name="step_2">2</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This -->
-  <!--This is a button for answering that two nicknames refer to different people. This string -->
-  <!--Introductions-->
   <string name="introduction_onboarding_title">Upoznajte vaše kontakte</string>
   <string name="introduction_onboarding_text">Vi možete da upoznate vaše kontakte međusobno, da nebi morali da srijeću lice u liceda bi se povezali na Zerion.</string>
   <string name="introduction_menu_item">Izvršite upoznavanje</string>
@@ -160,7 +139,6 @@
   <string name="introduction_response_accepted_received">%1$s prihvata upoznavanje sa %2$s.</string>
   <string name="introduction_response_declined_received">%1$s je prihvatio-la upoznavanje sa kontaktom %2$s.</string>
   <string name="introduction_response_declined_received_by_introducee">%1$s kaže da je %2$s odbio-la upoznavanje.</string>
-  <!--Private Groups-->
   <string name="groups_list_empty">Nema grupa za prikazivanje</string>
   <string name="groups_list_empty_action">Dotaknite + ikonu da kreirate grupu, ili pitajte vaše kontakte da podijele grupe sa vama</string>
   <string name="groups_created_by">Kreator je %s</string>
@@ -192,7 +170,6 @@
   <string name="groups_dissolve_button">Raspusti</string>
   <string name="groups_dissolved_dialog_title">Grupa je raspuštena</string>
   <string name="groups_dissolved_dialog_message">Kreator je raspustio ovu grupu.\n\nNemožete više pisati poruke u grupi i možda nećete primiti poljednje poruke koje su napisane.</string>
-  <!--Private Group Invitations-->
   <string name="groups_invitations_title">Grupni pozivi</string>
   <string name="groups_invitations_invitation_sent">Pozvali ste kontakt %1$s da se pridruzi grupi \"%2$s\".</string>
   <string name="groups_invitations_invitation_received">%1$s je poslao-la poziv da pristupite grupi \"%2$s\".</string>
@@ -208,14 +185,12 @@
   <string name="groups_invitations_response_accepted_received">%s je prihvatio-la  grupni poziv.</string>
   <string name="groups_invitations_response_declined_received">1%s je odbio-la grupni poziv.</string>
   <string name="sharing_status_groups">Samo kreator moze da pozove nove članove u grupu. Ispod su trenutni članovi grupe.</string>
-  <!--Private Groups Revealing Contacts-->
   <string name="groups_reveal_contacts">Otkrijte kontakte</string>
   <string name="groups_reveal_dialog_message">Možete odlučiti da otkrijete kontakte svim trenutnim i budućim članovima ove grupe.\n\nOtkrivanje kontakata čini konekciju ka članovima grupe bržom i pouzdanijom, jer možete da komunicirate sa otkrivenim kontaktima čak i kad kreator grupe nije na vezi.</string>
   <string name="groups_reveal_visible">Veze kontakata su vidljive grupi</string>
   <string name="groups_reveal_visible_revealed_by_us">Veze kontakata su vidljive grupi (vi ste je otkrili)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Veze kontakata su vidljive grupi (otkriveno od strane %s)</string>
   <string name="groups_reveal_invisible">Veze kontakata nisu vidljive grupi</string>
-  <!--Forums-->
   <string name="no_posts">Nema postova</string>
   <plurals name="posts">
     <item quantity="one">%d post</item>
@@ -224,46 +199,31 @@
   </plurals>
   <string name="btn_reply">Odgovor</string>
   <string name="dialog_button_leave">Napusti</string>
-  <!--Forum Sharing-->
   <string name="contacts_selected">Kontakti selektovani</string>
   <string name="activity_share_toolbar_header">Izaberite kontakte</string>
-  <!--Blogs-->
   <string name="read_more">pročitaj ostalo</string>
 
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
 
-  <!--Settings Display-->
   <string name="pref_language_title">Jezik i regija</string>
   <string name="pref_language_default">Default sistema</string>
   <string name="display_settings_title">Displej</string>
   <string name="pref_theme_title">Tema</string>
   <string name="pref_theme_light">Svijetla</string>
   <string name="pref_theme_dark">Tamna</string>
-  <string name="pref_theme_auto">Automatski (Dnevno)</string>
   <string name="pref_theme_system">Default sistema</string>
-  <!--Settings Connections-->
   <string name="tor_network_setting_automatic">Automatski prema na lokaciji</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
   <string name="tor_network_setting_summary">Automatski: %1$s (za %2$s)</string>
   <string name="tor_mobile_data_title">Koristi mobilinu mrežu</string>
-  <!--Settings Security and Panic-->
   <string name="security_settings_title">Sigurnost</string>
   <string name="pref_lock_title">Zakljucavanje applikacije</string>
   <string name="pref_lock_summary">Koristi zaključavanje ekrana uređaja da bi zaštitili Zerion dok ste prijavljeni</string>
   <string name="pref_lock_disabled_summary">Da bi koristili ovu mogućnost, podesite zaključavanje ekrana za vaš uređaj</string>
   <string name="pref_lock_timeout_title">Zaključavanje aplikacije po neaktivnosti</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
   <string name="pref_lock_timeout_summary">Kada se ne koristi Zerion, automatski zaključaj poslije %s</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_1">1 minut</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_5">5 minuta</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_15">15 minuta</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_30">30 minuta</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_60">1 sat</string>
   <string name="pref_lock_timeout_never">Nikad</string>
   <string name="pref_lock_timeout_never_summary">Ne zaključavaj Zerion automatski</string>
@@ -285,7 +245,6 @@
   <string name="panic_setting_signout_summary">Izloguj se iz Zerion-a ako je pritisnuto panik dugme</string>
   <string name="purge_setting_title">Izbriši račun</string>
   <string name="purge_setting_summary">Izbriši Zerion račun ako je panik dugme pritisnuto. Pažnja: Ovo će permanentno izbrisati vaše identitete, kontakte i poruke</string>
-  <!--Settings Notifications-->
   <string name="notification_settings_title">Obavještenja</string>
   <string name="notify_sign_in_title">Podsjeti me da se prijavim</string>
   <string name="notify_sign_in_summary">Prikazi podsjetnik kada se telefon uključi ili kada se aplikacija ažurira</string>
@@ -301,51 +260,21 @@
   <string name="notify_sound_setting_disabled">Ništa</string>
   <string name="choose_ringtone_title">Izaberi zvuk zvona</string>
   <string name="cannot_load_ringtone">Ne mogu otvoriti ton zvona</string>
-  <!--Settings Feedback-->
-  <string name="feedback_settings_title">Povratne informacije</string>
-  <string name="send_feedback">Šalji povratne informacije</string>
-  <!--Link Warning-->
   <string name="link_warning_title">Link upozorenje</string>
   <string name="link_warning_intro">Upravo ćete otvoriti slijedeći link sa eksternom aplikacijom</string>
   <string name="link_warning_open_link">Otvori link</string>
-  <!--Crash Reporter-->
-  <string name="crash_report_title">Zerion izvještaj po krahu</string>
-  <string name="zerion_crashed">Izvinite, Zerion je krahirao.</string>
-  <string name="not_your_fault">Nijeste vi krivi.</string>
-  <string name="please_send_report">Molimo pomozite nam da napravimo bolji Zerion tako što ćete nam poslati izvještaj o krahu.</string>
-  <string name="report_is_encrypted">Obećavamo da je izvještaj kriptovan i sigurno poslat.</string>
-  <string name="feedback_title">Povratna informacija</string>
-  <string name="describe_crash">Opišite šta se desilo (opciono)</string>
-  <string name="enter_feedback">Unesite vašu povratnu informaciju</string>
-  <string name="optional_contact_email">Vaša email adres (opciono)</string>
-  <string name="include_debug_report_crash">Uključite anonimne podatke o krahu</string>
-  <string name="include_debug_report_feedback">Uključite anonimne podatke o ovom uređaju</string>
-  <string name="could_not_load_report_data">Nije bilo moguće učitati podatke izvještaja</string>
-  <string name="send_report">Pošalji izvještaj</string>
   <string name="close">Zatvori</string>
-  <string name="dev_report_saved">Izvještaj sačuvan. Biće poslat slijedeći put kada se ulogujete u Zerion.</string>
-  <!--Sign Out-->
   <string name="progress_title_logout">Isključujete se iz Zeriona...</string>
-  <!--Screen Filters & Tapjacking-->
   <string name="screen_filter_title">Detektovano je prekrivanje ekrana</string>
   <string name="screen_filter_allow">Dozvoli ovim aplikacijama da precrtavaju ekran</string>
-  <!--Permission Requests-->
   <string name="permission_camera_title">Dozvole kamere</string>
   <string name="permission_camera_request_body">Da bi skenirao QR kod, Zerionu je potreban pristup kameri.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Otključaj Zerion</string>
   <string name="lock_unlock_verbose">Unesite PIN uređaja, figuru ili lozinku</string>
   <string name="lock_unlock_fingerprint_description">Dodirnite senzor otiska sa registrovanim prstom da bi nastavili</string>
   <string name="lock_unlock_password">Koristi lozinku</string>
   <string name="lock_is_locked">Zerion je zaključan</string>
   <string name="lock_tap_to_unlock">Dotakni da otključaš</string>
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
-  <!--This is a message to be used in screenshots.-->
 	<string name="wallet_card_title">Novčanik</string>
 	<string name="wallet_card_summary">Bitcoin preko Tor mreže</string>
 	<string name="wallet_empty">Još nema novčanika</string>
@@ -465,7 +394,6 @@
 	<string name="wallet_receive_new">Nova adresa</string>
 	<string name="wallet_node_hint">Dodirnite server da biste ga koristili. Dugo pritisnite prilagođeni server da biste ga uklonili.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Adresa za višekratnu upotrebu koja ostaje privatna. Uplate na nju se ne mogu povezati na blokčejnu. Otkrivanje skenira javne podatke preko Tor mreže; vaši ključevi nikada ne napuštaju uređaj.</string>
 	<string name="wallet_sp_balance">Otkriveno: %1$s</string>
 	<string name="wallet_sp_scanned">Skenirano do bloka %1$d</string>
 	<string name="wallet_sp_set_oracle">Izvor skeniranja</string>

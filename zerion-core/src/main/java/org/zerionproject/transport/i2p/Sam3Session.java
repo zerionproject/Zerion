@@ -12,18 +12,6 @@ import java.nio.charset.StandardCharsets;
 
 import javax.annotation.Nullable;
 
-/**
- * A SAM v3 client session against a local I2P router bridge (default
- * {@code 127.0.0.1:7656}). The control socket runs HELLO + SESSION CREATE and
- * stays open for the session's life; {@link #connect} dials a peer destination
- * on its own socket, and {@link #forwardTo} asks the router to forward inbound
- * I2P streams to a local port so the transport can accept them with an ordinary
- * {@code ServerSocket}, exactly as the Tor hidden service does.
- *
- * <p>This class speaks the wire protocol only; it does not run the router,
- * bootstrap the network, or manage a poller. It is fully exercisable against a
- * fake bridge over loopback.
- */
 @NotNullByDefault
 public class Sam3Session {
 
@@ -51,13 +39,6 @@ public class Sam3Session {
 		this.privateKey = privateKey;
 	}
 
-	/**
-	 * Opens a control socket and creates a STREAM session. When
-	 * {@code privateKey} is null a fresh transient destination is generated;
-	 * otherwise the persisted key recreates the same destination. Returns a
-	 * live session whose {@link #getPrivateKey} should be persisted on first
-	 * run and {@link #getLocalDestination} published for peers to dial.
-	 */
 	public static Sam3Session open(String host, int port, int connectTimeoutMs,
 			String sessionId, @Nullable String privateKey) throws IOException {
 		if (privateKey != null) checkB64(privateKey);
@@ -99,12 +80,6 @@ public class Sam3Session {
 		}
 	}
 
-	/**
-	 * Dials {@code peerDestination} (a base64 destination) and returns a
-	 * connected socket whose streams carry the raw peer connection. Throws
-	 * {@link Sam3Exception} carrying the SAM result on failure (for example
-	 * {@code CANT_REACH_PEER}).
-	 */
 	public Socket connect(String peerDestination) throws IOException {
 		checkB64(peerDestination);
 		Socket s = new Socket();
@@ -125,11 +100,6 @@ public class Sam3Session {
 		}
 	}
 
-	/**
-	 * Registers forwarding of inbound I2P streams to {@code 127.0.0.1:localPort}
-	 * with no per-stream header, so the transport accepts them as plain
-	 * sockets. Sent on the control socket and active for the session's life.
-	 */
 	public void forwardTo(int localPort) throws IOException {
 		OutputStream out = controlSocket.getOutputStream();
 		InputStream in = controlSocket.getInputStream();
@@ -156,13 +126,6 @@ public class Sam3Session {
 		}
 	}
 
-	/**
-	 * Rejects any value that is not a plain I2P base64 blob before it is
-	 * concatenated into a newline-delimited SAM command. This is the load-
-	 * bearing defence against command injection through a peer-controlled
-	 * destination or a hostile bridge reply: a space or newline in the value
-	 * would otherwise append SAM parameters or a whole second command.
-	 */
 	private static void checkB64(String value) throws Sam3Exception {
 		int n = value.length();
 		if (n == 0 || n > MAX_B64_LEN) {
@@ -185,8 +148,6 @@ public class Sam3Session {
 		out.flush();
 	}
 
-	/** Reads a single newline-terminated reply without consuming any bytes
-	 * that follow it, so a raw stream after {@code RESULT=OK} stays intact. */
 	private static Sam3Reply readReply(InputStream in) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		while (true) {

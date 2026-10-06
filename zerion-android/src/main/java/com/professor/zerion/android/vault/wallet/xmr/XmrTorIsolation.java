@@ -6,22 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 
-/**
- * Tor stream isolation for Monero daemon traffic. wallet2 reaches the daemon
- * through the SOCKS proxy string handed to its init; a bare host:port selects
- * SOCKS4a with no authentication, so every Monero stream of the process was
- * eligible to share one circuit with every other, letting a node link the
- * user's wallets to each other and a wallet's syncing to its relay. The
- * vendored wallet2 parses {@code socks5://user:pass@host:port} and performs
- * SOCKS5 username/password authentication, and Tor isolates streams by those
- * credentials (IsolateSOCKSAuth), so distinct credentials yield distinct
- * circuits. The username is a digest of the wallet identity and the purpose
- * (never the raw wallet id, and not secret: it is stable across processes and
- * devices, and only the loopback gate and the local Tor ever see it); the
- * password is drawn once per process so
- * circuits are not shared across process lifetimes. Neither is persisted:
- * wallet2 keeps the proxy string in memory only and nothing here writes it.
- */
 @NotNullByDefault
 public final class XmrTorIsolation {
 
@@ -36,22 +20,15 @@ public final class XmrTorIsolation {
 	private XmrTorIsolation() {
 	}
 
-	/**
-	 * Whether {@code candidate} is this process's SOCKS password, compared
-	 * in constant time. The loopback relay the native wallet reaches Tor
-	 * through accepts only this password.
-	 */
 	public static boolean isProcessSecret(String candidate) {
 		return com.professor.zerion.android.vault.net.TorSocksGate
 				.constantTimeEquals(PROCESS_SECRET, candidate);
 	}
 
-	/** Proxy string for the view-only sync session of a wallet. */
 	public static String syncProxy(int socksPort, String walletId) {
 		return proxy(socksPort, walletId, PURPOSE_SYNC);
 	}
 
-	/** Proxy string for the spend-capable relay session of a wallet. */
 	public static String relayProxy(int socksPort, String walletId) {
 		return proxy(socksPort, walletId, PURPOSE_RELAY);
 	}

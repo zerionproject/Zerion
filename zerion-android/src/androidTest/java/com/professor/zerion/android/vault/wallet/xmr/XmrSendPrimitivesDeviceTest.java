@@ -21,18 +21,6 @@ import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * On-device contract tests for the send inspection and reconciliation
- * primitives against the real native library, with no vault, no app data, no
- * relay and no transaction construction. These cover the offline-verifiable
- * guarantees: classification comes from Monero's parser; invalid handles fail
- * closed; the refresh-idle probe is honest when the wallet is genuinely idle;
- * and a lookup that cannot reach a daemon, or is given a malformed txid, is a
- * LOOKUP_ERROR and never negative evidence. Positive lookup results
- * (IN_POOL / MINED / MISSED from a real daemon) are covered by the decode unit
- * test {@link XmrTxLookup} and by the P4-C Pixel acceptance against a live
- * node; a loopback socket cannot faithfully emulate the daemon's HTTP server.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrSendPrimitivesDeviceTest {
 
@@ -41,12 +29,6 @@ public class XmrSendPrimitivesDeviceTest {
 	private static final String B =
 			"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-	/**
-	 * Canonical mainnet address vectors from Monero's own upstream functional
-	 * test suite (tests/functional_tests/validate_address.py). The classifier
-	 * under test is exactly Monero's get_account_address_from_str, so these are
-	 * authoritative and independently verifiable.
-	 */
 	private static final String MAINNET_STANDARD =
 			"42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm";
 	private static final String MAINNET_SUBADDRESS =

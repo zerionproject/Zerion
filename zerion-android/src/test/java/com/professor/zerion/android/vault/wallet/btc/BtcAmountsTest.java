@@ -8,11 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Amount bounds: only a positive amount up to the total supply is sendable,
- * the parser refuses negatives, overflow and text, truncates beyond eight
- * decimals, and random text never throws.
- */
 public class BtcAmountsTest {
 
 	@Test

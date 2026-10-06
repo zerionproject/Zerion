@@ -3,14 +3,15 @@ package org.zerionproject.transport;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 import org.zerionproject.tor.TorWrapper.TorState;
+import org.zerionproject.core.api.plugin.OnionTargetFactory;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
+import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,46 +32,44 @@ import javax.net.SocketFactory;
 public class ZtpTorTransport implements OverlayTransport {
 
 	private static final int REMOTE_ONION_PORT = 80;
+	private static final java.util.regex.Pattern ONION_V3 =
+			java.util.regex.Pattern.compile("^[a-z2-7]{56}$");
 	private static final int SOCKET_TIMEOUT_MS = 30_000;
 	private static final long ACCEPT_RETRY_DELAY_MS = 500;
 	private static final int MAX_INBOUND_CONNECTIONS = 64;
 
-	/**
-	 * A connection that has not delivered its stream tag holds a slot for at
-	 * most this long. The tag is the first thing an honest peer writes, so a
-	 * silent connection is not a peer waiting for us but a slot being held.
-	 */
 	static final int TAG_READ_TIMEOUT_MS = 5_000;
 
-	/**
-	 * Slots for connections that have not yet delivered a tag, separate from
-	 * and smaller than the total, so silent connections cannot take every
-	 * slot away from authenticated sessions.
-	 */
 	static final int MAX_PRE_TAG_CONNECTIONS = 16;
-	/** How long Tor may sit without a working connection, after having had
-	 * one, before the transport counts as degraded. */
+	static final int MAX_AUTHORIZED_INBOUND_CONNECTIONS =
+			MAX_INBOUND_CONNECTIONS;
+	static final int MAX_AUTHORIZED_PRE_TAG_CONNECTIONS = 8;
 	static final long DEGRADED_GRACE_MS = 45_000;
-	/** Two network restarts are never closer together than this. */
 	static final long MIN_RESTART_INTERVAL_MS = 60_000;
-	/** Delay before the second attempt to bring a dead Tor back. */
 	static final long PROCESS_RESTART_BACKOFF_MIN_MS = 30_000;
-	/** The delay between attempts doubles up to this. */
 	static final long PROCESS_RESTART_BACKOFF_MAX_MS = 10 * 60_000;
 
-	/** Sleeps for the given number of milliseconds. */
 	interface Sleeper {
 		void sleep(long ms) throws InterruptedException;
 	}
 
-	/** A hidden service this transport has published, kept for republishing. */
+	private static final class InboundBudget {
+		final Semaphore inbound;
+		final Semaphore preTag;
+
+		InboundBudget(int maxInbound, int maxPreTag) {
+			inbound = new Semaphore(maxInbound);
+			preTag = new Semaphore(maxPreTag);
+		}
+	}
+
 	private static final class PublishedService {
-		final int localPort;
+		final String target;
 		final int remotePort;
 		final String privateKey;
 
-		PublishedService(int localPort, int remotePort, String privateKey) {
-			this.localPort = localPort;
+		PublishedService(String target, int remotePort, String privateKey) {
+			this.target = target;
 			this.remotePort = remotePort;
 			this.privateKey = privateKey;
 		}
@@ -85,27 +84,35 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final TorBridgeConfigurator bridgeConfigurator;
 	private final TorPrivacyConfigurator privacyConfigurator;
 	private final TorProcessWatch processWatch;
+	private final OnionTargetFactory targets;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final AtomicBoolean torDead = new AtomicBoolean(false);
 	private final Map<String, PublishedService> published =
 			Collections.synchronizedMap(new LinkedHashMap<>());
 	volatile Sleeper sleeper = Thread::sleep;
-	private final Semaphore inboundLimiter =
-			new Semaphore(MAX_INBOUND_CONNECTIONS);
-	private final Semaphore preTagLimiter =
-			new Semaphore(MAX_PRE_TAG_CONNECTIONS);
+	private final InboundBudget openBudget = new InboundBudget(
+			MAX_INBOUND_CONNECTIONS, MAX_PRE_TAG_CONNECTIONS);
+	private final InboundBudget authorizedBudget = new InboundBudget(
+			MAX_AUTHORIZED_INBOUND_CONNECTIONS,
+			MAX_AUTHORIZED_PRE_TAG_CONNECTIONS);
 	private final AtomicBoolean everConnected = new AtomicBoolean(false);
 	private final Object restartLock = new Object();
+	private final Object lifecycleLock = new Object();
+	private final java.util.concurrent.atomic.AtomicInteger runGeneration =
+			new java.util.concurrent.atomic.AtomicInteger();
 	volatile LongSupplier clock = System::currentTimeMillis;
 	private volatile long degradedSinceMs = 0;
+	private volatile boolean republishOnConnect = false;
 	private long lastRestartMs = 0;
 
 	@Nullable
-	private volatile ServerSocket serverSocket;
-	private volatile int localPort;
+	private volatile OnionTargetListener openListener;
 	@Nullable
-	private volatile ServerSocket authorizedServerSocket;
-	private volatile int authorizedLocalPort;
+	private volatile String openTarget;
+	@Nullable
+	private volatile OnionTargetListener authorizedListener;
+	@Nullable
+	private volatile String authorizedTarget;
 	@Nullable
 	private volatile Runnable torRestartedListener;
 	@Nullable
@@ -113,7 +120,6 @@ public class ZtpTorTransport implements OverlayTransport {
 	@Nullable
 	private volatile DialListener dialListener;
 
-	/** Told which onion address a dial for a contact reached. */
 	public interface DialListener {
 		void dialSucceeded(int contactId, String onion);
 	}
@@ -138,6 +144,18 @@ public class ZtpTorTransport implements OverlayTransport {
 			TorBridgeConfigurator bridgeConfigurator,
 			TorPrivacyConfigurator privacyConfigurator,
 			TorProcessWatch processWatch) {
+		this(tor, socketFactory, fastSocketFactory, ioExecutor, handler,
+				bridgeConfigurator, privacyConfigurator, processWatch,
+				new LoopbackOnionTargetFactory());
+	}
+
+	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
+			SocketFactory fastSocketFactory, Executor ioExecutor,
+			ZtpConnectionHandler handler,
+			TorBridgeConfigurator bridgeConfigurator,
+			TorPrivacyConfigurator privacyConfigurator,
+			TorProcessWatch processWatch, OnionTargetFactory targets) {
+		this.targets = targets;
 		this.tor = tor;
 		this.socketFactory = socketFactory;
 		this.fastSocketFactory = fastSocketFactory;
@@ -147,6 +165,9 @@ public class ZtpTorTransport implements OverlayTransport {
 		this.privacyConfigurator = privacyConfigurator;
 		this.processWatch = processWatch;
 		processWatch.setListener(this::onControlConnectionLost);
+		if (bridgeConfigurator != null) {
+			bridgeConfigurator.setAppliedListener(this::torReconfigured);
+		}
 	}
 
 	@Override
@@ -159,11 +180,24 @@ public class ZtpTorTransport implements OverlayTransport {
 		return TorConstants.PROP_ONION_V3;
 	}
 
+	@Override
+	public boolean isValidAddress(String peerOnion) {
+		return ONION_V3.matcher(peerOnion).matches();
+	}
+
 	public HiddenServiceProperties start(@Nullable String privateKey)
+			throws IOException, InterruptedException {
+		synchronized (lifecycleLock) {
+			return startLocked(privateKey);
+		}
+	}
+
+	private HiddenServiceProperties startLocked(@Nullable String privateKey)
 			throws IOException, InterruptedException {
 		if (!running.compareAndSet(false, true)) {
 			throw new IllegalStateException("already started");
 		}
+		runGeneration.incrementAndGet();
 		torDead.set(false);
 		processWatch.setListener(this::onControlConnectionLost);
 		try {
@@ -172,40 +206,54 @@ public class ZtpTorTransport implements OverlayTransport {
 			running.set(false);
 			throw e;
 		}
-		startAccepting(0);
-		startAcceptingAuthorized();
-		return publishHiddenService(localPort, REMOTE_ONION_PORT, privateKey);
+		try {
+			startAccepting();
+			startAcceptingAuthorized();
+			return publishHiddenService(getOpenTarget(), REMOTE_ONION_PORT,
+					privateKey);
+		} catch (IOException e) {
+			closeListeners();
+			try {
+				tor.stop();
+			} catch (IOException ignored) {
+			}
+			running.set(false);
+			throw e;
+		}
 	}
 
-	/**
-	 * The listener behind the authorized onion service. It is a separate
-	 * local port so that a connection can be told apart by the service it
-	 * came through, which the inbound policy needs.
-	 */
 	void startAcceptingAuthorized() throws IOException {
-		ServerSocket ss = new ServerSocket();
-		ss.bind(new InetSocketAddress("127.0.0.1", 0));
-		this.authorizedServerSocket = ss;
-		this.authorizedLocalPort = ss.getLocalPort();
-		ioExecutor.execute(() -> acceptLoop(ss, true));
+		OnionTargetListener l = targets.open();
+		this.authorizedListener = l;
+		this.authorizedTarget = l.getTorTarget();
+		ioExecutor.execute(() -> acceptLoop(l, true));
 	}
 
-	public int getAuthorizedLocalPort() {
-		return authorizedLocalPort;
+	public OnionTargetListener openServiceListener() throws IOException {
+		return targets.open();
 	}
 
-	/** Called after Tor was restarted and the services republished. */
+	public String getAuthorizedTarget() {
+		String t = authorizedTarget;
+		if (t == null) throw new IllegalStateException("not accepting");
+		return t;
+	}
+
+	public String getOpenTarget() {
+		String t = openTarget;
+		if (t == null) throw new IllegalStateException("not accepting");
+		return t;
+	}
+
+	int getAuthorizedLocalPort() {
+		String t = authorizedTarget;
+		return t == null ? -1 : OnionTargets.loopbackPort(t);
+	}
+
 	public void setTorRestartedListener(@Nullable Runnable listener) {
 		this.torRestartedListener = listener;
 	}
 
-	/**
-	 * Called after every change to the configuration of the running Tor
-	 * process, such as the network being disabled or enabled or the
-	 * bridges being re-applied. Tor drops the client credentials it was
-	 * given over the control port on every such change, so the listener
-	 * is where they are installed again.
-	 */
 	public void setTorReconfiguredListener(@Nullable Runnable listener) {
 		this.torReconfiguredListener = listener;
 	}
@@ -220,10 +268,6 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
-	/**
-	 * Starts the wrapper and applies every setting the transport requires,
-	 * failing closed (Tor stopped again) if any of them cannot be verified.
-	 */
 	private void startTor() throws IOException, InterruptedException {
 		tor.start();
 		try {
@@ -258,17 +302,19 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
-	/**
-	 * Publishes a hidden service through the wrapper and remembers it, so
-	 * that it is published again after Tor has been restarted.
-	 */
 	public HiddenServiceProperties publishHiddenService(int localPort,
 			int remotePort, @Nullable String privateKey) throws IOException {
-		HiddenServiceProperties hs = tor.publishHiddenService(localPort,
+		return publishHiddenService(OnionTargets.loopback(localPort),
+				remotePort, privateKey);
+	}
+
+	public HiddenServiceProperties publishHiddenService(String target,
+			int remotePort, @Nullable String privateKey) throws IOException {
+		HiddenServiceProperties hs = tor.publishHiddenService(target,
 				remotePort, privateKey);
 		if (hs == null) throw new IOException("hidden service not published");
 		published.put(hs.onion,
-				new PublishedService(localPort, remotePort, hs.privKey));
+				new PublishedService(target, remotePort, hs.privKey));
 		return hs;
 	}
 
@@ -277,37 +323,32 @@ public class ZtpTorTransport implements OverlayTransport {
 		tor.removeHiddenService(onion);
 	}
 
-	/** The onions currently published by this transport. */
 	List<String> publishedOnions() {
 		synchronized (published) {
 			return new ArrayList<>(published.keySet());
 		}
 	}
 
-	/**
-	 * The wrapper reports the loss of its control connection while Tor is
-	 * meant to be running: the tor child has died. The wrapper itself keeps
-	 * reporting the last state it saw, so the transport marks Tor dead at
-	 * once (no dial reaches the SOCKS port again until Tor is back) and
-	 * restarts it on the I/O executor, with a doubling delay between
-	 * attempts, republishing every hidden service it had published.
-	 */
 	void onControlConnectionLost() {
 		if (!running.get()) return;
 		if (!torDead.compareAndSet(false, true)) return;
-		ioExecutor.execute(this::restartTorUntilUp);
+		int run = runGeneration.get();
+		ioExecutor.execute(() -> restartTorUntilUp(run));
+	}
+
+	private boolean isCurrentRun(int run) {
+		return running.get() && runGeneration.get() == run;
 	}
 
 	boolean isTorDead() {
 		return torDead.get();
 	}
 
-	private void restartTorUntilUp() {
+	private void restartTorUntilUp(int run) {
 		long backoff = PROCESS_RESTART_BACKOFF_MIN_MS;
-		while (running.get()) {
+		while (isCurrentRun(run)) {
 			try {
-				restartTorOnce();
-				torDead.set(false);
+				if (restartTorOnce(run)) torDead.set(false);
 				return;
 			} catch (IOException e) {
 			} catch (InterruptedException e) {
@@ -324,43 +365,39 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
-	private void restartTorOnce() throws IOException, InterruptedException {
-		try {
-			tor.stop();
-		} catch (IOException ignored) {
-		}
-		if (!running.get()) return;
-		startTor();
-		if (!running.get()) {
+	private boolean restartTorOnce(int run)
+			throws IOException, InterruptedException {
+		synchronized (lifecycleLock) {
+			if (!isCurrentRun(run)) return false;
 			try {
-				tor.enableNetwork(false);
+				tor.stop();
 			} catch (IOException ignored) {
 			}
-			tor.stop();
-			return;
-		}
-		List<PublishedService> services;
-		synchronized (published) {
-			services = new ArrayList<>(published.values());
-		}
-		for (PublishedService s : services) {
-			HiddenServiceProperties hs = tor.publishHiddenService(s.localPort,
-					s.remotePort, s.privateKey);
-			if (hs == null) throw new IOException("republish failed");
+			startTor();
+			List<PublishedService> services;
+			synchronized (published) {
+				services = new ArrayList<>(published.values());
+			}
+			for (PublishedService s : services) {
+				HiddenServiceProperties hs = tor.publishHiddenService(s.target,
+						s.remotePort, s.privateKey);
+				if (hs == null) throw new IOException("republish failed");
+			}
 		}
 		Runnable listener = torRestartedListener;
-		if (listener != null) listener.run();
+		if (listener != null && isCurrentRun(run)) listener.run();
+		return true;
 	}
 
-	void startAccepting(int port) throws IOException {
-		ServerSocket ss = new ServerSocket();
-		ss.bind(new InetSocketAddress("127.0.0.1", port));
-		this.serverSocket = ss;
-		this.localPort = ss.getLocalPort();
-		ioExecutor.execute(() -> acceptLoop(ss, false));
+	void startAccepting() throws IOException {
+		OnionTargetListener l = targets.open();
+		this.openListener = l;
+		this.openTarget = l.getTorTarget();
+		ioExecutor.execute(() -> acceptLoop(l, false));
 	}
 
-	private void acceptLoop(ServerSocket ss, boolean authorized) {
+	private void acceptLoop(OnionTargetListener ss, boolean authorized) {
+		InboundBudget budget = authorized ? authorizedBudget : openBudget;
 		while (!ss.isClosed()) {
 			Socket socket;
 			try {
@@ -375,29 +412,31 @@ public class ZtpTorTransport implements OverlayTransport {
 				}
 				continue;
 			}
-			if (inboundLimiter.availablePermits() <= 0) {
+			if (budget.inbound.availablePermits() <= 0) {
 				closeQuietly(socket);
 				continue;
 			}
-			ioExecutor.execute(() -> handleAccepted(socket, authorized));
+			ioExecutor.execute(() -> handleAccepted(socket, authorized,
+					budget));
 		}
 	}
 
-	private void handleAccepted(Socket socket, boolean authorized) {
-		if (!inboundLimiter.tryAcquire()) {
+	private void handleAccepted(Socket socket, boolean authorized,
+			InboundBudget budget) {
+		if (!budget.inbound.tryAcquire()) {
 			closeQuietly(socket);
 			return;
 		}
-		if (!preTagLimiter.tryAcquire()) {
+		if (!budget.preTag.tryAcquire()) {
 			closeQuietly(socket);
-			inboundLimiter.release();
+			budget.inbound.release();
 			return;
 		}
 		java.util.concurrent.atomic.AtomicBoolean tagDelivered =
 				new java.util.concurrent.atomic.AtomicBoolean(false);
 		Runnable onTagDelivered = () -> {
 			if (tagDelivered.compareAndSet(false, true)) {
-				preTagLimiter.release();
+				budget.preTag.release();
 				try {
 					socket.setSoTimeout(SOCKET_TIMEOUT_MS);
 				} catch (java.net.SocketException ignored) {
@@ -419,22 +458,12 @@ public class ZtpTorTransport implements OverlayTransport {
 		} finally {
 			closeQuietly(socket);
 			if (tagDelivered.compareAndSet(false, true)) {
-				preTagLimiter.release();
+				budget.preTag.release();
 			}
-			inboundLimiter.release();
+			budget.inbound.release();
 		}
 	}
 
-	/**
-	 * Counts the bytes delivered to the reader and runs the callback once the
-	 * preamble length has been reached, so the accept path can move a
-	 * connection from the short pre-tag budget to the session budget. The
-	 * preamble must arrive in full within a wall-clock deadline measured
-	 * from the accept: the socket's read timeout only bounds the gap
-	 * between bytes, so a peer dripping one byte per timeout would
-	 * otherwise hold a pre-tag slot for the whole preamble length times
-	 * the timeout.
-	 */
 	static final class PreambleDeadlineInputStream
 			extends java.io.FilterInputStream {
 
@@ -488,14 +517,9 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
-	/**
-	 * Dials only while Tor is alive and connected. A dead Tor leaves its
-	 * SOCKS port free for any local process to bind, so nothing may be
-	 * offered to that port until Tor is back; a Tor that has not built a
-	 * circuit cannot complete the dial anyway.
-	 */
 	@Override
 	public long dial(int contactId, String peerOnion, boolean fast) {
+		if (!isValidAddress(peerOnion)) return DIAL_NOT_CONNECTED;
 		if (torDead.get() || tor.getTorState() != TorState.CONNECTED) {
 			return DIAL_NOT_CONNECTED;
 		}
@@ -530,18 +554,18 @@ public class ZtpTorTransport implements OverlayTransport {
 	}
 
 	public int getLocalPort() {
-		return localPort;
+		String t = openTarget;
+		return t == null ? -1 : OnionTargets.loopbackPort(t);
 	}
 
-	/**
-	 * Tor's state as reported by the wrapper. Once Tor has been connected in
-	 * this run, a fall back to connecting marks the moment the network
-	 * degraded; a connected report or a deliberate disable clears it.
-	 */
 	void onTorState(TorState state) {
 		if (state == TorState.CONNECTED) {
 			everConnected.set(true);
 			degradedSinceMs = 0;
+			if (republishOnConnect) {
+				republishOnConnect = false;
+				ioExecutor.execute(this::republishHiddenServices);
+			}
 		} else if (state == TorState.CONNECTING) {
 			if (everConnected.get() && degradedSinceMs == 0) {
 				degradedSinceMs = clock.getAsLong();
@@ -558,19 +582,10 @@ public class ZtpTorTransport implements OverlayTransport {
 				&& clock.getAsLong() - since >= DEGRADED_GRACE_MS;
 	}
 
-	/**
-	 * A connectivity report that the network is up while Tor has been
-	 * stuck without a working connection for longer than the grace period
-	 * is the signal the wrapper's idempotent enable cannot carry: Tor is
-	 * told the network went away and came back, which makes it retry its
-	 * guards at once and republish the hidden service instead of waiting
-	 * out its own retry schedule. Inside the grace period Tor is only
-	 * reconnecting after a brief dip and a bounce would cut the live
-	 * sessions it is about to recover, so the report is a plain enable.
-	 */
 	@Override
 	public void setNetworkEnabled(boolean enabled) {
 		if (!running.get()) return;
+		if (!enabled) republishOnConnect = true;
 		if (enabled && !bridgesApplied()) {
 			try {
 				tor.enableNetwork(false);
@@ -587,12 +602,6 @@ public class ZtpTorTransport implements OverlayTransport {
 		torReconfigured();
 	}
 
-	/**
-	 * The bridge configuration is re-applied before every enable: a
-	 * configuration Tor refused after the start (a mistyped line, a control
-	 * port hiccup) has disabled the network, and an enable that skipped the
-	 * check would connect without the bridges the user asked for.
-	 */
 	private boolean bridgesApplied() {
 		TorBridgeConfigurator b = bridgeConfigurator;
 		return b == null || b.apply();
@@ -604,12 +613,41 @@ public class ZtpTorTransport implements OverlayTransport {
 		restartNetworkNow();
 	}
 
-	/**
-	 * The wrapper's current state is read at the moment of the restart, so a
-	 * network that was deliberately disabled, or a Tor that is stopping, in
-	 * the instant before the state event reaches this transport is never
-	 * re-enabled by a restart.
-	 */
+	private void republishHiddenServices() {
+		if (!running.get() || torDead.get()) return;
+		List<Map.Entry<String, PublishedService>> services;
+		synchronized (published) {
+			services = new ArrayList<>(published.entrySet());
+		}
+		synchronized (lifecycleLock) {
+			if (!running.get() || torDead.get()) return;
+			for (Map.Entry<String, PublishedService> e : services) {
+				PublishedService svc = e.getValue();
+				try {
+					tor.removeHiddenService(e.getKey());
+				} catch (IOException ignored) {
+				}
+				try {
+					tor.publishHiddenService(svc.target, svc.remotePort,
+							svc.privateKey);
+				} catch (IOException ignored) {
+				}
+			}
+		}
+	}
+
+	@Override
+	public void refreshPeerDescriptors() {
+		if (!running.get() || torDead.get()) return;
+		if (tor.getTorState() != TorState.CONNECTED) return;
+		try {
+			tor.forgetHiddenServiceDescriptors();
+		} catch (IOException e) {
+			return;
+		}
+		torReconfigured();
+	}
+
 	private boolean restartNetworkNow() {
 		synchronized (restartLock) {
 			if (tor.getTorState() != TorState.CONNECTING) return false;
@@ -617,6 +655,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			if (now - lastRestartMs < MIN_RESTART_INTERVAL_MS) return false;
 			lastRestartMs = now;
 		}
+		republishOnConnect = true;
 		try {
 			tor.enableNetwork(false);
 			if (bridgesApplied()) tor.enableNetwork(true);
@@ -628,13 +667,19 @@ public class ZtpTorTransport implements OverlayTransport {
 
 	public void stop() throws IOException, InterruptedException {
 		running.set(false);
-		processWatch.setListener(null);
-		ServerSocket ss = serverSocket;
-		if (ss != null) closeQuietly(ss);
-		ServerSocket ass = authorizedServerSocket;
-		if (ass != null) closeQuietly(ass);
-		published.clear();
-		tor.stop();
+		synchronized (lifecycleLock) {
+			processWatch.setListener(null);
+			closeListeners();
+			published.clear();
+			tor.stop();
+		}
+	}
+
+	private void closeListeners() {
+		OnionTargetListener open = openListener;
+		if (open != null) closeQuietly(open);
+		OnionTargetListener authorized = authorizedListener;
+		if (authorized != null) closeQuietly(authorized);
 	}
 
 	private static void closeQuietly(java.io.Closeable c) {

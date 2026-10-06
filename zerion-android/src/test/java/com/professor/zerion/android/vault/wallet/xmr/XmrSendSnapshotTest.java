@@ -13,12 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * The immutable snapshot binds exactly the reviewed and signed values, computes
- * the total debit as amount + fee (never adding dust), and fails closed on every
- * inconsistent or out-of-range native value. Arrays are defensively copied so
- * the snapshot cannot be changed after construction.
- */
 public class XmrSendSnapshotTest {
 
 	private static final String WALLET = "w1";

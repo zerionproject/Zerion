@@ -13,14 +13,12 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
-		<!-- ====== APP SECURITY ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_app_security" />
 
 		<LinearLayout style="@style/Zerion.Settings.Group">
 
-			<!-- App Lock -->
 			<LinearLayout style="@style/Zerion.Settings.Row">
 
 				<ImageView
@@ -51,7 +49,6 @@
 
 			</LinearLayout>
 
-			<!-- Screenshot Protection -->
 			<LinearLayout style="@style/Zerion.Settings.Row">
 
 				<ImageView
@@ -83,7 +80,6 @@
 
 			</LinearLayout>
 
-			<!-- Lock Timeout -->
 			<LinearLayout
 				android:id="@+id/lock_timeout_card"
 				style="@style/Zerion.Settings.Row.Clickable">
@@ -119,7 +115,6 @@
 
 			</LinearLayout>
 
-			<!-- Default Disappearing Timer -->
 			<LinearLayout
 				android:id="@+id/default_timer_card"
 				style="@style/Zerion.Settings.Row.Clickable">
@@ -155,7 +150,6 @@
 
 			</LinearLayout>
 
-			<!-- Change Password -->
 			<LinearLayout
 				android:id="@+id/change_password_card"
 				style="@style/Zerion.Settings.Row.Clickable">
@@ -192,7 +186,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== PRIVACY ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_privacy" />
@@ -232,7 +225,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== CALLS ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/pref_calls_section_title" />
@@ -305,7 +297,6 @@
 			style="@style/Zerion.Settings.SectionFooter"
 			android:text="@string/pref_calls_footer" />
 
-		<!-- ====== EMERGENCY WIPE ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_emergency_wipe" />
@@ -414,7 +405,6 @@
 
 		</LinearLayout>
 
-		<!-- Wipe password is destructive — its own danger group -->
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"

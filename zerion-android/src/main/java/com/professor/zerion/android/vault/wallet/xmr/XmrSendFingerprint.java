@@ -7,39 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Canonical, versioned, domain-separated fingerprint of a reviewed and signed
- * Monero send. It is a pure function of the reviewed transaction data: the same
- * fields always produce the same 32-byte digest, and no process-local value
- * (native pointer, object identity, timestamp, nonce, pid, activity) ever enters
- * it. Two independent computations of the same fields agree exactly, which is
- * what lets an authorization be bound to the reviewed transaction and re-checked
- * against the live native object immediately before relay.
- *
- * <p>Encoding v1. Every variable-length value is length-prefixed with a 4-byte
- * big-endian length so no concatenation can be reinterpreted; every integer is a
- * fixed 8-byte big-endian value; the address kind is a fixed 4-byte stable code
- * (not an enum ordinal); the transaction count is written before the txids, and
- * each txid is decoded from its 64-character lowercase hex to its 32 raw bytes
- * and appended in wallet2 order. The buffer is:
- *
- * <pre>
- *   LP("ZERION:XMR:SEND:v1")
- *   U32(version = 1)
- *   LP(walletId, UTF-8)
- *   LP(primaryWalletFingerprint, 32 bytes)
- *   U32(network)
- *   LP(destinationExact, UTF-8)
- *   U32(addressKindCode)
- *   U64(amountAtomic)
- *   U64(feeAtomic)
- *   U64(dustAtomic)
- *   U64(totalDebitAtomic)
- *   U64(txCount)
- *   RAW32(txid_0) .. RAW32(txid_{n-1})
- *   fingerprint = SHA-256(buffer)
- * </pre>
- */
 @NotNullByDefault
 final class XmrSendFingerprint {
 
@@ -64,11 +31,6 @@ final class XmrSendFingerprint {
 		}
 	}
 
-	/**
-	 * Compute the fingerprint over already-validated fields. Callers
-	 * ({@link XmrSendSnapshot}) validate ranges, consistency and txid form
-	 * before calling; this method only encodes and hashes.
-	 */
 	static byte[] compute(String walletId, byte[] primaryWalletFingerprint,
 			int network, String destinationExact, int addressKindCode,
 			long amountAtomic, long feeAtomic, long dustAtomic,

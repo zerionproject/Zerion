@@ -8,14 +8,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * The Electrum reply parsers face a server that can send anything. Random
- * text, structurally valid JSON with hostile values (NaN and infinities,
- * negative and overflowing numbers, hashes that are not hex or not 64
- * characters, duplicate keys, deep nesting) and truncations must yield
- * bounded lists of well-formed entries or, for a broadcast reply, an
- * IOException, and never any other exception.
- */
 public class ElectrumParserFuzzTest {
 
 	private static final int RANDOM_INPUTS = 4000;

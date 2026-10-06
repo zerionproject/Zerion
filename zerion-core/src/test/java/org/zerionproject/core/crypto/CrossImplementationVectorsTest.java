@@ -16,15 +16,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Emits primitive-level test vectors produced by this implementation so
- * that a second implementation of the Zerion wire can prove it agrees on
- * every cryptographic building block: ML-KEM-768 encapsulation, ML-DSA-65
- * signatures, the hybrid signature composition, the BLAKE2b key
- * derivation, MAC and hash framing, and the XSalsa20-Poly1305 cipher with
- * its MAC-first layout. Self-consistency is asserted here; the emitted file
- * is consumed by the other implementation's test suite.
- */
 public class CrossImplementationVectorsTest {
 
 	private static final String KDF_LABEL =

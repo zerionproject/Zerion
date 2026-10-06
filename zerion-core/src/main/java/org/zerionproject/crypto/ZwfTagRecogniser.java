@@ -5,33 +5,32 @@ import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Recognises the tag prefixing an incoming ZWF stream and maps it to a
- * {@code (contact, streamId)}.
- *
- * <p>For each registered contact the recogniser keeps a sliding window of the
- * next {@code window} expected stream ids, indexing {@code MAC(tagKey, streamId)}
- * → {@code (contact, streamId)}. An incoming tag is a single map lookup. As
- * streams are accepted the window advances (via {@link #advanceTo}) so old tags
- * are dropped and future ones become recognisable, matching the persistent
- * receive-side stream counter.
- */
 @ThreadSafe
 @NotNullByDefault
 public class ZwfTagRecogniser {
 
+	public static final long DEFAULT_EPOCH = 0;
+
 	private final CryptoComponent crypto;
 	private final int window;
 	private final Object lock = new Object();
-	private final Map<Integer, SecretKey> tagKeys = new HashMap<>();
+	private final Map<Integer, Map<Long, SecretKey>> tagKeys = new HashMap<>();
 	private final Map<Integer, Long> highWater = new HashMap<>();
 	private final Map<String, Match> tagIndex = new HashMap<>();
+	private int lastSearchedContact = Integer.MIN_VALUE;
+	private int lastSearchedPreferred = Integer.MIN_VALUE;
+	private int searches = 0;
+
+	static final int PREFERRED_SHARE = 4;
 
 	public ZwfTagRecogniser(CryptoComponent crypto, int window) {
 		if (window < 1) throw new IllegalArgumentException("window < 1");
@@ -39,16 +38,20 @@ public class ZwfTagRecogniser {
 		this.window = window;
 	}
 
-	/**
-	 * Registers a contact with its tag key and the highest stream id already
-	 * received from it (0 for a new contact). Tags for stream ids in
-	 * {@code (highWaterMark, highWaterMark + window]} become recognisable.
-	 */
 	public void register(int contactId, SecretKey tagKey, long highWaterMark) {
+		Map<Long, SecretKey> keys = new LinkedHashMap<>();
+		keys.put(DEFAULT_EPOCH, tagKey);
+		register(contactId, keys, highWaterMark);
+	}
+
+	public void register(int contactId, Map<Long, SecretKey> tagKeysByEpoch,
+			long highWaterMark) {
+		if (tagKeysByEpoch.isEmpty()) throw new IllegalArgumentException();
 		synchronized (lock) {
 			Long existing = highWater.get(contactId);
 			if (existing != null) removeWindow(contactId, existing);
-			tagKeys.put(contactId, tagKey);
+			clearKeys(tagKeys.put(contactId,
+					new LinkedHashMap<>(tagKeysByEpoch)), tagKeysByEpoch);
 			highWater.put(contactId, highWaterMark);
 			addWindow(contactId, highWaterMark);
 		}
@@ -58,15 +61,19 @@ public class ZwfTagRecogniser {
 		synchronized (lock) {
 			Long hw = highWater.remove(contactId);
 			if (hw != null) removeWindow(contactId, hw);
-			tagKeys.remove(contactId);
+			clearKeys(tagKeys.remove(contactId), null);
 		}
 	}
 
-	/**
-	 * Slides the window so ids at or below {@code newHighWaterMark} are no longer
-	 * recognised and the next {@code window} ids are. Call after accepting a
-	 * stream.
-	 */
+	private static void clearKeys(@Nullable Map<Long, SecretKey> old,
+			@Nullable Map<Long, SecretKey> kept) {
+		if (old == null) return;
+		for (SecretKey k : old.values()) {
+			if (kept != null && kept.containsValue(k)) continue;
+			k.clear();
+		}
+	}
+
 	public void advanceTo(int contactId, long newHighWaterMark) {
 		synchronized (lock) {
 			Long old = highWater.get(contactId);
@@ -77,6 +84,13 @@ public class ZwfTagRecogniser {
 		}
 	}
 
+	public long getHighWater(int contactId) {
+		synchronized (lock) {
+			Long hw = highWater.get(contactId);
+			return hw == null ? -1 : hw;
+		}
+	}
+
 	@Nullable
 	public Match recognise(byte[] tag) {
 		synchronized (lock) {
@@ -84,71 +98,92 @@ public class ZwfTagRecogniser {
 		}
 	}
 
-	/**
-	 * Searches for the tag among the stream ids beyond the contact's window,
-	 * up to {@code maxGap} ids past its high-water mark. A contact burns a
-	 * send id on every connection attempt that never delivered a frame, so
-	 * its counter can run ahead of the receive window; this search lets a
-	 * connection whose peer is already known recover from such a gap. The
-	 * cost is bounded to one contact and is never spent on an anonymous
-	 * connection, whose tag must fall inside the precomputed window.
-	 */
 	@Nullable
 	public Match recogniseBeyondWindow(int contactId, byte[] tag,
 			long maxGap) {
-		SecretKey key;
+		List<Map.Entry<Long, SecretKey>> keys;
 		long hw;
 		synchronized (lock) {
-			key = tagKeys.get(contactId);
+			Map<Long, SecretKey> k = tagKeys.get(contactId);
 			Long h = highWater.get(contactId);
-			if (key == null || h == null) return null;
+			if (k == null || h == null) return null;
+			keys = new ArrayList<>(k.entrySet());
 			hw = h;
 		}
 		long first = hw + window + 1;
 		long last = hw + maxGap;
 		for (long s = first; s <= last && s > 0; s++) {
-			byte[] candidate = ZwfTag.computeTag(crypto, key, s);
-			if (MessageDigest.isEqual(candidate, tag)) {
-				return new Match(contactId, s);
+			for (Map.Entry<Long, SecretKey> e : keys) {
+				byte[] candidate = ZwfTag.computeTag(crypto, e.getValue(), s);
+				if (MessageDigest.isEqual(candidate, tag)) {
+					return new Match(contactId, s, e.getKey());
+				}
 			}
 		}
 		return null;
 	}
 
-	/**
-	 * The search of {@link #recogniseBeyondWindow} over every registered
-	 * contact, for an anonymous inbound connection whose tag fell outside
-	 * every precomputed window. The caller rations these searches.
-	 */
 	@Nullable
-	public Match recogniseBeyondWindowAny(byte[] tag, long maxGap) {
-		java.util.List<Integer> contacts;
+	public Match recogniseBeyondWindowNext(byte[] tag, long maxGap) {
+		return recogniseBeyondWindowNext(tag, maxGap,
+				java.util.Collections.emptySet());
+	}
+
+	@Nullable
+	public Match recogniseBeyondWindowNext(byte[] tag, long maxGap,
+			java.util.Set<Integer> preferred) {
+		int contactId;
 		synchronized (lock) {
-			contacts = new java.util.ArrayList<>(tagKeys.keySet());
+			if (tagKeys.isEmpty()) return null;
+			List<Integer> all = new ArrayList<>(tagKeys.keySet());
+			java.util.Collections.sort(all);
+			List<Integer> first = new ArrayList<>();
+			List<Integer> rest = new ArrayList<>();
+			for (Integer id : all) {
+				if (preferred.contains(id)) first.add(id);
+				else rest.add(id);
+			}
+			boolean takePreferred = !first.isEmpty() && (rest.isEmpty()
+					|| searches % PREFERRED_SHARE != PREFERRED_SHARE - 1);
+			searches++;
+			if (takePreferred) {
+				contactId = nextAfter(first, lastSearchedPreferred);
+				lastSearchedPreferred = contactId;
+			} else {
+				contactId = nextAfter(rest, lastSearchedContact);
+				lastSearchedContact = contactId;
+			}
 		}
-		for (int contactId : contacts) {
-			Match m = recogniseBeyondWindow(contactId, tag, maxGap);
-			if (m != null) return m;
-		}
-		return null;
+		return recogniseBeyondWindow(contactId, tag, maxGap);
 	}
 
-	/** Must hold the lock. */
+	private static int nextAfter(List<Integer> sorted, int last) {
+		for (Integer id : sorted) {
+			if (id > last) return id;
+		}
+		return sorted.get(0);
+	}
+
 	private void addWindow(int contactId, long hw) {
-		SecretKey key = tagKeys.get(contactId);
-		if (key == null) return;
-		for (long s = Math.max(1, hw - window + 1); s <= hw + window; s++) {
-			byte[] tag = ZwfTag.computeTag(crypto, key, s);
-			tagIndex.put(hex(tag), new Match(contactId, s));
+		Map<Long, SecretKey> keys = tagKeys.get(contactId);
+		if (keys == null) return;
+		for (Map.Entry<Long, SecretKey> e : keys.entrySet()) {
+			for (long s = Math.max(1, hw - window + 1); s <= hw + window;
+					s++) {
+				byte[] tag = ZwfTag.computeTag(crypto, e.getValue(), s);
+				tagIndex.put(hex(tag), new Match(contactId, s, e.getKey()));
+			}
 		}
 	}
 
-	/** Must hold the lock. */
 	private void removeWindow(int contactId, long hw) {
-		SecretKey key = tagKeys.get(contactId);
-		if (key == null) return;
-		for (long s = Math.max(1, hw - window + 1); s <= hw + window; s++) {
-			tagIndex.remove(hex(ZwfTag.computeTag(crypto, key, s)));
+		Map<Long, SecretKey> keys = tagKeys.get(contactId);
+		if (keys == null) return;
+		for (SecretKey key : keys.values()) {
+			for (long s = Math.max(1, hw - window + 1); s <= hw + window;
+					s++) {
+				tagIndex.remove(hex(ZwfTag.computeTag(crypto, key, s)));
+			}
 		}
 	}
 
@@ -164,10 +199,12 @@ public class ZwfTagRecogniser {
 	public static final class Match {
 		public final int contactId;
 		public final long streamId;
+		public final long epoch;
 
-		Match(int contactId, long streamId) {
+		Match(int contactId, long streamId, long epoch) {
 			this.contactId = contactId;
 			this.streamId = streamId;
+			this.epoch = epoch;
 		}
 	}
 }

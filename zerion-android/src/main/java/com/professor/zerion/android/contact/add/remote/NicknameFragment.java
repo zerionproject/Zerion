@@ -30,7 +30,7 @@ import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
-import androidx.appcompat.app.AlertDialog.Builder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -191,6 +191,11 @@ public class NicknameFragment extends BaseFragment {
 			int stringRes = R.string.unsupported_link;
 			Toast.makeText(getContext(), stringRes, LENGTH_LONG).show();
 			finish();
+		} else if (e instanceof org.zerionproject.core.api.contact
+				.OwnLinkChangedException) {
+			Toast.makeText(getContext(), R.string.own_link_changed,
+					LENGTH_LONG).show();
+			finish();
 		} else {
 			int stringRes = R.string.adding_contact_error;
 			Toast.makeText(getContext(), stringRes, LENGTH_LONG).show();
@@ -201,9 +206,12 @@ public class NicknameFragment extends BaseFragment {
 	private void handleExistingContact(String name, Author existing) {
 		OnClickListener listener = (d, w) -> {
 			d.dismiss();
-			String str = getString(R.string.contact_already_exists_general);
-			Toast.makeText(getContext(), str, LENGTH_LONG).show();
-			finish();
+			viewModel.setReAddExisting(true);
+			viewModel.setRemoteHandshakeLink(requireNonNull(
+					viewModel.getLastRemoteHandshakeLink()));
+			Toast.makeText(getContext(), R.string.contact_readd_started,
+					LENGTH_LONG).show();
+			viewModel.addContact(name);
 		};
 		showSameLinkDialog(existing.getName(), name,
 				R.string.duplicate_link_dialog_text_1_contact, listener);
@@ -224,7 +232,8 @@ public class NicknameFragment extends BaseFragment {
 	private void showSameLinkDialog(String name1, String name2,
 			@StringRes int existsRes, OnClickListener samePersonListener) {
 		Context ctx = requireContext();
-		Builder b = new Builder(ctx, R.style.ZerionDialogTheme_Neutral);
+		SecureAlertDialogBuilder b = new SecureAlertDialogBuilder(ctx,
+				R.style.ZerionDialogTheme_Neutral);
 		b.setTitle(getString(R.string.duplicate_link_dialog_title));
 		String msg = getString(existsRes, name1) + "\n\n" +
 				getString(R.string.duplicate_link_dialog_text_2, name2, name1);
@@ -240,7 +249,8 @@ public class NicknameFragment extends BaseFragment {
 
 	private void showWarningDialog(String name1, String name2) {
 		Context ctx = requireContext();
-		Builder b = new Builder(ctx, R.style.ZerionDialogTheme);
+		SecureAlertDialogBuilder b = new SecureAlertDialogBuilder(ctx,
+				R.style.ZerionDialogTheme);
 		b.setIcon(getDialogIcon(ctx, R.drawable.alerts_and_states_error));
 		b.setTitle(getString(R.string.duplicate_link_dialog_title));
 		b.setMessage(

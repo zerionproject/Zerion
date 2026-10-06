@@ -32,7 +32,6 @@ public class FeeBoundsTest {
 				BtcWallet.MAX_FEE_RATE <= 200.0);
 	}
 
-	/** BTC-04: a NaN estimate passed every comparison and yielded a zero fee. */
 	@Test
 	public void nanEstimateTakesTheFloor() throws IOException {
 		FakeElectrum e = new FakeElectrum();
@@ -61,7 +60,6 @@ public class FeeBoundsTest {
 		assertTrue(sweep.feeSat >= BtcWallet.minimumFeeSat(sweep.vbytes));
 	}
 
-	/** BTC-10: the plan reports its effective rate and the fee's share. */
 	@Test
 	public void planReportsEffectiveRateAndShareOfAmount()
 			throws IOException {

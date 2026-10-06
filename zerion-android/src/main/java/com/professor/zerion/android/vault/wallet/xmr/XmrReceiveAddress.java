@@ -4,14 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * An issued Monero receive subaddress. Index 0 is the wallet's primary address
- * and is never handed out as a default receive address. A fresh subaddress
- * (a new index) is the default for each new payment request; previously issued
- * ones may be deliberately reused. The address string is deterministic from the
- * wallet seed and index, so it is safe to cache. "used" is only populated where
- * it can be known reliably; otherwise it is null (unknown).
- */
 @NotNullByDefault
 public final class XmrReceiveAddress {
 

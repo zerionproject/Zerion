@@ -33,18 +33,6 @@ import static org.zerionproject.core.api.plugin.Plugin.State.ENABLING;
 import static org.zerionproject.core.api.plugin.Plugin.State.INACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
-/**
- * The I2P transport exposed as a {@link DuplexPlugin} and the owner of the I2P
- * transport lifecycle, mirroring the Tor plugin. Contact traffic runs through
- * {@link I2pTransport} and its poller, not the plugin surface. First-contact
- * pairing, key agreement and rendezvous stay on Tor, so those methods are
- * unsupported here.
- *
- * <p>The plugin is registered but starts dormant: {@link #start} does nothing
- * unless the per-plugin enable preference is set, which is off by default until
- * an I2P router is bundled. This keeps the plugin from attempting a SAM
- * connection (and failing) on devices without a router.
- */
 @NotNullByDefault
 class I2pDuplexPlugin implements DuplexPlugin {
 
@@ -150,13 +138,11 @@ class I2pDuplexPlugin implements DuplexPlugin {
 	@Override
 	public void poll(Collection<Pair<TransportProperties, ConnectionHandler>>
 			properties) {
-		// Contact traffic is driven by the transport's own poller.
 	}
 
 	@Override
 	@Nullable
 	public DuplexTransportConnection createConnection(TransportProperties p) {
-		// Contact connections go through I2pTransport, not the plugin surface.
 		return null;
 	}
 

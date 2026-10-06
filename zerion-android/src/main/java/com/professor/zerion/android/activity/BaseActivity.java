@@ -87,7 +87,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
 		securityManager = applicationComponent.securityManager();
 
-		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed(this)) {
 			super.onCreate(state);
 			Intent gate = new Intent(this, com.professor.zerion.android
 					.security.KeystoreUnavailableActivity.class);
@@ -134,7 +134,14 @@ public abstract class BaseActivity extends AppCompatActivity
 
 		super.onCreate(state);
 
+		if (com.professor.zerion.android.util.AppTasks.startsAfresh(this,
+				state != null)) {
+			com.professor.zerion.android.util.AppTasks
+					.finishOtherTasks(this, false);
+		}
+
 		androidx.activity.EdgeToEdge.enable(this);
+		IncognitoInputHelper.install(getWindow().getDecorView());
 
 		securityManager.applyScreenshotProtection(this, forceScreenshotProtection());
 		com.professor.zerion.android.security.SecureDialogs.install(this);
@@ -165,7 +172,7 @@ public abstract class BaseActivity extends AppCompatActivity
 	protected void onStart() {
 		super.onStart();
 		if (securityManager == null) return;
-		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed(this)
 				&& !isFinishing()) {
 			Intent gate = new Intent(this, com.professor.zerion.android
 					.security.KeystoreUnavailableActivity.class);

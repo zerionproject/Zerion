@@ -87,7 +87,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion yra sukonfigūruota taip, kad nesinaudotų internetu, kai įrenginys veikia naudodamas akumuliatoriaus energiją</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion yra sukonfigūruota taip, kad šioje šalyje nesinaudotų internetu</string>
   
-  <string name="transport_lan_long">Tas pats belaidis (Wi-Fi) tinklas</string>
 
   <string name="reminder_notification_title">Atsijungta iš Zerion</string>
   <string name="reminder_notification_text">Bakstelėkite, norėdami prisijungti atgal.</string>
@@ -224,7 +223,6 @@
   <string name="connecting_to_device">Jungiamasi prie įrenginio\u2026</string>
   <string name="authenticating_with_device">Tapatybės nustatymas su įrenginiu\u2026</string>
   <string name="connection_error_title">Nepavyko prisijungti prie jūsų adresato</string>
-  <string name="connection_error_feedback">Jei ši problema išlieka, <a href="feedback">atsiųskite mums atsiliepimą</a>, kad padėtumėte mums patobulinti programėlę.</string>
   
   <string name="add_contact_remotely_title_case">Pridėti adresatą per atstumą</string>
   <string name="add_contact_nearby_title">Pridėti šalia esantį adresatą</string>
@@ -407,8 +405,6 @@
   
   <string name="tor_network_setting_summary">Automatiškai: %1$s (šalyje %2$s)</string>
   <string name="tor_mobile_data_title">Naudoti mobiliuosius duomenis</string>
-  <string name="tor_only_when_charging_title">Prisijungti prie interneto tik įkraunant įrenginį</string>
-  <string name="tor_only_when_charging_summary">Išjungia interneto ryšį, kai įrenginys veikia naudodamas akumuliatorių</string>
   
   <string name="security_settings_title">Saugumas</string>
   <string name="pref_lock_title">Programėlės užrakinimas</string>
@@ -465,74 +461,9 @@
   <string name="choose_ringtone_title">Pasirinkite skambučio melodiją</string>
   <string name="cannot_load_ringtone">Nepavyksta įkelti skambučio melodijos</string>
   
-  <string name="mailbox_settings_title">Pašto dėžutė</string>
-  <string name="mailbox_setup_title">Pašto dėžutės sąranka</string>
-  <string name="mailbox_setup_intro">Pašto dėžutė leidžia adresatams siųsti jums žinutes, kai esate neprisijungę prie interneto. Žinutės bus siunčiamos į jūsų pašto dėžutę ir saugomos ten tol, kol prisijungsite prie interneto.\n
-		\nGalite įsidiegti Zerion pašto dėžutę laisvame atsarginiame įrenginyje. Palikite įrenginį prijungtą prie maitinimo šaltinio ir belaidžio (Wi-Fi) ryšio, kad jis būtų pastoviai prijungtas prie interneto.</string>
-  <string name="mailbox_setup_download">Pirmiausia, įsidiekite kitame įrenginyje pašto dėžutės programėlę: atverkite „Google Play“ ar kitą programėlių parduotuvę, iš kurios atsisiuntėte Zerion, ir įrašykite į paiešką raktažodį „Zerion Mailbox“.\n
-		\nTuomet, susiekite pašto dėžutę su Zerion, nuskenuodami pašto dėžutės programėlėje rodomą QR kodą.</string>
-  <string name="mailbox_setup_download_link">Bendrinti atsisiuntimo nuorodą</string>
-  <string name="mailbox_setup_connecting">Jungiamasi prie pašto dėžutės…</string>
   
-  <string name="mailbox_setup_connecting_info">Tai gali užtrukti iki %1s</string>
-  <string name="mailbox_setup_already_paired_title">Pašto dėžutė jau susieta</string>
-  <string name="mailbox_setup_already_paired_description">Atsiekite pašto dėžutę kitame įrenginyje ir bandykite dar kartą.</string>
-  <string name="mailbox_setup_io_error_title">Nepavyko prisijungti</string>
-  <string name="mailbox_setup_io_error_description">Įsitikinkite, kad abu įrenginiai yra prisijungę prie interneto ir bandykite dar kartą.</string>
-  <string name="mailbox_setup_assertion_error_title">Pašto dėžutės klaida</string>
-  <string name="mailbox_setup_assertion_error_description">Jei problema išlieka, išsiųskite atsiliepimą (su anoniminiais duomenimis) per Zerion programėlę.</string>
-  <string name="mailbox_setup_camera_error_description">Nepavyko gauti prieigos prie kameros. Bandykite dar kartą, galbūt po to, kai paleisite įrenginį iš naujo.</string>
-  <string name="mailbox_setup_paired_title">Prisijungta</string>
-  <string name="mailbox_setup_paired_description">Jūsų pašto dėžutė sėkmingai susieta su Zerion.\n
-		\nLaikykite pašto dėžutę prijungtą prie elektros maitinimo šaltinio ir belaidžio (Wi-Fi) tinklo, kad ji visuomet būtų prisijungusi prie interneto.</string>
-  <string name="tor_offline_title">Nepasiekiama</string>
-  <string name="tor_offline_description">Įsitikinkite, kad šis įrenginys yra prisijungęs prie interneto ir, kad yra leidžiami ryšiai su internetu.\n
-		\nPo to, palaukite, kol ryšio nustatymų ekrane gaublio piktograma užsidegs žaliai.</string>
-  <string name="tor_offline_button_check">Tikrinti ryšio nustatymus</string>
-  <string name="mailbox_status_title">Pašto dėžutės būsena</string>
-  <string name="mailbox_status_connected_title">Pašto dėžutė veikia</string>
-  <string name="mailbox_status_problem_title">Zerion kyla nesklandumų jungiantis prie pašto dėžutės</string>
-  <string name="mailbox_status_failure_title">Pašto dėžutė yra neprieinama</string>
-  <string name="mailbox_status_app_too_old_title">Zerion yra per sena</string>
-  <string name="mailbox_status_app_too_old_message">Atnaujinkite Zerion programėlę iki naujausios versijos ir bandykite dar kartą.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Pašto dėžutė yra per sena</string>
-  <string name="mailbox_status_mailbox_too_old_message">Atnaujinkite pašto dėžutės programėlę iki naujausios versijos ir bandykite dar kartą.</string>
-  <string name="mailbox_status_check_button">Tikrinti ryšį</string>
   
-  <string name="mailbox_status_connected_info">Paskutinis prisijungimas: %s</string>
   
-  <string name="mailbox_status_connected_never">Niekada</string>
-  <string name="mailbox_status_unlink_button">Atsieti</string>
-  <string name="mailbox_status_unlink_dialog_title">Atsieti pašto dėžutę?</string>
-  <string name="mailbox_status_unlink_dialog_question">Ar tikrai norite atsieti pašto dėžutę?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Jei atsiesite pašto dėžutę, nebegalėsite gauti žinučių, kai Zerion neturi prieigos prie interneto.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Jūsų pašto dėžutė atsieta</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Kitą kartą, kai turėsite prieigą prie pašto dėžutės, atverkite pašto dėžutės programėlę ir bakstelėkite mygtuką „Atsieti“, kad užbaigtumėte procesą.\n\nJeigu daugiau nebeturite prieigos prie pašto dėžutės įrenginio, nesijaudinkite. Jūsų duomenys yra šifruoti, tad išliks saugūs netgi tuo atveju, jei neužbaigsite proceso.</string>
-  <string name="mailbox_status_unlink_success">Jūsų pašto dėžutė atsieta</string>
-  <string name="mailbox_error_notification_channel_title">Problemos su Zerion pašto dėžute</string>
-  <string name="mailbox_error_notification_title">Zerion pašto dėžutė yra neprieinama</string>
-  <string name="mailbox_error_notification_text">Bakstelėkite norėdami išspręsti problemą.</string>
-  <string name="mailbox_error_wizard_button">Išspręsti problemą</string>
-  <string name="mailbox_error_wizard_title">Pašto dėžutės nesklandumų šalinimo vediklis</string>
-  <string name="mailbox_error_wizard_question1">Ar turite prieigą prie savo pašto dėžutės įrenginio?</string>
-  <string name="mailbox_error_wizard_answer1">Taip, turiu prieigą prie jo dabar.</string>
-  <string name="mailbox_error_wizard_answer2">Šiuo metu neturiu, bet galiu gauti prieigą vėliau.</string>
-  <string name="mailbox_error_wizard_answer3">Ne, aš daugiau nebeturiu prieigos prie jo.</string>
-  <string name="mailbox_error_wizard_info1_1">Patikrinkite, ar pašto dėžutės įrenginys yra įjungtas ir prisijungęs prie interneto.</string>
-  <string name="mailbox_error_wizard_question1_1">Atverkite pašto dėžutės programėlę. Ką matote?</string>
-  <string name="mailbox_error_wizard_answer1_1">Aš matau instrukcijas, kaip nustatyti pašto dėžutę.</string>
-  <string name="mailbox_error_wizard_answer1_2">Aš matau QR kodą</string>
-  <string name="mailbox_error_wizard_answer1_3">Aš matau „Pašto dėžutė veikia“</string>
-  <string name="mailbox_error_wizard_answer1_4">Aš matau „Internetas nepasiekiamas“</string>
-  <string name="mailbox_error_wizard_info1_1_1">Atsiekite savo pašto dėžutę naudodami žemiau esantį mygtuką, o tuomet sekite instrukcijas pašto dėžutės įrenginyje, kad vėl ją susietumėte.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Atsiekite pašto dėžutę naudodami žemiau esantį mygtuką, o tuomet, nuskenuokite QR kodą, kad vėl ją susietumėte.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Naudokite žemiau esantį mygtuką, kad patikrintumėte ryšį tarp Zerion ir pašto dėžutės.\n\n
-		Jei ryšys ir vėl patiria nesėkmę:\n
-		\u2022 Patikrinkite, ar pašto dėžutės ir Zerion programėlės yra atnaujintos į naujausią versiją.\n
-		\u2022 Paleiskite pašto dėžutės bei Zerion įrenginius iš naujo ir bandykite dar kartą.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Patikrinkite, ar pašto dėžutės įrenginys yra tinkamai prijungtas prie interneto.\n\nPatikrinkite, ar laikrodis pašto dėžutės įrenginyje rodo teisingą laiką, datą ir laiko juostą.\n\nPatikrinkite, ar pašto dėžutės ir Zerion programėlės yra atnaujintos į naujausią versiją.\n\nPaleiskite pašto dėžutės bei Zerion įrenginius iš naujo ir bandykite dar kartą.</string>
-  <string name="mailbox_error_wizard_info2">Grįžkite į šį langelį, kai turėsite prieigą prie įrenginio.</string>
-  <string name="mailbox_error_wizard_info3">Atsiekite pašto dėžutę naudodami žemiau esantį mygtuką.\n\nAtsieję seną pašto dėžutę galite bet kuriuo metu nusistatyti naują pašto dėžutę.</string>
   
   <string name="about_title">Apie</string>
   <string name="zerion_version">Zerion versija: %s</string>
@@ -540,7 +471,6 @@
   <string name="links">Nuorodos</string>
   <string name="zerion_website">\u2022 <a href="">Internetinė svetainė</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Pradinis kodas</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Keitinių žurnalas</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Privatumo politika</a></string>
   
   <string name="translator_thanks">Dėkojame talkininkams iš Localization Lab, ypač Moo už vertimą į lietuvių kalbą</string>
@@ -561,43 +491,13 @@
   <string name="pref_category_actions">Veiksmai</string>
   <string name="share_app_link">Bendrinti atsisiuntimo nuorodą</string>
   <string name="share_app_link_text">Atsisiųskite Zerion apsilankę adresu %s</string>
-  <string name="send_feedback">Siųsti atsiliepimą</string>
   
   <string name="link_warning_title">Įspėjimas apie nuorodą</string>
   <string name="link_warning_intro">Jūs ketinate atverti šią nuorodą, naudojant išorinę programėlę.</string>
   <string name="link_warning_text">Tai gali būti panaudota tam, kad jūs būtumėte atpažinti. Pagalvokite ar pasitikite asmeniu, kuris jums siunčia šią nuorodą ir apsvarstykite galimybę ją atverti, naudojant Tor Browser.</string>
   <string name="link_warning_open_link">Atverti nuorodą</string>
   
-  <string name="crash_report_title">Zerion strigties ataskaita</string>
-  <string name="zerion_crashed">Apgailestaujame, Zerion užstrigo</string>
-  <string name="not_your_fault">Tai nėra jūsų kaltė.</string>
-  <string name="please_send_report">Padėkite mums sukurti geresnę Zerion, išsiųsdami mums strigties ataskaitą.</string>
-  <string name="report_is_encrypted">Mes pažadame, kad ataskaita yra šifruota ir išsiunčiama saugiai.</string>
-  <string name="feedback_title">Atsiliepimai</string>
-  <string name="describe_crash">Aprašykite kas nutiko (nebūtina)</string>
-  <string name="enter_feedback">Įveskite savo atsiliepimą</string>
-  <string name="optional_contact_email">Jūsų el. pašto adresas (nebūtina)</string>
-  <string name="privacy_policy">Siųsdami mums savo duomenis, sutinkate su mūsų <a href="">privatumo politika</a></string>
-  <string name="include_debug_report_crash">Įtraukti anoniminius duomenis apie strigtį</string>
-  <string name="include_debug_report_feedback">Įtraukti anoniminius duomenis apie šį įrenginį</string>
-  <string name="dev_report_user_info">Naudotojo informacija</string>
-  <string name="dev_report_basic_info">Pagrindinė informacija</string>
-  <string name="dev_report_device_info">Įrenginio informacija</string>
-  <string name="dev_report_stacktrace">Dėklo pėdsakas</string>
-  <string name="dev_report_time_info">Laiko informacija</string>
-  <string name="dev_report_memory">Atmintis</string>
-  <string name="dev_report_storage">Saugykla</string>
-  <string name="dev_report_connectivity">Jungiamumas</string>
-  <string name="dev_report_network_usage">Tinklo naudojimas</string>
-  <string name="dev_report_build_config">Darinio konfigūracija</string>
-  <string name="dev_report_logcat">Programėlės žurnalas</string>
-  <string name="dev_report_device_features">Įrenginio ypatybės</string>
-  <string name="send_report">Siųsti ataskaitą</string>
   <string name="close">Užverti</string>
-  <string name="dev_report_sending">Siunčiamas atsiliepimas…</string>
-  <string name="dev_report_sent">Atsiliepimas išsiųstas</string>
-  <string name="dev_report_saved">Ataskaita įrašyta. Ji bus išsiųsta, kai kitą kartą prisijungsite prie Zerion.</string>
-  <string name="dev_report_error">Klaida: Nepavyko išsiųsti ataskaitos</string>
   
   <string name="progress_title_logout">Atsijungiama iš Zerion…</string>
   
@@ -752,7 +652,6 @@
 	<string name="wallet_receive_new">Naujas adresas</string>
 	<string name="wallet_node_hint">Bakstelėkite serverį, kad jį naudotumėte. Ilgai palaikykite pasirinktinį serverį, kad jį pašalintumėte.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Pakartotinai naudojamas privatus adresas. Mokėjimai į jį grandinėje nesusiejami. Aptikimas nuskaito viešus duomenis per Tor; jūsų raktai niekada nepalieka įrenginio.</string>
 	<string name="wallet_sp_balance">Aptikta: %1$s</string>
 	<string name="wallet_sp_scanned">Nuskaityta iki bloko %1$d</string>
 	<string name="wallet_sp_set_oracle">Nuskaitymo šaltinis</string>

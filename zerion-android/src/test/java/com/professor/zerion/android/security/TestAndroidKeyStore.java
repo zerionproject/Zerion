@@ -27,6 +27,28 @@ public final class TestAndroidKeyStore {
 
 	private static final String NAME = "AndroidKeyStore";
 	private static final Map<String, Key> STORE = new ConcurrentHashMap<>();
+	private static final java.util.Set<String> SCREEN_LOCK_BOUND =
+			ConcurrentHashMap.newKeySet();
+
+	public static void removeScreenLock() {
+		for (String alias : SCREEN_LOCK_BOUND) STORE.remove(alias);
+		SCREEN_LOCK_BOUND.clear();
+	}
+
+	public static boolean requiresUnlockedDevice(String alias) {
+		return SCREEN_LOCK_BOUND.contains(alias);
+	}
+
+	private static boolean unlockedDeviceRequired(AlgorithmParameterSpec spec) {
+		if (spec == null) return false;
+		try {
+			Method m = spec.getClass().getMethod("isUnlockedDeviceRequired");
+			Object v = m.invoke(spec);
+			return Boolean.TRUE.equals(v);
+		} catch (ReflectiveOperationException ignored) {
+			return false;
+		}
+	}
 
 	private TestAndroidKeyStore() {
 	}
@@ -98,7 +120,6 @@ public final class TestAndroidKeyStore {
 		}
 	}
 
-	/** Fault injection: the next N key lookups throw as a keystore may. */
 	public static volatile int failKeyLookups = 0;
 
 	public static final class InMemoryKeyStoreSpi extends KeyStoreSpi {
@@ -113,11 +134,6 @@ public final class TestAndroidKeyStore {
 			return STORE.get(alias);
 		}
 
-		/**
-		 * The platform keystore hands back a secret key entry without a
-		 * protection parameter; the JDK default would refuse, which would
-		 * make every fresh strengthener look like a first run.
-		 */
 		@Override
 		public java.security.KeyStore.Entry engineGetEntry(String alias,
 				java.security.KeyStore.ProtectionParameter protParam)
@@ -169,6 +185,7 @@ public final class TestAndroidKeyStore {
 		@Override
 		public void engineDeleteEntry(String alias) {
 			STORE.remove(alias);
+			SCREEN_LOCK_BOUND.remove(alias);
 		}
 
 		@Override
@@ -214,6 +231,7 @@ public final class TestAndroidKeyStore {
 		private final String algorithm;
 		private String alias = "default";
 		private int keySize;
+		private boolean screenLockBound = false;
 
 		BaseKeyGeneratorSpi(String algorithm, int defaultKeySize) {
 			this.algorithm = algorithm;
@@ -228,6 +246,7 @@ public final class TestAndroidKeyStore {
 		protected void engineInit(AlgorithmParameterSpec params,
 				SecureRandom random) {
 			alias = aliasOf(params);
+			screenLockBound = unlockedDeviceRequired(params);
 			try {
 				Method m = params.getClass().getMethod("getKeySize");
 				Object size = m.invoke(params);
@@ -250,6 +269,11 @@ public final class TestAndroidKeyStore {
 				gen.init(keySize, new SecureRandom());
 				SecretKey key = gen.generateKey();
 				STORE.put(alias, key);
+				if (screenLockBound) {
+					SCREEN_LOCK_BOUND.add(alias);
+				} else {
+					SCREEN_LOCK_BOUND.remove(alias);
+				}
 				return key;
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e);

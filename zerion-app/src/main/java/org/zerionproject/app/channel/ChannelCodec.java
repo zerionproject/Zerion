@@ -31,6 +31,12 @@ class ChannelCodec {
 			"org.zerionproject/CHANNEL_POST_BODY";
 	private static final String LABEL_POST_ATTACHMENTS =
 			"org.zerionproject/CHANNEL_POST_ATTACHMENTS";
+	private static final String LABEL_POST_BODY_V2 =
+			"org.zerionproject/CHANNEL_POST_BODY_V2";
+	private static final String LABEL_POST_ATTACHMENTS_V2 =
+			"org.zerionproject/CHANNEL_POST_ATTACHMENTS_V2";
+	private static final String LABEL_POST_CHAIN_V2 =
+			"org.zerionproject/CHANNEL_POST_CHAIN_V2";
 
 	private final CryptoComponent crypto;
 
@@ -289,6 +295,112 @@ class ChannelCodec {
 				buf.array());
 	}
 
+	byte[] signedInputOf(ChannelPost p) {
+		if (p.getFormatVersion() == ChannelPost.FORMAT_V2) {
+			byte[] salt = saltOf(p);
+			return postSignedInputV2(p.getChannelId(), p.getSeqNum(),
+					p.getPrevHash(), p.getTimestampHourMs(), p.getTtlMs(),
+					salt, bodyHashV2(salt, p.getBody()),
+					attachmentsHashV2(salt, p.getAttachments()));
+		}
+		return postSignedInput(p.getChannelId(), p.getSeqNum(),
+				p.getPrevHash(), p.getTimestampHourMs(), p.getBody(),
+				attachmentsHash(p.getAttachments()), p.getTtlMs());
+	}
+
+	byte[] canonicalHashOf(ChannelPost p) {
+		if (p.getFormatVersion() == ChannelPost.FORMAT_V2) {
+			byte[] salt = saltOf(p);
+			return postCanonicalHashV2(p.getChannelId(), p.getSeqNum(),
+					p.getPrevHash(), p.getTimestampHourMs(), p.getTtlMs(),
+					salt, bodyHashV2(salt, p.getBody()),
+					attachmentsHashV2(salt, p.getAttachments()),
+					p.getSignature());
+		}
+		return postCanonicalHash(p.getChannelId(), p.getSeqNum(),
+				p.getPrevHash(), p.getTimestampHourMs(), p.getBody(),
+				attachmentsHash(p.getAttachments()), p.getTtlMs(),
+				p.getSignature());
+	}
+
+	private static byte[] saltOf(ChannelPost p) {
+		byte[] salt = p.getSalt();
+		return salt == null ? new byte[ChannelConstants.POST_SALT_BYTES]
+				: salt;
+	}
+
+	byte[] postSignedInputV2(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, long ttlMs, byte[] salt, byte[] bodyHash,
+			byte[] attachmentsHash) {
+		ByteBuffer buf = ByteBuffer.allocate(1 + 4 + channelId.length + 8
+				+ 4 + prevHash.length + 8 + 8 + 4 + salt.length
+				+ bodyHash.length + attachmentsHash.length);
+		buf.put((byte) ChannelPost.FORMAT_V2);
+		buf.putInt(channelId.length);
+		buf.put(channelId);
+		buf.putLong(seqNum);
+		buf.putInt(prevHash.length);
+		buf.put(prevHash);
+		buf.putLong(timestampHourMs);
+		buf.putLong(ttlMs);
+		buf.putInt(salt.length);
+		buf.put(salt);
+		buf.put(bodyHash);
+		buf.put(attachmentsHash);
+		return buf.array();
+	}
+
+	byte[] bodyHashV2(byte[] salt, String wireBody) {
+		return crypto.hash(LABEL_POST_BODY_V2, salt,
+				wireBody.getBytes(StandardCharsets.UTF_8));
+	}
+
+	byte[] attachmentsHashV2(byte[] salt,
+			List<ChannelPost.ChannelAttachment> as) {
+		ByteArrayOutputStream sink = new ByteArrayOutputStream();
+		writeInt(sink, as.size());
+		for (ChannelPost.ChannelAttachment a : as) {
+			writeField(sink, a.getBlobHash());
+			byte[] size = ByteBuffer.allocate(8).putLong(a.getSizeBytes())
+					.array();
+			sink.write(size, 0, size.length);
+			writeField(sink, a.getMimeType()
+					.getBytes(StandardCharsets.UTF_8));
+			writeField(sink, a.getPerAttachmentKey());
+			byte[] thumb = a.getThumbnail();
+			if (thumb == null) {
+				writeInt(sink, -1);
+			} else {
+				writeField(sink, thumb);
+			}
+		}
+		return crypto.hash(LABEL_POST_ATTACHMENTS_V2, salt,
+				sink.toByteArray());
+	}
+
+	byte[] postCanonicalHashV2(byte[] channelId, long seqNum,
+			byte[] prevHash, long timestampHourMs, long ttlMs, byte[] salt,
+			byte[] bodyHash, byte[] attachmentsHash, byte[] signature) {
+		byte[] input = postSignedInputV2(channelId, seqNum, prevHash,
+				timestampHourMs, ttlMs, salt, bodyHash, attachmentsHash);
+		ByteBuffer buf = ByteBuffer.allocate(input.length + 4
+				+ signature.length);
+		buf.put(input);
+		buf.putInt(signature.length);
+		buf.put(signature);
+		return crypto.hash(LABEL_POST_CHAIN_V2, buf.array());
+	}
+
+	private static void writeInt(ByteArrayOutputStream sink, int v) {
+		byte[] b = ByteBuffer.allocate(4).putInt(v).array();
+		sink.write(b, 0, b.length);
+	}
+
+	private static void writeField(ByteArrayOutputStream sink, byte[] f) {
+		writeInt(sink, f.length);
+		sink.write(f, 0, f.length);
+	}
+
 	String formatInviteLink(byte[] channelId,
 			byte[] publisherEd25519Pub,
 			@Nullable byte[] publisherMlDsaPub,
@@ -387,6 +499,7 @@ class ChannelCodec {
 			if (onionParam != null && !onionParam.isEmpty()) {
 				if (onionParam.length() > 80) return null;
 				onion = onionParam.toLowerCase(Locale.ROOT);
+				if (!ONION_V3.matcher(onion).matches()) return null;
 			}
 			return new ChannelInviteLink(channelId, publisherEd, null,
 					isPublic, capability, onion, approvalFlag);

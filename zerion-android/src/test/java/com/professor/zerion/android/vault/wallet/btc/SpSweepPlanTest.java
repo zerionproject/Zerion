@@ -15,13 +15,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A Silent Payments sweep goes through plan, review and a fingerprint-bound
- * authorisation like every other send: planning shows the destination,
- * amount and fee without signing or broadcasting anything, the fingerprint
- * covers what was shown, and the gate releases the plan only for that
- * fingerprint.
- */
 public class SpSweepPlanTest {
 
 	private static final String MNEMONIC =

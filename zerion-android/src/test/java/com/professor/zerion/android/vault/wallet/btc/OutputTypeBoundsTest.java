@@ -7,10 +7,6 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-BTC-04 and A2-BTC-05: the fee estimate and the dust threshold follow
- * the destination's script type instead of assuming every output is P2WPKH.
- */
 public class OutputTypeBoundsTest {
 
 	private static final String P2PKH = "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2";
@@ -53,7 +49,6 @@ public class OutputTypeBoundsTest {
 				> BtcTx.estimateVBytes(2, 2));
 	}
 
-	/** A payment to a legacy address is refused below its own dust limit. */
 	@Test
 	public void aLegacyDestinationUsesItsOwnDustLimitAndSize()
 			throws Exception {

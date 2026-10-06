@@ -17,12 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The pieces of the Tor control protocol the transport speaks itself: the
- * cookie file, a loopback connection that sends one command and collects
- * every reply line, and the reply check. Shared by the privacy configurator
- * and the onion service controller.
- */
 @NotNullByDefault
 final class TorControl {
 
@@ -33,7 +27,6 @@ final class TorControl {
 
 	interface Connection extends Closeable {
 
-		/** Sends one command and returns every reply line, in order. */
 		List<String> send(String command) throws IOException;
 	}
 
@@ -74,7 +67,6 @@ final class TorControl {
 		}
 	}
 
-	/** Plain-text Tor control protocol over a loopback socket. */
 	static final class SocketConnection implements Connection {
 
 		private final Socket socket;
@@ -82,14 +74,37 @@ final class TorControl {
 		private final Writer out;
 
 		SocketConnection(int controlPort) throws IOException {
-			socket = new Socket();
-			socket.connect(new InetSocketAddress("127.0.0.1", controlPort),
-					CONNECT_TIMEOUT_MS);
-			socket.setSoTimeout(READ_TIMEOUT_MS);
-			in = new BufferedReader(new InputStreamReader(
-					socket.getInputStream(), StandardCharsets.US_ASCII));
-			out = new OutputStreamWriter(socket.getOutputStream(),
-					StandardCharsets.US_ASCII);
+			this(loopback(controlPort));
+		}
+
+		SocketConnection(TorControlSocketFactory sockets) throws IOException {
+			this(sockets.open(READ_TIMEOUT_MS));
+		}
+
+		private SocketConnection(Socket socket) throws IOException {
+			this.socket = socket;
+			try {
+				in = new BufferedReader(new InputStreamReader(
+						socket.getInputStream(), StandardCharsets.US_ASCII));
+				out = new OutputStreamWriter(socket.getOutputStream(),
+						StandardCharsets.US_ASCII);
+			} catch (IOException e) {
+				socket.close();
+				throw e;
+			}
+		}
+
+		private static Socket loopback(int controlPort) throws IOException {
+			Socket socket = new Socket();
+			try {
+				socket.connect(new InetSocketAddress("127.0.0.1",
+						controlPort), CONNECT_TIMEOUT_MS);
+				socket.setSoTimeout(READ_TIMEOUT_MS);
+			} catch (IOException e) {
+				socket.close();
+				throw e;
+			}
+			return socket;
 		}
 
 		@Override

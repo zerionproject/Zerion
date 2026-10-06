@@ -15,28 +15,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
-/**
- * On-device proof of the restore/rescan history defect and its fix, at the
- * native boundary. A view-only background wallet has {@code m_watch_only ==
- * false} (its keys file is stored with watch_only false), so wallet2's
- * WalletImpl::isNewWallet classifies a freshly restored, not-yet-scanned
- * background wallet as "new" and WalletImpl::doInit fast-forwards its
- * refresh-from height to the daemon tip on connect. That silently skips every
- * block before now, which is why a restore/rescan from an early date recovered
- * no historical transactions even though the seed and chain were sufficient.
- *
- * <p>The fix marks the wallet as recovering-from-seed before the connect, which
- * makes isNewWallet false so the connect leaves the stored early height in
- * place. (The public setRefreshFromBlockHeight cannot repair it after the fact:
- * WalletImpl::checkBackgroundSync makes that setter a no-op on a background
- * wallet, so the height must be preserved through the connect, not corrected
- * afterward.)
- *
- * <p>These tests use throwaway, unfunded wallets in the test cache directory. No
- * real vault is touched and no value transaction is ever built or broadcast. The
- * network tests are tolerant of no connectivity so the suite never fails on a
- * missing daemon, but prove the reset and its prevention when a node is reachable.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrRestoreHeightDeviceTest {
 
@@ -57,7 +35,6 @@ public class XmrRestoreHeightDeviceTest {
 		return dir;
 	}
 
-	/** A throwaway 25-word seed produced by a create, so no seed is hardcoded. */
 	private String throwawaySeed(File dir) {
 		long w = NativeMonero.nCreate(new File(dir, "seedgen").getAbsolutePath(),
 				b(MAIN_PW), "English");
@@ -72,7 +49,6 @@ public class XmrRestoreHeightDeviceTest {
 		}
 	}
 
-	/** Build a V2 wallet (spend + background cache) restored at HIST_HEIGHT. */
 	private void buildAtHistoricalHeight(File dir) {
 		String seed = throwawaySeed(dir);
 		String base = new File(dir, "w").getAbsolutePath();
@@ -97,11 +73,6 @@ public class XmrRestoreHeightDeviceTest {
 		return bg;
 	}
 
-	/**
-	 * Building the V2 wallet at a historical height and reopening the background
-	 * cache preserves that refresh height (no network). This is the state the
-	 * runtime opens before it connects, so the height loss is entirely at connect.
-	 */
 	@Test
 	public void restoreHeightPersistsThroughBackgroundCache() {
 		File dir = freshDir("persist");
@@ -115,12 +86,6 @@ public class XmrRestoreHeightDeviceTest {
 		}
 	}
 
-	/**
-	 * The public setter is a no-op on a background wallet, so the height cannot be
-	 * repaired after a connect: it must be preserved through the connect. This
-	 * documents why the fix marks recovering-from-seed rather than re-setting the
-	 * height afterward. No network.
-	 */
 	@Test
 	public void publicSetRefreshHeightIsNoOpOnBackgroundWallet() {
 		File dir = freshDir("noop");
@@ -136,11 +101,6 @@ public class XmrRestoreHeightDeviceTest {
 		}
 	}
 
-	/**
-	 * Empirical reproduction of the defect: connecting an unscanned background
-	 * wallet WITHOUT the recovering-from-seed marker fast-forwards its refresh
-	 * height to the daemon tip.
-	 */
 	@Test
 	public void connectWithoutRecoveringMarkerFastForwardsToTip() {
 		File dir = freshDir("bug");
@@ -163,11 +123,6 @@ public class XmrRestoreHeightDeviceTest {
 		}
 	}
 
-	/**
-	 * The fix: marking the wallet recovering-from-seed before the connect keeps
-	 * the stored early height in place, so the scan starts there and rediscovers
-	 * all prior history.
-	 */
 	@Test
 	public void recoveringMarkerPreservesEarlyHeightThroughConnect() {
 		File dir = freshDir("fix");

@@ -101,7 +101,15 @@ public class ImageViewHolder extends ViewHolder {
 					isVideo && !isSticker ? View.VISIBLE : View.GONE);
 		}
 
-		if (attachment.getState() != AVAILABLE) {
+		if (attachment.isDocument() && attachment.getState() == AVAILABLE) {
+			Glide.with(imageView).clear(imageView);
+			imageView.setImageResource("pdf".equals(attachment.getExtension())
+					? R.drawable.ic_pdf : R.drawable.ic_document);
+			imageView.setScaleType(FIT_CENTER);
+			imageView.setContentDescription(imageView.getContext().getString(
+					R.string.document_attachment_description));
+			if (playOverlay != null) playOverlay.setVisibility(View.GONE);
+		} else if (attachment.getState() != AVAILABLE) {
 			Glide.with(imageView).clear(imageView);
 			if (attachment.getState() == ERROR) {
 				imageView.setImageResource(ERROR_RES);

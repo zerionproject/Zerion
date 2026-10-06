@@ -1,13 +1,10 @@
 package org.zerionproject.crypto;
 
-import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.KpId;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
-import org.zerionproject.core.api.crypto.pcs.PcsException;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
-import org.zerionproject.core.api.crypto.pcs.PcsRatchet.DhRatchetResult;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.core.crypto.pcs.PcsHeaderCodec;
@@ -24,6 +21,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
 
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.DH_PUBLIC_KEY_SIZE;
 import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_KP_ID_SIZE;
 import static org.zerionproject.wire.ZwfConstants.FRAME_HEADER_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.FRAME_HEADER_PLAINTEXT_LENGTH;
@@ -37,27 +35,6 @@ import static org.zerionproject.wire.ZwfConstants.STREAM_HEADER_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.STREAM_HEADER_PLAINTEXT_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.WIRE_VERSION;
 
-/**
- * Send side of a Zerion 3.0 (ZWF) Mode 3-Full stream.
- *
- * <p>The Mode 3-Full frame format rides the
- * native wire layer. The cryptography — per-message classical chain key,
- * per-frame ML-KEM re-encapsulation and hybrid body key — is unchanged. It
- * differs from that format in that:
- * <ul>
- * <li>the chain is seeded from a persistent, strictly-monotonic {@code streamId}
- * (never the resettable per-keyset counter);</li>
- * <li>the AEAD nonce binds {@code streamId} as well as the frame number
- * ({@link ZwfNonce});</li>
- * <li>every frame is padded to a fixed {@link
- * org.zerionproject.wire.ZwfConstants#FRAME_LENGTH} bytes;</li>
- * <li>the stream header is a native Zerion header ({@code [version][streamId]});
- * the chain key is not sent because the persisted ratchet state seeds the chain
- * from {@code (rootKey, streamId)}.</li>
- * </ul>
- * There is no classical / Mode 2 / legacy-Mode 3 fallback: Mode 3-Full is the
- * only mode.
- */
 @NotThreadSafe
 @NotNullByDefault
 public class ZwfMode3FullStreamEncrypter {
@@ -100,13 +77,6 @@ public class ZwfMode3FullStreamEncrypter {
 				null, null, null, true);
 	}
 
-	/**
-	 * Full constructor with the shared Mode 3-Full state hooks used by a duplex
-	 * connection: {@code m3fRefresher} reads the state the receive side may have
-	 * advanced (learning the peer's ML-KEM key), {@code m3fCallback} writes back
-	 * the state after each send, and {@code directionLock} serialises access
-	 * across the two directions.
-	 */
 	public ZwfMode3FullStreamEncrypter(OutputStream out,
 			AuthenticatedCipher cipher, PcsRatchet ratchet,
 			Mode3FullRatchet mode3FullRatchet, long streamId, byte[] tag,
@@ -150,16 +120,10 @@ public class ZwfMode3FullStreamEncrypter {
 		this.streamMessageNumber = 0;
 	}
 
-	/** Largest application payload a single Mode 3-Full frame can carry. */
 	public int getMaxPayloadLength() {
 		return maxPayloadFor(headerCodec.getMode3FullHeaderSize());
 	}
 
-	/**
-	 * The largest application payload a single frame can carry, computed without
-	 * a live encrypter (the Mode 3-Full header size is fixed). Used to size ZMM
-	 * records for fragmentation before the stream is opened.
-	 */
 	public static int maxMessageLength() {
 		return maxPayloadFor(new PcsHeaderCodec().getMode3FullHeaderSize());
 	}
@@ -179,7 +143,6 @@ public class ZwfMode3FullStreamEncrypter {
 		int maxPayload = maxPayloadFor(pcsHeaderSize);
 		if (payloadLength > maxPayload)
 			throw new IllegalArgumentException("payload exceeds frame capacity");
-		// Pad the body so every frame is exactly FRAME_LENGTH on the wire.
 		int paddingLength = maxPayload - payloadLength;
 
 		if (writeTag) writeTag();
@@ -187,17 +150,9 @@ public class ZwfMode3FullStreamEncrypter {
 
 		int messageNumber;
 		int prevChainLength = 0;
-		PublicKey dhPublicKey;
 		Mode3FullRatchet.PqSendResult mode3FullSend;
 		SecretKey classicalMessageKey;
 		SecretKey bodyMessageKey;
-		try {
-			DhRatchetResult dhResult = ratchet.performSendDhRatchet(sendState);
-			sendState = dhResult.getNewState();
-			dhPublicKey = dhResult.getDhPublicKey();
-		} catch (GeneralSecurityException | PcsException e) {
-			throw new IOException("DH ratchet failed", e);
-		}
 
 		PcsRatchet.KdfCkResult streamKdf = ratchet.kdfCk(streamChainKey);
 		classicalMessageKey = streamKdf.getMessageKey();
@@ -247,6 +202,7 @@ public class ZwfMode3FullStreamEncrypter {
 			Arrays.fill(ss, (byte) 0);
 		}
 
+		streamChainKey.clear();
 		streamChainKey = nextStreamChainKey;
 		streamMessageNumber++;
 		if (stateCallback != null) stateCallback.accept(sendState);
@@ -257,7 +213,7 @@ public class ZwfMode3FullStreamEncrypter {
 			byte[] kpIdBytes = kpIdUsed != null ? kpIdUsed.getBytes()
 					: new byte[MODE3_FULL_KP_ID_SIZE];
 			byte[] m3fHeader = headerCodec.encodeMode3FullHeader(messageNumber,
-					prevChainLength, dhPublicKey.getEncoded(),
+					prevChainLength, new byte[DH_PUBLIC_KEY_SIZE],
 					mode3FullSend.getPkAdvertise(),
 					mode3FullSend.getCiphertext(), kpIdBytes);
 			if (m3fHeader.length != pcsHeaderSize)
@@ -347,5 +303,10 @@ public class ZwfMode3FullStreamEncrypter {
 
 	PcsSessionState getState() {
 		return sendState;
+	}
+
+	public void destroy() {
+		streamChainKey.clear();
+		frameNumber = -1;
 	}
 }

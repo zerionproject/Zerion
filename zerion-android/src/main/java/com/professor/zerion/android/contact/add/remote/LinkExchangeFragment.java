@@ -113,6 +113,7 @@ public class LinkExchangeFragment extends BaseFragment {
 
 		Button copyButton = v.findViewById(R.id.copyButton);
 		copyButton.setOnClickListener(view -> {
+			viewModel.onOwnLinkShared();
 			com.professor.zerion.android.util.SecureClipboard.copy(
 					requireContext(),
 					getString(R.string.link_clip_label), link);
@@ -123,6 +124,7 @@ public class LinkExchangeFragment extends BaseFragment {
 
 		Button shareButton = v.findViewById(R.id.shareButton);
 		shareButton.setOnClickListener(view -> {
+			viewModel.onOwnLinkShared();
 			try {
 				IntentBuilder.from(requireActivity())
 						.setText(link)
@@ -179,8 +181,7 @@ public class LinkExchangeFragment extends BaseFragment {
 		Matcher matcher = LINK_REGEX.matcher(link);
 		if (matcher.find()) {
 			String linkWithoutSchema = matcher.group(1);
-			if (("zerion://" + linkWithoutSchema)
-					.equals(viewModel.getHandshakeLink().getValue())) {
+			if (viewModel.isOwnLink(link)) {
 				linkInputLayout.setError(getString(R.string.own_link_error));
 				linkInput.requestFocus();
 				return null;

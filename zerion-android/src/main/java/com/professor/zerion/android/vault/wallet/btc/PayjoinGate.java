@@ -4,13 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Single-use authorization for a Payjoin final transaction, bound to the exact
- * transaction fingerprint the user reviewed. A fingerprint mismatch means the
- * transaction changed after review: authorization is discarded and a fresh
- * review is required. Authentication is consumed once, so a signed proposal can
- * never be replayed.
- */
 @NotNullByDefault
 public final class PayjoinGate {
 

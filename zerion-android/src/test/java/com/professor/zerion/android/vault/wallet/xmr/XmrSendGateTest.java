@@ -20,13 +20,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * The send gate performs fresh authentication after the signed snapshot exists,
- * issues a memory-only single-use token bound to the fingerprint, ownership,
- * epoch and lock generation, wipes secrets immediately, and fails closed on
- * every stale-authorization race. The final pre-relay check re-reads the native
- * object and rejects any mutation. Nothing is relayed.
- */
 public class XmrSendGateTest {
 
 	private static final String WALLET = "w1";

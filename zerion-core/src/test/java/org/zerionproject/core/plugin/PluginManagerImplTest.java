@@ -116,11 +116,6 @@ public class PluginManagerImplTest extends BrambleMockTestCase {
 		p.stopService();
 	}
 
-	/**
-	 * A restart stops the running plugin of the transport and starts a
-	 * fresh one from its factory, so the Tor process and its listeners
-	 * are rebuilt on request without touching the other plugins.
-	 */
 	@Test
 	public void testRestartPluginStopsTheOldAndStartsAFreshOne()
 			throws Exception {

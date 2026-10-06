@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Professional In-Chat Request/Invitation Design -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
@@ -12,7 +11,6 @@
 
 	<include layout="@layout/list_item_conversation_top_notice_in" />
 
-	<!-- Request message text (if any) -->
 	<com.vanniktech.emoji.EmojiTextView
 		android:id="@+id/msgText"
 		style="@style/TextMessage"
@@ -30,7 +28,6 @@
 		tools:text="Short message"
 		tools:visibility="visible" />
 
-	<!-- Request Card -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/request_card"
 		android:layout_width="match_parent"
@@ -53,7 +50,6 @@
 			android:layout_height="wrap_content"
 			android:padding="12dp">
 
-			<!-- Request icon -->
 			<ImageView
 				android:id="@+id/request_icon"
 				android:layout_width="32dp"
@@ -66,7 +62,6 @@
 				app:tint="@android:color/white"
 				tools:ignore="ContentDescription" />
 
-			<!-- Request text -->
 			<com.vanniktech.emoji.EmojiTextView
 				android:id="@+id/text"
 				android:layout_width="0dp"
@@ -124,7 +119,6 @@
 
 			</LinearLayout>
 
-			<!-- Timestamp and auto-delete indicator -->
 			<LinearLayout
 				android:id="@+id/meta_container"
 				android:layout_width="wrap_content"

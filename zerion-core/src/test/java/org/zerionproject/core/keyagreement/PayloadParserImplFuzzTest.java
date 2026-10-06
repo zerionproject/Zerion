@@ -14,12 +14,6 @@ import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.COMM
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 import static org.junit.Assert.assertEquals;
 
-/**
- * The nearby pairing payload parser, which reads a QR code, only ever throws
- * an {@link IOException} on hostile input: random strings, strings that start
- * with the current version byte, and strings that start with a valid version
- * byte and a valid BDF list header.
- */
 public class PayloadParserImplFuzzTest {
 
 	private static final int RANDOM_INPUTS = 4000;

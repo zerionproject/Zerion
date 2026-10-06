@@ -10,6 +10,7 @@ public class HideUiActivity extends Activity {
 	public void onCreate(Bundle state) {
 		super.onCreate(state);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
-		finish();
+		com.professor.zerion.android.util.AppTasks.finishOtherTasks(this, true);
+		finishAndRemoveTask();
 	}
 }

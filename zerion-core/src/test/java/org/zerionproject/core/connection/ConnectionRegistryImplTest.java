@@ -64,7 +64,6 @@ public class ConnectionRegistryImplTest extends BrambleMockTestCase {
 
 	}
 
-	/** A2-NET-04: a removed contact's live connections are force-closed. */
 	@Test
 	public void testContactRemovalClosesItsConnections() {
 		context.checking(new Expectations() {{

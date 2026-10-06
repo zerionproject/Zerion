@@ -1,6 +1,6 @@
-Zerion is a private messenger. It runs over Tor, so your IP address stays hidden from the people you talk to and from the network itself. There's no phone number, no email, and no account on anyone's server. Your data lives encrypted on your own device, nowhere else.
+Zerion is a private messenger. Online messaging runs over Tor, so your IP address stays hidden from the people you talk to and from the Tor relays in between (your provider can see you use Tor). There's no phone number, no email, and no account on anyone's server. Your data lives encrypted on your own device; no Zerion server keeps a copy.
 
-Everything is end-to-end encrypted with hybrid post-quantum cryptography: today's proven algorithms together with the new NIST quantum-resistant ones. Keys move forward with every message, so a key uncovered today cannot open yesterday's conversations. If large quantum computers arrive sooner than expected, what you sent in the past stays protected.
+One-to-one, group and mesh messages are end-to-end encrypted with hybrid post-quantum cryptography: today's proven algorithms together with the new NIST quantum-resistant ones. Channels and account transfer use Tor and classical cryptography. Keys move forward as you talk, so a key taken today cannot decrypt messages recorded earlier. If large quantum computers arrive sooner than expected, the content of past messages stays protected.
 
 
 WHAT YOU CAN DO
@@ -23,12 +23,11 @@ CHANNELS
 One person writes, many people read.
 
 • Public channels: anyone with the invite link can subscribe
-• Private channels: people ask to join and the owner approves
+• Private channels: only people with the private invite link can read
 • Discussion threads: the owner decides, per channel, whether subscribers can reply
 • Reactions, pinned posts, and attachments
-• Editor delegations: let trusted people post without sharing your identity key
 • Mute notifications for any channel
-• Subscribers never see one another, so no member list leaks between them
+• Subscribers are not listed to each other; people who comment or react are visible to all
 
 
 HARDENED MODE (OPT-IN)
@@ -42,14 +41,14 @@ Three independent protections under Security settings, all off by default:
 
 PRIVACY AND SECURITY
 
-• Tor, mandatory and always on. Online messaging never bypasses it; an optional Bluetooth mesh for offline messaging and an optional I2P transport are off by default
+• Tor, mandatory and always on while online. Online messaging never bypasses it; the optional Bluetooth mesh is off by default, and Offline mode turns off all internet messaging
 • No phone number, no email, no central server
 • No telemetry, no analytics, no crash reporting
-• No logging of any kind, verified at build time
+• No logging in Zerion's code, verified at build time
 • Encrypted at rest with SQLCipher and a key derived from your password
-• Screenshots blocked inside the app
+• Screenshots blocked inside the app by default
 • Notifications never reveal message contents
-• The clipboard auto-clears after you copy something sensitive
+• Sensitive copies are cleared from the clipboard after 60 seconds while the app runs
 • Fully open source, GPL v3, reviewed internally before each release
 
 

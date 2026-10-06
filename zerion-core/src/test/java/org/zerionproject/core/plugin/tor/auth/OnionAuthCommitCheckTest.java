@@ -9,12 +9,6 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.zerionproject.core.plugin.tor.auth.OnionAuthCommitCheck.Verdict;
 
-/**
- * A commit moves a pair to AUTH_REQUIRED only when it is bound to the
- * current generation on both sides, names this device's authorized
- * service and the peer's registered key, both directions were proven and
- * the contact is not revoked. Every other commit changes nothing.
- */
 public class OnionAuthCommitCheckTest {
 
 	private static final String MY_ONION =

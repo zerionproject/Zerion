@@ -14,7 +14,9 @@ public class GroupTrAuthException extends DbException {
 		GROUP_NOT_FOUND,
 		CONTACT_NOT_FOUND,
 		EPOCH_OVERFLOW,
-		NOT_A_MEMBER
+		NOT_A_MEMBER,
+		INVITE_EXPIRED,
+		INVALID_TIMER
 	}
 
 	private final Reason reason;

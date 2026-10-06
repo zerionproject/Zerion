@@ -1,10 +1,3 @@
-// Supply-chain gate for the Payjoin native library.
-// Verifies every packaged libpayjoin_ffi.so against the pinned SHA-256 in
-// MANIFEST.txt and rejects any unexpected native artifact in the Payjoin ABI
-// directories. Wired into release/bundle assembly so an unpinned or unexpected
-// binary fails the build. rootProject.ext.payjoinNativeEnabled decides the
-// direction of the failure: off, any libpayjoin artifact under jniLibs is an
-// error; on, both ABIs must be present and match the manifest.
 
 def payjoinJniDir = { -> file("${projectDir}/src/main/jniLibs") }
 def payjoinManifest = { -> file("${rootDir}/zerion-android/native/payjoin/MANIFEST.txt") }

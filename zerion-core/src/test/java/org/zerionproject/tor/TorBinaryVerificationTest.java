@@ -16,12 +16,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.zerionproject.tor.TorWrapper.TorState.STOPPED;
 
-/**
- * SC-TOR-02: the wrapper hands the files it is about to execute to the
- * verifier before it launches anything, and a verifier that rejects them
- * stops the start with nothing launched. There is no way to start Tor
- * around the check.
- */
 public class TorBinaryVerificationTest {
 
 	@Rule

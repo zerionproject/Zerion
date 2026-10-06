@@ -49,12 +49,8 @@ class ChannelPostTombstoneStore {
 	}
 
 	void removeAll(byte[] channelId) throws DbException {
-		Settings cur = settingsManager.getSettings(NS);
-		String key = ChannelStore.hex(channelId);
-		if (!cur.containsKey(key)) return;
-		Settings out = new Settings();
-		out.put(key, "");
-		settingsManager.mergeSettings(out, NS);
+		settingsManager.deleteSettings(NS, Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 
 	private void write(byte[] channelId, Set<Long> seqs) throws DbException {

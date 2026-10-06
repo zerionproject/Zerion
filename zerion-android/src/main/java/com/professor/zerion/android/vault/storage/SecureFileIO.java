@@ -24,6 +24,8 @@ import java.nio.file.attribute.FileTime;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
+
 @NotNullByDefault
 public class SecureFileIO {
 
@@ -31,27 +33,56 @@ public class SecureFileIO {
 	private static final long FIXED_TIMESTAMP = 946684800000L;
 
 	private final Context context;
-	private final File vaultDir;
+	@Nullable
+	private final VaultLocation location;
+	@Nullable
+	private volatile File resolvedDir;
 	private final SecureRandom random = new SecureRandom();
 	private volatile boolean initialized = false;
 
 	public SecureFileIO(Context context) {
 		this.context = context;
+		this.location = null;
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-			this.vaultDir = new File(context.getNoBackupFilesDir(), "vault");
+			this.resolvedDir = new File(context.getNoBackupFilesDir(), "vault");
 		} else {
-			this.vaultDir = new File(context.getFilesDir(), "vault");
+			this.resolvedDir = new File(context.getFilesDir(), "vault");
 		}
 	}
 
-	/**
-	 * Test seam: an isolated vault directory so durability tests never touch the
-	 * real vault. Not used in production, where the directory is derived from the
-	 * app's no-backup files dir.
-	 */
 	SecureFileIO(Context context, File vaultDir) {
 		this.context = context;
-		this.vaultDir = vaultDir;
+		this.location = null;
+		this.resolvedDir = vaultDir;
+	}
+
+	public SecureFileIO(Context context, VaultLocation location) {
+		this.context = context;
+		this.location = location;
+		this.resolvedDir = null;
+	}
+
+	public static void wipeVaultAt(Context context, File vaultDir)
+			throws IOException {
+		if (!vaultDir.isDirectory()) return;
+		new SecureFileIO(context, vaultDir).wipeVault();
+		if (!vaultDir.delete() && vaultDir.exists()) {
+			throw new IOException("Failed to delete vault directory");
+		}
+	}
+
+	private File dir() {
+		File d = resolvedDir;
+		if (d != null) return d;
+		synchronized (this) {
+			if (resolvedDir == null && location != null) {
+				resolvedDir = location.directory();
+			}
+			if (resolvedDir == null) {
+				throw new IllegalStateException("No vault location");
+			}
+			return resolvedDir;
+		}
 	}
 
 	private void validateFilename(String filename) {
@@ -89,10 +120,10 @@ public class SecureFileIO {
 			}
 		}
 
-		File resolvedFile = new File(vaultDir, filename);
+		File resolvedFile = new File(dir(), filename);
 		try {
 			String canonicalPath = resolvedFile.getCanonicalPath();
-			String vaultCanonicalPath = vaultDir.getCanonicalPath();
+			String vaultCanonicalPath = dir().getCanonicalPath();
 			if (!canonicalPath.startsWith(vaultCanonicalPath)) {
 				throw new SecurityException("Invalid filename: path escapes vault directory");
 			}
@@ -109,14 +140,14 @@ public class SecureFileIO {
 	}
 
 	private void initializeVaultDirectory() {
-		if (vaultDir.exists() && !vaultDir.isDirectory()) {
+		if (dir().exists() && !dir().isDirectory()) {
 			throw new RuntimeException(
 					"vault path exists but is not a directory: "
-							+ vaultDir.getAbsolutePath());
+							+ dir().getAbsolutePath());
 		}
-		if (!vaultDir.exists()) {
-			boolean created = vaultDir.mkdirs();
-			if (!created && !vaultDir.exists()) {
+		if (!dir().exists()) {
+			boolean created = dir().mkdirs();
+			if (!created && !dir().exists()) {
 				throw new RuntimeException("Failed to create vault directory");
 			}
 		}
@@ -125,8 +156,8 @@ public class SecureFileIO {
 	public void writeSecure(String filename, byte[] data) throws IOException {
 		ensureInitialized();
 		validateFilename(filename);
-		File file = new File(vaultDir, filename);
-		File tempFile = new File(vaultDir, filename + ".tmp" + random.nextInt());
+		File file = new File(dir(), filename);
+		File tempFile = new File(dir(), filename + ".tmp" + random.nextInt());
 
 		FileOutputStream fos = null;
 		BufferedOutputStream bos = null;
@@ -177,7 +208,7 @@ public class SecureFileIO {
 	public byte[] readSecure(String filename) throws IOException {
 		ensureInitialized();
 		validateFilename(filename);
-		File file = new File(vaultDir, filename);
+		File file = new File(dir(), filename);
 		if (!file.exists()) {
 			throw new IOException("File not found: " + filename);
 		}
@@ -212,7 +243,7 @@ public class SecureFileIO {
 	public void secureDelete(String filename) throws IOException {
 		ensureInitialized();
 		validateFilename(filename);
-		File file = new File(vaultDir, filename);
+		File file = new File(dir(), filename);
 		secureDelete(file);
 	}
 
@@ -277,7 +308,7 @@ public class SecureFileIO {
 		}
 
 		File dir = subdirectory != null ?
-				new File(vaultDir, subdirectory) : vaultDir;
+				new File(dir(), subdirectory) : dir();
 
 		if (!dir.exists() || !dir.isDirectory()) {
 			return new String[0];
@@ -290,7 +321,7 @@ public class SecureFileIO {
 	public void createDirectory(String path) throws IOException {
 		ensureInitialized();
 		validateFilename(path);
-		File dir = new File(vaultDir, path);
+		File dir = new File(dir(), path);
 		if (!dir.exists()) {
 			if (!dir.mkdirs()) {
 				throw new IOException("Failed to create directory: " + path);
@@ -303,20 +334,20 @@ public class SecureFileIO {
 	public boolean exists(String filename) {
 		try {
 			validateFilename(filename);
-			return new File(vaultDir, filename).exists();
+			return new File(dir(), filename).exists();
 		} catch (SecurityException e) {
 			return false;
 		}
 	}
 
 	public File getVaultDir() {
-		return vaultDir;
+		return dir();
 	}
 
 	public long getFileSize(String filename) {
 		try {
 			validateFilename(filename);
-			File file = new File(vaultDir, filename);
+			File file = new File(dir(), filename);
 			return file.exists() ? file.length() : 0;
 		} catch (SecurityException e) {
 			return 0;
@@ -337,15 +368,6 @@ public class SecureFileIO {
 		}
 	}
 
-	/**
-	 * Durably flush a directory's own namespace (the creation, rename or removal
-	 * of entries inside it), so the change survives power loss after this returns.
-	 * A directory cannot be opened for writing, so the previous FileOutputStream
-	 * approach silently failed and flushed nothing; a directory fsync requires an
-	 * O_RDONLY handle flushed with {@link Os#fsync}, available since API 21. A
-	 * failure propagates so a write can never be reported as durable when its
-	 * directory entry is not.
-	 */
 	void fsyncDir(File dir) throws IOException {
 		if (dir == null) return;
 		FileDescriptor fd = null;
@@ -364,35 +386,21 @@ public class SecureFileIO {
 		}
 	}
 
-	/**
-	 * Durably flush the vault root directory so that a rename, create or delete
-	 * of an entry directly under it (used by the rekey commit's item-set swap and
-	 * header replacement) survives power loss once this returns. A raw
-	 * {@code renameTo}/{@code Files.move} is atomic in program order but its
-	 * directory entry is not durable until the directory itself is fsynced.
-	 */
 	public void fsyncVaultDir() throws IOException {
-		fsyncDir(vaultDir);
+		fsyncDir(dir());
 	}
 
-	/**
-	 * Fsync every directory from {@code dir}'s parent up to and including the
-	 * vault root, so a directory newly created at any level has a durable entry
-	 * in its own parent. Used only after a real {@code mkdirs}.
-	 */
 	private void fsyncNewDirectoryChain(File dir) throws IOException {
 		File cur = dir;
 		while (cur != null) {
 			File parent = cur.getParentFile();
 			if (parent == null) break;
 			fsyncDir(parent);
-			if (parent.equals(vaultDir) || cur.equals(vaultDir)) break;
+			if (parent.equals(dir()) || cur.equals(dir())) break;
 			cur = parent;
 		}
 	}
 
-	/** Best-effort directory flush for delete paths, which the durable
-	 *  write-before-relay contract does not depend on. */
 	private void fsyncDirQuiet(File dir) {
 		try {
 			fsyncDir(dir);
@@ -403,7 +411,7 @@ public class SecureFileIO {
 	public void deleteDirectory(String path) throws IOException {
 		ensureInitialized();
 		validateFilename(path);
-		File dir = new File(vaultDir, path);
+		File dir = new File(dir(), path);
 		deleteDirectoryInternal(dir);
 	}
 
@@ -430,7 +438,7 @@ public class SecureFileIO {
 
 	public void wipeVault() throws IOException {
 		ensureInitialized();
-		wipeDirectory(vaultDir);
+		wipeDirectory(dir());
 
 		initializeVaultDirectory();
 	}
@@ -449,7 +457,7 @@ public class SecureFileIO {
 			}
 		}
 
-		if (!vaultDir.equals(dir)) {
+		if (!dir().equals(dir)) {
 			dir.delete();
 		}
 	}

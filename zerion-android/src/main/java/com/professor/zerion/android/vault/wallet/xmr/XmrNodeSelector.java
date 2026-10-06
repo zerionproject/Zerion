@@ -9,21 +9,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Builds the sequential failover order from the four-tier node model:
- * user-owned onion (preferred) then the vetted public onion default then custom
- * remotes then, only when the user has opted into Direct mode, a clearnet node.
- * The result is tried one node at a time; nothing here connects and nothing is
- * ever marked trusted except a user-owned node the user chose to trust.
- */
 @NotNullByDefault
 public final class XmrNodeSelector {
 
-	/**
-	 * Tier-2 default: public v3 onion restricted nodes vetted over Tor
-	 * (mainnet genesis, live height, restricted RPC, no-auth, 6/6 stable).
-	 * Re-vet before each release. None is trusted.
-	 */
 	public static final List<XmrNode> VETTED_DEFAULT = Collections.unmodifiableList(
 			Arrays.asList(
 					XmrNode.parse("2chk3x3x2iyreog6y2vhljpraqmwiqdmmafhiiab443t7xyfeadqfuad.onion:18089", XmrNode.Source.VETTED, false),
@@ -34,13 +22,6 @@ public final class XmrNodeSelector {
 	private XmrNodeSelector() {
 	}
 
-	/**
-	 * @param userOwned       the user's own node, tried first if set (tier 1)
-	 * @param custom          user-added custom remotes (tier 3)
-	 * @param useVettedDefault whether the vetted public default set is included
-	 * @param directNode      a clearnet node; MUST be null unless the user has
-	 *                        explicitly opted into Direct mode (tier 4)
-	 */
 	public static List<XmrNode> failoverOrder(@Nullable XmrNode userOwned,
 			List<XmrNode> custom, boolean useVettedDefault,
 			@Nullable XmrNode directNode) {
@@ -71,7 +52,6 @@ public final class XmrNodeSelector {
 		return deduped;
 	}
 
-	/** Every node in the order except a Direct node reaches the daemon over Tor. */
 	public static boolean allOverTorExceptDirect(List<XmrNode> order) {
 		for (XmrNode n : order) {
 			if (!n.usesTor() && n.source != XmrNode.Source.DIRECT) return false;

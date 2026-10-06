@@ -10,8 +10,6 @@
 	<color name="zerion_ripple">#1AFFFFFF</color>
 	<color name="zerion_hint">#80FFFFFF</color>
 	<color name="zerion_primary">@color/zerion_night_800</color>
-	<!-- Commit to the cyan brand accent in night mode too (was lime, which gave
-	     OS dark mode a different, greenish identity). -->
 	<color name="zerion_accent">@color/zerion_cyan</color>
 
 	<color name="preference_category_background">@color/zerion_night_950</color>
@@ -24,7 +22,6 @@
 	<color name="notice_out">@color/zerion_blue_800</color>
 	<color name="msg_stroke">@color/msg_stroke_dark</color>
 
-	<!-- Ensure outgoing message bubbles are visible in dark mode -->
 	<color name="zerion_message_sent">#0099CC</color>
 	<color name="zerion_message_sent_pressed">#0077AA</color>
 	<color name="zerion_message_received">#2C2D32</color>
@@ -52,8 +49,6 @@
 	<color name="md_theme_onTertiary">@color/zerion_blue_900</color>
 	<color name="md_theme_tertiaryContainer">@color/zerion_blue_800</color>
 	<color name="md_theme_onTertiaryContainer">@color/zerion_blue_300</color>
-	<!-- Cool white to match the default dark identity (was a warm off-white
-	     that clashed with the pure-white text used elsewhere). -->
 	<color name="md_theme_onBackground">#FFFFFF</color>
 	<color name="md_theme_onSurface">#FFFFFF</color>
 	<color name="md_theme_surfaceDim">@color/zerion_night_700</color>

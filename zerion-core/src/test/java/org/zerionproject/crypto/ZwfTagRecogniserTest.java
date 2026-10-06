@@ -37,12 +37,33 @@ public class ZwfTagRecogniserTest {
 	}
 
 	@Test
+	public void replacedAndRemovedTagKeysAreZeroed() {
+		SecretKey first = randomKey();
+		SecretKey second = randomKey();
+		byte[] firstBytes = first.getBytes().clone();
+		ZwfTagRecogniser r = new ZwfTagRecogniser(crypto, 8);
+		r.register(1, first, 0);
+		r.register(1, second, 0);
+		assertEquals("the replaced key is zeroed", 0, sum(first.getBytes()));
+		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, second, 1)));
+		assertNull(r.recognise(ZwfTag.computeTag(crypto,
+				new SecretKey(firstBytes), 1)));
+		r.remove(1);
+		assertEquals("the removed key is zeroed", 0, sum(second.getBytes()));
+	}
+
+	private static int sum(byte[] b) {
+		int acc = 0;
+		for (byte x : b) acc |= x;
+		return acc;
+	}
+
+	@Test
 	public void recognisesTagsInWindow() {
 		SecretKey keyA = randomKey();
 		ZwfTagRecogniser r = new ZwfTagRecogniser(crypto, 8);
 		r.register(1, keyA, 0);
 
-		// streamId 1..8 are in the window; 0 and 9 are not
 		for (long s = 1; s <= 8; s++) {
 			ZwfTagRecogniser.Match m =
 					r.recognise(ZwfTag.computeTag(crypto, keyA, s));
@@ -57,16 +78,15 @@ public class ZwfTagRecogniserTest {
 	public void windowIsSymmetricAndSlides() {
 		SecretKey keyA = randomKey();
 		ZwfTagRecogniser r = new ZwfTagRecogniser(crypto, 8);
-		r.register(1, keyA, 0); // window [1, 8]
+		r.register(1, keyA, 0);
 		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 1)));
 		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 8)));
 		assertNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 9)));
 
-		r.advanceTo(1, 20); // window [13, 28]
+		r.advanceTo(1, 20);
 		assertNull("id below the window no longer recognised",
 				r.recognise(ZwfTag.computeTag(crypto, keyA, 1)));
 		assertNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 12)));
-		// a reordered id below the high-water but inside the window IS recognised
 		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 13)));
 		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 20)));
 		assertNotNull(r.recognise(ZwfTag.computeTag(crypto, keyA, 28)));
@@ -91,7 +111,6 @@ public class ZwfTagRecogniserTest {
 		assertEquals(2, b.contactId);
 		assertEquals(3, b.streamId);
 
-		// contact A's tag key never resolves to contact B
 		assertEquals(1, r.recognise(ZwfTag.computeTag(crypto, keyA, 7)).contactId);
 	}
 

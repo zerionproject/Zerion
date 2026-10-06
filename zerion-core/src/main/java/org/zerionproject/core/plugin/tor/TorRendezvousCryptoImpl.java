@@ -27,8 +27,6 @@ public class TorRendezvousCryptoImpl implements TorRendezvousCrypto {
 	@Override
 	public String getPrivateKeyBlob(byte[] seed) {
 		byte[] h = sha512(seed);
-		// Ed25519 scalar clamping (RFC 8032): the resulting 64-byte expanded
-		// key is Tor's ED25519-V3 secret key format.
 		h[0] &= (byte) 248;
 		h[31] &= (byte) 127;
 		h[31] |= (byte) 64;

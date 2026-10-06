@@ -38,6 +38,9 @@ public class ZerionApplicationImpl extends Application
 	private AndroidComponent applicationComponent;
 	@Override
 	protected void attachBaseContext(Context base) {
+		if (!IS_DEBUG_BUILD) {
+			com.professor.zerion.android.util.SilentStandardStreams.install();
+		}
 		Localizer.initialize(EarlyPrefs.language(base));
 		super.attachBaseContext(
 				Localizer.getInstance().applyLocaleToContext(base));
@@ -51,6 +54,8 @@ public class ZerionApplicationImpl extends Application
 		DynamicColors.applyToActivitiesIfAvailable(this);
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
+
+		clearNotificationsOfAnEarlierProcess();
 
 		applicationComponent = createApplicationComponent();
 		UncaughtExceptionHandler exceptionHandler =
@@ -105,9 +110,14 @@ public class ZerionApplicationImpl extends Application
 	}
 
 	private void applyWhileOpenMode(boolean appInForeground) {
+		android.content.SharedPreferences uiPrefs =
+				AppModule.getUiPrefsOrNull();
+		if (uiPrefs == null) {
+			return;
+		}
 		com.professor.zerion.android.settings.BackgroundConnections.Mode mode =
 				com.professor.zerion.android.settings.BackgroundConnections
-						.getMode(AppModule.getUiPrefs());
+						.getMode(uiPrefs);
 		if (mode != com.professor.zerion.android.settings.BackgroundConnections
 				.Mode.WHILE_OPEN) {
 			return;
@@ -118,6 +128,14 @@ public class ZerionApplicationImpl extends Application
 		try {
 			startService(i);
 		} catch (Exception ignored) {
+		}
+	}
+
+	private void clearNotificationsOfAnEarlierProcess() {
+		if (!getPackageName().equals(Application.getProcessName())) return;
+		try {
+			androidx.core.app.NotificationManagerCompat.from(this).cancelAll();
+		} catch (RuntimeException ignored) {
 		}
 	}
 

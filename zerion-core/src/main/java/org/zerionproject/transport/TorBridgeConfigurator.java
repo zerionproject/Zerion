@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -27,6 +28,7 @@ import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_PREF_TOR_NE
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK_AUTOMATIC;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK_WITHOUT_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK_WITH_BRIDGES;
 
 @Singleton
@@ -62,24 +64,30 @@ public class TorBridgeConfigurator implements EventListener {
 		}
 	}
 
+	@Nullable
+	private volatile Runnable appliedListener;
+
+	public void setAppliedListener(@Nullable Runnable listener) {
+		appliedListener = listener;
+	}
+
 	private void applyOrDisableNetwork() {
-		if (apply()) return;
+		if (!apply()) {
+			try {
+				tor.enableNetwork(false);
+			} catch (IOException e) {
+			}
+		}
+		Runnable listener = appliedListener;
+		if (listener == null) return;
 		try {
-			tor.enableNetwork(false);
-		} catch (IOException e) {
+			listener.run();
+		} catch (RuntimeException ignored) {
 		}
 	}
 
-	/** Whether the last bridge apply was refused by Tor. */
 	private volatile boolean lastApplyFailed = false;
 
-	/**
-	 * Applies the bridge setting the user chose. Returns false when bridges
-	 * are wanted but none could be configured, in which case the caller
-	 * keeps the network disabled. After a refusal the bridges are cleared
-	 * before the next attempt, because the wrapper remembers the last list
-	 * it was handed and would report an identical list as already applied.
-	 */
 	public boolean apply() {
 		Settings s;
 		try {
@@ -88,6 +96,11 @@ public class TorBridgeConfigurator implements EventListener {
 			return false;
 		}
 		int network = s.getInt(PREF_TOR_NETWORK, DEFAULT_PREF_TOR_NETWORK);
+		if (network != PREF_TOR_NETWORK_AUTOMATIC
+				&& network != PREF_TOR_NETWORK_WITHOUT_BRIDGES
+				&& network != PREF_TOR_NETWORK_WITH_BRIDGES) {
+			return false;
+		}
 		String country = locationUtils.getCurrentCountry();
 		boolean useBridges = network == PREF_TOR_NETWORK_WITH_BRIDGES
 				|| (network == PREF_TOR_NETWORK_AUTOMATIC
@@ -130,12 +143,6 @@ public class TorBridgeConfigurator implements EventListener {
 		}
 	}
 
-	/**
-	 * A bridge line as Tor accepts it: an optional pluggable transport name,
-	 * an address with a port, and optional further tokens (a fingerprint,
-	 * key=value arguments). Nothing else, and in particular no character
-	 * that could end the line or the option early.
-	 */
 	public static boolean isPlausibleBridgeLine(String line) {
 		String t = line.trim();
 		if (t.isEmpty() || t.length() > 512) return false;

@@ -1,7 +1,9 @@
 package org.zerionproject.sync;
 
+import org.zerionproject.message.ZmmConstants;
 import org.zerionproject.message.ZmmRecord;
 import org.zerionproject.transport.ZppConnectionRunner;
+import org.zerionproject.transport.ZwfControlHandler;
 import org.zerionproject.transport.ZwfDuplexConnection;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -9,46 +11,20 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
-/**
- * Drives a live connection with the Zerion Pull Protocol's constant-rate rhythm.
- *
- * <p>The send side emits exactly one frame per slot through a
- * {@link ZppSendScheduler}: the next queued record, or a cover record when idle.
- * Because a real frame and a cover frame are the same fixed-size ZWF frame,
- * "sending a message" and "sitting idle" are indistinguishable on the wire
- * within a regime. The receive side decodes each incoming frame, drops cover,
- * and hands real records to the {@link ZppRecordSink}.
- *
- * <p>The slot cadence has two constant regimes supplied by {@link ZppPacing}:
- * the active interval while an application record has been sent or received
- * within the pacing window (or records are queued), and a slower idle interval
- * afterwards. Both regimes are constant-rate with zero-mean jitter, so within a
- * regime the wire pattern leaks nothing about content; an observer of an
- * established connection can see at most the coarse regime transitions. When a
- * record is queued or received during an idle gap, the current gap is shortened
- * to the active interval measured from the previous frame, never less, so
- * activity onset cannot produce a frame spacing tighter than the active
- * cadence.
- *
- * <p>A received record extends the active regime only while this side is
- * itself taking part: within {@link #REPLY_WINDOW_MS} of its own last real
- * send every receipt extends the window, otherwise receipts alone may start
- * one active window per {@link #RECEIVE_ACTIVATION_INTERVAL_MS}. A peer that
- * merely keeps sending therefore cannot hold this side at the active cadence
- * indefinitely; its records are still delivered, only the cover cadence
- * stays idle.
- *
- * <p>The scheduler is registered while the connection is open so the message
- * layer can enqueue records for the contact, and unregistered when it ends.
- */
 @NotNullByDefault
 public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 
 	private static final int JITTER_DIVISOR = 3;
 	static final long REPLY_WINDOW_MS = 10 * 60_000L;
 	static final long RECEIVE_ACTIVATION_INTERVAL_MS = 10 * 60_000L;
+	static final long TICKER_JOIN_MS = 5_000L;
+	static final long TICKER_FORCE_JOIN_MS = 30_000L;
+
+	private static final AtomicLong NEXT_SESSION_ID = new AtomicLong();
 
 	private final ZppRecordSink recordSink;
 	private final ZppConnectionRegistry registry;
@@ -94,14 +70,33 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				System::currentTimeMillis, REPLY_WINDOW_MS,
 				RECEIVE_ACTIVATION_INTERVAL_MS);
 		scheduler.setWakeListener(clock::noteActivity);
-		registry.onConnectionOpened(contactId, scheduler,
-				connection.getMaxMessageLength());
-		recordSink.onConnected(contactId);
+		long sessionId = NEXT_SESSION_ID.incrementAndGet();
+		ZwfControlHandler control = connection.getControlHandler();
+		boolean opened = false;
 		Thread ticker = new Thread(
 				() -> tickLoop(scheduler, clock, gate, running),
 				"zpp-send-" + contactId);
 		ticker.start();
 		try {
+			if (control != null) {
+				control.start(new ZwfControlHandler.Sender() {
+					@Override
+					public void send(byte[] payload) {
+						scheduler.enqueueRecord(ZmmRecord.encode(
+								ZmmConstants.TYPE_ROOT_EVOLUTION, payload),
+								false);
+					}
+
+					@Override
+					public void sendWhenDue(Supplier<byte[]> builder) {
+						scheduler.enqueueRecordWhenDue(() -> {
+							byte[] payload = builder.get();
+							return payload == null ? null : ZmmRecord.encode(
+									ZmmConstants.TYPE_ROOT_EVOLUTION, payload);
+						});
+					}
+				});
+			}
 			while (running.get()) {
 				byte[] record;
 				try {
@@ -112,22 +107,50 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				if (record == null) {
 					break;
 				}
-				if (record.length >= 2 && !ZmmRecord.isCover(record)) {
-					if (gate.admitReceipt()) clock.noteActivity();
-					recordSink.deliver(contactId, ZmmRecord.getType(record),
-							ZmmRecord.getPayload(record));
+				if (!opened) {
+					opened = true;
+					registry.onConnectionOpened(contactId, scheduler,
+							connection.getMaxMessageLength());
+					recordSink.onConnected(contactId, sessionId);
 				}
+				if (record.length < 2 || ZmmRecord.isCover(record)) continue;
+				if (!connection.lastFrameCarriedPqSecret()) continue;
+				int type = ZmmRecord.getType(record);
+				if (type == ZmmConstants.TYPE_ROOT_EVOLUTION) {
+					if (control != null) {
+						control.onRecord(ZmmRecord.getPayload(record));
+					}
+					continue;
+				}
+				if (gate.admitReceipt()) clock.noteActivity();
+				recordSink.deliver(contactId, sessionId, type,
+						ZmmRecord.getPayload(record));
 			}
 		} finally {
 			running.set(false);
 			ticker.interrupt();
-			try {
-				ticker.join(5000);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
+			joinTicker(ticker, connection);
+			if (control != null) control.close();
+			if (opened) {
+				registry.onConnectionClosed(contactId, scheduler);
+				recordSink.onDisconnected(contactId, sessionId);
 			}
-			registry.onConnectionClosed(contactId, scheduler);
-			recordSink.onDisconnected(contactId);
+		}
+	}
+
+	private static void joinTicker(Thread ticker,
+			ZwfDuplexConnection connection) {
+		try {
+			ticker.join(TICKER_JOIN_MS);
+			if (!ticker.isAlive()) return;
+			connection.closeStreams();
+			long deadline = System.currentTimeMillis() + TICKER_FORCE_JOIN_MS;
+			while (ticker.isAlive()
+					&& System.currentTimeMillis() < deadline) {
+				ticker.join(1000);
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -137,12 +160,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			while (running.get()) {
 				boolean realSent = scheduler.tick();
 				long now = System.currentTimeMillis();
-				if (realSent) {
-					clock.lastRealMs = now;
-					if (scheduler.lastRealFrameWasUserOriginated()) {
-						gate.noteLocalSend();
-					}
-				}
+				afterFrame(clock, gate, realSent,
+						scheduler.lastRealFrameWasUserOriginated(), now);
 				boolean active = scheduler.getQueueDepth() > 0
 						|| now - clock.lastRealMs < pacing.idleAfterMs();
 				long activeDelay = computeInterval(pacing.activeIntervalMs(),
@@ -160,13 +179,14 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		}
 	}
 
-	/**
-	 * Decides whether a received record may extend the active regime. The
-	 * peer's records never carry the decision on their own: receipts extend
-	 * the regime while this side has sent a real record within the reply
-	 * window, and otherwise start at most one active window per activation
-	 * interval.
-	 */
+	static void afterFrame(SlotClock clock, ReceiveActivityGate gate,
+			boolean realSent, boolean userOriginated, long now) {
+		if (realSent && userOriginated) {
+			clock.lastRealMs = now;
+			gate.noteLocalSend();
+		}
+	}
+
 	static final class ReceiveActivityGate {
 
 		private final LongSupplier clock;
@@ -204,11 +224,6 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		}
 	}
 
-	/**
-	 * Per-connection slot state. {@link #awaitNextSlot} sleeps until the slot
-	 * deadline; activity noted during the wait shortens the deadline to the
-	 * active-cadence spacing measured from the previous frame, never less.
-	 */
 	static final class SlotClock {
 
 		private final Object lock = new Object();
@@ -243,13 +258,6 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		}
 	}
 
-	/**
-	 * Returns the next inter-frame delay: {@code base} plus a uniform jitter in
-	 * {@code [-jitterMs, +jitterMs]}. The jitter is zero-mean so the average
-	 * cadence stays {@code base}, and the result is clamped to at least 1ms so a
-	 * frame is never sent back-to-back (no bursting). The offset is independent
-	 * of message content, so it leaks nothing.
-	 */
 	static long computeInterval(long base, long jitterMs, Random random) {
 		if (jitterMs <= 0) return Math.max(1, base);
 		long offset = random.nextInt((int) (2 * jitterMs + 1)) - jitterMs;

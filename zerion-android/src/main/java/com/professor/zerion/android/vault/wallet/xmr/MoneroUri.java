@@ -8,18 +8,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * A parser for {@code monero:} payment URIs (as produced by QR codes). It only
- * extracts the fields; it is deliberately <b>not</b> the authority on whether the
- * address is valid. The raw address string is handed back verbatim for the send
- * flow to validate through Monero's own parser ({@link MoneroEngine#addressKind}),
- * so no hand-written address pattern here can ever admit or reject funds. A plain
- * address with no scheme is accepted as an address-only input.
- *
- * <p>The amount, when present, is parsed from decimal XMR to atomic units with
- * exact integer arithmetic; anything malformed, negative, over-precise or
- * overflowing is rejected rather than silently coerced.
- */
 @NotNullByDefault
 public final class MoneroUri {
 
@@ -35,12 +23,10 @@ public final class MoneroUri {
 		this.amountAtomic = amountAtomic;
 	}
 
-	/** The raw recipient address, to be validated by the Monero parser. */
 	public String address() {
 		return address;
 	}
 
-	/** The requested amount in atomic units, or -1 when the URI names none. */
 	public long amountAtomic() {
 		return amountAtomic;
 	}
@@ -49,11 +35,6 @@ public final class MoneroUri {
 		return amountAtomic >= 0;
 	}
 
-	/**
-	 * Parse a scanned string. Accepts a bare address or a {@code monero:} URI.
-	 * Returns null when the input is not a plausible address-or-URI at all; throws
-	 * only when a present amount is malformed.
-	 */
 	@Nullable
 	public static MoneroUri parse(String input) throws XmrError.XmrException {
 		String s = input.trim();
@@ -83,11 +64,6 @@ public final class MoneroUri {
 		return new MoneroUri(address, amount);
 	}
 
-	/**
-	 * Convert a decimal XMR string to atomic units with exact integer math.
-	 * Rejects a sign, non-digits, more than twelve fractional places, or a value
-	 * that overflows a long.
-	 */
 	public static long parseXmrToAtomic(String xmr) throws XmrError.XmrException {
 		if (xmr.isEmpty()) throw invalidAmount();
 		int dot = xmr.indexOf('.');

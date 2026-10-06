@@ -7,17 +7,6 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * AES-256-GCM for one video session. A session owns one transmit key and one
- * receive key that are derived from fresh random contributions of both
- * peers and are never reused by another session. Within the session the
- * nonce is the 64-bit frame counter itself, big-endian in the last eight of
- * the twelve nonce bytes, so for a given key every nonce is distinct by
- * construction until the counter would wrap, at which point encryption
- * refuses instead of repeating. Transmit and receive use different keys, so
- * the two directions cannot collide either. The object is single use: once
- * closed it cannot encrypt again.
- */
 final class VideoFrameCipher {
 
 	static final int NONCE_LENGTH = 12;

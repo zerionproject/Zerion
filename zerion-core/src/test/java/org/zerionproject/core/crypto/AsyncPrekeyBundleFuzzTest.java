@@ -16,11 +16,6 @@ import java.util.Random;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A prekey bundle that does not decode as the bytes its author signed never
- * verifies: random input and sampled bit flips of a valid bundle are refused
- * by the decoder or fail the signature check, and truncations are refused.
- */
 public class AsyncPrekeyBundleFuzzTest {
 
 	private static final int RANDOM_INPUTS = 1500;

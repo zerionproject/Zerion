@@ -19,16 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 
-/**
- * On-device durability tests for the shared vault write primitive. They run
- * against an isolated temporary vault directory, never the real vault, and prove
- * the behaviour the spend journal will depend on: a write into a freshly created
- * nested directory completes and is readable, it survives a fresh reader, the
- * directory fsync actually works on this device's filesystem, and a directory
- * fsync failure propagates so a write is never reported as durable when its
- * directory entry is not. Physical power loss cannot be simulated here; these
- * prove the ordering and that the fsync calls succeed or fail loudly.
- */
 @RunWith(AndroidJUnit4.class)
 public class SecureFileIODurabilityTest {
 

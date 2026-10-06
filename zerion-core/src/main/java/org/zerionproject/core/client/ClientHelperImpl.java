@@ -3,6 +3,7 @@ package org.zerionproject.core.client;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.UniqueId;
 import org.zerionproject.core.api.client.ClientHelper;
+import org.zerionproject.core.api.client.MessageDictionaryVisitor;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyParser;
@@ -218,6 +219,18 @@ class ClientHelperImpl implements ClientHelper {
 		for (Entry<MessageId, Metadata> e : raw.entrySet())
 			parsed.put(e.getKey(), metadataParser.parse(e.getValue()));
 		return parsed;
+	}
+
+	@Override
+	public void visitMessageMetadataAsDictionaryExcluding(Transaction txn,
+			GroupId g, BdfEntry excluded, MessageDictionaryVisitor visitor)
+			throws DbException, FormatException {
+		String key = excluded.getKey();
+		byte[] value = metadataEncoder.encode(BdfDictionary.of(excluded))
+				.get(key);
+		db.visitMessageMetadataExcluding(txn, g, key, value,
+				(m, metadata) -> visitor.visit(m,
+						metadataParser.parse(metadata)));
 	}
 
 	@Override

@@ -26,16 +26,36 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 7 : 5;
+					? 8 : 5;
 
-	/**
-	 * The peer's minor version from which voice memos are exchanged in the
-	 * current format: wrap key derived from the pairing secret, message
-	 * identity bound into the associated data, long memos chunked. Memos are
-	 * not sent to older peers, and memos in the earlier format are refused
-	 * on receipt.
-	 */
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
+
+	int GROUP_PROTOCOL_V2_MIN_VERSION = 8;
+
+	int REACTION_REMOVAL_MIN_VERSION = 8;
+
+	int LEGACY_MAX_GROUP_POST_BODY_LENGTH = 64 * 1024;
+
+	String MSG_KEY_GROUP_BODY_HASH = "groupBodyHash";
+
+	String MSG_KEY_GROUP_BODY_LENGTH = "groupBodyLength";
+
+	String MSG_KEY_GROUP_POST_STATE = "groupPostState";
+
+	String MSG_KEY_GROUP_EFFECTIVE_TTL = "groupEffectiveTtl";
+
+	String MSG_KEY_GROUP_RECEIVED_AT = "groupReceivedAt";
+
+	int GROUP_POST_STATE_UNDECIDED = 0;
+
+	int GROUP_POST_STATE_ACCEPTED = 1;
+
+	int GROUP_POST_STATE_PENDING = 2;
+
+	String GROUP_POST_BODY_HASH_LABEL = "org.zerionproject/GROUP_POST_CT";
+
+	int getContactClientMinorVersion(Transaction txn, ContactId c)
+			throws DbException;
 
 	void addLocalMessage(PrivateMessage m) throws DbException;
 
@@ -150,7 +170,7 @@ public interface MessagingManager extends ConversationClient {
 	PrivateMessageFormat getContactMessageFormat(Transaction txn, ContactId c)
 			throws DbException;
 
-	void addLocalReaction(ContactId contactId, MessageId targetMessageId,
+	boolean addLocalReaction(ContactId contactId, MessageId targetMessageId,
 			String emoji) throws DbException;
 
 	java.util.Map<MessageId, java.util.Map<String, Integer>> getReactions(

@@ -33,17 +33,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Exercises the testable part of the Tor transport - the accept loop and dial
- * dispatch - with real loopback sockets and no Tor daemon. The Tor process and
- * onion publish/dial are validated on-device.
- */
 public class ZtpTorTransportTest {
 
-	/**
-	 * No-op Tor: these tests drive accept/dial directly, never start Tor.
-	 * It reports itself connected, since the transport dials only then.
-	 */
+	static final String PEER_ONION =
+			"abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx";
+
 	static class StubTor implements TorWrapper {
 		public void start() {
 		}
@@ -129,7 +123,7 @@ public class ZtpTorTransportTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				handler, null, () -> {
 		});
-		t.startAccepting(0);
+		t.startAccepting();
 
 		Socket client = new Socket("127.0.0.1", t.getLocalPort());
 		client.getOutputStream().write(0x42);
@@ -144,14 +138,12 @@ public class ZtpTorTransportTest {
 	@Test(timeout = 15_000)
 	public void dialledConnectionsReachTheHandler() throws Exception {
 		ExecutorService exec = Executors.newCachedThreadPool();
-		// A stand-in "peer" the fake socket factory connects to.
 		ServerSocket peer = new ServerSocket(0, 1,
 				InetAddress.getByName("127.0.0.1"));
 		SocketFactory fakeFactory = new SocketFactory() {
 			@Override
 			public Socket createSocket(String host, int port)
 					throws IOException {
-				// ignore the .onion host; connect to the local peer
 				return new Socket("127.0.0.1", peer.getLocalPort());
 			}
 
@@ -195,7 +187,7 @@ public class ZtpTorTransportTest {
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), fakeFactory,
 				fakeFactory, exec, handler, null, () -> {
 		});
-		long sessionMs = t.dial(7, "somefakeonionaddress", false);
+		long sessionMs = t.dial(7, PEER_ONION, false);
 
 		assertTrue(outgoing.await(10, TimeUnit.SECONDS));
 		assertEquals(7, gotContact.get());
@@ -252,11 +244,10 @@ public class ZtpTorTransportTest {
 				failingFactory, exec, handler, null, () -> {
 		});
 		assertEquals(ZtpTorTransport.DIAL_NOT_CONNECTED,
-				t.dial(7, "somefakeonionaddress", true));
+				t.dial(7, PEER_ONION, true));
 		exec.shutdownNow();
 	}
 
-	/** Records the wrapper calls in order so the start sequence can be checked. */
 	private static class RecordingTor extends StubTor {
 		final List<String> calls = new ArrayList<>();
 		boolean failPadding = false;
@@ -458,7 +449,7 @@ public class ZtpTorTransportTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				tagReadingHandler(new CountDownLatch(1)), null, () -> {
 		});
-		t.startAccepting(0);
+		t.startAccepting();
 		Socket silent = new Socket("127.0.0.1", t.getLocalPort());
 		silent.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 10_000);
 		long start = System.currentTimeMillis();
@@ -482,7 +473,7 @@ public class ZtpTorTransportTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				tagReadingHandler(tagsRead), null, () -> {
 		});
-		t.startAccepting(0);
+		t.startAccepting();
 		List<Socket> silent = new ArrayList<>();
 		for (int i = 0; i < ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS; i++) {
 			silent.add(new Socket("127.0.0.1", t.getLocalPort()));

@@ -10,10 +10,6 @@ import java.io.OutputStream;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * A duplex connection over a point-to-point BLE GATT link, used only to carry
- * the offline pairing key agreement and contact exchange.
- */
 @ThreadSafe
 @NotNullByDefault
 class BluetoothKeyAgreementConnection extends AbstractDuplexTransportConnection {

@@ -6,20 +6,12 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Everything persisted about client authorization with one contact. The
- * dialing key pair is this device's key for the contact's authorized
- * service; the peer fields describe the contact's service and the public
- * key the contact gave this device for its own service.
- */
 @NotNullByDefault
 public final class OnionAuthRecord {
 
 	public final ContactId contactId;
 	public State state;
-	/** Generation of this device's authorized service when the pair was offered. */
 	public long localGen;
-	/** Generation of the peer's service this device knows and has a credential for. */
 	public long peerGen;
 	@Nullable
 	public byte[] dialPrivateKey;

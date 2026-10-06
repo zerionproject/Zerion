@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** A2-AND-10: a failed decoy code locks the next attempt out at once. */
 public class DecoyUnlockThrottleTest {
 
 	@Test

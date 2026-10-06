@@ -9,7 +9,6 @@
 	android:clickable="false"
 	android:focusable="false">
 
-	<!-- Toolbar with Zerion gradient for depth -->
 	<com.google.android.material.appbar.AppBarLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
@@ -31,7 +30,6 @@
 
 	</com.google.android.material.appbar.AppBarLayout>
 
-	<!-- Settings fragment container -->
 	<androidx.fragment.app.FragmentContainerView
 		android:id="@+id/fragmentContainer"
 		android:name="com.professor.zerion.android.settings.SettingsFragment"

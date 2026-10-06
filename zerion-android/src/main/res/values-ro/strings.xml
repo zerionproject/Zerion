@@ -86,7 +86,6 @@
   <string name="tor_plugin_status_disabled_battery">Aplicația Zerion este configurată să nu folosească internetul când funcționează pe baterie</string>
   <string name="tor_plugin_status_disabled_country_blocked">Aplicația Zerion este configurată să nu folosească internetul în această țară</string>
   
-  <string name="transport_lan_long">Aceeași rețea Wi-Fi</string>
 
   <string name="reminder_notification_title">V-ați deconectat din Zerion</string>
   <string name="reminder_notification_text">Atingeți pentru a vă reconecta.</string>
@@ -218,7 +217,6 @@
   <string name="connecting_to_device">Se conectează la dispozitiv\u2026</string>
   <string name="authenticating_with_device">Se realizează autentificarea cu dispozitivul\u2026</string>
   <string name="connection_error_title">Nu a fost posibilă conectarea cu contactul dvs.</string>
-  <string name="connection_error_feedback">Dacă problema persistă, <a href="feedback">trimiteți feedback</a> pentru a ne ajuta să îmbunătățim aplicația.</string>
   
   <string name="add_contact_remotely_title_case">Adăugați contact de la distanță</string>
   <string name="add_contact_nearby_title">Adaugă un contact din apropiere</string>
@@ -397,8 +395,6 @@
   
   <string name="tor_network_setting_summary">Automat: %1$s (în %2$s)</string>
   <string name="tor_mobile_data_title">Utilizați date mobile</string>
-  <string name="tor_only_when_charging_title">Conectați-vă la internet doar când dispozitivul se încarcă</string>
-  <string name="tor_only_when_charging_summary">Se dezactivează conexiunea la internet când dispozitivul funcționează pe baterie</string>
   
   <string name="security_settings_title">Securitate</string>
   <string name="pref_lock_title">Blocare aplicație</string>
@@ -455,74 +451,9 @@
   <string name="choose_ringtone_title">Alegeți sunetul</string>
   <string name="cannot_load_ringtone">Nu se poate încărca sunetul</string>
   
-  <string name="mailbox_settings_title">Cutia poștală</string>
-  <string name="mailbox_setup_title">Configurarea cutiei poștale</string>
-  <string name="mailbox_setup_intro">Având o cutie poștală, contactele dvs. pot să vă trimită mesaje în timp ce sunteți offline. Cutia poștală va primi mesajele și le va stoca până când intrați online.\n
-		\nPuteți instala aplicația de cutie poștală Zerion pe un dispozitiv de rezervă. Țineți-l conectat la o sursă de curent și la Wi-Fi, astfel încât să fie întotdeauna online.</string>
-  <string name="mailbox_setup_download">În primul rând, instalați aplicația de cutie poștală pe un alt dispozitiv căutând „Cutie poștală Zerion” în Google Play sau de unde ați descărcat Zerion.\n
-		\nApoi conectați cutia poștală la Zerion prin scanarea codului QR afișat de aplicația de cutie poștală.</string>
-  <string name="mailbox_setup_download_link">Partajați linkul de descărcare</string>
-  <string name="mailbox_setup_connecting">Se conectează la Cutia poștală…</string>
   
-  <string name="mailbox_setup_connecting_info">Asta ar putea dura până la %1s</string>
-  <string name="mailbox_setup_already_paired_title">Cutia poștală este deja conectată</string>
-  <string name="mailbox_setup_already_paired_description">Anulați conectarea cutiei poștale la celălalt dispozitiv și încercați din nou.</string>
-  <string name="mailbox_setup_io_error_title">Nu s-a reușit conectarea</string>
-  <string name="mailbox_setup_io_error_description">Asigurați-vă că ambele dispozitive sunt conectate la internet și încercați din nou.</string>
-  <string name="mailbox_setup_assertion_error_title">Eroare de cutie poștală</string>
-  <string name="mailbox_setup_assertion_error_description">Trimiteți feedback (cu date anonime) prin intermediul aplicației Zerion dacă problema persistă.</string>
-  <string name="mailbox_setup_camera_error_description">Nu s-a putut accesa camera. Încercați din nou, poate după repornirea dispozitivului.</string>
-  <string name="mailbox_setup_paired_title">Conectată</string>
-  <string name="mailbox_setup_paired_description">Cutia dvs. poștală a fost conectată la Zerion.\n
-		\nȚineți conectată cutia poștală la o sursă de alimentare și la Wi-Fi, astfel încât să fie întotdeauna online.</string>
-  <string name="tor_offline_title">Offline</string>
-  <string name="tor_offline_description">Asigurați-vă că acest dispozitiv este online și că sunt permise conexiunile la internet.\n
-\nDupă aceea, așteptați ca pictograma cu globul pământesc din ecranul de configurare a conexiunii să devină verde.</string>
-  <string name="tor_offline_button_check">Verificați setările de conectare</string>
-  <string name="mailbox_status_title">Starea cutiei poștale</string>
-  <string name="mailbox_status_connected_title">Cutia poștală este în funcțiune</string>
-  <string name="mailbox_status_problem_title">Zerion nu se poate conecta la cutia poștală</string>
-  <string name="mailbox_status_failure_title">Cutia poștală nu este disponibilă</string>
-  <string name="mailbox_status_app_too_old_title">Versiunea Zerion este prea veche</string>
-  <string name="mailbox_status_app_too_old_message">Actualizați aplicația Zerion la cea mai nouă versiune și încercați din nou.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Versiunea cutiei poștale este prea veche</string>
-  <string name="mailbox_status_mailbox_too_old_message">Actualizați cutia poștală la cea mai nouă versiune și încercați din nou.</string>
-  <string name="mailbox_status_check_button">Verificați conexiunea</string>
   
-  <string name="mailbox_status_connected_info">Ultima conectare: %s</string>
   
-  <string name="mailbox_status_connected_never">Niciodată</string>
-  <string name="mailbox_status_unlink_button">Deconectați</string>
-  <string name="mailbox_status_unlink_dialog_title">Deconectați cutia poștală?</string>
-  <string name="mailbox_status_unlink_dialog_question">Sigur doriți deconectarea cutiei poștale?</string>
-  <string name="mailbox_status_unlink_dialog_warning">În cazul în care deconectați cutia poștală, nu veți mai putea primii mesaje cât timp Zerion este offline.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Cutia dvs. poștală a fost deconectată.</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Data viitoare când veți avea acces la dispozitivul pe care aveți cutia poștală, deschideți aplicația de cutie poștală și atingeți butonul „Deconectare” pentru a finaliza procesul.\n\nDacă nu mai aveți acces la dispozitivul pe care aveți cutia poștală, nu vă faceți griji. Datele dvs. sunt criptate, astfel încât vor rămâne în siguranță chiar dacă nu finalizați procesul.</string>
-  <string name="mailbox_status_unlink_success">Cutia dvs. poștală a fost deconectată</string>
-  <string name="mailbox_error_notification_channel_title">Problemă cu cutia poștală Zerion</string>
-  <string name="mailbox_error_notification_title">Cutia poștală Zerion nu este disponibilă</string>
-  <string name="mailbox_error_notification_text">Atingeți pentru a remedia problema.</string>
-  <string name="mailbox_error_wizard_button">Remediați problema</string>
-  <string name="mailbox_error_wizard_title">Expert de depanare a cutiei poștale</string>
-  <string name="mailbox_error_wizard_question1">Aveți acces la dispozitivul pe care aveți cutia poștală?</string>
-  <string name="mailbox_error_wizard_answer1">Da, am acces acum.</string>
-  <string name="mailbox_error_wizard_answer2">Nu acum, dar pot avea acces mai târziu.</string>
-  <string name="mailbox_error_wizard_answer3">Nu, nu mai am acces.</string>
-  <string name="mailbox_error_wizard_info1_1">Verificați dacă dispozitivul pe care aveți cutia poștală este pornit și este conectat la internet.</string>
-  <string name="mailbox_error_wizard_question1_1">Deschideți aplicația de cutie poștală. Ce vedeți?</string>
-  <string name="mailbox_error_wizard_answer1_1">Văd instrucțiuni pentru setarea cutiei poștale</string>
-  <string name="mailbox_error_wizard_answer1_2">Văd un cod QR</string>
-  <string name="mailbox_error_wizard_answer1_3">Văd „Cutia poștală funcționează” (Mailbox is running)</string>
-  <string name="mailbox_error_wizard_answer1_4">Văd „Dispozitiv offline” (Device offlie)</string>
-  <string name="mailbox_error_wizard_info1_1_1">Deconectați cutia poștală folosind butonul de mai jos, apoi urmați instrucțiunile de pe dispozitivul pe care aveți cutia poștală pentru a o conecta din nou.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Deconectați cutia poștală folosind butonul de mai jos, apoi scanați codul QR pentru a o conecta din nou.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Folosiți butonul de mai jos pentru verificarea conexiunii dintre Zerion și cutia poștală.\n\n
-		Dacă apare din nou o eroare de conectare:\n
-		\u2022 Verificați dacă aplicațiile de cutie poștală și Zerion sunt actualizate la cea mai recentă versiune.\n
-		\u2022 Reporniți dispozitivele pe care sunt instalate aplicațiile de cutie poștală și Zerion și încercați din nou.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Verificați dacă dispozitivul pe care este instalată cutia poștală este conectat corect la internet.\n\nVerificați dacă ceasul de pe dispozitivul pe care este aplcația de cutie poștală indică ora, data și fusul orar corecte.\n\nVerificați dacă aplicațiile de cutie poștală și Zerion sunt actualizate la cea mai recentă versiune.\n\nReporniți dispozitivele pe care aveți aplicațiile de cutie poștală și Zerion și încercați din nou.</string>
-  <string name="mailbox_error_wizard_info2">Reveniți la acest ecran atunci când aveți acces la dispozitiv.</string>
-  <string name="mailbox_error_wizard_info3">Deconectați cutia poștală folosind butonul de mai jos\n\nDupă ce ați deconectat vechea cutie poștală, puteți configura una nouă în orice moment.</string>
   
   <string name="about_title">Despre</string>
   <string name="zerion_version">Versiune Zerion: %s</string>
@@ -530,7 +461,6 @@
   <string name="links">Linkuri</string>
   <string name="zerion_website">\u2022 <a href="">Site</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Cod sursă</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Jurnal de modificări</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Politica de confidențialitate</a></string>
   
   <string name="translator_thanks">Mulțumiri tuturor colaboratorilor de la Localization Lab</string>
@@ -551,43 +481,13 @@
   <string name="pref_category_actions">Actiuni</string>
   <string name="share_app_link">Partajează legătură de descărcare</string>
   <string name="share_app_link_text">Descarcă Zerion de la %s</string>
-  <string name="send_feedback">Trimiteți feedback</string>
   
   <string name="link_warning_title">Avertisment privind un link</string>
   <string name="link_warning_intro">Urmează să deschideți linkul următor cu o aplicație externă.</string>
   <string name="link_warning_text">Acest lucru poate duce la identificarea dvs. Gândiți-vă dacă aveți încredere în persoana care v-a trimis acest link și luați în considerare deschiderea acestuia cu browserul Tor.</string>
   <string name="link_warning_open_link">Deschideți link</string>
   
-  <string name="crash_report_title">Raport de cădere a aplicației Zerion</string>
-  <string name="zerion_crashed">Ne pare rău, dar aplicația Zerion a căzut</string>
-  <string name="not_your_fault">Nu este vina dvs.</string>
-  <string name="please_send_report">Vă rugăm să ne ajutați să îmbunătățim Zerion trimițându-ne un raport de cădere a aplicației.</string>
-  <string name="report_is_encrypted">Vă asigurăm că raportul este criptat și trimis securizat.</string>
-  <string name="feedback_title">Feedback</string>
-  <string name="describe_crash">Descrieți ce s-a întâmplat (opțional)</string>
-  <string name="enter_feedback">Introduceți feedbackul dvs.</string>
-  <string name="optional_contact_email">Adresa dvs. e-mail (opțional)</string>
-  <string name="privacy_policy">Prin trimiterea de date, sunteți de acord cu <a href="">politica noastră de confidențialitate</a></string>
-  <string name="include_debug_report_crash">Includeți date anonime despre căderea aplicației</string>
-  <string name="include_debug_report_feedback">Includeți date anonime despre acest dispozitiv</string>
-  <string name="dev_report_user_info">Informații despre utilizator</string>
-  <string name="dev_report_basic_info">Informații de bază</string>
-  <string name="dev_report_device_info">Informații despre dispozitiv</string>
-  <string name="dev_report_stacktrace">Eroare de urmărire stivă</string>
-  <string name="dev_report_time_info">Informații privind ora</string>
-  <string name="dev_report_memory">Memorie</string>
-  <string name="dev_report_storage">Stocare</string>
-  <string name="dev_report_connectivity">Conectivitate</string>
-  <string name="dev_report_network_usage">Utilizarea rețelei</string>
-  <string name="dev_report_build_config">Configurație versiune</string>
-  <string name="dev_report_logcat">Jurnal aplicație</string>
-  <string name="dev_report_device_features">Funcții dispozitiv</string>
-  <string name="send_report">Trimiteți raport</string>
   <string name="close">Închideți</string>
-  <string name="dev_report_sending">Se trimite feedback…</string>
-  <string name="dev_report_sent">Feedback trimis</string>
-  <string name="dev_report_saved">Raport salvat. Va fi trimis data viitoare când vă conectați la Zerion.</string>
-  <string name="dev_report_error">Eroare: trimiterea raportului a eșuat</string>
   
   <string name="progress_title_logout">În curs de deconectare din Zerion...</string>
   
@@ -742,7 +642,6 @@
 	<string name="wallet_receive_new">Adresă nouă</string>
 	<string name="wallet_node_hint">Atinge un server pentru a-l folosi. Apasă lung pe un server personalizat pentru a-l elimina.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">O adresă privată reutilizabilă. Plățile către ea nu pot fi corelate on-chain. Detectarea scanează date publice prin Tor; cheile tale nu părăsesc niciodată dispozitivul.</string>
 	<string name="wallet_sp_balance">Detectat: %1$s</string>
 	<string name="wallet_sp_scanned">Scanat până la blocul %1$d</string>
 	<string name="wallet_sp_set_oracle">Sursă de scanare</string>

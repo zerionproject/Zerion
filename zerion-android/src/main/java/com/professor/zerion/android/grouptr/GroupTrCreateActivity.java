@@ -49,6 +49,11 @@ public class GroupTrCreateActivity extends ZerionActivity {
 	}
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		return screenshotSwitch != null && screenshotSwitch.isChecked();
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
 		setContentView(R.layout.activity_grouptr_create);
@@ -80,12 +85,9 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		});
 
 		disappearingRow.setOnClickListener(v -> showDisappearingPicker());
-		screenshotSwitch.setOnCheckedChangeListener((b, checked) -> {
-			if (checked) getWindow().addFlags(
-					android.view.WindowManager.LayoutParams.FLAG_SECURE);
-			else getWindow().clearFlags(
-					android.view.WindowManager.LayoutParams.FLAG_SECURE);
-		});
+		screenshotSwitch.setOnCheckedChangeListener((b, checked) ->
+				securityManager.applyScreenshotProtection(this,
+						forceScreenshotProtection()));
 
 		createButton.setOnClickListener(v -> onCreateTapped());
 	}

@@ -5,13 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/**
- * Ownership binds a prepared transaction to the exact live objects and session
- * generation. It uses object identity, so a replaced native object, a replaced
- * session, a changed epoch or lock generation, a wallet switch or the wrong flow
- * each fail closed. Identity is never a cryptographic fact and is never part of
- * the fingerprint.
- */
 public class XmrSendOwnershipTest {
 
 	private final Object prepared = new Object();

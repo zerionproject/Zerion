@@ -52,8 +52,6 @@ public class XmrOutgoingHistoryTest {
 		assertTrue(merged.get(0).pending);
 	}
 
-	/** XMR-06: a send whose relay outcome is unknown is shown as unresolved,
-	 *  never as a plain pending send the user would take as on its way. */
 	@Test
 	public void uncertainSendIsMarkedUnresolvedUntilTheChainReportsIt() {
 		List<XmrTxInfo> merged = XmrWalletManager.mergeOutgoingHistory("w1",

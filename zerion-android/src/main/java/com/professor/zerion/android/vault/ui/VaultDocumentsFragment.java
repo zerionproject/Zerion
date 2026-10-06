@@ -65,16 +65,19 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 	private static final int REQUEST_FILE_PICK = 1003;
 	private static final int REQUEST_EXPORT_PLAIN = 1004;
+	private static final int REQUEST_EXPORT_ZENC = 1006;
 
 	@Nullable
 	private VaultItem pendingPlainExport;
+	@Nullable
+	private VaultItem pendingZencExport;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@AppModule.SecurePrefs
-	SharedPreferences securePrefs;
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 	private RecyclerView documentsList;
@@ -123,7 +126,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
-		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+		sortMode = profilePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
 
 		setupDocumentsList();
 		setupSearchAndSort();
@@ -151,7 +154,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 		vaultSortButton.setOnClickListener(v -> {
 			sortMode = sortMode == VaultSearch.SORT_NAME
 					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
-			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			profilePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
 			applyFilterAndSort();
 		});
 	}
@@ -225,17 +228,12 @@ public class VaultDocumentsFragment extends BaseFragment {
 				.show();
 	}
 
-	/**
-	 * The unencrypted copy is written only to a location the user picks in
-	 * the system document picker; nothing is placed in shared storage on
-	 * the app's own initiative.
-	 */
 	private void launchPlainExportPicker(VaultItem item) {
 		pendingPlainExport = item;
 		Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
 		intent.addCategory(Intent.CATEGORY_OPENABLE);
 		intent.setType("application/octet-stream");
-		intent.putExtra(Intent.EXTRA_TITLE, new java.io.File(item.name).getName());
+		intent.putExtra(Intent.EXTRA_TITLE, safeExportName(item.name));
 		if (getActivity() instanceof VaultActivity) {
 			((VaultActivity) getActivity()).setExpectingChildResult();
 		}
@@ -327,6 +325,22 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void exportAsEncryptedZenc(VaultItem item) {
+		pendingZencExport = item;
+		Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+		intent.addCategory(Intent.CATEGORY_OPENABLE);
+		intent.setType("application/octet-stream");
+		intent.putExtra(Intent.EXTRA_TITLE,
+				neutralExportName(new java.security.SecureRandom()));
+		expectChildResult();
+		try {
+			startActivityForResult(intent, REQUEST_EXPORT_ZENC);
+		} catch (Exception e) {
+			pendingZencExport = null;
+			showSnackbar(getString(R.string.vault_no_file_picker));
+		}
+	}
+
+	private void askZencPassword(VaultItem item, Uri target) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
 				getString(R.string.vault_zenc_export_title),
 				getString(R.string.vault_zenc_export_message_download)
@@ -336,7 +350,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
 				if (password != null && password.length > 0) {
-					performEncryptedExport(item, password, false);
+					performEncryptedExport(item, password, target);
 				} else {
 					showSnackbar(getString(R.string.vault_zenc_password_required));
 				}
@@ -350,6 +364,11 @@ public class VaultDocumentsFragment extends BaseFragment {
 		dialog.show(getParentFragmentManager(), "export_password");
 	}
 
+	static String neutralExportName(java.util.Random random) {
+		return String.format(java.util.Locale.US, "export-%08x.zenc",
+				random.nextInt());
+	}
+
 	private void shareAsEncryptedZenc(VaultItem item) {
 		DocumentPasswordDialog dialog = DocumentPasswordDialog.newPasswordDialog(
 				getString(R.string.vault_zenc_export_title),
@@ -360,7 +379,7 @@ public class VaultDocumentsFragment extends BaseFragment {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
 				if (password != null && password.length > 0) {
-					performEncryptedExport(item, password, true);
+					performEncryptedExport(item, password, null);
 				} else {
 					showSnackbar(getString(R.string.vault_zenc_password_required));
 				}
@@ -374,7 +393,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 		dialog.show(getParentFragmentManager(), "share_password");
 	}
 
-	private void performEncryptedExport(VaultItem item, char[] password, boolean share) {
+	private void performEncryptedExport(VaultItem item, char[] password,
+			@Nullable Uri target) {
 		Activity a = getActivity();
 		if (a == null) return;
 		viewModel.getMediaContent(item.id, new VaultViewModel.MediaContentCallback() {
@@ -387,15 +407,12 @@ public class VaultDocumentsFragment extends BaseFragment {
 
 						java.util.Arrays.fill(content, (byte) 0);
 
-						String exportFilename = item.name;
-						if (!exportFilename.toLowerCase().endsWith(".zenc")) {
-							exportFilename = exportFilename + ".zenc";
-						}
-
-						if (share) {
-							shareZencFile(a, exportFilename, zencData);
+						if (target == null) {
+							shareZencFile(a, neutralExportName(
+									new java.security.SecureRandom()),
+									zencData);
 						} else {
-							saveZencToDownloads(a, exportFilename, zencData);
+							writeZencTo(a, target, zencData);
 						}
 
 					} catch (Exception e) {
@@ -469,29 +486,19 @@ public class VaultDocumentsFragment extends BaseFragment {
 		}
 	}
 
-	private void saveZencToDownloads(Activity a, String filename, byte[] zencData) {
+	private void writeZencTo(Activity a, Uri target, byte[] zencData) {
 		try {
-			java.io.File exportDir = new java.io.File(
-					android.os.Environment.getExternalStoragePublicDirectory(
-							android.os.Environment.DIRECTORY_DOWNLOADS),
-					"Zerion"
-			);
-			if (!exportDir.exists()) {
-				exportDir.mkdirs();
+			try (java.io.OutputStream out = a.getContentResolver()
+					.openOutputStream(target, "wt")) {
+				if (out == null) throw new java.io.IOException();
+				out.write(zencData);
+			} finally {
+				java.util.Arrays.fill(zencData, (byte) 0);
 			}
-
-			java.io.File exportFile = new java.io.File(exportDir, filename);
-			java.io.FileOutputStream fos = new java.io.FileOutputStream(exportFile);
-			fos.write(zencData);
-			fos.close();
-
-			java.util.Arrays.fill(zencData, (byte) 0);
 
 			a.runOnUiThread(() -> {
 				if (isAdded()) {
-					Toast.makeText(a,
-							getString(R.string.vault_zenc_saved_to,
-									exportFile.getPath()),
+					Toast.makeText(a, R.string.vault_zenc_saved,
 							Toast.LENGTH_LONG).show();
 				}
 			});
@@ -630,6 +637,16 @@ public class VaultDocumentsFragment extends BaseFragment {
 	public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 
+		if (requestCode == REQUEST_EXPORT_ZENC) {
+			VaultItem item = pendingZencExport;
+			pendingZencExport = null;
+			Uri target = data == null ? null : data.getData();
+			if (resultCode == Activity.RESULT_OK && item != null
+					&& target != null) {
+				askZencPassword(item, target);
+			}
+			return;
+		}
 		if (requestCode == REQUEST_EXPORT_PLAIN) {
 			VaultItem item = pendingPlainExport;
 			pendingPlainExport = null;
@@ -642,7 +659,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 		}
 		if (resultCode == Activity.RESULT_OK && data != null) {
 			if (requestCode == REQUEST_FILE_PICK) {
-				Uri fileUri = data.getData();
+				Uri fileUri = com.professor.zerion.android.util.PickedUris
+						.accept(requireContext(), data.getData());
 				if (fileUri != null) {
 					String fileName = getFileName(fileUri);
 
@@ -699,6 +717,23 @@ public class VaultDocumentsFragment extends BaseFragment {
 		});
 
 		dialog.show(getParentFragmentManager(), "password_dialog");
+	}
+
+	static String safeExportName(String name) {
+		String last = new java.io.File(name).getName();
+		StringBuilder sb = new StringBuilder(last.length());
+		for (int i = 0; i < last.length(); i++) {
+			char c = last.charAt(i);
+			boolean unsafe = c < 0x20 || c == 0x7F || c == '/' || c == '\\'
+					|| c == ':';
+			sb.append(unsafe ? '_' : c);
+		}
+		String out = sb.toString().trim();
+		if (out.length() > 120) out = out.substring(0, 120);
+		if (out.isEmpty() || out.equals(".") || out.equals("..")) {
+			out = "vault-item";
+		}
+		return out;
 	}
 
 	private String getFileName(Uri uri) {

@@ -1,6 +1,9 @@
 package org.zerionproject.app.channel;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
+import org.zerionproject.core.api.plugin.OnionTargets;
+import org.zerionproject.transport.LoopbackOnionTargetFactory;
 
 import java.io.IOException;
 
@@ -11,6 +14,17 @@ public interface OnionPublisher {
 
 	OnionHandle publish(int localPort, @Nullable String privateKey)
 			throws IOException;
+
+	default OnionTargetListener openTarget() throws IOException {
+		return new LoopbackOnionTargetFactory().open();
+	}
+
+	default OnionHandle publish(String target, @Nullable String privateKey)
+			throws IOException {
+		int port = OnionTargets.loopbackPort(target);
+		if (port <= 0) throw new IOException("Unsupported onion target");
+		return publish(port, privateKey);
+	}
 
 	void unpublish(String onion) throws IOException;
 

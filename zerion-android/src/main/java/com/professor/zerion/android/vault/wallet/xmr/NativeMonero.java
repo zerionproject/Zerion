@@ -2,31 +2,9 @@ package com.professor.zerion.android.vault.wallet.xmr;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Load-safe, fail-closed bridge to the Monero wallet2_api JNI library
- * (libzmonero.so). If the native library is unavailable the bridge reports
- * unavailable and every operation is a no-op returning a failure sentinel; it
- * never falls back to a weaker or non-native code path. This layer forwards
- * calls only: it holds no keys, makes no policy decision, and is never a send
- * authorization path. Zerion authentication, session lifetime, storage and the
- * send gate live above this class in Java.
- *
- * There is deliberately no combined prepare-and-relay entry point: {@link
- * #prepare} builds and signs without relaying, and {@link #commit} relays a
- * previously prepared transaction, so the Java send gate can interpose between
- * review and relay.
- */
 @NotNullByDefault
 public final class NativeMonero {
 
-	/**
-	 * Error sentinel returned by the long-valued native accessors (balance,
-	 * unlocked balance, wallet/daemon height, subaddress count, tx fee/amount)
-	 * when the native side could not produce a real value (invalid/stale handle
-	 * or an internal wallet2 failure). Real wallet2 values are always {@code >=
-	 * 0}, so this is never a legitimate result and callers must treat it as
-	 * "unavailable", distinct from a real {@code 0}.
-	 */
 	static final long LONG_ERR = Long.MIN_VALUE;
 
 	private static final boolean AVAILABLE;
@@ -95,27 +73,12 @@ public final class NativeMonero {
 
 	static native void nSetRefreshFromHeight(long wallet, long height);
 
-	/** The wallet's current refresh-from height (wallet2
-	 *  get_refresh_from_block_height); {@link #LONG_ERR} on an invalid handle. */
 	static native long nGetRefreshFromHeight(long wallet);
 
-	/** Whether the daemon set by the last init is trusted (read back). */
 	static native boolean nTrustedDaemon(long wallet);
 
-	/**
-	 * Requests a rescan from the refresh-from height; the refresh thread
-	 * discards and rebuilds the scanned cache on its next start. The caller
-	 * quiesces the refresh thread first and starts it after.
-	 */
 	static native boolean nRescanBlockchain(long wallet);
 
-	/**
-	 * Mark the wallet as recovering from seed. This keeps wallet2's init from
-	 * fast-forwarding an unscanned background wallet's refresh height to the
-	 * daemon tip (WalletImpl::isNewWallet excludes recovering-from-seed), so a
-	 * restore or rescan scans from its stored early height instead of skipping
-	 * all prior history.
-	 */
 	static native void nSetRecoveringFromSeed(long wallet, boolean recovering);
 
 	static native boolean nRefresh(long wallet);
@@ -167,9 +130,6 @@ public final class NativeMonero {
 
 	static native long nTxDust(long tx);
 
-	/** Total change returned to the wallet across the prepared tx set;
-	 *  {@link #LONG_ERR} on an invalid handle. With amount + fee this gives the
-	 *  consumed-input total the send reservation must cover. */
 	static native long nTxChange(long tx);
 
 	static native int nAddressKind(String address);

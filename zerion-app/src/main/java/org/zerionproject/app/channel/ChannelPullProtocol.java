@@ -21,6 +21,9 @@ import javax.inject.Inject;
 @NotNullByDefault
 class ChannelPullProtocol {
 
+	private static final java.util.regex.Pattern ONION_V3 =
+			java.util.regex.Pattern.compile("^[a-z2-7]{56}(\\.onion)?$");
+
 	private final ChannelCodec codec;
 	private final ChannelPullCodec pullCodec;
 	private final ChannelHmacChallenge hmacChallenge;
@@ -49,7 +52,6 @@ class ChannelPullProtocol {
 		return pullCodec.encodePullRequest(channelId, -1L, null, null);
 	}
 
-	/** A public channel is pulled from the last post held, unauthenticated. */
 	byte[] buildPublicRequest(byte[] channelId, long sinceSeqNum)
 			throws IOException {
 		return pullCodec.encodePullRequest(channelId, sinceSeqNum, null,
@@ -59,10 +61,24 @@ class ChannelPullProtocol {
 	byte[] buildAuthenticatedRequest(byte[] channelId,
 			long sinceSeqNum, byte[] capability, byte[] publisherNonce)
 			throws IOException {
-		byte[] response = hmacChallenge.respond(capability,
-				publisherNonce, channelId);
-		return pullCodec.encodePullRequest(channelId, sinceSeqNum,
-				response, publisherNonce);
+		return buildRequest(channelId, sinceSeqNum, capability,
+				publisherNonce, null, null);
+	}
+
+	byte[] buildRequest(byte[] channelId, long sinceSeqNum,
+			@Nullable byte[] capability, @Nullable byte[] nonce,
+			@Nullable byte[] reactionsCursor, @Nullable byte[] commentsCursor)
+			throws IOException {
+		if (capability == null || nonce == null) {
+			return pullCodec.encodePullRequest(channelId, sinceSeqNum, null,
+					null, reactionsCursor, commentsCursor);
+		}
+		byte[] legacy = hmacChallenge.respond(capability, nonce, channelId);
+		byte[] request = pullCodec.encodePullRequest(channelId, sinceSeqNum,
+				legacy, nonce, reactionsCursor, commentsCursor);
+		byte[] proof = hmacChallenge.respondV2(capability, nonce, channelId,
+				pullCodec.withoutProof(request));
+		return pullCodec.withProofV2(request, proof);
 	}
 
 	byte[] buildResponseAsPublisher(ChannelState state,
@@ -75,6 +91,25 @@ class ChannelPullProtocol {
 					reactions,
 			List<org.zerionproject.app.api.channel.ChannelComment>
 					comments) throws IOException {
+		return buildResponseAsPublisher(state, publisherEd25519,
+				publisherMlDsa, manifestSignature, discussionsEnabled,
+				postsToSend, contentKeyEnvelope, neighbourHints, reactions,
+				comments, null, null);
+	}
+
+	byte[] buildResponseAsPublisher(ChannelState state,
+			byte[] publisherEd25519, byte[] publisherMlDsa,
+			byte[] manifestSignature, boolean discussionsEnabled,
+			List<ChannelPost> postsToSend,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ChannelPullCodec.ItemSync reactionsSync,
+			@Nullable ChannelPullCodec.ItemSync commentsSync)
+			throws IOException {
 		byte[] wireJoinCapability = state.isPublicChannel()
 				? state.getJoinCapability() : null;
 		BdfDictionary manifestDict = pullCodec.encodeManifest(
@@ -90,11 +125,20 @@ class ChannelPullProtocol {
 				discussionsEnabled, manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
 				contentKeyEnvelope, neighbourHints, reactions,
-				comments);
+				comments, reactionsSync, commentsSync);
 	}
 
 	ProcessResult processSubscriberResponse(byte[] responseBytes,
 			ChannelState localState, List<ChannelPost> existingPosts,
+			@Nullable byte[] capability) {
+		ChannelPost last = existingPosts.isEmpty() ? null
+				: existingPosts.get(existingPosts.size() - 1);
+		return processSubscriberResponse(responseBytes, localState,
+				last == null ? null : tipOf(last), capability);
+	}
+
+	ProcessResult processSubscriberResponse(byte[] responseBytes,
+			ChannelState localState, @Nullable ChannelChainTip tip,
 			@Nullable byte[] capability) {
 		ChannelPullCodec.PullResponse resp;
 		try {
@@ -148,31 +192,32 @@ class ChannelPullProtocol {
 
 		List<ChannelPost> accepted = new ArrayList<>();
 		List<ChannelPost> provisional = new ArrayList<>();
-		ChannelPost prev = existingPosts.isEmpty() ? null
-				: existingPosts.get(existingPosts.size() - 1);
-		long lastKnownSeq = prev == null ? -1L : prev.getSeqNum();
+		ChannelChainTip prev = tip;
+		long lastKnownSeq = tip == null ? -1L : tip.seqNum;
 		for (ChannelPost incoming : resp.newPosts) {
 			if (incoming.getSeqNum() <= lastKnownSeq) {
 				continue;
 			}
 			ChannelPostValidator.Result vr = validator.validate(
-					mergedState, incoming, prev);
+					mergedState, incoming, prev, provisional.isEmpty());
 			if (vr == ChannelPostValidator.Result.OK) {
 				for (ChannelPost p : provisional) accepted.add(p.withheld());
 				provisional.clear();
 				accepted.add(incoming);
-				prev = incoming;
+				prev = tipOf(incoming);
 			} else if (vr == ChannelPostValidator.Result.DELEGATION_REVOKED) {
 				for (ChannelPost p : provisional) accepted.add(p.withheld());
 				provisional.clear();
 				accepted.add(incoming.withheld());
-				prev = incoming;
+				prev = tipOf(incoming);
 			} else if (vr == ChannelPostValidator.Result.DELEGATION_NOT_FOUND
 					&& incoming.signedByDelegate()
-					&& validator.validateChain(incoming, prev)
-					== ChannelPostValidator.Result.OK) {
+					&& validator.validateChain(incoming, prev,
+					provisional.isEmpty())
+					== ChannelPostValidator.Result.OK
+					&& ChannelPostValidator.linksTo(incoming, prev)) {
 				provisional.add(incoming);
-				prev = incoming;
+				prev = tipOf(incoming);
 			} else {
 				break;
 			}
@@ -185,9 +230,17 @@ class ChannelPullProtocol {
 		} catch (FormatException e) {
 			wireDiscussions = true;
 		}
-		return ProcessResult.success(mergedState, accepted,
+		ProcessResult result = ProcessResult.success(mergedState, accepted,
 				resp.neighbourHints, resp.reactions, resp.comments,
 				wireDiscussions);
+		result.publisherVersion = resp.version;
+		result.reactionsSync = resp.reactionsSync;
+		result.commentsSync = resp.commentsSync;
+		return result;
+	}
+
+	private ChannelChainTip tipOf(ChannelPost p) {
+		return new ChannelChainTip(p.getSeqNum(), codec.canonicalHashOf(p));
 	}
 
 	@Nullable
@@ -236,7 +289,16 @@ class ChannelPullProtocol {
 			long wireCreatedAt = manifest.getLong("createdAtHourMs");
 			boolean wirePublic = manifest.getBoolean("publicChannel");
 			String wireOnion = manifest.getString("currentOnion");
+			if (!wireOnion.isEmpty() && !ONION_V3.matcher(
+					wireOnion.toLowerCase(java.util.Locale.ROOT)).matches()) {
+				return null;
+			}
 			long incomingSeq = manifest.getLong("manifestSeq");
+			if (incomingSeq < 0L || incomingSeq
+					> org.zerionproject.app.api.channel.ChannelConstants
+					.MAX_SEQUENCE_NUMBER) {
+				return null;
+			}
 			byte[] wireChannelId = manifest.getRaw("channelId");
 			if (!java.util.Arrays.equals(wireChannelId,
 					local.getChannelId())) {
@@ -352,6 +414,11 @@ class ChannelPullProtocol {
 				comments;
 		final boolean discussionsEnabled;
 		final String error;
+		int publisherVersion = 1;
+		@Nullable
+		ChannelPullCodec.ItemSync reactionsSync;
+		@Nullable
+		ChannelPullCodec.ItemSync commentsSync;
 
 		private ProcessResult(boolean ok,
 				@Nullable ChannelState mergedState,

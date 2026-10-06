@@ -54,9 +54,6 @@ public class I2pTransportTest {
 		exec.shutdownNow();
 	}
 
-	/** A fake SAM bridge: replies OK to the control handshake and to a dial,
-	 * and after a STREAM CONNECT OK sends one byte so the outgoing handler has
-	 * something to read. */
 	private void handleBridge(Socket s) {
 		try {
 			InputStream in = s.getInputStream();
@@ -149,7 +146,6 @@ public class I2pTransportTest {
 				new ExternalI2pRouter("127.0.0.1", bridgePort, 5000), exec,
 				handler);
 		t.start(null);
-		// Simulate the router forwarding an inbound stream to the local port.
 		Socket forwarded = new Socket();
 		forwarded.connect(new InetSocketAddress("127.0.0.1",
 				t.getLocalPort()), 5000);

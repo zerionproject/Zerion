@@ -16,7 +16,6 @@
         android:textColor="@color/zerion_text_primary"
         android:paddingBottom="16dp" />
 
-    <!-- Take Photo -->
     <LinearLayout
         android:id="@+id/attachment_camera"
         android:layout_width="match_parent"
@@ -45,7 +44,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Record Video -->
     <LinearLayout
         android:id="@+id/attachment_video"
         android:layout_width="match_parent"
@@ -74,7 +72,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Stickers -->
     <LinearLayout
         android:id="@+id/attachment_stickers"
         android:layout_width="match_parent"
@@ -104,7 +101,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Phone Gallery -->
     <LinearLayout
         android:id="@+id/attachment_phone_gallery"
         android:layout_width="match_parent"
@@ -133,7 +129,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Vault Gallery -->
     <LinearLayout
         android:id="@+id/attachment_vault_gallery"
         android:layout_width="match_parent"
@@ -162,7 +157,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Phone Documents -->
     <LinearLayout
         android:id="@+id/attachment_phone_documents"
         android:layout_width="match_parent"
@@ -191,7 +185,6 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Vault Documents -->
     <LinearLayout
         android:id="@+id/attachment_vault_documents"
         android:layout_width="match_parent"

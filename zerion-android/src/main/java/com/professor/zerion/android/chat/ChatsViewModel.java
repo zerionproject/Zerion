@@ -42,14 +42,6 @@ import javax.inject.Inject;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-/**
- * Backs the Chats inbox: loads every 1:1 contact, reduces each to a
- * {@link ChatItem} (name, last-activity time, unread count) and sorts them
- * most-recent first. Private groups and channels have their own tabs and are
- * not listed here. Reloads whenever an event that can change a conversation's
- * activity or unread count fires, so the inbox stays current while the app is
- * open.
- */
 @NotNullByDefault
 public class ChatsViewModel extends DbViewModel implements EventListener {
 
@@ -142,11 +134,6 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 		});
 	}
 
-	/**
-	 * Pins or unpins a contact. Returns false only when a pin was rejected
-	 * because the pinned limit is already reached, so the caller can notify
-	 * the user; true in every other case.
-	 */
 	boolean togglePin(int contactId) {
 		ContactId cid = new ContactId(contactId);
 		boolean wasPinned = pinnedManager.isPinned(cid);

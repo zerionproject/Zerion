@@ -24,27 +24,12 @@ public interface PluginManager {
 
 	void setPluginEnabled(TransportId t, boolean enabled);
 
-	/**
-	 * Stops the plugin for the given transport and starts a fresh one, if
-	 * connections are neither paused nor in offline mode.
-	 */
 	void restartPlugin(TransportId t);
 
-	/**
-	 * Offline (paranoia) mode: when on, all internet transports (Tor, I2P) are
-	 * stopped and only the offline mesh runs, so the app makes no internet
-	 * connections at all. Persisted, so it survives a restart.
-	 */
 	void setOfflineMode(boolean offline);
 
 	boolean isOfflineMode();
 
-	/**
-	 * Connections paused: when on, no transport plugins are started at all,
-	 * including the offline mesh, so the app opens no connections of any kind.
-	 * Persisted, so a restart that brings the service back up still starts no
-	 * transports until this is cleared.
-	 */
 	void setConnectionsPaused(boolean paused);
 
 	boolean isConnectionsPaused();

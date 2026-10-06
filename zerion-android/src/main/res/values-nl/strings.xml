@@ -23,7 +23,6 @@
 	<string name="dnkm_huawei_protected_button">Bescherm Zerion</string>
 	<string name="dnkm_huawei_protected_help">Als Zerion niet is toegevoegd aan de beschermde apps, is het niet mogelijk om het in de achtergrond uit te voeren.</string>
 	<string name="dnkm_xiaomi_button">Bescherm Zerion</string>
-	<string name="dnkm_warning_dozed">%s kon niet in de achtergrond worden uitgevoerd</string>
 	
 	<string name="enter_password">Wachtwoord</string>
 	<string name="try_again">Verkeerd wachtwoord, probeer het nog een keer</string>
@@ -69,7 +68,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion is geconfigureerd om het internet niet te gebruiken als apparaat op batterij loopt</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion is geconfigureerd om internet niet te gebruiken in dit land</string>
   
-  <string name="transport_lan_long">Hetzelfde wifinetwerk</string>
 
   <string name="reminder_notification_title">Uitgelogd van Zerion</string>
   <string name="reminder_notification_text">Tik om opnieuw in te loggen.</string>
@@ -163,13 +161,10 @@
   <string name="exchanging_contact_details">Contactdetails aan het uitwisselen\u2026</string>
   <string name="contact_added_toast">Contact toegevoegd: %s</string>
   <string name="contact_already_exists">Contact %s bestaat al</string>
-  <string name="qr_code_too_old">De QR-code die je hebt gescand komt van een oudere versie van %s.\n\nVraag aan je contact om de app bij te werken naar de laatste versie en probeer het daarna opnieuw.</string>
-  <string name="qr_code_too_new">De QR-code die je hebt gescand komt van een nieuwere versie van %s.\n\nWerk de app bij naar de laatste versie en probeer het daarna opnieuw.</string>
   <string name="camera_error">Camerafout</string>
   <string name="connecting_to_device">Aan het verbinden met apparaat\u2026</string>
   <string name="authenticating_with_device">Aan het authenticeren met apparaat\u2026</string>
   <string name="connection_error_title">Kon geen verbinding maken met je contact</string>
-  <string name="connection_error_feedback">Als dit probleem aanhoudt, <a href="feedback">stuur feedback</a> alsjeblieft om ons te helpen de app te verbeteren.</string>
   
   <string name="add_contact_remotely_title_case">Voeg een contact ver weg toe</string>
   <string name="add_contact_nearby_title">Voeg contact dat in de buurt is toe</string>
@@ -319,7 +314,6 @@
   <string name="pref_theme_title">Thema</string>
   <string name="pref_theme_light">Licht</string>
   <string name="pref_theme_dark">Donker</string>
-  <string name="pref_theme_auto">Automatisch (overdag)</string>
   <string name="pref_theme_system">Systeemstandaard</string>
   
   <string name="network_settings_title">Verbindingen</string>
@@ -328,14 +322,12 @@
   <string name="tor_enable_summary">Alle verbindingen gaan door het Tornetwerk voor privacy</string>
   <string name="tor_network_setting">Verbindingsmethode voor Tornetwerk</string>
   <string name="tor_network_setting_automatic">Automatisch gebaseerd op locatie</string>
-  <string name="tor_network_setting_without_bridges">Gebruikt Tornetwerk zonder bridges</string>
+  <string name="tor_network_setting_without_bridges">Gebruik Tornetwerk zonder bridges</string>
   <string name="tor_network_setting_with_bridges">Gebruik Tornetwerk met bridges</string>
   <string name="tor_network_setting_never">Verbind niet met het internet</string>
   
   <string name="tor_network_setting_summary">Automatisch: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Gebruik mobiele data</string>
-  <string name="tor_only_when_charging_title">Verbind alleen met het internet tijdens opladen</string>
-  <string name="tor_only_when_charging_summary">Schakel internetverbinding uit als apparaat op batterij loopt</string>
   
   <string name="security_settings_title">Beveiliging</string>
   <string name="pref_lock_title">App-vergrendeling</string>
@@ -395,39 +387,13 @@
   <string name="learn_more">Meer info</string>
   
   <string name="pref_category_actions">Acties</string>
-  <string name="send_feedback">Verstuur feedback</string>
   
   <string name="link_warning_title">Linkwaarschuwing</string>
   <string name="link_warning_intro">Je staat op het punt om de volgende link te open met een externe app.</string>
   <string name="link_warning_text">Dit kan worden gebruikt om je te identificeren. Denk goed na of je de persoon die je deze link heeft gestuurd wil vertrouwen en overweeg om deze te openen met een Tor-browser.</string>
   <string name="link_warning_open_link">Open link</string>
   
-  <string name="crash_report_title">Zerion Crashrapport</string>
-  <string name="not_your_fault">Dit is niet jouw schuld</string>
-  <string name="please_send_report">Help ons alsjeblieft om Zerion te verbeteren door crashrapporten naar ons te sturen.</string>
-  <string name="report_is_encrypted">We beloven dat het rapport is versleuteld en veilig wordt verzonden.</string>
-  <string name="feedback_title">Feedback</string>
-  <string name="describe_crash">Beschrijf wat er is gebeurd (optioneel)</string>
-  <string name="enter_feedback">Voer je feedback in</string>
-  <string name="optional_contact_email">Je e-mailadres (optioneel)</string>
-  <string name="include_debug_report_crash">Voeg geanonimiseerde gegevens toe over de crash.</string>
-  <string name="include_debug_report_feedback">Voeg geanonimiseerde gegevens over dit apparaat toe.</string>
-  <string name="dev_report_basic_info">Basis informatie</string>
-  <string name="dev_report_device_info">Apparaatinformatie</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">Tijdsinformatie</string>
-  <string name="dev_report_memory">Geheugen</string>
-  <string name="dev_report_storage">Storage</string>
-  <string name="dev_report_connectivity">Connectiviteit</string>
-  <string name="dev_report_build_config">Buildinformatie</string>
-  <string name="dev_report_logcat">Applog</string>
-  <string name="dev_report_device_features">Apparaatfeatures</string>
-  <string name="send_report">Verstuur rapport</string>
   <string name="close">Sluit</string>
-  <string name="dev_report_sending">Verstuur Feedback...</string>
-  <string name="dev_report_sent">Feedback is verzonden</string>
-  <string name="dev_report_saved">Rapport is opgeslagen. Het zal worden verstuurd als je de volgende keer inlogt op Zerion </string>
-  <string name="dev_report_error">Fout: Verzenden van rapport is gefaald</string>
   
   <string name="progress_title_logout">Uitloggen bij Zerion…</string>
   
@@ -505,8 +471,8 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Klassieke Beveiliging</string>
 	<string name="security_level_classical_short">Klassiek</string>
-	<string name="security_level_post_quantum_description">Dit contact gebruikt hybride post-quantum cryptografie (X25519 + ML-KEM-768), wat bescherming biedt tegen toekomstige kwantumcomputeraanvallen.</string>
-	<string name="security_level_classical_description">Dit contact gebruikt klassieke cryptografie. Upgrade beide apps naar Zerion voor post-quantum beveiliging.</string>
+	<string name="security_level_post_quantum_description">Berichten gebruiken kwantumbestendige versleuteling bovenop klassieke versleuteling, en de handtekeningen van dit contact gebruiken zowel een klassieke als een kwantumbestendige sleutel. Bij contacten die vóór versie 3.0.12 zijn gekoppeld, is bij het koppelen alleen de klassieke sleutel gecontroleerd; vergelijk de veiligheidsnummers of koppel opnieuw om de kwantumbestendige sleutel te bevestigen.</string>
+	<string name="security_level_classical_description">Dit contact staat geregistreerd als gekoppeld met de oudere klassieke sleuteluitwisseling (contacten die vóór versie 3.0.15 aan je zijn voorgesteld, worden ook zo weergegeven). Elk bericht blijft beschermd met kwantumbestendige versleuteling. Koppel opnieuw rechtstreeks om ook het koppelen kwantumbestendig te maken.</string>
 
 	<string name="login_account_locked">Account vergrendeld vanwege te veel mislukte pogingen. Wacht alstublieft %1$d minuten en %2$d seconden.</string>
 	<string name="login_final_warning">WAARSCHUWING: Na nog 3 mislukte pogingen worden alle gegevens permanent verwijderd voor de veiligheid.</string>
@@ -538,7 +504,7 @@
 	<string name="wipe_password_remove_failed">Wiswachtwoord verwijderen mislukt</string>
 	<string name="wipe_password_triggered_title">Noodwissing Geactiveerd</string>
 	<string name="wipe_password_triggered_message">Wiswachtwoord gedetecteerd. Alle gegevens worden nu permanent verwijderd.</string>
-	<string name="wipe_password_warning">⚠️ WAARSCHUWING: Het invoeren van het wiswachtwoord zal onmiddellijk en permanent ALLE gegevens van dit apparaat verwijderen. Dit kan niet ongedaan worden gemaakt.</string>
+	<string name="wipe_password_warning">⚠️ WAARSCHUWING: Als je het wiswachtwoord invoert, worden alle Zerion-gegevens op dit toestel direct en definitief verwijderd. Dit kan niet ongedaan worden gemaakt.</string>
 	<string name="set">Instellen</string>
 	<string name="remove">Verwijderen</string>
 
@@ -591,14 +557,14 @@
 	<string name="settings_section_tor_network">TOR-NETWERK</string>
 	<string name="settings_section_mode">PRIVACYMODUS</string>
 	<string name="offline_mode_title">Offlinemodus (Paranoia)</string>
-	<string name="offline_mode_summary">Blokkeer alle internet. Praat alleen met contacten in de buurt via mesh</string>
-	<string name="offline_mode_info">Offlinemodus stopt Tor en I2P volledig, zodat de app helemaal geen internetverbinding maakt. Je kunt alleen al gekoppelde contacten in de buurt bereiken, via Bluetooth.</string>
+	<string name="offline_mode_summary">Stop Tor. Praat alleen met contacten in de buurt via mesh</string>
+	<string name="offline_mode_info">Offlinemodus stopt Tor, zodat de app geen internetverbinding maakt voor berichten. Een directe of lokale walletnode die je zelf instelt, wordt niet geblokkeerd. Je kunt alleen al gekoppelde contacten in de buurt bereiken, via Bluetooth.</string>
 	<string name="offline_mode_confirm_title">Offlinemodus inschakelen?</string>
-	<string name="offline_mode_confirm_message">Dit blokkeert alle internet: Tor en I2P worden gestopt en de app maakt geen netwerkverbinding. Alleen al gekoppelde contacten in de buurt zijn bereikbaar, via de offline mesh. Schakel uit om weer online te gaan.</string>
+	<string name="offline_mode_confirm_message">Dit stopt berichten via internet: Tor wordt gestopt. Alleen al gekoppelde contacten in de buurt zijn bereikbaar, via het offline mesh-netwerk. Een directe of lokale walletnode die je hebt ingesteld, wordt niet geblokkeerd. Zet uit om weer online te gaan.</string>
 	<string name="offline_mode_confirm_button">Ga offline</string>
 	<string name="network_status_off">Uit</string>
 	<string name="offline_mode_transport_off">Gestopt in offlinemodus</string>
-	<string name="offline_mode_banner">Offlinemodus · internet geblokkeerd · alleen mesh</string>
+	<string name="offline_mode_banner">Offlinemodus · Tor gestopt · alleen mesh</string>
 	<string name="settings_section_overlay">OVERLAYNETWERKEN</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">Route ook via het I2P-netwerk</string>
@@ -626,6 +592,7 @@
 	<string name="nearby_pairing_connecting">Verbinden…</string>
 	<string name="nearby_pairing_exchanging">Sleutels uitwisselen…</string>
 	<string name="nearby_pairing_success">%1$s toegevoegd</string>
+	<string name="nearby_pairing_success_neutral">Contact toegevoegd</string>
 	<string name="nearby_pairing_failed">Koppelen mislukt. Houd de telefoons dichter bij elkaar en probeer opnieuw.</string>
 	<string name="nearby_pairing_no_bluetooth">Bluetooth is niet beschikbaar. Koppelen werkt alleen via het lokale netwerk.</string>
 	<string name="mesh_status_label">Offline mesh</string>
@@ -635,7 +602,16 @@
 	<string name="settings_section_appearance">WEERGAVE</string>
 	<string name="identity_section_title">Identiteitsverificatie</string>
 	<string name="identity_safety_number_label">Veiligheidsnummer</string>
-	<string name="identity_safety_number_explain">Vergelijk deze 60 cijfers met je contact in persoon of via een vertrouwd kanaal. Als ze op beide apparaten overeenkomen, is je gesprek end-to-end beveiligd.</string>
+	<string name="identity_safety_number_explain">Vergelijk deze 60 cijfers met je contact, persoonlijk of via een vertrouwd kanaal. Als ze op beide toestellen overeenkomen, hebben jullie allebei elkaars echte identiteitssleutels en heeft niemand ze vervangen bij het koppelen. Versie 2 dekt beide sleutels van jullie identiteiten en verschijnt zodra beide apps elkaars post-kwantum ondertekeningssleutel kennen, die ze bij de volgende verbinding uitwisselen; versie 1 dekt alleen de klassieke sleutel. Nummers van verschillende versies komen nooit overeen, dus vergelijk de versie die jullie allebei zien.</string>
+	<string name="identity_fingerprint_hybrid_format">Versie 2 (beide sleutels): %1$s</string>
+	<string name="identity_fingerprint_classical_format">Versie 1 (klassieke sleutel): %1$s</string>
+	<string name="identity_keys_out_of_sync_title">Verbindingssleutels lopen niet gelijk</string>
+	<string name="identity_keys_out_of_sync_message">Het apparaat van dit contact accepteert verbindingen, maar herkent je verbindingssleutels niet meer. Dit gebeurt als een van jullie een oudere back-up heeft teruggezet nadat de sleutels waren veranderd. Berichten kunnen pas weer worden afgeleverd als jullie elkaar opnieuw toevoegen: wissel nog eens links uit. Je gespreksgeschiedenis blijft bewaard.</string>
+	<string name="identity_keys_out_of_sync_banner">Verbindingssleutels lopen niet gelijk. Tik om te herstellen</string>
+	<string name="identity_readd_contact">Contact opnieuw toevoegen om de verbinding te herstellen</string>
+	<string name="identity_readd_contact_hint">Wissel opnieuw links uit met dit contact. De koppeling vervangt de verbindingssleutels op beide apparaten en bewaart je gesprek.</string>
+	<string name="contact_readd_started">Het contact wordt opnieuw toegevoegd zodra het jou ook weer toevoegt met je nieuwe link</string>
+	<string name="identity_safety_number_version_label">Veiligheidsnummer, versie %1$d</string>
 	<string name="identity_my_fingerprint_label">Mijn vingerafdruk</string>
 	<string name="identity_their_fingerprint_label">Hun vingerafdruk</string>
 	<string name="identity_copied">Gekopieerd naar klembord</string>
@@ -742,6 +718,7 @@
 	<string name="password_strong">Wachtwoord is sterk</string>
 	<string name="setup_failed_title">Instellen mislukt</string>
 	<string name="setup_failed_message">Er is iets misgegaan. Probeer opnieuw.</string>
+	<string name="generic_error">Er is iets misgegaan. Probeer opnieuw.</string>
 	<string name="setup_failed_retry">Opnieuw proberen</string>
 	<string name="dnkm_huawei_app_launch_text">Tik op de knop hieronder, open het scherm \"App-start\" en zorg dat Zerion op \"Handmatig beheren\" staat.</string>
 	<string name="dnkm_huawei_app_launch_help">Als Zerion in het scherm \"App-start\" niet op \"Handmatig beheren\" staat, kan het niet op de achtergrond draaien.</string>
@@ -802,6 +779,7 @@
 	<string name="channels_join_title">Deelnemen aan een kanaal</string>
 	<string name="channels_join_link_hint">Plak de uitnodigingslink van het kanaal</string>
 	<string name="channels_join_action">Deelnemen</string>
+	<string name="channels_join_confirm">Deelnemen aan dit kanaal? Sleutel van de uitgever: %1$s</string>
 	<string name="channels_join_error_link">Dit lijkt geen geldige uitnodigingslink voor een Zerion-kanaal.</string>
 	<string name="channels_join_already_subscribed">Je bent al geabonneerd op dit kanaal.</string>
 	<string name="channels_feed_empty_publisher">Je kanaal heeft nog geen berichten. Publiceer je eerste.</string>
@@ -816,13 +794,13 @@
 	<string name="channels_invite_preparing">Uitnodigingslink voorbereiden…</string>
 	<string name="channels_invite_not_ready">Kanaal is nog niet klaar om te delen. Zorg dat je verbonden bent en probeer opnieuw.</string>
 	<string name="channels_invite_rotate_confirm_title">Uitnodigingslink vernieuwen?</string>
-	<string name="channels_invite_rotate_confirm_message">Iedereen die de oude link al heeft, kan niet opnieuw deelnemen. Bestaande abonnees blijven berichten ontvangen.</string>
+	<string name="channels_invite_rotate_confirm_message">Iedereen met de oude link verliest de toegang, ook huidige abonnees, en het kanaal verhuist meteen naar een nieuw adres. Berichten van vóór de wijziging zijn met de nieuwe link niet te lezen. Deel de nieuwe link met de mensen die moeten blijven.</string>
 	<string name="channels_leave_confirm_title">Kanaal verlaten?</string>
 	<string name="channels_leave_confirm_message">Alle lokaal opgeslagen berichten van dit kanaal worden van je apparaat verwijderd.</string>
 	<string name="channels_leave_confirm_action">Verlaten</string>
 	<string name="channels_delete_confirm_title">Kanaal verwijderen?</string>
-	<string name="channels_delete_confirm_message">Hiermee wordt het kanaal permanent voor iedereen verwijderd. Abonnees verliezen alle berichten de volgende keer dat ze verbinden. Dit kan niet ongedaan worden gemaakt.</string>
-	<string name="channels_delete_confirm_action">Voor iedereen verwijderen</string>
+	<string name="channels_delete_confirm_message">Hiermee worden het kanaal en alles wat dit toestel ervoor bewaart definitief verwijderd. 14 dagen lang vertelt het adres van het kanaal abonnees alleen dat het is verwijderd, zodat hun toestellen het verwijderen als ze verbinden terwijl jouw toestel online is; daarna worden ook het adres en de sleutels verwijderd. Abonnees die in die tijd niet verbinden, houden hun kopie. Dit kan niet ongedaan worden gemaakt.</string>
+	<string name="channels_delete_confirm_action">Kanaal verwijderen</string>
 	<string name="channels_action_delete_channel">Kanaal verwijderen</string>
 	<string name="channels_publisher_offline_note">Abonnees ontvangen je berichten wanneer hun app het onion-adres van je kanaal bereikt. Houd Zerion actief voor de beste bezorging.</string>
 	<string name="channels_ttl_label">Verlopen</string>
@@ -839,10 +817,10 @@
 	<string name="channels_delegations_role_owner">Eigenaar</string>
 	<string name="channels_delegations_role_editor">Redacteur</string>
 	<string name="channels_delegations_role_you">Jij</string>
-	<string name="channels_delegations_help">Je kunt redacteuren toevoegen om te helpen posten in dit kanaal. Houd een redacteur ingedrukt om die in te trekken. Alleen de eigenaar kan posten, vastmaken, verwijderen of andere redacteuren toevoegen.</string>
+	<string name="channels_delegations_help">Redacteuren kunnen tekst posten in dit kanaal; hun berichten bereiken abonnees via jouw apparaat, dat dus online moet zijn. Voeg een abonnee toe die zich heeft aangekondigd, of plak de sleutel die een redacteur uit het kanaalmenu heeft gekopieerd. Houd een redacteur ingedrukt om die in te trekken. Alleen de eigenaar kan vastmaken, verwijderen, bestanden bijvoegen of andere redacteuren toevoegen.</string>
 	<string name="channels_delegations_add">Redacteur toevoegen</string>
 	<string name="channels_delegations_revoke">Intrekken</string>
-	<string name="channels_delegations_paste_pubkey">Plak de hybride publieke sleutel van de redacteur (base32)</string>
+	<string name="channels_delegations_paste_pubkey">Plak de kanaalsleutel van de redacteur (base32)</string>
 	<string name="channels_delegations_validity_label">Geldig tot</string>
 	<string name="channels_delegations_validity_unbounded">Geen vervaldatum</string>
 	<string name="channels_delegations_added">Redacteur toegevoegd.</string>
@@ -865,6 +843,17 @@
 	<string name="channels_delegations_paste_key">Plak publieke sleutel…</string>
 	<string name="channels_action_delete">Verwijderen</string>
 	<string name="channels_post_deleted">[verwijderd]</string>
+	<string name="channels_outdated_subscribers_notice">Sommige abonnees gebruiken een oudere versie van Zerion. Zij ontvangen geen nieuwe berichten meer tot ze updaten.</string>
+	<string name="channels_posts_given_up_notice">Oudere berichten zijn van dit apparaat verwijderd om binnen de opslaglimiet voor kanalen te blijven.</string>
+	<string name="channels_action_copy_my_key">Mijn kanaalsleutel kopiëren</string>
+	<string name="channels_my_key_copied">Kanaalsleutel gekopieerd. Geef die aan de eigenaar om als redacteur te worden toegevoegd.</string>
+	<string name="channels_comment_anonymous">Anoniem</string>
+	<string name="channels_comment_owner">Eigenaar</string>
+	<string name="channels_comment_you">Jij</string>
+	<string name="channels_comment_ban_author">Deze auteur blokkeren</string>
+	<string name="channels_comment_ban_confirm">De auteur van deze reactie blokkeren? Diens reacties en emoji-reacties worden verwijderd en alles wat die nog naar dit kanaal stuurt wordt geweigerd.</string>
+	<string name="channels_delegations_from_subscribers">Aangekondigde abonnees</string>
+	<string name="channels_editor_post_failed">Posten mislukt. Het apparaat van de eigenaar moet online zijn en je moet nog redacteur zijn.</string>
 	<string name="channels_post_delete_confirm">Dit bericht verwijderen?</string>
 	<string name="channels_post_delete_failed">Kan bericht niet verwijderen</string>
 	<string name="channels_attach_cd">Bestand bijvoegen</string>
@@ -883,16 +872,21 @@
 	<string name="channels_leave_failed">Kan het kanaal niet verlaten</string>
 	<string name="channels_ban_failed">Kan deze abonnee niet verbannen</string>
 	<string name="channels_announce_title">Jezelf aankondigen?</string>
-	<string name="channels_announce_message">De kanaaleigenaar ziet je gekozen weergavenaam en je publieke sleutel. Je kunt ook anoniem blijven. Alleen de eigenaar ziet ooit aangekondigde abonnees.</string>
+	<string name="channels_announce_message">De eigenaar van het kanaal ziet de naam die je kiest en een sleutel die alleen in dit kanaal bij jou hoort; die verraadt niet wie je elders bent. Je reacties tonen deze naam aan iedereen die de discussie leest. Als de eigenaar je als vertrouwd markeert, blijven je reacties en emoji-reacties behouden wanneer onbekende accounts de discussie overspoelen. Je kunt dit overslaan.</string>
 	<string name="channels_announce_name_hint">Weergavenaam</string>
 	<string name="channels_announce_action">Aankondigen</string>
-	<string name="channels_announce_skip">Anoniem blijven</string>
+	<string name="channels_announce_skip">Geen naam delen</string>
 	<string name="channels_announce_failed">Aankondigen mislukt</string>
 	<string name="channels_subscribers_title">Abonnees</string>
 	<string name="channels_subscribers_empty">Nog geen abonnees hebben zichzelf aangekondigd.</string>
 	<string name="channels_subscribers_count">%1$d aangekondigd</string>
 	<string name="channels_subscribers_ban">Abonnee verbannen</string>
 	<string name="channels_subscribers_ban_confirm">Deze abonnee verbannen? Hun berichten, reacties en opmerkingen worden geweigerd.</string>
+	<string name="channels_subscribers_trust">Markeren als vertrouwd</string>
+	<string name="channels_subscribers_untrust">Vertrouwen intrekken</string>
+	<string name="channels_subscribers_trusted_badge">Vertrouwd</string>
+	<string name="channels_subscribers_trust_failed">Kan het vertrouwen van deze abonnee niet wijzigen</string>
+	<string name="channels_react_too_soon">Je hebt deze reactie dit uur te vaak gewijzigd. Probeer het later opnieuw.</string>
 	<string name="channels_subscribers_ban_rotate">Vernieuw ook de uitnodigingslink (verwijdert ook niet-aangekondigde meelezers; overige abonnees hebben een nieuwe uitnodiging nodig)</string>
 	<string name="channels_subscribers_banned_label">Verbannen</string>
 	<string name="channels_action_comments">Opmerkingen</string>
@@ -942,7 +936,7 @@
 	<string name="channels_comments_count_one">1 opmerking</string>
 	<string name="channels_create_require_approval">Beoordeel nieuwe abonnees voordat ze kunnen lezen</string>
 	<string name="channels_apply_title">Aanmelden om deel te nemen</string>
-	<string name="channels_apply_message">De kanaaleigenaar moet je aanmelding goedkeuren voordat je berichten kunt lezen. De eigenaar ziet je weergavenaam en je publieke sleutel.</string>
+	<string name="channels_apply_message">De eigenaar van het kanaal moet je aanvraag goedkeuren voordat je berichten kunt lezen. De eigenaar ziet je weergavenaam en een sleutel die alleen in dit kanaal bij jou hoort.</string>
 	<string name="channels_apply_action">Aanmelden</string>
 	<string name="channels_apply_failed">Kan aanmelding niet verzenden</string>
 	<string name="channels_approval_pending_banner">Wachten tot de eigenaar je aanmelding goedkeurt…</string>
@@ -971,6 +965,8 @@
 	<string name="tor_hidden_services_connecting">Verbinden met Tor hidden services…</string>
 	<string name="tor_hidden_services_publishing">Je adres wordt gepubliceerd op het Tor-netwerk…</string>
 	<string name="tor_status_publishing">Publiceren</string>
+	<string name="tor_status_clock_skew">Klok is onjuist</string>
+	<string name="tor_hidden_services_clock_skew">De klok van je toestel is onjuist, waardoor Tor je adres niet kan publiceren. Zet datum, tijd en tijdzone op automatisch en verbind opnieuw.</string>
 	<string name="tor_status_bootstrapping">Circuits opbouwen (%1$d%%)</string>
 	<string name="tor_restart">Tor herstarten</string>
 	<string name="tor_restarting">Tor wordt herstart…</string>
@@ -983,8 +979,11 @@
 	<string name="network_uptime_label">Uptime:</string>
 	<string name="network_hidden_service_label">Hidden service:</string>
 	<string name="network_mode_title">Beveiligde netwerkmodus</string>
-	<string name="network_mode_description">Alle communicatie loopt via het Tor-netwerk voor maximale privacy en veiligheid. Je verbinding is end-to-end versleuteld en je identiteit blijft anoniem.</string>
 	<string name="ongoing_notification_exit_action">Afsluiten</string>
+	<string name="disguised_notification_title">Melding</string>
+	<string name="disguised_notification_text">Tik om te openen</string>
+	<string name="exit_in_progress">Wordt afgesloten. Open zo opnieuw.</string>
+	<string name="picked_file_refused">Dit bestand kan hier niet worden gebruikt.</string>
 	<string name="voice_message">Spraakbericht</string>
 	<string name="play_pause">Afspelen/Pauzeren</string>
 	<string name="play_voice_message">Spraakbericht afspelen</string>
@@ -1071,7 +1070,7 @@
 	<string name="pref_force_complete_rotation_done">Vernieuwing voltooid</string>
 	<string name="pref_force_complete_rotation_not_announcing">Geen vernieuwing bezig</string>
 	<string name="rotation_notification_channel_title">Adresvernieuwingen</string>
-	<string name="rotation_notification_own_body">Je beveiligde adres is vernieuwd voor forward secrecy.</string>
+	<string name="rotation_notification_own_body">Je beveiligde adres is gewijzigd. Je contacten gaan automatisch over naar het nieuwe adres, waarna het oude adres wordt opgeheven.</string>
 	<string name="rotation_notification_peer_body">Een contact heeft zijn beveiligde adres bijgewerkt.</string>
 	<string name="pref_calls_section_title">OPROEPEN</string>
 	<string name="pref_voice_calls_title">Spraakoproepen</string>
@@ -1095,6 +1094,11 @@
 	<string name="video_attach_error">Kan video niet bijvoegen</string>
 	<string name="video_attach_error_too_big">Video te groot. Maximale grootte is %d MB.</string>
 	<string name="video_not_supported_by_contact">Video vereist Zerion op beide apparaten. Dit contact gebruikt een oudere of incompatibele versie.</string>
+	<string name="document_mesh_not_supported">Documenten kunnen niet via mesh worden verstuurd</string>
+	<string name="document_not_supported_by_contact">Dit contact kan nog geen documenten ontvangen</string>
+	<string name="document_attach_error">Dit document kon niet worden toegevoegd</string>
+	<string name="document_attach_error_too_big">Documenten mogen maximaal %d MB zijn</string>
+	<string name="document_attachment_description">Document</string>
 	<string name="audio_attach_error">Kan audio niet bijvoegen</string>
 	<string name="audio_attach_error_too_big">Audiobestand te groot. Maximale grootte is %d MB.</string>
 	<string name="audio_not_supported_by_contact">Audiobestanden vereisen Zerion op beide apparaten. Dit contact gebruikt een oudere of incompatibele versie.</string>
@@ -1152,7 +1156,7 @@
 	<string name="settings_save_failed">Kan instelling niet opslaan.</string>
 	<string name="grouptr_open">Openen</string>
 	<string name="grouptr_input_hint">Bericht</string>
-	<string name="grouptr_member_key_message">Identiteitsvingerafdruk\n\n%1$s\n\nDeze is afgeleid van de ondertekeningssleutel van dit lid. Als deze niet overeenkomt met wat je verwacht, komen de berichten mogelijk van een andere sleutel.</string>
+	<string name="grouptr_member_key_message">Identiteitsvingerafdruk\n\n%1$s\n\nDeze is afgeleid van de ondertekeningssleutels van dit lid. Als deze niet overeenkomt met wat je verwacht, komen de berichten mogelijk van een andere sleutel.</string>
 	<string name="grouptr_msg_you">Jij</string>
 	<string name="grouptr_stealth_name_set">Naam in deze groep instellen</string>
 	<string name="grouptr_stealth_name_msg">Een andere naam die alleen voor andere leden in deze groep zichtbaar is. Laat leeg om te wissen.</string>
@@ -1169,6 +1173,7 @@
 	<string name="grouptr_group_name_hint">Groepsnaam</string>
 	<string name="grouptr_invite_received_toast">Je bent toegevoegd aan een nieuwe groep</string>
 	<string name="grouptr_removed_by_admin">Je bent verwijderd uit \"%1$s\"</string>
+	<string name="grouptr_removed_neutral">Je bent uit een groep verwijderd</string>
 	<string name="grouptr_pending_invite_title">%1$s, uitgenodigd door %2$s</string>
 	<string name="grouptr_pending_accept">Accepteren</string>
 	<string name="grouptr_pending_decline">Weigeren</string>
@@ -1236,6 +1241,12 @@
 	<string name="no_media">Nog geen media gedeeld</string>
 	<string name="media_document_open_failed">Kan dit document niet openen</string>
 	<string name="media_document_no_app">Geen app beschikbaar om dit bestandstype te openen</string>
+	<string name="external_open_title">Openen in een andere app?</string>
+	<string name="external_open_message">Dit bestand wordt geopend in een andere app op je telefoon, buiten Zerion. Die app gebruikt geen Tor. Documenten zoals PDF-, Office- en kaartbestanden kunnen de app bij het openen verbinding laten maken met internet, waardoor je IP-adres zichtbaar kan worden voor wie het bestand heeft gemaakt.\n\nOpen het alleen als je de afzender vertrouwt, of zet eerst de vliegtuigmodus aan. Zerion verwijdert zijn kopie zodra je terugkomt.</string>
+	<string name="external_open_confirm">Toch openen</string>
+	<string name="media_refused_title">Bestand niet verzonden</string>
+	<string name="media_refused_cannot_clean">Zerion kon de verborgen informatie (zoals locatie of apparaatgegevens) niet uit dit bestand verwijderen, dus het is niet verzonden. Dit gebeurt bij AVI en andere oudere videoformaten, TIFF- en RAW-foto\'s van camera\'s, sommige Ogg-bestanden en beschadigde bestanden. Zet het om naar MP4, JPEG, PNG of MP3 en probeer het opnieuw.</string>
+	<string name="media_refused_too_large">Dit bestand is te groot om de verborgen informatie (zoals locatie of apparaatgegevens) op deze telefoon te verwijderen, dus het is niet verzonden. Maak het kleiner en probeer het opnieuw.</string>
 	<string name="no_images">Nog geen afbeeldingen gedeeld</string>
 	<string name="no_documents">Nog geen documenten gedeeld</string>
 	<string name="chat_settings">Chatinstellingen</string>
@@ -1252,7 +1263,12 @@
 	<string name="verified_contact">Geverifieerd contact</string>
 	<string name="verify_to_send_media_banner">Verifieer dit contact om stickers en bijlagen te verzenden</string>
 	<string name="verify_to_send_media_title">Verifieer dit contact eerst</string>
-	<string name="verify_to_send_media_message">Voor je veiligheid kunnen bijlagen, stickers en spraakberichten alleen worden verzonden tussen contacten die elkaar hebben geverifieerd. Open de contactinformatie om veiligheidsnummers te vergelijken.</string>
+	<string name="verify_to_send_media_message">Voor je veiligheid kunnen bijlagen, stickers en spraakberichten alleen worden verzonden naar contacten die je zelf hebt toegevoegd of hebt geverifieerd. Dit contact is aan je voorgesteld. Open de contactinformatie om veiligheidsnummers te vergelijken.</string>
+	<string name="own_link_changed">Je link is veranderd omdat je intussen een ander contact hebt toegevoegd. Stuur je contact je nieuwe link en voeg het contact opnieuw toe.</string>
+	<string name="identity_mark_verified">Markeren als geverifieerd</string>
+	<string name="identity_mark_verified_title">Dit contact markeren als geverifieerd?</string>
+	<string name="identity_mark_verified_message">Doe dit alleen als de app van je contact hetzelfde veiligheidsnummer toont, vergeleken in persoon of via een kanaal dat je vertrouwt. Als de nummers verschillen, kan iemand je gesprek onderscheppen.</string>
+	<string name="identity_mark_verified_confirm">De nummers komen overeen</string>
 	<string name="verify_to_send_media_open_info">Contactinformatie openen</string>
 	<string name="trust_indicator">Vertrouwensindicator</string>
 	<string name="all">Alle</string>
@@ -1364,11 +1380,11 @@
 	<string name="pref_accent_blue">Blauw</string>
 	<string name="pref_theme_amoled">AMOLED-zwart</string>
 	<string name="tor_mobile_data_summary">Sta verbindingen via het mobiele netwerk toe</string>
-	<string name="tor_info_message">Zerion gebruikt uitsluitend het Tor-netwerk voor veilige, anonieme communicatie. Alle verbindingen lopen via Tor.</string>
+	<string name="tor_info_message">Zerion verstuurt alle online berichten via het Tor-netwerk. Bluetooth-verbindingen met contacten in de buurt, en een directe of lokale walletnode als je die instelt, gebruiken Tor niet.\n\nDe automatische modus raadt je land aan de hand van je simkaart of mobiele netwerk, of van de taalinstelling van je telefoon als er geen simkaart is, en gebruikt bridges in landen waarvan bekend is dat ze Tor blokkeren. Bridges verbergen voor je netwerk dat je Tor gebruikt, maar brengen andere partijen in: snowflake-bridges bereiken een broker via een content delivery network, vragen openbare STUN-servers naar je adres en sturen je verkeer daarna via vrijwillige proxy\'s, die je IP-adres zien; meek-bridges gaan via een content delivery network. Kies \"Gebruik Tornetwerk zonder bridges\" of voeg je eigen bridges toe om ze te vermijden.</string>
 	<string name="tor_custom_bridges_title">Aangepaste bridges</string>
 	<string name="tor_custom_bridges_summary_none">Niet ingesteld</string>
 	<string name="tor_custom_bridges_invalid">Een van de regels is geen bridge-regel. Er is niets opgeslagen.</string>
-	<string name="tor_custom_bridges_dialog_message">Als Tor geen verbinding kan maken waar jij bent, plak hier dan bridge-regels, één per regel. Ze worden vóór de ingebouwde bridges geprobeerd. Je kunt bridges krijgen via bridges.torproject.org of de GetBridgesBot op Telegram.</string>
+	<string name="tor_custom_bridges_dialog_message">Als Tor geen verbinding kan maken waar jij bent, plak hier dan bridge-regels, één per regel. Als je hier bridges toevoegt, worden alleen deze gebruikt en niet de ingebouwde. Gewone, obfs4-, snowflake-, meek- en webtunnel-bridges worden ondersteund. Je kunt bridges krijgen via bridges.torproject.org of de GetBridgesBot op Telegram.</string>
 	<string name="tor_custom_bridges_hint">Plak bridge-regels, één per regel</string>
 	<string name="backup_settings_title">Back-up &amp; overdracht</string>
 	<string name="backup_settings_summary">Verplaats je account naar een andere telefoon</string>
@@ -1388,7 +1404,7 @@
 	<string name="settings_section_account">Account</string>
 	<string name="backup_export_success">Back-up opgeslagen</string>
 	<string name="backup_export_success_title">Back-up opgeslagen</string>
-	<string name="backup_export_warning_after">Je back-up is opgeslagen. Deze bevat je account, contacten en berichten, maar niet je kluis-items. Exporteer de kluis apart via het kluisscherm als je die gebruikt. De back-up is alleen beschermd met je wachtwoordzin, dus bewaar hem op een veilige plek en verwijder het bestand zodra je je account naar de andere telefoon hebt verplaatst.</string>
+	<string name="backup_export_warning_after">Je back-up is opgeslagen. Deze bevat je account, contacten en berichten, maar niet je kluis-items. Exporteer de kluis apart via het kluisscherm als je die gebruikt. De back-up is alleen beschermd met je wachtwoordzin, dus bewaar hem op een veilige plek en verwijder het bestand zodra je je account naar de andere telefoon hebt verplaatst. De verbindingssleutels met je contacten veranderen terwijl je met ze praat; deze telefoon houdt ze zeven dagen ongewijzigd, zet de back-up dus binnen die tijd terug. Een back-up die je later terugzet, bereikt sommige contacten misschien pas weer als jullie elkaar opnieuw toevoegen.</string>
 	<string name="backup_export_failed">Kan de back-up niet maken</string>
 	<string name="backup_export_not_signed_in">Log eerst in en maak dan een back-up.</string>
 	<string name="backup_import_in_progress">Account importeren</string>
@@ -1400,7 +1416,7 @@
 	<string name="backup_import_corrupt">Dit back-upbestand is beschadigd en kan niet worden gelezen.</string>
 	<string name="backup_import_io_error">Kan het back-upbestand niet lezen.</string>
 	<string name="backup_import_success_title">Account geïmporteerd</string>
-	<string name="backup_import_success_message">Log in met je nieuwe apparaatwachtwoord. Als je dit account van een andere telefoon hebt overgezet, verwijder Zerion dan van die telefoon zodat beide niet tegelijk dezelfde identiteit gebruiken.</string>
+	<string name="backup_import_success_message">Log in met je nieuwe apparaatwachtwoord. Als je dit account van een andere telefoon hebt overgezet, verwijder Zerion dan van die telefoon zodat beide niet tegelijk dezelfde identiteit gebruiken. Contacten van wie de verbindingssleutels zijn veranderd sinds deze back-up werd gemaakt, tonen dat de sleutels niet gelijk lopen: voeg elkaar opnieuw toe door links uit te wisselen; je gespreksgeschiedenis blijft bewaard.</string>
 	<string name="transfer_section_title">Apparaatoverdracht</string>
 	<string name="backup_transfer_send_title">Naar een nieuwe telefoon sturen</string>
 	<string name="backup_transfer_send_summary">Draag dit account rechtstreeks over via Tor</string>
@@ -1419,7 +1435,9 @@
 	<string name="transfer_failed_title">Overdracht mislukt</string>
 	<string name="transfer_failed_message">De overdracht is niet voltooid. Zorg dat beide telefoons met Tor verbonden zijn en probeer opnieuw.</string>
 	<string name="transfer_receive_done_message">Account ontvangen. Log in met het wachtwoord dat je zojuist hebt ingesteld.</string>
-	<string name="transfer_send_done_message">Account verzonden. Om te voorkomen dat dezelfde identiteit op twee telefoons draait, verwijder je Zerion van deze telefoon.</string>
+	<string name="transfer_send_done_message">Account verzonden, maar de nieuwe telefoon heeft de import niet bevestigd. Om te voorkomen dat dezelfde identiteit op twee telefoons draait, verwijder je Zerion van deze telefoon zodra het account op de nieuwe telefoon werkt.</string>
+	<string name="transfer_moved_title">Account verhuisd</string>
+	<string name="transfer_send_moved_message">De nieuwe telefoon heeft de import bevestigd. Dit account draait nu daar en maakt vanaf deze telefoon geen verbinding meer. Kluisbestanden en wallets gaan niet mee met een overdracht: zet ze over voordat je dit profiel verwijdert via Instellingen, Profielen.</string>
 	<string name="transfer_status_publishing">Een eenmalig adres voorbereiden</string>
 	<string name="transfer_status_connecting">Verbinden via Tor</string>
 	<string name="transfer_status_authenticating">Veilig verbinden</string>
@@ -1453,7 +1471,7 @@
 	<string name="profiles_switch_title">Profiel wisselen</string>
 	<string name="profiles_switch_summary">Log uit en log dan in met het wachtwoord van het gewenste profiel.</string>
 	<string name="profiles_delete_title">Dit profiel verwijderen</string>
-	<string name="profiles_delete_summary">Wis de gegevens van dit profiel veilig. Kan niet ongedaan worden gemaakt.</string>
+	<string name="profiles_delete_summary">Verwijder de gegevens van dit profiel. Kan niet ongedaan worden gemaakt.</string>
 	<string name="profiles_add_dialog_title">Nieuw profiel aanmaken</string>
 	<string name="profiles_add_dialog_message">Je wordt uitgelogd. Zodra het nieuwe profiel is aangemaakt, log je met het bijbehorende wachtwoord in om het te gebruiken.</string>
 	<string name="profiles_add_name_hint">Profielnaam</string>
@@ -1471,9 +1489,22 @@
 	<string name="profiles_switch_action">Uitloggen</string>
 	<string name="profiles_switch_progress">Profiel wisselen…</string>
 	<string name="profiles_delete_dialog_title">Dit profiel verwijderen?</string>
-	<string name="profiles_delete_dialog_message">Alle berichten, contacten en de identiteit van dit profiel worden veilig gewist. Dit kan niet ongedaan worden gemaakt.</string>
+	<string name="profiles_delete_dialog_message">Alle berichten, contacten en de identiteit van dit profiel worden van dit toestel verwijderd. Flashgeheugen kan sporen van verwijderde gegevens bewaren. Dit kan niet ongedaan worden gemaakt.</string>
 	<string name="profiles_delete_action">Profiel verwijderen</string>
 	<string name="profiles_delete_last_warning">Dit is het enige profiel. Als je het verwijdert, wordt de app gereset.</string>
+	<string name="profiles_hidden_note">Andere profielen worden hier nooit getoond. Om een ander profiel te gebruiken, log je uit en voer je het wachtwoord van dat profiel in.</string>
+	<string name="profiles_add_password_gate_message">Voer het wachtwoord in van het profiel waarin je bent ingelogd. Het nieuwe profiel krijgt het wachtwoord dat je ervoor hebt gekozen.</string>
+	<string name="profiles_password_unavailable">Dit wachtwoord kan niet worden gebruikt voor een nieuw profiel. Kies een ander wachtwoord.</string>
+	<string name="profiles_delete_then_sign_in">Daarna toont de app het inlogscherm. Kies daar \"Ik ben mijn wachtwoord vergeten\" om de app opnieuw in te stellen.</string>
+	<string name="profiles_create_locked_out">Er zijn onlangs te veel nieuwe wachtwoorden geprobeerd. Probeer het later opnieuw.</string>
+	<string name="backup_password_gate_message">Back-ups en overdrachten bevatten je hele account. Voer het wachtwoord in van het profiel waarin je bent ingelogd.</string>
+	<string name="vault_claim_title">Deze kluis naar dit profiel verplaatsen?</string>
+	<string name="vault_claim_message">Voor deze update werd de kluis gedeeld door alle profielen op dit apparaat. Als je hem hierheen verplaatst, horen de kluis, de walletbestanden en de stickerset alleen nog bij dit profiel en zijn ze vanuit geen ander profiel meer zichtbaar; wie een ander profiel gebruikt, vindt de kluis dan leeg. Je kunt de kluis voorlopig gedeeld laten en later beslissen.</string>
+	<string name="vault_claim_move">Hierheen verplaatsen</string>
+	<string name="vault_claim_keep_shared">Gedeeld laten</string>
+	<string name="vault_claim_scheduled">De kluis wordt bij je volgende aanmelding naar dit profiel verplaatst.</string>
+	<string name="vault_claim_failed">De kluis kon niet worden opgeeist. Probeer het na je volgende aanmelding opnieuw.</string>
+	<string name="change_password_new_unavailable">Dit wachtwoord kan niet worden gebruikt. Kies een ander nieuw wachtwoord.</string>
 	<string name="pref_default_disappearing_title">Standaardtimer voor verdwijnen</string>
 	<string name="pref_lock_timeout_360">6 uur</string>
 	<string name="pref_lock_timeout_720">12 uur</string>
@@ -1500,64 +1531,6 @@
 	<string name="notify_voice_calls_setting_summary">Toon meldingen voor inkomende spraakoproepen</string>
 	<string name="notify_voice_calls_setting_summary_26">Configureer meldingen voor inkomende spraakoproepen</string>
 	<string name="notify_sound_setting_system">Tik om systeeminstellingen te openen</string>
-	<string name="mailbox_settings_title">Mailbox</string>
-	<string name="mailbox_setup_title">Mailbox instellen</string>
-	<string name="mailbox_setup_intro">Een Mailbox houdt je bereikbaar terwijl je offline bent. Hij bewaart je binnenkomende berichten en levert ze de volgende keer dat je Zerion opent.\n \nStel hem in op een reserveapparaat dat aan de stroom en Wi-Fi blijft.</string>
-	<string name="mailbox_setup_download">Installeer eerst de Mailbox-app op een ander apparaat door te zoeken naar \"Zerion Mailbox\" in Google Play of waar je Zerion ook hebt gedownload.\n \nKoppel dan je Mailbox met Zerion.</string>
-	<string name="mailbox_setup_download_link">Downloadlink delen</string>
-	<string name="mailbox_setup_connecting">Verbinden met Mailbox…</string>
-	<string name="mailbox_setup_connecting_info">Dit kan tot %1s duren</string>
-	<string name="mailbox_setup_already_paired_title">Mailbox al gekoppeld</string>
-	<string name="mailbox_setup_already_paired_description">Ontkoppel de Mailbox op je andere apparaat en probeer opnieuw.</string>
-	<string name="mailbox_setup_io_error_title">Kan geen verbinding maken</string>
-	<string name="mailbox_setup_io_error_description">Zorg dat beide apparaten met internet zijn verbonden en probeer opnieuw.</string>
-	<string name="mailbox_setup_assertion_error_title">Mailbox-fout</string>
-	<string name="mailbox_setup_assertion_error_description">Stuur feedback (met anonieme gegevens) via de Zerion-app als het probleem aanhoudt.</string>
-	<string name="mailbox_setup_camera_error_description">Kan geen toegang krijgen tot de camera. Probeer opnieuw, eventueel na het herstarten van het apparaat.</string>
-	<string name="mailbox_setup_paired_title">Verbonden</string>
-	<string name="mailbox_setup_paired_description">Je Mailbox is succesvol gekoppeld met Zerion.\n \nHoud je Mailbox verbonden met stroom en Wi-Fi zodat hij altijd online is.</string>
-	<string name="tor_offline_title">Offline</string>
-	<string name="tor_offline_description">Zorg dat dit apparaat online is en dat internetverbindingen zijn toegestaan.\n \nWacht daarna tot het wereldbolpictogram in het scherm met verbindingsinstellingen groen wordt.</string>
-	<string name="tor_offline_button_check">Verbindingsinstellingen controleren</string>
-	<string name="mailbox_status_title">Mailbox-status</string>
-	<string name="mailbox_status_connected_title">Mailbox draait</string>
-	<string name="mailbox_status_problem_title">Zerion heeft moeite om verbinding te maken met de Mailbox</string>
-	<string name="mailbox_status_failure_title">Mailbox is niet beschikbaar</string>
-	<string name="mailbox_status_app_too_old_title">Zerion is te oud</string>
-	<string name="mailbox_status_app_too_old_message">Werk Zerion bij naar de nieuwste versie van de app en probeer opnieuw.</string>
-	<string name="mailbox_status_mailbox_too_old_title">Mailbox is te oud</string>
-	<string name="mailbox_status_mailbox_too_old_message">Werk je Mailbox bij naar de nieuwste versie van de app en probeer opnieuw.</string>
-	<string name="mailbox_status_check_button">Verbinding controleren</string>
-	<string name="mailbox_status_connected_info">Laatste verbinding: %s</string>
-	<string name="mailbox_status_connected_never">Nooit</string>
-	<string name="mailbox_status_unlink_button">Ontkoppelen</string>
-	<string name="mailbox_status_unlink_dialog_title">Mailbox ontkoppelen?</string>
-	<string name="mailbox_status_unlink_dialog_question">Weet je zeker dat je je Mailbox wilt ontkoppelen?</string>
-	<string name="mailbox_status_unlink_dialog_warning">Als je je Mailbox ontkoppelt, kun je geen berichten ontvangen terwijl Zerion offline is.</string>
-	<string name="mailbox_status_unlink_no_wipe_title">Je Mailbox is ontkoppeld</string>
-	<string name="mailbox_status_unlink_no_wipe_message">De volgende keer dat je toegang hebt tot je Mailbox-apparaat, open je de Mailbox-app en tik je op de knop \"Ontkoppelen\" om het proces te voltooien.\n\nAls je geen toegang meer hebt tot je Mailbox-apparaat, hoef je je geen zorgen te maken. Je gegevens zijn versleuteld, dus ze blijven veilig, zelfs als je het proces niet voltooit.</string>
-	<string name="mailbox_status_unlink_success">Je Mailbox is ontkoppeld</string>
-	<string name="mailbox_error_notification_channel_title">Probleem met Zerion Mailbox</string>
-	<string name="mailbox_error_notification_title">Zerion Mailbox is niet beschikbaar</string>
-	<string name="mailbox_error_notification_text">Tik om het probleem op te lossen.</string>
-	<string name="mailbox_error_wizard_button">Probleem oplossen</string>
-	<string name="mailbox_error_wizard_title">Mailbox-probleemoplossingswizard</string>
-	<string name="mailbox_error_wizard_question1">Heb je toegang tot je Mailbox-apparaat?</string>
-	<string name="mailbox_error_wizard_answer1">Ja, ik heb er nu toegang toe.</string>
-	<string name="mailbox_error_wizard_answer2">Nu niet, maar ik kan er later toegang toe krijgen.</string>
-	<string name="mailbox_error_wizard_answer3">Nee, ik heb er geen toegang meer toe.</string>
-	<string name="mailbox_error_wizard_info1_1">Controleer of het Mailbox-apparaat is ingeschakeld en met internet is verbonden.</string>
-	<string name="mailbox_error_wizard_question1_1">Open de Mailbox-app. Wat zie je?</string>
-	<string name="mailbox_error_wizard_answer1_1">Ik zie instructies om de Mailbox in te stellen</string>
-	<string name="mailbox_error_wizard_answer1_2">Ik zie een koppelscherm</string>
-	<string name="mailbox_error_wizard_answer1_3">Ik zie \"Mailbox draait\"</string>
-	<string name="mailbox_error_wizard_answer1_4">Ik zie \"Apparaat offline\"</string>
-	<string name="mailbox_error_wizard_info1_1_1">Ontkoppel je Mailbox met de knop hieronder en volg dan de instructies op het Mailbox-apparaat om het opnieuw te koppelen.</string>
-	<string name="mailbox_error_wizard_info_1_1_2">Ontkoppel je Mailbox met de knop hieronder en koppel het dan opnieuw.</string>
-	<string name="mailbox_error_wizard_info1_1_3">Gebruik de knop hieronder om de verbinding tussen Zerion en de Mailbox te controleren.\n\n Als de verbinding opnieuw mislukt:\n • Controleer of de Mailbox- en Zerion-apps zijn bijgewerkt naar de nieuwste versie.\n • Herstart je Mailbox- en Zerion-apparaten en probeer opnieuw.</string>
-	<string name="mailbox_error_wizard_info1_1_4">Controleer of het Mailbox-apparaat goed met internet is verbonden.\n\nControleer of de klok op het Mailbox-apparaat de juiste tijd, datum en tijdzone toont.\n\nControleer of de Mailbox- en Zerion-apps zijn bijgewerkt naar de nieuwste versie.\n\nHerstart je Mailbox- en Zerion-apparaten en probeer opnieuw.</string>
-	<string name="mailbox_error_wizard_info2">Kom terug naar dit scherm wanneer je toegang hebt tot het apparaat.</string>
-	<string name="mailbox_error_wizard_info3">Ontkoppel je Mailbox met de knop hieronder.\n\nNa het ontkoppelen van je oude Mailbox kun je op elk moment een nieuwe Mailbox instellen.</string>
 	<string name="about_title">Over</string>
 	<string name="zerion_version">Zerion-versie: %s</string>
 	<string name="zerion_url_copied_open_in_tor_browser">Link gekopieerd. Open hem in Tor Browser om je IP privé te houden.</string>
@@ -1581,16 +1554,12 @@
 	<string name="disappearing_timer_set">Bericht verdwijnt na %s</string>
 	<string name="share_app_link">Downloadlink delen</string>
 	<string name="share_app_link_text">Download Zerion op %s</string>
-	<string name="zerion_crashed">Sorry, Zerion is gecrasht</string>
 	<string name="pending_contact_remove_action">Verzoek verwijderen</string>
 	<string name="decoy_calc_clear">C</string>
 	<string name="decoy_calc_delete">DEL</string>
 	<string name="decoy_calc_initial_value">0</string>
 	<string name="password_min_8_chars">Wachtwoord moet minimaal 8 tekens bevatten</string>
 	<string name="vault_enter_new_password">Voer nieuw wachtwoord in</string>
-	<string name="privacy_policy">Door ons gegevens te sturen ga je akkoord met ons <a href="">privacybeleid</a></string>
-	<string name="dev_report_user_info">Gebruikersinformatie</string>
-	<string name="dev_report_network_usage">Netwerkgebruik</string>
 	<string name="permission_nearby_devices_title">Toestemming voor nabije apparaten</string>
 	<string name="permission_camera_location_request_body">Zerion heeft toegang tot de camera nodig voor video-oproepen.\n\nZerion slaat je locatie niet op en deelt deze met niemand.</string>
 	<string name="permission_location_setting_title">Locatie-instelling</string>
@@ -1621,7 +1590,7 @@
 	<string name="vault_select_image">Afbeelding selecteren</string>
 	<string name="vault_select_document">Document selecteren</string>
 	<string name="vault_export_error">Exporteren van item mislukt</string>
-	<string name="security_level_legacy_auth_description">Kwantumbestendige versleuteling, maar handtekeningen gebruiken nog de oudere standaard. Voeg dit contact opnieuw toe zodra jullie beiden hebben bijgewerkt voor volledige bescherming.</string>
+	<string name="security_level_legacy_auth_description">Berichten gebruiken kwantumbestendige versleuteling, maar deze app heeft de kwantumbestendige ondertekeningssleutel van dit contact nog niet, dus hun handtekeningen worden alleen met de klassieke sleutel gecontroleerd. Zodra jullie allebei de huidige versie gebruiken, wordt de sleutel bij de volgende verbinding automatisch uitgewisseld.</string>
 	<string name="media">Media</string>
 	<string name="decoy_title">Lokaas-launcher</string>
 	<string name="decoy_summary">Toon een werkende rekenmachine wanneer de app opent. Voer je ontgrendelvolgorde in om Zerion te onthullen.</string>
@@ -1648,6 +1617,14 @@
 	<string name="voice_call_status_connecting_tor">Verbinden via Tor…</string>
 	<string name="voice_call_status_video_connecting_tor">Video-oproep verbindt via Tor…</string>
 	<string name="voice_call_status_ringing">Gaat over…</string>
+	<string name="call_notification_incoming_title">Inkomende oproep</string>
+	<string name="call_notification_ongoing_title">Lopende oproep</string>
+	<string name="call_notification_voice_text">Beveiligd spraakgesprek</string>
+	<string name="call_notification_video_text">Beveiligd videogesprek</string>
+	<string name="voice_call_status_incoming">Inkomende beveiligde oproep…</string>
+	<string name="voice_call_status_incoming_video">Inkomende beveiligde video-oproep…</string>
+	<string name="voice_call_locked_title">Inkomende oproep</string>
+	<string name="voice_call_locked_hint">Ontgrendel om op te nemen</string>
 	<string name="voice_call_status_connected">Verbonden</string>
 	<string name="voice_call_status_ended">Oproep beëindigd · %1$s</string>
 	<string name="voice_call_status_failed">Oproep mislukt: %1$s</string>
@@ -1682,7 +1659,7 @@
 	<string name="vault_document_export_failed">Exporteren van document mislukt</string>
 	<string name="vault_document_load_failed">Laden van document mislukt: %1$s</string>
 	<string name="vault_zenc_export_title">Exportwachtwoord instellen</string>
-	<string name="vault_zenc_export_message_download">Stel een wachtwoord in om het .zenc-bestand te versleutelen. Dit bestand kan veilig worden gedeeld.</string>
+	<string name="vault_zenc_export_message_download">Stel een wachtwoord in om het .zenc-bestand te versleutelen. Iedereen die het bestand krijgt, kan offline wachtwoorden proberen, dus gebruik een sterk wachtwoord.</string>
 	<string name="vault_zenc_export_message_share">Stel een wachtwoord in om het .zenc-bestand te versleutelen. Je moet dit wachtwoord apart delen.</string>
 	<string name="vault_zenc_password_required">Wachtwoord is vereist voor .zenc-export</string>
 	<string name="vault_document_export_generic_failed">Exporteren mislukt</string>
@@ -1690,6 +1667,7 @@
 	<string name="vault_zenc_sharing_reminder">Versleuteld bestand delen. Vergeet niet het wachtwoord apart te delen.</string>
 	<string name="vault_zenc_share_failed">Delen mislukt</string>
 	<string name="vault_zenc_saved_to">Versleuteld bestand opgeslagen naar: %1$s</string>
+	<string name="vault_zenc_saved">Versleuteld bestand opgeslagen</string>
 	<string name="vault_zenc_save_failed">Opslaan mislukt</string>
 	<string name="vault_document_delete_title">Document verwijderen</string>
 	<string name="vault_document_delete_message">Weet je zeker dat je dit document wilt verwijderen?</string>
@@ -1903,7 +1881,7 @@
 	<string name="wallet_receive_new">Nieuw adres</string>
 	<string name="wallet_node_hint">Tik op een server om deze te gebruiken. Houd een aangepaste server ingedrukt om deze te verwijderen.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Een herbruikbaar privéadres. Betalingen eraan zijn on-chain niet te koppelen. Detectie scant openbare gegevens via Tor; je sleutels verlaten nooit het apparaat.</string>
+	<string name="wallet_sp_intro">Een herbruikbaar privéadres. Betalingen eraan tonen dit adres niet on-chain, zodat anderen ze niet gemakkelijk aan jou of aan elkaar kunnen koppelen, tenzij je de ontvangen munten later samen uitgeeft. Detectie scant openbare gegevens via Tor; je sleutels verlaten het toestel nooit.</string>
 	<string name="wallet_sp_balance">Gedetecteerd: %1$s</string>
 	<string name="wallet_sp_scanned">Gescand tot blok %1$d</string>
 	<string name="wallet_sp_set_oracle">Scanbron</string>
@@ -1922,4 +1900,39 @@
 	<string name="wallet_xmr_release_done">Onafgeronde verzending vrijgegeven.</string>
 	<string name="wallet_xmr_release_not_yet">De laatste transactie kan nog niet worden vrijgegeven: ze is nog zichtbaar op het netwerk, nog geen drie dagen oud, of de node gaf geen antwoord.</string>
 	<string name="wallet_xmr_delete_unresolved_body">Deze portemonnee heeft een verzending waarvan de uitkomst nog onbekend is. Verwijderen haalt de portemonnee van dit apparaat; ze kan alleen worden hersteld met de herstelzin, en de uitkomst van die verzending moet daarna in de herstelde portemonnee worden gecontroleerd. Zorg dat je de herstelzin hebt voordat je doorgaat.</string>
+	<plurals name="grouptr_reach_banner">
+		<item quantity="one">%d lid is geen contact van je en krijgt je berichten niet. Tik voor details.</item>
+		<item quantity="other">%d leden zijn geen contact van je en krijgen je berichten niet. Tik voor details.</item>
+	</plurals>
+	<string name="grouptr_reach_title">Wie je berichten bereiken</string>
+	<string name="grouptr_reach_explanation">Groepsberichten gaan rechtstreeks tussen leden die elkaars contact zijn, en leden sturen berichten niet door. Deze leden zijn geen contact van je, dus zij krijgen je berichten niet en jij krijgt die van hen niet:\n\n%1$s\n\nVoeg ze toe als contact om ze te bereiken.</string>
+	<plurals name="grouptr_post_not_sent_older">
+		<item quantity="one">Niet verzonden naar %d lid: die app is te oud voor zulke grote berichten.</item>
+		<item quantity="other">Niet verzonden naar %d leden: hun app is te oud voor zulke grote berichten.</item>
+	</plurals>
+	<string name="grouptr_ttl_set_by_creator">Verdwijnende berichten in deze groep: %1$s. Alleen de maker van de groep kan dit wijzigen.</string>
+	<plurals name="grouptr_ttl_older_members">
+		<item quantity="one">%d lid gebruikt een oudere app die de eigen berichten niet op deze timer verwijdert.</item>
+		<item quantity="other">%d leden gebruiken een oudere app die hun eigen berichten niet op deze timer verwijdert.</item>
+	</plurals>
+	<plurals name="grouptr_ttl_minutes">
+		<item quantity="one">%d minuut</item>
+		<item quantity="other">%d minuten</item>
+	</plurals>
+	<string name="grouptr_sender_alias_format">%1$s (plaatst als \"%2$s\")</string>
+	<string name="grouptr_sender_unverified_format">\"%1$s\" (geen naam die je kent)</string>
+	<string name="grouptr_member_out_of_reach">geen contact, krijgt je berichten niet</string>
+	<string name="grouptr_member_invited">Uitgenodigd, wacht op antwoord</string>
+	<string name="grouptr_confirm_revoke">De uitnodiging aan %1$s intrekken? Een antwoord van die persoon wordt dan genegeerd.</string>
+	<string name="grouptr_revoke_invite">Uitnodiging intrekken</string>
+	<string name="grouptr_invite_expired">Deze uitnodiging is verlopen. Vraag de maker van de groep om een nieuwe.</string>
+	<string name="reaction_removed_here_only">Alleen op dit apparaat verwijderd: de app van je contact is te oud om de reactie daar te verwijderen.</string>
+	<string name="startup_data_without_account_message">Zerion heeft gegevens op dit apparaat gevonden, maar geen accountsleutel die ze opent: de sleutelbestanden ontbreken of zijn beschadigd. Er is niets verwijderd.\n\nJe kunt Zerion sluiten en de gegevens bewaren, of alles wissen en opnieuw beginnen.</string>
+	<string name="startup_data_without_account_keep">Sluiten en bewaren</string>
+	<string name="startup_data_without_account_erase">Alles wissen</string>
+	<string name="startup_erase_everything_confirm">Alles wat Zerion op dit apparaat bewaart wordt permanent gewist: identiteiten, contacten, berichten, de kluis en wallets.</string>
+	<string name="vault_settings_clipboard_timed">%1$s, of eerder als de kluis vergrendelt</string>
+	<string name="vault_settings_clipboard_untimed">Als de kluis vergrendelt, bij afmelden of bij paniek</string>
+	<string name="vault_settings_kdf_strong">Wachtwoordsleutel: Argon2id, 256 MiB, 3 rondes, gebonden aan dit apparaat</string>
+	<string name="vault_settings_kdf_reduced">Wachtwoordsleutel: Argon2id, 128 MiB, 6 rondes (dit apparaat kan geen 256 MiB vrijmaken), gebonden aan dit apparaat</string>
 </resources>

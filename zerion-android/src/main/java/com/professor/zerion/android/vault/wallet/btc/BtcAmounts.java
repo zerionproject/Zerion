@@ -5,12 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Bounds for amounts in satoshis. Every amount that reaches the planner
- * comes through here: it must be positive and at most the total supply, so
- * a parsed value cannot overflow the fee arithmetic or reach the library's
- * own checks as a negative or absurd number.
- */
 @NotNullByDefault
 public final class BtcAmounts {
 
@@ -21,23 +15,14 @@ public final class BtcAmounts {
 	private BtcAmounts() {
 	}
 
-	/** True for an amount a transaction output can carry. */
 	public static boolean sendable(long sat) {
 		return sat > 0 && sat <= MAX_MONEY_SAT;
 	}
 
-	/** The amount itself when it is within bounds, otherwise -1. */
 	public static long bounded(long sat) {
 		return sat < 0 || sat > MAX_MONEY_SAT ? -1 : sat;
 	}
 
-	/**
-	 * Parses a decimal bitcoin amount into satoshis, truncating anything
-	 * beyond eight decimals, or -1 when the text is not a number, is
-	 * negative, or exceeds the total supply. The magnitude is compared
-	 * before any rescaling, so an exponent like 1e999999999 in the text is
-	 * refused without expanding it into memory.
-	 */
 	public static long parseBtc(String text) {
 		try {
 			BigDecimal v = new BigDecimal(text.trim());

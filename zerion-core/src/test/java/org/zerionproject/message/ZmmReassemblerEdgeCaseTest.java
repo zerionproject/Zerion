@@ -11,13 +11,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Fragment records with hostile header fields: duplicates, indexes outside
- * the count, a zero count, a short header, a count that changes between
- * fragments of the same message, an oversized message and random input. None
- * of them completes a message wrongly, throws, or leaves a partial behind
- * that blocks the contact's reassembly slots.
- */
 public class ZmmReassemblerEdgeCaseTest {
 
 	private static final int CONTACT = 3;
@@ -55,14 +48,13 @@ public class ZmmReassemblerEdgeCaseTest {
 	}
 
 	@Test
-	public void zeroLengthFragmentsCompleteAnEmptyMessage() {
+	public void zeroLengthFragmentsAreDropped() {
 		ZmmReassembler r = new ZmmReassembler();
 		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 				fragment(4, 0, 2, new byte[0])));
-		ZmmReassembler.Message m = r.receive(CONTACT,
-				ZmmConstants.TYPE_FRAGMENT, fragment(4, 1, 2, new byte[0]));
-		assertNotNull(m);
-		assertEquals(0, m.payload.length);
+		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
+				fragment(4, 1, 2, new byte[0])));
+		assertSlotsFree(r);
 	}
 
 	@Test
@@ -84,11 +76,12 @@ public class ZmmReassemblerEdgeCaseTest {
 	@Test
 	public void oversizedMessageIsDroppedAndItsSlotFreed() {
 		ZmmReassembler r = new ZmmReassembler();
-		byte[] big = new byte[ZmmReassembler.MAX_MESSAGE_BYTES / 2 + 1];
-		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
-				fragment(6, 0, 2, big)));
-		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
-				fragment(6, 1, 2, big)));
+		byte[] chunk = new byte[ZmmReassembler.MAX_CHUNK_BYTES];
+		int over = ZmmReassembler.MAX_MESSAGE_BYTES / chunk.length + 1;
+		for (int i = 0; i < over; i++) {
+			assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
+					fragment(6, i, over + 1, chunk)));
+		}
 		assertSlotsFree(r);
 		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 				fragment(6, 0, 2, "a".getBytes())));
@@ -112,7 +105,6 @@ public class ZmmReassemblerEdgeCaseTest {
 		}
 	}
 
-	/** All per-contact slots are free when a full set of new partials opens. */
 	private static void assertSlotsFree(ZmmReassembler r) {
 		for (int id = 100; id < 100 + ZmmReassembler.MAX_PARTIAL_MESSAGES_PER_CONTACT; id++) {
 			assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,

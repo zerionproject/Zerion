@@ -19,11 +19,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The contact exchange proves possession of the whole hybrid identity: the
- * signature over the exchange nonce must verify under both the Ed25519 and
- * the ML-DSA-65 half, so a peer that can forge one half alone cannot pass.
- */
 public class ContactExchangeHybridSignatureTest {
 
 	private CryptoComponent crypto;

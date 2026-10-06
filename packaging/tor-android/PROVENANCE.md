@@ -35,7 +35,7 @@ artifact's executables exactly (see the verification section).
 |---|---|
 | Tor | tag `tor-0.4.9.13`, commit `3c575400909efe6599d88e61e7daf0012655ca44` (tag signed by the Tor release key; the matching `tor-0.4.9.13.tar.gz.sha256sum` on dist.torproject.org, `5e748d3272cdf44a7d7741173f371c8def3d96eecb77e93c89c50663ce9cc792`, carries a good signature from David Goulet's key `B74417EDDF22AC9F9E90F49142E86A2A11F48D36`, one of the keys listed in Tor's README) |
 | libevent | tag `release-2.1.12-stable`, commit `5df3037d10556bfcb675bc73e516978b75fc7bc7` |
-| OpenSSL | tag `openssl-3.5.7`, commit `8cf17aaeb4599f8af87fefd810b5b5fee90fe69e` |
+| OpenSSL | tag `openssl-3.5.8`, commit `f4dc4d58b48d346a8270183f89acf826d459b0ca` |
 | zlib | tag `v1.3.2`, commit `da607da739fa6047df13e66a2af6b8bec7c2a498` |
 | Android NDK | r29 (`29.0.14206865`), zip SHA-256 `4abbbcdc842f3d4879206e9695d52709603e52dd68d3c1fff04b3b5e7a308ecf` |
 | Android API | 21 (the NDK platform level the makefile targets) |
@@ -51,8 +51,8 @@ records the resolved commits in `out/SOURCES.txt` and the SHA-256 of each
 
 | File | SHA-256 | Size |
 |---|---|---|
-| `out/arm64-v8a/libtor.so` | `29eb99c78c803cdada5948c193308544f5c30414032c3334c3a83a124fcb9426` | 8822328 bytes |
-| `out/armeabi-v7a/libtor.so` | `418976d0958c8b422d71126e9fe34986657b96672b4fe6059107e41a0f7b8eaa` | 7111964 bytes |
+| `out/arm64-v8a/libtor.so` | `586209695b73aea897086d0500b7ef1dcccb0a5a8a002c4e1903ab2ad866dced` | 8829968 bytes |
+| `out/armeabi-v7a/libtor.so` | `1b83790304f4c15a283ada143d35ef86a30027d814d0cd8cf6e1004c360eeb09` | 7114876 bytes |
 
 The same values are the pins in
 `zerion-core-android/src/main/resources/org/zerionproject/tor/binaries.sha256`,
@@ -71,7 +71,7 @@ has to be accompanied by a rebuild and an update of both places.
 - F-Droid: `fdroid-build.sh` run inside
   `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` with the apt
   packages the recipe lists produced the same two hashes (2026-09-25, gcc 14.2.0 host toolchain, NDK r29 downloaded and verified inside the image).
-- Runtime: on the Moto (Android 15) and the Pixel 9 Pro (Android 17) the installed `libtor.so` answers `Tor version 0.4.9.13 (git-3c575400909efe65)` with Libevent 2.1.12-stable, OpenSSL 3.5.7, Zlib 1.3.2, and its SHA-256 is the arm64-v8a value above; the running daemon answers `GETINFO version` `0.4.9.13 (git-3c575400909efe65)`, bootstraps to 100, serves the isolated Unix SOCKS listener with `IsolateSOCKSAuth IsolateClientAddr IsolateDestAddr`, `ConnectionPadding=1`, `SafeSocks=1`, publishes the authorized service and accepts client-authorization credentials, and survives a kill, a connectivity loss, a restart from the app and an app relaunch; messaging, an image attachment and a call between the two phones worked.
+- Runtime (2026-10-05, OpenSSL 3.5.8 build): on the Moto (Android 15) and the Pixel 9 Pro (Android 17) the installed `libtor.so` has the arm64-v8a SHA-256 above and answers `Tor version 0.4.9.13 (git-3c575400909efe65)` with Libevent 2.1.12-stable, OpenSSL 3.5.8, Zlib 1.3.2; both phones sign in, reach each other over Tor and establish audio calls with it, and a call survives a 35 s connection loss and ends on both sides within the liveness deadline after a lasting loss.
 
 ## How to rebuild
 

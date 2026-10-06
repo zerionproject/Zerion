@@ -34,13 +34,6 @@ import java.util.function.Supplier;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Exercises the ZPP connection runner end to end: one endpoint enqueues real
- * records while both run the constant-rate loop, and the peer receives exactly
- * those records (cover frames are dropped, never delivered as data), proving the
- * send scheduler, cover fill and receive dispatch work together over the real
- * stream.
- */
 public class ZppConnectionRunnerTest {
 
 	private CryptoComponent crypto;
@@ -71,7 +64,7 @@ public class ZppConnectionRunnerTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -130,13 +123,14 @@ public class ZppConnectionRunnerTest {
 				Collections.synchronizedList(new ArrayList<>());
 
 		@Override
-		public void deliver(int contactId, int type, byte[] payload) {
+		public void deliver(int contactId, long sessionId, int type,
+				byte[] payload) {
 			received.add(contactId + "|" + type + "|"
 					+ new String(payload, StandardCharsets.UTF_8));
 		}
 
 		@Override
-		public void onDisconnected(int contactId) {
+		public void onDisconnected(int contactId, long sessionId) {
 		}
 	}
 
@@ -166,7 +160,6 @@ public class ZppConnectionRunnerTest {
 
 		CapturingRegistry registry = new CapturingRegistry();
 		CollectingSink sink = new CollectingSink();
-		// Fast tick so the test does not wait real ZPP slots.
 		ZppConnectionRunnerImpl runner =
 				new ZppConnectionRunnerImpl(sink, registry, 5);
 
@@ -188,8 +181,6 @@ public class ZppConnectionRunnerTest {
 		aliceThread.start();
 		bobThread.start();
 
-		// Wait for alice's connection to register its scheduler, then enqueue
-		// three real records for bob to receive.
 		ZppSendScheduler aliceScheduler = awaitScheduler(registry, 1);
 		int n = 3;
 		for (int i = 0; i < n; i++) {
@@ -197,12 +188,9 @@ public class ZppConnectionRunnerTest {
 					("hello-" + i).getBytes(StandardCharsets.UTF_8));
 		}
 
-		// Bob receives them (delivered under bob's contact id 2), while idle
-		// slots keep emitting cover in both directions.
 		awaitReceived(sink, 2, n, errors, ioFailures);
 		Thread.sleep(60);
 
-		// Stop both runners by closing the pipes.
 		aOut.close();
 		bOut.close();
 		aIn.close();
@@ -228,19 +216,11 @@ public class ZppConnectionRunnerTest {
 			assertEquals("2|" + ZmmConstants.TYPE_TEXT + "|hello-" + i,
 					bobGot.get(i));
 		}
-		// Idle slots emitted cover, so both a real and a cover frame flowed.
 		assertEquals(n, aliceScheduler.getRealFrameCount());
 		assertTrue("idle slots should emit cover frames",
 				aliceScheduler.getCoverFrameCount() > 0);
 	}
 
-	/**
-	 * Waits for a condition until the deadline that leaves the test timeout
-	 * a margin. The handshake behind the first real frame runs an ML-KEM key
-	 * exchange, whose cost under a loaded build host is not bounded by a
-	 * fixed iteration count, so the waits are bounded by wall-clock deadline
-	 * only and the test still fails if the records never arrive.
-	 */
 	private static final long WAIT_DEADLINE_MS = 20_000;
 
 	private static ZppSendScheduler awaitScheduler(CapturingRegistry registry,
@@ -254,14 +234,6 @@ public class ZppConnectionRunnerTest {
 		throw new AssertionError("scheduler not registered for " + contactId);
 	}
 
-	/**
-	 * A runner that threw can never deliver, so its exception is reported as
-	 * the cause instead of a bare timeout.
-	 */
-	/**
-	 * Records the I/O failure that ends a direction, because the runner ends
-	 * the connection on any I/O failure without reporting it.
-	 */
 	private static final class RecordingConnection extends ZwfDuplexConnection {
 		private final int id;
 		private final List<Throwable> failures;
@@ -340,7 +312,6 @@ public class ZppConnectionRunnerTest {
 				+ io + " threads:\n" + threadDump());
 	}
 
-	/** Stacks of the runner and slot threads, for a stall that leaves no exception. */
 	private static String threadDump() {
 		StringBuilder sb = new StringBuilder();
 		for (Map.Entry<Thread, StackTraceElement[]> e

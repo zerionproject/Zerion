@@ -167,7 +167,10 @@ public class BundledI2pRouter implements I2pRouter {
 	}
 
 	private void applyReseedOverTor(Properties p) {
-		if (torSocksPort <= 0) return;
+		if (torSocksPort <= 0) {
+			p.setProperty("router.reseedDisable", "true");
+			return;
+		}
 		String host = "127.0.0.1";
 		String port = String.valueOf(torSocksPort);
 		p.setProperty("router.reseedSSLProxyEnable", "true");

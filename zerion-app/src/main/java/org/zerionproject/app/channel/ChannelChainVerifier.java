@@ -42,20 +42,13 @@ class ChannelChainVerifier {
 			if (!Arrays.equals(p.getPrevHash(), prev)) {
 				return Result.HASH_CHAIN_BROKEN;
 			}
-			byte[] attHash = codec.attachmentsHash(p.getAttachments());
-			prev = codec.postCanonicalHash(p.getChannelId(),
-					p.getSeqNum(), p.getPrevHash(),
-					p.getTimestampHourMs(), p.getBody(),
-					attHash, p.getTtlMs(), p.getSignature());
+			prev = codec.canonicalHashOf(p);
 			expected = p.getSeqNum() + 1L;
 		}
 		return Result.OK;
 	}
 
 	byte[] hashOf(ChannelPost p) {
-		byte[] attHash = codec.attachmentsHash(p.getAttachments());
-		return codec.postCanonicalHash(p.getChannelId(), p.getSeqNum(),
-				p.getPrevHash(), p.getTimestampHourMs(), p.getBody(),
-				attHash, p.getTtlMs(), p.getSignature());
+		return codec.canonicalHashOf(p);
 	}
 }

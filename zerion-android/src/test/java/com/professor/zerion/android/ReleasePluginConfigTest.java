@@ -30,11 +30,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * The plugin configuration offers the I2P transport only when the feature
- * flag says so, and the flag follows the build type: a release build never
- * registers I2P, there are no simplex transports, and nothing polls.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class ReleasePluginConfigTest {

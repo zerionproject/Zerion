@@ -55,8 +55,12 @@ class MlKemProviderImpl implements MlKemProvider {
 		byte[] ekVector = Arrays.copyOfRange(encapsulationKey,
 				MLKEM_EK_SEED_SIZE, encapsulationKey.length);
 
-		return new MlKemKeyPair(encapsulationKey, decapsulationKey,
-				ekSeed, ekVector);
+		try {
+			return new MlKemKeyPair(encapsulationKey, decapsulationKey,
+					ekSeed, ekVector);
+		} finally {
+			Arrays.fill(decapsulationKey, (byte) 0);
+		}
 	}
 
 	@Override

@@ -9,20 +9,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * User node preference for XMR sync, four tiers:
- * <ul>
- *   <li>OWN — the user's own node, best privacy. Used exclusively; if it is
- *   unreachable the wallet goes offline rather than silently downgrading to a
- *   public node.</li>
- *   <li>VETTED — the Zerion-vetted Tor node set, the default. Never "trusted".</li>
- *   <li>CUSTOM — user-added remote node(s) over Tor.</li>
- *   <li>DIRECT — an explicit clearnet node, reduced privacy. Exclusive and only
- *   ever active after the user acknowledges the privacy warning; it is never an
- *   automatic failover from a Tor tier.</li>
- * </ul>
- * Persisted app-wide in the encrypted vault settings at {@code xmr._nodes}.
- */
 @NotNullByDefault
 public final class XmrNodeConfig {
 
@@ -30,12 +16,6 @@ public final class XmrNodeConfig {
 
 	public final Mode mode;
 	public final String ownNode;
-	/**
-	 * Whether the own node runs as a trusted daemon. Off unless the user
-	 * switched it on: a trusted daemon is given more of the wallet's trust
-	 * than a public node ever is, and choosing the own-node tier is not by
-	 * itself that decision.
-	 */
 	public final boolean ownTrusted;
 	public final List<String> customNodes;
 	public final String directNode;
@@ -58,7 +38,6 @@ public final class XmrNodeConfig {
 		return new XmrNodeConfig(Mode.VETTED, "", new ArrayList<>(), "");
 	}
 
-	/** The sequential failover order this config resolves to. */
 	public List<XmrNode> toFailoverList() {
 		try {
 			switch (mode) {

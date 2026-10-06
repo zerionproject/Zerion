@@ -7,12 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * The wire records of the activation protocol, carried in this client's
- * per-contact group. A record is a list: type, protocol version, key
- * generation of the sender, then the type's fields. Android and iOS share
- * this layout; see docs/protocol/ONION_CLIENT_AUTH.md.
- */
 @NotNullByDefault
 public final class OnionAuthRecords {
 
@@ -34,7 +28,6 @@ public final class OnionAuthRecords {
 	static final int KEY_LENGTH = 32;
 	static final int FINGERPRINT_LENGTH = 32;
 
-	/** A decoded record. Fields not carried by the type are null. */
 	public static final class Record {
 
 		public final int type;
@@ -61,12 +54,6 @@ public final class OnionAuthRecords {
 	private OnionAuthRecords() {
 	}
 
-	/**
-	 * The offer carries the sender's client public key for the receiver's
-	 * service and, once the sender has published its own authorized
-	 * service, that address; before then the address is empty and a second
-	 * offer follows with it.
-	 */
 	public static BdfList offer(long keyVersion, @Nullable String onion,
 			byte[] publicKey) {
 		return BdfList.of(TYPE_OFFER, PROTOCOL_VERSION, keyVersion,
@@ -81,11 +68,6 @@ public final class OnionAuthRecords {
 		return BdfList.of(TYPE_PROBE_SUCCESS, PROTOCOL_VERSION, keyVersion);
 	}
 
-	/**
-	 * The commit names the peer's service and the fingerprint of the
-	 * peer's client key as this side knows them, so the receiver can check
-	 * that both sides commit to the same generation.
-	 */
 	public static BdfList commit(long keyVersion, String peerOnion,
 			byte[] peerKeyFingerprint) {
 		return BdfList.of(TYPE_COMMIT, PROTOCOL_VERSION, keyVersion,
@@ -103,7 +85,6 @@ public final class OnionAuthRecords {
 		return BdfList.of(TYPE_ROTATE_ACK, PROTOCOL_VERSION, keyVersion);
 	}
 
-	/** Parses and validates a record; every shape error is a FormatException. */
 	public static Record parse(BdfList body) throws FormatException {
 		if (body.size() < 3) throw new FormatException();
 		long type = body.getLong(0);

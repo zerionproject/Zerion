@@ -23,13 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
-/**
- * A pairing connection. The handshake and the contact exchange run over the
- * classical streams keyed by the pending contact's handshake keys. Once the
- * contact exists on both sides, the same socket carries the first session
- * with the new contact through the established-contact handler, so no
- * traffic to a contact ever runs over the rotation-key streams.
- */
 @NotNullByDefault
 abstract class HandshakeConnection extends Connection {
 
@@ -91,12 +84,6 @@ abstract class HandshakeConnection extends Connection {
 		}
 	}
 
-	/**
-	 * Hands the socket the pairing ran on to the established-contact handler,
-	 * which resumes the new contact's session from the inputs the exchange
-	 * just committed. The session runs on the I/O executor so this pairing
-	 * task completes, and the streams are disposed when it ends.
-	 */
 	void runPairedSession(ContactId contactId, boolean incoming) {
 		ioExecutor.execute(() -> {
 			boolean exception = false;

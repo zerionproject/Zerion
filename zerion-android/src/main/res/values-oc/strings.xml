@@ -23,7 +23,6 @@
 	<string name="dnkm_huawei_protected_button">Projècte Zerion</string>
 	<string name="dnkm_huawei_protected_help">Se Zerion es pas ajustat a la lista de las aplicacion protegidas poirà pas s’executar en rèire plan.</string>
 	<string name="dnkm_xiaomi_button">Projècte Zerion</string>
-	<string name="dnkm_warning_dozed">%s a pas pogut s’executar en rèire plan</string>
 	
 	<string name="enter_password">Senhal</string>
 	<string name="try_again">Senhal incorècte, tornatz ensajar</string>
@@ -35,8 +34,6 @@
   <string name="dialog_message_lost_password">Vòstre compte Zerion es salvat e chifrat sus vòstre aparelh, non pas sus un servidor alonhat «cloud». En fach podèm pas reïnicializar vòstre senhal.
 Volètz suprimir vòstre compte e ne crear un nòu ?\n
 \nMèfi : vòstra identitat, vòstres contactes e messatges seràn perduts per totjorn.</string>
-  <string name="startup_failed_notification_title">Zerion a pas pogut aviar</string>
-  <string name="startup_failed_notification_text">Tocatz per mai d’informacions.</string>
   <string name="startup_failed_activity_title">Fracàs de l’aviada de Zerion.</string>
   <string name="startup_failed_db_error">Per una rason desconeguda, la basa de donadas de Zerion es corrompuda e òm pòt pas la reparar. Vòstre compte, vòstras donadas e totes vòstres contactes son perduts. Malaürosament, avètz de reïnstallar Zerion o configurar un nòu compte en causir « Ai oblidat mon senhal » dins la fenèstra per picar lo senhal. </string>
   <string name="startup_failed_data_too_old_error">Vòstre compte foguèt creat amb una anciana version d’aicesta aplicacion e pòt pas èsser dobrit amb aquesta. Vos cal siá reïnstallar l’anciana version o configurar un nòu compte en causir « Ai oblidat mon senhal » dins la fenèstra per picar lo senhal.</string>
@@ -147,13 +144,10 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="exchanging_contact_details">Escambi dels detalhs del contacte\u2026</string>
   <string name="contact_added_toast">Contacte apondut : %s</string>
   <string name="contact_already_exists">Lo contacte %s existís ja</string>
-  <string name="qr_code_too_old">Lo còdi QR qu’avètz numerizat ven d’una version anciana de %s.\n\nMercés de demandar a vòstre contact d’installar la darrièra version puèi tornatz ensajar.</string>
-  <string name="qr_code_too_new">Lo còdi QR qu’avètz numerizat ven d’una version mai recenta de %s.\n\nMercés d’installar la darrièra version puèi tornatz ensajar.</string>
   <string name="camera_error">Error de camèra</string>
   <string name="connecting_to_device">Connexion a l’aparelh\u2026</string>
   <string name="authenticating_with_device">Autentificacion amb l’aparelh\u2026</string>
   <string name="connection_error_title">Connexion impossibla al contacte</string>
-  <string name="connection_error_feedback">S’aqueste problèma dura, mercés <a href="feedback"> d’enviar un comentari</a> per nos ajudar a melhorar l’aplicacion.</string>
   
   <string name="add_contact_remotely_title_case">Ajustar un contacte a distància</string>
   <string name="add_contact_nearby_title">Ajustatz un contacte a proximitat</string>
@@ -303,14 +297,12 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="pref_theme_title">Tèma</string>
   <string name="pref_theme_light">Clar</string>
   <string name="pref_theme_dark">Escur</string>
-  <string name="pref_theme_auto">Automatic (Segon l’ora)</string>
   <string name="pref_theme_system">Sistèma per defaut</string>
   
   <string name="tor_network_setting_automatic">Automaticament basat sus l’emplaçament</string>
   
   <string name="tor_network_setting_summary">Automatic : %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Utilizar la connexion del mobil</string>
-  <string name="tor_only_when_charging_summary">Desactiva la connexion Internet quand l’aparelh manca de bateriá</string>
   
   <string name="security_settings_title">Seguretat</string>
   <string name="pref_lock_title">Verrolatge de l’aplicacion</string>
@@ -367,27 +359,13 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="choose_ringtone_title">Causir la sonariá</string>
   <string name="cannot_load_ringtone">Cargament impossible de las sonariás</string>
 
-  <string name="send_feedback">Enviar vòstres comentaris</string>
   
   <string name="link_warning_title">Avertiment de ligam</string>
   <string name="link_warning_intro">Sètz a man de dobrir lo ligam seguent amb una aplicacion extèrna.</string>
   <string name="link_warning_text">Aquò pòt servir a vos identificar. Soscatz se vos fisatz de la persona que vos a enviat aqueste ligam e pensatz de lo dobrir amb Tor Browser. </string>
   <string name="link_warning_open_link">Dobrir lo ligam</string>
   
-  <string name="crash_report_title">Senhalar lo fracàs de Zerion</string>
-  <string name="zerion_crashed">Malastre, Zerion a arrestat de foncionar.</string>
-  <string name="not_your_fault">Es pas vòstra fauta.</string>
-  <string name="please_send_report">Ajudatz-nos a melhorar Zerion en nos enviant un rapòrt de fracàs.</string>
-  <string name="report_is_encrypted">Asseguram que lo rapòrt es chifrat e enviat en tota seguretat.</string>
-  <string name="feedback_title">Comentaris</string>
-  <string name="describe_crash">Describètz çò que s’es passat</string>
-  <string name="enter_feedback">Marcatz vòstres comentaris</string>
-  <string name="optional_contact_email">Vòstre corrièl (opcional)</string>
-  <string name="include_debug_report_crash">Ajustar de donas anonimas tocant lo fracàs</string>
-  <string name="include_debug_report_feedback">Ajustar de donas anonimas tocant aqueste periferic</string>
-  <string name="send_report">Enviar lo rapòrt</string>
   <string name="close">Tampar</string>
-  <string name="dev_report_saved">Rapòrt salvat. Serà enviat a vòstra connexion venenta a Zerion.</string>
   
   <string name="progress_title_logout">Desconnecion de Zerion...</string>
   

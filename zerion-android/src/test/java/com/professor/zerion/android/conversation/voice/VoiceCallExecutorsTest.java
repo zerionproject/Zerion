@@ -10,12 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The call executor never creates more than its maximum number of threads
- * however much work is submitted, queues a bounded amount beyond that and
- * drops the rest, and every thread it creates is a daemon so a leaked call
- * cannot keep the process alive.
- */
 public class VoiceCallExecutorsTest {
 
 	@Test
@@ -69,14 +63,6 @@ public class VoiceCallExecutorsTest {
 		}
 	}
 
-	/**
-	 * DV-06: a call keeps several loops blocked at once (heartbeat, playout,
-	 * capture, the network reader, video) and still needs its signalling
-	 * and teardown tasks to run while they block. Every one of them must
-	 * get a thread up to the maximum; a pool that queues behind its core
-	 * threads leaves audio silent in one direction and never sends the
-	 * hang-up.
-	 */
 	@Test
 	public void concurrentLoopsAllRunUpToTheMaximum() throws Exception {
 		ThreadPoolExecutor pool =

@@ -15,11 +15,6 @@ interface ContactExchangeCrypto {
 	boolean verify(PublicKey publicKey, SecretKey masterKey, boolean alice,
 			byte[] signature);
 
-	/**
-	 * Signs the nonce bound to this exchange with the local hybrid identity
-	 * (Ed25519 and ML-DSA-65 over the same input), so that the peer can
-	 * verify possession of both halves of the identity it is about to store.
-	 */
 	byte[] hybridSign(PrivateKey ed25519PrivateKey, byte[] mlDsaPrivateKey,
 			SecretKey masterKey, boolean alice);
 

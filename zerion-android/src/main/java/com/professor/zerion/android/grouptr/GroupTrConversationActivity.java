@@ -54,6 +54,11 @@ import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrLocalStateChangedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
+import org.zerionproject.app.api.grouptr.GroupTrMember;
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -81,6 +86,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	EventBus eventBus;
 	@Inject
 	AndroidNotificationManager notificationManager;
+	@Inject
+	ContactManager contactManager;
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
@@ -137,10 +144,25 @@ public class GroupTrConversationActivity extends ZerionActivity
 			new SimpleDateFormat("HH:mm", Locale.getDefault());
 	@Nullable
 	private byte[] localPub;
+	private volatile boolean groupBlocksScreenshots = true;
+	private final Object reloadLock = new Object();
+	private boolean reloadRunning = false;
+	private boolean reloadAgain = false;
+	private volatile java.util.Map<String, byte[]> knownMlDsaKeys =
+			new java.util.HashMap<>();
+	private volatile java.util.Map<String, String> knownNames =
+			new java.util.HashMap<>();
+	@Nullable
+	private volatile GroupTrState lastState;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
 		component.inject(this);
+	}
+
+	@Override
+	protected boolean forceScreenshotProtection() {
+		return groupBlocksScreenshots;
 	}
 
 	@Override
@@ -164,9 +186,11 @@ public class GroupTrConversationActivity extends ZerionActivity
 			try {
 				boolean blocked = groupTrManager
 						.isLocalScreenshotBlocked(gidForLoad);
+				groupBlocksScreenshots = blocked;
 				if (!blocked) {
-					runOnUiThread(() -> getWindow().clearFlags(
-							WindowManager.LayoutParams.FLAG_SECURE));
+					runOnUiThread(() -> securityManager
+							.applyScreenshotProtection(this,
+									forceScreenshotProtection()));
 				}
 			} catch (org.zerionproject.core.api.db.DbException ex) {
 			}
@@ -242,25 +266,120 @@ public class GroupTrConversationActivity extends ZerionActivity
 		View titleBlock = findViewById(R.id.toolbarTitleBlock);
 		titleBlock.setOnClickListener(v -> openSettings());
 
-		ioExecutor.execute(() -> {
-			try {
-				LocalAuthor la = identityManager.getLocalAuthor();
-				localPub = la.getPublicKey().getEncoded();
-				GroupTrState s = groupTrManager.getGroup(groupId);
-				if (s == null) {
-					main.post(this::finish);
+		requestReload();
+	}
+
+	private void requestReload() {
+		synchronized (reloadLock) {
+			if (reloadRunning) {
+				reloadAgain = true;
+				return;
+			}
+			reloadRunning = true;
+		}
+		ioExecutor.execute(this::reloadLoop);
+	}
+
+	private void reloadLoop() {
+		while (true) {
+			synchronized (reloadLock) {
+				reloadAgain = false;
+			}
+			reloadOnce();
+			synchronized (reloadLock) {
+				if (!reloadAgain) {
+					reloadRunning = false;
 					return;
 				}
-				List<GroupTrPost> posts =
-						groupTrManager.getRecentPosts(groupId);
-				main.post(() -> {
-					updateHeader(s);
-					renderPosts(posts);
-				});
-			} catch (DbException ex) {
-				main.post(() -> toast(R.string.grouptr_error_load));
 			}
-		});
+		}
+	}
+
+	private void reloadOnce() {
+		byte[] gid = groupId;
+		try {
+			if (localPub == null) {
+				LocalAuthor la = identityManager.getLocalAuthor();
+				localPub = la.getPublicKey().getEncoded();
+			}
+			GroupTrState s = groupTrManager.getGroup(gid);
+			if (s == null) {
+				main.post(this::finish);
+				return;
+			}
+			knownNames = loadKnownNames(s);
+			List<GroupTrMember> outOfReach =
+					groupTrManager.getMembersOutOfReach(gid);
+			List<GroupTrPost> posts = groupTrManager.getRecentPosts(gid);
+			main.post(() -> {
+				lastState = s;
+				updateHeader(s);
+				bindReachBanner(s, outOfReach);
+				renderPosts(posts);
+			});
+		} catch (DbException | RuntimeException ex) {
+			main.post(() -> toast(R.string.grouptr_error_load));
+		}
+	}
+
+	private java.util.Map<String, String> loadKnownNames(GroupTrState s) {
+		java.util.Map<String, String> names = new java.util.HashMap<>();
+		java.util.Map<String, byte[]> mlDsa = new java.util.HashMap<>();
+		for (GroupTrMember m : s.getMembers()) {
+			if (!m.getName().isEmpty()) {
+				names.put(StringUtils.toHexString(m.getPubKey()), m.getName());
+			}
+		}
+		try {
+			for (Contact c : contactManager.getContacts()) {
+				String name = c.getAlias() != null ? c.getAlias()
+						: c.getAuthor().getName();
+				String key = StringUtils.toHexString(
+						c.getAuthor().getPublicKey().getEncoded());
+				names.put(key, name);
+				if (c.getMlDsaSigPublicKey() != null) {
+					mlDsa.put(key, c.getMlDsaSigPublicKey());
+				}
+			}
+			byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
+			if (localPub != null && localMlDsa != null) {
+				mlDsa.put(StringUtils.toHexString(localPub), localMlDsa);
+			}
+		} catch (DbException | RuntimeException ex) {
+		}
+		knownMlDsaKeys = mlDsa;
+		if (localPub != null) {
+			names.put(StringUtils.toHexString(localPub),
+					getString(R.string.grouptr_member_role_you));
+		}
+		return names;
+	}
+
+	private void bindReachBanner(GroupTrState s,
+			List<GroupTrMember> outOfReach) {
+		TextView banner = findViewById(R.id.reachBanner);
+		if (banner == null) return;
+		if (outOfReach.isEmpty() || s.isDissolved()) {
+			banner.setVisibility(View.GONE);
+			return;
+		}
+		int n = outOfReach.size();
+		banner.setText(getResources().getQuantityString(
+				R.plurals.grouptr_reach_banner, n, n));
+		banner.setVisibility(View.VISIBLE);
+		StringBuilder names = new StringBuilder();
+		for (GroupTrMember m : outOfReach) {
+			if (names.length() > 0) names.append('\n');
+			names.append(m.getName().isEmpty()
+					? shortKeyId(m.getPubKey()) : m.getName());
+		}
+		String list = names.toString();
+		banner.setOnClickListener(v -> new SecureAlertDialogBuilder(this)
+				.setTitle(R.string.grouptr_reach_title)
+				.setMessage(getString(R.string.grouptr_reach_explanation,
+						list))
+				.setPositiveButton(android.R.string.ok, null)
+				.show());
 	}
 
 	private void updateHeader(GroupTrState s) {
@@ -320,11 +439,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			notificationManager.blockGroupTrNotification(groupId);
 			notificationManager.clearGroupTrPostNotification(groupId);
 			byte[] gid = groupId;
-			ioExecutor.execute(() -> {
-				groupTrManager.markGroupRead(gid);
-				List<GroupTrPost> posts = groupTrManager.getRecentPosts(gid);
-				main.post(() -> renderPosts(posts));
-			});
+			ioExecutor.execute(() -> groupTrManager.markGroupRead(gid));
+			requestReload();
 		}
 	}
 
@@ -364,21 +480,18 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	@Override
 	public void eventOccurred(Event e) {
-		if (!(e instanceof GroupPostReceivedEvent)) return;
-		GroupPostReceivedEvent ev = (GroupPostReceivedEvent) e;
-		if (!Arrays.equals(ev.getGroupId(), groupId)) return;
-		main.post(() -> {
-			GroupTrPost p = new GroupTrPost(ev.getGroupId(),
-					ev.getSenderPubKey(), ev.getSenderName(),
-					ev.getCiphertext(), ev.getTimestamp(), ev.getEpoch(),
-					false, ev.getAutoDeleteTimerMs());
-			if (postAdapter.contains(p)) return;
-			boolean pin = isScrolledToBottom();
-			postAdapter.addPost(p);
-			scheduleAutoDelete(p);
-			emptyState.setVisibility(View.GONE);
-			if (pin) scrollToBottom();
-		});
+		byte[] gid;
+		if (e instanceof GroupTrPostAcceptedEvent) {
+			gid = ((GroupTrPostAcceptedEvent) e).getGroupId();
+		} else if (e instanceof GroupTrLocalStateChangedEvent) {
+			gid = ((GroupTrLocalStateChangedEvent) e).getGroupId();
+		} else if (e instanceof GroupPostReceivedEvent) {
+			gid = ((GroupPostReceivedEvent) e).getGroupId();
+		} else {
+			return;
+		}
+		if (!Arrays.equals(gid, groupId)) return;
+		requestReload();
 	}
 
 	@Override
@@ -445,11 +558,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void scheduleAutoDelete(GroupTrPost p) {
-		long ttl = p.getAutoDeleteTimerMs();
-		if (ttl <= 0L) return;
+		long expiry = p.getExpiryTime();
+		if (expiry == Long.MAX_VALUE) return;
 		String key = postKey(p);
 		if (!autoDeleteScheduled.add(key)) return;
-		long remaining = ttl - (System.currentTimeMillis() - p.getTimestamp());
+		long now = System.currentTimeMillis();
+		long remaining = expiry <= now ? 0L : expiry - now;
 		if (remaining <= 0L) {
 			expirePost(p, key);
 			return;
@@ -479,12 +593,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 		@Override
 		public void onImageClick(byte[] bytes, @Nullable String mime) {
-			openMediaFullscreen(bytes, mime, false, ".jpg");
+			openMediaFullscreen(bytes, mime, false);
 		}
 
 		@Override
 		public void onVideoClick(byte[] bytes, @Nullable String mime) {
-			openMediaFullscreen(bytes, mime, true, ".mp4");
+			openMediaFullscreen(bytes, mime, true);
 		}
 
 		@Override
@@ -518,54 +632,33 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	@Nullable
 	private Bitmap extractVideoThumb(byte[] videoBytes) {
-		java.io.File tmp = null;
 		MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 		try {
-			tmp = java.io.File.createTempFile("grouptr_vid_thumb_",
-					".mp4", getCacheDir());
-			try (java.io.FileOutputStream out =
-					new java.io.FileOutputStream(tmp)) {
-				out.write(videoBytes);
-			}
-			mmr.setDataSource(tmp.getAbsolutePath());
+			mmr.setDataSource(new com.professor.zerion.android.util
+					.ByteArrayMediaDataSource(videoBytes));
 			return mmr.getFrameAtTime(0);
-		} catch (IOException | RuntimeException ex) {
+		} catch (RuntimeException ex) {
 			return null;
 		} finally {
 			try {
 				mmr.release();
 			} catch (IOException ignored) {
 			}
-			if (tmp != null && !tmp.delete()) tmp.deleteOnExit();
 		}
 	}
 
 	private void openMediaFullscreen(byte[] bytes, @Nullable String mime,
-			boolean isVideo, String ext) {
-		try {
-			java.io.File dir = new java.io.File(getCacheDir(),
-					"grouptr_view");
-			if (!dir.exists() && !dir.mkdirs()) {
-				toast(R.string.grouptr_attach_read_failed);
-				return;
-			}
-			java.io.File tmp = java.io.File.createTempFile(
-					"grouptr_view_", ext, dir);
-			try (java.io.FileOutputStream out =
-					new java.io.FileOutputStream(tmp)) {
-				out.write(bytes);
-			}
-			Uri uri = androidx.core.content.FileProvider.getUriForFile(this,
-					getPackageName() + ".fileprovider", tmp);
-			Intent i = new Intent(Intent.ACTION_VIEW);
-			String type = mime != null ? mime
-					: (isVideo ? "video/mp4" : "image/jpeg");
-			i.setDataAndType(uri, type);
-			i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-			startActivity(i);
-		} catch (IOException | RuntimeException ex) {
+			boolean isVideo) {
+		String type = com.professor.zerion.android.util.ExternalViewerTypes
+				.typeForContent(mime != null ? mime
+						: (isVideo ? "video/mp4" : "image/jpeg"), bytes);
+		if (type == null) {
 			toast(R.string.grouptr_attach_read_failed);
+			return;
 		}
+		com.professor.zerion.android.util.ExternalHandoff.open(this,
+				ioExecutor, bytes, type,
+				() -> toast(R.string.grouptr_attach_read_failed));
 	}
 
 	private void playVoice(AppCompatImageButton button, byte[] oggOpus) {
@@ -622,10 +715,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		input.setText("");
 		ioExecutor.execute(() -> {
 			try {
-				groupTrManager.sendGroupPost(groupId, body, 0L);
-				List<GroupTrPost> posts =
-						groupTrManager.getRecentPosts(groupId);
-				main.post(() -> renderPosts(posts));
+				int skipped = groupTrManager.sendGroupPost(groupId, body, 0L);
+				reportSkipped(skipped);
+				requestReload();
 			} catch (DbException ex) {
 				main.post(() -> {
 					if (input.getText() == null
@@ -766,7 +858,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 	}
 
-	private void onMediaPicked(@Nullable Uri uri) {
+	private void onMediaPicked(@Nullable Uri picked) {
+		Uri uri = com.professor.zerion.android.util.PickedUris.accept(this,
+				picked);
 		if (uri == null) return;
 		ioExecutor.execute(() -> processPickedMedia(uri));
 	}
@@ -794,8 +888,30 @@ public class GroupTrConversationActivity extends ZerionActivity
 				main.post(() -> toast(R.string.grouptr_attach_video_too_large));
 				return;
 			}
+			com.professor.zerion.android.attachment.SharedMediaSanitizer
+					.Cleaned cleaned;
+			try {
+				cleaned = new com.professor.zerion.android.attachment
+						.SharedMediaSanitizer(getApplicationContext())
+						.sanitize(uri, mime, data, MAX_INLINE_MEDIA_BYTES);
+			} catch (IOException | RuntimeException ex) {
+				main.post(() -> {
+					if (ex instanceof com.professor.zerion.android.attachment
+							.MediaRefusedException) {
+						com.professor.zerion.android.attachment
+								.MediaRefusalDialog.show(this,
+										(com.professor.zerion.android
+												.attachment
+												.MediaRefusedException) ex);
+					} else {
+						toast(R.string.grouptr_attach_read_failed);
+					}
+				});
+				return;
+			}
 			long durationMs = probeVideoDurationMs(uri);
-			byte[] body = GroupTrBody.encodeVideo(data, mime, durationMs);
+			byte[] body = GroupTrBody.encodeVideo(cleaned.getData(),
+					cleaned.getMimeType(), durationMs);
 			sendBodyAsync(body);
 			return;
 		}
@@ -880,14 +996,20 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		ioExecutor.execute(() -> {
 			try {
-				groupTrManager.sendGroupPost(groupId, body, 0L);
-				List<GroupTrPost> posts =
-						groupTrManager.getRecentPosts(groupId);
-				main.post(() -> renderPosts(posts));
+				int skipped = groupTrManager.sendGroupPost(groupId, body, 0L);
+				reportSkipped(skipped);
+				requestReload();
 			} catch (DbException ex) {
 				main.post(() -> toast(R.string.grouptr_error_send));
 			}
 		});
+	}
+
+	private void reportSkipped(int skipped) {
+		if (skipped <= 0) return;
+		main.post(() -> Toast.makeText(this, getResources().getQuantityString(
+				R.plurals.grouptr_post_not_sent_older, skipped, skipped),
+				Toast.LENGTH_LONG).show());
 	}
 
 	private static String formatDuration(long ms) {
@@ -908,6 +1030,19 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void showTtlDialog() {
+		GroupTrState s = lastState;
+		if (s != null && localPub != null
+				&& !Arrays.equals(localPub, s.getCreatorPubKey())) {
+			long ms = s.getDefaultAutoDeleteTimerMs();
+			new SecureAlertDialogBuilder(this)
+					.setTitle(R.string.grouptr_default_ttl_set)
+					.setMessage(getString(R.string.grouptr_ttl_set_by_creator,
+							ms <= 0L ? getString(R.string.grouptr_ttl_off_label)
+									: GroupTrTimerLabels.label(this, ms)))
+					.setPositiveButton(android.R.string.ok, null)
+					.show();
+			return;
+		}
 		final String[] labels = {
 				getString(R.string.grouptr_ttl_off),
 				getString(R.string.grouptr_ttl_5min),
@@ -929,8 +1064,18 @@ public class GroupTrConversationActivity extends ZerionActivity
 						try {
 							groupTrManager.setGroupAutoDeleteTimer(
 									groupId, v);
-							main.post(() -> toast(
-									R.string.grouptr_default_ttl_saved));
+							int older = groupTrManager
+									.countMembersOnOlderVersion(groupId);
+							main.post(() -> {
+								toast(R.string.grouptr_default_ttl_saved);
+								if (older > 0) {
+									Toast.makeText(this, getResources()
+											.getQuantityString(
+													R.plurals.grouptr_ttl_older_members,
+													older, older),
+											Toast.LENGTH_LONG).show();
+								}
+							});
 						} catch (DbException ex) {
 							main.post(() -> toast(
 									R.string.grouptr_error_save));
@@ -946,45 +1091,37 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	private void bindSender(TextView sender,
 			org.zerionproject.app.api.grouptr.GroupTrPost p) {
-		sender.setText(decorateName(p));
+		sender.setText(senderLabel(p));
 		sender.setOnClickListener(v -> showFingerprintDialog(p));
+	}
+
+	private String senderLabel(org.zerionproject.app.api.grouptr.GroupTrPost p) {
+		String known = knownNames.get(StringUtils.toHexString(
+				p.getSenderPubKey()));
+		return GroupTrSenderLabel.label(known, p.getSenderName(),
+				shortKeyId(p.getSenderPubKey()),
+				getString(R.string.grouptr_sender_alias_format),
+				getString(R.string.grouptr_sender_unverified_format));
 	}
 
 	private void showFingerprintDialog(
 			org.zerionproject.app.api.grouptr.GroupTrPost p) {
+		byte[] mlDsa = knownMlDsaKeys.get(StringUtils.toHexString(
+				p.getSenderPubKey()));
 		String fp = com.professor.zerion.android.contact.identity
-				.IdentityFingerprint.forSigningPub(p.getSenderPubKey());
+				.IdentityDisplay.lines(p.getSenderPubKey(), mlDsa,
+						getString(R.string.identity_fingerprint_hybrid_format),
+						getString(R.string.identity_fingerprint_classical_format));
 		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this, R.style.ZerionDialogTheme)
-				.setTitle(decorateName(p))
+				.setTitle(senderLabel(p))
 				.setMessage(getString(R.string.grouptr_member_key_message, fp))
 				.setPositiveButton(android.R.string.ok, null)
 				.show();
 	}
 
-	private static String decorateName(
-			org.zerionproject.app.api.grouptr.GroupTrPost p) {
-		String name = p.getSenderName();
-		String suffix = shortKeyId(p.getSenderPubKey());
-		return name == null || name.isEmpty()
-				? "· " + suffix
-				: name + " · " + suffix;
-	}
-
 	private static String shortKeyId(byte[] pubKey) {
-		try {
-			java.security.MessageDigest md =
-					java.security.MessageDigest.getInstance("SHA-256");
-			byte[] h = md.digest(pubKey);
-			StringBuilder sb = new StringBuilder(8);
-			for (int i = 0; i < 4; i++) {
-				sb.append(String.format(java.util.Locale.US,
-						"%02x", h[i]));
-			}
-			return sb.toString();
-		} catch (java.security.NoSuchAlgorithmException e) {
-			return "????????";
-		}
+		return GroupTrSenderLabel.fingerprint(pubKey);
 	}
 
 	public static Intent intent(android.content.Context ctx, byte[] gid) {

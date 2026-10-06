@@ -42,6 +42,9 @@ public class AddContactActivity extends ZerionActivity implements
 				.get(AddContactViewModel.class);
 	}
 
+	public static final String EXTRA_RE_ADD_CONTACT =
+			"com.professor.zerion.RE_ADD_CONTACT";
+
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
@@ -54,6 +57,9 @@ public class AddContactActivity extends ZerionActivity implements
 		}
 
 		viewModel.onCreate();
+		if (getIntent().getBooleanExtra(EXTRA_RE_ADD_CONTACT, false)) {
+			viewModel.setReAddExisting(true);
+		}
 
 		viewModel.getRemoteLinkEntered().observeEvent(this, entered -> {
 			if (entered) showNextFragment(new NicknameFragment());
@@ -101,8 +107,7 @@ public class AddContactActivity extends ZerionActivity implements
 	}
 
 	private void handleIncomingLink(String link) {
-		String ownLink = viewModel.getHandshakeLink().getValue();
-		if (link.equals(ownLink)) {
+		if (viewModel.isOwnLink(link)) {
 			Toast.makeText(this, R.string.intent_own_link, LENGTH_LONG).show();
 		} else if (viewModel.isValidRemoteContactLink(link)) {
 			viewModel.setRemoteHandshakeLink(link);

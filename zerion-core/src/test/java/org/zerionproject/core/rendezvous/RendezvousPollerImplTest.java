@@ -140,9 +140,10 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testReanchorsExpiryForOldPendingContactAtStartup()
+	public void anInvitationPastItsLifetimeExpiresAtStartup()
 			throws Exception {
 		Transaction txn = new Transaction(null, true);
+		Transaction writeTxn = new Transaction(null, false);
 		long pastOriginalExpiry =
 				pendingContact.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
 
@@ -154,13 +155,13 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(pastOriginalExpiry));
+			oneOf(db).transaction(with(false), withDbRunnable(writeTxn));
+			oneOf(db).clearPendingContactOurKeys(writeTxn,
+					pendingContact.getId());
 			oneOf(eventBus).broadcast(with(new PredicateMatcher<>(
 					PendingContactStateChangedEvent.class, e ->
-					e.getPendingContactState() == OFFLINE)));
+					e.getPendingContactState() == FAILED)));
 		}});
-
-		expectDeriveRendezvousKey();
-		expectSchedulePolling();
 
 		rendezvousPoller.startService();
 	}
@@ -540,10 +541,14 @@ public class RendezvousPollerImplTest extends BrambleMockTestCase {
 		return expectSchedulePolling();
 	}
 
-	private void expectPendingContactExpires(long now) {
-		context.checking(new Expectations() {{
+	private void expectPendingContactExpires(long now) throws Exception {
+		Transaction writeTxn = new Transaction(null, false);
+		context.checking(new DbExpectations() {{
 			oneOf(clock).currentTimeMillis();
 			will(returnValue(now));
+			oneOf(db).transaction(with(false), withDbRunnable(writeTxn));
+			oneOf(db).clearPendingContactOurKeys(writeTxn,
+					pendingContact.getId());
 		}});
 
 		expectStateChangedEvent(FAILED);

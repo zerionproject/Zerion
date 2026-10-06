@@ -9,17 +9,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
-/**
- * Checks the voice memo text forms an incoming private message may carry. A
- * memo is the text {@code [VOICE:<durationMs>:<base64 payload>]} or, when
- * long, a series of parts {@code [VMP:1:<memoId>:<seq>:<total>:<durationMs>:
- * <slice>]} whose slices concatenate to that base64 payload. The payload's
- * first byte is its format version. Version 1 carried its wrap key in clear
- * and bound no message identity into the associated data, so it is refused
- * on receipt: a memo in that format is neither played nor kept, and cannot be
- * replayed or reflected into a conversation. Only the first part of a chunked
- * memo carries the version byte, so only that part is checked.
- */
 @NotNullByDefault
 class VoiceMemoFormatCheck {
 
@@ -33,10 +22,6 @@ class VoiceMemoFormatCheck {
 	private VoiceMemoFormatCheck() {
 	}
 
-	/**
-	 * Throws if {@code text} is a voice memo, or the first part of one, in
-	 * any format but the current one.
-	 */
 	static void requireCurrentFormat(@Nullable String text)
 			throws FormatException {
 		if (text == null) return;

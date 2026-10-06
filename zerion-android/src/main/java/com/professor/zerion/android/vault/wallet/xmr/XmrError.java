@@ -2,11 +2,6 @@ package com.professor.zerion.android.vault.wallet.xmr;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Typed, fail-closed error model for the XMR wallet layer. Distinct causes are
- * kept distinct so a corrupted item or a native failure is never reported as a
- * "wrong password". No failed operation may navigate into the wallet.
- */
 @NotNullByDefault
 public enum XmrError {
 	WRONG_PASSWORD,

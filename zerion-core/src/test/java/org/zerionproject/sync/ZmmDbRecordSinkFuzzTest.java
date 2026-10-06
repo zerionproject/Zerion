@@ -30,12 +30,6 @@ import static org.zerionproject.core.test.TestUtils.getGroup;
 import static org.zerionproject.core.test.TestUtils.getClientId;
 import static org.zerionproject.core.test.TestUtils.getMessage;
 
-/**
- * The record sink drops a malformed sync record and keeps the session:
- * random records, records of other types, sampled bit flips of a valid
- * message record and truncations never escape as an exception, while an
- * intact message record still reaches the database.
- */
 public class ZmmDbRecordSinkFuzzTest extends BrambleMockTestCase {
 
 	private static final int RANDOM_RECORDS = 3000;
@@ -79,7 +73,7 @@ public class ZmmDbRecordSinkFuzzTest extends BrambleMockTestCase {
 			oneOf(db).receiveMessage(with(txn), with(new ContactId(1)),
 					with(any(Message.class)));
 		}});
-		sink.deliver(1, ZmmConstants.TYPE_SYNC, record);
+		sink.deliver(1, 1L, ZmmConstants.TYPE_SYNC, record);
 	}
 
 	@Test
@@ -90,7 +84,8 @@ public class ZmmDbRecordSinkFuzzTest extends BrambleMockTestCase {
 		for (int i = 0; i < RANDOM_RECORDS; i++) {
 			byte[] payload = new byte[random.nextInt(300)];
 			random.nextBytes(payload);
-			sink.deliver(random.nextInt(3), types[random.nextInt(types.length)],
+			sink.deliver(random.nextInt(3), 1L,
+					types[random.nextInt(types.length)],
 					payload);
 		}
 	}
@@ -103,14 +98,14 @@ public class ZmmDbRecordSinkFuzzTest extends BrambleMockTestCase {
 		for (int i = 0; i < SAMPLED_FLIPS; i++) {
 			byte[] mutated = record.clone();
 			mutated[random.nextInt(record.length)] ^= (byte) (1 << random.nextInt(8));
-			sink.deliver(1, ZmmConstants.TYPE_SYNC, mutated);
+			sink.deliver(1, 1L, ZmmConstants.TYPE_SYNC, mutated);
 		}
 		for (int len = 0; len < record.length; len += 5) {
 			byte[] truncated = new byte[len];
 			System.arraycopy(record, 0, truncated, 0, len);
-			sink.deliver(1, ZmmConstants.TYPE_SYNC, truncated);
+			sink.deliver(1, 1L, ZmmConstants.TYPE_SYNC, truncated);
 		}
-		sink.onDisconnected(1);
+		sink.onDisconnected(1, 1L);
 	}
 
 	private void allowAnyDelivery() throws Exception {

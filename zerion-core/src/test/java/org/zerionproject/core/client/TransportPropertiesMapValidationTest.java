@@ -25,15 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * A transport properties map arrives from a remote peer inside an
- * introduction ACCEPT and inside the contact exchange payload. Every key
- * must be rejected with a FormatException before a TransportId is built
- * from it: TransportId's constructor throws an unchecked exception for an
- * empty or over-long identifier, and an unchecked exception escaping a
- * validator killed the process and left the message to be re-validated at
- * every start.
- */
 public class TransportPropertiesMapValidationTest extends BrambleMockTestCase {
 
 	private final ClientHelperImpl clientHelper = new ClientHelperImpl(

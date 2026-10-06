@@ -57,8 +57,6 @@ public class XmrNodeConfigTest {
 		assertTrue(order.get(0).usesTor());
 	}
 
-	/** JNI-02: an own node is untrusted unless the user says so; the flag is
-	 *  persisted with the node and read back, never defaulted to trusted. */
 	@Test
 	public void ownNodeIsUntrustedUnlessExplicitlyMarked() throws Exception {
 		XmrNodeConfig plain = new XmrNodeConfig(XmrNodeConfig.Mode.OWN, ONION,

@@ -9,16 +9,10 @@
 	<cache-path
 		name="zenc_share"
 		path="zenc_share/" />
-	<cache-path
-		name="grouptr_view"
-		path="grouptr_view/" />
 	<files-path
 		name="camera"
 		path="camera/" />
 	<cache-path
-		name="channel_attach_view"
-		path="channel_attach_view/" />
-	<cache-path
-		name="media_docs"
-		path="media_docs/" />
+		name="external_view"
+		path="external_view/" />
 </paths>

@@ -4,13 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Holds one planned Silent Payments sweep between review and authorisation
- * and releases it only for the fingerprint the user reviewed and the wallet
- * it was planned for, so the transaction that is signed is the one that was
- * shown and a wallet opened in between clears the plan instead of signing
- * another wallet's coins under this wallet's name.
- */
 @NotNullByDefault
 public final class SpSweepGate {
 

@@ -71,12 +71,6 @@ class ConnectionRegistryImpl implements ConnectionRegistry, EventListener {
 		}
 	}
 
-	/**
-	 * A removed contact's live sessions are ended at once: the ratchet and
-	 * the records it could still deliver belong to a relationship that no
-	 * longer exists, and the sessions would otherwise hold inbound permits,
-	 * ticker threads and cover bandwidth until the peer hangs up.
-	 */
 	private void closeContactConnections(ContactId c) {
 		List<InterruptibleConnection> toClose = new ArrayList<>();
 		synchronized (lock) {

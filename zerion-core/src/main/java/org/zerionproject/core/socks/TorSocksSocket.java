@@ -13,16 +13,6 @@ import java.nio.charset.StandardCharsets;
 
 import javax.annotation.Nullable;
 
-/**
- * A socket that reaches its destination through the local Tor SOCKS
- * listener. The stream to the listener comes from a
- * {@link TorSocksConnector}, so the same client works over a Unix domain
- * socket on Android and over loopback TCP elsewhere; this class speaks
- * SOCKS5 with username/password authentication over that stream and then
- * hands every read and write to it. The destination is always sent as a
- * domain name: nothing here resolves a name, so an onion address never
- * reaches the system resolver.
- */
 @NotNullByDefault
 public class TorSocksSocket extends Socket {
 
@@ -74,6 +64,10 @@ public class TorSocksSocket extends Socket {
 			throw new IllegalArgumentException();
 		}
 		InetSocketAddress inet = (InetSocketAddress) endpoint;
+		if (!inet.isUnresolved()) {
+			throw new IllegalArgumentException(
+					"Destination must be unresolved");
+		}
 		String host = inet.getHostString();
 		if (host.length() > MAX_HOST_LENGTH || host.isEmpty()) {
 			throw new IllegalArgumentException();

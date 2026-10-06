@@ -15,13 +15,6 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-/**
- * Persists client authorization state in the encrypted settings store:
- * one namespace, per-contact keys prefixed with the contact id, and
- * device-level keys for the authorized service and a rotation in
- * progress. Settings live in the database, so the state survives every
- * restart and is part of the encrypted backup.
- */
 @NotNullByDefault
 public class OnionAuthStore {
 
@@ -53,7 +46,6 @@ public class OnionAuthStore {
 	private static final String SVC_LAST_ROTATION = "svc.lastRotation";
 	private static final String SVC_REVOCATION_PENDING = "svc.revocationPending";
 
-	/** The device's authorized service and a retiring predecessor. */
 	public static final class ServiceRecord {
 
 		@Nullable
@@ -132,7 +124,6 @@ public class OnionAuthStore {
 		settingsManager.mergeSettings(txn, s, NAMESPACE);
 	}
 
-	/** Removes every key of the contact, so the contact reads as LEGACY. */
 	public void clear(Transaction txn, ContactId c) throws DbException {
 		Settings s = new Settings();
 		for (String f : new String[] {K_STATE, K_LOCAL_GEN, K_PEER_GEN,
@@ -145,7 +136,6 @@ public class OnionAuthStore {
 		settingsManager.mergeSettings(txn, s, NAMESPACE);
 	}
 
-	/** Every contact with a persisted record. */
 	public List<OnionAuthRecord> loadAll(Transaction txn) throws DbException {
 		Settings s = settingsManager.getSettings(txn, NAMESPACE);
 		List<OnionAuthRecord> out = new ArrayList<>();

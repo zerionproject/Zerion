@@ -79,7 +79,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion طوری پیکربندی شده تا از اینترنت در هنگام مصرف باتری استفاده نکند</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion طوری پیکربندی شده تا از اینترنت در این کشور استفاده نکند</string>
   
-  <string name="transport_lan_long">همان شبکه وای-فای</string>
 
   <string name="reminder_notification_title">از Zerion (برایر) خارج شد</string>
   <string name="reminder_notification_text">برای وارد شدن دوباره ضربه بزنید.</string>
@@ -205,7 +204,6 @@
   <string name="connecting_to_device">اتصال به دستگاهu2026\</string>
   <string name="authenticating_with_device">تصدیق سازی با دستگاه u2026\</string>
   <string name="connection_error_title">اتصال به مخاطب شما برقرار نشد</string>
-  <string name="connection_error_feedback">اگر این مشکل ادامه پیدا کرد، لطفا <a href="feedback">بازخورد ارسال کنید</a> تا به ما در بهبود برنامه کمک کنید.</string>
   
   <string name="add_contact_remotely_title_case">افزودن مخاطب از دور</string>
   <string name="add_contact_nearby_title">افزودن مخاطب از نزدیک</string>
@@ -379,8 +377,6 @@
   
   <string name="tor_network_setting_summary">خودکار: %1$s(در %2$s)</string>
   <string name="tor_mobile_data_title">استفاده از داده موبایل</string>
-  <string name="tor_only_when_charging_title">اتصال به اینترنت تنها در هنگام شارژ شدن</string>
-  <string name="tor_only_when_charging_summary">ارتباط اینترنت را هنگامی که دستگاه در حال استفاده از باتری خود می باشد را غیرفعال می کند</string>
   
   <string name="security_settings_title">امنیت</string>
   <string name="pref_lock_title">قفل برنامه</string>
@@ -437,74 +433,9 @@
   <string name="choose_ringtone_title">انتخاب رینگتون</string>
   <string name="cannot_load_ringtone">ناتوانی در بارگذاری رینگتون</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">راه‌اندازی Mailbox</string>
-  <string name="mailbox_setup_intro">Mailbox به مخاطبین شما امکان می‌دهد در زمانی که آفلاین هستید، برای شما پیام ارسال کنند. Mailbox پیام‌های شما را دریافت می‌کند و آن‌ها را تا زمانی که آنلاین شوید نگهداری می‌کند.\n
-		شما می‌توانید برنامه Zerion Mailbox را روی دستگاه دیگری نصب کنید. آن را به برق و Wi-Fi متصل نگه دارید تا همیشه آنلاین باشد. </string>
-  <string name="mailbox_setup_download">ابتدا، با جستجوی «Zerion Mailbox» در Google Play یا هر جایی که Zerion را دانلود کرده‌اید، برنامه Mailbox را روی دستگاه دیگری نصب کنید.\n
-		\nسپس با اسکن کد QR نمایش داده شده توسط برنامه Mailbox، صندوق پستی خود را با Zerion پیوند دهید. </string>
-  <string name="mailbox_setup_download_link">اشتراک لینک دانلود</string>
-  <string name="mailbox_setup_connecting">در حال اتصال به صندوق پست…</string>
   
-  <string name="mailbox_setup_connecting_info">این ممکن است تا %1s طول بکشد</string>
-  <string name="mailbox_setup_already_paired_title">صندوق‌پستی قبلا متصل شده است</string>
-  <string name="mailbox_setup_already_paired_description">اتصال صندوق‌پستی دستگاه دیگرتان را لغو کنید و دوباره امتحان کنید.</string>
-  <string name="mailbox_setup_io_error_title">متصل نشد</string>
-  <string name="mailbox_setup_io_error_description">مطمئن شوید که هر دو دستگاه به اینترنت متصل هستند و دوباره امتحان کنید.</string>
-  <string name="mailbox_setup_assertion_error_title">خطای Mailbox</string>
-  <string name="mailbox_setup_assertion_error_description">لطفا در صورت تداوم مشکل، بازخورد (با داده‌های ناشناس) را از طریق برنامه Zerion ارسال کنید.</string>
-  <string name="mailbox_setup_camera_error_description">دسترسی به دوربین امکان پذیر نیست. لطفا بعد از راه‌اندازی مجدد دستگاه، دوباره امتحان کنید.</string>
-  <string name="mailbox_setup_paired_title">متصل</string>
-  <string name="mailbox_setup_paired_description">صندوق پستی شما با موفقیت با Zerion وصل شد.\n
-		\nصندوق پستی خود را به برق و Wi-Fi متصل نگه دارید تا همیشه آنلاین باشد.</string>
-  <string name="tor_offline_title">آفلاین</string>
-  <string name="tor_offline_description">مطمئن شوید که این دستگاه آنلاین است و اتصال به اینترنت مجاز است.\n
-		\nپس از آن، منتظر بمانید تا نماد کره زمین در صفحه تنظیمات اتصال سبز شود.</string>
-  <string name="tor_offline_button_check">تنظیمات اتصال را بررسی کنید</string>
-  <string name="mailbox_status_title">وضعیت Mailbox</string>
-  <string name="mailbox_status_connected_title">Mailbox در حال اجراست</string>
-  <string name="mailbox_status_problem_title">Zerion در اتصال به صندوق پستی به مشکلی برخورده است</string>
-  <string name="mailbox_status_failure_title">صندوق پستی در دسترس نیست</string>
-  <string name="mailbox_status_app_too_old_title">Zerion خیلی قدیمی است</string>
-  <string name="mailbox_status_app_too_old_message">Zerion را به آخرین نسخه برنامه به‌روزرسانی کنید و دوباره امتحان کنید.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox خیلی قدیمی است</string>
-  <string name="mailbox_status_mailbox_too_old_message">Mailbox خود را به آخرین نسخه برنامه به‌روزرسانی کنید و دوباره امتحان کنید.</string>
-  <string name="mailbox_status_check_button">اتصال را بررسی کنید</string>
   
-  <string name="mailbox_status_connected_info">آخرین اتصال: %s</string>
   
-  <string name="mailbox_status_connected_never">هیچ وقت</string>
-  <string name="mailbox_status_unlink_button">لغو پیوند</string>
-  <string name="mailbox_status_unlink_dialog_title">لغو پیوند صندوق پستی؟</string>
-  <string name="mailbox_status_unlink_dialog_question">آیا از لغو پیوند صندوق پستی خود مطمئنید؟</string>
-  <string name="mailbox_status_unlink_dialog_warning">اگر پیوند صندوق پستی خود را لغو کنید، زمانی که Zerion آفلاین است، نمی‌توانید پیام‌ها را دریافت کنید.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">پیوند صندوق پستی شما لغو شد</string>
-  <string name="mailbox_status_unlink_no_wipe_message">دفعه بعد که به دستگاه صندوق پستی خود دسترسی پیدا کردید، لطفا برنامه صندوق پستی را باز کنید و روی دکمه \"لغو پیوند\" بزنید تا فرآیند تکمیل شود.\n\nاگر دیگر به دستگاه صندوق پستی خود دسترسی ندارید، نگران نباشید. داده‌های شما رمزگذاری شده‌اند، بنابراین حتی اگر این فرآیند را کامل نکرده‌ایدد، امن می‌مانند.</string>
-  <string name="mailbox_status_unlink_success">پیوند صندوق پستی شما لغو شد</string>
-  <string name="mailbox_error_notification_channel_title">مشکل صندوق پستی Zerion</string>
-  <string name="mailbox_error_notification_title">صندوق پستی Zerion در دسترس نیست</string>
-  <string name="mailbox_error_notification_text">برای حل مشکل، ضربه بزنید.</string>
-  <string name="mailbox_error_wizard_button">رفع مشکل</string>
-  <string name="mailbox_error_wizard_title">عیب‌یابی قدم به قدم Mailbox</string>
-  <string name="mailbox_error_wizard_question1">آیا به دستگاه Mailbox خود دسترسی دارید؟</string>
-  <string name="mailbox_error_wizard_answer1">بله، الآن دسترسی دارم.</string>
-  <string name="mailbox_error_wizard_answer2">نه الآن دسترسی ندارم، ولی بعدا دسترسی خواهم داشت.</string>
-  <string name="mailbox_error_wizard_answer3">نه، دیگر به آن دسترسی ندارم.</string>
-  <string name="mailbox_error_wizard_info1_1">مطمئن شوید که دستگاه Mailbox روشن و به اینترنت متصل است.</string>
-  <string name="mailbox_error_wizard_question1_1">برنامه Mailbox را باز کنید. چه می‌بینید؟</string>
-  <string name="mailbox_error_wizard_answer1_1">دستورالعمل‌های تنظیم Mailbox را می‌بینم</string>
-  <string name="mailbox_error_wizard_answer1_2">یک کد QR می‌بینم</string>
-  <string name="mailbox_error_wizard_answer1_3">پیام \"Mailbox در حال اجراست\" را می‌بینم</string>
-  <string name="mailbox_error_wizard_answer1_4">پیام \"دستگاه آفلاین است\" را می‌بینم</string>
-  <string name="mailbox_error_wizard_info1_1_1">لطفا با استفاده از دکمه زیر پیوند Mailbox خود را لغو کنید، سپس دستورالعمل‌های دستگاه Mailbox را دنبال کنید تا دوباره آن را متصل کنید.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">لطفا با استفاده از دکمه زیر پیوند Mailbox خود را لغو کنید، سپس کد QR را اسکن کنید تا دوباره آن را متصل کنید.</string>
-  <string name="mailbox_error_wizard_info1_1_3">لطفا از دکمه زیر برای بررسی ارتباط بین Zerion و Mailbox استفاده کنید.\n\n 
-		اگر اتصال دوباره قطع شد:\n 
-		\u2022 بررسی کنید که برنامه‌های Mailbox و Zerion به آخرین نسخه به‌روزرسانی شده باشند.\n 
-		\u2022 Mailbox و دستگاه‌های Zerion خود را راه اندازی مجدد کنید و دوباره امتحان کنید.</string>
-  <string name="mailbox_error_wizard_info1_1_4">بررسی کنید که دستگاه Mailbox به درستی به اینترنت متصل باشد.\n\nبررسی کنید که ساعت در دستگاه Mailbox زمان، تاریخ و منطقه زمانی مناسب را نشان دهد.\n\nبررسی کنید که برنامه‌های Mailbox و Zerion به آخرین نسخه به‌روزرسانی شده باشند. \n\nدستگاه‌های Mailbox و Zerion خود را راه‌اندازی مجدد کنید و دوباره امتحان کنید.</string>
-  <string name="mailbox_error_wizard_info2">لطفا هنگامی که به دستگاه دسترسی دارید به این صفحه بازگردید.</string>
-  <string name="mailbox_error_wizard_info3">لطفا با استفاده از دکمه زیر، پیوند Mailbox خود را لغو کنید.\n\nپس از لغو پیوند Mailbox قدیمی، می‌توانید هر زمان که خواستید یک Mailbox جدید راه‌اندازی کنید.</string>
   
   <string name="about_title">درباره‌ی Zerion</string>
   <string name="zerion_version">نسخه Zerion: %s</string>
@@ -512,7 +443,6 @@
   <string name="links">لینک ها</string>
   <string name="zerion_website">\u2022 <a href="">وبسایت</a></string>
   <string name="zerion_source_code">\u2022 <a href="">کد منبع</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">گزارش تغییرات</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">سیاست حفظ حریم خصوصی</a></string>
   
   <string name="translator_thanks">با تشکر از همه مشارکت کنندگان در Localization Lab بخصوص erinm، Reza Ghasemi، Mohsen Eghbal و Vox.</string>
@@ -531,43 +461,13 @@
   <string name="disappearing_messages_summary">پس از این پیام‌های این گفتگو را بعد از 7\u00A0 روز ناپدید کن.</string>
   
   <string name="pref_category_actions">فعالیتها </string>
-  <string name="send_feedback">ارسال بازخورد</string>
   
   <string name="link_warning_title">هشدار پیوند</string>
   <string name="link_warning_intro">با باز کردن لینک زیر شما یک برنامه بیرونی را باز خواهید کرد.</string>
   <string name="link_warning_text">این می‌تواند برای شناسایی شما مورد استفاده قرار بگیرد. قبل از باز کردن این پیوند به قابل اطمینان بودن شخصی که آن را برای شما ارسال کرده فکر کنید و بعد برای احتیاط آن را با مرورگر تور باز کنید.</string>
   <string name="link_warning_open_link">باز کردن پیوند</string>
   
-  <string name="crash_report_title">گزارش خطای Zerion (برایر)</string>
-  <string name="zerion_crashed">متاسفانه Zerion از کار افتاد</string>
-  <string name="not_your_fault">این تقصیر شما نیست.</string>
-  <string name="please_send_report">لطفا با فرستادن گزارش خطا به ما کمک کنید تا Zerion (برایر) را بهتر کنیم.</string>
-  <string name="report_is_encrypted">به شما اطمینان می دهیم که گزارش شما رمزنگاری شده و به صورت امن فرستاده می شود.</string>
-  <string name="feedback_title">بازخورد</string>
-  <string name="describe_crash">توضیح دهید چه اتفاقی افتاد (اختیاری)</string>
-  <string name="enter_feedback">بازخورد خود را وارد کنید</string>
-  <string name="optional_contact_email">آدرس ایمیل شما (اختیاری)</string>
-  <string name="privacy_policy">با ارسال داده به ما، با <a href="">سیاست حفظ حریم خصوصی</a> ما موافقت می‌کنید</string>
-  <string name="include_debug_report_crash">قرار دادن داده های ناشناس مربوط به خرابی</string>
-  <string name="include_debug_report_feedback">قرار دادن داده های ناشناس درباره این دستگاه</string>
-  <string name="dev_report_user_info">اطلاعات کاربر</string>
-  <string name="dev_report_basic_info">اطلاعات پایه</string>
-  <string name="dev_report_device_info">اطلاعات دستگاه</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">اطلاعات زمانی</string>
-  <string name="dev_report_memory">حافظه</string>
-  <string name="dev_report_storage">حافظه</string>
-  <string name="dev_report_connectivity">اتصال</string>
-  <string name="dev_report_network_usage">استفاده از شبکه</string>
-  <string name="dev_report_build_config">پیکربندی ساخت</string>
-  <string name="dev_report_logcat">لاگ برنامه</string>
-  <string name="dev_report_device_features">ویژگی‌های دستگاه</string>
-  <string name="send_report">ارسال گزارش</string>
   <string name="close">بستن</string>
-  <string name="dev_report_sending">در حال فرستادن نظر...</string>
-  <string name="dev_report_sent">بازخورد ارسال شد</string>
-  <string name="dev_report_saved">گزارش ذخیره شد. دفعه بعدی که وارد Zerion (برایر) شدید فرستاده خواهد شد.</string>
-  <string name="dev_report_error">خطا در ارسال گزارش</string>
   
   <string name="progress_title_logout">خروج از Zerion (برایر)...</string>
   
@@ -581,9 +481,7 @@
   <string name="permission_location_title">اجازه موقعیت</string>
   <string name="permission_nearby_devices_title">مجوز دستگاه‌های نزدیک</string>
   <string name="permission_camera_location_title">دوربین و موقعیت</string>
-  <string name="permission_location_denied_body">شما دسترسی به موقعیت خود را نداده‌اید اما Zerion (برایر) برای یافتن دستگاه‌های بلوتوث نیاز به این دسترسی دارد.\n\nلطفا این دسترسی را فراهم کنید.</string>
   <string name="permission_location_setting_title">تنظیمات مکان‌یابی</string>
-  <string name="permission_location_setting_body">تنظیمات مکانی دستگاه شما باید روشن شود تا بتوانید سایر دستگاه‌ها را از طریق بلوتوث بیابید. برای ادامه لطفا مکان‌یابی خود را فعال کنید. شما می‌توانید بعدا آن رو دوباره غیرفعال کنید.</string>
   <string name="permission_location_setting_button">فعالسازی مکان‌یابی</string>
   <string name="lock_unlock">باز کردن قفل Zerion (برایر)</string>
   <string name="lock_unlock_verbose">پین، الگو یا گذرواژه دستگاه خود را برای باز کردن قفل Zerion (برایر) وارد کنید</string>
@@ -725,7 +623,6 @@
 	<string name="wallet_receive_new">نشانی جدید</string>
 	<string name="wallet_node_hint">برای استفاده از یک سرور روی آن ضربه بزنید. برای حذف یک سرور سفارشی، آن را لمس کرده و نگه دارید.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">یک نشانی خصوصی قابل‌استفاده مجدد. پرداخت‌ها به آن روی زنجیره به یکدیگر قابل‌ردیابی نیستند. شناسایی، داده‌های عمومی را از طریق Tor اسکن می‌کند؛ کلیدهای شما هرگز از دستگاه خارج نمی‌شوند.</string>
 	<string name="wallet_sp_balance">شناسایی‌شده: %1$s</string>
 	<string name="wallet_sp_scanned">اسکن‌شده تا بلاک %1$d</string>
 	<string name="wallet_sp_set_oracle">منبع اسکن</string>

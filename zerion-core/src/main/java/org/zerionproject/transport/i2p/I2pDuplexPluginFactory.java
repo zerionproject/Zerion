@@ -17,13 +17,6 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-/**
- * Creates the I2P transport's plugin. Registering this factory registers the
- * I2P transport with the key manager and lets the plugin manager start and stop
- * the transport. The connection handler and poller factory are injected as
- * {@link Provider}s so the plugin config stays constructible before the contact
- * and key managers they depend on, matching the Tor factory.
- */
 @Immutable
 @NotNullByDefault
 public class I2pDuplexPluginFactory implements DuplexPluginFactory {

@@ -183,11 +183,13 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		String reassembled = null;
 		String stateKey;
 		if (part != null) {
-			reassembled = listener.getReassembledVoiceMessage(part.memoId);
+			reassembled = listener.getReassembledVoiceMessage(
+					!item.isIncoming(), part.memoId);
 			if (reassembled != null) {
 				stateKey = "ready:" + reassembled.length() + ":"
 						+ reassembled.hashCode();
-			} else if (listener.isVoiceMemoFailed(part.memoId)) {
+			} else if (listener.isVoiceMemoFailed(!item.isIncoming(),
+					part.memoId)) {
 				stateKey = "failed";
 			} else {
 				stateKey = "receiving";

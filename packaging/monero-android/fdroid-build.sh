@@ -44,6 +44,9 @@ for ABI in arm64-v8a armeabi-v7a; do
   ABI="${ABI}" "${WORK}/build-monero-android.sh"
   install -Dm644 "${WORK}/out/${ABI}/libzmonero.so" \
     "${REPO}/zerion-android/src/main/jniLibs/${ABI}/libzmonero.so"
+  install -Dm644 "${WORK}/out/${ABI}/buildinfo.txt" \
+    "${HERE}/out/${ABI}/buildinfo.txt"
   echo "installed -> zerion-android/src/main/jniLibs/${ABI}/libzmonero.so"
+  cat "${HERE}/out/${ABI}/buildinfo.txt"
 done
 echo "=== done: libzmonero.so built from source for arm64-v8a + armeabi-v7a ==="

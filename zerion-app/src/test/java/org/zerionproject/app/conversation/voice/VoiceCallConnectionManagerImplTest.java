@@ -23,13 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A dial that outlives its attempt must not hand a connection to the
- * callee later: the callee would adopt that orphan as the call and drop
- * the connection the caller actually streams on. The manager returns the
- * connection of the attempt that answered in time and closes the late one
- * as soon as it arrives.
- */
 public class VoiceCallConnectionManagerImplTest {
 
 	private final Mockery context = new Mockery() {{

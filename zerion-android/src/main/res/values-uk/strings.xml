@@ -84,7 +84,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion налаштовано не використовувати інтернет при роботі від батареї</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion налаштовано не використовувати інтернет у цій країні</string>
   
-  <string name="transport_lan_long">Спільна мережа Wi-Fi</string>
 
   <string name="reminder_notification_title">Ви вийшли з Zerion</string>
   <string name="reminder_notification_text">Натисніть, щоб знову увійти.</string>
@@ -221,7 +220,6 @@
   <string name="connecting_to_device">З\'єднання з пристроєм\u2026</string>
   <string name="authenticating_with_device">Автентифікація з пристроєм\u2026</string>
   <string name="connection_error_title">Неможливо з\'єднатися з вашим контактом</string>
-  <string name="connection_error_feedback">Якщо ця проблема збережеться, будь ласка, <a href="feedback">надішліть відгук</a>, щоб допомогти нам вдосконалити цей додаток.</string>
   
   <string name="add_contact_remotely_title_case">Додати контакт віддалено</string>
   <string name="add_contact_nearby_title">Додати контакт поблизу</string>
@@ -404,8 +402,6 @@
   
   <string name="tor_network_setting_summary">Автоматично: %1$s (через %2$s)</string>
   <string name="tor_mobile_data_title">Використовувати мобільну мережу</string>
-  <string name="tor_only_when_charging_title">З\'єднуватися з інтернетом лише під час заряджання</string>
-  <string name="tor_only_when_charging_summary">Вимикає з’єднання з інтернетом коли пристрій працює від батареї</string>
   
   <string name="security_settings_title">Безпека</string>
   <string name="pref_lock_title">Блокування програми</string>
@@ -462,74 +458,9 @@
   <string name="choose_ringtone_title">Обрати мелодію</string>
   <string name="cannot_load_ringtone">Неможливо завантажити мелодію</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Налаштування Mailbox</string>
-  <string name="mailbox_setup_intro">Скринька дає змогу контактам надсилати вам повідомлення, поки ви не в мережі. Скринька отримуватиме ваші повідомлення й зберігатиме їх до появи вас у мережі.\n
-		\nМожете встановити застосунок Zerion Mailbox на окремий пристрій. Забезпечте йому безперервні електрику й Wi-Fi, щоб він завжди був онлайн.</string>
-  <string name="mailbox_setup_download">Спершу встановіть застосунок Mailbox на інший пристрій, знайшовши «Zerion Mailbox» у Google Play чи іншому місці, звідки ви завантажили Zerion.\n
-		\nТоді з\'єднайте свій Mailbox із Zerion, просканувавши QR-код, показаний застосунком Mailbox.</string>
-  <string name="mailbox_setup_download_link">Поширити посилання на завантаження</string>
-  <string name="mailbox_setup_connecting">Під\'єднується до Mailbox…</string>
   
-  <string name="mailbox_setup_connecting_info">Це може зайняти до %1s</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox уже під\'єднано</string>
-  <string name="mailbox_setup_already_paired_description">Від\'єднайте Mailbox від свого іншого пристрою й повторіть спробу.</string>
-  <string name="mailbox_setup_io_error_title">Не вдалося з\'єднатися</string>
-  <string name="mailbox_setup_io_error_description">Переконайтесь, що обидва пристрої мають інтернет-з\'єднання, й повторіть спробу.</string>
-  <string name="mailbox_setup_assertion_error_title">Помилка Mailbox</string>
-  <string name="mailbox_setup_assertion_error_description">Будь ласка, надішліть відгук (з анонімними даними) застосунком Zerion, якщо проблема повторюватиметься.</string>
-  <string name="mailbox_setup_camera_error_description">Не вдалось отримати доступ до камери. Повторіть спробу — можливо, перезавантаживши пристрій.</string>
-  <string name="mailbox_setup_paired_title">Під\'єднано</string>
-  <string name="mailbox_setup_paired_description">Ваш Mailbox успішно під\'єднано до Zerion.\n
-		\nЗабезпечте Mailbox постійне з\'єднання з електромережею та Wi-Fi, щоб він постійно був на зв\'язку.</string>
-  <string name="tor_offline_title">Поза мережею</string>
-  <string name="tor_offline_description">Переконайтесь, що пристрій у мережі й дозволяє інтернет-з\'єднання.\n
-		\nТоді дочекайтесь, поки значок «глобус» екрану налаштувань з\'єднання стане зеленим.</string>
-  <string name="tor_offline_button_check">Перевірити налаштування з\'єднання</string>
-  <string name="mailbox_status_title">Стан Mailbox</string>
-  <string name="mailbox_status_connected_title">Mailbox працює</string>
-  <string name="mailbox_status_problem_title">Не вдається з\'єднати Zerion із Mailbox</string>
-  <string name="mailbox_status_failure_title">Mailbox недоступна</string>
-  <string name="mailbox_status_app_too_old_title">Версія Zerion занадто стара</string>
-  <string name="mailbox_status_app_too_old_message">Оновіть Zerion до найновішої версії та спробуйте ще.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Версія потової скриньки занадто стара</string>
-  <string name="mailbox_status_mailbox_too_old_message">Оновіть свою поштову скриньку до останньої версії програми та спробуйте ще раз.</string>
-  <string name="mailbox_status_check_button">Перевірити з\'єднання</string>
   
-  <string name="mailbox_status_connected_info">З\'єднання було: %s</string>
   
-  <string name="mailbox_status_connected_never">Ніколи</string>
-  <string name="mailbox_status_unlink_button">Від\'єднати</string>
-  <string name="mailbox_status_unlink_dialog_title">Від\'єднати потову скриньку?</string>
-  <string name="mailbox_status_unlink_dialog_question">Ви впевнені що хочете від\'єднати поштову скриньку?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Якщо ви від\'єднаєте вашу поштову скриньку, ви не зможете отримувати повідомлення поки Zerion не на зв\'язку</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Ваша поштова скринька від\'єднана</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Наступного разу, коли у вас буде доступ до поштової скриньки, відкрийте програму \"Поштова скринька\" і натисніть кнопку \"Відв\'язати\", щоб завершити процес.\n\nЯкщо у вас більше немає доступу до поштової скриньки, не хвилюйтеся. Ваші дані зашифровано, тому вони залишаться в безпеці, навіть якщо ви не завершите процес.</string>
-  <string name="mailbox_status_unlink_success">Ваша поштова скринька від\'єднана</string>
-  <string name="mailbox_error_notification_channel_title">Проблема з поштовою скринькою Zerion</string>
-  <string name="mailbox_error_notification_title">Поштова скринька Zerion не доступна</string>
-  <string name="mailbox_error_notification_text">Натисніть щоб виправити проблему</string>
-  <string name="mailbox_error_wizard_button">Виправити проблему</string>
-  <string name="mailbox_error_wizard_title">Майстер усунення несправностей Mailbox</string>
-  <string name="mailbox_error_wizard_question1">Ви маєте доступ до вашого пристрою Mailbox?</string>
-  <string name="mailbox_error_wizard_answer1">Так, я маю доступ до нього прямо зараз.</string>
-  <string name="mailbox_error_wizard_answer2">Не зараз, але я можу отримати доступ до нього пізніше.</string>
-  <string name="mailbox_error_wizard_answer3">Ні, я більше не маю до нього доступу.</string>
-  <string name="mailbox_error_wizard_info1_1">Переконайтеся, що пристрій Mailbox увімкнено та під\'єднано до Інтернету.</string>
-  <string name="mailbox_error_wizard_question1_1">Відкрийте програму Mailbox. Що ви бачите?</string>
-  <string name="mailbox_error_wizard_answer1_1">Я бачу вказівки щодо налаштування Mailbox</string>
-  <string name="mailbox_error_wizard_answer1_2">Я бачу QR-код</string>
-  <string name="mailbox_error_wizard_answer1_3">Я бачу \"Поштова скринька працює\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Я бачу \"Пристрій не в мережі\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Будь ласка, від\'єднайте вашу поштову скриньку за допомогою кнопки нижче, а потім дотримуйтесь інструкцій на поштовому пристрої, щоб прив\'язати її знову.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Будь ласка, від\'єднайте свою поштову скриньку за допомогою кнопки нижче, а потім проскануйте QR-код, щоб прив\'язати її знову.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Будь ласка, скористайтеся кнопкою нижче, щоб перевірити з\'єднання між Zerion та поштовою скринькою.\n\n
-Якщо з\'єднання знову не вдалося:\n
-		\u2022 Переконайтеся, що програми Поштова скринька та Zerion оновлено до останньої версії.\n
-		\u2022 Перезапустіть поштову скриньку та Zerion і повторіть спробу.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Переконайтеся, що поштовий пристрій належним чином під\'єднано до Інтернету.\n\nПереконайтеся, що годинник на поштовому пристрої показує правильний час, дату та часовий пояс.\n\nПереконайтеся, що програми Поштова скринька та Zerion оновлено до останньої версії.\n\nП перезапустіть поштову скриньку та Zerion і повторіть спробу.</string>
-  <string name="mailbox_error_wizard_info2">Будь ласка повертайтесь до цього екрану коли у вас буде доступ до пристрою</string>
-  <string name="mailbox_error_wizard_info3">Будь ласка, від\'єднайте свою поштову скриньку за допомогою кнопки нижче.\n\nПісля від\'єднання старої поштової скриньки ви можете створити нову поштову скриньку в будь-який час.</string>
   
   <string name="about_title">Про</string>
   <string name="zerion_version">Версія Zerion %s</string>
@@ -537,7 +468,6 @@
   <string name="links">Посилання</string>
   <string name="zerion_website">\u2022 <a href="">Вебсайт</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Вихідний код</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Список змін та доповнень</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Політика конфіденційности</a></string>
   
   <string name="translator_thanks">Дякуємо всім хто вніс свій внесок у Localization Lab</string>
@@ -558,43 +488,13 @@
   <string name="pref_category_actions">Дії</string>
   <string name="share_app_link">Поділитися посиланням для завантаження</string>
   <string name="share_app_link_text">Завантажити Zerion з %s</string>
-  <string name="send_feedback">Надіслати відгук</string>
   
   <string name="link_warning_title">Попередження про посилання</string>
   <string name="link_warning_intro">Ви збираєтеся відкрити наступне посилання за допомогою зовнішньої програми.</string>
   <string name="link_warning_text">Це може бути використання для визначення вашої особи. Подумайте про те, чи довіряєте ви людині, яка надіслала вам це посилання, і подумайте про його відкриття за допомогою Tor Browser.</string>
   <string name="link_warning_open_link">Відкрити посилання</string>
   
-  <string name="crash_report_title">Аварійний звіт Zerion</string>
-  <string name="zerion_crashed">Перепрошуємо, Zerion зазнав збою</string>
-  <string name="not_your_fault">Це не ваша провина.</string>
-  <string name="please_send_report">Будь ласка, допоможіть нам покращити Zerion надіславши нам аварійний звіт.</string>
-  <string name="report_is_encrypted">Ми обіцяємо, що цей звіт буде зашифровано та безпечно надіслано.</string>
-  <string name="feedback_title">Відгук</string>
-  <string name="describe_crash">Опишіть, що сталося (за бажанням)</string>
-  <string name="enter_feedback">Введіть свій відгук</string>
-  <string name="optional_contact_email">Ваша електронна адреса (необов\'язково)</string>
-  <string name="privacy_policy">Відправляючи нам дані ви погоджуєтесь з нашою <a href="">політикою конфіденційности</a></string>
-  <string name="include_debug_report_crash">Додати анонімну інформацію про аварійний збій</string>
-  <string name="include_debug_report_feedback">Додати анонімну інформацію про цей пристрій</string>
-  <string name="dev_report_user_info">Користувацькі дані</string>
-  <string name="dev_report_basic_info">Загальні дані</string>
-  <string name="dev_report_device_info">Дані про пристрій</string>
-  <string name="dev_report_stacktrace">Траса стеку</string>
-  <string name="dev_report_time_info">Часові дані</string>
-  <string name="dev_report_memory">Пам\'ять</string>
-  <string name="dev_report_storage">Сховище</string>
-  <string name="dev_report_connectivity">З\'єднання</string>
-  <string name="dev_report_network_usage">Використання мережі</string>
-  <string name="dev_report_build_config">Параметри збірки</string>
-  <string name="dev_report_logcat">Журнал застосунку</string>
-  <string name="dev_report_device_features">Можливості пристрою</string>
-  <string name="send_report">Надіслати звіт</string>
   <string name="close">Закрити</string>
-  <string name="dev_report_sending">Надсилання відгуку...</string>
-  <string name="dev_report_sent">Відгук надіслано</string>
-  <string name="dev_report_saved">Звіт збережено. Його буде надіслано наступного разу, як ви увійдете до Zerion.</string>
-  <string name="dev_report_error">Помилка: не вдалося надіслати звіт</string>
   
   <string name="progress_title_logout">Відбувається вихід з Zerion…</string>
   
@@ -749,7 +649,6 @@
 	<string name="wallet_receive_new">Нова адреса</string>
 	<string name="wallet_node_hint">Торкніться сервера, щоб використати його. Утримуйте власний сервер, щоб видалити його.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Багаторазова приватна адреса. Платежі на неї неможливо повʼязати в блокчейні. Виявлення сканує публічні дані через Tor; ваші ключі ніколи не залишають пристрій.</string>
 	<string name="wallet_sp_balance">Виявлено: %1$s</string>
 	<string name="wallet_sp_scanned">Проскановано до блоку %1$d</string>
 	<string name="wallet_sp_set_oracle">Джерело сканування</string>

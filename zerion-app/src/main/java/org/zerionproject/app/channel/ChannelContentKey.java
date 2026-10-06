@@ -22,6 +22,7 @@ class ChannelContentKey {
 	private static final String AES_GCM = "AES/GCM/NoPadding";
 	private static final int GCM_IV_BYTES = 12;
 	private static final int GCM_TAG_BITS = 128;
+	static final int MIN_CIPHERTEXT_BYTES = GCM_TAG_BITS / 8;
 
 	private static void zeroSecretKeySpec(SecretKeySpec spec) {
 	}
@@ -29,6 +30,8 @@ class ChannelContentKey {
 			"org.zerionproject/CHANNEL_CONTENT_KEY_WRAP";
 	private static final String DERIVE_LABEL_BODY_NONCE =
 			"org.zerionproject/CHANNEL_BODY_NONCE";
+	private static final String DERIVE_LABEL_BODY_NONCE_V2 =
+			"org.zerionproject/CHANNEL_BODY_NONCE_V2";
 
 	private final CryptoComponent crypto;
 	private final SecureRandom random;
@@ -132,6 +135,45 @@ class ChannelContentKey {
 		}
 	}
 
+	byte[] encryptBodyV2(byte[] contentKey, byte[] channelId, long seqNum,
+			byte[] salt, String plaintextBody)
+			throws GeneralSecurityException {
+		SecretKeySpec spec = new SecretKeySpec(contentKey, "AES");
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.ENCRYPT_MODE, spec,
+				new GCMParameterSpec(GCM_TAG_BITS,
+						bodyNonceV2(channelId, seqNum, salt)));
+		cipher.updateAAD(bodyAadV2(channelId, seqNum, salt));
+		return cipher.doFinal(plaintextBody.getBytes(StandardCharsets.UTF_8));
+	}
+
+	String decryptBodyV2(byte[] contentKey, byte[] channelId, long seqNum,
+			byte[] salt, byte[] ciphertextBody)
+			throws GeneralSecurityException {
+		SecretKeySpec spec = new SecretKeySpec(contentKey, "AES");
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.DECRYPT_MODE, spec,
+				new GCMParameterSpec(GCM_TAG_BITS,
+						bodyNonceV2(channelId, seqNum, salt)));
+		cipher.updateAAD(bodyAadV2(channelId, seqNum, salt));
+		return new String(cipher.doFinal(ciphertextBody),
+				StandardCharsets.UTF_8);
+	}
+
+	String decryptBodyOf(byte[] contentKey,
+			org.zerionproject.app.api.channel.ChannelPost post,
+			byte[] ciphertextBody) throws GeneralSecurityException {
+		byte[] salt = post.getSalt();
+		if (post.getFormatVersion()
+				== org.zerionproject.app.api.channel.ChannelPost.FORMAT_V2) {
+			if (salt == null) throw new GeneralSecurityException();
+			return decryptBodyV2(contentKey, post.getChannelId(),
+					post.getSeqNum(), salt, ciphertextBody);
+		}
+		return decryptBody(contentKey, post.getChannelId(), post.getSeqNum(),
+				ciphertextBody);
+	}
+
 	byte[] generateAttachmentKey() {
 		byte[] k = new byte[ChannelConstants.CONTENT_KEY_BYTES];
 		random.nextBytes(k);
@@ -206,6 +248,24 @@ class ChannelContentKey {
 		byte[] derived = crypto.hash(DERIVE_LABEL_BODY_NONCE,
 				channelId, buf.array());
 		return Arrays.copyOfRange(derived, 0, GCM_IV_BYTES);
+	}
+
+	private byte[] bodyNonceV2(byte[] channelId, long seqNum, byte[] salt) {
+		ByteBuffer buf = ByteBuffer.allocate(8);
+		buf.putLong(seqNum);
+		byte[] derived = crypto.hash(DERIVE_LABEL_BODY_NONCE_V2,
+				channelId, buf.array(), salt);
+		return Arrays.copyOfRange(derived, 0, GCM_IV_BYTES);
+	}
+
+	private byte[] bodyAadV2(byte[] channelId, long seqNum, byte[] salt) {
+		ByteBuffer buf = ByteBuffer.allocate(1 + channelId.length + 8
+				+ salt.length);
+		buf.put((byte) 2);
+		buf.put(channelId);
+		buf.putLong(seqNum);
+		buf.put(salt);
+		return buf.array();
 	}
 
 	private byte[] bodyAad(byte[] channelId, long seqNum) {

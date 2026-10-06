@@ -34,13 +34,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Prekey bundles received over the contact channel are stored only when both
- * signatures verify and the bundle's identity key is the contact's own hybrid
- * identity: a valid bundle for another identity, a tampered bundle, or a
- * bundle from a contact without a post-quantum identity is dropped. Our own
- * bundle goes to a connecting contact at most once an hour.
- */
 public class MeshBundleManagerTest {
 
 	private final Random random = new Random(97);
@@ -119,7 +112,7 @@ public class MeshBundleManagerTest {
 	@Test
 	public void ourBundleIsSentOncePerContactPerHour() throws Exception {
 		AsyncPrekeyBundle ours = bundle(crypto.generateHybridSignatureKeyPair());
-		when(meshManager.publishBundle()).thenReturn(ours);
+		when(meshManager.publishBundle(any())).thenReturn(ours);
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
 		listener.eventOccurred(new ContactConnectedEvent(contactId));
@@ -129,13 +122,14 @@ public class MeshBundleManagerTest {
 		listener.eventOccurred(new ContactConnectedEvent(another));
 		verify(messagingManager, times(1)).sendPrekeyBundle(eq(another),
 				eq(ours.encode()));
-		verify(meshManager, times(2)).publishBundle();
+		verify(meshManager).publishBundle(contactId);
+		verify(meshManager).publishBundle(another);
 	}
 
 	@Test
 	public void aFailedSendIsNotCountedAsSent() throws Exception {
 		AsyncPrekeyBundle ours = bundle(crypto.generateHybridSignatureKeyPair());
-		when(meshManager.publishBundle())
+		when(meshManager.publishBundle(any()))
 				.thenThrow(new org.zerionproject.core.api.db.DbException())
 				.thenReturn(ours);
 		listener.eventOccurred(new ContactConnectedEvent(contactId));

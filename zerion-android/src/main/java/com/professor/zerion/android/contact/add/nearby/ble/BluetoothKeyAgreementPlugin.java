@@ -59,15 +59,6 @@ import static org.zerionproject.core.api.plugin.Plugin.State.ACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.INACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 
-/**
- * A key-agreement-only transport over a point-to-point BLE GATT link, so two
- * nearby devices can pair offline with no Wi-Fi and no network. It carries the
- * MITM-protected QR key agreement; the device showing the QR runs a GATT server
- * and advertises a service id derived from its commitment, and the device
- * scanning the QR derives the same id, finds it, and connects. Roles are fixed
- * by who scans, so there is no connection glare. Each endpoint has its own
- * per-chunk completion latch; writes are accepted only from the bound peer.
- */
 @SuppressLint("MissingPermission")
 @ThreadSafe
 @NotNullByDefault
@@ -221,9 +212,6 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		callback.pluginStateChanged(s);
 	}
 
-	/** Derives the discovery service UUID from a 16-byte commitment so both sides
-	 * compute the same value without exchanging an address. Null on failure so the
-	 * caller does not fall back to a shared, guessable UUID. */
 	@Nullable
 	private static UUID pairingUuid(byte[] commitment) {
 		try {
@@ -244,8 +232,6 @@ public class BluetoothKeyAgreementPlugin implements DuplexPlugin {
 		return Math.max(DEFAULT_CHUNK, usable);
 	}
 
-	/** Awaits a single op's completion latch, ignoring late releases of an
-	 * already-completed op because the field is cleared before the next send. */
 	private static boolean awaitLatch(@Nullable CountDownLatch latch) {
 		if (latch == null) return false;
 		try {

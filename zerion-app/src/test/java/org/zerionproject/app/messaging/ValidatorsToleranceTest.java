@@ -37,15 +37,6 @@ import static org.zerionproject.core.test.TestUtils.getGroup;
 import static org.zerionproject.core.test.TestUtils.getMessage;
 import static org.junit.Assert.fail;
 
-/**
- * Every message validator the app registers is fed random structured BDF
- * bodies (nested lists, dictionaries, strings, raw bytes, numbers, booleans
- * and nulls, with the first element often a real message type) and may
- * respond only by accepting the body or throwing
- * {@link InvalidMessageException}. Any other exception means a peer can crash
- * the validation executor with a crafted message, the class of defect the
- * assessment's PROTO-01 belonged to.
- */
 public class ValidatorsToleranceTest extends BrambleMockTestCase {
 
 	private static final int BODIES_PER_VALIDATOR = 1500;
@@ -255,13 +246,6 @@ public class ValidatorsToleranceTest extends BrambleMockTestCase {
 		};
 	}
 
-	/**
-	 * A stand-in for a package-private encoder interface: every method that
-	 * returns a metadata dictionary returns an empty one, every other method
-	 * returns null. The validators only call the metadata encoders after
-	 * their own checks have passed, so the stub's answer never masks a
-	 * failure.
-	 */
 	private static Object metadataStub(String interfaceName) {
 		try {
 			Class<?> type = Class.forName(interfaceName);

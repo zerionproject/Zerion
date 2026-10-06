@@ -119,6 +119,10 @@ public class AttachmentItem implements Parcelable {
 		return mimeType != null && mimeType.startsWith("audio/");
 	}
 
+	public boolean isDocument() {
+		return AttachmentDocuments.isDocumentType(header.getContentType());
+	}
+
 	public boolean isSticker() {
 		return com.professor.zerion.android.sticker.StickerUtils
 				.isStickerContentType(header.getContentType());

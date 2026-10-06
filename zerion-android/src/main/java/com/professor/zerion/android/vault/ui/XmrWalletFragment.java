@@ -30,15 +30,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * Monero wallet list, structured like the Bitcoin wallet list: a header, a card
- * row per wallet (coin identity from the persisted {@link WalletRecord#coin},
- * never the name), and a + that adds a Monero wallet. This screen shows Monero
- * wallets ONLY. Tapping a wallet always prompts for the wallet password and
- * verifies it before opening the (view-only) detail screen, and a long press
- * deletes the wallet after a confirmation and the same password, mirroring the
- * Bitcoin list. Per-wallet settings live inside the detail screen, not here.
- */
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class XmrWalletFragment extends BaseFragment {

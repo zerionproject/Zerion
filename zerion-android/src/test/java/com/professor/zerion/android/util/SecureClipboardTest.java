@@ -26,10 +26,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
 
-/**
- * A clear removes the value this class copied and nothing else, and after a
- * copy no static field of the class holds the copied text.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class SecureClipboardTest {

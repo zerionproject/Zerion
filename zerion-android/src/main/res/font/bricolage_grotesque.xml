@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bricolage Grotesque (variable) display face, mapped to discrete weights.
-     Headings use Medium (500) for a modern, calm look rather than heavy bold. -->
 <font-family xmlns:android="http://schemas.android.com/apk/res/android">
     <font
         android:fontStyle="normal"

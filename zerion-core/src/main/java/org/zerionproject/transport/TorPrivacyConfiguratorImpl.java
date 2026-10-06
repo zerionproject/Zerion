@@ -1,7 +1,6 @@
 package org.zerionproject.transport;
 
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.zerionproject.core.api.plugin.TorControlPort;
 import org.zerionproject.core.api.plugin.TorDirectory;
 import org.zerionproject.core.api.plugin.TorSocksPath;
 import org.zerionproject.core.util.StringUtils;
@@ -28,27 +27,9 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * Talks to the Tor control port over its own cookie-authenticated
- * connection, moves the SOCKS listener from the loopback TCP port the
- * shipped configuration opens to a Unix domain socket inside the app's
- * private directory, sets the listener's isolation flags and connection
- * padding with SETCONF, then reads the effective configuration back with
- * GETCONF and refuses to accept anything but that single listener carrying
- * every required isolation flag, no TCP listener left beside it, and
- * padding switched on. The check is made against what Tor reports, not
- * against what was requested. With the listener on a Unix socket no other
- * process on the device can use, probe or hijack this app's Tor client.
- */
 @NotNullByDefault
 public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 
-	/**
-	 * IsolateSOCKSAuth makes the SOCKS credentials part of Tor's circuit
-	 * isolation key, which is what turns the per-destination usernames of
-	 * the socket factory into per-destination circuits; the other two keep
-	 * client-address and destination isolation on regardless of credentials.
-	 */
 	static final String[] REQUIRED_SOCKS_FLAGS = {
 			"IsolateSOCKSAuth", "IsolateClientAddr", "IsolateDestAddr"
 	};
@@ -68,9 +49,10 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 
 	@Inject
 	public TorPrivacyConfiguratorImpl(@TorDirectory File torDirectory,
-			@TorSocksPath File socksPath, @TorControlPort int controlPort) {
+			@TorSocksPath File socksPath,
+			TorControlSocketFactory controlSockets) {
 		this(torDirectory, socksPath,
-				() -> new TorControl.SocketConnection(controlPort));
+				() -> new TorControl.SocketConnection(controlSockets));
 	}
 
 	TorPrivacyConfiguratorImpl(File torDirectory, File socksPath,
@@ -81,7 +63,6 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		this.connectionFactory = connectionFactory;
 	}
 
-	/** Tor's spelling of a Unix domain socket listener. */
 	static String listenerFor(File socksPath) {
 		String path = socksPath.getAbsolutePath();
 		if (path.indexOf(' ') >= 0 || path.indexOf('"') >= 0) {
@@ -119,15 +100,6 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		}
 	}
 
-	/**
-	 * Tor binds the Unix socket itself, but only into a directory that
-	 * exists. The directory is created here, right before the SETCONF that
-	 * needs it, because an account reset wipes the files directory after
-	 * the path was chosen at startup and Tor would otherwise refuse to
-	 * enable the network. The directory is restricted to the owner and a
-	 * stale socket file from an earlier process is removed so the bind
-	 * cannot fail on it either.
-	 */
 	private void prepareSocketDirectory() throws IOException {
 		File dir = socksPath.getAbsoluteFile().getParentFile();
 		if (dir == null) throw new IOException("Tor socket directory");
@@ -140,10 +112,6 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		}
 	}
 
-	/**
-	 * Restricts the directory to its owner. Only a POSIX file system can
-	 * express that, so on other hosts the directory is left as created.
-	 */
 	private static void ownerOnly(File dir) throws IOException {
 		Path p = dir.toPath();
 		if (!p.getFileSystem().supportedFileAttributeViews()
@@ -161,10 +129,6 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		TorControl.requireOk(reply, what);
 	}
 
-	/**
-	 * True only if Tor reports a SocksPort line for our listener that
-	 * carries every required flag and no flag that negates one of them.
-	 */
 	static boolean socksIsolationActive(List<String> reply, String listener) {
 		for (String line : reply) {
 			String[] tokens = socksTokens(line);
@@ -185,10 +149,6 @@ public class TorPrivacyConfiguratorImpl implements TorPrivacyConfigurator {
 		return false;
 	}
 
-	/**
-	 * True if Tor reports any SocksPort line for a listener other than ours,
-	 * such as the loopback TCP port of the shipped configuration.
-	 */
 	static boolean otherSocksListener(List<String> reply, String listener) {
 		for (String line : reply) {
 			String[] tokens = socksTokens(line);

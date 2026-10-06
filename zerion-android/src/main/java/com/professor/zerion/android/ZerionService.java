@@ -108,17 +108,30 @@ public class ZerionService extends Service {
 	public static final String ACTION_PAUSE =
 			"com.professor.zerion.android.PAUSE";
 
+	private static final java.util.concurrent.atomic.AtomicLong exitStartedAt =
+			new java.util.concurrent.atomic.AtomicLong(0L);
+
+	static final long EXIT_GRACE_MS = 10_000L;
+
 	public static void cancelPendingExit() {
 		Thread previousWatchdog = pendingKillWatchdog.getAndSet(null);
 		if (previousWatchdog != null) previousWatchdog.interrupt();
 		exitInProgress.set(false);
+		exitStartedAt.set(0L);
+	}
+
+	public static boolean isExitPending() {
+		if (!exitInProgress.get()) return false;
+		long since = exitStartedAt.get();
+		return since != 0L && android.os.SystemClock.elapsedRealtime() - since
+				< EXIT_GRACE_MS;
 	}
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
 
-		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed(this)) {
 			stopSelf();
 			return;
 		}
@@ -213,12 +226,6 @@ public class ZerionService extends Service {
 		super.attachBaseContext(Localizer.getInstance().applyLocaleToContext(base));
 	}
 
-	/**
-	 * The failure screen runs in its own process and is not exported, so the
-	 * signal never travels through an intent that another app could send to
-	 * the exported entry activity. The main process ends itself afterwards,
-	 * on its own decision, so that a later launch starts from a clean state.
-	 */
 	private void showStartupFailure(StartResult result) {
 		androidExecutor.runOnUiThread(() -> {
 			startActivity(startupFailureIntent(ZerionService.this, result));
@@ -237,7 +244,7 @@ public class ZerionService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		if (com.professor.zerion.android.AppModule.isSecureStorageFailed()) {
+		if (com.professor.zerion.android.AppModule.isSecureStorageFailed(this)) {
 			stopSelf();
 			return START_NOT_STICKY;
 		}
@@ -252,6 +259,7 @@ public class ZerionService extends Service {
 				}
 			} else if (ACTION_EXIT.equals(action)) {
 				if (exitInProgress.compareAndSet(false, true)) {
+					exitStartedAt.set(android.os.SystemClock.elapsedRealtime());
 					shutdownFromBackground();
 				}
 			} else if (ACTION_PAUSE.equals(action)) {

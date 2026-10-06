@@ -13,9 +13,9 @@ import android.net.Uri;
 import org.zerionproject.core.api.Multiset;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.plugin.event.B4OwnRotationCompletedEvent;
 import org.zerionproject.core.api.plugin.event.B4PeerOnionAnnouncedEvent;
-import org.zerionproject.core.api.crypto.SecretKey;
 import com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
@@ -33,7 +33,6 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.login.SignInReminderReceiver;
 import com.professor.zerion.android.navdrawer.NavDrawerActivity;
-import com.professor.zerion.android.splash.SplashScreenActivity;
 import com.professor.zerion.android.util.ZerionNotificationBuilder;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import org.zerionproject.app.api.conversation.ConversationResponse;
@@ -45,7 +44,7 @@ import org.zerionproject.app.api.messaging.VoiceSignalHeader;
 import org.zerionproject.app.api.messaging.VoiceSignalType;
 import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
-import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
 import org.zerionproject.app.api.messaging.event.PrivateMessageReceivedEvent;
 import org.zerionproject.app.api.messaging.event.VoiceSignalReceivedEvent;
 import com.professor.zerion.android.grouptr.GroupTrConversationActivity;
@@ -109,6 +108,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	static final int PRIVATE_MESSAGE_NOTIFICATION_ID = 2;
 	private static final int GROUP_MESSAGE_NOTIFICATION_ID = 3;
+
+	static final String SESSION_GROUP = "zerion.session";
 	private static final int CONTACT_ADDED_NOTIFICATION_ID = 4;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
@@ -126,6 +127,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final ContactManager contactManager;
 	private final org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 	private final SharedPreferences uiPrefs;
+	private final SharedPreferences profilePrefs;
 
 	private final com.professor.zerion.android.conversation.voice
 			.CallSignalGate callSignalGate;
@@ -165,7 +167,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			MessagingManager messagingManager, ContactManager contactManager,
 			org.zerionproject.app.api.conversation.ConversationManager conversationManager,
 			VoiceSignalFactory voiceSignalFactory,
-			@AppModule.UiPrefs SharedPreferences uiPrefs) {
+			@AppModule.UiPrefs SharedPreferences uiPrefs,
+			@AppModule.ProfilePrefs SharedPreferences profilePrefs) {
 		this.settingsManager = settingsManager;
 		this.androidExecutor = androidExecutor;
 		this.clock = clock;
@@ -174,6 +177,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		this.conversationManager = conversationManager;
 		this.voiceSignalFactory = voiceSignalFactory;
 		this.uiPrefs = uiPrefs;
+		this.profilePrefs = profilePrefs;
 		this.callSignalGate = new com.professor.zerion.android.conversation
 				.voice.CallSignalGate(clock::currentTimeMillis);
 		appContext = app.getApplicationContext();
@@ -239,7 +243,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, ROTATION_CHANNEL_ID)
 						.setSmallIcon(R.drawable.ic_notifications)
-						.setContentTitle(appContext.getString(R.string.app_name))
+						.setContentTitle(com.professor.zerion.android.settings
+								.NotificationDisguise.title(appContext))
 						.setContentText(appContext.getString(bodyResId))
 						.setGroup("rotation")
 						.setCategory(NotificationCompat.CATEGORY_STATUS)
@@ -257,6 +262,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			clearGroupMessageNotification();
 			clearAllGroupTrNotifications();
 			clearContactAddedNotification();
+			clearAllChannelNotifications();
+			notificationManager.cancelAll();
 			return null;
 		});
 		try {
@@ -308,9 +315,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			} else {
 				showContactNotification(p.getContactId());
 			}
-		} else if (e instanceof GroupPostReceivedEvent) {
-			GroupPostReceivedEvent g = (GroupPostReceivedEvent) e;
-			showGroupTrPostNotification(g.getGroupId());
+		} else if (e instanceof GroupTrPostAcceptedEvent) {
+			GroupTrPostAcceptedEvent g = (GroupTrPostAcceptedEvent) e;
+			if (!g.isLocal()) showGroupTrPostNotification(g.getGroupId());
 		} else if (e instanceof ChannelPostReceivedEvent) {
 			ChannelPostReceivedEvent c = (ChannelPostReceivedEvent) e;
 			if (!c.isLocal()) showChannelPostNotification(c.getChannelId());
@@ -320,7 +327,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					c.getParentPostSeqNum());
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
-			if (!c.isVerified()) showContactAddedNotification();
+			if (!c.isAddedDirectly()) showContactAddedNotification();
+		} else if (e instanceof ContactRemovedEvent) {
+			com.professor.zerion.android.conversation.ChatSettingsActivity
+					.forgetContact(appContext,
+							((ContactRemovedEvent) e).getContactId());
 		} else if (e instanceof VoiceSignalReceivedEvent) {
 			VoiceSignalReceivedEvent voiceEvent = (VoiceSignalReceivedEvent) e;
 			VoiceSignalHeader header = voiceEvent.getSignalHeader();
@@ -348,16 +359,21 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				R.string.ongoing_notification_title;
 		int text = locked ? R.string.lock_tap_to_unlock :
 				R.string.ongoing_notification_text;
-		int icon = R.drawable.logo;
+		int icon = com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo);
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, ONGOING_CHANNEL_ID);
 		b.setSmallIcon(icon);
 		b.setColor(getColor(appContext, R.color.zerion_primary));
-		b.setContentTitle(appContext.getText(title));
-		b.setContentText(appContext.getText(text));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext, title));
+		b.setContentText(com.professor.zerion.android.settings
+				.NotificationDisguise.text(appContext, text));
 		b.setWhen(0);
 		b.setOngoing(true);
-		Intent openIntent = new Intent(appContext, SplashScreenActivity.class);
+		b.setGroup(SESSION_GROUP);
+		Intent openIntent = com.professor.zerion.android.settings
+				.AppIconManager.launchIntent(appContext);
 		b.setContentIntent(getActivity(appContext, 0, openIntent, getImmutableFlags(0)));
 
 		Intent exitIntent = new Intent(appContext,
@@ -378,11 +394,6 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 	private volatile boolean appLocked = false;
 
-	/**
-	 * The app lock also governs the notification shade: while locked, the
-	 * contact notifications are re-posted without their reply action, and
-	 * they get it back when the lock is lifted.
-	 */
 	@UiThread
 	@Override
 	public void updateForegroundNotification(boolean locked) {
@@ -429,9 +440,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
 				appContext, CONTACT_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 		b.setColorRes(R.color.zerion_primary);
-		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
 		b.setContentText(appContext.getResources().getQuantityString(
 				R.plurals.private_message_notification_text,
 				count, count));
@@ -452,7 +465,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		b.setContentIntent(t.getPendingIntent(nextRequestId++,
 				getImmutableFlags(0)));
 
-		boolean quickReplyEnabled = uiPrefs.getBoolean(
+		boolean quickReplyEnabled = profilePrefs.getBoolean(
 				com.professor.zerion.android.settings.NotificationsFragment
 						.PREF_NOTIFY_QUICK_REPLY, true);
 		if (quickReplyEnabled && !appLocked) {
@@ -552,9 +565,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (settings.getBoolean(PREF_NOTIFY_GROUP, true)) {
 			ZerionNotificationBuilder b =
 					new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
-			b.setSmallIcon(R.drawable.logo);
+			b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 			b.setColorRes(R.color.zerion_primary);
-			b.setContentTitle(appContext.getText(R.string.app_name));
+			b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
 			b.setContentText(appContext.getResources().getQuantityString(
 					R.plurals.group_message_notification_text, groupTotal,
 					groupTotal));
@@ -625,9 +640,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		if (count == 0) return;
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 		b.setColorRes(R.color.zerion_primary);
-		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
 		b.setContentText(appContext.getResources().getQuantityString(
 				R.plurals.group_message_notification_text, count, count));
 		b.setNumber(count);
@@ -720,9 +737,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		if (count == 0) return;
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 		b.setColorRes(R.color.zerion_primary);
-		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
 		b.setContentText(contentText);
 		b.setNumber(count);
 		b.setNotificationCategory(CATEGORY_SOCIAL);
@@ -826,9 +845,11 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private void updateContactAddedNotification() {
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CONTACT_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 		b.setColorRes(R.color.zerion_primary);
-		b.setContentTitle(appContext.getText(R.string.app_name));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
 		b.setContentText(appContext.getResources().getQuantityString(
 				R.plurals.contact_added_notification_text, contactAddedTotal,
 				contactAddedTotal));
@@ -867,10 +888,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, REMINDER_CHANNEL_ID);
-		b.setSmallIcon(R.drawable.logo);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.logo));
 		b.setColor(getColor(appContext, R.color.zerion_primary));
-		b.setContentTitle(
-				appContext.getText(R.string.reminder_notification_title));
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext,
+						R.string.reminder_notification_title));
 		b.setContentText(
 				appContext.getText(R.string.reminder_notification_text));
 		b.setAutoCancel(true);
@@ -885,8 +908,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				getBroadcast(appContext, 0, i1, getImmutableFlags(0));
 		b.addAction(0, actionTitle, actionIntent);
 
-		Intent i = new Intent(appContext, SplashScreenActivity.class);
-		i.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
+		Intent i = com.professor.zerion.android.settings.AppIconManager
+				.launchIntent(appContext);
+		i.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
 		b.setContentIntent(getActivity(appContext, 0, i, getImmutableFlags(0)));
 
 		notificationManager.notify(REMINDER_NOTIFICATION_ID, b.build());
@@ -994,10 +1018,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					}
 				}
 
-				boolean voiceEnabled = uiPrefs.getBoolean(
+				boolean voiceEnabled = profilePrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
 								.PREF_VOICE_CALLS_ENABLED, true);
-				boolean videoEnabled = uiPrefs.getBoolean(
+				boolean videoEnabled = profilePrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
 								.PREF_VIDEO_CALLS_ENABLED, false);
 
@@ -1008,33 +1032,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					return;
 				}
 
-				if (rawPayload != null) {
-					String voiceCallKeyHex = rawPayload;
-					String ephemeralHex = null;
-					String[] parts = rawPayload.split("\\|");
-					voiceCallKeyHex = parts[0];
-					if (parts.length >= 2) {
-						if ("VIDEO".equals(parts[parts.length - 1])) {
-							if (parts.length >= 3) {
-								ephemeralHex = parts[1];
-							}
-						} else {
-							ephemeralHex = parts[1];
-						}
-					}
-					try {
-						SecretKey key = new SecretKey(
-								StringUtils.fromHexString(voiceCallKeyHex));
-						VoiceCallKeyHolder.setKey(key);
-					} catch (Exception e) {
-					}
-					if (ephemeralHex != null) {
-						try {
-							VoiceCallKeyHolder.setRemoteEphemeral(
-									StringUtils.fromHexString(ephemeralHex));
-						} catch (Exception ignored) {
-						}
-					}
+				if (!VoiceCallKeyHolder.holdOfferPayload(contactId.getInt(),
+						callId, rawPayload, new android.os.Handler(
+								android.os.Looper.getMainLooper()))) {
+					return;
 				}
 
 				final boolean videoCall = isVideoCall;

@@ -200,13 +200,6 @@ class KeyManagerImpl implements KeyManager, Service, EventListener {
 		return m != null && m.canSendOutgoingStreams(p);
 	}
 
-	/**
-	 * An established contact never gets a rotation-key stream context: every
-	 * contact session runs over the ZWF ratchet, and the classical sync
-	 * connections that used these contexts have no caller. Handing one out
-	 * would let a future caller move contact traffic to classical keys
-	 * without a ratchet, so the request is refused rather than served.
-	 */
 	@Override
 	@Nullable
 	public StreamContext getStreamContext(ContactId c, TransportId t) {

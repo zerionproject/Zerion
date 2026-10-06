@@ -16,11 +16,6 @@ import static org.zerionproject.core.api.plugin.TorConstants.EXTRA_CONNECT_TIMEO
 import static org.zerionproject.core.api.plugin.TorConstants.EXTRA_SOCKET_TIMEOUT;
 import static org.zerionproject.core.api.plugin.TorConstants.FAST_CONNECT_TIMEOUT;
 
-/**
- * Socket factories for the local Tor SOCKS listener. The platform binds the
- * {@link TorSocksConnector} that reaches the listener; everything above it
- * only speaks SOCKS over whatever stream the connector opens.
- */
 @Module
 public class SocksModule {
 

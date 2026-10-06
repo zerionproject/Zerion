@@ -3,7 +3,6 @@
         android:height="24dp"
         android:viewportHeight="24.0"
         android:viewportWidth="24.0">
-	<!-- Workaround for toolbar icons failing to apply proper layout direction -->
 	<group
 		android:pivotX="12"
 		android:pivotY="12"

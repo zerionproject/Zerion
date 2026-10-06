@@ -5,9 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.Immutable;
 
-/**
- * Broadcast while Tor bootstraps, with the percentage it reported.
- */
 @Immutable
 @NotNullByDefault
 public class TorBootstrapEvent extends Event {

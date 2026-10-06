@@ -13,12 +13,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * The channel hash chain: an ordered run of posts is accepted only when every
- * post names the canonical hash of its predecessor and the sequence numbers
- * are contiguous; a genesis post must name the zero hash; changing any field
- * of a post, including its signature, breaks the link the next post carries.
- */
 public class ChannelChainVerifierTest {
 
 	private final Random random = new Random(79);

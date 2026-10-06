@@ -25,7 +25,6 @@ import javax.inject.Inject;
 
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static androidx.preference.PreferenceManager.setDefaultValues;
 import static com.professor.zerion.android.ZerionApplication.ENTRY_ACTIVITY;
 
 @MethodsNotNullByDefault
@@ -46,9 +45,19 @@ public class SplashScreenActivity extends BaseActivity {
 
 	@Override
 	public void onCreate(@Nullable Bundle state) {
+		com.professor.zerion.android.util.SafeIntents
+				.dropUnreadableExtras(getIntent());
 		super.onCreate(state);
 
+		if (com.professor.zerion.android.ZerionService.isExitPending()) {
+			android.widget.Toast.makeText(this, R.string.exit_in_progress,
+					android.widget.Toast.LENGTH_SHORT).show();
+			finish();
+			return;
+		}
 		com.professor.zerion.android.ZerionService.cancelPendingExit();
+		com.professor.zerion.android.settings.AppIconManager
+				.syncLinkEntry(this);
 
 		com.professor.zerion.android.decoy.DecoyCalculatorActivity
 				.consumeDecoyPassed();
@@ -63,8 +72,14 @@ public class SplashScreenActivity extends BaseActivity {
 				WindowManager.LayoutParams.FLAG_SECURE
 		);
 		getWindow().setExitTransition(new Fade());
-		androidExecutor.runOnBackgroundThread(() ->
-				setDefaultValues(this, R.xml.panic_preferences, false));
+		androidExecutor.runOnBackgroundThread(() -> {
+			try {
+				com.professor.zerion.android.panic.PanicSettingsStore.migrate(
+						this, com.professor.zerion.android.AppModule
+								.getUiPrefs());
+			} catch (RuntimeException ignored) {
+			}
+		});
 
 		if (accountManager.hasDatabaseKey()) {
 			startNextActivity(ENTRY_ACTIVITY);
@@ -131,6 +146,11 @@ public class SplashScreenActivity extends BaseActivity {
 	}
 
 	private void startNextActivity(Class<? extends Activity> activityClass) {
+		if (com.professor.zerion.android.util.AppTasks
+				.moveMainTaskToFront(this)) {
+			overridePendingTransition(0, 0);
+			return;
+		}
 		Intent i = new Intent(this, activityClass);
 		i.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(i);

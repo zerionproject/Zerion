@@ -16,17 +16,6 @@ import java.io.IOException;
 
 import javax.inject.Inject;
 
-/**
- * Applies incoming ZPP records to the delivery-DAG database. Each decoded record
- * is a fragment or a whole {@link ZmmConstants#TYPE_SYNC} record; fragments are
- * rejoined by the reassembler, and a completed sync record is parsed and fed to
- * the matching {@link DatabaseComponent} receive method, exactly as the former
- * incoming sync session did. Validation and client delivery then happen
- * asynchronously off the {@code MessageAddedEvent} the DB attaches.
- *
- * <p>A malformed record or a database error drops that one record and leaves the
- * connection running; it is never allowed to tear down the session.
- */
 @NotNullByDefault
 public class ZmmDbRecordSink implements ZppRecordSink {
 
@@ -41,9 +30,10 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 	}
 
 	@Override
-	public void deliver(int contactId, int type, byte[] payload) {
-		ZmmReassembler.Message record = reassembler.receive(contactId, type,
-				payload);
+	public void deliver(int contactId, long sessionId, int type,
+			byte[] payload) {
+		ZmmReassembler.Message record = reassembler.receive(contactId,
+				sessionId, type, payload);
 		if (record == null || record.type != ZmmConstants.TYPE_SYNC) return;
 		try {
 			applyRecord(new ContactId(contactId), record.payload);
@@ -52,13 +42,8 @@ public class ZmmDbRecordSink implements ZppRecordSink {
 	}
 
 	@Override
-	public void onConnected(int contactId) {
-		reassembler.sessionOpened(contactId);
-	}
-
-	@Override
-	public void onDisconnected(int contactId) {
-		reassembler.sessionClosed(contactId);
+	public void onDisconnected(int contactId, long sessionId) {
+		reassembler.sessionClosed(sessionId);
 	}
 
 	private void applyRecord(ContactId c, byte[] recordBytes)

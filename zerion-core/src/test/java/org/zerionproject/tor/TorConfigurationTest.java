@@ -12,11 +12,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * SC-TOR-01: the configuration Tor is started with carries the isolation
- * and padding hardening itself, rather than relying on the transport to
- * add it afterwards over the control port.
- */
 public class TorConfigurationTest {
 
 	@Rule
@@ -91,8 +86,68 @@ public class TorConfigurationTest {
 		String lyrebird = w.getLyrebirdExecutableFile().getAbsolutePath();
 		List<String> plugins = startingWith(lines(w.torrc()),
 				"ClientTransportPlugin ");
-		assertEquals(3, plugins.size());
+		assertEquals(4, plugins.size());
 		for (String p : plugins) assertTrue(p, p.endsWith(" exec " + lyrebird));
+	}
+
+	@Test
+	public void webtunnelBridgesHaveATransport() throws Exception {
+		TestTorWrapper w = wrapper();
+		String lyrebird = w.getLyrebirdExecutableFile().getAbsolutePath();
+		assertTrue(lines(w.torrc()).contains(
+				"ClientTransportPlugin webtunnel exec " + lyrebird));
+	}
+
+	private static final String CONTROL_SOCKET =
+			"/data/user/0/com.professor.zerion/files/zs/0123456789abc";
+
+	private TestTorWrapper unixWrapper() throws Exception {
+		File dir = tmp.newFolder("tor-unix");
+		return new TestTorWrapper(dir, CONTROL_SOCKET, (t, l) -> {
+		});
+	}
+
+	@Test
+	public void withAUnixControlSocketTorOpensNoTcpListener()
+			throws Exception {
+		List<String> l = lines(unixWrapper().torrc());
+		assertEquals(Arrays.asList("ControlPort unix:" + CONTROL_SOCKET),
+				startingWith(l, "ControlPort "));
+		assertEquals(Arrays.asList("SocksPort 0"),
+				startingWith(l, "SocksPort "));
+		for (String line : l) {
+			assertTrue(line, !line.contains("9050"));
+			assertTrue(line, !line.contains("9051"));
+			assertTrue(line, !line.startsWith("DNSPort"));
+			assertTrue(line, !line.startsWith("TransPort"));
+			assertTrue(line, !line.startsWith("ORPort"));
+			assertTrue(line, !line.startsWith("HTTPTunnelPort"));
+		}
+		assertTrue(l.contains("CookieAuthentication 1"));
+		assertTrue(l.contains("DisableNetwork 1"));
+	}
+
+	@Test
+	public void aBadControlSocketPathFailsTheStartBeforeTorRuns()
+			throws Exception {
+		TestTorWrapper w = new TestTorWrapper(tmp.newFolder("tor-bad-start"),
+				"/data/zs/a b", (t, l) -> {
+		});
+		try {
+			w.start();
+			throw new AssertionError("Tor started with a bad control path");
+		} catch (java.io.IOException expected) {
+		}
+		assertTrue(w.launched == null);
+		assertEquals(TorWrapper.TorState.STOPPED, w.getTorState());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void aControlSocketPathThatCouldEndTheLineIsRefused()
+			throws Exception {
+		new TestTorWrapper(tmp.newFolder("tor-bad"),
+				"/data/zs/ctl\nControlPort 9051", (t, l) -> {
+		}).torrc();
 	}
 
 	@Test

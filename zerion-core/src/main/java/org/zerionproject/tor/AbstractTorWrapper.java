@@ -5,6 +5,7 @@ import net.freehaven.tor.control.TorControlConnection;
 
 import org.briarproject.nullsafety.InterfaceNotNullByDefault;
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.plugin.OnionTargets;
 
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
@@ -50,21 +51,6 @@ import static org.zerionproject.tor.TorWrapper.TorState.STARTING;
 import static org.zerionproject.tor.TorWrapper.TorState.STOPPED;
 import static org.zerionproject.tor.TorWrapper.TorState.STOPPING;
 
-/**
- * Runs Tor as a child process from a configuration written at every start,
- * authenticates to its control port with the cookie it creates, and tracks
- * its state from the control events. Derived from the Briar Project's
- * onion wrapper 0.1.4 (GPLv3) with these changes: the executables are
- * verified against build-time pins before they run, the SOCKS listener is
- * isolated per client and destination from the first line of the
- * configuration, connection padding is on from the start, a process that
- * does not exit when told to is killed within a bound instead of waited
- * for without one, a process that never opens its control listener is
- * given up on, a start interrupted midway leaves no orphan process, and
- * nothing is logged. The cookie is read only after Tor has reported its
- * control listener open, by which time Tor has written a fresh one, so a
- * stale cookie file that could not be deleted is never the one read.
- */
 @InterfaceNotNullByDefault
 abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
@@ -85,23 +71,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private static final Pattern BOOTSTRAP_PERCENTAGE =
 			Pattern.compile(".*PROGRESS=(\\d{1,3}).*");
 
-	/** How long a started process gets to open its control listener. */
 	static final long START_TIMEOUT_MS = 30_000;
 
-	/** How long a process gets to exit after being told to shut down. */
 	static final long EXIT_TIMEOUT_MS = 10_000;
 
-	/** How long a process gets to die after being killed. */
 	static final long KILL_TIMEOUT_MS = 5_000;
 
 	static final long EXIT_POLL_INTERVAL_MS = 50;
 
-	/**
-	 * The isolation flags every SOCKS listener of this process carries.
-	 * IsolateSOCKSAuth makes the credentials the socket factory presents
-	 * part of the circuit key, the other two isolate by client address and
-	 * by destination regardless of credentials.
-	 */
 	static final String[] SOCKS_ISOLATION_FLAGS = {
 			"IsolateSOCKSAuth", "IsolateClientAddr", "IsolateDestAddr"
 	};
@@ -113,6 +90,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private final File configFile, doneFile, cookieFile;
 	private final int torSocksPort;
 	private final int torControlPort;
+	@Nullable
+	private final String controlSocketPath;
 	private final TorBinaryVerifier verifier;
 
 	protected final NetworkState state = new NetworkState();
@@ -120,7 +99,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Nullable
 	private volatile Process torProcess = null;
 	@Nullable
-	private volatile Socket controlSocket = null;
+	private volatile Socket controlConnectionSocket = null;
 	@Nullable
 	private volatile TorControlConnection controlConnection = null;
 
@@ -134,16 +113,58 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	AbstractTorWrapper(Executor ioExecutor, Executor eventExecutor,
 			String architecture, File torDirectory, int torSocksPort,
 			int torControlPort, TorBinaryVerifier verifier) {
+		this(ioExecutor, eventExecutor, architecture, torDirectory,
+				torSocksPort, torControlPort, null, verifier);
+	}
+
+	AbstractTorWrapper(Executor ioExecutor, Executor eventExecutor,
+			String architecture, File torDirectory, int torSocksPort,
+			int torControlPort, @Nullable String controlSocketPath,
+			TorBinaryVerifier verifier) {
 		this.ioExecutor = ioExecutor;
 		this.eventExecutor = eventExecutor;
 		this.architecture = architecture;
 		this.torDirectory = torDirectory;
 		this.torSocksPort = torSocksPort;
 		this.torControlPort = torControlPort;
+		this.controlSocketPath = controlSocketPath;
 		this.verifier = verifier;
 		configFile = new File(torDirectory, "torrc");
 		doneFile = new File(torDirectory, "done");
 		cookieFile = new File(torDirectory, ".tor/control_auth_cookie");
+	}
+
+	private Socket connectControl() throws IOException {
+		String unix = controlSocketPath;
+		if (unix != null) return connectUnixControlSocket(unix);
+		return new Socket("127.0.0.1", torControlPort);
+	}
+
+	protected Socket connectUnixControlSocket(String path)
+			throws IOException {
+		throw new IOException("Unix control socket not supported");
+	}
+
+	private void prepareControlSocketDirectory(String path)
+			throws IOException {
+		File socket = new File(path);
+		File dir = socket.getAbsoluteFile().getParentFile();
+		if (dir == null) throw new IOException("Tor control directory");
+		if (!dir.isDirectory() && !dir.mkdirs() && !dir.isDirectory()) {
+			throw new IOException("Tor control directory");
+		}
+		boolean ownerOnly = dir.setReadable(false, false)
+				&& dir.setWritable(false, false)
+				&& dir.setExecutable(false, false)
+				&& dir.setReadable(true, true)
+				&& dir.setWritable(true, true)
+				&& dir.setExecutable(true, true);
+		if (!ownerOnly && File.separatorChar == '/') {
+			throw new IOException("Tor control directory permissions");
+		}
+		if (socket.exists() && !socket.delete()) {
+			throw new IOException("stale Tor control socket");
+		}
 	}
 
 	protected File getTorExecutableFile() {
@@ -168,9 +189,17 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (!torDirectory.exists() && !torDirectory.mkdirs()) {
 				throw new IOException("Could not create Tor directory");
 			}
+			String unixControl = controlSocketPath;
+			if (unixControl != null
+					&& !OnionTargets.isUnix("unix:" + unixControl)) {
+				throw new IOException("Tor control socket path");
+			}
 			if (!assetsAreUpToDate()) installAssets();
 			extract(getConfigInputStream(), configFile);
 			cookieFile.delete();
+			if (unixControl != null) {
+				prepareControlSocketDirectory(unixControl);
+			}
 
 			File torFile = getTorExecutableFile();
 			verifier.verify(torFile, getLyrebirdExecutableFile());
@@ -198,8 +227,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				Thread.sleep(COOKIE_POLLING_INTERVAL_MS);
 			}
 
-			Socket socket = new Socket("127.0.0.1", torControlPort);
-			controlSocket = socket;
+			Socket socket = connectControl();
+			controlConnectionSocket = socket;
 			TorControlConnection connection = new TorControlConnection(socket);
 			controlConnection = connection;
 			connection.authenticate(read(cookieFile));
@@ -223,12 +252,6 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		state.setStarted();
 	}
 
-	/**
-	 * Undoes a start that failed at any point: the control connection is
-	 * dropped, the process, if one was launched, is terminated within the
-	 * bound, and the state returns to stopped so that the wrapper can be
-	 * started again and no Tor process outlives the attempt.
-	 */
 	private void abandonStart(@Nullable Process process)
 			throws InterruptedException {
 		closeControl();
@@ -242,8 +265,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	private void closeControl() {
 		controlConnection = null;
-		tryToClose(controlSocket);
-		controlSocket = null;
+		tryToClose(controlConnectionSocket);
+		controlConnectionSocket = null;
 	}
 
 	private boolean assetsAreUpToDate() {
@@ -293,25 +316,28 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		strb.append("\n");
 	}
 
-	/**
-	 * The configuration Tor is started with. The network is disabled until
-	 * the transport has verified the listener it needs, the SOCKS listener
-	 * is isolated from its first line, padding is on, and the pluggable
-	 * transports point at the verified lyrebird executable.
-	 */
 	String torrc() {
 		File dataDirectory = new File(torDirectory, ".tor");
 		StringBuilder strb = new StringBuilder();
-		append(strb, "ControlPort", torControlPort);
+		String unixControl = controlSocketPath;
+		if (unixControl == null) {
+			append(strb, "ControlPort", torControlPort);
+		} else {
+			append(strb, "ControlPort", OnionTargets.unixPath(unixControl));
+		}
 		append(strb, "CookieAuthentication", 1);
 		append(strb, "DataDirectory", dataDirectory.getAbsolutePath());
 		append(strb, "DisableNetwork", 1);
 		append(strb, "SafeSocks", 1);
-		strb.append("SocksPort ").append(torSocksPort);
-		for (String flag : SOCKS_ISOLATION_FLAGS) {
-			strb.append(' ').append(flag);
+		if (unixControl == null) {
+			strb.append("SocksPort ").append(torSocksPort);
+			for (String flag : SOCKS_ISOLATION_FLAGS) {
+				strb.append(' ').append(flag);
+			}
+			strb.append('\n');
+		} else {
+			append(strb, "SocksPort", 0);
 		}
-		strb.append('\n');
 		strb.append("GeoIPFile\n");
 		strb.append("GeoIPv6File\n");
 		append(strb, "ConnectionPadding", 1);
@@ -320,6 +346,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		append(strb, "ClientTransportPlugin obfs4 exec", lyrebirdPath);
 		append(strb, "ClientTransportPlugin meek_lite exec", lyrebirdPath);
 		append(strb, "ClientTransportPlugin snowflake exec", lyrebirdPath);
+		append(strb, "ClientTransportPlugin webtunnel exec", lyrebirdPath);
 		return strb.toString();
 	}
 
@@ -343,12 +370,6 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 	}
 
-	/**
-	 * Reads the process's output on the IO executor until it reports that
-	 * the control listener is open, and keeps reading for the life of the
-	 * process so that its output never fills the pipe. Fails if the
-	 * process exits first or says nothing within the timeout.
-	 */
 	void waitForTorToStart(Process torProcess, long timeoutMs)
 			throws InterruptedException, IOException {
 		BlockingQueue<Boolean> success = new ArrayBlockingQueue<>(1);
@@ -378,8 +399,17 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Override
 	public HiddenServiceProperties publishHiddenService(int localPort,
 			int remotePort, @Nullable String privKey) throws IOException {
-		Map<Integer, String> portLines =
-				singletonMap(remotePort, "127.0.0.1:" + localPort);
+		return publishHiddenService(OnionTargets.loopback(localPort),
+				remotePort, privKey);
+	}
+
+	@Override
+	public HiddenServiceProperties publishHiddenService(String target,
+			int remotePort, @Nullable String privKey) throws IOException {
+		if (!OnionTargets.isValid(target)) {
+			throw new IllegalArgumentException("onion target");
+		}
+		Map<Integer, String> portLines = singletonMap(remotePort, target);
 		Map<String, String> response;
 		if (privKey == null) {
 			response = getControlConnection()
@@ -401,6 +431,11 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Override
 	public void removeHiddenService(String onion) throws IOException {
 		getControlConnection().delOnion(onion);
+	}
+
+	@Override
+	public void forgetHiddenServiceDescriptors() throws IOException {
+		getControlConnection().signal("NEWNYM");
 	}
 
 	@Override
@@ -445,12 +480,6 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 	}
 
-	/**
-	 * Waits within {@link #EXIT_TIMEOUT_MS} for a process that has been
-	 * asked to shut down, kills it if it is still alive, and waits within
-	 * {@link #KILL_TIMEOUT_MS} for the kill to take effect. Returns true if
-	 * the process exited on its own.
-	 */
 	static boolean terminate(Process process) throws InterruptedException {
 		if (awaitExit(process, EXIT_TIMEOUT_MS)) return true;
 		process.destroy();
@@ -460,12 +489,6 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		return false;
 	}
 
-	/**
-	 * A plain destroy already kills on Android; on a JVM it only asks. The
-	 * forcible variant exists on every runtime this code compiles against
-	 * but not on the oldest Android releases the app supports, so it is
-	 * reached by reflection and skipped where it is absent.
-	 */
 	private static void destroyForcibly(Process process) {
 		try {
 			Method m = Process.class.getMethod("destroyForcibly");
@@ -474,11 +497,6 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		}
 	}
 
-	/**
-	 * True once the process has exited, false if it is still alive when
-	 * the timeout passes. Polls, because a bounded wait is not available on
-	 * every runtime the app supports.
-	 */
 	static boolean awaitExit(Process process, long timeoutMs)
 			throws InterruptedException {
 		long deadline = System.currentTimeMillis() + timeoutMs;

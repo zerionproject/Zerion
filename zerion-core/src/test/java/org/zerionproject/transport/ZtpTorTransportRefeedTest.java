@@ -32,13 +32,6 @@ import javax.net.SocketFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * SC-TOR-06: Tor forgets every credential added over its control port
- * whenever its configuration changes, so the transport must announce each
- * reconfiguration of the running process after the change has been made,
- * and only while it is running; whatever the listener does must not
- * disturb the network handling itself.
- */
 public class ZtpTorTransportRefeedTest {
 
 	private static class RecordingTor implements TorWrapper {
@@ -212,6 +205,7 @@ public class ZtpTorTransportRefeedTest {
 		TorBridgeConfigurator bridges = new TorBridgeConfigurator(
 				new FixedSettings(settings), new NoBridges(), () -> "", tor,
 				new NoEvents(), exec);
+		bridgeConfigurator = bridges;
 		ZtpTorTransport t = new ZtpTorTransport(tor, refusingFactory,
 				refusingFactory, exec, handler, bridges, () -> {
 				}, new TorProcessWatch());
@@ -221,6 +215,8 @@ public class ZtpTorTransportRefeedTest {
 		transport = t;
 		return t;
 	}
+
+	private TorBridgeConfigurator bridgeConfigurator;
 
 	private ZtpTorTransport started(Settings settings) throws Exception {
 		ZtpTorTransport t = transport(settings);
@@ -252,6 +248,21 @@ public class ZtpTorTransportRefeedTest {
 		t.setNetworkEnabled(true);
 		assertEquals(Arrays.asList("bridges:off", "network:true", "refeed"),
 				tor.calls);
+	}
+
+	@Test(timeout = 15_000)
+	public void credentialsAreReinstalledAfterASettingsDrivenBridgeChange()
+			throws Exception {
+		started(new Settings());
+		bridgeConfigurator.eventOccurred(new org.zerionproject.core.api
+				.settings.event.SettingsUpdatedEvent(
+				org.zerionproject.core.api.plugin.TorConstants.ID.getString(),
+				new Settings()));
+		long deadline = System.currentTimeMillis() + 10_000;
+		while (tor.calls.size() < 2 && System.currentTimeMillis() < deadline) {
+			Thread.sleep(10);
+		}
+		assertEquals(Arrays.asList("bridges:off", "refeed"), tor.calls);
 	}
 
 	@Test(timeout = 15_000)

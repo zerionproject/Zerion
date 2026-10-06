@@ -28,6 +28,8 @@ import javax.inject.Singleton;
 class ChannelSubscriberStore {
 
 	private static final String NS = "zerion-channels-subscribers";
+	private static final String NS_BANS = "zerion-channels-bans";
+	private static final String NS_TRUSTED = "zerion-channels-trusted";
 
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
@@ -43,6 +45,47 @@ class ChannelSubscriberStore {
 	}
 
 	List<ChannelSubscriber> getSubscribers(byte[] channelId)
+			throws DbException {
+		List<ChannelSubscriber> stored = storedSubscribers(channelId);
+		List<byte[]> trusted = getTrusted(channelId);
+		if (trusted.isEmpty()) return stored;
+		List<ChannelSubscriber> out = new ArrayList<>(stored.size());
+		for (ChannelSubscriber sub : stored) {
+			boolean t = contains(trusted, sub.getEd25519PubKey());
+			out.add(t ? new ChannelSubscriber(sub.getDisplayName(),
+					sub.getEd25519PubKey(), sub.getMlDsaPubKey(),
+					sub.getJoinedAtHourMs(), sub.isBanned(), true) : sub);
+		}
+		return out;
+	}
+
+	private static boolean contains(List<byte[]> keys, byte[] key) {
+		for (byte[] k : keys) {
+			if (Arrays.equals(k, key)) return true;
+		}
+		return false;
+	}
+
+	void setTrusted(byte[] channelId, byte[] ed25519PubKey, boolean trusted)
+			throws DbException {
+		List<byte[]> keys = getTrusted(channelId);
+		List<byte[]> next = new ArrayList<>(keys.size() + 1);
+		for (byte[] k : keys) {
+			if (!Arrays.equals(k, ed25519PubKey)) next.add(k);
+		}
+		if (trusted) next.add(ed25519PubKey);
+		while (next.size() > org.zerionproject.app.api.channel
+				.ChannelConstants.MAX_BANNED_KEYS_PER_CHANNEL) {
+			next.remove(0);
+		}
+		writeKeys(NS_TRUSTED, channelId, next);
+	}
+
+	List<byte[]> getTrusted(byte[] channelId) throws DbException {
+		return readKeys(NS_TRUSTED, channelId);
+	}
+
+	private List<ChannelSubscriber> storedSubscribers(byte[] channelId)
 			throws DbException {
 		Settings s = settingsManager.getSettings(NS);
 		String encoded = s.get(ChannelStore.hex(channelId));
@@ -66,14 +109,15 @@ class ChannelSubscriberStore {
 		}
 	}
 
-	void putSubscriber(byte[] channelId, ChannelSubscriber sub)
+	long putSubscriber(byte[] channelId, ChannelSubscriber sub)
 			throws DbException {
-		List<ChannelSubscriber> existing = getSubscribers(channelId);
+		List<ChannelSubscriber> existing = storedSubscribers(channelId);
 		List<ChannelSubscriber> out = new ArrayList<>(existing.size() + 1);
 		boolean replaced = false;
 		for (ChannelSubscriber s : existing) {
 			if (Arrays.equals(s.getEd25519PubKey(),
 					sub.getEd25519PubKey())) {
+				if (sameSubscriber(s, sub)) return 0L;
 				out.add(sub);
 				replaced = true;
 			} else {
@@ -81,12 +125,33 @@ class ChannelSubscriberStore {
 			}
 		}
 		if (!replaced) out.add(sub);
-		write(channelId, out);
+		return write(channelId, out);
+	}
+
+	private static boolean sameSubscriber(ChannelSubscriber a,
+			ChannelSubscriber b) {
+		return a.getDisplayName().equals(b.getDisplayName())
+				&& Arrays.equals(a.getEd25519PubKey(), b.getEd25519PubKey())
+				&& Arrays.equals(a.getMlDsaPubKey(), b.getMlDsaPubKey())
+				&& a.getJoinedAtHourMs() == b.getJoinedAtHourMs()
+				&& a.isBanned() == b.isBanned();
 	}
 
 	void setBanned(byte[] channelId, byte[] ed25519PubKey, boolean banned)
 			throws DbException {
-		List<ChannelSubscriber> existing = getSubscribers(channelId);
+		List<byte[]> bans = getBans(channelId);
+		List<byte[]> nextBans = new ArrayList<>(bans.size() + 1);
+		for (byte[] k : bans) {
+			if (!Arrays.equals(k, ed25519PubKey)) nextBans.add(k);
+		}
+		if (banned) nextBans.add(ed25519PubKey);
+		while (nextBans.size() > org.zerionproject.app.api.channel
+				.ChannelConstants.MAX_BANNED_KEYS_PER_CHANNEL) {
+			nextBans.remove(0);
+		}
+		writeKeys(NS_BANS, channelId, nextBans);
+		if (banned) setTrusted(channelId, ed25519PubKey, false);
+		List<ChannelSubscriber> existing = storedSubscribers(channelId);
 		List<ChannelSubscriber> out = new ArrayList<>(existing.size());
 		for (ChannelSubscriber s : existing) {
 			if (Arrays.equals(s.getEd25519PubKey(), ed25519PubKey)) {
@@ -102,7 +167,10 @@ class ChannelSubscriberStore {
 
 	boolean isBanned(byte[] channelId, byte[] ed25519PubKey)
 			throws DbException {
-		for (ChannelSubscriber s : getSubscribers(channelId)) {
+		for (byte[] k : getBans(channelId)) {
+			if (Arrays.equals(k, ed25519PubKey)) return true;
+		}
+		for (ChannelSubscriber s : storedSubscribers(channelId)) {
 			if (Arrays.equals(s.getEd25519PubKey(), ed25519PubKey)) {
 				return s.isBanned();
 			}
@@ -110,11 +178,50 @@ class ChannelSubscriberStore {
 		return false;
 	}
 
-	void removeAll(byte[] channelId) throws DbException {
-		write(channelId, new ArrayList<>());
+	List<byte[]> getBans(byte[] channelId) throws DbException {
+		return readKeys(NS_BANS, channelId);
 	}
 
-	private void write(byte[] channelId, List<ChannelSubscriber> subs)
+	private List<byte[]> readKeys(String namespace, byte[] channelId)
+			throws DbException {
+		String encoded = settingsManager.getSettings(namespace)
+				.get(ChannelStore.hex(channelId));
+		List<byte[]> out = new ArrayList<>();
+		if (encoded == null || encoded.isEmpty()) return out;
+		try {
+			for (Object o : bytesToList(decodeBase64(encoded))) {
+				if (o instanceof byte[]) out.add((byte[]) o);
+			}
+		} catch (IOException | IllegalArgumentException e) {
+			return out;
+		}
+		return out;
+	}
+
+	private void writeKeys(String namespace, byte[] channelId,
+			List<byte[]> keys) throws DbException {
+		if (keys.isEmpty()) {
+			settingsManager.deleteSettings(namespace, java.util.Collections
+					.singletonList(ChannelStore.hex(channelId)));
+			return;
+		}
+		BdfList list = new BdfList();
+		list.addAll(keys);
+		Settings out = new Settings();
+		out.put(ChannelStore.hex(channelId),
+				encodeBase64(listToBytes(list)));
+		settingsManager.mergeSettings(out, namespace);
+	}
+
+	void removeAll(byte[] channelId) throws DbException {
+		List<String> key = java.util.Collections
+				.singletonList(ChannelStore.hex(channelId));
+		settingsManager.deleteSettings(NS, key);
+		settingsManager.deleteSettings(NS_BANS, key);
+		settingsManager.deleteSettings(NS_TRUSTED, key);
+	}
+
+	private long write(byte[] channelId, List<ChannelSubscriber> subs)
 			throws DbException {
 		BdfList list = new BdfList();
 		for (ChannelSubscriber s : subs) {
@@ -126,10 +233,11 @@ class ChannelSubscriberStore {
 			d.put("banned", s.isBanned());
 			list.add(d);
 		}
+		String encoded = encodeBase64(listToBytes(list));
 		Settings out = new Settings();
-		out.put(ChannelStore.hex(channelId),
-				encodeBase64(listToBytes(list)));
+		out.put(ChannelStore.hex(channelId), encoded);
 		settingsManager.mergeSettings(out, NS);
+		return encoded.length();
 	}
 
 	private byte[] listToBytes(BdfList l) {

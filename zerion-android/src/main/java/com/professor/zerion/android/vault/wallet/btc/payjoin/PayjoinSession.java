@@ -4,14 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Orchestrates one Payjoin exchange: send the original proposal over Tor,
- * receive the counterparty response, and validate it locally. It never signs
- * or broadcasts; only a VALIDATED outcome permits the wallet to build the final
- * transaction, which is then authenticated and signed separately. A received
- * proposal is single-use, protecting against replayed or duplicated proposals.
- * Every failure is explicit; a failed Payjoin never becomes a normal payment.
- */
 @NotNullByDefault
 public final class PayjoinSession {
 

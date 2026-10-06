@@ -24,7 +24,6 @@
 		android:background="@drawable/msg_out"
 		android:elevation="@dimen/message_bubble_elevation">
 
-		<!-- Reply preview container -->
 		<LinearLayout
 			android:id="@+id/replyPreviewContainer"
 			android:layout_width="0dp"

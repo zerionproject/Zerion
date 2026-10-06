@@ -22,12 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Wiping an account removes every preference file and every keystore entry
- * the app creates, and nothing else: after the wipe no preference the app
- * wrote remains readable and no key alias remains, while a preference file
- * the app does not own is untouched.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class AccountWipeCleanupTest {

@@ -16,7 +16,6 @@
         android:contentDescription="@string/image"
         tools:src="@drawable/ic_image" />
 
-    <!-- Document overlay for non-images -->
     <LinearLayout
         android:id="@+id/document_overlay"
         android:layout_width="match_parent"

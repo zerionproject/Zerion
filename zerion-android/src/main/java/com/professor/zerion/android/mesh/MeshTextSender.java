@@ -41,11 +41,15 @@ public class MeshTextSender {
 	private final java.security.SecureRandom jitter =
 			new java.security.SecureRandom();
 
+	static final int PRESENCE_ROUND_FRAMES = 8;
 	private static final long PRESENCE_TTL_SECONDS = 180;
-	private static final int PRESENCE_BUCKET_STEP = 8;
 	private static final long PRESENCE_INTERVAL_MS = 60_000;
 	private static final long PRESENCE_INITIAL_DELAY_MS = 1_500;
-	private static final long PEER_CONNECT_BEACON_DELAY_MS = 600;
+	static final long PRESENCE_TRIGGER_MIN_GAP_MS = 30_000;
+	static final int PRESENCE_TRIGGER_DELAY_MIN_MS = 1_000;
+	static final int PRESENCE_TRIGGER_DELAY_SPREAD_MS = 3_000;
+	static final int ACK_DELAY_MIN_MS = 3_000;
+	static final int ACK_DELAY_SPREAD_MS = 27_000;
 
 	private final PluginManager pluginManager;
 	private final MeshController meshController;
@@ -59,6 +63,11 @@ public class MeshTextSender {
 
 	private volatile boolean wasRunning = false;
 	private final ScheduledExecutorService scheduler;
+	private final java.util.Map<Integer, Long> lastBeaconed =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.concurrent.atomic.AtomicBoolean presenceDue =
+			new java.util.concurrent.atomic.AtomicBoolean(false);
+	private volatile long lastPresenceRoundAt = Long.MIN_VALUE;
 
 	@Inject
 	MeshTextSender(PluginManager pluginManager, MeshController meshController,
@@ -90,10 +99,31 @@ public class MeshTextSender {
 	}
 
 	private void onPeerConnected() {
+		if (!presenceDue.compareAndSet(false, true)) return;
+		long delay = PRESENCE_TRIGGER_DELAY_MIN_MS
+				+ jitter.nextInt(PRESENCE_TRIGGER_DELAY_SPREAD_MS + 1);
+		long last = lastPresenceRoundAt;
+		if (last != Long.MIN_VALUE) {
+			delay = Math.max(delay,
+					last + PRESENCE_TRIGGER_MIN_GAP_MS - now());
+		}
 		try {
-			scheduler.schedule(this::broadcastPresence,
-					PEER_CONNECT_BEACON_DELAY_MS, TimeUnit.MILLISECONDS);
+			scheduler.schedule(() -> {
+				presenceDue.set(false);
+				broadcastPresence();
+			}, delay, TimeUnit.MILLISECONDS);
 		} catch (java.util.concurrent.RejectedExecutionException e) {
+			presenceDue.set(false);
+		}
+	}
+
+	private static final class Beacon {
+		final ContactId contactId;
+		final AsyncPrekeyBundle bundle;
+
+		Beacon(ContactId contactId, AsyncPrekeyBundle bundle) {
+			this.contactId = contactId;
+			this.bundle = bundle;
 		}
 	}
 
@@ -103,27 +133,48 @@ public class MeshTextSender {
 					|| meshManager.getPeerCount() == 0) {
 				return;
 			}
-			int sent = 0;
+			long now = now();
+			lastPresenceRoundAt = now;
+			java.util.List<Beacon> due = new java.util.ArrayList<>();
+			java.util.Set<Integer> current = new java.util.HashSet<>();
 			for (Contact c : contactManager.getContacts()) {
 				ContactId id = c.getId();
+				current.add(id.getInt());
 				try {
 					AsyncPrekeyBundle bundle =
 							bundleStore.getContactBundle(id.getInt(), crypto);
-					if (bundle == null) continue;
-					meshManager.sendOffline(bundle,
-							MeshMessageRouter.MESH_PRESENCE,
-							MeshPadding.pad(new byte[0]), PRESENCE_TTL_SECONDS,
-							false);
-					sent++;
+					if (bundle != null) due.add(new Beacon(id, bundle));
 				} catch (Exception e) {
 				}
 			}
-			int bucket = PRESENCE_BUCKET_STEP;
-			while (bucket < sent) bucket += PRESENCE_BUCKET_STEP;
-			for (int i = sent; sent > 0 && i < bucket; i++) {
-				try {
-					meshManager.sendCover(false, PRESENCE_TTL_SECONDS);
-				} catch (Exception e) {
+			lastBeaconed.keySet().retainAll(current);
+			java.util.Collections.shuffle(due, jitter);
+			due.sort(java.util.Comparator.comparingLong(b ->
+					lastBeaconed.getOrDefault(b.contactId.getInt(),
+							Long.MIN_VALUE)));
+			java.util.List<Beacon> round = new java.util.ArrayList<>(
+					due.subList(0, Math.min(PRESENCE_ROUND_FRAMES,
+							due.size())));
+			while (round.size() < PRESENCE_ROUND_FRAMES) round.add(null);
+			java.util.Collections.shuffle(round, jitter);
+			for (Beacon b : round) {
+				boolean sent = false;
+				if (b != null) {
+					try {
+						meshManager.sendOffline(b.bundle,
+								MeshMessageRouter.MESH_PRESENCE,
+								MeshPadding.pad(new byte[0]),
+								PRESENCE_TTL_SECONDS, false);
+						lastBeaconed.put(b.contactId.getInt(), now);
+						sent = true;
+					} catch (Exception e) {
+					}
+				}
+				if (!sent) {
+					try {
+						meshManager.sendCover(false, PRESENCE_TTL_SECONDS);
+					} catch (Exception e) {
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -199,20 +250,21 @@ public class MeshTextSender {
 	}
 
 	public void sendAck(ContactId contactId, byte[] messageId) {
-		ioExecutor.execute(() -> {
-			try {
-				Thread.sleep(jitterMs());
-				AsyncPrekeyBundle bundle =
-						bundleStore.getContactBundle(contactId.getInt(), crypto);
-				if (bundle == null) return;
-				byte[] padded = MeshPadding.pad(messageId);
-				meshManager.sendOffline(bundle, MeshMessageRouter.MESH_ACK,
-						padded, TTL_SECONDS, false);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			} catch (Exception e) {
-			}
-		});
+		long delay = ACK_DELAY_MIN_MS + jitter.nextInt(ACK_DELAY_SPREAD_MS + 1);
+		try {
+			scheduler.schedule(() -> ioExecutor.execute(() -> {
+				try {
+					AsyncPrekeyBundle bundle = bundleStore.getContactBundle(
+							contactId.getInt(), crypto);
+					if (bundle == null) return;
+					byte[] padded = MeshPadding.pad(messageId);
+					meshManager.sendOffline(bundle, MeshMessageRouter.MESH_ACK,
+							padded, TTL_SECONDS, false);
+				} catch (Exception e) {
+				}
+			}), delay, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
 	}
 
 	public void onDelivered(ContactId contactId, MessageId messageId) {

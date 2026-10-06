@@ -22,6 +22,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -33,6 +34,7 @@ import com.professor.zerion.R;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
@@ -50,7 +52,6 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.app.conversation.voice.VoiceCallConnectionManager;
-import org.zerionproject.app.conversation.voice.VoiceCallConnectionHandler;
 import org.zerionproject.app.conversation.voice.VoiceCallCrypto;
 
 import java.io.BufferedInputStream;
@@ -62,7 +63,9 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -121,18 +124,29 @@ public class VoiceCallService extends Service implements EventListener {
 	private final Object torConnectionLock = new Object();
 	private final Object mediaWriteLock = new Object();
 	private volatile boolean isShuttingDown = false;
+	private final List<Intent> deferredStarts = new ArrayList<>();
 	private volatile boolean endpointsClosed = false;
+	private static final long INCOMING_RING_TIMEOUT_MS = 60_000;
+
+	private static final long ACCEPTED_SETUP_TIMEOUT_MS = 45_000;
+	private volatile int heldContactId = -1;
+	@Nullable
+	private volatile String heldCallId = null;
 	private final ExecutorService executorService =
 			VoiceCallExecutors.bounded();
 
 	private ContactId contactId;
-	private String contactName;
+	private volatile String contactName;
 	private String callId;
 	private boolean isIncoming;
 	private volatile CallState callState = CallState.IDLE;
+
+	private volatile long connectedAtRealtime = 0L;
 	private volatile VoiceCallActivity callActivity;
 	private volatile boolean eventListenerRegistered = false;
-	private Runnable callSetupTimeoutRunnable;
+	private volatile Runnable callSetupTimeoutRunnable;
+
+	private final Object videoStartLock = new Object();
 
 	private AudioRecord audioRecord;
 	private AudioTrack audioTrack;
@@ -168,8 +182,12 @@ public class VoiceCallService extends Service implements EventListener {
 	private long expectedReceiveSequence = 0;
 
 	private static final int MAX_RECONNECT_ATTEMPTS = 3;
+	private static final long RECONNECT_TOTAL_DEADLINE_MS = 90_000;
 	private volatile int reconnectAttempts = 0;
+	private volatile long lastMediaRealtime = 0;
 	private volatile boolean isReconnecting = false;
+	private final Runnable reconnectWatchdogRunnable =
+			this::onReconnectDeadlineReached;
 	private String lastRemoteOnion;
 	private int lastRemotePort;
 
@@ -200,6 +218,16 @@ public class VoiceCallService extends Service implements EventListener {
 	private byte[] localEphemeralSecret;
 	private byte[] remoteEphemeralSecret;
 
+	@Nullable
+	private KeyPair localAgreementKeyPair;
+	@Nullable
+	private byte[] remoteAgreementKey;
+	private volatile boolean agreementNegotiated = false;
+	@Nullable
+	private SecretKey callSecret;
+	private final AudioFrameReplayGuard replayGuard =
+			new AudioFrameReplayGuard();
+
 	private volatile boolean isVideoCall = false;
 	private final VideoAutoAccept videoAutoAccept = new VideoAutoAccept();
 	private volatile boolean videoEnabled = false;
@@ -212,10 +240,14 @@ public class VoiceCallService extends Service implements EventListener {
 	private volatile Runnable remoteOfferTimeoutRunnable;
 	private static final long REMOTE_OFFER_TIMEOUT_MS = 60_000;
 	private static final long VIDEO_SETUP_TIMEOUT_MS = 60_000;
+	private static final long LOCAL_VIDEO_REQUEST_TIMEOUT_MS =
+			REMOTE_OFFER_TIMEOUT_MS + VIDEO_SETUP_TIMEOUT_MS;
+	private static final long RECONNECT_WAIT_MS = 60_000;
 	private static final int VIDEO_NONCE_BYTES = 16;
 	private static final String VIDEO_OFFER_PREFIX = "REQUEST:";
 	private static final String VIDEO_ACCEPT_PREFIX = "ACCEPT:";
 	private android.content.SharedPreferences uiPrefs;
+	private android.content.SharedPreferences profilePrefs;
 	private VoiceCallCrypto.VideoKeys videoKeys;
 	private VideoStreamManager videoStreamManager;
 	private DuplexTransportConnection videoTorConnection;
@@ -242,6 +274,7 @@ public class VoiceCallService extends Service implements EventListener {
 		dbExecutor = component.databaseExecutor();
 		ioExecutor = component.ioExecutor();
 		uiPrefs = component.uiPreferences();
+		profilePrefs = component.profilePreferences();
 		connectionManager = component.voiceCallConnectionManager();
 		voiceCallCrypto = component.voiceCallCrypto();
 
@@ -257,6 +290,13 @@ public class VoiceCallService extends Service implements EventListener {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		if (intent != null && isShuttingDown) {
+			synchronized (deferredStarts) {
+				deferredStarts.add(new Intent(intent));
+			}
+			stopSelf(startId);
+			return START_NOT_STICKY;
+		}
 		if (intent != null) {
 			String action = intent.getAction();
 
@@ -289,15 +329,27 @@ public class VoiceCallService extends Service implements EventListener {
 			callId = intent.getStringExtra(VoiceCallActivity.EXTRA_CALL_ID);
 			isVideoCall = intent.getBooleanExtra("auto_video", false);
 			videoAutoAccept.callStarted(isVideoCall && isIncoming);
+			if (isVideoCall && !isIncoming) {
+				consentGate.onLocalVideoCallPlaced();
+			}
 
 			if (isIncoming) {
-				SecretKey heldKey = VoiceCallKeyHolder.consumeKey();
+				heldContactId = cid;
+				heldCallId = callId;
+				SecretKey heldKey =
+						VoiceCallKeyHolder.consumeKey(cid, callId);
 				if (heldKey != null) {
 					voiceCallKey = heldKey;
 				}
-				byte[] heldEphemeral = VoiceCallKeyHolder.consumeRemoteEphemeral();
+				byte[] heldEphemeral =
+						VoiceCallKeyHolder.consumeRemoteEphemeral(cid, callId);
 				if (heldEphemeral != null) {
 					remoteEphemeralSecret = heldEphemeral;
+				}
+				byte[] heldAgreementKey =
+						VoiceCallKeyHolder.consumeAgreementKey(cid, callId);
+				if (heldAgreementKey != null) {
+					remoteAgreementKey = heldAgreementKey;
 				}
 			}
 
@@ -330,6 +382,7 @@ public class VoiceCallService extends Service implements EventListener {
 				initiateCall();
 			} else {
 				callState = CallState.RINGING;
+				scheduleCallSetupTimeout(INCOMING_RING_TIMEOUT_MS);
 			}
 		}
 
@@ -364,15 +417,20 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void initiateCall() {
 		callState = CallState.CONNECTING;
+		connectedAtRealtime = 0L;
+		lastMediaRealtime = 0;
+		mainHandler.removeCallbacks(reconnectWatchdogRunnable);
 		updateCallActivity();
 
 		executorService.execute(() -> {
 			try {
-				if (voiceCallKey == null) {
-					voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
-				}
+				SecretKey previous = voiceCallKey;
+				voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
+				if (previous != null) previous.clear();
 
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
+				localAgreementKeyPair =
+						voiceCallCrypto.generateCallAgreementKeyPair();
 
 				sendCallOffer();
 
@@ -382,8 +440,7 @@ public class VoiceCallService extends Service implements EventListener {
 				scheduleCallSetupTimeout(35_000);
 
 			} catch (Exception e) {
-				callState = CallState.FAILED;
-				updateCallActivity();
+				failCall();
 			}
 		});
 	}
@@ -392,22 +449,30 @@ public class VoiceCallService extends Service implements EventListener {
 		if (callState != CallState.RINGING || !isIncoming) return;
 
 		callState = CallState.CONNECTING;
+		connectedAtRealtime = 0L;
+		lastMediaRealtime = 0;
+		mainHandler.removeCallbacks(reconnectWatchdogRunnable);
+		scheduleCallSetupTimeout(ACCEPTED_SETUP_TIMEOUT_MS);
 		updateCallActivity();
 
 		executorService.execute(() -> {
 			try {
 
 				localEphemeralSecret = voiceCallCrypto.generateEphemeralSecret();
+				if (remoteAgreementKey != null) {
+					localAgreementKeyPair =
+							voiceCallCrypto.generateCallAgreementKeyPair();
+					agreementNegotiated = true;
+				}
 
-				createHiddenService();
+				if (!createHiddenService()) return;
 
 				sendCallAnswer();
 
-				scheduleCallSetupTimeout(45_000);
+				scheduleCallSetupTimeout(ACCEPTED_SETUP_TIMEOUT_MS);
 
 			} catch (Exception e) {
-				callState = CallState.FAILED;
-				updateCallActivity();
+				failCall();
 			}
 		});
 	}
@@ -421,11 +486,7 @@ public class VoiceCallService extends Service implements EventListener {
 				sendCallReject();
 			} catch (Exception e) {
 			}
-			if (!endpointsClosed && callId != null) {
-				endpointsClosed = true;
-				connectionManager.closeEndpoint(callId);
-			}
-			stopSelf();
+			finishCall(false, true);
 		});
 	}
 
@@ -439,17 +500,40 @@ public class VoiceCallService extends Service implements EventListener {
 			callState = CallState.DISCONNECTED;
 			isRecording = false;
 		}
-		isShuttingDown = true;
+		finishCall();
+	}
+
+	private void finishCall() {
+		finishCall(true, true);
+	}
+
+	private void failCall() {
+		callState = CallState.FAILED;
+		updateCallActivity();
+		finishCall(true, false);
+	}
+
+	private void finishCall(boolean notifyPeer, boolean updateUi) {
+		synchronized (streamLock) {
+			if (isShuttingDown) {
+				return;
+			}
+			isShuttingDown = true;
+			isRecording = false;
+		}
+		cancelCallSetupTimeout();
 
 		executorService.execute(() -> {
-			try {
-				sendMediaBye();
-			} catch (Exception e) {
-			}
+			if (notifyPeer) {
+				try {
+					sendMediaBye();
+				} catch (Exception e) {
+				}
 
-			try {
-				sendCallEnd();
-			} catch (Exception e) {
+				try {
+					sendCallEnd();
+				} catch (Exception e) {
+				}
 			}
 
 			try {
@@ -481,12 +565,13 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			}
 
-			updateCallActivity();
+			if (updateUi) updateCallActivity();
 			stopSelf();
 		});
 	}
 
-	private void createHiddenService() throws IOException {
+	private boolean createHiddenService() throws IOException {
+		SecretKey endpointKey = null;
 		try {
 			if (!isIncoming && voiceCallKey == null) {
 				voiceCallKey = voiceCallCrypto.generateVoiceCallKey();
@@ -495,46 +580,20 @@ public class VoiceCallService extends Service implements EventListener {
 			if (voiceCallKey == null) {
 				throw new IOException("No voice call key available");
 			}
+			endpointKey = liveKeyCopy();
+			if (endpointKey == null) return false;
 
 			boolean alice = !isIncoming;
 
-			VoiceCallConnectionHandler handler = new VoiceCallConnectionHandler() {
-				@Override
-				public void handleConnection(DuplexTransportConnection conn) {
-					if (callState == CallState.CONNECTED
-							&& consentGate.mayStartCapture(true,
-							videoAllowedLocally())
-							&& videoKeys == null && videoStreamManager == null) {
-						videoTorConnection = conn;
-						if (!deriveVideoEncryptionKeys()) {
-							disposeConnection(conn);
-							handleVideoSetupFailure();
-							return;
-						}
-						startVideoStreamingOnConnection();
-						videoEnabled = true;
-						updateNotification();
-					} else if (callState == CallState.CONNECTED) {
-						disposeConnection(conn);
-					} else if (callState == CallState.CONNECTING ||
-							callState == CallState.RINGING) {
-						torConnection = conn;
-						cancelCallSetupTimeout();
-						callState = CallState.CONNECTED;
-						callStartTime = System.currentTimeMillis();
-						updateCallActivity();
-						startAudioStreaming();
-						autoStartVideoIfNeeded();
-					}
-				}
-			};
-
 			VoiceCallConnectionManager.EndpointInfo endpoint =
 					connectionManager.createIncomingEndpoint(
-							callId, voiceCallKey, alice, handler);
+							callId, endpointKey, alice,
+							this::onEndpointConnection);
+			if (!closeIfTornDown(callId)) return false;
 
 			onionAddress = endpoint.onionAddress;
 			onionPort = endpoint.port;
+			return true;
 
 		} catch (IOException e) {
 			String errorMessage = "Failed to set up secure connection";
@@ -550,7 +609,60 @@ public class VoiceCallService extends Service implements EventListener {
 			updateCallActivity();
 
 			throw new IOException(errorMessage, e);
+		} finally {
+			if (endpointKey != null) endpointKey.clear();
 		}
+	}
+
+	private void onEndpointConnection(DuplexTransportConnection conn) {
+		if (callState == CallState.CONNECTED
+				&& consentGate.mayStartCapture(true, videoAllowedLocally())
+				&& videoKeys == null && videoStreamManager == null) {
+			videoTorConnection = conn;
+			if (!deriveVideoEncryptionKeys()) {
+				disposeConnection(conn);
+				handleVideoSetupFailure();
+				return;
+			}
+			if (!startVideoStreamingOnConnection()) return;
+			videoEnabled = true;
+			updateNotification();
+		} else if (callState == CallState.CONNECTED) {
+			disposeConnection(conn);
+		} else if (callState == CallState.CONNECTING ||
+				callState == CallState.RINGING) {
+			if (!adoptConnection(conn)) return;
+			cancelCallSetupTimeout();
+			if (callStartTime == 0) callStartTime = System.currentTimeMillis();
+			reconnectAttempts = 0;
+			isReconnecting = false;
+			updateCallActivity();
+			startAudioStreaming();
+			expireVideoAutoAcceptLater();
+			autoStartVideoIfNeeded();
+		} else {
+			disposeConnection(conn);
+		}
+	}
+
+	@Nullable
+	private SecretKey liveKeyCopy() {
+		synchronized (streamLock) {
+			SecretKey key = voiceCallKey;
+			if (isShuttingDown || key == null) return null;
+			return new SecretKey(key.getBytes().clone());
+		}
+	}
+
+	private boolean closeIfTornDown(String endpointId) {
+		synchronized (streamLock) {
+			if (!isShuttingDown && !endpointsClosed) return true;
+		}
+		try {
+			connectionManager.closeEndpoint(endpointId);
+		} catch (Exception e) {
+		}
+		return false;
 	}
 
 	private static final java.util.regex.Pattern ONION_V3_PATTERN =
@@ -559,13 +671,11 @@ public class VoiceCallService extends Service implements EventListener {
 	private void connectToRemoteOnion(String remoteOnion, int remotePort) {
 		if (remoteOnion == null || !ONION_V3_PATTERN.matcher(
 				remoteOnion.toLowerCase()).matches()) {
-			callState = CallState.FAILED;
-			updateCallActivity();
+			failCall();
 			return;
 		}
 		if (remotePort < 1 || remotePort > 65535) {
-			callState = CallState.FAILED;
-			updateCallActivity();
+			failCall();
 			return;
 		}
 
@@ -575,24 +685,24 @@ public class VoiceCallService extends Service implements EventListener {
 		executorService.execute(() -> {
 			try {
 				if (voiceCallKey == null) {
-					callState = CallState.FAILED;
-					updateCallActivity();
+					failCall();
 					return;
 				}
 
 				boolean alice = !isIncoming;
 
-				torConnection = connectionManager.connectToRemote(
-						callId, remoteOnion, voiceCallKey, alice);
+				DuplexTransportConnection conn = connectionManager
+						.connectToRemote(callId, remoteOnion, voiceCallKey,
+								alice);
 
-				if (torConnection == null) {
+				if (conn == null) {
 					throw new IOException("Failed to connect to remote peer");
 				}
+				if (!adoptConnection(conn)) return;
 
 				cancelCallSetupTimeout();
 				reconnectAttempts = 0;
 				isReconnecting = false;
-				callState = CallState.CONNECTED;
 				if (callStartTime == 0) {
 					callStartTime = System.currentTimeMillis();
 				}
@@ -611,19 +721,54 @@ public class VoiceCallService extends Service implements EventListener {
 						errorMessage = "Connection timeout. Contact may be offline.";
 					}
 				}
-				callState = CallState.FAILED;
-				updateCallActivity();
+				failCall();
 			}
 		});
 	}
 
-	private void deriveAudioEncryptionKeys() {
+	private boolean adoptConnection(DuplexTransportConnection conn) {
+		synchronized (streamLock) {
+			if (!isShuttingDown && (callState == CallState.CONNECTING
+					|| callState == CallState.RINGING)) {
+				torConnection = conn;
+				callState = CallState.CONNECTED;
+				if (connectedAtRealtime == 0L) {
+					connectedAtRealtime = SystemClock.elapsedRealtime();
+				}
+				lastMediaRealtime = SystemClock.elapsedRealtime();
+				reconnectAttempts = 0;
+				mainHandler.removeCallbacks(reconnectWatchdogRunnable);
+				mainHandler.postDelayed(reconnectWatchdogRunnable,
+						RECONNECT_TOTAL_DEADLINE_MS);
+				return true;
+			}
+		}
+		disposeConnection(conn);
+		return false;
+	}
+
+	private synchronized void deriveAudioEncryptionKeys() {
 		if (voiceCallKey == null) {
 			throw new IllegalStateException("No voice call key available");
 		}
 
 		boolean alice = !isIncoming;
 
+		if (agreementNegotiated) {
+			if (audioKeys != null) return;
+			if (localEphemeralSecret == null || remoteEphemeralSecret == null) {
+				throw new IllegalStateException("contributions missing");
+			}
+			audioKeys = voiceCallCrypto.deriveEphemeralAudioKeys(callSecret(),
+					localEphemeralSecret, remoteEphemeralSecret, alice);
+			Arrays.fill(localEphemeralSecret, (byte) 0);
+			Arrays.fill(remoteEphemeralSecret, (byte) 0);
+			localEphemeralSecret = null;
+			remoteEphemeralSecret = null;
+			return;
+		}
+
+		VoiceCallCrypto.AudioKeys previous = audioKeys;
 		if (localEphemeralSecret != null && remoteEphemeralSecret != null) {
 			audioKeys = voiceCallCrypto.deriveEphemeralAudioKeys(
 					voiceCallKey, localEphemeralSecret,
@@ -635,25 +780,66 @@ public class VoiceCallService extends Service implements EventListener {
 		} else {
 			audioKeys = voiceCallCrypto.deriveAudioKeys(voiceCallKey, alice);
 		}
+		if (previous != null) previous.destroy();
+	}
+
+	private synchronized SecretKey callSecret() {
+		SecretKey secret = callSecret;
+		if (secret != null) return secret;
+		KeyPair ours = localAgreementKeyPair;
+		byte[] theirs = remoteAgreementKey;
+		SecretKey key = voiceCallKey;
+		if (ours == null || theirs == null || key == null) {
+			throw new IllegalStateException("agreement incomplete");
+		}
+		try {
+			secret = voiceCallCrypto.deriveCallSecret(key, ours, theirs,
+					!isIncoming, callId);
+		} catch (java.security.GeneralSecurityException e) {
+			throw new IllegalStateException(e);
+		} finally {
+			wipeAgreementKeyPair();
+		}
+		callSecret = secret;
+		return secret;
+	}
+
+	private synchronized void wipeAgreementKeyPair() {
+		KeyPair ours = localAgreementKeyPair;
+		if (ours != null) {
+			Arrays.fill(ours.getPrivate().getEncoded(), (byte) 0);
+		}
+		localAgreementKeyPair = null;
 	}
 
 	private void startAudioStreaming() {
-		if (isRecording) {
+		synchronized (streamLock) {
+			if (isRecording || isShuttingDown) {
+				return;
+			}
+		}
+
+		try {
+			deriveAudioEncryptionKeys();
+		} catch (RuntimeException e) {
+			failCall();
 			return;
 		}
 
-		deriveAudioEncryptionKeys();
-
-		isRecording = true;
-		final int generation = streamGeneration.incrementAndGet();
+		final int generation;
+		synchronized (streamLock) {
+			if (isShuttingDown) {
+				return;
+			}
+			isRecording = true;
+			generation = streamGeneration.incrementAndGet();
+		}
 
 		audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 		audioManager.setSpeakerphoneOn(false);
 		isSpeakerOn = false;
 
-		int audioSessionId = AudioManager.AUDIO_SESSION_ID_GENERATE;
-
-		audioTrack = new AudioTrack.Builder()
+		AudioTrack track = new AudioTrack.Builder()
 				.setAudioAttributes(new AudioAttributes.Builder()
 						.setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
 						.setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -666,29 +852,46 @@ public class VoiceCallService extends Service implements EventListener {
 				.setBufferSizeInBytes(BUFFER_SIZE * 4)
 				.build();
 
-		if (audioTrack.getState() != AudioTrack.STATE_INITIALIZED) {
+		if (track.getState() != AudioTrack.STATE_INITIALIZED) {
+			track.release();
 			stopAudioStreaming();
 			return;
 		}
 
-		audioSessionId = audioTrack.getAudioSessionId();
-
-		audioRecord = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+		AudioRecord record = new AudioRecord(
+				MediaRecorder.AudioSource.VOICE_COMMUNICATION,
 				SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT,
 				BUFFER_SIZE * 2);
 
-		if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+		if (record.getState() != AudioRecord.STATE_INITIALIZED) {
+			record.release();
+			track.release();
 			stopAudioStreaming();
 			return;
 		}
 
-		enableAudioProcessing(audioRecord.getAudioSessionId());
-
-		audioRecord.startRecording();
-		audioTrack.play();
-
-		if (proximityWakeLock != null && !proximityWakeLock.isHeld()) {
-			proximityWakeLock.acquire();
+		boolean started = false;
+		synchronized (streamLock) {
+			if (!isShuttingDown && generation == streamGeneration.get()) {
+				audioTrack = track;
+				audioRecord = record;
+				enableAudioProcessing(record.getAudioSessionId());
+				record.startRecording();
+				track.play();
+				if (proximityWakeLock != null
+						&& !proximityWakeLock.isHeld()) {
+					proximityWakeLock.acquire();
+				}
+				started = true;
+			}
+		}
+		if (!started) {
+			record.release();
+			track.release();
+			if (isShuttingDown) {
+				audioManager.setMode(AudioManager.MODE_NORMAL);
+			}
+			return;
 		}
 
 		if (USE_OPUS_CODEC) {
@@ -808,8 +1011,15 @@ public class VoiceCallService extends Service implements EventListener {
 								readOffset = 0;
 								continue;
 							}
-							byte[] encryptedAudio = voiceCallCrypto.encryptAudioFrame(
-									encodedAudio, keys.txKey);
+							long sequence = sendSequenceNumber.getAndIncrement();
+							byte[] encryptedAudio = agreementNegotiated
+									? voiceCallCrypto.encryptAudioFrame(
+											encodedAudio, keys.txKey,
+											voiceCallCrypto
+													.audioFrameAssociatedData(
+															!isIncoming, sequence))
+									: voiceCallCrypto.encryptAudioFrame(
+											encodedAudio, keys.txKey);
 
 							java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
 							crc32.update(encryptedAudio, 0, encryptedAudio.length);
@@ -817,7 +1027,7 @@ public class VoiceCallService extends Service implements EventListener {
 
 							synchronized (mediaWriteLock) {
 								dataOut.writeInt(encryptedAudio.length);
-								dataOut.writeLong(sendSequenceNumber.getAndIncrement());
+								dataOut.writeLong(sequence);
 								dataOut.writeLong(0L);
 								dataOut.writeLong(checksum);
 								dataOut.write(encryptedAudio);
@@ -896,9 +1106,11 @@ public class VoiceCallService extends Service implements EventListener {
 
 						if (encFrameSize == AUDIO_READY_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
+							lastMediaRealtime = SystemClock.elapsedRealtime();
 							continue;
 						} else if (encFrameSize == AUDIO_HEARTBEAT_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
+							lastMediaRealtime = SystemClock.elapsedRealtime();
 							continue;
 						} else if (encFrameSize == AUDIO_BYE_MARKER) {
 							mainHandler.post(() -> endCall());
@@ -928,6 +1140,7 @@ public class VoiceCallService extends Service implements EventListener {
 						byte[] encryptedFrame = new byte[encFrameSize];
 						dataIn.readFully(encryptedFrame);
 						receivedFrames++;
+						lastMediaRealtime = SystemClock.elapsedRealtime();
 
 						totalBytesReceived += encFrameSize + 28;
 						totalFramesReceived++;
@@ -950,8 +1163,14 @@ public class VoiceCallService extends Service implements EventListener {
 
 						byte[] encodedAudio;
 						try {
-							encodedAudio = voiceCallCrypto.decryptAudioFrame(
-									encryptedFrame, keys.rxKey);
+							encodedAudio = agreementNegotiated
+									? voiceCallCrypto.decryptAudioFrame(
+											encryptedFrame, keys.rxKey,
+											voiceCallCrypto
+													.audioFrameAssociatedData(
+															isIncoming, sequence))
+									: voiceCallCrypto.decryptAudioFrame(
+											encryptedFrame, keys.rxKey);
 						} catch (RuntimeException e) {
 							corruptedFrames++;
 							networkMetrics.recordCorruptedPacket();
@@ -971,6 +1190,10 @@ public class VoiceCallService extends Service implements EventListener {
 							decoded = encodedAudio;
 						}
 
+						if (agreementNegotiated && !replayGuard.admit(sequence)) {
+							networkMetrics.recordCorruptedPacket();
+							continue;
+						}
 						if (lastSequence >= 0) {
 							if (sequence <= lastSequence) {
 								networkMetrics.recordCorruptedPacket();
@@ -1066,6 +1289,11 @@ public class VoiceCallService extends Service implements EventListener {
 			try {
 				while (streaming(generation) && torConnection != null) {
 					Thread.sleep(10000);
+					String id = callId;
+					if (id != null && streaming(generation)) {
+						connectionManager.keepEndpoint(id);
+						connectionManager.keepEndpoint(id + "-video");
+					}
 
 					if (torConnection != null) {
 						try {
@@ -1185,6 +1413,7 @@ public class VoiceCallService extends Service implements EventListener {
 				bound.onCallFailed(reason);
 			}
 		});
+		finishCall(true, false);
 	}
 
 	private void cancelCallSetupTimeout() {
@@ -1194,17 +1423,30 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	/**
-	 * Whether the loops started for the given streaming generation should
-	 * keep running. A reconnect or a stop starts a new generation, so the
-	 * capture, playout, reader and keepalive loops of a replaced connection
-	 * wind down instead of running beside the new ones, and an error they
-	 * report late cannot restart a reconnect on the connection that
-	 * replaced theirs.
-	 */
 	private boolean streaming(int generation) {
 		return !isShuttingDown && isRecording
 				&& streamGeneration.get() == generation;
+	}
+
+	private void onReconnectDeadlineReached() {
+		if (isShuttingDown) return;
+		if (callState != CallState.CONNECTING
+				&& callState != CallState.CONNECTED) {
+			return;
+		}
+		long base = lastMediaRealtime;
+		if (base == 0) {
+			mainHandler.postDelayed(reconnectWatchdogRunnable,
+					RECONNECT_TOTAL_DEADLINE_MS);
+			return;
+		}
+		long idle = SystemClock.elapsedRealtime() - base;
+		if (idle >= RECONNECT_TOTAL_DEADLINE_MS) {
+			endCall();
+			return;
+		}
+		mainHandler.postDelayed(reconnectWatchdogRunnable,
+				RECONNECT_TOTAL_DEADLINE_MS - idle);
 	}
 
 	private void handleConnectionError() {
@@ -1218,9 +1460,20 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 
 		final SecretKey reconnectKey;
+		boolean armWatchdog = false;
 		synchronized (this) {
 			if (isReconnecting) return;
-			if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			long base = lastMediaRealtime;
+			long idle;
+			if (base == 0) {
+				lastMediaRealtime = SystemClock.elapsedRealtime();
+				idle = 0;
+				armWatchdog = true;
+			} else {
+				idle = SystemClock.elapsedRealtime() - base;
+			}
+			if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS
+					|| idle >= RECONNECT_TOTAL_DEADLINE_MS) {
 				reconnectKey = null;
 			} else {
 				reconnectKey = voiceCallKey;
@@ -1229,6 +1482,10 @@ public class VoiceCallService extends Service implements EventListener {
 				isReconnecting = true;
 				reconnectAttempts++;
 			}
+		}
+		if (armWatchdog) {
+			mainHandler.postDelayed(reconnectWatchdogRunnable,
+					RECONNECT_TOTAL_DEADLINE_MS);
 		}
 		if (reconnectKey != null) {
 			sendSequenceNumber.addAndGet(1000);
@@ -1257,34 +1514,45 @@ public class VoiceCallService extends Service implements EventListener {
 				try {
 					boolean alice = !isIncoming;
 
+					DuplexTransportConnection redialed = null;
 					if (lastRemoteOnion != null) {
-						torConnection = connectionManager.connectToRemote(
+						redialed = connectionManager.connectToRemote(
 								callId, lastRemoteOnion, reconnectKey, alice);
 					} else if (onionAddress != null) {
-						VoiceCallConnectionHandler handler = conn -> {
-							torConnection = conn;
-							reconnectAttempts = 0;
+						SecretKey endpointKey = liveKeyCopy();
+						if (endpointKey == null) {
 							isReconnecting = false;
-							callState = CallState.CONNECTED;
-							updateCallActivity();
-							deriveAudioEncryptionKeys();
-							startAudioStreaming();
-							autoStartVideoIfNeeded();
-						};
-						connectionManager.createIncomingEndpoint(
-								callId, reconnectKey, alice, handler);
+							return;
+						}
+						try {
+							connectionManager.createIncomingEndpoint(
+									callId, endpointKey, alice,
+									this::onEndpointConnection);
+						} finally {
+							endpointKey.clear();
+						}
 						isReconnecting = false;
+						if (!closeIfTornDown(callId)) return;
+						final int waitGeneration = streamGeneration.get();
+						mainHandler.postDelayed(() -> {
+							if (callState == CallState.CONNECTING
+									&& waitGeneration == streamGeneration.get()) {
+								handleConnectionError(waitGeneration);
+							}
+						}, RECONNECT_WAIT_MS);
 						return;
 					} else {
 						throw new IOException("No reconnection target");
 					}
 
-					if (torConnection != null) {
+					if (redialed != null) {
+						if (!adoptConnection(redialed)) {
+							isReconnecting = false;
+							return;
+						}
 						reconnectAttempts = 0;
 						isReconnecting = false;
-						callState = CallState.CONNECTED;
 						updateCallActivity();
-						deriveAudioEncryptionKeys();
 						startAudioStreaming();
 						autoStartVideoIfNeeded();
 					} else {
@@ -1299,11 +1567,9 @@ public class VoiceCallService extends Service implements EventListener {
 		} else {
 			callState = CallState.DISCONNECTED;
 			updateCallActivity();
-			mainHandler.postDelayed(() -> {
-				if (callState == CallState.DISCONNECTED) {
-					endCall();
-				}
-			}, 2000);
+			cancelCallSetupTimeout();
+			cancelVideoSetupTimeout();
+			finishCall();
 		}
 	}
 
@@ -1391,6 +1657,14 @@ public class VoiceCallService extends Service implements EventListener {
 			Arrays.fill(remoteEphemeralSecret, (byte) 0);
 			remoteEphemeralSecret = null;
 		}
+		wipeAgreementKeyPair();
+		remoteAgreementKey = null;
+		synchronized (this) {
+			if (callSecret != null) {
+				callSecret.clear();
+				callSecret = null;
+			}
+		}
 		zeroizeVideoKeys();
 		synchronized (jbLock) {
 			Arrays.fill(sharedJitterBuffer, (byte) 0);
@@ -1465,22 +1739,45 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private void sendCallOffer() throws DbException {
 		String encodedKey = voiceCallCrypto.encodeVoiceCallKey(voiceCallKey);
-		String payload = encodedKey;
-		if (localEphemeralSecret != null) {
-			payload = encodedKey + "|" + CallHex.bytesToHex(localEphemeralSecret);
-		}
-		if (isVideoCall) {
-			payload = payload + "|VIDEO";
-		}
-		sendVoiceSignal(VoiceSignalType.CALL_OFFER, payload);
+		KeyPair agreement = localAgreementKeyPair;
+		byte[] agreementKey = agreement == null ? null
+				: voiceCallCrypto.encodeCallAgreementPublicKey(agreement);
+		sendVoiceSignal(VoiceSignalType.CALL_OFFER,
+				CallSignalPayloads.formatOffer(encodedKey,
+						localEphemeralSecret, agreementKey, isVideoCall));
 	}
 
 	private void sendCallAnswer() throws DbException {
-		String payload = onionAddress + ":" + onionPort;
-		if (localEphemeralSecret != null) {
-			payload = payload + "|" + CallHex.bytesToHex(localEphemeralSecret);
+		KeyPair agreement = agreementNegotiated ? localAgreementKeyPair : null;
+		byte[] agreementKey = agreement == null ? null
+				: voiceCallCrypto.encodeCallAgreementPublicKey(agreement);
+		sendVoiceSignal(VoiceSignalType.CALL_ANSWER,
+				CallSignalPayloads.formatAnswer(onionAddress, onionPort,
+						localEphemeralSecret, agreementKey));
+	}
+
+	private boolean settleAgreement(CallSignalPayloads.Answer answer) {
+		if (answer.agreementKey == null || localAgreementKeyPair == null) {
+			wipeAgreementKeyPair();
+			agreementNegotiated = false;
+			return true;
 		}
-		sendVoiceSignal(VoiceSignalType.CALL_ANSWER, payload);
+		SecretKey key = liveKeyCopy();
+		if (key == null) return false;
+		try {
+			String expected = connectionManager.expectedPeerOnion(callId, key,
+					true);
+			String onion = answer.onion.toLowerCase(java.util.Locale.US);
+			if (onion.endsWith(".onion")) {
+				onion = onion.substring(0, onion.length() - 6);
+			}
+			if (!expected.equals(onion)) return false;
+		} finally {
+			key.clear();
+		}
+		remoteAgreementKey = answer.agreementKey;
+		agreementNegotiated = true;
+		return true;
 	}
 
 	private void sendCallReject() throws DbException {
@@ -1596,11 +1893,10 @@ public class VoiceCallService extends Service implements EventListener {
 	private void handleSignalingFailure(String reason) {
 		mainHandler.post(() -> {
 			if (callState == CallState.CONNECTING || callState == CallState.RINGING) {
-				callState = CallState.FAILED;
-				updateCallActivity();
 				if (callActivity != null) {
 					callActivity.onCallFailed("Failed to establish call: " + reason);
 				}
+				failCall();
 			}
 		});
 	}
@@ -1619,12 +1915,33 @@ public class VoiceCallService extends Service implements EventListener {
 		this.callActivity = activity;
 	}
 
+	@Nullable
+	public String getContactName() {
+		return contactName;
+	}
+
+	public boolean isCallFor(int contact, @Nullable String call) {
+		ContactId current = contactId;
+		if (current == null) return true;
+		return sameCall(current.getInt(), callId, contact, call);
+	}
+
+	static boolean sameCall(int contactA, @Nullable String callA,
+			int contactB, @Nullable String callB) {
+		if (contactA != contactB) return false;
+		return callA == null || callB == null || callA.equals(callB);
+	}
+
 	public void clearCallActivity() {
 		this.callActivity = null;
 	}
 
 	public CallState getCallState() {
 		return callState;
+	}
+
+	public long getConnectedAtRealtime() {
+		return connectedAtRealtime;
 	}
 
 	public void setMuted(boolean muted) {
@@ -1695,7 +2012,9 @@ public class VoiceCallService extends Service implements EventListener {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		isShuttingDown = true;
+		synchronized (streamLock) {
+			isShuttingDown = true;
+		}
 		cancelCallSetupTimeout();
 
 		if (eventBus != null) {
@@ -1724,7 +2043,9 @@ public class VoiceCallService extends Service implements EventListener {
 			proximityWakeLock.release();
 		}
 		zeroizeKeyMaterial();
-		VoiceCallKeyHolder.clear();
+		if (heldContactId != -1) {
+			VoiceCallKeyHolder.clearFor(heldContactId, heldCallId);
+		}
 
 		executorService.shutdown();
 		try {
@@ -1736,6 +2057,23 @@ public class VoiceCallService extends Service implements EventListener {
 		} catch (InterruptedException e) {
 			executorService.shutdownNow();
 			Thread.currentThread().interrupt();
+		}
+		replayDeferredStarts();
+	}
+
+	private void replayDeferredStarts() {
+		List<Intent> replay;
+		synchronized (deferredStarts) {
+			if (deferredStarts.isEmpty()) return;
+			replay = new ArrayList<>(deferredStarts);
+			deferredStarts.clear();
+		}
+		for (Intent i : replay) {
+			try {
+				startService(i);
+			} catch (IllegalStateException e) {
+				ContextCompat.startForegroundService(this, i);
+			}
 		}
 	}
 
@@ -1766,34 +2104,19 @@ public class VoiceCallService extends Service implements EventListener {
 								|| callState == CallState.CONNECTING)) {
 					return;
 				}
-				String payload = header.getPayload();
-				if (payload != null) {
-					String ephemeralPart = null;
-					String connectionPart = payload;
-					int pipeIdx = payload.indexOf('|');
-					if (pipeIdx > 0) {
-						connectionPart = payload.substring(0, pipeIdx);
-						ephemeralPart = payload.substring(pipeIdx + 1);
-					}
-					String[] parts = connectionPart.split(":");
-					if (parts.length >= 2) {
-						String remoteOnion = parts[0];
-						try {
-							int remotePort = Integer.parseInt(parts[1]);
-							if (remotePort < 1 || remotePort > 65535) {
-								break;
-							}
-							if (ephemeralPart != null) {
-								remoteEphemeralSecret = CallHex.hexToBytes(ephemeralPart);
-							}
-							callState = CallState.CONNECTING;
-							updateCallActivity();
-							connectToRemoteOnion(remoteOnion, remotePort);
-						} catch (IllegalArgumentException e) {
-							break;
-						}
-					}
+				CallSignalPayloads.Answer answer =
+						CallSignalPayloads.parseAnswer(header.getPayload());
+				if (answer == null) break;
+				if (!settleAgreement(answer)) {
+					failCall();
+					break;
 				}
+				if (answer.contribution != null) {
+					remoteEphemeralSecret = answer.contribution;
+				}
+				callState = CallState.CONNECTING;
+				updateCallActivity();
+				connectToRemoteOnion(answer.onion, answer.port);
 				break;
 
 			case CALL_REJECT:
@@ -1814,12 +2137,11 @@ public class VoiceCallService extends Service implements EventListener {
 						}
 					});
 				}
-				callState = CallState.DISCONNECTED;
-				zeroizeKeyMaterial();
-				if (rejectReason == null) {
-					updateCallActivity();
+				synchronized (streamLock) {
+					callState = CallState.DISCONNECTED;
+					isRecording = false;
 				}
-				stopSelf();
+				finishCall(false, rejectReason == null);
 				break;
 
 			case CALL_END:
@@ -1833,13 +2155,15 @@ public class VoiceCallService extends Service implements EventListener {
 				if (callId == null || !callId.equals(signalCallId)) {
 					return;
 				}
-				callState = CallState.DISCONNECTED;
-				zeroizeKeyMaterial();
+				synchronized (streamLock) {
+					callState = CallState.DISCONNECTED;
+					isRecording = false;
+				}
 				updateCallActivity();
 				if (callActivity != null) {
 					callActivity.onCallFailed("Contact is busy");
 				}
-				stopSelf();
+				finishCall(false, false);
 				break;
 
 			case VIDEO_OFFER:
@@ -1872,6 +2196,7 @@ public class VoiceCallService extends Service implements EventListener {
 				if (callId == null || !callId.equals(signalCallId)) {
 					return;
 				}
+				consentGate.onRemoteVideoEnd();
 				stopVideoStreaming();
 				break;
 
@@ -1887,7 +2212,7 @@ public class VoiceCallService extends Service implements EventListener {
 			return;
 		}
 		VideoConsentGate.OfferDecision decision = consentGate.onRemoteOffer(
-				callState == CallState.CONNECTED, videoAllowedLocally());
+				callState == CallState.CONNECTED, videoEnabledInSettings());
 		if (decision == VideoConsentGate.OfferDecision.REJECT_NOT_ALLOWED) {
 			sendVoiceSignal(VoiceSignalType.VIDEO_REJECT, null);
 			return;
@@ -1895,7 +2220,7 @@ public class VoiceCallService extends Service implements EventListener {
 		if (decision != VideoConsentGate.OfferDecision.PROMPT_USER) return;
 		remoteVideoNonce = nonce;
 		scheduleRemoteOfferTimeout();
-		if (videoAutoAccept.consumeForOffer()) {
+		if (videoAutoAccept.consumeForOffer() && cameraPermitted()) {
 			acceptVideoOffer();
 			return;
 		}
@@ -1922,12 +2247,18 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	private boolean videoAllowedLocally() {
-		boolean enabled = uiPrefs != null && uiPrefs.getBoolean(
+		return videoEnabledInSettings() && cameraPermitted();
+	}
+
+	private boolean videoEnabledInSettings() {
+		return profilePrefs != null && profilePrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
 						.PREF_VIDEO_CALLS_ENABLED, false);
-		boolean permitted = ContextCompat.checkSelfPermission(this,
+	}
+
+	private boolean cameraPermitted() {
+		return ContextCompat.checkSelfPermission(this,
 				Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
-		return enabled && permitted;
 	}
 
 	private static byte[] newVideoNonce() {
@@ -2068,8 +2399,9 @@ public class VoiceCallService extends Service implements EventListener {
 					handleVideoSetupFailure();
 					return;
 				}
-				startVideoStreamingOnConnection();
+				boolean started = startVideoStreamingOnConnection();
 				cancelVideoSetupTimeout();
+				if (!started) return;
 				videoEnabled = true;
 				updateNotification();
 			} catch (Exception e) {
@@ -2081,15 +2413,22 @@ public class VoiceCallService extends Service implements EventListener {
 	private void autoStartVideoIfNeeded() {
 		if (!isVideoCall || videoEnabled || isIncoming) return;
 		if (consentGate.isCaptureArmed()) return;
-		if (!consentGate.onLocalRequest(callState == CallState.CONNECTED,
+		if (!consentGate.onAutoRequest(callState == CallState.CONNECTED,
 				videoAllowedLocally())) {
 			return;
 		}
 		byte[] nonce = newVideoNonce();
 		localVideoNonce = nonce;
+		scheduleVideoSetupTimeout(LOCAL_VIDEO_REQUEST_TIMEOUT_MS);
 		updateNotification();
 		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, VIDEO_OFFER_PREFIX
 				+ org.zerionproject.core.util.StringUtils.toHexString(nonce));
+	}
+
+	private void expireVideoAutoAcceptLater() {
+		if (!videoAutoAccept.isArmed()) return;
+		mainHandler.postDelayed(videoAutoAccept::videoEnded,
+				VIDEO_SETUP_TIMEOUT_MS);
 	}
 
 	public void requestVideoUpgrade() {
@@ -2112,6 +2451,7 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 		byte[] nonce = newVideoNonce();
 		localVideoNonce = nonce;
+		scheduleVideoSetupTimeout(LOCAL_VIDEO_REQUEST_TIMEOUT_MS);
 		updateNotification();
 
 		sendVoiceSignal(VoiceSignalType.VIDEO_OFFER, VIDEO_OFFER_PREFIX
@@ -2146,24 +2486,31 @@ public class VoiceCallService extends Service implements EventListener {
 	}
 
 	public void endVideo() {
-		if (!videoEnabled) return;
-		videoEnabled = false;
+		boolean active = videoEnabled || consentGate.isCaptureArmed()
+				|| videoStreamManager != null;
+		consentGate.onLocalVideoOff();
+		videoAutoAccept.videoEnded();
+		cancelVideoSetupTimeout();
+		if (!active) return;
+		sendVoiceSignal(VoiceSignalType.VIDEO_END, null);
+		DuplexTransportConnection link = videoTorConnection;
+		stopVideoStreaming();
 		updateNotification();
-
-		if (videoStreamManager != null) {
-			videoStreamManager.pauseSending();
-		}
-
-		mainHandler.post(() -> {
-			if (callActivity != null) {
-				callActivity.onVideoStopped();
+		executorService.execute(() -> {
+			try {
+				if (callId != null) {
+					connectionManager.closeEndpoint(callId + "-video");
+				}
+			} catch (Exception ignored) {
 			}
+			if (link != null) disposeConnection(link);
 		});
 	}
 
 	public void resumeVideo() {
 		if (videoEnabled || callState != CallState.CONNECTED) return;
-		if (videoStreamManager == null || !videoStreamManager.isRunning()) {
+		if (videoStreamManager == null || !videoStreamManager.isRunning()
+				|| !consentGate.isCaptureArmed()) {
 
 			requestVideoUpgrade();
 			return;
@@ -2195,13 +2542,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	/**
-	 * Derives the keys of one video session from the call key and the fresh
-	 * random contributions both peers exchanged in this session's offer and
-	 * accept signals, then consumes those contributions so that no second
-	 * connection can obtain the same keys. Returns false if either
-	 * contribution is missing, in which case no video session may start.
-	 */
 	private synchronized boolean deriveVideoEncryptionKeys() {
 		byte[] local = localVideoNonce;
 		byte[] remote = remoteVideoNonce;
@@ -2210,7 +2550,13 @@ public class VoiceCallService extends Service implements EventListener {
 			return false;
 		}
 		boolean alice = !isIncoming;
-		videoKeys = voiceCallCrypto.deriveEphemeralVideoKeys(voiceCallKey,
+		SecretKey base;
+		try {
+			base = agreementNegotiated ? callSecret() : voiceCallKey;
+		} catch (RuntimeException e) {
+			return false;
+		}
+		videoKeys = voiceCallCrypto.deriveEphemeralVideoKeys(base,
 				local, remote, alice);
 		clearVideoNonces();
 		return true;
@@ -2243,7 +2589,7 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	private void startVideoStreamingOnConnection() {
+	private boolean startVideoStreamingOnConnection() {
 		if (videoTorConnection == null || videoKeys == null) {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
@@ -2252,7 +2598,12 @@ public class VoiceCallService extends Service implements EventListener {
 							"Video: encryption keys not derived");
 				}
 			});
-			return;
+			return false;
+		}
+		if (!consentGate.mayStartCapture(callState == CallState.CONNECTED,
+				videoAllowedLocally())) {
+			refuseVideoWithoutConsent();
+			return false;
 		}
 
 		upgradeForegroundForVideo();
@@ -2306,7 +2657,19 @@ public class VoiceCallService extends Service implements EventListener {
 
 			OutputStream videoOut =
 					videoTorConnection.getWriter().getOutputStream();
-			videoStreamManager.startSending(this, videoOut);
+			boolean consented;
+			synchronized (videoStartLock) {
+				VideoStreamManager manager = videoStreamManager;
+				consented = manager != null && !isShuttingDown
+						&& consentGate.mayStartCapture(
+						callState == CallState.CONNECTED,
+						videoAllowedLocally());
+				if (consented) manager.startSending(this, videoOut);
+			}
+			if (!consented) {
+				refuseVideoWithoutConsent();
+				return false;
+			}
 
 			mainHandler.post(() -> {
 				if (callActivity != null) {
@@ -2326,6 +2689,7 @@ public class VoiceCallService extends Service implements EventListener {
 					});
 				}
 			});
+			return true;
 		} catch (Exception e) {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
@@ -2334,22 +2698,34 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 			});
 			stopVideoStreaming();
+			return false;
+		}
+	}
+
+	private void refuseVideoWithoutConsent() {
+		DuplexTransportConnection unused = videoTorConnection;
+		stopVideoStreaming();
+		if (unused != null) disposeConnection(unused);
+		if (!isShuttingDown) {
+			sendVoiceSignal(VoiceSignalType.VIDEO_END, null);
 		}
 	}
 
 	private void stopVideoStreaming() {
 		videoEnabled = false;
 		videoAutoAccept.videoEnded();
-		consentGate.reset();
-		clearVideoNonces();
-		cancelRemoteOfferTimeout();
+		synchronized (videoStartLock) {
+			consentGate.reset();
+			clearVideoNonces();
+			cancelRemoteOfferTimeout();
 
-		if (videoStreamManager != null) {
-			videoStreamManager.setStateCallback(null);
-			try {
-				videoStreamManager.stop();
-			} catch (Exception ignored) {}
-			videoStreamManager = null;
+			if (videoStreamManager != null) {
+				videoStreamManager.setStateCallback(null);
+				try {
+					videoStreamManager.stop();
+				} catch (Exception ignored) {}
+				videoStreamManager = null;
+			}
 		}
 		videoTorConnection = null;
 		try {

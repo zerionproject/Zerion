@@ -89,7 +89,6 @@ public class AsyncEnvelopeTest {
 			AsyncEnvelope.decode(enc);
 			fail("expected FormatException");
 		} catch (FormatException expected) {
-			// ok
 		}
 	}
 }

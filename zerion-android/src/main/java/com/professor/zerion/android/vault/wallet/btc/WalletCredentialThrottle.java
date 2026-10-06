@@ -6,16 +6,6 @@ import java.util.function.LongSupplier;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * One failure counter for every place that checks the wallet credential:
- * the section gate and the per-transaction authorisation share it, so a
- * guessing run against the send dialog is slowed down exactly like one
- * against the gate. From the third failure on every further attempt has to
- * wait for a delay that doubles up to five minutes, and after three failures
- * the caller must drop any reviewed transaction and lock the wallet section
- * again. Time is read from the monotonic clock so a clock change cannot
- * shorten a delay.
- */
 @ThreadSafe
 @NotNullByDefault
 public final class WalletCredentialThrottle {
@@ -33,7 +23,6 @@ public final class WalletCredentialThrottle {
 		this.monotonicClock = monotonicClock;
 	}
 
-	/** Restores the failure count persisted by an earlier process. */
 	public synchronized void restoreFailures(int persistedFailures) {
 		failures = Math.max(0, persistedFailures);
 		if (failures >= FREE_FAILURES) {
@@ -45,7 +34,6 @@ public final class WalletCredentialThrottle {
 		return failures;
 	}
 
-	/** True while a failed attempt still has to be waited out. */
 	public synchronized boolean isThrottled() {
 		return monotonicClock.getAsLong() < delayUntil;
 	}
@@ -59,10 +47,6 @@ public final class WalletCredentialThrottle {
 		delayUntil = 0;
 	}
 
-	/**
-	 * Records a wrong credential and returns true if the caller must drop
-	 * any pending transaction and lock the wallet section again.
-	 */
 	public synchronized boolean recordFailure() {
 		failures++;
 		if (failures >= FREE_FAILURES) {

@@ -5,6 +5,7 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.data.BdfDictionary;
+import org.zerionproject.core.api.data.BdfEntry;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
@@ -78,6 +79,10 @@ public interface ClientHelper {
 	Map<MessageId, BdfDictionary> getMessageMetadataAsDictionary(
 			Transaction txn, GroupId g, BdfDictionary query) throws DbException,
 			FormatException;
+
+	void visitMessageMetadataAsDictionaryExcluding(Transaction txn, GroupId g,
+			BdfEntry excluded, MessageDictionaryVisitor visitor)
+			throws DbException, FormatException;
 
 	void mergeGroupMetadata(GroupId g, BdfDictionary metadata)
 			throws DbException, FormatException;

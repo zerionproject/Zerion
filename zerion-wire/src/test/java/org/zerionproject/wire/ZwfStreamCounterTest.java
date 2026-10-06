@@ -17,18 +17,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The #1 safety gate for the Zerion 3.0 wire format: proves a stream id is never
- * reused, even across simulated crashes/restarts and under concurrency.
- */
 public class ZwfStreamCounterTest {
 
-	/**
-	 * In-memory {@link StreamCounterStore} whose {@code storeHighWater} is
-	 * treated as durable. A "crash" is modelled by discarding the
-	 * {@link ZwfStreamCounter} (its cache) while keeping this store, exactly as
-	 * a real restart would reload the high-water mark from the database.
-	 */
 	private static class DurableInMemoryStore implements StreamCounterStore {
 		private final Map<Long, Long> persisted = new ConcurrentHashMap<>();
 
@@ -79,9 +69,8 @@ public class ZwfStreamCounterTest {
 		DurableInMemoryStore store = new DurableInMemoryStore();
 		Set<Long> seen = ConcurrentHashMap.newKeySet();
 		long highest = 0;
-		// Simulate 50 crash/restart cycles, allocating a handful each time.
 		for (int cycle = 0; cycle < 50; cycle++) {
-			ZwfStreamCounter counter = new ZwfStreamCounter(store); // fresh cache
+			ZwfStreamCounter counter = new ZwfStreamCounter(store);
 			for (int i = 0; i < 7; i++) {
 				long id = counter.allocateSendStreamId(CONTACT_A);
 				assertTrue("id must be fresh", seen.add(id));
@@ -99,18 +88,14 @@ public class ZwfStreamCounterTest {
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 1));
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 2));
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 3));
-		// replay of an already-seen id is rejected
 		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 2));
 		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 3));
-		// a jump forward advances the high-water
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 10));
-		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 10)); // replay
-		// reorder: ids below the high-water but inside the window are accepted
+		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 10));
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 5));
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 9));
-		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 5)); // now seen
+		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 5));
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 11));
-		// zero / negative are always rejected
 		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 0));
 		assertFalse(counter.acceptRecvStreamId(CONTACT_A, -1));
 	}
@@ -119,13 +104,10 @@ public class ZwfStreamCounterTest {
 	public void farAheadDeliveryDoesNotBrickButStaleIsRejected() {
 		int w = REPLAY_WINDOW_SIZE;
 		ZwfStreamCounter counter = new ZwfStreamCounter(new DurableInMemoryStore());
-		// An early far-ahead id (natural churn or an on-path attacker) must not
-		// slide the window past genuine lower streams still inside it.
 		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 2L * w));
-		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 2L * w - 1)); // within
-		assertTrue(counter.acceptRecvStreamId(CONTACT_A, w + 1));      // within
-		// more than a window below the high-water = stale
-		assertFalse(counter.acceptRecvStreamId(CONTACT_A, w));         // == hw-w
+		assertTrue(counter.acceptRecvStreamId(CONTACT_A, 2L * w - 1));
+		assertTrue(counter.acceptRecvStreamId(CONTACT_A, w + 1));
+		assertFalse(counter.acceptRecvStreamId(CONTACT_A, w));
 		assertFalse(counter.acceptRecvStreamId(CONTACT_A, 1));
 	}
 
@@ -137,10 +119,6 @@ public class ZwfStreamCounterTest {
 		for (long id = 1; id <= 2L * w; id++) {
 			assertTrue(before.acceptRecvStreamId(CONTACT_A, id));
 		}
-		// After restart the persistent high-water bars anything older than the
-		// window, and the startup floor bars everything at or below the
-		// persisted high-water (the in-memory seen-set is not persisted, so the
-		// floor is what prevents cross-restart re-acceptance).
 		ZwfStreamCounter after = new ZwfStreamCounter(store);
 		assertFalse("stale id below the window rejected after restart",
 				after.acceptRecvStreamId(CONTACT_A, w / 2));
@@ -210,7 +188,6 @@ public class ZwfStreamCounterTest {
 		start.countDown();
 		assertTrue(done.await(30, TimeUnit.SECONDS));
 		pool.shutdownNow();
-		// No duplicates, and exactly the contiguous range 1..total was handed out.
 		assertEquals(total, ids.size());
 		assertTrue(ids.contains(1L));
 		assertTrue(ids.contains((long) total));

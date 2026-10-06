@@ -10,15 +10,6 @@ import java.util.function.LongSupplier;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Admission control for incoming call signalling. An unauthenticated-in-time
- * CALL_OFFER previously rang the full-screen call activity with no freshness,
- * rate or duplicate check, so a contact could replay old offers queued while
- * offline, storm the callee with rings, or force repeated call launches. This
- * gate rejects stale offers, rate-limits offers per contact, and de-duplicates
- * call ids, and it decides whether a CALL_ANSWER is admissible for our current
- * role and state.
- */
 @ThreadSafe
 @NotNullByDefault
 public class CallSignalGate {
@@ -64,12 +55,6 @@ public class CallSignalGate {
 		this.offerWindowMs = offerWindowMs;
 	}
 
-	/**
-	 * Decides whether an incoming CALL_OFFER should ring. Rejects an offer that
-	 * is stale or far in the future, arrives too soon after or too often
-	 * relative to earlier offers from the same contact, or repeats a call id
-	 * that has already been admitted.
-	 */
 	public synchronized boolean admitOffer(String contactKey, String callId,
 			long offerTimestamp) {
 		long now = clock.getAsLong();
@@ -98,11 +83,6 @@ public class CallSignalGate {
 		return true;
 	}
 
-	/**
-	 * A CALL_ANSWER is admissible only when we placed the call and are still
-	 * ringing or connecting. Accepting an answer while idle, or while we are
-	 * the callee, let a contact drive an unsolicited outbound dial.
-	 */
 	public static boolean answerAccepted(boolean weAreCaller,
 			boolean ringingOrConnecting) {
 		return weAreCaller && ringingOrConnecting;

@@ -9,12 +9,6 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
-/**
- * The wrapper with the platform pieces stubbed: process id and update time
- * are constants, the "executables" are whatever bytes the test supplies,
- * and the file run as Tor can be replaced by a script. Installation skips
- * the executable bit so the tests behave the same on every host.
- */
 class TestTorWrapper extends AbstractTorWrapper {
 
 	static final Executor IO = Executors.newCachedThreadPool(r -> {
@@ -33,6 +27,12 @@ class TestTorWrapper extends AbstractTorWrapper {
 			TorBinaryVerifier verifier) {
 		super(IO, Runnable::run, "arm64_pie", dir, socksPort, controlPort,
 				verifier);
+	}
+
+	TestTorWrapper(File dir, String controlSocketPath,
+			TorBinaryVerifier verifier) {
+		super(IO, Runnable::run, "arm64_pie", dir, 9050, 9051,
+				controlSocketPath, verifier);
 	}
 
 	@Override

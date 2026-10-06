@@ -9,13 +9,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The only Tor configuration this side composes from user input is the
- * custom bridge list. Every line handed to Tor must be a single Bridge line:
- * a line that already carries the keyword keeps it once, any other line gets
- * it, blank lines vanish, both line endings split, and no line can smuggle a
- * second option because the keyword is always the first word.
- */
 public class TorBridgeConfiguratorTest {
 
 	@Test
@@ -43,7 +36,6 @@ public class TorBridgeConfiguratorTest {
 		}
 	}
 
-	/** A2-NET-03: only lines shaped like bridge lines are accepted. */
 	@Test
 	public void onlyPlausibleBridgeLinesAreAccepted() {
 		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(

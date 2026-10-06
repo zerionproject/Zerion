@@ -51,7 +51,8 @@ class ChannelMyApplicationsStore {
 					d.getOptionalRaw("ephPriv"),
 					d.getRaw("ephPub"),
 					d.getLong("ts"),
-					parseStatus(d.getString("status")));
+					parseStatus(d.getString("status")),
+					"member".equals(d.getOptionalString("signer")));
 		} catch (IOException e) {
 			return null;
 		}
@@ -66,6 +67,7 @@ class ChannelMyApplicationsStore {
 		d.put("ephPub", app.ephemeralAgreementPub);
 		d.put("ts", app.appliedAtHourMs);
 		d.put("status", app.status.name());
+		if (app.signedWithMemberKey) d.put("signer", "member");
 		Settings out = new Settings();
 		out.put(ChannelStore.hex(channelId),
 				encodeBase64(dictToBytes(d)));
@@ -73,12 +75,8 @@ class ChannelMyApplicationsStore {
 	}
 
 	void remove(byte[] channelId) throws DbException {
-		Settings cur = settingsManager.getSettings(NS);
-		String key = ChannelStore.hex(channelId);
-		if (!cur.containsKey(key)) return;
-		Settings out = new Settings();
-		out.put(key, "");
-		settingsManager.mergeSettings(out, NS);
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 
 	static final class MyApplication {
@@ -88,16 +86,18 @@ class ChannelMyApplicationsStore {
 		final byte[] ephemeralAgreementPub;
 		final long appliedAtHourMs;
 		final ApplicationStatus status;
+		final boolean signedWithMemberKey;
 
 		MyApplication(String displayName,
 				@Nullable byte[] ephemeralAgreementPriv,
 				byte[] ephemeralAgreementPub, long appliedAtHourMs,
-				ApplicationStatus status) {
+				ApplicationStatus status, boolean signedWithMemberKey) {
 			this.displayName = displayName;
 			this.ephemeralAgreementPriv = ephemeralAgreementPriv;
 			this.ephemeralAgreementPub = ephemeralAgreementPub;
 			this.appliedAtHourMs = appliedAtHourMs;
 			this.status = status;
+			this.signedWithMemberKey = signedWithMemberKey;
 		}
 	}
 

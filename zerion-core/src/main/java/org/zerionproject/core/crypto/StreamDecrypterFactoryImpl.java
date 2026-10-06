@@ -12,11 +12,6 @@ import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
-/**
- * Builds the classical stream decrypter that carries pairing handshakes and
- * contact exchanges. A context that carries ratchet state is refused, for the
- * reason given on {@link StreamEncrypterFactoryImpl}.
- */
 @Immutable
 @NotNullByDefault
 class StreamDecrypterFactoryImpl implements StreamDecrypterFactory {

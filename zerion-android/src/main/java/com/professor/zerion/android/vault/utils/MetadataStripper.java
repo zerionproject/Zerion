@@ -15,16 +15,43 @@ import android.os.ParcelFileDescriptor;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.annotation.Nullable;
 
 @NotNullByDefault
 public class MetadataStripper {
 
 	private static final int JPEG_QUALITY = 95;
+
+	static final int MAX_SAMPLE_BYTES = 16 * 1024 * 1024;
+
+	static final int MP4 = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4;
+	static final int WEBM = MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM;
+
+	static final String VP8 = "video/x-vnd.on2.vp8";
+	static final String VP9 = "video/x-vnd.on2.vp9";
+	static final String VORBIS = "audio/vorbis";
+	static final String OPUS = "audio/opus";
+
+	private static final Set<String> WEBM_CODECS =
+			new HashSet<>(Arrays.asList(VP8, VP9, VORBIS, OPUS));
+
+	private static final Set<String> MP4_CANNOT_CARRY =
+			new HashSet<>(Arrays.asList(VP8, VORBIS));
+
+	private static final int VORBIS_PAGE_SAMPLES = 4;
 
 	private final Context context;
 
@@ -41,24 +68,51 @@ public class MetadataStripper {
 			} else if (isDocument(mimeType)) {
 				return stripDocumentMetadata(fileData, mimeType);
 			}
-		} catch (Exception e) {
+		} catch (Exception | OutOfMemoryError e) {
 		}
 		return fileData;
 	}
 
+	public byte[] stripImageMetadataOrThrow(byte[] imageData, String mimeType)
+			throws IOException {
+		try {
+			return stripImageMetadata(imageData, mimeType, true);
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment.MediaRefusedException
+					.tooLarge("image too large to clean");
+		}
+	}
+
+	public static String strippedImageMimeType(String mimeType) {
+		if (mimeType.equals("image/png")) return "image/png";
+		if (mimeType.equals("image/webp")) return "image/webp";
+		return "image/jpeg";
+	}
+
 	private byte[] stripImageMetadata(byte[] imageData, String mimeType) throws IOException {
-		if (!com.professor.zerion.android.util
-				.SafeImageDecoder.hasAllowedMagic(imageData)) {
+		return stripImageMetadata(imageData, mimeType, false);
+	}
+
+	private byte[] stripImageMetadata(byte[] imageData, String mimeType,
+			boolean bounded) throws IOException {
+		boolean known = com.professor.zerion.android.util
+				.SafeImageDecoder.hasAllowedMagic(imageData);
+		if (!known && !(bounded && isReencodableForSending(imageData))) {
 			throw new IOException("unsupported image format");
 		}
-		BitmapFactory.Options bounds = com.professor.zerion.android.util
-				.SafeImageDecoder.probeBounds(imageData);
+		BitmapFactory.Options bounds = bounded ? probeDimensions(imageData)
+				: com.professor.zerion.android.util.SafeImageDecoder
+						.probeBounds(imageData);
 		if (bounds == null) {
 			throw new IOException("unsupported image format");
 		}
 
 		int maxDimension = 4096;
-		int sampleSize = calculateSampleSize(bounds.outWidth, bounds.outHeight, maxDimension);
+		int sampleSize = bounded
+				? boundedSampleSize(bounds.outWidth, bounds.outHeight,
+						maxDimension)
+				: calculateSampleSize(bounds.outWidth, bounds.outHeight,
+						maxDimension);
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
@@ -67,7 +121,7 @@ public class MetadataStripper {
 
 		Bitmap bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length, options);
 		if (bitmap == null) {
-			return imageData;
+			throw new IOException("undecodable image");
 		}
 
 		Bitmap.CompressFormat format;
@@ -86,8 +140,9 @@ public class MetadataStripper {
 
 		byte[] strippedData;
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-			bitmap.compress(format, quality, output);
+			boolean encoded = bitmap.compress(format, quality, output);
 			bitmap.recycle();
+			if (!encoded) throw new IOException("image re-encode failed");
 			strippedData = output.toByteArray();
 		}
 
@@ -96,6 +151,23 @@ public class MetadataStripper {
 		}
 
 		return strippedData;
+	}
+
+	public static boolean isReencodableForSending(byte[] data) {
+		return com.professor.zerion.android.util.MediaMagic.isBmp(data)
+				|| com.professor.zerion.android.util.MediaMagic.isAvif(data);
+	}
+
+	@Nullable
+	private static BitmapFactory.Options probeDimensions(byte[] data) {
+		BitmapFactory.Options bounds = new BitmapFactory.Options();
+		bounds.inJustDecodeBounds = true;
+		BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
+		if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+		int max = com.professor.zerion.android.util.SafeImageDecoder
+				.MAX_DIMENSION;
+		if (bounds.outWidth > max || bounds.outHeight > max) return null;
+		return bounds;
 	}
 
 	private int calculateSampleSize(int width, int height, int maxDimension) {
@@ -111,6 +183,15 @@ public class MetadataStripper {
 			}
 		}
 
+		return sampleSize;
+	}
+
+	static int boundedSampleSize(int width, int height, int maxDimension) {
+		int sampleSize = 1;
+		while (width / sampleSize > maxDimension
+				|| height / sampleSize > maxDimension) {
+			sampleSize *= 2;
+		}
 		return sampleSize;
 	}
 
@@ -164,7 +245,7 @@ public class MetadataStripper {
 			try (FileOutputStream fos = new FileOutputStream(tempIn)) {
 				fos.write(videoData);
 			}
-			tempOut = remuxVideoFile(tempIn);
+			tempOut = remux(fileSource(tempIn), "vid_remux_", false).getFile();
 			try (FileInputStream fis = new FileInputStream(tempOut);
 				 ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 				byte[] buf = new byte[8192];
@@ -184,148 +265,307 @@ public class MetadataStripper {
 
 	public File stripVideoMetadataFromUri(Uri uri, ContentResolver resolver)
 			throws IOException {
-		ParcelFileDescriptor pfd = null;
-		MediaExtractor extractor = null;
-		MediaMuxer muxer = null;
-		File tempOutput = null;
+		return remuxForSending(uri, resolver, false).getFile();
+	}
 
-		try {
-			tempOutput = File.createTempFile("vid_clean_", ".mp4",
-					context.getCacheDir());
-
-			pfd = resolver.openFileDescriptor(uri, "r");
+	public Remuxed remuxForSending(Uri uri, ContentResolver resolver,
+			boolean allowWebm) throws IOException {
+		return remux(extractor -> {
+			ParcelFileDescriptor pfd;
+			try {
+				pfd = resolver.openFileDescriptor(uri, "r");
+			} catch (SecurityException e) {
+				throw new IOException(e);
+			}
 			if (pfd == null) throw new IOException("Cannot open video URI");
+			try {
+				extractor.setDataSource(pfd.getFileDescriptor());
+			} catch (IOException | RuntimeException e) {
+				pfd.close();
+				throw e;
+			}
+			return pfd;
+		}, "vid_clean_", allowWebm);
+	}
 
-			extractor = new MediaExtractor();
-			extractor.setDataSource(pfd.getFileDescriptor());
+	public static final class Remuxed {
 
-			muxer = new MediaMuxer(tempOutput.getAbsolutePath(),
-					MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+		private final File file;
+		private final boolean webm;
+		private final boolean video;
 
+		Remuxed(File file, boolean webm, boolean video) {
+			this.file = file;
+			this.webm = webm;
+			this.video = video;
+		}
+
+		public File getFile() {
+			return file;
+		}
+
+		public boolean isWebm() {
+			return webm;
+		}
+
+		public boolean hasVideo() {
+			return video;
+		}
+
+		public String getMimeType() {
+			if (webm) return video ? "video/webm" : "audio/webm";
+			return video ? "video/mp4" : "audio/mp4";
+		}
+	}
+
+	private interface Source {
+
+		Closeable open(MediaExtractor extractor) throws IOException;
+	}
+
+	private static Source fileSource(File file) {
+		return extractor -> {
+			extractor.setDataSource(file.getAbsolutePath());
+			return () -> {
+			};
+		};
+	}
+
+	private Remuxed remux(Source source, String prefix, boolean allowWebm)
+			throws IOException {
+		List<String> mimes;
+		try {
+			mimes = keptTrackTypes(source);
+		} catch (Exception | OutOfMemoryError e) {
+			throw new IOException("Failed to read media tracks", e);
+		}
+		int[] containers = containersFor(mimes, allowWebm);
+		if (containers.length == 0) {
+			throw new IOException("No container can carry these tracks");
+		}
+		boolean video = hasVideo(mimes);
+		Throwable last = null;
+		for (int container : containers) {
+			boolean webm = container == WEBM;
+			int[] trims = webm && mimes.contains(VORBIS)
+					? new int[] {VORBIS_PAGE_SAMPLES, 0} : new int[] {0};
+			for (int trim : trims) {
+				File out = null;
+				try {
+					out = File.createTempFile(prefix, webm ? ".webm" : ".mp4",
+							context.getCacheDir());
+					mux(source, container, out, trim);
+					if (webm) {
+						requireSameSamples(source, out);
+					} else {
+						Mp4MetadataScrubber.scrub(out);
+					}
+					return new Remuxed(out, webm, video);
+				} catch (Exception | OutOfMemoryError e) {
+					if (out != null) secureDelete(out);
+					last = e;
+				}
+			}
+		}
+		throw new IOException("Failed to strip video metadata", last);
+	}
+
+	private static void mux(Source source, int container, File out,
+			int vorbisTrim) throws IOException {
+		MediaExtractor extractor = new MediaExtractor();
+		MediaMuxer muxer = null;
+		Closeable handle = null;
+		try {
+			handle = source.open(extractor);
+			muxer = new MediaMuxer(out.getAbsolutePath(), container);
 			int trackCount = extractor.getTrackCount();
 			int[] trackMap = new int[trackCount];
 			boolean[] includeTrack = new boolean[trackCount];
-
+			int[] trim = new int[trackCount];
 			for (int i = 0; i < trackCount; i++) {
 				MediaFormat format = extractor.getTrackFormat(i);
 				String mime = format.getString(MediaFormat.KEY_MIME);
-				if (mime != null && (mime.startsWith("video/")
-						|| mime.startsWith("audio/"))) {
+				if (isKept(mime)) {
 					trackMap[i] = muxer.addTrack(format);
 					includeTrack[i] = true;
+					if (VORBIS.equals(mime)) trim[i] = vorbisTrim;
 				}
 			}
-
 			muxer.start();
-
-			ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
-			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-
-			for (int i = 0; i < trackCount; i++) {
-				if (!includeTrack[i]) continue;
-
-				extractor.selectTrack(i);
-				while (true) {
-					int sampleSize = extractor.readSampleData(buffer, 0);
-					if (sampleSize < 0) break;
-
-					bufferInfo.offset = 0;
-					bufferInfo.size = sampleSize;
-					bufferInfo.presentationTimeUs =
-							extractor.getSampleTime();
-					bufferInfo.flags = extractor.getSampleFlags();
-
-					muxer.writeSampleData(trackMap[i], buffer,
-							bufferInfo);
-					extractor.advance();
-				}
-				extractor.unselectTrack(i);
+			if (container == WEBM) {
+				copyInterleaved(extractor, muxer, trackMap, includeTrack, trim);
+			} else {
+				copyTrackByTrack(extractor, muxer, trackMap, includeTrack);
 			}
-
 			muxer.stop();
-			return tempOutput;
-
-		} catch (Exception e) {
-			if (tempOutput != null) secureDelete(tempOutput);
-			throw new IOException("Failed to strip video metadata", e);
 		} finally {
-			if (extractor != null) extractor.release();
+			extractor.release();
 			if (muxer != null) {
 				try { muxer.release(); } catch (Exception ignored) {}
 			}
-			if (pfd != null) {
-				try { pfd.close(); } catch (Exception ignored) {}
+			if (handle != null) {
+				try { handle.close(); } catch (Exception ignored) {}
 			}
 		}
 	}
 
-	private File remuxVideoFile(File inputFile) throws IOException {
-		MediaExtractor extractor = null;
-		MediaMuxer muxer = null;
-		File tempOutput = null;
+	private static void copyTrackByTrack(MediaExtractor extractor,
+			MediaMuxer muxer, int[] trackMap, boolean[] includeTrack)
+			throws IOException {
+		ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
+		MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+		for (int i = 0; i < trackMap.length; i++) {
+			if (!includeTrack[i]) continue;
+			extractor.selectTrack(i);
+			while (true) {
+				buffer = sampleBuffer(buffer, extractor.getSampleSize());
+				int sampleSize = extractor.readSampleData(buffer, 0);
+				if (sampleSize < 0) break;
+				bufferInfo.offset = 0;
+				bufferInfo.size = sampleSize;
+				bufferInfo.presentationTimeUs = extractor.getSampleTime();
+				bufferInfo.flags = extractor.getSampleFlags();
+				muxer.writeSampleData(trackMap[i], buffer, bufferInfo);
+				extractor.advance();
+			}
+			extractor.unselectTrack(i);
+		}
+	}
 
+	private static void copyInterleaved(MediaExtractor extractor,
+			MediaMuxer muxer, int[] trackMap, boolean[] includeTrack,
+			int[] trim) throws IOException {
+		for (int i = 0; i < trackMap.length; i++) {
+			if (includeTrack[i]) extractor.selectTrack(i);
+		}
+		ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
+		MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+		while (true) {
+			int track = extractor.getSampleTrackIndex();
+			if (track < 0) break;
+			buffer = sampleBuffer(buffer, extractor.getSampleSize());
+			int sampleSize = extractor.readSampleData(buffer, 0);
+			if (sampleSize < 0) break;
+			int size = sampleSize - trim[track];
+			if (size <= 0) throw new IOException("empty sample");
+			bufferInfo.offset = 0;
+			bufferInfo.size = size;
+			bufferInfo.presentationTimeUs = extractor.getSampleTime();
+			bufferInfo.flags = extractor.getSampleFlags();
+			muxer.writeSampleData(trackMap[track], buffer, bufferInfo);
+			extractor.advance();
+		}
+	}
+
+	private static void requireSameSamples(Source source, File out)
+			throws IOException {
+		List<String> in = sampleCounts(source);
+		List<String> written = sampleCounts(fileSource(out));
+		if (in.isEmpty() || !in.equals(written)) {
+			throw new IOException("remuxed samples do not match");
+		}
+	}
+
+	private static List<String> sampleCounts(Source source)
+			throws IOException {
+		MediaExtractor extractor = new MediaExtractor();
+		Closeable handle = null;
 		try {
-			tempOutput = File.createTempFile("vid_remux_", ".mp4",
-					context.getCacheDir());
-
-			extractor = new MediaExtractor();
-			extractor.setDataSource(inputFile.getAbsolutePath());
-
-			muxer = new MediaMuxer(tempOutput.getAbsolutePath(),
-					MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-
+			handle = source.open(extractor);
 			int trackCount = extractor.getTrackCount();
-			int[] trackMap = new int[trackCount];
-			boolean[] includeTrack = new boolean[trackCount];
-
+			String[] types = new String[trackCount];
+			long[] counts = new long[trackCount];
+			long[] bytes = new long[trackCount];
 			for (int i = 0; i < trackCount; i++) {
-				MediaFormat format = extractor.getTrackFormat(i);
-				String mime = format.getString(MediaFormat.KEY_MIME);
-				if (mime != null && (mime.startsWith("video/")
-						|| mime.startsWith("audio/"))) {
-					trackMap[i] = muxer.addTrack(format);
-					includeTrack[i] = true;
+				String mime = extractor.getTrackFormat(i)
+						.getString(MediaFormat.KEY_MIME);
+				if (isKept(mime)) {
+					types[i] = mime;
+					extractor.selectTrack(i);
 				}
 			}
-
-			muxer.start();
-
-			ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
-			MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-
-			for (int i = 0; i < trackCount; i++) {
-				if (!includeTrack[i]) continue;
-
-				extractor.selectTrack(i);
-				while (true) {
-					int sampleSize = extractor.readSampleData(buffer, 0);
-					if (sampleSize < 0) break;
-
-					bufferInfo.offset = 0;
-					bufferInfo.size = sampleSize;
-					bufferInfo.presentationTimeUs =
-							extractor.getSampleTime();
-					bufferInfo.flags = extractor.getSampleFlags();
-
-					muxer.writeSampleData(trackMap[i], buffer,
-							bufferInfo);
-					extractor.advance();
-				}
-				extractor.unselectTrack(i);
+			while (true) {
+				int track = extractor.getSampleTrackIndex();
+				if (track < 0) break;
+				long size = extractor.getSampleSize();
+				if (size < 0) break;
+				counts[track]++;
+				bytes[track] += size;
+				extractor.advance();
 			}
-
-			muxer.stop();
-			return tempOutput;
-
-		} catch (Exception e) {
-			if (tempOutput != null) secureDelete(tempOutput);
-			throw new IOException("Failed to remux video", e);
+			List<String> out = new ArrayList<>();
+			for (int i = 0; i < trackCount; i++) {
+				if (types[i] != null) {
+					out.add(types[i] + " " + counts[i] + " " + bytes[i]);
+				}
+			}
+			Collections.sort(out);
+			return out;
 		} finally {
-			if (extractor != null) extractor.release();
-			if (muxer != null) {
-				try { muxer.release(); } catch (Exception ignored) {}
+			extractor.release();
+			if (handle != null) {
+				try { handle.close(); } catch (Exception ignored) {}
 			}
 		}
+	}
+
+	private static List<String> keptTrackTypes(Source source)
+			throws IOException {
+		MediaExtractor extractor = new MediaExtractor();
+		Closeable handle = null;
+		try {
+			handle = source.open(extractor);
+			List<String> mimes = new ArrayList<>();
+			for (int i = 0; i < extractor.getTrackCount(); i++) {
+				String mime = extractor.getTrackFormat(i)
+						.getString(MediaFormat.KEY_MIME);
+				if (isKept(mime)) mimes.add(mime);
+			}
+			return mimes;
+		} finally {
+			extractor.release();
+			if (handle != null) {
+				try { handle.close(); } catch (Exception ignored) {}
+			}
+		}
+	}
+
+	private static boolean isKept(@Nullable String mime) {
+		return mime != null && (mime.startsWith("video/")
+				|| mime.startsWith("audio/"));
+	}
+
+	static boolean hasVideo(List<String> mimes) {
+		for (String m : mimes) {
+			if (m.startsWith("video/")) return true;
+		}
+		return false;
+	}
+
+	static int[] containersFor(List<String> mimes, boolean allowWebm) {
+		if (mimes.isEmpty()) return new int[0];
+		boolean needsWebm = false;
+		boolean webmCodecs = true;
+		int videos = 0;
+		int audios = 0;
+		for (String m : mimes) {
+			if (MP4_CANNOT_CARRY.contains(m)) needsWebm = true;
+			if (!WEBM_CODECS.contains(m)) webmCodecs = false;
+			if (m.startsWith("video/")) videos++;
+			else audios++;
+		}
+		boolean webm = allowWebm && webmCodecs && videos <= 1 && audios <= 1;
+		if (needsWebm) return webm ? new int[] {WEBM} : new int[0];
+		return webm ? new int[] {MP4, WEBM} : new int[] {MP4};
+	}
+
+	static ByteBuffer sampleBuffer(ByteBuffer buffer, long sampleSize)
+			throws IOException {
+		if (sampleSize <= buffer.capacity()) return buffer;
+		if (sampleSize > MAX_SAMPLE_BYTES) {
+			throw new IOException("media sample too large");
+		}
+		return ByteBuffer.allocate((int) sampleSize);
 	}
 
 	private byte[] stripDocumentMetadata(byte[] documentData, String mimeType) {

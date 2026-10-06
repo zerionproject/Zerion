@@ -49,7 +49,6 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 		this.mesh = mesh;
 	}
 
-	/** True if this message was delivered over the offline mesh. */
 	public boolean isMesh() {
 		return mesh;
 	}

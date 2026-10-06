@@ -30,7 +30,8 @@ class ChannelBlobStore {
 			"org.zerionproject/BLOB_DIR_NAME";
 	private static final int DIR_NAME_HEX_BYTES = 16;
 
-	private final File rootDir;
+	private final DatabaseConfig dbConfig;
+	private final File startupRootDir;
 	private final SettingsManager settingsManager;
 	private final CryptoComponent crypto;
 	private final SecureRandom random = new SecureRandom();
@@ -39,11 +40,23 @@ class ChannelBlobStore {
 	@Inject
 	ChannelBlobStore(DatabaseConfig dbConfig,
 			SettingsManager settingsManager, CryptoComponent crypto) {
-		this.rootDir = new File(
-				dbConfig.getDatabaseDirectory().getParentFile(),
-				DIR_NAME);
+		this.dbConfig = dbConfig;
+		this.startupRootDir = rootOf(dbConfig);
 		this.settingsManager = settingsManager;
 		this.crypto = crypto;
+	}
+
+	private static File rootOf(DatabaseConfig dbConfig) {
+		return new File(dbConfig.getDatabaseDirectory().getParentFile(),
+				DIR_NAME);
+	}
+
+	private File rootDir() {
+		return rootOf(dbConfig);
+	}
+
+	File profileDir() {
+		return dbConfig.getDatabaseDirectory().getParentFile();
 	}
 
 	private byte[] getOrCreateDirNameSecret() throws IOException {
@@ -111,6 +124,22 @@ class ChannelBlobStore {
 		return out;
 	}
 
+	long size(byte[] channelId, byte[] blobHash) throws IOException {
+		File file = new File(channelDir(channelId),
+				hex(blobHash) + ".bin");
+		return file.isFile() ? file.length() : -1L;
+	}
+
+	long totalBytes(byte[] channelId) throws IOException {
+		File[] children = channelDir(channelId).listFiles();
+		if (children == null) return 0L;
+		long total = 0L;
+		for (File f : children) {
+			if (f.getName().endsWith(".bin")) total += f.length();
+		}
+		return total;
+	}
+
 	boolean has(byte[] channelId, byte[] blobHash) {
 		try {
 			return new File(channelDir(channelId),
@@ -165,7 +194,7 @@ class ChannelBlobStore {
 			f.delete();
 		}
 		dir.delete();
-		File legacy = new File(rootDir, hex(channelId));
+		File legacy = new File(rootDir(), hex(channelId));
 		if (legacy.exists() && !legacy.equals(dir)) {
 			File[] legacyKids = legacy.listFiles();
 			if (legacyKids != null) {
@@ -183,12 +212,26 @@ class ChannelBlobStore {
 		for (int i = 0; i < n; i++) {
 			sb.append(String.format(Locale.US, "%02x", derived[i]));
 		}
-		File opaque = new File(rootDir, sb.toString());
-		File legacy = new File(rootDir, hex(channelId));
+		File root = rootDir();
+		File opaque = new File(root, sb.toString());
+		File legacy = new File(root, hex(channelId));
 		if (legacy.exists() && !legacy.equals(opaque) && !opaque.exists()) {
 			legacy.renameTo(opaque);
 		}
+		if (!opaque.exists() && !startupRootDir.equals(root)) {
+			claimFromStartupRoot(new File(startupRootDir, sb.toString()),
+					opaque);
+			claimFromStartupRoot(new File(startupRootDir, hex(channelId)),
+					opaque);
+		}
 		return opaque;
+	}
+
+	private static void claimFromStartupRoot(File old, File target) {
+		if (target.exists() || !old.isDirectory()) return;
+		File parent = target.getParentFile();
+		if (parent != null && !parent.isDirectory()) parent.mkdirs();
+		old.renameTo(target);
 	}
 
 	private static String hex(byte[] b) {

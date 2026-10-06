@@ -34,4 +34,24 @@ class LoginUtils {
 		builder.setPositiveButton(R.string.ok, null);
 		return builder.create();
 	}
+
+	static AlertDialog createKeyFilesDamagedDialog(Context ctx) {
+		MaterialAlertDialogBuilder builder =
+				new SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
+		builder.setIcon(getDialogIcon(ctx, R.drawable.alerts_and_states_error));
+		builder.setTitle(R.string.dialog_title_key_files_damaged);
+		builder.setMessage(R.string.dialog_message_key_files_damaged);
+		builder.setPositiveButton(R.string.ok, null);
+		return builder.create();
+	}
+
+	static AlertDialog createKeyReplacementUncertainDialog(Context ctx) {
+		MaterialAlertDialogBuilder builder =
+				new SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme);
+		builder.setIcon(getDialogIcon(ctx, R.drawable.alerts_and_states_error));
+		builder.setTitle(R.string.dialog_title_password_change_unconfirmed);
+		builder.setMessage(R.string.dialog_message_password_change_unconfirmed);
+		builder.setPositiveButton(R.string.ok, null);
+		return builder.create();
+	}
 }

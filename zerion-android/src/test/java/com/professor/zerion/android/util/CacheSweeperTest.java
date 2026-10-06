@@ -16,11 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * STO-08: every directory and prefix under which decrypted content is
- * materialised is swept, including the share, document and camera
- * directories the old sweeper missed; unrelated cache entries stay.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class CacheSweeperTest {
@@ -55,11 +50,20 @@ public class CacheSweeperTest {
 		assertTrue(stays.exists());
 	}
 
-	/**
-	 * EXT-13-F07: the vault share directory can be removed on its own, for
-	 * vault lock, picker cancellation and attachment handoff, without
-	 * touching the rest of the cache.
-	 */
+	@Test
+	public void sweepsTheOldChannelStagingDirectory() throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File noBackup = ctx.getNoBackupFilesDir();
+		File old = touch(new File(noBackup, "channel_attach_view"),
+				"att_0123456789abcdef.pdf");
+		File keep = touch(noBackup, "unrelated.state");
+		CacheSweeper.sweep(ctx);
+		assertFalse("plaintext staged by an earlier version is left behind",
+				old.exists());
+		assertFalse(new File(noBackup, "channel_attach_view").exists());
+		assertTrue(keep.exists());
+	}
+
 	@Test
 	public void sweepsOneDirectoryOnItsOwn() throws Exception {
 		Context ctx = RuntimeEnvironment.getApplication();

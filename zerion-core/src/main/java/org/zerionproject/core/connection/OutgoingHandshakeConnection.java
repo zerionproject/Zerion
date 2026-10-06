@@ -80,7 +80,7 @@ class OutgoingHandshakeConnection extends HandshakeConnection
 					handshakeManager.handshake(pendingContactId, in, out);
 			Contact contact = contactExchangeManager.exchangeContacts(
 					pendingContactId, connection, result.getMasterKey(),
-					result.isAlice(), true, classical,
+					result.isAlice(), false, classical,
 					result.getOurStaticHybridPub(),
 					result.getTheirStaticHybridPub(),
 					result.getOurEphX25519(),

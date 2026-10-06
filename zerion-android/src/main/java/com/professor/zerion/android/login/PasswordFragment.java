@@ -44,6 +44,7 @@ import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.view.inputmethod.EditorInfo.IME_ACTION_DONE;
 import static androidx.core.content.ContextCompat.checkSelfPermission;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_FILES_DAMAGED;
 import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
@@ -205,10 +206,7 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		char[] typed = new char[editable.length()];
 		editable.getChars(0, editable.length(), typed, 0);
 		password.setText(null);
-		char[] passwordChars = com.professor.zerion.android.account
-				.PasswordSanitizer.sanitize(typed);
-		java.util.Arrays.fill(typed, '\0');
-		viewModel.validatePassword(passwordChars);
+		viewModel.validatePassword(typed);
 	}
 
 	private void onPasswordInvalid(DecryptionResult result) {
@@ -216,6 +214,9 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		progress.setVisibility(INVISIBLE);
 		if (result == KEY_STRENGTHENER_ERROR) {
 			createKeyStrengthenerErrorDialog(requireContext()).show();
+		} else if (result == KEY_FILES_DAMAGED) {
+			LoginUtils.createKeyFilesDamagedDialog(requireContext()).show();
+			password.setText(null);
 		} else {
 			String errorMsg = getString(R.string.try_again);
 			setError(input, errorMsg, true);

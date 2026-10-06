@@ -54,7 +54,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_DELEGATION,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -65,7 +65,26 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_MANIFEST,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signPostV2(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_POST_V2,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyPostV2(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_POST_V2,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -76,7 +95,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_POST,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -95,7 +114,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_REACTION,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -114,7 +133,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_ANNOUNCE,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -133,7 +152,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_COMMENT,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -152,7 +171,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_APPLICATION,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -172,7 +191,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -191,7 +210,7 @@ class ChannelSignatures {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_CHANNEL_TOMBSTONE,
 					signedInput, hybridPublicKey);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}
@@ -271,7 +290,7 @@ class ChannelSignatures {
 			throws GeneralSecurityException {
 		if (mlDsaPriv == null || mlDsaPriv.length == 0) {
 			throw new GeneralSecurityException(
-					"Local ML-DSA private key missing — refusing "
+					"Local ML-DSA private key missing, refusing "
 							+ "classical-only channel user signature");
 		}
 		HybridSignaturePrivateKey hybrid =
@@ -292,7 +311,7 @@ class ChannelSignatures {
 							ed25519PublicKey.getEncoded(), mlDsaPub);
 			return crypto.verifyHybridSignature(signature, label,
 					signedInput, hybrid);
-		} catch (GeneralSecurityException e) {
+		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;
 		}
 	}

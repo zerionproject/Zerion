@@ -8,7 +8,6 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import java.util.HashMap;
 import java.util.Map;
 
-/** A non-persistent SettingsManager for testing the async prekey store. */
 class InMemorySettingsManager implements SettingsManager {
 
 	private final Map<String, Settings> store = new HashMap<>();

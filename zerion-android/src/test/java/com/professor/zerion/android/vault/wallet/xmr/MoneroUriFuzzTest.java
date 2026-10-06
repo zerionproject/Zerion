@@ -9,13 +9,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The Monero payment URI parser and the amount converter under random
- * input: a URI either parses to an address with a non-negative or absent
- * amount, is empty, or is refused with the wallet's own exception, and the
- * amount converter agrees with exact decimal arithmetic on every input it
- * accepts and refuses everything it cannot represent.
- */
 public class MoneroUriFuzzTest {
 
 	private static final int RANDOM_INPUTS = 6000;
@@ -86,7 +79,6 @@ public class MoneroUriFuzzTest {
 		return sb.toString();
 	}
 
-	/** The exact atomic value, or null if the converter must refuse. */
 	private static Long expectedAtomic(String s) {
 		if (s.isEmpty()) return null;
 		int dot = s.indexOf('.');

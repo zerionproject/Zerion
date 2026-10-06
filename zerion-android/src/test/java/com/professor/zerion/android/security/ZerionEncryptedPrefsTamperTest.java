@@ -17,11 +17,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-AND-07: a stored value that no longer authenticates must not quietly
- * become its default (which turns every security toggle off); the storage is
- * reported as failed so the app fails closed.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class ZerionEncryptedPrefsTamperTest {

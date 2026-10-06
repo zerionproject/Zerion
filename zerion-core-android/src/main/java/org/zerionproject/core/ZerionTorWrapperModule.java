@@ -10,7 +10,12 @@ import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.TorControlPort;
 import org.zerionproject.core.api.plugin.TorDirectory;
+import org.zerionproject.core.api.plugin.OnionTargetFactory;
+import org.zerionproject.core.api.plugin.TorSocksPath;
 import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.socks.LocalSockets;
+import org.zerionproject.core.socks.UnixOnionTargetFactory;
+import org.zerionproject.transport.TorControlSocketFactory;
 
 import java.io.File;
 import java.util.concurrent.Executor;
@@ -22,12 +27,6 @@ import dagger.Provides;
 
 import static org.zerionproject.core.util.AndroidUtils.getSupportedArchitectures;
 
-/**
- * Provides the Android Tor wrapper for the native transport. It lives in the
- * Android core module because that is where the {@code AndroidTorWrapper}
- * implementation is on the classpath; the rest of the native transport wiring
- * consumes only the {@link TorWrapper} interface.
- */
 @Module
 public class ZerionTorWrapperModule {
 
@@ -39,17 +38,32 @@ public class ZerionTorWrapperModule {
 			@EventExecutor Executor eventExecutor,
 			@TorDirectory File torDirectory, @TorSocksPort int torSocksPort,
 			@TorControlPort int torControlPort,
+			@TorSocksPath File socksPath,
 			org.zerionproject.transport.TorProcessWatch processWatch) {
 		return new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
 				eventExecutor, architecture(), torDirectory, torSocksPort,
-				torControlPort, shippedPins(), processWatch);
+				torControlPort, controlSocketPath(socksPath.getAbsolutePath()),
+				shippedPins(), processWatch);
 	}
 
-	/**
-	 * The pins are read at every start rather than once here, so that a
-	 * build whose pin file is missing fails to start Tor instead of failing
-	 * to construct the application.
-	 */
+	static String controlSocketPath(String socksPath) {
+		return socksPath + "c";
+	}
+
+	@Provides
+	@Singleton
+	TorControlSocketFactory provideTorControlSocketFactory(
+			@TorSocksPath File socksPath) {
+		String path = controlSocketPath(socksPath.getAbsolutePath());
+		return readTimeoutMs -> LocalSockets.connect(path, readTimeoutMs);
+	}
+
+	@Provides
+	@Singleton
+	OnionTargetFactory provideOnionTargetFactory(Application app) {
+		return new UnixOnionTargetFactory(new File(app.getFilesDir(), "zo"));
+	}
+
 	private static TorBinaryVerifier shippedPins() {
 		return (tor, lyrebird) -> TorBinaryPins.shipped().verify(tor, lyrebird);
 	}
@@ -57,7 +71,7 @@ public class ZerionTorWrapperModule {
 	@Provides
 	@Singleton
 	org.zerionproject.core.socks.TorSocksConnector provideTorSocksConnector(
-			@org.zerionproject.core.api.plugin.TorSocksPath File socksPath) {
+			@TorSocksPath File socksPath) {
 		return new org.zerionproject.core.socks.UnixTorSocksConnector(
 				socksPath);
 	}

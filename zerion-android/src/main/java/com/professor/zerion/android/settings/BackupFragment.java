@@ -21,6 +21,7 @@ import com.professor.zerion.android.backup.BackupException;
 import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenDocumentAdvanced;
 
+import org.zerionproject.core.api.account.AccountManager;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -54,6 +55,13 @@ public class BackupFragment extends Fragment {
 	@Inject
 	AccountBackupManager backupManager;
 
+	@Inject
+	org.zerionproject.core.api.crypto.PasswordStrengthEstimator
+			strengthEstimator;
+
+	@Inject
+	AccountManager accountManager;
+
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
 	private final ActivityResultLauncher<String> exportLauncher =
@@ -83,13 +91,32 @@ public class BackupFragment extends Fragment {
 			@Nullable Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 		view.findViewById(R.id.export_card).setOnClickListener(v ->
-				exportLauncher.launch("zerion-backup.zbk"));
+				withAccountPassword(() ->
+						exportLauncher.launch("zerion-backup.zbk")));
 		view.findViewById(R.id.import_card).setOnClickListener(v ->
-				importLauncher.launch(new String[] {"*/*"}));
+				withAccountPassword(() ->
+						importLauncher.launch(new String[] {"*/*"})));
 		view.findViewById(R.id.transfer_send_card).setOnClickListener(v ->
-				navigate(new TransferSendFragment()));
+				withAccountPassword(() ->
+						navigate(new TransferSendFragment())));
 		view.findViewById(R.id.transfer_receive_card).setOnClickListener(v ->
-				navigate(new TransferReceiveFragment()));
+				withAccountPassword(() ->
+						navigate(new TransferReceiveFragment())));
+	}
+
+	private void withAccountPassword(Runnable action) {
+		if (!accountManager.hasDatabaseKey()) {
+			action.run();
+			return;
+		}
+		AccountPasswordGate.prompt(requireContext(), accountManager,
+				ioExecutor, mainHandler,
+				R.string.settings_password_required_title,
+				R.string.backup_password_gate_message,
+				() -> {
+					if (isAdded()) action.run();
+				}, () -> {
+				});
 	}
 
 	private void navigate(androidx.fragment.app.Fragment fragment) {
@@ -110,6 +137,8 @@ public class BackupFragment extends Fragment {
 	}
 
 	private void onImportSourceChosen(@Nullable Uri uri) {
+		uri = com.professor.zerion.android.util.PickedUris.accept(
+				requireContext(), uri);
 		if (uri != null) showImportPasswordDialog(uri);
 	}
 
@@ -140,7 +169,9 @@ public class BackupFragment extends Fragment {
 							} else if (!com.professor.zerion.android.backup
 									.BackupPassphrase.longEnough(p1)) {
 								toast(R.string.backup_password_too_short);
-							} else if (!Arrays.equals(p1, p2)) {
+							} else if (!com.professor.zerion.android.login
+									.AccountPasswordPolicy
+									.sameNormalForm(p1, p2)) {
 								toast(R.string.backup_passwords_mismatch);
 							} else {
 								pass.getText().clear();
@@ -184,10 +215,13 @@ public class BackupFragment extends Fragment {
 						try {
 							if (p.length < 1 || np1.length < 1) {
 								toast(R.string.backup_password_empty);
-							} else if (!com.professor.zerion.android.backup
-									.BackupPassphrase.longEnough(np1)) {
-								toast(R.string.profiles_password_too_short);
-							} else if (!Arrays.equals(np1, np2)) {
+							} else if (!com.professor.zerion.android.login
+									.AccountPasswordPolicy
+									.acceptable(strengthEstimator, np1)) {
+								toast(R.string.password_too_weak);
+							} else if (!com.professor.zerion.android.login
+									.AccountPasswordPolicy
+									.sameNormalForm(np1, np2)) {
 								toast(R.string.backup_passwords_mismatch);
 							} else {
 								pass.getText().clear();

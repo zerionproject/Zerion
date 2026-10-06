@@ -15,11 +15,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The persisted state round-trips exactly, an unknown contact reads as
- * LEGACY, a cleared record reads as LEGACY again and no longer appears in
- * the list of records, and the device's service record survives too.
- */
 public class OnionAuthStoreTest {
 
 	private final OnionAuthStore store =

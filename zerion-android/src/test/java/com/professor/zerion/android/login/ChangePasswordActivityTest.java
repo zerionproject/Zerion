@@ -102,6 +102,7 @@ public class ChangePasswordActivityTest {
 	public void testChangePasswordUI() {
 		when(viewModel.estimatePasswordStrength(any(char[].class)))
 				.thenReturn(STRONG);
+		when(viewModel.acceptable(any(char[].class))).thenReturn(true);
 		MutableLiveEvent<DecryptionResult> result = new MutableLiveEvent<>();
 		when(viewModel.changePassword(any(char[].class), any(char[].class)))
 				.thenReturn(result);

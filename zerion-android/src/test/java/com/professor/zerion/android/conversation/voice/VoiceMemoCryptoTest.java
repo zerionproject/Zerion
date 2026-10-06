@@ -15,12 +15,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * A voice memo opens only with the key derived from the pairing secret and
- * only under the identity of the message it was recorded for. Nothing in the
- * payload opens it, a replay under another timestamp fails, a memo reflected
- * back to its sender fails, and a memo moved to another conversation fails.
- */
 public class VoiceMemoCryptoTest {
 
 	private final SecureRandom rnd = new SecureRandom();
@@ -32,7 +26,6 @@ public class VoiceMemoCryptoTest {
 	private final int durationMs = 1_125;
 	private final FakeKeys keys = new FakeKeys(random(32), alice, bob);
 
-	/** Derives wrap keys from a pairing secret the way both peers would. */
 	private static final class FakeKeys implements VoiceMemoKeys {
 		private final byte[] secret;
 		private final byte[] local;
@@ -67,7 +60,6 @@ public class VoiceMemoCryptoTest {
 		}
 	}
 
-	/** What an attacker holding only the payload can do: use its bytes as the key. */
 	private static final class PayloadOnlyKeys implements VoiceMemoKeys {
 		@Override
 		public byte[] deriveWrapKey(byte[] salt) {
@@ -156,11 +148,6 @@ public class VoiceMemoCryptoTest {
 		VoiceMessagePayloadParser.parse(payload);
 	}
 
-	/**
-	 * A stored memo from before the format change carries its wrap key in
-	 * the payload and binds no message identity; it is still opened for
-	 * playback of history, without consulting the pairing secret.
-	 */
 	@Test
 	public void storedLegacyMemoStillOpensForHistory() throws Exception {
 		StreamingAudioEncryptor encryptor = new StreamingAudioEncryptor();

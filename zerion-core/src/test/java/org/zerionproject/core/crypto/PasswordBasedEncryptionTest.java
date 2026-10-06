@@ -54,12 +54,6 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 		}
 	}
 
-	/**
-	 * A2-CRY-03: the legacy scrypt formats carry the cost in the file; a
-	 * cost outside the range ever written, or not a power of two, is a
-	 * corrupt or tampered file and must be reported as such, not reach the
-	 * library as an argument error or an allocation.
-	 */
 	@Test
 	public void testLegacyScryptCostIsBounded() {
 		assertFalse(CryptoComponentImpl.validScryptCost(3));
@@ -102,6 +96,8 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 	public void testMissingKeyStrengthenerThrowsException() {
 		SecretKey strengthened = getSecretKey();
 		context.checking(new Expectations() {{
+			allowing(keyStrengthener).currentGeneration();
+			will(returnValue(KeyStrengthener.LEGACY_GENERATION));
 			oneOf(keyStrengthener).strengthenKey(with(any(SecretKey.class)));
 			will(returnValue(strengthened));
 		}});
@@ -123,6 +119,8 @@ public class PasswordBasedEncryptionTest extends BrambleMockTestCase {
 	public void testKeyStrengthenerFailureThrowsException() {
 		SecretKey strengthened = getSecretKey();
 		context.checking(new Expectations() {{
+			allowing(keyStrengthener).currentGeneration();
+			will(returnValue(KeyStrengthener.LEGACY_GENERATION));
 			oneOf(keyStrengthener).strengthenKey(with(any(SecretKey.class)));
 			will(returnValue(strengthened));
 			oneOf(keyStrengthener).isInitialised();

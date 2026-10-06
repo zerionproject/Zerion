@@ -17,27 +17,29 @@ import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Floods frames across the mesh links and suppresses duplicates. The
- * duplicate set is bounded in time and size and can never be flushed by a
- * flood: an entry leaves only once it has expired, and a neighbour that
- * exceeds its own share of the set or its own frame rate has its further
- * frames dropped, so it can neither make this node relay or deliver an old
- * frame again nor crowd out the other neighbours' frames. Frames this node
- * originates are always admitted.
- */
 @ThreadSafe
 @NotNullByDefault
 public class MeshForwarder {
 
 	public interface FrameListener {
 		void onFrame(byte[] payload);
+
+		default void onFrame(byte[] payload, String fromPeer) {
+			onFrame(payload);
+		}
 	}
 
 	static final int SEEN_CAP = 8192;
 	static final int SEEN_PER_PEER_CAP = 1024;
 	static final long SEEN_TTL_MS = 15 * 60_000L;
-	private static final int STORE_MAX_BYTES = 2 * 1024 * 1024;
+
+	public static final int MAX_PAYLOAD_BYTES = 32 * 1024;
+	public static final int MAX_FRAME_BYTES =
+			MeshFrame.HEADER_BYTES + MAX_PAYLOAD_BYTES;
+	static final int STORE_MAX_BYTES = 2 * 1024 * 1024;
+	static final int STORE_MAX_FRAMES = 1024;
+	static final int STORE_PER_PEER_MAX_BYTES = 1024 * 1024;
+	static final int STORE_PER_PEER_MAX_FRAMES = 256;
 	static final int MAX_FRAMES_PER_SEC = 200;
 	static final int MAX_FRAMES_PER_SEC_PER_PEER = 50;
 	private static final String UNKNOWN_PEER = "";
@@ -47,7 +49,8 @@ public class MeshForwarder {
 	private final Map<String, MeshLink> links = new ConcurrentHashMap<>();
 	private final LinkedHashMap<String, SeenEntry> seen = new LinkedHashMap<>();
 	private final Map<String, Integer> seenPerPeer = new HashMap<>();
-	private final LinkedHashMap<String, byte[]> store = new LinkedHashMap<>();
+	private final LinkedHashMap<String, Carried> store = new LinkedHashMap<>();
+	private final Map<String, Share> storeShares = new HashMap<>();
 	private final Map<String, RateWindow> peerRates = new HashMap<>();
 	private final RateWindow globalRate = new RateWindow();
 	private long storeBytes = 0;
@@ -68,6 +71,22 @@ public class MeshForwarder {
 		int count = 0;
 	}
 
+	private static final class Carried {
+		final byte[] frame;
+		@Nullable
+		final String peer;
+
+		Carried(byte[] frame, @Nullable String peer) {
+			this.frame = frame;
+			this.peer = peer;
+		}
+	}
+
+	private static final class Share {
+		long bytes = 0;
+		int frames = 0;
+	}
+
 	public MeshForwarder(FrameListener listener, SecureRandom random) {
 		this.listener = listener;
 		this.random = random;
@@ -75,9 +94,9 @@ public class MeshForwarder {
 
 	public void addLink(MeshLink link) {
 		links.put(link.getId(), link);
-		List<byte[]> carried;
+		List<byte[]> carried = new ArrayList<>();
 		synchronized (store) {
-			carried = new ArrayList<>(store.values());
+			for (Carried c : store.values()) carried.add(c.frame);
 		}
 		for (byte[] frame : carried) link.broadcast(frame);
 	}
@@ -94,34 +113,36 @@ public class MeshForwarder {
 		String idHex = StringUtils.toHexString(messageId);
 		markSeen(idHex, null);
 		byte[] encoded = frame.encode();
-		remember(idHex, encoded);
+		remember(idHex, encoded, null);
 		relay(encoded, null, null);
 		return messageId;
 	}
 
-	public void onReceive(byte[] frameBytes, @Nullable String fromLinkId) {
-		onReceive(frameBytes, fromLinkId, null);
+	public boolean onReceive(byte[] frameBytes, @Nullable String fromLinkId) {
+		return onReceive(frameBytes, fromLinkId, null);
 	}
 
-	public void onReceive(byte[] frameBytes, @Nullable String fromLinkId,
+	public boolean onReceive(byte[] frameBytes, @Nullable String fromLinkId,
 			@Nullable String fromPeerId) {
+		if (frameBytes.length > MAX_FRAME_BYTES) return false;
 		String peer = fromPeerId == null ? UNKNOWN_PEER : fromPeerId;
-		if (!rateLimitOk(peer)) return;
+		if (!rateLimitOk(peer)) return false;
 		MeshFrame frame;
 		try {
 			frame = MeshFrame.decode(frameBytes);
 		} catch (FormatException e) {
-			return;
+			return false;
 		}
 		String idHex = StringUtils.toHexString(frame.getMessageId());
-		if (!markSeen(idHex, peer)) return;
-		listener.onFrame(frame.getPayload());
+		if (!markSeen(idHex, peer)) return false;
+		listener.onFrame(frame.getPayload(), peer);
 		MeshFrame next = frame.decremented();
 		if (next != null) {
 			byte[] encoded = next.encode();
-			remember(idHex, encoded);
+			remember(idHex, encoded, peer);
 			relay(encoded, fromLinkId, fromPeerId);
 		}
+		return true;
 	}
 
 	private void relay(byte[] encoded, @Nullable String fromLinkId,
@@ -135,13 +156,6 @@ public class MeshForwarder {
 		}
 	}
 
-	/**
-	 * Admits a frame id into the duplicate set. A null peer is this node's
-	 * own frame, which is always admitted, evicting the oldest entry if the
-	 * set is full. A neighbour's frame is refused if it is a duplicate, if
-	 * the neighbour already holds its share of the set, or if the set is
-	 * full of unexpired entries.
-	 */
 	private boolean markSeen(String idHex, @Nullable String peer) {
 		synchronized (seen) {
 			long now = clock.getAsLong();
@@ -163,13 +177,6 @@ public class MeshForwarder {
 		}
 	}
 
-	/**
-	 * When the set is full of unexpired foreign entries, the peer holding
-	 * the most of them gives up its oldest so a peer holding fewer can be
-	 * admitted; peer identities are cheap to invent on a radio link, so a
-	 * flood spread over many identities must not shut out every other
-	 * neighbour for the whole lifetime of its entries.
-	 */
 	private boolean evictFromHeaviestPeer(int newcomerHeld) {
 		String heaviest = null;
 		int most = newcomerHeld;
@@ -219,18 +226,67 @@ public class MeshForwarder {
 		else seenPerPeer.put(e.peer, held - 1);
 	}
 
-	private void remember(String idHex, byte[] encoded) {
+	private void remember(String idHex, byte[] encoded, @Nullable String peer) {
 		synchronized (store) {
-			byte[] prev = store.put(idHex, encoded);
-			if (prev != null) storeBytes -= prev.length;
+			Carried prev = store.remove(idHex);
+			if (prev != null) forget(prev);
+			if (peer != null) {
+				Share held = storeShares.get(peer);
+				while (held != null && (held.bytes + encoded.length
+						> STORE_PER_PEER_MAX_BYTES
+						|| held.frames >= STORE_PER_PEER_MAX_FRAMES)) {
+					if (!evictOldestOf(peer)) break;
+					held = storeShares.get(peer);
+				}
+			}
+			store.put(idHex, new Carried(encoded, peer));
+			Share share = storeShares.get(peer);
+			if (share == null) {
+				share = new Share();
+				storeShares.put(peer, share);
+			}
+			share.bytes += encoded.length;
+			share.frames++;
 			storeBytes += encoded.length;
-			Iterator<Map.Entry<String, byte[]>> it =
-					store.entrySet().iterator();
-			while (storeBytes > STORE_MAX_BYTES && it.hasNext()) {
-				storeBytes -= it.next().getValue().length;
-				it.remove();
+			while (storeBytes > STORE_MAX_BYTES
+					|| store.size() > STORE_MAX_FRAMES) {
+				if (!evictOldestOf(heaviestHolder())) break;
 			}
 		}
+	}
+
+	@Nullable
+	private String heaviestHolder() {
+		String heaviest = null;
+		long most = -1;
+		for (Map.Entry<String, Share> e : storeShares.entrySet()) {
+			if (e.getValue().bytes > most) {
+				most = e.getValue().bytes;
+				heaviest = e.getKey();
+			}
+		}
+		return heaviest;
+	}
+
+	private boolean evictOldestOf(@Nullable String holder) {
+		Iterator<Map.Entry<String, Carried>> it = store.entrySet().iterator();
+		while (it.hasNext()) {
+			Carried c = it.next().getValue();
+			if (holder == null ? c.peer == null : holder.equals(c.peer)) {
+				it.remove();
+				forget(c);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void forget(Carried c) {
+		storeBytes -= c.frame.length;
+		Share share = storeShares.get(c.peer);
+		if (share == null) return;
+		share.bytes -= c.frame.length;
+		if (--share.frames <= 0) storeShares.remove(c.peer);
 	}
 
 	private boolean rateLimitOk(String peer) {

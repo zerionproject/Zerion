@@ -159,13 +159,6 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	/**
-	 * Post the Bitcoin wallet list. The Bitcoin screen shows Bitcoin wallets
-	 * only: coin identity comes from the persisted {@link WalletRecord#coin},
-	 * never the name, address, or navigation state, and any other/unknown coin is
-	 * never shown here. Every place that refreshes the Bitcoin list routes
-	 * through this so no path can leak a Monero wallet into it.
-	 */
 	private void postBtcWallets() throws Exception {
 		List<WalletRecord> btc = new java.util.ArrayList<>();
 		for (WalletRecord w : walletStore.listWallets()) {
@@ -1061,11 +1054,6 @@ public class VaultViewModel extends AndroidViewModel {
 		return spSweepReview;
 	}
 
-	/**
-	 * Plans the sweep and hands the destination, amount and fee to the user
-	 * for review; nothing is signed until {@link #authorizeSpSweep} receives
-	 * the credential together with the reviewed fingerprint.
-	 */
 	public void prepareSpSweep(String toAddress, double feeRate) {
 		BtcWallet w = openBtc;
 		if (w == null) return;
@@ -1306,10 +1294,6 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	/**
-	 * Settings read for a credential check: it must not refresh the vault's
-	 * inactivity timer, otherwise a guessing run would keep the vault open.
-	 */
 	private org.json.JSONObject settingsObjectQuiet() throws Exception {
 		String json = walletStore.readSettingsQuiet();
 		return json == null ? new org.json.JSONObject()
@@ -1753,10 +1737,6 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	/**
-	 * The phrase is handed to the screen as characters the dialog wipes on
-	 * dismissal; no String copy of a mnemonic is created on this path.
-	 */
 	public LiveData<char[]> getWalletSeedReveal() {
 		return walletSeedReveal;
 	}
@@ -1967,12 +1947,6 @@ public class VaultViewModel extends AndroidViewModel {
 		WALLET_EXECUTOR.execute(() -> scanOpenBtc(false));
 	}
 
-	/**
-	 * Drops every reviewed plan. Called wherever the send gate was already
-	 * cleared: a failed credential, a section relock, a wallet close. The
-	 * sweep plan carries spend-capable keys, so it must not outlive any of
-	 * those events either.
-	 */
 	void dropReviewedPlans() {
 		sendGate.clear();
 		spSweepGate.clear();
@@ -2321,12 +2295,6 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	/**
-	 * The one credential check behind the section gate and every
-	 * transaction authorisation. A wrong credential counts against the shared
-	 * throttle, drops any reviewed transaction, and after three failures locks
-	 * the wallet section again; the check itself never counts as activity.
-	 */
 	private synchronized boolean verifyWalletCredential(char[] credential) {
 		restoreCredentialFailures();
 		if (credentialThrottle.isThrottled()) {
@@ -2580,6 +2548,12 @@ public class VaultViewModel extends AndroidViewModel {
 				isLoading.postValue(false);
 			}
 		});
+	}
+
+	@Nullable
+	public com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
+			vaultKdfParameters() {
+		return vaultManager.kdfParameters();
 	}
 
 	public void lockVault() {

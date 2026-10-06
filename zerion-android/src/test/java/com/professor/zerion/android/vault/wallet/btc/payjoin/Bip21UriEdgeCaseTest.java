@@ -7,14 +7,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * BIP21 payment URIs from a QR code or clipboard: the scheme is matched
- * case-insensitively, amounts convert exactly to satoshis, an amount that
- * is negative, sub-satoshi, overflowing or not a number yields no amount
- * rather than a wrong one, a parameter the app does not understand but the
- * URI marks as required makes the URI unusable as BIP21 demands, and
- * random input never throws.
- */
 public class Bip21UriEdgeCaseTest {
 
 	private static final String ADDR = "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu";

@@ -125,6 +125,10 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 				items.add(new MutableLiveData<>(item));
 				continue;
 			}
+			if (AttachmentDocuments.isDocumentType(baseType)) {
+				items.add(new MutableLiveData<>(documentItem(h)));
+				continue;
+			}
 			if (!supported.contains(baseType)) {
 				AttachmentItem item = new AttachmentItem(h, "", ERROR);
 				items.add(new MutableLiveData<>(item));
@@ -232,6 +236,10 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			return item;
 		}
 
+		if (AttachmentDocuments.isDocumentType(baseType)) {
+			return documentItem(h);
+		}
+
 		if (needsSize) {
 			InputStream is = new BufferedInputStream(a.getStream());
 			Size size = imageSizeCalculator.getSize(is, baseType);
@@ -248,6 +256,14 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			item = new AttachmentItem(h, extension, state);
 		}
 		return item;
+	}
+
+	private AttachmentItem documentItem(AttachmentHeader h) {
+		String ext = AttachmentDocuments.PDF.equals(
+				com.professor.zerion.android.sticker.StickerUtils
+						.baseMime(h.getContentType())) ? "pdf" : "txt";
+		return new AttachmentItem(h, defaultSize, defaultSize, ext,
+				defaultSize, defaultSize, AVAILABLE);
 	}
 
 	private AttachmentItem createAttachmentItem(AttachmentHeader h, Size size) {

@@ -1,7 +1,7 @@
 package org.zerionproject.transport;
 
 import org.briarproject.nullsafety.NotNullByDefault;
-import org.zerionproject.core.api.plugin.TorControlPort;
+import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorDirectory;
 import org.zerionproject.core.util.Base32;
 import org.zerionproject.core.util.StringUtils;
@@ -17,13 +17,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-/**
- * Publishes onion services with Tor v3 client authorization and registers
- * client keys, over the transport's own authenticated control connection.
- * The onion wrapper's publish call cannot carry client keys, so the
- * authorized service goes through here; it is created detached so it
- * outlives the control connection that created it.
- */
 @NotNullByDefault
 public class TorOnionServiceControl implements
 		org.zerionproject.core.plugin.tor.auth.OnionServiceControl {
@@ -41,8 +34,9 @@ public class TorOnionServiceControl implements
 
 	@Inject
 	public TorOnionServiceControl(@TorDirectory File torDirectory,
-			@TorControlPort int controlPort) {
-		this(torDirectory, () -> new TorControl.SocketConnection(controlPort));
+			TorControlSocketFactory controlSockets) {
+		this(torDirectory,
+				() -> new TorControl.SocketConnection(controlSockets));
 	}
 
 	TorOnionServiceControl(File torDirectory,
@@ -51,17 +45,23 @@ public class TorOnionServiceControl implements
 		this.connectionFactory = connectionFactory;
 	}
 
-	/**
-	 * Publishes a service whose descriptor is encrypted for the given client
-	 * public keys. With a null private key Tor generates a new one and it is
-	 * returned so the caller can persist it.
-	 */
 	@Override
 	public Published publish(@Nullable String privateKey, int localPort,
 			int remotePort, Collection<byte[]> clientPublicKeys)
 			throws IOException {
+		return publish(privateKey, OnionTargets.loopback(localPort),
+				remotePort, clientPublicKeys);
+	}
+
+	@Override
+	public Published publish(@Nullable String privateKey, String target,
+			int remotePort, Collection<byte[]> clientPublicKeys)
+			throws IOException {
 		if (clientPublicKeys.isEmpty()) {
 			throw new IllegalArgumentException("no client keys");
+		}
+		if (!OnionTargets.isValid(target)) {
+			throw new IllegalArgumentException("onion target");
 		}
 		StringBuilder cmd = new StringBuilder("ADD_ONION ");
 		cmd.append(privateKey == null ? "NEW:ED25519-V3" : privateKey);
@@ -69,8 +69,7 @@ public class TorOnionServiceControl implements
 		for (byte[] key : clientPublicKeys) {
 			cmd.append(" ClientAuthV3=").append(encodeClientPublicKey(key));
 		}
-		cmd.append(" Port=").append(remotePort).append(",127.0.0.1:")
-				.append(localPort);
+		cmd.append(" Port=").append(remotePort).append(',').append(target);
 		List<String> reply = command(cmd.toString(), "ADD_ONION");
 		String onion = null, key = privateKey;
 		for (String line : reply) {
@@ -91,11 +90,6 @@ public class TorOnionServiceControl implements
 		command("DEL_ONION " + onion, "DEL_ONION");
 	}
 
-	/**
-	 * Hands Tor the private half of a client key for a peer's service, so
-	 * that dials to that onion can decrypt its descriptor. The key is kept
-	 * in Tor's memory only, for the lifetime of the Tor process.
-	 */
 	@Override
 	public void addClientKey(String onion, byte[] clientPrivateKey)
 			throws IOException {
@@ -109,13 +103,6 @@ public class TorOnionServiceControl implements
 		classifyClientAuthReply(reply);
 	}
 
-	/**
-	 * Every reply Tor documents for ONION_CLIENT_AUTH_ADD, classified
-	 * exhaustively: 250 added, 251 added and the previous credential
-	 * replaced, 252 added and a cached descriptor decrypted are success;
-	 * 451 is the client capacity, reported as its own exception; 512, 551,
-	 * 552 and anything else, positive or negative, fail.
-	 */
 	static void classifyClientAuthReply(List<String> reply)
 			throws IOException {
 		if (reply.isEmpty()) throw new IOException("empty reply");
@@ -141,10 +128,6 @@ public class TorOnionServiceControl implements
 		}
 	}
 
-	/**
-	 * Tor answers 250 when the credential was removed and 251 when none
-	 * was registered; both leave Tor without a credential for the address.
-	 */
 	@Override
 	public void removeClientKey(String onion) throws IOException {
 		requireOnion(onion);
@@ -157,7 +140,6 @@ public class TorOnionServiceControl implements
 		}
 	}
 
-	/** Tor's spelling of a client public key: base32 without padding. */
 	static String encodeClientPublicKey(byte[] publicKey) {
 		if (publicKey.length != KEY_BYTES) {
 			throw new IllegalArgumentException("client key");

@@ -6,12 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Decides what happens after a Payjoin exchange. There is no path that sends a
- * transaction: a successful, fully accepted proposal goes to review, and every
- * failure offers an explicit normal-send fallback or aborts. A Payjoin failure
- * never silently becomes a normal payment.
- */
 @NotNullByDefault
 public final class PayjoinOutcomeRouter {
 

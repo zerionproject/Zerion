@@ -52,19 +52,11 @@ public class ElectrumClient implements ElectrumRpc {
 
 	private static final Pattern OBJECT = Pattern.compile("\\{[^{}]*\\}");
 	private static final Pattern TXID = Pattern.compile("^[0-9a-fA-F]{64}$");
-	/** Entries a server may return for one script hash before the rest is dropped. */
 	static final int MAX_LIST_ITEMS = 5000;
-	/** A transaction larger than a block cannot be real; hex doubles the size. */
 	static final int MAX_TX_HEX_CHARS = 2 * 1_000_000;
 
 	private static final int MAX_RESPONSE_CHARS = 8 * 1024 * 1024;
 
-	/**
-	 * The server answered a request with an error object. For lookups this
-	 * is a definitive negative answer from that server; for a broadcast it
-	 * is only the server's claim, which the wallet does not trust to free
-	 * the inputs. The server's own text is never carried in the message.
-	 */
 	public static final class ServerRejectedException extends IOException {
 		ServerRejectedException(String message) {
 			super(message);
@@ -84,11 +76,6 @@ public class ElectrumClient implements ElectrumRpc {
 
 	private static final int HANDSHAKE_TIMEOUT_MS = 15_000;
 	private static final int READ_TIMEOUT_MS = 40_000;
-	/**
-	 * Lines with another id or no JSON object that one call skips before
-	 * it gives up, so a server streaming notifications cannot hold the
-	 * calling thread for as long as it keeps the stream alive.
-	 */
 	static final int MAX_SKIPPED_LINES = 64;
 
 	public ElectrumClient(ElectrumEndpoint ep, int socksPort,
@@ -130,15 +117,8 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	/** What a certificate capture learned about the server. */
 	public static final class CapturedCert {
 		public final String sha256;
-		/**
-		 * True when the certificate chained to a trusted authority and
-		 * matched the host name, so pinning it adds to the checks the
-		 * connection already passes; false when it was captured without
-		 * validation and only an out-of-band comparison can vouch for it.
-		 */
 		public final boolean caValid;
 
 		CapturedCert(String sha256, boolean caValid) {
@@ -147,20 +127,12 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	/** The certificate did not pass the platform's authority and name checks. */
 	private static final class NotCaValid extends IOException {
 		NotCaValid(Throwable cause) {
 			super("certificate not trusted by any CA", cause);
 		}
 	}
 
-	/**
-	 * Reads the server's leaf certificate for pinning. The certificate is
-	 * first checked the way an unpinned connection checks it; only when
-	 * that fails is it read without validation, and the result says which
-	 * of the two happened so the user can be told. Each capture uses its
-	 * own circuit.
-	 */
 	public static CapturedCert captureCert(ElectrumEndpoint ep, int socksPort)
 			throws IOException {
 		if (!ep.tls()) {
@@ -266,7 +238,6 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	/** Only TLS 1.2 and 1.3 are offered, whatever the platform default. */
 	static void restrictProtocols(SSLSocket ssl) {
 		java.util.List<String> keep = new java.util.ArrayList<>();
 		for (String p : ssl.getSupportedProtocols()) {
@@ -480,7 +451,6 @@ public class ElectrumClient implements ElectrumRpc {
 		return out;
 	}
 
-	/** Whether {@code s} is a transaction id: exactly 64 hex characters. */
 	static boolean isTxid(String s) {
 		return TXID.matcher(s).matches();
 	}

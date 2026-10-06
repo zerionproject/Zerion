@@ -131,6 +131,7 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 	@Override
 	public void removingContact(Transaction txn, Contact c) throws DbException {
 		db.removeGroup(txn, getContactGroup(c));
+		b4OnionRotation.contactRemoved(txn, c.getId());
 	}
 
 	@Override

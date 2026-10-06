@@ -84,7 +84,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 		recycler = findViewById(R.id.subscribersRecycler);
 		emptyView = findViewById(R.id.subscribersEmptyView);
-		adapter = new SubscribersAdapter(this::confirmBan);
+		adapter = new SubscribersAdapter(this::showActions);
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 	}
@@ -122,6 +122,35 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		}
 		setTitle(getString(R.string.channels_subscribers_count,
 				subs.size()));
+	}
+
+	private void showActions(ChannelSubscriber sub) {
+		if (sub.isBanned()) return;
+		String trust = getString(sub.isTrusted()
+				? R.string.channels_subscribers_untrust
+				: R.string.channels_subscribers_trust);
+		String ban = getString(R.string.channels_subscribers_ban);
+		new SecureAlertDialogBuilder(this)
+				.setTitle(sub.getDisplayName())
+				.setItems(new CharSequence[] {trust, ban}, (d, which) -> {
+					if (which == 0) setTrusted(sub, !sub.isTrusted());
+					else confirmBan(sub);
+				})
+				.show();
+	}
+
+	private void setTrusted(ChannelSubscriber sub, boolean trusted) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.setSubscriberTrusted(channelId,
+						sub.getEd25519PubKey(), trusted);
+				runOnUiThread(this::refresh);
+			} catch (DbException ignored) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_subscribers_trust_failed,
+						Toast.LENGTH_SHORT).show());
+			}
+		});
 	}
 
 	private void confirmBan(ChannelSubscriber sub) {
@@ -245,7 +274,11 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 		void bind(ChannelSubscriber sub) {
 			name.setText(sub.getDisplayName());
-			subtitle.setText(toHexShort(sub.getEd25519PubKey()));
+			String key = toHexShort(sub.getEd25519PubKey());
+			subtitle.setText(sub.isTrusted() ? key + "  " + itemView
+					.getContext().getString(
+							R.string.channels_subscribers_trusted_badge)
+					: key);
 			bannedBadge.setVisibility(sub.isBanned()
 					? View.VISIBLE : View.GONE);
 		}

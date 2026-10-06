@@ -14,11 +14,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Key-path signatures use fresh auxiliary randomness: signing the same
- * transaction twice yields different, valid signatures, so a fault or a
- * side channel during one signature does not reveal the nonce of another.
- */
 public class TaprootAuxRandomnessTest {
 
 	@Test

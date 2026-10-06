@@ -1,17 +1,13 @@
 package org.zerionproject.core.plugin.tor.auth;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.plugin.OnionTargets;
 
 import java.io.IOException;
 import java.util.Collection;
 
 import javax.annotation.Nullable;
 
-/**
- * The Tor control operations client authorization needs. Implemented over
- * the transport's control connection and attached to the manager by the
- * Tor plugin while Tor runs.
- */
 @NotNullByDefault
 public interface OnionServiceControl {
 
@@ -26,7 +22,6 @@ public interface OnionServiceControl {
 		}
 	}
 
-	/** Thrown when Tor reports that no more authorized clients fit. */
 	final class CapacityException extends IOException {
 
 		public CapacityException() {
@@ -37,6 +32,14 @@ public interface OnionServiceControl {
 	Published publish(@Nullable String privateKey, int localPort,
 			int remotePort, Collection<byte[]> clientPublicKeys)
 			throws IOException;
+
+	default Published publish(@Nullable String privateKey, String target,
+			int remotePort, Collection<byte[]> clientPublicKeys)
+			throws IOException {
+		int port = OnionTargets.loopbackPort(target);
+		if (port <= 0) throw new IOException("Unsupported onion target");
+		return publish(privateKey, port, remotePort, clientPublicKeys);
+	}
 
 	void remove(String onion) throws IOException;
 

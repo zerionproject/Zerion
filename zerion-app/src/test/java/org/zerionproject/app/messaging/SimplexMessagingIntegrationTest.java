@@ -41,13 +41,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-CRY-05: an established contact's traffic runs only over the ZWF
- * session layer. The rotation-key sync connections that carried it before
- * are refused for contacts, so a caller that asks the connection manager
- * for a simplex sync connection to a contact gets a disposed writer and
- * no bytes, and a stream offered on the incoming side delivers nothing.
- */
 public class SimplexMessagingIntegrationTest extends BrambleTestCase {
 
 	private static final int TIMEOUT_MS = 5_000;

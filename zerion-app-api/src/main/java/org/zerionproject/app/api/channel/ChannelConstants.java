@@ -32,6 +32,16 @@ public final class ChannelConstants {
 
 	public static final long DEFAULT_RECENT_POSTS_RETAINED = 500L;
 
+	public static final int MAX_ATTACHMENT_THUMBNAIL_BYTES = 48 * 1024;
+	public static final int MAX_ATTACHMENT_CAPTION_BYTES = 4096;
+
+	public static final int MAX_SUBSCRIBER_POSTS_PER_CHANNEL = 10_000;
+	public static final long MAX_SUBSCRIBER_POST_BYTES_PER_CHANNEL =
+			32L * 1024L * 1024L;
+	public static final long MAX_SUBSCRIBER_BYTES_PER_POST = 1024L * 1024L;
+	public static final long MAX_SUBSCRIBER_ATTACHMENT_BYTES_PER_CHANNEL =
+			256L * 1024L * 1024L;
+
 	public static final String INVITE_LINK_SCHEME = "zerion";
 	public static final String INVITE_LINK_HOST = "channel";
 	public static final String INVITE_LINK_CAPABILITY_PARAM = "k";
@@ -50,11 +60,30 @@ public final class ChannelConstants {
 			"org.zerionproject/CHANNEL_MANIFEST";
 	public static final String SIGNING_LABEL_POST =
 			"org.zerionproject/CHANNEL_POST";
+	public static final String SIGNING_LABEL_POST_V2 =
+			"org.zerionproject/CHANNEL_POST_V2";
+	public static final int POST_SALT_BYTES = 16;
+
+	public static final int PROTOCOL_VERSION = 2;
 	public static final String SIGNING_LABEL_DELEGATION =
 			"org.zerionproject/CHANNEL_DELEGATION";
 
+	public static final int MAX_RESPONSE_BYTES = 16 * 1024 * 1024;
+
 	public static final long BOOTSTRAP_HMAC_NONCE_BYTES = 16L;
 	public static final long PULL_BATCH_MAX_POSTS = 100L;
+
+	public static final long MAX_SEQUENCE_NUMBER = 1L << 62;
+	public static final long RESTORE_SEQUENCE_JUMP = 1L << 32;
+	public static final long RESTORE_DELEGATION_SEQUENCE_JUMP = 1L << 20;
+	public static final int MAX_REMEMBERED_ONIONS = 12;
+	public static final long ONION_FALLBACK_AFTER_MS = 15L * 60L * 1000L;
+
+	public static final int MAX_EDITOR_POSTS_PER_HOUR = 30;
+	public static final int MAX_EDITOR_POSTS_PER_DAY = 150;
+	public static final long MAX_EDITOR_POST_BYTES_PER_CHANNEL =
+			64L * 1024L * 1024L;
+	public static final long MAX_PULL_RESPONSE_REACTIONS = 25600L;
 
 	public static final int CONTENT_KEY_BYTES = 32;
 	public static final int CONTENT_KEY_HASH_BYTES = 32;
@@ -76,14 +105,22 @@ public final class ChannelConstants {
 	public static final String SIGNING_LABEL_REACTION =
 			"org.zerionproject/CHANNEL_REACTION";
 	public static final int MAX_REACTION_EMOJI_BYTES = 32;
-	public static final int MAX_REACTIONS_PER_POST = 256;
-	/**
-	 * Ceiling on the reactions a channel stores in total and on the
-	 * reactions one signer may hold across a channel, so that valid
-	 * signatures alone cannot grow the publisher's state without bound.
-	 */
-	public static final int MAX_REACTIONS_PER_CHANNEL = 4096;
-	public static final int MAX_REACTIONS_PER_SIGNER_PER_CHANNEL = 128;
+	public static final int MAX_REACTIONS_PER_POST = 64;
+	public static final int MAX_REACTIONS_PER_CHANNEL = 256;
+	public static final int MAX_REACTIONS_PER_SIGNER_PER_CHANNEL = 32;
+	public static final long MAX_REACTION_BYTES_PER_CHANNEL = 1536L * 1024L;
+	public static final int MAX_ANONYMOUS_ITEMS_PER_CHANNEL = 128;
+	public static final int MAX_ANONYMOUS_ITEMS_PER_POST = 32;
+	public static final int MAX_ANONYMOUS_ITEMS_PER_SIGNER = 8;
+	public static final long MAX_ANONYMOUS_ITEM_BYTES_PER_CHANNEL =
+			768L * 1024L;
+	public static final long ITEM_MAX_AGE_MS = 48L * 60L * 60L * 1000L;
+	public static final long ITEM_MAX_FUTURE_MS = 2L * 60L * 60L * 1000L;
+	public static final long KNOWN_SIGNER_WRITE_BURST_BYTES =
+			16L * 1024L * 1024L;
+	public static final long KNOWN_SIGNER_WRITE_BYTES_PER_HOUR =
+			128L * 1024L * 1024L;
+	public static final int MAX_BANNED_KEYS_PER_CHANNEL = 4096;
 	public static final String WIRE_TYPE_ANNOUNCE =
 			"ZERION_CHANNEL_ANNOUNCE_V1";
 	public static final String WIRE_TYPE_ANNOUNCE_ACK =
@@ -99,8 +136,15 @@ public final class ChannelConstants {
 	public static final String SIGNING_LABEL_COMMENT =
 			"org.zerionproject/CHANNEL_COMMENT";
 	public static final int MAX_COMMENT_BODY_CHARS = 1024;
-	public static final int MAX_COMMENTS_PER_CHANNEL = 4096;
-	public static final int MAX_COMMENTS_PER_AUTHOR = 256;
+	public static final int MAX_COMMENT_AUTHOR_NAME_CHARS = 64;
+	public static final int MAX_COMMENTS_PER_POST = 64;
+	public static final int MAX_COMMENTS_PER_AUTHOR = 32;
+	public static final int MAX_COMMENTS_PER_CHANNEL = 256;
+	public static final long MAX_COMMENT_BYTES_PER_CHANNEL = 1536L * 1024L;
+	public static final long MAX_PULL_RESPONSE_COMMENTS = 4096L;
+	public static final long CHANNEL_WRITE_BURST_BYTES = 64L * 1024L * 1024L;
+	public static final long CHANNEL_WRITE_BYTES_PER_HOUR =
+			512L * 1024L * 1024L;
 	public static final String WIRE_TYPE_APPLY_TO_JOIN =
 			"ZERION_CHANNEL_APPLY_TO_JOIN_V1";
 	public static final String WIRE_TYPE_APPLY_ACK =
@@ -118,6 +162,19 @@ public final class ChannelConstants {
 	public static final int MAX_PENDING_APPLICATIONS = 256;
 	public static final String INVITE_LINK_APPROVAL_PARAM = "p";
 
+	public static final String WIRE_TYPE_SUBMIT_POST =
+			"ZERION_CHANNEL_SUBMIT_POST_V1";
+	public static final String WIRE_TYPE_SUBMIT_POST_ACK =
+			"ZERION_CHANNEL_SUBMIT_POST_ACK_V1";
+	public static final String SUBMIT_STATUS_OK = "OK";
+	public static final String SUBMIT_STATUS_STALE = "STALE";
+	public static final String SUBMIT_STATUS_REFUSED = "REFUSED";
+
+	public static final int ONION_ROTATION_MIN_DAYS = 28;
+	public static final int ONION_ROTATION_MAX_DAYS = 35;
+	public static final int ONION_MIGRATION_DAYS = 30;
+	public static final int DELETED_CHANNEL_GRACE_DAYS = 14;
+
 	public static final String WIRE_TYPE_CHANNEL_TOMBSTONE =
 			"ZERION_CHANNEL_TOMBSTONE_V1";
 	public static final String SIGNING_LABEL_CHANNEL_TOMBSTONE =
@@ -132,6 +189,7 @@ public final class ChannelConstants {
 	public static final long TTL_THIRTY_DAYS_MS = 30L * TTL_ONE_DAY_MS;
 
 	public static final String TOMBSTONE_PREFIX = "ZRN_TOMBSTONE:";
+	public static final String DELETED_POST_PLACEHOLDER = "[deleted]";
 
 	public static final boolean DISCUSSIONS_IN_MANIFEST = false;
 }

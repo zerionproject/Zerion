@@ -21,14 +21,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Hammers the read-only native entry points while the refresh thread is
- * running against a public mainnet daemon, and reopens the wallet repeatedly
- * while a refresh is in flight. Exercises the history, balance and height
- * reads that the JNI-01 remediation serialises against the refresh thread.
- * Intended to run under a sanitizer build of libzmonero; passes when no
- * native fault or Java exception occurs.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrHistoryRefreshStressDeviceTest {
 

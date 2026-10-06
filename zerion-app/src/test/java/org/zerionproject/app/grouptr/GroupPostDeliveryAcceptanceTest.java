@@ -12,11 +12,6 @@ import java.util.List;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * PROTO-07: a relayed group post is delivered only when both its signer and
- * the contact that delivered it are current members, so a removed member or a
- * non-member relay cannot resurrect an old signed post.
- */
 public class GroupPostDeliveryAcceptanceTest {
 
 	private final byte[] creator = fill((byte) 1);

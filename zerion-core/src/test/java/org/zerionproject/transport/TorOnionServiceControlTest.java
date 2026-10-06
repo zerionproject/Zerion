@@ -31,18 +31,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Drives the controller against a loopback server that speaks the control
- * protocol subset it uses, so the exact commands Tor receives are pinned:
- * a detached service with one ClientAuthV3 entry per key, base32 public
- * keys without padding, base64 private keys, and the reply parsing.
- */
 public class TorOnionServiceControlTest {
 
 	private static final String ONION =
 			"i66iurfyjjh5tqpqhq7luu6defbb5rs7mxzvqgryaabqkzkgmjhql7qd";
 	private static final String KEY_BLOB =
 			"ED25519-V3:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
+	private static final String CRLF = "\r\n";
 
 	private ServerSocket server;
 	private ExecutorService exec;
@@ -243,6 +239,30 @@ public class TorOnionServiceControlTest {
 			} catch (IOException expected) {
 			}
 		}
+	}
+
+	@Test(timeout = 20_000)
+	public void testForwardsTheAuthorizedServiceToAUnixSocket()
+			throws Exception {
+		control().publish(null, "unix:/data/user/0/app/files/zo/0a1b2c3d",
+				80, asList(key(1)));
+		assertTrue(commands.get(0), commands.get(0).endsWith(
+				" Port=80,unix:/data/user/0/app/files/zo/0a1b2c3d"));
+	}
+
+	@Test(timeout = 20_000)
+	public void testATargetThatCouldEndTheCommandNeverReachesTor()
+			throws Exception {
+		for (String bad : new String[] {"unix:/a b",
+				"unix:/a" + CRLF + "GETINFO x", "unix:/a,80", "unix:relative", "unix:\"/a\"",
+				"10.0.0.1:80", "127.0.0.1:0", "127.0.0.1:70000", ""}) {
+			try {
+				control().publish(null, bad, 80, asList(key(1)));
+				fail(bad);
+			} catch (IllegalArgumentException expected) {
+			}
+		}
+		assertTrue(commands.isEmpty());
 	}
 
 	@Test

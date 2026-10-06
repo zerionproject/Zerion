@@ -45,19 +45,21 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 	private PackageManager pm;
 	private SwitchPreferenceCompat lockPref, purgePref;
 	private ListPreference panicAppPref;
+	private PanicSettingsStore store;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
 		ZerionApplication app =
 				(ZerionApplication) requireActivity().getApplication();
 		app.getApplicationComponent().inject(this);
-		PreferenceManager prefManager = getPreferenceManager();
-		prefManager.setPreferenceDataStore(new EncryptedDataStore(uiPrefs));
+		store = new PanicSettingsStore(uiPrefs);
+		super.onCreate(savedInstanceState);
 	}
 
 	@Override
 	public void onCreatePreferences(Bundle bundle, String s) {
+		PreferenceManager prefManager = getPreferenceManager();
+		prefManager.setPreferenceDataStore(new EncryptedDataStore(uiPrefs));
 		addPreferencesFromResource(R.xml.panic_preferences);
 	}
 
@@ -80,15 +82,14 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 			return true;
 		});
 
-		if (PanicResponder.checkForDisconnectIntent(activity)) {
+		if (store.checkForDisconnectIntent(activity)) {
 			activity.finish();
 		} else {
 			String packageName =
 					PanicResponder.getConnectIntentSender(activity);
 			if (!TextUtils.isEmpty((packageName)) &&
 					!TextUtils.equals(packageName,
-							PanicResponder
-									.getTriggerPackageName(activity))) {
+							store.getTriggerPackageName())) {
 				showOptInDialog();
 			}
 		}
@@ -113,7 +114,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 			android.app.Activity a = getActivity();
 			if (a == null) return false;
 			String packageName = (String) newValue;
-			PanicResponder.setTriggerPackageName(a, packageName);
+			store.setTriggerPackageName(a, packageName);
 			showPanicApp(packageName);
 
 			if (packageName.equals(PACKAGE_NAME_NONE)) {
@@ -146,10 +147,10 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 	public void onStart() {
 		super.onStart();
 		updatePreferences();
-		showPanicApp(PanicResponder.getTriggerPackageName(requireActivity()));
+		showPanicApp(store.getTriggerPackageName());
 	}
 
-	private void showPanicApp(String triggerPackageName) {
+	private void showPanicApp(@Nullable String triggerPackageName) {
 		if (TextUtils.isEmpty(triggerPackageName)
 				|| triggerPackageName.equals(PACKAGE_NAME_NONE)) {
 			panicAppPref.setValue(PACKAGE_NAME_NONE);
@@ -171,7 +172,7 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 			} catch (PackageManager.NameNotFoundException e) {
 				android.app.Activity a = getActivity();
 				if (a != null) {
-					PanicResponder.setTriggerPackageName(a, PACKAGE_NAME_NONE);
+					store.setTriggerPackageName(a, PACKAGE_NAME_NONE);
 				}
 				showPanicApp(PACKAGE_NAME_NONE);
 			}
@@ -183,8 +184,8 @@ public class PanicPreferencesFragment extends PreferenceFragmentCompat {
 		DialogInterface.OnClickListener okListener = (dialog, which) -> {
 			android.app.Activity a = getActivity();
 			if (a == null) return;
-			PanicResponder.setTriggerPackageName(a);
-			showPanicApp(PanicResponder.getTriggerPackageName(a));
+			store.setTriggerPackageNameFromCaller(a);
+			showPanicApp(store.getTriggerPackageName());
 			a.setResult(RESULT_OK);
 		};
 		DialogInterface.OnClickListener cancelListener = (dialog, which) -> {

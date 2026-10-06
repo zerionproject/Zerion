@@ -8,12 +8,6 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-REG-BTC-01: the sweep plan, which carries spend-capable keys, must be
- * dropped wherever the send plan is dropped: a failed credential, a wallet
- * close and the section reset that closes the wallet. The ViewModel has no
- * unit harness, so the wiring is checked at the source level.
- */
 public class VaultViewModelPlanClearingTest {
 
 	private static final String SRC =

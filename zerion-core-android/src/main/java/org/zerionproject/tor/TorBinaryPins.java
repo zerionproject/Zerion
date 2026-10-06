@@ -19,15 +19,6 @@ import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-/**
- * The SHA-256 values of the Tor and lyrebird executables the build packaged,
- * read from the same pin file the build verified the packaged files
- * against. A file is accepted only if its hash is one of the values pinned
- * for that executable; the device's architecture is not consulted, since
- * every pinned value is a genuine build of the executable and a file that
- * matches none of them must not run. A pin file that is missing, empty or
- * malformed is a failure, not an open door.
- */
 @NotNullByDefault
 public final class TorBinaryPins implements TorBinaryVerifier {
 
@@ -39,7 +30,6 @@ public final class TorBinaryPins implements TorBinaryVerifier {
 		this.pinsByLibrary = pinsByLibrary;
 	}
 
-	/** The pins compiled into this build. */
 	public static TorBinaryPins shipped() throws IOException {
 		InputStream in = TorBinaryPins.class.getResourceAsStream(RESOURCE);
 		if (in == null) throw new IOException("Tor binary pins missing");
@@ -50,10 +40,6 @@ public final class TorBinaryPins implements TorBinaryVerifier {
 		}
 	}
 
-	/**
-	 * Parses lines of the form {@code <abi>/<library> <sha256>}; blank
-	 * lines and lines starting with {@code #} are ignored.
-	 */
 	static TorBinaryPins parse(InputStream in) throws IOException {
 		Map<String, Set<String>> pins = new HashMap<>();
 		BufferedReader r = new BufferedReader(new InputStreamReader(in, UTF_8));
@@ -91,12 +77,10 @@ public final class TorBinaryPins implements TorBinaryVerifier {
 		return true;
 	}
 
-	/** The libraries this pin set covers. */
 	Set<String> libraries() {
 		return Collections.unmodifiableSet(pinsByLibrary.keySet());
 	}
 
-	/** The accepted hashes of one library. */
 	Set<String> pinsFor(String library) {
 		Set<String> s = pinsByLibrary.get(library);
 		return s == null ? Collections.<String>emptySet()
@@ -109,11 +93,6 @@ public final class TorBinaryPins implements TorBinaryVerifier {
 		verify(lyrebird, AndroidTorWrapper.LYREBIRD_LIB_NAME);
 	}
 
-	/**
-	 * @param file the file about to be executed, whatever it is called on
-	 * disk
-	 * @param library the packaged library name the pins are recorded under
-	 */
 	void verify(File file, String library) throws IOException {
 		Set<String> accepted = pinsByLibrary.get(library);
 		if (accepted == null || accepted.isEmpty()) {

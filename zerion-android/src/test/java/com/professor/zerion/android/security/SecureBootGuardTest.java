@@ -13,11 +13,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * STAT-05: in Hardened Mode the signature check fails closed. Missing
- * signing information, an empty signer list, a null entry or an unknown
- * signer are all a mismatch; only an accepted certificate digest passes.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class SecureBootGuardTest {

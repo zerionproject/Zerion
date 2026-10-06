@@ -46,6 +46,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
+		com.professor.zerion.android.util.SafeIntents
+				.dropUnreadableExtras(getIntent());
 		super.onCreate(savedInstanceState);
 		getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
@@ -73,7 +75,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		} else {
 			new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.channels_join_title)
-					.setMessage(data.toString())
+					.setMessage(getString(R.string.channels_join_confirm,
+							publisherFingerprint(link)))
 					.setCancelable(false)
 					.setPositiveButton(R.string.channels_join_action,
 							(d, w) -> handleJoin(link))
@@ -81,6 +84,17 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 							(d, w) -> finish())
 					.show();
 		}
+	}
+
+	static String publisherFingerprint(ChannelInviteLink link) {
+		byte[] key = link.getPublisherEd25519PubKey();
+		StringBuilder sb = new StringBuilder();
+		if (key == null) return "";
+		for (int i = 0; i < Math.min(8, key.length); i++) {
+			if (i > 0 && i % 2 == 0) sb.append(' ');
+			sb.append(String.format(java.util.Locale.US, "%02x", key[i]));
+		}
+		return sb.toString();
 	}
 
 	private void showApplyDialog(ChannelInviteLink link) {
@@ -145,6 +159,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 		android.app.ProgressDialog d = new android.app.ProgressDialog(this);
 		d.setMessage(getString(R.string.channels_apply_progress));
 		d.setCancelable(false);
+		com.professor.zerion.android.security.SecureDialogs.applyHostPolicy(d);
 		d.show();
 		return d;
 	}

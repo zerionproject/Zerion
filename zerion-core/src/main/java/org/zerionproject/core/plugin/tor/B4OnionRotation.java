@@ -79,8 +79,10 @@ public class B4OnionRotation {
 		HiddenServiceProperties publishHiddenService(@Nullable String privKey)
 				throws IOException;
 
-		/** Whether the transport currently publishes this onion. */
 		boolean isPublished(String onion);
+
+		@Nullable
+		String getStartupOnion();
 
 		void removeHiddenService(String onion) throws IOException;
 
@@ -95,6 +97,14 @@ public class B4OnionRotation {
 	private static final String B4_ALICE_NEXT_ROTATION_DAYS_KEY =
 			"alice_rotation_next_interval_days";
 
+	private static final String B4_ALICE_REVOCATION_OWED_KEY =
+			"alice_revocation_owed";
+
+	private static final String B4_ALICE_REVOCATION_ROTATION_KEY =
+			"alice_revocation_rotation";
+
+	static final long REVOCATION_RETIRE_MS = 48L * 60 * 60 * 1000;
+
 	private final java.security.SecureRandom rotationRng =
 			new java.security.SecureRandom();
 
@@ -105,12 +115,7 @@ public class B4OnionRotation {
 
 	private final Object rotationLock = new Object();
 
-	private final ScheduledExecutorService scheduler =
-			Executors.newSingleThreadScheduledExecutor(r -> {
-				Thread t = new Thread(r, "b4-rotation-rebroadcast");
-				t.setDaemon(true);
-				return t;
-			});
+	private final ScheduledExecutorService scheduler;
 
 	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
@@ -122,11 +127,6 @@ public class B4OnionRotation {
 	@Nullable
 	private volatile java.util.concurrent.ScheduledFuture<?> periodic;
 
-	/**
-	 * A peer whose session with us starts this long after the announcement
-	 * has had the announcement over an authenticated session and dials the
-	 * next onion from then on; the old onion is retired once every peer has.
-	 */
 	static final long MIGRATION_GRACE_MS = 24L * 60 * 60 * 1000;
 
 	@Inject
@@ -134,10 +134,22 @@ public class B4OnionRotation {
 			SettingsManager settingsManager,
 			AccountManager accountManager,
 			Clock clock) {
+		this(db, settingsManager, accountManager, clock,
+				Executors.newSingleThreadScheduledExecutor(r -> {
+					Thread t = new Thread(r, "b4-rotation-rebroadcast");
+					t.setDaemon(true);
+					return t;
+				}));
+	}
+
+	B4OnionRotation(DatabaseComponent db, SettingsManager settingsManager,
+			AccountManager accountManager, Clock clock,
+			ScheduledExecutorService scheduler) {
 		this.db = db;
 		this.settingsManager = settingsManager;
 		this.accountManager = accountManager;
 		this.clock = clock;
+		this.scheduler = scheduler;
 	}
 
 	public void bindAdapter(B4TorAdapter adapter) {
@@ -147,23 +159,33 @@ public class B4OnionRotation {
 	public void startPeriodicEvaluation() {
 		java.util.concurrent.ScheduledFuture<?> previous = periodic;
 		if (previous != null) previous.cancel(false);
-		periodic = scheduler.scheduleWithFixedDelay(() -> {
-			try {
-				republishPendingOnion();
-				resumeIfPromotionInterrupted();
-				evaluateTrigger();
-				evaluateForceExpire();
-			} catch (DbException | RuntimeException ignored) {
-			}
-		}, 60, 6 * 60 * 60, TimeUnit.SECONDS);
+		periodic = scheduler.scheduleWithFixedDelay(this::evaluateAll,
+				60, 60 * 60, TimeUnit.SECONDS);
 	}
 
-	/**
-	 * The next onion is published only in the memory of the process that
-	 * rotated; every later process must publish it again from the stored
-	 * key while the rotation is announcing, otherwise peers that already
-	 * moved to it dial a dark address until promotion.
-	 */
+	void evaluateAll() {
+		try {
+			republishPendingOnion();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			resumeIfPromotionInterrupted();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			runOwedRevocation();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			evaluateTrigger();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			evaluateForceExpire();
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
 	public void republishPendingOnion() throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		B4TorAdapter ad = adapter;
@@ -260,6 +282,84 @@ public class B4OnionRotation {
 					loadPhase(txn) == RotationPhase.IDLE);
 			if (shouldRotate) executeRotation(now);
 		}
+	}
+
+	public void revokeAfterContactRemoval() throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		boolean owed = db.transactionWithResult(true, txn ->
+				loadEncryptedString(txn, B4_ALICE_REVOCATION_OWED_KEY)
+						!= null);
+		if (!owed) db.transaction(false, this::recordRevocationOwed);
+		runOwedRevocation();
+	}
+
+	private void recordRevocationOwed(Transaction txn) throws DbException {
+		Settings s = new Settings();
+		s.put(B4_ALICE_REVOCATION_OWED_KEY, sealString("1"));
+		settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+	}
+
+	public void runOwedRevocation() throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		B4TorAdapter ad = adapter;
+		if (ad == null) return;
+		synchronized (rotationLock) {
+			boolean owed = db.transactionWithResult(true, txn ->
+					loadEncryptedString(txn, B4_ALICE_REVOCATION_OWED_KEY)
+							!= null);
+			if (!owed) return;
+			RotationPhase phase = db.transactionWithResult(true,
+					this::loadPhase);
+			if (phase == RotationPhase.ANNOUNCING) abandonPendingNext(ad);
+			long now = clock.currentTimeMillis();
+			if (!executeRotation(now)) return;
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.put(B4_ALICE_REVOCATION_OWED_KEY, "");
+				s.put(B4_ALICE_REVOCATION_ROTATION_KEY, sealString("1"));
+				settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+			});
+			boolean retire = db.transactionWithResult(true,
+					this::shouldRetireOldOnion);
+			if (retire) {
+				executePromotion();
+			} else {
+				scheduleRevocationRetirement();
+			}
+		}
+	}
+
+	private void scheduleRevocationRetirement() {
+		try {
+			scheduler.schedule(() -> {
+				try {
+					evaluateForceExpire();
+				} catch (DbException | RuntimeException ignored) {
+				}
+			}, REVOCATION_RETIRE_MS + 1000L, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException ignored) {
+		}
+	}
+
+	private void abandonPendingNext(B4TorAdapter ad) throws DbException {
+		String next = db.transactionWithNullableResult(true, txn ->
+				loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY));
+		if (next != null && ad.isPublished(next)) {
+			try {
+				ad.removeHiddenService(next);
+			} catch (IOException e) {
+				throw new DbException(e);
+			}
+		}
+		db.transaction(false, txn -> {
+			Settings s = new Settings();
+			s.put(B4_ALICE_ONION3_NEXT_KEY, "");
+			s.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY, "");
+			s.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY, "");
+			s.put(B4_ALICE_ROTATION_PHASE_KEY,
+					sealString(RotationPhase.IDLE.name()));
+			settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+		});
 	}
 
 	public void onAnnounceReceived(Transaction txn, ContactId from,
@@ -366,16 +466,6 @@ public class B4OnionRotation {
 		}
 	}
 
-	/**
-	 * A session with a peer carries our transport properties, and with them
-	 * the announcement. The first session after the announcement marks the
-	 * peer as having received it; a session that starts after the migration
-	 * grace marks the peer as migrated, since it dials the next onion from
-	 * the moment it has the announcement. Both onions share one listener,
-	 * so an inbound connection cannot say which onion it arrived on; the
-	 * session itself is the evidence. Once every peer has migrated the old
-	 * onion is retired.
-	 */
 	public void onPeerSyncSessionEstablished(ContactId cid)
 			throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
@@ -419,6 +509,27 @@ public class B4OnionRotation {
 					+ cid.getInt(), "");
 			settingsManager.mergeSettings(txn, clear, B4_SETTINGS_NAMESPACE);
 		});
+	}
+
+	public void contactRemoved(Transaction txn, ContactId cid)
+			throws DbException {
+		if (B4_ROTATION_ENABLED) recordRevocationOwed(txn);
+		Settings stored = settingsManager.getSettings(txn,
+				B4_SETTINGS_NAMESPACE);
+		Settings clear = new Settings();
+		for (String prefix : new String[] {
+				B4_CONTACT_ONION3_PENDING_KEY_PREFIX,
+				B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX,
+				B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX,
+				B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX,
+				B4_PEER_ROTATION_STATE_KEY_PREFIX}) {
+			String key = prefix + cid.getInt();
+			String value = stored.get(key);
+			if (value != null && !value.isEmpty()) clear.put(key, "");
+		}
+		if (!clear.isEmpty()) {
+			settingsManager.mergeSettings(txn, clear, B4_SETTINGS_NAMESPACE);
+		}
 	}
 
 	@Nullable
@@ -503,9 +614,9 @@ public class B4OnionRotation {
 		}
 	}
 
-	private void executeRotation(long now) throws DbException {
+	private boolean executeRotation(long now) throws DbException {
 		B4TorAdapter ad = adapter;
-		if (ad == null) return;
+		if (ad == null) return false;
 
 		HiddenServiceProperties hsProps;
 		try {
@@ -547,6 +658,7 @@ public class B4OnionRotation {
 		props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, "0");
 		ad.mergeTorLocalProperties(props);
 		scheduleRebroadcasts(now);
+		return true;
 	}
 
 	private void scheduleRebroadcasts(long announcedAtMs) {
@@ -629,12 +741,12 @@ public class B4OnionRotation {
 					B4_SETTINGS_NAMESPACE);
 		});
 
-		String oldOnion = state[0];
+		String oldOnion = state[0] != null ? state[0] : ad.getStartupOnion();
 		String newOnion = state[1];
 		String newPrivKey = state[2];
 
-
-		if (oldOnion != null) {
+		if (oldOnion != null && newOnion != null && newPrivKey != null
+				&& !oldOnion.equals(newOnion) && ad.isPublished(oldOnion)) {
 			try {
 				ad.removeHiddenService(oldOnion);
 			} catch (IOException e) {
@@ -673,6 +785,7 @@ public class B4OnionRotation {
 			update.put(B4_ALICE_ROTATION_PHASE_KEY,
 					sealString(RotationPhase.IDLE.name()));
 			update.put(B4_ALICE_PROMOTING_SENTINEL_KEY, "");
+			update.put(B4_ALICE_REVOCATION_ROTATION_KEY, "");
 			update.put(B4_ALICE_NEXT_ROTATION_DAYS_KEY,
 					sealString(String.valueOf(drawNextRotationDays())));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
@@ -701,8 +814,13 @@ public class B4OnionRotation {
 		long daysSince = DAYS.convert(now - announcedAt,
 				java.util.concurrent.TimeUnit.MILLISECONDS);
 		if (daysSince >= FORCE_EXPIRE_DAYS) return true;
+		boolean revocation = loadEncryptedString(txn,
+				B4_ALICE_REVOCATION_ROTATION_KEY) != null;
+		if (revocation && now - announcedAt >= REVOCATION_RETIRE_MS) {
+			return true;
+		}
 		Collection<Contact> contacts = db.getContacts(txn);
-		if (contacts.isEmpty()) return false;
+		if (contacts.isEmpty()) return revocation;
 		for (Contact c : contacts) {
 			if (loadPeerState(txn, c.getId()) != PeerRotationState.MIGRATED) {
 				return false;

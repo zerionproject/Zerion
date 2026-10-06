@@ -32,15 +32,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * On-device proof of the persistent-cache failure model against the real
- * native library, without touching the app's vault: an in-memory store and
- * vault gate stand in for ZVault (the device has real org.json, so the
- * settings path is exercised), and the cache lives under a temporary
- * directory that is removed afterwards. Shows that a corrupted cache is
- * rejected and rebuilt from the seed, that a cache belonging to another wallet
- * is rejected, and that two wallets never share cache directories.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrCacheRebuildDeviceTest {
 
@@ -367,12 +358,6 @@ public class XmrCacheRebuildDeviceTest {
 		}
 	}
 
-	/**
-	 * Delegates to the real engine and records what each restore/open produced:
-	 * whether an open yielded a usable session, and the primary address of the
-	 * last usable session (identity evidence). Addresses are compared only in
-	 * memory and never logged.
-	 */
 	private static final class CountingEngine implements MoneroEngine {
 		final AtomicInteger restores = new AtomicInteger();
 		final AtomicInteger openedOk = new AtomicInteger();

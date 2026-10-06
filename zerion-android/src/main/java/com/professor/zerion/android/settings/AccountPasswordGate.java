@@ -7,24 +7,19 @@ import android.widget.Toast;
 import com.professor.zerion.R;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
+import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.login.AccountPasswordCheck;
+
 import org.zerionproject.core.api.account.AccountManager;
-import org.zerionproject.core.api.crypto.DecryptionException;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 
-/**
- * Settings that protect the account (the duress password, erase after
- * failed sign-ins, the decoy screen, deleting a profile) are changed only
- * after the account password is entered again, through the same throttle
- * as the sign-in screen, so a person holding the unlocked phone cannot
- * quietly disarm them.
- */
 @NotNullByDefault
 final class AccountPasswordGate {
 
-	enum Outcome { GRANTED, WRONG, LOCKED }
+	enum Outcome { GRANTED, WRONG, LOCKED, ERASE }
 
 	static final class Result {
 		final Outcome outcome;
@@ -39,7 +34,6 @@ final class AccountPasswordGate {
 	private AccountPasswordGate() {
 	}
 
-	/** A device without an account has nothing to protect; unknown counts as present. */
 	static boolean accountExists(AccountManager accountManager) {
 		try {
 			return accountManager.accountExists();
@@ -48,25 +42,51 @@ final class AccountPasswordGate {
 		}
 	}
 
-	/** Blocking check; the password is wiped whatever the outcome. */
 	static Result verify(AccountManager accountManager, char[] password) {
+		return verify(accountManager, typed -> false, password);
+	}
+
+	static Result verify(AccountManager accountManager,
+			AccountPasswordCheck.DuressCheck duress, char[] password) {
 		try {
-			long locked = accountManager.signInLockoutRemainingMs();
-			if (locked > 0) return new Result(Outcome.LOCKED, locked);
-			accountManager.signIn(password);
-			return new Result(Outcome.GRANTED, 0);
-		} catch (DecryptionException | RuntimeException e) {
+			AccountPasswordCheck.Result r =
+					new AccountPasswordCheck(accountManager, duress)
+							.check(password, accountManager::verifyPassword);
+			switch (r.outcome) {
+				case GRANTED:
+					return new Result(Outcome.GRANTED, 0);
+				case LOCKED:
+					return new Result(Outcome.LOCKED, r.lockedMs);
+				case ERASE:
+					return new Result(Outcome.ERASE, 0);
+				default:
+					return new Result(Outcome.WRONG, 0);
+			}
+		} catch (RuntimeException e) {
 			return new Result(Outcome.WRONG, 0);
 		} finally {
 			Arrays.fill(password, '\0');
 		}
 	}
 
-	/**
-	 * Asks for the account password and runs {@code onGranted} on the main
-	 * thread when it is right; {@code onRefused} runs on cancel, a wrong
-	 * password or a lockout, after the user has been told which.
-	 */
+	static void eraseFromSession(Context context,
+			AccountManager accountManager, Executor executor) {
+		executor.execute(() -> {
+			try {
+				accountManager.shredDatabaseKey();
+			} catch (RuntimeException ignored) {
+			}
+			new Handler(android.os.Looper.getMainLooper()).post(() -> {
+				if (context instanceof ZerionActivity) {
+					((ZerionActivity) context).eraseAccountsAndExit();
+				} else {
+					android.os.Process.killProcess(
+							android.os.Process.myPid());
+				}
+			});
+		});
+	}
+
 	static void prompt(Context context, AccountManager accountManager,
 			Executor executor, Handler main, int titleRes, int messageRes,
 			Runnable onGranted, Runnable onRefused) {
@@ -97,11 +117,18 @@ final class AccountPasswordGate {
 						e.getChars(0, e.length(), pw, 0);
 						e.clear();
 					}
+					AccountPasswordCheck.DuressCheck duress =
+							AccountPasswordCheck.duressPasswordOf(context);
 					executor.execute(() -> {
-						Result r = verify(accountManager, pw);
+						Result r = verify(accountManager, duress, pw);
 						main.post(() -> {
 							if (r.outcome == Outcome.GRANTED) {
 								onGranted.run();
+								return;
+							}
+							if (r.outcome == Outcome.ERASE) {
+								eraseFromSession(context, accountManager,
+										executor);
 								return;
 							}
 							if (r.outcome == Outcome.LOCKED) {

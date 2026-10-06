@@ -183,7 +183,8 @@ public class ContactsViewModel extends DbViewModel implements EventListener {
 	}
 
 	private void applyDefaultTimer(ContactId contactId) {
-		long timer = com.professor.zerion.android.AppModule.getUiPrefs()
+		long timer = com.professor.zerion.android.AppModule
+				.getAndroidComponent(getApplication()).profilePreferences()
 				.getLong("default_disappearing_timer", -1L);
 		if (timer <= 0) return;
 		runOnDbThread(false, txn ->

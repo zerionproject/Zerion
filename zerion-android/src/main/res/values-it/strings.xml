@@ -86,7 +86,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion è configurato per non usare internet quando funziona a batteria</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion è configurato per non usare internet in questa nazione</string>
   
-  <string name="transport_lan_long">Stessa rete Wi-Fi</string>
 
   <string name="reminder_notification_title">Uscito da Zerion</string>
   <string name="reminder_notification_text">Tocca per riaccedere.</string>
@@ -218,7 +217,6 @@
   <string name="connecting_to_device">Connessione al dispositivo\u2026</string>
   <string name="authenticating_with_device">Autenticazione con il dispositivo\u2026</string>
   <string name="connection_error_title">Impossibile connettersi al tuo contatto</string>
-  <string name="connection_error_feedback">Se il problema persiste, <a href="feedback">invia un feedback</a> per aiutarci a migliorare l\'app.</string>
   
   <string name="add_contact_remotely_title_case">Aggiungi contatto distante</string>
   <string name="add_contact_nearby_title">Aggiungi contatto vicino</string>
@@ -397,8 +395,6 @@
   
   <string name="tor_network_setting_summary">Automatico: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Usa dati mobili</string>
-  <string name="tor_only_when_charging_title">Connetti a internet solo durante la ricarica</string>
-  <string name="tor_only_when_charging_summary">Disattiva la connessione internet quando il dispositivo funziona a batteria</string>
   
   <string name="security_settings_title">Sicurezza</string>
   <string name="pref_lock_title">Blocco dell\'app</string>
@@ -455,74 +451,9 @@
   <string name="choose_ringtone_title">Scegli suoneria</string>
   <string name="cannot_load_ringtone">Impossibile caricare la suoneria</string>
   
-  <string name="mailbox_settings_title">Casella postale</string>
-  <string name="mailbox_setup_title">Impostazioni della casella postale</string>
-  <string name="mailbox_setup_intro">Una casella postale consente ai tuoi contatti di lasciarti messaggi mentre non sei in linea. La casella riceverà i tuoi messaggi e li conserverà finché non torni in linea.\n
-		\nPuoi installare l\'app Zerion Mailbox in un dispositivo di scorta. Tienilo collegato alla corrente e al Wi-Fi in modo che resti in linea.</string>
-  <string name="mailbox_setup_download">Per prima cosa, installa l\'app Mailbox in un altro dispositivo cercando \"Zerion Mailbox\" su Google Play o da dove avevi scaricato Zerion.\n
-		\nPoi collega la tua casella con Zerion scansionando il codice QR mostrato dall\'app Mailbox.</string>
-  <string name="mailbox_setup_download_link">Condividi link di download</string>
-  <string name="mailbox_setup_connecting">Connessione alla casella postale…</string>
   
-  <string name="mailbox_setup_connecting_info">Potrebbe impiegarci %1s</string>
-  <string name="mailbox_setup_already_paired_title">Casella postale già collegata</string>
-  <string name="mailbox_setup_already_paired_description">Scollega la casella postale sul tuo altro dispositivo e riprova.</string>
-  <string name="mailbox_setup_io_error_title">Impossibile connettere</string>
-  <string name="mailbox_setup_io_error_description">Assicurati che entrambi i dispositivi siano connessi ad internet e riprova.</string>
-  <string name="mailbox_setup_assertion_error_title">Errore casella postale</string>
-  <string name="mailbox_setup_assertion_error_description">Invia feedback (con dati anonimi) con l\'app Zerion se il problema persiste.</string>
-  <string name="mailbox_setup_camera_error_description">Impossibile accedere alla fotocamera. Riprova, magari dopo un riavvio del dispositivo.</string>
-  <string name="mailbox_setup_paired_title">Connesso</string>
-  <string name="mailbox_setup_paired_description">La tua casella postale è stata collegata correttamente a Zerion.\n
-		\nTienila collegata alla corrente e al Wi-Fi in modo che sia sempre in linea.</string>
-  <string name="tor_offline_title">Offline</string>
-  <string name="tor_offline_description">Assicurati che questo dispositivo sia in linea e che le connessioni ad internet siano permesse.\n
-		\nSuccessivamente, attendi che l\'icona del globo nella schermata delle impostazioni di connessione diventi verde.</string>
-  <string name="tor_offline_button_check">Controlla impostazioni di connessione</string>
-  <string name="mailbox_status_title">Stato casella postale</string>
-  <string name="mailbox_status_connected_title">Casella postale in esecuzione</string>
-  <string name="mailbox_status_problem_title">Zerion sta avendo problemi a connettersi alla casella postale</string>
-  <string name="mailbox_status_failure_title">Casella postale non disponibile</string>
-  <string name="mailbox_status_app_too_old_title">Zerion è troppo vecchio</string>
-  <string name="mailbox_status_app_too_old_message">Aggiorna Zerion all\'ultima versione e riprova.</string>
-  <string name="mailbox_status_mailbox_too_old_title">La cassella postale è troppo vecchia</string>
-  <string name="mailbox_status_mailbox_too_old_message">Aggiorna la casella postale all\'ultima versione e riprova.</string>
-  <string name="mailbox_status_check_button">Controlla connessione</string>
   
-  <string name="mailbox_status_connected_info">Ultima connessione: %s</string>
   
-  <string name="mailbox_status_connected_never">Mai</string>
-  <string name="mailbox_status_unlink_button">Scollega</string>
-  <string name="mailbox_status_unlink_dialog_title">Scollegare la casella postale?</string>
-  <string name="mailbox_status_unlink_dialog_question">Vuoi davvero scollegare la tua casella postale?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Se la scolleghi non potrai più ricevere messaggi mentre Zerion è offline.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">La casella postale è stata scollegata</string>
-  <string name="mailbox_status_unlink_no_wipe_message">La prossima volta che avrai accesso al dispositivo della casella postale, apri l\'app Mailbox e tocca il pulsante \"Scollega\" per completare il processo.\n\nSe non hai più accesso al dispositivo, non preoccuparti. I dati sono cifrati e rimarranno sicuri anche se non completi il processo.</string>
-  <string name="mailbox_status_unlink_success">La casella postale è stata scollegata</string>
-  <string name="mailbox_error_notification_channel_title">Problema casella postale di Zerion</string>
-  <string name="mailbox_error_notification_title">Casella postale di Zerion non disponibile</string>
-  <string name="mailbox_error_notification_text">Tocca per risolvere il problema.</string>
-  <string name="mailbox_error_wizard_button">Risolvi problema</string>
-  <string name="mailbox_error_wizard_title">Wizard risoluzione problemi casella postale</string>
-  <string name="mailbox_error_wizard_question1">Hai accesso al dispositivo della casella postale?</string>
-  <string name="mailbox_error_wizard_answer1">Sì, vi ho accesso in questo momento.</string>
-  <string name="mailbox_error_wizard_answer2">Non ora, ma posso accedervi più tardi.</string>
-  <string name="mailbox_error_wizard_answer3">No, non ne ho più accesso.</string>
-  <string name="mailbox_error_wizard_info1_1">Controlla se quel dispositivo della casella postale è acceso e connesso a internet.</string>
-  <string name="mailbox_error_wizard_question1_1">Apri l\'app Mailbox. Cosa vedi?</string>
-  <string name="mailbox_error_wizard_answer1_1">Vedo istruzioni per configurare la casella postale</string>
-  <string name="mailbox_error_wizard_answer1_2">Vedo un codice QR</string>
-  <string name="mailbox_error_wizard_answer1_3">Vedo \"Casella postale in esecuzione\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Vedo \"Dispositivo offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Scollega la casella postale usando il pulsante sottostante, poi segui le istruzioni nel dispositivo della casella postale per ricollegarla.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Scollega la casella postale usando il pulsante sottostante, poi scansiona il codice QR per ricollegarla.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Usa il pulsante sottostante per controllare la connessione tra Zerion e la casella postale.\n\n
-		Se la connessione fallisce di nuovo:\n
-		\u2022 Verifica che le app Mailbox e Zerion siano aggiornate alla versione più recente.\n
-		\u2022 Riavvia i dispositivi di Mailbox e Zerion e riprova.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Controlla che il dispositivo della casella postale sia connesso a internet correttamente.\n\nControlla che l\'orologio nel dispositivo della casella postale mostri l\'orario, la data e il fuso orario giusti.\n\nControlla che le app Mailbox e Zerion siano aggiornate alla versione più recente.\n\nRiavvia i dispositivi di Mailbox e Zerion e riprova.</string>
-  <string name="mailbox_error_wizard_info2">Torna in questa schermata quando avrai accesso al dispositivo.</string>
-  <string name="mailbox_error_wizard_info3">Scollega la casella postale usando il pulsante sottostante.\n\nDopo avere sbloccato la vecchia casella postale, puoi configurarne una nuova in qualsiasi momento.</string>
   
   <string name="about_title">Informazioni</string>
   <string name="zerion_version">Versione di Zerion: %s</string>
@@ -530,7 +461,6 @@
   <string name="links">Collegamenti</string>
   <string name="zerion_website">\u2022 <a href="">Sito web</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Codice sorgente</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Cronologia</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Informativa sulla privacy</a></string>
   
   <string name="translator_thanks">Grazie a tutti i collaboratori nel Localization Lab</string>
@@ -551,43 +481,13 @@
   <string name="pref_category_actions">Azioni</string>
   <string name="share_app_link">Condividi link di download</string>
   <string name="share_app_link_text">Scarica Zerion su %s</string>
-  <string name="send_feedback">Invia feedback</string>
   
   <string name="link_warning_title">Attenzione Link</string>
   <string name="link_warning_intro">Stai per aprire il seguente link con un\' app esterna</string>
   <string name="link_warning_text">Ciò può essere usato per identificarti. Pensa se ti fidi della persona che ti ha inviato questo link e considera se aprirlo con Tor Browser.</string>
   <string name="link_warning_open_link">Apri Link</string>
   
-  <string name="crash_report_title">Rapporto Crash Zerion</string>
-  <string name="zerion_crashed">Spiacenti, Zerion è crashato</string>
-  <string name="not_your_fault">Questo non è colpa tua.</string>
-  <string name="please_send_report">Per favore aiutaci a migliorare Zerion mandandoci un report del crash.</string>
-  <string name="report_is_encrypted">Vi promettiamo che il rapporto è cifrato e inviato in modo sicuro.</string>
-  <string name="feedback_title">Feedback</string>
-  <string name="describe_crash">Descrivi cosa è successo (facoltativo)</string>
-  <string name="enter_feedback">Immetti il tuo feedback</string>
-  <string name="optional_contact_email">Il tuo indirizzo email (facoltativo)</string>
-  <string name="privacy_policy">Inviandoci dati, accetti la nostra <a href="">informativa sulla privacy</a></string>
-  <string name="include_debug_report_crash">Includere dati anonimi riguardo al crash</string>
-  <string name="include_debug_report_feedback">Includere dati anonimi riguardo al tuo dispositivo</string>
-  <string name="dev_report_user_info">Informazioni utente</string>
-  <string name="dev_report_basic_info">Informazioni di base</string>
-  <string name="dev_report_device_info">Informazioni dispositivo</string>
-  <string name="dev_report_stacktrace">Stack trace</string>
-  <string name="dev_report_time_info">Informazioni orario</string>
-  <string name="dev_report_memory">Memoria</string>
-  <string name="dev_report_storage">Spazio</string>
-  <string name="dev_report_connectivity">Connettività</string>
-  <string name="dev_report_network_usage">Utilizzo della rete</string>
-  <string name="dev_report_build_config">Configurazione build</string>
-  <string name="dev_report_logcat">Registro app</string>
-  <string name="dev_report_device_features">Caratteristiche dispositivo</string>
-  <string name="send_report">Invia report</string>
   <string name="close">Chiudi</string>
-  <string name="dev_report_sending">Trasmissione feedback...</string>
-  <string name="dev_report_sent">Commenti inviati</string>
-  <string name="dev_report_saved">Report salvato. Verrà spedito la prossima volta che loggherai in Zerion.</string>
-  <string name="dev_report_error">Errore: invio segnalazione fallita</string>
   
   <string name="progress_title_logout">Uscire da Zerion ...</string>
   
@@ -655,14 +555,10 @@
 	<string name="settings_section_tor_network">RETE TOR</string>
 	<string name="settings_section_mode">MODALITÀ PRIVACY</string>
 	<string name="offline_mode_title">Modalità offline (Paranoia)</string>
-	<string name="offline_mode_summary">Blocca tutta la rete. Parla solo con i contatti nelle vicinanze tramite mesh</string>
-	<string name="offline_mode_info">La modalità offline arresta completamente Tor e I2P, quindi l\'app non stabilisce alcuna connessione internet. Puoi raggiungere solo i contatti già abbinati che si trovano nelle vicinanze, tramite Bluetooth.</string>
 	<string name="offline_mode_confirm_title">Attivare la modalità offline?</string>
-	<string name="offline_mode_confirm_message">Questo blocca tutta la rete: Tor e I2P vengono arrestati e l\'app non stabilisce alcuna connessione di rete. Sono raggiungibili solo i contatti già abbinati nelle vicinanze, tramite la mesh offline. Disattiva per tornare online.</string>
 	<string name="offline_mode_confirm_button">Vai offline</string>
 	<string name="network_status_off">Off</string>
 	<string name="offline_mode_transport_off">Arrestato in modalità offline</string>
-	<string name="offline_mode_banner">Modalità offline · internet bloccato · solo mesh</string>
 	<string name="settings_section_overlay">RETI OVERLAY</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">Instrada anche attraverso la rete I2P</string>
@@ -699,7 +595,6 @@
 	<string name="settings_section_appearance">ASPETTO</string>
 	<string name="identity_section_title">Verifica dell\'identità</string>
 	<string name="identity_safety_number_label">Numero di sicurezza</string>
-	<string name="identity_safety_number_explain">Confronta queste 60 cifre con il tuo contatto di persona o tramite un canale attendibile. Se corrispondono su entrambi i dispositivi, la tua conversazione è sicura end-to-end.</string>
 	<string name="identity_my_fingerprint_label">La mia impronta</string>
 	<string name="identity_their_fingerprint_label">La sua impronta</string>
 	<string name="identity_copied">Copiato negli appunti</string>
@@ -754,8 +649,6 @@
 	<string name="vault_settings_change_master">Cambia password principale</string>
 	<string name="vault_settings_change_master_summary">Aggiorna la password del vault</string>
 	<string name="vault_settings_autolock">Timeout di blocco automatico</string>
-	<string name="vault_settings_biometric">Sblocco biometrico</string>
-	<string name="vault_settings_biometric_summary">Usa lo sblocco con impronta o volto</string>
 	<string name="vault_settings_clear_clipboard">Svuota gli appunti dopo</string>
 	<string name="vault_settings_hide_content">Nascondi contenuto nel selettore app</string>
 	<string name="vault_settings_hide_content_summary">Sfoca il contenuto del vault quando cambi app</string>
@@ -865,13 +758,10 @@
 	<string name="channels_invite_preparing">Preparazione del link d\'invito…</string>
 	<string name="channels_invite_not_ready">Il canale non e\' ancora pronto per la condivisione. Assicurati di essere connesso e riprova.</string>
 	<string name="channels_invite_rotate_confirm_title">Rigenerare il link d\'invito?</string>
-	<string name="channels_invite_rotate_confirm_message">Chi ha gia\' il vecchio link non potra\' piu\' unirsi. Gli iscritti esistenti continuano a ricevere i post.</string>
 	<string name="channels_leave_confirm_title">Abbandonare il canale?</string>
 	<string name="channels_leave_confirm_message">Tutti i post di questo canale memorizzati localmente verranno rimossi dal tuo dispositivo.</string>
 	<string name="channels_leave_confirm_action">Abbandona</string>
 	<string name="channels_delete_confirm_title">Eliminare il canale?</string>
-	<string name="channels_delete_confirm_message">Questo elimina definitivamente il canale per tutti. Gli iscritti perderanno tutti i post alla successiva connessione. Non e\' possibile annullare.</string>
-	<string name="channels_delete_confirm_action">Elimina per tutti</string>
 	<string name="channels_action_delete_channel">Elimina canale</string>
 	<string name="channels_publisher_offline_note">Gli iscritti riceveranno i tuoi post quando la loro app raggiungera\' l\'onion del tuo canale. Tieni Zerion in esecuzione per una consegna ottimale.</string>
 	<string name="channels_ttl_label">Scadenza</string>
@@ -888,7 +778,6 @@
 	<string name="channels_delegations_role_owner">Proprietario</string>
 	<string name="channels_delegations_role_editor">Editor</string>
 	<string name="channels_delegations_role_you">Tu</string>
-	<string name="channels_delegations_help">Puoi aggiungere editor per aiutarti a pubblicare in questo canale. Tieni premuto su un editor per revocarlo. Solo il proprietario puo\' pubblicare, fissare, eliminare o aggiungere altri editor.</string>
 	<string name="channels_delegations_add">Aggiungi editor</string>
 	<string name="channels_delegations_revoke">Revoca</string>
 	<string name="channels_delegations_paste_pubkey">Incolla la chiave pubblica ibrida dell\'editor (base32)</string>
@@ -932,10 +821,8 @@
 	<string name="channels_leave_failed">Impossibile abbandonare il canale</string>
 	<string name="channels_ban_failed">Impossibile bandire questo iscritto</string>
 	<string name="channels_announce_title">Annunciarti?</string>
-	<string name="channels_announce_message">Il proprietario del canale vedra\' il nome visualizzato che scegli e la tua chiave pubblica. Puoi invece rimanere anonimo. Solo il proprietario vede gli iscritti che si sono annunciati.</string>
 	<string name="channels_announce_name_hint">Nome visualizzato</string>
 	<string name="channels_announce_action">Annuncia</string>
-	<string name="channels_announce_skip">Rimani anonimo</string>
 	<string name="channels_announce_failed">Impossibile annunciare</string>
 	<string name="channels_subscribers_title">Iscritti</string>
 	<string name="channels_subscribers_empty">Nessun iscritto si e\' ancora annunciato.</string>
@@ -985,7 +872,6 @@
 	<string name="channels_comments_count_one">1 commento</string>
 	<string name="channels_create_require_approval">Esamina i nuovi iscritti prima che possano leggere</string>
 	<string name="channels_apply_title">Richiedi di unirti</string>
-	<string name="channels_apply_message">Il proprietario del canale deve approvare la tua richiesta prima che tu possa leggere i post. Il proprietario vedra\' il tuo nome visualizzato e la tua chiave pubblica.</string>
 	<string name="channels_apply_action">Richiedi</string>
 	<string name="channels_apply_failed">Impossibile inviare la richiesta</string>
 	<string name="channels_approval_pending_banner">In attesa che il proprietario approvi la tua richiesta…</string>
@@ -1020,7 +906,6 @@
 	<string name="network_uptime_label">Tempo di attività:</string>
 	<string name="network_hidden_service_label">Hidden Service:</string>
 	<string name="network_mode_title">Modalità di rete sicura</string>
-	<string name="network_mode_description">Tutte le comunicazioni vengono instradate attraverso la rete Tor per la massima privacy e sicurezza. La tua connessione è crittografata end-to-end e la tua identità rimane anonima.</string>
 	<string name="ongoing_notification_exit_action">Esci</string>
 	<string name="voice_message">Messaggio vocale</string>
 	<string name="play_pause">Riproduci/Pausa</string>
@@ -1107,7 +992,6 @@
 	<string name="pref_force_complete_rotation_done">Rotazione completata</string>
 	<string name="pref_force_complete_rotation_not_announcing">Nessuna rotazione in corso</string>
 	<string name="rotation_notification_channel_title">Rotazioni dell\'indirizzo</string>
-	<string name="rotation_notification_own_body">Il tuo indirizzo sicuro è stato ruotato per la forward secrecy.</string>
 	<string name="rotation_notification_peer_body">Un contatto ha aggiornato il proprio indirizzo sicuro.</string>
 	<string name="pref_calls_section_title">CHIAMATE</string>
 	<string name="pref_voice_calls_title">Chiamate vocali</string>
@@ -1377,7 +1261,6 @@
 	<string name="pref_accent_blue">Blu</string>
 	<string name="pref_theme_amoled">Nero AMOLED</string>
 	<string name="tor_mobile_data_summary">Consenti connessioni sulla rete cellulare</string>
-	<string name="tor_info_message">Zerion usa esclusivamente la rete Tor per una comunicazione sicura e anonima. Tutte le connessioni vengono instradate tramite Tor.</string>
 	<string name="tor_custom_bridges_title">Bridge personalizzati</string>
 	<string name="tor_custom_bridges_summary_none">Non impostato</string>
 	<string name="tor_custom_bridges_dialog_message">Se Tor non riesce a connettersi dove ti trovi, incolla qui le righe dei bridge, una per riga. Vengono provate prima dei bridge integrati. Puoi ottenere i bridge da bridges.torproject.org o dal GetBridgesBot su Telegram.</string>
@@ -1422,9 +1305,6 @@
 	<string name="transfer_send_title">Invia a un nuovo telefono</string>
 	<string name="transfer_receive_password_message">Imposta una password per proteggere l\'account ricevuto su questo telefono. La userai per accedere.</string>
 	<string name="transfer_receive_show_qr">Scansiona questo codice con il vecchio telefono</string>
-	<string name="transfer_sas_title">Verifica il numero di sicurezza</string>
-	<string name="transfer_sas_message">Entrambi i telefoni devono mostrare lo stesso numero:\n\n%1$s\n\nCorrisponde sull\'altro telefono?</string>
-	<string name="transfer_sas_matches">Corrisponde</string>
 	<string name="transfer_done_title">Fatto</string>
 	<string name="transfer_failed_title">Trasferimento non riuscito</string>
 	<string name="transfer_failed_message">Il trasferimento non è stato completato. Assicurati che entrambi i telefoni siano connessi a Tor e riprova.</string>
@@ -1462,7 +1342,6 @@
 	<string name="profiles_switch_title">Cambia profilo</string>
 	<string name="profiles_switch_summary">Disconnettiti, poi accedi con la password del profilo di destinazione.</string>
 	<string name="profiles_delete_title">Elimina questo profilo</string>
-	<string name="profiles_delete_summary">Cancella in modo sicuro i dati di questo profilo. Non può essere annullato.</string>
 	<string name="profiles_add_dialog_title">Crea nuovo profilo</string>
 	<string name="profiles_add_dialog_message">Verrai disconnesso. Una volta creato il nuovo profilo, accedi con la sua password per usarlo.</string>
 	<string name="profiles_add_name_hint">Nome profilo</string>
@@ -1480,7 +1359,6 @@
 	<string name="profiles_switch_action">Disconnetti</string>
 	<string name="profiles_switch_progress">Cambio profilo…</string>
 	<string name="profiles_delete_dialog_title">Eliminare questo profilo?</string>
-	<string name="profiles_delete_dialog_message">Tutti i messaggi, i contatti e l\'identità di questo profilo verranno cancellati in modo sicuro. Questa operazione non può essere annullata.</string>
 	<string name="profiles_delete_action">Elimina profilo</string>
 	<string name="profiles_delete_last_warning">Questo è l\'unico profilo. Eliminandolo l\'app verrà reimpostata.</string>
 	<string name="pref_default_disappearing_title">Timer a scomparsa predefinito</string>
@@ -1588,9 +1466,6 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Sicurezza classica</string>
 	<string name="security_level_classical_short">Classica</string>
-	<string name="security_level_post_quantum_description">Crittografia e firme resistenti ai computer quantistici. Sicure contro gli attaccanti odierni e contro i futuri computer quantistici.</string>
-	<string name="security_level_legacy_auth_description">Crittografia resistente ai computer quantistici, ma le firme usano ancora lo standard precedente. Aggiungi di nuovo questo contatto una volta che entrambi avrete aggiornato per ottenere la protezione completa.</string>
-	<string name="security_level_classical_description">Solo crittografia classica. Entrambe le parti devono aggiornare a Zerion per la protezione resistente ai computer quantistici.</string>
 	<string name="voice_call">Chiamata vocale</string>
 	<string name="media">Media</string>
 	<string name="login_account_locked">Account bloccato per troppi tentativi falliti. Attendi %1$d minuti e %2$d secondi.</string>
@@ -1631,7 +1506,6 @@
 	<string name="wipe_password_remove_failed">Impossibile rimuovere la password di cancellazione</string>
 	<string name="wipe_password_triggered_title">Cancellazione di emergenza attivata</string>
 	<string name="wipe_password_triggered_message">Password di cancellazione rilevata. Tutti i dati saranno eliminati definitivamente adesso.</string>
-	<string name="wipe_password_warning">⚠️ ATTENZIONE: inserire la password di cancellazione eliminerà immediatamente e definitivamente TUTTI i dati da questo dispositivo. Questa azione non può essere annullata.</string>
 	<string name="set">Imposta</string>
 	<string name="remove">Rimuovi</string>
 	<string name="zerion_call">Chiamata Zerion</string>
@@ -1683,11 +1557,6 @@
 	<string name="vault_no_file_picker">Nessun selettore di file disponibile</string>
 	<string name="vault_settings_wipe_message">Questo eliminerà definitivamente tutti i dati del vault. Questa azione non può essere annullata. Sei assolutamente sicuro?</string>
 	<string name="vault_wipe_button">Cancella vault</string>
-	<string name="vault_biometric_enabled">Autenticazione biometrica attivata</string>
-	<string name="vault_biometric_no_fingerprints">Nessuna impronta registrata</string>
-	<string name="vault_biometric_no_hardware">Hardware biometrico non disponibile</string>
-	<string name="vault_biometric_unsupported">Autenticazione biometrica non supportata su questo dispositivo</string>
-	<string name="vault_biometric_disabled">Autenticazione biometrica disattivata</string>
 	<string name="vault_document_opening">Apertura di %1$s…</string>
 	<string name="vault_document_open_error">Impossibile aprire il documento: attività non pronta</string>
 	<string name="vault_document_details_title">Dettagli documento</string>
@@ -1698,7 +1567,6 @@
 	<string name="vault_document_export_failed">Impossibile esportare il documento</string>
 	<string name="vault_document_load_failed">Impossibile caricare il documento: %1$s</string>
 	<string name="vault_zenc_export_title">Imposta password di esportazione</string>
-	<string name="vault_zenc_export_message_download">Imposta una password per crittografare il file .zenc. Questo file può essere condiviso in modo sicuro.</string>
 	<string name="vault_zenc_export_message_share">Imposta una password per crittografare il file .zenc. Dovrai condividere questa password separatamente.</string>
 	<string name="vault_zenc_password_required">La password è obbligatoria per l\'esportazione .zenc</string>
 	<string name="vault_document_export_generic_failed">Impossibile esportare</string>
@@ -1911,7 +1779,6 @@
 	<string name="wallet_receive_new">Nuovo indirizzo</string>
 	<string name="wallet_node_hint">Tocca un server per usarlo. Tieni premuto un server personalizzato per rimuoverlo.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Un indirizzo privato riutilizzabile. I pagamenti verso di esso non sono collegabili sulla blockchain. Il rilevamento analizza dati pubblici tramite Tor; le tue chiavi non lasciano mai il dispositivo.</string>
 	<string name="wallet_sp_balance">Rilevato: %1$s</string>
 	<string name="wallet_sp_scanned">Analizzato fino al blocco %1$d</string>
 	<string name="wallet_sp_set_oracle">Sorgente di scansione</string>

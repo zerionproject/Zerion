@@ -23,12 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * End-to-end proof of the Phase 2 + Phase 3 software pipeline with no radio:
- * the recipient generates prekeys and publishes a signed bundle, the sender
- * seals a message to it and floods it across the mesh, and the recipient opens
- * it and consumes the one-time prekey. Relays cannot open it.
- */
 public class AsyncMeshIntegrationTest {
 
 	private final SecureRandom random = new SecureRandom();
@@ -74,7 +68,6 @@ public class AsyncMeshIntegrationTest {
 
 	@Test
 	public void sealFloodOpenAndConsume() throws Exception {
-		// Recipient R: identity, prekey store, published bundle.
 		AsyncMeshDelivery.Identity rId = newIdentity();
 		AsyncPrekeyStore rStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
@@ -93,7 +86,6 @@ public class AsyncMeshIntegrationTest {
 				rId, new SystemClock());
 		MeshForwarder rForwarder = new MeshForwarder(rDelivery, random);
 
-		// Sender S: identity, its own store and delivery (as a mesh node).
 		AsyncMeshDelivery.Identity sId = newIdentity();
 		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
@@ -102,7 +94,6 @@ public class AsyncMeshIntegrationTest {
 				new SystemClock());
 		MeshForwarder sForwarder = new MeshForwarder(sDelivery, random);
 
-		// A relay in the middle that cannot open anything.
 		AsyncMeshDelivery.Identity relayId = newIdentity();
 		AsyncPrekeyStore relayStore = new AsyncPrekeyStore(crypto,
 				new InMemorySettingsManager(), new SystemClock());
@@ -126,11 +117,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(0, relayOpened.size());
 	}
 
-	/**
-	 * PROTO-09: replaying one captured valid envelope under fresh frame ids
-	 * must open (decapsulate and verify) it at most once. The dedup id is
-	 * checked before the open, so repeats cost a settings read, not crypto.
-	 */
 	@Test
 	public void replayedEnvelopeIsOpenedOnlyOnce() throws Exception {
 		Recipient r = new Recipient(new SystemClock());
@@ -142,10 +128,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(1, r.opened.size());
 	}
 
-	/**
-	 * PROTO-09: an envelope whose time-to-live has elapsed against the clock
-	 * is rejected rather than delivered, closing the unbounded replay window.
-	 */
 	@Test
 	public void expiredEnvelopeIsRejected() throws Exception {
 		long base = System.currentTimeMillis();
@@ -159,12 +141,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(0, r.opened.size());
 	}
 
-	/**
-	 * CRY-08: an envelope sealed to the reusable signed prekey must stay
-	 * rejected after the seen-set has been filled past its bound by newer
-	 * envelopes. Eviction raises the floor to the evicted expiry, so the
-	 * old envelope is refused whether or not it is still remembered.
-	 */
 	@Test
 	public void replayAfterSeenSetEvictionIsStillRejected() throws Exception {
 		Recipient r = new Recipient(new SystemClock(), 4);
@@ -185,10 +161,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals("evicted envelope replayed", 7, r.opened.size());
 	}
 
-	/**
-	 * CRY-08: the floor refuses only what expires at or before the oldest
-	 * evicted entry; a fresh envelope expiring later still opens.
-	 */
 	@Test
 	public void envelopesAboveTheFloorStillOpenAfterEviction()
 			throws Exception {
@@ -206,10 +178,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(4, r.opened.size());
 	}
 
-	/**
-	 * A sender that floods the recipient with long-lived envelopes raises
-	 * only its own floor: another sender's ordinary envelope still opens.
-	 */
 	@Test
 	public void aFloodFromOneSenderDoesNotBlockAnotherSender()
 			throws Exception {
@@ -233,11 +201,6 @@ public class AsyncMeshIntegrationTest {
 				r.opened.size());
 	}
 
-	/**
-	 * The envelope timestamp is in milliseconds: a value in seconds looks
-	 * decades old and is refused, which is what every honest sender must
-	 * avoid and what the sending side is tested to avoid.
-	 */
 	@Test
 	public void anEnvelopeStampedInSecondsIsRefused() throws Exception {
 		Recipient r = new Recipient(new SystemClock());
@@ -250,11 +213,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(1, r.opened.size());
 	}
 
-	/**
-	 * Nothing is recorded for a sender the listener does not know, so a
-	 * stranger cannot fill the replay store; a repeat still costs no second
-	 * open thanks to the in-memory record.
-	 */
 	@Test
 	public void aStrangersEnvelopeIsNeitherRecordedNorReopened()
 			throws Exception {
@@ -268,12 +226,6 @@ public class AsyncMeshIntegrationTest {
 		assertEquals(Long.MIN_VALUE, r.store.seenFloor(sender.sigPub));
 	}
 
-	/**
-	 * A2-CRY-04: a sender remembers which one-time keys it has used, so a
-	 * second envelope to the same recipient picks another key or the signed
-	 * prekey instead of a key the recipient has already deleted; every
-	 * envelope opens.
-	 */
 	@Test
 	public void repeatedSendsNeverReuseAConsumedOneTimeKey() throws Exception {
 		Recipient r = new Recipient(new SystemClock());
@@ -297,7 +249,6 @@ public class AsyncMeshIntegrationTest {
 				+ " rest on the signed prekey", sends, r.opened.size());
 	}
 
-	/** A2-CRY-04: a bundle whose signed prekey has expired is not sealed to. */
 	@Test
 	public void anExpiredSignedPrekeyRefusesTheSend() throws Exception {
 		Recipient r = new Recipient(new SystemClock());
@@ -325,7 +276,6 @@ public class AsyncMeshIntegrationTest {
 		}
 	}
 
-	/** Seals a message to {@code r} and returns the raw envelope bytes. */
 	private byte[] sealTo(Recipient r, byte[] payload, long ttlSeconds,
 			long sendTimestamp) throws Exception {
 		return sealTo(r, payload, ttlSeconds, sendTimestamp, true);

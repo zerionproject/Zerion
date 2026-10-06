@@ -82,7 +82,8 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 		ZerionApplication app =
 				(ZerionApplication) context.getApplicationContext();
 		ioExecutor = app.getApplicationComponent().ioExecutor();
-		storage = new StickerStorage(context.getApplicationContext());
+		storage = new StickerStorage(app.getApplicationComponent()
+				.profileStorage().stickerDir());
 		importer = new StickerImporter(storage);
 	}
 
@@ -158,7 +159,9 @@ public class StickerPickerDialog extends BottomSheetDialogFragment {
 		tabMine.setAlpha(myStickersTabActive ? 1f : 0.5f);
 	}
 
-	private void onPickResult(@Nullable Uri uri) {
+	private void onPickResult(@Nullable Uri picked) {
+		Uri uri = com.professor.zerion.android.util.PickedUris.accept(
+				requireContext(), picked);
 		if (uri == null || importer == null || myAdapter == null) return;
 		Activity act = getActivity();
 		if (act == null) return;

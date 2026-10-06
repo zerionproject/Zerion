@@ -6,10 +6,13 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.ContactType;
+import org.zerionproject.core.api.contact.OwnLinkChangedException;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.PendingContactState;
+import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridAgreementPrivateKey;
 import org.zerionproject.core.api.crypto.HybridAgreementPublicKey;
@@ -18,11 +21,7 @@ import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.KeyParser;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
-import org.zerionproject.core.api.crypto.pcs.DhRatchetState;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
-import org.zerionproject.core.api.crypto.pcs.PqRatchetState;
 import org.zerionproject.core.crypto.pcs.PcsStateManager;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.ContactExistsException;
@@ -55,7 +54,6 @@ import javax.inject.Inject;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.zerionproject.core.api.contact.PendingContactState.WAITING_FOR_CONNECTION;
-import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_ENABLED;
 import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAME_LENGTH;
 import static org.zerionproject.core.util.StringUtils.toUtf8;
 
@@ -63,13 +61,18 @@ import static org.zerionproject.core.util.StringUtils.toUtf8;
 @NotNullByDefault
 class ContactManagerImpl implements ContactManager, EventListener {
 
+	static final String IN_PERSON_NAMESPACE =
+			"org.zerionproject.contact.scannedInPerson";
+	static final String CONNECTION_KEYS_NAMESPACE =
+			"org.zerionproject.transport.rootEvolution";
+	static final String OUT_OF_SYNC_KEY_PREFIX = "outOfSync.";
+
 	private final DatabaseComponent db;
 	private final KeyManager keyManager;
 	private final IdentityManager identityManager;
 	private final PendingContactFactory pendingContactFactory;
 	private final CryptoComponent crypto;
 	private final PcsStateManager pcsStateManager;
-	private final Mode3FullRatchet mode3FullRatchet;
 
 	private final List<ContactHook> hooks = new CopyOnWriteArrayList<>();
 	private final Map<PendingContactId, PendingContactState> states =
@@ -81,15 +84,13 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			IdentityManager identityManager,
 			PendingContactFactory pendingContactFactory,
 			CryptoComponent crypto,
-			PcsStateManager pcsStateManager,
-			Mode3FullRatchet mode3FullRatchet) {
+			PcsStateManager pcsStateManager) {
 		this.db = db;
 		this.keyManager = keyManager;
 		this.identityManager = identityManager;
 		this.pendingContactFactory = pendingContactFactory;
 		this.crypto = crypto;
 		this.pcsStateManager = pcsStateManager;
-		this.mode3FullRatchet = mode3FullRatchet;
 	}
 
 	@Override
@@ -105,11 +106,6 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				verified, active, (byte[]) null);
 	}
 
-	/**
-	 * Adds a contact paired nearby. The root key comes from the hybrid
-	 * nearby pairing protocol (X25519 and ML-KEM-768), so the contact is
-	 * recorded as post-quantum like a contact paired over a link.
-	 */
 	@Override
 	public ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			SecretKey rootKey, long timestamp, boolean alice, boolean verified,
@@ -130,7 +126,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			SecretKey rootKey, boolean verified,
 			@Nullable byte[] peerMlDsaSigPublicKey) throws DbException {
 		requireNotReserved(remote);
-		ContactId c = db.addContact(txn, remote, local, null, verified, false,
+		ContactId c = db.addContact(txn, remote, local, null, verified, true,
 				false, peerMlDsaSigPublicKey);
 		initializePcsState(txn, c, rootKey);
 		Contact contact = db.getContact(txn, c);
@@ -154,15 +150,18 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			@Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException {
 		requireNotReserved(remote);
-		if (db.containsContact(txn, remote.getId(), local)) {
-			throw new ContactExistsException(local, remote);
-		}
 		PendingContact pendingContact = db.getPendingContact(txn, p);
 		boolean postQuantum = pendingContact.isPostQuantum();
 		checkForSecurityDowngrade(txn, remote.getId(), postQuantum);
 		byte[][] ourKeySnapshot = db.getPendingContactOurKeys(txn, p);
+		boolean inPerson = takeScannedInPerson(txn, p);
 		db.removePendingContact(txn, p);
 		states.remove(p);
+		if (db.containsContact(txn, remote.getId(), local)) {
+			return rekeyContact(txn, remote, local, rootKey, timestamp, alice,
+					peerMlDsaSigPublicKey, inPerson);
+		}
+		verified = verified || inPerson;
 		PublicKey theirPublicKey = pendingContact.getPublicKey();
 		KeyPair ourKeyPair;
 		if (theirPublicKey instanceof HybridCommitmentPublicKey) {
@@ -196,13 +195,43 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		return c;
 	}
 
-	/**
-	 * Returns the local hybrid handshake key pair to use for a pending
-	 * contact: the pair that was snapshotted when the pending contact was
-	 * created, so that identity key rotation after each successful addition
-	 * never breaks a pairing that is still in flight, or the current
-	 * identity keys for rows created before snapshots existed.
-	 */
+	private ContactId rekeyContact(Transaction txn, Author remote,
+			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
+			@Nullable byte[] peerMlDsaSigPublicKey, boolean inPerson)
+			throws DbException {
+		Contact existing = getContact(txn, remote.getId(), local);
+		ContactId c = existing.getId();
+		keyManager.addRotationKeys(txn, c, rootKey, timestamp, alice, true);
+		db.removePcsSessionState(txn, c,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT);
+		db.removePcsSessionState(txn, c,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING);
+		initializePcsState(txn, c, rootKey);
+		if (existing.getMlDsaSigPublicKey() == null
+				&& peerMlDsaSigPublicKey != null) {
+			db.setContactMlDsaSigPublicKey(txn, c, peerMlDsaSigPublicKey);
+		}
+		if (inPerson && !existing.isVerified()) db.setContactVerified(txn, c);
+		Settings s = new Settings();
+		s.putBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+		db.mergeSettings(txn, s, CONNECTION_KEYS_NAMESPACE);
+		txn.attach(new ContactConnectionKeysEvent(c, false));
+		identityManager.rotateHybridHandshakeKeys(txn);
+		return c;
+	}
+
+	private boolean takeScannedInPerson(Transaction txn, PendingContactId p)
+			throws DbException {
+		String key = org.zerionproject.core.util.StringUtils.toHexString(
+				p.getBytes());
+		Settings s = db.getSettings(txn, IN_PERSON_NAMESPACE);
+		if (!s.getBoolean(key, false)) return false;
+		Settings clear = new Settings();
+		clear.putBoolean(key, false);
+		db.mergeSettings(txn, clear, IN_PERSON_NAMESPACE);
+		return true;
+	}
+
 	private KeyPair hybridKeyPairFor(Transaction txn,
 			@Nullable byte[][] snapshot) throws DbException {
 		if (snapshot != null) {
@@ -291,6 +320,12 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	public PendingContact addPendingContact(Transaction txn, String link,
 			String alias)
 			throws DbException, FormatException, GeneralSecurityException {
+		return addPendingContact(txn, link, alias, false);
+	}
+
+	private PendingContact addPendingContact(Transaction txn, String link,
+			String alias, boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException {
 		PendingContact p =
 				pendingContactFactory.createPendingContact(link, alias);
 
@@ -302,7 +337,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 			}
 		}
 		AuthorId local = identityManager.getLocalAuthor(txn).getId();
-		db.addPendingContact(txn, p, local);
+		db.addPendingContact(txn, p, local, reAddExisting);
 		if (p.isPostQuantum()) {
 			KeyPair hybridSnapshot = identityManager.getHybridHandshakeKeys(txn);
 			if (hybridSnapshot != null) {
@@ -330,6 +365,52 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		} finally {
 			db.endTransaction(txn);
 		}
+	}
+
+	@Override
+	public PendingContact addPendingContact(String link, String alias,
+			String sharedOwnLink)
+			throws DbException, FormatException, GeneralSecurityException {
+		return addPendingContact(link, alias, sharedOwnLink, false, false);
+	}
+
+	@Override
+	public PendingContact addPendingContact(String link, String alias,
+			@Nullable String sharedOwnLink, boolean reAddExisting,
+			boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException {
+		Transaction txn = db.startTransaction(false);
+		try {
+			if (sharedOwnLink != null
+					&& !sharedOwnLink.equals(getHandshakeLink(txn))) {
+				throw new OwnLinkChangedException();
+			}
+			PendingContact p = addPendingContact(txn, link, alias,
+					reAddExisting);
+			if (verifiedInPerson) {
+				Settings s = new Settings();
+				s.putBoolean(org.zerionproject.core.util.StringUtils
+						.toHexString(p.getId().getBytes()), true);
+				db.mergeSettings(txn, s, IN_PERSON_NAMESPACE);
+			}
+			db.commitTransaction(txn);
+			return p;
+		} finally {
+			db.endTransaction(txn);
+		}
+	}
+
+	@Override
+	public boolean isConnectionOutOfSync(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn ->
+				isConnectionOutOfSync(txn, c));
+	}
+
+	@Override
+	public boolean isConnectionOutOfSync(Transaction txn, ContactId c)
+			throws DbException {
+		return db.getSettings(txn, CONNECTION_KEYS_NAMESPACE)
+				.getBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
 	}
 
 	@Override
@@ -436,6 +517,11 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	}
 
 	@Override
+	public void setContactVerified(ContactId c) throws DbException {
+		db.transaction(false, txn -> db.setContactVerified(txn, c));
+	}
+
+	@Override
 	public boolean contactExists(Transaction txn, AuthorId remoteAuthorId,
 			AuthorId localAuthorId) throws DbException {
 		return db.containsContact(txn, remoteAuthorId, localAuthorId);
@@ -467,28 +553,7 @@ class ContactManagerImpl implements ContactManager, EventListener {
 
 	private void initializePcsState(Transaction txn, ContactId contactId,
 			SecretKey rootKey) throws DbException {
-		KeyPair dhKeyPair = crypto.generateAgreementKeyPair();
-		DhRatchetState dhState = new DhRatchetState(dhKeyPair, null);
-		PcsSessionState sendState;
-		PcsSessionState receiveState;
-		if (MODE3_FULL_ENABLED) {
-			Mode3FullState sharedMode3Full =
-					mode3FullRatchet.createInitialState();
-			sendState = PcsSessionState.createInitialMode3Full(
-					rootKey, rootKey, dhState, sharedMode3Full);
-			receiveState = PcsSessionState.createInitialMode3Full(
-					rootKey, rootKey, dhState, sharedMode3Full);
-		} else {
-			sendState = PcsSessionState.createInitialMode3(
-					rootKey, rootKey, dhState);
-			receiveState = PcsSessionState.createInitialMode3(
-					rootKey, rootKey, dhState);
-		}
-		pcsStateManager.initializeMode2State(txn, contactId, sendState,
-				receiveState);
-		PqRatchetState pqState = PqRatchetState.createReady(
-				System.currentTimeMillis());
-		pcsStateManager.savePqState(txn, contactId, pqState);
+		pcsStateManager.initializePairingRoot(txn, contactId, rootKey);
 	}
 
 	@Override
@@ -504,6 +569,11 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		PcsSessionState state = pcsStateManager.loadSendState(txn, c);
 		SecretKey rootKey = state == null ? null : state.getRootKey();
 		if (rootKey == null) throw new NoSuchContactException();
-		return crypto.deriveKey(label, rootKey, inputs);
+		try {
+			return crypto.deriveKey(label, rootKey, inputs);
+		} finally {
+			rootKey.clear();
+			state.getChainKey().clear();
+		}
 	}
 }

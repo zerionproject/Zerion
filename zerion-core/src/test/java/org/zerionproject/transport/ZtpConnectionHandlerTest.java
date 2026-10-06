@@ -49,14 +49,6 @@ import static org.junit.Assert.fail;
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 
-/**
- * Exercises the established-contact connection handler end to end: a dialled
- * (outgoing) endpoint and a tag-recognised (incoming) endpoint each resume
- * their stored session, hand the live connection to the runner, exchange
- * messages both ways, report the closed session to the provider and zeroize
- * the session's ML-KEM key material. The socket a pairing ran on takes the
- * same path with the contact id known on both sides.
- */
 public class ZtpConnectionHandlerTest {
 
 	private CryptoComponent crypto;
@@ -87,7 +79,7 @@ public class ZtpConnectionHandlerTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -124,7 +116,6 @@ public class ZtpConnectionHandlerTest {
 		return XSalsa20Poly1305AuthenticatedCipher::new;
 	}
 
-	/** A fake session provider backed by an in-memory map and a tag recogniser. */
 	private static class FakeProvider implements ZtpSessionProvider {
 		private final ZwfTagRecogniser recogniser;
 		private final Map<Integer, StoredContactSession> stored;
@@ -145,7 +136,11 @@ public class ZtpConnectionHandlerTest {
 
 		@Override
 		public StoredContactSession getStoredSession(int contactId) {
-			return stored.get(contactId);
+			StoredContactSession s = stored.get(contactId);
+			if (s == null) return null;
+			return new StoredContactSession(
+					new SecretKey(s.getRootKey().getBytes().clone()),
+					s.isAlice(), s.getGeneration());
 		}
 
 		@Override
@@ -154,11 +149,6 @@ public class ZtpConnectionHandlerTest {
 		}
 	}
 
-	/**
-	 * A runner that sends and receives {@code n} messages on the connection,
-	 * recording what it received and the connection it ran, keyed by contact
-	 * id.
-	 */
 	private static class ExchangeRunner implements ZppConnectionRunner {
 		private final int n;
 		final Map<Integer, List<String>> received = new ConcurrentHashMap<>();
@@ -297,7 +287,41 @@ public class ZtpConnectionHandlerTest {
 		return new SecretKey(rootBytes);
 	}
 
-	/** A separate establisher and counter model an independent device. */
+	@Test(timeout = 30_000)
+	public void aRefusedConnectionWipesTheRootKeysLoadedForIt()
+			throws Exception {
+		SecretKey root = new SecretKey(new byte[SecretKey.LENGTH]);
+		crypto.getSecureRandom().nextBytes(root.getBytes());
+		ContactRootKeys loaded = ContactRootKeys.atPairing(
+				new SecretKey(root.getBytes().clone()));
+		ZtpSessionProvider provider = new ZtpSessionProvider() {
+			@Override
+			public int recogniseIncoming(byte[] tag) {
+				return -1;
+			}
+
+			@Override
+			public StoredContactSession getStoredSession(int contactId) {
+				return new StoredContactSession(loaded, true, 0);
+			}
+
+			@Override
+			public void sessionClosed(int contactId) {
+			}
+		};
+		ZtpConnectionHandlerImpl h = handler(provider, (c, conn) -> {
+		});
+		assertTrue(h.acquireSession(1,
+				org.zerionproject.core.api.plugin.TransportId.class
+						.getConstructor(String.class).newInstance("other")));
+		h.handleOutgoing(org.zerionproject.core.api.plugin.TorConstants.ID, 1,
+				new java.io.ByteArrayInputStream(new byte[0]),
+				new java.io.ByteArrayOutputStream());
+		int acc = 0;
+		for (byte b : loaded.getCurrent().getBytes()) acc |= b;
+		assertEquals("the root copy is zeroed", 0, acc);
+	}
+
 	private ZtpConnectionHandlerImpl handler(ZtpSessionProvider provider,
 			ZppConnectionRunner runner) {
 		ZtpConnectionEstablisher establisher = new ZtpConnectionEstablisher(
@@ -343,10 +367,6 @@ public class ZtpConnectionHandlerTest {
 		}
 	}
 
-	/**
-	 * Alice's runner ran for contact 2 and Bob's for contact 1, each exchanged
-	 * six messages, and each side reported the closed session.
-	 */
 	private static void assertExchanged(ExchangeRunner runner,
 			FakeProvider aliceProvider, FakeProvider bobProvider) {
 		assertNotNull(runner.received.get(2));

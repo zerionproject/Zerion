@@ -87,7 +87,12 @@ Rules:
   it is not a downgrade path. No message from the peer moves this state
   anywhere but `REVOKED` (a local action).
 - `* -> REVOKED`: contact removed or blocked, section 7. A contact re-added
-  later is a new pairing with a new root key and starts at `LEGACY`.
+  later is a new pairing with a new root key and is meant to start at
+  `LEGACY`. Known limitation: the record is keyed by the internal contact id,
+  which the database reuses when the most recently added contact is removed
+  and another is added; the new contact then inherits the `REVOKED` record,
+  inbound connections from it are refused, and its stream counters start
+  from the removed contact's values.
 - Before `AUTH_REQUIRED` the pair is at today's posture: open service gated
   by the recognition tag. Nothing is weaker than today at any point.
 
@@ -269,6 +274,16 @@ a crash resumes at the next one:
 
 The contact's transport keys are deleted with the contact as today.
 
+The open address (`onion3`) is revoked as well, by the address rotation
+(`B4OnionRotation`, from 3.0.15): the rotation is recorded as owed in the
+transaction that removes the contact (`contactRemoved`), so a process killed
+right after the removal still owes it, and it stays owed until it has run; a
+rotation already announcing is abandoned and its next onion unpublished, and
+the address the removed contact knew is retired once every remaining contact
+has moved, within 48 hours at most, checked exactly when the window ends and
+at every hourly round, and at once when no contact is left. Each hourly
+check runs whatever happened to the ones before it.
+
 The rotation is recorded as pending in the service record before it is
 attempted and cleared only once the new service is published and announced
 to the remaining contacts. A revocation while Tor is down, or a rotation
@@ -286,7 +301,11 @@ Regression tests cover both the closed sessions and the refused tag.
 Observed on 2026-09-24 against the Tor 0.4.9.12 that 3.0.12 ships and on
 2026-09-25 against the Tor 0.4.9.13 built in tree for the next release, both
 on the Moto, over the app's own authenticated control port (replies observed by
-the device check, not logged by the app):
+the device check, not logged by the app). These observations used a loopback
+target; since 3.0.15 (not yet released) the target is a Unix socket in the
+app's private directory (`Port=80,unix:<files>/zo/<name>`), which Tor's
+ADD_ONION parses like a HiddenServicePort target. That form is not yet
+confirmed on a device:
 
 - `ADD_ONION NEW:ED25519-V3 Flags=Detach,V3Auth ClientAuthV3=<key>
   Port=80,127.0.0.1:<port>` returns `250-ServiceID`, `250-PrivateKey`, one

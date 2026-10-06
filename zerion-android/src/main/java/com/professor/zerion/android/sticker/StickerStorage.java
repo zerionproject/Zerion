@@ -34,7 +34,11 @@ public final class StickerStorage {
 	private final SecureRandom random = new SecureRandom();
 
 	public StickerStorage(Context appContext) {
-		this.dir = new File(appContext.getFilesDir(), DIR);
+		this(new File(appContext.getFilesDir(), DIR));
+	}
+
+	public StickerStorage(File dir) {
+		this.dir = dir;
 		if (!dir.exists()) {
 
 			dir.mkdirs();
@@ -152,7 +156,6 @@ public final class StickerStorage {
 		for (String id : listIds()) {
 			delete(id);
 		}
-		StickerKeystore.deleteKey();
 	}
 
 	private String newId() {

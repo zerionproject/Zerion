@@ -60,6 +60,9 @@ import static org.junit.Assert.assertNull;
 
 public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 
+	private final SecretKey aliceActivateKey = getSecretKey();
+	private final SecretKey bobActivateKey = getSecretKey();
+
 	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
 	private final ClientHelper clientHelper = context.mock(ClientHelper.class);
 	private final ContactManager contactManager =
@@ -162,6 +165,10 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 					alice ? ownKemSecret : peerKemSecret,
 					alice ? peerKemSecret : ownKemSecret);
 			will(returnValue(finalMasterKey));
+			oneOf(crypto).deriveActivateKey(finalMasterKey, true);
+			will(returnValue(aliceActivateKey));
+			oneOf(crypto).deriveActivateKey(finalMasterKey, false);
+			will(returnValue(bobActivateKey));
 
 			oneOf(contactManager).addContact(with(txn), with(remoteIntroducee),
 					with(localIntroducee.getId()),
@@ -202,12 +209,14 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		assertEquals(now, afterLocal.lastMessageTimestamp);
 		assertNull(afterLocal.ephemeralPublicKey);
 		assertNull(afterLocal.ephemeralPrivateKey);
-		assertArrayEquals(localMacKey.getBytes(), afterLocal.macKey);
+		assertArrayEquals(alice ? aliceActivateKey.getBytes()
+				: bobActivateKey.getBytes(), afterLocal.macKey);
 
 		IntroduceeSession.Remote afterRemote = after.getRemote();
 		assertEquals(authMessage.getMessageId(), afterRemote.lastMessageId);
 		assertNull(afterRemote.ephemeralPublicKey);
-		assertArrayEquals(remoteMacKey.getBytes(), afterRemote.macKey);
+		assertArrayEquals(alice ? bobActivateKey.getBytes()
+				: aliceActivateKey.getBytes(), afterRemote.macKey);
 	}
 
 	@Test
@@ -244,6 +253,10 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 					alice ? ownKemSecret : peerKemSecret,
 					alice ? peerKemSecret : ownKemSecret);
 			will(returnValue(finalMasterKey));
+			oneOf(crypto).deriveActivateKey(finalMasterKey, true);
+			will(returnValue(aliceActivateKey));
+			oneOf(crypto).deriveActivateKey(finalMasterKey, false);
+			will(returnValue(bobActivateKey));
 
 			oneOf(messageParser).getRequestsAvailableToAnswerQuery(sessionId);
 			will(returnValue(query));
@@ -281,7 +294,6 @@ public class IntroduceeProtocolEngineTest extends BrambleMockTestCase {
 		assertNull(afterRemote.macKey);
 	}
 
-	/** PROTO-12: an AUTH without the KEM ciphertext aborts the session. */
 	@Test
 	public void testAuthWithoutKemCiphertextAbortsSession() throws Exception {
 		Transaction txn = new Transaction(null, false);

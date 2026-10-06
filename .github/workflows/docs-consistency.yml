@@ -31,6 +31,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Pinned by tag until checked against upstream; see docs/SUPPLY_CHAIN.md.
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:

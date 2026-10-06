@@ -73,6 +73,13 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			protected LoginThrottle createLoginThrottle(File stateFile) {
 				return LoginThrottle.inFile(stateFile, LoginThrottle.SIGN_IN);
 			}
+
+			@Override
+			protected LoginThrottle createPasswordCheckThrottle() {
+				return LoginThrottle.inFile(
+						new File(testDir, "password.check.lockout"),
+						AndroidAccountManager.PASSWORD_CHECK);
+			}
 		};
 	}
 
@@ -84,8 +91,6 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 				"   ".toCharArray(), new byte[10], new byte[32]));
 	}
 
-	/** AND-09: an imported profile is wrapped with the keystore strengthener
-	 *  from the start, exactly like a created one. */
 	@Test
 	public void testImportProfileWrapsTheKeyWithTheStrengthener()
 			throws Exception {
@@ -96,20 +101,29 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 		byte[] wrapped = new byte[40];
 		char[] password = "secret".toCharArray();
 		File profileDb = new File(testDir, "profiles/p1/db");
+		File profileKey = new File(testDir, "profiles/p1/key");
 		context.checking(new Expectations() {{
+			allowing(profileManager).getLockoutFile();
+			will(returnValue(new File(testDir, "login.lockout")));
+			allowing(profileManager).listProfileIds();
+			will(returnValue(java.util.Collections.emptyList()));
 			oneOf(profileManager).generateProfileId();
 			will(returnValue("p1"));
 			oneOf(profileManager).createProfileDir("p1");
 			will(returnValue(true));
-			allowing(profileManager).getActiveProfileId();
-			will(returnValue(null));
-			allowing(profileManager).setActiveProfileId(
+			never(profileManager).setActiveProfileId(
 					with(any(String.class)));
-			allowing(profileManager).setActiveProfileId(null);
 			oneOf(profileManager).getDbDir("p1");
 			will(returnValue(profileDb));
+			oneOf(profileManager).getKeyDir("p1");
+			will(returnValue(profileKey));
 			allowing(databaseConfig).getKeyStrengthener();
 			will(returnValue(strengthener));
+			allowing(strengthener).currentGeneration();
+			will(returnValue(org.zerionproject.core.api.crypto
+					.KeyStrengthener.LEGACY_GENERATION));
+			allowing(strengthener).startNewGeneration();
+			will(returnValue(false));
 			oneOf(crypto).encryptWithPassword(dbKey, password, strengthener);
 			will(returnValue(wrapped));
 			oneOf(profileManager).writeDisplayName("p1", "Alice");
@@ -119,12 +133,16 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 		assertTrue(keyDir.mkdirs());
 		org.junit.Assert.assertEquals("p1", accountManager.importProfile(
 				"Alice", password, new byte[10], dbKey));
+		assertTrue("the key went to the new profile",
+				new File(profileKey, "db.key").exists());
+		assertFalse("not to the profile in use",
+				new File(keyDir, "db.key").exists());
 	}
 
 	private static final String HEX = "0102030405060708";
 
 	private void expectSignIn(java.util.List<String> profiles,
-			boolean everMultiple, int derivations) throws Exception {
+			int derivations) throws Exception {
 		org.zerionproject.core.api.crypto.KeyStrengthener strengthener =
 				context.mock(org.zerionproject.core.api.crypto
 						.KeyStrengthener.class);
@@ -142,14 +160,18 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			will(returnValue(null));
 			allowing(profileManager).setActiveProfileId(
 					with(any(String.class)));
-			allowing(profileManager).hasEverHadMultipleProfiles();
-			will(returnValue(everMultiple));
+			oneOf(profileManager).startSession(profiles.get(0));
 			allowing(profileManager).readEncryptedMetaFile(
 					with(any(String.class)), with(any(String.class)));
 			will(returnValue(null));
 			oneOf(profileManager).writeLastActiveProfileId(profiles.get(0));
 			allowing(databaseConfig).getKeyStrengthener();
 			will(returnValue(strengthener));
+			allowing(strengthener).currentGeneration();
+			will(returnValue(org.zerionproject.core.api.crypto
+					.KeyStrengthener.LEGACY_GENERATION));
+			allowing(strengthener).startNewGeneration();
+			will(returnValue(false));
 			exactly(derivations).of(crypto).decryptWithPassword(
 					with(equal(ciphertext)), with(equal(password)),
 					with(same(strengthener)));
@@ -171,19 +193,27 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 	@Test
 	public void testSignInTriesEveryProfileEvenAfterTheFirstMatches()
 			throws Exception {
-		expectSignIn(java.util.Arrays.asList("a", "b"), true, 2);
+		expectSignIn(java.util.Arrays.asList("a", "b"), 2);
 	}
 
 	@Test
-	public void testSignInIsPaddedOnceASecondProfileEverExisted()
+	public void aDeviceThatNeverHadASecondProfileSignsInWithTheSameWork()
 			throws Exception {
-		expectSignIn(java.util.Collections.singletonList("a"), true, 2);
+		expectSignIn(java.util.Collections.singletonList("a"), 2);
 	}
 
 	@Test
-	public void testSignInIsNotPaddedOnADeviceThatNeverHadTwoProfiles()
+	public void aSessionHasNoWayToListCountOrNameOtherProfiles()
 			throws Exception {
-		expectSignIn(java.util.Collections.singletonList("a"), false, 1);
+		for (String name : new String[] {"listProfileIds", "profileCount",
+				"readDisplayName", "readPendingIdentityName"}) {
+			for (java.lang.reflect.Method m :
+					AndroidAccountManager.class.getMethods()) {
+				assertFalse(name + " is public",
+						m.getName().equals(name));
+			}
+		}
+		AndroidAccountManager.class.getMethod("readActiveDisplayName");
 	}
 
 	@Test
@@ -239,6 +269,10 @@ public class AndroidAccountManagerTest extends BrambleMockTestCase {
 			oneOf(profileManager).deleteProfileMetadataKey();
 			allowing(profileManager).getLockoutFile();
 			will(returnValue(new File(testDir, "login.lockout")));
+			allowing(profileManager).getAppFilesRoot();
+			will(returnValue(filesDir));
+			allowing(databaseConfig).getKeyStrengthener();
+			will(returnValue(null));
 		}});
 
 		assertTrue(dbDir.mkdirs());

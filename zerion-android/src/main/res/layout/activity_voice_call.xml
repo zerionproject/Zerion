@@ -8,7 +8,6 @@
     android:background="@color/zerion_dark_bg"
     android:keepScreenOn="true">
 
-    <!-- Remote Video Surface (center-crop container) -->
     <FrameLayout
         android:id="@+id/remote_video_container"
         android:layout_width="match_parent"
@@ -23,7 +22,6 @@
             android:layout_gravity="center" />
     </FrameLayout>
 
-    <!-- Local Video Preview (PIP corner) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/local_video_container"
         android:layout_width="120dp"
@@ -43,7 +41,6 @@
             android:layout_height="match_parent" />
     </androidx.cardview.widget.CardView>
 
-    <!-- Call Type Label at Top -->
     <TextView
         android:id="@+id/call_type_label"
         android:layout_width="wrap_content"
@@ -57,7 +54,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Contact Avatar - Large Centered Circle -->
     <FrameLayout
         android:id="@+id/avatar_container"
         android:layout_width="140dp"
@@ -79,7 +75,6 @@
 
     </FrameLayout>
 
-    <!-- Contact Name -->
     <TextView
         android:id="@+id/contact_name"
         android:layout_width="wrap_content"
@@ -97,7 +92,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:text="Contact Name" />
 
-    <!-- Call Status -->
     <TextView
         android:id="@+id/call_status"
         android:layout_width="wrap_content"
@@ -110,7 +104,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Call Duration Timer -->
     <Chronometer
         android:id="@+id/call_duration"
         android:layout_width="wrap_content"
@@ -123,7 +116,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Network Quality Indicators (shown during active call) -->
     <LinearLayout
         android:id="@+id/network_quality_container"
         android:layout_width="wrap_content"
@@ -176,7 +168,6 @@
 
     </LinearLayout>
 
-    <!-- Incoming Call Layout - Professional Molly Style -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/incoming_call_layout"
         android:layout_width="match_parent"
@@ -187,7 +178,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Decline Button with Label -->
         <LinearLayout
             android:id="@+id/decline_container"
             android:layout_width="wrap_content"
@@ -221,7 +211,6 @@
 
         </LinearLayout>
 
-        <!-- Accept Button with Label -->
         <LinearLayout
             android:id="@+id/accept_container"
             android:layout_width="wrap_content"
@@ -257,7 +246,6 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Active Call Layout -->
     <LinearLayout
         android:id="@+id/active_call_layout"
         android:layout_width="match_parent"
@@ -270,7 +258,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Call Controls Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -278,7 +265,6 @@
             android:gravity="center"
             android:layout_marginBottom="40dp">
 
-            <!-- Mute Button -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -307,7 +293,6 @@
 
             </LinearLayout>
 
-            <!-- Speaker Button -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -336,7 +321,6 @@
 
             </LinearLayout>
 
-            <!-- Video Button -->
             <LinearLayout
                 android:id="@+id/video_button_container"
                 android:layout_width="wrap_content"
@@ -366,7 +350,6 @@
 
             </LinearLayout>
 
-            <!-- Switch Camera Button (only visible when video active) -->
             <LinearLayout
                 android:id="@+id/switch_camera_container"
                 android:layout_width="wrap_content"
@@ -399,7 +382,6 @@
 
         </LinearLayout>
 
-        <!-- End Call Button -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

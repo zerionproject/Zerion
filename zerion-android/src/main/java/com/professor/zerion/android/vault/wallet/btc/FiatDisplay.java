@@ -6,13 +6,6 @@ import java.util.Locale;
 
 import javax.annotation.Nullable;
 
-/**
- * Deterministic fiat line for the balance. The row is always present: with a
- * usable price it shows the conversion, and without one it shows an honest
- * unavailable placeholder rather than an empty string, so the layout never
- * moves and the value never silently disappears when a price refresh is
- * temporarily unavailable. No price is ever fabricated.
- */
 @NotNullByDefault
 public final class FiatDisplay {
 

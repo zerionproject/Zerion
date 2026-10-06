@@ -9,10 +9,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-/**
- * PROTO-16: a miss is looked up again next time, a hit is cached, and
- * invalidation forgets the hits.
- */
 public class MlDsaKeyDirectoryTest {
 
 	private final byte[] ed = new byte[] {1, 2, 3};

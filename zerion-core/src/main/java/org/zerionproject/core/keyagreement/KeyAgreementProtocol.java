@@ -55,13 +55,6 @@ class KeyAgreementProtocol {
 		this.alice = alice;
 	}
 
-	/**
-	 * Runs the nearby pairing protocol with hybrid X25519 and ML-KEM-768
-	 * keys. After the key exchange Alice encapsulates an ML-KEM secret to
-	 * Bob's key and sends the ciphertext; both sides then derive the shared
-	 * secret from the X25519 agreement and the ML-KEM secret, so the master
-	 * key that every contact key descends from is post-quantum.
-	 */
 	SecretKey perform() throws AbortException, IOException {
 		try {
 			PublicKey theirPublicKey;

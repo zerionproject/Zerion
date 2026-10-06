@@ -2,7 +2,7 @@
 
 I2P is an optional carrier of development builds only: the router, the plugin
 and the setting are compiled into debug builds and absent from the published
-release, which is Tor-only. In a development build it lets Zerion reach the I2P
+release, whose only internet transport for messaging is Tor. In a development build it lets Zerion reach the I2P
 network as a second overlay alongside Tor. It is off by default and is enabled
 by the user behind a consent screen, because I2P has a different privacy property from Tor that the
 user should understand before turning it on.
@@ -59,6 +59,10 @@ configured with:
 | `router.reseedSSLProxy.username` | `zi2p-reseed` |
 | `router.reseedSSLProxy.password` | the relay's per-process secret |
 | `router.reseedSSLRequired` | true |
+
+When the relay has no port (it failed to open), the router is configured with
+`router.reseedDisable` set to true instead, so it never falls back to a direct
+reseed (since 3.0.15, not yet released).
 
 Reseed is required to use SSL through the proxy, so it fails closed rather than
 falling back to a direct fetch.

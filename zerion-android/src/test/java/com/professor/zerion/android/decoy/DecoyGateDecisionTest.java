@@ -5,12 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-/**
- * Core Decoy Mode gate invariant. The gate is process-scoped: after the OS kills
- * the backgrounded process (GrapheneOS), the passed flag is false again, so a
- * reopen must show the calculator, never the real UI/login. Entering the code in
- * the current process suppresses the gate until the next process death.
- */
 public class DecoyGateDecisionTest {
 
 	@Test

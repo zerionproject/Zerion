@@ -24,13 +24,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * Canonical identity of the transaction that a Payjoin exchange will actually
- * broadcast. Wallet-owned inputs are signed here with a P2WPKH BIP143 witness;
- * receiver-contributed inputs keep the witnesses supplied in the proposal and
- * are never signed by this wallet. The fingerprint binds every field that a
- * reviewer authenticates, so any later mutation is detectable.
- */
 @NotNullByDefault
 public final class PayjoinFinalTx {
 
@@ -110,11 +103,6 @@ public final class PayjoinFinalTx {
 		return owned;
 	}
 
-	/**
-	 * Stable identity over every field a reviewer authenticates: version,
-	 * locktime, destination, amount, change, absolute fee, feerate, then each
-	 * input outpoint with its sequence and ownership, then each output.
-	 */
 	public String fingerprint() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("v=").append(version).append(';');
@@ -138,11 +126,6 @@ public final class PayjoinFinalTx {
 		return sha256Hex(sb.toString());
 	}
 
-	/**
-	 * Builds the network transaction, signing only wallet-owned inputs. A
-	 * request to sign an input without a wallet key is impossible: foreign
-	 * entries carry no key and only receive their proposal witness.
-	 */
 	public String buildSignedHex() {
 		NetworkParameters params = BtcKeys.PARAMS;
 		Transaction tx = new Transaction(params);

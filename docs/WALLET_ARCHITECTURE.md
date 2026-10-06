@@ -26,9 +26,13 @@ Account (app) ─ vault master password ─▶ ZVault (VaultManager)
 
 - **ZVault (`VaultManager`)** is the single encrypted store. It holds every
   wallet seed as a vault item, plus per-wallet settings. Unlocking requires the
-  vault master password **and** a device-bound Android Keystore key: the master
-  key is `HKDF( Argon2id(password) XOR keystoreUnwrap(randomSecret) )`. Neither
-  the password alone nor a copied disk image alone can unlock it.
+  vault master password **and** device-bound Android Keystore keys: since
+  3.0.15 the master key is random and wrapped under
+  `HKDF( HMAC_keystore(Argon2id(password)) XOR keystoreUnwrap(randomSecret) )`,
+  so every password guess needs the keystore (earlier vaults derived the master
+  key as `HKDF( Argon2id(password) XOR keystoreUnwrap(randomSecret) )` and are
+  moved at their next unlock). Neither the password alone nor a copied disk
+  image alone can unlock it.
 - **A wallet** is a vault item of type WALLET whose content is
   `[version][mnemonic]`, plus a settings namespace keyed by the wallet id. BTC
   derives keys with bitcoinj; XMR derives a native wallet2 wallet (see the
@@ -78,12 +82,12 @@ lock invalidates them all and unlocking the vault never implies wallet access.
 
 Three independent secrets, never conflated:
 
-1. **Vault master password** — unlocks ZVault (Argon2id 256 MiB / t=3, plus the
-   keystore factor).
-2. **Per-wallet password** — a second factor sealing an individual wallet's seed
+1. **Vault master password**: unlocks ZVault (Argon2id 256 MiB / t=3, or
+   128 MiB / t=6 where 256 MiB cannot be allocated, plus the keystore factor).
+2. **Per-wallet password**: a second factor sealing an individual wallet's seed
    (Argon2id 64 MiB / t=3, per-item salt). For XMR it also derives the spend
    wallet's main-file key.
-3. **Per-send / per-transaction authorization** — a fresh authentication bound to
+3. **Per-send / per-transaction authorization**: a fresh authentication bound to
    the exact reviewed transaction, consumed once at broadcast/relay.
 
 **Secret-buffer ownership rule.** A `char[]`/`byte[]` secret is owned by the

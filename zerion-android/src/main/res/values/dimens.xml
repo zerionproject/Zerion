@@ -1,6 +1,5 @@
 <resources>
 
-	<!-- Default screen margins, per the Android Design guidelines. -->
 	<dimen name="margin_activity_horizontal">16dp</dimen>
 	<dimen name="margin_activity_vertical">16dp</dimen>
 
@@ -12,12 +11,10 @@
 	<dimen name="margin_xlarge">32dp</dimen>
 	<dimen name="margin_xxlarge">64dp</dimen>
 
-	<!-- hero icons -->
 	<dimen name="hero_square">180dp</dimen>
 	<dimen name="hero_rect_width">192dp</dimen>
 	<dimen name="hero_rect_height">96dp</dimen>
 
-	<!-- v2 dimens -->
 	<dimen name="text_size_tiny">12sp</dimen>
 	<dimen name="text_size_small">14sp</dimen>
 	<dimen name="text_size_medium">16sp</dimen>

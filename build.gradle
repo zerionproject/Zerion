@@ -1,4 +1,16 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentSelector
+
+Configuration ideModelCopyOf(Project owner, Configuration configuration) {
+	Configuration copy = configuration.copyRecursive()
+	copy.canBeConsumed = false
+	copy.resolutionStrategy.dependencySubstitution.all { substitution ->
+		if (!(substitution.requested instanceof ProjectComponentSelector)) {
+			substitution.useTarget(owner)
+		}
+	}
+	return copy
+}
 
 allprojects {
 	repositories {
@@ -21,6 +33,82 @@ allprojects {
 	dependencyLocking {
 		lockAllConfigurations()
 		lockMode = LockMode.STRICT
+	}
+	tasks.register('verifyLockedConfigurationCopies') {
+		notCompatibleWithConfigurationCache('resolves copies of configurations at execution time')
+		doLast {
+			configurations.matching {
+				it.canBeResolved && (it.name.endsWith('RuntimeClasspath')
+						|| it.name.endsWith('CompileClasspath'))
+			}.each { c ->
+				if (!c.resolutionStrategy.dependencyLockingEnabled) {
+					throw new GradleException("dependency locking is not active on ${c.name}")
+				}
+				ideModelCopyOf(project, c).incoming.resolutionResult.allComponents { }
+			}
+		}
+	}
+	tasks.matching { it.name == 'check' }.configureEach {
+		it.dependsOn('verifyLockedConfigurationCopies')
+	}
+	tasks.register('writeIdeCopyLockState') {
+		notCompatibleWithConfigurationCache('resolves copies of configurations at execution time')
+		doLast {
+			if (gradle.startParameter.writeDependencyLocks) {
+				throw new GradleException('run writeIdeCopyLockState without --write-locks, after resolveAndLockAll --write-locks')
+			}
+			File lockFile = file('gradle.lockfile')
+			if (!lockFile.isFile()) return
+			List<String> header = []
+			Map<String, Set<String>> modules = new TreeMap<>()
+			Set<String> empty = new TreeSet<>()
+			boolean hadEmptyLine = false
+			lockFile.readLines().each { line ->
+				if (line.startsWith('#')) {
+					header << line
+					return
+				}
+				if (line.trim().isEmpty()) return
+				int eq = line.indexOf('=')
+				String key = line.substring(0, eq)
+				Set<String> names = new TreeSet<>(line.substring(eq + 1).split(',').findAll { it })
+				if (key == 'empty') {
+					hadEmptyLine = true
+					empty.addAll(names)
+				} else {
+					modules.put(key, names)
+				}
+			}
+			configurations.findAll { it.canBeResolved }.each { c ->
+				String copyName = c.name + 'Copy'
+				modules.values().each { it.remove(copyName) }
+				empty.remove(copyName)
+				Set<String> resolved = new TreeSet<>()
+				try {
+					Configuration copy = ideModelCopyOf(project, c)
+					copy.resolutionStrategy.deactivateDependencyLocking()
+					copy.incoming.resolutionResult.allComponents { component ->
+						def id = component.id
+						if (id instanceof ModuleComponentIdentifier) {
+							resolved << "${id.group}:${id.module}:${id.version}".toString()
+						}
+					}
+				} catch (Exception ignored) {
+					return
+				}
+				if (resolved.isEmpty()) {
+					empty << copyName
+				} else {
+					resolved.each { modules.computeIfAbsent(it) { new TreeSet<>() } << copyName }
+				}
+			}
+			List<String> out = new ArrayList<>(header)
+			modules.each { module, names ->
+				if (!names.isEmpty()) out << "${module}=${names.join(',')}".toString()
+			}
+			if (hadEmptyLine || !empty.isEmpty()) out << "empty=${empty.join(',')}".toString()
+			lockFile.text = out.join('\n') + '\n'
+		}
 	}
 	tasks.register('resolveAndLockAll') {
 		notCompatibleWithConfigurationCache('resolves every configuration at execution time')
@@ -72,10 +160,3 @@ buildscript {
 	}
 }
 
-// Dependency vulnerability scanning is performed via the standalone OWASP
-// dependency-check CLI rather than the Gradle plugin (the plugin would add
-// dozens of transitive deps that are incompatible with our Gradle dependency
-// verification metadata). See scripts/run-dependency-check.sh for the
-// recommended CI invocation, and config/owasp-suppressions.xml for accepted
-// false-positives. The CLI is run against the assembled APK / module JARs
-// and reports HTML + JSON to build/reports/dependency-check/.

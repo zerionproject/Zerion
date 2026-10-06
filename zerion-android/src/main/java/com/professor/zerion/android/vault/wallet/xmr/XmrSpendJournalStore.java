@@ -4,15 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Durable, fail-closed access to the spend journal. It reads and writes the
- * journal through {@link XmrStore}, whose journal writes return only after the
- * record is committed to disk, so a relay can be gated on a successful write.
- * Reading is strict: a present journal that will not parse, or a storage read
- * that fails, is reported as {@link Kind#CORRUPTED}, never as absent, so an
- * unreadable safety record can never let a new spend through. Clearing is
- * package-private and belongs to the reconciliation authority.
- */
 @NotNullByDefault
 public final class XmrSpendJournalStore {
 
@@ -28,7 +19,6 @@ public final class XmrSpendJournalStore {
 			this.journal = journal;
 		}
 
-		/** True unless the wallet is provably free of any journal. */
 		public boolean quarantined() {
 			return kind != Kind.ABSENT;
 		}
@@ -63,10 +53,6 @@ public final class XmrSpendJournalStore {
 		return read(walletId).quarantined();
 	}
 
-	/**
-	 * Persist the journal durably. Returns only after the record is committed;
-	 * on any storage failure it throws and the caller must not relay.
-	 */
 	public void writeDurably(XmrSpendJournal journal)
 			throws XmrError.XmrException {
 		try {
@@ -76,11 +62,6 @@ public final class XmrSpendJournalStore {
 		}
 	}
 
-	/**
-	 * Remove the journal. Owned by the reconciliation authority and the manager's
-	 * quarantine-clearing path only; it is deliberately not a public API, so no
-	 * UI action can dismiss a quarantine.
-	 */
 	void clear(String walletId) throws Exception {
 		store.removeSpendJournal(walletId);
 	}

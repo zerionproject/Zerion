@@ -1,11 +1,13 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.crypto.SettingsStreamCounterStore;
+import org.zerionproject.crypto.StreamCounterContactHook;
 import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
 import org.zerionproject.sync.ZmmDbRecordSink;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
@@ -23,12 +25,6 @@ import javax.inject.Singleton;
 import dagger.Module;
 import dagger.Provides;
 
-/**
- * Wires the native Zerion transport and pull-protocol into the app. This is the
- * core-side half of the plugin/connection/sync transport path; the
- * Android-specific half (the Tor wrapper and the poller) lives in an Android
- * module.
- */
 @Module
 public class ZerionTransportModule {
 
@@ -38,15 +34,14 @@ public class ZerionTransportModule {
 		ZtpSessionProvider sessionProvider;
 	}
 
-	/**
-	 * The stream counter MUST be a process-wide singleton: two instances for the
-	 * same contact would hand out the same outgoing stream id and reuse a
-	 * (key, nonce) pair. This is the enforcement point for that invariant.
-	 */
 	@Provides
 	@Singleton
-	ZwfStreamCounter provideStreamCounter(SettingsStreamCounterStore store) {
-		return new ZwfStreamCounter(store);
+	ZwfStreamCounter provideStreamCounter(SettingsStreamCounterStore store,
+			ContactManager contactManager) {
+		ZwfStreamCounter counter = new ZwfStreamCounter(store);
+		contactManager.registerContactHook(
+				new StreamCounterContactHook(counter, store));
+		return counter;
 	}
 
 	@Provides
@@ -113,8 +108,10 @@ public class ZerionTransportModule {
 			ZtpConnectionEstablisher establisher, ZtpSessionProvider provider,
 			ZppConnectionRunner runner, ConnectionRegistry connectionRegistry,
 			org.zerionproject.core.api.plugin.OnionClientAuthManager
-					onionClientAuthManager) {
+					onionClientAuthManager,
+			RootEvolutionManager rootEvolutionManager) {
 		return new ZtpConnectionHandlerImpl(establisher, provider, runner,
-				connectionRegistry, onionClientAuthManager);
+				connectionRegistry, onionClientAuthManager,
+				rootEvolutionManager);
 	}
 }

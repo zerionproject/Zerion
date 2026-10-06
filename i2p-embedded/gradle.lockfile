@@ -5,4 +5,4 @@ net.i2p.client:mstreaming:2.13.0=compileClasspath,runtimeClasspath,testCompileCl
 net.i2p.client:streaming:2.13.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 net.i2p:i2p:2.13.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 net.i2p:router:2.13.0=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-empty=annotationProcessor,shadow,testAnnotationProcessor
+empty=annotationProcessor,annotationProcessorCopy,compileClasspathCopy,runtimeClasspathCopy,shadow,shadowCopy,testAnnotationProcessor,testAnnotationProcessorCopy,testCompileClasspathCopy,testRuntimeClasspathCopy

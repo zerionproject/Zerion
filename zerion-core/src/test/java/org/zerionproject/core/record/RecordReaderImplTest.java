@@ -23,11 +23,6 @@ import static org.junit.Assert.fail;
 
 public class RecordReaderImplTest extends BrambleTestCase {
 
-	/**
-	 * A2-CRY-07: a reader built with a payload cap refuses a longer record
-	 * before allocating it, and an accept-or-ignore read gives up after a
-	 * bounded number of ignored records.
-	 */
 	@Test
 	public void testPayloadCapAndIgnoreBound() throws Exception {
 		byte[] big = new byte[RECORD_HEADER_BYTES];

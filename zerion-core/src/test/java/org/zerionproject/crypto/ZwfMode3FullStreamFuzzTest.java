@@ -32,13 +32,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Bounded adversarial coverage of the Mode 3-Full stream decrypter: every bit
- * of the stream start, sampled bits of every frame, every truncation boundary
- * and random input. The invariant is that the decrypter either returns the
- * sealed payload or throws an {@link IOException}; it never returns a
- * modified payload and never fails with any other exception.
- */
 public class ZwfMode3FullStreamFuzzTest {
 
 	private static final int START_LENGTH = TAG_LENGTH + STREAM_HEADER_LENGTH;
@@ -73,7 +66,7 @@ public class ZwfMode3FullStreamFuzzTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -90,7 +83,6 @@ public class ZwfMode3FullStreamFuzzTest {
 				crypto, mlKemProvider);
 	}
 
-	/** A sealed stream together with the receiver state that opens it. */
 	private static final class Sealed {
 		final byte[] tag;
 		final SecretKey headerKey;
@@ -213,11 +205,6 @@ public class ZwfMode3FullStreamFuzzTest {
 		}
 	}
 
-	/**
-	 * Opens {@code bytes}; the frames before {@code failingFrame} must equal the
-	 * sealed payloads and the failing frame must be refused with an
-	 * {@link IOException}, never with anything else and never with a payload.
-	 */
 	private void expectRefusal(Sealed s, byte[] bytes, int failingFrame,
 			String what) throws Exception {
 		ZwfMode3FullStreamDecrypter dec = opener(s, bytes);
@@ -257,7 +244,7 @@ public class ZwfMode3FullStreamFuzzTest {
 
 	private ZwfMode3FullStreamDecrypter opener(Sealed s, byte[] bytes) {
 		return new ZwfMode3FullStreamDecrypter(new ByteArrayInputStream(bytes),
-				cipher(), ratchet, mode3FullRatchet, null, s.tag, 0L,
+				cipher(), ratchet, mode3FullRatchet, s.tag, 0L,
 				s.headerKey, s.receiver, null);
 	}
 

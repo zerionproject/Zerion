@@ -26,7 +26,6 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -42,6 +41,16 @@ public class ProfilesFragment extends Fragment {
 
 	@Inject
 	IdentityManager identityManager;
+
+	@Inject
+	com.professor.zerion.android.profile.ProfileStorage profileStorage;
+
+	@Inject
+	com.professor.zerion.android.vault.VaultManager vaultManager;
+
+	@Inject
+	org.zerionproject.core.api.crypto.PasswordStrengthEstimator
+			strengthEstimator;
 
 	private final java.util.concurrent.ExecutorService io =
 			java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -95,23 +104,18 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void refreshProfileList() {
-		refreshProfileCount();
+		showHiddenProfilesNote();
 		backfillActiveDisplayNameIfNeeded();
 		renderProfileRows();
 	}
 
-	private void refreshProfileCount() {
+	private void showHiddenProfilesNote() {
 		if (profileCountSummary == null) return;
-		int n = accountManager.profileCount();
-		String summary = n == 1
-				? getString(R.string.profiles_count_one)
-				: getString(R.string.profiles_count_other, n);
-		profileCountSummary.setText(summary);
+		profileCountSummary.setText(R.string.profiles_hidden_note);
 	}
 
 	private void backfillActiveDisplayNameIfNeeded() {
-		String activeId = accountManager.getActiveProfileId();
-		if (accountManager.readDisplayName(activeId) != null) return;
+		if (accountManager.readActiveDisplayName() != null) return;
 		io.execute(() -> {
 			String name = null;
 			try {
@@ -133,14 +137,8 @@ public class ProfilesFragment extends Fragment {
 	private void renderProfileRows() {
 		if (profilesListGroup == null) return;
 		profilesListGroup.removeAllViews();
-		String activeId = accountManager.getActiveProfileId();
-		List<String> ids = accountManager.listProfileIds();
-		for (String id : ids) {
-			String name = accountManager.readDisplayName(id);
-			boolean isActive = id.equals(activeId);
-			View row = buildProfileRow(name, isActive, id);
-			profilesListGroup.addView(row);
-		}
+		profilesListGroup.addView(
+				buildProfileRow(accountManager.readActiveDisplayName()));
 	}
 
 	private static boolean isReadableText(@Nullable String s) {
@@ -153,8 +151,7 @@ public class ProfilesFragment extends Fragment {
 		return true;
 	}
 
-	private View buildProfileRow(@Nullable String name, boolean isActive,
-			String id) {
+	private View buildProfileRow(@Nullable String name) {
 		View row = getLayoutInflater().inflate(
 				R.layout.row_profile_entry, profilesListGroup, false);
 		TextView titleView = row.findViewById(R.id.profile_row_title);
@@ -165,28 +162,11 @@ public class ProfilesFragment extends Fragment {
 				|| !isReadableText(name))
 				? getString(R.string.profiles_row_unknown_name) : name;
 		titleView.setText(display);
-		if (isActive) {
-			summaryView.setText(R.string.profiles_row_active);
-			chevron.setVisibility(View.GONE);
-			row.setClickable(false);
-			row.setFocusable(false);
-		} else {
-			summaryView.setText(R.string.profiles_row_tap_to_switch);
-			row.setOnClickListener(v -> showSwitchToProfileDialog(display));
-		}
+		summaryView.setText(R.string.profiles_row_active);
+		chevron.setVisibility(View.GONE);
+		row.setClickable(false);
+		row.setFocusable(false);
 		return row;
-	}
-
-	private void showSwitchToProfileDialog(String displayName) {
-		String msg = getString(R.string.profiles_switch_to_message, displayName);
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(getString(R.string.profiles_switch_to_title,
-						displayName))
-				.setMessage(msg)
-				.setPositiveButton(R.string.profiles_switch_action,
-						(d, w) -> signOutAndExit())
-				.setNegativeButton(R.string.cancel, null)
-				.show();
 	}
 
 	private void showAddProfileDialog() {
@@ -248,47 +228,74 @@ public class ProfilesFragment extends Fragment {
 		char[] pw = charsOf(pwSeq);
 		char[] pwConfirm = charsOf(pwConfirmSeq);
 		try {
-			if (pw.length < 8) {
-				toast(R.string.profiles_password_too_short);
+			if (!com.professor.zerion.android.login.AccountPasswordPolicy
+					.acceptable(strengthEstimator, pw)) {
+				toast(R.string.password_too_weak);
 				return false;
 			}
-			if (!Arrays.equals(pw, pwConfirm)) {
+			if (!com.professor.zerion.android.login.AccountPasswordPolicy
+					.sameNormalForm(pw, pwConfirm)) {
 				toast(R.string.profiles_password_mismatch);
 				return false;
 			}
 			final char[] pwToUse = pw;
-			io.execute(() -> {
-				String newId = accountManager.scheduleProfileCreation(name,
-						pwToUse);
-				Arrays.fill(pwToUse, '\0');
-				android.app.Activity activity = getActivity();
-				if (activity == null) return;
-				activity.runOnUiThread(() -> {
-					if (!isAdded()) return;
-					if (newId != null) {
-						toast(R.string.profiles_created_success);
-						refreshProfileCount();
-					} else {
-						String reason =
-								accountManager.getLastProfileCreationError();
-						if (com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD
-								&& reason != null && !reason.isEmpty()) {
-							Toast.makeText(requireContext(),
-									getString(R.string.profiles_create_failed)
-											+ "\n" + reason,
-									Toast.LENGTH_LONG).show();
-						} else {
-							toast(R.string.profiles_create_failed);
-						}
-					}
-				});
-			});
 			pw = null;
+			AccountPasswordGate.prompt(requireContext(), accountManager, io,
+					new android.os.Handler(android.os.Looper.getMainLooper()),
+					R.string.settings_password_required_title,
+					R.string.profiles_add_password_gate_message,
+					() -> createProfile(name, pwToUse),
+					() -> Arrays.fill(pwToUse, '\0'));
 		} finally {
 			if (pw != null) Arrays.fill(pw, '\0');
 			Arrays.fill(pwConfirm, '\0');
 		}
-			return true;
+		return true;
+	}
+
+	private void createProfile(String name, char[] password) {
+		Context app = requireContext().getApplicationContext();
+		android.os.Handler main =
+				new android.os.Handler(android.os.Looper.getMainLooper());
+		io.execute(() -> {
+			String newId = accountManager.scheduleProfileCreation(name,
+					password);
+			Arrays.fill(password, '\0');
+			AndroidAccountManager.ProfileCreationRefusal refusal =
+					accountManager.getLastProfileCreationRefusal();
+			main.post(() -> {
+				if (newId != null) {
+					Toast.makeText(app, R.string.profiles_created_success,
+							Toast.LENGTH_SHORT).show();
+					if (isAdded() && getActivity() instanceof SettingsActivity) {
+						signOutAndExit();
+					} else {
+						ProfileSignOut.signOutAndRestart(app);
+					}
+					return;
+				}
+				if (!isAdded()) return;
+				if (refusal == AndroidAccountManager
+						.ProfileCreationRefusal.PASSWORD_UNAVAILABLE) {
+					toast(R.string.profiles_password_unavailable);
+				} else if (refusal == AndroidAccountManager
+						.ProfileCreationRefusal.LOCKED_OUT) {
+					toast(R.string.profiles_create_locked_out);
+				} else {
+					String reason =
+							accountManager.getLastProfileCreationError();
+					if (com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD
+							&& reason != null && !reason.isEmpty()) {
+						Toast.makeText(requireContext(),
+								getString(R.string.profiles_create_failed)
+										+ "\n" + reason,
+								Toast.LENGTH_LONG).show();
+					} else {
+						toast(R.string.profiles_create_failed);
+					}
+				}
+			});
+		});
 	}
 
 	private void showSwitchProfileDialog() {
@@ -302,11 +309,10 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void showDeleteProfileDialog() {
-		boolean isLast = accountManager.profileCount() <= 1;
-		String msg = getString(R.string.profiles_delete_dialog_message);
-		if (isLast) {
-			msg += "\n\n" + getString(R.string.profiles_delete_last_warning);
-		}
+		String target = accountManager.getActiveProfileId();
+		if (target == null) return;
+		String msg = getString(R.string.profiles_delete_dialog_message)
+				+ "\n\n" + getString(R.string.profiles_delete_then_sign_in);
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.profiles_delete_dialog_title)
 				.setMessage(msg)
@@ -319,16 +325,34 @@ public class ProfilesFragment extends Fragment {
 								R.string.settings_password_required_title,
 								R.string.settings_password_required_message,
 								() -> {
-									if (isAdded()) doDeleteActiveProfile();
+									if (isAdded()) doDeleteProfile(target);
 								}, () -> {
 								}))
 				.setNegativeButton(R.string.cancel, null)
 				.show();
 	}
 
-	private void doDeleteActiveProfile() {
-		accountManager.deleteActiveProfile();
-		signOutAndExit();
+	private void doDeleteProfile(String target) {
+		io.execute(() -> {
+			if (!profileStorage.vaultIsShared()) {
+				try {
+					vaultManager.wipeVault();
+				} catch (Exception ignored) {
+				}
+			}
+			profileStorage.forgetClaimOf(target);
+			boolean deleted = accountManager.deleteActiveProfile(target);
+			android.app.Activity activity = getActivity();
+			if (activity == null) return;
+			activity.runOnUiThread(() -> {
+				if (!isAdded()) return;
+				if (!deleted) {
+					toast(R.string.delete_account_failed);
+					return;
+				}
+				signOutAndExit();
+			});
+		});
 	}
 
 	private void signOutAndExit() {
@@ -343,7 +367,10 @@ public class ProfilesFragment extends Fragment {
 	}
 
 	private void scheduleRestart() {
-		Context ctx = requireContext().getApplicationContext();
+		scheduleRestart(requireContext().getApplicationContext());
+	}
+
+	static void scheduleRestart(Context ctx) {
 		android.content.Intent restartIntent =
 				ctx.getPackageManager().getLaunchIntentForPackage(
 						ctx.getPackageName());

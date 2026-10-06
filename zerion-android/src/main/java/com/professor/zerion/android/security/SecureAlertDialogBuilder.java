@@ -7,19 +7,12 @@ import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.professor.zerion.android.vault.ui.IncognitoInputHelper;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * The one alert-dialog builder used across the app. It applies
- * {@link SecureDialogs}' policy when the dialog is created: the dialog
- * inherits its host activity's screenshot protection, and it is forced
- * protected when its content holds a password-type input or when the author
- * calls {@link #protectSecrets()}. A layout set by resource id is inflated
- * here so its inputs are inspected before the window is shown.
- */
 @NotNullByDefault
 public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 
@@ -35,7 +28,6 @@ public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 		super(context, overrideThemeResId);
 	}
 
-	/** Mark the dialog as showing a secret: it is always protected. */
 	public SecureAlertDialogBuilder protectSecrets() {
 		secret = true;
 		return this;
@@ -57,6 +49,7 @@ public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 	@Override
 	public AlertDialog create() {
 		AlertDialog dialog = super.create();
+		if (customView != null) IncognitoInputHelper.install(customView);
 		boolean secretContent = customView != null
 				&& SecureDialogs.containsSecretInput(customView);
 		if (secret || secretContent) SecureDialogs.protectSecret(dialog);

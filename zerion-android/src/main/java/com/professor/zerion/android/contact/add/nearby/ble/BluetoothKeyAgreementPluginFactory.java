@@ -11,10 +11,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
 
-/**
- * Registers the key-agreement-only BLE transport so a contact can be added
- * offline over Bluetooth with no network.
- */
 @Immutable
 @NotNullByDefault
 public class BluetoothKeyAgreementPluginFactory implements DuplexPluginFactory {

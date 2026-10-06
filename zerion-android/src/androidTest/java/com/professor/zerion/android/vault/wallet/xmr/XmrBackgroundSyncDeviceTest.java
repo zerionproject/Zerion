@@ -15,15 +15,6 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
-/**
- * On-device proof of the two-layer key boundary the background-sync bridge
- * provides: the main keys file carries the spend key and requires the wallet
- * password, while the separate view-only background keys file, encrypted under
- * a distinct (vault-tier) password, opens a spend-keyless wallet. No daemon and
- * no network. The wallet is a throwaway in the test cache directory; no real
- * vault is touched. This validates the storage invariant that decrypting the
- * vault-tier layer alone cannot yield XMR spending authority.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrBackgroundSyncDeviceTest {
 
@@ -110,15 +101,6 @@ public class XmrBackgroundSyncDeviceTest {
 		}
 	}
 
-	/**
-	 * Store-1 closure at rest, exercising the real wallet key derivation exactly
-	 * as the manager does. The main keys file is encrypted under a wallet-
-	 * password-derived key; the vault-tier layer holds only the random background
-	 * credential and the salt. Proves attacker model B: a party holding the
-	 * vault-tier material (background credential + salt) but not the wallet
-	 * password can open only the view-only background wallet and can never open a
-	 * spend-capable main wallet, while the correct wallet password can.
-	 */
 	@Test
 	public void vaultTierMaterialAloneCannotSpend() {
 		Context ctx = ApplicationProvider.getApplicationContext();
@@ -232,13 +214,6 @@ public class XmrBackgroundSyncDeviceTest {
 		}
 	}
 
-	/**
-	 * True when opening {@code base} with {@code password} does not yield a
-	 * spend-capable wallet: either the open reports an error status, or the
-	 * opened wallet has no 25-word seed. wallet2_api returns a non-null wallet
-	 * on a bad password and signals failure through the status, so a null check
-	 * alone is not enough.
-	 */
 	private static boolean notSpendable(MoneroEngine engine, String base,
 			char[] password) {
 		MoneroEngine.Session s = engine.open(base, password);
@@ -251,17 +226,6 @@ public class XmrBackgroundSyncDeviceTest {
 		}
 	}
 
-	/**
-	 * The balance-convergence plumbing used after a send: an open background
-	 * wallet holds the background keys-file lock, so it is closed before the
-	 * spend wallet writes its post-relay state back into w.background (a store on
-	 * the CustomPassword main wallet updates the background cache), and the
-	 * background wallet then reopens cleanly from that updated cache. Proven on a
-	 * throwaway wallet (no funds, so no spend to propagate); the spent-output
-	 * propagation itself is guaranteed by wallet2 (commit_tx set_spent +
-	 * store_background_cache). This asserts there is no keys-file lock conflict
-	 * and no cache corruption.
-	 */
 	@Test
 	public void spendStoreUpdatesBackgroundCacheAfterReleasingLock() {
 		Context ctx = ApplicationProvider.getApplicationContext();
@@ -304,21 +268,6 @@ public class XmrBackgroundSyncDeviceTest {
 		}
 	}
 
-	/**
-	 * The external-spend reconciliation sequence, exactly as
-	 * {@code XmrWalletManager.reconcileExternalSpends} runs it: with no view
-	 * session holding the cache, open the spend wallet purely locally (no
-	 * init/connect, so no daemon), which triggers wallet2
-	 * process_background_cache_on_open; store it, regenerating w.background with
-	 * any resolved spent flags; then reopen the view. On a throwaway wallet there
-	 * is no external spend to resolve (no funds, no scanned plausible spend), so
-	 * this asserts the reconciliation is a safe local no-op: the spend wallet
-	 * opens and stores offline without a lock conflict, and the reopened view is
-	 * still a spend-keyless background wallet with a consistent balance. The
-	 * resolution of a real external spend is guaranteed by wallet2 (the replayed
-	 * plausible spend resolves its key image and set_spent under the spend key);
-	 * it cannot be funded here.
-	 */
 	@Test
 	public void reconcileOpensSpendWalletLocallyAndKeepsTheViewSpendKeyless() {
 		Context ctx = ApplicationProvider.getApplicationContext();

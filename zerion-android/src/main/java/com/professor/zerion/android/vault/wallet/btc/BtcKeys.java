@@ -18,15 +18,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * Bitcoin key material. The mnemonic is never held as a string: an
- * {@link Account} is derived once from the mnemonic characters, the seed
- * is wiped as soon as the account-level keys exist, and every address,
- * script hash and signing key comes from those account keys. Private
- * scalars live inside the library's key objects as immutable big integers
- * for the account's lifetime, which the JVM cannot wipe; closing the
- * account drops every reference to them.
- */
 @NotNullByDefault
 public final class BtcKeys {
 
@@ -35,7 +26,6 @@ public final class BtcKeys {
 	private BtcKeys() {
 	}
 
-	/** The account-level keys of one wallet, derived once. */
 	public static final class Account {
 
 		@Nullable
@@ -56,10 +46,6 @@ public final class BtcKeys {
 					new ChildNumber(1, false));
 		}
 
-		/**
-		 * Derives the account keys from the mnemonic characters, which the
-		 * caller keeps and wipes. The seed exists only inside this call.
-		 */
 		public static Account fromMnemonic(char[] mnemonic, int account)
 				throws GeneralSecurityException {
 			byte[] seed = Bip39Seed.fromMnemonic(mnemonic);
@@ -95,7 +81,6 @@ public final class BtcKeys {
 			return k;
 		}
 
-		/** Drops every key reference; the account is unusable afterwards. */
 		public void close() {
 			account = null;
 			silent = null;

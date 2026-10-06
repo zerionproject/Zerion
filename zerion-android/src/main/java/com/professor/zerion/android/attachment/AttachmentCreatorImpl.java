@@ -3,6 +3,7 @@ package com.professor.zerion.android.attachment;
 import android.app.Application;
 import android.net.Uri;
 import com.professor.zerion.android.util.CacheSweeper;
+import com.professor.zerion.android.vault.share.VaultShareRegistry;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -130,11 +131,27 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		if (result != null) result.postValue(getResult(false));
 	}
 
+	private String documentErrorMessage(Throwable t) {
+		if (t instanceof ChunkedAttachmentsNotSupportedException) {
+			return app.getString(R.string.document_not_supported_by_contact);
+		} else if (t instanceof FileTooBigException) {
+			int mb = org.zerionproject.app.api.attachment.MediaConstants
+					.MAX_ATTACHMENT_SIZE / 1024 / 1024;
+			return app.getString(R.string.document_attach_error_too_big, mb);
+		}
+		return app.getString(R.string.document_attach_error);
+	}
+
 	private String getErrorMessage(Uri uri, Throwable t) {
 		String mimeType = app.getContentResolver().getType(uri);
 		boolean isVideo = mimeType != null && mimeType.startsWith("video/");
 		boolean isAudio = mimeType != null && mimeType.startsWith("audio/");
+		boolean isDocument = AttachmentDocuments.sendType(mimeType) != null;
+		if (isDocument) return documentErrorMessage(t);
 
+		if (t instanceof MediaRefusedException) {
+			return app.getString(((MediaRefusedException) t).getUserMessage());
+		}
 		if (t instanceof ChunkedAttachmentsNotSupportedException) {
 			ChunkedAttachmentsNotSupportedException e =
 					(ChunkedAttachmentsNotSupportedException) t;
@@ -188,22 +205,20 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		if (result != null) result.postValue(getResult(true));
 	}
 
-	/**
-	 * A vault item shared into a chat is a decrypted copy under the app's
-	 * cache that exists only to be read once by the attachment task; once
-	 * the task has finished with every URI, or was abandoned, the copy is
-	 * removed instead of waiting for the next app lock.
-	 */
 	private void releaseVaultShareFiles() {
 		String provider = app.getPackageName() + ".fileprovider";
+		boolean legacyFile = false;
 		for (Uri u : uris) {
+			if (VaultShareRegistry.isVaultShare(app, u)) {
+				VaultShareRegistry.release(u);
+			}
 			String path = u.getPath();
 			if (provider.equals(u.getAuthority()) && path != null
 					&& path.startsWith("/vault_share/")) {
-				CacheSweeper.sweepDirAsync(app, "vault_share");
-				return;
+				legacyFile = true;
 			}
 		}
+		if (legacyFile) CacheSweeper.sweepDirAsync(app, "vault_share");
 	}
 
 	@Override

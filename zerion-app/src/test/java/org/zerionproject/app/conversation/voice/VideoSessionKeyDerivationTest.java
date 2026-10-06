@@ -22,13 +22,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Every video session must run under keys that no other session of the
- * same call can share. The keys are derived from the call key and one
- * fresh random contribution from each peer, so two sessions differ as soon
- * as either contribution differs, and both peers derive mirrored transmit
- * and receive keys from the same pair of contributions.
- */
 public class VideoSessionKeyDerivationTest {
 
 	private final Mockery context = new Mockery() {{
@@ -46,10 +39,6 @@ public class VideoSessionKeyDerivationTest {
 		return b;
 	}
 
-	/**
-	 * Keyed-hash key derivation over the label and every input, standing
-	 * in for the production BLAKE2b derivation.
-	 */
 	private static final class HmacDerive implements Action {
 		@Override
 		public Object invoke(Invocation invocation) throws Throwable {

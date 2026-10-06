@@ -13,11 +13,6 @@ import java.io.ByteArrayOutputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * PROTO-10: a malicious channel publisher must not be able to make a
- * subscriber materialise an unbounded number of posts, reactions, comments or
- * per-post attachments from a single pull response.
- */
 public class ChannelPullCodecDecodeLimitTest {
 
 	private static final byte[] CHANNEL_ID = new byte[32];
@@ -65,19 +60,55 @@ public class ChannelPullCodecDecodeLimitTest {
 	public void tooManyCommentsIsRejected() throws Exception {
 		BdfList comments = new BdfList();
 		for (int i = 0;
-				i < ChannelConstants.MAX_COMMENTS_PER_CHANNEL + 1; i++) {
-			comments.add(new BdfDictionary());
+				i < ChannelConstants.MAX_PULL_RESPONSE_COMMENTS + 1; i++) {
+			comments.add(comment(i, "c", "n"));
 		}
 		assertRejected(response(new BdfList(), new BdfList(), comments));
 	}
 
 	@Test
+	public void commentsUpToTheEarlierLimitDecodeAndABadOneIsSkipped()
+			throws Exception {
+		BdfList comments = new BdfList();
+		for (int i = 0; i < ChannelConstants.MAX_PULL_RESPONSE_COMMENTS - 2;
+				i++) {
+			comments.add(comment(i, "c", "n"));
+		}
+		char[] name = new char[ChannelConstants.MAX_COMMENT_AUTHOR_NAME_CHARS
+				+ 1];
+		java.util.Arrays.fill(name, 'n');
+		comments.add(comment(-1, "bad", new String(name)));
+		comments.add(comment(-2, "", "n"));
+		ChannelPullCodec.PullResponse r = codec.decodePullResponse(
+				encode(response(new BdfList(), new BdfList(), comments)),
+				CHANNEL_ID);
+		assertEquals(ChannelConstants.MAX_PULL_RESPONSE_COMMENTS - 2,
+				r.comments.size());
+	}
+
+	@Test
 	public void tooManyReactionsIsRejected() throws Exception {
-		long cap = (long) ChannelConstants.MAX_REACTIONS_PER_POST
-				* ChannelConstants.PULL_BATCH_MAX_POSTS;
+		long cap = ChannelConstants.MAX_PULL_RESPONSE_REACTIONS;
 		BdfList reactions = new BdfList();
 		for (long i = 0; i < cap + 1; i++) reactions.add(new BdfDictionary());
 		assertRejected(response(new BdfList(), reactions, new BdfList()));
+	}
+
+	@Test
+	public void reactionsUpToTheEarlierDecodeLimitStillDecode()
+			throws Exception {
+		assertEquals(256L * ChannelConstants.PULL_BATCH_MAX_POSTS,
+				ChannelConstants.MAX_PULL_RESPONSE_REACTIONS);
+		BdfList reactions = new BdfList();
+		for (long i = 0; i < ChannelConstants.MAX_PULL_RESPONSE_REACTIONS;
+				i++) {
+			reactions.add(reaction(i));
+		}
+		ChannelPullCodec.PullResponse r = codec.decodePullResponse(
+				encode(response(new BdfList(), reactions, new BdfList())),
+				CHANNEL_ID);
+		assertEquals(ChannelConstants.MAX_PULL_RESPONSE_REACTIONS,
+				r.reactions.size());
 	}
 
 	@Test
@@ -115,6 +146,28 @@ public class ChannelPullCodecDecodeLimitTest {
 		d.put("posts", posts);
 		d.put("reactions", reactions);
 		d.put("comments", comments);
+		return d;
+	}
+
+	private BdfDictionary comment(long id, String body, String name) {
+		BdfDictionary d = new BdfDictionary();
+		d.put("seq", 1L);
+		d.put("id", id);
+		d.put("body", body);
+		d.put("name", name);
+		d.put("ed", new byte[32]);
+		d.put("ml", new byte[0]);
+		d.put("ts", 0L);
+		return d;
+	}
+
+	private BdfDictionary reaction(long seq) {
+		BdfDictionary d = new BdfDictionary();
+		d.put("seq", seq % ChannelConstants.PULL_BATCH_MAX_POSTS);
+		d.put("emoji", "x");
+		d.put("ed", new byte[32]);
+		d.put("ml", new byte[0]);
+		d.put("ts", seq);
 		return d;
 	}
 

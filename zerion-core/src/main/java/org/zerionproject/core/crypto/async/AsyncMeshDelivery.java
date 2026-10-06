@@ -21,20 +21,11 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		boolean onOpened(byte[] senderIdentitySigPub, int messageType,
 				byte[] payload, long sendTimestamp);
 
-		/**
-		 * True when the sender is known; only a known sender's envelopes
-		 * are recorded in the replay store, so a stranger cannot fill it.
-		 */
 		default boolean knowsSender(byte[] senderIdentitySigPub) {
 			return true;
 		}
 	}
 
-	/**
-	 * Recently opened envelopes, by dedup id, so a repeat of an envelope from
-	 * a stranger costs a map lookup rather than another open. In memory
-	 * only; the durable record is the per-sender store.
-	 */
 	private static final int RECENTLY_OPENED = 1024;
 	private final java.util.LinkedHashMap<String, Boolean> recentlyOpened =
 			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
@@ -44,6 +35,55 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 					return size() > RECENTLY_OPENED;
 				}
 			};
+
+	private static final int RECENTLY_FAILED = 4096;
+	private static final String LABEL_FAILED_OPEN =
+			"org.zerionproject.async/FAILED_OPEN";
+	private final java.util.LinkedHashMap<String, Boolean> recentlyFailed =
+			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						java.util.Map.Entry<String, Boolean> eldest) {
+					return size() > RECENTLY_FAILED;
+				}
+			};
+
+	static final int OPEN_ATTEMPTS_PER_SECOND = 48;
+	static final int OPEN_ATTEMPT_BURST = 96;
+	static final int PEER_OPEN_ATTEMPTS_PER_SECOND = 16;
+	static final int PEER_OPEN_ATTEMPT_BURST = 32;
+	private static final int MAX_PEER_BUDGETS = 256;
+	private final Object budgetLock = new Object();
+	private final Budget nodeBudget =
+			new Budget(OPEN_ATTEMPTS_PER_SECOND, OPEN_ATTEMPT_BURST);
+	private final java.util.LinkedHashMap<String, Budget> peerBudgets =
+			new java.util.LinkedHashMap<String, Budget>(16, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						java.util.Map.Entry<String, Budget> eldest) {
+					return size() > MAX_PEER_BUDGETS;
+				}
+			};
+
+	private static final class Budget {
+		final int perSecond;
+		final int burst;
+		double tokens;
+		long refilledAt = Long.MIN_VALUE;
+
+		Budget(int perSecond, int burst) {
+			this.perSecond = perSecond;
+			this.burst = burst;
+			this.tokens = burst;
+		}
+
+		void refill(long now) {
+			if (refilledAt == Long.MIN_VALUE) refilledAt = now;
+			long elapsed = Math.max(0L, now - refilledAt);
+			tokens = Math.min(burst, tokens + elapsed * perSecond / 1000.0);
+			refilledAt = now;
+		}
+	}
 
 	private static final long MAX_TTL_SECONDS = 30L * 24 * 60 * 60;
 	private static final long CLOCK_SKEW_TOLERANCE_MS = 60L * 1000;
@@ -56,13 +96,6 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
 
-	/**
-	 * One-time prekeys this sender has already sealed to, by recipient and
-	 * key id. The recipient deletes a one-time key after its first use, so
-	 * a second envelope to the same key is silently lost; a sender that
-	 * remembers what it used picks another key or falls back to the signed
-	 * prekey. Bounded, and only as durable as the process.
-	 */
 	private static final int MAX_USED_ONE_TIME_KEYS = 4096;
 	private final java.util.LinkedHashSet<String> usedOneTimeKeys =
 			new java.util.LinkedHashSet<>();
@@ -83,11 +116,18 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		public final byte[] sigPub;
 		public final PrivateKey sigPriv;
 		public final byte[] agreePub;
+		public final byte[] legacyAgreePub;
 
 		public Identity(byte[] sigPub, PrivateKey sigPriv, byte[] agreePub) {
+			this(sigPub, sigPriv, agreePub, agreePub);
+		}
+
+		public Identity(byte[] sigPub, PrivateKey sigPriv, byte[] agreePub,
+				byte[] legacyAgreePub) {
 			this.sigPub = sigPub;
 			this.sigPriv = sigPriv;
 			this.agreePub = agreePub;
+			this.legacyAgreePub = legacyAgreePub;
 		}
 	}
 
@@ -170,8 +210,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			}
 			r.prekeyId = prekeyId;
 			r.recipientAgreementPub = throwaway.getPublic();
-			long spk = 1 + (long) (-Math.log(1.0 - random.nextDouble()) * 6.0);
-			r.signedPrekeyId = Math.max(1, Math.min(spk, 120));
+			r.signedPrekeyId = AsyncPrekeyStore.PUBLISHED_SIGNED_PREKEY_ID;
 			r.recipientIdentitySigPub = randomBytes(
 					org.zerionproject.core.api.crypto.PostQuantumConstants
 							.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES);
@@ -205,6 +244,11 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 
 	@Override
 	public void onFrame(byte[] envelopeBytes) {
+		onFrame(envelopeBytes, "");
+	}
+
+	@Override
+	public void onFrame(byte[] envelopeBytes, String fromPeer) {
 		AsyncEnvelope env;
 		try {
 			env = AsyncEnvelope.decode(envelopeBytes);
@@ -220,15 +264,39 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 				if (recentlyOpened.containsKey(dedupHex)) return;
 			}
 			if (store.isSeen(env.getDedupId())) return;
-			KeyPair prekey = store.resolvePrekey(env.getPrekeyKind(),
-					env.getPrekeyId(), env.getSignedPrekeyId());
-			if (prekey == null) return;
-			AsyncSealedSender.OpenRequest o =
-					new AsyncSealedSender.OpenRequest();
-			o.recipientAgreementKeyPair = prekey;
-			o.recipientIdentitySigPub = identity.sigPub;
-			o.recipientIdentityAgreePub = identity.agreePub;
-			AsyncSealedSender.OpenedMessage m = sealer.open(envelopeBytes, o);
+			List<AsyncPrekeyStore.PrekeyCandidate> candidates =
+					store.resolveCandidates(env.getPrekeyKind(),
+							env.getPrekeyId(), env.getSignedPrekeyId(), ttl);
+			if (candidates.isEmpty()) return;
+			String failedKey = org.zerionproject.core.util.StringUtils
+					.toHexString(crypto.hash(LABEL_FAILED_OPEN, envelopeBytes));
+			synchronized (recentlyFailed) {
+				if (recentlyFailed.containsKey(failedKey)) return;
+			}
+			if (!takeOpenBudget(fromPeer, candidates.size())) return;
+			AsyncSealedSender.OpenedMessage m = null;
+			AsyncPrekeyStore.PrekeyCandidate used = null;
+			for (AsyncPrekeyStore.PrekeyCandidate c : candidates) {
+				AsyncSealedSender.OpenRequest o =
+						new AsyncSealedSender.OpenRequest();
+				o.recipientAgreementKeyPair = c.keyPair;
+				o.recipientIdentitySigPub = identity.sigPub;
+				o.recipientIdentityAgreePub = c.published
+						? identity.agreePub : identity.legacyAgreePub;
+				try {
+					m = sealer.open(envelopeBytes, o);
+					used = c;
+					break;
+				} catch (GeneralSecurityException
+						| org.zerionproject.core.api.FormatException e) {
+				}
+			}
+			if (m == null || used == null) {
+				synchronized (recentlyFailed) {
+					recentlyFailed.put(failedKey, Boolean.TRUE);
+				}
+				return;
+			}
 			long now = clock.currentTimeMillis();
 			long expiry = m.getSendTimestamp() + ttl * 1000L;
 			if (now > expiry
@@ -245,11 +313,30 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			}
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
-			if (accepted && env.getPrekeyKind()
-					== AsyncEnvelope.PREKEY_KIND_ONE_TIME) {
-				store.consumeOneTimePrekey(env.getPrekeyId());
+			if (accepted && used.oneTimeId != null) {
+				store.consumeOneTimePrekey(used.oneTimeId);
 			}
 		} catch (Exception e) {
+		}
+	}
+
+	private boolean takeOpenBudget(String fromPeer, int attempts) {
+		synchronized (budgetLock) {
+			long now = clock.currentTimeMillis();
+			Budget peer = peerBudgets.get(fromPeer);
+			if (peer == null) {
+				peer = new Budget(PEER_OPEN_ATTEMPTS_PER_SECOND,
+						PEER_OPEN_ATTEMPT_BURST);
+				peerBudgets.put(fromPeer, peer);
+			}
+			nodeBudget.refill(now);
+			peer.refill(now);
+			if (nodeBudget.tokens < attempts || peer.tokens < attempts) {
+				return false;
+			}
+			nodeBudget.tokens -= attempts;
+			peer.tokens -= attempts;
+			return true;
 		}
 	}
 

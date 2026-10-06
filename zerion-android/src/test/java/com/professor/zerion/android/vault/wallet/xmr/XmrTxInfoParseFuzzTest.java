@@ -7,14 +7,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The native history arrives as text lines the wallet parses. Lines with
- * hostile fields (wrong counts, uppercase or short hashes, signs, values
- * beyond 64 bits, decimals, words, flags outside 0 and 1, random text) are
- * dropped or parsed, never thrown on, and every parsed row carries a
- * lowercase 64-character hash, a known direction and a non-negative
- * timestamp.
- */
 public class XmrTxInfoParseFuzzTest {
 
 	private static final int RANDOM_INPUTS = 8000;

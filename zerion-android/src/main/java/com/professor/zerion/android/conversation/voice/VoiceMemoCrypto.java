@@ -6,18 +6,6 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-/**
- * The parts of the voice memo format that decide what a memo is bound to.
- *
- * <p>Format 2: the 80-byte wrapped-key field is {@code salt(32) ||
- * AES-GCM(wrapKey, iv, sessionKey)(48)} where {@code wrapKey} is derived from
- * the pairing secret and the salt, so nothing in the payload opens it. Every
- * chunk and the global MAC carry as associated data {@code [2] || groupId ||
- * timestamp(8) || senderAuthorId(32) || recipientAuthorId(32)}, so a memo
- * verifies only as the message it was recorded for, from its sender to its
- * recipient, in its conversation. Format 1 carried the wrap key in the first
- * 32 bytes of the field and bound only the version and the group id.
- */
 @NotNullByDefault
 public final class VoiceMemoCrypto {
 
@@ -58,7 +46,6 @@ public final class VoiceMemoCrypto {
 		return field;
 	}
 
-	/** The salt of a format 2 field, or the clear wrap key of a format 1 field. */
 	public static byte[] fieldPrefix(byte[] wrappedKeyField) {
 		requireField(wrappedKeyField);
 		return Arrays.copyOfRange(wrappedKeyField, 0, SALT_LENGTH);
@@ -70,10 +57,6 @@ public final class VoiceMemoCrypto {
 				WRAPPED_KEY_LENGTH);
 	}
 
-	/**
-	 * The message identity that follows the format version and the group id
-	 * in the associated data of a format 2 memo.
-	 */
 	public static byte[] messageBinding(long timestamp, byte[] senderId,
 			byte[] recipientId) {
 		if (senderId.length != AUTHOR_ID_LENGTH

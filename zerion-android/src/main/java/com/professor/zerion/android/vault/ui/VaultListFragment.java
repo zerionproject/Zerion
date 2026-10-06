@@ -45,8 +45,8 @@ public class VaultListFragment extends BaseFragment {
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@AppModule.SecurePrefs
-	SharedPreferences securePrefs;
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 	private RecyclerView recyclerView;
@@ -101,7 +101,7 @@ public class VaultListFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
-		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+		sortMode = profilePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
 
 		setupFab();
 		setupAdapter();
@@ -131,7 +131,7 @@ public class VaultListFragment extends BaseFragment {
 		vaultSortButton.setOnClickListener(v -> {
 			sortMode = sortMode == VaultSearch.SORT_NAME
 					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
-			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			profilePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
 			applyFilterAndSort();
 		});
 	}
@@ -256,7 +256,8 @@ public class VaultListFragment extends BaseFragment {
 	public void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 		if (resultCode == android.app.Activity.RESULT_OK && data != null) {
-			android.net.Uri uri = data.getData();
+			android.net.Uri uri = com.professor.zerion.android.util.PickedUris
+					.accept(requireContext(), data.getData());
 			if (uri != null) {
 				if (requestCode == REQUEST_IMAGE_PICK) {
 					saveImageToVault(uri);

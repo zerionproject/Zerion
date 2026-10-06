@@ -4,13 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Immutable snapshot of sync progress. Heights distinguish NOT-YET-SCANNED from
- * CONFIRMED-ZERO: while {@code walletHeight < daemonHeight} the balance is
- * provisional and {@link #scanComplete()} is false, so the UI must not present a
- * zero balance as final. Balances are atomic (piconero). {@code checking} is
- * true while a user-requested refresh is being serviced.
- */
 @NotNullByDefault
 public final class XmrSyncStatus {
 

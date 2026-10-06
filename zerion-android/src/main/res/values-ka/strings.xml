@@ -81,7 +81,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion კონფიგურირებულია, რომ არ გამოიყენოს ინტერნეტი, როდესაც ბატარეაზე მუშაობს.</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion კონფიგურირებულია, რომ არ გამოიყენოს ინტერნეტი ამ ქვეყანაში</string>
   
-  <string name="transport_lan_long">იგივე Wi-Fi ქსელი</string>
 
   <string name="reminder_notification_title">გამოსულია Zerion-იდან</string>
   <string name="reminder_notification_text">შეეხეთ ანგარიშზე დასაბრუნებლად.</string>
@@ -205,7 +204,6 @@
   <string name="connecting_to_device">უკავშირდება მოწყობილობას\u2026</string>
   <string name="authenticating_with_device">ავტორიზაცია მოწყობილობით\u2026</string>
   <string name="connection_error_title">თქვენს კონტაქტთან დაკავშირება ვერ ხერხდება</string>
-  <string name="connection_error_feedback">თუ პრობლემა არ მოგვარდება, გთხოვთ, <a href="feedback">გამოგვიგზავნოთ გამოხმაურება</a>, რომ დაგვეხმაროთ აპის გაუმჯობესებაში.</string>
   
   <string name="add_contact_remotely_title_case">კონტაქტის დისტანციურად დამატება</string>
   <string name="add_contact_nearby_title">ახლომყოფი კონტაქტის დამატება</string>
@@ -379,8 +377,6 @@
   
   <string name="tor_network_setting_summary">ავტომატური: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">მობილური მონაცემების გამოყენებით</string>
-  <string name="tor_only_when_charging_title">ინტერნეტთან დაკავშირება მხოლოდ დამუხტვისას</string>
-  <string name="tor_only_when_charging_summary">როდესაც მოწყობილობა მუშაობს ბატარეაზე, ინტერნეტ კავშირი გამოირთვება </string>
   
   <string name="security_settings_title">უსაფრთხოება</string>
   <string name="pref_lock_title">აპის ჩაკეტვა</string>
@@ -437,70 +433,8 @@
   <string name="choose_ringtone_title">აირჩიეთ ზარის მელოდია</string>
   <string name="cannot_load_ringtone">ზარის მელოდიის ჩამოტვირთვა ვერ მოხერხდა</string>
   
-  <string name="mailbox_settings_title">საფოსტო ყუთი</string>
-  <string name="mailbox_setup_title">საფოსტო ყუთის დაყენება</string>
-  <string name="mailbox_setup_intro">საფოსტო ყუთი საშუალებას აძლევს თქვენს კონტაქტებს გამოგიგზავნონ შეტყობინებები, როდესაც  კავშირგარეშე ხართ. საფოსტო ყუთი მიიღებს თქვენს შეტყობინებებს და შეინახავს მათ, სანამ ონლაინ არ შემოხვალთ.\n
-		\nშეგიძლიათ დააყენოთ Zerion Mailbox აპი სათადარიგო მოწყობილობაზე. დატოვეთ ჩართული კვების წყაროსთან და Wi-Fi-თან, რომ მუდამ ონლაინ იყოს.</string>
-  <string name="mailbox_setup_download">ჯერ დააყენეთ საფოსტო ყუთის აპი რამე სხვა მოწყობილობაზე, ამისთვის მოძებნეთ „Zerion Mailbox“  Google Play-ში ან იქ, საიდანაც თავის დროზე ჩამოტვირთეთ Zerion.\n		\nშემდეგ თქვენი საფოსტო ყუთი დაუკავშირეთ Zerion-ს QR-კოდის მეშვეობით, რომელიც გამოჩნდება საფოსტო ყუთის აპში.</string>
-  <string name="mailbox_setup_download_link">ჩამოტვირთვის ბმულის გაზიარება</string>
-  <string name="mailbox_setup_already_paired_title">საფოსტო ყუთი უკვე დაკავშირებულია</string>
-  <string name="mailbox_setup_already_paired_description">ჩახსენით საფოსტო ყუთი სათადარიგო მოწყობილობაზე და ისევ სცადეთ.</string>
-  <string name="mailbox_setup_io_error_title">დაკავშირება ვერ ხერხდება</string>
-  <string name="mailbox_setup_io_error_description">დარწმუნდით, რომ ორივე მოწყობილობა დაკავშირებულია ინტერნეტთან და ისევ სცადეთ.</string>
-  <string name="mailbox_setup_assertion_error_title">საფოსტო ყუთის შეცდომა</string>
-  <string name="mailbox_setup_assertion_error_description">თუ პრობლემა ვერ მოგვარდა, გთხოვთ, გამოგვიგზავნოთ გამოხმაურება (ანონიმური მონაცემებით) Zerion-ის აპის მეშვეობით.</string>
-  <string name="mailbox_setup_camera_error_description">კამერაზე წვდომა ვერ ხერხდება. ისევ სცადეთ, შესაძლოა მოწყობილობის გადატვირთვის შემდეგ.</string>
-  <string name="mailbox_setup_paired_title">დაკავშირებულია</string>
-  <string name="mailbox_setup_paired_description">თქვენი საფოსტო ყუთი წარმატებით მიება Zerion-ს.\n
-		\nდატოვეთ საფოსტო ყუთი ჩართული კვებასა და Wi-Fi-ში, რომ ის მუდამ ხაზზე იყოს.</string>
-  <string name="tor_offline_title">კავშირგარეშე</string>
-  <string name="tor_offline_description">დარწმუნდით, რომ ეს მოწყობილობა ონლაინ არის და ინტერნეტთან კავშირი ნებადართულია.\n
-		\nშემდეგ დაელოდეთ, სანამ გლობუსის ხატულა არ გამწვანდება კავშირის პარამეტრების ეკრანზე.</string>
-  <string name="tor_offline_button_check">დაკავშირების პარამეტრების შემოწმება</string>
-  <string name="mailbox_status_title">საფოსტო ყუთის სტატუსი</string>
-  <string name="mailbox_status_connected_title">საფოსტო ყუთი მუშაობს</string>
-  <string name="mailbox_status_problem_title">Zerion განიცდის პრობლემებს საფოსტო ყუთთან დაკავშირებისას</string>
-  <string name="mailbox_status_failure_title">საფოსტო ყუთი მიუწვდომელია</string>
-  <string name="mailbox_status_app_too_old_title">Zerion ძალიან ძველია</string>
-  <string name="mailbox_status_app_too_old_message">განაახლეთ Zerion აპის ბოლო ვერსიამდე და ისევ სცადეთ.</string>
-  <string name="mailbox_status_mailbox_too_old_title">საფოსტო ყუთი ძალიან ძველია</string>
-  <string name="mailbox_status_mailbox_too_old_message">განაახლეთ თქვენი საფოსტო ყუთი ბოლო ვერსიამდე და ისევ სცადეთ.</string>
-  <string name="mailbox_status_check_button">კავშირის შემოწმება</string>
   
-  <string name="mailbox_status_connected_info">ბოლო დაკავშირება: %s</string>
   
-  <string name="mailbox_status_connected_never">არასდროს</string>
-  <string name="mailbox_status_unlink_button">ჩახსნა</string>
-  <string name="mailbox_status_unlink_dialog_title">ჩაიხსნას საფოსტო ყუთი?</string>
-  <string name="mailbox_status_unlink_dialog_question">ნამდვილად გსურთ ჩახსნათ თქვენი საფოსტო ყუთი?</string>
-  <string name="mailbox_status_unlink_dialog_warning">თუ ჩახსნით საფოსტო ყუთს, ვეღარ მიიღებთ შეტყობინებებს, სანამ Zerion კავშირგარეშე იქნება.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">თქვენი საფოსტო ყუთი ჩახსნილია</string>
-  <string name="mailbox_status_unlink_no_wipe_message">შემდეგ ჯერზე, როდესაც განახორციელებთ წვდომას თქვენს მოწყობილობაზე საფოსტო ყუთით, გახსენით საფოსტო ყუთის აპი და შეეხეთ „ჩახსნის“ ღილაკს პროცესის დასასრულებლად.\n\nთუ აღარ გაქვთ წვდომა თქვენს მოწყობილობაზე საფოსტო ყუთით, სანერვიულო არაფერია. თქვენი მონაცემები დაშიფრულია და მაინც დაცული დარჩება, თუ ვერ დაასრულეთ პროცესი.</string>
-  <string name="mailbox_status_unlink_success">თქვენი საფოსტო ყუთი ჩახსნილია</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox-ის პრობლემა</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox მიუწვდომელია</string>
-  <string name="mailbox_error_notification_text">შეეხეთ პრობლემის მოსაგვარებლად.</string>
-  <string name="mailbox_error_wizard_button">პრობლემის მოგვარება</string>
-  <string name="mailbox_error_wizard_title">საფოსტო ყუთის პრობლემის აღმოფხვრის ოსტატი</string>
-  <string name="mailbox_error_wizard_question1">გაქვთ წვდომა თქვენს საფოსტო ყუთის მოწყობილობაზე?</string>
-  <string name="mailbox_error_wizard_answer1">დიახ, ახლა მაქვს წვდომა.</string>
-  <string name="mailbox_error_wizard_answer2">ახლა არა, მაგრამ მოგვიანებით მექნება.</string>
-  <string name="mailbox_error_wizard_answer3">არა, აღარ მაქვს მასზე წვდომა.</string>
-  <string name="mailbox_error_wizard_info1_1">შეამოწმეთ, ჩართულია თუ არა საფოსტო ყუთის მოწყობილობა და დაკავშირებულია თუ არა ინტერნეტთან.</string>
-  <string name="mailbox_error_wizard_question1_1">გახსენით საფოსტო ყუთის აპი. რას ხედავთ?</string>
-  <string name="mailbox_error_wizard_answer1_1">ვხედავ საფოსტო ყუთის დაყენების ინსტრტუქციებს</string>
-  <string name="mailbox_error_wizard_answer1_2">ვხედავ QR კოდს</string>
-  <string name="mailbox_error_wizard_answer1_3">ვხედავ, რომ „საფოსტო ყუთი გაშვებულია“</string>
-  <string name="mailbox_error_wizard_answer1_4">ვხედავ, რომ „მოწყობილობა კავშირგარეშეა“</string>
-  <string name="mailbox_error_wizard_info1_1_1">გთხოვთ, ჩახსნათ თქვენი საფოსტო ყუთი ღილაკით ქვემოთ, შემდეგ მიჰყვეთ ინსტრუქციებს საფოსტო ყუთის მოწყობილობაზე ხელახლა მიბმისთვის.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">გთხოვთ, ჩახსნათ საფოსტო ყუთი ღილაკით ქვემოთ, შემდეგ დაასკანირეთ QR კოდი და ხელახლა მიაბით.</string>
-  <string name="mailbox_error_wizard_info1_1_3"> Zerion-სა და Mailbox-ს შორის გთხოვთ გამოიყენოთ ღილაკი ქვემოთ კავშირის შესამოწმებლად.\n\n
-		თუ კავშირი მაინც ვერ მოხერხდა:\n
-		\u2022 შეამოწმეთ, განახლებულია თუ არა საფოსტო ყუთი და Zerion-ის აპი ბოლო ვერსიებამდე.\n
-		\u2022 გადატვირთეთ საფოსტო ყუთის და Zerion-მოწყობილობები და ისევ სცადეთ.</string>
-  <string name="mailbox_error_wizard_info1_1_4">შეამოწმეთ, საფოსტო ყუთის მოწყობილობა სათანადოდ თუ არის დაკავშირებული ინტერნეტთან.\n\nშეამოწმეთ, რომ საათი საფოსტო ყუთის მოწყობილობაზე აჩვენებს სწორ დროს, თარიღს და დროის სარტყელს.\n\nშეამოწმეთ, განახლებულია თუ არა საფოსტო ყუთი და Zerion-აპები ბოლო ვერსიებამდე.\n\nგადატვირთეთ თქვენი საფოსტო ყუთი და Zerion-მოწყობილობები და ისევ სცადეთ.</string>
-  <string name="mailbox_error_wizard_info2">მოწყობილობაზე წვდომისას, გთხოვთ, დაბრუნდეთ ამ ეკრანზე.</string>
-  <string name="mailbox_error_wizard_info3">გთხოვთ, ჩახსენით თქვენი საფოსტო ყუთი ღილაკით ქვემოთ.\n\nთქვენი ძველი საფოსტო ყუთის ჩახსნის შემდეგ, ნებისმიერ დროს შეგიძლიათ დააყენოთ ახალი საფოსტო ყუთი.</string>
   
   <string name="about_title">შესახებ</string>
   <string name="zerion_version">Zerion-ის ვერსია: %s</string>
@@ -508,7 +442,6 @@
   <string name="links">ბმულები</string>
   <string name="zerion_website">\u2022 <a href="">ვებსაიტი</a></string>
   <string name="zerion_source_code">\u2022 <a href="">წყაროს კოდი</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">ცვლილებების ჟურნალი</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">კონფიდენციალურობის დებულება</a></string>
   
   <string name="translator_thanks">დიდი მადლობა ყველას, ვინც წვლილი შეიტანა Localization-Lab-ში</string>
@@ -527,43 +460,13 @@
   <string name="disappearing_messages_summary">ამ მიმოწერაში მომდევნო შეტყობინებები ავტომატურად გაქრეს 7\u00A0დღის შემდეგ.</string>
   
   <string name="pref_category_actions">მოქმედებები</string>
-  <string name="send_feedback">გამოხმაურების გაგზავნა</string>
   
   <string name="link_warning_title">გაფრთხილება ბმულის შესახებ</string>
   <string name="link_warning_intro">თქვენ აპირებთ შემდეგი ბმულის გახსნას გარე აპით.</string>
   <string name="link_warning_text">ეს შეიძლება გამოყენებულ იქნას თქვენი იდენტიფიცირებისთვის. იფიქრეთ იმაზე, ენდობით თუ არა იმ ადამიანს, ვინც გამოგიგზავნათ ეს ბმული და განიხილეთ მისი გახსნის შესაძლებლობა Tor ბრაუზერის მეშვეობით.</string>
   <string name="link_warning_open_link">ბმულის გახსნა</string>
   
-  <string name="crash_report_title">Zerion-ის შეფერხების ანგარიში</string>
-  <string name="zerion_crashed">სამწუხაროდ, Zerion გაფუჭდა</string>
-  <string name="not_your_fault">ეს თქვენი ბრალი არ არის.</string>
-  <string name="please_send_report">გთხოვთ, დაგვეხმაროთ, გავაუმჯობესოთ Zerion და გამოგვიგზავნეთ ანგარიში გათიშვის შესახებ.</string>
-  <string name="report_is_encrypted">გპირდებით, რომ ეს ანგარიში დაიშიფრება და გაიგზავნება უსაფრთხოდ.</string>
-  <string name="feedback_title">გამოხმაურება</string>
-  <string name="describe_crash">აღწერეთ, რა მოხდა (არასავალდებულო)</string>
-  <string name="enter_feedback">შეიყვანეთ თქვენი გამოხმაურება</string>
-  <string name="optional_contact_email">თქვენი ელფოსტის მისამართი (არასავალდებულო)</string>
-  <string name="privacy_policy">მონაცემების გამოგზავნით ჩვენთან, ეთანხმებით ჩვენს <a href="">კონფიდენციალურობის დებულებას</a></string>
-  <string name="include_debug_report_crash">დაურთეთ ანონიმური მონაცემები გათიშვის შესახებ</string>
-  <string name="include_debug_report_feedback">მათ შორის ანონიმური მონაცემები ამ მოწყობილობის შესახებ</string>
-  <string name="dev_report_user_info">ინფორმაცია მომხმარებლის შესახებ</string>
-  <string name="dev_report_basic_info">ძირითადი ინფორმაცია</string>
-  <string name="dev_report_device_info">ინფორმაცია მოწყობილობის შესახებ</string>
-  <string name="dev_report_stacktrace">სტეკის მიდევნება</string>
-  <string name="dev_report_time_info">ინფორმაცია დროის შესახებ </string>
-  <string name="dev_report_memory">მეხსიერება</string>
-  <string name="dev_report_storage">საცავი</string>
-  <string name="dev_report_connectivity">კავშირი</string>
-  <string name="dev_report_network_usage">ქსელის მოხმარება</string>
-  <string name="dev_report_build_config">ანაწყობის კონფიგურაცია</string>
-  <string name="dev_report_logcat">აპის ჟურნალი</string>
-  <string name="dev_report_device_features">მოწყობილობის მახასიათებლები</string>
-  <string name="send_report">ანგარიშის გაგზავნა</string>
   <string name="close">დახურვა</string>
-  <string name="dev_report_sending">იგზავნება გამოხმაურება…</string>
-  <string name="dev_report_sent">გამოხმაურება გაგზავნილია</string>
-  <string name="dev_report_saved">ანგარიში შენახულია. გაიგზავნება მომდევნო ჯერზე Zerion-ის ანგარიშზე შესვლისას.</string>
-  <string name="dev_report_error">შეცდომა: ანგარიშის გაგზავნა ვერ მოხერხდა</string>
   
   <string name="progress_title_logout">გამოდის Zerion-იდან…</string>
   

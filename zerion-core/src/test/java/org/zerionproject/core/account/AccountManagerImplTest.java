@@ -81,6 +81,12 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(keyDir));
 			allowing(databaseConfig).getKeyStrengthener();
 			will(returnValue(keyStrengthener));
+			allowing(keyStrengthener).currentGeneration();
+			will(returnValue(KeyStrengthener.LEGACY_GENERATION));
+			allowing(keyStrengthener).startNewGeneration();
+			will(returnValue(false));
+			allowing(crypto).strengtheningGeneration(with(any(byte[].class)));
+			will(returnValue(KeyStrengthener.LEGACY_GENERATION));
 		}});
 
 		accountManager =
@@ -389,7 +395,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertEquals(newEncryptedKeyHex, loadDatabaseKey(keyBackupFile));
 	}
 
-	/** AND-06: the sign-in throttle is one persisted, monotonic counter. */
 	@Test
 	public void lockoutIsEnforcedBeforeTheKeyIsTouchedAndSurvivesRestart()
 			throws Exception {
@@ -438,11 +443,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertFalse(new File(keyDir, "login.lockout").exists());
 	}
 
-	/**
-	 * A2-AND-02: a password change verifies the old password through the
-	 * same throttle as sign-in, so it is not an unthrottled oracle for the
-	 * account password on an unlocked device.
-	 */
 	@Test
 	public void changePasswordIsThrottledLikeSignIn() throws Exception {
 		java.util.concurrent.atomic.AtomicLong mono =
@@ -488,9 +488,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		};
 	}
 
-	/** STO-06: both key files are written through synced temporaries and
-	 *  atomic renames; no temporary file survives and neither file is
-	 *  ever empty. */
 	@Test
 	public void storingTheKeyLeavesCompleteFilesAndNoTemporaries()
 			throws Exception {
@@ -510,8 +507,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		}
 	}
 
-	/** AND-09: a strengthener that fails during the sign-in upgrade leaves
-	 *  the stored key as it is instead of writing a password-only key. */
 	@Test
 	public void strengthenerFailureDuringUpgradeKeepsTheStoredKey()
 			throws Exception {
@@ -536,7 +531,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
 	}
 
-	/** AND-09: a password change never silently drops the device binding. */
 	@Test
 	public void changePasswordReportsAStrengthenerFailure() throws Exception {
 		context.checking(new Expectations() {{
@@ -569,6 +563,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	public void testShreddingTheKeyRemovesBothFilesAndTheLoadedKey()
 			throws Exception {
 		context.checking(new Expectations() {{
+			allowing(keyStrengthener).discardKeyBeforeFirstAccount();
 			oneOf(crypto).decryptWithPassword(encryptedKey, password,
 					keyStrengthener);
 			will(returnValue(key.getBytes()));
@@ -620,7 +615,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testStoringTheDbKeyLeavesOnlyTheKeyAndItsBackup()
+	public void testStoringTheDbKeyLeavesTheKeyItsBackupAndItsState()
 			throws Exception {
 		context.checking(new Expectations() {{
 			oneOf(identityManager).createIdentity(authorName);
@@ -639,16 +634,11 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		String[] files = keyDir.list();
 		assertNotNull(files);
 		java.util.Arrays.sort(files);
-		assertArrayEquals(new String[] {"db.key", "db.key.bak"}, files);
+		assertArrayEquals(
+				new String[] {"db.key", "db.key.bak", "db.key.state"},
+				files);
 	}
 
-	/**
-	 * A fresh installation has no stored key that depends on the platform
-	 * key store, so the first account creation may discard whatever the
-	 * store holds under the alias and generate anew. Once a key file exists
-	 * the strengthener is left alone: replacing its key would make that
-	 * file undecryptable.
-	 */
 	@Test
 	public void theFirstAccountDiscardsTheStrengthenerKeyALaterOneDoesNot()
 			throws Exception {
@@ -661,7 +651,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			exactly(2).of(crypto).encryptWithPassword(key.getBytes(),
 					password, keyStrengthener);
 			will(returnValue(encryptedKey));
-			oneOf(keyStrengthener).discardKeyBeforeFirstAccount();
+			exactly(2).of(keyStrengthener).discardKeyBeforeFirstAccount();
 		}});
 
 		assertFalse(accountManager.accountExists());
@@ -669,6 +659,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertTrue(accountManager.accountExists());
 
 		accountManager.shredDatabaseKey();
+		accountManager.deleteAccount();
 		keyDir.mkdirs();
 		storeDatabaseKey(keyFile, encryptedKeyHex);
 		assertTrue(accountManager.accountExists());
@@ -735,11 +726,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		}});
 	}
 
-	/**
-	 * EXT-13-F03: a password change whose new key cannot be written
-	 * durably must fail, and fail closed: the files still hold the old
-	 * ciphertext, so the old password keeps unlocking the account.
-	 */
 	@Test
 	public void changePasswordFailsClosedWhenThePrimaryFileCannotBeWritten()
 			throws Exception {
@@ -778,11 +764,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertEquals(encryptedKeyHex, loadDatabaseKey(keyBackupFile));
 	}
 
-	/**
-	 * The change is complete only when the bytes on disk decrypt with the
-	 * new password to the same key; a stored value that does not is rolled
-	 * back to the old ciphertext.
-	 */
 	@Test
 	public void changePasswordRollsBackWhenTheStoredKeyDoesNotVerify()
 			throws Exception {
@@ -822,8 +803,6 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 		assertTrue(accountManager.hasDatabaseKey());
 	}
 
-	/** The backup is written first, so a partial write never replaces the
-	 * primary file, which is the one read first at sign-in. */
 	@Test
 	public void storingTheKeyWritesTheBackupBeforeThePrimary()
 			throws Exception {
@@ -838,6 +817,7 @@ public class AccountManagerImplTest extends BrambleMockTestCase {
 			}
 		};
 		assertTrue(m.storeEncryptedDatabaseKey(encryptedKeyHex));
-		assertEquals(java.util.Arrays.asList("db.key.bak", "db.key"), order);
+		assertEquals(java.util.Arrays.asList("db.key.bak", "db.key.state",
+				"db.key"), order);
 	}
 }

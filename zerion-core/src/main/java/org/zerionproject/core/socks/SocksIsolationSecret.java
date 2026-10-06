@@ -5,13 +5,6 @@ import org.zerionproject.core.util.StringUtils;
 
 import java.security.SecureRandom;
 
-/**
- * The per-process half of the SOCKS isolation credentials. It is drawn once
- * when the process starts, shared by every Tor socket factory of the process
- * so that one destination maps to one circuit across them, never written
- * anywhere, and replaced by a fresh value on the next start so that circuits
- * are not shared across process lifetimes.
- */
 @NotNullByDefault
 public final class SocksIsolationSecret {
 

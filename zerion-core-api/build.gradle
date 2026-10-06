@@ -19,7 +19,6 @@ dependencies {
 	signature 'org.codehaus.mojo.signature:java16:1.1@signature'
 }
 
-// needed to make test output available to zerion-core and zerion-app
 configurations {
 	testOutput.extendsFrom(testCompile)
 }

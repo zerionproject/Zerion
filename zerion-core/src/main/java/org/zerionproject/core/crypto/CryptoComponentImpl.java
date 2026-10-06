@@ -58,6 +58,8 @@ class CryptoComponentImpl implements CryptoComponent {
 	private static final byte PBKDF_FORMAT_SCRYPT_STRENGTHENED = 1;
 	private static final byte PBKDF_FORMAT_ARGON2ID = 2;
 	private static final byte PBKDF_FORMAT_ARGON2ID_STRENGTHENED = 3;
+	private static final byte PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION =
+			4;
 	private static final byte ONION_HS_PROTOCOL_VERSION = 3;
 	private static final int ONION_CHECKSUM_BYTES = 2;
 
@@ -367,9 +369,13 @@ class CryptoComponentImpl implements CryptoComponent {
 		SecretKey kdfKey = argon2idKdf.deriveKey(password, salt, cost);
 		SecretKey key = kdfKey;
 		boolean strengthened = false;
+		int generation = KeyStrengthener.LEGACY_GENERATION;
 		if (keyStrengthener != null) {
 			try {
-				key = keyStrengthener.strengthenKey(kdfKey);
+				generation = keyStrengthener.currentGeneration();
+				key = generation == KeyStrengthener.LEGACY_GENERATION
+						? keyStrengthener.strengthenKey(kdfKey)
+						: keyStrengthener.strengthenKey(kdfKey, generation);
 				strengthened = true;
 			} catch (RuntimeException e) {
 				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
@@ -377,16 +383,25 @@ class CryptoComponentImpl implements CryptoComponent {
 						.KeyStrengthenerException(e);
 			}
 		}
+		boolean namesGeneration = strengthened
+				&& generation != KeyStrengthener.LEGACY_GENERATION;
 		byte[] iv = new byte[STORAGE_IV_BYTES];
 		secureRandom.nextBytes(iv);
-		int outputLen = 1 + salt.length + INT_32_BYTES + iv.length
+		int outputLen = 1 + (namesGeneration ? INT_32_BYTES : 0)
+				+ salt.length + INT_32_BYTES + iv.length
 				+ input.length + macBytes;
 		byte[] output = new byte[outputLen];
 		int outputOff = 0;
-		byte formatVersion = strengthened
-				? PBKDF_FORMAT_ARGON2ID_STRENGTHENED : PBKDF_FORMAT_ARGON2ID;
+		byte formatVersion = namesGeneration
+				? PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION
+				: strengthened ? PBKDF_FORMAT_ARGON2ID_STRENGTHENED
+				: PBKDF_FORMAT_ARGON2ID;
 		output[outputOff] = formatVersion;
 		outputOff++;
+		if (namesGeneration) {
+			ByteUtils.writeUint32(generation, output, outputOff);
+			outputOff += INT_32_BYTES;
+		}
 		arraycopy(salt, 0, output, outputOff, salt.length);
 		outputOff += salt.length;
 		ByteUtils.writeUint32(cost, output, outputOff);
@@ -407,12 +422,6 @@ class CryptoComponentImpl implements CryptoComponent {
 		}
 	}
 
-	/**
-	 * The legacy scrypt formats carry the cost in the ciphertext. A cost
-	 * that is not a power of two within the range the derivation ever wrote
-	 * is a tampered or corrupt file, and would otherwise reach the library
-	 * as an unchecked argument error or an allocation of arbitrary size.
-	 */
 	static boolean validScryptCost(long cost) {
 		return cost >= ScryptKdf.MIN_COST && cost <= ScryptKdf.MAX_COST
 				&& (cost & (cost - 1)) == 0;
@@ -434,8 +443,22 @@ class CryptoComponentImpl implements CryptoComponent {
 		if (formatVersion != PBKDF_FORMAT_SCRYPT &&
 				formatVersion != PBKDF_FORMAT_SCRYPT_STRENGTHENED &&
 				formatVersion != PBKDF_FORMAT_ARGON2ID &&
-				formatVersion != PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
+				formatVersion != PBKDF_FORMAT_ARGON2ID_STRENGTHENED &&
+				formatVersion != PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
+		}
+		int generation = KeyStrengthener.LEGACY_GENERATION;
+		if (formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION) {
+			if (input.length < 1 + INT_32_BYTES + PBKDF_SALT_BYTES
+					+ INT_32_BYTES + STORAGE_IV_BYTES + macBytes) {
+				throw new DecryptionException(INVALID_CIPHERTEXT);
+			}
+			long g = ByteUtils.readUint32(input, inputOff);
+			inputOff += INT_32_BYTES;
+			if (g < 1 || g > Integer.MAX_VALUE) {
+				throw new DecryptionException(INVALID_CIPHERTEXT);
+			}
+			generation = (int) g;
 		}
 		byte[] salt = new byte[PBKDF_SALT_BYTES];
 		arraycopy(input, inputOff, salt, 0, salt.length);
@@ -450,7 +473,8 @@ class CryptoComponentImpl implements CryptoComponent {
 		inputOff += iv.length;
 		boolean isArgon2id =
 				formatVersion == PBKDF_FORMAT_ARGON2ID ||
-				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED ||
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION;
 		if (!isArgon2id && !validScryptCost(cost)) {
 			throw new DecryptionException(INVALID_CIPHERTEXT);
 		}
@@ -463,13 +487,19 @@ class CryptoComponentImpl implements CryptoComponent {
 		}
 		SecretKey key = kdfKey;
 		if (formatVersion == PBKDF_FORMAT_SCRYPT_STRENGTHENED ||
-				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
-			if (keyStrengthener == null || !keyStrengthener.isInitialised()) {
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED ||
+				formatVersion == PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION) {
+			if (keyStrengthener == null || !(generation
+					== KeyStrengthener.LEGACY_GENERATION
+					? keyStrengthener.isInitialised()
+					: keyStrengthener.isInitialised(generation))) {
 				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
 			}
 			try {
-				key = keyStrengthener.strengthenKey(kdfKey);
+				key = generation == KeyStrengthener.LEGACY_GENERATION
+						? keyStrengthener.strengthenKey(kdfKey)
+						: keyStrengthener.strengthenKey(kdfKey, generation);
 			} catch (RuntimeException e) {
 				java.util.Arrays.fill(kdfKey.getBytes(), (byte) 0);
 				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
@@ -497,10 +527,23 @@ class CryptoComponentImpl implements CryptoComponent {
 
 	@Override
 	public boolean isEncryptedWithStrengthenedKey(byte[] ciphertext) {
-		if (ciphertext.length == 0) return false;
+		return strengtheningGeneration(ciphertext) >= 0;
+	}
+
+	@Override
+	public int strengtheningGeneration(byte[] ciphertext) {
+		if (ciphertext.length == 0) return -1;
 		byte fv = ciphertext[0];
-		return fv == PBKDF_FORMAT_SCRYPT_STRENGTHENED
-				|| fv == PBKDF_FORMAT_ARGON2ID_STRENGTHENED;
+		if (fv == PBKDF_FORMAT_SCRYPT_STRENGTHENED
+				|| fv == PBKDF_FORMAT_ARGON2ID_STRENGTHENED) {
+			return KeyStrengthener.LEGACY_GENERATION;
+		}
+		if (fv == PBKDF_FORMAT_ARGON2ID_STRENGTHENED_GENERATION
+				&& ciphertext.length >= 1 + INT_32_BYTES) {
+			long g = ByteUtils.readUint32(ciphertext, 1);
+			return g < 1 || g > Integer.MAX_VALUE ? -1 : (int) g;
+		}
+		return -1;
 	}
 
 	@Override

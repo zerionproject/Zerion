@@ -24,12 +24,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * AND-03: FLAG_SECURE is per window, so a dialog must carry it itself. A
- * dialog inherits its host's protection, and a dialog holding a secret is
- * protected even when the host is not; an ordinary dialog under an
- * unprotected host stays capturable, respecting the user's preference.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class SecureDialogsTest {
@@ -63,7 +57,6 @@ public class SecureDialogsTest {
 				SecureDialogs.isProtected(d.getWindow()));
 	}
 
-	/** The defect itself: a dialog window does not inherit its host's flag. */
 	@Test
 	public void plainBuilderDialogDoesNotInheritProtection() {
 		FragmentActivity a = host(true);

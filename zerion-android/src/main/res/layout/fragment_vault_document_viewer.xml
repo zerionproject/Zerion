@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_zerion_gradient">
 
-    <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
@@ -24,7 +23,6 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Main content area -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll_view"
         android:layout_width="match_parent"
@@ -36,7 +34,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- PDF viewer (single page for security) -->
             <androidx.core.widget.NestedScrollView
                 android:id="@+id/pdf_scroll_view"
                 android:layout_width="match_parent"
@@ -58,7 +55,6 @@
                         android:scaleType="fitCenter"
                         android:contentDescription="@string/cd_pdf_page" />
 
-                    <!-- PDF navigation controls -->
                     <LinearLayout
                         android:id="@+id/pdf_controls"
                         android:layout_width="match_parent"
@@ -100,7 +96,6 @@
 
             </androidx.core.widget.NestedScrollView>
 
-            <!-- Text viewer (TXT, MD) -->
             <androidx.core.widget.NestedScrollView
                 android:id="@+id/text_scroll_view"
                 android:layout_width="match_parent"
@@ -129,16 +124,6 @@
 
             </androidx.core.widget.NestedScrollView>
 
-            <!-- Markdown viewer (WebView for security) -->
-            <WebView
-                android:id="@+id/markdown_webview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="16dp"
-                android:visibility="gone"
-                android:background="@android:color/white" />
-
-            <!-- Unsupported format message -->
             <LinearLayout
                 android:id="@+id/unsupported_layout"
                 android:layout_width="match_parent"
@@ -183,7 +168,6 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Loading indicator -->
     <FrameLayout
         android:id="@+id/loading_overlay"
         android:layout_width="match_parent"

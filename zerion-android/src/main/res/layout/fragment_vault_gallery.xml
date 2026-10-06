@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground">
 
-    <!-- Search row + Gallery Grid -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -49,7 +48,6 @@
 
     </LinearLayout>
 
-    <!-- Empty State -->
     <LinearLayout
         android:id="@+id/gallery_empty_text"
         android:layout_width="match_parent"
@@ -82,7 +80,6 @@
 
     </LinearLayout>
 
-    <!-- FAB for adding images -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add"
         android:layout_width="wrap_content"

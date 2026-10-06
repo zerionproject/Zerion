@@ -18,13 +18,6 @@ import static org.zerionproject.core.api.transport.TransportConstants.PROTOCOL_V
 import static org.zerionproject.core.api.transport.TransportConstants.STREAM_HEADER_NONCE_LENGTH;
 import static org.zerionproject.core.api.transport.TransportConstants.TAG_LENGTH;
 
-/**
- * Builds the classical stream encrypter that carries pairing handshakes and
- * contact exchanges. A context that carries ratchet state is refused: the only
- * consumer of ratcheting streams over rotation keys was the post-pairing
- * continuation, which now runs on the ZWF path like every other contact
- * connection.
- */
 @Immutable
 @NotNullByDefault
 class StreamEncrypterFactoryImpl implements StreamEncrypterFactory {

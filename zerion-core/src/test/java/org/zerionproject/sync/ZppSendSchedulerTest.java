@@ -56,7 +56,6 @@ public class ZppSendSchedulerTest {
 		s.enqueue(ZmmConstants.TYPE_TEXT,
 				"three".getBytes(StandardCharsets.UTF_8));
 
-		// three real frames, then two cover frames - all one per slot
 		for (int i = 0; i < 5; i++) s.tick();
 
 		assertEquals(5, sink.sent.size());
@@ -84,13 +83,11 @@ public class ZppSendSchedulerTest {
 				"one".getBytes(StandardCharsets.UTF_8));
 		s.enqueue(ZmmConstants.TYPE_TEXT,
 				"two".getBytes(StandardCharsets.UTF_8));
-		// not ready: every frame is cover, no application record leaves, queue kept
 		for (int i = 0; i < 4; i++) s.tick();
 		assertEquals(4, sink.sent.size());
 		for (byte[] rec : sink.sent) assertTrue(ZmmRecord.isCover(rec));
 		assertEquals(0, s.getRealFrameCount());
 		assertEquals(2, s.getQueueDepth());
-		// once ready: the queued application records go out in order
 		ready.set(true);
 		s.tick();
 		s.tick();
@@ -105,7 +102,6 @@ public class ZppSendSchedulerTest {
 	public void surplusWaitsForNextSlotNoBurst() throws Exception {
 		RecordingSink sink = new RecordingSink();
 		ZppSendScheduler s = new ZppSendScheduler(sink);
-		// enqueue five, but only tick twice: exactly two go out, three remain.
 		for (int i = 0; i < 5; i++) {
 			s.enqueue(ZmmConstants.TYPE_TEXT, new byte[]{(byte) i});
 		}

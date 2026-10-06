@@ -11,11 +11,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The shared throttle must make a guessing run against any credential
- * prompt slow, tell the caller when to drop the reviewed transaction and
- * re-lock, and carry its count across a restart.
- */
 public class WalletCredentialThrottleTest {
 
 	private final AtomicLong clock = new AtomicLong(1_000_000);

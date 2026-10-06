@@ -13,7 +13,6 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
-		<!-- ====== APPEARANCE ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_appearance" />
@@ -162,7 +161,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== CHAT ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/pref_chat_section" />

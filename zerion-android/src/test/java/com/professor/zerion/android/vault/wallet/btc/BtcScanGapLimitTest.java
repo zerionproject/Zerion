@@ -22,11 +22,6 @@ public class BtcScanGapLimitTest {
 				new FakeElectrum.RecordingFactory(e), (url, tag) -> null);
 	}
 
-	/**
-	 * BTC-08: a server answering non-empty history for every script hash
-	 * defeated the gap limit and kept the scan running forever. The scan now
-	 * stops at the chain cap.
-	 */
 	@Test(timeout = 600_000)
 	public void historyForEveryAddressEndsAtTheChainCap() throws IOException {
 		final int[] calls = {0};
@@ -112,11 +107,6 @@ public class BtcScanGapLimitTest {
 		assertTrue(kept.containsKey("newest"));
 	}
 
-	/**
-	 * BTC-11: two sends before the scan server has seen the first must not
-	 * pay change to the same address; the signed change index becomes the
-	 * floor for the next plan.
-	 */
 	@Test
 	public void changeAddressAdvancesPastASignedChangeOutput()
 			throws IOException {
@@ -137,7 +127,6 @@ public class BtcScanGapLimitTest {
 		assertEquals(first.changeIndex + 1, w.minChangeProbe());
 	}
 
-	/** BTC-05: the next unused index at or above the displayed one. */
 	@Test
 	public void nextUnusedReceiveIndex() {
 		java.util.Set<Integer> used = new java.util.HashSet<>(

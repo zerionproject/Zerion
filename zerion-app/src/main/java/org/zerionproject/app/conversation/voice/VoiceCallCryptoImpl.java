@@ -3,6 +3,8 @@ package org.zerionproject.app.conversation.voice;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.rendezvous.KeyMaterialSource;
@@ -16,6 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 
 import static org.zerionproject.core.util.StringUtils.fromHexString;
@@ -34,6 +37,14 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 
 	private static final String VIDEO_KEY_LABEL =
 			"org.zerionproject.app.voice/VIDEO_KEY";
+
+	private static final String CALL_SECRET_LABEL =
+			"org.zerionproject.app.voice/CALL_SECRET_V2";
+
+	private static final byte[] FRAME_AAD_LABEL =
+			toUtf8("org.zerionproject.app.voice/AUDIO_FRAME_V2");
+
+	private static final int AGREEMENT_PUBLIC_KEY_BYTES = 32;
 
 	private static final int SEED_BYTES = 32;
 	private static final int AES_KEY_BYTES = 32;
@@ -262,6 +273,86 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 
 	@Override
 	public byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key) {
+		return decrypt(ciphertext, key, null);
+	}
+
+	@Override
+	public byte[] encryptAudioFrame(byte[] plaintext, SecretKey key,
+			byte[] aad) {
+		byte[] keyBytes = key.getBytes().clone();
+		try {
+			byte[] nonce = new byte[GCM_NONCE_BYTES];
+			secureRandom.nextBytes(nonce);
+			Cipher cipher = CIPHER_CACHE.get();
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(keyBytes,
+					"AES"), new GCMParameterSpec(GCM_TAG_BITS, nonce));
+			cipher.updateAAD(aad);
+			byte[] ciphertextWithTag = cipher.doFinal(plaintext);
+			byte[] result =
+					new byte[GCM_NONCE_BYTES + ciphertextWithTag.length];
+			System.arraycopy(nonce, 0, result, 0, GCM_NONCE_BYTES);
+			System.arraycopy(ciphertextWithTag, 0, result, GCM_NONCE_BYTES,
+					ciphertextWithTag.length);
+			return result;
+		} catch (Exception e) {
+			throw new RuntimeException("Audio frame encryption failed", e);
+		} finally {
+			java.util.Arrays.fill(keyBytes, (byte) 0);
+		}
+	}
+
+	@Override
+	public byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key,
+			byte[] aad) {
+		return decrypt(ciphertext, key, aad);
+	}
+
+	@Override
+	public KeyPair generateCallAgreementKeyPair() {
+		return crypto.generateAgreementKeyPair();
+	}
+
+	@Override
+	public byte[] encodeCallAgreementPublicKey(KeyPair keyPair) {
+		byte[] encoded = keyPair.getPublic().getEncoded();
+		if (encoded.length != AGREEMENT_PUBLIC_KEY_BYTES) {
+			throw new IllegalArgumentException("agreement key");
+		}
+		return encoded.clone();
+	}
+
+	@Override
+	public SecretKey deriveCallSecret(SecretKey voiceCallKey, KeyPair ours,
+			byte[] theirPublicKey, boolean alice, String callId)
+			throws GeneralSecurityException {
+		if (theirPublicKey.length != AGREEMENT_PUBLIC_KEY_BYTES) {
+			throw new GeneralSecurityException("agreement key");
+		}
+		PublicKey theirs = crypto.getAgreementKeyParser()
+				.parsePublicKey(theirPublicKey);
+		byte[] mine = encodeCallAgreementPublicKey(ours);
+		byte[] callKey = voiceCallKey.getBytes().clone();
+		try {
+			return crypto.deriveSharedSecret(CALL_SECRET_LABEL, theirs, ours,
+					callKey, alice ? mine : theirPublicKey,
+					alice ? theirPublicKey : mine, toUtf8(callId));
+		} finally {
+			java.util.Arrays.fill(callKey, (byte) 0);
+		}
+	}
+
+	@Override
+	public byte[] audioFrameAssociatedData(boolean fromAlice, long sequence) {
+		byte[] aad = new byte[FRAME_AAD_LABEL.length + 1 + 8];
+		System.arraycopy(FRAME_AAD_LABEL, 0, aad, 0, FRAME_AAD_LABEL.length);
+		aad[FRAME_AAD_LABEL.length] = (byte) (fromAlice ? 1 : 2);
+		ByteBuffer.wrap(aad, FRAME_AAD_LABEL.length + 1, 8)
+				.order(ByteOrder.BIG_ENDIAN).putLong(sequence);
+		return aad;
+	}
+
+	private byte[] decrypt(byte[] ciphertext, SecretKey key,
+			@javax.annotation.Nullable byte[] aad) {
 		try {
 			if (ciphertext.length < GCM_NONCE_BYTES + 16) {
 				throw new IllegalArgumentException("Ciphertext too short");
@@ -279,6 +370,7 @@ class VoiceCallCryptoImpl implements VoiceCallCrypto {
 			GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_BITS, nonce);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
 			cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec);
+			if (aad != null) cipher.updateAAD(aad);
 
 			byte[] result = cipher.doFinal(ciphertextWithTag);
 			java.util.Arrays.fill(keyBytes, (byte) 0);

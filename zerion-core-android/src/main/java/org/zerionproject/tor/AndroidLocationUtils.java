@@ -12,12 +12,6 @@ import java.util.Locale;
 
 import static android.content.Context.TELEPHONY_SERVICE;
 
-/**
- * Guesses the current country from the first of these that answers, in
- * order of likely correctness: the phone network, which works without a
- * SIM or with a foreign one; the SIM, which assumes no roaming; the user's
- * locale.
- */
 @NotNullByDefault
 class AndroidLocationUtils implements LocationUtils {
 

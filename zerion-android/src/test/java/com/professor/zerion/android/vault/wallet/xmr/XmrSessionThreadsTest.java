@@ -7,11 +7,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Executor threads for the native wallet carry the requested stack: a
- * recursion runs several times deeper on a factory thread than on a thread
- * created with a small stack, and the threads carry the executor's name.
- */
 public class XmrSessionThreadsTest {
 
 	@Test

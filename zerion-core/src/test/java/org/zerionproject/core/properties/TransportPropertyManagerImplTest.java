@@ -20,6 +20,7 @@ import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.plugin.tor.B4OnionRotation;
@@ -37,6 +38,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.api.properties.TransportPropertyConstants.GROUP_KEY_DISCOVERED;
 import static org.zerionproject.core.api.properties.TransportPropertyConstants.MSG_KEY_LOCAL;
 import static org.zerionproject.core.api.properties.TransportPropertyConstants.MSG_KEY_TRANSPORT_ID;
@@ -49,6 +51,7 @@ import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.core.test.TestUtils.getGroup;
 import static org.zerionproject.core.test.TestUtils.getMessage;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
+import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.hasEvent;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -196,6 +199,12 @@ public class TransportPropertyManagerImplTest extends BrambleMockTestCase {
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
 			oneOf(db).removeGroup(txn, contactGroup);
+			allowing(accountManager).getDatabaseKey();
+			will(returnValue(getSecretKey()));
+			oneOf(settingsManager).mergeSettings(with(txn),
+					with(any(Settings.class)), with(B4_SETTINGS_NAMESPACE));
+			oneOf(settingsManager).getSettings(txn, B4_SETTINGS_NAMESPACE);
+			will(returnValue(new Settings()));
 		}});
 
 		TransportPropertyManagerImpl t = createInstance();

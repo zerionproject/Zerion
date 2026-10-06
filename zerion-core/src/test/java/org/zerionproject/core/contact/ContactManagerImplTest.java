@@ -9,10 +9,7 @@ import org.zerionproject.core.api.contact.PendingContactState;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
-import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
-import org.zerionproject.core.api.crypto.pcs.PqRatchetState;
 import org.zerionproject.core.crypto.pcs.PcsStateManager;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.NoSuchContactException;
@@ -48,6 +45,7 @@ import static org.zerionproject.core.util.StringUtils.getRandomBase32String;
 import static org.zerionproject.core.util.StringUtils.getRandomString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ContactManagerImplTest extends BrambleMockTestCase {
 
@@ -57,7 +55,6 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	private PendingContactFactory pendingContactFactory;
 	private CryptoComponent crypto;
 	private PcsStateManager pcsStateManager;
-	private Mode3FullRatchet mode3FullRatchet;
 
 	private Author remote;
 	private LocalAuthor localAuthor;
@@ -82,7 +79,6 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		pendingContactFactory = context.mock(PendingContactFactory.class);
 		crypto = context.mock(CryptoComponent.class);
 		pcsStateManager = context.mock(PcsStateManager.class);
-		mode3FullRatchet = context.mock(Mode3FullRatchet.class);
 
 		remote = getAuthor();
 		localAuthor = getLocalAuthor();
@@ -96,15 +92,13 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		alice = new Random().nextBoolean();
 
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager,
-				mode3FullRatchet);
+				pendingContactFactory, crypto, pcsStateManager);
 	}
 
 	@Test
 	public void convertingPendingContactRotatesHandshakeKeys()
 			throws Exception {
 		Transaction txn = new Transaction(null, false);
-		Mode3FullState mode3FullState = context.mock(Mode3FullState.class);
 		PendingContactId p = pendingContact.getId();
 
 		context.checking(new DbExpectations() {{
@@ -116,6 +110,9 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(java.util.Collections.emptyList()));
 			oneOf(db).getPendingContactOurKeys(txn, p);
 			will(returnValue(null));
+			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
+			will(returnValue(new org.zerionproject.core.api.settings
+					.Settings()));
 			oneOf(db).removePendingContact(txn, p);
 			oneOf(identityManager).getHandshakeKeys(txn);
 			will(returnValue(handshakeKeyPair));
@@ -129,15 +126,8 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 					pendingContact.getPublicKey(), handshakeKeyPair);
 			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
 					timestamp, alice, active);
-			oneOf(crypto).generateAgreementKeyPair();
-			will(returnValue(handshakeKeyPair));
-			oneOf(mode3FullRatchet).createInitialState();
-			will(returnValue(mode3FullState));
-			oneOf(pcsStateManager).initializeMode2State(with(txn),
-					with(contactId), with(any(PcsSessionState.class)),
-					with(any(PcsSessionState.class)));
-			oneOf(pcsStateManager).savePqState(with(txn), with(contactId),
-					with(any(PqRatchetState.class)));
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
 			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
@@ -150,7 +140,6 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	@Test
 	public void testAddContact() throws Exception {
 		Transaction txn = new Transaction(null, false);
-		Mode3FullState mode3FullState = context.mock(Mode3FullState.class);
 
 		context.checking(new DbExpectations() {{
 			oneOf(db).transactionWithResult(with(false), withDbCallable(txn));
@@ -158,15 +147,8 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contactId));
 			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
 					timestamp, alice, active);
-			oneOf(crypto).generateAgreementKeyPair();
-			will(returnValue(handshakeKeyPair));
-			oneOf(mode3FullRatchet).createInitialState();
-			will(returnValue(mode3FullState));
-			oneOf(pcsStateManager).initializeMode2State(with(txn),
-					with(contactId), with(any(PcsSessionState.class)),
-					with(any(PcsSessionState.class)));
-			oneOf(pcsStateManager).savePqState(with(txn), with(contactId),
-					with(any(PqRatchetState.class)));
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
 		}});
@@ -291,6 +273,24 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void anIntroducedContactIsRecordedAsPostQuantum() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		byte[] mlDsa = getRandomId();
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).addContact(txn, remote, local, null, false, true, false,
+					mlDsa);
+			will(returnValue(contactId));
+			allowing(pcsStateManager);
+			oneOf(db).getContact(txn, contactId);
+			will(returnValue(contact));
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, remote, local,
+				rootKey, false, mlDsa));
+	}
+
+	@Test
 	public void testGetHandshakeLink() throws Exception {
 		Transaction txn = new Transaction(null, true);
 		String link = "zerion://" + getRandomBase32String(BASE32_LINK_BYTES);
@@ -306,6 +306,33 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		}});
 
 		assertEquals(link, contactManager.getHandshakeLink());
+	}
+
+	@Test
+	public void aContactLinkEnteredAfterTheOwnLinkChangedAddsNothing()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		String shared = "zerion://" + getRandomBase32String(BASE32_LINK_BYTES);
+		String current = "zerion://" + getRandomBase32String(BASE32_LINK_BYTES);
+		String theirs = "zerion://" + getRandomBase32String(BASE32_LINK_BYTES);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).startTransaction(false);
+			will(returnValue(txn));
+			oneOf(identityManager).getHybridHandshakeKeys(txn);
+			will(returnValue(handshakeKeyPair));
+			oneOf(pendingContactFactory).createHandshakeLink(
+					handshakeKeyPair.getPublic());
+			will(returnValue(current));
+			oneOf(db).endTransaction(txn);
+		}});
+
+		try {
+			contactManager.addPendingContact(theirs, "alias", shared);
+			fail();
+		} catch (org.zerionproject.core.api.contact
+				.OwnLinkChangedException expected) {
+		}
 	}
 
 	@Test
@@ -347,6 +374,129 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 
 		assertEquals(derived, contactManager.deriveContactKey(contactId,
 				"org.zerionproject.voice/MEMO_WRAP_KEY", salt));
+	}
+
+	@Test
+	public void deriveContactKeyWipesTheLoadedRootCopy() throws Exception {
+		Transaction txn = new Transaction(null, true);
+		byte[] salt = getRandomId();
+		SecretKey derived = getSecretKey();
+		SecretKey loadedRoot = new SecretKey(rootKey.getBytes().clone());
+		SecretKey loadedChain = getSecretKey();
+		PcsSessionState state = new PcsSessionState(loadedChain, 0, 0,
+				loadedRoot, null, false, 0, null);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(pcsStateManager).loadSendState(txn, contactId);
+			will(returnValue(state));
+			oneOf(crypto).deriveKey("org.zerionproject.voice/MEMO_WRAP_KEY",
+					loadedRoot, salt);
+			will(returnValue(derived));
+		}});
+
+		contactManager.deriveContactKey(contactId,
+				"org.zerionproject.voice/MEMO_WRAP_KEY", salt);
+		assertTrue(isZero(loadedRoot.getBytes()));
+		assertTrue(isZero(loadedChain.getBytes()));
+	}
+
+	private static boolean isZero(byte[] b) {
+		int acc = 0;
+		for (byte x : b) acc |= x;
+		return acc == 0;
+	}
+
+	@Test
+	public void aPairingWithAnExistingContactReplacesItsKeysAndKeepsIt()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+		org.zerionproject.core.api.settings.Settings none =
+				new org.zerionproject.core.api.settings.Settings();
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.singletonList(contact)));
+			oneOf(db).getPendingContactOurKeys(txn, p);
+			will(returnValue(null));
+			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
+			will(returnValue(none));
+			oneOf(db).removePendingContact(txn, p);
+			oneOf(db).containsContact(txn, remote.getId(), local);
+			will(returnValue(true));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.singletonList(contact)));
+			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+					timestamp, alice, true);
+			oneOf(db).removePcsSessionState(txn, contactId,
+					DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT);
+			oneOf(db).removePcsSessionState(txn, contactId,
+					DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING);
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
+			oneOf(db).mergeSettings(with(txn), with(any(
+					org.zerionproject.core.api.settings.Settings.class)),
+					with(ContactManagerImpl.CONNECTION_KEYS_NAMESPACE));
+			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+			never(db).addContact(with(any(Transaction.class)),
+					with(any(Author.class)), with(any(AuthorId.class)),
+					with(any(org.zerionproject.core.api.crypto.PublicKey.class)),
+					with(any(boolean.class)), with(any(boolean.class)),
+					with(any(boolean.class)), with(any(byte[].class)));
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+	}
+
+	@Test
+	public void aLinkScannedInPersonVerifiesTheContact() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+		org.zerionproject.core.api.settings.Settings marked =
+				new org.zerionproject.core.api.settings.Settings();
+		marked.putBoolean(org.zerionproject.core.util.StringUtils
+				.toHexString(p.getBytes()), true);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.emptyList()));
+			oneOf(db).getPendingContactOurKeys(txn, p);
+			will(returnValue(null));
+			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
+			will(returnValue(marked));
+			oneOf(db).mergeSettings(with(txn), with(any(
+					org.zerionproject.core.api.settings.Settings.class)),
+					with(ContactManagerImpl.IN_PERSON_NAMESPACE));
+			oneOf(db).removePendingContact(txn, p);
+			oneOf(db).containsContact(txn, remote.getId(), local);
+			will(returnValue(false));
+			oneOf(identityManager).getHandshakeKeys(txn);
+			will(returnValue(handshakeKeyPair));
+			oneOf(db).addContact(txn, remote, local,
+					pendingContact.getPublicKey(), true, false, false,
+					(byte[]) null);
+			will(returnValue(contactId));
+			oneOf(db).setContactAlias(txn, contactId,
+					pendingContact.getAlias());
+			oneOf(keyManager).addContact(txn, contactId,
+					pendingContact.getPublicKey(), handshakeKeyPair);
+			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
+			oneOf(db).getContact(txn, contactId);
+			will(returnValue(contact));
+			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, false, active, null));
 	}
 
 	@Test(expected = NoSuchContactException.class)

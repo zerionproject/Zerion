@@ -2,24 +2,6 @@ package org.zerionproject.wire;
 
 import static org.zerionproject.wire.ZwfConstants.NONCE_LENGTH;
 
-/**
- * Derives the 24-byte XSalsa20 AEAD nonce for a ZWF frame segment.
- *
- * <p>The {@code streamId} is bound directly into the nonce as defence in depth:
- * even if the chain-key derivation were somehow reused, two different streams
- * still produce disjoint nonce spaces.
- *
- * <p>Nonce layout (big-endian):
- * <pre>
- *   [0..7]   streamId   (uint64, persistent, strictly monotonic per contact/direction)
- *   [8..15]  frameNumber (uint64, per-stream, from 0)
- *   [16]     0x80        (domain-separation marker)
- *   [17]     segment     (0, 1 or 2 — the three Mode 3-Full AEAD segments)
- *   [18]     originator  (1 if the stream was opened by the alice-role endpoint,
- *                         else 0 — the sender of a stream is always its originator)
- *   [19..23] 0
- * </pre>
- */
 public final class ZwfNonce {
 
 	private ZwfNonce() {

@@ -16,13 +16,6 @@ import com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Proves through the real dependency graph on the device that every UI
- * surface resolves the one application-scoped Monero manager: the component
- * hands out a single instance, and two ViewModel stores (one per hosting
- * activity) yield ViewModels backed by that same instance. Read-only: no
- * vault unlock, no wallet open, no app data touched.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrManagerSingletonDeviceTest {
 

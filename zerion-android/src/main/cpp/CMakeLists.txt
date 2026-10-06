@@ -26,7 +26,11 @@ target_compile_definitions(zargon2 PRIVATE ARGON2_NO_THREADS)
 # prebuilt libraries stay byte-identical, and DWARF would embed the absolute
 # build directory, which differs between F-Droid's layout and any other
 # checkout and breaks the reproducible comparison.
-target_compile_options(zargon2 PRIVATE -O3 -g0 -fvisibility=hidden)
+# -fno-ident drops the compiler's ident string from .comment: the Windows and
+# Linux NDK clang of the same revision write different ident strings, which
+# was the only difference between a Play bundle built on one host and the
+# F-Droid APK built on the other.
+target_compile_options(zargon2 PRIVATE -O3 -g0 -fvisibility=hidden -fno-ident)
 
 # Android 15+ 16 KB page-size support: align ELF LOAD segments to 16 KB so the
 # library maps correctly on 16 KB-page devices.

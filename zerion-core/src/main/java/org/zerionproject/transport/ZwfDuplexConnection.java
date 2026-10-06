@@ -2,7 +2,9 @@ package org.zerionproject.transport;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
+import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -18,35 +20,26 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import static org.zerionproject.wire.ZwfConstants.FRAME_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.NONCE_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 
-/**
- * A duplex ZWF connection to one contact, built on a completed handshake's
- * {@link ZwfSession}. It owns one long-lived outgoing stream (encrypter) and one
- * incoming stream (decrypter). Each application message is one frame.
- *
- * <p>Outgoing: a persistent {@code streamId} is allocated (durably, before use),
- * its tag is written, and messages are framed under the send-side Mode3Full
- * ratchet. Incoming: the peer's tag is recognised to a {@code (contact,
- * streamId)}, the stream id is accepted against replay, and frames are opened
- * under the receive-side ratchet.
- *
- * <p><strong>Post-quantum engagement:</strong> a fresh session's first message
- * per direction is the zero-ciphertext sentinel (classical), after which each
- * side advertises its ML-KEM key in-band. Send and receive share one Mode3Full state (via sharedM3f under directionLock),
- * so the peer key learned while receiving is fed into the send side and
- * per-message ML-KEM engages from the second message onward.
- * currentMode3FullState() exposes it so callers/tests can confirm engagement.
- */
 @NotNullByDefault
 public class ZwfDuplexConnection {
 
 	private final int contactId;
+	private final long generation;
 	private final ZwfSession session;
 	private final ZwfStreamCounter counter;
 	private final CryptoComponent crypto;
@@ -56,30 +49,43 @@ public class ZwfDuplexConnection {
 	private final OutputStream out;
 	private final BufferedInputStream in;
 	private final ZwfTagRecogniser recogniser;
-	private final java.util.concurrent.atomic.AtomicReference<
-			org.zerionproject.core.api.crypto.pcs.Mode3FullState> sharedM3f;
-	private final java.util.concurrent.locks.Lock directionLock =
-			new java.util.concurrent.locks.ReentrantLock();
+	private final AtomicReference<Mode3FullState> sharedM3f;
+	private final Lock directionLock = new ReentrantLock();
 
-	/**
-	 * How far past the receive window a known contact's stream id may lie and
-	 * still be recognised. Each id costs one keyed hash, so the bound keeps a
-	 * recovery search to a fraction of a second while covering many more
-	 * failed connection attempts than a peer can plausibly accumulate.
-	 */
 	static final long MAX_RECV_STREAM_GAP = 1L << 16;
 
+	@Nullable
 	private ZwfMode3FullStreamEncrypter encrypter;
+	@Nullable
 	private ZwfMode3FullStreamDecrypter decrypter;
-	private long pendingStreamId;
+	private long recvEpoch = -1;
 	private boolean recvStreamCommitted;
+	private boolean firstFrameReported;
+	@Nullable
+	private volatile LongConsumer firstFrameListener;
+	@Nullable
+	private volatile ZwfControlHandler controlHandler;
+	private final Object sendLock = new Object();
+	private boolean destroyed = false;
+	private final OutputStream rawOut;
+	private final InputStream rawIn;
 
 	public ZwfDuplexConnection(int contactId, ZwfSession session,
 			ZwfStreamCounter counter, CryptoComponent crypto, PcsRatchet ratchet,
 			Mode3FullRatchet mode3FullRatchet,
 			Supplier<AuthenticatedCipher> cipherFactory, InputStream in,
 			OutputStream out) {
+		this(contactId, counter.generation(contactId), session, counter, crypto,
+				ratchet, mode3FullRatchet, cipherFactory, in, out);
+	}
+
+	public ZwfDuplexConnection(int contactId, long generation,
+			ZwfSession session, ZwfStreamCounter counter, CryptoComponent crypto,
+			PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
+			Supplier<AuthenticatedCipher> cipherFactory, InputStream in,
+			OutputStream out) {
 		this.contactId = contactId;
+		this.generation = generation;
 		this.session = session;
 		this.counter = counter;
 		this.crypto = crypto;
@@ -87,47 +93,88 @@ public class ZwfDuplexConnection {
 		this.mode3FullRatchet = mode3FullRatchet;
 		this.cipherFactory = cipherFactory;
 		this.out = out;
+		this.rawOut = out;
+		this.rawIn = in;
 		this.in = new BufferedInputStream(in);
 		this.recogniser = new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE);
+		Map<Long, SecretKey> tagKeys = new LinkedHashMap<>();
+		for (ZwfSession.RecvKeys r : session.getRecvKeys()) {
+			tagKeys.put(r.getEpoch(), r.getTagKey());
+		}
 		long recvHighWater = counter.currentRecvHighWater(contactId);
-		this.recogniser.register(contactId, session.getRecvTagKey(),
-				recvHighWater);
-		this.sharedM3f = new java.util.concurrent.atomic.AtomicReference<>(
+		this.recogniser.register(contactId, tagKeys, recvHighWater);
+		this.sharedM3f = new AtomicReference<>(
 				session.getSendState().getMode3FullState());
 	}
 
-	/**
-	 * The largest payload {@link #sendMessage} accepts in one frame. A larger
-	 * application record must be fragmented (see the ZMM fragmenter) before it is
-	 * sent.
-	 */
+	public void setFirstFrameListener(@Nullable LongConsumer listener) {
+		firstFrameListener = listener;
+	}
+
+	public void setControlHandler(@Nullable ZwfControlHandler handler) {
+		controlHandler = handler;
+	}
+
+	@Nullable
+	public ZwfControlHandler getControlHandler() {
+		return controlHandler;
+	}
+
 	public int getMaxMessageLength() {
 		return ZwfMode3FullStreamEncrypter.maxMessageLength();
 	}
 
-	/** Sends one application message as a frame on the outgoing stream. */
-	public void sendMessage(byte[] payload) throws IOException {
-		if (encrypter == null) {
-			long streamId = counter.allocateSendStreamId(contactId);
-			byte[] tag = ZwfTag.computeTag(crypto, session.getSendTagKey(),
-					streamId);
-			byte[] streamHeaderNonce = new byte[NONCE_LENGTH];
-			crypto.getSecureRandom().nextBytes(streamHeaderNonce);
-			encrypter = new ZwfMode3FullStreamEncrypter(out, cipherFactory.get(),
-					ratchet, mode3FullRatchet, streamId, tag, streamHeaderNonce,
-					session.getSendHeaderKey(), session.getSendState(), null,
-					sharedM3f::get, sharedM3f::set, directionLock,
-					session.isAlice());
-		}
-		encrypter.writeFrame(payload, payload.length, false);
+	public long getSendEpoch() {
+		return session.getSendEpoch();
 	}
 
-	/**
-	 * Receives one application message, or {@code null} at end of stream.
-	 * Recognises the incoming stream on the first call.
-	 */
+	public void sendMessage(byte[] payload) throws IOException {
+		long streamId = -1;
+		if (encrypter == null) {
+			try {
+				streamId = counter.allocateSendStreamId(contactId, generation);
+			} catch (IllegalStateException e) {
+				throw new IOException(e);
+			}
+		}
+		synchronized (sendLock) {
+			if (destroyed) throw new IOException("Connection closed");
+			if (encrypter == null) {
+				byte[] tag = ZwfTag.computeTag(crypto, session.getSendTagKey(),
+						streamId);
+				byte[] streamHeaderNonce = new byte[NONCE_LENGTH];
+				crypto.getSecureRandom().nextBytes(streamHeaderNonce);
+				encrypter = new ZwfMode3FullStreamEncrypter(out,
+						cipherFactory.get(), ratchet, mode3FullRatchet,
+						streamId, tag, streamHeaderNonce,
+						session.getSendHeaderKey(), session.getSendState(), null,
+						sharedM3f::get, sharedM3f::set, directionLock,
+						session.isAlice());
+			}
+			encrypter.writeFrame(payload, payload.length, false);
+		}
+	}
+
+	public void closeStreams() {
+		try {
+			rawOut.close();
+		} catch (IOException ignored) {
+		}
+		try {
+			rawIn.close();
+		} catch (IOException ignored) {
+		}
+	}
+
+	public boolean isDestroyed() {
+		synchronized (sendLock) {
+			return destroyed;
+		}
+	}
+
 	public byte[] receiveMessage() throws IOException {
-		if (decrypter == null) {
+		ZwfMode3FullStreamDecrypter d = decrypter;
+		if (d == null) {
 			byte[] tag = peekTag();
 			ZwfTagRecogniser.Match match = recogniser.recognise(tag);
 			if (match == null) {
@@ -137,60 +184,70 @@ public class ZwfDuplexConnection {
 			if (match == null) {
 				throw new FormatException();
 			}
-			pendingStreamId = match.streamId;
-			decrypter = new ZwfMode3FullStreamDecrypter(in, cipherFactory.get(),
-					ratchet, mode3FullRatchet, null, tag, match.streamId,
-					session.getRecvHeaderKey(), session.getRecvState(), null,
+			ZwfSession.RecvKeys keys = session.getRecvKeys(match.epoch);
+			if (keys == null) throw new FormatException();
+			recvEpoch = match.epoch;
+			long expected = match.streamId;
+			d = new ZwfMode3FullStreamDecrypter(in, cipherFactory.get(),
+					ratchet, mode3FullRatchet, tag, expected,
+					keys.getHeaderKey(), keys.getState(), null,
 					sharedM3f::get, sharedM3f::set, directionLock,
 					!session.isAlice());
+			d.setStreamIdAcceptor(this::commitRecvStreamId);
+			decrypter = d;
 		}
 		byte[] buf = new byte[FRAME_LENGTH];
-		int n;
+		int n = d.readFrame(buf);
+		if (!recvStreamCommitted) throw new FormatException();
 		try {
-			n = decrypter.readFrame(buf);
-		} catch (FormatException fe) {
-			throw fe;
-		}
-		if (!recvStreamCommitted) {
-			if (!counter.acceptRecvStreamId(contactId, pendingStreamId)) {
-				throw new FormatException();
+			if (n < 0) return null;
+			if (!firstFrameReported) {
+				firstFrameReported = true;
+				LongConsumer l = firstFrameListener;
+				if (l != null) l.accept(recvEpoch);
+				ZwfControlHandler h = controlHandler;
+				if (h != null) h.onPeerStreamAuthenticated(recvEpoch);
 			}
-			recogniser.advanceTo(contactId, pendingStreamId);
-			recvStreamCommitted = true;
+			return Arrays.copyOf(buf, n);
+		} finally {
+			Arrays.fill(buf, (byte) 0);
 		}
-		if (n < 0) return null;
-		return Arrays.copyOf(buf, n);
 	}
 
-	/**
-	 * The current shared Mode3Full state. Once each side has learned the peer's
-	 * advertised ML-KEM key, {@code getTheirActivePqPk()} is non-null and
-	 * subsequent sends engage per-message post-quantum encapsulation.
-	 */
-	public org.zerionproject.core.api.crypto.pcs.Mode3FullState
-			currentMode3FullState() {
+	private boolean commitRecvStreamId(long streamId) {
+		if (recvStreamCommitted) return true;
+		if (!counter.acceptRecvStreamId(contactId, streamId, generation)) {
+			return false;
+		}
+		recogniser.advanceTo(contactId, streamId);
+		recvStreamCommitted = true;
+		return true;
+	}
+
+	public boolean lastFrameCarriedPqSecret() {
+		ZwfMode3FullStreamDecrypter d = decrypter;
+		return d != null && d.lastFrameCarriedPqSecret();
+	}
+
+	public Mode3FullState currentMode3FullState() {
 		return sharedM3f.get();
 	}
 
-	/**
-	 * Zeroizes the ML-KEM decapsulation keys of the shared Mode 3-Full state
-	 * once the connection has ended. The state is never persisted or resumed,
-	 * so no later connection can need it.
-	 */
 	public void destroyKeyMaterial() {
-		org.zerionproject.core.api.crypto.pcs.Mode3FullState s = sharedM3f.get();
-		if (s != null) s.destroy();
+		synchronized (sendLock) {
+			destroyed = true;
+			Mode3FullState s = sharedM3f.get();
+			if (s != null) s.destroy();
+			ZwfMode3FullStreamEncrypter e = encrypter;
+			if (e != null) e.destroy();
+			ZwfMode3FullStreamDecrypter d = decrypter;
+			if (d != null) d.destroy();
+			session.clear();
+		}
 	}
 
-	/**
-	 * True once this side has learned the peer's advertised ML-KEM key, so an
-	 * application frame it now sends carries a real post-quantum secret. The send
-	 * scheduler gates application records on this so the classical-only opening
-	 * sentinel is only ever a cover frame. The peer key is monotonic, so this
-	 * only ever transitions false to true within a connection.
-	 */
 	public boolean isPqReady() {
-		org.zerionproject.core.api.crypto.pcs.Mode3FullState s = sharedM3f.get();
+		Mode3FullState s = sharedM3f.get();
 		return s != null && s.getTheirActivePqPk() != null;
 	}
 

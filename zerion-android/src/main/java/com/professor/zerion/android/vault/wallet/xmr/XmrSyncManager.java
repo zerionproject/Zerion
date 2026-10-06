@@ -7,38 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-/**
- * Drives read-only synchronization of one open Monero wallet over Tor. Every
- * operation is owned by a token capturing (walletId, session epoch, session,
- * node list); a result is published only while that token is still the active
- * one AND {@link Ownership#isCurrent} confirms the vault is unlocked at the same
- * lock generation. A stale result from an old wallet, node, or session epoch is
- * discarded, so wallet A's refresh can never update wallet B.
- *
- * <p>Scanning is done by the wallet's own background refresh thread (started
- * via {@link MoneroEngine.Session#startRefresh()}), which scans to the tip and
- * then re-checks for new blocks on a fixed interval. This loop is a read-only
- * observer: it polls the scanned height (a local read) and, sparingly, the
- * daemon height, and publishes truthful state. It never issues an overlapping
- * refresh of its own. A user refresh request only wakes the wallet's refresh
- * thread; repeated requests coalesce into one flag and a request during an
- * active scan is a no-op, so concurrent native scans are impossible.
- *
- * <p>Node failure is judged from the wallet's own error status and a live
- * connectivity check, never from a short pause in height progress: over Tor a
- * batch of full blocks can take a while to arrive, and treating that as a dead
- * node caused constant, unnecessary reconnects. A long stall (no scanned-height
- * progress while behind the tip) first triggers a connectivity check and only
- * fails over when the node is disconnected or still delivers nothing after a
- * bounded maximum. Failover is sequential and bounded; when every node has been
- * tried without success the state becomes OFFLINE, never an endless spinner,
- * and never clearnet.
- *
- * <p>All calls in this class run on the single {@code sessionExecutor} shared
- * with the wallet's open/close path. A vault lock wins every race:
- * {@link #stop()} flips the token cancelled and interrupts the background scan;
- * the native close, queued on the same executor, then runs with no scan running.
- */
 @NotNullByDefault
 public final class XmrSyncManager {
 
@@ -131,11 +99,6 @@ public final class XmrSyncManager {
 		sessionExecutor.execute(() -> run(t));
 	}
 
-	/**
-	 * Stop the active sync at once. Flips the token so no further result can be
-	 * published and interrupts any in-flight scan; the native handle itself is
-	 * closed separately on the session executor after this returns.
-	 */
 	public void stop() {
 		Token t = active;
 		active = null;
@@ -152,19 +115,11 @@ public final class XmrSyncManager {
 		}
 	}
 
-	/** True while a sync loop owns the session (connected or scanning). */
 	public boolean isActive() {
 		Token t = active;
 		return t != null && !t.cancelled;
 	}
 
-	/**
-	 * Run a short piece of session-thread work. While a sync loop owns the
-	 * session executor the work is queued and run by the loop on its next cycle
-	 * (the loop is woken); otherwise it is posted to the executor directly. This
-	 * is the only way for other callers to reach the session thread without
-	 * waiting for the loop to end.
-	 */
 	public void submit(Runnable task) {
 		Token t = active;
 		if (t != null && !t.cancelled) {
@@ -190,11 +145,6 @@ public final class XmrSyncManager {
 		}
 	}
 
-	/**
-	 * Ask for an incremental refresh now. Coalesces: repeated calls set one flag
-	 * that the loop consumes once; if the wallet is already mid-scan the wake is
-	 * a no-op. Never reconstructs, never restarts from the restore height.
-	 */
 	public void requestRefresh() {
 		Token t = active;
 		if (t != null && !t.cancelled) {
@@ -222,14 +172,6 @@ public final class XmrSyncManager {
 		}
 	}
 
-	/**
-	 * Publish the canonical wallet2 history to the UI only when its content has
-	 * changed since the last publication, so an incoming transaction wallet2 has
-	 * just learned about (including an unconfirmed one) and every confirmation
-	 * change surface on the next poll cycle without waiting for a block-height
-	 * change or a manual refresh. Returns the new fingerprint. wallet2 stays the
-	 * only source of truth; nothing is invented locally.
-	 */
 	private String publishHistoryIfChanged(Token t, @Nullable String lastFp) {
 		HistorySink hs = historySink;
 		if (hs == null || !live(t)) return lastFp == null ? "" : lastFp;
@@ -413,11 +355,6 @@ public final class XmrSyncManager {
 		}
 	}
 
-	/**
-	 * Wake the wallet's refresh thread for one incremental pass now. The thread
-	 * only wakes on the disabled-to-enabled edge, so pause then start. If a scan
-	 * is already running the flag change is harmless and no second scan starts.
-	 */
 	private void wakeRefresh(Token t) {
 		try {
 			t.session.pauseRefresh();
@@ -427,18 +364,6 @@ public final class XmrSyncManager {
 		}
 	}
 
-	/**
-	 * Persist the wallet cache without racing the wallet's own refresh thread.
-	 * That thread appends to the block-hash chain as it scans, and store()
-	 * serializes the same chain to build the cache file; writing it while the
-	 * chain is being appended reallocates it out from under the serializer, a
-	 * use-after-free the device's memory tagging traps as a fatal fault.
-	 * Pausing the refresh prevents any new scan from starting, and waiting for
-	 * it to fall idle guarantees the in-flight scan has released the chain
-	 * before the write. If the scan cannot be quiesced within the budget the
-	 * store is skipped and retried on a later cycle rather than written into a
-	 * mutating chain. The refresh is always resumed.
-	 */
 	private boolean persistCache(Token t) {
 		try {
 			t.session.pauseRefresh();
@@ -461,10 +386,6 @@ public final class XmrSyncManager {
 		return stored;
 	}
 
-	/**
-	 * Stops scanning on the failed node and tries each other node once, in
-	 * order, returning the first that connects or -1 when all have been tried.
-	 */
 	private int failover(Token t) {
 		boolean idle = false;
 		for (int attempt = 0; attempt < 2 && !idle; attempt++) {
@@ -479,11 +400,6 @@ public final class XmrSyncManager {
 		return connectAnyFrom(t, t.nodeIndex + 1);
 	}
 
-	/**
-	 * Tries each node once starting at {@code start} (wrapping), returning the
-	 * index of the first that connects, or -1 if a full pass over all nodes
-	 * fails. Bounded to one attempt per node so it can never spin.
-	 */
 	private int connectAnyFrom(Token t, int start) {
 		int n = t.nodes.size();
 		if (n == 0) return -1;
@@ -563,11 +479,6 @@ public final class XmrSyncManager {
 		return (i >= 0 && i < t.nodes.size()) ? t.nodes.get(i).shortLabel() : null;
 	}
 
-	/**
-	 * Stable identity of the daemon the active session is connected to
-	 * ({@link XmrNode#endpointId()}), or null when not connected. Intended for
-	 * records that must name the exact endpoint later, never a list index.
-	 */
 	@Nullable
 	public String currentNodeEndpointId() {
 		Token t = active;
@@ -576,7 +487,6 @@ public final class XmrSyncManager {
 		return (i >= 0 && i < t.nodes.size()) ? t.nodes.get(i).endpointId() : null;
 	}
 
-	/** The node the sync loop is currently connected to, or null. */
 	@Nullable
 	public XmrNode currentNode() {
 		Token t = active;

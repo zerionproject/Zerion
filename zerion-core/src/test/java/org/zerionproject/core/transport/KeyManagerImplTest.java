@@ -228,11 +228,6 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 				unknownTransportId));
 	}
 
-	/**
-	 * A2-CRY-05: an established contact never receives a rotation-key
-	 * stream context; every contact session runs over the ZWF ratchet and
-	 * the classical sync path that used these contexts is refused.
-	 */
 	@Test
 	public void testGetStreamContextForContactIsRefused() throws Exception {
 		assertNull(keyManager.getStreamContext(contactId, transportId));
@@ -260,7 +255,6 @@ public class KeyManagerImplTest extends BrambleMockTestCase {
 		assertNull(keyManager.getStreamContext(unknownTransportId, tag));
 	}
 
-	/** A2-CRY-05: a tag that resolves to an established contact is refused. */
 	@Test
 	public void testGetStreamContextForTagOfAContactIsRefused()
 			throws Exception {

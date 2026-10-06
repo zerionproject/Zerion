@@ -18,8 +18,9 @@ and the vault UI in `vault/ui/`. Bitcoin primitives use bitcoinj on mainnet.
   (`WalletStore.createWallet`) as `[version byte][UTF-8 mnemonic]`, encrypted by
   the vault (`VaultManager.addItem` / `addItemWithPassword`); plaintext buffers
   are shredded after use.
-- **KDF.** Argon2id. Vault master default 256 MiB / 3 iterations / parallelism 1
-  / 32-byte key; the per-wallet ("extra") password uses 64 MiB / 3 iterations.
+- **KDF.** Argon2id. Vault master 256 MiB / 3 iterations / parallelism 1
+  / 32-byte key (128 MiB / 6 iterations only where 256 MiB cannot be
+  allocated); the per-wallet ("extra") password uses 64 MiB / 3 iterations.
   The native Argon2 is preferred with a fail-closed BouncyCastle fallback.
 - **Per-wallet password.** A wallet may carry its own password. Reads are
   fail-closed (`WalletStore.accessFor`): a password-protected wallet with an

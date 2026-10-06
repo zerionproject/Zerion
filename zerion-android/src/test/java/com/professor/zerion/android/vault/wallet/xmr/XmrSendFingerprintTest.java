@@ -6,12 +6,6 @@ import static org.junit.Assert.assertFalse;
 
 import org.junit.Test;
 
-/**
- * The canonical fingerprint is a deterministic pure function of the reviewed
- * fields, pinned by a golden vector so a future change to the encoding cannot go
- * unnoticed, and every fund-critical field is proven to change the digest. No
- * process-local value enters it, so identical fields always agree.
- */
 public class XmrSendFingerprintTest {
 
 	private static final String WALLET = "wallet-golden";

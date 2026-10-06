@@ -25,13 +25,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Accepted connections are bounded twice: connections that have not yet
- * sent their stream tag hold one of a few pre-tag slots, and all live
- * connections hold one of the inbound slots. A connection beyond either
- * bound is closed at once, a pre-tag slot is freed the moment the tag
- * arrives, and the transport keeps accepting afterwards.
- */
 public class ZtpTorTransportInboundLimitTest {
 
 	private static final int PRE_TAG_SLOTS = ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS;
@@ -79,7 +72,7 @@ public class ZtpTorTransportInboundLimitTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				handler, null, () -> {
 		});
-		transport.startAccepting(0);
+		transport.startAccepting();
 	}
 
 	@After
@@ -94,12 +87,6 @@ public class ZtpTorTransportInboundLimitTest {
 		exec.shutdownNow();
 	}
 
-	/**
-	 * A2-REG-NET-01: the tag must arrive in full within the deadline
-	 * measured from the accept; a peer dripping one byte per read timeout
-	 * loses its slot at the deadline instead of holding it for sixteen
-	 * timeouts.
-	 */
 	@Test(timeout = 30_000)
 	public void aDrippingPeerLosesItsSlotAtTheDeadline() throws Exception {
 		java.util.concurrent.atomic.AtomicLong now =
@@ -126,14 +113,6 @@ public class ZtpTorTransportInboundLimitTest {
 		assertKeptOpen(open());
 	}
 
-	/**
-	 * A connection is accepted on the transport's executor, so opening the
-	 * slots and then one more says nothing about whether the slots were
-	 * taken yet: the extra connection can win the race and be accepted
-	 * into a slot that is still free. What the bound promises is that once
-	 * the slots are taken, a further connection is refused, so the test
-	 * waits for that instead of assuming it has already happened.
-	 */
 	private void assertBoundReachedEventually() throws Exception {
 		long deadline = System.currentTimeMillis() + 10_000;
 		while (true) {
@@ -184,7 +163,6 @@ public class ZtpTorTransportInboundLimitTest {
 		assertEquals(n, entered.get());
 	}
 
-	/** The transport closed its end: the client reads end of stream or a reset. */
 	private static void assertClosedByTheTransport(Socket s) throws IOException {
 		s.setSoTimeout(3_000);
 		try {
@@ -196,7 +174,6 @@ public class ZtpTorTransportInboundLimitTest {
 		}
 	}
 
-	/** The transport kept the connection: a read waits instead of ending. */
 	private static void assertKeptOpen(Socket s) throws IOException {
 		s.setSoTimeout(1_500);
 		try {

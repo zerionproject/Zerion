@@ -20,13 +20,6 @@ import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Acceptance of a channel post against the subscriber's view of the channel:
- * only a post that continues the chain, stays within the body bound and
- * carries a valid hybrid signature from the publisher, or from a delegate
- * whose certificate the publisher signed and has not revoked and whose window
- * covers the post, is accepted.
- */
 public class ChannelPostValidatorTest {
 
 	private static final long HOUR = 3_600_000L;
@@ -160,6 +153,67 @@ public class ChannelPostValidatorTest {
 			assertEquals(ChannelPostValidator.Result.BAD_SIGNATURE,
 					validator.validate(state, p, null));
 		}
+	}
+
+	@Test
+	public void aPostAtTheNextNumberWithAnotherLinkIsAcceptedWhenGapsAre()
+			throws Exception {
+		ChannelState state = state(Collections.<ChannelDelegationCert>emptyList(),
+				Collections.<Long>emptyList());
+		ChannelPost genesis = signed(publisher, 0, zero(), "first", null);
+		ChannelChainTip tip = new ChannelChainTip(0L, chain.hashOf(genesis));
+		byte[] other = zero();
+		other[5] = 9;
+		ChannelPost fork = signed(publisher, 1, other, "after a restore",
+				null);
+		assertEquals(ChannelPostValidator.Result.CHAIN_BROKEN,
+				validator.validate(state, fork, tip, false));
+		assertEquals(ChannelPostValidator.Result.OK,
+				validator.validate(state, fork, tip, true));
+		assertEquals(ChannelPostValidator.Result.BAD_SIGNATURE,
+				validator.validate(state, signed(stranger, 1, other, "x",
+						null), tip, true));
+	}
+
+	@Test
+	public void aNumberBeyondTheBoundIsRefusedEvenWhenGapsAre()
+			throws Exception {
+		ChannelState state = state(Collections.<ChannelDelegationCert>emptyList(),
+				Collections.<Long>emptyList());
+		ChannelPost genesis = signed(publisher, 0, zero(), "first", null);
+		ChannelChainTip tip = new ChannelChainTip(0L, chain.hashOf(genesis));
+		long bound = ChannelTestNode.constant("MAX_SEQUENCE_NUMBER",
+				Long.MAX_VALUE - 1L);
+		ChannelPost far = signed(publisher, bound + 1L, zero(), "far",
+				null);
+		assertEquals(ChannelPostValidator.Result.SEQ_OUT_OF_ORDER,
+				validator.validate(state, far, tip, true));
+		assertEquals(ChannelPostValidator.Result.SEQ_OUT_OF_ORDER,
+				validator.validate(state, far, null, true));
+		ChannelPost atBound = signed(publisher, bound, zero(), "edge",
+				null);
+		assertEquals(ChannelPostValidator.Result.OK,
+				validator.validate(state, atBound, tip, true));
+	}
+
+	@Test
+	public void aKeyGrantedAgainAfterARevocationIsJudgedUnderTheNewGrant()
+			throws Exception {
+		ChannelDelegationCert revoked = cert(publisher, delegate, HOUR, 0L,
+				1L);
+		ChannelDelegationCert granted = cert(publisher, delegate, 5 * HOUR,
+				0L, 2L);
+		ChannelState state = state(java.util.Arrays.asList(revoked, granted),
+				Collections.singletonList(1L));
+		ChannelPost before = signed(delegate, 1, zero(), "before", delegate);
+		assertEquals(3 * HOUR, before.getTimestampHourMs());
+		assertEquals(ChannelPostValidator.Result.DELEGATION_REVOKED,
+				validator.validateSigner(state, before));
+		ChannelPost after = signed(delegate, 4, zero(), "after", delegate);
+		assertEquals(6 * HOUR, after.getTimestampHourMs());
+		assertEquals("a key granted again stays refused until the revoked "
+				+ "window ends", ChannelPostValidator.Result.OK,
+				validator.validateSigner(state, after));
 	}
 
 	@Test

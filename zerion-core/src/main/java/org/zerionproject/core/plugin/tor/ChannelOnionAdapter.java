@@ -1,6 +1,7 @@
 package org.zerionproject.core.plugin.tor;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
 
 import java.io.IOException;
 
@@ -9,7 +10,9 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public interface ChannelOnionAdapter {
 
-	ChannelOnionHandle publishChannelOnion(int localPort,
+	OnionTargetListener openOnionTarget() throws IOException;
+
+	ChannelOnionHandle publishChannelOnion(String target,
 			@Nullable String privateKey) throws IOException;
 
 	void removeChannelOnion(String onion) throws IOException;

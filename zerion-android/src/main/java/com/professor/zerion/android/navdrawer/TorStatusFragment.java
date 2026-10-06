@@ -61,6 +61,7 @@ public class TorStatusFragment extends BaseFragment {
 	private TextView torAuthSummary;
 	private int torBootstrap = 0;
 	private boolean torOnionPublished = false;
+	private long torClockSkewSeconds = 0;
 	private LinearLayout onionCard;
 	private TextView onionAddressValue;
 	private MaterialButton onionCopyButton;
@@ -127,6 +128,12 @@ public class TorStatusFragment extends BaseFragment {
 	}
 
 	@Override
+	public void onResume() {
+		super.onResume();
+		viewModel.refreshTorPublishState();
+	}
+
+	@Override
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.network_status_title);
@@ -158,6 +165,12 @@ public class TorStatusFragment extends BaseFragment {
 		viewModel.getTorOnionPublished().observe(getViewLifecycleOwner(),
 				published -> {
 					torOnionPublished = Boolean.TRUE.equals(published);
+					if (lastTorState != null) updateTorStatus(lastTorState);
+				});
+
+		viewModel.getTorClockSkewSeconds().observe(getViewLifecycleOwner(),
+				skew -> {
+					torClockSkewSeconds = skew == null ? 0 : skew;
 					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
 
@@ -292,58 +305,67 @@ public class TorStatusFragment extends BaseFragment {
 	private void updateTorStatus(
 			org.zerionproject.core.api.plugin.Plugin.State state) {
 		Context ctx = requireContext();
-		if (pluginManager.isOfflineMode()) {
-			torStatusText.setText(R.string.network_status_off);
-			torStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
-			torOnionAddress.setText(R.string.offline_mode_transport_off);
-			torStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_text_secondary));
-			torRestartButton.setVisibility(View.GONE);
-			return;
-		}
-		torRestartButton.setVisibility(View.VISIBLE);
 		boolean online = lastNetworkStatus != null
 				&& lastNetworkStatus.isConnected();
-		if (state == null
-				|| state == org.zerionproject.core.api.plugin.Plugin.State.DISABLED) {
-			torStatusText.setText(R.string.disabled);
-			torStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_destructive));
-			torOnionAddress.setText(R.string.not_available);
-			torStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_destructive));
-		} else if (state
-				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE
-				&& online && torOnionPublished) {
-			torStatusText.setText(R.string.connected);
-			torStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_success));
-			torOnionAddress.setText(R.string.tor_hidden_services_active);
-			torStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_primary_accent));
-		} else if (state
-				== org.zerionproject.core.api.plugin.Plugin.State.ACTIVE
-				&& online) {
-			torStatusText.setText(R.string.tor_status_publishing);
-			torStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
-			torOnionAddress.setText(R.string.tor_hidden_services_publishing);
-			torStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
-		} else {
-			if (torBootstrap > 0 && torBootstrap < 100) {
+		TorStatusDecider.Status status = TorStatusDecider.decide(
+				pluginManager.isOfflineMode(), state, online,
+				torOnionPublished, torClockSkewSeconds != 0, torBootstrap);
+		torRestartButton.setVisibility(
+				status == TorStatusDecider.Status.OFFLINE_MODE
+						? View.GONE : View.VISIBLE);
+		switch (status) {
+			case OFFLINE_MODE:
+				setStatus(ctx, R.string.network_status_off,
+						R.color.zerion_text_secondary,
+						R.string.offline_mode_transport_off,
+						R.color.zerion_text_secondary);
+				break;
+			case DISABLED:
+				setStatus(ctx, R.string.disabled, R.color.zerion_destructive,
+						R.string.not_available, R.color.zerion_destructive);
+				break;
+			case CONNECTED:
+				setStatus(ctx, R.string.connected, R.color.zerion_success,
+						R.string.tor_hidden_services_active,
+						R.color.zerion_primary_accent);
+				break;
+			case CLOCK_SKEW:
+				setStatus(ctx, R.string.tor_status_clock_skew,
+						R.color.zerion_warning,
+						R.string.tor_hidden_services_clock_skew,
+						R.color.zerion_warning);
+				break;
+			case PUBLISHING:
+				setStatus(ctx, R.string.tor_status_publishing,
+						R.color.zerion_warning,
+						R.string.tor_hidden_services_publishing,
+						R.color.zerion_warning);
+				break;
+			case BOOTSTRAPPING:
 				torStatusText.setText(getString(
 						R.string.tor_status_bootstrapping, torBootstrap));
-			} else {
-				torStatusText.setText(R.string.connecting);
-			}
-			torStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
-			torOnionAddress.setText(R.string.tor_hidden_services_connecting);
-			torStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
+				torStatusText.setTextColor(
+						ContextCompat.getColor(ctx, R.color.zerion_warning));
+				torOnionAddress.setText(
+						R.string.tor_hidden_services_connecting);
+				torStatusIcon.setColorFilter(
+						ContextCompat.getColor(ctx, R.color.zerion_warning));
+				break;
+			case CONNECTING:
+			default:
+				setStatus(ctx, R.string.connecting, R.color.zerion_warning,
+						R.string.tor_hidden_services_connecting,
+						R.color.zerion_warning);
+				break;
 		}
+	}
+
+	private void setStatus(Context ctx, int statusText, int statusColor,
+			int addressText, int iconColor) {
+		torStatusText.setText(statusText);
+		torStatusText.setTextColor(ContextCompat.getColor(ctx, statusColor));
+		torOnionAddress.setText(addressText);
+		torStatusIcon.setColorFilter(ContextCompat.getColor(ctx, iconColor));
 	}
 
 	@Override

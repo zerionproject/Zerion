@@ -179,6 +179,24 @@ class ClientVersioningManagerImpl implements ClientVersioningManager,
 	@Override
 	public void removingContact(Transaction txn, Contact c) throws DbException {
 		db.removeGroup(txn, getContactGroup(c));
+		clearB3Flags(txn, c.getId());
+	}
+
+	private void clearB3Flags(Transaction txn, ContactId c)
+			throws DbException {
+		Settings stored =
+				settingsManager.getSettings(txn, B3_SETTINGS_NAMESPACE);
+		Settings clear = new Settings();
+		for (String prefix : new String[] {B3_SLOT_PRESENT_KEY_PREFIX,
+				B3_PEER_MESSAGING_MINOR_KEY_PREFIX,
+				B3_STRICT_REJECT_KEY_PREFIX}) {
+			String key = prefix + c.getInt();
+			String value = stored.get(key);
+			if (value != null && !value.isEmpty()) clear.put(key, "");
+		}
+		if (!clear.isEmpty()) {
+			settingsManager.mergeSettings(txn, clear, B3_SETTINGS_NAMESPACE);
+		}
 	}
 
 	@Override

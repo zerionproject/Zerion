@@ -1,10 +1,13 @@
 # Release signing
 
 Every Gradle build of this project is unsigned on purpose: `gradle.properties`
-sets `fdroid=true`, which keeps the reproducible F-Droid path and the local
-path identical, and the signing step is a separate, tracked script that runs
-on the release machine only. This file is the process; the scripts are the
-implementation and are tested against a throwaway keystore (see below).
+sets `fdroid=true`, the build refuses `-Pfdroid=false`, so the reproducible
+F-Droid path and the local path are the same path, and Gradle has no signing
+configuration and never reads `keystore.properties`. The signing step is a
+separate, tracked script that runs on the release machine only and hands the
+passwords to `apksigner` and `jarsigner` through the environment. This file
+is the process; the scripts are the implementation and are tested against a
+throwaway keystore (see below).
 
 ## Inputs
 
@@ -17,8 +20,14 @@ implementation and are tested against a throwaway keystore (see below).
   keyPassword=...
   ```
 
-  The same file feeds the Gradle signing config when `fdroid` is off, so there
-  is exactly one description of the key.
+  Only `scripts/sign-release.sh` reads this file. It is git-ignored and must
+  stay outside every backup, sync folder and screenshot; the passwords in it
+  are plaintext, so the file's protection is the account that owns the
+  release machine. Keep the keystore itself in a separate directory from the
+  repository, readable by that account only (`chmod 600` on Linux, a
+  restricted ACL on Windows), and prefer a separate signing account or a
+  hardware token for the key when the release process allows it: the build
+  account runs third-party Gradle plugins, the signing account should not.
 
 - The release certificate. Sideloaded APKs on GitHub and the F-Droid
   reproducible build carry the certificate with SHA-256
@@ -28,6 +37,13 @@ implementation and are tested against a throwaway keystore (see below).
   which is why both are accepted by the in-app signature check.
 
 ## APK (GitHub release, byte-identical to F-Droid)
+
+Since 3.0.12 the published APK is the output of `fdroid build --test` in the
+`buildserver-trixie` image, signed with `scripts/sign-release.sh`
+([FDROID.md](FDROID.md)). That build removes `gradle/verification-metadata.xml`,
+as the F-Droid recipe does. The script below produces the independent build
+with dependency verification kept, and the release is compared with it before
+publication.
 
 ```
 scripts/build-fdroid-apk.sh

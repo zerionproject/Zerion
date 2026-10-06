@@ -163,8 +163,11 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 	private void addPendingContact(PendingContact p) {
 		long now = clock.currentTimeMillis();
 
-		long base = Math.max(p.getTimestamp(), now);
-		long expiry = base + RENDEZVOUS_TIMEOUT_MS;
+		long expiry = p.getTimestamp() + RENDEZVOUS_TIMEOUT_MS;
+		if (expiry <= now) {
+			expire(p.getId());
+			return;
+		}
 		try {
 			SecretKey rendezvousKey;
 			boolean alice;
@@ -264,6 +267,14 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		}
 	}
 
+	private void expire(PendingContactId p) {
+		try {
+			db.transaction(false, txn -> db.clearPendingContactOurKeys(txn, p));
+		} catch (DbException e) {
+		}
+		broadcastState(p, FAILED);
+	}
+
 	private void broadcastState(PendingContactId p, PendingContactState state) {
 		eventBus.broadcast(new PendingContactStateChangedEvent(p, state));
 	}
@@ -291,7 +302,7 @@ class RendezvousPollerImpl implements RendezvousPoller, Service, EventListener {
 		}
 		for (PendingContactId p : expired) {
 			removePendingContact(p);
-			broadcastState(p, FAILED);
+			expire(p);
 		}
 	}
 	private void removePendingContact(PendingContactId p) {

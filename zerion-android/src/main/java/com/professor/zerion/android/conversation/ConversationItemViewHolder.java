@@ -286,16 +286,13 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 				String replyTextContent = item.getReplyToText();
 				if (replyTextContent != null) {
 					Context ctx = replyText.getContext();
-					String prefix;
-					if (item.isIncoming()) {
-						prefix = ctx.getString(R.string.reply_prefix_you);
-					} else {
-						String name = item.getContactName() != null ?
-								item.getContactName().getValue() : null;
-						prefix = name != null ? name :
-								ctx.getString(R.string.unknown_contact);
-					}
-					replyText.setText(prefix + ": " + replyTextContent);
+					String name = item.getContactName() != null ?
+							item.getContactName().getValue() : null;
+					replyText.setText(quoteLine(item.getReplyToLocal(),
+							ctx.getString(R.string.reply_prefix_you),
+							name != null ? name
+									: ctx.getString(R.string.unknown_contact),
+							replyTextContent));
 				}
 				replyPreviewContainer.setVisibility(VISIBLE);
 			} else {
@@ -306,6 +303,12 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 	boolean isIncoming() {
 		return outViewHolder == null;
+	}
+
+	static String quoteLine(@Nullable Boolean quotedLocal, String you,
+			String contactName, String quotedText) {
+		if (quotedLocal == null) return quotedText;
+		return (quotedLocal ? you : contactName) + ": " + quotedText;
 	}
 
 	@Nullable

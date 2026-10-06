@@ -63,10 +63,6 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 	private final Map<PendingContactId, MutableTransportKeySet>
 			pendingContactOutContexts = new HashMap<>();
 
-	@GuardedBy("lock")
-	private final Map<PendingContactId, Integer> activeHandshakes =
-			new HashMap<>();
-
 	TransportKeyManagerImpl(DatabaseComponent db,
 			TransportCrypto transportCrypto,
 			Executor dbExecutor,
@@ -240,10 +236,14 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 			SecretKey rootKey, boolean alice) throws DbException {
 		lock.lock();
 		try {
-
 			MutableTransportKeySet existing =
 					pendingContactOutContexts.get(p);
-			if (existing != null) return existing.getKeySetId();
+			if (existing != null) {
+				if (keySetExists(txn, existing.getKeySetId())) {
+					return existing.getKeySetId();
+				}
+				dropPendingContactKeys(p);
+			}
 			long timePeriod = clock.currentTimeMillis() / timePeriodLength;
 			TransportKeys k = transportCrypto.deriveHandshakeKeys(transportId,
 					rootKey, timePeriod, alice);
@@ -286,47 +286,34 @@ class TransportKeyManagerImpl implements TransportKeyManager {
 		}
 	}
 
+	@GuardedBy("lock")
+	private boolean keySetExists(Transaction txn, KeySetId keySetId)
+			throws DbException {
+		for (TransportKeySet ks : db.getTransportKeys(txn, transportId)) {
+			if (ks.getKeySetId().equals(keySetId)) return true;
+		}
+		return false;
+	}
+
 	@Override
 	public void removePendingContact(PendingContactId p) {
 		lock.lock();
 		try {
-
-			Integer active = activeHandshakes.get(p);
-			if (active != null && active > 0) return;
-			activeHandshakes.remove(p);
-			Iterator<TagContext> it = inContexts.values().iterator();
-			while (it.hasNext())
-				if (p.equals(it.next().pendingContactId)) it.remove();
-			pendingContactOutContexts.remove(p);
-			Iterator<MutableTransportKeySet> it1 = keys.values().iterator();
-			while (it1.hasNext())
-				if (p.equals(it1.next().getPendingContactId())) it1.remove();
+			dropPendingContactKeys(p);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	public void acquireHandshakeLock(PendingContactId p) {
-		lock.lock();
-		try {
-			activeHandshakes.merge(p, 1, Integer::sum);
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	public void releaseHandshakeLock(PendingContactId p) {
-		lock.lock();
-		try {
-			Integer count = activeHandshakes.get(p);
-			if (count != null && count > 1) {
-				activeHandshakes.put(p, count - 1);
-			} else {
-				activeHandshakes.remove(p);
-			}
-		} finally {
-			lock.unlock();
-		}
+	@GuardedBy("lock")
+	private void dropPendingContactKeys(PendingContactId p) {
+		Iterator<TagContext> it = inContexts.values().iterator();
+		while (it.hasNext())
+			if (p.equals(it.next().pendingContactId)) it.remove();
+		pendingContactOutContexts.remove(p);
+		Iterator<MutableTransportKeySet> it1 = keys.values().iterator();
+		while (it1.hasNext())
+			if (p.equals(it1.next().getPendingContactId())) it1.remove();
 	}
 
 	@Override

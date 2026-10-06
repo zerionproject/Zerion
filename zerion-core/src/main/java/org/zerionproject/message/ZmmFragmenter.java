@@ -6,33 +6,21 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Splits a record that is too large for one ZWF frame into a sequence of
- * {@link ZmmConstants#TYPE_FRAGMENT} records that each fit, and that
- * {@link ZmmReassembler} joins back together on the far side.
- *
- * <p>A fragment record's payload is
- * {@code [originalType:2][messageId:4][index:2][count:2][chunk]}: the message id
- * ties a message's fragments together, and index/count let the receiver order
- * them and know when the last has arrived. A record that already fits is emitted
- * unchanged, so the common small-message case adds no overhead.
- */
 @NotNullByDefault
 public final class ZmmFragmenter {
 
-	static final int FRAGMENT_HEADER_LENGTH = 10; // type2 + msgId4 + index2 + count2
-	private static final int RECORD_TYPE_LENGTH = 2;
+	static final int FRAGMENT_HEADER_LENGTH = 10;
+	static final int RECORD_TYPE_LENGTH = 2;
 	private static final int MAX_FRAGMENTS = 0xFFFF;
 
 	private ZmmFragmenter() {
 	}
 
-	/**
-	 * Encodes {@code (type, payload)} as one or more ZMM records that each fit in
-	 * {@code maxRecordBytes}. Returns the single plain record if it already fits.
-	 */
 	public static List<byte[]> fragment(int type, byte[] payload, long messageId,
 			int maxRecordBytes) {
+		if (payload.length > ZmmConstants.MAX_RECORD_BYTES) {
+			throw new IllegalArgumentException("record too large");
+		}
 		byte[] plain = ZmmRecord.encode(type, payload);
 		List<byte[]> out = new ArrayList<>();
 		if (plain.length <= maxRecordBytes) {

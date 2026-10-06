@@ -3,14 +3,6 @@ package org.zerionproject.message;
 import org.zerionproject.core.util.ByteUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * One Zerion Message Model record: a 16-bit type followed by its payload,
- * carried as the payload of a single ZWF frame.
- *
- * <p>Wire layout: {@code [type:2 big-endian][payload]}. Because the whole record
- * sits inside the fixed-size ZWF frame's AEAD, neither the type nor the length
- * is observable on the wire.
- */
 @NotNullByDefault
 public final class ZmmRecord {
 
@@ -20,7 +12,6 @@ public final class ZmmRecord {
 	private ZmmRecord() {
 	}
 
-	/** Encodes a record: {@code [type][payload]}. */
 	public static byte[] encode(int type, byte[] payload) {
 		if (type < 0 || type > ZmmConstants.MAX_TYPE)
 			throw new IllegalArgumentException("type out of range: " + type);
@@ -30,7 +21,6 @@ public final class ZmmRecord {
 		return out;
 	}
 
-	/** A cover record: cover type, empty payload (padded to frame size by ZWF). */
 	public static byte[] cover() {
 		return encode(ZmmConstants.TYPE_COVER, EMPTY);
 	}

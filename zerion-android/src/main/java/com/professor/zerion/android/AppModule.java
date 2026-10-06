@@ -99,6 +99,10 @@ public class AppModule {
 	@Retention(RUNTIME)
 	public @interface UiPrefs {}
 
+	@Qualifier
+	@Retention(RUNTIME)
+	public @interface ProfilePrefs {}
+
 	public static final String PREF_POST_UPDATE_NOTICE_PENDING =
 			"post_update_notice_v20002_pending";
 
@@ -106,10 +110,19 @@ public class AppModule {
 		return SecurePrefsHolder.getUiPrefs();
 	}
 
+	public static SharedPreferences getUiPrefsOrNull() {
+		return SecurePrefsHolder.getUiPrefsOrNull();
+	}
+
 	public static boolean isSecureStorageFailed() {
 		return SecurePrefsHolder.initFailed
 				|| com.professor.zerion.android.security.ZerionEncryptedPrefs
 						.isStorageFailed();
+	}
+
+	public static boolean isSecureStorageFailed(Context ctx) {
+		SecurePrefsHolder.ensureInitialized(ctx);
+		return isSecureStorageFailed();
 	}
 
 	static class SecurePrefsHolder {
@@ -120,15 +133,31 @@ public class AppModule {
 
 		static void initialize(Application app) {
 			synchronized (lock) {
-				if (securePrefs == null) {
+				if (securePrefs == null || initFailed) {
 					initializeInternal(app);
 				}
 			}
 		}
 
+		static void ensureInitialized(Context ctx) {
+			if (securePrefs != null && !initFailed) return;
+			Context app = ctx.getApplicationContext();
+			if (app instanceof Application) {
+				initializeWithStrictModeBypass((Application) app);
+			}
+		}
+
+		static void resetForTests() {
+			synchronized (lock) {
+				securePrefs = null;
+				uiPrefs = null;
+				initFailed = false;
+			}
+		}
+
 		static void initializeWithStrictModeBypass(Application app) {
 			synchronized (lock) {
-				if (securePrefs == null) {
+				if (securePrefs == null || initFailed) {
 					StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
 					StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(oldPolicy)
 							.permitDiskReads()
@@ -147,6 +176,7 @@ public class AppModule {
 		private static void initializeInternal(Application app) {
 			Context ctx = app.getApplicationContext();
 			boolean upgradedFromAndroidX = androidXMasterKeyExists();
+			initFailed = false;
 			try {
 				securePrefs = ZerionEncryptedPrefs.create(ctx, "secure_prefs");
 				uiPrefs = ZerionEncryptedPrefs.create(ctx, "ui_prefs");
@@ -186,6 +216,10 @@ public class AppModule {
 			if (uiPrefs == null) {
 				throw new IllegalStateException("UiPrefs not initialized");
 			}
+			return uiPrefs;
+		}
+
+		static SharedPreferences getUiPrefsOrNull() {
 			return uiPrefs;
 		}
 	}
@@ -319,6 +353,8 @@ public class AppModule {
 		RecentEmoji recentEmoji;
 		@Inject
 		com.professor.zerion.android.vault.PreferencesMigration preferencesMigration;
+		@Inject
+		com.professor.zerion.android.profile.ProfileStorage profileStorage;
 
 		@Inject
 		void init() {
@@ -389,7 +425,7 @@ public class AppModule {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 		try {
 			StrictMode.allowThreadDiskWrites();
-			return profileManager.getActiveTorDir();
+			return profileManager.getDeviceTorDir();
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
@@ -418,13 +454,6 @@ public class AppModule {
 		return IS_DEBUG_BUILD ? port + 2 : port;
 	}
 
-	/**
-	 * Where Tor listens for SOCKS once configured: a Unix domain socket in a
-	 * short path under the app's private files directory (a Unix socket
-	 * path is limited to about a hundred bytes, which the per-profile Tor
-	 * directory may exceed), named by a digest of that Tor directory so each
-	 * profile has its own.
-	 */
 	@Provides
 	@Singleton
 	@org.zerionproject.core.api.plugin.TorSocksPath
@@ -453,12 +482,6 @@ public class AppModule {
 		}
 	}
 
-	/**
-	 * The loopback relay through which the native Monero wallet reaches
-	 * Tor's Unix socket listener; it verifies the wallet's process secret
-	 * before relaying. Installing the connector for the wallet helpers
-	 * happens here too, so nothing in the vault can dial a loopback port.
-	 */
 	@Provides
 	@Singleton
 	com.professor.zerion.android.vault.net.TorSocksGate provideTorSocksGate(
@@ -553,43 +576,42 @@ public class AppModule {
 	}
 
 	@Provides
+	@ProfilePrefs
+	SharedPreferences provideProfilePreferences(
+			com.professor.zerion.android.profile.ProfileStorage storage) {
+		return storage.preferences();
+	}
+
+	@Provides
 	@Singleton
-	VaultManager provideVaultManager(Context context) {
+	VaultManager provideVaultManager(Context context,
+			com.professor.zerion.android.profile.ProfileStorage storage) {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(oldPolicy)
 				.permitDiskReads()
 				.permitDiskWrites()
 				.build());
 		try {
-			return new VaultManager(context);
+			return new VaultManager(context, storage.vaultLocation());
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
 	}
 
-	/**
-	 * One application-scoped Monero wallet authority. Every hosting activity
-	 * resolves this same instance, so a wallet can never have two native
-	 * sessions through two surfaces. The instance owns no secret beyond the
-	 * vault lock boundary: the vault lock listener it registers closes the
-	 * native session and wipes buffers exactly as before.
-	 */
 	@Provides
 	@Singleton
 	com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager
 			provideXmrWalletManager(Context context, VaultManager vaultManager,
 			com.professor.zerion.android.vault.wallet.WalletStore walletStore,
-			com.professor.zerion.android.vault.net.TorSocksGate gate) {
+			com.professor.zerion.android.vault.net.TorSocksGate gate,
+			com.professor.zerion.android.profile.ProfileStorage storage) {
 		com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager m =
 				new com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager(
-						context, vaultManager, walletStore,
+						storage.walletContext(), vaultManager, walletStore,
 						new com.professor.zerion.android.vault.wallet.xmr
 								.NativeMoneroEngine());
 		m.setTorSocksPort(gate.port());
 		m.reloadNodeConfig();
-		vaultManager.addLockListener(() ->
-				com.professor.zerion.android.util.SecureClipboard
-						.clearIfOurs(context.getApplicationContext()));
 		return m;
 	}
 
@@ -673,8 +695,12 @@ public class AppModule {
 
 	@Provides
 	@Singleton
-	MeshBundleStore provideMeshBundleStore(SettingsManager settingsManager) {
-		return new MeshBundleStore(settingsManager);
+	MeshBundleStore provideMeshBundleStore(SettingsManager settingsManager,
+			org.zerionproject.core.api.contact.ContactManager contactManager) {
+		MeshBundleStore store =
+				new MeshBundleStore(settingsManager, contactManager);
+		contactManager.registerContactHook(store);
+		return store;
 	}
 
 	@Provides

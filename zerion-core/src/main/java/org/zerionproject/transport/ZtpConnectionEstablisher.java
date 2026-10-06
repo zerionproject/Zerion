@@ -12,15 +12,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Supplier;
 
-/**
- * Turns a raw transport connection (a Tor socket's streams) into a live,
- * post-quantum {@link ZwfDuplexConnection}: it runs the native handshake over
- * the streams, derives the transport session from the resulting root key, and
- * hands back a duplex connection ready to carry messages on the same streams.
- *
- * <p>This is the single seam the Tor transport calls once it has a connected
- * socket; it is transport-agnostic and fully exercisable over in-memory pipes.
- */
 @NotNullByDefault
 public class ZtpConnectionEstablisher {
 
@@ -43,34 +34,45 @@ public class ZtpConnectionEstablisher {
 		this.cipherFactory = cipherFactory;
 	}
 
-	/**
-	 * Resumes an ongoing contact's connection over the streams without a
-	 * handshake. Used for every connection after the initial pairing,
-	 * including the one carried by the pairing socket itself: the root key
-	 * and role were fixed at pairing, so no key agreement runs.
-	 *
-	 * <p>The post-quantum Mode 3-Full ratchet starts from a fresh initial
-	 * state on each connection and re-engages in-band (the first frame per
-	 * direction is the classical sentinel, after which each side
-	 * re-advertises its ML-KEM key). Nothing is resumed from an earlier
-	 * connection and nothing is persisted when one ends: the state is a
-	 * single per-connection object shared and advanced asynchronously by
-	 * both directions, so an abrupt drop would leave the two peers with
-	 * divergent copies, and its ML-KEM decapsulation keys would otherwise
-	 * outlive the connection at rest. Starting fresh makes every
-	 * reconnection symmetric and identical to the first session, at the
-	 * cost of one classical frame before post-quantum re-engages. The root
-	 * key is already post-quantum (hybrid ML-KEM at pairing), so even the
-	 * sentinel frame is protected by post-quantum-derived keys.
-	 *
-	 * @param contactId the local contact id.
-	 * @param rootKey the contact's stored handshake root key.
-	 * @param alice our role tiebreaker, fixed at pairing.
-	 */
 	public ZwfDuplexConnection resume(int contactId, SecretKey rootKey,
 			boolean alice, InputStream in, OutputStream out) {
-		ZwfSession session = sessionFactory.deriveSession(rootKey, alice);
-		return new ZwfDuplexConnection(contactId, session, counter, crypto,
-				ratchet, mode3FullRatchet, cipherFactory, in, out);
+		return resume(contactId, rootKey, alice,
+				counter.generation(contactId), in, out);
+	}
+
+	public ZwfDuplexConnection resume(int contactId, SecretKey rootKey,
+			boolean alice, long generation, InputStream in, OutputStream out) {
+		return resume(contactId, ContactRootKeys.atPairing(rootKey), 0, alice,
+				generation, in, out);
+	}
+
+	public ZwfDuplexConnection resume(int contactId, ContactRootKeys keys,
+			long sendEpoch, boolean alice, long generation, InputStream in,
+			OutputStream out) {
+		ZwfSession session = sessionFactory.deriveSession(keys, sendEpoch,
+				alice);
+		return new ZwfDuplexConnection(contactId, generation, session, counter,
+				crypto, ratchet, mode3FullRatchet, cipherFactory, in, out);
+	}
+
+	public long epochOfTag(int contactId, ContactRootKeys keys, boolean alice,
+			byte[] tag) {
+		long highWater = counter.currentRecvHighWater(contactId);
+		long[] epochs = {keys.getEpoch(), keys.getPendingEpoch()};
+		org.zerionproject.crypto.ZwfTagRecogniser r =
+				new org.zerionproject.crypto.ZwfTagRecogniser(crypto,
+						org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE);
+		java.util.Map<Long, SecretKey> tagKeys =
+				new java.util.LinkedHashMap<>();
+		for (long e : epochs) {
+			SecretKey root = keys.getKey(e);
+			if (root != null) {
+				tagKeys.put(e, sessionFactory.deriveRecvTagKey(root, e, alice));
+			}
+		}
+		r.register(contactId, tagKeys, highWater);
+		org.zerionproject.crypto.ZwfTagRecogniser.Match m = r.recognise(tag);
+		for (SecretKey k : tagKeys.values()) k.clear();
+		return m == null ? -1 : m.epoch;
 	}
 }

@@ -13,7 +13,6 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
-		<!-- ====== PRIVACY MODE ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_mode" />
@@ -174,12 +173,10 @@
 
 		</LinearLayout>
 
-		<!-- ====== TOR NETWORK ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_tor_network" />
 
-		<!-- Info card -->
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -284,7 +281,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== OVERLAY NETWORKS (I2P) ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_overlay" />
@@ -389,7 +385,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== OFFLINE MESH ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/settings_section_mesh" />
@@ -460,7 +455,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== ONION ROTATION ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/onion_rotation_section_title" />

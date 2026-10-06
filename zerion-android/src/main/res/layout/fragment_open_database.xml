@@ -6,7 +6,6 @@
 	android:layout_height="match_parent"
 	android:background="@color/zerion_dark_bg">
 
-	<!-- Logo at top -->
 	<ImageView
 		android:id="@+id/logoView"
 		android:layout_width="120dp"
@@ -19,7 +18,6 @@
 		app:srcCompat="@drawable/logo"
 		tools:ignore="ContentDescription" />
 
-	<!-- Lock icon centred inside the indeterminate ring -->
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/lockGroup"
 		android:layout_width="128dp"

@@ -26,17 +26,11 @@ public class Argon2 {
 
 	public static final int WALLET_MEMORY_KB = 64 * 1024;
 
-	/** The largest memory cost this app ever writes; nothing above is accepted. */
 	public static final int MAX_MEMORY_KB = DEFAULT_MEMORY_KB;
 	public static final int MIN_MEMORY_KB = 1024;
 	public static final int MAX_ITERATIONS = 10;
 	public static final int MAX_PARALLELISM = 4;
 
-	/**
-	 * Rejects parameters read from a file, header or import that would
-	 * make the derivation allocate or run beyond what this app itself
-	 * produces; a crafted header must fail, never exhaust memory.
-	 */
 	public static void requireSaneParams(int memoryKb, int iterations,
 			int parallelism) {
 		if (memoryKb < MIN_MEMORY_KB || memoryKb > MAX_MEMORY_KB
@@ -63,8 +57,9 @@ public class Argon2 {
 				CharBuffer.wrap(password));
 		byte[] passwordBytes = new byte[byteBuffer.remaining()];
 		byteBuffer.get(passwordBytes);
+		byte[] nativeCopy = passwordBytes.clone();
 		try {
-			byte[] nativeOut = NativeArgon2.deriveOrNull(passwordBytes, salt,
+			byte[] nativeOut = NativeArgon2.deriveOrNull(nativeCopy, salt,
 					params.memoryKb, params.iterations, params.parallelism,
 					params.hashLength);
 			if (nativeOut != null) {
@@ -73,16 +68,12 @@ public class Argon2 {
 			byte[] output = deriveKeyBouncyCastle(passwordBytes, salt, params);
 			return output;
 		} finally {
+			Arrays.fill(nativeCopy, (byte) 0);
 			Arrays.fill(passwordBytes, (byte) 0);
 			Arrays.fill(byteBuffer.array(), (byte) 0);
 		}
 	}
 
-	/**
-	 * Argon2id via Bouncy Castle. This is the fail-closed fallback used when the
-	 * native library is unavailable, and the reference the equivalence tests
-	 * compare the native output against. Same parameters, same version (v1.3).
-	 */
 	public static byte[] deriveKeyBouncyCastle(byte[] passwordBytes, byte[] salt,
 			Argon2Params params) {
 		Argon2Parameters bcParams =

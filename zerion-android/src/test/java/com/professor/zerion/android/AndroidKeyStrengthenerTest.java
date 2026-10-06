@@ -18,12 +18,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-/**
- * A2-AND-06: a keystore lookup that fails must not be mistaken for "no key
- * yet"; generating a fresh key under the alias would crypto-shred every
- * profile's stored database key. The strengthener refuses instead and works
- * again with the same key once the keystore answers.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class AndroidKeyStrengthenerTest {
@@ -63,12 +57,6 @@ public class AndroidKeyStrengthenerTest {
 				expected, fresh.strengthenKey(k).getBytes());
 	}
 
-	/**
-	 * Before the first account exists nothing depends on the alias, so a key
-	 * store that cannot even look the alias up must not stop the first
-	 * account from being created: the strengthener discards the alias and
-	 * generates. Google Play's review device failed 3.0.13 here.
-	 */
 	@Test
 	public void aFreshInstallGeneratesAKeyEvenWhenLookupsFail()
 			throws Exception {

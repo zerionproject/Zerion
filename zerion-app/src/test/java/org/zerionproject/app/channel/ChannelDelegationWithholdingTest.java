@@ -35,14 +35,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * EXT-13-F06: revoking a delegation must not cut a subscriber off from the
- * rest of the channel. A post signed by a delegate whose certificate the
- * publisher has revoked stays in the chain and is withheld from view, on a
- * subscriber that held the certificate and on one that never saw it, as long
- * as a verified later post commits to it. Nothing that fails a signature or
- * chain check is admitted under that rule.
- */
 public class ChannelDelegationWithholdingTest {
 
 	private static final long HOUR = 3_600_000L;
@@ -165,8 +157,16 @@ public class ChannelDelegationWithholdingTest {
 				Collections.singletonList(overlapping),
 				Collections.singletonList(1L),
 				Collections.singletonList(first));
-		assertEquals(ChannelPostValidator.Result.DELEGATION_REVOKED,
+		assertEquals("a grant in force that covers the post does not "
+				+ "rescue it", ChannelPostValidator.Result.OK,
 				validator.validate(revokedThenReissued, early, null));
+		ChannelState revokedThenGrantedLater = state(1L,
+				Collections.singletonList(later),
+				Collections.singletonList(1L),
+				Collections.singletonList(first));
+		assertEquals("a grant that starts after the post rescues it",
+				ChannelPostValidator.Result.DELEGATION_REVOKED,
+				validator.validate(revokedThenGrantedLater, early, null));
 		ChannelState reissuedThenRevoked = state(1L, noCerts(),
 				Collections.singletonList(2L),
 				Arrays.asList(first, overlapping));

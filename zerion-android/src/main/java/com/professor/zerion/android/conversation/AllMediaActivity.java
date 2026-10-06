@@ -364,8 +364,7 @@ public class AllMediaActivity extends ZerionActivity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		com.professor.zerion.android.vault.utils.SecureMemory.secureDeleteDir(
-				new java.io.File(getCacheDir(), "media_docs"), 0L);
+		DocumentOpener.wipe(this);
 	}
 
 	private void openMedia(MediaItem item) {
@@ -392,48 +391,8 @@ public class AllMediaActivity extends ZerionActivity {
 	}
 
 	private void openDocument(MediaItem item) {
-		dbExecutor.execute(() -> {
-			try {
-				Attachment att =
-						attachmentRetriever.getMessageAttachment(item.header);
-				String mime = item.header.getContentType();
-				String ext = getExtensionFromMimeType(mime)
-						.toLowerCase(java.util.Locale.US)
-						.replaceAll("[^a-z0-9]", "");
-				if (ext.isEmpty()) ext = "bin";
-				java.io.File dir = new java.io.File(getCacheDir(), "media_docs");
-				com.professor.zerion.android.vault.utils.SecureMemory
-						.secureDeleteDir(dir, 0L);
-				if (!dir.exists()) dir.mkdirs();
-				java.io.File out = new java.io.File(dir,
-						"doc_" + item.messageId.hashCode() + "." + ext);
-				try (java.io.InputStream is = att.getStream();
-						java.io.FileOutputStream fos =
-								new java.io.FileOutputStream(out)) {
-					byte[] buf = new byte[8192];
-					int n;
-					while ((n = is.read(buf)) != -1) fos.write(buf, 0, n);
-				}
-				android.net.Uri uri =
-						androidx.core.content.FileProvider.getUriForFile(this,
-								getPackageName() + ".fileprovider", out);
-				runOnUiThread(() -> {
-					try {
-						Intent view = new Intent(Intent.ACTION_VIEW);
-						view.setDataAndType(uri, mime);
-						view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-						startActivity(view);
-					} catch (android.content.ActivityNotFoundException e) {
-						Toast.makeText(this, R.string.media_document_no_app,
-								Toast.LENGTH_SHORT).show();
-					}
-				});
-			} catch (Exception e) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.media_document_open_failed,
-						Toast.LENGTH_SHORT).show());
-			}
-		});
+		DocumentOpener.open(this, dbExecutor, attachmentRetriever,
+				item.header);
 	}
 
 	private void launchMediaViewer(MediaItem item) {

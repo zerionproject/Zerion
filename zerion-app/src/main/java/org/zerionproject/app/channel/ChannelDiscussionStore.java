@@ -38,8 +38,7 @@ class ChannelDiscussionStore {
 	}
 
 	void remove(byte[] channelId) throws DbException {
-		Settings out = new Settings();
-		out.put(ChannelStore.hex(channelId), "");
-		settingsManager.mergeSettings(out, NS);
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 }

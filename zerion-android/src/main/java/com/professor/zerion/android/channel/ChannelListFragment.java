@@ -453,6 +453,7 @@ public class ChannelListFragment extends BaseFragment
 				new android.app.ProgressDialog(requireContext());
 		d.setMessage(getString(R.string.channels_apply_progress));
 		d.setCancelable(false);
+		com.professor.zerion.android.security.SecureDialogs.applyHostPolicy(d);
 		d.show();
 		return d;
 	}

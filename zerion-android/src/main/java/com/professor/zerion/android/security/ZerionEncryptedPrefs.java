@@ -58,13 +58,6 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 	private static final long CREATE_RETRY_DELAY_MS = 150;
 	private static volatile boolean storageFailed = false;
 
-	/**
-	 * True once any keystore operation has failed beyond recovery in this
-	 * process. Reads then return defaults and writes are dropped rather than
-	 * crashing; the UI layer checks this flag and fails closed with an
-	 * explanation instead of letting the app run against broken secure
-	 * storage.
-	 */
 	public static boolean isStorageFailed() {
 		if (valuesUnreadable) return true;
 		if (!storageFailed) return false;
@@ -76,15 +69,8 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 		return false;
 	}
 
-	/**
-	 * A stored value failed authentication: the key changed under the file
-	 * or the file was altered. Reads would otherwise return defaults, which
-	 * for the security toggles means "off", so this fails closed like a
-	 * keystore failure until the app is reinstalled or the data cleared.
-	 */
 	private static volatile boolean valuesUnreadable = false;
 
-	/** Test support: forgets cached instances and failure flags. */
 	static synchronized void resetForTests() {
 		INSTANCES.clear();
 		storageFailed = false;

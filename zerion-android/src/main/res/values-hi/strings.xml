@@ -22,7 +22,6 @@
 	<string name="dnkm_huawei_protected_text">कृपया नीचे दिए गए बटन को टैप करें और सुनिश्चित करें कि \"संरक्षित ऐप्स\" स्क्रीन पर Zerion  सुरक्षित है</string>
 	<string name="dnkm_huawei_protected_button">Zerion की रक्षा करें</string>
 	<string name="dnkm_huawei_protected_help">अगर Zerion संरक्षित ऐप्स सूची में नहीं जोड़ा गया है, तो यह पृष्ठभूमि में चलने में असमर्थ होगा।</string>
-	<string name="dnkm_warning_dozed">%sपृष्ठभूमि में चलाने में असमर्थ था</string>
 	
 	<string name="enter_password">पासवर्ड</string>
 	<string name="try_again">गलत पासवर्ड, फिर से प्रयास करें</string>
@@ -30,8 +29,6 @@
 	<string name="forgotten_password">मुझे अपना पासवर्ड याद नहीं है</string>
 	<string name="dialog_title_lost_password">पासवर्ड खो गया</string>
 	<string name="dialog_message_lost_password">आपका Zerion  खाता आपके डिवाइस पर एन्क्रिप्ट किया गया है, बादल में नहीं, इसलिए हम आपका पासवर्ड रीसेट नहीं कर सकते। क्या आप अपना खाता हटाना चाहते हैं और फिर से शुरू करना चाहते हैं? \ N \ n सावधानी: आपकी पहचान, संपर्क और संदेश स्थायी रूप से खो जाएंगे</string>
-	<string name="startup_failed_notification_title">Zerion  शुरू नहीं हो सका</string>
-  <string name="startup_failed_notification_text">अधिक जानकारी के लिए टैप करें।</string>
   <string name="startup_failed_activity_title">Zerion  स्टार्टअप विफलता</string>
   <string name="startup_failed_db_error">किसी कारण से, आपका Zerion  डेटाबेस मरम्मत से परे दूषित हो गया है। आपका खाता, आपका डेटा और आपके सभी संपर्क खो गए हैं। दुर्भाग्यवश, आपको पासवर्ड प्रॉम्प्ट पर \'मेरा पासवर्ड भूल गया है\' चुनकर Zerion  को पुनर्स्थापित करने या एक नया खाता सेट अप करने की आवश्यकता है।</string>
   <string name="startup_failed_data_too_old_error">आपका खाता इस ऐप के पुराने संस्करण के साथ बनाया गया था और इस संस्करण के साथ खोला नहीं जा सकता है। आपको या तो पुराने संस्करण को पुनर्स्थापित करना होगा या पासवर्ड प्रॉम्प्ट पर \'मैं अपना पासवर्ड भूल गया हूं\' चुनकर एक नया खाता सेट करना होगा।</string>
@@ -134,13 +131,10 @@
   <string name="exchanging_contact_details">संपर्क विवरणों का आदान-प्रदान करें \ u2026</string>
   <string name="contact_added_toast">संपर्क जोड़ा गया:%s</string>
   <string name="contact_already_exists">संपर्क%s पहले से मौजूद है</string>
-  <string name="qr_code_too_old">आपके द्वारा स्कैन किए गए क्यूआर कोड के पुराने संस्करण से आता है %s.\ n \ n कृपया अपने संपर्क से नवीनतम संस्करण में अपग्रेड करने के लिए कहें और फिर पुन: प्रयास करें।</string>
-  <string name="qr_code_too_new">आपके द्वारा स्कैन किए गए क्यूआर कोड के एक नए संस्करण से आता है %s.\ n \ n कृपया नवीनतम संस्करण में अपग्रेड करें और फिर पुन: प्रयास करें।</string>
   <string name="camera_error">कैमरा त्रुटि</string>
   <string name="connecting_to_device">उपकरण \ u2026 से कनेक्ट हो रहा है</string>
   <string name="authenticating_with_device">डिवाइस के साथ प्रमाणीकरण \ u2026</string>
   <string name="connection_error_title">आपके संपर्क से कनेक्ट नहीं हो सका</string>
-  <string name="connection_error_feedback">यदि यह समस्या बनी रहती है, तो कृपया ऐप को बेहतर बनाने में हमारी सहायता के लिए <a href="feedback">फ़ीडबैक भेजें</a>।</string>
   
   <string name="add_contact_remotely_title_case">दूरी वाले संपर्क जोड़ें</string>
   <string name="add_contact_nearby_title">आस-पास वाले संपर्क जोड़ें</string>
@@ -290,14 +284,12 @@
   <string name="pref_theme_title">विषय</string>
   <string name="pref_theme_light">रोशनी</string>
   <string name="pref_theme_dark">अंधेरा</string>
-  <string name="pref_theme_auto">स्वचालित (दिन का समय)</string>
   <string name="pref_theme_system">प्रणालीगत चूक</string>
   
   <string name="tor_network_setting_automatic">स्वचालित स्थान पर आधारित</string>
   
   <string name="tor_network_setting_summary">स्वचालित:%1$s (में %2$s)</string>
   <string name="tor_mobile_data_title">मोबाइल डेटा का प्रयोग करें</string>
-  <string name="tor_only_when_charging_summary">जब यंत्र बैटरी पर चल रहा हो तो इंटरनेट संबंध को निष्क्रिय कर देता है</string>
   
   <string name="security_settings_title">सुरक्षा</string>
   <string name="pref_lock_title">एप्लिकेशन का लॉक</string>
@@ -356,27 +348,13 @@
   
   <string name="learn_more">और अधिक जानें</string>
   
-  <string name="send_feedback">प्रतिक्रिया भेजें</string>
   
   <string name="link_warning_title">लिंक चेतावनी</string>
   <string name="link_warning_intro">आप बाहरी एप्लिकेशन के साथ निम्न लिंक खोलने वाले हैं</string>
   <string name="link_warning_text">इसका उपयोग आपकी पहचान करने के लिए किया जा सकता है। इस बारे में सोचें कि क्या आप उस व्यक्ति पर भरोसा करते हैं जिसने आपको यह लिंक भेजा है और इसे टोर ब्राउज़र से खोलने पर विचार करें।</string>
   <string name="link_warning_open_link">खुली लिंक</string>
   
-  <string name="crash_report_title">Zerion  क्रैश रिपोर्ट</string>
-  <string name="zerion_crashed">क्षमा करें, Zerion  दुर्घटनाग्रस्त हो गया है।</string>
-  <string name="not_your_fault">यह आपकी गलती नहीं है</string>
-  <string name="please_send_report">कृपया हमें क्रैश रिपोर्ट भेजकर बेहतर Zerion  बनाने में हमारी सहायता करें</string>
-  <string name="report_is_encrypted">हम वादा करते हैं कि रिपोर्ट एन्क्रिप्ट की गई है और सुरक्षित रूप से भेजा गया है।</string>
-  <string name="feedback_title">प्रतिक्रिया</string>
-  <string name="describe_crash">वर्णन करें कि क्या हुआ (वैकल्पिक)</string>
-  <string name="enter_feedback">अपना फ़ीडबैक दर्ज करें</string>
-  <string name="optional_contact_email">आपका ईमेल पता (वैकल्पिक)</string>
-  <string name="include_debug_report_crash">दुर्घटना के बारे में अनाम डेटा शामिल करें</string>
-  <string name="include_debug_report_feedback">इस डिवाइस के बारे में अनाम डेटा शामिल करें</string>
-  <string name="send_report">रिपोर्ट भेजो</string>
   <string name="close">बंद करे</string>
-  <string name="dev_report_saved">रिपोर्ट सहेजी गई अगली बार जब आप Zerion  में प्रवेश करेंगे तो उसे भेजा जाएगा।</string>
   
   <string name="progress_title_logout">Zerion  से साइन आउट हो रहा है ...</string>
   
@@ -387,7 +365,6 @@
   <string name="permission_camera_title">कैमरा अनुमति</string>
   <string name="permission_camera_request_body">QR कोड को स्कैन करने के लिए, Zerion को कैमरे तक पहुंच की आवश्यकता है।</string>
   <string name="permission_location_title">स्थान की अनुमति</string>
-  <string name="permission_location_request_body">ब्लूटूथ उपकरणों को खोजने के लिए, Zerion को आपके स्थान तक पहुंचने की अनुमति की आवश्यकता है। \ N \ n Zerion आपके स्थान को स्टोर नहीं करता है या इसे किसी के साथ साझा नहीं करता है।</string>
   <string name="permission_camera_location_title">कैमरा और स्थान</string>
   <string name="permission_camera_location_request_body">क्यूआर कोड को स्कैन करने के लिए, Zerion को कैमरे तक पहुंच की आवश्यकता होती है। \ N \ n ब्लूटूथ डिवाइसों को खोजने के लिए, Zerion को आपके स्थान तक पहुंचने की अनुमति की आवश्यकता होती है। \ n\n \ Zerion आपके स्थान को स्टोर नहीं करता है या इसे किसी के साथ साझा नहीं करता है।</string>
   <string name="permission_camera_denied_body">आपने कैमरे तक पहुंच से वंचित किया है, लेकिन संपर्क जोड़ने के लिए कैमरे का उपयोग करने की आवश्यकता है। \ N \ n कृपया पहुंच प्रदान करने पर विचार करें।</string>
@@ -571,7 +548,6 @@
 	<string name="wallet_receive_new">नया पता</string>
 	<string name="wallet_node_hint">किसी सर्वर को इस्तेमाल करने के लिए उस पर टैप करें। कस्टम सर्वर हटाने के लिए उसे देर तक दबाएँ।</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">एक पुनः इस्तेमाल होने वाला निजी पता। इस पर किए गए भुगतान ऑन-चेन जोड़े नहीं जा सकते। पहचान Tor के ज़रिए सार्वजनिक डेटा स्कैन करती है; आपकी कुंजियाँ कभी डिवाइस से बाहर नहीं जातीं।</string>
 	<string name="wallet_sp_balance">पहचाना गया: %1$s</string>
 	<string name="wallet_sp_scanned">ब्लॉक %1$d तक स्कैन किया गया</string>
 	<string name="wallet_sp_set_oracle">स्कैन स्रोत</string>

@@ -39,10 +39,12 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 	private final ConcurrentMap<String, RendezvousEndpoint> activeEndpoints =
 			new ConcurrentHashMap<>();
+	private final Object endpointLock = new Object();
 
 	private final ConcurrentMap<String, Long> endpointCreationTimes =
 			new ConcurrentHashMap<>();
-	private static final long ENDPOINT_TIMEOUT_MS = 30 * 60 * 1000;
+	static final long ENDPOINT_TIMEOUT_MS = 30 * 60 * 1000;
+	private final java.util.function.LongSupplier clock;
 
 	private final ConcurrentMap<String, DuplexTransportConnection> activeConnections =
 			new ConcurrentHashMap<>();
@@ -50,15 +52,6 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 	private final ScheduledExecutorService cleanupScheduler =
 			Executors.newSingleThreadScheduledExecutor();
 
-	/**
-	 * How long one dial may take before the next attempt starts. A dial
-	 * that is abandoned can still complete and reach the callee, which
-	 * would adopt that orphan instead of the connection of the next
-	 * attempt, so this is at least as long as every setup timeout in the
-	 * service: an attempt is only abandoned once the setup it belonged to
-	 * has already given up and closed its endpoint. Attempts that fail
-	 * quickly are still retried.
-	 */
 	static final long DIAL_TIMEOUT_MS = 60_000;
 	private static final Object ABANDONED = new Object();
 
@@ -74,17 +67,25 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 	VoiceCallConnectionManagerImpl(PluginManager pluginManager,
 			VoiceCallCrypto crypto, long dialTimeoutMs, long[] retryDelaysMs) {
+		this(pluginManager, crypto, dialTimeoutMs, retryDelaysMs,
+				System::currentTimeMillis);
+	}
+
+	VoiceCallConnectionManagerImpl(PluginManager pluginManager,
+			VoiceCallCrypto crypto, long dialTimeoutMs, long[] retryDelaysMs,
+			java.util.function.LongSupplier clock) {
 		this.pluginManager = pluginManager;
 		this.crypto = crypto;
 		this.dialTimeoutMs = dialTimeoutMs;
 		this.retryDelaysMs = retryDelaysMs;
+		this.clock = clock;
 
 		cleanupScheduler.scheduleAtFixedRate(this::cleanupExpiredEndpoints,
 				5, 5, TimeUnit.MINUTES);
 	}
 
-	private void cleanupExpiredEndpoints() {
-		long now = System.currentTimeMillis();
+	void cleanupExpiredEndpoints() {
+		long now = clock.getAsLong();
 		List<String> expired = new ArrayList<>();
 
 		for (Map.Entry<String, Long> entry :
@@ -95,6 +96,12 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		}
 
 		for (String callId : expired) {
+			synchronized (endpointLock) {
+				Long last = endpointCreationTimes.get(callId);
+				if (last == null || now - last <= ENDPOINT_TIMEOUT_MS) {
+					continue;
+				}
+			}
 			closeEndpoint(callId);
 
 			try {
@@ -126,11 +133,19 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 				endpointKey, TorConstants.ID);
 		KeyMaterialSource keyMaterialForEndpoint = crypto.createKeyMaterialSource(
 				endpointKey, TorConstants.ID);
+		endpointKey.clear();
 
 		String localOnion = crypto.getLocalOnion(keyMaterialForOnion, alice);
 
 		if (localOnion == null || localOnion.isEmpty()) {
 			throw new IOException("Failed to derive local onion address");
+		}
+
+		synchronized (endpointLock) {
+			if (activeEndpoints.containsKey(callId)) {
+				endpointCreationTimes.put(callId, clock.getAsLong());
+				return new EndpointInfo(localOnion, 80);
+			}
 		}
 
 		ConnectionHandler connectionHandler = new ConnectionHandler() {
@@ -158,14 +173,38 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 			throw new IOException("Failed to create rendezvous endpoint");
 		}
 
-		RendezvousEndpoint oldEndpoint = activeEndpoints.put(callId, endpoint);
+		RendezvousEndpoint oldEndpoint;
+		synchronized (endpointLock) {
+			oldEndpoint = activeEndpoints.put(callId, endpoint);
+			endpointCreationTimes.put(callId, clock.getAsLong());
+		}
 		if (oldEndpoint != null) {
 			tryToClose(oldEndpoint);
 		}
 
-		endpointCreationTimes.put(callId, System.currentTimeMillis());
-
 		return new EndpointInfo(localOnion, 80);
+	}
+
+	@Override
+	public String expectedPeerOnion(String callId, SecretKey voiceCallKey,
+			boolean alice) {
+		SecretKey endpointKey = deriveEndpointKey(voiceCallKey, callId);
+		try {
+			KeyMaterialSource keyMaterial = crypto.createKeyMaterialSource(
+					endpointKey, TorConstants.ID);
+			return crypto.getLocalOnion(keyMaterial, !alice);
+		} finally {
+			endpointKey.clear();
+		}
+	}
+
+	@Override
+	public void keepEndpoint(String callId) {
+		synchronized (endpointLock) {
+			if (activeEndpoints.containsKey(callId)) {
+				endpointCreationTimes.put(callId, clock.getAsLong());
+			}
+		}
 	}
 
 	@Override
@@ -256,7 +295,11 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 
 	@Override
 	public void closeEndpoint(String callId) {
-		RendezvousEndpoint endpoint = activeEndpoints.remove(callId);
+		RendezvousEndpoint endpoint;
+		synchronized (endpointLock) {
+			endpoint = activeEndpoints.remove(callId);
+			endpointCreationTimes.remove(callId);
+		}
 		if (endpoint != null) {
 			tryToClose(endpoint);
 		}
@@ -265,8 +308,6 @@ class VoiceCallConnectionManagerImpl implements VoiceCallConnectionManager {
 		if (conn != null) {
 			tryToClose(conn);
 		}
-
-		endpointCreationTimes.remove(callId);
 	}
 
 	@Override

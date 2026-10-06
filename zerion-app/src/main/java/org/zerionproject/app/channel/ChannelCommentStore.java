@@ -31,6 +31,7 @@ class ChannelCommentStore {
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
 	private final BdfWriterFactory writerFactory;
+	private final ChannelItemSync sync;
 
 	@Inject
 	ChannelCommentStore(SettingsManager settingsManager,
@@ -39,9 +40,37 @@ class ChannelCommentStore {
 		this.settingsManager = settingsManager;
 		this.readerFactory = readerFactory;
 		this.writerFactory = writerFactory;
+		this.sync = new ChannelItemSync(settingsManager, readerFactory,
+				writerFactory, "c");
+	}
+
+	ChannelItemSync sync() {
+		return sync;
+	}
+
+	static String keyOf(ChannelComment c) {
+		return Long.toString(c.getCommentId());
+	}
+
+	private static byte[] digestOf(ChannelComment c) {
+		byte[] sig = c.getSignature();
+		if (sig != null && sig.length >= 16) {
+			return java.util.Arrays.copyOf(sig, 16);
+		}
+		return (c.getBody() + ":" + c.getTimestampHourMs())
+				.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 	}
 
 	List<ChannelComment> getComments(byte[] channelId) throws DbException {
+		List<ChannelComment> stored = readStored(channelId);
+		List<ChannelComment> fitted =
+				ChannelCommentPolicy.fitToCeilings(stored);
+		if (fitted != stored) write(channelId, fitted);
+		return fitted;
+	}
+
+	private List<ChannelComment> readStored(byte[] channelId)
+			throws DbException {
 		Settings s = settingsManager.getSettings(NS);
 		String encoded = s.get(ChannelStore.hex(channelId));
 		if (encoded == null) return new ArrayList<>();
@@ -70,15 +99,30 @@ class ChannelCommentStore {
 
 	boolean putComment(byte[] channelId, ChannelComment c)
 			throws DbException {
-		List<ChannelComment> existing = getComments(channelId);
-		for (ChannelComment ex : existing) {
-			if (ex.getCommentId() == c.getCommentId()) return false;
-		}
-		if (existing.size() >= 4096) return false;
-		List<ChannelComment> out = new ArrayList<>(existing.size() + 1);
-		out.addAll(existing);
-		out.add(c);
-		write(channelId, out);
+		return putComment(channelId, c, getComments(channelId));
+	}
+
+	boolean putComment(byte[] channelId, ChannelComment c,
+			List<ChannelComment> current) throws DbException {
+		List<ChannelComment> next =
+				ChannelCommentPolicy.withAdmitted(current, c);
+		if (next == null || next == current) return false;
+		write(channelId, next);
+		return true;
+	}
+
+	void setComments(byte[] channelId, List<ChannelComment> comments)
+			throws DbException {
+		write(channelId, ChannelCommentPolicy.fitToCeilings(comments));
+	}
+
+	boolean retainPosts(byte[] channelId, java.util.Set<Long> posts)
+			throws DbException {
+		List<ChannelComment> current = getComments(channelId);
+		List<ChannelComment> kept =
+				ChannelCommentPolicy.retainPosts(current, posts);
+		if (kept == current) return false;
+		write(channelId, kept);
 		return true;
 	}
 
@@ -93,7 +137,9 @@ class ChannelCommentStore {
 	}
 
 	void removeAll(byte[] channelId) throws DbException {
-		write(channelId, new ArrayList<>());
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
+		sync.removeAll(channelId);
 	}
 
 	private void write(byte[] channelId, List<ChannelComment> comments)
@@ -116,6 +162,13 @@ class ChannelCommentStore {
 		out.put(ChannelStore.hex(channelId),
 				encodeBase64(listToBytes(list)));
 		settingsManager.mergeSettings(out, NS);
+		List<String> keys = new ArrayList<>(comments.size());
+		List<byte[]> digests = new ArrayList<>(comments.size());
+		for (ChannelComment c : comments) {
+			keys.add(keyOf(c));
+			digests.add(digestOf(c));
+		}
+		sync.recordWrite(channelId, keys, digests);
 	}
 
 	private byte[] listToBytes(BdfList l) {

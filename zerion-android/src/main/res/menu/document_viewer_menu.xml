@@ -2,7 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- Edit action for text documents -->
     <item
         android:id="@+id/action_edit"
         android:title="Edit"

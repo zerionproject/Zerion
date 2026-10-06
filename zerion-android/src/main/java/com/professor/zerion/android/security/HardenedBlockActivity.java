@@ -32,6 +32,12 @@ public class HardenedBlockActivity
 	SharedPreferences uiPrefs;
 	@Inject
 	org.zerionproject.core.api.account.AccountManager accountManager;
+	@Inject
+	com.professor.zerion.android.vault.VaultManager vaultManager;
+
+	@Nullable
+	com.professor.zerion.android.login.AccountPasswordCheck.DuressCheck
+			duressCheck = null;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -63,10 +69,6 @@ public class HardenedBlockActivity
 		quitButton.setOnClickListener(v -> finishAndRemoveTask());
 	}
 
-	/**
-	 * The mode protects the account, so only the account password may turn
-	 * it off; a device with no account yet has nothing to protect.
-	 */
 	private void promptDisableHardenedMode(int result) {
 		boolean needsPassword;
 		try {
@@ -105,24 +107,25 @@ public class HardenedBlockActivity
 	}
 
 	private void verifyThenDisable(char[] password) {
+		com.professor.zerion.android.login.AccountPasswordCheck.DuressCheck
+				duress = duressCheck != null ? duressCheck
+				: com.professor.zerion.android.login.AccountPasswordCheck
+						.duressPasswordOf(this);
 		new Thread(() -> {
-			boolean ok = false;
-			long lockedMs = 0;
-			try {
-				lockedMs = accountManager.signInLockoutRemainingMs();
-				if (lockedMs <= 0) {
-					accountManager.signIn(password);
-					ok = true;
-				}
-			} catch (org.zerionproject.core.api.crypto.DecryptionException e) {
-				ok = false;
-			} catch (RuntimeException e) {
-				ok = false;
-			} finally {
-				java.util.Arrays.fill(password, '\0');
+			boolean signedIn = accountManager.hasDatabaseKey();
+			com.professor.zerion.android.login.AccountPasswordCheck.Result r =
+					new com.professor.zerion.android.login.AccountPasswordCheck(
+							accountManager, duress).check(password,
+							signedIn ? accountManager::verifyPassword
+									: accountManager::signIn);
+			if (r.outcome == com.professor.zerion.android.login
+					.AccountPasswordCheck.Outcome.ERASE) {
+				eraseAccounts(signedIn);
+				return;
 			}
-			final boolean granted = ok;
-			final long waitMs = lockedMs;
+			final boolean granted = r.outcome == com.professor.zerion.android
+					.login.AccountPasswordCheck.Outcome.GRANTED;
+			final long waitMs = r.lockedMs;
 			runOnUiThread(() -> {
 				if (isFinishing()) return;
 				if (granted) {
@@ -139,6 +142,30 @@ public class HardenedBlockActivity
 				}
 			});
 		}, "HardenedDisable").start();
+	}
+
+	private void eraseAccounts(boolean signedIn) {
+		try {
+			accountManager.shredDatabaseKey();
+		} catch (RuntimeException ignored) {
+		}
+		try {
+			com.professor.zerion.android.account.AccountWipeCleanup.wipe(
+					getApplicationContext(), vaultManager);
+		} catch (RuntimeException ignored) {
+		}
+		if (!signedIn) {
+			try {
+				accountManager.deleteAccount();
+			} catch (RuntimeException ignored) {
+			}
+		}
+		runOnUiThread(() -> {
+			finishAndRemoveTask();
+			if (signedIn) {
+				android.os.Process.killProcess(android.os.Process.myPid());
+			}
+		});
 	}
 
 	private void disableHardenedMode() {

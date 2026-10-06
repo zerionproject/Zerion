@@ -73,7 +73,6 @@ public class AsyncPrekeyBundleTest {
 	@Test
 	public void tamperedSignedPrekeyFailsVerify() throws Exception {
 		byte[] enc = build(2).encode();
-		// Flip a byte inside signedPrekeyPub (after version+identity keys).
 		int off = 1 + 1984 + 1216 + 4 + 10;
 		enc[off] ^= 0x01;
 		AsyncPrekeyBundle d = AsyncPrekeyBundle.decode(enc);
@@ -85,11 +84,8 @@ public class AsyncPrekeyBundleTest {
 		AsyncPrekeyBundle b = build(1);
 		CryptoComponent other = new CryptoComponentImpl(() -> null,
 				new ScryptKdf(new SystemClock()));
-		// Same crypto engine, but re-sign nothing: a bundle whose identity key
-		// does not match its signatures must fail. Rebuild with a mismatched
-		// identity by decoding then verifying against a bundle we tamper.
 		byte[] enc = b.encode();
-		enc[1] ^= 0x01; // corrupt the identity sig pub
+		enc[1] ^= 0x01;
 		AsyncPrekeyBundle d = AsyncPrekeyBundle.decode(enc);
 		assertFalse(d.verify(crypto));
 		assertFalse(d.verify(other));
@@ -103,7 +99,6 @@ public class AsyncPrekeyBundleTest {
 			AsyncPrekeyBundle.decode(enc);
 			fail("expected FormatException");
 		} catch (FormatException expected) {
-			// ok
 		}
 	}
 }

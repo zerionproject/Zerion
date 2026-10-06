@@ -1,6 +1,6 @@
 package com.professor.zerion.android.vault.ui;
 
-import com.professor.zerion.android.vault.utils.SecureMemory;
+import com.professor.zerion.android.vault.share.VaultShareRegistry;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -21,12 +21,10 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import javax.inject.Inject;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
@@ -45,25 +43,32 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@com.professor.zerion.android.AppModule.SecurePrefs
-	android.content.SharedPreferences securePrefs;
+	@com.professor.zerion.android.AppModule.ProfilePrefs
+	android.content.SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 	private VaultViewModel.VaultState currentState = null;
 	private boolean isPickerMode = false;
 	private volatile boolean pickerResultDelivered = false;
+	@Nullable
+	private volatile Uri pickerSharedUri = null;
 	private String pickerType = null;
 
 	@Override
 	protected boolean forceScreenshotProtection() {
-		return securePrefs == null
-				|| securePrefs.getBoolean("hide_content_enabled", true);
+		return profilePrefs == null
+				|| profilePrefs.getBoolean("hide_content_enabled", true)
+				|| VaultScreenProtection.required(
+						getSupportFragmentManager(), profilePrefs);
 	}
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 
 		super.onCreate(savedInstanceState);
+		VaultScreenProtection.install(this, profilePrefs, () ->
+				securityManager.applyScreenshotProtection(this,
+						forceScreenshotProtection()));
 
 		if (android.os.Build.VERSION.SDK_INT
 				>= android.os.Build.VERSION_CODES.S) {
@@ -146,8 +151,8 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 			() -> viewModel.lockIfUnlocked();
 
 	private void scheduleAutolock() {
-		int timeoutSeconds = securePrefs == null ? 60
-				: securePrefs.getInt("autolock_timeout", 60);
+		int timeoutSeconds = profilePrefs == null ? 60
+				: profilePrefs.getInt("autolock_timeout", 60);
 		if (timeoutSeconds < 0) return;
 		if (timeoutSeconds == 0) {
 			viewModel.lockIfUnlocked();
@@ -187,6 +192,8 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	protected void onDestroy() {
 		lockHandler.removeCallbacks(childResultLockWatchdog);
 		if (isPickerMode && !pickerResultDelivered) {
+			Uri shared = pickerSharedUri;
+			if (shared != null) VaultShareRegistry.release(shared);
 			com.professor.zerion.android.util.CacheSweeper
 					.sweepDirAsync(this, "vault_share");
 		}
@@ -271,33 +278,14 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 			public void onContentRetrieved(byte[] content) {
 				new Thread(() -> {
 					try {
-						File cacheDir = new File(getCacheDir(), "vault_share");
-						if (!cacheDir.exists()) {
-							cacheDir.mkdirs();
-						}
-						File[] oldFiles = cacheDir.listFiles();
-						if (oldFiles != null) {
-							for (File f : oldFiles) {
-								secureDeleteFile(f);
-							}
-						}
-
 						String safeName = new File(item.name).getName();
 						if (safeName.isEmpty() || safeName.equals(".")
 								|| safeName.equals("..")) {
 							safeName = "attachment";
 						}
-						File tempFile = new File(cacheDir, safeName);
-						FileOutputStream fos = new FileOutputStream(tempFile);
-						fos.write(content);
-						fos.close();
-						java.util.Arrays.fill(content, (byte) 0);
-
-						Uri uri = FileProvider.getUriForFile(
-								VaultActivity.this,
-								getPackageName() + ".fileprovider",
-								tempFile
-						);
+						Uri uri = VaultShareRegistry.register(
+								VaultActivity.this, content, safeName);
+						pickerSharedUri = uri;
 
 						runOnUiThread(() -> {
 							ArrayList<Uri> uris = new ArrayList<>();
@@ -328,9 +316,6 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 		});
 	}
 
-	private static void secureDeleteFile(File f) {
-		SecureMemory.secureDeleteFile(f, 512L * 1024 * 1024, true);
-	}
 
 	private void showSetupFragment() {
 		VaultOnboardingFragment fragment = VaultOnboardingFragment.newInstance();
@@ -374,11 +359,44 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	}
 
 	public void onVaultUnlocked() {
-		showVaultDashboard();
+		com.professor.zerion.android.profile.ProfileStorage storage =
+				com.professor.zerion.android.AppModule.getAndroidComponent(this)
+						.profileStorage();
+		if (storage.offersSharedVaultClaim()) {
+			storage.sharedVaultClaimOffered();
+			showSharedVaultClaimDialog(storage);
+		}
+		showUnlockedHome();
+	}
+
+	private void showSharedVaultClaimDialog(
+			com.professor.zerion.android.profile.ProfileStorage storage) {
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this)
+				.setTitle(R.string.vault_claim_title)
+				.setMessage(R.string.vault_claim_message)
+				.setCancelable(false)
+				.setPositiveButton(R.string.vault_claim_move, (d, w) -> {
+					boolean claimed = storage.claimSharedVault();
+					Toast.makeText(this, claimed
+							? R.string.vault_claim_scheduled
+							: R.string.vault_claim_failed,
+							Toast.LENGTH_LONG).show();
+				})
+				.setNegativeButton(R.string.vault_claim_keep_shared, null)
+				.show();
 	}
 
 	public void onVaultCreated() {
-		showVaultDashboard();
+		showUnlockedHome();
+	}
+
+	private void showUnlockedHome() {
+		if (isPickerMode) {
+			showPickerFragment();
+		} else {
+			showVaultDashboard();
+		}
 	}
 
 	@Override

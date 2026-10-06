@@ -153,6 +153,18 @@ public abstract class ConversationItem {
 		return replyToMessageId != null && replyToText != null;
 	}
 
+	@Nullable
+	private Boolean replyToLocal;
+
+	@Nullable
+	public Boolean getReplyToLocal() {
+		return replyToLocal;
+	}
+
+	public void setReplyToLocal(@Nullable Boolean replyToLocal) {
+		this.replyToLocal = replyToLocal;
+	}
+
 	private final Map<String, Integer> reactions = new HashMap<>();
 
 	public Map<String, Integer> getReactions() {

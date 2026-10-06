@@ -12,11 +12,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Round-trips records through {@link ZmmFragmenter} and {@link ZmmReassembler}:
- * a large record splits into several frame-sized fragments and rejoins exactly,
- * regardless of arrival order, while a small record passes through untouched.
- */
 public class ZmmFragmentationTest {
 
 	private static final int CONTACT = 7;
@@ -117,7 +112,6 @@ public class ZmmFragmentationTest {
 		assertArrayEquals(b, doneB.payload);
 	}
 
-	/** Builds a raw TYPE_FRAGMENT record with attacker-chosen header fields. */
 	private static byte[] mkFragment(int origType, long messageId, int index,
 			int count, int chunkLen) {
 		byte[] body = new byte[ZmmFragmenter.FRAGMENT_HEADER_LENGTH + chunkLen];
@@ -130,35 +124,27 @@ public class ZmmFragmentationTest {
 
 	@Test
 	public void rejectsExcessiveFragmentCount() {
-		// A hostile peer claiming a huge fragment count must be dropped without
-		// allocating, not accepted (the count field is a uint16 up to 65535).
 		ZmmReassembler r = new ZmmReassembler();
 		byte[] hostile = mkFragment(ZmmConstants.TYPE_TEXT, 1, 0,
 				ZmmReassembler.MAX_FRAGMENTS_PER_MESSAGE + 1, 4);
 		assertNull(feed(r, hostile));
-		// A count at the bound is still accepted.
 		byte[] ok = mkFragment(ZmmConstants.TYPE_TEXT, 2, 0,
 				ZmmReassembler.MAX_FRAGMENTS_PER_MESSAGE, 4);
-		assertNull(feed(r, ok)); // held (incomplete), not rejected
+		assertNull(feed(r, ok));
 	}
 
 	@Test
 	public void enforcesPerContactPartialCapWithoutStarvingOthers() {
 		ZmmReassembler r = new ZmmReassembler();
-		// Fill one contact's partial cap with incomplete (count=2, only index 0)
-		// messages.
 		for (int m = 0; m < ZmmReassembler.MAX_PARTIAL_MESSAGES_PER_CONTACT; m++) {
 			assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 					fragPayload(ZmmConstants.TYPE_TEXT, m, 0, 2, 4)));
 		}
-		// A further distinct message from the same contact cannot start: neither
-		// fragment completes it (the partial is refused at creation).
 		long over = ZmmReassembler.MAX_PARTIAL_MESSAGES_PER_CONTACT;
 		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 				fragPayload(ZmmConstants.TYPE_TEXT, over, 0, 2, 4)));
 		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 				fragPayload(ZmmConstants.TYPE_TEXT, over, 1, 2, 4)));
-		// A different contact is unaffected — its two-fragment message completes.
 		assertNull(r.receive(CONTACT + 1, ZmmConstants.TYPE_FRAGMENT,
 				fragPayload(ZmmConstants.TYPE_TEXT, 99, 0, 2, 4)));
 		assertEquals(ZmmConstants.TYPE_TEXT, r.receive(CONTACT + 1,
@@ -174,7 +160,6 @@ public class ZmmFragmentationTest {
 					fragPayload(ZmmConstants.TYPE_TEXT, m, 0, 2, 4));
 		}
 		r.clearContact(CONTACT);
-		// After clearing, the contact can start fresh partials again and complete.
 		assertNull(r.receive(CONTACT, ZmmConstants.TYPE_FRAGMENT,
 				fragPayload(ZmmConstants.TYPE_TEXT, 500, 0, 2, 4)));
 		assertEquals(ZmmConstants.TYPE_TEXT, r.receive(CONTACT,

@@ -56,11 +56,6 @@ public class BroadcastDurabilityTest {
 		return TX0 + ":0";
 	}
 
-	/**
-	 * BTC-12: when no connection to any broadcast server can be opened, no
-	 * byte of the transaction left the device, so the send is a plain
-	 * failure with its inputs still spendable, not an uncertain broadcast.
-	 */
 	@Test
 	public void connectionFailureBeforeSendingIsFailedNotPossiblySent()
 			throws IOException {
@@ -98,11 +93,6 @@ public class BroadcastDurabilityTest {
 		assertEquals("inputs stay spendable", 100000, r.balanceSat);
 	}
 
-	/**
-	 * BTC-11: a sent transaction whose inputs are still unspent stays
-	 * reserved while the network can still confirm it, however old it is;
-	 * it is released only once both servers say it is absent.
-	 */
 	@Test
 	public void agedSentInputsStayReservedWhileTheTransactionIsLive()
 			throws IOException {
@@ -192,14 +182,6 @@ public class BroadcastDurabilityTest {
 		assertEquals(PendingTx.SENT, log.map.get("p1").state);
 	}
 
-	/**
-	 * A2-BTC-01: a server that relays the transaction and still answers
-	 * with an error must not free the inputs. The claimed rejection is an
-	 * uncertain broadcast: the record stays possibly sent, the inputs stay
-	 * reserved while the server shows them as unspent, a retry cannot pick
-	 * them, and once the server hides the inputs the record settles and the
-	 * payment stays visible as pending instead of vanishing as failed.
-	 */
 	@Test
 	public void aClaimedRejectionIsUncertainAndKeepsInputsReserved()
 			throws IOException {
@@ -232,7 +214,6 @@ public class BroadcastDurabilityTest {
 				w.pendingSummaries().get(0).state);
 	}
 
-	/** A2-BTC-13: only settled or failed records may leave the journal. */
 	@Test
 	public void onlySettledOrFailedRecordsArePrunable() {
 		long cutoff = 1_000L;

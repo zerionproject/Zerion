@@ -76,6 +76,15 @@ public interface ContactManager {
 			throws DbException, FormatException, GeneralSecurityException,
 			ContactExistsException, PendingContactExistsException;
 
+	PendingContact addPendingContact(String link, String alias,
+			String sharedOwnLink) throws DbException, FormatException,
+			GeneralSecurityException;
+
+	PendingContact addPendingContact(String link, String alias,
+			@javax.annotation.Nullable String sharedOwnLink,
+			boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException;
+
 	PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
 
@@ -124,12 +133,13 @@ public interface ContactManager {
 	boolean contactExists(AuthorId remoteAuthorId, AuthorId localAuthorId)
 			throws DbException;
 
-	/**
-	 * Derives a key for {@code label} and {@code inputs} from the secret
-	 * shared with contact {@code c} at pairing, which both sides hold. Used
-	 * for keys that either side must be able to derive again later, such as
-	 * the wrap key of a stored voice memo.
-	 */
+	void setContactVerified(ContactId c) throws DbException;
+
+	boolean isConnectionOutOfSync(ContactId c) throws DbException;
+
+	boolean isConnectionOutOfSync(Transaction txn, ContactId c)
+			throws DbException;
+
 	SecretKey deriveContactKey(ContactId c, String label, byte[]... inputs)
 			throws DbException;
 

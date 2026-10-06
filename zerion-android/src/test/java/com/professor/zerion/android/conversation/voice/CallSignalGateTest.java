@@ -7,11 +7,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * PROTO-08: incoming CALL_OFFER admission must reject stale offers, rate-limit
- * per contact, and de-duplicate call ids; CALL_ANSWER must be admissible only
- * when we placed the call and are still ringing or connecting.
- */
 public class CallSignalGateTest {
 
 	private final AtomicLong now = new AtomicLong(1_000_000_000L);

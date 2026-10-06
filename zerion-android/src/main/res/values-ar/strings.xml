@@ -89,7 +89,6 @@
   <string name="tor_plugin_status_disabled_battery">ضُبط Zerion على عدم استخدام الإنترنت عند التشغيل على البطارية</string>
   <string name="tor_plugin_status_disabled_country_blocked">ضُبط Zerion على عدم استخدام الإنترنت في هذا البلد</string>
   
-  <string name="transport_lan_long">نفس شبكة الWi-Fi </string>
 
   <string name="reminder_notification_title">تم تسجيل الخروج من Zerion</string>
   <string name="reminder_notification_text">الرجاء اللمس لإعادة الدخول</string>
@@ -236,7 +235,6 @@
   <string name="connecting_to_device">يتم الإتصال بالجهاز\u2026</string>
   <string name="authenticating_with_device">يتم التوثيق مع الجهاز\u2026</string>
   <string name="connection_error_title">لم يمكن الإتصال بجهة إتصالك</string>
-  <string name="connection_error_feedback">إذا إستمرت المشكلة، رجاءًا <a href="feedback">أرسل تقرير </a> لمساعدتنا على تحسين التطبيق.</string>
   
   <string name="add_contact_remotely_title_case">إضافة جهة اتصال عن بعد </string>
   <string name="add_contact_nearby_title">إضافة جهة اتصال قريبة</string>
@@ -428,8 +426,6 @@
   
   <string name="tor_network_setting_summary">تلقائيا: %1$s (في %2$s)</string>
   <string name="tor_mobile_data_title">إستخدام بيانات الجوال</string>
-  <string name="tor_only_when_charging_title">الاتصال بالإنترنت فقط عن الشحن</string>
-  <string name="tor_only_when_charging_summary">تعطيل الاتصال بالانترنت عند تشغيل الجهاز على البطارية</string>
   
   <string name="security_settings_title">الأمان</string>
   <string name="pref_lock_title">قفل التطبيق</string>
@@ -486,73 +482,9 @@
   <string name="choose_ringtone_title">اختر نغمة</string>
   <string name="cannot_load_ringtone">لا يمكن تشغيل النغمة</string>
   
-  <string name="mailbox_settings_title">صندوق البريد</string>
-  <string name="mailbox_setup_title">إعداد صندوق البريد</string>
-  <string name="mailbox_setup_intro">يتيح صندوق البريد (Mailbox) لجهات اتصالك إرسال رسائل إليك أثناء عدم الاتصال بالإنترنت. سيتلقى صندوق البريد رسائلك ويخزنها حتى تتصل بالإنترنت.\n
-\nيمكنك تثبيت تطبيق Zerion Mailbox على جهاز احتياطي. أبقِ جهازك متصلاً بمصدر الطاقة وشبكة Wi-Fi حتى يكون متصلاً بالإنترنت دائمًا.</string>
-  <string name="mailbox_setup_download">أولاً، ثبّت تطبيق Mailbox على جهاز آخر من خلال البحث عن \"Zerion Mailbox\" على متجر Google أو في أي مكان قمت فيه بتنزيل Zerion.\n
-\nثم اربط صندوق البريد (Mailbox) الخاص بك مع Zerion عن طريق مسح رمز QR الذي يظهر في تطبيق Mailbox.</string>
-  <string name="mailbox_setup_download_link">مشاركة رابط التنزيل</string>
-  <string name="mailbox_setup_connecting">جارِ الاتصال بصندوق البريد…</string>
   
-  <string name="mailbox_setup_connecting_info">قد يستغرق هذا ما يصل إلى %1s</string>
-  <string name="mailbox_setup_already_paired_title">صندوق البريد مرتبط بالفعل</string>
-  <string name="mailbox_setup_already_paired_description">قم بإلغاء ربط صندوق البريد على جهازك الآخر وحاول مرة أخرى.</string>
-  <string name="mailbox_setup_io_error_title">تعذر الاتصال</string>
-  <string name="mailbox_setup_io_error_description">تأكد من أن كلا الجهازين متصلان بالإنترنت وحاول مرة أخرى.</string>
-  <string name="mailbox_setup_assertion_error_title">خطأ في صندوق البريد</string>
-  <string name="mailbox_setup_assertion_error_description">يُرجى إرسال الملاحظات (مع بيانات مجهولة المصدر) عبر تطبيق Zerion إذا استمرت المشكلة.</string>
-  <string name="mailbox_setup_camera_error_description">تعذر الوصول إلى الكاميرا. حاول مرة أخرى، ربما بعد إعادة تشغيل الجهاز.</string>
-  <string name="mailbox_setup_paired_title">متصل</string>
-  <string name="mailbox_setup_paired_description">لقد ربطت صندوق بريدك بـ Zerion بنجاح.\n
-\nحافظ على اتصال صندوق بريدك بمصدر الطاقة وشبكة Wi-Fi حتى يكون متصلاً بالإنترنت دائمًا.</string>
-  <string name="tor_offline_title">غير متصل</string>
-  <string name="tor_offline_description">\nبعد ذلك، انتظر حتى يتحول لون رمز الكرة الأرضية في شاشة إعدادات الاتصال إلى اللون الأخضر.</string>
-  <string name="tor_offline_button_check">تحقق من إعدادات الاتصال</string>
-  <string name="mailbox_status_title">حالة صندوق البريد</string>
-  <string name="mailbox_status_connected_title">صندوق البريد قيد التشغيل</string>
-  <string name="mailbox_status_problem_title">يواجه Zerion مشكلة في الاتصال بصندوق البريد</string>
-  <string name="mailbox_status_failure_title">صندوق البريد غير متاح</string>
-  <string name="mailbox_status_app_too_old_title">Zerion قديم جداً</string>
-  <string name="mailbox_status_app_too_old_message">حدّث بريار إلى أحدث إصدار من التطبيق وحاول مرة أخرى.</string>
-  <string name="mailbox_status_mailbox_too_old_title">صندوق البريد قديم جدًا</string>
-  <string name="mailbox_status_mailbox_too_old_message">قم بتحديث صندوق البريد  Mailbox الخاص بك إلى أحدث إصدار من التطبيق وحاول مرة أخرى.</string>
-  <string name="mailbox_status_check_button">تحقق من اتصال</string>
   
-  <string name="mailbox_status_connected_info">آخر اتصال: %s</string>
   
-  <string name="mailbox_status_connected_never">أبداً</string>
-  <string name="mailbox_status_unlink_button">فك الارتباط</string>
-  <string name="mailbox_status_unlink_dialog_title">هل تريد إلغاء ارتباط صندوق البريد؟</string>
-  <string name="mailbox_status_unlink_dialog_question">هل أنت متأكد أنك تريد إلغاء ربط صندوق بريدك؟</string>
-  <string name="mailbox_status_unlink_dialog_warning">إذا قمت بإلغاء ربط صندوق بريدك، فلن تتمكن من تلقي الرسائل عندما يكون Zerion غير متصل.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">ألغيت ربط صندوق بريدك</string>
-  <string name="mailbox_status_unlink_no_wipe_message">في المرة القادمة التي يمكنك فيها الوصول إلى جهاز Mailbox الخاص بك، يُرجى فتح تطبيق Mailbox والنقر على الزر \"Unlink\" لإكمال العملية.\n\nإذا لم يعد بإمكانك الوصول إلى جهاز Mailbox الخاص بك، فلا تقلق. يتم تعمية بياناتك بحيث تظل آمنة حتى لو لم تكمل العملية.</string>
-  <string name="mailbox_status_unlink_success">ألغيت ربط صندوق بريدك</string>
-  <string name="mailbox_error_notification_channel_title">مشكلة صندوق بريد Zerion</string>
-  <string name="mailbox_error_notification_title">صندوق بريد Zerion غير متوفر</string>
-  <string name="mailbox_error_notification_text">انقر لإصلاح المشكلة.</string>
-  <string name="mailbox_error_wizard_button">اصلح المشكلة</string>
-  <string name="mailbox_error_wizard_title">معالج استكشاف أخطاء صندوق البريد وإصلاحها</string>
-  <string name="mailbox_error_wizard_question1">هل لديك حق الوصول إلى جهاز صندوق بريدك؟</string>
-  <string name="mailbox_error_wizard_answer1">نعم ، يمكنني الوصول إليه الآن.</string>
-  <string name="mailbox_error_wizard_answer2">ليس الآن ، لكن يمكنني الوصول إليه لاحقًا.</string>
-  <string name="mailbox_error_wizard_answer3">لا ، لم يعد بإمكاني الوصول إليه.</string>
-  <string name="mailbox_error_wizard_info1_1">تأكد من أن جهاز صندوق البريد قيد التشغيل ومتصل بالإنترنت.</string>
-  <string name="mailbox_error_wizard_question1_1">افتح تطبيق صندوق البريد Mailbox. ماذا ترى؟</string>
-  <string name="mailbox_error_wizard_answer1_1">أرى إرشادات حول إعداد صندوق البريد Mailbox</string>
-  <string name="mailbox_error_wizard_answer1_2">أرى رمز QR</string>
-  <string name="mailbox_error_wizard_answer1_3">أرى \"صندوق البريد قيد التشغيل\"</string>
-  <string name="mailbox_error_wizard_answer1_4">أرى \"الجهاز غير متصل بالإنترنت\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">يُرجى إلغاء ربط  صندوق البريد Mailbox الخاص بك باستخدام الزر أدناه، ثم اتباع الإرشادات الموجودة على جهاز Mailbox لربطه مرة أخرى.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">يُرجى إلغاء ربط صندوق البريد Mailbox الخاص بك باستخدام الزر أدناه، ثم مسح رمز الاستجابة السريعة QR للربط مرة أخرى</string>
-  <string name="mailbox_error_wizard_info1_1_3">الرجاء استخدام الزر أدناه للتحقق من الاتصال بين Zerion وصندوق البريد.\n\n
-إذا فشل الاتصال مرة أخرى:\n
-\u2022 تأكد من تحديث تطبيقي Mailbox و Zerion إلى الإصدار الأحدث.\n
-\u2022 أعد تشغيل أجهزة Mailbox و Zerion وحاول مرة أخرى.</string>
-  <string name="mailbox_error_wizard_info1_1_4">تأكد من أن جهاز صندوق البريد متصل بالإنترنت بشكل صحيح.\n\nتأكد من أن الساعة الموجودة على جهاز صندوق البريد تعرض الوقت والتاريخ والمنطقة الزمنية الصحيحة.\n\nتأكد من تحديث تطبيقات صندوق البريد و Zerion إلى الإصدار الأحدث.\ n\nأعِد تشغيل أجهزة صندوق البريد و Zerion وحاول مرة أخرى.</string>
-  <string name="mailbox_error_wizard_info2">يرجى العودة إلى هذه الشاشة عندما يكون لديك حق الوصول إلى الجهاز.</string>
-  <string name="mailbox_error_wizard_info3">الرجاء إلغاء ربط صندوق بريك باستخدام الزر أدناه.\n\nبعد إلغاء ربط صندوق البريد القديم، يمكنك إعداد صندوق بريد جديد في أي وقت.</string>
   
   <string name="about_title">عن </string>
   <string name="zerion_version">إصدار Zerion: %s</string>
@@ -560,7 +492,6 @@
   <string name="links">روابط</string>
   <string name="zerion_website">\u2022 <a href="">الموقع إلكتروني</a></string>
   <string name="zerion_source_code">\u2022 <a href="">الشيفرة المصدرية</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">سجل التغييرات</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">سياسة الخصوصية</a></string>
   
   <string name="translator_thanks">شكرا لجميع المساهمين في Localization Lab</string>
@@ -581,43 +512,13 @@
   <string name="pref_category_actions">الإجراءات</string>
   <string name="share_app_link">مشاركة رابط التنزيل</string>
   <string name="share_app_link_text">نزّل Zerion في %s</string>
-  <string name="send_feedback">أرسل ملاحظاتك</string>
   
   <string name="link_warning_title">تنبيه بوجود رابط</string>
   <string name="link_warning_intro">أنت بصدد فتح هذا الرابط في تطبيق خارجي</string>
   <string name="link_warning_text">يمكن لهذا كشف هويّتك. تأكّدوا من ثقتكم بالشخص الذي أرسل لكم هذا الرّابط خذوا بعين الاعتبار فتح الرّابط في متصفّح تور (Tor).</string>
   <string name="link_warning_open_link">افتح الرابط</string>
   
-  <string name="crash_report_title">تقرير إنهيار Zerion</string>
-  <string name="zerion_crashed">آسف، لقد تحطم Zerion</string>
-  <string name="not_your_fault">هذا ليس خطؤك.</string>
-  <string name="please_send_report">الرجاء مساعدتنا في تحسين Zerion عبر إرسال تقرير الإنهيار.</string>
-  <string name="report_is_encrypted">نعدك بأن التقرير سيرسل مشفرًا وبشكل آمن.</string>
-  <string name="feedback_title">الإفادة حول التطبيق</string>
-  <string name="describe_crash">وصف ما حدث (إختياري)</string>
-  <string name="enter_feedback">ادخال ملاحظاتك</string>
-  <string name="optional_contact_email">بريدك الالكتروني (إختياري)</string>
-  <string name="privacy_policy">بإرسال البيانات إلينا فإنك توافق على <a href="">سياسة الخصوصية</a></string>
-  <string name="include_debug_report_crash">تضمين بيانات مجهولة عن الإنهيار</string>
-  <string name="include_debug_report_feedback">تضمين بيانات مجهولة عن هذا الجهاز</string>
-  <string name="dev_report_user_info">معلومات المستخدم</string>
-  <string name="dev_report_basic_info">المعلومات الأساسية</string>
-  <string name="dev_report_device_info">معلومات الجهاز</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">معلومات الوقت</string>
-  <string name="dev_report_memory">الذاكرة</string>
-  <string name="dev_report_storage">التخزين</string>
-  <string name="dev_report_connectivity">الاتصال</string>
-  <string name="dev_report_network_usage">استهلاك الشبكة</string>
-  <string name="dev_report_build_config">تهيئة البناء</string>
-  <string name="dev_report_logcat">سجل التطبيق</string>
-  <string name="dev_report_device_features">مميزات الجهاز</string>
-  <string name="send_report">ارسال التقرير</string>
   <string name="close">إغلاق</string>
-  <string name="dev_report_sending">ارسال التعليقات</string>
-  <string name="dev_report_sent">أرسلت ملاحظات</string>
-  <string name="dev_report_saved">تم حفظ التقرير. سيتم إرساله عند تسجيل الدخول إلى Zerion في المرة القادمة.</string>
-  <string name="dev_report_error">خطأ: فشل إرسال التقرير</string>
   
   <string name="progress_title_logout">تسجيل الخروج من Zerion...</string>
   
@@ -631,13 +532,10 @@
   <string name="permission_camera_request_body">للتمكن من مسح رمز QR، يحتاج Zerion إلى إستعمال الكاميرا.</string>
   <string name="permission_location_title">إذن معرفة الموقع </string>
   <string name="permission_nearby_devices_title">إذن الأجهزة القريبة</string>
-  <string name="permission_location_request_body">لاكتشاف أجهزة بلوتوث، يحتاج Zerion لإذن بالوصول إلى موقعكم.\n\n لا يخزّن Zerion موقعكم ولا يشاركه مع أي شخص. </string>
   <string name="permission_camera_location_title">الكاميرا والموقع</string>
   <string name="permission_camera_location_request_body">لمسح رمز الاستجابة السّريعة أو QR، يحتاج Zerion للوصول إلى الكاميرا. \n\n لاكتشاف أجهزة بلوتوث، يحتاج Zerion لإذن بالوصول إلى موقعكم. \n\n لا يخزّن Zerion موقعكم ولا يشاركه مع أي شخص. </string>
   <string name="permission_camera_denied_body">قد رفضت إعطاء إذن الكاميرا، لكن إضافة جهات إتصال يتطلب إستعمال الكاميرا.\n\nالرجاء منح الإذن.</string>
-  <string name="permission_location_denied_body">لقد رفضت الوصول إلى موقعك، لكن Zerion يحتاج إلى هذا الإذن لاكتشاف أجهزة البلوتوث.\n\nالرجاء التفكير في منح حق الوصول.</string>
   <string name="permission_location_setting_title">إعداد الموقع</string>
-  <string name="permission_location_setting_body">يجب تشغيل إعداد الموقع بجهازك للعثور على أجهزة أخرى عبر البلوتوث. الرجاء تفعيل الموقع للمتابعة. ويمكنك تعطيله مرة أخرى بعد ذلك.</string>
   <string name="permission_location_setting_button">تفعيل الموقع</string>
   <string name="lock_unlock">فك قفل Zerion</string>
   <string name="lock_unlock_verbose">ادخال رمز، نمط أو كلمة سر جهازك لإلغاء قفل Zerion</string>
@@ -727,14 +625,10 @@
 	<string name="settings_section_tor_network">شبكة TOR</string>
 	<string name="settings_section_mode">وضع الخصوصية</string>
 	<string name="offline_mode_title">وضع عدم الاتصال (الحذر الشديد)</string>
-	<string name="offline_mode_summary">حظر كل الإنترنت. تواصل فقط مع جهات الاتصال القريبة عبر الشبكة المتداخلة</string>
-	<string name="offline_mode_info">يوقف وضع عدم الاتصال Tor وI2P تمامًا، فلا يُجري التطبيق أي اتصال بالإنترنت على الإطلاق. يمكنك الوصول فقط إلى جهات الاتصال المقترنة مسبقًا والقريبة منك، عبر Bluetooth.</string>
 	<string name="offline_mode_confirm_title">تشغيل وضع عدم الاتصال؟</string>
-	<string name="offline_mode_confirm_message">هذا يحظر كل الإنترنت: يتم إيقاف Tor وI2P ولا يُجري التطبيق أي اتصال بالشبكة. يمكن الوصول فقط إلى جهات الاتصال القريبة المقترنة مسبقًا، عبر الشبكة المتداخلة دون اتصال. أوقفه للعودة إلى الاتصال بالإنترنت.</string>
 	<string name="offline_mode_confirm_button">الانتقال إلى وضع عدم الاتصال</string>
 	<string name="network_status_off">متوقف</string>
 	<string name="offline_mode_transport_off">متوقف في وضع عدم الاتصال</string>
-	<string name="offline_mode_banner">وضع عدم الاتصال · الإنترنت محظور · الشبكة المتداخلة فقط</string>
 	<string name="settings_section_overlay">الشبكات التراكبية</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">التوجيه أيضًا عبر شبكة I2P</string>
@@ -771,7 +665,6 @@
 	<string name="settings_section_appearance">المظهر</string>
 	<string name="identity_section_title">التحقق من الهوية</string>
 	<string name="identity_safety_number_label">رقم الأمان</string>
-	<string name="identity_safety_number_explain">قارن هذه الأرقام الستين مع جهة اتصالك شخصيًا أو عبر قناة موثوقة. إذا تطابقت على كلا الجهازين، فمحادثتك مؤمّنة من طرف إلى طرف.</string>
 	<string name="identity_my_fingerprint_label">بصمتي</string>
 	<string name="identity_their_fingerprint_label">بصمتهم</string>
 	<string name="identity_copied">تم النسخ إلى الحافظة</string>
@@ -826,8 +719,6 @@
 	<string name="vault_settings_change_master">تغيير كلمة المرور الرئيسية</string>
 	<string name="vault_settings_change_master_summary">تحديث كلمة مرور الخزنة</string>
 	<string name="vault_settings_autolock">مهلة القفل التلقائي</string>
-	<string name="vault_settings_biometric">الفتح بالمقاييس الحيوية</string>
-	<string name="vault_settings_biometric_summary">استخدم فتح بصمة الإصبع أو الوجه</string>
 	<string name="vault_settings_clear_clipboard">مسح الحافظة بعد</string>
 	<string name="vault_settings_hide_content">إخفاء المحتوى في مبدّل التطبيقات</string>
 	<string name="vault_settings_hide_content_summary">تمويه محتوى الخزنة عند التبديل بين التطبيقات</string>
@@ -937,13 +828,10 @@
 	<string name="channels_invite_preparing">جارٍ تحضير رابط الدعوة…</string>
 	<string name="channels_invite_not_ready">القناة ليست جاهزة للمشاركة بعد. تأكد من أنك متصل وحاول مرة أخرى.</string>
 	<string name="channels_invite_rotate_confirm_title">تدوير رابط الدعوة؟</string>
-	<string name="channels_invite_rotate_confirm_message">لن يتمكن أي شخص لديه الرابط القديم بالفعل من الانضمام مرة أخرى. يستمر المشتركون الحاليون في تلقّي المنشورات.</string>
 	<string name="channels_leave_confirm_title">مغادرة القناة؟</string>
 	<string name="channels_leave_confirm_message">ستتم إزالة كل المنشورات المخزّنة محليًا لهذه القناة من جهازك.</string>
 	<string name="channels_leave_confirm_action">مغادرة</string>
 	<string name="channels_delete_confirm_title">حذف القناة؟</string>
-	<string name="channels_delete_confirm_message">هذا يحذف القناة نهائيًا للجميع. سيفقد المشتركون كل المنشورات في المرة التالية التي يتصلون فيها. لا يمكن التراجع.</string>
-	<string name="channels_delete_confirm_action">حذف للجميع</string>
 	<string name="channels_action_delete_channel">حذف القناة</string>
 	<string name="channels_publisher_offline_note">سيتلقى المشتركون منشوراتك عندما يصل تطبيقهم إلى عنوان onion الخاص بقناتك. أبقِ Zerion قيد التشغيل للحصول على أفضل تسليم.</string>
 	<string name="channels_ttl_label">انتهاء الصلاحية</string>
@@ -960,7 +848,6 @@
 	<string name="channels_delegations_role_owner">المالك</string>
 	<string name="channels_delegations_role_editor">محرّر</string>
 	<string name="channels_delegations_role_you">أنت</string>
-	<string name="channels_delegations_help">يمكنك إضافة محرّرين للمساعدة في النشر في هذه القناة. اضغط مطولًا على محرّر لإبطال صلاحيته. يمكن للمالك فقط النشر أو التثبيت أو الحذف أو إضافة محرّرين آخرين.</string>
 	<string name="channels_delegations_add">إضافة محرّر</string>
 	<string name="channels_delegations_revoke">إبطال</string>
 	<string name="channels_delegations_paste_pubkey">الصق المفتاح العام الهجين للمحرّر (base32)</string>
@@ -1004,10 +891,8 @@
 	<string name="channels_leave_failed">تعذّرت مغادرة القناة</string>
 	<string name="channels_ban_failed">تعذّر حظر هذا المشترك</string>
 	<string name="channels_announce_title">الإعلان عن نفسك؟</string>
-	<string name="channels_announce_message">سيرى مالك القناة اسم العرض الذي اخترته ومفتاحك العام. يمكنك البقاء مجهولًا بدلًا من ذلك. المالك وحده يرى المشتركين المُعلَنين.</string>
 	<string name="channels_announce_name_hint">اسم العرض</string>
 	<string name="channels_announce_action">إعلان</string>
-	<string name="channels_announce_skip">البقاء مجهولًا</string>
 	<string name="channels_announce_failed">تعذّر الإعلان</string>
 	<string name="channels_subscribers_title">المشتركون</string>
 	<string name="channels_subscribers_empty">لم يُعلن أي مشترك عن نفسه بعد.</string>
@@ -1057,7 +942,6 @@
 	<string name="channels_comments_count_one">تعليق واحد</string>
 	<string name="channels_create_require_approval">مراجعة المشتركين الجدد قبل أن يتمكنوا من القراءة</string>
 	<string name="channels_apply_title">التقديم للانضمام</string>
-	<string name="channels_apply_message">يجب أن يوافق مالك القناة على طلبك قبل أن تتمكن من قراءة المنشورات. سيرى المالك اسم العرض ومفتاحك العام.</string>
 	<string name="channels_apply_action">تقديم</string>
 	<string name="channels_apply_failed">تعذّر إرسال الطلب</string>
 	<string name="channels_approval_pending_banner">في انتظار موافقة المالك على طلبك…</string>
@@ -1092,7 +976,6 @@
 	<string name="network_uptime_label">مدة التشغيل:</string>
 	<string name="network_hidden_service_label">الخدمة الخفية:</string>
 	<string name="network_mode_title">وضع الشبكة الآمن</string>
-	<string name="network_mode_description">يتم توجيه كل الاتصالات عبر شبكة Tor لأقصى قدر من الخصوصية والأمان. اتصالك مشفّر من طرف إلى طرف وتبقى هويتك مجهولة.</string>
 	<string name="ongoing_notification_exit_action">خروج</string>
 	<string name="voice_message">رسالة صوتية</string>
 	<string name="play_pause">تشغيل/إيقاف مؤقت</string>
@@ -1179,7 +1062,6 @@
 	<string name="pref_force_complete_rotation_done">اكتمل التدوير</string>
 	<string name="pref_force_complete_rotation_not_announcing">لا يوجد تدوير قيد التنفيذ</string>
 	<string name="rotation_notification_channel_title">تدوير العناوين</string>
-	<string name="rotation_notification_own_body">تم تدوير عنوانك الآمن لتحقيق السرية التقدمية.</string>
 	<string name="rotation_notification_peer_body">قامت إحدى جهات الاتصال بتحديث عنوانها الآمن.</string>
 	<string name="pref_calls_section_title">المكالمات</string>
 	<string name="pref_voice_calls_title">المكالمات الصوتية</string>
@@ -1449,7 +1331,6 @@
 	<string name="pref_accent_blue">أزرق</string>
 	<string name="pref_theme_amoled">أسود AMOLED</string>
 	<string name="tor_mobile_data_summary">السماح بالاتصالات عبر شبكة الهاتف الخلوي</string>
-	<string name="tor_info_message">يستخدم Zerion شبكة Tor حصريًا للاتصال الآمن والمجهول. يتم توجيه كل الاتصالات عبر Tor.</string>
 	<string name="tor_custom_bridges_title">جسور مخصصة</string>
 	<string name="tor_custom_bridges_summary_none">غير محدد</string>
 	<string name="tor_custom_bridges_dialog_message">إذا تعذّر على Tor الاتصال في مكانك، فالصق أسطر الجسور هنا، سطرًا لكل جسر. تُجرَّب قبل الجسور المدمجة. يمكنك الحصول على الجسور من bridges.torproject.org أو GetBridgesBot على Telegram.</string>
@@ -1494,9 +1375,6 @@
 	<string name="transfer_send_title">الإرسال إلى هاتف جديد</string>
 	<string name="transfer_receive_password_message">عيّن كلمة مرور لحماية الحساب المُستقبَل على هذا الهاتف. ستسجّل الدخول بها.</string>
 	<string name="transfer_receive_show_qr">امسح هذا الرمز بالهاتف القديم</string>
-	<string name="transfer_sas_title">تحقق من رقم الأمان</string>
-	<string name="transfer_sas_message">يجب أن يُظهر كلا الهاتفين الرقم نفسه:\n\n%1$s\n\nهل يتطابق على الهاتف الآخر؟</string>
-	<string name="transfer_sas_matches">إنه يتطابق</string>
 	<string name="transfer_done_title">تم</string>
 	<string name="transfer_failed_title">فشل النقل</string>
 	<string name="transfer_failed_message">لم يكتمل النقل. تأكد من أن كلا الهاتفين متصل بـ Tor وحاول مرة أخرى.</string>
@@ -1534,7 +1412,6 @@
 	<string name="profiles_switch_title">تبديل الملف الشخصي</string>
 	<string name="profiles_switch_summary">سجّل الخروج، ثم سجّل الدخول بكلمة مرور الملف الشخصي المستهدف.</string>
 	<string name="profiles_delete_title">حذف هذا الملف الشخصي</string>
-	<string name="profiles_delete_summary">امسح بيانات هذا الملف الشخصي بأمان. لا يمكن التراجع.</string>
 	<string name="profiles_add_dialog_title">إنشاء ملف شخصي جديد</string>
 	<string name="profiles_add_dialog_message">سيتم تسجيل خروجك. بمجرد إنشاء الملف الشخصي الجديد، سجّل الدخول بكلمة مروره لاستخدامه.</string>
 	<string name="profiles_add_name_hint">اسم الملف الشخصي</string>
@@ -1552,7 +1429,6 @@
 	<string name="profiles_switch_action">تسجيل الخروج</string>
 	<string name="profiles_switch_progress">جارٍ تبديل الملف الشخصي…</string>
 	<string name="profiles_delete_dialog_title">حذف هذا الملف الشخصي؟</string>
-	<string name="profiles_delete_dialog_message">سيتم مسح كل الرسائل وجهات الاتصال والهوية لهذا الملف الشخصي بأمان. لا يمكن التراجع.</string>
 	<string name="profiles_delete_action">حذف الملف الشخصي</string>
 	<string name="profiles_delete_last_warning">هذا هو الملف الشخصي الوحيد. حذفه سيعيد ضبط التطبيق.</string>
 	<string name="pref_default_disappearing_title">مؤقّت الاختفاء الافتراضي</string>
@@ -1628,9 +1504,6 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">الأمان الكلاسيكي</string>
 	<string name="security_level_classical_short">كلاسيكي</string>
-	<string name="security_level_post_quantum_description">تشفير وتوقيعات مقاومة للكم. آمنة ضد مهاجمي اليوم وضد حواسيب الكم المستقبلية.</string>
-	<string name="security_level_legacy_auth_description">تشفير مقاوم للكم، لكن التوقيعات لا تزال تستخدم المعيار الأقدم. أعد إضافة جهة الاتصال هذه بمجرد تحديثكما معًا للحصول على حماية كاملة.</string>
-	<string name="security_level_classical_description">تشفير كلاسيكي فقط. يحتاج الطرفان إلى الترقية إلى Zerion للحصول على حماية مقاومة للكم.</string>
 	<string name="media">الوسائط</string>
 	<string name="login_account_locked">تم قفل الحساب بسبب كثرة المحاولات الفاشلة. يرجى الانتظار %1$d دقيقة و%2$d ثانية.</string>
 	<string name="login_final_warning">تحذير: بعد 3 محاولات فاشلة أخرى، سيتم حذف كل البيانات نهائيًا للأمان.</string>
@@ -1670,7 +1543,6 @@
 	<string name="wipe_password_remove_failed">فشلت إزالة كلمة مرور المسح</string>
 	<string name="wipe_password_triggered_title">تم تفعيل المسح الطارئ</string>
 	<string name="wipe_password_triggered_message">تم اكتشاف كلمة مرور المسح. سيتم حذف كل البيانات نهائيًا الآن.</string>
-	<string name="wipe_password_warning">⚠️ تحذير: إدخال كلمة مرور المسح سيحذف كل البيانات من هذا الجهاز فورًا ونهائيًا. لا يمكن التراجع عن هذا.</string>
 	<string name="set">تعيين</string>
 	<string name="remove">إزالة</string>
 	<string name="zerion_call">مكالمة Zerion</string>
@@ -1722,11 +1594,6 @@
 	<string name="vault_no_file_picker">لا يوجد مُنتقي ملفات متاح</string>
 	<string name="vault_settings_wipe_message">سيؤدي هذا إلى حذف كل بيانات الخزنة نهائيًا. لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد تمامًا؟</string>
 	<string name="vault_wipe_button">مسح الخزنة</string>
-	<string name="vault_biometric_enabled">تم تفعيل المصادقة بالمقاييس الحيوية</string>
-	<string name="vault_biometric_no_fingerprints">لم يتم تسجيل بصمات</string>
-	<string name="vault_biometric_no_hardware">أجهزة المقاييس الحيوية غير متوفرة</string>
-	<string name="vault_biometric_unsupported">المصادقة بالمقاييس الحيوية غير مدعومة على هذا الجهاز</string>
-	<string name="vault_biometric_disabled">تم تعطيل المصادقة بالمقاييس الحيوية</string>
 	<string name="vault_document_opening">جارٍ فتح %1$s…</string>
 	<string name="vault_document_open_error">تعذّر فتح المستند: النشاط غير جاهز</string>
 	<string name="vault_document_details_title">تفاصيل المستند</string>
@@ -1737,7 +1604,6 @@
 	<string name="vault_document_export_failed">فشل تصدير المستند</string>
 	<string name="vault_document_load_failed">فشل تحميل المستند: %1$s</string>
 	<string name="vault_zenc_export_title">تعيين كلمة مرور التصدير</string>
-	<string name="vault_zenc_export_message_download">عيّن كلمة مرور لتشفير ملف .zenc. يمكن مشاركة هذا الملف بأمان.</string>
 	<string name="vault_zenc_export_message_share">عيّن كلمة مرور لتشفير ملف .zenc. ستحتاج إلى مشاركة كلمة المرور هذه بشكل منفصل.</string>
 	<string name="vault_zenc_password_required">كلمة المرور مطلوبة لتصدير .zenc</string>
 	<string name="vault_document_export_generic_failed">فشل التصدير</string>
@@ -1950,7 +1816,6 @@
 	<string name="wallet_receive_new">عنوان جديد</string>
 	<string name="wallet_node_hint">انقر على خادم لاستخدامه. اضغط مطولًا على خادم مخصص لإزالته.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">عنوان خاص قابل لإعادة الاستخدام. لا يمكن ربط المدفوعات إليه على السلسلة. يفحص الاكتشاف البيانات العامة عبر Tor؛ ولا تغادر مفاتيحك الجهاز أبدًا.</string>
 	<string name="wallet_sp_balance">تم اكتشاف: %1$s</string>
 	<string name="wallet_sp_scanned">تم الفحص حتى الكتلة %1$d</string>
 	<string name="wallet_sp_set_oracle">مصدر الفحص</string>

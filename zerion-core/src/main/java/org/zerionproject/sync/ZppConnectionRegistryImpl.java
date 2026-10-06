@@ -16,20 +16,11 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * Tracks online contacts and drives their outgoing sync. When a connection
- * opens, it starts a {@link ZppOutgoingSource} that feeds that connection's send
- * scheduler from the database; when the connection closes, it stops the source.
- */
 @ThreadSafe
 @NotNullByDefault
 @Singleton
 public class ZppConnectionRegistryImpl implements ZppConnectionRegistry {
 
-	/**
-	 * The delivery latency budget the retransmission scheduler assumes for a Tor
-	 * connection. Matches the transport's round-trip expectation.
-	 */
 	private static final long MAX_LATENCY_MS = 30_000L;
 
 	private final DatabaseComponent db;
@@ -38,6 +29,7 @@ public class ZppConnectionRegistryImpl implements ZppConnectionRegistry {
 	private final TaskScheduler taskScheduler;
 	private final Clock clock;
 	private final ZmmSyncCodec codec;
+	private final LocalMessageLog localMessages;
 
 	private final Map<ZppSendScheduler, ZppOutgoingSource> sources =
 			new ConcurrentHashMap<>();
@@ -45,7 +37,9 @@ public class ZppConnectionRegistryImpl implements ZppConnectionRegistry {
 	@Inject
 	public ZppConnectionRegistryImpl(DatabaseComponent db,
 			@DatabaseExecutor Executor dbExecutor, EventBus eventBus,
-			TaskScheduler taskScheduler, Clock clock, ZmmSyncCodec codec) {
+			TaskScheduler taskScheduler, Clock clock, ZmmSyncCodec codec,
+			LocalMessageLog localMessages) {
+		this.localMessages = localMessages;
 		this.db = db;
 		this.dbExecutor = dbExecutor;
 		this.eventBus = eventBus;
@@ -59,7 +53,7 @@ public class ZppConnectionRegistryImpl implements ZppConnectionRegistry {
 			int maxRecordBytes) {
 		ZppOutgoingSource source = new ZppOutgoingSource(db, dbExecutor, eventBus,
 				taskScheduler, clock, codec, new ContactId(contactId),
-				MAX_LATENCY_MS, maxRecordBytes, scheduler);
+				MAX_LATENCY_MS, maxRecordBytes, scheduler, localMessages);
 		sources.put(scheduler, source);
 		source.start();
 	}

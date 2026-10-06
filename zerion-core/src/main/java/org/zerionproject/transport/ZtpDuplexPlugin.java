@@ -10,11 +10,14 @@ import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.keyagreement.KeyAgreementListener;
 import org.zerionproject.core.api.plugin.ConnectionHandler;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginCallback;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
+import org.zerionproject.core.api.plugin.TorClockSkewStatus;
+import org.zerionproject.core.api.plugin.event.TorClockSkewEvent;
 import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.PluginException;
 import org.zerionproject.core.api.plugin.TorConstants;
@@ -33,8 +36,6 @@ import org.zerionproject.core.plugin.tor.TorRendezvousCrypto;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.concurrent.Executor;
@@ -49,29 +50,14 @@ import static org.zerionproject.core.api.plugin.Plugin.State.ENABLING;
 import static org.zerionproject.core.api.plugin.Plugin.State.INACTIVE;
 import static org.zerionproject.core.api.plugin.Plugin.State.STARTING_STOPPING;
 import static org.zerionproject.core.api.plugin.TorConstants.HS_PRIVATE_KEY_V3;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_ACCOUNT_MOVED;
 import static org.zerionproject.core.api.plugin.TorConstants.PROP_ONION_V3;
 import static org.zerionproject.core.plugin.tor.TorRendezvousCrypto.SEED_BYTES;
 import static org.zerionproject.core.util.IoUtils.tryToClose;
 
-/**
- * The native transport exposed as a {@link DuplexPlugin}, and the single owner
- * of the Tor lifecycle. Ongoing contact traffic never touches the plugin
- * surface: {@link ZtpTorTransport} accepts and dials contact onions and hands
- * every socket to the native connection handler, and {@link ZtpPoller} decides
- * when to dial. The plugin surface exists for the flows that still run through
- * the app's managers: first-contact pairing (rendezvous endpoints and the
- * dial-side {@link #poll}), voice-call endpoints, and channel onion publishing.
- *
- * <p>Registering this plugin also registers the transport with the key manager
- * (via the factory's id and latency), which the pairing handshake's
- * transport-key stream layer requires.
- *
- * <p>The generic poller must stay idle for this transport ({@link #shouldPoll}
- * is false), so generic sync never dials a contact; only the rendezvous poller
- * and the voice-call manager use the plugin's outgoing connections.
- */
 @NotNullByDefault
-class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
+class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
+		TorClockSkewStatus {
 
 	static final int MAX_LATENCY = 30 * 1000;
 	static final int MAX_IDLE_TIME = 30 * 1000;
@@ -96,6 +82,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 	@Nullable
 	private volatile State lastReportedState = null;
+	private final ClockSkewTracker clockSkew = new ClockSkewTracker();
 
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
 			SocketFactory socketFactory, TorWrapper tor,
@@ -132,16 +119,21 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 			@Override
 			public void onBootstrapPercentage(int percentage) {
+				if (percentage >= 100) clockSkew.clear();
 				eventBus.broadcast(new TorBootstrapEvent(percentage));
 			}
 
 			@Override
 			public void onHsDescriptorUpload(String onion) {
+				if (!transport.publishedOnions().contains(onion)) return;
+				clockSkew.clear();
 				eventBus.broadcast(new TorOnionPublishedEvent(onion));
 			}
 
 			@Override
 			public void onClockSkewDetected(long skewSeconds) {
+				clockSkew.onSkew(skewSeconds);
+				eventBus.broadcast(new TorClockSkewEvent(skewSeconds));
 			}
 		});
 	}
@@ -178,6 +170,9 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	public void start() throws PluginException {
 		if (used.getAndSet(true)) throw new IllegalStateException();
 		Settings settings = callback.getSettings();
+		if (settings.getBoolean(PREF_ACCOUNT_MOVED, false)) {
+			throw new PluginException();
+		}
 		@Nullable String privateKey = settings.get(HS_PRIVATE_KEY_V3);
 		HiddenServiceProperties hs;
 		try {
@@ -204,23 +199,29 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 				.dialSucceeded(new ContactId(contactId), onion));
 		transport.setTorReconfiguredListener(
 				onionClientAuth::refeedCredentials);
-		onionClientAuth.attachTor(onionServiceControl,
-				transport.getAuthorizedLocalPort(),
+		String authorizedTarget = transport.getAuthorizedTarget();
+		onionClientAuth.attachTor(onionServiceControl, authorizedTarget,
 				c -> poller.dialNow(c.getInt()));
 		transport.setTorRestartedListener(() -> onionClientAuth.attachTor(
-				onionServiceControl, transport.getAuthorizedLocalPort(),
+				onionServiceControl, authorizedTarget,
 				c -> poller.dialNow(c.getInt())));
+		String startupOnion = hs.onion;
 		b4OnionRotation.bindAdapter(new B4OnionRotation.B4TorAdapter() {
 			@Override
 			public HiddenServiceProperties publishHiddenService(
 					@Nullable String privKey) throws IOException {
-				return transport.publishHiddenService(transport.getLocalPort(),
-						REMOTE_ONION_PORT, privKey);
+				return transport.publishHiddenService(
+						transport.getOpenTarget(), REMOTE_ONION_PORT, privKey);
 			}
 
 			@Override
 			public boolean isPublished(String onion) {
 				return transport.publishedOnions().contains(onion);
+			}
+
+			@Override
+			public String getStartupOnion() {
+				return startupOnion;
 			}
 
 			@Override
@@ -251,6 +252,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 
 	@Override
 	public void stop() throws PluginException {
+		clockSkew.clear();
 		onionClientAuth.detachTor();
 		transport.setTorRestartedListener(null);
 		transport.setTorReconfiguredListener(null);
@@ -265,6 +267,11 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 			Thread.currentThread().interrupt();
 			throw new PluginException();
 		}
+	}
+
+	@Override
+	public long getCurrentClockSkewSeconds() {
+		return clockSkew.current();
 	}
 
 	@Override
@@ -351,13 +358,11 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 		TransportProperties remoteProperties = new TransportProperties();
 		remoteProperties.put(PROP_ONION_V3, remoteOnion);
 		try {
-			@SuppressWarnings("resource")
-			ServerSocket ss = new ServerSocket();
-			ss.bind(new InetSocketAddress("127.0.0.1", 0));
-			int port = ss.getLocalPort();
+			OnionTargetListener ss = transport.openServiceListener();
 			try {
-				transport.publishHiddenService(port, REMOTE_ONION_PORT, blob);
-			} catch (IOException e) {
+				transport.publishHiddenService(ss.getTorTarget(),
+						REMOTE_ONION_PORT, blob);
+			} catch (IOException | RuntimeException e) {
 				tryToClose(ss);
 				return null;
 			}
@@ -400,11 +405,16 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter {
 	}
 
 	@Override
-	public ChannelOnionHandle publishChannelOnion(int localPort,
+	public ChannelOnionHandle publishChannelOnion(String target,
 			@Nullable String privateKey) throws IOException {
-		HiddenServiceProperties hs = transport.publishHiddenService(localPort,
+		HiddenServiceProperties hs = transport.publishHiddenService(target,
 				REMOTE_ONION_PORT, privateKey);
 		return new ChannelOnionHandle(hs.onion, hs.privKey);
+	}
+
+	@Override
+	public OnionTargetListener openOnionTarget() throws IOException {
+		return transport.openServiceListener();
 	}
 
 	@Override

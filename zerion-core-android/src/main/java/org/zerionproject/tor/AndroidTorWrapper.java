@@ -9,28 +9,26 @@ import android.content.res.Resources;
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLock;
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.socks.LocalSockets;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.annotation.Nullable;
+
 import static android.os.Build.SUPPORTED_ABIS;
 import static android.os.Build.VERSION.SDK_INT;
 import static java.util.Arrays.asList;
 
-/**
- * The Tor wrapper for Android. The executables are the native libraries
- * the package manager installed from the APK, run in place where the
- * platform allows it, and are verified against the build-time pins before
- * every start.
- */
 @NotNullByDefault
 public class AndroidTorWrapper extends AbstractTorWrapper {
 
@@ -44,27 +42,33 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	private final AndroidWakeLock wakeLock;
 	private final File torLib, lyrebirdLib;
 
-	/**
-	 * @param ioExecutor runs IO tasks, some for the life of the wrapper, so
-	 * it needs an unbounded pool
-	 * @param eventExecutor calls the observer; a single thread keeps events
-	 * in order
-	 * @param architecture the architecture of the Tor and lyrebird
-	 * executables
-	 * @param torDirectory where the Tor process keeps its state
-	 */
 	public AndroidTorWrapper(Application app,
 			AndroidWakeLockManager wakeLockManager, Executor ioExecutor,
 			Executor eventExecutor, String architecture, File torDirectory,
 			int torSocksPort, int torControlPort,
 			TorBinaryVerifier verifier) {
+		this(app, wakeLockManager, ioExecutor, eventExecutor, architecture,
+				torDirectory, torSocksPort, torControlPort, null, verifier);
+	}
+
+	public AndroidTorWrapper(Application app,
+			AndroidWakeLockManager wakeLockManager, Executor ioExecutor,
+			Executor eventExecutor, String architecture, File torDirectory,
+			int torSocksPort, int torControlPort,
+			@Nullable String controlSocketPath, TorBinaryVerifier verifier) {
 		super(ioExecutor, eventExecutor, architecture, torDirectory,
-				torSocksPort, torControlPort, verifier);
+				torSocksPort, torControlPort, controlSocketPath, verifier);
 		this.app = app;
 		wakeLock = wakeLockManager.createWakeLock("TorPlugin");
 		String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
 		torLib = new File(nativeLibDir, TOR_LIB_NAME);
 		lyrebirdLib = new File(nativeLibDir, LYREBIRD_LIB_NAME);
+	}
+
+	@Override
+	protected Socket connectUnixControlSocket(String path)
+			throws IOException {
+		return LocalSockets.connect(path, 0);
 	}
 
 	@Override
@@ -132,14 +136,6 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 				LYREBIRD_LIB_NAME);
 	}
 
-	/**
-	 * With the library installed by the package manager any copy an
-	 * earlier version extracted is removed; the copy is never the file that
-	 * is verified and run while the installed library exists, so a copy
-	 * that cannot be removed is inert. Without the installed library the
-	 * executable is extracted from the APK on platforms that still permit
-	 * executing it from the app's data, and verified before it runs.
-	 */
 	private void installExecutable(File extracted, File lib, String libName)
 			throws IOException {
 		if (lib.exists()) {

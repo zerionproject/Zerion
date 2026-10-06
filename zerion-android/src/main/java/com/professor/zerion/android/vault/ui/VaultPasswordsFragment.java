@@ -1,7 +1,5 @@
 package com.professor.zerion.android.vault.ui;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -49,8 +47,8 @@ public class VaultPasswordsFragment extends BaseFragment {
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@AppModule.SecurePrefs
-	SharedPreferences securePrefs;
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 	private RecyclerView passwordsList;
@@ -64,10 +62,6 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private int sortMode;
 	@Nullable
 	private androidx.appcompat.app.AlertDialog passwordDialog;
-	private final android.os.Handler clipboardClearHandler =
-			new android.os.Handler(android.os.Looper.getMainLooper());
-	@Nullable
-	private Runnable pendingClipboardClear;
 
 	public static VaultPasswordsFragment newInstance() {
 		return new VaultPasswordsFragment();
@@ -100,7 +94,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
-		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+		sortMode = profilePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
 
 		setupPasswordsList();
 		setupSearchAndSort();
@@ -128,7 +122,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 		vaultSortButton.setOnClickListener(v -> {
 			sortMode = sortMode == VaultSearch.SORT_NAME
 					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
-			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			profilePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
 			applyFilterAndSort();
 		});
 	}
@@ -359,59 +353,13 @@ public class VaultPasswordsFragment extends BaseFragment {
 	}
 
 	private void copyToClipboard(String label, String text) {
-		ClipboardManager clipboard = (ClipboardManager)
-				requireContext().getSystemService(Context.CLIPBOARD_SERVICE);
-
-		if (clipboard == null) {
-			return;
-		}
-
-		ClipData clip = ClipData.newPlainText(label, text);
-		if (android.os.Build.VERSION.SDK_INT
-				>= android.os.Build.VERSION_CODES.TIRAMISU) {
-			android.os.PersistableBundle extras = new android.os.PersistableBundle();
-			extras.putBoolean(
-					android.content.ClipDescription.EXTRA_IS_SENSITIVE, true);
-			clip.getDescription().setExtras(extras);
-		}
-		clipboard.setPrimaryClip(clip);
-
-		boolean clipboardClearEnabled = securePrefs.getBoolean("clipboard_clear_enabled", true);
-		if (!clipboardClearEnabled) {
-			return;
-		}
-
-		int clipboardTimeoutSeconds = securePrefs.getInt("clipboard_timeout", 30);
-		long clipboardTimeoutMs = clipboardTimeoutSeconds * 1000L;
-
-		if (pendingClipboardClear != null) {
-			clipboardClearHandler.removeCallbacks(pendingClipboardClear);
-		}
-		android.content.Context appCtx =
-				requireContext().getApplicationContext();
-		pendingClipboardClear = () -> {
-			pendingClipboardClear = null;
-			try {
-				if (clipboard.hasPrimaryClip()) {
-					ClipData currentClip = clipboard.getPrimaryClip();
-					if (currentClip != null && currentClip.getItemCount() > 0) {
-						CharSequence clipText = currentClip.getItemAt(0).getText();
-						if (clipText != null && clipText.toString().equals(text)) {
-							ClipData emptyClip = ClipData.newPlainText("", "\u200B");
-							clipboard.setPrimaryClip(emptyClip);
-
-							Toast.makeText(appCtx,
-									appCtx.getString(
-											R.string.vault_clipboard_cleared),
-									Toast.LENGTH_SHORT).show();
-						}
-					}
-				}
-			} catch (Exception e) {
-			}
-		};
-		clipboardClearHandler.postDelayed(pendingClipboardClear,
-				clipboardTimeoutMs);
+		boolean clipboardClearEnabled =
+				profilePrefs.getBoolean("clipboard_clear_enabled", true);
+		long clearAfterMs = clipboardClearEnabled
+				? profilePrefs.getInt("clipboard_timeout", 30) * 1000L
+				: 0L;
+		com.professor.zerion.android.util.SecureClipboard.copySensitive(
+				requireContext(), label, text, clearAfterMs);
 	}
 
 	private static String maskPassword(String s) {

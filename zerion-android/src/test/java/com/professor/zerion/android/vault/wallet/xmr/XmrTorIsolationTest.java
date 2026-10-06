@@ -7,17 +7,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * XMR-04: every Monero daemon stream must carry SOCKS5 credentials that are
- * distinct per wallet and per purpose, in the exact grammar the vendored
- * wallet2 proxy parser accepts, without exposing the raw wallet identity.
- */
 public class XmrTorIsolationTest {
 
 	private static final String W1 = "wallet-one-0123456789";
 	private static final String W2 = "wallet-two-0123456789";
 
-	/** Mirrors wallet2's net::uri_components split: scheme, userinfo, hostport. */
 	private static String[] parse(String uri) {
 		int schemeEnd = uri.indexOf("://");
 		assertTrue("scheme required", schemeEnd > 0);

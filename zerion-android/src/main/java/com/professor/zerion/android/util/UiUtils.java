@@ -445,16 +445,9 @@ public class UiUtils {
 	@AnyThread
 	public static void handleException(Context context,
 			AndroidExecutor androidExecutor, Exception e) {
-		androidExecutor.runOnUiThread(() -> {
-			String msg = "Error: " + e.getClass().getSimpleName();
-			if (!StringUtils.isNullOrEmpty(e.getMessage())) {
-				msg += " " + e.getMessage();
-			}
-			if (e.getCause() != null) {
-				msg += " caused by " + e.getCause().getClass().getSimpleName();
-			}
-			Toast.makeText(context, msg, LENGTH_LONG).show();
-		});
+		androidExecutor.runOnUiThread(() ->
+				Toast.makeText(context, R.string.generic_error, LENGTH_LONG)
+						.show());
 	}
 
 	public static void setInputStateAlwaysVisible(Activity activity) {

@@ -42,6 +42,18 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 	private static final int MAX_CHUNK_DATA_BYTES =
 			MeshPadding.MAX_DATA_BYTES - MeshAttachmentSender.CHUNK_HEADER_BYTES;
 
+	static final long ACK_FRESH_MS = 10 * 60_000L;
+	static final long REACK_INTERVAL_MS = 5 * 60_000L;
+	private static final int MAX_ACK_RECORDS = 1024;
+	private final java.util.LinkedHashMap<String, Long> lastAcked =
+			new java.util.LinkedHashMap<String, Long>(64, 0.75f, true) {
+				@Override
+				protected boolean removeEldestEntry(
+						Map.Entry<String, Long> eldest) {
+					return size() > MAX_ACK_RECORDS;
+				}
+			};
+
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
 	private final MeshSeenStore seenStore;
@@ -113,7 +125,7 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 		presenceTracker.markPresent(contactId);
 		byte[] body = MeshPadding.unpad(payload);
 		if (messageType == MESH_TEXT) {
-			handleText(contactId, body);
+			handleText(contactId, body, sendTimestamp);
 			return true;
 		}
 		if (messageType == MESH_ACK) {
@@ -129,7 +141,7 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 			return true;
 		}
 		if (messageType == MESH_ATTACH_CHUNK) {
-			handleChunk(contactId, body);
+			handleChunk(contactId, body, sendTimestamp);
 			return true;
 		}
 		if (messageType == MESH_ATTACH_ACK) {
@@ -175,7 +187,22 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 				contentType, composeMs, totalSize, chunkCount, now));
 	}
 
-	private void handleChunk(ContactId contactId, byte[] body) {
+	private boolean mayAck(ContactId contactId, byte[] id, long sendTimestamp) {
+		long now = System.currentTimeMillis();
+		if (sendTimestamp <= 0L || now - sendTimestamp > ACK_FRESH_MS) {
+			return false;
+		}
+		String key = contactId.getInt() + ":" + StringUtils.toHexString(id);
+		synchronized (lastAcked) {
+			Long prev = lastAcked.get(key);
+			if (prev != null && now - prev < REACK_INTERVAL_MS) return false;
+			lastAcked.put(key, now);
+		}
+		return true;
+	}
+
+	private void handleChunk(ContactId contactId, byte[] body,
+			long sendTimestamp) {
 		if (body.length < MeshAttachmentSender.CHUNK_HEADER_BYTES) return;
 		int o = MeshAttachmentSender.ATTACH_ID_BYTES;
 		byte[] attachId = Arrays.copyOfRange(body, 0, o);
@@ -209,7 +236,9 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 				return;
 			}
 			if (seen) {
-				attachmentSender.get().sendAck(contactId, attachId);
+				if (mayAck(contactId, attachId, sendTimestamp)) {
+					attachmentSender.get().sendAck(contactId, attachId);
+				}
 				return;
 			}
 			long now = System.currentTimeMillis();
@@ -225,7 +254,9 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 				}
 				return;
 			}
-			attachmentSender.get().sendAck(contactId, attachId);
+			if (mayAck(contactId, attachId, sendTimestamp)) {
+				attachmentSender.get().sendAck(contactId, attachId);
+			}
 		});
 	}
 
@@ -255,7 +286,8 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 		}
 	}
 
-	private void handleText(ContactId contactId, byte[] body) {
+	private void handleText(ContactId contactId, byte[] body,
+			long sendTimestamp) {
 		if (body.length < MeshTextSender.HEADER_BYTES + 1) return;
 		byte[] messageId = Arrays.copyOfRange(body, 0,
 				MeshTextSender.MESSAGE_ID_BYTES);
@@ -279,7 +311,9 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 				return;
 			}
 			if (seen) {
-				textSender.get().sendAck(contactId, messageId);
+				if (mayAck(contactId, messageId, sendTimestamp)) {
+					textSender.get().sendAck(contactId, messageId);
+				}
 				return;
 			}
 			try {
@@ -292,7 +326,9 @@ public class MeshMessageRouter implements MeshManager.OpenedHandler {
 				}
 				return;
 			}
-			textSender.get().sendAck(contactId, messageId);
+			if (mayAck(contactId, messageId, sendTimestamp)) {
+				textSender.get().sendAck(contactId, messageId);
+			}
 		});
 	}
 

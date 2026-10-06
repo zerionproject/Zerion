@@ -9,11 +9,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * PROTO-13: the in-band text call signal is recognised only to hide stored
- * rows of older releases; nothing parses it. The helper exposes no parser,
- * and the removed wire class no longer exists.
- */
 public class LegacyCallSignalTest {
 
 	@Test

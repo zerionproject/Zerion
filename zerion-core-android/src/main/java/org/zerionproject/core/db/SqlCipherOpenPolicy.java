@@ -4,20 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Decides what to do with an existing database directory when it is opened.
- * The decision is a pure function of two facts so that every failure class
- * can be exercised without a device: whether the setup marker is present,
- * which is written when a database is created and removed once a local
- * identity has been stored, and what a probe of the existing file found.
- *
- * Existing user data is never deleted because the probe threw. A database
- * that opened and holds an identity is reused. A database that opened and
- * provably holds no identity is empty and may be recreated. A database that
- * could not be opened is only ever moved aside, and only when the marker
- * says that setup never completed; otherwise the open fails closed with the
- * failure class attached so that the caller can report it.
- */
 @NotNullByDefault
 final class SqlCipherOpenPolicy {
 
@@ -47,13 +33,6 @@ final class SqlCipherOpenPolicy {
 	private SqlCipherOpenPolicy() {
 	}
 
-	/**
-	 * What a successful connection to an existing file tells us. Only a
-	 * database that has both expected tables and no identity row is
-	 * provably empty; a file missing a table is not a Zerion database of
-	 * this schema (a downgrade, a foreign file) and must be treated as a
-	 * failed probe so it is never deleted as empty.
-	 */
 	static Probe probe(boolean settingsTablePresent,
 			boolean identityTablePresent, long identityRows) {
 		if (!settingsTablePresent || !identityTablePresent) {
@@ -77,11 +56,6 @@ final class SqlCipherOpenPolicy {
 		}
 	}
 
-	/**
-	 * Classifies an open failure from the exception chain. Class names are
-	 * matched as strings so that the policy has no dependency on the
-	 * platform database classes and can be tested on the JVM.
-	 */
 	static FailureClass classify(@Nullable Throwable t) {
 		for (Throwable c = t; c != null; c = c.getCause()) {
 			String name = c.toString();

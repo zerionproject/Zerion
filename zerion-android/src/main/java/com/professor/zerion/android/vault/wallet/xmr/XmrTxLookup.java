@@ -5,14 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * One factual observation about a txid from the queried daemon. MISSED means
- * only that this daemon does not currently know the txid; it is never by
- * itself evidence that the transaction did not reach the network. Anything the
- * daemon did not answer unambiguously (transport failure, non-OK status,
- * malformed or incomplete response, malformed input) is LOOKUP_ERROR, never
- * MISSED. Interpreting these observations is the caller's policy.
- */
 @NotNullByDefault
 public final class XmrTxLookup {
 
@@ -42,10 +34,6 @@ public final class XmrTxLookup {
 		return true;
 	}
 
-	/**
-	 * Decode the native per-index codes for the requested txids. A missing or
-	 * mis-sized code array yields LOOKUP_ERROR for every entry.
-	 */
 	public static List<XmrTxLookup> decode(List<String> requested,
 			long[] codes) {
 		List<XmrTxLookup> out = new ArrayList<>(requested.size());

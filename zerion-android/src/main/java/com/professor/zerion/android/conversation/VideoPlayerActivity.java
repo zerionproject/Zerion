@@ -15,7 +15,9 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.datasource.ByteArrayDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.ui.PlayerView;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -31,9 +33,11 @@ import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -53,6 +57,8 @@ public class VideoPlayerActivity extends ZerionActivity {
 			"video/mp4", "video/webm", "video/3gpp", "video/quicktime",
 			"video/x-matroska", "video/mpeg", "video/avi"
 	};
+
+	static final int MAX_VIDEO_BYTES = 256 * 1024 * 1024;
 
 	private static final int MAX_RETRY_ATTEMPTS = 10;
 	private static final long RETRY_DELAY_MS = 500;
@@ -75,9 +81,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@Nullable
 	private TextView errorText;
 	@Nullable
-	private File tempVideoFile;
-	@Nullable
-	private Uri preparedVideoUri;
+	private volatile byte[] videoBytes;
 
 	private boolean playWhenReady = true;
 	private int currentWindow = 0;
@@ -138,15 +142,14 @@ public class VideoPlayerActivity extends ZerionActivity {
 	public void onStop() {
 		super.onStop();
 		releasePlayer();
-		cleanupTempFile();
-		preparedVideoUri = null;
+		wipeVideo();
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		retryHandler.removeCallbacksAndMessages(null);
-		cleanupTempFile();
+		wipeVideo();
 	}
 
 	@Override
@@ -159,7 +162,6 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
 	private void cleanupOrphanedTempFiles() {
 		try {
 			File cacheDir = getCacheDir();
@@ -170,7 +172,8 @@ public class VideoPlayerActivity extends ZerionActivity {
 
 			for (File file : files) {
 				if (file.getName().startsWith(TEMP_VIDEO_PREFIX)) {
-					file.delete();
+					SecureMemory.secureDeleteFile(file, 200L * 1024 * 1024,
+							false);
 				}
 			}
 		} catch (SecurityException ignored) {
@@ -182,12 +185,11 @@ public class VideoPlayerActivity extends ZerionActivity {
 			return;
 		}
 
-		if (preparedVideoUri != null && tempVideoFile != null && tempVideoFile.exists()) {
-			startPlayback(preparedVideoUri);
+		byte[] prepared = videoBytes;
+		if (prepared != null) {
+			startPlayback(prepared);
 			return;
 		}
-
-		preparedVideoUri = null;
 
 		Intent intent = getIntent();
 		AttachmentItem attachment = intent.getParcelableExtra(ATTACHMENT);
@@ -227,32 +229,20 @@ public class VideoPlayerActivity extends ZerionActivity {
 		dbExecutor.execute(() -> {
 			try {
 				Attachment att = attachmentReader.getAttachment(header);
-				InputStream is = att.getStream();
-
-				tempVideoFile = File.createTempFile(TEMP_VIDEO_PREFIX, "." + ext, getCacheDir());
-
-				FileOutputStream fos = new FileOutputStream(tempVideoFile);
-				byte[] buffer = new byte[8192];
-				int bytesRead;
-				while ((bytesRead = is.read(buffer)) != -1) {
-					fos.write(buffer, 0, bytesRead);
+				byte[] bytes;
+				try (InputStream is = att.getStream()) {
+					bytes = readVideo(is);
 				}
-				fos.flush();
-				fos.getFD().sync();
-				fos.close();
-				is.close();
-
-				if (!tempVideoFile.exists() || tempVideoFile.length() == 0) {
-					cleanupTempFile();
-					throw new Exception("Empty temp file");
-				}
-
-				Uri videoUri = Uri.fromFile(tempVideoFile);
-				preparedVideoUri = videoUri;
+				if (bytes.length == 0) throw new IOException("Empty video");
+				videoBytes = bytes;
 
 				runOnUiThread(() -> {
 					isLoadingVideo = false;
-					startPlayback(videoUri);
+					if (isFinishing() || isDestroyed()) {
+						wipeVideo();
+						return;
+					}
+					startPlayback(bytes);
 				});
 
 			} catch (AttachmentNotYetAvailableException e) {
@@ -260,7 +250,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 					retryHandler.postDelayed(() -> loadVideoWithRetry(
 							header, ext, attemptNumber + 1), RETRY_DELAY_MS);
 				} else {
-					cleanupTempFile();
+					wipeVideo();
 					runOnUiThread(() -> {
 						isLoadingVideo = false;
 						showLoading(false);
@@ -268,7 +258,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 					});
 				}
 			} catch (Exception e) {
-				cleanupTempFile();
+				wipeVideo();
 				runOnUiThread(() -> {
 					isLoadingVideo = false;
 					showLoading(false);
@@ -276,6 +266,43 @@ public class VideoPlayerActivity extends ZerionActivity {
 				});
 			}
 		});
+	}
+
+	static byte[] readVideo(InputStream in) throws IOException {
+		WipingBuffer out = new WipingBuffer();
+		try {
+			byte[] buffer = new byte[64 * 1024];
+			int n;
+			while ((n = in.read(buffer)) != -1) {
+				if (out.size() + n > MAX_VIDEO_BYTES) {
+					throw new IOException("Video too large");
+				}
+				out.write(buffer, 0, n);
+			}
+			Arrays.fill(buffer, (byte) 0);
+			return out.toByteArray();
+		} finally {
+			out.wipe();
+		}
+	}
+
+	private static final class WipingBuffer extends ByteArrayOutputStream {
+
+		@Override
+		public synchronized void write(byte[] b, int off, int len) {
+			if (count + len > buf.length) {
+				byte[] old = buf;
+				super.write(b, off, len);
+				if (old != buf) Arrays.fill(old, (byte) 0);
+			} else {
+				super.write(b, off, len);
+			}
+		}
+
+		void wipe() {
+			Arrays.fill(buf, (byte) 0);
+			reset();
+		}
 	}
 
 	private boolean isSupportedVideoType(@Nullable String mimeType) {
@@ -313,7 +340,7 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 	}
 
-	private void startPlayback(Uri videoUri) {
+	private void startPlayback(byte[] video) {
 		if (isFinishing() || isDestroyed()) return;
 
 		player = new ExoPlayer.Builder(this).build();
@@ -336,12 +363,13 @@ public class VideoPlayerActivity extends ZerionActivity {
 			public void onPlayerError(PlaybackException error) {
 				showLoading(false);
 				showError(getString(R.string.video_playback_error));
-				cleanupTempFile();
+				wipeVideo();
 			}
 		});
 
-		MediaItem mediaItem = MediaItem.fromUri(videoUri);
-		player.setMediaItem(mediaItem);
+		player.setMediaSource(new ProgressiveMediaSource.Factory(
+				() -> new ByteArrayDataSource(video))
+				.createMediaSource(MediaItem.fromUri(Uri.EMPTY)));
 		player.setPlayWhenReady(playWhenReady);
 		player.seekTo(currentWindow, playbackPosition);
 		player.prepare();
@@ -357,13 +385,10 @@ public class VideoPlayerActivity extends ZerionActivity {
 		}
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
-	private void cleanupTempFile() {
-		if (tempVideoFile != null) {
-			SecureMemory.secureDeleteFile(tempVideoFile, 200L * 1024 * 1024, false);
-			tempVideoFile = null;
-		}
-		preparedVideoUri = null;
+	private void wipeVideo() {
+		byte[] bytes = videoBytes;
+		videoBytes = null;
+		if (bytes != null) Arrays.fill(bytes, (byte) 0);
 	}
 
 	private void showLoading(boolean show) {

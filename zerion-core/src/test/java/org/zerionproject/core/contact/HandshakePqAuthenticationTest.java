@@ -54,16 +54,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Runs the rendezvous pairing handshake end to end between two real
- * handshake managers over piped streams with the production crypto, and
- * checks the post-quantum authentication property: a peer that holds the
- * committed static public key and its classical X25519 private half but not
- * its static ML-KEM private half (the position of a quantum adversary who
- * has recovered the X25519 key from the link) cannot complete the handshake,
- * and a peer that only speaks the earlier, classically authenticated minor
- * version is refused.
- */
 public class HandshakePqAuthenticationTest {
 
 	private final Mockery context = new Mockery() {{
@@ -136,9 +126,15 @@ public class HandshakePqAuthenticationTest {
 
 	private Party party(KeyPair ourKeys, PublicKey theirPublicKey,
 			String name) throws Exception {
-		PendingContact pending = pendingContactFactory.createPendingContact(
+		return partyWithLink(ourKeys,
 				pendingContactFactory.createHandshakeLink(theirPublicKey),
 				name);
+	}
+
+	private Party partyWithLink(KeyPair ourKeys, String theirLink,
+			String name) throws Exception {
+		PendingContact pending = pendingContactFactory.createPendingContact(
+				theirLink, name);
 		String prefix = name + "-" + (mockSerial++) + "-";
 		TransactionManager db =
 				context.mock(TransactionManager.class, prefix + "db");
@@ -197,10 +193,6 @@ public class HandshakePqAuthenticationTest {
 		return o;
 	}
 
-	/**
-	 * A real connection is disposed when either side's handshake ends, so a
-	 * peer left waiting sees end of stream rather than blocking forever.
-	 */
 	private static void closeQuietly(OutputStream out) {
 		try {
 			out.close();
@@ -218,12 +210,6 @@ public class HandshakePqAuthenticationTest {
 				realPriv.getX25519PrivateKey(), otherPriv.getMlKemPrivateKey()));
 	}
 
-	/**
-	 * A2-CRY-01: a peer whose committed static key carries an ML-KEM half
-	 * the library rejects is refused as a format error at receipt, on the
-	 * handshake thread, instead of ending it with an unchecked exception
-	 * and leaving the pending contact registered.
-	 */
 	@Test(timeout = 120_000)
 	public void testPeerWithARejectedMlKemStaticKeyIsRefusedCleanly()
 			throws Exception {
@@ -244,6 +230,27 @@ public class HandshakePqAuthenticationTest {
 				+ o.firstError, o.firstError instanceof FormatException);
 		assertTrue("bob must fail with an I/O error, got " + o.secondError,
 				o.secondError instanceof IOException);
+	}
+
+	@Test(timeout = 120_000)
+	public void aLinkWithAForeignRendezvousKeyIsRefused() throws Exception {
+		KeyPair aliceKeys = crypto.generateHybridAgreementKeyPair();
+		KeyPair bobKeys = crypto.generateHybridAgreementKeyPair();
+		String bobLink =
+				pendingContactFactory.createHandshakeLink(bobKeys.getPublic());
+		byte[] raw = org.zerionproject.core.util.Base32.decode(
+				bobLink.substring("zerion://".length()), true);
+		byte[] foreign = crypto.generateAgreementKeyPair().getPublic()
+				.getEncoded();
+		System.arraycopy(foreign, 0, raw, 1 + 32, 32);
+		String tampered = "zerion://" + org.zerionproject.core.util.Base32
+				.encode(raw).toLowerCase(java.util.Locale.US);
+		Party alice = partyWithLink(aliceKeys, tampered, "alice");
+		Party bob = party(bobKeys, aliceKeys.getPublic(), "bob");
+		Outcome o = run(alice, bob);
+		assertNull("the tampered link was accepted", o.first);
+		assertTrue("alice must refuse with a format error, got "
+				+ o.firstError, o.firstError instanceof FormatException);
 	}
 
 	@Test(timeout = 120_000)
@@ -299,7 +306,6 @@ public class HandshakePqAuthenticationTest {
 		assertMinorVersionRefused((byte) 2);
 	}
 
-	/** CRY-07: a peer without the static-ephemeral terms is refused. */
 	@Test
 	public void testPeerSpeakingMinorVersionThreeIsRefused() throws Exception {
 		assertMinorVersionRefused((byte) 3);
@@ -393,7 +399,6 @@ public class HandshakePqAuthenticationTest {
 		assertEquals(4, HandshakeConstants.KCI_MINOR_VERSION);
 	}
 
-	/** Rewrites the records of one direction; index counts records seen. */
 	private interface Mutator {
 		List<Record> apply(Record record, int index);
 	}
@@ -422,11 +427,6 @@ public class HandshakePqAuthenticationTest {
 		}
 	}
 
-	/**
-	 * Runs both real parties through a record-level man in the middle. The
-	 * first mutator sees the records of the party in the Alice role, the
-	 * second the records of the party in the Bob role.
-	 */
 	private Outcome runThroughRelay(Party alice, Party bob,
 			Mutator fromAliceRole, Mutator fromBobRole) throws Exception {
 		byte[] aliceCommitment = crypto.hash(HYBRID_COMMITMENT_LABEL,

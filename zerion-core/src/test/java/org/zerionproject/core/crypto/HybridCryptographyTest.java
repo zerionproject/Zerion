@@ -68,12 +68,6 @@ public class HybridCryptographyTest extends BrambleMockTestCase {
 		assertTrue(keyPair.getPrivate() instanceof HybridAgreementPrivateKey);
 	}
 
-	/**
-	 * CRY-07: the static-ephemeral X25519 terms are computed by both sides in
-	 * the same canonical order, and each term needs one party's static private
-	 * key together with the other party's ephemeral private key, so a holder
-	 * of only one static private key cannot produce the pair.
-	 */
 	@Test
 	public void testStaticEphemeralTermsAgreeAcrossRoles() throws Exception {
 		HybridKeyAgreement agreement = new HybridKeyAgreement(

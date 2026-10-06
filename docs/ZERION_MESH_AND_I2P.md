@@ -9,9 +9,10 @@ assumes that background.
 
 Neither transport weakens the guarantee that online messaging runs over Tor,
 which is mandatory and always on. The mesh is off by default. I2P is compiled
-into the release build and is off by default; the user enables it behind a
-consent screen that states its privacy property. A fresh install runs Tor and
-nothing else.
+into development builds only (a `debugImplementation` dependency since 3.0.12)
+and is off by default there; the user enables it behind a consent screen that
+states its privacy property. The published release does not contain I2P. A
+fresh install runs Tor and nothing else.
 
 ---
 
@@ -43,8 +44,12 @@ matters.
 - Tor and I2P hide *network location*: who you are talking to, and where you are
   on the internet.
 - The mesh hides *content*: every payload a relay carries is opaque post-quantum
-  ciphertext that only the intended recipient can open. Relays learn nothing
-  about the message, the sender, or group membership.
+  ciphertext that only the intended recipient can open. Relays do not learn the
+  message or the sender from the envelope, and since 3.0.15 the prekey
+  selector does not name the recipient (Section 7). What relays and nearby
+  radios can still observe is listed in Section 12: which device originates a
+  frame when it is a direct neighbour, the size bucket, the time-to-live class,
+  timing, and the burst of envelopes a group post produces.
 - The mesh does not hide *physical proximity*. A co-located adversary with a
   radio can tell that a device is transmitting and roughly where it is. This is
   inherent to any local-radio system.
@@ -77,22 +82,40 @@ dialling each other at once (connection glare), the device advertising the
 numerically higher session nonce is the one that connects as central; the other
 stays peripheral.
 
-Discovery does not use a static "this device runs Zerion" beacon. The advertised
-service identifier is derived from a shared secret and the current time
-(`discoveryUuid(epoch)`), rotating on a fixed epoch, and scanners check the
-current and adjacent epochs to tolerate clock skew. The advertisement carries no
-device name (`setIncludeDeviceName(false)`), and while the mesh is active the
-classic BLE adapter name is masked to a random `BT-xxxxxx` string, restored when
-the mesh stops. Frames are fragmented to fit the negotiated BLE MTU and
-reassembled on the receiving side.
+Discovery does not use a static beacon. The advertised service identifier is
+derived from a shared secret and the current time (`discoveryUuid(epoch)`),
+rotating on a fixed epoch, and scanners check the current and adjacent epochs to
+tolerate clock skew. The shared secret is a constant in the public source, so
+anyone can compute the identifier for any epoch: it names no device, but it
+shows that a device runs the Zerion mesh. The scan response also carries an
+8-byte nonce for the connection tie-break. Since 3.0.15 a fresh nonce is drawn
+for every advertising set and the device replaces its advertising set after a
+random 4 to 6 minutes; Android gives each set its own random address and does
+not change it within a set sooner than every 7 minutes, so nonce and address
+change together and a passive observer can follow one advertising identity for
+at most about 6 minutes. (Up to 3.0.14 the nonce stayed the same for a fixed 10
+minutes, longer than the address, so an observer could chain address changes
+through it.) Before replacing its set, a device tells the devices it is linked
+to its new nonce in a link-local frame that is never relayed, so they do not
+dial it again as a stranger. The advertisement carries no device name
+(`setIncludeDeviceName(false)`). While the mesh is active the Bluetooth adapter
+name, which a connecting central can read, is set to `Android`, the same on
+every device, before the radio starts; the user's name is restored when the
+mesh stops or is disabled, and at the next app start if the app ended while
+the mesh ran. (Up to 3.0.14 the name was a random `BT-xxxxxx` kept for the
+whole session, set only after the radio had started.) Each device holds at
+most 6 outbound and 6 inbound links; when the slots are full, a link that has
+carried nothing new since it came up, or nothing for 6 minutes, gives up its
+slot to the next device. Frames are fragmented to fit the negotiated BLE MTU
+and reassembled on the receiving side.
 
 The transport tracks the Bluetooth adapter state: if the mesh is enabled while
 Bluetooth is off, it registers for `ACTION_STATE_CHANGED` and brings the radio
 up the moment Bluetooth is switched on, and tears it back down when Bluetooth is
 switched off, without needing the mesh to be toggled again.
 
-Residual: an adversary who extracts the app's discovery secret can still compute
-the current identifier and detect Zerion presence. Fully hiding participation
+Residual: the discovery secret ships in the app and its public source, so anyone
+can compute the current identifier and detect Zerion presence. Fully hiding participation
 would require contact-scoped discovery, which breaks open relaying. This is a
 documented, deferred design choice.
 
@@ -130,15 +153,16 @@ identity, the recipient, and the payload, using the sender's hybrid Ed25519 +
 ML-DSA-65 identity key; both halves must verify. This gives:
 
 - **Confidentiality and integrity to relays.** Only the holder of the recipient
-  prekey's private half can open the envelope. Every relay sees a fixed-size
-  opaque blob.
+  prekey's private half can open the envelope. Every relay sees a padded opaque
+  blob plus the routing fields (prekey selector, ephemeral key, time-to-live,
+  deduplication id), not the sender or the content.
 - **Sender authentication.** The recipient knows for certain which contact sent
   the message, and a relay cannot forge or alter one.
 - **Post-quantum protection.** Both the key agreement and the signature combine a
   classical and a post-quantum primitive, so an attacker must break both.
 
-The envelope is padded to a fixed size (`MeshPadding`) so the plaintext length is
-never observable, and it carries a send timestamp used for replay-window and
+The envelope is padded to one of two sizes, 4096 or 16384 bytes (`MeshPadding`),
+so the plaintext length is observable only as which of the two it needed, and it carries a send timestamp used for replay-window and
 freshness checks. On receipt, the delivery layer marks an envelope as seen before
 handing it to the router, so a replayed envelope is not delivered twice.
 
@@ -150,6 +174,18 @@ online together: on connection, a device sends its bundle to a contact, throttle
 so it is not resent constantly. Received bundles are verified against the
 contact's identity and stored (`MeshBundleStore`). When the pair later goes
 offline, the mesh already holds the bundle it needs.
+
+Since 3.0.15 each contact receives a bundle of its own. All bundles carry the
+same signed-prekey id, shared by every account, and each contact knows the
+one-time prekeys under ids derived from a secret only the recipient holds, so
+neither a relay nor another contact can tell from the selector which account
+an envelope is for (docs/protocol/ASYNC-SEALED-SENDER.md, Selectors). The
+bundle's agreement key is a key generated for the mesh alone; up to 3.0.14 it
+was the key of the user's current pairing link, which let a contact match the
+bundle to a pairing link shared elsewhere. Bundles are still exchanged with
+every contact whether or not the mesh is enabled, so that the mesh works the
+first time it is needed; with the dedicated key a bundle reveals nothing a
+contact does not already know.
 
 A record for a contact whose bundle is not yet held cannot be sealed. It is
 queued and retried once the bundle arrives (Section 12), rather than dropped.
@@ -174,7 +210,11 @@ Flow:
   authenticated sender identity against the user's contacts. Messages from
   unknown senders are dropped. A received message is de-duplicated against a
   persistent seen-set (`MeshSeenStore`), stored, and then acknowledged with a
-  `MESH_ACK`.
+  `MESH_ACK`. The acknowledgement goes out after a random delay of 3 to 30
+  seconds, only if the envelope was sealed at most 10 minutes earlier, and at
+  most once every 5 minutes for the same message, so a captured envelope
+  replayed next to a device does not keep drawing replies that would identify
+  the recipient.
 - **Delivery state.** A one-to-one message shows one tick when flooded and two
   ticks when the matching `MESH_ACK` returns. This reuses the existing
   sent/delivered event path, so the conversation reads the same as it does
@@ -227,14 +267,21 @@ present for a time-to-live (currently 150 s) and swept out afterward (every
 30 s).
 
 Beaconing is driven by the mesh lifecycle, not by opening a conversation. The
-sender starts as soon as the mesh starts, emits a first heartbeat shortly after
-(currently 4 s), and repeats on an interval (currently 60 s) so an idle but
+sender starts as soon as the mesh starts, emits a first round shortly after
+(currently 1.5 s), and repeats on an interval (currently 60 s) so an idle but
 reachable contact still shows online. In addition, when a new BLE peer connects,
-a presence round is sent about 1.5 s later, so a contact that comes into range is
-detected in seconds rather than at the next interval. Heartbeats are sealed
-per-contact like any other message and carry a short time-to-live (currently
-180 s). The conversation and contact list show "online via mesh" while Tor is
-off, and normal online status when Tor is on.
+the next round is brought forward to 1 to 4 s later, but never sooner than 30 s
+after the previous round, so a contact that comes into range is detected in
+seconds while connecting over and over cannot make a device beacon
+continuously. Every round is exactly 8 envelopes in random order: a heartbeat
+for each contact whose turn it is (those beaconed longest ago first) and cover
+for the rest, also when there is no contact to beacon, so the round reveals
+neither the number of contacts nor which envelope is real. A device with more
+than 8 contacts beacons each every few rounds; with more than 16, a contact can
+briefly drop out of "online via mesh". Heartbeats are sealed per-contact like
+any other message and carry a short time-to-live (currently 180 s). The
+conversation and contact list show "online via mesh" while Tor is off, and
+normal online status when Tor is on.
 
 ## 11. What the mesh does not carry: channels
 
@@ -259,9 +306,10 @@ Built-in reliability:
   target's prekey is not held, is queued and delivered once that peer exchanges
   keys.
 - **Cover traffic.** When peers are present, each device occasionally emits a
-  throwaway sealed envelope addressed to itself (interval randomized, currently
-  120 to 300 s). Nobody else can open it, so it is relayed and dropped
-  everywhere, which blends real sends into background chatter.
+  sealed envelope addressed to a throwaway key (interval randomized, currently
+  120 to 300 s). Nobody can open it, so it is relayed and dropped everywhere,
+  which blends real sends into background chatter. Its selector is that of an
+  envelope sealed from a current bundle.
 
 Honest limits:
 
@@ -277,9 +325,21 @@ Honest limits:
   that has not reached any peer before the app restarts may not be re-sent to a
   member who was never in range. Bringing group-record durability to parity with
   one-to-one is tracked work.
-- Presence heartbeats are one padded frame per contact per interval, so a
-  co-located BLE observer can count how many contacts a device is beaconing to,
-  even though it cannot read who they are. Reducing this signal is tracked work.
+- Presence rounds are always 8 envelopes, so a co-located BLE observer learns
+  neither how many contacts a device beacons to nor who they are. Up to 3.0.14
+  the real heartbeats came first, the count was padded to a multiple of 8 and
+  each carried the recipient's signed-prekey counter, so a neighbour that
+  connected twice could read the exact count and a stable fingerprint.
+- What a relay or a nearby radio can still observe: that a device runs the mesh
+  (the discovery identifier is public); one advertising identity for up to
+  about 6 minutes; that a direct neighbour originated a frame (frames it
+  originates arrive from it first); the size bucket (4096 or 16384 bytes; only
+  real traffic uses the larger one); the time-to-live class (180 s for presence,
+  7 days otherwise); retry and acknowledgement timing; and the number of
+  envelopes a group post fans out to. A neighbour linked to a device can follow
+  it for as long as the link lasts. A message carried to its recipient within
+  10 minutes of sealing is acknowledged, which still tells an observer who
+  watches closely that the recipient is nearby.
 
 ## 13. Offline pairing
 
@@ -317,9 +377,11 @@ the two are contacts and can exchange prekeys and messages over the mesh.
 I2P is an **opt-in** transport. It is off by default
 (`I2pConstants.DEFAULT_PREF_PLUGIN_ENABLE = false`), and the plugin enforces this
 at startup: without the explicit preference, `I2pDuplexPlugin.start()` sets the
-plugin to `DISABLED` and returns. The router and the plugin are part of the
-release build (`AppModule.shouldEnableI2p()` registers the plugin factory in
-every build), so a user who accepts the consent screen can turn it on. Tor stays
+plugin to `DISABLED` and returns. The router and the plugin are part of
+development builds only: `i2p-embedded` is a `debugImplementation` dependency and
+`AppModule.shouldEnableI2p()` returns true only in a debug build, so the published
+release neither contains nor registers I2P (`ReleasePluginConfigTest`). In a
+development build a user who accepts the consent screen can turn it on. Tor stays
 mandatory and always on when I2P is enabled; I2P is an additional path, not a
 replacement.
 
@@ -364,7 +426,11 @@ router.reseedSSLRequired     = true
 
 Because Tor is mandatory and started before I2P, the SOCKS proxy is available
 when the router reseeds. If it is not, the reseed fails rather than reaching out
-directly, so joining I2P never leaks the device address during bootstrap.
+directly, so joining I2P does not reveal the device address during bootstrap,
+unless the development-build option for direct reseeding (off by default) is
+switched on: with it on, when Tor cannot connect, the router contacts a small set
+of known reseed servers directly, which reveals the device address to them
+and shows that it uses I2P.
 
 ## 18. Addressing and non-blocking boot
 
@@ -387,7 +453,7 @@ I2P is a duplex transport under the same connection machinery as Tor. Inbound
 streams are accepted from an `I2PServerSocket` (bounded to 64 concurrent inbound
 connections) and outbound streams are dialled with `I2PSocketManager.connect`.
 Both are handed to the shared `ZtpConnectionHandler`, so every connection, over
-Tor or over I2P, runs the identical ZWF frame format, ZPP constant-rate pull
+Tor or over I2P, runs the identical ZWF frame format, ZPP paced pull
 protocol, and Mode 3-Full ratchet described in the whitepaper. I2P changes only
 how bytes are carried, not what is carried.
 
@@ -399,7 +465,8 @@ and the reason I2P is opt-in and off by default, is participation visibility: a
 network observer positioned to watch your connection can tell that you
 *participate* in I2P, the same class of exposure as using Tor without bridges.
 The reseed step is routed through Tor and fails closed, so bootstrap does not
-reveal the device address, but steady-state I2P participation is observable at
+reveal the device address (unless direct reseeding is switched on, Section 17),
+but steady-state I2P participation is observable at
 the "this device is an I2P node" level. This is why Tor stays mandatory and
 always on, and I2P is an extra you turn on deliberately.
 

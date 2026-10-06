@@ -3,28 +3,43 @@ package org.zerionproject.transport;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * The stored inputs needed to resume an ongoing contact's connection without
- * re-running the handshake: the handshake root key and our role, both fixed at
- * pairing. Nothing else carries across connections; the post-quantum ratchet
- * starts fresh on each one.
- */
 @NotNullByDefault
 public class StoredContactSession {
 
-	private final SecretKey rootKey;
+	private final ContactRootKeys rootKeys;
 	private final boolean alice;
+	private final long generation;
 
 	public StoredContactSession(SecretKey rootKey, boolean alice) {
-		this.rootKey = rootKey;
+		this(rootKey, alice, 0);
+	}
+
+	public StoredContactSession(SecretKey rootKey, boolean alice,
+			long generation) {
+		this(ContactRootKeys.atPairing(rootKey), alice, generation);
+	}
+
+	public StoredContactSession(ContactRootKeys rootKeys, boolean alice,
+			long generation) {
+		this.rootKeys = rootKeys;
 		this.alice = alice;
+		this.generation = generation;
 	}
 
 	public SecretKey getRootKey() {
-		return rootKey;
+		SecretKey k = rootKeys.getKey(rootKeys.getSendEpoch());
+		return k == null ? rootKeys.getCurrent() : k;
+	}
+
+	public ContactRootKeys getRootKeys() {
+		return rootKeys;
 	}
 
 	public boolean isAlice() {
 		return alice;
+	}
+
+	public long getGeneration() {
+		return generation;
 	}
 }

@@ -2,7 +2,10 @@ package org.zerionproject.core.crypto.async;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridAgreementPrivateKey;
 import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.api.crypto.PrivateKey;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
@@ -21,18 +24,13 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Persists this account's async prekeys and the envelope replay seen-set in the
- * encrypted settings store (SQLCipher-backed). It generates and rotates one-time
- * and signed prekeys, resolves the private key an incoming envelope consumed so
- * {@link AsyncSealedSender#open} can decrypt, deletes a one-time prekey once it
- * is used (per-message forward secrecy), and deduplicates envelopes. It does not
- * hold the account identity; the caller supplies identity keys when publishing a
- * bundle. All key material is stored only in the encrypted settings namespace.
- */
 @ThreadSafe
 @NotNullByDefault
 public class AsyncPrekeyStore {
+
+	public static final long PUBLISHED_SIGNED_PREKEY_ID = 0L;
+
+	static final int MAX_AUDIENCES = 1024;
 
 	private static final String NS = "org.zerionproject.async/prekeys";
 	private static final String OTK_IDS = "otkIds";
@@ -43,24 +41,24 @@ public class AsyncPrekeyStore {
 	private static final String SPK_PREV_ID = "spkPrevId";
 	private static final String SPK_PREV_PUB = "spkPrevPub";
 	private static final String SPK_PREV_PRIV = "spkPrevPriv";
+	private static final String SPK_PREV_EXPIRY = "spkPrevExpiry";
+	private static final String MESH_AGREE_PUB = "meshAgreePub";
+	private static final String ALIAS_KEY = "otkAliasKey";
+	private static final String AUDIENCES = "otkAudiences";
+	private static final String LABEL_OTK_ALIAS =
+			"org.zerionproject.async/ONE_TIME_PREKEY_ALIAS";
+	private static final long ALIAS_RELOAD_INTERVAL_MS = 30_000L;
 	private static final String SEEN_PREFIX = "seen.";
 	private static final String FLOOR_PREFIX = "floor.";
 	private static final String SEEN_SENDER_LABEL =
 			"org.zerionproject.async/SEEN_SENDER";
-	/** Senders with a replay record; the least recently expiring go first. */
 	public static final int MAX_SEEN_SENDERS = 256;
-	/** The global record and floor of releases before senders were kept apart. */
 	private static final String LEGACY_SEEN = "seen";
 	private static final String LEGACY_FLOOR = "seenFloor";
 
 	private static final long SPK_LIFETIME_SECONDS = 7L * 24 * 3600;
 	public static final int MAX_SEEN = 4096;
 
-	/**
-	 * The longest an envelope may live, mirrored from the delivery layer so
-	 * that a seen-set entry written before expiries were recorded is kept for
-	 * the whole window rather than dropped.
-	 */
 	static final long MAX_ENVELOPE_LIFETIME_MS = 30L * 24 * 60 * 60 * 1000;
 
 	private final CryptoComponent crypto;
@@ -70,12 +68,15 @@ public class AsyncPrekeyStore {
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
 
+	@Nullable
+	private Map<String, String> aliasIndex = null;
+	private long aliasIndexBuiltAt = 0L;
+
 	public AsyncPrekeyStore(CryptoComponent crypto,
 			SettingsManager settingsManager, Clock clock) {
 		this(crypto, settingsManager, clock, MAX_SEEN);
 	}
 
-	/** As above with an explicit bound on the envelope seen-set. */
 	public AsyncPrekeyStore(CryptoComponent crypto,
 			SettingsManager settingsManager, Clock clock, int maxSeen) {
 		if (maxSeen < 1) throw new IllegalArgumentException();
@@ -99,8 +100,6 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/** Generates and persists {@code count} one-time prekeys, returning their
-	 * public parts for inclusion in a published bundle. */
 	public List<AsyncPrekeyBundle.OneTimePrekey> generateOneTimePrekeys(
 			int count) throws DbException {
 		synchronized (lock) {
@@ -123,14 +122,112 @@ public class AsyncPrekeyStore {
 			}
 			upd.put(OTK_IDS, joinList(ids));
 			settingsManager.mergeSettings(upd, NS);
+			aliasIndex = null;
 			return created;
 		}
 	}
 
-	/** Tops the one-time prekey pool up to {@code target}, generating only the
-	 * shortfall, and returns the full current set of public parts for a bundle.
-	 * Unlike {@link #generateOneTimePrekeys}, repeated calls do not grow the
-	 * store without bound. */
+	public List<AsyncPrekeyBundle.OneTimePrekey> topUpOneTimePrekeys(
+			int target, byte[] audience) throws DbException {
+		synchronized (lock) {
+			List<AsyncPrekeyBundle.OneTimePrekey> pool =
+					topUpOneTimePrekeys(target);
+			Settings s = settingsManager.getSettings(NS);
+			byte[] aliasKey = aliasKeyLocked(s);
+			rememberAudienceLocked(s, audience);
+			List<AsyncPrekeyBundle.OneTimePrekey> out =
+					new ArrayList<>(pool.size());
+			for (AsyncPrekeyBundle.OneTimePrekey p : pool) {
+				out.add(new AsyncPrekeyBundle.OneTimePrekey(
+						alias(aliasKey, audience, p.id), p.pub));
+			}
+			aliasIndex = null;
+			return out;
+		}
+	}
+
+	public byte[] getMeshAgreementPublicKey() throws DbException {
+		synchronized (lock) {
+			Settings s = settingsManager.getSettings(NS);
+			String hex = s.get(MESH_AGREE_PUB);
+			if (!empty(hex)) return hex(hex);
+			KeyPair kp = crypto.generateHybridAgreementKeyPair();
+			byte[] pub = kp.getPublic().getEncoded();
+			PrivateKey priv = kp.getPrivate();
+			if (priv instanceof HybridAgreementPrivateKey) {
+				((HybridAgreementPrivateKey) priv).clear();
+			}
+			Settings upd = new Settings();
+			upd.put(MESH_AGREE_PUB, StringUtils.toHexString(pub));
+			settingsManager.mergeSettings(upd, NS);
+			return pub;
+		}
+	}
+
+	private byte[] aliasKeyLocked(Settings s) throws DbException {
+		String hex = s.get(ALIAS_KEY);
+		if (!empty(hex)) return hex(hex);
+		byte[] key = new byte[SecretKey.LENGTH];
+		random.nextBytes(key);
+		Settings upd = new Settings();
+		upd.put(ALIAS_KEY, StringUtils.toHexString(key));
+		settingsManager.mergeSettings(upd, NS);
+		s.put(ALIAS_KEY, StringUtils.toHexString(key));
+		return key;
+	}
+
+	private void rememberAudienceLocked(Settings s, byte[] audience)
+			throws DbException {
+		LinkedHashSet<String> audiences = parseList(s.get(AUDIENCES));
+		String a = StringUtils.toHexString(audience);
+		if (audiences.contains(a)) return;
+		audiences.add(a);
+		while (audiences.size() > MAX_AUDIENCES) {
+			audiences.remove(audiences.iterator().next());
+		}
+		Settings upd = new Settings();
+		upd.put(AUDIENCES, joinList(audiences));
+		settingsManager.mergeSettings(upd, NS);
+		s.put(AUDIENCES, joinList(audiences));
+	}
+
+	private byte[] alias(byte[] aliasKey, byte[] audience, byte[] id) {
+		byte[] mac = crypto.mac(LABEL_OTK_ALIAS, new SecretKey(aliasKey),
+				audience, id);
+		return java.util.Arrays.copyOf(mac,
+				AsyncPrekeyBundle.ONE_TIME_PREKEY_ID_BYTES);
+	}
+
+	@Nullable
+	private String unaliasLocked(Settings s, String idHex) throws DbException {
+		long now = clock.currentTimeMillis();
+		Map<String, String> index = aliasIndex;
+		if (index == null || (!index.containsKey(idHex)
+				&& now - aliasIndexBuiltAt >= ALIAS_RELOAD_INTERVAL_MS)) {
+			index = buildAliasIndexLocked(s);
+			aliasIndex = index;
+			aliasIndexBuiltAt = now;
+		}
+		return index.get(idHex);
+	}
+
+	private Map<String, String> buildAliasIndexLocked(Settings s)
+			throws DbException {
+		Map<String, String> index = new java.util.HashMap<>();
+		String keyHex = s.get(ALIAS_KEY);
+		if (empty(keyHex)) return index;
+		byte[] aliasKey = hex(keyHex);
+		LinkedHashSet<String> ids = parseList(s.get(OTK_IDS));
+		for (String audienceHex : parseList(s.get(AUDIENCES))) {
+			byte[] audience = hex(audienceHex);
+			for (String idHex : ids) {
+				index.put(StringUtils.toHexString(
+						alias(aliasKey, audience, hex(idHex))), idHex);
+			}
+		}
+		return index;
+	}
+
 	public List<AsyncPrekeyBundle.OneTimePrekey> topUpOneTimePrekeys(int target)
 			throws DbException {
 		synchronized (lock) {
@@ -152,8 +249,6 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/** Returns the current signed prekey, generating a fresh one if none exists
-	 * or the current one has expired. */
 	public SignedPrekey getSignedPrekey() throws DbException {
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
@@ -168,8 +263,6 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/** Rotates the signed prekey, keeping the previous one for a grace window so
-	 * in-flight envelopes can still be opened. */
 	public SignedPrekey rotateSignedPrekey() throws DbException {
 		synchronized (lock) {
 			return rotateSignedPrekeyLocked(settingsManager.getSettings(NS));
@@ -184,6 +277,7 @@ public class AsyncPrekeyStore {
 			upd.putLong(SPK_PREV_ID, s.getLong(SPK_ID, 0L));
 			upd.put(SPK_PREV_PUB, curPub);
 			upd.put(SPK_PREV_PRIV, s.get(SPK_PRIV));
+			upd.putLong(SPK_PREV_EXPIRY, s.getLong(SPK_EXPIRY, 0L));
 		}
 		long newId = s.getLong(SPK_ID, 0L) + 1L;
 		KeyPair kp = crypto.generateHybridAgreementKeyPair();
@@ -198,8 +292,6 @@ public class AsyncPrekeyStore {
 		return new SignedPrekey(newId, pub, priv, expiry);
 	}
 
-	/** Resolves the private keypair an envelope consumed, or null if unknown or
-	 * already consumed. */
 	@Nullable
 	public KeyPair resolvePrekey(int prekeyKind, byte[] prekeyId,
 			long signedPrekeyId) throws DbException, GeneralSecurityException {
@@ -224,7 +316,69 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/** Deletes a used one-time prekey so it cannot open a replayed envelope. */
+	public static final class PrekeyCandidate {
+		public final KeyPair keyPair;
+		public final boolean published;
+		@Nullable
+		public final byte[] oneTimeId;
+
+		PrekeyCandidate(KeyPair keyPair, boolean published,
+				@Nullable byte[] oneTimeId) {
+			this.keyPair = keyPair;
+			this.published = published;
+			this.oneTimeId = oneTimeId;
+		}
+	}
+
+	public List<PrekeyCandidate> resolveCandidates(int prekeyKind,
+			byte[] prekeyId, long signedPrekeyId, long ttlSeconds)
+			throws DbException, GeneralSecurityException {
+		synchronized (lock) {
+			Settings s = settingsManager.getSettings(NS);
+			List<PrekeyCandidate> out = new ArrayList<>(2);
+			if (prekeyKind == AsyncEnvelope.PREKEY_KIND_ONE_TIME) {
+				String idHex = StringUtils.toHexString(prekeyId);
+				boolean published = false;
+				if (!parseList(s.get(OTK_IDS)).contains(idHex)) {
+					idHex = unaliasLocked(s, idHex);
+					published = true;
+				}
+				if (idHex == null) return out;
+				String pubHex = s.get(otkPub(idHex));
+				String privHex = s.get(otkPriv(idHex));
+				if (empty(pubHex) || empty(privHex)) return out;
+				out.add(new PrekeyCandidate(keyPair(pubHex, privHex),
+						published, hex(idHex)));
+				return out;
+			}
+			if (signedPrekeyId == PUBLISHED_SIGNED_PREKEY_ID) {
+				if (!empty(s.get(SPK_PUB))) {
+					out.add(new PrekeyCandidate(keyPair(s.get(SPK_PUB),
+							s.get(SPK_PRIV)), true, null));
+				}
+				if (!empty(s.get(SPK_PREV_PUB))
+						&& previousMayStillOpen(s, ttlSeconds)) {
+					out.add(new PrekeyCandidate(keyPair(s.get(SPK_PREV_PUB),
+							s.get(SPK_PREV_PRIV)), true, null));
+				}
+				return out;
+			}
+			KeyPair legacy = resolvePrekey(prekeyKind, prekeyId,
+					signedPrekeyId);
+			if (legacy != null) {
+				out.add(new PrekeyCandidate(legacy, false, null));
+			}
+			return out;
+		}
+	}
+
+	private boolean previousMayStillOpen(Settings s, long ttlSeconds) {
+		long prevExpiry = s.getLong(SPK_PREV_EXPIRY, 0L);
+		if (prevExpiry <= 0L) return true;
+		long nowSeconds = clock.currentTimeMillis() / 1000L;
+		return nowSeconds <= prevExpiry + ttlSeconds;
+	}
+
 	public void consumeOneTimePrekey(byte[] prekeyId) throws DbException {
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
@@ -236,15 +390,10 @@ public class AsyncPrekeyStore {
 			upd.put(otkPub(idHex), "");
 			upd.put(otkPriv(idHex), "");
 			settingsManager.mergeSettings(upd, NS);
+			aliasIndex = null;
 		}
 	}
 
-	/**
-	 * Reports whether an envelope dedup id has already been recorded, without
-	 * marking it. Used to reject a replay before the expensive envelope open,
-	 * so a flood of repeats of one captured envelope costs a settings read
-	 * rather than a decapsulation and two signature verifications each.
-	 */
 	public boolean isSeen(byte[] dedupId) throws DbException {
 		String h = StringUtils.toHexString(dedupId);
 		synchronized (lock) {
@@ -265,18 +414,6 @@ public class AsyncPrekeyStore {
 		return StringUtils.toHexString(java.util.Arrays.copyOf(h, 16));
 	}
 
-	/**
-	 * Records an envelope dedup id together with the envelope's expiry under
-	 * the sender that sealed it and returns true if the envelope is new. Each
-	 * sender's set is bounded, but eviction can never re-admit a replay: an
-	 * entry leaves the set only once it has expired, or, when the set is
-	 * full, by raising that sender's floor to the evicted entry's expiry,
-	 * after which every envelope from that sender expiring at or before the
-	 * floor is rejected whether or not it is remembered. A sender that floods
-	 * its own set therefore raises only its own floor; other senders'
-	 * envelopes are unaffected. The number of senders with a record is
-	 * bounded too, the least recently expiring record leaving first.
-	 */
 	public boolean checkAndMarkSeen(byte[] senderSigPub, byte[] dedupId,
 			long expiryMs) throws DbException {
 		String sender = senderKey(senderSigPub);
@@ -319,11 +456,6 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/**
-	 * Keeps the number of senders with a non-empty record within the bound
-	 * by dropping, until it fits, the record whose latest expiry is the
-	 * earliest, never the record being written.
-	 */
 	private void evictSurplusSenders(Settings s, String keep, Settings upd) {
 		java.util.Map<String, Long> latest = new java.util.HashMap<>();
 		for (Map.Entry<String, String> e : s.entrySet()) {
@@ -351,7 +483,6 @@ public class AsyncPrekeyStore {
 		}
 	}
 
-	/** The expiry at or below which every envelope of a sender is refused. */
 	public long seenFloor(byte[] senderSigPub) throws DbException {
 		synchronized (lock) {
 			return settingsManager.getSettings(NS)

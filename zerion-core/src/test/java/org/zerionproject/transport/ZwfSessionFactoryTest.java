@@ -13,11 +13,6 @@ import java.lang.reflect.Constructor;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- * Proves the two endpoints derive mirrored session material from the shared root
- * key: one side's send-side keys equal the other side's receive-side keys, and
- * the two directions are separated.
- */
 public class ZwfSessionFactoryTest {
 
 	private CryptoComponent crypto;
@@ -64,7 +59,6 @@ public class ZwfSessionFactoryTest {
 		ZwfSession alice = factory.deriveSession(rootKey, true);
 		ZwfSession bob = factory.deriveSession(rootKey, false);
 
-		// my send-side material == peer's receive-side material
 		assertArrayEquals(alice.getSendTagKey().getBytes(),
 				bob.getRecvTagKey().getBytes());
 		assertArrayEquals(bob.getSendTagKey().getBytes(),
@@ -73,7 +67,6 @@ public class ZwfSessionFactoryTest {
 				bob.getRecvHeaderKey().getBytes());
 		assertArrayEquals(bob.getSendHeaderKey().getBytes(),
 				alice.getRecvHeaderKey().getBytes());
-		// the chain seed (direction root key) mirrors too
 		assertArrayEquals(alice.getSendState().getRootKey().getBytes(),
 				bob.getRecvState().getRootKey().getBytes());
 		assertArrayEquals(alice.getRecvState().getRootKey().getBytes(),

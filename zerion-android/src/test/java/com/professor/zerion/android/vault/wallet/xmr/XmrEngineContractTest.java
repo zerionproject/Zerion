@@ -8,11 +8,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-/**
- * Contract of the inspection primitives as the send flow will consume them:
- * every txid is enumerated in order and agrees with the count, dust is read
- * but never added to the debit, and a disposed handle fails closed.
- */
 public class XmrEngineContractTest {
 
 	private static final String T1 =

@@ -13,11 +13,6 @@ import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_PK_A
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * The header codec's decoders accept a well-formed header and otherwise throw
- * {@link PcsException}: random input, every single bit flip of a valid header
- * and every truncation length produce nothing else.
- */
 public class PcsHeaderCodecFuzzTest {
 
 	private static final int RANDOM_INPUTS = 3000;

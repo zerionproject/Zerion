@@ -8,17 +8,6 @@ import java.nio.charset.StandardCharsets;
 
 import javax.annotation.Nullable;
 
-/**
- * Detects Payjoin information in a BIP21 payment request. A request without a
- * usable Payjoin endpoint is a normal payment and continues on the existing
- * send path unchanged. A request whose Payjoin data is present but malformed is
- * reported as malformed so the caller can reject the Payjoin attempt; nothing
- * here trusts the endpoint. The endpoint is validated again by the native
- * Payjoin implementation before it is used. A request that marks a parameter
- * as required with the {@code req-} prefix defined by BIP21, and that this
- * code does not understand, is reported as malformed as that BIP demands,
- * so it is never paid as if the parameter were absent.
- */
 @NotNullByDefault
 public final class PayjoinUri {
 

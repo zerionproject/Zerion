@@ -36,14 +36,12 @@ public class XmrSyncManagerTest {
 		exec.shutdownNow();
 	}
 
-	/** Fast polling; stall thresholds far beyond any test's duration. */
 	private XmrSyncManager manager() {
 		sync = new XmrSyncManager(exec, (w, e) -> current.get(), sink, 200, 60,
 				60_000, 120_000);
 		return sync;
 	}
 
-	/** Short stall thresholds so stall handling can be exercised quickly. */
 	private XmrSyncManager managerShortStall() {
 		sync = new XmrSyncManager(exec, (w, e) -> current.get(), sink, 200, 60,
 				300, 900);
@@ -253,9 +251,6 @@ public class XmrSyncManagerTest {
 				5000);
 	}
 
-	/** JNI-04: a failover never re-initialises a wallet whose refresh thread
-	 *  is still running; when the thread will not go idle the loop ends
-	 *  offline instead of racing the reconnect against the scan. */
 	@Test
 	public void failoverRefusesToReconnectWhileTheRefreshIsBusy()
 			throws Exception {
@@ -276,9 +271,6 @@ public class XmrSyncManagerTest {
 		assertFalse(sync.isActive());
 	}
 
-	/** JNI-05: a stop that lands while the periodic store holds the refresh
-	 *  paused must not be followed by a restart of that refresh; the session
-	 *  is about to be closed and a running refresh would race the close. */
 	@Test
 	public void stopDuringThePeriodicStoreDoesNotRestartTheRefresh()
 			throws Exception {

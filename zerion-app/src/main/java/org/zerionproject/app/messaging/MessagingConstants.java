@@ -48,6 +48,8 @@ interface MessagingConstants {
 	String MSG_KEY_GROUP_TARGET_PUBKEY = "groupTargetPubKey";
 	String MSG_KEY_GROUP_NEW_ROLE = "groupNewRole";
 	String MSG_KEY_GROUP_MEMBER_LIST = "groupMemberList";
+	String MSG_KEY_GROUP_TIMER = "groupTimer";
+	String MSG_KEY_GROUP_SETTINGS_TIMESTAMP = "groupSettingsTimestamp";
 
 	String MSG_KEY_GTR_INVITE_NAME = "gtrInviteName";
 	String MSG_KEY_GTR_INVITE_SALT = "gtrInviteSalt";

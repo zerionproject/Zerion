@@ -10,16 +10,6 @@ public interface Mode3FullRatchet {
 
 	Mode3FullState createInitialState();
 
-	/**
-	 * Encapsulate a post-quantum secret for the next outgoing frame. Rotation of
-	 * our own ML-KEM key pair is driven by {@code ownSendsSinceRotation}, the
-	 * number of our own sends since our key pair was last rotated, so a key pair
-	 * is never advertised for more than {@link
-	 * org.zerionproject.core.api.crypto.pcs.PcsConstants#MODE3_FULL_SEND_ROTATION_INTERVAL}
-	 * of our sends regardless of how the peer interleaves its traffic. The caller
-	 * (the send side) owns this counter and resets it whenever
-	 * {@link PqSendResult#isRotated()} is true.
-	 */
 	PqSendResult pqEncapsulateSend(Mode3FullState state,
 			long ownSendsSinceRotation);
 
@@ -29,12 +19,6 @@ public interface Mode3FullRatchet {
 	SecretKey deriveHybridMessageKey(SecretKey classicalMessageKey,
 			byte[] sharedSecret);
 
-	/**
-	 * Absorbs a post-quantum shared secret into a stream chain key. Both
-	 * endpoints derive the same secret for the same frame, so applying this at
-	 * the same point in the chain keeps the two sides in step. Once absorbed,
-	 * the chain can no longer be recomputed from the contact root key alone.
-	 */
 	SecretKey mixPqSecretIntoChainKey(SecretKey chainKey, byte[] sharedSecret);
 
 	@NotNullByDefault
@@ -60,8 +44,6 @@ public interface Mode3FullRatchet {
 			this.rotated = rotated;
 		}
 
-		/** Whether our own ML-KEM key pair was rotated on this send; the send
-		 *  side resets its own-send counter when this is true. */
 		public boolean isRotated() {
 			return rotated;
 		}

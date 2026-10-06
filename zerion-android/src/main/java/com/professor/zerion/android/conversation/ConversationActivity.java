@@ -60,7 +60,6 @@ import com.professor.zerion.android.widget.LinkDialogFragment;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import java.util.concurrent.Executor;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
-import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.zerionproject.app.api.conversation.ConversationRequest;
 import org.zerionproject.app.api.conversation.ConversationResponse;
@@ -172,10 +171,19 @@ public class ConversationActivity extends ZerionActivity
 	@com.professor.zerion.android.AppModule.UiPrefs
 	android.content.SharedPreferences uiPrefs;
 
+	@Inject
+	@com.professor.zerion.android.AppModule.ProfilePrefs
+	android.content.SharedPreferences profilePrefs;
+
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
 
 	private final ActivityResultLauncher<String[]> docLauncher =
 			registerForActivityResult(new OpenMultipleImageDocumentsAdvanced(),
+					this::onImagesChosen);
+	private final ActivityResultLauncher<String[]> documentLauncher =
+			registerForActivityResult(
+					new com.professor.zerion.android.util.ActivityLaunchers
+							.OpenMultipleDocumentsAdvanced(),
 					this::onImagesChosen);
 	private final ActivityResultLauncher<String> contentLauncher =
 			registerForActivityResult(new GetMultipleImagesAdvanced(),
@@ -192,6 +200,7 @@ public class ConversationActivity extends ZerionActivity
 	private ShapeableImageView toolbarAvatar;
 	private ImageView toolbarStatus;
 	private boolean meshOnline = false;
+	private boolean conversationShown = false;
 	private TextView toolbarTitle;
 	private TextView toolbarSubtitle;
 	private ZerionRecyclerView list;
@@ -271,9 +280,14 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getContactItem().observe(this, contactItem -> {
 			requireNonNull(contactItem);
 			setAvatar(toolbarAvatar, contactItem);
-			contactVerified = contactItem.getAuthorInfo().getStatus()
-					== AuthorInfo.Status.VERIFIED;
+			contactVerified = mayReceiveMedia(contactItem.getContact());
 			updateVerifyBanner();
+		});
+		viewModel.areKeysOutOfSync().observe(this, outOfSync -> {
+			TextView banner = findViewById(R.id.keysOutOfSyncBanner);
+			if (banner == null) return;
+			banner.setVisibility(Boolean.TRUE.equals(outOfSync)
+					? View.VISIBLE : View.GONE);
 		});
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
@@ -312,7 +326,8 @@ public class ConversationActivity extends ZerionActivity
 		list.setEmptyText(getString(R.string.no_private_messages));
 		list.setEmptyAction(getString(R.string.no_private_messages_action));
 		ConversationScrollListener scrollListener =
-				new ConversationScrollListener(adapter, viewModel);
+				new ConversationScrollListener(adapter, viewModel,
+						() -> !lockManager.isLocked());
 		list.getRecyclerView().addOnScrollListener(scrollListener);
 
 		SwipeToReplyCallback swipeCallback = new SwipeToReplyCallback(
@@ -389,10 +404,19 @@ public class ConversationActivity extends ZerionActivity
 			}
 		});
 
-		viewModel.getVoiceMemoRebuilt().observeEvent(this, memoId -> {
-			if (memoId != null) {
-				voiceMemoRebuildsRequested.remove(memoId);
-				refreshVoiceMemoAnchor(memoId);
+		viewModel.getVoiceMemoRebuilt().observeEvent(this, key -> {
+			if (key != null) {
+				voiceMemoRebuildsRequested.remove(key);
+				refreshVoiceMemoAnchor(VoiceMemoParts.isLocalKey(key),
+						VoiceMemoParts.memoIdOf(key));
+			}
+		});
+
+		viewModel.getReactionRemovedLocallyOnly().observeEvent(this, r -> {
+			if (r != null && r) {
+				new ZerionSnackbarBuilder().make(list,
+						R.string.reaction_removed_here_only,
+						Snackbar.LENGTH_LONG).show();
 			}
 		});
 
@@ -446,7 +470,7 @@ public class ConversationActivity extends ZerionActivity
 		});
 
 		viewModel.isContactTyping().observe(this, typing -> {
-			boolean typingEnabled = uiPrefs.getBoolean(
+			boolean typingEnabled = profilePrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
 							.PREF_TYPING_INDICATORS, true);
 			if (!typingEnabled) {
@@ -519,6 +543,14 @@ public class ConversationActivity extends ZerionActivity
 		if (banner != null) {
 			banner.setOnClickListener(v -> openContactInfo());
 		}
+		TextView keysBanner = findViewById(R.id.keysOutOfSyncBanner);
+		if (keysBanner != null) {
+			keysBanner.setOnClickListener(v -> openContactInfo());
+		}
+	}
+
+	static boolean mayReceiveMedia(org.zerionproject.core.api.contact.Contact c) {
+		return c.isVerified() || c.getHandshakePublicKey() != null;
 	}
 
 	private boolean requireVerifiedToSendMedia() {
@@ -550,7 +582,7 @@ public class ConversationActivity extends ZerionActivity
 		typingManager.setListener(new TypingIndicatorManager.TypingListener() {
 			@Override
 			public void onSendTypingIndicator(boolean isTyping) {
-				if (uiPrefs.getBoolean(
+				if (profilePrefs.getBoolean(
 						com.professor.zerion.android.settings.SecurityFragment
 								.PREF_TYPING_INDICATORS, true)) {
 					viewModel.sendTypingIndicator(isTyping);
@@ -617,7 +649,7 @@ public class ConversationActivity extends ZerionActivity
 				photoFile.getParentFile().mkdirs();
 			}
 			photoUri = androidx.core.content.FileProvider.getUriForFile(this,
-					"com.professor.zerion.fileprovider", photoFile);
+					getPackageName() + ".fileprovider", photoFile);
 			takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoUri);
 			takePictureIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 			startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
@@ -637,7 +669,7 @@ public class ConversationActivity extends ZerionActivity
 				recordedVideoFile.getParentFile().mkdirs();
 			}
 			videoUri = androidx.core.content.FileProvider.getUriForFile(this,
-					"com.professor.zerion.fileprovider", recordedVideoFile);
+					getPackageName() + ".fileprovider", recordedVideoFile);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, videoUri);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 0);
 			takeVideoIntent.putExtra(android.provider.MediaStore.EXTRA_DURATION_LIMIT, 60);
@@ -685,7 +717,7 @@ public class ConversationActivity extends ZerionActivity
 				}
 
 				Uri finalizedUri = androidx.core.content.FileProvider.getUriForFile(this,
-						"com.professor.zerion.fileprovider", finalizedFile);
+						getPackageName() + ".fileprovider", finalizedFile);
 
 				runOnUiThread(() -> {
 					if (sendController instanceof TextAttachmentController) {
@@ -904,16 +936,21 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onStart() {
 		super.onStart();
+		if (lockManager.isLocked()) {
+			conversationShown = false;
+			return;
+		}
+		conversationShown = true;
 		notificationManager.blockContactNotification(contactId);
 		notificationManager.clearContactNotification(contactId);
 		displayContactOnlineStatus();
 		list.startPeriodicUpdate();
 		loadMessages();
 		viewModel.reloadAutoDeleteTimer();
-		voiceCallsEnabled = uiPrefs.getBoolean(
+		voiceCallsEnabled = profilePrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
 						.PREF_VOICE_CALLS_ENABLED, true);
-		videoCallsEnabled = uiPrefs.getBoolean(
+		videoCallsEnabled = profilePrefs.getBoolean(
 				com.professor.zerion.android.settings.SecurityFragment
 						.PREF_VIDEO_CALLS_ENABLED, false);
 		invalidateOptionsMenu();
@@ -937,15 +974,11 @@ public class ConversationActivity extends ZerionActivity
 
 		purgeCameraTemp();
 
-		try {
-			Intent serviceIntent = new Intent(this,
-					com.professor.zerion.android.conversation.voice.VoiceCallService.class);
-			stopService(serviceIntent);
-		} catch (Exception e) {
+		if (conversationShown) {
+			notificationManager.unblockContactNotification(contactId);
+			list.stopPeriodicUpdate();
 		}
-
-		notificationManager.unblockContactNotification(contactId);
-		list.stopPeriodicUpdate();
+		conversationShown = false;
 
 		if (pendingSecretBurnId != null) {
 			viewModel.deleteMessages(
@@ -974,6 +1007,7 @@ public class ConversationActivity extends ZerionActivity
 		super.onDestroy();
 		typingManager.destroy();
 		shredCameraDir();
+		DocumentOpener.wipe(this);
 	}
 
 	private void shredCameraDir() {
@@ -1045,7 +1079,7 @@ public class ConversationActivity extends ZerionActivity
 			onBackPressed();
 			return true;
 		} else if (itemId == R.id.action_voice_call) {
-			if (!uiPrefs.getBoolean(
+			if (!profilePrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
 							.PREF_VOICE_CALLS_ENABLED, true)) {
 				return true;
@@ -1053,7 +1087,7 @@ public class ConversationActivity extends ZerionActivity
 			startVoiceCall();
 			return true;
 		} else if (itemId == R.id.action_video_call) {
-			if (!uiPrefs.getBoolean(
+			if (!profilePrefs.getBoolean(
 					com.professor.zerion.android.settings.SecurityFragment
 							.PREF_VIDEO_CALLS_ENABLED, false)) {
 				return true;
@@ -1290,8 +1324,14 @@ public class ConversationActivity extends ZerionActivity
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
 							.parse(text);
 			if (part != null) {
-				viewModel.feedVoicePart(text);
-				voiceMemoRebuildsRequested.remove(part.memoId);
+				Pair<Integer, ConversationMessageItem> carrier =
+						adapter.getMessageItem(m);
+				boolean local = carrier != null
+						? !carrier.getSecond().isIncoming()
+						: viewModel.isLocalMessage(m);
+				viewModel.feedVoicePart(local, text);
+				voiceMemoRebuildsRequested.remove(
+						VoiceMemoParts.key(local, part.memoId));
 				if (part.seq > 0) {
 					Pair<Integer, ConversationMessageItem> partItem =
 							adapter.getMessageItem(m);
@@ -1301,8 +1341,9 @@ public class ConversationActivity extends ZerionActivity
 						partItem.getSecond().markRead();
 					}
 				}
-				if (viewModel.getReassembledVoiceMessage(part.memoId) != null) {
-					refreshVoiceMemoAnchor(part.memoId);
+				if (viewModel.getReassembledVoiceMessage(local, part.memoId)
+						!= null) {
+					refreshVoiceMemoAnchor(local, part.memoId);
 				}
 			}
 			if (ConversationSecretNoteItem.isSecretNoteText(text)) {
@@ -1338,10 +1379,11 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@UiThread
-	private void refreshVoiceMemoAnchor(String memoId) {
+	private void refreshVoiceMemoAnchor(boolean local, String memoId) {
 		for (int i = 0; i < adapter.getItemCount(); i++) {
 			ConversationItem item = adapter.getItemAt(i);
 			if (!(item instanceof ConversationMessageItem)) continue;
+			if (item.isIncoming() == local) continue;
 			String t = ((ConversationMessageItem) item).getText();
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part anchor =
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
@@ -1356,18 +1398,21 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	@Nullable
-	public String getReassembledVoiceMessage(String memoId) {
-		String reassembled = viewModel.getReassembledVoiceMessage(memoId);
-		if (reassembled == null && !viewModel.isVoiceMemoFailed(memoId)
-				&& voiceMemoRebuildsRequested.add(memoId)) {
-			viewModel.rebuildVoiceMemo(memoId);
+	public String getReassembledVoiceMessage(boolean local, String memoId) {
+		String reassembled =
+				viewModel.getReassembledVoiceMessage(local, memoId);
+		if (reassembled == null
+				&& !viewModel.isVoiceMemoFailed(local, memoId)
+				&& voiceMemoRebuildsRequested.add(
+				VoiceMemoParts.key(local, memoId))) {
+			viewModel.rebuildVoiceMemo(local, memoId);
 		}
 		return reassembled;
 	}
 
 	@Override
-	public boolean isVoiceMemoFailed(String memoId) {
-		return viewModel.isVoiceMemoFailed(memoId);
+	public boolean isVoiceMemoFailed(boolean local, String memoId) {
+		return viewModel.isVoiceMemoFailed(local, memoId);
 	}
 
 	@UiThread
@@ -1542,8 +1587,8 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void onPhoneDocumentsSelected() {
-		String[] mimeTypes = new String[]{"image/*", "application/pdf"};
-		docLauncher.launch(mimeTypes);
+		documentLauncher.launch(com.professor.zerion.android.attachment
+				.AttachmentDocuments.pickerTypes());
 	}
 
 	@Override
@@ -1898,7 +1943,9 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void onImagesChosen(@Nullable List<Uri> uris) {
-		if (uris == null || uris.isEmpty()) return;
+		uris = com.professor.zerion.android.util.PickedUris.accept(this,
+				uris);
+		if (uris.isEmpty()) return;
 
 		if (uris.size() > MAX_ATTACHMENTS_PER_MESSAGE) {
 			new ZerionSnackbarBuilder()
@@ -1910,7 +1957,16 @@ public class ConversationActivity extends ZerionActivity
 
 		if (viewModel.isOfflineMode()) {
 			for (Uri uri : uris) {
-				sendMeshImageAsync(uri, false);
+				if (com.professor.zerion.android.attachment.AttachmentDocuments
+						.sendType(getContentResolver().getType(uri)) != null) {
+					new ZerionSnackbarBuilder()
+							.make(list, getString(
+									R.string.document_mesh_not_supported),
+									Snackbar.LENGTH_SHORT)
+							.show();
+				} else {
+					sendMeshImageAsync(uri, false);
+				}
 			}
 			return;
 		}
@@ -2158,6 +2214,21 @@ public class ConversationActivity extends ZerionActivity
 					}
 					adapter.notifyDataSetChanged();
 				});
+			} catch (org.zerionproject.app.api.grouptr.GroupTrAuthException e) {
+				if (e.getReason() == org.zerionproject.app.api.grouptr
+						.GroupTrAuthException.Reason.INVITE_EXPIRED) {
+					runOnUiThread(() -> {
+						adapter.notifyDataSetChanged();
+						Snackbar.make(list, R.string.grouptr_invite_expired,
+								Snackbar.LENGTH_LONG).show();
+					});
+				} else {
+					runOnUiThread(() -> {
+						item.setAnswered(false);
+						adapter.notifyDataSetChanged();
+						handleException(e);
+					});
+				}
 			} catch (DbException e) {
 				runOnUiThread(() -> {
 					item.setAnswered(false);
@@ -2191,7 +2262,10 @@ public class ConversationActivity extends ZerionActivity
 	public void onAttachmentClicked(View view, ConversationMessageItem messageItem,
 			AttachmentItem attachmentItem) {
 		if (attachmentItem.getState() != AttachmentItem.State.ERROR) {
-			if (attachmentItem.isVideo()) {
+			if (attachmentItem.isDocument()) {
+				DocumentOpener.open(this, dbExecutor, attachmentRetriever,
+						attachmentItem.getHeader());
+			} else if (attachmentItem.isVideo()) {
 				Intent intent = new Intent(this, VideoPlayerActivity.class);
 				intent.putExtra(VideoPlayerActivity.ATTACHMENT, attachmentItem);
 				intent.putExtra(VideoPlayerActivity.ITEM_ID, messageItem.getId().getBytes());
@@ -2203,9 +2277,13 @@ public class ConversationActivity extends ZerionActivity
 				intent.putExtra(NAME, imgName != null ? imgName : "");
 				intent.putExtra(ITEM_ID, messageItem.getId().getBytes());
 				intent.putExtra(DATE, messageItem.getTime());
-				intent.putExtra(ATTACHMENT_POSITION, messageItem.getAttachments().indexOf(attachmentItem));
-				intent.putParcelableArrayListExtra(ATTACHMENTS,
-						new ArrayList<>(messageItem.getAttachments()));
+				ArrayList<AttachmentItem> images = new ArrayList<>();
+				for (AttachmentItem a : messageItem.getAttachments()) {
+					if (!a.isDocument()) images.add(a);
+				}
+				intent.putExtra(ATTACHMENT_POSITION,
+						images.indexOf(attachmentItem));
+				intent.putParcelableArrayListExtra(ATTACHMENTS, images);
 
 				ActivityOptionsCompat options =
 						makeSceneTransitionAnimation(this, view, "image");

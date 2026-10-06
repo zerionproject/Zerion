@@ -43,6 +43,7 @@ import static org.zerionproject.core.contact.HandshakeConstants.KCI_MINOR_VERSIO
 import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_EPHEMERAL_PUBLIC_KEY;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_HYBRID_STATIC_KEY;
 import static org.zerionproject.core.contact.HandshakeRecordTypes.RECORD_TYPE_KEM_CIPHERTEXT;
@@ -59,11 +60,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 			r.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 					!isKnownRecordType(r.getRecordType());
 
-	/**
-	 * The largest handshake record is a hybrid public key of 1216 bytes;
-	 * an unauthenticated peer may not make this side allocate more per
-	 * record than that order of magnitude.
-	 */
 	static final int HANDSHAKE_MAX_RECORD_PAYLOAD_BYTES = 4096;
 
 	private static boolean isKnownRecordType(byte type) {
@@ -147,7 +143,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 					"Post-quantum handshake requested but hybrid keys unavailable");
 		}
 		throw new IOException(
-				"Refusing classical-only handshake — peer must advertise "
+				"Refusing classical-only handshake, peer must advertise "
 						+ "post-quantum capability");
 	}
 
@@ -178,6 +174,10 @@ class HandshakeManagerImpl implements HandshakeManager {
 
 		if (!pendingContactFactory.verifyHybridKeyCommitment(
 				theirHybridStaticKey, theirCommitment)) {
+			throw new FormatException();
+		}
+		if (!rendezvousKeyMatches(ctx.pendingContact.getPublicKey()
+				.getEncoded(), theirHybridStaticKey.getEncoded())) {
 			throw new FormatException();
 		}
 
@@ -298,6 +298,19 @@ class HandshakeManagerImpl implements HandshakeManager {
 				ourEphX25519, theirEphX25519);
 	}
 
+	static boolean rendezvousKeyMatches(byte[] linkKey, byte[] staticKey) {
+		if (linkKey.length != HYBRID_COMMITMENT_BYTES
+				+ HYBRID_RENDEZVOUS_X25519_BYTES) {
+			return false;
+		}
+		if (staticKey.length < HYBRID_RENDEZVOUS_X25519_BYTES) return false;
+		int diff = 0;
+		for (int i = 0; i < HYBRID_RENDEZVOUS_X25519_BYTES; i++) {
+			diff |= linkKey[HYBRID_COMMITMENT_BYTES + i] ^ staticKey[i];
+		}
+		return diff == 0;
+	}
+
 	private void sendHybridStaticKey(RecordWriter w, PublicKey k)
 			throws IOException {
 		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
@@ -314,11 +327,6 @@ class HandshakeManagerImpl implements HandshakeManager {
 		return parseHybridKey(key);
 	}
 
-	/**
-	 * A peer's hybrid key is parsed, not just measured: the ML-KEM half
-	 * must pass the same checks the encapsulation performs, so a malformed
-	 * key is a format error here rather than an unchecked failure later.
-	 */
 	private PublicKey parseHybridKey(byte[] key) throws FormatException {
 		try {
 			return crypto.getHybridAgreementKeyParser().parsePublicKey(key);

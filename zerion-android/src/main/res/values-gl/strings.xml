@@ -23,7 +23,6 @@
 	<string name="dnkm_huawei_protected_button">Protexer Zerion</string>
 	<string name="dnkm_huawei_protected_help">Se Zerion non se engade ao listado de apps protexidas, non poderá funcionar en segundo plano.</string>
 	<string name="dnkm_xiaomi_button">Protexer Zerion</string>
-	<string name="dnkm_warning_dozed">%s non foi quen de funcionar en segundo plano</string>
 	
 	<string name="enter_password">Contrasinal</string>
 	<string name="try_again">Contrasinal incorrecto, tenteo de novo</string>
@@ -69,7 +68,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion está configurada para non usar internet se está usando batería</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurada para non usar internet neste país</string>
   
-  <string name="transport_lan_long">Mesma rede Wi-Fi</string>
 
   <string name="reminder_notification_title">Desconectaches de Zerion</string>
   <string name="reminder_notification_text">Toca para volver a conectar</string>
@@ -189,13 +187,10 @@
   <string name="exchanging_contact_details">Intercambiando detalles do contacto\u2026</string>
   <string name="contact_added_toast">Contacto engadido: %s</string>
   <string name="contact_already_exists">O contacto %s xa existe</string>
-  <string name="qr_code_too_old">O código QR que escaneaches procede dunha versión anterior de %s.\n\nPor favor, solicite ao teu contacto actualizar a nova versión e inténtao de novo.</string>
-  <string name="qr_code_too_new">O código QR que escaneaches procede dunha nova versión de %s.\n\nPor favor, actualiza a última versión e inténteo de novo.</string>
   <string name="camera_error">Fallo na cámara</string>
   <string name="connecting_to_device">Conectando co dispositivo\u2026</string>
   <string name="authenticating_with_device">Autenticándose co dispositivo\u2026</string>
   <string name="connection_error_title">Non se puido conectar co contacto</string>
-  <string name="connection_error_feedback">Se persiste o problema,<a href="feedback">envía un informe</a> para axudarnos a mellorar a app.</string>
   
   <string name="add_contact_remotely_title_case">Engadir contacto a distancia</string>
   <string name="add_contact_nearby_title">Engadir contacto próximo</string>
@@ -347,7 +342,6 @@
   <string name="pref_theme_title">Decorado</string>
   <string name="pref_theme_light">Claro</string>
   <string name="pref_theme_dark">Escuro</string>
-  <string name="pref_theme_auto">Automático (no día)</string>
   <string name="pref_theme_system">Por defecto no sistema</string>
   
   <string name="network_settings_title">Conexións</string>
@@ -362,8 +356,6 @@
   
   <string name="tor_network_setting_summary">Automático: %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Utilizar datos móbiles</string>
-  <string name="tor_only_when_charging_title">Conectar a internet só cando carga batería</string>
-  <string name="tor_only_when_charging_summary">Desactiva a conexión a internet cando o dispositivo utiliza a batería</string>
   
   <string name="security_settings_title">Seguridade</string>
   <string name="pref_lock_title">Bloquear app</string>
@@ -420,8 +412,6 @@
   <string name="choose_ringtone_title">Escolle ton</string>
   <string name="cannot_load_ringtone">Non se cargou o ton</string>
   
-  <string name="mailbox_setup_connecting">Conectando...</string>
-  <string name="tor_offline_title">Desconectado</string>
   
   <string name="disappearing_messages_title">Mensaxes efémeras</string>
   <string name="disappearing_messages_explanation_long">Ao activar esta función farás que as novas
@@ -437,40 +427,13 @@
   <string name="disappearing_messages_summary">Facer que as futuras mensaxes da conversa desaparecerán automáticamente após 7\u00A0días.</string>
   
   <string name="pref_category_actions">Accións</string>
-  <string name="send_feedback">Envía a avaliación</string>
   
   <string name="link_warning_title">Aviso de ligazón</string>
   <string name="link_warning_intro">Vas abrir a seguinte ligazón nunha aplicación externa.</string>
   <string name="link_warning_text">Esto pódese utilizar para identificarte. Pensa ben se confías na persoa que che envía a ligazón e considera abrila co Navegador Tor.</string>
   <string name="link_warning_open_link">Abrir ligazón</string>
   
-  <string name="crash_report_title">Informe de fallo de Zerion</string>
-  <string name="not_your_fault">Non é culpa túa.</string>
-  <string name="please_send_report">Axúdanos por favor a mellorar Zerion enviándonos un informe do fallo.</string>
-  <string name="report_is_encrypted">Prometemos que o informe está cifrado e enviado con seguridade.</string>
-  <string name="feedback_title">Avaliación</string>
-  <string name="describe_crash">Describe que aconteceu (optativo)</string>
-  <string name="enter_feedback">Escribe a túa avaliación</string>
-  <string name="optional_contact_email">O teu enderezo e-mail (optativo)</string>
-  <string name="include_debug_report_crash">Incluír datos anónimos sobre o fallo</string>
-  <string name="include_debug_report_feedback">Incluír datos anónimos sobre este dispositivo</string>
-  <string name="dev_report_user_info">Información da usuaria</string>
-  <string name="dev_report_basic_info">Información básica</string>
-  <string name="dev_report_device_info">Información do dispositivo</string>
-  <string name="dev_report_stacktrace">Trazas</string>
-  <string name="dev_report_time_info">Información da hora</string>
-  <string name="dev_report_memory">Memoria</string>
-  <string name="dev_report_storage">Almacenaxe</string>
-  <string name="dev_report_connectivity">Conectividade</string>
-  <string name="dev_report_build_config">Configuración da compilación</string>
-  <string name="dev_report_logcat">Rexistro da app</string>
-  <string name="dev_report_device_features">Características do dispositivo</string>
-  <string name="send_report">Enviar informe</string>
   <string name="close">Pechar</string>
-  <string name="dev_report_sending">Enviando comentarios...</string>
-  <string name="dev_report_sent">Comentarios enviados</string>
-  <string name="dev_report_saved">Informe gardado. Enviarase a seguinte vez que te conectes con Zerion.</string>
-  <string name="dev_report_error">Erro: fallou o envío do informe</string>
   
   <string name="progress_title_logout">Desconectando de Zerion...</string>
   
@@ -625,7 +588,6 @@
 	<string name="wallet_receive_new">Novo enderezo</string>
 	<string name="wallet_node_hint">Toca un servidor para usalo. Mantén premido un servidor personalizado para quitalo.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Un enderezo privado reutilizable. Os pagamentos a el non se poden vincular na cadea. A detección analiza datos públicos a través de Tor; as túas claves nunca saen do dispositivo.</string>
 	<string name="wallet_sp_balance">Detectado: %1$s</string>
 	<string name="wallet_sp_scanned">Analizado ata o bloque %1$d</string>
 	<string name="wallet_sp_set_oracle">Fonte de análise</string>

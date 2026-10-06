@@ -130,6 +130,19 @@ public class ActivityLaunchers {
 		}
 	}
 
+	public static class OpenMultipleDocumentsAdvanced
+			extends OpenMultipleDocuments {
+		@NonNull
+		@Override
+		public Intent createIntent(Context context, String[] input) {
+			Intent i = super.createIntent(context, input);
+			putShowAdvancedExtra(i);
+			i.addFlags(FLAG_GRANT_READ_URI_PERMISSION);
+			i.putExtra(EXTRA_MIME_TYPES, input);
+			return i;
+		}
+	}
+
 	private static void putShowAdvancedExtra(Intent i) {
 		i.putExtra(SDK_INT <= 28 ? "android.content.extra.SHOW_ADVANCED" :
 				"android.provider.extra.SHOW_ADVANCED", true);

@@ -27,13 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * On-device reproduction and regression for the rename identity model: the
- * wallet's display name must have zero cryptographic effect, so renaming a
- * wallet must never change the password that opens it. Uses the real
- * VaultManager, WalletStore and native engine on a throwaway vault in app data.
- * No network and no value transaction.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrRenameDeviceTest {
 

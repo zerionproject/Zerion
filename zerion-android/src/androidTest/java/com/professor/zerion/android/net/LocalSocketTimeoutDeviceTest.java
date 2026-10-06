@@ -20,13 +20,6 @@ import java.net.SocketTimeoutException;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Verifies on the device that a read on a Unix domain socket is bounded by
- * LocalSocket.setSoTimeout, which the Tor SOCKS client relies on for its
- * connect and read deadlines. Records which exception type the platform
- * raises, because Android's LocalSocketImpl reports the timeout as a plain
- * IOException("Try again") rather than a SocketTimeoutException.
- */
 @RunWith(AndroidJUnit4.class)
 public class LocalSocketTimeoutDeviceTest {
 

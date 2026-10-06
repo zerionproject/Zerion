@@ -30,7 +30,6 @@
 		android:textColor="@color/zerion_text_secondary"
 		android:textSize="16sp" />
 
-	<!-- Zerion (PQ) Option -->
 	<androidx.cardview.widget.CardView
 		android:id="@+id/zerionCard"
 		android:layout_width="match_parent"
@@ -110,7 +109,6 @@
 
 	</androidx.cardview.widget.CardView>
 
-	<!-- Classic Mode (Classical Cryptography) Option -->
 	<androidx.cardview.widget.CardView
 		android:id="@+id/briarCard"
 		android:layout_width="match_parent"

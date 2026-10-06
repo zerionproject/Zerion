@@ -63,13 +63,6 @@ class HyperSqlDatabase extends JdbcDatabase {
 		return reopen;
 	}
 
-	/**
-	 * Closes the database and clears the clean-shutdown flag while the private
-	 * key copy is still valid, then zeroes that copy. The key copied at open
-	 * is owned here, so a caller clearing its own key object before close
-	 * cannot prevent the final dirty-flag write. Idempotent: a second close,
-	 * or a close after a failed open, only clears the key and returns.
-	 */
 	@Override
 	public void close() throws DbException {
 		synchronized (closeLock) {
@@ -105,7 +98,6 @@ class HyperSqlDatabase extends JdbcDatabase {
 		if (k != null) k.clear();
 	}
 
-	/** Whether a private key copy is still held; for tests only. */
 	boolean holdsKey() {
 		return key != null;
 	}

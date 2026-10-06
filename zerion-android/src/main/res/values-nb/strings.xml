@@ -82,7 +82,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion er satt opp til å ikke bruke Internettet når den kjører fra batteri</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion er satt opp til ikke a bruke Internettet i dette landet</string>
   
-  <string name="transport_lan_long">Samme Wi-Fi-nettverk</string>
 
   <string name="reminder_notification_title">Logget ut av Zerion</string>
   <string name="reminder_notification_text">Trykk for å logge inn igjen.</string>
@@ -206,7 +205,6 @@
   <string name="connecting_to_device">Kobler til enhet\u2026</string>
   <string name="authenticating_with_device">Autentiserer med enhet\u2026</string>
   <string name="connection_error_title">Kunne ikke koble til din kontakt </string>
-  <string name="connection_error_feedback">Om problemet vedvarer, vennligst <a href="feedback"> send tilbakemelding </a> for å hjelpe oss å forbedre appen.</string>
   
   <string name="add_contact_remotely_title_case">Legg til kontakt over distanse</string>
   <string name="add_contact_nearby_title">Legg til kontakt i nærheten</string>
@@ -381,8 +379,6 @@
   
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Bruke mobildata</string>
-  <string name="tor_only_when_charging_title">Koble bare til Internettet under lading</string>
-  <string name="tor_only_when_charging_summary">Deaktivere Internettforbindelsen når enheten bruker batteriet</string>
   
   <string name="security_settings_title">Sikkerhet</string>
   <string name="pref_lock_title">App-lås</string>
@@ -439,71 +435,8 @@
   <string name="choose_ringtone_title">Velg ringetone</string>
   <string name="cannot_load_ringtone">Kan ikke laste inn ringetone</string>
   
-  <string name="mailbox_settings_title">Mailboks</string>
-  <string name="mailbox_setup_title">Mailboks-innstillinger</string>
-  <string name="mailbox_setup_intro">En Mailboks gjør det mulig for dine kontakter å sende deg meldinger selv om du ikke er pålogget. Mailboksen vil motta dine meldinger å lagre dem til du logger på igjen.\n
-		\nDu kan installere Zerion Mailboks-appen på en enhet du har til overs. Sørge for å koble den til strøm og Wi-Fi slik at den alltid er pålogget internettet.</string>
-  <string name="mailbox_setup_download">Først, installere Mailbox-app\'en på en annen enhet ved å søke etter «Zerion Mailbox» på Google Play eller hvorenn du lastet ned Zerion.\n
-		\nSå koble din Mailbox med Zerion ved å skanne QR-koden vist i Mailbox-app\'en.</string>
-  <string name="mailbox_setup_download_link">Dele nedlastingslenke</string>
-  <string name="mailbox_setup_already_paired_title">Mailboks\'en er allerede lenket opp</string>
-  <string name="mailbox_setup_already_paired_description">Lenke fra Mailboks-appen på din andre enhet og prøv igjen.</string>
-  <string name="mailbox_setup_io_error_title">Kunne ikke koble til</string>
-  <string name="mailbox_setup_io_error_description">Sørge for at begge enhetene er tilkoblet Internettet og prøve igjen.</string>
-  <string name="mailbox_setup_assertion_error_title">Mailboks-feil</string>
-  <string name="mailbox_setup_assertion_error_description">Vennligst sende tilbakemelding (med anonymiserte data) via Zerion-app\'en hvis problemet fortsetter.</string>
-  <string name="mailbox_setup_camera_error_description">Kunne ikke få tilgang til kameraet. Prøv igjen, kanskje etter en omstart av enheten.</string>
-  <string name="mailbox_setup_paired_title">Tilkoblet</string>
-  <string name="mailbox_setup_paired_description">Din Mailboks har lyktes i å bli lenket sammen med Zerion.\n
-		\nSørge for å holde din Mailboks koblet til strøm og Wi-Fi, slik at du alltid forblir pålogget.</string>
-  <string name="tor_offline_title">Frakoblet</string>
-  <string name="tor_offline_description">Sørge for at denne enheten er pålogget Internettet, og at alle forbindelser til Internettet er tillatte å finne sted.\n
-		\nEtter dette, vente til globe-ikonet under tilkoblingsinstillingskjermen blir grønn.</string>
-  <string name="tor_offline_button_check">Sjekke tilkoblingsinstillingene</string>
-  <string name="mailbox_status_title">Mailboks-status</string>
-  <string name="mailbox_status_connected_title">Mailboks\'en kjører</string>
-  <string name="mailbox_status_problem_title">Zerion har problemer med å koble til Mailboks\'en</string>
-  <string name="mailbox_status_failure_title">Mailboks\'en er utilgjengelig</string>
-  <string name="mailbox_status_app_too_old_title">Zerion er for gammel</string>
-  <string name="mailbox_status_app_too_old_message">Oppdatere Zerion til den siste versjonen av app\'en og prøv igjen.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailboks er for gammel</string>
-  <string name="mailbox_status_mailbox_too_old_message">Oppdatere din Mailboks til den siste versjonen av app\'en og prøv igjen.</string>
-  <string name="mailbox_status_check_button">Sjekke tilkoblingen</string>
   
-  <string name="mailbox_status_connected_info">Siste tilkobling: %s</string>
   
-  <string name="mailbox_status_connected_never">Aldri</string>
-  <string name="mailbox_status_unlink_button">Lenke fra</string>
-  <string name="mailbox_status_unlink_dialog_title">Lenke fra mailboks?</string>
-  <string name="mailbox_status_unlink_dialog_question">Er du sikker på at du vil lenke fra din Mailboks?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Dersom du lenker fra din Mailboks, så vil du ikke kunne motta meldinger så lenge Zerion frakoblet nettet.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Din Mailboks har blitt lenket fra</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Neste gang du får tilgang til din Mailbox-enhet, vennligst åpne Mailbox-app\'en og trykk på «Koble fra»-knappen for å fullføre prosessen.\n\nHvis du ikke lenger har tilgang til din Mailbox-enhet, fortvil ikke! Dine data er kryptert så de vil forbli sikre selv om du ikke fullfører prosessen.</string>
-  <string name="mailbox_status_unlink_success">Din Mailboks har blitt lenket fra</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailboks-problem</string>
-  <string name="mailbox_error_notification_title">Zerion Mailboks er utilgjengelig</string>
-  <string name="mailbox_error_notification_text">Trykke for å løse problem.</string>
-  <string name="mailbox_error_wizard_button">Løse problem</string>
-  <string name="mailbox_error_wizard_title">Mailboks feilsøkingshjelper</string>
-  <string name="mailbox_error_wizard_question1">Har du tilgang til din Mailboks-enhet?</string>
-  <string name="mailbox_error_wizard_answer1">Ja, jeg har tilgang til den akkurat nå.</string>
-  <string name="mailbox_error_wizard_answer2">Ikke akkurat nå, men jeg kan få tilgang til den senere.</string>
-  <string name="mailbox_error_wizard_answer3">Nei, jeg har ikke lenger tilgang til den.</string>
-  <string name="mailbox_error_wizard_info1_1">Sjekke at Maiboks-enheten er skrudd på og at den er koblet til Internettet.</string>
-  <string name="mailbox_error_wizard_question1_1">Åpne Mailboks-app\'en. Hva ser du?</string>
-  <string name="mailbox_error_wizard_answer1_1">Jeg ser instruksjonene for å sette opp Mailboks\'en</string>
-  <string name="mailbox_error_wizard_answer1_2">Jeg ser en QR-kode</string>
-  <string name="mailbox_error_wizard_answer1_3">Jeg kan se \"Mailboks\'en kjører\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Jeg kan se \"Enheten offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Vennligst koble fra Mailboks\'en din ved å bruke knappen under, etter det følger du instruksjonene på Mailboks-enehet for å lenke den sammen på nytt igjen.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Vennligst lenke fra din Mailboks ved å bruke knappen under, så skanner du QR-koden for å linke den sammen igjen.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Vennligst bruk knappen under for å sjekke tilkoblingen imellom Zerion og Mailboks.\n\n
-		Dersom tilkoblingen mislykkes igjen:\n
-		\u2022 Sjekk at Mailboks- og Zerion-appene er oppdaterte til de nyeste versjonene.\n
-		\u2022 Starte dine Mailboks- og Zerion-enheter på nytt og prøv igjen.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Sjekke at mailboks-enheten er ordentlig koblet til Internettet.\n\nSjekk at klokka på Mailboks-enheten viser riktig tid, dato og tidssone.\n\nSjekk at Maiboks- og Zerion-appene er oppdaterte til den nyeste versjonen.\n\nStarte dine Mailboks- og Zerion-enheter på nytt og prøv igjen.</string>
-  <string name="mailbox_error_wizard_info2">Vennligst kom tilbake til denne skjermen når du har fått tilgang til enheten.</string>
-  <string name="mailbox_error_wizard_info3">Vennligst lenke fra din mailboks ved å bruke knappen under.\n\nEtter du har lenket fra din gamle Mailboks, så kan du sette opp en ny Mailboks når det skulle være.</string>
   
   <string name="about_title">Om</string>
   <string name="zerion_version">Zerion versjon: %s</string>
@@ -511,7 +444,6 @@
   <string name="links">Lenker</string>
   <string name="zerion_website">\u2022 <a href="">Nettside</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Kildekode</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Endringslogg</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Personvernerklæring</a></string>
   
   <string name="translator_thanks">En takk til alle bidragsytere og til Lokaliseringslabben</string>
@@ -530,43 +462,13 @@
   <string name="disappearing_messages_summary">La fremtidige meldinger i denne konversasjonen forvinne automatisk etter 7\u00A0dager.</string>
   
   <string name="pref_category_actions">Handlinger</string>
-  <string name="send_feedback">Send tilbakemelding</string>
   
   <string name="link_warning_title">Lenkeadvarsel</string>
   <string name="link_warning_intro">Du er i ferd med å følge en lenke med et eksternt program.</string>
   <string name="link_warning_text">Dette kan brukes for å identifisere deg. Tenk over om du stoler på personen som sendte deg lenken eller ikke, og vurdere om du vil åpne den i Tor-nettleseren.</string>
   <string name="link_warning_open_link">Åpne lenke</string>
   
-  <string name="crash_report_title">Kræsjrapport for Zerion</string>
-  <string name="zerion_crashed">Vi er lei for det, Zerion har krasjet</string>
-  <string name="not_your_fault">Dette er ikke din feil.</string>
-  <string name="please_send_report">Hjelp til med å forbedre Zerion ved å sende en kræsjrapport.</string>
-  <string name="report_is_encrypted">Kræsjrapporten vil sendes kryptert og sikkert.</string>
-  <string name="feedback_title">Tilbakemelding</string>
-  <string name="describe_crash">Beskriv hva som skjedde (valgfritt)</string>
-  <string name="enter_feedback">Skriv inn din tilbakemelding</string>
-  <string name="optional_contact_email">Din e-postadresse (valgfri)</string>
-  <string name="privacy_policy">Ved å sende oss data godtar du vår <a href="">personvernserklæring</a></string>
-  <string name="include_debug_report_crash">Inkluder anonym data om kræsjet</string>
-  <string name="include_debug_report_feedback">Inkluder anonym data om denne enheten</string>
-  <string name="dev_report_user_info">Brukerinformasjon</string>
-  <string name="dev_report_basic_info">Grunninformasjon</string>
-  <string name="dev_report_device_info">Enhetsinformasjon</string>
-  <string name="dev_report_stacktrace">Stabelsporing</string>
-  <string name="dev_report_time_info">Tidsinformasjon</string>
-  <string name="dev_report_memory">Minne</string>
-  <string name="dev_report_storage">Lagringsplass</string>
-  <string name="dev_report_connectivity">Tilkobling</string>
-  <string name="dev_report_network_usage">Nettverksbåndbredde-bruk</string>
-  <string name="dev_report_build_config">Byggekonfigurasjon</string>
-  <string name="dev_report_logcat">App-logg</string>
-  <string name="dev_report_device_features">Enhetsfunksjonaliteter</string>
-  <string name="send_report">Send kræsjrapport</string>
   <string name="close">Lukk</string>
-  <string name="dev_report_sending">Sender tilbakemelding...</string>
-  <string name="dev_report_sent">Tilbakemelding sendt</string>
-  <string name="dev_report_saved">Kræsjrapport lagret. Den vil bli sendt neste gang du logger inn i Zerion.</string>
-  <string name="dev_report_error">Feil: Rapportsendingen mislyktes</string>
   
   <string name="progress_title_logout">Logger ut av Zerion…</string>
   
@@ -579,13 +481,10 @@
   <string name="permission_camera_title">Kameratilgang</string>
   <string name="permission_camera_request_body">For å skanne QR-koden, trenger Zerion tilgang til kameraet.</string>
   <string name="permission_location_title">Lokasjonstillatelse</string>
-  <string name="permission_location_request_body">For å oppdage Blåtann-enheter, så trenger Zerion tillatelse til å få tilgang til lokasjonen din.\n\nZerion lagrer ikke din lokasjon eller deler den med noen.</string>
   <string name="permission_camera_location_title">Kamera og lokasjon</string>
   <string name="permission_camera_location_request_body">For å skanne QR-koden, så trenger Zerion tilgang til kameraet.\n\nFor å finne Blåtann-enheter, så trenger Zerion tillatelse til å få tilgang til din lokasjon.\n\nZerion lagrer ikke din lokasjon eller deler den med noen.</string>
   <string name="permission_camera_denied_body">Du har nektet tilgang til kameraet, men tillegg av kontakter krever bruk av kameraet.\n\nOvervei å innvilge tilgang.</string>
-  <string name="permission_location_denied_body">Du har avlsått tilgang til din lokasjon, men Zerion trenger denne tilgangen for å kunne finne Blåtann-enheter.\n\nVennligst vurdere å gi tilgang.</string>
   <string name="permission_location_setting_title">Lokasjonsinnstillinger</string>
-  <string name="permission_location_setting_body">Din enhets lokasjonsinnstillinger må være skrudd på for å finne andre enheter via Blåtann. Vennligst skru på lokasjonstilgang for å fortsette. Det er mulig å skru det av igjen senere.</string>
   <string name="permission_location_setting_button">Skru på lokasjon</string>
   
   <string name="lock_unlock">Låse opp Zerion</string>
@@ -728,7 +627,6 @@
 	<string name="wallet_receive_new">Ny adresse</string>
 	<string name="wallet_node_hint">Trykk på en server for å bruke den. Trykk lenge på en egendefinert server for å fjerne den.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">En gjenbrukbar privat adresse. Betalinger til den kan ikke kobles sammen på blokkjeden. Gjenkjenning skanner offentlige data over Tor; nøklene dine forlater aldri enheten.</string>
 	<string name="wallet_sp_balance">Oppdaget: %1$s</string>
 	<string name="wallet_sp_scanned">Skannet til blokk %1$d</string>
 	<string name="wallet_sp_set_oracle">Skannekilde</string>

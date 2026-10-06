@@ -24,14 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The Electrum line protocol as the client reads it from a hostile or merely
- * awkward server: replies split across writes are reassembled, lines with
- * another id or no id are skipped until the reply arrives, an overlong line
- * is refused at its bound instead of buffered, a reply cut off by a close is
- * a connection error, an error object is a server rejection, and a
- * transaction whose id does not match the one requested is refused.
- */
 public class ElectrumClientFramingTest {
 
 	private static final Pattern ID = Pattern.compile("\"id\":(\\d+)");
@@ -39,7 +31,6 @@ public class ElectrumClientFramingTest {
 			"abandon abandon abandon abandon abandon abandon abandon abandon "
 					+ "abandon abandon abandon about";
 
-	/** Answers each request line with the chunks a script hands back. */
 	private interface Script {
 		List<byte[]> reply(long id, String request);
 	}
@@ -184,12 +175,6 @@ public class ElectrumClientFramingTest {
 		}
 	}
 
-	/**
-	 * A2-BTC-02: a server that streams lines with another id forever holds
-	 * the call only for a bounded number of lines, and when that happens
-	 * during construction the connected stream is closed rather than leaked:
-	 * the server sees its client go away.
-	 */
 	@Test(timeout = 30_000)
 	public void anUnansweredCallIsCutOffAndAFailedConstructionCloses()
 			throws Exception {

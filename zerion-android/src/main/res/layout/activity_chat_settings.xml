@@ -31,7 +31,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Contact Profile Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -99,7 +98,6 @@
 
             </LinearLayout>
 
-            <!-- Sound & Notifications -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -175,7 +173,6 @@
                         app:trackTint="@color/zerion_surface_elevated" />
                 </LinearLayout>
 
-                <!-- Disappearing Messages -->
                 <LinearLayout
                     android:id="@+id/disappearing_messages_option"
                     android:layout_width="match_parent"
@@ -225,7 +222,6 @@
 
             </LinearLayout>
 
-            <!-- Security Level -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -294,7 +290,6 @@
 
             </LinearLayout>
 
-            <!-- Identity verification -->
             <LinearLayout
                 android:id="@+id/identity_card"
                 android:layout_width="match_parent"
@@ -328,6 +323,7 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/safety_number_label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
@@ -423,6 +419,64 @@
                     android:text="@string/identity_copy"
                     app:icon="@drawable/ic_content_copy"
                     app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/mark_verified_button"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/identity_mark_verified"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/keys_out_of_sync_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/identity_keys_out_of_sync_title"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/zerion_text_primary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/identity_keys_out_of_sync_message"
+                        android:textColor="@color/zerion_text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:text="@string/identity_readd_contact_hint"
+                    android:textColor="@color/zerion_text_secondary"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/readd_contact_button"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/identity_readd_contact" />
 
             </LinearLayout>
 

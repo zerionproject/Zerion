@@ -1,4 +1,4 @@
-# Reproducible Monero wallet2_api build for Android (XMR-P0).
+# Reproducible Monero wallet2_api build for Android.
 # Pinned base + NDK + Monero source; builds official Monero from source only,
 # no prebuilt Monero binary. Produces libzmonero.so per ABI.
 # The base image is pinned by content digest (the tag alone can be moved),

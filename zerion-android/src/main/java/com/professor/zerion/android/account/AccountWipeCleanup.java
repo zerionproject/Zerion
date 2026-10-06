@@ -61,6 +61,8 @@ public final class AccountWipeCleanup {
 		deleteKeyStoreEntry(KS_ALIAS_ANDROIDX_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_VAULT_MASTER);
 		deleteKeyStoreEntry(KS_ALIAS_VAULT_BIOMETRIC);
+		com.professor.zerion.android.vault.crypto.VaultKeystore
+				.deleteAllVaultKeys();
 	}
 
 	private static void wipeVaultSafe(VaultManager vaultManager) {
@@ -71,12 +73,6 @@ public final class AccountWipeCleanup {
 		}
 	}
 
-	/**
-	 * Nothing in the preferences directory should survive a wipe: a file
-	 * that is not on the list above (a legacy plaintext file, a library's
-	 * own file) would still show that the app was used and, at worst, what
-	 * it was used for.
-	 */
 	private static void clearAndDeleteEveryPrefsFile(Context context) {
 		try {
 			File dir = new File(context.getApplicationInfo().dataDir,

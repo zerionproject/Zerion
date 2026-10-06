@@ -27,21 +27,10 @@ import static com.professor.zerion.android.conversation.ConversationActivity.CON
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A quick reply typed into a notification is refused while the app is
- * locked, and a reply without a contact or without text is ignored, so no
- * message is composed and nothing is sent in either case.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class NotificationQuickReplyReceiverTest {
 
-	/**
-	 * The application installs a handler that ends the process on an uncaught
-	 * exception; installing one here first makes the application's handler
-	 * delegate to it in a debug build, so a background failure is recorded
-	 * and reported instead of killing the test runtime.
-	 */
 	private static final List<Throwable> UNCAUGHT =
 			Collections.synchronizedList(new ArrayList<>());
 
@@ -113,7 +102,6 @@ public class NotificationQuickReplyReceiverTest {
 		return intent;
 	}
 
-	/** The receiver composes replies on a thread it names; none may exist. */
 	private static void assertNoReplyStarted() {
 		for (Thread t : Thread.getAllStackTraces().keySet()) {
 			assertNotEquals("NotificationQuickReply", t.getName());

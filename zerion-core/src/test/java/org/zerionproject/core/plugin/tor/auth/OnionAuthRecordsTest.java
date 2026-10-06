@@ -11,11 +11,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
-/**
- * The wire records round-trip through their encoding and every malformed
- * shape is refused, so a peer cannot smuggle an unexpected field, key
- * length or address through the activation channel.
- */
 public class OnionAuthRecordsTest {
 
 	private static final String ONION =

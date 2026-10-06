@@ -81,7 +81,7 @@ class ChannelApplicationStore {
 		return null;
 	}
 
-	void putApplication(byte[] channelId, ChannelApplication app)
+	long putApplication(byte[] channelId, ChannelApplication app)
 			throws DbException {
 		List<ChannelApplication> existing = getApplications(channelId);
 		List<ChannelApplication> out = new ArrayList<>(existing.size() + 1);
@@ -89,6 +89,7 @@ class ChannelApplicationStore {
 		for (ChannelApplication a : existing) {
 			if (Arrays.equals(a.getApplicantEd25519(),
 					app.getApplicantEd25519())) {
+				if (sameApplication(a, app)) return 0L;
 				out.add(app);
 				replaced = true;
 			} else {
@@ -96,7 +97,21 @@ class ChannelApplicationStore {
 			}
 		}
 		if (!replaced) out.add(app);
-		write(channelId, out);
+		return write(channelId, out);
+	}
+
+	private static boolean sameApplication(ChannelApplication a,
+			ChannelApplication b) {
+		return a.getDisplayName().equals(b.getDisplayName())
+				&& Arrays.equals(a.getApplicantEd25519(),
+				b.getApplicantEd25519())
+				&& Arrays.equals(a.getApplicantMlDsa(), b.getApplicantMlDsa())
+				&& Arrays.equals(a.getApplicantEphemeralAgreementPub(),
+				b.getApplicantEphemeralAgreementPub())
+				&& a.getAppliedAtHourMs() == b.getAppliedAtHourMs()
+				&& a.getStatus() == b.getStatus()
+				&& Arrays.equals(a.getKemCiphertext(), b.getKemCiphertext())
+				&& Arrays.equals(a.getEnvelope(), b.getEnvelope());
 	}
 
 	void removeApplication(byte[] channelId, byte[] applicantEd)
@@ -112,10 +127,11 @@ class ChannelApplicationStore {
 	}
 
 	void removeAll(byte[] channelId) throws DbException {
-		write(channelId, new ArrayList<>());
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 
-	private void write(byte[] channelId, List<ChannelApplication> apps)
+	private long write(byte[] channelId, List<ChannelApplication> apps)
 			throws DbException {
 		BdfList list = new BdfList();
 		for (ChannelApplication a : apps) {
@@ -134,10 +150,11 @@ class ChannelApplicationStore {
 			}
 			list.add(d);
 		}
+		String encoded = encodeBase64(listToBytes(list));
 		Settings out = new Settings();
-		out.put(ChannelStore.hex(channelId),
-				encodeBase64(listToBytes(list)));
+		out.put(ChannelStore.hex(channelId), encoded);
 		settingsManager.mergeSettings(out, NS);
+		return encoded.length();
 	}
 
 	private static ChannelApplication.Status parseStatus(String s) {

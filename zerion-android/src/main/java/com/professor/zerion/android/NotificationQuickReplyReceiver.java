@@ -36,6 +36,9 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 	@Inject
 	Provider<PrivateMessageFactory> privateMessageFactoryProvider;
 	@Inject
+	Provider<org.zerionproject.app.api.autodelete.AutoDeleteManager>
+			autoDeleteManagerProvider;
+	@Inject
 	com.professor.zerion.android.api.LockManager lockManager;
 
 	@Override
@@ -69,6 +72,8 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 						conversationManagerProvider.get();
 				PrivateMessageFactory pmFactory =
 						privateMessageFactoryProvider.get();
+				org.zerionproject.app.api.autodelete.AutoDeleteManager
+						autoDeleteManager = autoDeleteManagerProvider.get();
 
 				db.transaction(false, txn -> {
 					GroupId groupId = messagingManager
@@ -76,8 +81,10 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 					long timestamp = conversationManager
 							.getTimestampForOutgoingMessage(txn,
 									recipientId);
-					PrivateMessage pm = pmFactory
-							.createLegacyPrivateMessage(groupId,
+					PrivateMessage pm = com.professor.zerion.android
+							.conversation.OutgoingTextMessages.create(txn,
+									messagingManager, autoDeleteManager,
+									pmFactory, recipientId, groupId,
 									timestamp, text);
 					messagingManager.addLocalMessage(txn, pm);
 				});

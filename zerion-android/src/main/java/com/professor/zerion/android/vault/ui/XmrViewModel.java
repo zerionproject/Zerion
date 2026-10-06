@@ -15,14 +15,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * Per-activity UI façade over the single application-scoped
- * {@link XmrWalletManager}. Holds no wallet secrets and owns no session: every
- * hosting activity resolves the same manager, so one wallet can never have
- * two native sessions through two surfaces. Clearing this ViewModel only
- * detaches its observers (they are lifecycle-bound); the manager, and the
- * session it owns, live and die with the vault lock, not with the activity.
- */
 @NotNullByDefault
 public class XmrViewModel extends AndroidViewModel {
 

@@ -24,13 +24,6 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * Distributes async prekey bundles between contacts over the encrypted channel
- * (Tor/I2P), so a contact can seal offline mesh messages to us and we to them,
- * with no identity broadcast. When a contact connects online we send them our
- * current bundle (throttled); when one of theirs arrives we verify its
- * signatures and that it belongs to that contact, then store it.
- */
 @Singleton
 @NotNullByDefault
 public class MeshBundleManager implements EventListener {
@@ -85,7 +78,7 @@ public class MeshBundleManager implements EventListener {
 			byte[] identitySigPub =
 					new HybridSignaturePublicKey(ed, mlDsa).getEncoded();
 			if (!MeshBundleStore.matchesIdentity(bundle, identitySigPub)) {
-				return; // bundle claims another identity; reject
+				return;
 			}
 			store.putContactBundle(contactId.getInt(), bundleBytes);
 		} catch (Exception e) {
@@ -97,7 +90,7 @@ public class MeshBundleManager implements EventListener {
 		long now = System.currentTimeMillis();
 		if (last != null && now - last < RESEND_INTERVAL_MS) return;
 		try {
-			AsyncPrekeyBundle bundle = meshManager.publishBundle();
+			AsyncPrekeyBundle bundle = meshManager.publishBundle(contactId);
 			messagingManager.sendPrekeyBundle(contactId, bundle.encode());
 			lastSent.put(contactId.getInt(), now);
 		} catch (Exception e) {

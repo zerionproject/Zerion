@@ -18,11 +18,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- * The pre-unlock store holds exactly the language, theme and text size, round
- * trips them, and exposes no preferences object through which another key
- * could be added.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class EarlyPrefsTest {

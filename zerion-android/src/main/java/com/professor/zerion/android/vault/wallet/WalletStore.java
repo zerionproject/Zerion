@@ -80,12 +80,6 @@ public class WalletStore
 
 	public enum Access { REJECT, WITH_PASSWORD, NO_PASSWORD }
 
-	/**
-	 * Pure fail-closed decision for how a wallet's seed may be read. A
-	 * password-protected wallet (existing/legacy included) can only ever be read
-	 * through the password-verified AEAD path; an empty/absent password is
-	 * rejected outright and never silently falls through to the no-password path.
-	 */
 	public static Access accessFor(boolean walletProtected,
 			@Nullable char[] password) {
 		if (walletProtected) {
@@ -95,12 +89,6 @@ public class WalletStore
 		return Access.NO_PASSWORD;
 	}
 
-	/**
-	 * Decrypts the wallet secret, failing closed when a wallet password is
-	 * required and absent, and returns it as a mutable {@code char[]} the
-	 * caller must wipe. No immutable String copy of the mnemonic is created
-	 * on any wallet path.
-	 */
 	public char[] loadMnemonicChars(String walletId, @Nullable char[] password)
 			throws Exception {
 		boolean walletProtected = vaultManager.itemHasExtraPassword(walletId);
@@ -182,13 +170,6 @@ public class WalletStore
 
 	private static final String CONFIG_CODE = "CFG";
 
-	/**
-	 * Guards every settings read-modify-write cycle. Settings are mutated from
-	 * several executors; callers that read the settings JSON, change it and
-	 * write it back must hold this lock for the whole cycle, otherwise a
-	 * concurrent cycle can base its write on a stale read and silently drop
-	 * the other side's change (pending-tx reservations included).
-	 */
 	public final Object settingsLock = new Object();
 
 	@Override
@@ -218,12 +199,10 @@ public class WalletStore
 	}
 
 	@Nullable
-	/** Reads the settings without counting the read as user activity. */
 	public String readSettingsQuiet() throws Exception {
 		return vaultManager.withoutActivityRefresh(this::readSettings);
 	}
 
-	/** Writes the settings without counting the write as user activity. */
 	public void writeSettingsQuiet(String json) throws Exception {
 		vaultManager.withoutActivityRefresh(() -> {
 			writeSettings(json);

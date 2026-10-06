@@ -21,14 +21,6 @@ import static net.i2p.crypto.eddsa.EdDSAEngine.SIGNATURE_ALGORITHM;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Proves that migrating the app's Ed25519 from net.i2p.crypto.eddsa (which is
- * unmaintained and vulnerable to CVE-2020-36843 signature malleability) to
- * Bouncy Castle is wire-compatible: every seed derives a byte-identical public
- * key, and signatures interoperate in both directions. If this test passes,
- * existing identities (AuthorIds), voice-call onions, and stored signatures are
- * unchanged, so no re-pairing is required.
- */
 public class EddsaBcCompatibilityTest {
 
 	private static final EdDSANamedCurveSpec CURVE =
@@ -45,9 +37,7 @@ public class EddsaBcCompatibilityTest {
 					.generatePublicKey().getEncoded();
 
 			EdDSAPrivateKeySpec spec = new EdDSAPrivateKeySpec(seed, CURVE);
-			// VoiceCallCryptoImpl.getLocalOnion path
 			byte[] edVoicePub = spec.getA().toByteArray();
-			// CryptoComponentImpl.generateSignatureKeyPair path
 			byte[] edKeygenPub = new EdDSAPrivateKey(spec).getAbyte();
 
 			assertArrayEquals(edKeygenPub, bcPub);
@@ -80,16 +70,13 @@ public class EddsaBcCompatibilityTest {
 			bcSign.update(msg, 0, msg.length);
 			byte[] newSig = bcSign.generateSignature();
 
-			// Ed25519 is deterministic: identical signature bytes
 			assertArrayEquals(oldSig, newSig);
 
-			// signature from the old library verifies under Bouncy Castle
 			Ed25519Signer bcVerify = new Ed25519Signer();
 			bcVerify.init(false, new Ed25519PublicKeyParameters(pub, 0));
 			bcVerify.update(msg, 0, msg.length);
 			assertTrue(bcVerify.verifySignature(oldSig));
 
-			// signature from Bouncy Castle verifies under the old library
 			EdDSAPublicKey edPub =
 					new EdDSAPublicKey(new EdDSAPublicKeySpec(pub, CURVE));
 			Signature edVerify = Signature.getInstance(SIGNATURE_ALGORITHM,
@@ -100,9 +87,6 @@ public class EddsaBcCompatibilityTest {
 		}
 	}
 
-	// The Tor ED25519-V3 secret key blob (TorRendezvousCryptoImpl) is the
-	// clamped SHA-512 expansion of the seed. The migrated derivation must equal
-	// eddsa's getH() so the onion-service identity is unchanged.
 	@Test
 	public void torPrivateKeyBlobMatches() throws Exception {
 		Random r = new Random(555);

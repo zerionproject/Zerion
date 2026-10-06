@@ -31,6 +31,11 @@ public interface VoiceCallConnectionManager {
 	DuplexTransportConnection connectToRemote(String callId, String remoteOnion,
 			SecretKey voiceCallKey, boolean alice) throws IOException;
 
+	String expectedPeerOnion(String callId, SecretKey voiceCallKey,
+			boolean alice);
+
+	void keepEndpoint(String callId);
+
 	void closeEndpoint(String callId);
 
 	void shutdown();

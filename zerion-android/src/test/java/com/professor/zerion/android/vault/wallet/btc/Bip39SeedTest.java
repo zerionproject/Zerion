@@ -11,12 +11,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * BTC-09: the mnemonic never becomes a string on the wallet path. The
- * character-based seed derivation matches BIP-39 and the library, the
- * account derived from it yields the library's addresses, and a closed
- * account holds no key.
- */
 public class Bip39SeedTest {
 
 	private static final String MNEMONIC =

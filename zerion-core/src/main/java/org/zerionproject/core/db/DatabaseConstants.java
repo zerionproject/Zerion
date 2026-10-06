@@ -11,4 +11,8 @@ interface DatabaseConstants {
 	String SCHEMA_VERSION_KEY = "schemaVersion";
 
 	String DIRTY_KEY = "dirty";
+
+	String CONTACT_ID_HIGH_WATER_KEY = "contactIdHighWater";
+
+	String KEY_SET_ID_HIGH_WATER_KEY = "keySetIdHighWater";
 }

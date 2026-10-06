@@ -107,11 +107,6 @@ public class VoiceMessageViewHolder {
 		});
 	}
 
-	/**
-	 * Decrypts and prepares a memo. The memo is opened under the identity of
-	 * the message that carries it: its timestamp, and the sender and recipient
-	 * author ids as seen from this device.
-	 */
 	public void bindEncryptedVoice(String messageText,
 			org.zerionproject.core.api.sync.GroupId groupId, long timestamp,
 			boolean incoming) {
@@ -280,7 +275,6 @@ public class VoiceMessageViewHolder {
 		cleanupTempFile();
 	}
 
-	/** The decoded audio never touches the file system; it is wiped on release. */
 	private void cleanupTempFile() {
 		InMemoryAudio audio = currentAudio;
 		if (audio != null) {

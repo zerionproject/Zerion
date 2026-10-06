@@ -72,7 +72,11 @@ class ImagePreviewViewHolder extends ViewHolder {
 			if (playOverlay != null) {
 				playOverlay.setVisibility(isVideo ? VISIBLE : GONE);
 			}
-			if (isVideo) {
+			if (attachmentItem.isDocument()) {
+				Glide.with(imageView).clear(imageView);
+				progressBar.setVisibility(INVISIBLE);
+				imageView.setImageResource(R.drawable.ic_document);
+			} else if (isVideo) {
 				loadVideoThumbnail(item.getUri());
 			} else {
 				loadImage(attachmentItem);

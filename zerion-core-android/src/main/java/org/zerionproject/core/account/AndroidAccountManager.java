@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.account.ErasePolicy;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.DecryptionException;
 import org.zerionproject.core.api.crypto.KeyStrengthener;
@@ -13,14 +14,15 @@ import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseConfig;
 import org.zerionproject.core.api.identity.IdentityManager;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
@@ -28,55 +30,157 @@ import javax.inject.Singleton;
 
 import static java.util.Arrays.asList;
 import static org.zerionproject.core.api.crypto.DecryptionResult.INVALID_CIPHERTEXT;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_FILES_DAMAGED;
 import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.util.IoUtils.deleteFileOrDir;
-import static org.zerionproject.core.util.StringUtils.UTF_8;
 import static org.zerionproject.core.util.StringUtils.fromHexString;
+import static org.zerionproject.core.util.StringUtils.toHexString;
 @Singleton
 public class AndroidAccountManager extends AccountManagerImpl
 		implements AccountManager {
 
+	private static final String ERASE_MARKER_NAME = "erase.requested";
+
 	private static final List<String> PROTECTED_DIR_NAMES =
-			asList("cache", "code_cache", "lib", "shared_prefs");
+			asList("cache", "code_cache", "lib", "shared_prefs",
+					ERASE_MARKER_NAME);
+
+	public enum ProfileCreationRefusal {
+		PASSWORD_UNAVAILABLE,
+		LOCKED_OUT,
+		FAILED
+	}
 
 	protected final Context appContext;
 	private final SharedPreferences prefs;
 	private final ProfileManager profileManager;
+	private final SecureRandom random = new SecureRandom();
+	private final AtomicInteger derivations;
 
 	@Nullable
 	private volatile String lastProfileCreationError;
+
+	@Nullable
+	private volatile ProfileCreationRefusal lastProfileCreationRefusal;
+
+	@GuardedBy("stateChangeLock")
+	@Nullable
+	private File keyDirOverride = null;
 
 	@Inject
 	AndroidAccountManager(DatabaseConfig databaseConfig,
 			CryptoComponent crypto, IdentityManager identityManager,
 			SharedPreferences prefs, Application app,
 			ProfileManager profileManager) {
-		super(databaseConfig, crypto, identityManager);
+		this(databaseConfig, crypto, identityManager, prefs, app,
+				profileManager, new AtomicInteger());
+	}
+
+	private AndroidAccountManager(DatabaseConfig databaseConfig,
+			CryptoComponent crypto, IdentityManager identityManager,
+			SharedPreferences prefs, Application app,
+			ProfileManager profileManager, AtomicInteger derivations) {
+		super(databaseConfig, countingDerivations(crypto, derivations),
+				identityManager);
+		this.derivations = derivations;
 		this.prefs = prefs;
 		this.profileManager = profileManager;
 		appContext = app.getApplicationContext();
+	}
+
+	private static CryptoComponent countingDerivations(
+			CryptoComponent delegate, AtomicInteger counter) {
+		return (CryptoComponent) Proxy.newProxyInstance(
+				CryptoComponent.class.getClassLoader(),
+				new Class<?>[] {CryptoComponent.class},
+				(proxy, method, args) -> {
+					if (method.getName().equals("decryptWithPassword")) {
+						counter.incrementAndGet();
+					}
+					try {
+						return method.invoke(delegate, args);
+					} catch (InvocationTargetException e) {
+						throw e.getCause();
+					}
+				});
+	}
+
+	@Override
+	protected File dbKeyFile() {
+		File dir = keyDirOverride;
+		return dir == null ? super.dbKeyFile()
+				: new File(dir, super.dbKeyFile().getName());
+	}
+
+	@Override
+	protected File dbKeyBackupFile() {
+		File dir = keyDirOverride;
+		return dir == null ? super.dbKeyBackupFile()
+				: new File(dir, super.dbKeyBackupFile().getName());
+	}
+
+	@Override
+	protected File dbKeyStateFile() {
+		File dir = keyDirOverride;
+		return dir == null ? super.dbKeyStateFile()
+				: new File(dir, super.dbKeyStateFile().getName());
+	}
+
+	@Override
+	protected File eraseMarkerFile() {
+		File files = profileManager.getAppFilesRoot().getAbsoluteFile();
+		File data = files.getParentFile();
+		return new File(data == null ? files : data, ERASE_MARKER_NAME);
+	}
+
+	@Inject
+	void injectErasePolicy(ErasePolicy policy) {
+		setErasePolicy(policy);
 	}
 
 	@Override
 	public boolean accountExists() {
 		synchronized (stateChangeLock) {
 			for (String id : profileManager.listProfileIds()) {
-				if (profileManager.getDbKeyFile(id).exists()
-						|| profileManager.getDbKeyBackupFile(id).exists()) {
-					return true;
-				}
+				if (profileManager.hasKeyFiles(id)) return true;
 			}
 			return false;
 		}
 	}
 
 	@Override
-	public void signIn(char[] password) throws DecryptionException {
+	public boolean createAccount(String name, char[] password) {
 		synchronized (stateChangeLock) {
+			boolean created = super.createAccount(name, password);
+			if (created) {
+				profileManager.startSession(
+						profileManager.getActiveProfileId());
+			}
+			return created;
+		}
+	}
+
+	@Override
+	public void signIn(char[] typed) throws DecryptionException {
+		PasswordForms password = PasswordForms.of(typed);
+		try {
+			synchronized (stateChangeLock) {
+				signInLocked(password);
+			}
+		} finally {
+			password.clear();
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void signInLocked(PasswordForms password)
+			throws DecryptionException {
+		{
 			checkGlobalLockout();
+			org.zerionproject.core.account.LoginThrottle.Attempt attempt =
+					beginAttempt();
 			List<String> profiles = profileManager.listProfileIds();
 			if (profiles.isEmpty()) {
-				recordGlobalFailedAttempt();
 				throw new DecryptionException(INVALID_CIPHERTEXT);
 			}
 			String previousActive = profileManager.getActiveProfileId();
@@ -92,88 +196,147 @@ public class AndroidAccountManager extends AccountManagerImpl
 			}
 			SecretKey matchedKey = null;
 			String matchedId = null;
+			String matchedHex = null;
 			boolean matchedNeedsUpgrade = false;
-			int attempts = 0;
+			int derivationsBefore = derivations.get();
+			int tried = 0;
+			List<String> damaged = new java.util.ArrayList<>();
 			for (String id : order) {
 				profileManager.setActiveProfileId(id);
-				String hex = loadEncryptedDatabaseKey();
-				if (hex == null) continue;
-				attempts++;
+				if (loadEncryptedDatabaseKey() == null) continue;
+				tried++;
 				try {
-					byte[] ciphertext = fromHexString(hex);
+					StoredKey stored = openStoredKey(password);
+					byte[] ciphertext = stored.ciphertext;
+					byte[] plaintext = stored.plaintext;
 					KeyStrengthener strengthener =
 							databaseConfig.getKeyStrengthener();
-					byte[] plaintext = crypto.decryptWithPassword(ciphertext,
-							password, strengthener);
 					if (matchedKey != null) {
 						java.util.Arrays.fill(plaintext, (byte) 0);
 						continue;
 					}
 					matchedKey = new SecretKey(plaintext);
 					matchedId = id;
-					boolean needsStrengthenerUpgrade = strengthener != null
-							&& !crypto.isEncryptedWithStrengthenedKey(
-									ciphertext);
-					boolean needsKdfUpgrade =
-							crypto.isEncryptedWithLegacyKdf(ciphertext);
-					matchedNeedsUpgrade =
-							needsStrengthenerUpgrade || needsKdfUpgrade;
+					matchedHex = stored.hex;
+					matchedNeedsUpgrade = needsReencryption(stored);
 				} catch (DecryptionException e) {
 					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
 						if (matchedKey != null) matchedKey.clear();
 						profileManager.setActiveProfileId(previousActive);
+						cancelAttempt(attempt);
 						throw e;
 					}
-				} catch (org.zerionproject.core.api.FormatException
-						ignored) {
+					if (e.getDecryptionResult() == KEY_FILES_DAMAGED) {
+						damaged.add(id);
+					}
 				}
 			}
-			padSignInAttempts(attempts, order, password);
+			padSignIn(derivations.get() - derivationsBefore, order, password);
 			if (matchedKey != null) {
 				profileManager.setActiveProfileId(matchedId);
 				if (matchedNeedsUpgrade) {
-					encryptAndReplaceDatabaseKey(matchedKey, password);
+					encryptAndReplaceDatabaseKey(matchedKey, password.normal);
 				}
+				alignKeyFilesWithPrimaryIfItHolds(matchedHex);
 				materializePendingIdentityIfPresent(matchedId);
 				setDatabaseKey(matchedKey);
 				profileManager.writeLastActiveProfileId(matchedId);
 				resetGlobalLockout();
+				retireUnusedStrengthenerGenerations();
+				profileManager.startSession(matchedId);
 				return;
 			}
 			profileManager.setActiveProfileId(previousActive);
-			recordGlobalFailedAttempt();
-			throw new DecryptionException(INVALID_CIPHERTEXT);
+			boolean reportDamage = damaged.contains(order.get(0));
+			if (reportDamage) {
+				cancelAttempt(attempt);
+			} else {
+				applyErasePolicy(tried > 0 && damaged.isEmpty());
+			}
+			throw new DecryptionException(
+					reportDamage ? KEY_FILES_DAMAGED : INVALID_CIPHERTEXT);
 		}
 	}
 
-	/**
-	 * The password is tried against every profile, so the work does not
-	 * reveal which profile matched; and once a second profile has ever
-	 * existed the derivation runs at least this many times, so a device with
-	 * one visible profile and a device that also holds a hidden one take the
-	 * same time to sign in.
-	 */
 	static final int MIN_TIMED_ATTEMPTS = 2;
 
 	@GuardedBy("stateChangeLock")
-	private void padSignInAttempts(int attempts, List<String> order,
-			char[] password) {
+	private void padSignIn(int performed, List<String> order,
+			PasswordForms password) {
 		if (order.isEmpty()) return;
-		int minimum = profileManager.hasEverHadMultipleProfiles()
-				? MIN_TIMED_ATTEMPTS : 1;
-		if (attempts >= minimum) return;
+		int target = MIN_TIMED_ATTEMPTS * password.count();
+		if (performed >= target) return;
 		profileManager.setActiveProfileId(order.get(0));
 		String hex = loadEncryptedDatabaseKey();
 		if (hex == null) return;
-		for (int i = attempts; i < minimum; i++) {
+		for (int i = performed; i < target; i++) {
+			padOnce(hex, password.legacy == null || i % 2 == 0
+					? password.normal : password.legacy);
+		}
+	}
+
+	private void padOnce(String hex, char[] password) {
+		try {
+			byte[] plaintext = crypto.decryptWithPassword(
+					fromHexString(hex), password,
+					databaseConfig.getKeyStrengthener());
+			java.util.Arrays.fill(plaintext, (byte) 0);
+		} catch (DecryptionException
+				| org.zerionproject.core.api.FormatException ignored) {
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private boolean passwordOpensAnyProfile(PasswordForms password,
+			@Nullable String skip) throws DecryptionException {
+		int derivationsBefore = derivations.get();
+		boolean opens = false;
+		String first = null;
+		for (String id : profileManager.listProfileIds()) {
+			if (!profileManager.hasKeyFiles(id)) continue;
+			if (first == null) first = id;
+			if (id.equals(skip)) continue;
+			keyDirOverride = profileManager.getKeyDirWithoutCreating(id);
 			try {
-				byte[] plaintext = crypto.decryptWithPassword(
-						fromHexString(hex), password,
-						databaseConfig.getKeyStrengthener());
+				byte[] plaintext = openStoredKey(password, false).plaintext;
 				java.util.Arrays.fill(plaintext, (byte) 0);
-			} catch (DecryptionException
-					| org.zerionproject.core.api.FormatException ignored) {
+				opens = true;
+			} catch (DecryptionException e) {
+				if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
+					throw e;
+				}
+			} finally {
+				keyDirOverride = null;
 			}
+		}
+		if (first != null) {
+			int target = MIN_TIMED_ATTEMPTS * password.count();
+			while (derivations.get() - derivationsBefore < target) {
+				int before = derivations.get();
+				keyDirOverride = profileManager.getKeyDirWithoutCreating(first);
+				try {
+					byte[] plaintext = openStoredKey(password, false).plaintext;
+					java.util.Arrays.fill(plaintext, (byte) 0);
+				} catch (DecryptionException e) {
+					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
+						throw e;
+					}
+				} finally {
+					keyDirOverride = null;
+				}
+				if (derivations.get() == before) break;
+			}
+		}
+		return opens;
+	}
+
+	@GuardedBy("stateChangeLock")
+	private boolean storeKeyFor(String profileId, String hex) {
+		keyDirOverride = profileManager.getKeyDir(profileId);
+		try {
+			return storeEncryptedDatabaseKey(hex);
+		} finally {
+			keyDirOverride = null;
 		}
 	}
 
@@ -198,23 +361,16 @@ public class AndroidAccountManager extends AccountManagerImpl
 		byte[] plaintext = key.getBytes();
 		byte[] ciphertext;
 		try {
+			startStrengthenerGeneration();
 			ciphertext = crypto.encryptWithPassword(plaintext, password,
 					databaseConfig.getKeyStrengthener());
 		} catch (org.zerionproject.core.api.crypto
 				.KeyStrengthenerException keepExisting) {
 			return;
 		}
-		storeEncryptedDatabaseKey(
-				org.zerionproject.core.util.StringUtils.toHexString(
-						ciphertext));
+		storeEncryptedDatabaseKey(toHexString(ciphertext));
 	}
 
-	/**
-	 * One sign-in attempt is tried against every profile, so the throttle is
-	 * global: its state lives outside the profile directories and runs on
-	 * the device's monotonic clock, which keeps counting across a force-stop
-	 * and is re-anchored on the boot identifier after a reboot.
-	 */
 	@Override
 	protected LoginThrottle createLoginThrottle(File ignored) {
 		return new LoginThrottle(
@@ -223,14 +379,56 @@ public class AndroidAccountManager extends AccountManagerImpl
 				LoginThrottle.linuxBootId(), LoginThrottle.SIGN_IN);
 	}
 
+	static final LoginThrottle.Policy PASSWORD_CHECK = new LoginThrottle.Policy() {
+		@Override
+		public int freeFailures() {
+			return 3;
+		}
+
+		@Override
+		public long lockoutMs(int failures) {
+			int doublings = Math.max(0, failures - 4);
+			long duration = 300_000L << Math.min(doublings, 20);
+			return Math.min(duration, 86_400_000L);
+		}
+
+		@Override
+		public long decayMs() {
+			return 86_400_000L;
+		}
+	};
+
+	protected LoginThrottle createPasswordCheckThrottle() {
+		return new LoginThrottle(LoginThrottle.fileStore(
+				profileManager.getPasswordCheckLockoutFile()),
+				android.os.SystemClock::elapsedRealtime,
+				LoginThrottle.linuxBootId(), PASSWORD_CHECK);
+	}
+
+	@Nullable
+	private LoginThrottle passwordCheckThrottle;
+
 	@GuardedBy("stateChangeLock")
-	private void checkGlobalLockout() throws DecryptionException {
-		checkLockout();
+	private LoginThrottle passwordCheckThrottle() {
+		LoginThrottle t = passwordCheckThrottle;
+		if (t == null) {
+			t = createPasswordCheckThrottle();
+			passwordCheckThrottle = t;
+		}
+		return t;
 	}
 
 	@GuardedBy("stateChangeLock")
-	private void recordGlobalFailedAttempt() {
-		recordFailedAttempt();
+	private boolean admitPasswordCheck() {
+		LoginThrottle t = passwordCheckThrottle();
+		if (t.remainingLockoutMs() > 0) return false;
+		t.recordFailure();
+		return t.remainingLockoutMs() == 0;
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void checkGlobalLockout() throws DecryptionException {
+		checkLockout();
 	}
 
 	@GuardedBy("stateChangeLock")
@@ -242,17 +440,10 @@ public class AndroidAccountManager extends AccountManagerImpl
 		return profileManager.getActiveProfileId();
 	}
 
-	public int profileCount() {
-		return profileManager.listProfileIds().size();
-	}
-
-	public java.util.List<String> listProfileIds() {
-		return profileManager.listProfileIds();
-	}
-
 	@Nullable
-	public String readDisplayName(String profileId) {
-		return profileManager.readDisplayName(profileId);
+	public String readActiveDisplayName() {
+		return profileManager.readDisplayName(
+				profileManager.getActiveProfileId());
 	}
 
 	public void ensureActiveDisplayName(String fallbackName) {
@@ -263,65 +454,97 @@ public class AndroidAccountManager extends AccountManagerImpl
 	}
 
 	@Nullable
-	public String scheduleProfileCreation(String displayName, char[] password) {
-		synchronized (stateChangeLock) {
+	public String scheduleProfileCreation(String displayName, char[] typed) {
+		PasswordForms password = PasswordForms.of(typed);
+		try {
+			synchronized (stateChangeLock) {
+				return scheduleProfileCreationLocked(displayName, password);
+			}
+		} finally {
+			password.clear();
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	@Nullable
+	private String scheduleProfileCreationLocked(String displayName,
+			PasswordForms password) {
+		{
 			lastProfileCreationError = null;
-			String newId = profileManager.generateProfileId();
-			if (!profileManager.createProfileDir(newId)) {
-				lastProfileCreationError = "createProfileDir failed";
+			lastProfileCreationRefusal = null;
+			if (isEmptyPassword(password.normal)) {
+				refuse(ProfileCreationRefusal.FAILED,
+						"password must not be empty");
 				return null;
 			}
-			String previousActive = profileManager.getActiveProfileId();
+			if (!passwordCanProtectNewProfile(password)) return null;
+			String newId = profileManager.generateProfileId();
+			if (!profileManager.createProfileDir(newId)) {
+				refuse(ProfileCreationRefusal.FAILED,
+						"createProfileDir failed");
+				return null;
+			}
 			try {
-				profileManager.setActiveProfileId(newId);
 				SecretKey freshKey = crypto.generateSecretKey();
 				byte[] plaintext = freshKey.getBytes();
+				startStrengthenerGeneration();
 				byte[] ciphertext = crypto.encryptWithPassword(plaintext,
-						password, databaseConfig.getKeyStrengthener());
-				boolean ok = storeEncryptedDatabaseKey(
-						org.zerionproject.core.util.StringUtils.toHexString(
-								ciphertext));
+						password.normal, databaseConfig.getKeyStrengthener());
+				boolean ok = storeKeyFor(newId, toHexString(ciphertext));
 				if (!ok) {
-					lastProfileCreationError = "storeEncryptedDatabaseKey failed";
+					refuse(ProfileCreationRefusal.FAILED,
+							"storeEncryptedDatabaseKey failed");
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				if (!writePendingIdentityName(newId, displayName)
 						|| !profileManager.writeDisplayName(newId,
 								displayName)) {
-					lastProfileCreationError = "profile metadata write failed";
+					refuse(ProfileCreationRefusal.FAILED,
+							"profile metadata write failed");
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				freshKey.clear();
 				return newId;
 			} catch (Exception e) {
-				lastProfileCreationError = e.getClass().getSimpleName()
-						+ (e.getMessage() != null ? ": " + e.getMessage() : "");
+				refuse(ProfileCreationRefusal.FAILED, describe(e));
 				profileManager.secureWipeProfile(newId);
 				return null;
-			} finally {
-				profileManager.setActiveProfileId(previousActive);
 			}
 		}
 	}
 
 	@Nullable
-	public String importProfile(String displayName, char[] password,
+	public String importProfile(String displayName, char[] typed,
 			byte[] dbBytes, byte[] dbKey) {
-		if (isEmptyPassword(password)) {
-			lastProfileCreationError = "password must not be empty";
+		PasswordForms password = PasswordForms.of(typed);
+		try {
+			return importProfile(displayName, password, dbBytes, dbKey);
+		} finally {
+			password.clear();
+		}
+	}
+
+	@Nullable
+	private String importProfile(String displayName, PasswordForms password,
+			byte[] dbBytes, byte[] dbKey) {
+		lastProfileCreationRefusal = null;
+		if (isEmptyPassword(password.normal)) {
+			refuse(ProfileCreationRefusal.FAILED,
+					"password must not be empty");
 			return null;
 		}
 		synchronized (stateChangeLock) {
+			lastProfileCreationError = null;
+			if (!passwordCanProtectNewProfile(password)) return null;
 			String newId = profileManager.generateProfileId();
 			if (!profileManager.createProfileDir(newId)) {
-				lastProfileCreationError = "createProfileDir failed";
+				refuse(ProfileCreationRefusal.FAILED,
+						"createProfileDir failed");
 				return null;
 			}
-			String previousActive = profileManager.getActiveProfileId();
 			try {
-				profileManager.setActiveProfileId(newId);
 				File dbFile = new File(profileManager.getDbDir(newId),
 						"db.sqlite");
 				try (java.io.FileOutputStream out =
@@ -329,36 +552,99 @@ public class AndroidAccountManager extends AccountManagerImpl
 					out.write(dbBytes);
 					out.getFD().sync();
 				}
-				byte[] ciphertext = crypto.encryptWithPassword(dbKey, password,
-						databaseConfig.getKeyStrengthener());
-				boolean ok = storeEncryptedDatabaseKey(
-						org.zerionproject.core.util.StringUtils.toHexString(
-								ciphertext));
+				startStrengthenerGeneration();
+				byte[] ciphertext = crypto.encryptWithPassword(dbKey,
+						password.normal, databaseConfig.getKeyStrengthener());
+				boolean ok = storeKeyFor(newId, toHexString(ciphertext));
 				if (!ok) {
-					lastProfileCreationError = "storeEncryptedDatabaseKey failed";
+					refuse(ProfileCreationRefusal.FAILED,
+							"storeEncryptedDatabaseKey failed");
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				if (!profileManager.writeDisplayName(newId, displayName)) {
-					lastProfileCreationError = "writeDisplayName failed";
+					refuse(ProfileCreationRefusal.FAILED,
+							"writeDisplayName failed");
 					profileManager.secureWipeProfile(newId);
 					return null;
 				}
 				return newId;
 			} catch (Exception e) {
-				lastProfileCreationError = e.getClass().getSimpleName()
-						+ (e.getMessage() != null ? ": " + e.getMessage() : "");
+				refuse(ProfileCreationRefusal.FAILED, describe(e));
 				profileManager.secureWipeProfile(newId);
 				return null;
-			} finally {
-				profileManager.setActiveProfileId(previousActive);
 			}
 		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private boolean passwordCanProtectNewProfile(PasswordForms password) {
+		try {
+			checkGlobalLockout();
+		} catch (DecryptionException e) {
+			refuse(ProfileCreationRefusal.LOCKED_OUT, "locked out");
+			return false;
+		}
+		if (!admitPasswordCheck()) {
+			refuse(ProfileCreationRefusal.LOCKED_OUT,
+					"password checks locked out");
+			return false;
+		}
+		try {
+			if (passwordOpensAnyProfile(password, null)) {
+				refuse(ProfileCreationRefusal.PASSWORD_UNAVAILABLE, null);
+				return false;
+			}
+		} catch (DecryptionException e) {
+			refuse(ProfileCreationRefusal.FAILED,
+					"key strengthener unavailable");
+			return false;
+		}
+		return true;
+	}
+
+	private void refuse(ProfileCreationRefusal refusal,
+			@Nullable String detail) {
+		lastProfileCreationRefusal = refusal;
+		lastProfileCreationError = detail;
+	}
+
+	private static String describe(Exception e) {
+		return e.getClass().getSimpleName()
+				+ (e.getMessage() != null ? ": " + e.getMessage() : "");
 	}
 
 	@Nullable
 	public String getLastProfileCreationError() {
 		return lastProfileCreationError;
+	}
+
+	@Nullable
+	public ProfileCreationRefusal getLastProfileCreationRefusal() {
+		return lastProfileCreationRefusal;
+	}
+
+	@Override
+	public void changePassword(char[] oldPassword, char[] newPassword)
+			throws DecryptionException {
+		PasswordForms newForms = PasswordForms.of(newPassword);
+		try {
+			synchronized (stateChangeLock) {
+				if (hasDatabaseKey() && !isEmptyPassword(newForms.normal)) {
+					verifyPassword(oldPassword);
+					if (!admitPasswordCheck()) {
+						throw new DecryptionException(INVALID_CIPHERTEXT);
+					}
+					if (passwordOpensAnyProfile(newForms,
+							profileManager.getActiveProfileId())) {
+						throw new PasswordUnavailableException();
+					}
+				}
+				super.changePassword(oldPassword, newPassword);
+			}
+		} finally {
+			newForms.clear();
+		}
 	}
 
 	private boolean writePendingIdentityName(String profileId, String name) {
@@ -372,29 +658,108 @@ public class AndroidAccountManager extends AccountManagerImpl
 	}
 
 	@Nullable
-	public String readPendingIdentityName(String profileId) {
+	private String readPendingIdentityName(String profileId) {
 		return profileManager.readEncryptedMetaFile(profileId,
 				"pending_identity_name");
 	}
 
-	public void clearPendingIdentityName(String profileId) {
-		profileManager.deleteMetaFile(profileId, "pending_identity_name");
-	}
-
-	public void deleteActiveProfile() {
+	public boolean deleteActiveProfile(String expectedProfileId) {
 		synchronized (stateChangeLock) {
 			String id = profileManager.getActiveProfileId();
-			profileManager.secureWipeProfile(id);
+			if (id == null || !id.equals(expectedProfileId)) return false;
+			if (anotherProfileHoldsAKey(id)) encryptForNothing();
+			else createPlaceholderProfile();
+			profileManager.shredProfileKeys(id);
+			profileManager.forgetLastActiveProfileId(id);
+			return true;
 		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void encryptForNothing() {
+		byte[] secret = new byte[32];
+		byte[] seed = new byte[24];
+		random.nextBytes(secret);
+		random.nextBytes(seed);
+		char[] password = toHexString(seed).toCharArray();
+		try {
+			byte[] ciphertext = crypto.encryptWithPassword(secret, password,
+					databaseConfig.getKeyStrengthener());
+			java.util.Arrays.fill(ciphertext, (byte) 0);
+		} catch (RuntimeException ignored) {
+		} finally {
+			java.util.Arrays.fill(secret, (byte) 0);
+			java.util.Arrays.fill(seed, (byte) 0);
+			java.util.Arrays.fill(password, '\0');
+		}
+	}
+
+	@GuardedBy("stateChangeLock")
+	private boolean anotherProfileHoldsAKey(String id) {
+		for (String other : profileManager.listProfileIds()) {
+			if (!other.equals(id) && profileManager.hasKeyFiles(other)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@GuardedBy("stateChangeLock")
+	private void createPlaceholderProfile() {
+		String placeholder = profileManager.generateProfileId();
+		if (!profileManager.createProfileDir(placeholder)) return;
+		byte[] secret = new byte[32];
+		byte[] seed = new byte[24];
+		random.nextBytes(secret);
+		random.nextBytes(seed);
+		char[] password = toHexString(seed).toCharArray();
+		boolean stored = false;
+		try {
+			startStrengthenerGeneration();
+			byte[] ciphertext = crypto.encryptWithPassword(secret, password,
+					databaseConfig.getKeyStrengthener());
+			stored = storeKeyFor(placeholder, toHexString(ciphertext));
+		} catch (RuntimeException ignored) {
+		} finally {
+			java.util.Arrays.fill(secret, (byte) 0);
+			java.util.Arrays.fill(seed, (byte) 0);
+			java.util.Arrays.fill(password, '\0');
+		}
+		if (!stored) profileManager.secureWipeProfile(placeholder);
+	}
+
+	@Override
+	protected void shredKeyFiles() {
+		for (String id : profileManager.listProfileIds()) {
+			deleteFileOrDir(profileManager.getKeyDirWithoutCreating(id));
+		}
+	}
+
+	@Nullable
+	@Override
+	protected Set<Integer> strengtheningGenerationsInUse() {
+		List<String> ids = profileManager.listProfileIdsOrNull();
+		if (ids == null) return null;
+		Set<Integer> inUse = new HashSet<>();
+		for (String id : ids) {
+			if (!addGenerationOf(profileManager.getDbKeyFile(id), inUse)
+					|| !addGenerationOf(profileManager.getDbKeyBackupFile(id),
+					inUse)) {
+				return null;
+			}
+		}
+		return inUse;
 	}
 
 	@Override
 	public void deleteAccount() {
-		synchronized (stateChangeLock) {
-			super.deleteAccount();
-			SharedPreferences defaultPrefs = getDefaultSharedPreferences();
-			deleteAppData(prefs, defaultPrefs);
-		}
+		super.deleteAccount();
+	}
+
+	@Override
+	protected void deleteAccountData() {
+		SharedPreferences defaultPrefs = getDefaultSharedPreferences();
+		deleteAppData(prefs, defaultPrefs);
 	}
 	SharedPreferences getDefaultSharedPreferences() {
 		return PreferenceManager.getDefaultSharedPreferences(appContext);
@@ -430,6 +795,13 @@ public class AndroidAccountManager extends AccountManagerImpl
 		if (children != null) files.addAll(asList(children));
 		for (File file : files) {
 			deleteFileOrDir(file);
+		}
+		KeyStrengthener strengthener = databaseConfig.getKeyStrengthener();
+		if (strengthener != null) {
+			try {
+				strengthener.discardKeyBeforeFirstAccount();
+			} catch (RuntimeException ignored) {
+			}
 		}
 		try {
 			java.security.KeyStore ks =

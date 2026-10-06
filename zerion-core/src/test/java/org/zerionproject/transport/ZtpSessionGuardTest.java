@@ -7,11 +7,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Unit tests for the cross-transport single-session guard in
- * {@link ZtpConnectionHandlerImpl}. The guard methods do not touch the
- * injected components, so a handler built with nulls exercises them directly.
- */
 public class ZtpSessionGuardTest {
 
 	private ZtpConnectionHandlerImpl newHandler() {
@@ -22,8 +17,6 @@ public class ZtpSessionGuardTest {
 	@Test
 	public void sameTransportIsAlwaysAllowed() {
 		ZtpConnectionHandlerImpl h = newHandler();
-		// Two concurrent Tor connections to the same contact both proceed:
-		// one dialled and one accepted, the honest-glare maximum.
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
@@ -35,11 +28,8 @@ public class ZtpSessionGuardTest {
 		ZtpConnectionHandlerImpl h = newHandler();
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		assertTrue(h.acquireSession(1, TorConstants.ID));
-		// An authenticated peer opening further connections on the same
-		// transport must not multiply live sessions beyond the glare pair.
 		assertFalse(h.acquireSession(1, TorConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
-		// Dropping back below the cap frees a slot again.
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
 		h.releaseSession(1, TorConstants.ID);
@@ -49,10 +39,8 @@ public class ZtpSessionGuardTest {
 	public void differentTransportStandsDownWhileOneIsLive() {
 		ZtpConnectionHandlerImpl h = newHandler();
 		assertTrue(h.acquireSession(1, TorConstants.ID));
-		// I2P must not resume the same per-contact ratchet while Tor holds it.
 		assertFalse(h.acquireSession(1, I2pConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
-		// Once Tor releases, I2P may take the session.
 		assertTrue(h.acquireSession(1, I2pConstants.ID));
 		h.releaseSession(1, I2pConstants.ID);
 	}
@@ -63,7 +51,6 @@ public class ZtpSessionGuardTest {
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		assertTrue(h.acquireSession(1, TorConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
-		// One Tor connection remains, so a different transport is still blocked.
 		assertFalse(h.acquireSession(1, I2pConstants.ID));
 		h.releaseSession(1, TorConstants.ID);
 		assertTrue(h.acquireSession(1, I2pConstants.ID));

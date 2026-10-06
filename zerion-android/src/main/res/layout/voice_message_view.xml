@@ -11,7 +11,6 @@
 	android:gravity="center_vertical"
 	android:minHeight="60dp">
 
-	<!-- Play/Pause Button -->
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/playPauseButton"
 		style="@style/Widget.MaterialComponents.Button.Icon"
@@ -28,7 +27,6 @@
 		app:cornerRadius="20dp"
 		android:contentDescription="@string/play_voice_message" />
 
-	<!-- Waveform/Progress Container -->
 	<LinearLayout
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
@@ -37,7 +35,6 @@
 		android:layout_marginEnd="4dp"
 		android:orientation="vertical">
 
-		<!-- Progress SeekBar with improved styling -->
 		<SeekBar
 			android:id="@+id/voiceProgress"
 			android:layout_width="match_parent"
@@ -51,7 +48,6 @@
 			android:paddingEnd="0dp"
 			android:minHeight="24dp" />
 
-		<!-- Duration Label -->
 		<TextView
 			android:id="@+id/voiceDuration"
 			android:layout_width="wrap_content"

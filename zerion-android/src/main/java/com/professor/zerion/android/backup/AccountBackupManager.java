@@ -5,11 +5,13 @@ import com.professor.zerion.android.vault.utils.SecureMemory;
 import android.app.Application;
 
 import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.core.account.PasswordNormalizer;
 import org.zerionproject.core.account.ProfileManager;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.transport.RootKeyStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
@@ -33,31 +35,38 @@ public class AccountBackupManager {
 
 	private static final int MAX_DB_BYTES = 512 * 1024 * 1024;
 
+	static final long ROOT_EVOLUTION_PAUSE_MS = 7L * 24 * 60 * 60 * 1000;
+
 	private final Application app;
 	private final DatabaseComponent db;
 	private final AndroidAccountManager accountManager;
 	private final ProfileManager profileManager;
 	private final IdentityManager identityManager;
+	private final RootKeyStore rootKeyStore;
 	private final BackupCrypto backupCrypto = new BackupCrypto();
 
 	@Inject
 	AccountBackupManager(Application app, DatabaseComponent db,
 			AndroidAccountManager accountManager,
-			ProfileManager profileManager, IdentityManager identityManager) {
+			ProfileManager profileManager, IdentityManager identityManager,
+			RootKeyStore rootKeyStore) {
 		this.app = app;
 		this.db = db;
 		this.accountManager = accountManager;
 		this.profileManager = profileManager;
 		this.identityManager = identityManager;
+		this.rootKeyStore = rootKeyStore;
 	}
 
 	public byte[] exportAccount(char[] passphrase) throws BackupException {
 		byte[] bundleBytes = snapshotBundle();
+		char[] normal = PasswordNormalizer.normalize(passphrase);
 		try {
-			return backupCrypto.seal(bundleBytes, passphrase, (byte) 0,
+			return backupCrypto.seal(bundleBytes, normal, (byte) 0,
 					argon2Params());
 		} finally {
 			Arrays.fill(bundleBytes, (byte) 0);
+			Arrays.fill(normal, '\0');
 		}
 	}
 
@@ -69,11 +78,31 @@ public class AccountBackupManager {
 
 	public void importAccount(byte[] fileBytes, char[] passphrase,
 			char[] newPassword) throws BackupException {
-		BackupCrypto.Opened opened = backupCrypto.open(fileBytes, passphrase);
+		BackupCrypto.Opened opened = openWithEitherForm(fileBytes, passphrase);
 		try {
 			provisionFromBundle(opened.bundle, newPassword);
 		} finally {
 			Arrays.fill(opened.bundle, (byte) 0);
+		}
+	}
+
+	BackupCrypto.Opened openWithEitherForm(byte[] fileBytes,
+			char[] passphrase) throws BackupException {
+		char[] normal = PasswordNormalizer.normalize(passphrase);
+		char[] legacy = PasswordNormalizer.legacyForm(passphrase, normal);
+		try {
+			try {
+				return backupCrypto.open(fileBytes, normal);
+			} catch (BackupException e) {
+				if (legacy == null || e.reason
+						!= BackupException.Reason.WRONG_PASSPHRASE) {
+					throw e;
+				}
+				return backupCrypto.open(fileBytes, legacy);
+			}
+		} finally {
+			Arrays.fill(normal, '\0');
+			if (legacy != null) Arrays.fill(legacy, '\0');
 		}
 	}
 
@@ -84,6 +113,7 @@ public class AccountBackupManager {
 		File snapshot = new File(app.getCacheDir(),
 				"zbk-" + UUID.randomUUID() + ".tmp");
 		byte[] dbBytes = null;
+		rootKeyStore.beginSnapshot();
 		try {
 			writeSnapshot(snapshot);
 			dbBytes = readFile(snapshot);
@@ -93,14 +123,21 @@ public class AccountBackupManager {
 				name = identityManager.getLocalAuthor().getName();
 			}
 			BackupBundle bundle = new BackupBundle(name, dbKey, dbBytes, null);
+			pauseRootEvolution();
 			return bundle.toBytes();
 		} catch (IOException | DbException | SQLException e) {
 			throw new BackupException(IO_ERROR);
 		} finally {
+			rootKeyStore.endSnapshot();
 			if (dbBytes != null) Arrays.fill(dbBytes, (byte) 0);
 			Arrays.fill(dbKey, (byte) 0);
 			secureDelete(snapshot);
 		}
+	}
+
+	private void pauseRootEvolution() throws DbException {
+		long until = System.currentTimeMillis() + ROOT_EVOLUTION_PAUSE_MS;
+		db.transaction(false, txn -> rootKeyStore.pauseUntil(txn, until));
 	}
 
 	void provisionFromBundle(byte[] bundleBytes, char[] newPassword)

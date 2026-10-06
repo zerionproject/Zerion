@@ -1,5 +1,7 @@
 package org.zerionproject.app.channel;
 
+import org.zerionproject.core.api.plugin.OnionTargetListener;
+import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
@@ -26,8 +28,19 @@ class TorPluginOnionPublisher implements OnionPublisher {
 	@Override
 	public OnionHandle publish(int localPort,
 			@Nullable String privateKey) throws IOException {
+		return publish(OnionTargets.loopback(localPort), privateKey);
+	}
+
+	@Override
+	public OnionTargetListener openTarget() throws IOException {
+		return adapter().openOnionTarget();
+	}
+
+	@Override
+	public OnionHandle publish(String target, @Nullable String privateKey)
+			throws IOException {
 		ChannelOnionAdapter.ChannelOnionHandle h =
-				adapter().publishChannelOnion(localPort, privateKey);
+				adapter().publishChannelOnion(target, privateKey);
 		return new OnionHandle(h.getOnion(), h.getPrivateKey());
 	}
 

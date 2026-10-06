@@ -6,13 +6,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/**
- * An {@link I2pRouter} that relies on an I2P router run outside the app, for
- * example the standalone i2pd Android app or an i2pd on the emulator host, with
- * its SAM bridge enabled. {@link #start} only probes that the bridge is
- * reachable; it does not start or stop the router. This is the path for testing
- * the I2P transport before a native router is bundled.
- */
 @NotNullByDefault
 public class ExternalI2pRouter implements I2pRouter {
 
@@ -37,6 +30,5 @@ public class ExternalI2pRouter implements I2pRouter {
 
 	@Override
 	public void stop() {
-		// The router is external; not ours to stop.
 	}
 }

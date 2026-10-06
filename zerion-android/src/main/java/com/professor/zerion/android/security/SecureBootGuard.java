@@ -26,10 +26,6 @@ public final class SecureBootGuard {
 	public static final int RESULT_ADB_DAEMON_LISTENING = 8;
 	public static final int RESULT_SIGNATURE_MISMATCH = 9;
 
-	// Accepted SHA-256 signing certificates. The upload/release key (O=Zerion)
-	// signs the sideloaded APK on GitHub and the F-Droid reproducible build;
-	// Google Play re-signs the bundle with its own app-signing key on install,
-	// so both are trusted. Any other signer means the build was repackaged.
 	private static final String[] ACCEPTED_CERT_SHA256 = {
 			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
 			"b12ddf964ac59e3914984ec93e068768756bb0b917cb45c3fb2b65dc6c7940c6"
@@ -38,11 +34,6 @@ public final class SecureBootGuard {
 	private SecureBootGuard() {
 	}
 
-	/**
-	 * Hardened Mode treats every abnormal answer (no signing info, no
-	 * signer, an exception from the package manager) as a mismatch: a
-	 * hooked or repackaged process must not pass by breaking the check.
-	 */
 	public static int verifyAppSignature(Context ctx) {
 		if (com.professor.zerion.BuildConfig.DEBUG) return RESULT_OK;
 		try {
@@ -117,11 +108,6 @@ public final class SecureBootGuard {
 		return RESULT_OK;
 	}
 
-	/**
-	 * USB or wireless debugging enabled, read from Settings.Global, which an
-	 * app can read directly; a socket probe of adbd is blocked by SELinux
-	 * for untrusted apps on modern Android and misses USB debugging.
-	 */
 	public static boolean adbEnabled(Context ctx) {
 		try {
 			android.content.ContentResolver cr = ctx.getContentResolver();

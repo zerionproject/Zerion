@@ -78,7 +78,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerionは電池で動作する時に、インターネットを使用しないように設定されています</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerionはこの国でインターネットを使用しないように設定されています</string>
   
-  <string name="transport_lan_long">同じWi-Fiネットワーク</string>
 
   <string name="reminder_notification_title">Zerionからサインアウト</string>
   <string name="reminder_notification_text">タップして再ログインします。</string>
@@ -200,7 +199,6 @@
   <string name="connecting_to_device">端末に接続中\u2026</string>
   <string name="authenticating_with_device">端末同士での認証中\u2026</string>
   <string name="connection_error_title">連絡先に接続できませんでした</string>
-  <string name="connection_error_feedback">この問題が解決しない場合、アプリを改善するために<a href="feedback">フィードバックを送信</a>してください。</string>
   
   <string name="add_contact_remotely_title_case">離れた場所にいる人を連絡先に追加</string>
   <string name="add_contact_nearby_title">近くにいる人を連絡先に追加</string>
@@ -371,8 +369,6 @@
   
   <string name="tor_network_setting_summary">自動：%1$s（%2$s内）</string>
   <string name="tor_mobile_data_title">携帯電話回線を使用する</string>
-  <string name="tor_only_when_charging_title">充電時にのみインターネットに接続する</string>
-  <string name="tor_only_when_charging_summary">端末が電池で動作する時に、インターネット接続を無効にする</string>
   
   <string name="security_settings_title">安全</string>
   <string name="pref_lock_title">アプリロック</string>
@@ -429,74 +425,9 @@
   <string name="choose_ringtone_title">着信音を選択</string>
   <string name="cannot_load_ringtone">着信音を読み込めません</string>
   
-  <string name="mailbox_settings_title">メールボックス</string>
-  <string name="mailbox_setup_title">メールボックスをセットアップ</string>
-  <string name="mailbox_setup_intro">メールボックスはあなたがオフラインの間、連絡先があなたにメッセージを送信することを有効にします。メールボックスはあなたがオンラインになるまで、メッセージを受信し保管します。\n
-		\n予備端末上にZerionのメールボックスアプリをインストールできます。それを電源とWi-Fiに接続し、常時オンラインにしてください。</string>
-  <string name="mailbox_setup_download">最初に、Google PlayまたはZerionをダウンロードしたどこかで「ZerionMailbox」を検索して、他の端末上にメールボックスアプリをインストールします。\n
-		\nそして、メールボックスアプリによって表示されるQRコードを読み取って、Zerionとあなたのメールボックスをリンクします。</string>
-  <string name="mailbox_setup_download_link">ダウンロードリンクを共有</string>
-  <string name="mailbox_setup_connecting">メールボックスへ接続中…</string>
   
-  <string name="mailbox_setup_connecting_info">%1sまでかかる場合があります</string>
-  <string name="mailbox_setup_already_paired_title">メールボックスは既にリンクされています</string>
-  <string name="mailbox_setup_already_paired_description">あなたの端末上のメールボックスのリンクを解き、再試行してください。</string>
-  <string name="mailbox_setup_io_error_title">接続できません</string>
-  <string name="mailbox_setup_io_error_description">双方の端末がインターネットに接続されていることを確かにして、再試行してください。</string>
-  <string name="mailbox_setup_assertion_error_title">メールボックスにエラー</string>
-  <string name="mailbox_setup_assertion_error_description">もし問題が続くのであれば、Zerionアプリ経由で（匿名データ付きの）フィードバックを送信してください。</string>
-  <string name="mailbox_setup_camera_error_description">カメラにアクセスできません。端末を再起動してから、もう一度試してみてください。</string>
-  <string name="mailbox_setup_paired_title">接続済み</string>
-  <string name="mailbox_setup_paired_description">あなたのメールボックスはZerionとのリンクに成功しています。\n
-		メールボックスを電源とW-Fiに接続して、常時オンラインにしてください。</string>
-  <string name="tor_offline_title">オフライン</string>
-  <string name="tor_offline_description">この端末がオンラインかつインターネットへの接続が許可されていること確かにしてください。\n
-		\nその後に、接続設定画面内の球体アイコンが緑に切り替わるまで、お待ちください。</string>
-  <string name="tor_offline_button_check">接続設定を確認</string>
-  <string name="mailbox_status_title">メールボックスの状態</string>
-  <string name="mailbox_status_connected_title">メールボックスは実行中</string>
-  <string name="mailbox_status_problem_title">Zerionはメールボックスへの接続が不調です</string>
-  <string name="mailbox_status_failure_title">メールボックスは利用できません</string>
-  <string name="mailbox_status_app_too_old_title">Zerionは古すぎます</string>
-  <string name="mailbox_status_app_too_old_message">Zerionをアプリの最新版に更新し、再度お試しください。</string>
-  <string name="mailbox_status_mailbox_too_old_title">メールボックスは古すぎます</string>
-  <string name="mailbox_status_mailbox_too_old_message">メールボックスをアプリの最新版に更新し、再度お試しください。</string>
-  <string name="mailbox_status_check_button">接続を確認</string>
   
-  <string name="mailbox_status_connected_info">最終接続: %s</string>
   
-  <string name="mailbox_status_connected_never">一度もない</string>
-  <string name="mailbox_status_unlink_button">リンク解除</string>
-  <string name="mailbox_status_unlink_dialog_title">メールボックスをリンク解除しますか？</string>
-  <string name="mailbox_status_unlink_dialog_question">本当にあなたのメールボックスをリンク解除してもよろしいですか?</string>
-  <string name="mailbox_status_unlink_dialog_warning">メールボックスをリンク解除すると、Zerionがオフライン中にメッセージを受信できません。</string>
-  <string name="mailbox_status_unlink_no_wipe_title">メールボックスはリンク解除されました</string>
-  <string name="mailbox_status_unlink_no_wipe_message">次回、メールボックス端末にアクセスした際に、メールボックスアプリを起動し、「リンク解除」ボタンをタップして処理を完了してください。\n\nメールボックス端末にアクセスできなくなった場合でも、ご安心ください。データは暗号化されているので、処理を完了しなくても安全なままです。</string>
-  <string name="mailbox_status_unlink_success">メールボックスはリンク解除されました</string>
-  <string name="mailbox_error_notification_channel_title">Zerionメールボックスに問題</string>
-  <string name="mailbox_error_notification_title">Zerionメールボックスは利用できません</string>
-  <string name="mailbox_error_notification_text">タップして問題を修正する。</string>
-  <string name="mailbox_error_wizard_button">問題を修正する</string>
-  <string name="mailbox_error_wizard_title">メールボックスのトラブルシューティングウィザード</string>
-  <string name="mailbox_error_wizard_question1">あなたのメールボックス端末にアクセスできますか？</string>
-  <string name="mailbox_error_wizard_answer1">はい、私は確かに今アクセスしています。</string>
-  <string name="mailbox_error_wizard_answer2">今すぐには無理ですが、後でアクセスできるようになります。</string>
-  <string name="mailbox_error_wizard_answer3">いいえ、最早アクセスできません。</string>
-  <string name="mailbox_error_wizard_info1_1">メールボックス端末の電源が入っていて、インターネットに接続されているかを確認してください。</string>
-  <string name="mailbox_error_wizard_question1_1">メールボックスアプリを開いてください。何が確認できますか？</string>
-  <string name="mailbox_error_wizard_answer1_1">メールボックスの設定方法が表示される</string>
-  <string name="mailbox_error_wizard_answer1_2">QRコードが表示される</string>
-  <string name="mailbox_error_wizard_answer1_3">「メールボックスは実行中」と表示される</string>
-  <string name="mailbox_error_wizard_answer1_4">「端末がオフライン」と表示されます</string>
-  <string name="mailbox_error_wizard_info1_1_1">以下のボタンでメールボックスのリンクを解除し、メールボックスの端末の指示に従って再度リンクしてください。</string>
-  <string name="mailbox_error_wizard_info_1_1_2">以下のボタンでメールボックスのリンクを解除し、QRコードを読み取って再度リンクしてください。</string>
-  <string name="mailbox_error_wizard_info1_1_3">以下のボタンを使用して、Zerionとメールボックスの間での接続を確認してください。\n\n
-		接続が再び失敗する場合:\n
-		\u2022 メールボックスとZerionアプリが最新版に更新されているか確認してください。\n
-		\u2022 メールボックスとZerionの端末を再起動して、再度お試しください。</string>
-  <string name="mailbox_error_wizard_info1_1_4">メールボックス端末がインターネットに適切に接続されているか、確認してください。\n\nメールボックス端末の時計が正しい時刻、日付、時間帯を表示しているか、確認してください。\n\nメールボックスとZerionアプリが最新版に更新されているか、確認してください。\n\nメールボックスとZerionの端末を再起動し、再度お試しください。</string>
-  <string name="mailbox_error_wizard_info2">端末にアクセスしたら、この画面に戻って来てください。</string>
-  <string name="mailbox_error_wizard_info3">以下のボタンを使用してメールボックスをリンク解除してください。\n\n古いメールボックスをリンク解除した後、いつでも新しいメールボックスをセットアップできます。</string>
   
   <string name="about_title">バージョン情報</string>
   <string name="zerion_version">Zerionバージョン: %s</string>
@@ -504,7 +435,6 @@
   <string name="links">リンク</string>
   <string name="zerion_website">\u2022 <a href="">ウェブサイト</a></string>
   <string name="zerion_source_code">\u2022 <a href="">ソースコード</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">変更履歴</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">プライバシーポリシー</a></string>
   
   <string name="translator_thanks">Localization Labの全貢献者へ感謝</string>
@@ -525,43 +455,13 @@
   <string name="pref_category_actions">操作</string>
   <string name="share_app_link">ダウンロードリンクを共有</string>
   <string name="share_app_link_text">%s でZerionをダウンロード</string>
-  <string name="send_feedback">フィードバックを送信</string>
   
   <string name="link_warning_title">リンクの警告</string>
   <string name="link_warning_intro">外部アプリで次のリンクを開こうとしています。</string>
   <string name="link_warning_text">これはあなたを識別するために使用できます。 このリンクを送ってきた人を信頼していいのどうか考えてください。リンクを開く場合は、Tor Browserで開いてください。</string>
   <string name="link_warning_open_link">リンクを開く</string>
   
-  <string name="crash_report_title">Zerionのクラッシュレポート</string>
-  <string name="zerion_crashed">申し訳ありませんが、Zerionはクラッシュしました</string>
-  <string name="not_your_fault">これはあなたのせいではありません。</string>
-  <string name="please_send_report">クラッシュレポートを送信して、より良いZerionの開発にご協力ください。</string>
-  <string name="report_is_encrypted">レポートは暗号化され、安全に送信されることをお約束します。</string>
-  <string name="feedback_title">フィードバック</string>
-  <string name="describe_crash">何が起こったかのかを説明してください（任意）</string>
-  <string name="enter_feedback">フィードバックを入力してください</string>
-  <string name="optional_contact_email">あなたのメールアドレス（任意）</string>
-  <string name="privacy_policy">データを我々に送信することで、<a href="">プライバシーポリシー</a>に同意したことになります。</string>
-  <string name="include_debug_report_crash">クラッシュに関する匿名のデータを添付する</string>
-  <string name="include_debug_report_feedback">この端末に関する匿名のデータを添付する</string>
-  <string name="dev_report_user_info">利用者情報</string>
-  <string name="dev_report_basic_info">基本情報</string>
-  <string name="dev_report_device_info">端末情報</string>
-  <string name="dev_report_stacktrace">スタックトレース</string>
-  <string name="dev_report_time_info">時間情報</string>
-  <string name="dev_report_memory">メモリー</string>
-  <string name="dev_report_storage">ストレージ</string>
-  <string name="dev_report_connectivity">接続</string>
-  <string name="dev_report_network_usage">ネットワーク使用量</string>
-  <string name="dev_report_build_config">ビルド構成</string>
-  <string name="dev_report_logcat">アプリのログ</string>
-  <string name="dev_report_device_features">端末の機能</string>
-  <string name="send_report">レポートを送信</string>
   <string name="close">閉じる</string>
-  <string name="dev_report_sending">フィードバックを送信中…</string>
-  <string name="dev_report_sent">フィードバックを送信しました</string>
-  <string name="dev_report_saved">レポートを保存しました。 次回、Zerionにログインしたときに送信されます。</string>
-  <string name="dev_report_error">エラー：レポート送信に失敗</string>
   
   <string name="progress_title_logout">Zerionからサインアウト中…</string>
   
@@ -665,14 +565,10 @@
 	<string name="settings_section_tor_network">TOR ネットワーク</string>
 	<string name="settings_section_mode">プライバシーモード</string>
 	<string name="offline_mode_title">オフラインモード（パラノイア）</string>
-	<string name="offline_mode_summary">すべてのインターネットを遮断。メッシュ経由で近くの連絡先とのみ通信します</string>
-	<string name="offline_mode_info">オフラインモードは Tor と I2P を完全に停止するため、アプリはインターネットに一切接続しません。Bluetooth 経由で、近くにいるすでにペアリング済みの連絡先にのみ接続できます。</string>
 	<string name="offline_mode_confirm_title">オフラインモードをオンにしますか？</string>
-	<string name="offline_mode_confirm_message">これはすべてのインターネットを遮断します。Tor と I2P は停止し、アプリはネットワークに接続しません。オフラインメッシュ経由で、近くにいるすでにペアリング済みの連絡先にのみ接続できます。オンラインに戻すにはオフにしてください。</string>
 	<string name="offline_mode_confirm_button">オフラインにする</string>
 	<string name="network_status_off">オフ</string>
 	<string name="offline_mode_transport_off">オフラインモードで停止中</string>
-	<string name="offline_mode_banner">オフラインモード · インターネット遮断 · メッシュのみ</string>
 	<string name="settings_section_overlay">オーバーレイネットワーク</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">I2P ネットワーク経由でもルーティングする</string>
@@ -709,7 +605,6 @@
 	<string name="settings_section_appearance">外観</string>
 	<string name="identity_section_title">本人確認</string>
 	<string name="identity_safety_number_label">安全番号</string>
-	<string name="identity_safety_number_explain">この 60 桁の数字を、対面または信頼できる方法で連絡先と照合してください。両方の端末で一致すれば、あなたの会話はエンドツーエンドで保護されています。</string>
 	<string name="identity_my_fingerprint_label">自分のフィンガープリント</string>
 	<string name="identity_their_fingerprint_label">相手のフィンガープリント</string>
 	<string name="identity_copied">クリップボードにコピーしました</string>
@@ -764,8 +659,6 @@
 	<string name="vault_settings_change_master">マスターパスワードを変更</string>
 	<string name="vault_settings_change_master_summary">保管庫のパスワードを更新</string>
 	<string name="vault_settings_autolock">自動ロックのタイムアウト</string>
-	<string name="vault_settings_biometric">生体認証でロック解除</string>
-	<string name="vault_settings_biometric_summary">指紋または顔認証を使用</string>
 	<string name="vault_settings_clear_clipboard">一定時間後にクリップボードを消去</string>
 	<string name="vault_settings_hide_content">アプリ切り替え時に内容を隠す</string>
 	<string name="vault_settings_hide_content_summary">アプリ切り替え時に保管庫の内容をぼかす</string>
@@ -881,13 +774,10 @@
 	<string name="channels_invite_preparing">招待リンクを準備しています…</string>
 	<string name="channels_invite_not_ready">チャンネルはまだ共有できる状態ではありません。接続を確認してもう一度お試しください。</string>
 	<string name="channels_invite_rotate_confirm_title">招待リンクをローテーションしますか？</string>
-	<string name="channels_invite_rotate_confirm_message">すでに古いリンクを持っている人は再び参加できなくなります。既存の購読者は引き続き投稿を受け取ります。</string>
 	<string name="channels_leave_confirm_title">チャンネルを退出しますか？</string>
 	<string name="channels_leave_confirm_message">このチャンネルのローカルにキャッシュされた投稿はすべて端末から削除されます。</string>
 	<string name="channels_leave_confirm_action">退出</string>
 	<string name="channels_delete_confirm_title">チャンネルを削除しますか？</string>
-	<string name="channels_delete_confirm_message">これはチャンネルを全員に対して完全に削除します。購読者は次回接続時にすべての投稿を失います。取り消しはできません。</string>
-	<string name="channels_delete_confirm_action">全員に対して削除</string>
 	<string name="channels_action_delete_channel">チャンネルを削除</string>
 	<string name="channels_publisher_offline_note">購読者のアプリがあなたのチャンネルの onion に到達したときに投稿が届きます。確実に配信するために Zerion を実行し続けてください。</string>
 	<string name="channels_ttl_label">有効期限</string>
@@ -904,7 +794,6 @@
 	<string name="channels_delegations_role_owner">オーナー</string>
 	<string name="channels_delegations_role_editor">編集者</string>
 	<string name="channels_delegations_role_you">あなた</string>
-	<string name="channels_delegations_help">このチャンネルへの投稿を手伝う編集者を追加できます。編集者を長押しすると取り消せます。投稿、ピン留め、削除、他の編集者の追加ができるのはオーナーだけです。</string>
 	<string name="channels_delegations_add">編集者を追加</string>
 	<string name="channels_delegations_revoke">取り消す</string>
 	<string name="channels_delegations_paste_pubkey">編集者のハイブリッド公開鍵（base32）を貼り付け</string>
@@ -948,10 +837,8 @@
 	<string name="channels_leave_failed">チャンネルを退出できませんでした</string>
 	<string name="channels_ban_failed">この購読者をブロックできませんでした</string>
 	<string name="channels_announce_title">自分を通知しますか？</string>
-	<string name="channels_announce_message">チャンネルのオーナーは、あなたが選んだ表示名と公開鍵を見ることができます。代わりに匿名のままでいることもできます。通知した購読者を見られるのはオーナーだけです。</string>
 	<string name="channels_announce_name_hint">表示名</string>
 	<string name="channels_announce_action">通知する</string>
-	<string name="channels_announce_skip">匿名のままにする</string>
 	<string name="channels_announce_failed">通知できませんでした</string>
 	<string name="channels_subscribers_title">購読者</string>
 	<string name="channels_subscribers_empty">まだ自分を通知した購読者はいません。</string>
@@ -1001,7 +888,6 @@
 	<string name="channels_comments_count_one">1 件のコメント</string>
 	<string name="channels_create_require_approval">閲覧を許可する前に新しい購読者を審査</string>
 	<string name="channels_apply_title">参加を申請</string>
-	<string name="channels_apply_message">投稿を閲覧するには、チャンネルのオーナーがあなたの申請を承認する必要があります。オーナーはあなたの表示名と公開鍵を見ることができます。</string>
 	<string name="channels_apply_action">申請</string>
 	<string name="channels_apply_failed">申請を送信できませんでした</string>
 	<string name="channels_approval_pending_banner">オーナーが申請を承認するのを待っています…</string>
@@ -1036,7 +922,6 @@
 	<string name="network_uptime_label">稼働時間:</string>
 	<string name="network_hidden_service_label">秘匿サービス:</string>
 	<string name="network_mode_title">セキュアネットワークモード</string>
-	<string name="network_mode_description">すべての通信は、最大限のプライバシーとセキュリティのために Tor ネットワーク経由でルーティングされます。接続はエンドツーエンドで暗号化され、あなたの ID は匿名のままです。</string>
 	<string name="ongoing_notification_exit_action">終了</string>
 	<string name="voice_message">ボイスメッセージ</string>
 	<string name="play_pause">再生/一時停止</string>
@@ -1123,7 +1008,6 @@
 	<string name="pref_force_complete_rotation_done">ローテーションが完了しました</string>
 	<string name="pref_force_complete_rotation_not_announcing">進行中のローテーションはありません</string>
 	<string name="rotation_notification_channel_title">アドレスのローテーション</string>
-	<string name="rotation_notification_own_body">前方秘匿性のため、あなたの安全なアドレスがローテーションされました。</string>
 	<string name="rotation_notification_peer_body">連絡先が安全なアドレスを更新しました。</string>
 	<string name="pref_calls_section_title">通話</string>
 	<string name="pref_voice_calls_title">音声通話</string>
@@ -1393,7 +1277,6 @@
 	<string name="pref_accent_blue">ブルー</string>
 	<string name="pref_theme_amoled">AMOLED ブラック</string>
 	<string name="tor_mobile_data_summary">モバイルネットワーク経由の接続を許可</string>
-	<string name="tor_info_message">Zerion は安全で匿名の通信のために Tor ネットワークのみを使用します。すべての接続は Tor 経由でルーティングされます。</string>
 	<string name="tor_custom_bridges_title">カスタムブリッジ</string>
 	<string name="tor_custom_bridges_summary_none">未設定</string>
 	<string name="tor_custom_bridges_dialog_message">Tor があなたの地域で接続できない場合、ここにブリッジの行を 1 行に 1 つずつ貼り付けてください。組み込みのブリッジより先に試されます。ブリッジは bridges.torproject.org または Telegram の GetBridgesBot から入手できます。</string>
@@ -1438,9 +1321,6 @@
 	<string name="transfer_send_title">新しい端末に送信</string>
 	<string name="transfer_receive_password_message">この端末で受信したアカウントを保護するパスワードを設定してください。これでサインインします。</string>
 	<string name="transfer_receive_show_qr">古い端末でこのコードをスキャン</string>
-	<string name="transfer_sas_title">安全番号を確認</string>
-	<string name="transfer_sas_message">両方の端末が同じ番号を表示している必要があります:\n\n%1$s\n\nもう一方の端末でも一致していますか？</string>
-	<string name="transfer_sas_matches">一致しています</string>
 	<string name="transfer_done_title">完了</string>
 	<string name="transfer_failed_title">転送に失敗しました</string>
 	<string name="transfer_failed_message">転送が完了しませんでした。両方の端末が Tor に接続されていることを確認してもう一度お試しください。</string>
@@ -1478,7 +1358,6 @@
 	<string name="profiles_switch_title">プロフィールを切り替え</string>
 	<string name="profiles_switch_summary">サインアウトし、切り替え先のプロフィールのパスワードでサインインします。</string>
 	<string name="profiles_delete_title">このプロフィールを削除</string>
-	<string name="profiles_delete_summary">このプロフィールのデータを安全に消去します。取り消せません。</string>
 	<string name="profiles_add_dialog_title">新しいプロフィールを作成</string>
 	<string name="profiles_add_dialog_message">サインアウトされます。新しいプロフィールが作成されたら、そのパスワードでサインインして使用してください。</string>
 	<string name="profiles_add_name_hint">プロフィール名</string>
@@ -1496,7 +1375,6 @@
 	<string name="profiles_switch_action">サインアウト</string>
 	<string name="profiles_switch_progress">プロフィールを切り替えています…</string>
 	<string name="profiles_delete_dialog_title">このプロフィールを削除しますか？</string>
-	<string name="profiles_delete_dialog_message">このプロフィールのすべてのメッセージ、連絡先、ID が安全に消去されます。これは取り消せません。</string>
 	<string name="profiles_delete_action">プロフィールを削除</string>
 	<string name="profiles_delete_last_warning">これは唯一のプロフィールです。削除するとアプリがリセットされます。</string>
 	<string name="pref_default_disappearing_title">デフォルトの消えるタイマー</string>
@@ -1574,9 +1452,6 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">従来型セキュリティ</string>
 	<string name="security_level_classical_short">従来型</string>
-	<string name="security_level_post_quantum_description">量子耐性のある暗号化と署名。現在の攻撃者にも将来の量子コンピューターにも安全です。</string>
-	<string name="security_level_legacy_auth_description">量子耐性のある暗号化ですが、署名はまだ古い標準を使用しています。完全な保護を得るには、双方が更新した後でこの連絡先を追加し直してください。</string>
-	<string name="security_level_classical_description">従来型の暗号化のみです。量子耐性の保護には、双方が Zerion にアップグレードする必要があります。</string>
 	<string name="media">メディア</string>
 	<string name="login_account_locked">失敗回数が多すぎるため、アカウントがロックされています。%1$d 分 %2$d 秒お待ちください。</string>
 	<string name="login_final_warning">警告: あと 3 回失敗すると、セキュリティのためすべてのデータが完全に削除されます。</string>
@@ -1616,7 +1491,6 @@
 	<string name="wipe_password_remove_failed">消去パスワードの削除に失敗しました</string>
 	<string name="wipe_password_triggered_title">緊急消去が作動しました</string>
 	<string name="wipe_password_triggered_message">消去パスワードが検出されました。すべてのデータが今から完全に削除されます。</string>
-	<string name="wipe_password_warning">⚠️ 警告: 消去パスワードを入力すると、この端末からすべてのデータが直ちに完全に削除されます。これは取り消せません。</string>
 	<string name="set">設定</string>
 	<string name="remove">削除</string>
 	<string name="zerion_call">Zerion 通話</string>
@@ -1668,11 +1542,6 @@
 	<string name="vault_no_file_picker">利用できるファイルピッカーがありません</string>
 	<string name="vault_settings_wipe_message">これは保管庫のすべてのデータを完全に削除します。この操作は取り消せません。本当によろしいですか？</string>
 	<string name="vault_wipe_button">保管庫を消去</string>
-	<string name="vault_biometric_enabled">生体認証を有効にしました</string>
-	<string name="vault_biometric_no_fingerprints">登録された指紋がありません</string>
-	<string name="vault_biometric_no_hardware">生体認証ハードウェアが利用できません</string>
-	<string name="vault_biometric_unsupported">この端末では生体認証がサポートされていません</string>
-	<string name="vault_biometric_disabled">生体認証を無効にしました</string>
 	<string name="vault_document_opening">%1$s を開いています…</string>
 	<string name="vault_document_open_error">ドキュメントを開けません: アクティビティの準備ができていません</string>
 	<string name="vault_document_details_title">ドキュメントの詳細</string>
@@ -1683,7 +1552,6 @@
 	<string name="vault_document_export_failed">ドキュメントのエクスポートに失敗しました</string>
 	<string name="vault_document_load_failed">ドキュメントの読み込みに失敗しました: %1$s</string>
 	<string name="vault_zenc_export_title">エクスポートパスワードを設定</string>
-	<string name="vault_zenc_export_message_download">.zenc ファイルを暗号化するパスワードを設定してください。このファイルは安全に共有できます。</string>
 	<string name="vault_zenc_export_message_share">.zenc ファイルを暗号化するパスワードを設定してください。このパスワードは別途共有する必要があります。</string>
 	<string name="vault_zenc_password_required">.zenc のエクスポートにはパスワードが必要です</string>
 	<string name="vault_document_export_generic_failed">エクスポートに失敗しました</string>
@@ -1896,7 +1764,6 @@
 	<string name="wallet_receive_new">新しいアドレス</string>
 	<string name="wallet_node_hint">サーバーをタップして使用します。カスタムサーバーを長押しすると削除できます。</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">再利用可能なプライベートアドレスです。ここへの支払いはオンチェーンで関連付けられません。検出はTor経由で公開データをスキャンします。あなたの鍵が端末から出ることはありません。</string>
 	<string name="wallet_sp_balance">検出済み：%1$s</string>
 	<string name="wallet_sp_scanned">ブロック %1$d までスキャン済み</string>
 	<string name="wallet_sp_set_oracle">スキャンソース</string>

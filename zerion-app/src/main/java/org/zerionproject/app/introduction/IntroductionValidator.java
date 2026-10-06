@@ -47,11 +47,6 @@ class IntroductionValidator extends BdfMessageValidator {
 		this(messageEncoder, clientHelper, metadataEncoder, clock, k -> true);
 	}
 
-	/**
-	 * The ML-KEM key an introducee sends in its accept message is checked
-	 * with the same rule the encapsulation applies, so a malformed key is
-	 * an invalid message rather than a failure inside the protocol engine.
-	 */
 	IntroductionValidator(MessageEncoder messageEncoder,
 			ClientHelper clientHelper, MetadataEncoder metadataEncoder,
 			Clock clock, java.util.function.Predicate<byte[]> mlKemKeyCheck) {

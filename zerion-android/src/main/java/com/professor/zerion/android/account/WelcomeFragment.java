@@ -58,6 +58,10 @@ public class WelcomeFragment extends Fragment {
 	@Inject
 	AccountBackupManager backupManager;
 
+	@Inject
+	org.zerionproject.core.api.crypto.PasswordStrengthEstimator
+			strengthEstimator;
+
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
 	@Nullable
@@ -124,6 +128,8 @@ public class WelcomeFragment extends Fragment {
 	}
 
 	private void onImportFileChosen(@Nullable Uri uri) {
+		uri = com.professor.zerion.android.util.PickedUris.accept(
+				requireContext(), uri);
 		if (uri != null) showImportPasswordDialog(uri);
 	}
 
@@ -158,7 +164,13 @@ public class WelcomeFragment extends Fragment {
 					try {
 						if (p.length < 1 || np1.length < 1) {
 							toast(R.string.backup_password_empty);
-						} else if (!Arrays.equals(np1, np2)) {
+						} else if (!com.professor.zerion.android.login
+								.AccountPasswordPolicy
+								.acceptable(strengthEstimator, np1)) {
+							toast(R.string.password_too_weak);
+						} else if (!com.professor.zerion.android.login
+								.AccountPasswordPolicy
+								.sameNormalForm(np1, np2)) {
 							toast(R.string.backup_passwords_mismatch);
 						} else {
 							clearField(pass);

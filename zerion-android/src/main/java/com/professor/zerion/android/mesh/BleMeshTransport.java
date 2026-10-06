@@ -56,27 +56,30 @@ public class BleMeshTransport implements MeshLink {
 	private static final int TARGET_MTU = 512;
 	private static final int DEFAULT_CHUNK = 20;
 	private static final int LENGTH_PREFIX = 4;
-	private static final int MAX_FRAME_BYTES = 128 * 1024;
+	private static final int MAX_FRAME_BYTES = MeshForwarder.MAX_FRAME_BYTES;
 	private static final long OP_TIMEOUT_MS = 2000;
 	private static final int MAX_ATTR_LEN = 509;
 	private static final int GATT_BUSY_RETRIES = 100;
 	private static final long GATT_BUSY_BACKOFF_MS = 10;
-	private static final int MAX_CLIENTS = 6;
+	private static final int MAX_CLIENTS = MeshLinkPolicy.MAX_CLIENTS;
+	private static final int MAX_CENTRALS = MeshLinkPolicy.MAX_CENTRALS;
 	private static final long REAP_INTERVAL_MS = 10_000;
 	private static final long CLIENT_STALE_MS = 60_000;
 
 	private static final int MANUFACTURER_ID = 0xFFFF;
-	private static final int NONCE_BYTES = 8;
 	private static final long CONNECT_COOLDOWN_MS = 4000;
-	private volatile byte[] sessionNonce = new byte[NONCE_BYTES];
+	private final MeshLinkPolicy policy =
+			new MeshLinkPolicy(new java.security.SecureRandom());
+	private volatile byte[] sessionNonce;
 	@Nullable
 	private volatile java.util.concurrent.ScheduledExecutorService nonceRotator;
+	private long scanEpoch = Long.MIN_VALUE;
 
 	private final Context appContext;
 	private final MeshForwarder forwarder;
 	private final BluetoothManager bluetoothManager;
 	@Nullable
-	private final Runnable onRadioUp;
+	private final Runnable beforeRadioUp;
 	@Nullable
 	private final Runnable onPeerConnected;
 
@@ -116,14 +119,15 @@ public class BleMeshTransport implements MeshLink {
 			ConcurrentHashMap.newKeySet();
 
 	public BleMeshTransport(Context context, MeshForwarder forwarder,
-			@Nullable Runnable onRadioUp, @Nullable Runnable onPeerConnected) {
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected) {
 		this.appContext = context.getApplicationContext();
 		this.forwarder = forwarder;
-		this.onRadioUp = onRadioUp;
+		this.beforeRadioUp = beforeRadioUp;
 		this.onPeerConnected = onPeerConnected;
 		this.bluetoothManager = (BluetoothManager)
 				appContext.getSystemService(Context.BLUETOOTH_SERVICE);
-		new java.security.SecureRandom().nextBytes(sessionNonce);
+		sessionNonce = policy.freshNonce();
 	}
 
 	@Override
@@ -145,16 +149,19 @@ public class BleMeshTransport implements MeshLink {
 		registerStateReceiver();
 		forwarder.addLink(this);
 		java.util.concurrent.ScheduledExecutorService rot =
-				Executors.newSingleThreadScheduledExecutor(r -> {
+				new java.util.concurrent.ScheduledThreadPoolExecutor(1, r -> {
 					Thread t = new Thread(r, "BleNonceRotate");
 					t.setDaemon(true);
 					return t;
 				});
-		rot.scheduleWithFixedDelay(this::rotate, MeshDiscovery.EPOCH_MS, MeshDiscovery.EPOCH_MS,
-				TimeUnit.MILLISECONDS);
+		nonceRotator = rot;
+		scheduleAdvertisingRotation(rot);
 		rot.scheduleWithFixedDelay(this::reap, REAP_INTERVAL_MS,
 				REAP_INTERVAL_MS, TimeUnit.MILLISECONDS);
-		nonceRotator = rot;
+		rot.scheduleWithFixedDelay(this::announceNonce,
+				MeshLinkPolicy.NONCE_ANNOUNCE_INTERVAL_MS,
+				MeshLinkPolicy.NONCE_ANNOUNCE_INTERVAL_MS,
+				TimeUnit.MILLISECONDS);
 		BluetoothAdapter adapter = bluetoothManager.getAdapter();
 		if (adapter != null && adapter.isEnabled()) {
 			startRadio(adapter);
@@ -164,25 +171,29 @@ public class BleMeshTransport implements MeshLink {
 	private void startRadio(BluetoothAdapter adapter) {
 		synchronized (radioLock) {
 			if (radioUp || !running) return;
+		}
+		Runnable hook = beforeRadioUp;
+		if (hook != null) {
+			try {
+				hook.run();
+			} catch (RuntimeException e) {
+			}
+		}
+		synchronized (radioLock) {
+			if (radioUp || !running) return;
 			radioUp = true;
 			try {
 				openServer();
 			} catch (Exception e) {
 			}
 			try {
-				startAdvertising(adapter);
+				startAdvertising(adapter, policy.freshNonce());
 			} catch (Exception e) {
 			}
 			try {
 				startScanning(adapter);
 			} catch (Exception e) {
 			}
-		}
-		Runnable hook = onRadioUp;
-		if (hook != null) {
-			Thread t = new Thread(hook, "BleRadioUp");
-			t.setDaemon(true);
-			t.start();
 		}
 	}
 
@@ -223,6 +234,7 @@ public class BleMeshTransport implements MeshLink {
 			lastConnectAttempt.clear();
 			clientNonce.clear();
 			activeNonces.clear();
+			policy.clear();
 		}
 	}
 
@@ -262,8 +274,14 @@ public class BleMeshTransport implements MeshLink {
 			if (state == BluetoothAdapter.STATE_ON) {
 				if (!running) return;
 				BluetoothAdapter adapter = bluetoothManager.getAdapter();
-				if (adapter != null && adapter.isEnabled()) {
-					startRadio(adapter);
+				java.util.concurrent.ScheduledExecutorService rot =
+						nonceRotator;
+				if (adapter != null && adapter.isEnabled() && rot != null) {
+					try {
+						rot.execute(() -> startRadio(adapter));
+					} catch (java.util.concurrent.RejectedExecutionException
+							e) {
+					}
 				}
 			} else if (state == BluetoothAdapter.STATE_TURNING_OFF
 					|| state == BluetoothAdapter.STATE_OFF) {
@@ -272,26 +290,62 @@ public class BleMeshTransport implements MeshLink {
 		}
 	};
 
-	private void rotate() {
+	private void scheduleAdvertisingRotation(
+			java.util.concurrent.ScheduledExecutorService rot) {
 		try {
-			byte[] fresh = new byte[NONCE_BYTES];
-			new java.security.SecureRandom().nextBytes(fresh);
+			rot.schedule(this::rotate, policy.nextAdvertisingSetLifetimeMs(),
+					TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private void rotate() {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		try {
+			if (!running) return;
+			byte[] fresh = policy.freshNonce();
+			sendExecutor.execute(() -> switchAdvertisingSet(fresh));
+		} catch (Exception e) {
+		} finally {
+			if (rot != null && running) scheduleAdvertisingRotation(rot);
+		}
+	}
+
+	private void switchAdvertisingSet(byte[] fresh) {
+		try {
 			synchronized (radioLock) {
 				if (!radioUp || !running) return;
-				sessionNonce = fresh;
+			}
+			doBroadcast(withLengthPrefix(MeshLinkPolicy.encodeAnnounce(fresh)),
+					null);
+			synchronized (radioLock) {
+				if (!radioUp || !running) return;
 				BluetoothAdapter adapter = bluetoothManager.getAdapter();
 				if (adapter == null || !adapter.isEnabled()) return;
 				BluetoothLeAdvertiser a = advertiser;
-				if (a != null) {
-					a.stopAdvertising(advertiseCallback);
-					startAdvertising(adapter);
-				}
+				if (a != null) a.stopAdvertising(advertiseCallback);
+				startAdvertising(adapter, fresh);
 				BluetoothLeScanner sc = scanner;
-				if (sc != null) {
+				if (sc != null && MeshDiscovery.currentEpoch() != scanEpoch) {
 					sc.stopScan(scanCallback);
 					startScanning(adapter);
 				}
 			}
+		} catch (Exception e) {
+		}
+	}
+
+	private void announceNonce() {
+		try {
+			synchronized (radioLock) {
+				if (!radioUp || !running) return;
+			}
+			if (connectedCentrals.isEmpty() && connectedClients.isEmpty()) {
+				return;
+			}
+			byte[] framed = withLengthPrefix(
+					MeshLinkPolicy.encodeAnnounce(sessionNonce));
+			sendExecutor.execute(() -> doBroadcast(framed, null));
 		} catch (Exception e) {
 		}
 	}
@@ -383,13 +437,17 @@ public class BleMeshTransport implements MeshLink {
 				public void onConnectionStateChange(BluetoothDevice device,
 						int status, int newState) {
 					if (newState == BluetoothProfile.STATE_CONNECTED) {
+						if (!admitCentral(device)) return;
 						connectedCentrals.put(device.getAddress(), device);
+						policy.onLinkUp(serverKey(device.getAddress()),
+								clock());
 						firePeerConnected();
 					} else if (newState
 							== BluetoothProfile.STATE_DISCONNECTED) {
 						connectedCentrals.remove(device.getAddress());
 						reassemblers.remove(serverKey(device.getAddress()));
 						mtuByDevice.remove(device.getAddress());
+						policy.onLinkDown(serverKey(device.getAddress()));
 					}
 				}
 
@@ -421,11 +479,55 @@ public class BleMeshTransport implements MeshLink {
 				}
 			};
 
+	private boolean admitCentral(BluetoothDevice device) {
+		String address = device.getAddress();
+		if (connectedCentrals.containsKey(address)
+				|| connectedCentrals.size() < MAX_CENTRALS) {
+			return true;
+		}
+		BluetoothGattServer server = gattServer;
+		List<String> keys = new java.util.ArrayList<>();
+		for (String a : connectedCentrals.keySet()) keys.add(serverKey(a));
+		String victim = policy.idleLinkToEvict(keys, clock());
+		if (victim == null) {
+			if (server != null) {
+				try {
+					server.cancelConnection(device);
+				} catch (RuntimeException e) {
+				}
+			}
+			return false;
+		}
+		String victimAddress = victim.substring(SERVER_PREFIX.length());
+		BluetoothDevice old = connectedCentrals.remove(victimAddress);
+		reassemblers.remove(victim);
+		mtuByDevice.remove(victimAddress);
+		policy.onLinkDown(victim);
+		if (old != null && server != null) {
+			try {
+				server.cancelConnection(old);
+			} catch (RuntimeException e) {
+			}
+		}
+		return true;
+	}
+
+	private void evictClient(String address) {
+		BluetoothGatt g = connectedClients.remove(address);
+		if (g != null) closeQuietly(g);
+		clearClientNonce(address);
+		reassemblers.remove(clientKey(address));
+		mtuByDevice.remove(address);
+		lastConnectAttempt.remove(address);
+		policy.onLinkDown(clientKey(address));
+	}
+
 	private void startScanning(BluetoothAdapter adapter) {
 		BluetoothLeScanner s = adapter.getBluetoothLeScanner();
 		if (s == null) return;
 		scanner = s;
 		long epoch = MeshDiscovery.currentEpoch();
+		scanEpoch = epoch;
 		List<ScanFilter> filters = new java.util.ArrayList<>();
 		for (long e = epoch - 3; e <= epoch + 3; e++) {
 			filters.add(new ScanFilter.Builder()
@@ -452,11 +554,22 @@ public class BleMeshTransport implements MeshLink {
 			if (peerNonce == null) return;
 			if (MeshDiscovery.compareNonce(sessionNonce, peerNonce) <= 0) return;
 			String nonceHex = StringUtils.toHexString(peerNonce);
-			if (activeNonces.contains(nonceHex)) return;
 			long now = clock();
+			if (activeNonces.contains(nonceHex)
+					|| policy.isAnnounced(nonceHex, now)) {
+				return;
+			}
 			Long last = lastConnectAttempt.get(address);
 			if (last != null && now - last < CONNECT_COOLDOWN_MS) return;
-			if (connectedClients.size() >= MAX_CLIENTS) return;
+			if (connectedClients.size() >= MAX_CLIENTS) {
+				List<String> keys = new java.util.ArrayList<>();
+				for (String a : connectedClients.keySet()) {
+					keys.add(clientKey(a));
+				}
+				String victim = policy.idleLinkToEvict(keys, now);
+				if (victim == null) return;
+				evictClient(victim.substring(CLIENT_PREFIX.length()));
+			}
 			lastConnectAttempt.put(address, now);
 			BluetoothGatt gatt = device.connectGatt(appContext, false,
 					clientCallback, BluetoothDevice.TRANSPORT_LE);
@@ -466,6 +579,7 @@ public class BleMeshTransport implements MeshLink {
 			} else {
 				clientNonce.put(address, nonceHex);
 				activeNonces.add(nonceHex);
+				policy.onLinkUp(clientKey(address), now);
 			}
 		}
 	};
@@ -525,6 +639,7 @@ public class BleMeshTransport implements MeshLink {
 					if (ch != null) {
 						gatt.setCharacteristicNotification(ch, true);
 					}
+					announceNonce();
 					firePeerConnected();
 				}
 
@@ -538,7 +653,8 @@ public class BleMeshTransport implements MeshLink {
 				}
 			};
 
-	private void startAdvertising(BluetoothAdapter adapter) {
+	private void startAdvertising(BluetoothAdapter adapter, byte[] nonce) {
+		sessionNonce = nonce;
 		BluetoothLeAdvertiser a = adapter.getBluetoothLeAdvertiser();
 		if (a == null) return;
 		advertiser = a;
@@ -553,7 +669,7 @@ public class BleMeshTransport implements MeshLink {
 				.build();
 		AdvertiseData scanResponse = new AdvertiseData.Builder()
 				.setIncludeDeviceName(false)
-				.addManufacturerData(MANUFACTURER_ID, sessionNonce)
+				.addManufacturerData(MANUFACTURER_ID, nonce)
 				.build();
 		a.startAdvertising(settings, data, scanResponse, advertiseCallback);
 	}
@@ -569,21 +685,34 @@ public class BleMeshTransport implements MeshLink {
 		r.append(value);
 		byte[] frame;
 		while ((frame = r.poll()) != null) {
+			if (MeshLinkPolicy.isControl(frame)) {
+				byte[] announced = MeshLinkPolicy.decodeAnnounce(frame);
+				if (announced != null) {
+					policy.onAnnounce(key, announced, clock());
+				}
+				continue;
+			}
 			byte[] f = frame;
 			try {
-				receiveExecutor.execute(
-						() -> forwarder.onReceive(f, LINK_ID, key));
+				receiveExecutor.execute(() -> {
+					if (forwarder.onReceive(f, LINK_ID, key)) {
+						policy.onUseful(key, clock());
+					}
+				});
 			} catch (java.util.concurrent.RejectedExecutionException e) {
 			}
 		}
 	}
 
+	private static final String SERVER_PREFIX = "s:";
+	private static final String CLIENT_PREFIX = "c:";
+
 	private static String serverKey(String address) {
-		return "s:" + address;
+		return SERVER_PREFIX + address;
 	}
 
 	private static String clientKey(String address) {
-		return "c:" + address;
+		return CLIENT_PREFIX + address;
 	}
 
 	private int chunkSize(String address) {
@@ -683,6 +812,7 @@ public class BleMeshTransport implements MeshLink {
 					reassemblers.remove(clientKey(addr));
 					mtuByDevice.remove(addr);
 					lastConnectAttempt.remove(addr);
+					policy.onLinkDown(clientKey(addr));
 				}
 			}
 			for (BluetoothDevice dev :
@@ -694,8 +824,10 @@ public class BleMeshTransport implements MeshLink {
 					connectedCentrals.remove(addr);
 					reassemblers.remove(serverKey(addr));
 					mtuByDevice.remove(addr);
+					policy.onLinkDown(serverKey(addr));
 				}
 			}
+			policy.expire(now);
 		} catch (Exception ignored) {
 		}
 	}

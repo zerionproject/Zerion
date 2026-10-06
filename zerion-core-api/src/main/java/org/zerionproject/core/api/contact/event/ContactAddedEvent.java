@@ -12,10 +12,17 @@ public class ContactAddedEvent extends Event {
 
 	private final ContactId contactId;
 	private final boolean verified;
+	private final boolean addedDirectly;
 
 	public ContactAddedEvent(ContactId contactId, boolean verified) {
+		this(contactId, verified, verified);
+	}
+
+	public ContactAddedEvent(ContactId contactId, boolean verified,
+			boolean addedDirectly) {
 		this.contactId = contactId;
 		this.verified = verified;
+		this.addedDirectly = addedDirectly;
 	}
 
 	public ContactId getContactId() {
@@ -24,5 +31,9 @@ public class ContactAddedEvent extends Event {
 
 	public boolean isVerified() {
 		return verified;
+	}
+
+	public boolean isAddedDirectly() {
+		return addedDirectly;
 	}
 }

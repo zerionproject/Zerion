@@ -4,13 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Holds the one reviewed plan between review and authorization. A plan is
- * released for signing only against the fingerprint the user reviewed, a
- * fresh authentication, and the wallet it was prepared for: a wallet
- * opened in between clears the plan rather than signing it with another
- * wallet's journal, reservation and isolation.
- */
 @NotNullByDefault
 public final class SendGate {
 

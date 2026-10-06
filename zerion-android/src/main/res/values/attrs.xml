@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-	<!-- Theme attributes for programmatic access -->
 	<attr name="colorControlNormal" format="color" />
 	<attr name="selectableItemBackground" format="reference" />
 

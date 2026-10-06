@@ -18,6 +18,7 @@ import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
 import org.zerionproject.core.api.sync.event.MessagesSentEvent;
+import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.plugin.event.ContactDisconnectedEvent;
@@ -157,6 +158,10 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveEvent<Boolean> chatCleared = new MutableLiveEvent<>();
 	private final MutableLiveEvent<String> voiceMemoRebuilt =
 			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> reactionRemovedLocallyOnly =
+			new MutableLiveEvent<>();
+	private final java.util.concurrent.ConcurrentHashMap<MessageId, Boolean>
+			localById = new java.util.concurrent.ConcurrentHashMap<>();
 	private final MutableLiveEvent<Collection<MessageId>> messagesDeleted =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<MarkMessagesEvent> messagesMarked =
@@ -165,6 +170,8 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> meshOnline =
 			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> keysOutOfSync =
+			new MutableLiveData<>(false);
 
 	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
 	private final android.os.Handler offlineDebounceHandler =
@@ -323,6 +330,11 @@ public class ConversationViewModel extends DbViewModel
 			if (c.getContactId().equals(contactId)) {
 				contactDeleted.postValue(true);
 			}
+		} else if (e instanceof ContactConnectionKeysEvent) {
+			ContactConnectionKeysEvent k = (ContactConnectionKeysEvent) e;
+			if (k.getContactId().equals(contactId)) {
+				keysOutOfSync.postValue(k.isOutOfSync());
+			}
 		} else if (e instanceof ContactConnectedEvent) {
 			ContactConnectedEvent c = (ContactConnectedEvent) e;
 			if (c.getContactId().equals(contactId)) {
@@ -367,6 +379,8 @@ public class ConversationViewModel extends DbViewModel
 			org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent<?> p =
 					(org.zerionproject.app.api.conversation.event.ConversationMessageReceivedEvent<?>) e;
 			if (p.getContactId().equals(contactId)) {
+				localById.put(p.getMessageHeader().getId(),
+						p.getMessageHeader().isLocal());
 				newMessageReceived.postEvent(p.getMessageHeader());
 			}
 		}
@@ -406,6 +420,8 @@ public class ConversationViewModel extends DbViewModel
 				Contact c = contactManager.getContact(contactId);
 				AuthorInfo authorInfo = authorManager.getAuthorInfo(c);
 				contactItem.postValue(new ContactItem(c, authorInfo));
+				keysOutOfSync.postValue(
+						contactManager.isConnectionOutOfSync(contactId));
 				long timer = db.transactionWithResult(true, txn ->
 						autoDeleteManager.getAutoDeleteTimer(txn, contactId));
 				autoDeleteTimer.postValue(timer);
@@ -434,6 +450,17 @@ public class ConversationViewModel extends DbViewModel
 				long timer = db.transactionWithResult(true, txn ->
 						autoDeleteManager.getAutoDeleteTimer(txn, contactId));
 				autoDeleteTimer.postValue(timer);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	void markContactVerified() {
+		runOnDbThread(() -> {
+			try {
+				contactManager.setContactVerified(requireNonNull(contactId));
+				loadContact(contactId);
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -627,6 +654,7 @@ public class ConversationViewModel extends DbViewModel
 							.getTimestampForOutgoingMessage(txn,
 									requireNonNull(contactId));
 					PrivateMessage m;
+					long noteTimer = NO_AUTO_DELETE_TIMER;
 					try {
 						if (format == TEXT_ONLY) {
 							m = privateMessageFactory.createLegacyPrivateMessage(
@@ -636,10 +664,13 @@ public class ConversationViewModel extends DbViewModel
 									groupId, timestamp, secretText,
 									java.util.Collections.emptyList());
 						} else {
+							noteTimer = autoDeleteManager.getAutoDeleteTimer(
+									txn, requireNonNull(contactId),
+									timestamp);
 							m = privateMessageFactory.createPrivateMessage(
 									groupId, timestamp, secretText,
 									java.util.Collections.emptyList(),
-									NO_AUTO_DELETE_TIMER, null);
+									noteTimer, null);
 						}
 					} catch (FormatException e) {
 						throw new AssertionError(e);
@@ -650,7 +681,7 @@ public class ConversationViewModel extends DbViewModel
 							message.getId(), message.getGroupId(),
 							message.getTimestamp(), true, true, false, false,
 							true, java.util.Collections.emptyList(),
-							NO_AUTO_DELETE_TIMER, null);
+							noteTimer, null);
 					final String finalText = secretText;
 					final MessageId finalId = message.getId();
 					final long finalTimestamp = message.getTimestamp();
@@ -699,6 +730,7 @@ public class ConversationViewModel extends DbViewModel
 				PrivateMessageHeader h =
 						messagingManager.addLocalMeshAttachment(c, contentType,
 								jpeg, ts);
+				localById.put(h.getId(), true);
 				addedHeader.postEvent(h);
 				meshAttachmentSender.sendOfflinePhoto(c, h.getId(), contentType,
 						jpeg, ts);
@@ -714,13 +746,6 @@ public class ConversationViewModel extends DbViewModel
 	private long voiceMemoTimestamp;
 	private GroupId voiceMessageGroupId;
 
-	/**
-	 * The inputs voice memos in this conversation are sealed and opened with:
-	 * the wrap key is derived from the pairing secret through the contact
-	 * manager, the author ids come from the contact, and an outgoing memo
-	 * takes the next message timestamp, refused when the peer's messaging
-	 * client is too old to receive the current memo format.
-	 */
 	com.professor.zerion.android.conversation.voice.VoiceMemoKeys voiceMemoKeys() {
 		return new ContactVoiceMemoKeys(requireNonNull(contactId));
 	}
@@ -945,6 +970,7 @@ public class ConversationViewModel extends DbViewModel
 					true, pm.getAttachmentHeaders(),
 					pm.getAutoDeleteTimer());
 
+				localById.put(header.getId(), true);
 				txn.attach(() -> addedHeader.postEvent(header));
 			});
 
@@ -993,42 +1019,54 @@ public class ConversationViewModel extends DbViewModel
 		attachmentCreator.cancel();
 	}
 
-	public void feedVoicePart(@Nullable String text) {
+	public void feedVoicePart(boolean local, @Nullable String text) {
 		ContactId c = contactId;
 		if (c == null) return;
-		voiceAssembler.addPartText(c, text);
+		voiceAssembler.addPartText(c, local, text);
 	}
 
 	@Nullable
-	public String getReassembledVoiceMessage(String memoId) {
+	public String getReassembledVoiceMessage(boolean local, String memoId) {
 		ContactId c = contactId;
 		if (c == null) return null;
-		return voiceAssembler.getReassembled(c, memoId);
+		return voiceAssembler.getReassembled(c, local, memoId);
 	}
 
-	public boolean isVoiceMemoFailed(String memoId) {
+	public boolean isVoiceMemoFailed(boolean local, String memoId) {
 		ContactId c = contactId;
 		if (c == null) return false;
-		return voiceAssembler.isFailed(c, memoId);
+		return voiceAssembler.isFailed(c, local, memoId);
 	}
 
-	public void rebuildVoiceMemo(String memoId) {
+	@Nullable
+	Boolean quotedDirection(MessageId m) {
+		return localById.get(m);
+	}
+
+	boolean isLocalMessage(MessageId m) {
+		Boolean local = localById.get(m);
+		return local != null && local;
+	}
+
+	public void rebuildVoiceMemo(boolean local, String memoId) {
 		if (contactId == null) return;
 		final ContactId c = contactId;
 		runOnDbThread(() -> {
 			try {
 				Map<MessageId, String> texts =
 						messagingManager.getMessageTexts(c);
-				for (String t : texts.values()) {
+				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
+					if (isLocalMessage(e.getKey()) != local) continue;
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
 							com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
-									.parse(t);
+									.parse(e.getValue());
 					if (p != null && p.memoId.equals(memoId)) {
-						voiceAssembler.addPartText(c, t);
+						voiceAssembler.addPartText(c, local, e.getValue());
 					}
 				}
-				if (voiceAssembler.getReassembled(c, memoId) != null) {
-					voiceMemoRebuilt.postEvent(memoId);
+				if (voiceAssembler.getReassembled(c, local, memoId) != null) {
+					voiceMemoRebuilt.postEvent(VoiceMemoParts.key(local,
+							memoId));
 				}
 			} catch (DbException ignored) {
 			}
@@ -1046,11 +1084,13 @@ public class ConversationViewModel extends DbViewModel
 				Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
 				Map<MessageId, GroupId> unread = new java.util.HashMap<>();
 				for (ConversationMessageHeader h : headers) {
+					localById.put(h.getId(), h.isLocal());
 					if (!h.isRead()) unread.put(h.getId(), h.getGroupId());
 				}
 				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
 					String t = e.getValue();
-					voiceAssembler.addPartText(c, t);
+					voiceAssembler.addPartText(c, isLocalMessage(e.getKey()),
+							t);
 					GroupId g = unread.get(e.getKey());
 					if (g != null) {
 						com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
@@ -1113,28 +1153,19 @@ public class ConversationViewModel extends DbViewModel
 
 	private Collection<MessageId> expandVoiceMemoParts(ContactId c,
 			Collection<MessageId> messageIds) throws DbException {
-		java.util.Set<String> memoIds = new java.util.HashSet<>();
+		Map<MessageId, String> deleted = new java.util.HashMap<>();
 		for (MessageId id : messageIds) {
-			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
-					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
-							.parse(messagingManager.getMessageText(id));
-			if (p != null) memoIds.add(p.memoId);
+			String t = messagingManager.getMessageText(id);
+			if (t != null) deleted.put(id, t);
 		}
-		if (memoIds.isEmpty()) return messageIds;
-		for (String memoId : memoIds) {
+		if (!VoiceMemoParts.anyPart(deleted.values())) return messageIds;
+		Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
+		VoiceMemoParts.Expansion x = VoiceMemoParts.expand(messageIds,
+				deleted, texts, this::isLocalMessage);
+		for (String memoId : x.sentMemoIds) {
 			voiceSendManager.cancelMemo(memoId);
 		}
-		Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
-		java.util.Set<MessageId> expanded = new java.util.HashSet<>(messageIds);
-		for (Map.Entry<MessageId, String> e : texts.entrySet()) {
-			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
-					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
-							.parse(e.getValue());
-			if (p != null && memoIds.contains(p.memoId)) {
-				expanded.add(e.getKey());
-			}
-		}
-		return expanded;
+		return x.messages;
 	}
 
 	void clearChat() {
@@ -1189,6 +1220,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveEvent<String> getVoiceMemoRebuilt() {
 		return voiceMemoRebuilt;
+	}
+
+	LiveEvent<Boolean> getReactionRemovedLocallyOnly() {
+		return reactionRemovedLocallyOnly;
 	}
 
 	LiveEvent<Boolean> getChatCleared() {
@@ -1300,6 +1335,10 @@ public class ConversationViewModel extends DbViewModel
 		return contactConnected;
 	}
 
+	LiveData<Boolean> areKeysOutOfSync() {
+		return keysOutOfSync;
+	}
+
 	LiveData<Boolean> isMeshOnline() {
 		return meshOnline;
 	}
@@ -1323,7 +1362,10 @@ public class ConversationViewModel extends DbViewModel
 		final ContactId c = contactId;
 		runOnDbThread(() -> {
 			try {
-				messagingManager.addLocalReaction(c, targetMessageId, emoji);
+				if (!messagingManager.addLocalReaction(c, targetMessageId,
+						emoji)) {
+					reactionRemovedLocallyOnly.postEvent(true);
+				}
 			} catch (DbException e) {
 				handleException(e);
 			}
@@ -1397,9 +1439,10 @@ public class ConversationViewModel extends DbViewModel
 					long timestamp = conversationManager
 							.getTimestampForOutgoingMessage(txn,
 									recipientId);
-					PrivateMessage pm = privateMessageFactory
-							.createLegacyPrivateMessage(groupId,
-									timestamp, text);
+					PrivateMessage pm = OutgoingTextMessages.create(txn,
+							messagingManager, autoDeleteManager,
+							privateMessageFactory, recipientId, groupId,
+							timestamp, text);
 					messagingManager.addLocalMessage(txn, pm);
 				});
 				androidExecutor.runOnUiThread(onSuccess);
@@ -1433,10 +1476,21 @@ public class ConversationViewModel extends DbViewModel
 	public static class IdentityKeys {
 		public final byte[] localSigningPub;
 		public final byte[] remoteSigningPub;
+		@Nullable
+		public final byte[] localMlDsaPub;
+		@Nullable
+		public final byte[] remoteMlDsaPub;
 
 		public IdentityKeys(byte[] local, byte[] remote) {
+			this(local, null, remote, null);
+		}
+
+		public IdentityKeys(byte[] local, @Nullable byte[] localMlDsa,
+				byte[] remote, @Nullable byte[] remoteMlDsa) {
 			this.localSigningPub = local;
+			this.localMlDsaPub = localMlDsa;
 			this.remoteSigningPub = remote;
+			this.remoteMlDsaPub = remoteMlDsa;
 		}
 	}
 
@@ -1455,9 +1509,11 @@ public class ConversationViewModel extends DbViewModel
 				byte[] local =
 						identityManager.getLocalAuthor().getPublicKey()
 								.getEncoded();
-				byte[] remote = contactManager.getContact(c)
-						.getAuthor().getPublicKey().getEncoded();
-				identityKeys.postEvent(new IdentityKeys(local, remote));
+				byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
+				Contact contact = contactManager.getContact(c);
+				byte[] remote = contact.getAuthor().getPublicKey().getEncoded();
+				identityKeys.postEvent(new IdentityKeys(local, localMlDsa,
+						remote, contact.getMlDsaSigPublicKey()));
 			} catch (DbException e) {
 				handleException(e);
 			}

@@ -109,15 +109,14 @@ public class TransferSendFragment extends Fragment implements Callback {
 
 	private void start() {
 		ioExecutor.execute(() -> {
-			boolean ok = false;
+			AccountTransferManager.SendResult result;
 			try {
-				transferManager.send(this);
-				ok = true;
+				result = transferManager.send(this);
 			} catch (TransferException | RuntimeException e) {
-				ok = false;
+				result = null;
 			}
-			boolean success = ok;
-			mainHandler.post(() -> finishResult(success));
+			AccountTransferManager.SendResult r = result;
+			mainHandler.post(() -> finishResult(r));
 		});
 	}
 
@@ -187,16 +186,36 @@ public class TransferSendFragment extends Fragment implements Callback {
 				.show();
 	}
 
-	private void finishResult(boolean success) {
+	private void finishResult(
+			@Nullable AccountTransferManager.SendResult result) {
 		if (!isAdded()) return;
+		if (result == AccountTransferManager.SendResult.MOVED) {
+			new SecureAlertDialogBuilder(requireContext())
+					.setTitle(R.string.transfer_moved_title)
+					.setMessage(R.string.transfer_send_moved_message)
+					.setCancelable(false)
+					.setPositiveButton(R.string.ok, (d, w) -> signOut())
+					.show();
+			return;
+		}
+		boolean sent = result != null;
 		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(success ? R.string.transfer_done_title
+				.setTitle(sent ? R.string.transfer_done_title
 						: R.string.transfer_failed_title)
-				.setMessage(success ? R.string.transfer_send_done_message
+				.setMessage(sent ? R.string.transfer_send_done_message
 						: R.string.transfer_failed_message)
 				.setCancelable(false)
 				.setPositiveButton(R.string.ok, (d, w) -> back())
 				.show();
+	}
+
+	private void signOut() {
+		android.app.Activity activity = getActivity();
+		if (activity instanceof SettingsActivity) {
+			((SettingsActivity) activity).requestProfileSignOut();
+		} else if (activity != null) {
+			activity.finishAffinity();
+		}
 	}
 
 	private String statusFor(Status status) {
@@ -209,6 +228,8 @@ public class TransferSendFragment extends Fragment implements Callback {
 				return getString(R.string.transfer_status_authenticating);
 			case TRANSFERRING:
 				return getString(R.string.transfer_status_transferring);
+			case IMPORTING:
+				return getString(R.string.transfer_status_importing);
 			case DONE:
 				return getString(R.string.transfer_status_done);
 			default:

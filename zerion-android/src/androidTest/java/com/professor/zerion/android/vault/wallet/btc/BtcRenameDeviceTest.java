@@ -25,12 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Device proof that a BTC rename is a presentation-only change: the walletId
- * (vault item id) is immutable across rename, the seed is never re-encrypted,
- * and no per-wallet fund/privacy state is migrated. Mirrors the XMR rename
- * model. A throwaway vault in app-private storage is used; no network, no funds.
- */
 @RunWith(AndroidJUnit4.class)
 public class BtcRenameDeviceTest {
 

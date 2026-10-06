@@ -17,8 +17,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -32,6 +32,7 @@ class ChannelReactionStore {
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
 	private final BdfWriterFactory writerFactory;
+	private final ChannelItemSync sync;
 
 	@Inject
 	ChannelReactionStore(SettingsManager settingsManager,
@@ -40,9 +41,38 @@ class ChannelReactionStore {
 		this.settingsManager = settingsManager;
 		this.readerFactory = readerFactory;
 		this.writerFactory = writerFactory;
+		this.sync = new ChannelItemSync(settingsManager, readerFactory,
+				writerFactory, "r");
+	}
+
+	ChannelItemSync sync() {
+		return sync;
+	}
+
+	static String keyOf(ChannelReaction r) {
+		return r.getPostSeqNum() + ":"
+				+ ChannelStore.hex(r.getSignerEd25519PubKey());
+	}
+
+	private static byte[] digestOf(ChannelReaction r) {
+		byte[] sig = r.getSignature();
+		if (sig != null && sig.length >= 16) {
+			return java.util.Arrays.copyOf(sig, 16);
+		}
+		return (r.getEmoji() + ":" + r.getTimestampHourMs())
+				.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 	}
 
 	List<ChannelReaction> getReactions(byte[] channelId) throws DbException {
+		List<ChannelReaction> stored = readStored(channelId);
+		List<ChannelReaction> fitted =
+				ChannelReactionPolicy.fitToCeilings(stored);
+		if (fitted.size() != stored.size()) write(channelId, fitted);
+		return fitted;
+	}
+
+	private List<ChannelReaction> readStored(byte[] channelId)
+			throws DbException {
 		Settings s = settingsManager.getSettings(NS);
 		String encoded = s.get(ChannelStore.hex(channelId));
 		if (encoded == null) return new ArrayList<>();
@@ -69,43 +99,30 @@ class ChannelReactionStore {
 
 	boolean putReaction(byte[] channelId, ChannelReaction reaction)
 			throws DbException {
-		List<ChannelReaction> existing = getReactions(channelId);
-		List<ChannelReaction> out = new ArrayList<>(existing.size() + 1);
-		boolean replaced = false;
-		boolean changed = false;
-		for (ChannelReaction r : existing) {
-			if (r.getPostSeqNum() == reaction.getPostSeqNum()
-					&& Arrays.equals(r.getSignerEd25519PubKey(),
-							reaction.getSignerEd25519PubKey())) {
-				out.add(reaction);
-				replaced = true;
-				if (!r.getEmoji().equals(reaction.getEmoji())
-						|| r.getTimestampHourMs()
-								!= reaction.getTimestampHourMs()) {
-					changed = true;
-				}
-			} else {
-				out.add(r);
-			}
-		}
-		if (!replaced) {
-			int forPost = 0;
-			for (ChannelReaction r : existing) {
-				if (r.getPostSeqNum() == reaction.getPostSeqNum()) forPost++;
-			}
-			if (forPost >= org.zerionproject.app.api.channel.ChannelConstants
-					.MAX_REACTIONS_PER_POST) {
-				return false;
-			}
-			if (existing.size() >= org.zerionproject.app.api.channel
-					.ChannelConstants.MAX_REACTIONS_PER_CHANNEL) {
-				return false;
-			}
-			out.add(reaction);
-			changed = true;
-		}
-		if (!changed) return false;
-		write(channelId, out);
+		return putReaction(channelId, reaction, getReactions(channelId));
+	}
+
+	boolean putReaction(byte[] channelId, ChannelReaction reaction,
+			List<ChannelReaction> current) throws DbException {
+		List<ChannelReaction> next =
+				ChannelReactionPolicy.withAdmitted(current, reaction);
+		if (next == null || next == current) return false;
+		write(channelId, next);
+		return true;
+	}
+
+	void setReactions(byte[] channelId, List<ChannelReaction> reactions)
+			throws DbException {
+		write(channelId, ChannelReactionPolicy.fitToCeilings(reactions));
+	}
+
+	boolean retainPosts(byte[] channelId, Set<Long> posts)
+			throws DbException {
+		List<ChannelReaction> current = getReactions(channelId);
+		List<ChannelReaction> kept =
+				ChannelReactionPolicy.retainPosts(current, posts);
+		if (kept == current) return false;
+		write(channelId, kept);
 		return true;
 	}
 
@@ -120,7 +137,9 @@ class ChannelReactionStore {
 	}
 
 	void removeAll(byte[] channelId) throws DbException {
-		write(channelId, new ArrayList<>());
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
+		sync.removeAll(channelId);
 	}
 
 	private void write(byte[] channelId, List<ChannelReaction> reactions)
@@ -141,6 +160,13 @@ class ChannelReactionStore {
 		out.put(ChannelStore.hex(channelId),
 				encodeBase64(listToBytes(list)));
 		settingsManager.mergeSettings(out, NS);
+		List<String> keys = new ArrayList<>(reactions.size());
+		List<byte[]> digests = new ArrayList<>(reactions.size());
+		for (ChannelReaction r : reactions) {
+			keys.add(keyOf(r));
+			digests.add(digestOf(r));
+		}
+		sync.recordWrite(channelId, keys, digests);
 	}
 
 	private byte[] listToBytes(BdfList l) {

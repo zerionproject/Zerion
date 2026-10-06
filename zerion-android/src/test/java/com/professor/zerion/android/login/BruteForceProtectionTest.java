@@ -34,12 +34,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * AND-06: the login screen's policy reads one persisted, monotonic throttle
- * owned by the account manager. Wrong passwords only ever cost time unless
- * the user chose the erase policy, a lockout survives a restart, the wall
- * clock is never consulted, and failures a day old are forgotten.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class BruteForceProtectionTest {
@@ -55,7 +49,7 @@ public class BruteForceProtectionTest {
 		dir = Files.createTempDirectory("bf").toFile();
 		prefs = RuntimeEnvironment.getApplication().getSharedPreferences(
 				"bf-test-" + System.nanoTime(), Context.MODE_PRIVATE);
-		manager = new FakeAccountManager(dir, mono);
+		manager = new FakeAccountManager(dir, mono, prefs);
 		protection = new BruteForceProtection(prefs, manager);
 	}
 
@@ -145,21 +139,41 @@ public class BruteForceProtectionTest {
 		wrongPassword();
 		wrongPassword();
 		wrongPassword();
-		FakeAccountManager restarted = new FakeAccountManager(dir, mono);
+		FakeAccountManager restarted =
+				new FakeAccountManager(dir, mono, prefs);
 		BruteForceProtection again = new BruteForceProtection(prefs, restarted);
 		assertTrue(again.checkLockStatus().isLocked);
 		assertEquals(3, restarted.failedSignInAttempts());
 	}
 
+	private static final String END_OF_METHOD = "\n\t}\n";
+
 	@Test
-	public void failuresDecayAfterADay() {
+	public void theDecisionIsCarriedOutWhereItIsMade() throws Exception {
+		String vm = new String(java.nio.file.Files.readAllBytes(
+				java.nio.file.Paths.get("src/main/java/com/professor/zerion/"
+						+ "android/login/StartupViewModel.java")),
+				java.nio.charset.StandardCharsets.UTF_8);
+		int v = vm.indexOf("void validatePassword(char[] password) {");
+		String validate = vm.substring(v, vm.indexOf("private void erase(", v));
+		assertTrue(validate.contains("erase(true);"));
+		int h = vm.indexOf("private void handleCryptographicFailure(");
+		String failure = vm.substring(h, vm.indexOf(END_OF_METHOD, h));
+		assertTrue(failure.contains("erase(true);"));
+		assertFalse(failure.contains("triggerWipe.postEvent(true);"));
+		int e = vm.indexOf("private void erase(boolean notifyScreen) {");
+		String erase = vm.substring(e, vm.indexOf(END_OF_METHOD, e));
+		assertTrue(erase.contains("accountManager.deleteAccount();"));
+	}
+
+	@Test
+	public void failuresAreNotForgottenAfterAQuietDay() {
 		wrongPassword();
 		wrongPassword();
 		mono.addAndGet(86_400_000L + 1);
 		FailureResult r = wrongPassword();
-		assertEquals("old failures no longer count",
-				FailureResult.Type.NORMAL_FAILURE, r.type);
-		assertEquals(ATTEMPTS_BEFORE_FIRST_LOCKOUT - 1, r.attemptsRemaining);
+		assertEquals("failures a day old still count",
+				FailureResult.Type.LOCKOUT, r.type);
 	}
 
 	@Test
@@ -174,15 +188,23 @@ public class BruteForceProtectionTest {
 		assertEquals(FailureResult.Type.NORMAL_FAILURE, wrongPassword().type);
 	}
 
-	/** The manager's contract: count on refusal, refuse while locked, reset on success. */
 	private static final class FakeAccountManager implements AccountManager {
 
 		private final LoginThrottle throttle;
+		private final SignInErasePolicy erasePolicy;
+		private boolean eraseRequested = false;
 
-		FakeAccountManager(File dir, AtomicLong mono) {
+		FakeAccountManager(File dir, AtomicLong mono,
+				SharedPreferences prefs) {
 			throttle = new LoginThrottle(
 					LoginThrottle.fileStore(new File(dir, "login.lockout")),
 					mono::get, () -> "boot", LoginThrottle.SIGN_IN);
+			erasePolicy = new SignInErasePolicy(prefs);
+		}
+
+		@Override
+		public boolean isEraseRequested() {
+			return eraseRequested;
 		}
 
 		@Override
@@ -232,7 +254,16 @@ public class BruteForceProtectionTest {
 				return;
 			}
 			throttle.recordFailure();
+			if (erasePolicy.eraseDue(throttle.failures())) {
+				eraseRequested = true;
+			}
 			throw new DecryptionException(DecryptionResult.INVALID_PASSWORD);
+		}
+
+		@Override
+		public void verifyPassword(char[] password)
+				throws DecryptionException {
+			signIn(password);
 		}
 
 		@Override

@@ -7,28 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Arrays;
 
-/**
- * The opaque sealed-sender envelope carried by a relay, as specified in
- * docs/protocol/ASYNC-SEALED-SENDER.md. This class is only the wire format:
- * it holds and
- * (de)serialises the fields. Deriving the message key, sealing, and opening are
- * done elsewhere and are gated behind an external cryptographer review before
- * any use.
- *
- * <p>Wire layout (all integers big-endian):
- * <pre>
- *   0     version           1
- *   1     prekeyKind        1     0x01 one-time, 0x00 signed-prekey
- *   2     prekeyId          16
- *   18    signedPrekeyId    4     uint32
- *   22    senderEphemeralPub 1216 hybrid agreement public key
- *   1238  kemCiphertext     1088  ML-KEM-768 ciphertext
- *   2326  ttl               4     uint32 seconds (relay-visible, advisory)
- *   2330  dedupId           16    relay-visible
- *   2346  ciphertextLen     4     uint32 length of the AEAD blob
- *   2350  aeadBlob          var   Poly1305 tag(16) || XSalsa20 ciphertext
- * </pre>
- */
 @NotNullByDefault
 public class AsyncEnvelope {
 
@@ -58,9 +36,6 @@ public class AsyncEnvelope {
 	public static final int HEADER_BYTES =
 			OFF_CIPHERTEXT_LEN + ByteUtils.INT_32_BYTES;
 
-	/** Bounds the AEAD blob so a hostile envelope cannot force a huge
-	 * allocation. Fixed inner overhead is ~5.4 KB, so this allows a payload of
-	 * roughly 1 MB. */
 	public static final int MAX_AEAD_BLOB_BYTES = 6 * 1024 * 1024;
 
 	private final int prekeyKind;

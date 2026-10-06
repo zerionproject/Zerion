@@ -20,11 +20,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
 
-/**
- * Renders the XMR Send and Review layouts off-screen to PNG files so the visual
- * design can be reviewed without a funded wallet and without defeating the
- * vault's FLAG_SECURE screenshot protection. No wallet, no vault, no network.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrSendUiRenderTest {
 

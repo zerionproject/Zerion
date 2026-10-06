@@ -20,21 +20,12 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import static org.zerionproject.core.util.StringUtils.UTF_8;
 
-/**
- * Failed-attempt throttle for a credential check. Time is taken from a
- * monotonic clock, never the wall clock, so a clock change can neither
- * shorten a lockout nor decay the failure count; the state is persisted
- * together with the boot identifier so a force-stop or relaunch continues
- * the same lockout, and a reboot, after which the monotonic clock is not
- * comparable, restarts the lockout in force rather than ending it.
- */
 @ThreadSafe
 @NotNullByDefault
 public final class LoginThrottle {
 
 	private static final int FORMAT = 1;
 
-	/** How many failures are free, how long each lockout lasts, when to forget. */
 	public interface Policy {
 
 		int freeFailures();
@@ -44,7 +35,8 @@ public final class LoginThrottle {
 		long decayMs();
 	}
 
-	/** Three free attempts, then five minutes doubling to a day; forgotten after a day. */
+	public static final long NEVER_DECAYS = Long.MAX_VALUE;
+
 	public static final Policy SIGN_IN = new Policy() {
 		@Override
 		public int freeFailures() {
@@ -60,11 +52,10 @@ public final class LoginThrottle {
 
 		@Override
 		public long decayMs() {
-			return 86_400_000L;
+			return NEVER_DECAYS;
 		}
 	};
 
-	/** Every failure costs time, growing linearly to about twenty seconds; forgotten after a minute. */
 	public static final Policy VAULT = new Policy() {
 		@Override
 		public int freeFailures() {
@@ -83,7 +74,6 @@ public final class LoginThrottle {
 		}
 	};
 
-	/** Where the state line lives between processes. */
 	public interface Store {
 
 		@Nullable
@@ -112,7 +102,6 @@ public final class LoginThrottle {
 		load();
 	}
 
-	/** A throttle whose state lives in the given file, on the JVM's monotonic clock. */
 	public static LoginThrottle inFile(File stateFile, Policy policy) {
 		return new LoginThrottle(fileStore(stateFile),
 				() -> System.nanoTime() / 1_000_000L, linuxBootId(), policy);
@@ -123,14 +112,12 @@ public final class LoginThrottle {
 		return failures;
 	}
 
-	/** Milliseconds the caller still has to wait, or zero. */
 	public synchronized long remainingLockoutMs() {
 		long now = monotonicMs.getAsLong();
 		decayIfQuiet(now);
 		return Math.max(0, lockedUntil - now);
 	}
 
-	/** Records a failure and returns the lockout now in force, or zero. */
 	public synchronized long recordFailure() {
 		long now = monotonicMs.getAsLong();
 		decayIfQuiet(now);
@@ -145,6 +132,34 @@ public final class LoginThrottle {
 		return lockout;
 	}
 
+	public static final class Attempt {
+
+		private final int failures;
+		private final long lastFailureAt;
+		private final long lockedUntil;
+
+		private Attempt(int failures, long lastFailureAt, long lockedUntil) {
+			this.failures = failures;
+			this.lastFailureAt = lastFailureAt;
+			this.lockedUntil = lockedUntil;
+		}
+	}
+
+	public synchronized Attempt beginAttempt() {
+		long now = monotonicMs.getAsLong();
+		decayIfQuiet(now);
+		Attempt before = new Attempt(failures, lastFailureAt, lockedUntil);
+		recordFailure();
+		return before;
+	}
+
+	public synchronized void cancel(Attempt attempt) {
+		failures = attempt.failures;
+		lastFailureAt = attempt.lastFailureAt;
+		lockedUntil = attempt.lockedUntil;
+		save();
+	}
+
 	public synchronized void reset() {
 		failures = 0;
 		lastFailureAt = 0;
@@ -152,9 +167,9 @@ public final class LoginThrottle {
 		store.clear();
 	}
 
-	/** Quiet time counts from the later of the last failure and the lockout end. */
 	private void decayIfQuiet(long now) {
 		if (failures == 0) return;
+		if (policy.decayMs() == NEVER_DECAYS) return;
 		if (now < lockedUntil) return;
 		if (now - Math.max(lastFailureAt, lockedUntil) > policy.decayMs()) {
 			failures = 0;
@@ -211,11 +226,6 @@ public final class LoginThrottle {
 				+ lastFailureAt + "," + lockedUntil);
 	}
 
-	/**
-	 * The kernel's boot identifier, or an empty string where it cannot be
-	 * read; an empty identifier never matches, so the stored lockout is
-	 * restarted rather than trusted.
-	 */
 	public static Supplier<String> linuxBootId() {
 		return () -> {
 			File f = new File("/proc/sys/kernel/random/boot_id");
@@ -229,7 +239,6 @@ public final class LoginThrottle {
 		};
 	}
 
-	/** A store that writes the state line durably: temp file, sync, atomic rename. */
 	public static Store fileStore(File f) {
 		return new Store() {
 			@Override
@@ -264,11 +273,6 @@ public final class LoginThrottle {
 		};
 	}
 
-	/**
-	 * Writes the bytes to a temporary file, syncs it, moves it atomically over
-	 * the target and syncs the directory, so a crash leaves either the old or
-	 * the new content and never an empty file.
-	 */
 	public static void writeDurably(File target, byte[] data)
 			throws IOException {
 		File dir = target.getAbsoluteFile().getParentFile();
@@ -294,7 +298,6 @@ public final class LoginThrottle {
 		syncDirectory(dir);
 	}
 
-	/** Best effort: directory syncs are not supported on every file system. */
 	public static void syncDirectory(@Nullable File dir) {
 		if (dir == null) return;
 		try (FileChannel c = FileChannel.open(dir.toPath(),

@@ -13,6 +13,7 @@ import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.data.MetadataParser;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.NoSuchContactException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
@@ -20,6 +21,7 @@ import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.zerionproject.core.api.plugin.OnionClientAuthManager;
+import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
 import org.zerionproject.core.api.properties.event.RemoteTransportPropertiesUpdatedEvent;
@@ -60,15 +62,6 @@ import static org.zerionproject.core.plugin.tor.auth.OnionAuthValidator.MSG_KEY_
 import static org.zerionproject.core.plugin.tor.auth.OnionAuthValidator.MSG_KEY_LOCAL;
 import static org.zerionproject.core.plugin.tor.auth.OnionAuthValidator.MSG_KEY_TYPE;
 
-/**
- * Client authorization of the contact address: the per-contact state
- * machine, the activation records, the authorized service and its
- * rotation, credentials in Tor, and revocation. Database state changes
- * happen inside the caller's transaction; Tor control work is queued on
- * the I/O executor and re-driven from the persisted state, so a crash
- * between the two resumes at the next tick. See
- * docs/protocol/ONION_CLIENT_AUTH.md.
- */
 @ThreadSafe
 @NotNullByDefault
 @javax.inject.Singleton
@@ -99,16 +92,11 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	private final TaskScheduler scheduler;
 
 	private final Object torLock = new Object();
-	/**
-	 * Serialises every change to the authorized service and to Tor's
-	 * credentials, so two contacts' offers arriving together cannot
-	 * interleave two delete-and-add sequences and leave the service with
-	 * one contact's key missing.
-	 */
 	private final Object serviceLock = new Object();
 	@Nullable
 	private OnionServiceControl control = null;
-	private int authorizedPort = 0;
+	@Nullable
+	private String authorizedTarget = null;
 	@Nullable
 	private ProbeDialer probeDialer = null;
 
@@ -149,15 +137,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		this.scheduler = scheduler;
 	}
 
-	/* Attachment of Tor by the plugin */
-
-	/**
-	 * Called by the Tor plugin once Tor is up, with the port of the
-	 * authorized listener. Re-feeds Tor from the persisted state: the
-	 * authorized service with its current key set and a credential for
-	 * every peer service, before the plugin reports itself active.
-	 */
-	/** Dials a contact at once at the address the property manager gives. */
 	public interface ProbeDialer {
 		void dial(ContactId c);
 	}
@@ -168,9 +147,14 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	public void attachTor(OnionServiceControl control, int authorizedPort,
 			@Nullable ProbeDialer dialer) {
+		attachTor(control, OnionTargets.loopback(authorizedPort), dialer);
+	}
+
+	public void attachTor(OnionServiceControl control,
+			String authorizedTarget, @Nullable ProbeDialer dialer) {
 		synchronized (torLock) {
 			this.control = control;
-			this.authorizedPort = authorizedPort;
+			this.authorizedTarget = authorizedTarget;
 			this.probeDialer = dialer;
 		}
 		refeedTor();
@@ -179,16 +163,11 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	public void detachTor() {
 		synchronized (torLock) {
 			this.control = null;
-			this.authorizedPort = 0;
+			this.authorizedTarget = null;
 			this.probeDialer = null;
 		}
 	}
 
-	/**
-	 * The transport reached an onion address for a contact. Only a dial
-	 * that reached the contact's authorized address while this side is
-	 * probing counts as this side's probe.
-	 */
 	public void dialSucceeded(ContactId c, String onion) {
 		Cached cached = cache.get(c);
 		if (cached != null && cached.probing && onion.equals(cached.peerOnion)) {
@@ -219,10 +198,9 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/* OpenDatabaseHook */
-
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
+		removeGroupsOfRemovedContacts(txn);
 		for (Contact c : db.getContacts(txn)) ensureGroup(txn, c);
 		for (OnionAuthRecord r : store.loadAll(txn)) {
 			cache(r);
@@ -236,6 +214,28 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				TICK_MS, TimeUnit.MILLISECONDS);
 	}
 
+	private void removeGroupsOfRemovedContacts(Transaction txn)
+			throws DbException {
+		for (Group g : db.getGroups(txn, CLIENT_ID, MAJOR_VERSION)) {
+			ContactId c;
+			try {
+				c = clientHelper.getContactId(txn, g.getId());
+			} catch (DbException e) {
+				c = null;
+			}
+			boolean exists = false;
+			if (c != null) {
+				try {
+					db.getContact(txn, c);
+					exists = true;
+				} catch (NoSuchContactException e) {
+					exists = false;
+				}
+			}
+			if (!exists) db.removeGroup(txn, g);
+		}
+	}
+
 	private void ensureGroup(Transaction txn, Contact c) throws DbException {
 		Group g = getContactGroup(c);
 		if (!db.containsGroup(txn, g.getId())) {
@@ -244,8 +244,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 		clientHelper.setContactId(txn, g.getId(), c.getId());
 	}
-
-	/* ClientVersioningHook */
 
 	@Override
 	public void onClientVisibilityChanging(Transaction txn, Contact c,
@@ -261,23 +259,19 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				MAJOR_VERSION, c);
 	}
 
-	/* ContactHook */
-
 	@Override
 	public void addingContact(Transaction txn, Contact c) throws DbException {
 		ensureGroup(txn, c);
+		OnionAuthRecord r = store.load(txn, c.getId());
+		if (r.state != LEGACY) store.clear(txn, c.getId());
+		cache.remove(c.getId());
 	}
 
-	/**
-	 * Revocation, step 1: the contact is marked revoked in the same
-	 * transaction that removes it, so no traffic is accepted from it after
-	 * the commit. The registry closes its live sessions on the removal
-	 * event; the Tor work (credential, service, rotation) follows on the
-	 * I/O executor from the persisted state.
-	 */
 	@Override
 	public void removingContact(Transaction txn, Contact c)
 			throws DbException {
+		Group g = getContactGroup(c);
+		if (db.containsGroup(txn, g.getId())) db.removeGroup(txn, g);
 		OnionAuthRecord r = store.load(txn, c.getId());
 		if (r.state == LEGACY) {
 			cache.remove(c.getId());
@@ -285,18 +279,19 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 		String peerOnion = r.peerOnion;
 		boolean authorized = r.authorizesPeer();
-		r.state = REVOKED;
-		r.dialPrivateKey = null;
-		r.dialPublicKey = null;
-		r.peerPublicKey = null;
-		r.probing = false;
-		store.save(txn, r);
-		cache(r);
+		store.clear(txn, c.getId());
+		OnionAuthRecord tombstone = new OnionAuthRecord(c.getId());
+		tombstone.state = REVOKED;
+		store.save(txn, tombstone);
+		cache(tombstone);
+		if (authorized) {
+			ServiceRecord svc = store.loadService(txn);
+			svc.revocationPending = true;
+			store.saveService(txn, svc);
+		}
 		RevocationWork w = new RevocationWork(c.getId(), peerOnion, authorized);
 		txn.attach(() -> ioExecutor.execute(() -> revoke(w)));
 	}
-
-	/* IncomingMessageHook */
 
 	@Override
 	public DeliveryAction incomingMessage(Transaction txn, Message m,
@@ -341,8 +336,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				break;
 		}
 	}
-
-	/* The activation protocol */
 
 	private void onOffer(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
@@ -397,14 +390,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		cache(r);
 	}
 
-	/**
-	 * A probe is this side's proof that the pair works: for the designated
-	 * dialer a dial that reached the peer's authorized address, for the
-	 * other side a recognised connection from the peer through this
-	 * device's authorized service. The dialer is asked to dial at once,
-	 * since a pair that is already connected over the open address would
-	 * otherwise not dial again for a long time.
-	 */
 	private void startProbe(Transaction txn, OnionAuthRecord r) {
 		if (r.probeSucceeded) return;
 		r.probing = true;
@@ -471,8 +456,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		cache(r);
 	}
 
-	/* Rotation records */
-
 	private void onRotate(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
 		if (r.state == LEGACY) return;
@@ -510,8 +493,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 		return true;
 	}
-
-	/* Public API */
 
 	@Override
 	public State getState(ContactId c) throws DbException {
@@ -551,8 +532,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		db.transaction(false, txn -> abortNegotiation(txn, c));
 	}
 
-	/* Events */
-
 	@Override
 	public void eventOccurred(Event e) {
 		if (e instanceof RemoteTransportPropertiesUpdatedEvent) {
@@ -563,10 +542,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/**
-	 * A contact that advertises support and is still LEGACY gets an offer.
-	 * Both sides do this, so whichever side notices first starts.
-	 */
 	private void evaluateOffers() {
 		try {
 			Map<ContactId, org.zerionproject.core.api.properties
@@ -588,11 +563,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/**
-	 * The offer carries this device's current service generation; the
-	 * record remembers it as the generation the pair was offered at, so a
-	 * later commit from the peer is checked against the same number.
-	 */
 	private void sendOffer(Transaction txn, OnionAuthRecord r)
 			throws DbException {
 		if (r.dialPublicKey == null) return;
@@ -632,13 +602,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/* Tor work, driven from persisted state */
-
-	/**
-	 * After an offer or a rotation from a contact: put the contact's key on
-	 * our service, install our credential for the contact's service, and
-	 * send what the protocol requires next.
-	 */
 	private void authorize(ContactId c) {
 		OnionServiceControl ctl = control();
 		if (ctl == null) return;
@@ -658,13 +621,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/**
-	 * Installs the credential for the peer's service and, before commit,
-	 * tells the peer where this device stands: an offer whenever the
-	 * service is published and a READY once the credential is in place.
-	 * Both are idempotent for the receiver, so this runs after every
-	 * offer and after every Tor start.
-	 */
 	private void credentialAndAnswer(OnionServiceControl ctl, ContactId c,
 			boolean serviceChanged) throws DbException {
 		db.transaction(false, txn -> {
@@ -690,20 +646,13 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		});
 	}
 
-	/**
-	 * Publishes the authorized service with the current key set, or
-	 * re-publishes it when the set changed. Tor cannot change the key set
-	 * of a running service, so a change is a delete followed by an add
-	 * with the same key, which keeps the address. Returns whether the
-	 * service was (re)published.
-	 */
 	private boolean republishService(OnionServiceControl ctl)
 			throws DbException, IOException {
-		int port;
+		String target;
 		synchronized (torLock) {
-			port = authorizedPort;
+			target = authorizedTarget;
 		}
-		if (port == 0) return false;
+		if (target == null) return false;
 		List<byte[]> keys = db.transactionWithResult(true, this::authorizedKeys);
 		ServiceRecord svc = db.transactionWithResult(true, store::loadService);
 		if (keys.isEmpty()) {
@@ -726,8 +675,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			} catch (IOException ignored) {
 			}
 		}
-		OnionServiceControl.Published p = ctl.publish(svc.privateKey, port,
-				REMOTE_PORT, keys);
+		OnionServiceControl.Published p = ctl.publish(svc.privateKey,
+				target, REMOTE_PORT, keys);
 		svc.onion = p.onion;
 		svc.privateKey = p.privateKey;
 		if (svc.gen == 0) svc.gen = 1;
@@ -746,14 +695,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		return keys;
 	}
 
-	/**
-	 * After every reconfiguration of the running Tor process: only the
-	 * credentials, since the ephemeral services survive a reconfiguration
-	 * and the credentials do not. Runs under the service lock so that a
-	 * revocation in flight cannot be undone by a re-installation that read
-	 * the record before the revocation was committed. A record that has no
-	 * credential yet, or is legacy or revoked, installs nothing.
-	 */
 	@Override
 	public void refeedCredentials() {
 		ioExecutor.execute(() -> {
@@ -778,7 +719,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		});
 	}
 
-	/** After every Tor start: service and credentials from persisted state. */
 	private void refeedTor() {
 		ioExecutor.execute(() -> {
 			OnionServiceControl ctl = control();
@@ -805,14 +745,15 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				ServiceRecord svc = db.transactionWithResult(true,
 						store::loadService);
 				if (svc.oldOnion != null && svc.oldPrivateKey != null) {
-					int port;
+					String target;
 					synchronized (torLock) {
-						port = authorizedPort;
+						target = authorizedTarget;
 					}
 					List<byte[]> keys = db.transactionWithResult(true,
 							this::authorizedKeys);
-					if (!keys.isEmpty() && port != 0) {
-						ctl.publish(svc.oldPrivateKey, port, REMOTE_PORT, keys);
+					if (!keys.isEmpty() && target != null) {
+						ctl.publish(svc.oldPrivateKey, target, REMOTE_PORT,
+								keys);
 					}
 				}
 				for (OnionAuthRecord r : db.transactionWithResult(true,
@@ -833,8 +774,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			}
 	}
 
-	/* Revocation, steps 2 to 6 */
-
 	private void revoke(RevocationWork w) {
 		OnionServiceControl ctl = control();
 		synchronized (serviceLock) {
@@ -845,12 +784,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/**
-	 * The rotation a revocation requires is recorded as pending before it
-	 * is attempted, and cleared only once the new service is published and
-	 * announced, so a revocation while Tor is down or a publish that fails
-	 * half way is completed at the next Tor start (section 7).
-	 */
 	private void revokeLocked(@Nullable OnionServiceControl ctl,
 			RevocationWork w) {
 		if (w.peerOnion != null && ctl != null) {
@@ -872,12 +805,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		rotateLocked(true, w.contactId);
 	}
 
-	/**
-	 * Rotation. A revocation rotation deletes the old service at once and
-	 * publishes the new one with the remaining keys; a normal rotation
-	 * keeps the old service until every contact has acknowledged the new
-	 * address or the retirement deadline passes.
-	 */
 	private void rotate(boolean revocation, @Nullable ContactId revoked) {
 		synchronized (serviceLock) {
 			try {
@@ -890,11 +817,11 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	private void rotateLocked(boolean revocation, @Nullable ContactId revoked) {
 		OnionServiceControl ctl = control();
 		if (ctl == null) return;
-		int port;
+		String target;
 		synchronized (torLock) {
-			port = authorizedPort;
+			target = authorizedTarget;
 		}
-		if (port == 0) return;
+		if (target == null) return;
 		try {
 			List<byte[]> keys = db.transactionWithResult(true, this::authorizedKeys);
 			ServiceRecord svc = db.transactionWithResult(true, store::loadService);
@@ -929,7 +856,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				db.transaction(false, txn -> store.saveService(txn, svc));
 				return;
 			}
-			OnionServiceControl.Published p = ctl.publish(null, port,
+			OnionServiceControl.Published p = ctl.publish(null, target,
 					REMOTE_PORT, keys);
 			svc.onion = p.onion;
 			svc.privateKey = p.privateKey;
@@ -977,8 +904,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		} catch (DbException ignored) {
 		}
 	}
-
-	/* Pre-commit cleanup and housekeeping */
 
 	private void abortNegotiation(Transaction txn, ContactId c)
 			throws DbException {
@@ -1052,8 +977,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	/* Helpers */
-
 	private void cache(OnionAuthRecord r) {
 		cache.put(r.contactId, new Cached(r.state, r.peerOnion, r.probing));
 	}
@@ -1074,8 +997,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			throw new DbException();
 		}
 	}
-
-	/* Work carried across a transaction commit */
 
 	private static final class RevocationWork {
 

@@ -293,13 +293,6 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		}
 	}
 
-	/**
-	 * A validator or incoming message hook that fails with an unchecked
-	 * exception has already had its transaction rolled back. The message is
-	 * marked invalid in a fresh transaction so that it is never validated or
-	 * delivered again, including at the next start, and the executor thread
-	 * survives.
-	 */
 	private void invalidateAfterFailure(MessageId id) {
 		Queue<MessageId> invalidate = new LinkedList<>();
 		invalidate.add(id);

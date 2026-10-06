@@ -1,7 +1,5 @@
 package com.professor.zerion.android.conversation;
 
-import com.professor.zerion.android.vault.utils.SecureMemory;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,9 +27,6 @@ import org.zerionproject.app.api.identity.AuthorInfo;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-import java.io.File;
-import java.util.Map;
-
 import javax.inject.Inject;
 
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
@@ -41,7 +36,6 @@ import static com.professor.zerion.android.view.AuthorView.setAvatar;
 @ParametersNotNullByDefault
 public class ChatSettingsActivity extends ZerionActivity {
 
-	private static final String PREFS_NAME = "chat_settings";
 	private static final String PREF_MUTE_PREFIX = "mute_";
 	private static final String PREF_VIBRATION_PREFIX = "vibration_";
 	private static final String PREF_TIMER_PREFIX = "timer_";
@@ -69,9 +63,13 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private TextView disappearingMessagesValue;
 	private LinearLayout identityCard;
 	private TextView safetyNumberValue;
+	private TextView safetyNumberLabel;
 	private TextView myFingerprintValue;
 	private TextView theirFingerprintValue;
 	private com.google.android.material.button.MaterialButton copySafetyNumberButton;
+	private com.google.android.material.button.MaterialButton markVerifiedButton;
+	private LinearLayout keysOutOfSyncCard;
+	private com.google.android.material.button.MaterialButton readdContactButton;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -91,8 +89,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 
 		viewModel.setContactId(contactId);
 		viewModel.checkConnectionStatus(connectionRegistry);
-		prefs = getSecurePrefs(this);
-		migrateFromPlaintextPrefs();
+		prefs = getProfilePrefs(this);
 
 		setContentView(R.layout.activity_chat_settings);
 
@@ -118,19 +115,40 @@ public class ChatSettingsActivity extends ZerionActivity {
 
 		identityCard = findViewById(R.id.identity_card);
 		safetyNumberValue = findViewById(R.id.safety_number_value);
+		safetyNumberLabel = findViewById(R.id.safety_number_label);
 		myFingerprintValue = findViewById(R.id.my_fingerprint_value);
 		theirFingerprintValue = findViewById(R.id.their_fingerprint_value);
 		copySafetyNumberButton = findViewById(R.id.copy_safety_number_button);
+		markVerifiedButton = findViewById(R.id.mark_verified_button);
+		markVerifiedButton.setOnClickListener(v -> confirmMarkVerified());
+		keysOutOfSyncCard = findViewById(R.id.keys_out_of_sync_card);
+		readdContactButton = findViewById(R.id.readd_contact_button);
+		readdContactButton.setOnClickListener(v -> readdContact());
+		viewModel.areKeysOutOfSync().observe(this, outOfSync ->
+				keysOutOfSyncCard.setVisibility(Boolean.TRUE.equals(outOfSync)
+						? View.VISIBLE : View.GONE));
 
 		viewModel.getIdentityKeys().observeEvent(this, keys -> {
 			if (keys == null) return;
 			String safety = com.professor.zerion.android.contact.identity
-					.ContactSafetyNumber.forKeys(
-							keys.localSigningPub, keys.remoteSigningPub);
+					.ContactSafetyNumber.forKeys(keys.localSigningPub,
+							keys.localMlDsaPub, keys.remoteSigningPub,
+							keys.remoteMlDsaPub);
+			int version = com.professor.zerion.android.contact.identity
+					.ContactSafetyNumber.versionFor(keys.localMlDsaPub,
+							keys.remoteMlDsaPub);
+			String hybridFormat =
+					getString(R.string.identity_fingerprint_hybrid_format);
+			String classicalFormat =
+					getString(R.string.identity_fingerprint_classical_format);
 			String myFp = com.professor.zerion.android.contact.identity
-					.IdentityFingerprint.forSigningPub(keys.localSigningPub);
+					.IdentityDisplay.lines(keys.localSigningPub,
+							keys.localMlDsaPub, hybridFormat, classicalFormat);
 			String theirFp = com.professor.zerion.android.contact.identity
-					.IdentityFingerprint.forSigningPub(keys.remoteSigningPub);
+					.IdentityDisplay.lines(keys.remoteSigningPub,
+							keys.remoteMlDsaPub, hybridFormat, classicalFormat);
+			safetyNumberLabel.setText(getString(
+					R.string.identity_safety_number_version_label, version));
 			safetyNumberValue.setText(formatSafetyNumberMultiline(safety));
 			myFingerprintValue.setText(myFp);
 			theirFingerprintValue.setText(theirFp);
@@ -188,7 +206,10 @@ public class ChatSettingsActivity extends ZerionActivity {
 		});
 
 		viewModel.getContactItem().observe(this, contactItem -> {
-			if (contactItem != null && contactItem.getAuthorInfo().getStatus() == AuthorInfo.Status.VERIFIED) {
+			boolean verified = contactItem != null
+					&& contactItem.getAuthorInfo().getStatus()
+					== AuthorInfo.Status.VERIFIED;
+			if (verified) {
 				trustIndicatorContainer.setVisibility(View.VISIBLE);
 				trustIndicator.setVisibility(View.VISIBLE);
 				trustIndicator.setImageResource(R.drawable.trust_indicator_verified);
@@ -197,6 +218,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 			} else {
 				trustIndicatorContainer.setVisibility(View.GONE);
 			}
+			markVerifiedButton.setVisibility(contactItem != null && !verified
+					? View.VISIBLE : View.GONE);
 		});
 
 		loadSettings();
@@ -226,50 +249,47 @@ public class ChatSettingsActivity extends ZerionActivity {
 	}
 
 	public static boolean isContactMuted(Context context, ContactId contactId) {
-		SharedPreferences prefs = getSecurePrefs(context);
+		return isContactMuted(getProfilePrefs(context), contactId);
+	}
+
+	static boolean isContactMuted(SharedPreferences prefs,
+			ContactId contactId) {
 		return prefs.getBoolean(PREF_MUTE_PREFIX + contactId.getInt(), false);
 	}
 
 	public static boolean isVibrationEnabled(Context context, ContactId contactId) {
-		SharedPreferences prefs = getSecurePrefs(context);
+		return isVibrationEnabled(getProfilePrefs(context), contactId);
+	}
+
+	static boolean isVibrationEnabled(SharedPreferences prefs,
+			ContactId contactId) {
 		return prefs.getBoolean(PREF_VIBRATION_PREFIX + contactId.getInt(), true);
 	}
 
 	public static long getDisappearingTimer(Context context, ContactId contactId) {
-		SharedPreferences prefs = getSecurePrefs(context);
+		return getDisappearingTimer(getProfilePrefs(context), contactId);
+	}
+
+	static long getDisappearingTimer(SharedPreferences prefs,
+			ContactId contactId) {
 		return prefs.getLong(PREF_TIMER_PREFIX + contactId.getInt(), 0);
 	}
 
-	private static SharedPreferences getSecurePrefs(Context context) {
-		return AppModule.getAndroidComponent(context).securePreferences();
+	public static void forgetContact(Context context, ContactId contactId) {
+		forgetContact(getProfilePrefs(context), contactId);
 	}
 
-	private void migrateFromPlaintextPrefs() {
-		File prefsDir = new File(getApplicationInfo().dataDir, "shared_prefs");
-		File oldFile = new File(prefsDir, PREFS_NAME + ".xml");
-		if (!oldFile.exists()) return;
+	static void forgetContact(SharedPreferences prefs, ContactId contactId) {
+		int id = contactId.getInt();
+		prefs.edit()
+				.remove(PREF_MUTE_PREFIX + id)
+				.remove(PREF_VIBRATION_PREFIX + id)
+				.remove(PREF_TIMER_PREFIX + id)
+				.apply();
+	}
 
-		SharedPreferences oldPrefs =
-				getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-		Map<String, ?> allEntries = oldPrefs.getAll();
-		if (!allEntries.isEmpty()) {
-			SharedPreferences.Editor editor = prefs.edit();
-			for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-				Object value = entry.getValue();
-				if (value instanceof Boolean) {
-					editor.putBoolean(entry.getKey(), (Boolean) value);
-				} else if (value instanceof Long) {
-					editor.putLong(entry.getKey(), (Long) value);
-				} else if (value instanceof Integer) {
-					editor.putInt(entry.getKey(), (Integer) value);
-				} else if (value instanceof String) {
-					editor.putString(entry.getKey(), (String) value);
-				}
-			}
-			editor.commit();
-		}
-		oldPrefs.edit().clear().commit();
-		SecureMemory.secureDeleteFile(oldFile, 0L, false);
+	private static SharedPreferences getProfilePrefs(Context context) {
+		return AppModule.getAndroidComponent(context).profilePreferences();
 	}
 
 	private void showAvatarFullScreen(com.professor.zerion.android.contact.ContactItem contactItem) {
@@ -307,6 +327,24 @@ public class ChatSettingsActivity extends ZerionActivity {
 					viewModel.setAutoDeleteTimer(getTimerForRadioId(
 							radioGroup.getCheckedRadioButtonId()));
 				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void readdContact() {
+		Intent i = new Intent(this, com.professor.zerion.android.contact.add
+				.remote.AddContactActivity.class);
+		i.putExtra(com.professor.zerion.android.contact.add.remote
+				.AddContactActivity.EXTRA_RE_ADD_CONTACT, true);
+		startActivity(i);
+	}
+
+	private void confirmMarkVerified() {
+		new SecureAlertDialogBuilder(this)
+				.setTitle(R.string.identity_mark_verified_title)
+				.setMessage(R.string.identity_mark_verified_message)
+				.setPositiveButton(R.string.identity_mark_verified_confirm,
+						(dialog, which) -> viewModel.markContactVerified())
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}

@@ -1,9 +1,12 @@
 package org.zerionproject.app.conversation.voice;
 
+import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.rendezvous.KeyMaterialSource;
 import org.briarproject.nullsafety.NotNullByDefault;
+
+import java.security.GeneralSecurityException;
 
 @NotNullByDefault
 public interface VoiceCallCrypto {
@@ -32,6 +35,20 @@ public interface VoiceCallCrypto {
 			long frameCounter);
 
 	byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key);
+
+	byte[] encryptAudioFrame(byte[] plaintext, SecretKey key, byte[] aad);
+
+	byte[] decryptAudioFrame(byte[] ciphertext, SecretKey key, byte[] aad);
+
+	KeyPair generateCallAgreementKeyPair();
+
+	byte[] encodeCallAgreementPublicKey(KeyPair keyPair);
+
+	SecretKey deriveCallSecret(SecretKey voiceCallKey, KeyPair ours,
+			byte[] theirPublicKey, boolean alice, String callId)
+			throws GeneralSecurityException;
+
+	byte[] audioFrameAssociatedData(boolean fromAlice, long sequence);
 
 
 	VideoKeys deriveEphemeralVideoKeys(SecretKey voiceCallKey,

@@ -11,11 +11,6 @@ import javax.inject.Singleton;
 import dagger.Module;
 import dagger.Provides;
 
-/**
- * Release builds ship no I2P router. The plugin factory that depends on the
- * stack is never registered in a release build, so this binding exists only
- * to satisfy the object graph and refuses to create a transport.
- */
 @Module
 public class I2pStackModule {
 

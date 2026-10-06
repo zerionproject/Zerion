@@ -29,10 +29,12 @@ import javax.inject.Inject;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ACTIVATE_MAC;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_ACTIVATE_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_ALICE_MAC_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_MAC;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_NONCE;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_AUTH_SIGN;
+import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_ACTIVATE_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_BOB_MAC_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_MASTER_KEY;
 import static org.zerionproject.app.api.introduction.IntroductionConstants.LABEL_PRE_MASTER_KEY;
@@ -163,6 +165,13 @@ class IntroductionCryptoImpl implements IntroductionCrypto {
 				alice ? LABEL_ALICE_MAC_KEY : LABEL_BOB_MAC_KEY,
 				masterKey
 		);
+	}
+
+	@Override
+	public SecretKey deriveActivateKey(SecretKey finalMasterKey,
+			boolean alice) {
+		return crypto.deriveKey(alice ? LABEL_ALICE_ACTIVATE_KEY
+				: LABEL_BOB_ACTIVATE_KEY, finalMasterKey);
 	}
 
 	@Override

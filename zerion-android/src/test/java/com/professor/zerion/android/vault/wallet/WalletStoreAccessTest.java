@@ -4,12 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-/**
- * Fail-closed decision for reading a wallet seed. Covers existing/legacy
- * password-protected wallets: an empty or absent password can never reach the
- * no-password decryption path, and a supplied password always routes through
- * the password-verified AEAD path (which itself fails closed on a wrong one).
- */
 public class WalletStoreAccessTest {
 
 	@Test

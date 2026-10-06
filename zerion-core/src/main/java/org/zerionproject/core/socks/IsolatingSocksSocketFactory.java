@@ -12,22 +12,6 @@ import java.util.Locale;
 
 import javax.net.SocketFactory;
 
-/**
- * Socket factory for the local Tor SOCKS listener that gives every
- * destination its own Tor circuit. Tor isolates streams by their SOCKS
- * username and password (its IsolateSOCKSAuth default), so every connection
- * authenticates with the destination host as the username and a password
- * drawn once per process. Connections to one destination share a circuit,
- * connections to different destinations never do, and a socket created
- * without a destination receives a fresh random username so that it is
- * isolated on its own. The credentials carry no secret: Tor ignores their
- * value and only compares them, so they are an isolation key, not an
- * authentication. They only take effect on a SOCKS listener with
- * IsolateSOCKSAuth, which
- * {@link org.zerionproject.transport.TorPrivacyConfigurator} enforces. The
- * listener itself is reached through a {@link TorSocksConnector}, which on
- * Android is a Unix domain socket that no other process can open.
- */
 @NotNullByDefault
 public class IsolatingSocksSocketFactory extends SocketFactory {
 
@@ -52,11 +36,6 @@ public class IsolatingSocksSocketFactory extends SocketFactory {
 		this.password = secret.value();
 	}
 
-	/**
-	 * The SOCKS username that isolates connections to the given host. The
-	 * host is case-folded so that two spellings of one onion address share a
-	 * circuit rather than opening two.
-	 */
 	static String usernameFor(String host) {
 		return host.toLowerCase(Locale.US);
 	}

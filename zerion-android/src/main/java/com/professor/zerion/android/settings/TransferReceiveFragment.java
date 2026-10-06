@@ -52,6 +52,10 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 	@Inject
 	AccountTransferManager transferManager;
 
+	@Inject
+	org.zerionproject.core.api.crypto.PasswordStrengthEstimator
+			strengthEstimator;
+
 	private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
 	@Nullable
@@ -164,7 +168,14 @@ public class TransferReceiveFragment extends Fragment implements Callback {
 						if (p1.length < 1) {
 							toast(R.string.backup_password_empty);
 							back();
-						} else if (!Arrays.equals(p1, p2)) {
+						} else if (!com.professor.zerion.android.login
+								.AccountPasswordPolicy
+								.acceptable(strengthEstimator, p1)) {
+							toast(R.string.password_too_weak);
+							back();
+						} else if (!com.professor.zerion.android.login
+								.AccountPasswordPolicy
+								.sameNormalForm(p1, p2)) {
 							toast(R.string.backup_passwords_mismatch);
 							back();
 						} else {

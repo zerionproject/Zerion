@@ -99,6 +99,23 @@
 		tools:text="@string/channels_approval_pending_banner"
 		tools:visibility="visible" />
 
+	<TextView
+		android:id="@+id/channelNoticeBanner"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/zerion_dark_bg"
+		android:gravity="center_vertical"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="8dp"
+		android:paddingBottom="8dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner"
+		tools:text="@string/channels_posts_given_up_notice"
+		tools:visibility="visible" />
+
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/channelFeedRecycler"
 		android:layout_width="match_parent"
@@ -108,7 +125,7 @@
 		android:paddingBottom="12dp"
 		android:scrollbars="none"
 		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
-		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner" />
+		app:layout_constraintTop_toBottomOf="@+id/channelNoticeBanner" />
 
 	<TextView
 		android:id="@+id/channelFeedEmptyView"

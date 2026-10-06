@@ -1,8 +1,6 @@
 package org.zerionproject.crypto;
 
 import org.zerionproject.core.api.FormatException;
-import org.zerionproject.core.api.crypto.KeyParser;
-import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.KpId;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
@@ -10,7 +8,6 @@ import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet.PqRecvResult;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.pcs.PcsException;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
-import org.zerionproject.core.api.crypto.pcs.PcsRatchet.DhRatchetResult;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.core.crypto.pcs.PcsHeaderCodec;
@@ -25,6 +22,7 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import java.util.function.LongPredicate;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -42,15 +40,6 @@ import static org.zerionproject.wire.ZwfConstants.STREAM_HEADER_PLAINTEXT_LENGTH
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.WIRE_VERSION;
 
-/**
- * Receive side of a Zerion 3.0 (ZWF) Mode 3-Full stream — the inverse of
- * {@link ZwfMode3FullStreamEncrypter}. Reads the native tag and stream header,
- * seeds its chain from {@code (rootKey, streamId)}, then opens each fixed-size
- * frame's three AEAD segments (frame header + Mode 3-Full header under the
- * classical message key, body under the hybrid key). Any authentication or
- * format failure surfaces as a {@link FormatException}; the stream must then be
- * dropped.
- */
 @NotThreadSafe
 @NotNullByDefault
 public class ZwfMode3FullStreamDecrypter {
@@ -59,8 +48,6 @@ public class ZwfMode3FullStreamDecrypter {
 	private final AuthenticatedCipher cipher;
 	private final PcsRatchet ratchet;
 	private final Mode3FullRatchet mode3FullRatchet;
-	@Nullable
-	private final KeyParser keyParser;
 	private final byte[] expectedTag;
 	private final long expectedStreamId;
 	private final SecretKey streamHeaderKey;
@@ -86,27 +73,23 @@ public class ZwfMode3FullStreamDecrypter {
 	private boolean finalFrame;
 	private boolean streamStartRead;
 	private boolean pqConfirmedRecv;
+	private boolean lastFramePq;
+	@Nullable
+	private LongPredicate streamIdAcceptor;
 
 	public ZwfMode3FullStreamDecrypter(InputStream in, AuthenticatedCipher cipher,
 			PcsRatchet ratchet, Mode3FullRatchet mode3FullRatchet,
-			@Nullable KeyParser keyParser, byte[] expectedTag,
-			long expectedStreamId, SecretKey streamHeaderKey,
-			PcsSessionState initialState,
+			byte[] expectedTag, long expectedStreamId,
+			SecretKey streamHeaderKey, PcsSessionState initialState,
 			@Nullable Consumer<PcsSessionState> stateCallback) {
-		this(in, cipher, ratchet, mode3FullRatchet, keyParser, expectedTag,
+		this(in, cipher, ratchet, mode3FullRatchet, expectedTag,
 				expectedStreamId, streamHeaderKey, initialState, stateCallback,
 				null, null, null, true);
 	}
 
-	/**
-	 * Full constructor with the shared Mode 3-Full state hooks used by a duplex
-	 * connection: {@code m3fRefresher}/{@code m3fCallback} share the state with
-	 * the send side (so the peer key this side learns reaches the send side),
-	 * and {@code directionLock} serialises access.
-	 */
 	public ZwfMode3FullStreamDecrypter(InputStream in,
 			AuthenticatedCipher cipher, PcsRatchet ratchet,
-			Mode3FullRatchet mode3FullRatchet, @Nullable KeyParser keyParser,
+			Mode3FullRatchet mode3FullRatchet,
 			byte[] expectedTag, long expectedStreamId, SecretKey streamHeaderKey,
 			PcsSessionState initialState,
 			@Nullable Consumer<PcsSessionState> stateCallback,
@@ -122,7 +105,6 @@ public class ZwfMode3FullStreamDecrypter {
 		this.cipher = cipher;
 		this.ratchet = ratchet;
 		this.mode3FullRatchet = mode3FullRatchet;
-		this.keyParser = keyParser;
 		this.expectedTag = expectedTag;
 		this.expectedStreamId = expectedStreamId;
 		this.streamHeaderKey = streamHeaderKey;
@@ -143,12 +125,21 @@ public class ZwfMode3FullStreamDecrypter {
 		this.pqConfirmedRecv = false;
 	}
 
-	/**
-	 * Reads and decrypts the next frame into {@code payloadOut}.
-	 *
-	 * @return the application payload length, or -1 after the final frame.
-	 * @throws FormatException on any authentication or format failure.
-	 */
+	public void setStreamIdAcceptor(@Nullable LongPredicate acceptor) {
+		streamIdAcceptor = acceptor;
+	}
+
+	public boolean lastFrameCarriedPqSecret() {
+		return lastFramePq;
+	}
+
+	public void destroy() {
+		SecretKey ck = streamChainKey;
+		if (ck != null) ck.clear();
+		streamChainKey = null;
+		finalFrame = true;
+	}
+
 	public int readFrame(byte[] payloadOut) throws IOException {
 		if (finalFrame) return -1;
 		if (frameNumber < 0) throw new IOException("frame counter exhausted");
@@ -159,12 +150,15 @@ public class ZwfMode3FullStreamDecrypter {
 		int pcsHeaderSize = headerCodec.getMode3FullHeaderSize();
 		SecretKey classicalMK = null;
 		SecretKey bodyMK = null;
+		SecretKey nextStreamChainKey = null;
 		byte[] m3fHeaderPlain = null;
 		byte[] bodyPlain = null;
+		SecretKey currentChainKey = streamChainKey;
+		if (currentChainKey == null) throw new FormatException();
 		try {
-			PcsRatchet.KdfCkResult streamKdf = ratchet.kdfCk(streamChainKey);
+			PcsRatchet.KdfCkResult streamKdf = ratchet.kdfCk(currentChainKey);
 			classicalMK = streamKdf.getMessageKey();
-			SecretKey nextStreamChainKey = streamKdf.getNewChainKey();
+			nextStreamChainKey = streamKdf.getNewChainKey();
 
 			byte[] frameHeaderPlain = new byte[FRAME_HEADER_PLAINTEXT_LENGTH];
 			decryptSegment(SEGMENT_FRAME_HEADER, classicalMK, 0,
@@ -264,19 +258,20 @@ public class ZwfMode3FullStreamDecrypter {
 				if (pqSecretMixed) pqConfirmedRecv = true;
 			}
 
-			// Does not affect this frame's key, which comes from the stream chain.
-			applyReceiveDhRatchet(m3fHeader.getDhPublicKey());
-
 			if (actualPayloadLength > payloadOut.length)
 				throw new FormatException();
 			System.arraycopy(bodyPlain, 0, payloadOut, 0, actualPayloadLength);
 
+			currentChainKey.clear();
 			streamChainKey = nextStreamChainKey;
+			nextStreamChainKey = null;
+			lastFramePq = pqSecretMixed;
 			streamMessageNumber++;
 			frameNumber++;
 			if (stateCallback != null) stateCallback.accept(recvState);
 			return actualPayloadLength;
 		} finally {
+			if (nextStreamChainKey != null) nextStreamChainKey.clear();
 			if (bodyPlain != null) Arrays.fill(bodyPlain, (byte) 0);
 			if (m3fHeaderPlain != null) Arrays.fill(m3fHeaderPlain, (byte) 0);
 			if (classicalMK != null) classicalMK.clear();
@@ -286,48 +281,19 @@ public class ZwfMode3FullStreamDecrypter {
 		}
 	}
 
-	/**
-	 * Builds the state to publish from the receive-owned part of the pending
-	 * state (the peer's newly advertised key and the receive advance) and the
-	 * send-owned part of the newest shared state (our active key pair and
-	 * the recent key pairs). The body was opened outside the lock, so the send
-	 * side may have rotated in between; publishing the pending state as it is
-	 * would put the retired key pair back and discard the one the peer was
-	 * just told to use. Must be called with the direction lock held.
-	 */
 	private Mode3FullState mergeOnCommit(Mode3FullState pending) {
-		if (m3fRefresher == null) return pending;
+		if (m3fRefresher == null) {
+			return pending.withPeerUsedKpId(pending.getPeerUsedKpId());
+		}
 		Mode3FullState fresh = m3fRefresher.get();
-		if (fresh == null) return pending;
+		if (fresh == null) {
+			return pending.withPeerUsedKpId(pending.getPeerUsedKpId());
+		}
 		long counter = Math.max(fresh.getMessageCounter(),
 				pending.getMessageCounter() - 1) + 1;
 		return new Mode3FullState(pending.getTheirActivePqPk(),
 				fresh.getOurActiveKeyPair(), fresh.getRecentKeyPairs(),
 				counter).withPeerUsedKpId(pending.getPeerUsedKpId());
-	}
-
-	private void applyReceiveDhRatchet(byte[] dhKeyBytes) throws FormatException {
-		if (keyParser == null || !recvState.isMode2()) return;
-		org.zerionproject.core.api.crypto.pcs.DhRatchetState dhs =
-				recvState.getDhState();
-		PublicKey persistedRemote = dhs != null
-				? dhs.getDhRemotePublicKey() : null;
-		boolean isNewDhKey = persistedRemote == null
-				|| !Arrays.equals(dhKeyBytes, persistedRemote.getEncoded());
-		if (!isNewDhKey) return;
-		PublicKey theirNewKey;
-		try {
-			theirNewKey = keyParser.parsePublicKey(dhKeyBytes);
-		} catch (GeneralSecurityException e) {
-			throw new FormatException();
-		}
-		try {
-			DhRatchetResult dhResult =
-					ratchet.performReceiveDhRatchet(recvState, theirNewKey);
-			recvState = dhResult.getNewState();
-		} catch (GeneralSecurityException | PcsException | RuntimeException e) {
-			throw new FormatException();
-		}
 	}
 
 	@Nullable
@@ -376,8 +342,10 @@ public class ZwfMode3FullStreamDecrypter {
 		if (version != WIRE_VERSION) throw new FormatException();
 		streamId = ByteUtils.readUint64(plaintext, ByteUtils.INT_16_BYTES);
 		if (streamId < 1) throw new FormatException();
-		// The stream id seeding the chain and AEAD nonce MUST be the tag's replay-validated id, or a stale header id could reuse the (rootKey, streamId) nonce space.
 		if (expectedStreamId > 0 && streamId != expectedStreamId)
+			throw new FormatException();
+		LongPredicate acceptor = streamIdAcceptor;
+		if (acceptor != null && !acceptor.test(streamId))
 			throw new FormatException();
 
 		SecretKey rootKey = recvState.getRootKey();

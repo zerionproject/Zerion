@@ -5,7 +5,11 @@ contacts. It carries a stream of fixed-size frames, each protected by an
 authenticated cipher and by the Mode 3-Full ratchet. The ratchet gives forward
 secrecy and post-compromise security within a connection; both properties rest
 on the ML-KEM layer alone (see "The ratchet" below and the security claims
-matrix), not on an independent classical ratchet.
+matrix), not on an independent classical ratchet. Across connections, the
+contact's root key, which seeds every connection, evolves with fresh hybrid
+secrets between peers that both support it (see "Session resumption" and
+ZWF-ROOT-EVOLUTION.md), so a copied root stops authenticating after an
+evolution the copier did not take part in.
 
 ZWF sits directly on a raw byte stream. That stream can come from Tor, from I2P,
 or from any other carrier that provides an ordered reliable channel. The carrier
@@ -17,7 +21,10 @@ sees only fixed-size frames.
 - A passive observer cannot link two frames to the same conversation without the
   per-contact tag key.
 - A compromise of the current keys does not reveal earlier messages (forward
-  secrecy) and the ratchet heals in later messages (post-compromise security).
+  secrecy) and the ratchet heals in later messages (post-compromise security)
+  within a connection. A compromise of the contact root key heals at the
+  next root evolution the attacker does not take part in, between peers that
+  both support root evolution.
 - The post-quantum layer contributes to every message, not only to the initial
   handshake.
 
@@ -47,11 +54,14 @@ frame. All following bytes are frames.
 ```
 tag[16]                first 16 bytes of MAC(ZWF_STREAM_TAG, tagKey, streamId)
 streamHeaderNonce[24]
-streamHeader ciphertext[10] + MAC[16]     total stream header on wire = 50
+MAC[16] + streamHeader ciphertext[10]     total stream header on wire = 50
 frame[4096]
 frame[4096]
 ...
 ```
+
+Every sealed segment on the wire, here and in the frames, is the 16-byte
+Poly1305 tag followed by the ciphertext (the NaCl `secretbox` layout).
 
 Stream-header plaintext (10 bytes), encrypted under a dedicated stream-header key
 with the random 24-byte header nonce:
@@ -114,10 +124,10 @@ bytes.
 | Field | Size | Notes |
 | --- | --- | --- |
 | version | 1 | `PCS_PROTOCOL_VERSION` = 6 |
-| flags | 1 | PCS enabled, DH ratchet, PQ enabled, Mode 3-Full frame |
+| flags | 1 | PCS enabled, DH ratchet, PQ enabled, Mode 3-Full frame; every receiver requires all four, so the DH ratchet flag stays set although no DH ratchet runs |
 | messageNumber | 4 | uint32 |
 | previousChainLength | 4 | uint32 |
-| dhPublicKey | 32 | X25519 ratchet public key |
+| dhPublicKey | 32 | All zero; kept for the frame layout (see "The ratchet") |
 | pqEpoch | 4 | uint32 |
 | chunk PK_ADVERTISE | 1188 | type 0x10, index, length 1184, then the ML-KEM-768 encapsulation key |
 | chunk KEM_CT | 1092 | type 0x11, index, length 1088, then the ML-KEM-768 ciphertext |
@@ -130,14 +140,13 @@ was made against.
 ## The ratchet
 
 Zerion runs a symmetric chain per stream with a post-quantum layer folded into
-it. The frame header still carries an X25519 ratchet public key and the flags
-still name a DH ratchet, but that classical ratchet is inert: the receive side
-never parses the peer's key and the send side never advances the root, so the
-field is fixed for the life of a session and contributes no secret. Forward
-secrecy before the first ML-KEM secret is mixed in is therefore limited to the
-chain advance under a key a root-key holder can reconstruct; from the first
-post-quantum contribution onward, every key depends on an ML-KEM secret. This is
-a documented design deferral, not a hybrid classical-plus-post-quantum ratchet.
+it. There is no classical DH ratchet: the 32-byte `dhPublicKey` field of the
+header is kept so the frame layout stays the one every peer parses, and it is
+sent as zeros (earlier Android releases sent a fixed X25519 key there; no Android 3.0.x
+receiver parses it). Forward secrecy before the first ML-KEM secret is
+mixed in is therefore limited to the chain advance under a key a root-key
+holder can reconstruct; from the first post-quantum contribution onward, every
+key depends on an ML-KEM secret.
 
 Chain seeding. The per-stream initial chain key is
 `KDF(PCS_STREAM_CHAIN, rootKey, streamId, salt)` where the salt is the random
@@ -156,40 +165,81 @@ folded in two places:
   post-quantum secret into the chain key itself, so the secret ratchets forward
   and every later message depends on it.
 
-The first message, sent before the peer's key is learned, carries an all-zero
-ciphertext sentinel and no post-quantum secret. From the second message onward,
-the post-quantum layer is active and continuous. Because the shared secret is
+The frames a side sends before it has learned the peer's key carry an all-zero
+ciphertext sentinel and no post-quantum secret; they are cover frames only.
+The sender holds application records until the peer's key is known, and the
+receiver enforces it as well: the pull protocol drops every record but cover
+that arrives in a frame without a post-quantum secret. From the first frame
+after that, the post-quantum layer is active and continuous. Because the shared secret is
 folded into the chain, an attacker who records traffic and later obtains the
 classical keys still cannot derive the body keys without also breaking ML-KEM.
 
 Receive side. The receiver looks up its decapsulation keypair by the 16-byte key
-id in the header, keeping the 32 most recent keypairs so that in-flight messages
-made against a rotated key still open.
+id in the header, keeping up to 32 recent keypairs per connection so that
+in-flight messages made against a rotated key still open. Keypairs older than
+the one the peer last used are pruned and zeroized, but only once the frame
+that used it has authenticated in full, so a frame that fails leaves every
+keypair usable.
+
+Rotation and the retention bound. A side rotates its keypair every 16 of its
+own sends, as long as fewer than 32 retired keypairs are retained. Retained
+keypairs are pruned as soon as the peer uses a newer one, which every peer
+frame does once it has read the newer advertisement. Rotation therefore pauses
+only when the peer has not been heard from for about 512 of this side's sends;
+the pause avoids evicting a keypair that the peer's frames still in flight may
+be encapsulated to, which would break the connection. Rotation is thus bounded
+by the peer's progress in that one case, not independent of the peer.
 
 ## Stream identifiers and replay
 
 Send stream identifiers are strictly monotonic and are persisted before first use,
-so they are never reused across restarts or crashes. Reusing an identifier under
-the long-lived root key would repeat chain keys and nonces, which would be a
-complete loss of confidentiality, so the counter is durable by construction.
+so they are not reused across restarts or crashes (a database restored from
+backup can hand back a used identifier). Because the chain seed is salted with
+the random stream-header nonce, a reused identifier would not repeat chain keys
+or (key, nonce) pairs, but it would repeat the stream tag, which links streams;
+the counter is durable by construction.
 
 The receive side validates each incoming identifier against a 256-wide window
-that tolerates reordering and rejects replays. The replay check runs only after
-the first frame of a stream authenticates, so an attacker cannot exhaust the
-window with forged identifiers.
+that tolerates reordering and rejects replays; after a restart the persisted
+high-water mark acts as a floor, so older identifiers are refused. The replay
+check runs as soon as the encrypted stream header authenticates, before the
+first frame is opened, so a replayed stream is refused before it can publish
+any ratchet state (an attacker without the stream-header key cannot reach the
+check with forged identifiers). Nothing outside the connection changes until
+the first frame has authenticated: the connection is registered, the message
+layer is offered the send queue and the onion rotation and client
+authorization learn of the session only then.
 
 ## Session resumption
 
 A connection does not re-handshake. The connection handler re-derives the ZWF
-session for that contact from the persisted **root key** and **role**, and starts
-a **fresh Mode 3-Full ratchet for each connection**: the Mode 3-Full state is
-*not* carried over from a previous connection. This matches the code
-(`ZtpConnectionEstablisher.resume()` calls `deriveSession(rootKey, alice)` and
-does not reuse a persisted Mode 3-Full state) and the security model, which
-specifies a fresh post-quantum ratchet per connection so a compromise of one
-connection's ratchet does not extend to the next. Within a single connection,
-both directions share one Mode 3-Full state under a lock, so a peer key learned
+session for that contact from the persisted **root keys** and **role**, and
+starts a **fresh Mode 3-Full ratchet for each connection**: the Mode 3-Full
+state is *not* carried over from a previous connection
+(`ZtpConnectionEstablisher.resume()` calls `deriveSession(keys, sendEpoch,
+alice)` and creates a new initial state), so a compromise of one connection's
+ratchet does not extend to the next. Within a single connection, both
+directions share one Mode 3-Full state under a lock, so a peer key learned
 while receiving is available to the sender on the same connection.
+
+The root key evolves. Each connection between two peers that support it runs
+the root evolution of ZWF-ROOT-EVOLUTION.md: the peers fold fresh X25519 and
+ML-KEM-768 secrets into a new root, confirm it, and delete the old one, after
+which a copy of the old root no longer authenticates in either direction. A
+connection is keyed under one root epoch: the dialler chooses (its pending root
+once the peer proved it holds it, its current root otherwise, and the current
+root again for one dial after two dials under the pending root that never
+authenticated) and the side that accepts answers under the same epoch. With a peer that does not support root
+evolution, such as Android 3.0.14, the root stays the one agreed at pairing and
+a compromise of it is not healed until the two re-pair.
+
+Key lifetime. When a connection ends, the ML-KEM decapsulation keys of its
+Mode 3-Full state, the stream chain keys, the session's direction root, tag
+and stream-header keys and the copies of the root keys loaded for it are
+zeroized, as are replaced chain keys on every frame and the Poly1305 subkey
+after each segment. The cryptographic library's own key objects (the
+ML-KEM private-key parameters it builds for each decapsulation) and values the
+Java runtime copied are outside Zerion's control and are not zeroized.
 
 ## Component provenance
 

@@ -83,8 +83,6 @@
 		<item name="popupTheme">@style/PopupMenu</item>
 	</style>
 
-	<!-- Bricolage display face on the toolbar title, the most prominent heading
-	     on every standard-toolbar screen. Medium weight, not bold. -->
 	<style name="TextAppearance.Zerion.ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
 		<item name="android:fontFamily">@font/bricolage_grotesque</item>
 		<item name="fontFamily">@font/bricolage_grotesque</item>
@@ -165,7 +163,6 @@
 		<item name="android:textColor">@color/zerion_button_text_neutral</item>
 	</style>
 
-	<!-- Borderless EditText style for professional look -->
 	<style name="Zerion.EditText" parent="Widget.AppCompat.EditText">
 		<item name="android:background">@android:color/transparent</item>
 		<item name="android:textColor">@color/zerion_text_primary</item>
@@ -276,7 +273,6 @@
 		<item name="widgetLayout">@layout/preference_switch</item>
 	</style>
 
-	<!-- Emoji Keyboard Animation Style -->
 	<style name="emoji_fade_animation_style">
 		<item name="android:windowEnterAnimation">@android:anim/fade_in</item>
 		<item name="android:windowExitAnimation">@android:anim/fade_out</item>

@@ -13,13 +13,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * SC-TOR-05: the control events that reach the observer. The published
- * wrapper only reported a descriptor upload while its logger was enabled,
- * which it never is in this app; here the observer learns of every
- * upload, of every bootstrap step and of a clock skew, and of nothing
- * else.
- */
 public class TorEventsTest {
 
 	private static final String ONION =
@@ -31,10 +24,6 @@ public class TorEventsTest {
 	private final List<String> seen = new ArrayList<>();
 	private final List<TorState> states = new ArrayList<>();
 
-	/**
-	 * The state is reported separately: the first event of any kind also
-	 * reports the initial state, which is not what these tests are about.
-	 */
 	private final Observer observer = new Observer() {
 		@Override
 		public void onState(TorState s) {

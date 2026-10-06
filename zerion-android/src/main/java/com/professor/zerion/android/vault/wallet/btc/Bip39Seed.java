@@ -9,14 +9,6 @@ import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- * BIP-39 seed derivation over a mutable mnemonic. The library's derivation
- * takes the words as immutable strings; this one takes the characters the
- * caller can wipe, joins them with single spaces into a byte buffer, runs
- * PBKDF2-HMAC-SHA512 with the "mnemonic" salt and 2048 rounds, and wipes
- * every intermediate buffer. Only the English word list is supported, so
- * the mnemonic must be ASCII.
- */
 @NotNullByDefault
 public final class Bip39Seed {
 
@@ -28,14 +20,6 @@ public final class Bip39Seed {
 	private Bip39Seed() {
 	}
 
-	/**
-	 * Validates a mnemonic against the English word list and its checksum
-	 * without turning any of it into a string: each word is looked up by
-	 * comparing characters against the list, the 11-bit indices are packed
-	 * into entropy, and the checksum bits are compared with the hash.
-	 *
-	 * @throws IllegalArgumentException if the mnemonic is not valid.
-	 */
 	public static void check(char[] words) {
 		byte[] joined = normalizedBytes(words);
 		try {
@@ -110,7 +94,6 @@ public final class Bip39Seed {
 		return word.length() - len;
 	}
 
-	/** Derives the 64-byte seed. The caller owns and wipes {@code words}. */
 	static byte[] fromMnemonic(char[] words) throws GeneralSecurityException {
 		byte[] password = normalizedBytes(words);
 		try {
@@ -120,10 +103,6 @@ public final class Bip39Seed {
 		}
 	}
 
-	/**
-	 * The words as ASCII bytes separated by single spaces, with leading,
-	 * trailing and repeated whitespace removed.
-	 */
 	static byte[] normalizedBytes(char[] words) {
 		byte[] buf = new byte[words.length];
 		int n = 0;

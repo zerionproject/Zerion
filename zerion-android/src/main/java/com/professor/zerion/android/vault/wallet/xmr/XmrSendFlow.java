@@ -7,25 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.Set;
 import java.util.function.Supplier;
 
-/**
- * The core Monero send state machine, with no UI dependency as a security
- * authority. It drives one send from input through a reviewed, signed
- * transaction, a fresh authentication, and, on the same serialized
- * session-executor operation, the ownership-checked relay: pre-ownership
- * validation, native re-read, post-ownership validation, fingerprint comparison,
- * single-use authorization consumption, capture of the connected relay endpoint,
- * a durable journal write, and only then nCommit on the same prepared
- * transaction. There is no thread or UI gap between final validation and the
- * journal and relay, no silent reconstruction of a different transaction, and no
- * silent change of node or clearnet fallback.
- *
- * <p>Every method that touches the native transaction runs on the single
- * session executor. {@link #invalidate()} may be called from a lock listener on
- * another thread and only flips state and invalidates the authorization, never
- * touching the native object; the native transaction it leaves behind is freed
- * on the executor through {@link #disposeOnExecutor()}. {@link #cancel()} frees
- * the native object inline and is only invoked on the session executor.
- */
 @NotNullByDefault
 public final class XmrSendFlow {
 
@@ -84,12 +65,6 @@ public final class XmrSendFlow {
 		return snapshot;
 	}
 
-	/**
-	 * Total change of the prepared transaction, read from the exact signed tx for
-	 * the display balance reservation (never guessed). Zero when unavailable or
-	 * on a sweep. Must be read while the prepared transaction is still alive
-	 * (before relay teardown).
-	 */
 	public long changeAtomic() {
 		MoneroEngine.Prepared p = prepared;
 		if (p == null || p.isDisposed()) return 0;
@@ -97,11 +72,6 @@ public final class XmrSendFlow {
 		return c > 0 ? c : 0;
 	}
 
-	/**
-	 * Validate the destination and amount, quiesce refresh, build and sign the
-	 * transaction, and take the immutable review snapshot. Rejects a quarantined
-	 * wallet before any construction. On success the flow is REVIEW_READY.
-	 */
 	public void prepare(String destination, long amountAtomic, int priority,
 			byte[] primaryFingerprint) throws XmrError.XmrException {
 		if (state != State.INPUT) throw fail(XmrError.UNKNOWN);
@@ -154,10 +124,6 @@ public final class XmrSendFlow {
 		}
 	}
 
-	/**
-	 * Fresh per-transaction authentication after the snapshot exists. Produces a
-	 * single-use token bound to the snapshot, ownership and generation.
-	 */
 	public void authorize(char[] password) throws XmrError.XmrException {
 		if (state != State.REVIEW_READY || snapshot == null || prepared == null) {
 			throw fail(XmrError.UNKNOWN);
@@ -175,17 +141,6 @@ public final class XmrSendFlow {
 		state = State.AUTHORIZED;
 	}
 
-	/**
-	 * The single serialized relay operation. Validates against the live native
-	 * object and generation, consumes the authorization once, captures the
-	 * connected relay endpoint, writes the journal durably, and only then
-	 * relays. A journal write failure means no relay. It never reconstructs a
-	 * different transaction or changes node. Once the journal is durable, a
-	 * commit that throws (the circuit dropped while or after the request was
-	 * sent) is an uncertain relay exactly like a commit that returned false:
-	 * the transaction may have reached the network, so the journal stays and
-	 * the send is never reported as a plain failure.
-	 */
 	public RelayResult confirmAndRelay() {
 		if (state != State.AUTHORIZED || snapshot == null || prepared == null
 				|| token == null) {
@@ -251,7 +206,6 @@ public final class XmrSendFlow {
 		return RelayResult.RELAY_UNCERTAIN;
 	}
 
-	/** User cancel before relay: dispose the transaction and kill the auth. */
 	public void cancel() {
 		if (state == State.SUCCESS || state == State.RELAY_UNCERTAIN) return;
 		state = State.CANCELLED;
@@ -259,15 +213,6 @@ public final class XmrSendFlow {
 		disposePrepared();
 	}
 
-	/**
-	 * Vault lock or session replacement: invalidate the authorization at once.
-	 * Safe to call from a lock listener off the session executor: it only flips
-	 * state and kills the token, never touching the native object, so it cannot
-	 * race the executor's relay. The native transaction is freed separately on
-	 * the executor through {@link #disposeOnExecutor()}. If a relay is already
-	 * past its durable journal write this cannot unsend it, but it guarantees no
-	 * new relay begins.
-	 */
 	public void invalidate() {
 		if (state == State.SUCCESS || state == State.RELAY_UNCERTAIN
 				|| state == State.RELAYING) {
@@ -278,16 +223,10 @@ public final class XmrSendFlow {
 		invalidateToken();
 	}
 
-	/**
-	 * Free the prepared native transaction. Must run on the session executor so
-	 * it can never race a concurrent native read or relay. Idempotent: a
-	 * transaction already disposed by the relay path is a no-op.
-	 */
 	public void disposeOnExecutor() {
 		disposePrepared();
 	}
 
-	/** The wallet this flow was created for. */
 	public String walletId() {
 		return walletId;
 	}

@@ -23,7 +23,6 @@
 	<string name="dnkm_huawei_protected_button">Babestu Zerion</string>
 	<string name="dnkm_huawei_protected_help">Zerion ez bada babestutako aplikazioen zerrendara gehitzen, ezin izango du bigarren planoan ibili.</string>
 	<string name="dnkm_xiaomi_button">Babestu Zerion</string>
-	<string name="dnkm_warning_dozed">%s ezin izan da bigarren planoan exekutatu</string>
 	
 	<string name="enter_password">Pasahitza</string>
 	<string name="try_again">Pasahitz okerra, saiatu berriro</string>
@@ -33,8 +32,6 @@
 	<string name="forgotten_password">Nire pasahitza ahaztu dut</string>
   <string name="dialog_title_lost_password">Pasahitzaren galera</string>
   <string name="dialog_message_lost_password">Zure Zerion kontua zure gailuan zifratuta gordetzen da, ez hodeian, beraz ezin dugu zure pasahitza berrezarri. Zure kontua ezabatu eta berriro hasi nahi zenuke?\n\nKontuz: Zure identitateak, kontaktuak eta mezuak betirako galduko dira.</string>
-  <string name="startup_failed_notification_title">Zerion ezin izan da abiatu</string>
-  <string name="startup_failed_notification_text">Sakatu informazio gehiagorako.</string>
   <string name="startup_failed_activity_title">Zerion abio-hutsegitea</string>
   <string name="startup_failed_db_error">Dena delakoagatik, zure Zerion datu-basea hondatuta dago eta ezin da konpondu. Zure kontua, zure datuak eta zure kontaktuak galdu dira. Zoritxarrez Zerion berrinstalatu behar duzu edo kontu berria sortu pasahitzaren gonbitan \'Nire pasahitza ahaztu dut\' aukeratuz.</string>
   <string name="startup_failed_data_too_old_error">Zure kontua aplikazio honen bertsio zahar batekin sortu zen eta ezin da bertsio honekin ireki. Aurreko bertsioa berrinstalatu behar duzu edo kontu berri bat ezarri pasahitzaren gonbitan \'Nire pasahitza ahaztu dut\' aukeratuz.</string>
@@ -150,13 +147,10 @@
   <string name="exchanging_contact_details">Kontaktu-xehetasunak trukatzen\u2016</string>
   <string name="contact_added_toast">Kontaktua gehitu da: %s</string>
   <string name="contact_already_exists">%s kontaktua badago aurretik ere</string>
-  <string name="qr_code_too_old">Eskaneatu duzun QR kodea %s aplikazioaren bertsio zaharrago batetik dator.\n\nEskatu mesedez zure kontaktuari azken bertsiora eguneratu dezala eta saiatu berriro.</string>
-  <string name="qr_code_too_new">Eskaneatu duzun QR kodea %s aplikazioaren bertsio berriago batetik dator.\n\nEguneratu azken bertsiora eta saiatu berriro.</string>
   <string name="camera_error">Kameraren errorea</string>
   <string name="connecting_to_device">Gailura konektatzen\u2026</string>
   <string name="authenticating_with_device">Gailuarekin autentifikatzen\u2026</string>
   <string name="connection_error_title">Ezin izan da zure kontaktuarekin konektatu</string>
-  <string name="connection_error_feedback">Arazoa  mantentzen bada, mesedez <a href="feedback">bidali iruzkin bat</a> aplikazioa hobetzen laguntzeko.</string>
   
   <string name="add_contact_remotely_title_case">Gehitu urruneko kontaktua</string>
   <string name="add_contact_nearby_title">Gehitu inguruko kontaktua</string>
@@ -306,14 +300,12 @@
   <string name="pref_theme_title">Gaia</string>
   <string name="pref_theme_light">Argia</string>
   <string name="pref_theme_dark">Iluna</string>
-  <string name="pref_theme_auto">Automatikoa (Egunez)</string>
   <string name="pref_theme_system">Sisteman lehenetsia</string>
   
   <string name="tor_network_setting_automatic">Automatikoa kokalekuan oinarritua</string>
   
   <string name="tor_network_setting_summary">Automatikoa: %1$s (%2$s(e)n)</string>
   <string name="tor_mobile_data_title">Erabili datu mugikorrak</string>
-  <string name="tor_only_when_charging_summary">Internet konexio desgaitzen du gailuak bateria darabilenean</string>
   
   <string name="security_settings_title">Segurtasuna</string>
   <string name="pref_lock_title">Aplikazioaren blokeoa</string>
@@ -372,27 +364,13 @@
   
   <string name="learn_more">Gehiago jakin</string>
   
-  <string name="send_feedback">Bidali garatzaileentzako iruzkinak</string>
   
   <string name="link_warning_title">Estekari buruzko abisua</string>
   <string name="link_warning_intro">Honako esteka hau kanpo aplikazio batekin irekitzear zaude.</string>
   <string name="link_warning_text">Hau zu identifikatzeko erabili daiteke. Pentsatu esteka hau bidali dizun pertsonarengan konfiantza duzun eta baloratu Tor nabigatzailearekin irekitzea.</string>
   <string name="link_warning_open_link">Ireki esteka</string>
   
-  <string name="crash_report_title">Zerion kraskatze txostena</string>
-  <string name="zerion_crashed">Zerion kraskatu egin da.</string>
-  <string name="not_your_fault">Hau ez da zure errua.</string>
-  <string name="please_send_report">Lagundu iezaguzu Zerion hobe bat eraikitzen, guri kraskatze txostenak bidaliz.</string>
-  <string name="report_is_encrypted">Txostena zifratuta dagoela eta modu seguruan bidaliko dela hitzematen dizugu.</string>
-  <string name="feedback_title">Garatzaileentzako iruzkinak</string>
-  <string name="describe_crash">Deskribatu zer gertatu den (aukerakoa)</string>
-  <string name="enter_feedback">Idatzi garatzaileentzako zure iruzkinak</string>
-  <string name="optional_contact_email">Zure e-mail helbidea (aukerakoa)</string>
-  <string name="include_debug_report_crash">Gehitu kraskatzeari buruzko datu anonimoak</string>
-  <string name="include_debug_report_feedback">Gehitu gailu honi buruzko datu anonimoak</string>
-  <string name="send_report">Bidali txostena</string>
   <string name="close">Itxi</string>
-  <string name="dev_report_saved">Txostena gordeta. Zerion-en saioa hasten duzun hurrengoan bidaliko da.</string>
   
   <string name="progress_title_logout">Zerion saioa amaitzen...</string>
   
@@ -544,7 +522,6 @@
 	<string name="wallet_receive_new">Helbide berria</string>
 	<string name="wallet_node_hint">Sakatu zerbitzari bat erabiltzeko. Sakatu luze zerbitzari pertsonalizatu bat kentzeko.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Behin baino gehiagotan erabil daitekeen helbide pribatua. Bertara egindako ordainketak ezin dira katean lotu. Detekzioak datu publikoak eskaneatzen ditu Tor bidez; zure gakoek ez dute inoiz gailua uzten.</string>
 	<string name="wallet_sp_balance">Detektatuta: %1$s</string>
 	<string name="wallet_sp_scanned">%1$d blokeraino eskaneatuta</string>
 	<string name="wallet_sp_set_oracle">Eskaneatze-iturria</string>

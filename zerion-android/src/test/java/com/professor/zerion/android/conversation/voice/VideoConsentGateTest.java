@@ -10,11 +10,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Adversarial call-state tests for the camera consent invariant: no
- * sequence of remote signals may arm local capture, and every local arming
- * requires a connected call with video allowed.
- */
 public class VideoConsentGateTest {
 
 	@Test
@@ -162,6 +157,128 @@ public class VideoConsentGateTest {
 					case 0: g.onRemoteOffer(connected, allowed); break;
 					case 1: g.onRemoteAccept(); break;
 					case 2: g.onRemoteReject(); break;
+					default: g.reset(); break;
+				}
+				assertFalse("run " + run, g.isCaptureArmed());
+				assertFalse("run " + run, g.mayStartCapture(true, true));
+			}
+		}
+	}
+
+	@Test
+	public void testVideoOffDisarmsAndALaterAcceptIsIgnored() {
+		VideoConsentGate g = new VideoConsentGate();
+		assertTrue(g.onLocalRequest(true, true));
+		g.onLocalVideoOff();
+		assertFalse(g.isCaptureArmed());
+		assertFalse("an accept after video off is unsolicited",
+				g.onRemoteAccept());
+		assertFalse(g.mayStartCapture(true, true));
+	}
+
+	@Test
+	public void testVideoOffIsNotUndoneByAReconnect() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		assertTrue(g.onAutoRequest(true, true));
+		assertTrue(g.onRemoteAccept());
+		assertTrue(g.mayStartCapture(true, true));
+		g.onLocalVideoOff();
+		g.reset();
+		assertFalse("a reconnect must not offer video again",
+				g.onAutoRequest(true, true));
+		assertFalse(g.onRemoteAccept());
+		assertFalse(g.mayStartCapture(true, true));
+	}
+
+	@Test
+	public void testVideoOffDropsAPendingRemoteOffer() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onRemoteOffer(true, true);
+		g.onLocalVideoOff();
+		assertFalse(g.onLocalAccept(true, true));
+		assertFalse(g.isCaptureArmed());
+	}
+
+	@Test
+	public void testAPeerEndedSessionIsNotReofferedAutomatically() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		assertTrue(g.onAutoRequest(true, true));
+		assertTrue(g.onRemoteAccept());
+		g.onRemoteVideoEnd();
+		assertFalse(g.isCaptureArmed());
+		assertFalse(g.onAutoRequest(true, true));
+	}
+
+	@Test
+	public void testALostLinkIsNotReofferedWithoutANewUserAction() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		assertTrue(g.onAutoRequest(true, true));
+		assertTrue(g.onRemoteAccept());
+		g.reset();
+		assertFalse("the screen showed video as stopped",
+				g.isVideoWanted());
+		assertFalse("a reconnect offered video again without the user",
+				g.onAutoRequest(true, true));
+		assertFalse(g.onRemoteAccept());
+		assertFalse(g.mayStartCapture(true, true));
+		assertTrue("the user can still turn video back on",
+				g.onLocalRequest(true, true));
+	}
+
+	@Test
+	public void testARefusedRequestIsNotReofferedWithoutANewUserAction() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		assertTrue(g.onAutoRequest(true, true));
+		g.onRemoteReject();
+		assertFalse(g.isVideoWanted());
+		assertFalse(g.onAutoRequest(true, true));
+		assertFalse(g.onRemoteAccept());
+		assertFalse(g.mayStartCapture(true, true));
+	}
+
+	@Test
+	public void testAutomaticOffersNeedALocalChoice() {
+		VideoConsentGate g = new VideoConsentGate();
+		assertFalse(g.onAutoRequest(true, true));
+		assertFalse(g.isCaptureArmed());
+		g.onRemoteOffer(true, true);
+		g.onLocalRejectOrTimeout();
+		assertFalse(g.onAutoRequest(true, true));
+	}
+
+	@Test
+	public void testOnlyANewUserActionTurnsVideoBackOn() {
+		VideoConsentGate g = new VideoConsentGate();
+		g.onLocalVideoCallPlaced();
+		g.onLocalVideoOff();
+		assertFalse(g.onAutoRequest(true, true));
+		assertTrue(g.onLocalRequest(true, true));
+		assertTrue(g.isVideoWanted());
+	}
+
+	@Test
+	public void testRandomRemoteSignalsAfterVideoOffNeverArm() {
+		Random r = new Random(11);
+		for (int run = 0; run < 2000; run++) {
+			VideoConsentGate g = new VideoConsentGate();
+			g.onLocalVideoCallPlaced();
+			g.onAutoRequest(true, true);
+			g.onRemoteAccept();
+			g.onLocalVideoOff();
+			int steps = 1 + r.nextInt(12);
+			for (int i = 0; i < steps; i++) {
+				boolean connected = r.nextBoolean();
+				boolean allowed = r.nextBoolean();
+				switch (r.nextInt(6)) {
+					case 0: g.onRemoteOffer(connected, allowed); break;
+					case 1: g.onRemoteAccept(); break;
+					case 2: g.onRemoteReject(); break;
+					case 3: g.onRemoteVideoEnd(); break;
+					case 4: g.onAutoRequest(connected, allowed); break;
 					default: g.reset(); break;
 				}
 				assertFalse("run " + run, g.isCaptureArmed());

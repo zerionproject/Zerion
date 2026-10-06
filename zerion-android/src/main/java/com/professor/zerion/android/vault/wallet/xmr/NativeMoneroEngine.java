@@ -4,13 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * {@link MoneroEngine} backed by the wallet2_api JNI library. Thin: it converts
- * opaque native handles into {@link Session}/{@link Prepared} objects and
- * forwards. Fail-closed: if the native library is unavailable every factory
- * method returns null, so the caller can present an honest "engine unavailable"
- * state and never proceed to a weaker path. No key material is retained here.
- */
 @NotNullByDefault
 public final class NativeMoneroEngine implements MoneroEngine {
 
@@ -83,19 +76,10 @@ public final class NativeMoneroEngine implements MoneroEngine {
 		}
 	}
 
-	/** The longest string any native parser is handed: an address with room. */
 	static final int MAX_ADDRESS_CHARS = 256;
-	/** A daemon or proxy address: scheme, credentials, host, port. */
 	static final int MAX_ENDPOINT_CHARS = 512;
-	/** A subaddress label, user text kept short before it reaches the wallet. */
 	static final int MAX_LABEL_CHARS = 256;
 
-	/**
-	 * Whether a string may be handed to the native parsers: present, no
-	 * longer than {@code max}, and printable ASCII only. Addresses and
-	 * endpoints are base58 and URL text, so anything else is refused here on
-	 * the JVM side rather than being decoded by native code.
-	 */
 	static boolean acceptableJniString(@Nullable String s, int max) {
 		if (s == null || s.length() > max) return false;
 		for (int i = 0; i < s.length(); i++) {
@@ -318,11 +302,6 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			return NativeMonero.nUnlockedBalance(h, account);
 		}
 
-		/**
-		 * The native history is refreshed and read by this call alone (the
-		 * wallet's refresh thread no longer touches it), so two readers must
-		 * not run at once.
-		 */
 		@Override
 		public java.util.List<XmrTxInfo> history() {
 			java.util.List<XmrTxInfo> out = new java.util.ArrayList<>();
@@ -474,22 +453,6 @@ public final class NativeMoneroEngine implements MoneroEngine {
 			}
 		}
 
-		/**
-		 * Disable the refresh thread, interrupt any refresh in flight, then join
-		 * the thread. Pausing first means a refresh that started after the
-		 * caller's interrupt cannot run a whole catch-up before the join returns.
-		 *
-		 * The interrupt lock held by the closing caller excludes the cross-thread
-		 * refresh interrupts issued by XmrSyncManager.stop() through
-		 * interruptRefresh(): an interrupt that already borrowed the native
-		 * pointer completes before nClose destroys the wallet, and one that
-		 * arrives later skips via tryLock or sees the closed flag inside the
-		 * lock. Only that cross-thread interrupt skips; the executor-side pause
-		 * and stop that precede a store, a prepare or a failover take the lock
-		 * and are never skipped, so a store can never run into a refresh that a
-		 * skipped pause left running. The refresh thread joined here never
-		 * takes this lock.
-		 */
 		private void quiesce() {
 			NativeMonero.nPauseRefresh(h);
 			NativeMonero.nStop(h);

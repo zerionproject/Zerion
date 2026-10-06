@@ -37,7 +37,18 @@ public interface GroupTrManager {
 
 	void removeFromDevice(byte[] groupId) throws DbException;
 
-	void sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
+	int sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
+			throws DbException;
+
+	int countMembersOnOlderVersion(byte[] groupId) throws DbException;
+
+	java.util.List<GroupTrMember> getMembersOutOfReach(byte[] groupId)
+			throws DbException;
+
+	Collection<GroupTrSentInvite> getSentInvites(byte[] groupId)
+			throws DbException;
+
+	void revokeInvite(byte[] groupId, ContactId contactId)
 			throws DbException;
 
 	void setMeshSink(GroupTrMeshSink sink);

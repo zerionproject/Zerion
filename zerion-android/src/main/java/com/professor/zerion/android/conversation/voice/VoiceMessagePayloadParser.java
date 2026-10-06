@@ -153,10 +153,6 @@ public class VoiceMessagePayloadParser {
 		return bytesToInt(payload, payload.length - TAG_LENGTH - INT_LENGTH);
 	}
 
-	/**
-	 * Format 2 is the current format. Format 1 is parsed only so memos stored
-	 * before the format changed can still be played.
-	 */
 	public static boolean isSupported(byte formatVersion) {
 		return formatVersion == VoiceMemoCrypto.FORMAT_VERSION
 				|| formatVersion == VoiceMemoCrypto.LEGACY_FORMAT_VERSION;

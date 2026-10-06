@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-	<!-- Cleartext traffic disabled - Tor handles all encryption -->
 	<base-config cleartextTrafficPermitted="false" />
 </network-security-config>

@@ -8,12 +8,6 @@ import java.io.OutputStream;
 
 import javax.annotation.concurrent.GuardedBy;
 
-/**
- * A blocking byte stream over one GATT characteristic used by the offline
- * pairing key agreement. Bytes are sent in chunks through a supplied sender and
- * received bytes are fed in from the GATT callbacks. The volume is a few small
- * handshake messages, so a plain growing buffer is enough.
- */
 @NotNullByDefault
 class BleGattStream {
 

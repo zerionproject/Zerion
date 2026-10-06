@@ -22,7 +22,6 @@
 	<string name="dnkm_huawei_protected_text">Napsauta alla olevaa nappia varmistaaksesi, että Zerion on suojattu \"Suojatut sovellukset\" -näkymässä.</string>
 	<string name="dnkm_huawei_protected_button">Suojaa Zerion</string>
 	<string name="dnkm_huawei_protected_help">Jos Zerionia ei lisätä suojattujen sovellusten listalle, se ei voi toimia taustalla.</string>
-	<string name="dnkm_warning_dozed">%s ei voinut toimia taustalla</string>
 	
 	<string name="enter_password">Salasana</string>
 	<string name="try_again">Väärä salasana, yritä uudelleen</string>
@@ -30,8 +29,6 @@
 	<string name="forgotten_password">Olen unohtanut salasanani</string>
 	<string name="dialog_title_lost_password">Unohtunut salasana</string>
 	<string name="dialog_message_lost_password">Sinun Zerion tili on tallennettu salattuna sinun laitteelle, ei pilvipalvelimelle, joten emme voi palauttaa salasanaasi. Haluatko poistaa tilisi ja aloittaa alusta?\n\nVaroitus: Tulet menettämään tunnuksesi, yhteystietosi ja viestisi lopullisesti.</string>
-	<string name="startup_failed_notification_title">Zerionin käynnistys epäonnistui</string>
-  <string name="startup_failed_notification_text">Napauta nähdäksesi lisätietoja.</string>
   <string name="startup_failed_activity_title">Zerionin käynnistys epäonnistui</string>
   <string name="startup_failed_db_error">Jostain syystä sinun Zerion tietokanta on korruptoitunut korjauskelvottomaksi. Tilisi, tietosi ja kaikki yhteystietosi on menetetty. Valitettavasti, sinun täytyy asentaa Zerion uudelleen ja luoda uusi tili valitsemalla \'Olen unohtanut salasanani\' kun sinulta kysytään salasanaa.</string>
   <string name="startup_failed_data_too_old_error">Sinun tili luotiin vanhalla versiolla eikä sitä voida avata tällä versiolla. Sinun täytyy joko asentaa vanha versio uudelleen tai luoda uusi tili valitsemalla \'Olen unohtanut salasanani\' kun sinulta kysytään salasanaa.</string>
@@ -81,7 +78,6 @@
   <string name="delete">Poista</string>
   <string name="accept">Hyväksy</string>
   <string name="decline">Kieltäydy</string>
-  <string name="options">Valitsimet</string>
   <string name="online">Verkossa</string>
   <string name="offline">Poissa verkosta</string>
   <string name="send">Lähetä</string>
@@ -120,12 +116,10 @@
   <string name="authenticating_with_device">Tunnistaudutaan laitteen kanssa\u2026</string>
   <string name="connection_error_title">Yhteydenotto yhteystietoon epäonnistui</string>
   <string name="connection_error_explanation">Tarkista että olette kumpikin käyttämässä samaa Wi-Fi verkkoa.</string>
-  <string name="connection_error_feedback">Jos tämä ongelma jatkuu, <a href="feedback">lähetä palautetta</a> jotta voimme parantaa sovellusta.</string>
   
   <string name="paste_button">Liitä</string>
   <string name="copy_button">Kopio</string>
   <string name="share_button">Jaa</string>
-  <string name="add_contact_remote_connecting">Yhdistetään...</string>
   <string name="connecting">Yhdistetään...</string>
   
   <string name="step_1">1</string>
@@ -229,7 +223,6 @@
   <string name="pref_theme_title">Teema</string>
   <string name="pref_theme_light">Vaalea</string>
   <string name="pref_theme_dark">Tumma</string>
-  <string name="pref_theme_auto">Automaattinen (päiväsaika)</string>
   <string name="pref_theme_system">Järjestelmäoletus</string>
   
   <string name="network_settings_title">Verkot</string>
@@ -277,8 +270,6 @@
   <string name="panic_setting_signout_summary">Kirjaudu ulos Zerionista jos paniikkinappia on painettu</string>
   <string name="purge_setting_title">Poista tili</string>
   <string name="purge_setting_summary">Poista Zerion tilisi jos paniikkinappia on painettu. Varoitus: Tämä tulee pysyvästi poistamaan sinun tunnukset, yhteystiedot ja viestit</string>
-  <string name="uninstall_setting_title">Poista Zerionin asennus</string>
-  <string name="uninstall_setting_summary">Tämä tulee vaatimaan manuaalisen varmennuksen paniikkitilanteessa</string>
   
   <string name="notification_settings_title">Ilmoitukset</string>
   <string name="notify_sign_in_title">Muistuta minua kirjautumaan sisään</string>
@@ -296,28 +287,12 @@
   <string name="choose_ringtone_title">Valitse soittoääni</string>
   <string name="cannot_load_ringtone">Soittoäänen lataaminen epäonnistui</string>
   
-  <string name="feedback_settings_title">Palaute</string>
-  <string name="send_feedback">Lähetä palautetta</string>
   
   <string name="link_warning_title">Linkkivaroitus</string>
   <string name="link_warning_intro">Olet aikomassa avata seuraavan linkin toisessa sovelluksessa.</string>
   <string name="link_warning_open_link">Avaa linkki</string>
   
-  <string name="crash_report_title">Zerion kaatumisilmoitus</string>
-  <string name="zerion_crashed">Pahoittelemme, Zerion on kaatunut.</string>
-  <string name="not_your_fault">Tämä ei ole sinun syysi.</string>
-  <string name="please_send_report">Auta meitä rakentamaan parempi Zerion lähettämällä meille kaatumisilmoitus.</string>
-  <string name="report_is_encrypted">Lupaamme, että ilmoitus on salattu ja lähetetty turvallisesti.</string>
-  <string name="feedback_title">Palaute</string>
-  <string name="describe_crash">Kuvaile mitä tapahtui (valinnainen)</string>
-  <string name="enter_feedback">Kirjoita palaute</string>
-  <string name="optional_contact_email">Sähköpostiosoite (valinnainen)</string>
-  <string name="include_debug_report_crash">Liitä anonyymiä dataa kaatumisesta</string>
-  <string name="include_debug_report_feedback">Liitä anonyymiä dataa tästä laitteesta</string>
-  <string name="could_not_load_report_data">Ilmoituksen tietojen lataaminen epäonnistui.</string>
-  <string name="send_report">Lähetä ilmoitus</string>
   <string name="close">Sulje</string>
-  <string name="dev_report_saved">Ilmoitus tallennettu. Sen lähetys tapahtuu seuraavan kerran kun kirjaudut sisään Zerioniin.</string>
   
   <string name="progress_title_logout">Kirjaudutaan ulos Zerionista...</string>
   
@@ -459,7 +434,6 @@
 	<string name="wallet_receive_new">Uusi osoite</string>
 	<string name="wallet_node_hint">Ota palvelin käyttöön napauttamalla sitä. Poista mukautettu palvelin painamalla sitä pitkään.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Uudelleenkäytettävä yksityinen osoite. Siihen tehtyjä maksuja ei voi yhdistää toisiinsa lohkoketjussa. Tunnistus skannaa julkista dataa Torin kautta; avaimesi eivät koskaan poistu laitteelta.</string>
 	<string name="wallet_sp_balance">Havaittu: %1$s</string>
 	<string name="wallet_sp_scanned">Skannattu lohkoon %1$d asti</string>
 	<string name="wallet_sp_set_oracle">Skannauslähde</string>

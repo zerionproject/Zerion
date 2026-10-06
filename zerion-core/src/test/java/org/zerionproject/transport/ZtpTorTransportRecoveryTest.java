@@ -38,14 +38,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The recovery contract of the Tor transport after a dead network spell:
- * a connectivity report while Tor is stuck reconnecting bounces Tor's
- * network instead of the idempotent enable, the transport counts as
- * degraded only after the grace period and only after it was once
- * connected, and restarts are rate limited.
- */
 public class ZtpTorTransportRecoveryTest {
+
+	static final String PEER_ONION =
+			"abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx";
 
 	private static class RecordingTor implements TorWrapper {
 		final List<Boolean> enableCalls =
@@ -124,6 +120,10 @@ public class ZtpTorTransportRecoveryTest {
 		}
 
 		public void enableIpv6(boolean ipv6Only) {
+		}
+
+		public void forgetHiddenServiceDescriptors() {
+			calls.add("newnym");
 		}
 
 		public File getLyrebirdExecutableFile() {
@@ -205,7 +205,6 @@ public class ZtpTorTransportRecoveryTest {
 	@Nullable
 	private ZtpTorTransport transport;
 
-	/** The wrapper's properties type has no public constructor. */
 	private static TorWrapper.HiddenServiceProperties hiddenService(
 			String onion, String privKey) {
 		try {
@@ -220,7 +219,6 @@ public class ZtpTorTransportRecoveryTest {
 		}
 	}
 
-	/** A socket factory that counts attempts and never connects. */
 	private final SocketFactory refusingFactory = new SocketFactory() {
 		@Override
 		public Socket createSocket(String host, int port) throws IOException {
@@ -315,12 +313,54 @@ public class ZtpTorTransportRecoveryTest {
 		exec.shutdownNow();
 	}
 
-	/**
-	 * A2-REG-NET-03: the transport is a singleton the plugin manager stops
-	 * and starts across offline and pause cycles; the process watch must
-	 * report a dead Tor to the transport after any such cycle, not only in
-	 * its first life.
-	 */
+	@Test
+	public void aNetworkBounceRepublishesTheOnionsOnceTorIsConnectedAgain()
+			throws Exception {
+		ZtpTorTransport t = started(null, new NoSettings(),
+				new TorProcessWatch());
+		String onion = t.publishHiddenService(1234, 80, "k1").onion;
+		int onions = t.publishedOnions().size();
+		tor.calls.clear();
+		tor.state = TorState.CONNECTED;
+		t.setNetworkEnabled(false);
+		t.onTorState(TorState.DISABLED);
+		assertFalse("nothing is re-added while the network is down",
+				tor.calls.stream().anyMatch(c -> c.startsWith("remove:")));
+		t.setNetworkEnabled(true);
+		t.onTorState(TorState.CONNECTING);
+		t.onTorState(TorState.CONNECTED);
+		waitUntil(() -> tor.calls.stream()
+				.filter(c -> c.startsWith("publish:")).count() >= onions);
+		assertEquals("every onion is removed once", onions,
+				tor.calls.stream().filter(c -> c.startsWith("remove:")).count());
+		assertTrue("the removal precedes the re-add",
+				tor.calls.indexOf("remove:" + onion)
+						< tor.calls.lastIndexOf("publish:1234:80:k1"));
+		t.onTorState(TorState.CONNECTED);
+		Thread.sleep(200);
+		assertEquals("a repeated CONNECTED does not re-add again", onions,
+				tor.calls.stream().filter(c -> c.startsWith("remove:")).count());
+	}
+
+	@Test
+	public void aDescriptorRefreshSignalsNewnymOnlyWhileConnected()
+			throws Exception {
+		ZtpTorTransport t = started(null, new NoSettings(),
+				new TorProcessWatch());
+		tor.state = TorState.CONNECTING;
+		t.refreshPeerDescriptors();
+		assertFalse("no purge while Tor is still connecting",
+				tor.calls.contains("newnym"));
+		java.util.concurrent.atomic.AtomicInteger refeeds =
+				new java.util.concurrent.atomic.AtomicInteger();
+		t.setTorReconfiguredListener(refeeds::incrementAndGet);
+		tor.state = TorState.CONNECTED;
+		t.refreshPeerDescriptors();
+		assertTrue(tor.calls.contains("newnym"));
+		assertEquals("the purge drops ephemeral client authorization, so the credentials are fed again",
+				1, refeeds.get());
+	}
+
 	@Test
 	public void aTorDeathIsStillDetectedAfterAStopStartCycle()
 			throws Exception {
@@ -336,13 +376,6 @@ public class ZtpTorTransportRecoveryTest {
 		waitUntil(() -> !t.isTorDead());
 	}
 
-	/**
-	 * A2-NET-03: after Tor refused the bridge configuration the network is
-	 * disabled, and a later connectivity report must not enable it without
-	 * bridges; once the configuration is accepted again the enable goes
-	 * through, with the bridges cleared and re-applied so the wrapper's
-	 * memory of the refused list cannot report it as already applied.
-	 */
 	@Test
 	public void theNetworkStaysDisabledWhileBridgesAreRefused()
 			throws Exception {
@@ -361,10 +394,6 @@ public class ZtpTorTransportRecoveryTest {
 				tor.calls);
 	}
 
-	/**
-	 * A2-NET-05: a stop that lands while a dead Tor is being restarted must
-	 * not leave the restarted Tor running with the network enabled.
-	 */
 	@Test
 	public void aStopDuringARestartLeavesTorStopped() throws Exception {
 		TorProcessWatch watch = new TorProcessWatch();
@@ -385,12 +414,6 @@ public class ZtpTorTransportRecoveryTest {
 						tor.calls.size()).contains("network:true"));
 	}
 
-	/**
-	 * DV-04: Tor refuses to enable the network when its SOCKS listener
-	 * cannot bind. The start must then fail with Tor stopped instead of
-	 * leaving a Tor process running with the network disabled and the
-	 * transport reporting itself as started.
-	 */
 	@Test
 	public void torIsStoppedWhenTheNetworkCannotBeEnabled()
 			throws Exception {
@@ -421,12 +444,6 @@ public class ZtpTorTransportRecoveryTest {
 		assertFalse(t.isNetworkDegraded());
 	}
 
-	/**
-	 * NET-08: a connectivity report inside the grace period is a plain
-	 * enable, since Tor is only reconnecting after a brief dip and a bounce
-	 * would cut the sessions it is about to recover; once the grace period
-	 * has passed the report bounces the network, rate limited.
-	 */
 	@Test
 	public void connectivityReportBouncesOnlyOnceDegraded()
 			throws Exception {
@@ -451,12 +468,6 @@ public class ZtpTorTransportRecoveryTest {
 				tor.enableCalls);
 	}
 
-	/**
-	 * NET-07: the loss of the control connection while Tor is running is
-	 * the death of the tor child. Tor is stopped and started again with the
-	 * same settings sequence, and every hidden service the transport had
-	 * published is published again with its own key.
-	 */
 	@Test
 	public void deadTorIsRestartedAndItsServicesRepublished()
 			throws Exception {
@@ -479,7 +490,7 @@ public class ZtpTorTransportRecoveryTest {
 		ZtpTorTransport t = started();
 		tor.state = TorState.CONNECTED;
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, "peer", false));
+				t.dial(1, PEER_ONION, false));
 		assertEquals("a live Tor is dialled", 1, dialAttempts.get());
 
 		CountDownLatch release = new CountDownLatch(1);
@@ -492,12 +503,12 @@ public class ZtpTorTransportRecoveryTest {
 		waitUntil(() -> !sleeps.isEmpty());
 		assertTrue(t.isTorDead());
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, "peer", false));
+				t.dial(1, PEER_ONION, false));
 		assertEquals("no dial while dead", 1, dialAttempts.get());
 
 		release.countDown();
 		waitUntil(() -> !t.isTorDead());
-		t.dial(1, "peer", false);
+		t.dial(1, PEER_ONION, false);
 		assertEquals("dialled again once Tor is back", 2,
 				dialAttempts.get());
 	}
@@ -519,12 +530,12 @@ public class ZtpTorTransportRecoveryTest {
 		ZtpTorTransport t = started();
 		tor.state = TorState.CONNECTING;
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, "peer", false));
+				t.dial(1, PEER_ONION, false));
 		tor.state = TorState.DISABLED;
-		t.dial(1, "peer", true);
+		t.dial(1, PEER_ONION, true);
 		assertEquals(0, dialAttempts.get());
 		tor.state = TorState.CONNECTED;
-		t.dial(1, "peer", true);
+		t.dial(1, PEER_ONION, true);
 		assertEquals(1, dialAttempts.get());
 	}
 
@@ -605,5 +616,85 @@ public class ZtpTorTransportRecoveryTest {
 		t.restartNetwork();
 		t.setNetworkEnabled(true);
 		assertTrue(tor.enableCalls.isEmpty());
+	}
+
+	@Test
+	public void aRestartLoopOfAnEarlierRunLeavesTheLaterRunAlone()
+			throws Exception {
+		ZtpTorTransport t = started();
+		CountDownLatch release = new CountDownLatch(1);
+		t.sleeper = ms -> {
+			sleeps.add(ms);
+			release.await();
+		};
+		tor.failStarts = 1;
+		t.onControlConnectionLost();
+		waitUntil(() -> !sleeps.isEmpty());
+		t.stop();
+		t.start(null);
+		tor.calls.clear();
+		release.countDown();
+		Thread.sleep(500);
+		assertFalse("the earlier run stopped the later run's Tor",
+				tor.calls.contains("stop"));
+		assertFalse("the earlier run started Tor again",
+				tor.calls.contains("start"));
+	}
+
+	@Test
+	public void onlyAV3OnionAddressIsDialled() throws Exception {
+		ZtpTorTransport t = started();
+		tor.state = TorState.CONNECTED;
+		for (String bad : new String[] {"peer", PEER_ONION + ".onion",
+				PEER_ONION.toUpperCase(java.util.Locale.US),
+				PEER_ONION.substring(1), PEER_ONION + "a",
+				"192.0.2.1", "example.com"}) {
+			assertEquals(bad, OverlayTransport.DIAL_NOT_CONNECTED,
+					t.dial(1, bad, false));
+		}
+		assertEquals("a malformed address reached the SOCKS listener", 0,
+				dialAttempts.get());
+		t.dial(1, PEER_ONION, false);
+		assertEquals(1, dialAttempts.get());
+	}
+
+	private static class WithNetworkSetting implements SettingsManager {
+		private final int network;
+
+		WithNetworkSetting(int network) {
+			this.network = network;
+		}
+
+		public Settings getSettings(String namespace) {
+			Settings s = new Settings();
+			s.putInt(org.zerionproject.core.api.plugin.TorConstants
+					.PREF_TOR_NETWORK, network);
+			return s;
+		}
+
+		public Settings getSettings(Transaction txn, String namespace) {
+			return getSettings(namespace);
+		}
+
+		public void mergeSettings(Settings s, String namespace) {
+		}
+
+		public void mergeSettings(Transaction txn, Settings s,
+				String namespace) {
+		}
+	}
+
+	@Test
+	public void anUnknownNetworkChoiceKeepsTheNetworkDisabled() {
+		TorBridgeConfigurator never = new TorBridgeConfigurator(
+				new WithNetworkSetting(3), new NoBridges(), () -> "", tor,
+				new NoEvents(), exec);
+		assertFalse(never.apply());
+		assertFalse(tor.calls.contains("bridges:off"));
+		TorBridgeConfigurator plain = new TorBridgeConfigurator(
+				new WithNetworkSetting(org.zerionproject.core.api.plugin
+						.TorConstants.PREF_TOR_NETWORK_WITHOUT_BRIDGES),
+				new NoBridges(), () -> "", tor, new NoEvents(), exec);
+		assertTrue(plain.apply());
 	}
 }

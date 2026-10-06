@@ -126,20 +126,27 @@ class ConversationVisitor implements
 			if (replyContext != null) {
 				item.setReplyToMessageId(replyContext.getFirst());
 				item.setReplyToText(replyContext.getSecond());
+				item.setReplyToLocal(viewModel.quotedDirection(
+						replyContext.getFirst()));
 			} else if (h.getReplyToId() != null) {
-				item.setReplyToMessageId(h.getReplyToId());
-				String replyText = textCache.getText(h.getReplyToId());
-				item.setReplyToText(replyText != null ? replyText :
-						ctx.getString(R.string.reply_original_unavailable));
+				bindQuote(item, h.getReplyToId(),
+						viewModel.quotedDirection(h.getReplyToId()));
 			}
 		} else if (h.getReplyToId() != null) {
-			item.setReplyToMessageId(h.getReplyToId());
-			String replyText = textCache.getText(h.getReplyToId());
-			item.setReplyToText(replyText != null ? replyText :
-					ctx.getString(R.string.reply_original_unavailable));
+			bindQuote(item, h.getReplyToId(), null);
 		}
 
 		return item;
+	}
+
+	private void bindQuote(ConversationItem item, MessageId quoted,
+			@Nullable Boolean quotedLocal) {
+		item.setReplyToMessageId(quoted);
+		item.setReplyToLocal(quotedLocal);
+		String replyText = quotedLocal == null ? null
+				: textCache.getText(quoted);
+		item.setReplyToText(replyText != null ? replyText :
+				ctx.getString(R.string.reply_original_unavailable));
 	}
 	private String getContactNameOrDefault() {
 		String name = contactName.getValue();

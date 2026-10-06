@@ -22,25 +22,6 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGN
 import static org.zerionproject.core.api.transport.TransportConstants.MAC_LENGTH;
 import static org.zerionproject.core.api.transport.TransportConstants.STREAM_HEADER_NONCE_LENGTH;
 
-/**
- * The asynchronous sealed-sender crypto core (Phase 2 design, sections 4 and 5),
- * built entirely by composing the existing audited primitives: hybrid
- * encapsulation + one-pass agreement for the message key, keyed BLAKE2b for the
- * AEAD key and nonce, an inner hybrid signature for sender authentication, and
- * XSalsa20-Poly1305 for the record. No new cryptographic primitive is
- * introduced.
- *
- * <p>NOT WIRED INTO ANY TRANSPORT and gated behind review. It carries no live
- * traffic; it exists to be reviewed and tested.
- *
- * <p>Deviation from the draft design, section 4.4: the draft folded
- * {@code sendTimestamp} into the key-deriving transcript, but that field is not
- * on the outer wire, so a recipient could not rebuild the transcript to derive
- * the key. Here the key-deriving transcript uses only fields the recipient can
- * reconstruct from the wire and its own identity; {@code sendTimestamp} lives in
- * the signed inner record instead, so it is authenticated without being needed
- * to derive the key.
- */
 @NotNullByDefault
 public class AsyncSealedSender {
 
@@ -68,10 +49,10 @@ public class AsyncSealedSender {
 	public byte[] seal(SealRequest r) throws GeneralSecurityException {
 		KeyPair ephemeral = crypto.generateHybridAgreementKeyPair();
 		SecretKey mk = null;
+		HybridEncapsulationResult enc = null;
 		try {
 			byte[] ephemeralPub = ephemeral.getPublic().getEncoded();
-			HybridEncapsulationResult enc =
-					crypto.hybridEncapsulate(r.recipientAgreementPub);
+			enc = crypto.hybridEncapsulate(r.recipientAgreementPub);
 			byte[] kemCt = enc.getCiphertext();
 			byte[] transcript = transcript(r.recipientIdentitySigPub,
 					r.recipientIdentityAgreePub, r.prekeyKind, r.prekeyId,
@@ -93,26 +74,12 @@ public class AsyncSealedSender {
 					aeadBlob);
 			return env.encode();
 		} finally {
+			if (enc != null) enc.clearSecret();
 			clearAgreementPrivateKey(ephemeral);
 			if (mk != null) mk.clear();
 		}
 	}
 
-	/**
-	 * Opens an envelope, returning the payload and the authenticated sender
-	 * identity, or throwing if any check fails (fail-closed). This is the
-	 * crypto core only. The caller MUST additionally, and these are
-	 * load-bearing for the forward-secrecy and replay guarantees:
-	 * <ul>
-	 * <li>check the returned {@code senderIdentitySigPub} is a known, accepted
-	 * contact (open accepts a valid signature by <em>any</em> identity, since
-	 * the identity is carried inside the sealed record);
-	 * <li>consume the one-time prekey used by this envelope and delete its
-	 * private key, so it cannot open a replayed envelope;
-	 * <li>record the envelope's dedup id in a durable seen-set and reject
-	 * repeats, which is the replay defence on the reused signed-prekey path.
-	 * </ul>
-	 */
 	public OpenedMessage open(byte[] envelopeBytes, OpenRequest r)
 			throws GeneralSecurityException, FormatException {
 		AsyncEnvelope env = AsyncEnvelope.decode(envelopeBytes);
@@ -171,10 +138,6 @@ public class AsyncSealedSender {
 			byte[] recipientIdentityAgreePub, int prekeyKind, byte[] prekeyId,
 			long signedPrekeyId, byte[] ephemeralPub, byte[] kemCt, long ttl,
 			byte[] dedupId) {
-		// Every transcript field must be fixed-size for the raw concatenation
-		// to be unambiguous. The wire-derived fields are already length-checked
-		// by AsyncEnvelope; the caller-supplied identity fields are checked
-		// here so a future caller cannot introduce a canonicalization ambiguity.
 		if (recipientIdentitySigPub.length != SIG_PUB
 				|| recipientIdentityAgreePub.length != AGREE_PUB) {
 			throw new IllegalArgumentException("bad identity key length");

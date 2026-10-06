@@ -110,6 +110,7 @@ public class QrExchangeFragment extends BaseFragment {
 				Bitmap qr = QrCodeUtils.generateQrCode(link);
 				if (qr != null) {
 					qrCodeImage.setImageBitmap(qr);
+					viewModel.onOwnLinkShared();
 				}
 			}
 		});
@@ -211,14 +212,14 @@ public class QrExchangeFragment extends BaseFragment {
 		if (!scanComplete.compareAndSet(false, true)) return;
 
 		requireActivity().runOnUiThread(() -> {
-			String ownLink = viewModel.getHandshakeLink().getValue();
-			if (link.equals(ownLink)) {
+			if (viewModel.isOwnLink(link)) {
 				Toast.makeText(requireContext(),
 						R.string.own_link_error, LENGTH_SHORT).show();
 				scanComplete.set(false);
 				return;
 			}
 			viewModel.setRemoteHandshakeLink(link);
+			viewModel.setRemoteLinkScannedInPerson(true);
 			statusText.setText(R.string.qr_scanned_waiting);
 			statusText.setVisibility(View.VISIBLE);
 			qrHintText.setText(R.string.qr_scanned_hint);

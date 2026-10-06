@@ -7,11 +7,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * NET-04: the publisher's shared egress budget must bound total bytes served
- * per window across concurrent anonymous readers, reset each window, and still
- * allow one legitimate over-budget object per window.
- */
 public class EgressBudgetTest {
 
 	private final AtomicLong now = new AtomicLong(1_000_000L);

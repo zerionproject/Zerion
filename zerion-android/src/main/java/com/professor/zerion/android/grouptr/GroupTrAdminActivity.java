@@ -28,6 +28,7 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
+import org.zerionproject.app.api.grouptr.GroupTrSentInvite;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.grouptr.MemberRole;
 
@@ -105,7 +106,6 @@ public class GroupTrAdminActivity extends ZerionActivity {
 
 		openChatButton.setOnClickListener(v -> startActivity(
 				GroupTrConversationActivity.intent(this, groupId)));
-		actionTtl.setOnClickListener(v -> showTtlDialog());
 
 		render();
 	}
@@ -122,17 +122,37 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				LocalAuthor la = identityManager.getLocalAuthor();
 				localPub = la.getPublicKey().getEncoded();
 				GroupTrState s = groupTrManager.getGroup(groupId);
+				List<GroupTrMember> outOfReach = s == null
+						? new ArrayList<>()
+						: groupTrManager.getMembersOutOfReach(groupId);
+				List<GroupTrSentInvite> invites = new ArrayList<>();
+				if (s != null && Arrays.equals(localPub,
+						s.getCreatorPubKey())) {
+					invites.addAll(groupTrManager.getSentInvites(groupId));
+				}
 				runOnUiThread(() -> {
 					if (s == null) {
 						finish();
 						return;
 					}
+					this.outOfReach = outOfReach;
+					this.sentInvites = invites;
 					bind(s);
 				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> toast(R.string.grouptr_error_load));
 			}
 		});
+	}
+
+	private List<GroupTrMember> outOfReach = new ArrayList<>();
+	private List<GroupTrSentInvite> sentInvites = new ArrayList<>();
+
+	private boolean outOfReach(GroupTrMember m) {
+		for (GroupTrMember o : outOfReach) {
+			if (Arrays.equals(o.getPubKey(), m.getPubKey())) return true;
+		}
+		return false;
 	}
 
 	private void bind(GroupTrState s) {
@@ -197,6 +217,10 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			} else if (m.getRole() == MemberRole.ADMIN) {
 				role = getString(R.string.grouptr_member_role_admin);
 			}
+			if (!self && outOfReach(m)) {
+				String reach = getString(R.string.grouptr_member_out_of_reach);
+				role = role == null ? reach : role + " \u00b7 " + reach;
+			}
 			if (role != null) {
 				roleView.setText(role);
 				roleView.setVisibility(View.VISIBLE);
@@ -229,6 +253,48 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				membersContainer.addView(divider);
 			}
 		}
+		bindSentInvites(s, isCreator, dissolved, inf);
+	}
+
+	private void bindSentInvites(GroupTrState s, boolean isCreator,
+			boolean dissolved, LayoutInflater inf) {
+		if (!isCreator || dissolved) return;
+		for (GroupTrSentInvite invite : sentInvites) {
+			View row = inf.inflate(R.layout.list_item_grouptr_admin_member,
+					membersContainer, false);
+			TextView avatar = row.findViewById(R.id.memberAvatar);
+			TextView nameView = row.findViewById(R.id.memberName);
+			TextView roleView = row.findViewById(R.id.memberRole);
+			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
+			String name = invite.getContactName().isEmpty() ? "?"
+					: invite.getContactName();
+			avatar.setText(name.substring(0, 1).toUpperCase());
+			nameView.setText(name);
+			roleView.setText(R.string.grouptr_member_invited);
+			roleView.setVisibility(View.VISIBLE);
+			menu.setVisibility(View.VISIBLE);
+			menu.setOnClickListener(v -> confirmRevoke(s, invite));
+			membersContainer.addView(row);
+		}
+	}
+
+	private void confirmRevoke(GroupTrState s, GroupTrSentInvite invite) {
+		new SecureAlertDialogBuilder(this)
+				.setMessage(getString(R.string.grouptr_confirm_revoke,
+						invite.getContactName()))
+				.setPositiveButton(R.string.grouptr_revoke_invite, (d, w) ->
+						ioExecutor.execute(() -> {
+							try {
+								groupTrManager.revokeInvite(s.getGroupId(),
+										invite.getContactId());
+								runOnUiThread(this::render);
+							} catch (DbException ex) {
+								runOnUiThread(() ->
+										toast(R.string.grouptr_error_save));
+							}
+						}))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
 	}
 
 	private void bindActions(GroupTrState s, boolean isCreator,
@@ -240,7 +306,20 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		}
 		actionAddMember.setVisibility(isCreator ? View.VISIBLE : View.GONE);
 		actionAddMember.setOnClickListener(v -> showAddMemberDialog(s));
-		actionTtl.setVisibility(isCreator ? View.VISIBLE : View.GONE);
+		actionTtl.setVisibility(View.VISIBLE);
+		actionTtl.setOnClickListener(v -> {
+			if (isCreator) {
+				showTtlDialog();
+			} else {
+				new SecureAlertDialogBuilder(this)
+						.setTitle(R.string.grouptr_default_ttl_set)
+						.setMessage(getString(
+								R.string.grouptr_ttl_set_by_creator,
+								formatTtl(s.getDefaultAutoDeleteTimerMs())))
+						.setPositiveButton(android.R.string.ok, null)
+						.show();
+			}
+		});
 	}
 
 	private void bindDanger(GroupTrState s, boolean isCreator,
@@ -298,15 +377,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private String formatTtl(long ms) {
-		if (ms <= 0L) return getString(R.string.grouptr_ttl_off_label);
-		if (ms == 5L * 60_000L) return getString(R.string.grouptr_ttl_5min);
-		if (ms == 60L * 60_000L) return getString(R.string.grouptr_ttl_1hr);
-		if (ms == 24L * 60L * 60_000L) return getString(R.string.grouptr_ttl_1day);
-		if (ms == 7L * 24L * 60L * 60_000L)
-			return getString(R.string.grouptr_ttl_7days);
-		if (ms == 30L * 24L * 60L * 60_000L)
-			return getString(R.string.grouptr_ttl_30days);
-		return getString(R.string.grouptr_ttl_off_label);
+		return GroupTrTimerLabels.label(this, ms);
 	}
 
 	private void showMemberMenu(GroupTrState s, GroupTrMember m) {
@@ -427,8 +498,19 @@ public class GroupTrAdminActivity extends ZerionActivity {
 						try {
 							groupTrManager.setGroupAutoDeleteTimer(
 									groupId, v);
-							runOnUiThread(() -> toast(
-									R.string.grouptr_default_ttl_saved));
+							int older = groupTrManager
+									.countMembersOnOlderVersion(groupId);
+							runOnUiThread(() -> {
+								toast(R.string.grouptr_default_ttl_saved);
+								if (older > 0) {
+									Toast.makeText(this, getResources()
+											.getQuantityString(
+													R.plurals.grouptr_ttl_older_members,
+													older, older),
+											Toast.LENGTH_LONG).show();
+								}
+								render();
+							});
 						} catch (DbException ex) {
 							runOnUiThread(() -> toast(
 									R.string.grouptr_error_save));

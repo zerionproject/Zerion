@@ -1,0 +1,14 @@
+# SHA-256 of every third-party prebuilt native library the app packages, one
+# line per ABI and library: <abi>/<library> <sha256>. These libraries arrive
+# inside Maven artifacts (net.zetetic:sqlcipher-android:4.13.0 and
+# androidx.camera:camera-core:1.4.2) and are pinned here independently of
+# Gradle dependency verification, which the F-Droid reference build removes.
+# The gate verifyThirdPartyNativeArtifacts checks the merged native libraries
+# against these values before they are packaged; a dependency upgrade updates
+# this file together with the dependency version (see docs/SUPPLY_CHAIN.md).
+arm64-v8a/libsqlcipher.so 91060e3d9360d4ac0858633f24ed97a62b66b6cdf18c00f8ef8a1e39e72fd76f
+armeabi-v7a/libsqlcipher.so c5c01c5250ac119ce4f54da6bcb82b54355acf54bcbb240f9d9d12b88a557ee5
+arm64-v8a/libimage_processing_util_jni.so 3e0071afcdc7e321f839e196d266014182f18d0988e4455acc9857a085b2184e
+armeabi-v7a/libimage_processing_util_jni.so e48e356bbe1902ae9a66178a4a0141c993b82ee9f70dde52ad83e4af3eca984f
+arm64-v8a/libsurface_util_jni.so ee3f0d56f81cc0a301db32dc4fd51274c3216733b4c40172768e38bc5049a265
+armeabi-v7a/libsurface_util_jni.so f110d6a305fef5be5664d58cfb054366b002bc516066b4ec880c38a68428756f

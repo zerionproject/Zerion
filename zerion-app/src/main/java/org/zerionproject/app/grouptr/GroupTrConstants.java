@@ -13,6 +13,9 @@ interface GroupTrConstants {
 	String SIGNING_LABEL_GROUP_EPOCH_COMMIT =
 			"org.zerionproject/GROUP_EPOCH_COMMIT";
 
+	String SIGNING_LABEL_GROUP_SETTINGS =
+			"org.zerionproject/GROUP_SETTINGS";
+
 	String SIGNING_LABEL_GROUPTR_INVITE_OFFER =
 			"org.zerionproject/GROUPTR_INVITE_OFFER";
 	String SIGNING_LABEL_GROUPTR_INVITE_ACCEPT =
@@ -36,6 +39,7 @@ interface GroupTrConstants {
 	String S_DEFAULT_TTL = "defaultAutoDeleteTimerMs";
 	String S_STEALTH_NAME = "stealthName";
 	String S_REMOVED = "removed";
+	String S_SETTINGS_TIMESTAMP = "settingsTimestamp";
 
 	String SETTINGS_NS_INVITES_SENT = "grouptr.invites_sent";
 	String SETTINGS_NS_OFFERS_PENDING = "grouptr.offers_pending";

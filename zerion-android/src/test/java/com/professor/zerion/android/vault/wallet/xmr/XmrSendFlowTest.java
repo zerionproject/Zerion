@@ -21,15 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * The send state machine drives a transaction from input to relay with the
- * exact ordering the safety model requires: quarantine and validity checks
- * before construction, refresh quiesced before signing, fresh authorization
- * after the snapshot, and on one operation the ownership-checked validation, the
- * durable journal write, and only then the single commit. A journal write
- * failure means no commit; an uncertain commit leaves a durable quarantine; a
- * mutation or a stale authorization fails closed.
- */
 public class XmrSendFlowTest {
 
 	private static final String WALLET = "w1";

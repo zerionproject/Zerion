@@ -32,13 +32,6 @@ public class ChannelState {
 	private final byte[] contentKey;
 	private final List<ChannelDelegationCert> activeDelegations;
 	private final List<Long> revokedDelegationSeqs;
-	/**
-	 * Certificates that were active once and no longer are (revoked or
-	 * replaced), kept so that posts signed under them can still be verified
-	 * and, if revoked, withheld rather than blocking the chain. Bounded by
-	 * {@link #MAX_RETIRED_DELEGATIONS}, oldest sequence numbers dropped
-	 * first.
-	 */
 	private final List<ChannelDelegationCert> retiredDelegations;
 	public static final int MAX_RETIRED_DELEGATIONS = 64;
 	private final long nextDelegationSeq;
@@ -291,12 +284,6 @@ public class ChannelState {
 		return retiredDelegations;
 	}
 
-	/**
-	 * The retired list after {@code retiring} certificates leave the active
-	 * set: existing retired certificates first, then the new ones, without
-	 * duplicates by sequence number, trimmed to the newest
-	 * {@link #MAX_RETIRED_DELEGATIONS} by sequence number.
-	 */
 	public static List<ChannelDelegationCert> retire(
 			List<ChannelDelegationCert> retired,
 			List<ChannelDelegationCert> retiring) {

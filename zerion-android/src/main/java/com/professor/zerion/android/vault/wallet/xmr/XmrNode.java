@@ -7,16 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/**
- * A Monero daemon endpoint. The host may be a v3 onion, an IP literal, or a DNS
- * hostname. The privacy guarantee is a property of the TRANSPORT, not the host
- * format: a Tor-mode node ({@link #usesTor()}) is always resolved and reached
- * through the Tor SOCKS proxy, which resolves any hostname or onion REMOTELY, so
- * no local DNS ever happens for it. A Direct-mode node is clearnet, resolves
- * locally, and is only ever created behind an explicit user opt-in with a
- * privacy warning; an onion can never be a Direct node. A node is never trusted
- * unless the user marks their own node so.
- */
 @NotNullByDefault
 public final class XmrNode {
 
@@ -48,12 +38,6 @@ public final class XmrNode {
 		this.trusted = trusted;
 	}
 
-	/**
-	 * Parse a {@code host:port} spec. The host may be a v3 onion, an IP literal,
-	 * or a DNS hostname; a hostname is only ever resolved locally for a
-	 * Direct-mode node (all other nodes resolve it remotely through Tor). An
-	 * onion can never be a Direct node. Only a user-owned node may be trusted.
-	 */
 	public static XmrNode parse(String spec, Source source, boolean trusted) {
 		if (spec == null) throw new IllegalArgumentException("null node");
 		String s = spec.trim();
@@ -99,16 +83,10 @@ public final class XmrNode {
 		return hostType == HostType.ONION;
 	}
 
-	/** All nodes reach the daemon over Tor except an explicit Direct node. */
 	public boolean usesTor() {
 		return source != Source.DIRECT;
 	}
 
-	/**
-	 * True when reaching this node would require LOCAL DNS resolution: only a
-	 * Direct-mode hostname. Tor-mode nodes resolve any host remotely at the
-	 * proxy, so they never require local DNS.
-	 */
 	public boolean requiresLocalDns() {
 		return !usesTor() && hostType == HostType.HOSTNAME;
 	}
@@ -117,29 +95,6 @@ public final class XmrNode {
 		return (host.contains(":") ? "[" + host + "]" : host) + ":" + port;
 	}
 
-	/**
-	 * Stable identity of this daemon endpoint for persisted records: the
-	 * transport plus the canonical configured endpoint, independent of the
-	 * node's position in any list and carrying no credentials. Two entries
-	 * denote the same daemon exactly when this string is equal.
-	 *
-	 * Transport is the security-relevant path mode: every node reaches the
-	 * daemon through Tor except an explicit Direct node, and there is no
-	 * separate TLS mode in the wallet's daemon connection (init takes only a
-	 * daemon address, a proxy and a trust flag). Should a distinct transport
-	 * security mode ever be added it must extend this tag. The endpoint is
-	 * canonicalised so equivalent spellings collapse: a hostname is
-	 * lower-cased (DNS is case-insensitive), a v3 onion is already lower-case
-	 * by construction, an IPv6 literal is normalised to its expanded form, and
-	 * the port is always explicit (parse rejects a spec without one), so no
-	 * default-vs-explicit port ambiguity exists. Credentials are never part of
-	 * an endpoint.
-	 *
-	 * Limitation for the relay journal: an equal endpoint identifies the same
-	 * configured daemon, but it is not on its own proof that a transaction did
-	 * or did not reach the Monero network. A MISSED from this endpoint means
-	 * only that this one daemon does not currently know the txid.
-	 */
 	public String endpointId() {
 		return (usesTor() ? "tor" : "direct") + ":" + canonicalEndpoint();
 	}
@@ -154,12 +109,6 @@ public final class XmrNode {
 		return (h.indexOf(':') >= 0 ? "[" + h + "]" : h) + ":" + port;
 	}
 
-	/**
-	 * Expand an IPv6 literal to its full eight-group lower-case hexadecimal
-	 * form so that {@code ::1} and {@code 0:0:0:0:0:0:0:1} yield one identity.
-	 * Parsing a literal never triggers DNS. On any parse failure the lower-cased
-	 * input is used unchanged rather than guessing.
-	 */
 	private static String canonicalIpv6(String literal) {
 		try {
 			java.net.InetAddress a = java.net.InetAddress.getByName(literal);

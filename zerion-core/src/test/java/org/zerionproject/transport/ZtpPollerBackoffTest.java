@@ -29,17 +29,11 @@ import javax.annotation.Nullable;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.junit.Assert.assertEquals;
 
-/**
- * NET-08: a connectivity report that repeats the current state (the screen
- * turning on or off, doze changing) must not forget every contact's dial
- * backoff; only a change from disconnected to connected does.
- */
 public class ZtpPollerBackoffTest {
 
 	private static final TransportId ID = new TransportId("t");
 	private static final String KEY = "onion3";
 
-	/** Hands the scheduled sweep back to the test instead of a timer. */
 	private static final class ManualScheduler implements TaskScheduler {
 		final AtomicReference<Runnable> next = new AtomicReference<>();
 

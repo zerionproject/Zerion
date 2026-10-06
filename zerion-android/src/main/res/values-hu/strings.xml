@@ -81,7 +81,6 @@
   <string name="tor_plugin_status_disabled_battery">A Zerion úgy van beállítva, hogy ne használjon Internetet, ha akkumulátorról megy a telefon</string>
   <string name="tor_plugin_status_disabled_country_blocked">A Zerion úgy van beállítva, hogy ne használjon Internetet ebben az országban</string>
   
-  <string name="transport_lan_long">Azonos Wi-Fi hálózat</string>
 
   <string name="reminder_notification_title">Kilépve a Zerion-ból</string>
   <string name="reminder_notification_text">Koppints az újra belépéshez.</string>
@@ -208,7 +207,6 @@
   <string name="connecting_to_device">Csatlakozás az eszközhöz\u2026</string>
   <string name="authenticating_with_device">Azonosítás az eszközzel\u2026</string>
   <string name="connection_error_title">Nem sikerült csatlakozni a kapcsolatához</string>
-  <string name="connection_error_feedback">Ha ez a probléma tartósan fennáll, kérjük <a href="feedback">küldjön visszajelzést</a> nekünk, hogy segítsen fejleszteni az appot.</string>
   
   <string name="add_contact_remotely_title_case">Távoli kapcsolat hozzá adása</string>
   <string name="add_contact_nearby_title">Közeli kapcsolat hozzáadása</string>
@@ -386,8 +384,6 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   
   <string name="tor_network_setting_summary">Automatikus: %1$s ( %2$s)</string>
   <string name="tor_mobile_data_title">Mobil adat használata</string>
-  <string name="tor_only_when_charging_title">Csatlakozás az internethez csak töltés alatt</string>
-  <string name="tor_only_when_charging_summary">Letiltja az internet kapcsolatot, amikor elemről fut az eszköz</string>
   
   <string name="security_settings_title">Biztonság</string>
   <string name="pref_lock_title">App zár</string>
@@ -445,62 +441,9 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   <string name="choose_ringtone_title">Csengőhang választása</string>
   <string name="cannot_load_ringtone">Sikertelen a csengőhang betöltése</string>
   
-  <string name="mailbox_settings_title">Postafiók</string>
-  <string name="mailbox_setup_title">Postafiók beàllítàsa</string>
-  <string name="mailbox_setup_intro">A postafiók lehetővé teszi a kapcsolatai számára, hogy üzeneteket küldjenek Önnek, miközben Ön offline állapotban van. A postafiók fogadja az üzeneteket, és tárolja őket, amíg az internethez nem kapcsolódik. Telepítheti a Zerion postafiók alkalmazást egy tartalék eszközre. Tartsa csatlakoztatva az áramforráshoz és a Wi-Fi-hálózathoz, hogy mindig online legyen.</string>
-  <string name="mailbox_setup_download_link">Letöltési link megosztása</string>
-  <string name="mailbox_setup_connecting">Kapcsolódàs a postafiókhoz...</string>
   
-  <string name="mailbox_setup_connecting_info">Ez akár%1s-ot is igénybe vehet</string>
-  <string name="mailbox_setup_already_paired_title">A Mailbox már linkelt</string>
-  <string name="mailbox_setup_already_paired_description">Válaszd le a Mailbox-ot a másik eszközödön és próbáld újra.</string>
-  <string name="mailbox_setup_io_error_title">Sikertelen a kapcsolódás</string>
-  <string name="mailbox_setup_io_error_description">Ellenőrizd, hogy mindkét eszköz csatlakoztatva van-e az internethez és próbáld újra.</string>
-  <string name="mailbox_setup_assertion_error_title">Postafiók hiba</string>
-  <string name="mailbox_setup_assertion_error_description">Kérjük, küldjön visszajelzést (anonim adatokkal) a Zerion alkalmazáson keresztül, ha a probléma továbbra is fennáll.</string>
-  <string name="mailbox_setup_camera_error_description">Nem sikerült elérni a kamerát. Próbálja újra, talán az eszköz újraindítása után.</string>
-  <string name="mailbox_setup_paired_title">Csatlakozva</string>
-  <string name="tor_offline_title">Offline</string>
-  <string name="tor_offline_button_check">Ellenőrizze a kapcsolat beállításait</string>
-  <string name="mailbox_status_title">Postafiók állapota</string>
-  <string name="mailbox_status_connected_title">A Mailbox fut</string>
-  <string name="mailbox_status_problem_title">A Zerion-nak problémái vannak a Mailbox-hoz csatlakozással</string>
-  <string name="mailbox_status_failure_title">A Mailbox nem elérhető</string>
-  <string name="mailbox_status_app_too_old_title">Zerion túl régi</string>
-  <string name="mailbox_status_app_too_old_message">Frissísd a Zerion-t a legutolsó app verzióra és próbáld újra.</string>
-  <string name="mailbox_status_mailbox_too_old_title">A Mailbox túl régi</string>
-  <string name="mailbox_status_mailbox_too_old_message">Frissítsd a Mailbox-ot a legutolsó app verzióra és próbáld újra.</string>
-  <string name="mailbox_status_check_button">Kapcsolat ellenőrzése</string>
   
-  <string name="mailbox_status_connected_info">Utolsó csatlakozás: %s</string>
   
-  <string name="mailbox_status_connected_never">Soha</string>
-  <string name="mailbox_status_unlink_button">Leválasztás</string>
-  <string name="mailbox_status_unlink_dialog_title">Leválassza a postafiókot?</string>
-  <string name="mailbox_status_unlink_dialog_question">Biztosan szeretnéd lecsatlakoztatni a Mailbox-od?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Ha leválasztod a Mailbox-od, nem fogsz tudni üzeneteket kapni amíg a Zerion offline.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">A Mailbox-od lecsatlakoztatásra került</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Ha legközelebb hozzáfér postafiókjához, nyissa meg a postafiók alkalmazást, és érintse meg a „Leválasztás” gombot a folyamat befejezéséhez. Ha már nem fér hozzá postafiókjához, ne aggódjon. Adatai titkosítva vannak, így akkor is biztonságban maradnak, ha nem fejezi be a folyamatot.</string>
-  <string name="mailbox_status_unlink_success">A Mailbox-od lecsatlakoztatásra került</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox probléma</string>
-  <string name="mailbox_error_notification_title">A Zerion Mailbox nem elérhető</string>
-  <string name="mailbox_error_notification_text">Érintsd meg a hibajavításhoz.</string>
-  <string name="mailbox_error_wizard_button">Probléma javítása</string>
-  <string name="mailbox_error_wizard_title">Mailbox hibaelhárító varázsló</string>
-  <string name="mailbox_error_wizard_question1">Van hozzáférésed a Mailbox eszközödhöz?</string>
-  <string name="mailbox_error_wizard_answer1">Igen, most azonnal van hozzáférésem.</string>
-  <string name="mailbox_error_wizard_answer2">Épp most nem, de később hozzáférek.</string>
-  <string name="mailbox_error_wizard_answer3">Nem, nincs már hozzáférésem.</string>
-  <string name="mailbox_error_wizard_info1_1">Ellenőrizd, hogy a Mailbox eszközöd be van-e kapcsolva és csatlakoztatva van-e az internethez.</string>
-  <string name="mailbox_error_wizard_question1_1">Nyisd meg a Mailbox appot. Mit látsz?</string>
-  <string name="mailbox_error_wizard_answer1_1">A Mailbox beállításának lépéseit látom</string>
-  <string name="mailbox_error_wizard_answer1_2">Látok egy QR kódot</string>
-  <string name="mailbox_error_wizard_answer1_3">Azt látom \"Mailbox is running\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Azt látom, hogy \"Device offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Kérjük válaszd le a Mailbox-ot a gombbal alább, aztán kövesd a lépéseket a Mailbox eszközön az újra csatlakoztatáshoz.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Kérjük válaszd le a Mailbox-ot a gombbal alább, aztán olvasd be a QR kódot  az újra csatlakoztatáshoz.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Ellenőrizze, hogy a postafiók megfelelően csatlakozik-e az internethez. Ellenőrizze, hogy a postafiók órája a megfelelő időt, dátumot és időzónát mutatja-e. Ellenőrizze, hogy a postafiók és a Zerion alkalmazások frissültek-e a legújabb verzióra. Indítsa újra a postafiók és a Zerion eszközöket, és próbálja újra.</string>
-  <string name="mailbox_error_wizard_info2">Kérjük gyere vissza erre  képernyőre, ha van hozzáférésed az eszközhöz.</string>
   
   <string name="about_title">Névjegy</string>
   <string name="zerion_version">Zerion verzió: %s</string>
@@ -508,7 +451,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   <string name="links">Linkek</string>
   <string name="zerion_website">\u2022 <a href="">Weboldal</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Forráskód</a> </string>
-  <string name="zerion_changelog">\u2022 <a href="">Változásnapló</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Adatvédelmi irányelvek</a></string>
   
   <string name="translator_thanks">Köszönet minden közreműködőnek a Lokalizációs Laborban</string>
@@ -528,43 +470,13 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
   
   <string name="pref_category_actions">Események</string>
   <string name="share_app_link">Letöltési link megosztása</string>
-  <string name="send_feedback">Visszajelzés küldése</string>
   
   <string name="link_warning_title">Link figyelmeztetés</string>
   <string name="link_warning_intro">Épp megnyit egy linket egy külső alkalmazással.</string>
   <string name="link_warning_text">Ez tudja azonosítani Önt. Gondolkodjon el arról, hogy megbízik-e a személyben, aki a linket küldte és nyissa meg azt a Tor böngészőben.</string>
   <string name="link_warning_open_link">Link megnyitása</string>
   
-  <string name="crash_report_title">Zerion összeomlási jelentés</string>
-  <string name="zerion_crashed">Sajnáljuk, a Zerion összeomlott</string>
-  <string name="not_your_fault">Ez nem az Ön hibája.</string>
-  <string name="please_send_report">Kérjük segítsen nekünk a Zerion-t jobbá tenni, a hibajelentés elküldésével.</string>
-  <string name="report_is_encrypted">Biztosítjuk, hogy a hibajelentés titkosított és biztonságos.</string>
-  <string name="feedback_title">Visszajelzés</string>
-  <string name="describe_crash">Írja le mi történt (opcionális)</string>
-  <string name="enter_feedback">Gépelje be visszajelzését</string>
-  <string name="optional_contact_email">Email címe (opcionális)</string>
-  <string name="privacy_policy">Az adatok elküldésével Ön elfogadja a mi <a href="">Adatvédelmi irányelvünket</a></string>
-  <string name="include_debug_report_crash">Névtelen adat beágyazása az összeomlásról</string>
-  <string name="include_debug_report_feedback">Névtelen adat beágyazása az eszközről</string>
-  <string name="dev_report_user_info">Felhasználó információ</string>
-  <string name="dev_report_basic_info">Alapinformáció</string>
-  <string name="dev_report_device_info">Eszköz információ</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">Idő információ</string>
-  <string name="dev_report_memory">Memória</string>
-  <string name="dev_report_storage">Tárhely</string>
-  <string name="dev_report_connectivity">Csatlakozódás</string>
-  <string name="dev_report_network_usage">Hálózathasználat</string>
-  <string name="dev_report_build_config">Build konfiguráció</string>
-  <string name="dev_report_logcat">App log</string>
-  <string name="dev_report_device_features">Eszköz szolgáltatások</string>
-  <string name="send_report">Jelentés elküldése</string>
   <string name="close">Bezár</string>
-  <string name="dev_report_sending">Visszajelzés küldése...</string>
-  <string name="dev_report_sent">Visszajelzés elküldve</string>
-  <string name="dev_report_saved">A jelentés mentve. Elküldésre kerül akkor, amikor legközelebb bejelentkezik a Zerion-ba.</string>
-  <string name="dev_report_error">Hiba: Riport küldése sikertelen</string>
   
   <string name="progress_title_logout">Kilépés a Zerion-ból...</string>
   
@@ -719,7 +631,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="wallet_receive_new">Új cím</string>
 	<string name="wallet_node_hint">Koppintson egy szerverre a használatához. Egyéni szerver eltávolításához tartsa lenyomva.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Újrafelhasználható privát cím. Az erre küldött fizetések a láncon nem összekapcsolhatók. Az észlelés Toron keresztül nyilvános adatokat vizsgál; a kulcsai soha nem hagyják el az eszközt.</string>
 	<string name="wallet_sp_balance">Észlelve: %1$s</string>
 	<string name="wallet_sp_scanned">Beolvasva a(z) %1$d. blokkig</string>
 	<string name="wallet_sp_set_oracle">Beolvasási forrás</string>

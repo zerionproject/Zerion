@@ -30,14 +30,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Drives the configurator against a loopback server that speaks the Tor
- * control protocol subset it uses. The server starts from the configuration
- * the shipped wrapper writes (a bare SocksPort and ConnectionPadding 0) and
- * can be told to honour or ignore SETCONF, so the tests show that the
- * configurator only passes when Tor itself reports the isolation flags and
- * padding as active, and fails closed in every other case.
- */
 public class TorPrivacyConfiguratorImplTest {
 
 	private static final int SOCKS_PORT = 59050;
@@ -91,7 +83,6 @@ public class TorPrivacyConfiguratorImplTest {
 		torDir.delete();
 	}
 
-	/** State of the fake Tor: what the shipped torrc produces at start. */
 	private void serve(Socket s) {
 		String socksLine = String.valueOf(SOCKS_PORT);
 		String padding = "0";
@@ -147,7 +138,12 @@ public class TorPrivacyConfiguratorImplTest {
 
 	private TorPrivacyConfiguratorImpl configurator() {
 		return new TorPrivacyConfiguratorImpl(torDir, socketFile,
-				server.getLocalPort());
+				readTimeoutMs -> {
+					java.net.Socket s = new java.net.Socket("127.0.0.1",
+							server.getLocalPort());
+					s.setSoTimeout(readTimeoutMs);
+					return s;
+				});
 	}
 
 	@Test(timeout = 20_000)
@@ -161,10 +157,6 @@ public class TorPrivacyConfiguratorImplTest {
 		assertTrue(applied.contains("ConnectionPadding=1"));
 	}
 
-	/**
-	 * NET-09: the loopback TCP listener of the shipped configuration must
-	 * be gone. A Tor that reports it beside the Unix socket is refused.
-	 */
 	@Test(timeout = 20_000)
 	public void testFailsClosedWhenATcpListenerRemains() {
 		keepTcpListener = true;
@@ -210,11 +202,6 @@ public class TorPrivacyConfiguratorImplTest {
 		assertTrue(setconfs.isEmpty());
 	}
 
-	/**
-	 * DV-04: an account reset deletes the files directory after the socket
-	 * path was chosen, so the configurator must create the directory and
-	 * clear a stale socket itself before Tor is asked to bind there.
-	 */
 	@Test(timeout = 20_000)
 	public void testCreatesTheSocketDirectoryAndClearsAStaleSocket()
 			throws Exception {

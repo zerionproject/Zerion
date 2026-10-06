@@ -34,7 +34,6 @@ public class ElectrumRoutingTest {
 					ElectrumEndpoint.Mode.PLAINTEXT, false, true, null);
 			fail("plaintext direct must be rejected");
 		} catch (IllegalArgumentException expected) {
-			// expected: direct requires verified TLS
 		}
 	}
 
@@ -47,7 +46,6 @@ public class ElectrumRoutingTest {
 			onion.asDirect();
 			fail("onion cannot become a direct clearnet endpoint");
 		} catch (IllegalArgumentException expected) {
-			// expected
 		}
 	}
 
@@ -58,7 +56,6 @@ public class ElectrumRoutingTest {
 					ElectrumEndpoint.Mode.TLS, true, true, null);
 			fail("an endpoint cannot be both direct and local");
 		} catch (IllegalArgumentException expected) {
-			// expected
 		}
 	}
 }

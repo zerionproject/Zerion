@@ -25,13 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A subscriber processing a publisher's pull response: posts already held
- * are skipped rather than re-accepted, a post that breaks the chain or
- * carries a bad signature stops acceptance at that point, and a manifest is
- * merged only when it is for this channel, from this publisher, signed by
- * the publisher and newer than the one held.
- */
 public class ChannelPullProtocolReplayTest {
 
 	private static final long HOUR = 3_600_000L;
@@ -128,18 +121,20 @@ public class ChannelPullProtocolReplayTest {
 	}
 
 	@Test
-	public void aBrokenLinkStopsAcceptanceAtThatPost() throws Exception {
+	public void aNewLinkSignedByThePublisherIsAcceptedAsItsStatement()
+			throws Exception {
 		List<ChannelPost> posts = chain(publisher, 0, 5);
 		ChannelPost p2 = posts.get(2);
 		byte[] wrongPrev = p2.getPrevHash().clone();
 		wrongPrev[7] ^= 1;
-		posts.set(2, post(publisher, 2, wrongPrev, "forged"));
+		posts.set(2, post(publisher, 2, wrongPrev, "after a restore"));
 		ChannelPullProtocol.ProcessResult r = protocol
 				.processSubscriberResponse(response(manifest(publisher,
 						publisher, 1L, channelId), posts), local,
 						Collections.<ChannelPost>emptyList(), null);
 		assertTrue(r.error, r.ok);
-		assertEquals(2, r.acceptedPosts.size());
+		assertEquals(5, r.acceptedPosts.size());
+		assertEquals(2L, r.acceptedPosts.get(2).getSeqNum());
 	}
 
 	@Test

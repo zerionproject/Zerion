@@ -237,7 +237,6 @@ public class Mode3NegativeTest extends BrambleMockTestCase {
 
 	@Test
 	public void testFeatureFlagEnablesNegotiation() {
-		// Mode 3 is unconditionally enabled in v1.7+.
 	}
 
 	private boolean isValidMode3Record(Record record) {

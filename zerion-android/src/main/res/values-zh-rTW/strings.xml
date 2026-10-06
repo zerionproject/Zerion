@@ -83,7 +83,6 @@
   <string name="tor_plugin_status_disabled_battery">當使用電池時，Zerion 被設置為無法使用網際網路</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion 被設置為無法在這個國家使用網際網路</string>
   
-  <string name="transport_lan_long">同一個 Wi-Fi 網路</string>
 
   <string name="reminder_notification_title">已登出 Zerion</string>
   <string name="reminder_notification_text">輕按以重新登錄。</string>
@@ -204,7 +203,6 @@
   <string name="connecting_to_device">正在連接至裝置\u2026</string>
   <string name="authenticating_with_device">正在驗證裝置\u2026</string>
   <string name="connection_error_title">無法連接到您的聯絡人</string>
-  <string name="connection_error_feedback">如果該問題仍存在，請 <a href="feedback">發送反饋</a> 幫助我們改善程式。</string>
   
   <string name="add_contact_remotely_title_case">添加遠處的聯絡人</string>
   <string name="add_contact_nearby_title">添加附近的聯絡人</string>
@@ -376,8 +374,6 @@
   
   <string name="tor_network_setting_summary">自動選擇：%1$s（在 %2$s）</string>
   <string name="tor_mobile_data_title">使用移動數據</string>
-  <string name="tor_only_when_charging_title">在充電時才連接到網際網路</string>
-  <string name="tor_only_when_charging_summary">當裝置使用電池電量時關閉網絡連接</string>
   
   <string name="security_settings_title">安全</string>
   <string name="pref_lock_title">程式鎖</string>
@@ -434,75 +430,9 @@
   <string name="choose_ringtone_title">選擇鈴聲</string>
   <string name="cannot_load_ringtone">無法加載鈴聲</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Mailbox 設置</string>
-  <string name="mailbox_setup_intro">Mailbox 讓聯絡人在您離線時仍然可向您發送訊息。在您上線前，Mailbox 會代為接收並儲存給訊息。\n
-    \n 您可在備用設備上安裝 Zerion Mailbox，讓它接上電源與 Wi-Fi  以維持在線狀態</string>
-  <string name="mailbox_setup_download">首先，在另一台設備上透過 Google Play 或其它下載 Zerion 的地方搜尋“Zerion Mailbox”，以安裝 Mailbox 。\n
-		\n再掃瞄 Mailbox 的二維掃瞄將 它與 Zerion 鏈接起來。</string>
-  <string name="mailbox_setup_download_link">分享下載鏈接</string>
-  <string name="mailbox_setup_connecting">Mailbox 連接中...</string>
   
-  <string name="mailbox_setup_connecting_info">它要花上 %1s的時間</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox 已連接</string>
-  <string name="mailbox_setup_already_paired_description">解除其它設備的 Mailbox 鏈接後再試試</string>
-  <string name="mailbox_setup_io_error_title">無法連接</string>
-  <string name="mailbox_setup_io_error_description">確認二台設備都已連上網後再重試</string>
-  <string name="mailbox_setup_assertion_error_title">Mailbox 出錯</string>
-  <string name="mailbox_setup_assertion_error_description">如果問題一直持續，請利用 Zerion 發送反饋(其為匿名資料)</string>
-  <string name="mailbox_setup_camera_error_description">無法使用相機，不妨重開機後再試試</string>
-  <string name="mailbox_setup_paired_title">已連接</string>
-  <string name="mailbox_setup_paired_description">您已順利地完成 Zerion Mailbox 的連接 \n
-   將 Mailbox 維持通電與Wi-Fi，以保持在線狀態 </string>
-  <string name="tor_offline_title">離線</string>
-  <string name="tor_offline_description">確認這台設備可以順利地使用際網網路上線 \n
-   \n 接下來請等候連線畫面的球狀圖標變成綠色</string>
-  <string name="tor_offline_button_check">檢查連線設置</string>
-  <string name="mailbox_status_title">Mailbox 狀態</string>
-  <string name="mailbox_status_connected_title">郵箱正在運行</string>
-  <string name="mailbox_status_problem_title">Zerion 無法順利連接  Mailbox</string>
-  <string name="mailbox_status_failure_title">Mailbox 無法使用</string>
-  <string name="mailbox_status_app_too_old_title">Zerion 版本過舊</string>
-  <string name="mailbox_status_app_too_old_message">更新 Zerion 至最新版後再試試看</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox 版本過舊</string>
-  <string name="mailbox_status_mailbox_too_old_message">更新 Mailbox 至最新版後再試試看</string>
-  <string name="mailbox_status_check_button">檢查連線</string>
   
-  <string name="mailbox_status_connected_info">最近一次連接%s</string>
   
-  <string name="mailbox_status_connected_never">永不</string>
-  <string name="mailbox_status_unlink_button">解除鏈接</string>
-  <string name="mailbox_status_unlink_dialog_title">解除 Mailbox 鏈接? </string>
-  <string name="mailbox_status_unlink_dialog_question">確定要解除 Mailbox 鏈接? </string>
-  <string name="mailbox_status_unlink_dialog_warning">若移除 Mailbox 鏈接，您將無法在 Zerion  離線時收取訊息</string>
-  <string name="mailbox_status_unlink_no_wipe_title">您已移除 Mailbox 鏈接</string>
-  <string name="mailbox_status_unlink_no_wipe_message">下回使用 Mailbox 設備時，請打開 Mailbox 輕觸\"移除鏈接\"鍵以完成手續。\n\n 若無法使用 Mailbox  設備也別擔心，因為您的資料都經過加密保護即便未能完成最後一道程序但依然安全。</string>
-  <string name="mailbox_status_unlink_success">您已移除 Mailbox 鏈接</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox 問題</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox 無法使用</string>
-  <string name="mailbox_error_notification_text">輕觸以修復問題</string>
-  <string name="mailbox_error_wizard_button">解決問題</string>
-  <string name="mailbox_error_wizard_title">Mailbox 疑難處理精靈</string>
-  <string name="mailbox_error_wizard_question1">您可以取用 Mailbox 裝置嗎?</string>
-  <string name="mailbox_error_wizard_answer1">是的，我手上正拿著它</string>
-  <string name="mailbox_error_wizard_answer2">目前沒有，但我稍晚可以拿到</string>
-  <string name="mailbox_error_wizard_answer3">我無法再取用那台設備</string>
-  <string name="mailbox_error_wizard_info1_1">檢查  Mailbox 裝置是否開啟並已連上網際網路
-</string>
-  <string name="mailbox_error_wizard_question1_1">打開 Mailbox 應用，您看到什麼東西</string>
-  <string name="mailbox_error_wizard_answer1_1">如何設置 Mailbox 的指示</string>
-  <string name="mailbox_error_wizard_answer1_2">出現二維碼</string>
-  <string name="mailbox_error_wizard_answer1_3">看到\" Mailbox 正在執行\"</string>
-  <string name="mailbox_error_wizard_answer1_4">顯示\"設備離線\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">請按下方按鈕以移除 Mailbox 鏈接，之後再按設備指示重新鏈接</string>
-  <string name="mailbox_error_wizard_info_1_1_2">請按下方按鈕以移除 Mailbox 鏈接，之後再掃一次二維碼以重新鏈接</string>
-  <string name="mailbox_error_wizard_info1_1_3">請利用下方按鈕來檢查 Zerion  與 Mailbox 之間的連接\n\n
-		若連接再次失敗:\n
-		\u2022  分別檢查 Mailbox  Zerion 是否為最新版本\n
-		\u2022 重開機 Mailbox and Zerion 設備後再試試.</string>
-  <string name="mailbox_error_wizard_info1_1_4">檢查 Mailbox 設備是否妥當地連上網路 \n\n 確認設備上的時間、日期、時區正確 \n\n 檢查 Mailbox 和 Zerion 皆為最新版本 \n\n 重啟 Mailbox 設備後再試試</string>
-  <string name="mailbox_error_wizard_info2">當您能使用該設備後，請再回到本畫面操作</string>
-  <string name="mailbox_error_wizard_info3">請按下方按鈕以移除 Mailbox 鏈接，移除後您隨時可以重新設置新的 Mailbox </string>
   
   <string name="about_title">關於</string>
   <string name="zerion_version">Zerion 版本: %s</string>
@@ -510,7 +440,6 @@
   <string name="links">鏈接</string>
   <string name="zerion_website">\u2022 <a href="">網站</a></string>
   <string name="zerion_source_code">\u2022 <a href="">源代碼</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">更新記錄</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">隱私政策</a></string>
   
   <string name="translator_thanks">感謝所有 Localization Lab 的貢獻者</string>
@@ -529,43 +458,13 @@
   <string name="disappearing_messages_summary">讓這個對話的訊息會在 7\u00A0 天後自動消失</string>
   
   <string name="pref_category_actions">行為</string>
-  <string name="send_feedback">提交反饋</string>
   
   <string name="link_warning_title">鏈接警告</string>
   <string name="link_warning_intro">您將要在另一個程式中打開以下鏈接</string>
   <string name="link_warning_text">這可能用來標識您的身份。請考慮一下您是否信任這個給您發送鏈接的人，並考慮用 Tor 瀏覽器打開它。</string>
   <string name="link_warning_open_link">打開鏈接</string>
   
-  <string name="crash_report_title">Zerion 崩潰報告</string>
-  <string name="zerion_crashed">抱歉 Zerion 崩潰了</string>
-  <string name="not_your_fault">這並非您的錯誤所致。</string>
-  <string name="please_send_report">請發送崩潰報告，以幫助我們優化 Zerion 。</string>
-  <string name="report_is_encrypted">我們保證會加密並安全地發送報告。</string>
-  <string name="feedback_title">反饋</string>
-  <string name="describe_crash">描述發生了什麼（選填）</string>
-  <string name="enter_feedback">輸入您的反饋</string>
-  <string name="optional_contact_email">您的郵箱地址（選填）</string>
-  <string name="privacy_policy">向我們發送資料即表示您同意我們的 <a href="">隱私權政策</a></string>
-  <string name="include_debug_report_crash">包含關於本次崩潰的匿名數據</string>
-  <string name="include_debug_report_feedback">包含關於本裝置的匿名數據</string>
-  <string name="dev_report_user_info">用戶資訊 </string>
-  <string name="dev_report_basic_info">基本資訊</string>
-  <string name="dev_report_device_info">設備資訊</string>
-  <string name="dev_report_stacktrace">堆疊追踪</string>
-  <string name="dev_report_time_info">時間資訊</string>
-  <string name="dev_report_memory">記憶體</string>
-  <string name="dev_report_storage">容量</string>
-  <string name="dev_report_connectivity">連接能力</string>
-  <string name="dev_report_network_usage">網路用量</string>
-  <string name="dev_report_build_config">版本設定</string>
-  <string name="dev_report_logcat">應用軟體日誌</string>
-  <string name="dev_report_device_features">設備特色</string>
-  <string name="send_report">發送報告</string>
   <string name="close">關閉</string>
-  <string name="dev_report_sending">發送反饋...</string>
-  <string name="dev_report_sent">送出反饋</string>
-  <string name="dev_report_saved">報告已保存，將於您下次登錄時發送。</string>
-  <string name="dev_report_error">錯誤: 發送報告失敗</string>
   
   <string name="progress_title_logout">正在登出 Zerion……</string>
   
@@ -579,13 +478,10 @@
   <string name="permission_camera_request_body">Zerion 需要獲得相機權限以掃描二維碼。</string>
   <string name="permission_location_title">位置權限</string>
   <string name="permission_nearby_devices_title">精近設備授權</string>
-  <string name="permission_location_request_body">Zerion 需要位置信息權限以發現藍牙裝置。\n\nZerion 不會存儲您的位置或將它分享給任何人。</string>
   <string name="permission_camera_location_title">相機和位置</string>
   <string name="permission_camera_location_request_body"> Zerion 需要相機權限以掃描二維碼。\n\nZerion 需要位置信息權限以發現藍牙裝置。\n\nZerion 不會存儲您的位置或將它分享給任何人。</string>
   <string name="permission_camera_denied_body">您已拒絕相機權限，而添加聯絡人需要使用相機。\n\n請考慮授予相機權限。</string>
-  <string name="permission_location_denied_body">您拒絕取得位置定位之授權，但  Zerion 必須要有此授權方能利用找到其它藍牙設備\n\n 請同意此權限</string>
   <string name="permission_location_setting_title">位置設定</string>
-  <string name="permission_location_setting_body">您必須開啟設備的位置以借由藍牙找到其它設備, 當然您稍後可關閉位置功能</string>
   <string name="permission_location_setting_button">啟動定位</string>
   <string name="lock_unlock">解鎖 Zerion</string>
   <string name="lock_unlock_verbose">輸入您裝置的 PIN 碼，圖案或密碼以解鎖 Zerion</string>
@@ -640,14 +536,10 @@
 	<string name="settings_section_tor_network">TOR 網路</string>
 	<string name="settings_section_mode">隱私模式</string>
 	<string name="offline_mode_title">離線模式（偏執）</string>
-	<string name="offline_mode_summary">封鎖所有網際網路。僅透過網狀網路與附近的聯絡人通訊</string>
-	<string name="offline_mode_info">離線模式會完全停止 Tor 與 I2P，因此應用程式不會建立任何網際網路連線。您只能透過 Bluetooth 聯絡附近且已配對的聯絡人。</string>
 	<string name="offline_mode_confirm_title">開啟離線模式？</string>
-	<string name="offline_mode_confirm_message">這會封鎖所有網際網路：Tor 與 I2P 都會停止，應用程式不會建立任何網路連線。只有附近且已配對的聯絡人可透過離線網狀網路聯絡。關閉即可重新上線。</string>
 	<string name="offline_mode_confirm_button">切換為離線</string>
 	<string name="network_status_off">關閉</string>
 	<string name="offline_mode_transport_off">已在離線模式中停止</string>
-	<string name="offline_mode_banner">離線模式 · 網際網路已封鎖 · 僅網狀網路</string>
 	<string name="settings_section_overlay">重疊網路</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">同時透過 I2P 網路路由</string>
@@ -684,7 +576,6 @@
 	<string name="settings_section_appearance">外觀</string>
 	<string name="identity_section_title">身分驗證</string>
 	<string name="identity_safety_number_label">安全號碼</string>
-	<string name="identity_safety_number_explain">請當面或透過可信任的管道，與您的聯絡人比對這 60 位數字。如果兩台裝置上都相符，代表您的對話受端對端安全保護。</string>
 	<string name="identity_my_fingerprint_label">我的指紋碼</string>
 	<string name="identity_their_fingerprint_label">對方的指紋碼</string>
 	<string name="identity_copied">已複製到剪貼簿</string>
@@ -739,8 +630,6 @@
 	<string name="vault_settings_change_master">變更主密碼</string>
 	<string name="vault_settings_change_master_summary">更新您的保險庫密碼</string>
 	<string name="vault_settings_autolock">自動鎖定逾時</string>
-	<string name="vault_settings_biometric">生物辨識解鎖</string>
-	<string name="vault_settings_biometric_summary">使用指紋或臉部解鎖</string>
 	<string name="vault_settings_clear_clipboard">在此時間後清除剪貼簿</string>
 	<string name="vault_settings_hide_content">在應用程式切換畫面中隱藏內容</string>
 	<string name="vault_settings_hide_content_summary">切換應用程式時模糊化保險庫內容</string>
@@ -854,13 +743,10 @@
 	<string name="channels_invite_preparing">正在準備邀請連結…</string>
 	<string name="channels_invite_not_ready">頻道尚未準備好可分享。請確認您已連線後再試一次。</string>
 	<string name="channels_invite_rotate_confirm_title">更換邀請連結？</string>
-	<string name="channels_invite_rotate_confirm_message">已持有舊連結的人將無法再次加入。現有訂閱者會繼續收到貼文。</string>
 	<string name="channels_leave_confirm_title">離開頻道？</string>
 	<string name="channels_leave_confirm_message">此頻道所有本機快取的貼文都將從您的裝置移除。</string>
 	<string name="channels_leave_confirm_action">離開</string>
 	<string name="channels_delete_confirm_title">刪除頻道？</string>
-	<string name="channels_delete_confirm_message">這會為所有人永久刪除此頻道。訂閱者下次連線時將失去所有貼文。此操作無法復原。</string>
-	<string name="channels_delete_confirm_action">為所有人刪除</string>
 	<string name="channels_action_delete_channel">刪除頻道</string>
 	<string name="channels_publisher_offline_note">訂閱者的應用程式連上您頻道的 onion 位址時，就會收到您的貼文。請保持 Zerion 執行以獲得最佳傳遞效果。</string>
 	<string name="channels_ttl_label">到期</string>
@@ -877,7 +763,6 @@
 	<string name="channels_delegations_role_owner">擁有者</string>
 	<string name="channels_delegations_role_editor">編輯者</string>
 	<string name="channels_delegations_role_you">您</string>
-	<string name="channels_delegations_help">您可以新增編輯者，協助在此頻道發布貼文。長按編輯者可撤銷其權限。只有擁有者能發布、置頂、刪除或新增其他編輯者。</string>
 	<string name="channels_delegations_add">新增編輯者</string>
 	<string name="channels_delegations_revoke">撤銷</string>
 	<string name="channels_delegations_paste_pubkey">貼上編輯者的混合式公開金鑰（base32）</string>
@@ -921,10 +806,8 @@
 	<string name="channels_leave_failed">無法離開頻道</string>
 	<string name="channels_ban_failed">無法封鎖此訂閱者</string>
 	<string name="channels_announce_title">公開您的身分？</string>
-	<string name="channels_announce_message">頻道擁有者將看到您所選的顯示名稱與您的公開金鑰。您也可以選擇保持匿名。只有擁有者能看到已公開身分的訂閱者。</string>
 	<string name="channels_announce_name_hint">顯示名稱</string>
 	<string name="channels_announce_action">公開身分</string>
-	<string name="channels_announce_skip">保持匿名</string>
 	<string name="channels_announce_failed">無法公開身分</string>
 	<string name="channels_subscribers_title">訂閱者</string>
 	<string name="channels_subscribers_empty">尚無訂閱者公開自己的身分。</string>
@@ -974,7 +857,6 @@
 	<string name="channels_comments_count_one">1 則留言</string>
 	<string name="channels_create_require_approval">在新訂閱者能閱讀前先審核</string>
 	<string name="channels_apply_title">申請加入</string>
-	<string name="channels_apply_message">頻道擁有者必須核准您的申請，您才能閱讀貼文。擁有者將看到您的顯示名稱與您的公開金鑰。</string>
 	<string name="channels_apply_action">申請</string>
 	<string name="channels_apply_failed">無法送出申請</string>
 	<string name="channels_approval_pending_banner">正在等待擁有者核准您的申請…</string>
@@ -1009,7 +891,6 @@
 	<string name="network_uptime_label">運作時間：</string>
 	<string name="network_hidden_service_label">隱藏服務：</string>
 	<string name="network_mode_title">安全網路模式</string>
-	<string name="network_mode_description">所有通訊都會透過 Tor 網路路由，以獲得最高的隱私與安全性。您的連線受端對端加密，身分保持匿名。</string>
 	<string name="ongoing_notification_exit_action">結束</string>
 	<string name="voice_message">語音訊息</string>
 	<string name="play_pause">播放／暫停</string>
@@ -1096,7 +977,6 @@
 	<string name="pref_force_complete_rotation_done">更換已完成</string>
 	<string name="pref_force_complete_rotation_not_announcing">沒有進行中的更換</string>
 	<string name="rotation_notification_channel_title">位址更換</string>
-	<string name="rotation_notification_own_body">您的安全位址已更換，以達成前向保密。</string>
 	<string name="rotation_notification_peer_body">有聯絡人更新了他們的安全位址。</string>
 	<string name="pref_calls_section_title">通話</string>
 	<string name="pref_voice_calls_title">語音通話</string>
@@ -1367,7 +1247,6 @@
 	<string name="pref_accent_blue">藍色</string>
 	<string name="pref_theme_amoled">AMOLED 純黑</string>
 	<string name="tor_mobile_data_summary">允許透過行動網路連線</string>
-	<string name="tor_info_message">Zerion 專門使用 Tor 網路進行安全、匿名的通訊。所有連線都會透過 Tor 路由。</string>
 	<string name="tor_custom_bridges_title">自訂橋接</string>
 	<string name="tor_custom_bridges_summary_none">未設定</string>
 	<string name="tor_custom_bridges_dialog_message">如果 Tor 在您所在地區無法連線，請在此貼上橋接資訊，每行一筆。系統會在使用內建橋接前先嘗試這些。您可以從 bridges.torproject.org 或 Telegram 上的 GetBridgesBot 取得橋接。</string>
@@ -1412,9 +1291,6 @@
 	<string name="transfer_send_title">傳送到新手機</string>
 	<string name="transfer_receive_password_message">設定一組密碼，以在這支手機上保護所接收的帳戶。您將以它登入。</string>
 	<string name="transfer_receive_show_qr">用舊手機掃描此代碼</string>
-	<string name="transfer_sas_title">檢查安全號碼</string>
-	<string name="transfer_sas_message">兩支手機必須顯示相同號碼：\n\n%1$s\n\n它在另一支手機上相符嗎？</string>
-	<string name="transfer_sas_matches">相符</string>
 	<string name="transfer_done_title">完成</string>
 	<string name="transfer_failed_title">移轉失敗</string>
 	<string name="transfer_failed_message">移轉未完成。請確認兩支手機都已連上 Tor，然後再試一次。</string>
@@ -1452,7 +1328,6 @@
 	<string name="profiles_switch_title">切換設定檔</string>
 	<string name="profiles_switch_summary">登出後，再以目標設定檔的密碼登入。</string>
 	<string name="profiles_delete_title">刪除此設定檔</string>
-	<string name="profiles_delete_summary">安全清除此設定檔的資料。無法復原。</string>
 	<string name="profiles_add_dialog_title">建立新設定檔</string>
 	<string name="profiles_add_dialog_message">您將被登出。新設定檔建立後，請以它的密碼登入以使用它。</string>
 	<string name="profiles_add_name_hint">設定檔名稱</string>
@@ -1470,7 +1345,6 @@
 	<string name="profiles_switch_action">登出</string>
 	<string name="profiles_switch_progress">正在切換設定檔…</string>
 	<string name="profiles_delete_dialog_title">刪除此設定檔？</string>
-	<string name="profiles_delete_dialog_message">此設定檔的所有訊息、聯絡人與身分都將被安全清除。此操作無法復原。</string>
 	<string name="profiles_delete_action">刪除設定檔</string>
 	<string name="profiles_delete_last_warning">這是唯一的設定檔。刪除它會重設應用程式。</string>
 	<string name="pref_default_disappearing_title">預設自動消失計時器</string>
@@ -1578,9 +1452,6 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">傳統安全性</string>
 	<string name="security_level_classical_short">傳統</string>
-	<string name="security_level_post_quantum_description">抗量子的加密與簽章。可抵禦當今的攻擊者，以及未來的量子電腦。</string>
-	<string name="security_level_legacy_auth_description">抗量子的加密，但簽章仍使用舊標準。雙方都更新後，請重新新增此聯絡人以獲得完整保護。</string>
-	<string name="security_level_classical_description">僅傳統加密。雙方都需要升級到 Zerion，才能獲得抗量子保護。</string>
 	<string name="voice_call">語音通話</string>
 	<string name="media">媒體</string>
 	<string name="login_account_locked">帳戶因嘗試失敗次數過多而鎖定。請等待 %1$d 分 %2$d 秒。</string>
@@ -1621,7 +1492,6 @@
 	<string name="wipe_password_remove_failed">移除清除密碼失敗</string>
 	<string name="wipe_password_triggered_title">已啟動緊急清除</string>
 	<string name="wipe_password_triggered_message">已偵測到清除密碼。所有資料即將被永久刪除。</string>
-	<string name="wipe_password_warning">⚠️ 警告：輸入清除密碼將立即且永久刪除此裝置上的所有資料。此操作無法復原。</string>
 	<string name="set">設定</string>
 	<string name="remove">移除</string>
 	<string name="zerion_call">Zerion 通話</string>
@@ -1673,11 +1543,6 @@
 	<string name="vault_no_file_picker">沒有可用的檔案選擇器</string>
 	<string name="vault_settings_wipe_message">這會永久刪除所有保險庫資料。此操作無法復原。您真的確定嗎？</string>
 	<string name="vault_wipe_button">清除保險庫</string>
-	<string name="vault_biometric_enabled">已啟用生物辨識驗證</string>
-	<string name="vault_biometric_no_fingerprints">尚未註冊任何指紋</string>
-	<string name="vault_biometric_no_hardware">無法使用生物辨識硬體</string>
-	<string name="vault_biometric_unsupported">此裝置不支援生物辨識驗證</string>
-	<string name="vault_biometric_disabled">已停用生物辨識驗證</string>
 	<string name="vault_document_opening">正在開啟 %1$s…</string>
 	<string name="vault_document_open_error">無法開啟文件：作業尚未就緒</string>
 	<string name="vault_document_details_title">文件詳細資料</string>
@@ -1688,7 +1553,6 @@
 	<string name="vault_document_export_failed">匯出文件失敗</string>
 	<string name="vault_document_load_failed">載入文件失敗：%1$s</string>
 	<string name="vault_zenc_export_title">設定匯出密碼</string>
-	<string name="vault_zenc_export_message_download">設定一組密碼以加密 .zenc 檔案。此檔案可安全分享。</string>
 	<string name="vault_zenc_export_message_share">設定一組密碼以加密 .zenc 檔案。您需要另行分享此密碼。</string>
 	<string name="vault_zenc_password_required">.zenc 匯出需要密碼</string>
 	<string name="vault_document_export_generic_failed">匯出失敗</string>
@@ -1901,7 +1765,6 @@
 	<string name="wallet_receive_new">新位址</string>
 	<string name="wallet_node_hint">點按伺服器即可使用。長按自訂伺服器可將其移除。</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">一組可重複使用的私密位址。向它付款在鏈上無法被關聯。偵測作業會透過 Tor 掃描公開資料；你的金鑰絕不會離開裝置。</string>
 	<string name="wallet_sp_balance">已偵測：%1$s</string>
 	<string name="wallet_sp_scanned">已掃描至區塊 %1$d</string>
 	<string name="wallet_sp_set_oracle">掃描來源</string>

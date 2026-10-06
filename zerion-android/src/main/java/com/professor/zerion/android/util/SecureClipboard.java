@@ -16,35 +16,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-/**
- * Bounded-lifetime clipboard copies. A value copied here is marked sensitive
- * for the system, cleared automatically after its lifetime, and clearable
- * earlier (vault lock). A clear never removes a value that is provably not ours.
- *
- * <p>Android 10+ denies clipboard reads to an app that does not have window
- * focus, which is exactly the situation after the user switches away to paste.
- * Ownership is therefore proved in two ways: by the clip description's
- * timestamp recorded at copy time (readable without the clip content), or by
- * the content when it is readable. Only when neither can be read does a
- * sensitive copy whose lifetime has passed get cleared unconditionally; any
- * clear that could not run is retried when the app regains focus.
- *
- * <p>The copied value itself is not retained: ownership by content is decided
- * by comparing a digest of the clipboard text with the digest recorded at copy
- * time, so no field of this class holds a secret after the copy.
- */
 @NotNullByDefault
 public final class SecureClipboard {
 
 	private static final long AUTO_CLEAR_MS = 60_000L;
 	private static final Handler HANDLER =
 			new Handler(Looper.getMainLooper());
+	private static final Object EXPIRY_TOKEN = new Object();
 
 	@androidx.annotation.Nullable
 	private static volatile byte[] lastCopiedDigest;
 	private static volatile long lastTimestamp;
 	private static volatile long clearDeadline;
 	private static volatile boolean lastSensitive;
+	private static volatile boolean clearPending;
+	private static long generation;
 
 	private SecureClipboard() {
 	}
@@ -53,76 +39,92 @@ public final class SecureClipboard {
 		copy(ctx, label, text, AUTO_CLEAR_MS, false);
 	}
 
-	/**
-	 * Copy a sensitive value: EXTRA_IS_SENSITIVE (API 33+), automatic clear
-	 * after {@code clearAfterMs}, earlier clear via {@link #clearIfOurs}. Only
-	 * ever call on a direct user action after a warning.
-	 */
 	public static void copySensitive(Context ctx, String label, String text,
 			long clearAfterMs) {
 		copy(ctx, label, text, clearAfterMs, true);
 	}
 
-	private static void copy(Context ctx, String label, String text,
-			long clearAfterMs, boolean sensitive) {
+	private static synchronized void copy(Context ctx, String label,
+			String text, long clearAfterMs, boolean sensitive) {
 		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(
 				Context.CLIPBOARD_SERVICE);
 		if (cm == null) return;
 		ClipData clip = ClipData.newPlainText(label, text);
+		PersistableBundle extras = new PersistableBundle();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-			PersistableBundle extras = new PersistableBundle();
-			extras.putBoolean(
-					ClipDescription.EXTRA_IS_SENSITIVE, true);
-			clip.getDescription().setExtras(extras);
+			extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+		} else {
+			extras.putBoolean("android.content.extra.IS_SENSITIVE", true);
 		}
+		clip.getDescription().setExtras(extras);
 		cm.setPrimaryClip(clip);
-		byte[] digest = digest(text);
-		lastCopiedDigest = digest;
+		wipe(lastCopiedDigest);
+		lastCopiedDigest = digest(text);
 		lastSensitive = sensitive;
 		lastTimestamp = currentTimestamp(cm);
-		clearDeadline = System.currentTimeMillis() + clearAfterMs;
-		HANDLER.postDelayed(() -> clear(cm, digest, sensitive), clearAfterMs);
+		clearPending = false;
+		long copyGeneration = ++generation;
+		HANDLER.removeCallbacksAndMessages(EXPIRY_TOKEN);
+		if (clearAfterMs > 0) {
+			clearDeadline = System.currentTimeMillis() + clearAfterMs;
+			HANDLER.postDelayed(() -> expire(cm, copyGeneration),
+					EXPIRY_TOKEN, clearAfterMs);
+		} else {
+			clearDeadline = Long.MAX_VALUE;
+		}
 	}
 
-	/**
-	 * Clear the clipboard now if it still holds the last value this class
-	 * copied (for example on a vault lock). Safe to call from any thread.
-	 */
 	public static void clearIfOurs(Context ctx) {
-		byte[] ours = lastCopiedDigest;
-		if (ours == null) return;
+		if (lastCopiedDigest == null) return;
 		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(
 				Context.CLIPBOARD_SERVICE);
 		if (cm == null) return;
-		boolean sensitive = lastSensitive;
-		if (Looper.myLooper() == Looper.getMainLooper()) {
-			clear(cm, ours, sensitive);
-		} else {
-			HANDLER.post(() -> clear(cm, ours, sensitive));
-		}
+		clear(cm);
 	}
 
-	/**
-	 * Call when the app regains focus: retries a sensitive clear whose lifetime
-	 * has passed but which could not be completed while the app was in the
-	 * background.
-	 */
+	public static void clearOnSignOut(Context ctx) {
+		if (lastCopiedDigest == null) return;
+		ClipboardManager cm = (ClipboardManager) ctx.getSystemService(
+				Context.CLIPBOARD_SERVICE);
+		if (cm == null) return;
+		clear(cm, true);
+	}
+
+	static boolean expiryQueued() {
+		return HANDLER.hasMessages(0, EXPIRY_TOKEN);
+	}
+
 	public static void onAppFocused(Context ctx) {
-		byte[] ours = lastCopiedDigest;
-		if (ours == null || !lastSensitive) return;
-		if (System.currentTimeMillis() < clearDeadline) return;
+		if (lastCopiedDigest == null) return;
+		if (!clearPending && System.currentTimeMillis() < clearDeadline) {
+			return;
+		}
 		clearIfOurs(ctx);
 	}
 
-	private static void clear(ClipboardManager cm, byte[] digest,
-			boolean sensitive) {
+	private static synchronized void expire(ClipboardManager cm,
+			long copyGeneration) {
+		if (copyGeneration != generation) return;
+		clear(cm);
+	}
+
+	private static void clear(ClipboardManager cm) {
+		clear(cm, false);
+	}
+
+	private static synchronized void clear(ClipboardManager cm,
+			boolean unlessProvablyNotOurs) {
+		byte[] digest = lastCopiedDigest;
+		if (digest == null) return;
 		try {
 			Boolean stillOurs = holdsValue(cm, digest);
 			if (stillOurs != null && !stillOurs) {
-				forget(digest);
+				forget();
 				return;
 			}
-			if (stillOurs == null && !sensitive) {
+			if (stillOurs == null && !lastSensitive
+					&& !unlessProvablyNotOurs) {
+				clearPending = true;
 				return;
 			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -130,24 +132,24 @@ public final class SecureClipboard {
 			} else {
 				cm.setPrimaryClip(ClipData.newPlainText("", "​"));
 			}
-			forget(digest);
-		} catch (SecurityException ignored) {
+			forget();
+		} catch (SecurityException e) {
+			clearPending = true;
 		}
 	}
 
-	private static void forget(byte[] digest) {
-		byte[] current = lastCopiedDigest;
-		if (current != null && Arrays.equals(digest, current)) {
-			lastCopiedDigest = null;
-			lastTimestamp = 0;
-		}
+	private static void forget() {
+		HANDLER.removeCallbacksAndMessages(EXPIRY_TOKEN);
+		wipe(lastCopiedDigest);
+		lastCopiedDigest = null;
+		lastTimestamp = 0;
+		clearPending = false;
 	}
 
-	/**
-	 * True/false when ownership can be decided; null when the clipboard cannot
-	 * be read at all. The description timestamp (readable without the content)
-	 * is checked first, then the content itself.
-	 */
+	private static void wipe(@androidx.annotation.Nullable byte[] digest) {
+		if (digest != null) Arrays.fill(digest, (byte) 0);
+	}
+
 	@androidx.annotation.Nullable
 	private static Boolean holdsValue(ClipboardManager cm, byte[] digest) {
 		try {

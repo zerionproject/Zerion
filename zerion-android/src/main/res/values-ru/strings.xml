@@ -87,7 +87,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion настроен так, чтобы не использовать интернет при работе от батареи</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion настроен не использовать интернет в этой стране</string>
   
-  <string name="transport_lan_long">Та же сеть Wi-Fi</string>
 
   <string name="reminder_notification_title">Вы не авторизованы в Zerion</string>
   <string name="reminder_notification_text">Нажмите для входа</string>
@@ -224,7 +223,6 @@
   <string name="connecting_to_device">Подключение к устройству\u2026</string>
   <string name="authenticating_with_device">Аутентификация с устройством\u2026</string>
   <string name="connection_error_title">Не удалось подключиться к контакту</string>
-  <string name="connection_error_feedback">Если эта проблема сохраняется, пожалуйста <a href="feedback">отправьте отзыв</a>,  чтобы помочь нам улучшить приложение.</string>
   
   <string name="add_contact_remotely_title_case">Добавить контакт удаленно</string>
   <string name="add_contact_nearby_title">Добавить контакт поблизости</string>
@@ -407,8 +405,6 @@
   
   <string name="tor_network_setting_summary">Автоматически: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">Использовать мобильные данные</string>
-  <string name="tor_only_when_charging_title">Подключаться к интернету только во время зарядки</string>
-  <string name="tor_only_when_charging_summary">Подключение к интернету будет отключено при работе устройства от батареи</string>
   
   <string name="security_settings_title">Безопасность</string>
   <string name="pref_lock_title">Блокировка приложения</string>
@@ -465,74 +461,9 @@
   <string name="choose_ringtone_title">Выберите мелодию звонка</string>
   <string name="cannot_load_ringtone">Не удается загрузить мелодию звонка</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Настройка Mailbox</string>
-  <string name="mailbox_setup_intro">Mailbox дает возможность вашим контактам отправлять вам сообщения, пока вы находитесь в оффлайн. Mailbox будет получать ваши сообщения и хранить их до тех пор, пока вы не подключитесь к сети.\n
-		Вы можете установить приложение Zerion Mailbox на запасное устройство. Держите его подключенным к питанию и Wi-Fi, чтобы оно всегда было в сети.</string>
-  <string name="mailbox_setup_download">Во-первых, установите приложение Mailbox на другое устройство, выполнив поиск \"Zerion Mailbox\" в Google Play или там, откуда вы загрузили Zerion.\n
-		\nЗатем свяжите Mailbox с Zerion, сосканировав QR-код, показанный приложением Mailbox.</string>
-  <string name="mailbox_setup_download_link">Поделиться ссылкой на загрузку</string>
-  <string name="mailbox_setup_connecting">Подключение к Mailbox…</string>
   
-  <string name="mailbox_setup_connecting_info">Это может занять до %1s</string>
-  <string name="mailbox_setup_already_paired_title">Maibox уже связан</string>
-  <string name="mailbox_setup_already_paired_description">Отвяжите Mailbox на другом устройстве и повторите попытку.</string>
-  <string name="mailbox_setup_io_error_title">Не удалось подключиться</string>
-  <string name="mailbox_setup_io_error_description">Убедитесь, что оба устройства подключены к интернету, и повторите попытку.</string>
-  <string name="mailbox_setup_assertion_error_title">Ошибка Mailbox</string>
-  <string name="mailbox_setup_assertion_error_description">Пожалуйста, отправьте отзыв (с анонимными данными) через приложение Zerion, если проблема сохраняется.</string>
-  <string name="mailbox_setup_camera_error_description">Не удалось получить доступ к камере. Попробуйте еще раз. Возможно поможет перезагрузка устройства.</string>
-  <string name="mailbox_setup_paired_title">Подключено</string>
-  <string name="mailbox_setup_paired_description">Ваш Mailbox был успешно связан с Zerion.\n
-		\nДержите Mailbox подключенным к электропитанию и Wi-Fi, чтобы он всегда был доступен.</string>
-  <string name="tor_offline_title">Отключен</string>
-  <string name="tor_offline_description">Убедитесь, что данное устройство находится в сети и подключение к интернету разрешено.\n
-		\nПосле этого дождитесь, пока значок глобуса на экране настроек подключения станет зеленым.</string>
-  <string name="tor_offline_button_check">Проверьте настройки подключения</string>
-  <string name="mailbox_status_title">Статус Mailbox</string>
-  <string name="mailbox_status_connected_title">Mailbox запущен</string>
-  <string name="mailbox_status_problem_title">Zerion испытывает проблемы с подключением к Mailbox</string>
-  <string name="mailbox_status_failure_title">Mailbox недоступен</string>
-  <string name="mailbox_status_app_too_old_title">Zerion устарел</string>
-  <string name="mailbox_status_app_too_old_message">Обновите Zerion до последней версии и повторите попытку.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox устарел</string>
-  <string name="mailbox_status_mailbox_too_old_message">Обновите Mailbox до последней версии и повторите попытку.</string>
-  <string name="mailbox_status_check_button">Проверьте подключение</string>
   
-  <string name="mailbox_status_connected_info">Последнее подключение: %s</string>
   
-  <string name="mailbox_status_connected_never">Никогда</string>
-  <string name="mailbox_status_unlink_button">Разъединить</string>
-  <string name="mailbox_status_unlink_dialog_title">Отвязать Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_question">Вы уверены, что хотите отвязать свой Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Если вы отвяжете свой Mailbox, вы не сможете получать сообщения, пока Zerion находится в оффлайн.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Ваш Mailbox был отвязан</string>
-  <string name="mailbox_status_unlink_no_wipe_message">В следующий раз, когда у вас будет доступ к устройству Mailbox, откройте приложение Mailbox и нажмите кнопку \"Unlink\", чтобы завершить процесс.\n\nЕсли у вас больше нет доступа к устройству Mailbox, не волнуйтесь. Ваши данные зашифрованы, поэтому они останутся в безопасности, даже если вы не завершите процесс.</string>
-  <string name="mailbox_status_unlink_success">Ваш Mailbox был отвязан</string>
-  <string name="mailbox_error_notification_channel_title">Проблема с Zerion Mailbox</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox недоступен</string>
-  <string name="mailbox_error_notification_text">Нажмите, чтобы устранить проблему.</string>
-  <string name="mailbox_error_wizard_button">Исправить проблему</string>
-  <string name="mailbox_error_wizard_title">Мастер устранения неисправностей Mailbox</string>
-  <string name="mailbox_error_wizard_question1">Есть ли у вас доступ к устройству Mailbox?</string>
-  <string name="mailbox_error_wizard_answer1">Да, у меня есть к нему доступ прямо сейчас.</string>
-  <string name="mailbox_error_wizard_answer2">Сейчас нет, но я смогу получить к нему доступ позже.</string>
-  <string name="mailbox_error_wizard_answer3">Нет, у меня больше нет к нему доступа.</string>
-  <string name="mailbox_error_wizard_info1_1">Убедитесь, что устройство Mailbox включено и подключено к интернету.</string>
-  <string name="mailbox_error_wizard_question1_1">Откройте приложение Mailbox. Что вы видите?</string>
-  <string name="mailbox_error_wizard_answer1_1">Я вижу инструкции по настройке Mailbox</string>
-  <string name="mailbox_error_wizard_answer1_2">Я вижу QR-код</string>
-  <string name="mailbox_error_wizard_answer1_3">Я вижу \"Mailbox запущен\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Я вижу \"Устройство не в сети\".</string>
-  <string name="mailbox_error_wizard_info1_1_1">Пожалуйста, отвяжите свой Mailbox с помощью кнопки ниже, после чего повторно привяжите его, следуя инструкциям на устройстве Mailbox.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Пожалуйста, отвяжите свой Mailbox с помощью кнопки ниже, после чего сосканируйте QR-код, чтобы привязать его снова.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Пожалуйста, используйте кнопку ниже, чтобы проверить связь между Zerion и Mailbox.\n\n
-		Если подключение снова не удалось:\n
-		\u2022 Убедитесь, что приложения Mailbox и Zerion обновлены до последней версии.\n
-		\u2022 Перезапустите устройства Mailbox и Zerion и повторите попытку..</string>
-  <string name="mailbox_error_wizard_info1_1_4">Убедитесь, что устройство Mailbox корректно подключено к интернету.\n\nУбедитесь, что часы на устройстве Mailbox показывают правильное время, дату и часовой пояс.\n\nУбедитесь, что приложения Mailbox и Zerion обновлены до последней версии.\n\nПерезагрузите устройства Mailbox и Zerion и повторите попытку.</string>
-  <string name="mailbox_error_wizard_info2">Пожалуйста, вернитесь к этому экрану, когда у вас будет доступ к устройству.</string>
-  <string name="mailbox_error_wizard_info3">Пожалуйста, отвяжите свой Mailbox с помощью кнопки ниже.\n\nПосле отсоединения старого Mailbox вы в любое время сможете настроить новый.</string>
   
   <string name="about_title">О проекте</string>
   <string name="zerion_version">Версия Zerion: %s</string>
@@ -540,7 +471,6 @@
   <string name="links">Ссылки</string>
   <string name="zerion_website">\u2022 <a href="">Сайт</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Исходный код</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Список изменений</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Политика конфиденциальности</a></string>
   
   <string name="translator_thanks">Благодарим всех участников проекта Localization Lab</string>
@@ -561,43 +491,13 @@
   <string name="pref_category_actions">Действия</string>
   <string name="share_app_link">Поделиться ссылкой на загрузку</string>
   <string name="share_app_link_text">Загрузить Zerion на %s</string>
-  <string name="send_feedback">Отправить отзыв</string>
   
   <string name="link_warning_title">Предупреждение о ссылке</string>
   <string name="link_warning_intro">Вы собираетесь открыть следующую ссылку в стороннем приложении.</string>
   <string name="link_warning_text">Это может быть использовано для вашей идентификации. Подумайте, доверяете ли вы тому, кто отправил вам эту ссылку и рассмотрите возможность ее открытия в браузере Tor.</string>
   <string name="link_warning_open_link">Открыть ссылку</string>
   
-  <string name="crash_report_title">Отчет о сбое Zerion</string>
-  <string name="zerion_crashed">К сожалению, Zerion неожиданно завершил работу.</string>
-  <string name="not_your_fault">Это не ваша вина.</string>
-  <string name="please_send_report">Пожалуйста, помогите сделать Zerion лучше, отправив нам отчет о сбое.</string>
-  <string name="report_is_encrypted">Мы гарантируем, что отчет зашифрован и будет отправлен безопасно.</string>
-  <string name="feedback_title">Обратная связь</string>
-  <string name="describe_crash">Опишите, что произошло (необязательно)</string>
-  <string name="enter_feedback">Введите свой отзыв</string>
-  <string name="optional_contact_email">Ваш адрес email (необязательно)</string>
-  <string name="privacy_policy">Отправляя нам данные, вы соглашаетесь с нашей <a href="">политикой конфиденциальности</a></string>
-  <string name="include_debug_report_crash">Включить анонимные данные о сбое</string>
-  <string name="include_debug_report_feedback">Включить анонимные данные об этом устройстве</string>
-  <string name="dev_report_user_info">Информация о пользователе</string>
-  <string name="dev_report_basic_info">Основная информация</string>
-  <string name="dev_report_device_info">Информация об устройстве</string>
-  <string name="dev_report_stacktrace">Трассировки стека</string>
-  <string name="dev_report_time_info">Информация о времени</string>
-  <string name="dev_report_memory">Память</string>
-  <string name="dev_report_storage">Хранилище</string>
-  <string name="dev_report_connectivity">Подключение</string>
-  <string name="dev_report_network_usage">Использование сети</string>
-  <string name="dev_report_build_config">Конфигурация сборки</string>
-  <string name="dev_report_logcat">Журнал приложения</string>
-  <string name="dev_report_device_features">Характеристики устройства</string>
-  <string name="send_report">Отправить отчет</string>
   <string name="close">Закрыть</string>
-  <string name="dev_report_sending">Отправка отзыва...</string>
-  <string name="dev_report_sent">Отзыв отправлен</string>
-  <string name="dev_report_saved">Отчет сохранен. Он будет отправлен при следующем входе в Zerion.</string>
-  <string name="dev_report_error">Ошибка: не удалось отправить отчет</string>
   
   <string name="progress_title_logout">Выход из Zerion…</string>
   
@@ -701,14 +601,10 @@
 	<string name="settings_section_tor_network">СЕТЬ TOR</string>
 	<string name="settings_section_mode">РЕЖИМ ПРИВАТНОСТИ</string>
 	<string name="offline_mode_title">Автономный режим (Паранойя)</string>
-	<string name="offline_mode_summary">Блокировать весь интернет. Общайтесь только с ближайшими контактами через mesh-сеть</string>
-	<string name="offline_mode_info">Автономный режим полностью останавливает Tor и I2P, поэтому приложение вообще не подключается к интернету. Вы можете связаться только с уже добавленными контактами поблизости через Bluetooth.</string>
 	<string name="offline_mode_confirm_title">Включить автономный режим?</string>
-	<string name="offline_mode_confirm_message">Это блокирует весь интернет: Tor и I2P останавливаются, и приложение не устанавливает сетевых подключений. Доступны только уже добавленные контакты поблизости через автономную mesh-сеть. Выключите, чтобы вернуться в онлайн.</string>
 	<string name="offline_mode_confirm_button">Перейти в автономный режим</string>
 	<string name="network_status_off">Выкл.</string>
 	<string name="offline_mode_transport_off">Остановлено в автономном режиме</string>
-	<string name="offline_mode_banner">Автономный режим · интернет заблокирован · только mesh</string>
 	<string name="settings_section_overlay">ОВЕРЛЕЙНЫЕ СЕТИ</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="i2p_toggle_summary">Также маршрутизировать через сеть I2P</string>
@@ -745,7 +641,6 @@
 	<string name="settings_section_appearance">ВНЕШНИЙ ВИД</string>
 	<string name="identity_section_title">Проверка подлинности</string>
 	<string name="identity_safety_number_label">Код безопасности</string>
-	<string name="identity_safety_number_explain">Сравните эти 60 цифр с вашим контактом лично или по доверенному каналу. Если они совпадают на обоих устройствах, ваш разговор защищён сквозным шифрованием.</string>
 	<string name="identity_my_fingerprint_label">Мой отпечаток</string>
 	<string name="identity_their_fingerprint_label">Их отпечаток</string>
 	<string name="identity_copied">Скопировано в буфер обмена</string>
@@ -800,8 +695,6 @@
 	<string name="vault_settings_change_master">Изменить мастер-пароль</string>
 	<string name="vault_settings_change_master_summary">Обновить пароль хранилища</string>
 	<string name="vault_settings_autolock">Время до автоблокировки</string>
-	<string name="vault_settings_biometric">Биометрическая разблокировка</string>
-	<string name="vault_settings_biometric_summary">Использовать разблокировку по отпечатку или лицу</string>
 	<string name="vault_settings_clear_clipboard">Очищать буфер обмена через</string>
 	<string name="vault_settings_hide_content">Скрывать содержимое в списке приложений</string>
 	<string name="vault_settings_hide_content_summary">Размывать содержимое хранилища при переключении приложений</string>
@@ -911,13 +804,10 @@
 	<string name="channels_invite_preparing">Подготовка ссылки-приглашения…</string>
 	<string name="channels_invite_not_ready">Канал ещё не готов к отправке. Убедитесь, что вы подключены, и повторите попытку.</string>
 	<string name="channels_invite_rotate_confirm_title">Обновить ссылку-приглашение?</string>
-	<string name="channels_invite_rotate_confirm_message">Все, у кого уже есть старая ссылка, больше не смогут присоединиться. Существующие подписчики продолжат получать публикации.</string>
 	<string name="channels_leave_confirm_title">Покинуть канал?</string>
 	<string name="channels_leave_confirm_message">Все локально сохранённые публикации этого канала будут удалены с вашего устройства.</string>
 	<string name="channels_leave_confirm_action">Покинуть</string>
 	<string name="channels_delete_confirm_title">Удалить канал?</string>
-	<string name="channels_delete_confirm_message">Это безвозвратно удаляет канал для всех. Подписчики потеряют все публикации при следующем подключении. Отменить нельзя.</string>
-	<string name="channels_delete_confirm_action">Удалить для всех</string>
 	<string name="channels_action_delete_channel">Удалить канал</string>
 	<string name="channels_publisher_offline_note">Подписчики получат ваши публикации, когда их приложение свяжется с onion-адресом вашего канала. Держите Zerion запущенным для наилучшей доставки.</string>
 	<string name="channels_ttl_label">Срок действия</string>
@@ -934,7 +824,6 @@
 	<string name="channels_delegations_role_owner">Владелец</string>
 	<string name="channels_delegations_role_editor">Редактор</string>
 	<string name="channels_delegations_role_you">Вы</string>
-	<string name="channels_delegations_help">Вы можете добавлять редакторов, чтобы помогать публиковать в этом канале. Нажмите и удерживайте на редакторе, чтобы отозвать его. Только владелец может публиковать, закреплять, удалять или добавлять других редакторов.</string>
 	<string name="channels_delegations_add">Добавить редактора</string>
 	<string name="channels_delegations_revoke">Отозвать</string>
 	<string name="channels_delegations_paste_pubkey">Вставьте гибридный открытый ключ редактора (base32)</string>
@@ -978,10 +867,8 @@
 	<string name="channels_leave_failed">Не удалось покинуть канал</string>
 	<string name="channels_ban_failed">Не удалось заблокировать этого подписчика</string>
 	<string name="channels_announce_title">Объявить о себе?</string>
-	<string name="channels_announce_message">Владелец канала увидит выбранное вами отображаемое имя и ваш открытый ключ. Вместо этого вы можете остаться анонимным. Объявившихся подписчиков видит только владелец.</string>
 	<string name="channels_announce_name_hint">Отображаемое имя</string>
 	<string name="channels_announce_action">Объявить</string>
-	<string name="channels_announce_skip">Остаться анонимным</string>
 	<string name="channels_announce_failed">Не удалось объявить</string>
 	<string name="channels_subscribers_title">Подписчики</string>
 	<string name="channels_subscribers_empty">Пока ни один подписчик не объявил о себе.</string>
@@ -1031,7 +918,6 @@
 	<string name="channels_comments_count_one">1 комментарий</string>
 	<string name="channels_create_require_approval">Проверять новых подписчиков перед тем, как разрешить им чтение</string>
 	<string name="channels_apply_title">Подать заявку на вступление</string>
-	<string name="channels_apply_message">Владелец канала должен одобрить вашу заявку, прежде чем вы сможете читать публикации. Владелец увидит ваше отображаемое имя и открытый ключ.</string>
 	<string name="channels_apply_action">Подать заявку</string>
 	<string name="channels_apply_failed">Не удалось отправить заявку</string>
 	<string name="channels_approval_pending_banner">Ожидание одобрения вашей заявки владельцем…</string>
@@ -1066,7 +952,6 @@
 	<string name="network_uptime_label">Время работы:</string>
 	<string name="network_hidden_service_label">Скрытый сервис:</string>
 	<string name="network_mode_title">Защищённый сетевой режим</string>
-	<string name="network_mode_description">Всё взаимодействие маршрутизируется через сеть Tor для максимальной приватности и безопасности. Ваше подключение зашифровано сквозным шифрованием, а ваша личность остаётся анонимной.</string>
 	<string name="ongoing_notification_exit_action">Выйти</string>
 	<string name="voice_message">Голосовое сообщение</string>
 	<string name="play_pause">Воспроизвести/Пауза</string>
@@ -1153,7 +1038,6 @@
 	<string name="pref_force_complete_rotation_done">Смена завершена</string>
 	<string name="pref_force_complete_rotation_not_announcing">Нет активной смены</string>
 	<string name="rotation_notification_channel_title">Смена адресов</string>
-	<string name="rotation_notification_own_body">Ваш защищённый адрес был сменён для прямой секретности.</string>
 	<string name="rotation_notification_peer_body">Контакт обновил свой защищённый адрес.</string>
 	<string name="pref_calls_section_title">ЗВОНКИ</string>
 	<string name="pref_voice_calls_title">Голосовые звонки</string>
@@ -1423,7 +1307,6 @@
 	<string name="pref_accent_blue">Синий</string>
 	<string name="pref_theme_amoled">AMOLED-чёрный</string>
 	<string name="tor_mobile_data_summary">Разрешить подключения через сотовую сеть</string>
-	<string name="tor_info_message">Zerion использует исключительно сеть Tor для защищённого анонимного общения. Все подключения маршрутизируются через Tor.</string>
 	<string name="tor_custom_bridges_title">Пользовательские мосты</string>
 	<string name="tor_custom_bridges_summary_none">Не заданы</string>
 	<string name="tor_custom_bridges_dialog_message">Если Tor не может подключиться там, где вы находитесь, вставьте сюда строки мостов, по одной в строке. Они пробуются раньше встроенных мостов. Мосты можно получить на bridges.torproject.org или через GetBridgesBot в Telegram.</string>
@@ -1468,9 +1351,6 @@
 	<string name="transfer_send_title">Отправить на новый телефон</string>
 	<string name="transfer_receive_password_message">Задайте пароль для защиты полученной учётной записи на этом телефоне. С ним вы будете входить.</string>
 	<string name="transfer_receive_show_qr">Отсканируйте этот код старым телефоном</string>
-	<string name="transfer_sas_title">Проверьте код безопасности</string>
-	<string name="transfer_sas_message">Оба телефона должны показывать одинаковый код:\n\n%1$s\n\nОн совпадает на другом телефоне?</string>
-	<string name="transfer_sas_matches">Совпадает</string>
 	<string name="transfer_done_title">Готово</string>
 	<string name="transfer_failed_title">Не удалось выполнить перенос</string>
 	<string name="transfer_failed_message">Перенос не завершён. Убедитесь, что оба телефона подключены к Tor, и повторите попытку.</string>
@@ -1508,7 +1388,6 @@
 	<string name="profiles_switch_title">Переключить профиль</string>
 	<string name="profiles_switch_summary">Выйдите, затем войдите с паролем нужного профиля.</string>
 	<string name="profiles_delete_title">Удалить этот профиль</string>
-	<string name="profiles_delete_summary">Безопасно стереть данные этого профиля. Нельзя отменить.</string>
 	<string name="profiles_add_dialog_title">Создать новый профиль</string>
 	<string name="profiles_add_dialog_message">Вы выйдете из учётной записи. После создания нового профиля войдите с его паролем, чтобы использовать его.</string>
 	<string name="profiles_add_name_hint">Имя профиля</string>
@@ -1526,7 +1405,6 @@
 	<string name="profiles_switch_action">Выйти</string>
 	<string name="profiles_switch_progress">Переключение профиля…</string>
 	<string name="profiles_delete_dialog_title">Удалить этот профиль?</string>
-	<string name="profiles_delete_dialog_message">Все сообщения, контакты и личность этого профиля будут безопасно стёрты. Это нельзя отменить.</string>
 	<string name="profiles_delete_action">Удалить профиль</string>
 	<string name="profiles_delete_last_warning">Это единственный профиль. Его удаление сбросит приложение.</string>
 	<string name="pref_default_disappearing_title">Таймер исчезающих сообщений по умолчанию</string>
@@ -1604,9 +1482,6 @@
 	<string name="security_level_post_quantum_short">PQ</string>
 	<string name="security_level_classical">Классическая защита</string>
 	<string name="security_level_classical_short">Классика</string>
-	<string name="security_level_post_quantum_description">Квантово-устойчивое шифрование и подписи. Защищает от нынешних злоумышленников и от будущих квантовых компьютеров.</string>
-	<string name="security_level_legacy_auth_description">Квантово-устойчивое шифрование, но подписи по-прежнему используют старый стандарт. Добавьте этот контакт заново, когда вы оба обновитесь, чтобы получить полную защиту.</string>
-	<string name="security_level_classical_description">Только классическое шифрование. Для квантово-устойчивой защиты обеим сторонам нужно перейти на Zerion.</string>
 	<string name="media">Медиа</string>
 	<string name="login_account_locked">Учётная запись заблокирована из-за слишком большого числа неудачных попыток. Подождите %1$d мин. и %2$d сек.</string>
 	<string name="login_final_warning">ПРЕДУПРЕЖДЕНИЕ: после ещё 3 неудачных попыток все данные будут безвозвратно удалены в целях безопасности.</string>
@@ -1646,7 +1521,6 @@
 	<string name="wipe_password_remove_failed">Не удалось удалить пароль удаления</string>
 	<string name="wipe_password_triggered_title">Активировано экстренное удаление</string>
 	<string name="wipe_password_triggered_message">Обнаружен пароль удаления. Все данные будут безвозвратно удалены сейчас.</string>
-	<string name="wipe_password_warning">⚠️ ПРЕДУПРЕЖДЕНИЕ: ввод пароля удаления немедленно и безвозвратно удалит ВСЕ данные с этого устройства. Это нельзя отменить.</string>
 	<string name="set">Задать</string>
 	<string name="remove">Удалить</string>
 	<string name="zerion_call">Звонок Zerion</string>
@@ -1698,11 +1572,6 @@
 	<string name="vault_no_file_picker">Нет доступного выбора файлов</string>
 	<string name="vault_settings_wipe_message">Это безвозвратно удалит все данные хранилища. Это действие нельзя отменить. Вы абсолютно уверены?</string>
 	<string name="vault_wipe_button">Стереть хранилище</string>
-	<string name="vault_biometric_enabled">Биометрическая аутентификация включена</string>
-	<string name="vault_biometric_no_fingerprints">Отпечатки пальцев не зарегистрированы</string>
-	<string name="vault_biometric_no_hardware">Биометрическое оборудование недоступно</string>
-	<string name="vault_biometric_unsupported">Биометрическая аутентификация не поддерживается на этом устройстве</string>
-	<string name="vault_biometric_disabled">Биометрическая аутентификация отключена</string>
 	<string name="vault_document_opening">Открытие %1$s…</string>
 	<string name="vault_document_open_error">Не удалось открыть документ: активность не готова</string>
 	<string name="vault_document_details_title">Сведения о документе</string>
@@ -1713,7 +1582,6 @@
 	<string name="vault_document_export_failed">Не удалось экспортировать документ</string>
 	<string name="vault_document_load_failed">Не удалось загрузить документ: %1$s</string>
 	<string name="vault_zenc_export_title">Задать пароль экспорта</string>
-	<string name="vault_zenc_export_message_download">Задайте пароль для шифрования файла .zenc. Этим файлом можно безопасно поделиться.</string>
 	<string name="vault_zenc_export_message_share">Задайте пароль для шифрования файла .zenc. Этот пароль нужно будет передать отдельно.</string>
 	<string name="vault_zenc_password_required">Для экспорта .zenc требуется пароль</string>
 	<string name="vault_document_export_generic_failed">Не удалось экспортировать</string>
@@ -1926,7 +1794,6 @@
 	<string name="wallet_receive_new">Новый адрес</string>
 	<string name="wallet_node_hint">Нажмите на сервер, чтобы использовать его. Удерживайте свой сервер, чтобы удалить его.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Многоразовый приватный адрес. Платежи на него невозможно связать в блокчейне. Обнаружение сканирует публичные данные через Tor; ваши ключи никогда не покидают устройство.</string>
 	<string name="wallet_sp_balance">Обнаружено: %1$s</string>
 	<string name="wallet_sp_scanned">Просканировано до блока %1$d</string>
 	<string name="wallet_sp_set_oracle">Источник сканирования</string>

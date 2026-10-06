@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** EXT-13-F05: the store itself refuses to grow past the channel ceiling. */
 public class ChannelReactionStoreTest {
 
 	private static final class MemorySettings implements SettingsManager {
@@ -56,7 +55,8 @@ public class ChannelReactionStoreTest {
 	}
 
 	@Test
-	public void theStoreStopsAtTheChannelCeiling() throws DbException {
+	public void theStoreStaysAtTheCeilingAndStillTakesReactionsIn()
+			throws DbException {
 		ChannelCodecTestComponent c =
 				DaggerChannelCodecTestComponent.create();
 		ChannelReactionStore store = new ChannelReactionStore(
@@ -77,10 +77,11 @@ public class ChannelReactionStoreTest {
 			post++;
 		}
 		assertEquals(total, store.getReactions(channel).size());
-		assertFalse("the ceiling refuses one more", store.putReaction(channel,
-				new ChannelReaction(post + 1, "+1", signer(s + 1),
+		assertTrue("a full channel takes in one more", store.putReaction(
+				channel, new ChannelReaction(post + 1, "+1", signer(s + 1),
 						new byte[4], 0)));
-		assertEquals(total, store.getReactions(channel).size());
+		assertEquals("and stays at the ceiling", total,
+				store.getReactions(channel).size());
 		assertTrue("a signer may still replace its own reaction",
 				store.putReaction(channel, new ChannelReaction(1, "-1",
 						signer(0), new byte[4], 1)));

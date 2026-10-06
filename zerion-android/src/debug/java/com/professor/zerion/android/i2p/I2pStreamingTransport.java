@@ -26,17 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
-/**
- * Carries contact traffic over I2P through the in-process bundled router using
- * the I2CP streaming library, the embedded-router counterpart of the SAM-based
- * transport. Our address comes straight from the persisted keypair, so it is
- * published as soon as the plugin starts; the I2CP session is then brought up in
- * the background and retried until the router has tunnels, so a slow first-boot
- * reseed never blocks or kills anything. Inbound streams are taken from an
- * {@link I2PServerSocket}, outbound ones dialled with {@link
- * I2PSocketManager#connect}, and both run through the shared session stack.
- * Debug builds only.
- */
 @NotNullByDefault
 public class I2pStreamingTransport implements I2pOverlayTransport {
 
@@ -166,7 +155,6 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 			handler.handleOutgoing(I2pConstants.ID, contactId,
 					socket.getInputStream(), socket.getOutputStream());
 		} catch (IOException e) {
-			// close below
 		} finally {
 			closeQuietly(socket);
 		}
@@ -175,7 +163,6 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 
 	@Override
 	public void setNetworkEnabled(boolean enabled) {
-		// The router owns its own network lifecycle.
 	}
 
 	@Override
@@ -226,7 +213,6 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 			handler.handleIncoming(I2pConstants.ID, socket.getInputStream(),
 					socket.getOutputStream());
 		} catch (IOException e) {
-			// close below
 		} finally {
 			closeQuietly(socket);
 			inboundLimiter.release();
@@ -237,7 +223,6 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 		try {
 			socket.close();
 		} catch (IOException ignored) {
-			// nothing to do
 		}
 	}
 }

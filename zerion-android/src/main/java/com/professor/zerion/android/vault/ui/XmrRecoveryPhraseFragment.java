@@ -29,19 +29,6 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-/**
- * Recovery phrase screen. Reached deterministically after a committed create
- * (and, with fresh authentication, from wallet settings). The phrase is handed
- * over in memory only, never through arguments or saved state: on process
- * death the screen has nothing to show and sends the user back to re-request
- * it with authentication. The hosting activity sets FLAG_SECURE, so the screen
- * cannot be captured.
- *
- * <p>Backup verification asks for three randomly chosen positions, each with
- * six candidate words drawn from the phrase itself. Only a non-secret
- * "verified" flag is ever persisted; the asked positions, candidates and
- * answers live in this fragment's memory and are cleared when it leaves.
- */
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class XmrRecoveryPhraseFragment extends BaseFragment {
@@ -287,11 +274,6 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 		}
 	}
 
-	/**
-	 * A wrong choice restarts from the first position with freshly chosen
-	 * positions and candidates, so progress cannot be accumulated by guessing
-	 * one position at a time.
-	 */
 	private void restartVerification() {
 		String[] w = words;
 		if (w == null) return;
@@ -350,13 +332,6 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 		}
 	}
 
-	/**
-	 * Split the seed char[] into word Strings without ever materialising the
-	 * whole phrase as one immutable String. Each word must still become a String
-	 * to render in a TextView, but the full-phrase copy that a plain
-	 * {@code new String(seed).split(...)} would leave on the heap until GC is
-	 * avoided; the per-word Strings are dropped in {@link #clearSecrets()}.
-	 */
 	private static String[] tokenizeSeed(char[] seed) {
 		List<String> out = new ArrayList<>();
 		int i = 0;

@@ -36,11 +36,6 @@ import static org.zerionproject.core.util.StringUtils.toHexString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-NET-01: the next onion is published again by every process while the
- * rotation announces, promotion publishes it when no process has, and a
- * peer's session after the migration grace counts as its migration.
- */
 public class B4OnionRotationTest extends BrambleMockTestCase {
 
 	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
@@ -66,6 +61,12 @@ public class B4OnionRotationTest extends BrambleMockTestCase {
 		@Override
 		public boolean isPublished(String onion) {
 			return live.contains(onion);
+		}
+
+		@Override
+		@Nullable
+		public String getStartupOnion() {
+			return null;
 		}
 
 		@Override
@@ -180,8 +181,6 @@ public class B4OnionRotationTest extends BrambleMockTestCase {
 		assertTrue(adapter.published.isEmpty());
 	}
 
-	/** A session after the grace marks the peer migrated; before it, only
-	 *  as having received the announcement. */
 	@Test
 	public void aSessionAfterTheGraceMarksThePeerMigrated() throws Exception {
 		ContactId cid = new ContactId(7);

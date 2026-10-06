@@ -10,16 +10,6 @@ import java.sql.Statement;
 
 import static org.zerionproject.core.db.JdbcUtils.tryToClose;
 
-/**
- * Adds the pairing key snapshot to pending contacts. Each pending contact
- * remembers the local handshake key pair that was current when it was
- * created, so the identity handshake keys can rotate after every successful
- * contact addition without breaking pairings that are still in flight.
- * Existing rows are backfilled with the current identity keys, because they
- * were created under those keys: without the backfill, the first rotation
- * after the upgrade would strand every pre-upgrade pending pairing on keys
- * that no longer exist.
- */
 class Migration66_67 implements Migration<Connection> {
 
 	private final DatabaseTypes dbTypes;
@@ -45,12 +35,6 @@ class Migration66_67 implements Migration<Connection> {
 		backfillBestEffort(txn);
 	}
 
-	/**
-	 * Adds the column, treating an already-present column as success, so a
-	 * device that ran the column additions but did not commit the schema
-	 * version, or ran a build where the statements committed eagerly, heals
-	 * instead of failing every subsequent open.
-	 */
 	private void addColumnIfMissing(Connection txn, String column)
 			throws DbException {
 		Statement s = null;
@@ -81,13 +65,6 @@ class Migration66_67 implements Migration<Connection> {
 		}
 	}
 
-	/**
-	 * Rows created before the upgrade were created under the current
-	 * identity keys, so they are backfilled with those keys to survive the
-	 * first rotation. The backfill is best effort: a failure here affects
-	 * only pairings that were in flight across the upgrade, never the
-	 * account, so it must not prevent the database from opening.
-	 */
 	private void backfillBestEffort(Connection txn) {
 		PreparedStatement query = null;
 		PreparedStatement update = null;

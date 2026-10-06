@@ -14,7 +14,6 @@
     android:padding="24dp"
     android:gravity="center">
 
-    <!-- Title -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -25,7 +24,6 @@
         android:layout_marginBottom="8dp"
         android:layout_marginTop="40dp" />
 
-    <!-- Subtitle -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -35,7 +33,6 @@
         android:layout_marginBottom="40dp"
         android:gravity="center" />
 
-    <!-- Password Input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/vault_password_layout"
         android:layout_width="match_parent"
@@ -61,6 +58,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textPassword"
+            android:saveEnabled="false"
             android:textColor="@color/zerion_text_primary"
             android:background="@android:color/transparent"
             android:imeOptions="flagNoPersonalizedLearning|actionDone"
@@ -71,7 +69,6 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Unlock Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/vault_unlock_button"
         android:layout_width="match_parent"
@@ -81,7 +78,6 @@
         style="@style/Zerion.Button.Primary"
         app:cornerRadius="8dp" />
 
-    <!-- Progress Bar -->
     <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"

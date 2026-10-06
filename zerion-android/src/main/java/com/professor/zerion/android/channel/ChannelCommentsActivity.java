@@ -110,7 +110,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 		sendButton = findViewById(R.id.commentsComposeSendButton);
 		composeBar = findViewById(R.id.commentsComposeBar);
 		disabledNotice = findViewById(R.id.commentsDisabledNotice);
-		adapter = new CommentsAdapter();
+		adapter = new CommentsAdapter(this::confirmBanAuthor);
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 		sendButton.setOnClickListener(v -> handleSend());
@@ -146,7 +146,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 	private void restoreCommentDraft() {
 		if (channelId.length == 0 || composeInput == null) return;
 		String draft = com.professor.zerion.android.AppModule
-				.getAndroidComponent(this).securePreferences()
+				.getAndroidComponent(this).profilePreferences()
 				.getString(commentDraftKey(), null);
 		if (draft != null && !draft.isEmpty()) {
 			composeInput.setText(draft);
@@ -159,7 +159,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 		String draft = composeInput.getText() == null
 				? "" : composeInput.getText().toString();
 		android.content.SharedPreferences sp = com.professor.zerion.android
-				.AppModule.getAndroidComponent(this).securePreferences();
+				.AppModule.getAndroidComponent(this).profilePreferences();
 		if (draft.trim().isEmpty()) {
 			sp.edit().remove(commentDraftKey()).apply();
 		} else {
@@ -204,6 +204,9 @@ public class ChannelCommentsActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			List<ChannelComment> comments;
 			boolean enabled = true;
+			byte[] ownerKey = new byte[0];
+			byte[] myKey = new byte[0];
+			boolean owner = false;
 			try {
 				comments = channelManager.getComments(channelId,
 						parentSeq);
@@ -213,18 +216,49 @@ public class ChannelCommentsActivity extends ZerionActivity
 			try {
 				enabled =
 						channelManager.areDiscussionsEnabled(channelId);
+				org.zerionproject.app.api.channel.ChannelState s =
+						channelManager.getChannel(channelId);
+				if (s != null) {
+					ownerKey = s.getPublisherEd25519PubKey();
+					owner = s.weArePublisher();
+				}
+				byte[] mine = channelManager.getMyChannelPublicKey(channelId);
+				myKey = Arrays.copyOf(mine, Math.min(32, mine.length));
 			} catch (DbException ignored) {
 			}
-			Collections.sort(comments, (a, b) ->
-					Long.compare(a.getTimestampHourMs(),
-							b.getTimestampHourMs()));
 			List<ChannelComment> finalComments = comments;
 			final boolean finalEnabled = enabled;
+			final byte[] finalOwnerKey = ownerKey;
+			final byte[] finalMyKey = myKey;
+			final boolean finalOwner = owner;
 			runOnUiThreadUnlessDestroyed(() -> {
+				adapter.setKeys(finalOwnerKey, finalMyKey, finalOwner);
 				render(finalComments);
 				bindComposerEnabled(finalEnabled);
 			});
 		});
+	}
+
+	private void confirmBanAuthor(ChannelComment comment) {
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this)
+				.setTitle(R.string.channels_comment_ban_author)
+				.setMessage(R.string.channels_comment_ban_confirm)
+				.setPositiveButton(R.string.channels_subscribers_ban,
+						(d, w) -> ioExecutor.execute(() -> {
+							try {
+								channelManager.banSubscriber(channelId,
+										comment.getAuthorEd25519PubKey());
+								runOnUiThreadUnlessDestroyed(this::refresh);
+							} catch (DbException ignored) {
+								runOnUiThreadUnlessDestroyed(() ->
+										Toast.makeText(this,
+												R.string.channels_ban_failed,
+												Toast.LENGTH_SHORT).show());
+							}
+						}))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
 	}
 
 	private void bindComposerEnabled(boolean enabled) {
@@ -267,7 +301,25 @@ public class ChannelCommentsActivity extends ZerionActivity
 	private static class CommentsAdapter
 			extends RecyclerView.Adapter<CommentViewHolder> {
 
+		interface OnBan {
+			void onBan(ChannelComment comment);
+		}
+
+		private final OnBan onBan;
 		private List<ChannelComment> items = new ArrayList<>();
+		private byte[] ownerKey = new byte[0];
+		private byte[] myKey = new byte[0];
+		private boolean weAreOwner;
+
+		CommentsAdapter(OnBan onBan) {
+			this.onBan = onBan;
+		}
+
+		void setKeys(byte[] ownerKey, byte[] myKey, boolean weAreOwner) {
+			this.ownerKey = ownerKey;
+			this.myKey = myKey;
+			this.weAreOwner = weAreOwner;
+		}
 
 		void setItems(List<ChannelComment> comments) {
 			this.items = comments;
@@ -286,7 +338,20 @@ public class ChannelCommentsActivity extends ZerionActivity
 		@Override
 		public void onBindViewHolder(@NonNull CommentViewHolder h,
 				int position) {
-			h.bind(items.get(position));
+			ChannelComment c = items.get(position);
+			byte[] author = c.getAuthorEd25519PubKey();
+			boolean byOwner = Arrays.equals(author, ownerKey);
+			boolean byMe = Arrays.equals(author, myKey);
+			h.bind(c, byOwner, byMe);
+			if (weAreOwner && !byOwner && !byMe) {
+				h.itemView.setOnLongClickListener(v -> {
+					onBan.onBan(c);
+					return true;
+				});
+			} else {
+				h.itemView.setOnLongClickListener(null);
+				h.itemView.setLongClickable(false);
+			}
 		}
 
 		@Override
@@ -297,6 +362,15 @@ public class ChannelCommentsActivity extends ZerionActivity
 
 	private static class CommentViewHolder
 			extends RecyclerView.ViewHolder {
+
+		private static String fingerprint(byte[] key) {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < Math.min(8, key.length); i++) {
+				sb.append(String.format(java.util.Locale.US, "%02x",
+						key[i]));
+			}
+			return sb.toString();
+		}
 
 		final TextView author;
 		final TextView body;
@@ -309,8 +383,22 @@ public class ChannelCommentsActivity extends ZerionActivity
 			timestamp = itemView.findViewById(R.id.commentTimestamp);
 		}
 
-		void bind(ChannelComment c) {
-			author.setText(c.getAuthorDisplayName());
+		void bind(ChannelComment c, boolean byOwner, boolean byMe) {
+			android.content.Context ctx = itemView.getContext();
+			String name = c.getAuthorDisplayName().trim();
+			StringBuilder label = new StringBuilder(name.isEmpty()
+					? ctx.getString(R.string.channels_comment_anonymous)
+					: name);
+			label.append("  ").append(fingerprint(
+					c.getAuthorEd25519PubKey()));
+			if (byOwner) {
+				label.append("  ").append(
+						ctx.getString(R.string.channels_comment_owner));
+			} else if (byMe) {
+				label.append("  ").append(
+						ctx.getString(R.string.channels_comment_you));
+			}
+			author.setText(label.toString());
 			body.setText(c.getBody());
 			timestamp.setText(com.professor.zerion.android.util
 					.UiUtils.formatChannelHour(itemView.getContext(),

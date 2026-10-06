@@ -87,7 +87,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion je nastavený tak, aby nepoužíval internet, keď ide na batériu</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion je nastavený tak, aby v tejto krajine nepoužíval internet</string>
   
-  <string name="transport_lan_long">Rovnaká sieť Wi-Fi</string>
 
   <string name="reminder_notification_title">Odhlásený z aplikácie Zerion</string>
   <string name="reminder_notification_text">Ťuknutím sa prihláste späť.</string>
@@ -224,7 +223,6 @@
   <string name="connecting_to_device">Pripájanie k zariadeniu\u2026</string>
   <string name="authenticating_with_device">Overovanie so zariadením\u2026</string>
   <string name="connection_error_title">Nepodarilo sa pripojiť k vášmu kontaktu</string>
-  <string name="connection_error_feedback">Ak tento problém pretrváva, pošlite nám prosím <a href="feedback">spätnú väzbu</a>, ktorá nám pomôže aplikáciu vylepšiť.</string>
   
   <string name="add_contact_remotely_title_case">Pridať vzdialený kontakt</string>
   <string name="add_contact_nearby_title">Pridať kontakt v blízkosti</string>
@@ -407,8 +405,6 @@
   
   <string name="tor_network_setting_summary">Automaticky: %1$s (v %2$s)</string>
   <string name="tor_mobile_data_title">Použiť mobilné dáta</string>
-  <string name="tor_only_when_charging_title">Pripojiť sa k internetu len počas nabíjania</string>
-  <string name="tor_only_when_charging_summary">Zakáže pripojenie k internetu, keď zariadenie beží na batériu</string>
   
   <string name="security_settings_title">Bezpečnosť</string>
   <string name="pref_lock_title">Zámok aplikácie</string>
@@ -465,75 +461,9 @@
   <string name="choose_ringtone_title">Vybrať zvonenie</string>
   <string name="cannot_load_ringtone">Nie je možné načítať zvonenie</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Nastavenie Mailbox</string>
-  <string name="mailbox_setup_intro">Aplikácia Mailbox umožňuje vašim kontaktom posielať správy, aj keď ste v režime offline. Schránka bude prijímať vaše správy a uchovávať ich, kým sa neobjavíte online.
-\nAplikáciu Zerion Mailbox môžete nainštalovať do náhradného zariadenia. Udržujte ho pripojené k napájaniu a Wi-Fi, aby bolo vždy online.</string>
-  <string name="mailbox_setup_download">Najprv nainštalujte aplikáciu Mailbox do iného zariadenia vyhľadaním \"Zerion Mailbox\" v službe Google Play alebo kdekoľvek kde ste si stiahli Zerion.\n
-\nPotom prepojte svoj Mailbox s aplikáciou Zerion naskenovaním QR kódu, ktorý zobrazí aplikácia Mailbox.</string>
-  <string name="mailbox_setup_download_link">Zdieľať odkaz na stiahnutie</string>
-  <string name="mailbox_setup_connecting">Pripájanie na Mailbox...</string>
   
-  <string name="mailbox_setup_connecting_info">Toto môže trvať až %1s</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox je už prepojený</string>
-  <string name="mailbox_setup_already_paired_description">Odpojte Mailbox na vašom druhom zariadení a skúste to znova.</string>
-  <string name="mailbox_setup_io_error_title">Nepodarilo sa pripojiť</string>
-  <string name="mailbox_setup_io_error_description">Skontrolujte, či sú obe zariadenia pripojené k internetu, a skúste to znova.</string>
-  <string name="mailbox_setup_assertion_error_title">Chyba aplikácie Mailbox</string>
-  <string name="mailbox_setup_assertion_error_description">Ak problém pretrváva, pošlite prosím spätnú väzbu (s anonymnými údajmi) prostredníctvom aplikácie Zerion.</string>
-  <string name="mailbox_setup_camera_error_description">Nepodarilo sa získať prístup ku kamere. Skúste to znova, možno po reštartovaní zariadenia.</string>
-  <string name="mailbox_setup_paired_title">Pripojené</string>
-  <string name="mailbox_setup_paired_description">Vaša aplikácia Mailbox bola úspešne prepojená s Zerion.\n
-		\nUdržujte svoju aplikáciu Mailbox pripojenú k napájaniu a Wi-Fi, aby bola vždy online.</string>
-  <string name="tor_offline_title">Odpojený</string>
-  <string name="tor_offline_description">Skontrolujte, či je toto zariadenie online a či je povolené pripojenie na internet.\n
-
-\nPotom počkajte, kým sa ikona zemegule na obrazovke nastavení pripojenia zmení na zelenú.</string>
-  <string name="tor_offline_button_check">Skontrolovať nastavenia pripojenia</string>
-  <string name="mailbox_status_title">Stav aplikácie Mailbox</string>
-  <string name="mailbox_status_connected_title">Mailbox je spustený</string>
-  <string name="mailbox_status_problem_title">Zerion má problémy s pripojením k Mailbox</string>
-  <string name="mailbox_status_failure_title">Mailbox nie je dostupný</string>
-  <string name="mailbox_status_app_too_old_title">Zerion je príliš starý</string>
-  <string name="mailbox_status_app_too_old_message">Aktualizujte aplikáciu Zerion na najnovšiu verziu a skúste to znova.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox je príliš starý</string>
-  <string name="mailbox_status_mailbox_too_old_message">Aktualizujte aplikáciu Mailbox na najnovšiu verziu a skúste to znova.</string>
-  <string name="mailbox_status_check_button">Skontrolovať pripojenie</string>
   
-  <string name="mailbox_status_connected_info">Posledné pripojenie: %s</string>
   
-  <string name="mailbox_status_connected_never">Nikdy</string>
-  <string name="mailbox_status_unlink_button">Odpojiť</string>
-  <string name="mailbox_status_unlink_dialog_title">Odpojiť Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_question">Ste si istí, že chcete zrušiť prepojenie s Mailbox?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Ak zrušíte prepojenie s Mailbox, nebudete môcť prijímať správy, keď je Zerion v režime offline.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Váš Mailbox bol odpojený</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Keď budete mať nabudúce prístup k zariadeniu Mailbox, otvorte aplikáciu Mailbox a ťuknutím na tlačidlo \"Odpojiť\" dokončite proces.\n\nAk už nemáte prístup k zariadeniu Mailbox, neznepokojujte sa. Vaše údaje sú zašifrované, takže zostanú v bezpečí, aj keď proces nedokončíte.</string>
-  <string name="mailbox_status_unlink_success">Váš Mailbox bol odpojený</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox problém</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox nie je dostupný</string>
-  <string name="mailbox_error_notification_text">Ťuknutím na položku opravte problém.</string>
-  <string name="mailbox_error_wizard_button">Opraviť problém</string>
-  <string name="mailbox_error_wizard_title">Sprievodca riešením problémov Mailbox</string>
-  <string name="mailbox_error_wizard_question1">Máte prístup k vášmu zariadeniu Mailbox?</string>
-  <string name="mailbox_error_wizard_answer1">Áno, mám k nemu prístup práve teraz.</string>
-  <string name="mailbox_error_wizard_answer2">Teraz nie, ale môžem k nemu získať prístup neskôr.</string>
-  <string name="mailbox_error_wizard_answer3">Nie, už k nemu nemám prístup.</string>
-  <string name="mailbox_error_wizard_info1_1">Skontrolujte, či je zariadenie Mailbox zapnuté a pripojené k internetu.</string>
-  <string name="mailbox_error_wizard_question1_1">Otvorte aplikáciu Mailbox. Čo vidíte?</string>
-  <string name="mailbox_error_wizard_answer1_1">Vidím pokyny na nastavenie aplikácie Mailbox</string>
-  <string name="mailbox_error_wizard_answer1_2">Vidím QR kód</string>
-  <string name="mailbox_error_wizard_answer1_3">Vidím \" Mailbox je spustený\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Vidím \"Zariadenie je v režime offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Zrušte prosím prepojenie aplikácie Mailbox pomocou nižšie uvedeného tlačidla a potom postupujte podľa pokynov na zariadení Mailbox, aby ste ju opäť prepojili.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Zrušte prosím prepojenie aplikácie Mailbox pomocou tlačidla nižšie a potom naskenujte QR kód, aby ste ju opäť prepojili.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Pomocou nasledujúceho tlačidla skontrolujte prosím pripojenie medzi aplikáciami Zerion a Mailbox.\n\n
-		Ak spojenie opäť zlyhá:\n
-		\u2022 Skontrolujte, či sú aplikácie Mailbox a Zerion aktualizované na najnovšiu verziu.\n
-		\u2022 Reštartujte svoje zariadenia Mailbox a Zerion a skúste to znova.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Skontrolujte, či je zariadenie Mailbox správne pripojené k internetu.\n\nPrekontrolujte, či hodiny na zariadení Mailbox ukazujú správny čas, dátum a časové pásmo.\n\nPrekontrolujte, či sú aplikácie Mailbox a Zerion aktualizované na najnovšiu verziu.\n\nReštartujte zariadenia Mailbox a Zerion a skúste to znova.</string>
-  <string name="mailbox_error_wizard_info2">Vráťte sa prosím späť na túto obrazovku, keď budete mať prístup k zariadeniu.</string>
-  <string name="mailbox_error_wizard_info3">Zrušte prosím prepojenie svojej aplikácie Mailbox pomocou tlačidla nižšie.\n\nPo zrušení prepojenia vašej starej aplikácie Mailbox môžete kedykoľvek nastaviť novú aplikáciu Mailbox.</string>
   
   <string name="about_title">O programe</string>
   <string name="zerion_version">Zerion verzia: %s</string>
@@ -541,7 +471,6 @@
   <string name="links">Odkazy</string>
   <string name="zerion_website">\u2022 <a href="">Webová stránka</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Zdrojový kód</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Zoznam zmien</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Zásady ochrany súkromia</a></string>
   
   <string name="translator_thanks">Ďakujeme všetkým prispievateľom z Localization Lab, hlavne prekladateľom: Jozef Gaál</string>
@@ -562,43 +491,13 @@
   <string name="pref_category_actions">Akcie</string>
   <string name="share_app_link">Zdieľať odkaz na stiahnutie</string>
   <string name="share_app_link_text">Stiahnuť Zerion na %s</string>
-  <string name="send_feedback">Odoslať spätnú väzbu</string>
   
   <string name="link_warning_title">Varovanie o odkaze</string>
   <string name="link_warning_intro">Chystáte sa otvoriť nasledujúci odkaz pomocou externej aplikácie.</string>
   <string name="link_warning_text">Toto môže byť použité na vašu identifikáciu. Premyslite si, či dôverujete osobe, ktorá vám poslala tento odkaz, a zvážte jeho otvorenie pomocou prehliadača Tor.</string>
   <string name="link_warning_open_link">Otvoriť odkaz</string>
   
-  <string name="crash_report_title">Zerion Hlásenie o chybe</string>
-  <string name="zerion_crashed">Prepáčte, aplikácia Zerion spadla</string>
-  <string name="not_your_fault">Toto nie je vaša chyba.</string>
-  <string name="please_send_report">Pomôžte nám prosím vytvoriť lepší Zerion tým, že nám pošlete hlásenie o chybe.</string>
-  <string name="report_is_encrypted">Sľubujeme, že hlásenie bude zašifrované a odoslané bezpečne.</string>
-  <string name="feedback_title">Spätná väzba</string>
-  <string name="describe_crash">Opíšte, čo sa stalo (nepovinné)</string>
-  <string name="enter_feedback">Zadajte svoju spätnú väzbu</string>
-  <string name="optional_contact_email">Vaša e-mailová adresa (nepovinné)</string>
-  <string name="privacy_policy">Odoslaním údajov súhlasíte s našimi <a href="">zásadami ochrany osobných údajov</a></string>
-  <string name="include_debug_report_crash">Zahrnúť anonymné údaje o chybe</string>
-  <string name="include_debug_report_feedback">Zahrnúť anonymné údaje o tomto zariadení</string>
-  <string name="dev_report_user_info">Informácie o používateľovi</string>
-  <string name="dev_report_basic_info">Základné informácie</string>
-  <string name="dev_report_device_info">Informácie o zariadení</string>
-  <string name="dev_report_stacktrace">Trasovanie zásobníka</string>
-  <string name="dev_report_time_info">Informácie o čase</string>
-  <string name="dev_report_memory">Pamäť</string>
-  <string name="dev_report_storage">Úložný priestor</string>
-  <string name="dev_report_connectivity">Konektivita</string>
-  <string name="dev_report_network_usage">Využitie siete</string>
-  <string name="dev_report_build_config">Konfigurácia zostavy</string>
-  <string name="dev_report_logcat">Záznam aplikácie</string>
-  <string name="dev_report_device_features">Funkcie zariadenia</string>
-  <string name="send_report">Odoslať hlásenie</string>
   <string name="close">Zavrieť</string>
-  <string name="dev_report_sending">Odosielanie spätnej väzby...</string>
-  <string name="dev_report_sent">Spätná väzba odoslaná</string>
-  <string name="dev_report_saved">Hlásenie bolo uložené. Odošle sa pri ďalšom prihlásení do aplikácie Zerion.</string>
-  <string name="dev_report_error">Chyba: Odoslanie hlásenia zlyhalo</string>
   
   <string name="progress_title_logout">Odhlasovanie z Zerion...</string>
   
@@ -753,7 +652,6 @@
 	<string name="wallet_receive_new">Nová adresa</string>
 	<string name="wallet_node_hint">Ťuknutím na server ho použijete. Vlastný server odstránite dlhým podržaním.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Opakovane použiteľná súkromná adresa. Platby na ňu nie sú v blockchaine prepojiteľné. Detekcia prehľadáva verejné dáta cez Tor; vaše kľúče nikdy neopustia zariadenie.</string>
 	<string name="wallet_sp_balance">Zistené: %1$s</string>
 	<string name="wallet_sp_scanned">Prehľadané po blok %1$d</string>
 	<string name="wallet_sp_set_oracle">Zdroj skenovania</string>

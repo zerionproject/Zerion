@@ -7,12 +7,6 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-/**
- * A parsed SAM v3 reply line, for example
- * {@code STREAM STATUS RESULT=CANT_REACH_PEER MESSAGE="no lease set"}.
- * The two leading tokens form the reply type ({@code STREAM STATUS}); the
- * remainder are {@code KEY=VALUE} pairs whose values may be double-quoted.
- */
 @NotNullByDefault
 class Sam3Reply {
 
@@ -33,7 +27,6 @@ class Sam3Reply {
 		return params.get(key);
 	}
 
-	/** The RESULT token, or {@code "I2P_ERROR"} if the reply carried none. */
 	String getResult() {
 		String r = params.get("RESULT");
 		return r == null ? "I2P_ERROR" : r;
@@ -61,8 +54,6 @@ class Sam3Reply {
 		return new Sam3Reply(type.toString(), params);
 	}
 
-	/** Splits on spaces but keeps a double-quoted run (which may contain
-	 * spaces) as a single token, quotes included. */
 	private static java.util.List<String> tokenize(String line) {
 		java.util.List<String> out = new java.util.ArrayList<>();
 		StringBuilder cur = new StringBuilder();

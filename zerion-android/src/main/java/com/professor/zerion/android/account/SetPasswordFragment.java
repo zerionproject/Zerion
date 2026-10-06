@@ -174,7 +174,9 @@ public class SetPasswordFragment extends SetupFragment {
 
 			float strength = viewModel.estimatePasswordStrength(sanitized1);
 			strengthMeter.setStrength(strength);
-			boolean strongEnough = strength >= QUITE_WEAK;
+			boolean strongEnough = strength >= QUITE_WEAK
+					&& sanitized1.length >= com.professor.zerion.android.login
+							.AccountPasswordPolicy.MIN_LENGTH;
 
 			if (sanitized1.length > 0) {
 				if (strength >= STRONG) {
@@ -221,8 +223,7 @@ public class SetPasswordFragment extends SetupFragment {
 	private void setPassword() {
 		char[] passwordChars = getPasswordChars(passwordEntry);
 		try {
-			char[] sanitizedChars = sanitizePasswordChars(passwordChars);
-			viewModel.setPassword(sanitizedChars);
+			viewModel.setPassword(passwordChars.clone());
 		} finally {
 			Arrays.fill(passwordChars, '\0');
 		}

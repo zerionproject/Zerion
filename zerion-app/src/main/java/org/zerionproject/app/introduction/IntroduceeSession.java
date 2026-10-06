@@ -139,6 +139,28 @@ class IntroduceeSession extends Session<IntroduceeState>
 				remote, masterKey.getBytes(), s.transportKeys);
 	}
 
+	static IntroduceeSession withFinalKeys(IntroduceeSession s,
+			byte[] masterKey, SecretKey aliceActivateKey,
+			SecretKey bobActivateKey) {
+		Local l = s.local;
+		Local local = new Local(l.alice, l.lastMessageId,
+				l.lastMessageTimestamp, l.ephemeralPublicKey,
+				l.ephemeralPrivateKey, l.transportProperties,
+				l.acceptTimestamp, l.alice ? aliceActivateKey.getBytes()
+				: bobActivateKey.getBytes(), l.mlDsaPubKey,
+				l.mlKemEphemeralPublicKey, l.mlKemEphemeralPrivateKey,
+				l.ownKemSecret);
+		Remote r = s.remote;
+		Remote remote = new Remote(r.alice, r.author, r.lastMessageId,
+				r.ephemeralPublicKey, r.transportProperties, r.acceptTimestamp,
+				r.alice ? aliceActivateKey.getBytes()
+						: bobActivateKey.getBytes(),
+				r.mlDsaPubKey, r.mlKemEphemeralPublicKey);
+		return new IntroduceeSession(s.getSessionId(), s.getState(),
+				s.getRequestTimestamp(), s.contactGroupId, s.introducer, local,
+				remote, masterKey, s.transportKeys);
+	}
+
 	static IntroduceeSession withMasterKey(IntroduceeSession s,
 			byte[] masterKey) {
 		return new IntroduceeSession(s.getSessionId(), s.getState(),

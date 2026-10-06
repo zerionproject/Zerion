@@ -50,15 +50,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The send and receive directions of one duplex connection share one Mode
- * 3-Full state. The receive side snapshots that state, releases the lock,
- * opens the body, and then publishes a state built from its snapshot. If the
- * send side rotates its ML-KEM key pair in between, the receive side's
- * publication must not discard the rotated key pair the peer was just told
- * to use. These tests force that interleaving deterministically with a lock
- * whose release hands control to the send side, without any timing.
- */
 public class ZwfMode3FullSharedStateRaceTest {
 
 	private CryptoComponent crypto;
@@ -87,7 +78,7 @@ public class ZwfMode3FullSharedStateRaceTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -104,12 +95,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 				mlKemProvider);
 	}
 
-	/**
-	 * A lock that runs one action right after the next release, on the
-	 * releasing thread. The action itself may take the lock again (it is
-	 * reentrant), which reproduces a send that lands exactly in the gap
-	 * between the receiver's snapshot and its commit.
-	 */
 	static final class HandoverLock implements Lock {
 		private final ReentrantLock delegate = new ReentrantLock();
 		private final AtomicReference<Runnable> afterNextUnlock =
@@ -153,7 +138,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		}
 	}
 
-	/** One peer: a shared state, its lock, and the two stream directions. */
 	final class Peer {
 		final AtomicReference<Mode3FullState> shared;
 		final HandoverLock lock = new HandoverLock();
@@ -185,7 +169,7 @@ public class ZwfMode3FullSharedStateRaceTest {
 
 		void listen(byte[] tag, long streamId, SecretKey streamHeaderKey) {
 			dec = new ZwfMode3FullStreamDecrypter(in, cipher(), ratchet,
-					mode3FullRatchet, null, tag, streamId, streamHeaderKey,
+					mode3FullRatchet, tag, streamId, streamHeaderKey,
 					recvState, null, shared::get, shared::set, lock, !alice);
 		}
 
@@ -227,7 +211,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		return PcsSessionState.createInitialMode3Full(rootKey, rootKey, dh, m3f);
 	}
 
-	/** Two peers wired both ways, with both directions bootstrapped. */
 	private Peer[] connectedPair() throws IOException {
 		SecretKey rootKey = randomKey();
 		Peer a = new Peer(rootKey, true);
@@ -251,7 +234,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		return new Peer[] {a, b};
 	}
 
-	/** Sends from {@code from} to {@code to} until the sender has rotated. */
 	private int rotateOnce(Peer from, Peer to) throws IOException {
 		MlKemKeyPair before = from.activeKeyPair();
 		int sent = 0;
@@ -263,11 +245,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		return sent;
 	}
 
-	/**
-	 * A second stream from Alice to Bob whose sender keeps a frozen view of
-	 * Bob's key (no refresh), read by a second Bob decrypter that shares Bob's
-	 * state and lock like the first one.
-	 */
 	private final class FrozenStream {
 		final ZwfMode3FullStreamEncrypter enc;
 		final ZwfMode3FullStreamDecrypter dec;
@@ -283,7 +260,7 @@ public class ZwfMode3FullSharedStateRaceTest {
 					stateWith(from.sendState.getRootKey(), frozenSenderView),
 					null, () -> frozenSenderView, null, null, from.alice);
 			dec = new ZwfMode3FullStreamDecrypter(in, cipher(), ratchet,
-					mode3FullRatchet, null, tag, streamId, header,
+					mode3FullRatchet, tag, streamId, header,
 					stateWith(to.recvState.getRootKey(), to.shared.get()),
 					null, to.shared::get, to.shared::set, to.lock, from.alice);
 		}
@@ -324,13 +301,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertEquals(MODE3_FULL_SEND_ROTATION_INTERVAL, more);
 	}
 
-	/**
-	 * The race: Bob's receiver snapshots the shared state, Bob's sender
-	 * rotates and advertises the new key pair in the gap, Bob's receiver
-	 * commits. Alice learns the new key pair from the rotation frame and
-	 * encapsulates to it. Bob must still be able to open that frame, and his
-	 * shared state must hold the rotated key pair as active.
-	 */
 	@Test
 	public void sendRotationBetweenReceiverSnapshotAndCommitIsNotLost()
 			throws Exception {
@@ -382,7 +352,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertEquals("and bob still sends", a.receive());
 	}
 
-	/** The same interleaving on every rotation, many times over. */
 	@Test(timeout = 300_000)
 	public void repeatedRotationsInTheReceiverGapNeverLoseAKey()
 			throws Exception {
@@ -415,7 +384,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertTrue(frames >= 39 * MODE3_FULL_SEND_ROTATION_INTERVAL);
 	}
 
-	/** A stale commit must not bring a retired key pair back as active. */
 	@Test
 	public void staleReceiverCommitCannotRestoreARetiredKeyPair()
 			throws Exception {
@@ -444,18 +412,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 				after.getMessageCounter() > 0);
 	}
 
-	/**
-	 * A peer that has not yet seen a rotation may keep encapsulating to the
-	 * previous key pair: it is accepted while that pair sits in the recent
-	 * window and refused once the window has evicted it.
-	 */
-	/**
-	 * R2-N1: a sender whose peer has not been heard from stops rotating at
-	 * the retention bound instead of evicting a key pair the peer may still
-	 * be using; a stale stream for the oldest retained key pair still opens.
-	 * Once the peer is heard from again, every key pair older than the one
-	 * it used is pruned, rotation resumes and the stale stream is refused.
-	 */
 	@Test(timeout = 300_000)
 	public void rotationPausesAtTheBoundInsteadOfEvictingAUsableKeyPair()
 			throws Exception {
@@ -500,12 +456,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		rotateOnce(b, a);
 	}
 
-	/**
-	 * R2-N1 as observed in production: a frame queued while the receiver's
-	 * own send side rotates more than the retention bound must still open
-	 * once the receiver reads it. Before the pause it was dropped with a
-	 * format error and the connection with it.
-	 */
 	@Test(timeout = 300_000)
 	public void frameQueuedAcrossManyOwnRotationsStillOpens()
 			throws Exception {
@@ -522,22 +472,10 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertEquals("and the next one", b.receive());
 	}
 
-	/**
-	 * A peer keeps 32 retired key pairs (32 rotations of 16 sends). A sender
-	 * that has read the peer's frames less recently than that, or a receiver
-	 * whose own sends have rotated more often than that since it last read,
-	 * legitimately hits an evicted key pair. The cadence-paced production
-	 * runner never approaches either bound; the stress test keeps both leads
-	 * inside it so that only the shared state race is under test.
-	 */
 	private static final int MAX_UNREAD_LEAD =
 			(MODE3_FULL_RECV_SK_LRU_SIZE / 2)
 					* MODE3_FULL_SEND_ROTATION_INTERVAL;
 
-	/**
-	 * Both directions run at full speed on two threads for thousands of
-	 * frames; no frame may fail to open and every rotation must survive.
-	 */
 	@Test(timeout = 600_000)
 	public void simultaneousSendAndReceiveNeverDropAFrame() throws Exception {
 		Peer[] p = connectedPair();
@@ -624,7 +562,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertEquals(frames, aReceived.get());
 	}
 
-	/** A new connection after a rotation bootstraps from fresh state. */
 	@Test
 	public void reconnectAfterARotationBootstrapsCleanly() throws Exception {
 		Peer[] p = connectedPair();
@@ -639,7 +576,6 @@ public class ZwfMode3FullSharedStateRaceTest {
 		assertEquals("both ways", again[0].receive());
 	}
 
-	/** The receiver refuses a ciphertext for a key pair it never had. */
 	@Test
 	public void unknownKeyPairIdIsRefused() throws Exception {
 		Peer[] p = connectedPair();

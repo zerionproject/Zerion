@@ -357,7 +357,6 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		assertEquals(NO_AUTO_DELETE_TIMER, am.getAutoDeleteTimer());
 	}
 
-	/** PROTO-12: what an older or stripping peer sends is refused. */
 	@Test(expected = org.zerionproject.core.api.FormatException.class)
 	public void testAcceptMessageWithoutPqFieldsIsRefused() throws Exception {
 		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,

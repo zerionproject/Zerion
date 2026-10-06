@@ -17,14 +17,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * Assembles the final Payjoin transaction from a validated proposal. Ownership
- * of every input is decided only from wallet state; nothing the proposal or the
- * native layer claims can make an input wallet-owned. Both validation layers
- * must agree, the non-overridable privacy rules must still hold, and the final
- * transaction is analysed as it will actually be signed. Any failure produces a
- * rejection and no signable transaction.
- */
 @NotNullByDefault
 public final class PayjoinSender {
 

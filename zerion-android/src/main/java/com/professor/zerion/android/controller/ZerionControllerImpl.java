@@ -143,6 +143,10 @@ public class ZerionControllerImpl implements ZerionController {
 
 	@Override
 	public void signOut(ResultHandler<Void> handler, boolean deleteAccount) {
+		com.professor.zerion.android.util.SecureClipboard.clearOnSignOut(
+				activity.getApplicationContext());
+		com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder
+				.clear();
 		wakeLockManager.executeWakefully(() -> {
 			if (deleteAccount) accountManager.shredDatabaseKey();
 			try {
@@ -190,6 +194,7 @@ public class ZerionControllerImpl implements ZerionController {
 
 	@Override
 	public void deleteAccount() {
+		accountManager.shredDatabaseKey();
 		fullAccountWipe();
 	}
 

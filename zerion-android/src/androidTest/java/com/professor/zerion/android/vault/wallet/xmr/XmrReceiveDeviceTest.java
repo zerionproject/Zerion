@@ -28,11 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * XMR-P3 on-device receive/subaddress privacy tests over the real vault store
- * (JSON-backed) and, where a native wallet is present, the real engine. Isolated
- * non-funded environment only.
- */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class XmrReceiveDeviceTest {

@@ -30,7 +30,6 @@ public class VaultItemKdfParamsTest {
 		assertEquals(1, restored.extraPasswordParallelism);
 	}
 
-	/** STO-04: item metadata carrying absurd KDF parameters is refused. */
 	@Test
 	public void oversizedKdfParamsInMetadataAreRefused() {
 		VaultItem item = VaultItem.createNewWithPassword(

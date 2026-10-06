@@ -5,7 +5,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/** A2-AND-09: the backup passphrase follows the profile password minimum. */
 public class BackupPassphraseTest {
 
 	@Test

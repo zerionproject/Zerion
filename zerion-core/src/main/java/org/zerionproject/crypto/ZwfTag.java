@@ -7,17 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 
-/**
- * Derives the 16-byte stream-recognition tag that prefixes the first frame of a
- * ZWF stream.
- *
- * <p>The tag is {@code MAC(tagKey, streamId)} truncated to {@link
- * org.zerionproject.wire.ZwfConstants#TAG_LENGTH} bytes. Because it is
- * keyed by the per-contact tag key and bound to the monotonic {@code streamId},
- * every stream's tag is distinct and, without the tag key, unlinkable — a
- * network observer cannot tell two streams belong to the same contact, and there
- * is no constant per-contact prefix to fingerprint.
- */
 @NotNullByDefault
 public final class ZwfTag {
 

@@ -3,8 +3,15 @@
 The sealed-sender envelope is the crypto layer for offline delivery. It lets a
 sender encrypt a message to a recipient who is not online, with no interactive
 handshake, and hand that message to untrusted relays. A relay learns only what it
-needs to forward and deduplicate. It does not learn the sender, the recipient, or
-the content.
+needs to forward, deduplicate and route to a prekey. It does not learn the sender
+or the content, and it does not learn the recipient's identity directly. The
+prekey selector fields are visible, but from 3.0.15 they name no recipient:
+every account publishes the same signed-prekey id, and each contact knows the
+recipient's one-time prekeys under ids of its own (see Selectors below). A
+contact can recognise only envelopes sealed from its own copy of the bundle,
+which in practice are its own. Envelopes sealed from a bundle published by
+3.0.14 or earlier, until the sender receives a current one, still carry that
+bundle's per-account selectors.
 
 This layer is used by the Bluetooth mesh. The mesh transport carries these
 envelopes; the envelope protects them.
@@ -13,8 +20,10 @@ envelopes; the envelope protects them.
 
 - The recipient publishes a prekey bundle in advance. The sender needs only that
   bundle to seal a message.
-- Relays are untrusted. They see an opaque envelope, a time-to-live, and a
-  deduplication identifier, and nothing else.
+- Relays are untrusted. They see an opaque envelope, the prekey selector
+  (`prekeyKind`, `prekeyId`, `signedPrekeyId`), the sender's ephemeral key and
+  KEM ciphertext, a time-to-live and a deduplication identifier (see the
+  visibility column below).
 - The recipient authenticates the sender after opening, from a signature inside
   the sealed record. A relay cannot see who signed.
 
@@ -106,17 +115,61 @@ bundleSig[3373]           over everything above
 ```
 
 Both signatures are hybrid and are verified against the bundle's own identity key.
+
+`identityAgreePub` is bound into the key transcript and used for nothing else.
+From 3.0.15 it is a hybrid agreement key generated once for this purpose and
+kept with the prekeys; its private half is discarded. Up to 3.0.14 it was the
+key of the user's pairing link at the time the bundle was made, so any contact
+could match the bundle to a pairing link shared elsewhere, and a bundle made
+after the link key rotated did not open at a recipient that had loaded the
+older key.
+
+## Selectors
+
+From 3.0.15 the store publishes its keys so that the selector tells a relay
+nothing:
+
+- **Signed prekey.** Every bundle carries signed-prekey id `0`, the same for
+  every account (earlier releases count from 1, so `0` names none of their
+  keys). The recipient tries its current signed prekey and then, if an
+  envelope of that time-to-live sealed to it could still be alive, its
+  previous one: a sender cannot seal to a signed prekey after its expiry, so
+  an envelope sealed to the previous key is dead once its time-to-live has
+  passed since that key expired.
+- **One-time prekeys.** Each contact receives the pool under its own ids, the
+  first 16 bytes of `MAC(ONE_TIME_PREKEY_ALIAS, aliasKey, contactId, ownId)`
+  where `aliasKey` is a random 32-byte secret kept with the prekeys. The store
+  remembers which contacts it published to and maps an id back to its own on
+  receipt. A key used through one contact's id is gone for every contact.
+- **Earlier bundles.** A non-zero signed-prekey id, or a one-time id that is
+  the store's own, comes from a bundle published by 3.0.14 or earlier; it is
+  resolved directly, and the transcript is rebuilt with the agreement key that
+  bundle carried.
+
+Every attempt to open an envelope costs a hybrid decapsulation, and a stranger
+can make any envelope name a recipient's keys. Attempts are drawn from a
+budget for the device, refilling at 48 per second up to 96, and from a budget
+for the Bluetooth neighbour the envelope arrived from, refilling at 16 per
+second up to 32, so a single neighbour cannot spend the whole budget; an
+envelope that arrives with either budget spent is not opened. An envelope that names a key but does not open
+is remembered by a hash of its whole encoding, so a repeat costs a lookup; the
+deduplication identifier is not used for this, because a forgery could carry
+the identifier of a genuine envelope. An envelope that does not authenticate
+never reaches the signature check.
 A one-time prekey is preferred when available and is consumed on first use, which
 gives a fresh key per message. When no one-time prekey is available the signed
-prekey is used.
+prekey is used. Only a one-time prekey gives forward secrecy for that message:
+an envelope sealed to the signed prekey can be opened by anyone who later obtains
+that signed prekey's private key while it is retained.
 
 ## Delivery and cover
 
 The delivery layer floods a sealed envelope through the mesh forwarder. It can
 also emit cover envelopes. A cover envelope is sealed to a throwaway keypair with
-random recipient identity fields and a signed-prekey id drawn from a
-log-distribution over a plausible range, so a cover envelope is indistinguishable
-on the wire from a message. On receipt, the delivery layer resolves the prekey,
+random recipient identity fields, and its selector is that of an envelope
+sealed from a published bundle: signed-prekey id `0`, or a random one-time
+prekey id. A cover envelope is therefore indistinguishable on the wire from a
+message sealed from a current bundle. On receipt, the delivery layer resolves the prekey,
 opens the envelope, checks the deduplication identifier against a seen-store, and
 consumes the one-time prekey if the message is accepted.
 

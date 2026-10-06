@@ -16,18 +16,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 
-/**
- * A loopback SOCKS5 relay for the one client that cannot open a Unix domain
- * socket: the native Monero wallet, which speaks TCP to its proxy. Tor's
- * own SOCKS listener is a Unix domain socket no other process can open, and
- * this relay is the only TCP way to it. Unlike Tor it verifies the SOCKS
- * password: a client must present the process secret the native wallet is
- * given, or the connection is refused before anything reaches Tor. The
- * username is forwarded unchanged so Tor still isolates the wallet's
- * streams by it. The relay speaks only the first two SOCKS5 exchanges
- * itself (method selection and username/password); everything after,
- * including the connect request, is carried through to Tor verbatim.
- */
 @NotNullByDefault
 public final class TorSocksGate {
 
@@ -49,11 +37,6 @@ public final class TorSocksGate {
 
 	static final InetAddress IPV4_LOOPBACK = ipv4Loopback();
 
-	/**
-	 * @param passwordAccepted accepts the passwords of in-process clients
-	 * that hold their own per-process secret, such as the native wallet;
-	 * the gate's own {@link #processSecret()} is always accepted too.
-	 */
 	public TorSocksGate(TorSocksConnector upstream,
 			Predicate<String> passwordAccepted) throws IOException {
 		this.upstream = upstream;
@@ -79,10 +62,6 @@ public final class TorSocksGate {
 		}
 	}
 
-	/**
-	 * A per-process password the gate accepts, for in-process clients that
-	 * can only be handed a proxy address and credentials. Never persisted.
-	 */
 	public String processSecret() {
 		return processSecret;
 	}
@@ -226,7 +205,6 @@ public final class TorSocksGate {
 		}
 	}
 
-	/** Constant-time comparison for the password check. */
 	public static boolean constantTimeEquals(String a, String b) {
 		byte[] x = a.getBytes(StandardCharsets.UTF_8);
 		byte[] y = b.getBytes(StandardCharsets.UTF_8);

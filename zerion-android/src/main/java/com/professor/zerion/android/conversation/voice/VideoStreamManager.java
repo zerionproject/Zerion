@@ -53,11 +53,6 @@ class VideoStreamManager {
 
 	private volatile boolean linkLostReported = false;
 
-	/**
-	 * A send or receive failure means the video link is gone, which is the
-	 * normal end of the video when the other side stops it or hangs up; it
-	 * is reported once and apart from camera errors.
-	 */
 	private void reportLinkLost() {
 		if (!running || linkLostReported) return;
 		linkLostReported = true;
@@ -86,11 +81,6 @@ class VideoStreamManager {
 		camera.updatePreviewSurface(surface);
 	}
 
-	/**
-	 * Installs the keys of one video session. The cipher is single use: a
-	 * later session must create a new manager with freshly derived keys, so a
-	 * (key, nonce) pair can never be repeated across sessions.
-	 */
 	void initKeys(byte[] videoTxKey, byte[] videoRxKey) {
 		if (cipher != null) throw new IllegalStateException(
 				"video session keys already installed");

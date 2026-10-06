@@ -15,16 +15,6 @@ import javax.annotation.Nullable;
 
 import androidx.core.content.ContextCompat;
 
-/**
- * USB panic for Hardened Mode. The system's USB state broadcast, which
- * every device emits (the legacy sysfs node the old watcher relied on does
- * not exist on configfs devices), reports whether the cable is connected,
- * whether a host configured the device and which functions are active.
- * The panic fires only when a host has configured a data-capable function
- * (adb, MTP or PTP), never for a charger, a car head unit or an audio
- * accessory, and at most once per connection. One receiver is registered
- * for the process; arming and disarming toggle it.
- */
 @NotNullByDefault
 public class AntiForensics {
 
@@ -46,7 +36,6 @@ public class AntiForensics {
 		removeLegacyFingerprint();
 	}
 
-	/** Older versions kept a device-id hash in plain files; it has no use. */
 	private void removeLegacyFingerprint() {
 		try {
 			File legacy = new File(context.getFilesDir(), ".device_id");
@@ -87,7 +76,6 @@ public class AntiForensics {
 		}
 	}
 
-	/** Package-visible for tests; the decision is a pure function of the extras. */
 	static boolean isDataTransfer(@Nullable Intent intent) {
 		if (intent == null || !ACTION_USB_STATE.equals(intent.getAction())) {
 			return false;

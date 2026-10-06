@@ -4,6 +4,7 @@ import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.connection.InterruptibleConnection;
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.sync.Priority;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -18,25 +19,10 @@ import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import static org.zerionproject.wire.ZwfConstants.TAG_LENGTH;
 
-/**
- * Handles transport connections to established contacts. Every connection after
- * the initial pairing resumes the contact's stored session rather than running a
- * handshake: the root key and role were fixed at pairing, and the post-quantum
- * ratchet starts fresh on every connection.
- *
- * <p>Outgoing connections carry the dialled contact id. Incoming connections are
- * anonymous, so the stream tag is peeked and recognised to a contact before the
- * session is resumed; a tag that matches no known contact is rejected (first-time
- * pairing arrives on the separate rendezvous path, not here).
- *
- * <p>The socket a pairing ran on is handed over with its contact id known, so
- * the first session needs no tag lookup. The live connection is handed to the
- * {@link ZppConnectionRunner} for the duration of the session; when it ends the
- * contact's tag window advances and the session's ML-KEM key material is
- * zeroized. Nothing of the session is persisted.
- */
 @NotNullByDefault
 public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 
@@ -47,16 +33,9 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	private final org.zerionproject.core.api.plugin.OnionClientAuthManager
 			inboundPolicy;
 	private final SecureRandom random = new SecureRandom();
+	@Nullable
+	private final RootEvolutionManager evolutions;
 
-	/**
-	 * The transport currently running a ratchet-resuming session for each
-	 * contact. The Mode 3-Full ratchet is keyed per contact, not per transport,
-	 * so two connections on <em>different</em> transports must never resume it
-	 * at once. Connections on the <em>same</em> transport are capped at two —
-	 * one dialled and one accepted, which is the honest-glare maximum — so an
-	 * authenticated peer cannot multiply sessions, schedulers and cover traffic
-	 * by opening further connections.
-	 */
 	private final Map<Integer, TransportSession> liveSessions =
 			new ConcurrentHashMap<>();
 
@@ -66,11 +45,23 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 			ConnectionRegistry connectionRegistry,
 			org.zerionproject.core.api.plugin.OnionClientAuthManager
 					inboundPolicy) {
+		this(establisher, sessionProvider, connectionRunner,
+				connectionRegistry, inboundPolicy, null);
+	}
+
+	public ZtpConnectionHandlerImpl(ZtpConnectionEstablisher establisher,
+			ZtpSessionProvider sessionProvider,
+			ZppConnectionRunner connectionRunner,
+			ConnectionRegistry connectionRegistry,
+			org.zerionproject.core.api.plugin.OnionClientAuthManager
+					inboundPolicy,
+			@Nullable RootEvolutionManager evolutions) {
 		this.inboundPolicy = inboundPolicy;
 		this.establisher = establisher;
 		this.sessionProvider = sessionProvider;
 		this.connectionRunner = connectionRunner;
 		this.connectionRegistry = connectionRegistry;
+		this.evolutions = evolutions;
 	}
 
 	private static final class TransportSession {
@@ -83,9 +74,6 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		}
 	}
 
-	/** Reserves a live session slot for {@code transportId}. Returns false if a
-	 * different transport already holds the contact's session, or if the
-	 * same-transport concurrency cap is reached. */
 	boolean acquireSession(int contactId, TransportId transportId) {
 		synchronized (liveSessions) {
 			TransportSession s = liveSessions.get(contactId);
@@ -116,7 +104,13 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 			InputStream in, OutputStream out) throws IOException {
 		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
 		if (stored == null) throw new FormatException();
-		runResumed(transportId, contactId, stored, in, out, false);
+		runResumed(transportId, contactId, stored, in, out, false,
+				dialEpoch(contactId, stored.getRootKeys()), false);
+	}
+
+	private long dialEpoch(int contactId, ContactRootKeys keys) {
+		if (evolutions == null) return keys.getSendEpoch();
+		return evolutions.dialEpoch(new ContactId(contactId), keys);
 	}
 
 	@Override
@@ -125,12 +119,6 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		handleIncoming(transportId, in, out, false);
 	}
 
-	/**
-	 * A recognised contact that has committed to client authorization is
-	 * refused over the open service: the connection is closed before any
-	 * session runs, so the open address is not a way around the
-	 * authorized one.
-	 */
 	@Override
 	public void handleIncoming(TransportId transportId, InputStream in,
 			OutputStream out, boolean viaAuthorizedService)
@@ -141,19 +129,22 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		if (contactId < 0) {
 			throw new FormatException();
 		}
-		if (org.zerionproject.core.api.plugin.TorConstants.ID
-				.equals(transportId)) {
+		boolean tor = org.zerionproject.core.api.plugin.TorConstants.ID
+				.equals(transportId);
+		if (tor) {
 			ContactId c = new ContactId(contactId);
 			if (!inboundPolicy.acceptsInbound(c, viaAuthorizedService)) {
 				throw new FormatException();
 			}
-			if (viaAuthorizedService) {
-				inboundPolicy.inboundViaAuthorizedService(c);
-			}
 		}
 		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
 		if (stored == null) throw new FormatException();
-		runResumed(transportId, contactId, stored, bufferedIn, out, true);
+		ContactRootKeys keys = stored.getRootKeys();
+		long epoch = establisher.epochOfTag(contactId, keys, stored.isAlice(),
+				tag);
+		if (epoch < 0) epoch = keys.getSendEpoch();
+		runResumed(transportId, contactId, stored, bufferedIn, out, true,
+				epoch, tor && viaAuthorizedService);
 	}
 
 	@Override
@@ -162,16 +153,25 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 			throws IOException {
 		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
 		if (stored == null) throw new FormatException();
-		runResumed(transportId, contactId, stored, in, out, incoming);
+		runResumed(transportId, contactId, stored, in, out, incoming,
+				incoming ? stored.getRootKeys().getSendEpoch()
+						: dialEpoch(contactId, stored.getRootKeys()), false);
 	}
 
 	private void runResumed(TransportId transportId, int contactId,
 			StoredContactSession stored, InputStream in, OutputStream out,
-			boolean incoming) throws IOException {
-		if (!acquireSession(contactId, transportId)) return;
+			boolean incoming, long sendEpoch, boolean viaAuthorizedService)
+			throws IOException {
+		if (!acquireSession(contactId, transportId)) {
+			wipe(stored.getRootKeys());
+			return;
+		}
+		ZwfDuplexConnection connection = null;
+		AtomicBoolean registered = new AtomicBoolean(false);
 		try {
-			ZwfDuplexConnection connection = establisher.resume(contactId,
-					stored.getRootKey(), stored.isAlice(), in, out);
+			connection = establisher.resume(contactId, stored.getRootKeys(),
+					sendEpoch, stored.isAlice(), stored.getGeneration(), in,
+					out);
 			ContactId c = new ContactId(contactId);
 			AtomicBoolean closed = new AtomicBoolean(false);
 			InterruptibleConnection ic = new InterruptibleConnection() {
@@ -193,16 +193,26 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 					}
 				}
 			};
-			if (incoming) {
-				connectionRegistry.registerIncomingConnection(c, transportId,
-						ic);
-			} else {
-				byte[] nonce = new byte[16];
-				random.nextBytes(nonce);
-				connectionRegistry.registerOutgoingConnection(c, transportId,
-						ic, new Priority(nonce));
+			connection.setFirstFrameListener(epoch -> {
+				if (viaAuthorizedService) {
+					inboundPolicy.inboundViaAuthorizedService(c);
+				}
+				if (incoming) {
+					connectionRegistry.registerIncomingConnection(c,
+							transportId, ic);
+				} else {
+					byte[] nonce = new byte[16];
+					random.nextBytes(nonce);
+					connectionRegistry.registerOutgoingConnection(c,
+							transportId, ic, new Priority(nonce));
+				}
+				registered.set(true);
+				sessionProvider.sessionEstablished(contactId);
+			});
+			if (evolutions != null) {
+				connection.setControlHandler(
+						evolutions.newEvolution(c, stored.isAlice()));
 			}
-			sessionProvider.sessionEstablished(contactId);
 			boolean exception = false;
 			try {
 				connectionRunner.run(contactId, connection);
@@ -210,18 +220,29 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 				exception = true;
 				throw e;
 			} finally {
-				connectionRegistry.unregisterConnection(c, transportId, ic,
-						incoming, exception);
+				if (registered.get()) {
+					connectionRegistry.unregisterConnection(c, transportId,
+							ic, incoming, exception);
+				}
 				sessionProvider.sessionClosed(contactId);
-				connection.destroyKeyMaterial();
 			}
 		} finally {
+			if (connection != null) connection.destroyKeyMaterial();
+			wipe(stored.getRootKeys());
 			releaseSession(contactId, transportId);
+			if (!incoming && evolutions != null) {
+				evolutions.dialEnded(new ContactId(contactId),
+						registered.get());
+			}
 		}
 	}
 
-	/** Reads the stream tag without consuming it, so the resumed connection can
-	 * re-read it. */
+	private static void wipe(ContactRootKeys keys) {
+		keys.getCurrent().clear();
+		SecretKey pending = keys.getPending();
+		if (pending != null) pending.clear();
+	}
+
 	private static byte[] peekTag(BufferedInputStream in) throws IOException {
 		in.mark(TAG_LENGTH);
 		byte[] tag = new byte[TAG_LENGTH];

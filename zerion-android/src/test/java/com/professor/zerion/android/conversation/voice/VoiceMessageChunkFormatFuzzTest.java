@@ -12,13 +12,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The chunked voice memo text format under random and hostile input: a part
- * either parses into bounded fields or is refused, never thrown on; every
- * split memo reassembles to the original text; and part counts, sequence
- * numbers and slice sizes outside the format's bounds are refused so a peer
- * cannot make the assembler reserve more than the format allows.
- */
 public class VoiceMessageChunkFormatFuzzTest {
 
 	private static final int RANDOM_INPUTS = 6000;

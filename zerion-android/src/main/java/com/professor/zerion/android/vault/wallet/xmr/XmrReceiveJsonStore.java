@@ -5,13 +5,6 @@ import androidx.annotation.Nullable;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.json.JSONObject;
 
-/**
- * JSON-backed {@link XmrSubaddressLedger.Store} persisted in the encrypted vault
- * settings at {@code xmr.<walletId>.recv}. All access is serialized on the
- * store's settings monitor. Reads the whole settings blob and writes it back on
- * each mutation; the receive state is small, and writing on the reservation is
- * the crash-safe commit point.
- */
 @NotNullByDefault
 public final class XmrReceiveJsonStore implements XmrSubaddressLedger.Store {
 

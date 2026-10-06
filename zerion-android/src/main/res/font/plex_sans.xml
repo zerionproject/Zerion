@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- IBM Plex Sans (variable), mapped to discrete weights so body text renders
-     at a clean Regular (400) and bold text is a real 700, not synthetic. -->
 <font-family xmlns:android="http://schemas.android.com/apk/res/android">
     <font
         android:fontStyle="normal"

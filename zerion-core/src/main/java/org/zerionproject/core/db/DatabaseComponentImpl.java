@@ -22,6 +22,7 @@ import org.zerionproject.core.api.db.DbCallable;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.DbRunnable;
 import org.zerionproject.core.api.db.EventAction;
+import org.zerionproject.core.api.db.MessageMetadataVisitor;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.MigrationListener;
 import org.zerionproject.core.api.db.NoSuchContactException;
@@ -145,7 +146,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		}
 		try {
 			return new Transaction(db.startTransaction(), readOnly);
-		} catch (DbException | RuntimeException e) {
+		} catch (DbException | RuntimeException | Error e) {
 			if (readOnly) lock.readLock().unlock();
 			else lock.writeLock().unlock();
 			throw e;
@@ -260,7 +261,8 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			throw new ContactExistsException(local, remote);
 		ContactId c = db.addContact(txn, remote, local, handshake, verified,
 				postQuantum, pcsEnabled, mlDsaSigPublicKey);
-		transaction.attach(new ContactAddedEvent(c, verified));
+		transaction.attach(new ContactAddedEvent(c, verified,
+				verified || handshake != null));
 		return c;
 	}
 
@@ -311,10 +313,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	@Override
 	public void addPendingContact(Transaction transaction, PendingContact p,
 			AuthorId local) throws DbException {
+		addPendingContact(transaction, p, local, false);
+	}
+
+	@Override
+	public void addPendingContact(Transaction transaction, PendingContact p,
+			AuthorId local, boolean allowExistingContact) throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		Contact contact = db.getContact(txn, p.getPublicKey(), local);
-		if (contact != null)
+		if (contact != null && !allowExistingContact)
 			throw new ContactExistsException(local, contact.getAuthor());
 		if (db.containsPendingContact(txn, p.getId())) {
 			PendingContact existing = db.getPendingContact(txn, p.getId());
@@ -699,6 +707,20 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public Collection<GroupId> getGroupsWithMessagesToDelete(
+			Transaction transaction) throws DbException {
+		T txn = unbox(transaction);
+		return db.getGroupsWithMessagesToDelete(txn);
+	}
+
+	@Override
+	public Collection<MessageId> getMessagesToDelete(
+			Transaction transaction, GroupId g) throws DbException {
+		T txn = unbox(transaction);
+		return db.getMessagesToDelete(txn, g);
+	}
+
+	@Override
 	public Map<MessageId, Metadata> getMessageMetadata(Transaction transaction,
 			GroupId g) throws DbException {
 		T txn = unbox(transaction);
@@ -714,6 +736,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsGroup(txn, g))
 			throw new NoSuchGroupException();
 		return db.getMessageMetadata(txn, g, query);
+	}
+
+	@Override
+	public <E extends Exception> void visitMessageMetadataExcluding(
+			Transaction transaction, GroupId g, String key, byte[] value,
+			MessageMetadataVisitor<E> visitor) throws DbException, E {
+		T txn = unbox(transaction);
+		if (!db.containsGroup(txn, g))
+			throw new NoSuchGroupException();
+		db.visitMessageMetadataExcluding(txn, g, key, value, visitor);
 	}
 
 	@Override
@@ -849,6 +881,13 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public long getNextCleanupDeadline(Transaction transaction, long after)
+			throws DbException {
+		T txn = unbox(transaction);
+		return db.getNextCleanupDeadline(txn, after);
+	}
+
+	@Override
 	public long getNextSendTime(Transaction transaction, ContactId c,
 			long maxLatency) throws DbException {
 		T txn = unbox(transaction);
@@ -875,6 +914,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public void clearPendingContactOurKeys(Transaction transaction,
+			PendingContactId p) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsPendingContact(txn, p))
+			throw new NoSuchPendingContactException();
+		db.clearPendingContactOurKeys(txn, p);
+	}
+
+	@Override
 	public void setPendingContactOurKeys(Transaction transaction,
 			PendingContactId p, byte[] publicKey, byte[] privateKey)
 			throws DbException {
@@ -897,6 +946,14 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			throws DbException {
 		T txn = unbox(transaction);
 		return db.getSettings(txn, namespace);
+	}
+
+	@Nullable
+	@Override
+	public String getSetting(Transaction transaction, String namespace,
+			String key) throws DbException {
+		T txn = unbox(transaction);
+		return db.getSetting(txn, namespace, key);
 	}
 
 	@Override
@@ -1053,6 +1110,30 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			}
 		}
 		if (requested) transaction.attach(new MessageRequestedEvent(c));
+	}
+
+	@Override
+	public void deleteSettings(Transaction transaction, String namespace,
+			Collection<String> keys) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		if (keys.isEmpty()) return;
+		T txn = unbox(transaction);
+		db.deleteSettings(txn, namespace, keys);
+		transaction.attach(new SettingsUpdatedEvent(namespace,
+				db.getSettings(txn, namespace)));
+	}
+
+	@Override
+	public void deleteSettingsNamespaces(Transaction transaction,
+			Collection<String> namespaces) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		if (namespaces.isEmpty()) return;
+		T txn = unbox(transaction);
+		db.deleteSettingsNamespaces(txn, namespaces);
+		for (String namespace : namespaces) {
+			transaction.attach(new SettingsUpdatedEvent(namespace,
+					new Settings()));
+		}
 	}
 
 	@Override
@@ -1401,6 +1482,17 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public void setCleanupDeadline(Transaction transaction, MessageId m,
+			long deadline) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsMessage(txn, m))
+			throw new NoSuchMessageException();
+		long set = db.setCleanupDeadline(txn, m, deadline);
+		transaction.attach(new CleanupTimerStartedEvent(m, set));
+	}
+
+	@Override
 	public void updateTransportKeys(Transaction transaction,
 			Collection<TransportKeySet> keys) throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
@@ -1413,74 +1505,12 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
-	public void setPcsSessionState(Transaction transaction, ContactId c,
-			int direction, SecretKey chainKey, int messageNumber,
-			int previousChainLength) throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		db.setPcsSessionState(txn, c, direction, chainKey, messageNumber,
-				previousChainLength);
-	}
-
-	@Override
-	@Nullable
-	public Object[] getPcsSessionState(Transaction transaction, ContactId c,
-			int direction) throws DbException {
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		return db.getPcsSessionState(txn, c, direction);
-	}
-
-	@Override
 	public boolean containsPcsSessionState(Transaction transaction, ContactId c)
 			throws DbException {
 		T txn = unbox(transaction);
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		return db.containsPcsSessionState(txn, c);
-	}
-
-	@Override
-	public void addPcsSkippedKey(Transaction transaction, ContactId c,
-			int direction, int messageNumber, SecretKey messageKey,
-			long timestamp) throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		db.addPcsSkippedKey(txn, c, direction, messageNumber, messageKey,
-				timestamp);
-	}
-
-	@Override
-	@Nullable
-	public SecretKey getPcsSkippedKey(Transaction transaction, ContactId c,
-			int direction, int messageNumber) throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		return db.getPcsSkippedKey(txn, c, direction, messageNumber);
-	}
-
-	@Override
-	public int getPcsSkippedKeyCount(Transaction transaction, ContactId c,
-			int direction) throws DbException {
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		return db.getPcsSkippedKeyCount(txn, c, direction);
-	}
-
-	@Override
-	public int prunePcsSkippedKeys(Transaction transaction, long maxAge)
-			throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		return db.prunePcsSkippedKeys(txn, maxAge);
 	}
 
 	@Override
@@ -1491,6 +1521,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		db.removePcsState(txn, c);
+	}
+
+	@Override
+	public void removePcsSessionState(Transaction transaction, ContactId c,
+			int direction) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsContact(txn, c))
+			throw new NoSuchContactException();
+		db.removePcsSessionState(txn, c, direction);
 	}
 
 	@Override
@@ -1518,53 +1558,6 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		return db.getPcsMode2SessionState(txn, c, direction);
-	}
-
-	@Override
-	public void addPcsMode2SkippedKey(Transaction transaction, byte[] chainId,
-			int messageNumber, SecretKey messageKey, long timestamp)
-			throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		db.addPcsMode2SkippedKey(txn, chainId, messageNumber, messageKey, timestamp);
-	}
-
-	@Override
-	@Nullable
-	public SecretKey getPcsMode2SkippedKey(Transaction transaction, byte[] chainId,
-			int messageNumber) throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		return db.getPcsMode2SkippedKey(txn, chainId, messageNumber);
-	}
-
-	@Override
-	public void setPqRatchetState(Transaction transaction, ContactId c,
-			long currentEpoch, long epochStartTime, int messagesSinceEpoch,
-			int state, boolean isInitiator, int chunksSent, int chunksReceived,
-			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
-			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
-			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
-			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
-			throws DbException {
-		if (transaction.isReadOnly()) throw new IllegalArgumentException();
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		db.setPqRatchetState(txn, c, currentEpoch, epochStartTime,
-				messagesSinceEpoch, state, isInitiator, chunksSent, chunksReceived,
-				ourEkSeed, ourEkVector, ourDecapsKey, theirEkSeed, theirEkHash,
-				theirEkVector, ciphertext, pendingChunks);
-	}
-
-	@Override
-	@Nullable
-	public Object[] getPqRatchetState(Transaction transaction, ContactId c)
-			throws DbException {
-		T txn = unbox(transaction);
-		if (!db.containsContact(txn, c))
-			throw new NoSuchContactException();
-		return db.getPqRatchetState(txn, c);
 	}
 
 	@Override

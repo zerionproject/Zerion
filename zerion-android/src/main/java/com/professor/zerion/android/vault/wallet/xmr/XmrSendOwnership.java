@@ -2,19 +2,6 @@ package com.professor.zerion.android.vault.wallet.xmr;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Process-local binding of a prepared transaction to the exact live objects and
- * session generation that produced it. It is never persisted and is never part
- * of the {@link XmrSendFingerprint}: it uses object identity, which is a
- * process-local fact, not a cryptographic one. Every native operation on the
- * prepared transaction, and the final check before relay, must verify that the
- * current objects and generations still match the ones captured here.
- *
- * <p>A replaced native transaction, a reopened or replaced session, a changed
- * session epoch or vault lock generation, a wallet switch, the wrong active
- * flow, or a disposed object each make {@link #matches} return false, so a stale
- * authorization can never be applied to a different transaction or session.
- */
 @NotNullByDefault
 public final class XmrSendOwnership {
 
@@ -48,12 +35,6 @@ public final class XmrSendOwnership {
 		return walletId;
 	}
 
-	/**
-	 * True only when every process-local binding still holds: the same prepared
-	 * object and session object by identity, the same active flow token by
-	 * identity, the same wallet id, and unchanged session epoch and lock
-	 * generation. Any null or any difference fails closed.
-	 */
 	public boolean matches(Object currentPrepared, Object currentSession,
 			String currentWalletId, long currentEpoch, long currentLockGen,
 			Object currentFlow) {

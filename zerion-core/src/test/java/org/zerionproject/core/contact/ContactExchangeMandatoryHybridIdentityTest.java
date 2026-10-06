@@ -43,14 +43,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * A real contact exchange manager (Alice) faces a scripted peer built from
- * the same production primitives (Bob's identity, header keys, stream and
- * record codecs) that sends a crafted contact info record. The exchange
- * must reject every record that lacks or breaks the ML-DSA half of the
- * identity proof, and accept the fully valid one, so that no peer can fall
- * back to Ed25519-only authentication.
- */
 public class ContactExchangeMandatoryHybridIdentityTest
 		extends BrambleTestCase {
 
@@ -110,10 +102,6 @@ public class ContactExchangeMandatoryHybridIdentityTest
 		lifecycleManager.waitForShutdown();
 	}
 
-	/**
-	 * Runs Alice's real exchange against the scripted Bob and returns what
-	 * Alice's exchange threw, or null if it completed.
-	 */
 	@Nullable
 	private Throwable exchangeAgainst(Tamper tamper) throws Exception {
 		TestDuplexTransportConnection[] pair = createPair();

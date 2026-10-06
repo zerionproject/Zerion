@@ -66,7 +66,7 @@ public class PcsSessionState {
 	}
 
 	public static PcsSessionState createInitialMode3Full(SecretKey rootKey,
-			SecretKey chainKey, DhRatchetState dhState,
+			SecretKey chainKey, @Nullable DhRatchetState dhState,
 			Mode3FullState mode3FullState) {
 		return new PcsSessionState(chainKey, 0, 0, rootKey, dhState, true, 0,
 				mode3FullState);

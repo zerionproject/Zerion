@@ -43,12 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * PROTO-15: the mesh group-record path accepts group records only. A
- * private-message type that has its own online ordering and freshness
- * rules (a typing indicator, a call signal, a prekey bundle, a legacy text
- * with no type) is refused before it is stored or dispatched.
- */
 @NotNullByDefault
 public class MeshGroupRecordPathTest extends BrambleTestCase {
 

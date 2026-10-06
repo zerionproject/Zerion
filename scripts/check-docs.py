@@ -66,7 +66,6 @@ FORBIDDEN = [
     (r"truly anonymous|complete anonymity|completely anonymous", "anonymity is bounded by Tor's model"),
     (r"hardware-backed vault|held in (the )?hardware", "the vault is device-bound, not held in hardware"),
     (r"signs the transcript with its hybrid", "pairing authentication is classical in 3.0.11"),
-    (r"debug-build-only", "I2P is in the release build on this branch"),
     (r"schema version 66", "schema version is 67"),
 ]
 ALLOW_CONTEXT = [r"not used", r"retired", r"no longer", r"not ", r"never ", r"is written", r"absent", r"instead of", r"Historical", r"older material"]

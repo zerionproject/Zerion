@@ -247,8 +247,13 @@ class SettingsViewModel extends DbViewModel implements EventListener {
 			try {
 				byte[] localPub = identityManager.getLocalAuthor()
 						.getPublicKey().getEncoded();
+				byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
 				String fp = com.professor.zerion.android.contact.identity
-						.IdentityFingerprint.forSigningPub(localPub);
+						.IdentityDisplay.lines(localPub, localMlDsa,
+								getApplication().getString(R.string
+										.identity_fingerprint_hybrid_format),
+								getApplication().getString(R.string
+										.identity_fingerprint_classical_format));
 				myFingerprint.postEvent(fp);
 			} catch (org.zerionproject.core.api.db.DbException e) {
 				handleException(e);

@@ -17,14 +17,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Every signature the builder produces verifies against a BIP143 digest
- * computed here from the serialized transaction alone, without the library's
- * own sighash code: version, hashPrevouts, hashSequence, the outpoint, the
- * P2WPKH script code, the amount, the sequence, hashOutputs, the lock time
- * and SIGHASH_ALL. The witness also carries the signing key's compressed
- * public key, whose hash is the one in the script code.
- */
 public class BtcTxBip143DigestTest {
 
 	private static final String MNEMONIC =
@@ -82,7 +74,6 @@ public class BtcTxBip143DigestTest {
 		throw new AssertionError("unknown input " + hash + ":" + index);
 	}
 
-	/** {@code 1976a914 <20-byte key hash> 88ac}, length prefix included. */
 	private static byte[] scriptCode(byte[] keyHash) {
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
 		b.write(0x19);

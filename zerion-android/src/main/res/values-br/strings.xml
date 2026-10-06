@@ -1,5 +1,4 @@
 <resources>
-	<!--Setup-->
 	<string name="setup_title">Degemer mat war Zerion</string>
 	<string name="setup_next">De-heul</string>
 	<string name="setup_password_intro">Dibabit ur ger-tremen</string>
@@ -15,23 +14,17 @@
 	<string name="more_info">Muioc\'h a ditouroù</string>
 	<string name="don_t_ask_again">Arabat goulenn ganin ken</string>
 	<string name="dnkm_huawei_protected_button">Gwareziñ Zerion</string>
-  <!--Login-->
   <string name="enter_password">Ger-tremen</string>
   <string name="try_again">Ger-tremen fall, klaskit adarre</string>
   <string name="sign_in_button">Kevreañ</string>
   <string name="forgotten_password">Ankoueet em eus ma ger-tremen</string>
   <string name="dialog_title_lost_password">Kollet em eus ma ger-tremen</string>
-  <string name="startup_failed_notification_title">N\'hall ket loc\'hañ Zerion</string>
-  <!--Navigation Drawer-->
   <string name="contact_list_button">Darempredoù</string>
   <string name="groups_button">Strolladoù prevez</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Prennañ an arload</string>
   <string name="settings_button">Arventennoù</string>
   <string name="sign_out_button">Digevreañ</string>
-  <!--Transports-->
   <string name="transport_tor">Kenrouedad</string>
-  <!--Notifications-->
   <string name="ongoing_notification_title">Marilhet e-barzh Zerion</string>
   <string name="ongoing_notification_text">Touchit da zigeriñ Zerion.</string>
   <plurals name="private_message_notification_text">
@@ -48,7 +41,6 @@
     <item quantity="many">%d a gemennadennoù strollad nevez.</item>
     <item quantity="other">%d a gemennadennoù strollad nevez.</item>
   </plurals>
-  <!--Misc-->
   <string name="now">bremañ</string>
   <string name="show">Diskouez</string>
   <string name="hide">Kuzhaat</string>
@@ -58,7 +50,6 @@
   <string name="delete">Dilemel</string>
   <string name="accept">Asantiñ</string>
   <string name="decline">Nac\'hañ</string>
-  <string name="options">Dibarzhioù</string>
   <string name="online">Enlinenn</string>
   <string name="offline">Ezlinenn</string>
   <string name="send">Kas</string>
@@ -69,20 +60,17 @@
   <string name="text_too_long">An destenn ebarzhet a zo re hir</string>
   <string name="show_onboarding">Diskouez an diviz skoazell</string>
   <string name="help">Skoazell</string>
-  <!--Contacts and Private Conversations-->
   <string name="date_no_private_messages">Kemennadenn ebet.</string>
   <string name="message_hint">Doare kemennadenn</string>
   <string name="delete_contact">Dilemel an darempred</string>
   <string name="dialog_title_delete_contact">Kadarnat dilemel darempred</string>
   <string name="contact_deleted_toast">Darempred dilemet</string>
-  <!--Adding Contacts-->
   <string name="add_contact_title">Ouzhpennañ un darempred</string>
   <string name="continue_button">Kenderc\'hel</string>
   <string name="try_again_button">Klask adarre</string>
   <string name="contact_added_toast">Darempred ouzhpennet: %s</string>
   <string name="contact_already_exists">An darempred %s a zo anezhañ endeo</string>
   <string name="camera_error">Fazi Kamera</string>
-  <!--Introductions-->
   <string name="introduction_onboarding_title">Degas e-barzh ho tarempredoù</string>
   <string name="introduction_menu_item">Sevel un digoradur</string>
   <string name="introduction_activity_title">Diuziñ darempred</string>
@@ -99,7 +87,6 @@
     <item quantity="many">%d a zarempredoù nevez ouzhpennet.</item>
     <item quantity="other">%d a zarempredoù nevez ouzhpennet.</item>
   </plurals>
-  <!--Private Groups-->
   <string name="groups_created_by">Graet gant %s</string>
   <plurals name="messages">
     <item quantity="one">%d kemennadenn</item>
@@ -116,7 +103,6 @@
   <string name="groups_create_group_invitation_button">Kas pedadennoù</string>
   <string name="groups_create_group_hint">Dibabit un anv evit ho strollad prevez</string>
   <string name="groups_invitation_sent">Pedadenn ar strollad a zo bet kaset</string>
-  <string name="groups_message_sent">Kemennadenn kaset</string>
   <string name="groups_member_list">Listenn an izili</string>
   <string name="groups_invite_members">Pediñ izili</string>
   <string name="groups_member_created_you">Krouet ho peus ar strollad</string>
@@ -129,38 +115,13 @@
   <string name="groups_dissolve">Divodañ ar strollad</string>
   <string name="groups_dissolve_dialog_title">Kadarnaat e tivodit ar strollad</string>
   <string name="groups_dissolve_button">Divodañ</string>
-  <!--Private Group Invitations-->
-  <!--Private Groups Revealing Contacts-->
-  <!--Forums-->
-  <!--Forum Sharing-->
-  <!--Blogs-->
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Display-->
-  <!--Settings Network-->
-  <!--How and when Tor will connect after Automatic: E.g. Don't connect (in China) or Use Tor with bridges (in Belarus)-->
-  <!--Settings Security and Panic-->
   <string name="security_settings_title">Surentezh</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_5">5 munutenn</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_60">1 eurvezh</string>
   <string name="change_password">Cheñch ar ger-tremen</string>
   <string name="confirm_new_password">Kadarnaat ar ger-tremen nevez</string>
   <string name="panic_app_setting_none">Hini ebet</string>
   <string name="panic_setting_signout_title">Digevreañ</string>
-  <!--Settings Notifications-->
   <string name="notify_sound_setting_disabled">Hini ebet</string>
-  <!--Settings Feedback-->
-  <!--Link Warning-->
-  <!--Crash Reporter-->
   <string name="close">Serriñ</string>
-  <!--Sign Out-->
-  <!--Screen Filters & Tapjacking-->
-  <!--Permission Requests-->
-  <!--App Locking-->
 </resources>

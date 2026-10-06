@@ -13,6 +13,7 @@ for each layer of the stack.
 | ZPP, the paced cover-traffic scheduler | `zerion-core/.../sync/Zpp*` | ZTP-ZPP.md |
 | ZMM, application records and fragmentation | `zerion-core/.../message` | ZTP-ZPP.md |
 | Mode 3-Full, the per-message post-quantum ratchet | `core/crypto/pcs` | ZWF-MODE3FULL.md |
+| Contact root evolution | `zerion-core/.../transport/RootEvolution*`, `RootKeyStore` | ZWF-ROOT-EVOLUTION.md |
 | Async sealed-sender envelope | `core/crypto/async` | ASYNC-SEALED-SENDER.md |
 | Bluetooth mesh transport | `zerion-core/.../transport/mesh`, `zerion-android/.../mesh` | MESH-TRANSPORT.md |
 | Embedded I2P carrier | `zerion-core/.../transport/i2p`, `zerion-android/.../i2p`, `i2p-embedded` | EMBEDDED-I2P.md |
@@ -36,12 +37,14 @@ Zerion runs one message stack over three interchangeable carriers.
   Carriers:
     - Tor v3 onion services            (inherited onion wrapper, see ZTP-ZPP.md)
     - Bluetooth Low Energy             (MESH-TRANSPORT.md)
-    - Embedded I2P, optional           (EMBEDDED-I2P.md)
+    - Embedded I2P, development builds (EMBEDDED-I2P.md)
 ```
 
 The online path and the offline path use different session crypto because they
 have different trust and timing models. Online, both peers are present and hold a
-long-lived shared root key, so Zerion runs a continuous forward-secret ratchet.
+shared contact root key, so Zerion runs a continuous forward-secret ratchet in
+each connection, and the two peers replace the root key itself with fresh
+hybrid secrets from time to time (ZWF-ROOT-EVOLUTION.md).
 Offline, the recipient may be absent for days and messages are relayed by
 untrusted devices, so Zerion seals each message to the recipient's published
 prekey bundle with no interactive handshake.
@@ -51,10 +54,11 @@ prekey bundle with no interactive handshake.
 | File | Scope |
 | --- | --- |
 | [ZWF-MODE3FULL.md](ZWF-MODE3FULL.md) | The online wire format and the Mode 3-Full post-quantum ratchet |
-| [ZTP-ZPP.md](ZTP-ZPP.md) | The Tor transport seam and the constant-rate pull protocol |
+| [ZWF-ROOT-EVOLUTION.md](ZWF-ROOT-EVOLUTION.md) | Evolution of the contact root key between connections |
+| [ZTP-ZPP.md](ZTP-ZPP.md) | The Tor transport seam and the paced pull protocol |
 | [ASYNC-SEALED-SENDER.md](ASYNC-SEALED-SENDER.md) | The offline sealed-sender envelope used by the mesh |
 | [MESH-TRANSPORT.md](MESH-TRANSPORT.md) | Store-and-forward flooding and the Bluetooth Low Energy link |
-| [EMBEDDED-I2P.md](EMBEDDED-I2P.md) | The optional embedded I2P carrier and its privacy trade-off |
+| [EMBEDDED-I2P.md](EMBEDDED-I2P.md) | The embedded I2P carrier of development builds and its privacy trade-off |
 
 ## Cryptographic primitives
 
@@ -73,8 +77,13 @@ All layers share one primitive set.
 | Vault and calls | AES-256-GCM; HKDF-SHA256 and HMAC-SHA256 for vault chunk keys and call endpoint keys |
 
 Public keys and signatures are hybrid: a classical key concatenated with a
-post-quantum key, so a break of either family alone does not break the
-construction. Sizes are listed in each document and are fixed by
+post-quantum key, and a hybrid signature is valid only if both halves verify.
+A break of either family alone does not break a hybrid signature where the
+verifier holds the signer's ML-DSA-65 key from an authenticated source (the
+contact record at pairing, a GroupTr member list, a channel id). The AuthorId
+names an identity by its Ed25519 key only (format 2, specified in
+`docs/wire/AUTHOR_ID_V2.md`, is not active), so where a protocol takes the
+ML-DSA-65 key from the same message it checks, the signature rests on Ed25519. Sizes are listed in each document and are fixed by
 `PostQuantumConstants` and `PcsConstants`.
 
 ## Conventions

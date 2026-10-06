@@ -5,23 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Immutable record of a reviewed, signed Monero send. It is built once, from a
- * successfully prepared {@link MoneroEngine.Prepared} plus the exact
- * already-validated inputs that produced it, and can never change afterwards.
- * It holds no native pointer and no process-local value; the native object's
- * identity and lifetime live in {@link XmrSendOwnership}. The fingerprint over
- * these fields is what an authorization is bound to and what is recomputed from
- * the live native object immediately before relay.
- *
- * <p>Construction fails closed: any inconsistent or out-of-range native value,
- * a count that disagrees with the enumerated txids, a malformed txid, an
- * overflowing total, or a fee below the dust it already contains, throws
- * {@link XmrError.XmrException} with {@link XmrError#SEND_SNAPSHOT_INVALID}, and
- * the owning flow disposes the prepared transaction. Dust is reported for the
- * review only and is never added to the debit; the total debit is exactly
- * amount + fee.
- */
 @NotNullByDefault
 public final class XmrSendSnapshot {
 
@@ -61,12 +44,6 @@ public final class XmrSendSnapshot {
 		this.fingerprint = fingerprint;
 	}
 
-	/**
-	 * Build the snapshot from a prepared transaction and the validated inputs
-	 * that produced it. The native amount, fee, dust, count and txids are read
-	 * here and validated; the caller has already validated the destination and
-	 * resolved its kind through Monero's parser.
-	 */
 	public static XmrSendSnapshot fromPrepared(String walletId,
 			byte[] primaryWalletFingerprint, int network,
 			String destinationExact, MoneroEngine.AddressKind destinationKind,
@@ -77,12 +54,6 @@ public final class XmrSendSnapshot {
 				prepared.txCount(), prepared.txIds());
 	}
 
-	/**
-	 * Build the snapshot from explicit already-read values. Used by
-	 * {@link #fromPrepared} and directly by the final pre-relay revalidation,
-	 * which re-reads the same native object and rebuilds the fingerprint to
-	 * compare it against the authorized one.
-	 */
 	public static XmrSendSnapshot create(String walletId,
 			byte[] primaryWalletFingerprint, int network,
 			String destinationExact, MoneroEngine.AddressKind destinationKind,
@@ -173,12 +144,10 @@ public final class XmrSendSnapshot {
 		return new ArrayList<>(java.util.Arrays.asList(allTxids));
 	}
 
-	/** The authorization fingerprint (a fresh 32-byte copy). */
 	public byte[] fingerprint() {
 		return fingerprint.clone();
 	}
 
-	/** Constant-time comparison of this snapshot's fingerprint with another. */
 	public boolean fingerprintEquals(byte[] other) {
 		return java.security.MessageDigest.isEqual(fingerprint, other);
 	}

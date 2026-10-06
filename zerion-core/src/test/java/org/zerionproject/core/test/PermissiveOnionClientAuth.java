@@ -5,7 +5,6 @@ import org.zerionproject.core.api.plugin.OnionClientAuthManager;
 
 import javax.annotation.Nullable;
 
-/** A client authorization manager with every contact at LEGACY. */
 public class PermissiveOnionClientAuth implements OnionClientAuthManager {
 
 	@Override

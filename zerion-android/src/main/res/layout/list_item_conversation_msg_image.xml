@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<!-- This layout is only used indirectly by cloning and setting its ConstraintSet -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
@@ -16,7 +15,6 @@
 	android:background="@drawable/msg_in"
 	android:elevation="@dimen/message_bubble_elevation">
 
-	<!-- Placeholder for replyPreviewContainer to avoid ConstraintSet warnings -->
 	<LinearLayout
 		android:id="@+id/replyPreviewContainer"
 		android:layout_width="0dp"
@@ -41,7 +39,6 @@
 		tools:ignore="ContentDescription"
 		tools:listitem="@layout/list_item_image" />
 
-	<!-- Placeholder for voiceMessageView to avoid ConstraintSet warnings -->
 	<View
 		android:id="@+id/voiceMessageView"
 		android:layout_width="wrap_content"

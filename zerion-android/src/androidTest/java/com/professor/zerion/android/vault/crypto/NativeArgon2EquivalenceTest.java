@@ -11,12 +11,6 @@ import org.junit.runner.RunWith;
 
 import java.nio.charset.StandardCharsets;
 
-/**
- * Cross-implementation equivalence gate: the native reference Argon2id must
- * produce the exact same derived key as the Bouncy Castle Java implementation
- * for the same parameters, so existing wallets open unchanged when native is
- * enabled. Runs on a real device where libzargon2.so is loaded.
- */
 @RunWith(AndroidJUnit4.class)
 public class NativeArgon2EquivalenceTest {
 
@@ -71,8 +65,6 @@ public class NativeArgon2EquivalenceTest {
 
 	@Test
 	public void equivalentAtExistingWalletProfile256Mb() {
-		// The exact profile existing wallets were created with. Slow but this
-		// is the load-bearing guarantee that they still open.
 		assertEquivalent("existing-wallet-password", salt(2, 32),
 				WALLET_256MB, 3, 1, 32);
 	}

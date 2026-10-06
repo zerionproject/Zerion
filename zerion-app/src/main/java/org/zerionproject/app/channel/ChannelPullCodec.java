@@ -37,12 +37,23 @@ class ChannelPullCodec {
 	byte[] encodePullRequest(byte[] channelId, long sinceSeqNum,
 			@Nullable byte[] hmacResponse, @Nullable byte[] nonce)
 			throws IOException {
+		return encodePullRequest(channelId, sinceSeqNum, hmacResponse, nonce,
+				null, null);
+	}
+
+	byte[] encodePullRequest(byte[] channelId, long sinceSeqNum,
+			@Nullable byte[] hmacResponse, @Nullable byte[] nonce,
+			@Nullable byte[] reactionsCursor, @Nullable byte[] commentsCursor)
+			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_PULL_REQUEST);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		d.put("channelId", channelId);
 		d.put("sinceSeqNum", sinceSeqNum);
 		if (hmacResponse != null) d.put("hmacResponse", hmacResponse);
 		if (nonce != null) d.put("nonce", nonce);
+		if (reactionsCursor != null) d.put("rc", reactionsCursor);
+		if (commentsCursor != null) d.put("cc", commentsCursor);
 		return writeDict(d);
 	}
 
@@ -56,7 +67,9 @@ class ChannelPullCodec {
 		return new PullRequest(d.getRaw("channelId"),
 				d.getLong("sinceSeqNum"),
 				d.getOptionalRaw("hmacResponse"),
-				d.getOptionalRaw("nonce"));
+				d.getOptionalRaw("nonce"),
+				d.getLong("v", 1L).intValue(),
+				d.getOptionalRaw("rc"), d.getOptionalRaw("cc"));
 	}
 
 	byte[] encodePullResponse(BdfDictionary manifest,
@@ -67,8 +80,27 @@ class ChannelPullCodec {
 					reactions,
 			List<org.zerionproject.app.api.channel.ChannelComment>
 					comments) throws IOException {
+		return encodePullResponse(manifest, newPosts, contentKeyEnvelope,
+				neighbourHints, reactions, comments, null, null);
+	}
+
+	byte[] encodePullResponse(BdfDictionary manifest,
+			List<ChannelPost> newPosts,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ItemSync reactionsSync,
+			@Nullable ItemSync commentsSync) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_PULL_RESPONSE);
+		if (reactionsSync != null || commentsSync != null) {
+			d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
+		}
+		if (reactionsSync != null) d.put("rs", syncToWire(reactionsSync));
+		if (commentsSync != null) d.put("cs", syncToWire(commentsSync));
 		d.put("manifest", manifest);
 		BdfList postList = new BdfList();
 		for (ChannelPost p : newPosts) {
@@ -114,7 +146,6 @@ class ChannelPullCodec {
 		return writeDict(d);
 	}
 
-	private static final int MAX_AUTHOR_NAME_CHARS = 64;
 
 	PullResponse decodePullResponse(byte[] data, byte[] channelId)
 			throws IOException {
@@ -145,8 +176,8 @@ class ChannelPullCodec {
 		List<org.zerionproject.app.api.channel.ChannelReaction>
 				reactions = new ArrayList<>();
 		BdfList reactionList = d.getList("reactions", new BdfList());
-		if (reactionList.size() > (long) ChannelConstants.MAX_REACTIONS_PER_POST
-				* ChannelConstants.PULL_BATCH_MAX_POSTS) {
+		if (reactionList.size()
+				> ChannelConstants.MAX_PULL_RESPONSE_REACTIONS) {
 			throw new FormatException();
 		}
 		for (Object o : reactionList) {
@@ -165,7 +196,7 @@ class ChannelPullCodec {
 		List<org.zerionproject.app.api.channel.ChannelComment>
 				comments = new ArrayList<>();
 		BdfList commentList = d.getList("comments", new BdfList());
-		if (commentList.size() > ChannelConstants.MAX_COMMENTS_PER_CHANNEL) {
+		if (commentList.size() > ChannelConstants.MAX_PULL_RESPONSE_COMMENTS) {
 			throw new FormatException();
 		}
 		for (Object o : commentList) {
@@ -174,10 +205,7 @@ class ChannelPullCodec {
 			byte[] cSig = cd.getOptionalRaw("sig");
 			String cBody = cd.getString("body");
 			String cName = cd.getString("name");
-			if (cBody.length() > ChannelConstants.MAX_COMMENT_BODY_CHARS
-					|| cName.length() > MAX_AUTHOR_NAME_CHARS) {
-				throw new FormatException();
-			}
+			if (!ChannelCommentPolicy.validFields(cBody, cName)) continue;
 			comments.add(
 					new org.zerionproject.app.api.channel.ChannelComment(
 							cd.getLong("seq"),
@@ -189,8 +217,53 @@ class ChannelPullCodec {
 							cd.getLong("ts"),
 							cSig == null ? new byte[0] : cSig));
 		}
+		ItemSync rs = syncFromWire(d.getOptionalDictionary("rs"));
+		ItemSync cs = syncFromWire(d.getOptionalDictionary("cs"));
 		return new PullResponse(manifest, posts, envelope, hints,
-				reactions, comments);
+				reactions, comments, d.getLong("v", 1L).intValue(), rs, cs);
+	}
+
+	static final class ItemSync {
+		final byte[] cursor;
+		final boolean full;
+		final List<String> removed;
+
+		ItemSync(byte[] cursor, boolean full, List<String> removed) {
+			this.cursor = cursor;
+			this.full = full;
+			this.removed = removed;
+		}
+	}
+
+	private static BdfDictionary syncToWire(ItemSync sync) {
+		BdfDictionary d = new BdfDictionary();
+		d.put("cursor", sync.cursor);
+		d.put("full", sync.full);
+		BdfList removed = new BdfList();
+		for (String k : sync.removed) removed.add(k);
+		d.put("removed", removed);
+		return d;
+	}
+
+	@Nullable
+	private static ItemSync syncFromWire(@Nullable BdfDictionary d)
+			throws FormatException {
+		if (d == null) return null;
+		byte[] cursor = d.getRaw("cursor");
+		if (cursor.length != ChannelItemSync.CURSOR_BYTES) {
+			throw new FormatException();
+		}
+		BdfList raw = d.getList("removed", new BdfList());
+		if (raw.size() > ChannelItemSync.MAX_REMOVED_LOG) {
+			throw new FormatException();
+		}
+		List<String> removed = new ArrayList<>(raw.size());
+		for (Object o : raw) {
+			if (o instanceof String && ((String) o).length() <= 128) {
+				removed.add((String) o);
+			}
+		}
+		return new ItemSync(cursor, d.getBoolean("full", true), removed);
 	}
 
 	BdfDictionary encodeManifest(byte[] channelId, byte[] salt,
@@ -267,7 +340,21 @@ class ChannelPullCodec {
 			atts.add(ad);
 		}
 		d.put("attachments", atts);
+		if (p.getFormatVersion() != ChannelPost.FORMAT_LEGACY) {
+			d.put("pv", (long) p.getFormatVersion());
+			byte[] salt = p.getSalt();
+			if (salt != null) d.put("salt", salt);
+		}
 		return d;
+	}
+
+	BdfDictionary postToWireDict(ChannelPost p) {
+		return postToWire(p);
+	}
+
+	ChannelPost wireDictToPost(byte[] channelId, BdfDictionary d)
+			throws FormatException {
+		return wireToPost(channelId, d);
 	}
 
 	private ChannelPost wireToPost(byte[] channelId, BdfDictionary d)
@@ -285,8 +372,22 @@ class ChannelPullCodec {
 					ad.getString("mime"), ad.getRaw("key"), null,
 					ad.getOptionalRaw("thumb")));
 		}
+		long version = d.getLong("pv", (long) ChannelPost.FORMAT_LEGACY);
+		byte[] salt = null;
+		if (version == ChannelPost.FORMAT_V2) {
+			salt = d.getRaw("salt");
+			if (salt.length != ChannelConstants.POST_SALT_BYTES) {
+				throw new FormatException();
+			}
+		} else if (version != ChannelPost.FORMAT_LEGACY) {
+			throw new FormatException();
+		}
+		long seqNum = d.getLong("seqNum");
+		if (seqNum < 0L || seqNum > ChannelConstants.MAX_SEQUENCE_NUMBER) {
+			throw new FormatException();
+		}
 		return new ChannelPost(channelId,
-				d.getLong("seqNum"),
+				seqNum,
 				d.getRaw("prevHash"),
 				d.getLong("timestampHourMs"),
 				d.getString("body"),
@@ -295,7 +396,8 @@ class ChannelPullCodec {
 				d.getRaw("signature"),
 				false,
 				d.getOptionalRaw("delegateSignerEd25519"),
-				d.getOptionalRaw("delegateSignerMlDsa"));
+				d.getOptionalRaw("delegateSignerMlDsa"),
+				false, (int) version, salt);
 	}
 
 	private BdfDictionary certToWire(ChannelDelegationCert c) {
@@ -311,11 +413,6 @@ class ChannelPullCodec {
 		return d;
 	}
 
-	/**
-	 * Reads the optional capability challenge carried by a request. Returns
-	 * null when either field is absent, which the publisher treats as an
-	 * unauthenticated request.
-	 */
 	@javax.annotation.Nullable
 	Challenge peekChallenge(byte[] data) throws IOException {
 		BdfDictionary d = readDict(data);
@@ -351,6 +448,7 @@ class ChannelPullCodec {
 			@javax.annotation.Nullable byte[] hmac) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_POST_COMMENT);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("seq", parentPostSeqNum);
@@ -431,6 +529,7 @@ class ChannelPullCodec {
 			@javax.annotation.Nullable byte[] hmac) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_ANNOUNCE);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("name", displayName);
@@ -491,6 +590,7 @@ class ChannelPullCodec {
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_POST_REACTION);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("seq", postSeqNum);
@@ -562,6 +662,7 @@ class ChannelPullCodec {
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		d.put("channelId", channelId);
 		d.put("name", displayName);
 		d.put("ts", timestampHourMs);
@@ -599,6 +700,7 @@ class ChannelPullCodec {
 			byte[] signature) throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_CHECK_APPROVAL);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		d.put("channelId", channelId);
 		d.put("ts", timestampHourMs);
 		d.put("ed", signerEd);
@@ -709,6 +811,7 @@ class ChannelPullCodec {
 			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_GET_ATTACHMENT);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
 		putChallenge(d, nonce, hmac);
 		d.put("channelId", channelId);
 		d.put("blobHash", blobHash);
@@ -737,7 +840,11 @@ class ChannelPullCodec {
 
 	AttachmentResponse decodeAttachmentResponse(byte[] data)
 			throws IOException {
-		BdfDictionary d = readDict(data);
+		BdfReader r = readerFactory.createReader(
+				new ByteArrayInputStream(data),
+				BdfReader.DEFAULT_NESTED_LIMIT,
+				ChannelConstants.MAX_RESPONSE_BYTES, true);
+		BdfDictionary d = r.readDictionary();
 		String type = d.getString("type");
 		if (!ChannelConstants.WIRE_TYPE_ATTACHMENT_BLOB.equals(type)) {
 			throw new FormatException();
@@ -765,6 +872,94 @@ class ChannelPullCodec {
 		AttachmentResponse(byte[] blobHash, byte[] blob) {
 			this.blobHash = blobHash;
 			this.blob = blob;
+		}
+	}
+
+	byte[] encodeSubmitPostRequest(byte[] channelId, ChannelPost post,
+			@Nullable byte[] nonce, @Nullable byte[] hmac)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_SUBMIT_POST);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
+		putChallenge(d, nonce, hmac);
+		d.put("channelId", channelId);
+		d.put("post", postToWire(post));
+		return writeDict(d);
+	}
+
+	static final class SubmitPostRequest {
+		final byte[] channelId;
+		final ChannelPost post;
+
+		SubmitPostRequest(byte[] channelId, ChannelPost post) {
+			this.channelId = channelId;
+			this.post = post;
+		}
+	}
+
+	SubmitPostRequest decodeSubmitPostRequest(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		if (!ChannelConstants.WIRE_TYPE_SUBMIT_POST.equals(
+				d.getString("type"))) {
+			throw new FormatException();
+		}
+		byte[] channelId = d.getRaw("channelId");
+		return new SubmitPostRequest(channelId,
+				wireToPost(channelId, d.getDictionary("post")));
+	}
+
+	byte[] encodeSubmitPostAck(String status, long tipSeq)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_SUBMIT_POST_ACK);
+		d.put("status", status);
+		d.put("tip", tipSeq);
+		return writeDict(d);
+	}
+
+	String decodeSubmitPostAck(byte[] data) {
+		try {
+			BdfDictionary d = readDict(data);
+			if (!ChannelConstants.WIRE_TYPE_SUBMIT_POST_ACK.equals(
+					d.getString("type"))) {
+				return ChannelConstants.SUBMIT_STATUS_REFUSED;
+			}
+			return d.getString("status");
+		} catch (IOException e) {
+			return ChannelConstants.SUBMIT_STATUS_REFUSED;
+		}
+	}
+
+	int peekVersion(byte[] data) {
+		try {
+			return readDict(data).getLong("v", 1L).intValue();
+		} catch (IOException e) {
+			return 1;
+		}
+	}
+
+	byte[] withoutProof(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		d.remove("hmac");
+		d.remove("hmac2");
+		d.remove("hmacResponse");
+		d.remove("nonce");
+		return writeDict(d);
+	}
+
+	byte[] withProofV2(byte[] data, byte[] proof) throws IOException {
+		BdfDictionary d = readDict(data);
+		d.put("hmac2", proof);
+		return writeDict(d);
+	}
+
+	@Nullable
+	byte[] peekProofV2(byte[] data) {
+		try {
+			return readDict(data).getOptionalRaw("hmac2");
+		} catch (IOException e) {
+			return null;
 		}
 	}
 
@@ -835,12 +1030,23 @@ class ChannelPullCodec {
 		@Nullable
 		final byte[] nonce;
 
+		final int version;
+		@Nullable
+		final byte[] reactionsCursor;
+		@Nullable
+		final byte[] commentsCursor;
+
 		PullRequest(byte[] channelId, long sinceSeqNum,
-				@Nullable byte[] hmacResponse, @Nullable byte[] nonce) {
+				@Nullable byte[] hmacResponse, @Nullable byte[] nonce,
+				int version, @Nullable byte[] reactionsCursor,
+				@Nullable byte[] commentsCursor) {
 			this.channelId = channelId;
 			this.sinceSeqNum = sinceSeqNum;
 			this.hmacResponse = hmacResponse;
 			this.nonce = nonce;
+			this.version = version;
+			this.reactionsCursor = reactionsCursor;
+			this.commentsCursor = commentsCursor;
 		}
 	}
 
@@ -856,19 +1062,29 @@ class ChannelPullCodec {
 		final List<org.zerionproject.app.api.channel.ChannelComment>
 				comments;
 
+		final int version;
+		@Nullable
+		final ItemSync reactionsSync;
+		@Nullable
+		final ItemSync commentsSync;
+
 		PullResponse(BdfDictionary manifest, List<ChannelPost> newPosts,
 				@Nullable byte[] contentKeyEnvelope,
 				List<String> neighbourHints,
 				List<org.zerionproject.app.api.channel.ChannelReaction>
 						reactions,
 				List<org.zerionproject.app.api.channel.ChannelComment>
-						comments) {
+						comments, int version, @Nullable ItemSync reactionsSync,
+				@Nullable ItemSync commentsSync) {
 			this.manifest = manifest;
 			this.newPosts = newPosts;
 			this.contentKeyEnvelope = contentKeyEnvelope;
 			this.neighbourHints = neighbourHints;
 			this.reactions = reactions;
 			this.comments = comments;
+			this.version = version;
+			this.reactionsSync = reactionsSync;
+			this.commentsSync = commentsSync;
 		}
 	}
 }

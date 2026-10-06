@@ -19,6 +19,8 @@ class CallNotification {
 	private static final String CHANNEL_ID = "voice_call_channel";
 	private static final String CHANNEL_ID_ONGOING = "voice_call_ongoing_channel";
 
+	static final String GROUP = "zerion.call";
+
 	private final Service service;
 
 	CallNotification(Service service) {
@@ -38,8 +40,12 @@ class CallNotification {
 
 		boolean ringingIncoming = isIncoming
 				&& callState == VoiceCallService.CallState.RINGING;
-		String title = ringingIncoming ? "Incoming call" : "Ongoing call";
-		String text = videoActive ? "Secure video call" : "Secure voice call";
+		String title = service.getString(ringingIncoming
+				? R.string.call_notification_incoming_title
+				: R.string.call_notification_ongoing_title);
+		String text = service.getString(videoActive
+				? R.string.call_notification_video_text
+				: R.string.call_notification_voice_text);
 
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(service,
 				ringingIncoming ? CHANNEL_ID : CHANNEL_ID_ONGOING)
@@ -49,21 +55,24 @@ class CallNotification {
 				.setPriority(ringingIncoming ? NotificationCompat.PRIORITY_MAX
 						: NotificationCompat.PRIORITY_LOW)
 				.setCategory(NotificationCompat.CATEGORY_CALL)
+				.setGroup(GROUP)
 				.setOngoing(true)
 				.setAutoCancel(false)
 				.setContentIntent(pendingIntent);
 		if (ringingIncoming) {
 			builder.setFullScreenIntent(pendingIntent, true);
-			Intent acceptIntent = new Intent(service, VoiceCallService.class);
-			acceptIntent.setAction(CallIntents.ACTION_ACCEPT_CALL);
-			PendingIntent acceptPendingIntent = PendingIntent.getService(service, 1,
+			Intent acceptIntent = new Intent(intent);
+			acceptIntent.putExtra(VoiceCallActivity.EXTRA_ANSWER, true);
+			PendingIntent acceptPendingIntent = PendingIntent.getActivity(service, 1,
 					acceptIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			builder.addAction(R.drawable.ic_phone_white, "Accept", acceptPendingIntent);
+			builder.addAction(R.drawable.ic_phone_white,
+					service.getString(R.string.accept), acceptPendingIntent);
 			Intent declineIntent = new Intent(service, VoiceCallService.class);
 			declineIntent.setAction(CallIntents.ACTION_DECLINE_CALL);
 			PendingIntent declinePendingIntent = PendingIntent.getService(service, 2,
 					declineIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			builder.addAction(R.drawable.ic_close, "Decline", declinePendingIntent);
+			builder.addAction(R.drawable.ic_close,
+					service.getString(R.string.decline), declinePendingIntent);
 			builder.setVisibility(NotificationCompat.VISIBILITY_SECRET);
 		}
 

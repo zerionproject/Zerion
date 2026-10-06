@@ -4,4 +4,6 @@ Zerion 3.0 adds offline messaging. When there is no internet, nearby devices con
 
 This release also strengthens the app: per message post-quantum encryption throughout, a hardened mode with tamper detection enabled by default, an app signature self check, and reproducible builds. Both people need this version to message each other.
 
+Note added September 2026: in current releases hardened mode is off by default (three opt-in protections), I2P is no longer in the published app, and reproducible builds were not yet achieved: the first byte-identical reproduction of a release is recorded for 3.0.12.
+
 Full notes: https://github.com/zerionproject/Zerion/releases/tag/v3.0.0

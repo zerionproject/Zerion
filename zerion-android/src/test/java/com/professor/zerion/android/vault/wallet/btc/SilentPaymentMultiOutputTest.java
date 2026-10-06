@@ -14,16 +14,6 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Sender and receiver agree on several outputs to one silent payment
- * address in one transaction: the sender derives distinct outputs for
- * k = 0, 1, 2 and the receiver, scanning the transaction's outputs in any
- * order among decoys, finds exactly those with distinct tweaks, both from
- * the input key sum and from the precomputed tweak point. Nothing is found
- * with the wrong scan key, and a receiver that skips a k finds nothing past
- * the gap. The implementation has no label support, so label vectors do not
- * apply to it.
- */
 public class SilentPaymentMultiOutputTest {
 
 	private static final BigInteger N = new BigInteger(

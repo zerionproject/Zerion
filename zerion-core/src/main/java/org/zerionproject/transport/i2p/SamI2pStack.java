@@ -8,12 +8,6 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
-/**
- * The I2P stack over a SAM bridge to an externally-run router. This is the
- * release build's binding; with the plugin disabled by default there it is not
- * exercised, but it keeps the graph buildable and drives the transport when an
- * external router is available.
- */
 @NotNullByDefault
 public class SamI2pStack implements I2pStack {
 

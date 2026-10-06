@@ -31,13 +31,11 @@ import com.professor.zerion.android.login.OpenDatabaseFragment;
 import com.professor.zerion.android.login.PasswordFragment;
 import com.professor.zerion.android.login.StartupActivity;
 import com.professor.zerion.android.navdrawer.NavDrawerActivity;
-import com.professor.zerion.android.navdrawer.TransportsActivity;
 import com.professor.zerion.android.panic.PanicPreferencesActivity;
 import com.professor.zerion.android.panic.PanicResponderActivity;
 import com.professor.zerion.android.settings.SettingsActivity;
 import com.professor.zerion.android.settings.SettingsFragment;
 import com.professor.zerion.android.splash.SplashScreenActivity;
-import com.professor.zerion.android.test.TestDataActivity;
 
 import dagger.Component;
 
@@ -82,9 +80,8 @@ public interface ActivityComponent {
 
 	void inject(SettingsActivity activity);
 
-	void inject(TransportsActivity activity);
 
-	void inject(TestDataActivity activity);
+	void inject(ZerionActivity activity);
 
 	void inject(ChangePasswordActivity activity);
 

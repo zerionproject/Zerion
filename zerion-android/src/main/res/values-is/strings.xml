@@ -77,7 +77,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion er sett upp til að nota ekki internetið þegar keyrt er á rafhlöðu</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion er sett upp til að nota ekki internetið í þessu landi</string>
   
-  <string name="transport_lan_long">Sama þráðlausa Wi-Fi netkerfið</string>
 
   <string name="reminder_notification_title">Skráð út úr Zerion</string>
   <string name="reminder_notification_text">Ýttu til að skrá þig aftur inn.</string>
@@ -201,7 +200,6 @@
   <string name="connecting_to_device">Tengist við tæki\u2026</string>
   <string name="authenticating_with_device">Auðkenni við tæki\u2026</string>
   <string name="connection_error_title">Gat ekki tengst við tengiliðinn þinn</string>
-  <string name="connection_error_feedback">Ef þetta vandamál er viðvarandi, ættirðu að <a href="feedback">senda umsögn</a> til að hjálpa okkur að bæta forritið.</string>
   
   <string name="add_contact_remotely_title_case">Bæta við fjarlægum tengilið</string>
   <string name="add_contact_nearby_title">Bæta við nálægum tengilið</string>
@@ -369,8 +367,6 @@
   
   <string name="tor_network_setting_summary">Sjálfvirkt: %1$s (eftir %2$s)</string>
   <string name="tor_mobile_data_title">Nota farsímagagnasamband</string>
-  <string name="tor_only_when_charging_title">Tengjast í gegnum internetið aðeins þegar verið er í hleðslu</string>
-  <string name="tor_only_when_charging_summary">Gerir internettengingu óvirka þegar tækið keyrir á rafhlöðu</string>
   
   <string name="security_settings_title">Öryggi</string>
   <string name="pref_lock_title">Forritslæsing</string>
@@ -427,36 +423,8 @@
   <string name="choose_ringtone_title">Veldu hringitón</string>
   <string name="cannot_load_ringtone">Get ekki hlaðið inn hringitóni</string>
   
-  <string name="mailbox_settings_title">Pósthólf</string>
-  <string name="mailbox_setup_title">Uppsetning pósthólfs</string>
-  <string name="mailbox_setup_intro">Pósthólf gerir tengiliðunum þínum kleift að senda þér skilaboð á meðan þú ert ekki á netinu. Pósthólfið tekur við skilaboðum og geymir þau þar til þú kemst í samband.\n
-		\nÞú getur sett upp Zerion Mailbox pósthólfsforritið á aukatæki. Haltu því tengdu við rafmagn og Wi-Fi þannig að það verði alltaf til taks á netinu.</string>
-  <string name="mailbox_setup_download">Fyrst skaltu setja upp pósthólfsforritið á öðru tæki með því að leita að \"Zerion Mailbox\" á Google Play eða hvar sem það var sem þú náðir í Zerion.\n
-		\nTengdu síðan pósthólfið við Zerion með því að skanna QR-kóðann sem birtist í pósthólfsforritinu.</string>
-  <string name="mailbox_setup_download_link">Deila niðurhalstengli</string>
-  <string name="mailbox_setup_already_paired_title">Pósthólf er þegar tengt</string>
-  <string name="mailbox_setup_already_paired_description">Aftengdu pósthólfið á hinu tækinu þínu og prófaðu aftur.</string>
-  <string name="mailbox_setup_io_error_title">Mistókst að tengjast</string>
-  <string name="mailbox_setup_io_error_description">Gakktu úr skugga um að bæði tækin séu tengd við internetið og prófaðu svo aftur.</string>
-  <string name="mailbox_setup_assertion_error_title">Villa í pósthólfi</string>
-  <string name="mailbox_setup_assertion_error_description">Sendu umsögn (með naflausum gögnum) í gegnum Zerion forritið ef vandamálið er viðvarandi.</string>
-  <string name="mailbox_setup_camera_error_description">Náði ekki sambandi við myndavél. Prófaðu aftur, kannski eftir að hafa endurræst tækið.</string>
-  <string name="mailbox_setup_paired_title">Tengt</string>
-  <string name="mailbox_setup_paired_description">Tekist hefur að tengja pósthólfið þitt við Zerion.\n
-		\nHaltu pósthólfinu þínu tengdu við rafmagn og Wi-Fi þannig að það sé alltaf á netinu.</string>
-  <string name="tor_offline_title">Ónettengt</string>
-  <string name="tor_offline_description">Gakktu úr skugga um að þetta tæki sé tengt við netið og að tengingar við internetið séu leyfðar.\n
-		\nSíðan skaltu bíða eftir að hnatttáknið á tengistillingaskjánum verði grænt.</string>
-  <string name="tor_offline_button_check">Athugaðu tengistillingarnar</string>
-  <string name="mailbox_status_title">Staða pósthólfs</string>
-  <string name="mailbox_status_connected_title">Pósthólf er í gangi</string>
-  <string name="mailbox_status_failure_title">Pósthólf er ekki tiltækt</string>
-  <string name="mailbox_status_check_button">Athugaðu tenginguna</string>
   
-  <string name="mailbox_status_connected_info">Síðasta tenging: %s</string>
   
-  <string name="mailbox_status_connected_never">Aldrei</string>
-  <string name="mailbox_status_unlink_button">Aftengja</string>
   
   <string name="about_title">Um hugbúnaðinn</string>
   <string name="links">Hlekkir</string>
@@ -475,42 +443,13 @@
   <string name="disappearing_messages_summary">Láta öll frekari skilaboð í þessu samtali hverfa sjálfkrafa eftir 7\u00A0daga.</string>
   
   <string name="pref_category_actions">Aðgerðir</string>
-  <string name="send_feedback">Senda umsögn</string>
   
   <string name="link_warning_title">Aðvörun vegna tengils</string>
   <string name="link_warning_intro">Þú ert í þann mund að fara að opna eftirfarandi tengil með utanaðkomandi forriti.</string>
   <string name="link_warning_text">Þetta er hægt að nota til að auðkenna þig. Hugsaðu þig vel um hvort þú treystir þeim sem sendi þér þennan tengil og íhugaðu hvort þú ættir frekar að opna hann með Tor-vafranum.</string>
   <string name="link_warning_open_link">Opna tengil</string>
   
-  <string name="crash_report_title">Hrunskýrsla fyrir Zerion</string>
-  <string name="zerion_crashed">Því miður, Zerion hefur hrunið</string>
-  <string name="not_your_fault">Það er ekki þér að kenna.</string>
-  <string name="please_send_report">Hjálpaðu okkur við að bæta Zerion með því að senda okkur hrunskýrslu.</string>
-  <string name="report_is_encrypted">Við lofum að skýrslan sé dulrituð og send á öruggan máta.</string>
-  <string name="feedback_title">Umsagnir</string>
-  <string name="describe_crash">Lýstu því hvað gerðist (valfrjálst)</string>
-  <string name="enter_feedback">Settu inn umsögnina þína</string>
-  <string name="optional_contact_email">Tölvupóstfangið þitt (valfrjálst)</string>
-  <string name="include_debug_report_crash">Senda nafnlaus gögn um hrunið</string>
-  <string name="include_debug_report_feedback">Senda nafnlaus gögn um tækið</string>
-  <string name="dev_report_user_info">Upplýsingar um notanda</string>
-  <string name="dev_report_basic_info">Grunnupplýsingar</string>
-  <string name="dev_report_device_info">Upplýsingar um tæki</string>
-  <string name="dev_report_stacktrace">Stacktrace-rakning</string>
-  <string name="dev_report_time_info">Tímaupplýsingar</string>
-  <string name="dev_report_memory">Minni</string>
-  <string name="dev_report_storage">Geymslurými</string>
-  <string name="dev_report_connectivity">Tengingar</string>
-  <string name="dev_report_network_usage">Notkun netkerfis</string>
-  <string name="dev_report_build_config">Byggingaruppsetning</string>
-  <string name="dev_report_logcat">Atvikaskrá forrits</string>
-  <string name="dev_report_device_features">Eiginleikar tækis</string>
-  <string name="send_report">Senda skýrslu</string>
   <string name="close">Loka</string>
-  <string name="dev_report_sending">Sendi umsögn…</string>
-  <string name="dev_report_sent">Umsögn send</string>
-  <string name="dev_report_saved">Skýrsla vistuð. Hún verður send næst þegar þú skráir þig inn í Zerion.</string>
-  <string name="dev_report_error">Villa: Sending skýrslu mistókst</string>
   
   <string name="progress_title_logout">Skrái út úr Zerion…</string>
   
@@ -665,7 +604,6 @@
 	<string name="wallet_receive_new">Nýtt vistfang</string>
 	<string name="wallet_node_hint">Ýttu á þjón til að nota hann. Haltu inni á sérsniðnum þjóni til að fjarlægja hann.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Endurnýtanlegt einkavistfang. Greiðslur á það er ekki hægt að tengja saman á keðjunni. Greining skannar opinber gögn um Tor; lyklarnir þínir yfirgefa aldrei tækið.</string>
 	<string name="wallet_sp_balance">Greint: %1$s</string>
 	<string name="wallet_sp_scanned">Skannað að blokk %1$d</string>
 	<string name="wallet_sp_set_oracle">Skönnunaruppspretta</string>

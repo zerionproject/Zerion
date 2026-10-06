@@ -44,12 +44,6 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
-/**
- * Opened Monero wallet screen, structured to match the Bitcoin wallet: a
- * centered balance and sync status, the same circular Send / Receive / Refresh
- * actions (Send is present but disabled until a later phase), and a history
- * list using the same row layout. Receive is subaddress-first.
- */
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class XmrWalletDetailFragment extends BaseFragment {
@@ -320,11 +314,6 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		}
 	}
 
-	/**
-	 * Show canonical details for one transaction. The row is looked up fresh from
-	 * the current wallet2 history by txid, so the screen reflects the authoritative
-	 * state and survives a refresh or restart rather than a transient row object.
-	 */
 	private void showTxDetails(String txid) {
 		List<XmrTxInfo> history = viewModel.getHistory().getValue();
 		XmrTxInfo tx = null;
@@ -426,14 +415,6 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		box.addView(row);
 	}
 
-	/**
-	 * Monero Send as a modal card over the wallet, matching the Bitcoin flow:
-	 * an input card (recipient, amount, priority), then a review card that shows
-	 * the exact already-signed transaction and asks for the wallet password to
-	 * authorize that transaction after it is shown, then a result card. The card
-	 * only reads the send state the manager posts and drives the one core send
-	 * flow; it never touches the native transaction, the journal or the relay.
-	 */
 	private void showSendDialog() {
 		if (!isAdded()) return;
 		if (viewModel.isSpendQuarantined(walletId)) {
@@ -605,8 +586,6 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		return 0;
 	}
 
-	/** XMR atomic amount from a number the user typed in unit {@code u}
-	 *  (0 XMR, 1 USD, 2 EUR); -1 when the text or the needed rate is missing. */
 	private long atomicFromUnit(String text, int u) {
 		String t = text.trim();
 		if (t.isEmpty()) return -1;
@@ -639,8 +618,6 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		setAmountAtomic(amount, unlockedAtomic / 100 * pct);
 	}
 
-	/** Put an XMR atomic value into the amount field, written in the currently
-	 *  selected unit so the field and its suffix stay consistent. */
 	private void setAmountAtomic(TextInputEditText amount, long atomic) {
 		String text;
 		double rate = rateFor(sendUnit);
@@ -1337,11 +1314,6 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		returnToList();
 	}
 
-	/**
-	 * After a committed delete this screen must not remain reachable: pop it
-	 * off the back stack so Back cannot reopen the deleted wallet, landing on
-	 * the list beneath (whose view reloads from persisted state).
-	 */
 	private void returnToList() {
 		if (!isAdded()) return;
 		androidx.fragment.app.FragmentManager fm =

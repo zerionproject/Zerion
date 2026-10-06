@@ -10,7 +10,6 @@
 	android:fitsSystemWindows="true"
 	tools:context=".android.navdrawer.NavDrawerActivity">
 
-	<!-- Top App Bar (60dp height + status bar insets) -->
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/appBar"
 		android:layout_width="0dp"
@@ -23,7 +22,6 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent">
 
-		<!-- Profile Icon (Left) - 48x48dp tap target -->
 		<com.google.android.material.card.MaterialCardView
 			android:id="@+id/profileIcon"
 			android:layout_width="48dp"
@@ -52,7 +50,6 @@
 
 		</com.google.android.material.card.MaterialCardView>
 
-		<!-- Screen Title (left-aligned, large) -->
 		<TextView
 			android:id="@+id/toolbarTitle"
 			android:layout_width="0dp"
@@ -73,7 +70,6 @@
 			app:layout_constraintStart_toEndOf="@+id/profileIcon"
 			app:layout_constraintTop_toTopOf="parent" />
 
-		<!-- Network Status Button -->
 		<ImageButton
 			android:id="@+id/networkStatusButton"
 			android:layout_width="48dp"
@@ -87,7 +83,6 @@
 			app:layout_constraintTop_toTopOf="parent"
 			app:tint="@color/zerion_text_primary" />
 
-		<!-- zVault shortcut -->
 		<ImageButton
 			android:id="@+id/vaultShortcutButton"
 			android:layout_width="48dp"
@@ -101,7 +96,6 @@
 			app:layout_constraintTop_toTopOf="parent"
 			app:tint="@color/zerion_text_primary" />
 
-		<!-- Menu Button (3-dot) -->
 		<ImageButton
 			android:id="@+id/menuButton"
 			android:layout_width="48dp"
@@ -156,7 +150,6 @@
 
 		</androidx.constraintlayout.widget.ConstraintLayout>
 
-	<!-- Content Container -->
 	<androidx.fragment.app.FragmentContainerView
 		android:id="@+id/fragmentContainer"
 		android:name="com.professor.zerion.android.contact.ContactListFragment"
@@ -167,7 +160,6 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/expiryWarning" />
 
-	<!-- Subtle top divider for the bottom-nav -->
 	<View
 		android:id="@+id/bottomNavDivider"
 		android:layout_width="0dp"
@@ -177,7 +169,6 @@
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />
 
-	<!-- Bottom Navigation (Text-Only Tabs - 56dp height) -->
 	<LinearLayout
 		android:id="@+id/bottomNavigation"
 		android:layout_width="0dp"
@@ -247,7 +238,6 @@
 
 	</LinearLayout>
 
-	<!-- FAB (Add Contact or Group) -->
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/fabCompose"
 		android:layout_width="wrap_content"

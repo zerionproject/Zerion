@@ -9,11 +9,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
 
-/**
- * The minimal ZVault storage surface the XMR layer uses. WalletStore implements
- * this; tests provide a fake. Keeps the XMR layer decoupled from the concrete
- * store and independently testable without touching real vault storage.
- */
 @NotNullByDefault
 public interface XmrStore {
 	String createWallet(WalletCoin coin, String name, char[] mnemonic,
@@ -33,10 +28,6 @@ public interface XmrStore {
 
 	Object settingsMonitor();
 
-	/**
-	 * A per-wallet secret kept as its own vault item, as bytes the caller
-	 * wipes, so it never passes through the settings JSON or a String.
-	 */
 	@Nullable
 	byte[] readWalletSecret(String walletId, String name) throws Exception;
 
@@ -45,21 +36,10 @@ public interface XmrStore {
 
 	void removeWalletSecret(String walletId, String name) throws Exception;
 
-	/**
-	 * Read the durable spend-journal string for a wallet, or null if none. Kept
-	 * out of the settings blob so its reader can be strictly fail-closed and does
-	 * not share the settings JSON's lenient parsing.
-	 */
 	@Nullable
 	String readSpendJournal(String walletId) throws Exception;
 
-	/**
-	 * Durably persist the spend-journal string for a wallet. Returns only after
-	 * the record is committed to disk, so a relay can be gated on its success.
-	 */
 	void writeSpendJournal(String walletId, String journal) throws Exception;
 
-	/** Remove the spend-journal for a wallet. Owned by the reconciliation
-	 *  authority, never a UI action. */
 	void removeSpendJournal(String walletId) throws Exception;
 }

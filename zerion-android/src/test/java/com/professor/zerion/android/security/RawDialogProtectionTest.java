@@ -13,12 +13,6 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-REG-AND-01: a raw Dialog is outside the FLAG_SECURE policy that alert
- * dialogs and dialog fragments get automatically, so every file that builds
- * one must route it through the secret-protecting helper. The gallery viewer
- * and the avatar viewer show decrypted content in such windows.
- */
 public class RawDialogProtectionTest {
 
 	@Test

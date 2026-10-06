@@ -53,7 +53,6 @@ public class AsyncPrekeyStoreTest {
 		assertEquals(a.id, b.id);
 		AsyncPrekeyStore.SignedPrekey c = store.rotateSignedPrekey();
 		assertEquals(a.id + 1, c.id);
-		// The previous signed prekey is still resolvable during the grace window.
 		assertNotNull(store.resolvePrekey(AsyncEnvelope.PREKEY_KIND_SIGNED,
 				new byte[AsyncEnvelope.PREKEY_ID_BYTES], a.id));
 		assertNotNull(store.resolvePrekey(AsyncEnvelope.PREKEY_KIND_SIGNED,
@@ -75,11 +74,6 @@ public class AsyncPrekeyStoreTest {
 						&& !store.isSeen(id));
 	}
 
-	/**
-	 * A sender that floods its own record raises only its own floor: another
-	 * sender's envelope expiring at that floor is still admitted, so one
-	 * contact cannot silence the mesh for the rest.
-	 */
 	@Test
 	public void aFloodFromOneSenderLeavesAnotherSenderUnaffected()
 			throws Exception {
@@ -100,7 +94,6 @@ public class AsyncPrekeyStoreTest {
 						now + 7L * 24 * 3600 * 1000));
 	}
 
-	/** The number of senders with a record is bounded as well. */
 	@Test
 	public void theSetOfSendersIsBounded() throws Exception {
 		long now = System.currentTimeMillis();
@@ -117,13 +110,6 @@ public class AsyncPrekeyStoreTest {
 				+ AsyncPrekeyStore.MAX_SEEN_SENDERS + 19)));
 	}
 
-	/**
-	 * CRY-08: the bound evicts the entry expiring soonest and raises the
-	 * floor to its expiry, so the evicted id, any id expiring at or before
-	 * the floor, and an expired id are all refused; only later expiries are
-	 * admitted, and a newcomer that would itself be the soonest to expire is
-	 * refused rather than admitted and forgotten.
-	 */
 	@Test
 	public void evictionRaisesTheFloorInsteadOfForgetting() throws Exception {
 		AsyncPrekeyStore bounded = new AsyncPrekeyStore(crypto,
@@ -149,7 +135,6 @@ public class AsyncPrekeyStoreTest {
 				id(7), now - 1L));
 	}
 
-	/** Entries written before expiries were recorded are kept, not dropped. */
 	@Test
 	public void legacyEntriesWithoutExpiryStayRemembered() throws Exception {
 		InMemorySettingsManager settings = new InMemorySettingsManager();

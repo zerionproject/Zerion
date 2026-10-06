@@ -27,4 +27,4 @@ org.jmock:jmock:2.12.0=testCompileClasspath,testRuntimeClasspath
 org.objenesis:objenesis:3.0.1=testRuntimeClasspath
 org.ow2.asm:asm:7.1=testCompileClasspath,testRuntimeClasspath
 org.ow2.asm:asm:9.7=animalsniffer
-empty=annotationProcessor,testAnnotationProcessor,testCompile,testOutput
+empty=animalsnifferCopy,annotationProcessor,annotationProcessorCopy,compileClasspathCopy,runtimeClasspathCopy,signatureCopy,testAnnotationProcessor,testAnnotationProcessorCopy,testCompile,testCompileClasspathCopy,testCompileCopy,testOutput,testOutputCopy,testRuntimeClasspathCopy

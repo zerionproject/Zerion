@@ -33,17 +33,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Opens a complete wire frame sealed by the other implementation: its stream
- * prologue and one frame, read through this implementation's real decrypter
- * with the real ratchet and a real ML-KEM key pair.
- *
- * <p>Per-primitive vectors cannot catch a frame-layer disagreement, because two
- * implementations can agree on every primitive and still place the same bytes
- * in different fields or advance the chain differently. A connection that dies
- * shortly after it opens looks exactly like that, so this closes the gap. When
- * the file is absent the test has nothing to check and passes.
- */
 public class ZwfCrossImplementationFrameTest {
 
 	private static final String A_ROOT =
@@ -79,7 +68,7 @@ public class ZwfCrossImplementationFrameTest {
 				Thread.sleep(ms);
 			}
 		};
-		ratchet = new PcsRatchetImpl(crypto, clock);
+		ratchet = new PcsRatchetImpl(crypto);
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor = providerImpl.getDeclaredConstructor(
@@ -112,13 +101,9 @@ public class ZwfCrossImplementationFrameTest {
 		SecretKey rootKey =
 				new SecretKey(hex(section(json, "zwfFrame", "rootKey")));
 
-		// The peer sealed this as the A direction, so this side opens it as the
-		// B direction: the same per-direction keys seen from the other end.
 		SecretKey recvRootKey = crypto.deriveKey(A_ROOT, rootKey);
 		SecretKey recvHeaderKey = crypto.deriveKey(A_HDR, rootKey);
 
-		// The key pair the peer encapsulated to, so the post-quantum secret it
-		// mixed into the body key can actually be recovered here.
 		byte[] ek = hex(section(json, "mlkem768", "publicKey"));
 		byte[] dk = hex(section(json, "mlkem768", "privateKey"));
 		MlKemKeyPair ourKeyPair = new MlKemKeyPair(ek, dk,
@@ -135,7 +120,7 @@ public class ZwfCrossImplementationFrameTest {
 		AuthenticatedCipher cipher = new XSalsa20Poly1305AuthenticatedCipher();
 		ZwfMode3FullStreamDecrypter dec = new ZwfMode3FullStreamDecrypter(
 				new ByteArrayInputStream(wire), cipher, ratchet,
-				mode3FullRatchet, null, tag, 0L, recvHeaderKey, recvState, null);
+				mode3FullRatchet, tag, 0L, recvHeaderKey, recvState, null);
 
 		byte[] buf = new byte[FRAME_LENGTH];
 		int n = dec.readFrame(buf);
@@ -144,9 +129,6 @@ public class ZwfCrossImplementationFrameTest {
 				expectedPayload, Arrays.copyOf(buf, n));
 		assertEquals(7L, dec.getStreamId());
 
-		// The frame after the first: this is where the chain advance and the
-		// post-quantum fork have to agree, and where a live connection fails if
-		// they do not.
 		byte[] expectedPayload2 = hex(section(json, "zwfFrame", "payload2"));
 		int n2 = dec.readFrame(buf);
 		assertTrue("expected a second payload, got " + n2, n2 > 0);

@@ -44,14 +44,6 @@ import static org.zerionproject.app.messaging.MessageTypes.TYPING_INDICATOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * Accept and reject cases for every private message type that had no
- * validator test: attachment manifests and chunks, reactions, typing
- * indicators, link previews, mesh prekey bundles and every group record.
- * Each type has a well-formed body that is accepted with the expected
- * dependencies and the bounds the validator enforces, each of which is shown
- * to reject.
- */
 public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 
 	private final BdfReaderFactory bdfReaderFactory =

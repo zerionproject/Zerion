@@ -10,6 +10,7 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.sync.ClientId;
 import org.zerionproject.core.api.sync.Group;
@@ -29,6 +30,7 @@ import java.util.Map;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
+import static org.zerionproject.core.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.api.sync.Group.Visibility.INVISIBLE;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.Group.Visibility.VISIBLE;
@@ -142,6 +144,8 @@ public class ClientVersioningManagerImplTest extends BrambleMockTestCase {
 					MAJOR_VERSION, contact);
 			will(returnValue(contactGroup));
 			oneOf(db).removeGroup(txn, contactGroup);
+			oneOf(settingsManager).getSettings(txn, B3_SETTINGS_NAMESPACE);
+			will(returnValue(new Settings()));
 		}});
 
 		ClientVersioningManagerImpl c = createInstance();

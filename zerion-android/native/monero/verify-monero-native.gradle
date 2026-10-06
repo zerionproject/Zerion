@@ -1,16 +1,7 @@
-// Supply-chain gate for the fund-critical Monero native library.
-// Verifies every packaged jniLibs/<abi>/libzmonero.so against the accepted
-// per-ABI SHA-256 recorded in packaging/monero-android/PROVENANCE.md, and rejects
-// any stray libzmonero* artifact. This is a build/release integrity gate that runs
-// on every assemble/bundle (debug included), so a changed native build input can
-// never be packaged unnoticed. It does not replace the APK signature (the runtime
-// package-integrity boundary); it catches a mismatch before an APK is produced.
-//
-// On a deliberate native rebuild, update these hashes together with PROVENANCE.md
-// and jniLibs; a forgotten update fails the build rather than shipping silently.
 
 def moneroJniDir = { -> file("${projectDir}/src/main/jniLibs") }
 def moneroExpectedLib = 'libzmonero.so'
+def moneroKnownLibs = [moneroExpectedLib, 'libpayjoin_ffi.so'] as Set
 def moneroAccepted = [
     'arm64-v8a'  : '36fef47d05ec6274f9db7d60c4f3187636dea73cc0c741deea66423f820a66c5',
     'armeabi-v7a': 'f382b1190f4a9744157ce2041d89cc78fb7c3b459211b3e8abf713d301a4a66c',
@@ -38,7 +29,12 @@ tasks.register('verifyMoneroNativeArtifacts') {
             }
             def got = moneroSha256Of(lib)
             if (got != want) {
-                throw new GradleException("Monero native lib SHA-256 mismatch for ${abi}: expected ${want}, got ${got} (update jniLibs + PROVENANCE.md + this gate together on a deliberate rebuild)")
+                def info = new File(rootDir,
+                        "packaging/monero-android/out/${abi}/buildinfo.txt")
+                def detail = info.isFile()
+                        ? "\nBuild fingerprint (packaging/monero-android/out/${abi}/buildinfo.txt):\n${info.text}"
+                        : ''
+                throw new GradleException("Monero native lib SHA-256 mismatch for ${abi}: expected ${want}, got ${got} (update jniLibs + PROVENANCE.md + this gate together on a deliberate rebuild)${detail}")
             }
             def stray = (abiDir.listFiles() ?: []).findAll {
                 it.name.startsWith('libzmonero') && it.name != moneroExpectedLib
@@ -46,12 +42,32 @@ tasks.register('verifyMoneroNativeArtifacts') {
             if (!stray.isEmpty()) {
                 throw new GradleException("Unexpected Monero native artifact in ${abi}: ${stray*.name}")
             }
+            def unpinned = (abiDir.listFiles() ?: []).findAll {
+                it.isFile() && !moneroKnownLibs.contains(it.name)
+            }
+            if (!unpinned.isEmpty()) {
+                throw new GradleException("Unpinned file in jniLibs/${abi}: ${unpinned*.name} (every packaged native library must be pinned by a gate)")
+            }
+        }
+        def abiDirs = (jni.listFiles() ?: []).findAll { it.isDirectory() }
+        def unknownAbis = abiDirs.findAll { !moneroAccepted.containsKey(it.name) }
+        if (!unknownAbis.isEmpty()) {
+            throw new GradleException("jniLibs holds an ABI the gate does not pin: ${unknownAbis*.name}")
         }
     }
 }
 
-tasks.matching {
-    it.name.startsWith('assemble') || it.name.startsWith('bundle')
-}.configureEach {
-    it.dependsOn('verifyMoneroNativeArtifacts')
+android.applicationVariants.all { variant ->
+    def cap = variant.name.capitalize()
+    tasks.matching {
+        it.name == "merge${cap}JniLibFolders" || it.name == "merge${cap}NativeLibs"
+                || it.name == "package${cap}" || it.name == "package${cap}Bundle"
+                || it.name == "strip${cap}DebugSymbols"
+                || it.name == "extract${cap}NativeSymbolTables"
+                || it.name == "mergeNativeDebugMetadata${cap}"
+                || it.name == "install${cap}"
+                || it.name == "assemble${cap}" || it.name == "bundle${cap}"
+    }.configureEach {
+        it.dependsOn('verifyMoneroNativeArtifacts')
+    }
 }

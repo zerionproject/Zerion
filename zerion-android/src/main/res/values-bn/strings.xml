@@ -85,7 +85,6 @@
   <string name="tor_plugin_status_disabled_battery">ব্যাটারিতে চলার সময় Zerion ইন্টারনেট ব্যবহার না করার জন্য কনফিগার করা হয়েছে</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion এই দেশে ইন্টারনেট ব্যবহার না করার জন্য কনফিগার করা হয়েছে</string>
   
-  <string name="transport_lan_long">একই Wi-Fi নেটওয়ার্ক</string>
 
   <string name="reminder_notification_title">Zerion থেকে সাইন আউট করুন</string>
   <string name="reminder_notification_text">আবার সাইন ইন করতে আলতো চাপুন।</string>
@@ -212,7 +211,6 @@
   <string name="connecting_to_device">ডিভাইসে সংযোগ করা হচ্ছে\u2026</string>
   <string name="authenticating_with_device">ডিভাইসের সাথে যাচাই করা হচ্ছে\u2026</string>
   <string name="connection_error_title">আপনার কন্টাক্টের সাথে সংযোগ করা যায়নি</string>
-  <string name="connection_error_feedback">যদি এই সমস্যা চলতে থাকে, অনুগ্রহ করে আমাদেরকে <a href="feedback">ফিডব্যাক পাঠান</a> যাতে আমরা অ্যাপটি উন্নত করতে পারি।</string>
   
   <string name="add_contact_remotely_title_case">দূরে আছে এমন কন্টাক্ট যোগ করুন</string>
   <string name="add_contact_nearby_title">নিকটবর্তী কন্টাক্ট যোগ করুন</string>
@@ -387,8 +385,6 @@
   
   <string name="tor_network_setting_summary">স্বয়ংক্রিয়: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">মোবাইল ডেটা ব্যবহার করুন</string>
-  <string name="tor_only_when_charging_title">শুধুমাত্র চার্জিংয়ের সময় ইন্টারনেটে সংযোগ স্থাপন করুন</string>
-  <string name="tor_only_when_charging_summary">ব্যাটারিতে চলার সময় ডিভাইসে ইন্টারনেট সংযোগ নিষ্ক্রিয় করুন</string>
   
   <string name="security_settings_title">সুরক্ষা</string>
   <string name="pref_lock_title">অ্যাপ লক</string>
@@ -445,75 +441,9 @@
   <string name="choose_ringtone_title">রিংটোন বেছে নিন</string>
   <string name="cannot_load_ringtone">রিংটোন লোড করা যাচ্ছে না</string>
   
-  <string name="mailbox_settings_title">মেইল বক্স</string>
-  <string name="mailbox_setup_title">মেইল বক্স সেটআপ</string>
-  <string name="mailbox_setup_intro">মেইলবক্স আপনার কন্টাক্টদের আপনি অফলাইনে থাকলেও আপনাকে বার্তা পাঠাতে সুযোগ দিবে। মেইলবক্স আপনার বার্তাগুলো গ্রহণ করে সংরক্ষণ করবে যতক্ষণ না আপনি অনলাইনে আসেন। 
-		\nআপনি অন্য একটি ডিভাইসে Zerion মেইলবক্স অ্যাপ ইনস্টল করতে পারেন। এটি সবসময় অনলাইনে রাখতে চারজার এবং ওয়াই-ফাইতে সংযুক্ত রাখুন।</string>
-  <string name="mailbox_setup_download">প্রথমে, অন্য একটি ডিভাইসে \"Zerion Mailbox\" অ্যাপ ইনস্টল করুন। এটি Google Play অথবা যেখান থেকে আপনি Zerion ডাউনলোড করেছিলেন সেখান থেকে খুঁজে পেতে পারেন।\n
-		\nএরপর, মেইলবক্স অ্যাপের দেখানো QR কোড স্ক্যান করে আপনার মেইলবক্সকে Zerion এর সঙ্গে সংযুক্ত করুন।</string>
-  <string name="mailbox_setup_download_link">ডাউনলোড লিংক শেয়ার করুন</string>
-  <string name="mailbox_setup_connecting">মেইলবক্সে সংযোগ করা হচ্ছে...</string>
   
-  <string name="mailbox_setup_connecting_info">এতে %1s সময় লাগতে পারে</string>
-  <string name="mailbox_setup_already_paired_title">মেইল বক্স ইতিমধ্যে লিঙ্ক করা রয়েছে।</string>
-  <string name="mailbox_setup_already_paired_description">আপনার অন্য ডিভাইসে Mailbox আনলিঙ্ক করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_setup_io_error_title">সংযোগ করতে পারছে না</string>
-  <string name="mailbox_setup_io_error_description">দয়া করে নিশ্চিত করুন যে উভয় ডিভাইস ইন্টারনেটের সাথে সংযুক্ত রয়েছে এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_setup_assertion_error_title">মেইল বক্সে সমস্যা</string>
-  <string name="mailbox_setup_assertion_error_description">যদি সমস্যা হতেই থাকে, দয়া করে Zerion অ্যাপের মাধ্যমে (অজ্ঞাত তথ্যসহ) ফিডব্যাক পাঠান।</string>
-  <string name="mailbox_setup_camera_error_description">ক্যামেরা অ্যাক্সেস করা যায়নি। আবার চেষ্টা করুন, হয়তো ডিভাইস বন্ধ করে চালু করার পর এটি সমাধান হতে পারে।</string>
-  <string name="mailbox_setup_paired_title">সংযুক্ত</string>
-  <string name="mailbox_setup_paired_description">আপনার মেইলবক্স সফলভাবে ব্রায়ারের সাথে লিঙ্ক হয়েছে।\n
-		\nআপনার মেইলবক্সটি সব সময় অনলাইনে রাখতে এটি চার্জার এবং Wi-Fi এর সাথে সংযুক্ত রাখুন।</string>
-  <string name="tor_offline_title">অফলাইন</string>
-  <string name="tor_offline_description">নিশ্চিত করুন এই ডিভাইসটি অনলাইনে আছে এবং ইন্টারনেট সংযোগ পাচ্ছে।\n
-		\nএরপর, সংযোগ সেটিংস স্ক্রীনে গ্লোব আইকনটি সবুজ হওয়ার জন্য অপেক্ষা করুন।</string>
-  <string name="tor_offline_button_check">কানেকশন সেটিংস চেক করুন</string>
-  <string name="mailbox_status_title">মেইল বক্সের অবস্থা</string>
-  <string name="mailbox_status_connected_title">মেইল বক্স চালু আছে</string>
-  <string name="mailbox_status_problem_title">Zerion মেইলবক্সের সাথে সংযোগ করতে সমস্যায় পড়ছে</string>
-  <string name="mailbox_status_failure_title">মেইলবক্স এই মুহূর্তে কাজ করছে না </string>
-  <string name="mailbox_status_app_too_old_title">Zerion অনেক পুরাতন</string>
-  <string name="mailbox_status_app_too_old_message">Zerion অ্যাপের সর্বশেষ সংস্করণে আপডেট করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_status_mailbox_too_old_title">মেইল বক্স অনেক পুরাতন</string>
-  <string name="mailbox_status_mailbox_too_old_message">মেইল বক্স অ্যাপের সর্বশেষ সংস্করণে আপডেট করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_status_check_button">সংযোগ পরীক্ষা করুন</string>
   
-  <string name="mailbox_status_connected_info">শেষবার সংযোগ হয়েছে: %s</string>
   
-  <string name="mailbox_status_connected_never">কখনো না</string>
-  <string name="mailbox_status_unlink_button">আনলিঙ্ক</string>
-  <string name="mailbox_status_unlink_dialog_title">মেইল বক্স আনলিঙ্ক করবেন?</string>
-  <string name="mailbox_status_unlink_dialog_question">আপনি কি নিশ্চিত যে আপনি আপনার মেইলবক্স আনলিঙ্ক করতে চান?</string>
-  <string name="mailbox_status_unlink_dialog_warning">যদি আপনি আপনার মেইলবক্স আনলিঙ্ক করেন, তবে Zerion অফলাইন থাকার সময় আপনি বার্তা গ্রহণ করতে পারবেন না।</string>
-  <string name="mailbox_status_unlink_no_wipe_title">আপবার মেইল বক্স আনলিঙ্ক করা হয়েছে</string>
-  <string name="mailbox_status_unlink_no_wipe_message">পরবর্তী সময়ে আপনার মেইলবক্স ডিভাইসে অ্যাক্সেস পাওয়ার পর, দয়া করে মেইলবক্স অ্যাপটি খুলুন এবং প্রক্রিয়া সম্পূর্ণ করতে \"Unlink\" বোতামে ট্যাপ করুন।\n\nযদি আপনার মেইলবক্স ডিভাইসে আর অ্যাক্সেস না থাকে, চিন্তা করবেন না। আপনার ডেটা এনক্রিপ্টেড, তাই প্রক্রিয়া সম্পূর্ণ না করলেও এটি নিরাপদ থাকবে।</string>
-  <string name="mailbox_status_unlink_success">আপবার মেইল বক্স আনলিঙ্ক করা হয়েছে</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox এ সমস্যা</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox এই মুহূর্তে কাজ করছে না</string>
-  <string name="mailbox_error_notification_text">সমস্যা সমাধান করতে ট্যাপ করুন</string>
-  <string name="mailbox_error_wizard_button">সমাধান করুন</string>
-  <string name="mailbox_error_wizard_title">মেইলবক্স সমস্যার সমাধান উইজার্ড</string>
-  <string name="mailbox_error_wizard_question1">আপনার কি মেইলবক্স ডিভাইসে অ্যাক্সেস আছে?</string>
-  <string name="mailbox_error_wizard_answer1">হাঁ, আমার এই মুহূর্তে অ্যাক্সেস আছে।</string>
-  <string name="mailbox_error_wizard_answer2">এই মুহূর্তে নেই কিন্তু পরে অ্যাক্সেস করতে পারি</string>
-  <string name="mailbox_error_wizard_answer3">না, আমার আর এটিতে অ্যাক্সেস নেই।</string>
-  <string name="mailbox_error_wizard_info1_1">মেইলবক্স ডিভাইসটি চালু আছে এবং ইন্টারনেটে সংযুক্ত রয়েছে কিনা তা নিশ্চিত করুন।</string>
-  <string name="mailbox_error_wizard_question1_1">মেইলবক্স অ্যাপটি খুলুন। আপনি কী দেখতে পাচ্ছেন?</string>
-  <string name="mailbox_error_wizard_answer1_1">আমি মেইলবক্স সেট আপ করার জন্য নির্দেশনা দেখছি</string>
-  <string name="mailbox_error_wizard_answer1_2">আমি QR কোড দেখছি</string>
-  <string name="mailbox_error_wizard_answer1_3">আমি দেখছি \"Mailbox is running\"</string>
-  <string name="mailbox_error_wizard_answer1_4">আমি দেখছি \"Device offline\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">অনুগ্রহ করে নিচের বোতামটি ব্যবহার করে আপনার মেইলবক্স আনলিঙ্ক করুন, তারপর মেইলবক্স ডিভাইসে প্রদত্ত নির্দেশনা অনুসরণ করে আবার এটি লিঙ্ক করুন।</string>
-  <string name="mailbox_error_wizard_info_1_1_2">অনুগ্রহ করে নিচের বোতামটি ব্যবহার করে আপনার মেইলবক্স আনলিঙ্ক করুন, তারপর আবার এটি লিঙ্ক করার জন্য কিউআর কোড স্ক্যান করুন।</string>
-  <string name="mailbox_error_wizard_info1_1_3">অনুগ্রহ করে নিচের বোতামটি ব্যবহার করে Zerion এবং Mailbox-এর মধ্যে সংযোগ পরীক্ষা করুন।\n\n 
-
-		যদি সংযোগ আবার ব্যর্থ হয়: 
-		\u2022 নিশ্চিত করুন যে Mailbox এবং Zerion অ্যাপস সর্বশেষ সংস্করণে আপডেট করা হয়েছে। 
-		\u2022আপনার Mailbox এবং Zerion ডিভাইস বন্ধ করে পুনরায় চালু করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_error_wizard_info1_1_4">নিশ্চিত করুন যে Mailbox ডিভাইসটি সঠিকভাবে ইন্টারনেটে সংযুক্ত।\n\nনিশ্চিত করুন যে Mailbox ডিভাইসে ঘড়ির সময়, তারিখ এবং সময় অঞ্চল সঠিকভাবে প্রদর্শিত হচ্ছে। \n\nনিশ্চিত করুন যে Mailbox এবং Zerion অ্যাপস সর্বশেষ সংস্করণে আপডেট করা হয়েছে। \n\nআপনার Mailbox এবং Zerion ডিভাইসগুলি বন্ধ করে পুনরায় চালু করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="mailbox_error_wizard_info2">যখন আপনি ডিভাইসটির অ্যাক্সেস পাবেন, তখন এই স্ক্রীনে ফিরে আসুন।</string>
-  <string name="mailbox_error_wizard_info3">অনুগ্রহ করে নিচের বোতামটি ব্যবহার করে আপনার মেইলবক্স আনলিঙ্ক করুন।\n\nআপনার পুরানো মেইলবক্স আনলিঙ্ক করার পর, আপনি যেকোনো সময় একটি নতুন মেইলবক্স সেটআপ করতে পারবেন।</string>
   
   <string name="about_title">আমাদের কথা</string>
   <string name="zerion_version">Zerion ভার্সন: %s</string>
@@ -521,7 +451,6 @@
   <string name="links">লিঙ্কসমুহ</string>
   <string name="zerion_website">\u2022 <a href="">ওয়েবসাইট</a></string>
   <string name="zerion_source_code">\u2022 <a href="">সোর্স কোড</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">পরিবর্তন সমূহ</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">গোপনিয়তার নীতি</a></string>
   
   <string name="translator_thanks">Localization Lab-এর সকল অবদানকারীদের ধন্যবাদ। বিশেষ করে আশরাফুল হক কে।</string>
@@ -542,43 +471,13 @@
   <string name="pref_category_actions">অ্যাকশান</string>
   <string name="share_app_link">ডাউনলোড লিংক শেয়ার করুন</string>
   <string name="share_app_link_text">%s থেকে Zerion ডাউনলোড করুন</string>
-  <string name="send_feedback">প্রতিক্রিয়া পাঠান</string>
   
   <string name="link_warning_title">লিংক সতর্কবাণী</string>
   <string name="link_warning_intro">আপনি একটি বাহ্যিক অ্যাপ্লিকেশনের সাথে নিম্নোক্ত লিঙ্কটি খুলতে চলেছেন ।</string>
   <string name="link_warning_text">এটি আপনাকে চিহ্নিত করতে ব্যবহৃত হতে পারে। ভেবে দেখুন, যিনি এই লিঙ্কটি পাঠিয়েছেন তার উপর আপনি কতটা বিশ্বাস করেন এবং এটি Tor Browser ব্যবহার করে খুলতে পারেন।</string>
   <string name="link_warning_open_link">যোগসূত্র খুলুন</string>
   
-  <string name="crash_report_title">Zerion ক্র্যাশ রিপোর্ট</string>
-  <string name="zerion_crashed">দুঃখিত Zerion ভেঙ্গে পড়েছে</string>
-  <string name="not_your_fault">এটা আপনার ভুল নয়</string>
-  <string name="please_send_report">আমাদের একটি ক্র্যাশ রিপোর্ট পাঠিয়ে একটি ভাল Zerion গড়ে তুলতে সাহায্য করুন ।</string>
-  <string name="report_is_encrypted">আমরা প্রতিজ্ঞা করছি যে প্রতিবেদনটি এনক্রিপ্ট এবং নিরাপদভাবে পাঠানো হয়েছে ।</string>
-  <string name="feedback_title">প্রতিক্রিয়া</string>
-  <string name="describe_crash">কি ঘটেছে বর্ণনা করুন (ঐচ্ছিক)</string>
-  <string name="enter_feedback">আপনার প্রতিক্রিয়া লিখুন</string>
-  <string name="optional_contact_email">আপনার ইমেল অ্যাড্রেস (ঐচ্ছিক)</string>
-  <string name="privacy_policy">আমাদের কাছে ডেটা পাঠানোর মাধ্যমে আপনি আমাদের <a href="">গোপনীয়তা নীতির</a> মেনে নিচ্ছেন।</string>
-  <string name="include_debug_report_crash">ক্র্যাশ সম্পর্কে বেনামী তথ্য অন্তর্ভুক্ত করুন</string>
-  <string name="include_debug_report_feedback">এই ডিভাইস সম্বন্ধে বেনামী তথ্য অন্তর্ভুক্ত করুন</string>
-  <string name="dev_report_user_info">ব্যবহারকারী তথ্য</string>
-  <string name="dev_report_basic_info">সাধারণ তথ্য</string>
-  <string name="dev_report_device_info">ডিভাইসের তথ্য</string>
-  <string name="dev_report_stacktrace">Stacktrace</string>
-  <string name="dev_report_time_info">সময়ের তথ্য</string>
-  <string name="dev_report_memory">স্মৃতি</string>
-  <string name="dev_report_storage">স্টোরেজ</string>
-  <string name="dev_report_connectivity">সংযোগ</string>
-  <string name="dev_report_network_usage">নেটওয়ার্কের ব্যবহার</string>
-  <string name="dev_report_build_config">তৈরির কনফিগারেশন</string>
-  <string name="dev_report_logcat">অ্যাপ লগ</string>
-  <string name="dev_report_device_features">ডিভাইসের বৈশিষ্ট্য</string>
-  <string name="send_report">প্রতিবেদন প্রেরণ করুন</string>
   <string name="close">বন্ধ</string>
-  <string name="dev_report_sending">প্রতিক্রিয়া পাঠানো হচ্ছে...</string>
-  <string name="dev_report_sent">ফিডব্যাক পাঠানো হয়েছে</string>
-  <string name="dev_report_saved">রিপোর্ট সংরক্ষিত। পরবর্তী বার আপনি Zerion লগ ইন পাঠানো হবে।</string>
-  <string name="dev_report_error">সমস্যা: রিপোর্ট পাঠানো যায়নি</string>
   
   <string name="progress_title_logout">Zerion থেকে সাইন-আউট করা হচ্ছে...</string>
   
@@ -594,13 +493,10 @@
   <string name="permission_camera_request_body">QR কোড স্ক্যান করতে, Zerion এর ক্যামেরার অ্যাক্সেস প্রয়োজন ।</string>
   <string name="permission_location_title">অবস্থানের অনুমতি</string>
   <string name="permission_nearby_devices_title">আশেপাশের ডিভাইসের অনুমতি</string>
-  <string name="permission_location_request_body">ব্লুটুথ ডিভাইস আবিষ্কার করতে, Zerion আপনার অবস্থান অ্যাক্সেস করার অনুমতি প্রয়োজন । Zerion আপনার অবস্থান সংরক্ষণ করে না বা কারো সাথে শেয়ার করে না.</string>
   <string name="permission_camera_location_title">ক্যামেরা এবং অবস্থান</string>
   <string name="permission_camera_location_request_body">QR কোড স্ক্যান করতে, Zerion এর আপনার ক্যামেরা অ্যাক্সেস করার অনুমতি প্রয়োজন ।\n\nব্লুটুথ ডিভাইস আবিষ্কার করতে, Zerion আপনার অবস্থান অ্যাক্সেস করার অনুমতিসমূহ প্রয়োজন।\n\n Zerion আপনার অবস্থান সংরক্ষণ করে না বা কারো সাথে শেয়ার করে না।</string>
   <string name="permission_camera_denied_body">আপনি ক্যামেরার অ্যাক্সেস প্রত্যাখ্যান করেছেন, কিন্তু কন্টাক্ট যোগ করার জন্য ক্যামেরা ব্যবহার জরুরী।\n\nঅনুগ্রহ করে অ্যাক্সেস দেওয়ার কথা বিবেচনা করুন।</string>
-  <string name="permission_location_denied_body">আপনি আপনার অবস্থান অ্যাক্সেস প্রত্যাখ্যান করেছেন, কিন্তু ব্লুটুথ ডিভাইসগুলি আবিষ্কার করার জন্য Zerion এর এই অনুমতিসমূহ প্রয়োজন।\n\nঅনুগ্রহ করে অ্যাক্সেস দেওয়ার কথা বিবেচনা করুন।</string>
   <string name="permission_location_setting_title">অবস্থানের সেটিং</string>
-  <string name="permission_location_setting_body">ব্লুটুথের মাধ্যমে অন্যান্য ডিভাইস খুঁজে বের করার জন্য আপনার ডিভাইসের লোকেশন সেটিংস চালু থাকতে হবে। চালিয়ে যাওয়ার জন্য অনুগ্রহ করে লোকেশন সক্ষম করুন। পরবর্তীতে আপনি এটি আবার বন্ধ করতে পারবেন।</string>
   <string name="permission_location_setting_button">লোকেশন সক্ষম করুন</string>
   <string name="lock_unlock">Zerion আনলক করুন</string>
   <string name="lock_unlock_verbose">Zerion আনলক করতে আপনার ডিভাইসের PIN, প্যাটার্ন বা পাসওয়ার্ড লিখুন </string>
@@ -741,7 +637,6 @@
 	<string name="wallet_receive_new">নতুন ঠিকানা</string>
 	<string name="wallet_node_hint">কোনো সার্ভার ব্যবহার করতে সেটিতে ট্যাপ করুন। কাস্টম সার্ভার সরাতে সেটিতে দীর্ঘক্ষণ চাপ দিন।</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">একটি পুনর্ব্যবহারযোগ্য ব্যক্তিগত ঠিকানা। এতে করা পেমেন্টগুলো অন-চেইনে অসংযুক্তযোগ্য। শনাক্তকরণ Tor-এর মাধ্যমে পাবলিক ডেটা স্ক্যান করে; আপনার কীগুলো কখনও ডিভাইস ছেড়ে যায় না।</string>
 	<string name="wallet_sp_balance">শনাক্ত হয়েছে: %1$s</string>
 	<string name="wallet_sp_scanned">%1$d ব্লক পর্যন্ত স্ক্যান করা হয়েছে</string>
 	<string name="wallet_sp_set_oracle">স্ক্যান উৎস</string>

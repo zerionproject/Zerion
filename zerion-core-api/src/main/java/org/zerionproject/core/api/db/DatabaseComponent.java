@@ -74,6 +74,9 @@ public interface DatabaseComponent extends TransactionManager {
 	void addPendingContact(Transaction txn, PendingContact p, AuthorId local)
 			throws DbException;
 
+	void addPendingContact(Transaction txn, PendingContact p, AuthorId local,
+			boolean allowExistingContact) throws DbException;
+
 	void addTransport(Transaction txn, TransportId t, long maxLatency)
 			throws DbException;
 
@@ -180,11 +183,21 @@ public interface DatabaseComponent extends TransactionManager {
 	Map<GroupId, Collection<MessageId>> getMessagesToDelete(Transaction txn)
 			throws DbException;
 
+	Collection<GroupId> getGroupsWithMessagesToDelete(Transaction txn)
+			throws DbException;
+
+	Collection<MessageId> getMessagesToDelete(Transaction txn, GroupId g)
+			throws DbException;
+
 	Map<MessageId, Metadata> getMessageMetadata(Transaction txn, GroupId g)
 			throws DbException;
 
 	Map<MessageId, Metadata> getMessageMetadata(Transaction txn, GroupId g,
 			Metadata query) throws DbException;
+
+	<E extends Exception> void visitMessageMetadataExcluding(Transaction txn,
+			GroupId g, String key, byte[] value,
+			MessageMetadataVisitor<E> visitor) throws DbException, E;
 
 	Metadata getMessageMetadata(Transaction txn, MessageId m)
 			throws DbException;
@@ -222,6 +235,9 @@ public interface DatabaseComponent extends TransactionManager {
 
 	long getNextCleanupDeadline(Transaction txn) throws DbException;
 
+	long getNextCleanupDeadline(Transaction txn, long after)
+			throws DbException;
+
 	long getNextSendTime(Transaction txn, ContactId c, long maxLatency)
 			throws DbException;
 
@@ -235,10 +251,17 @@ public interface DatabaseComponent extends TransactionManager {
 	void setPendingContactOurKeys(Transaction txn, PendingContactId p,
 			byte[] publicKey, byte[] privateKey) throws DbException;
 
+	void clearPendingContactOurKeys(Transaction txn, PendingContactId p)
+			throws DbException;
+
 	Collection<PendingContact> getPendingContacts(Transaction txn)
 			throws DbException;
 
 	Settings getSettings(Transaction txn, String namespace) throws DbException;
+
+	@Nullable
+	String getSetting(Transaction txn, String namespace, String key)
+			throws DbException;
 
 	List<Byte> getSyncVersions(Transaction txn, ContactId c) throws DbException;
 
@@ -271,6 +294,12 @@ public interface DatabaseComponent extends TransactionManager {
 			throws DbException;
 
 	void removeContact(Transaction txn, ContactId c) throws DbException;
+
+	void deleteSettings(Transaction txn, String namespace,
+			Collection<String> keys) throws DbException;
+
+	void deleteSettingsNamespaces(Transaction txn,
+			Collection<String> namespaces) throws DbException;
 
 	void removeGroup(Transaction txn, Group g) throws DbException;
 
@@ -348,6 +377,9 @@ public interface DatabaseComponent extends TransactionManager {
 
 	void stopCleanupTimer(Transaction txn, MessageId m) throws DbException;
 
+	void setCleanupDeadline(Transaction txn, MessageId m, long deadline)
+			throws DbException;
+
 	void updateTransportKeys(Transaction txn, Collection<TransportKeySet> keys)
 			throws DbException;
 
@@ -355,31 +387,17 @@ public interface DatabaseComponent extends TransactionManager {
 
 	int PCS_DIRECTION_RECEIVE = 1;
 
-	void setPcsSessionState(Transaction txn, ContactId c, int direction,
-			SecretKey chainKey, int messageNumber, int previousChainLength)
-			throws DbException;
+	int PCS_SLOT_TRANSPORT_ROOT = 2;
 
-	@Nullable
-	Object[] getPcsSessionState(Transaction txn, ContactId c, int direction)
-			throws DbException;
+	int PCS_SLOT_TRANSPORT_ROOT_PENDING = 3;
 
 	boolean containsPcsSessionState(Transaction txn, ContactId c)
 			throws DbException;
 
-	void addPcsSkippedKey(Transaction txn, ContactId c, int direction,
-			int messageNumber, SecretKey messageKey, long timestamp)
-			throws DbException;
-
-	@Nullable
-	SecretKey getPcsSkippedKey(Transaction txn, ContactId c, int direction,
-			int messageNumber) throws DbException;
-
-	int getPcsSkippedKeyCount(Transaction txn, ContactId c, int direction)
-			throws DbException;
-
-	int prunePcsSkippedKeys(Transaction txn, long maxAge) throws DbException;
-
 	void removePcsState(Transaction txn, ContactId c) throws DbException;
+
+	void removePcsSessionState(Transaction txn, ContactId c, int direction)
+			throws DbException;
 
 	void setPcsMode2SessionState(Transaction txn, ContactId c, int direction,
 			SecretKey chainKey, int messageNumber, int previousChainLength,
@@ -391,25 +409,6 @@ public interface DatabaseComponent extends TransactionManager {
 	@Nullable
 	Object[] getPcsMode2SessionState(Transaction txn, ContactId c, int direction)
 			throws DbException;
-
-	void addPcsMode2SkippedKey(Transaction txn, byte[] chainId, int messageNumber,
-			SecretKey messageKey, long timestamp) throws DbException;
-
-	@Nullable
-	SecretKey getPcsMode2SkippedKey(Transaction txn, byte[] chainId,
-			int messageNumber) throws DbException;
-
-	void setPqRatchetState(Transaction txn, ContactId c, long currentEpoch,
-			long epochStartTime, int messagesSinceEpoch, int state,
-			boolean isInitiator, int chunksSent, int chunksReceived,
-			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
-			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
-			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
-			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
-			throws DbException;
-
-	@Nullable
-	Object[] getPqRatchetState(Transaction txn, ContactId c) throws DbException;
 
 	boolean containsPqRatchetState(Transaction txn, ContactId c)
 			throws DbException;

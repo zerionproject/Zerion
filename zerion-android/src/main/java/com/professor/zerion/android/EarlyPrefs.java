@@ -14,13 +14,6 @@ import static com.professor.zerion.android.settings.ChatPreferences.PREF_GUI_TEX
 import static com.professor.zerion.android.settings.DisplayFragment.PREF_LANGUAGE;
 import static com.professor.zerion.android.settings.DisplayFragment.PREF_THEME;
 
-/**
- * The three display settings the process needs before the account is
- * unlocked: the language tag, the theme name and the text size index. They
- * live in a boot-readable encrypted store and, when that store cannot be
- * created, in a plain private file. Nothing else is ever written here: the
- * store is not exposed, so a caller cannot add a key to it.
- */
 @NotNullByDefault
 public final class EarlyPrefs {
 

@@ -126,7 +126,6 @@ public class AsyncSealedSenderTest {
 			sealer.open(envelope, o);
 			fail("expected failure");
 		} catch (Exception expected) {
-			// ok
 		}
 	}
 
@@ -141,7 +140,6 @@ public class AsyncSealedSenderTest {
 			sealer.open(envelope, o);
 			fail("expected failure");
 		} catch (Exception expected) {
-			// ok
 		}
 	}
 
@@ -150,7 +148,6 @@ public class AsyncSealedSenderTest {
 			sealer.open(envelope, openRequest());
 			fail("expected failure");
 		} catch (Exception expected) {
-			// ok
 		}
 	}
 }

@@ -29,12 +29,15 @@ import androidx.lifecycle.ViewModelProvider;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_FILES_DAMAGED;
 import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_REPLACEMENT_FAILED;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_REPLACEMENT_UNCERTAIN;
 import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.api.crypto.DecryptionResult.SUCCESS;
 import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.QUITE_WEAK;
 import static org.zerionproject.core.api.crypto.PasswordStrengthEstimator.STRONG;
 import static com.professor.zerion.android.login.LoginUtils.createKeyReplacementFailedDialog;
+import static com.professor.zerion.android.login.LoginUtils.createKeyReplacementUncertainDialog;
 import static com.professor.zerion.android.login.LoginUtils.createKeyStrengthenerErrorDialog;
 import static com.professor.zerion.android.util.UiUtils.hideSoftKeyboard;
 import static com.professor.zerion.android.util.UiUtils.setError;
@@ -75,6 +78,13 @@ public class ChangePasswordActivity extends ZerionActivity
 	public void onCreate(Bundle state) {
 		super.onCreate(state);
 		setContentView(R.layout.activity_change_password);
+		if (state != null) {
+			viewModel.getLatestResult().observeEvent(this,
+					this::onChangeResult);
+		}
+		viewModel.getEraseRequested().observeEvent(this, erase -> {
+			if (erase) eraseAccountsAndExit();
+		});
 
 		androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
@@ -143,7 +153,8 @@ public class ChangePasswordActivity extends ZerionActivity
 		if (firstLen > 0) newPassword.getText().getChars(0, firstLen, firstChars, 0);
 		if (secondLen > 0) newPasswordConfirmation.getText().getChars(0, secondLen, secondChars, 0);
 
-		boolean passwordsMatch = java.util.Arrays.equals(firstChars, secondChars);
+		boolean passwordsMatch =
+				AccountPasswordPolicy.sameNormalForm(firstChars, secondChars);
 		float strength = viewModel.estimatePasswordStrength(firstChars);
 		strengthMeter.setStrength(strength);
 
@@ -159,15 +170,16 @@ public class ChangePasswordActivity extends ZerionActivity
 			}
 		}
 
+		boolean acceptable = viewModel.acceptable(firstChars);
 		setError(newPasswordEntryWrapper,
 				getString(R.string.password_too_weak),
-				firstLen > 0 && strength < QUITE_WEAK);
+				firstLen > 0 && !acceptable);
 		setError(newPasswordConfirmationWrapper,
 				getString(R.string.passwords_do_not_match),
 				secondLen > 0 && !passwordsMatch);
 		changePasswordButton.setEnabled(
 				currentPassword.length() > 0 &&
-						passwordsMatch && strength >= QUITE_WEAK);
+						passwordsMatch && acceptable);
 
 		java.util.Arrays.fill(firstChars, '\0');
 		java.util.Arrays.fill(secondChars, '\0');
@@ -191,24 +203,19 @@ public class ChangePasswordActivity extends ZerionActivity
 		newPasswordConfirmation.setText("");
 		currentPassword.setText("");
 		newPassword.setText("");
-		char[] curPwd = com.professor.zerion.android.account
-				.PasswordSanitizer.sanitize(curTyped);
-		char[] newPwd = com.professor.zerion.android.account
-				.PasswordSanitizer.sanitize(newTyped);
-		java.util.Arrays.fill(curTyped, '\0');
-		java.util.Arrays.fill(newTyped, '\0');
-		viewModel.changePassword(curPwd, newPwd).observeEvent(this, result -> {
-					if (result == SUCCESS) {
-						Toast.makeText(ChangePasswordActivity.this,
-								R.string.password_changed,
-								LENGTH_LONG).show();
-						setResult(RESULT_OK);
-						supportFinishAfterTransition();
-					} else {
-						tryAgain(result);
-					}
-				}
-		);
+		viewModel.changePassword(curTyped, newTyped)
+				.observeEvent(this, this::onChangeResult);
+	}
+
+	private void onChangeResult(DecryptionResult result) {
+		if (result == SUCCESS) {
+			Toast.makeText(ChangePasswordActivity.this,
+					R.string.password_changed, LENGTH_LONG).show();
+			setResult(RESULT_OK);
+			supportFinishAfterTransition();
+		} else {
+			tryAgain(result);
+		}
 	}
 
 	private void tryAgain(DecryptionResult result) {
@@ -216,8 +223,16 @@ public class ChangePasswordActivity extends ZerionActivity
 		progress.setVisibility(INVISIBLE);
 		if (result == KEY_STRENGTHENER_ERROR) {
 			createKeyStrengthenerErrorDialog(this).show();
+		} else if (result == KEY_REPLACEMENT_FAILED
+				&& viewModel.takeNewPasswordRefused()) {
+			setError(newPasswordEntryWrapper,
+					getString(R.string.change_password_new_unavailable), true);
 		} else if (result == KEY_REPLACEMENT_FAILED) {
 			createKeyReplacementFailedDialog(this).show();
+		} else if (result == KEY_REPLACEMENT_UNCERTAIN) {
+			createKeyReplacementUncertainDialog(this).show();
+		} else if (result == KEY_FILES_DAMAGED) {
+			LoginUtils.createKeyFilesDamagedDialog(this).show();
 		} else if (viewModel.lockoutRemainingMs() > 0) {
 			setError(currentPasswordEntryWrapper, getString(
 					R.string.hardened_block_password_locked,

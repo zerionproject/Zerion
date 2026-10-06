@@ -5,12 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
 
-/**
- * Attempts at the decoy unlock code are throttled with the vault policy
- * (an immediate, doubling lockout that decays), persisted across process
- * restarts, so the digits-only code cannot be enumerated at the rate of the
- * key derivation alone. While locked, the calculator simply calculates.
- */
 @NotNullByDefault
 final class DecoyUnlockThrottle {
 

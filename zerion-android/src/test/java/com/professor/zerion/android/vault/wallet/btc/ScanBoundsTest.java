@@ -10,10 +10,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * A2-REG-BTC-08: a server answering the per-call maximum for every index
- * is cut off by an aggregate bound instead of filling the heap.
- */
 public class ScanBoundsTest {
 
 	private static final String MNEMONIC =

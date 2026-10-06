@@ -14,7 +14,6 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import info.guardianproject.GuardianProjectRSA4096;
 import info.guardianproject.panic.Panic;
-import info.guardianproject.panic.PanicResponder;
 import info.guardianproject.trustedintents.TrustedIntents;
 
 import static com.professor.zerion.android.panic.PanicPreferencesFragment.KEY_LOCK;
@@ -30,6 +29,8 @@ public class PanicResponderActivity extends ZerionActivity {
 
 	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
+		com.professor.zerion.android.util.SafeIntents
+				.dropUnreadableExtras(getIntent());
 		super.onCreate(savedInstanceState);
 
 		TrustedIntents trustedIntents = TrustedIntents.get(this);
@@ -39,7 +40,8 @@ public class PanicResponderActivity extends ZerionActivity {
 		Intent intent = trustedIntents.getIntentFromTrustedSender(this);
 		if (intent != null) {
 			if (Panic.isTriggerIntent(intent)) {
-				if (PanicResponder.receivedTriggerFromConnectedApp(this)) {
+				if (new PanicSettingsStore(uiPrefs)
+						.receivedTriggerFromConnectedApp(this)) {
 					if (uiPrefs.getBoolean(KEY_PURGE, false)) {
 						signOut(true, true);
 					} else if (uiPrefs.getBoolean(KEY_LOCK, true)) {

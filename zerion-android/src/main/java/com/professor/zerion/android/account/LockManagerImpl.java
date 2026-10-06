@@ -56,6 +56,9 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 	private final AlarmManager alarmManager;
 	private final PendingIntent lockIntent;
 	private final int timeoutNever, timeoutDefault;
+	private final javax.inject.Provider<
+			com.professor.zerion.android.vault.VaultManager> vault;
+	private final Executor vaultLockExecutor;
 
 	private volatile boolean locked = false;
 	private volatile boolean lockableSetting = false;
@@ -68,7 +71,13 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 	@Inject
 	LockManagerImpl(Application app, SettingsManager settingsManager,
 			AndroidNotificationManager notificationManager,
-			@DatabaseExecutor Executor dbExecutor) {
+			@DatabaseExecutor Executor dbExecutor,
+			@org.zerionproject.core.api.lifecycle.IoExecutor
+					Executor ioExecutor,
+			javax.inject.Provider<com.professor.zerion.android.vault
+					.VaultManager> vault) {
+		this.vault = vault;
+		this.vaultLockExecutor = ioExecutor;
 		appContext = app.getApplicationContext();
 		this.settingsManager = settingsManager;
 		this.notificationManager = notificationManager;
@@ -146,11 +155,6 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 		}
 	}
 
-	/**
-	 * The app lock rides on the device screen lock: when the device lock is
-	 * removed there is no credential left to ask for, so a pending app lock
-	 * is released and the setting is hidden until a screen lock exists.
-	 */
 	@Override
 	public boolean isLocked() {
 		if (locked && !hasScreenLock(appContext)) {
@@ -168,6 +172,14 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 		this.locked = locked;
 		notificationManager.updateForegroundNotification(locked);
 		if (locked) {
+			vaultLockExecutor.execute(() -> {
+				try {
+					vault.get().lockVault();
+				} catch (RuntimeException ignored) {
+				}
+			});
+			com.professor.zerion.android.util.SecureClipboard
+					.clearIfOurs(appContext);
 			com.professor.zerion.android.util.CacheSweeper.sweepAsync(appContext);
 		}
 	}

@@ -11,13 +11,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-/**
- * The BLE frame reassembler under every chunking a link can produce and
- * under hostile length prefixes: frames come back whole and in order however
- * the bytes were split, an oversized or negative length discards the buffer
- * instead of allocating, and the reassembler recovers on the next well formed
- * frame.
- */
 public class MeshFrameReassemblerTest {
 
 	private static final int MAX_FRAME = 16384;

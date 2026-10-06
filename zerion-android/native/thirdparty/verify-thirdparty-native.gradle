@@ -1,0 +1,83 @@
+def thirdPartyPinFile = file("${projectDir}/native/thirdparty/thirdparty-native.sha256")
+def shippedAbis = ['arm64-v8a', 'armeabi-v7a'] as Set
+def firstPartyLibs = ['libtor.so', 'liblyrebird.so', 'libzmonero.so',
+                      'libzargon2.so', 'libpayjoin_ffi.so'] as Set
+
+def readThirdPartyPins = { ->
+    def pins = [:]
+    thirdPartyPinFile.eachLine { line ->
+        def t = line.trim()
+        if (t.isEmpty() || t.startsWith('#')) return
+        def parts = t.split(/\s+/)
+        if (parts.length != 2 || !(parts[1] ==~ /[0-9a-f]{64}/)) {
+            throw new GradleException("Malformed third-party native pin: ${line}")
+        }
+        pins[parts[0]] = parts[1]
+    }
+    if (pins.isEmpty()) throw new GradleException('Third-party native pin file is empty')
+    pins
+}
+
+def thirdPartySha256Of = { File f ->
+    def md = java.security.MessageDigest.getInstance('SHA-256')
+    f.withInputStream { is ->
+        byte[] buf = new byte[65536]; int n
+        while ((n = is.read(buf)) != -1) md.update(buf, 0, n)
+    }
+    md.digest().collect { String.format('%02x', it) }.join()
+}
+
+android.applicationVariants.all { variant ->
+    def cap = variant.name.capitalize()
+    def mergeTask = tasks.named("merge${cap}NativeLibs")
+    def gate = tasks.register("verifyThirdPartyNativeArtifacts${cap}") {
+        group = 'verification'
+        description = "Verifies the merged third-party native libraries of ${variant.name} against pinned SHA-256."
+        dependsOn mergeTask
+        inputs.file thirdPartyPinFile
+        doLast {
+            def pins = readThirdPartyPins()
+            def libRoot = mergeTask.get().outputs.files.files.find { it.isDirectory() }
+            if (libRoot == null) throw new GradleException('merged native libraries not found')
+            def lib = new File(libRoot, 'lib')
+            if (!lib.isDirectory()) lib = libRoot
+            def seen = [] as Set
+            shippedAbis.each { abi ->
+                def abiDir = new File(lib, abi)
+                if (!abiDir.isDirectory()) {
+                    throw new GradleException("No merged native libraries for ABI ${abi}")
+                }
+                abiDir.listFiles().findAll { it.isFile() }.each { f ->
+                    def rel = "${abi}/${f.name}"
+                    if (firstPartyLibs.contains(f.name)) return
+                    def want = pins[rel]
+                    if (want == null) {
+                        throw new GradleException("Unpinned third-party native library ${rel} (add it to native/thirdparty/thirdparty-native.sha256 after checking its provenance)")
+                    }
+                    def got = thirdPartySha256Of(f)
+                    if (got != want) {
+                        throw new GradleException("Third-party native library SHA-256 mismatch for ${rel}: expected ${want}, got ${got} (a deliberate dependency upgrade updates the pin file together with the dependency version)")
+                    }
+                    seen << rel
+                }
+            }
+            def missing = pins.keySet() - seen
+            if (!missing.isEmpty()) {
+                throw new GradleException("Pinned third-party native libraries missing from the build: ${missing}")
+            }
+        }
+    }
+    tasks.matching {
+        it.name == "package${cap}" || it.name == "package${cap}Bundle"
+                || it.name == "strip${cap}DebugSymbols"
+                || it.name == "extract${cap}NativeSymbolTables"
+                || it.name == "mergeNativeDebugMetadata${cap}"
+    }.configureEach { it.dependsOn(gate) }
+    tasks.matching {
+        it.name == "assemble${cap}" || it.name == "bundle${cap}"
+    }.configureEach { it.dependsOn(gate) }
+}
+
+tasks.matching { it.name == 'check' }.configureEach {
+    it.dependsOn(tasks.matching { it.name.startsWith('verifyThirdPartyNativeArtifacts') })
+}

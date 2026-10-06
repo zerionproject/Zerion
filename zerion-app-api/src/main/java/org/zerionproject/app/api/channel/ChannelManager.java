@@ -47,8 +47,6 @@ public interface ChannelManager {
 
 	void rotateJoinCapability(byte[] channelId) throws DbException;
 
-	void onOnionRotated(String newOnionAddress) throws DbException;
-
 	ChannelDelegationCert delegatePublisher(byte[] channelId,
 			byte[] delegateeEd25519PubKey, byte[] delegateeMlDsaPubKey,
 			long validUntilHourMs) throws DbException;
@@ -103,6 +101,9 @@ public interface ChannelManager {
 	void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
 			throws DbException;
 
+	void setSubscriberTrusted(byte[] channelId, byte[] ed25519PubKey,
+			boolean trusted) throws DbException;
+
 	void postComment(byte[] channelId, long parentPostSeqNum, String body)
 			throws DbException;
 
@@ -141,4 +142,12 @@ public interface ChannelManager {
 
 	ApplicationStatus getMyApplicationStatus(byte[] channelId)
 			throws DbException;
+
+	boolean hasOutdatedSubscribers(byte[] channelId);
+
+	byte[] getMyChannelPublicKey(byte[] channelId) throws DbException;
+
+	boolean canPost(byte[] channelId) throws DbException;
+
+	long getPostsGivenUp(byte[] channelId) throws DbException;
 }

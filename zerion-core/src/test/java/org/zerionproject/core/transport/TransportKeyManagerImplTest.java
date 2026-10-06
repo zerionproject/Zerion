@@ -229,6 +229,108 @@ public class TransportKeyManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void aPendingContactIsForgottenWhenRemoved() throws Exception {
+		boolean alice = random.nextBoolean();
+		TransportKeys transportKeys = createHandshakeKeys(1000, 0, alice);
+		Transaction txn = new Transaction(null, false);
+		context.checking(new Expectations() {{
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(timePeriodLength * 1000 + 1));
+			oneOf(transportCrypto).deriveHandshakeKeys(transportId, rootKey,
+					1000, alice);
+			will(returnValue(transportKeys));
+			for (long i = 0; i < REORDERING_WINDOW_SIZE; i++) {
+				exactly(3).of(transportCrypto).encodeTag(
+						with(any(byte[].class)), with(tagKey),
+						with(PROTOCOL_VERSION), with(i));
+				will(new EncodeTagAction());
+			}
+			oneOf(db).addTransportKeys(txn, pendingContactId, transportKeys);
+			will(returnValue(keySetId));
+		}});
+		TransportKeyManagerImpl manager = new TransportKeyManagerImpl(db,
+				transportCrypto, dbExecutor, scheduler, clock, transportId,
+				maxLatency);
+		manager.addHandshakeKeys(txn, pendingContactId, rootKey, alice);
+		assertTrue(manager.canSendOutgoingStreams(pendingContactId));
+		manager.removePendingContact(pendingContactId);
+		assertFalse(manager.canSendOutgoingStreams(pendingContactId));
+	}
+
+	@Test
+	public void aPendingContactAddedAgainAfterItsRowsWereDeletedGetsFreshKeys()
+			throws Exception {
+		boolean alice = random.nextBoolean();
+		TransportKeys first = createHandshakeKeys(1000, 0, alice);
+		TransportKeys second = createHandshakeKeys(1000, 0, alice);
+		Transaction txn = new Transaction(null, false);
+		context.checking(new Expectations() {{
+			exactly(2).of(clock).currentTimeMillis();
+			will(returnValue(timePeriodLength * 1000 + 1));
+			oneOf(transportCrypto).deriveHandshakeKeys(transportId, rootKey,
+					1000, alice);
+			will(returnValue(first));
+			oneOf(transportCrypto).deriveHandshakeKeys(transportId, rootKey,
+					1000, alice);
+			will(returnValue(second));
+			for (long i = 0; i < REORDERING_WINDOW_SIZE; i++) {
+				allowing(transportCrypto).encodeTag(
+						with(any(byte[].class)), with(tagKey),
+						with(PROTOCOL_VERSION), with(i));
+				will(new EncodeTagAction());
+			}
+			oneOf(db).addTransportKeys(txn, pendingContactId, first);
+			will(returnValue(keySetId));
+			oneOf(db).getTransportKeys(txn, transportId);
+			will(returnValue(new ArrayList<TransportKeySet>()));
+			oneOf(db).addTransportKeys(txn, pendingContactId, second);
+			will(returnValue(keySetId1));
+		}});
+		TransportKeyManagerImpl manager = new TransportKeyManagerImpl(db,
+				transportCrypto, dbExecutor, scheduler, clock, transportId,
+				maxLatency);
+		assertEquals(keySetId, manager.addHandshakeKeys(txn,
+				pendingContactId, rootKey, alice));
+		assertEquals("the key set whose rows are gone is not reused",
+				keySetId1, manager.addHandshakeKeys(txn, pendingContactId,
+						rootKey, alice));
+		assertTrue(manager.canSendOutgoingStreams(pendingContactId));
+	}
+
+	@Test
+	public void aPendingContactAddedAgainWhileItsRowsExistKeepsItsKeys()
+			throws Exception {
+		boolean alice = random.nextBoolean();
+		TransportKeys transportKeys = createHandshakeKeys(1000, 0, alice);
+		Transaction txn = new Transaction(null, false);
+		context.checking(new Expectations() {{
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(timePeriodLength * 1000 + 1));
+			oneOf(transportCrypto).deriveHandshakeKeys(transportId, rootKey,
+					1000, alice);
+			will(returnValue(transportKeys));
+			for (long i = 0; i < REORDERING_WINDOW_SIZE; i++) {
+				exactly(3).of(transportCrypto).encodeTag(
+						with(any(byte[].class)), with(tagKey),
+						with(PROTOCOL_VERSION), with(i));
+				will(new EncodeTagAction());
+			}
+			oneOf(db).addTransportKeys(txn, pendingContactId, transportKeys);
+			will(returnValue(keySetId));
+			oneOf(db).getTransportKeys(txn, transportId);
+			will(returnValue(singletonList(new TransportKeySet(keySetId,
+					null, pendingContactId, transportKeys))));
+		}});
+		TransportKeyManagerImpl manager = new TransportKeyManagerImpl(db,
+				transportCrypto, dbExecutor, scheduler, clock, transportId,
+				maxLatency);
+		assertEquals(keySetId, manager.addHandshakeKeys(txn,
+				pendingContactId, rootKey, alice));
+		assertEquals(keySetId, manager.addHandshakeKeys(txn,
+				pendingContactId, rootKey, alice));
+	}
+
+	@Test
 	public void testOutgoingStreamContextIsNullIfContactIsNotFound()
 			throws Exception {
 		Transaction txn = new Transaction(null, false);

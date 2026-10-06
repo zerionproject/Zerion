@@ -16,12 +16,6 @@ import static org.zerionproject.tor.AbstractTorWrapper.EXIT_TIMEOUT_MS;
 import static org.zerionproject.tor.AbstractTorWrapper.KILL_TIMEOUT_MS;
 import static org.zerionproject.tor.TorWrapper.TorState.STOPPED;
 
-/**
- * SC-TOR-01: a Tor process that will not exit is killed within a bound, a
- * process that never opens its control listener is given up on, and a
- * start that fails or is interrupted at any point leaves no process
- * behind and no state the wrapper cannot recover from.
- */
 public class TorProcessLifecycleTest {
 
 	@Rule

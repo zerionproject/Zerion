@@ -21,10 +21,6 @@ import static org.zerionproject.core.api.record.Record.RECORD_HEADER_BYTES;
 @NotNullByDefault
 class RecordReaderImpl implements RecordReader {
 
-	/**
-	 * Records skipped by one accept-or-ignore call before it gives up: a
-	 * peer may not hold the reader in a loop of unknown record types.
-	 */
 	static final int MAX_IGNORED_RECORDS = 64;
 
 	private final DataInputStream in;

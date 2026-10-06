@@ -8,13 +8,6 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * A2-AND-02: the master-password check used by password change and the
- * wallet gate consults the unlock throttle, records failures and keeps the
- * time floor, like the unlock itself. The manager needs a device keystore
- * and a full vault to run, so the wiring is checked at the source level;
- * the throttle's own behaviour is covered by LoginThrottleTest.
- */
 public class VaultManagerThrottleSourceTest {
 
 	private static final String SRC =

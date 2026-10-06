@@ -14,14 +14,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The membership state machine's admission rules, checked before any
- * signature: who may sign each kind of record, which records must advance
- * the epoch, that the creator can neither be removed nor reported as leaving,
- * that an epoch commit must continue exactly from the current epoch, and the
- * shape bounds of a member list snapshot. Every rule is exercised with a
- * replayed or stale epoch, a non-creator sender and a dissolved group.
- */
 public class GroupMembershipRulesTest {
 
 	private static final long EPOCH = 5L;
@@ -44,13 +36,15 @@ public class GroupMembershipRulesTest {
 	}
 
 	@Test
-	public void removalsNeedTheCreatorAFreshEpochAndNeverTargetTheCreator() {
+	public void removalsNeedTheCreatorTheCurrentEpochAndNeverTargetTheCreator() {
 		GroupTrState s = group(false);
 		assertArrayEquals(creator, GroupTrManagerImpl.membershipEventSigner(s,
 				ChangeKind.MEMBER_REMOVED, creator, member, EPOCH + 1,
 				EPOCH + 1));
-		assertNull("replayed epoch", GroupTrManagerImpl.membershipEventSigner(
-				s, ChangeKind.MEMBER_REMOVED, creator, member, EPOCH, EPOCH));
+		assertArrayEquals("the epoch its commit already reached", creator,
+				GroupTrManagerImpl.membershipEventSigner(s,
+						ChangeKind.MEMBER_REMOVED, creator, member, EPOCH,
+						EPOCH));
 		assertNull("stale epoch", GroupTrManagerImpl.membershipEventSigner(
 				s, ChangeKind.MEMBER_REMOVED, creator, member, EPOCH - 1,
 				EPOCH - 1));

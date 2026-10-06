@@ -32,13 +32,6 @@ import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTransportId;
 
-/**
- * After a pairing completes, the socket it ran on goes to the
- * established-contact handler with the new contact's id, dialled or accepted
- * according to the pairing direction. The handshake and the exchange still run
- * over the pending contact's classical streams, and no stream context is ever
- * requested for the contact itself: the rotation-key sync path is not used.
- */
 public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 
 	private final KeyManager keyManager = context.mock(KeyManager.class);
@@ -92,7 +85,7 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 					streamWriter);
 			will(returnValue(new HandshakeResult(masterKey, true, true)));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, true, true, false, null, null, null,
+					connection, masterKey, true, false, false, null, null, null,
 					null);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,
@@ -131,7 +124,7 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 					streamWriter);
 			will(returnValue(new HandshakeResult(masterKey, false, true)));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, false, true, false, null, null, null,
+					connection, masterKey, false, false, false, null, null, null,
 					null);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,
@@ -170,7 +163,7 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 					streamWriter);
 			will(returnValue(new HandshakeResult(masterKey, true, true)));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, true, true, false, null, null, null,
+					connection, masterKey, true, false, false, null, null, null,
 					null);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,

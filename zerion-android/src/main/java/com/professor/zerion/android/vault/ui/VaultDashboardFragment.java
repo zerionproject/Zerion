@@ -139,12 +139,6 @@ public class VaultDashboardFragment extends BaseFragment {
 		}
 	}
 
-	/**
-	 * Shared coin selector shown after the wallet gate. Bitcoin dispatches into
-	 * the existing (frozen) BTC wallet flow unchanged; Monero dispatches into the
-	 * reviewed XMR wallet flow. XMR is reached only through this selector, never a
-	 * hidden gesture.
-	 */
 	private void showCoinSelector() {
 		if (!isAdded()) {
 			return;

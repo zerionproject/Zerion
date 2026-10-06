@@ -39,11 +39,6 @@ public class SetupActivityTest {
 	public ActivityScenarioRule<SetupActivity> rule =
 			new ActivityScenarioRule<>(SetupActivity.class);
 
-	/**
-	 * The scenario rule launches the activity before the test body runs, but
-	 * on the first run in a fresh process the activity is not always resumed
-	 * by then; wait for it so the view assertions find a resumed activity.
-	 */
 	@Before
 	public void waitForTheActivity() {
 		rule.getScenario().moveToState(Lifecycle.State.RESUMED);
@@ -54,14 +49,14 @@ public class SetupActivityTest {
 	public void testPasswordMatchUI() {
 		moveToSetPasswordFragment();
 
-		onView(withId(R.id.password_entry)).perform(typeText("123456"));
-		onView(withId(R.id.password_confirm)).perform(typeText("654321"));
+		onView(withId(R.id.password_entry)).perform(typeText("12345678"));
+		onView(withId(R.id.password_confirm)).perform(typeText("87654321"));
 		onView(withText(R.string.passwords_do_not_match))
 				.check(matches(isDisplayed()));
 		onView(withId(R.id.next)).check(matches(not(isEnabled())));
 
 		onView(withId(R.id.password_confirm)).perform(clearText());
-		onView(withId(R.id.password_confirm)).perform(replaceText("123456"));
+		onView(withId(R.id.password_confirm)).perform(replaceText("12345678"));
 		onView(withText(R.string.passwords_do_not_match)).check(doesNotExist());
 		onView(withId(R.id.next)).check(matches(isEnabled()));
 

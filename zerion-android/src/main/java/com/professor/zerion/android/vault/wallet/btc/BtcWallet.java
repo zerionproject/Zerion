@@ -29,26 +29,11 @@ import java.util.Set;
 public class BtcWallet {
 
 	public static final int GAP_LIMIT = 20;
-	/**
-	 * The most addresses probed on one chain in a full scan. The gap limit
-	 * ends an honest scan long before this; a server answering non-empty
-	 * history for every script hash would otherwise keep the scan running
-	 * forever.
-	 */
 	static final int MAX_CHAIN_INDEX = 2000;
-	/**
-	 * History items and unspent outputs a single scan accepts in total,
-	 * over both chains; a server answering the per-call maximum for every
-	 * index would otherwise make the scan build millions of objects.
-	 */
 	static final int MAX_SCAN_ITEMS = 50_000;
-	/** Parsed transactions kept between scans. */
 	static final int MAX_TX_CACHE = 512;
-	/** A transaction larger than this is parsed but not kept in the cache. */
 	static final int MAX_CACHED_TX_BYTES = 64 * 1024;
-	/** Transactions the history view fetches, newest first. */
 	static final int MAX_HISTORY_TXS = 1000;
-	/** Raw transaction bytes one history fetch parses before it stops. */
 	static final long MAX_HISTORY_BYTES = 8L * 1024 * 1024;
 
 	private volatile int minReceiveProbe = -1;
@@ -58,12 +43,6 @@ public class BtcWallet {
 		if (index > minReceiveProbe) minReceiveProbe = index;
 	}
 
-	/**
-	 * The lowest change index the next plan may use. Persisted by the
-	 * caller and advanced past every change output this wallet has signed,
-	 * so two sends before the scan server has seen the first never share a
-	 * change address.
-	 */
 	public void setMinChangeProbe(int index) {
 		if (index > minChangeProbe) minChangeProbe = index;
 	}
@@ -72,16 +51,10 @@ public class BtcWallet {
 		return minChangeProbe;
 	}
 
-	/** The wallet id this instance was opened for. */
 	public String walletId() {
 		return isolationTag;
 	}
 
-	/**
-	 * The smallest receive index at or above {@code shown} that has not
-	 * been used, so a displayed address that received funds is replaced by
-	 * the next unused one rather than staying on screen.
-	 */
 	public static int nextUnusedAtOrAbove(Set<Integer> used, int shown) {
 		int i = Math.max(shown, 0);
 		while (used.contains(i)) i++;
@@ -93,15 +66,7 @@ public class BtcWallet {
 	}
 	private static final long DUST = 294L;
 	static final double MIN_FEE_RATE = 2.0;
-	/**
-	 * The highest rate a server estimate or a caller may set. A hostile
-	 * server used to be able to push every option to 1000 sat/vB; the
-	 * ceiling now sits at the top of what a congested mempool has ever
-	 * needed, and the review shows the effective rate and the fee's share
-	 * of the amount so that an excessive suggestion is visible.
-	 */
 	static final double MAX_FEE_RATE = 200.0;
-	/** Above this share of the amount the review flags the fee as high. */
 	public static final int HIGH_FEE_PERCENT = 20;
 	private static final long PENDING_GRACE_MS = 30L * 60L * 1000L;
 	private static final int PENDING_FAIL_MISSES = 3;
@@ -140,7 +105,6 @@ public class BtcWallet {
 		public final List<ElectrumClient.HistItem> history;
 		public final List<OwnedUtxo> utxos;
 		public final Set<String> ownedAddresses;
-		/** Receive indexes with history within the probed range. */
 		public final Set<Integer> usedReceiveIndexes;
 
 		ScanResult(long balanceSat, String receiveAddress, int receiveIndex,
@@ -291,11 +255,6 @@ public class BtcWallet {
 		throw last;
 	}
 
-	/**
-	 * Opens the wallet from its mnemonic characters. The account keys are
-	 * derived once here; the caller keeps ownership of the array and wipes
-	 * it, and the wallet never holds the mnemonic in any form.
-	 */
 	public BtcWallet(char[] mnemonic, int account, int socksPort, String host,
 			int port, String isolationTag) {
 		this(mnemonic, account, socksPort,
@@ -350,10 +309,6 @@ public class BtcWallet {
 		return keys.address(index);
 	}
 
-	/**
-	 * Drops the account keys. Every derivation and signature fails
-	 * afterwards; the caller opens a new wallet from the mnemonic instead.
-	 */
 	public void close() {
 		keys.close();
 		txCache.clear();
@@ -615,19 +570,12 @@ public class BtcWallet {
 		return sanitizeRate(btcPerKb * 1e8 / 1000.0);
 	}
 
-	/**
-	 * Clamps a fee rate into the accepted range. A value that is not a
-	 * finite number (a server can answer NaN, which no ordinary comparison
-	 * rejects) counts as unknown and takes the floor; an infinite or
-	 * excessive value takes the ceiling.
-	 */
 	static double sanitizeRate(double rate) {
 		if (!(rate >= MIN_FEE_RATE)) return MIN_FEE_RATE;
 		if (rate > MAX_FEE_RATE) return MAX_FEE_RATE;
 		return rate;
 	}
 
-	/** The fee no plan may go below for its size. */
 	static long minimumFeeSat(int vbytes) {
 		return (long) Math.ceil(vbytes * MIN_FEE_RATE);
 	}
@@ -742,11 +690,6 @@ public class BtcWallet {
 		return out;
 	}
 
-	/**
-	 * Keeps the {@code limit} newest transactions (unconfirmed first, then
-	 * by height) in their original order, so a server cannot make the
-	 * history view fetch without bound.
-	 */
 	static LinkedHashMap<String, Integer> newestFirst(
 			LinkedHashMap<String, Integer> heights, int limit) {
 		if (heights.size() <= limit) return heights;
@@ -783,12 +726,6 @@ public class BtcWallet {
 		return t;
 	}
 
-	/**
-	 * True when a scan reports no history at all for a wallet that had
-	 * history earlier in this session: a wallet's history never shrinks to
-	 * nothing, so the reply is a hidden or broken view and must not replace
-	 * the last verified state.
-	 */
 	public static boolean emptiedAfterHistory(@Nullable Set<String> previousTxids,
 			Set<String> nowTxids) {
 		return previousTxids != null && !previousTxids.isEmpty()
@@ -865,9 +802,7 @@ public class BtcWallet {
 		public final boolean sweep;
 		public final List<String> outpoints;
 		public final String fingerprint;
-		/** The estimated size the fee was computed for. */
 		public final int vbytes;
-		/** The change index this plan pays to, or -1 without change. */
 		public final int changeIndex;
 		final List<BtcTx.Input> inputs;
 		final List<BtcTx.Output> outputs;
@@ -902,12 +837,10 @@ public class BtcWallet {
 			this.changeIndex = changeIndex;
 		}
 
-		/** The effective fee rate of this plan in sat/vB. */
 		public double feeRateSatPerVb() {
 			return vbytes <= 0 ? 0 : (double) feeSat / vbytes;
 		}
 
-		/** The fee as a percentage of the amount, or 0 for a sweep. */
 		public int feePercentOfAmount() {
 			if (sweep || amountSat <= 0) return 0;
 			return (int) Math.min(Integer.MAX_VALUE,
@@ -915,11 +848,6 @@ public class BtcWallet {
 		}
 	}
 
-	/**
-	 * Plans and signs in one step without the review gate. Production code
-	 * goes through {@link #planSend} and the gate; these entry points exist
-	 * for the wallet tests and are package private for that reason.
-	 */
 	String send(String toAddress, long amountSat, double feeRate,
 			boolean sweep) throws IOException {
 		return send(toAddress, amountSat, feeRate, sweep, null, false);
@@ -1159,19 +1087,6 @@ public class BtcWallet {
 		}
 	}
 
-	/**
-	 * Journals the transaction, then broadcasts it. Only a connection that
-	 * could not be opened at all is a plain failure: no byte of the
-	 * transaction reached any server, so its inputs stay spendable. Once
-	 * the transaction has been written to a server, every outcome other
-	 * than the server echoing the local txid is uncertain, including a
-	 * server that answers with an error: a server can relay a transaction
-	 * and still claim to have refused it, so a claimed rejection keeps the
-	 * inputs reserved until the definitive-miss protocol in
-	 * {@link #reconcilePending} releases them. The journal entry is written
-	 * inside the connection scope so a persist failure closes the
-	 * connection and nothing is broadcast without a record.
-	 */
 		private String broadcastTracked(String rawHex, List<String> outpoints,
 			long netSat) throws IOException {
 		String localTxid = txidOf(rawHex);
@@ -1261,11 +1176,6 @@ public class BtcWallet {
 		return new SpScanResult(scannedTo, found);
 	}
 
-	/**
-	 * A Silent Payments sweep that has been planned but not signed: what the
-	 * user reviews (destination, amount, fee, inputs) is bound by the
-	 * fingerprint to what {@link #signSpSweep} signs and broadcasts.
-	 */
 	public static final class SpSweepPlan {
 		public final String toAddress;
 		public final long amountSat;
@@ -1296,7 +1206,6 @@ public class BtcWallet {
 		return signSpSweep(planSweepSilentPayments(found, toAddress, feeRate));
 	}
 
-	/** Signs and broadcasts exactly the reviewed sweep plan. */
 	public String signSpSweep(SpSweepPlan plan) throws IOException {
 		String rawHex = BtcTx.buildAndSignTaproot(plan.inputs, plan.outputs);
 		return broadcastTracked(rawHex, plan.outpoints, plan.spNetSat);

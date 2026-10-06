@@ -20,11 +20,6 @@ import static org.zerionproject.tor.CircumventionProvider.BridgeType.NON_DEFAULT
 import static org.zerionproject.tor.CircumventionProvider.BridgeType.SNOWFLAKE;
 import static org.zerionproject.tor.CircumventionProvider.BridgeType.VANILLA;
 
-/**
- * Bridge lines are read from the {@code bridges-<type>-<country>} resources
- * on the class path, falling back to the {@code zz} list of a type when
- * there is no country-specific one.
- */
 @Immutable
 @NotNullByDefault
 class CircumventionProviderImpl implements CircumventionProvider {

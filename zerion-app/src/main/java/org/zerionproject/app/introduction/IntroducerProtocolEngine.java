@@ -537,14 +537,14 @@ class IntroducerProtocolEngine
 		if (s.getIntroduceeA().groupId.equals(g)) return s.getIntroduceeA();
 		else if (s.getIntroduceeB().groupId.equals(g))
 			return s.getIntroduceeB();
-		else throw new AssertionError();
+		else throw new IllegalStateException();
 	}
 
 	private Introducee getOtherIntroducee(IntroducerSession s, GroupId g) {
 		if (s.getIntroduceeA().groupId.equals(g)) return s.getIntroduceeB();
 		else if (s.getIntroduceeB().groupId.equals(g))
 			return s.getIntroduceeA();
-		else throw new AssertionError();
+		else throw new IllegalStateException();
 	}
 
 	private boolean isInvalidDependency(IntroducerSession session,

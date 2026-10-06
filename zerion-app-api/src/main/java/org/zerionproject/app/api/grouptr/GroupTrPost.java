@@ -16,6 +16,7 @@ public class GroupTrPost {
 	private final long epoch;
 	private final boolean local;
 	private final long autoDeleteTimerMs;
+	private final long timerStart;
 
 	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
 			String senderName, byte[] body, long timestamp, long epoch,
@@ -27,6 +28,13 @@ public class GroupTrPost {
 	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
 			String senderName, byte[] body, long timestamp, long epoch,
 			boolean local, long autoDeleteTimerMs) {
+		this(groupId, senderPubKey, senderName, body, timestamp, epoch,
+				local, autoDeleteTimerMs, timestamp);
+	}
+
+	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
+			String senderName, byte[] body, long timestamp, long epoch,
+			boolean local, long autoDeleteTimerMs, long timerStart) {
 		this.groupId = groupId;
 		this.senderPubKey = senderPubKey;
 		this.senderName = senderName;
@@ -35,10 +43,31 @@ public class GroupTrPost {
 		this.epoch = epoch;
 		this.local = local;
 		this.autoDeleteTimerMs = autoDeleteTimerMs;
+		this.timerStart = timerStart;
 	}
 
 	public long getAutoDeleteTimerMs() {
 		return autoDeleteTimerMs;
+	}
+
+	public long getTimerStart() {
+		return timerStart;
+	}
+
+	public long getExpiryTime() {
+		return expiryTime(timerStart, autoDeleteTimerMs);
+	}
+
+	public boolean isExpiredAt(long now) {
+		return now >= getExpiryTime();
+	}
+
+	public static long expiryTime(long timestamp, long autoDeleteTimerMs) {
+		if (autoDeleteTimerMs <= 0) return Long.MAX_VALUE;
+		if (timestamp > Long.MAX_VALUE - autoDeleteTimerMs) {
+			return Long.MAX_VALUE;
+		}
+		return timestamp + autoDeleteTimerMs;
 	}
 
 	public byte[] getGroupId() {

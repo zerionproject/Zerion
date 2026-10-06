@@ -11,6 +11,7 @@ public interface MessageTypes {
 	int TYPING_INDICATOR = 8;
 	int LINK_PREVIEW_MESSAGE = 9;
 	int MESH_PREKEY_BUNDLE = 10;
+	int MESSAGE_REACTION_REMOVED = 11;
 
 	int GROUP_POST = 32;
 	int GROUP_MEMBER_ADDED = 33;
@@ -25,4 +26,5 @@ public interface MessageTypes {
 	int GROUPTR_INVITE_OFFER = 42;
 	int GROUPTR_INVITE_ACCEPT = 43;
 	int GROUPTR_INVITE_DECLINE = 44;
+	int GROUP_SETTINGS = 46;
 }

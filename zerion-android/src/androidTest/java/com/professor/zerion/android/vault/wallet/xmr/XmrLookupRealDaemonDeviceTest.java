@@ -20,21 +20,6 @@ import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Validates the nLookupTxs RPC mapping against a real mainnet monerod, so the
- * relay reconciliation in a later commit rests on proven daemon semantics and
- * not on a loopback emulation. It reads only; it never builds, signs or relays
- * a transaction and needs no funds.
- *
- * The MINED and MISSED vectors were confirmed directly against mainnet before
- * being committed: transaction
- * {@code 60b1b5731d7d7e96ef06a5f5d0f20392376945785466f6cb4e8fbdb2cdcd7c58} is
- * mined in block 3750100 (a depth of hundreds of thousands of blocks, well
- * beyond any reorg), and a syntactically valid but nonexistent txid is returned
- * in the daemon's missed list. This test requires network access to a public
- * clearnet node; that is why it is a device test and not part of the offline
- * suite.
- */
 @RunWith(AndroidJUnit4.class)
 public class XmrLookupRealDaemonDeviceTest {
 
@@ -45,8 +30,8 @@ public class XmrLookupRealDaemonDeviceTest {
 	};
 
 	private static final String MINED_TXID =
-			"60b1b5731d7d7e96ef06a5f5d0f20392376945785466f6cb4e8fbdb2cdcd7c58";
-	private static final long MINED_HEIGHT = 3750100L;
+			"c88ce9783b4f11190d7b9c17a69c1c52200f9faaee8e98dd07e6811175177139";
+	private static final long MINED_HEIGHT = 0L;
 
 	private static final String NONEXISTENT_TXID =
 			"dead00000000000000000000000000000000000000000000000000000beef123";

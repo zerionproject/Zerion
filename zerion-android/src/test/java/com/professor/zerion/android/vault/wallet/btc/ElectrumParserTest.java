@@ -39,7 +39,6 @@ public class ElectrumParserTest {
 		assertTrue(ElectrumClient.parseHistory("{}").isEmpty());
 	}
 
-	/** BTC-08: a hash that is not 64 hex characters never reaches a request. */
 	@Test
 	public void historyEntryWithMalformedHashIsSkipped() {
 		String r = "{\"result\":[{\"tx_hash\":\"zz\",\"height\":1},"

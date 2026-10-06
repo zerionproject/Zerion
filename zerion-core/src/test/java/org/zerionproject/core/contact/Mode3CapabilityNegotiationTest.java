@@ -154,7 +154,6 @@ public class Mode3CapabilityNegotiationTest extends BrambleMockTestCase {
 
 	@Test
 	public void testMode3NegotiationWhenFlagOn() {
-		// Mode 3 is unconditionally enabled in v1.7+.
 	}
 
 	@Test

@@ -29,7 +29,7 @@ The reproducible build is defined by `packaging/monero-android/Dockerfile` and
 | Component | Pin |
 |---|---|
 | Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
-| OpenSSL | `1.1.1w` |
+| OpenSSL | `3.5.8` |
 | Boost | `1.84.0` |
 | libsodium | `1.0.19` |
 | Android NDK | r27b (`ndkVersion 27.1.12297006`) |
@@ -64,13 +64,21 @@ pin gates verify, so a checkout without them cannot produce an APK.
 - Build the Tor executable the same way with `packaging/tor-android/fdroid-build.sh`
   (the recipe's second `build:` line).
 - Then run the reproducible app build: `assembleOfficialRelease -Pfdroid`
-  (`-Pfdroid` strips VCS/timestamp inputs for a reproducible APK).
+  (`gradle.properties` already sets `fdroid=true` and the build refuses any
+  other value, so the flag is redundant: every build has static `BuildConfig`
+  values and no baseline profile).
 - `verify-monero-native.gradle` pins the expected `.so` SHA-256. A from-source
   build that reproduces the pinned bytes passes as-is; if F-Droid's toolchain
   produces a different-but-equivalent binary, update the pinned hashes in that
   gate + PROVENANCE.md to the F-Droid-reproducible values (the source is the
   integrity boundary for the F-Droid build).
 - `libzargon2.so` needs nothing extra — Gradle builds it from `src/main/cpp`.
+- Gradle dependency verification stays on: `gradle/verification-metadata.xml`
+  is NOT removed, so every resolved dependency is checksum- and
+  signature-verified and a mismatch fails the build. The native hash gates
+  (`verify-monero-native.gradle`, `verify-payjoin-native.gradle`) and the Tor
+  binary pin stay enabled too. Nothing is built with a warm cache or with a
+  gate disabled to obtain a pass.
 
 ## fdroiddata recipe
 
@@ -88,23 +96,20 @@ commit hash of its own, and the immutable per-release manifest attached to the
 GitHub release records the hash the F-Droid entry has to pin.
 
 ```yaml
-  - versionName: 3.0.13
-    versionCode: 31300
-    commit: <full 40-character hash of the v3.0.13 commit>
+  - versionName: 3.0.15
+    versionCode: 31500
+    commit: <full 40-character hash of the v3.0.15 commit>
     subdir: zerion-android
     sudo:
       - apt-get update
-      - apt-get install -y --no-install-recommends ca-certificates curl unzip git
-        build-essential cmake pkg-config libtool automake autoconf gperf python3
-        file xz-utils make patch perl
+      - apt-get install -y g++ libc-dev cmake pkg-config libtool automake autoconf
+        gperf file xz-utils lbzip2 make patch perl
       - mkdir -p /build
       - chown vagrant:vagrant /build
     gradle:
       - official
     srclibs:
       - reproducible-apk-tools@v0.3.0
-    rm:
-      - gradle/verification-metadata.xml
     build:
       - ANDROID_NDK_HOME=$$NDK$$ ../packaging/monero-android/fdroid-build.sh >
         /tmp/libzmonero-build.log 2>&1 || (tail -n 300 /tmp/libzmonero-build.log; false)
@@ -134,9 +139,33 @@ Four steps the 3.0.11 entry carried are gone, and one of them would fail a
   it to fix.
 - `submodules: true`. `.gitmodules` exists but declares no submodules.
 
-`rm: gradle/verification-metadata.xml` stays, as in every entry since 2.0.1: it
-removes strict dependency verification from F-Droid's build only. The release
-build published here keeps the metadata and fails closed without it.
+`rm: gradle/verification-metadata.xml` is still in the published recipe, as in
+every entry since 2.0.1: it removes strict dependency verification from the
+F-Droid build. Since 3.0.12 the APK published here is the signed output of
+that same build (`fdroid build --test`, see the last section), so the
+published APK is built without dependency verification. Its dependency
+integrity rests on the strictly locked versions, HTTPS downloads and the
+release-time comparison with an independent build that keeps the metadata
+(`scripts/build-fdroid-apk.sh`, which fails closed without it). The recipe
+change that drops the `rm:` step is prepared for the next merge request: a
+strict build from an empty cache passes on Linux (CI job
+`strict-from-clean-cache`) and the metadata lists the Linux `aapt2` artifact,
+so nothing in the buildserver's resolution is outside the metadata. The same
+change pins `reproducible-apk-tools` by commit instead of the movable tag
+`v0.3.0`, and pins the CMake that configures the Monero native build (see
+below).
+
+The F-Droid build of 3.0.14 failed on the builder at the Monero hash gate:
+the `libzmonero.so` the recipe's prebuild produced there did not match the
+pinned hash. The gate is meant to fail that way; the cause is that the host
+tools of the builder image (trixie: CMake 3.31, gcc 14) differ from the
+pinned image the accepted hashes were produced in (bookworm: CMake 3.25.1,
+gcc 12), and nothing in the recipe pinned them. The prepared recipe
+downloads the SDK's CMake 3.22.1 by hash and puts it first on `PATH` for the
+prebuild, the Dockerfile does the same, and the pins are only updated once
+both environments produce identical bytes. A pin is never changed to a hash
+read from a build log, and the gate is never relaxed for one builder; see
+[SUPPLY_CHAIN.md](SUPPLY_CHAIN.md).
 
 `fdroid-build.sh` fetches every dependency archive with a pinned SHA-256 and
 clones Monero at the pinned commit. If the F-Droid maintainers prefer declared

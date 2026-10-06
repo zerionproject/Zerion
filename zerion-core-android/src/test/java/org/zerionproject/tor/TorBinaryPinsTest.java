@@ -19,17 +19,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * SC-TOR-02: the pins the app is built with are the values of the
- * executables the build verified, a file is accepted only when its hash is
- * one of them, and every way the pin data could be wrong is a refusal.
- */
 public class TorBinaryPinsTest {
 
 	private static final String TOR_ARM64 =
-			"29eb99c78c803cdada5948c193308544f5c30414032c3334c3a83a124fcb9426";
+			"586209695b73aea897086d0500b7ef1dcccb0a5a8a002c4e1903ab2ad866dced";
 	private static final String TOR_ARM32 =
-			"418976d0958c8b422d71126e9fe34986657b96672b4fe6059107e41a0f7b8eaa";
+			"1b83790304f4c15a283ada143d35ef86a30027d814d0cd8cf6e1004c360eeb09";
 	private static final String LYREBIRD_ARM64 =
 			"34e258346e12648b7206941cd4af790ad61ca4c663e47426f3631ee98870dc5c";
 	private static final String LYREBIRD_ARM32 =

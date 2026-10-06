@@ -51,6 +51,10 @@ public class SecurityFragment extends Fragment {
 	SharedPreferences uiPrefs;
 
 	@Inject
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
+
+	@Inject
 	com.professor.zerion.android.security.SecurityManager securityManager;
 
 	@Inject
@@ -153,29 +157,31 @@ public class SecurityFragment extends Fragment {
 		updateDefaultTimerDisplay();
 
 		typingIndicatorsSwitch = view.findViewById(R.id.typing_indicators_switch);
-		boolean typingEnabled = uiPrefs.getBoolean(PREF_TYPING_INDICATORS, true);
+		boolean typingEnabled =
+				profilePrefs.getBoolean(PREF_TYPING_INDICATORS, true);
 		typingIndicatorsSwitch.setChecked(typingEnabled);
 		typingIndicatorsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
-				uiPrefs.edit().putBoolean(PREF_TYPING_INDICATORS, isChecked).apply();
+				profilePrefs.edit().putBoolean(PREF_TYPING_INDICATORS,
+						isChecked).apply();
 			}
 		});
 
 		voiceCallsSwitch = view.findViewById(R.id.voice_calls_switch);
 		if (voiceCallsSwitch != null) {
-			boolean voiceEnabled = uiPrefs.getBoolean(
+			boolean voiceEnabled = profilePrefs.getBoolean(
 					PREF_VOICE_CALLS_ENABLED, true);
 			voiceCallsSwitch.setChecked(voiceEnabled);
 			voiceCallsSwitch.setOnCheckedChangeListener(
 					(buttonView, isChecked) -> {
 				if (buttonView.isPressed()) {
-					uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
+					profilePrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
 							isChecked).apply();
 					if (!isChecked && videoCallsSwitch != null
 							&& videoCallsSwitch.isChecked()) {
 						videoCallsSwitch.setChecked(false);
-						uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
-								false).apply();
+						profilePrefs.edit().putBoolean(
+								PREF_VIDEO_CALLS_ENABLED, false).apply();
 					}
 				}
 			});
@@ -183,7 +189,7 @@ public class SecurityFragment extends Fragment {
 
 		videoCallsSwitch = view.findViewById(R.id.video_calls_switch);
 		if (videoCallsSwitch != null) {
-			boolean videoEnabled = uiPrefs.getBoolean(
+			boolean videoEnabled = profilePrefs.getBoolean(
 					PREF_VIDEO_CALLS_ENABLED, false);
 			videoCallsSwitch.setChecked(videoEnabled);
 			videoCallsSwitch.setOnCheckedChangeListener(
@@ -192,8 +198,8 @@ public class SecurityFragment extends Fragment {
 					if (isChecked) {
 						showVideoCallsBetaDialog();
 					} else {
-						uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
-								false).apply();
+						profilePrefs.edit().putBoolean(
+								PREF_VIDEO_CALLS_ENABLED, false).apply();
 					}
 				}
 			});
@@ -247,10 +253,6 @@ public class SecurityFragment extends Fragment {
 		updateWipePasswordSummary();
 	}
 
-	/**
-	 * Runs {@code granted} only after the account password is re-entered
-	 * through the sign-in throttle; {@code refused} restores the control.
-	 */
 	private void withAccountPassword(Runnable granted, Runnable refused) {
 		if (!isAdded()) return;
 		AccountPasswordGate.prompt(requireContext(), accountManager,
@@ -300,13 +302,13 @@ public class SecurityFragment extends Fragment {
 				.setCancelable(false)
 				.setPositiveButton(R.string.video_calls_beta_enable,
 						(dialog, which) -> {
-					uiPrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
+					profilePrefs.edit().putBoolean(PREF_VIDEO_CALLS_ENABLED,
 							true).apply();
 					if (voiceCallsSwitch != null
 							&& !voiceCallsSwitch.isChecked()) {
 						voiceCallsSwitch.setChecked(true);
-						uiPrefs.edit().putBoolean(PREF_VOICE_CALLS_ENABLED,
-								true).apply();
+						profilePrefs.edit().putBoolean(
+								PREF_VOICE_CALLS_ENABLED, true).apply();
 					}
 				})
 				.setNegativeButton(R.string.cancel, (dialog, which) -> {
@@ -480,7 +482,7 @@ public class SecurityFragment extends Fragment {
 			{-1L, 86400000L, 604800000L, 2419200000L};
 
 	private void updateDefaultTimerDisplay() {
-		long value = uiPrefs.getLong("default_disappearing_timer", -1L);
+		long value = profilePrefs.getLong("default_disappearing_timer", -1L);
 		String[] labels = getResources().getStringArray(
 				R.array.default_timer_labels);
 		String text = labels[0];
@@ -498,7 +500,7 @@ public class SecurityFragment extends Fragment {
 	private void showDefaultTimerDialog() {
 		String[] entries = getResources().getStringArray(
 				R.array.default_timer_labels);
-		long stored = uiPrefs.getLong("default_disappearing_timer", -1L);
+		long stored = profilePrefs.getLong("default_disappearing_timer", -1L);
 		int selectedIndex = 0;
 		for (int i = 0; i < DEFAULT_TIMER_VALUES.length; i++) {
 			if (DEFAULT_TIMER_VALUES[i] == stored) {
@@ -512,7 +514,7 @@ public class SecurityFragment extends Fragment {
 				.setSingleChoiceItems(entries, selectedIndex,
 						(dialog, which) -> {
 					long value = DEFAULT_TIMER_VALUES[which];
-					uiPrefs.edit().putLong("default_disappearing_timer",
+					profilePrefs.edit().putLong("default_disappearing_timer",
 							value).apply();
 					updateDefaultTimerDisplay();
 					dialog.dismiss();
@@ -722,12 +724,17 @@ public class SecurityFragment extends Fragment {
 						for (int i = 0; i < t1.length(); i++) pw1[i] = t1.charAt(i);
 						for (int i = 0; i < t2.length(); i++) pw2[i] = t2.charAt(i);
 
-						if (pw1.length < 4) {
+						char[] normal = com.professor.zerion.android.account
+								.PasswordSanitizer.sanitize(pw1);
+						int normalLength = normal.length;
+						java.util.Arrays.fill(normal, '\0');
+						if (normalLength < 4) {
 							showToast(R.string.wipe_password_too_short);
 							return;
 						}
 
-						if (!java.util.Arrays.equals(pw1, pw2)) {
+						if (!com.professor.zerion.android.login
+								.AccountPasswordPolicy.sameNormalForm(pw1, pw2)) {
 							showToast(R.string.wipe_password_mismatch);
 							return;
 						}

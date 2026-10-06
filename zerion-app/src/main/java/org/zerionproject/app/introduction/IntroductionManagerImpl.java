@@ -192,17 +192,39 @@ class IntroductionManagerImpl extends ConversationClientImpl
 			storageId = ss.storageId;
 			Role role = sessionParser.getRole(ss.bdfSession);
 			if (role == INTRODUCER) {
+				IntroducerSession introducer =
+						sessionParser.parseIntroducerSession(ss.bdfSession);
+				requireIntroducee(introducer, m.getGroupId());
 				session = handleMessage(txn, m, body, meta.getMessageType(),
-						sessionParser.parseIntroducerSession(ss.bdfSession),
-						introducerEngine);
+						introducer, introducerEngine);
 			} else if (role == INTRODUCEE) {
-				session = handleMessage(txn, m, body, meta.getMessageType(),
+				IntroduceeSession introducee =
 						sessionParser.parseIntroduceeSession(m.getGroupId(),
-								ss.bdfSession), introduceeEngine);
+								ss.bdfSession);
+				requireIntroducer(txn, introducee, m.getGroupId());
+				session = handleMessage(txn, m, body, meta.getMessageType(),
+						introducee, introduceeEngine);
 			} else throw new AssertionError();
 		}
 		storeSession(txn, storageId, session);
 		return ACCEPT_DO_NOT_SHARE;
+	}
+
+	private void requireIntroducee(IntroducerSession s, GroupId g)
+			throws FormatException {
+		if (!s.getIntroduceeA().groupId.equals(g)
+				&& !s.getIntroduceeB().groupId.equals(g)) {
+			throw new FormatException();
+		}
+	}
+
+	private void requireIntroducer(Transaction txn, IntroduceeSession s,
+			GroupId g) throws DbException, FormatException {
+		ContactId sender = clientHelper.getContactId(txn, g);
+		Author author = db.getContact(txn, sender).getAuthor();
+		if (!author.getId().equals(s.getIntroducer().getId())) {
+			throw new FormatException();
+		}
 	}
 
 	private IntroduceeSession createNewIntroduceeSession(Transaction txn,

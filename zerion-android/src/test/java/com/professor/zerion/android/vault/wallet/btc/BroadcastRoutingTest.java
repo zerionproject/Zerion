@@ -7,11 +7,6 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * BTC-06: a user who selected a node of their own, or local or direct
- * routing, broadcasts through that node; the scan/broadcast split across
- * shipped servers applies only while the shipped default is in use.
- */
 public class BroadcastRoutingTest {
 
 	private static final String DEFAULT = "default.onion:50001";

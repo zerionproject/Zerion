@@ -5,12 +5,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The peer's next video offer is accepted without asking only when the local
- * user answered an incoming video call, and only once; a call started as
- * audio, an outgoing video call, or anything after the video session ended
- * asks the user.
- */
 public class VideoAutoAcceptTest {
 
 	@Test

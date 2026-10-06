@@ -20,6 +20,7 @@ import org.zerionproject.core.api.db.DataTooOldException;
 import org.zerionproject.core.api.db.DbClosedException;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.MessageDeletedException;
+import org.zerionproject.core.api.db.MessageMetadataVisitor;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.MigrationListener;
 import org.zerionproject.core.api.identity.Author;
@@ -55,6 +56,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +84,8 @@ import static org.zerionproject.core.api.sync.SyncConstants.MESSAGE_HEADER_LENGT
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.PENDING;
 import static org.zerionproject.core.api.sync.validation.MessageState.UNKNOWN;
+import static org.zerionproject.core.db.DatabaseConstants.CONTACT_ID_HIGH_WATER_KEY;
+import static org.zerionproject.core.db.DatabaseConstants.KEY_SET_ID_HIGH_WATER_KEY;
 import static org.zerionproject.core.db.DatabaseConstants.DB_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.db.DatabaseConstants.DIRTY_KEY;
 import static org.zerionproject.core.db.DatabaseConstants.SCHEMA_VERSION_KEY;
@@ -91,9 +95,16 @@ import static org.zerionproject.core.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 67;
+	static final int CODE_SCHEMA_VERSION = 72;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 8;
+	static final int MAX_METADATA_BATCH_MESSAGES = 512;
+	static final long MAX_METADATA_BATCH_BYTES = 1024 * 1024;
+	private static final String METADATA_BATCH_QUERY =
+			"SELECT messageId, metaKey, value FROM messageMetadata"
+					+ " WHERE state = ? AND messageId IN ("
+					+ String.join(", ", Collections.nCopies(
+							MAX_METADATA_BATCH_MESSAGES, "?")) + ")";
 	private static final int OFFSET_PREV = -1;
 	private static final int OFFSET_CURR = 0;
 	private static final int OFFSET_NEXT = 1;
@@ -143,9 +154,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	private static final String CREATE_CONTACT_CAPABILITIES =
 			"CREATE TABLE contactCapabilities"
-					+ " (contactId INT NOT NULL PRIMARY KEY,"
+					+ " (contactId INT NOT NULL,"
 					+ " capability INTEGER NOT NULL,"
-					+ " advertisedAt BIGINT NOT NULL)";
+					+ " advertisedAt BIGINT NOT NULL,"
+					+ " PRIMARY KEY (contactId),"
+					+ " FOREIGN KEY (contactId)"
+					+ " REFERENCES contacts (contactId)"
+					+ " ON DELETE CASCADE)";
 
 	private static final String CREATE_GROUPS =
 			"CREATE TABLE groups"
@@ -386,7 +401,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " createdAt BIGINT NOT NULL,"
 					+ " isLocal INTEGER NOT NULL,"
 					+ " state INTEGER NOT NULL,"
-					+ " PRIMARY KEY (groupId, authorId))";
+					+ " PRIMARY KEY (groupId, authorId),"
+					+ " FOREIGN KEY (groupId)"
+					+ " REFERENCES groups (groupId)"
+					+ " ON DELETE CASCADE)";
 
 	private static final String CREATE_GROUP_KEY_HISTORY =
 			"CREATE TABLE groupKeyHistory"
@@ -396,15 +414,22 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " messageIndex INTEGER NOT NULL,"
 					+ " messageKey _SECRET NOT NULL,"
 					+ " expiresAt BIGINT NOT NULL,"
-					+ " PRIMARY KEY (groupId, authorId, epoch, messageIndex))";
+					+ " PRIMARY KEY (groupId, authorId, epoch, messageIndex),"
+					+ " FOREIGN KEY (groupId)"
+					+ " REFERENCES groups (groupId)"
+					+ " ON DELETE CASCADE)";
 
 	private static final String CREATE_GROUP_CRYPTO_STATE =
 			"CREATE TABLE groupCryptoState"
-					+ " (groupId _HASH NOT NULL PRIMARY KEY,"
+					+ " (groupId _HASH NOT NULL,"
 					+ " cryptoMode INTEGER NOT NULL,"
 					+ " lastRekeyTime BIGINT NOT NULL,"
 					+ " rekeyReason INTEGER,"
-					+ " minCapability INTEGER NOT NULL)";
+					+ " minCapability INTEGER NOT NULL,"
+					+ " PRIMARY KEY (groupId),"
+					+ " FOREIGN KEY (groupId)"
+					+ " REFERENCES groups (groupId)"
+					+ " ON DELETE CASCADE)";
 
 	private static final String INDEX_GROUP_KEY_HISTORY_BY_EXPIRY =
 			"CREATE INDEX IF NOT EXISTS groupKeyHistoryExpiry"
@@ -430,9 +455,13 @@ abstract class JdbcDatabase implements Database<Connection> {
 			"CREATE INDEX IF NOT EXISTS groupsByClientIdMajorVersion"
 					+ " ON groups (clientId, majorVersion)";
 
-	private static final String INDEX_MESSAGE_METADATA_BY_GROUP_ID_STATE =
-			"CREATE INDEX IF NOT EXISTS messageMetadataByGroupIdState"
-					+ " ON messageMetadata (groupId, state)";
+	static final String DROP_INDEX_MESSAGE_METADATA_BY_GROUP_ID_STATE =
+			"DROP INDEX IF EXISTS messageMetadataByGroupIdState";
+
+	static final String INDEX_MESSAGE_METADATA_BY_GROUP_ID_STATE_MESSAGE_ID =
+			"CREATE INDEX IF NOT EXISTS"
+					+ " messageMetadataByGroupIdStateMessageId"
+					+ " ON messageMetadata (groupId, state, messageId)";
 
 	private static final String INDEX_MESSAGE_DEPENDENCIES_BY_DEPENDENCY_ID =
 			"CREATE INDEX IF NOT EXISTS messageDependenciesByDependencyId"
@@ -588,7 +617,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration63_64(),
 				new Migration64_65(dbTypes),
 				new Migration65_66(),
-				new Migration66_67(dbTypes)
+				new Migration66_67(dbTypes),
+				new Migration67_68(),
+				new Migration68_69(),
+				new Migration69_70(),
+				new Migration70_71(),
+				new Migration71_72(dbTypes)
 		);
 	}
 
@@ -654,7 +688,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s = txn.createStatement();
 			s.executeUpdate(INDEX_CONTACTS_BY_AUTHOR_ID);
 			s.executeUpdate(INDEX_GROUPS_BY_CLIENT_ID_MAJOR_VERSION);
-			s.executeUpdate(INDEX_MESSAGE_METADATA_BY_GROUP_ID_STATE);
+			s.executeUpdate(
+					INDEX_MESSAGE_METADATA_BY_GROUP_ID_STATE_MESSAGE_ID);
 			s.executeUpdate(INDEX_MESSAGE_DEPENDENCIES_BY_DEPENDENCY_ID);
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_GROUP_ID);
 			s.executeUpdate(INDEX_STATUSES_BY_CONTACT_ID_TIMESTAMP);
@@ -665,6 +700,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID);
 			s.executeUpdate(INDEX_GROUP_KEY_HISTORY_BY_EXPIRY);
 			s.executeUpdate(INDEX_GROUP_SENDER_KEYS_BY_GROUP);
+			for (String index : ForeignKeyIndexes.STATEMENTS) {
+				s.executeUpdate(dbTypes.replaceTypes(index));
+			}
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
@@ -757,14 +795,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 		if (shouldClose) tryToClose(txn);
 	}
 
-	/**
-	 * Adds an already-open connection to the pool so the first transaction of
-	 * {@link #open} reuses it instead of opening a fresh connection. Lets a
-	 * subclass validate the database with a real connection and then hand that
-	 * same connection to open, avoiding a second key derivation. The connection
-	 * must be idle (auto-commit, no open transaction), exactly as a freshly
-	 * created one is.
-	 */
 	protected void seedPooledConnection(Connection c) {
 		connectionsLock.lock();
 		try {
@@ -830,45 +860,78 @@ abstract class JdbcDatabase implements Database<Connection> {
 			@Nullable PublicKey handshake, boolean verified, boolean postQuantum,
 			boolean pcsEnabled,
 			@Nullable byte[] mlDsaSigPublicKey) throws DbException {
+		int id = nextCounterValue(txn, CONTACT_ID_HIGH_WATER_KEY,
+				"SELECT MAX(contactId) FROM contacts");
 		PreparedStatement ps = null;
-		ResultSet rs = null;
 		try {
 			String sql = "INSERT INTO contacts"
-					+ " (authorId, formatVersion, name, publicKey,"
+					+ " (contactId, authorId, formatVersion, name, publicKey,"
 					+ " localAuthorId, handshakePublicKey, verified, postQuantum,"
 					+ " pcsEnabled, mlDsaSigPublicKey)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
-			ps.setBytes(1, remote.getId().getBytes());
-			ps.setInt(2, remote.getFormatVersion());
-			ps.setString(3, remote.getName());
-			ps.setBytes(4, remote.getPublicKey().getEncoded());
-			ps.setBytes(5, local.getBytes());
-			if (handshake == null) ps.setNull(6, BINARY);
-			else ps.setBytes(6, handshake.getEncoded());
-			ps.setBoolean(7, verified);
-			ps.setBoolean(8, postQuantum);
-			ps.setBoolean(9, pcsEnabled);
-			if (mlDsaSigPublicKey == null) ps.setNull(10, BINARY);
-			else ps.setBytes(10, mlDsaSigPublicKey);
+			ps.setInt(1, id);
+			ps.setBytes(2, remote.getId().getBytes());
+			ps.setInt(3, remote.getFormatVersion());
+			ps.setString(4, remote.getName());
+			ps.setBytes(5, remote.getPublicKey().getEncoded());
+			ps.setBytes(6, local.getBytes());
+			if (handshake == null) ps.setNull(7, BINARY);
+			else ps.setBytes(7, handshake.getEncoded());
+			ps.setBoolean(8, verified);
+			ps.setBoolean(9, postQuantum);
+			ps.setBoolean(10, pcsEnabled);
+			if (mlDsaSigPublicKey == null) ps.setNull(11, BINARY);
+			else ps.setBytes(11, mlDsaSigPublicKey);
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
-			sql = "SELECT contactId FROM contacts"
-					+ " ORDER BY contactId DESC LIMIT 1";
-			ps = txn.prepareStatement(sql);
-			rs = ps.executeQuery();
-			if (!rs.next()) throw new DbStateException();
-			ContactId c = new ContactId(rs.getInt(1));
-			if (rs.next()) throw new DbStateException();
-			rs.close();
-			ps.close();
-			return c;
 		} catch (SQLException e) {
-			tryToClose(rs);
 			tryToClose(ps);
 			throw new DbException(e);
 		}
+		recordHighWater(txn, CONTACT_ID_HIGH_WATER_KEY, id);
+		return new ContactId(id);
+	}
+
+	private int nextCounterValue(Connection txn, String key, String maxSql)
+			throws DbException {
+		Settings s = getSettings(txn, DB_SETTINGS_NAMESPACE);
+		long highWater = 0;
+		String stored = s.get(key);
+		if (stored != null && !stored.isEmpty()) {
+			try {
+				highWater = Long.parseLong(stored);
+			} catch (NumberFormatException e) {
+				throw new DbException(e);
+			}
+			if (highWater < 0) throw new DbException();
+		}
+		Statement st = null;
+		ResultSet rs = null;
+		try {
+			st = txn.createStatement();
+			rs = st.executeQuery(maxSql);
+			if (rs.next()) {
+				long max = rs.getLong(1);
+				if (!rs.wasNull()) highWater = Math.max(highWater, max);
+			}
+			rs.close();
+			st.close();
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(st);
+			throw new DbException(e);
+		}
+		if (highWater >= Integer.MAX_VALUE) throw new DbException();
+		return (int) highWater + 1;
+	}
+
+	private void recordHighWater(Connection txn, String key, int value)
+			throws DbException {
+		Settings s = new Settings();
+		s.putInt(key, value);
+		mergeSettings(txn, s, DB_SETTINGS_NAMESPACE);
 	}
 
 	@Override
@@ -1198,15 +1261,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 
-			String sql = "SELECT COALESCE(MAX(keySetId), 0) + 1"
-					+ " FROM outgoingKeys";
-			ps = txn.prepareStatement(sql);
-			rs = ps.executeQuery();
-			if (!rs.next()) throw new DbStateException();
-			int nextKeySetId = rs.getInt(1);
-			rs.close();
-			ps.close();
-			sql = "INSERT INTO outgoingKeys (transportId, keySetId,"
+			int nextKeySetId = nextCounterValue(txn, KEY_SET_ID_HIGH_WATER_KEY,
+					"SELECT MAX(keySetId) FROM outgoingKeys");
+			String sql = "INSERT INTO outgoingKeys (transportId, keySetId,"
 					+ " timePeriod, contactId, pendingContactId, tagKey,"
 					+ " headerKey, stream, active, rootKey, alice)"
 					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -1270,6 +1327,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			for (int rows : batchAffected)
 				if (rows != 1) throw new DbStateException();
 			ps.close();
+			recordHighWater(txn, KEY_SET_ID_HIGH_WATER_KEY, nextKeySetId);
 			return keySetId;
 		} catch (SQLException e) {
 			tryToClose(rs);
@@ -2214,6 +2272,189 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
+	public <E extends Exception> void visitMessageMetadataExcluding(
+			Connection txn, GroupId g, String key, byte[] value,
+			MessageMetadataVisitor<E> visitor) throws DbException, E {
+		visitMessageMetadataExcludingPaged(txn, g, key, value, visitor);
+	}
+
+	static final int METADATA_PAGE_ROWS = 4096;
+
+	private <E extends Exception> void visitMessageMetadataExcludingPaged(
+			Connection txn, GroupId g, String key, byte[] value,
+			MessageMetadataVisitor<E> visitor) throws DbException, E {
+		byte[] after = null;
+		while (true) {
+			MetadataPage page = getMetadataSizesPage(txn, g, key, value,
+					after);
+			visitMetadataInBatches(txn, page.sizes, visitor);
+			if (page.next == null) return;
+			after = page.next;
+		}
+	}
+
+	private static final class MetadataPage {
+
+		private final Map<MessageId, Long> sizes;
+		@Nullable
+		private final byte[] next;
+
+		private MetadataPage(Map<MessageId, Long> sizes,
+				@Nullable byte[] next) {
+			this.sizes = sizes;
+			this.next = next;
+		}
+	}
+
+	private MetadataPage getMetadataSizesPage(Connection txn, GroupId g,
+			String key, byte[] value, @Nullable byte[] after)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT messageId, OCTET_LENGTH(value),"
+					+ " CASE WHEN metaKey = ? AND value = ? THEN 1 ELSE 0 END"
+					+ " FROM messageMetadata"
+					+ " WHERE groupId = ? AND state = ?"
+					+ (after == null ? "" : " AND messageId > ?")
+					+ " ORDER BY messageId LIMIT ?";
+			ps = txn.prepareStatement(sql);
+			int i = 1;
+			ps.setString(i++, key);
+			ps.setBytes(i++, value);
+			ps.setBytes(i++, g.getBytes());
+			ps.setInt(i++, DELIVERED.getValue());
+			if (after != null) ps.setBytes(i++, after);
+			ps.setInt(i, METADATA_PAGE_ROWS);
+			rs = ps.executeQuery();
+			Map<MessageId, Long> sizes = new LinkedHashMap<>();
+			Set<MessageId> excluded = new HashSet<>();
+			int rows = 0;
+			MessageId last = null;
+			while (rs.next()) {
+				rows++;
+				MessageId m = new MessageId(rs.getBytes(1));
+				Long size = sizes.get(m);
+				sizes.put(m, (size == null ? 0 : size) + rs.getLong(2));
+				if (rs.getInt(3) == 1) excluded.add(m);
+				last = m;
+			}
+			rs.close();
+			ps.close();
+			byte[] next = null;
+			if (rows == METADATA_PAGE_ROWS && last != null) {
+				if (sizes.size() == 1) {
+					addWholeMessageSize(txn, last, key, value, sizes,
+							excluded);
+					next = last.getBytes();
+				} else {
+					sizes.remove(last);
+					excluded.remove(last);
+					MessageId previous = null;
+					for (MessageId m : sizes.keySet()) previous = m;
+					next = previous == null ? null : previous.getBytes();
+				}
+			}
+			sizes.keySet().removeAll(excluded);
+			return new MetadataPage(sizes, next);
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	private void addWholeMessageSize(Connection txn, MessageId m, String key,
+			byte[] value, Map<MessageId, Long> sizes, Set<MessageId> excluded)
+			throws SQLException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT OCTET_LENGTH(value),"
+					+ " CASE WHEN metaKey = ? AND value = ? THEN 1 ELSE 0 END"
+					+ " FROM messageMetadata"
+					+ " WHERE messageId = ? AND state = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setString(1, key);
+			ps.setBytes(2, value);
+			ps.setBytes(3, m.getBytes());
+			ps.setInt(4, DELIVERED.getValue());
+			rs = ps.executeQuery();
+			long size = 0;
+			boolean exclude = false;
+			while (rs.next()) {
+				size += rs.getLong(1);
+				if (rs.getInt(2) == 1) exclude = true;
+			}
+			sizes.put(m, size);
+			if (exclude) excluded.add(m);
+		} finally {
+			tryToClose(rs);
+			tryToClose(ps);
+		}
+	}
+
+	private <E extends Exception> void visitMetadataInBatches(Connection txn,
+			Map<MessageId, Long> sizes, MessageMetadataVisitor<E> visitor)
+			throws DbException, E {
+		if (sizes.isEmpty()) return;
+		List<MessageId> ids = new ArrayList<>(sizes.keySet());
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement(METADATA_BATCH_QUERY);
+			int start = 0;
+			while (start < ids.size()) {
+				int end = start + 1;
+				long bytes = sizes.get(ids.get(start));
+				while (end < ids.size()
+						&& end - start < MAX_METADATA_BATCH_MESSAGES
+						&& bytes + sizes.get(ids.get(end))
+						<= MAX_METADATA_BATCH_BYTES) {
+					bytes += sizes.get(ids.get(end));
+					end++;
+				}
+				List<MessageId> batch = ids.subList(start, end);
+				Map<MessageId, Metadata> metadata =
+						getMessageMetadata(ps, batch);
+				for (MessageId m : batch) {
+					Metadata meta = metadata.remove(m);
+					if (meta != null) visitor.visit(m, meta);
+				}
+				start = end;
+			}
+		} catch (SQLException e) {
+			throw new DbException(e);
+		} finally {
+			tryToClose(ps);
+		}
+	}
+
+	private Map<MessageId, Metadata> getMessageMetadata(PreparedStatement ps,
+			List<MessageId> batch) throws SQLException {
+		ps.setInt(1, DELIVERED.getValue());
+		for (int i = 0; i < MAX_METADATA_BATCH_MESSAGES; i++) {
+			if (i < batch.size()) ps.setBytes(i + 2, batch.get(i).getBytes());
+			else ps.setNull(i + 2, BINARY);
+		}
+		ResultSet rs = ps.executeQuery();
+		try {
+			Map<MessageId, Metadata> all = new HashMap<>(batch.size());
+			while (rs.next()) {
+				MessageId messageId = new MessageId(rs.getBytes(1));
+				Metadata metadata = all.get(messageId);
+				if (metadata == null) {
+					metadata = new Metadata();
+					all.put(messageId, metadata);
+				}
+				metadata.put(rs.getString(2), rs.getBytes(3));
+			}
+			return all;
+		} finally {
+			tryToClose(rs);
+		}
+	}
+
+	@Override
 	public Metadata getGroupMetadata(Connection txn, GroupId g)
 			throws DbException {
 		PreparedStatement ps = null;
@@ -2700,6 +2941,55 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
+	public Collection<GroupId> getGroupsWithMessagesToDelete(Connection txn)
+			throws DbException {
+		long now = clock.currentTimeMillis();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT DISTINCT groupId FROM messages"
+					+ " WHERE cleanupDeadline <= ?";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, now);
+			rs = ps.executeQuery();
+			List<GroupId> ids = new ArrayList<>();
+			while (rs.next()) ids.add(new GroupId(rs.getBytes(1)));
+			rs.close();
+			ps.close();
+			return ids;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public Collection<MessageId> getMessagesToDelete(Connection txn, GroupId g)
+			throws DbException {
+		long now = clock.currentTimeMillis();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT messageId FROM messages"
+					+ " WHERE cleanupDeadline <= ? AND groupId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, now);
+			ps.setBytes(2, g.getBytes());
+			rs = ps.executeQuery();
+			List<MessageId> ids = new ArrayList<>();
+			while (rs.next()) ids.add(new MessageId(rs.getBytes(1)));
+			rs.close();
+			ps.close();
+			return ids;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
 	public long getNextSendTime(Connection txn, ContactId c, long maxLatency)
 			throws DbException {
 		PreparedStatement ps = null;
@@ -2764,6 +3054,33 @@ abstract class JdbcDatabase implements Database<Connection> {
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(s);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public long getNextCleanupDeadline(Connection txn, long after)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT cleanupDeadline FROM messages"
+					+ " WHERE cleanupDeadline > ?"
+					+ " ORDER BY cleanupDeadline LIMIT 1";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, after);
+			rs = ps.executeQuery();
+			long nextDeadline = NO_CLEANUP_DEADLINE;
+			if (rs.next()) {
+				nextDeadline = rs.getLong(1);
+				if (rs.next()) throw new AssertionError();
+			}
+			rs.close();
+			ps.close();
+			return nextDeadline;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
 			throw new DbException(e);
 		}
 	}
@@ -2850,6 +3167,24 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
+	public void clearPendingContactOurKeys(Connection txn, PendingContactId p)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE pendingContacts"
+					+ " SET ourPublicKey = NULL, ourPrivateKey = NULL"
+					+ " WHERE pendingContactId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, p.getBytes());
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
 	public Collection<PendingContact> getPendingContacts(Connection txn)
 			throws DbException {
 		Statement s = null;
@@ -2905,7 +3240,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			List<MessageId> ids = new ArrayList<>();
 			while (rs.next()) {
 				int length = rs.getInt(1);
-				if (capacity < RECORD_HEADER_BYTES + length) break;
+				if (capacity < RECORD_HEADER_BYTES + length) continue;
 				ids.add(new MessageId(rs.getBytes(2)));
 				capacity -= RECORD_HEADER_BYTES + length;
 			}
@@ -2935,6 +3270,30 @@ abstract class JdbcDatabase implements Database<Connection> {
 			rs.close();
 			ps.close();
 			return s;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Nullable
+	@Override
+	public String getSetting(Connection txn, String namespace, String key)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT value FROM settings"
+					+ " WHERE namespace = ? AND settingKey = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setString(1, namespace);
+			ps.setString(2, key);
+			rs = ps.executeQuery();
+			String value = rs.next() ? rs.getString(1) : null;
+			rs.close();
+			ps.close();
+			return value;
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(ps);
@@ -3377,6 +3736,58 @@ abstract class JdbcDatabase implements Database<Connection> {
 			if (affected < 0 || affected > 1) throw new DbStateException();
 			ps.close();
 			return affected == 1;
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void deleteSettings(Connection txn, String namespace,
+			Collection<String> keys) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "DELETE FROM settings"
+					+ " WHERE namespace = ? AND settingKey = ?";
+			ps = txn.prepareStatement(sql);
+			for (String key : keys) {
+				ps.setString(1, namespace);
+				ps.setString(2, key);
+				ps.addBatch();
+			}
+			int[] batchAffected = ps.executeBatch();
+			if (batchAffected.length != keys.size()) {
+				throw new DbStateException();
+			}
+			for (int rows : batchAffected) {
+				if (rows < 0 || rows > 1) throw new DbStateException();
+			}
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void deleteSettingsNamespaces(Connection txn,
+			Collection<String> namespaces) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "DELETE FROM settings WHERE namespace = ?";
+			ps = txn.prepareStatement(sql);
+			for (String namespace : namespaces) {
+				ps.setString(1, namespace);
+				ps.addBatch();
+			}
+			int[] batchAffected = ps.executeBatch();
+			if (batchAffected.length != namespaces.size()) {
+				throw new DbStateException();
+			}
+			for (int rows : batchAffected) {
+				if (rows < 0) throw new DbStateException();
+			}
+			ps.close();
 		} catch (SQLException e) {
 			tryToClose(ps);
 			throw new DbException(e);
@@ -4228,70 +4639,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
-	public void setPcsSessionState(Connection txn, ContactId c, int direction,
-			SecretKey chainKey, int messageNumber, int previousChainLength)
-			throws DbException {
-		PreparedStatement ps = null;
-		try {
-			String sql = "DELETE FROM pcsSessionState"
-					+ " WHERE contactId = ? AND direction = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			ps.executeUpdate();
-			ps.close();
-			sql = "INSERT INTO pcsSessionState"
-					+ " (contactId, direction, chainKey, messageNumber,"
-					+ " previousChainLength)"
-					+ " VALUES (?, ?, ?, ?, ?)";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			ps.setBytes(3, chainKey.getBytes());
-			ps.setInt(4, messageNumber);
-			ps.setInt(5, previousChainLength);
-			int affected = ps.executeUpdate();
-			if (affected != 1) throw new DbStateException();
-			ps.close();
-		} catch (SQLException e) {
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	@Nullable
-	public Object[] getPcsSessionState(Connection txn, ContactId c,
-			int direction) throws DbException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			String sql = "SELECT chainKey, messageNumber, previousChainLength"
-					+ " FROM pcsSessionState"
-					+ " WHERE contactId = ? AND direction = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			rs = ps.executeQuery();
-			if (!rs.next()) {
-				rs.close();
-				ps.close();
-				return null;
-			}
-			byte[] chainKeyBytes = rs.getBytes(1);
-			int messageNumber = rs.getInt(2);
-			int previousChainLength = rs.getInt(3);
-			rs.close();
-			ps.close();
-			return new Object[]{chainKeyBytes, messageNumber, previousChainLength};
-		} catch (SQLException e) {
-			tryToClose(rs);
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
 	public boolean containsPcsSessionState(Connection txn, ContactId c)
 			throws DbException {
 		PreparedStatement ps = null;
@@ -4313,112 +4660,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
-	public void addPcsSkippedKey(Connection txn, ContactId c, int direction,
-			int messageNumber, SecretKey messageKey, long timestamp)
-			throws DbException {
-		PreparedStatement ps = null;
-		try {
-			String sql = "INSERT INTO pcsSkippedKeys"
-					+ " (contactId, direction, messageNumber, messageKey, timestamp)"
-					+ " VALUES (?, ?, ?, ?, ?)";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			ps.setInt(3, messageNumber);
-			ps.setBytes(4, messageKey.getBytes());
-			ps.setLong(5, timestamp);
-			int affected = ps.executeUpdate();
-			if (affected != 1) throw new DbStateException();
-			ps.close();
-		} catch (SQLException e) {
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	@Nullable
-	public SecretKey getPcsSkippedKey(Connection txn, ContactId c,
-			int direction, int messageNumber) throws DbException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			String selectSql = "SELECT messageKey FROM pcsSkippedKeys"
-					+ " WHERE contactId = ? AND direction = ? AND messageNumber = ?";
-			ps = txn.prepareStatement(selectSql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			ps.setInt(3, messageNumber);
-			rs = ps.executeQuery();
-			if (!rs.next()) {
-				rs.close();
-				ps.close();
-				return null;
-			}
-			byte[] keyBytes = rs.getBytes(1);
-			rs.close();
-			ps.close();
-			String deleteSql = "DELETE FROM pcsSkippedKeys"
-					+ " WHERE contactId = ? AND direction = ? AND messageNumber = ?";
-			ps = txn.prepareStatement(deleteSql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			ps.setInt(3, messageNumber);
-			int affected = ps.executeUpdate();
-			if (affected != 1) throw new DbStateException();
-			ps.close();
-
-			return new SecretKey(keyBytes);
-		} catch (SQLException e) {
-			tryToClose(rs);
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	public int getPcsSkippedKeyCount(Connection txn, ContactId c, int direction)
-			throws DbException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			String sql = "SELECT COUNT(*) FROM pcsSkippedKeys"
-					+ " WHERE contactId = ? AND direction = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setInt(2, direction);
-			rs = ps.executeQuery();
-			if (!rs.next()) throw new DbStateException();
-			int count = rs.getInt(1);
-			rs.close();
-			ps.close();
-			return count;
-		} catch (SQLException e) {
-			tryToClose(rs);
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	public int prunePcsSkippedKeys(Connection txn, long maxAge)
-			throws DbException {
-		PreparedStatement ps = null;
-		try {
-			long threshold = clock.currentTimeMillis() - maxAge;
-			String sql = "DELETE FROM pcsSkippedKeys WHERE timestamp < ?";
-			ps = txn.prepareStatement(sql);
-			ps.setLong(1, threshold);
-			int affected = ps.executeUpdate();
-			ps.close();
-			return affected;
-		} catch (SQLException e) {
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
 	public void removePcsState(Connection txn, ContactId c) throws DbException {
 		PreparedStatement ps = null;
 		try {
@@ -4430,6 +4671,24 @@ abstract class JdbcDatabase implements Database<Connection> {
 			sql = "DELETE FROM pcsSessionState WHERE contactId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setInt(1, c.getInt());
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removePcsSessionState(Connection txn, ContactId c,
+			int direction) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "DELETE FROM pcsSessionState"
+					+ " WHERE contactId = ? AND direction = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, c.getInt());
+			ps.setInt(2, direction);
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
@@ -4526,166 +4785,6 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
-	public void addPcsMode2SkippedKey(Connection txn, byte[] chainId,
-			int messageNumber, SecretKey messageKey, long timestamp)
-			throws DbException {
-		PreparedStatement ps = null;
-		try {
-			String sql = "INSERT INTO pcsSkippedKeys"
-					+ " (contactId, direction, messageNumber, messageKey, timestamp, chainId)"
-					+ " VALUES (0, 0, ?, ?, ?, ?)";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, messageNumber);
-			ps.setBytes(2, messageKey.getBytes());
-			ps.setLong(3, timestamp);
-			ps.setBytes(4, chainId);
-			int affected = ps.executeUpdate();
-			if (affected != 1) throw new DbStateException();
-			ps.close();
-		} catch (SQLException e) {
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	@Nullable
-	public SecretKey getPcsMode2SkippedKey(Connection txn, byte[] chainId,
-			int messageNumber) throws DbException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			String sql = "SELECT messageKey FROM pcsSkippedKeys"
-					+ " WHERE chainId = ? AND messageNumber = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setBytes(1, chainId);
-			ps.setInt(2, messageNumber);
-			rs = ps.executeQuery();
-			if (!rs.next()) {
-				rs.close();
-				ps.close();
-				return null;
-			}
-			byte[] keyBytes = rs.getBytes(1);
-			rs.close();
-			ps.close();
-			sql = "DELETE FROM pcsSkippedKeys"
-					+ " WHERE chainId = ? AND messageNumber = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setBytes(1, chainId);
-			ps.setInt(2, messageNumber);
-			ps.executeUpdate();
-			ps.close();
-
-			return new SecretKey(keyBytes);
-		} catch (SQLException e) {
-			tryToClose(rs);
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	public void setPqRatchetState(Connection txn, ContactId c, long currentEpoch,
-			long epochStartTime, int messagesSinceEpoch, int state,
-			boolean isInitiator, int chunksSent, int chunksReceived,
-			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
-			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
-			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
-			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
-			throws DbException {
-		PreparedStatement ps = null;
-		try {
-			String sql = "DELETE FROM pqRatchetState"
-					+ " WHERE contactId = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.executeUpdate();
-			ps.close();
-			sql = "INSERT INTO pqRatchetState"
-					+ " (contactId, currentEpoch, epochStartTime,"
-					+ " messagesSinceEpoch, state, isInitiator,"
-					+ " chunksSent, chunksReceived, ourEkSeed,"
-					+ " ourEkVector, ourDecapsKey, theirEkSeed,"
-					+ " theirEkHash, theirEkVector, ciphertext,"
-					+ " pendingChunks)"
-					+ " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			ps.setLong(2, currentEpoch);
-			ps.setLong(3, epochStartTime);
-			ps.setInt(4, messagesSinceEpoch);
-			ps.setInt(5, state);
-			ps.setBoolean(6, isInitiator);
-			ps.setInt(7, chunksSent);
-			ps.setInt(8, chunksReceived);
-			ps.setBytes(9, ourEkSeed);
-			ps.setBytes(10, ourEkVector);
-			ps.setBytes(11, ourDecapsKey);
-			ps.setBytes(12, theirEkSeed);
-			ps.setBytes(13, theirEkHash);
-			ps.setBytes(14, theirEkVector);
-			ps.setBytes(15, ciphertext);
-			ps.setBytes(16, pendingChunks);
-			int affected = ps.executeUpdate();
-			if (affected != 1) throw new DbStateException();
-			ps.close();
-		} catch (SQLException e) {
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
-	@Nullable
-	public Object[] getPqRatchetState(Connection txn, ContactId c)
-			throws DbException {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try {
-			String sql = "SELECT currentEpoch, epochStartTime, messagesSinceEpoch,"
-					+ " state, isInitiator, chunksSent, chunksReceived,"
-					+ " ourEkSeed, ourEkVector, ourDecapsKey,"
-					+ " theirEkSeed, theirEkHash, theirEkVector,"
-					+ " ciphertext, pendingChunks"
-					+ " FROM pqRatchetState"
-					+ " WHERE contactId = ?";
-			ps = txn.prepareStatement(sql);
-			ps.setInt(1, c.getInt());
-			rs = ps.executeQuery();
-			if (!rs.next()) {
-				rs.close();
-				ps.close();
-				return null;
-			}
-			Object[] result = new Object[]{
-					rs.getLong(1),
-					rs.getLong(2),
-					rs.getInt(3),
-					rs.getInt(4),
-					rs.getBoolean(5),
-					rs.getInt(6),
-					rs.getInt(7),
-					rs.getBytes(8),
-					rs.getBytes(9),
-					rs.getBytes(10),
-					rs.getBytes(11),
-					rs.getBytes(12),
-					rs.getBytes(13),
-					rs.getBytes(14),
-					rs.getBytes(15)
-			};
-			rs.close();
-			ps.close();
-			return result;
-		} catch (SQLException e) {
-			tryToClose(rs);
-			tryToClose(ps);
-			throw new DbException(e);
-		}
-	}
-
-	@Override
 	public boolean containsPqRatchetState(Connection txn, ContactId c)
 			throws DbException {
 		PreparedStatement ps = null;
@@ -4717,6 +4816,42 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public long setCleanupDeadline(Connection txn, MessageId m,
+			long deadline) throws DbException {
+		long now = clock.currentTimeMillis();
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "UPDATE messages SET"
+					+ " cleanupTimerDuration = COALESCE(cleanupTimerDuration, ?),"
+					+ " cleanupDeadline = CASE WHEN cleanupDeadline IS NULL"
+					+ " OR cleanupDeadline > ? THEN ? ELSE cleanupDeadline END"
+					+ " WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, Math.max(0L, deadline - now));
+			ps.setLong(2, deadline);
+			ps.setLong(3, deadline);
+			ps.setBytes(4, m.getBytes());
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+			sql = "SELECT cleanupDeadline FROM messages WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			rs = ps.executeQuery();
+			if (!rs.next()) throw new DbStateException();
+			long set = rs.getLong(1);
+			rs.close();
+			ps.close();
+			return set;
+		} catch (SQLException e) {
+			tryToClose(rs);
 			tryToClose(ps);
 			throw new DbException(e);
 		}

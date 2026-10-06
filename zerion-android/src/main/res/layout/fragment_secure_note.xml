@@ -15,7 +15,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Title Input -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/note_title_layout"
             android:layout_width="match_parent"
@@ -38,7 +37,6 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Lock Note Option -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/lock_note_card"
             android:layout_width="match_parent"
@@ -97,7 +95,6 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Note Password (Hidden by default) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/note_password_layout"
             android:layout_width="match_parent"
@@ -116,6 +113,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
+                android:saveEnabled="false"
                 android:textColor="@color/zerion_text_primary"
                 android:imeOptions="flagNoPersonalizedLearning"
                 android:privateImeOptions="nm"
@@ -124,7 +122,6 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Content Input -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -159,7 +156,6 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Save FAB -->
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/save_note_fab"
         android:layout_width="wrap_content"
@@ -174,7 +170,6 @@
         app:backgroundTint="@color/zerion_primary_accent"
         app:rippleColor="#FFFFFF" />
 
-    <!-- Progress Overlay -->
     <FrameLayout
         android:id="@+id/progress_overlay"
         android:layout_width="match_parent"

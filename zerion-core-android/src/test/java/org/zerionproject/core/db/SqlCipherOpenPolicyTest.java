@@ -16,12 +16,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Fault injection for every failure class an existing database can present
- * at open time. The invariant under test: a failed probe never yields a
- * destructive action unless the setup marker proves that no identity was
- * ever stored, and even then the files are moved, not deleted.
- */
 public class SqlCipherOpenPolicyTest {
 
 	private static Throwable chain(String innerClassName, String message) {
@@ -34,11 +28,6 @@ public class SqlCipherOpenPolicyTest {
 		return new SQLException("Failed to configure database", inner);
 	}
 
-	/**
-	 * A file missing one of the expected tables is not provably empty: it
-	 * is a failed probe, which never deletes, instead of an empty database
-	 * that would be reset.
-	 */
 	@Test
 	public void aMissingTableIsAFailedProbeNotAnEmptyDatabase() {
 		assertEquals(Probe.FAILED, SqlCipherOpenPolicy.probe(false, true, 0));

@@ -31,8 +31,8 @@ LIBEVENT_TAG=release-2.1.12-stable
 LIBEVENT_COMMIT=5df3037d10556bfcb675bc73e516978b75fc7bc7
 LIBEVENT_URL=https://github.com/libevent/libevent.git
 
-OPENSSL_TAG=openssl-3.5.7
-OPENSSL_COMMIT=8cf17aaeb4599f8af87fefd810b5b5fee90fe69e
+OPENSSL_TAG=openssl-3.5.8
+OPENSSL_COMMIT=f4dc4d58b48d346a8270183f89acf826d459b0ca
 OPENSSL_URL=https://github.com/openssl/openssl.git
 
 ZLIB_TAG=v1.3.2
@@ -59,13 +59,37 @@ download() {
 	fi
 }
 
+# An unpacked NDK is accepted only when it was unpacked from a zip whose
+# SHA-256 this script verified: the download step leaves that hash in a stamp
+# file inside the NDK directory, and a directory without the stamp, or with
+# another hash in it, is refused. ALLOW_UNVERIFIED_NDK=1 overrides this for a
+# local experiment and is never set by the F-Droid recipe.
+ndk_stamp_ok() {
+	local stamp="$1/.zerion-ndk-zip.sha256"
+	[ -f "${stamp}" ] && [ "$(cat "${stamp}")" = "${NDK_SHA256}" ]
+}
+
+require_verified_ndk() {
+	if ndk_stamp_ok "$1"; then
+		return
+	fi
+	if [ "${ALLOW_UNVERIFIED_NDK:-0}" = "1" ]; then
+		say "WARNING: using an NDK whose zip hash was not verified by this script: $1"
+		return
+	fi
+	echo "NDK at $1 was not unpacked by this script from a zip with SHA-256 ${NDK_SHA256} (no matching .zerion-ndk-zip.sha256 stamp); remove it to re-download, or set ALLOW_UNVERIFIED_NDK=1 for a non-release build" >&2
+	exit 1
+}
+
 prepare_ndk() {
 	if [ -n "${ANDROID_NDK_R29:-}" ]; then
 		ANDROID_NDK_HOME="${ANDROID_NDK_R29}"
+		require_verified_ndk "${ANDROID_NDK_HOME}"
 		return
 	fi
 	ANDROID_NDK_HOME="${NDK_CACHE}/android-ndk-r29"
 	if [ -d "${ANDROID_NDK_HOME}" ]; then
+		require_verified_ndk "${ANDROID_NDK_HOME}"
 		return
 	fi
 	say "downloading NDK r29"
@@ -74,6 +98,7 @@ prepare_ndk() {
 	echo "${NDK_SHA256}  ${NDK_CACHE}/android-ndk-r29.zip" | sha256sum -c - > /dev/null
 	unzip -q "${NDK_CACHE}/android-ndk-r29.zip" -d "${NDK_CACHE}"
 	rm -f "${NDK_CACHE}/android-ndk-r29.zip"
+	echo "${NDK_SHA256}" > "${ANDROID_NDK_HOME}/.zerion-ndk-zip.sha256"
 }
 
 fetch() {

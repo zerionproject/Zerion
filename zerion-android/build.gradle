@@ -1,48 +1,16 @@
 apply plugin: 'com.android.application'
 
-/* Single switch for the Payjoin native library: packaging, the supply-chain
-   gate (native/payjoin/verify-payjoin-native.gradle) and the Kotlin toolchain
-   all follow it. The only Kotlin sources are the UniFFI bindings, so while the
-   library is off the Kotlin plugin, its compiler and build-tools classpaths
-   are not part of the build at all. */
 rootProject.ext.payjoinNativeEnabled = false
 if (rootProject.ext.payjoinNativeEnabled) {
     apply plugin: 'kotlin-android'
 }
 
-// Load keystore properties for signing (skip for F-Droid builds)
-// Supports environment variables (ZERION_STORE_FILE, ZERION_STORE_PASSWORD,
-// ZERION_KEY_ALIAS, ZERION_KEY_PASSWORD) or keystore.properties file.
-// Environment variables take precedence over the properties file.
-def isFdroidBuild = project.hasProperty('fdroid')
-def keystorePropertiesFile = rootProject.file("keystore.properties")
-def keystoreProperties = new Properties()
-if (!isFdroidBuild) {
-    if (System.getenv('ZERION_STORE_FILE')) {
-        keystoreProperties['storeFile'] = System.getenv('ZERION_STORE_FILE')
-        keystoreProperties['storePassword'] = System.getenv('ZERION_STORE_PASSWORD')
-        keystoreProperties['keyAlias'] = System.getenv('ZERION_KEY_ALIAS')
-        keystoreProperties['keyPassword'] = System.getenv('ZERION_KEY_PASSWORD')
-    } else if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-    }
+def fdroidProperty = project.findProperty('fdroid')
+if (fdroidProperty == null || fdroidProperty.toString().equalsIgnoreCase('false')) {
+    throw new GradleException('This project builds in reproducible mode only: gradle.properties sets fdroid=true and -Pfdroid=false is not supported (see docs/RELEASE_SIGNING.md)')
 }
+def isFdroidBuild = true
 
-def getStdout = { command, defaultValue ->
-    def stdout = new ByteArrayOutputStream()
-    try {
-        exec {
-            commandLine = command
-            standardOutput = stdout
-        }
-        return stdout.toString().trim()
-    } catch (Exception ignored) {
-        return defaultValue
-    }
-}
-
-// Single switch for the Payjoin native library: packaging and the supply-chain
-// gate (native/payjoin/verify-payjoin-native.gradle) both follow it.
 rootProject.ext.payjoinNativeEnabled = false
 
 android {
@@ -59,19 +27,10 @@ android {
         jniLibs {
             useLegacyPackaging = true
             keepDebugSymbols += ['**/*.so']
-            // Payjoin is build-gated OFF (PayjoinFeature.PRODUCTION_ENABLED = false,
-            // no runtime override) and no production code loads its native library,
-            // so the Rust libpayjoin_ffi.so is dormant attack surface and dead weight
-            // in the shipped APK. payjoinNativeEnabled (below) is the single switch:
-            // off, the library is excluded from packaging and the gate refuses any
-            // libpayjoin artifact; on, the gate requires both ABIs to match
-            // native/payjoin/MANIFEST.txt. The UniFFI bindings compile either way.
             if (!rootProject.ext.payjoinNativeEnabled) {
                 excludes += ['**/libpayjoin_ffi.so']
             }
         }
-        // Always strip the embedded VCS info so the release APK stays byte-reproducible
-        // regardless of which commit it was built from (removes F-Droid repro commit-fragility).
         resources {
             excludes += ["META-INF/version-control-info.textproto"]
         }
@@ -89,32 +48,16 @@ android {
         buildConfig = true
     }
 
-    // Disable Google dependency metadata for F-Droid reproducible builds
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
     }
 
-    // Signing configuration for release builds (skipped for F-Droid builds)
-    signingConfigs {
-        release {
-            enableV1Signing false
-            enableV2Signing true
-            enableV3Signing true
-            if (!isFdroidBuild && keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
-        }
-    }
-
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 31400
-        versionName "3.0.14"
+        versionCode 31500
+        versionName "3.0.15"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
 
@@ -123,21 +66,8 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
-        // For reproducible builds (F-Droid): use -Pfdroid flag to disable dynamic values
-        // Usage: ./gradlew assembleRelease -Pfdroid
-        def isFdroid = project.hasProperty('fdroid')
-        if (isFdroid) {
-            // Static values for reproducible F-Droid builds
-            buildConfigField "String", "GitHash", "\"release\""
-            buildConfigField "Long", "BuildTimestamp", "0L"
-        } else {
-            // Dynamic values for development builds
-            buildConfigField "String", "GitHash",
-                "\"${getStdout(['git', 'rev-parse', '--short=7', 'HEAD'], 'No commit hash')}\""
-            def now = (long) (System.currentTimeMillis() / 1000)
-            buildConfigField "Long", "BuildTimestamp",
-                "${getStdout(['git', 'log', '-n', '1', '--format=%ct'], now)}000L"
-        }
+        buildConfigField "String", "GitHash", "\"release\""
+        buildConfigField "Long", "BuildTimestamp", "0L"
         testInstrumentationRunner 'com.professor.zerion.android.BriarTestRunner'
         testInstrumentationRunnerArguments disableAnalytics: 'true'
         multiDexEnabled true
@@ -163,13 +93,6 @@ android {
             shrinkResources true
             minifyEnabled true
             crunchPngs false
-            // Do not embed git VCS info in the release APK. The packaging
-            // resources exclude above does not catch it (AGP adds it as app
-            // metadata, not a merged resource), so a worktree build (no git
-            // found) and a clean-clone build differed in META-INF/
-            // version-control-info.textproto and broke F-Droid reproducibility.
-            // Disabling it here removes the file entirely, so the release APK is
-            // reproducible regardless of the build environment's git state.
             vcsInfo {
                 include false
             }
@@ -177,10 +100,6 @@ android {
                 abiFilters 'arm64-v8a', 'armeabi-v7a'
             }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-            // Only use signing config for non-F-Droid builds (F-Droid signs with their own key)
-            if (!isFdroidBuild) {
-                signingConfig signingConfigs.release
-            }
         }
     }
 
@@ -188,7 +107,7 @@ android {
     productFlavors {
         screenshot {
             dimension "version"
-            applicationIdSuffix ".screenshot" // = org.zerionproject.app.android.screenshot.debug
+            applicationIdSuffix ".screenshot"
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt', 'proguard-test.txt'
         }
         official {
@@ -203,7 +122,6 @@ android {
     }
 
     compileOptions {
-        // Use Java 11 to avoid D8 warnings about class file version >= 56
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -215,10 +133,6 @@ android {
     }
 
     sourceSets {
-        /* The UniFFI bindings and their JNA runtime exist only for the
-           native Payjoin library; while that library is switched off
-           neither is compiled or packaged, so the release carries no
-           dormant native bridge. */
         if (rootProject.ext.payjoinNativeEnabled) {
             main.kotlin.srcDirs += "$projectDir/native/payjoin/bindings"
         }
@@ -228,25 +142,14 @@ android {
         unitTests {
             includeAndroidResources = true
             all {
-                // Mockito 5.1.1 bundles Byte Buddy 1.12.22, which rejects Java 21
-                // (class file major 65) bytecode when instrumenting a mock's type
-                // hierarchy on the JDK 21 test runtime. Enable Byte Buddy's
-                // experimental support so it can instrument the newer class files.
                 it.systemProperty 'net.bytebuddy.experimental', 'true'
-                // Robolectric has no AndroidKeyStore shadow, so activity tests
-                // register an in-memory test keystore provider. Marking it JCE
-                // verified needs reflective access into java.base/javax.crypto.
                 it.jvmArgs '--add-opens=java.base/javax.crypto=ALL-UNNAMED'
+                it.maxHeapSize = '2g'
             }
         }
     }
     namespace 'com.professor.zerion'
     lint {
-        /* Lint is not part of the release path: its own toolchain (Groovy,
-           resolved by the annotation extraction) is signed by keys the
-           strict dependency verification does not trust, and the release
-           gates are enforceNoLogs, dependency verification, the native hash
-           gates and the wallet regression. A lint run itself fails on errors. */
         abortOnError true
         checkReleaseBuilds false
         warning 'MissingTranslation', 'MissingDefaultResource', 'ImpliedQuantity', 'ExtraTranslation', 'InvalidPackage', 'MissingPermission'
@@ -254,7 +157,6 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            // Rename APK from zerion-android-official-debug to zerion-official-debug
             def appName = "zerion"
             def buildType = variant.buildType.name
             def flavorName = variant.flavorName
@@ -263,18 +165,12 @@ android {
     }
 }
 
-// Exclude profileinstaller to prevent non-deterministic baseline profiles (F-Droid reproducibility)
 if (isFdroidBuild) {
     configurations.all {
         exclude group: 'androidx.profileinstaller', module: 'profileinstaller'
     }
 }
 
-// Pin slf4j-api to the version already used and verified, so bitcoinj's
-// transitive slf4j-api does not pull a different version into the graph.
-// Exclude the legacy bcprov-jdk15on packaging so only the app's
-// bcprov-jdk15to18 provides the org.bouncycastle classes (bitcoinj needs the
-// app's Bouncy Castle, not a duplicate on the test classpath).
 configurations.all {
     resolutionStrategy {
         force 'org.slf4j:slf4j-api:1.7.32'
@@ -282,10 +178,6 @@ configurations.all {
     exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
 }
 
-// Robolectric 4.8.2 bundles ASM 9.2 (max Java 18 bytecode). The unit-test task runs on
-// JDK 21, so instrumentation reads major-version-65 core classes and ASM 9.2 aborts with
-// "Unsupported class file major version 65". Force ASM 9.6 on the unit-test classpaths so
-// the sandbox class loader can parse JDK 21 bytecode.
 configurations.configureEach { config ->
     if (config.name.toLowerCase().contains('unittest')) {
         config.resolutionStrategy {
@@ -300,26 +192,18 @@ configurations.configureEach { config ->
 
 
 dependencies {
-    //
     implementation project(':zerion-core-api')
 
     implementation project(':zerion-core')
     implementation project(':zerion-core-android')
     implementation project(':zerion-app')
 
-    // Embedded I2P router with its bundled crypto relocated into an isolated
-    // namespace so it never collides with the app's own Bouncy Castle.
     debugImplementation project(path: ':i2p-embedded', configuration: 'shadow')
 
     implementation "org.bouncycastle:bcprov-jdk15to18:$bouncy_castle_version"
 
-    // Bitcoin key derivation and transaction signing (BIP32/39/84, P2WPKH).
-    // Used only for its crypto/tx primitives; Electrum traffic is routed over
-    // Tor by the wallet, not by bitcoinj's own networking. slf4j-api is present
-    // with no binding, so bitcoinj's logging is a no-op.
     implementation "org.bitcoinj:bitcoinj-core:0.16.3"
 
-    // newer versions of the libraries below require compileSdk 35
     implementation 'androidx.activity:activity:1.10.1'
     implementation 'androidx.fragment:fragment:1.6.2'
     implementation 'androidx.preference:preference:1.2.1'
@@ -332,10 +216,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview-selection:1.1.0'
     implementation 'androidx.biometric:biometric:1.1.0'
 
-    // force kotlin standard lib to latest version to prevent jetifier issues
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    /* JNA runtime for the Payjoin native library UniFFI bindings; packaged
-       only together with the native library it drives. */
     if (rootProject.ext.payjoinNativeEnabled) {
         implementation 'net.java.dev.jna:jna:5.17.0@aar'
     }
@@ -343,18 +224,16 @@ dependencies {
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
     implementation 'uk.co.samuelwall:material-tap-target-prompt:3.3.2'
-    implementation 'com.vanniktech:emoji-google:0.9.0' // newer versions are more work to adapt
+    implementation 'com.vanniktech:emoji-google:0.9.0'
     def glideVersion = '4.16.0'
     implementation("com.github.bumptech.glide:glide:$glideVersion") {
         exclude group: 'com.android.support'
-        exclude module: 'disklrucache' // when there's no disk cache, we can't accidentally use it
+        exclude module: 'disklrucache'
     }
-    // ExoPlayer for video playback
     def media3Version = '1.4.1'
     implementation "androidx.media3:media3-exoplayer:$media3Version"
     implementation "androidx.media3:media3-ui:$media3Version"
 
-    // QR code generation (ZXing core — no camera UI, just encoding)
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'androidx.camera:camera-camera2:1.4.2'
     implementation 'androidx.camera:camera-lifecycle:1.4.2'
@@ -373,9 +252,9 @@ dependencies {
     testImplementation 'androidx.test.ext:junit:1.1.5'
     testImplementation "androidx.arch.core:core-testing:2.1.0"
     testImplementation "androidx.test.espresso:espresso-core:3.5.0"
-    testImplementation 'org.robolectric:robolectric:4.8.2' // newer versions have SecureRandom issue
+    testImplementation 'org.robolectric:robolectric:4.8.2'
     testImplementation 'org.mockito:mockito-core:5.1.1'
-    testImplementation 'org.json:json:20180813' // real org.json for plain JVM unit tests (android.jar stub is not mocked)
+    testImplementation 'org.json:json:20180813'
     testImplementation "junit:junit:$junit_version"
     testImplementation "org.jmock:jmock:$jmock_version"
     testImplementation "org.jmock:jmock-junit4:$jmock_version"
@@ -403,11 +282,6 @@ dependencies {
 
 task enforceNoLogs {
     doLast {
-        /* Dev diagnostics are permitted in DEBUG builds and stripped before
-           release. The zero-log policy is enforced whenever a release or
-           bundle task is in the task graph, whatever the invoked task was
-           called: `assemble` or `build` pull the release assembly in as a
-           dependency and must not skip the check. */
         boolean releaseBuild = project.hasProperty('enforceNoLogs') ||
                 gradle.taskGraph.allTasks.any { t ->
                     t.name.toLowerCase() ==~ /(assemble|bundle|package)\w*release/
@@ -416,7 +290,6 @@ task enforceNoLogs {
             println "enforceNoLogs: skipped for debug build (dev diagnostics allowed; enforced on release/bundle)"
             return
         }
-        // Every module that ships in the release, Java and Kotlin alike.
         def srcDirs = []
         rootProject.allprojects.each { p ->
             ['src/main/java', 'src/main/kotlin'].each { d ->
@@ -476,10 +349,8 @@ task verifyTranslations {
             throw new GradleException("Translations\n" + translations.join("\n")
                 + "\nhave no matching value folder")
 
-        // Some devices use iw instead of he for hebrew
         def hebrew_legacy = project.file("src/main/res/values-iw")
         def hebrew = project.file("src/main/res/values-he")
-        // Copy values-he to values-iw
         if (hebrew.exists()) {
             hebrew_legacy.mkdir()
             copy {
@@ -494,12 +365,6 @@ project.afterEvaluate {
     preBuild.dependsOn.add(verifyTranslations)
     preBuild.dependsOn.add(enforceNoLogs)
 
-    // Wallet-critical logic and crypto must pass before any shippable
-    // artifact is produced. A dedicated task runs only the wallet and crypto
-    // regression tests (BIP vectors, coin selection, fail-closed behaviour,
-    // fee bounds, isolation tags, malformed-response handling, Silent Payments
-    // cursor, durable broadcast state, AES-GCM and Argon2id), and release and
-    // bundle assembly depend on it.
     def unitTest = tasks.named('testOfficialDebugUnitTest').get()
     tasks.register('walletRegressionTest', Test) {
         group = 'verification'
@@ -513,12 +378,6 @@ project.afterEvaluate {
             includeTestsMatching 'com.professor.zerion.android.vault.wallet.xmr.*'
             includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
         }
-        // This suite derives wallet keys with Argon2id, which is deliberately
-        // memory hard. Running it beside R8, which saturates the cores and
-        // takes gigabytes, starved those derivations enough to expire a
-        // thirty-second wait on one release build in three while every run
-        // without R8 passed. Ordering it after R8 removes the contention
-        // instead of hiding it behind a longer deadline.
         mustRunAfter tasks.matching { it.name.startsWith('minify') }
     }
     tasks.matching {
@@ -528,7 +387,6 @@ project.afterEvaluate {
         it.dependsOn('walletRegressionTest')
     }
 
-    // Disable ART/Baseline profile tasks for F-Droid reproducible builds
     if (isFdroidBuild) {
         tasks.matching { it.name.toLowerCase().contains("artprofile") }.configureEach { it.enabled = false }
         tasks.matching { it.name.toLowerCase().contains("baselineprofile") }.configureEach { it.enabled = false }
@@ -537,3 +395,4 @@ project.afterEvaluate {
 
 apply from: "${projectDir}/native/payjoin/verify-payjoin-native.gradle"
 apply from: "${projectDir}/native/monero/verify-monero-native.gradle"
+apply from: "${projectDir}/native/thirdparty/verify-thirdparty-native.gradle"

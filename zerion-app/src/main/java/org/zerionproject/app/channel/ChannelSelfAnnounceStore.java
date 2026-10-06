@@ -34,11 +34,7 @@ class ChannelSelfAnnounceStore {
 	}
 
 	void remove(byte[] channelId) throws DbException {
-		Settings cur = settingsManager.getSettings(NS);
-		String key = ChannelStore.hex(channelId);
-		if (!cur.containsKey(key)) return;
-		Settings out = new Settings();
-		out.put(key, "");
-		settingsManager.mergeSettings(out, NS);
+		settingsManager.deleteSettings(NS, java.util.Collections
+				.singletonList(ChannelStore.hex(channelId)));
 	}
 }

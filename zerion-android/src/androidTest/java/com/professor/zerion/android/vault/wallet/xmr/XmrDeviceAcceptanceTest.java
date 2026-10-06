@@ -34,16 +34,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * XMR-P1 on-device acceptance over the REAL production stack: a real
- * {@link VaultManager} (ZVault master key, Argon2id + AES-GCM), a real
- * {@link WalletStore} sealing the seed, and the real {@link NativeMoneroEngine}
- * (libzmonero.so). No fakes in the security path. Runs headless on an isolated,
- * non-funded emulator via {@code am instrument}. Exercises create, restart
- * persistence, second-authentication (correct/wrong), import determinism,
- * delete, forensic residue, and ephemeral working-directory shred, and writes a
- * timing/summary file that the harness pulls back.
- */
 @RunWith(AndroidJUnit4.class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class XmrDeviceAcceptanceTest {

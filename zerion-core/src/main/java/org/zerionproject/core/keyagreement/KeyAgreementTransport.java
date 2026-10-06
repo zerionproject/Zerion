@@ -35,11 +35,6 @@ class KeyAgreementTransport {
 				|| type == KEM_CIPHERTEXT;
 	}
 
-	/**
-	 * The largest key agreement record is a hybrid key plus ciphertext of
-	 * under 2.5 KiB; nothing an unauthenticated nearby peer sends may make
-	 * this side allocate more per record than a small multiple of that.
-	 */
 	static final int MAX_RECORD_PAYLOAD_BYTES = 8192;
 
 	private final KeyAgreementConnection kac;

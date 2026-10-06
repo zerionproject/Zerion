@@ -10,14 +10,23 @@ public final class ChannelSubscriber {
 	private final byte[] mlDsaPubKey;
 	private final long joinedAtHourMs;
 	private final boolean banned;
+	private final boolean trusted;
 
 	public ChannelSubscriber(String displayName, byte[] ed25519PubKey,
 			byte[] mlDsaPubKey, long joinedAtHourMs, boolean banned) {
+		this(displayName, ed25519PubKey, mlDsaPubKey, joinedAtHourMs, banned,
+				false);
+	}
+
+	public ChannelSubscriber(String displayName, byte[] ed25519PubKey,
+			byte[] mlDsaPubKey, long joinedAtHourMs, boolean banned,
+			boolean trusted) {
 		this.displayName = displayName;
 		this.ed25519PubKey = ed25519PubKey;
 		this.mlDsaPubKey = mlDsaPubKey;
 		this.joinedAtHourMs = joinedAtHourMs;
 		this.banned = banned;
+		this.trusted = trusted;
 	}
 
 	public String getDisplayName() {
@@ -38,5 +47,9 @@ public final class ChannelSubscriber {
 
 	public boolean isBanned() {
 		return banned;
+	}
+
+	public boolean isTrusted() {
+		return trusted;
 	}
 }

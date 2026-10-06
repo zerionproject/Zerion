@@ -81,7 +81,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion està configurat per a no usar Internet mentre funciona amb bateria</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion està configurat per a no emprar Internet en aquest país</string>
   
-  <string name="transport_lan_long">La mateixa xarxa WiFi</string>
 
   <string name="reminder_notification_title">Heu sortit de Zerion</string>
   <string name="reminder_notification_text">Toqueu per a reiniciar la sessió.</string>
@@ -209,7 +208,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="connecting_to_device">Connectant-se al dispositiu\u2026</string>
   <string name="authenticating_with_device">Autenticant-se amb el dispositiu\u2026</string>
   <string name="connection_error_title">No ha pogut connectar-se al vostre contacte</string>
-  <string name="connection_error_feedback">Si aquest problema persisteix, <a href="feedback">envieu-nos un comentari</a> per ajudar-nos a millorar l\'aplicació.</string>
   
   <string name="add_contact_remotely_title_case">Afegeix un contacte llunyà</string>
   <string name="add_contact_nearby_title">Afegeix un contacte proper</string>
@@ -384,8 +382,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   
   <string name="tor_network_setting_summary">Automàtic: %1$s (a %2$s)</string>
   <string name="tor_mobile_data_title">Usa dades mòbils</string>
-  <string name="tor_only_when_charging_title">Només connecta\'t a Internet mentre s\'està carregant </string>
-  <string name="tor_only_when_charging_summary">Desactiva la connexió a Internet quan el dispositiu estigui funcionant amb la bateria</string>
   
   <string name="security_settings_title">Seguretat</string>
   <string name="pref_lock_title">Bloqueig de l\'aplicació</string>
@@ -442,74 +438,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="choose_ringtone_title">Trieu el so d\'avís</string>
   <string name="cannot_load_ringtone">No s\'ha pogut carregar el so d\'avís</string>
   
-  <string name="mailbox_settings_title">Bústia</string>
-  <string name="mailbox_setup_title">Configuració de la bústia</string>
-  <string name="mailbox_setup_intro">Una bústia permet als vostres contactes enviar-vos missatges mentre esteu fora de línia. La bústia rebrà els vostres missatges i els emmagatzemarà fins que us connecteu.\n
-		\nPodeu instal·lar l\'aplicació Zerion Mailbox en un dispositiu de recanvi. Mantingueu-lo connectat a l\'alimentació i a la Wi-Fi perquè estigui sempre en línia.</string>
-  <string name="mailbox_setup_download">Primer, instal·leu l\'aplicació Mailbox en un altre dispositiu cercant «Zerion Mailbox» a Google Play o allà on hageu baixat el Zerion.\n
-		\nA continuació, enllaceu la vostra bústia amb Zerion escanejant el codi QR que mostra l\'aplicació Mailbox.</string>
-  <string name="mailbox_setup_download_link">Comparteix l\'enllaç de baixada</string>
-  <string name="mailbox_setup_connecting">S\'està connectant a la bústia...</string>
   
-  <string name="mailbox_setup_connecting_info">Això pot trigar fins a %1s</string>
-  <string name="mailbox_setup_already_paired_title">La bústia ja està enllaçada</string>
-  <string name="mailbox_setup_already_paired_description">Desenllaceu la bústia de l\'altre dispositiu i torneu-ho a provar.</string>
-  <string name="mailbox_setup_io_error_title">No s\'ha pogut connectar</string>
-  <string name="mailbox_setup_io_error_description">Assegureu-vos que tots dos dispositius estiguin connectats a Internet i torneu-ho a provar.</string>
-  <string name="mailbox_setup_assertion_error_title">Error de bústia</string>
-  <string name="mailbox_setup_assertion_error_description">Envieu comentaris (amb dades anònimes) mitjançant l\'aplicació Zerion si el problema persisteix.</string>
-  <string name="mailbox_setup_camera_error_description">No s\'ha pogut accedir a la càmera. Torneu-ho a provar després de reiniciar el dispositiu.</string>
-  <string name="mailbox_setup_paired_title">Connectat</string>
-  <string name="mailbox_setup_paired_description">La vostra bústia s\'ha enllaçat correctament amb el Zerion.\n
-		\nMantingueu la vostra bústia connectada a l\'alimentació i a la Wi-Fi perquè estigui sempre en línia.</string>
-  <string name="tor_offline_title">Fora de línia</string>
-  <string name="tor_offline_description">Assegureu-vos que aquest dispositiu estigui en línia i que es permeten les connexions a Internet.\n
-		\nDesprés, espereu que la icona del globus terraqüi a la pantalla de configuració de connexió es torni verda.</string>
-  <string name="tor_offline_button_check">Comproveu la configuració de la connexió</string>
-  <string name="mailbox_status_title">Estat de la bústia</string>
-  <string name="mailbox_status_connected_title">La bústia s\'està executant</string>
-  <string name="mailbox_status_problem_title">El Zerion té problemes per connectar-se a la bústia</string>
-  <string name="mailbox_status_failure_title">La bústia no està disponible</string>
-  <string name="mailbox_status_app_too_old_title">En Zerion és massa antic</string>
-  <string name="mailbox_status_app_too_old_message">Actualitzeu el Zerion a la darrera versió i torneu-ho a provar.</string>
-  <string name="mailbox_status_mailbox_too_old_title">La bústia és massa antiga</string>
-  <string name="mailbox_status_mailbox_too_old_message">Actualitza la vostra bústia a la darrera versió i torneu-ho a provar.</string>
-  <string name="mailbox_status_check_button">Comprova la connexió</string>
   
-  <string name="mailbox_status_connected_info">Última connexió: %s</string>
   
-  <string name="mailbox_status_connected_never">Mai</string>
-  <string name="mailbox_status_unlink_button">Desenllaça</string>
-  <string name="mailbox_status_unlink_dialog_title">Voleu desenllaçar la bústia?</string>
-  <string name="mailbox_status_unlink_dialog_question">Esteu segur que voleu desenllaçar la vostra bústia?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Si desenllaçeu la vostra bústia no podreu rebre missatges mentre el Zerion estigui fora de línia.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">La vostra bústia s\'ha desenllaçat</string>
-  <string name="mailbox_status_unlink_no_wipe_message">La propera vegada que tingueu accés al vostre dispositiu Mailbox, obriu l\'aplicació Mailbox i toqueu el botó «Desenllaça» per completar el procés.\n\nSi ja no teniu accés al dispositiu Mailbox, no us preocupeu. Les vostres dades estan xifrades, de manera que es mantindran segures encara que no completeu el procés.</string>
-  <string name="mailbox_status_unlink_success">La vostra bústia s\'ha desenllaçat</string>
-  <string name="mailbox_error_notification_channel_title">Problema amb la bústia Zerion</string>
-  <string name="mailbox_error_notification_title">La bústia Zerion no està disponible</string>
-  <string name="mailbox_error_notification_text">Toqueu per solucionar el problema.</string>
-  <string name="mailbox_error_wizard_button">Soluciona el problema</string>
-  <string name="mailbox_error_wizard_title">Assistent per a la resolució de problemes de la bústia</string>
-  <string name="mailbox_error_wizard_question1">Teniu accés al vostre dispositiu Mailbox?</string>
-  <string name="mailbox_error_wizard_answer1">Sí, hi tinc accés ara mateix.</string>
-  <string name="mailbox_error_wizard_answer2">Ara mateix no, però hi puc accedir més tard.</string>
-  <string name="mailbox_error_wizard_answer3">No, ja no hi tinc accés.</string>
-  <string name="mailbox_error_wizard_info1_1">Comproveu que el dispositiu Mailbox estigui encès i connectat a Internet.</string>
-  <string name="mailbox_error_wizard_question1_1">Obriu l\'aplicació Mailbox. Què veus?</string>
-  <string name="mailbox_error_wizard_answer1_1">Veig instruccions per configurar la bústia</string>
-  <string name="mailbox_error_wizard_answer1_2">Veig un codi QR</string>
-  <string name="mailbox_error_wizard_answer1_3">Veig «El Mailbox s\'està executant»</string>
-  <string name="mailbox_error_wizard_answer1_4">Veig «Dispositiu fora de línia»</string>
-  <string name="mailbox_error_wizard_info1_1_1">Desenllaceu la vostra bústia mitjançant el botó següent i, a continuació, seguiu les instruccions del dispositiu Mailbox per enllaçar-la de nou.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Desenllaceu la bústia amb el botó següent i escanegeu el codi QR per tornar-la a enllaçar.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Feu servir el botó següent per comprovar la connexió entre Zerion i el Mailbox.\n\n
-		Si la connexió torna a fallar:\n
-		\u2022 Comproveu que les aplicacions Mailbox i Zerion estiguin actualitzades a la darrera versió.\n
-		\u2022 Reinicieu els vostres dispositius Mailbox i Zerion i torneu-ho a provar.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Comproveu que el dispositiu Mailbox estigui connectat correctament a Internet.\n\nComproveu que l\'hora, data i zona horària del dispositiu Mailbox siguin correctes.\n\nComproveu que les aplicacions Mailbox i Zerion estiguin actualitzades a la darrera versió.\ n\nReinicieu els vostres dispositius Mailbox i Zerion i torneu-ho a provar.</string>
-  <string name="mailbox_error_wizard_info2">Torneu a aquesta pantalla quan tingueu accés al dispositiu.</string>
-  <string name="mailbox_error_wizard_info3">Desenllaceu la vostra bústia amb el botó següent.\n\nDesprés de desenllaçar la vostra bústia antiga, podeu configurar una bústia nova en qualsevol moment.</string>
   
   <string name="about_title">Quant a</string>
   <string name="zerion_version">Versió del Zerion: %s</string>
@@ -517,7 +448,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="links">Enllaços</string>
   <string name="zerion_website">\u2022 <a href="">Lloc web</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Codi font</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Registre de canvis</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Política de privadesa</a></string>
   
   <string name="translator_thanks">Gràcies a tots els col·laboradors del Localization Lab, especialment a Jaime Muñoz</string>
@@ -536,43 +466,13 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="disappearing_messages_summary">Feu que els missatges futurs d\'aquesta conversa desapareguin automàticament al cap de 7\u00A0dies.</string>
   
   <string name="pref_category_actions">Accions</string>
-  <string name="send_feedback">Envieu comentaris</string>
   
   <string name="link_warning_title">Avís d\'enllaç</string>
   <string name="link_warning_intro">L\'enllaç s\'obrirà amb una aplicació externa.</string>
   <string name="link_warning_text">Això podria usar-se per a identificar-vos. Penseu si us en refieu prou de la persona que us ha enviat l\'enllaç. Avalueu si us convindria obrir-lo amb un navegador que faciliti l\'anonimat com Tor Browser.</string>
   <string name="link_warning_open_link">Obre l\'enllaç</string>
   
-  <string name="crash_report_title">Informe de fallida de Zerion</string>
-  <string name="zerion_crashed">El Zerion ha fallat</string>
-  <string name="not_your_fault">Això no és culpa vostra.</string>
-  <string name="please_send_report">Ajudi\'ns a construir un Zerion millor enviant-nos un informe de fallida.</string>
-  <string name="report_is_encrypted">Us garantim que l\'informe es xifra i s\'envia de manera segura.</string>
-  <string name="feedback_title">Comentaris</string>
-  <string name="describe_crash">Descriviu el que hi ha succeït (opcional)</string>
-  <string name="enter_feedback">Escriviu els vostres comentaris</string>
-  <string name="optional_contact_email">La vostra adreça de correu (opcional)</string>
-  <string name="privacy_policy">En enviar-nos dades, accepteu la nostra <a href="">política de privadesa</a></string>
-  <string name="include_debug_report_crash">Inclou dades anònimes sobre la fallida</string>
-  <string name="include_debug_report_feedback">Inclou dades anònimes sobre el dispositiu</string>
-  <string name="dev_report_user_info">Informació de l\'usuari</string>
-  <string name="dev_report_basic_info">Informació bàsica</string>
-  <string name="dev_report_device_info">Informació del dispositiu</string>
-  <string name="dev_report_stacktrace">Traça de la pila</string>
-  <string name="dev_report_time_info">Informació del temps</string>
-  <string name="dev_report_memory">Memòria</string>
-  <string name="dev_report_storage">Emmagatzematge</string>
-  <string name="dev_report_connectivity">Connectivitat</string>
-  <string name="dev_report_network_usage">Ús de la xarxa</string>
-  <string name="dev_report_build_config">Configuració de la compilació</string>
-  <string name="dev_report_logcat">Registre de l\'aplicació</string>
-  <string name="dev_report_device_features">Característiques del dispositiu</string>
-  <string name="send_report">Envia l\'informe</string>
   <string name="close">Tanca</string>
-  <string name="dev_report_sending">S\'està enviant els comentaris...</string>
-  <string name="dev_report_sent">Comentaris enviats</string>
-  <string name="dev_report_saved">S\'ha desat l\'informe. Se us enviarà la propera vegada que inicieu sessió a Zerion.</string>
-  <string name="dev_report_error">Error: no s\'ha pogut enviar l\'informe</string>
   
   <string name="progress_title_logout">S\'està tancant la sessió de Zerion...</string>
   
@@ -727,7 +627,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="wallet_receive_new">Adreça nova</string>
 	<string name="wallet_node_hint">Toca un servidor per utilitzar-lo. Mantén premut un servidor personalitzat per eliminar-lo.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Una adreça privada reutilitzable. Els pagaments que s\'hi fan no es poden vincular a la cadena. La detecció escaneja dades públiques a través de Tor; les teves claus mai no surten del dispositiu.</string>
 	<string name="wallet_sp_balance">Detectat: %1$s</string>
 	<string name="wallet_sp_scanned">Escanejat fins al bloc %1$d</string>
 	<string name="wallet_sp_set_oracle">Font d\'escaneig</string>

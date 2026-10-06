@@ -11,12 +11,6 @@ import org.payjoindevkit.Url
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * On-device verification that the Payjoin native library loads on each shipped
- * ABI and that the UniFFI/JNA boundary fails closed. Every hostile input must
- * produce a controlled exception; no native handle misuse may crash the app or
- * continue unsafely.
- */
 @RunWith(AndroidJUnit4::class)
 class PayjoinNativeInstrumentedTest {
 

@@ -24,12 +24,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * NET-09: the SOCKS client speaks SOCKS5 with username/password over
- * whatever stream the connector opens, sends the destination as a domain
- * name without resolving it, hands data through once connected, and fails
- * closed when the listener refuses the credentials or the connection.
- */
 public class TorSocksSocketTest {
 
 	private ServerSocket server;
@@ -158,6 +152,24 @@ public class TorSocksSocketTest {
 		assertEquals(Collections.singletonList("dest.onion:secret"),
 				credentials);
 		assertEquals(Collections.singletonList("Dest.Onion:443"), hosts);
+	}
+
+	@Test(timeout = 20_000)
+	public void aResolvedDestinationIsRefusedBeforeTheListenerIsOpened()
+			throws Exception {
+		TorSocksSocket s = socket("u", "p");
+		for (InetSocketAddress resolved : new InetSocketAddress[] {
+				new InetSocketAddress(InetAddress.getLoopbackAddress(), 80),
+				new InetSocketAddress("127.0.0.1", 80)}) {
+			try {
+				s.connect(resolved);
+				fail();
+			} catch (IllegalArgumentException expected) {
+			}
+		}
+		assertFalse(s.isConnected());
+		assertEquals(0, opened.get());
+		assertTrue(hosts.isEmpty());
 	}
 
 	@Test(timeout = 20_000)

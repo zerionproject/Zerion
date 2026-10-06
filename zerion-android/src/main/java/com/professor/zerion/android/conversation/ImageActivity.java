@@ -34,7 +34,7 @@ import javax.inject.Inject;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog.Builder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.core.view.WindowCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
@@ -242,7 +242,8 @@ public class ImageActivity extends ZerionActivity
 				viewModel.onSaveImageError();
 			}
 		};
-		Builder builder = new Builder(this, R.style.ZerionDialogTheme);
+		SecureAlertDialogBuilder builder = new SecureAlertDialogBuilder(this,
+				R.style.ZerionDialogTheme);
 		builder.setTitle(getString(R.string.dialog_title_save_image));
 		builder.setMessage(getString(R.string.dialog_message_save_image));
 		builder.setIcon(getDialogIcon(this, R.drawable.ic_security));

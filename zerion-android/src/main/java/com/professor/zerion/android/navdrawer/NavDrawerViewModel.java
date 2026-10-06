@@ -264,11 +264,6 @@ public class NavDrawerViewModel extends DbViewModel
 		return unreadChannels;
 	}
 
-	/**
-	 * Recomputes the total unread count for each tab (summed across all
-	 * contacts, groups and channels) on the database thread and posts each to
-	 * its LiveData. Cheap enough to call on resume and on tab changes.
-	 */
 	@UiThread
 	void checkUnreadCounts() {
 		runOnDbThread(() -> {

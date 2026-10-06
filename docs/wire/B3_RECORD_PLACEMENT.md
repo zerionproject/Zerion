@@ -6,6 +6,22 @@
 > it is permanently enabled. The future-tense rollout/flip steps in §5 and the
 > open follow-ups in §8 are retained for history and are marked completed or
 > superseded inline.
+>
+> **Current wire format (3.0.x), where it differs from the record below.**
+> `CONTACT_INFO` is a BDF list of exactly 7 slots:
+> `[authorList, propsDict, signature, timestamp, b3ProofSig, mlDsaSigPub,
+> hybridSignature]`, and any other size is rejected (the 4- and 5-slot forms
+> are no longer accepted). Slot 2 is an Ed25519 signature over a nonce derived
+> from the master key, not over author, props and timestamp, which are
+> protected by the encrypted channel only. Slot 4 is the 64-byte B.3 proof or
+> empty. Slot 5 is the 1952-byte ML-DSA-65 public key and slot 6 a 3373-byte
+> hybrid Ed25519 + ML-DSA-65 signature over the same master-key nonce; both
+> are required and must verify. The nearby (QR / Bluetooth) path sends no B.3
+> proof (slot 4 is empty there). The handshake has a seventh record type,
+> `0x06` `RECORD_TYPE_STATIC_KEM_CIPHERTEXT`, and received hybrid keys are
+> parsed, not only length-checked. The local hybrid handshake key pair rotates
+> after every completed contact addition, so it is not a long-term identity
+> key.
 
 **Status:** SHIPPED in v1.5.0. Originally agreed by both teams and implemented
 behind `B3_PROOF_ENABLED` (BuildConfig boolean on Android, `static let`

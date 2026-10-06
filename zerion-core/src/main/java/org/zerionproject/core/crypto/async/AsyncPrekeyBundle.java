@@ -17,28 +17,6 @@ import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_AGRE
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES;
 
-/**
- * A recipient's signed prekey bundle (Phase 2 design, section 3): the identity
- * keys, a signed prekey, and a batch of one-time prekeys, each a hybrid
- * agreement key, all signed by the recipient's hybrid identity. A sender picks a
- * prekey from a verified bundle and seals to it with {@link AsyncSealedSender}.
- *
- * <p>Wire layout (big-endian):
- * <pre>
- *   version             1
- *   identitySigPub      1984
- *   identityAgreePub    1216
- *   signedPrekeyId      4
- *   signedPrekeyPub     1216
- *   signedPrekeyExpiry  8
- *   signedPrekeySig     3373   over version||signedPrekeyId||signedPrekeyPub||expiry
- *   oneTimePrekeyCount  2
- *   oneTimePrekeys[]    each { id 16, pub 1216 }
- *   bundleSig           3373   over everything above
- * </pre>
- * This class is the wire format and the signature check; generating, storing,
- * and consuming prekey private keys is a separate (infrastructure) concern.
- */
 @NotNullByDefault
 public class AsyncPrekeyBundle {
 
@@ -118,7 +96,6 @@ public class AsyncPrekeyBundle {
 		return oneTimePrekeys;
 	}
 
-	/** Builds and signs a bundle with the recipient's hybrid identity. */
 	public static AsyncPrekeyBundle create(CryptoComponent crypto,
 			byte[] identitySigPub, PrivateKey identitySigPriv,
 			byte[] identityAgreePub, long signedPrekeyId,
@@ -138,8 +115,6 @@ public class AsyncPrekeyBundle {
 				new ArrayList<>(oneTimePrekeys), bundleSig);
 	}
 
-	/** Verifies both signatures against the bundle's own identity key. A caller
-	 * must still check that identity key is a known, trusted contact. */
 	public boolean verify(CryptoComponent crypto) {
 		try {
 			PublicKey id = crypto.getHybridSignatureKeyParser()

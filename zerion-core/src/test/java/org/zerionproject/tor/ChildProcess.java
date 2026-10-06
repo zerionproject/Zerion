@@ -3,10 +3,6 @@ package org.zerionproject.tor;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * A stand-in for the Tor process in tests: a JVM that exits at once, prints
- * the line the wrapper waits for and then sleeps, or only sleeps.
- */
 public final class ChildProcess {
 
 	static final String EXIT = "exit";
@@ -35,10 +31,6 @@ public final class ChildProcess {
 				.redirectErrorStream(true).start();
 	}
 
-	/**
-	 * A script the wrapper can run in place of Tor. Windows runs a command
-	 * file by its extension; everything else runs a shell script.
-	 */
 	static File script(File dir, String name, String mode)
 			throws IOException {
 		boolean windows = System.getProperty("os.name", "")

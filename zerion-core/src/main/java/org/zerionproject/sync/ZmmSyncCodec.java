@@ -16,13 +16,6 @@ import java.io.IOException;
 
 import javax.inject.Inject;
 
-/**
- * Serialises the delivery-DAG sync records (Message/Ack/Offer/Request) to and
- * from the opaque payload of a {@link ZmmConstants#TYPE_SYNC} record, reusing the
- * existing {@link SyncRecordWriter}/{@link SyncRecordReader} so the on-wire record
- * format is unchanged from the proven sync layer. ZPP carries these as opaque
- * bytes; the record's own kind is read back from its framing, not the ZMM type.
- */
 @NotNullByDefault
 public class ZmmSyncCodec {
 
@@ -68,7 +61,6 @@ public class ZmmSyncCodec {
 		return out.toByteArray();
 	}
 
-	/** A reader positioned at the start of one serialised sync record. */
 	public SyncRecordReader newReader(byte[] payload) {
 		return readerFactory.createRecordReader(
 				new ByteArrayInputStream(payload), false);

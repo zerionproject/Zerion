@@ -10,6 +10,7 @@ import org.zerionproject.core.api.data.BdfWriterFactory;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelDelegationCert;
 import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelState;
@@ -21,8 +22,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
@@ -32,16 +35,26 @@ import javax.inject.Inject;
 class ChannelStore {
 
 	private static final String NS_STATE = "zerion-channels-state";
-	private static final String NS_POSTS = "zerion-channels-posts";
 	private static final String NS_PRIV = "zerion-channels-priv";
 	private static final String NS_UNREAD = "zerion-channels-unread";
 	private static final String NS_MIRROR = "zerion-channels-mirror";
 	private static final String NS_INDEX = "zerion-channels-index";
 	private static final String INDEX_KEY = "channelIds";
+	private static final String NS_PENDING_REMOVAL =
+			"zerion-channels-pending-removal";
+	private static final String REMOVAL_KEEPS_TOMBSTONE = "t";
+	private static final String REMOVAL_COMPLETE = "c";
+	private static final String NS_INSTANCE = "zerion-channels-instance";
+	private static final String INSTANCE_KEY = "id";
+	private static final String NS_RETIRED_CONTENT_KEYS =
+			"zerion-channels-retired-content-keys";
+	static final int MAX_RETIRED_CONTENT_KEYS = 64;
 
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
 	private final BdfWriterFactory writerFactory;
+	private final ChannelPostStore posts;
+	private final ChannelOnionStore onions;
 
 	@Inject
 	ChannelStore(SettingsManager settingsManager,
@@ -50,6 +63,30 @@ class ChannelStore {
 		this.settingsManager = settingsManager;
 		this.readerFactory = readerFactory;
 		this.writerFactory = writerFactory;
+		this.posts = new ChannelPostStore(settingsManager, readerFactory,
+				writerFactory);
+		this.onions = new ChannelOnionStore(settingsManager, readerFactory,
+				writerFactory);
+	}
+
+	ChannelOnionStore onions() {
+		return onions;
+	}
+
+	ChannelPostStore posts() {
+		return posts;
+	}
+
+	SettingsManager settings() {
+		return settingsManager;
+	}
+
+	BdfReaderFactory readerFactory() {
+		return readerFactory;
+	}
+
+	BdfWriterFactory writerFactory() {
+		return writerFactory;
 	}
 
 	static String hex(byte[] b) {
@@ -69,6 +106,64 @@ class ChannelStore {
 		addToIndex(hex(s.getChannelId()));
 	}
 
+	void putChannel(ChannelState s, Map<String, Settings> alsoWrite)
+			throws DbException {
+		Map<String, Settings> batch = new LinkedHashMap<>(alsoWrite);
+		Settings state = new Settings();
+		state.put(hex(s.getChannelId()),
+				encodeBase64(dictToBytes(stateToDict(s))));
+		batch.put(NS_STATE, state);
+		Set<String> ids = readIndex();
+		if (ids.add(hex(s.getChannelId()))) {
+			batch.put(NS_INDEX, indexSettings(ids));
+		}
+		settingsManager.mergeSettings(batch);
+	}
+
+	static Settings pendingRemoval(byte[] channelId, boolean keepTombstone) {
+		Settings out = new Settings();
+		out.put(hex(channelId), keepTombstone ? REMOVAL_KEEPS_TOMBSTONE
+				: REMOVAL_COMPLETE);
+		return out;
+	}
+
+	static String pendingRemovalNamespace() {
+		return NS_PENDING_REMOVAL;
+	}
+
+	void markPendingRemoval(byte[] channelId, boolean keepTombstone)
+			throws DbException {
+		settingsManager.mergeSettings(pendingRemoval(channelId,
+				keepTombstone), NS_PENDING_REMOVAL);
+	}
+
+	Map<String, Boolean> pendingRemovals() throws DbException {
+		Map<String, Boolean> out = new LinkedHashMap<>();
+		for (Map.Entry<String, String> e
+				: settingsManager.getSettings(NS_PENDING_REMOVAL).entrySet()) {
+			if (e.getValue().isEmpty()) continue;
+			out.put(e.getKey(), REMOVAL_KEEPS_TOMBSTONE.equals(e.getValue()));
+		}
+		return out;
+	}
+
+	void clearPendingRemoval(byte[] channelId) throws DbException {
+		settingsManager.deleteSettings(NS_PENDING_REMOVAL,
+				java.util.Collections.singletonList(hex(channelId)));
+	}
+
+	@Nullable
+	String getInstanceId() throws DbException {
+		String v = settingsManager.getSettings(NS_INSTANCE).get(INSTANCE_KEY);
+		return v == null || v.isEmpty() ? null : v;
+	}
+
+	void setInstanceId(String id) throws DbException {
+		Settings out = new Settings();
+		out.put(INSTANCE_KEY, id);
+		settingsManager.mergeSettings(out, NS_INSTANCE);
+	}
+
 	@Nullable
 	ChannelState getChannel(byte[] channelId) throws DbException {
 		Settings s = settingsManager.getSettings(NS_STATE);
@@ -77,7 +172,7 @@ class ChannelStore {
 		try {
 			BdfDictionary d = bytesToDict(decodeBase64(encoded));
 			return dictToState(d);
-		} catch (IOException e) {
+		} catch (IOException | IllegalArgumentException e) {
 			return null;
 		}
 	}
@@ -92,7 +187,7 @@ class ChannelStore {
 			try {
 				BdfDictionary d = bytesToDict(decodeBase64(encoded));
 				out.add(dictToState(d));
-			} catch (IOException ignored) {
+			} catch (IOException | IllegalArgumentException ignored) {
 			}
 		}
 		return out;
@@ -100,49 +195,62 @@ class ChannelStore {
 
 	void removeChannel(byte[] channelId) throws DbException {
 		String key = hex(channelId);
-		clearKey(NS_STATE, key);
-		clearKey(NS_POSTS, key);
-		clearKey(NS_PRIV, key);
-		clearKey(NS_UNREAD, key);
-		clearKey(NS_MIRROR, key);
+		posts.removeAll(channelId);
+		java.util.List<String> keys = java.util.Collections.singletonList(key);
+		settingsManager.deleteSettings(NS_STATE, keys);
+		settingsManager.deleteSettings(NS_PRIV, keys);
+		settingsManager.deleteSettings(NS_UNREAD, keys);
+		settingsManager.deleteSettings(NS_MIRROR, keys);
+		settingsManager.deleteSettings(NS_RETIRED_CONTENT_KEYS, keys);
 		removeFromIndex(key);
+	}
+
+	List<byte[]> getRetiredContentKeys(byte[] channelId) throws DbException {
+		String stored = settingsManager.getSetting(NS_RETIRED_CONTENT_KEYS,
+				hex(channelId));
+		List<byte[]> out = new ArrayList<>();
+		if (stored == null || stored.isEmpty()) return out;
+		for (String encoded : stored.split(",")) {
+			try {
+				byte[] key = decodeBase64(encoded);
+				if (key.length == ChannelConstants.CONTENT_KEY_BYTES) {
+					out.add(key);
+				}
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
+		return out;
+	}
+
+	Map<String, Settings> retireContentKey(byte[] channelId,
+			byte[] contentKey) throws DbException {
+		List<byte[]> keys = getRetiredContentKeys(channelId);
+		keys.add(0, contentKey);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < keys.size() && i < MAX_RETIRED_CONTENT_KEYS;
+				i++) {
+			if (i > 0) sb.append(',');
+			sb.append(encodeBase64(keys.get(i)));
+		}
+		Settings out = new Settings();
+		out.put(hex(channelId), sb.toString());
+		Map<String, Settings> batch = new LinkedHashMap<>();
+		batch.put(NS_RETIRED_CONTENT_KEYS, out);
+		return batch;
 	}
 
 	void appendPost(byte[] channelId, ChannelPost post)
 			throws DbException {
-		List<ChannelPost> existing = getPosts(channelId);
-		existing.add(post);
-		writePosts(channelId, existing);
+		posts.append(channelId, post, null);
 	}
 
 	List<ChannelPost> getPosts(byte[] channelId) throws DbException {
-		Settings s = settingsManager.getSettings(NS_POSTS);
-		String encoded = s.get(hex(channelId));
-		if (encoded == null) return new ArrayList<>();
-		try {
-			BdfList list = bytesToList(decodeBase64(encoded));
-			List<ChannelPost> out = new ArrayList<>(list.size());
-			for (Object o : list) {
-				if (o instanceof BdfDictionary) {
-					out.add(dictToPost(channelId, (BdfDictionary) o));
-				}
-			}
-			return out;
-		} catch (IOException e) {
-			return new ArrayList<>();
-		}
+		return posts.getPosts(channelId);
 	}
 
-	void writePosts(byte[] channelId, List<ChannelPost> posts)
+	void writePosts(byte[] channelId, List<ChannelPost> list)
 			throws DbException {
-		BdfList list = new BdfList();
-		for (ChannelPost p : posts) {
-			list.add(postToDict(p));
-		}
-		String encoded = encodeBase64(listToBytes(list));
-		Settings out = new Settings();
-		out.put(hex(channelId), encoded);
-		settingsManager.mergeSettings(out, NS_POSTS);
+		posts.replaceAll(channelId, list);
 	}
 
 	void putPublisherPrivKey(byte[] channelId, byte[] hybridPriv)
@@ -183,15 +291,6 @@ class ChannelStore {
 		settingsManager.mergeSettings(out, NS_MIRROR);
 	}
 
-	private void clearKey(String namespace, String key)
-			throws DbException {
-		Settings cur = settingsManager.getSettings(namespace);
-		if (!cur.containsKey(key)) return;
-		Settings out = new Settings();
-		out.put(key, "");
-		settingsManager.mergeSettings(out, namespace);
-	}
-
 	private Set<String> readIndex() throws DbException {
 		Settings s = settingsManager.getSettings(NS_INDEX);
 		String csv = s.get(INDEX_KEY);
@@ -204,6 +303,10 @@ class ChannelStore {
 	}
 
 	private void writeIndex(Set<String> ids) throws DbException {
+		settingsManager.mergeSettings(indexSettings(ids), NS_INDEX);
+	}
+
+	private static Settings indexSettings(Set<String> ids) {
 		StringBuilder sb = new StringBuilder();
 		boolean first = true;
 		for (String id : ids) {
@@ -213,7 +316,7 @@ class ChannelStore {
 		}
 		Settings out = new Settings();
 		out.put(INDEX_KEY, sb.toString());
-		settingsManager.mergeSettings(out, NS_INDEX);
+		return out;
 	}
 
 	private void addToIndex(String channelIdHex) throws DbException {
@@ -352,72 +455,6 @@ class ChannelStore {
 				retired);
 	}
 
-	private BdfDictionary postToDict(ChannelPost p) {
-		BdfDictionary d = new BdfDictionary();
-		d.put("seqNum", p.getSeqNum());
-		d.put("prevHash", p.getPrevHash());
-		d.put("timestampHourMs", p.getTimestampHourMs());
-		d.put("body", p.getBody());
-		d.put("ttlMs", p.getTtlMs());
-		d.put("signature", p.getSignature());
-		d.put("read", p.isRead());
-		if (p.isWithheld()) d.put("withheld", true);
-		BdfList atts = new BdfList();
-		for (ChannelPost.ChannelAttachment a : p.getAttachments()) {
-			BdfDictionary ad = new BdfDictionary();
-			ad.put("hash", a.getBlobHash());
-			ad.put("size", a.getSizeBytes());
-			ad.put("mime", a.getMimeType());
-			ad.put("key", a.getPerAttachmentKey());
-			if (a.getCaptionUtf8() != null) {
-				ad.put("caption", a.getCaptionUtf8());
-			}
-			if (a.getThumbnail() != null) {
-				ad.put("thumb", a.getThumbnail());
-			}
-			atts.add(ad);
-		}
-		d.put("attachments", atts);
-		if (p.getDelegateSignerEd25519PubKey() != null) {
-			d.put("delegateSignerEd25519",
-					p.getDelegateSignerEd25519PubKey());
-		}
-		if (p.getDelegateSignerMlDsaPubKey() != null) {
-			d.put("delegateSignerMlDsa",
-					p.getDelegateSignerMlDsaPubKey());
-		}
-		return d;
-	}
-
-	private ChannelPost dictToPost(byte[] channelId, BdfDictionary d)
-			throws FormatException {
-		List<ChannelPost.ChannelAttachment> atts = new ArrayList<>();
-		BdfList raw = d.getList("attachments");
-		for (Object o : raw) {
-			if (!(o instanceof BdfDictionary)) continue;
-			BdfDictionary ad = (BdfDictionary) o;
-			atts.add(new ChannelPost.ChannelAttachment(
-					ad.getRaw("hash"),
-					ad.getLong("size"),
-					ad.getString("mime"),
-					ad.getRaw("key"),
-					ad.getOptionalString("caption"),
-					ad.getOptionalRaw("thumb")));
-		}
-		return new ChannelPost(channelId,
-				d.getLong("seqNum"),
-				d.getRaw("prevHash"),
-				d.getLong("timestampHourMs"),
-				d.getString("body"),
-				atts,
-				d.getLong("ttlMs"),
-				d.getRaw("signature"),
-				d.getBoolean("read"),
-				d.getOptionalRaw("delegateSignerEd25519"),
-				d.getOptionalRaw("delegateSignerMlDsa"),
-				d.getBoolean("withheld", false));
-	}
-
 	private byte[] dictToBytes(BdfDictionary d) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		BdfWriter w = writerFactory.createWriter(out);
@@ -430,30 +467,11 @@ class ChannelStore {
 		return out.toByteArray();
 	}
 
-	private byte[] listToBytes(BdfList l) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		BdfWriter w = writerFactory.createWriter(out);
-		try {
-			w.writeList(l);
-			w.flush();
-		} catch (IOException e) {
-			return new byte[0];
-		}
-		return out.toByteArray();
-	}
-
 	private BdfDictionary bytesToDict(byte[] bytes)
 			throws FormatException, IOException {
 		BdfReader r = readerFactory.createReader(
 				new ByteArrayInputStream(bytes));
 		return r.readDictionary();
-	}
-
-	private BdfList bytesToList(byte[] bytes)
-			throws FormatException, IOException {
-		BdfReader r = readerFactory.createReader(
-				new ByteArrayInputStream(bytes));
-		return r.readList();
 	}
 
 	private static String encodeBase64(byte[] data) {

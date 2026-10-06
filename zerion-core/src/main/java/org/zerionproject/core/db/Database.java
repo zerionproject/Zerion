@@ -12,6 +12,7 @@ import org.zerionproject.core.api.db.DataTooOldException;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.MessageDeletedException;
+import org.zerionproject.core.api.db.MessageMetadataVisitor;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.MigrationListener;
 import org.zerionproject.core.api.identity.Author;
@@ -185,6 +186,10 @@ interface Database<T> {
 	Map<MessageId, Metadata> getMessageMetadata(T txn, GroupId g,
 			Metadata query) throws DbException;
 
+	<E extends Exception> void visitMessageMetadataExcluding(T txn,
+			GroupId g, String key, byte[] value,
+			MessageMetadataVisitor<E> visitor) throws DbException, E;
+
 	Metadata getMessageMetadataForValidator(T txn, MessageId m)
 			throws DbException;
 
@@ -225,7 +230,15 @@ interface Database<T> {
 	Map<GroupId, Collection<MessageId>> getMessagesToDelete(T txn)
 			throws DbException;
 
+	Collection<GroupId> getGroupsWithMessagesToDelete(T txn)
+			throws DbException;
+
+	Collection<MessageId> getMessagesToDelete(T txn, GroupId g)
+			throws DbException;
+
 	long getNextCleanupDeadline(T txn) throws DbException;
+
+	long getNextCleanupDeadline(T txn, long after) throws DbException;
 
 	long getNextSendTime(T txn, ContactId c, long maxLatency)
 			throws DbException;
@@ -240,12 +253,18 @@ interface Database<T> {
 	void setPendingContactOurKeys(T txn, PendingContactId p, byte[] publicKey,
 			byte[] privateKey) throws DbException;
 
+	void clearPendingContactOurKeys(T txn, PendingContactId p)
+			throws DbException;
+
 	Collection<PendingContact> getPendingContacts(T txn) throws DbException;
 
 	Collection<MessageId> getRequestedMessagesToSend(T txn, ContactId c,
 			long capacity, long maxLatency) throws DbException;
 
 	Settings getSettings(T txn, String namespace) throws DbException;
+
+	@Nullable
+	String getSetting(T txn, String namespace, String key) throws DbException;
 
 	List<Byte> getSyncVersions(T txn, ContactId c) throws DbException;
 
@@ -279,6 +298,12 @@ interface Database<T> {
 	boolean raiseSeenFlag(T txn, ContactId c, MessageId m) throws DbException;
 
 	void removeContact(T txn, ContactId c) throws DbException;
+
+	void deleteSettings(T txn, String namespace, Collection<String> keys)
+			throws DbException;
+
+	void deleteSettingsNamespaces(T txn, Collection<String> namespaces)
+			throws DbException;
 
 	void removeGroup(T txn, GroupId g) throws DbException;
 
@@ -354,6 +379,9 @@ interface Database<T> {
 
 	void stopCleanupTimer(T txn, MessageId m) throws DbException;
 
+	long setCleanupDeadline(T txn, MessageId m, long deadline)
+			throws DbException;
+
 	void updateRetransmissionData(T txn, ContactId c, MessageId m,
 			long maxLatency) throws DbException;
 
@@ -362,30 +390,12 @@ interface Database<T> {
 	int PCS_DIRECTION_SEND = 0;
 	int PCS_DIRECTION_RECEIVE = 1;
 
-	void setPcsSessionState(T txn, ContactId c, int direction,
-			SecretKey chainKey, int messageNumber, int previousChainLength)
-			throws DbException;
-
-	@Nullable
-	Object[] getPcsSessionState(T txn, ContactId c, int direction)
-			throws DbException;
-
 	boolean containsPcsSessionState(T txn, ContactId c) throws DbException;
 
-	void addPcsSkippedKey(T txn, ContactId c, int direction,
-			int messageNumber, SecretKey messageKey, long timestamp)
-			throws DbException;
-
-	@Nullable
-	SecretKey getPcsSkippedKey(T txn, ContactId c, int direction,
-			int messageNumber) throws DbException;
-
-	int getPcsSkippedKeyCount(T txn, ContactId c, int direction)
-			throws DbException;
-
-	int prunePcsSkippedKeys(T txn, long maxAge) throws DbException;
-
 	void removePcsState(T txn, ContactId c) throws DbException;
+
+	void removePcsSessionState(T txn, ContactId c, int direction)
+			throws DbException;
 
 	void setPcsMode2SessionState(T txn, ContactId c, int direction,
 			SecretKey chainKey, int messageNumber, int previousChainLength,
@@ -397,25 +407,6 @@ interface Database<T> {
 	@Nullable
 	Object[] getPcsMode2SessionState(T txn, ContactId c, int direction)
 			throws DbException;
-
-	void addPcsMode2SkippedKey(T txn, byte[] chainId, int messageNumber,
-			SecretKey messageKey, long timestamp) throws DbException;
-
-	@Nullable
-	SecretKey getPcsMode2SkippedKey(T txn, byte[] chainId, int messageNumber)
-			throws DbException;
-
-	void setPqRatchetState(T txn, ContactId c, long currentEpoch,
-			long epochStartTime, int messagesSinceEpoch, int state,
-			boolean isInitiator, int chunksSent, int chunksReceived,
-			@Nullable byte[] ourEkSeed, @Nullable byte[] ourEkVector,
-			@Nullable byte[] ourDecapsKey, @Nullable byte[] theirEkSeed,
-			@Nullable byte[] theirEkHash, @Nullable byte[] theirEkVector,
-			@Nullable byte[] ciphertext, @Nullable byte[] pendingChunks)
-			throws DbException;
-
-	@Nullable
-	Object[] getPqRatchetState(T txn, ContactId c) throws DbException;
 
 	boolean containsPqRatchetState(T txn, ContactId c) throws DbException;
 

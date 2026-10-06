@@ -59,7 +59,6 @@ class ChatItemViewHolder extends RecyclerView.ViewHolder {
 				break;
 		}
 
-		// Presence dot: only 1:1 contacts have an online/offline state.
 		if (item.getType() == ChatItem.Type.CONTACT) {
 			presenceDot.setVisibility(View.VISIBLE);
 			presenceDot.setBackgroundResource(item.isOnline()

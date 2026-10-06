@@ -12,11 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * The reconciliation policy resolves a journal only on positive evidence (pool,
- * mined, or outgoing history) or a definitive rejection, and never on MISSED,
- * an error or a timeout, from any node, however many times seen.
- */
 public class XmrSpendReconcilerTest {
 
 	private static final String WID = "w1";

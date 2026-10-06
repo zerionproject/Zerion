@@ -10,6 +10,9 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public class ChannelPost {
 
+	public static final int FORMAT_LEGACY = 1;
+	public static final int FORMAT_V2 = 2;
+
 	private final byte[] channelId;
 	private final long seqNum;
 	private final byte[] prevHash;
@@ -24,6 +27,9 @@ public class ChannelPost {
 	@Nullable
 	private final byte[] delegateSignerMlDsaPubKey;
 	private final boolean withheld;
+	private final int formatVersion;
+	@Nullable
+	private final byte[] salt;
 
 	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
 			long timestampHourMs, String body,
@@ -51,6 +57,19 @@ public class ChannelPost {
 			byte[] signature, boolean read,
 			@Nullable byte[] delegateSignerEd25519PubKey,
 			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld) {
+		this(channelId, seqNum, prevHash, timestampHourMs, body,
+				attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				withheld, FORMAT_LEGACY, null);
+	}
+
+	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, String body,
+			List<ChannelAttachment> attachments, long ttlMs,
+			byte[] signature, boolean read,
+			@Nullable byte[] delegateSignerEd25519PubKey,
+			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld,
+			int formatVersion, @Nullable byte[] salt) {
 		this.channelId = channelId;
 		this.seqNum = seqNum;
 		this.prevHash = prevHash;
@@ -63,15 +82,10 @@ public class ChannelPost {
 		this.delegateSignerEd25519PubKey = delegateSignerEd25519PubKey;
 		this.delegateSignerMlDsaPubKey = delegateSignerMlDsaPubKey;
 		this.withheld = withheld;
+		this.formatVersion = formatVersion;
+		this.salt = salt;
 	}
 
-	/**
-	 * A post that keeps its place in the chain but whose content is not
-	 * shown: it was signed by a delegate whose authorization the publisher
-	 * has since revoked, or by a delegate this subscriber can no longer
-	 * verify and that a later verified post commits to. The stored bytes are
-	 * the original, so the chain hash of the next post still verifies.
-	 */
 	public boolean isWithheld() {
 		return withheld;
 	}
@@ -81,7 +95,32 @@ public class ChannelPost {
 		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
 				body, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
-				true);
+				true, formatVersion, salt);
+	}
+
+	public ChannelPost withFlags(boolean read, boolean withheld) {
+		if (read == this.read && withheld == this.withheld) return this;
+		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
+				body, attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				withheld, formatVersion, salt);
+	}
+
+	public ChannelPost asShown(String shownBody,
+			List<ChannelAttachment> shownAttachments) {
+		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
+				shownBody, shownAttachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				withheld, formatVersion, salt);
+	}
+
+	public int getFormatVersion() {
+		return formatVersion;
+	}
+
+	@Nullable
+	public byte[] getSalt() {
+		return salt;
 	}
 
 	public byte[] getChannelId() {

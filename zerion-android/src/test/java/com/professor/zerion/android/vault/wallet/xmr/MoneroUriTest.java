@@ -8,11 +8,6 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-/**
- * The URI parser extracts the address and amount but never judges address
- * validity, and it converts XMR amounts to atomic units with exact arithmetic,
- * rejecting anything malformed, over-precise or overflowing.
- */
 public class MoneroUriTest {
 
 	private static final String ADDR =

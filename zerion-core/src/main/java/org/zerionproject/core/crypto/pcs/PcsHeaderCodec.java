@@ -397,7 +397,7 @@ public class PcsHeaderCodec {
 		offset += PQ_EPOCH_SIZE;
 
 		byte type1 = data[offset++];
-		offset++; // index byte (unused)
+		offset++;
 		int len1 = readUint16(data, offset);
 		offset += 2;
 		if (type1 != PQ_CHUNK_TYPE_PK_ADVERTISE
@@ -410,7 +410,7 @@ public class PcsHeaderCodec {
 		offset += MODE3_FULL_PK_ADVERTISE_SIZE;
 
 		byte type2 = data[offset++];
-		offset++; // index byte (unused)
+		offset++;
 		int len2 = readUint16(data, offset);
 		offset += 2;
 		if (type2 != PQ_CHUNK_TYPE_KEM_CT
@@ -423,7 +423,7 @@ public class PcsHeaderCodec {
 		offset += MODE3_FULL_KEM_CT_SIZE;
 
 		byte type3 = data[offset++];
-		offset++; // index byte (unused)
+		offset++;
 		int len3 = readUint16(data, offset);
 		offset += 2;
 		if (type3 != PQ_CHUNK_TYPE_KP_ID

@@ -96,12 +96,6 @@ public class Mode3FullRatchetImplTest {
 				result.getNewState().getTheirActivePqPk());
 	}
 
-	/**
-	 * A2-CRY-01: an advertised key that fails the library's modulus check is
-	 * refused at receipt with the protocol's own exception, so it is never
-	 * stored and never reaches the sender's encapsulation as an unchecked
-	 * failure.
-	 */
 	@Test
 	public void testAdvertisedKeyFailingTheModulusCheckIsRefused()
 			throws Exception {
@@ -119,11 +113,6 @@ public class Mode3FullRatchetImplTest {
 				mlKemProvider.generateKeyPair().getEncapsulationKey()));
 	}
 
-	/**
-	 * A2-CRY-08: a key pair another snapshot has retired and zeroized is no
-	 * longer found by id, so a stale lookup fails at once instead of
-	 * decapsulating under an all-zero key.
-	 */
 	@Test
 	public void testDestroyedKeyPairIsNotFoundById() {
 		Mode3FullState s = ratchet.createInitialState();

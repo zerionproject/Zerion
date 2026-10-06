@@ -130,6 +130,30 @@ Notes recorded during bring-up:
   NDK cross compilers are unset before the Monero configure) so the cross build
   never runs a target binary.
 
+## Build environment (3.0.15)
+
+F-Droid's build of 3.0.14 (versionCode 31400) built `libzmonero.so` for
+arm64-v8a with SHA-256 `7b74e8ec8ea1e58b0c223817b7b41b08fb368991550a830b3df7da35659d67c9`
+and the gate refused it. The same recipe in F-Droid's `buildserver-trixie`
+image reproduces the accepted hashes below with eight to twenty CPUs, as the
+`vagrant` user with the NDK under `/opt/android-sdk/ndk/27.1.12297006`, and on a
+file system that reverses directory order, so the difference comes from the
+environment the build is started in. The 3.0.14 script passed that
+environment to every compiler: with compiler and linker flags, a different
+umask and a git configuration that rewrites line endings set by the caller, it
+did not even build.
+
+Since 3.0.15 `build-monero-android.sh` re-executes itself with `env -i`, passing
+only the pinned versions, the NDK path and the ABI, with `LC_ALL=C`, `TZ=UTC`,
+`umask 022`, an empty `HOME` and git reading no system or user configuration.
+Under the same hostile environment it builds the accepted arm64-v8a hash, and
+`fdroid-build.sh` run as in the F-Droid recipe builds both accepted hashes; the
+accepted hashes do not change. Each build also writes
+`out/<abi>/buildinfo.txt` (tool versions, host facts, the optional Monero
+features CMake settled on and the SHA-256 of every archive in the link), and
+the Gradle gate prints that file when it refuses a library, so a host that
+builds different bytes can be compared with the reference stage by stage.
+
 ## Accepted hashes (friend accessors and pinned build image, 2026-09-22)
 
 These are the values the Gradle gate enforces since two changes to the

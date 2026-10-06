@@ -12,7 +12,6 @@ interface HandshakeConstants {
 
 	byte PQ_AUTH_MINOR_VERSION = 3;
 
-	/** Adds the static-ephemeral X25519 terms (key-compromise impersonation resistance). */
 	byte KCI_MINOR_VERSION = 4;
 
 

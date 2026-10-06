@@ -14,12 +14,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Deterministic proof that (key, nonce) pairs never repeat within a video
- * session and that separate sessions never share a key, which together rule
- * out the AES-GCM nonce reuse of the previous design where every session
- * derived the same key and restarted its counter at zero.
- */
 public class VideoFrameCipherTest {
 
 	private static byte[] key(int seed) {

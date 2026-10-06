@@ -4,11 +4,6 @@ import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyAnalyzer;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * The exact final Payjoin transaction presented for review. It corresponds to a
- * single canonical PayjoinFinalTx fingerprint; authentication is bound to that
- * same fingerprint, so what the user sees is what gets signed.
- */
 @NotNullByDefault
 public final class PayjoinReviewData {
 

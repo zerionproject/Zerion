@@ -12,6 +12,12 @@ every implementation.
   16 lowercase hex characters, `seq` counts from 0, `total` is at most 24, and
   the slices concatenate to the base64 payload.
 
+A `memoId` is chosen by the sender, so a receiver keeps the memos it sent
+apart from the memos the contact sent: parts are put together, and deleted
+together, only with parts of the same `memoId` sent in the same direction.
+A contact that sends parts under the id of a memo this device sent can
+neither complete, break nor delete that memo.
+
 Android writes base64 without padding; padded input is accepted.
 
 ## Payload

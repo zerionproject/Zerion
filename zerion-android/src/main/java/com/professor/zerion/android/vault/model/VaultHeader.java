@@ -9,7 +9,8 @@ import java.util.Arrays;
 @NotNullByDefault
 public class VaultHeader {
 
-	public static final int CURRENT_VERSION = 1;
+	public static final int CURRENT_VERSION = 2;
+	public static final int VERSION_KEYSTORE_FACTOR = 2;
 	private static final byte[] MAGIC_BYTES = "ZVLT".getBytes(StandardCharsets.US_ASCII);
 
 	public static final int FEATURE_FLAG_KDF_ARGON2ID = 0x00000001;
@@ -25,11 +26,26 @@ public class VaultHeader {
 	public final long createdTimestamp;
 	public final long modifiedTimestamp;
 	public final int featureFlags;
+	public final int keySlot;
+	public final byte[] wrappedMasterKey;
 
 	public VaultHeader(int version, byte[] salt, int kdfMemoryKb, int kdfIterations,
 			int kdfParallelism, byte[] wrappedKeystoreBlob, byte[] biometricTokenSalt,
 			byte[] passwordVerificationMac, long createdTimestamp, long modifiedTimestamp,
 			int featureFlags) {
+		this(version, salt, kdfMemoryKb, kdfIterations, kdfParallelism,
+				wrappedKeystoreBlob, biometricTokenSalt,
+				passwordVerificationMac, createdTimestamp, modifiedTimestamp,
+				featureFlags, 0, new byte[0]);
+	}
+
+	public VaultHeader(int version, byte[] salt, int kdfMemoryKb,
+			int kdfIterations, int kdfParallelism, byte[] wrappedKeystoreBlob,
+			byte[] biometricTokenSalt, byte[] passwordVerificationMac,
+			long createdTimestamp, long modifiedTimestamp, int featureFlags,
+			int keySlot, byte[] wrappedMasterKey) {
+		this.keySlot = keySlot;
+		this.wrappedMasterKey = wrappedMasterKey;
 		this.version = version;
 		this.salt = salt;
 		this.kdfMemoryKb = kdfMemoryKb;
@@ -43,11 +59,22 @@ public class VaultHeader {
 		this.featureFlags = featureFlags;
 	}
 
+	public static VaultHeader createKeystoreFactor(byte[] salt, int kdfMemoryKb,
+			int kdfIterations, byte[] wrappedKeystoreBlob,
+			byte[] biometricTokenSalt, byte[] passwordVerificationMac,
+			long createdTimestamp, int keySlot, byte[] wrappedMasterKey) {
+		return new VaultHeader(VERSION_KEYSTORE_FACTOR, salt, kdfMemoryKb,
+				kdfIterations, 1, wrappedKeystoreBlob, biometricTokenSalt,
+				passwordVerificationMac, createdTimestamp,
+				System.currentTimeMillis(), FEATURE_FLAG_KDF_ARGON2ID, keySlot,
+				wrappedMasterKey);
+	}
+
 	public static VaultHeader createNew(byte[] salt, int kdfMemoryKb, int kdfIterations,
 			byte[] wrappedKeystoreBlob, byte[] biometricTokenSalt, byte[] passwordVerificationMac) {
 		long now = System.currentTimeMillis();
 		return new VaultHeader(
-				CURRENT_VERSION,
+				1,
 				salt,
 				kdfMemoryKb,
 				kdfIterations,
@@ -74,6 +101,9 @@ public class VaultHeader {
 				8 +
 				8 +
 				4;
+		if (version >= VERSION_KEYSTORE_FACTOR) {
+			totalSize += 4 + 4 + wrappedMasterKey.length;
+		}
 
 		ByteBuffer buffer = ByteBuffer.allocate(totalSize);
 
@@ -93,6 +123,11 @@ public class VaultHeader {
 		buffer.putLong(createdTimestamp);
 		buffer.putLong(modifiedTimestamp);
 		buffer.putInt(featureFlags);
+		if (version >= VERSION_KEYSTORE_FACTOR) {
+			buffer.putInt(keySlot);
+			buffer.putInt(wrappedMasterKey.length);
+			buffer.put(wrappedMasterKey);
+		}
 
 		return buffer.array();
 	}
@@ -163,10 +198,28 @@ public class VaultHeader {
 					"Vault header missing required Argon2id flag");
 		}
 
+		int keySlot = 0;
+		byte[] wrappedMasterKey = new byte[0];
+		if (version >= VERSION_KEYSTORE_FACTOR) {
+			keySlot = buffer.getInt();
+			if (keySlot != 1 && keySlot != 2) {
+				throw new IllegalArgumentException("Invalid vault key slot");
+			}
+			wrappedMasterKey = new byte[boundedLength(buffer.getInt(),
+					MAX_FIELD_LENGTH)];
+			buffer.get(wrappedMasterKey);
+			if (passwordVerificationMac.length == 0
+					|| wrappedMasterKey.length == 0) {
+				throw new IllegalArgumentException(
+						"Vault header incomplete");
+			}
+		}
+
 		return new VaultHeader(
 				version, salt, kdfMemoryKb, kdfIterations, kdfParallelism,
 				wrappedKeystoreBlob, biometricTokenSalt, passwordVerificationMac,
-				createdTimestamp, modifiedTimestamp, featureFlags
+				createdTimestamp, modifiedTimestamp, featureFlags, keySlot,
+				wrappedMasterKey
 		);
 	}
 
@@ -174,7 +227,8 @@ public class VaultHeader {
 		return new VaultHeader(
 				version, salt, kdfMemoryKb, kdfIterations, kdfParallelism,
 				wrappedKeystoreBlob, biometricTokenSalt, passwordVerificationMac,
-				createdTimestamp, System.currentTimeMillis(), featureFlags
+				createdTimestamp, System.currentTimeMillis(), featureFlags,
+				keySlot, wrappedMasterKey
 		);
 	}
 }

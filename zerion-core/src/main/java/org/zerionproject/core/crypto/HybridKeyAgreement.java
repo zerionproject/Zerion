@@ -278,16 +278,6 @@ class HybridKeyAgreement {
 		}
 	}
 
-	/**
-	 * The two static-ephemeral X25519 agreements that give the handshake
-	 * key-compromise-impersonation resistance: with only a peer's static
-	 * private key, an impostor cannot compute the term that needs the
-	 * other party's static private key. The pair is returned in a
-	 * canonical order (the party with the lower static public key first:
-	 * its static key against the other party's ephemeral key, then its
-	 * ephemeral key against the other party's static key), so both sides
-	 * mix the same two secrets in the same positions.
-	 */
 	byte[][] staticEphemeralTerms(HybridAgreementPublicKey theirStatic,
 			HybridAgreementPublicKey theirEphemeral,
 			PublicKey ourStaticPublic, byte[] ourStaticX25519Priv,

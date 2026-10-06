@@ -23,7 +23,7 @@ public class PinnedContactManager {
 	private final SharedPreferences prefs;
 
 	@Inject
-	PinnedContactManager(@AppModule.UiPrefs SharedPreferences prefs) {
+	PinnedContactManager(@AppModule.ProfilePrefs SharedPreferences prefs) {
 		this.prefs = prefs;
 	}
 

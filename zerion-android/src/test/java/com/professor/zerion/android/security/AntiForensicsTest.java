@@ -15,11 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * AND-07: the USB panic decides on the system's USB state broadcast, fires
- * only for a host that configured a data-capable function, once per
- * connection, and never while disarmed.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class AntiForensicsTest {

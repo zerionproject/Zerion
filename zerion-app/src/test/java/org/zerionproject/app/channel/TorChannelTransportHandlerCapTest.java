@@ -22,22 +22,20 @@ import javax.net.SocketFactory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * A channel server handles a bounded number of requests at once. Beyond
- * that bound a new connection is closed without being read, the bound is a
- * cap on concurrency rather than a queue, and the server serves again as
- * soon as a handler returns.
- */
 public class TorChannelTransportHandlerCapTest {
 
-	private static final int HANDLERS = 16;
+	private static final int PER_SERVER =
+			TorChannelTransport.MAX_HANDLERS_PER_CHANNEL;
+	private static final int CHANNELS = 3;
+	private static final int HANDLERS = CHANNELS * PER_SERVER;
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final CountDownLatch release = new CountDownLatch(1);
 	private final AtomicInteger entered = new AtomicInteger();
-	private final AtomicInteger port = new AtomicInteger();
+	private final List<Integer> ports =
+			java.util.Collections.synchronizedList(new ArrayList<>());
 	private final List<Socket> sockets = new ArrayList<>();
-	private ChannelServer server;
+	private final List<ChannelServer> servers = new ArrayList<>();
 
 	@After
 	public void tearDown() {
@@ -48,7 +46,7 @@ public class TorChannelTransportHandlerCapTest {
 			} catch (IOException ignored) {
 			}
 		}
-		if (server != null) server.close();
+		for (ChannelServer server : servers) server.close();
 		exec.shutdownNow();
 	}
 
@@ -58,8 +56,8 @@ public class TorChannelTransportHandlerCapTest {
 		OnionPublisher publisher = new OnionPublisher() {
 			@Override
 			public OnionHandle publish(int localPort, String privateKey) {
-				port.set(localPort);
-				return new OnionHandle("channelonion", "key");
+				ports.add(localPort);
+				return new OnionHandle("channelonion" + localPort, "key");
 			}
 
 			@Override
@@ -68,7 +66,54 @@ public class TorChannelTransportHandlerCapTest {
 		};
 		TorChannelTransport transport = new TorChannelTransport(publisher,
 				SocketFactory.getDefault(), exec);
-		server = transport.bindServer(new byte[32], null, request -> {
+		for (int i = 0; i < CHANNELS; i++) {
+			servers.add(transport.bindServer(new byte[] {(byte) i}, null,
+					request -> {
+				entered.incrementAndGet();
+				try {
+					release.await(30, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+				return new byte[] {7};
+			}));
+		}
+
+		for (int i = 0; i < HANDLERS; i++) {
+			request(open(ports.get(i / PER_SERVER)));
+		}
+		waitForEntered(HANDLERS);
+
+		Socket refused = open(ports.get(2));
+		requestRefused(refused);
+		assertEquals(HANDLERS, entered.get());
+
+		release.countDown();
+		for (int i = 0; i < HANDLERS; i++) {
+			assertEquals(7, readResponse(sockets.get(i)));
+		}
+		Socket served = open(ports.get(0));
+		request(served);
+		assertEquals(7, readResponse(served));
+		assertEquals(HANDLERS + 1, entered.get());
+	}
+
+	@Test(timeout = 60_000)
+	public void oneOnionHoldsAtMostItsShareOfTheHandlers() throws Exception {
+		OnionPublisher publisher = new OnionPublisher() {
+			@Override
+			public OnionHandle publish(int localPort, String privateKey) {
+				ports.add(localPort);
+				return new OnionHandle("channelonion" + localPort, "key");
+			}
+
+			@Override
+			public void unpublish(String onion) {
+			}
+		};
+		TorChannelTransport transport = new TorChannelTransport(publisher,
+				SocketFactory.getDefault(), exec);
+		servers.add(transport.bindServer(new byte[32], null, request -> {
 			entered.incrementAndGet();
 			try {
 				release.await(30, TimeUnit.SECONDS);
@@ -76,31 +121,28 @@ public class TorChannelTransportHandlerCapTest {
 				Thread.currentThread().interrupt();
 			}
 			return new byte[] {7};
-		});
-
-		for (int i = 0; i < HANDLERS; i++) request(open());
-		waitForEntered(HANDLERS);
-
-		Socket refused = open();
-		request(refused);
-		assertClosedWithoutAResponse(refused);
-		assertEquals(HANDLERS, entered.get());
-
-		release.countDown();
-		for (int i = 0; i < HANDLERS; i++) {
-			assertEquals(7, readResponse(sockets.get(i)));
-		}
-		Socket served = open();
-		request(served);
-		assertEquals(7, readResponse(served));
-		assertEquals(HANDLERS + 1, entered.get());
+		}));
+		for (int i = 0; i < PER_SERVER; i++) request(open(ports.get(0)));
+		waitForEntered(PER_SERVER);
+		Socket refused = open(ports.get(0));
+		requestRefused(refused);
+		assertEquals(PER_SERVER, entered.get());
 	}
 
-	private Socket open() throws IOException {
-		Socket s = new Socket("127.0.0.1", port.get());
+	private Socket open(int port) throws IOException {
+		Socket s = new Socket("127.0.0.1", port);
 		s.setSoTimeout(10_000);
 		sockets.add(s);
 		return s;
+	}
+
+	private static void requestRefused(Socket s) throws IOException {
+		try {
+			request(s);
+		} catch (IOException refusedBeforeTheRequest) {
+			return;
+		}
+		assertClosedWithoutAResponse(s);
 	}
 
 	private static void request(Socket s) throws IOException {

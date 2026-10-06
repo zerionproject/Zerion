@@ -11,7 +11,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.professor.zerion.android.vault.model.VaultItem;
 import com.professor.zerion.android.vault.storage.SecureFileIO;
+import com.professor.zerion.android.vault.storage.VaultLocation;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,15 +21,10 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * On-device crash-safety proof for the vault master-password change. A change
- * re-wraps every item key under the new master key and swaps the item set, then
- * commits by renaming the new header onto the live one. A crash before that
- * commit must roll back to the old password with items intact; a crash after it
- * must roll forward. Reconciliation runs before every unlock and must never harm
- * a healthy vault. Uses a throwaway vault in app data (wiped each test).
- */
 @RunWith(AndroidJUnit4.class)
 public class VaultRekeyRecoveryDeviceTest {
 
@@ -36,14 +33,59 @@ public class VaultRekeyRecoveryDeviceTest {
 	private static final byte[] SEED =
 			"seed-material-do-not-lose".getBytes(StandardCharsets.UTF_8);
 
+	private static final String TEST_ALIAS = "zerion_test_vault_rekey";
+
 	private Context ctx;
+	private File vaultDir;
+	private VaultLocation location;
 	private SecureFileIO fileIO;
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 		ctx = ApplicationProvider.getApplicationContext();
-		fileIO = new SecureFileIO(ctx);
-		deleteTree(fileIO.getVaultDir());
+		vaultDir = new File(ctx.getCacheDir(), "test-vault-rekey-recovery");
+		deleteTree(vaultDir);
+		deleteTestKeys();
+		location = new VaultLocation() {
+			@Override
+			public boolean isAvailable() {
+				return true;
+			}
+
+			@Override
+			public File directory() {
+				return vaultDir;
+			}
+
+			@Override
+			public String keyAlias() {
+				return TEST_ALIAS;
+			}
+
+			@Override
+			public List<File> allVaultDirectories() {
+				return Collections.singletonList(vaultDir);
+			}
+
+			@Override
+			public void onUnlocked() {
+			}
+		};
+		fileIO = new SecureFileIO(ctx, location);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		deleteTree(vaultDir);
+		deleteTestKeys();
+	}
+
+	private static void deleteTestKeys() throws Exception {
+		KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+		ks.load(null);
+		for (String alias : Collections.list(ks.aliases())) {
+			if (alias.startsWith(TEST_ALIAS)) ks.deleteEntry(alias);
+		}
 	}
 
 	private static void deleteTree(File f) {
@@ -54,7 +96,7 @@ public class VaultRekeyRecoveryDeviceTest {
 	}
 
 	private VaultManager fresh() {
-		return new VaultManager(ctx);
+		return new VaultManager(ctx, location);
 	}
 
 	private static void awaitUnlockThrottle() throws InterruptedException {

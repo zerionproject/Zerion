@@ -85,7 +85,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion pil ile çalışırken İnternet kullanmayacak şekilde yapılandırılmış</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion bu ülkede İnternet kullanmayacak şekilde yapılandırılmış</string>
   
-  <string name="transport_lan_long">Aynı Wi-Fi ağı</string>
 
   <string name="reminder_notification_title">Zerion oturumu kapatıldı</string>
   <string name="reminder_notification_text">Yeniden oturum açmak için dokunun.</string>
@@ -212,7 +211,6 @@
   <string name="connecting_to_device">Aygıt ile bağlantı kuruluyor\u2026</string>
   <string name="authenticating_with_device">Aygıt üzerinde kimlik doğrulanıyor\u2026</string>
   <string name="connection_error_title">Kişinizle bağlantı kurulamadı</string>
-  <string name="connection_error_feedback">Sorun sürerse, uygulamayı geliştirmemize yardımcı olmak için <a href="feedback">bize bildirin</a>.</string>
   
   <string name="add_contact_remotely_title_case">Uzaktaki kişiyi ekle</string>
   <string name="add_contact_nearby_title">Yakındaki kişiyi ekle</string>
@@ -387,8 +385,6 @@
   
   <string name="tor_network_setting_summary">Otomatik: %1$s (%2$s içinde)</string>
   <string name="tor_mobile_data_title">Mobil veri kullanılsın</string>
-  <string name="tor_only_when_charging_title">İnternet bağlantısı yalnızca şarj edilirken kullanılsın</string>
-  <string name="tor_only_when_charging_summary">Aygıt pil ile çalışırken İnternet bağlantısı kullanılmaz</string>
   
   <string name="security_settings_title">Güvenlik</string>
   <string name="pref_lock_title">Uygulama kilidi</string>
@@ -445,74 +441,9 @@
   <string name="choose_ringtone_title">Zil sesini seçin</string>
   <string name="cannot_load_ringtone">Zil sesi yüklenemedi</string>
   
-  <string name="mailbox_settings_title">Mailbox</string>
-  <string name="mailbox_setup_title">Mailbox kurulumu</string>
-  <string name="mailbox_setup_intro">Mailbox siz çevrim dışıyken kişilerinizin size ileti gönderebilmesini sağlar. İletilerinizi Mailbox alır ve siz çevrim içi olana kadar saklar.\n
-		\nZerion Mailbox uygulamasını yedek bir aygıta kurabilirsiniz. Bu aygıtı şarja ve Wi-Fi ağına bağlı tutarsanız sürekli çevrim içi olur.</string>
-  <string name="mailbox_setup_download">İlk olarak bir başka aygıt üzerinde, Google Play ile ya da Zerion uygulamasını indirdiğiniz yerde \"Zerion Mailbox\" ifadesini arayın ve Mailbox uygulamasını bularak kurun.\n
-		\nArdından Zerion üzerinden Mailbox uygulamasında görüntülenen kare kodu tarayarak Mailbox uygulamasını ilişkilendirin.</string>
-  <string name="mailbox_setup_download_link">İndirme bağlantısını paylaş</string>
-  <string name="mailbox_setup_connecting">Mailbox ile bağlantı kuruluyor…</string>
   
-  <string name="mailbox_setup_connecting_info">Bu işlem %1s kadar sürebilir</string>
-  <string name="mailbox_setup_already_paired_title">Mailbox zaten bağlanmış</string>
-  <string name="mailbox_setup_already_paired_description">Diğer aygıttan Mailbox bağlantısını kaldırıp yeniden deneyin</string>
-  <string name="mailbox_setup_io_error_title">Bağlantı kurulamadı</string>
-  <string name="mailbox_setup_io_error_description">İki aygıtın da İnternete bağlı olduğundan emin olduktan sonra yeniden deneyin.</string>
-  <string name="mailbox_setup_assertion_error_title">Mailbox sorunu</string>
-  <string name="mailbox_setup_assertion_error_description">Sorun sürerse lütfen Zerion uygulaması üzerinden (anonim olarak) bize bildirin.</string>
-  <string name="mailbox_setup_camera_error_description">Kameraya erişilemedi. Aygıtı yeniden başlatıp yeniden deneyin.</string>
-  <string name="mailbox_setup_paired_title">Bağlantı kuruldu</string>
-  <string name="mailbox_setup_paired_description">Mailbox uygulamanız ile Zerion bağlandı.\n
-		\nMailbox çalışan aygıtı şarja ve Wi-Fi ağına bağlı tutun. Böylece sürekli çevrim içi olur.</string>
-  <string name="tor_offline_title">Çevrim dışı</string>
-  <string name="tor_offline_description">Bu aygıtın çevrim içi olduğundan ve İnternet bağlantılarına izin verildiğinden emin olun.\n
-		\nArdından bağlantı ayarları ekranındaki yerküre simgesinin yeşile dönmesini bekleyin.</string>
-  <string name="tor_offline_button_check">Bağlantı ayarlarını denetle</string>
-  <string name="mailbox_status_title">Mailbox durumu</string>
-  <string name="mailbox_status_connected_title">Mailbox çalışıyor</string>
-  <string name="mailbox_status_problem_title">Zerion Mailbox ile bağlantı kurmakta sorun yaşıyor.</string>
-  <string name="mailbox_status_failure_title">Mailbox kullanılamıyor</string>
-  <string name="mailbox_status_app_too_old_title">Zerion sürümü çok eski</string>
-  <string name="mailbox_status_app_too_old_message">Zerion uygulamasını güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="mailbox_status_mailbox_too_old_title">Mailbox sürümü çok eski</string>
-  <string name="mailbox_status_mailbox_too_old_message">Mailbox uygulamasını güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="mailbox_status_check_button">Bağlantıyı denetle</string>
   
-  <string name="mailbox_status_connected_info">Son bağlantı: %s</string>
   
-  <string name="mailbox_status_connected_never">Asla</string>
-  <string name="mailbox_status_unlink_button">Bağlantıyı kaldır</string>
-  <string name="mailbox_status_unlink_dialog_title">Mailbox bağlantısı kaldırılsın mı?</string>
-  <string name="mailbox_status_unlink_dialog_question">Mailbox bağlantısını kaldırmak istediğinize emin misiniz?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Mailbox bağlantısını kaldırırsanız, Zerion çevrim dışı olduğunda iletileri alamazsınız.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Mailbox bağlantınız kaldırıldı</string>
-  <string name="mailbox_status_unlink_no_wipe_message">Mailbox aygıtınıza bir sonra erişmenizde lütfen Mailbox uygulamasını açın ve \"Bağlantıyı kaldır\" düğmesine dokunarak işlemi tamamlayın.\n\nMailbox aygıtınıza artık erişemiyorsanız endişelenmeyin. Verileriniz şifrelenmiştir ve bu süreci tamamlamasanız bile güvende kalır.</string>
-  <string name="mailbox_status_unlink_success">Mailbox bağlantınız kaldırıldı</string>
-  <string name="mailbox_error_notification_channel_title">Zerion Mailbox sorunu</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox kullanılamıyor</string>
-  <string name="mailbox_error_notification_text">Sorunu çözmek için dokunun.</string>
-  <string name="mailbox_error_wizard_button">Sorunu çöz</string>
-  <string name="mailbox_error_wizard_title">Mailbox sorun çözme yardımcısı</string>
-  <string name="mailbox_error_wizard_question1">Mailbox aygıtınıza erişebiliyor musunuz?</string>
-  <string name="mailbox_error_wizard_answer1">Evet, şu an ona erişebiliyorum.</string>
-  <string name="mailbox_error_wizard_answer2">Şimdi değil ama daha sonra erişebilirim.</string>
-  <string name="mailbox_error_wizard_answer3">Hayır, artık ona erişemiyorum.</string>
-  <string name="mailbox_error_wizard_info1_1">Mailbox aygıtının açık ve İnternet bağlantısı olduğunu denetleyin.</string>
-  <string name="mailbox_error_wizard_question1_1">Mailbox uygulamasını açın. Ne görüyorsunuz?</string>
-  <string name="mailbox_error_wizard_answer1_1">Mailbox kurulum yönergelerini görüyorum</string>
-  <string name="mailbox_error_wizard_answer1_2">Bir kare kod görüyorum</string>
-  <string name="mailbox_error_wizard_answer1_3">\"Mailbox çalışıyor\" ifadesini görüyorum</string>
-  <string name="mailbox_error_wizard_answer1_4">\"Aygıt çevrim dışı\" ifadesini görüyorum</string>
-  <string name="mailbox_error_wizard_info1_1_1">Lütfen aşağıdaki düğmeyi kullanarak Mailbox bağlantınızı kesin. Ardından bağlantıyı yeniden kurmak için Mailbox aygıtındaki yönergeleri izleyin.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Lütfen aşağıdaki düğmeyi kullanarak Mailbox bağlantınızı kesin. Ardından bağlantıyı yeniden kurmak için kare kodu tarayın.</string>
-  <string name="mailbox_error_wizard_info1_1_3">Zerion ve Mailbox arasındaki bağlantıyı denetlemek için aşağıdaki düğmeyi kullanın.\n\n
-		Bağlantı yeniden kurulamazsa:\n
-		\u2022 Mailbox ve Zerion uygulamalarının sürümlerinin güncel olduğundan emin olun.\n
-		\u2022 Mailbox ve Zerion aygıtlarını yeniden başlatıp yeniden deneyin.</string>
-  <string name="mailbox_error_wizard_info1_1_4">Mailbox aygıtının İnternet bağlantısının düzgün olduğundan emin olun.\n\nMailbox aygıtındaki saatin ve tarihin ve saat diliminin doğru olduğundan emin olun.\n\nMailbox ve Zerion uygulamalarının sürümünün güncel olduğundan emin olun.\n\nMailbox ve Zerion aygıtlarınızı yeniden başlattıktan sonra yeniden deneyin.</string>
-  <string name="mailbox_error_wizard_info2">Aygıta eriştiğinizde bu ekranı yeniden açın.</string>
-  <string name="mailbox_error_wizard_info3">Lütfen aşağıdaki düğmeyi kullanarak Mailbox bağlantısını kaldırın.\n\nMailbox bağlantısını kaldırdıktan sonra istediğiniz zaman yeni bir Mailbox ayarlayabilirsiniz.</string>
   
   <string name="about_title">Hakkında</string>
   <string name="zerion_version">Zerion sürümü: %s</string>
@@ -520,7 +451,6 @@
   <string name="links">Bağlantılar</string>
   <string name="zerion_website">\u2022 <a href="">Site</a></string>
   <string name="zerion_source_code">\u2022 <a href="">Kaynak kodu</a></string>
-  <string name="zerion_changelog">\u2022 <a href="">Değişiklik günlüğü</a></string>
   <string name="zerion_privacy_policy">\u2022 <a href="">Gizlilik ilkesi</a></string>
   
   <string name="translator_thanks">Tüm Localization Lab katkıları için teşekkürler</string>
@@ -541,43 +471,13 @@
   <string name="pref_category_actions">İşlemler</string>
   <string name="share_app_link">İndirme bağlantısını paylaş</string>
   <string name="share_app_link_text">%s adresinden Zerion indir</string>
-  <string name="send_feedback">Geri bildirim gönder</string>
   
   <string name="link_warning_title">Bağlantı uyarısı</string>
   <string name="link_warning_intro">Aşağıdaki bağlantıyı bir dış uygulamayla açmak üzeresiniz.</string>
   <string name="link_warning_text">Bu kim olduğunuzu belirlemek için kullanılabilir. Size bu bağlantıyı gönderen kişiye güvenip güvenmediğinizi düşünün ve bağlantıyı Tor Browser ile açın.</string>
   <string name="link_warning_open_link">Bağlantıyı aç</string>
   
-  <string name="crash_report_title">Zerion çökme bildirimi</string>
-  <string name="zerion_crashed">Ne yazık ki Zerion çöktü</string>
-  <string name="not_your_fault">Bu sizin hatanız değil.</string>
-  <string name="please_send_report">Bize bir çökme bildirimi göndererek Zerion uygulamasını iyileştirmemize yardımcı olun.</string>
-  <string name="report_is_encrypted">Bildirim şifreleneceğine ve güvenli bir şekilde gönderileceğine söz veriyoruz.</string>
-  <string name="feedback_title">Geri bildirim</string>
-  <string name="describe_crash">Ne olduğunu anlatın (isteğe bağlı)</string>
-  <string name="enter_feedback">Geri bildiriminizi yazın</string>
-  <string name="optional_contact_email">E-posta adresiniz (isteğe bağlı)</string>
-  <string name="privacy_policy">Bize veri göndererek <a href="">gizlilik ilkemizi</a> kabul etmiş olursunuz</string>
-  <string name="include_debug_report_crash">Çökme ile ilgili anonim veriler eklensin</string>
-  <string name="include_debug_report_feedback">Bu aygıtla ilgili anonim veriler eklensin</string>
-  <string name="dev_report_user_info">Kullanıcı bilgileri</string>
-  <string name="dev_report_basic_info">Temel bilgiler</string>
-  <string name="dev_report_device_info">Aygıt bilgileri</string>
-  <string name="dev_report_stacktrace">Yığın izleme</string>
-  <string name="dev_report_time_info">Zaman bilgisi</string>
-  <string name="dev_report_memory">Bellek</string>
-  <string name="dev_report_storage">Depolama alanı</string>
-  <string name="dev_report_connectivity">Bağlanabilirlik</string>
-  <string name="dev_report_network_usage">Ağ kullanımı</string>
-  <string name="dev_report_build_config">Derleme yapılandırması</string>
-  <string name="dev_report_logcat">Uygulama günlüğü</string>
-  <string name="dev_report_device_features">Aygıt özellikleri</string>
-  <string name="send_report">Bildirimi gönder</string>
   <string name="close">Kapat</string>
-  <string name="dev_report_sending">Geri bildirim gönderiliyor…</string>
-  <string name="dev_report_sent">Geri bildirim gönderildi</string>
-  <string name="dev_report_saved">Bildirim kaydedildi. Zerion oturumunu bir sonraki açışınızda gönderilecek.</string>
-  <string name="dev_report_error">Hata: Bildirim gönderilemedi</string>
   
   <string name="progress_title_logout">Zerion oturumu kapatılıyor...</string>
   
@@ -768,7 +668,6 @@
 	<string name="wallet_receive_new">Yeni adres</string>
 	<string name="wallet_node_hint">Kullanmak için bir sunucuya dokunun. Özel bir sunucuyu kaldırmak için uzun basın.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Yeniden kullanılabilir özel bir adres. Bu adrese yapılan ödemeler zincir üzerinde ilişkilendirilemez. Tespit, Tor üzerinden genel verileri tarar; anahtarlarınız cihazdan asla çıkmaz.</string>
 	<string name="wallet_sp_balance">Tespit edildi: %1$s</string>
 	<string name="wallet_sp_scanned">%1$d bloğuna kadar tarandı</string>
 	<string name="wallet_sp_set_oracle">Tarama kaynağı</string>

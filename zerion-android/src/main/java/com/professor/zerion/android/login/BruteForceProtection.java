@@ -9,56 +9,44 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Sign-in failure policy shown to the user. The counting and the lockout
- * timing live in the account manager's single persisted throttle, which
- * runs on the monotonic clock and survives restarts; this class only turns
- * that state into what the login screen shows and applies the opt-in
- * erase policy, whose flag is the one thing it stores itself.
- */
 @ThreadSafe
 @NotNullByDefault
 public final class BruteForceProtection {
 
-	private static final String KEY_WIPE_ON_FAILURES = "bf_wipe";
-
 	static final int ATTEMPTS_BEFORE_FIRST_LOCKOUT = 3;
-	static final int ATTEMPTS_BEFORE_WIPE = 6;
+	static final int ATTEMPTS_BEFORE_WIPE =
+			SignInErasePolicy.ATTEMPTS_BEFORE_WIPE;
 	static final long LOCKOUT_DURATION_MS = 5 * 60 * 1000;
 	static final long MAX_LOCKOUT_MS = 24 * 60 * 60 * 1000;
 
-	private final SharedPreferences prefs;
+	private final SignInErasePolicy erasePolicy;
 	private final AccountManager accountManager;
 
 	public BruteForceProtection(SharedPreferences prefs,
 			AccountManager accountManager) {
-		this.prefs = prefs;
+		this.erasePolicy = new SignInErasePolicy(prefs);
 		this.accountManager = accountManager;
 	}
 
 	public synchronized boolean isWipeOnRepeatedFailures() {
-		return prefs.getBoolean(KEY_WIPE_ON_FAILURES, false);
+		return erasePolicy.isEnabled();
 	}
 
 	public synchronized void setWipeOnRepeatedFailures(boolean enabled) {
-		prefs.edit().putBoolean(KEY_WIPE_ON_FAILURES, enabled).commit();
+		erasePolicy.setEnabled(enabled);
 	}
 
-	/**
-	 * Called after the account manager refused a password; the manager has
-	 * already counted the failure and started any lockout.
-	 */
 	public synchronized FailureResult recordFailedAttempt() {
 		int failedAttempts = accountManager.failedSignInAttempts();
 		long lockout = accountManager.signInLockoutRemainingMs();
 		boolean wipe = isWipeOnRepeatedFailures();
-		if (wipe && failedAttempts >= ATTEMPTS_BEFORE_WIPE) {
+		if (accountManager.isEraseRequested()) {
 			return FailureResult.wipeData();
 		}
 		if (failedAttempts >= ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
 			if (wipe && failedAttempts > ATTEMPTS_BEFORE_FIRST_LOCKOUT) {
 				return FailureResult.finalWarning(
-						ATTEMPTS_BEFORE_WIPE - failedAttempts);
+						Math.max(1, ATTEMPTS_BEFORE_WIPE - failedAttempts));
 			}
 			return FailureResult.lockout(lockout);
 		}
@@ -70,7 +58,6 @@ public final class BruteForceProtection {
 		return LoginThrottle.SIGN_IN.lockoutMs(failedAttempts);
 	}
 
-	/** The manager resets its throttle on a successful sign-in. */
 	public synchronized void recordSuccessfulLogin() {
 	}
 
@@ -80,7 +67,6 @@ public final class BruteForceProtection {
 		return LockStatus.notLocked();
 	}
 
-	/** The manager clears its throttle when the account is deleted. */
 	public synchronized void clear() {
 	}
 

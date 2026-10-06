@@ -1,16 +1,5 @@
 apply plugin: 'com.android.library'
 
-/* The Tor executable is built from pinned source by packaging/tor-android
-   (see its PROVENANCE.md) and committed under packaging/tor-android/out; the
-   lyrebird executable is unpacked from its verified jar. Both land in the
-   build directory, never in the source tree, and only for the ABIs the pin
-   file lists. Before they can be merged into the library every file is
-   verified against the SHA-256 recorded in
-   src/main/resources/org/zerionproject/tor/binaries.sha256, the same file
-   the app reads at run time to verify the executable it is about to start.
-   A file that is missing, that does not match, or that is not listed fails
-   the build. The check does not depend on Gradle dependency verification,
-   so it also holds in builds that remove the verification metadata. */
 def torBinariesDir = "$buildDir/tor-jni"
 def torPinFile = file('src/main/resources/org/zerionproject/tor/binaries.sha256')
 

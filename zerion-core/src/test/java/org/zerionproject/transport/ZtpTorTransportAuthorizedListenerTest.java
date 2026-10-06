@@ -24,11 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The authorized onion service forwards to its own local listener, and the
- * handler is told which listener a connection came through, so the inbound
- * policy can refuse a committed contact over the open service.
- */
 public class ZtpTorTransportAuthorizedListenerTest {
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
@@ -76,7 +71,7 @@ public class ZtpTorTransportAuthorizedListenerTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				handler, null, () -> {
 		});
-		transport.startAccepting(0);
+		transport.startAccepting();
 		transport.startAcceptingAuthorized();
 	}
 

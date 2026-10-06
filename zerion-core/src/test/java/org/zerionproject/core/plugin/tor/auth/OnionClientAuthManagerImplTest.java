@@ -59,16 +59,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Drives the manager through the activation protocol against a recording
- * Tor control and an in-memory store, with the peer's records constructed
- * directly, and pins the invariants of the design: no dial of the open
- * address once committed, refusal of a committed contact over the open
- * service, commits bound to the generation, immediate revocation with the
- * old service deleted and the new set excluding the revoked key, rotation
- * with overlap and acknowledgement, pre-commit abort cleanup, and the
- * re-feed of Tor from persisted state after a restart.
- */
 public class OnionClientAuthManagerImplTest {
 
 	private static final String PEER_ONION =
@@ -108,12 +98,10 @@ public class OnionClientAuthManagerImplTest {
 			OnionAuthRecords.MAJOR_VERSION);
 	private final Map<MessageId, BdfList> bodies = new HashMap<>();
 	private final Map<ContactId, TransportProperties> remote = new HashMap<>();
-	/** Records this device sent, per contact, in order. */
 	private final Map<ContactId, List<OnionAuthRecords.Record>> sent =
 			new HashMap<>();
 
 	private OnionClientAuthManagerImpl manager;
-	/** The real database refuses a transaction inside another on a thread. */
 	private final ThreadLocal<Integer> txnDepth =
 			ThreadLocal.withInitial(() -> 0);
 
@@ -125,7 +113,6 @@ public class OnionClientAuthManagerImplTest {
 	}
 
 
-	/** Tor control that records commands and mints valid addresses. */
 	static final class RecordingControl implements OnionServiceControl {
 
 		final List<String> commands = Collections.synchronizedList(
@@ -254,6 +241,12 @@ public class OnionClientAuthManagerImplTest {
 			allowing(db).containsGroup(with(any(Transaction.class)),
 					with(any(GroupId.class)));
 			will(returnValue(true));
+			allowing(db).getGroups(with(any(Transaction.class)),
+					with(OnionAuthRecords.CLIENT_ID),
+					with(OnionAuthRecords.MAJOR_VERSION));
+			will(returnValue(Arrays.asList(g1, g2)));
+			allowing(db).removeGroup(with(any(Transaction.class)),
+					with(any(Group.class)));
 			allowing(contactGroupFactory).createContactGroup(
 					OnionAuthRecords.CLIENT_ID, OnionAuthRecords.MAJOR_VERSION,
 					c1);
@@ -424,7 +417,6 @@ public class OnionClientAuthManagerImplTest {
 		return b;
 	}
 
-	/** Runs the whole activation for c1 and returns at AUTH_REQUIRED. */
 	private void activate(Contact c, Group g, String peerOnion, byte[] peerPub)
 			throws Exception {
 		peerAdvertisesSupport(c);
@@ -837,8 +829,6 @@ public class OnionClientAuthManagerImplTest {
 		manager.tickForTest();
 		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
 	}
-
-	/* SC-TOR-06: credentials re-installed after a Tor reconfiguration */
 
 	@Test
 	public void testRefeedCredentialsReinstallsOnlyTheCredentials()

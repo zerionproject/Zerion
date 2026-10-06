@@ -35,8 +35,8 @@ public class VaultSettingsFragment extends BaseFragment {
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@AppModule.SecurePrefs
-	SharedPreferences securePrefs;
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 
@@ -120,6 +120,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		setupClickListeners();
 		observeViewModel();
 		loadSettings();
+		showKeyDerivation(view.findViewById(R.id.keystore_info));
 	}
 
 	private void onExportLocationPicked(
@@ -184,6 +185,7 @@ public class VaultSettingsFragment extends BaseFragment {
 
 		clipboardSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			saveSetting("clipboard_clear_enabled", isChecked);
+			updateClipboardTimeoutDisplay();
 		});
 
 		hideContentSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -465,14 +467,14 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void loadSettings() {
-		currentAutolockTimeout = securePrefs.getInt("autolock_timeout", 60);
+		currentAutolockTimeout = profilePrefs.getInt("autolock_timeout", 60);
 		updateAutolockDisplay();
 
-		currentClipboardTimeout = securePrefs.getInt("clipboard_timeout", 30);
-		updateClipboardTimeoutDisplay();
+		currentClipboardTimeout = profilePrefs.getInt("clipboard_timeout", 30);
 
-		clipboardSwitch.setChecked(securePrefs.getBoolean("clipboard_clear_enabled", true));
-		hideContentSwitch.setChecked(securePrefs.getBoolean("hide_content_enabled", true));
+		clipboardSwitch.setChecked(profilePrefs.getBoolean("clipboard_clear_enabled", true));
+		updateClipboardTimeoutDisplay();
+		hideContentSwitch.setChecked(profilePrefs.getBoolean("hide_content_enabled", true));
 	}
 
 	private void updateAutolockDisplay() {
@@ -487,6 +489,19 @@ public class VaultSettingsFragment extends BaseFragment {
 		autolockValue.setText(display);
 	}
 
+	private void showKeyDerivation(@Nullable TextView keystoreInfo) {
+		if (keystoreInfo == null) return;
+		com.professor.zerion.android.vault.crypto.Argon2.Argon2Params p =
+				viewModel.vaultKdfParameters();
+		if (p == null) return;
+		int line = p.memoryKb >= com.professor.zerion.android.vault
+				.VaultManager.STRONG_KDF.memoryKb
+				? R.string.vault_settings_kdf_strong
+				: R.string.vault_settings_kdf_reduced;
+		keystoreInfo.setText(getString(R.string.vault_settings_info_keystore)
+				+ '\n' + getString(line));
+	}
+
 	private void updateClipboardTimeoutDisplay() {
 		String display;
 		if (currentClipboardTimeout < 60) {
@@ -495,12 +510,17 @@ public class VaultSettingsFragment extends BaseFragment {
 			display = (currentClipboardTimeout / 60) + " minutes";
 		}
 		if (clipboardTimeoutValue != null) {
-			clipboardTimeoutValue.setText(display);
+			boolean timed = clipboardSwitch == null
+					|| clipboardSwitch.isChecked();
+			clipboardTimeoutValue.setText(timed
+					? getString(R.string.vault_settings_clipboard_timed,
+							display)
+					: getString(R.string.vault_settings_clipboard_untimed));
 		}
 	}
 
 	private void saveSetting(String key, Object value) {
-		SharedPreferences.Editor editor = securePrefs.edit();
+		SharedPreferences.Editor editor = profilePrefs.edit();
 
 		if (value instanceof Boolean) {
 			editor.putBoolean(key, (Boolean) value);

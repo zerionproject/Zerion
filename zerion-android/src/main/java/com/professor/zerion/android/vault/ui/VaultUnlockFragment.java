@@ -143,6 +143,10 @@ public class VaultUnlockFragment extends BaseFragment {
 
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
+				if (getActivity() instanceof VaultActivity
+						&& ((VaultActivity) getActivity()).isPickerMode()) {
+					return;
+				}
 				android.view.ViewParent parent = requireView().getParent();
 				if (!(parent instanceof android.view.ViewGroup)) return;
 				int containerId = ((android.view.ViewGroup) parent).getId();

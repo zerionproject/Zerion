@@ -11,6 +11,7 @@ import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.sync.Ack;
 import org.zerionproject.core.api.sync.Message;
+import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.sync.Offer;
 import org.zerionproject.core.api.sync.Request;
 import org.zerionproject.core.api.sync.event.GroupVisibilityUpdatedEvent;
@@ -25,7 +26,11 @@ import org.zerionproject.message.ZmmFragmenter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,28 +46,16 @@ import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_IDS;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_LENGTH;
 
-/**
- * The send side of ZPP for one online contact: pulls the delivery-DAG records
- * (Ack/Message/Offer/Request) from the database and enqueues them into the
- * contact's constant-rate {@link ZppSendScheduler}. This mirrors the proven
- * outgoing sync logic - the same generate calls, the same triggering events, the
- * same {@code getNextSendTime} retransmission timer - but writes records into the
- * scheduler instead of a stream and never emits cover or manages slots itself,
- * because ZPP's scheduler fills every idle slot with cover at a constant rate.
- *
- * <p>Records too large for one frame are fragmented before being enqueued. On a
- * heavy backlog the scheduler queue front-loads and a record can reach its
- * retransmission timer before it has been sent, producing a duplicate send; that
- * is harmless because the receiver deduplicates.
- */
 @ThreadSafe
 @NotNullByDefault
 public class ZppOutgoingSource implements EventListener {
 
 	private static final int BATCH_CAPACITY =
 			(RECORD_HEADER_BYTES + MAX_MESSAGE_LENGTH) * 2;
-	private static final int MAX_QUEUE_DEPTH = 512;
+	private static final int MAX_LANE_DEPTH = 512;
 	private static final long BACKPRESSURE_RETRY_MS = 2_000L;
+	private static final long BULK_ROOM_RETRY_MS = 10_000L;
+	static final long FRESH_MESSAGE_MS = 10 * 60_000L;
 
 	private final DatabaseComponent db;
 	private final Executor dbExecutor;
@@ -74,14 +67,18 @@ public class ZppOutgoingSource implements EventListener {
 	private final long maxLatency;
 	private final int maxRecordBytes;
 	private final ZppSendScheduler scheduler;
+	private final LocalMessageLog localMessages;
 
 	private final AtomicBoolean generateAckQueued = new AtomicBoolean(false);
 	private final AtomicBoolean generateBatchQueued = new AtomicBoolean(false);
 	private final AtomicBoolean generateOfferQueued = new AtomicBoolean(false);
 	private final AtomicBoolean generateRequestQueued = new AtomicBoolean(false);
+	private final AtomicBoolean bulkRoomRetryQueued = new AtomicBoolean(false);
 	private final AtomicLong nextSendTime = new AtomicLong(Long.MAX_VALUE);
 	private final AtomicLong messageIdCounter = new AtomicLong(0);
 	private volatile boolean stopped = false;
+
+	private final Set<MessageId> inFlight = ConcurrentHashMap.newKeySet();
 
 	private final Object retransmitLock = new Object();
 	@GuardedBy("retransmitLock")
@@ -91,7 +88,9 @@ public class ZppOutgoingSource implements EventListener {
 	public ZppOutgoingSource(DatabaseComponent db, Executor dbExecutor,
 			EventBus eventBus, TaskScheduler taskScheduler, Clock clock,
 			ZmmSyncCodec codec, ContactId contactId, long maxLatency,
-			int maxRecordBytes, ZppSendScheduler scheduler) {
+			int maxRecordBytes, ZppSendScheduler scheduler,
+			LocalMessageLog localMessages) {
+		this.localMessages = localMessages;
 		this.db = db;
 		this.dbExecutor = dbExecutor;
 		this.eventBus = eventBus;
@@ -104,7 +103,6 @@ public class ZppOutgoingSource implements EventListener {
 		this.scheduler = scheduler;
 	}
 
-	/** Registers for events and does the initial generation pass. */
 	public void start() {
 		eventBus.addListener(this);
 		generateAck();
@@ -113,7 +111,6 @@ public class ZppOutgoingSource implements EventListener {
 		generateRequest();
 	}
 
-	/** Deregisters and cancels the retransmission timer. */
 	public void stop() {
 		stopped = true;
 		eventBus.removeListener(this);
@@ -165,21 +162,43 @@ public class ZppOutgoingSource implements EventListener {
 		if (stopped) return;
 		generateBatchQueued.set(false);
 		if (!proceedOrDefer(this::generateBatch)) return;
+		long capacity = batchCapacity();
 		try {
 			Collection<Message> b = db.transactionWithNullableResult(false,
 					txn -> {
 						Collection<Message> batch = db.generateRequestedBatch(txn,
-								contactId, BATCH_CAPACITY, maxLatency);
+								contactId, capacity, maxLatency);
 						setNextSendTime(db.getNextSendTime(txn, contactId,
 								maxLatency));
 						return batch;
 					});
 			if (b != null) {
-				for (Message m : b) enqueue(codec.encodeMessage(m), true);
+				long now = clock.currentTimeMillis();
+				for (Message m : b) {
+					if (!inFlight.add(m.getId())) continue;
+					enqueueMessage(m, isFresh(m, now));
+				}
 				generateBatch();
+			} else if (scheduler.getBulkDepth() > 0) {
+				retryWhenBulkLaneHasRoom();
 			}
 		} catch (DbException | IOException e) {
 		}
+	}
+
+	private long batchCapacity() {
+		long room = (long) (MAX_LANE_DEPTH - scheduler.getBulkDepth())
+				* maxRecordBytes;
+		return Math.max(maxRecordBytes, Math.min(BATCH_CAPACITY, room));
+	}
+
+	private void retryWhenBulkLaneHasRoom() {
+		if (stopped) return;
+		if (!bulkRoomRetryQueued.compareAndSet(false, true)) return;
+		taskScheduler.schedule(() -> {
+			bulkRoomRetryQueued.set(false);
+			if (!stopped) generateBatch();
+		}, dbExecutor, BULK_ROOM_RETRY_MS, MILLISECONDS);
 	}
 
 	@DatabaseExecutor
@@ -195,7 +214,13 @@ public class ZppOutgoingSource implements EventListener {
 				return offer;
 			});
 			if (o != null) {
-				enqueue(codec.encodeOffer(o), false);
+				List<MessageId> ids = new ArrayList<>();
+				for (MessageId id : o.getMessageIds()) {
+					if (!inFlight.contains(id)) ids.add(id);
+				}
+				if (!ids.isEmpty()) {
+					enqueue(codec.encodeOffer(new Offer(ids)), false);
+				}
 				generateOffer();
 			}
 		} catch (DbException | IOException e) {
@@ -218,28 +243,47 @@ public class ZppOutgoingSource implements EventListener {
 		}
 	}
 
-	/**
-	 * Queues one sync record, fragmented as needed. Only a message batch is
-	 * content this side produced; acks, offers and requests are replies the
-	 * peer's records provoke and must not count as local activity for the
-	 * pacing gate.
-	 */
+	boolean isFresh(Message m, long now) {
+		if (m.getTimestamp() - now > FRESH_MESSAGE_MS) return false;
+		return localMessages.takeFirstSend(m.getId());
+	}
+
 	private void enqueue(byte[] syncRecord, boolean userOriginated)
 			throws IOException {
+		enqueue(syncRecord, userOriginated, null);
+	}
+
+	private void enqueue(byte[] syncRecord, boolean userOriginated,
+			@Nullable Runnable onSent) throws IOException {
+		if (syncRecord.length > ZmmConstants.MAX_RECORD_BYTES) {
+			if (onSent != null) onSent.run();
+			return;
+		}
 		long id = messageIdCounter.getAndIncrement();
-		for (byte[] frame : ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
-				syncRecord, id, maxRecordBytes)) {
-			scheduler.enqueueRecord(frame, userOriginated);
+		List<byte[]> frames = ZmmFragmenter.fragment(ZmmConstants.TYPE_SYNC,
+				syncRecord, id, maxRecordBytes);
+		boolean bulkLane = frames.size() > 1;
+		int last = frames.size() - 1;
+		for (int i = 0; i <= last; i++) {
+			scheduler.enqueueRecord(frames.get(i), userOriginated, bulkLane,
+					i == last ? onSent : null);
 		}
 	}
 
-	/**
-	 * @return true if generation may proceed; false if the send queue is already
-	 * at capacity, in which case the given trigger is re-run after a short delay
-	 * so a backlog cannot front-load into memory faster than it is drained.
-	 */
+	private void enqueueMessage(Message m, boolean userOriginated)
+			throws IOException {
+		MessageId id = m.getId();
+		try {
+			enqueue(codec.encodeMessage(m), userOriginated,
+					() -> inFlight.remove(id));
+		} catch (IOException | RuntimeException e) {
+			inFlight.remove(id);
+			throw e;
+		}
+	}
+
 	private boolean proceedOrDefer(Runnable retrigger) {
-		if (scheduler.getQueueDepth() < MAX_QUEUE_DEPTH) return true;
+		if (scheduler.getSmallDepth() < MAX_LANE_DEPTH) return true;
 		if (!stopped) taskScheduler.schedule(() -> {
 			if (!stopped) retrigger.run();
 		}, dbExecutor, BACKPRESSURE_RETRY_MS, MILLISECONDS);

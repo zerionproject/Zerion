@@ -10,12 +10,6 @@ import java.io.ByteArrayOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * The bytes of every client-authorization activation record, pinned so a
- * change on either platform that would break interoperability fails here.
- * The same vectors are asserted by OnionAuthRecordsTests on iOS. The test
- * lives in this package because the BDF writer implementation does.
- */
 public class OnionAuthWireVectorsTest {
 
 	private static final String ONION =

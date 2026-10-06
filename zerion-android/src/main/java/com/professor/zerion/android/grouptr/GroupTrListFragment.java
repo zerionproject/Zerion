@@ -27,7 +27,7 @@ import org.zerionproject.app.api.grouptr.GroupTrPendingInvite;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
-import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrSelfRemovedEvent;
 
@@ -129,7 +129,7 @@ public class GroupTrListFragment extends BaseFragment
 				|| e instanceof GroupEpochCommitEvent
 				|| e instanceof GroupTrLocalStateChangedEvent
 				|| e instanceof GroupTrSelfRemovedEvent
-				|| e instanceof GroupPostReceivedEvent) {
+				|| e instanceof GroupTrPostAcceptedEvent) {
 			runOnUiThreadUnlessDestroyed(() -> {
 				if (!isAdded()) return;
 				if (e instanceof GroupMembershipChangedEvent) {
@@ -142,14 +142,8 @@ public class GroupTrListFragment extends BaseFragment
 								Toast.LENGTH_LONG).show();
 					}
 				} else if (e instanceof GroupTrSelfRemovedEvent) {
-					GroupTrSelfRemovedEvent ev =
-							(GroupTrSelfRemovedEvent) e;
-					String name = ev.getGroupName().isEmpty()
-							? getString(R.string.grouptr_unnamed_group)
-							: ev.getGroupName();
 					Toast.makeText(requireContext(),
-							getString(R.string.grouptr_removed_by_admin,
-									name),
+							R.string.grouptr_removed_neutral,
 							Toast.LENGTH_LONG).show();
 				}
 				loadGroups();

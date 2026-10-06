@@ -6,7 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-/** A2-REG-BTC-16: the scanned-request parser honours BIP21's req- rule. */
 public class Bip21RequestTest {
 
 	private static final String ADDR = "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu";

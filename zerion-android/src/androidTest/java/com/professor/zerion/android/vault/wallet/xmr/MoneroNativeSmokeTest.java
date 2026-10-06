@@ -15,13 +15,6 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
-/**
- * XMR-P0 on-device proof that libzmonero.so (built reproducibly from official
- * Monero wallet2_api) loads and performs the local wallet lifecycle without a
- * daemon: create, derive primary address and a subaddress, read the seed, and
- * validate addresses. No network is used. Runs on a real arm device where the
- * native library is present.
- */
 @RunWith(AndroidJUnit4.class)
 public class MoneroNativeSmokeTest {
 

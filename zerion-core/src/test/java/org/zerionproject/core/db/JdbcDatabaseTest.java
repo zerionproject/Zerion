@@ -49,6 +49,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,6 +61,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -194,7 +197,6 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 
 	@Test
 	public void testReopenSameInstanceAfterClose() throws Exception {
-		// Open and populate a single database instance.
 		Database<Connection> db = open(false);
 		Connection txn = db.startTransaction();
 		db.addIdentity(txn, identity);
@@ -203,10 +205,6 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		db.commitTransaction(txn);
 		db.close();
 
-		// Reopen the SAME instance in the same process, as happens after Exit
-		// followed by an immediate reopen (the pending process-kill is
-		// cancelled, so the instance is reused). This must not fail with
-		// DbClosedException and must still see the persisted data.
 		db.open(key, null);
 		txn = db.startTransaction();
 		assertTrue(db.containsContact(txn, contactId));
@@ -1912,6 +1910,39 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testRequestedMessageThatDoesNotFitIsSkippedForASmallerOne()
+			throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addIdentity(txn, identity);
+		assertEquals(contactId,
+				db.addContact(txn, author, localAuthor.getId(), null, true));
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, contactId, groupId, true);
+		Message big = getMessage(groupId, 2_000, 1_000L);
+		Message small = getMessage(groupId, 10, 2_000L);
+		db.addMessage(txn, big, DELIVERED, true, false, null);
+		db.addMessage(txn, small, DELIVERED, true, false, null);
+		db.raiseRequestedFlag(txn, contactId, big.getId());
+		db.raiseRequestedFlag(txn, contactId, small.getId());
+
+		long capacity = RECORD_HEADER_BYTES + small.getRawLength();
+		assertEquals(singletonList(small.getId()),
+				db.getRequestedMessagesToSend(txn, contactId, capacity,
+						MAX_LATENCY));
+
+		capacity = 2 * RECORD_HEADER_BYTES + big.getRawLength()
+				+ small.getRawLength();
+		assertEquals(asList(big.getId(), small.getId()),
+				db.getRequestedMessagesToSend(txn, contactId, capacity,
+						MAX_LATENCY));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testMessageRetransmission() throws Exception {
 		long now = System.currentTimeMillis();
 		AtomicLong time = new AtomicLong(now);
@@ -2323,6 +2354,206 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		db.deleteMessage(txn, messageId);
 		assertTrue(db.getMessagesToDelete(txn).isEmpty());
 		assertEquals(NO_CLEANUP_DEADLINE, db.getNextCleanupDeadline(txn));
+	}
+
+	@Test
+	public void testMessagesToDeleteOfEachGroup() throws Exception {
+		long now = System.currentTimeMillis();
+		AtomicLong time = new AtomicLong(now);
+		Group group1 = getGroup(clientId, majorVersion);
+		Group group2 = getGroup(clientId, majorVersion);
+		List<Message> messages = new ArrayList<>();
+		for (int i = 0; i < 9; i++) {
+			GroupId g = i % 3 == 0 ? groupId
+					: i % 3 == 1 ? group1.getId() : group2.getId();
+			messages.add(getMessage(g));
+		}
+		Database<Connection> db =
+				open(false, new TestMessageFactory(), new SettableClock(time));
+		Connection txn = db.startTransaction();
+
+		assertTrue(db.getGroupsWithMessagesToDelete(txn).isEmpty());
+		assertTrue(db.getMessagesToDelete(txn, groupId).isEmpty());
+
+		db.addGroup(txn, group);
+		db.addGroup(txn, group1);
+		db.addGroup(txn, group2);
+		for (int i = 0; i < messages.size(); i++) {
+			MessageId m = messages.get(i).getId();
+			db.addMessage(txn, messages.get(i), DELIVERED, false, false, null);
+			if (i == 8) continue;
+			db.setCleanupTimerDuration(txn, m, 1_000L * (i + 1));
+			db.startCleanupTimer(txn, m);
+		}
+
+		for (long t = now - 1; t <= now + 10_000; t += 500) {
+			time.set(t);
+			Map<GroupId, Collection<MessageId>> whole =
+					db.getMessagesToDelete(txn);
+			assertEquals(whole.keySet(),
+					new HashSet<>(db.getGroupsWithMessagesToDelete(txn)));
+			assertEquals(whole.size(),
+					db.getGroupsWithMessagesToDelete(txn).size());
+			for (Group g : asList(group, group1, group2)) {
+				Collection<MessageId> expected = whole.get(g.getId());
+				assertEquals(expected == null ? emptySet()
+								: new HashSet<>(expected),
+						new HashSet<>(db.getMessagesToDelete(txn, g.getId())));
+			}
+		}
+
+		time.set(now + 2_000);
+		assertEquals(new HashSet<>(asList(groupId, group1.getId())),
+				new HashSet<>(db.getGroupsWithMessagesToDelete(txn)));
+		assertEquals(singletonList(messages.get(0).getId()),
+				db.getMessagesToDelete(txn, groupId));
+		assertEquals(singletonList(messages.get(1).getId()),
+				db.getMessagesToDelete(txn, group1.getId()));
+		assertTrue(db.getMessagesToDelete(txn, group2.getId()).isEmpty());
+
+		db.stopCleanupTimer(txn, messages.get(0).getId());
+		assertEquals(singletonList(group1.getId()),
+				db.getGroupsWithMessagesToDelete(txn));
+		assertTrue(db.getMessagesToDelete(txn, groupId).isEmpty());
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testNextCleanupDeadlineAfterATime() throws Exception {
+		long now = System.currentTimeMillis();
+		AtomicLong time = new AtomicLong(now);
+		Message message1 = getMessage(groupId);
+		Message message2 = getMessage(groupId);
+		Database<Connection> db =
+				open(false, new TestMessageFactory(), new SettableClock(time));
+		Connection txn = db.startTransaction();
+
+		assertEquals(NO_CLEANUP_DEADLINE,
+				db.getNextCleanupDeadline(txn, now));
+
+		db.addGroup(txn, group);
+		db.addMessage(txn, message, DELIVERED, false, false, null);
+		db.addMessage(txn, message1, DELIVERED, false, false, null);
+		db.addMessage(txn, message2, DELIVERED, false, false, null);
+		db.setCleanupTimerDuration(txn, messageId, 1_000);
+		db.setCleanupTimerDuration(txn, message1.getId(), 2_000);
+		db.setCleanupTimerDuration(txn, message2.getId(), 3_000);
+		db.startCleanupTimer(txn, messageId);
+		db.startCleanupTimer(txn, message1.getId());
+		db.startCleanupTimer(txn, message2.getId());
+
+		assertEquals(now + 1_000, db.getNextCleanupDeadline(txn));
+		assertEquals(now + 1_000, db.getNextCleanupDeadline(txn, now));
+		assertEquals(now + 2_000,
+				db.getNextCleanupDeadline(txn, now + 1_000));
+		assertEquals(now + 2_000,
+				db.getNextCleanupDeadline(txn, now + 1_500));
+		assertEquals(now + 3_000,
+				db.getNextCleanupDeadline(txn, now + 2_000));
+		assertEquals(NO_CLEANUP_DEADLINE,
+				db.getNextCleanupDeadline(txn, now + 3_000));
+
+		db.stopCleanupTimer(txn, message1.getId());
+		assertEquals(now + 3_000,
+				db.getNextCleanupDeadline(txn, now + 1_000));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testMessageMetadataExcludingAKeyAndValue() throws Exception {
+		byte[] excluded = {0x21, 0x20};
+		byte[] kept = {0x21, 0x00};
+		Group group1 = getGroup(clientId, majorVersion);
+		Message post = getMessage(groupId);
+		Message text = getMessage(groupId);
+		Message sameValueOtherKey = getMessage(groupId);
+		Message noMetadata = getMessage(groupId);
+		Message pendingPost = getMessage(groupId);
+		Message invalidText = getMessage(groupId);
+		Message otherGroupPost = getMessage(group1.getId());
+		Message otherGroupText = getMessage(group1.getId());
+
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addGroup(txn, group);
+		db.addGroup(txn, group1);
+		for (Message m : asList(post, text, sameValueOtherKey, noMetadata,
+				otherGroupPost, otherGroupText)) {
+			db.addMessage(txn, m, DELIVERED, true, false, null);
+		}
+		db.addMessage(txn, pendingPost, PENDING, true, false, null);
+		db.addMessage(txn, invalidText, DELIVERED, true, false, null);
+		db.mergeMessageMetadata(txn, post.getId(),
+				metadata("type", excluded, "body", getRandomBytes(1024)));
+		db.mergeMessageMetadata(txn, text.getId(),
+				metadata("type", kept, "body", excluded));
+		db.mergeMessageMetadata(txn, sameValueOtherKey.getId(),
+				metadata("kind", excluded));
+		db.mergeMessageMetadata(txn, pendingPost.getId(),
+				metadata("type", excluded));
+		db.mergeMessageMetadata(txn, invalidText.getId(),
+				metadata("type", kept));
+		db.setMessageState(txn, invalidText.getId(), INVALID);
+		db.mergeMessageMetadata(txn, otherGroupPost.getId(),
+				metadata("type", excluded));
+		db.mergeMessageMetadata(txn, otherGroupText.getId(),
+				metadata("type", kept));
+
+		Map<MessageId, Metadata> all = db.getMessageMetadata(txn, groupId);
+		assertEquals(3, all.size());
+		assertExcluding(db, txn, groupId, "type", excluded, all,
+				asList(text.getId(), sameValueOtherKey.getId()));
+		assertExcluding(db, txn, groupId, "type", kept, all,
+				asList(post.getId(), sameValueOtherKey.getId()));
+		assertExcluding(db, txn, groupId, "kind", excluded, all,
+				asList(post.getId(), text.getId()));
+		assertExcluding(db, txn, groupId, "type", new byte[] {0x21, 0x01},
+				all, asList(post.getId(), text.getId(),
+						sameValueOtherKey.getId()));
+		assertExcluding(db, txn, group1.getId(), "type", excluded,
+				db.getMessageMetadata(txn, group1.getId()),
+				singletonList(otherGroupText.getId()));
+
+		db.setMessageState(txn, pendingPost.getId(), DELIVERED);
+		all = db.getMessageMetadata(txn, groupId);
+		assertEquals(4, all.size());
+		assertExcluding(db, txn, groupId, "type", excluded, all,
+				asList(text.getId(), sameValueOtherKey.getId()));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	private void assertExcluding(Database<Connection> db, Connection txn,
+			GroupId g, String key, byte[] value, Map<MessageId, Metadata> all,
+			List<MessageId> expected) throws Exception {
+		Map<MessageId, Metadata> found = new HashMap<>();
+		db.visitMessageMetadataExcluding(txn, g, key, value,
+				(m, meta) -> assertNull(found.put(m, meta)));
+		assertEquals(new HashSet<>(expected), found.keySet());
+		for (MessageId m : expected) {
+			Metadata whole = all.get(m);
+			Metadata part = found.get(m);
+			assertNotNull(whole);
+			assertNotNull(part);
+			assertEquals(whole.keySet(), part.keySet());
+			for (String k : whole.keySet()) {
+				assertArrayEquals(whole.get(k), part.get(k));
+			}
+		}
+	}
+
+	private static Metadata metadata(Object... entries) {
+		Metadata m = new Metadata();
+		for (int i = 0; i < entries.length; i += 2) {
+			m.put((String) entries[i], (byte[]) entries[i + 1]);
+		}
+		return m;
 	}
 
 	@Test

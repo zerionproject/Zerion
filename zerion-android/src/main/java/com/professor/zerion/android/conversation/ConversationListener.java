@@ -37,8 +37,8 @@ interface ConversationListener {
 	List<AttachmentItem> loadAttachmentsForItem(ConversationMessageItem item);
 
 	@androidx.annotation.Nullable
-	String getReassembledVoiceMessage(String memoId);
+	String getReassembledVoiceMessage(boolean local, String memoId);
 
-	boolean isVoiceMemoFailed(String memoId);
+	boolean isVoiceMemoFailed(boolean local, String memoId);
 
 }

@@ -1,40 +1,41 @@
 package org.zerionproject.message;
 
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.system.SystemClock;
 import org.zerionproject.core.util.ByteUtils;
+import org.zerionproject.crypto.ZwfMode3FullStreamEncrypter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Reassembles records that {@link ZmmFragmenter} split across frames. Every
- * decoded record is fed in; a non-fragment record passes straight through, and a
- * fragment yields the original record only once its final piece has arrived.
- *
- * <p>Partial messages are bounded against a hostile peer: a fragment count above
- * {@link #MAX_FRAGMENTS_PER_MESSAGE} or a message over {@link #MAX_MESSAGE_BYTES}
- * is rejected, buffered fragment bytes across all contacts never exceed
- * {@link #MAX_TOTAL_BUFFERED_BYTES}, and each contact may hold at most
- * {@link #MAX_PARTIAL_MESSAGES_PER_CONTACT} incomplete messages so one contact
- * cannot starve reassembly for the others. Fragment storage is grown lazily so a
- * claimed-but-unfilled count costs nothing until the bytes actually arrive.
- * {@link #clearContact} drops a contact's partial state when its connection ends.
- */
 @ThreadSafe
 @NotNullByDefault
 public class ZmmReassembler {
 
-	public static final int MAX_MESSAGE_BYTES = 1024 * 1024;
+	public static final int MAX_MESSAGE_BYTES = ZmmConstants.MAX_RECORD_BYTES;
 	public static final int MAX_FRAGMENTS_PER_MESSAGE = 2048;
 	public static final int MAX_PARTIAL_MESSAGES_PER_CONTACT = 16;
 	public static final int MAX_TOTAL_BUFFERED_BYTES = 16 * 1024 * 1024;
 
-	/** A completed record: its original type and reassembled payload. */
+	public static final int MAX_BUFFERED_BYTES_PER_CONTACT =
+			2 * MAX_MESSAGE_BYTES;
+
+	public static final int MAX_CHUNK_BYTES =
+			ZwfMode3FullStreamEncrypter.maxMessageLength()
+					- ZmmFragmenter.RECORD_TYPE_LENGTH
+					- ZmmFragmenter.FRAGMENT_HEADER_LENGTH;
+
+	public static final long PARTIAL_IDLE_TIMEOUT_MS = 5 * 60_000L;
+
+	public static final long SINGLE_SESSION = 0L;
+
 	public static final class Message {
 		public final int type;
 		public final byte[] payload;
@@ -46,35 +47,58 @@ public class ZmmReassembler {
 	}
 
 	private static class Partial {
+		final int contactId;
+		final long sessionId;
+		final long messageId;
 		final int type;
 		final int count;
-		// Grown lazily: a claimed count does not allocate until bytes arrive.
 		final Map<Integer, byte[]> chunks = new HashMap<>();
 		int totalBytes;
+		long lastActivityMs;
+		long lastTouch;
 
-		Partial(int type, int count) {
+		Partial(int contactId, long sessionId, long messageId, int type,
+				int count, long now, long touch) {
+			this.contactId = contactId;
+			this.sessionId = sessionId;
+			this.messageId = messageId;
 			this.type = type;
 			this.count = count;
+			this.lastActivityMs = now;
+			this.lastTouch = touch;
 		}
 	}
 
+	private final Clock clock;
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final Map<Long, Partial> partials = new HashMap<>();
+	private final Map<Long, Map<Long, Partial>> partialsBySession =
+			new HashMap<>();
 	@GuardedBy("lock")
 	private final Map<Integer, Integer> partialsPerContact = new HashMap<>();
 	@GuardedBy("lock")
+	private final Map<Integer, Long> bytesPerContact = new HashMap<>();
+	@GuardedBy("lock")
 	private long totalBufferedBytes;
 	@GuardedBy("lock")
-	private final Map<Integer, Integer> liveSessions = new HashMap<>();
+	private long touches;
 
-	/**
-	 * Feeds one decoded record. Returns the completed message if this record was
-	 * a whole record or the last fragment of one, or {@code null} if it was an
-	 * incomplete or dropped fragment.
-	 */
+	public ZmmReassembler() {
+		this(new SystemClock());
+	}
+
+	ZmmReassembler(Clock clock) {
+		this.clock = clock;
+	}
+
 	@Nullable
 	public Message receive(int contactId, int type, byte[] payload) {
+		return receive(contactId, SINGLE_SESSION, type, payload);
+	}
+
+	@Nullable
+	public Message receive(int contactId, long sessionId, int type,
+			byte[] payload) {
 		if (type != ZmmConstants.TYPE_FRAGMENT) {
 			return new Message(type, payload);
 		}
@@ -87,17 +111,26 @@ public class ZmmReassembler {
 			return null;
 		}
 		int chunkLen = payload.length - ZmmFragmenter.FRAGMENT_HEADER_LENGTH;
+		if (chunkLen == 0 || chunkLen > MAX_CHUNK_BYTES) return null;
 
-		long key = (((long) contactId) << 32) | (messageId & 0xFFFFFFFFL);
 		synchronized (lock) {
-			Partial p = partials.get(key);
+			long now = clock.currentTimeMillis();
+			evictIdle(now);
+			Map<Long, Partial> session = partialsBySession.get(sessionId);
+			Partial p = session == null ? null : session.get(messageId);
+			if (p != null && p.contactId != contactId) return null;
 			if (p == null) {
 				if (partialsPerContact.getOrDefault(contactId, 0)
 						>= MAX_PARTIAL_MESSAGES_PER_CONTACT) {
 					return null;
 				}
-				p = new Partial(origType, count);
-				partials.put(key, p);
+				p = new Partial(contactId, sessionId, messageId, origType,
+						count, now, ++touches);
+				if (session == null) {
+					session = new HashMap<>();
+					partialsBySession.put(sessionId, session);
+				}
+				session.put(messageId, p);
 				partialsPerContact.put(contactId,
 						partialsPerContact.getOrDefault(contactId, 0) + 1);
 			}
@@ -106,8 +139,8 @@ public class ZmmReassembler {
 				return null;
 			}
 			if (p.totalBytes + chunkLen > MAX_MESSAGE_BYTES
-					|| totalBufferedBytes + chunkLen > MAX_TOTAL_BUFFERED_BYTES) {
-				remove(key, contactId, p);
+					|| !makeRoom(p, chunkLen)) {
+				remove(p);
 				return null;
 			}
 			byte[] chunk = new byte[chunkLen];
@@ -115,9 +148,12 @@ public class ZmmReassembler {
 					chunk, 0, chunkLen);
 			p.chunks.put(index, chunk);
 			p.totalBytes += chunkLen;
+			p.lastActivityMs = now;
+			p.lastTouch = ++touches;
 			totalBufferedBytes += chunkLen;
+			bytesPerContact.put(contactId, heldBy(contactId) + chunkLen);
 			if (p.chunks.size() < p.count) return null;
-			remove(key, contactId, p);
+			remove(p);
 			byte[] full = new byte[p.totalBytes];
 			int off = 0;
 			for (int i = 0; i < p.count; i++) {
@@ -129,55 +165,93 @@ public class ZmmReassembler {
 		}
 	}
 
-	/** A connection to the contact has opened. */
-	public void sessionOpened(int contactId) {
+	public void sessionClosed(long sessionId) {
 		synchronized (lock) {
-			liveSessions.put(contactId,
-					liveSessions.getOrDefault(contactId, 0) + 1);
+			Map<Long, Partial> session = partialsBySession.get(sessionId);
+			if (session == null) return;
+			for (Partial p : new ArrayList<>(session.values())) remove(p);
 		}
 	}
 
-	/**
-	 * A connection to the contact has ended. Partial records are dropped only
-	 * when this was the contact's last live connection: a second session to
-	 * the same contact keeps its fragments while the first one closes.
-	 */
-	public void sessionClosed(int contactId) {
-		synchronized (lock) {
-			int n = liveSessions.getOrDefault(contactId, 0) - 1;
-			if (n > 0) {
-				liveSessions.put(contactId, n);
-				return;
-			}
-			liveSessions.remove(contactId);
-			clearContact(contactId);
-		}
-	}
-
-	/** Drops all partial reassembly state for a contact. */
 	public void clearContact(int contactId) {
 		synchronized (lock) {
-			Iterator<Map.Entry<Long, Partial>> it = partials.entrySet().iterator();
-			while (it.hasNext()) {
-				Map.Entry<Long, Partial> e = it.next();
-				if ((int) (e.getKey() >> 32) == contactId) {
-					totalBufferedBytes -= e.getValue().totalBytes;
-					it.remove();
-				}
+			for (Partial p : allPartials()) {
+				if (p.contactId == contactId) remove(p);
 			}
-			partialsPerContact.remove(contactId);
 		}
 	}
 
 	@GuardedBy("lock")
-	private void remove(long key, int contactId, Partial p) {
-		if (partials.remove(key) != null) {
-			totalBufferedBytes -= p.totalBytes;
-			Integer n = partialsPerContact.get(contactId);
-			if (n != null) {
-				if (n <= 1) partialsPerContact.remove(contactId);
-				else partialsPerContact.put(contactId, n - 1);
+	private boolean makeRoom(Partial p, int chunkLen) {
+		while (heldBy(p.contactId) + chunkLen
+				> MAX_BUFFERED_BYTES_PER_CONTACT) {
+			Partial victim = null;
+			for (Partial q : allPartials()) {
+				if (q == p || q.contactId != p.contactId) continue;
+				if (victim == null || q.lastTouch < victim.lastTouch) {
+					victim = q;
+				}
 			}
+			if (victim == null) return false;
+			remove(victim);
+		}
+		while (totalBufferedBytes + chunkLen > MAX_TOTAL_BUFFERED_BYTES) {
+			Partial victim = null;
+			long victimHolds = 0;
+			for (Partial q : allPartials()) {
+				if (q == p) continue;
+				long holds = heldBy(q.contactId);
+				if (victim == null || holds > victimHolds
+						|| (holds == victimHolds
+						&& q.lastTouch < victim.lastTouch)) {
+					victim = q;
+					victimHolds = holds;
+				}
+			}
+			if (victim == null) return false;
+			remove(victim);
+		}
+		return true;
+	}
+
+	@GuardedBy("lock")
+	private long heldBy(int contactId) {
+		Long held = bytesPerContact.get(contactId);
+		return held == null ? 0 : held;
+	}
+
+	@GuardedBy("lock")
+	private void evictIdle(long now) {
+		for (Partial p : allPartials()) {
+			if (now - p.lastActivityMs >= PARTIAL_IDLE_TIMEOUT_MS) remove(p);
+		}
+	}
+
+	@GuardedBy("lock")
+	private List<Partial> allPartials() {
+		List<Partial> all = new ArrayList<>();
+		for (Map<Long, Partial> session : partialsBySession.values()) {
+			all.addAll(session.values());
+		}
+		return all;
+	}
+
+	@GuardedBy("lock")
+	private void remove(Partial p) {
+		Map<Long, Partial> session = partialsBySession.get(p.sessionId);
+		if (session == null || session.get(p.messageId) != p) return;
+		session.remove(p.messageId);
+		if (session.isEmpty()) partialsBySession.remove(p.sessionId);
+		totalBufferedBytes -= p.totalBytes;
+		Long held = bytesPerContact.get(p.contactId);
+		if (held != null) {
+			if (held <= p.totalBytes) bytesPerContact.remove(p.contactId);
+			else bytesPerContact.put(p.contactId, held - p.totalBytes);
+		}
+		Integer n = partialsPerContact.get(p.contactId);
+		if (n != null) {
+			if (n <= 1) partialsPerContact.remove(p.contactId);
+			else partialsPerContact.put(p.contactId, n - 1);
 		}
 	}
 }

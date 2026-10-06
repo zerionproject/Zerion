@@ -8,13 +8,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * The envelope decoder accepts exactly the encodings it produces: random
- * input, every single bit flip of a valid encoding and every truncation are
- * either refused with {@link FormatException} or decoded into an envelope
- * that re-encodes to the very same bytes, so no accepted input has a second
- * reading.
- */
 public class AsyncEnvelopeFuzzTest {
 
 	private static final int RANDOM_INPUTS = 3000;

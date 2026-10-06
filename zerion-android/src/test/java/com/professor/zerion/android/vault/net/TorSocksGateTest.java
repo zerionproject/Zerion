@@ -22,12 +22,6 @@ import java.util.concurrent.Executors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * NET-09: the loopback relay the native Monero wallet uses lets nothing
- * through to Tor without the process secret. The fake Tor behind the relay
- * records the credentials it is handed and echoes the first bytes after
- * the handshake, so the test can see both the refusal and the relay.
- */
 public class TorSocksGateTest {
 
 	private static final String SECRET = "process-secret";

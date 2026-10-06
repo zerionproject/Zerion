@@ -11,13 +11,6 @@ import java.util.List;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Admission of group invite offers and responses before their signatures
- * are checked: an offer must be timely, come from the contact it names as
- * creator, not target a group we already belong to, not duplicate a pending
- * offer and carry the group id derived from its own fields; a response must
- * come from the contact the invite went to, for a group we still hold.
- */
 public class GroupInviteRulesTest {
 
 	private static final long NOW = 1_700_000_000_000L;

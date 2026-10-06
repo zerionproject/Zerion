@@ -27,16 +27,13 @@
 	<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 	<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
-	<!-- Offline mesh (Bluetooth Low Energy only, Android 12+); neverForLocation, no location access -->
 	<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
 	<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 	<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
 		android:usesPermissionFlags="neverForLocation"
 		tools:targetApi="s" />
 
-	<!-- Location permission removed - not needed for Tor-only transport -->
 	<uses-permission-sdk-23 android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-	<!-- USE_BIOMETRIC is provided by androidx.biometric library -->
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 	<uses-permission-sdk-23 android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -56,11 +53,29 @@
 		android:logo="@mipmap/ic_launcher_round"
 		android:networkSecurityConfig="@xml/network_security_config"
 		android:supportsRtl="true"
+		android:taskAffinity=""
 		android:theme="@style/ZerionTheme.NoActionBar"
 		android:enableOnBackInvokedCallback="true"
 		android:extractNativeLibs="true"
 		tools:ignore="GoogleAppIndexingWarning,UnusedAttribute"
 		tools:targetApi="35">
+
+		<meta-data
+			android:name="android.webkit.WebView.MetricsOptOut"
+			android:value="true" />
+		<meta-data
+			android:name="android.webkit.WebView.EnableSafeBrowsing"
+			android:value="false" />
+
+		<provider
+			android:name="androidx.startup.InitializationProvider"
+			android:authorities="${applicationId}.androidx-startup"
+			android:exported="false"
+			tools:node="merge">
+			<meta-data
+				android:name="androidx.emoji2.text.EmojiCompatInitializer"
+				tools:node="remove" />
+		</provider>
 
 		<receiver
 			android:name="com.professor.zerion.android.login.SignInReminderReceiver"
@@ -89,17 +104,29 @@
 
 		<activity
 			android:name="com.professor.zerion.android.channel.ChannelInviteHandlerActivity"
-			android:exported="true"
+			android:exported="false"
 			android:launchMode="singleTask"
 			android:noHistory="true"
-			android:theme="@style/ZerionTheme">
-			<intent-filter android:autoVerify="false">
+			android:theme="@style/ZerionTheme" />
+
+		<activity
+			android:name="com.professor.zerion.android.navdrawer.ExternalLinkActivity"
+			android:excludeFromRecents="true"
+			android:exported="true"
+			android:noHistory="true"
+			android:theme="@android:style/Theme.NoDisplay">
+			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
+
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
-				<data
-					android:scheme="zerion"
-					android:host="channel" />
+
+				<data android:scheme="zerion" />
+			</intent-filter>
+			<intent-filter android:label="@string/add_contact_remotely_title_case">
+				<action android:name="android.intent.action.SEND" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:mimeType="text/plain" />
 			</intent-filter>
 		</activity>
 
@@ -181,6 +208,8 @@
 		<activity
 			android:name="com.professor.zerion.android.splash.SplashScreenActivity"
 			android:exported="true"
+			android:excludeFromRecents="true"
+			android:noHistory="true"
 			android:label="@string/app_name"
 			android:theme="@style/ZerionTheme.NoActionBar">
 			<intent-filter>
@@ -234,24 +263,10 @@
 
 		<activity
 			android:name="com.professor.zerion.android.navdrawer.NavDrawerActivity"
-			android:exported="true"
+			android:exported="false"
 			android:launchMode="singleTask"
 			android:theme="@style/ZerionTheme.NoActionBar"
-			android:windowSoftInputMode="adjustResize">
-			<intent-filter android:label="@string/add_contact_remotely_title_case">
-				<action android:name="android.intent.action.VIEW" />
-
-				<category android:name="android.intent.category.DEFAULT" />
-				<category android:name="android.intent.category.BROWSABLE" />
-
-				<data android:scheme="zerion" />
-			</intent-filter>
-			<intent-filter android:label="@string/add_contact_remotely_title_case">
-				<action android:name="android.intent.action.SEND" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<data android:mimeType="text/plain" />
-			</intent-filter>
-		</activity>
+			android:windowSoftInputMode="adjustResize" />
 
 		<activity
 			android:name="com.professor.zerion.android.conversation.ConversationActivity"
@@ -350,16 +365,6 @@
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<activity
-			android:name="com.professor.zerion.android.navdrawer.TransportsActivity"
-			android:exported="false"
-			android:label="@string/network_settings_title"
-			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity">
-			<meta-data
-				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
-		</activity>
-
-		<activity
 			android:name="com.professor.zerion.android.login.ChangePasswordActivity"
 			android:exported="false"
 			android:label="@string/change_password"
@@ -369,8 +374,6 @@
 				android:name="android.support.PARENT_ACTIVITY"
 				android:value="com.professor.zerion.android.settings.SettingsActivity" />
 		</activity>
-
-		<!-- TestDataActivity moved to debug/AndroidManifest.xml for debug builds only -->
 
 		<activity
 			android:name="com.professor.zerion.android.panic.PanicPreferencesActivity"
@@ -387,7 +390,6 @@
 			android:exported="true"
 			android:noHistory="true"
 			android:theme="@style/TranslucentTheme">
-			<!-- this can never have launchMode singleTask or singleInstance! -->
 			<intent-filter>
 				<action android:name="info.guardianproject.panic.action.TRIGGER" />
 				<category android:name="android.intent.category.DEFAULT" />
@@ -503,9 +505,9 @@
 				android:value="com.professor.zerion.android.navdrawer.NavDrawerActivity" />
 		</activity>
 
-		<!-- Voice Call Activity -->
 		<activity
 			android:name=".android.conversation.voice.VoiceCallActivity"
+			android:excludeFromRecents="true"
 			android:exported="false"
 			android:label="Voice Call"
 			android:launchMode="singleTask"
@@ -515,7 +517,6 @@
 			android:supportsPictureInPicture="true"
 			android:theme="@style/ZerionTheme.NoActionBar" />
 
-		<!-- Voice Call Service - supports microphone and special_use for permission fallback -->
 		<service
 			android:name=".android.conversation.voice.VoiceCallService"
 			android:exported="false"
@@ -525,7 +526,26 @@
 				android:value="Voice call signaling while waiting for microphone permission" />
 		</service>
 
-		<!-- FileProvider for camera photos -->
+		<provider
+			android:name="com.professor.zerion.android.vault.share.VaultShareProvider"
+			android:authorities="${applicationId}.vaultshare"
+			android:exported="false"
+			android:grantUriPermissions="false" />
+
+		<provider
+			android:name="androidx.startup.InitializationProvider"
+			android:authorities="${applicationId}.androidx-startup"
+			android:exported="false"
+			tools:node="merge">
+			<meta-data
+				android:name="androidx.emoji2.text.EmojiCompatInitializer"
+				tools:node="remove" />
+		</provider>
+
+		<meta-data
+			android:name="android.webkit.WebView.MetricsOptOut"
+			android:value="true" />
+
 		<provider
 			android:name="androidx.core.content.FileProvider"
 			android:authorities="${applicationId}.fileprovider"
@@ -549,12 +569,9 @@
 			<action android:name="android.intent.action.VIEW" />
 			<data android:scheme="http" />
 		</intent>
-		<!-- Camera intent for Android 11+ package visibility -->
 		<intent>
 			<action android:name="android.media.action.IMAGE_CAPTURE" />
 		</intent>
-		<!-- white-listing the intents below does not seem necessary,
-		but they are still included in case modified Android versions require it -->
 		<intent>
 			<action android:name="android.settings.CHANNEL_NOTIFICATION_SETTINGS" />
 		</intent>

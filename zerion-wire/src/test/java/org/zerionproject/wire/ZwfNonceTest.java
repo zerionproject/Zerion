@@ -17,11 +17,11 @@ public class ZwfNonceTest {
 		byte[] n = new byte[NONCE_LENGTH];
 		ZwfNonce.encode(n, 0x0102030405060708L, 0x1112131415161718L, 2, true);
 		byte[] expected = {
-				0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // streamId
-				0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, // frameNumber
-				(byte) 0x80,                                    // marker
-				0x02,                                           // segment
-				0x01,                                           // originator (alice)
+				0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+				0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+				(byte) 0x80,
+				0x02,
+				0x01,
 				0, 0, 0, 0, 0
 		};
 		for (int i = 0; i < NONCE_LENGTH; i++) {
@@ -31,8 +31,6 @@ public class ZwfNonceTest {
 
 	@Test
 	public void nonceIsUniqueEvenWhenFrameNumberResets() {
-		// The crux: frameNumber restarts at 0 on every new stream. Binding the
-		// (monotonic) streamId into the nonce keeps every nonce distinct anyway.
 		Set<String> seen = new HashSet<>();
 		byte[] n = new byte[NONCE_LENGTH];
 		for (long streamId = 1; streamId <= 300; streamId++) {
@@ -64,10 +62,6 @@ public class ZwfNonceTest {
 
 	@Test
 	public void originatorByteSeparatesTheTwoDirections() {
-		// The two directions of a connection both open streamId 1, frame 0. The
-		// originator bit makes their nonces disjoint regardless of the keys, so a
-		// (key, nonce) collision cannot arise even if both directions were ever
-		// seeded from the same root key.
 		byte[] alice = new byte[NONCE_LENGTH];
 		byte[] bob = new byte[NONCE_LENGTH];
 		ZwfNonce.encode(alice, 1, 0, 0, true);

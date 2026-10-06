@@ -4,15 +4,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * The production pacing policy: an active regime at the classic 750 ms slot
- * and an idle regime of 4 s. Each regime is a constant, jittered rate; only
- * the choice between them depends on whether application records flowed
- * recently, so an observer of an established connection learns at most the
- * coarse onset and end of activity, never which frames carried data. The
- * idle rate is the same on every network type: a slower rate on metered
- * networks would tell the peer which kind of network this device is on.
- */
 @ThreadSafe
 @NotNullByDefault
 public class ZppPacingPolicy implements ZppPacing {

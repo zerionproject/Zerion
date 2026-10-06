@@ -224,6 +224,10 @@ public class VaultOnboardingFragment extends BaseFragment {
 		try {
 			viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 				if (state == VaultViewModel.VaultState.UNLOCKED) {
+					if (requireActivity() instanceof VaultActivity) {
+						((VaultActivity) requireActivity()).onVaultCreated();
+						return;
+					}
 					VaultDashboardFragment fragment = VaultDashboardFragment.newInstance();
 					((BaseFragment.BaseFragmentListener) requireActivity()).showNextFragment(fragment);
 				}

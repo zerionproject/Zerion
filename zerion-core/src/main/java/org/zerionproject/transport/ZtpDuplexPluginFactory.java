@@ -21,19 +21,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.net.SocketFactory;
 
-/**
- * Creates the native transport's plugin facade. Registering this factory in the
- * plugin config does three things: the key manager registers the transport (the
- * pairing handshake's stream layer needs its id and max latency), the plugin
- * manager starts and stops the Tor lifecycle through the plugin, and the
- * rendezvous poller can create pairing endpoints on it.
- *
- * <p>The transport and poller are injected as {@link Provider}s: the plugin
- * config must be constructible before the contact and key managers it feeds,
- * while the transport stack depends on those managers. Deferring the lookup to
- * {@link #createPlugin} (which the plugin manager calls at startup, after the
- * graph is built) breaks that cycle.
- */
 @Immutable
 @NotNullByDefault
 public class ZtpDuplexPluginFactory implements DuplexPluginFactory {

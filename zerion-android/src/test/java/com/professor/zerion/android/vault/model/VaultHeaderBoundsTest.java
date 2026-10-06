@@ -9,11 +9,6 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * STO-04: a vault header read from disk or an import is bounded before any
- * allocation or derivation happens. Absurd KDF parameters and field lengths
- * are refused with an argument error, never with an out-of-memory crash.
- */
 public class VaultHeaderBoundsTest {
 
 	private static byte[] bytes(int n, int fill) {

@@ -9,6 +9,8 @@ public final class IdentityFingerprint {
 
 	private static final byte[] LABEL =
 			"ZERION_IDENTITY_FINGERPRINT_v1".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] LABEL_V2 =
+			"ZERION_IDENTITY_FINGERPRINT_v2".getBytes(StandardCharsets.UTF_8);
 
 	private IdentityFingerprint() {
 	}
@@ -39,5 +41,28 @@ public final class IdentityFingerprint {
 	public static String forSigningPub(byte[] signingPub) {
 		if (signingPub == null || signingPub.length == 0) return "";
 		return format(compute(signingPub));
+	}
+
+	public static String forIdentity(byte[] signingPub,
+			@javax.annotation.Nullable byte[] mlDsaPub) {
+		if (signingPub == null || signingPub.length == 0) return "";
+		if (mlDsaPub == null || mlDsaPub.length == 0) {
+			return forSigningPub(signingPub);
+		}
+		Blake2bDigest digest = new Blake2bDigest(256);
+		digest.update(LABEL_V2, 0, LABEL_V2.length);
+		updateWithLength(digest, signingPub);
+		updateWithLength(digest, mlDsaPub);
+		byte[] out = new byte[digest.getDigestSize()];
+		digest.doFinal(out, 0);
+		return format(out);
+	}
+
+	private static void updateWithLength(Blake2bDigest digest, byte[] b) {
+		byte[] length = new byte[] {(byte) (b.length >>> 24),
+				(byte) (b.length >>> 16), (byte) (b.length >>> 8),
+				(byte) b.length};
+		digest.update(length, 0, length.length);
+		digest.update(b, 0, b.length);
 	}
 }

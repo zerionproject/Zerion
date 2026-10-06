@@ -4,7 +4,6 @@ import org.zerionproject.app.api.channel.ChannelTransport;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
-import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -84,18 +83,23 @@ class InProcessChannelTransport implements ChannelTransport {
 
 	private String synthesiseOnion(byte[] channelId) {
 		long seq = NEXT_ONION_SEQ.incrementAndGet();
-		StringBuilder sb = new StringBuilder("inproc-");
+		byte[] material = new byte[35];
 		for (int i = 0; i < Math.min(8, channelId.length); i++) {
-			sb.append(String.format(Locale.US, "%02x", channelId[i]));
+			material[i] = channelId[i];
 		}
-		sb.append('-').append(seq).append(".onion");
-		return sb.toString();
+		for (int i = 0; i < 8; i++) {
+			material[27 + i] = (byte) (seq >>> (8 * (7 - i)));
+		}
+		return Base32Util.encode(material);
 	}
 
 	private String privKeyToOnion(String privKey) {
 		if (privKey.startsWith("inproc-key-")) {
 			return privKey.substring("inproc-key-".length());
 		}
-		return "inproc-" + privKey.hashCode() + ".onion";
+		byte[] material = new byte[35];
+		int h = privKey.hashCode();
+		for (int i = 0; i < 4; i++) material[31 + i] = (byte) (h >>> (8 * i));
+		return Base32Util.encode(material);
 	}
 }

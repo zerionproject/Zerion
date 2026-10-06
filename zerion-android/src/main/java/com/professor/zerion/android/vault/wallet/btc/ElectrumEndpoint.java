@@ -88,12 +88,6 @@ public final class ElectrumEndpoint {
 		return pinSha256 != null && !pinSha256.isEmpty();
 	}
 
-	/**
-	 * A .onion host is reached inside Tor; a host on the local network may
-	 * speak plaintext on any port but 50002; every other host is spoken to
-	 * over TLS whatever its port, because its traffic would otherwise leave a
-	 * Tor exit in the clear.
-	 */
 	public static Mode inferMode(String host, int port) {
 		if (host.toLowerCase().endsWith(".onion")) {
 			return Mode.ONION;
@@ -104,14 +98,6 @@ public final class ElectrumEndpoint {
 		return Mode.TLS;
 	}
 
-	/**
-	 * A host is treated as local only when it is the literal loopback name or
-	 * a strictly parsed loopback or RFC 1918 IPv4 literal, or the IPv6
-	 * loopback literal. Named hosts are never classified as local, so a
-	 * public hostname that merely starts with a private-range prefix cannot
-	 * be resolved or connected outside the selected routing policy; reaching
-	 * a named machine on the LAN requires the explicit Direct choice.
-	 */
 	public static boolean isLanHost(String host) {
 		String h = host.toLowerCase().trim();
 		if (h.equals("localhost")) return true;

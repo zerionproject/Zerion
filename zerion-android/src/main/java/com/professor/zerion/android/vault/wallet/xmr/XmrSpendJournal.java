@@ -8,19 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * A write-ahead record that a relay was attempted for a set of signed
- * transactions, held so an uncertain relay can never be silently forgotten. It
- * persists only the minimum safety state and never a destination, amount, fee,
- * credential, token, snapshot, signed bytes, native pointer or session. It is
- * encoded in its own strict, self-contained text format so the reader can fail
- * closed on anything malformed rather than degrading to "no journal" the way the
- * general settings readers do.
- *
- * <p>Any parse problem throws {@link XmrError.XmrException} with
- * {@link XmrError#JOURNAL_CORRUPTED}; the caller treats that, like a present
- * journal, as {@link XmrError#SPEND_QUARANTINED}.
- */
 @NotNullByDefault
 public final class XmrSpendJournal {
 
@@ -53,11 +40,6 @@ public final class XmrSpendJournal {
 		this.rejectedTxids = rejectedTxids;
 	}
 
-	/**
-	 * Build a journal from validated send state. Rejects the same inconsistencies
-	 * the parser rejects, so a journal can never be created in a form that would
-	 * later read back as corrupt.
-	 */
 	public static XmrSpendJournal create(State state, String walletId,
 			String primaryFingerprintHex, List<String> txids,
 			String relayEndpointId, long createdAtMs,
@@ -129,13 +111,6 @@ public final class XmrSpendJournal {
 		return sb.toString();
 	}
 
-	/**
-	 * Strictly parse a journal, requiring it to belong to {@code expectedWalletId}.
-	 * Any deviation, an unknown version, an inconsistent count, a malformed or
-	 * duplicated txid, a rejection that names an unknown txid, or an oversized
-	 * input, is {@link XmrError#JOURNAL_CORRUPTED}. It never returns a partial or
-	 * defaulted journal.
-	 */
 	public static XmrSpendJournal parse(String expectedWalletId, String text)
 			throws XmrError.XmrException {
 		if (text.length() > MAX_INPUT_LEN) throw corrupt();

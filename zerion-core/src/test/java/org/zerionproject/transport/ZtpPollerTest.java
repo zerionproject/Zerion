@@ -36,13 +36,6 @@ import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The poller dials only the contacts this side is the designated dialler
- * for, backs a contact off after a failed dial until a recovery or an
- * urgent reason to connect, keeps dialling after a real session, stops
- * dialling when stopped, follows connectivity reports, and restarts a
- * degraded transport once per backoff window.
- */
 public class ZtpPollerTest {
 
 	private static final TransportId ID = new TransportId("t");
@@ -181,11 +174,6 @@ public class ZtpPollerTest {
 		assertEquals(Collections.singletonList(1), transport.dials);
 	}
 
-	/**
-	 * A2-NET-01: the dialer rule rests on the two author ids, which both
-	 * sides see identically and which do not move when an onion rotates;
-	 * the addresses play no part in it.
-	 */
 	@Test
 	public void theDialerRuleIgnoresAddresses() {
 		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
@@ -205,11 +193,6 @@ public class ZtpPollerTest {
 				getContact(dialsUs, themLow, new AuthorId(high), true)));
 	}
 
-	/**
-	 * A2-NET-01: a dial to a contact's announced next onion reports its
-	 * outcome to the rotation, so three failures fall back to the onion
-	 * the contact still publishes and a session confirms the move.
-	 */
 	@Test
 	public void dialsToAPendingOnionReportTheirOutcome() throws Exception {
 		Mockery context = new Mockery();

@@ -58,8 +58,8 @@ public class VaultGalleryFragment extends BaseFragment {
 	ViewModelProvider.Factory viewModelFactory;
 
 	@Inject
-	@AppModule.SecurePrefs
-	SharedPreferences securePrefs;
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
 
 	private VaultViewModel viewModel;
 	private RecyclerView galleryGrid;
@@ -108,7 +108,7 @@ public class VaultGalleryFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
-		sortMode = securePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
+		sortMode = profilePrefs.getInt("vault_sort_mode", VaultSearch.SORT_NAME);
 
 		setupGalleryGrid();
 		setupSearchAndSort();
@@ -136,7 +136,7 @@ public class VaultGalleryFragment extends BaseFragment {
 		vaultSortButton.setOnClickListener(v -> {
 			sortMode = sortMode == VaultSearch.SORT_NAME
 					? VaultSearch.SORT_RECENT : VaultSearch.SORT_NAME;
-			securePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
+			profilePrefs.edit().putInt("vault_sort_mode", sortMode).apply();
 			applyFilterAndSort();
 		});
 	}
@@ -428,7 +428,8 @@ public class VaultGalleryFragment extends BaseFragment {
 
 		if (resultCode == Activity.RESULT_OK && data != null) {
 			if (requestCode == REQUEST_IMAGE_PICK) {
-				Uri imageUri = data.getData();
+				Uri imageUri = com.professor.zerion.android.util.PickedUris
+						.accept(requireContext(), data.getData());
 				if (imageUri != null) {
 					java.io.InputStream inputStream = null;
 					try {

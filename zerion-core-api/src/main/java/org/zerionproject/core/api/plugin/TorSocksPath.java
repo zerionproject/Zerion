@@ -10,11 +10,6 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * The filesystem path of the Unix domain socket on which Tor listens for
- * SOCKS connections. It lies inside the app's private directory, so only
- * this app's own process can reach the listener.
- */
 @Qualifier
 @Target({FIELD, METHOD, PARAMETER})
 @Retention(RUNTIME)

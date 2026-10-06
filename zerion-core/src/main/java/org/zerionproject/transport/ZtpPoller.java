@@ -41,6 +41,9 @@ public class ZtpPoller implements EventListener {
 	private static final int FAST_DIAL_BURST = 3;
 	private static final long MIN_RESTART_BACKOFF_MS = 60_000L;
 	private static final long MAX_RESTART_BACKOFF_MS = 10 * 60_000L;
+	static final int REFRESH_AFTER_FAILURES = 2;
+	static final long RECENT_CONNECTION_MS = 30 * 60_000L;
+	static final long MIN_REFRESH_INTERVAL_MS = 2 * 60_000L;
 
 	private final Executor ioExecutor;
 	private final TaskScheduler taskScheduler;
@@ -52,6 +55,9 @@ public class ZtpPoller implements EventListener {
 	private final Set<Integer> connecting = ConcurrentHashMap.newKeySet();
 	private final Map<Integer, Long> nextDialAt = new ConcurrentHashMap<>();
 	private final Map<Integer, Integer> failStreak = new ConcurrentHashMap<>();
+	private final Map<Integer, Long> lastConnectedAt = new ConcurrentHashMap<>();
+	private volatile long lastRefreshAt = 0;
+	volatile java.util.function.LongSupplier clock = System::currentTimeMillis;
 	private final AtomicLong backoffEpoch = new AtomicLong();
 	private volatile long nextRestartAt = 0;
 	private volatile long restartBackoffMs = MIN_RESTART_BACKOFF_MS;
@@ -107,11 +113,6 @@ public class ZtpPoller implements EventListener {
 				REPOLL_INTERVAL_MS, MILLISECONDS);
 	}
 
-	/**
-	 * Dials one contact at once, past any backoff, at the address the
-	 * property manager currently gives for it. Used to probe a contact's
-	 * authorized address; the designated-dialer rule still applies.
-	 */
 	public void dialNow(int contactId) {
 		connect(contactId, true);
 	}
@@ -132,12 +133,6 @@ public class ZtpPoller implements EventListener {
 		});
 	}
 
-	/**
-	 * The sweep doubles as the watchdog: a transport that has stayed
-	 * degraded is restarted, with a doubling interval between restarts so a
-	 * network that is genuinely down is not hammered. A recovery, which
-	 * arrives as {@link #pollNow()}, resets the interval.
-	 */
 	private void pollAll() {
 		if (!running) return;
 		if (transport.isNetworkDegraded()) {
@@ -158,13 +153,6 @@ public class ZtpPoller implements EventListener {
 		scheduleRepoll();
 	}
 
-	/**
-	 * Connectivity reports arrive for screen and doze changes as well as
-	 * for real network changes. Only a change of the connected state is a
-	 * reason to forget every contact's dial backoff; a repeated report of
-	 * the same state, as the screen turns on and off, is not. Returns true
-	 * if the state changed.
-	 */
 	private boolean recordConnectivity(boolean connected) {
 		Boolean previous = lastReportedConnected;
 		lastReportedConnected = connected;
@@ -225,11 +213,6 @@ public class ZtpPoller implements EventListener {
 		});
 	}
 
-	/**
-	 * A dial to a contact's announced next onion feeds the rotation logic:
-	 * a session confirms the move, repeated failures make the property
-	 * manager fall back to the onion the contact still publishes.
-	 */
 	private void reportPendingOnionOutcome(ContactId cid,
 			@Nullable String address, boolean connected) {
 		javax.inject.Provider<org.zerionproject.core.plugin.tor
@@ -247,26 +230,36 @@ public class ZtpPoller implements EventListener {
 
 	private void recordDialOutcome(int contactId, long sessionMs, long epoch) {
 		boolean connected = sessionMs >= MIN_CONNECTED_MS;
+		long now = clock.getAsLong();
 		if (connected) {
 			failStreak.remove(contactId);
 			nextDialAt.remove(contactId);
+			lastConnectedAt.put(contactId, now);
 		} else if (backoffEpoch.get() == epoch) {
 			int streak = failStreak.merge(contactId, 1, Integer::sum);
+			if (streak >= REFRESH_AFTER_FAILURES
+					&& refreshPeerDescriptors(contactId, now)) {
+				nextDialAt.remove(contactId);
+				return;
+			}
 			long shift = Math.min(streak - 1, 6);
 			long backoff = Math.min(MIN_BACKOFF_MS << shift, MAX_BACKOFF_MS);
 			long jitter = (long) (backoff * 0.2 * backoffJitter.nextDouble());
-			nextDialAt.put(contactId,
-					System.currentTimeMillis() + backoff + jitter);
+			nextDialAt.put(contactId, now + backoff + jitter);
 		}
 	}
 
-	/**
-	 * Exactly one side of a contact pair dials: the side whose own author id
-	 * sorts before the peer's. Both sides compare the same two ids, so they
-	 * always agree, and the rule does not move when either side's onion
-	 * address changes, unlike a comparison of addresses, which during an
-	 * onion rotation is evaluated on different addresses by the two sides.
-	 */
+	private boolean refreshPeerDescriptors(int contactId, long now) {
+		Long last = lastConnectedAt.get(contactId);
+		if (last == null || now - last > RECENT_CONNECTION_MS) return false;
+		synchronized (this) {
+			if (now - lastRefreshAt < MIN_REFRESH_INTERVAL_MS) return false;
+			lastRefreshAt = now;
+		}
+		transport.refreshPeerDescriptors();
+		return true;
+	}
+
 	static boolean isDesignatedDialer(Contact contact) {
 		byte[] ours = contact.getLocalAuthorId().getBytes();
 		byte[] theirs = contact.getAuthor().getId().getBytes();
@@ -280,7 +273,11 @@ public class ZtpPoller implements EventListener {
 					transportPropertyManager.getRemoteProperties(
 							new ContactId(contactId),
 							transport.getTransportId());
-			return props.get(transport.getAddressPropertyKey());
+			String address = props.get(transport.getAddressPropertyKey());
+			if (address == null || !transport.isValidAddress(address)) {
+				return null;
+			}
+			return address;
 		} catch (DbException e) {
 			return null;
 		}

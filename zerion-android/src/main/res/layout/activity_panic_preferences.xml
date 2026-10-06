@@ -7,7 +7,6 @@
 	android:fitsSystemWindows="true"
 	android:orientation="vertical">
 
-	<!-- Toolbar matching settings -->
 	<com.google.android.material.appbar.AppBarLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"

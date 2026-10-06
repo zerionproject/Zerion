@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
-import com.professor.zerion.android.test.TestDataActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetImageAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.OpenImageDocumentAdvanced;
 import com.bumptech.glide.Glide;
@@ -148,7 +147,8 @@ public class SettingsFragment extends Fragment {
 
 		if (IS_DEBUG_BUILD) {
 			testDataCard.setOnClickListener(v -> {
-				Intent i = new Intent(requireContext(), TestDataActivity.class);
+				Intent i = new Intent().setClassName(requireContext(),
+						"com.professor.zerion.android.test.TestDataActivity");
 				requireContext().startActivity(i);
 			});
 			crashCard.setOnClickListener(v -> {
@@ -187,6 +187,8 @@ public class SettingsFragment extends Fragment {
 	}
 
 	private void onImageSelected(@Nullable Uri uri) {
+		uri = com.professor.zerion.android.util.PickedUris.accept(
+				requireContext(), uri);
 		if (uri != null) viewModel.setAvatar(uri);
 	}
 

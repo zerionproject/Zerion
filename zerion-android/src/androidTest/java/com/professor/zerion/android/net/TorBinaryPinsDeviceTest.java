@@ -19,12 +19,6 @@ import java.io.OutputStream;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * SC-TOR-02 on the device: the Tor and lyrebird executables the package
- * manager installed from this APK are exactly the pinned builds, and a copy
- * with a single changed byte is refused by the same check the wrapper runs
- * before every start.
- */
 @RunWith(AndroidJUnit4.class)
 public class TorBinaryPinsDeviceTest {
 

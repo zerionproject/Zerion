@@ -7,7 +7,6 @@ import android.os.ParcelFileDescriptor;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -63,8 +62,8 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 	private NestedScrollView textScrollView;
 	private TextView textContentView;
-
-	private WebView markdownWebView;
+	@Nullable
+	private android.graphics.Typeface textTypeface;
 
 	private LinearLayout unsupportedLayout;
 	private TextView unsupportedTitle;
@@ -73,7 +72,6 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	private PdfRenderer pdfRenderer;
 	private ParcelFileDescriptor pdfFileDescriptor;
 	private byte[] pdfBytes;
-	private java.io.File pdfTempFile;
 	private int currentPdfPage = 0;
 	private Bitmap currentPageBitmap;
 
@@ -135,8 +133,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 		textScrollView = view.findViewById(R.id.text_scroll_view);
 		textContentView = view.findViewById(R.id.text_content);
-
-		markdownWebView = view.findViewById(R.id.markdown_webview);
+		textTypeface = textContentView.getTypeface();
 
 		unsupportedLayout = view.findViewById(R.id.unsupported_layout);
 		unsupportedTitle = view.findViewById(R.id.unsupported_title);
@@ -362,22 +359,13 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		try {
 			pdfBytes = pdfContent;
 
-			java.io.File cacheDir = requireContext().getCacheDir();
-			pdfTempFile = new java.io.File(cacheDir,
-					"vault_pdf_" + System.nanoTime() + ".pdf");
-			try (java.io.FileOutputStream fos =
-					new java.io.FileOutputStream(pdfTempFile)) {
-				fos.write(pdfContent);
-				fos.getFD().sync();
-			}
-
-			pdfFileDescriptor = ParcelFileDescriptor.open(pdfTempFile,
-					ParcelFileDescriptor.MODE_READ_ONLY);
+			pdfFileDescriptor = com.professor.zerion.android.vault.utils
+					.PlaintextDescriptor.open(pdfContent,
+							requireContext().getCacheDir());
 			pdfRenderer = new PdfRenderer(pdfFileDescriptor);
 
 			pdfScrollView.setVisibility(View.VISIBLE);
 			textScrollView.setVisibility(View.GONE);
-			markdownWebView.setVisibility(View.GONE);
 			unsupportedLayout.setVisibility(View.GONE);
 
 			currentPdfPage = 0;
@@ -453,9 +441,9 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 
 			textScrollView.setVisibility(View.VISIBLE);
 			pdfScrollView.setVisibility(View.GONE);
-			markdownWebView.setVisibility(View.GONE);
 			unsupportedLayout.setVisibility(View.GONE);
 
+			textContentView.setTypeface(textTypeface);
 			textContentView.setText(text);
 
 		} catch (Exception e) {
@@ -469,18 +457,12 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		try {
 			String markdown = new String(markdownContent, StandardCharsets.UTF_8);
 
-			String html = convertMarkdownToHtml(markdown);
-
-			markdownWebView.setVisibility(View.VISIBLE);
+			textScrollView.setVisibility(View.VISIBLE);
 			pdfScrollView.setVisibility(View.GONE);
-			textScrollView.setVisibility(View.GONE);
 			unsupportedLayout.setVisibility(View.GONE);
 
-			markdownWebView.getSettings().setJavaScriptEnabled(false);
-			markdownWebView.getSettings().setAllowFileAccess(false);
-			markdownWebView.getSettings().setAllowContentAccess(false);
-
-			markdownWebView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null);
+			textContentView.setTypeface(android.graphics.Typeface.SANS_SERIF);
+			textContentView.setText(MarkdownSpans.render(markdown));
 
 		} catch (Exception e) {
 			showError(getString(R.string.vault_doc_markdown_failed_title),
@@ -489,48 +471,9 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		}
 	}
 
-	private String convertMarkdownToHtml(String markdown) {
-		String html = markdown
-				.replace("&", "&amp;")
-				.replace("<", "&lt;")
-				.replace(">", "&gt;");
-
-		html = html.replaceAll("(?m)^# (.+)$", "<h1>$1</h1>");
-		html = html.replaceAll("(?m)^## (.+)$", "<h2>$1</h2>");
-		html = html.replaceAll("(?m)^### (.+)$", "<h3>$1</h3>");
-		html = html.replaceAll("\\*\\*(.+?)\\*\\*", "<strong>$1</strong>");
-		html = html.replaceAll("\\*(.+?)\\*", "<em>$1</em>");
-		html = html.replaceAll("```([\\s\\S]*?)```", "<pre><code>$1</code></pre>");
-		html = html.replaceAll("`(.+?)`", "<code>$1</code>");
-		html = html.replace("\n\n", "</p><p>");
-		html = html.replace("\n", "<br>");
-
-		return "<!DOCTYPE html>" +
-				"<html>" +
-				"<head>" +
-				"<meta charset=\"utf-8\">" +
-				"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
-				"<style>" +
-				"body { font-family: sans-serif; padding: 16px;" +
-				" line-height: 1.6; background: #101418; color: #E4E7EB; }" +
-				"h1, h2, h3 { color: #FFFFFF; }" +
-				"a { color: #22D3EE; }" +
-				"code { background: #1D242B; padding: 2px 6px;" +
-				" border-radius: 3px; }" +
-				"pre { background: #1D242B; padding: 12px;" +
-				" border-radius: 6px; overflow-x: auto; }" +
-				"</style>" +
-				"</head>" +
-				"<body>" +
-				"<p>" + html + "</p>" +
-				"</body>" +
-				"</html>";
-	}
-
 	private void showUnsupportedFormat(MimeUtils.MimeType mimeType) {
 		pdfScrollView.setVisibility(View.GONE);
 		textScrollView.setVisibility(View.GONE);
-		markdownWebView.setVisibility(View.GONE);
 
 		unsupportedLayout.setVisibility(View.VISIBLE);
 
@@ -558,7 +501,6 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		unsupportedLayout.setVisibility(View.VISIBLE);
 		pdfScrollView.setVisibility(View.GONE);
 		textScrollView.setVisibility(View.GONE);
-		markdownWebView.setVisibility(View.GONE);
 
 		unsupportedTitle.setText(title);
 		unsupportedMessage.setText(message);
@@ -617,20 +559,11 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			pdfFileDescriptor = null;
 		}
 
-		if (pdfTempFile != null) {
-			SecureMemory.secureDeleteFile(pdfTempFile, 0L, false);
-			pdfTempFile = null;
-		}
 
 		if (textContentView != null) {
 			textContentView.setText("");
 		}
 
-		if (markdownWebView != null) {
-			markdownWebView.loadUrl("about:blank");
-			markdownWebView.clearHistory();
-			markdownWebView.clearCache(true);
-		}
 
 		System.gc();
 	}

@@ -9,10 +9,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * The sweep gate follows the send gate: one reviewed plan, released once,
- * only to the wallet it was planned for and the fingerprint the user saw.
- */
 public class SpSweepGateTest {
 
 	private static BtcWallet.SpSweepPlan plan(String fp) {

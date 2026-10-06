@@ -15,14 +15,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
-/**
- * Produces connected streams over I2P and runs them through the shared session
- * stack, mirroring {@link org.zerionproject.transport.ZtpTorTransport}. A
- * {@link Sam3Session} against the local router bridge supplies the streams:
- * inbound connections are forwarded by the router to a local {@code
- * ServerSocket} we accept, and outbound connections are dialled with SAM
- * STREAM CONNECT. Everything below {@link ZtpConnectionHandler} is unchanged.
- */
 @NotNullByDefault
 public class I2pTransport implements I2pOverlayTransport {
 
@@ -52,12 +44,6 @@ public class I2pTransport implements I2pOverlayTransport {
 		this.handler = handler;
 	}
 
-	/**
-	 * Opens a SAM session (recreating the destination from {@code privateKey}
-	 * when non-null), binds a local accept socket, and asks the router to
-	 * forward inbound streams to it. Returns the destination to publish and the
-	 * key to persist.
-	 */
 	public I2pDestination start(@Nullable String privateKey)
 			throws IOException {
 		if (!running.compareAndSet(false, true)) {
@@ -120,7 +106,6 @@ public class I2pTransport implements I2pOverlayTransport {
 			handler.handleOutgoing(I2pConstants.ID, contactId,
 					socket.getInputStream(), socket.getOutputStream());
 		} catch (IOException e) {
-			// close below
 		} finally {
 			closeQuietly(socket);
 		}
@@ -129,8 +114,6 @@ public class I2pTransport implements I2pOverlayTransport {
 
 	@Override
 	public void setNetworkEnabled(boolean enabled) {
-		// The I2P router's network lifecycle is owned by the router process,
-		// not toggled through SAM here.
 	}
 
 	@Override
@@ -180,7 +163,6 @@ public class I2pTransport implements I2pOverlayTransport {
 			handler.handleIncoming(I2pConstants.ID, socket.getInputStream(),
 					socket.getOutputStream());
 		} catch (IOException e) {
-			// close below
 		} finally {
 			closeQuietly(socket);
 			inboundLimiter.release();
@@ -192,7 +174,6 @@ public class I2pTransport implements I2pOverlayTransport {
 		try {
 			socket.setTcpNoDelay(true);
 		} catch (java.net.SocketException ignored) {
-			// best effort
 		}
 	}
 
@@ -200,7 +181,6 @@ public class I2pTransport implements I2pOverlayTransport {
 		try {
 			c.close();
 		} catch (IOException ignored) {
-			// nothing to do
 		}
 	}
 }

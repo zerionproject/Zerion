@@ -33,13 +33,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * Runs the nearby pairing protocol between two real parties over piped
- * connections with the production crypto. Both derive the same master key
- * from hybrid keys, the key depends on an ML-KEM secret that only the
- * decapsulating party can recover, a wrong X25519 half aborts on either
- * side, and a QR payload of the classical protocol version is refused.
- */
 public class KeyAgreementProtocolEndToEndTest {
 
 	private CryptoComponent crypto;
@@ -171,15 +164,6 @@ public class KeyAgreementProtocolEndToEndTest {
 		assertArrayEquals(o.aliceKey.getBytes(), o.bobKey.getBytes());
 	}
 
-	/**
-	 * The master key depends on the ML-KEM secret that only the decapsulating
-	 * party can recover, which is what protects a recorded pairing against a
-	 * later quantum adversary: a party that presents the committed public key
-	 * and holds its X25519 private half but not its ML-KEM private half is
-	 * aborted whenever it has to decapsulate. Which side decapsulates is
-	 * decided by the commitment order, so the test fixes the impostor on that
-	 * side.
-	 */
 	@Test(timeout = 120_000)
 	public void testDecapsulatorWithoutMlKemPrivateKeyIsAborted()
 			throws Exception {
@@ -205,11 +189,6 @@ public class KeyAgreementProtocolEndToEndTest {
 		}
 	}
 
-	/**
-	 * The encapsulating side contributes the ML-KEM secret it generated, so
-	 * its own ML-KEM private key never enters the protocol; the classical
-	 * halves still have to match on both sides.
-	 */
 	@Test(timeout = 60_000)
 	public void testWrongX25519PrivateKeyIsAbortedOnEitherSide()
 			throws Exception {

@@ -1,0 +1,40 @@
+# Text files are stored and checked out with LF line endings on every host.
+# A Windows checkout with core.autocrlf=true turned the bridge lists and the
+# Tor binary pin file into CRLF, which made a Play bundle built there differ
+# from the F-Droid APK built on Linux in exactly those entries.
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.xml text eol=lf
+*.java text eol=lf
+*.kt text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.sha256 text eol=lf
+bridges-* text eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Binary inputs are never normalised.
+*.jar binary
+*.so binary
+*.a binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.mp4 binary
+*.ogg binary
+*.opus binary
+*.zip binary
+*.apk binary
+*.aab binary
+*.keystore binary
+*.jks binary
+*.gpg binary
+*.kbx binary
+*.ttf binary
+*.otf binary

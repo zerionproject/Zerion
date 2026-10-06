@@ -162,17 +162,23 @@ public class MeshAttachmentSender {
 	}
 
 	public void sendAck(ContactId contactId, byte[] attachId) {
-		ioExecutor.execute(() -> {
-			try {
-				AsyncPrekeyBundle bundle = bundleStore
-						.getContactBundle(contactId.getInt(), crypto);
-				if (bundle == null) return;
-				meshManager.sendOffline(bundle,
-						MeshMessageRouter.MESH_ATTACH_ACK,
-						MeshPadding.pad(attachId.clone()), TTL_SECONDS, false);
-			} catch (Exception e) {
-			}
-		});
+		byte[] id = attachId.clone();
+		long delay = MeshTextSender.ACK_DELAY_MIN_MS
+				+ random.nextInt(MeshTextSender.ACK_DELAY_SPREAD_MS + 1);
+		try {
+			scheduler.schedule(() -> ioExecutor.execute(() -> {
+				try {
+					AsyncPrekeyBundle bundle = bundleStore
+							.getContactBundle(contactId.getInt(), crypto);
+					if (bundle == null) return;
+					meshManager.sendOffline(bundle,
+							MeshMessageRouter.MESH_ATTACH_ACK,
+							MeshPadding.pad(id), TTL_SECONDS, false);
+				} catch (Exception e) {
+				}
+			}), delay, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
 	}
 
 	void onDelivered(byte[] attachId) {

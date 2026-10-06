@@ -23,7 +23,6 @@
 	<string name="dnkm_huawei_protected_button">Заштити го Zerion</string>
 	<string name="dnkm_huawei_protected_help">Ако Zerion не е додаден на листата со заштитени апликации, ќе биде оневозможен да работи во позадина.</string>
 	<string name="dnkm_xiaomi_button">Заштити го Zerion</string>
-	<string name="dnkm_warning_dozed">%s беше оневозможен да работи во позадина</string>
 	
 	<string name="enter_password">Лозинка</string>
 	<string name="try_again">Погрешна лозинка</string>
@@ -33,8 +32,6 @@
 	<string name="forgotten_password">Ја заборавив лозинката</string>
   <string name="dialog_title_lost_password">Изгубена лозинка</string>
   <string name="dialog_message_lost_password">Вашата Zerion сметка е зачувана енкриптирана на вашиот уред, а не на облак, со оглед на тоа ние не можеме да ја рестартираме вашата лозинка. Дали сакате да ја избришете вашата сметка и да почнете од почеток?\n\nВнимание: Вашите идентитети, контакти и пораки ќе бидат трајно изгубени.</string>
-  <string name="startup_failed_notification_title">Zerion не може да се стартува</string>
-  <string name="startup_failed_notification_text">Допрете за повеќе информации</string>
   <string name="startup_failed_activity_title">Стартувањето на Zerion не успеа</string>
   <string name="startup_failed_db_error">Поради некоја причина, вашата Zerion база на податоци е оштетена повеќе од степенот за можна поправка. Вашата сметка, вашите податоци и сите ваши контакти се изгубени. За жал, ќе треба да го пре-инсталирате Zerion или да отворите нова сметка преку \'Ја заборавив лозинката\' во екранот каде истата се бара.</string>
   <string name="startup_failed_data_too_old_error">Вашата сметка е создадена со стара верзија на оваа апликација и не може да биде отворена со оваа верзија. Морате или да ја пре-инсталирате старата верзија или да отворите нова сметка преку \'Ја заборавив лозинката\' во екранот каде истата се бара.</string>
@@ -74,7 +71,6 @@
   <string name="tor_plugin_status_disabled_battery">Zerion е конфигуриран да не користи Интернет додека е работи на батерија</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion е конфигуриран да не користи Интернет во оваа држава</string>
   
-  <string name="transport_lan_long">Иста Wi-Fi мрежа </string>
 
   <string name="reminder_notification_title">Одјави се од Zerion</string>
   <string name="reminder_notification_text">Допрете за да се најавите.</string>
@@ -162,13 +158,10 @@
   <string name="exchanging_contact_details">Разменување детали за контакт\u2026</string>
   <string name="contact_added_toast">Додадени контакти: %s</string>
   <string name="contact_already_exists">Контактот %s веќе постои</string>
-  <string name="qr_code_too_old">QR кодот што го скениравте доаѓа од постара верзија на %s.\n\nВе молиме прашајте го вашиот контакт за надградба во последната верзија и обидете се повторно. </string>
-  <string name="qr_code_too_new">QR кодот кој го скениравте доаѓа од понова верзија на %s.\n\nВе молиме надградете во последната верзија и потоа обидете се повторно.</string>
   <string name="camera_error">Грешка во камерата</string>
   <string name="connecting_to_device">Поврзување со уред\u2026</string>
   <string name="authenticating_with_device">Автентикација со уред\u2026</string>
   <string name="connection_error_title">Не може да се поврзе со твојот контакт</string>
-  <string name="connection_error_feedback">Ако овој проблем останува, ве молиме <a href="feedback">испратете повратна информација</a> за да ни помогнете да ја подобриме апликацијата.</string>
   
   <string name="add_contact_remotely_title_case">Додај контакт НА РАСТОЈАНИЕ</string>
   <string name="add_contact_nearby_title">Додај контакт во близина</string>
@@ -318,7 +311,6 @@
   <string name="pref_theme_title">Тема</string>
   <string name="pref_theme_light">Светло</string>
   <string name="pref_theme_dark">Темно</string>
-  <string name="pref_theme_auto">Автоматски (Дневно)</string>
   <string name="pref_theme_system">Систем стандардно поставен</string>
   
   <string name="network_settings_title">Поврзувања</string>
@@ -333,8 +325,6 @@
   
   <string name="tor_network_setting_summary">Автоматски: %1$s (во %2$s)</string>
   <string name="tor_mobile_data_title">Користи мобилни податоци</string>
-  <string name="tor_only_when_charging_title">Поврзи на Интернет само за време на полнење</string>
-  <string name="tor_only_when_charging_summary">Оневозможи го Интернет поврзувањето кога уредот не е приклучен на полнач</string>
   
   <string name="security_settings_title">Безбедност</string>
   <string name="pref_lock_title">Апликацијата е заклучена</string>
@@ -393,27 +383,13 @@
   
   <string name="learn_more">Научете повеќе</string>
   
-  <string name="send_feedback">Испрати повратни информации</string>
   
   <string name="link_warning_title">Линк предупредување</string>
   <string name="link_warning_intro">Ќе го отворите следниот линк во надворешна апликација.</string>
   <string name="link_warning_text">Ова може да биде искористено за ваше идентификување. Размислете дали и верувате на оваа личност која ви го испраќа овој линк и размислете истиот да го отворите со Tor прелистувачот.</string>
   <string name="link_warning_open_link">Отвори линк</string>
   
-  <string name="crash_report_title">Zerion извештај за срушување</string>
-  <string name="zerion_crashed">Жал ни е, Zerion се сруши.</string>
-  <string name="not_your_fault">Ова не е ваша гршка.</string>
-  <string name="please_send_report">Ве молиме помогнете ни да изградиме подобар Zerion со испраќање на извештај за срушување. </string>
-  <string name="report_is_encrypted">Ви ветуваме дека извештајот е енкриптиран и безбедно испратен.</string>
-  <string name="feedback_title">Повратни информации</string>
-  <string name="describe_crash">Опиши што се случи (опционално)</string>
-  <string name="enter_feedback">Внеси ги твоите повратни информации</string>
-  <string name="optional_contact_email">Вашата е-пошта (опционално)</string>
-  <string name="include_debug_report_crash">Вклучи анонимни податоци за ова срушување</string>
-  <string name="include_debug_report_feedback">Вкучи анонимни податоци за овој уред</string>
-  <string name="send_report">Испрати извештај</string>
   <string name="close">Затвори</string>
-  <string name="dev_report_saved">Извештајот е зачуван. Ќе биде испратен следниот пат кога ќе се вклучите на Zerion.</string>
   
   <string name="progress_title_logout">Одјавување од Zerion</string>
   
@@ -565,7 +541,6 @@
 	<string name="wallet_receive_new">Нова адреса</string>
 	<string name="wallet_node_hint">Допрете сервер за да го користите. Долго притиснете сопствен сервер за да го отстраните.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Приватна адреса за повеќекратна употреба. Плаќањата кон неа не може да се поврзат на синџирот. Откривањето скенира јавни податоци преку Tor; вашите клучеви никогаш не го напуштаат уредот.</string>
 	<string name="wallet_sp_balance">Откриено: %1$s</string>
 	<string name="wallet_sp_scanned">Скенирано до блок %1$d</string>
 	<string name="wallet_sp_set_oracle">Извор за скенирање</string>

@@ -14,15 +14,6 @@ import java.util.regex.Pattern;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Verifies values produced by a second implementation of the Zerion wire
- * against this implementation: an ML-KEM-768 ciphertext it encapsulated to
- * one of our keys must decapsulate to the shared secret it reports, and its
- * ML-DSA-65 and hybrid signatures under our keys must verify. The file is
- * emitted by the other implementation's test suite from the vectors that
- * {@link CrossImplementationVectorsTest} produced; when it is absent this
- * test has nothing to check and passes.
- */
 public class CrossImplementationVerifyTest {
 
 	private static final String DEFAULT_IN = "build/cross-impl/ios-vectors.json";
@@ -54,10 +45,6 @@ public class CrossImplementationVerifyTest {
 		assertTrue("ML-DSA-65 signature from the peer does not verify",
 				dsa.verify(dsaPub, dsaMsg, dsaSig));
 
-		// The direction no shipping flow has ever exercised: encapsulating to a
-		// key the peer generated. A steady-state connection needs this as soon
-		// as it learns the key the peer advertises, so a format or validation
-		// mismatch here would close every connection shortly after it opened.
 		byte[] peerEk = hex(section(json, "locallyGeneratedKem", "publicKey"));
 		byte[] peerDk = hex(section(json, "locallyGeneratedKem", "privateKey"));
 		MlKem768.MlKemEncapsulation toPeer = kem.encapsulate(peerEk);

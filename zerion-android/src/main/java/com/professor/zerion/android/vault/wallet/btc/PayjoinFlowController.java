@@ -6,15 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Drives the Payjoin send flow as a strict state machine. Each forward state is
- * entered only when its real operation begins, so the UI never shows a state
- * that is not actually happening. Authentication is possible only in the review
- * state and only against the final transaction fingerprint. Any failure,
- * cancellation, or interruption clears the pending authorization and never
- * signs or broadcasts. A failure is never turned into a normal send here; it
- * yields an explicit fallback choice.
- */
 @NotNullByDefault
 public final class PayjoinFlowController {
 

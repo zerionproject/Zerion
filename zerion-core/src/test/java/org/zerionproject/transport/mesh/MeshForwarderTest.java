@@ -24,8 +24,6 @@ public class MeshForwarderTest {
 		}
 	}
 
-	/** Wires node {@code a}'s link to node {@code b} and vice versa, so a
-	 * broadcast from one is delivered to the other as if over a radio. */
 	private void connect(MeshForwarder a, String aId, MeshForwarder b,
 			String bId) {
 		a.addLink(link(aId, b, bId));
@@ -149,11 +147,6 @@ public class MeshForwarderTest {
 		return new MeshFrame(3, messageId, text.getBytes()).encode();
 	}
 
-	/**
-	 * NET-11: a neighbour flooding fresh frame ids can neither flush the
-	 * duplicate set (its share is capped and nothing leaves before it has
-	 * expired) nor crowd out another neighbour's frames.
-	 */
 	@Test
 	public void floodFromOnePeerCannotFlushAnotherPeersFrameId() {
 		Collector cb = new Collector();
@@ -249,11 +242,6 @@ public class MeshForwarderTest {
 				MeshForwarder.SEEN_CAP + 1, cb.delivered.size());
 	}
 
-	/**
-	 * A2-NET-06: a flood spread over many invented identities fills the set
-	 * but cannot shut out a real neighbour: its frame is admitted by evicting
-	 * the oldest entry of whichever identity holds the most.
-	 */
 	@Test
 	public void aFloodOverManyIdentitiesCannotShutOutANeighbour() {
 		Collector cb = new Collector();
@@ -293,7 +281,6 @@ public class MeshForwarderTest {
 		MeshForwarder a = new MeshForwarder(p -> {}, random);
 		byte[] payload = "carried later".getBytes();
 		a.originate(payload);
-		// A late node connects after the flood; it still receives the payload.
 		Collector cbD = new Collector();
 		MeshForwarder d = new MeshForwarder(cbD, random);
 		connect(a, "a-d", d, "d-a");

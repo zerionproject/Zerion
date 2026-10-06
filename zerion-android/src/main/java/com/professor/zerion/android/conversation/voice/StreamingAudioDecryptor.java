@@ -137,14 +137,6 @@ public class StreamingAudioDecryptor {
 		Arrays.fill(metadata.array(), (byte) 0);
 	}
 
-	/**
-	 * Opens a memo for playback. A format 2 memo derives its wrap key from the
-	 * pairing secret and the memo's salt and verifies only under the identity
-	 * of the message it was recorded for. A format 1 memo, which carried its
-	 * wrap key in the payload and bound no message identity, is opened only
-	 * because it may already be stored from before the format changed; the
-	 * validator refuses that format on receipt, so no such memo arrives now.
-	 */
 	public static byte[] decryptAll(
 			VoiceMessagePayloadParser.ParsedPayload payload, byte[] groupId,
 			long timestamp, byte[] senderId, byte[] recipientId,

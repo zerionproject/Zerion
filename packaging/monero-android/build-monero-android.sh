@@ -6,11 +6,31 @@
 # already-built dependencies. Fails hard on any error.
 set -euo pipefail
 
+# Build in a fixed, minimal environment. Settings inherited from the calling
+# build service (compiler or linker flags, include and library search paths,
+# make or CMake options, pkg-config paths, locale, umask, git configuration)
+# could otherwise reach the compilers and change the output on one host only.
+# Only the pinned inputs below are passed through; git reads no system or user
+# configuration and HOME is an empty directory of the build.
+if [ "${ZMONERO_CLEAN_ENV:-}" != "1" ]; then
+  mkdir -p /build/home
+  exec env -i ZMONERO_CLEAN_ENV=1 \
+    PATH=/usr/bin:/bin HOME=/build/home LC_ALL=C TZ=UTC \
+    GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+    ANDROID_NDK_HOME="${ANDROID_NDK_HOME}" ABI="${ABI:-arm64-v8a}" \
+    OPENSSL_VERSION="${OPENSSL_VERSION}" SODIUM_VERSION="${SODIUM_VERSION}" \
+    BOOST_VERSION="${BOOST_VERSION}" BOOST_UNDERSCORE="${BOOST_UNDERSCORE}" \
+    MONERO_TAG="${MONERO_TAG}" MONERO_COMMIT="${MONERO_COMMIT}" \
+    bash "$0" "$@"
+fi
+umask 022
+
 ABI="${ABI:-arm64-v8a}"
 API=24
 NDK="${ANDROID_NDK_HOME}"
 TC="${NDK}/toolchains/llvm/prebuilt/linux-x86_64"
 JOBS="$(nproc)"
+if [ "${JOBS}" -gt 4 ]; then JOBS=4; fi
 # Every build embeds the same clock: OpenSSL writes its build date into
 # libcrypto unless SOURCE_DATE_EPOCH is set, and the F-Droid build server
 # sets a per-commit value, so the recipe pins one value of its own; two
@@ -259,7 +279,7 @@ if grep -q 'jit_compiler_a64' "${RANDOMX_CMAKE}"; then
   echo "RandomX a64 JIT sources still in CMake source list"; exit 4;
 fi
 echo "RandomX interpreter patches verified (common.hpp + CMakeLists)"
-# Documented minimal patch (JNI-01): the wallet API refresh thread refreshes
+# Documented minimal patch: the wallet API refresh thread refreshes
 # the transaction history whenever it finds it empty, while the API caller
 # refreshes it explicitly before reading it. Both rebuild the same
 # TransactionInfo objects under the history lock, so a caller iterating the
@@ -276,7 +296,7 @@ if grep -q 'if (m_history->count() == 0) {' "${WALLET_API_CPP}"; then
   echo "unpatched refresh-thread history refresh still present"; exit 4;
 fi
 echo "wallet.cpp refresh-thread history patch verified"
-# Documented minimal patch (JNI-07): the shim reads two private members of
+# Documented minimal patch: the shim reads two private members of
 # the wallet API, the refresh mutex the history gate serialises on and the
 # constructed transactions whose change it reports. Instead of redefining
 # the access specifier around the headers, both classes declare the shim's
@@ -382,6 +402,24 @@ ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   -llog -latomic -static-libstdc++ \
   -o ${OUT}/libzmonero.so
 ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
+# Fingerprint of this build: tools, host facts, the optional Monero features
+# CMake settled on, and the SHA-256 of every archive that went into the link.
+# A host whose library differs from the pinned value can be compared with the
+# reference build stage by stage from its own log (the Gradle gate prints this
+# file when it refuses a library). Nothing here is part of the library.
+{
+  echo "libzmonero.so ${ABI} $(sha256sum ${OUT}/libzmonero.so | cut -d' ' -f1)"
+  echo "host $(uname -srm) nproc=$(nproc) umask=$(umask)"
+  echo "tools cmake=$(cmake --version | head -1 | cut -d' ' -f3) make=$(make --version | head -1 | cut -d' ' -f3) perl=$(perl -e 'print $^V') git=$(git --version | cut -d' ' -f3) $(python3 --version 2>&1)"
+  echo "clang $(${CXX} --version | head -1)"
+  grep -E '^(HIDAPI|Readline|Backtrace|CCACHE|LRELEASE|USE_READLINE|USE_CCACHE|STACK_TRACE|ARCH|BUILD_TAG)[A-Za-z_]*:' ${MB}/CMakeCache.txt | LC_ALL=C sort | sed 's/^/monero-cmake /' || true
+  for a in $(cd ${DEPS}/lib && ls *.a | LC_ALL=C sort); do
+    echo "dep ${a} $(sha256sum ${DEPS}/lib/${a} | cut -d' ' -f1)"
+  done
+  for lib in ${LIBS}; do
+    echo "monero ${lib#${MB}/} $(sha256sum ${lib} | cut -d' ' -f1)"
+  done
+} > ${OUT}/buildinfo.txt
 echo "=== RESULT (${ABI}) ==="
 ls -la ${OUT}/libzmonero.so
 sha256sum ${OUT}/libzmonero.so | tee ${OUT}/libzmonero.so.sha256

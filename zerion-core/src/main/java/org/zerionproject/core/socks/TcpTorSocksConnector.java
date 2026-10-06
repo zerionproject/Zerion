@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/** Connects to a SOCKS listener on a TCP address, for JVM hosts and tests. */
 @NotNullByDefault
 public final class TcpTorSocksConnector implements TorSocksConnector {
 

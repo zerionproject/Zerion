@@ -10,12 +10,15 @@ import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.sync.GroupId;
 import com.professor.zerion.android.attachment.media.ImageCompressor;
+import com.professor.zerion.android.util.MediaMagic;
 import com.professor.zerion.android.vault.utils.MetadataStripper;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,6 +43,12 @@ class AttachmentCreationTask {
 			"audio/aac",
 			"audio/mp4",
 			"audio/mpeg",
+			"audio/3gpp",
+			"audio/3gp"
+	));
+
+	private static final Set<String> ISO_MEDIA_AUDIO_TYPES = new HashSet<>(asList(
+			"audio/mp4",
 			"audio/3gpp",
 			"audio/3gp"
 	));
@@ -120,6 +129,9 @@ class AttachmentCreationTask {
 	@IoExecutor
 	private AttachmentHeader storeAttachment(Uri uri)
 			throws IOException, DbException, ChunkedAttachmentsNotSupportedException {
+		if (!"content".equals(uri.getScheme())) {
+			throw new IOException("not a content address");
+		}
 		String contentType = contentResolver.getType(uri);
 		if (contentType == null) {
 			contentType = getMimeTypeFromExtension(uri);
@@ -129,6 +141,14 @@ class AttachmentCreationTask {
 		boolean isAudio = SUPPORTED_AUDIO_TYPES.contains(contentType);
 		boolean isVideo = SUPPORTED_VIDEO_TYPES.contains(contentType);
 		boolean isImage = asList(getSupportedImageContentTypes()).contains(contentType);
+		String documentType = AttachmentDocuments.sendType(contentType);
+
+		if (!isAudio && !isVideo && !isImage && documentType != null) {
+			if (!messageFormat.supportsChunkedAttachments()) {
+				throw new ChunkedAttachmentsNotSupportedException(documentType);
+			}
+			return storeDocument(uri, documentType);
+		}
 
 		if (!isAudio && !isVideo && !isImage) {
 			throw new UnsupportedMimeTypeException(contentType, uri);
@@ -158,17 +178,32 @@ class AttachmentCreationTask {
 		File strippedFile = null;
 		InputStream is;
 		try {
-			if (contentType.startsWith("video/")) {
-				strippedFile = metadataStripper
-						.stripVideoMetadataFromUri(uri, contentResolver);
+			if (remuxes(contentType) || isIsoMediaContent(uri)) {
+				boolean video = contentType.startsWith("video/");
+				MetadataStripper.Remuxed remuxed;
+				try {
+					remuxed = metadataStripper.remuxForSending(uri,
+							contentResolver, video);
+				} catch (IOException e) {
+					throw MediaRefusedException.cannotClean(e);
+				}
+				strippedFile = remuxed.getFile();
+				contentType = sentType(remuxed);
 				fileSize = strippedFile.length();
 				is = new FileInputStream(strippedFile);
 			} else {
-				is = contentResolver.openInputStream(uri);
-				if (is == null) throw new IOException("Could not open input stream");
+				byte[] audio = cleanAudio(readAtMost(uri, MAX_ATTACHMENT_SIZE));
+				fileSize = audio.length;
+				is = new ByteArrayInputStream(audio);
 			}
 		} catch (SecurityException e) {
 			throw new IOException(e);
+		} catch (IOException e) {
+			if (strippedFile != null) {
+				com.professor.zerion.android.vault.utils.SecureMemory
+						.secureDeleteFile(strippedFile);
+			}
+			throw e;
 		}
 
 		long timestamp = System.currentTimeMillis();
@@ -193,6 +228,34 @@ class AttachmentCreationTask {
 	}
 
 	@IoExecutor
+	private AttachmentHeader storeDocument(Uri uri, String type)
+			throws IOException, DbException {
+		byte[] data;
+		try {
+			data = readAtMost(uri, MAX_ATTACHMENT_SIZE);
+		} catch (SecurityException e) {
+			throw new IOException(e);
+		}
+		if (!AttachmentDocuments.contentMatches(type, data)) {
+			throw new IOException("document content does not match its type");
+		}
+		MessagingManager.ProgressCallback progressCallback = progress -> {
+			AttachmentCreator creator = this.attachmentCreator;
+			if (creator != null) {
+				creator.onAttachmentProgress(uri, progress);
+			}
+		};
+		InputStream is = new ByteArrayInputStream(data);
+		try {
+			return messagingManager.addLocalAttachmentStreaming(groupId,
+					System.currentTimeMillis(), type, is, data.length,
+					progressCallback);
+		} finally {
+			tryToClose(is);
+		}
+	}
+
+	@IoExecutor
 	private AttachmentHeader storeImageAttachment(Uri uri, String contentType)
 			throws IOException, DbException {
 		InputStream is;
@@ -210,6 +273,79 @@ class AttachmentCreationTask {
 				timestamp, MIME_TYPE, is);
 		tryToClose(is);
 		return h;
+	}
+
+	static byte[] cleanAudio(byte[] audio) throws IOException {
+		byte[] clean;
+		try {
+			clean = SharedMediaSanitizer.cleanStream(
+					AudioTagStripper.withoutTags(audio));
+		} catch (IOException e) {
+			throw MediaRefusedException.cannotClean(e);
+		}
+		boolean stream = MediaMagic.isMpegAudioFrame(clean, 0)
+				|| startsWith(clean, "OggS") || startsWith(clean, "ADIF")
+				|| startsWith(clean, "fLaC");
+		if (!stream) {
+			throw MediaRefusedException.cannotClean(
+					"audio content not recognised");
+		}
+		return clean;
+	}
+
+	static boolean remuxes(String contentType) {
+		return contentType.startsWith("video/")
+				|| ISO_MEDIA_AUDIO_TYPES.contains(contentType);
+	}
+
+	static String sentType(MetadataStripper.Remuxed remuxed)
+			throws MediaRefusedException {
+		if (remuxed.hasVideo()) return remuxed.getMimeType();
+		if (remuxed.isWebm()) {
+			com.professor.zerion.android.vault.utils.SecureMemory
+					.secureDeleteFile(remuxed.getFile());
+			throw MediaRefusedException.cannotClean("audio only in webm");
+		}
+		return "audio/mp4";
+	}
+
+	private static boolean startsWith(byte[] d, String magic) {
+		if (d.length < magic.length()) return false;
+		for (int i = 0; i < magic.length(); i++) {
+			if (d[i] != (byte) magic.charAt(i)) return false;
+		}
+		return true;
+	}
+
+	private boolean isIsoMediaContent(Uri uri) throws IOException {
+		try (InputStream in = contentResolver.openInputStream(uri)) {
+			if (in == null) throw new IOException("Could not open input stream");
+			byte[] head = new byte[12];
+			int read = 0;
+			while (read < head.length) {
+				int r = in.read(head, read, head.length - read);
+				if (r < 0) break;
+				read += r;
+			}
+			return read == head.length && MediaMagic.isIsoMedia(head);
+		}
+	}
+
+	private byte[] readAtMost(Uri uri, long max) throws IOException {
+		try (InputStream in = contentResolver.openInputStream(uri)) {
+			if (in == null) throw new IOException("Could not open input stream");
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			byte[] buf = new byte[64 * 1024];
+			int n;
+			while ((n = in.read(buf)) != -1) {
+				out.write(buf, 0, n);
+				if (out.size() > max) {
+					throw new org.zerionproject.app.api.attachment
+							.FileTooBigException();
+				}
+			}
+			return out.toByteArray();
+		}
 	}
 
 	private long getFileSize(Uri uri) {

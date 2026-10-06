@@ -70,6 +70,10 @@ public class NotificationsFragment extends Fragment {
 	@AppModule.UiPrefs
 	SharedPreferences uiPrefs;
 
+	@Inject
+	@AppModule.ProfilePrefs
+	SharedPreferences profilePrefs;
+
 	private SettingsViewModel viewModel;
 	private NotificationsManager nm;
 
@@ -134,12 +138,13 @@ public class NotificationsFragment extends Fragment {
 	}
 
 	private void setupQuickReply() {
-		boolean enabled = uiPrefs.getBoolean(PREF_NOTIFY_QUICK_REPLY, true);
+		boolean enabled =
+				profilePrefs.getBoolean(PREF_NOTIFY_QUICK_REPLY, true);
 		notifyQuickReplySwitch.setChecked(enabled);
 		notifyQuickReplySwitch.setOnCheckedChangeListener(
 				(buttonView, isChecked) -> {
 					if (buttonView.isPressed()) {
-						uiPrefs.edit()
+						profilePrefs.edit()
 								.putBoolean(PREF_NOTIFY_QUICK_REPLY,
 										isChecked)
 								.apply();

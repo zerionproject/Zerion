@@ -4,15 +4,6 @@ import android.content.SharedPreferences;
 
 import androidx.annotation.Nullable;
 
-/**
- * The user's Background Connections choice and the policy that decides, from
- * that choice plus the sign-in and app-foreground state, whether the Zerion
- * service and its networking (Tor and all P2P transports) should be running.
- *
- * The policy is pure and side-effect free so it can be unit tested; storage is
- * in encrypted preferences so the mode is readable before the database is open
- * and survives process death and reboot.
- */
 public final class BackgroundConnections {
 
 	public static final String PREF_KEY = "background_connection_mode";
@@ -54,11 +45,6 @@ public final class BackgroundConnections {
 		prefs.edit().putString(PREF_KEY, mode.getValue()).apply();
 	}
 
-	/**
-	 * Whether the service and its networking should currently be running.
-	 * Never true when signed out; PAUSED is always false; WHILE_OPEN follows
-	 * the app-foreground state; ALWAYS keeps it running whenever signed in.
-	 */
 	public static boolean shouldRun(Mode mode, boolean signedIn,
 			boolean appInForeground) {
 		if (!signedIn) return false;
@@ -74,18 +60,11 @@ public final class BackgroundConnections {
 		}
 	}
 
-	/**
-	 * Whether a start request should be honoured now. Distinct from
-	 * {@link #shouldRun} only for clarity at call sites that gate startService.
-	 */
 	public static boolean allowStart(Mode mode, boolean signedIn,
 			boolean appInForeground) {
 		return shouldRun(mode, signedIn, appInForeground);
 	}
 
-	/**
-	 * Whether the running service must be stopped now for the given state.
-	 */
 	public static boolean requireStop(Mode mode, boolean signedIn,
 			boolean appInForeground) {
 		return signedIn && !shouldRun(mode, signedIn, appInForeground);

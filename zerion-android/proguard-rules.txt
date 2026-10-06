@@ -327,6 +327,7 @@
     public static *** w(...);
     public static *** e(...);
     public static *** wtf(...);
+    public static *** println(...);
 }
 # The embedded I2P router ships its own logger (net.i2p.util.Log). It is muted
 # at runtime by logger.defaultLevel=CRIT + logRotationLimit=0 in BundledI2pRouter,

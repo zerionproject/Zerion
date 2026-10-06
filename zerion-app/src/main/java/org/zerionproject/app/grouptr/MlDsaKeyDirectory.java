@@ -10,13 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
-/**
- * Resolves a peer's ML-DSA public key from its Ed25519 identity key. Hits
- * are cached until {@link #invalidate()}; a miss is never cached, because
- * the key may arrive with the next member list or contact and a remembered
- * miss would keep refusing that peer's signatures until an unrelated
- * contact event happened to clear it.
- */
 @NotNullByDefault
 final class MlDsaKeyDirectory {
 

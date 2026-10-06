@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Voice recording mode - replaces normal input UI when recording -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/voiceRecordingOverlay"
@@ -7,7 +6,6 @@
     android:layout_height="wrap_content"
     android:visibility="gone">
 
-    <!-- Recording controls bar - floating style matching input bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -19,7 +17,6 @@
         android:paddingBottom="8dp"
         android:gravity="center_vertical">
 
-        <!-- Cancel button -->
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/cancel_recording_button"
             android:layout_width="44dp"
@@ -31,7 +28,6 @@
             app:srcCompat="@drawable/ic_close"
             app:tint="@color/zerion_destructive" />
 
-        <!-- Recording pulse indicator -->
         <View
             android:id="@+id/recording_pulse"
             android:layout_width="12dp"
@@ -41,7 +37,6 @@
             android:background="@drawable/ic_circle"
             android:backgroundTint="@color/zerion_destructive" />
 
-        <!-- Timer -->
         <TextView
             android:id="@+id/recording_time"
             android:layout_width="0dp"
@@ -53,7 +48,6 @@
             android:textStyle="bold"
             android:gravity="start" />
 
-        <!-- Send button -->
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/send_voice_button"
             android:layout_width="44dp"

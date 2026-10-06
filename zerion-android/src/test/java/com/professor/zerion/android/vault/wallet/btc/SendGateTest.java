@@ -19,7 +19,6 @@ public class SendGateTest {
 				false, 110, -1);
 	}
 
-	/** BTC-07: a plan is released only to the wallet it was prepared for. */
 	@Test
 	public void planFromAnotherWalletIsRefusedAndCleared() {
 		SendGate g = new SendGate();

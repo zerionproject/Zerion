@@ -37,13 +37,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Dispatch of opened offline mesh messages: only a sender whose hybrid
- * identity matches a contact is routed, a text is delivered once and acked on
- * every repeat, a delivery that fails leaves the message unmarked so a retry
- * can land, malformed bodies and unknown types are dropped without touching
- * the store, and group records are deduplicated by content.
- */
 public class MeshMessageRouterTest {
 
 	private final Random random = new Random(89);
@@ -79,23 +72,24 @@ public class MeshMessageRouterTest {
 	}
 
 	@Test
-	public void aTextFromAContactIsDeliveredOnceAndAckedOnEveryRepeat()
+	public void aTextFromAContactIsDeliveredOnceAndAckedOnce()
 			throws Exception {
 		byte[] messageId = TestUtils.getRandomId();
 		when(seenStore.checkAndMark(messageId)).thenReturn(false, true, true);
 		byte[] payload = MeshPadding.pad(text(messageId, 1_000L, null,
 				"hello"));
+		long sent = System.currentTimeMillis();
 
 		assertTrue(router.onOfflineMessage(identity, MeshMessageRouter.MESH_TEXT,
-				payload, 0L));
+				payload, sent));
 		assertTrue(router.onOfflineMessage(identity, MeshMessageRouter.MESH_TEXT,
-				payload, 0L));
+				payload, sent));
 		assertTrue(router.onOfflineMessage(identity, MeshMessageRouter.MESH_TEXT,
-				payload, 0L));
+				payload, sent));
 
 		verify(messagingManager, times(1)).receiveMeshMessage(eq(contactId),
 				eq("hello"), eq(1_000L), eq(messageId), eq(null));
-		verify(textSender, times(3)).sendAck(contactId, messageId);
+		verify(textSender, times(1)).sendAck(contactId, messageId);
 		verify(presenceTracker, times(3)).markPresent(contactId);
 	}
 

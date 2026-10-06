@@ -5,7 +5,6 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent">
 
-	<!-- Input card - expands when fillHeight=true via weight -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/input_layout"
 		style="@style/Zerion.Card"
@@ -30,7 +29,6 @@
 
 	</com.google.android.material.card.MaterialCardView>
 
-	<!-- Send button - always at bottom with filled style for visibility -->
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/compositeSendButton"
 		style="@style/Zerion.Button.Filled"

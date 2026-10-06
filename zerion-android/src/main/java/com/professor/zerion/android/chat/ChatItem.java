@@ -5,11 +5,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * One row in the Chats inbox: a 1:1 contact conversation reduced to what the
- * inbox needs (name, last-activity time, unread count, avatar) plus the contact
- * id a tap needs to open it.
- */
 @NotNullByDefault
 class ChatItem {
 

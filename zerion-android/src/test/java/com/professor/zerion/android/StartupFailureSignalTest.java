@@ -21,13 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * The startup failure signal must not be reachable from outside the app: the
- * service addresses the non-exported failure screen directly, and the
- * exported entry activity no longer reacts to a failure extra at all, so
- * another app cannot kill the process or show a fake failure screen by
- * sending an intent.
- */
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
 public class StartupFailureSignalTest {

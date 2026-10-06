@@ -10,12 +10,8 @@ import org.zerionproject.transport.TorProcessWatch;
 import java.io.File;
 import java.util.concurrent.Executor;
 
-/**
- * The Android Tor wrapper with the one reaction the library lacks: when the
- * control connection closes while Tor is meant to be running, the tor child
- * has died, and the transport is told so that it can restart Tor instead of
- * dialling a SOCKS port that any local process could now bind.
- */
+import javax.annotation.Nullable;
+
 public class ZerionTorWrapper extends AndroidTorWrapper {
 
 	private final TorProcessWatch processWatch;
@@ -24,9 +20,11 @@ public class ZerionTorWrapper extends AndroidTorWrapper {
 			AndroidWakeLockManager wakeLockManager, Executor ioExecutor,
 			Executor eventExecutor, String architecture, File torDirectory,
 			int torSocksPort, int torControlPort,
-			TorBinaryVerifier verifier, TorProcessWatch processWatch) {
+			@Nullable String controlSocketPath, TorBinaryVerifier verifier,
+			TorProcessWatch processWatch) {
 		super(app, wakeLockManager, ioExecutor, eventExecutor, architecture,
-				torDirectory, torSocksPort, torControlPort, verifier);
+				torDirectory, torSocksPort, torControlPort, controlSocketPath,
+				verifier);
 		this.processWatch = processWatch;
 	}
 

@@ -173,10 +173,9 @@ public class AddNearbyContactFragment extends BaseFragment {
 				statusText.setText(R.string.nearby_pairing_exchanging);
 				break;
 			case SUCCESS:
-				String name = viewModel.getContactName().getValue();
-				Toast.makeText(requireContext(), getString(
-						R.string.nearby_pairing_success,
-						name == null ? "" : name), Toast.LENGTH_LONG).show();
+				Toast.makeText(requireContext(),
+						R.string.nearby_pairing_success_neutral,
+						Toast.LENGTH_LONG).show();
 				requireActivity().finish();
 				break;
 			case FAILED:

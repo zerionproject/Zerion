@@ -6,17 +6,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
 
-/**
- * Monero spot price in the fiat currencies the send screen offers, fetched over
- * Tor so the request carries no clearnet metadata. Kraken's public ticker is
- * used because it answers reliably from Tor exit nodes and needs no API key;
- * the last-trade close price for XMR/USD and XMR/EUR is read from the ticker.
- * Each currency is a separate request so the wrong price can never be attached
- * to the wrong currency by result-order ambiguity. A missing or unparseable
- * response yields zero for that currency, which the UI treats as "no price"
- * rather than a wrong number. This is display-only: it never influences the
- * atomic amount that is actually signed and sent.
- */
 @NotNullByDefault
 public final class XmrPrice {
 
@@ -75,12 +64,6 @@ public final class XmrPrice {
 		return body == null ? 0 : parseKrakenLast(body);
 	}
 
-	/**
-	 * Read the last-trade close price from a Kraken ticker response,
-	 * {@code {"error":[],"result":{"<pair>":{...,"c":["<price>","<lot>"],...}}}}.
-	 * A non-empty error array (rate limit, bad pair) has no result object and no
-	 * {@code "c"} array, so this returns 0.
-	 */
 	static double parseKrakenLast(String body) {
 		int c = body.indexOf("\"c\"");
 		if (c < 0) {

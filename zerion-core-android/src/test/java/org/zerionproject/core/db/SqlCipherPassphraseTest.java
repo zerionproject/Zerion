@@ -8,11 +8,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * A2-REG-AND-02: the passphrase bytes handed to the database library are
- * exactly what the former String path produced, so every existing database
- * still opens, while no String ever holds the key.
- */
 public class SqlCipherPassphraseTest {
 
 	@Test

@@ -25,12 +25,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-/**
- * STO-02: the database must complete its close-time dirty-flag write while
- * valid key material is available, even though the account manager zeroes
- * its own copy of the key before the lifecycle manager closes the database,
- * and must clear only its own key copy afterwards.
- */
 public class HyperSqlShutdownKeyTest extends BrambleTestCase {
 
 	private final File testDir = getTestDirectory();

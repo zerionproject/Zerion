@@ -5,6 +5,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
+import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.SecretKey;
@@ -23,6 +24,8 @@ import org.zerionproject.wire.ZwfStreamCounter;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
@@ -32,25 +35,11 @@ import javax.inject.Singleton;
 
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 
-/**
- * Bridges the transport to the contact/identity database: it recognises an
- * incoming stream tag to a contact, loads the stored inputs to resume a
- * contact's session, and advances the contact's tag window after a
- * connection ends. No ratchet state is persisted: every connection starts a
- * fresh Mode 3-Full ratchet, and a state blob left behind by an earlier
- * release is stripped from the database at startup.
- *
- * <p>A single tag recogniser is seeded with every established contact at startup
- * and kept current as contacts are added and removed, so an anonymous incoming
- * connection can be attributed to a contact by its first stream tag. A contact's
- * role is recomputed deterministically from the two author ids, so it never has
- * to be stored separately.
- */
 @ThreadSafe
 @NotNullByDefault
 @Singleton
-public class ZtpSessionProviderImpl
-		implements ZtpSessionProvider, Service, EventListener {
+public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
+		EventListener, RootKeyStore.Listener {
 
 	private final ContactManager contactManager;
 	private final PcsStateManager pcsStateManager;
@@ -63,23 +52,15 @@ public class ZtpSessionProviderImpl
 	private final ZwfTagRecogniser recogniser;
 	private final javax.inject.Provider<org.zerionproject.core.plugin.tor
 			.B4OnionRotation> onionRotation;
+	@Nullable
+	private final RootKeyStore rootKeyStore;
 
-	/**
-	 * How far past a contact's receive window an anonymous inbound tag is
-	 * searched. A contact burns a send id on every dial that dies before
-	 * its first frame is answered, so its counter runs ahead of our window
-	 * whenever our inbound slots were held by someone else; a search across
-	 * every contact is what lets it back in without a re-pairing.
-	 */
 	static final long INBOUND_SEARCH_GAP = 1L << 14;
-	/**
-	 * A search costs one tag computation per id and contact, so a stranger's
-	 * random tags may trigger at most one search per interval; a genuine
-	 * contact retries within a minute and gets the next one.
-	 */
 	static final long INBOUND_SEARCH_INTERVAL_MS = 10_000L;
 	private final java.util.concurrent.atomic.AtomicLong nextSearchAtMs =
 			new java.util.concurrent.atomic.AtomicLong(0);
+	final java.util.Set<Integer> peerDials =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	volatile java.util.function.LongSupplier clock = System::currentTimeMillis;
 
 	@Inject
@@ -89,10 +70,11 @@ public class ZtpSessionProviderImpl
 			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
 			@DatabaseExecutor Executor dbExecutor,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
-					.B4OnionRotation> onionRotation) {
+					.B4OnionRotation> onionRotation,
+			RootKeyStore rootKeyStore) {
 		this(new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), contactManager,
 				pcsStateManager, sessionFactory, counter, db, eventBus,
-				dbExecutor, onionRotation);
+				dbExecutor, onionRotation, rootKeyStore);
 	}
 
 	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
@@ -102,6 +84,19 @@ public class ZtpSessionProviderImpl
 			Executor dbExecutor,
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> onionRotation) {
+		this(recogniser, contactManager, pcsStateManager, sessionFactory,
+				counter, db, eventBus, dbExecutor, onionRotation, null);
+	}
+
+	ZtpSessionProviderImpl(ZwfTagRecogniser recogniser,
+			ContactManager contactManager,
+			PcsStateManager pcsStateManager, ZwfSessionFactory sessionFactory,
+			ZwfStreamCounter counter, DatabaseComponent db, EventBus eventBus,
+			Executor dbExecutor,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> onionRotation,
+			@Nullable RootKeyStore rootKeyStore) {
+		this.rootKeyStore = rootKeyStore;
 		this.onionRotation = onionRotation;
 		this.contactManager = contactManager;
 		this.pcsStateManager = pcsStateManager;
@@ -116,10 +111,11 @@ public class ZtpSessionProviderImpl
 	@Override
 	public void startService() throws ServiceException {
 		eventBus.addListener(this);
+		if (rootKeyStore != null) rootKeyStore.addListener(this);
 		try {
 			Collection<Contact> contacts = contactManager.getContacts();
 			for (Contact c : contacts) {
-				pcsStateManager.stripPersistedMode3FullState(c.getId());
+				pcsStateManager.stripDeadState(c.getId());
 				registerContact(c.getId());
 			}
 		} catch (DbException e) {
@@ -130,6 +126,12 @@ public class ZtpSessionProviderImpl
 	@Override
 	public void stopService() {
 		eventBus.removeListener(this);
+		if (rootKeyStore != null) rootKeyStore.removeListener(this);
+	}
+
+	@Override
+	public void rootKeysChanged(ContactId c) {
+		dbExecutor.execute(() -> registerContact(c));
 	}
 
 	@Override
@@ -143,7 +145,8 @@ public class ZtpSessionProviderImpl
 				now + INBOUND_SEARCH_INTERVAL_MS)) {
 			return -1;
 		}
-		m = recogniser.recogniseBeyondWindowAny(tag, INBOUND_SEARCH_GAP);
+		m = recogniser.recogniseBeyondWindowNext(tag, INBOUND_SEARCH_GAP,
+				peerDials);
 		return m == null ? -1 : m.contactId;
 	}
 
@@ -162,13 +165,21 @@ public class ZtpSessionProviderImpl
 	@Nullable
 	public StoredContactSession getStoredSession(int contactId) {
 		ContactId cid = new ContactId(contactId);
+		long generation = counter.generation(contactId);
+		ContactRootKeys keys = loadRootKeys(cid);
+		if (keys == null) return null;
+		Boolean alice = computeAlice(cid);
+		if (alice == null) return null;
+		return new StoredContactSession(keys, alice, generation);
+	}
+
+	@Nullable
+	private ContactRootKeys loadRootKeys(ContactId cid) {
+		if (rootKeyStore != null) return rootKeyStore.load(cid);
 		PcsSessionState send = pcsStateManager.loadSendState(cid);
 		if (send == null) return null;
 		SecretKey rootKey = send.getRootKey();
-		if (rootKey == null) return null;
-		Boolean alice = computeAlice(cid);
-		if (alice == null) return null;
-		return new StoredContactSession(rootKey, alice);
+		return rootKey == null ? null : ContactRootKeys.atPairing(rootKey);
 	}
 
 	@Override
@@ -185,50 +196,51 @@ public class ZtpSessionProviderImpl
 		} else if (e instanceof ContactRemovedEvent) {
 			ContactId cid = ((ContactRemovedEvent) e).getContactId();
 			recogniser.remove(cid.getInt());
+			peerDials.remove(cid.getInt());
 			dbExecutor.execute(this::rotateOnionAfterContactRemoval);
+		} else if (e instanceof ContactConnectionKeysEvent) {
+			ContactId cid = ((ContactConnectionKeysEvent) e).getContactId();
+			if (!((ContactConnectionKeysEvent) e).isOutOfSync()) {
+				dbExecutor.execute(() -> registerContact(cid));
+			}
 		}
 	}
 
-	/**
-	 * A removed contact keeps our current onion address and could hold its
-	 * inbound slots until the address rotates on its own, so removal rotates
-	 * the address right away.
-	 */
 	private void rotateOnionAfterContactRemoval() {
 		try {
-			onionRotation.get().forceRotate();
+			onionRotation.get().revokeAfterContactRemoval();
 		} catch (DbException | RuntimeException ignored) {
 		}
 	}
 
-	/** Seeds the recogniser for one contact that has an established session. */
 	private void registerContact(ContactId cid) {
-		PcsSessionState send = pcsStateManager.loadSendState(cid);
-		if (send == null) {
-			return;
-		}
-		SecretKey rootKey = send.getRootKey();
-		if (rootKey == null) {
+		ContactRootKeys keys = loadRootKeys(cid);
+		if (keys == null) {
+			recogniser.remove(cid.getInt());
+			peerDials.remove(cid.getInt());
 			return;
 		}
 		Boolean alice = computeAlice(cid);
 		if (alice == null) {
 			return;
 		}
-		SecretKey recvTagKey = sessionFactory.deriveRecvTagKey(rootKey, alice);
+		if (alice) peerDials.remove(cid.getInt());
+		else peerDials.add(cid.getInt());
+		Map<Long, SecretKey> tagKeys = new LinkedHashMap<>();
+		long[] epochs = {keys.getEpoch(), keys.getPendingEpoch()};
+		for (long e : epochs) {
+			SecretKey root = keys.getKey(e);
+			if (root != null) {
+				tagKeys.put(e, sessionFactory.deriveRecvTagKey(root, e, alice));
+			}
+		}
+		keys.getCurrent().clear();
+		SecretKey pending = keys.getPending();
+		if (pending != null) pending.clear();
 		long recvHighWater = counter.currentRecvHighWater(cid.getInt());
-		recogniser.register(cid.getInt(), recvTagKey, recvHighWater);
+		recogniser.register(cid.getInt(), tagKeys, recvHighWater);
 	}
 
-	/**
-	 * Determines our role for a contact deterministically from the two author
-	 * ids: alice is the endpoint whose author id sorts first. Both endpoints
-	 * compare the same pair of ids, so they always agree and always pick opposite
-	 * roles. Only the role's opposition matters: every per-direction key is
-	 * derived as {@code deriveKey(alice ? A : B, rootKey)}, so one endpoint's
-	 * send-side material equals the other's receive-side material whenever the
-	 * two roles differ, regardless of which endpoint is alice.
-	 */
 	@Nullable
 	private Boolean computeAlice(ContactId cid) {
 		try {

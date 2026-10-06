@@ -11,12 +11,6 @@ import java.net.SocketException;
 
 import javax.annotation.Nullable;
 
-/**
- * Presents a connected Unix domain socket as a {@link Socket} so that the
- * SOCKS client and everything layered on it (including TLS) can use it like
- * a TCP stream. Only the stream, timeout and shutdown operations are real;
- * TCP-specific options are accepted and ignored.
- */
 final class LocalStreamSocket extends Socket {
 
 	private final LocalSocket local;
@@ -115,6 +109,14 @@ final class LocalStreamSocket extends Socket {
 	public synchronized void close() throws IOException {
 		if (closed) return;
 		closed = true;
+		try {
+			local.shutdownInput();
+		} catch (IOException | RuntimeException ignored) {
+		}
+		try {
+			local.shutdownOutput();
+		} catch (IOException | RuntimeException ignored) {
+		}
 		local.close();
 		super.close();
 	}

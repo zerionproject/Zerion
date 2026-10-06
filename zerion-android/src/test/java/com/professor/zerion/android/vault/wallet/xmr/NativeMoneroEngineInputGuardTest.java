@@ -6,13 +6,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Every string that would reach a native parser is checked on the JVM side
- * first: it must be present, bounded and printable ASCII. An address of
- * several kilobytes, one with control or non-ASCII characters, or a missing
- * one never crosses into native code, whatever the native library would make
- * of it.
- */
 public class NativeMoneroEngineInputGuardTest {
 
 	private static final String ADDRESS =

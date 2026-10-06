@@ -1,6 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <resources>
-	<!--Setup-->
 	<string name="setup_title">Zerion-a xoş gəlmisiniz!</string>
 	<string name="setup_name_explanation">Sizin nikiniz yazdığlarınızın yanında görsənəcək. Hesabı yaradandan sonra onu dəyişə bilməzsiniz.</string>
 	<string name="setup_next">Növbəti</string>
@@ -22,16 +21,12 @@
 	<string name="dnkm_huawei_protected_text">Aşağıdakı düyməni basın və əmin olun ki, Zerion \"Qorunan proqramlar\" ekranında qorunur.</string>
 	<string name="dnkm_huawei_protected_button">Zerion-ın qorunması</string>
 	<string name="dnkm_huawei_protected_help">Zerion qorunan tətbiqlər siyahısına əlavə olunmasa, arxa planda işləməyəcəkdir.</string>
-	<string name="dnkm_warning_dozed">%sarxa planda işə düşmədi</string>
-	<!--Login-->
 	<string name="enter_password">Şifrə</string>
 	<string name="try_again">Şifrə yanlışdır, bir daha cəhd edin</string>
 	<string name="sign_in_button">Daxil ol</string>
 	<string name="forgotten_password">Mən şifrəni unutmuşam</string>
 	<string name="dialog_title_lost_password">Yaddan çıxmış şifrə</string>
 	<string name="dialog_message_lost_password">Sizin Zerion hesabınız internetda yox, cihazınızda şifrələnir, ona görə biz onu silə bilmirik. Hesabı silib yenidən başlamaq istəyirsiniz? Diqqət: Sizin şəxsi məlumatlarınız, kontaktlarınız, məktublar və parametrlər silinəcək.</string>
-	<string name="startup_failed_notification_title">Zerion başlamadı</string>
-  <string name="startup_failed_notification_text">Digər malumat üçün toxunun.</string>
   <string name="startup_failed_activity_title">Başlama xətası</string>
   <string name="startup_failed_db_error">Zerion məlumat bazası nədənsə sıradan çıxıb. Hesabınız, məlumatlarınız və bütün əlaqələriniz itirilmişdır. Təəssüf ki, Zerion\'ı yenidən bərpa etməli və ya \'Şifrəni unutmuşam\' seçərək yeni hesab yaratmalısınız.</string>
   <string name="startup_failed_data_too_old_error">Hesabınız bu tətbiqin köhnə versiyası ilə yaradılmış və bu versiya ilə açıla bilməz. Parolu istəniləndə \'Mənim parolumu unutdum\' seçərək köhnə versiyanı yenidən bərpa etməli və ya yeni hesab yaratmalısınız</string>
@@ -48,18 +43,14 @@
   <string name="startup_open_database">Məlumatlar şifrədən açılması...</string>
   <string name="startup_migrate_database">Məlumatların təzələnməsi...</string>
   <string name="startup_compact_database">Məlumatın sıxılması...</string>
-  <!--Navigation Drawer-->
   <string name="nav_drawer_open_description">Naviqasiya çekmecini açın</string>
   <string name="nav_drawer_close_description">Naviqasiya çekməyini bağlayın</string>
   <string name="contact_list_button">Kontaktlar</string>
   <string name="groups_button">Şəxsi Qruplar</string>
-  <!--This is part of the main menu. The app will be locked when this is tapped.-->
   <string name="lock_button">Tətbiqetməni kilidlə</string>
   <string name="settings_button">Quraşdırmalar</string>
   <string name="sign_out_button">Çıxış</string>
-  <!--Transports: Tor-->
   <string name="transport_tor">Internet</string>
-  <!--Notifications-->
   <string name="reminder_notification_title">Zerion-dan çıxdı</string>
   <string name="reminder_notification_text">Daxil olmağınız üçün toxunun.</string>
   <string name="reminder_notification_channel_title">Zerion-a giriş haqqında xatırlama</string>
@@ -74,7 +65,6 @@
     <item quantity="one">Yeni qrup məktubu</item>
     <item quantity="other">%dyeni qrup məktubu</item>
   </plurals>
-  <!--Misc-->
   <string name="now">İndi</string>
   <string name="show">Göstər</string>
   <string name="hide">Gizlətmək</string>
@@ -99,7 +89,6 @@
   <string name="sorry">Bağışlayın</string>
   <string name="error_start_activity">Sizin sistemdə ələçatmazdır. </string>
   <string name="status_heading">Status:</string>
-  <!--Contacts and Private Conversations-->
   <string name="no_contacts">Göstərmək üçün əlaqə yoxdur</string>
   <string name="no_contacts_action">Kontakt əlavə etmək üçün + işarəsinə toxunun</string>
   <string name="date_no_private_messages">Məktub yixdur.</string>
@@ -120,7 +109,6 @@
   <string name="dialog_title_delete_contact">Kontaktın silinməsini təsdiqləyin</string>
   <string name="dialog_message_delete_contact">Bu kontaktı və bu kontaktla əvəzlənən bütün mesajları silmək istədiyinizə əminsinizmi?</string>
   <string name="contact_deleted_toast">Kontakt silindi</string>
-  <!--This is shown in the action bar when opening an image in fullscreen that the user sent-->
   <string name="you">Siz</string>
   <string name="save_image">Şəkili saxlamaq</string>
   <string name="dialog_title_save_image">Şəkili saxlamaq?</string>
@@ -132,7 +120,6 @@
   <string name="dialog_title_image_support">İndi bu kontakta şəkilləri göndərə bilərsiniz</string>
   <string name="dialog_message_image_support">Şəkilləri əlavə etmək üçün bu simvola toxunun.</string>
   <string name="messaging_too_many_attachments_toast">Yalnız %d ilk şəkil göndəriləcək</string>
-  <!--Adding Contacts-->
   <string name="add_contact_title">Yaxında kontakt əlavə etmək</string>
   <string name="continue_button">Davam et</string>
   <string name="try_again_button">Yenidən cəhd elə</string>
@@ -140,14 +127,10 @@
   <string name="exchanging_contact_details">Əlaqə məlumatları mübadiləsi \u2026</string>
   <string name="contact_added_toast">Kontakt eləvə edildi: %s</string>
   <string name="contact_already_exists">Kontakt %s artıq mövcuddur</string>
-  <string name="qr_code_too_old">Skan etdiyiniz QR kodunun köhnə bir versiyası gəlir. %s dən ən son versiyaya keçməyi xahiş edin və daha sonra yenidən cəhd edin.</string>
-  <string name="qr_code_too_new">Skan etdiyiniz QR kodunun köhnə bir versiyası gəlir. %sdən ən son versiyaya keçməyi xahiş edin və daha sonra yenidən cəhd edin.</string>
   <string name="camera_error">Kamera xətası</string>
   <string name="connecting_to_device">Cihaza qoşulma /2026</string>
   <string name="authenticating_with_device">Cihazla təsdiqlənir \u2026</string>
   <string name="connection_error_title">Kontaktınıza qoşula bilmədi</string>
-  <string name="connection_error_feedback"><a href="feedback">Bu problem davam edərsə, tətbiqin təkmilləşdirilməsinə kömək etmək üçün rəy göndərin.</a></string>
-  <!--Adding Contacts Remotely-->
   <string name="add_contact_remotely_title_case">Məsafədə kontakt əlavə etmək </string>
   <string name="add_contact_nearby_title">Yaxında kontakt əlavə etmək </string>
   <string name="add_contact_remotely_title">Məsafədə kontakt əlavə etmək </string>
@@ -180,9 +163,7 @@
   <string name="unsupported_link">Bu link Zerion-ın daha yeni versiyasından gəlir. Ən son versiyaya keçin və yenidən cəhd edin.</string>
   <string name="intent_own_link">Öz linkini açdın. Əlavə etmək istədiyiniz kontaktlardan birini istifadə edin!</string>
   <string name="missing_link">Zəhmət olmasa linki daxil edin</string>
-  <!--This is a numeral indicating the first step in a series of screens-->
   <string name="step_1">1</string>
-  <!--This is a numeral indicating the second step in a series of screens-->
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
     <item quantity="one">New contact added.</item>
@@ -190,17 +171,9 @@
   </plurals>
   <string name="offline_state">İnternet bağlantısı yoxdur</string>
   <string name="duplicate_link_dialog_title">Dublikat Link</string>
-  <!--This is a question asking whether two nicknames refer to the same person-->
-  <!--This is a button for answering that two nicknames do indeed refer to the same person. This
-	string will be used in a dialog button, so if the translation of this string is longer than 20
-	characters, please use "Yes" instead, and use "No" for the "Different Person" button-->
   <string name="same_person_button">Eyni şəxs</string>
-  <!--This is a button for answering that two nicknames refer to different people. This string
-	will be used in a dialog button, so if the translation of this string longer than 20 characters,
-	please use "No" instead, and use "Yes" for the "Same Person" button-->
   <string name="different_person_button">Fərqli şəxs</string>
   <string name="pending_contact_updated_toast">Gözləyən kontakt yeniləndi</string>
-  <!--Introductions-->
   <string name="introduction_onboarding_title">Kontaktınızı tanıtın</string>
   <string name="introduction_onboarding_text">Kontaktlarınızı bir-birinizə təqdim edə bilərsiniz, lakin Zerion-a qoşulmaq üçün şəxsən görüşmək lazım deyil.</string>
   <string name="introduction_menu_item">Giriş edin</string>
@@ -217,7 +190,6 @@
   <string name="introduction_request_answered_received">%1$ssizi %2$s-ə təqdim etmək istədi.</string>
   <string name="introduction_response_accepted_sent">%1$s-ə qəbul olundunuz</string>
   <string name="introduction_response_declined_sent">%1$s-ə girişdən imtina etdiniz</string>
-  <!--Private Groups-->
   <string name="groups_list_empty">Göstərmək üçün heç bir qrup</string>
   <string name="groups_list_empty_action">Bir qrup yaratmaq üçün + simvoluna toxunun və ya kontaktlarınızı sizinlə bölüşmək üçün əlaqə saxlayın</string>
   <string name="groups_created_by">%s yaratdı</string>
@@ -248,7 +220,6 @@
   <string name="groups_dissolve_button">Braxın</string>
   <string name="groups_dissolved_dialog_title">Qrup braxıldı</string>
   <string name="groups_dissolved_dialog_message">Bu qrupun yaradıcısı onu ləğv etdi. Siz qrupa mesaj yaza bilməyəcəksiniz və yazılmış bütün yazıları ala bilməyəcəksiniz.</string>
-  <!--Private Group Invitations-->
   <string name="groups_invitations_title">Qrup dəvətləri</string>
   <string name="groups_invitations_joined">Qrupa qoşuldu</string>
   <string name="groups_invitations_declined">Qrup dəvətləri azaldı</string>
@@ -257,13 +228,11 @@
     <item quantity="other">%daçıq qrup dəvətləri</item>
   </plurals>
   <string name="sharing_status_groups">Yalnız yaradıcı qrupa yeni üzvləri dəvət edə bilər. Aşağıda qrupun bütün üzvləri iştirak edir.</string>
-  <!--Private Groups Revealing Contacts-->
   <string name="groups_reveal_contacts">Kontaktları aşkar edin</string>
   <string name="groups_reveal_dialog_message">Bu qrupun bütün mövcud və gələcək üzvlərinə kontaktların aşkarlanıb veriləcəyini seçə bilərsiniz. \n\n Kontaktları geri götürmək, qrupun yaradıcısı olsa da, aşkar əlaqələrlə ünsiyyət qura biləcəyiniz üçün qrupla əlaqənizi daha sürətli və daha etibarlı edir.</string>
   <string name="groups_reveal_visible">Kontakt qrupda görünə bilər</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontakt əlaqəsi qrupda görür (sizin üçün görsənir)</string>
   <string name="groups_reveal_invisible">Kontakt əlaqəsi qrup üçün görünmür</string>
-  <!--Forums-->
   <string name="no_posts">Post yoxdur</string>
   <plurals name="posts">
     <item quantity="one">%dpost</item>
@@ -271,45 +240,28 @@
   </plurals>
   <string name="btn_reply">Cavab ver</string>
   <string name="dialog_button_leave">Buraxın</string>
-  <!--Forum Sharing-->
   <string name="contacts_selected">Kontaktlar seçildi</string>
   <string name="activity_share_toolbar_header">Kontaktlar seçin</string>
-  <!--Blogs-->
   <string name="read_more">daha çox oxu</string>
-  <!--Blog Sharing-->
-  <!--RSS Feeds-->
-  <!--Settings Profile Picture-->
-  <!--Settings Display-->
   <string name="pref_language_title">Dil və region</string>
   <string name="pref_language_default">Sistemdə olduğu kimi </string>
   <string name="display_settings_title">Görüntü</string>
   <string name="pref_theme_title">Tema</string>
   <string name="pref_theme_light">Ağ</string>
   <string name="pref_theme_dark">Tünd</string>
-  <string name="pref_theme_auto">Avtomatik (Gündüz)</string>
   <string name="pref_theme_system">Sistem Olduğu kimi</string>
-  <!--Settings Connections-->
   <string name="tor_network_setting_automatic">Yerə görə avtomatik olaraq</string>
-  <!--How and when Zerion will connect to Tor: E.g. "Don't connect to the Internet (in China)" or "Use Tor network with bridges (in Belarus)"-->
   <string name="tor_mobile_data_title">Mobil interneti istifadə etmək</string>
-  <string name="tor_only_when_charging_summary">Cihaz batareyadan işləyərkən internet bağlantısını kəsir</string>
-  <!--Settings Security and Panic-->
   <string name="security_settings_title">Təhlükəsizlik</string>
   <string name="pref_lock_title">Tətbiq kilidi</string>
   <string name="pref_lock_summary">Zerion-a girmək üçün ekran kilidindən istifadə edin. </string>
   <string name="pref_lock_disabled_summary">Bundan istifadə etmək üçün ekran kilidini quraşdırın. </string>
   <string name="pref_lock_timeout_title">Tətbiq kilidinin hərəkətsizlik müddəti</string>
-  <!--The %s placeholder is replaced with the following time spans, e.g. 5 Minutes, 1 Hour-->
   <string name="pref_lock_timeout_summary">Zerion-ı istifadə etməsəniz, onu avtomatik olaraq %s dəqiqədən sonra kilidləyin</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_1">1 dəqiqə</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_5">5 dəqiqə</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_15">15 dəqiqə</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_30">30 dəqiqə</string>
-  <!--Will be shown in a list of lock times. Should fit into the %s of "automatically lock it after %s"-->
   <string name="pref_lock_timeout_60">1 saat</string>
   <string name="pref_lock_timeout_never">Heç vaxt</string>
   <string name="pref_lock_timeout_never_summary">Zerion-ı avtomatik olaraq kilidləməyin</string>
@@ -330,7 +282,6 @@
   <string name="panic_setting_signout_title">Çıxış</string>
   <string name="panic_setting_signout_summary">Panik düyməsi basarkən Zerion-dan çıxın</string>
   <string name="purge_setting_title">Hesabı sil</string>
-  <!--Settings Notifications-->
   <string name="notification_settings_title">Bildirişler</string>
   <string name="notify_sign_in_title">Daxil olmaq üçün mənim yadıma salmaq</string>
   <string name="notify_sign_in_summary">Telefonu işə saldıqda və ya proqramı yenilədikdə xatırlatmanı göstərin</string>
@@ -346,60 +297,30 @@
   <string name="notify_sound_setting_disabled">Heç biri</string>
   <string name="choose_ringtone_title">Zəng tonunu seçin</string>
   <string name="cannot_load_ringtone">Zəng tonu yüklənmir</string>
-  <!--Settings Feedback-->
-  <string name="feedback_settings_title">Şərh</string>
-  <string name="send_feedback">Rəy  göndər</string>
-  <!--Link Warning-->
   <string name="link_warning_title">Bağlantı xəbərdarlığı</string>
   <string name="link_warning_intro">Xarici tətbiq ilə aşağıdakı linki açmaq istəyirsən.</string>
   <string name="link_warning_text">Bu sizi tanımaq üçün istifadə edilə bilər. Sizə bu link göndərən adama etibar edirsinizmi?  Bu linki Tor Browserda açmaq məsləhət görülür. </string>
   <string name="link_warning_open_link">Link-i aç</string>
-  <!--Crash Reporter-->
-  <string name="crash_report_title">Zerion qəza göndərişi</string>
-  <string name="zerion_crashed">Bağışlayın, Zerion qəzaya uğrayıb.</string>
-  <string name="not_your_fault">Bu sizin günahınız deyil.</string>
-  <string name="please_send_report">Xahiş edirik bizə bir qəza hesabatı göndərərək daha yaxşı bir Zerion qurmamıza kömək edin.</string>
-  <string name="report_is_encrypted">Hesabatın şifrələndiyini və təhlükəsiz olaraq göndərildiyinə əmin edirik.</string>
-  <string name="feedback_title">Şərh</string>
-  <string name="describe_crash">Nə baş verdiyini təsvir edin (istəyə bağlıdır)</string>
-  <string name="enter_feedback">Rəyinizi yazın</string>
-  <string name="optional_contact_email">Sizim elektron ünvanınız (istəyinizə bağlıdır)</string>
-  <string name="include_debug_report_crash">Cədvəl haqqında anonim məlumatları əlavə edin</string>
-  <string name="include_debug_report_feedback">Bu cihaz haqqında anonim məlumatları əlavə edin</string>
-  <string name="send_report">Hesabat göndər</string>
   <string name="close">Bağla</string>
-  <string name="dev_report_saved">Hesabat saxlandı. Zerion-a növbəti dəfə daxil olduqda göndəriləcək.</string>
-  <!--Sign Out-->
   <string name="progress_title_logout">Zerion-dan çıxış... </string>
-  <!--Screen Filters & Tapjacking-->
   <string name="screen_filter_title">Ekran örtüyü aşkarlandı</string>
   <string name="screen_filter_allow">Bu tətbiqlərin yuxarı çəkilməsinə icazə verin</string>
-  <!--Permission Requests-->
   <string name="permission_camera_title">Camera izni</string>
   <string name="permission_camera_request_body">QR kodunu skan etmək üçün Zerion-a kameraya icazə lazımdır.</string>
   <string name="permission_location_title">Mövqe icazəsi</string>
   <string name="permission_camera_location_title">Kamera və mövqe</string>
   <string name="permission_camera_denied_body">Kameraya daxil olmağı rədd etdiniz, lakin əlaqə əlavə etmək kameradan istifadə etməyi tələb edir. \n\nİcazə verilməsini düşünün.</string>
-  <!--App Locking-->
   <string name="lock_unlock">Zerion kilidini aç</string>
   <string name="lock_unlock_verbose">Zerion kilidini açmaq üçün cihazınızın PİN, naxış və ya parolunuzu daxil edin</string>
   <string name="lock_unlock_fingerprint_description">Davam etmək üçün qeyd olunan barmaq ilə barmaq izinizi sensorunuza toxunun</string>
   <string name="lock_unlock_password">Şifrəni istifadə edin</string>
   <string name="lock_is_locked">Zerion kilidləndi</string>
   <string name="lock_tap_to_unlock">Kilidi açmaq üçün toxunun</string>
-  <!--Connections Screen-->
-  <!--Screenshots-->
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
   <string name="screenshot_alice">Alisa</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
   <string name="screenshot_bob">Bob</string>
-  <!--This is a name to be used in screenshots. Feel free to change it to a local name.-->
   <string name="screenshot_carol">Kerol</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Bob!-->
   <string name="screenshot_message_1">Salam Bob!</string>
-  <!--This is a message to be used in screenshots. Please use the same translation for Alice!-->
   <string name="screenshot_message_2">Salam Elis! Zerion haqqında danışdığınız üçün təşəkkür edirik!</string>
-  <!--This is a message to be used in screenshots.-->
   <string name="screenshot_message_3">Problem yoxdur, bunu ümüd edirəm 😀</string>
 	<string name="wallet_card_title">Pul kisəsi</string>
 	<string name="wallet_card_summary">Tor üzərindən Bitcoin</string>
@@ -520,7 +441,6 @@
 	<string name="wallet_receive_new">Yeni ünvan</string>
 	<string name="wallet_node_hint">İstifadə etmək üçün serverə toxunun. Xüsusi serveri silmək üçün uzun basın.</string>
 	<string name="wallet_settings_sp">Silent Payments</string>
-	<string name="wallet_sp_intro">Təkrar istifadə oluna bilən məxfi ünvan. Ona edilən ödənişləri blokçeyndə bir-birinə bağlamaq mümkün deyil. Aşkarlama Tor üzərindən açıq məlumatları skan edir; açarlarınız heç vaxt cihazı tərk etmir.</string>
 	<string name="wallet_sp_balance">Aşkarlandı: %1$s</string>
 	<string name="wallet_sp_scanned">%1$d blokuna qədər skan edildi</string>
 	<string name="wallet_sp_set_oracle">Skan mənbəyi</string>

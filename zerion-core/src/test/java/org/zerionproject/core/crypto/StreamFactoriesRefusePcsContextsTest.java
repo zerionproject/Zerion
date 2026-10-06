@@ -23,13 +23,6 @@ import static org.zerionproject.core.test.TestUtils.getTransportId;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-/**
- * The classical stream factories build the streams that carry pairing
- * handshakes and contact exchanges. A context that carries ratchet state has
- * no consumer any more: every contact connection runs on the ZWF path, so such
- * a context is refused before any key is derived instead of being carried by
- * a chain seeded from an unsalted, period-resetting stream number.
- */
 public class StreamFactoriesRefusePcsContextsTest extends BrambleMockTestCase {
 
 	private final CryptoComponent crypto = context.mock(CryptoComponent.class);

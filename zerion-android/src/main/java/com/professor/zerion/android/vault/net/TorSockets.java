@@ -8,14 +8,6 @@ import java.net.Socket;
 
 import javax.annotation.Nullable;
 
-/**
- * The wallet code's way to Tor's SOCKS listener. The listener is a Unix
- * domain socket that only this process can open, so the wallet helpers ask
- * here for a stream instead of dialling a loopback port. Until the platform
- * has installed the connector nothing can be opened: there is no loopback
- * fallback to fail open onto. The port argument the helpers still carry is
- * only their readiness flag.
- */
 @NotNullByDefault
 public final class TorSockets {
 

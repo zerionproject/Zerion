@@ -50,11 +50,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Real-database delivery tests for the receive-side attachment and ephemeral
- * resource bounds (PROTO-05, PROTO-06, PROTO-11). Messages are injected as if
- * received from a contact so the full validation and delivery pipeline runs.
- */
 @NotNullByDefault
 public class AttachmentResourceIntegrationTest extends BrambleTestCase {
 

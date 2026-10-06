@@ -85,7 +85,6 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="tor_plugin_status_disabled_battery">Zerion está configurado para no usar Internet cuando funciona con batería</string>
   <string name="tor_plugin_status_disabled_country_blocked">Zerion está configurado para no usar Internet en este país</string>
   
-  <string name="transport_lan_long">Misma red Wi-Fi</string>
 
   <string name="reminder_notification_title">Sesión de Zerion cerrada</string>
   <string name="reminder_notification_text">Pulsa para reiniciar sesión.</string>
@@ -216,7 +215,6 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="connecting_to_device">Conectando al dispositivo\u2026</string>
   <string name="authenticating_with_device">Autentificándose con el dispositivo\u2026</string>
   <string name="connection_error_title">No se pudo conectar a tu contacto</string>
-  <string name="connection_error_feedback">Si este problema persiste, por favor <a href="feedback">envía tus comentarios</a> para ayudarnos a mejorar la aplicación.</string>
   
   <string name="add_contact_remotely_title_case">Añadir un Contacto a Distancia</string>
   <string name="add_contact_nearby_title">Agregar contacto cercano</string>
@@ -391,8 +389,6 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   
   <string name="tor_network_setting_summary">Automático: %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Usar datos móviles</string>
-  <string name="tor_only_when_charging_title">Conectarse a Internet solo al cargar</string>
-  <string name="tor_only_when_charging_summary">Desactiva la conexión a Internet cuando el dispositivo funciona con batería.</string>
   
   <string name="security_settings_title">Seguridad</string>
   <string name="pref_lock_title">Bloqueo de la Aplicación</string>
@@ -449,59 +445,9 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="choose_ringtone_title">Elige tono de llamada</string>
   <string name="cannot_load_ringtone">No se puede cargar el tono de llamada</string>
   
-  <string name="mailbox_settings_title">Buzón de correo</string>
-  <string name="mailbox_setup_title">Configuración del buzón de correo</string>
-  <string name="mailbox_setup_download_link">Compartir enlace de descarga</string>
-  <string name="mailbox_setup_connecting">Conectando con tu buzón de correo...</string>
   
-  <string name="mailbox_setup_connecting_info">Esto puede tomar hasta %1s</string>
-  <string name="mailbox_setup_already_paired_title">Buzón de correo ya vinculado</string>
-  <string name="mailbox_setup_already_paired_description">Desvincula el buzón de correo en tu otro dispositivo e inténtalo de nuevo.</string>
-  <string name="mailbox_setup_io_error_title">No se pudo conectar</string>
-  <string name="mailbox_setup_io_error_description">Asegúrate de que ambos dispositivos estén conectados a Internet e inténtalo de nuevo.</string>
-  <string name="mailbox_setup_assertion_error_title">Error del buzón de correo</string>
-  <string name="mailbox_setup_assertion_error_description">Por favor, envía comentarios (con datos anónimos) a través de la aplicación Zerion si el problema persiste.</string>
-  <string name="mailbox_setup_camera_error_description">No se pudo acceder a la cámara. Inténtalo de nuevo, quizás después de reiniciar el dispositivo.</string>
-  <string name="mailbox_setup_paired_title">Conectado</string>
-  <string name="tor_offline_title">Desconectado</string>
-  <string name="tor_offline_button_check">Comprobar la configuración de la conexión</string>
-  <string name="mailbox_status_title">Estado del buzón de correo</string>
-  <string name="mailbox_status_connected_title">El buzón de correo está funcionando</string>
-  <string name="mailbox_status_problem_title">Zerion tiene problemas para conectarse al buzón de correo</string>
-  <string name="mailbox_status_failure_title">El buzón de correo no está disponible</string>
-  <string name="mailbox_status_app_too_old_title">Zerion está desactualizado</string>
-  <string name="mailbox_status_app_too_old_message">Actualiza Zerion a la última versión de la aplicación e inténtalo de nuevo.</string>
-  <string name="mailbox_status_mailbox_too_old_title">El buzón de correo está desactualizado</string>
-  <string name="mailbox_status_mailbox_too_old_message">Actualiza tu buzón de correo a la última versión de la aplicación y vuelve a intentarlo.</string>
-  <string name="mailbox_status_check_button">Verificar conexión</string>
   
-  <string name="mailbox_status_connected_info">Última conexión: %s</string>
   
-  <string name="mailbox_status_connected_never">Nunca</string>
-  <string name="mailbox_status_unlink_button">Desvincular</string>
-  <string name="mailbox_status_unlink_dialog_title">¿Desvincular el buzón de correo?</string>
-  <string name="mailbox_status_unlink_dialog_question">¿Estás seguro de que quieres desvincular tu buzón de correo?</string>
-  <string name="mailbox_status_unlink_dialog_warning">Si desvinculas tu buzón de correo, no podrás recibir mensajes mientras Zerion esté desconectado.</string>
-  <string name="mailbox_status_unlink_no_wipe_title">Tu buzón de correo ha sido desvinculado</string>
-  <string name="mailbox_status_unlink_success">Tu buzón de correo ha sido desvinculado</string>
-  <string name="mailbox_error_notification_channel_title">Problema con Zerion Mailbox</string>
-  <string name="mailbox_error_notification_title">Zerion Mailbox no está disponible</string>
-  <string name="mailbox_error_notification_text">Toca para solucionar el problema.</string>
-  <string name="mailbox_error_wizard_button">Solucionar problema</string>
-  <string name="mailbox_error_wizard_title">Asistente de solución de problemas del buzón de correo</string>
-  <string name="mailbox_error_wizard_question1">¿Tienes acceso a tu dispositivo de buzón de correo?</string>
-  <string name="mailbox_error_wizard_answer1">Sí, tengo acceso a él ahora mismo.</string>
-  <string name="mailbox_error_wizard_answer2">No ahora, pero podré acceder a él más tarde.</string>
-  <string name="mailbox_error_wizard_answer3">No, ya no tengo acceso a él.</string>
-  <string name="mailbox_error_wizard_info1_1">Verifica que el dispositivo del buzón de correo esté encendido y conectado a Internet.</string>
-  <string name="mailbox_error_wizard_question1_1">Abre la aplicación del buzón de correo. ¿Qué ves?</string>
-  <string name="mailbox_error_wizard_answer1_1">Veo instrucciones para configurar el buzón de correo</string>
-  <string name="mailbox_error_wizard_answer1_2">Veo un código QR</string>
-  <string name="mailbox_error_wizard_answer1_3">Veo \"El buzón de correo está en funcionamiento\"</string>
-  <string name="mailbox_error_wizard_answer1_4">Veo \"Dispositivo sin conexión\"</string>
-  <string name="mailbox_error_wizard_info1_1_1">Por favor, desvincula tu buzón de correo usando el botón de abajo, luego sigue las instrucciones en el dispositivo del buzón de correo para vincularlo nuevamente.</string>
-  <string name="mailbox_error_wizard_info_1_1_2">Por favor, desvincula tu buzón de correo usando el botón de abajo, y luego escanea el código QR para vincularlo nuevamente.</string>
-  <string name="mailbox_error_wizard_info2">Por favor, vuelve a esta pantalla cuando tengas acceso al dispositivo.</string>
   
   <string name="about_title">Acerca de nosotros</string>
   <string name="zerion_version">Versión Zerion: %s</string>
@@ -509,7 +455,6 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="links">Enlaces</string>
   <string name="zerion_website">•  <a href="">Sitio Web</a></string>
   <string name="zerion_source_code">•  <a href="">Código fuente</a></string>
-  <string name="zerion_changelog">•  <a href="">Registro de cambios</a></string>
   <string name="zerion_privacy_policy">•  <a href="">Política de Privacidad</a></string>
   
   <string name="translator_thanks">Gracias a todos los colaboradores de Localization Lab.</string>
@@ -521,43 +466,13 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="pref_category_actions">Acciones</string>
   <string name="share_app_link">Compartir enlace de descarga</string>
   <string name="share_app_link_text">Descargar Zerion en%s</string>
-  <string name="send_feedback">Enviar opinión</string>
   
   <string name="link_warning_title">Advertencia de enlace</string>
   <string name="link_warning_intro">Estás a punto de abrir el siguiente enlace con una aplicación externa.</string>
   <string name="link_warning_text">Esto puede usarse para identificarte. Piensa si confías en la persona que te envió este enlace y considera abrirlo con Tor Browser.</string>
   <string name="link_warning_open_link">Abrir el enlace</string>
   
-  <string name="crash_report_title">Informe de accidente de Zerion</string>
-  <string name="zerion_crashed">Lo sentimos, Zerion se ha bloqueado</string>
-  <string name="not_your_fault">Esto no es tu culpa.</string>
-  <string name="please_send_report">Ayúdenos a construir un Zerion mejor enviándonos un informe de fallos.</string>
-  <string name="report_is_encrypted">Prometemos que el informe se cifrará y se enviará de forma segura.</string>
-  <string name="feedback_title">Comentarios</string>
-  <string name="describe_crash">Describe lo que pasó (opcional)</string>
-  <string name="enter_feedback">Escribe tu comentario</string>
-  <string name="optional_contact_email">Tu dirección de correo electrónico (opcional)</string>
-  <string name="privacy_policy">Al enviarnos los datos, acepta nuestro<a href="">política de privacidad</a></string>
-  <string name="include_debug_report_crash">Incluir datos anónimos sobre el fallo</string>
-  <string name="include_debug_report_feedback">Incluir datos anónimos sobre este dispositivo</string>
-  <string name="dev_report_user_info">Información del usuario</string>
-  <string name="dev_report_basic_info">Información básica</string>
-  <string name="dev_report_device_info">Información del dispositivo</string>
-  <string name="dev_report_stacktrace">Rastro de pila</string>
-  <string name="dev_report_time_info">Información de tiempo</string>
-  <string name="dev_report_memory">Memoria</string>
-  <string name="dev_report_storage">Almacenamiento</string>
-  <string name="dev_report_connectivity">Conectividad</string>
-  <string name="dev_report_network_usage">Uso de la red</string>
-  <string name="dev_report_build_config">Configuración de compilación</string>
-  <string name="dev_report_logcat">Registro de la aplicación</string>
-  <string name="dev_report_device_features">Características del dispositivo</string>
-  <string name="send_report">Enviar informe</string>
   <string name="close">Cerrar</string>
-  <string name="dev_report_sending">Enviando comentarios</string>
-  <string name="dev_report_sent">Comentarios enviados</string>
-  <string name="dev_report_saved">Informe guardado. Se enviará la próxima vez que inicies sesión en Zerion.</string>
-  <string name="dev_report_error">Error: Error al enviar el informe</string>
   
   <string name="progress_title_logout">Saliendo de Zerion…</string>
   

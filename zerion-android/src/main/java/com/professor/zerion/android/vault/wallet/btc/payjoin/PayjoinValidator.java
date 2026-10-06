@@ -11,11 +11,6 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-/**
- * Independent, local validation of a Payjoin counterparty proposal before the
- * wallet signs. The counterparty and any relay are treated as untrusted. Any
- * uncertainty fails closed. This class performs no I/O.
- */
 @NotNullByDefault
 public final class PayjoinValidator {
 
@@ -39,7 +34,6 @@ public final class PayjoinValidator {
 		OUR_INPUT_SEQUENCE_CHANGED
 	}
 
-	/** The sequence every input of our own transactions carries. */
 	public static final long RBF_SEQUENCE = 0xfffffffdL;
 	public static final int DEFAULT_VERSION = 2;
 

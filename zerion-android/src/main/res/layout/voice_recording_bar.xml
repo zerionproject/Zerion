@@ -14,7 +14,6 @@
 	android:visibility="gone"
 	tools:visibility="visible">
 
-	<!-- Slide to cancel indicator -->
 	<TextView
 		android:id="@+id/slideToCancelText"
 		android:layout_width="0dp"
@@ -28,7 +27,6 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
 
-	<!-- Recording timer -->
 	<TextView
 		android:id="@+id/recordingTimer"
 		android:layout_width="wrap_content"
@@ -44,7 +42,6 @@
 		app:layout_constraintTop_toTopOf="parent"
 		tools:text="0:15" />
 
-	<!-- Audio level indicator (simple animated bars) -->
 	<com.professor.zerion.android.conversation.voice.AudioLevelView
 		android:id="@+id/audioLevelIndicator"
 		android:layout_width="60dp"
@@ -55,7 +52,6 @@
 		app:layout_constraintStart_toEndOf="@+id/recordingTimer"
 		app:layout_constraintTop_toTopOf="parent" />
 
-	<!-- Cancel button -->
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/cancelButton"
 		style="@style/Widget.Material3.Button.TextButton"

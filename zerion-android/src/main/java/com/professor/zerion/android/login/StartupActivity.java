@@ -70,12 +70,85 @@ public class StartupActivity extends BaseActivity implements
 			}
 		});
 		viewModel.getState().observe(this, this::onStateChanged);
-		viewModel.checkAccountExistsAsync(exists -> {
-			if (!exists) {
-				viewModel.deleteAccount();
+		viewModel.decideStartAsync(this::onStartDecided);
+	}
+
+	private void onStartDecided(StartupViewModel.StartupDecision decision) {
+		if (isFinishing()) return;
+		switch (decision) {
+			case ERASED:
+			case NO_ACCOUNT:
 				onAccountDeleted();
-			}
+				break;
+			case DATA_WITHOUT_ACCOUNT:
+				showDataWithoutAccount();
+				break;
+			default:
+				break;
+		}
+	}
+
+	private void showDataWithoutAccount() {
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this, R.style.ZerionDialogTheme)
+				.setTitle(R.string.dialog_title_key_files_damaged)
+				.setMessage(R.string.startup_data_without_account_message)
+				.setCancelable(false)
+				.setPositiveButton(R.string.startup_data_without_account_keep,
+						(d, w) -> finishAndRemoveTask())
+				.setNegativeButton(R.string.startup_data_without_account_erase,
+						(d, w) -> confirmEraseEverything())
+				.show();
+	}
+
+	private void confirmEraseEverything() {
+		String required = getString(R.string.delete_confirm_word);
+		com.google.android.material.textfield.TextInputLayout til =
+				new com.google.android.material.textfield.TextInputLayout(this);
+		com.google.android.material.textfield.TextInputEditText confirm =
+				new com.google.android.material.textfield.TextInputEditText(
+						til.getContext());
+		confirm.setHint(getString(R.string.delete_confirm_hint, required));
+		confirm.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+				| android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		til.addView(confirm);
+		int pad = Math.round(24 * getResources().getDisplayMetrics().density);
+		til.setPadding(pad, 0, pad, 0);
+		androidx.appcompat.app.AlertDialog dialog =
+				new com.professor.zerion.android.security
+						.SecureAlertDialogBuilder(this, R.style.ZerionDialogTheme)
+						.setTitle(R.string.startup_data_without_account_erase)
+						.setMessage(R.string.startup_erase_everything_confirm)
+						.setView(til)
+						.setCancelable(false)
+						.setPositiveButton(R.string.cancel,
+								(d, w) -> showDataWithoutAccount())
+						.setNegativeButton(R.string.delete,
+								(d, w) -> viewModel.deleteAccount())
+						.create();
+		dialog.setOnShowListener(d -> {
+			android.widget.Button delete = dialog.getButton(
+					androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE);
+			delete.setEnabled(false);
+			confirm.addTextChangedListener(new android.text.TextWatcher() {
+				@Override
+				public void beforeTextChanged(CharSequence t, int st, int c,
+						int a) {
+				}
+
+				@Override
+				public void onTextChanged(CharSequence t, int st, int b,
+						int c) {
+				}
+
+				@Override
+				public void afterTextChanged(android.text.Editable e) {
+					delete.setEnabled(e.toString().trim()
+							.equalsIgnoreCase(required));
+				}
+			});
 		});
+		dialog.show();
 	}
 
 	@Override

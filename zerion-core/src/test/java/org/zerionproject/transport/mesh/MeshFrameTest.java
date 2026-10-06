@@ -53,7 +53,6 @@ public class MeshFrameTest {
 			MeshFrame.decode(in);
 			fail("expected FormatException");
 		} catch (FormatException expected) {
-			// ok
 		}
 	}
 }

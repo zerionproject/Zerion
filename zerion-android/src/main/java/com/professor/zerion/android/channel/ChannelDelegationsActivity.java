@@ -22,14 +22,11 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 
-import org.zerionproject.core.api.contact.Contact;
-import org.zerionproject.core.api.contact.ContactManager;
-import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
-import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.app.api.channel.ChannelDelegationCert;
 import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelSubscriber;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -55,8 +52,6 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 
 	@Inject
 	ChannelManager channelManager;
-	@Inject
-	ContactManager contactManager;
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
@@ -131,52 +126,44 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 
 	private void showAddDialog() {
 		ioExecutor.execute(() -> {
-			List<Contact> contacts;
+			List<ChannelSubscriber> subs;
 			try {
-				contacts = new ArrayList<>(contactManager.getContacts());
+				subs = new ArrayList<>(
+						channelManager.getAnnouncedSubscribers(channelId));
 			} catch (DbException ex) {
-				contacts = new ArrayList<>();
+				subs = new ArrayList<>();
 			}
-			List<Contact> usable = new ArrayList<>();
-			for (Contact c : contacts) {
-				PublicKey pk = c.getAuthor().getPublicKey();
-				if (pk instanceof HybridSignaturePublicKey) usable.add(c);
+			List<ChannelSubscriber> usable = new ArrayList<>();
+			for (ChannelSubscriber sub : subs) {
+				if (!sub.isBanned()) usable.add(sub);
 			}
-			List<Contact> finalContacts = usable;
-			runOnUiThread(() -> showAddPicker(finalContacts));
+			runOnUiThread(() -> showAddPicker(usable));
 		});
 	}
 
-	private void showAddPicker(List<Contact> contacts) {
-		CharSequence[] labels = new CharSequence[contacts.size() + 1];
-		for (int i = 0; i < contacts.size(); i++) {
-			labels[i] = contacts.get(i).getAuthor().getName();
+	private void showAddPicker(List<ChannelSubscriber> subs) {
+		CharSequence[] labels = new CharSequence[subs.size() + 1];
+		for (int i = 0; i < subs.size(); i++) {
+			labels[i] = subs.get(i).getDisplayName() + "  "
+					+ DelegationViewHolder.toHexShort(
+					subs.get(i).getEd25519PubKey());
 		}
-		labels[contacts.size()] = getString(
+		labels[subs.size()] = getString(
 				R.string.channels_delegations_paste_key);
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_delegations_add)
 				.setItems(labels, (d, which) -> {
-					if (which == contacts.size()) {
+					if (which == subs.size()) {
 						showPasteKeyDialog();
 					} else {
-						addContactAsEditor(contacts.get(which));
+						addEditor(subs.get(which).getEd25519PubKey(),
+								subs.get(which).getMlDsaPubKey());
 					}
 				})
 				.show();
 	}
 
-	private void addContactAsEditor(Contact contact) {
-		PublicKey pk = contact.getAuthor().getPublicKey();
-		if (!(pk instanceof HybridSignaturePublicKey)) {
-			Toast.makeText(this,
-					R.string.channels_delegations_error_key,
-					Toast.LENGTH_LONG).show();
-			return;
-		}
-		HybridSignaturePublicKey hybrid = (HybridSignaturePublicKey) pk;
-		byte[] ed25519 = hybrid.getEd25519PublicKey();
-		byte[] mlDsa = hybrid.getMlDsaPublicKey();
+	private void addEditor(byte[] ed25519, byte[] mlDsa) {
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.delegatePublisher(channelId, ed25519,

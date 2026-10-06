@@ -60,19 +60,6 @@ public class ZppPacingRegimeTest {
 		assertTrue("active gap was shortened: " + elapsed, elapsed >= 130);
 	}
 
-	/**
-	 * NET-10: a peer that only sends cannot hold this side at the active
-	 * cadence. Without a local real send, receipts start one active window
-	 * per activation interval; within the reply window of a local send every
-	 * receipt extends the window; once that window has passed, receipts fall
-	 * back to the rationed activation.
-	 */
-	/**
-	 * A2-REG-NET-04: a protocol reply the peer provoked (an offer answered
-	 * with a request, a delivery answered with an ack) is a real frame but
-	 * not local activity; only a message this side produced opens the reply
-	 * window in which receipts extend the active regime.
-	 */
 	@Test
 	public void provokedRepliesDoNotCountAsLocalActivity() throws Exception {
 		java.util.List<byte[]> sent = new java.util.ArrayList<>();

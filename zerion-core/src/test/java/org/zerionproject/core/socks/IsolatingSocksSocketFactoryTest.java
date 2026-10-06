@@ -23,12 +23,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Runs a loopback SOCKS5 server that records the credentials each client
- * presents, and checks that the isolating factory authenticates every
- * connection with a username that names the destination, so Tor's SOCKS
- * isolation places different destinations on different circuits.
- */
 public class IsolatingSocksSocketFactoryTest {
 
 	private static final class Credentials {

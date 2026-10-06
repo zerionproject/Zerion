@@ -2,12 +2,6 @@ package com.professor.zerion.android.mesh;
 
 import javax.annotation.Nullable;
 
-/**
- * Reassembles length-prefixed mesh frames from MTU-sized BLE chunks. A
- * compacting read/write buffer keeps appends amortised O(1) and copies each
- * completed frame once. One instance per connection; synchronised because chunks
- * and polls can arrive on different threads.
- */
 final class MeshFrameReassembler {
 
 	private static final int LENGTH_PREFIX = 4;

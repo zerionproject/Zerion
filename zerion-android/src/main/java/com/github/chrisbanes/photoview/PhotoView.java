@@ -25,10 +25,6 @@ import android.view.GestureDetector;
 
 import androidx.appcompat.widget.AppCompatImageView;
 
-/**
- * A zoomable ImageView. See {@link PhotoViewAttacher} for most of the details on how the zooming
- * is accomplished
- */
 @SuppressWarnings("unused")
 public class PhotoView extends AppCompatImageView {
 
@@ -50,23 +46,13 @@ public class PhotoView extends AppCompatImageView {
 
     private void init() {
         attacher = new PhotoViewAttacher(this);
-        //We always pose as a Matrix scale type, though we can change to another scale type
-        //via the attacher
         super.setScaleType(ScaleType.MATRIX);
-        //apply the previously applied scale type
         if (pendingScaleType != null) {
             setScaleType(pendingScaleType);
             pendingScaleType = null;
         }
     }
 
-    /**
-     * Get the current {@link PhotoViewAttacher} for this view. Be wary of holding on to references
-     * to this attacher, as it has a reference to this view, which, if a reference is held in the
-     * wrong place, can cause memory leaks.
-     *
-     * @return the attacher.
-     */
     public PhotoViewAttacher getAttacher() {
         return attacher;
     }
@@ -103,7 +89,6 @@ public class PhotoView extends AppCompatImageView {
     @Override
     public void setImageDrawable(Drawable drawable) {
         super.setImageDrawable(drawable);
-        // setImageBitmap calls through to this method
         if (attacher != null) {
             attacher.update();
         }

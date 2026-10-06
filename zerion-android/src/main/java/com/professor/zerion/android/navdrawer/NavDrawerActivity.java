@@ -37,6 +37,7 @@ import com.professor.zerion.android.donation.DonationManager;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.ui.VaultDashboardFragment;
 import com.professor.zerion.android.vault.ui.VaultOnboardingFragment;
+import com.professor.zerion.android.vault.ui.VaultScreenProtection;
 import com.professor.zerion.android.vault.ui.VaultUnlockFragment;
 import com.professor.zerion.android.view.AuthorView;
 import com.professor.zerion.android.widget.DonationDialogFragment;
@@ -88,8 +89,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 	VaultManager vaultManager;
 
 	@Inject
-	@com.professor.zerion.android.AppModule.SecurePrefs
-	android.content.SharedPreferences securePrefs;
+	@com.professor.zerion.android.AppModule.ProfilePrefs
+	android.content.SharedPreferences profilePrefs;
 
 	@Inject
 	DonationManager donationManager;
@@ -128,11 +129,22 @@ public class NavDrawerActivity extends ZerionActivity implements
 	}
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		return VaultScreenProtection.required(getSupportFragmentManager(),
+				profilePrefs);
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle state) {
+		com.professor.zerion.android.util.SafeIntents
+				.dropUnreadableExtras(getIntent());
 		super.onCreate(state);
 		getWindow().setFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE,
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		VaultScreenProtection.install(this, profilePrefs, () ->
+				securityManager.applyScreenshotProtection(this,
+						forceScreenshotProtection()));
 		setContentView(R.layout.activity_nav_drawer);
 
 		ZerionApplication app = (ZerionApplication) getApplication();
@@ -230,18 +242,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 						.findFragmentById(R.id.fragmentContainer)));
 	}
 
-	/**
-	 * The ZVault section (its dashboard, lists, and the BTC/XMR wallet screens) is
-	 * a self-contained secure context entered from the vault shortcut and navigated
-	 * with the toolbar. Hide the messenger bottom navigation while any vault
-	 * fragment is shown so a stray Chats/Groups/Channels tap cannot tear down a
-	 * wallet screen mid-flow (which would leave the wallet session alive and the
-	 * back stack inconsistent). It is restored the moment a messenger tab fragment
-	 * is shown again. Driven from every entry point that changes the container
-	 * fragment: {@code showNextFragment} (vault sub-navigation, pushed), {@code
-	 * showTabFragment} (bottom-tab replace), and the back-stack-changed listener
-	 * (pops).
-	 */
 	private void applyBottomNavForFragment(androidx.fragment.app.Fragment f) {
 		if (bottomNavigation == null) {
 			return;
@@ -516,7 +516,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			vaultManager.lockVault();
 			return;
 		}
-		int timeoutSeconds = securePrefs.getInt("autolock_timeout", 60);
+		int timeoutSeconds = profilePrefs.getInt("autolock_timeout", 60);
 		if (timeoutSeconds < 0) return;
 		if (timeoutSeconds == 0) {
 			vaultManager.lockVault();
@@ -573,6 +573,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	@Override
 	protected void onNewIntent(Intent intent) {
+		com.professor.zerion.android.util.SafeIntents
+				.dropUnreadableExtras(intent);
 		super.onNewIntent(intent);
 
 		if ("zerion-content".equals(intent.getScheme())) {

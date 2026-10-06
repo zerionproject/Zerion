@@ -6,11 +6,6 @@ import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Test-only derivation helpers keyed by a mnemonic string. Production code
- * holds only a {@link BtcKeys.Account}; the string form exists here so that
- * fixtures can spell the mnemonic as a literal.
- */
 final class TestKeys {
 
 	private static final Map<String, BtcKeys.Account> ACCOUNTS =

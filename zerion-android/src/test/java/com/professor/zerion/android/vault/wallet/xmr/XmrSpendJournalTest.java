@@ -11,11 +11,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * The spend journal round-trips and, crucially, fails closed: any malformed,
- * inconsistent, wrong-version, oversized or wrong-wallet record is
- * JOURNAL_CORRUPTED, never silently accepted or treated as absent.
- */
 public class XmrSpendJournalTest {
 
 	private static final String WID = "wallet-1";

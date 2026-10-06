@@ -6,17 +6,17 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.util.Base32;
 import org.zerionproject.app.channel.OnionPublisher;
 import org.zerionproject.app.channel.OnionPublisher.OnionHandle;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -46,6 +46,11 @@ public class AccountTransferManager {
 			"Zerion-Account-Transfer-v2-length".getBytes(StandardCharsets.UTF_8);
 	private static final byte[] CODE_LABEL =
 			"Zerion-Account-Transfer-v2-code".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] AAD_IMPORTED =
+			"Zerion-Account-Transfer-v2-imported"
+					.getBytes(StandardCharsets.UTF_8);
+	private static final int MAX_CONFIRMATION_BYTES = 256;
+	static final int IMPORT_CONFIRM_TIMEOUT_MS = 15 * 60 * 1000;
 	public static final int CODE_DIGITS = 6;
 	private static final String SESSION_LABEL =
 			"com.professor.zerion.transfer/sessionKey";
@@ -61,22 +66,18 @@ public class AccountTransferManager {
 		TRANSFERRING, IMPORTING, DONE
 	}
 
-	/**
-	 * The new phone shows a confirmation code derived from the session; the
-	 * old phone asks the user to type it and streams the account only when
-	 * it matches. A connection from anyone other than the phone the user is
-	 * holding cannot produce a code the user can type, so the one-time
-	 * address in the QR is not enough to receive the account.
-	 */
+	public enum SendResult {
+		MOVED,
+		SENT_UNCONFIRMED
+	}
+
 	public interface Callback {
 		void onStatus(Status status);
 
 		void onPairingReady(String qrPayload);
 
-		/** New phone: show this code so the user can type it on the old one. */
 		void onShowConfirmationCode(String code);
 
-		/** Old phone: return the code the user typed, or null to cancel. */
 		@Nullable
 		String onEnterConfirmationCode();
 	}
@@ -85,10 +86,11 @@ public class AccountTransferManager {
 	private final OnionPublisher onionPublisher;
 	private final SocketFactory torSocketFactory;
 	private final AccountBackupManager backup;
+	private final AccountRetirement retirement;
 	private final VaultCrypto vaultCrypto = new VaultCrypto();
 
 	@Nullable
-	private volatile ServerSocket currentServer;
+	private volatile OnionTargetListener currentServer;
 	@Nullable
 	private volatile Socket currentSocket;
 	private volatile boolean cancelled;
@@ -96,11 +98,12 @@ public class AccountTransferManager {
 	@Inject
 	AccountTransferManager(CryptoComponent crypto,
 			OnionPublisher onionPublisher, SocketFactory torSocketFactory,
-			AccountBackupManager backup) {
+			AccountBackupManager backup, AccountRetirement retirement) {
 		this.crypto = crypto;
 		this.onionPublisher = onionPublisher;
 		this.torSocketFactory = torSocketFactory;
 		this.backup = backup;
+		this.retirement = retirement;
 	}
 
 	public void cancel() {
@@ -109,36 +112,34 @@ public class AccountTransferManager {
 		closeQuietly(currentSocket);
 	}
 
-	/**
-	 * Old phone: publish a one-time onion, show its QR, accept the new phone's
-	 * connection, then stream this account.
-	 */
-	public void send(Callback cb) throws TransferException {
+	public SendResult send(Callback cb) throws TransferException {
 		cancelled = false;
 		cb.onStatus(Status.PUBLISHING);
 		KeyPair myKp = crypto.generateAgreementKeyPair();
 		byte[] myPub = myKp.getPublic().getEncoded();
-		ServerSocket ss = null;
+		OnionTargetListener ss = null;
 		OnionHandle handle = null;
+		Thread acceptDeadline = null;
 		try {
-			ss = new ServerSocket();
-			ss.bind(new InetSocketAddress("127.0.0.1", 0));
-			ss.setSoTimeout(ACCEPT_TIMEOUT_MS);
+			ss = onionPublisher.openTarget();
 			currentServer = ss;
-			handle = onionPublisher.publish(ss.getLocalPort(), null);
+			handle = onionPublisher.publish(ss.getTorTarget(), null);
 			cb.onPairingReady(LINK_PREFIX + Base32.encode(myPub) + ":"
 					+ handle.getOnion());
 			cb.onStatus(Status.WAITING_FOR_PEER);
+			acceptDeadline = closeAfter(ss, ACCEPT_TIMEOUT_MS);
 			Socket client = ss.accept();
+			acceptDeadline.interrupt();
 			currentSocket = client;
 			try {
-				runSend(client, myKp, myPub, cb);
+				return runSend(client, myKp, myPub, cb);
 			} finally {
 				closeQuietly(client);
 			}
 		} catch (IOException e) {
 			throw new TransferException(IO_ERROR);
 		} finally {
+			if (acceptDeadline != null) acceptDeadline.interrupt();
 			currentSocket = null;
 			currentServer = null;
 			if (handle != null) {
@@ -151,10 +152,21 @@ public class AccountTransferManager {
 		}
 	}
 
-	/**
-	 * New phone: scan the old phone's QR, dial it over Tor, receive + import
-	 * the account under a new device password.
-	 */
+	private static Thread closeAfter(OnionTargetListener listener,
+			long timeoutMs) {
+		Thread t = new Thread(() -> {
+			try {
+				Thread.sleep(timeoutMs);
+			} catch (InterruptedException e) {
+				return;
+			}
+			closeQuietly(listener);
+		}, "TransferAcceptDeadline");
+		t.setDaemon(true);
+		t.start();
+		return t;
+	}
+
 	public void receive(String qrPayload, char[] newPassword, Callback cb)
 			throws TransferException {
 		cancelled = false;
@@ -183,8 +195,8 @@ public class AccountTransferManager {
 		}
 	}
 
-	private void runSend(Socket s, KeyPair myKp, byte[] myPub, Callback cb)
-			throws TransferException {
+	private SendResult runSend(Socket s, KeyPair myKp, byte[] myPub,
+			Callback cb) throws TransferException {
 		try {
 			s.setSoTimeout(READ_TIMEOUT_MS);
 			DataInputStream in = new DataInputStream(s.getInputStream());
@@ -209,9 +221,11 @@ public class AccountTransferManager {
 				out.flush();
 				cb.onStatus(Status.TRANSFERRING);
 				byte[] bundleBytes = backup.snapshotBundle();
+				byte[] digest;
 				try {
 					byte[] sealed = vaultCrypto.encrypt(bundleBytes,
 							sessionKey.getBytes(), AAD).toBytes();
+					digest = sha256(sealed);
 					writeFrame(out, vaultCrypto.encrypt(int32(sealed.length),
 							sessionKey.getBytes(), AAD_LENGTH).toBytes());
 					writeFrame(out, sealed);
@@ -219,7 +233,18 @@ public class AccountTransferManager {
 				} finally {
 					Arrays.fill(bundleBytes, (byte) 0);
 				}
+				SendResult result = SendResult.SENT_UNCONFIRMED;
+				cb.onStatus(Status.IMPORTING);
+				if (importConfirmed(s, in, sessionKey, digest)) {
+					try {
+						retirement.retire();
+						result = SendResult.MOVED;
+					} catch (DbException e) {
+						result = SendResult.SENT_UNCONFIRMED;
+					}
+				}
 				cb.onStatus(Status.DONE);
+				return result;
 			} finally {
 				sessionKey.clear();
 			}
@@ -262,6 +287,7 @@ public class AccountTransferManager {
 				} finally {
 					Arrays.fill(bundleBytes, (byte) 0);
 				}
+				confirmImport(out, sessionKey, sha256(sealed));
 				cb.onStatus(Status.DONE);
 			} finally {
 				sessionKey.clear();
@@ -273,11 +299,39 @@ public class AccountTransferManager {
 		}
 	}
 
-	/**
-	 * Six decimal digits derived from the session key: only the two phones
-	 * that share the session can show or check it. Read from a keyed hash so
-	 * the code reveals nothing about the key.
-	 */
+	private boolean importConfirmed(Socket s, DataInputStream in,
+			SecretKey sessionKey, byte[] digest) {
+		try {
+			s.setSoTimeout(IMPORT_CONFIRM_TIMEOUT_MS);
+			byte[] frame = readFrame(in, 1, MAX_CONFIRMATION_BYTES);
+			byte[] body = vaultCrypto.decrypt(
+					VaultCrypto.EncryptedData.fromBytes(frame),
+					sessionKey.getBytes(), AAD_IMPORTED);
+			return java.security.MessageDigest.isEqual(body, digest);
+		} catch (IOException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	private void confirmImport(DataOutputStream out, SecretKey sessionKey,
+			byte[] digest) {
+		try {
+			writeFrame(out, vaultCrypto.encrypt(digest, sessionKey.getBytes(),
+					AAD_IMPORTED).toBytes());
+			out.flush();
+		} catch (IOException | RuntimeException ignored) {
+		}
+	}
+
+	private static byte[] sha256(byte[] data) {
+		try {
+			return java.security.MessageDigest.getInstance("SHA-256")
+					.digest(data);
+		} catch (java.security.NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	static String confirmationCode(SecretKey sessionKey) {
 		try {
 			javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");

@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 #
-# Builds the GitHub-release APK exactly the way F-Droid builds it, so the
-# published binary is byte-for-byte reproducible and F-Droid's verification
-# passes. This mirrors the F-Droid recipe in fdroiddata
-# (metadata/com.professor.zerion.yml) 1:1.
+# Runs the Gradle build and post-processing the way the F-Droid recipe in
+# fdroiddata (metadata/com.professor.zerion.yml) does. Both keep
+# gradle/verification-metadata.xml in place, so every resolved dependency is
+# checksum- and signature-verified in the recipe and here alike. Since 3.0.12 the
+# published APK is the signed output of `fdroid build --test` (docs/FDROID.md);
+# this build is the independent, dependency-verified build it is compared with.
 #
-# The single most common release mistake is building the GitHub APK WITHOUT
-# -Pfdroid. Without that flag the APK embeds a dynamic git hash and build
-# timestamp and keeps the merged androidx baseline profile (assets/dexopt/
-# baseline.prof*), none of which F-Droid's -Pfdroid build produces, so the two
-# binaries differ and F-Droid refuses to publish. Always release the APK this
-# script produces, never a plain assembleOfficialRelease.
+# gradle.properties sets fdroid=true and the build refuses -Pfdroid=false, so
+# every build of this project has static BuildConfig values and no baseline
+# profile (assets/dexopt/baseline.prof*); the -Pfdroid below is redundant and
+# kept only because the F-Droid recipe passes the same property. The guard
+# after the build still checks that no baseline profile was packaged.
 #
 # Usage:
 #   scripts/build-fdroid-apk.sh
@@ -54,7 +55,7 @@ if [ -n "$(git -C "$RAT_DIR" status --porcelain)" ]; then
 fi
 
 # Mirror the F-Droid recipe. The Gradle dependency verification metadata stays
-# in place so every artifact resolved for the shipped build is checksum- and
+# in place in both, so every artifact resolved for this build is checksum- and
 # signature-verified; a mismatch fails the build instead of silently building
 # an unverified dependency in.
 sed -i "/include ':bramble-java'/d" settings.gradle || true

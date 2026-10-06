@@ -77,7 +77,8 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTA
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_EPOCH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_SENDER_PUBKEY;
-import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_CIPHERTEXT;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_SETTINGS_TIMESTAMP;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_TIMER;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_RECORD_SIG;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_PUBKEY;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_ADDED_NAME;
@@ -161,6 +162,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MESSAGE_REACTION) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateMessageReaction(m, list);
+				} else if (messageType == MessageTypes.MESSAGE_REACTION_REMOVED) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessageReactionRemoved(m, list);
 				} else if (messageType == TYPING_INDICATOR) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateTypingIndicator(m, list);
@@ -194,6 +198,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == GROUP_MEMBER_LIST_SNAPSHOT) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupMemberListSnapshot(m, list);
+				} else if (messageType == MessageTypes.GROUP_SETTINGS) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupSettings(m, list);
 				} else if (messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGrouptrInviteOffer(m, list);
@@ -416,6 +423,25 @@ class PrivateMessageValidator implements MessageValidator {
 		return new BdfMessageContext(meta);
 	}
 
+	private BdfMessageContext validateMessageReactionRemoved(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 3);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		String emoji = body.getString(2);
+		checkLength(emoji, 1, 64);
+		if (!ALLOWED_REACTION_EMOJIS.contains(emoji)) {
+			throw new FormatException();
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_REACTION_REMOVED);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		meta.put(MSG_KEY_REACTION_EMOJI, emoji);
+		return new BdfMessageContext(meta);
+	}
+
 	private BdfMessageContext validateTypingIndicator(Message m, BdfList body)
 			throws FormatException {
 		checkSize(body, 2);
@@ -495,8 +521,10 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		long ttlForSig =
 				autoDeleteTimer == NO_AUTO_DELETE_TIMER ? 0L : autoDeleteTimer;
+		byte[] bodyHash = crypto.hash(org.zerionproject.app.api.messaging
+				.MessagingManager.GROUP_POST_BODY_HASH_LABEL, ciphertext);
 		byte[] signedInput = buildGroupPostSignedInput(
-				groupId, (int) epoch, senderPubKey, senderName, ciphertext,
+				groupId, (int) epoch, senderPubKey, senderName, bodyHash,
 				m.getTimestamp(), ttlForSig);
 		byte[] sigToVerify = recordSig;
 		if (recordSig.length == org.zerionproject.core.api.crypto
@@ -515,7 +543,13 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
 		meta.put(MSG_KEY_GROUP_SENDER_PUBKEY, senderPubKey);
 		meta.put("groupSenderName", senderName);
-		meta.put(MSG_KEY_GROUP_CIPHERTEXT, ciphertext);
+		meta.put(org.zerionproject.app.api.messaging.MessagingManager
+				.MSG_KEY_GROUP_BODY_HASH, bodyHash);
+		meta.put(org.zerionproject.app.api.messaging.MessagingManager
+				.MSG_KEY_GROUP_BODY_LENGTH, (long) ciphertext.length);
+		meta.put(org.zerionproject.app.api.messaging.MessagingManager
+				.MSG_KEY_GROUP_POST_STATE, (long) org.zerionproject.app.api
+				.messaging.MessagingManager.GROUP_POST_STATE_UNDECIDED);
 		meta.put(MSG_KEY_GROUP_RECORD_SIG, recordSig);
 		if (autoDeleteTimer != NO_AUTO_DELETE_TIMER) {
 			meta.put(MSG_KEY_AUTO_DELETE_TIMER, autoDeleteTimer);
@@ -741,13 +775,11 @@ class PrivateMessageValidator implements MessageValidator {
 	}
 
 	private byte[] buildGroupPostSignedInput(byte[] groupId, int epoch,
-			byte[] senderPubKey, String senderName, byte[] ciphertext,
+			byte[] senderPubKey, String senderName, byte[] ctHash,
 			long timestamp, long ttlMs) {
 		byte[] nameHash = crypto.hash(
 				"org.zerionproject/GROUP_POST_NAME",
 				senderName.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-		byte[] ctHash = crypto.hash(
-				"org.zerionproject/GROUP_POST_CT", ciphertext);
 		byte[] out = new byte[32 + 4 + 32 + nameHash.length
 				+ ctHash.length + 8 + 8];
 		System.arraycopy(groupId, 0, out, 0, 32);
@@ -858,6 +890,44 @@ class PrivateMessageValidator implements MessageValidator {
 			out[69 + i] = (byte) (timestamp >>> ((7 - i) * 8));
 		}
 		out[77] = (byte) 0x06;
+		return out;
+	}
+
+	private BdfMessageContext validateGroupSettings(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 5);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		long timer = body.getLong(2);
+		if (timer != 0L) validateAutoDeleteTimer(timer);
+		long timestamp = body.getLong(3);
+		byte[] sig = body.getRaw(4);
+		checkLength(sig, 1, 4096);
+		byte[] signedInput = groupSettingsSignedInput(groupId, timer,
+				timestamp);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_SETTINGS);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MSG_KEY_GROUP_TIMER, timer);
+		meta.put(MSG_KEY_GROUP_SETTINGS_TIMESTAMP, timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		meta.put("groupMembershipSignedInput", signedInput);
+		return new BdfMessageContext(meta);
+	}
+
+	static byte[] groupSettingsSignedInput(byte[] groupId, long timer,
+			long timestamp) {
+		byte[] out = new byte[32 + 8 + 8 + 1];
+		System.arraycopy(groupId, 0, out, 0, 32);
+		for (int i = 0; i < 8; i++) {
+			out[32 + i] = (byte) (timer >>> ((7 - i) * 8));
+		}
+		for (int i = 0; i < 8; i++) {
+			out[40 + i] = (byte) (timestamp >>> ((7 - i) * 8));
+		}
+		out[48] = (byte) 0x08;
 		return out;
 	}
 

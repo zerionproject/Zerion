@@ -2,11 +2,6 @@ package com.professor.zerion.android.vault.wallet.xmr;
 
 import androidx.annotation.Nullable;
 
-/**
- * In-JVM fake of {@link MoneroEngine} for deterministic XmrWalletManager tests.
- * No native code, no real storage. Lets tests drive create/restore/open
- * outcomes and observe close/seed calls.
- */
 public final class FakeMoneroEngine implements MoneroEngine {
 
 	static final String FAKE_SEED =
@@ -54,21 +49,11 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	@Nullable
 	public volatile FakeSession lastSpendOpened;
 
-	/** Daemon height every session opened from now on reports. */
 	public volatile long daemonHeightForNewSessions = 0;
-	/** Scanned height every spend session opened from now on reports. */
 	public volatile long spendBlockchainHeightForNewSessions = 3_750_000L;
-	/**
-	 * What a spend session's store wrote into the wallet's background cache,
-	 * by wallet path: a later background open reports it as history, as the
-	 * library's background cache does after a successful rewrite.
-	 */
 	final java.util.Map<String, java.util.List<XmrTxInfo>> storedOutgoing =
 			new java.util.concurrent.ConcurrentHashMap<>();
-	/** The library reporting a store as done although the background cache
-	 *  rewrite failed (it logs and swallows that failure). */
 	public volatile boolean storeSkipsBackgroundCache = false;
-	/** Outgoing history every spend session opened from now on reports. */
 	@Nullable
 	public volatile java.util.List<XmrTxInfo> spendOutgoingForNewSessions;
 
@@ -117,7 +102,6 @@ public final class FakeMoneroEngine implements MoneroEngine {
 				: AddressKind.STANDARD;
 	}
 
-	/** Configurable prepared transaction for JVM tests; never relays. */
 	public static final class FakePrepared implements Prepared {
 		public java.util.List<String> ids = new java.util.ArrayList<>();
 		public long fee, amount, dust, count, change;
@@ -218,10 +202,7 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	}
 
 	volatile boolean refreshIdle = true;
-	/** When set, spend (non-background) sessions fail to connect. */
 	volatile boolean failSpendInit = false;
-	/** Used by sessions the manager opens itself (the spend session of a send)
-	 *  when the test cannot reach the session object before prepare runs. */
 	@Nullable
 	public volatile Prepared preparedForNewSessions;
 	@Nullable

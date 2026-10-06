@@ -19,12 +19,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * XMR-P0 hardening pass for the Zerion JNI boundary (non-funded, on-device).
- * Verifies the native library survives repeated lifecycle, guards double-close,
- * rejects invalid handles and malformed input, and never lets a native error
- * escape as an uncontrolled crash. Uses only throwaway wallets; no funds.
- */
 @RunWith(AndroidJUnit4.class)
 public class MoneroNativeHardeningTest {
 
@@ -98,11 +92,6 @@ public class MoneroNativeHardeningTest {
 		assertNull(NativeMonero.nHistory(0));
 	}
 
-	/**
-	 * F-5 handle registry: forged, stale, wrong-kind and double-disposed handles
-	 * must resolve to the typed error sentinel, never dereference memory. Real
-	 * handles are small opaque ids, not raw pointers.
-	 */
 	@Test
 	public void forgedStaleAndWrongTypeHandlesFailSafely() {
 		long[] forged = {1L, -1L, 7L, 0xDEADBEEFL, 0x7FFFFFFFFFFFFFFFL,

@@ -4,14 +4,6 @@ import androidx.annotation.Nullable;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Immutable, validated snapshot of one wallet transaction, copied out of the
- * native history at read time. Carries only what the read-only P2 UI needs; it
- * holds no native handle and no key material (history is public chain data the
- * daemon already knows). Amounts are atomic (piconero). Constructed only through
- * {@link #parse}, which rejects malformed rows so hostile daemon data cannot
- * produce a bad object.
- */
 @NotNullByDefault
 public final class XmrTxInfo {
 
@@ -27,11 +19,6 @@ public final class XmrTxInfo {
 	public final long unlockTime;
 	public final boolean pending;
 	public final boolean failed;
-	/**
-	 * True for an outgoing row whose relay outcome is unknown: the daemon
-	 * neither accepted nor definitively refused it. Such a row is never
-	 * shown as an ordinary pending send.
-	 */
 	public final boolean uncertain;
 
 	private XmrTxInfo(String txid, Direction direction, long amountAtomic,
@@ -58,33 +45,18 @@ public final class XmrTxInfo {
 		this.uncertain = uncertain;
 	}
 
-	/**
-	 * A synthetic pending outgoing row for the durable send overlay: an
-	 * already-relayed transaction wallet2's own history has not yet observed.
-	 * Built from the exact signed amount and final fee, never guessed; pending,
-	 * not failed, zero confirmations, height 0.
-	 */
 	public static XmrTxInfo pendingOutgoing(String txid, long amountAtomic,
 			long feeAtomic, long timestampSec) {
 		return pendingOutgoing(txid, amountAtomic, feeAtomic, timestampSec,
 				false);
 	}
 
-	/** As above, marked uncertain when the relay outcome is unknown. */
 	public static XmrTxInfo pendingOutgoing(String txid, long amountAtomic,
 			long feeAtomic, long timestampSec, boolean uncertain) {
 		return new XmrTxInfo(txid, Direction.OUT, amountAtomic, feeAtomic, 0,
 				timestampSec, 0, 0, true, false, uncertain);
 	}
 
-	/**
-	 * A durable outgoing row built from the exact locally known send facts
-	 * (amount, fee, timestamp) enriched with whatever canonical chain state the
-	 * wallet has since proven for the same txid (height, confirmations, mined or
-	 * failed state). A view-only wallet cannot itself reconstruct an outgoing
-	 * transaction, so these facts come from Zerion's own record of the send, not
-	 * guessed.
-	 */
 	public static XmrTxInfo outgoing(String txid, long amountAtomic,
 			long feeAtomic, long timestampSec, long height, long confirmations,
 			boolean pending, boolean failed) {
@@ -92,12 +64,6 @@ public final class XmrTxInfo {
 				timestampSec, confirmations, 0, pending, failed);
 	}
 
-	/**
-	 * Parse one native snapshot line
-	 * {@code hash,direction,amount,fee,height,timestamp,confirmations,unlockTime,pending,failed}.
-	 * Returns null (dropped by the caller) if any field is missing, non-numeric,
-	 * out of range, or the txid is not 64 lowercase hex characters.
-	 */
 	@Nullable
 	public static XmrTxInfo parse(String line) {
 		String[] f = line.split(",", -1);
@@ -124,12 +90,6 @@ public final class XmrTxInfo {
 		}
 	}
 
-	/**
-	 * Parse a wallet2 unsigned-64 field. Uses {@link Long#parseUnsignedLong} so
-	 * a legitimate value above {@code Long.MAX_VALUE} (notably a sender-chosen
-	 * {@code unlock_time} up to 2^64-1 on a received transaction) is kept as its
-	 * raw bit pattern instead of throwing and silently dropping the whole row.
-	 */
 	private static long parseUnsigned(String s) {
 		return Long.parseUnsignedLong(s);
 	}

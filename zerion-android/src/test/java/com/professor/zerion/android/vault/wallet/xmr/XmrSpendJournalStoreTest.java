@@ -20,12 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The store is durable-by-contract and strictly fail-closed: a present journal
- * reads back, an unparseable or unreadable one is CORRUPTED (still quarantined),
- * a missing one is ABSENT, a write failure surfaces so a relay cannot proceed,
- * and wallets are isolated from each other.
- */
 public class XmrSpendJournalStoreTest {
 
 	private static final String A = "wallet-A";

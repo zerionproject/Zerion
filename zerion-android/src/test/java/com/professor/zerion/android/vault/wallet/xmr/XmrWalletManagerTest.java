@@ -24,12 +24,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Deterministic XMR-P1 tests: fail-closed authentication, atomic create,
- * malformed-seed rejection, session invalidation, and secret-buffer wiping.
- * Plain JUnit with a fake native engine and hand-written fakes for the vault
- * gate and store, so no native code and no real vault storage are touched.
- */
 public class XmrWalletManagerTest {
 
 	@Rule
@@ -268,8 +262,6 @@ public class XmrWalletManagerTest {
 		assertTrue(engine.closeCount > before);
 	}
 
-	/** JNI-03: a persisting close whose cache write fails still frees the
-	 *  native wallet and invalidates the session; nothing stays open. */
 	@Test
 	public void closeStillInvalidatesWhenThePersistingCloseFails() {
 		mgr.createWallet("w", "pass".toCharArray());
@@ -574,13 +566,6 @@ public class XmrWalletManagerTest {
 	private static final String DEST =
 			"42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm";
 
-	/**
-	 * How long an asynchronous result may take. The release build runs this
-	 * suite beside R8, and a ten-second deadline expired there once in four
-	 * runs while every isolated run passed, so the deadline is generous
-	 * enough to survive a loaded machine and still far below the per-test
-	 * timeout.
-	 */
 	private static final long AWAIT_MS = 30_000;
 
 	private static void awaitTrue(java.util.function.BooleanSupplier c,
@@ -594,11 +579,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/**
-	 * XMR-04: the view-only sync session and the spend-capable relay session
-	 * of one wallet must each be initialised with their own SOCKS5 isolation
-	 * credential, so a node cannot link syncing to relaying over one circuit.
-	 */
 	@Test(timeout = 90_000)
 	public void syncAndRelaySessionsCarryDistinctIsolationCredentials()
 			throws Exception {
@@ -637,8 +617,6 @@ public class XmrWalletManagerTest {
 	private static final String T1 =
 			"1111111111111111111111111111111111111111111111111111111111111111";
 
-	/** A live manager with a real session thread so the sync loop and the send
-	 *  flow run as in production; the test observes through LiveData. */
 	private final class Live implements AutoCloseable {
 		final java.util.concurrent.ExecutorService session =
 				java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -693,8 +671,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-03: a review nobody answers must not hold the spend session, the
-	 *  signed transaction and the exclusive slot for the process lifetime. */
 	@Test(timeout = 90_000)
 	public void orphanedReviewIsReleasedByTheWatchdog() throws Exception {
 		try (Live live = new Live()) {
@@ -721,7 +697,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-03: while a review is orphaned every other XMR wallet is blocked. */
 	@Test(timeout = 90_000)
 	public void orphanedReviewBlocksOtherWalletsUntilReleased() throws Exception {
 		try (Live live = new Live()) {
@@ -740,7 +715,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-03: an explicit session close tears down an active flow. */
 	@Test(timeout = 90_000)
 	public void explicitCloseTearsDownAnActiveReview() throws Exception {
 		Live live = new Live();
@@ -755,7 +729,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-03: the vault lock always wins over an active review. */
 	@Test(timeout = 90_000)
 	public void vaultLockDestroysSpendCapabilityDuringReview() throws Exception {
 		try (Live live = new Live()) {
@@ -770,9 +743,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-05: an uncertain relay must keep the balance reservation, durably,
-	 *  because wallet2 marks inputs spent only after the daemon accepted the
-	 *  transaction and the funds may nevertheless be gone. */
 	@Test(timeout = 90_000)
 	public void uncertainRelayKeepsTheReservationAcrossRestart()
 			throws Exception {
@@ -806,7 +776,6 @@ public class XmrWalletManagerTest {
 		assertTrue(restarted.isSpendQuarantined(id));
 	}
 
-	/** XMR-05 contrast: an accepted relay converges and releases exactly once. */
 	@Test(timeout = 90_000)
 	public void acceptedRelayConvergesAndReleasesTheReservation()
 			throws Exception {
@@ -826,10 +795,6 @@ public class XmrWalletManagerTest {
 	private static final long MINED = 2_500_000L;
 	private static final long DAY_MS = 24L * 60 * 60 * 1000;
 
-	/** XMR-07: the spend wallet opened for a later send is the first place
-	 *  a spend the view-only cache cannot see becomes visible; a reservation
-	 *  it reports as spent converges there, and the view is rebuilt from the
-	 *  spend wallet's state when the send is abandoned. */
 	@Test(timeout = 90_000)
 	public void laterSendConvergesAnObservedSpendAndRebuildsTheView()
 			throws Exception {
@@ -883,9 +848,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-10: a wallet created while the clock ran ahead persists a restore
-	 *  height above the chain tip; the first daemon height caps it below the
-	 *  tip and rescans, once, and the marker never survives the correction. */
 	@Test(timeout = 90_000)
 	public void clockAheadRestoreHeightIsCappedByTheFirstDaemonHeight()
 			throws Exception {
@@ -911,9 +873,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-02: a daemon reporting a tip below the newest checkpoint this
-	 *  build knows is behind the chain, so its height corrects nothing and
-	 *  the clock marker survives for an honest node to consume. */
 	@Test(timeout = 90_000)
 	public void anImplausiblyLowDaemonHeightNeverLowersTheRestoreHeight()
 			throws Exception {
@@ -935,10 +894,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-01: a relay-uncertain reservation whose journal a positive
-	 *  answer already cleared, but which the spend wallet never observed,
-	 *  is released under the journal's own rule once the daemon reports the
-	 *  transaction as missed after the expiry window. */
 	@Test(timeout = 90_000)
 	public void aStaleUncertainReservationIsReleasedAfterTheDaemonForgetsIt()
 			throws Exception {
@@ -982,9 +937,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-03: a spend wallet still at genesis had its background cache
-	 *  merge fail; initialising it would fast-forward and then overwrite the
-	 *  background cache with an empty view, so the send is refused. */
 	@Test(timeout = 90_000)
 	public void aSpendWalletAtGenesisIsRefused() throws Exception {
 		try (Live live = new Live()) {
@@ -1007,8 +959,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-03: the spend session carries the recovering marker before
-	 *  init, like the view session, so the library never treats it as new. */
 	@Test(timeout = 90_000)
 	public void theSpendSessionIsMarkedRecoveringBeforeInit() throws Exception {
 		try (Live live = new Live()) {
@@ -1023,9 +973,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-04: a wrong password re-arms the watchdog, and a watchdog that
-	 *  fires while the flow is authorizing schedules a follow-up instead of
-	 *  silently ending. */
 	@Test(timeout = 90_000)
 	public void theWatchdogSurvivesAWrongPasswordAndABusyFlow()
 			throws Exception {
@@ -1069,9 +1016,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-05: a store the library reports as done although the background
-	 *  cache rewrite failed must not release the reservation; the reopened
-	 *  view decides. */
 	@Test(timeout = 90_000)
 	public void aStoreThatMissedTheBackgroundCacheDoesNotConverge()
 			throws Exception {
@@ -1094,8 +1038,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** A2-XMR-06: a persisting close the library could not complete is
-	 *  reported instead of silently dropping the scan progress. */
 	@Test(timeout = 90_000)
 	public void aFailedPersistingCloseIsReported() throws Exception {
 		try (Live live = new Live()) {
@@ -1115,7 +1057,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-10 contrast: a height the user chose is never capped. */
 	@Test(timeout = 90_000)
 	public void importedRestoreHeightIsNeverCappedByTheDaemon()
 			throws Exception {
@@ -1152,7 +1093,6 @@ public class XmrWalletManagerTest {
 		awaitTrue(live.m::isSessionValid, AWAIT_MS);
 	}
 
-	/** Drives one send to a terminal relay state and returns the prepared tx. */
 	private FakeMoneroEngine.FakePrepared relay(Live live, boolean accepted,
 			XmrSendUiState.Kind expected) throws Exception {
 		FakeMoneroEngine.FakePrepared p = live.reachReview();
@@ -1162,7 +1102,6 @@ public class XmrWalletManagerTest {
 		return p;
 	}
 
-	/** XMR-01: an accepted relay the daemon can see resolves at once. */
 	@Test(timeout = 90_000)
 	public void relaySuccessResolvesTheJournalFromTheDaemon() throws Exception {
 		try (Live live = new Live()) {
@@ -1173,9 +1112,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a daemon rejection is uncertain, never auto-released: the node
-	 *  may have broadcast and lied, so only positive evidence or the expiry
-	 *  gated release may end it. */
 	@Test(timeout = 90_000)
 	public void daemonRejectionStaysUncertainAndIsNeverAutoReleased()
 			throws Exception {
@@ -1194,8 +1130,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a timeout after submission resolves when the daemon later
-	 *  reports the transaction; the reservation is held until convergence. */
 	@Test(timeout = 90_000)
 	public void timeoutAfterSubmissionResolvesWhenTheDaemonSeesIt()
 			throws Exception {
@@ -1212,7 +1146,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: losing the connection before submission leaves no journal. */
 	@Test(timeout = 90_000)
 	public void connectionLossBeforeSubmissionLeavesNoJournal()
 			throws Exception {
@@ -1232,8 +1165,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a commit that throws after the journal is durable is uncertain,
-	 *  not a plain failure, so it can never be silently forgotten. */
 	@Test(timeout = 90_000)
 	public void connectionLossAfterPossibleSubmissionIsUncertain()
 			throws Exception {
@@ -1249,7 +1180,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: restart while uncertain, then the view open reconciles. */
 	@Test(timeout = 90_000)
 	public void restartWhileUncertainReconcilesOnOpen() throws Exception {
 		String id;
@@ -1267,7 +1197,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: after a node switch reconciliation runs against the new daemon. */
 	@Test(timeout = 90_000)
 	public void nodeSwitchWhileUncertainStillReconciles() throws Exception {
 		String id;
@@ -1289,8 +1218,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a transaction that never appears stays quarantined until the
-	 *  password-gated, expiry-gated release; the release drops the reservation. */
 	@Test(timeout = 90_000)
 	public void transactionNeverAppearsIsReleasableOnlyAfterExpiry()
 			throws Exception {
@@ -1324,7 +1251,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: the release is refused when the daemon did not answer. */
 	@Test(timeout = 90_000)
 	public void releaseIsRefusedWithoutAnAnsweringDaemon() throws Exception {
 		try (Live live = new Live()) {
@@ -1347,7 +1273,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a wrong password never releases anything. */
 	@Test(timeout = 90_000)
 	public void releaseRequiresTheWalletPassword() throws Exception {
 		try (Live live = new Live()) {
@@ -1369,7 +1294,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: reconciliation is idempotent under repetition. */
 	@Test(timeout = 90_000)
 	public void repeatedReconciliationIsIdempotent() throws Exception {
 		try (Live live = new Live()) {
@@ -1390,7 +1314,6 @@ public class XmrWalletManagerTest {
 		}
 	}
 
-	/** XMR-01: a quarantined wallet is deletable only with the acknowledgement. */
 	@Test
 	public void deleteWhileQuarantinedRequiresAcknowledgement() throws Exception {
 		store.secret = FakeMoneroEngine.FAKE_SEED.toCharArray();

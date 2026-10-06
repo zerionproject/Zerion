@@ -7,13 +7,6 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The immutable state the Send UI renders, posted by the manager as the one
- * send flow advances. It exposes only what the screens need and never any
- * internal identity: no fingerprint, native handle, endpoint id or journal
- * detail. The UI reads this and drives the flow through the manager; it never
- * touches the native transaction or the journal itself.
- */
 @NotNullByDefault
 public final class XmrSendUiState {
 
@@ -22,7 +15,6 @@ public final class XmrSendUiState {
 		RELAY_UNCERTAIN, FAILED, QUARANTINED, CANCELLED
 	}
 
-	/** The reviewed, already-signed transaction as shown on the Review screen. */
 	public static final class Review {
 		public final long amountAtomic;
 		public final String destination;

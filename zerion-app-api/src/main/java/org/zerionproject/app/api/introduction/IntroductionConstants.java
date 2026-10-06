@@ -25,6 +25,12 @@ public interface IntroductionConstants {
 	String LABEL_ACTIVATE_MAC =
 			"org.zerionproject.app.introduction/ACTIVATE_MAC";
 
+	String LABEL_ALICE_ACTIVATE_KEY =
+			"org.zerionproject.app.introduction/ALICE_ACTIVATE_KEY";
+
+	String LABEL_BOB_ACTIVATE_KEY =
+			"org.zerionproject.app.introduction/BOB_ACTIVATE_KEY";
+
 	boolean INTRODUCTION_HYBRID_KEM_ENABLED = true;
 
 	String LABEL_PRE_MASTER_KEY =

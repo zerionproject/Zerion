@@ -2,16 +2,6 @@ package com.professor.zerion.android.vault.wallet.btc;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Central definition of the Tor stream-isolation context for each wallet
- * activity. Every context is derived from the wallet identifier so activities of
- * different wallets never share a circuit, and each activity of one wallet
- * (scan, broadcast, Silent Payment scan, price, Payjoin) gets a distinct,
- * stable context so they are not linkable to each other over one circuit. The
- * contexts are stable per wallet and per purpose, not per request, so a fresh
- * Tor identity is not created for every call. Stream isolation is keyed on the
- * SOCKS username and password derived here.
- */
 @NotNullByDefault
 public final class TorIsolation {
 
@@ -38,11 +28,6 @@ public final class TorIsolation {
 		return walletId + "-pj";
 	}
 
-	/**
-	 * A tag used once, for a connection that belongs to no wallet, such as
-	 * a node health check or a certificate capture: each such connection
-	 * gets its own circuit instead of sharing one across wallets.
-	 */
 	public static String ephemeral(String purpose) {
 		byte[] nonce = new byte[4];
 		new java.security.SecureRandom().nextBytes(nonce);

@@ -5,7 +5,7 @@
 # org.briarproject:lyrebird-android:0.6.2 against these values before they
 # are packaged, and the app verifies the file it is about to execute against
 # them before every Tor start. Only the ABIs listed here are packaged.
-arm64-v8a/libtor.so 29eb99c78c803cdada5948c193308544f5c30414032c3334c3a83a124fcb9426
-armeabi-v7a/libtor.so 418976d0958c8b422d71126e9fe34986657b96672b4fe6059107e41a0f7b8eaa
+arm64-v8a/libtor.so 586209695b73aea897086d0500b7ef1dcccb0a5a8a002c4e1903ab2ad866dced
+armeabi-v7a/libtor.so 1b83790304f4c15a283ada143d35ef86a30027d814d0cd8cf6e1004c360eeb09
 arm64-v8a/liblyrebird.so 34e258346e12648b7206941cd4af790ad61ca4c663e47426f3631ee98870dc5c
 armeabi-v7a/liblyrebird.so ec54b954399a75cddbc76862fbd887d91714531e21be03795708483809a2e7ed

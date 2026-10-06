@@ -15,7 +15,6 @@ import javax.annotation.Nullable;
 
 import androidx.appcompat.app.ActionBar;
 
-/** Hosts the offline (nearby) QR pairing screen. */
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class AddNearbyContactActivity extends ZerionActivity

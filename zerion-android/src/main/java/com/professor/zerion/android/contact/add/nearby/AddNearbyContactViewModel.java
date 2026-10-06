@@ -96,9 +96,6 @@ public class AddNearbyContactViewModel extends DbViewModel
 
 	public void startListening() {
 		if (!started.compareAndSet(false, true)) return;
-		// Nearby pairing is Bluetooth-only. If Bluetooth is off / unsupported,
-		// fail fast so the UI can prompt the user instead of showing a QR that
-		// can never pair and hanging on "connecting" forever.
 		if (!isBluetoothReadyForPairing()) {
 			started.set(false);
 			state.postValue(PairingState.FAILED);
@@ -203,13 +200,6 @@ public class AddNearbyContactViewModel extends DbViewModel
 				runPairedSession(contact, transportId, conn, alice));
 	}
 
-	/**
-	 * Carries the first session with the new contact over the socket the
-	 * pairing ran on. Both sides committed the session inputs during the
-	 * exchange, so the handler resumes without a tag lookup; the side that
-	 * played Alice registers the connection as dialled and the other side as
-	 * accepted. The streams are disposed when the session ends.
-	 */
 	private void runPairedSession(Contact contact, TransportId transportId,
 			DuplexTransportConnection conn, boolean alice) {
 		boolean exception = false;

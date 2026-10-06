@@ -52,6 +52,8 @@ public class MeshController implements OpenDatabaseHook {
 				.getBoolean(PREF_MESH_ENABLED, false);
 		if (enabled && isSupported() && hasPermissions(appContext)) {
 			ioExecutor.execute(this::startQuietly);
+		} else if (isSupported() && hasPermissions(appContext)) {
+			ioExecutor.execute(meshManager::restoreBluetoothName);
 		}
 	}
 
@@ -87,6 +89,13 @@ public class MeshController implements OpenDatabaseHook {
 
 	private void startQuietly() {
 		try {
+			if (settingsManager.getSettings(
+					org.zerionproject.core.api.plugin.TorConstants.ID
+							.getString()).getBoolean(
+					org.zerionproject.core.api.plugin.TorConstants
+							.PREF_ACCOUNT_MOVED, false)) {
+				return;
+			}
 			textSenderProvider.get();
 			meshManager.start();
 		} catch (DbException e) {

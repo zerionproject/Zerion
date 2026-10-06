@@ -14,6 +14,8 @@ class ChannelHmacChallenge {
 
 	private static final String LABEL =
 			"org.zerionproject/CHANNEL_HMAC_CHALLENGE";
+	private static final String LABEL_V2 =
+			"org.zerionproject/CHANNEL_REQUEST_PROOF_V2";
 
 	private final CryptoComponent crypto;
 	private final SecureRandom random;
@@ -40,5 +42,18 @@ class ChannelHmacChallenge {
 			byte[] response) {
 		SecretKey k = new SecretKey(capability);
 		return crypto.verifyMac(response, LABEL, k, channelId, nonce);
+	}
+
+	byte[] respondV2(byte[] capability, byte[] nonce, byte[] channelId,
+			byte[] requestWithoutProof) {
+		SecretKey k = new SecretKey(capability);
+		return crypto.mac(LABEL_V2, k, channelId, nonce, requestWithoutProof);
+	}
+
+	boolean verifyV2(byte[] capability, byte[] nonce, byte[] channelId,
+			byte[] requestWithoutProof, byte[] proof) {
+		SecretKey k = new SecretKey(capability);
+		return crypto.verifyMac(proof, LABEL_V2, k, channelId, nonce,
+				requestWithoutProof);
 	}
 }

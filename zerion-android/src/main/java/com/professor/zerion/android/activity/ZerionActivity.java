@@ -84,9 +84,17 @@ public abstract class ZerionActivity extends BaseActivity {
 	}
 
 	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		if (hasFocus) {
+			com.professor.zerion.android.util.SecureClipboard
+					.onAppFocused(this);
+		}
+	}
+
+	@Override
 	public void onResume() {
 		super.onResume();
-		com.professor.zerion.android.util.SecureClipboard.onAppFocused(this);
 		if (briarController
 				instanceof com.professor.zerion.android.controller
 						.ZerionControllerImpl) {
@@ -180,6 +188,10 @@ public abstract class ZerionActivity extends BaseActivity {
 		b.show();
 	}
 
+	public void eraseAccountsAndExit() {
+		signOut(true, true);
+	}
+
 	protected void signOut(boolean removeFromRecentApps,
 			boolean deleteAccount) {
 		wakeLockManager.runWakefully(() -> {
@@ -190,6 +202,8 @@ public abstract class ZerionActivity extends BaseActivity {
 							this::runOnUiThread, "SignOut");
 				}, deleteAccount);
 			} else {
+				com.professor.zerion.android.util.SecureClipboard
+						.clearOnSignOut(this);
 				if (deleteAccount) briarController.deleteAccount();
 				exit(removeFromRecentApps);
 			}

@@ -52,6 +52,11 @@ class VideoCameraManager {
 	@Nullable
 	private Surface pendingSwitchEncoderSurface;
 
+	private volatile boolean stopped;
+
+	@Nullable
+	private volatile java.util.concurrent.CountDownLatch pendingOpen;
+
 	void setErrorCallback(@Nullable CameraErrorCallback callback) {
 		this.errorCallback = callback;
 	}
@@ -86,11 +91,17 @@ class VideoCameraManager {
 	}
 
 	void start(Context context, Surface encoderSurface) {
+		stopped = false;
 		encoderSurfaceRef = encoderSurface;
 		cameraThread = new HandlerThread("CameraThread");
 		cameraThread.start();
-		cameraHandler = new Handler(cameraThread.getLooper());
+		Handler handler = new Handler(cameraThread.getLooper());
+		cameraHandler = handler;
+		onCameraThreadStarted(handler);
 		openCamera(context, encoderSurface);
+	}
+
+	void onCameraThreadStarted(Handler handler) {
 	}
 
 	private void openCamera(Context context, Surface encoderSurface) {
@@ -98,19 +109,28 @@ class VideoCameraManager {
 				Context.CAMERA_SERVICE);
 		if (manager == null) return;
 
+		java.util.concurrent.CountDownLatch opening =
+				new java.util.concurrent.CountDownLatch(1);
 		try {
 			String cameraId = findCameraId(manager);
 			if (cameraId == null) return;
 
+			pendingOpen = opening;
 			manager.openCamera(cameraId, new CameraDevice.StateCallback() {
 				@Override
 				public void onOpened(CameraDevice camera) {
+					opening.countDown();
+					if (stopped) {
+						camera.close();
+						return;
+					}
 					cameraDevice = camera;
 					createCaptureSession(camera, encoderSurface);
 				}
 
 				@Override
 				public void onDisconnected(CameraDevice camera) {
+					opening.countDown();
 					camera.close();
 					cameraDevice = null;
 				}
@@ -118,7 +138,7 @@ class VideoCameraManager {
 				@Override
 				public void onClosed(CameraDevice camera) {
 
-					if (pendingSwitchContext != null) {
+					if (pendingSwitchContext != null && !stopped) {
 						Context ctx = pendingSwitchContext;
 						Surface surf = pendingSwitchEncoderSurface;
 						pendingSwitchContext = null;
@@ -129,6 +149,7 @@ class VideoCameraManager {
 
 				@Override
 				public void onError(CameraDevice camera, int error) {
+					opening.countDown();
 					camera.close();
 					cameraDevice = null;
 					if (errorCallback != null) {
@@ -137,11 +158,13 @@ class VideoCameraManager {
 				}
 			}, cameraHandler);
 		} catch (SecurityException e) {
+			opening.countDown();
 			if (errorCallback != null) {
 				errorCallback.onCameraError(
 						"Camera permission denied by system");
 			}
 		} catch (CameraAccessException e) {
+			opening.countDown();
 			if (errorCallback != null) {
 				errorCallback.onCameraError("Camera not available");
 			}
@@ -179,14 +202,6 @@ class VideoCameraManager {
 		createCaptureSessionInternal(camera, encoderSurface, usePreview);
 	}
 
-	/**
-	 * Sessions are configured asynchronously, and a preview surface that
-	 * arrives while the first session is still being configured replaces
-	 * it with a second one. The callbacks of a replaced session are
-	 * ignored and the session closed, so a late "configured" for it does
-	 * not start a preview on a closed session and report a camera error
-	 * while the current session works.
-	 */
 	private void createCaptureSessionInternal(CameraDevice camera,
 			Surface encoderSurface, boolean includePreview) {
 		final int generation = ++sessionGeneration;
@@ -319,7 +334,18 @@ class VideoCameraManager {
 	}
 
 	void stop() {
+		stopped = true;
 		stopCamera();
+		java.util.concurrent.CountDownLatch opening = pendingOpen;
+		HandlerThread thread = cameraThread;
+		if (opening != null && thread != null
+				&& thread.getLooper() != android.os.Looper.myLooper()) {
+			try {
+				opening.await(2, java.util.concurrent.TimeUnit.SECONDS);
+			} catch (InterruptedException ignored) {
+				Thread.currentThread().interrupt();
+			}
+		}
 		if (cameraThread != null) {
 			cameraThread.quitSafely();
 			try {

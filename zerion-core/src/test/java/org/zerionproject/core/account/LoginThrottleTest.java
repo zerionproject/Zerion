@@ -13,11 +13,6 @@ import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
 
-/**
- * AND-06: a failed-attempt lockout runs on the monotonic clock, survives a
- * force-stop through its state file, is restarted rather than ended by a
- * reboot, and is never shortened by the wall clock, which it never reads.
- */
 public class LoginThrottleTest {
 
 	private final File testDir = getTestDirectory();
@@ -89,17 +84,43 @@ public class LoginThrottleTest {
 	}
 
 	@Test
-	public void failuresDecayOnlyAfterAQuietDay() {
+	public void signInFailuresAreNeverForgottenByTime() {
 		LoginThrottle t = throttle(LoginThrottle.SIGN_IN);
 		t.recordFailure();
 		t.recordFailure();
-		mono.addAndGet(86_400_000L);
-		assertEquals(2, t.failures());
-		mono.addAndGet(1);
+		mono.addAndGet(86_400_001L);
+		assertEquals("after a quiet day", 2, t.failures());
+		mono.addAndGet(30L * 86_400_000L);
+		assertEquals("after a quiet month", 2,
+				throttle(LoginThrottle.SIGN_IN).failures());
+		t.reset();
 		assertEquals(0, t.failures());
 		assertFalse("a cleared throttle keeps no state file", state.exists()
 				&& state.length() > 0);
-		assertEquals(0, t.recordFailure());
+	}
+
+	@Test
+	public void anAttemptIsCountedBeforeItIsCheckedAndCanBeTakenBack() {
+		LoginThrottle t = throttle(LoginThrottle.SIGN_IN);
+		t.recordFailure();
+		t.recordFailure();
+		LoginThrottle.Attempt attempt = t.beginAttempt();
+		assertEquals("a restarted process finds the attempt counted", 3,
+				throttle(LoginThrottle.SIGN_IN).failures());
+		assertEquals(300_000L,
+				throttle(LoginThrottle.SIGN_IN).remainingLockoutMs());
+		t.cancel(attempt);
+		assertEquals(2, throttle(LoginThrottle.SIGN_IN).failures());
+		assertEquals(0,
+				throttle(LoginThrottle.SIGN_IN).remainingLockoutMs());
+	}
+
+	@Test
+	public void theVaultPolicyStillForgetsAfterAQuietMinute() {
+		LoginThrottle t = throttle(LoginThrottle.VAULT);
+		t.recordFailure();
+		mono.addAndGet(1_000L + 60_001L);
+		assertEquals(0, t.failures());
 	}
 
 	@Test

@@ -6,7 +6,6 @@
 	android:layout_height="match_parent"
 	android:background="@drawable/bg_zerion_gradient">
 
-	<!-- App Bar - Flush against top of screen -->
 	<com.google.android.material.appbar.AppBarLayout
 		android:id="@+id/app_bar"
 		android:layout_width="match_parent"
@@ -30,14 +29,12 @@
 
 	</com.google.android.material.appbar.AppBarLayout>
 
-	<!-- Full-Screen Editor Container - Expands to fill entire height -->
 	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:orientation="vertical"
 		app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-		<!-- Top Section: Document Name & Options (Fixed) -->
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -46,7 +43,6 @@
 			android:paddingEnd="16dp"
 			android:paddingTop="16dp">
 
-			<!-- Document Name Card -->
 			<com.google.android.material.card.MaterialCardView
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
@@ -92,7 +88,6 @@
 
 			</com.google.android.material.card.MaterialCardView>
 
-			<!-- Editor Options Row -->
 			<LinearLayout
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
@@ -102,7 +97,6 @@
 				android:paddingStart="4dp"
 				android:paddingEnd="4dp">
 
-				<!-- Monospace Toggle -->
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/toggle_monospace"
 					style="@style/Zerion.Button.Text"
@@ -119,7 +113,6 @@
 					app:iconPadding="4dp"
 					app:iconTint="@color/zerion_primary_accent" />
 
-				<!-- Word Count -->
 				<TextView
 					android:id="@+id/word_count"
 					android:layout_width="wrap_content"
@@ -134,7 +127,6 @@
 
 		</LinearLayout>
 
-		<!-- Content Editor Card - Expands to fill remaining screen height -->
 		<com.google.android.material.card.MaterialCardView
 			android:layout_width="match_parent"
 			android:layout_height="0dp"
@@ -153,7 +145,6 @@
 				android:orientation="vertical"
 				android:padding="12dp">
 
-				<!-- Content Label -->
 				<TextView
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
@@ -163,7 +154,6 @@
 					android:layout_marginBottom="8dp"
 					android:paddingStart="4dp" />
 
-				<!-- Full-Height Scrollable Editor -->
 				<androidx.core.widget.NestedScrollView
 					android:layout_width="match_parent"
 					android:layout_height="0dp"
@@ -197,7 +187,6 @@
 
 	</LinearLayout>
 
-	<!-- Save FAB - Floats above keyboard automatically -->
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/fab_save"
 		android:layout_width="56dp"

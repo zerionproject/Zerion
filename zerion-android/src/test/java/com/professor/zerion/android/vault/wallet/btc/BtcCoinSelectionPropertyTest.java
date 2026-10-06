@@ -14,14 +14,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Coin selection over random wallets: every input the built transaction
- * spends is one of the wallet's coins and none is spent twice, the inputs
- * cover the amount plus the fee, the fee is the fee rate times the size
- * estimate (plus a dropped dust change at most), the recipient output is
- * present, any change is above dust, outputs are sorted by value, and an
- * amount the wallet cannot cover is refused rather than partially paid.
- */
 public class BtcCoinSelectionPropertyTest {
 
 	private static final String MNEMONIC =

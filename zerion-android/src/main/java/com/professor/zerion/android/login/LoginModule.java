@@ -29,6 +29,13 @@ public abstract class LoginModule {
 
 	@Provides
 	@Singleton
+	static org.zerionproject.core.api.account.ErasePolicy provideErasePolicy(
+			@AppModule.SecurePrefs SharedPreferences securePrefs) {
+		return new SignInErasePolicy(securePrefs);
+	}
+
+	@Provides
+	@Singleton
 	static BruteForceProtection provideBruteForceProtection(
 			@AppModule.SecurePrefs SharedPreferences securePrefs,
 			org.zerionproject.core.api.account.AccountManager accountManager) {

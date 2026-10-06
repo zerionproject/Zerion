@@ -21,7 +21,7 @@ import java.util.List;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-import androidx.appcompat.app.AlertDialog.Builder;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.customview.view.AbsSavedState;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -176,7 +176,7 @@ public class TextAttachmentController extends TextSendController
 			4 * 7 * 24 * 60 * 60 * 1000L
 		};
 
-		new Builder(ctx, R.style.ZerionDialogTheme)
+		new SecureAlertDialogBuilder(ctx, R.style.ZerionDialogTheme)
 			.setTitle(R.string.disappearing_message_timer_title)
 			.setItems(timerOptions, (dialog, which) -> {
 				expectedTimer = timerValues[which];
@@ -194,7 +194,8 @@ public class TextAttachmentController extends TextSendController
 	private void onImageButtonClicked() {
 		if (!sendButton.hasImageSupport()) {
 			Context ctx = imagePreview.getContext();
-			Builder builder = new Builder(ctx, R.style.OnboardingDialogTheme);
+			SecureAlertDialogBuilder builder = new SecureAlertDialogBuilder(ctx,
+					R.style.OnboardingDialogTheme);
 			builder.setTitle(
 					ctx.getString(R.string.dialog_title_no_image_support));
 			builder.setMessage(

@@ -13,7 +13,6 @@
 		android:paddingHorizontal="16dp"
 		android:paddingBottom="32dp">
 
-		<!-- ====== SECURITY ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/vault_settings_section_security" />
@@ -92,7 +91,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== PRIVACY ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/vault_settings_section_privacy" />
@@ -166,7 +164,6 @@
 
 		</LinearLayout>
 
-		<!-- ====== DATA ====== -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/vault_settings_section_data" />
@@ -209,7 +206,6 @@
 
 		</LinearLayout>
 
-		<!-- Wipe vault — destructive group -->
 		<LinearLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
@@ -257,7 +253,6 @@
 
 		</LinearLayout>
 
-		<!-- Vault info -->
 		<TextView
 			style="@style/Zerion.Settings.SectionHeader"
 			android:text="@string/vault_settings_info_title" />

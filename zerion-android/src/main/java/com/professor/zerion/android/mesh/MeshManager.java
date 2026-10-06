@@ -2,6 +2,7 @@ package com.professor.zerion.android.mesh;
 
 import android.content.Context;
 
+import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridSignaturePrivateKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
@@ -37,7 +38,6 @@ public class MeshManager {
 		boolean onOfflineMessage(byte[] senderIdentitySigPub, int messageType,
 				byte[] payload, long sendTimestamp);
 
-		/** True when the sender is a contact whose envelopes are recorded. */
 		default boolean knowsSender(byte[] senderIdentitySigPub) {
 			return true;
 		}
@@ -89,7 +89,7 @@ public class MeshManager {
 		AsyncPrekeyStore prekeyStore =
 				new AsyncPrekeyStore(crypto, settingsManager, clock);
 		store = prekeyStore;
-		AsyncMeshDelivery.Identity identity = loadIdentity();
+		AsyncMeshDelivery.Identity identity = loadIdentity(prekeyStore);
 		AsyncSealedSender sealer = new AsyncSealedSender(crypto);
 		AsyncMeshDelivery meshDelivery = new AsyncMeshDelivery(crypto, sealer,
 				prekeyStore, new AsyncMeshDelivery.OpenedListener() {
@@ -124,63 +124,57 @@ public class MeshManager {
 	}
 
 	private void stopLocked() {
-		if (!running.compareAndSet(true, false)) return;
-		BleMeshTransport b = ble;
-		if (b != null) b.stop();
-		ble = null;
-		forwarder = null;
-		delivery = null;
-		store = null;
+		if (running.compareAndSet(true, false)) {
+			BleMeshTransport b = ble;
+			if (b != null) b.stop();
+			ble = null;
+			forwarder = null;
+			delivery = null;
+			store = null;
+		}
 		restoreBluetoothName();
 	}
 
-	private static final String NAME_NS = "org.zerionproject.mesh";
-	private static final String ORIGINAL_NAME_KEY = "btOriginalName";
-	private static final String MASK_PREFIX = "BT-";
-
 	private void maskBluetoothName() {
-		if (android.os.Build.VERSION.SDK_INT
-				< android.os.Build.VERSION_CODES.S) return;
+		MeshBluetoothName.Adapter adapter = bluetoothNameAdapter();
+		if (adapter == null) return;
 		try {
-			android.bluetooth.BluetoothManager bm =
-					(android.bluetooth.BluetoothManager)
-							context.getSystemService(Context.BLUETOOTH_SERVICE);
-			if (bm == null) return;
-			android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
-			if (adapter == null) return;
-			String current = adapter.getName();
-			if (current != null && !current.startsWith(MASK_PREFIX)) {
-				org.zerionproject.core.api.settings.Settings upd =
-						new org.zerionproject.core.api.settings.Settings();
-				upd.put(ORIGINAL_NAME_KEY, current);
-				settingsManager.mergeSettings(upd, NAME_NS);
-			}
-			byte[] r = new byte[3];
-			new SecureRandom().nextBytes(r);
-			adapter.setName(MASK_PREFIX
-					+ org.zerionproject.core.util.StringUtils.toHexString(r));
+			MeshBluetoothName.mask(adapter, settingsManager);
 		} catch (Exception e) {
 		}
 	}
 
-	private void restoreBluetoothName() {
-		if (android.os.Build.VERSION.SDK_INT
-				< android.os.Build.VERSION_CODES.S) return;
+	public void restoreBluetoothName() {
+		MeshBluetoothName.Adapter adapter = bluetoothNameAdapter();
+		if (adapter == null) return;
 		try {
-			android.bluetooth.BluetoothManager bm =
-					(android.bluetooth.BluetoothManager)
-							context.getSystemService(Context.BLUETOOTH_SERVICE);
-			if (bm == null) return;
-			android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
-			if (adapter == null) return;
-			org.zerionproject.core.api.settings.Settings s =
-					settingsManager.getSettings(NAME_NS);
-			String original = s.get(ORIGINAL_NAME_KEY);
-			if (original != null && !original.isEmpty()) {
-				adapter.setName(original);
-			}
+			MeshBluetoothName.restore(adapter, settingsManager);
 		} catch (Exception e) {
 		}
+	}
+
+	@Nullable
+	private MeshBluetoothName.Adapter bluetoothNameAdapter() {
+		if (android.os.Build.VERSION.SDK_INT
+				< android.os.Build.VERSION_CODES.S) return null;
+		android.bluetooth.BluetoothManager bm =
+				(android.bluetooth.BluetoothManager)
+						context.getSystemService(Context.BLUETOOTH_SERVICE);
+		if (bm == null) return null;
+		android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
+		if (adapter == null) return null;
+		return new MeshBluetoothName.Adapter() {
+			@Nullable
+			@Override
+			public String getName() {
+				return adapter.getName();
+			}
+
+			@Override
+			public boolean setName(String name) {
+				return adapter.setName(name);
+			}
+		};
 	}
 
 	public boolean isRunning() {
@@ -208,18 +202,26 @@ public class MeshManager {
 		return count;
 	}
 
-	public AsyncPrekeyBundle publishBundle() throws DbException,
-			GeneralSecurityException {
+	public AsyncPrekeyBundle publishBundle(ContactId audience)
+			throws DbException, GeneralSecurityException {
 		AsyncPrekeyStore prekeyStore = store;
 		if (prekeyStore == null) {
 			prekeyStore = new AsyncPrekeyStore(crypto, settingsManager, clock);
 		}
 		List<AsyncPrekeyBundle.OneTimePrekey> otks =
-				prekeyStore.topUpOneTimePrekeys(ONE_TIME_PREKEY_POOL);
+				prekeyStore.topUpOneTimePrekeys(ONE_TIME_PREKEY_POOL,
+						audienceOf(audience));
 		AsyncPrekeyStore.SignedPrekey spk = prekeyStore.getSignedPrekey();
-		AsyncMeshDelivery.Identity id = loadIdentity();
+		AsyncMeshDelivery.Identity id = loadIdentity(prekeyStore);
 		return AsyncPrekeyBundle.create(crypto, id.sigPub, id.sigPriv,
-				id.agreePub, spk.id, spk.pub, spk.expiry, otks);
+				id.agreePub, AsyncPrekeyStore.PUBLISHED_SIGNED_PREKEY_ID,
+				spk.pub, spk.expiry, otks);
+	}
+
+	private static byte[] audienceOf(ContactId contactId) {
+		int id = contactId.getInt();
+		return new byte[] {(byte) (id >>> 24), (byte) (id >>> 16),
+				(byte) (id >>> 8), (byte) id};
 	}
 
 	public void sendOffline(AsyncPrekeyBundle recipientBundle, int messageType,
@@ -250,19 +252,14 @@ public class MeshManager {
 				sendTimestampMs(clock), oneTimeKind);
 	}
 
-	/**
-	 * The send timestamp of an envelope is in milliseconds, the unit the
-	 * delivery layer compares against its own clock together with the
-	 * time-to-live in seconds. A value in seconds looks decades old there
-	 * and is refused after the full open.
-	 */
 	static long sendTimestampMs(Clock clock) {
 		return clock.currentTimeMillis();
 	}
 
 	private final SecureRandom coverRandom = new SecureRandom();
 
-	private AsyncMeshDelivery.Identity loadIdentity() throws DbException {
+	private AsyncMeshDelivery.Identity loadIdentity(AsyncPrekeyStore prekeyStore)
+			throws DbException {
 		LocalAuthor author = identityManager.getLocalAuthor();
 		byte[] ed25519Pub = author.getPublicKey().getEncoded();
 		byte[] ed25519Priv = author.getPrivateKey().getEncoded();
@@ -272,9 +269,10 @@ public class MeshManager {
 				.getEncoded();
 		HybridSignaturePrivateKey sigPriv =
 				new HybridSignaturePrivateKey(ed25519Priv, mlDsaSigPriv);
-		byte[] agreePub = db.transactionWithResult(true, txn ->
+		byte[] legacyAgreePub = db.transactionWithResult(true, txn ->
 				identityManager.getHybridHandshakeKeys(txn).getPublic()
 						.getEncoded());
-		return new AsyncMeshDelivery.Identity(sigPub, sigPriv, agreePub);
+		return new AsyncMeshDelivery.Identity(sigPub, sigPriv,
+				prekeyStore.getMeshAgreementPublicKey(), legacyAgreePub);
 	}
 }

@@ -25,11 +25,8 @@ public class ZppConnectionRunnerJitterTest {
 			sum += v;
 		}
 		double avg = sum / (double) n;
-		// Zero-mean jitter: the average cadence must stay at the base rate, so
-		// the constant-rate anti-burst property is preserved.
 		assertTrue("average drifted from base: " + avg,
 				Math.abs(avg - base) < 5);
-		// The jitter actually spans its range (not a degenerate constant).
 		assertTrue(min <= base - jitter + 5);
 		assertTrue(max >= base + jitter - 5);
 	}
@@ -38,10 +35,8 @@ public class ZppConnectionRunnerJitterTest {
 	public void testNeverBurstsAndZeroJitterIsConstant() {
 		Random r = new Random(1);
 		for (int i = 0; i < 1000; i++) {
-			// Always at least 1ms: a frame is never sent back-to-back.
 			assertTrue(ZppConnectionRunnerImpl.computeInterval(1, 100, r) >= 1);
 		}
-		// Zero jitter reduces to the fixed base.
 		assertEquals(750, ZppConnectionRunnerImpl.computeInterval(750, 0, r));
 	}
 }
