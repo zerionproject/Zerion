@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
-import com.professor.zerion.android.splash.SplashScreenActivity;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -53,6 +52,8 @@ public class DecoyCalculatorActivity extends Activity {
 		unlockThrottle = new DecoyUnlockThrottle(
 				new java.io.File(getFilesDir(), "decoy.lockout"));
 		setContentView(R.layout.activity_decoy_calculator);
+		keepClearOfSystemBars(((android.view.ViewGroup) findViewById(
+				android.R.id.content)).getChildAt(0));
 		display = findViewById(R.id.decoyDisplay);
 		bindDigit(R.id.btn0, '0');
 		bindDigit(R.id.btn1, '1');
@@ -74,6 +75,25 @@ public class DecoyCalculatorActivity extends Activity {
 		findViewById(R.id.btnPercent).setOnClickListener(v -> onPercent());
 		findViewById(R.id.btnEq).setOnClickListener(v -> onEquals());
 		refresh();
+	}
+
+	static void keepClearOfSystemBars(android.view.View root) {
+		int left = root.getPaddingLeft();
+		int top = root.getPaddingTop();
+		int right = root.getPaddingRight();
+		int bottom = root.getPaddingBottom();
+		androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root,
+				(v, insets) -> {
+					androidx.core.graphics.Insets bars = insets.getInsets(
+							androidx.core.view.WindowInsetsCompat.Type
+									.systemBars()
+									| androidx.core.view.WindowInsetsCompat
+									.Type.displayCutout());
+					v.setPadding(left + bars.left, top + bars.top,
+							right + bars.right, bottom + bars.bottom);
+					return insets;
+				});
+		androidx.core.view.ViewCompat.requestApplyInsets(root);
 	}
 
 	private void bindDigit(int id, char digit) {
@@ -164,11 +184,16 @@ public class DecoyCalculatorActivity extends Activity {
 		if (isFinishing() || isDestroyed()) return;
 		DECOY_PASSED_TOKEN.set(true);
 		DecoyGate.markPassed();
-		Intent i = new Intent(this, SplashScreenActivity.class);
+		startActivity(realAppIntent(this));
+		finish();
+	}
+
+	static Intent realAppIntent(android.content.Context context) {
+		Intent i = com.professor.zerion.android.settings.AppIconManager
+				.launchIntent(context);
 		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
 				| Intent.FLAG_ACTIVITY_CLEAR_TASK);
-		startActivity(i);
-		finish();
+		return i;
 	}
 
 	private void refresh() {

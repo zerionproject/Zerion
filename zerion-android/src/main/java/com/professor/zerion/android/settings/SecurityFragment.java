@@ -605,6 +605,7 @@ public class SecurityFragment extends Fragment {
 		warningText.setText(R.string.decoy_set_code_warning);
 		androidx.appcompat.app.AlertDialog dlg =
 				new SecureAlertDialogBuilder(requireContext())
+						.fitAboveKeyboard()
 						.setTitle(R.string.decoy_set_code_title)
 						.setView(dialogView)
 						.setPositiveButton(R.string.decoy_set_code_save, null)
@@ -678,6 +679,12 @@ public class SecurityFragment extends Fragment {
 		if (passwordLayout1 != null) passwordLayout1.setHint(getString(R.string.wipe_password_enter));
 		if (passwordLayout2 != null) passwordLayout2.setHint(getString(R.string.wipe_password_confirm));
 
+		TextView messageText = dialogView.findViewById(R.id.password_message);
+		if (messageText != null) {
+			messageText.setText(R.string.wipe_password_dialog_message);
+			messageText.setVisibility(View.VISIBLE);
+		}
+
 		if (warningText != null) {
 			warningText.setText(R.string.wipe_password_warning);
 			warningText.setVisibility(View.VISIBLE);
@@ -701,8 +708,8 @@ public class SecurityFragment extends Fragment {
 
 		androidx.appcompat.app.AlertDialog wdlg =
 				new SecureAlertDialogBuilder(requireContext())
+						.fitAboveKeyboard()
 						.setTitle(R.string.wipe_password_dialog_title)
-						.setMessage(R.string.wipe_password_dialog_message)
 						.setView(dialogView)
 						.setPositiveButton(R.string.set, null)
 						.setNegativeButton(R.string.cancel, null)

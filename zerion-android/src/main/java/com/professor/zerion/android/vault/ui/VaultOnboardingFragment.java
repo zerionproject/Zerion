@@ -270,13 +270,6 @@ public class VaultOnboardingFragment extends BaseFragment {
 			throw e;
 		}
 
-		try {
-			viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			});
-		} catch (Exception e) {
-			throw e;
-		}
-
 	}
 
 	@Override

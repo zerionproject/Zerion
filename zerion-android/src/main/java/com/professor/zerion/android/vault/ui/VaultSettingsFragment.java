@@ -81,7 +81,6 @@ public class VaultSettingsFragment extends BaseFragment {
 
 		changePasswordCard = view.findViewById(R.id.change_password_card);
 		autolockCard = view.findViewById(R.id.autolock_card);
-		observeResults();
 		autolockValue = view.findViewById(R.id.autolock_value);
 		clipboardSwitch = view.findViewById(R.id.clipboard_switch);
 		hideContentSwitch = view.findViewById(R.id.hide_content_switch);
@@ -117,6 +116,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		viewModel = new ViewModelProvider(requireActivity(), viewModelFactory)
 				.get(VaultViewModel.class);
 
+		observeResults();
 		setupClickListeners();
 		observeViewModel();
 		loadSettings();
@@ -439,6 +439,7 @@ public class VaultSettingsFragment extends BaseFragment {
 		TextInputEditText confirmInput = new TextInputEditText(requireContext());
 		confirmInput.setHint(getString(
 				R.string.vault_wipe_confirm_hint, keyword));
+		confirmInput.setSingleLine(true);
 		IncognitoInputHelper.configureForVault(confirmInput);
 
 		new SecureAlertDialogBuilder(requireContext())

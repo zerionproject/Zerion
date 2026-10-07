@@ -1,6 +1,6 @@
 # Multi-Profile - Android design + iOS parity handoff
 
-iOS parity for the SimpleX-style multi-profile feature shipped on Android (originally landed for v1.6; current as of v2.0.x) in commits `ebf1c01` (phase 1), `2c043c1` (phase 2), `46475b7` (phases 3 to 5). The isolation described below (no enumeration inside a session, per-profile vault, wallets, stickers and settings, password-collision refusal) is in 3.0.15, not yet released; 3.0.14 and earlier listed every profile by name in Settings, Profiles and shared the vault, wallet files, stickers and per-contact settings across profiles. iOS has not been changed for 3.0.15.
+iOS parity for the SimpleX-style multi-profile feature shipped on Android (originally landed for v1.6; current as of v2.0.x) in commits `ebf1c01` (phase 1), `2c043c1` (phase 2), `46475b7` (phases 3 to 5). The isolation described below (no enumeration inside a session, per-profile vault, wallets, stickers and settings, password-collision refusal) is in 3.0.15; 3.0.14 and earlier listed every profile by name in Settings, Profiles and shared the vault, wallet files, stickers and per-contact settings across profiles. iOS has not been changed for 3.0.15.
 
 ## Design choices (decided with user, must match on iOS)
 

@@ -115,6 +115,7 @@ public class DocumentPasswordDialog extends DialogFragment {
 		});
 
 		MaterialAlertDialogBuilder builder = new SecureAlertDialogBuilder(context)
+				.fitAboveKeyboard()
 				.setTitle(title)
 				.setView(view)
 				.setPositiveButton(android.R.string.ok, (dialog, which) -> {

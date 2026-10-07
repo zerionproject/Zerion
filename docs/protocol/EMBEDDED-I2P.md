@@ -62,7 +62,7 @@ configured with:
 
 When the relay has no port (it failed to open), the router is configured with
 `router.reseedDisable` set to true instead, so it never falls back to a direct
-reseed (since 3.0.15, not yet released).
+reseed (since 3.0.15).
 
 Reseed is required to use SSL through the proxy, so it fails closed rather than
 falling back to a direct fetch.

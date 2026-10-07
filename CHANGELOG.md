@@ -2,6 +2,13 @@
 
 Release notes for every published version. The current architecture and its security properties are described in [README.md](README.md), [SECURITY.md](SECURITY.md) and [docs/](docs/); an entry below describes its own release only and is not updated afterwards. Artifacts and hashes are on [GitHub Releases](https://github.com/zerionproject/Zerion/releases); the values for the current release are in [docs/release-manifest.json](docs/release-manifest.json).
 
+## 3.0.16 (October 2026)
+
+- Decoy launcher: with the Calculator, Notes or Weather app icon chosen, the correct code no longer crashes the app, and the calculator's bottom row (0, decimal point and equals) is no longer covered by the navigation bar ([#39](https://github.com/zerionproject/Zerion/issues/39)).
+- zVault settings open again; the app closed every time they were chosen from the menu ([#40](https://github.com/zerionproject/Zerion/issues/40)).
+- Password dialogs: a very long password no longer pushes the OK and Cancel buttons out of the dialog, and Enter confirms the account password instead of starting a new line. The wipe password, decoy code and vault document password dialogs keep their buttons above the keyboard on small screens ([#41](https://github.com/zerionproject/Zerion/issues/41)).
+- Otherwise identical to 3.0.15.
+
 ## 3.0.15 (October 2026)
 
 - Security and reliability fixes from the October 2026 internal assessment of the Android app, covering calls, attachments, channels, groups, the offline mesh, the network layer, account protection and the build. The issues rated High and the main Medium ones are listed under the limitations of 3.0.14 in [SECURITY.md](SECURITY.md).

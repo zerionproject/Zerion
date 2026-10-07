@@ -382,7 +382,7 @@ published by earlier releases stay in the legacy format and are verified as
 such; format is part of what the signature covers, so a post cannot be moved
 from one format to the other.
 
-At most 8 attachments per post; the publisher accepts up to 50 MiB of plaintext each. `ZERION_CHANNEL_GET_ATTACHMENT_V1` keys: `type`, `v`, `channelId`, `blobHash`, plus `nonce`, `hmac` and `hmac2` in private channels. The reply has `type`, `blobHash` and `blob` (empty if not held). The subscriber reads the reply with a field bound of 16 MiB, the largest reply it accepts. Metadata stripping is a client duty: the Android app re-encodes images and remuxes video and other ISO media before publishing (from 3.0.15, not yet released); other file types are sent unchanged.
+At most 8 attachments per post; the publisher accepts up to 50 MiB of plaintext each. `ZERION_CHANNEL_GET_ATTACHMENT_V1` keys: `type`, `v`, `channelId`, `blobHash`, plus `nonce`, `hmac` and `hmac2` in private channels. The reply has `type`, `blobHash` and `blob` (empty if not held). The subscriber reads the reply with a field bound of 16 MiB, the largest reply it accepts. Metadata stripping is a client duty: the Android app re-encodes images and remuxes video and other ISO media before publishing (from 3.0.15); other file types are sent unchanged.
 
 ### Post signed-input (byte-exact)
 

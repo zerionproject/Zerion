@@ -68,7 +68,7 @@ public class IncognitoInputHelper {
 					InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
 		}
 
-		if (editText.getMaxLines() > 1) {
+		if (!isPassword && editText.getMaxLines() > 1) {
 			inputType |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
 		}
 

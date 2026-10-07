@@ -1,0 +1,1 @@
+Fixes three problems: the app no longer crashes after the correct decoy code when the Calculator, Notes or Weather icon is used, and the calculator's bottom row is no longer covered by the navigation bar. zVault settings open again. A long password no longer pushes OK and Cancel out of password dialogs, and Enter confirms the account password.

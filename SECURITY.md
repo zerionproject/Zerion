@@ -32,9 +32,9 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | September 2026 | release review | project | 3.0.13 setup path and build reproducibility, after the Google Play review of 3.0.13 failed at account creation | first-account key store failure and the build-path dependency of the Argon2 library fixed in 3.0.14 | not published |
 | October 2026 | internal assessment | project | whole Android product (3.0.14) with two-phone device testing, followed by a review of the remediated tree | 7 High, 84 Medium and the lower-rated findings fixed in 3.0.15 | not published |
 
-## Limitations of the previous release (3.0.14), fixed in 3.0.15
+## Limitations of 3.0.14, fixed in 3.0.15
 
-Recorded here so that no document overstates what 3.0.14 shipped. All are fixed in 3.0.15, the current release; the entries are kept as the history of the previous one. None of them is known to have been exploited. The list names the issues rated High and the main Medium ones; the lower-rated fixes are summarised in [CHANGELOG.md](CHANGELOG.md).
+Recorded here so that no document overstates what 3.0.14 shipped. All are fixed in 3.0.15 and later releases; the entries are kept as the history of 3.0.14. None of them is known to have been exploited. The list names the issues rated High and the main Medium ones; the lower-rated fixes are summarised in [CHANGELOG.md](CHANGELOG.md).
 
 - Profiles: a profile marked hidden was listed by name on the Profiles screen, and the vault, the wallets, stickers and several settings were shared by every profile on the device. The Profiles screen now shows only the signed-in profile and those stores are kept per profile; someone with root or forensic access to the device can still see how many profiles exist.
 - Password checks: the password prompts for switching to a profile and for deleting one signed in on the running session, so the wrong profile could be switched to or deleted. They now only verify the password.

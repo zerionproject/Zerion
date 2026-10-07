@@ -44,7 +44,30 @@ public class AppIconManager {
 		} catch (RuntimeException ignored) {
 		}
 		if (icon < 0 || icon >= ALIAS_NAMES.length) icon = ICON_DEFAULT;
-		return new ComponentName(context, ALIAS_NAMES[icon]);
+		ComponentName preferred = new ComponentName(context, ALIAS_NAMES[icon]);
+		if (isEnabled(context, preferred)) return preferred;
+		for (String name : ALIAS_NAMES) {
+			ComponentName cn = new ComponentName(context, name);
+			if (isEnabled(context, cn)) return cn;
+		}
+		return preferred;
+	}
+
+	private static boolean isEnabled(Context context, ComponentName cn) {
+		try {
+			PackageManager pm = context.getPackageManager();
+			int state = pm.getComponentEnabledSetting(cn);
+			if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+				return true;
+			}
+			if (state != PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+				return false;
+			}
+			return pm.getActivityInfo(cn,
+					PackageManager.MATCH_DISABLED_COMPONENTS).enabled;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	public static Intent launchIntent(Context context) {

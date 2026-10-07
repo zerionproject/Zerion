@@ -3,6 +3,8 @@ package com.professor.zerion.android.security;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -19,6 +21,7 @@ public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 	@Nullable
 	private View customView;
 	private boolean secret;
+	private boolean fitAboveKeyboard;
 
 	public SecureAlertDialogBuilder(Context context) {
 		super(context);
@@ -30,6 +33,11 @@ public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 
 	public SecureAlertDialogBuilder protectSecrets() {
 		secret = true;
+		return this;
+	}
+
+	public SecureAlertDialogBuilder fitAboveKeyboard() {
+		fitAboveKeyboard = true;
 		return this;
 	}
 
@@ -54,6 +62,13 @@ public class SecureAlertDialogBuilder extends MaterialAlertDialogBuilder {
 				&& SecureDialogs.containsSecretInput(customView);
 		if (secret || secretContent) SecureDialogs.protectSecret(dialog);
 		else SecureDialogs.applyHostPolicy(dialog);
+		Window w = dialog.getWindow();
+		if (fitAboveKeyboard && w != null) {
+			int mode = w.getAttributes().softInputMode
+					& ~WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST;
+			w.setSoftInputMode(mode
+					| WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+		}
 		return dialog;
 	}
 }

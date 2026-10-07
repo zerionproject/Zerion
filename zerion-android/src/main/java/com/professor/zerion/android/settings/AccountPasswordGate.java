@@ -105,7 +105,7 @@ final class AccountPasswordGate {
 		android.widget.FrameLayout box = new android.widget.FrameLayout(context);
 		box.setPadding(pad, 0, pad, 0);
 		box.addView(password);
-		new SecureAlertDialogBuilder(context)
+		androidx.appcompat.app.AlertDialog dialog = new SecureAlertDialogBuilder(context)
 				.setTitle(titleRes)
 				.setMessage(messageRes)
 				.setView(box)
@@ -148,5 +148,22 @@ final class AccountPasswordGate {
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> onRefused.run())
 				.show();
+		submitOnDone(password, dialog);
+	}
+
+	static void submitOnDone(android.widget.TextView field,
+			androidx.appcompat.app.AlertDialog dialog) {
+		field.setOnEditorActionListener((v, actionId, event) -> {
+			boolean done = actionId == android.view.inputmethod.EditorInfo
+					.IME_ACTION_DONE;
+			boolean enter = event != null
+					&& event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER
+					&& event.getAction() == android.view.KeyEvent.ACTION_DOWN;
+			if (!done && !enter) return false;
+			android.widget.Button ok = dialog.getButton(
+					android.content.DialogInterface.BUTTON_POSITIVE);
+			if (ok != null && ok.isEnabled()) ok.performClick();
+			return true;
+		});
 	}
 }

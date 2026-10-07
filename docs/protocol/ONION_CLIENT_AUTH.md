@@ -302,7 +302,7 @@ Observed on 2026-09-24 against the Tor 0.4.9.12 that 3.0.12 ships and on
 2026-09-25 against the Tor 0.4.9.13 built in tree for the next release, both
 on the Moto, over the app's own authenticated control port (replies observed by
 the device check, not logged by the app). These observations used a loopback
-target; since 3.0.15 (not yet released) the target is a Unix socket in the
+target; since 3.0.15 the target is a Unix socket in the
 app's private directory (`Port=80,unix:<files>/zo/<name>`), which Tor's
 ADD_ONION parses like a HiddenServicePort target. That form is not yet
 confirmed on a device:
