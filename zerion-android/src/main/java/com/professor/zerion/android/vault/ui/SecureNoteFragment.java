@@ -435,7 +435,7 @@ public class SecureNoteFragment extends BaseFragment {
 		});
 
 		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			if (success != null && success.equals("Saved")) {
+			if (viewModel.isMessage(success, R.string.vault_msg_saved)) {
 				if (!isSaving) {
 					return;
 				}

@@ -88,6 +88,13 @@ class ConversationAdapter
 		return NO_POSITION;
 	}
 
+	int getPositionOfMessage(MessageId id) {
+		for (int i = 0; i < items.size(); i++) {
+			if (id.equals(items.get(i).getId())) return i;
+		}
+		return NO_POSITION;
+	}
+
 	@Nullable
 	public ConversationItem getItemAt(int position) {
 		if (position >= 0 && position < items.size()) {

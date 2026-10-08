@@ -1,6 +1,7 @@
 package com.professor.zerion.android.vault.ui;
 
 import android.app.Application;
+import android.content.Context;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.VaultManager;
@@ -24,12 +25,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 
+import androidx.annotation.StringRes;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -39,6 +43,24 @@ import org.zerionproject.core.api.plugin.TorSocksPort;
 
 @NotNullByDefault
 public class VaultViewModel extends AndroidViewModel {
+
+	private static final Map<String, Integer> WALLET_ERRORS = new HashMap<>();
+
+	static {
+		WALLET_ERRORS.put(BtcWallet.ERR_FROZEN_COIN, R.string.wallet_err_frozen_coin);
+		WALLET_ERRORS.put(BtcWallet.ERR_COIN_GONE, R.string.wallet_err_coin_gone);
+		WALLET_ERRORS.put(BtcWallet.ERR_INVALID_ADDRESS, R.string.wallet_err_invalid_address);
+		WALLET_ERRORS.put(BtcWallet.ERR_AMOUNT_RANGE, R.string.wallet_err_amount_range);
+		WALLET_ERRORS.put(BtcWallet.ERR_NO_COINS, R.string.wallet_err_no_coins);
+		WALLET_ERRORS.put(BtcWallet.ERR_BALANCE_AFTER_FEE, R.string.wallet_err_balance_after_fee);
+		WALLET_ERRORS.put(BtcWallet.ERR_DUST, R.string.wallet_err_dust);
+		WALLET_ERRORS.put(BtcWallet.ERR_INSUFFICIENT, R.string.wallet_err_insufficient);
+		WALLET_ERRORS.put(BtcWallet.ERR_FEE_TOO_LOW, R.string.wallet_err_fee_too_low);
+		WALLET_ERRORS.put(BtcWallet.ERR_ORACLE_UNREACHABLE, R.string.wallet_err_oracle_unreachable);
+		WALLET_ERRORS.put(BtcWallet.ERR_SP_SELF_CHECK, R.string.wallet_err_sp_self_check);
+		WALLET_ERRORS.put(BtcWallet.ERR_SP_NONE, R.string.wallet_err_sp_none);
+		WALLET_ERRORS.put(BtcWallet.ERR_AMOUNT_AFTER_FEE, R.string.wallet_err_amount_after_fee);
+	}
 
 	public enum VaultState {
 		NOT_CREATED,
@@ -1020,8 +1042,8 @@ public class VaultViewModel extends AndroidViewModel {
 				});
 				postSpInfo(readWalletPrivacy(id));
 			} catch (Throwable e) {
-				walletError.postValue(new Event<>(e.getMessage() != null ? e.getMessage()
-						: getApplication().getString(R.string.wallet_network_failed)));
+				walletError.postValue(new Event<>(
+						walletErrorText(e, R.string.wallet_network_failed)));
 			} finally {
 				spBusy.postValue(false);
 			}
@@ -1065,9 +1087,8 @@ public class VaultViewModel extends AndroidViewModel {
 				spSweepGate.prepare(plan, w.walletId());
 				spSweepReview.postValue(new Event<>(new SpSweepReview(plan)));
 			} catch (Throwable e) {
-				walletError.postValue(new Event<>(e.getMessage() != null
-						? e.getMessage()
-						: getApplication().getString(R.string.wallet_send_failed)));
+				walletError.postValue(new Event<>(
+						walletErrorText(e, R.string.wallet_send_failed)));
 			} finally {
 				spBusy.postValue(false);
 			}
@@ -1125,8 +1146,8 @@ public class VaultViewModel extends AndroidViewModel {
 						.getString(R.string.wallet_send_uncertain)));
 				scanOpenBtc(true);
 			} catch (Throwable e) {
-				walletError.postValue(new Event<>(e.getMessage() != null ? e.getMessage()
-						: getApplication().getString(R.string.wallet_send_failed)));
+				walletError.postValue(new Event<>(
+						walletErrorText(e, R.string.wallet_send_failed)));
 			} finally {
 				spBusy.postValue(false);
 				sending.set(false);
@@ -2080,8 +2101,8 @@ public class VaultViewModel extends AndroidViewModel {
 				walletMergePrompt.postValue(new MergePrompt(toAddress, amountSat,
 						feeRate, sweep, e.clusterCount));
 			} catch (Throwable e) {
-				walletError.postValue(new Event<>(e.getMessage() != null ? e.getMessage()
-						: getApplication().getString(R.string.wallet_send_failed)));
+				walletError.postValue(new Event<>(
+						walletErrorText(e, R.string.wallet_send_failed)));
 			} finally {
 				walletBusy.postValue(false);
 			}
@@ -2140,8 +2161,8 @@ public class VaultViewModel extends AndroidViewModel {
 						.getString(R.string.wallet_send_uncertain)));
 				scanOpenBtc(true);
 			} catch (Throwable e) {
-				walletError.postValue(new Event<>(e.getMessage() != null ? e.getMessage()
-						: getApplication().getString(R.string.wallet_send_failed)));
+				walletError.postValue(new Event<>(
+						walletErrorText(e, R.string.wallet_send_failed)));
 				walletBusy.postValue(false);
 			} finally {
 				sending.set(false);
@@ -2225,7 +2246,8 @@ public class VaultViewModel extends AndroidViewModel {
 						.PayjoinSession.Status.FAILED, null);
 			} catch (Throwable e) {
 				failPayjoin(com.professor.zerion.android.vault.wallet.btc.payjoin
-						.PayjoinSession.Status.FAILED, e.getMessage());
+						.PayjoinSession.Status.FAILED,
+						walletErrorText(e, R.string.payjoin_unavailable_message));
 			} finally {
 				walletBusy.postValue(false);
 			}
@@ -2508,22 +2530,47 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				vaultManager.createVault(password);
 				vaultState.postValue(VaultState.UNLOCKED);
-				successMessage.postValue("Vault created successfully");
+				successMessage.postValue(text(R.string.vault_msg_created));
 				loadVaultItems();
 			} catch (IllegalStateException e) {
-				errorMessage.postValue("Vault already exists");
+				errorMessage.postValue(text(R.string.vault_msg_already_exists));
 			} catch (SecurityException e) {
-				errorMessage.postValue("Security error");
+				errorMessage.postValue(text(R.string.vault_msg_security_error));
 			} catch (IOException e) {
-				errorMessage.postValue("Storage error");
+				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to create vault");
+				errorMessage.postValue(text(R.string.vault_msg_create_failed));
 			} finally {
 				Arrays.fill(password, '\0');
 				Arrays.fill(confirmPassword, '\0');
 				isLoading.postValue(false);
 			}
 		});
+	}
+
+	private String text(@StringRes int id) {
+		return getApplication().getString(id);
+	}
+
+	private String walletErrorText(Throwable e, @StringRes int fallback) {
+		return walletErrorText(getApplication(), e, fallback);
+	}
+
+	static String walletErrorText(Context ctx, Throwable e,
+			@StringRes int fallback) {
+		String m = e.getMessage();
+		if (m == null || m.isEmpty()) return ctx.getString(fallback);
+		Integer known = WALLET_ERRORS.get(m);
+		if (known != null) return ctx.getString(known);
+		return ctx.getString(fallback) + ": " + m;
+	}
+
+	static boolean hasWalletErrorText(String message) {
+		return WALLET_ERRORS.containsKey(message);
+	}
+
+	public boolean isMessage(@Nullable String message, @StringRes int id) {
+		return message != null && message.equals(text(id));
 	}
 
 	public void unlockVault(char[] password) {
@@ -2537,12 +2584,12 @@ public class VaultViewModel extends AndroidViewModel {
 					vaultState.postValue(VaultState.UNLOCKED);
 					loadVaultItems();
 				} else {
-					errorMessage.postValue("Invalid password");
+					errorMessage.postValue(text(R.string.vault_unlock_failed));
 				}
 			} catch (SecurityException e) {
-				errorMessage.postValue("Invalid password");
+				errorMessage.postValue(text(R.string.vault_unlock_failed));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to unlock vault");
+				errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
 			} finally{
 				Arrays.fill(password, '\0');
 				isLoading.postValue(false);
@@ -2582,22 +2629,22 @@ public class VaultViewModel extends AndroidViewModel {
 			} catch (SecurityException e) {
 				vaultItems.postValue(new ArrayList<>());
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to load vault items");
+				errorMessage.postValue(text(R.string.vault_msg_load_failed));
 			}
 		});
 	}
 
 	public void addDocument(String fileName, byte[] content) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (fileName == null || fileName.trim().isEmpty()) {
-			errorMessage.postValue("File name cannot be empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_name_empty));
 			return;
 		}
 		if (content == null || content.length == 0) {
-			errorMessage.postValue("File content is empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_empty));
 			return;
 		}
 
@@ -2608,10 +2655,10 @@ public class VaultViewModel extends AndroidViewModel {
 				loadVaultItems();
 				isLoading.postValue(false);
 			} catch (SecurityException e) {
-				errorMessage.postValue("Vault is locked");
+				errorMessage.postValue(text(R.string.vault_locked));
 				isLoading.postValue(false);
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to add document");
+				errorMessage.postValue(text(R.string.vault_msg_add_document_failed));
 				isLoading.postValue(false);
 			}
 		});
@@ -2619,15 +2666,15 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void addDocumentWithPassword(String fileName, byte[] content, @Nullable char[] extraPassword) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (fileName == null || fileName.trim().isEmpty()) {
-			errorMessage.postValue("File name cannot be empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_name_empty));
 			return;
 		}
 		if (content == null || content.length == 0) {
-			errorMessage.postValue("File content is empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_empty));
 			return;
 		}
 
@@ -2646,13 +2693,13 @@ public class VaultViewModel extends AndroidViewModel {
 					item = vaultManager.addItem(VaultItem.ItemType.DOCUMENT, fileName, content);
 				}
 				loadVaultItems();
-				successMessage.postValue("Document saved securely");
+				successMessage.postValue(text(R.string.vault_msg_document_saved));
 				isLoading.postValue(false);
 			} catch (SecurityException e) {
-				errorMessage.postValue("Vault is locked");
+				errorMessage.postValue(text(R.string.vault_locked));
 				isLoading.postValue(false);
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to add document");
+				errorMessage.postValue(text(R.string.vault_msg_add_document_failed));
 				isLoading.postValue(false);
 			} finally {
 				if (extraPassword != null) {
@@ -2664,19 +2711,19 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void updateDocument(String itemId, String fileName, byte[] content) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (itemId == null || itemId.trim().isEmpty()) {
-			errorMessage.postValue("Invalid document ID");
+			errorMessage.postValue(text(R.string.vault_msg_invalid_document));
 			return;
 		}
 		if (fileName == null || fileName.trim().isEmpty()) {
-			errorMessage.postValue("File name cannot be empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_name_empty));
 			return;
 		}
 		if (content == null || content.length == 0) {
-			errorMessage.postValue("File content is empty");
+			errorMessage.postValue(text(R.string.vault_msg_file_empty));
 			return;
 		}
 
@@ -2686,13 +2733,13 @@ public class VaultViewModel extends AndroidViewModel {
 				vaultManager.deleteItem(itemId);
 				vaultManager.addItem(VaultItem.ItemType.DOCUMENT, fileName, content);
 				loadVaultItems();
-				successMessage.postValue("Document updated");
+				successMessage.postValue(text(R.string.vault_msg_document_updated));
 				isLoading.postValue(false);
 			} catch (SecurityException e) {
-				errorMessage.postValue("Vault is locked");
+				errorMessage.postValue(text(R.string.vault_locked));
 				isLoading.postValue(false);
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to update document");
+				errorMessage.postValue(text(R.string.vault_msg_update_document_failed));
 				isLoading.postValue(false);
 			}
 		});
@@ -2701,11 +2748,11 @@ public class VaultViewModel extends AndroidViewModel {
 	public void savePassword(String title, String username, String password,
 			String url, String notes) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (title.trim().isEmpty()) {
-			errorMessage.postValue("Title cannot be empty");
+			errorMessage.postValue(text(R.string.vault_error_title_empty));
 			return;
 		}
 
@@ -2731,7 +2778,7 @@ public class VaultViewModel extends AndroidViewModel {
 				loadVaultItems();
 				isLoading.postValue(false);
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to save password");
+				errorMessage.postValue(text(R.string.vault_msg_save_password_failed));
 				isLoading.postValue(false);
 			}
 		});
@@ -2740,7 +2787,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void getPassword(String itemId, PasswordCallback callback) {
 		if (!vaultManager.isUnlocked()) {
 			new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-				callback.onError("Please unlock your vault first");
+				callback.onError(text(R.string.vault_msg_unlock_first));
 			});
 			return;
 		}
@@ -2758,7 +2805,7 @@ public class VaultViewModel extends AndroidViewModel {
 				});
 			} catch (Exception e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Failed to retrieve password");
+					callback.onError(text(R.string.vault_msg_retrieve_password_failed));
 				});
 			}
 		});
@@ -2804,11 +2851,11 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void saveNote(String title, String content, @Nullable String existingId) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (title.trim().isEmpty()) {
-			errorMessage.postValue("Note title cannot be empty");
+			errorMessage.postValue(text(R.string.vault_msg_note_title_empty));
 			return;
 		}
 
@@ -2828,17 +2875,17 @@ public class VaultViewModel extends AndroidViewModel {
 						contentBytes
 				);
 
-				successMessage.postValue("Saved");
+				successMessage.postValue(text(R.string.vault_msg_saved));
 				loadVaultItems();
 
 				Arrays.fill(contentBytes, (byte) 0);
 
 			} catch (SecurityException e) {
-				errorMessage.postValue("Security error");
+				errorMessage.postValue(text(R.string.vault_msg_security_error));
 			} catch (IOException e) {
-				errorMessage.postValue("Storage error");
+				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to save note");
+				errorMessage.postValue(text(R.string.vault_msg_save_note_failed));
 			} finally {
 				isLoading.postValue(false);
 			}
@@ -2848,7 +2895,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void saveNoteWithPassword(String title, String content, char[] password,
 			@Nullable String existingNoteId) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			java.util.Arrays.fill(password, '\0');
 			return;
 		}
@@ -2888,7 +2935,7 @@ public class VaultViewModel extends AndroidViewModel {
 				String protectedTitle = "🔒 " + title;
 				VaultItem item = vaultManager.addItem(VaultItem.ItemType.NOTE, protectedTitle, combined);
 
-				successMessage.postValue("Saved");
+				successMessage.postValue(text(R.string.vault_msg_saved));
 				loadVaultItems();
 
 				Arrays.fill(contentBytes, (byte) 0);
@@ -2897,7 +2944,7 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(salt, (byte) 0);
 
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to save note");
+				errorMessage.postValue(text(R.string.vault_msg_save_note_failed));
 			} finally {
 				Arrays.fill(passwordChars, '\0');
 				isLoading.postValue(false);
@@ -2932,7 +2979,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				if (targetItem == null) {
 					content.postValue(null);
-					errorMessage.postValue("Note not found");
+					errorMessage.postValue(text(R.string.vault_msg_note_not_found));
 					return;
 				}
 
@@ -2950,10 +2997,10 @@ public class VaultViewModel extends AndroidViewModel {
 				content.postValue("__RETRY__");
 			} catch (IOException e) {
 				content.postValue(null);
-				errorMessage.postValue("Storage error");
+				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {
 				content.postValue(null);
-				errorMessage.postValue("Failed to load note");
+				errorMessage.postValue(text(R.string.vault_msg_load_note_failed));
 			}
 		});
 
@@ -2964,7 +3011,7 @@ public class VaultViewModel extends AndroidViewModel {
 		MutableLiveData<String> content = new MutableLiveData<>();
 
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			java.util.Arrays.fill(password, '\0');
 			return content;
 		}
@@ -3003,10 +3050,10 @@ public class VaultViewModel extends AndroidViewModel {
 				Arrays.fill(decryptedContent, (byte) 0);
 			} catch (SecurityException e) {
 				content.postValue(null);
-				errorMessage.postValue("Please unlock your vault first");
+				errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			} catch (Exception e) {
 				content.postValue(null);
-				errorMessage.postValue("Failed to decrypt note");
+				errorMessage.postValue(text(R.string.vault_msg_decrypt_note_failed));
 			} finally {
 				Arrays.fill(passwordChars, '\0');
 			}
@@ -3017,7 +3064,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void addMediaToVault(VaultItem.ItemType type, String name, byte[] content, String mimeType) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		isLoading.postValue(true);
@@ -3025,14 +3072,14 @@ public class VaultViewModel extends AndroidViewModel {
 		dbExecutor.execute(() -> {
 			try {
 				vaultManager.addMediaItem(type, name, content, mimeType);
-				successMessage.postValue("Added to vault");
+				successMessage.postValue(text(R.string.vault_msg_added));
 				loadVaultItems();
 			} catch (SecurityException e) {
-				errorMessage.postValue("Security error");
+				errorMessage.postValue(text(R.string.vault_msg_security_error));
 			} catch (IOException e) {
-				errorMessage.postValue("Storage error");
+				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to add to vault");
+				errorMessage.postValue(text(R.string.vault_msg_add_failed));
 			} finally {
 				isLoading.postValue(false);
 			}
@@ -3041,7 +3088,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void deleteItem(String itemId) {
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		isLoading.postValue(true);
@@ -3050,13 +3097,13 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				vaultManager.deleteItem(itemId);
 				loadVaultItems();
-				successMessage.postValue("Item deleted");
+				successMessage.postValue(text(R.string.vault_msg_item_deleted));
 			} catch (SecurityException e) {
-				errorMessage.postValue("Vault locked");
+				errorMessage.postValue(text(R.string.vault_locked));
 			} catch (IOException e) {
-				errorMessage.postValue("Storage error");
+				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {
-				errorMessage.postValue("Delete failed");
+				errorMessage.postValue(text(R.string.vault_msg_delete_failed));
 			} finally {
 				isLoading.postValue(false);
 			}
@@ -3066,7 +3113,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void getMediaContent(String itemId, MediaContentCallback callback) {
 		if (!vaultManager.isUnlocked()) {
 			new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-				callback.onError("Please unlock your vault first");
+				callback.onError(text(R.string.vault_msg_unlock_first));
 			});
 			return;
 		}
@@ -3076,7 +3123,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				if (content == null || content.length == 0) {
 					new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-						callback.onError("Empty content");
+						callback.onError(text(R.string.vault_msg_file_empty));
 					});
 					return;
 				}
@@ -3086,11 +3133,11 @@ public class VaultViewModel extends AndroidViewModel {
 				});
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Vault is locked");
+					callback.onError(text(R.string.vault_locked));
 				});
 			} catch (Exception e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Failed to load content");
+					callback.onError(text(R.string.vault_msg_load_content_failed));
 				});
 			}
 		});
@@ -3104,7 +3151,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void getThumbnail(String itemId, ThumbnailCallback callback) {
 		if (!vaultManager.isUnlocked()) {
 			new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-				callback.onError("Please unlock your vault first");
+				callback.onError(text(R.string.vault_msg_unlock_first));
 			});
 			return;
 		}
@@ -3118,7 +3165,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				if (thumbnail == null || thumbnail.length == 0) {
 					new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-						callback.onError("Empty thumbnail");
+						callback.onError(text(R.string.vault_msg_load_thumbnail_failed));
 					});
 					return;
 				}
@@ -3128,11 +3175,11 @@ public class VaultViewModel extends AndroidViewModel {
 						callback.onThumbnailRetrieved(finalThumbnail));
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Vault is locked");
+					callback.onError(text(R.string.vault_locked));
 				});
 			} catch (Exception e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Failed to load thumbnail");
+					callback.onError(text(R.string.vault_msg_load_thumbnail_failed));
 				});
 			}
 		});
@@ -3152,7 +3199,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void loadDocumentSecure(String itemId, DocumentCallback callback) {
 		if (!vaultManager.isUnlocked()) {
 			new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-				callback.onError("Please unlock your vault first");
+				callback.onError(text(R.string.vault_msg_unlock_first));
 			});
 			return;
 		}
@@ -3163,7 +3210,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				if (content == null || content.length == 0) {
 					new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-						callback.onError("Document is empty");
+						callback.onError(text(R.string.vault_msg_document_empty));
 					});
 					return;
 				}
@@ -3188,11 +3235,11 @@ public class VaultViewModel extends AndroidViewModel {
 
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Vault is locked");
+					callback.onError(text(R.string.vault_locked));
 				});
 			} catch (Exception e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Failed to load document");
+					callback.onError(text(R.string.vault_msg_load_document_failed));
 				});
 			}
 		});
@@ -3202,7 +3249,7 @@ public class VaultViewModel extends AndroidViewModel {
 			DocumentCallback callback) {
 		if (!vaultManager.isUnlocked()) {
 			new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-				callback.onError("Please unlock your vault first");
+				callback.onError(text(R.string.vault_msg_unlock_first));
 			});
 			return;
 		}
@@ -3213,7 +3260,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 				if (content == null || content.length == 0) {
 					new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-						callback.onError("Document is empty");
+						callback.onError(text(R.string.vault_msg_document_empty));
 					});
 					return;
 				}
@@ -3238,11 +3285,11 @@ public class VaultViewModel extends AndroidViewModel {
 
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Incorrect password");
+					callback.onError(text(R.string.vault_incorrect_password));
 				});
 			} catch (Exception e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-					callback.onError("Failed to decrypt");
+					callback.onError(text(R.string.vault_msg_decrypt_failed));
 				});
 			} finally {
 				if (extraPassword != null) {
@@ -3272,9 +3319,9 @@ public class VaultViewModel extends AndroidViewModel {
 				vaultManager.wipeVault();
 				vaultState.postValue(VaultState.NOT_CREATED);
 				clearSensitiveMemory();
-				successMessage.postValue("Vault wiped");
+				successMessage.postValue(text(R.string.vault_msg_wiped));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to wipe vault");
+				errorMessage.postValue(text(R.string.vault_msg_wipe_failed));
 			} finally {
 				isLoading.postValue(false);
 			}
@@ -3283,11 +3330,11 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void changePassword(char[] currentPassword, char[] newPassword) {
 		if (!vaultManager.vaultExists()) {
-			errorMessage.postValue("No vault exists");
+			errorMessage.postValue(text(R.string.vault_msg_no_vault));
 			return;
 		}
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue("Please unlock your vault first");
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		isLoading.postValue(true);
@@ -3295,12 +3342,15 @@ public class VaultViewModel extends AndroidViewModel {
 		dbExecutor.execute(() -> {
 			try {
 				vaultManager.changePassword(currentPassword, newPassword);
-				successMessage.postValue("Password changed successfully");
+				successMessage.postValue(text(R.string.vault_settings_password_changed));
 			} catch (SecurityException e) {
-				errorMessage.postValue(e.getMessage() != null
-						? e.getMessage() : "Invalid current password");
+				String m = e.getMessage();
+				errorMessage.postValue(m != null
+						&& m.startsWith(VaultManager.TOO_MANY_ATTEMPTS)
+						? text(R.string.vault_msg_too_many_attempts)
+						: text(R.string.vault_msg_invalid_current_password));
 			} catch (Exception e) {
-				errorMessage.postValue("Failed to change password");
+				errorMessage.postValue(text(R.string.vault_msg_change_password_failed));
 			} finally {
 				Arrays.fill(currentPassword, '\0');
 				Arrays.fill(newPassword, '\0');
@@ -3311,7 +3361,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void exportVault(char[] exportPassword, ExportCallback callback) {
 		if (!vaultManager.isUnlocked()) {
-			callback.onExportError("Please unlock your vault first");
+			callback.onExportError(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		dbExecutor.execute(() -> {
@@ -3319,7 +3369,7 @@ public class VaultViewModel extends AndroidViewModel {
 				byte[] exportData = vaultManager.exportVault(exportPassword);
 				callback.onExportSuccess(exportData);
 			} catch (Exception e) {
-				callback.onExportError("Export failed");
+				callback.onExportError(text(R.string.vault_document_export_generic_failed));
 			} finally {
 				Arrays.fill(exportPassword, '\0');
 			}

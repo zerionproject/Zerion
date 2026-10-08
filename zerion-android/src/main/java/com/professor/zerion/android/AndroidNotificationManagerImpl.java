@@ -360,7 +360,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		int text = locked ? R.string.lock_tap_to_unlock :
 				R.string.ongoing_notification_text;
 		int icon = com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo);
+				.smallIcon(appContext, R.drawable.ic_stat_zerion);
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, ONGOING_CHANNEL_ID);
 		b.setSmallIcon(icon);
@@ -441,7 +441,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
 				appContext, CONTACT_CHANNEL_ID);
 		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext));
@@ -566,7 +566,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			ZerionNotificationBuilder b =
 					new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
 			b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 			b.setColorRes(R.color.zerion_primary);
 			b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext));
@@ -641,7 +641,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, GROUP_CHANNEL_ID);
 		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext));
@@ -738,7 +738,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CHANNEL_CHANNEL_ID);
 		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext));
@@ -846,7 +846,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		ZerionNotificationBuilder b =
 				new ZerionNotificationBuilder(appContext, CONTACT_CHANNEL_ID);
 		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 		b.setColorRes(R.color.zerion_primary);
 		b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext));
@@ -889,7 +889,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		NotificationCompat.Builder b =
 				new NotificationCompat.Builder(appContext, REMINDER_CHANNEL_ID);
 		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
-				.smallIcon(appContext, R.drawable.logo));
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
 		b.setColor(getColor(appContext, R.color.zerion_primary));
 		b.setContentTitle(com.professor.zerion.android.settings
 				.NotificationDisguise.title(appContext,

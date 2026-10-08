@@ -1,7 +1,5 @@
 package com.professor.zerion.android.vault.wallet.xmr;
 
-import androidx.annotation.Nullable;
-
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -116,23 +114,6 @@ public final class XmrNodeConfig {
 			xmr.put("_nodes", n);
 			root.put("xmr", xmr);
 			store.writeSettings(root.toString());
-		}
-	}
-
-	@Nullable
-	public String activeNodeLabel() {
-		List<XmrNode> order = toFailoverList();
-		if (order.isEmpty()) return null;
-		XmrNode first = order.get(0);
-		switch (mode) {
-			case OWN:
-				return "Own node · " + first.shortLabel();
-			case CUSTOM:
-				return "Custom · " + first.shortLabel();
-			case DIRECT:
-				return "Direct (clearnet) · " + first.shortLabel();
-			default:
-				return "Vetted Tor nodes";
 		}
 	}
 

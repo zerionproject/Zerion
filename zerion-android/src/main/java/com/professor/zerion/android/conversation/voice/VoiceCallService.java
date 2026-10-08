@@ -1367,7 +1367,7 @@ public class VoiceCallService extends Service implements EventListener {
 		callSetupTimeoutRunnable = () -> {
 			if (callState == CallState.RINGING ||
 					callState == CallState.CONNECTING) {
-				handleSetupFailure("Connection timeout");
+				handleSetupFailure(getString(R.string.voice_call_reason_timeout));
 			}
 		};
 		mainHandler.postDelayed(callSetupTimeoutRunnable, timeoutMs);
@@ -1822,14 +1822,14 @@ public class VoiceCallService extends Service implements EventListener {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
-						handleSignalingFailure("Interrupted while waiting for conversation group");
+						handleSignalingFailure();
 						return;
 					}
 					retries--;
 				}
 
 				if (conversationGroup == null) {
-					handleSignalingFailure("Failed to load conversation group");
+					handleSignalingFailure();
 					return;
 				}
 
@@ -1879,22 +1879,23 @@ public class VoiceCallService extends Service implements EventListener {
 								groupId, timestamp, callId);
 						break;
 					default:
-						handleSignalingFailure("Unknown signal type: " + signalType);
+						handleSignalingFailure();
 						return;
 				}
 
 				messagingManager.addLocalVoiceSignal(signal);
 			} catch (Exception e) {
-				handleSignalingFailure("Failed to send signaling: " + e.getMessage());
+				handleSignalingFailure();
 			}
 		});
 	}
 
-	private void handleSignalingFailure(String reason) {
+	private void handleSignalingFailure() {
 		mainHandler.post(() -> {
 			if (callState == CallState.CONNECTING || callState == CallState.RINGING) {
 				if (callActivity != null) {
-					callActivity.onCallFailed("Failed to establish call: " + reason);
+					callActivity.onCallFailed(
+							getString(R.string.voice_call_reason_setup_failed));
 				}
 				failCall();
 			}
@@ -2161,7 +2162,8 @@ public class VoiceCallService extends Service implements EventListener {
 				}
 				updateCallActivity();
 				if (callActivity != null) {
-					callActivity.onCallFailed("Contact is busy");
+					callActivity.onCallFailed(
+							getString(R.string.voice_call_reason_busy));
 				}
 				finishCall(false, false);
 				break;
@@ -2376,7 +2378,8 @@ public class VoiceCallService extends Service implements EventListener {
 		mainHandler.post(() -> {
 			VoiceCallActivity bound = callActivity;
 			if (bound != null) {
-				bound.showVideoError("Video link unavailable");
+				bound.showVideoError(
+						getString(R.string.voice_call_video_unavailable));
 			}
 			updateNotification();
 		});
@@ -2435,7 +2438,8 @@ public class VoiceCallService extends Service implements EventListener {
 		if (callState != CallState.CONNECTED || videoEnabled) {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
-					callActivity.showVideoError("Cannot start video: call not connected");
+					callActivity.showVideoError(
+							getString(R.string.voice_call_video_not_connected));
 				}
 			});
 			return;
@@ -2444,7 +2448,7 @@ public class VoiceCallService extends Service implements EventListener {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
 					callActivity.showVideoError(
-							"Cannot start video: video calls are disabled");
+							getString(R.string.voice_call_video_disabled));
 				}
 			});
 			return;
@@ -2536,7 +2540,7 @@ public class VoiceCallService extends Service implements EventListener {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
 					callActivity.showVideoError(
-							"Camera restart failed");
+							getString(R.string.voice_call_camera_restart_failed));
 				}
 			});
 		}
@@ -2593,9 +2597,9 @@ public class VoiceCallService extends Service implements EventListener {
 		if (videoTorConnection == null || videoKeys == null) {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
-					callActivity.showVideoError(videoTorConnection == null ?
-							"Video: no Tor connection" :
-							"Video: encryption keys not derived");
+					callActivity.showVideoError(getString(videoTorConnection == null
+							? R.string.voice_call_video_no_tor
+							: R.string.voice_call_video_no_keys));
 				}
 			});
 			return false;
@@ -2619,15 +2623,16 @@ public class VoiceCallService extends Service implements EventListener {
 				public void onVideoStopped() {}
 
 				@Override
-				public void onVideoError(String reason) {
+				public void onVideoError(int reason) {
 					if (isShuttingDown
 							|| callState == CallState.DISCONNECTED) {
 						return;
 					}
 					mainHandler.post(() -> {
 						if (callActivity != null) {
-							callActivity.showVideoError(
-									"Camera error: " + reason);
+							callActivity.showVideoError(getString(
+									R.string.voice_call_camera_error,
+									getString(reason)));
 						}
 					});
 				}
@@ -2694,7 +2699,7 @@ public class VoiceCallService extends Service implements EventListener {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
 					callActivity.showVideoError(
-							"Video streaming failed: " + e.getMessage());
+							getString(R.string.voice_call_video_failed));
 				}
 			});
 			stopVideoStreaming();

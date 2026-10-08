@@ -181,10 +181,10 @@
 	<string name="dialog_disappearing_off">Off</string>
 	<string name="dialog_disappearing_5_minutes">5 minutes</string>
 	<string-array name="default_timer_labels">
-		<item>Off</item>
-		<item>1 day</item>
-		<item>1 week</item>
-		<item>4 weeks</item>
+		<item>@string/dialog_disappearing_off</item>
+		<item>@string/default_timer_1_day</item>
+		<item>@string/dialog_disappearing_1_week</item>
+		<item>@string/dialog_disappearing_4_weeks</item>
 	</string-array>
 	<string name="dialog_disappearing_30_minutes">30 minutes</string>
 	<string name="dialog_disappearing_1_hour">1 hour</string>
@@ -269,7 +269,7 @@
 	<string name="forgotten_password">Forgot your password?</string>
 	<string name="dialog_title_lost_password">Lost Password</string>
 	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
-	<string name="delete_confirm_word">DELETE</string>
+	<string name="delete_confirm_word" translatable="false">DELETE</string>
 	<string name="delete_confirm_hint">Type %1$s to confirm</string>
 	<string name="password_missing">Please enter your password</string>
 	<string name="account_locked_try_again">Account locked. Please try again in %s</string>
@@ -554,8 +554,8 @@
 	<string name="active">Active</string>
 	<string name="generating">Generating…</string>
 	<string name="not_available">Not available</string>
-	<string name="tor_hidden_services_active">Secure connection via Tor hidden services</string>
-	<string name="tor_hidden_services_connecting">Connecting to Tor hidden services…</string>
+	<string name="tor_hidden_services_active">Secure connection via Tor onion services</string>
+	<string name="tor_hidden_services_connecting">Connecting to Tor onion services…</string>
 	<string name="tor_hidden_services_publishing">Publishing your address to the Tor network…</string>
 	<string name="tor_status_publishing">Publishing</string>
 	<string name="tor_status_clock_skew">Clock is wrong</string>
@@ -1248,6 +1248,7 @@
 	<string name="pref_app_icon_notes">Notes</string>
 	<string name="pref_app_icon_weather">Weather</string>
 	<string name="pref_app_icon_restart_hint">Home screen icon will update shortly</string>
+	<string name="pref_app_icon_disguise_hint">Home screen icon will update shortly. Message notifications now appear as “%1$s” with a bell icon.</string>
 	<string name="pref_nav_size_title">Navigation Bar Size</string>
 	<string name="pref_nav_size_compact">Compact</string>
 	<string name="pref_nav_size_default">Default</string>
@@ -1523,7 +1524,7 @@
 	<string name="disappearing_messages_explanation_long">New messages disappear after 7\u00A0days.
 		\n\nThe sender\'s countdown starts when the message is delivered. The recipient\'s starts when they read it. Messages on the timer show a bomb icon.
 		\n\nRecipients can still copy what you send.
-		\n\nEither of you can change this setting \u2014 your changes apply to your new messages right away, and to your contact\'s once they receive your next message.</string>
+		\n\nEither of you can change this setting. Your changes apply to your new messages right away, and to your contact\'s once they receive your next message.</string>
 	<string name="learn_more">Learn more</string>
 	<string name="disappearing_messages_summary">New messages disappear after 7\u00A0days.</string>
 	<string name="disappearing_messages_setting_description">Messages will automatically disappear after the selected time</string>
@@ -2326,4 +2327,160 @@
 	<string name="vault_settings_clipboard_untimed">When the vault locks, on sign-out or on panic</string>
 	<string name="vault_settings_kdf_strong">Password key: Argon2id, 256 MiB, 3 passes, bound to this device</string>
 	<string name="vault_settings_kdf_reduced">Password key: Argon2id, 128 MiB, 6 passes (this device cannot spare 256 MiB), bound to this device</string>
+	<string name="updates_check_title">Check for updates</string>
+	<string name="updates_check_summary">Version %1$s. Checked over Tor, only for installs from GitHub.</string>
+	<string name="updates_check_summary_store">Updates for this installation come from %1$s.</string>
+	<string name="updates_auto_title">Check automatically</string>
+	<string name="updates_auto_summary">Once a day over Tor</string>
+	<string name="updates_checking">Checking over Tor…</string>
+	<string name="updates_up_to_date">You have the latest version (%1$s).</string>
+	<string name="updates_not_verified">The update information could not be verified, so it was ignored.</string>
+	<string name="updates_unreachable">GitHub could not be reached over Tor. Try again later.</string>
+	<string name="updates_tor_not_ready">Tor is not connected yet. Try again in a moment.</string>
+	<string name="updates_store_install">Updates for this installation come from %1$s, not from GitHub.</string>
+	<string name="updates_available_title">Update available</string>
+	<string name="updates_available_message">Zerion %1$s is available. You are using %2$s.
+
+Download it from the Zerion releases on GitHub:
+%3$s
+
+SHA-256 of the APK:
+%4$s
+
+A real update installs over the existing app. Never uninstall Zerion to install an update: uninstalling deletes your account.
+
+The link opens in your browser, which does not use Tor.</string>
+	<string name="updates_open">Open in browser</string>
+	<string name="updates_copy_link">Copy link</string>
+	<string name="updates_later">Later</string>
+	<string name="updates_link_copied">Link copied</string>
+	<string name="updates_no_browser">No browser is available to open the link.</string>
+	<string name="dialog_disappearing_custom">Custom…</string>
+	<string name="disappearing_custom_with_value">Custom: %1$s</string>
+	<string name="disappearing_custom_title">Disappear after</string>
+	<string name="disappearing_custom_preview">Messages disappear after %1$s.</string>
+	<plurals name="disappearing_unit_minutes">
+		<item quantity="one">minute</item>
+		<item quantity="other">minutes</item>
+	</plurals>
+	<plurals name="disappearing_unit_hours">
+		<item quantity="one">hour</item>
+		<item quantity="other">hours</item>
+	</plurals>
+	<plurals name="disappearing_unit_days">
+		<item quantity="one">day</item>
+		<item quantity="other">days</item>
+	</plurals>
+	<plurals name="disappearing_unit_weeks">
+		<item quantity="one">week</item>
+		<item quantity="other">weeks</item>
+	</plurals>
+	<string name="default_timer_1_day">1 day</string>
+	<plurals name="duration_weeks">
+		<item quantity="one">%d week</item>
+		<item quantity="other">%d weeks</item>
+	</plurals>
+	<string name="vault_msg_created">Vault created successfully</string>
+	<string name="vault_msg_already_exists">Vault already exists</string>
+	<string name="vault_msg_security_error">Security error</string>
+	<string name="vault_msg_storage_error">Storage error</string>
+	<string name="vault_msg_create_failed">Failed to create vault</string>
+	<string name="vault_msg_unlock_failed">Failed to unlock vault</string>
+	<string name="vault_msg_load_failed">Failed to load vault items</string>
+	<string name="vault_msg_unlock_first">Please unlock your vault first</string>
+	<string name="vault_msg_file_name_empty">File name cannot be empty</string>
+	<string name="vault_msg_file_empty">File content is empty</string>
+	<string name="vault_msg_add_document_failed">Failed to add document</string>
+	<string name="vault_msg_document_saved">Document saved securely</string>
+	<string name="vault_msg_invalid_document">Invalid document ID</string>
+	<string name="vault_msg_document_updated">Document updated</string>
+	<string name="vault_msg_update_document_failed">Failed to update document</string>
+	<string name="vault_msg_save_password_failed">Failed to save password</string>
+	<string name="vault_msg_note_title_empty">Note title cannot be empty</string>
+	<string name="vault_msg_saved">Saved</string>
+	<string name="vault_msg_save_note_failed">Failed to save note</string>
+	<string name="vault_msg_note_not_found">Note not found</string>
+	<string name="vault_msg_load_note_failed">Failed to load note</string>
+	<string name="vault_msg_decrypt_note_failed">Failed to decrypt note</string>
+	<string name="vault_msg_added">Added to vault</string>
+	<string name="vault_msg_add_failed">Failed to add to vault</string>
+	<string name="vault_msg_item_deleted">Item deleted</string>
+	<string name="vault_msg_delete_failed">Delete failed</string>
+	<string name="vault_msg_wiped">Vault wiped</string>
+	<string name="vault_msg_wipe_failed">Failed to wipe vault</string>
+	<string name="vault_msg_no_vault">No vault exists</string>
+	<string name="vault_msg_change_password_failed">Failed to change password</string>
+	<string name="vault_msg_invalid_current_password">Invalid current password</string>
+	<string name="vault_msg_too_many_attempts">Too many failed attempts. Try again later.</string>
+	<string name="vault_msg_retrieve_password_failed">Failed to retrieve password</string>
+	<string name="vault_msg_load_content_failed">Failed to load content</string>
+	<string name="vault_msg_load_thumbnail_failed">Failed to load thumbnail</string>
+	<string name="vault_msg_document_empty">Document is empty</string>
+	<string name="vault_msg_load_document_failed">Failed to load document</string>
+	<string name="vault_msg_decrypt_failed">Failed to decrypt</string>
+	<string name="vault_doc_export_plain">Export (unencrypted)</string>
+	<string name="vault_doc_export_zenc">Export as .zenc (encrypted)</string>
+	<string name="vault_doc_share_zenc">Share .zenc file</string>
+	<string name="vault_doc_import">Import document</string>
+	<string name="vault_doc_new_text">New text document</string>
+	<string name="vault_action_view">View</string>
+	<string name="vault_choose_from_gallery">Choose from gallery</string>
+	<string name="vault_doc_type_mp4">MP4 video</string>
+	<string name="vault_doc_type_webm">WebM video</string>
+	<string name="vault_doc_type_unknown">Unknown file</string>
+	<string name="wallet_err_frozen_coin">A frozen coin cannot be spent</string>
+	<string name="wallet_err_coin_gone">A selected coin is no longer available</string>
+	<string name="wallet_err_invalid_address">Not a valid Bitcoin address</string>
+	<string name="wallet_err_amount_range">Amount out of range</string>
+	<string name="wallet_err_no_coins">No spendable coins</string>
+	<string name="wallet_err_balance_after_fee">Balance is too low to send after the fee</string>
+	<string name="wallet_err_dust">Amount is below the dust limit</string>
+	<string name="wallet_err_insufficient">Insufficient balance for amount plus fee</string>
+	<string name="wallet_err_fee_too_low">Fee below the relay minimum</string>
+	<string name="wallet_err_oracle_unreachable">Could not reach the scan source over Tor</string>
+	<string name="wallet_err_sp_self_check">Silent Payments self-check failed</string>
+	<string name="wallet_err_sp_none">No unspent silent payments found</string>
+	<string name="wallet_err_amount_after_fee">Amount is too low to send after the fee</string>
+	<string name="voice_call_camera_in_use">The camera is in use by another app</string>
+	<string name="voice_call_camera_too_many">Too many cameras are open. Close other apps.</string>
+	<string name="voice_call_camera_disabled">The camera is disabled by device policy</string>
+	<string name="voice_call_camera_hardware">Camera hardware error</string>
+	<string name="voice_call_camera_service">Camera service error. Restart the app.</string>
+	<string name="voice_call_camera_unknown">Unknown camera problem</string>
+	<string name="voice_call_camera_permission">Camera permission was denied</string>
+	<string name="voice_call_camera_unavailable">Camera not available</string>
+	<string name="voice_call_camera_session">The camera could not be set up</string>
+	<string name="voice_call_camera_preview">Camera preview failed</string>
+	<string name="voice_call_video_integrity">The video stream failed an integrity check</string>
+	<string name="voice_call_camera_error">Camera error: %1$s</string>
+	<string name="voice_call_reason_timeout">Connection timed out</string>
+	<string name="voice_call_reason_setup_failed">The call could not be set up</string>
+	<string name="voice_call_reason_busy">Contact is busy</string>
+	<string name="voice_call_speaker_on">Speaker on</string>
+	<string name="voice_call_muted">Muted</string>
+	<string name="voice_call_packet_loss">Loss: %1$s%%</string>
+	<string name="voice_call_channel_incoming">Incoming calls</string>
+	<string name="voice_call_channel_incoming_desc">Ringing alerts for incoming voice calls</string>
+	<string name="voice_call_channel_ongoing">Ongoing calls</string>
+	<string name="voice_call_channel_ongoing_desc">Status of a voice call in progress</string>
+	<string name="hardened_reason_verified_boot">Verified boot is not in the green state, so the device firmware is not a stock signed image. Someone with bootloader access could have modified the system.</string>
+	<string name="hardened_reason_bootloader">The bootloader is unlocked. A recovery-mode dump could bypass the app\'s wipes.</string>
+	<string name="hardened_reason_root">A root binary (su) was found. A rooted device cannot keep apps isolated from a determined attacker.</string>
+	<string name="hardened_reason_magisk">Magisk traces were found. The system has root and may be hooking app processes.</string>
+	<string name="hardened_reason_debugger">A debugger is attached to Zerion. Memory contents can be read while it runs.</string>
+	<string name="hardened_reason_frida">Frida instrumentation was found. Its hooks can change cryptographic operations while they run.</string>
+	<string name="hardened_reason_xposed">An Xposed or LSPosed framework was found. System-wide hooks can intercept app calls.</string>
+	<string name="hardened_reason_adb">The ADB daemon is listening on this device. USB or wireless debugging is exposing it.</string>
+	<string name="hardened_reason_unknown">The hardened mode check failed (code %1$d).</string>
+	<plurals name="duration_seconds">
+		<item quantity="one">%d second</item>
+		<item quantity="other">%d seconds</item>
+	</plurals>
+	<string name="voice_call_video_unavailable">Video is not available</string>
+	<string name="voice_call_video_not_connected">Video can start once the call is connected</string>
+	<string name="voice_call_video_disabled">Video calls are turned off</string>
+	<string name="voice_call_camera_restart_failed">The camera could not restart</string>
+	<string name="voice_call_video_no_tor">Video needs a Tor connection</string>
+	<string name="voice_call_video_no_keys">Video encryption is not ready yet</string>
+	<string name="voice_call_video_failed">Video streaming failed</string>
 </resources>

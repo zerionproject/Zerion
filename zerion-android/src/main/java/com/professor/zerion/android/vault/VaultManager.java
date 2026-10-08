@@ -32,6 +32,7 @@ import org.zerionproject.core.account.PasswordNormalizer;
 @NotNullByDefault
 public class VaultManager
 		implements com.professor.zerion.android.vault.wallet.xmr.VaultGate {
+	public static final String TOO_MANY_ATTEMPTS = "Too many failed attempts";
 	private static final String HEADER_FILE = "vault.header";
 	private static final String HEADER_NEW_FILE = "vault.header.new";
 	private static final String ITEMS_DIR = "items";
@@ -420,7 +421,7 @@ public class VaultManager
 			if (waitMs > 0) {
 				long waitSeconds = (waitMs + 999) / 1000;
 				throw new SecurityException(
-						"Too many failed attempts. Wait " + waitSeconds
+						TOO_MANY_ATTEMPTS + ". Wait " + waitSeconds
 								+ " seconds");
 			}
 			if (currentHeader == null) {
@@ -977,7 +978,7 @@ public class VaultManager
 	private synchronized boolean verifyPassword(char[] candidate)
 			throws Exception {
 		if (unlockThrottle.remainingLockoutMs() > 0) {
-			throw new SecurityException("Too many failed attempts");
+			throw new SecurityException(TOO_MANY_ATTEMPTS);
 		}
 		long start = android.os.SystemClock.elapsedRealtime();
 		boolean ok = false;

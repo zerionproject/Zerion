@@ -98,12 +98,23 @@ public class GroupTrCreateActivity extends ZerionActivity {
 				getString(R.string.grouptr_ttl_1h),
 				getString(R.string.grouptr_ttl_1day),
 				getString(R.string.grouptr_ttl_7days),
-				getString(R.string.grouptr_ttl_30days)
+				getString(R.string.grouptr_ttl_30days),
+				getString(R.string.dialog_disappearing_custom)
 		};
 		long[] values = new long[] { 0L, 3600L, 86400L, 7 * 86400L, 30 * 86400L };
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_create_disappearing)
 				.setItems(labels, (d, w) -> {
+					if (w == values.length) {
+						com.professor.zerion.android.conversation
+								.DisappearingTimers.showCustomPicker(this,
+								ttlSeconds * 1000L, ms -> {
+									ttlSeconds = ms / 1000L;
+									disappearingValue.setText(
+											GroupTrTimerLabels.label(this, ms));
+								});
+						return;
+					}
 					ttlSeconds = values[w];
 					disappearingValue.setText(labels[w]);
 				})

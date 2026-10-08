@@ -285,7 +285,8 @@ public class VaultGalleryFragment extends BaseFragment {
 	}
 
 	private void showItemOptions(VaultItem item) {
-		String[] options = {"View", "Delete"};
+		String[] options = {getString(R.string.vault_action_view),
+				getString(R.string.delete)};
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
@@ -316,7 +317,8 @@ public class VaultGalleryFragment extends BaseFragment {
 	}
 
 	private void showAddImageDialog() {
-		String[] options = {"Take Photo", "Choose from Gallery"};
+		String[] options = {getString(R.string.take_photo),
+				getString(R.string.vault_choose_from_gallery)};
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_add_image)

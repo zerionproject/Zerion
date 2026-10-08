@@ -579,8 +579,11 @@ public class ConversationViewModel extends DbViewModel
 									m.getAttachmentHeaders(),
 									m.getAutoDeleteTimer(), replyToId);
 					MessageId id = message.getId();
+					localById.put(id, true);
 
 					if (replyToItem != null) {
+						localById.put(replyToItem.getId(),
+								!replyToItem.isIncoming());
 						storeReplyContext(id, replyToItem.getId(),
 								replyToItem.getText());
 					}

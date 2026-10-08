@@ -101,6 +101,15 @@
                 android:buttonTint="@color/zerion_primary_accent" />
 
             <RadioButton
+                android:id="@+id/timer_custom"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/dialog_disappearing_custom"
+                android:textColor="@color/zerion_text_primary"
+                android:textSize="16sp"
+                android:buttonTint="@color/zerion_primary_accent" />
+
+            <RadioButton
                 android:id="@+id/timer_off"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"

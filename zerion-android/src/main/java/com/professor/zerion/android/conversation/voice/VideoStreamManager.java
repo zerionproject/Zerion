@@ -3,6 +3,8 @@ package com.professor.zerion.android.conversation.voice;
 import android.content.Context;
 import android.view.Surface;
 
+import com.professor.zerion.R;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.DataInputStream;
@@ -13,6 +15,8 @@ import java.io.OutputStream;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
+
+import androidx.annotation.StringRes;
 
 @NotNullByDefault
 class VideoStreamManager {
@@ -47,7 +51,7 @@ class VideoStreamManager {
 	interface VideoStateCallback {
 		void onVideoStarted();
 		void onVideoStopped();
-		void onVideoError(String reason);
+		void onVideoError(@StringRes int reason);
 		void onVideoLinkLost();
 	}
 
@@ -236,7 +240,7 @@ class VideoStreamManager {
 				if (consecutiveAuthFailures >= 3
 						&& stateCallback != null) {
 					stateCallback.onVideoError(
-							"Video stream integrity failure");
+							R.string.voice_call_video_integrity);
 					return;
 				}
 			} catch (Exception e) {

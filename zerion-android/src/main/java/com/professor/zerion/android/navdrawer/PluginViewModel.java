@@ -15,15 +15,10 @@ import org.zerionproject.core.api.network.event.NetworkStatusEvent;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.Plugin.State;
 import org.zerionproject.core.api.plugin.I2pConstants;
-import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.plugin.PluginManager;
-import org.zerionproject.core.api.plugin.TorClockSkewStatus;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
-import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
 import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
-import org.zerionproject.core.api.plugin.event.TorClockSkewEvent;
-import org.zerionproject.core.api.plugin.event.TorOnionPublishedEvent;
 import org.zerionproject.core.api.plugin.event.TransportStateEvent;
 import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
@@ -78,19 +73,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Integer> torBootstrap =
 			new MutableLiveData<>(0);
 
-	private final MutableLiveData<Boolean> torOnionPublished =
-			new MutableLiveData<>(false);
-
-	private final MutableLiveData<Long> torClockSkewSeconds =
-			new MutableLiveData<>(0L);
-
-	private static final long PUBLISH_GRACE_MS = 60_000;
-	private final android.os.Handler mainHandler =
-			new android.os.Handler(android.os.Looper.getMainLooper());
-	private final TorPublishState torPublishState =
-			new TorPublishState(PUBLISH_GRACE_MS);
-	private final Runnable publishCheck = this::runPublishCheck;
-	private boolean cleared = false;
+	private final TorPublishTracker torPublishTracker;
 
 	private final MutableLiveData<B4OnionRotation.RotationPhase>
 			rotationPhase = new MutableLiveData<>(
@@ -116,7 +99,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			NetworkManager networkManager,
 			TransportPropertyManager transportPropertyManager,
 			B4OnionRotation b4OnionRotation,
-			ConnectionRegistry connectionRegistry,
+			TorPublishTracker torPublishTracker,
 			org.zerionproject.core.api.contact.ContactManager contactManager,
 			org.zerionproject.core.api.plugin.OnionClientAuthManager
 					onionClientAuthManager) {
@@ -129,65 +112,24 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		this.eventBus = eventBus;
 		this.transportPropertyManager = transportPropertyManager;
 		this.b4OnionRotation = b4OnionRotation;
+		this.torPublishTracker = torPublishTracker;
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
-		if (!connectionRegistry.getConnectedContacts(TorConstants.ID)
-				.isEmpty()) {
-			torPublishState.onPublishProof();
-		}
-		if (torPluginState.getValue() == State.ACTIVE) {
-			schedulePublishCheck(torPublishState.onActive(
-					android.os.SystemClock.elapsedRealtime(),
-					currentTorClockSkew()));
-		}
-		showTorPublishState();
+		torPublishTracker.refresh();
 		loadSettings();
 		loadLocalOnion();
 		loadRotationState();
 	}
 
-	private void schedulePublishCheck(long delayMs) {
-		mainHandler.removeCallbacks(publishCheck);
-		if (!cleared && delayMs != TorPublishState.NO_CHECK) {
-			mainHandler.postDelayed(publishCheck, delayMs);
-		}
-	}
-
-	private void runPublishCheck() {
-		schedulePublishCheck(torPublishState.onCheck(
-				android.os.SystemClock.elapsedRealtime(),
-				currentTorClockSkew()));
-		showTorPublishState();
-	}
-
-	private void onTorPublishProof() {
-		schedulePublishCheck(TorPublishState.NO_CHECK);
-		torPublishState.onPublishProof();
-		showTorPublishState();
-	}
-
-	private void showTorPublishState() {
-		torOnionPublished.setValue(torPublishState.isPublished());
-		torClockSkewSeconds.setValue(torPublishState.getSkewSeconds());
-	}
-
-	private long currentTorClockSkew() {
-		Plugin p = pluginManager.getPlugin(TorConstants.ID);
-		return p instanceof TorClockSkewStatus
-				? ((TorClockSkewStatus) p).getCurrentClockSkewSeconds() : 0;
-	}
-
 	void refreshTorPublishState() {
-		runPublishCheck();
+		torPublishTracker.refresh();
 	}
 
 	@Override
 	protected void onCleared() {
 		super.onCleared();
-		cleared = true;
-		mainHandler.removeCallbacks(publishCheck);
 		eventBus.removeListener(this);
 	}
 
@@ -213,42 +155,14 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 				torPluginState.postValue(torState);
 				if (torState == State.ACTIVE) {
 					loadLocalOnion();
-					mainHandler.post(() -> {
-						schedulePublishCheck(torPublishState.onActive(
-								android.os.SystemClock.elapsedRealtime(),
-								currentTorClockSkew()));
-						showTorPublishState();
-					});
-				} else {
-					boolean fullStop = torState == State.DISABLED
-							|| pluginManager.isOfflineMode();
-					mainHandler.post(() -> {
-						schedulePublishCheck(torPublishState.onInactive(fullStop,
-								android.os.SystemClock.elapsedRealtime()));
-						showTorPublishState();
-					});
-					if (torState == State.STARTING_STOPPING) {
-						torBootstrap.postValue(0);
-					}
+				} else if (torState == State.STARTING_STOPPING) {
+					torBootstrap.postValue(0);
 				}
 			} else if (t.getTransportId().equals(I2pConstants.ID)) {
 				i2pPluginState.postValue(t.getState());
 			}
 		} else if (e instanceof TorBootstrapEvent) {
 			torBootstrap.postValue(((TorBootstrapEvent) e).getPercentage());
-		} else if (e instanceof TorClockSkewEvent) {
-			long skew = ((TorClockSkewEvent) e).getSkewSeconds();
-			mainHandler.post(() -> {
-				schedulePublishCheck(torPublishState.onClockSkew(skew));
-				showTorPublishState();
-			});
-		} else if (e instanceof TorOnionPublishedEvent) {
-			mainHandler.post(this::onTorPublishProof);
-		} else if (e instanceof ConnectionOpenedEvent) {
-			ConnectionOpenedEvent c = (ConnectionOpenedEvent) e;
-			if (c.getTransportId().equals(TorConstants.ID) && c.isIncoming()) {
-				mainHandler.post(this::onTorPublishProof);
-			}
 		}
 	}
 
@@ -257,17 +171,15 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	}
 
 	LiveData<Boolean> getTorOnionPublished() {
-		return torOnionPublished;
+		return torPublishTracker.getPublished();
 	}
 
 	LiveData<Long> getTorClockSkewSeconds() {
-		return torClockSkewSeconds;
+		return torPublishTracker.getClockSkewSeconds();
 	}
 
 	void restartTor() {
-		schedulePublishCheck(torPublishState.onInactive(true,
-				android.os.SystemClock.elapsedRealtime()));
-		showTorPublishState();
+		torPublishTracker.onRestartRequested();
 		torBootstrap.setValue(0);
 		pluginManager.restartPlugin(TorConstants.ID);
 	}

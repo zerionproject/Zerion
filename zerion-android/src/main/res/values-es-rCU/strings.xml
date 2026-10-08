@@ -453,9 +453,9 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="zerion_version">Versión Zerion: %s</string>
   <string name="tor_version">Versión Tor:%s</string>
   <string name="links">Enlaces</string>
-  <string name="zerion_website">•  <a href="">Sitio Web</a></string>
-  <string name="zerion_source_code">•  <a href="">Código fuente</a></string>
-  <string name="zerion_privacy_policy">•  <a href="">Política de Privacidad</a></string>
+  <string name="zerion_website">•  <a href="https://zerion.chat">Sitio Web</a></string>
+  <string name="zerion_source_code">•  <a href="https://github.com/zerionproject">Código fuente</a></string>
+  <string name="zerion_privacy_policy">•  <a href="https://zerion.chat/privacy-policy.html">Política de Privacidad</a></string>
   
   <string name="translator_thanks">Gracias a todos los colaboradores de Localization Lab.</string>
   
@@ -505,4 +505,161 @@ Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="screenshot_message_2">¡Hola Alicia! ¡Gracias por contarme sobre Zerion!</string>
   
   <string name="screenshot_message_3">No hay problema, espero que te guste 😀</string>
+	<string name="bg_conn_always_summary">Recomendado. Zerion sigue estando accesible para que los mensajes, los mensajes de grupo y las actualizaciones de canales puedan llegar mientras la aplicación está en segundo plano.</string>
+	<string name="bg_conn_always_title">Siempre conectado</string>
+	<string name="bg_conn_open_summary">Zerion se conecta mientras la aplicación está abierta y detiene sus conexiones cuando sales de ella. Vuelve a abrir Zerion para reconectarte.</string>
+	<string name="bg_conn_open_title">Solo mientras Zerion está abierto</string>
+	<string name="bg_conn_paused_summary">Detiene Tor, todas las conexiones entre pares y el servicio en segundo plano hasta que elijas otra opción.</string>
+	<string name="bg_conn_paused_title">En pausa</string>
+	<string name="bg_conn_warning">Mientras las conexiones en segundo plano estén limitadas o en pausa, los mensajes entrantes, los mensajes de grupo y las actualizaciones de canales se retrasarán hasta que Zerion vuelva a conectarse. Durante la pausa, la entrega no continúa en segundo plano.</string>
+	<string name="connected">Conectado</string>
+	<string name="disabled">Desactivado</string>
+	<string name="generating">Generando…</string>
+	<string name="i2p_direct_reseed_summary">Solo si Tor está bloqueado donde estás</string>
+	<string name="i2p_direct_reseed_title">Arranque inicial sin Tor</string>
+	<string name="i2p_direct_reseed_warning_confirm">Permitir arranque directo</string>
+	<string name="i2p_direct_reseed_warning_message">Activa esto solo si Tor está bloqueado y no puede conectarse donde estás. Mientras esté activado, cada vez que Tor no pueda conectarse al iniciar I2P, Zerion contactará directamente con un pequeño grupo de servidores de arranque de I2P conocidos por HTTPS, con verificación de firmas. Cada una de esas conexiones les revela a esos servidores que tu dispositivo usa I2P. Tras un arranque correcto, I2P funciona por sí solo y Zerion sigue usando Tor siempre que Tor funcione. Este permiso sigue activado hasta que lo desactives. Déjalo desactivado si no sufres censura.</string>
+	<string name="i2p_direct_reseed_warning_title">¿Iniciar I2P sin Tor?</string>
+	<string name="i2p_enable_warning_confirm">Activar I2P</string>
+	<string name="i2p_enable_warning_message">I2P es una segunda red de anonimato que puedes usar junto con Tor. Tus mensajes siguen cifrados, así que nadie puede leer lo que envías ni saber con quién hablas. Pero, a diferencia de Tor, I2P no oculta tu dirección IP: tu red o tu proveedor de internet pueden ver que este dispositivo usa I2P, solo que lo usas, nunca el contenido. Tor siempre sigue activado. Activa I2P solo si te parece aceptable que tu red vea que lo usas.</string>
+	<string name="i2p_enable_warning_title">¿Activar I2P?</string>
+	<string name="i2p_info_message">I2P es una red de anonimato alternativa a Tor, con un enrutador integrado. Tor sigue activado como base; I2P es un extra opcional.</string>
+	<string name="i2p_toggle_summary">Enrutar también a través de la red I2P</string>
+	<string name="i2p_toggle_title">I2P</string>
+	<string name="internet_status_label">Conectividad</string>
+	<string name="mesh_info_message">Los mensajes van sellados para el destinatario y se retransmiten de dispositivo en dispositivo. Al activar esto se piden los permisos de Bluetooth y de dispositivos cercanos, y se emite localmente.</string>
+	<string name="mesh_permission_denied">La red en malla sin conexión necesita los permisos de Bluetooth y de dispositivos cercanos</string>
+	<plurals name="mesh_status_active">
+		<item quantity="one">Activo · %d dispositivo al alcance</item>
+		<item quantity="many">Activo · %d dispositivos al alcance</item>
+		<item quantity="other">Activo · %d dispositivos al alcance</item>
+	</plurals>
+	<string name="mesh_status_label">Red en malla sin conexión</string>
+	<string name="mesh_status_searching">Activo · buscando</string>
+	<string name="mesh_toggle_summary">Comunícate con contactos cercanos sin internet, por Bluetooth</string>
+	<string name="mesh_toggle_title">Red en malla sin conexión</string>
+	<string name="mesh_unsupported">La red en malla sin conexión requiere Android 12 o posterior</string>
+	<string name="network_i2p_subtitle">Invisible Internet Project</string>
+	<string name="network_status_off">Desactivado</string>
+	<string name="network_status_title">Estado de la red</string>
+	<string name="not_available">No disponible</string>
+	<string name="offline_mode_banner">Modo sin conexión · Tor detenido · solo red en malla</string>
+	<string name="offline_mode_confirm_button">Desconectarse</string>
+	<string name="offline_mode_confirm_message">Esto detiene la mensajería por internet: Tor se detiene. Solo podrás comunicarte con contactos cercanos ya vinculados, a través de la red en malla sin conexión. Un nodo de billetera directo o local que hayas configurado no se bloquea. Desactívalo para volver a estar conectado.</string>
+	<string name="offline_mode_confirm_title">¿Activar el modo sin conexión?</string>
+	<string name="offline_mode_info">El modo sin conexión detiene Tor, así que la aplicación no establece ninguna conexión a internet para la mensajería. Un nodo de billetera directo o local que configures tú mismo no se bloquea. Solo puedes comunicarte con contactos ya vinculados que estén cerca, por Bluetooth.</string>
+	<string name="offline_mode_summary">Detener Tor. Hablar solo con contactos cercanos por la red en malla</string>
+	<string name="offline_mode_title">Modo sin conexión (Paranoia)</string>
+	<string name="offline_mode_transport_off">Detenido en modo sin conexión</string>
+	<string name="onion_rotation_section_title">ROTACIÓN DE DIRECCIÓN ONION</string>
+	<string name="pref_force_complete_rotation_confirm_action">Forzar finalización</string>
+	<string name="pref_force_complete_rotation_confirm_message">Esto retira tu antigua dirección onion de inmediato. Los contactos que todavía no hayan migrado no podrán comunicarse contigo hasta que se vuelvan a conectar por otro canal. Usa esta opción solo si la rotación se ha atascado o necesitas una limpieza inmediata.</string>
+	<string name="pref_force_complete_rotation_confirm_title">¿Forzar la finalización de la rotación?</string>
+	<string name="pref_force_complete_rotation_done">Rotación completada</string>
+	<string name="pref_force_complete_rotation_not_announcing">No hay ninguna rotación en curso</string>
+	<string name="pref_force_complete_rotation_summary">Retirar la dirección antigua de inmediato</string>
+	<string name="pref_force_complete_rotation_title">Forzar finalización ahora</string>
+	<string name="pref_rotate_onion_confirm_action">Rotar</string>
+	<string name="pref_rotate_onion_confirm_message">Se generará una nueva dirección de Tor y se compartirá con tus contactos en su próxima conexión. Tu dirección antigua seguirá funcionando hasta que todos los contactos hayan migrado.</string>
+	<string name="pref_rotate_onion_confirm_title">¿Rotar la dirección onion?</string>
+	<string name="pref_rotate_onion_failed">La rotación falló. Comprueba que Tor esté funcionando</string>
+	<string name="pref_rotate_onion_success_message">Tu dirección antigua seguirá funcionando hasta que todos los contactos se hayan conectado a la nueva.\n\nNueva dirección:\n%1$s</string>
+	<string name="pref_rotate_onion_success_title">Nueva dirección creada</string>
+	<string name="pref_rotate_onion_summary">Crea una nueva dirección de Tor y anúnciala a tus contactos</string>
+	<string name="pref_rotate_onion_title">Rotar la dirección onion ahora</string>
+	<string name="settings_bg_conn_header">Conexiones en segundo plano</string>
+	<string name="settings_section_mesh">RED EN MALLA SIN CONEXIÓN</string>
+	<string name="settings_section_mode">MODO DE PRIVACIDAD</string>
+	<string name="settings_section_overlay">REDES SUPERPUESTAS</string>
+	<string name="settings_section_tor_network">RED TOR</string>
+	<string name="tor_client_auth_summary">Autorización de cliente: fijada para %1$d, activándose para %2$d, de %3$d contactos</string>
+	<string name="tor_custom_bridges_dialog_message">Si Tor no puede conectarse donde estás, pega aquí líneas de puente, una por línea. Si agregas puentes aquí, solo se usarán estos, no los integrados. Se admiten puentes simples, obfs4, snowflake, meek y webtunnel. Puedes conseguir puentes en bridges.torproject.org o con el GetBridgesBot de Telegram.</string>
+	<string name="tor_custom_bridges_hint">Pega líneas de puente, una por línea</string>
+	<string name="tor_custom_bridges_invalid">Una de las líneas no es una línea de puente. No se guardó nada.</string>
+	<string name="tor_custom_bridges_summary_none">Sin configurar</string>
+	<plurals name="tor_custom_bridges_summary_set">
+		<item quantity="one">%1$d puente personalizado</item>
+		<item quantity="many">%1$d puentes personalizados</item>
+		<item quantity="other">%1$d puentes personalizados</item>
+	</plurals>
+	<string name="tor_custom_bridges_title">Puentes personalizados</string>
+	<string name="tor_hidden_services_active">Conexión segura mediante servicios onion de Tor</string>
+	<string name="tor_hidden_services_clock_skew">El reloj de tu dispositivo no está en hora, por lo que Tor no puede publicar tu dirección. Configura la fecha, la hora y la zona horaria como automáticas y vuelve a conectarte.</string>
+	<string name="tor_hidden_services_connecting">Conectando con los servicios onion de Tor…</string>
+	<string name="tor_hidden_services_publishing">Publicando tu dirección en la red Tor…</string>
+	<string name="tor_info_message">Zerion envía toda la mensajería en línea a través de la red Tor. Las conexiones Bluetooth con contactos cercanos, y un nodo de billetera directo o local si configuras uno, no usan Tor.\n\nEl modo automático deduce tu país a partir de tu tarjeta SIM o tu red móvil, o del idioma de tu teléfono si no hay tarjeta SIM, y usa puentes en los países que se sabe que bloquean Tor. Los puentes ocultan a tu red que usas Tor, pero implican a terceros: los puentes snowflake contactan con un servidor de coordinación (broker) a través de una red de distribución de contenidos, piden tu dirección a servidores STUN públicos y después envían tu tráfico a través de proxies voluntarios, que ven tu dirección IP; los puentes meek pasan por una red de distribución de contenidos. Elige “Usar la red Tor sin puentes” o agrega tus propios puentes para evitarlos.</string>
+	<string name="tor_onion_copied">Dirección onion copiada</string>
+	<string name="tor_onion_copy">Copiar</string>
+	<string name="tor_onion_share_label">Dirección onion de Zerion</string>
+	<string name="tor_restart">Reiniciar Tor</string>
+	<string name="tor_restarting">Reiniciando Tor…</string>
+	<string name="tor_rotation_explainer">La dirección antigua sigue activa. Los contactos migran a medida que se vuelven a conectar.</string>
+	<string name="tor_rotation_in_progress">Cambiando a la nueva dirección</string>
+	<string name="tor_status_bootstrapping">Creando circuitos (%1$d%%)</string>
+	<string name="tor_status_clock_skew">Reloj incorrecto</string>
+	<string name="tor_status_publishing">Publicando</string>
+	<string name="tor_your_onion_label">Tu dirección onion</string>
+	<string name="transport_i2p">I2P</string>
+	<string name="dialog_disappearing_off">Desactivado</string>
+	<string name="dialog_disappearing_5_minutes">5 minutos</string>
+	<string name="dialog_disappearing_30_minutes">30 minutos</string>
+	<string name="dialog_disappearing_1_hour">1 hora</string>
+	<string name="dialog_disappearing_8_hours">8 horas</string>
+	<string name="dialog_disappearing_12_hours">12 horas</string>
+	<string name="dialog_disappearing_24_hours">24 horas</string>
+	<string name="dialog_disappearing_1_week">1 semana</string>
+	<string name="dialog_disappearing_4_weeks">4 semanas</string>
+	<string name="disappearing_messages_explanation_long">Los mensajes nuevos desaparecen después de 7 días.\n\nLa cuenta regresiva del remitente empieza cuando se entrega el mensaje. La del destinatario empieza cuando lo lee. Los mensajes con temporizador muestran un ícono de bomba.\n\nLos destinatarios todavía pueden copiar lo que envías.\n\nCualquiera de los dos puede cambiar esta configuración: los cambios se aplican de inmediato a tus mensajes nuevos, y a los de tu contacto en cuanto reciba tu próximo mensaje.</string>
+	<string name="disappearing_messages_setting_description">Los mensajes desaparecerán automáticamente después del tiempo seleccionado</string>
+	<string name="disappearing_message_timer_title">Enviar con temporizador de desaparición</string>
+	<string name="disappearing_timer_off">Temporizador de desaparición desactivado para este mensaje</string>
+	<string name="disappearing_timer_set">El mensaje desaparecerá después de %s</string>
+	<string name="updates_check_title">Buscar actualizaciones</string>
+	<string name="updates_check_summary">Versión %1$s. Se comprueba a través de Tor, solo en instalaciones desde GitHub.</string>
+	<string name="updates_check_summary_store">Las actualizaciones de esta instalación llegan a través de %1$s.</string>
+	<string name="updates_auto_title">Comprobar automáticamente</string>
+	<string name="updates_auto_summary">Una vez al día a través de Tor</string>
+	<string name="updates_checking">Comprobando a través de Tor…</string>
+	<string name="updates_up_to_date">Tienes la versión más reciente (%1$s).</string>
+	<string name="updates_not_verified">No se pudo verificar la información de la actualización, así que se ignoró.</string>
+	<string name="updates_unreachable">No se pudo acceder a GitHub a través de Tor. Inténtalo de nuevo más tarde.</string>
+	<string name="updates_tor_not_ready">Tor todavía no está conectado. Inténtalo de nuevo en un momento.</string>
+	<string name="updates_store_install">Las actualizaciones de esta instalación llegan a través de %1$s, no de GitHub.</string>
+	<string name="updates_available_title">Actualización disponible</string>
+	<string name="updates_available_message">Zerion %1$s está disponible. Estás usando la versión %2$s.\n\nDescárgala desde la página de versiones de Zerion en GitHub:\n%3$s\n\nSHA-256 del APK:\n%4$s\n\nUna actualización auténtica se instala sobre la aplicación existente. Nunca desinstales Zerion para instalar una actualización: al desinstalarla se borra tu cuenta.\n\nEl enlace se abre en tu navegador, que no usa Tor.</string>
+	<string name="updates_open">Abrir en el navegador</string>
+	<string name="updates_copy_link">Copiar enlace</string>
+	<string name="updates_later">Más tarde</string>
+	<string name="updates_link_copied">Enlace copiado</string>
+	<string name="updates_no_browser">No hay ningún navegador disponible para abrir el enlace.</string>
+	<string name="dialog_disappearing_custom">Personalizado…</string>
+	<string name="disappearing_custom_with_value">Personalizado: %1$s</string>
+	<string name="disappearing_custom_title">Desaparecer después de</string>
+	<string name="disappearing_custom_preview">Los mensajes desaparecen después de %1$s.</string>
+	<plurals name="disappearing_unit_minutes">
+		<item quantity="one">minuto</item>
+		<item quantity="many">minutos</item>
+		<item quantity="other">minutos</item>
+	</plurals>
+	<plurals name="disappearing_unit_hours">
+		<item quantity="one">hora</item>
+		<item quantity="many">horas</item>
+		<item quantity="other">horas</item>
+	</plurals>
+	<plurals name="disappearing_unit_days">
+		<item quantity="one">día</item>
+		<item quantity="many">días</item>
+		<item quantity="other">días</item>
+	</plurals>
+	<plurals name="disappearing_unit_weeks">
+		<item quantity="one">semana</item>
+		<item quantity="many">semanas</item>
+		<item quantity="other">semanas</item>
+	</plurals>
+	<plurals name="duration_weeks">
+		<item quantity="one">%d semana</item>
+		<item quantity="many">%d semanas</item>
+		<item quantity="other">%d semanas</item>
+	</plurals>
+	<string name="default_timer_1_day">1 día</string>
 </resources>

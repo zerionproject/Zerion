@@ -197,6 +197,8 @@ public interface AndroidComponent
 	@AppModule.SecurePrefs
 	SharedPreferences securePreferences();
 
+	com.professor.zerion.android.update.UpdateChecker updateChecker();
+
 	@AppModule.ProfilePrefs
 	SharedPreferences profilePreferences();
 

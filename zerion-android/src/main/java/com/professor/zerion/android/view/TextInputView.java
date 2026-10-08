@@ -167,7 +167,7 @@ public class TextInputView extends LinearLayout {
 		TextView replyText = replyPreview.findViewById(R.id.reply_text);
 		ImageButton cancelReply = replyPreview.findViewById(R.id.cancel_reply);
 
-		String authorName = "You";
+		String authorName = getContext().getString(R.string.reply_prefix_you);
 		if (item.isIncoming() && item.getContactName() != null &&
 			item.getContactName().getValue() != null) {
 			authorName = item.getContactName().getValue();

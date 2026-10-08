@@ -119,8 +119,8 @@ public class VaultUnlockFragment extends BaseFragment {
 
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
 			if (error != null && !error.isEmpty()) {
-				passwordLayout.setError(error);
 				passwordInput.clearPassword();
+				passwordLayout.setError(error);
 				passwordInput.requestFocus();
 				passwordLayout.animate()
 						.translationX(-10f)

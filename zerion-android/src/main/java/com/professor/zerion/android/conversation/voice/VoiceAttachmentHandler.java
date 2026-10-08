@@ -1,5 +1,6 @@
 package com.professor.zerion.android.conversation.voice;
 
+import com.professor.zerion.R;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 
 import android.content.Context;
@@ -55,7 +56,8 @@ public class VoiceAttachmentHandler {
 
 	public boolean startRecording(AttachmentRecordingCallback callback) {
 		if (isRecording.get()) {
-			callback.onRecordingError("Recording already in progress");
+			callback.onRecordingError(
+					context.getString(R.string.voice_message_error));
 			return false;
 		}
 
@@ -68,7 +70,8 @@ public class VoiceAttachmentHandler {
 				startProgressMonitoring();
 			} catch (IOException e) {
 				cleanup();
-				mainHandler.post(() -> callback.onRecordingError("Failed to start recording: " + e.getMessage()));
+				mainHandler.post(() -> callback.onRecordingError(
+						context.getString(R.string.voice_message_error)));
 			}
 		});
 
@@ -103,7 +106,8 @@ public class VoiceAttachmentHandler {
 		mediaRecorder.setOnErrorListener((mr, what, extra) -> {
 			mainHandler.post(() -> {
 				if (currentCallback != null) {
-					currentCallback.onRecordingError("Recording error occurred");
+					currentCallback.onRecordingError(
+							context.getString(R.string.voice_message_error));
 				}
 			});
 			cleanup();
@@ -152,7 +156,8 @@ public class VoiceAttachmentHandler {
 				deleteOutputFile();
 				mainHandler.post(() -> {
 					if (currentCallback != null) {
-						currentCallback.onRecordingError("Recording too short (minimum 0.5 seconds)");
+						currentCallback.onRecordingError(
+								context.getString(R.string.voice_message_too_short));
 					}
 				});
 			} else if (outputFile != null && outputFile.exists()) {
@@ -162,7 +167,8 @@ public class VoiceAttachmentHandler {
 					deleteOutputFile();
 					mainHandler.post(() -> {
 						if (currentCallback != null) {
-							currentCallback.onRecordingError("Recording too long. Maximum ~30 seconds per voice attachment.");
+							currentCallback.onRecordingError(
+									context.getString(R.string.voice_message_too_long));
 						}
 					});
 				} else {
@@ -177,7 +183,8 @@ public class VoiceAttachmentHandler {
 		} catch (IllegalStateException e) {
 			mainHandler.post(() -> {
 				if (currentCallback != null) {
-					currentCallback.onRecordingError("Failed to stop recording");
+					currentCallback.onRecordingError(
+							context.getString(R.string.voice_message_error));
 				}
 			});
 		} finally {

@@ -276,7 +276,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			public void onError(String error) {
 				if (!canUpdateUi()) return;
 				showLoading(false);
-				if (error.contains("Incorrect password")) {
+				if (viewModel.isMessage(error, R.string.vault_incorrect_password)) {
 					showSnackbar(getString(R.string.vault_incorrect_password));
 					showPasswordDialog();
 				} else {
@@ -491,7 +491,11 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 			message = getString(R.string.vault_doc_unsupported_archive);
 		} else {
 			message = getString(R.string.vault_doc_unsupported_generic,
-					mimeType.displayName);
+					getString(mimeType == MimeUtils.MimeType.VIDEO_MP4
+							? R.string.vault_doc_type_mp4
+							: mimeType == MimeUtils.MimeType.VIDEO_WEBM
+									? R.string.vault_doc_type_webm
+									: R.string.vault_doc_type_unknown));
 		}
 
 		unsupportedMessage.setText(message);

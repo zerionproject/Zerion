@@ -355,6 +355,10 @@ public class AppModule {
 		com.professor.zerion.android.vault.PreferencesMigration preferencesMigration;
 		@Inject
 		com.professor.zerion.android.profile.ProfileStorage profileStorage;
+		@Inject
+		com.professor.zerion.android.navdrawer.TorPublishTracker torPublishTracker;
+		@Inject
+		com.professor.zerion.android.update.UpdateChecker updateChecker;
 
 		@Inject
 		void init() {

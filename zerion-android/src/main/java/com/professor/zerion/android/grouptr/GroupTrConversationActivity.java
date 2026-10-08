@@ -1050,39 +1050,45 @@ public class GroupTrConversationActivity extends ZerionActivity
 				getString(R.string.grouptr_ttl_1day),
 				getString(R.string.grouptr_ttl_7days),
 				getString(R.string.grouptr_ttl_30days),
+				getString(R.string.dialog_disappearing_custom),
 		};
 		final long[] values = {
 				0L, 5L * 60 * 1000, 60L * 60 * 1000,
 				24L * 60 * 60 * 1000, 7L * 24 * 60 * 60 * 1000,
 				30L * 24L * 60 * 60 * 1000
 		};
+		long current = s == null ? 0L : s.getDefaultAutoDeleteTimerMs();
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_default_ttl_set)
 				.setItems(labels, (d, which) -> {
-					long v = values[which];
-					ioExecutor.execute(() -> {
-						try {
-							groupTrManager.setGroupAutoDeleteTimer(
-									groupId, v);
-							int older = groupTrManager
-									.countMembersOnOlderVersion(groupId);
-							main.post(() -> {
-								toast(R.string.grouptr_default_ttl_saved);
-								if (older > 0) {
-									Toast.makeText(this, getResources()
-											.getQuantityString(
-													R.plurals.grouptr_ttl_older_members,
-													older, older),
-											Toast.LENGTH_LONG).show();
-								}
-							});
-						} catch (DbException ex) {
-							main.post(() -> toast(
-									R.string.grouptr_error_save));
-						}
-					});
+					if (which == values.length) {
+						com.professor.zerion.android.conversation
+								.DisappearingTimers.showCustomPicker(this,
+								current, this::applyGroupTtl);
+						return;
+					}
+					applyGroupTtl(values[which]);
 				})
 				.show();
+	}
+
+	private void applyGroupTtl(long v) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.setGroupAutoDeleteTimer(groupId, v);
+				int older = groupTrManager.countMembersOnOlderVersion(groupId);
+				main.post(() -> {
+					toast(R.string.grouptr_default_ttl_saved);
+					if (older > 0) {
+						Toast.makeText(this, getResources().getQuantityString(
+								R.plurals.grouptr_ttl_older_members, older,
+								older), Toast.LENGTH_LONG).show();
+					}
+				});
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.grouptr_error_save));
+			}
+		});
 	}
 
 	private void toast(int res) {

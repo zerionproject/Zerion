@@ -2,6 +2,16 @@
 
 Release notes for every published version. The current architecture and its security properties are described in [README.md](README.md), [SECURITY.md](SECURITY.md) and [docs/](docs/); an entry below describes its own release only and is not updated afterwards. Artifacts and hashes are on [GitHub Releases](https://github.com/zerionproject/Zerion/releases); the values for the current release are in [docs/release-manifest.json](docs/release-manifest.json).
 
+## 3.0.17 (October 2026)
+
+- Network status: the status no longer goes back to "Publishing" every time the screen is opened or after Tor is restarted. The publishing state is now tracked for the whole app instead of per screen.
+- Update check: an installation from GitHub Releases can check once a day over Tor whether a newer version exists, and shows a notice with a link to the release page. The notice is only shown if the announcement is signed with the same key as the installed app; anything else is ignored. The check can be turned off or run by hand in Settings. Installations from app stores are not checked, and the notice reminds users never to uninstall Zerion to update, because uninstalling deletes the account.
+- Disappearing messages: besides the fixed choices, any time from one minute to one year can be set, for chats, private groups and the default timer.
+- Languages: every text is now translated in all supported languages, including the Tor and network screens, zVault, the wallet, calls and the Hardened Mode messages, which were partly English before. Choosing "System default" after another language now switches back without restarting the app. The word typed to confirm account deletion stays "DELETE" in every language.
+- Replies: the quoted message shows its author and up to four lines in its own tinted box, is no longer squeezed by a short reply, and tapping it scrolls to the original message.
+- Notifications: a new, clearer status bar icon. When the Calculator, Notes or Weather icon is chosen, the app now explains that notifications appear under that name with a bell icon.
+- zVault: a wrong vault password now shows an error message.
+
 ## 3.0.16 (October 2026)
 
 - Decoy launcher: with the Calculator, Notes or Weather app icon chosen, the correct code no longer crashes the app, and the calculator's bottom row (0, decimal point and equals) is no longer covered by the navigation bar ([#39](https://github.com/zerionproject/Zerion/issues/39)).

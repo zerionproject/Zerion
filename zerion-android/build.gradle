@@ -7,7 +7,7 @@ if (rootProject.ext.payjoinNativeEnabled) {
 
 def fdroidProperty = project.findProperty('fdroid')
 if (fdroidProperty == null || fdroidProperty.toString().equalsIgnoreCase('false')) {
-    throw new GradleException('This project builds in reproducible mode only: gradle.properties sets fdroid=true and -Pfdroid=false is not supported (see docs/RELEASE_SIGNING.md)')
+    throw new GradleException('This project builds in reproducible mode only: gradle.properties sets fdroid=true and -Pfdroid=false is not supported')
 }
 def isFdroidBuild = true
 
@@ -56,10 +56,12 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 31600
-        versionName "3.0.16"
+        versionCode 31700
+        versionName "3.0.17"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
+        buildConfigField "String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/zerionproject/Zerion/master/docs/release-manifest.json\""
+        buildConfigField "String", "UPDATE_RELEASES_URL", "\"https://github.com/zerionproject/Zerion/releases\""
 
         buildConfigField "boolean", "B3_PROOF_ENABLED", "true"
         buildConfigField "boolean", "B4_ROTATION_ENABLED", "true"

@@ -42,6 +42,8 @@ import com.professor.zerion.R;
 
 import org.zerionproject.core.api.contact.ContactId;
 
+import java.util.Locale;
+
 
 public class VoiceCallActivity extends AppCompatActivity {
 
@@ -635,7 +637,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				R.drawable.bg_call_control_button_active :
 				R.drawable.bg_call_control_button);
 		if (muteLabel != null) {
-			muteLabel.setText(isMuted ? "Muted" : "Mute");
+			muteLabel.setText(isMuted
+					? R.string.voice_call_muted : R.string.mute);
 		}
 	}
 
@@ -652,7 +655,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				R.drawable.bg_call_control_button_active :
 				R.drawable.bg_call_control_button);
 		if (speakerLabel != null) {
-			speakerLabel.setText(isSpeakerOn ? "Speaker On" : "Speaker");
+			speakerLabel.setText(isSpeakerOn
+					? R.string.voice_call_speaker_on : R.string.speaker);
 		}
 	}
 
@@ -785,7 +789,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 			stopRingtone();
 			stopDialTone();
 			String name = contactNameText.getText() != null
-					? contactNameText.getText().toString() : "Contact";
+					? contactNameText.getText().toString()
+					: getString(R.string.unknown_contact);
 			callStatusText.setText(getString(
 					R.string.call_rejected_peer_disabled_calls, name)
 					+ "\n" + getString(
@@ -802,7 +807,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 			stopRingtone();
 			stopDialTone();
 			String name = contactNameText.getText() != null
-					? contactNameText.getText().toString() : "Contact";
+					? contactNameText.getText().toString()
+					: getString(R.string.unknown_contact);
 			callStatusText.setText(getString(
 					R.string.call_rejected_peer_disabled_video, name)
 					+ "\n" + getString(
@@ -932,7 +938,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			double packetLoss = metrics.getPacketLossPercentage();
 			if (packetLoss > 1.0) {
-				packetLossBadge.setText(String.format("Loss: %.1f%%", packetLoss));
+				packetLossBadge.setText(getString(R.string.voice_call_packet_loss,
+						String.format(Locale.getDefault(), "%.1f", packetLoss)));
 				packetLossBadge.setVisibility(View.VISIBLE);
 
 				int lossColor = packetLoss < 5.0 ?

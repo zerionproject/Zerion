@@ -180,7 +180,7 @@ public class VaultListFragment extends BaseFragment {
 	}
 
 	private void showItemOptionsDialog(VaultItem item) {
-		String[] options = {"Open", "Delete"};
+		String[] options = {getString(R.string.open), getString(R.string.delete)};
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)

@@ -53,6 +53,7 @@
 	<dimen name="message_bubble_border">2dp</dimen>
 	<dimen name="message_bubble_padding_sides">12dp</dimen>
 	<dimen name="message_bubble_padding_sides_inner">10dp</dimen>
+	<dimen name="reply_quote_min_width">160dp</dimen>
 	<dimen name="message_bubble_padding_top">6dp</dimen>
 	<dimen name="message_bubble_padding_top_inner">4dp</dimen>
 	<dimen name="message_bubble_padding_bottom">4dp</dimen>

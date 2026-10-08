@@ -41,6 +41,9 @@ public class SettingsFragment extends Fragment {
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
+	@Inject
+	com.professor.zerion.android.update.UpdateChecker updateChecker;
+
 	private SettingsViewModel viewModel;
 
 	private View avatarCard;
@@ -66,6 +69,39 @@ public class SettingsFragment extends Fragment {
 	private final ActivityResultLauncher<String> contentLauncher =
 			registerForActivityResult(new GetImageAdvanced(),
 					this::onImageSelected);
+
+	private void setUpUpdateRows(View view) {
+		View card = view.findViewById(R.id.updates_card);
+		TextView summary = view.findViewById(R.id.updates_summary);
+		View autoRow = view.findViewById(R.id.updates_auto_row);
+		com.google.android.material.switchmaterial.SwitchMaterial autoSwitch =
+				view.findViewById(R.id.updates_auto_switch);
+		String store = updateChecker.storeName();
+		if (store != null) {
+			summary.setText(getString(R.string.updates_check_summary_store,
+					store));
+			autoRow.setVisibility(View.GONE);
+		} else {
+			summary.setText(getString(R.string.updates_check_summary,
+					updateChecker.installedVersionName()));
+			autoSwitch.setChecked(updateChecker.isAutomaticEnabled());
+			autoSwitch.setOnCheckedChangeListener((b, checked) ->
+					updateChecker.setAutomaticEnabled(checked));
+		}
+		card.setOnClickListener(v -> {
+			card.setEnabled(false);
+			android.widget.Toast.makeText(requireContext(),
+					R.string.updates_checking,
+					android.widget.Toast.LENGTH_SHORT).show();
+			updateChecker.checkNow(result -> {
+				card.setEnabled(true);
+				if (!isAdded()) return;
+				com.professor.zerion.android.update.UpdateDialogs.showResult(
+						requireContext(), result,
+						updateChecker.installedVersionName(), updateChecker);
+			});
+		});
+	}
 
 	@Override
 	public void onAttach(@NonNull Context context) {
@@ -133,6 +169,7 @@ public class SettingsFragment extends Fragment {
 		}
 		notificationsCard.setOnClickListener(v -> showNotificationsSettings());
 		aboutCard.setOnClickListener(v -> showAboutSettings());
+		setUpUpdateRows(view);
 		if (supportCard != null) {
 			supportCard.setOnClickListener(v -> showDonationDialog());
 		}

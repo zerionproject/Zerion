@@ -86,9 +86,10 @@ class CallNotification {
 
 			NotificationChannel incoming = new NotificationChannel(
 					CHANNEL_ID,
-					"Incoming Calls",
+					service.getString(R.string.voice_call_channel_incoming),
 					NotificationManager.IMPORTANCE_HIGH);
-			incoming.setDescription("Ringing alerts for incoming voice calls");
+			incoming.setDescription(service.getString(
+					R.string.voice_call_channel_incoming_desc));
 			incoming.enableLights(true);
 			incoming.enableVibration(true);
 			incoming.setVibrationPattern(new long[]{0, 1000, 500, 1000});
@@ -97,9 +98,10 @@ class CallNotification {
 
 			NotificationChannel ongoing = new NotificationChannel(
 					CHANNEL_ID_ONGOING,
-					"Ongoing Calls",
+					service.getString(R.string.voice_call_channel_ongoing),
 					NotificationManager.IMPORTANCE_LOW);
-			ongoing.setDescription("Status of a voice call in progress");
+			ongoing.setDescription(service.getString(
+					R.string.voice_call_channel_ongoing_desc));
 			ongoing.enableLights(false);
 			ongoing.enableVibration(false);
 			ongoing.setLockscreenVisibility(Notification.VISIBILITY_SECRET);

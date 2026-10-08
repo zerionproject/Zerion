@@ -3,16 +3,17 @@ package com.professor.zerion.android.conversation;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class QuotedReplyLabelTest {
 
 	@Test
 	public void theQuoteIsLabelledByItsAuthorWhicheverWayTheReplyWent() {
-		assertEquals("Bob: hi", ConversationItemViewHolder.quoteLine(false,
-				"You", "Bob", "hi"));
-		assertEquals("You: hi", ConversationItemViewHolder.quoteLine(true,
-				"You", "Bob", "hi"));
-		assertEquals("hi", ConversationItemViewHolder.quoteLine(null, "You",
-				"Bob", "hi"));
+		assertEquals("Bob", ConversationItemViewHolder.quoteAuthor(false,
+				"You", "Bob"));
+		assertEquals("You", ConversationItemViewHolder.quoteAuthor(true,
+				"You", "Bob"));
+		assertNull(ConversationItemViewHolder.quoteAuthor(null, "You",
+				"Bob"));
 	}
 }

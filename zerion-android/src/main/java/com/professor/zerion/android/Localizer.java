@@ -43,7 +43,9 @@ public class Localizer {
 	}
 
 	public static synchronized void forceReinitialize(String languageTag) {
-		INSTANCE = new Localizer(languageTag);
+		Locale system = INSTANCE == null
+				? Locale.getDefault() : INSTANCE.systemLocale;
+		INSTANCE = new Localizer(system, getLocaleFromTag(languageTag));
 	}
 
 	public static synchronized Localizer getInstance() {
@@ -67,12 +69,20 @@ public class Localizer {
 		} else {
 			currentLocale = conf.locale;
 		}
+		Locale.setDefault(locale);
 		if (locale.equals(currentLocale)) {
 			return context;
 		}
-		Locale.setDefault(locale);
 		conf.setLocale(locale);
 		return context.createConfigurationContext(conf);
+	}
+
+	public void updateResources(Context context) {
+		Locale.setDefault(locale);
+		Resources res = context.getResources();
+		Configuration conf = new Configuration(res.getConfiguration());
+		conf.setLocale(locale);
+		res.updateConfiguration(conf, res.getDisplayMetrics());
 	}
 
 	public void setLocaleWithPersistence(Context context) {

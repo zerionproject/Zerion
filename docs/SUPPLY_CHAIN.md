@@ -3,8 +3,8 @@
 This file lists every input of the release that is pinned, the gate that
 enforces the pin, and the procedure for a deliberate change. A pin that is
 not in this table is a finding. Companion documents:
-[FDROID.md](FDROID.md) (the reference build), [RELEASE_SIGNING.md](RELEASE_SIGNING.md)
-(signing), `packaging/tor-android/PROVENANCE.md` and
+[FDROID.md](FDROID.md) (the reference build),
+`packaging/tor-android/PROVENANCE.md` and
 `packaging/monero-android/PROVENANCE.md` (the native builds).
 
 ## Build inputs and their gates
@@ -24,7 +24,7 @@ not in this table is a finding. Companion documents:
 | Android NDK for the Monero build | r27b, zip SHA-256 in the Dockerfile and `fdroid-build.sh` | `sha256sum -c` before unpacking | same |
 | reproducible-apk-tools | commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` | `scripts/build-fdroid-apk.sh` refuses any other checkout; the recipe pins the same commit | update both places |
 | OWASP dependency-check CLI | version 12.2.2, archive hash from `DEPENDENCY_CHECK_SHA256` (required, the script refuses to run without it) | `scripts/run-dependency-check.sh` | record the published hash of the new release in the release notes of the run; the tool is not on the release path (it only reports) |
-| Signing | the release certificate `d7fdb111...` | `scripts/sign-release.sh` refuses any other certificate; Gradle never signs and never reads `keystore.properties` | a key rotation is a documented event in RELEASE_SIGNING.md |
+| Signing | the release certificate `d7fdb111...` | `scripts/sign-release.sh` refuses any other certificate; Gradle never signs and never reads `keystore.properties` | a key rotation is announced with the release |
 | GitHub Actions | tags `actions/checkout@v4`, `actions/setup-java@v4`, `actions/setup-python@v5`, `gradle/actions/wrapper-validation@v4` | none yet (the workflows have `contents: read` only and no secrets) | pin by commit: for each action run `gh api repos/<owner>/<repo>/git/ref/tags/<tag> --jq .object.sha` (dereference an annotated tag with `.../git/tags/<sha>`), write `uses: <owner>/<repo>@<sha> # <tag>`, and let Dependabot or a monthly check move the pins |
 
 

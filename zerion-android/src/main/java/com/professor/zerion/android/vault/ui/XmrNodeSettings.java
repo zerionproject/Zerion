@@ -23,6 +23,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 @NotNullByDefault
 final class XmrNodeSettings {
 
@@ -98,7 +100,7 @@ final class XmrNodeSettings {
 		ScrollView scroll = new ScrollView(ctx);
 		scroll.addView(list);
 
-		String active = cfg.activeNodeLabel();
+		String active = activeLabel(f, cfg);
 		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_xmr_node_title)
 				.setMessage(active == null ? null
@@ -153,6 +155,23 @@ final class XmrNodeSettings {
 
 	private interface OwnSink {
 		void accept(String address, boolean trusted);
+	}
+
+	@Nullable
+	private static String activeLabel(Fragment f, XmrNodeConfig cfg) {
+		List<XmrNode> order = cfg.toFailoverList();
+		if (order.isEmpty()) return null;
+		String node = order.get(0).shortLabel();
+		switch (cfg.mode) {
+			case OWN:
+				return f.getString(R.string.wallet_xmr_node_own) + " · " + node;
+			case CUSTOM:
+				return f.getString(R.string.wallet_xmr_node_custom) + " · " + node;
+			case DIRECT:
+				return f.getString(R.string.wallet_xmr_node_direct) + " · " + node;
+			default:
+				return f.getString(R.string.wallet_xmr_node_vetted);
+		}
 	}
 
 	private static void promptOwnNode(Fragment f, XmrNodeConfig cfg,

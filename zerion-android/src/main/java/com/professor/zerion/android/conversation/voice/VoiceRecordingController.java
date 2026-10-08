@@ -22,6 +22,12 @@ import java.util.concurrent.Executor;
 @NotNullByDefault
 public class VoiceRecordingController implements DefaultLifecycleObserver {
 
+	public static final class RecordingMessage extends Exception {
+		RecordingMessage(String message) {
+			super(message);
+		}
+	}
+
 	public interface VoiceRecordingHost {
 		void onRecordingComplete();
 		void onRecordingCancelled();
@@ -322,7 +328,7 @@ public class VoiceRecordingController implements DefaultLifecycleObserver {
 					host.runOnUiThread(() -> {
 						isRecording = false;
 						hideRecordingUI();
-						host.onRecordingError(new Exception(error));
+						host.onRecordingError(new RecordingMessage(error));
 					});
 				}
 

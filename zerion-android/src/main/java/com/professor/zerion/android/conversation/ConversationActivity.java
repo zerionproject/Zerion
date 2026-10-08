@@ -135,6 +135,7 @@ public class ConversationActivity extends ZerionActivity
 	public static final String CONTACT_ID = "zerion.CONTACT_ID";
 
 	private static final int TRANSITION_DURATION_MS = 500;
+	private static final int QUOTE_HIGHLIGHT_MS = 1500;
 	private static final java.util.regex.Pattern CALL_KEY_PATTERN =
 		java.util.regex.Pattern.compile("^[A-Za-z0-9+/=]{40,}$");
 
@@ -1681,7 +1682,9 @@ public class ConversationActivity extends ZerionActivity
 	@Override
 	public void onRecordingError(Exception e) {
 		runOnUiThread(() -> {
-			String errorMessage = e.getMessage();
+			String errorMessage =
+					e instanceof VoiceRecordingController.RecordingMessage
+							? e.getMessage() : null;
 			if (errorMessage == null || errorMessage.isEmpty()) {
 				errorMessage = getString(R.string.voice_message_error);
 			}
@@ -1759,52 +1762,9 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private void showDisappearingMessagesDialog() {
-		View dialogView = getLayoutInflater().inflate(
-				R.layout.dialog_disappearing_messages, null);
-		android.widget.RadioGroup radioGroup = dialogView.findViewById(
-				R.id.disappearing_messages_radio_group);
-
-		Long currentTimer = viewModel.getAutoDeleteTimer().getValue();
-		if (currentTimer != null) {
-			radioGroup.check(getRadioIdForTimer(currentTimer));
-		}
-
-		new SecureAlertDialogBuilder(this)
-				.setView(dialogView)
-				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-					viewModel.setAutoDeleteTimer(getTimerForRadioId(
-							radioGroup.getCheckedRadioButtonId()));
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private int getRadioIdForTimer(long timer) {
-		if (timer <= 0) return R.id.timer_off;
-		long seconds = timer / 1000;
-		long minutes = seconds / 60;
-		long hours = minutes / 60;
-		long weeks = hours / 24 / 7;
-		if (minutes <= 5) return R.id.timer_5_minutes;
-		if (minutes <= 30) return R.id.timer_30_minutes;
-		if (hours <= 1) return R.id.timer_1_hour;
-		if (hours <= 8) return R.id.timer_8_hours;
-		if (hours <= 12) return R.id.timer_12_hours;
-		if (hours <= 24) return R.id.timer_24_hours;
-		if (weeks <= 1) return R.id.timer_1_week;
-		return R.id.timer_4_weeks;
-	}
-
-	private long getTimerForRadioId(int radioId) {
-		if (radioId == R.id.timer_5_minutes) return 5 * 60 * 1000L;
-		if (radioId == R.id.timer_30_minutes) return 30 * 60 * 1000L;
-		if (radioId == R.id.timer_1_hour) return 60 * 60 * 1000L;
-		if (radioId == R.id.timer_8_hours) return 8 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_12_hours) return 12 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_24_hours) return 24 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
-		return -1L;
+		DisappearingTimers.showChatTimerDialog(this,
+				viewModel.getAutoDeleteTimer().getValue(),
+				viewModel::setAutoDeleteTimer);
 	}
 
 	private void askToClearChat() {
@@ -2363,6 +2323,27 @@ public class ConversationActivity extends ZerionActivity
 		adapter.setHighlightedPosition(position);
 		layoutManager.scrollToPositionWithOffset(position,
 				list.getRecyclerView().getHeight() / 3);
+	}
+
+	private final Runnable clearQuoteHighlight = () -> {
+		if (searchMatchPositions.isEmpty()) adapter.setHighlightedPosition(-1);
+	};
+
+	@Override
+	public void onQuoteClicked(MessageId quoted) {
+		int position = adapter.getPositionOfMessage(quoted);
+		if (position < 0) {
+			Toast.makeText(this, R.string.reply_original_unavailable,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		View recycler = list.getRecyclerView();
+		layoutManager.scrollToPositionWithOffset(position,
+				recycler.getHeight() / 3);
+		if (!searchMatchPositions.isEmpty()) return;
+		adapter.setHighlightedPosition(position);
+		recycler.removeCallbacks(clearQuoteHighlight);
+		recycler.postDelayed(clearQuoteHighlight, QUOTE_HIGHLIGHT_MS);
 	}
 
 	@UiThread

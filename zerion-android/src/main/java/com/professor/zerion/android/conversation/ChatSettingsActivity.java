@@ -165,7 +165,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 		viewModel.loadIdentityKeys();
 		viewModel.getAutoDeleteTimer().observe(this, timer -> {
 			if (timer != null) {
-				disappearingMessagesValue.setText(getTimerDisplayText(timer));
+				disappearingMessagesValue.setText(DisappearingTimers.label(this, timer));
 			}
 		});
 
@@ -311,24 +311,9 @@ public class ChatSettingsActivity extends ZerionActivity {
 	}
 
 	private void showDisappearingMessagesDialog() {
-		View dialogView = getLayoutInflater().inflate(
-				R.layout.dialog_disappearing_messages, null);
-		RadioGroup radioGroup = dialogView.findViewById(
-				R.id.disappearing_messages_radio_group);
-
-		Long currentTimer = viewModel.getAutoDeleteTimer().getValue();
-		if (currentTimer != null) {
-			radioGroup.check(getRadioIdForTimer(currentTimer));
-		}
-
-		new SecureAlertDialogBuilder(this)
-				.setView(dialogView)
-				.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-					viewModel.setAutoDeleteTimer(getTimerForRadioId(
-							radioGroup.getCheckedRadioButtonId()));
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+		DisappearingTimers.showChatTimerDialog(this,
+				viewModel.getAutoDeleteTimer().getValue(),
+				viewModel::setAutoDeleteTimer);
 	}
 
 	private void readdContact() {
@@ -347,51 +332,6 @@ public class ChatSettingsActivity extends ZerionActivity {
 						(dialog, which) -> viewModel.markContactVerified())
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
-	}
-
-	private String getTimerDisplayText(long timer) {
-		if (timer <= 0) return getString(R.string.off);
-		long seconds = timer / 1000;
-		long minutes = seconds / 60;
-		long hours = minutes / 60;
-		long weeks = hours / 24 / 7;
-		if (seconds <= 30) return "30 seconds";
-		if (minutes <= 5) return "5 minutes";
-		if (minutes <= 30) return "30 minutes";
-		if (hours <= 1) return "1 hour";
-		if (hours <= 8) return "8 hours";
-		if (hours <= 12) return "12 hours";
-		if (hours <= 24) return "24 hours";
-		if (weeks <= 1) return "1 week";
-		return "4 weeks";
-	}
-
-	private int getRadioIdForTimer(long timer) {
-		if (timer <= 0) return R.id.timer_off;
-		long seconds = timer / 1000;
-		long minutes = seconds / 60;
-		long hours = minutes / 60;
-		long weeks = hours / 24 / 7;
-		if (minutes <= 5) return R.id.timer_5_minutes;
-		if (minutes <= 30) return R.id.timer_30_minutes;
-		if (hours <= 1) return R.id.timer_1_hour;
-		if (hours <= 8) return R.id.timer_8_hours;
-		if (hours <= 12) return R.id.timer_12_hours;
-		if (hours <= 24) return R.id.timer_24_hours;
-		if (weeks <= 1) return R.id.timer_1_week;
-		return R.id.timer_4_weeks;
-	}
-
-	private long getTimerForRadioId(int radioId) {
-		if (radioId == R.id.timer_5_minutes) return 5 * 60 * 1000L;
-		if (radioId == R.id.timer_30_minutes) return 30 * 60 * 1000L;
-		if (radioId == R.id.timer_1_hour) return 60 * 60 * 1000L;
-		if (radioId == R.id.timer_8_hours) return 8 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_12_hours) return 12 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_24_hours) return 24 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_1_week) return 7 * 24 * 60 * 60 * 1000L;
-		if (radioId == R.id.timer_4_weeks) return 4 * 7 * 24 * 60 * 60 * 1000L;
-		return -1L;
 	}
 
 	private static String formatSafetyNumberMultiline(String single) {

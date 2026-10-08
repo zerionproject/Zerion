@@ -11,16 +11,20 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.Surface;
 
+import com.professor.zerion.R;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 
 import javax.annotation.Nullable;
 
+import androidx.annotation.StringRes;
+
 @NotNullByDefault
 class VideoCameraManager {
 
 	interface CameraErrorCallback {
-		void onCameraError(String reason);
+		void onCameraError(@StringRes int reason);
 	}
 
 	interface CameraReadyCallback {
@@ -161,12 +165,12 @@ class VideoCameraManager {
 			opening.countDown();
 			if (errorCallback != null) {
 				errorCallback.onCameraError(
-						"Camera permission denied by system");
+						R.string.voice_call_camera_permission);
 			}
 		} catch (CameraAccessException e) {
 			opening.countDown();
 			if (errorCallback != null) {
-				errorCallback.onCameraError("Camera not available");
+				errorCallback.onCameraError(R.string.voice_call_camera_unavailable);
 			}
 		}
 	}
@@ -245,14 +249,14 @@ class VideoCameraManager {
 										false);
 							} else if (errorCallback != null) {
 								errorCallback.onCameraError(
-										"Camera session config failed");
+										R.string.voice_call_camera_session);
 							}
 						}
 					}, cameraHandler);
 		} catch (CameraAccessException e) {
 			if (errorCallback != null) {
 				errorCallback.onCameraError(
-						"Camera not available for session");
+						R.string.voice_call_camera_unavailable);
 			}
 		}
 	}
@@ -284,7 +288,7 @@ class VideoCameraManager {
 			if (includePreview) {
 				startPreview(session, camera, encoderSurface, false);
 			} else if (errorCallback != null) {
-				errorCallback.onCameraError("Camera preview failed");
+				errorCallback.onCameraError(R.string.voice_call_camera_preview);
 			}
 		}
 	}
@@ -297,20 +301,21 @@ class VideoCameraManager {
 		stopCamera();
 	}
 
-	private static String describeError(int error) {
+	@StringRes
+	private static int describeError(int error) {
 		switch (error) {
 			case CameraDevice.StateCallback.ERROR_CAMERA_IN_USE:
-				return "Camera already in use by another app";
+				return R.string.voice_call_camera_in_use;
 			case CameraDevice.StateCallback.ERROR_MAX_CAMERAS_IN_USE:
-				return "Too many cameras open. Close other apps";
+				return R.string.voice_call_camera_too_many;
 			case CameraDevice.StateCallback.ERROR_CAMERA_DISABLED:
-				return "Camera disabled by device policy";
+				return R.string.voice_call_camera_disabled;
 			case CameraDevice.StateCallback.ERROR_CAMERA_DEVICE:
-				return "Camera hardware error";
+				return R.string.voice_call_camera_hardware;
 			case CameraDevice.StateCallback.ERROR_CAMERA_SERVICE:
-				return "Camera service error. Restart the app";
+				return R.string.voice_call_camera_service;
 			default:
-				return "Camera error (code " + error + ")";
+				return R.string.voice_call_camera_unknown;
 		}
 	}
 

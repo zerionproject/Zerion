@@ -301,7 +301,10 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void showDocumentOptions(VaultItem item) {
-		String[] options = {"Export (Unencrypted)", "Export as .zenc (Encrypted)", "Share .zenc File", "Delete"};
+		String[] options = {getString(R.string.vault_doc_export_plain),
+				getString(R.string.vault_doc_export_zenc),
+				getString(R.string.vault_doc_share_zenc),
+				getString(R.string.delete)};
 
 		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)
@@ -535,7 +538,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	private void showAddDocumentOptions() {
-		String[] options = {"Import Document", "New Text Document"};
+		String[] options = {getString(R.string.vault_doc_import),
+				getString(R.string.vault_doc_new_text)};
 
 		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.vault_document_add_action)

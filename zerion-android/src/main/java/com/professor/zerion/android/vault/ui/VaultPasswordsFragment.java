@@ -242,7 +242,8 @@ public class VaultPasswordsFragment extends BaseFragment {
 	}
 
 	private void showPasswordOptions(com.professor.zerion.android.vault.model.VaultItem item) {
-		String[] options = {"View", "Delete"};
+		String[] options = {getString(R.string.vault_action_view),
+				getString(R.string.delete)};
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(item.name)

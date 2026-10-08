@@ -3,6 +3,8 @@ package com.professor.zerion.android.security;
 import android.content.Context;
 import android.os.Debug;
 
+import com.professor.zerion.R;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedReader;
@@ -286,23 +288,23 @@ public final class SecureBootGuard {
 			case RESULT_OK:
 				return "OK";
 			case RESULT_VERIFIED_BOOT_NOT_GREEN:
-				return "Verified boot not in GREEN state. Device firmware is not a stock signed image. An attacker with bootloader access could have modified the OS.";
+				return ctx.getString(R.string.hardened_reason_verified_boot);
 			case RESULT_BOOTLOADER_UNLOCKED:
-				return "Bootloader is unlocked. A recovery-mode dump could bypass app-layer wipes.";
+				return ctx.getString(R.string.hardened_reason_bootloader);
 			case RESULT_ROOT_BINARY_FOUND:
-				return "Root binary (su) detected. A rooted device cannot enforce app sandboxing against a determined attacker.";
+				return ctx.getString(R.string.hardened_reason_root);
 			case RESULT_MAGISK_FOUND:
-				return "Magisk artifacts detected. The OS has root and may be hooking app processes.";
+				return ctx.getString(R.string.hardened_reason_magisk);
 			case RESULT_DEBUGGER_ATTACHED:
-				return "A debugger is attached to this process. Memory contents can be read live.";
+				return ctx.getString(R.string.hardened_reason_debugger);
 			case RESULT_FRIDA_FOUND:
-				return "Frida instrumentation detected. Function hooks can rewrite cryptographic operations in flight.";
+				return ctx.getString(R.string.hardened_reason_frida);
 			case RESULT_XPOSED_FOUND:
-				return "Xposed / LSPosed framework detected. System-wide hooks can intercept app calls.";
+				return ctx.getString(R.string.hardened_reason_xposed);
 			case RESULT_ADB_DAEMON_LISTENING:
-				return "ADB daemon is listening on localhost. USB or wireless debugging is exposing this device.";
+				return ctx.getString(R.string.hardened_reason_adb);
 			default:
-				return "Hardened Mode check failed (code " + result + ").";
+				return ctx.getString(R.string.hardened_reason_unknown, result);
 		}
 	}
 }

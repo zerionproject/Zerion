@@ -27,6 +27,32 @@ import java.util.Set;
 
 @NotNullByDefault
 public class BtcWallet {
+	public static final String ERR_FROZEN_COIN =
+			"A frozen coin cannot be spent";
+	public static final String ERR_COIN_GONE =
+			"A selected coin is no longer available";
+	public static final String ERR_INVALID_ADDRESS =
+			"Not a valid Bitcoin address";
+	public static final String ERR_AMOUNT_RANGE =
+			"Amount out of range";
+	public static final String ERR_NO_COINS =
+			"No spendable coins";
+	public static final String ERR_BALANCE_AFTER_FEE =
+			"Balance is too low to send after the fee";
+	public static final String ERR_DUST =
+			"Amount is below the dust limit";
+	public static final String ERR_INSUFFICIENT =
+			"Insufficient balance for amount plus fee";
+	public static final String ERR_FEE_TOO_LOW =
+			"Fee below the relay minimum";
+	public static final String ERR_ORACLE_UNREACHABLE =
+			"Could not reach the oracle over Tor";
+	public static final String ERR_SP_SELF_CHECK =
+			"Silent Payments self-check failed";
+	public static final String ERR_SP_NONE =
+			"No unspent silent payments found";
+	public static final String ERR_AMOUNT_AFTER_FEE =
+			"Amount is too low to send after the fee";
 
 	public static final int GAP_LIMIT = 20;
 	static final int MAX_CHAIN_INDEX = 2000;
@@ -770,13 +796,13 @@ public class BtcWallet {
 			for (PrivacyMeta m : metas) {
 				if (manualOutpoints.contains(m.outpoint)) {
 					if (m.frozen) {
-						throw new IOException("A frozen coin cannot be spent");
+						throw new IOException(ERR_FROZEN_COIN);
 					}
 					ordered.add(m);
 				}
 			}
 			if (ordered.size() != manualOutpoints.size()) {
-				throw new IOException("A selected coin is no longer available");
+				throw new IOException(ERR_COIN_GONE);
 			}
 			ordered.sort(java.util.Comparator.comparingLong(
 					(PrivacyMeta m) -> m.valueSat).reversed());
@@ -878,10 +904,10 @@ public class BtcWallet {
 			double feeRate, boolean sweep, @Nullable Set<String> manualOutpoints,
 			boolean allowClusterMerge) throws IOException {
 		if (!BtcKeys.isValidAddress(toAddress)) {
-			throw new IOException("Not a valid Bitcoin address");
+			throw new IOException(ERR_INVALID_ADDRESS);
 		}
 		if (!sweep && !BtcAmounts.sendable(amountSat)) {
-			throw new IOException("Amount out of range");
+			throw new IOException(ERR_AMOUNT_RANGE);
 		}
 		double rate = sanitizeRate(feeRate);
 		int destVBytes = BtcTx.outputVBytes(toAddress);
@@ -903,18 +929,18 @@ public class BtcWallet {
 				inSat += u.value;
 			}
 			if (inputs.isEmpty()) {
-				throw new IOException("No spendable coins");
+				throw new IOException(ERR_NO_COINS);
 			}
 			feeSat = (long) Math.ceil(
 					(11 + inputs.size() * 68 + destVBytes) * rate);
 			externalSat = inSat - feeSat;
 			if (externalSat <= destDust) {
-				throw new IOException("Balance is too low to send after the fee");
+				throw new IOException(ERR_BALANCE_AFTER_FEE);
 			}
 			outputs.add(new BtcTx.Output(toAddress, externalSat));
 		} else {
 			if (amountSat <= destDust) {
-				throw new IOException("Amount is below the dust limit");
+				throw new IOException(ERR_DUST);
 			}
 			externalSat = amountSat;
 			boolean useAllInputs =
@@ -928,7 +954,7 @@ public class BtcWallet {
 						+ destVBytes + BtcTx.CHANGE_OUTPUT_VBYTES) * rate);
 				if (inSat < amountSat + feeSat) {
 					throw new IOException(
-							"Insufficient balance for amount plus fee");
+							ERR_INSUFFICIENT);
 				}
 			} else {
 				feeSat = 0;
@@ -941,7 +967,7 @@ public class BtcWallet {
 					}
 					if (inputs.size() >= sorted.size()) {
 						throw new IOException(
-								"Insufficient balance for amount plus fee");
+								ERR_INSUFFICIENT);
 					}
 					OwnedUtxo next = sorted.get(inputs.size());
 					inputs.add(toInput(next));
@@ -971,7 +997,7 @@ public class BtcWallet {
 
 		int planVBytes = BtcTx.estimateVBytes(inputs.size(), outputs);
 		if (feeSat < minimumFeeSat(planVBytes)) {
-			throw new IOException("Fee below the relay minimum");
+			throw new IOException(ERR_FEE_TOO_LOW);
 		}
 		List<String> outpoints = new ArrayList<>();
 		for (BtcTx.Input in : inputs) {
@@ -1159,7 +1185,7 @@ public class BtcWallet {
 		Integer tip = SilentPaymentScanner.tipHeight(oracle,
 				TorIsolation.silentPayment(isolationTag), spFetcher);
 		if (tip == null) {
-			throw new IOException("Could not reach the oracle over Tor");
+			throw new IOException(ERR_ORACLE_UNREACHABLE);
 		}
 		byte[] scanPriv = keys.silentScanPriv();
 		byte[] spendPub = keys.silentSpendPub();
@@ -1215,10 +1241,10 @@ public class BtcWallet {
 			List<SilentPaymentScanner.Found> found, String toAddress,
 			double feeRate) throws IOException {
 		if (!BtcKeys.isValidAddress(toAddress)) {
-			throw new IOException("Not a valid Bitcoin address");
+			throw new IOException(ERR_INVALID_ADDRESS);
 		}
 		if (!SilentPayment.selfTest() || !TaprootSign.selfTest()) {
-			throw new IOException("Silent Payments self-check failed");
+			throw new IOException(ERR_SP_SELF_CHECK);
 		}
 		java.math.BigInteger spendPriv =
 				keys.silentSpendPriv();
@@ -1252,14 +1278,14 @@ public class BtcWallet {
 				sumIn += u.valueSat;
 			}
 			if (inputs.isEmpty()) {
-				throw new IOException("No unspent silent payments found");
+				throw new IOException(ERR_SP_NONE);
 			}
 			int vbytes = 11 + inputs.size() * 58
 					+ BtcTx.outputVBytes(toAddress);
 			long fee = (long) Math.ceil(vbytes * rate);
 			long swept = sumIn - fee;
 			if (swept <= BtcTx.dustThresholdSat(toAddress)) {
-				throw new IOException("Amount is too low to send after the fee");
+				throw new IOException(ERR_AMOUNT_AFTER_FEE);
 			}
 			List<BtcTx.Output> outputs = new ArrayList<>();
 			outputs.add(new BtcTx.Output(toAddress, swept));

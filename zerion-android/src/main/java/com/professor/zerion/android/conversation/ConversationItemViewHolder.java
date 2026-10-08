@@ -9,6 +9,7 @@ import android.widget.TextView;
 import com.professor.zerion.R;
 import org.zerionproject.app.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.sync.MessageId;
 
 import java.net.URL;
 import java.util.Map;
@@ -45,6 +46,8 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	@Nullable
 	private TextView replyText;
 	@Nullable
+	private TextView replyAuthor;
+	@Nullable
 	private String itemKey = null;
 	private float lastTextSizeSp = -1f;
 	@Nullable
@@ -78,6 +81,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		bomb = v.findViewById(R.id.bomb);
 		replyPreviewContainer = layout.findViewById(R.id.replyPreviewContainer);
 		replyText = layout.findViewById(R.id.replyText);
+		replyAuthor = layout.findViewById(R.id.replyAuthor);
 		reactionsView = layout.findViewById(R.id.reactionsView);
 		linkPreviewCard = layout.findViewById(R.id.linkPreviewCard);
 		if (linkPreviewCard != null) {
@@ -288,11 +292,29 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 					Context ctx = replyText.getContext();
 					String name = item.getContactName() != null ?
 							item.getContactName().getValue() : null;
-					replyText.setText(quoteLine(item.getReplyToLocal(),
+					String author = quoteAuthor(item.getReplyToLocal(),
 							ctx.getString(R.string.reply_prefix_you),
 							name != null ? name
-									: ctx.getString(R.string.unknown_contact),
-							replyTextContent));
+									: ctx.getString(R.string.unknown_contact));
+					if (replyAuthor != null) {
+						replyAuthor.setText(author);
+						replyAuthor.setVisibility(author == null ? GONE : VISIBLE);
+						replyText.setText(replyTextContent);
+					} else {
+						replyText.setText(author == null ? replyTextContent
+								: author + ": " + replyTextContent);
+					}
+				}
+				MessageId quoted = item.getReplyToMessageId();
+				if (quoted != null) {
+					replyPreviewContainer.setOnClickListener(v ->
+							listener.onQuoteClicked(quoted));
+					replyPreviewContainer.setOnLongClickListener(v ->
+							layout.performLongClick());
+				} else {
+					replyPreviewContainer.setOnClickListener(null);
+					replyPreviewContainer.setOnLongClickListener(null);
+					replyPreviewContainer.setClickable(false);
 				}
 				replyPreviewContainer.setVisibility(VISIBLE);
 			} else {
@@ -305,10 +327,11 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		return outViewHolder == null;
 	}
 
-	static String quoteLine(@Nullable Boolean quotedLocal, String you,
-			String contactName, String quotedText) {
-		if (quotedLocal == null) return quotedText;
-		return (quotedLocal ? you : contactName) + ": " + quotedText;
+	@Nullable
+	static String quoteAuthor(@Nullable Boolean quotedLocal, String you,
+			String contactName) {
+		if (quotedLocal == null) return null;
+		return quotedLocal ? you : contactName;
 	}
 
 	@Nullable

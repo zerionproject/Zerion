@@ -28,6 +28,8 @@ interface ConversationListener {
 
 	void onReactionClicked(ConversationItem item);
 
+	void onQuoteClicked(org.zerionproject.core.api.sync.MessageId quoted);
+
 	void onSecretNoteOpened(org.zerionproject.core.api.sync.MessageId messageId);
 
 	void onSecretNoteRevealed(org.zerionproject.core.api.sync.MessageId messageId);

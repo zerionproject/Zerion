@@ -17,39 +17,61 @@
 
 	<LinearLayout
 		android:id="@+id/replyPreviewContainer"
-		android:layout_width="0dp"
+		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginStart="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginTop="@dimen/message_bubble_padding_top_inner"
 		android:layout_marginEnd="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
-		android:background="?android:attr/selectableItemBackground"
+		android:background="@drawable/bg_reply_quote_in"
+		android:foreground="?android:attr/selectableItemBackground"
+		android:minWidth="@dimen/reply_quote_min_width"
 		android:orientation="horizontal"
-		android:paddingTop="4dp"
-		android:paddingBottom="4dp"
 		android:visibility="gone"
+		app:layout_constrainedWidth="true"
 		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintHorizontal_bias="0.0"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent">
 
 		<View
 			android:layout_width="3dp"
 			android:layout_height="match_parent"
-			android:layout_marginEnd="6dp"
-			android:layout_marginRight="6dp"
 			android:background="@color/zerion_primary_accent" />
 
-		<TextView
-			android:id="@+id/replyText"
-			android:layout_width="0dp"
+		<LinearLayout
+			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:ellipsize="end"
-			android:maxLines="2"
-			android:textColor="@color/zerion_text_secondary_inverse"
-			android:textSize="12sp"
-			android:textStyle="italic" />
+			android:orientation="vertical"
+			android:paddingStart="8dp"
+			android:paddingLeft="8dp"
+			android:paddingTop="4dp"
+			android:paddingEnd="8dp"
+			android:paddingRight="8dp"
+			android:paddingBottom="6dp">
+
+			<TextView
+				android:id="@+id/replyAuthor"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:ellipsize="end"
+				android:maxLines="1"
+				android:textColor="@color/zerion_primary_accent"
+				android:textSize="12sp"
+				android:textStyle="bold"
+				android:visibility="gone" />
+
+			<TextView
+				android:id="@+id/replyText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:ellipsize="end"
+				android:maxLines="4"
+				android:textColor="@color/zerion_text_secondary_inverse"
+				android:textSize="13sp" />
+
+		</LinearLayout>
 
 	</LinearLayout>
 

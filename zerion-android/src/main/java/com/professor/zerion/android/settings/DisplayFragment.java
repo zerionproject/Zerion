@@ -259,6 +259,8 @@ public class DisplayFragment extends Fragment {
 				.setPositiveButton(android.R.string.ok, (d, i) -> {
 					EarlyPrefs.setLanguage(requireContext(), newLanguage);
 					Localizer.forceReinitialize(newLanguage);
+					Localizer.getInstance().updateResources(
+							requireContext().getApplicationContext());
 					Intent intent = new Intent(getContext(), ENTRY_ACTIVITY);
 					intent.setFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
 					requireActivity().startActivity(intent);
@@ -337,9 +339,16 @@ public class DisplayFragment extends Fragment {
 						currentAppIcon = which;
 						AppIconManager.setAppIcon(requireContext(), which);
 						updateAppIconDisplay();
-						android.widget.Toast.makeText(requireContext(),
-								R.string.pref_app_icon_restart_hint,
-								android.widget.Toast.LENGTH_SHORT).show();
+						if (which == AppIconManager.ICON_DEFAULT) {
+							android.widget.Toast.makeText(requireContext(),
+									R.string.pref_app_icon_restart_hint,
+									android.widget.Toast.LENGTH_SHORT).show();
+						} else {
+							android.widget.Toast.makeText(requireContext(),
+									getString(R.string.pref_app_icon_disguise_hint,
+											entries[which]),
+									android.widget.Toast.LENGTH_LONG).show();
+						}
 					}
 					dialog.dismiss();
 				})

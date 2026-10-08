@@ -49,7 +49,8 @@ class PendingContactViewHolder extends ViewHolder {
 			avatar.setText("?");
 		}
 		avatar.setBackgroundBytes(p.getId().getBytes());
-		name.setText(alias != null && !alias.isEmpty() ? alias : "Unknown");
+		name.setText(alias != null && !alias.isEmpty() ? alias
+				: name.getContext().getString(R.string.unknown_contact));
 
 		time.setText(formatDate(time.getContext(), p.getTimestamp()));
 		removeButton.setOnClickListener(v -> {

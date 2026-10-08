@@ -113,6 +113,7 @@
 	<color name="zerion_amoled_msg_out">#1A2332</color>
 
 	<color name="zerion_primary_accent">#26B7F0</color>
+	<color name="reply_quote_in_background">#2626B7F0</color>
 	<color name="zerion_secondary_accent">#1A92C4</color>
 
 	<color name="zerion_text_primary">#14151A</color>

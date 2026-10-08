@@ -23,9 +23,7 @@ final class GroupTrTimerLabels {
 		if (ms == DAY) return ctx.getString(R.string.grouptr_ttl_1day);
 		if (ms == 7L * DAY) return ctx.getString(R.string.grouptr_ttl_7days);
 		if (ms == 30L * DAY) return ctx.getString(R.string.grouptr_ttl_30days);
-		long minutes = Math.max(1L, ms / MINUTE);
-		return ctx.getResources().getQuantityString(
-				R.plurals.grouptr_ttl_minutes, (int) Math.min(minutes,
-						Integer.MAX_VALUE), minutes);
+		return com.professor.zerion.android.util.UiUtils.formatDuration(ctx,
+				ms);
 	}
 }

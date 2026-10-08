@@ -487,6 +487,8 @@ public class SecurityFragment extends Fragment {
 				R.array.default_timer_labels);
 		String text = labels[0];
 		if (value > 0) {
+			text = com.professor.zerion.android.conversation.DisappearingTimers
+					.label(requireContext(), value);
 			for (int i = 1; i < DEFAULT_TIMER_VALUES.length; i++) {
 				if (DEFAULT_TIMER_VALUES[i] == value) {
 					text = labels[i];
@@ -498,10 +500,12 @@ public class SecurityFragment extends Fragment {
 	}
 
 	private void showDefaultTimerDialog() {
-		String[] entries = getResources().getStringArray(
+		String[] presets = getResources().getStringArray(
 				R.array.default_timer_labels);
+		String[] entries = java.util.Arrays.copyOf(presets, presets.length + 1);
+		entries[presets.length] = getString(R.string.dialog_disappearing_custom);
 		long stored = profilePrefs.getLong("default_disappearing_timer", -1L);
-		int selectedIndex = 0;
+		int selectedIndex = stored > 0 ? presets.length : 0;
 		for (int i = 0; i < DEFAULT_TIMER_VALUES.length; i++) {
 			if (DEFAULT_TIMER_VALUES[i] == stored) {
 				selectedIndex = i;
@@ -513,14 +517,25 @@ public class SecurityFragment extends Fragment {
 				.setTitle(R.string.pref_default_disappearing_title)
 				.setSingleChoiceItems(entries, selectedIndex,
 						(dialog, which) -> {
-					long value = DEFAULT_TIMER_VALUES[which];
-					profilePrefs.edit().putLong("default_disappearing_timer",
-							value).apply();
-					updateDefaultTimerDisplay();
 					dialog.dismiss();
+					if (which == presets.length) {
+						com.professor.zerion.android.conversation
+								.DisappearingTimers.showCustomPicker(
+								requireContext(), stored,
+								this::storeDefaultTimer);
+						return;
+					}
+					storeDefaultTimer(DEFAULT_TIMER_VALUES[which]);
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.show();
+	}
+
+	private void storeDefaultTimer(long value) {
+		if (!isAdded()) return;
+		profilePrefs.edit().putLong("default_disappearing_timer", value)
+				.apply();
+		updateDefaultTimerDisplay();
 	}
 
 	@Override

@@ -103,6 +103,9 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@org.zerionproject.core.api.lifecycle.IoExecutor
 	java.util.concurrent.Executor ioExecutor;
 
+	@Inject
+	com.professor.zerion.android.update.UpdateChecker updateChecker;
+
 	private MaterialCardView profileIcon;
 	private ShapeableImageView profileAvatar;
 	private TextView toolbarTitle;
@@ -173,6 +176,12 @@ public class NavDrawerActivity extends ZerionActivity implements
 			onNewIntent(getIntent());
 		}
 		maybeShowPostUpdateNotice();
+		updateChecker.getPopup().observe(this, announcement -> {
+			if (announcement == null) return;
+			updateChecker.popupShown(announcement);
+			com.professor.zerion.android.update.UpdateDialogs.showAvailable(
+					this, announcement, updateChecker.installedVersionName());
+		});
 	}
 
 	private void maybeShowPostUpdateNotice() {
@@ -529,6 +538,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	public void onStart() {
 		super.onStart();
+		updateChecker.onAppForeground();
 		vaultAutolockHandler.removeCallbacks(vaultAutolockRunnable);
 		if (currentTab == TAB_VAULT && !vaultManager.isUnlocked()) {
 			switchTab(TAB_VAULT, true);

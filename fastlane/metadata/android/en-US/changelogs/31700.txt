@@ -1,0 +1,1 @@
+Network status no longer falls back to "Publishing". Disappearing messages accept any time from one minute to one year. GitHub installs can check for updates over Tor, with signed notices only. All texts are translated in every supported language. Replies show the quoted message in full width with its author, and tapping the quote opens the original. Clearer notification icon.

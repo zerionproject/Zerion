@@ -278,9 +278,10 @@ public class VaultSettingsFragment extends BaseFragment {
 		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(),
 				success -> {
 			if (success == null) return;
-			if (success.contains("Password changed")) {
+			if (viewModel.isMessage(success,
+					R.string.vault_settings_password_changed)) {
 				showToast(getString(R.string.vault_settings_password_changed));
-			} else if (success.contains("wiped")) {
+			} else if (viewModel.isMessage(success, R.string.vault_msg_wiped)) {
 				if (getActivity() instanceof VaultActivity) {
 					((VaultActivity) getActivity()).showFragment(
 							new VaultSetupFragment(), "vault_setup", false);
@@ -294,9 +295,28 @@ public class VaultSettingsFragment extends BaseFragment {
 		});
 	}
 
+	private String timeoutLabel(int seconds) {
+		if (seconds < 0) return getString(R.string.pref_lock_timeout_never);
+		if (seconds < 60) {
+			return getResources().getQuantityString(
+					R.plurals.duration_seconds, seconds, seconds);
+		}
+		int minutes = seconds / 60;
+		return getResources().getQuantityString(
+				R.plurals.duration_minutes, minutes, minutes);
+	}
+
+	private String[] timeoutLabels(int[] values) {
+		String[] labels = new String[values.length];
+		for (int i = 0; i < values.length; i++) {
+			labels[i] = timeoutLabel(values[i]);
+		}
+		return labels;
+	}
+
 	private void showAutolockDialog() {
-		String[] options = {"30 seconds", "60 seconds", "2 minutes", "5 minutes", "Never"};
 		int[] values = {30, 60, 120, 300, -1};
+		String[] options = timeoutLabels(values);
 
 		int selectedIndex = 1;
 		for (int i = 0; i < values.length; i++) {
@@ -318,9 +338,8 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void showClipboardTimeoutDialog() {
-		String[] options = {"15 seconds", "30 seconds", "60 seconds",
-				"2 minutes"};
 		int[] values = {15, 30, 60, 120};
+		String[] options = timeoutLabels(values);
 
 		int selectedIndex = 1;
 		for (int i = 0; i < values.length; i++) {
@@ -479,15 +498,7 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void updateAutolockDisplay() {
-		String display;
-		if (currentAutolockTimeout == -1) {
-			display = "Never";
-		} else if (currentAutolockTimeout < 60) {
-			display = currentAutolockTimeout + " seconds";
-		} else {
-			display = (currentAutolockTimeout / 60) + " minutes";
-		}
-		autolockValue.setText(display);
+		autolockValue.setText(timeoutLabel(currentAutolockTimeout));
 	}
 
 	private void showKeyDerivation(@Nullable TextView keystoreInfo) {
@@ -504,12 +515,7 @@ public class VaultSettingsFragment extends BaseFragment {
 	}
 
 	private void updateClipboardTimeoutDisplay() {
-		String display;
-		if (currentClipboardTimeout < 60) {
-			display = currentClipboardTimeout + " seconds";
-		} else {
-			display = (currentClipboardTimeout / 60) + " minutes";
-		}
+		String display = timeoutLabel(currentClipboardTimeout);
 		if (clipboardTimeoutValue != null) {
 			boolean timed = clipboardSwitch == null
 					|| clipboardSwitch.isChecked();
