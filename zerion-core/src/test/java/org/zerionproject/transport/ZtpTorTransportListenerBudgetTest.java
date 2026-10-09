@@ -155,7 +155,7 @@ public class ZtpTorTransportListenerBudgetTest {
 
 	private void waitForEntered(boolean viaAuthorizedService)
 			throws InterruptedException {
-		long deadline = System.currentTimeMillis() + 3_000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (!entered.contains(viaAuthorizedService)
 				&& System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);

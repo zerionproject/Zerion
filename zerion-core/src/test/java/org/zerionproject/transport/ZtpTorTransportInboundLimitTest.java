@@ -32,6 +32,7 @@ public class ZtpTorTransportInboundLimitTest {
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final CountDownLatch release = new CountDownLatch(1);
+	private final AtomicInteger started = new AtomicInteger();
 	private final AtomicInteger entered = new AtomicInteger();
 	private final List<Socket> sockets = new ArrayList<>();
 	private ZtpTorTransport transport;
@@ -47,6 +48,7 @@ public class ZtpTorTransportInboundLimitTest {
 			@Override
 			public void handleIncoming(TransportId transportId, InputStream in,
 					OutputStream out) throws IOException {
+				started.incrementAndGet();
 				byte[] tag = new byte[TAG_LENGTH];
 				int off = 0;
 				while (off < TAG_LENGTH) {
@@ -95,7 +97,7 @@ public class ZtpTorTransportInboundLimitTest {
 		Socket dripper = open();
 		dripper.getOutputStream().write(1);
 		dripper.getOutputStream().flush();
-		Thread.sleep(200);
+		waitForStarted(1);
 		now.addAndGet(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 1);
 		dripper.getOutputStream().write(2);
 		dripper.getOutputStream().flush();
@@ -155,8 +157,16 @@ public class ZtpTorTransportInboundLimitTest {
 		s.getOutputStream().flush();
 	}
 
+	private void waitForStarted(int n) throws InterruptedException {
+		long deadline = System.currentTimeMillis() + 15_000;
+		while (started.get() < n && System.currentTimeMillis() < deadline) {
+			Thread.sleep(20);
+		}
+		assertEquals(n, started.get());
+	}
+
 	private void waitForEntered(int n) throws InterruptedException {
-		long deadline = System.currentTimeMillis() + 10_000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (entered.get() < n && System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);
 		}
