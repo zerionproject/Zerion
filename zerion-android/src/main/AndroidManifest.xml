@@ -533,20 +533,6 @@
 			android:grantUriPermissions="false" />
 
 		<provider
-			android:name="androidx.startup.InitializationProvider"
-			android:authorities="${applicationId}.androidx-startup"
-			android:exported="false"
-			tools:node="merge">
-			<meta-data
-				android:name="androidx.emoji2.text.EmojiCompatInitializer"
-				tools:node="remove" />
-		</provider>
-
-		<meta-data
-			android:name="android.webkit.WebView.MetricsOptOut"
-			android:value="true" />
-
-		<provider
 			android:name="androidx.core.content.FileProvider"
 			android:authorities="${applicationId}.fileprovider"
 			android:exported="false"
