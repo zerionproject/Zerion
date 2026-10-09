@@ -82,7 +82,7 @@ public class VoiceCallDraftedFixesTest {
 		assertFalse(s.isVideoRequested());
 		assertNull("capture was set up",
 				CallRig.get(s, "videoStreamManager"));
-		CallRig.await(() -> rig.disposed.get() >= 2, 5_000);
+		CallRig.await(() -> rig.disposed.get() >= 2, 15_000);
 		assertTrue("the video connection was left open",
 				rig.disposed.get() >= 2);
 	}

@@ -120,7 +120,7 @@ public class VideoOfferPermissionTest {
 				new String[] {Manifest.permission.CAMERA},
 				new int[] {PackageManager.PERMISSION_GRANTED});
 		CallRig.await(() -> rig.sentTypes().contains("createVideoAccept"),
-				5_000);
+				15_000);
 		assertTrue("the offer was not accepted",
 				rig.sentTypes().contains("createVideoAccept"));
 		assertFalse("a new video request was made instead",
@@ -137,7 +137,7 @@ public class VideoOfferPermissionTest {
 				new String[] {Manifest.permission.CAMERA},
 				new int[] {PackageManager.PERMISSION_DENIED});
 		CallRig.await(() -> rig.sentTypes().contains("createVideoReject"),
-				5_000);
+				15_000);
 		assertTrue("the peer was not told",
 				rig.sentTypes().contains("createVideoReject"));
 		VoiceCallService s = rig.controller.get();

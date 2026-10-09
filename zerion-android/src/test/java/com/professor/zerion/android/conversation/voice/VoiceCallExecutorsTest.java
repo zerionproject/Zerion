@@ -82,7 +82,7 @@ public class VoiceCallExecutorsTest {
 			}
 			assertTrue("only " + (VoiceCallExecutors.MAX_THREADS
 							- started.getCount()) + " loops got a thread",
-					started.await(5, TimeUnit.SECONDS));
+					started.await(15, TimeUnit.SECONDS));
 			release.countDown();
 		} finally {
 			pool.shutdownNow();

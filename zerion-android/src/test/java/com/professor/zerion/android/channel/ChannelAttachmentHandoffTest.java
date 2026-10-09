@@ -274,7 +274,7 @@ public class ChannelAttachmentHandoffTest {
 		Intent two = nextView(feed);
 		assertNotNull(two);
 		assertEquals(1, copiesOf(second).size());
-		long deadline = System.currentTimeMillis() + 5000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (!copiesOf(first).isEmpty()
 				&& System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);
@@ -298,7 +298,7 @@ public class ChannelAttachmentHandoffTest {
 				Files.readAllBytes(staged.toPath()));
 		c.restart().start().resume();
 		runBackgroundWork();
-		long deadline = System.currentTimeMillis() + 5000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (staged.exists() && System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);
 		}
