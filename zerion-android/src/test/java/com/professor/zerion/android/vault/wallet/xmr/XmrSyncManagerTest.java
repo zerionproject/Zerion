@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -24,6 +26,8 @@ public class XmrSyncManagerTest {
 			"2chk3x3x2iyreog6y2vhljpraqmwiqdmmafhiiab443t7xyfeadqfuad.onion:18089";
 	private static final String N2 =
 			"4iv75ceaj2xjqne6d5d35xxk7lkcj6zdtpsbp7sq6sobp44b7txqrcid.onion:18089";
+
+	private static final long AWAIT_MS = 15_000;
 
 	private final ExecutorService exec = Executors.newSingleThreadExecutor();
 	private final Sink sink = new Sink();
@@ -58,7 +62,7 @@ public class XmrSyncManagerTest {
 	public void torPortZeroIsOfflineAndNeverConnects() throws Exception {
 		Script s = new Script();
 		manager().start("A", 1, s, nodes(N1), 0);
-		sink.await(st -> st.state == XmrSyncState.OFFLINE, 3000);
+		sink.await(st -> st.state == XmrSyncState.OFFLINE, AWAIT_MS);
 		assertEquals("no connect attempted without Tor", 0, s.initCalls.size());
 	}
 
@@ -68,7 +72,7 @@ public class XmrSyncManagerTest {
 		s.connect = 1;
 		manager().start("A", 1, s, nodes(N1), 9050);
 		sink.await(st -> st.state == XmrSyncState.CONNECTED
-				|| st.state == XmrSyncState.SYNCHRONIZING, 3000);
+				|| st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		assertTrue(s.initCalls.size() >= 1);
 		for (String[] call : s.initCalls) {
 			assertEquals("Tor node must be given the isolated SOCKS5 proxy",
@@ -86,7 +90,7 @@ public class XmrSyncManagerTest {
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
 		sink.await(st -> st.nodeLabel != null && st.nodeLabel.startsWith("4iv75")
 				&& (st.state == XmrSyncState.CONNECTED
-				|| st.state == XmrSyncState.SYNCHRONIZING), 4000);
+				|| st.state == XmrSyncState.SYNCHRONIZING), AWAIT_MS);
 		assertTrue("tried N1 before N2", s.initCalls.size() >= 2);
 		assertEquals(hostOf(N1), s.initCalls.get(0)[0].split(":")[0]);
 	}
@@ -100,10 +104,10 @@ public class XmrSyncManagerTest {
 		s.bal = 5_000_000_000_000L;
 		manager().start("A", 1, s, nodes(N1), 9050);
 		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING
-				&& st.daemonHeight == 200, 4000);
+				&& st.daemonHeight == 200, AWAIT_MS);
 		assertFalse("behind tip is never SYNCED", sink.hasState(XmrSyncState.SYNCED));
 		s.wh = 200;
-		sink.await(st -> st.state == XmrSyncState.SYNCED, 4000);
+		sink.await(st -> st.state == XmrSyncState.SYNCED, AWAIT_MS);
 	}
 
 	@Test
@@ -113,7 +117,7 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		Thread.sleep(400);
 		assertEquals("the observer never issues its own refresh", 0,
 				s.refreshCalls.get());
@@ -128,13 +132,13 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		s.wh = 150;
 		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING
-				&& st.walletHeight == 150, 3000);
+				&& st.walletHeight == 150, AWAIT_MS);
 		s.wh = 200;
 		sink.await(st -> st.state == XmrSyncState.SYNCED
-				&& st.walletHeight == 200, 3000);
+				&& st.walletHeight == 200, AWAIT_MS);
 		assertEquals("no failover happened during a healthy scan", 1,
 				s.initCalls.size());
 	}
@@ -146,10 +150,10 @@ public class XmrSyncManagerTest {
 		s.wh = 200;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCED, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCED, AWAIT_MS);
 		s.wh = 201;
 		sink.await(st -> st.state == XmrSyncState.SYNCED
-				&& st.walletHeight == 201, 3000);
+				&& st.walletHeight == 201, AWAIT_MS);
 		assertEquals(1, s.initCalls.size());
 	}
 
@@ -161,10 +165,24 @@ public class XmrSyncManagerTest {
 		s.dh = 200;
 		XmrSyncManager m = manager();
 		m.start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCED, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCED, AWAIT_MS);
+		CountDownLatch held = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		m.submit(() -> {
+			held.countDown();
+			try {
+				release.await(AWAIT_MS, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		assertTrue("the sync loop never ran the submitted work",
+				held.await(AWAIT_MS, TimeUnit.MILLISECONDS));
 		int wakesBefore = s.startRefreshCalls.get();
 		for (int i = 0; i < 25; i++) m.requestRefresh();
-		sink.await(st -> st.state == XmrSyncState.SYNCED && st.checking, 3000);
+		release.countDown();
+		sink.await(st -> st.state == XmrSyncState.SYNCED && st.checking,
+				AWAIT_MS);
 		Thread.sleep(500);
 		assertEquals("25 rapid taps produce one wake", wakesBefore + 1,
 				s.startRefreshCalls.get());
@@ -185,7 +203,7 @@ public class XmrSyncManagerTest {
 		s.dh = 3_752_000L;
 		manager().start("A", 1, s, nodes(N1), 9050);
 		sink.await(st -> st.state == XmrSyncState.CONNECTED
-				|| st.state == XmrSyncState.SYNCHRONIZING, 4000);
+				|| st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		assertTrue("recovering-from-seed is set so init does not fast-forward "
 				+ "the refresh height to the tip",
 				s.setRecoveringFromSeedCalls.get() >= 1);
@@ -202,7 +220,7 @@ public class XmrSyncManagerTest {
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
 		sink.await(st -> st.nodeLabel != null && st.nodeLabel.startsWith("4iv75")
 				&& (st.state == XmrSyncState.CONNECTED
-				|| st.state == XmrSyncState.SYNCHRONIZING), 4000);
+				|| st.state == XmrSyncState.SYNCHRONIZING), AWAIT_MS);
 		assertTrue("recovering-from-seed is re-marked before every connect "
 				+ "attempt, including a failover connect",
 				s.setRecoveringFromSeedCalls.get() >= s.initCalls.size());
@@ -215,7 +233,7 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		Thread.sleep(1200);
 		assertEquals("a pause in progress must not trigger failover", 1,
 				s.initCalls.size());
@@ -228,12 +246,12 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		s.status = 1;
 		s.connect = 0;
 		s.connectAfterInit = 1;
 		sink.await(st -> st.nodeLabel != null && st.nodeLabel.startsWith("4iv75"),
-				4000);
+				AWAIT_MS);
 		assertTrue("failed over to the next node", s.initCalls.size() >= 2);
 	}
 
@@ -244,11 +262,11 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		managerShortStall().start("A", 1, s, nodes(N1, N2), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		s.connect = 0;
 		s.connectAfterInit = 1;
 		sink.await(st -> st.nodeLabel != null && st.nodeLabel.startsWith("4iv75"),
-				5000);
+				AWAIT_MS);
 	}
 
 	@Test
@@ -259,12 +277,12 @@ public class XmrSyncManagerTest {
 		s.wh = 100;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		s.refreshIdle = false;
 		s.status = 1;
 		s.connect = 0;
 		s.connectAfterInit = 1;
-		sink.await(st -> st.state == XmrSyncState.OFFLINE, 8000);
+		sink.await(st -> st.state == XmrSyncState.OFFLINE, AWAIT_MS);
 		assertEquals("no init on a session whose refresh is still running",
 				1, s.initCalls.size());
 		assertTrue(s.stopRefreshCalled.get());
@@ -285,7 +303,7 @@ public class XmrSyncManagerTest {
 			startsAtStore.set(s.startRefreshCalls.get());
 		};
 		manager().start("A", 1, s, nodes(N1), 9050);
-		long deadline = System.currentTimeMillis() + 5000;
+		long deadline = System.currentTimeMillis() + AWAIT_MS;
 		while (s.storeCalls.get() == 0
 				&& System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);
@@ -304,7 +322,7 @@ public class XmrSyncManagerTest {
 		Script s = new Script();
 		s.connect = 0;
 		manager().start("A", 1, s, nodes(N1, N2), 9050);
-		sink.await(st -> st.state == XmrSyncState.OFFLINE, 5000);
+		sink.await(st -> st.state == XmrSyncState.OFFLINE, AWAIT_MS);
 		assertTrue("both nodes attempted once before offline",
 				s.initCalls.size() >= 2);
 		assertFalse("offline releases the session", sync.isActive());
@@ -317,7 +335,7 @@ public class XmrSyncManagerTest {
 		s.wh = 200;
 		s.dh = 200;
 		manager().start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCED, 4000);
+		sink.await(st -> st.state == XmrSyncState.SYNCED, AWAIT_MS);
 		int before = sink.all().size();
 		current.set(false);
 		sync.stop();
@@ -345,7 +363,7 @@ public class XmrSyncManagerTest {
 		s.wh = 9_999_999L;
 		s.dh = 0;
 		manager().start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.CONNECTED, 4000);
+		sink.await(st -> st.state == XmrSyncState.CONNECTED, AWAIT_MS);
 		Thread.sleep(400);
 		assertFalse("daemonHeight 0 must never be SYNCED",
 				sink.hasState(XmrSyncState.SYNCED));
@@ -360,12 +378,13 @@ public class XmrSyncManagerTest {
 		s.dh = 200;
 		XmrSyncManager m = manager();
 		m.start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 3000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		java.util.concurrent.FutureTask<String> task =
 				new java.util.concurrent.FutureTask<>(
 						() -> Thread.currentThread().getName());
 		m.submit(task);
-		String thread = task.get(3, java.util.concurrent.TimeUnit.SECONDS);
+		String thread = task.get(AWAIT_MS,
+				java.util.concurrent.TimeUnit.MILLISECONDS);
 		assertTrue("ran on the session executor thread while the loop owns it",
 				thread != null && !thread.equals(Thread.currentThread().getName()));
 		assertTrue("the loop keeps observing afterwards",
@@ -598,7 +617,7 @@ public class XmrSyncManagerTest {
 		XmrSyncManager m = manager();
 		m.setHistorySink(published::add);
 		m.start("A", 1, s, nodes(N1), 9050);
-		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, 4000);
+		sink.await(st -> st.state == XmrSyncState.SYNCHRONIZING, AWAIT_MS);
 		assertFalse("behind tip is never SYNCED",
 				sink.hasState(XmrSyncState.SYNCED));
 		awaitHistory(published);
@@ -624,7 +643,7 @@ public class XmrSyncManagerTest {
 	private static void awaitHistory(
 			java.util.List<java.util.List<XmrTxInfo>> published)
 			throws Exception {
-		long deadline = System.currentTimeMillis() + 4000;
+		long deadline = System.currentTimeMillis() + AWAIT_MS;
 		while (System.currentTimeMillis() < deadline) {
 			for (java.util.List<XmrTxInfo> h : published) {
 				if (!h.isEmpty()) return;
