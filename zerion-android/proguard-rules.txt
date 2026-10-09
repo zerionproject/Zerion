@@ -121,10 +121,6 @@
 -dontwarn org.conscrypt.OpenSSLProvider
 -dontwarn org.conscrypt.Conscrypt
 
-# HTML sanitiser
--keep class org.jsoup.safety.Safelist
--dontwarn org.jsoup.**
-
 # Emoji
 -keep class com.vanniktech.emoji.**
 

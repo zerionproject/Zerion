@@ -217,7 +217,6 @@ dependencies {
         implementation 'net.java.dev.jna:jna:5.17.0@aar'
     }
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
-    implementation "org.jsoup:jsoup:$jsoup_version"
     implementation 'info.guardianproject.panic:panic:1.0'
     implementation 'uk.co.samuelwall:material-tap-target-prompt:3.3.2'
     implementation 'com.vanniktech:emoji-google:0.9.0'

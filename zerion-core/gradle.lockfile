@@ -2,10 +2,6 @@
 # Manual edits can break the build and are not advised.
 # This file is expected to be part of source control.
 cglib:cglib:3.2.8=testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson:jackson-bom:2.15.3=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.google.code.findbugs:annotations:3.0.1=testCompileClasspath,testRuntimeClasspath
 com.google.code.findbugs:jsr305:3.0.2=annotationProcessor,compileClasspath,runtimeClasspath,testAnnotationProcessor,testCompileClasspath,testRuntimeClasspath
 com.google.dagger:dagger-compiler:2.51.1=annotationProcessor,testAnnotationProcessor
@@ -32,11 +28,9 @@ net.jcip:jcip-annotations:1.0=testCompileClasspath,testRuntimeClasspath
 net.jodah:concurrentunit:0.4.6=testCompileClasspath,testRuntimeClasspath
 net.ltgt.gradle.incap:incap:0.2=annotationProcessor,testAnnotationProcessor
 org.apache-extras.beanshell:bsh:2.0b6=testCompileClasspath,testRuntimeClasspath
-org.bitlet:weupnp:0.1.4=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.bouncycastle:bcprov-jdk15to18:1.84=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.briarproject:jtorctl:0.5=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.briarproject:null-safety:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
-org.briarproject:socks-socket:0.1=compileClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 org.checkerframework:checker-compat-qual:2.5.5=annotationProcessor,testAnnotationProcessor
 org.checkerframework:checker-qual:3.41.0=annotationProcessor,testAnnotationProcessor
 org.codehaus.mojo.signature:java16:1.1=signature
