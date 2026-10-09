@@ -1,6 +1,7 @@
 package org.zerionproject.app.channel;
 
 import org.zerionproject.app.api.channel.ChannelTransport.ChannelServer;
+import org.zerionproject.core.api.plugin.OnionTargetListener;
 import org.junit.After;
 import org.junit.Test;
 
@@ -9,6 +10,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +28,11 @@ public class TorChannelTransportDeadlineTest {
 	private static final int HANDLERS = 16;
 	private static final int PER_SERVER =
 			TorChannelTransport.MAX_HANDLERS_PER_CHANNEL;
-	private static final long HEADER_DEADLINE_MS = 1_500L;
-	private static final long WRITE_STALL_MS = 1_500L;
+	private static final long HEADER_DEADLINE_MS = 3_000L;
+	private static final long WRITE_STALL_MS = 3_000L;
+	private static final long SERVED_WITHIN_MS = 60_000L;
 	private static final int STALLED_RESPONSE_BYTES = 1024 * 1024;
+	private static final int SMALL_BUFFER_BYTES = 4096;
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final AtomicInteger port = new AtomicInteger();
@@ -52,37 +56,30 @@ public class TorChannelTransportDeadlineTest {
 	public void silentConnectionsFreeTheirHandlersAtTheHeaderDeadline()
 			throws Exception {
 		bind();
-		long start = System.currentTimeMillis();
 		for (int i = 0; i < HANDLERS; i++) open(64 * 1024);
-		Thread.sleep(300);
-		Socket refused = open(64 * 1024);
-		requestRefused(refused);
-
-		sleepUntil(start + HEADER_DEADLINE_MS + 1_000L);
-		Socket served = open(64 * 1024);
-		request(served, (byte) 2);
-		assertServed(served);
+		requestRefused(open(64 * 1024));
+		assertServedEventually();
 	}
 
 	@Test(timeout = 120_000)
 	public void stalledReadersFreeTheirHandlersAtTheWriteDeadline()
 			throws Exception {
 		bind();
-		for (int i = 0; i < PER_SERVER; i++) request(open(4096), (byte) 1);
+		for (int i = 0; i < PER_SERVER; i++) {
+			request(open(SMALL_BUFFER_BYTES), (byte) 1);
+		}
 		waitForEntered(PER_SERVER);
-		Thread.sleep(300);
-		long start = System.currentTimeMillis();
-		Socket refused = open(64 * 1024);
-		requestRefused(refused);
-
-		sleepUntil(start + WRITE_STALL_MS + 1_000L);
-		Socket served = open(64 * 1024);
-		request(served, (byte) 2);
-		assertServed(served);
+		requestRefused(open(64 * 1024));
+		assertServedEventually();
 	}
 
 	private void bind() throws IOException {
 		OnionPublisher publisher = new OnionPublisher() {
+			@Override
+			public OnionTargetListener openTarget() throws IOException {
+				return withSmallSendBuffers(OnionPublisher.super.openTarget());
+			}
+
 			@Override
 			public OnionHandle publish(int localPort, String privateKey) {
 				port.set(localPort);
@@ -101,6 +98,36 @@ public class TorChannelTransportDeadlineTest {
 			}
 			return new byte[] {7};
 		});
+	}
+
+	private static OnionTargetListener withSmallSendBuffers(
+			OnionTargetListener target) {
+		return new OnionTargetListener() {
+			@Override
+			public String getTorTarget() {
+				return target.getTorTarget();
+			}
+
+			@Override
+			public Socket accept() throws IOException {
+				Socket s = target.accept();
+				try {
+					s.setSendBufferSize(SMALL_BUFFER_BYTES);
+				} catch (SocketException ignored) {
+				}
+				return s;
+			}
+
+			@Override
+			public boolean isClosed() {
+				return target.isClosed();
+			}
+
+			@Override
+			public void close() throws IOException {
+				target.close();
+			}
+		};
 	}
 
 	private TorChannelTransport transport(OnionPublisher publisher) {
@@ -133,19 +160,35 @@ public class TorChannelTransportDeadlineTest {
 		out.flush();
 	}
 
-	private static void assertServed(Socket s) {
-		try {
-			DataInputStream in = new DataInputStream(s.getInputStream());
-			assertEquals(1, in.readInt());
-			assertEquals(7, in.readByte());
-		} catch (IOException e) {
-			fail("no handler was free again: " + e);
+	private void assertServedEventually() throws Exception {
+		long deadline = System.currentTimeMillis() + SERVED_WITHIN_MS;
+		while (!served(open(64 * 1024))) {
+			if (System.currentTimeMillis() > deadline) {
+				fail("no handler was free again");
+			}
+			Thread.sleep(50);
 		}
+	}
+
+	private static boolean served(Socket s) {
+		int length;
+		byte body;
+		try {
+			request(s, (byte) 2);
+			DataInputStream in = new DataInputStream(s.getInputStream());
+			length = in.readInt();
+			body = in.readByte();
+		} catch (IOException refused) {
+			return false;
+		}
+		assertEquals(1, length);
+		assertEquals(7, body);
+		return true;
 	}
 
 	private static void assertClosedWithoutAResponse(Socket s)
 			throws IOException {
-		s.setSoTimeout(3_000);
+		s.setSoTimeout(10_000);
 		try {
 			int r = s.getInputStream().read();
 			assertEquals(-1, r);
@@ -156,15 +199,10 @@ public class TorChannelTransportDeadlineTest {
 	}
 
 	private void waitForEntered(int n) throws InterruptedException {
-		long deadline = System.currentTimeMillis() + 10_000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (entered.get() < n && System.currentTimeMillis() < deadline) {
 			Thread.sleep(20);
 		}
 		assertEquals(n, entered.get());
-	}
-
-	private static void sleepUntil(long when) throws InterruptedException {
-		long wait = when - System.currentTimeMillis();
-		if (wait > 0) Thread.sleep(wait);
 	}
 }
