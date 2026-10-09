@@ -10,13 +10,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class PoliteExecutorTest extends BrambleTestCase {
 
 	private static final String TAG = "Test";
 	private static final int TASKS = 10;
+	private static final long TIMEOUT_SECONDS = 15;
 
 	@Test
 	public void testTasksAreDelegatedInOrderOfSubmission() throws Exception {
@@ -34,7 +37,7 @@ public class PoliteExecutorTest extends BrambleTestCase {
 			});
 		}
 
-		latch.await();
+		assertTrue(latch.await(TIMEOUT_SECONDS, SECONDS));
 
 		assertEquals(ascendingOrder(), list);
 	}
@@ -56,7 +59,7 @@ public class PoliteExecutorTest extends BrambleTestCase {
 			});
 		}
 
-		latch.await();
+		assertTrue(latch.await(TIMEOUT_SECONDS, SECONDS));
 
 		assertEquals(ascendingOrder(), list);
 	}
@@ -74,8 +77,10 @@ public class PoliteExecutorTest extends BrambleTestCase {
 			int result = i;
 			polite.execute(() -> {
 				try {
-
-					if (result < TASKS - 1) latches[result + 1].await();
+					if (result < TASKS - 1 && !latches[result + 1].await(
+							TIMEOUT_SECONDS, SECONDS)) {
+						return;
+					}
 					list.add(result);
 				} catch (InterruptedException e) {
 					fail();
@@ -84,7 +89,9 @@ public class PoliteExecutorTest extends BrambleTestCase {
 			});
 		}
 
-		for (int i = 0; i < TASKS; i++) latches[i].await();
+		for (int i = 0; i < TASKS; i++) {
+			assertTrue(latches[i].await(TIMEOUT_SECONDS, SECONDS));
+		}
 
 		assertEquals(descendingOrder(), list);
 	}
@@ -111,7 +118,7 @@ public class PoliteExecutorTest extends BrambleTestCase {
 			});
 		}
 
-		latch.await();
+		assertTrue(latch.await(TIMEOUT_SECONDS, SECONDS));
 
 		assertEquals(ascendingOrder(), list);
 	}

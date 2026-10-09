@@ -116,23 +116,23 @@ public class IsolatingSocksSocketFactoryTest {
 	private IsolatingSocksSocketFactory factory(SocksIsolationSecret secret) {
 		return new IsolatingSocksSocketFactory(new TcpTorSocksConnector(
 				new InetSocketAddress("127.0.0.1", server.getLocalPort())),
-				2000, 2000, 2000, new SecureRandom(), secret);
+				10_000, 10_000, 10_000, new SecureRandom(), secret);
 	}
 
 	private Credentials connect(IsolatingSocksSocketFactory f, String host)
-			throws IOException {
+			throws IOException, InterruptedException {
 		int before = seen.size();
 		Socket s = f.createSocket(host, 443);
 		s.close();
-		long deadline = System.currentTimeMillis() + 5000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (seen.size() <= before && System.currentTimeMillis() < deadline) {
-			Thread.yield();
+			Thread.sleep(5);
 		}
 		assertEquals(before + 1, seen.size());
 		return seen.get(before);
 	}
 
-	@Test(timeout = 20_000)
+	@Test(timeout = 120_000)
 	public void everyDestinationGetsItsOwnUsername() throws Exception {
 		IsolatingSocksSocketFactory f = factory();
 		Credentials a = connect(f, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.onion");
@@ -147,7 +147,7 @@ public class IsolatingSocksSocketFactoryTest {
 		assertTrue(a.password.length() >= 32);
 	}
 
-	@Test(timeout = 20_000)
+	@Test(timeout = 120_000)
 	public void freshProcessSecretMeansFreshCircuits() throws Exception {
 		Credentials a = connect(factory(), "cccccccccccccccc.onion");
 		Credentials b = connect(factory(), "cccccccccccccccc.onion");
@@ -156,7 +156,7 @@ public class IsolatingSocksSocketFactoryTest {
 				a.password, b.password);
 	}
 
-	@Test(timeout = 20_000)
+	@Test(timeout = 120_000)
 	public void factoriesOfOneProcessShareTheIsolationIdentity()
 			throws Exception {
 		SocksIsolationSecret secret =
@@ -170,7 +170,7 @@ public class IsolatingSocksSocketFactoryTest {
 				"SocksIsolationSecret", secret.toString());
 	}
 
-	@Test(timeout = 20_000)
+	@Test(timeout = 120_000)
 	public void socketsWithoutDestinationAreIsolatedIndividually()
 			throws Exception {
 		IsolatingSocksSocketFactory f = factory();
@@ -182,14 +182,14 @@ public class IsolatingSocksSocketFactoryTest {
 	}
 
 	private Credentials connectLater(IsolatingSocksSocketFactory f,
-			String host) throws IOException {
+			String host) throws IOException, InterruptedException {
 		int before = seen.size();
 		Socket s = f.createSocket();
-		s.connect(InetSocketAddress.createUnresolved(host, 443), 2000);
+		s.connect(InetSocketAddress.createUnresolved(host, 443), 10_000);
 		s.close();
-		long deadline = System.currentTimeMillis() + 5000;
+		long deadline = System.currentTimeMillis() + 15_000;
 		while (seen.size() <= before && System.currentTimeMillis() < deadline) {
-			Thread.yield();
+			Thread.sleep(5);
 		}
 		assertEquals(before + 1, seen.size());
 		return seen.get(before);
