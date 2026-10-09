@@ -4,7 +4,6 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
-import org.zerionproject.core.api.crypto.pcs.PqRatchetState;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -29,15 +28,13 @@ public class StreamContext {
 	private final boolean pcsEnabled;
 	@Nullable
 	private final PcsSessionState pcsState;
-	@Nullable
-	private final PqRatchetState pqRatchetState;
 
 	public StreamContext(@Nullable ContactId contactId,
 			@Nullable PendingContactId pendingContactId,
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode) {
 		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, false, false, null, null);
+				streamNumber, handshakeMode, false, false, null);
 	}
 
 	public StreamContext(@Nullable ContactId contactId,
@@ -45,7 +42,7 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode, boolean classical) {
 		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, classical, false, null, null);
+				streamNumber, handshakeMode, classical, false, null);
 	}
 
 	public StreamContext(@Nullable ContactId contactId,
@@ -53,16 +50,6 @@ public class StreamContext {
 			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
 			long streamNumber, boolean handshakeMode, boolean classical,
 			boolean pcsEnabled, @Nullable PcsSessionState pcsState) {
-		this(contactId, pendingContactId, transportId, tagKey, headerKey,
-				streamNumber, handshakeMode, classical, pcsEnabled, pcsState, null);
-	}
-
-	public StreamContext(@Nullable ContactId contactId,
-			@Nullable PendingContactId pendingContactId,
-			TransportId transportId, SecretKey tagKey, SecretKey headerKey,
-			long streamNumber, boolean handshakeMode, boolean classical,
-			boolean pcsEnabled, @Nullable PcsSessionState pcsState,
-			@Nullable PqRatchetState pqRatchetState) {
 		requireExactlyOneNull(contactId, pendingContactId);
 		if (pcsEnabled && pcsState == null) {
 			throw new IllegalArgumentException(
@@ -78,7 +65,6 @@ public class StreamContext {
 		this.classical = classical;
 		this.pcsEnabled = pcsEnabled;
 		this.pcsState = pcsState;
-		this.pqRatchetState = pqRatchetState;
 	}
 
 	@Nullable
@@ -122,10 +108,5 @@ public class StreamContext {
 	@Nullable
 	public PcsSessionState getPcsState() {
 		return pcsState;
-	}
-
-	@Nullable
-	public PqRatchetState getPqRatchetState() {
-		return pqRatchetState;
 	}
 }

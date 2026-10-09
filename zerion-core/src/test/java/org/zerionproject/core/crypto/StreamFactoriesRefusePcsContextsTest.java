@@ -81,13 +81,13 @@ public class StreamFactoriesRefusePcsContextsTest extends BrambleMockTestCase {
 
 	private StreamContext classicalContext() {
 		return new StreamContext(contactId, null, transportId, tagKey,
-				headerKey, 3L, false, false, false, null, null);
+				headerKey, 3L, false, false, false, null);
 	}
 
 	private StreamContext ratchetContext() {
 		PcsSessionState state = new PcsSessionState(getSecretKey(), 0, 0,
 				getSecretKey(), null, false, 0, null);
 		return new StreamContext(contactId, null, transportId, tagKey,
-				headerKey, 3L, false, false, true, state, null);
+				headerKey, 3L, false, false, true, state);
 	}
 }

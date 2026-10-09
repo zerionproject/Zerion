@@ -185,8 +185,7 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 			throws Exception {
 		StreamContext foreign = new StreamContext(null,
 				new PendingContactId(getRandomId()), transportId,
-				getSecretKey(), getSecretKey(), 0L, true, false, false, null,
-				null);
+				getSecretKey(), getSecretKey(), 0L, true, false, false, null);
 		context.checking(new Expectations() {{
 			oneOf(keyManager).getStreamContext(with(transportId),
 					with(equal(tag)));
@@ -201,7 +200,6 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 
 	private StreamContext handshakeContext() {
 		return new StreamContext(null, pendingContactId, transportId,
-				getSecretKey(), getSecretKey(), 0L, true, false, false, null,
-				null);
+				getSecretKey(), getSecretKey(), 0L, true, false, false, null);
 	}
 }
