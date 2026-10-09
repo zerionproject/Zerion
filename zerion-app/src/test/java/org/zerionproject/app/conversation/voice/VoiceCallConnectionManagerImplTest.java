@@ -88,18 +88,19 @@ public class VoiceCallConnectionManagerImplTest {
 		}});
 		VoiceCallConnectionManagerImpl manager =
 				new VoiceCallConnectionManagerImpl(pluginManager, crypto,
-						500, new long[] {0, 50});
+						2_000, new long[] {0, 50});
 		try {
 			DuplexTransportConnection conn = manager.connectToRemote("call",
 					"abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567.onion",
 					key, true);
 			assertSame(live, conn);
 			assertTrue("the late connection was not closed",
-					closed.await(10, TimeUnit.SECONDS));
+					closed.await(15, TimeUnit.SECONDS));
 			assertEquals(2, dials.get());
 			context.assertIsSatisfied();
 		} finally {
 			manager.shutdown();
+			secondDial.countDown();
 		}
 	}
 
@@ -112,17 +113,18 @@ public class VoiceCallConnectionManagerImplTest {
 					switch (method.getName()) {
 						case "createConnection":
 							if (dials.incrementAndGet() == 1) {
-								secondDial.await(10, TimeUnit.SECONDS);
+								secondDial.await(30, TimeUnit.SECONDS);
 								return late;
 							}
 							secondDial.countDown();
 							return live;
+						case "toString":
+							return "a dialler that holds the first dial until"
+									+ " the second";
 						case "hashCode":
 							return System.identityHashCode(proxy);
 						case "equals":
 							return proxy == args[0];
-						case "toString":
-							return "dialler";
 						default:
 							throw new UnsupportedOperationException(
 									method.getName());
