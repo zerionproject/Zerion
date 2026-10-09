@@ -56,7 +56,8 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --continue --dependency-verification strict \
             verifyLockedConfigurationCopies \
-            :zerion-core:test :zerion-wire:test :zerion-app:test \
+            :zerion-core-api:test :zerion-core:test :zerion-wire:test \
+            :zerion-app-api:test :zerion-app:test \
             :zerion-core-android:testDebugUnitTest \
             :zerion-android:testOfficialDebugUnitTest
       - name: Keep the test reports of a failed run
