@@ -33,9 +33,6 @@
   <string name="dialog_title_lost_password">Contrasinal perdido</string>
   <string name="dialog_message_lost_password">Zerion almacena a túa configuración cifrada no dispositivo, non na nube, así que non podemos restabelecer o teu contrasinal. Quererías borrar a túa conta e empezar de novo?\n\nPrecaución: As túas identidades, contactos e mensaxes serán eliminadas de forma permanente.</string>
   <string name="startup_failed_activity_title">Fallo de Inicio de Zerion</string>
-  <string name="download_zerion">Para seguir utilizando Zerion, descarga por favor a última versión.</string>
-  <string name="create_new_account">Precisas crear unha nova conta, pero podes utilizar o mesmo alcume.</string>
-  <string name="delete_account_button">Eliminar conta</string>
   <string name="startup_open_database">Descifrando a Base de datos...</string>
   <string name="startup_migrate_database">Actualizando a Base de datos...</string>
   <string name="startup_compact_database">Compactando a base de datos...</string>
@@ -94,11 +91,9 @@
   <string name="open">Abrir</string>
   <string name="change">Cambiar</string>
   <string name="start">Comezar</string>
-  <string name="finish">Rematar</string>
   <string name="no_data">Sen datos</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">O texto inserido e demasiado longo</string>
-  <string name="show_onboarding">Amosar xanela de axuda</string>
   <string name="fix">Arranxar</string>
   <string name="help">Axuda</string>
   <string name="sorry">Desculpa</string>
@@ -268,21 +263,12 @@
   <string name="groups_group_is_empty">Este grupo está baleiro</string>
   <string name="groups_group_is_dissolved">Este grupo foi disolto</string>
   <string name="groups_remove">Eliminar</string>
-  <string name="groups_create_group_title">Crear Grupo Privado</string>
-  <string name="groups_create_group_button">Crear Grupo</string>
   <string name="groups_create_group_invitation_button">Enviar Convite</string>
-  <string name="groups_create_group_hint">Escolle un nome para o teu grupo privado</string>
   <string name="groups_invitation_sent">Enviouse o convite de grupo</string>
-  <string name="groups_member_list">Lista de Membros</string>
-  <string name="groups_invite_members">Convidar a Membros</string>
-  <string name="groups_member_created_you">Creaches o grupo</string>
   <string name="groups_member_created">%s creou o grupo</string>
   <string name="groups_member_joined_you">Entraches no grupo</string>
-  <string name="groups_member_joined">%s uníuse ao grupo</string>
-  <string name="groups_leave">Deixar Grupo</string>
   <string name="groups_leave_dialog_title">Confirma que deixas o Grupo</string>
   <string name="groups_leave_dialog_message">Tes a certeza de querer deixar este grupo?</string>
-  <string name="groups_dissolve">Desfacer o grupo</string>
   <string name="groups_dissolve_dialog_title">Confirma a disolución do grupo</string>
   <string name="groups_dissolve_dialog_message">Segura de querer desfacer o grupo?\n\nOs restantes membros non poderán continuar as súas conversas e poderían non recibir as últimas mensaxes.</string>
   <string name="groups_dissolve_button">Desfacer</string>
@@ -291,23 +277,15 @@
   
   <string name="groups_invitations_title">Convites de Grupo</string>
   <string name="groups_invitations_invitation_sent">Convidaches a %1$s a unirse ao grupo \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s convidoute a unirte ao grupo \"%2$s\".</string>
   <string name="groups_invitations_joined">Xa estás no grupo</string>
   <string name="groups_invitations_declined">Rexeitou o convite ao grupo</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d convite de grupo aberto</item>
     <item quantity="other">%d convites de grupo abertos</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Aceptou o convite de grupo de %s.</string>
-  <string name="groups_invitations_response_declined_sent">Rexeitou o convite de grupo de %s.</string>
-  <string name="groups_invitations_response_declined_auto">O convite ao grupo desde %s foi automáticamente rexeitado.</string>
-  <string name="groups_invitations_response_accepted_received">%s aceptou o convite de grupo.</string>
-  <string name="groups_invitations_response_declined_received">%s rexeitou o convite de grupo.</string>
   <string name="sharing_status_groups">Só a persoa creadora poder convidar a novos membros ao grupo. Abaixo está a membresía do grupo.</string>
   
-  <string name="groups_reveal_contacts">Revelar contactos</string>
   <string name="groups_reveal_dialog_message">Podes escoller se revelas os contactos a todos os compoñentes actuais e futuros do grupo.\n\Se revelas os contactos a conexión do grupo será máis rápida e fiable, xa que poderá comunicarse cos contactos revelados incluso se a creadora do grupo non está en liña.</string>
-  <string name="groups_reveal_visible">As relacións dos contactos son visibles para o grupo</string>
   <string name="groups_reveal_visible_revealed_by_us">A relación co contacto é visible para o grupo (revelada por ti)</string>
   <string name="groups_reveal_visible_revealed_by_contact">A relación con contacto é visible para o grupo (revelada por %s)</string>
   <string name="groups_reveal_invisible">A relación co contacto non é visible para o grupo</string>
@@ -325,9 +303,7 @@
   
   <string name="read_more">ler mais</string>
 
-  <string name="change_profile_picture">Toca para cambiar a túa imaxe de perfil</string>
   <string name="dialog_confirm_profile_picture_title">Mudar imaxe de perfil</string>
-  <string name="dialog_confirm_profile_picture_remark">Só os teus contactos poden ver esta foto</string>
   <string name="change_profile_picture_failed_message">Lamentámolo, pero algo fallou cando intentamos actualizar a túa imaxe de pefil</string>
   
   <string name="pref_language_title">Idioma  &amp; rexión</string>
@@ -1027,12 +1003,10 @@
 	<string name="startup_failed_data_too_old_error">A túa conta creouse cunha versión antiga desta aplicación e non se pode abrir con esta versión.\n\nTes que reinstalar a versión antiga ou crear unha conta nova escollendo «Esquecín a miña clave» na pantalla do contrasinal.</string>
 	<string name="startup_failed_data_too_new_error">A túa conta creouse cunha versión máis recente desta aplicación e non se pode abrir con esta versión.\n\nActualiza á última versión e téntao de novo.</string>
 	<string name="startup_failed_service_error">Zerion non puido iniciar un compoñente necesario.\n\nActualiza á última versión da aplicación e téntao de novo.</string>
-	<string name="old_android_delete_account">Podes tocar o botón de abaixo para eliminar a túa conta deste dispositivo.</string>
 	<string name="chats_button">Conversas</string>
 	<string name="chat_type_group">Grupo</string>
 	<string name="chat_type_channel">Canle</string>
 	<string name="no_chats">Aínda non hai conversas</string>
-	<string name="groups_button_add">Engadir grupo novo</string>
 	<string name="channels_button">Canles</string>
 	<string name="channels_list_empty">Aínda non hai canles. Crea a túa propia ou únete a unha cunha ligazón de convite.</string>
 	<string name="channels_action_create">Crear canle</string>
@@ -1248,7 +1222,6 @@
 	<string name="recording_voice">Gravando a mensaxe de voz…</string>
 	<string name="voice_message_error">Fallou a gravación de voz</string>
 	<string name="voice_message_cancelled">Gravación cancelada</string>
-	<string name="slide_to_cancel">← Desliza para cancelar</string>
 	<string name="voice_message_too_short">Mensaxe de voz demasiado curta</string>
 	<string name="voice_message_too_long">Mensaxe de voz demasiado longa. Ten que durar menos de 30 segundos.</string>
 	<string name="microphone_permission_required">Precísase o permiso do micrófono para as mensaxes de voz</string>
@@ -1935,14 +1908,6 @@
 	<string name="video_offer_accept">Aceptar vídeo</string>
 	<string name="video_offer_reject">Rexeitar</string>
 	<string name="camera_permission_required">Precísase o permiso da cámara para as videochamadas</string>
-	<string name="contact_type_selection_title">Escolle o tipo de conexión</string>
-	<string name="contact_type_selection_subtitle">Selecciona como queres conectar co teu contacto</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Seguridade poscuántica</string>
-	<string name="contact_type_zerion_description">Conecta con outra persoa que use Zerion. Cifrado de extremo a extremo resistente á computación cuántica.</string>
-	<string name="contact_type_classic_title">Modo clásico</string>
-	<string name="contact_type_classic_badge">Seguridade clásica</string>
-	<string name="contact_type_classic_description">Conecta usando criptografía clásica. Usa esta opción por compatibilidade con contactos que teñan versións antigas.</string>
 	<string name="recommended">Recomendado</string>
 	<string name="contact_type_info">Escolle Zerion para ter a máxima seguridade ou o Modo clásico por compatibilidade con versións antigas.</string>
 	<string name="voice_call_status_reconnecting">Reconectando…</string>
@@ -2072,11 +2037,6 @@
 	<string name="vault_doc_unsupported_office">Os documentos de Office non se poden ver dentro do cofre seguro.\n\nPara abrir estes ficheiros fan falta aplicacións externas e ficheiros temporais, o que comprometería a seguridade do cofre.\n\nSó podes gardalos, non abrilos.</string>
 	<string name="vault_doc_unsupported_archive">Os ficheiros comprimidos non se poden extraer dentro do cofre seguro.\n\nA extracción crearía ficheiros sen cifrar no disco, o que comprometería a seguridade do cofre.\n\nSó podes gardalos, non extraelos.</string>
 	<string name="vault_doc_unsupported_generic">Este tipo de documento non se pode ver dentro do cofre seguro.\n\nTipo de ficheiro: %1$s\n\nSó podes gardalo, non abrilo.</string>
-	<string name="vault_item_secure_note">Nota segura</string>
-	<string name="vault_item_password_entry">Entrada de contrasinal</string>
-	<string name="vault_item_image">Imaxe • %1$s</string>
-	<string name="vault_item_video">Vídeo • %1$s</string>
-	<string name="vault_item_document">Documento • %1$s</string>
 	<string name="vault_add_to_vault_title">Engadir ao cofre</string>
 	<string name="vault_type_note">Nota</string>
 	<string name="vault_type_image">Imaxe</string>

@@ -46,10 +46,6 @@
   <string name="startup_failed_data_too_old_error">Профилът е създаден с по-ранно издание на приложението и не може да бъде отворен с текущото издание. Или инсталирайте по-ранното издание, или създайте нов профил, избирайки „Забравена парола“ от екрана за вход.</string>
   <string name="startup_failed_data_too_new_error">Профилът е създаден с по-ново издание на приложението и не може да бъде отворен с текущото издание.\n\nОбновете до последно издание и опитайте отново.</string>
   <string name="startup_failed_service_error">Zerion не може да стартира задължителна приставка.\n\nОбновете до последно издание и опитайте отново.</string>
-  <string name="download_zerion">За да продължите да използвате Zerion изтеглете последното издание.</string>
-  <string name="create_new_account">Ще трябва да създадете нов профил, но ще можете да използвате същия прякор.</string>
-  <string name="old_android_delete_account">За да премахнете профила от устройството докоснете бутона отдолу.</string>
-  <string name="delete_account_button">Премахване на профил</string>
   <string name="startup_open_database">Хранилището се дешифрира…</string>
   <string name="startup_migrate_database">Хранилището се обновява…</string>
   <string name="startup_compact_database">Хранилището се уплътнява…</string>
@@ -108,11 +104,9 @@
   <string name="open">Отваряне</string>
   <string name="change">Променяне</string>
   <string name="start">Старт</string>
-  <string name="finish">Край</string>
   <string name="no_data">Няма данни</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">Въведеният текст е твърде дълъг</string>
-  <string name="show_onboarding">Показване на помощен диалог</string>
   <string name="fix">Поправяне</string>
   <string name="help">Помощ</string>
   <string name="sorry">Съжаляваме</string>
@@ -294,21 +288,12 @@
   <string name="groups_group_is_empty">Групата е празна</string>
   <string name="groups_group_is_dissolved">Групата е разпусната</string>
   <string name="groups_remove">Премахване</string>
-  <string name="groups_create_group_title">Създаване на частна група</string>
-  <string name="groups_create_group_button">Създаване на група</string>
   <string name="groups_create_group_invitation_button">Изпращане на покана</string>
-  <string name="groups_create_group_hint">Име на частната група</string>
   <string name="groups_invitation_sent">Поканата за членство в група е изпратена</string>
-  <string name="groups_member_list">Списък с участници</string>
-  <string name="groups_invite_members">Покани за членство</string>
-  <string name="groups_member_created_you">Вие създадохте групата</string>
   <string name="groups_member_created">%s създаде групата</string>
   <string name="groups_member_joined_you">Вие се включихте в групата</string>
-  <string name="groups_member_joined">%s се включи в групата</string>
-  <string name="groups_leave">Напускане на групата</string>
   <string name="groups_leave_dialog_title">Потвърждение на напускане</string>
   <string name="groups_leave_dialog_message">Сигурни ли сте, че желаете да напуснете тази група?</string>
-  <string name="groups_dissolve">Разпускане на група</string>
   <string name="groups_dissolve_dialog_title">Потвърждение на разпускане на група</string>
   <string name="groups_dissolve_dialog_message">Сигурни ли сте, че желаете да разпуснете групата?\n\nОстаналите членове няма да могат да продължат разговорите си и може да не получат последните съобщения.</string>
   <string name="groups_dissolve_button">Разпускане</string>
@@ -317,23 +302,15 @@
   
   <string name="groups_invitations_title">Покани за членство в група</string>
   <string name="groups_invitations_invitation_sent">Поканихте %1$s в групата „%2$s“</string>
-  <string name="groups_invitations_invitation_received">%1$s ви покани в групата „%2$s“.</string>
   <string name="groups_invitations_joined">Включихте се в групата</string>
   <string name="groups_invitations_declined">Отказана покана за присъединяване в група</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d получена покана за членство в група</item>
     <item quantity="other">%d получени покани за членство в група</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Приехте поканата от %s за членство в група.</string>
-  <string name="groups_invitations_response_declined_sent">Отказахте поканата от %s за членство в група.</string>
-  <string name="groups_invitations_response_declined_auto">Поканата от %s за членство в група е отказана автоматично.</string>
-  <string name="groups_invitations_response_accepted_received">%s прие поканата за членство в група.</string>
-  <string name="groups_invitations_response_declined_received">%s отказа поканата за членство в група. </string>
   <string name="sharing_status_groups">Само основателят може да кани нови участници в групата. По-долу е списъкът с текущите участници.</string>
   
-  <string name="groups_reveal_contacts">Разкриване на контакти</string>
   <string name="groups_reveal_dialog_message">Можете да изберете дали да разкриете контактите на всички сегашни и бъдещи членове на групата.\n\nС разкриването им връзката с групата става по-бърза и надеждна, защото общувате с разкритите контакти, даже и основателят на групата да е извън мрежа.</string>
-  <string name="groups_reveal_visible">Отношенията ви с контакта са видими за групата</string>
   <string name="groups_reveal_visible_revealed_by_us">Отношенията ви с контакта са видими за групата (разкрити от вас)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Отношенията ви с контакта са видими за групата (разкрити от %s)</string>
   <string name="groups_reveal_invisible">Отношенията ви с контакта не са видими за групата</string>
@@ -351,9 +328,7 @@
   
   <string name="read_more">повече</string>
 
-  <string name="change_profile_picture">Докоснете за смяна на профилната снимка</string>
   <string name="dialog_confirm_profile_picture_title">Смяна на профилна снимка</string>
-  <string name="dialog_confirm_profile_picture_remark">Само вашите контакти виждат това изображение</string>
   <string name="change_profile_picture_failed_message">Грешка при смяна на профилната снимка</string>
   
   <string name="pref_language_title">Език и регион</string>
@@ -953,7 +928,6 @@
 	<string name="chat_type_group">Група</string>
 	<string name="chat_type_channel">Канал</string>
 	<string name="no_chats">Все още няма разговори</string>
-	<string name="groups_button_add">Добави нова група</string>
 	<string name="channels_button">Канали</string>
 	<string name="channels_list_empty">Все още няма канали. Създай свой или се присъедини към канал чрез линк за покана.</string>
 	<string name="channels_action_create">Създай канал</string>
@@ -1169,7 +1143,6 @@
 	<string name="recording_voice">Записване на гласово съобщение…</string>
 	<string name="voice_message_error">Гласовият запис не бе успешен</string>
 	<string name="voice_message_cancelled">Записът е отменен</string>
-	<string name="slide_to_cancel">← Плъзни за отказ</string>
 	<string name="voice_message_too_short">Гласовото съобщение е твърде кратко</string>
 	<string name="voice_message_too_long">Гласовото съобщение е твърде дълго. Нека е под 30 секунди.</string>
 	<string name="microphone_permission_required">За гласови съобщения е нужно разрешение за микрофона</string>
@@ -1835,14 +1808,6 @@
 	<string name="video_offer_accept">Приеми видеото</string>
 	<string name="video_offer_reject">Откажи</string>
 	<string name="camera_permission_required">За видеообаждания е нужно разрешение за камерата</string>
-	<string name="contact_type_selection_title">Избери тип връзка</string>
-	<string name="contact_type_selection_subtitle">Избери как искаш да се свържеш с контакта си</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Постквантова сигурност</string>
-	<string name="contact_type_zerion_description">Свържи се с друг потребител на Zerion. Квантово устойчиво шифроване от край до край.</string>
-	<string name="contact_type_classic_title">Класически режим</string>
-	<string name="contact_type_classic_badge">Класическа сигурност</string>
-	<string name="contact_type_classic_description">Свързване с класическа криптография. Използвай тази опция за обратна съвместимост с контакти с по-стари версии.</string>
 	<string name="recommended">Препоръчително</string>
 	<string name="contact_type_info">Избери Zerion за максимална сигурност или Класически режим за обратна съвместимост.</string>
 	<string name="voice_call_status_reconnecting">Повторно свързване…</string>
@@ -1972,11 +1937,6 @@
 	<string name="vault_doc_unsupported_office">Офис документите не могат да се разглеждат в защитения трезор.\n\nОтварянето на тези файлове изисква външни приложения и временни файлове, което би нарушило сигурността на трезора.\n\nМожеш само да ги съхраняваш, не и да ги отваряш.</string>
 	<string name="vault_doc_unsupported_archive">Архивните файлове не могат да се разархивират в защитения трезор.\n\nРазархивирането би създало нешифровани файлове на диска, което нарушава сигурността на трезора.\n\nМожеш само да ги съхраняваш, не и да ги разархивираш.</string>
 	<string name="vault_doc_unsupported_generic">Този тип документ не може да се разглежда в защитения трезор.\n\nТип на файла: %1$s\n\nМожеш само да го съхраняваш, не и да го отваряш.</string>
-	<string name="vault_item_secure_note">Защитена бележка</string>
-	<string name="vault_item_password_entry">Запис с парола</string>
-	<string name="vault_item_image">Изображение • %1$s</string>
-	<string name="vault_item_video">Видео • %1$s</string>
-	<string name="vault_item_document">Документ • %1$s</string>
 	<string name="vault_add_to_vault_title">Добавяне в трезора</string>
 	<string name="vault_type_note">Бележка</string>
 	<string name="vault_type_image">Изображение</string>

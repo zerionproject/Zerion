@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Jūsų paskyra buvo sukurta naudojant seną šios programėlės versiją ir negali būti atverta naudojant šią versiją.\n\nJūs privalote arba iš naujo įsidiegti seną versiją, arba nusistatyti naują paskyrą, slaptažodžio užklausos ekrane pasirinkę „Aš pamiršau slaptažodį“.</string>
   <string name="startup_failed_data_too_new_error">Jūsų paskyra buvo sukurta naudojant naujesnę šios programėlės versiją ir negali būti atverta naudojant šią versiją.\n\nAtnaujinkite programėlę į naujausią versiją ir bandykite dar kartą.</string>
   <string name="startup_failed_service_error">Zerion nepavyko paleisti reikiamo komponento.\n\nAtnaujinkite programėlę į naujausią versiją ir bandykite dar kartą.</string>
-  <string name="download_zerion">Norėdami ir toliau naudotis Zerion, atsisiųskite naujausią programos laidą.</string>
-  <string name="create_new_account">Jūs turėsite susikurti paskyrą, tačiau galėsite naudoti tą patį slapyvardį.</string>
-  <string name="old_android_delete_account">Galite bakstelėti ant žemiau esančio mygtuko, norėdami ištrinti paskyrą iš šio įrenginio.</string>
-  <string name="delete_account_button">Ištrinti paskyrą</string>
   <string name="startup_open_database">Iššifruojama duomenų bazė…</string>
   <string name="startup_migrate_database">Naujinama duomenų bazė…</string>
   <string name="startup_compact_database">Suspaudžiama duomenų bazė…</string>
@@ -114,11 +110,9 @@
   <string name="open">Atverti</string>
   <string name="change">Pakeisti</string>
   <string name="start">Pradėti</string>
-  <string name="finish">Užbaigti</string>
   <string name="no_data">Nėra duomenų</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Įvestas tekstas yra per ilgas</string>
-  <string name="show_onboarding">Rodyti pagalbos dialogą</string>
   <string name="fix">Pataisyti</string>
   <string name="help">Pagalba</string>
   <string name="sorry">Atsiprašome</string>
@@ -310,21 +304,12 @@
   <string name="groups_group_is_empty">Ši grupė tuščia</string>
   <string name="groups_group_is_dissolved">Ši grupė išformuota</string>
   <string name="groups_remove">Šalinti</string>
-  <string name="groups_create_group_title">Sukurkite privačią grupę</string>
-  <string name="groups_create_group_button">Sukurti grupę</string>
   <string name="groups_create_group_invitation_button">Siųsti pakvietimą</string>
-  <string name="groups_create_group_hint">Pasirinkite savo privačios grupės pavadinimą</string>
   <string name="groups_invitation_sent">Pakvietimas į grupę išsiųstas</string>
-  <string name="groups_member_list">Narių sąrašas</string>
-  <string name="groups_invite_members">Pakviesti narius</string>
-  <string name="groups_member_created_you">Jūs sukūrėte grupę</string>
   <string name="groups_member_created">%s sukūrė grupę</string>
   <string name="groups_member_joined_you">Jūs prisijungėte prie grupės</string>
-  <string name="groups_member_joined">%s prisijungė prie grupės</string>
-  <string name="groups_leave">Išeiti iš grupės</string>
   <string name="groups_leave_dialog_title">Patvirtinkite išėjimą iš grupės</string>
   <string name="groups_leave_dialog_message">Ar tikrai norite išeiti iš šios grupės?</string>
-  <string name="groups_dissolve">Išformuoti grupę</string>
   <string name="groups_dissolve_dialog_title">Patvirtinkite grupės išformavimą</string>
   <string name="groups_dissolve_dialog_message">Ar tikrai norite išformuoti šią grupę?\n\nVisi kiti nariai nebegalės tęsti savo pokalbio ir gali nebegauti naujausių žinučių.</string>
   <string name="groups_dissolve_button">Išformuoti</string>
@@ -333,7 +318,6 @@
   
   <string name="groups_invitations_title">Pakvietimai į grupę</string>
   <string name="groups_invitations_invitation_sent">Jūs pakvietėte, kad %1$s prisijungtų prie grupės „%2$s“.</string>
-  <string name="groups_invitations_invitation_received">%1$s pakvietė jus prisijungti prie grupės „%2$s“.</string>
   <string name="groups_invitations_joined">Prisijungta prie grupės</string>
   <string name="groups_invitations_declined">Pakvietimas į grupę atmestas</string>
   <plurals name="groups_invitations_open">
@@ -342,16 +326,9 @@
     <item quantity="many">%d atvirų pakvietimų į grupę</item>
     <item quantity="other">%d atviras pakvietimas į grupę</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Jūs priėmėte iš %s pakvietimą į grupę.</string>
-  <string name="groups_invitations_response_declined_sent">Jūs atmetėte iš %s pakvietimą į grupę.</string>
-  <string name="groups_invitations_response_declined_auto">Pakvietimas į grupę nuo %s buvo automatiškai atmestas.</string>
-  <string name="groups_invitations_response_accepted_received">%s priėmė pakvietimą į grupę.</string>
-  <string name="groups_invitations_response_declined_received">%s atmetė pakvietimą į grupę.</string>
   <string name="sharing_status_groups">Tik įkūrėjas gali kviesti naujus narius į grupę. Žemiau yra visi esami grupės nariai.</string>
   
-  <string name="groups_reveal_contacts">Atskleisti adresatus</string>
   <string name="groups_reveal_dialog_message">Galite pasirinkti, ar atskleisti adresatus visiems esamiems ir būsimiems šios grupės nariams.\n\nAdresatų atskleidimas paverčia jūsų ryšį su grupe greitesniu ir labiau patikimu, nes galite bendrauti su atskleistais adresatais netgi tuomet, kai grupės įkūrėjas yra atsijungęs.</string>
-  <string name="groups_reveal_visible">Adresatų sąryšiai yra matomi grupei</string>
   <string name="groups_reveal_visible_revealed_by_us">Adresatų sąryšiai yra matomi grupei (atskleidėte jūs)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Adresatų sąryšiai yra matomi grupei (atskleidė %s)</string>
   <string name="groups_reveal_invisible">Adresatų sąryšiai nėra matomi grupei</string>
@@ -371,9 +348,7 @@
   
   <string name="read_more">skaityti daugiau</string>
 
-  <string name="change_profile_picture">Bakstelėkite norėdami pasikeisti profilio paveikslą</string>
   <string name="dialog_confirm_profile_picture_title">Keisti profilio paveikslą</string>
-  <string name="dialog_confirm_profile_picture_remark">Šį paveikslą gali matyti tik jūsų adresatai</string>
   <string name="change_profile_picture_failed_message">Atleiskite, bet atnaujinant jūsų profilio paveikslą kažkas nutiko</string>
   
   <string name="pref_language_title">Kalba ir regionas</string>
@@ -1093,7 +1068,6 @@
 	<string name="chat_type_group">Grupė</string>
 	<string name="chat_type_channel">Kanalas</string>
 	<string name="no_chats">Pokalbių dar nėra</string>
-	<string name="groups_button_add">Pridėti naują grupę</string>
 	<string name="channels_button">Kanalai</string>
 	<string name="channels_list_empty">Kanalų dar nėra. Sukurkite savo arba prisijunkite prie kanalo per pakvietimo nuorodą.</string>
 	<string name="channels_action_create">Sukurti kanalą</string>
@@ -1309,7 +1283,6 @@
 	<string name="recording_voice">Įrašoma balso žinutė…</string>
 	<string name="voice_message_error">Nepavyko įrašyti balso</string>
 	<string name="voice_message_cancelled">Įrašymas atšauktas</string>
-	<string name="slide_to_cancel">← Perbraukite, kad atšauktumėte</string>
 	<string name="voice_message_too_short">Balso žinutė per trumpa</string>
 	<string name="voice_message_too_long">Balso žinutė per ilga. Ji turi būti trumpesnė nei 30 sekundžių.</string>
 	<string name="microphone_permission_required">Balso žinutėms reikalingas mikrofono leidimas</string>
@@ -1977,14 +1950,6 @@
 	<string name="video_offer_accept">Priimti vaizdą</string>
 	<string name="video_offer_reject">Atmesti</string>
 	<string name="camera_permission_required">Vaizdo skambučiams reikia kameros leidimo</string>
-	<string name="contact_type_selection_title">Pasirinkite ryšio tipą</string>
-	<string name="contact_type_selection_subtitle">Pasirinkite, kaip norite susisiekti su adresatu</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Postkvantinis saugumas</string>
-	<string name="contact_type_zerion_description">Susisiekite su kitu Zerion naudotoju. Ištisinis kvantiniams kompiuteriams atsparus šifravimas.</string>
-	<string name="contact_type_classic_title">Klasikinis režimas</string>
-	<string name="contact_type_classic_badge">Klasikinis saugumas</string>
-	<string name="contact_type_classic_description">Susisiekite naudodami klasikinę kriptografiją. Rinkitės šią parinktį dėl suderinamumo su adresatais, naudojančiais senesnes versijas.</string>
 	<string name="recommended">Rekomenduojama</string>
 	<string name="contact_type_info">Rinkitės Zerion, jei norite didžiausio saugumo, arba „Klasikinį režimą“, jei reikia suderinamumo su senesnėmis versijomis.</string>
 	<string name="voice_call_status_reconnecting">Jungiamasi iš naujo…</string>
@@ -2114,11 +2079,6 @@
 	<string name="vault_doc_unsupported_office">Office dokumentų negalima peržiūrėti apsaugotoje saugykloje.\n\nNorint atverti šiuos failus, reikia išorinių programėlių ir laikinųjų failų, o tai pakenktų saugyklos saugumui.\n\nJuos galite tik laikyti, bet ne atverti.</string>
 	<string name="vault_doc_unsupported_archive">Archyvų failų negalima išskleisti apsaugotoje saugykloje.\n\nIšskleidžiant diske būtų sukurti nešifruoti failai, o tai pakenktų saugyklos saugumui.\n\nJuos galite tik laikyti, bet ne išskleisti.</string>
 	<string name="vault_doc_unsupported_generic">Šio tipo dokumentų negalima peržiūrėti apsaugotoje saugykloje.\n\nFailo tipas: %1$s\n\nJį galite tik laikyti, bet ne atverti.</string>
-	<string name="vault_item_secure_note">Saugus užrašas</string>
-	<string name="vault_item_password_entry">Slaptažodžio įrašas</string>
-	<string name="vault_item_image">Atvaizdas • %1$s</string>
-	<string name="vault_item_video">Vaizdo įrašas • %1$s</string>
-	<string name="vault_item_document">Dokumentas • %1$s</string>
 	<string name="vault_add_to_vault_title">Pridėti į saugyklą</string>
 	<string name="vault_type_note">Užrašas</string>
 	<string name="vault_type_image">Atvaizdas</string>

@@ -34,7 +34,6 @@
   <string name="startup_failed_data_too_old_error">Sinun tili luotiin vanhalla versiolla eikä sitä voida avata tällä versiolla. Sinun täytyy joko asentaa vanha versio uudelleen tai luoda uusi tili valitsemalla \'Olen unohtanut salasanani\' kun sinulta kysytään salasanaa.</string>
   <string name="startup_failed_data_too_new_error">Tämän sovelluksen versio on liian vanha. Päivitä viimeisimpään versioon ja yritä uudelleen.</string>
   <string name="startup_failed_service_error">Zerion ei kyennyt käynnistämään vaadittua liitännäistä. Zerionin uudelleenasennus yleensä korjaa ongelman. Huomaa kuitenkin, että tulet menettämään tilisi ja kaikki siihen liittyvä data koska Zerion ei käytä palvelimia sinun tietojesi säilyttämiseen.</string>
-  <string name="create_new_account">Sinun täytyy luoda uusi tili, mutta voit käyttää samaa tunnusta.</string>
   <string name="startup_open_database">Puretaan tietokannan salaus...</string>
   <string name="startup_migrate_database">Päivitetään tietokanta...</string>
   
@@ -81,7 +80,6 @@
   <string name="no_data">Ei dataa</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Kirjoitettu teksti on liian pitkä</string>
-  <string name="show_onboarding">Näytä apudialogi</string>
   <string name="fix">Korjaa</string>
   <string name="help">Ohje</string>
   <string name="sorry">Pahoittelemme</string>
@@ -155,21 +153,12 @@
   <string name="groups_group_is_empty">Tämä ryhmä on tyhjä</string>
   <string name="groups_group_is_dissolved">Tämä ryhmä on hajautettu</string>
   <string name="groups_remove">Poista</string>
-  <string name="groups_create_group_title">Luo yksityinen ryhmä</string>
-  <string name="groups_create_group_button">Luo ryhmä</string>
   <string name="groups_create_group_invitation_button">Lähetä kutsu</string>
-  <string name="groups_create_group_hint">Valitse nimi yksityiselle ryhmällesi</string>
   <string name="groups_invitation_sent">Ryhmäkutsu on lähetetty</string>
-  <string name="groups_member_list">Jäsenluettelo</string>
-  <string name="groups_invite_members">Kutsu jäseniä</string>
-  <string name="groups_member_created_you">Sinä loit ryhmän</string>
   <string name="groups_member_created">%s loi ryhmän</string>
   <string name="groups_member_joined_you">Olet liittynyt ryhmään</string>
-  <string name="groups_member_joined">%s liittyi ryhmään</string>
-  <string name="groups_leave">Lähde ryhmästä</string>
   <string name="groups_leave_dialog_title">Vahvista ryhmästä lähtö</string>
   <string name="groups_leave_dialog_message">Oletko varma, että haluat lähteä tästä ryhmästä?</string>
-  <string name="groups_dissolve">Hajauta ryhmä</string>
   <string name="groups_dissolve_dialog_title">Vahvista ryhmän hajauttaminen</string>
   <string name="groups_dissolve_dialog_message">Oletko varma, että haluat hajauttaa tämän ryhmän?\n\nRyhmän muut jäsenet eivät sen jälkeen voi enää jatkaa ryhmäkeskustelua eivätkä välttämättä tule saamaan viimeisimpiä viestejä.</string>
   <string name="groups_dissolve_button">Hajauta</string>
@@ -178,22 +167,15 @@
   
   <string name="groups_invitations_title">Ryhmäkutsut</string>
   <string name="groups_invitations_invitation_sent">Olet kutsunut käyttäjän %1$s mukaan ryhmään \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s on kutsunut sinut mukaan ryhmään \"%2$s\".</string>
   <string name="groups_invitations_joined">Liittyi ryhmään</string>
   <string name="groups_invitations_declined">Kutsu liittyä ryhmään on hylätty</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d avoin ryhmäkutsu</item>
     <item quantity="other">%d avointa ryhmäkutsua</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Olet hyväksynyt käyttäjän %s lähettämän ryhmäkutsun.</string>
-  <string name="groups_invitations_response_declined_sent">Olet kieltäytynyt käyttäjän %s lähettämästä ryhmäkutsusta.</string>
-  <string name="groups_invitations_response_accepted_received">%s hyväksyi ryhmäkutsun.</string>
-  <string name="groups_invitations_response_declined_received">%s kieltäytyi ryhmäkutsusta.</string>
   <string name="sharing_status_groups">Vain ryhmäkeskustelun aloittaja voi pyytää uusia jäseniä mukaan ryhmään. Alla ovat kaikki ryhmän nykyiset jäsenet.</string>
   
-  <string name="groups_reveal_contacts">Näytä yhteystiedot</string>
   <string name="groups_reveal_dialog_message">Voit valita haluatko paljastaa yhteytesi muihin käyttäjiin tämän ryhmän nykyisille ja tuleville jäsenille.\n\nKäyttäjä yhteyksien paljastaminen tekee yhteydestä nopeamman ja luotettavamman, koska voit pitää yhteyttä muihin käyttäjiin myös silloin kun ryhmän aloittaja on poissa verkosta.</string>
-  <string name="groups_reveal_visible">Yhteys käyttäjään on näkyvissä ryhmän jäsenille</string>
   <string name="groups_reveal_visible_revealed_by_us">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (sinun paljastamana)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (käyttäjän %s paljastamana)</string>
   <string name="groups_reveal_invisible">Yhteys käyttäjään ei ole näkyvissä ryhmän jäsenille</string>
@@ -888,15 +870,11 @@
 	<string name="dialog_button_understand">Ymmärrän</string>
 	<string name="startup_failed_clock_error">Zerion ei voinut käynnistyä, koska laitteesi kello on väärässä.\n\nAseta laitteesi kello oikeaan aikaan ja yritä uudelleen.</string>
 	<string name="startup_failed_database_corrupt">Tietokantasi on vioittunut, eikä sitä voi palauttaa.\n\nTurvallisuutesi vuoksi Zerion ei säilytä varmuuskopioita tiedoistasi. Sinun täytyy luoda uusi tili valitsemalla ”Olen unohtanut salasanani”, kun sinulta kysytään salasanaa.\n\nNäin voi käydä odottamattoman sammumisen tai tallennustilan vian jälkeen.</string>
-	<string name="download_zerion">Jos haluat jatkaa Zerionin käyttöä, lataa uusin julkaisu.</string>
-	<string name="old_android_delete_account">Voit poistaa tilisi tältä laitteelta napauttamalla alla olevaa painiketta.</string>
-	<string name="delete_account_button">Poista tili</string>
 	<string name="startup_compact_database">Tiivistetään tietokantaa…</string>
 	<string name="chats_button">Keskustelut</string>
 	<string name="chat_type_group">Ryhmä</string>
 	<string name="chat_type_channel">Kanava</string>
 	<string name="no_chats">Ei vielä keskusteluja</string>
-	<string name="groups_button_add">Lisää uusi ryhmä</string>
 	<string name="channels_button">Kanavat</string>
 	<string name="channels_list_empty">Ei vielä kanavia. Luo oma kanava tai liity kanavaan kutsulinkillä.</string>
 	<string name="channels_action_create">Luo kanava</string>
@@ -1123,7 +1101,6 @@
 	<string name="recording_voice">Tallennetaan ääniviestiä…</string>
 	<string name="voice_message_error">Äänen tallennus epäonnistui</string>
 	<string name="voice_message_cancelled">Tallennus peruttu</string>
-	<string name="slide_to_cancel">← Peruuta pyyhkäisemällä</string>
 	<string name="voice_message_too_short">Ääniviesti on liian lyhyt</string>
 	<string name="voice_message_too_long">Ääniviesti on liian pitkä. Pidä se alle 30 sekunnin mittaisena.</string>
 	<string name="microphone_permission_required">Ääniviestit vaativat mikrofonin käyttöoikeuden</string>
@@ -1200,7 +1177,6 @@
 	<string name="call_rejected_peer_disabled_video_hint">Äänipuhelut ovat hänellä sallittuja. Kokeile sen sijaan äänipuhelua.</string>
 	<string name="record_voice_message">Tallenna ääniviesti</string>
 	<string name="start">Aloita</string>
-	<string name="finish">Valmis</string>
 	<string name="error_start_activity">Ei käytettävissä järjestelmässäsi</string>
 	<string name="status_heading">Tila:</string>
 	<string name="error">Virhe</string>
@@ -1549,14 +1525,11 @@
 	<string name="peer_trust_level_ourselves">Minä</string>
 	<string name="peer_trust_level_stranger">Tuntematon</string>
 	<string name="introduction_response_declined_auto">Esittely käyttäjälle %1$s hylättiin automaattisesti.</string>
-	<string name="groups_invitations_response_declined_auto">Käyttäjän %s lähettämä ryhmäkutsu hylättiin automaattisesti.</string>
 	<string name="reblog_button">Jaa uudelleen</string>
 	<string name="share_message">Jaa viestin kanssa</string>
 	<string name="share_hint_short">Lisää viesti (valinnainen)</string>
 	<string name="invitation_exists">Kutsu on jo lähetetty</string>
-	<string name="change_profile_picture">Napauta vaihtaaksesi profiilikuvasi</string>
 	<string name="dialog_confirm_profile_picture_title">Vaihda profiilikuva</string>
-	<string name="dialog_confirm_profile_picture_remark">Vain yhteystietosi näkevät tämän kuvan</string>
 	<string name="change_profile_picture_failed_message">Pahoittelemme, profiilikuvasi päivittämisessä tapahtui virhe</string>
 	<string name="pref_language_changed">Sovellus latautuu uudelleen, jotta uusi kieli tulee käyttöön.</string>
 	<string name="invite_friends_title">Kutsu ystäviä</string>
@@ -1915,14 +1888,6 @@
 	<string name="video_offer_accept">Hyväksy video</string>
 	<string name="video_offer_reject">Hylkää</string>
 	<string name="camera_permission_required">Videopuhelut vaativat kameran käyttöoikeuden</string>
-	<string name="contact_type_selection_title">Valitse yhteyden tyyppi</string>
-	<string name="contact_type_selection_subtitle">Valitse, miten haluat muodostaa yhteyden yhteystietoosi</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Kvanttiturvallinen suojaus</string>
-	<string name="contact_type_zerion_description">Muodosta yhteys toiseen Zerion-käyttäjään. Kvanttiturvallinen päästä päähän -salaus.</string>
-	<string name="contact_type_classic_title">Klassinen tila</string>
-	<string name="contact_type_classic_badge">Klassinen suojaus</string>
-	<string name="contact_type_classic_description">Muodosta yhteys klassisella kryptografialla. Käytä tätä vaihtoehtoa yhteensopivuuteen vanhempia versioita käyttävien yhteystietojen kanssa.</string>
 	<string name="recommended">Suositeltu</string>
 	<string name="contact_type_info">Valitse Zerion, kun haluat parhaan suojauksen, tai Klassinen tila yhteensopivuuteen vanhempien versioiden kanssa.</string>
 	<string name="voice_call_status_reconnecting">Yhdistetään uudelleen…</string>
@@ -2052,11 +2017,6 @@
 	<string name="vault_doc_unsupported_office">Office-asiakirjoja ei voi katsella suojatun holvin sisällä.\n\nNäiden tiedostojen avaaminen vaatii ulkoisia sovelluksia ja väliaikaisia tiedostoja, mikä vaarantaisi holvin turvallisuuden.\n\nVoit vain säilyttää niitä, et avata niitä.</string>
 	<string name="vault_doc_unsupported_archive">Arkistotiedostoja ei voi purkaa suojatun holvin sisällä.\n\nPurkaminen loisi levylle salaamattomia tiedostoja, mikä vaarantaisi holvin turvallisuuden.\n\nVoit vain säilyttää niitä, et purkaa niitä.</string>
 	<string name="vault_doc_unsupported_generic">Tätä asiakirjatyyppiä ei voi katsella suojatun holvin sisällä.\n\nTiedostotyyppi: %1$s\n\nVoit vain säilyttää sitä, et avata sitä.</string>
-	<string name="vault_item_secure_note">Suojattu muistiinpano</string>
-	<string name="vault_item_password_entry">Salasanamerkintä</string>
-	<string name="vault_item_image">Kuva • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Asiakirja • %1$s</string>
 	<string name="vault_add_to_vault_title">Lisää holviin</string>
 	<string name="vault_type_note">Muistiinpano</string>
 	<string name="vault_type_image">Kuva</string>

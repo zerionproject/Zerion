@@ -43,10 +43,6 @@
   <string name="startup_failed_data_too_old_error">حساب کاربری شما با نسخه قدیمی این برنامه ساخته شده و در این نسخه قابل باز شدن نیست.\n\n شما یا باید نسخه قبلی را دوباره نصب کنید و یا هنگام وارد کردن رمز عبور، با انتخاب «رمز خود را فراموش کرده‌ام» حساب جدیدی ایجاد کنید.</string>
   <string name="startup_failed_data_too_new_error">حساب کاربری شما با نسخه جدیدتر این برنامه ساخته شده و در این نسخه قابل باز شدن نیست.\n\n لطفا به آخرین نسخه ارتقا داده و دوباره امتحان کنید.</string>
   <string name="startup_failed_service_error">Zerion قادر به آغاز اجزای مورد نیاز نیست.\n\n لطفا به آخرین نسخه برنامه ارتقا داده و دوباره امتحان کنید.</string>
-  <string name="download_zerion">برای ادامه استفاده از Zerion، لطفا آخرین نسخه را دانلود کنید.</string>
-  <string name="create_new_account">لازم است تا یک حساب کاربری جدید ایجاد کنید، ولی می توانید از همان نام مستعار استفاده کنید.</string>
-  <string name="old_android_delete_account">برای حذف حساب کاربری خود از این دستگاه می‌توانید روی دکمه زیر ضربه بزنید.</string>
-  <string name="delete_account_button">حذف حساب کاربری</string>
   <string name="startup_open_database">در حال رمزگشایی سیستم ...</string>
   <string name="startup_migrate_database">در حال ارتقا سیستم ...</string>
   <string name="startup_compact_database">درحال فشرده‌ سازی پایگاه داده...</string>
@@ -105,11 +101,9 @@
   <string name="open">باز کردن</string>
   <string name="change">تغییر</string>
   <string name="start">آغاز</string>
-  <string name="finish">پایان</string>
   <string name="no_data">داده ای موجود نمی باشد</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">متن وارد شده بیش از حد طولانی می باشد</string>
-  <string name="show_onboarding">نمایش پنجره راهنما</string>
   <string name="fix">اصلاح</string>
   <string name="help">راهنما</string>
   <string name="sorry">پوزش</string>
@@ -290,43 +284,26 @@
   <string name="groups_group_is_empty">این گروه خالی می باشد</string>
   <string name="groups_group_is_dissolved">این گروه منحل شده است</string>
   <string name="groups_remove">حذف</string>
-  <string name="groups_create_group_title">ایجاد گروه خصوصی</string>
-  <string name="groups_create_group_button">ایجاد گروه</string>
   <string name="groups_create_group_invitation_button">ارسال دعوت نامه</string>
-  <string name="groups_create_group_hint">یک نام برای گروه شخصی خود انتخاب کنید</string>
   <string name="groups_invitation_sent">دعوت نامه گروه فرستاده شد</string>
-  <string name="groups_member_list">لیست اعضا</string>
-  <string name="groups_invite_members">دعوت اعضا</string>
-  <string name="groups_member_created_you">شما گروه را ایجاد کردید</string>
   <string name="groups_member_created">%s گروه را ایجاد کرد</string>
   <string name="groups_member_joined_you">شما به عضویت گروه درآمدید</string>
-  <string name="groups_member_joined">%sعضو گروه شد</string>
-  <string name="groups_leave">ترک گروه</string>
   <string name="groups_leave_dialog_title">تایید ترک گروه</string>
   <string name="groups_leave_dialog_message">مطمئن هستید که میخواهید این گروه را ترک کنید؟</string>
-  <string name="groups_dissolve">انحلال گروه</string>
   <string name="groups_dissolve_dialog_title">تایید انحلال گروه</string>
   <string name="groups_dissolve_button">انحلال</string>
   <string name="groups_dissolved_dialog_title">گروه منحل شد</string>
   
   <string name="groups_invitations_title">دعوت نامه های گروه</string>
   <string name="groups_invitations_invitation_sent">شما %1$s را برای عضویت به گروه \"%2$s\" دعوت کردید.</string>
-  <string name="groups_invitations_invitation_received">%1$s شما را دعوت کرده تا عضو گروه \"%2$s\" شوید.</string>
   <string name="groups_invitations_joined">عضو گروه شد</string>
   <string name="groups_invitations_declined">دعوت نامه گروه رد شد</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d دعوتنامه سرگشاده</item>
     <item quantity="other">%d دعوت نامه سرگشاده</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">شما دعوت نامه گروه از %s را پذیرفتید.</string>
-  <string name="groups_invitations_response_declined_sent">شما دعوت نامه گروه از %s را رد کردید.</string>
-  <string name="groups_invitations_response_declined_auto">دعوت به گروه از %s به صورت خودکار رد شد.</string>
-  <string name="groups_invitations_response_accepted_received">%sدعوت نامه گروه را پذیرفت.</string>
-  <string name="groups_invitations_response_declined_received">%s دعوت نامه گروه را رد کرد.</string>
   <string name="sharing_status_groups">فقط سازنده گروه می تواند اعضای جدید را به گروه دعوت کند. در پایین تمام اعضای فعلی گروه آمده است.</string>
   
-  <string name="groups_reveal_contacts">نشان دادن مخاطبان</string>
-  <string name="groups_reveal_visible">ارتباط مخاطب برای گروه قابل دیدن می باشد</string>
   <string name="groups_reveal_visible_revealed_by_us">ارتباط مخاطب برای گروه قابل دیدن می باشد (آشکار شده توسط شما)</string>
   <string name="groups_reveal_visible_revealed_by_contact">ارتباط مخاطب برای گروه قابل یدن می باشد (آشکار شده توسط %s)</string>
   <string name="groups_reveal_invisible">ارتباط مخاطب برای گروه قابل دیدن نمی باشد</string>
@@ -346,9 +323,7 @@
 
   
 
-  <string name="change_profile_picture">برای تغییر تصویر نمایه خود اینجا را لمس کنید.</string>
   <string name="dialog_confirm_profile_picture_title">تغییر تصویر نمایه</string>
-  <string name="dialog_confirm_profile_picture_remark">تنها مخاطبین شما می‌توانند این تصویر را مشاهده کنند.</string>
   <string name="change_profile_picture_failed_message">تاسفیم اما هنگام بروزرسانی تصویر نمایه شما مشکلی رخ داد.</string>
   
   <string name="pref_language_title">زبان و منطقه</string>
@@ -954,7 +929,6 @@
 	<string name="chat_type_group">گروه</string>
 	<string name="chat_type_channel">کانال</string>
 	<string name="no_chats">هنوز گفتگویی وجود ندارد</string>
-	<string name="groups_button_add">افزودن گروه جدید</string>
 	<string name="channels_button">کانال‌ها</string>
 	<string name="channels_list_empty">هنوز کانالی ندارید. کانال خودتان را بسازید یا از طریق پیوند دعوت به یک کانال بپیوندید.</string>
 	<string name="channels_action_create">ساخت کانال</string>
@@ -1170,7 +1144,6 @@
 	<string name="recording_voice">در حال ضبط پیام صوتی…</string>
 	<string name="voice_message_error">ضبط صدا ناموفق بود</string>
 	<string name="voice_message_cancelled">ضبط لغو شد</string>
-	<string name="slide_to_cancel">← برای لغو بکشید</string>
 	<string name="voice_message_too_short">پیام صوتی خیلی کوتاه است</string>
 	<string name="voice_message_too_long">پیام صوتی خیلی طولانی است. آن را کوتاه‌تر از ۳۰ ثانیه نگه دارید.</string>
 	<string name="microphone_permission_required">برای پیام‌های صوتی، مجوز میکروفون لازم است</string>
@@ -1843,14 +1816,6 @@
 	<string name="video_offer_accept">پذیرفتن ویدیو</string>
 	<string name="video_offer_reject">رد کردن</string>
 	<string name="camera_permission_required">برای تماس تصویری، اجازه دسترسی به دوربین لازم است</string>
-	<string name="contact_type_selection_title">انتخاب نوع اتصال</string>
-	<string name="contact_type_selection_subtitle">انتخاب کنید که چگونه می‌خواهید با مخاطب خود ارتباط برقرار کنید</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">امنیت پساکوانتومی</string>
-	<string name="contact_type_zerion_description">با یک کاربر دیگر Zerion ارتباط برقرار کنید. رمزگذاری سرتاسری مقاوم در برابر کوانتوم.</string>
-	<string name="contact_type_classic_title">حالت کلاسیک</string>
-	<string name="contact_type_classic_badge">امنیت کلاسیک</string>
-	<string name="contact_type_classic_description">با استفاده از رمزنگاری کلاسیک ارتباط برقرار کنید. از این گزینه برای سازگاری با مخاطبانی که از نسخه‌های قدیمی‌تر استفاده می‌کنند بهره بگیرید.</string>
 	<string name="recommended">پیشنهادی</string>
 	<string name="contact_type_info">برای حداکثر امنیت، Zerion را انتخاب کنید، یا برای سازگاری با نسخه‌های قدیمی‌تر، حالت کلاسیک را.</string>
 	<string name="voice_call_status_reconnecting">در حال اتصال دوباره…</string>
@@ -1980,11 +1945,6 @@
 	<string name="vault_doc_unsupported_office">سندهای Office را نمی‌توان داخل گاوصندوق امن مشاهده کرد.\n\nباز کردن این فایل‌ها به برنامه‌های خارجی و فایل‌های موقت نیاز دارد که امنیت گاوصندوق را به خطر می‌اندازد.\n\nفقط می‌توانید آن‌ها را نگهداری کنید، نه باز کنید.</string>
 	<string name="vault_doc_unsupported_archive">فایل‌های فشرده را نمی‌توان داخل گاوصندوق امن استخراج کرد.\n\nاستخراج، فایل‌هایی رمزگذاری‌نشده روی حافظه دستگاه می‌سازد و امنیت گاوصندوق را به خطر می‌اندازد.\n\nفقط می‌توانید آن‌ها را نگهداری کنید، نه استخراج کنید.</string>
 	<string name="vault_doc_unsupported_generic">این نوع سند را نمی‌توان داخل گاوصندوق امن مشاهده کرد.\n\nنوع فایل: %1$s\n\nفقط می‌توانید آن را نگهداری کنید، نه باز کنید.</string>
-	<string name="vault_item_secure_note">یادداشت امن</string>
-	<string name="vault_item_password_entry">مورد رمز عبور</string>
-	<string name="vault_item_image">تصویر • %1$s</string>
-	<string name="vault_item_video">ویدیو • %1$s</string>
-	<string name="vault_item_document">سند • %1$s</string>
 	<string name="vault_add_to_vault_title">افزودن به گاوصندوق</string>
 	<string name="vault_type_note">یادداشت</string>
 	<string name="vault_type_image">تصویر</string>

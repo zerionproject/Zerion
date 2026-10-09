@@ -49,10 +49,6 @@
   <string name="startup_failed_data_too_new_error">Llogaria juaj qe krijuar me një version më të ri të këtij aplikacioni 
 dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versionin më të ri dhe riprovoni.</string>
   <string name="startup_failed_service_error">Zerion-i nuk arriti të nisë një përbërës të domosdoshëm.\n\nJu lutemi, përmirësojeni me versionin më të ri të aplikacionit dhe riprovoni.</string>
-  <string name="download_zerion">Që të vazhdoni të përdorni Zerion-in, ju lutemi shkarkoni versionin më të ri.</string>
-  <string name="create_new_account">Do t’ju duhet të krijoni një llogari të re, por mund të përdorni të njëjtën nofkë.</string>
-  <string name="old_android_delete_account">Mund të prekni butonin më poshtë që të fshini llogarinë tuaj prej kësaj pajisjeje.</string>
-  <string name="delete_account_button">Fshi Llogarinë</string>
   <string name="startup_open_database">Po shfshehtëzohet Baza e të Dhënave…</string>
   <string name="startup_migrate_database">Po përditësohet Baza e të dhënave…</string>
   <string name="startup_compact_database">Po kompaktësohet Baza e të Dhënave…</string>
@@ -111,11 +107,9 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="open">Hape</string>
   <string name="change">Ndryshoje</string>
   <string name="start">Nise</string>
-  <string name="finish">Përfundoje</string>
   <string name="no_data">S\’ka të dhëna</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Teksti i dhënë është shumë i gjatë</string>
-  <string name="show_onboarding">Shfaq Dialog Ndihme</string>
   <string name="fix">Ndreqeni</string>
   <string name="help">Ndihmë</string>
   <string name="sorry">Na ndjeni</string>
@@ -297,21 +291,12 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="groups_group_is_empty">Ky grup është i zbrazët</string>
   <string name="groups_group_is_dissolved">Ky grup është shkrirë</string>
   <string name="groups_remove">Hiqe</string>
-  <string name="groups_create_group_title">Krijoni Grup Privat</string>
-  <string name="groups_create_group_button">Krijoje Grupin</string>
   <string name="groups_create_group_invitation_button">Dërgoje Ftesën</string>
-  <string name="groups_create_group_hint">Zgjidhni një emër për grupin tuaj privat</string>
   <string name="groups_invitation_sent">Ftesa e grupit u dërgua</string>
-  <string name="groups_member_list">Listë Anëtarësh</string>
-  <string name="groups_invite_members">Ftoni Anëtarë</string>
-  <string name="groups_member_created_you">E krijuat grupin</string>
   <string name="groups_member_created">%s krijoi grupin</string>
   <string name="groups_member_joined_you">U bëtë pjesë e grupit</string>
-  <string name="groups_member_joined">%s u bë pjesë e grupit</string>
-  <string name="groups_leave">Braktiseni Grupin</string>
   <string name="groups_leave_dialog_title">Ripohoni Braktisjen e Grupit</string>
   <string name="groups_leave_dialog_message">Jeni i sigurt se doni ta braktisni këtë grup?</string>
-  <string name="groups_dissolve">Shkrijeni Grupin</string>
   <string name="groups_dissolve_dialog_title">Ripohoni Shkrirjen e Grupit</string>
   <string name="groups_dissolve_dialog_message">Jeni i sigurt se doni të shkrihet ky grup?\n\nKrejt anëtarët e tjerë s\’do të jenë në gjendje të vazhdojnë bisedat e tyre dhe mundet të mos i marrin mesazhet më të rinj.</string>
   <string name="groups_dissolve_button">Shkrije</string>
@@ -320,23 +305,15 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   
   <string name="groups_invitations_title">Ftesa Grupi</string>
   <string name="groups_invitations_invitation_sent">Keni ftuar %1$s të bëhet pjesë e grupit \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s ju ka ftuar të bëheni pjesë e grupit \"%2$s\".</string>
   <string name="groups_invitations_joined">U bëtë pjesë e grupit</string>
   <string name="groups_invitations_declined">Ftesa për në grup u hodh poshtë</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d ftesë grupi e hapur</item>
     <item quantity="other">%d ftesa grupi të hapura</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Pranuat ftesën e grupit nga %s.</string>
-  <string name="groups_invitations_response_declined_sent">Hodhët poshtë ftesën për në grup nga %s.</string>
-  <string name="groups_invitations_response_declined_auto">Ftesa e grupit nga %s u hodh poshtë automatikisht.</string>
-  <string name="groups_invitations_response_accepted_received">%s e pranoi ftesën e grupit.</string>
-  <string name="groups_invitations_response_declined_received">%s e hodhi poshtë ftesën për në grup.</string>
   <string name="sharing_status_groups">Vetëm krijuesi mund të ftojë anëtarë të rinj në grup. Më poshtë gjenden tërë anëtarët e tanishëm të grupit.</string>
   
-  <string name="groups_reveal_contacts">Shfaqua Kontaktet</string>
   <string name="groups_reveal_dialog_message">Mund të zgjidhni t\’ua shfaqni ose jo kontaktet krejt anëtarëve të tanishëm dhe të ardhshëm të këtij grupi.\n\nShfaqja e kontakteve e bën lidhjen tuaj me grupin më të shpejtë dhe më të besueshme, ngaqë mund të komunikoni me kontaktet e shfaqura edhe kur krijuesi i grupit s\’është në linjë.</string>
-  <string name="groups_reveal_visible">Marrëdhënia e kontaktit është e dukshme për grupin</string>
   <string name="groups_reveal_visible_revealed_by_us">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga ju)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga %s)</string>
   <string name="groups_reveal_invisible">Marrëdhënia me kontaktin s\’është e dukshme për grupin</string>
@@ -354,9 +331,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   
   <string name="read_more">lexoni më tepër</string>
 
-  <string name="change_profile_picture">Që të ndryshoni foton e profilit tuaj, prekeni</string>
   <string name="dialog_confirm_profile_picture_title">Ndryshoni foto profili</string>
-  <string name="dialog_confirm_profile_picture_remark">Këtë foto mund ta shohin vetëm kontaktet tuaja</string>
   <string name="change_profile_picture_failed_message">Na ndjeni, por diç shkoi ters me përditësimin e fotos së profilit tuaj</string>
   
   <string name="pref_language_title">Gjuhë &amp; rajon</string>
@@ -1060,7 +1035,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="chat_type_group">Grup</string>
 	<string name="chat_type_channel">Kanal</string>
 	<string name="no_chats">Ende s\'ka biseda</string>
-	<string name="groups_button_add">Shto grup të ri</string>
 	<string name="channels_button">Kanale</string>
 	<string name="channels_list_empty">Ende s\'ka kanale. Krijo kanalin tënd ose bashkohu me një kanal përmes një lidhjeje ftese.</string>
 	<string name="channels_action_create">Krijo kanal</string>
@@ -1276,7 +1250,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="recording_voice">Po regjistrohet mesazhi zanor…</string>
 	<string name="voice_message_error">Regjistrimi i zërit dështoi</string>
 	<string name="voice_message_cancelled">Regjistrimi u anulua</string>
-	<string name="slide_to_cancel">← Rrëshqit për ta anuluar</string>
 	<string name="voice_message_too_short">Mesazhi zanor është shumë i shkurtër</string>
 	<string name="voice_message_too_long">Mesazhi zanor është shumë i gjatë. Mbaje nën 30 sekonda.</string>
 	<string name="microphone_permission_required">Për mesazhet zanore nevojitet leje për mikrofonin</string>
@@ -1942,14 +1915,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="video_offer_accept">Prano videon</string>
 	<string name="video_offer_reject">Refuzo</string>
 	<string name="camera_permission_required">Për thirrjet video kërkohet leja e kamerës</string>
-	<string name="contact_type_selection_title">Zgjidh llojin e lidhjes</string>
-	<string name="contact_type_selection_subtitle">Zgjidh si do të lidhesh me kontaktin tënd</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Siguri post-kuantike</string>
-	<string name="contact_type_zerion_description">Lidhu me një përdorues tjetër të Zerion-it. Fshehtëzim post-kuantik skaj-më-skaj.</string>
-	<string name="contact_type_classic_title">Mënyra klasike</string>
-	<string name="contact_type_classic_badge">Siguri klasike</string>
-	<string name="contact_type_classic_description">Lidhu duke përdorur kriptografi klasike. Përdore këtë mundësi për përputhshmëri me kontaktet që kanë versione më të vjetra.</string>
 	<string name="recommended">Rekomandohet</string>
 	<string name="contact_type_info">Zgjidh Zerion për siguri maksimale ose Mënyrën klasike për përputhshmëri me versionet e vjetra.</string>
 	<string name="voice_call_status_reconnecting">Po rilidhet…</string>
@@ -2079,11 +2044,6 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_doc_unsupported_office">Dokumentet Office nuk mund të shihen brenda kasafortës së sigurt.\n\nHapja e këtyre skedarëve kërkon aplikacione të jashtme dhe skedarë të përkohshëm, gjë që do ta cenonte sigurinë e kasafortës.\n\nMund vetëm t\'i ruash, jo t\'i hapësh.</string>
 	<string name="vault_doc_unsupported_archive">Skedarët arkivë nuk mund të shpaketohen brenda kasafortës së sigurt.\n\nShpaketimi do të krijonte skedarë të pafshehtëzuar në disk, duke cenuar sigurinë e kasafortës.\n\nMund vetëm t\'i ruash, jo t\'i shpaketosh.</string>
 	<string name="vault_doc_unsupported_generic">Ky lloj dokumenti nuk mund të shihet brenda kasafortës së sigurt.\n\nLloji i skedarit: %1$s\n\nMund vetëm ta ruash, jo ta hapësh.</string>
-	<string name="vault_item_secure_note">Shënim i sigurt</string>
-	<string name="vault_item_password_entry">Zë fjalëkalimi</string>
-	<string name="vault_item_image">Figurë • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Dokument • %1$s</string>
 	<string name="vault_add_to_vault_title">Shto në kasafortë</string>
 	<string name="vault_type_note">Shënim</string>
 	<string name="vault_type_image">Figurë</string>

@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Il tuo account è stato creato con una vecchia versione dell\'app e non può essere aperto in questa versione.\n\nDevi reinstallare la vecchia versione oppure configurare un nuovo account scegliendo \'Ho dimenticato la password\' quando richiesto.</string>
   <string name="startup_failed_data_too_new_error">Il tuo account è stato creato con una versione più recente dell\'app e non può esere aperto in questa versione.\n\nAggiorna all\'ultima versione e riprova.</string>
   <string name="startup_failed_service_error">Zerion non ha potuto avviare un componente necessario.\n\nAggiorna all\'ultima versione dell\'app e riprova.</string>
-  <string name="download_zerion">Per continuare a utilizzare Zerion, scarica l\'ultima versione.</string>
-  <string name="create_new_account">Avrai bisogno di creare un nuovo account, ma puoi usare lo stesso nickname.</string>
-  <string name="old_android_delete_account">Puoi toccare il pulsante sottostante per eliminare il tuo account da questo dispositivo.</string>
-  <string name="delete_account_button">Cancella Account</string>
   <string name="startup_open_database">Decrittazione del database...</string>
   <string name="startup_migrate_database">Aggiornamento del database...</string>
   <string name="startup_compact_database">Compattazione del database…</string>
@@ -112,11 +108,9 @@
   <string name="open">Apri</string>
   <string name="change">Cambia</string>
   <string name="start">Inizia</string>
-  <string name="finish">Fine</string>
   <string name="no_data">Nessun dato</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">Il testo inserito è troppo lungo</string>
-  <string name="show_onboarding">Mostra l\'aiuto</string>
   <string name="fix">Correggi</string>
   <string name="help">Aiuto</string>
   <string name="sorry">Scusa</string>
@@ -303,21 +297,12 @@
   <string name="groups_group_is_empty">Questo gruppo e\' vuoto</string>
   <string name="groups_group_is_dissolved">Questo gruppo e\' stato sciolto</string>
   <string name="groups_remove">Rimuovere</string>
-  <string name="groups_create_group_title">Crea gruppo privato</string>
-  <string name="groups_create_group_button">Crea gruppo</string>
   <string name="groups_create_group_invitation_button">Invia invito</string>
-  <string name="groups_create_group_hint">Scegli un nome per il tuo gruppi privato</string>
   <string name="groups_invitation_sent">Invito a partecipare al gruppo spedito</string>
-  <string name="groups_member_list">Lista membri</string>
-  <string name="groups_invite_members">Invita Membri</string>
-  <string name="groups_member_created_you">Hai creato un nuovo gruppo</string>
   <string name="groups_member_created">%s e\' il creatore del gruppo.</string>
   <string name="groups_member_joined_you">Ti sei unito al gruppo</string>
-  <string name="groups_member_joined">%s si è unito al gruppo</string>
-  <string name="groups_leave">Lascia gruppo</string>
   <string name="groups_leave_dialog_title">Abbandonare il gruppo</string>
   <string name="groups_leave_dialog_message">Sei sicuro di voler abbandonare questo gruppo?</string>
-  <string name="groups_dissolve">Sciogli il gruppo</string>
   <string name="groups_dissolve_dialog_title">Conferma lo scioglimento del gruppo</string>
   <string name="groups_dissolve_dialog_message">Sei sicuro di voler sciogliere questo gruppo?\n\nTutti gli altri membri non saranno più in grado di continuare le loro conversazioni e potrebbero non ricevere gli ultimi messaggi.</string>
   <string name="groups_dissolve_button">Sciogli</string>
@@ -326,7 +311,6 @@
   
   <string name="groups_invitations_title">Inviti spediti</string>
   <string name="groups_invitations_invitation_sent">Hai invitato %1$s ad unirsi al gruppo \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s ti ha invitato ad unirti al gruppo \"%2$s\".</string>
   <string name="groups_invitations_joined">Unito al gruppo</string>
   <string name="groups_invitations_declined">Invito al gruppo rifiutato</string>
   <plurals name="groups_invitations_open">
@@ -334,16 +318,9 @@
     <item quantity="many">%d inviti al gruppo aperti.</item>
     <item quantity="other">%d inviti al gruppo aperti.</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Hai accettato l\'invito al gruppo da %s.</string>
-  <string name="groups_invitations_response_declined_sent">Hai rifiutato l\'invito al gruppo da %s.</string>
-  <string name="groups_invitations_response_declined_auto">L\'invito di %s al gruppo è stato rifiutato automaticamente.</string>
-  <string name="groups_invitations_response_accepted_received">%s ha accettato l\'invito al gruppo.</string>
-  <string name="groups_invitations_response_declined_received">%s ha rifiutato l\'invito al gruppo.</string>
   <string name="sharing_status_groups">Solo il creatore può invitare nuovi membri nel gruppo. Sotto ci sono i membri correnti del gruppo.</string>
   
-  <string name="groups_reveal_contacts">Rivelare contatti</string>
   <string name="groups_reveal_dialog_message">Puoi scegliere se rivelare i contatti a tutti i membri correnti e futuri di questo gruppo.\n\nRivelare i contatti fa diventare la connessione al gruppo più veloce e più affidabile, perchè puoi comunicare con i contatti rivelati anche quando il creatore del gruppo è offline.</string>
-  <string name="groups_reveal_visible">La relazione fra i contatti è visibile al gruppo</string>
   <string name="groups_reveal_visible_revealed_by_us">La relazione fra i contatti è visibile al gruppo (rivelata da te)</string>
   <string name="groups_reveal_visible_revealed_by_contact">La relazione fra i contatti è visibile al gruppo (rivelata da %s)</string>
   <string name="groups_reveal_invisible">La relazione fra i contatti non è visibile al gruppo</string>
@@ -362,9 +339,7 @@
   
   <string name="read_more">leggi ancora</string>
 
-  <string name="change_profile_picture">Tocca per cambiare l\'immagine del profilo</string>
   <string name="dialog_confirm_profile_picture_title">Cambia immagine profilo</string>
-  <string name="dialog_confirm_profile_picture_remark">Solo i tuoi contatti possono vedere questa immagine</string>
   <string name="change_profile_picture_failed_message">Spiacenti, qualcosa è andato storto aggiornando la tua foto del profilo.</string>
   
   <string name="pref_language_title">Lingua &amp; regione</string>
@@ -711,7 +686,6 @@
 	<string name="chat_type_group">Gruppo</string>
 	<string name="chat_type_channel">Canale</string>
 	<string name="no_chats">Ancora nessuna conversazione</string>
-	<string name="groups_button_add">Aggiungi nuovo gruppo</string>
 	<string name="channels_button">Canali</string>
 	<string name="channels_list_empty">Ancora nessun canale. Crea il tuo o unisciti a uno tramite un link d\'invito.</string>
 	<string name="channels_action_create">Crea canale</string>
@@ -906,7 +880,6 @@
 	<string name="recording_voice">Registrazione messaggio vocale…</string>
 	<string name="voice_message_error">Registrazione vocale non riuscita</string>
 	<string name="voice_message_cancelled">Registrazione annullata</string>
-	<string name="slide_to_cancel">← Scorri per annullare</string>
 	<string name="voice_message_too_short">Messaggio vocale troppo breve</string>
 	<string name="voice_message_too_long">Messaggio vocale troppo lungo. Mantienilo sotto i 30 secondi.</string>
 	<string name="microphone_permission_required">L\'autorizzazione al microfono è necessaria per i messaggi vocali</string>
@@ -1512,14 +1485,6 @@
 	<string name="video_offer_accept">Accetta video</string>
 	<string name="video_offer_reject">Rifiuta</string>
 	<string name="camera_permission_required">Autorizzazione fotocamera richiesta per le videochiamate</string>
-	<string name="contact_type_selection_title">Scegli il tipo di connessione</string>
-	<string name="contact_type_selection_subtitle">Seleziona come vuoi connetterti con il tuo contatto</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Sicurezza post-quantistica</string>
-	<string name="contact_type_zerion_description">Connettiti con un altro utente Zerion. Crittografia resistente ai computer quantistici end-to-end.</string>
-	<string name="contact_type_classic_title">Modalità classica</string>
-	<string name="contact_type_classic_badge">Sicurezza classica</string>
-	<string name="contact_type_classic_description">Connettiti usando la crittografia classica. Usa questa opzione per la compatibilità con contatti su versioni precedenti.</string>
 	<string name="recommended">Consigliato</string>
 	<string name="contact_type_info">Scegli Zerion per la massima sicurezza, o Modalità classica per la compatibilità con le versioni precedenti.</string>
 	<string name="voice_call_status_reconnecting">Riconnessione…</string>
@@ -1638,11 +1603,6 @@
 	<string name="vault_doc_unsupported_office">I documenti Office non possono essere visualizzati all\'interno del vault sicuro.\n\nL\'apertura di questi file richiede app esterne e file temporanei, che comprometterebbero la sicurezza del vault.\n\nPuoi solo archiviarli, non aprirli.</string>
 	<string name="vault_doc_unsupported_archive">I file di archivio non possono essere estratti all\'interno del vault sicuro.\n\nL\'estrazione creerebbe file in chiaro sul disco, compromettendo la sicurezza del vault.\n\nPuoi solo archiviarli, non estrarli.</string>
 	<string name="vault_doc_unsupported_generic">Questo tipo di documento non può essere visualizzato all\'interno del vault sicuro.\n\nTipo di file: %1$s\n\nPuoi solo archiviarlo, non aprirlo.</string>
-	<string name="vault_item_secure_note">Nota sicura</string>
-	<string name="vault_item_password_entry">Voce password</string>
-	<string name="vault_item_image">Immagine • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Documento • %1$s</string>
 	<string name="vault_add_to_vault_title">Aggiungi al vault</string>
 	<string name="vault_type_note">Nota</string>
 	<string name="vault_type_image">Immagine</string>

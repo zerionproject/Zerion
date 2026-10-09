@@ -45,10 +45,6 @@
   <string name="startup_failed_data_too_old_error">Din konto ble laget med en gammel versjon av app\'en og kan ikke åpnes med denne versjonen.\n\nDu må enten installere den gamle versjonen på nytt, eller å lage en ny konto ved å velge «Jeg har glemt passordet mitt» ved passordsfeltet.</string>
   <string name="startup_failed_data_too_new_error">Din konto ble laget med en nyere versjon av denne app\'en og kan ikke åpnes med denne versjonen.\n\nVennligst oppgradere til den nyeste versjonen og prøv på nytt.</string>
   <string name="startup_failed_service_error">Zerion klarte ikke å starte en påkrevd komponent.\n\nVennligst oppgrader til den nyeste versjonen av app\'en og prøv på nytt.</string>
-  <string name="download_zerion">For å fortsette å bruke Zerion, vennligst laste ned nyeste utgave.</string>
-  <string name="create_new_account">Du trenger å lage en ny konto, men du kan benytte samme kallenavn.</string>
-  <string name="old_android_delete_account">Du kan trykke på knappen under for å slette kontoen din fra denne enheten.</string>
-  <string name="delete_account_button">Slett konto</string>
   <string name="startup_open_database">Dekrypter database...</string>
   <string name="startup_migrate_database">Oppgraderer database...</string>
   <string name="startup_compact_database">Komprimerer database...</string>
@@ -107,11 +103,9 @@
   <string name="open">Åpne</string>
   <string name="change">Endre</string>
   <string name="start">Start</string>
-  <string name="finish">Fullfør</string>
   <string name="no_data">Ingen data</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Innskrevet tekst er for lang</string>
-  <string name="show_onboarding">Vis hjelpedialogvindu</string>
   <string name="fix">Fiks</string>
   <string name="help">Hjelp</string>
   <string name="sorry">Beklager</string>
@@ -289,21 +283,12 @@
   <string name="groups_group_is_empty">Denne gruppen er tom</string>
   <string name="groups_group_is_dissolved">Denne gruppen har blitt oppløst</string>
   <string name="groups_remove">Fjern</string>
-  <string name="groups_create_group_title">Opprett privat gruppe</string>
-  <string name="groups_create_group_button">Opprett gruppe</string>
   <string name="groups_create_group_invitation_button">Send invitasjon</string>
-  <string name="groups_create_group_hint">Velg et navn for din private gruppe</string>
   <string name="groups_invitation_sent">Gruppeinvitasjon sendt</string>
-  <string name="groups_member_list">Medlemsliste</string>
-  <string name="groups_invite_members">Inviter medlemmer</string>
-  <string name="groups_member_created_you">Du opprettet gruppen</string>
   <string name="groups_member_created">%s opprettet gruppen</string>
   <string name="groups_member_joined_you">Du tok del i gruppen</string>
-  <string name="groups_member_joined">%s tok del i gruppen</string>
-  <string name="groups_leave">Forlat gruppe</string>
   <string name="groups_leave_dialog_title">Bekreft at du vil forlate gruppen</string>
   <string name="groups_leave_dialog_message">Er du sikker på at du vil forlate denne gruppen?</string>
-  <string name="groups_dissolve">Oppløs gruppe</string>
   <string name="groups_dissolve_dialog_title">Bekreft oppløsning av gruppe</string>
   <string name="groups_dissolve_dialog_message">Er du sikker på at du vil oppløse denne gruppen?\n\nAlle andre medlemmer vil ikke kunne fortsette deres samtaler, og vil kanskje ikke motta de seneste meldingene.</string>
   <string name="groups_dissolve_button">Oppløs</string>
@@ -312,23 +297,15 @@
   
   <string name="groups_invitations_title">Gruppeinvitasjoner</string>
   <string name="groups_invitations_invitation_sent">Du har invitert %1$s til å ta del i gruppen \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s har inviter deg til å ta del i gruppen \"%2$s\".</string>
   <string name="groups_invitations_joined">Tok del i gruppe</string>
   <string name="groups_invitations_declined">Gruppeinvitasjon avslått</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d åpen gruppeinvitasjon</item>
     <item quantity="other">%d åpne gruppeinvitasjoner</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Du godtok gruppeinvitasjonen fra %s.</string>
-  <string name="groups_invitations_response_declined_sent">Du avslo gruppeinvitasjoner fra %s.</string>
-  <string name="groups_invitations_response_declined_auto">Gruppeinvitasjonen fra %s ble automatisk avslått.</string>
-  <string name="groups_invitations_response_accepted_received">%s godtok gruppeinvitasjonen.</string>
-  <string name="groups_invitations_response_declined_received">%s avslo gruppeinvitasjonen</string>
   <string name="sharing_status_groups">Bare grunnleggeren kan invitere nye medlemmer til gruppen. Nedenfor har du alle medlemmene i den.</string>
   
-  <string name="groups_reveal_contacts">Avslør kontakter</string>
   <string name="groups_reveal_dialog_message">Du kan velge hvorvidt du vil tilkjennegi kontakter ovenfor alle nåværende og fremtidige medlemmer av denne gruppen.\n\nDette gjør tilkoblingen til gruppen raskere og mer pålitelig, fordi du kan kommunisere med tilkjennegitte kontakter selv om grunnleggeren av gruppen er frakoblet.</string>
-  <string name="groups_reveal_visible">Kontaktforhold er synlige for gruppen</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktforhold er synlige for gruppen (avslørt av deg)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktforhold er synlige for gruppen (avslørt av %s)</string>
   <string name="groups_reveal_invisible">Kontaktforhold er ikke synlige for gruppen</string>
@@ -347,9 +324,7 @@
   <string name="read_more">les mer</string>
 
   
-  <string name="change_profile_picture">Trykk for å endre ditt profilbilde</string>
   <string name="dialog_confirm_profile_picture_title">Bytte profilbilde</string>
-  <string name="dialog_confirm_profile_picture_remark">Bare kontaktene dine kan se dette bildet</string>
   <string name="change_profile_picture_failed_message">Vi beklager, men noe gikk galt under oppdateringen av ditt profilbilde</string>
   
   <string name="pref_language_title">Språk &amp; region</string>
@@ -1057,7 +1032,6 @@
 	<string name="chat_type_group">Gruppe</string>
 	<string name="chat_type_channel">Kanal</string>
 	<string name="no_chats">Ingen samtaler ennå</string>
-	<string name="groups_button_add">Legg til ny gruppe</string>
 	<string name="channels_button">Kanaler</string>
 	<string name="channels_list_empty">Ingen kanaler ennå. Opprett din egen, eller bli med i en via en invitasjonslenke.</string>
 	<string name="channels_action_create">Opprett kanal</string>
@@ -1273,7 +1247,6 @@
 	<string name="recording_voice">Tar opp talemelding…</string>
 	<string name="voice_message_error">Taleopptaket mislyktes</string>
 	<string name="voice_message_cancelled">Opptaket ble avbrutt</string>
-	<string name="slide_to_cancel">← Skyv for å avbryte</string>
 	<string name="voice_message_too_short">Talemeldingen er for kort</string>
 	<string name="voice_message_too_long">Talemeldingen er for lang. Hold den under 30 sekunder.</string>
 	<string name="microphone_permission_required">Mikrofontilgang kreves for talemeldinger</string>
@@ -1944,14 +1917,6 @@
 	<string name="video_offer_accept">Godta video</string>
 	<string name="video_offer_reject">Avvis</string>
 	<string name="camera_permission_required">Kameratilgang kreves for videoanrop</string>
-	<string name="contact_type_selection_title">Velg tilkoblingstype</string>
-	<string name="contact_type_selection_subtitle">Velg hvordan du vil koble til kontakten din</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Postkvantesikkerhet</string>
-	<string name="contact_type_zerion_description">Koble til en annen Zerion-bruker. Kvantesikker ende-til-ende-kryptering.</string>
-	<string name="contact_type_classic_title">Klassisk modus</string>
-	<string name="contact_type_classic_badge">Klassisk sikkerhet</string>
-	<string name="contact_type_classic_description">Koble til med klassisk kryptografi. Bruk dette alternativet for bakoverkompatibilitet med kontakter som har eldre versjoner.</string>
 	<string name="recommended">Anbefalt</string>
 	<string name="contact_type_info">Velg Zerion for maksimal sikkerhet, eller Klassisk modus for bakoverkompatibilitet.</string>
 	<string name="voice_call_status_reconnecting">Kobler til på nytt…</string>
@@ -2081,11 +2046,6 @@
 	<string name="vault_doc_unsupported_office">Office-dokumenter kan ikke vises i det sikre hvelvet.\n\nFor å åpne disse filene trengs eksterne apper og midlertidige filer, og det ville svekke sikkerheten i hvelvet.\n\nDu kan bare lagre dem, ikke åpne dem.</string>
 	<string name="vault_doc_unsupported_archive">Arkivfiler kan ikke pakkes ut i det sikre hvelvet.\n\nUtpakking ville lage ukrypterte filer på disken og svekke sikkerheten i hvelvet.\n\nDu kan bare lagre dem, ikke pakke dem ut.</string>
 	<string name="vault_doc_unsupported_generic">Denne dokumenttypen kan ikke vises i det sikre hvelvet.\n\nFiltype: %1$s\n\nDu kan bare lagre den, ikke åpne den.</string>
-	<string name="vault_item_secure_note">Sikkert notat</string>
-	<string name="vault_item_password_entry">Passordoppføring</string>
-	<string name="vault_item_image">Bilde • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Dokument • %1$s</string>
 	<string name="vault_add_to_vault_title">Legg til i hvelvet</string>
 	<string name="vault_type_note">Notat</string>
 	<string name="vault_type_image">Bilde</string>

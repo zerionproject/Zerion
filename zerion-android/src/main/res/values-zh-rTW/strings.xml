@@ -47,10 +47,6 @@
   <string name="startup_failed_data_too_old_error">您的帳號在是之前的舊版本應用創建，但在本版本中無法啟用。\n\n您必須重新安裝舊的版本或是另設新帳號，請在彈出的密碼視窗中選取\"遺忘密碼\"來設新帳號。</string>
   <string name="startup_failed_data_too_new_error">您的帳號在是新版本的應用中建立，但在舊版中無法開啟。請更新到最新版後再試試看</string>
   <string name="startup_failed_service_error">Zerion 無法啟動所需的元件\n\n請昇級至最新版後再重試</string>
-  <string name="download_zerion">爲了繼續使用 Zerion，請下載最新版。</string>
-  <string name="create_new_account">您要創建一個新帳戶，但可以續用現時的暱稱。</string>
-  <string name="old_android_delete_account">您可以輕觸下方按鍵好從設備上刪除帳號</string>
-  <string name="delete_account_button">刪除帳戶</string>
   <string name="startup_open_database">正在解密數據庫……</string>
   <string name="startup_migrate_database">正在更新數據庫……</string>
   <string name="startup_compact_database">正在壓縮數據庫……</string>
@@ -107,11 +103,9 @@
   <string name="open">打開</string>
   <string name="change">變動</string>
   <string name="start">開始</string>
-  <string name="finish">結束</string>
   <string name="no_data">沒有數據</string>
   <string name="ellipsis">……</string>
   <string name="text_too_long">輸入的文本過長</string>
-  <string name="show_onboarding">顯示協助對話框</string>
   <string name="fix">修復</string>
   <string name="help">幫助</string>
   <string name="sorry">抱歉</string>
@@ -287,21 +281,12 @@
   <string name="groups_group_is_empty">這群組是空的</string>
   <string name="groups_group_is_dissolved">已解散這群組</string>
   <string name="groups_remove">刪除</string>
-  <string name="groups_create_group_title">創建私人群組</string>
-  <string name="groups_create_group_button">創建群組</string>
   <string name="groups_create_group_invitation_button">發送邀請</string>
-  <string name="groups_create_group_hint">爲私人群組命名</string>
   <string name="groups_invitation_sent">群組邀請已發送</string>
-  <string name="groups_member_list">成員列表</string>
-  <string name="groups_invite_members">邀請成員</string>
-  <string name="groups_member_created_you">您創建了群組</string>
   <string name="groups_member_created">%s 創建了群組</string>
   <string name="groups_member_joined_you">您加入了群組</string>
-  <string name="groups_member_joined">%s 加入了群組</string>
-  <string name="groups_leave">退出群組</string>
   <string name="groups_leave_dialog_title">確認退出群組</string>
   <string name="groups_leave_dialog_message">確認要退出該群組嗎？</string>
-  <string name="groups_dissolve">解散群組</string>
   <string name="groups_dissolve_dialog_title">確認解散群組</string>
   <string name="groups_dissolve_dialog_message">確認要解散該群組嗎？\n\n所有其他成員將無法繼續會話並可能無法接收最新的消息。</string>
   <string name="groups_dissolve_button">解散</string>
@@ -310,22 +295,14 @@
   
   <string name="groups_invitations_title">群組邀請</string>
   <string name="groups_invitations_invitation_sent">您已邀請 %1$s 加入群組 “%2$s”。</string>
-  <string name="groups_invitations_invitation_received">%1$s 已邀請您加入群組 “%2$s”。</string>
   <string name="groups_invitations_joined">已加入群組</string>
   <string name="groups_invitations_declined">群組邀請已謝絕</string>
   <plurals name="groups_invitations_open">
     <item quantity="other">%d 打開了群組邀請</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">您接受了來自 %s 的群組邀請。</string>
-  <string name="groups_invitations_response_declined_sent">您謝絕了來自 %s 的群組邀請。</string>
-  <string name="groups_invitations_response_declined_auto">來自%s的小組邀請已自動回絕</string>
-  <string name="groups_invitations_response_accepted_received">%s 接受了群組邀請。</string>
-  <string name="groups_invitations_response_declined_received">%s 謝絕了群組邀請。</string>
   <string name="sharing_status_groups">只有創建者可以邀請新成員加入群組。下面是目前的群組成員。</string>
   
-  <string name="groups_reveal_contacts">顯示聯絡人</string>
   <string name="groups_reveal_dialog_message">您可以決定是否對所有當前和未來的群組成員展示該群組的聯絡人。\n\n這將使您連接群組更快速更可靠，因爲即使群組創建者離線，您也可以與已展示的聯絡人交流。</string>
-  <string name="groups_reveal_visible">群組可見聯絡人關係</string>
   <string name="groups_reveal_visible_revealed_by_us">群組可見聯絡人關係（由您設定）</string>
   <string name="groups_reveal_visible_revealed_by_contact">群組可見聯絡人關係（由 %s 設定）</string>
   <string name="groups_reveal_invisible">群組不可見聯絡人關係</string>
@@ -343,9 +320,7 @@
   <string name="read_more">閱讀全文</string>
 
   
-  <string name="change_profile_picture">輕觸更改使用者圖像</string>
   <string name="dialog_confirm_profile_picture_title">更改使用者圖像</string>
-  <string name="dialog_confirm_profile_picture_remark">只有您的聯絡人可乆看到這張照片</string>
   <string name="change_profile_picture_failed_message">抱歉，更新個人圖像時出了一點問題</string>
   
   <string name="pref_language_title">語言 &amp; 區域</string>
@@ -698,7 +673,6 @@
 	<string name="chat_type_group">群組</string>
 	<string name="chat_type_channel">頻道</string>
 	<string name="no_chats">尚無對話</string>
-	<string name="groups_button_add">新增群組</string>
 	<string name="channels_button">頻道</string>
 	<string name="channels_list_empty">尚無頻道。建立您自己的頻道，或透過邀請連結加入。</string>
 	<string name="channels_action_create">建立頻道</string>
@@ -893,7 +867,6 @@
 	<string name="recording_voice">正在錄製語音訊息…</string>
 	<string name="voice_message_error">語音錄製失敗</string>
 	<string name="voice_message_cancelled">已取消錄製</string>
-	<string name="slide_to_cancel">← 滑動以取消</string>
 	<string name="voice_message_too_short">語音訊息太短</string>
 	<string name="voice_message_too_long">語音訊息太長。請控制在 30 秒以內。</string>
 	<string name="microphone_permission_required">傳送語音訊息需要麥克風權限</string>
@@ -1500,14 +1473,6 @@
 	<string name="video_offer_accept">接受視訊</string>
 	<string name="video_offer_reject">拒絕</string>
 	<string name="camera_permission_required">視訊通話需要相機權限</string>
-	<string name="contact_type_selection_title">選擇連線類型</string>
-	<string name="contact_type_selection_subtitle">選擇您想與聯絡人連線的方式</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">後量子安全性</string>
-	<string name="contact_type_zerion_description">與另一位 Zerion 使用者連線。端對端抗量子加密。</string>
-	<string name="contact_type_classic_title">傳統模式</string>
-	<string name="contact_type_classic_badge">傳統安全性</string>
-	<string name="contact_type_classic_description">使用傳統密碼學連線。此選項用於與舊版本聯絡人的向下相容。</string>
 	<string name="recommended">建議</string>
 	<string name="contact_type_info">選擇 Zerion 以獲得最高安全性，或選擇傳統模式以向下相容。</string>
 	<string name="voice_call_status_reconnecting">重新連線中…</string>
@@ -1626,11 +1591,6 @@
 	<string name="vault_doc_unsupported_office">Office 文件無法在安全保險庫內檢視。\n\n開啟這些檔案需要外部應用程式與暫存檔，這會危及保險庫的安全。\n\n您只能存放，無法開啟它們。</string>
 	<string name="vault_doc_unsupported_archive">壓縮檔無法在安全保險庫內解壓縮。\n\n解壓縮會在磁碟上產生明文檔案，危及保險庫的安全。\n\n您只能存放，無法解壓縮它們。</string>
 	<string name="vault_doc_unsupported_generic">這種文件類型無法在安全保險庫內檢視。\n\n檔案類型：%1$s\n\n您只能存放，無法開啟它。</string>
-	<string name="vault_item_secure_note">安全筆記</string>
-	<string name="vault_item_password_entry">密碼項目</string>
-	<string name="vault_item_image">圖片 • %1$s</string>
-	<string name="vault_item_video">影片 • %1$s</string>
-	<string name="vault_item_document">文件 • %1$s</string>
 	<string name="vault_add_to_vault_title">新增至保險庫</string>
 	<string name="vault_type_note">筆記</string>
 	<string name="vault_type_image">圖片</string>

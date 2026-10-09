@@ -40,10 +40,6 @@
   <string name="startup_failed_data_too_old_error">Notandaaðgangurinn þinn var útbúinn með eldri útgáfu forritsins og er ekki hægt að opna hann með þessari útgáfu.\n\Þú þarft annað hvort að setja gömlu útgáfuna upp aftur, eða setja upp nýjan notandaaðgang með því að velja \'Ég hef gleymt lykilorðinu mínu\' þegar beðið er um lykilorð.</string>
   <string name="startup_failed_data_too_new_error">Notandaaðgangurinn þinn var útbúinn með nýrri útgáfu forritsins og er ekki hægt að opna hann með þessari útgáfu.\n\Þú þarft að setja upp nýjustu útgáfuna og prófa svo aftur.</string>
   <string name="startup_failed_service_error">Zerion tókst ekki að ræsa nauðsynlega einingu.\n\nUppfærðu í nýjustu útgáfuna og prófaðu síðan aftur.</string>
-  <string name="download_zerion">Til að halda áfram að nota Zerion, ættirðu að sækja nýjustu útgáfuna.</string>
-  <string name="create_new_account">Þú þarft að búa til nýjan notandaaðgang, en þú getur notað áfram sama stuttnefni.</string>
-  <string name="old_android_delete_account">Þú getur ýtt á hnappinn hér fyrir neðan til að eyða aðgangnum þínum af þessu tæki.</string>
-  <string name="delete_account_button">Eyða notandaaðgangi</string>
   <string name="startup_open_database">Afkóða gagnagrunn…</string>
   <string name="startup_migrate_database">Uppfæri gagnagrunn…</string>
   <string name="startup_compact_database">Þjappa gagnagrunni…</string>
@@ -102,11 +98,9 @@
   <string name="open">Opna</string>
   <string name="change">Breyta</string>
   <string name="start">Byrja</string>
-  <string name="finish">Enda</string>
   <string name="no_data">Engin gögn</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Textinn sem var settur inn er of langur</string>
-  <string name="show_onboarding">Birta hjálparglugga</string>
   <string name="fix">Laga</string>
   <string name="help">Hjálp</string>
   <string name="sorry">Því miður</string>
@@ -278,21 +272,12 @@
   <string name="groups_group_is_empty">Þessi hópur er tómur</string>
   <string name="groups_group_is_dissolved">Þessi hópur hefur verið leystur upp</string>
   <string name="groups_remove">Fjarlægja</string>
-  <string name="groups_create_group_title">Búa til einkahóp</string>
-  <string name="groups_create_group_button">Búa til hóp</string>
   <string name="groups_create_group_invitation_button">Senda boð</string>
-  <string name="groups_create_group_hint">Veldu nafn á einkahópinn þinn</string>
   <string name="groups_invitation_sent">Boð í hóp hafa verið send</string>
-  <string name="groups_member_list">Listi yfir meðlimi</string>
-  <string name="groups_invite_members">Bjóða meðlimum</string>
-  <string name="groups_member_created_you">Þú bjóst til hópinn</string>
   <string name="groups_member_created">%s bjó til hópinn</string>
   <string name="groups_member_joined_you">Þú gekkst í hópinn</string>
-  <string name="groups_member_joined">%s gekk í hópinn</string>
-  <string name="groups_leave">Hætta í hópi</string>
   <string name="groups_leave_dialog_title">Staðfesting á að hætta í hópi</string>
   <string name="groups_leave_dialog_message">Ertu viss um að þú viljir hætta í þessum hópi?</string>
-  <string name="groups_dissolve">Leysa upp hóp</string>
   <string name="groups_dissolve_dialog_title">Staðfesting á að leysa upp hóp</string>
   <string name="groups_dissolve_dialog_message">Ertu viss um að þú viljir leysa upp þennan hóp?\n\nAllir aðrir meðlimir hópsins eiga á hættu að geta ekki haldið áfram með samtöl sín og gætu misst af síðustu skilaboðunum.</string>
   <string name="groups_dissolve_button">Leysa upp</string>
@@ -301,23 +286,15 @@
   
   <string name="groups_invitations_title">Boð í hópa</string>
   <string name="groups_invitations_invitation_sent">Þú hefur boðið %1$s að ganga í hópinn \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s hefur boðið þér að ganga í hópinn \"%2$s\".</string>
   <string name="groups_invitations_joined">Hefur gengið í hópinn</string>
   <string name="groups_invitations_declined">Boði í hóp hafnað</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d opið boð í hóp</item>
     <item quantity="other">%d opin boð í hóp</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Þú samþykktir boð í hóp frá %s.</string>
-  <string name="groups_invitations_response_declined_sent">Þú hafnaðir boði í hóp frá %s.</string>
-  <string name="groups_invitations_response_declined_auto">Boði í hóp frá %s var sjálfvirkt hafnað.</string>
-  <string name="groups_invitations_response_accepted_received">%s samþykkti boð í hóp.</string>
-  <string name="groups_invitations_response_declined_received">%s hafnaði boði í hóp.</string>
   <string name="sharing_status_groups">Einungis stofnandinn getur boðið nýjum meðlimum í hópinn. Hé fyrir neðan eru allir skráðir meðlimir í hópnum.</string>
   
-  <string name="groups_reveal_contacts">Uppljóstra um tengiliði</string>
   <string name="groups_reveal_dialog_message">Þú getur valið hvort eigi að birta tengiliði fyrir öllum núverandi og verðandi meðlimum þessa hóps.\n\nAð ljóstra upp um tengiliði gerir tengingu þína við hópinn hraðari og áreiðanlegri, vegna þess að þá getur þú átt samskipti við birtu tengiliðina jafnvel þótt stofnandi hópsins sé ekki á netinu.</string>
-  <string name="groups_reveal_visible">Vensl tengiliðar eru sýnileg hópnum</string>
   <string name="groups_reveal_visible_revealed_by_us">Vensl tengiliðar eru sýnileg hópnum (uppljóstrað af þér)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Vensl tengiliðar eru sýnileg hópnum (uppljóstrað af %s)</string>
   <string name="groups_reveal_invisible">Vensl tengiliðar eru ekki sýnileg hópnum</string>
@@ -335,9 +312,7 @@
   
   <string name="read_more">lesa meira</string>
 
-  <string name="change_profile_picture">Ýttu til að skipta um auðkennismyndina þína</string>
   <string name="dialog_confirm_profile_picture_title">Skipta um auðkennismynd</string>
-  <string name="dialog_confirm_profile_picture_remark">Einungis tengiliðirnir þínir geta séð þessa mynd</string>
   <string name="change_profile_picture_failed_message">Því miður, eitthvað fór úrskeiðis við að uppfæra auðkennismyndina þína.</string>
   
   <string name="pref_language_title">Tungumál og landsvæði</string>
@@ -1039,7 +1014,6 @@
 	<string name="chat_type_group">Hópur</string>
 	<string name="chat_type_channel">Rás</string>
 	<string name="no_chats">Engin samtöl enn</string>
-	<string name="groups_button_add">Bæta við nýjum hópi</string>
 	<string name="channels_button">Rásir</string>
 	<string name="channels_list_empty">Engar rásir enn. Búðu til þína eigin eða gakktu í rás með boðstengli.</string>
 	<string name="channels_action_create">Búa til rás</string>
@@ -1255,7 +1229,6 @@
 	<string name="recording_voice">Tek upp raddskilaboð…</string>
 	<string name="voice_message_error">Upptaka raddskilaboða mistókst</string>
 	<string name="voice_message_cancelled">Hætt við upptöku</string>
-	<string name="slide_to_cancel">← Renndu til að hætta við</string>
 	<string name="voice_message_too_short">Raddskilaboðin eru of stutt</string>
 	<string name="voice_message_too_long">Raddskilaboðin eru of löng. Hafðu þau styttri en 30 sekúndur.</string>
 	<string name="microphone_permission_required">Heimild fyrir hljóðnema er nauðsynleg fyrir raddskilaboð</string>
@@ -1939,14 +1912,6 @@
 	<string name="video_offer_accept">Samþykkja mynd</string>
 	<string name="video_offer_reject">Hafna</string>
 	<string name="camera_permission_required">Heimild fyrir myndavél er nauðsynleg fyrir myndsímtöl</string>
-	<string name="contact_type_selection_title">Veldu tegund tengingar</string>
-	<string name="contact_type_selection_subtitle">Veldu hvernig þú vilt tengjast tengiliðnum þínum</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Skammtaþolið öryggi</string>
-	<string name="contact_type_zerion_description">Tengstu öðrum Zerion-notanda. Skammtaþolin dulritun enda á milli.</string>
-	<string name="contact_type_classic_title">Hefðbundinn hamur</string>
-	<string name="contact_type_classic_badge">Hefðbundið öryggi</string>
-	<string name="contact_type_classic_description">Tengstu með hefðbundinni dulritun. Notaðu þennan valkost fyrir samhæfni við tengiliði sem nota eldri útgáfur.</string>
 	<string name="recommended">Mælt með</string>
 	<string name="contact_type_info">Veldu Zerion fyrir hámarksöryggi, eða hefðbundinn ham fyrir samhæfni við eldri útgáfur.</string>
 	<string name="voice_call_status_reconnecting">Tengist aftur…</string>
@@ -2076,11 +2041,6 @@
 	<string name="vault_doc_unsupported_office">Ekki er hægt að skoða Office-skjöl innan öruggu hvelfingarinnar.\n\nTil að opna þessar skrár þarf utanaðkomandi forrit og bráðabirgðaskrár, sem myndi stefna öryggi hvelfingarinnar í hættu.\n\nÞú getur aðeins geymt þær, ekki opnað þær.</string>
 	<string name="vault_doc_unsupported_archive">Ekki er hægt að afþjappa safnskrár innan öruggu hvelfingarinnar.\n\nAfþjöppun myndi búa til ódulritaðar skrár á diskinum, sem stefnir öryggi hvelfingarinnar í hættu.\n\nÞú getur aðeins geymt þær, ekki afþjappað þær.</string>
 	<string name="vault_doc_unsupported_generic">Ekki er hægt að skoða skjöl af þessari tegund innan öruggu hvelfingarinnar.\n\nSkráartegund: %1$s\n\nÞú getur aðeins geymt skjalið, ekki opnað það.</string>
-	<string name="vault_item_secure_note">Öruggur minnispunktur</string>
-	<string name="vault_item_password_entry">Lykilorðsatriði</string>
-	<string name="vault_item_image">Mynd • %1$s</string>
-	<string name="vault_item_video">Myndskeið • %1$s</string>
-	<string name="vault_item_document">Skjal • %1$s</string>
 	<string name="vault_add_to_vault_title">Bæta í hvelfingu</string>
 	<string name="vault_type_note">Minnispunktur</string>
 	<string name="vault_type_image">Mynd</string>

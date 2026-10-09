@@ -37,8 +37,6 @@
   <string name="startup_failed_data_too_old_error">Вашата сметка е создадена со стара верзија на оваа апликација и не може да биде отворена со оваа верзија. Морате или да ја пре-инсталирате старата верзија или да отворите нова сметка преку \'Ја заборавив лозинката\' во екранот каде истата се бара.</string>
   <string name="startup_failed_data_too_new_error">Оваа верзија на апликацијата е многу стара. Ве молиме ажурирајте ја апликацијата до најновата верзија и обидете се повторно.</string>
   <string name="startup_failed_service_error">Zerion не е во можност да го стартува потребниот приклучок / плугин. Пре-инсталирањето на Zerion најчесто го решава овој проблем. Сепак, имајте во предвид дека во тој случај ќе ја изгубите вашата сметка и сите податоци поврзани со неа, бидејќи Zerion не користи централизирани сервери за складирање на вашите податоци.</string>
-  <string name="download_zerion">За да продолжите со користење на Zerion, ве молиме преземете го најновото издание.</string>
-  <string name="create_new_account">Ќе треба да создадете нова сметка, но можете да го користите истото корисничко име.</string>
   <string name="startup_open_database">Декриптирање на базата на податоци...</string>
   <string name="startup_migrate_database">Ажурирање на базата на податоци...</string>
   <string name="startup_compact_database">Пакување на базата на податоци</string>
@@ -100,7 +98,6 @@
   <string name="no_data">Нема податоци</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Внесениот текст е предолг</string>
-  <string name="show_onboarding">Покажи го диjалогот за помош</string>
   <string name="fix">Поправи</string>
   <string name="help">Помош</string>
   <string name="sorry">Жал ни е</string>
@@ -241,21 +238,12 @@
   <string name="groups_group_is_empty">Оваа група е празна</string>
   <string name="groups_group_is_dissolved">Оваа група е распуштена</string>
   <string name="groups_remove">Отстрани</string>
-  <string name="groups_create_group_title">Создади приватна група</string>
-  <string name="groups_create_group_button">Создади група</string>
   <string name="groups_create_group_invitation_button">Испрати покана</string>
-  <string name="groups_create_group_hint">Избери има за твојата приватна група</string>
   <string name="groups_invitation_sent">Групна покана беше испратена</string>
-  <string name="groups_member_list">Листа на членови</string>
-  <string name="groups_invite_members">Покани членови</string>
-  <string name="groups_member_created_you">Вие ја создадовте групата</string>
   <string name="groups_member_created">%s ја содаде групата</string>
   <string name="groups_member_joined_you">Вие се приклучивте на групата</string>
-  <string name="groups_member_joined">%s се приклучи на групата</string>
-  <string name="groups_leave">Напушти група</string>
   <string name="groups_leave_dialog_title">Потврди напуштање на група</string>
   <string name="groups_leave_dialog_message">Дали сте сигурни дека сакате да ја напуштите оваа група?</string>
-  <string name="groups_dissolve">Распуштање на група</string>
   <string name="groups_dissolve_dialog_title">Потврди распуштање на група</string>
   <string name="groups_dissolve_dialog_message">Дали сте сигурни дека сакате да ја распуштите оваа група?\n\nСите нејзини членови нема да можат да го продолжат разговорот и нема да ги допримат последните пораки.</string>
   <string name="groups_dissolve_button">Распуштање</string>
@@ -264,22 +252,15 @@
   
   <string name="groups_invitations_title">Групни покани</string>
   <string name="groups_invitations_invitation_sent">Вие го / ја поканивте %1$sда се приклучи на групата \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$sве покани да се приклучите на групата \"%2$s\".</string>
   <string name="groups_invitations_joined">Приклучена  група</string>
   <string name="groups_invitations_declined">Групната покана е одбиена</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%dотвори групна покана</item>
     <item quantity="other">%d отвори групни покани</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Вие ја прифативте групната покана од %s.</string>
-  <string name="groups_invitations_response_declined_sent">Вие ја одбивте групната покана од %s.</string>
-  <string name="groups_invitations_response_accepted_received">%s ја прифати групната покана.</string>
-  <string name="groups_invitations_response_declined_received">%s ја одби групната покана.</string>
   <string name="sharing_status_groups">Само содавачот може да покани нови членови во групата. Подолу се сите моментални членови на групата.</string>
   
-  <string name="groups_reveal_contacts">Покажи контакти</string>
   <string name="groups_reveal_dialog_message">Можете да одберете да ги покажете контактите на сите моментални и идни членови на оваа група.\n\nОткривањето на контактите го прави вашето поврзување со групата побрзо и поверодостојно, затоа што ќе можете да комуницирате со откриените контакти дури и кога создавачот на групата е исклучен.</string>
-  <string name="groups_reveal_visible">Контакт врската е видлива во групата</string>
   <string name="groups_reveal_visible_revealed_by_us">Контакт врската е видлива во групата (откриена од тебе)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Контакт врската е видилва во групата (открена од %s)</string>
   <string name="groups_reveal_invisible">Контакт врската не е видлива во групата</string>
@@ -991,13 +972,10 @@
 	<string name="dialog_button_understand">Разбирам</string>
 	<string name="startup_failed_clock_error">Zerion не можеше да се стартува бидејќи часовникот на твојот уред не е точен.\n\nПостави го часовникот на уредот на точното време и обиди се повторно.</string>
 	<string name="startup_failed_database_corrupt">Твојата база на податоци е оштетена и не може да се поврати.\n\nЗаради твоја безбедност, Zerion не чува резервни копии од твоите податоци. Ќе треба да поставиш нова сметка така што ќе избереш „Ја заборавив лозинката“ на екранот за внесување лозинка.\n\nОва може да се случи по неочекувано исклучување или дефект на меморијата.</string>
-	<string name="old_android_delete_account">Можеш да го допреш копчето подолу за да ја избришеш својата сметка од овој уред.</string>
-	<string name="delete_account_button">Избриши сметка</string>
 	<string name="chats_button">Разговори</string>
 	<string name="chat_type_group">Група</string>
 	<string name="chat_type_channel">Канал</string>
 	<string name="no_chats">Сè уште нема разговори</string>
-	<string name="groups_button_add">Додај нова група</string>
 	<string name="channels_button">Канали</string>
 	<string name="channels_list_empty">Сè уште нема канали. Создај свој или приклучи се на некој преку линк за покана.</string>
 	<string name="channels_action_create">Создај канал</string>
@@ -1213,7 +1191,6 @@
 	<string name="recording_voice">Се снима гласовна порака…</string>
 	<string name="voice_message_error">Снимањето на гласовната порака не успеа</string>
 	<string name="voice_message_cancelled">Снимањето е откажано</string>
-	<string name="slide_to_cancel">← Лизгај за откажување</string>
 	<string name="voice_message_too_short">Гласовната порака е прекратка</string>
 	<string name="voice_message_too_long">Гласовната порака е предолга. Нека биде пократка од 30 секунди.</string>
 	<string name="microphone_permission_required">За гласовни пораки е потребна дозвола за микрофон</string>
@@ -1289,7 +1266,6 @@
 	<string name="call_rejected_peer_disabled_video">%s ги има исклучено видео повиците</string>
 	<string name="call_rejected_peer_disabled_video_hint">Контактот прифаќа гласовни повици. Наместо тоа, обиди се со гласовен повик.</string>
 	<string name="record_voice_message">Сними гласовна порака</string>
-	<string name="finish">Заврши</string>
 	<string name="error">Грешка</string>
 	<string name="info">Информации</string>
 	<string name="no_private_messages_action">Испрати ја првата порака за да го започнеш разговорот</string>
@@ -1575,14 +1551,11 @@
 	<string name="peer_trust_level_stranger">Непознат</string>
 	<string name="introduction_response_error">Се појави грешка при одговарањето на запознавањето.</string>
 	<string name="introduction_response_declined_auto">Запознавањето со %1$s беше автоматски одбиено.</string>
-	<string name="groups_invitations_response_declined_auto">Групната покана од %s беше автоматски одбиена.</string>
 	<string name="reblog_button">Сподели повторно</string>
 	<string name="share_message">Сподели со порака</string>
 	<string name="share_hint_short">Додај порака (по избор)</string>
 	<string name="invitation_exists">Поканата е веќе испратена</string>
-	<string name="change_profile_picture">Допри за да ја промениш профилната слика</string>
 	<string name="dialog_confirm_profile_picture_title">Промени ја профилната слика</string>
-	<string name="dialog_confirm_profile_picture_remark">Само твоите контакти можат да ја видат оваа слика</string>
 	<string name="change_profile_picture_failed_message">Жал ни е, но нешто тргна наопаку при ажурирањето на твојата профилна слика</string>
 	<string name="pref_language_changed">Апликацијата повторно ќе се вчита за да се примени новиот јазик.</string>
 	<string name="invite_friends_title">Покани пријатели</string>
@@ -1925,14 +1898,6 @@
 	<string name="video_offer_accept">Прифати видео</string>
 	<string name="video_offer_reject">Одбиј</string>
 	<string name="camera_permission_required">Потребна е дозвола за камера за видеоповици</string>
-	<string name="contact_type_selection_title">Избери тип на поврзување</string>
-	<string name="contact_type_selection_subtitle">Избери како сакаш да се поврзеш со твојот контакт</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Пост-квантна безбедност</string>
-	<string name="contact_type_zerion_description">Поврзи се со друг корисник на Zerion. Квантно отпорно шифрирање од крај до крај.</string>
-	<string name="contact_type_classic_title">Класичен режим</string>
-	<string name="contact_type_classic_badge">Класична безбедност</string>
-	<string name="contact_type_classic_description">Поврзи се со класична криптографија. Користи ја оваа опција за компатибилност со контакти што користат постари верзии.</string>
 	<string name="recommended">Препорачано</string>
 	<string name="contact_type_info">Избери Zerion за максимална безбедност или Класичен режим за компатибилност со постари верзии.</string>
 	<string name="voice_call_status_reconnecting">Повторно се поврзува…</string>
@@ -2062,11 +2027,6 @@
 	<string name="vault_doc_unsupported_office">Office документите не можат да се прегледуваат внатре во безбедниот сеф.\n\nЗа отворање на овие датотеки се потребни надворешни апликации и привремени датотеки, што би ја загрозило безбедноста на сефот.\n\nМожеш само да ги чуваш, не и да ги отвораш.</string>
 	<string name="vault_doc_unsupported_archive">Архивските датотеки не можат да се распакуваат внатре во безбедниот сеф.\n\nРаспакувањето би создало нешифрирани датотеки на дискот, што ја загрозува безбедноста на сефот.\n\nМожеш само да ги чуваш, не и да ги распакуваш.</string>
 	<string name="vault_doc_unsupported_generic">Овој тип документ не може да се прегледува внатре во безбедниот сеф.\n\nТип на датотека: %1$s\n\nМожеш само да го чуваш, не и да го отвораш.</string>
-	<string name="vault_item_secure_note">Безбедна белешка</string>
-	<string name="vault_item_password_entry">Запис за лозинка</string>
-	<string name="vault_item_image">Слика • %1$s</string>
-	<string name="vault_item_video">Видео • %1$s</string>
-	<string name="vault_item_document">Документ • %1$s</string>
 	<string name="vault_add_to_vault_title">Додај во сефот</string>
 	<string name="vault_type_note">Белешка</string>
 	<string name="vault_type_image">Слика</string>

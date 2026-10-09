@@ -175,14 +175,6 @@
 	<style name="Zerion.Card" parent="Zerion.Card.Glass" />
 
 
-	<style name="Zerion.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
-		<item name="backgroundTint">@color/zerion_cyan</item>
-		<item name="tint">@android:color/white</item>
-		<item name="rippleColor">#FFFFFF</item>
-		<item name="elevation">6dp</item>
-		<item name="pressedTranslationZ">12dp</item>
-	</style>
-
 	<style name="Zerion.FAB.Small" parent="Widget.Material3.FloatingActionButton.Small.Primary">
 		<item name="backgroundTint">@color/zerion_cyan</item>
 		<item name="tint">@android:color/white</item>

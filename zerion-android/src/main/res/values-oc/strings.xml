@@ -39,8 +39,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="startup_failed_data_too_old_error">Vòstre compte foguèt creat amb una anciana version d’aicesta aplicacion e pòt pas èsser dobrit amb aquesta. Vos cal siá reïnstallar l’anciana version o configurar un nòu compte en causir « Ai oblidat mon senhal » dins la fenèstra per picar lo senhal.</string>
   <string name="startup_failed_data_too_new_error">Aquesta version de l’aplicacion es tròp anciana. Mercés de la metre al nivèl de la darrièra e de tornar ensajar.</string>
   <string name="startup_failed_service_error">Zerion a pas pogut aviar un modul necessari. Tornar installar Zerion pòt resolver aquò. Que aquò siá dich : perdretz vòstre compte e totas las donadas ligadas a aqueste. Zerion utiliza pas de servidor centralizat per salvar sas donadas.</string>
-  <string name="download_zerion">Per tenir d’utilizar Zerion, mercés de telecargar la darrièra version.</string>
-  <string name="create_new_account">Vos caldrà crear un nòu compte, mas podètz emplegar lo meteis escais-nom.</string>
   <string name="startup_open_database">Deschirament de la basa de donadas…</string>
   <string name="startup_migrate_database">Mesa a nivèl de la basa de donadas…</string>
   <string name="startup_compact_database">Compression de la basa de donadas…</string>
@@ -90,7 +88,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="no_data">Pas donada</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">Lo tèxte picat es tròp long</string>
-  <string name="show_onboarding">Mostrar l’ajuda</string>
   <string name="fix">Correccion</string>
   <string name="help">Ajuda</string>
   <string name="sorry">O planhèm</string>
@@ -227,21 +224,12 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   <string name="groups_group_is_empty">Aqueste grop es void</string>
   <string name="groups_group_is_dissolved">Aqueste grop es estat suprimit</string>
   <string name="groups_remove">Suprimir</string>
-  <string name="groups_create_group_title">Crear un grop privat</string>
-  <string name="groups_create_group_button">Crear un grop</string>
   <string name="groups_create_group_invitation_button">Enviar de convidacions</string>
-  <string name="groups_create_group_hint">Donatz un nom al grop privat</string>
   <string name="groups_invitation_sent">Convidacion enviada al grop</string>
-  <string name="groups_member_list">Tièra de membres</string>
-  <string name="groups_invite_members">Convidar mai de monde</string>
-  <string name="groups_member_created_you">Avètz creat lo grop</string>
   <string name="groups_member_created">%s a fondat lo grop</string>
   <string name="groups_member_joined_you">Sètz marcat dins lo grop</string>
-  <string name="groups_member_joined">%s es marcat dins lo grop</string>
-  <string name="groups_leave">Quitar lo grop</string>
   <string name="groups_leave_dialog_title">Confirmar que volètz quitar lo grop</string>
   <string name="groups_leave_dialog_message">Sètz segur de voler quitar lo grop ?</string>
-  <string name="groups_dissolve">Suprimir lo grop</string>
   <string name="groups_dissolve_dialog_title">Confirmar la supression del grop</string>
   <string name="groups_dissolve_dialog_message">Sètz segur de voler suprimir lo grop ? \n\nLa rèsta dels participants poiran pas tenir de charrat e poiriá arribar qu’ajan pas los darrièrs messatges.</string>
   <string name="groups_dissolve_button">Suprimir</string>
@@ -250,22 +238,15 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
   
   <string name="groups_invitations_title">Convidacion de grop</string>
   <string name="groups_invitations_invitation_sent">Avètz convidat %1$s a venir al grop « %2$s »</string>
-  <string name="groups_invitations_invitation_received">%1$s vos a convidat a anar al grop « %2$s »</string>
   <string name="groups_invitations_joined">Ajustat al grop</string>
   <string name="groups_invitations_declined">Convidacion al grop refusada</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d convidacion de grop en espèra</item>
     <item quantity="other">%d convidacions de grop en espèra</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Avètz acceptat la convidacion del grop a %s.</string>
-  <string name="groups_invitations_response_declined_sent">Avètz refusat la convidacion del grop a %s.</string>
-  <string name="groups_invitations_response_accepted_received">%s a acceptat la convidacion del grop.</string>
-  <string name="groups_invitations_response_declined_received">%s a refusat la convidacion del grop.</string>
   <string name="sharing_status_groups">Pas que lo fondador del grop pòt convidar mai de monde. Vaquí la tièra dels membres actuals.</string>
   
-  <string name="groups_reveal_contacts">Revelar los contactes</string>
   <string name="groups_reveal_dialog_message">Podètz causir de revelar los contactes a totes los membres actuals e venents d’aqueste grop.\n\nEn revelar los contactes auretz una melhora connexion al grop e mai fiabla perque poiretz comunicar amb los contactes revelats quand lo fondator es fòra linha.</string>
-  <string name="groups_reveal_visible">Vòstre ligam amb lo contacte es visible pel grop</string>
   <string name="groups_reveal_visible_revealed_by_us">Vòstre ligam – revelat per vos – amb lo contacte es visible pel grop </string>
   <string name="groups_reveal_visible_revealed_by_contact">Vòstre ligam – revelat per %s – amb lo contacte es invisible pel grop</string>
   <string name="groups_reveal_invisible">Vòstre ligam amb lo contacte es invisible pel grop</string>
@@ -842,13 +823,10 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="dialog_button_understand">Ai comprés</string>
 	<string name="startup_failed_clock_error">Zerion a pas pogut s’aviar perque lo relòtge de vòstre aparelh es incorrècte.\n\nMercés de metre lo relòtge de vòstre aparelh a l’ora corrècta e de tornar ensajar.</string>
 	<string name="startup_failed_database_corrupt">Vòstra basa de donadas es corrompuda e pòt pas èsser recuperada.\n\nPer vòstra seguretat, Zerion garda pas de salvagarda de vòstras donadas. Vos caldrà configurar un nòu compte en causir « Ai oblidat mon senhal » a la demanda de senhal.\n\nAquò pòt arribar aprèp una atudada imprevista o una avaria de l’emmagazinatge.</string>
-	<string name="old_android_delete_account">Podètz tocar lo boton çai-jos per suprimir vòstre compte d’aqueste aparelh.</string>
-	<string name="delete_account_button">Suprimir lo compte</string>
 	<string name="chats_button">Discussions</string>
 	<string name="chat_type_group">Grop</string>
 	<string name="chat_type_channel">Canal</string>
 	<string name="no_chats">Cap de conversacion pel moment</string>
-	<string name="groups_button_add">Ajustar un nòu grop</string>
 	<string name="channels_button">Canals</string>
 	<string name="channels_list_empty">Cap de canal pel moment. Creatz lo vòstre o rejonhètz-ne un via un ligam de convidacion.</string>
 	<string name="channels_action_create">Crear un canal</string>
@@ -1075,7 +1053,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="recording_voice">Enregistrament del messatge vocal…</string>
 	<string name="voice_message_error">L’enregistrament vocal a fracassat</string>
 	<string name="voice_message_cancelled">Enregistrament anullat</string>
-	<string name="slide_to_cancel">← Fasètz lisar per anullar</string>
 	<string name="voice_message_too_short">Messatge vocal tròp cort</string>
 	<string name="voice_message_too_long">Messatge vocal tròp long. Fasètz-lo de mens de 30 segondas.</string>
 	<string name="microphone_permission_required">L’autorizacion del microfòn es necessària pels messatges vocals</string>
@@ -1152,7 +1129,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="call_rejected_peer_disabled_video_hint">Accepta los apèls vocals. Ensajatz puslèu un apèl vocal.</string>
 	<string name="record_voice_message">Enregistrar un messatge vocal</string>
 	<string name="start">Començar</string>
-	<string name="finish">Acabar</string>
 	<string name="status_heading">Estat:</string>
 	<string name="error">Error</string>
 	<string name="info">Informacions</string>
@@ -1442,14 +1418,11 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="peer_trust_level_stranger">Desconegut</string>
 	<string name="introduction_response_error">I a agut una error en respondre a la presentacion.</string>
 	<string name="introduction_response_declined_auto">La presentacion a %1$s es estada refusada automaticament.</string>
-	<string name="groups_invitations_response_declined_auto">La convidacion de grop de %s es estada refusada automaticament.</string>
 	<string name="reblog_button">Repartejar</string>
 	<string name="share_message">Partejar amb un messatge</string>
 	<string name="share_hint_short">Ajustar un messatge (opcional)</string>
 	<string name="invitation_exists">Convidacion ja mandada</string>
-	<string name="change_profile_picture">Tocatz per cambiar vòstra fòto de perfil</string>
 	<string name="dialog_confirm_profile_picture_title">Cambiar la fòto de perfil</string>
-	<string name="dialog_confirm_profile_picture_remark">Sonque vòstres contactes pòdon veire aquesta fòto</string>
 	<string name="change_profile_picture_failed_message">O planhèm, mas quicòm a pas foncionat en metre a jorn vòstra fòto de perfil</string>
 	<string name="pref_language_changed">L’aplicacion se tornarà cargar per aplicar la lenga novèla.</string>
 	<string name="invite_friends_title">Convidar d’amics</string>
@@ -1797,14 +1770,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="video_offer_accept">Acceptar la vidèo</string>
 	<string name="video_offer_reject">Refusar</string>
 	<string name="camera_permission_required">Autorizacion de la camèra necessària pels apèls vidèo</string>
-	<string name="contact_type_selection_title">Causissètz lo tipe de connexion</string>
-	<string name="contact_type_selection_subtitle">Seleccionatz cossí vos volètz connectar amb vòstre contacte</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Seguretat post-quantica</string>
-	<string name="contact_type_zerion_description">Se connectar amb un autre utilizaire de Zerion. Chiframent post-quantic de cap a cap.</string>
-	<string name="contact_type_classic_title">Mòde classic</string>
-	<string name="contact_type_classic_badge">Seguretat classica</string>
-	<string name="contact_type_classic_description">Se connectar amb la criptografia classica. Utilizatz aquesta opcion per la compatibilitat amb los contactes que son sus de versions mai ancianas.</string>
 	<string name="recommended">Recomandat</string>
 	<string name="contact_type_info">Causissètz Zerion per una seguretat maximala, o lo Mòde classic per la compatibilitat amb las versions ancianas.</string>
 	<string name="voice_call_status_reconnecting">Reconnexion…</string>
@@ -1934,11 +1899,6 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	<string name="vault_doc_unsupported_office">Los documents Office se pòdon pas veire dins lo còfre segur.\n\nDobrir aqueles fichièrs demanda d’aplicacions extèrnas e de fichièrs temporaris, çò que comprometriá la seguretat del còfre.\n\nLos podètz sonque gardar, pas los dobrir.</string>
 	<string name="vault_doc_unsupported_archive">Los fichièrs d’archiu se pòdon pas extraire dins lo còfre segur.\n\nL’extraccion creariá de fichièrs en clar sul disc, çò que comprometriá la seguretat del còfre.\n\nLos podètz sonque gardar, pas los extraire.</string>
 	<string name="vault_doc_unsupported_generic">Aqueste tipe de document se pòt pas veire dins lo còfre segur.\n\nTipe de fichièr: %1$s\n\nLo podètz sonque gardar, pas lo dobrir.</string>
-	<string name="vault_item_secure_note">Nòta segura</string>
-	<string name="vault_item_password_entry">Element de senhal</string>
-	<string name="vault_item_image">Imatge • %1$s</string>
-	<string name="vault_item_video">Vidèo • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 	<string name="vault_add_to_vault_title">Ajustar al còfre</string>
 	<string name="vault_type_note">Nòta</string>
 	<string name="vault_type_image">Imatge</string>

@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Hesabınız bu uygulamanın daha eski bir sürümüyle oluşturulmuş ve bu sürümle açılamaz.\n\nEski sürümü yeniden kurun ya da parola sorulduğunda \"Parolamı unuttum\" seçeneğini kullanarak yeni bir hesap oluşturun.</string>
   <string name="startup_failed_data_too_new_error">Hesabınız bu uygulamanın daha yeni bir sürümüyle oluşturulmuş ve bu sürümle açılamaz.\n\nLütfen uygulamayı güncel sürümüne yükseltip yeniden deneyin.</string>
   <string name="startup_failed_service_error">Zerion gerek duyduğu bir bileşeni başlatamadı.\n\nLütfen uygulamayı güncel sürümüne yükseltip yeniden deneyin.</string>
-  <string name="download_zerion">Zerion kullanmayı sürdürmek için lütfen güncel sürümü indirin.</string>
-  <string name="create_new_account">Yeni bir hesap oluşturmanız gerekecek, fakat aynı takma adı kullanabilirsiniz.</string>
-  <string name="old_android_delete_account">Bu aygıttaki hesabınızı silmek için aşağıdaki düğmeye dokunabilirsiniz.</string>
-  <string name="delete_account_button">Hesabı sil</string>
   <string name="startup_open_database">Veri tabanının şifresi çözülüyor...</string>
   <string name="startup_migrate_database">Veri tabanı yükseltiliyor...</string>
   <string name="startup_compact_database">Veri tabanı sıkıştırılıyor...</string>
@@ -110,11 +106,9 @@
   <string name="open">Aç</string>
   <string name="change">Değiştir</string>
   <string name="start">Başlat</string>
-  <string name="finish">Bitir</string>
   <string name="no_data">Herhangi bir veri yok</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Yazılan metin çok uzun</string>
-  <string name="show_onboarding">Yardım penceresini görüntüle</string>
   <string name="fix">Düzelt</string>
   <string name="help">Yardım</string>
   <string name="sorry">Üzgünüm</string>
@@ -296,21 +290,12 @@
   <string name="groups_group_is_empty">Bu grup boş</string>
   <string name="groups_group_is_dissolved">Bu grup dağıtıldı</string>
   <string name="groups_remove">Sil</string>
-  <string name="groups_create_group_title">Özel grup oluştur</string>
-  <string name="groups_create_group_button">Grup oluştur</string>
   <string name="groups_create_group_invitation_button">Davet gönder</string>
-  <string name="groups_create_group_hint">Özel grubunuza bir ad verin</string>
   <string name="groups_invitation_sent">Grup daveti gönderildi</string>
-  <string name="groups_member_list">Üye listesi</string>
-  <string name="groups_invite_members">Üyeleri davet edin</string>
-  <string name="groups_member_created_you">Grubu oluşturdunuz</string>
   <string name="groups_member_created">Grubu %s oluşturdu</string>
   <string name="groups_member_joined_you">Gruba katıldınız</string>
-  <string name="groups_member_joined">%s gruba katıldı</string>
-  <string name="groups_leave">Gruptan ayrıl</string>
   <string name="groups_leave_dialog_title">Gruptan ayrılmayı onayla</string>
   <string name="groups_leave_dialog_message">Bu gruptan ayrılmak istediğinize emin misiniz?</string>
-  <string name="groups_dissolve">Grubu dağıt</string>
   <string name="groups_dissolve_dialog_title">Grubu dağıtmayı onayla</string>
   <string name="groups_dissolve_dialog_message">Bu grubu dağıtmak istediğinize emin misiniz?\n\nDiğer üyeler yazışmayı sürdüremeyecek ve son iletileri alamayacak.</string>
   <string name="groups_dissolve_button">Dağıt</string>
@@ -319,23 +304,15 @@
   
   <string name="groups_invitations_title">Grup davetleri</string>
   <string name="groups_invitations_invitation_sent">%1$s kişisini \"%2$s\" grubuna katılmaya davet ettiniz.</string>
-  <string name="groups_invitations_invitation_received">%1$s sizi \"%2$s\" grubuna katılmaya davet etti.</string>
   <string name="groups_invitations_joined">Gruba katıldı</string>
   <string name="groups_invitations_declined">Grup daveti reddedildi</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d grup daveti açık</item>
     <item quantity="other">%d grup daveti açık</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">%s kişisinin grup davetini kabul ettiniz.</string>
-  <string name="groups_invitations_response_declined_sent">%s kişisinin grup davetini reddettiniz.</string>
-  <string name="groups_invitations_response_declined_auto">%s kişisinin grup daveti otomatik olarak reddedildi.</string>
-  <string name="groups_invitations_response_accepted_received">%s grup davetini kabul etti.</string>
-  <string name="groups_invitations_response_declined_received">%s grup davetini reddetti.</string>
   <string name="sharing_status_groups">Yalnızca grubu oluşturan kişi gruba yeni üyeler davet edebilir. Aşağıda, grubun şimdiki üyelerini görebilirsiniz.</string>
   
-  <string name="groups_reveal_contacts">Kişileri görüntüle</string>
   <string name="groups_reveal_dialog_message">Kişilerin bu grubun şimdiki ve gelecekteki üyelerinin tümüne görüntülenip görüntülenmeyeceğini seçebilirsiniz.\n\nKişileri görünür yapmak, grupla olan bağlantınızı daha hızlı ve güvenilir yapar. Böylece grubu oluşturan kişi çevrim dışı olduğunda bile görüntülenen kişilerle iletişim kurabilirsiniz.</string>
-  <string name="groups_reveal_visible">Kişi ilişkisi grup tarafından görülebilir</string>
   <string name="groups_reveal_visible_revealed_by_us">Kişi ilişkisi grup tarafından görülebilir (siz görünür yaptınız)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kişi ilişkileri grup tarafından görülebilir (%s görünür yaptı)</string>
   <string name="groups_reveal_invisible">Kişi ilişkisi grup tarafından görülemez</string>
@@ -353,9 +330,7 @@
   
   <string name="read_more">diğerlerini oku</string>
 
-  <string name="change_profile_picture">Profil görselinizi değiştirmek için dokunun</string>
   <string name="dialog_confirm_profile_picture_title">Profil görselinizi değiştirin</string>
-  <string name="dialog_confirm_profile_picture_remark">Bu görseli yalnızca bağlantılarınız görebilir</string>
   <string name="change_profile_picture_failed_message">Üzgünüz. Profil görseliniz güncellenirken bir sorun çıktı</string>
   
   <string name="pref_language_title">Dil ve bölge</string>
@@ -1095,7 +1070,6 @@
 	<string name="chat_type_group">Grup</string>
 	<string name="chat_type_channel">Kanal</string>
 	<string name="no_chats">Henüz yazışma yok</string>
-	<string name="groups_button_add">Yeni grup ekle</string>
 	<string name="channels_button">Kanallar</string>
 	<string name="channels_list_empty">Henüz kanal yok. Kendi kanalınızı oluşturun veya bir davet bağlantısıyla bir kanala katılın.</string>
 	<string name="channels_action_create">Kanal oluştur</string>
@@ -1311,7 +1285,6 @@
 	<string name="recording_voice">Sesli ileti kaydediliyor…</string>
 	<string name="voice_message_error">Ses kaydı başarısız oldu</string>
 	<string name="voice_message_cancelled">Kayıt iptal edildi</string>
-	<string name="slide_to_cancel">← İptal etmek için kaydırın</string>
 	<string name="voice_message_too_short">Sesli ileti çok kısa</string>
 	<string name="voice_message_too_long">Sesli ileti çok uzun. 30 saniyenin altında tutun.</string>
 	<string name="microphone_permission_required">Sesli iletiler için mikrofon izni gerekir</string>
@@ -1946,14 +1919,6 @@
 	<string name="video_offer_accept">Videoyu kabul et</string>
 	<string name="video_offer_reject">Reddet</string>
 	<string name="camera_permission_required">Görüntülü aramalar için kamera izni gerekiyor</string>
-	<string name="contact_type_selection_title">Bağlantı türünü seçin</string>
-	<string name="contact_type_selection_subtitle">Kişinizle nasıl bağlantı kurmak istediğinizi seçin</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Kuantum sonrası güvenlik</string>
-	<string name="contact_type_zerion_description">Başka bir Zerion kullanıcısıyla bağlantı kurun. Uçtan uca kuantuma dayanıklı şifreleme.</string>
-	<string name="contact_type_classic_title">Klasik mod</string>
-	<string name="contact_type_classic_badge">Klasik güvenlik</string>
-	<string name="contact_type_classic_description">Klasik kriptografiyle bağlantı kurun. Eski sürümleri kullanan kişilerle geriye dönük uyumluluk için bu seçeneği kullanın.</string>
 	<string name="recommended">Önerilen</string>
 	<string name="contact_type_info">En yüksek güvenlik için Zerion\'u, geriye dönük uyumluluk için Klasik modu seçin.</string>
 	<string name="voice_call_status_reconnecting">Yeniden bağlanılıyor…</string>
@@ -2083,11 +2048,6 @@
 	<string name="vault_doc_unsupported_office">Office belgeleri güvenli kasanın içinde görüntülenemez.\n\nBu dosyaları açmak için dış uygulamalar ve geçici dosyalar gerekir; bu da kasanın güvenliğini tehlikeye atar.\n\nBunları yalnızca saklayabilirsiniz, açamazsınız.</string>
 	<string name="vault_doc_unsupported_archive">Arşiv dosyaları güvenli kasanın içinde açılamaz.\n\nArşivi açmak diskte şifrelenmemiş dosyalar oluşturur ve kasanın güvenliğini tehlikeye atar.\n\nBunları yalnızca saklayabilirsiniz, arşivden çıkaramazsınız.</string>
 	<string name="vault_doc_unsupported_generic">Bu belge türü güvenli kasanın içinde görüntülenemez.\n\nDosya türü: %1$s\n\nBunu yalnızca saklayabilirsiniz, açamazsınız.</string>
-	<string name="vault_item_secure_note">Güvenli not</string>
-	<string name="vault_item_password_entry">Parola kaydı</string>
-	<string name="vault_item_image">Görsel • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Belge • %1$s</string>
 	<string name="vault_add_to_vault_title">Kasaya ekle</string>
 	<string name="vault_type_note">Not</string>
 	<string name="vault_type_image">Görsel</string>

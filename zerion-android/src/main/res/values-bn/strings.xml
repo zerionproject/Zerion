@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">আপনার অ্যাকাউন্ট এই অ্যাপের পুরানো সংস্করণে তৈরি হয়েছে এবং এই সংস্করণে খোলা যাবে না।\n\nআপনাকে হয় পুরানো সংস্করণটি পুনরায় ইনস্টল করতে হবে, অথবা পাসওয়ার্ড প্রম্পটে \'আমি আমার পাসওয়ার্ড ভুলে গেছি\' অপশনটি নির্বাচন করে একটি নতুন অ্যাকাউন্ট সেটআপ করতে হবে।</string>
   <string name="startup_failed_data_too_new_error">আপনার অ্যাকাউন্ট এই অ্যাপের নতুন সংস্করণে তৈরি হয়েছে এবং এই সংস্করণে খোলা যাবে না। \n\nঅনুগ্রহ করে সর্বশেষ সংস্করণে আপগ্রেড করুন এবং আবার চেষ্টা করুন।</string>
   <string name="startup_failed_service_error">Zerion একটি প্রয়োজনীয় কম্পোনেন্ট চালু করতে পারেনি। \n\nঅনুগ্রহ করে অ্যাপের সর্বশেষ সংস্করণে আপগ্রেড করুন এবং আবার চেষ্টা করুন।</string>
-  <string name="download_zerion">Zerion ব্যবহার চালিয়ে যেতে, অনুগ্রহ করে সর্বশেষ ভার্সন ডাউনলোড করুন।</string>
-  <string name="create_new_account">আপনাকে একটি নতুন অ্যাকাউন্ট তৈরি করতে হবে, তবে আপনি একই ডাকনাম ব্যবহার করতে পারেন।</string>
-  <string name="old_android_delete_account">আপনি এই ডিভাইস থেকে আপনার অ্যাকাউন্ট মুছে ফেলতে নিচের বোতামটি চাপতে পারেন।</string>
-  <string name="delete_account_button">অ্যাকাউন্ট মুছে ফেলুন</string>
   <string name="startup_open_database">ডাটাবেস ডিক্রিপ্ট করা হচ্ছে...</string>
   <string name="startup_migrate_database">ডেটাবেস আপগ্রেড করা হচ্ছে...</string>
   <string name="startup_compact_database">ডাটাবেস কম্প্যাক্ট করা হচ্ছে...</string>
@@ -110,11 +106,9 @@
   <string name="open">খুলুন</string>
   <string name="change">পরিবর্তন</string>
   <string name="start">শুরু</string>
-  <string name="finish">শেষ</string>
   <string name="no_data">কোন তথ্য নেই</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">প্রবেশ পাঠ্যটি অত্যন্ত দীর্ঘ</string>
-  <string name="show_onboarding">সহায়তা ডায়ালগ দেখান</string>
   <string name="fix">সংশোধন</string>
   <string name="help">সাহায্য</string>
   <string name="sorry">দুঃখিত</string>
@@ -296,21 +290,12 @@
   <string name="groups_group_is_empty">এই গ্রুপি খালি</string>
   <string name="groups_group_is_dissolved">এই গ্রুপটি দ্রবীভূত করা হয়েছে</string>
   <string name="groups_remove">অপসারণ</string>
-  <string name="groups_create_group_title">ব্যক্তিগত গ্রুপ তৈরি করুন</string>
-  <string name="groups_create_group_button">গ্রুপ তৈরি করুন</string>
   <string name="groups_create_group_invitation_button">আমন্ত্রণ পাঠান</string>
-  <string name="groups_create_group_hint">আপনার ব্যক্তিগত গ্রুপের জন্য একটি নাম নির্বাচন করুন</string>
   <string name="groups_invitation_sent">গ্রুপ আমন্ত্রণ পাঠানো হয়েছে</string>
-  <string name="groups_member_list">সদস্য তালিকা</string>
-  <string name="groups_invite_members">সদস্যদের আমন্ত্রণ জানান</string>
-  <string name="groups_member_created_you">আপনি গ্রুপটি টি তৈরি করেছেন</string>
   <string name="groups_member_created">%s দল তৈরি করেছে</string>
   <string name="groups_member_joined_you">আপনি গ্রুপটিতে যোগদান করেছেন</string>
-  <string name="groups_member_joined">%s গ্রুপটিতে যোগদান করেছে</string>
-  <string name="groups_leave">দল পরিত্যাগ করুন</string>
   <string name="groups_leave_dialog_title">গোষ্ঠী ত্যাগ নিশ্চিত করুন</string>
   <string name="groups_leave_dialog_message">আপনি কি নিশ্চিত আপনি এই দল ছেড়ে যেতে চান?</string>
-  <string name="groups_dissolve">দলে ভেঙে দিন</string>
   <string name="groups_dissolve_dialog_title">গ্রুপটি বিলুপ্ত করার জন্য নিশ্চিত করুন</string>
   <string name="groups_dissolve_dialog_message">আপনি কি নিশ্চিত যে, আপনি এই গ্রুপটি বিলুপ্ত করতে চান? \n\nঅন্যান্য সদস্যরা তাদের আলোচনা চালিয়ে যেতে পারবে না এবং সম্ভবত সর্বশেষ বার্তাগুলি পাবে না।</string>
   <string name="groups_dissolve_button">বিলুপ্ত করুন</string>
@@ -319,23 +304,15 @@
   
   <string name="groups_invitations_title">গ্রুপের আমন্ত্রণ</string>
   <string name="groups_invitations_invitation_sent">আপনি %1$s-কে \"%2$s\" গ্রুপে যোগ দেওয়ার জন্য আমন্ত্রণ জানিয়েছেন।</string>
-  <string name="groups_invitations_invitation_received">%1$s আপনাকে \"%2$s\" গ্রুপে যোগ দেওয়ার জন্য আমন্ত্রণ জানিয়েছে।</string>
   <string name="groups_invitations_joined">দলের যোগদান</string>
   <string name="groups_invitations_declined">গ্রুপ আমন্ত্রণ প্রত্যাখ্যাত হয়েছে</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%dটি মুক্ত গ্রুপ আমন্ত্রণ রয়েছে</item>
     <item quantity="other">%d মুক্ত গ্রুপে আমন্ত্রণ রয়েছে</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">আপনি %sথেকে গ্রুপ আমন্ত্রণ গ্রহণ করেছেন।</string>
-  <string name="groups_invitations_response_declined_sent">আপনি থেকে %sগ্রুপ আমন্ত্রণ প্রত্যাখ্যান করেছেন।</string>
-  <string name="groups_invitations_response_declined_auto">%s থেকে প্রাপ্ত গ্রুপের আমন্ত্রণ স্বয়ংক্রিয়ভাবে প্রত্যাখ্যাত হয়েছে।</string>
-  <string name="groups_invitations_response_accepted_received">%s গ্রুপে আমন্ত্রণ গ্রহণ করেছেন</string>
-  <string name="groups_invitations_response_declined_received">%s গ্রুপে আমন্ত্রণ প্রত্যাখ্যান করেছেন।</string>
   <string name="sharing_status_groups">শুধুমাত্র দলের স্রষ্টা নতুন সদস্যদের আমন্ত্রণ করতে পারেন। নীচে দলের সব বর্তমান সদস্য।</string>
   
-  <string name="groups_reveal_contacts">যোগাযোগ প্রকাশ করুন</string>
   <string name="groups_reveal_dialog_message">আপনি ঠিক করুন আপনি কি এই গ্রুপের বর্তমান এবং ভবিষ্যত সকল সদস্যদের কাছে আপনার কন্টাক্টগুলি প্রকাশ করবেন কিনা। \n\nকন্টাক্ট প্রকাশ করলে গ্রুপগুলির সাথে সংযোগকে আরও দ্রুত এবং নির্ভরযোগ্য করে তোলে, কারণ গ্রুপ জীই তৈরি করেছেন তিনি অফলাইনে থাকলেই আপনি প্রকাশিত কন্টাক্টগুলির সাথে যোগাযোগ করতে পারবেন।</string>
-  <string name="groups_reveal_visible">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান</string>
   <string name="groups_reveal_visible_revealed_by_us">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান (আপনি প্রকাশ করেছেন)</string>
   <string name="groups_reveal_visible_revealed_by_contact">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান (%s  প্রকাশ করেছেন)</string>
   <string name="groups_reveal_invisible">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান নয়</string>
@@ -353,9 +330,7 @@
   
   <string name="read_more">আরো পড়ুন</string>
 
-  <string name="change_profile_picture">আপনার প্রোফাইলের ছবি পরিবর্তন করতে ট্যাপ করুন</string>
   <string name="dialog_confirm_profile_picture_title">প্রোফাইলের ছবি পরিবর্তন করুন</string>
-  <string name="dialog_confirm_profile_picture_remark">এই ছবি কেবল আপনার কন্টাক্টরা দেখতে পারবে</string>
   <string name="change_profile_picture_failed_message">আমরা দুঃখিত, তবে আপনার প্রোফাইল ছবি আপডেট করার সময় কিছু সমস্যা হয়েছে</string>
   
   <string name="pref_language_title">ভাষা &amp; অঞ্চল</string>
@@ -962,7 +937,6 @@
 	<string name="chat_type_group">গ্রুপ</string>
 	<string name="chat_type_channel">চ্যানেল</string>
 	<string name="no_chats">এখনো কোনো কথোপকথন নেই</string>
-	<string name="groups_button_add">নতুন গ্রুপ যোগ করুন</string>
 	<string name="channels_button">চ্যানেল</string>
 	<string name="channels_list_empty">এখনো কোনো চ্যানেল নেই। নিজের চ্যানেল তৈরি করুন বা আমন্ত্রণ লিংকের মাধ্যমে কোনো চ্যানেলে যোগ দিন।</string>
 	<string name="channels_action_create">চ্যানেল তৈরি করুন</string>
@@ -1178,7 +1152,6 @@
 	<string name="recording_voice">ভয়েস বার্তা রেকর্ড করা হচ্ছে…</string>
 	<string name="voice_message_error">ভয়েস রেকর্ডিং ব্যর্থ হয়েছে</string>
 	<string name="voice_message_cancelled">রেকর্ডিং বাতিল করা হয়েছে</string>
-	<string name="slide_to_cancel">← বাতিল করতে স্লাইড করুন</string>
 	<string name="voice_message_too_short">ভয়েস বার্তা খুব ছোট</string>
 	<string name="voice_message_too_long">ভয়েস বার্তা খুব দীর্ঘ। ৩০ সেকেন্ডের কম রাখুন।</string>
 	<string name="microphone_permission_required">ভয়েস বার্তার জন্য মাইক্রোফোনের অনুমতি প্রয়োজন</string>
@@ -1842,14 +1815,6 @@
 	<string name="video_offer_accept">ভিডিও গ্রহণ করুন</string>
 	<string name="video_offer_reject">প্রত্যাখ্যান করুন</string>
 	<string name="camera_permission_required">ভিডিও কলের জন্য ক্যামেরার অনুমতি প্রয়োজন</string>
-	<string name="contact_type_selection_title">সংযোগের ধরন বেছে নিন</string>
-	<string name="contact_type_selection_subtitle">আপনার পরিচিতির সাথে কীভাবে সংযুক্ত হতে চান তা বেছে নিন</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">পোস্ট-কোয়ান্টাম নিরাপত্তা</string>
-	<string name="contact_type_zerion_description">অন্য একজন Zerion ব্যবহারকারীর সাথে সংযুক্ত হন। এন্ড-টু-এন্ড কোয়ান্টাম-প্রতিরোধী এনক্রিপশন।</string>
-	<string name="contact_type_classic_title">ক্লাসিক মোড</string>
-	<string name="contact_type_classic_badge">ক্লাসিক্যাল নিরাপত্তা</string>
-	<string name="contact_type_classic_description">ক্লাসিক্যাল ক্রিপ্টোগ্রাফি ব্যবহার করে সংযুক্ত হন। পুরোনো সংস্করণ ব্যবহারকারী পরিচিতিদের সাথে সামঞ্জস্য রাখতে এই বিকল্পটি ব্যবহার করুন।</string>
 	<string name="recommended">প্রস্তাবিত</string>
 	<string name="contact_type_info">সর্বোচ্চ নিরাপত্তার জন্য Zerion বেছে নিন, অথবা পুরোনো সংস্করণের সাথে সামঞ্জস্যের জন্য ক্লাসিক মোড।</string>
 	<string name="voice_call_status_reconnecting">আবার সংযুক্ত হচ্ছে…</string>
@@ -1979,11 +1944,6 @@
 	<string name="vault_doc_unsupported_office">Office ডকুমেন্ট সুরক্ষিত Vault-এর ভেতরে দেখা যায় না।\n\nএই ফাইলগুলো খুলতে বাইরের অ্যাপ ও অস্থায়ী ফাইল লাগে, যা Vault-এর নিরাপত্তা নষ্ট করবে।\n\nআপনি এগুলো শুধু সংরক্ষণ করতে পারবেন, খুলতে পারবেন না।</string>
 	<string name="vault_doc_unsupported_archive">আর্কাইভ ফাইল সুরক্ষিত Vault-এর ভেতরে এক্সট্র্যাক্ট করা যায় না।\n\nএক্সট্র্যাক্ট করলে ডিস্কে এনক্রিপ্ট না করা ফাইল তৈরি হবে, যা Vault-এর নিরাপত্তা নষ্ট করে।\n\nআপনি এগুলো শুধু সংরক্ষণ করতে পারবেন, এক্সট্র্যাক্ট করতে পারবেন না।</string>
 	<string name="vault_doc_unsupported_generic">এই ধরনের ডকুমেন্ট সুরক্ষিত Vault-এর ভেতরে দেখা যায় না।\n\nফাইলের ধরন: %1$s\n\nআপনি এটি শুধু সংরক্ষণ করতে পারবেন, খুলতে পারবেন না।</string>
-	<string name="vault_item_secure_note">সুরক্ষিত নোট</string>
-	<string name="vault_item_password_entry">পাসওয়ার্ড এন্ট্রি</string>
-	<string name="vault_item_image">ছবি • %1$s</string>
-	<string name="vault_item_video">ভিডিও • %1$s</string>
-	<string name="vault_item_document">ডকুমেন্ট • %1$s</string>
 	<string name="vault_add_to_vault_title">Vault-এ যোগ করুন</string>
 	<string name="vault_type_note">নোট</string>
 	<string name="vault_type_image">ছবি</string>

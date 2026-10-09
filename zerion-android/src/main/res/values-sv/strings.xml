@@ -44,10 +44,6 @@
   <string name="startup_failed_data_too_old_error">Ditt konto skapades med en gammal version av denna appen och kan inte öppnas med denna version.\n\nDu måste antingen återinstallera den gamla versionen eller sätt upp ett nytt konto genom att välja ”Jag har glömt mitt lösenord” vid lösenordsförfrågan.</string>
   <string name="startup_failed_data_too_new_error">Ditt konto skapades med en nyare version av denna app och kan inte öppnas av denna version.\n\nUppgradera till den senaste versionen och prova igen.</string>
   <string name="startup_failed_service_error">Zerion kan inte starta en nödvändig komponent.\n\nUppgradera till den senaste versionen av appen och prova igen.</string>
-  <string name="download_zerion">För att fortsätta använda Zerion, hämta den senaste utgåvan.</string>
-  <string name="create_new_account">Du måste skapa ett nytt konto, men du kan använda samma användarnamn.</string>
-  <string name="old_android_delete_account">Du kan trycka på knappen nedan för att ta bort ditt konto från denna enhet.</string>
-  <string name="delete_account_button">Radera kontot</string>
   <string name="startup_open_database">Dekrypterar databasen...</string>
   <string name="startup_migrate_database">Uppgraderar databasen...</string>
   <string name="startup_compact_database">Komprimerar databasen...</string>
@@ -106,11 +102,9 @@
   <string name="open">Öppen</string>
   <string name="change">Ändra</string>
   <string name="start">Kör</string>
-  <string name="finish">Slutför</string>
   <string name="no_data">Ingen data</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Texten innehåller för många tecken</string>
-  <string name="show_onboarding">Visa hjälprutan</string>
   <string name="fix">Laga</string>
   <string name="help">Hjälp</string>
   <string name="sorry">Tyvärr</string>
@@ -291,21 +285,12 @@
   <string name="groups_group_is_empty">Denna grupp har inga medlemmar</string>
   <string name="groups_group_is_dissolved">Denna grupp har raderats</string>
   <string name="groups_remove">Ta bort</string>
-  <string name="groups_create_group_title">Skapa privatgrupp</string>
-  <string name="groups_create_group_button">Skapa grupp</string>
   <string name="groups_create_group_invitation_button">Skicka inbjudan</string>
-  <string name="groups_create_group_hint">Skapa ett namn för din privatgrupp</string>
   <string name="groups_invitation_sent">Gruppinbjudan har skickats</string>
-  <string name="groups_member_list">Medlemmar</string>
-  <string name="groups_invite_members">Bjuda in medlem</string>
-  <string name="groups_member_created_you">Du har skapat en grupp</string>
   <string name="groups_member_created">%sskapade en grupp</string>
   <string name="groups_member_joined_you">Du gick med i gruppen</string>
-  <string name="groups_member_joined">%sgick med i gruppen</string>
-  <string name="groups_leave">Gå ur grupp</string>
   <string name="groups_leave_dialog_title">Bekräfta gå ur grupp</string>
   <string name="groups_leave_dialog_message">Är du säker på att du vill gå ur den här gruppen?</string>
-  <string name="groups_dissolve">Radera grupp</string>
   <string name="groups_dissolve_dialog_title"> Bekräfta radering av grupp</string>
   <string name="groups_dissolve_dialog_message">Är du säker på att du vill radera denna grupp?\n\nMedlemmar kommer inte att kunna fortsätta sin a konversationer, och de sista meddelandena kanske inte kommer fram.</string>
   <string name="groups_dissolve_button">Radera</string>
@@ -314,23 +299,15 @@
   
   <string name="groups_invitations_title">Gruppinbjudningar</string>
   <string name="groups_invitations_invitation_sent">Du har bjudit in %1$s add gå med i gruppen \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s har bjudit in dig att gå med i gruppen \"%2$s\".</string>
   <string name="groups_invitations_joined">Gick med i grupp</string>
   <string name="groups_invitations_declined">Gruppinbjudan avvisades</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%dobesvarad gruppinbjudan</item>
     <item quantity="other">%dobesvarade gruppinbjudningar</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Du godkände gruppinbjudan från %s.</string>
-  <string name="groups_invitations_response_declined_sent">Du avvisade gruppinbjudan från %s.</string>
-  <string name="groups_invitations_response_declined_auto">Gruppinbjudan från %s avböjdes automatiskt.</string>
-  <string name="groups_invitations_response_accepted_received">%sgodkände gruppinbjudan.</string>
-  <string name="groups_invitations_response_declined_received">%savvisade gruppinbjudan.</string>
   <string name="sharing_status_groups">Bara skaparen kan bjuda in nya medlemmare till gruppen. Nedan listas gruppens nuvarande medlemmar.</string>
   
-  <string name="groups_reveal_contacts">Avslöja kontakter</string>
   <string name="groups_reveal_dialog_message">Du kan välja att avslöja dina kontakter för alla nuvarande och framtida medlemmar i den här gruppen.\n\nOm du avslöjer dina kontakter så blir din anslutning till gruppen snabbare och med pålitlig, för kommunikation kan ske med avslöjade kontakter även när gruppens skapare är nedkopplad.</string>
-  <string name="groups_reveal_visible">Kontaktrelationer är synliga för gruppen</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktrelationer är synliga för gruppen (avslöjade av dig)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktrelationer är synliga för gruppen (avslöjade av %s)</string>
   <string name="groups_reveal_invisible">Kontaktrelationer är ej synliga för gruppen</string>
@@ -348,9 +325,7 @@
   
   <string name="read_more">läs mer</string>
 
-  <string name="change_profile_picture">Tryck för att ändra din profilbild</string>
   <string name="dialog_confirm_profile_picture_title">Ändra profilbild</string>
-  <string name="dialog_confirm_profile_picture_remark">Bara din kontakter kan se denna bild</string>
   <string name="change_profile_picture_failed_message">Tyvärr, något gick fel när din profilbild skulle ändras</string>
   
   <string name="pref_language_title">Språk &amp; region</string>
@@ -1055,7 +1030,6 @@
 	<string name="chat_type_group">Grupp</string>
 	<string name="chat_type_channel">Kanal</string>
 	<string name="no_chats">Inga konversationer ännu</string>
-	<string name="groups_button_add">Lägg till ny grupp</string>
 	<string name="channels_button">Kanaler</string>
 	<string name="channels_list_empty">Inga kanaler ännu. Skapa en egen eller gå med i en via en inbjudningslänk.</string>
 	<string name="channels_action_create">Skapa kanal</string>
@@ -1271,7 +1245,6 @@
 	<string name="recording_voice">Spelar in röstmeddelande…</string>
 	<string name="voice_message_error">Röstinspelningen misslyckades</string>
 	<string name="voice_message_cancelled">Inspelningen avbröts</string>
-	<string name="slide_to_cancel">← Dra för att avbryta</string>
 	<string name="voice_message_too_short">Röstmeddelandet är för kort</string>
 	<string name="voice_message_too_long">Röstmeddelandet är för långt. Håll det under 30 sekunder.</string>
 	<string name="microphone_permission_required">Mikrofonbehörighet krävs för röstmeddelanden</string>
@@ -1941,14 +1914,6 @@
 	<string name="video_offer_accept">Acceptera video</string>
 	<string name="video_offer_reject">Avvisa</string>
 	<string name="camera_permission_required">Kameraåtkomst krävs för videosamtal</string>
-	<string name="contact_type_selection_title">Välj anslutningstyp</string>
-	<string name="contact_type_selection_subtitle">Välj hur du vill ansluta till din kontakt</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Postkvantsäkerhet</string>
-	<string name="contact_type_zerion_description">Anslut till en annan Zerion-användare. Kvantresistent totalsträckskryptering.</string>
-	<string name="contact_type_classic_title">Klassiskt läge</string>
-	<string name="contact_type_classic_badge">Klassisk säkerhet</string>
-	<string name="contact_type_classic_description">Anslut med klassisk kryptografi. Använd det här alternativet för bakåtkompatibilitet med kontakter som har äldre versioner.</string>
 	<string name="recommended">Rekommenderas</string>
 	<string name="contact_type_info">Välj Zerion för maximal säkerhet eller Klassiskt läge för bakåtkompatibilitet.</string>
 	<string name="voice_call_status_reconnecting">Återansluter…</string>
@@ -2078,11 +2043,6 @@
 	<string name="vault_doc_unsupported_office">Office-dokument kan inte visas i det säkra valvet.\n\nFör att öppna de här filerna krävs externa appar och temporära filer, vilket skulle äventyra valvets säkerhet.\n\nDu kan bara lagra dem, inte öppna dem.</string>
 	<string name="vault_doc_unsupported_archive">Arkivfiler kan inte packas upp i det säkra valvet.\n\nUppackning skulle skapa okrypterade filer på lagringsutrymmet, vilket äventyrar valvets säkerhet.\n\nDu kan bara lagra dem, inte packa upp dem.</string>
 	<string name="vault_doc_unsupported_generic">Den här dokumenttypen kan inte visas i det säkra valvet.\n\nFiltyp: %1$s\n\nDu kan bara lagra den, inte öppna den.</string>
-	<string name="vault_item_secure_note">Säker anteckning</string>
-	<string name="vault_item_password_entry">Lösenordspost</string>
-	<string name="vault_item_image">Bild • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Dokument • %1$s</string>
 	<string name="vault_add_to_vault_title">Lägg till i valvet</string>
 	<string name="vault_type_note">Anteckning</string>
 	<string name="vault_type_image">Bild</string>

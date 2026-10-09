@@ -35,7 +35,6 @@
 	<color name="zerion_button_text_disabled">#23cccccc</color>
 
 	<color name="thread_indicator">@color/zerion_night_700</color>
-	<color name="thread_item_highlight">@android:color/black</color>
 
 	<color name="divider">@android:color/black</color>
 

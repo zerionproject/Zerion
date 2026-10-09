@@ -44,10 +44,6 @@
   <string name="startup_failed_data_too_old_error">El vostre compte s\'ha creat amb una versió antiga d\'aquesta aplicació i no es pot obrir amb aquesta versió.\n\nHeu de tornar a instal·lar la versió antiga o configurar un compte nou escollint «He oblidat la meva contrasenya» a la sol·licitud de contrasenya.</string>
   <string name="startup_failed_data_too_new_error">El vostre compte s\'ha creat amb una versió més recent d\'aquesta aplicació i no es pot obrir amb aquesta versió.\n\nActualitzeu a la versió més recent i torneu-ho a provar.</string>
   <string name="startup_failed_service_error">El Zerion no ha pogut iniciar un component necessari.\n\nActualitzeu l\'aplicació a la darrera versió i torna-ho a provar.</string>
-  <string name="download_zerion">Per continuar utilitzant Zerion, baixeu la darrera versió.</string>
-  <string name="create_new_account">Haureu de crear un compte nou, però podeu utilitzar el mateix sobrenom.</string>
-  <string name="old_android_delete_account">Podeu tocar el botó següent per suprimir el vostre compte d\'aquest dispositiu.</string>
-  <string name="delete_account_button">Esborreu el compte</string>
   <string name="startup_open_database">S\'està desxifrant la base de dades...</string>
   <string name="startup_migrate_database">S\'està actualitzant la base de dades...</string>
   <string name="startup_compact_database">S\'està compactant la base de dades...</string>
@@ -106,11 +102,9 @@
   <string name="open">Obre</string>
   <string name="change">Canvia</string>
   <string name="start">Inicia</string>
-  <string name="finish">Fi</string>
   <string name="no_data">Sense dades</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">El text és massa llarg</string>
-  <string name="show_onboarding">Mostra el diàleg d\'ajuda.</string>
   <string name="fix">Corregeix</string>
   <string name="help">Ajuda</string>
   <string name="sorry">Ens sap greu</string>
@@ -293,21 +287,12 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="groups_group_is_empty">Aquest grup està buit.</string>
   <string name="groups_group_is_dissolved">Aquest grup s\'ha dissolt.</string>
   <string name="groups_remove">Suprimeix</string>
-  <string name="groups_create_group_title">Creeu un grup privat</string>
-  <string name="groups_create_group_button">Crea el grup</string>
   <string name="groups_create_group_invitation_button">Envia una invitació</string>
-  <string name="groups_create_group_hint">Trieu un nom per al vostre grup privat</string>
   <string name="groups_invitation_sent">S\'ha enviat la invitació del grup</string>
-  <string name="groups_member_list">Llista de membres</string>
-  <string name="groups_invite_members">Convida a nous membres</string>
-  <string name="groups_member_created_you">Heu creat el grup</string>
   <string name="groups_member_created">%s ha creat el grup</string>
   <string name="groups_member_joined_you">Us heu afegit al grup</string>
-  <string name="groups_member_joined">%s s\'ha afegit al grup</string>
-  <string name="groups_leave">Abandona el grup</string>
   <string name="groups_leave_dialog_title">Confirmeu que abandoneu el grup</string>
   <string name="groups_leave_dialog_message">Segur que voleu abandonar aquest grup?</string>
-  <string name="groups_dissolve">Dissol el grup</string>
   <string name="groups_dissolve_dialog_title">Confirmeu la dissolució del grup</string>
   <string name="groups_dissolve_dialog_message">Esteu segur que voleu dissoldre aquest grup?\n\nSi el dissoleu cap altre membre podrà continuar la conversa i alguns membres pot ser que no rebin els darrers missatges.</string>
   <string name="groups_dissolve_button">Dissol</string>
@@ -316,23 +301,15 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   
   <string name="groups_invitations_title">Convideu a formar part del grup</string>
   <string name="groups_invitations_invitation_sent">Heu convidat a %1$s a afegir-se al grup «%2$s».</string>
-  <string name="groups_invitations_invitation_received">%1$s us ha convidat a afegir-vos al grup «%2$s».</string>
   <string name="groups_invitations_joined">Us heu afegit al grup</string>
   <string name="groups_invitations_declined">Ha refusat afegir-se al grup</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d invitació a un grup obert</item>
     <item quantity="other">%d invitacions a grups oberts</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Heu acceptat afegir-vos al grup per invitació de %s.</string>
-  <string name="groups_invitations_response_declined_sent">Heu refusat afegir-vos al grup per invitació de %s.</string>
-  <string name="groups_invitations_response_declined_auto">La invitació al grup de %s s\'ha declinat automàticament.</string>
-  <string name="groups_invitations_response_accepted_received">%s ha decidit afegir-se al grup.</string>
-  <string name="groups_invitations_response_declined_received">%s ha refusat afegir-se al grup.</string>
   <string name="sharing_status_groups">Només el creador del grup pot convidar a nous membres. Tot seguit hi ha la llista dels membres del grup.</string>
   
-  <string name="groups_reveal_contacts">Revela els contactes</string>
   <string name="groups_reveal_dialog_message">Podeu triar si voleu que es mostrin els contactes a tots els membres actuals i futurs d\'aquest grup.\n\nLa revelació dels contactes fa que la vostra connexió al grup sigui més ràpida i més fiable, ja que podeu comunicar-vos amb els contactes revelats, fins i tot quan el creador del grup està fora de línia.</string>
-  <string name="groups_reveal_visible">La relació de contactes és visible pel grup</string>
   <string name="groups_reveal_visible_revealed_by_us">La relació de contactes és visible pel grup (revelada per vós)</string>
   <string name="groups_reveal_visible_revealed_by_contact">La relació de contactes és visible pel grup (revelada per %s)</string>
   <string name="groups_reveal_invisible">La relació de contactes no és visible pel grup</string>
@@ -350,9 +327,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   
   <string name="read_more">llegeix-ne més</string>
 
-  <string name="change_profile_picture">Feu un toc per modificar la foto del vostre perfil</string>
   <string name="dialog_confirm_profile_picture_title">Modifica la foto de perfil</string>
-  <string name="dialog_confirm_profile_picture_remark">Només veuran la foto els vostres contactes</string>
   <string name="change_profile_picture_failed_message">Alguna cosa ha fallat a l\'actualitzar la vostra foto de perfil</string>
   
   <string name="pref_language_title">Llengua i regió</string>
@@ -956,7 +931,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="chat_type_group">Grup</string>
 	<string name="chat_type_channel">Canal</string>
 	<string name="no_chats">Encara no hi ha cap conversa</string>
-	<string name="groups_button_add">Afegeix un grup nou</string>
 	<string name="channels_button">Canals</string>
 	<string name="channels_list_empty">Encara no hi ha cap canal. Crea\'n un o uneix-te a un amb un enllaç d\'invitació.</string>
 	<string name="channels_action_create">Crea un canal</string>
@@ -1172,7 +1146,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="recording_voice">S\'està enregistrant el missatge de veu…</string>
 	<string name="voice_message_error">No s\'ha pogut enregistrar la veu</string>
 	<string name="voice_message_cancelled">S\'ha cancel·lat l\'enregistrament</string>
-	<string name="slide_to_cancel">← Llisca per cancel·lar</string>
 	<string name="voice_message_too_short">El missatge de veu és massa curt</string>
 	<string name="voice_message_too_long">El missatge de veu és massa llarg. Ha de durar menys de 30 segons.</string>
 	<string name="microphone_permission_required">Cal el permís del micròfon per als missatges de veu</string>
@@ -1840,14 +1813,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="video_offer_accept">Accepta el vídeo</string>
 	<string name="video_offer_reject">Rebutja</string>
 	<string name="camera_permission_required">Cal el permís de la càmera per a les videotrucades</string>
-	<string name="contact_type_selection_title">Tria el tipus de connexió</string>
-	<string name="contact_type_selection_subtitle">Selecciona com vols connectar-te amb el teu contacte</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Seguretat postquàntica</string>
-	<string name="contact_type_zerion_description">Connecta\'t amb un altre usuari de Zerion. Xifratge d\'extrem a extrem resistent a la computació quàntica.</string>
-	<string name="contact_type_classic_title">Mode clàssic</string>
-	<string name="contact_type_classic_badge">Seguretat clàssica</string>
-	<string name="contact_type_classic_description">Connecta\'t amb criptografia clàssica. Fes servir aquesta opció per mantenir la compatibilitat amb contactes que tenen versions antigues.</string>
 	<string name="recommended">Recomanat</string>
 	<string name="contact_type_info">Tria Zerion per a la màxima seguretat o el mode clàssic per a la compatibilitat amb versions anteriors.</string>
 	<string name="voice_call_status_reconnecting">S\'està tornant a connectar…</string>
@@ -1977,11 +1942,6 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_doc_unsupported_office">Els documents d\'Office no es poden veure dins de la caixa forta segura.\n\nObrir aquests fitxers requereix aplicacions externes i fitxers temporals, cosa que comprometria la seguretat de la caixa forta.\n\nNomés els pots desar, no obrir-los.</string>
 	<string name="vault_doc_unsupported_archive">Els fitxers comprimits no es poden extreure dins de la caixa forta segura.\n\nL\'extracció crearia fitxers sense xifrar al disc, cosa que comprometria la seguretat de la caixa forta.\n\nNomés els pots desar, no extreure\'ls.</string>
 	<string name="vault_doc_unsupported_generic">Aquest tipus de document no es pot veure dins de la caixa forta segura.\n\nTipus de fitxer: %1$s\n\nNomés el pots desar, no obrir-lo.</string>
-	<string name="vault_item_secure_note">Nota segura</string>
-	<string name="vault_item_password_entry">Entrada de contrasenya</string>
-	<string name="vault_item_image">Imatge • %1$s</string>
-	<string name="vault_item_video">Vídeo • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 	<string name="vault_add_to_vault_title">Afegeix a la caixa forta</string>
 	<string name="vault_type_note">Nota</string>
 	<string name="vault_type_image">Imatge</string>

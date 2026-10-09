@@ -44,10 +44,6 @@
   <string name="startup_failed_data_too_old_error">თქვენი ანგარიში შექმნილია ამ აპის ძველი ვერსიის მეშვეობით და ვერ გაიხსნება ამ ვერსიაში.\n\nან ხელახლა უნდა დააინსტალიროთ ძველი ვერსია, ან დააყენეთ ახალი ანგარიში პაროლის მოთხოვნაში „დავიწყებული პაროლის“ არჩევით.</string>
   <string name="startup_failed_data_too_new_error">თქვენი ანგარიში შეიქმნა ამ აპის ახალი ვერსიის მეშვეობით და ვერ გაიხსნება ამ ვერსიაში.\n\nგთხოვთ, განაახლოთ ბოლო ვერსიამდე და ხელახლა სცადოთ.</string>
   <string name="startup_failed_service_error">Zerion-მა ვერ შეძლო საჭირო კომპონენტების გაშვებას.\n\nგთხოვთ, განაახლოთ აპის ბოლო ვერსიამდე და ისევ სცადოთ.</string>
-  <string name="download_zerion">თუ გსურთ, კვლავ გამოიყენოთ Zerion, ჩამოტვირთეთ ბოლო გამოშვება.</string>
-  <string name="create_new_account">დაგჭირდებათ ახალი ანგარიშის შექმნა, თუმცა იმავე მეტსახელის გამოყენება შეგეძლებათ.</string>
-  <string name="old_android_delete_account">ამ მოწყობილობიდან თქვენი ანგარიშის წასაშლელად, შეგიძლიათ შეეხოთ ღილაკს ქვემოთ.</string>
-  <string name="delete_account_button">ანგარიშის წაშლა</string>
   <string name="startup_open_database">მიმდინარეობს მონაცემთა ბაზის გაშიფვრა…</string>
   <string name="startup_migrate_database">მიმდინარეობს მონაცემთა ბაზის განახლება…</string>
   <string name="startup_compact_database">მიმდინარეობს მონაცემთა ბაზის შეკუმშვა…</string>
@@ -106,11 +102,9 @@
   <string name="open">გახსნა</string>
   <string name="change">შეცვლა</string>
   <string name="start">დაწყება</string>
-  <string name="finish">დასრულება</string>
   <string name="no_data">მონაცემები არ არის</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">შეყვანილი ტექსტი ძალიან გრძელია</string>
-  <string name="show_onboarding">დახმარების დიალოგის ჩვენება</string>
   <string name="fix">მოგვარება</string>
   <string name="help">დახმარება</string>
   <string name="sorry">ვწუხვართ</string>
@@ -288,21 +282,12 @@
   <string name="groups_group_is_empty">ეს ჯგუფი ცარიელია</string>
   <string name="groups_group_is_dissolved">ეს ჯგუფი დაიშალა</string>
   <string name="groups_remove">ამოშლა</string>
-  <string name="groups_create_group_title">დახურული ჯგუფის შექმნა</string>
-  <string name="groups_create_group_button">ჯგუფის შექმნა</string>
   <string name="groups_create_group_invitation_button">მოწვევის გაგზავნა</string>
-  <string name="groups_create_group_hint">აირჩიეთ თქვენი დახურული ჯგუფის სახელი</string>
   <string name="groups_invitation_sent">ჯგუფის მოწვევა გაგზავნილია</string>
-  <string name="groups_member_list">წევრთა სია</string>
-  <string name="groups_invite_members">წევრების მოწვევა</string>
-  <string name="groups_member_created_you">თქვენ შექმენით ჯგუფი</string>
   <string name="groups_member_created">%s-მ შექმნა ჯგუფი</string>
   <string name="groups_member_joined_you">თქვენ შეუერთდით ჯგუფს</string>
-  <string name="groups_member_joined">%s შემოუერთდა ჯგუფს</string>
-  <string name="groups_leave">ჯგუფის დატოვება</string>
   <string name="groups_leave_dialog_title">ჯგუფის დატოვების დადასტურება</string>
   <string name="groups_leave_dialog_message">ნამდვილად გსურთ დატოვოთ ეს ჯგუფი?</string>
-  <string name="groups_dissolve">ჯგუფის დაშლა</string>
   <string name="groups_dissolve_dialog_title">ჯგუფის დაშლის დადასტურება</string>
   <string name="groups_dissolve_dialog_message">ნამდვილად გსურთ დაშალოთ ეს ჯგუფი?\n\nდანარჩენი წევრები ვეღარ შეძლებენ საუბრის გაგრძელებას და შესაძლოა, ვეღარ მიიღონ უკანასკნელი შეტყობინებები.</string>
   <string name="groups_dissolve_button">დაშლა</string>
@@ -311,23 +296,15 @@
   
   <string name="groups_invitations_title">ჯგუფის მოწვევები</string>
   <string name="groups_invitations_invitation_sent">თქვენ მოიწვიეთ %1$s, რომ შემოუერთდეს ჯგუფს „%2$s“.</string>
-  <string name="groups_invitations_invitation_received">%1$s გიწვევთ, რომ შეუერთდეთ ჯგუფს „%2$s“.</string>
   <string name="groups_invitations_joined">შეუერთდა ჯგუფს</string>
   <string name="groups_invitations_declined">ჯგუფის მოწვევა უარყოფილია</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">ღია ჯგუფის %d მოწვევა</item>
     <item quantity="other">ღია ჯგუფის %d მოწვევა</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">თქვენ დათანხმდით %s-ის ჯგუფში მოწვევას.</string>
-  <string name="groups_invitations_response_declined_sent">თქვენ უარყავით %s-ის ჯგუფში მოწვევა.</string>
-  <string name="groups_invitations_response_declined_auto">%s-ის ჯგუფში მოწვევა ავტომატურად უარყოფილია.</string>
-  <string name="groups_invitations_response_accepted_received">%s-მ უარყო ჯგუფში მოწვევა.</string>
-  <string name="groups_invitations_response_declined_received">%s უარს აცხადებს ჯგუფში მოწვევაზე.</string>
   <string name="sharing_status_groups">მხოლოდ ჯგუფის შემქმნელს შეუძლია ახალი წევრების მოწვევა. ქვემოთ მოცემულია ამ ჯგუფის ყველა წევრი.</string>
   
-  <string name="groups_reveal_contacts">კონტაქტების გამხელა</string>
   <string name="groups_reveal_dialog_message">შეგიძლიათ გაუმხილოთ თქვენი კონტაქტები ჯგუფის ამჟამინდელ და მომავალ წევრებს.\n\nკონტაქტების გამხელით ჯგუფთან კავშირი გახდება უფრო სწრაფი და საიმედო, ვინაიდან გამხელილ კონტაქტებთან კომუნიკაცია მაშინაც შეგეძლებათ, როდესაც ჯგუფის შემქმნელი ხაზზე არ არის.</string>
-  <string name="groups_reveal_visible">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის</string>
   <string name="groups_reveal_visible_revealed_by_us">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის (თქვენ მიერ გამხელილი)</string>
   <string name="groups_reveal_visible_revealed_by_contact">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის (%s-ის მიერ გამხელილი)</string>
   <string name="groups_reveal_invisible">კონტაქტთან ურთიერთობა დაფარულია ჯგუფისთვის</string>
@@ -345,9 +322,7 @@
   
   <string name="read_more">წაიკითხეთ ვრცლად</string>
 
-  <string name="change_profile_picture">შეეხეთ თქვენი პროფილის სურათის შესაცვლელად</string>
   <string name="dialog_confirm_profile_picture_title">პროფილის სურათის შეცვლა</string>
-  <string name="dialog_confirm_profile_picture_remark">მხოლოდ თქვენი კონტაქტები იხილავენ ამ სურათს</string>
   <string name="change_profile_picture_failed_message">სამწუხაროდ, პროფილის სურათის განახლებისას რაღაც ხარვეზი წარმოიშვა </string>
   
   <string name="pref_language_title">ენა &amp; რეგიონი</string>
@@ -923,7 +898,6 @@
 	<string name="chat_type_group">ჯგუფი</string>
 	<string name="chat_type_channel">არხი</string>
 	<string name="no_chats">მიმოწერები ჯერ არ არის</string>
-	<string name="groups_button_add">ახალი ჯგუფის დამატება</string>
 	<string name="channels_button">არხები</string>
 	<string name="channels_list_empty">არხები ჯერ არ არის. შექმენით საკუთარი ან შეუერთდით არსებულს მოწვევის ბმულით.</string>
 	<string name="channels_action_create">არხის შექმნა</string>
@@ -1139,7 +1113,6 @@
 	<string name="recording_voice">ხმოვანი შეტყობინება იწერება…</string>
 	<string name="voice_message_error">ხმის ჩაწერა ვერ მოხერხდა</string>
 	<string name="voice_message_cancelled">ჩაწერა გაუქმდა</string>
-	<string name="slide_to_cancel">← გასაუქმებლად გადაასრიალეთ</string>
 	<string name="voice_message_too_short">ხმოვანი შეტყობინება ძალიან მოკლეა</string>
 	<string name="voice_message_too_long">ხმოვანი შეტყობინება ძალიან გრძელია. ის 30 წამზე მოკლე უნდა იყოს.</string>
 	<string name="microphone_permission_required">ხმოვანი შეტყობინებებისთვის საჭიროა მიკროფონის ნებართვა</string>
@@ -1812,14 +1785,6 @@
 	<string name="video_offer_accept">ვიდეოს მიღება</string>
 	<string name="video_offer_reject">უარყოფა</string>
 	<string name="camera_permission_required">ვიდეოზარებისთვის საჭიროა კამერის ნებართვა</string>
-	<string name="contact_type_selection_title">აირჩიეთ კავშირის ტიპი</string>
-	<string name="contact_type_selection_subtitle">აირჩიეთ, როგორ გსურთ თქვენს კონტაქტთან დაკავშირება</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">პოსტკვანტური უსაფრთხოება</string>
-	<string name="contact_type_zerion_description">დაუკავშირდით Zerion-ის სხვა მომხმარებელს. კვანტურად მდგრადი დაშიფვრა ბოლოდან ბოლომდე.</string>
-	<string name="contact_type_classic_title">კლასიკური რეჟიმი</string>
-	<string name="contact_type_classic_badge">კლასიკური უსაფრთხოება</string>
-	<string name="contact_type_classic_description">დაკავშირება კლასიკური კრიპტოგრაფიით. გამოიყენეთ ეს ვარიანტი ძველ ვერსიებზე მყოფ კონტაქტებთან თავსებადობისთვის.</string>
 	<string name="recommended">რეკომენდებული</string>
 	<string name="contact_type_info">მაქსიმალური უსაფრთხოებისთვის აირჩიეთ Zerion, ხოლო ძველ ვერსიებთან თავსებადობისთვის კლასიკური რეჟიმი.</string>
 	<string name="voice_call_status_reconnecting">ხელახლა უკავშირდება…</string>
@@ -1949,11 +1914,6 @@
 	<string name="vault_doc_unsupported_office">Office-დოკუმენტების ნახვა დაცული სეიფის შიგნით შეუძლებელია.\n\nამ ფაილების გასახსნელად საჭიროა გარე აპები და დროებითი ფაილები, რაც სეიფის უსაფრთხოებას საფრთხეს შეუქმნიდა.\n\nშეგიძლიათ მხოლოდ მათი შენახვა და არა გახსნა.</string>
 	<string name="vault_doc_unsupported_archive">არქივის ფაილების ამოარქივება დაცული სეიფის შიგნით შეუძლებელია.\n\nამოარქივება დისკზე დაუშიფრავ ფაილებს შექმნიდა, რაც სეიფის უსაფრთხოებას საფრთხეს შეუქმნიდა.\n\nშეგიძლიათ მხოლოდ მათი შენახვა და არა ამოარქივება.</string>
 	<string name="vault_doc_unsupported_generic">ამ ტიპის დოკუმენტის ნახვა დაცული სეიფის შიგნით შეუძლებელია.\n\nფაილის ტიპი: %1$s\n\nშეგიძლიათ მხოლოდ მისი შენახვა და არა გახსნა.</string>
-	<string name="vault_item_secure_note">დაცული ჩანაწერი</string>
-	<string name="vault_item_password_entry">შენახული პაროლი</string>
-	<string name="vault_item_image">სურათი • %1$s</string>
-	<string name="vault_item_video">ვიდეო • %1$s</string>
-	<string name="vault_item_document">დოკუმენტი • %1$s</string>
 	<string name="vault_add_to_vault_title">სეიფში დამატება</string>
 	<string name="vault_type_note">ჩანაწერი</string>
 	<string name="vault_type_image">სურათი</string>

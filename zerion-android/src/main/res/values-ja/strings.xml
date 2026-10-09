@@ -42,10 +42,6 @@
   <string name="startup_failed_data_too_old_error">あなたのアカウントは古いバージョンのアプリで作成されたもので、このバージョンでは開くことができません。\n\n古いバージョンを再インストールするか、パスワード入力画面で「パスワードを忘れました」を選択して新規アカウントを設定する必要があります。</string>
   <string name="startup_failed_data_too_new_error">あなたのアカウントは、このアプリの新しいバージョンで作成されたもので、このバージョンでは開くことができません。\n\n最新版にアップグレードしてから、もう一度試してください。</string>
   <string name="startup_failed_service_error">Zerionは必要なコンポーネントを起動できませんでした。\n\nアプリの最新版にアップグレードしてから、もう一度試してください。</string>
-  <string name="download_zerion">Zerionを使用し続けるには、最新のリリースをダウンロードしてください。</string>
-  <string name="create_new_account">新規アカウントを作成する必要があります。同じニックネームも使用できます。</string>
-  <string name="old_android_delete_account">下のボタンをタップして、この端末からあなたのアカウントを削除できます。</string>
-  <string name="delete_account_button">アカウントを削除</string>
   <string name="startup_open_database">データベースを復号中…</string>
   <string name="startup_migrate_database">データベースをアップグレード中…</string>
   <string name="startup_compact_database">データベースを圧縮中…</string>
@@ -102,11 +98,9 @@
   <string name="open">開く</string>
   <string name="change">変更</string>
   <string name="start">開始</string>
-  <string name="finish">終了</string>
   <string name="no_data">データなし</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">入力された文章が長すぎます</string>
-  <string name="show_onboarding">ヘルプダイアログを表示</string>
   <string name="fix">修復する</string>
   <string name="help">ヘルプ</string>
   <string name="sorry">申し訳ありません</string>
@@ -283,21 +277,12 @@
   <string name="groups_group_is_empty">このグループは空です</string>
   <string name="groups_group_is_dissolved">このグループは解散しました</string>
   <string name="groups_remove">削除</string>
-  <string name="groups_create_group_title">非公開グループ作成</string>
-  <string name="groups_create_group_button">グループ作成</string>
   <string name="groups_create_group_invitation_button">招待を送信</string>
-  <string name="groups_create_group_hint">非公開グループに名前をつける</string>
   <string name="groups_invitation_sent">グループ招待状が送信されました</string>
-  <string name="groups_member_list">人員一覧</string>
-  <string name="groups_invite_members">一員を招待</string>
-  <string name="groups_member_created_you">グループを作成しました</string>
   <string name="groups_member_created">%sがグループを作成しました</string>
   <string name="groups_member_joined_you">グループに参加しました</string>
-  <string name="groups_member_joined">%sがグループに参加しました</string>
-  <string name="groups_leave">グループを脱退</string>
   <string name="groups_leave_dialog_title">グループをやめる確認</string>
   <string name="groups_leave_dialog_message">このグループを脱退してもよろしいですか？</string>
-  <string name="groups_dissolve">グループを解散</string>
   <string name="groups_dissolve_dialog_title">グループ解散の確認</string>
   <string name="groups_dissolve_dialog_message">このグループを解散してもよろしいですか？\n\n他の全人員は会話を続けることができなくなり、最新のメッセージは受信できなくなります。</string>
   <string name="groups_dissolve_button">解散</string>
@@ -306,22 +291,14 @@
   
   <string name="groups_invitations_title">グループ招待</string>
   <string name="groups_invitations_invitation_sent">%1$sをグループ\"%2$s\"に招待しています。</string>
-  <string name="groups_invitations_invitation_received">%1$sがあなたをグループ\"%2$s\"に招待しています。</string>
   <string name="groups_invitations_joined">グループに参加しました</string>
   <string name="groups_invitations_declined">グループへの招待を辞退しました</string>
   <plurals name="groups_invitations_open">
     <item quantity="other">%d個のオープングループへの招待</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">%sからのグループ招待を受諾しました。</string>
-  <string name="groups_invitations_response_declined_sent">%sからのグループへの招待を辞退しました。</string>
-  <string name="groups_invitations_response_declined_auto">%sからのグループへの招待は自動的に辞退されました。</string>
-  <string name="groups_invitations_response_accepted_received">%sはグループへの招待を受諾しました。</string>
-  <string name="groups_invitations_response_declined_received">%sはグループへの招待を辞退しました。</string>
   <string name="sharing_status_groups">グループに新規人員を招待できるのは作成者のみです。 以下は、グループの現在の全人員です。</string>
   
-  <string name="groups_reveal_contacts">連絡先を明かす</string>
   <string name="groups_reveal_dialog_message">このグループの現在および将来の全人員に連絡先を明かすかどうかを選択できます。\n\n連絡先を明かすと、グループの作成者がオフラインの場合でも明かされた連絡先と通信できるため、グループへの接続がより高速で信頼性が高くなります。</string>
-  <string name="groups_reveal_visible">連絡先の関係はグループに表示されます</string>
   <string name="groups_reveal_visible_revealed_by_us">連絡先の関係はグループに表示されます（あなたによって明かされました）</string>
   <string name="groups_reveal_visible_revealed_by_contact">連絡先の関係はグループに表示されます（%sによって明かされました）</string>
   <string name="groups_reveal_invisible">連絡先の関係はグループには表示されません</string>
@@ -338,9 +315,7 @@
   
   <string name="read_more">続きを読む</string>
 
-  <string name="change_profile_picture">タップしてプロフィールの画像を変更</string>
   <string name="dialog_confirm_profile_picture_title">プロフィールの画像を変更</string>
-  <string name="dialog_confirm_profile_picture_remark">連絡先のみがこの画像を閲覧可能</string>
   <string name="change_profile_picture_failed_message">申し訳ありませんが、あなたのプロフィール画像の更新中に何か過ちが発生しました</string>
   
   <string name="pref_language_title">言語 &amp; 地域</string>
@@ -729,7 +704,6 @@
 	<string name="chat_type_group">グループ</string>
 	<string name="chat_type_channel">チャンネル</string>
 	<string name="no_chats">まだ会話はありません</string>
-	<string name="groups_button_add">新しいグループを追加</string>
 	<string name="channels_button">チャンネル</string>
 	<string name="channels_list_empty">まだチャンネルはありません。自分で作成するか、招待リンクから参加してください。</string>
 	<string name="channels_action_create">チャンネルを作成</string>
@@ -924,7 +898,6 @@
 	<string name="recording_voice">ボイスメッセージを録音しています…</string>
 	<string name="voice_message_error">音声の録音に失敗しました</string>
 	<string name="voice_message_cancelled">録音をキャンセルしました</string>
-	<string name="slide_to_cancel">← スライドしてキャンセル</string>
 	<string name="voice_message_too_short">ボイスメッセージが短すぎます</string>
 	<string name="voice_message_too_long">ボイスメッセージが長すぎます。30 秒以内にしてください。</string>
 	<string name="microphone_permission_required">ボイスメッセージにはマイクの権限が必要です</string>
@@ -1499,14 +1472,6 @@
 	<string name="video_offer_accept">ビデオを承認</string>
 	<string name="video_offer_reject">拒否</string>
 	<string name="camera_permission_required">ビデオ通話にはカメラの権限が必要です</string>
-	<string name="contact_type_selection_title">接続タイプを選択</string>
-	<string name="contact_type_selection_subtitle">連絡先との接続方法を選択</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">ポスト量子セキュリティ</string>
-	<string name="contact_type_zerion_description">別の Zerion ユーザーと接続します。エンドツーエンドの量子耐性暗号化。</string>
-	<string name="contact_type_classic_title">クラシックモード</string>
-	<string name="contact_type_classic_badge">従来型セキュリティ</string>
-	<string name="contact_type_classic_description">従来型の暗号を使用して接続します。古いバージョンの連絡先との下位互換性のためにこのオプションを使用してください。</string>
 	<string name="recommended">推奨</string>
 	<string name="contact_type_info">最大限のセキュリティには Zerion を、下位互換性にはクラシックモードを選んでください。</string>
 	<string name="voice_call_status_reconnecting">再接続しています…</string>
@@ -1625,11 +1590,6 @@
 	<string name="vault_doc_unsupported_office">Office ドキュメントはセキュア保管庫内で表示できません。\n\nこれらのファイルを開くには外部アプリと一時ファイルが必要で、保管庫のセキュリティが損なわれます。\n\n保存はできますが、開くことはできません。</string>
 	<string name="vault_doc_unsupported_archive">アーカイブファイルはセキュア保管庫内で展開できません。\n\n展開するとディスク上に平文ファイルが作成され、保管庫のセキュリティが損なわれます。\n\n保存はできますが、展開することはできません。</string>
 	<string name="vault_doc_unsupported_generic">このドキュメント形式はセキュア保管庫内で表示できません。\n\nファイル形式: %1$s\n\n保存はできますが、開くことはできません。</string>
-	<string name="vault_item_secure_note">セキュアノート</string>
-	<string name="vault_item_password_entry">パスワード項目</string>
-	<string name="vault_item_image">画像 • %1$s</string>
-	<string name="vault_item_video">動画 • %1$s</string>
-	<string name="vault_item_document">ドキュメント • %1$s</string>
 	<string name="vault_add_to_vault_title">保管庫に追加</string>
 	<string name="vault_type_note">ノート</string>
 	<string name="vault_type_image">画像</string>

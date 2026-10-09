@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Contul dvs. a fost creat cu o versiune veche a acestei aplicații și nu poate fi deschis cu această versiune. Trebuie fie să reinstalați versiunea veche, fie să creați un cont nou selectând „Mi-am uitat parola” în momentul solicitării parolei.</string>
   <string name="startup_failed_data_too_new_error">Contul dvs. a fost creat cu o versiune mai nouă a acestei aplicații și nu poate fi deschis cu această versiune. Vă rugăm să realizați un upgrade la cea mai recentă versiune și să încercați din nou.</string>
   <string name="startup_failed_service_error">Zerion nu a reușit să pornească o componentă necesară. Vă rugăm să faceți un upgrade la cea mai recentă versiune a aplicației și să încercați din nou.</string>
-  <string name="download_zerion">Pentru a putea să utilizați Zerion în continuare, descărcați cea mai recentă versiune.</string>
-  <string name="create_new_account">Va trebui să creați un cont nou, dar puteți să folosiți același pseudonim.</string>
-  <string name="old_android_delete_account">Puteți atinge butonul de mai jos pentru a șterge contul dvs. de pe acest dispozitiv.</string>
-  <string name="delete_account_button">Ștergeți contul</string>
   <string name="startup_open_database">Se decriptează baza de date...</string>
   <string name="startup_migrate_database">Se actualizează baza de date...</string>
   <string name="startup_compact_database">Se compactează baza de date...</string>
@@ -112,11 +108,9 @@
   <string name="open">Deschideți</string>
   <string name="change">Modificați</string>
   <string name="start">Start</string>
-  <string name="finish">Terminați</string>
   <string name="no_data">Nu sunt date</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Textul introdus este prea lung</string>
-  <string name="show_onboarding">Afișați caseta de dialog de ajutor</string>
   <string name="fix">Remediați</string>
   <string name="help">Ajutor</string>
   <string name="sorry">Ne pare rău</string>
@@ -303,21 +297,12 @@
   <string name="groups_group_is_empty">Acest grup este gol</string>
   <string name="groups_group_is_dissolved">Acest grup a fost dizolvat</string>
   <string name="groups_remove">Eliminați</string>
-  <string name="groups_create_group_title">Creați grup privat</string>
-  <string name="groups_create_group_button">Creați grup</string>
   <string name="groups_create_group_invitation_button">Trimiteți invitație</string>
-  <string name="groups_create_group_hint">Alegeți un nume pentru grupul dvs. privat</string>
   <string name="groups_invitation_sent">Invitația in grup a fost trimisă</string>
-  <string name="groups_member_list">Lista de membrii</string>
-  <string name="groups_invite_members">Invitați membri</string>
-  <string name="groups_member_created_you">Ați creat grupul</string>
   <string name="groups_member_created">%s a creat grupul</string>
   <string name="groups_member_joined_you">V-ați alăturat grupului</string>
-  <string name="groups_member_joined">%s s-a alăturat grupului</string>
-  <string name="groups_leave">Părăsiți grupul</string>
   <string name="groups_leave_dialog_title">Confirmați părăsirea grupului</string>
   <string name="groups_leave_dialog_message">Sigur doriți să părăsiți acest grup?</string>
-  <string name="groups_dissolve">Dizolvați grupul</string>
   <string name="groups_dissolve_dialog_title">Confirmați dizolvarea grupului</string>
   <string name="groups_dissolve_dialog_message">Sigur doriți să dizolvați acest grup?\n\nToți ceilalți membri vor fi în imposibilitatea de a continua conversația și s-ar putea să nu primească cele mai recente mesaje.</string>
   <string name="groups_dissolve_button">Dizolvați</string>
@@ -326,7 +311,6 @@
   
   <string name="groups_invitations_title">Invitații în grup</string>
   <string name="groups_invitations_invitation_sent">Ați invitat utilizatorul %1$s să se alăture grupului „%2$s”.</string>
-  <string name="groups_invitations_invitation_received">%1$s v-a invitat să vă alăturați grupului „%2$s”.</string>
   <string name="groups_invitations_joined">S-a alăturat grupului</string>
   <string name="groups_invitations_declined">Invitația în grup a fost refuzată</string>
   <plurals name="groups_invitations_open">
@@ -334,16 +318,9 @@
     <item quantity="few">%d invitații în grup deschise</item>
     <item quantity="other">%d invitații în grup deschise</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Ați acceptat invitația în grup de la %s.</string>
-  <string name="groups_invitations_response_declined_sent">Ați refuzat invitația în grup de la %s.</string>
-  <string name="groups_invitations_response_declined_auto">Invitația în grup de la %s a fost refuzată automat.</string>
-  <string name="groups_invitations_response_accepted_received">%s a acceptat invitația în grup.</string>
-  <string name="groups_invitations_response_declined_received">%s a refuzat invitația în grup.</string>
   <string name="sharing_status_groups">Doar persoana care a creat grupul poate invita membri noi. Mai jos vedeți toți membrii actuali ai grupului.</string>
   
-  <string name="groups_reveal_contacts">Arărați contactele</string>
   <string name="groups_reveal_dialog_message">Puteți alege să arătați contactele tuturor membrilor actuali și viitori ai acestui grup.\n\nAfișarea contactelor face conexiunea dvs. la grup mai rapidă și mai fiabilă, deoarece puteți comunica cu contactele dezvăluite chiar și atunci când creatorul grupului este offline.</string>
-  <string name="groups_reveal_visible">Relația de contact este vizibilă grupului</string>
   <string name="groups_reveal_visible_revealed_by_us">Relația de contact este vizibilă grupului (dezvăluită de dvs.)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Relația de contact este vizibilă grupului (dezvăluită de %s)</string>
   <string name="groups_reveal_invisible">Relația de contact nu este vizibilă grupului</string>
@@ -362,9 +339,7 @@
   
   <string name="read_more">citiți mai multe</string>
 
-  <string name="change_profile_picture">Atingeți pentru a schimba poza dvs. de profil</string>
   <string name="dialog_confirm_profile_picture_title">Modificați poza de profil</string>
-  <string name="dialog_confirm_profile_picture_remark">Doar contactele dvs. pot vedea această poză</string>
   <string name="change_profile_picture_failed_message">Ne pare rău, dar ceva nu a funcționat în momentul actualizării pozei de profil</string>
   
   <string name="pref_language_title">Limbă și regiune</string>
@@ -1076,7 +1051,6 @@
 	<string name="chat_type_group">Grup</string>
 	<string name="chat_type_channel">Canal</string>
 	<string name="no_chats">Nicio conversație încă</string>
-	<string name="groups_button_add">Adăugați un grup nou</string>
 	<string name="channels_button">Canale</string>
 	<string name="channels_list_empty">Niciun canal încă. Creați-vă propriul canal sau alăturați-vă unuia printr-un link de invitație.</string>
 	<string name="channels_action_create">Creați un canal</string>
@@ -1292,7 +1266,6 @@
 	<string name="recording_voice">Se înregistrează mesajul vocal…</string>
 	<string name="voice_message_error">Înregistrarea vocală a eșuat</string>
 	<string name="voice_message_cancelled">Înregistrare anulată</string>
-	<string name="slide_to_cancel">← Glisați pentru a anula</string>
 	<string name="voice_message_too_short">Mesaj vocal prea scurt</string>
 	<string name="voice_message_too_long">Mesaj vocal prea lung. Păstrați-l sub 30 de secunde.</string>
 	<string name="microphone_permission_required">Pentru mesajele vocale este necesară permisiunea pentru microfon</string>
@@ -1959,14 +1932,6 @@
 	<string name="video_offer_accept">Acceptați video</string>
 	<string name="video_offer_reject">Refuzați</string>
 	<string name="camera_permission_required">Pentru apelurile video este necesară permisiunea pentru cameră</string>
-	<string name="contact_type_selection_title">Alegeți tipul de conexiune</string>
-	<string name="contact_type_selection_subtitle">Selectați cum doriți să vă conectați cu contactul dvs.</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Securitate post-cuantică</string>
-	<string name="contact_type_zerion_description">Conectați-vă cu un alt utilizator Zerion. Criptare end-to-end rezistentă la atacuri cuantice.</string>
-	<string name="contact_type_classic_title">Mod clasic</string>
-	<string name="contact_type_classic_badge">Securitate clasică</string>
-	<string name="contact_type_classic_description">Conectați-vă folosind criptografie clasică. Folosiți această opțiune pentru compatibilitate cu contactele care au versiuni mai vechi.</string>
 	<string name="recommended">Recomandat</string>
 	<string name="contact_type_info">Alegeți Zerion pentru securitate maximă sau Modul clasic pentru compatibilitate cu versiunile mai vechi.</string>
 	<string name="voice_call_status_reconnecting">Se reconectează…</string>
@@ -2096,11 +2061,6 @@
 	<string name="vault_doc_unsupported_office">Documentele Office nu pot fi vizualizate în seiful securizat.\n\nDeschiderea acestor fișiere necesită aplicații externe și fișiere temporare, ceea ce ar compromite securitatea seifului.\n\nLe puteți doar stoca, nu și deschide.</string>
 	<string name="vault_doc_unsupported_archive">Fișierele arhivă nu pot fi extrase în seiful securizat.\n\nExtragerea ar crea fișiere necriptate pe disc, compromițând securitatea seifului.\n\nLe puteți doar stoca, nu și extrage.</string>
 	<string name="vault_doc_unsupported_generic">Acest tip de document nu poate fi vizualizat în seiful securizat.\n\nTip de fișier: %1$s\n\nÎl puteți doar stoca, nu și deschide.</string>
-	<string name="vault_item_secure_note">Notiță securizată</string>
-	<string name="vault_item_password_entry">Intrare de parolă</string>
-	<string name="vault_item_image">Imagine • %1$s</string>
-	<string name="vault_item_video">Videoclip • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 	<string name="vault_add_to_vault_title">Adăugați în seif</string>
 	<string name="vault_type_note">Notiță</string>
 	<string name="vault_type_image">Imagine</string>

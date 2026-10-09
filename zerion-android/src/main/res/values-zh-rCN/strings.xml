@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">您的帐户是用此应用程序的旧版本创建的，不能用此版本打开。\n\n您必须重新安装旧版本，或者在密码提示时选择“我忘记密码”，建立一个新帐户。</string>
   <string name="startup_failed_data_too_new_error">您的帐户是用此应用程序的较新版本创建的，不能用此版本打开。\n\n请升级到最新版本，然后重试。</string>
   <string name="startup_failed_service_error">Zerion 无法启动必需的组件。\n\n请升级到最新版并重新尝试。</string>
-  <string name="download_zerion">请下载最新版本以继续使用 Zerion</string>
-  <string name="create_new_account">您将需要创建一个新帐户，但可以使用相同的昵称。</string>
-  <string name="old_android_delete_account">您可以轻按下面的按钮从这个设备上删除您的帐户。</string>
-  <string name="delete_account_button">删除帐户</string>
   <string name="startup_open_database">正在解密数据库……</string>
   <string name="startup_migrate_database">正在更新数据库……</string>
   <string name="startup_compact_database">正在压缩数据库……</string>
@@ -108,11 +104,9 @@
   <string name="open">打开</string>
   <string name="change">更改</string>
   <string name="start">开始</string>
-  <string name="finish">完成</string>
   <string name="no_data">没有数据</string>
   <string name="ellipsis">……</string>
   <string name="text_too_long">输入的文本过长</string>
-  <string name="show_onboarding">显示帮助对话框</string>
   <string name="fix">修复</string>
   <string name="help">帮助</string>
   <string name="sorry">抱歉</string>
@@ -289,21 +283,12 @@
   <string name="groups_group_is_empty">该群聊是空的</string>
   <string name="groups_group_is_dissolved">该群聊已被解散</string>
   <string name="groups_remove">删除</string>
-  <string name="groups_create_group_title">创建私密群聊</string>
-  <string name="groups_create_group_button">创建群聊</string>
   <string name="groups_create_group_invitation_button">发送邀请</string>
-  <string name="groups_create_group_hint">为私密群聊命名</string>
   <string name="groups_invitation_sent">群聊邀请已发送</string>
-  <string name="groups_member_list">成员列表</string>
-  <string name="groups_invite_members">邀请成员</string>
-  <string name="groups_member_created_you">您创建了群聊</string>
   <string name="groups_member_created">%s 创建了群聊</string>
   <string name="groups_member_joined_you">您加入了群聊</string>
-  <string name="groups_member_joined">%s 加入了群聊</string>
-  <string name="groups_leave">退出群聊</string>
   <string name="groups_leave_dialog_title">确认退出群聊</string>
   <string name="groups_leave_dialog_message">确认要退出该群聊吗？</string>
-  <string name="groups_dissolve">解散群聊</string>
   <string name="groups_dissolve_dialog_title">确认解散群聊</string>
   <string name="groups_dissolve_dialog_message">确认要解散该群聊吗？\n\n所有其他成员将无法继续会话并可能无法接收最新的消息。</string>
   <string name="groups_dissolve_button">解散</string>
@@ -312,22 +297,14 @@
   
   <string name="groups_invitations_title">群聊邀请</string>
   <string name="groups_invitations_invitation_sent">您已邀请 %1$s 加入群聊 “%2$s”。</string>
-  <string name="groups_invitations_invitation_received">%1$s 已邀请您加入群聊 “%2$s”。</string>
   <string name="groups_invitations_joined">已加入群聊</string>
   <string name="groups_invitations_declined">群聊邀请已谢绝</string>
   <plurals name="groups_invitations_open">
     <item quantity="other">%d 打开了群聊邀请</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">您接受了来自 %s 的群聊邀请。</string>
-  <string name="groups_invitations_response_declined_sent">您谢绝了来自 %s 的群聊邀请。</string>
-  <string name="groups_invitations_response_declined_auto">来自 %s 的小组邀请被自动拒绝了</string>
-  <string name="groups_invitations_response_accepted_received">%s 接受了群聊邀请。</string>
-  <string name="groups_invitations_response_declined_received">%s 谢绝了群聊邀请。</string>
   <string name="sharing_status_groups">只有创建者可以邀请新成员加入群聊。下面是目前的群成员。</string>
   
-  <string name="groups_reveal_contacts">显示联系人</string>
   <string name="groups_reveal_dialog_message">您可以决定是否对所有当前和未来的群成员展示该群聊的联系人。\n\n这将使您连接群聊更快速更可靠，因为即使群聊创建者离线，您也可以与已展示的联系人交流。</string>
-  <string name="groups_reveal_visible">联系人关系对群聊可见</string>
   <string name="groups_reveal_visible_revealed_by_us">联系人关系对群聊可见（由您设定）</string>
   <string name="groups_reveal_visible_revealed_by_contact">联系人关系对群聊可见（由 %s 设定）</string>
   <string name="groups_reveal_invisible">联系人关系对群聊不可见</string>
@@ -345,9 +322,7 @@
   <string name="read_more">阅读全文</string>
 
   
-  <string name="change_profile_picture">轻按以更改你的个人资料图片</string>
   <string name="dialog_confirm_profile_picture_title">更改个人资料图片</string>
-  <string name="dialog_confirm_profile_picture_remark">只有你的联系人能看到这张图</string>
   <string name="change_profile_picture_failed_message">抱歉，更新你的个人资料图片时出了问题</string>
   
   <string name="pref_language_title">语言 &amp; 区域</string>
@@ -734,7 +709,6 @@
 	<string name="chat_type_group">群组</string>
 	<string name="chat_type_channel">频道</string>
 	<string name="no_chats">还没有会话</string>
-	<string name="groups_button_add">添加新群组</string>
 	<string name="channels_button">频道</string>
 	<string name="channels_list_empty">还没有频道。创建你自己的频道，或通过邀请链接加入一个。</string>
 	<string name="channels_action_create">创建频道</string>
@@ -929,7 +903,6 @@
 	<string name="recording_voice">正在录制语音消息…</string>
 	<string name="voice_message_error">语音录制失败</string>
 	<string name="voice_message_cancelled">录制已取消</string>
-	<string name="slide_to_cancel">← 滑动取消</string>
 	<string name="voice_message_too_short">语音消息太短</string>
 	<string name="voice_message_too_long">语音消息太长。请控制在 30 秒以内。</string>
 	<string name="microphone_permission_required">发送语音消息需要麦克风权限</string>
@@ -1502,14 +1475,6 @@
 	<string name="video_offer_accept">接受视频</string>
 	<string name="video_offer_reject">拒绝</string>
 	<string name="camera_permission_required">视频通话需要相机权限</string>
-	<string name="contact_type_selection_title">选择连接类型</string>
-	<string name="contact_type_selection_subtitle">选择你想与联系人连接的方式</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">后量子安全</string>
-	<string name="contact_type_zerion_description">与另一位 Zerion 用户连接。端到端抗量子加密。</string>
-	<string name="contact_type_classic_title">经典模式</string>
-	<string name="contact_type_classic_badge">经典安全</string>
-	<string name="contact_type_classic_description">使用经典密码学连接。使用此选项以便与使用旧版本的联系人向后兼容。</string>
 	<string name="recommended">推荐</string>
 	<string name="contact_type_info">选择 Zerion 以获得最大安全性，或选择经典模式以实现向后兼容。</string>
 	<string name="voice_call_status_reconnecting">正在重新连接…</string>
@@ -1628,11 +1593,6 @@
 	<string name="vault_doc_unsupported_office">无法在安全保险库内查看 Office 文档。\n\n打开这些文件需要外部应用和临时文件，这会危及保险库安全。\n\n你只能存储它们，不能打开它们。</string>
 	<string name="vault_doc_unsupported_archive">无法在安全保险库内解压压缩文件。\n\n解压会在磁盘上创建明文文件，危及保险库安全。\n\n你只能存储它们，不能解压它们。</string>
 	<string name="vault_doc_unsupported_generic">无法在安全保险库内查看此文档类型。\n\n文件类型：%1$s\n\n你只能存储它，不能打开它。</string>
-	<string name="vault_item_secure_note">安全笔记</string>
-	<string name="vault_item_password_entry">密码条目</string>
-	<string name="vault_item_image">图片 • %1$s</string>
-	<string name="vault_item_video">视频 • %1$s</string>
-	<string name="vault_item_document">文档 • %1$s</string>
 	<string name="vault_add_to_vault_title">添加到保险库</string>
 	<string name="vault_type_note">笔记</string>
 	<string name="vault_type_image">图片</string>

@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Váš účet byl vytvořen ve starší verzi této aplikace a v této verzi jej nelze otevřít.\n\nMusíte buď přeinstalovat starou verzi, nebo nastavit nový účet tak, že na výzvu k zadání hesla vyberete možnost „Zapomněl jsem heslo“.</string>
   <string name="startup_failed_data_too_new_error">Váš účet byl vytvořen s novější verzí této aplikace a s touto verzí jej nelze otevřít.\n\nPřejděte prosím na nejnovější verzi a zkuste to znovu.</string>
   <string name="startup_failed_service_error">Aplikaci Zerion se nepodařilo spustit požadovanou komponentu.\n\nAktualizujte prosím aplikaci na nejnovější verzi a zkuste to znovu.</string>
-  <string name="download_zerion">Pro pokračování v používání aplikace Zerion si prosím stáhněte její nejnovější verzi.</string>
-  <string name="create_new_account">Budete potřebovat vytvořit nový účet, ale můžete použít stejné uživatelské jméno.</string>
-  <string name="old_android_delete_account">Klepnutím na tlačítko níže odstraníte svůj účet z tohoto zařízení.</string>
-  <string name="delete_account_button">Odstranit účet</string>
   <string name="startup_open_database">Dešifrování databáze...</string>
   <string name="startup_migrate_database">Aktualizování databáze...</string>
   <string name="startup_compact_database">Komprimování databáze…</string>
@@ -114,11 +110,9 @@
   <string name="open">Otevřít</string>
   <string name="change">Změnit</string>
   <string name="start">Zapnout</string>
-  <string name="finish">Dokončit</string>
   <string name="no_data">Žádná data</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">Zadaný text je příliš dlouhý</string>
-  <string name="show_onboarding">Zobrazit nabídku nápovědy</string>
   <string name="fix">Opravit</string>
   <string name="help">Pomoc</string>
   <string name="sorry">Promiňte</string>
@@ -310,21 +304,12 @@
   <string name="groups_group_is_empty">Tato skupina je prázdná</string>
   <string name="groups_group_is_dissolved">Tato skupina byla rozpuštěna</string>
   <string name="groups_remove">Odstranit</string>
-  <string name="groups_create_group_title">Vytvořit soukromou skupinu</string>
-  <string name="groups_create_group_button">Vytvořit skupinu</string>
   <string name="groups_create_group_invitation_button">Poslat pozvánku</string>
-  <string name="groups_create_group_hint">Vyberte jméno pro vaši soukromou skupinu</string>
   <string name="groups_invitation_sent">Skupinová pozvánka byla odeslána</string>
-  <string name="groups_member_list">Seznam členů</string>
-  <string name="groups_invite_members">Pozvat členy</string>
-  <string name="groups_member_created_you">Vytvořili jste skupinu</string>
   <string name="groups_member_created">%s vytvořil skupinu</string>
   <string name="groups_member_joined_you">Vstoupili jste do skupiny</string>
-  <string name="groups_member_joined">%s se připojil ke skupině</string>
-  <string name="groups_leave">Opustit skupinu</string>
   <string name="groups_leave_dialog_title">Potvrdit opuštění skupiny</string>
   <string name="groups_leave_dialog_message">Jste si jisti, že chcete opustit tuto skupinu?</string>
-  <string name="groups_dissolve">Rozpustit skupinu</string>
   <string name="groups_dissolve_dialog_title">Potvrzení rozpuštění skupiny</string>
   <string name="groups_dissolve_dialog_message">Jste si jisti, že chcete tuto skupinu rozpustit?\n\nVšichni členové nebudou moci pokračovat v konverzacích a taktéž nebudou schopni přijímat zprávy.</string>
   <string name="groups_dissolve_button">Rozpuštění</string>
@@ -333,7 +318,6 @@
   
   <string name="groups_invitations_title">Skupinové pozvánky</string>
   <string name="groups_invitations_invitation_sent">Pozvali jste %1$s k připojení ke skupině \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s vás pozval, abyste se připojili ke skupině \"%2$s\".</string>
   <string name="groups_invitations_joined">Připojení ke skupině</string>
   <string name="groups_invitations_declined">Pozvání do skupiny bylo odmítnuto</string>
   <plurals name="groups_invitations_open">
@@ -342,16 +326,9 @@
     <item quantity="many">%d otevřených skupinových pozvánek</item>
     <item quantity="other">%d otevřených skupinových pozvánek</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Přijali jste pozvání do skupiny od %s.</string>
-  <string name="groups_invitations_response_declined_sent">Odmítli jste pozvání do skupiny od %s.</string>
-  <string name="groups_invitations_response_declined_auto">Pozvánka do skupiny od %s byla automaticky zamítnuta.</string>
-  <string name="groups_invitations_response_accepted_received">%s přijatých pozvání ke skupině.</string>
-  <string name="groups_invitations_response_declined_received">%s odmítnutých pozvání ke skupině.</string>
   <string name="sharing_status_groups">Pouze zakladatel může pozvat nové členy do skupiny. Níže jsou všichni současní členové skupiny.</string>
   
-  <string name="groups_reveal_contacts">Odkrýt kontakty</string>
   <string name="groups_reveal_dialog_message">Můžete si vybrat, zda chcete své kontakty odhalit všem současným i budoucím členům této skupiny.\n\nPřidáním kontaktů je vaše připojení ke skupině rychlejší a spolehlivější, protože můžete komunikovat s odhalenými kontakty i když je zakladatel skupiny offline.</string>
-  <string name="groups_reveal_visible">Vztah s kontaktem je viditelný ve skupině</string>
   <string name="groups_reveal_visible_revealed_by_us">Vztah s kontaktem je viditelný ve skupině (Tebou odkrytý)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Vztah s kontaktem je viditelný ve skupině (byl odkrytý %s)</string>
   <string name="groups_reveal_invisible">Vztah s kontaktem není viditelný ve skupině</string>
@@ -371,9 +348,7 @@
   
   <string name="read_more">Číst dál</string>
 
-  <string name="change_profile_picture">Klepněte pro změnu svého profilového obrázku</string>
   <string name="dialog_confirm_profile_picture_title">Změnit profilový obrázek</string>
-  <string name="dialog_confirm_profile_picture_remark">Pouze vaše kontakty uvidí tento obrázek</string>
   <string name="change_profile_picture_failed_message">Omlouváme se, ale něco se pokazilo při aktualizaci vašeho profilového obrázku</string>
   
   <string name="pref_language_title">Jazyk a oblast</string>
@@ -989,7 +964,6 @@
 	<string name="chat_type_group">Skupina</string>
 	<string name="chat_type_channel">Kanál</string>
 	<string name="no_chats">Zatím žádné konverzace</string>
-	<string name="groups_button_add">Přidat novou skupinu</string>
 	<string name="channels_button">Kanály</string>
 	<string name="channels_list_empty">Zatím žádné kanály. Vytvořte si vlastní nebo se k nějakému připojte přes odkaz s pozvánkou.</string>
 	<string name="channels_action_create">Vytvořit kanál</string>
@@ -1205,7 +1179,6 @@
 	<string name="recording_voice">Nahrávání hlasové zprávy…</string>
 	<string name="voice_message_error">Nahrávání hlasu se nezdařilo</string>
 	<string name="voice_message_cancelled">Nahrávání zrušeno</string>
-	<string name="slide_to_cancel">← Přejeďte pro zrušení</string>
 	<string name="voice_message_too_short">Hlasová zpráva je příliš krátká</string>
 	<string name="voice_message_too_long">Hlasová zpráva je příliš dlouhá. Musí být kratší než 30 sekund.</string>
 	<string name="microphone_permission_required">Pro hlasové zprávy je vyžadováno oprávnění k mikrofonu</string>
@@ -1873,14 +1846,6 @@
 	<string name="video_offer_accept">Přijmout video</string>
 	<string name="video_offer_reject">Odmítnout</string>
 	<string name="camera_permission_required">Pro videohovory je vyžadováno oprávnění k fotoaparátu</string>
-	<string name="contact_type_selection_title">Zvolte typ spojení</string>
-	<string name="contact_type_selection_subtitle">Vyberte, jak se chcete se svým kontaktem spojit</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Postkvantové zabezpečení</string>
-	<string name="contact_type_zerion_description">Spojte se s jiným uživatelem Zerionu. Koncové kvantově odolné šifrování.</string>
-	<string name="contact_type_classic_title">Klasický režim</string>
-	<string name="contact_type_classic_badge">Klasické zabezpečení</string>
-	<string name="contact_type_classic_description">Spojení pomocí klasické kryptografie. Tuto možnost použijte kvůli zpětné kompatibilitě s kontakty na starších verzích.</string>
 	<string name="recommended">Doporučeno</string>
 	<string name="contact_type_info">Zvolte Zerion pro maximální zabezpečení, nebo Klasický režim kvůli zpětné kompatibilitě.</string>
 	<string name="voice_call_status_reconnecting">Opětovné připojování…</string>
@@ -2010,11 +1975,6 @@
 	<string name="vault_doc_unsupported_office">Dokumenty Office nelze v zabezpečeném trezoru zobrazit.\n\nOtevření těchto souborů vyžaduje externí aplikace a dočasné soubory, což by ohrozilo zabezpečení trezoru.\n\nMůžete je pouze uložit, nikoli otevřít.</string>
 	<string name="vault_doc_unsupported_archive">Archivy nelze v zabezpečeném trezoru rozbalit.\n\nRozbalením by na disku vznikly nešifrované soubory, což by ohrozilo zabezpečení trezoru.\n\nMůžete je pouze uložit, nikoli rozbalit.</string>
 	<string name="vault_doc_unsupported_generic">Tento typ dokumentu nelze v zabezpečeném trezoru zobrazit.\n\nTyp souboru: %1$s\n\nMůžete ho pouze uložit, nikoli otevřít.</string>
-	<string name="vault_item_secure_note">Zabezpečená poznámka</string>
-	<string name="vault_item_password_entry">Záznam hesla</string>
-	<string name="vault_item_image">Obrázek • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Dokument • %1$s</string>
 	<string name="vault_add_to_vault_title">Přidat do trezoru</string>
 	<string name="vault_type_note">Poznámka</string>
 	<string name="vault_type_image">Obrázek</string>

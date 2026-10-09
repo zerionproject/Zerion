@@ -37,8 +37,6 @@
   <string name="startup_failed_data_too_old_error">Zure kontua aplikazio honen bertsio zahar batekin sortu zen eta ezin da bertsio honekin ireki. Aurreko bertsioa berrinstalatu behar duzu edo kontu berri bat ezarri pasahitzaren gonbitan \'Nire pasahitza ahaztu dut\' aukeratuz.</string>
   <string name="startup_failed_data_too_new_error">Aplikazioaren bertsio hau zaharregia da. Bertsio-berritu azken bertsiora eta saiatu berriro.</string>
   <string name="startup_failed_service_error">Zerion aplikazioak ezin izan du derrigorrezko plugin bat abiatu. Zerion berrinstalatzeak arazoa konpondu ohi du. Hala ere, jakin zure kontua eta datuak galduko dituzula Zerion aplikazioak ez baititu zerbitzari zentralak erabiltzen zure datuak gordetzeko.</string>
-  <string name="download_zerion">Zerion erabiltzen jarraitzeko, deskargatu azken bertsioa.</string>
-  <string name="create_new_account">Kontu berri bat sortu beharko duzu, baina erabiltzaile-izen bera erabili dezakezu.</string>
   <string name="startup_open_database">Datu-basea deszifratzen...</string>
   <string name="startup_migrate_database">Datu-basea eguneratzen...</string>
   <string name="startup_compact_database">Datu-basea trinkotzen…</string>
@@ -89,7 +87,6 @@
   <string name="no_data">Daturik ez</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">Sartutako testua luzeegia da</string>
-  <string name="show_onboarding">Erakutsi laguntza elkarrizketa-koadroa</string>
   <string name="fix">Konpondu</string>
   <string name="help">Laguntza</string>
   <string name="sorry">Sentitzen dugu</string>
@@ -230,21 +227,12 @@
   <string name="groups_group_is_empty">Talde hau hutsik dago</string>
   <string name="groups_group_is_dissolved">Talde hau desegin da</string>
   <string name="groups_remove">Kendu</string>
-  <string name="groups_create_group_title">Sortu talde pribatua</string>
-  <string name="groups_create_group_button">Sortu taldea</string>
   <string name="groups_create_group_invitation_button">Bidali gonbidapena</string>
-  <string name="groups_create_group_hint">Aukeratu zure talde pribatuaren izena</string>
   <string name="groups_invitation_sent">Talderako gonbidapena bidali da</string>
-  <string name="groups_member_list">Kideen zerrenda</string>
-  <string name="groups_invite_members">Gonbidatu kideak</string>
-  <string name="groups_member_created_you">Zuk sortu duzu taldea</string>
   <string name="groups_member_created"> %s erabiltzaileak sortu du taldea</string>
   <string name="groups_member_joined_you">Taldera elkartu zara</string>
-  <string name="groups_member_joined">%s taldera elkartu da</string>
-  <string name="groups_leave">Atera taldetik</string>
   <string name="groups_leave_dialog_title">Baieztatu taldetik ateratzea</string>
   <string name="groups_leave_dialog_message">Ziur zaude talde honetatik atera nahi duzula?</string>
-  <string name="groups_dissolve">Desegin taldea</string>
   <string name="groups_dissolve_dialog_title">Baieztatu taldea desegitea</string>
   <string name="groups_dissolve_dialog_message">Ziur zaude talde hau desegin nahi duzula?\n\nBeste kideek ezin izango dute elkarrizketarekin jarraitu eta agian ez dituzte azken mezuak jasoko.</string>
   <string name="groups_dissolve_button">Desegin</string>
@@ -253,22 +241,15 @@
   
   <string name="groups_invitations_title">Talderako gonbidapenak</string>
   <string name="groups_invitations_invitation_sent">%1$s erabiltzailea \"%2$s\" taldera elkartzera gonbidatu duzu.</string>
-  <string name="groups_invitations_invitation_received">%1$s erabiltzaileak \"%2$s\" taldera elkartzera gonbidatu zaitu.</string>
   <string name="groups_invitations_joined">Taldera elkartuta</string>
   <string name="groups_invitations_declined">Talderako gonbidapena errefusatu da</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">talderako gonbidapen %d erantzuteke</item>
     <item quantity="other">%d talderako gonbidapen erantzuteke</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">%s erabiltzailearen talderako gonbidapena onartu duzu.</string>
-  <string name="groups_invitations_response_declined_sent">%s erabiltzailearen talderako gonbidapena errefusatu duzu. </string>
-  <string name="groups_invitations_response_accepted_received">%s erabiltzaileak talderako gonbidapena onartu du.</string>
-  <string name="groups_invitations_response_declined_received">%s erabiltzaileak talderako gonbidapena errefusatu du.</string>
   <string name="sharing_status_groups">Sortzaileak ez beste inork ezin ditu kide berriak taldera gonbidatu. Behean taldeko oraingo kide guztiak daude.</string>
   
-  <string name="groups_reveal_contacts">Erazagutu kontaktuak</string>
   <string name="groups_reveal_dialog_message">Talde honetako oraingo eta etorkizuneko kide guztiei kontaktuak erazagutzea ala ez aukeratu dezakezu.\n\nKontaktuak erazagutzeak taldearekiko zure konexioa azkarragoa eta egonkorragoa egingo du, erazagututako kontaktuekin komunikatu zaitezkeelako taldearen sortzailea deskonektatuta egonik ere.</string>
-  <string name="groups_reveal_visible">Kontaktuen erlazioa taldean ikusgai dago</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktuen erlazioa taldean ikusgai dago (Zuk erazagututa)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktuen erlazioa taldean ikusgai dago (%s erabiltzaileak erazagututa)</string>
   <string name="groups_reveal_invisible">Kontaktuen erlazioa ez dago taldean ikusgai</string>
@@ -874,13 +855,10 @@
 	<string name="dialog_button_understand">Ulertzen dut</string>
 	<string name="startup_failed_clock_error">Zerion ezin izan da abiarazi gailuaren erlojua ez dagoelako ondo.\n\nEzarri gailuaren erlojua ordu zuzenean eta saiatu berriro.</string>
 	<string name="startup_failed_database_corrupt">Zure datu-basea hondatu egin da eta ezin da berreskuratu.\n\nZure segurtasunerako, Zerion-ek ez du zure datuen babeskopiarik gordetzen. Kontu berri bat sortu beharko duzu pasahitzaren gonbitan «Nire pasahitza ahaztu dut» aukeratuz.\n\nHau gerta daiteke ustekabeko itzaltze baten edo biltegiratze-akats baten ondoren.</string>
-	<string name="old_android_delete_account">Beheko botoia sakatu dezakezu zure kontua gailu honetatik ezabatzeko.</string>
-	<string name="delete_account_button">Ezabatu kontua</string>
 	<string name="chats_button">Txatak</string>
 	<string name="chat_type_group">Taldea</string>
 	<string name="chat_type_channel">Kanala</string>
 	<string name="no_chats">Oraindik ez dago elkarrizketarik</string>
-	<string name="groups_button_add">Gehitu talde berria</string>
 	<string name="channels_button">Kanalak</string>
 	<string name="channels_list_empty">Oraindik ez dago kanalik. Sortu zurea edo batu kanal batera gonbidapen-esteka baten bidez.</string>
 	<string name="channels_action_create">Sortu kanala</string>
@@ -1107,7 +1085,6 @@
 	<string name="recording_voice">Ahots-mezua grabatzen…</string>
 	<string name="voice_message_error">Ahots-grabazioak huts egin du</string>
 	<string name="voice_message_cancelled">Grabazioa bertan behera utzi da</string>
-	<string name="slide_to_cancel">← Irristatu bertan behera uzteko</string>
 	<string name="voice_message_too_short">Ahots-mezua laburregia da</string>
 	<string name="voice_message_too_long">Ahots-mezua luzeegia da. Ez gainditu 30 segundo.</string>
 	<string name="microphone_permission_required">Mikrofonoaren baimena behar da ahots-mezuetarako</string>
@@ -1183,7 +1160,6 @@
 	<string name="call_rejected_peer_disabled_video">%s erabiltzaileak bideo-deiak desgaituta ditu</string>
 	<string name="call_rejected_peer_disabled_video_hint">Ahots-deiak onartzen ditu. Saiatu ahots-dei batekin horren ordez.</string>
 	<string name="record_voice_message">Grabatu ahots-mezua</string>
-	<string name="finish">Amaitu</string>
 	<string name="error">Errorea</string>
 	<string name="info">Informazioa</string>
 	<string name="no_private_messages_action">Bidali lehen mezua elkarrizketa hasteko</string>
@@ -1469,14 +1445,11 @@
 	<string name="peer_trust_level_stranger">Ezezaguna</string>
 	<string name="introduction_response_error">Errore bat gertatu da aurkezpenari erantzutean.</string>
 	<string name="introduction_response_declined_auto">%1$s erabiltzailearekiko aurkezpena automatikoki errefusatu da.</string>
-	<string name="groups_invitations_response_declined_auto">%s erabiltzailearen talderako gonbidapena automatikoki errefusatu da.</string>
 	<string name="reblog_button">Berrargitaratu</string>
 	<string name="share_message">Partekatu mezu batekin</string>
 	<string name="share_hint_short">Gehitu mezu bat (aukerakoa)</string>
 	<string name="invitation_exists">Gonbidapena bidalita dago dagoeneko</string>
-	<string name="change_profile_picture">Sakatu zure profileko irudia aldatzeko</string>
 	<string name="dialog_confirm_profile_picture_title">Aldatu profileko irudia</string>
-	<string name="dialog_confirm_profile_picture_remark">Zure kontaktuek soilik ikus dezakete irudi hau</string>
 	<string name="change_profile_picture_failed_message">Barkatu, zerbait gaizki joan da zure profileko irudia eguneratzean</string>
 	<string name="pref_language_changed">Aplikazioa berriro kargatuko da hizkuntza berria aplikatzeko.</string>
 	<string name="invite_friends_title">Gonbidatu lagunak</string>
@@ -1823,14 +1796,6 @@
 	<string name="video_offer_accept">Onartu bideoa</string>
 	<string name="video_offer_reject">Errefusatu</string>
 	<string name="camera_permission_required">Kamera-baimena behar da bideo-deietarako</string>
-	<string name="contact_type_selection_title">Aukeratu konexio mota</string>
-	<string name="contact_type_selection_subtitle">Hautatu zure kontaktuarekin nola konektatu nahi duzun</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Segurtasun postkuantikoa</string>
-	<string name="contact_type_zerion_description">Konektatu Zerion-eko beste erabiltzaile batekin. Zifratze kuantiko-erresistentea muturretik muturrera.</string>
-	<string name="contact_type_classic_title">Modu klasikoa</string>
-	<string name="contact_type_classic_badge">Segurtasun klasikoa</string>
-	<string name="contact_type_classic_description">Konektatu kriptografia klasikoa erabiliz. Erabili aukera hau bertsio zaharragoak dituzten kontaktuekin bateragarritasuna mantentzeko.</string>
 	<string name="recommended">Gomendatua</string>
 	<string name="contact_type_info">Aukeratu Zerion segurtasun handiena izateko, edo Modu klasikoa bertsio zaharrekin bateragarritasuna izateko.</string>
 	<string name="voice_call_status_reconnecting">Berriro konektatzen…</string>
@@ -1960,11 +1925,6 @@
 	<string name="vault_doc_unsupported_office">Office dokumentuak ezin dira kutxa seguruaren barruan ikusi.\n\nFitxategi hauek irekitzeko kanpoko aplikazioak eta aldi baterako fitxategiak behar dira, eta horrek kutxaren segurtasuna arriskuan jarriko luke.\n\nGorde soilik egin ditzakezu, ez ireki.</string>
 	<string name="vault_doc_unsupported_archive">Artxibo-fitxategiak ezin dira kutxa seguruaren barruan erauzi.\n\nErauzteak testu arrunteko fitxategiak sortuko lituzke diskoan, eta horrek kutxaren segurtasuna arriskuan jarriko luke.\n\nGorde soilik egin ditzakezu, ez erauzi.</string>
 	<string name="vault_doc_unsupported_generic">Dokumentu mota hau ezin da kutxa seguruaren barruan ikusi.\n\nFitxategi mota: %1$s\n\nGorde soilik egin dezakezu, ez ireki.</string>
-	<string name="vault_item_secure_note">Ohar segurua</string>
-	<string name="vault_item_password_entry">Pasahitz-sarrera</string>
-	<string name="vault_item_image">Irudia • %1$s</string>
-	<string name="vault_item_video">Bideoa • %1$s</string>
-	<string name="vault_item_document">Dokumentua • %1$s</string>
 	<string name="vault_add_to_vault_title">Gehitu kutxara</string>
 	<string name="vault_type_note">Oharra</string>
 	<string name="vault_type_image">Irudia</string>

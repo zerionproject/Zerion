@@ -37,8 +37,6 @@
   <string name="startup_failed_data_too_old_error">너무 오래된 버전의 Zerion를 이용해 만든 계정이라 이 버전으로는 사용할 수 없습니다. 이전 버전을 다시 설치하거나 비밀번호를 입력하는 창에서 \'비밀번호를 잊어버렸습니다\'를 선택해 새로운 계정을 설정하세요.</string>
   <string name="startup_failed_data_too_new_error">이 버전의 앱은 너무 오래됐습니다. 최신 버전으로 업그레이드하고 다시 시도해 주세요.</string>
   <string name="startup_failed_service_error">Zerion에서 필요한 플러그인을 시작하지 못했습니다. Zerion를 다시 설치하면 대개 이 문제가 해결됩니다. 그렇지만 Zerion에서는 데이터를 저장하기 위해 중앙 서버를 사용하고 있지 않기 때문에 계정과 관련된 모든 데이터를 잃게 됩니다.</string>
-  <string name="download_zerion">Zerion를 계속 이용하기 위해서는 최신 버전을 다운로드 해 주세요.</string>
-  <string name="create_new_account">새로운 계정을 만들어야 하지만, 같은 별명을 사용할 수 있습니다.</string>
   <string name="startup_open_database">데이터베이스를 복호화하고 있습니다....</string>
   <string name="startup_migrate_database">데이터베이스를 업그레이드 하고 있습니다...</string>
   <string name="startup_compact_database">데이터베이스를 작게 만들고 있습니다...</string>
@@ -99,7 +97,6 @@
   <string name="no_data">데이터가 없습니다</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">입력된 내용이 너무 깁니다</string>
-  <string name="show_onboarding">도움말 보기</string>
   <string name="fix">고치기</string>
   <string name="help">도움</string>
   <string name="sorry">죄송합니다</string>
@@ -239,21 +236,12 @@
   <string name="groups_group_is_empty">이 모임에는 아무도 없습니다</string>
   <string name="groups_group_is_dissolved">이 모임은 해체됐습니다</string>
   <string name="groups_remove">제거하기</string>
-  <string name="groups_create_group_title">프라이빗 모임 만들기</string>
-  <string name="groups_create_group_button">모임 만들기</string>
   <string name="groups_create_group_invitation_button">초대장 보내기</string>
-  <string name="groups_create_group_hint">프라이빗 모임의 이름을 정하세요</string>
   <string name="groups_invitation_sent">모임 초대장을 보냈습니다</string>
-  <string name="groups_member_list">구성원 목록</string>
-  <string name="groups_invite_members">구성원 초대하기</string>
-  <string name="groups_member_created_you">모임을 만들었습니다</string>
   <string name="groups_member_created">%s 님이 모임을 만들었습니다</string>
   <string name="groups_member_joined_you">모임에 참가했습니다</string>
-  <string name="groups_member_joined">%s 님이 모임에 참가했습니다</string>
-  <string name="groups_leave">모임 나가기</string>
   <string name="groups_leave_dialog_title">모임 떠나기 확인</string>
   <string name="groups_leave_dialog_message">정말로 이 모임을 나가고 싶으신가요?</string>
-  <string name="groups_dissolve">모임 해체하기</string>
   <string name="groups_dissolve_dialog_title">모임 해체 확인</string>
   <string name="groups_dissolve_dialog_message">정말로 이 모임을 해체하려고 하세요?\n\n모든 다른 구성원들이 대화를 계속할 수 없게 되고, 최신 메시지를 받지 못할 수 있습니다.</string>
   <string name="groups_dissolve_button">해체하기</string>
@@ -262,21 +250,14 @@
   
   <string name="groups_invitations_title">모임 초대장</string>
   <string name="groups_invitations_invitation_sent">%1$s을(를) \"%2$s\" 모임에 참가하도록 초대했습니다.</string>
-  <string name="groups_invitations_invitation_received">%1$s 님이 \"%2$s\" 모임에 참가하도록 초대했습니다.</string>
   <string name="groups_invitations_joined">모임에 참가했습니다</string>
   <string name="groups_invitations_declined">모임 초대장 거절함</string>
   <plurals name="groups_invitations_open">
     <item quantity="other">받을 수 있는 초대장 %d개</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">%s(으)로부터 받은 초대장을 승락했습니다.</string>
-  <string name="groups_invitations_response_declined_sent">%s(으)로부터의 모임 초대장을 거절했습니다.</string>
-  <string name="groups_invitations_response_accepted_received">%s 님이 모임 초대장을 승락했습니다.</string>
-  <string name="groups_invitations_response_declined_received">%s 님이 모임 초대장을 거절했습니다.</string>
   <string name="sharing_status_groups">모임을 만든 분만 새로운 구성원을 초대할 수 있습니다. 다음은 모임의 모든 현재 구성원입니다.</string>
   
-  <string name="groups_reveal_contacts">연락처 공개하기</string>
   <string name="groups_reveal_dialog_message">이 모임의 지금과 앞으로 들어올 구성원에게 연락처를 공개할지를 정할 수 있습니다.\n\n연락처를 공개하면, 모임을 만든 사람이 오프라인이어도 공개된 연락처와 연결할 수 있기 때문에 모임에 더 빠르고 안정적으로 연결할 수 있습니다.</string>
-  <string name="groups_reveal_visible">연락처 관계가 모임에서 보입니다</string>
   <string name="groups_reveal_visible_revealed_by_us">(당신이) 모임에게 지인 관계 공개합니다</string>
   <string name="groups_reveal_visible_revealed_by_contact">(%s님이) 모임에게 지인 관계를 공개합니다</string>
   <string name="groups_reveal_invisible">모임에게 지인 관계를 공개하지 않습니다</string>
@@ -659,13 +640,10 @@
 	<string name="dialog_button_understand">이해했습니다</string>
 	<string name="startup_failed_clock_error">기기의 시계가 잘못되어 Zerion을 시작할 수 없습니다.\n\n기기의 시계를 올바른 시간으로 설정하고 다시 시도하세요.</string>
 	<string name="startup_failed_database_corrupt">데이터베이스가 손상되어 복구할 수 없습니다.\n\n보안을 위해 Zerion은 데이터 백업을 저장하지 않습니다. 비밀번호 입력 화면에서 \'비밀번호를 잊었습니다\'를 선택하여 새 계정을 설정해야 합니다.\n\n이는 예기치 않은 종료나 저장소 오류 후에 발생할 수 있습니다.</string>
-	<string name="old_android_delete_account">아래 버튼을 눌러 이 기기에서 계정을 삭제할 수 있습니다.</string>
-	<string name="delete_account_button">계정 삭제</string>
 	<string name="chats_button">채팅</string>
 	<string name="chat_type_group">그룹</string>
 	<string name="chat_type_channel">채널</string>
 	<string name="no_chats">아직 대화가 없습니다</string>
-	<string name="groups_button_add">새 그룹 추가</string>
 	<string name="channels_button">채널</string>
 	<string name="channels_list_empty">아직 채널이 없습니다. 직접 만들거나 초대 링크로 참여하세요.</string>
 	<string name="channels_action_create">채널 만들기</string>
@@ -860,7 +838,6 @@
 	<string name="recording_voice">음성 메시지 녹음 중…</string>
 	<string name="voice_message_error">음성 녹음에 실패했습니다</string>
 	<string name="voice_message_cancelled">녹음이 취소되었습니다</string>
-	<string name="slide_to_cancel">← 밀어서 취소</string>
 	<string name="voice_message_too_short">음성 메시지가 너무 짧습니다</string>
 	<string name="voice_message_too_long">음성 메시지가 너무 깁니다. 30초 이내로 유지하세요.</string>
 	<string name="microphone_permission_required">음성 메시지에는 마이크 권한이 필요합니다</string>
@@ -953,7 +930,6 @@
 	<string name="call_rejected_peer_disabled_video">%s님이 영상 통화를 비활성화했습니다</string>
 	<string name="call_rejected_peer_disabled_video_hint">음성 통화는 받습니다. 대신 음성 통화를 시도하세요.</string>
 	<string name="record_voice_message">음성 메시지 녹음</string>
-	<string name="finish">완료</string>
 	<string name="error">오류</string>
 	<string name="info">정보</string>
 	<string name="no_private_messages_action">첫 메시지를 보내 대화를 시작하세요</string>
@@ -1191,14 +1167,11 @@
 	<string name="peer_trust_level_stranger">낯선 사람</string>
 	<string name="introduction_response_error">소개에 응답하는 중 오류가 발생했습니다.</string>
 	<string name="introduction_response_declined_auto">%1$s님과의 소개가 자동으로 거절되었습니다.</string>
-	<string name="groups_invitations_response_declined_auto">%s님의 그룹 초대가 자동으로 거절되었습니다.</string>
 	<string name="reblog_button">리블로그</string>
 	<string name="share_message">메시지와 함께 공유</string>
 	<string name="share_hint_short">메시지 추가 (선택 사항)</string>
 	<string name="invitation_exists">이미 초대를 보냈습니다</string>
-	<string name="change_profile_picture">눌러서 프로필 사진을 변경하세요</string>
 	<string name="dialog_confirm_profile_picture_title">프로필 사진 변경</string>
-	<string name="dialog_confirm_profile_picture_remark">연락처만 이 사진을 볼 수 있습니다</string>
 	<string name="change_profile_picture_failed_message">죄송합니다. 프로필 사진을 업데이트하는 중 문제가 발생했습니다</string>
 	<string name="invite_friends_title">친구 초대</string>
 	<string name="invite_friends_summary">신뢰하는 사람들과 Zerion을 공유하세요</string>
@@ -1481,14 +1454,6 @@
 	<string name="video_offer_accept">영상 수락</string>
 	<string name="video_offer_reject">거절</string>
 	<string name="camera_permission_required">영상 통화에는 카메라 권한이 필요합니다</string>
-	<string name="contact_type_selection_title">연결 유형 선택</string>
-	<string name="contact_type_selection_subtitle">연락처와 연결할 방법을 선택하세요</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">양자 내성 보안</string>
-	<string name="contact_type_zerion_description">다른 Zerion 사용자와 연결합니다. 종단 간 양자 내성 암호화.</string>
-	<string name="contact_type_classic_title">고전 모드</string>
-	<string name="contact_type_classic_badge">고전 보안</string>
-	<string name="contact_type_classic_description">고전 암호화를 사용하여 연결합니다. 이전 버전의 연락처와 하위 호환성을 위해 이 옵션을 사용하세요.</string>
 	<string name="recommended">권장</string>
 	<string name="contact_type_info">최대 보안을 위해서는 Zerion을, 하위 호환성을 위해서는 고전 모드를 선택하세요.</string>
 	<string name="voice_call_status_reconnecting">다시 연결하는 중…</string>
@@ -1607,11 +1572,6 @@
 	<string name="vault_doc_unsupported_office">Office 문서는 보안 보관함 안에서 볼 수 없습니다.\n\n이러한 파일을 열려면 외부 앱과 임시 파일이 필요하며, 이는 보관함 보안을 손상시킵니다.\n\n저장만 할 수 있고 열 수는 없습니다.</string>
 	<string name="vault_doc_unsupported_archive">압축 파일은 보안 보관함 안에서 압축을 풀 수 없습니다.\n\n압축을 풀면 디스크에 평문 파일이 생성되어 보관함 보안이 손상됩니다.\n\n저장만 할 수 있고 압축을 풀 수는 없습니다.</string>
 	<string name="vault_doc_unsupported_generic">이 문서 형식은 보안 보관함 안에서 볼 수 없습니다.\n\n파일 형식: %1$s\n\n저장만 할 수 있고 열 수는 없습니다.</string>
-	<string name="vault_item_secure_note">보안 노트</string>
-	<string name="vault_item_password_entry">비밀번호 항목</string>
-	<string name="vault_item_image">이미지 • %1$s</string>
-	<string name="vault_item_video">동영상 • %1$s</string>
-	<string name="vault_item_document">문서 • %1$s</string>
 	<string name="vault_add_to_vault_title">보관함에 추가</string>
 	<string name="vault_type_note">노트</string>
 	<string name="vault_type_image">이미지</string>

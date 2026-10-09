@@ -33,9 +33,6 @@
   <string name="dialog_title_lost_password">Wachtwoord vergeten</string>
   <string name="dialog_message_lost_password">Je Zerion-account is versleuteld opgeslagen op je apparaat, niet in de cloud, dus kunnen we je wachtwoord niet herstellen. Wil je je account verwijderen en opnieuw beginnen?\n\nLet op: Je identiteiten, contacten en berichten zullen permanent verloren gaan.</string>
   <string name="startup_failed_activity_title">Opstarten Zerion mislukt</string>
-  <string name="download_zerion">Download de laatste versie om Zerion te kunnen blijven gebruiken.</string>
-  <string name="create_new_account">Je moet een nieuw account aanmaken. Je kan dezelfde bijnaam gebruiken.</string>
-  <string name="delete_account_button">Verwijder account</string>
   <string name="startup_open_database">Database aan het ontsleutelen…</string>
   <string name="startup_migrate_database">Database aan het upgraden…</string>
   <string name="startup_compact_database">Database comprimeren...</string>
@@ -94,11 +91,9 @@
   <string name="open">Open</string>
   <string name="change">Wijzigen</string>
   <string name="start">Beginnen</string>
-  <string name="finish">Einde</string>
   <string name="no_data">Geen gegevens</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">De ingevoerde tekst is te lang</string>
-  <string name="show_onboarding">Toon helpdialoog</string>
   <string name="fix">Oplossen</string>
   <string name="help">Help</string>
   <string name="sorry">Excuses</string>
@@ -241,21 +236,12 @@
   <string name="groups_group_is_empty">Deze groep is leeg</string>
   <string name="groups_group_is_dissolved">Deze groep is opgeheven</string>
   <string name="groups_remove">Verwijder</string>
-  <string name="groups_create_group_title">Maak privégroep aan</string>
-  <string name="groups_create_group_button">Maak groep aan</string>
   <string name="groups_create_group_invitation_button">Verstuur uitnodiging</string>
-  <string name="groups_create_group_hint">Voer een naam in voor je privégroep</string>
   <string name="groups_invitation_sent">Groepsuitnodiging is verstuurd</string>
-  <string name="groups_member_list">Ledenlijst</string>
-  <string name="groups_invite_members">Nodig leden uit</string>
-  <string name="groups_member_created_you">Je hebt de groep aangemaakt</string>
   <string name="groups_member_created">%s heeft de groep aangemaakt</string>
   <string name="groups_member_joined_you">Je hebt lid geworden van de groep</string>
-  <string name="groups_member_joined">%s is lid geworden van de groep</string>
-  <string name="groups_leave">Verlaat groep</string>
   <string name="groups_leave_dialog_title">Bevestig verlaten groep</string>
   <string name="groups_leave_dialog_message">Weet je zeker dat je deze groep wil verlaten? </string>
-  <string name="groups_dissolve">Hef groep op</string>
   <string name="groups_dissolve_dialog_title">Bevestig opheffen groep</string>
   <string name="groups_dissolve_dialog_message">Weet je zeker dat je deze groep wil opheffen?\n\nAlle andere leden zullen dan niet meer hun gesprek voort kunnen zetten en het zou kunnen dat ze de laatste berichten niet ontvangen.</string>
   <string name="groups_dissolve_button">Hef op</string>
@@ -264,22 +250,15 @@
   
   <string name="groups_invitations_title">Groepsuitnodigingen</string>
   <string name="groups_invitations_invitation_sent">Je hebt %1$s uitgenodigd om lid te worden van de groep \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s heeft je uitgenodigd om lid te worden van de groep \"%2$s\".</string>
   <string name="groups_invitations_joined">Lid geworden van groep</string>
   <string name="groups_invitations_declined">Groepsuitnodiging is afgewezen</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%d openstaande groepsuitnodiging</item>
     <item quantity="other">%d openstaande groepsuitnodigingen</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Je hebt de groepsuitnodiging van %s geaccepteerd.</string>
-  <string name="groups_invitations_response_declined_sent">Je hebt de groepsuitnodiging van %s afgewezen.</string>
-  <string name="groups_invitations_response_accepted_received">%s heeft de groepsuitnodiging geaccepteerd.</string>
-  <string name="groups_invitations_response_declined_received">%s heeft de groepsuitnodiging afgewezen.</string>
   <string name="sharing_status_groups">Alleen degene die een groep heeft aangemaakt kan nieuwe leden voor die groep uitnodigen. Hieronder staan alle huidige leden van de groep.</string>
   
-  <string name="groups_reveal_contacts">Openbaar contacten</string>
   <string name="groups_reveal_dialog_message">Je kan ervoor kiezen om contacten te openbaren aan alle huidige en toekomstige leden van deze groep.\n\nOpenbaren van contacten maakt je verbinding met de groep sneller en betrouwbaarder omdat je kan communiceren met geopenbaarde contacten, zelfs als degene die de groep heeft aangemaakt offline is.</string>
-  <string name="groups_reveal_visible">Contactrelatie is zichtbaar voor de groep</string>
   <string name="groups_reveal_visible_revealed_by_us">Contactrelatie is zichtbaar voor de groep (door jou geopenbaard)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Contactrelaties zijn zichtbaar voor de groep (geopenbaard door %s)</string>
   <string name="groups_reveal_invisible">Contactrelatie is niet zichtbaar voor de groep</string>
@@ -297,9 +276,7 @@
   
   <string name="read_more">lees meer</string>
 
-  <string name="change_profile_picture">Tik om je profielfoto te wijzigen</string>
   <string name="dialog_confirm_profile_picture_title">Wijzig profielfoto</string>
-  <string name="dialog_confirm_profile_picture_remark">Alleen je contacten kunnen deze afbeelding zien</string>
   <string name="change_profile_picture_failed_message">Excuses, maar er is iets misgegaan met het updaten van je profielfoto</string>
   
   <string name="pref_language_title">Taal &amp; regio</string>
@@ -508,14 +485,6 @@
 	<string name="speaker">Luidspreker</string>
 	<string name="end_call">Oproep beëindigen</string>
 
-	<string name="contact_type_selection_title">Kies Verbindingstype</string>
-	<string name="contact_type_selection_subtitle">Selecteer hoe u met uw contact wilt verbinden</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Post-Quantum Beveiliging</string>
-	<string name="contact_type_zerion_description">Verbind met andere Zerion-gebruikers met hybride post-quantum cryptografie. Biedt bescherming tegen toekomstige kwantumcomputeraanvallen.</string>
-	<string name="contact_type_classic_title">Klassieke Modus</string>
-	<string name="contact_type_classic_badge">Klassieke Beveiliging</string>
-	<string name="contact_type_classic_description">Verbind met klassieke cryptografie. Gebruik deze optie voor achterwaartse compatibiliteit met contacten op oudere versies.</string>
 	<string name="recommended">Aanbevolen</string>
 	<string name="contact_type_info">Kies Zerion voor maximale beveiliging, of Klassieke Modus voor achterwaartse compatibiliteit.</string>
 
@@ -742,12 +711,10 @@
 	<string name="startup_failed_data_too_old_error">Je account is gemaakt met een oude versie van deze app en kan niet worden geopend met deze versie.\n\nJe moet ofwel de oude versie opnieuw installeren, of een nieuw account instellen door bij de wachtwoordvraag \'Ik ben mijn wachtwoord vergeten\' te kiezen.</string>
 	<string name="startup_failed_data_too_new_error">Je account is gemaakt met een nieuwere versie van deze app en kan niet worden geopend met deze versie.\n\nWerk de app bij naar de nieuwste versie en probeer opnieuw.</string>
 	<string name="startup_failed_service_error">Zerion kon een vereist onderdeel niet starten.\n\nWerk de app bij naar de nieuwste versie en probeer opnieuw.</string>
-	<string name="old_android_delete_account">Je kunt op de knop hieronder tikken om je account van dit apparaat te verwijderen.</string>
 	<string name="chats_button">Chats</string>
 	<string name="chat_type_group">Groep</string>
 	<string name="chat_type_channel">Kanaal</string>
 	<string name="no_chats">Nog geen gesprekken</string>
-	<string name="groups_button_add">Nieuwe groep toevoegen</string>
 	<string name="channels_button">Kanalen</string>
 	<string name="channels_list_empty">Nog geen kanalen. Maak er zelf een of neem deel via een uitnodigingslink.</string>
 	<string name="channels_action_create">Kanaal aanmaken</string>
@@ -984,7 +951,6 @@
 	<string name="recording_voice">Spraakbericht opnemen…</string>
 	<string name="voice_message_error">Spraakopname mislukt</string>
 	<string name="voice_message_cancelled">Opname geannuleerd</string>
-	<string name="slide_to_cancel">← Schuif om te annuleren</string>
 	<string name="voice_message_too_short">Spraakbericht te kort</string>
 	<string name="voice_message_too_long">Spraakbericht te lang. Houd het onder 30 seconden.</string>
 	<string name="voice_msg_peer_update_required">De app van dit contact moet worden bijgewerkt voordat die spraakberichten kan ontvangen.</string>
@@ -1332,7 +1298,6 @@
 	<string name="peer_trust_level_stranger">Onbekende</string>
 	<string name="introduction_response_error">Er is een fout opgetreden bij het reageren op de introductie.</string>
 	<string name="introduction_response_declined_auto">De introductie bij %1$s is automatisch geweigerd.</string>
-	<string name="groups_invitations_response_declined_auto">De groepsuitnodiging van %s is automatisch geweigerd.</string>
 	<string name="reblog_button">Herbloggen</string>
 	<string name="share_message">Delen met een bericht</string>
 	<string name="share_hint_short">Voeg een bericht toe (optioneel)</string>
@@ -1733,11 +1698,6 @@
 	<string name="vault_doc_unsupported_office">Office-documenten kunnen niet in de beveiligde kluis worden bekeken.\n\nHet openen van deze bestanden vereist externe apps en tijdelijke bestanden, wat de beveiliging van de kluis zou aantasten.\n\nJe kunt ze alleen opslaan, niet openen.</string>
 	<string name="vault_doc_unsupported_archive">Archiefbestanden kunnen niet in de beveiligde kluis worden uitgepakt.\n\nUitpakken zou platte-tekstbestanden op de schijf aanmaken, wat de beveiliging van de kluis aantast.\n\nJe kunt ze alleen opslaan, niet uitpakken.</string>
 	<string name="vault_doc_unsupported_generic">Dit documenttype kan niet in de beveiligde kluis worden bekeken.\n\nBestandstype: %1$s\n\nJe kunt het alleen opslaan, niet openen.</string>
-	<string name="vault_item_secure_note">Beveiligde notitie</string>
-	<string name="vault_item_password_entry">Wachtwoorditem</string>
-	<string name="vault_item_image">Afbeelding • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 	<string name="vault_add_to_vault_title">Toevoegen aan kluis</string>
 	<string name="vault_type_note">Notitie</string>
 	<string name="vault_type_image">Afbeelding</string>

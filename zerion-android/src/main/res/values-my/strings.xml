@@ -47,10 +47,6 @@
   <string name="startup_failed_data_too_old_error">သင့်အကောင့်ကို ဤအက်ပ်၏ဗားရှင်းအဟောင်းတစ်ခုဖြင့် ဖွင့်ခဲ့သောကြောင့် ယခုဗားရှင်းဖြင့် ဖွင့်၍မရပါ။\n\nဗားရှင်းအဟောင်းကို ပြန်ထည့်သွင်းရပါမည် (သို့) စကားဝှက်တောင်းသည့်နေရာတွင် \'ကျွန်ုပ်၏စကားဝှက်ကို မေ့သွားပါသည်\' ကို ရွေးချယ်ပြီး အကောင့်အသစ်တစ်ခု ဖွင့်နိုင်ပါသည်။</string>
   <string name="startup_failed_data_too_new_error">သင့်အကောင့်ကို ဤအက်ပ်ဗားရှင်းထက် နောက်ကျသောဗားရှင်းတစ်ခုဖြင့် ဖွင့်ခဲ့သောကြောင့် ယခုဗားရှင်းဖြင့် ဖွင့်၍မရပါ။\n\nနောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
   <string name="startup_failed_service_error">Zerion သည် လိုအပ်သည့် အစိတ်အပိုင်းတစ်ခုကို မဖွင့်နိုင်ပါ။\n\nအက်ပ်နောက်ဆုံးဗားရှင်းသို့ အဆင့်မြှင့်ပြီး ထပ်စမ်းကြည့်ပါ။</string>
-  <string name="download_zerion">Zerion ကို ဆက်လက်အသုံးပြုရန် နောက်ဆုံးထွက်ထားသည်ကို ဒေါင်းလုဒ်လုပ်ပါ။</string>
-  <string name="create_new_account">အကောင့်အသစ်ဖွင့်ရန် လိုအပ်သော်လည်း သုံးလက်စနာမည်ပြောင်ကို ဆက်သုံးနိုင်ပါသည်။</string>
-  <string name="old_android_delete_account">သင့်အကောင့်ကို ဤစက်ပစ္စည်းမှ ဖျက်ရန် အောက်ပါ ခလုတ်ကို သင်နှိပ်နိုင်သည်။</string>
-  <string name="delete_account_button">အကောင့် ဖျက်သိမ်းမည်</string>
   <string name="startup_open_database">အချက်အလက်အစုကို ပြန်ဖြည်နေသည်…</string>
   <string name="startup_migrate_database">အချက်အလက်အစုကို အဆင့်မြှင့်နေသည်…</string>
   <string name="startup_compact_database">အချက်အလက်အစုကို သိပ်သည်းစေရန်လုပ်နေသည်…</string>
@@ -107,11 +103,9 @@
   <string name="open">ဖွင့်မည်</string>
   <string name="change">ပြောင်းလဲမည်</string>
   <string name="start">စတင်ရန်</string>
-  <string name="finish">ပြီးပြီ</string>
   <string name="no_data">ဒေတာမရှိ</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">ရိုက်ထားသောစာများ ရှည်နေပါသည်</string>
-  <string name="show_onboarding">ကူညီရေးစကားဝိုင်းကို ပြပါ</string>
   <string name="fix">ဖြေရှင်းမည်</string>
   <string name="help">အကူအညီ</string>
   <string name="sorry">ဝမ်းနည်းပါသည်</string>
@@ -289,21 +283,12 @@
   <string name="groups_group_is_empty">ဤအဖွဲ့ထဲတွင် အဖွဲ့ဝင်မရှိပါ</string>
   <string name="groups_group_is_dissolved">ဤအဖွဲ့အား ဖျက်သိမ်းလိုက်ပြီဖြစ်ပါသည်</string>
   <string name="groups_remove">ဖယ်ရှားမည်</string>
-  <string name="groups_create_group_title">ကိုယ်ပိုင်အဖွဲ့ ဖန်တီးမည်</string>
-  <string name="groups_create_group_button">အဖွဲ့အသစ် ဖန်တီးမည်</string>
   <string name="groups_create_group_invitation_button">ဖိတ်ကြားစာပေးပို့မည်</string>
-  <string name="groups_create_group_hint">သင်၏ ကိုယ်ပိုင်အဖွဲ့အတွက် အမည်ရွေးချယ်ပါ</string>
   <string name="groups_invitation_sent">အဖွဲ့လိုက်ဖိတ်ကြားစာ ပေးပို့ပြီး</string>
-  <string name="groups_member_list">အဖွဲ့ဝင်စာရင်း</string>
-  <string name="groups_invite_members">အဖွဲ့ဝင်များ ဖိတ်ခေါ်မယ်</string>
-  <string name="groups_member_created_you">သင်သည် အဖွဲ့အား ဖန်တီးခဲ့သည်</string>
   <string name="groups_member_created">%sသည် အဖွဲ့အား ဖန်တီးခဲ့သည်</string>
   <string name="groups_member_joined_you">သင်သည် အဖွဲ့သို့ ဝင်ရောက်ခဲ့သည်</string>
-  <string name="groups_member_joined">%s သည် အဖွဲ့သို့ ဝင်ရောက်ခဲ့သည်</string>
-  <string name="groups_leave">အဖွဲ့မှ ထွက်မည်</string>
   <string name="groups_leave_dialog_title">အဖွဲ့မှ ထွက်ခြင်းအား အတည်ပြုသည်</string>
   <string name="groups_leave_dialog_message">အဖွဲ့မှ ထွက်ရန် ‌သေချာပါသလား။</string>
-  <string name="groups_dissolve">အဖွဲ့အား ဖျက်သိမ်းမည်</string>
   <string name="groups_dissolve_dialog_title">အဖွဲ့ကို ဖျက်သိမ်းခြင်းအား အတည်ပြုသည်</string>
   <string name="groups_dissolve_dialog_message">ဤအဖွဲ့အား ဖျက်သိမ်းမည်ဆိုတာ သင်သေချာပါသလား။ \n\n အခြားအဖွဲ့ဝင်များအားလုံးသည် ၎င်းတို့ စကားပြောဆိုမှုများနှင့် နောက်ဆုံးမက်ဆေ့ချ်များ ဆက်လက်ပေးပို့လက်ခံရန် မရနိုင်တော့ပါ။</string>
   <string name="groups_dissolve_button">ဖျက်သိမ်းမည်</string>
@@ -312,22 +297,14 @@
   
   <string name="groups_invitations_title">အဖွဲ့သို့ ဖိတ်ခေါ်မှုများ</string>
   <string name="groups_invitations_invitation_sent">သင်မှ %1$s ကို  \"%2$s\" အဖွဲ့သို့ ပါဝင်ရန် ဖိတ်ခေါ်ခဲ့ပါသည်။</string>
-  <string name="groups_invitations_invitation_received">%1$sမှ သင့်ကို \"%2$s\" အဖွဲ့သို့ ပါဝင်ရန် ဖိတ်ခေါ်ခဲ့ပါသည်။</string>
   <string name="groups_invitations_joined">အဖွဲ့ထဲဝင်ပြီး</string>
   <string name="groups_invitations_declined">အဖွဲ့သို့ ဖိတ်ခေါ်မှုအား ငြင်းဆိုခံရသည်</string>
   <plurals name="groups_invitations_open">
     <item quantity="other">%d အဖွဲ့၏ ဖိတ်ကြားခြင်းများကို ဖွင့်လှစ်ခြင်း</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">%s မှ အဖွဲ့လိုက် ဖိတ်ခေါ်မှုအား သင် လက်ခံခဲ့ပါသည်။</string>
-  <string name="groups_invitations_response_declined_sent">%s မှ အဖွဲ့လိုက် ဖိတ်ခေါ်မှုအား သင် ငြင်းဆိုခဲ့ပါသည်။</string>
-  <string name="groups_invitations_response_declined_auto">%s မှ ပို့ထားသော အဖွဲ့သို့ ဖိတ်ခေါ်ချက်ကို အလိုအလျောက် ငြင်းပယ်ခဲ့ပါသည်။</string>
-  <string name="groups_invitations_response_accepted_received">%s သည် အဖွဲ့လိုက်ဖိတ်ခေါ်မှုအား လက်ခံခဲ့ပါသည်။</string>
-  <string name="groups_invitations_response_declined_received">%s သည် အဖွဲ့လိုက်ဖိတ်ခေါ်မှုအား ငြင်းဆိုခဲ့ပါသည်။</string>
   <string name="sharing_status_groups">ဖန်းတီးသူသာ အဖွဲ့ထဲသို့ အဖွဲ့ဝင်အသစ်များ ဖိတ်ခေါ်ဆိုနိုင်ပါသည်။ အောက်ပါစာရင်းသည် လက်ရှိအဖွဲ့ဝင်များဖြစ်ပါသည်။</string>
   
-  <string name="groups_reveal_contacts">အဆက်အသွယ်များ ထုတ်ဖော်မည်</string>
   <string name="groups_reveal_dialog_message">ယခု နှင့် နောင်အဖွဲ့ဝင်များစီသို့ သင်သည် အဆက်အသွယ်များ ထုတ်ဖေါ်ပြရန် ရွေးနိုင်ပါသည်။ \n\n အဆက်အသွယ်များထုတ်ဖေါ်ခြင်းသည် သင့် အဖွဲ့နှင့်ချိတ်ဆက်မှုလိုင်းအား ပိုမြန်စေပြီး ပိုစိတ်ချယုံကြည်စွာဖြစ်စေပါသည်၊ အဘယ်ကြောင့်ဆိုသည်မှာ အဖွဲ့ဖန်တီးသူ လိုင်းပေါ်မရှိလျှင်လည်း သင်သည် ထုတ်ဖေါ်ထားသော အဆက်အသွယ်များနှင့် ဆက်သွယ်နိုင်ပါသည်။</string>
-  <string name="groups_reveal_visible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည်</string>
   <string name="groups_reveal_visible_revealed_by_us">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (သင်မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_visible_revealed_by_contact">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (%s မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_invisible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုကို အဖွဲ့မှ မတွေ့မြင်နိုင်ပါ</string>
@@ -345,9 +322,7 @@
   <string name="read_more">ထပ်မံဖတ်ရှုမည်</string>
 
   
-  <string name="change_profile_picture">နှိပ်၍ သင့် ပရိုဖိုင်းပုံ ပြောင်းလဲပါ</string>
   <string name="dialog_confirm_profile_picture_title">ပရိုဖိုင်းပုံ ပြောင်းလဲမည်</string>
-  <string name="dialog_confirm_profile_picture_remark">သင့် အဆက်အသွယ်များသာ ဤရုပ်ပုံကို တွေ့မြင်ရပါသည်</string>
   <string name="change_profile_picture_failed_message">ဝမ်းနည်းပါသည်၊ သင့် ပရိုဖိုင်းပုံကို အပ်ဒိတ်ပြုလုပ်တုန်း တစ်ခုခု မှားယွင်းသွားပါသည်။</string>
   
   <string name="pref_language_title">ဘာသာစကား &amp; ဒေသ</string>
@@ -921,7 +896,6 @@
 	<string name="chat_type_group">အဖွဲ့</string>
 	<string name="chat_type_channel">ချန်နယ်</string>
 	<string name="no_chats">စကားပြောမှု မရှိသေးပါ</string>
-	<string name="groups_button_add">အဖွဲ့အသစ် ထည့်မည်</string>
 	<string name="channels_button">ချန်နယ်များ</string>
 	<string name="channels_list_empty">ချန်နယ် မရှိသေးပါ။ သင့်ကိုယ်ပိုင် ချန်နယ် ဖန်တီးပါ သို့မဟုတ် ဖိတ်ကြားလင့်ခ်ဖြင့် ချန်နယ်တစ်ခုသို့ ဝင်ပါ။</string>
 	<string name="channels_action_create">ချန်နယ် ဖန်တီးမည်</string>
@@ -1137,7 +1111,6 @@
 	<string name="recording_voice">အသံ မက်ဆေ့ချ် အသံသွင်းနေသည်…</string>
 	<string name="voice_message_error">အသံသွင်းခြင်း မအောင်မြင်ပါ</string>
 	<string name="voice_message_cancelled">အသံသွင်းခြင်းကို ပယ်ဖျက်လိုက်သည်</string>
-	<string name="slide_to_cancel">← ပယ်ဖျက်ရန် ဘေးသို့ ဆွဲပါ</string>
 	<string name="voice_message_too_short">အသံ မက်ဆေ့ချ် တိုလွန်းသည်</string>
 	<string name="voice_message_too_long">အသံ မက်ဆေ့ချ် ရှည်လွန်းသည်။ 30 စက္ကန့်အောက် ထားပါ။</string>
 	<string name="microphone_permission_required">အသံ မက်ဆေ့ချ်များအတွက် မိုက်ခရိုဖုန်း ခွင့်ပြုချက် လိုအပ်သည်</string>
@@ -1800,14 +1773,6 @@
 	<string name="video_offer_accept">ဗီဒီယို လက်ခံမည်</string>
 	<string name="video_offer_reject">ငြင်းဆန်မည်</string>
 	<string name="camera_permission_required">ဗီဒီယို ခေါ်ဆိုမှုများအတွက် ကင်မရာသုံးခွင့် လိုအပ်သည်</string>
-	<string name="contact_type_selection_title">ချိတ်ဆက်မှု အမျိုးအစား ရွေးပါ</string>
-	<string name="contact_type_selection_subtitle">သင့်အဆက်အသွယ်နှင့် မည်သို့ ချိတ်ဆက်လိုသည်ကို ရွေးပါ</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Post-Quantum လုံခြုံရေး</string>
-	<string name="contact_type_zerion_description">အခြား Zerion အသုံးပြုသူနှင့် ချိတ်ဆက်ပါ။ အစမှအဆုံး ကွမ်တမ်ဒဏ်ခံ ကုဒ်ဝှက်ခြင်း။</string>
-	<string name="contact_type_classic_title">ရိုးရာ မုဒ်</string>
-	<string name="contact_type_classic_badge">ရိုးရာ လုံခြုံရေး</string>
-	<string name="contact_type_classic_description">ရိုးရာ ကုဒ်ဝှက်စနစ်ကို သုံး၍ ချိတ်ဆက်ပါ။ ဗားရှင်းဟောင်းများ သုံးနေသော အဆက်အသွယ်များနှင့် လိုက်ဖက်စေရန် ဤရွေးချယ်မှုကို သုံးပါ။</string>
 	<string name="recommended">အကြံပြုထားသည်</string>
 	<string name="contact_type_info">အမြင့်ဆုံး လုံခြုံရေးအတွက် Zerion ကို ရွေးပါ သို့မဟုတ် ဗားရှင်းဟောင်းများနှင့် လိုက်ဖက်စေရန် ရိုးရာ မုဒ်ကို ရွေးပါ။</string>
 	<string name="voice_call_status_reconnecting">ပြန်ချိတ်ဆက်နေသည်…</string>
@@ -1937,11 +1902,6 @@
 	<string name="vault_doc_unsupported_office">Office စာရွက်စာတမ်းများကို လုံခြုံသေတ္တာအတွင်း ကြည့်ရှု၍ မရပါ။\n\nဤဖိုင်များကို ဖွင့်ရန် ပြင်ပ အက်ပ်များနှင့် ယာယီ ဖိုင်များ လိုအပ်ပြီး ၎င်းတို့က လုံခြုံသေတ္တာ၏ လုံခြုံရေးကို ထိခိုက်စေမည်။\n\n၎င်းတို့ကို သိမ်းဆည်းထားနိုင်ရုံသာ ဖြစ်ပြီး ဖွင့်၍ မရပါ။</string>
 	<string name="vault_doc_unsupported_archive">ချုံ့ထားသော ဖိုင်များကို လုံခြုံသေတ္တာအတွင်း ဖြည်ထုတ်၍ မရပါ။\n\nဖြည်ထုတ်ခြင်းက ကုဒ်မဝှက်ထားသော ဖိုင်များကို သိုလှောင်ခန်းပေါ်တွင် ဖန်တီးမည်ဖြစ်ပြီး လုံခြုံသေတ္တာ၏ လုံခြုံရေးကို ထိခိုက်စေမည်။\n\n၎င်းတို့ကို သိမ်းဆည်းထားနိုင်ရုံသာ ဖြစ်ပြီး ဖြည်ထုတ်၍ မရပါ။</string>
 	<string name="vault_doc_unsupported_generic">ဤစာရွက်စာတမ်း အမျိုးအစားကို လုံခြုံသေတ္တာအတွင်း ကြည့်ရှု၍ မရပါ။\n\nဖိုင် အမျိုးအစား: %1$s\n\n၎င်းကို သိမ်းဆည်းထားနိုင်ရုံသာ ဖြစ်ပြီး ဖွင့်၍ မရပါ။</string>
-	<string name="vault_item_secure_note">လုံခြုံသော မှတ်စု</string>
-	<string name="vault_item_password_entry">စကားဝှက် မှတ်တမ်း</string>
-	<string name="vault_item_image">ပုံ • %1$s</string>
-	<string name="vault_item_video">ဗီဒီယို • %1$s</string>
-	<string name="vault_item_document">စာရွက်စာတမ်း • %1$s</string>
 	<string name="vault_add_to_vault_title">လုံခြုံသေတ္တာထဲသို့ ထည့်မည်</string>
 	<string name="vault_type_note">မှတ်စု</string>
 	<string name="vault_type_image">ပုံ</string>

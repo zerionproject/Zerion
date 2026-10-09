@@ -33,9 +33,6 @@
   <string name="dialog_title_lost_password">סיסמה אבודה</string>
   <string name="dialog_message_lost_password">חשבון Zerion שלך מאוחסן באופן מוצפן על המכשיר שלך, לא בענן, כך שאנחנו לא יכולים לאפס את הסיסמה שלך. האם תרצה למחוק את החשבון שלך ולהתחיל מחדש?\n\nזהירות: הזהויות, אנשי הקשר וההודעות שלך יאבדו לצמיתות.</string>
   <string name="startup_failed_activity_title">כישלון הזנק Zerion</string>
-  <string name="download_zerion">כדי להמשיך להשתמש ב־Zerion, אנא הורד את השחרור האחרון.</string>
-  <string name="create_new_account">יהיה צריך ליצור חשבון חדש, אבל אפשר להשתמש באותו הכינוי.</string>
-  <string name="delete_account_button">מחק חשבון</string>
   <string name="startup_open_database">מפענח מסד נתונים…</string>
   <string name="startup_migrate_database">משדרג מסד נתונים…</string>
   <string name="startup_compact_database">מצופף מסד נתונים…</string>
@@ -98,11 +95,9 @@
   <string name="open">פתיחה</string>
   <string name="change">שינוי</string>
   <string name="start">התחל</string>
-  <string name="finish">סיים</string>
   <string name="no_data">אין נתונים</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">הטקסט המוכנס ארוך מדי</string>
-  <string name="show_onboarding">הצגת דו־שיח עזרה</string>
   <string name="fix">תקן</string>
   <string name="help">עזרה</string>
   <string name="sorry">עמך הסליחה</string>
@@ -250,21 +245,12 @@
   <string name="groups_group_is_empty">קבוצה זו ריקה</string>
   <string name="groups_group_is_dissolved">קבוצה זו פורקה</string>
   <string name="groups_remove">הסר</string>
-  <string name="groups_create_group_title">צור קבוצה פרטית</string>
-  <string name="groups_create_group_button">צור קבוצה</string>
   <string name="groups_create_group_invitation_button">שלח הזמנה</string>
-  <string name="groups_create_group_hint">נא לבחור שם לקבוצה הפרטית שלך</string>
   <string name="groups_invitation_sent">הזמנה קבוצתית נשלחה</string>
-  <string name="groups_member_list">רשימת חברי קבוצה</string>
-  <string name="groups_invite_members">הזמן חברי קבוצה</string>
-  <string name="groups_member_created_you">יצרת את הקבוצה</string>
   <string name="groups_member_created">%s יצר את הקבוצה</string>
   <string name="groups_member_joined_you">הצטרפת אל הקבוצה</string>
-  <string name="groups_member_joined">%s הצטרף אל הקבוצה</string>
-  <string name="groups_leave">עזוב קבוצה</string>
   <string name="groups_leave_dialog_title">אשר עזיבת קבוצה</string>
   <string name="groups_leave_dialog_message">האם אכן ברצונך לעזוב קבוצה זו?</string>
-  <string name="groups_dissolve">פרק קבוצה</string>
   <string name="groups_dissolve_dialog_title">אשר פירוק קבוצה</string>
   <string name="groups_dissolve_dialog_message">האם אכן ברצונך לפרק את הקבוצה הזאת?\n\nכל חברי הקבוצה האחרים לא יוכלו להמשיך בשיחתם וכנראה לא יקבלו את ההודעות האחרונות.</string>
   <string name="groups_dissolve_button">פרק</string>
@@ -273,7 +259,6 @@
   
   <string name="groups_invitations_title">הזמנות לקבוצה</string>
   <string name="groups_invitations_invitation_sent">הזמנת את %1$s להצטרף אל הקבוצה \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s הזמין אותך להצטרף אל הקבוצה \"%2$s\".</string>
   <string name="groups_invitations_joined">הצטרף אל קבוצה</string>
   <string name="groups_invitations_declined">הזמנה קבוצתית סורבה</string>
   <plurals name="groups_invitations_open">
@@ -282,14 +267,8 @@
     <item quantity="many">%d הזמנות קבוצתיות פתוחות</item>
     <item quantity="other">%d הזמנות קבוצתיות פתוחות</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">הסכמת אל ההזמנה הקבוצתית מאת %s.</string>
-  <string name="groups_invitations_response_declined_sent">סירבת אל ההזמנה הקבוצתית מאת %s.</string>
-  <string name="groups_invitations_response_accepted_received">%s הסכים אל ההזמנה הקבוצתית.</string>
-  <string name="groups_invitations_response_declined_received">%s סירב אל ההזמנה הקבוצתית.</string>
   <string name="sharing_status_groups">רק היוצר יכול להזמין חברי קבוצה חדשים אל הקבוצה. להלן כל חברי הקבוצה הנוכחיים.</string>
   
-  <string name="groups_reveal_contacts">חשוף אנשי קשר</string>
-  <string name="groups_reveal_visible">יחסים עם אנשי קשר גלויים לקבוצה</string>
   <string name="groups_reveal_visible_revealed_by_us">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידך)</string>
   <string name="groups_reveal_visible_revealed_by_contact">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידי %s)</string>
   <string name="groups_reveal_invisible">יחסים עם אנשי קשר אינם גלויים לקבוצה</string>
@@ -310,9 +289,7 @@
   <string name="read_more">קרא עוד</string>
 
   
-  <string name="change_profile_picture">הקש כדי לשנות את תמונת הפרופיל שלך</string>
   <string name="dialog_confirm_profile_picture_title">שנה תמונת פרופיל</string>
-  <string name="dialog_confirm_profile_picture_remark">רק אנשי הקשר שלך יכולים לראות את התמונה הזו</string>
   <string name="change_profile_picture_failed_message">אנו מצטערים משהו השתבש בעת עדכון תמונת הפרופיל שלך</string>
   
   <string name="pref_language_title">שפה ואזור</string>
@@ -1025,12 +1002,10 @@
 	<string name="startup_failed_data_too_old_error">החשבון שלך נוצר בגרסה ישנה של האפליקציה ולא ניתן לפתוח אותו בגרסה הזו.\n\nיש להתקין מחדש את הגרסה הישנה, או להגדיר חשבון חדש על ידי בחירה ב\"שכחתי את הסיסמה שלי\" במסך הסיסמה.</string>
 	<string name="startup_failed_data_too_new_error">החשבון שלך נוצר בגרסה חדשה יותר של האפליקציה ולא ניתן לפתוח אותו בגרסה הזו.\n\nיש לשדרג לגרסה העדכנית ביותר ולנסות שוב.</string>
 	<string name="startup_failed_service_error">Zerion לא הצליח להפעיל רכיב נדרש.\n\nיש לשדרג לגרסה העדכנית ביותר של האפליקציה ולנסות שוב.</string>
-	<string name="old_android_delete_account">אפשר להקיש על הכפתור למטה כדי למחוק את החשבון שלך מהמכשיר הזה.</string>
 	<string name="chats_button">שיחות</string>
 	<string name="chat_type_group">קבוצה</string>
 	<string name="chat_type_channel">ערוץ</string>
 	<string name="no_chats">אין עדיין שיחות</string>
-	<string name="groups_button_add">הוספת קבוצה חדשה</string>
 	<string name="channels_button">ערוצים</string>
 	<string name="channels_list_empty">אין עדיין ערוצים. אפשר ליצור ערוץ משלך או להצטרף לערוץ דרך קישור הזמנה.</string>
 	<string name="channels_action_create">יצירת ערוץ</string>
@@ -1246,7 +1221,6 @@
 	<string name="recording_voice">מקליט הודעה קולית…</string>
 	<string name="voice_message_error">הקלטת הקול נכשלה</string>
 	<string name="voice_message_cancelled">ההקלטה בוטלה</string>
-	<string name="slide_to_cancel">← החלקה לביטול</string>
 	<string name="voice_message_too_short">ההודעה הקולית קצרה מדי</string>
 	<string name="voice_message_too_long">ההודעה הקולית ארוכה מדי. האורך חייב להיות פחות מ-30 שניות.</string>
 	<string name="microphone_permission_required">נדרשת הרשאת מיקרופון כדי לשלוח הודעות קוליות</string>
@@ -1607,7 +1581,6 @@
 	<string name="peer_trust_level_stranger">זר</string>
 	<string name="introduction_response_error">אירעה שגיאה בתגובה להיכרות.</string>
 	<string name="introduction_response_declined_auto">ההיכרות עם %1$s נדחתה אוטומטית.</string>
-	<string name="groups_invitations_response_declined_auto">ההזמנה לקבוצה מאת %s נדחתה אוטומטית.</string>
 	<string name="groups_reveal_dialog_message">אפשר לבחור אם לחשוף אנשי קשר בפני כל החברים הנוכחיים והעתידיים בקבוצה הזו.\n\nחשיפת אנשי קשר הופכת את החיבור שלך לקבוצה למהיר ואמין יותר, כי אפשר לתקשר עם אנשי קשר חשופים גם כשהיוצר של הקבוצה לא מחובר.</string>
 	<string name="reblog_button">שיתוף מחדש</string>
 	<string name="share_message">שיתוף עם הודעה</string>
@@ -1950,14 +1923,6 @@
 	<string name="video_offer_accept">אישור וידאו</string>
 	<string name="video_offer_reject">דחייה</string>
 	<string name="camera_permission_required">נדרשת הרשאת מצלמה לשיחות וידאו</string>
-	<string name="contact_type_selection_title">בחירת סוג החיבור</string>
-	<string name="contact_type_selection_subtitle">יש לבחור איך להתחבר לאיש הקשר שלך</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">אבטחה פוסט-קוונטית</string>
-	<string name="contact_type_zerion_description">התחברות למשתמש Zerion אחר. הצפנה עמידה לקוונטים מקצה לקצה.</string>
-	<string name="contact_type_classic_title">מצב קלאסי</string>
-	<string name="contact_type_classic_badge">אבטחה קלאסית</string>
-	<string name="contact_type_classic_description">התחברות באמצעות קריפטוגרפיה קלאסית. יש להשתמש באפשרות זו לתאימות לאחור עם אנשי קשר שמשתמשים בגרסאות ישנות יותר.</string>
 	<string name="recommended">מומלץ</string>
 	<string name="contact_type_info">יש לבחור ב-Zerion לאבטחה מרבית, או במצב קלאסי לתאימות לאחור.</string>
 	<string name="voice_call_status_reconnecting">מתחבר מחדש…</string>
@@ -2087,11 +2052,6 @@
 	<string name="vault_doc_unsupported_office">אי אפשר לצפות במסמכי Office בתוך הכספת המאובטחת.\n\nפתיחת קבצים כאלה דורשת אפליקציות חיצוניות וקבצים זמניים, וזה היה פוגע באבטחת הכספת.\n\nאפשר רק לאחסן אותם, לא לפתוח אותם.</string>
 	<string name="vault_doc_unsupported_archive">אי אפשר לחלץ קובצי ארכיון בתוך הכספת המאובטחת.\n\nחילוץ היה יוצר קבצים לא מוצפנים באחסון, וזה היה פוגע באבטחת הכספת.\n\nאפשר רק לאחסן אותם, לא לחלץ אותם.</string>
 	<string name="vault_doc_unsupported_generic">אי אפשר לצפות בסוג המסמך הזה בתוך הכספת המאובטחת.\n\nסוג הקובץ: %1$s\n\nאפשר רק לאחסן אותו, לא לפתוח אותו.</string>
-	<string name="vault_item_secure_note">פתק מאובטח</string>
-	<string name="vault_item_password_entry">רשומת סיסמה</string>
-	<string name="vault_item_image">תמונה • %1$s</string>
-	<string name="vault_item_video">סרטון • %1$s</string>
-	<string name="vault_item_document">מסמך • %1$s</string>
 	<string name="vault_add_to_vault_title">הוספה לכספת</string>
 	<string name="vault_type_note">פתק</string>
 	<string name="vault_type_image">תמונה</string>

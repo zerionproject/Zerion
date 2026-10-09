@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">Votre compte a été créé avec une ancienne version de cette appli et ne peut pas être ouvert avec cette version.\n\nVous devez soit réinstaller l’ancienne version, soit créer un nouveau compte en choisissant « J’ai oublié mon mot de passe » à l’invite de mot de passe.</string>
   <string name="startup_failed_data_too_new_error">Votre compte a été créé avec une version plus récente de cette appli et ne peut être ouvert avec cette version.\n\nMettez l’appli à jour vers la version la plus récente et réessayez.</string>
   <string name="startup_failed_service_error">Zerion n’a pas pu lancer un composant essentiel.\n\nMettez l’appli à jour vers la version la plus récente et réessayez.</string>
-  <string name="download_zerion">Pour continuer à utiliser Zerion, téléchargez la dernière version.</string>
-  <string name="create_new_account">Vous devrez créer un nouveau compte, mais vous pouvez utiliser le même pseudonyme.</string>
-  <string name="old_android_delete_account">Vous pouvez toucher le bouton ci-dessous pour supprimer votre compte de cet appareil.</string>
-  <string name="delete_account_button">Supprimer le compte</string>
   <string name="startup_open_database">Déchiffrement de la base de données…</string>
   <string name="startup_migrate_database">Mise à niveau de la base de données…</string>
   <string name="startup_compact_database">Compactage de la base de données…</string>
@@ -112,11 +108,9 @@
   <string name="open">Ouvrir</string>
   <string name="change">Changer</string>
   <string name="start">Commencer</string>
-  <string name="finish">Terminer</string>
   <string name="no_data">Aucune donnée</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">Le texte saisi est trop long</string>
-  <string name="show_onboarding">Afficher la fenêtre d’aide</string>
   <string name="fix">Corriger</string>
   <string name="help">Aide</string>
   <string name="sorry">Désolé</string>
@@ -303,21 +297,12 @@
   <string name="groups_group_is_empty">Ce groupe est vide</string>
   <string name="groups_group_is_dissolved">Ce groupe a été dissout</string>
   <string name="groups_remove">Supprimer</string>
-  <string name="groups_create_group_title">Créer un groupe privé</string>
-  <string name="groups_create_group_button">Créer un groupe</string>
   <string name="groups_create_group_invitation_button">Envoyer une invitation</string>
-  <string name="groups_create_group_hint">Choisissez un nom pour votre groupe privé</string>
   <string name="groups_invitation_sent">L’invitation au groupe a été envoyée</string>
-  <string name="groups_member_list">Liste des participants</string>
-  <string name="groups_invite_members">Inviter des participants</string>
-  <string name="groups_member_created_you">Vous avez créé le groupe</string>
   <string name="groups_member_created">%s a créé le groupe</string>
   <string name="groups_member_joined_you">Vous participez au groupe</string>
-  <string name="groups_member_joined">%s participe au groupe</string>
-  <string name="groups_leave">Quitter le groupe</string>
   <string name="groups_leave_dialog_title">Confirmer la sortie du groupe</string>
   <string name="groups_leave_dialog_message">Voulez-vous vraiment quitter ce groupe ?</string>
-  <string name="groups_dissolve">Dissoudre le groupe</string>
   <string name="groups_dissolve_dialog_title">Confirmer la dissolution du groupe</string>
   <string name="groups_dissolve_dialog_message">Voulez-vous vraiment dissoudre ce groupe ?\n\nLes autres participants ne pourront pas poursuivre leur conversation et ne recevront peut-être pas les derniers messages.</string>
   <string name="groups_dissolve_button">Dissoudre</string>
@@ -326,7 +311,6 @@
   
   <string name="groups_invitations_title">Invitations au groupe</string>
   <string name="groups_invitations_invitation_sent">Vous avez invité %1$s à participer au groupe « %2$s ».</string>
-  <string name="groups_invitations_invitation_received">%1$s vous a invité à participer au groupe « %2$s ».</string>
   <string name="groups_invitations_joined">Vous participer au groupe</string>
   <string name="groups_invitations_declined">L’invitation au groupe a été refusée</string>
   <plurals name="groups_invitations_open">
@@ -334,16 +318,9 @@
     <item quantity="many">%d d’invitations au groupe en attente</item>
     <item quantity="other">%d invitations au groupe en attente</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Vous avez accepté l’invitation au groupe de %s.</string>
-  <string name="groups_invitations_response_declined_sent">Vous avez refusé l’invitation au groupe de %s.</string>
-  <string name="groups_invitations_response_declined_auto">L’invitation au groupe provenant de %s a été refusée automatiquement.</string>
-  <string name="groups_invitations_response_accepted_received">%s a accepté l’invitation au groupe.</string>
-  <string name="groups_invitations_response_declined_received">%s a refusé l’invitation au groupe.</string>
   <string name="sharing_status_groups">Seul le créateur peut inviter de nouveaux participants. Voici la liste des membres actuels du groupe.</string>
   
-  <string name="groups_reveal_contacts">Dévoiler les contacts</string>
   <string name="groups_reveal_dialog_message">Vous pouvez choisir de dévoiler les contacts à tous les participants actuels et futurs de ce groupe.\n\nDévoiler les contacts accélère et fiabilise votre connexion au groupe, car vous pouvez communiquer avec les contacts dévoilés même si le créateur du groupe est hors ligne.</string>
-  <string name="groups_reveal_visible">Votre lien avec le contact est visible par le groupe</string>
   <string name="groups_reveal_visible_revealed_by_us">Votre lien avec le contact est visible par le groupe (dévoilé par vous)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Votre lien avec le contact est visible par le groupe (dévoilé par %s)</string>
   <string name="groups_reveal_invisible">Votre lien avec le contact n’est pas visible par le groupe</string>
@@ -362,9 +339,7 @@
   
   <string name="read_more">en lire davantage</string>
 
-  <string name="change_profile_picture">Touchez pour changer votre photo de profil</string>
   <string name="dialog_confirm_profile_picture_title">Changer la photo de profil</string>
-  <string name="dialog_confirm_profile_picture_remark">Seuls vos contacts peuvent voir cette photo</string>
   <string name="change_profile_picture_failed_message">Nous sommes désolés, mais un problème est survenu lors de la mise à jour de votre photo de profil</string>
   
   <string name="pref_language_title">Langue et région</string>
@@ -714,7 +689,6 @@ copies des messages que vous envoyez.
 	<string name="chat_type_group">Groupe</string>
 	<string name="chat_type_channel">Canal</string>
 	<string name="no_chats">Aucune conversation pour le moment</string>
-	<string name="groups_button_add">Ajouter un nouveau groupe</string>
 	<string name="channels_button">Canaux</string>
 	<string name="channels_list_empty">Aucun canal pour le moment. Créez le vôtre ou rejoignez-en un via un lien d\'invitation.</string>
 	<string name="channels_action_create">Créer un canal</string>
@@ -909,7 +883,6 @@ copies des messages que vous envoyez.
 	<string name="recording_voice">Enregistrement du message vocal…</string>
 	<string name="voice_message_error">Échec de l\'enregistrement vocal</string>
 	<string name="voice_message_cancelled">Enregistrement annulé</string>
-	<string name="slide_to_cancel">← Glisser pour annuler</string>
 	<string name="voice_message_too_short">Message vocal trop court</string>
 	<string name="voice_message_too_long">Message vocal trop long. Limitez-le à 30 secondes.</string>
 	<string name="microphone_permission_required">L\'autorisation du microphone est requise pour les messages vocaux</string>
@@ -1515,14 +1488,6 @@ copies des messages que vous envoyez.
 	<string name="video_offer_accept">Accepter la vidéo</string>
 	<string name="video_offer_reject">Refuser</string>
 	<string name="camera_permission_required">Autorisation de l\'appareil photo requise pour les appels vidéo</string>
-	<string name="contact_type_selection_title">Choisir le type de connexion</string>
-	<string name="contact_type_selection_subtitle">Choisissez comment vous souhaitez vous connecter avec votre contact</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Sécurité post-quantique</string>
-	<string name="contact_type_zerion_description">Connectez-vous avec un autre utilisateur de Zerion. Chiffrement résistant au quantique de bout en bout.</string>
-	<string name="contact_type_classic_title">Mode classique</string>
-	<string name="contact_type_classic_badge">Sécurité classique</string>
-	<string name="contact_type_classic_description">Connectez-vous en utilisant la cryptographie classique. Utilisez cette option pour la compatibilité avec les contacts utilisant d\'anciennes versions.</string>
 	<string name="recommended">Recommandé</string>
 	<string name="contact_type_info">Choisissez Zerion pour une sécurité maximale, ou le mode classique pour la compatibilité ascendante.</string>
 	<string name="voice_call_status_reconnecting">Reconnexion…</string>
@@ -1641,11 +1606,6 @@ copies des messages que vous envoyez.
 	<string name="vault_doc_unsupported_office">Les documents Office ne peuvent pas être affichés dans le coffre sécurisé.\n\nL\'ouverture de ces fichiers nécessite des applications externes et des fichiers temporaires, ce qui compromettrait la sécurité du coffre.\n\nVous pouvez uniquement les stocker, pas les ouvrir.</string>
 	<string name="vault_doc_unsupported_archive">Les fichiers d\'archive ne peuvent pas être extraits dans le coffre sécurisé.\n\nL\'extraction créerait des fichiers en clair sur le disque, compromettant la sécurité du coffre.\n\nVous pouvez uniquement les stocker, pas les extraire.</string>
 	<string name="vault_doc_unsupported_generic">Ce type de document ne peut pas être affiché dans le coffre sécurisé.\n\nType de fichier : %1$s\n\nVous pouvez uniquement le stocker, pas l\'ouvrir.</string>
-	<string name="vault_item_secure_note">Note sécurisée</string>
-	<string name="vault_item_password_entry">Entrée de mot de passe</string>
-	<string name="vault_item_image">Image • %1$s</string>
-	<string name="vault_item_video">Vidéo • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 	<string name="vault_add_to_vault_title">Ajouter au coffre</string>
 	<string name="vault_type_note">Note</string>
 	<string name="vault_type_image">Image</string>

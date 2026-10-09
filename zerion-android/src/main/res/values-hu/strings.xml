@@ -44,10 +44,6 @@
   <string name="startup_failed_data_too_old_error">Fiókja ennek az alkalmazásnak egy régi verziójával jött létre, és ezzel a verzióval nem nyitható meg. Újra kell telepítenie a régi verziót, vagy be kell állítania egy új fiókot az „Elfelejtettem a jelszavam” lehetőség kiválasztásával a jelszókérőnél.</string>
   <string name="startup_failed_data_too_new_error">Fiókja az alkalmazás újabb verziójával jött létre, és ezzel a verzióval nem nyitható meg. Kérjük, frissítsen a legújabb verzióra, és próbálja újra.</string>
   <string name="startup_failed_service_error">Zerion nem tudott elindítani egy szükséges összetevőt. Kérjük, frissítsen az alkalmazás legújabb verziójára, és próbálja újra.</string>
-  <string name="download_zerion">A Zerion használatának folytatásához kérjük töltsd le a legújabb verziót.</string>
-  <string name="create_new_account">Új fiókot kell létrehoznod, de használhatod ugyanazt a becenevet.</string>
-  <string name="old_android_delete_account">Az alábbi gombra koppintva törölheti fiókját erről az eszközről.</string>
-  <string name="delete_account_button">Fiók törlése</string>
   <string name="startup_open_database">Adatbázis dekódolása...</string>
   <string name="startup_migrate_database">Adatbázis frissítése</string>
   <string name="startup_compact_database">Adatbázis tömörítése...</string>
@@ -106,11 +102,9 @@
   <string name="open">Megnyitás</string>
   <string name="change">Módosítás</string>
   <string name="start">Indítás</string>
-  <string name="finish">Befejezés</string>
   <string name="no_data">Nincs adat</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">A beírt szöveg túl hosszú</string>
-  <string name="show_onboarding">Súgó ablak megjelenítése</string>
   <string name="fix">Javítás</string>
   <string name="help">Súgó</string>
   <string name="sorry">Sajnáljuk</string>
@@ -293,21 +287,12 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="groups_group_is_empty">Ez a csoport üres</string>
   <string name="groups_group_is_dissolved">Ez a csoport felszámolásra került</string>
   <string name="groups_remove">Eltávolítás</string>
-  <string name="groups_create_group_title">Privát csoport létrehozása</string>
-  <string name="groups_create_group_button">Csoport létregozása</string>
   <string name="groups_create_group_invitation_button">Meghívó küldése</string>
-  <string name="groups_create_group_hint">Válasszon egy nevet a privát csoportjához</string>
   <string name="groups_invitation_sent">A csoportmeghívó elküldésre került</string>
-  <string name="groups_member_list">Tag lista</string>
-  <string name="groups_invite_members">Tagok meghíívása</string>
-  <string name="groups_member_created_you">Ön hozta létre a csoportot</string>
   <string name="groups_member_created">%s hozta létre a csoportot</string>
   <string name="groups_member_joined_you">Csatlakozott a csoporthoz</string>
-  <string name="groups_member_joined">%s csatlakozott a csoporthoz </string>
-  <string name="groups_leave">Csoport elhagyása</string>
   <string name="groups_leave_dialog_title">Csoport elhagyás megerősítése</string>
   <string name="groups_leave_dialog_message">Biztos, hogy el akarja hagyni ezt a csoportot?</string>
-  <string name="groups_dissolve">Csoport feloszlatása</string>
   <string name="groups_dissolve_dialog_title">Csoport feloszlatás megerősítése</string>
   <string name="groups_dissolve_dialog_message">Biztosan felszámolja ezt a csoportot\n\nA többi tag nem folytathatja beszélgetéseit és lehet nem kapják meg a legutolsó üzeneteket.</string>
   <string name="groups_dissolve_button">Feloszlatás</string>
@@ -316,23 +301,15 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   
   <string name="groups_invitations_title">Csoport meghívások</string>
   <string name="groups_invitations_invitation_sent">Meghívta %1$s személyt, hogy csatlakozzon a(z) \"%2$s\" csoporthoz.</string>
-  <string name="groups_invitations_invitation_received">%1$s meghívta Önt, hogy csatlakozzon a(z) \"%2$s\" csoporthoz.</string>
   <string name="groups_invitations_joined">Csatlakozott csoport</string>
   <string name="groups_invitations_declined">Csoport meghívó elutasítva</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">Eflogadta %d csoport meghívását</item>
     <item quantity="other">%d nyitott csoport meghívás</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Elfogadta a %s csoport meghívását.</string>
-  <string name="groups_invitations_response_declined_sent">Elutasította %s a csoport meghívását.</string>
-  <string name="groups_invitations_response_declined_auto"> %s csoport meghívása automatikusan elutasításra került.</string>
-  <string name="groups_invitations_response_accepted_received">%s elfogadta a csoport meghívást.</string>
-  <string name="groups_invitations_response_declined_received">%s elutasította a csoport meghívást.</string>
   <string name="sharing_status_groups">Csak a csoport létrehozója hívhat mg új tagokat a csoportba. Alább az összes aktuális tagja a csoportnak.</string>
   
-  <string name="groups_reveal_contacts">Kapcsolatok felfedése</string>
   <string name="groups_reveal_dialog_message">Választhat, hogy felfedi-e kapcsolatait a jelenlegi és jövőbeli tagjaival ennek a csoportnak.\n\nA kapcsolatok megosztása a csoportot és hálózati kapcsolatát gyorsabbá és megbízhatóbbá tesz, mert akkor is tud kommunikálni a kapcsolataival, ha a csoport létrehozója nincs a hálózaton.</string>
-  <string name="groups_reveal_visible">Kapcsolat viszony látható a csoportnak</string>
   <string name="groups_reveal_visible_revealed_by_us">Kapcsolat viszony látható a csoportnak (Ön által felfedve)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kapcsolat viszony látható a csoportnak (%s által felfedve)</string>
   <string name="groups_reveal_invisible">Kapcsolat viszony nem látható a csoportnak </string>
@@ -352,9 +329,7 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
 
 
   
-  <string name="change_profile_picture">Koppintson a profilképe cseréjéhez</string>
   <string name="dialog_confirm_profile_picture_title">Profil kép cseréje</string>
-  <string name="dialog_confirm_profile_picture_remark">Csak a kapcsolataid láthatják ezt a képet</string>
   <string name="change_profile_picture_failed_message">Sajnáljuk, de valami hiba történt a profil kép frissítése során</string>
   
   <string name="pref_language_title">Nyelv és régió</string>
@@ -1062,7 +1037,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="chat_type_group">Csoport</string>
 	<string name="chat_type_channel">Csatorna</string>
 	<string name="no_chats">Még nincsenek beszélgetések</string>
-	<string name="groups_button_add">Új csoport hozzáadása</string>
 	<string name="channels_button">Csatornák</string>
 	<string name="channels_list_empty">Még nincsenek csatornák. Hozzon létre sajátot, vagy csatlakozzon egyhez meghívólinkkel.</string>
 	<string name="channels_action_create">Csatorna létrehozása</string>
@@ -1278,7 +1252,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="recording_voice">Hangüzenet rögzítése…</string>
 	<string name="voice_message_error">A hangfelvétel sikertelen</string>
 	<string name="voice_message_cancelled">Felvétel megszakítva</string>
-	<string name="slide_to_cancel">← Húzza el a megszakításhoz</string>
 	<string name="voice_message_too_short">A hangüzenet túl rövid</string>
 	<string name="voice_message_too_long">A hangüzenet túl hosszú. Legyen rövidebb 30 másodpercnél.</string>
 	<string name="microphone_permission_required">A hangüzenetekhez mikrofonengedély szükséges</string>
@@ -1945,14 +1918,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="video_offer_accept">Videó elfogadása</string>
 	<string name="video_offer_reject">Elutasítás</string>
 	<string name="camera_permission_required">A videohívásokhoz kameraengedély szükséges</string>
-	<string name="contact_type_selection_title">Kapcsolattípus kiválasztása</string>
-	<string name="contact_type_selection_subtitle">Válassza ki, hogyan szeretne kapcsolódni a kapcsolatához</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Posztkvantum biztonság</string>
-	<string name="contact_type_zerion_description">Kapcsolódás egy másik Zerion-felhasználóhoz. Végpontok közötti kvantumbiztos titkosítás.</string>
-	<string name="contact_type_classic_title">Klasszikus mód</string>
-	<string name="contact_type_classic_badge">Klasszikus biztonság</string>
-	<string name="contact_type_classic_description">Kapcsolódás klasszikus kriptográfiával. Ezt a lehetőséget a régebbi verziót használó kapcsolatokkal való visszafelé kompatibilitáshoz válassza.</string>
 	<string name="recommended">Ajánlott</string>
 	<string name="contact_type_info">Válassza a Zeriont a maximális biztonságért, vagy a Klasszikus módot a visszafelé kompatibilitásért.</string>
 	<string name="voice_call_status_reconnecting">Újracsatlakozás…</string>
@@ -2082,11 +2047,6 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="vault_doc_unsupported_office">Office-dokumentumok nem tekinthetők meg a biztonságos széfen belül.\n\nEzek megnyitásához külső alkalmazások és ideiglenes fájlok kellenének, ami veszélyeztetné a széf biztonságát.\n\nCsak tárolhatja őket, megnyitni nem.</string>
 	<string name="vault_doc_unsupported_archive">Archív fájlok nem bonthatók ki a biztonságos széfen belül.\n\nA kibontás titkosítatlan fájlokat hozna létre a tárhelyen, ami veszélyeztetné a széf biztonságát.\n\nCsak tárolhatja őket, kibontani nem.</string>
 	<string name="vault_doc_unsupported_generic">Ez a dokumentumtípus nem tekinthető meg a biztonságos széfen belül.\n\nFájltípus: %1$s\n\nCsak tárolhatja, megnyitni nem.</string>
-	<string name="vault_item_secure_note">Biztonságos jegyzet</string>
-	<string name="vault_item_password_entry">Jelszóbejegyzés</string>
-	<string name="vault_item_image">Kép • %1$s</string>
-	<string name="vault_item_video">Videó • %1$s</string>
-	<string name="vault_item_document">Dokumentum • %1$s</string>
 	<string name="vault_add_to_vault_title">Hozzáadás a széfhez</string>
 	<string name="vault_type_note">Jegyzet</string>
 	<string name="vault_type_image">Kép</string>

@@ -301,10 +301,6 @@
 	<string name="startup_failed_data_too_old_error">Your account was created with an old version of this app and cannot be opened with this version.\n\nYou must either reinstall the old version or set up a new account by choosing \'I have forgotten my password\' at the password prompt.</string>
 	<string name="startup_failed_data_too_new_error">Your account was created with a newer version of this app and cannot be opened with this version.\n\nPlease upgrade to the latest version and try again.</string>
 	<string name="startup_failed_service_error">Zerion was unable to start a required component.\n\nPlease upgrade to the latest version of the app and try again.</string>
-	<string name="download_zerion">To continue using Zerion, please download the latest release.</string>
-	<string name="create_new_account">You will need to create a new account, but you can use the same nickname.</string>
-	<string name="old_android_delete_account">You can tap the button below to delete your account from this device.</string>
-	<string name="delete_account_button">Delete account</string>
 	<string name="startup_open_database">Decrypting Database…</string>
 	<string name="startup_migrate_database">Upgrading Database…</string>
 	<string name="startup_compact_database">Compacting Database…</string>
@@ -317,7 +313,6 @@
 	<string name="chat_type_channel">Channel</string>
 	<string name="no_chats">No conversations yet</string>
 	<string name="groups_button">Private Groups</string>
-	<string name="groups_button_add">Add new group</string>
 	<string name="channels_button">Channels</string>
 	<string name="channels_list_empty">No channels yet. Create your own or join one via an invite link.</string>
 	<string name="channels_action_create">Create channel</string>
@@ -606,7 +601,6 @@
 	<string name="recording_voice">Recording voice message…</string>
 	<string name="voice_message_error">Voice recording failed</string>
 	<string name="voice_message_cancelled">Recording cancelled</string>
-	<string name="slide_to_cancel">← Slide to cancel</string>
 	<string name="voice_message_too_short">Voice message too short</string>
 	<string name="voice_message_too_long">Voice message too long. Keep it under 30 seconds.</string>
 	<string name="microphone_permission_required">Microphone permission is required for voice messages</string>
@@ -718,11 +712,9 @@
 	<string name="open">Open</string>
 	<string name="change">Change</string>
 	<string name="start">Start</string>
-	<string name="finish">Finish</string>
 	<string name="no_data">No data</string>
 	<string name="ellipsis">…</string>
 	<string name="text_too_long">The entered text is too long</string>
-	<string name="show_onboarding">Show help dialog</string>
 	<string name="fix">Fix</string>
 	<string name="help">Help</string>
 	<string name="sorry">Sorry</string>
@@ -1159,21 +1151,12 @@
 	<string name="groups_group_is_empty">This group is empty</string>
 	<string name="groups_group_is_dissolved">This group has been dissolved</string>
 	<string name="groups_remove">Remove</string>
-	<string name="groups_create_group_title">Create private group</string>
-	<string name="groups_create_group_button">Create group</string>
 	<string name="groups_create_group_invitation_button">Send invitation</string>
-	<string name="groups_create_group_hint">Choose a name for your private group</string>
 	<string name="groups_invitation_sent">Group invitation has been sent</string>
-	<string name="groups_member_list">Member List</string>
-	<string name="groups_invite_members">Invite Members</string>
-	<string name="groups_member_created_you">You created the group</string>
 	<string name="groups_member_created">%s created the group</string>
 	<string name="groups_member_joined_you">You joined the group</string>
-	<string name="groups_member_joined">%s joined the group</string>
-	<string name="groups_leave">Leave Group</string>
 	<string name="groups_leave_dialog_title">Confirm Leaving Group</string>
 	<string name="groups_leave_dialog_message">Are you sure that you want to leave this group?</string>
-	<string name="groups_dissolve">Dissolve Group</string>
 	<string name="groups_dissolve_dialog_title">Confirm Dissolving Group</string>
 	<string name="groups_dissolve_dialog_message">Are you sure that you want to dissolve this group?\n\nAll other members will not be able to continue their conversation and might not receive the latest messages.</string>
 	<string name="groups_dissolve_button">Dissolve</string>
@@ -1182,23 +1165,15 @@
 
 	<string name="groups_invitations_title">Group Invitations</string>
 	<string name="groups_invitations_invitation_sent">You have invited %1$s to join the group \"%2$s\".</string>
-	<string name="groups_invitations_invitation_received">%1$s has invited you to join the group \"%2$s\".</string>
 	<string name="groups_invitations_joined">Joined group</string>
 	<string name="groups_invitations_declined">Group invitation declined</string>
 	<plurals name="groups_invitations_open">
 		<item quantity="one">%d open group invitation</item>
 		<item quantity="other">%d open group invitations</item>
 	</plurals>
-	<string name="groups_invitations_response_accepted_sent">You accepted the group invitation from %s.</string>
-	<string name="groups_invitations_response_declined_sent">You declined the group invitation from %s.</string>
-	<string name="groups_invitations_response_declined_auto">The group invitation from %s was automatically declined.</string>
-	<string name="groups_invitations_response_accepted_received">%s accepted the group invitation.</string>
-	<string name="groups_invitations_response_declined_received">%s declined the group invitation.</string>
 	<string name="sharing_status_groups">Only the creator can invite new members to the group. Below are all current members of the group.</string>
 
-	<string name="groups_reveal_contacts">Reveal Contacts</string>
 	<string name="groups_reveal_dialog_message">You can choose whether to reveal contacts to all current and future members of this group.\n\nRevealing contacts makes your connection to the group faster and more reliable, because you can communicate with revealed contacts even when the creator of the group is offline.</string>
-	<string name="groups_reveal_visible">Contact relationship is visible to the group</string>
 	<string name="groups_reveal_visible_revealed_by_us">Contact relationship is visible to the group (revealed by you)</string>
 	<string name="groups_reveal_visible_revealed_by_contact">Contact relationship is visible to the group (revealed by %s)</string>
 	<string name="groups_reveal_invisible">Contact relationship is not visible to the group</string>
@@ -1221,9 +1196,7 @@
 
 	<string name="read_more">read more</string>
 
-	<string name="change_profile_picture">Tap to change your profile picture</string>
 	<string name="dialog_confirm_profile_picture_title">Change profile picture</string>
-	<string name="dialog_confirm_profile_picture_remark">Only your contacts can see this picture</string>
 	<string name="change_profile_picture_failed_message">We\'re sorry, but something went wrong while updating your profile picture</string>
 
 	<string name="pref_language_title">Language &amp; region</string>
@@ -1715,14 +1688,6 @@
 	<string name="video_offer_reject">Decline</string>
 	<string name="camera_permission_required">Camera permission required for video calls</string>
 
-	<string name="contact_type_selection_title">Choose Connection Type</string>
-	<string name="contact_type_selection_subtitle">Select how you want to connect with your contact</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">Post-Quantum Security</string>
-	<string name="contact_type_zerion_description">Connect with another Zerion user. Quantum-resistant encryption end to end.</string>
-	<string name="contact_type_classic_title">Classic Mode</string>
-	<string name="contact_type_classic_badge">Classical Security</string>
-	<string name="contact_type_classic_description">Connect using classical cryptography. Use this option for backward compatibility with contacts on older versions.</string>
 	<string name="recommended">Recommended</string>
 	<string name="contact_type_info">Choose Zerion for maximum security, or Classic Mode for backward compatibility.</string>
 
@@ -1876,11 +1841,6 @@
 	<string name="vault_doc_unsupported_archive">Archive files cannot be extracted inside the secure vault.\n\nExtraction would create plaintext files on disk, compromising vault security.\n\nYou may only store them, not extract them.</string>
 	<string name="vault_doc_unsupported_generic">This document type cannot be viewed inside the secure vault.\n\nFile type: %1$s\n\nYou may only store it, not open it.</string>
 
-	<string name="vault_item_secure_note">Secure Note</string>
-	<string name="vault_item_password_entry">Password Entry</string>
-	<string name="vault_item_image">Image • %1$s</string>
-	<string name="vault_item_video">Video • %1$s</string>
-	<string name="vault_item_document">Document • %1$s</string>
 
 	<string name="vault_add_to_vault_title">Add to Vault</string>
 	<string name="vault_type_note">Note</string>

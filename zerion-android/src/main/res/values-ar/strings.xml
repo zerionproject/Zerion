@@ -48,10 +48,6 @@
   <string name="startup_failed_data_too_old_error">أُنشئ حسابك باستخدام إصدار قديم من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيجب عليك إما إعادة تثبيت الإصدار القديم أو إعداد حساب جديد عن طريق اختيار \"نسيتُ كلمة السر\" في مطالبة كلمة السر.</string>
   <string name="startup_failed_data_too_new_error">أُنشئ حسابك باستخدام إصدار أحدث من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيُرجى الترقية إلى احدث إصدار والمحاولة مرة أخرى.</string>
   <string name="startup_failed_service_error">تعذر على Zerion بدء تشغيل المكون المطلوب.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى.</string>
-  <string name="download_zerion">لمتابعة استخدام Zerion، يرجى تنزيل آخر إصدار. </string>
-  <string name="create_new_account">انت في حاجة لانشاء حساب جديد، لكن يمكنك استعمال نفس الاسم المستعار.</string>
-  <string name="old_android_delete_account">يمكنك النقر على الزر أدناه لحذف حسابك من هذا الجهاز.</string>
-  <string name="delete_account_button">حذف الحساب</string>
   <string name="startup_open_database">جارِ فك تشفير قاعدة البيانات...</string>
   <string name="startup_migrate_database">جارِ ترقية قاعدة البيانات...</string>
   <string name="startup_compact_database">جارِ ضغظ قاعدة البيانات…</string>
@@ -118,11 +114,9 @@
   <string name="open">فتح</string>
   <string name="change">تعديل</string>
   <string name="start">ابدأ</string>
-  <string name="finish">إنهاء</string>
   <string name="no_data">لا يوجد بيانات</string>
   <string name="ellipsis">...</string>
   <string name="text_too_long">النص المُدخل طويل جدًا</string>
-  <string name="show_onboarding">اظهار نافذة المساعدة</string>
   <string name="fix">إصلاح</string>
   <string name="help">مساعدة</string>
   <string name="sorry">معذرة</string>
@@ -324,21 +318,12 @@
   <string name="groups_group_is_empty">هذه المجموعة فارغة</string>
   <string name="groups_group_is_dissolved">هذه المجموعة قد تلاشت</string>
   <string name="groups_remove">حذف</string>
-  <string name="groups_create_group_title">إنشاء مجموعة خاصة</string>
-  <string name="groups_create_group_button">إنشاء مجموعة</string>
   <string name="groups_create_group_invitation_button">إرسال دعوة</string>
-  <string name="groups_create_group_hint">اختيار اسم لمجموعتك الخاصة</string>
   <string name="groups_invitation_sent">تم إرسال دعوة للمجموعة</string>
-  <string name="groups_member_list">قائمة الأعضاء</string>
-  <string name="groups_invite_members">دعوة أعضاء</string>
-  <string name="groups_member_created_you">أنت أنشأت المجموعة</string>
   <string name="groups_member_created">%s أنشأ المجموعة</string>
   <string name="groups_member_joined_you">قد انضممت/ي للمجموعة</string>
-  <string name="groups_member_joined">قد انضم/ت %s للمجموعة</string>
-  <string name="groups_leave">مغادرة المجموعة</string>
   <string name="groups_leave_dialog_title">تأكيد مغادرة المجموعة</string>
   <string name="groups_leave_dialog_message">هل أنت متأكد/ة من مغادرة هذه المجموعة؟</string>
-  <string name="groups_dissolve">حلّ المجموعة</string>
   <string name="groups_dissolve_dialog_title">تأكيد حلّ المجموعة</string>
   <string name="groups_dissolve_dialog_message">هل تريد/ين فعلا حلّ هذه المجموعة؟\n\nجميع الأعضاء الآخرين لن يتمكنوا من استكمال حوارهم وربما لن يستقبلوا الرسائل الأخيرة.</string>
   <string name="groups_dissolve_button">حلّ</string>
@@ -347,7 +332,6 @@
   
   <string name="groups_invitations_title">دعوات المجموعة</string>
   <string name="groups_invitations_invitation_sent">لقد قمت بدعوة %1$s للإنضمام إلى مجموعة \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">قام %1$s بدعوتك للإنضمام لمجموعة \"%2$s\".</string>
   <string name="groups_invitations_joined">تم الإنضمام للمجموعة</string>
   <string name="groups_invitations_declined">تم رفض الدعوة للمجموعة</string>
   <plurals name="groups_invitations_open">
@@ -359,16 +343,9 @@
     <item quantity="other">%d 
 فتح دعوات المجموعات</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">قد قبلت دعوة الانضمام للمجموعة من %s.</string>
-  <string name="groups_invitations_response_declined_sent">قد رفضت دعوة الانضمام للمجموعة من %s.</string>
-  <string name="groups_invitations_response_declined_auto">تم رفض دعوة المجموعة %s تلقائيًا.</string>
-  <string name="groups_invitations_response_accepted_received">قبل/ت %s دعوة الانضمام للمجموعة.</string>
-  <string name="groups_invitations_response_declined_received">رفض/ت %s دعوة الانضمام للمجموعة.</string>
   <string name="sharing_status_groups">فقط مُنشئ/ة المجموعة يمكنه/ها دعوة أعضاء جدد. في الأسفل جميع الأعضاء الحاليين بالمجموعة.</string>
   
-  <string name="groups_reveal_contacts">اظهار الأعضاء</string>
   <string name="groups_reveal_dialog_message">يمكن اختيار إظهار جميع جهات الاتصال الحالية والمستقبلية في هذه المجموعة لبعضهم البعض.\n\nإظهار جهات الاتصال سيجعل اتصالك بالمجموعة أسرع وأفضل اعتمادية، حيث سيمكن التواصل بين جهات الاتصال الظاهرة حتى لو كان منشئ المجموعة غير متصل.</string>
-  <string name="groups_reveal_visible">علاقات جهات الاتصال ستكون ظاهرة للمجموعة</string>
   <string name="groups_reveal_visible_revealed_by_us">علاقات جهات الاتصال ظاهرة للمجموعة (قمت/ي أنت بكشفها)</string>
   <string name="groups_reveal_visible_revealed_by_contact">علاقات جهات الاتصال ظاهرة للمجموعة (قام/ت %s بكشفها)</string>
   <string name="groups_reveal_invisible">علاقات جهات الاتصال غير ظاهرة للمجموعة</string>
@@ -390,9 +367,7 @@
   
   <string name="read_more">قراءة المزيد</string>
 
-  <string name="change_profile_picture">انقر لتغيير صورة ملفك الشخصي</string>
   <string name="dialog_confirm_profile_picture_title">تغيير الصورة الشخصية</string>
-  <string name="dialog_confirm_profile_picture_remark">جهات اتصالك فقط يمكنها رؤية هذه الصورة</string>
   <string name="change_profile_picture_failed_message">عذرًا، ولكن حدث خطأ ما أثناء تحديث صورة ملفك الشخصي</string>
   
   <string name="pref_language_title">اللغة &amp; المنطقة</string>
@@ -778,7 +753,6 @@
 	<string name="chat_type_group">مجموعة</string>
 	<string name="chat_type_channel">قناة</string>
 	<string name="no_chats">لا توجد محادثات بعد</string>
-	<string name="groups_button_add">إضافة مجموعة جديدة</string>
 	<string name="channels_button">القنوات</string>
 	<string name="channels_list_empty">لا توجد قنوات بعد. أنشئ قناتك الخاصة أو انضم إلى قناة عبر رابط دعوة.</string>
 	<string name="channels_action_create">إنشاء قناة</string>
@@ -973,7 +947,6 @@
 	<string name="recording_voice">جارٍ تسجيل رسالة صوتية…</string>
 	<string name="voice_message_error">فشل تسجيل الصوت</string>
 	<string name="voice_message_cancelled">تم إلغاء التسجيل</string>
-	<string name="slide_to_cancel">← اسحب للإلغاء</string>
 	<string name="voice_message_too_short">الرسالة الصوتية قصيرة جدًا</string>
 	<string name="voice_message_too_long">الرسالة الصوتية طويلة جدًا. أبقِها أقل من 30 ثانية.</string>
 	<string name="microphone_permission_required">إذن الميكروفون مطلوب للرسائل الصوتية</string>
@@ -1546,14 +1519,6 @@
 	<string name="video_offer_accept">قبول الفيديو</string>
 	<string name="video_offer_reject">رفض</string>
 	<string name="camera_permission_required">إذن الكاميرا مطلوب لمكالمات الفيديو</string>
-	<string name="contact_type_selection_title">اختر نوع الاتصال</string>
-	<string name="contact_type_selection_subtitle">حدد كيف تريد الاتصال بجهة اتصالك</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">أمان ما بعد الكم</string>
-	<string name="contact_type_zerion_description">اتصل بمستخدم Zerion آخر. تشفير مقاوم للكم من طرف إلى طرف.</string>
-	<string name="contact_type_classic_title">الوضع الكلاسيكي</string>
-	<string name="contact_type_classic_badge">الأمان الكلاسيكي</string>
-	<string name="contact_type_classic_description">اتصل باستخدام التشفير الكلاسيكي. استخدم هذا الخيار للتوافق مع جهات الاتصال على الإصدارات الأقدم.</string>
 	<string name="recommended">موصى به</string>
 	<string name="contact_type_info">اختر Zerion لأقصى أمان، أو الوضع الكلاسيكي للتوافق مع الإصدارات الأقدم.</string>
 	<string name="voice_call_status_reconnecting">جارٍ إعادة الاتصال…</string>
@@ -1672,11 +1637,6 @@
 	<string name="vault_doc_unsupported_office">لا يمكن عرض مستندات Office داخل الخزنة الآمنة.\n\nيتطلب فتح هذه الملفات تطبيقات خارجية وملفات مؤقتة، مما قد يعرّض أمان الخزنة للخطر.\n\nيمكنك تخزينها فقط، وليس فتحها.</string>
 	<string name="vault_doc_unsupported_archive">لا يمكن استخراج ملفات الأرشيف داخل الخزنة الآمنة.\n\nسيؤدي الاستخراج إلى إنشاء ملفات نصية غير مشفّرة على القرص، مما يعرّض أمان الخزنة للخطر.\n\nيمكنك تخزينها فقط، وليس استخراجها.</string>
 	<string name="vault_doc_unsupported_generic">لا يمكن عرض هذا النوع من المستندات داخل الخزنة الآمنة.\n\nنوع الملف: %1$s\n\nيمكنك تخزينه فقط، وليس فتحه.</string>
-	<string name="vault_item_secure_note">ملاحظة آمنة</string>
-	<string name="vault_item_password_entry">عنصر كلمة مرور</string>
-	<string name="vault_item_image">صورة • %1$s</string>
-	<string name="vault_item_video">فيديو • %1$s</string>
-	<string name="vault_item_document">مستند • %1$s</string>
 	<string name="vault_add_to_vault_title">إضافة إلى الخزنة</string>
 	<string name="vault_type_note">ملاحظة</string>
 	<string name="vault_type_image">صورة</string>

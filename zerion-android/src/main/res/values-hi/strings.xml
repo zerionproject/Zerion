@@ -34,7 +34,6 @@
   <string name="startup_failed_data_too_old_error">आपका खाता इस ऐप के पुराने संस्करण के साथ बनाया गया था और इस संस्करण के साथ खोला नहीं जा सकता है। आपको या तो पुराने संस्करण को पुनर्स्थापित करना होगा या पासवर्ड प्रॉम्प्ट पर \'मैं अपना पासवर्ड भूल गया हूं\' चुनकर एक नया खाता सेट करना होगा।</string>
   <string name="startup_failed_data_too_new_error">ऐप का यह संस्करण बहुत पुराना है। कृपया नवीनतम संस्करण में अपग्रेड करें और पुनः प्रयास करें।</string>
   <string name="startup_failed_service_error">Zerion  एक आवश्यक प्लगइन प्रारंभ करने में असमर्थ था Zerion  को पुनः स्थापित करना आमतौर पर इस समस्या को हल करता है हालांकि, कृपया ध्यान दें कि Zerion  आपके डेटा को स्टोर करने के लिए केंद्रीय सर्वर का उपयोग नहीं कर रहा है, इसके बाद आप अपने खाता और उसके साथ जुड़े सभी डेटा खो देंगे।</string>
-  <string name="create_new_account">आपको एक नया खाता बनाना होगा, लेकिन आप उसी उपनाम का उपयोग कर सकते हैं।</string>
   <string name="startup_open_database">डेटाबेस डिक्रिप्ट कर रहा है ...</string>
   <string name="startup_migrate_database">डाटाबेस का उन्नयन ...</string>
   <string name="startup_compact_database">डेटाबेस को कॉम्पैक्ट कर रहा है ...</string>
@@ -86,7 +85,6 @@
   <string name="no_data">नो डाटा </string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">प्रवेश किया हुआ पाठ बहुत लंबा है</string>
-  <string name="show_onboarding">सहायता संवाद दिखाएं</string>
   <string name="fix">ठीक कर</string>
   <string name="help">सहायता</string>
   <string name="sorry">माफ़ कीजिये</string>
@@ -214,21 +212,12 @@
   <string name="groups_group_is_empty">यह समूह खाली है</string>
   <string name="groups_group_is_dissolved">यह समूह भंग कर दिया गया है</string>
   <string name="groups_remove">हटाना</string>
-  <string name="groups_create_group_title">निजी समूह बनाएं</string>
-  <string name="groups_create_group_button">समूह बनाएँ</string>
   <string name="groups_create_group_invitation_button">निमंत्रण भेजना</string>
-  <string name="groups_create_group_hint">अपने निजी समूह के लिए एक नाम चुनें</string>
   <string name="groups_invitation_sent">समूह आमंत्रण भेजा गया है</string>
-  <string name="groups_member_list">सदस्य सूची</string>
-  <string name="groups_invite_members">सदस्यों को आमंत्रित करो</string>
-  <string name="groups_member_created_you">आपने समूह बनाया है</string>
   <string name="groups_member_created">%sसमूह बनाया</string>
   <string name="groups_member_joined_you">आप समूह में शामिल हो गए</string>
-  <string name="groups_member_joined">%sसमूह में शामिल हो गए</string>
-  <string name="groups_leave">समूह छोड़ दें</string>
   <string name="groups_leave_dialog_title">समूह छोड़ने की पुष्टि करें</string>
   <string name="groups_leave_dialog_message">क्या आप वाकई इस समूह को छोड़ना चाहते हैं?</string>
-  <string name="groups_dissolve">समूह भंग करें</string>
   <string name="groups_dissolve_dialog_title">डिसोल्विंग ग्रुप की पुष्टि करें</string>
   <string name="groups_dissolve_dialog_message">क्या आप निश्चित हैं कि आप इस समूह को भंग करना चाहते हैं? \ N \ n अन्य सभी सदस्य अपनी बातचीत जारी नहीं रख पाएंगे और शायद नवीनतम संदेश प्राप्त न हो जाएंगे।</string>
   <string name="groups_dissolve_button">भंग</string>
@@ -237,22 +226,15 @@
   
   <string name="groups_invitations_title">समूह आमंत्रण</string>
   <string name="groups_invitations_invitation_sent">आपने समूह \"%2$s\" में शामिल होने के लिए %1$sको आमंत्रित किया है</string>
-  <string name="groups_invitations_invitation_received">%1$sने आपको \"%2$s\" समूह में शामिल होने के लिए आमंत्रित किया है</string>
   <string name="groups_invitations_joined">समूह में शामिल</string>
   <string name="groups_invitations_declined">समूह आमंत्रण अस्वीकृत हुआ</string>
   <plurals name="groups_invitations_open">
     <item quantity="one">%dखुला समूह आमंत्रण</item>
     <item quantity="other">%dखुला समूह आमंत्रण</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">आपने%s से समूह निमंत्रण स्वीकार कर लिया है</string>
-  <string name="groups_invitations_response_declined_sent">आपने%s से समूह निमंत्रण को मना कर दिया</string>
-  <string name="groups_invitations_response_accepted_received">%sसमूह निमंत्रण से मना कर दिया</string>
-  <string name="groups_invitations_response_declined_received">%sसमूह निमंत्रण से मना कर दिया</string>
   <string name="sharing_status_groups">केवल निर्माता समूह में नए सदस्यों को आमंत्रित कर सकता है। नीचे समूह के सभी मौजूदा सदस्य हैं</string>
   
-  <string name="groups_reveal_contacts">संपर्क प्रकट करें</string>
   <string name="groups_reveal_dialog_message">आप यह समूह चुन सकते हैं कि इस समूह के सभी वर्तमान और भविष्य के सदस्यों के संपर्कों को प्रकट करना है। \ N \ n संपर्कों का स्वागत करते हुए समूह से आपका कनेक्शन तेज़ और अधिक विश्वसनीय बना देता है, क्योंकि आप समूह के निर्माता ऑफ़लाइन होने पर भी पता चला संपर्कों के साथ संवाद कर सकते हैं।</string>
-  <string name="groups_reveal_visible">संपर्क संबंध समूह को दिखाई देता है</string>
   <string name="groups_reveal_visible_revealed_by_us">संपर्क संबंध समूह को दिखाई देता है (आपके द्वारा पता चला है)</string>
   <string name="groups_reveal_visible_revealed_by_contact">संपर्क संबंध समूह को दिखाई देता है (%s द्वारा पता चला है)</string>
   <string name="groups_reveal_invisible">संपर्क संबंध समूह को दिखाई नहीं दे रहा है</string>
@@ -1006,14 +988,10 @@
 	<string name="dialog_button_understand">मैंने समझ लिया</string>
 	<string name="startup_failed_clock_error">Zerion शुरू नहीं हो सका, क्योंकि आपके डिवाइस की घड़ी गलत है।\n\nकृपया अपने डिवाइस की घड़ी को सही समय पर सेट करें और फिर से कोशिश करें।</string>
 	<string name="startup_failed_database_corrupt">आपका डेटाबेस खराब हो गया है और उसे रिकवर नहीं किया जा सकता।\n\nआपकी सुरक्षा के लिए, Zerion आपके डेटा का बैकअप नहीं रखता। आपको पासवर्ड प्रॉम्प्ट पर \"मुझे अपना पासवर्ड याद नहीं है\" चुनकर नया खाता सेट करना होगा।\n\nऐसा अचानक बंद होने या स्टोरेज की खराबी के बाद हो सकता है।</string>
-	<string name="download_zerion">Zerion इस्तेमाल करते रहने के लिए, कृपया नवीनतम रिलीज़ डाउनलोड करें।</string>
-	<string name="old_android_delete_account">इस डिवाइस से अपना खाता हटाने के लिए आप नीचे दिए गए बटन पर टैप कर सकते हैं।</string>
-	<string name="delete_account_button">खाता हटाएँ</string>
 	<string name="chats_button">चैट</string>
 	<string name="chat_type_group">समूह</string>
 	<string name="chat_type_channel">चैनल</string>
 	<string name="no_chats">अभी कोई बातचीत नहीं</string>
-	<string name="groups_button_add">नया समूह जोड़ें</string>
 	<string name="channels_button">चैनल</string>
 	<string name="channels_list_empty">अभी कोई चैनल नहीं। अपना चैनल बनाएँ या किसी आमंत्रण लिंक से किसी चैनल में शामिल हों।</string>
 	<string name="channels_action_create">चैनल बनाएँ</string>
@@ -1240,7 +1218,6 @@
 	<string name="recording_voice">वॉइस संदेश रिकॉर्ड हो रहा है…</string>
 	<string name="voice_message_error">वॉइस रिकॉर्डिंग विफल रही</string>
 	<string name="voice_message_cancelled">रिकॉर्डिंग रद्द की गई</string>
-	<string name="slide_to_cancel">← रद्द करने के लिए स्लाइड करें</string>
 	<string name="voice_message_too_short">वॉइस संदेश बहुत छोटा है</string>
 	<string name="voice_message_too_long">वॉइस संदेश बहुत लंबा है। इसे 30 सेकंड से कम रखें।</string>
 	<string name="microphone_permission_required">वॉइस संदेशों के लिए माइक्रोफ़ोन की अनुमति ज़रूरी है</string>
@@ -1316,7 +1293,6 @@
 	<string name="call_rejected_peer_disabled_video">%s ने वीडियो कॉल बंद कर रखी हैं</string>
 	<string name="call_rejected_peer_disabled_video_hint">वे वॉइस कॉल स्वीकार करते हैं। इसके बजाय वॉइस कॉल करके देखें।</string>
 	<string name="record_voice_message">वॉइस संदेश रिकॉर्ड करें</string>
-	<string name="finish">समाप्त करें</string>
 	<string name="error_start_activity">आपके सिस्टम पर उपलब्ध नहीं है</string>
 	<string name="error">त्रुटि</string>
 	<string name="info">जानकारी</string>
@@ -1615,14 +1591,11 @@
 	<string name="peer_trust_level_stranger">अजनबी</string>
 	<string name="introduction_response_error">परिचय का जवाब देने में एक त्रुटि हुई।</string>
 	<string name="introduction_response_declined_auto">%1$s से परिचय अपने-आप अस्वीकार कर दिया गया।</string>
-	<string name="groups_invitations_response_declined_auto">%s का समूह आमंत्रण अपने-आप अस्वीकार कर दिया गया।</string>
 	<string name="reblog_button">रीब्लॉग करें</string>
 	<string name="share_message">संदेश के साथ शेयर करें</string>
 	<string name="share_hint_short">एक संदेश जोड़ें (वैकल्पिक)</string>
 	<string name="invitation_exists">आमंत्रण पहले ही भेजा जा चुका है</string>
-	<string name="change_profile_picture">अपना प्रोफ़ाइल चित्र बदलने के लिए टैप करें</string>
 	<string name="dialog_confirm_profile_picture_title">प्रोफ़ाइल चित्र बदलें</string>
-	<string name="dialog_confirm_profile_picture_remark">यह चित्र केवल आपके संपर्क देख सकते हैं</string>
 	<string name="change_profile_picture_failed_message">क्षमा करें, आपका प्रोफ़ाइल चित्र अपडेट करते समय कुछ गड़बड़ हो गई</string>
 	<string name="pref_language_changed">नई भाषा लागू करने के लिए ऐप फिर से लोड होगा।</string>
 	<string name="invite_friends_title">दोस्तों को आमंत्रित करें</string>
@@ -1937,14 +1910,6 @@
 	<string name="video_offer_accept">वीडियो स्वीकार करें</string>
 	<string name="video_offer_reject">अस्वीकार करें</string>
 	<string name="camera_permission_required">वीडियो कॉल के लिए कैमरे की अनुमति ज़रूरी है</string>
-	<string name="contact_type_selection_title">कनेक्शन का प्रकार चुनें</string>
-	<string name="contact_type_selection_subtitle">चुनें कि आप अपने संपर्क से कैसे कनेक्ट होना चाहते हैं</string>
-	<string name="contact_type_zerion_title">Zerion</string>
-	<string name="contact_type_zerion_badge">पोस्ट-क्वांटम सुरक्षा</string>
-	<string name="contact_type_zerion_description">किसी दूसरे Zerion उपयोगकर्ता से कनेक्ट करें। एंड-टू-एंड क्वांटम-प्रतिरोधी एन्क्रिप्शन।</string>
-	<string name="contact_type_classic_title">क्लासिक मोड</string>
-	<string name="contact_type_classic_badge">क्लासिकल सुरक्षा</string>
-	<string name="contact_type_classic_description">क्लासिकल क्रिप्टोग्राफ़ी से कनेक्ट करें। पुराने वर्शन वाले संपर्कों के साथ संगतता के लिए यह विकल्प इस्तेमाल करें।</string>
 	<string name="recommended">अनुशंसित</string>
 	<string name="contact_type_info">अधिकतम सुरक्षा के लिए Zerion चुनें, या पुराने वर्शन के साथ संगतता के लिए क्लासिक मोड।</string>
 	<string name="voice_call_status_reconnecting">फिर से कनेक्ट हो रहा है…</string>
@@ -2074,11 +2039,6 @@
 	<string name="vault_doc_unsupported_office">Office दस्तावेज़ सुरक्षित तिजोरी के अंदर नहीं देखे जा सकते।\n\nइन फ़ाइलों को खोलने के लिए बाहरी ऐप और अस्थायी फ़ाइलों की ज़रूरत होती है, जिससे तिजोरी की सुरक्षा कमज़ोर हो जाएगी।\n\nआप इन्हें केवल रख सकते हैं, खोल नहीं सकते।</string>
 	<string name="vault_doc_unsupported_archive">आर्काइव फ़ाइलें सुरक्षित तिजोरी के अंदर एक्सट्रैक्ट नहीं की जा सकतीं।\n\nएक्सट्रैक्ट करने से डिस्क पर बिना एन्क्रिप्शन वाली फ़ाइलें बनेंगी, जिससे तिजोरी की सुरक्षा कमज़ोर हो जाएगी।\n\nआप इन्हें केवल रख सकते हैं, एक्सट्रैक्ट नहीं कर सकते।</string>
 	<string name="vault_doc_unsupported_generic">इस प्रकार का दस्तावेज़ सुरक्षित तिजोरी के अंदर नहीं देखा जा सकता।\n\nफ़ाइल प्रकार: %1$s\n\nआप इसे केवल रख सकते हैं, खोल नहीं सकते।</string>
-	<string name="vault_item_secure_note">सुरक्षित नोट</string>
-	<string name="vault_item_password_entry">पासवर्ड प्रविष्टि</string>
-	<string name="vault_item_image">छवि • %1$s</string>
-	<string name="vault_item_video">वीडियो • %1$s</string>
-	<string name="vault_item_document">दस्तावेज़ • %1$s</string>
 	<string name="vault_add_to_vault_title">तिजोरी में जोड़ें</string>
 	<string name="vault_type_note">नोट</string>
 	<string name="vault_type_image">छवि</string>

@@ -45,10 +45,6 @@
   <string name="forgotten_password">¿Olvidaste tu contraseña?</string>
   <string name="dialog_title_lost_password">Contraseña perdida</string>
   <string name="startup_failed_activity_title">Fallo al iniciar Zerion</string>
-  <string name="download_zerion">Para continuar usando Zerion, por favor descarga la versión mas reciente.</string>
-  <string name="create_new_account">Necesitarás crear una nueva cuenta, pero puedes usar el mismo nombre de usuario.</string>
-  <string name="old_android_delete_account">Puedes pulsar el botón de abajo para borrar tu cuenta de este dispositivo.</string>
-  <string name="delete_account_button">Borrar cuenta</string>
   <string name="startup_open_database">Descifrando la base de datos...</string>
   <string name="startup_migrate_database">Actualizando la base de datos...</string>
   <string name="startup_compact_database">Compactando base de datos...</string>
@@ -109,11 +105,9 @@
   <string name="open">Abrir</string>
   <string name="change">Cambiar</string>
   <string name="start">Iniciar</string>
-  <string name="finish">Finalizar</string>
   <string name="no_data">Sin datos</string>
   <string name="ellipsis">…</string>
   <string name="text_too_long">El texto ingresado es demasiado largo</string>
-  <string name="show_onboarding">Mostrar diálogo de ayuda</string>
   <string name="fix">Reparar</string>
   <string name="help">Ayuda</string>
   <string name="sorry">Disculpa</string>
@@ -298,28 +292,18 @@
   <string name="groups_group_is_empty">Este grupo está vacío</string>
   <string name="groups_group_is_dissolved">Este grupo ha sido disuelto</string>
   <string name="groups_remove">Remover</string>
-  <string name="groups_create_group_title">Crear grupo privado</string>
-  <string name="groups_create_group_button">Crear grupo</string>
   <string name="groups_create_group_invitation_button">Enviar invitación</string>
-  <string name="groups_create_group_hint">Elige un nombre para tu grupo privado</string>
   <string name="groups_invitation_sent">Se ha mandado la invitación de grupo</string>
-  <string name="groups_member_list">Integrantes</string>
-  <string name="groups_invite_members">Invitar miembros</string>
-  <string name="groups_member_created_you">Tú creaste el grupo</string>
   <string name="groups_member_created">%s creó el grupo</string>
   <string name="groups_member_joined_you">Te uniste al grupo</string>
-  <string name="groups_member_joined">%s se unió al grupo</string>
-  <string name="groups_leave">Abandonar grupo</string>
   <string name="groups_leave_dialog_title">Confirmar salida del grupo</string>
   <string name="groups_leave_dialog_message">¿Estás seguro de querer salir de este grupo?</string>
-  <string name="groups_dissolve">Disolver grupo</string>
   <string name="groups_dissolve_dialog_title">Confirmar disolución del grupo</string>
   <string name="groups_dissolve_button">Disolver</string>
   <string name="groups_dissolved_dialog_title">El grupo ha sido disuelto</string>
   
   <string name="groups_invitations_title">Invitaciones de grupo</string>
   <string name="groups_invitations_invitation_sent">Has invitado a %1$s a unirse al grupo \"%2$s\".</string>
-  <string name="groups_invitations_invitation_received">%1$s te ha invitado a unirte al grupo \"%2$s\".</string>
   <string name="groups_invitations_joined">Te has unido al grupo</string>
   <string name="groups_invitations_declined">Invitación de grupo declinada</string>
   <plurals name="groups_invitations_open">
@@ -327,15 +311,8 @@
     <item quantity="many">%d invitaciones de grupo sin responder</item>
     <item quantity="other">%d invitaciones de grupo sin responder</item>
   </plurals>
-  <string name="groups_invitations_response_accepted_sent">Aceptaste la invitación de grupo de %s.</string>
-  <string name="groups_invitations_response_declined_sent">Declinaste la invitación de grupo de %s.</string>
-  <string name="groups_invitations_response_declined_auto">La invitación grupal de %s fue automáticamente rechazada.</string>
-  <string name="groups_invitations_response_accepted_received">%s ha aceptado la invitación al grupo.</string>
-  <string name="groups_invitations_response_declined_received">%s ha declinado la invitación al grupo.</string>
   <string name="sharing_status_groups">Solo el creador puede invitar nuevos miembros al grupo. Abajo se listan todos los participantes actuales.</string>
   
-  <string name="groups_reveal_contacts">Revelar contactos</string>
-  <string name="groups_reveal_visible">Las relaciones entre los contactos son visibles al grupo</string>
   <string name="groups_reveal_visible_revealed_by_us">Las relaciones entre los contactos son visibles al grupo (las revelaste tú)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Las relaciones entre los contactos son visibles al grupo (las reveló %s)</string>
   <string name="groups_reveal_invisible">Las relaciones entre los contactos no son visibles al grupo</string>
@@ -354,9 +331,7 @@
   
   <string name="read_more">leer más</string>
 
-  <string name="change_profile_picture">Pulsar para cambiar la imagen de tu perfil</string>
   <string name="dialog_confirm_profile_picture_title">Cambiar imagen de perfil</string>
-  <string name="dialog_confirm_profile_picture_remark">Solo tus contactos pueden ver esta imagen</string>
   <string name="change_profile_picture_failed_message">Lo sentimos, pero algo falló mientras se estaba actualizando la imagen de tu perfil</string>
   
   <string name="pref_language_title">Idioma &amp; región</string>
