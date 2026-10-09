@@ -19,6 +19,7 @@ import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.test.BrambleTestCase;
 import org.zerionproject.core.test.TestDatabaseConfigModule;
 import org.zerionproject.core.test.TestDuplexTransportConnection;
+import org.zerionproject.core.test.TestTransportConnectionWriter;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.After;
 import org.junit.Before;
@@ -203,6 +204,20 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertHybridContact(alice, bobIdentity);
 		assertHybridContact(bob, aliceIdentity);
 		assertNoPendingContacts();
+		endPairedSessions(aliceConnection, bobConnection);
+	}
+
+	private static void endPairedSessions(
+			TestDuplexTransportConnection... connections) throws Exception {
+		for (TestDuplexTransportConnection c : connections) {
+			c.getWriter().getOutputStream().close();
+		}
+		for (TestDuplexTransportConnection c : connections) {
+			TestTransportConnectionWriter writer =
+					(TestTransportConnectionWriter) c.getWriter();
+			assertTrue("the paired session did not end",
+					writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS));
+		}
 	}
 
 	private PendingContact addPendingContact(
