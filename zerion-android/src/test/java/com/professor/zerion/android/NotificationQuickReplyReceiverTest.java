@@ -18,13 +18,15 @@ import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import androidx.core.app.RemoteInput;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -42,9 +44,13 @@ public class NotificationQuickReplyReceiverTest {
 
 	private Context app;
 	private LockManager lockManager;
+	private final List<NotificationQuickReplyReceiver> receivers =
+			new ArrayList<>();
+	private Set<Thread> replyThreadsBefore;
 
 	@Before
 	public void setUp() {
+		replyThreadsBefore = replyThreads();
 		app = RuntimeEnvironment.getApplication();
 		KeyguardManager keyguard = (KeyguardManager) app.getSystemService(
 				Context.KEYGUARD_SERVICE);
@@ -86,7 +92,10 @@ public class NotificationQuickReplyReceiverTest {
 	}
 
 	private void deliver(Intent intent) {
-		new NotificationQuickReplyReceiver().onReceive(app, intent);
+		NotificationQuickReplyReceiver receiver =
+				new NotificationQuickReplyReceiver();
+		receivers.add(receiver);
+		receiver.onReceive(app, intent);
 	}
 
 	private Intent replyIntent(String text, int contactId) {
@@ -102,9 +111,22 @@ public class NotificationQuickReplyReceiverTest {
 		return intent;
 	}
 
-	private static void assertNoReplyStarted() {
-		for (Thread t : Thread.getAllStackTraces().keySet()) {
-			assertNotEquals("NotificationQuickReply", t.getName());
+	private void assertNoReplyStarted() {
+		for (NotificationQuickReplyReceiver receiver : receivers) {
+			assertFalse("a reply was started",
+					Shadows.shadowOf(receiver).wentAsync());
 		}
+		Set<Thread> started = replyThreads();
+		started.removeAll(replyThreadsBefore);
+		assertTrue("a reply thread was started: " + started,
+				started.isEmpty());
+	}
+
+	private static Set<Thread> replyThreads() {
+		Set<Thread> threads = new HashSet<>();
+		for (Thread t : Thread.getAllStackTraces().keySet()) {
+			if ("NotificationQuickReply".equals(t.getName())) threads.add(t);
+		}
+		return threads;
 	}
 }
