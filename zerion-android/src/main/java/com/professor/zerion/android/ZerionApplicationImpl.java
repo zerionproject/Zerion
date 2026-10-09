@@ -22,6 +22,8 @@ import com.professor.zerion.android.util.UiUtils;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
@@ -36,6 +38,9 @@ public class ZerionApplicationImpl extends Application
 	}
 
 	private AndroidComponent applicationComponent;
+	@Nullable
+	private volatile Thread eagerSingletonsInit;
+
 	@Override
 	protected void attachBaseContext(Context base) {
 		if (!IS_DEBUG_BUILD) {
@@ -143,16 +148,26 @@ public class ZerionApplicationImpl extends Application
 		AndroidComponent androidComponent = DaggerAndroidComponent.builder()
 				.appModule(new AppModule(this))
 				.build();
-		new Thread(() -> {
+		Thread init = new Thread(() -> {
 			BrambleCoreEagerSingletons.Helper
 					.injectEagerSingletons(androidComponent);
 			BrambleAndroidEagerSingletons.Helper
 					.injectEagerSingletons(androidComponent);
 			BriarCoreEagerSingletons.Helper.injectEagerSingletons(androidComponent);
 			AndroidEagerSingletons.Helper.injectEagerSingletons(androidComponent);
-		}, "EagerSingletonsInit").start();
+		}, "EagerSingletonsInit");
+		eagerSingletonsInit = init;
+		init.start();
 
 		return androidComponent;
+	}
+
+	@VisibleForTesting
+	boolean awaitEagerSingletons(long timeoutMs) throws InterruptedException {
+		Thread init = eagerSingletonsInit;
+		if (init == null) return true;
+		init.join(timeoutMs);
+		return !init.isAlive();
 	}
 
 	@Override

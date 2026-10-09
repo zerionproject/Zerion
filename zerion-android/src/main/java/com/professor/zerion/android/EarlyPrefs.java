@@ -26,6 +26,10 @@ public final class EarlyPrefs {
 	private EarlyPrefs() {
 	}
 
+	static void resetForTests() {
+		cached = null;
+	}
+
 	public static String language(Context ctx) {
 		String tag = prefs(ctx).getString(PREF_LANGUAGE, DEFAULT_LANGUAGE);
 		return tag == null ? DEFAULT_LANGUAGE : tag;
