@@ -29,21 +29,20 @@ public class ZppPacingRegimeTest {
 				new ZppConnectionRunnerImpl.SlotClock();
 		AtomicBoolean running = new AtomicBoolean(true);
 		long start = System.currentTimeMillis();
-		Thread waker = new Thread(() -> {
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				return;
-			}
+		AtomicLong elapsed = new AtomicLong(-1);
+		Thread waiter = startWaiter(clock, running, start, 60_000, 100,
+				elapsed);
+		try {
+			awaitWaiting(waiter);
 			clock.noteActivity();
-		});
-		waker.start();
-		clock.awaitNextSlot(running, start, 2_000, 100);
-		long elapsed = System.currentTimeMillis() - start;
-		waker.join();
-		assertTrue("did not snap to active spacing: " + elapsed,
-				elapsed < 1_000);
-		assertTrue("snapped below active spacing: " + elapsed, elapsed >= 90);
+			waiter.join(30_000);
+			assertFalse("did not snap to active spacing", waiter.isAlive());
+		} finally {
+			running.set(false);
+			waiter.interrupt();
+		}
+		assertTrue("snapped below active spacing: " + elapsed.get(),
+				elapsed.get() >= 90);
 	}
 
 	@Test
@@ -52,12 +51,45 @@ public class ZppPacingRegimeTest {
 				new ZppConnectionRunnerImpl.SlotClock();
 		AtomicBoolean running = new AtomicBoolean(true);
 		long start = System.currentTimeMillis();
-		Thread waker = new Thread(clock::noteActivity);
-		waker.start();
-		clock.awaitNextSlot(running, start, 150, 150);
-		long elapsed = System.currentTimeMillis() - start;
-		waker.join();
-		assertTrue("active gap was shortened: " + elapsed, elapsed >= 130);
+		AtomicLong elapsed = new AtomicLong(-1);
+		Thread waiter = startWaiter(clock, running, start, 1_000, 1_000,
+				elapsed);
+		try {
+			awaitWaiting(waiter);
+			clock.noteActivity();
+			waiter.join(30_000);
+			assertFalse("the waiter never returned", waiter.isAlive());
+		} finally {
+			running.set(false);
+			waiter.interrupt();
+		}
+		assertTrue("active gap was shortened: " + elapsed.get(),
+				elapsed.get() >= 980);
+	}
+
+	private static Thread startWaiter(ZppConnectionRunnerImpl.SlotClock clock,
+			AtomicBoolean running, long frameSentAt, long delay,
+			long activeDelay, AtomicLong elapsed) {
+		Thread waiter = new Thread(() -> {
+			try {
+				clock.awaitNextSlot(running, frameSentAt, delay, activeDelay);
+				elapsed.set(System.currentTimeMillis() - frameSentAt);
+			} catch (InterruptedException ignored) {
+			}
+		});
+		waiter.start();
+		return waiter;
+	}
+
+	private static void awaitWaiting(Thread waiter)
+			throws InterruptedException {
+		long deadline = System.currentTimeMillis() + 15_000;
+		while (waiter.getState() != Thread.State.TIMED_WAITING
+				&& waiter.getState() != Thread.State.TERMINATED) {
+			assertTrue("the waiter never started waiting",
+					System.currentTimeMillis() < deadline);
+			Thread.sleep(1);
+		}
 	}
 
 	@Test
