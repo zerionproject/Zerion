@@ -22,10 +22,10 @@ import org.zerionproject.core.test.TestDuplexTransportConnection;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +34,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.fail;
+import static org.zerionproject.core.api.contact.ContactType.BRIAR;
+import static org.zerionproject.core.api.contact.ContactType.ZERION;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
+import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_RENDEZVOUS_X25519_BYTES;
 import static org.zerionproject.core.api.contact.PendingContactState.OFFLINE;
 import static org.zerionproject.core.test.TestDuplexTransportConnection.createPair;
 import static org.zerionproject.core.test.TestPluginConfigModule.DUPLEX_TRANSPORT_ID;
@@ -42,6 +46,7 @@ import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ContactExchangeIntegrationTest extends BrambleTestCase {
@@ -128,8 +133,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 
 	@Test
 	public void testExchangeContactsFromPendingContacts() throws Exception {
-		PendingContact bobFromAlice = addPendingContact(alice, bob);
-		PendingContact aliceFromBob = addPendingContact(bob, alice);
+		PendingContact bobFromAlice = addPendingContact(alice, bob, BRIAR);
+		PendingContact aliceFromBob = addPendingContact(bob, alice, BRIAR);
 		assertPendingContacts();
 
 		TestDuplexTransportConnection[] pair = createPair();
@@ -165,15 +170,13 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertNoPendingContacts();
 	}
 
-	@Ignore("Uses a classical (BRIAR) handshake link, which HandshakeManagerImpl "
-			+ "now refuses (PQ-only policy). Pre-existing; needs migration to a "
-			+ "ZERION/hybrid handshake link plus hybrid-key test fixtures.")
 	@Test
 	public void testHandshakeAndExchangeContactsFromPendingContacts()
 			throws Exception {
-		PendingContact bobFromAlice = addPendingContact(alice, bob);
-		PendingContact aliceFromBob = addPendingContact(bob, alice);
-		assertPendingContacts();
+		PendingContact bobFromAlice = addPendingContact(alice, bob, ZERION);
+		PendingContact aliceFromBob = addPendingContact(bob, alice, ZERION);
+		assertHybridPendingContact(alice, bobIdentity);
+		assertHybridPendingContact(bob, aliceIdentity);
 
 		TestDuplexTransportConnection[] pair = createPair();
 		TestDuplexTransportConnection aliceConnection = pair[0];
@@ -184,32 +187,36 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		alice.getEventBus().addListener(e -> {
 			if (e instanceof ContactAddedEvent) aliceFinished.countDown();
 		});
-
-		alice.getConnectionManager().manageOutgoingConnection(
-				bobFromAlice.getId(), DUPLEX_TRANSPORT_ID, aliceConnection, true);
 		bob.getEventBus().addListener(e -> {
 			if (e instanceof ContactAddedEvent) bobFinished.countDown();
 		});
+
+		alice.getConnectionManager().manageOutgoingConnection(
+				bobFromAlice.getId(), DUPLEX_TRANSPORT_ID, aliceConnection,
+				false);
 		bob.getConnectionManager().manageIncomingConnection(
-				aliceFromBob.getId(), DUPLEX_TRANSPORT_ID, bobConnection, true);
+				aliceFromBob.getId(), DUPLEX_TRANSPORT_ID, bobConnection,
+				false);
 		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
 		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
 
-		assertContacts(true, true);
+		assertHybridContact(alice, bobIdentity);
+		assertHybridContact(bob, aliceIdentity);
 		assertNoPendingContacts();
 	}
 
 	private PendingContact addPendingContact(
 			ContactExchangeIntegrationTestComponent local,
-			ContactExchangeIntegrationTestComponent remote) throws Exception {
+			ContactExchangeIntegrationTestComponent remote, ContactType type)
+			throws Exception {
 		EventWaiter waiter = new EventWaiter();
 		local.getEventBus().addListener(waiter);
 
-		String link = remote.getContactManager().getHandshakeLink(ContactType.BRIAR);
+		String link = remote.getContactManager().getHandshakeLink(type);
 		String alias = remote.getIdentityManager().getLocalAuthor().getName();
 		PendingContact pendingContact =
 				local.getContactManager().addPendingContact(link, alias);
-		waiter.latch.await(TIMEOUT, MILLISECONDS);
+		assertTrue(waiter.latch.await(TIMEOUT, MILLISECONDS));
 		return pendingContact;
 	}
 
@@ -237,6 +244,48 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		} else {
 			assertNull(actualPublicKey);
 		}
+	}
+
+	private void assertHybridPendingContact(
+			ContactExchangeIntegrationTestComponent local,
+			Identity expectedIdentity) throws Exception {
+		Collection<Pair<PendingContact, PendingContactState>> pairs =
+				local.getContactManager().getPendingContacts();
+		assertEquals(1, pairs.size());
+		Pair<PendingContact, PendingContactState> pair =
+				pairs.iterator().next();
+		assertEquals(OFFLINE, pair.getSecond());
+		PendingContact pendingContact = pair.getFirst();
+		assertTrue(pendingContact.isPostQuantum());
+		assertEquals(expectedIdentity.getLocalAuthor().getName(),
+				pendingContact.getAlias());
+		byte[] blob = pendingContact.getPublicKey().getEncoded();
+		assertEquals(HYBRID_COMMITMENT_BYTES + HYBRID_RENDEZVOUS_X25519_BYTES,
+				blob.length);
+		assertArrayEquals(rendezvousKey(expectedIdentity),
+				Arrays.copyOfRange(blob, HYBRID_COMMITMENT_BYTES, blob.length));
+	}
+
+	private void assertHybridContact(
+			ContactExchangeIntegrationTestComponent local,
+			Identity expectedIdentity) throws Exception {
+		Collection<Contact> contacts = local.getContactManager().getContacts();
+		assertEquals(1, contacts.size());
+		Contact contact = contacts.iterator().next();
+		assertEquals(expectedIdentity.getLocalAuthor(), contact.getAuthor());
+		assertFalse(contact.isVerified());
+		assertTrue(contact.isPostQuantum());
+		PublicKey actualPublicKey = contact.getHandshakePublicKey();
+		assertNotNull(actualPublicKey);
+		assertArrayEquals(rendezvousKey(expectedIdentity),
+				actualPublicKey.getEncoded());
+	}
+
+	private static byte[] rendezvousKey(Identity identity) {
+		PublicKey hybrid = identity.getHybridHandshakePublicKey();
+		assertNotNull(hybrid);
+		return Arrays.copyOfRange(hybrid.getEncoded(), 0,
+				HYBRID_RENDEZVOUS_X25519_BYTES);
 	}
 
 	private void assertNoPendingContacts() throws Exception {
