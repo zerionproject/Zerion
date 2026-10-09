@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,8 +55,13 @@ public class VideoPlayerNoPlaintextTest {
 			if (children == null) return;
 			for (File c : children) filesHolding(c, needle, out);
 		} else if (f.isFile() && f.length() < 64 * 1024 * 1024) {
-			String content = new String(Files.readAllBytes(f.toPath()),
-					StandardCharsets.ISO_8859_1);
+			byte[] bytes;
+			try {
+				bytes = Files.readAllBytes(f.toPath());
+			} catch (NoSuchFileException removed) {
+				return;
+			}
+			String content = new String(bytes, StandardCharsets.ISO_8859_1);
 			if (content.contains(new String(needle,
 					StandardCharsets.ISO_8859_1))) {
 				out.add(f.getName());

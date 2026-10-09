@@ -31,6 +31,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -191,10 +192,17 @@ public class ChannelAttachmentHandoffTest {
 		for (File f : files) {
 			if (f.isDirectory()) {
 				collect(f, content, found);
-			} else if (f.length() == content.length && Arrays.equals(content,
-					Files.readAllBytes(f.toPath()))) {
+			} else if (f.length() == content.length && holds(f, content)) {
 				found.add(f);
 			}
+		}
+	}
+
+	private static boolean holds(File f, byte[] content) throws Exception {
+		try {
+			return Arrays.equals(content, Files.readAllBytes(f.toPath()));
+		} catch (NoSuchFileException wiped) {
+			return false;
 		}
 	}
 
