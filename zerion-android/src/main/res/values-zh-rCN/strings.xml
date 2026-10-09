@@ -48,14 +48,8 @@
   <string name="startup_failed_data_too_old_error">您的帐户是用此应用程序的旧版本创建的，不能用此版本打开。\n\n您必须重新安装旧版本，或者在密码提示时选择“我忘记密码”，建立一个新帐户。</string>
   <string name="startup_failed_data_too_new_error">您的帐户是用此应用程序的较新版本创建的，不能用此版本打开。\n\n请升级到最新版本，然后重试。</string>
   <string name="startup_failed_service_error">Zerion 无法启动必需的组件。\n\n请升级到最新版并重新尝试。</string>
-  <plurals name="expiry_warning">
-    <item quantity="other">这是 Zerion 的一个测试版本。您的帐户将在 %d 天后到期，且无法延期。</item>
-  </plurals>
-  <string name="expiry_date_reached">本软件已过期。\n感谢您的测试！</string>
   <string name="download_zerion">请下载最新版本以继续使用 Zerion</string>
   <string name="create_new_account">您将需要创建一个新帐户，但可以使用相同的昵称。</string>
-  <string name="download_zerion_button">下载最新版本</string>
-  <string name="old_android_expiry_date_reached">Zerion 不再运行于 Andriod 4 系统。\n请在更高版本系统上安装 Zerion</string>
   <string name="old_android_delete_account">您可以轻按下面的按钮从这个设备上删除您的帐户。</string>
   <string name="delete_account_button">删除帐户</string>
   <string name="startup_open_database">正在解密数据库……</string>

@@ -48,16 +48,8 @@
   <string name="startup_failed_data_too_old_error">Contul dvs. a fost creat cu o versiune veche a acestei aplicații și nu poate fi deschis cu această versiune. Trebuie fie să reinstalați versiunea veche, fie să creați un cont nou selectând „Mi-am uitat parola” în momentul solicitării parolei.</string>
   <string name="startup_failed_data_too_new_error">Contul dvs. a fost creat cu o versiune mai nouă a acestei aplicații și nu poate fi deschis cu această versiune. Vă rugăm să realizați un upgrade la cea mai recentă versiune și să încercați din nou.</string>
   <string name="startup_failed_service_error">Zerion nu a reușit să pornească o componentă necesară. Vă rugăm să faceți un upgrade la cea mai recentă versiune a aplicației și să încercați din nou.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Aceasta este o versiune de test Zerion. Contul dvs. va expira în decurs de %d zi și nu poate fi reînnoit.</item>
-    <item quantity="few">Aceasta este o versiune de test Zerion. Contul dvs. va expira în %d zile și nu poate fi reînnoit.</item>
-    <item quantity="other">Aceasta este o versiune de test Zerion. Contul dvs. va expira în %d zile și nu poate fi reînnoit.</item>
-  </plurals>
-  <string name="expiry_date_reached">Acest program software a expirat.\nVă mulțumim că l-ați testat!</string>
   <string name="download_zerion">Pentru a putea să utilizați Zerion în continuare, descărcați cea mai recentă versiune.</string>
   <string name="create_new_account">Va trebui să creați un cont nou, dar puteți să folosiți același pseudonim.</string>
-  <string name="download_zerion_button">Descărcați cea mai recentă versiune</string>
-  <string name="old_android_expiry_date_reached">Zerion nu mai funcționează pe Android 4.\nInstalați Zerion pe un dispozitiv mai nou.</string>
   <string name="old_android_delete_account">Puteți atinge butonul de mai jos pentru a șterge contul dvs. de pe acest dispozitiv.</string>
   <string name="delete_account_button">Ștergeți contul</string>
   <string name="startup_open_database">Se decriptează baza de date...</string>

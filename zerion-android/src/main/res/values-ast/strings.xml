@@ -22,10 +22,8 @@
   <string name="dialog_title_lost_password">Contraseña perdida</string>
   <string name="dialog_message_lost_password">La cuenta de Zerion guárdase cifrada nel preséu, non na nube, de manera que nun podemos reaniciala.. ¿Quies desaniciar la cuenta y principiar de cero?\n\nAtención: Les tos identidaes, contautos y mensaxes perderánse de mou permanente.</string>
   <string name="startup_failed_activity_title">Fallu nel arranque de Zerion</string>
-  <string name="expiry_date_reached">Esti software caducó.\n¡Gracies por probalu!</string>
   <string name="download_zerion">Pa siguir usando Zerion, descarga la versión 1.0.</string>
   <string name="create_new_account">Tendrás de crear una cuenta nueva, pero puedes usar el mesmu alcuñu.</string>
-  <string name="download_zerion_button">Descargar Zerion 1.0</string>
   <string name="nav_drawer_open_description">Abrir el caxón de navegación</string>
   <string name="nav_drawer_close_description">Zarrar el caxón de navegación</string>
   <string name="contact_list_button">Contactos</string>
@@ -480,7 +478,6 @@
 	<string name="startup_failed_data_too_old_error">La to cuenta creóse con una versión antigua d\'esta aplicación y nun se pue abrir con esta versión.\n\nTienes de reinstalar la versión antigua o configurar una cuenta nueva escoyendo «Escaecí la contraseña» na pantalla de la contraseña.</string>
 	<string name="startup_failed_data_too_new_error">La to cuenta creóse con una versión más nueva d\'esta aplicación y nun se pue abrir con esta versión.\n\nAnova a la última versión y volvi tentalo.</string>
 	<string name="startup_failed_service_error">Zerion nun pudo aniciar un componente necesariu.\n\nAnova a la última versión de l\'aplicación y volvi tentalo.</string>
-	<string name="old_android_expiry_date_reached">Zerion yá nun funciona n\'Android 4.\nInstala Zerion nun dispositivu más nuevu.</string>
 	<string name="old_android_delete_account">Pues tocar el botón d\'abaxo pa desaniciar la to cuenta d\'esti dispositivu.</string>
 	<string name="delete_account_button">Desaniciar la cuenta</string>
 	<string name="startup_open_database">Descifrando la base de datos…</string>
@@ -2223,10 +2220,6 @@
 	<plurals name="dialog_message_critical_warning">
 		<item quantity="one">¡Namás queda %d intentu fallíu d\'aniciu de sesión enantes de que se desanicien tolos datos de mou permanente!</item>
 		<item quantity="other">¡Namás queden %d intentos fallíos d\'aniciu de sesión enantes de que se desanicien tolos datos de mou permanente!</item>
-	</plurals>
-	<plurals name="expiry_warning">
-		<item quantity="one">Esta ye una versión de prueba de Zerion. La to cuenta va caducar en %d día y nun se pue anovar.</item>
-		<item quantity="other">Esta ye una versión de prueba de Zerion. La to cuenta va caducar en %d díes y nun se pue anovar.</item>
 	</plurals>
 	<plurals name="channels_row_attachment_only">
 		<item quantity="one">📎 1 axuntu</item>

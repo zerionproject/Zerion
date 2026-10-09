@@ -8,7 +8,6 @@
   <string name="password_too_weak">Kata laluan terlalu lemah</string>
   <string name="passwords_do_not_match">Kata laluan tidak sepadan</string>
   <string name="enter_password">Masukkan kata laluan anda:</string>
-  <string name="expiry_date_reached">Aplikasi ini telah tamat tempoh.\nSila pasang ulang versi baru.</string>
   <string name="contact_list_button">Kenalan</string>
   <string name="settings_button">Tetapan</string>
   <string name="sign_out_button">Daftar Keluar</string>
@@ -633,8 +632,6 @@
 	<string name="startup_failed_service_error">Zerion tidak dapat memulakan komponen yang diperlukan.\n\nSila naik taraf ke versi terkini aplikasi dan cuba lagi.</string>
 	<string name="download_zerion">Untuk terus menggunakan Zerion, sila muat turun keluaran terkini.</string>
 	<string name="create_new_account">Anda perlu mencipta akaun baharu, tetapi anda boleh menggunakan nama samaran yang sama.</string>
-	<string name="download_zerion_button">Muat Turun Keluaran Terkini</string>
-	<string name="old_android_expiry_date_reached">Zerion tidak lagi berjalan pada Android 4.\nSila pasang Zerion pada peranti yang lebih baharu.</string>
 	<string name="old_android_delete_account">Anda boleh mengetik butang di bawah untuk memadam akaun anda daripada peranti ini.</string>
 	<string name="delete_account_button">Padam akaun</string>
 	<string name="startup_open_database">Menyahsulit Pangkalan Data…</string>
@@ -2292,9 +2289,6 @@
 	</plurals>
 	<plurals name="dialog_message_critical_warning">
 		<item quantity="other">Hanya %d lagi percubaan log masuk yang gagal sebelum semua data dipadam secara kekal!</item>
-	</plurals>
-	<plurals name="expiry_warning">
-		<item quantity="other">Ini ialah versi ujian Zerion. Akaun anda akan tamat tempoh dalam %d hari dan tidak boleh diperbaharui.</item>
 	</plurals>
 	<plurals name="channels_row_attachment_only">
 		<item quantity="other">📎 %d lampiran</item>

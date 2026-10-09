@@ -43,14 +43,8 @@
   <string name="startup_failed_data_too_old_error">حساب کاربری شما با نسخه قدیمی این برنامه ساخته شده و در این نسخه قابل باز شدن نیست.\n\n شما یا باید نسخه قبلی را دوباره نصب کنید و یا هنگام وارد کردن رمز عبور، با انتخاب «رمز خود را فراموش کرده‌ام» حساب جدیدی ایجاد کنید.</string>
   <string name="startup_failed_data_too_new_error">حساب کاربری شما با نسخه جدیدتر این برنامه ساخته شده و در این نسخه قابل باز شدن نیست.\n\n لطفا به آخرین نسخه ارتقا داده و دوباره امتحان کنید.</string>
   <string name="startup_failed_service_error">Zerion قادر به آغاز اجزای مورد نیاز نیست.\n\n لطفا به آخرین نسخه برنامه ارتقا داده و دوباره امتحان کنید.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">این یک نسخه آزمایشی از Zerion (برایر) می باشد. حساب کاربری شما در %d روز آینده به پایان می رسد و امکان تمدید آن وجود نخواهد داشت.</item>
-    <item quantity="other">این یک نسخه آزمایشی از Zerion (برایر) می باشد. حساب کاربری شما در %d روز آینده به پایان می رسد و امکان تمدید آن وجود نخواهد داشت.</item>
-  </plurals>
   <string name="download_zerion">برای ادامه استفاده از Zerion، لطفا آخرین نسخه را دانلود کنید.</string>
   <string name="create_new_account">لازم است تا یک حساب کاربری جدید ایجاد کنید، ولی می توانید از همان نام مستعار استفاده کنید.</string>
-  <string name="download_zerion_button">دانلود آخرین نسخه</string>
-  <string name="old_android_expiry_date_reached">Zerion دیگر روی اندروید 4 اجرا نمی‌شود.\nلطفا Zerion را روی دستگاه جدیدتر نصب کنید. </string>
   <string name="old_android_delete_account">برای حذف حساب کاربری خود از این دستگاه می‌توانید روی دکمه زیر ضربه بزنید.</string>
   <string name="delete_account_button">حذف حساب کاربری</string>
   <string name="startup_open_database">در حال رمزگشایی سیستم ...</string>
@@ -956,7 +950,6 @@
 	<string name="dialog_message_max_attempts">تلاش‌های ناموفق برای ورود بیش از حد زیاد بوده است. برای حفظ امنیت، همه داده‌ها حذف خواهند شد.</string>
 	<string name="dialog_button_understand">متوجه شدم</string>
 	<string name="startup_failed_database_corrupt">پایگاه داده شما خراب شده است و قابل بازیابی نیست.\n\nبرای امنیت شما، Zerion هیچ نسخه پشتیبانی از داده‌هایتان نگه نمی‌دارد. باید با انتخاب «رمز عبور خود را فراموش کرده‌ام» در صفحه ورود رمز عبور، یک حساب کاربری جدید بسازید.\n\nاین مشکل ممکن است پس از خاموش شدن ناگهانی یا خرابی حافظه پیش بیاید.</string>
-	<string name="expiry_date_reached">مهلت استفاده از این نرم‌افزار به پایان رسیده است.\nاز اینکه آن را آزمایش کردید سپاسگزاریم!</string>
 	<string name="chats_button">گفتگوها</string>
 	<string name="chat_type_group">گروه</string>
 	<string name="chat_type_channel">کانال</string>

@@ -49,15 +49,8 @@
   <string name="startup_failed_data_too_new_error">Llogaria juaj qe krijuar me një version më të ri të këtij aplikacioni 
 dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versionin më të ri dhe riprovoni.</string>
   <string name="startup_failed_service_error">Zerion-i nuk arriti të nisë një përbërës të domosdoshëm.\n\nJu lutemi, përmirësojeni me versionin më të ri të aplikacionit dhe riprovoni.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Ky është një version beta i Zerion-it. Llogaria juaj do të skadojë për %d ditë dhe s\’mund të rinovohet.</item>
-    <item quantity="other">Ky është një version beta i Zerion-it. Llogaria juaj do të skadojë për %d ditë dhe s\’mund të rinovohet.</item>
-  </plurals>
-  <string name="expiry_date_reached">Ky software ka skaduar.\nFaleminderit që e provuat!</string>
   <string name="download_zerion">Që të vazhdoni të përdorni Zerion-in, ju lutemi shkarkoni versionin më të ri.</string>
   <string name="create_new_account">Do t’ju duhet të krijoni një llogari të re, por mund të përdorni të njëjtën nofkë.</string>
-  <string name="download_zerion_button">Shkarkoni Hedhjen Më të Re Në Qarkullim</string>
-  <string name="old_android_expiry_date_reached">Zerion-i nuk funksionon më në Android 4.\nJu lutemi, instalojeni Zerion-in në një pajisje më të re.</string>
   <string name="old_android_delete_account">Mund të prekni butonin më poshtë që të fshini llogarinë tuaj prej kësaj pajisjeje.</string>
   <string name="delete_account_button">Fshi Llogarinë</string>
   <string name="startup_open_database">Po shfshehtëzohet Baza e të Dhënave…</string>

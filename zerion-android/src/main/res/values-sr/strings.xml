@@ -31,12 +31,6 @@
   <string name="startup_failed_data_too_old_error">Vaš račun je napravljen sa starom verzijom aplikacije i nemoze se otvoriti novom verzijom. Morate reinstalirati staru verziju ili podesiti podesiti novi račun tako što ćete izabrati  \'ZaboraviIi ste lozinku?\' kod unosa lozinke.</string>
   <string name="startup_failed_data_too_new_error">Ova verzija aplikacije je stara. Molim vas da azurirate na posljednju verziju a zatim ponovo pokušate.</string>
   <string name="startup_failed_service_error">Zerion nije mogao da startuje potreban plugin. Reinstaliranje Zeriona obično riješi problem. Međutim, imajte na umu da ćete izgubiti vaš račun i sve podatke vezane za njega pošto Zerion ne koristi centralne servere da sačuva vaše podatke.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Ovo je testna verzija Zeriona. Vaš račun će isteći za %d dan i ne može se obnoviti.</item>
-    <item quantity="few">Ovo je testna verzija Zeriona. Vaš račun će isteći za %d dana i ne može se obnoviti.</item>
-    <item quantity="other">Ovo je testna verzija Zeriona. Vaš račun će isteći za %d dana i ne može se obnoviti.</item>
-  </plurals>
-  <string name="expiry_date_reached">Ovaj softver je istekao.\nHvala na testiranju!</string>
   <string name="create_new_account">Morate kreirati novi račun, ali možete koristiti isti nadimak.</string>
   <string name="startup_open_database">Dekriptujem bazu...</string>
   <string name="startup_migrate_database">Ažuriram bazu...</string>
@@ -871,8 +865,6 @@
 	<string name="startup_failed_clock_error">Zerion nije mogao da se pokrene jer sat na tvom uređaju nije tačan.\n\nPodesi tačno vreme na uređaju i pokušaj ponovo.</string>
 	<string name="startup_failed_database_corrupt">Tvoja baza podataka je oštećena i ne može da se oporavi.\n\nRadi tvoje bezbednosti, Zerion ne čuva rezervne kopije tvojih podataka. Moraćeš da napraviš novi nalog tako što ćeš na ekranu za lozinku izabrati „Zaboravio sam šifru“.\n\nOvo može da se desi nakon neočekivanog gašenja ili kvara memorije.</string>
 	<string name="download_zerion">Da bi nastavio da koristiš Zerion, preuzmi najnovije izdanje.</string>
-	<string name="download_zerion_button">Preuzmi najnovije izdanje</string>
-	<string name="old_android_expiry_date_reached">Zerion više ne radi na Androidu 4.\nInstaliraj Zerion na noviji uređaj.</string>
 	<string name="old_android_delete_account">Možeš da dodirneš dugme ispod da obrišeš svoj nalog sa ovog uređaja.</string>
 	<string name="delete_account_button">Obriši nalog</string>
 	<string name="chats_button">Razgovori</string>

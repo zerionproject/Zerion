@@ -240,6 +240,4 @@ public interface AndroidComponent
 
 	void inject(com.professor.zerion.android.settings.DisplayFragment displayFragment);
 
-	void inject(com.professor.zerion.android.splash.ExpiredActivity expiredActivity);
-
 }

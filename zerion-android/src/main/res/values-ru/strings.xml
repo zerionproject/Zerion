@@ -48,17 +48,8 @@
   <string name="startup_failed_data_too_old_error">Ваш аккаунт был создан в старой версии Zerion, поэтому открыть его в этой версии приложения не удастся.\n\nВам необходимо либо установить старую версию, либо создать новый аккаунт, выбрав \'я забыл свой пароль\' на этапе авторизации в приложении.</string>
   <string name="startup_failed_data_too_new_error">Ваш аккаунт был создан в более новой версии этого приложения и не может быть открыт в текущей версии.\n\nПожалуйста, обновите приложение до последней версии и повторите попытку.</string>
   <string name="startup_failed_service_error">Zerion не смог запустить необходимый компонент.\n\nПожалуйста, обновите приложение до последней версии и повторите попытку.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Это бета-версия Zerion. Срок действия вашего аккаунта закончится через %d день и не может быть возобновлен.</item>
-    <item quantity="few">Это бета-версия Zerion. Срок действия вашего аккаунта закончится через %d дня и не может быть возобновлен.</item>
-    <item quantity="many">Это бета-версия Zerion. Срок действия вашего аккаунта закончится через %d дней и не может быть возобновлен.</item>
-    <item quantity="other">Это бета-версия Zerion. Срок действия вашего аккаунта закончится через %d дней и не может быть возобновлен.</item>
-  </plurals>
-  <string name="expiry_date_reached">Срок действия этого программного обеспечения истек.\nСпасибо за тестирование!</string>
   <string name="download_zerion">Для продолжения использования Zerion, пожалуйста, скачайте последнюю версию.</string>
   <string name="create_new_account">Вам необходимо создать новый аккаунт, но вы можете использовать тот же псевдоним.</string>
-  <string name="download_zerion_button">Загрузить последнюю версию</string>
-  <string name="old_android_expiry_date_reached">Zerion больше не работает на Android 4.\nПожалуйста, установите Zerion на более современное устройство.</string>
   <string name="old_android_delete_account">Вы можете нажать кнопку ниже, чтобы удалить свой аккаунт с этого устройства.</string>
   <string name="delete_account_button">Удалить аккаунт</string>
   <string name="startup_open_database">Расшифровка базы данных...</string>

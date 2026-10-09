@@ -34,11 +34,6 @@
   <string name="startup_failed_data_too_old_error">Sinun tili luotiin vanhalla versiolla eikä sitä voida avata tällä versiolla. Sinun täytyy joko asentaa vanha versio uudelleen tai luoda uusi tili valitsemalla \'Olen unohtanut salasanani\' kun sinulta kysytään salasanaa.</string>
   <string name="startup_failed_data_too_new_error">Tämän sovelluksen versio on liian vanha. Päivitä viimeisimpään versioon ja yritä uudelleen.</string>
   <string name="startup_failed_service_error">Zerion ei kyennyt käynnistämään vaadittua liitännäistä. Zerionin uudelleenasennus yleensä korjaa ongelman. Huomaa kuitenkin, että tulet menettämään tilisi ja kaikki siihen liittyvä data koska Zerion ei käytä palvelimia sinun tietojesi säilyttämiseen.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Tämä on Zerionin testiversio. Sinun tilisi tulee vanhentumaan %d päivän päästä eikä sitä voi uusia.</item>
-    <item quantity="other">Tämä on Zerionin testiversio. Sinun tilisi tulee vanhentumaan %d päivän päästä eikä sitä voi uusia.</item>
-  </plurals>
-  <string name="expiry_date_reached">Tämä sovellus on vanhentunut.\nKiitos testaamisesta!</string>
   <string name="create_new_account">Sinun täytyy luoda uusi tili, mutta voit käyttää samaa tunnusta.</string>
   <string name="startup_open_database">Puretaan tietokannan salaus...</string>
   <string name="startup_migrate_database">Päivitetään tietokanta...</string>
@@ -894,8 +889,6 @@
 	<string name="startup_failed_clock_error">Zerion ei voinut käynnistyä, koska laitteesi kello on väärässä.\n\nAseta laitteesi kello oikeaan aikaan ja yritä uudelleen.</string>
 	<string name="startup_failed_database_corrupt">Tietokantasi on vioittunut, eikä sitä voi palauttaa.\n\nTurvallisuutesi vuoksi Zerion ei säilytä varmuuskopioita tiedoistasi. Sinun täytyy luoda uusi tili valitsemalla ”Olen unohtanut salasanani”, kun sinulta kysytään salasanaa.\n\nNäin voi käydä odottamattoman sammumisen tai tallennustilan vian jälkeen.</string>
 	<string name="download_zerion">Jos haluat jatkaa Zerionin käyttöä, lataa uusin julkaisu.</string>
-	<string name="download_zerion_button">Lataa uusin julkaisu</string>
-	<string name="old_android_expiry_date_reached">Zerion ei enää toimi Android 4:ssä.\nAsenna Zerion uudempaan laitteeseen.</string>
 	<string name="old_android_delete_account">Voit poistaa tilisi tältä laitteelta napauttamalla alla olevaa painiketta.</string>
 	<string name="delete_account_button">Poista tili</string>
 	<string name="startup_compact_database">Tiivistetään tietokantaa…</string>

@@ -48,17 +48,8 @@
   <string name="startup_failed_data_too_old_error">Váš účet byl vytvořen ve starší verzi této aplikace a v této verzi jej nelze otevřít.\n\nMusíte buď přeinstalovat starou verzi, nebo nastavit nový účet tak, že na výzvu k zadání hesla vyberete možnost „Zapomněl jsem heslo“.</string>
   <string name="startup_failed_data_too_new_error">Váš účet byl vytvořen s novější verzí této aplikace a s touto verzí jej nelze otevřít.\n\nPřejděte prosím na nejnovější verzi a zkuste to znovu.</string>
   <string name="startup_failed_service_error">Aplikaci Zerion se nepodařilo spustit požadovanou komponentu.\n\nAktualizujte prosím aplikaci na nejnovější verzi a zkuste to znovu.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Toto je testovací verze Zerion. Váš účet a jeho platnost vyprší po %d dnech a není možné ho obnovit.</item>
-    <item quantity="few">Toto je testovací verze Zerion. Váš účet a jeho platnost vyprší po %d dnech a není možné ho obnovit.</item>
-    <item quantity="many">Toto je testovací verze Zerion. Váš účet a jeho platnost vyprší po %d dnech a není možné ho obnovit.</item>
-    <item quantity="other">Toto je testovací verze Zerion. Váš účet a jeho platnost vyprší po %d dnech a není možné ho obnovit.</item>
-  </plurals>
-  <string name="expiry_date_reached">Platnost tohoto software vypršela.\nDěkujeme za jeho otestování!</string>
   <string name="download_zerion">Pro pokračování v používání aplikace Zerion si prosím stáhněte její nejnovější verzi.</string>
   <string name="create_new_account">Budete potřebovat vytvořit nový účet, ale můžete použít stejné uživatelské jméno.</string>
-  <string name="download_zerion_button">Stáhnout nejnovější vydání</string>
-  <string name="old_android_expiry_date_reached">Zerion již neběží na systému Android 4.\nNainstalujte prosím Zerion na novější zařízení.</string>
   <string name="old_android_delete_account">Klepnutím na tlačítko níže odstraníte svůj účet z tohoto zařízení.</string>
   <string name="delete_account_button">Odstranit účet</string>
   <string name="startup_open_database">Dešifrování databáze...</string>

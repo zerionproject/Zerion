@@ -48,17 +48,8 @@
   <string name="startup_failed_data_too_old_error">Vaše konto bolo vytvorené v starej verzii tejto aplikácie a v tejto verzii sa nedá otvoriť.\n\nMusíte buď nainštalovať starú verziu, alebo nastaviť nové konto výberom možnosti \"Zabudol som heslo\" vo výzve na zadanie hesla.</string>
   <string name="startup_failed_data_too_new_error">Vaše konto bolo vytvorené s novšou verziou tejto aplikácie a s touto verziou ho nemožno otvoriť.\n\nProsím, aktualizujte na najnovšiu verziu a skúste to znova.</string>
   <string name="startup_failed_service_error">Zerion nedokázal spustiť požadovaný komponent.\n\nProsím, aktualizujte na najnovšiu verziu aplikácie a skúste to znova.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Toto je testovacia verzia aplikácie Zerion. Platnosť vášho účtu vyprší o %d deň a nie je možné ho obnoviť.</item>
-    <item quantity="few">Toto je testovacia verzia aplikácie Zerion. Platnosť vášho účtu vyprší o %d dni a nie je možné ho obnoviť.</item>
-    <item quantity="many">Toto je testovacia verzia aplikácie Zerion. Platnosť vášho účtu vyprší o %d dní a nie je možné ho obnoviť.</item>
-    <item quantity="other">Toto je testovacia verzia aplikácie Zerion. Platnosť vášho účtu vyprší o %d dní a nie je možné ho obnoviť.</item>
-  </plurals>
-  <string name="expiry_date_reached">Platnosť tohto softvéru vypršala.\nĎakujeme za testovanie!</string>
   <string name="download_zerion">Ak chcete pokračovať v používaní aplikácie Zerion, stiahnite si najnovšiu verziu.</string>
   <string name="create_new_account">Budete si musieť vytvoriť nový účet, ale môžete použiť rovnakú prezývku.</string>
-  <string name="download_zerion_button">Stiahnite si najnovšiu verziu</string>
-  <string name="old_android_expiry_date_reached">Zerion už nefunguje na systéme Android 4.\nProsím, nainštalujte Zerion na novšie zariadenie.</string>
   <string name="old_android_delete_account">Ťuknutím na tlačidlo nižšie môžete odstrániť svoje konto z tohto zariadenia.</string>
   <string name="delete_account_button">Vymazať účet</string>
   <string name="startup_open_database">Dešifrovanie databázy...</string>

@@ -48,15 +48,8 @@
   <string name="startup_failed_data_too_old_error">আপনার অ্যাকাউন্ট এই অ্যাপের পুরানো সংস্করণে তৈরি হয়েছে এবং এই সংস্করণে খোলা যাবে না।\n\nআপনাকে হয় পুরানো সংস্করণটি পুনরায় ইনস্টল করতে হবে, অথবা পাসওয়ার্ড প্রম্পটে \'আমি আমার পাসওয়ার্ড ভুলে গেছি\' অপশনটি নির্বাচন করে একটি নতুন অ্যাকাউন্ট সেটআপ করতে হবে।</string>
   <string name="startup_failed_data_too_new_error">আপনার অ্যাকাউন্ট এই অ্যাপের নতুন সংস্করণে তৈরি হয়েছে এবং এই সংস্করণে খোলা যাবে না। \n\nঅনুগ্রহ করে সর্বশেষ সংস্করণে আপগ্রেড করুন এবং আবার চেষ্টা করুন।</string>
   <string name="startup_failed_service_error">Zerion একটি প্রয়োজনীয় কম্পোনেন্ট চালু করতে পারেনি। \n\nঅনুগ্রহ করে অ্যাপের সর্বশেষ সংস্করণে আপগ্রেড করুন এবং আবার চেষ্টা করুন।</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">এটি ব্রয়ারের একটি পরীক্ষামূলক সংস্করণ। আপনার অ্যাকাউন্টটি %d দিনের মধ্যে মেয়াদ শেষ হয়ে যাবে এবং পুনর্নবীকরণ করা যাবে না।</item>
-    <item quantity="other">এটি Zerion একটি পরীক্ষামূলক সংস্করণ। আপনার অ্যাকাউন্টটি %d দিনের মধ্যে মেয়াদ শেষ হয়ে যাবে এবং পুনর্নবীকরণ করা যাবে না।</item>
-  </plurals>
-  <string name="expiry_date_reached">এই সফটওয়্যারটির মেয়াদ উত্তীর্ণ হয়ে গেছে । \nপরীক্ষার জন্য আপনাকে ধন্যবাদ!</string>
   <string name="download_zerion">Zerion ব্যবহার চালিয়ে যেতে, অনুগ্রহ করে সর্বশেষ ভার্সন ডাউনলোড করুন।</string>
   <string name="create_new_account">আপনাকে একটি নতুন অ্যাকাউন্ট তৈরি করতে হবে, তবে আপনি একই ডাকনাম ব্যবহার করতে পারেন।</string>
-  <string name="download_zerion_button">সর্বাধুনিক সংস্করণ ডাউনলোড করো</string>
-  <string name="old_android_expiry_date_reached">Zerion আর Android 4-এ কাজ করে না।\nঅনুগ্রহ করে একটি নতুন ডিভাইসে Zerion ইনস্টল করুন।</string>
   <string name="old_android_delete_account">আপনি এই ডিভাইস থেকে আপনার অ্যাকাউন্ট মুছে ফেলতে নিচের বোতামটি চাপতে পারেন।</string>
   <string name="delete_account_button">অ্যাকাউন্ট মুছে ফেলুন</string>
   <string name="startup_open_database">ডাটাবেস ডিক্রিপ্ট করা হচ্ছে...</string>

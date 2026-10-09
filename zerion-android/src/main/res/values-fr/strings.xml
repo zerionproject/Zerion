@@ -48,16 +48,8 @@
   <string name="startup_failed_data_too_old_error">Votre compte a été créé avec une ancienne version de cette appli et ne peut pas être ouvert avec cette version.\n\nVous devez soit réinstaller l’ancienne version, soit créer un nouveau compte en choisissant « J’ai oublié mon mot de passe » à l’invite de mot de passe.</string>
   <string name="startup_failed_data_too_new_error">Votre compte a été créé avec une version plus récente de cette appli et ne peut être ouvert avec cette version.\n\nMettez l’appli à jour vers la version la plus récente et réessayez.</string>
   <string name="startup_failed_service_error">Zerion n’a pas pu lancer un composant essentiel.\n\nMettez l’appli à jour vers la version la plus récente et réessayez.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Ceci est une version d’essai de Zerion. Votre compte arrivera à expiration dans %d jour et ne peut pas être renouvelé.</item>
-    <item quantity="many">Ceci est une version d’essai de Zerion. Votre compte arrivera à expiration dans %d jours et ne pourra pas être renouvelé.</item>
-    <item quantity="other">Ceci est une version d’essai de Zerion. Votre compte arrivera à expiration dans %d jours et ne pourra pas être renouvelé.</item>
-  </plurals>
-  <string name="expiry_date_reached">Ce logiciel est arrivé à expiration.\nMerci de l’avoir testé !</string>
   <string name="download_zerion">Pour continuer à utiliser Zerion, téléchargez la dernière version.</string>
   <string name="create_new_account">Vous devrez créer un nouveau compte, mais vous pouvez utiliser le même pseudonyme.</string>
-  <string name="download_zerion_button">Télécharger la dernière version</string>
-  <string name="old_android_expiry_date_reached">Zerion ne fonctionne plus sur Android 4.\nInstallez Zerion sur un appareil plus récent.</string>
   <string name="old_android_delete_account">Vous pouvez toucher le bouton ci-dessous pour supprimer votre compte de cet appareil.</string>
   <string name="delete_account_button">Supprimer le compte</string>
   <string name="startup_open_database">Déchiffrement de la base de données…</string>

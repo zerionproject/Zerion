@@ -45,15 +45,8 @@
   <string name="startup_failed_data_too_old_error">Din konto ble laget med en gammel versjon av app\'en og kan ikke åpnes med denne versjonen.\n\nDu må enten installere den gamle versjonen på nytt, eller å lage en ny konto ved å velge «Jeg har glemt passordet mitt» ved passordsfeltet.</string>
   <string name="startup_failed_data_too_new_error">Din konto ble laget med en nyere versjon av denne app\'en og kan ikke åpnes med denne versjonen.\n\nVennligst oppgradere til den nyeste versjonen og prøv på nytt.</string>
   <string name="startup_failed_service_error">Zerion klarte ikke å starte en påkrevd komponent.\n\nVennligst oppgrader til den nyeste versjonen av app\'en og prøv på nytt.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Dette er en test-versjon av Zerion. Din konto vil utløpe om %d dag, og kan ikke fornyes.</item>
-    <item quantity="other">Dette er en test-versjon av Zerion. Din konto vil utløpe om %d dager og kan ikke fornyes.</item>
-  </plurals>
-  <string name="expiry_date_reached">Denne programvaren har utløpt.\nTakk for at du testet den.</string>
   <string name="download_zerion">For å fortsette å bruke Zerion, vennligst laste ned nyeste utgave.</string>
   <string name="create_new_account">Du trenger å lage en ny konto, men du kan benytte samme kallenavn.</string>
-  <string name="download_zerion_button">Laste ned nyeste utgave</string>
-  <string name="old_android_expiry_date_reached">Zerion kan ikke lenger kjøre i Android 4.\nVennligst installere Zerion på en nyere enhet.</string>
   <string name="old_android_delete_account">Du kan trykke på knappen under for å slette kontoen din fra denne enheten.</string>
   <string name="delete_account_button">Slett konto</string>
   <string name="startup_open_database">Dekrypter database...</string>

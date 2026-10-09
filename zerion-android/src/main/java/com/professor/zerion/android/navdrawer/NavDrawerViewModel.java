@@ -41,9 +41,7 @@ import androidx.annotation.UiThread;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import static java.util.concurrent.TimeUnit.DAYS;
 import static org.briarproject.android.dontkillmelib.DozeUtils.needsDozeWhitelisting;
-import static com.professor.zerion.android.TestingConstants.EXPIRY_DATE;
 import static com.professor.zerion.android.controller.ZerionControllerImpl.DOZE_ASK_AGAIN;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
 
@@ -51,7 +49,6 @@ import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NA
 public class NavDrawerViewModel extends DbViewModel
 		implements EventListener {
 
-	private static final String EXPIRY_DATE_WARNING = "expiryDateWarning";
 	private static final String SHOW_TRANSPORTS_ONBOARDING =
 			"showTransportsOnboarding";
 
@@ -71,8 +68,6 @@ public class NavDrawerViewModel extends DbViewModel
 	private final MutableLiveData<Integer> unreadChannels =
 			new MutableLiveData<>();
 
-	private final MutableLiveData<Boolean> showExpiryWarning =
-			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> shouldAskForDozeWhitelisting =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> showTransportsOnboarding =
@@ -122,58 +117,6 @@ public class NavDrawerViewModel extends DbViewModel
 				|| e instanceof ContactConnectedEvent) {
 			checkUnreadCounts();
 		}
-	}
-
-	LiveData<Boolean> showExpiryWarning() {
-		return showExpiryWarning;
-	}
-
-	@UiThread
-	void checkExpiryWarning() {
-		runOnDbThread(() -> {
-			try {
-				Settings settings =
-						settingsManager.getSettings(SETTINGS_NAMESPACE);
-				int warningInt = settings.getInt(EXPIRY_DATE_WARNING, 0);
-
-				if (warningInt == 0) {
-					showExpiryWarning.postValue(true);
-				} else {
-					long warningLong = warningInt * 1000L;
-					long now = System.currentTimeMillis();
-					long daysSinceLastWarning =
-							(now - warningLong) / DAYS.toMillis(1);
-					long daysBeforeExpiry =
-							(EXPIRY_DATE - now) / DAYS.toMillis(1);
-
-					if (daysSinceLastWarning >= 30) {
-						showExpiryWarning.postValue(true);
-					} else if (daysBeforeExpiry <= 3 &&
-							daysSinceLastWarning > 0) {
-						showExpiryWarning.postValue(true);
-					} else {
-						showExpiryWarning.postValue(false);
-					}
-				}
-			} catch (DbException e) {
-				handleException(e);
-			}
-		});
-	}
-
-	@UiThread
-	void expiryWarningDismissed() {
-		showExpiryWarning.setValue(false);
-		runOnDbThread(() -> {
-			try {
-				Settings settings = new Settings();
-				int date = (int) (System.currentTimeMillis() / 1000L);
-				settings.putInt(EXPIRY_DATE_WARNING, date);
-				settingsManager.mergeSettings(settings, SETTINGS_NAMESPACE);
-			} catch (DbException e) {
-				handleException(e);
-			}
-		});
 	}
 
 	LiveData<Boolean> shouldAskForDozeWhitelisting() {

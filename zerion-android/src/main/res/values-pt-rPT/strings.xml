@@ -48,16 +48,8 @@
   <string name="startup_failed_data_too_old_error">A tua conta foi criada com uma versão antiga desta aplicação e não pode ser aberta com esta versão.\n\nDeves reinstalar a versão antiga ou configurar uma nova conta escolhendo \"Esqueci-me da minha palavra-passe\" no ecrã onde introduzes a palavra-passe.</string>
   <string name="startup_failed_data_too_new_error">A tua conta foi criada com uma versão mais recente desta aplicação e não pode ser aberta com esta versão.\n\nAtualiza para a versão mais recente e tenta novamente.</string>
   <string name="startup_failed_service_error">O Zerion não conseguiu iniciar um componente necessário.\n\nAtualiza para a versão mais recente da aplicação e tenta novamente.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Esta é uma versão de teste do Zerion. A tua conta expirará em %d dia e não poderá ser renovada.</item>
-    <item quantity="many">Esta é uma versão de teste do Zerion. A tua conta expirará em %d dias e não poderá ser renovada.</item>
-    <item quantity="other">Esta é uma versão de teste do Zerion. A tua conta expirará em %d dias e não poderá ser renovada.</item>
-  </plurals>
-  <string name="expiry_date_reached">Este software expirou.\nObrigado pelo teste!</string>
   <string name="download_zerion">Para continuar a utilizar o Zerion, descarrega a versão mais recente.</string>
   <string name="create_new_account">Terás de criar uma nova conta, mas podes utilizar o mesmo nome de utilizador.</string>
-  <string name="download_zerion_button">Descarregar a versão mais recente</string>
-  <string name="old_android_expiry_date_reached">O Zerion já não funciona no Android 4.\nInstala o Zerion num dispositivo mais recente.</string>
   <string name="old_android_delete_account">Podes tocar no botão abaixo para eliminar a tua conta neste dispositivo.</string>
   <string name="delete_account_button">Eliminar conta</string>
   <string name="startup_open_database">A desencriptar a base de dados…</string>

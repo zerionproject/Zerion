@@ -45,17 +45,8 @@
   <string name="startup_failed_data_too_old_error">Ваш обліковий запис створено старою версією застосунка, й нова версія не може його відкрити.\n\nПеревстановіть стару версію або створіть новий обліковий запис, обравши «Не пам\'ятаю пароль» у запиті пароля.</string>
   <string name="startup_failed_data_too_new_error">Ваш обліковий запис створено новішою версією застосунка, й поточна версія не може його відкрити.\n\nБудь ласка, оновіться до найновішої версії й повторіть спробу.</string>
   <string name="startup_failed_service_error">Zerion не зміг запустити необхідний компонент.\n\nБудь ласка, оновіть застосунок до найновішої версії й повторіть спробу.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Це тестова версія Zerion. Термін дії вашого профілю спливає через %d день. Його не можна продовжити.</item>
-    <item quantity="few">Це тестова версія Zerion. Термін дії вашого профілю спливає через %d дні. Його не можна продовжити.</item>
-    <item quantity="many">Це тестова версія Zerion. Термін дії вашого профілю спливає через %d днів. Його не можна продовжити.</item>
-    <item quantity="other">Це тестова версія Zerion. Термін дії вашого профілю спливає через %d дня. Його не можна продовжити.</item>
-  </plurals>
-  <string name="expiry_date_reached">У цієї програми закінчився термін дії\nДякуємо, що тестували її!</string>
   <string name="download_zerion">Щоб далі користуватися Zerion, будь ласка, завантажте найновіший випуск.</string>
   <string name="create_new_account">Вам знадобиться створити новий обліковий запис, але ви можете використовувати те саме ім\'я користувача.</string>
-  <string name="download_zerion_button">Завантажити найновіший випуск</string>
-  <string name="old_android_expiry_date_reached">Zerion більше не працює на Android 4.\nБудь ласка, встановіть Zerion на новіший пристрій.</string>
   <string name="old_android_delete_account">Можете видалити обліковий запис із цього пристрою кнопкою внизу.</string>
   <string name="delete_account_button">Видалити обліковий запис</string>
   <string name="startup_open_database">Розшифрування бази даних...</string>

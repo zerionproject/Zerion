@@ -45,18 +45,8 @@
   <string name="forgotten_password">¿Olvidaste tu contraseña?</string>
   <string name="dialog_title_lost_password">Contraseña perdida</string>
   <string name="startup_failed_activity_title">Fallo al iniciar Zerion</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Esta es una versión de prueba de Zerion. Su cuenta expirará en %d día y no podrá ser renovada.</item>
-    <item quantity="many">Esta es una versión de prueba de Zerion. Tu cuenta expirará en %d días y no podrá ser renovada.</item>
-    <item quantity="other">Esta es una versión de prueba de Zerion. Tu cuenta expirará en %d días y no prodrá ser renovada.</item>
-  </plurals>
-  <string name="expiry_date_reached">Este programa ha caducado.
-¡Gracias por probarlo!</string>
   <string name="download_zerion">Para continuar usando Zerion, por favor descarga la versión mas reciente.</string>
   <string name="create_new_account">Necesitarás crear una nueva cuenta, pero puedes usar el mismo nombre de usuario.</string>
-  <string name="download_zerion_button">Descargar la última versión.</string>
-  <string name="old_android_expiry_date_reached">Zerion ya no funciona sobre Android 4.
-Por favor, instala Zerion en un dispositivo más nuevo.</string>
   <string name="old_android_delete_account">Puedes pulsar el botón de abajo para borrar tu cuenta de este dispositivo.</string>
   <string name="delete_account_button">Borrar cuenta</string>
   <string name="startup_open_database">Descifrando la base de datos...</string>

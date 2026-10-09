@@ -37,14 +37,8 @@
   <string name="startup_failed_data_too_old_error">Вашата сметка е создадена со стара верзија на оваа апликација и не може да биде отворена со оваа верзија. Морате или да ја пре-инсталирате старата верзија или да отворите нова сметка преку \'Ја заборавив лозинката\' во екранот каде истата се бара.</string>
   <string name="startup_failed_data_too_new_error">Оваа верзија на апликацијата е многу стара. Ве молиме ажурирајте ја апликацијата до најновата верзија и обидете се повторно.</string>
   <string name="startup_failed_service_error">Zerion не е во можност да го стартува потребниот приклучок / плугин. Пре-инсталирањето на Zerion најчесто го решава овој проблем. Сепак, имајте во предвид дека во тој случај ќе ја изгубите вашата сметка и сите податоци поврзани со неа, бидејќи Zerion не користи централизирани сервери за складирање на вашите податоци.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Ова е тест верзија на Zerion. Вашата сметка ќе истече за %d ден и не може да биде обновена.</item>
-    <item quantity="other">Ова е тест верзија на Zerion. Вашата сметка ќе истече за %d денови и не може да биде обновена.</item>
-  </plurals>
-  <string name="expiry_date_reached">Софтверот истече.\nВи благодариме за тестирањето!</string>
   <string name="download_zerion">За да продолжите со користење на Zerion, ве молиме преземете го најновото издание.</string>
   <string name="create_new_account">Ќе треба да создадете нова сметка, но можете да го користите истото корисничко име.</string>
-  <string name="download_zerion_button">Преземи најново издание</string>
   <string name="startup_open_database">Декриптирање на базата на податоци...</string>
   <string name="startup_migrate_database">Ажурирање на базата на податоци...</string>
   <string name="startup_compact_database">Пакување на базата на податоци</string>
@@ -997,7 +991,6 @@
 	<string name="dialog_button_understand">Разбирам</string>
 	<string name="startup_failed_clock_error">Zerion не можеше да се стартува бидејќи часовникот на твојот уред не е точен.\n\nПостави го часовникот на уредот на точното време и обиди се повторно.</string>
 	<string name="startup_failed_database_corrupt">Твојата база на податоци е оштетена и не може да се поврати.\n\nЗаради твоја безбедност, Zerion не чува резервни копии од твоите податоци. Ќе треба да поставиш нова сметка така што ќе избереш „Ја заборавив лозинката“ на екранот за внесување лозинка.\n\nОва може да се случи по неочекувано исклучување или дефект на меморијата.</string>
-	<string name="old_android_expiry_date_reached">Zerion повеќе не работи на Android 4.\nИнсталирај го Zerion на понов уред.</string>
 	<string name="old_android_delete_account">Можеш да го допреш копчето подолу за да ја избришеш својата сметка од овој уред.</string>
 	<string name="delete_account_button">Избриши сметка</string>
 	<string name="chats_button">Разговори</string>

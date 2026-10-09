@@ -34,11 +34,6 @@
   <string name="startup_failed_data_too_old_error">आपका खाता इस ऐप के पुराने संस्करण के साथ बनाया गया था और इस संस्करण के साथ खोला नहीं जा सकता है। आपको या तो पुराने संस्करण को पुनर्स्थापित करना होगा या पासवर्ड प्रॉम्प्ट पर \'मैं अपना पासवर्ड भूल गया हूं\' चुनकर एक नया खाता सेट करना होगा।</string>
   <string name="startup_failed_data_too_new_error">ऐप का यह संस्करण बहुत पुराना है। कृपया नवीनतम संस्करण में अपग्रेड करें और पुनः प्रयास करें।</string>
   <string name="startup_failed_service_error">Zerion  एक आवश्यक प्लगइन प्रारंभ करने में असमर्थ था Zerion  को पुनः स्थापित करना आमतौर पर इस समस्या को हल करता है हालांकि, कृपया ध्यान दें कि Zerion  आपके डेटा को स्टोर करने के लिए केंद्रीय सर्वर का उपयोग नहीं कर रहा है, इसके बाद आप अपने खाता और उसके साथ जुड़े सभी डेटा खो देंगे।</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">यह Zerion का एक परीक्षण संस्करण है आपका खाता %dदिनों में समाप्त हो जाएगा और नवीनीकरण नहीं किया जा सकता है</item>
-    <item quantity="other">यह Zerion का एक परीक्षण संस्करण है आपका खाता %dदिनों में समाप्त हो जाएगा और नवीनीकरण नहीं किया जा सकता है</item>
-  </plurals>
-  <string name="expiry_date_reached">यह सॉफ्टवेयर समाप्त हो गया है। \n परीक्षण के लिए धन्यवाद!</string>
   <string name="create_new_account">आपको एक नया खाता बनाना होगा, लेकिन आप उसी उपनाम का उपयोग कर सकते हैं।</string>
   <string name="startup_open_database">डेटाबेस डिक्रिप्ट कर रहा है ...</string>
   <string name="startup_migrate_database">डाटाबेस का उन्नयन ...</string>
@@ -1012,8 +1007,6 @@
 	<string name="startup_failed_clock_error">Zerion शुरू नहीं हो सका, क्योंकि आपके डिवाइस की घड़ी गलत है।\n\nकृपया अपने डिवाइस की घड़ी को सही समय पर सेट करें और फिर से कोशिश करें।</string>
 	<string name="startup_failed_database_corrupt">आपका डेटाबेस खराब हो गया है और उसे रिकवर नहीं किया जा सकता।\n\nआपकी सुरक्षा के लिए, Zerion आपके डेटा का बैकअप नहीं रखता। आपको पासवर्ड प्रॉम्प्ट पर \"मुझे अपना पासवर्ड याद नहीं है\" चुनकर नया खाता सेट करना होगा।\n\nऐसा अचानक बंद होने या स्टोरेज की खराबी के बाद हो सकता है।</string>
 	<string name="download_zerion">Zerion इस्तेमाल करते रहने के लिए, कृपया नवीनतम रिलीज़ डाउनलोड करें।</string>
-	<string name="download_zerion_button">नवीनतम रिलीज़ डाउनलोड करें</string>
-	<string name="old_android_expiry_date_reached">Zerion अब Android 4 पर नहीं चलता।\nकृपया Zerion को किसी नए डिवाइस पर इंस्टॉल करें।</string>
 	<string name="old_android_delete_account">इस डिवाइस से अपना खाता हटाने के लिए आप नीचे दिए गए बटन पर टैप कर सकते हैं।</string>
 	<string name="delete_account_button">खाता हटाएँ</string>
 	<string name="chats_button">चैट</string>

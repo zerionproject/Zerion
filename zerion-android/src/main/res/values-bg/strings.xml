@@ -46,15 +46,8 @@
   <string name="startup_failed_data_too_old_error">Профилът е създаден с по-ранно издание на приложението и не може да бъде отворен с текущото издание. Или инсталирайте по-ранното издание, или създайте нов профил, избирайки „Забравена парола“ от екрана за вход.</string>
   <string name="startup_failed_data_too_new_error">Профилът е създаден с по-ново издание на приложението и не може да бъде отворен с текущото издание.\n\nОбновете до последно издание и опитайте отново.</string>
   <string name="startup_failed_service_error">Zerion не може да стартира задължителна приставка.\n\nОбновете до последно издание и опитайте отново.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Това е тестова версия на Zerion. Вашият акаунт ще бъде изтече след %d ден и не може да бъде подновена.</item>
-    <item quantity="other">Това е изпитателно издание на Zerion. Валидността на профила ще изтече след %d дена и не може да бъде подновена.</item>
-  </plurals>
-  <string name="expiry_date_reached">Софтуерът е с изтекъл срок.\nБлагодарим за изпитването!</string>
   <string name="download_zerion">За да продължите да използвате Zerion изтеглете последното издание.</string>
   <string name="create_new_account">Ще трябва да създадете нов профил, но ще можете да използвате същия прякор.</string>
-  <string name="download_zerion_button">Изтегляне</string>
-  <string name="old_android_expiry_date_reached">Zerion не работи на Android 4.\nИнсталирайте Zerion на друго устройство.</string>
   <string name="old_android_delete_account">За да премахнете профила от устройството докоснете бутона отдолу.</string>
   <string name="delete_account_button">Премахване на профил</string>
   <string name="startup_open_database">Хранилището се дешифрира…</string>

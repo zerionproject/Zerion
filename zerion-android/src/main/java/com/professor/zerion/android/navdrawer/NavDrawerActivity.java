@@ -56,7 +56,6 @@ import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static androidx.lifecycle.Lifecycle.State.STARTED;
 import static org.zerionproject.core.api.lifecycle.LifecycleManager.LifecycleState.RUNNING;
-import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.activity.RequestCodes.REQUEST_PASSWORD;
 import static com.professor.zerion.android.navdrawer.IntentRouter.handleExternalIntent;
 
@@ -545,9 +544,6 @@ public class NavDrawerActivity extends ZerionActivity implements
 		}
 		navDrawerViewModel.checkUnreadCounts();
 		lockManager.checkIfLockable();
-		if (IS_DEBUG_BUILD) {
-			navDrawerViewModel.checkExpiryWarning();
-		}
 		checkAndShowDonationDialog();
 	}
 

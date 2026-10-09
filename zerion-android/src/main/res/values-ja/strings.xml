@@ -42,14 +42,8 @@
   <string name="startup_failed_data_too_old_error">あなたのアカウントは古いバージョンのアプリで作成されたもので、このバージョンでは開くことができません。\n\n古いバージョンを再インストールするか、パスワード入力画面で「パスワードを忘れました」を選択して新規アカウントを設定する必要があります。</string>
   <string name="startup_failed_data_too_new_error">あなたのアカウントは、このアプリの新しいバージョンで作成されたもので、このバージョンでは開くことができません。\n\n最新版にアップグレードしてから、もう一度試してください。</string>
   <string name="startup_failed_service_error">Zerionは必要なコンポーネントを起動できませんでした。\n\nアプリの最新版にアップグレードしてから、もう一度試してください。</string>
-  <plurals name="expiry_warning">
-    <item quantity="other">これは、Zerionの試験バージョンです。 アカウントはあと%d日で期限切れになり、更新できません。</item>
-  </plurals>
-  <string name="expiry_date_reached">このソフトウェアの有効期限が切れました。試験に参加してくださりありがとうございます！</string>
   <string name="download_zerion">Zerionを使用し続けるには、最新のリリースをダウンロードしてください。</string>
   <string name="create_new_account">新規アカウントを作成する必要があります。同じニックネームも使用できます。</string>
-  <string name="download_zerion_button">最新リリースをダウンロード</string>
-  <string name="old_android_expiry_date_reached">ZerionはAndroid 4では動作しなくなりました。\n新しい端末にZerionをインストールしてください。</string>
   <string name="old_android_delete_account">下のボタンをタップして、この端末からあなたのアカウントを削除できます。</string>
   <string name="delete_account_button">アカウントを削除</string>
   <string name="startup_open_database">データベースを復号中…</string>

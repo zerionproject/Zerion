@@ -37,14 +37,8 @@
   <string name="startup_failed_data_too_old_error">Zure kontua aplikazio honen bertsio zahar batekin sortu zen eta ezin da bertsio honekin ireki. Aurreko bertsioa berrinstalatu behar duzu edo kontu berri bat ezarri pasahitzaren gonbitan \'Nire pasahitza ahaztu dut\' aukeratuz.</string>
   <string name="startup_failed_data_too_new_error">Aplikazioaren bertsio hau zaharregia da. Bertsio-berritu azken bertsiora eta saiatu berriro.</string>
   <string name="startup_failed_service_error">Zerion aplikazioak ezin izan du derrigorrezko plugin bat abiatu. Zerion berrinstalatzeak arazoa konpondu ohi du. Hala ere, jakin zure kontua eta datuak galduko dituzula Zerion aplikazioak ez baititu zerbitzari zentralak erabiltzen zure datuak gordetzeko.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Hau Zerion-en probetarako bertsio bat da. Zure kontua egun %d barru iraungituko da eta ezin da berriztu.</item>
-    <item quantity="other">Hau Zerion-en probetarako bertsio bat da. Zure kontua %d egun barru iraungituko da eta ezin da berriztu.</item>
-  </plurals>
-  <string name="expiry_date_reached">Programa hau iraungitu da.\nEskerrik asko probatzeagatik!</string>
   <string name="download_zerion">Zerion erabiltzen jarraitzeko, deskargatu azken bertsioa.</string>
   <string name="create_new_account">Kontu berri bat sortu beharko duzu, baina erabiltzaile-izen bera erabili dezakezu.</string>
-  <string name="download_zerion_button">Deskargatu azken bertsioa</string>
   <string name="startup_open_database">Datu-basea deszifratzen...</string>
   <string name="startup_migrate_database">Datu-basea eguneratzen...</string>
   <string name="startup_compact_database">Datu-basea trinkotzen…</string>
@@ -880,7 +874,6 @@
 	<string name="dialog_button_understand">Ulertzen dut</string>
 	<string name="startup_failed_clock_error">Zerion ezin izan da abiarazi gailuaren erlojua ez dagoelako ondo.\n\nEzarri gailuaren erlojua ordu zuzenean eta saiatu berriro.</string>
 	<string name="startup_failed_database_corrupt">Zure datu-basea hondatu egin da eta ezin da berreskuratu.\n\nZure segurtasunerako, Zerion-ek ez du zure datuen babeskopiarik gordetzen. Kontu berri bat sortu beharko duzu pasahitzaren gonbitan «Nire pasahitza ahaztu dut» aukeratuz.\n\nHau gerta daiteke ustekabeko itzaltze baten edo biltegiratze-akats baten ondoren.</string>
-	<string name="old_android_expiry_date_reached">Zerion-ek ez du jada Android 4-n funtzionatzen.\nInstalatu Zerion gailu berriago batean.</string>
 	<string name="old_android_delete_account">Beheko botoia sakatu dezakezu zure kontua gailu honetatik ezabatzeko.</string>
 	<string name="delete_account_button">Ezabatu kontua</string>
 	<string name="chats_button">Txatak</string>

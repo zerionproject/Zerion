@@ -32,14 +32,8 @@
   <string name="startup_failed_data_too_old_error">Hesabınız bu tətbiqin köhnə versiyası ilə yaradılmış və bu versiya ilə açıla bilməz. Parolu istəniləndə \'Mənim parolumu unutdum\' seçərək köhnə versiyanı yenidən bərpa etməli və ya yeni hesab yaratmalısınız</string>
   <string name="startup_failed_data_too_new_error">Bu tətbiq çox köhnədir. Zəhmət olmasa ən son versiyaya keçin və yenidən cəhd edin</string>
   <string name="startup_failed_service_error">Zerion lazımi bir plugin qura bilmədi. Zerionın yenidən qurulması bu problemi həll edir. Lakin, Zerion sizin məlumatlarınızı saxlamaq üçün mərkəzi serverlərdən istifadə etmədikdən sonra hesabınızı və onunla əlaqəli bütün məlumatları itirəcəyinizi nəzərə alın.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Bu Zerion\'ın test versiyasıdır. Hesabınız %dgün ərzində sona çatacaq və yeniləmə mümkün deyil.</item>
-    <item quantity="other">Bu Zerion\'ın test versiyasıdır. Hesabınız %dgün ərzində sona çatacaq və yeniləmə mümkün deyil.</item>
-  </plurals>
-  <string name="expiry_date_reached">Bu proqram sona çatdı. Test üçün təşəkkür edirik!</string>
   <string name="download_zerion">Zerion-dan istifadə etməyə davam etmək üçün ən son versiyanı yükləyin.</string>
   <string name="create_new_account">Yeni bir hesab yaratmaq lazımdır, lakin eyni ləqəbi istifadə edə bilərsiniz.</string>
-  <string name="download_zerion_button">Son versiyasını yükləyin </string>
   <string name="startup_open_database">Məlumatlar şifrədən açılması...</string>
   <string name="startup_migrate_database">Məlumatların təzələnməsi...</string>
   <string name="startup_compact_database">Məlumatın sıxılması...</string>
@@ -802,7 +796,6 @@
 	<string name="dialog_button_understand">Başa düşdüm</string>
 	<string name="startup_failed_clock_error">Cihazınızın saatı düz olmadığı üçün Zerion işə düşə bilmədi.\n\nCihazınızın saatını düzgün vaxta qurun və yenidən cəhd edin.</string>
 	<string name="startup_failed_database_corrupt">Məlumat bazanız zədələnib və bərpa oluna bilməz.\n\nTəhlükəsizliyiniz üçün Zerion məlumatlarınızın ehtiyat nüsxələrini saxlamır. Parol sorğusunda «Mən şifrəni unutmuşam» seçərək yeni hesab yaratmalı olacaqsınız.\n\nBu, gözlənilməz söndürmə və ya yaddaş nasazlığından sonra baş verə bilər.</string>
-	<string name="old_android_expiry_date_reached">Zerion artıq Android 4 üzərində işləmir.\nZerion-u daha yeni cihaza quraşdırın.</string>
 	<string name="old_android_delete_account">Hesabınızı bu cihazdan silmək üçün aşağıdakı düyməyə toxuna bilərsiniz.</string>
 	<string name="delete_account_button">Hesabı sil</string>
 	<string name="chats_button">Söhbətlər</string>

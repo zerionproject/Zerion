@@ -44,15 +44,8 @@
   <string name="startup_failed_data_too_old_error">თქვენი ანგარიში შექმნილია ამ აპის ძველი ვერსიის მეშვეობით და ვერ გაიხსნება ამ ვერსიაში.\n\nან ხელახლა უნდა დააინსტალიროთ ძველი ვერსია, ან დააყენეთ ახალი ანგარიში პაროლის მოთხოვნაში „დავიწყებული პაროლის“ არჩევით.</string>
   <string name="startup_failed_data_too_new_error">თქვენი ანგარიში შეიქმნა ამ აპის ახალი ვერსიის მეშვეობით და ვერ გაიხსნება ამ ვერსიაში.\n\nგთხოვთ, განაახლოთ ბოლო ვერსიამდე და ხელახლა სცადოთ.</string>
   <string name="startup_failed_service_error">Zerion-მა ვერ შეძლო საჭირო კომპონენტების გაშვებას.\n\nგთხოვთ, განაახლოთ აპის ბოლო ვერსიამდე და ისევ სცადოთ.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">ესაა საცდელი ვერსიის Zerion. თქვენს ანგარიშს %d დღეში გაუვა ვადა და ვეღარ გახანგრძლივდება.</item>
-    <item quantity="other">ეს არის Zerion-ის საცდელი ვერსია, რომლის ვადა %d დღეში ამოიწურება და მისი განახლება შეუძლებელია.</item>
-  </plurals>
-  <string name="expiry_date_reached">პროგრამული უზრუნველყოფის ვადა ამოიწურა.\nგმადლობთ ტესტირებისთვის!</string>
   <string name="download_zerion">თუ გსურთ, კვლავ გამოიყენოთ Zerion, ჩამოტვირთეთ ბოლო გამოშვება.</string>
   <string name="create_new_account">დაგჭირდებათ ახალი ანგარიშის შექმნა, თუმცა იმავე მეტსახელის გამოყენება შეგეძლებათ.</string>
-  <string name="download_zerion_button">ბოლო გამოშვების ჩამოტვირთვა</string>
-  <string name="old_android_expiry_date_reached">Zerion აღარ გაეშვება Android 4 ვერსიაზე.\nგთხოვთ, დააყენოთ Zerion უფრო ახალ მოწყობილობაზე.</string>
   <string name="old_android_delete_account">ამ მოწყობილობიდან თქვენი ანგარიშის წასაშლელად, შეგიძლიათ შეეხოთ ღილაკს ქვემოთ.</string>
   <string name="delete_account_button">ანგარიშის წაშლა</string>
   <string name="startup_open_database">მიმდინარეობს მონაცემთა ბაზის გაშიფვრა…</string>

@@ -40,15 +40,8 @@
   <string name="startup_failed_data_too_old_error">Notandaaðgangurinn þinn var útbúinn með eldri útgáfu forritsins og er ekki hægt að opna hann með þessari útgáfu.\n\Þú þarft annað hvort að setja gömlu útgáfuna upp aftur, eða setja upp nýjan notandaaðgang með því að velja \'Ég hef gleymt lykilorðinu mínu\' þegar beðið er um lykilorð.</string>
   <string name="startup_failed_data_too_new_error">Notandaaðgangurinn þinn var útbúinn með nýrri útgáfu forritsins og er ekki hægt að opna hann með þessari útgáfu.\n\Þú þarft að setja upp nýjustu útgáfuna og prófa svo aftur.</string>
   <string name="startup_failed_service_error">Zerion tókst ekki að ræsa nauðsynlega einingu.\n\nUppfærðu í nýjustu útgáfuna og prófaðu síðan aftur.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Þetta er prufuútgáfa af Zerion. Notandaaðgangurinn þinn mun renna út eftir %d dag og er ekki hægt að endurnýja hann.</item>
-    <item quantity="other">Þetta er prufuútgáfa af Zerion. Notandaaðgangurinn þinn mun renna út eftir %d daga og er ekki hægt að endurnýja hann.</item>
-  </plurals>
-  <string name="expiry_date_reached">Þessi hugbúnaður er úreltur.\nTakk fyrir að hafa tekið þátt í prófunum!</string>
   <string name="download_zerion">Til að halda áfram að nota Zerion, ættirðu að sækja nýjustu útgáfuna.</string>
   <string name="create_new_account">Þú þarft að búa til nýjan notandaaðgang, en þú getur notað áfram sama stuttnefni.</string>
-  <string name="download_zerion_button">Ná í nýjustu útgáfu</string>
-  <string name="old_android_expiry_date_reached">Zerion keyrir ekki lengur á Android 4.\nSettu Zerion upp á nýrra tæki.</string>
   <string name="old_android_delete_account">Þú getur ýtt á hnappinn hér fyrir neðan til að eyða aðgangnum þínum af þessu tæki.</string>
   <string name="delete_account_button">Eyða notandaaðgangi</string>
   <string name="startup_open_database">Afkóða gagnagrunn…</string>

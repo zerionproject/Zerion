@@ -301,16 +301,8 @@
 	<string name="startup_failed_data_too_old_error">Your account was created with an old version of this app and cannot be opened with this version.\n\nYou must either reinstall the old version or set up a new account by choosing \'I have forgotten my password\' at the password prompt.</string>
 	<string name="startup_failed_data_too_new_error">Your account was created with a newer version of this app and cannot be opened with this version.\n\nPlease upgrade to the latest version and try again.</string>
 	<string name="startup_failed_service_error">Zerion was unable to start a required component.\n\nPlease upgrade to the latest version of the app and try again.</string>
-	<plurals name="expiry_warning">
-		<item quantity="one">This is a test version of Zerion. Your account will expire in %d day and cannot be renewed.</item>
-		<item quantity="other">This is a test version of Zerion. Your account will expire in %d days and cannot be renewed.</item>
-	</plurals>
-	<string name="expiry_date_reached">This software has expired.\nThank you for testing!</string>
 	<string name="download_zerion">To continue using Zerion, please download the latest release.</string>
 	<string name="create_new_account">You will need to create a new account, but you can use the same nickname.</string>
-	<string name="download_zerion_button">Download Latest Release</string>
-	<string name="expired_redirect_url" translatable="false">https://zerion.chat</string>
-	<string name="old_android_expiry_date_reached">Zerion no longer runs on Android 4.\nPlease install Zerion on a newer device.</string>
 	<string name="old_android_delete_account">You can tap the button below to delete your account from this device.</string>
 	<string name="delete_account_button">Delete account</string>
 	<string name="startup_open_database">Decrypting Database…</string>

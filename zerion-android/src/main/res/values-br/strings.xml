@@ -519,11 +519,8 @@
 	<string name="startup_failed_data_too_old_error">Krouet eo bet ho kont gant un handelv kozh eus an arload-mañ ha ne c\'haller ket digeriñ anezhi gant an handelv-mañ.\n\nRet eo deoc\'h pe adstaliañ an handelv kozh pe krouiñ ur gont nevez en ur zibab « Ankoueet em eus ma ger-tremen » war skramm ar ger-tremen.</string>
 	<string name="startup_failed_data_too_new_error">Krouet eo bet ho kont gant un handelv nevesoc\'h eus an arload-mañ ha ne c\'haller ket digeriñ anezhi gant an handelv-mañ.\n\nHizivait d\'an handelv diwezhañ ha klaskit en-dro, mar plij.</string>
 	<string name="startup_failed_service_error">N\'eo ket bet gouest Zerion da loc\'hañ ul lodenn ret.\n\nHizivait an arload d\'an handelv diwezhañ ha klaskit en-dro, mar plij.</string>
-	<string name="expiry_date_reached">Diamzeret eo ar meziant-mañ.\nTrugarez deoc\'h evit an amprouiñ!</string>
 	<string name="download_zerion">Evit kenderc\'hel da implijout Zerion, pellgargit an embannadur diwezhañ, mar plij.</string>
 	<string name="create_new_account">Ret e vo deoc\'h krouiñ ur gont nevez, met gallout a reot implijout ar memes lezanv.</string>
-	<string name="download_zerion_button">Pellgargañ an embannadur diwezhañ</string>
-	<string name="old_android_expiry_date_reached">Ne dro ket ken Zerion war Android 4.\nStaliit Zerion war un trevnad nevesoc\'h, mar plij.</string>
 	<string name="old_android_delete_account">Gallout a rit touchañ ar bouton amañ dindan evit dilemel ho kont diwar an trevnad-mañ.</string>
 	<string name="delete_account_button">Dilemel ar gont</string>
 	<string name="startup_open_database">O tizrinegañ ar stlennvon…</string>
@@ -2279,13 +2276,6 @@
 		<item quantity="few">Nemet %d c\'hlask kevreañ c\'hwitet ouzhpenn ha dilemet e vo an holl roadennoù da viken!</item>
 		<item quantity="many">Nemet %d a glaskoù kevreañ c\'hwitet ouzhpenn ha dilemet e vo an holl roadennoù da viken!</item>
 		<item quantity="other">Nemet %d klask kevreañ c\'hwitet ouzhpenn ha dilemet e vo an holl roadennoù da viken!</item>
-	</plurals>
-	<plurals name="expiry_warning">
-		<item quantity="one">Un handelv amprouiñ eus Zerion eo hemañ. Diamzeriñ a raio ho kont a-benn %d devezh ha ne c\'hallo ket bezañ adnevesaet.</item>
-		<item quantity="two">Un handelv amprouiñ eus Zerion eo hemañ. Diamzeriñ a raio ho kont a-benn %d zevezh ha ne c\'hallo ket bezañ adnevesaet.</item>
-		<item quantity="few">Un handelv amprouiñ eus Zerion eo hemañ. Diamzeriñ a raio ho kont a-benn %d devezh ha ne c\'hallo ket bezañ adnevesaet.</item>
-		<item quantity="many">Un handelv amprouiñ eus Zerion eo hemañ. Diamzeriñ a raio ho kont a-benn %d a zevezhioù ha ne c\'hallo ket bezañ adnevesaet.</item>
-		<item quantity="other">Un handelv amprouiñ eus Zerion eo hemañ. Diamzeriñ a raio ho kont a-benn %d devezh ha ne c\'hallo ket bezañ adnevesaet.</item>
 	</plurals>
 	<plurals name="channels_row_attachment_only">
 		<item quantity="one">📎 %d restr stag</item>

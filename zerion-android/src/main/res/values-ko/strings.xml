@@ -37,13 +37,8 @@
   <string name="startup_failed_data_too_old_error">너무 오래된 버전의 Zerion를 이용해 만든 계정이라 이 버전으로는 사용할 수 없습니다. 이전 버전을 다시 설치하거나 비밀번호를 입력하는 창에서 \'비밀번호를 잊어버렸습니다\'를 선택해 새로운 계정을 설정하세요.</string>
   <string name="startup_failed_data_too_new_error">이 버전의 앱은 너무 오래됐습니다. 최신 버전으로 업그레이드하고 다시 시도해 주세요.</string>
   <string name="startup_failed_service_error">Zerion에서 필요한 플러그인을 시작하지 못했습니다. Zerion를 다시 설치하면 대개 이 문제가 해결됩니다. 그렇지만 Zerion에서는 데이터를 저장하기 위해 중앙 서버를 사용하고 있지 않기 때문에 계정과 관련된 모든 데이터를 잃게 됩니다.</string>
-  <plurals name="expiry_warning">
-    <item quantity="other">이 Zerion는 테스트용입니다. %d일 내에 계정이 만료되고 다시 되돌리지 못합니다.</item>
-  </plurals>
-  <string name="expiry_date_reached">이 소프트웨어는 만료되었습니다. \ n 테스트 해 주셔서 감사합니다!</string>
   <string name="download_zerion">Zerion를 계속 이용하기 위해서는 최신 버전을 다운로드 해 주세요.</string>
   <string name="create_new_account">새로운 계정을 만들어야 하지만, 같은 별명을 사용할 수 있습니다.</string>
-  <string name="download_zerion_button">최신 버전 다운로드 받기</string>
   <string name="startup_open_database">데이터베이스를 복호화하고 있습니다....</string>
   <string name="startup_migrate_database">데이터베이스를 업그레이드 하고 있습니다...</string>
   <string name="startup_compact_database">데이터베이스를 작게 만들고 있습니다...</string>
@@ -664,7 +659,6 @@
 	<string name="dialog_button_understand">이해했습니다</string>
 	<string name="startup_failed_clock_error">기기의 시계가 잘못되어 Zerion을 시작할 수 없습니다.\n\n기기의 시계를 올바른 시간으로 설정하고 다시 시도하세요.</string>
 	<string name="startup_failed_database_corrupt">데이터베이스가 손상되어 복구할 수 없습니다.\n\n보안을 위해 Zerion은 데이터 백업을 저장하지 않습니다. 비밀번호 입력 화면에서 \'비밀번호를 잊었습니다\'를 선택하여 새 계정을 설정해야 합니다.\n\n이는 예기치 않은 종료나 저장소 오류 후에 발생할 수 있습니다.</string>
-	<string name="old_android_expiry_date_reached">Zerion은 더 이상 Android 4에서 실행되지 않습니다.\n더 새로운 기기에 Zerion을 설치하세요.</string>
 	<string name="old_android_delete_account">아래 버튼을 눌러 이 기기에서 계정을 삭제할 수 있습니다.</string>
 	<string name="delete_account_button">계정 삭제</string>
 	<string name="chats_button">채팅</string>

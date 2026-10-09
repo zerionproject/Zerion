@@ -45,14 +45,8 @@ Umepoteza nenosiri.</string>
   <string name="startup_failed_data_too_old_error">Akaunti yako imetengenezwa na tolea la zamani la programu hii na Haiwezekani kufungua hili toleo . Nilazima ubadili hili toleo la zamani au utengeneze Akaunti mpaya kwa kuchagua umesahau nenosiri Katika uwanja wa nenosiri </string>
   <string name="startup_failed_data_too_new_error">Hili toleo la programu ulilo tumia nila zamani . Tafathi boresha kuwa toleo jipya na ujaribu tena .</string>
   <string name="startup_failed_service_error">Zerion imeshindikan kuanza Unabidi uunganishwe . Hianzishe Zerion kama kwawaida kuondoka hilo tatizo . Japo kuwa utapoteza Akaunti yako na data zako zote kutokana na zerion hifadhi data zako kwenye save kuu.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Hili ni toleo la jaribio la Zerion. Akaunti yako itaisha %d kwa siku na haiwezi kufanywa upya.</item>
-    <item quantity="other">Hili ni toleo la jaribio la Zerion. Akaunti yako itaisha %d kwa siku na haiwezi kufanywa upya.</item>
-  </plurals>
-  <string name="expiry_date_reached">Hii programu imemaliza muda wake.\nAsante kwa kujaribu </string>
   <string name="download_zerion">Ili kuendelea kutumia Zerion, tafadhali pakua toleo la hivi karibuni.</string>
   <string name="create_new_account">Unahitajika  kutenege Akaunti Mpaya , ila unaweza endelea kutumia lakabu yako .</string>
-  <string name="download_zerion_button">Pakua Kupaata toleo la hivi Karibuni</string>
   <string name="startup_open_database">Kupunguka Hifadhidata</string>
   <string name="startup_migrate_database">Boresha Hifadhidata</string>
   <string name="startup_compact_database">Kuingiliana Hifadhi data rununu</string>
@@ -990,7 +984,6 @@ Umepoteza nenosiri.</string>
 	<string name="dialog_button_understand">Nimeelewa</string>
 	<string name="startup_failed_clock_error">Zerion haikuweza kuanza kwa sababu saa ya kifaa chako si sahihi.\n\nTafadhali weka saa sahihi kwenye kifaa chako kisha ujaribu tena.</string>
 	<string name="startup_failed_database_corrupt">Hifadhidata yako imeharibika na haiwezi kurejeshwa.\n\nKwa usalama wako, Zerion haihifadhi nakala rudufu za data yako. Utahitaji kufungua akaunti mpya kwa kuchagua “Nimesahau nenosiri langu” kwenye skrini ya nenosiri.\n\nHii inaweza kutokea baada ya kifaa kuzimika ghafla au hitilafu ya hifadhi.</string>
-	<string name="old_android_expiry_date_reached">Zerion haifanyi kazi tena kwenye Android 4.\nTafadhali sakinisha Zerion kwenye kifaa kipya zaidi.</string>
 	<string name="old_android_delete_account">Unaweza kugusa kitufe kilicho hapa chini ili kufuta akaunti yako kwenye kifaa hiki.</string>
 	<string name="delete_account_button">Futa akaunti</string>
 	<string name="chats_button">Mazungumzo</string>

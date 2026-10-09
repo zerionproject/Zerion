@@ -48,15 +48,8 @@
   <string name="startup_failed_data_too_old_error">Hesabınız bu uygulamanın daha eski bir sürümüyle oluşturulmuş ve bu sürümle açılamaz.\n\nEski sürümü yeniden kurun ya da parola sorulduğunda \"Parolamı unuttum\" seçeneğini kullanarak yeni bir hesap oluşturun.</string>
   <string name="startup_failed_data_too_new_error">Hesabınız bu uygulamanın daha yeni bir sürümüyle oluşturulmuş ve bu sürümle açılamaz.\n\nLütfen uygulamayı güncel sürümüne yükseltip yeniden deneyin.</string>
   <string name="startup_failed_service_error">Zerion gerek duyduğu bir bileşeni başlatamadı.\n\nLütfen uygulamayı güncel sürümüne yükseltip yeniden deneyin.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Zerion deneme sürümünü kullanıyorsunuz. Hesabınız %d gün sonra geçersiz olacak ve yenilenemeyecek.</item>
-    <item quantity="other">Zerion deneme sürümünü kullanıyorsunuz. Hesabınız %d gün sonra geçersiz olacak ve yenilenemeyecek.</item>
-  </plurals>
-  <string name="expiry_date_reached">Bu yazılımın geçerlilik süresi geçmiş.\nDenediğiniz için teşekkürler!</string>
   <string name="download_zerion">Zerion kullanmayı sürdürmek için lütfen güncel sürümü indirin.</string>
   <string name="create_new_account">Yeni bir hesap oluşturmanız gerekecek, fakat aynı takma adı kullanabilirsiniz.</string>
-  <string name="download_zerion_button">Güncel sürümü indir</string>
-  <string name="old_android_expiry_date_reached">Zerion artık Android 4 üzerinde çalışmıyor.\nLütfen Zerion uygulamasını daha yeni bir aygıta kurun.</string>
   <string name="old_android_delete_account">Bu aygıttaki hesabınızı silmek için aşağıdaki düğmeye dokunabilirsiniz.</string>
   <string name="delete_account_button">Hesabı sil</string>
   <string name="startup_open_database">Veri tabanının şifresi çözülüyor...</string>

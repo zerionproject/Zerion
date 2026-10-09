@@ -44,15 +44,8 @@
   <string name="startup_failed_data_too_old_error">Fiókja ennek az alkalmazásnak egy régi verziójával jött létre, és ezzel a verzióval nem nyitható meg. Újra kell telepítenie a régi verziót, vagy be kell állítania egy új fiókot az „Elfelejtettem a jelszavam” lehetőség kiválasztásával a jelszókérőnél.</string>
   <string name="startup_failed_data_too_new_error">Fiókja az alkalmazás újabb verziójával jött létre, és ezzel a verzióval nem nyitható meg. Kérjük, frissítsen a legújabb verzióra, és próbálja újra.</string>
   <string name="startup_failed_service_error">Zerion nem tudott elindítani egy szükséges összetevőt. Kérjük, frissítsen az alkalmazás legújabb verziójára, és próbálja újra.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Ez a teszt verziója a Zerion-nak. A fiókja le fog járni %d napon belül és nem megújítható.</item>
-    <item quantity="other">Ez a teszt verziója a Zerion-nak. A fiókod le fog járni %d napon belül és nem megújítható.</item>
-  </plurals>
-  <string name="expiry_date_reached">Ez a szoftver lejárt.\nKöszönjük a tesztelését!</string>
   <string name="download_zerion">A Zerion használatának folytatásához kérjük töltsd le a legújabb verziót.</string>
   <string name="create_new_account">Új fiókot kell létrehoznod, de használhatod ugyanazt a becenevet.</string>
-  <string name="download_zerion_button">Legújabb verzió letöltése</string>
-  <string name="old_android_expiry_date_reached">A Zerion már nem fut Android 4 rendszeren. Kérjük, telepítse a Zeriont egy újabb eszközre.</string>
   <string name="old_android_delete_account">Az alábbi gombra koppintva törölheti fiókját erről az eszközről.</string>
   <string name="delete_account_button">Fiók törlése</string>
   <string name="startup_open_database">Adatbázis dekódolása...</string>

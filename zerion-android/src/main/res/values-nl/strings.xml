@@ -33,14 +33,8 @@
   <string name="dialog_title_lost_password">Wachtwoord vergeten</string>
   <string name="dialog_message_lost_password">Je Zerion-account is versleuteld opgeslagen op je apparaat, niet in de cloud, dus kunnen we je wachtwoord niet herstellen. Wil je je account verwijderen en opnieuw beginnen?\n\nLet op: Je identiteiten, contacten en berichten zullen permanent verloren gaan.</string>
   <string name="startup_failed_activity_title">Opstarten Zerion mislukt</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Dit is een testversie van Zerion. Je account verloopt binnen %d dag en kan niet worden vernieuwd.</item>
-    <item quantity="other">Dit is een testversie van Zerion. Je account verloopt binnen %d dagen en kan niet worden vernieuwd.</item>
-  </plurals>
-  <string name="expiry_date_reached">Deze software is verlopen.\nBedankt voor het testen!</string>
   <string name="download_zerion">Download de laatste versie om Zerion te kunnen blijven gebruiken.</string>
   <string name="create_new_account">Je moet een nieuw account aanmaken. Je kan dezelfde bijnaam gebruiken.</string>
-  <string name="download_zerion_button">Download de laatste versie</string>
   <string name="delete_account_button">Verwijder account</string>
   <string name="startup_open_database">Database aan het ontsleutelen…</string>
   <string name="startup_migrate_database">Database aan het upgraden…</string>
@@ -748,7 +742,6 @@
 	<string name="startup_failed_data_too_old_error">Je account is gemaakt met een oude versie van deze app en kan niet worden geopend met deze versie.\n\nJe moet ofwel de oude versie opnieuw installeren, of een nieuw account instellen door bij de wachtwoordvraag \'Ik ben mijn wachtwoord vergeten\' te kiezen.</string>
 	<string name="startup_failed_data_too_new_error">Je account is gemaakt met een nieuwere versie van deze app en kan niet worden geopend met deze versie.\n\nWerk de app bij naar de nieuwste versie en probeer opnieuw.</string>
 	<string name="startup_failed_service_error">Zerion kon een vereist onderdeel niet starten.\n\nWerk de app bij naar de nieuwste versie en probeer opnieuw.</string>
-	<string name="old_android_expiry_date_reached">Zerion draait niet meer op Android 4.\nInstalleer Zerion op een nieuwer apparaat.</string>
 	<string name="old_android_delete_account">Je kunt op de knop hieronder tikken om je account van dit apparaat te verwijderen.</string>
 	<string name="chats_button">Chats</string>
 	<string name="chat_type_group">Groep</string>

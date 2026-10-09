@@ -48,17 +48,8 @@
   <string name="startup_failed_data_too_old_error">Jūsų paskyra buvo sukurta naudojant seną šios programėlės versiją ir negali būti atverta naudojant šią versiją.\n\nJūs privalote arba iš naujo įsidiegti seną versiją, arba nusistatyti naują paskyrą, slaptažodžio užklausos ekrane pasirinkę „Aš pamiršau slaptažodį“.</string>
   <string name="startup_failed_data_too_new_error">Jūsų paskyra buvo sukurta naudojant naujesnę šios programėlės versiją ir negali būti atverta naudojant šią versiją.\n\nAtnaujinkite programėlę į naujausią versiją ir bandykite dar kartą.</string>
   <string name="startup_failed_service_error">Zerion nepavyko paleisti reikiamo komponento.\n\nAtnaujinkite programėlę į naujausią versiją ir bandykite dar kartą.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Tai yra bandomoji Zerion versija. Jūsų paskyros galiojimas pasibaigs po %d dienos ir negalės būti pratęstas.</item>
-    <item quantity="few">Tai yra bandomoji Zerion versija. Jūsų paskyros galiojimas pasibaigs po %d dienų ir negalės būti pratęstas.</item>
-    <item quantity="many">Tai yra bandomoji Zerion versija. Jūsų paskyros galiojimas pasibaigs po %d dienų ir negalės būti pratęstas.</item>
-    <item quantity="other">Tai yra bandomoji Zerion versija. Jūsų paskyros galiojimas pasibaigs po %d dienos ir negalės būti pratęstas.</item>
-  </plurals>
-  <string name="expiry_date_reached">Programinės įrangos galiojimas pasibaigė.\nDėkojame, kad išbandėte!</string>
   <string name="download_zerion">Norėdami ir toliau naudotis Zerion, atsisiųskite naujausią programos laidą.</string>
   <string name="create_new_account">Jūs turėsite susikurti paskyrą, tačiau galėsite naudoti tą patį slapyvardį.</string>
-  <string name="download_zerion_button">Atsisiųsti naujausią laidą</string>
-  <string name="old_android_expiry_date_reached">Zerion daugiau nebeveikia įrenginiuose su „Android“ 4.\nĮsidiekite Zerion naujesniame įrenginyje.</string>
   <string name="old_android_delete_account">Galite bakstelėti ant žemiau esančio mygtuko, norėdami ištrinti paskyrą iš šio įrenginio.</string>
   <string name="delete_account_button">Ištrinti paskyrą</string>
   <string name="startup_open_database">Iššifruojama duomenų bazė…</string>

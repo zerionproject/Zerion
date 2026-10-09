@@ -93,8 +93,6 @@ import static androidx.core.content.ContextCompat.getSystemService;
 import static androidx.core.graphics.drawable.DrawableCompat.setTint;
 import static androidx.core.view.ViewCompat.LAYOUT_DIRECTION_RTL;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static com.professor.zerion.android.TestingConstants.EXPIRY_DATE;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -229,11 +227,6 @@ public class UiUtils {
 			return r.getQuantityString(R.plurals.duration_minutes, minutes,
 					minutes);
 		}
-	}
-
-	public static long getDaysUntilExpiry() {
-		long now = System.currentTimeMillis();
-		return (EXPIRY_DATE - now) / DAYS.toMillis(1);
 	}
 
 	public static SpannableStringBuilder getTeaser(Context ctx, Spanned text) {

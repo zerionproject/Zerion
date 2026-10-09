@@ -48,16 +48,8 @@
   <string name="startup_failed_data_too_old_error">Sua conta foi criada em uma versão mais antiga desse aplicativo e não pode ser aberta com a versão atual.\n\nVocê deve reinstalar a versão antiga do aplicativo ou criar uma nova conta clicando em \'Eu esqueci minha senha\'.</string>
   <string name="startup_failed_data_too_new_error">Sua conta foi criada com uma versão mais recente deste aplicativo e não pode ser aberta com esta versão.\n\nPor favor, atualize para a versão mais recente e tente novamente. </string>
   <string name="startup_failed_service_error">Zerion não foi capaz de inicializar um componente necessário.\n\nPor favor, atualize o aplicativo para uma versão mais recente e tente novamente.</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Esta é uma versão de teste do Zerion. Sua conta irá expirar em %d dia e não poderá ser renovada.</item>
-    <item quantity="many">Esta é uma versão de teste do Zerion. Sua conta irá expirar em %d dias e não poderá ser renovada.</item>
-    <item quantity="other">Esta é uma versão de teste do Zerion. Sua conta irá expirar em %d dias e não poderá ser renovada.</item>
-  </plurals>
-  <string name="expiry_date_reached">Este software expirou.\nObrigado por testar!</string>
   <string name="download_zerion">Para continuar usando o Zerion, por favor baixe a versão mais recente.</string>
   <string name="create_new_account">Você precisará criar uma nova conta, mas poderá usar o mesmo apelido.</string>
-  <string name="download_zerion_button">Baixar a versão mais recente</string>
-  <string name="old_android_expiry_date_reached">Zerion já não é mais compatível com a versão 4 do Android.\nPor favor, instale Zerion em um dispositivo com uma versão mais recente do Android. </string>
   <string name="old_android_delete_account">Você pode tocar no botão abaixo para deletar sua conta desse dispositivo.</string>
   <string name="delete_account_button">Apagar a Conta</string>
   <string name="startup_open_database">Descriptografando Banco de Dados...</string>

@@ -33,16 +33,8 @@
   <string name="dialog_title_lost_password">סיסמה אבודה</string>
   <string name="dialog_message_lost_password">חשבון Zerion שלך מאוחסן באופן מוצפן על המכשיר שלך, לא בענן, כך שאנחנו לא יכולים לאפס את הסיסמה שלך. האם תרצה למחוק את החשבון שלך ולהתחיל מחדש?\n\nזהירות: הזהויות, אנשי הקשר וההודעות שלך יאבדו לצמיתות.</string>
   <string name="startup_failed_activity_title">כישלון הזנק Zerion</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">זאת גרסת בחינה של Zerion. חשבונך יפוג תוך יום %d ואינו יכול להתחדש.</item>
-    <item quantity="two">זאת גרסת בחינה של Zerion. חשבונך יפוג תוך %d ימים ואינו יכול להתחדש.</item>
-    <item quantity="many">זאת גרסת בחינה של Zerion. חשבונך יפוג תוך %d ימים ואינו יכול להתחדש.</item>
-    <item quantity="other">זאת גרסת בחינה של Zerion. חשבונך יפוג תוך %d ימים ואינו יכול להתחדש.</item>
-  </plurals>
-  <string name="expiry_date_reached">תוכנה זו פגה.\nתודה על הבדיקה!</string>
   <string name="download_zerion">כדי להמשיך להשתמש ב־Zerion, אנא הורד את השחרור האחרון.</string>
   <string name="create_new_account">יהיה צריך ליצור חשבון חדש, אבל אפשר להשתמש באותו הכינוי.</string>
-  <string name="download_zerion_button">הורד שחרור אחרון</string>
   <string name="delete_account_button">מחק חשבון</string>
   <string name="startup_open_database">מפענח מסד נתונים…</string>
   <string name="startup_migrate_database">משדרג מסד נתונים…</string>
@@ -1033,7 +1025,6 @@
 	<string name="startup_failed_data_too_old_error">החשבון שלך נוצר בגרסה ישנה של האפליקציה ולא ניתן לפתוח אותו בגרסה הזו.\n\nיש להתקין מחדש את הגרסה הישנה, או להגדיר חשבון חדש על ידי בחירה ב\"שכחתי את הסיסמה שלי\" במסך הסיסמה.</string>
 	<string name="startup_failed_data_too_new_error">החשבון שלך נוצר בגרסה חדשה יותר של האפליקציה ולא ניתן לפתוח אותו בגרסה הזו.\n\nיש לשדרג לגרסה העדכנית ביותר ולנסות שוב.</string>
 	<string name="startup_failed_service_error">Zerion לא הצליח להפעיל רכיב נדרש.\n\nיש לשדרג לגרסה העדכנית ביותר של האפליקציה ולנסות שוב.</string>
-	<string name="old_android_expiry_date_reached">Zerion כבר לא פועל ב-Android 4.\nיש להתקין את Zerion במכשיר חדש יותר.</string>
 	<string name="old_android_delete_account">אפשר להקיש על הכפתור למטה כדי למחוק את החשבון שלך מהמכשיר הזה.</string>
 	<string name="chats_button">שיחות</string>
 	<string name="chat_type_group">קבוצה</string>

@@ -48,19 +48,8 @@
   <string name="startup_failed_data_too_old_error">أُنشئ حسابك باستخدام إصدار قديم من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيجب عليك إما إعادة تثبيت الإصدار القديم أو إعداد حساب جديد عن طريق اختيار \"نسيتُ كلمة السر\" في مطالبة كلمة السر.</string>
   <string name="startup_failed_data_too_new_error">أُنشئ حسابك باستخدام إصدار أحدث من هذا التطبيق ولا يمكن فتحه باستخدام هذا الإصدار.\n\nيُرجى الترقية إلى احدث إصدار والمحاولة مرة أخرى.</string>
   <string name="startup_failed_service_error">تعذر على Zerion بدء تشغيل المكون المطلوب.\n\nيُرجى الترقية إلى أحدث إصدار من التطبيق والمحاولة مرة أخرى.</string>
-  <plurals name="expiry_warning">
-    <item quantity="zero">هذا إصدار تجريبي من Zerion. حسابك سينتهي اليوم ولن يمكن تجديده.</item>
-    <item quantity="one">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال يوم ولن يمكن تجديده.</item>
-    <item quantity="two">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال يومين ولن يمكن تجديده.</item>
-    <item quantity="few">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d أيام ولن يمكن تجديده.</item>
-    <item quantity="many">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
-    <item quantity="other">هذا إصدار تجريبي من Zerion. حسابك سينتهي خلال %d يوم ولن يمكن تجديده.</item>
-  </plurals>
-  <string name="expiry_date_reached">هذا البرنامج قد انتهت مدته.\nشكرا لك للتجربة!</string>
   <string name="download_zerion">لمتابعة استخدام Zerion، يرجى تنزيل آخر إصدار. </string>
   <string name="create_new_account">انت في حاجة لانشاء حساب جديد، لكن يمكنك استعمال نفس الاسم المستعار.</string>
-  <string name="download_zerion_button">تنزيل آخر أصدار</string>
-  <string name="old_android_expiry_date_reached">لم يعد Zerion يعمل على نظام التشغيل Android 4.\nيُرجى تثبيت Zerion على جهاز أحدث.</string>
   <string name="old_android_delete_account">يمكنك النقر على الزر أدناه لحذف حسابك من هذا الجهاز.</string>
   <string name="delete_account_button">حذف الحساب</string>
   <string name="startup_open_database">جارِ فك تشفير قاعدة البيانات...</string>

@@ -33,14 +33,8 @@
   <string name="dialog_title_lost_password">Contrasinal perdido</string>
   <string name="dialog_message_lost_password">Zerion almacena a túa configuración cifrada no dispositivo, non na nube, así que non podemos restabelecer o teu contrasinal. Quererías borrar a túa conta e empezar de novo?\n\nPrecaución: As túas identidades, contactos e mensaxes serán eliminadas de forma permanente.</string>
   <string name="startup_failed_activity_title">Fallo de Inicio de Zerion</string>
-  <plurals name="expiry_warning">
-    <item quantity="one">Esta versión de Zerion é para probas. A conta caducará en %d día e non se pode anovar.</item>
-    <item quantity="other">Esta é unha versión de proba de Zerion. A conta caducará en %d días e non se pode anovar.</item>
-  </plurals>
-  <string name="expiry_date_reached">Este software caducou.\nGrazas por probalo!</string>
   <string name="download_zerion">Para seguir utilizando Zerion, descarga por favor a última versión.</string>
   <string name="create_new_account">Precisas crear unha nova conta, pero podes utilizar o mesmo alcume.</string>
-  <string name="download_zerion_button">Descargar Última Versión</string>
   <string name="delete_account_button">Eliminar conta</string>
   <string name="startup_open_database">Descifrando a Base de datos...</string>
   <string name="startup_migrate_database">Actualizando a Base de datos...</string>
@@ -1033,7 +1027,6 @@
 	<string name="startup_failed_data_too_old_error">A túa conta creouse cunha versión antiga desta aplicación e non se pode abrir con esta versión.\n\nTes que reinstalar a versión antiga ou crear unha conta nova escollendo «Esquecín a miña clave» na pantalla do contrasinal.</string>
 	<string name="startup_failed_data_too_new_error">A túa conta creouse cunha versión máis recente desta aplicación e non se pode abrir con esta versión.\n\nActualiza á última versión e téntao de novo.</string>
 	<string name="startup_failed_service_error">Zerion non puido iniciar un compoñente necesario.\n\nActualiza á última versión da aplicación e téntao de novo.</string>
-	<string name="old_android_expiry_date_reached">Zerion xa non funciona en Android 4.\nInstala Zerion nun dispositivo máis recente.</string>
 	<string name="old_android_delete_account">Podes tocar o botón de abaixo para eliminar a túa conta deste dispositivo.</string>
 	<string name="chats_button">Conversas</string>
 	<string name="chat_type_group">Grupo</string>

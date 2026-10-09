@@ -63,7 +63,6 @@ android {
 
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField "Long", "BuildTimestamp", "0L"
         testInstrumentationRunner 'com.professor.zerion.android.BriarTestRunner'
         testInstrumentationRunnerArguments disableAnalytics: 'true'
         multiDexEnabled true
