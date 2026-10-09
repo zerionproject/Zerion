@@ -929,7 +929,7 @@ public class XmrWalletManagerTest {
 					live.m.getError().getValue().getIfNotHandled());
 			assertEquals(1, live.m.pendingSendsFor(live.id).size());
 
-			wall.addAndGet(3 * DAY_MS + 1000);
+			wall.set(System.currentTimeMillis() + 3 * DAY_MS + 1000);
 			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
 			awaitTrue(() -> live.m.pendingSendsFor(live.id).isEmpty(), AWAIT_MS);
 			assertEquals(live.id, live.m.getSpendReleased().getValue()
@@ -1239,7 +1239,7 @@ public class XmrWalletManagerTest {
 			assertTrue("too early: still quarantined",
 					live.m.isSpendQuarantined(live.id));
 
-			wall.addAndGet(3 * DAY_MS + 1000);
+			wall.set(System.currentTimeMillis() + 3 * DAY_MS + 1000);
 			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
 			awaitTrue(() -> {
 				Event<String> e = live.m.getSpendReleased().getValue();
@@ -1260,7 +1260,7 @@ public class XmrWalletManagerTest {
 			live.m.setWallClock(wall::get);
 			engine.lookupCodes = new long[] {XmrTxLookup.CODE_MISSED};
 			relay(live, false, XmrSendUiState.Kind.RELAY_UNCERTAIN);
-			wall.addAndGet(3 * DAY_MS + 1000);
+			wall.set(System.currentTimeMillis() + 3 * DAY_MS + 1000);
 			engine.lookupCodes = null;
 			live.m.releaseUnresolvedSend(live.id, "pass".toCharArray());
 			awaitTrue(() -> {
