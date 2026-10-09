@@ -101,11 +101,6 @@ public class ReleasePluginConfigTest {
 			}
 
 			@Override
-			public boolean shouldEnablePrivateGroupsInCore() {
-				return false;
-			}
-
-			@Override
 			public boolean shouldEnableI2p() {
 				return i2p;
 			}

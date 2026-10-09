@@ -8,7 +8,5 @@ public interface FeatureFlags {
 
 	boolean shouldEnableDisappearingMessages();
 
-	boolean shouldEnablePrivateGroupsInCore();
-
 	boolean shouldEnableI2p();
 }

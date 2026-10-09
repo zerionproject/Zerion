@@ -50,6 +50,4 @@ interface GroupTrConstants {
 	int MAX_GROUP_NAME_LENGTH = 100;
 	int MAX_MEMBER_NAME_LENGTH = 256;
 	int MAX_GROUP_MEMBERS = 256;
-
-	boolean FEATURE_GROUP_RELAY_PRIVACY_ENABLED = false;
 }

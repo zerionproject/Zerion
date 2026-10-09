@@ -26,11 +26,6 @@ public class TestFeatureFlagModule {
 			}
 
 			@Override
-			public boolean shouldEnablePrivateGroupsInCore() {
-				return true;
-			}
-
-			@Override
 			public boolean shouldEnableI2p() {
 				return false;
 			}

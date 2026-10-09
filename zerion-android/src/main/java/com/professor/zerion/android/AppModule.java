@@ -750,11 +750,6 @@ public class AppModule {
 			}
 
 			@Override
-			public boolean shouldEnablePrivateGroupsInCore() {
-				return false;
-			}
-
-			@Override
 			public boolean shouldEnableI2p() {
 				return IS_DEBUG_BUILD;
 			}
