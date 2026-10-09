@@ -249,6 +249,10 @@ public class MeshTextSender {
 		});
 	}
 
+	public void forget(java.util.Collection<MessageId> messageIds) {
+		for (MessageId m : messageIds) outbox.drop(m);
+	}
+
 	public void sendAck(ContactId contactId, byte[] messageId) {
 		long delay = ACK_DELAY_MIN_MS + jitter.nextInt(ACK_DELAY_SPREAD_MS + 1);
 		try {

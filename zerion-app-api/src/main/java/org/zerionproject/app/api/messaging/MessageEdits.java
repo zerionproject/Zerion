@@ -2,6 +2,8 @@ package org.zerionproject.app.api.messaging;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.nio.charset.StandardCharsets;
+
 import javax.annotation.Nullable;
 
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
@@ -23,7 +25,10 @@ public final class MessageEdits {
 
 	public static boolean isEditableText(@Nullable String text) {
 		if (text == null || text.trim().isEmpty()) return false;
-		if (text.length() > MAX_PRIVATE_MESSAGE_TEXT_LENGTH) return false;
+		if (text.getBytes(StandardCharsets.UTF_8).length
+				> MAX_PRIVATE_MESSAGE_TEXT_LENGTH) {
+			return false;
+		}
 		for (String prefix : SPECIAL_PREFIXES) {
 			if (text.startsWith(prefix)) return false;
 		}

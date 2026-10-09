@@ -55,7 +55,9 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import android.content.SharedPreferences;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -135,6 +137,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	private final Multiset<ContactId> contactCounts = new Multiset<>();
+	private final Map<org.zerionproject.core.api.sync.MessageId, ContactId>
+			notifiedMessages = new HashMap<>();
+	private final Set<org.zerionproject.core.api.sync.MessageId>
+			withdrawnMessages = new HashSet<>();
 	private final Set<Integer> activeContactNotificationIds =
 			new HashSet<>();
 	private final Multiset<GroupId> groupCounts = new Multiset<>();
@@ -276,6 +282,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	@UiThread
 	private void clearContactNotification() {
 		contactCounts.clear();
+		notifiedMessages.clear();
 		for (int id : activeContactNotificationIds) {
 			notificationManager.cancel(id);
 		}
@@ -321,7 +328,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 					.MessageDeletedForEveryoneEvent d =
 					(org.zerionproject.app.api.messaging.event
 							.MessageDeletedForEveryoneEvent) e;
-			if (d.wasUnread()) onContactMessageWithdrawn(d.getContactId());
+			if (d.wasUnread()) {
+				onContactMessageWithdrawn(d.getContactId(), d.getMessageId());
+			}
 		} else if (e instanceof GroupTrPostAcceptedEvent) {
 			GroupTrPostAcceptedEvent g = (GroupTrPostAcceptedEvent) e;
 			if (!g.isLocal()) showGroupTrPostNotification(g.getGroupId());
@@ -430,7 +439,13 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	}
 
 	@UiThread
-	private void onContactMessageWithdrawn(ContactId c) {
+	private void onContactMessageWithdrawn(ContactId c,
+			org.zerionproject.core.api.sync.MessageId m) {
+		if (notifiedMessages.remove(m) == null) {
+			if (withdrawnMessages.size() > 1000) withdrawnMessages.clear();
+			withdrawnMessages.add(m);
+			return;
+		}
 		if (contactCounts.getCount(c) == 0) return;
 		contactCounts.remove(c);
 		int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
@@ -446,6 +461,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	public void clearContactNotification(ContactId c) {
 		androidExecutor.runOnUiThread(() -> {
 			contactCounts.removeAll(c);
+			notifiedMessages.values().removeIf(c::equals);
 			int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
 			notificationManager.cancel(notifId);
 			activeContactNotificationIds.remove(notifId);
@@ -988,15 +1004,18 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private void handlePrivateMessageReceived(
 			PrivateMessageReceivedEvent event) {
 		ContactId c = event.getContactId();
+		org.zerionproject.core.api.sync.MessageId m =
+				event.getMessageHeader().getId();
 		if (!event.getMessageHeader().hasText()) {
-			showContactNotification(c);
+			showPrivateMessage(c, m);
 			return;
 		}
 		androidExecutor.runOnBackgroundThread(() -> {
 			String text = null;
 			try {
-				text = messagingManager.getMessageText(
-						event.getMessageHeader().getId());
+				text = messagingManager.getMessageText(m);
+			} catch (org.zerionproject.core.api.db.NoSuchMessageException e) {
+				return;
 			} catch (DbException e) {
 			}
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part p =
@@ -1011,8 +1030,16 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				}
 				return;
 			}
-			androidExecutor.runOnUiThread(() -> showContactNotification(c));
+			androidExecutor.runOnUiThread(() -> showPrivateMessage(c, m));
 		});
+	}
+
+	@UiThread
+	private void showPrivateMessage(ContactId c,
+			org.zerionproject.core.api.sync.MessageId m) {
+		if (withdrawnMessages.remove(m)) return;
+		notifiedMessages.put(m, c);
+		showContactNotification(c);
 	}
 
 	private void handleIncomingVoiceCall(ContactId contactId,

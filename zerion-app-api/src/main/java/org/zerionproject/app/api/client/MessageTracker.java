@@ -37,6 +37,9 @@ public interface MessageTracker {
 	void resetGroupCount(Transaction txn, GroupId g, int msgCount,
 			int unreadCount) throws DbException;
 
+	void resetGroupCount(Transaction txn, GroupId g, int msgCount,
+			int unreadCount, long latestMsgTime) throws DbException;
+
 	class GroupCount {
 
 		private final int msgCount, unreadCount;

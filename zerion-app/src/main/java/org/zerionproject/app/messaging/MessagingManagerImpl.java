@@ -30,6 +30,7 @@ import org.zerionproject.core.api.sync.event.MessagesSentEvent;
 import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
 import org.zerionproject.core.api.sync.MessageStatus;
 import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
+import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.api.versioning.ClientVersioningManager.ClientVersioningHook;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
@@ -392,7 +393,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			BdfDictionary meta, boolean hasText, List<AttachmentHeader> headers)
 			throws DbException, FormatException, InvalidMessageException {
 		GroupId groupId = m.getGroupId();
-		if (isDeletedForEveryone(txn, groupId, m.getId().getBytes())) {
+		Map<MessageId, BdfDictionary> controls =
+				controlRecordsFor(txn, groupId, m.getId().getBytes());
+		if (containsRemoteDelete(controls)) {
 			throw new InvalidMessageException();
 		}
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
@@ -403,7 +406,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		byte[] replyToIdBytes = meta.getOptionalRaw(MSG_KEY_REPLY_TO_ID);
 		MessageId replyToId = replyToIdBytes != null ?
 				new MessageId(replyToIdBytes) : null;
-		boolean edited = hasText && applyPendingEdits(txn, groupId, m.getId());
+		boolean edited = hasText
+				&& applyPendingEdits(txn, groupId, m.getId(), meta, controls);
 		PrivateMessageHeader header =
 				new PrivateMessageHeader(m.getId(), groupId, timestamp, local,
 						read, false, false, hasText, headers, timer,
@@ -844,6 +848,21 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 						imageBytes.length);
 				Message att =
 						clientHelper.createMessage(groupId, timestamp, body);
+				BdfList attachmentList = BdfList.of(
+						BdfList.of(att.getId().getBytes(), contentType));
+				BdfList pmBody =
+						BdfList.of(PRIVATE_MESSAGE, null, attachmentList);
+				Message pm =
+						clientHelper.createMessage(groupId, timestamp, pmBody);
+				if (isDeletedForEveryone(txn, groupId, pm.getId().getBytes())) {
+					return;
+				}
+				try {
+					clientHelper.getMessageMetadataAsDictionary(txn,
+							pm.getId());
+					return;
+				} catch (NoSuchMessageException expected) {
+				}
 				BdfDictionary attMeta = new BdfDictionary();
 				attMeta.put(MSG_KEY_TIMESTAMP, timestamp);
 				attMeta.put(MSG_KEY_LOCAL, false);
@@ -852,12 +871,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				attMeta.put(MSG_KEY_DESCRIPTOR_LENGTH, descriptor.length);
 				clientHelper.addLocalMessage(txn, att, attMeta, false, false);
 
-				BdfList attachmentList = BdfList.of(
-						BdfList.of(att.getId().getBytes(), contentType));
-				BdfList pmBody =
-						BdfList.of(PRIVATE_MESSAGE, null, attachmentList);
-				Message pm =
-						clientHelper.createMessage(groupId, timestamp, pmBody);
 				BdfDictionary pmMeta = new BdfDictionary();
 				pmMeta.put(MSG_KEY_TIMESTAMP, timestamp);
 				pmMeta.put(MSG_KEY_LOCAL, false);
@@ -1492,12 +1505,15 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public void deleteMessages(Transaction txn, GroupId g,
 			Collection<MessageId> messageIds) throws DbException {
 		boolean counted = false;
+		List<MessageId> shown = new ArrayList<>(messageIds.size());
 		for (MessageId m : messageIds) {
+			if (!isControlRecord(txn, m)) shown.add(m);
 			if (deleteMessage(txn, g, m)) counted = true;
 		}
 		if (counted) recalculateGroupCount(txn, g);
+		if (shown.isEmpty()) return;
 		ContactId c = getContactId(txn, g);
-		txn.attach(new ConversationMessagesDeletedEvent(c, messageIds));
+		txn.attach(new ConversationMessagesDeletedEvent(c, shown));
 	}
 
 	private boolean deleteMessage(Transaction txn, GroupId g, MessageId m)
@@ -1507,6 +1523,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					clientHelper.getMessageMetadataAsDictionary(txn, m);
 			Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 			boolean counted = isCountedMessage(meta);
+			if (isRetractable(meta)) purgeRemoteEdits(txn, g, m);
 			if (messageType != null && messageType == PRIVATE_MESSAGE) {
 				boolean local = meta.getBoolean(MSG_KEY_LOCAL, false);
 				for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
@@ -1594,12 +1611,16 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			throws DbException {
 		try {
 			int[] counts = new int[2];
+			long[] latest = new long[1];
 			visitMessageMetadata(txn, g, (id, meta) -> {
 				if (!isCountedMessage(meta)) return;
 				counts[0]++;
 				if (!meta.getBoolean(MSG_KEY_READ, false)) counts[1]++;
+				latest[0] = Math.max(latest[0],
+						meta.getLong(MSG_KEY_TIMESTAMP, 0L));
 			});
-			messageTracker.resetGroupCount(txn, g, counts[0], counts[1]);
+			messageTracker.resetGroupCount(txn, g, counts[0], counts[1],
+					latest[0]);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
@@ -1841,39 +1862,67 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	static final long CONTROL_KEPT_AFTER_ACK_MS = 60_000L;
 
+	static final int MAX_PENDING_CONTROL_RECORDS = 500;
+
 	private void incomingMessageEdit(Transaction txn, Message m,
 			BdfDictionary meta) throws DbException, FormatException {
 		GroupId g = m.getGroupId();
 		MessageId target = resolveMeshParent(txn, g,
 				meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID));
 		if (target == null) {
-			db.setCleanupDeadline(txn, m.getId(),
-					System.currentTimeMillis() + EDIT_DELETE_KEPT_MS);
+			keepPending(txn, g, m.getId(), MessageTypes.MESSAGE_EDIT,
+					editRetention(txn, g));
 			return;
 		}
 		applyRemoteEdit(txn, g, target, meta.getString(MSG_KEY_EDITED_TEXT),
-				meta.getLong(MSG_KEY_TIMESTAMP), true);
+				meta.getLong(MSG_KEY_TIMESTAMP), true, null);
 		db.setCleanupDeadline(txn, m.getId(), 0L);
 	}
 
 	private void incomingMessageDelete(Transaction txn, Message m,
 			BdfDictionary meta) throws DbException, FormatException {
 		GroupId g = m.getGroupId();
-		MessageId target = resolveMeshParent(txn, g,
-				meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID));
+		byte[] targetBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+		MessageId target = resolveMeshParent(txn, g, targetBytes);
 		if (target != null) applyRemoteDelete(txn, g, target);
-		db.setCleanupDeadline(txn, m.getId(),
-				System.currentTimeMillis() + EDIT_DELETE_KEPT_MS);
+		else withdrawUndelivered(txn, g, targetBytes);
+		keepPending(txn, g, m.getId(), MessageTypes.MESSAGE_DELETE,
+				EDIT_DELETE_KEPT_MS);
+	}
+
+	private void keepPending(Transaction txn, GroupId g, MessageId record,
+			int type, long keptMs) throws DbException, FormatException {
+		BdfDictionary query = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_MSG_TYPE, type),
+				new BdfEntry(MSG_KEY_LOCAL, false));
+		if (clientHelper.getMessageIds(txn, g, query).size()
+				> MAX_PENDING_CONTROL_RECORDS) {
+			db.setCleanupDeadline(txn, record, 0L);
+			return;
+		}
+		db.setCleanupDeadline(txn, record,
+				System.currentTimeMillis() + keptMs);
+	}
+
+	private long editRetention(Transaction txn, GroupId g)
+			throws DbException {
+		long timer = autoDeleteManager.getAutoDeleteTimer(txn,
+				getContactId(txn, g));
+		if (timer <= 0) return EDIT_DELETE_KEPT_MS;
+		return Math.min(timer, EDIT_DELETE_KEPT_MS);
 	}
 
 	private boolean applyRemoteEdit(Transaction txn, GroupId g,
-			MessageId target, String text, long editedAt, boolean notify)
+			MessageId target, String text, long editedAt, boolean notify,
+			@Nullable BdfDictionary targetMeta)
 			throws DbException, FormatException {
-		BdfDictionary t;
-		try {
-			t = clientHelper.getMessageMetadataAsDictionary(txn, target);
-		} catch (NoSuchMessageException e) {
-			return false;
+		BdfDictionary t = targetMeta;
+		if (t == null) {
+			try {
+				t = clientHelper.getMessageMetadataAsDictionary(txn, target);
+			} catch (NoSuchMessageException e) {
+				return false;
+			}
 		}
 		if (!isEditableTarget(txn, target, t, false)) return false;
 		if (!MessageEdits.withinEditWindow(t.getLong(MSG_KEY_TIMESTAMP),
@@ -1886,6 +1935,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		update.put(MSG_KEY_EDITED_TEXT, text);
 		update.put(MSG_KEY_EDITED_AT, editedAt);
 		clientHelper.mergeMessageMetadata(txn, target, update);
+		t.putAll(update);
 		if (notify) {
 			txn.attach(new PrivateMessageEditedEvent(getContactId(txn, g),
 					target, text, false));
@@ -1894,18 +1944,16 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private boolean applyPendingEdits(Transaction txn, GroupId g,
-			MessageId target) throws DbException, FormatException {
-		BdfDictionary query = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_EDIT),
-				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, target.getBytes()),
-				new BdfEntry(MSG_KEY_LOCAL, false));
+			MessageId target, BdfDictionary targetMeta,
+			Map<MessageId, BdfDictionary> controls)
+			throws DbException, FormatException {
 		boolean edited = false;
-		for (Entry<MessageId, BdfDictionary> e : clientHelper
-				.getMessageMetadataAsDictionary(txn, g, query).entrySet()) {
+		for (Entry<MessageId, BdfDictionary> e : controls.entrySet()) {
 			BdfDictionary edit = e.getValue();
+			if (!isRemoteRecord(edit, MessageTypes.MESSAGE_EDIT)) continue;
 			if (applyRemoteEdit(txn, g, target,
 					edit.getString(MSG_KEY_EDITED_TEXT),
-					edit.getLong(MSG_KEY_TIMESTAMP), false)) {
+					edit.getLong(MSG_KEY_TIMESTAMP), false, targetMeta)) {
 				edited = true;
 			}
 			db.setCleanupDeadline(txn, e.getKey(), 0L);
@@ -1929,25 +1977,86 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				target, unread));
 	}
 
+	private void withdrawUndelivered(Transaction txn, GroupId g,
+			byte[] target) throws DbException, FormatException {
+		if (target.length != UniqueId.LENGTH) return;
+		MessageId id = new MessageId(target);
+		try {
+			if (!db.getGroupId(txn, id).equals(g)) return;
+			MessageState state = db.getMessageState(txn, id);
+			if (state == MessageState.DELIVERED
+					|| state == MessageState.INVALID) {
+				return;
+			}
+			BdfDictionary meta = metadataParser.parse(
+					db.getMessageMetadataForValidator(txn, id));
+			if (!isRetractable(meta) || meta.getBoolean(MSG_KEY_LOCAL, true)) {
+				return;
+			}
+			purgeRemoteEdits(txn, g, id);
+			db.setMessageState(txn, id, MessageState.INVALID);
+			db.deleteMessage(txn, id);
+			db.deleteMessageMetadata(txn, id);
+		} catch (NoSuchMessageException e) {
+		}
+	}
+
+	private Map<MessageId, BdfDictionary> controlRecordsFor(Transaction txn,
+			GroupId g, byte[] target) throws DbException, FormatException {
+		return clientHelper.getMessageMetadataAsDictionary(txn, g,
+				BdfDictionary.of(new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID,
+						target)));
+	}
+
+	private static boolean isRemoteRecord(BdfDictionary meta, int type)
+			throws FormatException {
+		Integer t = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+		return t != null && t == type && !meta.getBoolean(MSG_KEY_LOCAL, true);
+	}
+
+	private static boolean containsRemoteDelete(
+			Map<MessageId, BdfDictionary> controls) throws FormatException {
+		for (BdfDictionary c : controls.values()) {
+			if (isRemoteRecord(c, MessageTypes.MESSAGE_DELETE)) return true;
+		}
+		return false;
+	}
+
 	private boolean isDeletedForEveryone(Transaction txn, GroupId g,
 			byte[] target) throws DbException, FormatException {
-		BdfDictionary query = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_DELETE),
-				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, target),
-				new BdfEntry(MSG_KEY_LOCAL, false));
-		return !clientHelper.getMessageIds(txn, g, query).isEmpty();
+		return containsRemoteDelete(controlRecordsFor(txn, g, target));
+	}
+
+	private void purgeRemoteEdits(Transaction txn, GroupId g, MessageId m)
+			throws DbException, FormatException {
+		for (Entry<MessageId, BdfDictionary> e :
+				controlRecordsFor(txn, g, m.getBytes()).entrySet()) {
+			if (isRemoteRecord(e.getValue(), MessageTypes.MESSAGE_EDIT)) {
+				db.removeMessage(txn, e.getKey());
+			}
+		}
+	}
+
+	private boolean isControlRecord(Transaction txn, MessageId m)
+			throws DbException {
+		try {
+			Integer type = clientHelper.getMessageMetadataAsDictionary(txn, m)
+					.getOptionalInt(MSG_KEY_MSG_TYPE);
+			return type != null && (type == MessageTypes.MESSAGE_EDIT
+					|| type == MessageTypes.MESSAGE_DELETE);
+		} catch (NoSuchMessageException | FormatException e) {
+			return false;
+		}
 	}
 
 	private void removeReactionsTo(Transaction txn, GroupId g,
 			MessageId target) throws DbException, FormatException {
-		for (int type : new int[] {MessageTypes.MESSAGE_REACTION,
-				MessageTypes.MESSAGE_REACTION_REMOVED}) {
-			BdfDictionary query = BdfDictionary.of(
-					new BdfEntry(MSG_KEY_MSG_TYPE, type),
-					new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID,
-							target.getBytes()));
-			for (MessageId id : clientHelper.getMessageIds(txn, g, query)) {
-				db.removeMessage(txn, id);
+		for (Entry<MessageId, BdfDictionary> e :
+				controlRecordsFor(txn, g, target.getBytes()).entrySet()) {
+			Integer type = e.getValue().getOptionalInt(MSG_KEY_MSG_TYPE);
+			if (type != null && (type == MessageTypes.MESSAGE_REACTION
+					|| type == MessageTypes.MESSAGE_REACTION_REMOVED)) {
+				db.removeMessage(txn, e.getKey());
 			}
 		}
 	}
@@ -1986,9 +2095,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		return body.getOptionalString(1);
 	}
 
-	private boolean reachedContact(Transaction txn, ContactId c, MessageId id,
-			BdfDictionary meta) throws DbException, FormatException {
-		if (meta.getBoolean(MSG_KEY_MESH, false)) return true;
+	private boolean reachedContact(Transaction txn, ContactId c, MessageId id)
+			throws DbException {
 		try {
 			return db.getMessageStatus(txn, c, id).isSent();
 		} catch (NoSuchMessageException e) {
@@ -2012,12 +2120,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	private void removeLocalControlMessages(Transaction txn, GroupId g,
 			int type, MessageId target) throws DbException, FormatException {
-		BdfDictionary query = BdfDictionary.of(
-				new BdfEntry(MSG_KEY_MSG_TYPE, type),
-				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, target.getBytes()),
-				new BdfEntry(MSG_KEY_LOCAL, true));
-		for (MessageId id : clientHelper.getMessageIds(txn, g, query)) {
-			db.removeMessage(txn, id);
+		for (Entry<MessageId, BdfDictionary> e :
+				controlRecordsFor(txn, g, target.getBytes()).entrySet()) {
+			BdfDictionary meta = e.getValue();
+			Integer t = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+			if (t != null && t == type && meta.getBoolean(MSG_KEY_LOCAL, false)) {
+				db.removeMessage(txn, e.getKey());
+			}
 		}
 	}
 
@@ -2055,6 +2164,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				long sentAt = t.getLong(MSG_KEY_TIMESTAMP);
 				long editedAt = Math.max(System.currentTimeMillis(),
 						sentAt + 1);
+				Long previous = t.getOptionalLong(MSG_KEY_EDITED_AT);
+				if (previous != null) {
+					editedAt = Math.max(editedAt, previous + 1);
+				}
 				if (!MessageEdits.withinEditWindow(sentAt, editedAt)) {
 					return EditResult.TOO_LATE;
 				}
@@ -2104,7 +2217,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					}
 					removeLocalControlMessages(txn, g,
 							MessageTypes.MESSAGE_EDIT, id);
-					if (!reachedContact(txn, c, id, t)) continue;
+					if (t.getBoolean(MSG_KEY_MESH, false)) {
+						everyone = false;
+						continue;
+					}
+					if (!reachedContact(txn, c, id)) continue;
 					if (!supported) {
 						everyone = false;
 						continue;

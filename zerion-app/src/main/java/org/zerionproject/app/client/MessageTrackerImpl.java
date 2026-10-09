@@ -168,4 +168,13 @@ class MessageTrackerImpl implements MessageTracker {
 		storeGroupCount(txn, g, groupCount);
 	}
 
+	@Override
+	public void resetGroupCount(Transaction txn, GroupId g, int msgCount,
+			int unreadCount, long latestMsgTime) throws DbException {
+		long latest = latestMsgTime > 0 ? latestMsgTime
+				: getGroupCount(txn, g).getLatestMsgTime();
+		storeGroupCount(txn, g,
+				new GroupCount(msgCount, unreadCount, latest));
+	}
+
 }

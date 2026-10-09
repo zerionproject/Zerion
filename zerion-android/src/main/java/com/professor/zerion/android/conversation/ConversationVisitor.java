@@ -135,6 +135,10 @@ class ConversationVisitor implements
 		} else if (h.getReplyToId() != null) {
 			bindQuote(item, h.getReplyToId(), null);
 		}
+		MessageId quoted = item.getReplyToMessageId();
+		if (viewModel != null && quoted != null) {
+			item.setReplyToEdited(viewModel.isEdited(quoted));
+		}
 
 		return item;
 	}

@@ -304,6 +304,11 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 							ctx.getString(R.string.reply_prefix_you),
 							name != null ? name
 									: ctx.getString(R.string.unknown_contact));
+					if (item.isReplyToEdited()) {
+						String edited = ctx.getString(R.string.message_edited);
+						author = author == null ? edited
+								: author + " · " + edited;
+					}
 					if (replyAuthor != null) {
 						replyAuthor.setText(author);
 						replyAuthor.setVisibility(author == null ? GONE : VISIBLE);

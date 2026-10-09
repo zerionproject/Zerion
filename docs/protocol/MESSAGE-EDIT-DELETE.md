@@ -29,14 +29,22 @@ with a form the app gives a special meaning (`SECRET:`, `VOICE_CALL:`,
   legacy text) whose text is not a secret note, voice memo or call event. Its
   timestamp must be later than the message's and at most 24 hours after it.
   The newest edit wins; the text shown, quoted and copied is the edited text,
-  the message is marked as edited, and no earlier version is kept.
+  the message and every quote of it are marked as edited, and the app shows
+  no earlier version. The original body stays in the encrypted database
+  until the message is deleted.
 - A delete applies to a text, attachment, voice memo part or link preview
-  message. The message is removed with its attachments and reactions, without
-  a placeholder and without a notification. If it was unread, it is also
-  taken off the notification count.
-- An edit or delete that arrives before its message is kept for seven days
-  and applied when the message arrives. A message that arrives after its
-  delete is rejected and never shown.
+  message. The message is removed with its attachments, its reactions and
+  any edit still waiting for it, without a placeholder and without a
+  notification. If it was unread, it is also taken off the notification
+  count, and a quote of it shows that the original is unavailable.
+- An edit or delete that arrives before its message is kept and applied when
+  the message arrives, also when the message is still waiting for its
+  attachments. A waiting edit is kept for seven days, or for the
+  conversation's disappearing-message time if that is shorter; a delete
+  record is kept for seven days. At most 500 waiting records of each kind
+  are kept per contact. A message that arrives after its delete is rejected
+  and never shown, and a message still waiting for its attachments when its
+  delete arrives is withdrawn.
 
 ## Sending
 
@@ -47,12 +55,17 @@ with a form the app gives a special meaning (`SECRET:`, `VOICE_CALL:`,
 - An edit is possible for 24 hours after sending; delete for everyone has no
   time limit. A message that never left the device is simply withdrawn and
   deleting it sends nothing.
-- A newer edit replaces an older one that has not been delivered yet.
-- Messages sent over the mesh can be deleted for everyone but not edited. The
-  edit and delete records themselves travel over Tor.
+- Each edit of a message carries a later time than the one before, and a
+  newer edit replaces an older one that has not been delivered yet.
+- Messages sent over the mesh can be neither edited nor deleted for everyone:
+  copies flooded through other phones cannot be recalled. Deleting one
+  removes it on this device and stops it from being sent again. The edit and
+  delete records themselves travel over Tor.
 
 ## Limits
 
 Deleting for everyone removes the message from the contact's app. It cannot
 remove copies the contact already made, such as screenshots, forwarded text
 or a notification already read, and a modified app can ignore the records.
+The 24-hour limit and the order of edits rest on the sender's own clock, so
+a modified app can also edit outside that window.

@@ -8,7 +8,7 @@ import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfEntry;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.db.DatabaseComponent;
-import org.zerionproject.core.api.db.Metadata;
+import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.identity.Identity;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
@@ -16,7 +16,7 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.InvalidMessageException;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
-import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
+import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.test.BrambleTestCase;
 import org.zerionproject.core.test.TestDatabaseConfigModule;
@@ -39,6 +39,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_DELETE;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_EDIT;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_REACTION;
@@ -88,6 +89,8 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 		validator = device.getPrivateMessageValidator();
 		contactGroup = messagingManager.getContactGroup(
 				contactManager.getContact(contact));
+		db.transaction(false, txn -> db.setGroupVisibility(txn, contact,
+				contactGroup.getId(), Group.Visibility.SHARED));
 	}
 
 	@After
@@ -186,11 +189,90 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 		Message original = create(text("oops"), now - HOUR);
 		deliverAt(delete(original.getId()), now - HOUR + 1000);
 
-		try {
-			deliver(original);
-			fail("a message its sender deleted for everyone was accepted");
-		} catch (InvalidMessageException expected) {
-		}
+		assertEquals(MessageState.INVALID, deliver(original));
+		assertFalse(conversation().contains(original.getId()));
+	}
+
+	@Test
+	public void anEditOfACaptionWhoseImageArrivesLastIsApplied()
+			throws Exception {
+		Message image = attachment(now - HOUR);
+		Message captioned = create(BdfList.of(PRIVATE_MESSAGE, "Hey Allfs",
+				BdfList.of(BdfList.of(image.getId().getBytes(), "image/jpeg"))),
+				now - HOUR + 1);
+		assertEquals(MessageState.PENDING, deliver(captioned));
+		deliverAt(edit(captioned.getId(), "Hey all"), now - HOUR + 1000);
+
+		assertEquals(MessageState.DELIVERED, deliver(image));
+
+		awaitState(captioned.getId(), MessageState.DELIVERED);
+		assertEquals("Hey all",
+				messagingManager.getMessageText(captioned.getId()));
+		assertTrue(header(captioned.getId()).isEdited());
+	}
+
+	@Test
+	public void aDeleteWithdrawsAMessageStillWaitingForItsImage()
+			throws Exception {
+		Message image = attachment(now - HOUR);
+		Message captioned = create(BdfList.of(PRIVATE_MESSAGE, "oops",
+				BdfList.of(BdfList.of(image.getId().getBytes(), "image/jpeg"))),
+				now - HOUR + 1);
+		assertEquals(MessageState.PENDING, deliver(captioned));
+		deliverAt(edit(captioned.getId(), "oops!"), now - HOUR + 500);
+
+		deliverAt(delete(captioned.getId()), now - HOUR + 1000);
+		deliver(image);
+
+		assertEquals(MessageState.INVALID, state(captioned.getId()));
+		assertFalse(conversation().contains(captioned.getId()));
+		assertEquals(0, countOf(MESSAGE_EDIT));
+	}
+
+	@Test
+	public void aMeshPhotoDeletedForEveryoneDoesNotComeBack()
+			throws Exception {
+		byte[] jpeg = new byte[] {1, 2, 3};
+		long sent = now - HOUR;
+		byte[] body = concat(clientHelper.toByteArray(
+				BdfList.of(ATTACHMENT, "image/jpeg")), jpeg);
+		Message attachment = clientHelper.createMessage(contactGroup.getId(),
+				sent, body);
+		Message photo = create(BdfList.of(PRIVATE_MESSAGE, null,
+				BdfList.of(BdfList.of(attachment.getId().getBytes(),
+						"image/jpeg"))), sent);
+		deliverAt(delete(photo.getId()), sent + 1000);
+
+		messagingManager.receiveMeshAttachment(contact, "image/jpeg", jpeg,
+				sent);
+
+		assertFalse(conversation().contains(photo.getId()));
+	}
+
+	@Test
+	public void aMeshMessageIsOnlyDeletedOnThisDevice() throws Exception {
+		MessageId mine = own("over the mesh", now - HOUR);
+		db.transaction(false, txn -> clientHelper.mergeMessageMetadata(txn,
+				mine, BdfDictionary.of(new BdfEntry("mesh", true))));
+
+		assertFalse(senderSeeing(9).deleteForEveryone(contact,
+				singletonList(mine)));
+
+		assertFalse(conversation().contains(mine));
+		assertEquals(0, localControls(MESSAGE_DELETE).size());
+	}
+
+	@Test
+	public void everyEditOfAMessageGetsALaterTime() throws Exception {
+		MessagingManagerImpl sender = senderSeeing(9);
+		MessageId mine = own("one", now + HOUR);
+
+		sender.editMessage(contact, mine, "two");
+		long first = editedAt(mine);
+		sender.editMessage(contact, mine, "three");
+
+		assertTrue(editedAt(mine) > first);
+		assertEquals("three", messagingManager.getMessageText(mine));
 	}
 
 	@Test
@@ -383,14 +465,57 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 		return m.getId();
 	}
 
-	private void deliver(Message m) throws Exception {
-		BdfDictionary meta = validator.validateToBdf(m, contactGroup)
-				.getDictionary();
-		db.transaction(false, txn -> {
-			clientHelper.addLocalMessage(txn, m, meta, false, false);
-			Metadata raw = db.getMessageMetadata(txn, m.getId());
-			((IncomingMessageHook) messagingManager).incomingMessage(txn, m,
-					raw);
-		});
+	private MessageState deliver(Message m) throws Exception {
+		db.transaction(false, txn -> db.receiveMessage(txn, contact, m));
+		long deadline = System.currentTimeMillis() + 20_000;
+		while (true) {
+			MessageState s;
+			try {
+				s = state(m.getId());
+			} catch (NoSuchMessageException removedAfterDelivery) {
+				return MessageState.DELIVERED;
+			}
+			if (s != MessageState.UNKNOWN) {
+				if (s != MessageState.PENDING) return s;
+				if (System.currentTimeMillis() > deadline - 18_000) return s;
+			}
+			if (System.currentTimeMillis() > deadline) {
+				throw new AssertionError("the message was never validated");
+			}
+			Thread.sleep(20);
+		}
+	}
+
+	private void awaitState(MessageId m, MessageState want) throws Exception {
+		long deadline = System.currentTimeMillis() + 20_000;
+		while (state(m) != want) {
+			if (System.currentTimeMillis() > deadline) {
+				throw new AssertionError("still " + state(m));
+			}
+			Thread.sleep(20);
+		}
+	}
+
+	private MessageState state(MessageId m) throws Exception {
+		return db.transactionWithResult(true, txn ->
+				db.getMessageState(txn, m));
+	}
+
+	private Message attachment(long ts) throws Exception {
+		byte[] body = concat(clientHelper.toByteArray(
+				BdfList.of(ATTACHMENT, "image/jpeg")), new byte[] {9, 9, 9});
+		return clientHelper.createMessage(contactGroup.getId(), ts, body);
+	}
+
+	private static byte[] concat(byte[] a, byte[] b) {
+		byte[] out = new byte[a.length + b.length];
+		System.arraycopy(a, 0, out, 0, a.length);
+		System.arraycopy(b, 0, out, a.length, b.length);
+		return out;
+	}
+
+	private long editedAt(MessageId m) throws Exception {
+		return db.transactionWithResult(true, txn -> clientHelper
+				.getMessageMetadataAsDictionary(txn, m).getLong("editedAt"));
 	}
 }

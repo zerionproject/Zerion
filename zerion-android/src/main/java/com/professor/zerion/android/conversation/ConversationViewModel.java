@@ -163,6 +163,8 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> editAndDeleteSupported =
 			new MutableLiveData<>(false);
+	private final java.util.Set<MessageId> editedMessages =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final MutableLiveEvent<Pair<MessageId, String>> messageEdited =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<Integer> editRefused =
@@ -332,7 +334,9 @@ public class ConversationViewModel extends DbViewModel
 				for (MessageId id : m.getMessageIds()) {
 					ConversationCache.getInstance().removeMessage(contactId, id);
 				}
-				messagesDeleted.postEvent(m.getMessageIds());
+				replyContextMap.values().removeIf(quote ->
+						m.getMessageIds().contains(quote.getFirst()));
+				messagesDeleted.setEvent(m.getMessageIds());
 			}
 		} else if (e instanceof ContactRemovedEvent) {
 			ContactRemovedEvent c = (ContactRemovedEvent) e;
@@ -378,7 +382,15 @@ public class ConversationViewModel extends DbViewModel
 			PrivateMessageEditedEvent ed = (PrivateMessageEditedEvent) e;
 			if (ed.getContactId().equals(contactId)) {
 				ConversationCache.getInstance().invalidate(contactId);
-				messageEdited.postEvent(
+				editedMessages.add(ed.getMessageId());
+				for (Map.Entry<MessageId, Pair<MessageId, String>> quote :
+						replyContextMap.entrySet()) {
+					if (quote.getValue().getFirst().equals(ed.getMessageId())) {
+						quote.setValue(new Pair<>(ed.getMessageId(),
+								ed.getText()));
+					}
+				}
+				messageEdited.setEvent(
 						new Pair<>(ed.getMessageId(), ed.getText()));
 			}
 		} else if (e instanceof ReactionReceivedEvent) {
@@ -1107,6 +1119,10 @@ public class ConversationViewModel extends DbViewModel
 				for (ConversationMessageHeader h : headers) {
 					localById.put(h.getId(), h.isLocal());
 					if (!h.isRead()) unread.put(h.getId(), h.getGroupId());
+					if (h instanceof PrivateMessageHeader
+							&& ((PrivateMessageHeader) h).isEdited()) {
+						editedMessages.add(h.getId());
+					}
 				}
 				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
 					String t = e.getValue();
@@ -1159,6 +1175,8 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Collection<MessageId> toDelete =
 						expandVoiceMemoParts(c, messageIds);
+				meshTextSender.forget(toDelete);
+				meshAttachmentSender.forget(toDelete);
 				DeletionResult result =
 						conversationManager.deleteMessages(c, toDelete);
 				if (result.allDeleted()) {
@@ -1410,6 +1428,8 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Collection<MessageId> toDelete =
 						expandVoiceMemoParts(c, messageIds);
+				meshTextSender.forget(toDelete);
+				meshAttachmentSender.forget(toDelete);
 				if (!messagingManager.deleteForEveryone(c, toDelete)) {
 					deletedHereOnly.postEvent(true);
 				}
@@ -1417,6 +1437,10 @@ public class ConversationViewModel extends DbViewModel
 				handleException(e);
 			}
 		});
+	}
+
+	boolean isEdited(MessageId m) {
+		return editedMessages.contains(m);
 	}
 
 	LiveData<Boolean> getEditAndDeleteSupported() {

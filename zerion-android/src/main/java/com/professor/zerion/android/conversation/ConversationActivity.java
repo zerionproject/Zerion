@@ -90,6 +90,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.selection.Selection;
@@ -177,6 +178,10 @@ public class ConversationActivity extends ZerionActivity
 	android.content.SharedPreferences profilePrefs;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
+	private final java.util.Set<MessageId> deletedIds =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private final Map<MessageId, String> editedTexts =
+			new ConcurrentHashMap<>();
 
 	private final ActivityResultLauncher<String[]> docLauncher =
 			registerForActivityResult(new OpenMultipleImageDocumentsAdvanced(),
@@ -394,6 +399,7 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getMessageTexts().observe(this, texts -> {
 			if (texts != null) {
 				textCache.putAll(texts);
+				textCache.putAll(editedTexts);
 			}
 		});
 
@@ -453,11 +459,14 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getMessagesDeleted().observeEvent(this, messageIds -> {
 			if (messageIds != null) {
+				deletedIds.addAll(messageIds);
 				for (MessageId msgId : messageIds) {
 					textCache.remove(msgId);
+					editedTexts.remove(msgId);
 				}
 				adapter.incrementRevision();
 				adapter.removeItems(messageIds);
+				markQuotesUnavailable(messageIds);
 			}
 		});
 
@@ -1230,6 +1239,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void onMessageEdited(MessageId id, String text) {
+		editedTexts.put(id, text);
 		textCache.put(id, text);
 		Pair<Integer, ConversationMessageItem> pair =
 				adapter.getMessageItem(id);
@@ -1242,6 +1252,7 @@ public class ConversationActivity extends ZerionActivity
 			ConversationItem item = adapter.getItemAt(i);
 			if (item != null && id.equals(item.getReplyToMessageId())) {
 				item.setReplyToText(text);
+				item.setReplyToEdited(true);
 				adapter.notifyItemChanged(i);
 			}
 		}
@@ -1260,6 +1271,9 @@ public class ConversationActivity extends ZerionActivity
 					|| item.isIncoming()) {
 				return false;
 			}
+			PrivateMessageHeader h = ((ConversationMessageItem) item)
+					.getHeader();
+			if (h == null || h.isMesh()) return false;
 		}
 		return true;
 	}
@@ -1410,20 +1424,41 @@ public class ConversationActivity extends ZerionActivity
 			Collection<ConversationMessageHeader> headers) {
 		List<ConversationItem> items = new ArrayList<>(headers.size());
 		for (ConversationMessageHeader h : headers) {
+			if (deletedIds.contains(h.getId())) continue;
 			ConversationItem item = h.accept(visitor);
 			if (item != null) {
+				if (item instanceof ConversationMessageItem
+						&& editedTexts.containsKey(h.getId())) {
+					((ConversationMessageItem) item).markEdited();
+				}
 				items.add(item);
 			}
 		}
 		return items;
 	}
 
+	@UiThread
+	private void markQuotesUnavailable(Collection<MessageId> deleted) {
+		String unavailable = getString(R.string.reply_original_unavailable);
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (item != null && item.getReplyToMessageId() != null
+					&& deleted.contains(item.getReplyToMessageId())) {
+				item.setReplyToText(unavailable);
+				item.setReplyToEdited(false);
+				adapter.notifyItemChanged(i);
+			}
+		}
+	}
+
 	private void loadMessageText(MessageId m) {
 		viewModel.loadMessageText(m);
 	}
 
-	private void displayMessageText(MessageId m, String text) {
+	private void displayMessageText(MessageId m, String loaded) {
 		runOnUiThreadUnlessDestroyed(() -> {
+			String edited = editedTexts.get(m);
+			String text = edited != null ? edited : loaded;
 			textCache.put(m, text);
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part =
 					com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat
@@ -1579,7 +1614,12 @@ public class ConversationActivity extends ZerionActivity
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
 		typingManager.onMessageSent();
 		ConversationItem editing = textInputView.getEditingItem();
-		if (editing != null && headers.isEmpty() && text != null) {
+		if (editing != null && !headers.isEmpty()) {
+			new ZerionSnackbarBuilder().make(list, R.string.edit_not_possible,
+					Snackbar.LENGTH_LONG).show();
+			return new MutableLiveData<>();
+		}
+		if (editing != null && text != null) {
 			LiveData<SendState> edited =
 					viewModel.editMessage(editing.getId(), text);
 			edited.observe(this, state -> {

@@ -161,6 +161,10 @@ public class MeshAttachmentSender {
 		return out;
 	}
 
+	public void forget(java.util.Collection<MessageId> messageIds) {
+		pending.values().removeIf(p -> messageIds.contains(p.pmId));
+	}
+
 	public void sendAck(ContactId contactId, byte[] attachId) {
 		byte[] id = attachId.clone();
 		long delay = MeshTextSender.ACK_DELAY_MIN_MS

@@ -157,6 +157,16 @@ public abstract class ConversationItem {
 	private Boolean replyToLocal;
 
 	@Nullable
+	private boolean replyToEdited;
+
+	public boolean isReplyToEdited() {
+		return replyToEdited;
+	}
+
+	public void setReplyToEdited(boolean replyToEdited) {
+		this.replyToEdited = replyToEdited;
+	}
+
 	public Boolean getReplyToLocal() {
 		return replyToLocal;
 	}
