@@ -20,6 +20,8 @@ import org.jmock.Expectations;
 import org.junit.Test;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.zerionproject.core.api.transport.TransportConstants.MAX_CLOCK_DIFFERENCE;
 import static org.zerionproject.core.test.TestUtils.getClientId;
@@ -49,6 +51,7 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTA
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_URL;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 public class PrivateMessageValidatorTest extends BrambleMockTestCase {
@@ -95,8 +98,7 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 			new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
 			new BdfEntry(MSG_KEY_LOCAL, false),
 			new BdfEntry(MSG_KEY_MSG_TYPE, ATTACHMENT),
-
-			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0L),
+			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0),
 			new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType)
 	);
 
@@ -184,13 +186,11 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the reworked 3.0 validator still rejects unknown types. Update "
-			+ "the mocks for the 3.0 message model.")
 	public void testAcceptsNullTextWithAttachmentsForPrivateMessage()
 			throws Exception {
 		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, null,
-				BdfList.of(attachmentHeader)), noTextMeta);
+				BdfList.of(attachmentHeader)), noTextMeta,
+				singletonList(getAttachmentId(attachmentHeader)));
 	}
 
 	@Test(expected = InvalidMessageException.class)
@@ -245,19 +245,20 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testAcceptsMaxLengthAttachmentListForPrivateMessage()
 			throws Exception {
 		BdfList attachmentList = new BdfList();
+		List<MessageId> attachmentIds = new ArrayList<>();
 		for (int i = 0; i < MAX_ATTACHMENTS_PER_MESSAGE; i++) {
-			attachmentList.add(getAttachmentHeader());
+			BdfList header = getAttachmentHeader();
+			attachmentList.add(header);
+			attachmentIds.add(getAttachmentId(header));
 		}
 		BdfDictionary maxAttachmentsMeta = new BdfDictionary(noAttachmentsMeta);
 		maxAttachmentsMeta.put(MSG_KEY_ATTACHMENT_HEADERS, attachmentList);
 
 		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
-				attachmentList), maxAttachmentsMeta);
+				attachmentList), maxAttachmentsMeta, attachmentIds);
 	}
 
 	@Test(expected = InvalidMessageException.class)
@@ -386,25 +387,13 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testAcceptsValidDescriptorForAttachment() throws Exception {
 		expectCheckTimestamp(now);
 		expectParseList(BdfList.of(ATTACHMENT, contentType));
 		expectEncodeMetadata(attachmentMeta);
 
-		validator.validateMessage(message, group);
-	}
-
-	@Test(expected = InvalidMessageException.class)
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator still rejects unknown types (PrivateMessageValidator "
-			+ "throws InvalidMessageException in the else branch). Update the mocks.")
-	public void testRejectsUnknownMessageType() throws Exception {
-		expectCheckTimestamp(now);
-		expectParseList(BdfList.of(ATTACHMENT + 1, contentType));
-
-		validator.validateMessage(message, group);
+		MessageContext result = validator.validateMessage(message, group);
+		assertEquals(0, result.getDependencies().size());
 	}
 
 	@Test
@@ -558,13 +547,19 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 
 	private void testAcceptsPrivateMessage(BdfList body, BdfDictionary meta)
 			throws Exception {
+		testAcceptsPrivateMessage(body, meta, new ArrayList<>());
+	}
+
+	private void testAcceptsPrivateMessage(BdfList body, BdfDictionary meta,
+			List<MessageId> expectedDependencies) throws Exception {
 		expectCheckTimestamp(now);
 		expectParseList(body);
 		expectReadEof(true);
 		expectEncodeMetadata(meta);
 
 		MessageContext result = validator.validateMessage(message, group);
-		assertEquals(0, result.getDependencies().size());
+		assertEquals(expectedDependencies,
+				new ArrayList<>(result.getDependencies()));
 	}
 
 	private void testRejectsAttachment(BdfList descriptor) throws Exception {
@@ -609,6 +604,10 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 	private BdfList getAttachmentHeader() {
 		return BdfList.of(new MessageId(getRandomId()),
 				getRandomString(MAX_CONTENT_TYPE_BYTES));
+	}
+
+	private static MessageId getAttachmentId(BdfList header) {
+		return (MessageId) header.get(0);
 	}
 
 	@Test(expected = InvalidMessageException.class)

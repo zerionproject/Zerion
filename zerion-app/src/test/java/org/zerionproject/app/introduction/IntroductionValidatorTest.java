@@ -22,6 +22,7 @@ import static java.util.Collections.singletonMap;
 import static org.zerionproject.core.api.crypto.CryptoConstants.MAC_BYTES;
 import static org.zerionproject.core.api.crypto.CryptoConstants.MAX_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.zerionproject.core.api.crypto.CryptoConstants.MAX_SIGNATURE_BYTES;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.zerionproject.core.test.TestUtils.getAgreementPublicKey;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -248,12 +249,11 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	}
 
 	@Test(expected = FormatException.class)
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testRejectsTooLongBodyForAccept() throws Exception {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, null, null);
+				acceptTimestamp, transportProperties, null, mlDsaPubKey,
+				mlKemPubKey, null);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -499,11 +499,9 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	}
 
 	@Test(expected = FormatException.class)
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testRejectsTooLongBodyForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), mac, signature, null);
+				previousMsgId.getBytes(), mac, signature, kemCiphertext, null);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -552,12 +550,12 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 	}
 
 	@Test(expected = FormatException.class)
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testRejectsTooLongSignatureForAuth() throws Exception {
+		int maxSignatureBytes =
+				Math.max(MAX_SIGNATURE_BYTES, HYBRID_SIGNATURE_BYTES);
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), mac,
-				getRandomBytes(MAX_SIGNATURE_BYTES + 1));
+				getRandomBytes(maxSignatureBytes + 1), kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 

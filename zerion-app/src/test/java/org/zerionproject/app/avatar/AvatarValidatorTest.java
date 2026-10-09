@@ -47,8 +47,7 @@ public class AvatarValidatorTest extends BrambleMockTestCase {
 	private final BdfDictionary meta = BdfDictionary.of(
 			new BdfEntry(MSG_KEY_VERSION, version),
 			new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
-
-			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0L)
+			new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0)
 	);
 
 	private final AvatarValidator validator =
@@ -136,22 +135,18 @@ public class AvatarValidatorTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testAcceptsUpdateMessage() throws Exception {
 		testAcceptsUpdateMessage(
 				BdfList.of(MSG_TYPE_UPDATE, version, contentType), meta);
 	}
 
 	@Test
-	@org.junit.Ignore("Stale jMock expectations for the pre-3.0 message model; "
-			+ "the validator was reworked for 3.0. Update mocks for the 3.0 model.")
 	public void testAcceptsZeroVersion() throws Exception {
 		BdfList body = BdfList.of(MSG_TYPE_UPDATE, 0L, contentType);
 		BdfDictionary meta = BdfDictionary.of(
 				new BdfEntry(MSG_KEY_VERSION, 0L),
 				new BdfEntry(MSG_KEY_CONTENT_TYPE, contentType),
-				new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0L)
+				new BdfEntry(MSG_KEY_DESCRIPTOR_LENGTH, 0)
 		);
 		testAcceptsUpdateMessage(body, meta);
 	}
