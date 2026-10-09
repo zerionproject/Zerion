@@ -367,6 +367,9 @@ project.afterEvaluate {
         description = 'Runs the wallet-logic and crypto regression suite.'
         testClassesDirs = unitTest.testClassesDirs
         classpath = unitTest.classpath
+        jvmArgs unitTest.jvmArgs
+        systemProperties unitTest.systemProperties
+        maxHeapSize = unitTest.maxHeapSize
         dependsOn 'compileOfficialDebugUnitTestJavaWithJavac'
         useJUnit()
         filter {
