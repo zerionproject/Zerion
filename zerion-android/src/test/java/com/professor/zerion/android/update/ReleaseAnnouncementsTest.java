@@ -104,12 +104,17 @@ public class ReleaseAnnouncementsTest {
 	public void theRepositoryManifestSignedByUsIsAccepted() throws Exception {
 		ReleaseAnnouncement a = accept(repoManifest, sign(repoManifest));
 		assertNotNull(a);
-		assertEquals("3.0.16", a.versionName);
-		assertEquals(31600, a.versionCode);
-		assertEquals(RELEASES + "/tag/v3.0.16", a.releasePageUrl);
-		assertEquals(RELEASES + "/download/v3.0.16/zerion-3.0.16.apk",
-				a.apkUrl);
-		assertEquals(64, a.apkSha256.length());
+		org.json.JSONObject android = new org.json.JSONObject(
+				new String(repoManifest, StandardCharsets.UTF_8))
+				.getJSONObject("android");
+		String version = android.getString("version");
+		assertEquals(version, a.versionName);
+		assertEquals(android.getLong("versionCode"), a.versionCode);
+		assertEquals(RELEASES + "/tag/v" + version, a.releasePageUrl);
+		assertEquals(RELEASES + "/download/v" + version + "/zerion-"
+				+ version + ".apk", a.apkUrl);
+		assertEquals(android.getJSONObject("apk").getString("sha256"),
+				a.apkSha256);
 	}
 
 	@Test
