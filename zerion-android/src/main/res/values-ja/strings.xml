@@ -2416,4 +2416,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">ホーム画面のアイコンはまもなく更新されます。メッセージの通知は今後、ベルのアイコン付きの「%1$s」として表示されます。</string>
 	<string name="voice_call_muted">ミュート中</string>
+	<string name="delete_for_me">自分から削除</string>
+	<string name="delete_for_everyone">全員から削除</string>
+	<string name="delete_for_everyone_explained">全員から削除すると、連絡先の端末からも削除されます。スクリーンショットなど、連絡先がすでに作成したコピーには影響しません。</string>
+	<string name="deleted_here_only">この端末でのみ削除されました。連絡先のアプリが古いため、相手の端末では削除できません。</string>
+	<string name="action_edit_message">編集</string>
+	<string name="editing_message">メッセージを編集</string>
+	<string name="message_edited">編集済み</string>
+	<string name="edit_too_late">メッセージを編集できるのは送信から24時間以内のみです。</string>
+	<string name="edit_not_possible">このメッセージは編集できません。</string>
 </resources>

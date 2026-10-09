@@ -315,6 +315,13 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			} else {
 				showContactNotification(p.getContactId());
 			}
+		} else if (e instanceof org.zerionproject.app.api.messaging.event
+				.MessageDeletedForEveryoneEvent) {
+			org.zerionproject.app.api.messaging.event
+					.MessageDeletedForEveryoneEvent d =
+					(org.zerionproject.app.api.messaging.event
+							.MessageDeletedForEveryoneEvent) e;
+			if (d.wasUnread()) onContactMessageWithdrawn(d.getContactId());
 		} else if (e instanceof GroupTrPostAcceptedEvent) {
 			GroupTrPostAcceptedEvent g = (GroupTrPostAcceptedEvent) e;
 			if (!g.isLocal()) showGroupTrPostNotification(g.getGroupId());
@@ -420,6 +427,19 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		if (com.professor.zerion.android.conversation.ChatSettingsActivity
 				.isContactMuted(appContext, c)) return;
 		postContactNotification(c, true);
+	}
+
+	@UiThread
+	private void onContactMessageWithdrawn(ContactId c) {
+		if (contactCounts.getCount(c) == 0) return;
+		contactCounts.remove(c);
+		int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
+		if (contactCounts.getCount(c) == 0) {
+			notificationManager.cancel(notifId);
+			activeContactNotificationIds.remove(notifId);
+		} else if (activeContactNotificationIds.contains(notifId)) {
+			postContactNotification(c, false);
+		}
 	}
 
 	@Override

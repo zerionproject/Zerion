@@ -2428,4 +2428,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Hasierako pantailako ikonoa laster eguneratuko da. Mezuen jakinarazpenak «%1$s» gisa agertzen dira orain, kanpai-ikono batekin.</string>
 	<string name="voice_call_muted">Isilarazita</string>
+	<string name="delete_for_me">Ezabatu niretzat</string>
+	<string name="delete_for_everyone">Ezabatu guztientzat</string>
+	<string name="delete_for_everyone_explained">Guztientzat ezabatzen badituzu, zure kontaktuaren gailutik ere kenduko dira. Zure kontaktuak dagoeneko egindako kopiei, hala nola pantaila-argazkiei, ez die eragiten.</string>
+	<string name="deleted_here_only">Gailu honetan soilik ezabatu da: zure kontaktuaren aplikazioa zaharregia da bere gailuan ezabatzeko.</string>
+	<string name="action_edit_message">Editatu</string>
+	<string name="editing_message">Editatu mezua</string>
+	<string name="message_edited">editatuta</string>
+	<string name="edit_too_late">Mezuak bidali eta 24 orduko epean soilik edita daitezke.</string>
+	<string name="edit_not_possible">Mezu hau ezin da editatu.</string>
 </resources>

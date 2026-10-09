@@ -21,12 +21,14 @@ class ConversationMessageItem extends ConversationItem {
 	@Nullable
 	private final PrivateMessageHeader header;
 	private boolean attachmentsLoaded = false;
+	private boolean edited;
 
 	ConversationMessageItem(@LayoutRes int layoutRes, PrivateMessageHeader h,
 			LiveData<String> contactName, List<AttachmentItem> attachments) {
 		super(layoutRes, h, contactName);
 		this.attachments = attachments;
 		this.header = h;
+		this.edited = h.isEdited();
 		this.attachmentsLoaded = !attachments.isEmpty() || h.getAttachmentHeaders().isEmpty();
 	}
 
@@ -35,6 +37,7 @@ class ConversationMessageItem extends ConversationItem {
 		super(layoutRes, h, contactName);
 		this.attachments = new ArrayList<>();
 		this.header = h;
+		this.edited = h.isEdited();
 		this.attachmentsLoaded = h.getAttachmentHeaders().isEmpty();
 	}
 
@@ -49,6 +52,15 @@ class ConversationMessageItem extends ConversationItem {
 	@Nullable
 	PrivateMessageHeader getHeader() {
 		return header;
+	}
+
+	boolean isEdited() {
+		return edited;
+	}
+
+	@UiThread
+	void markEdited() {
+		edited = true;
 	}
 
 	@UiThread

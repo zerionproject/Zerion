@@ -2469,4 +2469,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">הסמל במסך הבית יתעדכן בקרוב. התראות על הודעות מופיעות כעת בשם \"%1$s\" עם סמל של פעמון.</string>
 	<string name="voice_call_muted">מושתק</string>
+	<string name="delete_for_me">מחיקה אצלי</string>
+	<string name="delete_for_everyone">מחיקה אצל כולם</string>
+	<string name="delete_for_everyone_explained">מחיקה אצל כולם מסירה את ההודעות גם מהמכשיר של איש הקשר שלך. עותקים שאיש הקשר שלך כבר יצר, כמו צילומי מסך, לא יושפעו.</string>
+	<string name="deleted_here_only">נמחקה במכשיר הזה בלבד: האפליקציה של איש הקשר שלך ישנה מדי כדי למחוק אותה אצלו.</string>
+	<string name="action_edit_message">עריכה</string>
+	<string name="editing_message">עריכת הודעה</string>
+	<string name="message_edited">נערכה</string>
+	<string name="edit_too_late">ניתן לערוך הודעות רק תוך 24 שעות מרגע שליחתן.</string>
+	<string name="edit_not_possible">לא ניתן לערוך את ההודעה הזו.</string>
 </resources>

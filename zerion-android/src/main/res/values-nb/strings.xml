@@ -2447,4 +2447,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikonet på startskjermen oppdateres snart. Meldingsvarsler vises nå som «%1$s» med et bjelleikon.</string>
 	<string name="voice_call_muted">Dempet</string>
+	<string name="delete_for_me">Slett for meg</string>
+	<string name="delete_for_everyone">Slett for alle</string>
+	<string name="delete_for_everyone_explained">Når du sletter for alle, fjernes meldingene også fra kontaktens enhet. Kopier kontakten din allerede har laget, for eksempel skjermbilder, påvirkes ikke.</string>
+	<string name="deleted_here_only">Slettet bare på denne enheten: kontaktens app er for gammel til å slette meldingen der.</string>
+	<string name="action_edit_message">Rediger</string>
+	<string name="editing_message">Rediger melding</string>
+	<string name="message_edited">redigert</string>
+	<string name="edit_too_late">Meldinger kan bare redigeres innen 24 timer etter at de ble sendt.</string>
+	<string name="edit_not_possible">Denne meldingen kan ikke redigeres.</string>
 </resources>

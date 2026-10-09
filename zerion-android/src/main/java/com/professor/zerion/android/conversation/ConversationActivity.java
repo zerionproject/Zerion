@@ -413,6 +413,29 @@ public class ConversationActivity extends ZerionActivity
 			}
 		});
 
+		viewModel.getMessageEdited().observeEvent(this, pair -> {
+			if (pair != null) onMessageEdited(pair.getFirst(), pair.getSecond());
+		});
+
+		viewModel.getEditRefused().observeEvent(this, res -> {
+			if (res != null) {
+				new ZerionSnackbarBuilder().make(list, res,
+						Snackbar.LENGTH_LONG).show();
+			}
+		});
+
+		viewModel.getDeletedHereOnly().observeEvent(this, d -> {
+			if (d != null && d) {
+				new ZerionSnackbarBuilder().make(list,
+						R.string.deleted_here_only,
+						Snackbar.LENGTH_LONG).show();
+			}
+		});
+
+		viewModel.getEditAndDeleteSupported().observe(this, s -> {
+			if (actionMode != null) actionMode.invalidate();
+		});
+
 		viewModel.getReactionRemovedLocallyOnly().observeEvent(this, r -> {
 			if (r != null && r) {
 				new ZerionSnackbarBuilder().make(list,
@@ -1140,6 +1163,10 @@ public class ConversationActivity extends ZerionActivity
 			}
 			reactItem.setVisible(showReact);
 		}
+		MenuItem editItem = menu.findItem(R.id.action_edit);
+		if (editItem != null) {
+			editItem.setVisible(selectedEditableItem() != null);
+		}
 		return true;
 	}
 
@@ -1157,13 +1184,90 @@ public class ConversationActivity extends ZerionActivity
 		} else if (item.getItemId() == R.id.action_delete) {
 			deleteSelectedMessages();
 			return true;
+		} else if (item.getItemId() == R.id.action_edit) {
+			editSelectedMessage();
+			return true;
 		}
 		return false;
+	}
+
+	@Nullable
+	private ConversationMessageItem selectedEditableItem() {
+		if (tracker == null || tracker.getSelection().size() != 1) return null;
+		if (!Boolean.TRUE.equals(
+				viewModel.getEditAndDeleteSupported().getValue())) {
+			return null;
+		}
+		String key = tracker.getSelection().iterator().next();
+		int pos = adapter.getPositionOfKey(key);
+		if (pos < 0) return null;
+		ConversationItem item = adapter.getItemAt(pos);
+		if (!(item instanceof ConversationMessageItem)) return null;
+		ConversationMessageItem m = (ConversationMessageItem) item;
+		if (m.isIncoming() || m.getHeader() == null
+				|| m.getHeader().isMesh() || m.getLinkPreview() != null) {
+			return null;
+		}
+		if (!org.zerionproject.app.api.messaging.MessageEdits
+				.isEditableText(m.getText())) {
+			return null;
+		}
+		if (System.currentTimeMillis() - m.getTime()
+				> MessagingManager.EDIT_WINDOW_MS) {
+			return null;
+		}
+		return m;
+	}
+
+	@UiThread
+	private void editSelectedMessage() {
+		ConversationMessageItem item = selectedEditableItem();
+		if (actionMode != null) actionMode.finish();
+		if (item == null || item.getText() == null) return;
+		textInputView.showEditPreview(item, item.getText());
+		textInputView.showSoftKeyboard();
+	}
+
+	@UiThread
+	private void onMessageEdited(MessageId id, String text) {
+		textCache.put(id, text);
+		Pair<Integer, ConversationMessageItem> pair =
+				adapter.getMessageItem(id);
+		if (pair != null) {
+			pair.getSecond().setText(text);
+			pair.getSecond().markEdited();
+			adapter.notifyItemChanged(pair.getFirst());
+		}
+		for (int i = 0; i < adapter.getItemCount(); i++) {
+			ConversationItem item = adapter.getItemAt(i);
+			if (item != null && id.equals(item.getReplyToMessageId())) {
+				item.setReplyToText(text);
+				adapter.notifyItemChanged(i);
+			}
+		}
+	}
+
+	private boolean canDeleteSelectionForEveryone() {
+		if (!Boolean.TRUE.equals(
+				viewModel.getEditAndDeleteSupported().getValue())) {
+			return false;
+		}
+		for (String key : tracker.getSelection()) {
+			int pos = adapter.getPositionOfKey(key);
+			if (pos < 0) return false;
+			ConversationItem item = adapter.getItemAt(pos);
+			if (!(item instanceof ConversationMessageItem)
+					|| item.isIncoming()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
 	public void onDestroyActionMode(ActionMode mode) {
 		actionMode = null;
+		if (tracker != null) tracker.clearSelection();
 	}
 
 	@Override
@@ -1474,6 +1578,17 @@ public class ConversationActivity extends ZerionActivity
 	public LiveData<SendState> onSendClick(@Nullable String text,
 			List<AttachmentHeader> headers, long expectedAutoDeleteTimer) {
 		typingManager.onMessageSent();
+		ConversationItem editing = textInputView.getEditingItem();
+		if (editing != null && headers.isEmpty() && text != null) {
+			LiveData<SendState> edited =
+					viewModel.editMessage(editing.getId(), text);
+			edited.observe(this, state -> {
+				if (state == SendState.SENT) {
+					textInputView.hideReplyPreview();
+				}
+			});
+			return edited;
+		}
 		ConversationItem replyToItem = textInputView.getReplyingToItem();
 		LiveData<SendState> result = viewModel.sendMessage(text, headers, expectedAutoDeleteTimer, replyToItem);
 		textInputView.hideReplyPreview();
@@ -1889,17 +2004,33 @@ public class ConversationActivity extends ZerionActivity
 		Collection<MessageId> selected = getSelection();
 		if (selected.isEmpty()) return;
 
-		new SecureAlertDialogBuilder(this)
-				.setTitle(R.string.conversation_delete_title)
-				.setMessage(getResources().getQuantityString(R.plurals.conversation_delete_message,
-						selected.size(), selected.size()))
-				.setPositiveButton(R.string.conversation_delete_action,
-						(dialog, which) -> {
-					if (actionMode != null) actionMode.finish();
-					viewModel.deleteMessages(selected);
-				})
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
+		String question = getResources().getQuantityString(
+				R.plurals.conversation_delete_message, selected.size(),
+				selected.size());
+		SecureAlertDialogBuilder dialog = new SecureAlertDialogBuilder(this);
+		dialog.setTitle(R.string.conversation_delete_title);
+		if (canDeleteSelectionForEveryone()) {
+			dialog.setMessage(question + "\n\n"
+					+ getString(R.string.delete_for_everyone_explained));
+			dialog.setPositiveButton(R.string.delete_for_everyone,
+					(d, which) -> {
+						if (actionMode != null) actionMode.finish();
+						viewModel.deleteForEveryone(selected);
+					});
+			dialog.setNeutralButton(R.string.delete_for_me, (d, which) -> {
+				if (actionMode != null) actionMode.finish();
+				viewModel.deleteMessages(selected);
+			});
+		} else {
+			dialog.setMessage(question);
+			dialog.setPositiveButton(R.string.conversation_delete_action,
+					(d, which) -> {
+						if (actionMode != null) actionMode.finish();
+						viewModel.deleteMessages(selected);
+					});
+		}
+		dialog.setNegativeButton(android.R.string.cancel, null);
+		dialog.show();
 	}
 
 	private void onImagesChosen(@Nullable List<Uri> uris) {

@@ -2442,4 +2442,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Táknið á heimaskjánum uppfærist innan skamms. Tilkynningar um skilaboð birtast nú sem „%1$s“ með bjöllutákni.</string>
 	<string name="voice_call_muted">Þaggað</string>
+	<string name="delete_for_me">Eyða fyrir mig</string>
+	<string name="delete_for_everyone">Eyða fyrir alla</string>
+	<string name="delete_for_everyone_explained">Ef þú eyðir fyrir alla eru skilaboðin líka fjarlægð úr tæki tengiliðarins. Afrit sem tengiliðurinn hefur þegar gert, til dæmis skjámyndir, verða ekki fyrir áhrifum.</string>
+	<string name="deleted_here_only">Aðeins eytt úr þessu tæki: forrit tengiliðarins er of gamalt til að eyða skilaboðunum þar.</string>
+	<string name="action_edit_message">Breyta</string>
+	<string name="editing_message">Breyta skilaboðum</string>
+	<string name="message_edited">breytt</string>
+	<string name="edit_too_late">Aðeins er hægt að breyta skilaboðum innan 24 klukkustunda frá sendingu.</string>
+	<string name="edit_not_possible">Ekki er hægt að breyta þessum skilaboðum.</string>
 </resources>

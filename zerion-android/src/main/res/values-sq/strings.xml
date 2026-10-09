@@ -2445,4 +2445,13 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikona në ekranin bazë do të përditësohet së shpejti. Njoftimet e mesazheve tani shfaqen si “%1$s” me një ikonë zileje.</string>
 	<string name="voice_call_muted">I heshtur</string>
+	<string name="delete_for_me">Fshije për mua</string>
+	<string name="delete_for_everyone">Fshije për të gjithë</string>
+	<string name="delete_for_everyone_explained">Fshirja për të gjithë i heq mesazhet edhe nga pajisja e kontaktit tënd. Kopjet që kontakti yt ka bërë tashmë, si pamjet e ekranit, nuk preken.</string>
+	<string name="deleted_here_only">U fshi vetëm në këtë pajisje: aplikacioni i kontaktit tënd është shumë i vjetër për ta fshirë edhe atje.</string>
+	<string name="action_edit_message">Ndrysho</string>
+	<string name="editing_message">Ndrysho mesazhin</string>
+	<string name="message_edited">ndryshuar</string>
+	<string name="edit_too_late">Mesazhet mund të ndryshohen vetëm brenda 24 orëve nga dërgimi.</string>
+	<string name="edit_not_possible">Ky mesazh nuk mund të ndryshohet.</string>
 </resources>

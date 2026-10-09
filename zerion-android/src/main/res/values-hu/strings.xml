@@ -2448,4 +2448,13 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">A kezdőképernyő ikonja hamarosan frissül. Az üzenetértesítések mostantól „%1$s” néven, csengő ikonnal jelennek meg.</string>
 	<string name="voice_call_muted">Némítva</string>
+	<string name="delete_for_me">Törlés nálam</string>
+	<string name="delete_for_everyone">Törlés mindenkinél</string>
+	<string name="delete_for_everyone_explained">A mindenkinél való törlés a másik fél eszközéről is eltávolítja az üzeneteket. A másik fél által már készített másolatokat, például a képernyőképeket, ez nem érinti.</string>
+	<string name="deleted_here_only">Csak ezen az eszközön törölve: a másik fél alkalmazása túl régi ahhoz, hogy nála is törlődjön.</string>
+	<string name="action_edit_message">Szerkesztés</string>
+	<string name="editing_message">Üzenet szerkesztése</string>
+	<string name="message_edited">szerkesztve</string>
+	<string name="edit_too_late">Az üzenetek csak az elküldésüktől számított 24 órán belül szerkeszthetők.</string>
+	<string name="edit_not_possible">Ez az üzenet nem szerkeszthető.</string>
 </resources>

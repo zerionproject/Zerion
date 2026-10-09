@@ -2417,4 +2417,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">主畫面圖示將很快更新。訊息通知現在會顯示為「%1$s」，並帶有鈴鐺圖示。</string>
 	<string name="voice_call_muted">已靜音</string>
+	<string name="delete_for_me">為我刪除</string>
+	<string name="delete_for_everyone">為所有人刪除</string>
+	<string name="delete_for_everyone_explained">為所有人刪除時，這些訊息也會從聯絡人的裝置上移除。聯絡人已儲存的副本（例如螢幕截圖）不受影響。</string>
+	<string name="deleted_here_only">僅在此裝置上刪除：聯絡人的應用程式版本過舊，無法在其裝置上刪除。</string>
+	<string name="action_edit_message">編輯</string>
+	<string name="editing_message">編輯訊息</string>
+	<string name="message_edited">已編輯</string>
+	<string name="edit_too_late">訊息只能在傳送後 24 小時內編輯。</string>
+	<string name="edit_not_possible">此訊息無法編輯。</string>
 </resources>

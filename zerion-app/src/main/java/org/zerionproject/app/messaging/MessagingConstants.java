@@ -22,6 +22,9 @@ interface MessagingConstants {
 
 	String MSG_KEY_REPLY_TO_ID = "replyToId";
 
+	String MSG_KEY_EDITED_TEXT = "editedText";
+	String MSG_KEY_EDITED_AT = "editedAt";
+
 	String MSG_KEY_MESH = "mesh";
 
 	String MSG_KEY_MESH_STATE = "meshState";

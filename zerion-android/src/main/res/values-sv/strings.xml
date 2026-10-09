@@ -2445,4 +2445,13 @@ Vänlige installera Zerion på en nyare enhet.</string>
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikonen på startskärmen uppdateras om en stund. Meddelandeaviseringar visas nu som ”%1$s” med en klockikon.</string>
 	<string name="voice_call_muted">Tystad</string>
+	<string name="delete_for_me">Radera för mig</string>
+	<string name="delete_for_everyone">Radera för alla</string>
+	<string name="delete_for_everyone_explained">Om du raderar för alla tas meddelandena även bort från din kontakts enhet. Kopior som din kontakt redan har gjort, till exempel skärmbilder, påverkas inte.</string>
+	<string name="deleted_here_only">Raderat bara på den här enheten: din kontakts app är för gammal för att radera meddelandet där.</string>
+	<string name="action_edit_message">Redigera</string>
+	<string name="editing_message">Redigera meddelande</string>
+	<string name="message_edited">redigerat</string>
+	<string name="edit_too_late">Meddelanden kan bara redigeras inom 24 timmar efter att de skickats.</string>
+	<string name="edit_not_possible">Det här meddelandet kan inte redigeras.</string>
 </resources>

@@ -2453,4 +2453,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Das Symbol auf dem Startbildschirm wird in Kürze aktualisiert. Benachrichtigungen für Nachrichten erscheinen jetzt als „%1$s“ mit einem Glockensymbol.</string>
 	<string name="voice_call_muted">Stummgeschaltet</string>
+	<string name="delete_for_me">Für mich löschen</string>
+	<string name="delete_for_everyone">Für alle löschen</string>
+	<string name="delete_for_everyone_explained">Beim Löschen für alle werden die Nachrichten auch vom Gerät deines Kontakts entfernt. Kopien, die dein Kontakt bereits erstellt hat, etwa Screenshots, sind davon nicht betroffen.</string>
+	<string name="deleted_here_only">Nur auf diesem Gerät gelöscht: Die App deines Kontakts ist zu alt, um die Nachricht dort zu löschen.</string>
+	<string name="action_edit_message">Bearbeiten</string>
+	<string name="editing_message">Nachricht bearbeiten</string>
+	<string name="message_edited">bearbeitet</string>
+	<string name="edit_too_late">Nachrichten können nur innerhalb von 24 Stunden nach dem Senden bearbeitet werden.</string>
+	<string name="edit_not_possible">Diese Nachricht kann nicht bearbeitet werden.</string>
 </resources>

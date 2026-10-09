@@ -59,6 +59,8 @@ prekey bundle with no interactive handshake.
 | [ASYNC-SEALED-SENDER.md](ASYNC-SEALED-SENDER.md) | The offline sealed-sender envelope used by the mesh |
 | [MESH-TRANSPORT.md](MESH-TRANSPORT.md) | Store-and-forward flooding and the Bluetooth Low Energy link |
 | [EMBEDDED-I2P.md](EMBEDDED-I2P.md) | The embedded I2P carrier of development builds and its privacy trade-off |
+| [VOICE_MEMO_V2.md](VOICE_MEMO_V2.md) | The text forms and encrypted payload of voice memos in private conversations |
+| [MESSAGE-EDIT-DELETE.md](MESSAGE-EDIT-DELETE.md) | Editing a sent message and deleting it for everyone in private conversations |
 
 ## Cryptographic primitives
 

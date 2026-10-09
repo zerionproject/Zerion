@@ -2447,4 +2447,13 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Het pictogram op het startscherm wordt binnenkort bijgewerkt. Meldingen van berichten verschijnen nu als “%1$s” met een belpictogram.</string>
 	<string name="voice_call_muted">Gedempt</string>
+	<string name="delete_for_me">Verwijderen voor mij</string>
+	<string name="delete_for_everyone">Verwijderen voor iedereen</string>
+	<string name="delete_for_everyone_explained">Als je voor iedereen verwijdert, worden de berichten ook van het apparaat van je contact verwijderd. Kopieën die je contact al heeft gemaakt, zoals screenshots, worden hierdoor niet verwijderd.</string>
+	<string name="deleted_here_only">Alleen op dit apparaat verwijderd: de app van je contact is te oud om het bericht daar ook te verwijderen.</string>
+	<string name="action_edit_message">Bewerken</string>
+	<string name="editing_message">Bericht bewerken</string>
+	<string name="message_edited">bewerkt</string>
+	<string name="edit_too_late">Berichten kunnen alleen binnen 24 uur na het verzenden worden bewerkt.</string>
+	<string name="edit_not_possible">Dit bericht kan niet worden bewerkt.</string>
 </resources>

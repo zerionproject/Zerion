@@ -2471,4 +2471,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Skeudennig ar skramm degemer a vo hizivaet a-benn nebeut. Bremañ e vez diskouezet kemennoù ar c\'hemennadennoù evel « %1$s » gant ur skeudennig kloc\'h.</string>
 	<string name="voice_call_muted">Mudet</string>
+	<string name="delete_for_me">Dilemel evidon</string>
+	<string name="delete_for_everyone">Dilemel evit an holl</string>
+	<string name="delete_for_everyone_explained">Dilemel evit an holl a lam anezho ivez diwar trevnad ho darempred. An eilskouerioù graet dija gant ho darempred, evel an tapadennoù-skramm, n\'int ket tizhet.</string>
+	<string name="deleted_here_only">Dilamet war an trevnad-mañ hepken: re gozh eo arload ho darempred evit e zilemel war e drevnad.</string>
+	<string name="action_edit_message">Kemmañ</string>
+	<string name="editing_message">Kemmañ ar gemennadenn</string>
+	<string name="message_edited">kemmet</string>
+	<string name="edit_too_late">Ne c\'haller kemmañ ar c\'hemennadennoù nemet e-pad 24 eurvezh goude o c\'has.</string>
+	<string name="edit_not_possible">Ne c\'haller ket kemmañ ar gemennadenn-mañ.</string>
 </resources>

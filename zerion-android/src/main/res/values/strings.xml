@@ -1759,6 +1759,15 @@
 		<item quantity="other">Delete %1$d messages?</item>
 	</plurals>
 	<string name="conversation_delete_action">Delete</string>
+	<string name="delete_for_me">Delete for me</string>
+	<string name="delete_for_everyone">Delete for everyone</string>
+	<string name="delete_for_everyone_explained">Deleting for everyone also removes them from your contact\'s device. Copies your contact has already made, such as screenshots, are not affected.</string>
+	<string name="deleted_here_only">Deleted on this device only: your contact\'s app is too old to delete it on theirs.</string>
+	<string name="action_edit_message">Edit</string>
+	<string name="editing_message">Edit message</string>
+	<string name="message_edited">edited</string>
+	<string name="edit_too_late">Messages can only be edited within 24 hours of sending.</string>
+	<string name="edit_not_possible">This message cannot be edited.</string>
 
 	<string name="vault_settings_export_open_failed">Failed to open destination</string>
 	<string name="vault_settings_export_saved">Vault backup saved</string>

@@ -38,6 +38,8 @@ public class TextInputView extends LinearLayout {
 	private View replyPreview;
 	@Nullable
 	private ConversationItem replyingToItem;
+	@Nullable
+	private ConversationItem editingItem;
 
 	public TextInputView(Context context) {
 		this(context, null);
@@ -204,11 +206,41 @@ public class TextInputView extends LinearLayout {
 			replyPreview = null;
 		}
 		replyingToItem = null;
+		editingItem = null;
 	}
 
 	@Nullable
 	public ConversationItem getReplyingToItem() {
 		return replyingToItem;
+	}
+
+	public void showEditPreview(ConversationItem item, String text) {
+		hideReplyPreview();
+
+		LayoutInflater inflater = LayoutInflater.from(getContext());
+		replyPreview = inflater.inflate(R.layout.reply_preview, this, false);
+		addView(replyPreview, 0);
+
+		editingItem = item;
+
+		TextView title = replyPreview.findViewById(R.id.reply_author);
+		TextView original = replyPreview.findViewById(R.id.reply_text);
+		ImageButton cancel = replyPreview.findViewById(R.id.cancel_reply);
+		title.setText(R.string.editing_message);
+		original.setText(text);
+		cancel.setContentDescription(getContext().getString(R.string.cancel));
+		cancel.setOnClickListener(v -> {
+			hideReplyPreview();
+			textInput.clearText();
+		});
+
+		textInput.setText(text);
+		replyPreview.setVisibility(View.VISIBLE);
+	}
+
+	@Nullable
+	public ConversationItem getEditingItem() {
+		return editingItem;
 	}
 
 }

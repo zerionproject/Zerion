@@ -2512,4 +2512,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Значок на главном экране скоро обновится. Уведомления о сообщениях теперь отображаются как «%1$s» со значком колокольчика.</string>
 	<string name="voice_call_muted">Микрофон выключен</string>
+	<string name="delete_for_me">Удалить у меня</string>
+	<string name="delete_for_everyone">Удалить у всех</string>
+	<string name="delete_for_everyone_explained">При удалении у всех сообщения удаляются и с устройства вашего контакта. Копии, которые контакт уже сделал, например скриншоты, это не затрагивает.</string>
+	<string name="deleted_here_only">Удалено только на этом устройстве: приложение вашего контакта слишком старое, чтобы удалить сообщение у него.</string>
+	<string name="action_edit_message">Изменить</string>
+	<string name="editing_message">Редактирование сообщения</string>
+	<string name="message_edited">изменено</string>
+	<string name="edit_too_late">Сообщения можно изменять только в течение 24 часов после отправки.</string>
+	<string name="edit_not_possible">Это сообщение нельзя изменить.</string>
 </resources>

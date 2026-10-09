@@ -232,6 +232,11 @@ public class EmojiTextInputView extends LinearLayout implements
 		editText.setText(null);
 	}
 
+	void setText(String text) {
+		editText.setText(text);
+		editText.setSelection(editText.length());
+	}
+
 	boolean isEmpty() {
 		return getText() == null;
 	}

@@ -2510,4 +2510,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Значок на головному екрані незабаром оновиться. Сповіщення про повідомлення тепер показуються як «%1$s» зі значком дзвіночка.</string>
 	<string name="voice_call_muted">Мікрофон вимкнено</string>
+	<string name="delete_for_me">Видалити для мене</string>
+	<string name="delete_for_everyone">Видалити для всіх</string>
+	<string name="delete_for_everyone_explained">Видалення для всіх також прибирає їх із пристрою вашого контакту. Копії, які контакт уже зробив, наприклад знімки екрана, це не зачіпає.</string>
+	<string name="deleted_here_only">Видалено лише на цьому пристрої: застосунок вашого контакту надто старий, щоб видалити повідомлення в нього.</string>
+	<string name="action_edit_message">Редагувати</string>
+	<string name="editing_message">Редагування повідомлення</string>
+	<string name="message_edited">змінено</string>
+	<string name="edit_too_late">Повідомлення можна редагувати лише протягом 24 годин після надсилання.</string>
+	<string name="edit_not_possible">Це повідомлення не можна редагувати.</string>
 </resources>

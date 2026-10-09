@@ -2510,4 +2510,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikona na domovské obrazovce se brzy aktualizuje. Upozornění na zprávy se nyní zobrazují jako „%1$s“ s ikonou zvonku.</string>
 	<string name="voice_call_muted">Ztlumeno</string>
+	<string name="delete_for_me">Odstranit u mě</string>
+	<string name="delete_for_everyone">Odstranit u všech</string>
+	<string name="delete_for_everyone_explained">Odstraněním u všech je odstraníte i ze zařízení vašeho kontaktu. Na kopie, které si kontakt už pořídil, například snímky obrazovky, to nemá vliv.</string>
+	<string name="deleted_here_only">Odstraněno jen v tomto zařízení: aplikace vašeho kontaktu je příliš stará, aby zprávu odstranila i u něj.</string>
+	<string name="action_edit_message">Upravit</string>
+	<string name="editing_message">Úprava zprávy</string>
+	<string name="message_edited">upraveno</string>
+	<string name="edit_too_late">Zprávy lze upravit jen do 24 hodin od odeslání.</string>
+	<string name="edit_not_possible">Tuto zprávu nelze upravit.</string>
 </resources>

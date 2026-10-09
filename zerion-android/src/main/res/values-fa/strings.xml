@@ -2448,4 +2448,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">آیکون صفحه اصلی به‌زودی به‌روزرسانی می‌شود. اعلان‌های پیام اکنون با نام «%1$s» و آیکون زنگ نمایش داده می‌شوند.</string>
 	<string name="voice_call_muted">بی‌صدا شده</string>
+	<string name="delete_for_me">حذف برای من</string>
+	<string name="delete_for_everyone">حذف برای همه</string>
+	<string name="delete_for_everyone_explained">حذف برای همه، پیام‌ها را از دستگاه مخاطبتان هم پاک می‌کند. نسخه‌هایی که مخاطبتان از قبل تهیه کرده است، مانند اسکرین‌شات‌ها، تحت تأثیر قرار نمی‌گیرند.</string>
+	<string name="deleted_here_only">فقط در این دستگاه حذف شد: برنامه مخاطبتان قدیمی‌تر از آن است که بتواند پیام را در دستگاه خودش حذف کند.</string>
+	<string name="action_edit_message">ویرایش</string>
+	<string name="editing_message">ویرایش پیام</string>
+	<string name="message_edited">ویرایش‌شده</string>
+	<string name="edit_too_late">پیام‌ها را فقط تا ۲۴ ساعت پس از ارسال می‌توان ویرایش کرد.</string>
+	<string name="edit_not_possible">این پیام قابل ویرایش نیست.</string>
 </resources>

@@ -21,6 +21,7 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 	@Nullable
 	private final MessageId replyToId;
 	private final boolean mesh;
+	private final boolean edited;
 
 	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
 			boolean local, boolean read, boolean sent, boolean seen,
@@ -42,11 +43,25 @@ public class PrivateMessageHeader extends ConversationMessageHeader {
 			boolean local, boolean read, boolean sent, boolean seen,
 			boolean hasText, List<AttachmentHeader> headers,
 			long autoDeleteTimer, @Nullable MessageId replyToId, boolean mesh) {
+		this(id, groupId, timestamp, local, read, sent, seen, hasText,
+				headers, autoDeleteTimer, replyToId, mesh, false);
+	}
+
+	public PrivateMessageHeader(MessageId id, GroupId groupId, long timestamp,
+			boolean local, boolean read, boolean sent, boolean seen,
+			boolean hasText, List<AttachmentHeader> headers,
+			long autoDeleteTimer, @Nullable MessageId replyToId, boolean mesh,
+			boolean edited) {
 		super(id, groupId, timestamp, local, read, sent, seen, autoDeleteTimer);
 		this.hasText = hasText;
 		this.attachmentHeaders = headers;
 		this.replyToId = replyToId;
 		this.mesh = mesh;
+		this.edited = edited;
+	}
+
+	public boolean isEdited() {
+		return edited;
 	}
 
 	public boolean isMesh() {

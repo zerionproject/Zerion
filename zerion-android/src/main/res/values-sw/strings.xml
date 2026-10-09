@@ -2437,4 +2437,13 @@ Umepoteza nenosiri.</string>
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Aikoni ya skrini ya mwanzo itasasishwa hivi punde. Arifa za ujumbe sasa zinaonekana kama “%1$s” zikiwa na aikoni ya kengele.</string>
 	<string name="voice_call_muted">Imenyamazishwa</string>
+	<string name="delete_for_me">Futa kwa ajili yangu</string>
+	<string name="delete_for_everyone">Futa kwa kila mtu</string>
+	<string name="delete_for_everyone_explained">Kufuta kwa kila mtu pia huondoa jumbe hizo kwenye kifaa cha mwasiliani wako. Nakala ambazo mwasiliani wako tayari amezitengeneza, kama vile picha za skrini, haziathiriwi.</string>
+	<string name="deleted_here_only">Imefutwa kwenye kifaa hiki pekee: programu ya mwasiliani wako ni ya zamani mno kuweza kuufuta kwenye kifaa chake.</string>
+	<string name="action_edit_message">Hariri</string>
+	<string name="editing_message">Hariri ujumbe</string>
+	<string name="message_edited">imehaririwa</string>
+	<string name="edit_too_late">Jumbe zinaweza kuhaririwa tu ndani ya saa 24 baada ya kutumwa.</string>
+	<string name="edit_not_possible">Ujumbe huu hauwezi kuhaririwa.</string>
 </resources>

@@ -2428,4 +2428,13 @@ Volètz suprimir vòstre compte e ne crear un nòu ?\n
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">L’icòna de l’ecran d’acuèlh se metrà a jorn d’aquí pauc. Las notificacions de messatges apareisson ara coma « %1$s » amb una icòna de campana.</string>
 	<string name="voice_call_muted">Amudit</string>
+	<string name="delete_for_me">Suprimir per ieu</string>
+	<string name="delete_for_everyone">Suprimir per totes</string>
+	<string name="delete_for_everyone_explained">Suprimir per totes los lèva tanben de l’aparelh de vòstre contacte. Las còpias que vòstre contacte a ja fachas, coma las capturas d’ecran, son pas afectadas.</string>
+	<string name="deleted_here_only">Suprimit sonque sus aqueste aparelh: l’aplicacion de vòstre contacte es tròp vièlha per lo suprimir sus son aparelh.</string>
+	<string name="action_edit_message">Modificar</string>
+	<string name="editing_message">Modificar lo messatge</string>
+	<string name="message_edited">modificat</string>
+	<string name="edit_too_late">Los messatges se pòdon modificar sonque dins las 24 oras aprèp lor mandadís.</string>
+	<string name="edit_not_possible">Aqueste messatge se pòt pas modificar.</string>
 </resources>

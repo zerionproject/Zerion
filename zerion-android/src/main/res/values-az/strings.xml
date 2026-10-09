@@ -2376,4 +2376,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ana ekrandakı ikon tezliklə yenilənəcək. Mesaj bildirişləri indi zınqırov ikonu ilə «%1$s» adı altında görünür.</string>
 	<string name="voice_call_muted">Səssizdir</string>
+	<string name="delete_for_me">Mənim üçün sil</string>
+	<string name="delete_for_everyone">Hamı üçün sil</string>
+	<string name="delete_for_everyone_explained">Hamı üçün silmək mesajları kontaktınızın cihazından da silir. Kontaktınızın artıq əldə etdiyi nüsxələr, məsələn ekran görüntüləri, bundan təsirlənmir.</string>
+	<string name="deleted_here_only">Yalnız bu cihazda silindi: kontaktınızın tətbiqi mesajı öz cihazında silmək üçün çox köhnədir.</string>
+	<string name="action_edit_message">Redaktə et</string>
+	<string name="editing_message">Mesajı redaktə et</string>
+	<string name="message_edited">redaktə edildi</string>
+	<string name="edit_too_late">Mesajları yalnız göndərildikdən sonra 24 saat ərzində redaktə etmək olar.</string>
+	<string name="edit_not_possible">Bu mesajı redaktə etmək mümkün deyil.</string>
 </resources>

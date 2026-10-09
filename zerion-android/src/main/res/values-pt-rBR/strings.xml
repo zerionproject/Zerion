@@ -2485,4 +2485,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">O ícone na tela inicial será atualizado em breve. As notificações de mensagens agora aparecem como “%1$s” com um ícone de sino.</string>
 	<string name="voice_call_muted">Silenciado</string>
+	<string name="delete_for_me">Excluir para mim</string>
+	<string name="delete_for_everyone">Excluir para todos</string>
+	<string name="delete_for_everyone_explained">Ao excluir para todos, as mensagens também são removidas do dispositivo do seu contato. Cópias que seu contato já tenha feito, como capturas de tela, não são afetadas.</string>
+	<string name="deleted_here_only">Excluída apenas neste dispositivo: o aplicativo do seu contato é antigo demais para excluí-la no dele.</string>
+	<string name="action_edit_message">Editar</string>
+	<string name="editing_message">Editar mensagem</string>
+	<string name="message_edited">editada</string>
+	<string name="edit_too_late">As mensagens só podem ser editadas até 24 horas após o envio.</string>
+	<string name="edit_not_possible">Esta mensagem não pode ser editada.</string>
 </resources>

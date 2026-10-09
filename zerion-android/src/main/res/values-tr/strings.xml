@@ -2449,4 +2449,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ana ekran simgesi kısa süre içinde güncellenecek. İleti bildirimleri artık zil simgesiyle “%1$s” olarak görünür.</string>
 	<string name="voice_call_muted">Sessizde</string>
+	<string name="delete_for_me">Benden sil</string>
+	<string name="delete_for_everyone">Herkesten sil</string>
+	<string name="delete_for_everyone_explained">Herkesten silmek, mesajları kişinizin cihazından da kaldırır. Kişinizin daha önce oluşturduğu ekran görüntüsü gibi kopyalar bundan etkilenmez.</string>
+	<string name="deleted_here_only">Yalnızca bu cihazda silindi: kişinizin uygulaması, mesajı kendi cihazında silemeyecek kadar eski.</string>
+	<string name="action_edit_message">Düzenle</string>
+	<string name="editing_message">Mesajı düzenle</string>
+	<string name="message_edited">düzenlendi</string>
+	<string name="edit_too_late">Mesajlar yalnızca gönderildikten sonraki 24 saat içinde düzenlenebilir.</string>
+	<string name="edit_not_possible">Bu mesaj düzenlenemez.</string>
 </resources>

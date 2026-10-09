@@ -2443,4 +2443,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">მთავარ ეკრანზე ხატულა მალე განახლდება. წერილების შეტყობინებები ახლა გამოჩნდება სახელწოდებით „%1$s“ და ზანზალაკის ხატულით.</string>
 	<string name="voice_call_muted">დადუმებულია</string>
+	<string name="delete_for_me">წაშლა ჩემთვის</string>
+	<string name="delete_for_everyone">წაშლა ყველასთვის</string>
+	<string name="delete_for_everyone_explained">ყველასთვის წაშლა შეტყობინებებს თქვენი კონტაქტის მოწყობილობიდანაც შლის. ასლებზე, რომლებიც თქვენმა კონტაქტმა უკვე გააკეთა, მაგალითად ეკრანის ანაბეჭდებზე, ეს გავლენას არ ახდენს.</string>
+	<string name="deleted_here_only">წაიშალა მხოლოდ ამ მოწყობილობაზე: თქვენი კონტაქტის აპლიკაცია ძალიან ძველია და მის მოწყობილობაზე ვერ წაშლის.</string>
+	<string name="action_edit_message">რედაქტირება</string>
+	<string name="editing_message">შეტყობინების რედაქტირება</string>
+	<string name="message_edited">რედაქტირებული</string>
+	<string name="edit_too_late">შეტყობინებების რედაქტირება შესაძლებელია მხოლოდ გაგზავნიდან 24 საათის განმავლობაში.</string>
+	<string name="edit_not_possible">ამ შეტყობინების რედაქტირება შეუძლებელია.</string>
 </resources>

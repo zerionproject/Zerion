@@ -2445,4 +2445,13 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">La icona de la pantalla d\'inici s\'actualitzarà aviat. Les notificacions de missatges ara apareixen com a «%1$s» amb una icona de campana.</string>
 	<string name="voice_call_muted">Silenciat</string>
+	<string name="delete_for_me">Suprimeix per a mi</string>
+	<string name="delete_for_everyone">Suprimeix per a tothom</string>
+	<string name="delete_for_everyone_explained">Si suprimeixes per a tothom, els missatges també s\'eliminen del dispositiu del teu contacte. Les còpies que el teu contacte ja hagi fet, com ara captures de pantalla, no es veuen afectades.</string>
+	<string name="deleted_here_only">Suprimit només en aquest dispositiu: l\'aplicació del teu contacte és massa antiga per suprimir-lo també al seu.</string>
+	<string name="action_edit_message">Edita</string>
+	<string name="editing_message">Edita el missatge</string>
+	<string name="message_edited">editat</string>
+	<string name="edit_too_late">Els missatges només es poden editar durant les 24 hores posteriors a l\'enviament.</string>
+	<string name="edit_not_possible">Aquest missatge no es pot editar.</string>
 </resources>

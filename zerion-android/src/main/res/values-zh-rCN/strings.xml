@@ -2419,4 +2419,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">主屏幕图标将很快更新。消息通知现在将显示为“%1$s”，并带有铃铛图标。</string>
 	<string name="voice_call_muted">已静音</string>
+	<string name="delete_for_me">为我删除</string>
+	<string name="delete_for_everyone">为所有人删除</string>
+	<string name="delete_for_everyone_explained">为所有人删除时，这些消息也会从联系人的设备上移除。联系人已保存的副本（例如截图）不受影响。</string>
+	<string name="deleted_here_only">仅在此设备上删除：联系人的应用版本过旧，无法在其设备上删除。</string>
+	<string name="action_edit_message">编辑</string>
+	<string name="editing_message">编辑消息</string>
+	<string name="message_edited">已编辑</string>
+	<string name="edit_too_late">消息只能在发送后 24 小时内编辑。</string>
+	<string name="edit_not_possible">此消息无法编辑。</string>
 </resources>

@@ -168,6 +168,12 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == TYPING_INDICATOR) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateTypingIndicator(m, list);
+				} else if (messageType == MessageTypes.MESSAGE_EDIT) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessageEdit(m, list);
+				} else if (messageType == MessageTypes.MESSAGE_DELETE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessageDelete(m, list);
 				} else if (messageType == LINK_PREVIEW_MESSAGE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateLinkPreviewMessage(m, list);
@@ -439,6 +445,39 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_REACTION_REMOVED);
 		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
 		meta.put(MSG_KEY_REACTION_EMOJI, emoji);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMessageEdit(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 3);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		String text = body.getString(2);
+		checkLength(text, 1, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		if (!org.zerionproject.app.api.messaging.MessageEdits
+				.isEditableText(text)) {
+			throw new FormatException();
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_EDIT);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		meta.put(MessagingConstants.MSG_KEY_EDITED_TEXT, text);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMessageDelete(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_DELETE);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
 		return new BdfMessageContext(meta);
 	}
 

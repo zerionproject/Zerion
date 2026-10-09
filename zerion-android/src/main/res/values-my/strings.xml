@@ -2416,4 +2416,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">ပင်မစခရင်ရှိ အိုင်ကွန်ကို မကြာမီ အပ်ဒိတ်လုပ်မည်။ ယခုမှစ၍ မက်ဆေ့ချ် အသိပေးချက်များကို ခေါင်းလောင်း အိုင်ကွန်ဖြင့် “%1$s” အဖြစ် ပြသမည်။</string>
 	<string name="voice_call_muted">အသံပိတ်ထားသည်</string>
+	<string name="delete_for_me">ကျွန်ုပ်အတွက် ဖျက်မည်</string>
+	<string name="delete_for_everyone">အားလုံးအတွက် ဖျက်မည်</string>
+	<string name="delete_for_everyone_explained">အားလုံးအတွက် ဖျက်ပါက မက်ဆေ့ချ်များကို သင့်အဆက်အသွယ်၏ စက်ပေါ်မှလည်း ဖယ်ရှားပါမည်။ သင့်အဆက်အသွယ်က ယခင်ကတည်းက ပြုလုပ်ထားသော ဖန်သားပြင်ဓာတ်ပုံကဲ့သို့သော မိတ္တူများကိုမူ မထိခိုက်ပါ။</string>
+	<string name="deleted_here_only">ဤစက်ပေါ်တွင်သာ ဖျက်ထားပါသည်: သင့်အဆက်အသွယ်၏ အက်ပ်သည် ဟောင်းလွန်းသဖြင့် ၎င်းတို့၏ စက်ပေါ်တွင် မဖျက်နိုင်ပါ။</string>
+	<string name="action_edit_message">ပြင်ဆင်မည်</string>
+	<string name="editing_message">မက်ဆေ့ချ် ပြင်ဆင်ခြင်း</string>
+	<string name="message_edited">ပြင်ဆင်ထားသည်</string>
+	<string name="edit_too_late">မက်ဆေ့ချ်များကို ပို့ပြီး ၂၄ နာရီအတွင်းသာ ပြင်ဆင်နိုင်ပါသည်။</string>
+	<string name="edit_not_possible">ဤမက်ဆေ့ချ်ကို ပြင်ဆင်၍ မရပါ။</string>
 </resources>

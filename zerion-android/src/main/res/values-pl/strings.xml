@@ -2510,4 +2510,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikona na ekranie głównym wkrótce się zaktualizuje. Powiadomienia o wiadomościach są teraz wyświetlane jako „%1$s” z ikoną dzwonka.</string>
 	<string name="voice_call_muted">Wyciszony</string>
+	<string name="delete_for_me">Usuń u mnie</string>
+	<string name="delete_for_everyone">Usuń u wszystkich</string>
+	<string name="delete_for_everyone_explained">Usunięcie u wszystkich usuwa je także z urządzenia Twojego kontaktu. Nie dotyczy to kopii, które kontakt już wykonał, np. zrzutów ekranu.</string>
+	<string name="deleted_here_only">Usunięto tylko na tym urządzeniu: aplikacja Twojego kontaktu jest zbyt stara, aby usunąć wiadomość u niego.</string>
+	<string name="action_edit_message">Edytuj</string>
+	<string name="editing_message">Edycja wiadomości</string>
+	<string name="message_edited">edytowano</string>
+	<string name="edit_too_late">Wiadomości można edytować tylko w ciągu 24 godzin od wysłania.</string>
+	<string name="edit_not_possible">Tej wiadomości nie można edytować.</string>
 </resources>

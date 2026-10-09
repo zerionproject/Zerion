@@ -54,6 +54,7 @@ import org.zerionproject.app.api.conversation.DeletionResult;
 import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.event.PrivateMessageEditedEvent;
 import org.zerionproject.app.api.messaging.PrivateMessage;
 import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.zerionproject.app.api.messaging.PrivateMessageFormat;
@@ -159,6 +160,14 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveEvent<String> voiceMemoRebuilt =
 			new MutableLiveEvent<>();
 	private final MutableLiveEvent<Boolean> reactionRemovedLocallyOnly =
+			new MutableLiveEvent<>();
+	private final MutableLiveData<Boolean> editAndDeleteSupported =
+			new MutableLiveData<>(false);
+	private final MutableLiveEvent<Pair<MessageId, String>> messageEdited =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Integer> editRefused =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> deletedHereOnly =
 			new MutableLiveEvent<>();
 	private final java.util.concurrent.ConcurrentHashMap<MessageId, Boolean>
 			localById = new java.util.concurrent.ConcurrentHashMap<>();
@@ -365,6 +374,13 @@ public class ConversationViewModel extends DbViewModel
 			if (c.getContactId().equals(contactId)) {
 				clientVersionUpdated.postEvent(c.getClientVersion().getClientId());
 			}
+		} else if (e instanceof PrivateMessageEditedEvent) {
+			PrivateMessageEditedEvent ed = (PrivateMessageEditedEvent) e;
+			if (ed.getContactId().equals(contactId)) {
+				ConversationCache.getInstance().invalidate(contactId);
+				messageEdited.postEvent(
+						new Pair<>(ed.getMessageId(), ed.getText()));
+			}
 		} else if (e instanceof ReactionReceivedEvent) {
 			ReactionReceivedEvent r = (ReactionReceivedEvent) e;
 			if (r.getContactId().equals(contactId)) {
@@ -517,6 +533,8 @@ public class ConversationViewModel extends DbViewModel
 		PrivateMessageFormat format = db.transactionWithResult(true, txn ->
 				messagingManager.getContactMessageFormat(txn, c));
 		privateMessageFormat.postValue(format);
+		editAndDeleteSupported.postValue(
+				messagingManager.supportsEditAndDelete(c));
 
 		Collection<Contact> contacts = contactManager.getContacts();
 		boolean introductionSupported = contacts.size() > 1;
@@ -1358,6 +1376,63 @@ public class ConversationViewModel extends DbViewModel
 		if (contactId != null) {
 			contactConnected.postValue(registry.isConnected(contactId));
 		}
+	}
+
+	@UiThread
+	LiveData<SendState> editMessage(MessageId id, String text) {
+		MutableLiveData<SendState> result = new MutableLiveData<>();
+		if (contactId == null) return result;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				MessagingManager.EditResult r =
+						messagingManager.editMessage(c, id, text);
+				if (r == MessagingManager.EditResult.EDITED) {
+					result.postValue(SENT);
+				} else {
+					editRefused.postEvent(
+							r == MessagingManager.EditResult.TOO_LATE
+									? R.string.edit_too_late
+									: R.string.edit_not_possible);
+				}
+			} catch (DbException e) {
+				handleException(e);
+				result.postValue(ERROR);
+			}
+		});
+		return result;
+	}
+
+	void deleteForEveryone(Collection<MessageId> messageIds) {
+		if (contactId == null || messageIds.isEmpty()) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				Collection<MessageId> toDelete =
+						expandVoiceMemoParts(c, messageIds);
+				if (!messagingManager.deleteForEveryone(c, toDelete)) {
+					deletedHereOnly.postEvent(true);
+				}
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	LiveData<Boolean> getEditAndDeleteSupported() {
+		return editAndDeleteSupported;
+	}
+
+	LiveEvent<Pair<MessageId, String>> getMessageEdited() {
+		return messageEdited;
+	}
+
+	LiveEvent<Integer> getEditRefused() {
+		return editRefused;
+	}
+
+	LiveEvent<Boolean> getDeletedHereOnly() {
+		return deletedHereOnly;
 	}
 
 	void sendReaction(MessageId targetMessageId, String emoji) {

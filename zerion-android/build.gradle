@@ -56,8 +56,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 31700
-        versionName "3.0.17"
+        versionCode 31800
+        versionName "3.0.18"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
         buildConfigField "String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/zerionproject/Zerion/master/docs/release-manifest.json\""

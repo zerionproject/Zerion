@@ -2477,4 +2477,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Pictograma de pe ecranul de pornire se va actualiza în curând. Notificările pentru mesaje apar acum ca „%1$s” cu o pictogramă de clopoțel.</string>
 	<string name="voice_call_muted">Microfon oprit</string>
+	<string name="delete_for_me">Ștergeți pentru mine</string>
+	<string name="delete_for_everyone">Ștergeți pentru toți</string>
+	<string name="delete_for_everyone_explained">Ștergerea pentru toți le elimină și de pe dispozitivul contactului dumneavoastră. Copiile pe care contactul le-a făcut deja, cum ar fi capturile de ecran, nu sunt afectate.</string>
+	<string name="deleted_here_only">Șters doar de pe acest dispozitiv: aplicația contactului dumneavoastră este prea veche pentru a-l șterge și de pe dispozitivul său.</string>
+	<string name="action_edit_message">Editați</string>
+	<string name="editing_message">Editați mesajul</string>
+	<string name="message_edited">editat</string>
+	<string name="edit_too_late">Mesajele pot fi editate doar în 24 de ore de la trimitere.</string>
+	<string name="edit_not_possible">Acest mesaj nu poate fi editat.</string>
 </resources>

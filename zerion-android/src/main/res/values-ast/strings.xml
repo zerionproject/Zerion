@@ -2372,4 +2372,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">L\'iconu de la pantalla d\'aniciu va anovase en breve. Los avisos de mensaxes apaecen agora como «%1$s» con un iconu de campana.</string>
 	<string name="voice_call_muted">Silenciáu</string>
+	<string name="delete_for_me">Desaniciar pa min</string>
+	<string name="delete_for_everyone">Desaniciar pa toos</string>
+	<string name="delete_for_everyone_explained">Desaniciar pa toos tamién los quita del preséu del to contautu. Les copies que\'l to contautu yá fixo, como les captures de pantalla, nun se ven afectaes.</string>
+	<string name="deleted_here_only">Desaniciáu namás nesti preséu: l\'aplicación del to contautu ye mui vieya pa desanicialu nel so.</string>
+	<string name="action_edit_message">Editar</string>
+	<string name="editing_message">Editar el mensaxe</string>
+	<string name="message_edited">editáu</string>
+	<string name="edit_too_late">Los mensaxes namás se puen editar nes 24 hores siguientes al unviu.</string>
+	<string name="edit_not_possible">Esti mensaxe nun se pue editar.</string>
 </resources>

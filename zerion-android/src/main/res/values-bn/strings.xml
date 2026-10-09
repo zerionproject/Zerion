@@ -2447,4 +2447,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">হোম স্ক্রিনের আইকন শিগগিরই বদলে যাবে। বার্তার নোটিফিকেশন এখন ঘণ্টার আইকনসহ “%1$s” নামে দেখা যাবে।</string>
 	<string name="voice_call_muted">মিউট করা হয়েছে</string>
+	<string name="delete_for_me">আমার জন্য মুছুন</string>
+	<string name="delete_for_everyone">সবার জন্য মুছুন</string>
+	<string name="delete_for_everyone_explained">সবার জন্য মুছলে বার্তাগুলো আপনার পরিচিতির ডিভাইস থেকেও সরে যায়। আপনার পরিচিতি আগেই যেসব কপি করে রেখেছেন, যেমন স্ক্রিনশট, সেগুলোর ওপর এর কোনো প্রভাব পড়ে না।</string>
+	<string name="deleted_here_only">শুধু এই ডিভাইসে মোছা হয়েছে: আপনার পরিচিতির অ্যাপটি খুব পুরনো, তাই তাদের ডিভাইসে বার্তাটি মোছা যায়নি।</string>
+	<string name="action_edit_message">সম্পাদনা</string>
+	<string name="editing_message">বার্তা সম্পাদনা</string>
+	<string name="message_edited">সম্পাদিত</string>
+	<string name="edit_too_late">বার্তা পাঠানোর পর কেবল ২৪ ঘণ্টার মধ্যেই সম্পাদনা করা যায়।</string>
+	<string name="edit_not_possible">এই বার্তাটি সম্পাদনা করা যাবে না।</string>
 </resources>

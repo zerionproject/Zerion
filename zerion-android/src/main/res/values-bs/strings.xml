@@ -2409,4 +2409,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikona na početnom ekranu uskoro će se ažurirati. Obavještenja o porukama sada se prikazuju kao „%1$s“ sa ikonom zvona.</string>
 	<string name="voice_call_muted">Utišano</string>
+	<string name="delete_for_me">Obriši za mene</string>
+	<string name="delete_for_everyone">Obriši za sve</string>
+	<string name="delete_for_everyone_explained">Brisanje za sve ih uklanja i s uređaja vašeg kontakta. Ovo ne utiče na kopije koje je vaš kontakt već napravio, poput snimaka ekrana.</string>
+	<string name="deleted_here_only">Obrisano samo na ovom uređaju: aplikacija vašeg kontakta je prestara da bi poruku obrisala i kod njega.</string>
+	<string name="action_edit_message">Uredi</string>
+	<string name="editing_message">Uređivanje poruke</string>
+	<string name="message_edited">uređeno</string>
+	<string name="edit_too_late">Poruke se mogu urediti samo u roku od 24 sata od slanja.</string>
+	<string name="edit_not_possible">Ova poruka se ne može urediti.</string>
 </resources>

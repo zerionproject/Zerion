@@ -2478,4 +2478,13 @@ copies des messages que vous envoyez.
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">L\'icône de l\'écran d\'accueil sera mise à jour sous peu. Les notifications de messages s\'affichent désormais sous le nom « %1$s » avec une icône de cloche.</string>
 	<string name="voice_call_muted">Micro coupé</string>
+	<string name="delete_for_me">Supprimer pour moi</string>
+	<string name="delete_for_everyone">Supprimer pour tout le monde</string>
+	<string name="delete_for_everyone_explained">La suppression pour tout le monde retire aussi les messages de l\'appareil de votre contact. Les copies que votre contact a déjà faites, comme des captures d\'écran, ne sont pas concernées.</string>
+	<string name="deleted_here_only">Supprimé uniquement sur cet appareil : l\'application de votre contact est trop ancienne pour le supprimer de son côté.</string>
+	<string name="action_edit_message">Modifier</string>
+	<string name="editing_message">Modifier le message</string>
+	<string name="message_edited">modifié</string>
+	<string name="edit_too_late">Les messages ne peuvent être modifiés que dans les 24 heures suivant leur envoi.</string>
+	<string name="edit_not_possible">Ce message ne peut pas être modifié.</string>
 </resources>

@@ -106,7 +106,22 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 	void bindTimeOnly(ConversationItem item) {
 		setTopNotice(item);
-		time.setText(formatDate(time.getContext(), item.getTime()));
+		time.setText(timeLabel(item));
+	}
+
+	private String timeLabel(ConversationItem item) {
+		String timeText = formatDate(time.getContext(), item.getTime());
+		if (item instanceof ConversationMessageItem
+				&& ((ConversationMessageItem) item).getHeader().isMesh()) {
+			timeText = timeText + " · "
+					+ time.getContext().getString(R.string.via_mesh);
+		}
+		if (item instanceof ConversationMessageItem
+				&& ((ConversationMessageItem) item).isEdited()) {
+			timeText = timeText + " · "
+					+ time.getContext().getString(R.string.message_edited);
+		}
+		return timeText;
 	}
 
 	protected void applyStickerTextStyle() {
@@ -188,14 +203,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			}
 		}
 
-		long timestamp = item.getTime();
-		String timeText = formatDate(time.getContext(), timestamp);
-		if (item instanceof ConversationMessageItem
-				&& ((ConversationMessageItem) item).getHeader().isMesh()) {
-			timeText = timeText + " · "
-					+ time.getContext().getString(R.string.via_mesh);
-		}
-		time.setText(timeText);
+		time.setText(timeLabel(item));
 
 		boolean showBomb = item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER;
 		bomb.setVisibility(showBomb ? VISIBLE : GONE);

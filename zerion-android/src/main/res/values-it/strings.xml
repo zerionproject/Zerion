@@ -2475,4 +2475,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">L\'icona nella schermata Home verrà aggiornata a breve. Le notifiche dei messaggi ora appaiono come «%1$s» con un\'icona a forma di campanella.</string>
 	<string name="voice_call_muted">Silenziato</string>
+	<string name="delete_for_me">Elimina per me</string>
+	<string name="delete_for_everyone">Elimina per tutti</string>
+	<string name="delete_for_everyone_explained">Eliminando per tutti, i messaggi vengono rimossi anche dal dispositivo del tuo contatto. Le copie già fatte dal tuo contatto, come gli screenshot, non vengono eliminate.</string>
+	<string name="deleted_here_only">Eliminato solo su questo dispositivo: l\'app del tuo contatto è troppo vecchia per eliminarlo anche sul suo.</string>
+	<string name="action_edit_message">Modifica</string>
+	<string name="editing_message">Modifica messaggio</string>
+	<string name="message_edited">modificato</string>
+	<string name="edit_too_late">I messaggi possono essere modificati solo entro 24 ore dall\'invio.</string>
+	<string name="edit_not_possible">Questo messaggio non può essere modificato.</string>
 </resources>

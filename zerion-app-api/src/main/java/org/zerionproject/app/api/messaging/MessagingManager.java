@@ -13,6 +13,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -26,13 +27,24 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 8 : 5;
+					? 9 : 5;
 
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
 	int GROUP_PROTOCOL_V2_MIN_VERSION = 8;
 
 	int REACTION_REMOVAL_MIN_VERSION = 8;
+
+	int EDIT_DELETE_MIN_VERSION = 9;
+
+	long EDIT_WINDOW_MS = 24L * 60 * 60 * 1000;
+
+	enum EditResult {
+		EDITED,
+		NOT_SUPPORTED_BY_CONTACT,
+		NOT_EDITABLE,
+		TOO_LATE
+	}
 
 	int LEGACY_MAX_GROUP_POST_BODY_LENGTH = 64 * 1024;
 
@@ -184,5 +196,13 @@ public interface MessagingManager extends ConversationClient {
 
 	void addLocalLinkPreviewMessage(Transaction txn, ContactId contactId,
 			@Nullable String text, LinkPreview preview)
+			throws DbException;
+
+	boolean supportsEditAndDelete(ContactId c) throws DbException;
+
+	EditResult editMessage(ContactId c, MessageId m, String text)
+			throws DbException;
+
+	boolean deleteForEveryone(ContactId c, Collection<MessageId> messageIds)
 			throws DbException;
 }

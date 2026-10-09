@@ -2440,4 +2440,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Иконата на началния екран ще се обнови скоро. Известията за съобщения вече се показват като „%1$s“ с икона на камбанка.</string>
 	<string name="voice_call_muted">Заглушено</string>
+	<string name="delete_for_me">Изтрий за мен</string>
+	<string name="delete_for_everyone">Изтрий за всички</string>
+	<string name="delete_for_everyone_explained">Изтриването за всички премахва съобщенията и от устройството на вашия контакт. Копията, които контактът ви вече е направил, например екранни снимки, не се засягат.</string>
+	<string name="deleted_here_only">Изтрито само на това устройство: приложението на вашия контакт е твърде старо, за да изтрие съобщението и при него.</string>
+	<string name="action_edit_message">Редактиране</string>
+	<string name="editing_message">Редактиране на съобщение</string>
+	<string name="message_edited">редактирано</string>
+	<string name="edit_too_late">Съобщенията могат да се редактират само в рамките на 24 часа след изпращането.</string>
+	<string name="edit_not_possible">Това съобщение не може да бъде редактирано.</string>
 </resources>

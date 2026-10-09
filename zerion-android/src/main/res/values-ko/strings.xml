@@ -2407,4 +2407,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">홈 화면 아이콘이 곧 업데이트됩니다. 이제 메시지 알림이 종 아이콘과 함께 “%1$s” 이름으로 표시됩니다.</string>
 	<string name="voice_call_muted">음소거됨</string>
+	<string name="delete_for_me">나에게서 삭제</string>
+	<string name="delete_for_everyone">모두에게서 삭제</string>
+	<string name="delete_for_everyone_explained">모두에게서 삭제하면 연락처의 기기에서도 삭제됩니다. 스크린샷 등 연락처가 이미 만든 사본에는 영향을 주지 않습니다.</string>
+	<string name="deleted_here_only">이 기기에서만 삭제되었습니다. 연락처의 앱이 오래되어 상대방 기기에서는 삭제할 수 없습니다.</string>
+	<string name="action_edit_message">수정</string>
+	<string name="editing_message">메시지 수정</string>
+	<string name="message_edited">수정됨</string>
+	<string name="edit_too_late">메시지는 보낸 후 24시간 이내에만 수정할 수 있습니다.</string>
+	<string name="edit_not_possible">이 메시지는 수정할 수 없습니다.</string>
 </resources>

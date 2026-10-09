@@ -2440,4 +2440,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">होम स्क्रीन का आइकन जल्द ही अपडेट हो जाएगा। संदेशों की सूचनाएं अब घंटी के आइकन के साथ “%1$s” नाम से दिखेंगी।</string>
 	<string name="voice_call_muted">म्यूट किया गया</string>
+	<string name="delete_for_me">मेरे लिए हटाएँ</string>
+	<string name="delete_for_everyone">सभी के लिए हटाएँ</string>
+	<string name="delete_for_everyone_explained">सभी के लिए हटाने पर संदेश आपके संपर्क के डिवाइस से भी हट जाते हैं। आपके संपर्क द्वारा पहले से बनाई गई कॉपियाँ, जैसे स्क्रीनशॉट, इससे प्रभावित नहीं होतीं।</string>
+	<string name="deleted_here_only">सिर्फ़ इस डिवाइस पर हटाया गया: आपके संपर्क का ऐप इतना पुराना है कि वह इसे उनके डिवाइस पर नहीं हटा सकता।</string>
+	<string name="action_edit_message">संपादित करें</string>
+	<string name="editing_message">संदेश संपादित करें</string>
+	<string name="message_edited">संपादित</string>
+	<string name="edit_too_late">संदेशों को भेजने के 24 घंटे के अंदर ही संपादित किया जा सकता है।</string>
+	<string name="edit_not_possible">इस संदेश को संपादित नहीं किया जा सकता।</string>
 </resources>

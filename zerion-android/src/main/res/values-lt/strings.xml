@@ -2510,4 +2510,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Pradžios ekrano piktograma netrukus atsinaujins. Žinučių pranešimai dabar rodomi kaip „%1$s“ su varpelio piktograma.</string>
 	<string name="voice_call_muted">Nutildyta</string>
+	<string name="delete_for_me">Ištrinti man</string>
+	<string name="delete_for_everyone">Ištrinti visiems</string>
+	<string name="delete_for_everyone_explained">Ištrynus visiems, žinutės pašalinamos ir iš jūsų kontakto įrenginio. Kopijoms, kurias jūsų kontaktas jau padarė, pavyzdžiui, ekrano nuotraukoms, tai neturi įtakos.</string>
+	<string name="deleted_here_only">Ištrinta tik šiame įrenginyje: jūsų kontakto programėlė per sena, kad žinutė būtų ištrinta ir kontakto įrenginyje.</string>
+	<string name="action_edit_message">Redaguoti</string>
+	<string name="editing_message">Redaguoti žinutę</string>
+	<string name="message_edited">redaguota</string>
+	<string name="edit_too_late">Žinutes galima redaguoti tik per 24 valandas nuo išsiuntimo.</string>
+	<string name="edit_not_possible">Šios žinutės redaguoti negalima.</string>
 </resources>

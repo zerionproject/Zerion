@@ -2340,4 +2340,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Ikon skrin utama akan dikemas kini sebentar lagi. Pemberitahuan mesej kini dipaparkan sebagai “%1$s” dengan ikon loceng.</string>
 	<string name="voice_call_muted">Diredam</string>
+	<string name="delete_for_me">Padam untuk saya</string>
+	<string name="delete_for_everyone">Padam untuk semua</string>
+	<string name="delete_for_everyone_explained">Memadam untuk semua turut membuang mesej tersebut daripada peranti kenalan anda. Salinan yang sudah dibuat oleh kenalan anda, seperti tangkapan skrin, tidak terjejas.</string>
+	<string name="deleted_here_only">Dipadam pada peranti ini sahaja: versi aplikasi kenalan anda terlalu lama untuk memadamnya pada peranti mereka.</string>
+	<string name="action_edit_message">Sunting</string>
+	<string name="editing_message">Sunting mesej</string>
+	<string name="message_edited">disunting</string>
+	<string name="edit_too_late">Mesej hanya boleh disunting dalam tempoh 24 jam selepas dihantar.</string>
+	<string name="edit_not_possible">Mesej ini tidak boleh disunting.</string>
 </resources>

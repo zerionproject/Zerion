@@ -2428,4 +2428,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Иконата на почетниот екран наскоро ќе се ажурира. Известувањата за пораки сега се прикажуваат како „%1$s“ со икона на ѕвонче.</string>
 	<string name="voice_call_muted">Микрофон исклучен</string>
+	<string name="delete_for_me">Избриши за мене</string>
+	<string name="delete_for_everyone">Избриши за сите</string>
+	<string name="delete_for_everyone_explained">Бришењето за сите ги отстранува и од уредот на вашиот контакт. Копиите што вашиот контакт веќе ги направил, како слики од екранот, не се засегнати.</string>
+	<string name="deleted_here_only">Избришано само на овој уред: апликацијата на вашиот контакт е премногу стара за да ја избрише пораката и кај него.</string>
+	<string name="action_edit_message">Уреди</string>
+	<string name="editing_message">Уредување порака</string>
+	<string name="message_edited">уредено</string>
+	<string name="edit_too_late">Пораките може да се уредуваат само во рок од 24 часа по испраќањето.</string>
+	<string name="edit_not_possible">Оваа порака не може да се уреди.</string>
 </resources>

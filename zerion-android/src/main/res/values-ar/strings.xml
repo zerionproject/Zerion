@@ -2578,4 +2578,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">ستُحدَّث أيقونة الشاشة الرئيسية قريبًا. تظهر إشعارات الرسائل الآن باسم «%1$s» مع أيقونة جرس.</string>
 	<string name="voice_call_muted">مكتوم</string>
+	<string name="delete_for_me">حذف لديّ</string>
+	<string name="delete_for_everyone">حذف لدى الجميع</string>
+	<string name="delete_for_everyone_explained">يؤدي الحذف لدى الجميع إلى إزالة الرسائل من جهاز جهة اتصالك أيضًا. أما النسخ التي احتفظت بها جهة اتصالك مسبقًا، مثل لقطات الشاشة، فلا تتأثر.</string>
+	<string name="deleted_here_only">حُذفت من هذا الجهاز فقط: تطبيق جهة اتصالك قديم جدًا ولا يمكنه حذفها من جهازها.</string>
+	<string name="action_edit_message">تعديل</string>
+	<string name="editing_message">تعديل الرسالة</string>
+	<string name="message_edited">تم التعديل</string>
+	<string name="edit_too_late">لا يمكن تعديل الرسائل إلا خلال 24 ساعة من إرسالها.</string>
+	<string name="edit_not_possible">لا يمكن تعديل هذه الرسالة.</string>
 </resources>

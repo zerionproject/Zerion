@@ -2422,4 +2422,13 @@
 	</plurals>
 	<string name="pref_app_icon_disguise_hint">Aloitusnäytön kuvake päivittyy hetken kuluttua. Viesti-ilmoitukset näkyvät nyt nimellä ”%1$s” ja kellokuvakkeella.</string>
 	<string name="voice_call_muted">Mykistetty</string>
+	<string name="delete_for_me">Poista minulta</string>
+	<string name="delete_for_everyone">Poista kaikilta</string>
+	<string name="delete_for_everyone_explained">Kun poistat kaikilta, viestit poistuvat myös yhteyshenkilösi laitteelta. Tämä ei vaikuta kopioihin, jotka yhteyshenkilösi on jo tehnyt, kuten kuvakaappauksiin.</string>
+	<string name="deleted_here_only">Poistettu vain tältä laitteelta: yhteyshenkilösi sovellus on liian vanha viestin poistamiseen hänen laitteeltaan.</string>
+	<string name="action_edit_message">Muokkaa</string>
+	<string name="editing_message">Muokkaa viestiä</string>
+	<string name="message_edited">muokattu</string>
+	<string name="edit_too_late">Viestejä voi muokata vain 24 tunnin kuluessa lähettämisestä.</string>
+	<string name="edit_not_possible">Tätä viestiä ei voi muokata.</string>
 </resources>

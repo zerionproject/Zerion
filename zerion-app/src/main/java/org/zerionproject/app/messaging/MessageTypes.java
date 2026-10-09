@@ -12,6 +12,8 @@ public interface MessageTypes {
 	int LINK_PREVIEW_MESSAGE = 9;
 	int MESH_PREKEY_BUNDLE = 10;
 	int MESSAGE_REACTION_REMOVED = 11;
+	int MESSAGE_EDIT = 12;
+	int MESSAGE_DELETE = 13;
 
 	int GROUP_POST = 32;
 	int GROUP_MEMBER_ADDED = 33;
