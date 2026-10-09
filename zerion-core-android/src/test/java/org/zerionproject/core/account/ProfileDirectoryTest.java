@@ -108,4 +108,35 @@ public class ProfileDirectoryTest extends BrambleMockTestCase {
 				profiles.listProfileIds());
 		assertFalse(device.profileDir("keyless").exists());
 	}
+
+	@Test
+	public void dataNoKeyOpensIsKeptWhenNoProfileHasAKey()
+			throws Exception {
+		File db = new File(device.profileDir("default"), "db/db.sqlite");
+		assertTrue(db.getParentFile().mkdirs());
+		Files.write(db.toPath(), new byte[] {1});
+		File state = new File(device.profileDir("default"),
+				"key/db.key.state");
+		assertTrue(state.getParentFile().mkdirs());
+		Files.write(state.toPath(), new byte[] {1});
+
+		ProfileManager profiles = device.newProfileManager();
+
+		assertTrue("left for the user to keep or erase", db.exists());
+		assertTrue(state.exists());
+		assertEquals(Collections.singletonList("default"),
+				profiles.listProfileIds());
+	}
+
+	@Test
+	public void anEmptyProfileWithoutKeysIsRemovedEvenWithoutAnAccount()
+			throws Exception {
+		assertTrue(new File(device.profileDir("default"), "key").mkdirs());
+		assertTrue(new File(device.profileDir("default"), "db").mkdirs());
+
+		ProfileManager profiles = device.newProfileManager();
+
+		assertFalse(device.profileDir("default").exists());
+		assertEquals(Collections.emptyList(), profiles.listProfileIds());
+	}
 }

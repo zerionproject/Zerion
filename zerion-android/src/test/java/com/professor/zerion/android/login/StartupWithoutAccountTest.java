@@ -22,6 +22,7 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
+import org.zerionproject.core.account.ProfileManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -153,6 +154,7 @@ public class StartupWithoutAccountTest {
 			throws Exception {
 		leaveData();
 		setEraseSetting();
+		new ProfileManager(app);
 
 		ActivityController<StartupActivity> c =
 				Robolectric.buildActivity(StartupActivity.class).create();

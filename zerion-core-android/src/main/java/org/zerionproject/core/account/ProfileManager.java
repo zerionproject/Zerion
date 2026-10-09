@@ -404,10 +404,18 @@ public class ProfileManager {
 	private void removeProfilesWithoutKeys() {
 		File[] dirs = getProfilesRoot().listFiles();
 		if (dirs == null) return;
+		boolean anyProfileHasKeys = false;
+		for (File dir : dirs) {
+			if (dir.isDirectory() && hasKeyFiles(dir.getName())) {
+				anyProfileHasKeys = true;
+			}
+		}
 		for (File dir : dirs) {
 			if (!dir.isDirectory()) continue;
 			if (!hasKeyFiles(dir.getName())) {
-				secureWipeRecursive(dir);
+				if (anyProfileHasKeys || !containsAnyFile(dir)) {
+					secureWipeRecursive(dir);
+				}
 				continue;
 			}
 			File tor = new File(dir, TOR_SUBDIR);
