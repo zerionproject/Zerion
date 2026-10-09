@@ -13,12 +13,11 @@ carrier differs.
 
 ## Transport seam
 
-The I2P transport extends the same overlay transport interface as Tor. It has two
-implementations: a SAM bridge to a router run outside the app, and an embedded
-router reached over I2CP. The SAM variant mirrors the Tor transport: it opens a
-session, recreates the destination from a persisted key, binds a local server
-socket for inbound streams, and dials outbound with a stream connect. The address
-property is the I2P destination. Inbound connection limit is 64.
+The I2P transport extends the same overlay transport interface as Tor and is
+implemented by an embedded router reached over I2CP. Like the Tor transport, it
+recreates the destination from a persisted key, accepts inbound streams on a
+server socket, and dials outbound streams. The address property is the I2P
+destination. Inbound connection limit is 64.
 
 ## Embedded router configuration
 
