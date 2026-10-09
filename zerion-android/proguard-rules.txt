@@ -102,34 +102,6 @@
     java.lang.Object readResolve();
 }
 
-# ============================================================================
-# ZERION API
-# ============================================================================
-# Keep API interfaces that are used via reflection or across modules
--keep,includedescriptorclasses class com.professor.zerion.api.android.** { *; }
-
-# ============================================================================
-# VAULT PACKAGE - EXTRA OBFUSCATION
-# ============================================================================
-# Vault crypto and storage classes - obfuscate everything except DI and Android framework requirements
-# (already covered by rules above, this comment documents the strategy)
-# - VaultManager, VaultKeystore, etc. will be obfuscated
-# - Only @Inject annotated members will be kept
-# - ViewModel constructors will be kept
-# - Everything else gets obfuscated for maximum protection
-
-# ============================================================================
-# SECURITY PACKAGE - EXTRA OBFUSCATION
-# ============================================================================
-# Security-related classes should be heavily obfuscated
-# (already covered by rules above)
-
-# ============================================================================
-# PANIC/WIPE PACKAGE - EXTRA OBFUSCATION
-# ============================================================================
-# Anti-forensics and panic wipe functionality should be obfuscated
-# (already covered by rules above)
-
 # QR codes
 -keep class com.google.zxing.Result
 -keepclassmembers enum * {
@@ -137,11 +109,7 @@
     public static ** valueOf(java.lang.String);
 }
 
-# RSS libraries
--keep,includedescriptorclasses class com.rometools.rome.feed.synd.impl.** { *; }
--keep,includedescriptorclasses class com.rometools.rome.io.impl.** { *; }
--dontwarn javax.xml.stream.**
--dontwarn org.jaxen.**
+# Optional classes referenced by dependencies
 -dontwarn java.nio.**
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 -dontwarn org.slf4j.impl.**
@@ -156,9 +124,6 @@
 # HTML sanitiser
 -keep class org.jsoup.safety.Safelist
 -dontwarn org.jsoup.**
-
-# KeyboardAwareLinearLayout uses reflection on android.View
--dontnote org.thoughtcrime.securesms.components.KeyboardAwareLinearLayout
 
 # Emoji
 -keep class com.vanniktech.emoji.**
@@ -213,12 +178,6 @@
 -keep class org.zerionproject.** { *; }
 -keep interface org.zerionproject.** { *; }
 
-# ============================================================================
-# Dead clearnet TCP plugins (not registered in PluginConfig — Tor-only)
-# ============================================================================
-# R8 minification with minifyEnabled=true automatically strips unreferenced
-# classes. No explicit rules needed — these classes have zero references.
-
 # Zerion Android app layer is now obfuscated (vault, security, panic, mesh,
 # conversation, etc.). Manifest components, Dagger @Inject members, ViewModel
 # and View(AttributeSet) constructors, and Parcelable CREATORs are preserved
@@ -246,10 +205,9 @@
 -keep class org.zerionproject.app.BriarCoreEagerSingletons { *; }
 
 # ============================================================================
-# ED25519 / CURVE25519 CRYPTOGRAPHY
+# CURVE25519 CRYPTOGRAPHY
 # ============================================================================
-# These are loaded via reflection
--keep class net.i2p.crypto.eddsa.** { *; }
+# Loaded via reflection
 -keep class org.whispersystems.curve25519.** { *; }
 
 # ============================================================================

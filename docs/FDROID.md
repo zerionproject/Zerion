@@ -137,7 +137,7 @@ Four steps the 3.0.11 entry carried are gone, and one of them would fail a
 - The `inplace-fix.py` step for the I2P reseed certificates. `i2p-embedded` is a
   `debugImplementation` dependency, so the release APK contains no I2P entry for
   it to fix.
-- `submodules: true`. `.gitmodules` exists but declares no submodules.
+- `submodules: true`. The repository has no submodules.
 
 `rm: gradle/verification-metadata.xml` is still in the published recipe, as in
 every entry since 2.0.1: it removes strict dependency verification from the

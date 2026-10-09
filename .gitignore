@@ -54,8 +54,6 @@ PentestZerion/
 docs/SECURITY_AUDIT_REPORT.md
 scripts/run-security-audit.*
 
-# Generated Tor binaries (extracted from dependencies during build)
-zerion-core-android/src/main/jniLibs/
 docs-internal/
 
 # Validator and testing harness, kept out of the repository
@@ -71,9 +69,6 @@ scripts/*_validators/
 # verify-*-native.gradle gates fail the build if a shipped ABI is missing.
 zerion-android/src/main/jniLibs/*/libzmonero.so
 zerion-android/src/main/jniLibs/*/libpayjoin_ffi.so
-# Orphaned desktop binaries (the desktop app lives in the Zerion-Desktop repo)
-zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc
-zerion-desktop-ui/appResources/*/monero/monero-wallet-rpc.exe
 # Signing sidecar artifacts
 *.idsig
 __pycache__/

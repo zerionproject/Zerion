@@ -11,8 +11,6 @@ if (fdroidProperty == null || fdroidProperty.toString().equalsIgnoreCase('false'
 }
 def isFdroidBuild = true
 
-rootProject.ext.payjoinNativeEnabled = false
-
 android {
     compileSdk 36
     buildToolsVersion '36.0.0'
@@ -63,12 +61,8 @@ android {
         buildConfigField "String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/zerionproject/Zerion/master/docs/release-manifest.json\""
         buildConfigField "String", "UPDATE_RELEASES_URL", "\"https://github.com/zerionproject/Zerion/releases\""
 
-        buildConfigField "boolean", "B3_PROOF_ENABLED", "true"
-        buildConfigField "boolean", "B4_ROTATION_ENABLED", "true"
-
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField "String", "GitHash", "\"release\""
         buildConfigField "Long", "BuildTimestamp", "0L"
         testInstrumentationRunner 'com.professor.zerion.android.BriarTestRunner'
         testInstrumentationRunnerArguments disableAnalytics: 'true'
@@ -336,7 +330,7 @@ task verifyTranslations {
         lc.children().each { value -> translations.add(value.text()) }
 
         def folders = ["default", "en-US"]
-        def exceptions = ["values-night", "values-v21", "values-v23", "values-v31", "values-ldrtl"]
+        def exceptions = ["values-night", "values-v21", "values-v31", "values-ldrtl"]
         project.file("src/main/res").eachDir { dir ->
             if (dir.name.startsWith("values-") &&
                     !exceptions.contains(dir.name)) {

@@ -27,8 +27,8 @@ public class TranslationResourcesTest {
 	private static final Pattern PLACEHOLDER =
 			Pattern.compile("%(\\d+\\$)?[sdf]|%%");
 	private static final Set<String> NOT_LOCALES = new HashSet<>(
-			java.util.Arrays.asList("values-night", "values-v21",
-					"values-v23", "values-v31", "values-ldrtl", "values-iw"));
+			java.util.Arrays.asList("values-night", "values-v21", "values-v31",
+					"values-ldrtl", "values-iw"));
 
 	private static final class Res {
 		final String type;
