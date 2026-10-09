@@ -1,6 +1,5 @@
 package com.professor.zerion.android.conversation;
 
-import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.app.api.client.SessionId;
 import org.zerionproject.app.api.conversation.ConversationRequest;
 import org.zerionproject.app.api.grouptr.GroupTrInvitationHeader;
@@ -18,8 +17,6 @@ class ConversationRequestItem extends ConversationNoticeItem {
 
 	enum RequestType {INTRODUCTION, GROUPTR}
 
-	@Nullable
-	private final GroupId requestedGroupId;
 	private final RequestType requestType;
 	@Nullable
 	private final SessionId sessionId;
@@ -36,7 +33,6 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		this.sessionId = r.getSessionId();
 		this.answered = r.wasAnswered();
 		this.grouptrGid = null;
-		this.requestedGroupId = null;
 		this.canBeOpened = false;
 	}
 
@@ -46,7 +42,6 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		super(layoutRes, text, contactName, h);
 		this.requestType = RequestType.GROUPTR;
 		this.sessionId = null;
-		this.requestedGroupId = null;
 		this.canBeOpened = answered;
 		this.grouptrGid = grouptrGid;
 		this.answered = answered;
@@ -59,11 +54,6 @@ class ConversationRequestItem extends ConversationNoticeItem {
 	@Nullable
 	SessionId getSessionId() {
 		return sessionId;
-	}
-
-	@Nullable
-	GroupId getRequestedGroupId() {
-		return requestedGroupId;
 	}
 
 	@Nullable
