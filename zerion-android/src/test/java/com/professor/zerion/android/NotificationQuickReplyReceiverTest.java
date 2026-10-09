@@ -38,8 +38,6 @@ public class NotificationQuickReplyReceiverTest {
 
 	static {
 		TestAndroidKeyStore.register();
-		Thread.setDefaultUncaughtExceptionHandler(
-				(thread, throwable) -> UNCAUGHT.add(throwable));
 	}
 
 	private Context app;
@@ -47,6 +45,7 @@ public class NotificationQuickReplyReceiverTest {
 	private final List<NotificationQuickReplyReceiver> receivers =
 			new ArrayList<>();
 	private Set<Thread> replyThreadsBefore;
+	private Thread.UncaughtExceptionHandler appHandler;
 
 	@Before
 	public void setUp() {
@@ -57,11 +56,15 @@ public class NotificationQuickReplyReceiverTest {
 		Shadows.shadowOf(keyguard).setIsDeviceSecure(true);
 		lockManager = ((ZerionApplication) app).getApplicationComponent()
 				.lockManager();
+		appHandler = Thread.getDefaultUncaughtExceptionHandler();
+		Thread.setDefaultUncaughtExceptionHandler(
+				(thread, throwable) -> UNCAUGHT.add(throwable));
 	}
 
 	@After
 	public void tearDown() {
 		lockManager.setLocked(false);
+		Thread.setDefaultUncaughtExceptionHandler(appHandler);
 		synchronized (UNCAUGHT) {
 			if (!UNCAUGHT.isEmpty()) {
 				Throwable first = UNCAUGHT.get(0);
