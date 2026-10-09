@@ -40,15 +40,11 @@ import dagger.Component;
 interface IntroductionIntegrationTestComponent
 		extends BriarIntegrationTestComponent {
 
-	void inject(IntroductionIntegrationTest init);
-
 	void inject(MessageEncoderParserIntegrationTest init);
 
 	void inject(SessionEncoderParserIntegrationTest init);
 
 	void inject(IntroductionCryptoIntegrationTest init);
-
-	void inject(AutoDeleteIntegrationTest init);
 
 	MessageEncoder getMessageEncoder();
 

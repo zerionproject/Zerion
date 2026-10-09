@@ -57,8 +57,6 @@ import dagger.Component;
 public interface BriarIntegrationTestComponent
 		extends BrambleIntegrationTestComponent {
 
-	void inject(BriarIntegrationTest<BriarIntegrationTestComponent> init);
-
 	void inject(AutoDeleteModule.EagerSingletons init);
 
 	void inject(AvatarModule.EagerSingletons init);
