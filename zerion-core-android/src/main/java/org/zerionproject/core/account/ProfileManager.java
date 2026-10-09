@@ -401,15 +401,19 @@ public class ProfileManager {
 		if (marker.exists()) marker.delete();
 	}
 
+	private boolean anyProfileHasKeyFiles() {
+		File[] dirs = getProfilesRoot().listFiles();
+		if (dirs == null) return false;
+		for (File dir : dirs) {
+			if (dir.isDirectory() && hasKeyFiles(dir.getName())) return true;
+		}
+		return false;
+	}
+
 	private void removeProfilesWithoutKeys() {
 		File[] dirs = getProfilesRoot().listFiles();
 		if (dirs == null) return;
-		boolean anyProfileHasKeys = false;
-		for (File dir : dirs) {
-			if (dir.isDirectory() && hasKeyFiles(dir.getName())) {
-				anyProfileHasKeys = true;
-			}
-		}
+		boolean anyProfileHasKeys = anyProfileHasKeyFiles();
 		for (File dir : dirs) {
 			if (!dir.isDirectory()) continue;
 			if (!hasKeyFiles(dir.getName())) {
@@ -436,7 +440,7 @@ public class ProfileManager {
 
 	private void migrateLegacyLayoutIfNeeded(Context appContext) {
 		File profilesRoot = getProfilesRoot();
-		if (profilesRoot.exists()) return;
+		if (profilesRoot.exists() && anyProfileHasKeyFiles()) return;
 
 		File legacyDb = appContext.getDir(LEGACY_DB_DIR, Context.MODE_PRIVATE);
 		File legacyKey = appContext.getDir(LEGACY_KEY_DIR,

@@ -129,6 +129,43 @@ public class ProfileDirectoryTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void aMoveOfTheOldLayoutCutShortIsCompletedAtTheNextStart()
+			throws Exception {
+		assertTrue(device.profileDir("default").mkdirs());
+		File legacyDb = new File(testDir, "app_db/db.sqlite");
+		File legacyKey = new File(testDir, "app_key/db.key");
+		assertTrue(legacyDb.getParentFile().mkdirs());
+		assertTrue(legacyKey.getParentFile().mkdirs());
+		Files.write(legacyDb.toPath(), new byte[] {1});
+		Files.write(legacyKey.toPath(), new byte[] {2});
+
+		ProfileManager profiles = device.newProfileManager();
+
+		assertTrue(new File(device.profileDir("default"), "db/db.sqlite")
+				.exists());
+		assertTrue(device.keyFile("default").exists());
+		assertFalse(legacyDb.exists());
+		assertEquals(Collections.singletonList("default"),
+				profiles.listProfileIds());
+	}
+
+	@Test
+	public void theOldLayoutIsNeverMovedIntoAnExistingAccount()
+			throws Exception {
+		device.addProfile("u1", "password one");
+		File legacyDb = new File(testDir, "app_db/db.sqlite");
+		assertTrue(legacyDb.getParentFile().mkdirs());
+		Files.write(legacyDb.toPath(), new byte[] {1});
+
+		ProfileManager profiles = device.newProfileManager();
+
+		assertTrue(legacyDb.exists());
+		assertFalse(device.profileDir("default").exists());
+		assertEquals(Collections.singletonList("u1"),
+				profiles.listProfileIds());
+	}
+
+	@Test
 	public void anEmptyProfileWithoutKeysIsRemovedEvenWithoutAnAccount()
 			throws Exception {
 		assertTrue(new File(device.profileDir("default"), "key").mkdirs());
