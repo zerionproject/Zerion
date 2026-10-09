@@ -294,9 +294,11 @@ task enforceNoLogs {
         }
         def srcDirs = []
         rootProject.allprojects.each { p ->
-            ['src/main/java', 'src/main/kotlin'].each { d ->
-                def dir = p.file(d)
-                if (dir.isDirectory()) srcDirs << dir
+            ['main', 'release', 'official', 'officialRelease'].each { set ->
+                ['java', 'kotlin'].each { lang ->
+                    def dir = p.file("src/${set}/${lang}")
+                    if (dir.isDirectory()) srcDirs << dir
+                }
             }
         }
         def banned = ['Log.d(', 'Log.i(', 'Log.w(', 'Log.e(', 'Log.v(',
@@ -319,7 +321,7 @@ task enforceNoLogs {
         }
         if (!violations.isEmpty()) {
             throw new GradleException(
-                "LOGGING VIOLATION — Zerion enforces zero-log policy:\n"
+                "LOGGING VIOLATION: Zerion enforces a zero-log policy.\n"
                 + violations.join('\n'))
         }
     }
