@@ -112,9 +112,10 @@ public class TransportKeyAgreementIntegrationTest
 		lifecycleManager.waitForShutdown();
 	}
 
-	@Ignore("QUARANTINED: Flaky message count assertion unrelated to PCS/Mode 3. " +
-			"Contacts use mode3Capable=false, bypassing all PCS code paths. " +
-			"Investigate sync timing in TransportKeyAgreementManager separately.")
+	@Ignore("Not flaky, it cannot pass: KeyManagerImpl.getStreamContext(" +
+			"ContactId, TransportId) refuses contact stream contexts since " +
+			"48d13d52, so every simplex sync writes nothing and the first " +
+			"sync sees 0 messages sent instead of 1.")
 	@Test
 	public void testBothAddTransportAtTheSameTime() throws Exception {
 
@@ -157,9 +158,10 @@ public class TransportKeyAgreementIntegrationTest
 		assertTransportMessageArrives(bob, alice, aliceId, newTransportId);
 	}
 
-	@Ignore("QUARANTINED: Flaky message count assertion unrelated to PCS/Mode 3. " +
-			"Contacts use mode3Capable=false, bypassing all PCS code paths. " +
-			"Investigate sync timing in TransportKeyAgreementManager separately.")
+	@Ignore("Not flaky, it cannot pass: KeyManagerImpl.getStreamContext(" +
+			"ContactId, TransportId) refuses contact stream contexts since " +
+			"48d13d52, so every simplex sync writes nothing and the first " +
+			"sync sees 0 messages sent instead of 1.")
 	@Test
 	public void testAliceAddsTransportBeforeBob() throws Exception {
 
@@ -201,9 +203,10 @@ public class TransportKeyAgreementIntegrationTest
 		assertTransportMessageArrives(bob, alice, aliceId, newTransportId);
 	}
 
-	@Ignore("QUARANTINED: Flaky message count assertion unrelated to PCS/Mode 3. " +
-			"Contacts use mode3Capable=false, bypassing all PCS code paths. " +
-			"Investigate sync timing in TransportKeyAgreementManager separately.")
+	@Ignore("Not flaky, it cannot pass: KeyManagerImpl.getStreamContext(" +
+			"ContactId, TransportId) refuses contact stream contexts since " +
+			"48d13d52, so every simplex sync writes nothing and the first " +
+			"sync sees 0 messages sent instead of 1.")
 	@Test
 	public void testAliceAlreadyHasTransportWhenAddingBob() throws Exception {
 
@@ -244,9 +247,10 @@ public class TransportKeyAgreementIntegrationTest
 		assertTransportMessageArrives(bob, alice, aliceId, newTransportId);
 	}
 
-	@Ignore("QUARANTINED: Flaky message count assertion unrelated to PCS/Mode 3. " +
-			"Contacts use mode3Capable=false, bypassing all PCS code paths. " +
-			"Investigate sync timing in TransportKeyAgreementManager separately.")
+	@Ignore("Not flaky, it cannot pass: KeyManagerImpl.getStreamContext(" +
+			"ContactId, TransportId) refuses contact stream contexts since " +
+			"48d13d52, so every simplex sync writes nothing and the first " +
+			"sync sees 0 messages sent instead of 1.")
 	@Test
 	public void testAliceActivatesKeysByIncomingMessage() throws Exception {
 

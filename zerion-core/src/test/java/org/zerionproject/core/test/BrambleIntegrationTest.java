@@ -191,7 +191,8 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 				new TestTransportConnectionWriter(out, false);
 		fromComponent.getConnectionManager().manageOutgoingConnection(toId,
 				transportId, writer);
-		writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS);
+		assertTrue("Outgoing connection was not disposed",
+				writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS));
 
 		waitForEvents(fromComponent);
 		fromComponent.getEventBus().removeListener(sendListener);
@@ -216,13 +217,8 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 		assertEquals("Messages delivered", numDelivered,
 				deliveryCounter.getAndSet(0));
 
-		try {
-			messageSemaphore.tryAcquire(numNew, TIMEOUT, MILLISECONDS);
-		} catch (InterruptedException e) {
-			LOG.info("Interrupted while waiting for messages");
-			Thread.currentThread().interrupt();
-			fail();
-		}
+		assertTrue("Received messages were not processed",
+				messageSemaphore.tryAcquire(numNew, TIMEOUT, MILLISECONDS));
 	}
 
 	protected void awaitPendingMessageDelivery(int num)
@@ -235,13 +231,8 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 		deliveryWaiter.await(timeout, num);
 		assertEquals("Messages delivered", num, deliveryCounter.getAndSet(0));
 
-		try {
-			messageSemaphore.tryAcquire(num, timeout, MILLISECONDS);
-		} catch (InterruptedException e) {
-			LOG.info("Interrupted while waiting for messages");
-			Thread.currentThread().interrupt();
-			fail();
-		}
+		assertTrue("Delivered messages were not processed",
+				messageSemaphore.tryAcquire(num, timeout, MILLISECONDS));
 	}
 
 	protected void sendAcks(BrambleIntegrationTestComponent fromComponent,
@@ -264,7 +255,8 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 				new TestTransportConnectionWriter(out, false);
 		fromComponent.getConnectionManager().manageOutgoingConnection(toId,
 				SIMPLEX_TRANSPORT_ID, writer);
-		writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS);
+		assertTrue("Outgoing connection was not disposed",
+				writer.getDisposedLatch().await(TIMEOUT, MILLISECONDS));
 
 		waitForEvents(fromComponent);
 		fromComponent.getEventBus().removeListener(sendListener);
@@ -276,15 +268,12 @@ public abstract class BrambleIntegrationTest<C extends BrambleIntegrationTestCom
 		toComponent.getConnectionManager().manageIncomingConnection(
 				SIMPLEX_TRANSPORT_ID, reader);
 
-		ackWaiter.await(TIMEOUT, num);
-		assertEquals("ACKs delivered", num, ackCounter.getAndSet(0));
-		assertEquals("No messages delivered", 0, deliveryCounter.get());
 		try {
-			messageSemaphore.tryAcquire(num, TIMEOUT, MILLISECONDS);
-		} catch (InterruptedException e) {
-			LOG.info("Interrupted while waiting for messages");
-			Thread.currentThread().interrupt();
-			fail();
+			ackWaiter.await(TIMEOUT, num);
+			assertEquals("ACKs delivered", num, ackCounter.getAndSet(0));
+			assertEquals("No messages delivered", 0, deliveryCounter.get());
+			assertTrue("Acked messages were not processed",
+					messageSemaphore.tryAcquire(num, TIMEOUT, MILLISECONDS));
 		} finally {
 			expectAck = false;
 		}
