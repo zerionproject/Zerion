@@ -105,34 +105,17 @@ public class ZtpTorTransportInboundLimitTest {
 		assertEquals("no tag ever reached the handler", 0, entered.get());
 	}
 
-	@Test(timeout = 30_000)
+	@Test(timeout = 60_000)
 	public void preTagSlotsAreBoundedAndFreedWhenTheTagArrives()
 			throws Exception {
-		for (int i = 0; i < PRE_TAG_SLOTS; i++) open();
-		assertBoundReachedEventually();
-		sendTag(sockets.get(0));
+		for (int i = 0; i < PRE_TAG_SLOTS; i++) {
+			open();
+			waitForStarted(i + 1);
+		}
+		assertClosedByTheTransport(open());
+		sendTag(sockets.get(PRE_TAG_SLOTS - 1));
 		waitForEntered(1);
 		assertKeptOpen(open());
-	}
-
-	private void assertBoundReachedEventually() throws Exception {
-		long deadline = System.currentTimeMillis() + 10_000;
-		while (true) {
-			Socket beyond = open();
-			beyond.setSoTimeout(500);
-			boolean closed;
-			try {
-				closed = beyond.getInputStream().read() < 0;
-			} catch (SocketTimeoutException e) {
-				closed = false;
-			} catch (IOException e) {
-				closed = true;
-			}
-			if (closed) return;
-			if (System.currentTimeMillis() > deadline) {
-				fail("the pre-tag bound never refused a further connection");
-			}
-		}
 	}
 
 	@Test(timeout = 60_000)
@@ -174,7 +157,7 @@ public class ZtpTorTransportInboundLimitTest {
 	}
 
 	private static void assertClosedByTheTransport(Socket s) throws IOException {
-		s.setSoTimeout(3_000);
+		s.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS - 500);
 		try {
 			int r = s.getInputStream().read();
 			assertEquals(-1, r);

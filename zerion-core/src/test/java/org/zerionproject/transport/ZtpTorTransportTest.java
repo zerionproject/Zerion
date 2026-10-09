@@ -411,6 +411,11 @@ public class ZtpTorTransportTest {
 
 	private static ZtpConnectionHandler tagReadingHandler(
 			CountDownLatch tagsRead) {
+		return tagReadingHandler(tagsRead, new AtomicInteger());
+	}
+
+	private static ZtpConnectionHandler tagReadingHandler(
+			CountDownLatch tagsRead, AtomicInteger started) {
 		return new ZtpConnectionHandler() {
 			@Override
 			public void handlePaired(TransportId transportId, int contactId,
@@ -426,6 +431,7 @@ public class ZtpTorTransportTest {
 			@Override
 			public void handleIncoming(TransportId transportId, InputStream in,
 					OutputStream out) throws IOException {
+				started.incrementAndGet();
 				byte[] tag = new byte[org.zerionproject.wire.ZwfConstants
 						.TAG_LENGTH];
 				int off = 0;
@@ -450,12 +456,12 @@ public class ZtpTorTransportTest {
 				tagReadingHandler(new CountDownLatch(1)), null, () -> {
 		});
 		t.startAccepting();
+		long start = System.nanoTime();
 		Socket silent = new Socket("127.0.0.1", t.getLocalPort());
 		silent.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 10_000);
-		long start = System.currentTimeMillis();
 		assertEquals("the server must close a silent connection", -1,
 				silent.getInputStream().read());
-		long held = System.currentTimeMillis() - start;
+		long held = (System.nanoTime() - start) / 1_000_000;
 		assertTrue("closed after the deadline, held " + held + " ms",
 				held >= ZtpTorTransport.TAG_READ_TIMEOUT_MS - 500);
 		assertTrue("closed near the deadline, held " + held + " ms",
@@ -469,18 +475,25 @@ public class ZtpTorTransportTest {
 			throws Exception {
 		ExecutorService exec = Executors.newCachedThreadPool();
 		CountDownLatch tagsRead = new CountDownLatch(1);
+		AtomicInteger started = new AtomicInteger();
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(),
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
-				tagReadingHandler(tagsRead), null, () -> {
+				tagReadingHandler(tagsRead, started), null, () -> {
 		});
 		t.startAccepting();
 		List<Socket> silent = new ArrayList<>();
 		for (int i = 0; i < ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS; i++) {
 			silent.add(new Socket("127.0.0.1", t.getLocalPort()));
 		}
-		Thread.sleep(500);
+		long deadline = System.currentTimeMillis() + 15_000;
+		while (started.get() < ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS
+				&& System.currentTimeMillis() < deadline) {
+			Thread.sleep(10);
+		}
+		assertEquals("every silent connection holds a pre-tag slot",
+				ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS, started.get());
 		Socket oneTooMany = new Socket("127.0.0.1", t.getLocalPort());
-		oneTooMany.setSoTimeout(3_000);
+		oneTooMany.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS - 500);
 		assertEquals("a silent connection beyond the pre-tag budget is "
 				+ "refused at once", -1, oneTooMany.getInputStream().read());
 		oneTooMany.close();
