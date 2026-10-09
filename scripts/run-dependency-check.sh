@@ -5,15 +5,21 @@
 #     ./scripts/run-dependency-check.sh
 #
 # What it does:
-#   - Resolves all Gradle module compile/runtime dependencies into local jars
-#     under build/owasp-input/ via Gradle's `dependencies` task.
-#   - Downloads + caches the OWASP dependency-check CLI under build/owasp-cli/
-#     (auto-resolves the latest stable release).
-#   - Runs the CLI against the resolved dependency tree, writing HTML + JSON
-#     reports to build/reports/dependency-check/.
+#   - Downloads and caches the OWASP dependency-check CLI under build/owasp-cli/
+#     at the pinned version DC_VERSION (default 12.2.2). The archive must match
+#     DEPENDENCY_CHECK_SHA256, otherwise the script stops before running it.
+#   - Scans only what is already built: the jars in build/libs of
+#     zerion-core-api, zerion-core, zerion-app-api and zerion-app, and the
+#     official debug APK. It builds and resolves nothing itself, so run the
+#     Gradle build first; a directory that is missing or empty is skipped.
+#   - Writes HTML + JSON reports to build/reports/dependency-check/.
 #   - Honors config/owasp-suppressions.xml for accepted false positives.
 #
+# Required env var (first run, when the CLI is downloaded):
+#   DEPENDENCY_CHECK_SHA256  Published SHA-256 of the release archive.
+#
 # Optional env vars:
+#   DC_VERSION    dependency-check release to download (default: 12.2.2).
 #   NVD_API_KEY   Free key from https://nvd.nist.gov/developers/request-an-api-key
 #                 Speeds up NVD data feed download (~30s vs ~10min without).
 #   CVSS_FAIL     Numeric CVSS threshold above which the script exits 1

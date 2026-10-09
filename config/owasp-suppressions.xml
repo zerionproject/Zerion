@@ -2,7 +2,7 @@
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
 	<!--
 		Add an entry here for each known false-positive flagged by
-		./gradlew dependencyCheckAggregate. Format:
+		scripts/run-dependency-check.sh. Format:
 
 		<suppress until="YYYY-MM-DD">
 			<notes>Brief justification, e.g. "Tor dep flagged for old Java
