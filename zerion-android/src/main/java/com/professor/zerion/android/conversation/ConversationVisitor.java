@@ -11,8 +11,6 @@ import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.introduction.IntroductionRequest;
 import org.zerionproject.app.api.introduction.IntroductionResponse;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
-import org.zerionproject.app.api.privategroup.invitation.GroupInvitationRequest;
-import org.zerionproject.app.api.privategroup.invitation.GroupInvitationResponse;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
@@ -22,7 +20,6 @@ import javax.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 
 import static java.util.Collections.emptyList;
-import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.GROUP;
 import static com.professor.zerion.android.conversation.ConversationRequestItem.RequestType.INTRODUCTION;
 import static com.professor.zerion.android.util.UiUtils.getContactDisplayName;
 
@@ -155,64 +152,6 @@ class ConversationVisitor implements
 	private String getContactNameOrDefault() {
 		String name = contactName.getValue();
 		return name != null ? name : "";
-	}
-
-	@Override
-	public ConversationItem visitGroupInvitationRequest(
-			GroupInvitationRequest r) {
-		if (r.isLocal()) {
-			String text = ctx.getString(
-					R.string.groups_invitations_invitation_sent,
-					getContactNameOrDefault(), r.getName());
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text = ctx.getString(
-					R.string.groups_invitations_invitation_received,
-					getContactNameOrDefault(), r.getName());
-			return new ConversationRequestItem(
-					R.layout.list_item_conversation_request, text, contactName,
-					GROUP, r);
-		}
-	}
-
-	@Override
-	public ConversationItem visitGroupInvitationResponse(
-			GroupInvitationResponse r) {
-		if (r.isLocal()) {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.groups_invitations_response_accepted_sent,
-						getContactNameOrDefault());
-			} else if (r.isAutoDecline()) {
-				text = ctx.getString(
-						R.string.groups_invitations_response_declined_auto,
-						getContactNameOrDefault());
-			} else {
-				text = ctx.getString(
-						R.string.groups_invitations_response_declined_sent,
-						getContactNameOrDefault());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_out, text,
-					contactName, r);
-		} else {
-			String text;
-			if (r.wasAccepted()) {
-				text = ctx.getString(
-						R.string.groups_invitations_response_accepted_received,
-						getContactNameOrDefault());
-			} else {
-				text = ctx.getString(
-						R.string.groups_invitations_response_declined_received,
-						getContactNameOrDefault());
-			}
-			return new ConversationNoticeItem(
-					R.layout.list_item_conversation_notice_in, text,
-					contactName, r);
-		}
 	}
 
 	@Override

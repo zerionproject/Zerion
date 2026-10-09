@@ -4,8 +4,6 @@ import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.app.api.client.SessionId;
 import org.zerionproject.app.api.conversation.ConversationRequest;
 import org.zerionproject.app.api.grouptr.GroupTrInvitationHeader;
-import org.zerionproject.app.api.sharing.InvitationRequest;
-import org.zerionproject.app.api.sharing.Shareable;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import javax.annotation.Nullable;
@@ -18,7 +16,7 @@ import androidx.lifecycle.LiveData;
 @NotNullByDefault
 class ConversationRequestItem extends ConversationNoticeItem {
 
-	enum RequestType {INTRODUCTION, FORUM, BLOG, GROUP, GROUPTR}
+	enum RequestType {INTRODUCTION, GROUPTR}
 
 	@Nullable
 	private final GroupId requestedGroupId;
@@ -38,13 +36,8 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		this.sessionId = r.getSessionId();
 		this.answered = r.wasAnswered();
 		this.grouptrGid = null;
-		if (r instanceof InvitationRequest) {
-			this.requestedGroupId = ((Shareable) r.getNameable()).getId();
-			this.canBeOpened = ((InvitationRequest<?>) r).canBeOpened();
-		} else {
-			this.requestedGroupId = null;
-			this.canBeOpened = false;
-		}
+		this.requestedGroupId = null;
+		this.canBeOpened = false;
 	}
 
 	ConversationRequestItem(@LayoutRes int layoutRes, String text,
