@@ -1,6 +1,5 @@
 package org.zerionproject.core.test;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -12,10 +11,9 @@ import static org.zerionproject.core.test.UTest.Result.LARGER;
 import static org.zerionproject.core.test.UTest.Result.SMALLER;
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 public class UTestTest extends BrambleTestCase {
 
-	private final Random random = new Random();
+	private final Random random = new Random(20261009L);
 
 	@Test
 	public void testSmallerLarger() {
