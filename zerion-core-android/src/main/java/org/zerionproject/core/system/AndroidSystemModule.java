@@ -5,7 +5,6 @@ import android.app.Application;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
-import org.zerionproject.core.api.system.ResourceProvider;
 import org.zerionproject.core.api.system.SecureRandomProvider;
 import org.zerionproject.tor.AndroidLocationUtilsFactory;
 import org.zerionproject.tor.LocationUtils;
@@ -65,11 +64,5 @@ public class AndroidSystemModule {
 	Executor provideEventExecutor(AndroidExecutor androidExecutor) {
 
 		return androidExecutor::runOnUiThread;
-	}
-
-	@Provides
-	@Singleton
-	ResourceProvider provideResourceProvider(AndroidResourceProvider provider) {
-		return provider;
 	}
 }
