@@ -7,7 +7,6 @@ import org.zerionproject.core.api.plugin.TransportConnectionReader;
 import org.zerionproject.core.api.plugin.TransportConnectionWriter;
 import org.zerionproject.core.api.plugin.duplex.DuplexPlugin;
 import org.zerionproject.core.api.plugin.duplex.DuplexTransportConnection;
-import org.zerionproject.core.api.properties.TransportProperties;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.api.Action;
@@ -15,6 +14,7 @@ import org.jmock.api.Invocation;
 import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Test;
 
+import java.lang.reflect.Proxy;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +31,6 @@ public class VoiceCallConnectionManagerImplTest {
 	private final PluginManager pluginManager =
 			context.mock(PluginManager.class);
 	private final VoiceCallCrypto crypto = context.mock(VoiceCallCrypto.class);
-	private final DuplexPlugin plugin = context.mock(DuplexPlugin.class);
 	private final DuplexTransportConnection late =
 			context.mock(DuplexTransportConnection.class, "late");
 	private final DuplexTransportConnection live =
@@ -46,30 +45,12 @@ public class VoiceCallConnectionManagerImplTest {
 	public void aLateConnectionFromAnAbandonedAttemptIsClosed()
 			throws Exception {
 		CountDownLatch closed = new CountDownLatch(2);
+		CountDownLatch secondDial = new CountDownLatch(1);
 		AtomicInteger dials = new AtomicInteger();
+		DuplexPlugin plugin = dialler(dials, secondDial);
 		context.checking(new Expectations() {{
 			allowing(pluginManager).getPlugin(TorConstants.ID);
 			will(returnValue(plugin));
-			allowing(plugin).createConnection(
-					with(any(TransportProperties.class)));
-			will(new Action() {
-				@Override
-				public Object invoke(Invocation invocation)
-						throws Throwable {
-					if (dials.incrementAndGet() == 1) {
-						Thread.sleep(800);
-						return late;
-					}
-					return live;
-				}
-
-				@Override
-				public void describeTo(
-						org.hamcrest.Description description) {
-					description.appendText(
-							"blocks the first dial, answers the second");
-				}
-			});
 			allowing(late).getReader();
 			will(returnValue(lateReader));
 			allowing(late).getWriter();
@@ -120,5 +101,32 @@ public class VoiceCallConnectionManagerImplTest {
 		} finally {
 			manager.shutdown();
 		}
+	}
+
+	private DuplexPlugin dialler(AtomicInteger dials,
+			CountDownLatch secondDial) {
+		return (DuplexPlugin) Proxy.newProxyInstance(
+				DuplexPlugin.class.getClassLoader(),
+				new Class<?>[] {DuplexPlugin.class},
+				(proxy, method, args) -> {
+					switch (method.getName()) {
+						case "createConnection":
+							if (dials.incrementAndGet() == 1) {
+								secondDial.await(10, TimeUnit.SECONDS);
+								return late;
+							}
+							secondDial.countDown();
+							return live;
+						case "hashCode":
+							return System.identityHashCode(proxy);
+						case "equals":
+							return proxy == args[0];
+						case "toString":
+							return "dialler";
+						default:
+							throw new UnsupportedOperationException(
+									method.getName());
+					}
+				});
 	}
 }
