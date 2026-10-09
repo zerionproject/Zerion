@@ -8,22 +8,32 @@ import com.professor.zerion.android.security.TestZerionEncryptedPrefs;
 import org.robolectric.TestLifecycleApplication;
 
 import java.lang.reflect.Method;
+import java.security.Provider;
+import java.security.Security;
 
 public class TestZerionApplicationImpl extends ZerionApplicationImpl
 		implements TestLifecycleApplication {
 
 	private static final long STARTUP_TIMEOUT_MS = 60_000;
 
-	static {
-		TestAndroidKeyStore.register();
-	}
-
 	@Override
 	protected void attachBaseContext(Context base) {
+		TestAndroidKeyStore.register();
+		removeSecureRandomProvidersOfEarlierTests();
 		AppModule.SecurePrefsHolder.resetForTests();
 		TestZerionEncryptedPrefs.reset();
 		EarlyPrefs.resetForTests();
 		super.attachBaseContext(base);
+	}
+
+	private static void removeSecureRandomProvidersOfEarlierTests() {
+		Provider[] installed = Security.getProviders("SecureRandom.SHA1PRNG");
+		if (installed == null) return;
+		for (Provider p : installed) {
+			if (p.getClass().getClassLoader() != null) {
+				Security.removeProvider(p.getName());
+			}
+		}
 	}
 
 	@Override

@@ -54,11 +54,12 @@ public final class TestAndroidKeyStore {
 	}
 
 	public static void register() {
-		if (Security.getProvider(NAME) == null) {
-			Provider provider = new KeyStoreProvider();
-			Security.addProvider(provider);
-			markJceVerified(provider);
-		}
+		Provider current = Security.getProvider(NAME);
+		if (current instanceof KeyStoreProvider) return;
+		if (current != null) Security.removeProvider(NAME);
+		Provider provider = new KeyStoreProvider();
+		Security.addProvider(provider);
+		markJceVerified(provider);
 	}
 
 	@SuppressWarnings("unchecked")
