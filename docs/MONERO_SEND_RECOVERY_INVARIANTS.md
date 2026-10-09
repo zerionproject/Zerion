@@ -3,8 +3,9 @@
 This document is the single reference for the Monero send path, the spend
 journal, the balance reservation, the spend session and vault locking, so
 that a change to one state cannot silently reopen a defect in another. It
-was written during the 3.0.11 security remediation (findings XMR-01, XMR-03,
-XMR-05, JNI-01 and their interaction with vault locking, transaction
+was written during the 3.0.11 security remediation (the findings on an
+uncertain relay, send-flow teardown, reservation release and the native
+history race, and their interaction with vault locking, transaction
 journaling and authorization-token invalidation) and describes the code as
 it is after those fixes.
 
@@ -56,7 +57,7 @@ AUTHORIZED
 RELAYING
   |-- commit returned true  --> SUCCESS
   |-- commit returned false --> RELAY_UNCERTAIN
-  |-- commit threw          --> RELAY_UNCERTAIN   (XMR-01)
+  |-- commit threw          --> RELAY_UNCERTAIN   (uncertain relay)
   |-- validation/journal write failed (before commit) --> FAILED
 
 Any state before RELAYING:
@@ -67,7 +68,7 @@ RELAYING, SUCCESS, RELAY_UNCERTAIN: lock and cancel invalidate the token
 ```
 
 After a terminal relay result the manager runs, in order, on the session
-executor: daemon reconciliation on the still-open spend session (XMR-01),
+executor: daemon reconciliation on the still-open spend session (uncertain relay),
 convergence (`convergeAfterRelay`), then clears the flow, closes the spend
 session, releases the exclusive slot and re-arms sync.
 
@@ -115,7 +116,7 @@ CONVERGED -------(rescan rebuilds the view cache)--------------> RESERVED again
 The reservation is display-side only; wallet2's own balance is never
 edited. It is released only by positive convergence (the cache reflects the
 spend) or by the explicit release; observing the txid in history alone
-never releases it (XMR-05).
+never releases it (reservation release).
 
 ## Invariants and where each is enforced
 
@@ -147,34 +148,34 @@ never releases it (XMR-05).
 6. Orphaned UI does not orphan the native spend session: the manager's
    watchdog cancels a flow still at review after the TTL; the detail screen
    cancels an active flow when its view is destroyed; an explicit session
-   close tears the flow down; and the vault lock always wins. (XMR-03)
+   close tears the flow down; and the vault lock always wins. (flow teardown)
 7. Reconciliation does not require wallet deletion: the daemon-backed
    reconciliation runs on every connection; the expiry-gated release exists;
-   deletion remains possible with an explicit acknowledgement. (XMR-01)
+   deletion remains possible with an explicit acknowledgement. (uncertain relay)
 8. Native transaction lifetime is single-owner and executor-serialized:
    `disposePrepared` runs only on the session executor; `invalidate` from
    the lock thread never touches the native object; the history read uses
-   wallet2's own refresh quiescence (JNI-01, native recipe patch).
+   wallet2's own refresh quiescence (history race, native recipe patch).
 9. Relay and sync do not share a Tor circuit: the spend session and the
    sync loop use distinct SOCKS5 credentials, per wallet and per purpose.
-   (XMR-04, `XmrTorIsolation`)
+   (Tor isolation, `XmrTorIsolation`)
 
 ## Cross-finding review
 
-- XMR-01 x XMR-05: clearing the journal on positive evidence must not
+- uncertain relay x reservation release: clearing the journal on positive evidence must not
   release the reservation. It does not: journal resolution and convergence
   are separate; the record stays RELAY_UNCERTAIN until the spend wallet
   converges it.
-- XMR-01 x XMR-03: the release path runs on the session executor through
+- uncertain relay x flow teardown: the release path runs on the session executor through
   `syncManager.submit`, never while a send flow holds the exclusive slot
   (a quarantined wallet cannot start a flow), so it cannot race a relay.
-- XMR-03 x XMR-01: the watchdog cancels only at REVIEW_READY; a flow at
+- flow teardown x uncertain relay: the watchdog cancels only at REVIEW_READY; a flow at
   RELAYING is never interrupted, so a cancel can never turn a relay into a
   forgotten uncertain one.
-- XMR-03 x vault lock: both paths share `teardownSendFlowOnExecutor`; the
+- flow teardown x vault lock: both paths share `teardownSendFlowOnExecutor`; the
   lock additionally bumps the generation, so a watchdog cancel arriving
   after a lock is a no-op on an already-cleared flow.
-- JNI-01 x XMR-03: freeing the native transaction on the executor is the
+- history race x flow teardown: freeing the native transaction on the executor is the
   same discipline that removed the history use-after-free; the watchdog
   reuses the cancel path rather than touching native state directly.
 - Token invalidation x journaling: a journal is written only after the

@@ -356,7 +356,7 @@ confirmed on a device:
   connectivity change (`DisableNetwork`), on a network restart and when
   bridges are re-applied, so after each such change the transport tells the
   manager to install every credential again from the database
-  (`refeedCredentials`, finding SC-TOR-06). The service and the negotiation
+  (`refeedCredentials`). The service and the negotiation
   state are not touched by that step; a pair at `AUTH_REQUIRED` is never
   dialed at the open address while the credential is missing, so the gap
   between the change and the re-installation is a failed dial, not a

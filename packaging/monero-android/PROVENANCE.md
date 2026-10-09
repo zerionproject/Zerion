@@ -162,7 +162,7 @@ API headers: the build script's third documented patch makes `WalletImpl`
 and `PendingTransactionImpl` declare the shim's `ZerionWalletAccess` struct
 a friend, and the shim reaches the refresh mutex, the constructed
 transactions, `stopRefresh` and the underlying `wallet2` through that struct,
-so every translation unit compiles one class definition (JNI-07). The build
+so every translation unit compiles one class definition. The build
 image is pinned by the base image's content digest and installs its host
 toolchain from a dated Debian snapshot at exact package versions (SC-10);
 the package versions are the ones the previous hashes were produced with.
@@ -208,15 +208,16 @@ for the record.
 
 These were the values the Gradle gate enforced after the JNI shim gained
 wallet-level synchronisation and the remaining shim findings of the 3.0.11
-assessment were fixed (JNI-02, JNI-03, JNI-04, JNI-06 and the asynchronous
-rescan used by XMR-10). Only `jni/zmonero.cpp` changed; the build script,
+assessment were fixed (the trusted-daemon flag, the persisting close,
+wallet-level synchronisation, early log silencing and the asynchronous
+rescan). Only `jni/zmonero.cpp` changed; the build script,
 its two documented patches, the dependency set and the Monero commit are
 unchanged. Produced by `docker build -t zerion-monero-build:r3 .` from this
 directory and one fresh container per ABI, each from an empty `/build`.
 
 What the shim now does:
 
-- Wallet-level synchronisation (JNI-04). Everything the Java side polls
+- Wallet-level synchronisation. Everything the Java side polls
   (balances, scanned height, subaddress count, transaction history) is
   mutated by the wallet API's refresh thread with no lock a caller could
   take. The API serialises its own refresh passes on
@@ -232,17 +233,17 @@ What the shim now does:
   quiesces the refresh thread before each of them, so in practice the gate
   is free); relay takes it unconditionally. The wallet's own
   `TransactionHistory` is therefore rebuilt only under the gate, on either
-  thread, which also excludes the JNI-01 race structurally; the build
+  thread, which also excludes the history race structurally; the build
   script's history patch stays as a second line.
-- Logging is silenced in `JNI_OnLoad`, before any address validator can run
-  (JNI-06); the validators silence again explicitly. `wallet2::get_seed`
+- Logging is silenced in `JNI_OnLoad`, before any address validator can run;
+  the validators silence again explicitly. `wallet2::get_seed`
   prints to stdout only for a non-deterministic wallet, which Zerion never
   creates, and never prints the seed.
 - A persisting close stores under the gate, always frees the wallet
   (closing without a store and deleting it directly if the API's close
-  fails), and reports whether the cache was written (JNI-03).
+  fails), and reports whether the cache was written.
 - The trusted-daemon flag is applied after `init`, which otherwise
-  overrides it from loopback detection, and can be read back (JNI-02).
+  overrides it from loopback detection, and can be read back.
 - `nRescanBlockchain` hands the rescan to the refresh thread instead of
   running it on the caller.
 
@@ -257,7 +258,7 @@ below for the record.
 ## Previous hashes (clean rebuild with the history patch, 2026-09-21)
 
 These were the values the Gradle gate enforced after the transaction
-history race fix (JNI-01). `build-monero-android.sh` gained a second documented
+history race fix. `build-monero-android.sh` gained a second documented
 patch: the wallet API refresh thread no longer refreshes the transaction
 history when it finds it empty (`WalletImpl::doRefresh` in
 `src/wallet/api/wallet.cpp`), because the JNI shim refreshes and reads the
@@ -336,10 +337,10 @@ applies the same order to the tagged script in a `prebuild` step.
   interpreter patch is a no-op there.
 
 Wrapper history (pinned Monero and dependency versions unchanged throughout):
-- XMR-P3.1 (2026-08-28) added three forwarders for background, non-blocking
+- The background synchronization change (2026-08-28) added three forwarders for background, non-blocking
   synchronization: `nStartRefresh`, `nPauseRefresh`, `nSetAutoRefreshInterval`
   (wallet2_api `startRefresh` / `pauseRefresh` / `setAutoRefreshInterval`).
-- XMR-P3.3 (2026-08-28) added `nStopRefreshThread`, which stops and joins the
+- The refresh thread change (2026-08-28) added `nStopRefreshThread`, which stops and joins the
   wallet's refresh thread (`WalletImpl::stopRefresh`). It is required before a
   persisting close because wallet2_api `close(store=true)` writes the cache
   before it stops the thread; without the join a lock during catch-up could
@@ -349,7 +350,7 @@ Wrapper history (pinned Monero and dependency versions unchanged throughout):
   enabled for that one call. The link step gained the include directories
   needed for `wallet.h` (`external`, `external/rapidjson/include`,
   `external/supercop/include`, the per-ABI `generated_include`).
-- XMR-P4-B commit 2 (2026-08-28) added six read-only / synchronization
+- The Send review change (2026-08-28) added six read-only / synchronization
   forwarders for the Send review and reconciliation primitives, with no new
   relay path (`nCommit` is byte-for-byte unchanged: `commit("", false)`, one
   attempt, no retry, no re-sign, no failover):
@@ -380,11 +381,11 @@ Wrapper history (pinned Monero and dependency versions unchanged throughout):
   (`3943db3d…` / `e63d48b8…`) before relinking the new source. Behavior is
   unchanged: the send-snapshot validator already rejected any `< 1` count and
   `< 0` dust, covering both sentinels.
-- XMR-P4-B commit 2A (2026-08-28), a review-hardening pass, made three changes
+- A hardening pass on the Send review change (2026-08-28) made three changes
   and rebuilt both ABIs (arm64
   `3943db3d5c5b7088091f24e34191e43844bda32d097af6e83b3e42855e1ed074`, armv7
   `e63d48b87dd92deb4a922cbefac12014eac58b65434d515f20478e0d4e55ad83`):
-  - **removed `nIntegratedAddress`** from the production surface. P4 only needs
+  - **removed `nIntegratedAddress`** from the production surface. The Send review only needs
     to classify an existing integrated address (`nAddressKind`, which reads the
     embedded payment id through Monero's parser), never to generate one from an
     arbitrary payment id, so the generator is gone rather than shipped unused.
