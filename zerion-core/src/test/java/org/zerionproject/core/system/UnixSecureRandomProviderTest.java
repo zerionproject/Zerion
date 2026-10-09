@@ -23,13 +23,13 @@ public class UnixSecureRandomProviderTest extends BrambleTestCase {
 
 	@Before
 	public void setUp() {
-		assumeTrue(isLinux() || isMac());
 		assertTrue(testDir.mkdirs());
 	}
 
 	@Test
 	public void testGetProviderWritesToRandomDeviceOnFirstCall()
 			throws Exception {
+		assumeTrue(isLinux() || isMac());
 
 		File urandom = new File(testDir, "urandom");
 		if (urandom.exists()) assertTrue(urandom.delete());

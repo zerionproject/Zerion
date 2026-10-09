@@ -32,12 +32,12 @@ public class UnixSecureRandomSpiTest extends BrambleTestCase {
 
 	@Before
 	public void setUp() {
-		assumeTrue(isLinux() || isMac());
 		assertTrue(testDir.mkdirs());
 	}
 
 	@Test
 	public void testSeedsAreDistinct() {
+		assumeTrue(isLinux() || isMac());
 		Set<Bytes> seeds = new HashSet<>();
 		UnixSecureRandomSpi engine = new UnixSecureRandomSpi();
 		for (int i = 0; i < 1000; i++) {
