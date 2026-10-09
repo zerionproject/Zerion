@@ -1,6 +1,7 @@
 package com.professor.zerion.android.login;
 
 import android.app.Application;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -53,7 +54,7 @@ public class StartupWithoutAccountTest {
 
 	private static File leftover(File f) throws IOException {
 		File dir = f.getParentFile();
-		if (!dir.isDirectory()) assertTrue(dir.mkdirs());
+		assertTrue(dir.isDirectory() || dir.mkdirs());
 		Files.write(f.toPath(), "left over".getBytes(StandardCharsets.UTF_8));
 		return f;
 	}
@@ -95,22 +96,37 @@ public class StartupWithoutAccountTest {
 		return f.exists() ? "kept" : "erased";
 	}
 
-	private boolean start(ActivityController<StartupActivity> c,
-			long settleMs) throws Exception {
-		StartupActivity a = c.get();
-		boolean welcome = false;
-		long end = System.currentTimeMillis() + settleMs;
-		while (System.currentTimeMillis() < end && !welcome) {
-			shadowOf(Looper.getMainLooper()).idle();
-			Intent next = shadowOf(a).getNextStartedActivity();
-			if (next != null && next.getComponent() != null
+	private boolean sawWelcome;
+
+	private boolean welcomeStarted(StartupActivity a) {
+		Intent next;
+		while ((next = shadowOf(a).getNextStartedActivity()) != null) {
+			if (next.getComponent() != null
 					&& WelcomeActivity.class.getName().equals(
 							next.getComponent().getClassName())) {
-				welcome = true;
+				sawWelcome = true;
 			}
-			Thread.sleep(20);
 		}
-		return welcome;
+		return sawWelcome;
+	}
+
+	private static boolean asked() {
+		Dialog d = ShadowDialog.getLatestDialog();
+		return d != null && d.isShowing();
+	}
+
+	private boolean start(ActivityController<StartupActivity> c)
+			throws Exception {
+		StartupActivity a = c.get();
+		long end = System.currentTimeMillis() + TIMEOUT_MS;
+		shadowOf(Looper.getMainLooper()).idle();
+		while (!welcomeStarted(a) && !asked()
+				&& System.currentTimeMillis() < end) {
+			Thread.sleep(20);
+			shadowOf(Looper.getMainLooper()).idle();
+		}
+		shadowOf(Looper.getMainLooper()).idle();
+		return welcomeStarted(a);
 	}
 
 	@Before
@@ -136,7 +152,7 @@ public class StartupWithoutAccountTest {
 
 		ActivityController<StartupActivity> c =
 				Robolectric.buildActivity(StartupActivity.class).create();
-		boolean welcome = start(c, TIMEOUT_MS);
+		boolean welcome = start(c);
 		assertEquals("welcome shown, database erased, vault erased,"
 						+ " wallet files erased, erase setting erased,"
 						+ " erase request erased",
@@ -158,7 +174,7 @@ public class StartupWithoutAccountTest {
 
 		ActivityController<StartupActivity> c =
 				Robolectric.buildActivity(StartupActivity.class).create();
-		boolean welcome = start(c, 3_000);
+		boolean welcome = start(c);
 		AlertDialog dialog = (AlertDialog) ShadowDialog.getLatestDialog();
 		String shown = dialog != null && dialog.isShowing()
 				? "asked" : "not asked";
@@ -182,7 +198,7 @@ public class StartupWithoutAccountTest {
 		ActivityController<StartupActivity> c =
 				Robolectric.buildActivity(StartupActivity.class).create()
 						.start().resume();
-		start(c, 3_000);
+		start(c);
 		AlertDialog asked = (AlertDialog) ShadowDialog.getLatestDialog();
 		assertNotNull(asked);
 		asked.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
@@ -193,7 +209,7 @@ public class StartupWithoutAccountTest {
 		assertNotNull(word);
 		word.setText(app.getString(R.string.delete_confirm_word));
 		confirm.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
-		boolean welcome = start(c, TIMEOUT_MS);
+		boolean welcome = start(c);
 		assertEquals("welcome shown, database erased, vault erased,"
 						+ " wallet files erased",
 				(welcome ? "welcome shown" : "welcome not shown")
@@ -210,7 +226,7 @@ public class StartupWithoutAccountTest {
 
 		ActivityController<StartupActivity> c =
 				Robolectric.buildActivity(StartupActivity.class).create();
-		boolean welcome = start(c, TIMEOUT_MS);
+		boolean welcome = start(c);
 		assertEquals("welcome shown, erase setting erased",
 				(welcome ? "welcome shown" : "welcome not shown")
 						+ ", erase setting " + eraseSetting());
