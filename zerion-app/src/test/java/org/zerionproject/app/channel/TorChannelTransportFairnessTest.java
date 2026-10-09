@@ -85,9 +85,9 @@ public class TorChannelTransportFairnessTest {
 		DataOutputStream out = new DataOutputStream(s.getOutputStream());
 		out.writeInt(64 * 1024);
 		out.flush();
-		long start = System.currentTimeMillis();
+		long start = System.nanoTime();
 		boolean closed = false;
-		while (System.currentTimeMillis() - start < 40_000L) {
+		while (System.nanoTime() - start < 40_000_000_000L) {
 			try {
 				out.write(1);
 				out.flush();
@@ -97,7 +97,7 @@ public class TorChannelTransportFairnessTest {
 			}
 			Thread.sleep(500);
 		}
-		long held = System.currentTimeMillis() - start;
+		long held = (System.nanoTime() - start) / 1_000_000;
 		assertTrue("a trickled request held its handler for " + held
 				+ " ms", closed && held < 35_000L);
 	}
