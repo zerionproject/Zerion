@@ -1,0 +1,104 @@
+name: Build and test
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    tags:
+      - "v*"
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "fastlane/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "fastlane/**"
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-and-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Version and release references agree with the manifest
+        run: python3 scripts/check-version.py
+      - name: Verify the Gradle wrapper before it runs
+        run: bash scripts/check-wrapper.sh
+      - uses: gradle/actions/wrapper-validation@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install the Android SDK parts the build pins
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;36.0.0" \
+            "ndk;27.1.12297006" "cmake;3.22.1" > /dev/null
+      - name: Unit tests of every module with strict dependency verification and locking
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --continue --dependency-verification strict \
+            verifyLockedConfigurationCopies \
+            :zerion-core:test :zerion-wire:test :zerion-app:test \
+            :zerion-core-android:testDebugUnitTest \
+            :zerion-android:testOfficialDebugUnitTest
+      - name: Keep the test reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unit-test-reports
+          path: "*/build/reports/tests/"
+          retention-days: 14
+
+  release-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: Free disk space for the F-Droid build server image
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /opt/hostedtoolcache/CodeQL
+          df -h /
+      - name: Metadata that builds this commit with F-Droid's current recipe
+        run: |
+          mkdir -p "$RUNNER_TEMP/fd/in" "$RUNNER_TEMP/fd/out"
+          curl -fsSL -o "$RUNNER_TEMP/fd/upstream.yml" \
+            https://gitlab.com/fdroid/fdroiddata/-/raw/master/metadata/com.professor.zerion.yml
+          python3 scripts/fdroid-metadata.py "$RUNNER_TEMP/fd/upstream.yml" \
+            "$GITHUB_SHA" /in/zerion.git "$RUNNER_TEMP/fd/in/metadata.yml"
+          git clone -q --bare "$GITHUB_WORKSPACE" "$RUNNER_TEMP/fd/in/zerion.git"
+          cp scripts/fdroid-reference-build.sh "$RUNNER_TEMP/fd/in/"
+          echo "VERCODE=$(sed -n -E 's/^\s*versionCode ([0-9]+)$/\1/p' zerion-android/build.gradle)" >> "$GITHUB_ENV"
+      - name: Release build in F-Droid's build server image (native pins, enforceNoLogs, translations, R8, wallet regression suite)
+        run: |
+          docker run --rm -e VERCODE \
+            -v "$RUNNER_TEMP/fd/in:/in:ro" -v "$RUNNER_TEMP/fd/out:/out" \
+            registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie \
+            bash /in/fdroid-reference-build.sh
+      - name: Keep the unsigned APK and the build log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fdroid-reference-build
+          path: ${{ runner.temp }}/fd/out/
+          retention-days: 14

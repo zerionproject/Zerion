@@ -18,7 +18,7 @@
     {"purpose": "Identifiers and fingerprints", "primitive": "SHA-256", "params": "ML-KEM key-pair ids, TLS pins, transaction fingerprints, mesh discovery", "source": "zerion-core-api/src/main/java/org/zerionproject/core/api/crypto/pcs/KpId.java"},
     {"purpose": "Tor rendezvous derivation", "primitive": "SHA-512", "params": "", "source": "zerion-core/src/main/java/org/zerionproject/core/plugin/tor/TorRendezvousCryptoImpl.java"},
     {"purpose": "ML-KEM key-seed hash", "primitive": "SHA3-256", "params": "", "source": "zerion-core/src/main/java/org/zerionproject/core/crypto/pcs/MlKemProviderImpl.java"},
-    {"purpose": "Database at rest", "primitive": "SQLCipher (AES-256)", "params": "schema version 67", "source": "zerion-core/src/main/java/org/zerionproject/core/db/JdbcDatabase.java"}
+    {"purpose": "Database at rest", "primitive": "SQLCipher (AES-256)", "params": "schema version 72", "source": "zerion-core/src/main/java/org/zerionproject/core/db/JdbcDatabase.java"}
   ],
   "absent": ["Triple Ratchet", "HKDF-BLAKE2b", "PBKDF2-SHA256 for the vault", "military-grade"]
 }

@@ -25,7 +25,7 @@ not in this table is a finding. Companion documents:
 | reproducible-apk-tools | commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` | `scripts/build-fdroid-apk.sh` refuses any other checkout; the recipe pins the same commit | update both places |
 | OWASP dependency-check CLI | version 12.2.2, archive hash from `DEPENDENCY_CHECK_SHA256` (required, the script refuses to run without it) | `scripts/run-dependency-check.sh` | record the published hash of the new release in the release notes of the run; the tool is not on the release path (it only reports) |
 | Signing | the release certificate `d7fdb111...` | `scripts/sign-release.sh` refuses any other certificate; Gradle never signs and never reads `keystore.properties` | a key rotation is announced with the release |
-| GitHub Actions | tags `actions/checkout@v4`, `actions/setup-java@v4`, `actions/setup-python@v5`, `gradle/actions/wrapper-validation@v4` | none yet (the workflows have `contents: read` only and no secrets) | pin by commit: for each action run `gh api repos/<owner>/<repo>/git/ref/tags/<tag> --jq .object.sha` (dereference an annotated tag with `.../git/tags/<sha>`), write `uses: <owner>/<repo>@<sha> # <tag>`, and let Dependabot or a monthly check move the pins |
+| GitHub Actions | `actions/checkout`, `actions/setup-java`, `actions/setup-python`, `actions/upload-artifact` and `gradle/actions/wrapper-validation`, each pinned by commit hash with its version in a comment | every workflow refers to the commit, so a moved tag changes nothing; the workflows have `contents: read` only and no secrets | to move a pin, run `gh api repos/<owner>/<repo>/git/ref/tags/<tag> --jq .object.sha` (dereference an annotated tag with `.../git/tags/<sha>`) and write `uses: <owner>/<repo>@<sha> # <version>` |
 
 
 Dependency locks: every configuration is locked in strict mode (`gradle.lockfile` per module, `buildscript-gradle.lockfile` for the build script). To update them run `./gradlew resolveAndLockAll --write-locks` and then `./gradlew writeIdeCopyLockState`. The second task records lock state for the configuration copies the Android Gradle plugin resolves while Android Studio syncs a project (named `<configuration>Copy`), which otherwise have no lock state and make the sync fail; `./gradlew verifyLockedConfigurationCopies` (part of `check`) resolves such copies under strict locking and fails when that state is missing.
@@ -70,3 +70,29 @@ sets `fdroid=true`, the recipe passes the same property, and the build refuses
 signing, and a dependency graph that matches the lockfiles (the profile
 installer is excluded and not locked). This is why `-Pfdroid` on the command
 line is harmless and redundant.
+
+## Continuous integration
+
+The workflows run on pushes to `dev` and `master`, on `v*` tags and on pull
+requests, each when files it checks change, and once a week regardless. None
+of them holds a secret.
+
+- `build-and-test.yml`: `scripts/check-version.py` (the build version, the
+  release manifest, the changelogs and the current-release references agree,
+  and a tag names the version it builds), the wrapper checks, and the unit
+  tests of every module with strict dependency verification and the locked
+  configuration copies. A second job builds the commit the way F-Droid does
+  (`scripts/fdroid-metadata.py` takes the newest recipe from fdroiddata and
+  refuses one that removes dependency verification;
+  `scripts/fdroid-reference-build.sh` runs `fdroid build --test --on-server` in
+  F-Droid's build server image), so Tor and Monero are compiled from pinned
+  source and every release gate runs: the native pins, `enforceNoLogs`,
+  `verifyTranslations`, R8 and the wallet regression suite. The unsigned APK
+  and the build log are kept for two weeks.
+- `dependency-verification.yml`: resolves every classpath from an empty cache
+  with strict verification and proves a tampered artifact is refused.
+- `docs-consistency.yml`: `scripts/check-version.py`, `scripts/check-docs.py`
+  and the published APK against the release manifest.
+
+Signing stays off CI: `scripts/sign-release.sh` runs on the machine that holds
+the release key, on the APK the F-Droid build produced.

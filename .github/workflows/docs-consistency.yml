@@ -9,7 +9,9 @@ on:
       - "docs/**"
       - "fastlane/**"
       - "scripts/check-docs.py"
+      - "scripts/check-version.py"
       - "scripts/render-release-refs.py"
+      - "zerion-android/build.gradle"
       - ".github/workflows/docs-consistency.yml"
   pull_request:
     paths:
@@ -19,7 +21,9 @@ on:
       - "docs/**"
       - "fastlane/**"
       - "scripts/check-docs.py"
+      - "scripts/check-version.py"
       - "scripts/render-release-refs.py"
+      - "zerion-android/build.gradle"
   schedule:
     - cron: "17 6 * * 1"
   workflow_dispatch:
@@ -31,11 +35,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      # Pinned by tag until checked against upstream; see docs/SUPPLY_CHAIN.md.
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
+      - name: Version and release references agree with the manifest
+        run: python3 scripts/check-version.py
       - name: Check documents against the release manifest, the crypto list and the live website
         run: python3 scripts/check-docs.py
       - name: Verify the published APK hash against the manifest

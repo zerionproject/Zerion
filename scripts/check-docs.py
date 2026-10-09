@@ -21,7 +21,7 @@ not scanned for stale phrases; they carry dated notes instead.
 
 Usage: check-docs.py [--website <dir>] [--no-fetch]
 """
-import glob, io, json, os, re, sys, urllib.error, urllib.request
+import glob, json, os, re, sys, urllib.error, urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
@@ -66,7 +66,7 @@ FORBIDDEN = [
     (r"truly anonymous|complete anonymity|completely anonymous", "anonymity is bounded by Tor's model"),
     (r"hardware-backed vault|held in (the )?hardware", "the vault is device-bound, not held in hardware"),
     (r"signs the transcript with its hybrid", "pairing authentication is classical in 3.0.11"),
-    (r"schema version 66", "schema version is 67"),
+    (r"schema version 6[0-9]\b", "the schema version is 72"),
 ]
 ALLOW_CONTEXT = [r"not used", r"retired", r"no longer", r"not ", r"never ", r"is written", r"absent", r"instead of", r"Historical", r"older material"]
 
@@ -116,16 +116,9 @@ def check_links(name, text):
 
 def check_manifest_refs(name, text, m):
     a = m["android"]
-    for ver in re.findall(r"\b3\.0\.(\d+)\b", text):
-        pass
     for mm in re.finditer(r"(?:Latest release|current version|Current version)[^\n]{0,40}?(3\.0\.\d+)", text):
         if mm.group(1) != a["version"]:
             errors.append("%s: names %s as latest, manifest says %s" % (name, mm.group(1), a["version"]))
-    for sha in re.findall(r"\b[0-9a-f]{64}\b", text):
-        if sha.lower() == a["apk"]["sha256"] or sha.lower() == a["signingCertSha256"]:
-            continue
-        if name.endswith("PROVENANCE.md") or "native" in name:
-            continue
     if "D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8".lower() in text.lower():
         if a["signingCertSha256"] not in text.lower().replace(" ", ""):
             errors.append("%s: signing fingerprint differs from the manifest" % name)
