@@ -263,6 +263,8 @@ final class RootEvolutionTestBed {
 		volatile Gate gate;
 		final List<Byte> receivedKinds =
 				Collections.synchronizedList(new ArrayList<>());
+		final List<Byte> handledKinds =
+				Collections.synchronizedList(new ArrayList<>());
 		final ZtpConnectionHandlerImpl handler;
 		final Provider provider;
 		@Nullable
@@ -468,6 +470,7 @@ final class RootEvolutionTestBed {
 						}
 					}
 					inner.onRecord(payload);
+					if (payload.length > 1) device.handledKinds.add(payload[1]);
 				}
 
 				@Override

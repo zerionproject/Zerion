@@ -9,6 +9,7 @@ import org.zerionproject.transport.RootEvolutionTestBed.Live;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -58,13 +59,12 @@ public class RootEvolutionInterleavingTest {
 		assertFalse(bob.keys().getPending() == null);
 		Live second = bed.new Live(alice, bob);
 		assertTrue("alice's second HELLO reaches bob", second.await(
-				() -> count(bob, KIND_HELLO) >= 2
-						&& count(alice, KIND_HELLO) >= 2, 20_000));
-		Thread.sleep(200);
+				() -> handled(bob, KIND_HELLO) >= 2
+						&& handled(alice, KIND_HELLO) >= 2, 20_000));
 		bob.hold = null;
 		hold.release();
-		first.await(() -> RootEvolutionTestBed.settled(alice, bob, 0),
-				5_000);
+		assertTrue("the first connection settles", first.await(
+				() -> RootEvolutionTestBed.settled(alice, bob, 0), 20_000));
 		first.close();
 		second.close();
 		for (int i = 0; i < 3; i++) {
@@ -94,14 +94,13 @@ public class RootEvolutionInterleavingTest {
 		int bobBefore = bob.received.size();
 		Live replay = bed.new Live(mallory, bob);
 		assertTrue("mallory's HELLO reaches bob", replay.await(
-				() -> count(bob, KIND_HELLO) >= 2
+				() -> handled(bob, KIND_HELLO) >= 2
 						&& bob.received.size() > bobBefore, 20_000));
-		Thread.sleep(200);
 		replay.close();
 		bob.hold = null;
 		hold.release();
-		first.await(() -> RootEvolutionTestBed.settled(alice, bob, 0),
-				5_000);
+		assertTrue("the first connection settles", first.await(
+				() -> RootEvolutionTestBed.settled(alice, bob, 0), 20_000));
 		first.close();
 		for (int i = 0; i < 2; i++) {
 			bed.passTime();
@@ -228,17 +227,21 @@ public class RootEvolutionInterleavingTest {
 					Hold hold = new Hold(KIND_RESP);
 					bob.hold = hold;
 					Live first = bed.new Live(alice, bob);
-					first.await(() -> hold.caught, 5_000);
+					assertTrue(where + " bob answers",
+							first.await(() -> hold.caught, 20_000));
 					Live second = bed.new Live(alice, bob);
-					second.await(() -> count(bob, KIND_HELLO) >= 2, 5_000);
+					assertTrue(where + " the second HELLO reaches bob",
+							second.await(() -> count(bob, KIND_HELLO) >= 2,
+									20_000));
 					bob.hold = null;
 					if (random.nextBoolean()) {
 						first.close();
 						hold.release();
 					} else {
 						hold.release();
-						first.await(() -> RootEvolutionTestBed.settled(alice,
-								bob, 0), 3_000);
+						assertTrue(where + " the first connection settles",
+								first.await(() -> RootEvolutionTestBed.settled(
+										alice, bob, 0), 20_000));
 						first.close();
 					}
 					second.close();
@@ -266,9 +269,17 @@ public class RootEvolutionInterleavingTest {
 	}
 
 	private static int count(Device d, byte kind) {
+		return count(d.receivedKinds, kind);
+	}
+
+	private static int handled(Device d, byte kind) {
+		return count(d.handledKinds, kind);
+	}
+
+	private static int count(List<Byte> kinds, byte kind) {
 		int n = 0;
-		synchronized (d.receivedKinds) {
-			for (byte b : d.receivedKinds) if (b == kind) n++;
+		synchronized (kinds) {
+			for (byte b : kinds) if (b == kind) n++;
 		}
 		return n;
 	}
