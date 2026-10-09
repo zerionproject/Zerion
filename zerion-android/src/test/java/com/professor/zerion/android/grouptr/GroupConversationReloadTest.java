@@ -28,6 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -53,13 +55,38 @@ public class GroupConversationReloadTest {
 		TestAndroidKeyStore.register();
 	}
 
+	private static final long SETTLE_MS = 15_000;
+
 	private static final String GROUP_HEX =
 			"00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+
+	static final class TrackedExecutor implements Executor {
+
+		final ExecutorService pool = Executors.newFixedThreadPool(2);
+		final AtomicInteger pending = new AtomicInteger();
+
+		@Override
+		public void execute(Runnable task) {
+			pending.incrementAndGet();
+			try {
+				pool.execute(() -> {
+					try {
+						task.run();
+					} finally {
+						pending.decrementAndGet();
+					}
+				});
+			} catch (RuntimeException e) {
+				pending.decrementAndGet();
+				throw e;
+			}
+		}
+	}
 
 	public static class ProbeConversation extends GroupTrConversationActivity {
 
 		static GroupTrManager manager;
-		static ExecutorService io;
+		static TrackedExecutor io;
 
 		@Override
 		public void injectActivity(ActivityComponent component) {
@@ -81,8 +108,8 @@ public class GroupConversationReloadTest {
 	@After
 	public void tearDown() throws Exception {
 		if (ProbeConversation.io != null) {
-			ProbeConversation.io.shutdownNow();
-			ProbeConversation.io.awaitTermination(5, TimeUnit.SECONDS);
+			ProbeConversation.io.pool.shutdownNow();
+			ProbeConversation.io.pool.awaitTermination(5, TimeUnit.SECONDS);
 		}
 	}
 
@@ -95,20 +122,27 @@ public class GroupConversationReloadTest {
 		List<GroupTrPost> newer = posts(2, "Alice");
 		AtomicInteger phase = new AtomicInteger();
 		AtomicInteger calls = new AtomicInteger();
+		CountDownLatch firstReadStarted = new CountDownLatch(1);
+		CountDownLatch releaseFirstRead = new CountDownLatch(1);
 		when(m.getRecentPosts(any())).thenAnswer(inv -> {
 			int held = phase.get();
 			if (held == 0) return new ArrayList<GroupTrPost>();
 			List<GroupTrPost> read = held == 1 ? older : newer;
-			if (calls.incrementAndGet() == 1) Thread.sleep(400);
+			if (calls.incrementAndGet() == 1) {
+				firstReadStarted.countDown();
+				releaseFirstRead.await(SETTLE_MS, TimeUnit.MILLISECONDS);
+			}
 			return read;
 		});
 		ProbeConversation a = open(m);
 
 		phase.set(1);
 		a.eventOccurred(raw());
-		Thread.sleep(100);
+		assertTrue("the first reload never read the posts",
+				firstReadStarted.await(SETTLE_MS, TimeUnit.MILLISECONDS));
 		phase.set(2);
 		a.eventOccurred(raw());
+		releaseFirstRead.countDown();
 		settle();
 
 		RecyclerView list = a.findViewById(R.id.postsRecycler);
@@ -138,7 +172,7 @@ public class GroupConversationReloadTest {
 
 	private ProbeConversation open(GroupTrManager m) throws Exception {
 		ProbeConversation.manager = m;
-		ProbeConversation.io = Executors.newFixedThreadPool(2);
+		ProbeConversation.io = new TrackedExecutor();
 		Intent i = new Intent(ApplicationProvider.getApplicationContext(),
 				ProbeConversation.class);
 		i.putExtra(GroupTrConversationActivity.EXTRA_GROUP_ID, GROUP_HEX);
@@ -150,9 +184,17 @@ public class GroupConversationReloadTest {
 	}
 
 	private static void settle() throws Exception {
-		for (int k = 0; k < 6; k++) {
-			Thread.sleep(250);
+		long deadline = System.currentTimeMillis() + SETTLE_MS;
+		while (true) {
 			shadowOf(Looper.getMainLooper()).idle();
+			if (ProbeConversation.io.pending.get() == 0) {
+				shadowOf(Looper.getMainLooper()).idle();
+				if (ProbeConversation.io.pending.get() == 0) return;
+			}
+			if (System.currentTimeMillis() > deadline) {
+				throw new AssertionError("the screen kept loading");
+			}
+			Thread.sleep(10);
 		}
 	}
 
