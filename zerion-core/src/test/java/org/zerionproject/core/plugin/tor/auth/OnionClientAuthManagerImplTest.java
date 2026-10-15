@@ -45,8 +45,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
@@ -581,6 +584,66 @@ public class OnionClientAuthManagerImplTest {
 	}
 
 	@Test
+	public void testTheAuthorizedAddressRotatesAfterAPeriodDrawnEachTime()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		OnionAuthStore.ServiceRecord first = service();
+		assertTrue(OnionClientAuthManagerImpl.isRotationPeriod(
+				first.rotationPeriodMs));
+		now.addAndGet(TimeUnit.DAYS.toMillis(3));
+		manager.rotateAuthorizedService();
+		OnionAuthStore.ServiceRecord second = service();
+		assertFalse(first.onion.equals(second.onion));
+		assertEquals(now.get(), second.lastRotationMs);
+		assertTrue(OnionClientAuthManagerImpl.isRotationPeriod(
+				second.rotationPeriodMs));
+		Set<Long> drawn = new HashSet<>();
+		for (int i = 0; i < 20; i++) drawn.add(manager.drawRotationPeriodMs());
+		assertTrue("periods differ between rotations", drawn.size() > 1);
+		for (long p : drawn) {
+			assertTrue(OnionClientAuthManagerImpl.isRotationPeriod(p));
+		}
+	}
+
+	@Test
+	public void testAPeriodicRotationIsDueOnlyAfterItsPeriodAndOldRetired() {
+		OnionAuthStore.ServiceRecord svc = new OnionAuthStore.ServiceRecord();
+		svc.onion = PEER_ONION;
+		svc.lastRotationMs = 1_000L;
+		svc.rotationPeriodMs = OnionClientAuthManagerImpl.MIN_ROTATION_PERIOD_MS
+				+ 123_456L;
+		long due = svc.lastRotationMs + svc.rotationPeriodMs;
+		assertFalse(OnionClientAuthManagerImpl.periodicRotationDue(svc, due));
+		assertTrue(OnionClientAuthManagerImpl.periodicRotationDue(svc,
+				due + 1));
+		svc.oldOnion = PEER_ONION_2;
+		assertFalse("the old address is still served",
+				OnionClientAuthManagerImpl.periodicRotationDue(svc, due + 1));
+		svc.oldOnion = null;
+		svc.rotationPeriodMs = 0L;
+		assertFalse("no period drawn yet",
+				OnionClientAuthManagerImpl.periodicRotationDue(svc,
+						Long.MAX_VALUE));
+		svc.rotationPeriodMs = OnionClientAuthManagerImpl.MIN_ROTATION_PERIOD_MS;
+		svc.onion = null;
+		assertFalse(OnionClientAuthManagerImpl.periodicRotationDue(svc,
+				Long.MAX_VALUE));
+	}
+
+	@Test
+	public void testAStoredServiceWithoutAPeriodGetsOneAndKeepsItsAddress()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		store.saveRotationPeriod(null, 0L);
+		String onion = service().onion;
+		now.addAndGet(TimeUnit.DAYS.toMillis(1));
+		manager.tickForTest();
+		assertTrue(OnionClientAuthManagerImpl.isRotationPeriod(
+				service().rotationPeriodMs));
+		assertEquals(onion, service().onion);
+	}
+
+	@Test
 	public void testPeerRotationInstallsTheNewAddressAndAcks() throws Exception {
 		activate(c1, g1, PEER_ONION, peerPub(1));
 		receive(c1, g1, OnionAuthRecords.rotate(2, PEER_ONION_2, null));
@@ -916,5 +979,715 @@ public class OnionClientAuthManagerImplTest {
 		assertEquals(Collections.nCopies(3, "CRED " + PEER_ONION),
 				control.commands);
 		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	private void commitWithoutAnAnswer(Contact c, Group g, String peerOnion,
+			byte[] peerPub) throws Exception {
+		peerAdvertisesSupport(c);
+		receive(c, g, OnionAuthRecords.offer(1, peerOnion, peerPub));
+		receive(c, g, OnionAuthRecords.ready(1));
+		manager.dialSucceeded(c.getId(), peerOnion);
+		receive(c, g, OnionAuthRecords.probeSuccess(1));
+		assertEquals(State.AUTH_CONFIRMED, record(c).state);
+		assertTrue(record(c).commitSent);
+		assertEquals(1, countSent(c, OnionAuthRecords.TYPE_COMMIT));
+	}
+
+	private OnionClientAuthManagerImpl restartedManager() throws Exception {
+		OnionClientAuthManagerImpl m = new OnionClientAuthManagerImpl(db,
+				clientHelper, contactGroupFactory, metadataParser, store,
+				crypto, () -> transportPropertyManager, eventBus,
+				new org.zerionproject.core.api.system.Clock() {
+					@Override
+					public long currentTimeMillis() {
+						return now.get();
+					}
+
+					@Override
+					public void sleep(long milliseconds) {
+					}
+				},
+				Runnable::run, scheduler);
+		m.onDatabaseOpened(new Transaction(null, false));
+		return m;
+	}
+
+	@Test
+	public void testAReadyCarriesOurGenerationAndEitherGenerationIsAccepted()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(2, PEER_ONION, peerPub(1)));
+		long ours = service().gen;
+		assertNotEquals(2, ours);
+		assertEquals(ours, lastSent(c1, OnionAuthRecords.TYPE_READY).keyVersion);
+		receive(c1, g1, OnionAuthRecords.ready(5));
+		assertFalse(record(c1).readyReceived);
+		receive(c1, g1, OnionAuthRecords.ready(ours));
+		assertTrue(record(c1).readyReceived);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		peerAdvertisesSupport(c2);
+		receive(c2, g2, OnionAuthRecords.offer(2, PEER_ONION_2, peerPub(2)));
+		receive(c2, g2, OnionAuthRecords.ready(2));
+		assertTrue(record(c2).readyReceived);
+	}
+
+	private final List<ContactId> repairCalls =
+			Collections.synchronizedList(new ArrayList<>());
+	private final List<ContactId> openCalls =
+			Collections.synchronizedList(new ArrayList<>());
+
+	private void attachRecordingDialer() {
+		manager.attachTor(control, 4444,
+				new OnionClientAuthManagerImpl.ProbeDialer() {
+					@Override
+					public void dial(ContactId c) {
+						dialed.add(c);
+					}
+
+					@Override
+					public void repair(ContactId c) {
+						repairCalls.add(c);
+					}
+
+					@Override
+					public void repairOpen(ContactId c) {
+						openCalls.add(c);
+					}
+				});
+	}
+
+	private void completeRekey(Contact c, Group g, String peerOnion,
+			byte[] peerPub) throws Exception {
+		receive(c, g, OnionAuthRecords.ready(1));
+		manager.dialSucceeded(c.getId(), peerOnion);
+		receive(c, g, OnionAuthRecords.probeSuccess(1));
+		receive(c, g, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub)));
+		assertTrue(record(c).lockedIn());
+	}
+
+	@Test
+	public void testPeerRotationsDoNotRepublishAnUnchangedService()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		control.commands.clear();
+		for (int i = 0; i < 6; i++) {
+			receive(c1, g1, OnionAuthRecords.rotate(2 + i,
+					i % 2 == 0 ? PEER_ONION_2 : PEER_ONION, null));
+		}
+		assertFalse(control.commands.contains("DEL " + onion));
+		assertTrue(control.commands.contains("CRED " + PEER_ONION_2));
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertEquals(6, countSent(c1, OnionAuthRecords.TYPE_ROTATE_ACK));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		assertTrue(control.commands.contains("DEL " + onion));
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertTrue(control.authorizes(onion, peerPub(2)));
+		control.commands.clear();
+		manager.detachTor();
+		manager.attachTor(control, 4444);
+		assertTrue(control.commands.contains("ADD " + onion
+				+ " keys=2 port=4444"));
+	}
+
+	@Test
+	public void testNoRecordFromThePeerOpensALockedInSide() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String myOnion = service().onion;
+		long[] gens = {0, 1, 2, 99};
+		List<BdfList> records = new ArrayList<>();
+		for (long gen : gens) {
+			records.add(OnionAuthRecords.offer(gen, PEER_ONION, peerPub(1)));
+			records.add(OnionAuthRecords.offer(gen, PEER_ONION_2, peerPub(7)));
+			records.add(OnionAuthRecords.offer(gen, null, peerPub(8)));
+			records.add(OnionAuthRecords.ready(gen));
+			records.add(OnionAuthRecords.probeSuccess(gen));
+			records.add(OnionAuthRecords.commit(gen, myOnion,
+					OnionAuthCommitCheck.fingerprint(peerPub(1))));
+			records.add(OnionAuthRecords.commit(gen, PEER_ONION_2,
+					OnionAuthCommitCheck.fingerprint(peerPub(7))));
+			records.add(OnionAuthRecords.rotate(gen, PEER_ONION_2, null));
+			records.add(OnionAuthRecords.rotate(gen, null, peerPub(9)));
+			records.add(OnionAuthRecords.rotateAck(gen));
+		}
+		for (int round = 0; round < 3; round++) {
+			for (BdfList body : records) {
+				receive(c1, g1, body);
+				assertEquals(State.AUTH_REQUIRED, record(c1).state);
+				assertFalse(manager.acceptsInbound(c1.getId(), false));
+				assertTrue(manager.acceptsInbound(c1.getId(), true));
+				assertNotNull(manager.getDialOnion(c1.getId()));
+			}
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+			manager.detachTor();
+			manager.attachTor(control, 4444);
+			manager.onDatabaseOpened(new Transaction(null, false));
+			assertFalse(manager.acceptsInbound(c1.getId(), false));
+		}
+	}
+
+	@Test
+	public void testAPeerThatLostItsKeysStartsOneRoundADayKeepingTheCommittedPath()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		byte[] dialKey = record(c1).dialPublicKey;
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(2)));
+		OnionAuthRecord r = record(c1);
+		assertTrue(r.rekeying);
+		assertEquals(State.AUTH_REQUIRED, r.state);
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		assertArrayEquals(dialKey, r.dialPublicKey);
+		assertArrayEquals(peerPub(2), r.peerPublicKey);
+		assertArrayEquals(peerPub(1), r.committedPeerKey);
+		assertEquals(PEER_ONION, r.committedPeerOnion);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		assertTrue(control.authorizes(service().onion, peerPub(1)));
+		assertTrue(control.authorizes(service().onion, peerPub(2)));
+		assertTrue(control.commands.contains("CRED " + PEER_ONION_2));
+		assertArrayEquals(dialKey,
+				lastSent(c1, OnionAuthRecords.TYPE_OFFER).publicKey);
+		completeRekey(c1, g1, PEER_ONION_2, peerPub(2));
+		assertEquals(PEER_ONION_2, manager.getDialOnion(c1.getId()));
+		assertFalse(control.authorizes(service().onion, peerPub(1)));
+		assertTrue(control.authorizes(service().onion, peerPub(2)));
+		assertNull(record(c1).committedPeerKey);
+		assertNull(record(c1).committedPeerOnion);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(3)));
+		assertTrue(record(c1).lockedIn());
+		assertArrayEquals(peerPub(2), record(c1).peerPublicKey);
+		now.addAndGet(OnionClientAuthManagerImpl.REKEY_INTERVAL_MS);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(3)));
+		assertTrue(record(c1).rekeying);
+		assertArrayEquals(dialKey, record(c1).dialPublicKey);
+		assertArrayEquals(peerPub(3), record(c1).peerPublicKey);
+		assertArrayEquals(peerPub(2), record(c1).committedPeerKey);
+	}
+
+	@Test
+	public void testACommitOfTheCommittedRoundEndsARoundInItsFavour()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(2))));
+		assertTrue(record(c1).rekeying);
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		OnionAuthRecord r = record(c1);
+		assertTrue(r.lockedIn());
+		assertArrayEquals(peerPub(1), r.peerPublicKey);
+		assertNull(r.committedPeerKey);
+		assertTrue(control.authorizes(service().onion, peerPub(1)));
+		assertFalse(control.authorizes(service().onion, peerPub(2)));
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+	}
+
+	@Test
+	public void testAnOfferWithTheCommittedKeyEndsARoundInItsFavour()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		int commits = countSent(c1, OnionAuthRecords.TYPE_COMMIT);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		OnionAuthRecord r = record(c1);
+		assertTrue(r.lockedIn());
+		assertArrayEquals(peerPub(1), r.peerPublicKey);
+		assertEquals(commits + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertTrue(control.authorizes(service().onion, peerPub(1)));
+		assertFalse(control.authorizes(service().onion, peerPub(2)));
+	}
+
+	@Test
+	public void testACommitSentSideReturnsToItsCommitWhenThePeerStillHoldsIt()
+			throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		OnionAuthRecord r = record(c1);
+		assertTrue(r.rekeying);
+		assertEquals(State.AUTH_CONFIRMED, r.state);
+		assertFalse(r.commitSent);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		assertTrue(control.authorizes(service().onion, peerPub(1)));
+		assertTrue(control.authorizes(service().onion, peerPub(2)));
+		now.addAndGet(OnionClientAuthManagerImpl.NEGOTIATION_TIMEOUT_MS + 1);
+		manager.tickForTest();
+		assertTrue(record(c1).rekeying);
+		assertTrue(control.authorizes(service().onion, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		r = record(c1);
+		assertTrue(r.lockedIn());
+		assertArrayEquals(peerPub(1), r.peerPublicKey);
+		assertFalse(control.authorizes(service().onion, peerPub(2)));
+	}
+
+	@Test
+	public void testAReadyBeforeTheAddressIsKeptUntilTheAddressArrives()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, null, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.ready(7));
+		assertTrue(record(c1).readyReceived);
+		assertFalse(record(c1).probing);
+		assertNull(manager.getDialOnion(c1.getId()));
+		assertFalse(dialed.contains(c1.getId()));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertTrue(record(c1).probing);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		assertTrue(dialed.contains(c1.getId()));
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		assertTrue(record(c1).probeSucceeded);
+	}
+
+	@Test
+	public void testAPeerThatNeverCommitsKeepsTheRepairsBounded()
+			throws Exception {
+		attachRecordingDialer();
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		for (int i = 0; i < 25 * 4; i++) {
+			now.addAndGet(TimeUnit.HOURS.toMillis(6));
+			manager.tickForTest();
+			if (i % 20 == 0) {
+				receive(c1, g1, OnionAuthRecords.ready(1));
+				receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+			}
+		}
+		assertEquals(OnionClientAuthManagerImpl.MAX_REPAIRS, repairCalls.size());
+		assertTrue(openCalls.size() >= 1);
+		assertTrue(openCalls.size() <= 12);
+		assertEquals(1 + OnionClientAuthManagerImpl.MAX_REPAIRS,
+				countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertEquals(State.AUTH_CONFIRMED, record(c1).state);
+		assertNotNull(record(c1).dialPrivateKey);
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+	}
+
+	@Test
+	public void testAnOpenDialFollowsOnlyADayWithoutTheAuthorizedPath()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		attachRecordingDialer();
+		manager.tickForTest();
+		int offers = countSent(c1, OnionAuthRecords.TYPE_OFFER);
+		for (int i = 0; i < 4 * 23; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+		}
+		assertTrue(openCalls.isEmpty());
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		for (int i = 0; i < 4 * 23; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+		}
+		assertTrue(openCalls.isEmpty());
+		List<Long> times = new ArrayList<>();
+		for (int i = 0; i < 4 * 24 * 20; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			int before = openCalls.size();
+			manager.tickForTest();
+			if (openCalls.size() > before) times.add(now.get());
+		}
+		assertTrue(times.size() >= 3);
+		assertTrue(times.size() <= 12);
+		for (int i = 1; i < times.size(); i++) {
+			long gap = times.get(i) - times.get(i - 1);
+			assertTrue(gap >= OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+			assertTrue(gap <= OnionClientAuthManagerImpl.MAX_OPEN_DIAL_DELAY_MS
+					+ OnionClientAuthManagerImpl.TICK_MS);
+		}
+		assertEquals(offers + 1, countSent(c1, OnionAuthRecords.TYPE_OFFER));
+		assertTrue(record(c1).lockedIn());
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		manager.inboundViaAuthorizedService(c1.getId());
+		int calls = openCalls.size();
+		for (int i = 0; i < 4 * 20; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+		}
+		assertEquals(calls, openCalls.size());
+	}
+
+	@Test
+	public void testRepairDialsAreRequestedOnlyWithRepairsAndTheResend()
+			throws Exception {
+		List<ContactId> repaired = Collections.synchronizedList(
+				new ArrayList<>());
+		manager.attachTor(control, 4444,
+				new OnionClientAuthManagerImpl.ProbeDialer() {
+					@Override
+					public void dial(ContactId c) {
+						dialed.add(c);
+					}
+
+					@Override
+					public void repair(ContactId c) {
+						repaired.add(c);
+					}
+				});
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		assertTrue(dialed.contains(c1.getId()));
+		assertTrue(repaired.isEmpty());
+		for (int i = 0; i < OnionClientAuthManagerImpl.MAX_REPAIRS + 2; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS);
+			manager.tickForTest();
+		}
+		assertEquals(Collections.nCopies(OnionClientAuthManagerImpl.MAX_REPAIRS,
+				c1.getId()), repaired);
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		manager.tickForTest();
+		assertEquals(OnionClientAuthManagerImpl.MAX_REPAIRS, repaired.size());
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		manager.tickForTest();
+		assertEquals(OnionClientAuthManagerImpl.MAX_REPAIRS + 1,
+				repaired.size());
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		receive(c1, g1, OnionAuthRecords.ready(1));
+		for (int i = 0; i < 5; i++) {
+			manager.dialSucceeded(c1.getId(), PEER_ONION);
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS
+					- OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+		}
+		assertEquals(OnionClientAuthManagerImpl.MAX_REPAIRS + 1,
+				repaired.size());
+		assertEquals(c1.getId(), repaired.get(repaired.size() - 1));
+	}
+
+	@Test
+	public void testASilentLockedInContactGetsBoundedRepairDials()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		attachRecordingDialer();
+		List<Long> repairs = new ArrayList<>();
+		List<Long> opens = new ArrayList<>();
+		long start = now.get();
+		while (now.get() - start < TimeUnit.DAYS.toMillis(30)) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			int r = repairCalls.size();
+			int o = openCalls.size();
+			manager.tickForTest();
+			if (repairCalls.size() > r) repairs.add(now.get());
+			if (openCalls.size() > o) opens.add(now.get());
+		}
+		assertTrue(repairs.get(0) - start
+				< OnionClientAuthManagerImpl.SILENCE_MS);
+		List<Long> silence = repairs.subList(1, repairs.size());
+		assertTrue(silence.size() >= 3);
+		assertTrue(silence.size() <= 12);
+		assertTrue(silence.get(0) - start
+				>= OnionClientAuthManagerImpl.SILENCE_MS);
+		for (int i = 1; i < silence.size(); i++) {
+			long gap = silence.get(i) - silence.get(i - 1);
+			assertTrue(gap >= OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+			assertTrue(gap <= OnionClientAuthManagerImpl.MAX_OPEN_DIAL_DELAY_MS
+					+ OnionClientAuthManagerImpl.TICK_MS);
+		}
+		for (Long t : opens) assertFalse(silence.contains(t));
+		assertEquals(silence.size(), record(c1).silenceRepairs);
+		assertTrue(record(c1).lockedIn());
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		manager.inboundViaAuthorizedService(c1.getId());
+		int calls = repairCalls.size();
+		for (int i = 0; i < 4 * 23; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+		}
+		assertEquals(calls, repairCalls.size());
+		assertEquals(0, record(c1).silenceRepairs);
+	}
+
+	@Test
+	public void testARotationCarryingAClientKeyChangesNoAuthorization()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		control.commands.clear();
+		receive(c1, g1, OnionAuthRecords.rotate(2, PEER_ONION_2, peerPub(9)));
+		receive(c1, g1, OnionAuthRecords.rotate(3, null, peerPub(8)));
+		OnionAuthRecord r = record(c1);
+		assertArrayEquals(peerPub(1), r.peerPublicKey);
+		assertEquals(PEER_ONION_2, r.peerOnion);
+		assertEquals(3, r.peerGen);
+		assertEquals(3, lastSent(c1, OnionAuthRecords.TYPE_ROTATE_ACK)
+				.keyVersion);
+		assertFalse(control.commands.contains("DEL " + onion));
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertFalse(control.authorizes(onion, peerPub(9)));
+		assertFalse(control.authorizes(onion, peerPub(8)));
+		assertTrue(record(c1).lockedIn());
+	}
+
+	@Test
+	public void testACommitThatArrivesBeforeThePeersProbeSuccessLocksIn()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.ready(1));
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		assertEquals(0, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		assertTrue(record(c1).peerProbeSucceeded);
+		assertEquals(1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	@Test
+	public void testACommitBeforeOurOwnProbeSucceededChangesNothing()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.ready(1));
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		assertFalse(record(c1).peerProbeSucceeded);
+		assertFalse(record(c1).peerCommitReceived);
+		assertEquals(0, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertTrue(manager.acceptsInbound(c1.getId(), false));
+	}
+
+	@Test
+	public void testASentCommitSurvivesTheNegotiationTimeoutAndAReset()
+			throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		peerAdvertisesSupport(c2);
+		receive(c2, g2, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(2)));
+		String onion = service().onion;
+		now.addAndGet(OnionClientAuthManagerImpl.NEGOTIATION_TIMEOUT_MS + 1);
+		manager.tickForTest();
+		manager.resetNegotiation(c1.getId());
+		OnionAuthRecord r = record(c1);
+		assertEquals(State.AUTH_CONFIRMED, r.state);
+		assertTrue(r.commitSent);
+		assertNotNull(r.dialPrivateKey);
+		assertEquals(PEER_ONION, r.peerOnion);
+		assertArrayEquals(peerPub(1), r.peerPublicKey);
+		assertEquals(onion, service().onion);
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertFalse(control.commands.contains("UNCRED " + PEER_ONION));
+		assertEquals(State.LEGACY, record(c2).state);
+		assertFalse(control.authorizes(onion, peerPub(2)));
+		assertTrue(control.commands.contains("UNCRED " + PEER_ONION_2));
+	}
+
+	@Test
+	public void testASentCommitDialsOnlyTheAuthorizedAddress()
+			throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+		assertTrue(manager.acceptsInbound(c1.getId(), false));
+		assertTrue(manager.acceptsInbound(c1.getId(), true));
+		OnionClientAuthManagerImpl restarted = restartedManager();
+		assertEquals(PEER_ONION, restarted.getDialOnion(c1.getId()));
+		assertNull(restarted.getDialOnion(c2.getId()));
+	}
+
+	@Test
+	public void testAnUnansweredCommitIsRepairedWithABoundedBackoff()
+			throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		long committedAt = now.get();
+		List<Long> repairs = new ArrayList<>();
+		int seen = countSent(c1, OnionAuthRecords.TYPE_PROBE_SUCCESS);
+		while (now.get() - committedAt < TimeUnit.DAYS.toMillis(14)) {
+			now.addAndGet(OnionClientAuthManagerImpl.TICK_MS);
+			manager.tickForTest();
+			int ps = countSent(c1, OnionAuthRecords.TYPE_PROBE_SUCCESS);
+			if (ps > seen) repairs.add(now.get());
+			seen = ps;
+		}
+		assertEquals(OnionClientAuthManagerImpl.MAX_REPAIRS, repairs.size());
+		assertEquals(1 + OnionClientAuthManagerImpl.MAX_REPAIRS,
+				countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertTrue(repairs.get(0) - committedAt
+				>= OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		for (int i = 1; i < repairs.size(); i++) {
+			long gap = repairs.get(i) - repairs.get(i - 1);
+			long previous = i == 1 ? 0 : repairs.get(i - 1) - repairs.get(i - 2);
+			assertTrue(gap >= previous);
+			assertTrue(gap <= OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS
+					+ OnionClientAuthManagerImpl.TICK_MS);
+		}
+		OnionAuthRecords.Record commit = lastSent(c1,
+				OnionAuthRecords.TYPE_COMMIT);
+		assertEquals(PEER_ONION, commit.onion);
+		assertEquals(State.AUTH_CONFIRMED, record(c1).state);
+	}
+
+	@Test
+	public void testARotationByThePeerMovesTheRepairsToTheNewAddressButAddsNone()
+			throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		for (int i = 0; i < 3; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS);
+			manager.tickForTest();
+		}
+		assertEquals(4, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.rotate(2, PEER_ONION_2, null));
+		assertEquals(PEER_ONION_2, manager.getDialOnion(c1.getId()));
+		manager.tickForTest();
+		assertEquals(4, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		manager.tickForTest();
+		assertEquals(5, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertEquals(PEER_ONION_2,
+				lastSent(c1, OnionAuthRecords.TYPE_COMMIT).onion);
+		for (int i = 0; i < 2 * OnionClientAuthManagerImpl.MAX_REPAIRS; i++) {
+			receive(c1, g1, OnionAuthRecords.rotate(3 + i,
+					i % 2 == 0 ? PEER_ONION : PEER_ONION_2, null));
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS);
+			manager.tickForTest();
+		}
+		assertEquals(1 + OnionClientAuthManagerImpl.MAX_REPAIRS,
+				countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+	}
+
+	@Test
+	public void testARotationOnThisSideRestartsTheRepairs() throws Exception {
+		commitWithoutAnAnswer(c1, g1, PEER_ONION, peerPub(1));
+		for (int i = 0; i < OnionClientAuthManagerImpl.MAX_REPAIRS + 2; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS);
+			manager.tickForTest();
+		}
+		int commits = countSent(c1, OnionAuthRecords.TYPE_COMMIT);
+		assertEquals(1 + OnionClientAuthManagerImpl.MAX_REPAIRS, commits);
+		manager.rotateAuthorizedService();
+		assertEquals(2, service().gen);
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		manager.tickForTest();
+		assertEquals(commits + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertEquals(2, lastSent(c1, OnionAuthRecords.TYPE_COMMIT).keyVersion);
+	}
+
+	@Test
+	public void testALockedInSideAnswersOneCommitAndPacesItsOtherAnswers()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		int before = countSent(c1, OnionAuthRecords.TYPE_COMMIT);
+		byte[] fp = OnionAuthCommitCheck.fingerprint(peerPub(1));
+		for (int i = 0; i < 3; i++) {
+			receive(c1, g1, OnionAuthRecords.commit(1, service().onion, fp));
+		}
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.ready(1));
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion, fp));
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertEquals(before + 2, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	@Test
+	public void testALockedInSideResendsItsCommitOnceAfterLockingIn()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		int before = countSent(c1, OnionAuthRecords.TYPE_COMMIT);
+		manager.tickForTest();
+		assertEquals(before, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS);
+		manager.tickForTest();
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		for (int i = 0; i < 10; i++) {
+			now.addAndGet(OnionClientAuthManagerImpl.MAX_REPAIR_DELAY_MS);
+			manager.tickForTest();
+		}
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+	}
+
+	@Test
+	public void testAPairLockedInByAnEarlierVersionResendsItsCommitOnce()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		OnionAuthRecord r = record(c1);
+		r.commitResent = false;
+		r.nextRepairMs = 0;
+		r.repairs = 0;
+		store.save(null, r);
+		int before = countSent(c1, OnionAuthRecords.TYPE_COMMIT);
+		OnionClientAuthManagerImpl restarted = restartedManager();
+		restarted.tickForTest();
+		restarted.tickForTest();
+		assertEquals(before + 1, countSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	private int publishes() {
+		int n = 0;
+		synchronized (control.commands) {
+			for (String c : control.commands) if (c.startsWith("ADD ")) n++;
+		}
+		return n;
+	}
+
+	@Test
+	public void testAPeerInANewRoundCannotRepublishTheServiceWithEveryKey()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		String onion = service().onion;
+		int before = publishes();
+		for (int i = 3; i < 13; i++) {
+			receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION,
+					peerPub(i)));
+		}
+		assertEquals(before, publishes());
+		assertArrayEquals(peerPub(2), record(c1).peerPublicKey);
+		assertTrue(control.authorizes(onion, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		now.addAndGet(OnionClientAuthManagerImpl.REKEY_INTERVAL_MS);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(13)));
+		assertArrayEquals(peerPub(13), record(c1).peerPublicKey);
+		assertEquals(before + 1, publishes());
+		assertTrue(control.authorizes(onion, peerPub(13)));
+		assertFalse(control.authorizes(onion, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	@Test
+	public void testANegotiatingPeerReplacesItsKeyAtMostOnceADay()
+			throws Exception {
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		assertArrayEquals(peerPub(2), record(c1).peerPublicKey);
+		String onion = service().onion;
+		int before = publishes();
+		for (int i = 3; i < 13; i++) {
+			receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION,
+					peerPub(i)));
+		}
+		assertEquals(before, publishes());
+		assertArrayEquals(peerPub(2), record(c1).peerPublicKey);
+		assertTrue(control.authorizes(onion, peerPub(2)));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(2)));
+		assertEquals(PEER_ONION_2, record(c1).peerOnion);
+		now.addAndGet(OnionClientAuthManagerImpl.REKEY_INTERVAL_MS);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION_2,
+				peerPub(13)));
+		assertArrayEquals(peerPub(13), record(c1).peerPublicKey);
+		assertEquals(before + 1, publishes());
+		assertTrue(control.authorizes(onion, peerPub(13)));
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
 	}
 }

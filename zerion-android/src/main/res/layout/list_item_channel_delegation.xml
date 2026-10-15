@@ -43,7 +43,7 @@
 		android:layout_height="wrap_content"
 		android:minWidth="0dp"
 		android:text="@string/channels_delegations_revoke"
-		android:textColor="@color/zerion_destructive"
+		android:textColor="@color/zerion_destructive_text"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />

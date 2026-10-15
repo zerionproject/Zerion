@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static org.zerionproject.core.api.crypto.DecryptionResult.INVALID_PASSWORD;
+import static org.zerionproject.core.api.crypto.DecryptionResult.KEY_STRENGTHENER_ERROR;
 import static org.zerionproject.core.util.StringUtils.toHexString;
 
 final class ProfileTestDevice {
@@ -44,6 +45,8 @@ final class ProfileTestDevice {
 	private final SharedPreferences prefs;
 	private final CryptoComponent crypto;
 	private final SecureRandom random = new SecureRandom();
+	private final java.util.Set<String> unusableKeystoreKeys =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	ProfileTestDevice(Mockery context, File testDir) {
 		this.context = context;
@@ -66,6 +69,11 @@ final class ProfileTestDevice {
 							return seal((byte[]) args[0], (char[]) args[1]);
 						case "decryptWithPassword":
 							derivations.incrementAndGet();
+							if (unusableKeystoreKeys.contains(
+									toHexString((byte[]) args[0]))) {
+								throw new DecryptionException(
+										KEY_STRENGTHENER_ERROR);
+							}
 							return open((byte[]) args[0], (char[]) args[1]);
 						case "isEncryptedWithStrengthenedKey":
 							return true;
@@ -135,6 +143,19 @@ final class ProfileTestDevice {
 		return new PlainMetadataProfileManager(appContext);
 	}
 
+	ProfileManager newProfileManagerOutsideTheMainProcess() {
+		return new PlainMetadataProfileManager(appContext, false);
+	}
+
+	ProfileManager newProfileManagerThatCannotAddProfiles() {
+		return new PlainMetadataProfileManager(appContext) {
+			@Override
+			public boolean createProfileDir(String profileId) {
+				return false;
+			}
+		};
+	}
+
 	AndroidAccountManager newAccountManager() {
 		return newAccountManager(newProfileManager());
 	}
@@ -201,6 +222,12 @@ final class ProfileTestDevice {
 						.getBytes(StandardCharsets.UTF_8));
 	}
 
+	void loseKeystoreKeyOf(String id) throws IOException {
+		String hex = new String(Files.readAllBytes(keyFile(id).toPath()),
+				StandardCharsets.UTF_8).trim();
+		unusableKeystoreKeys.add(hex);
+	}
+
 	File keyFile(String id) {
 		return new File(filesDir, "profiles/" + id + "/key/db.key");
 	}
@@ -209,11 +236,16 @@ final class ProfileTestDevice {
 		return new File(filesDir, "profiles/" + id);
 	}
 
-	private static final class PlainMetadataProfileManager
+	private static class PlainMetadataProfileManager
 			extends ProfileManager {
 
 		PlainMetadataProfileManager(Context appContext) {
 			super(appContext);
+		}
+
+		PlainMetadataProfileManager(Context appContext,
+				boolean maintainStorage) {
+			super(appContext, maintainStorage);
 		}
 
 		private static void write(File f, String value) throws IOException {

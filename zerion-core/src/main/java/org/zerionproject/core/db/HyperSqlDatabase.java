@@ -111,6 +111,14 @@ class HyperSqlDatabase extends JdbcDatabase {
 	}
 
 	@Override
+	protected boolean purge(Connection c) throws SQLException {
+		try (Statement s = c.createStatement()) {
+			s.execute("CHECKPOINT");
+		}
+		return true;
+	}
+
+	@Override
 	protected void compactAndClose() throws DbException {
 		Connection c = null;
 		Statement s = null;

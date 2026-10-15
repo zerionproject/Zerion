@@ -52,7 +52,7 @@
 	<color name="msg_stroke_light">@color/zerion_message_received</color>
 	<color name="msg_stroke_dark">@color/zerion_message_received</color>
 	<color name="msg_stroke">@color/zerion_message_received</color>
-	<color name="msg_status_bubble_background">#66000000</color>
+	<color name="msg_status_bubble_background">#99000000</color>
 	<color name="msg_status_bubble_foreground">@android:color/white</color>
 	<color name="msg_selected_background">@color/zerion_cyan</color>
 
@@ -71,9 +71,9 @@
 
 	<color name="preference_category_background">@color/zerion_dark_bg</color>
 
-	<color name="zerion_button_text_positive">@color/zerion_cyan</color>
-	<color name="zerion_button_text_neutral">@color/zerion_cyan</color>
-	<color name="zerion_button_text_negative">@color/zerion_error_red</color>
+	<color name="zerion_button_text_positive">@color/zerion_accent_text</color>
+	<color name="zerion_button_text_neutral">@color/zerion_accent_text</color>
+	<color name="zerion_button_text_negative">@color/zerion_destructive_text</color>
 	<color name="zerion_button_text_disabled">#4DFFFFFF</color>
 
 	<color name="thread_indicator">@color/zerion_cyan</color>
@@ -84,7 +84,7 @@
 
 
 	<color name="md_theme_primary">@color/zerion_cyan</color>
-	<color name="md_theme_onPrimary">@android:color/white</color>
+	<color name="md_theme_onPrimary">@color/zerion_on_accent</color>
 	<color name="md_theme_primaryContainer">@color/zerion_card_bg</color>
 	<color name="md_theme_onPrimaryContainer">@android:color/white</color>
 	<color name="md_theme_inversePrimary">@color/zerion_aqua</color>
@@ -101,7 +101,7 @@
 
 	<color name="zerion_dark_bg">#F4F5F7</color>
 	<color name="zerion_ripple">#14000000</color>
-	<color name="zerion_hint">#80000000</color>
+	<color name="zerion_hint">#99000000</color>
 	<color name="zerion_card_bg">#FFFFFF</color>
 
 	<color name="zerion_amoled_bg">#000000</color>
@@ -111,17 +111,31 @@
 	<color name="zerion_amoled_msg_out">#1A2332</color>
 
 	<color name="zerion_primary_accent">#26B7F0</color>
+	<color name="zerion_on_accent">#14151A</color>
+	<color name="zerion_on_accent_ripple">#2914151A</color>
+	<color name="zerion_accent_text">#0A6C93</color>
+	<color name="zerion_accent_text_inverse">@color/zerion_primary_accent</color>
+	<color name="zerion_accent_icon">#0C8BBD</color>
+	<color name="zerion_accent_large_text">@color/zerion_accent_icon</color>
+	<color name="zerion_destructive_text">#B91C1C</color>
+	<color name="zerion_success_text">#166534</color>
+	<color name="zerion_warning_text">#92400E</color>
+	<color name="zerion_inverse_surface">#322F35</color>
+	<color name="zerion_inverse_on_surface">#F5EFF7</color>
+	<color name="zerion_success_fill">#15803D</color>
+	<color name="zerion_warning_fill">#B45309</color>
+	<color name="zerion_error_fill">#B91C1C</color>
 	<color name="reply_quote_in_background">#2626B7F0</color>
 	<color name="zerion_secondary_accent">#1A92C4</color>
 
 	<color name="zerion_text_primary">#14151A</color>
-	<color name="zerion_text_secondary">#5B616E</color>
+	<color name="zerion_text_secondary">#545965</color>
 
 	<color name="zerion_surface_elevated">#FFFFFF</color>
 	<color name="zerion_surface_pressed">#ECEEF2</color>
 	<color name="zerion_divider">#E3E5EA</color>
 
-	<color name="zerion_message_sent">#1A92C4</color>
+	<color name="zerion_message_sent">#167DA8</color>
 	<color name="zerion_message_sent_pressed">#15749C</color>
 	<color name="zerion_message_received">#27282F</color>
 	<color name="zerion_message_received_pressed">#32343C</color>
@@ -144,13 +158,20 @@
 	<color name="accent_amber">#F59E0B</color>
 	<color name="accent_rose">#F43F5E</color>
 	<color name="accent_blue">#3B82F6</color>
+	<color name="accent_violet_text">#6D28D9</color>
+	<color name="accent_emerald_text">#047857</color>
+	<color name="accent_amber_text">#92400E</color>
+	<color name="accent_rose_text">#BE123C</color>
+	<color name="accent_blue_text">#1D4ED8</color>
 
-	<color name="bubble_blue">#1A92C4</color>
+	<color name="bubble_blue">#167DA8</color>
 	<color name="bubble_purple">#7C3AED</color>
-	<color name="bubble_green">#059669</color>
-	<color name="bubble_orange">#D97706</color>
+	<color name="bubble_green">#04855D</color>
+	<color name="bubble_orange">#B06105</color>
 	<color name="bubble_pink">#DB2777</color>
-	<color name="bubble_cyan">#0891B2</color>
+	<color name="bubble_cyan">#077F9C</color>
+	<color name="bubble_out_inset">#26000000</color>
+	<color name="disguise_weather_background">#0891B2</color>
 
 	<color name="video_controls_background">#B3000000</color>
 </resources>

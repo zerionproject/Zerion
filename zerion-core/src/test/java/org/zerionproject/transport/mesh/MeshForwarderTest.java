@@ -74,6 +74,29 @@ public class MeshForwarderTest {
 	}
 
 	@Test
+	public void aFrameIsRelayedBeforeItsPayloadIsOpenedHere() {
+		List<String> order = new ArrayList<>();
+		MeshForwarder node = new MeshForwarder(p -> order.add("opened"),
+				random);
+		node.addLink(new MeshLink() {
+			@Override
+			public String getId() {
+				return "out";
+			}
+
+			@Override
+			public void broadcast(byte[] frame) {
+				order.add("relayed");
+			}
+		});
+		byte[] id = new byte[MeshFrame.MESSAGE_ID_BYTES];
+		random.nextBytes(id);
+		node.onReceive(new MeshFrame(3, id, "sealed".getBytes()).encode(),
+				"in");
+		assertEquals("[relayed, opened]", order.toString());
+	}
+
+	@Test
 	public void duplicateFrameSuppressed() {
 		Collector cb = new Collector();
 		MeshForwarder node = new MeshForwarder(cb, random);

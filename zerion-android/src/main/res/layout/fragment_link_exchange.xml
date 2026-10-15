@@ -132,7 +132,7 @@
 				android:paddingHorizontal="14dp"
 				android:paddingVertical="14dp"
 				android:singleLine="true"
-				android:textColor="@color/zerion_primary_accent"
+				android:textColor="@color/zerion_accent_text"
 				android:textIsSelectable="true"
 				android:textSize="14sp"
 				app:layout_constraintEnd_toEndOf="parent"
@@ -205,6 +205,7 @@
 				android:layout_marginTop="16dp"
 				android:hint="@string/contact_link_hint"
 				app:errorEnabled="true"
+				app:errorAccessibilityLiveRegion="1"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toBottomOf="@+id/linkInputIcon">

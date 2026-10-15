@@ -34,7 +34,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private static final int REMOTE_ONION_PORT = 80;
 	private static final java.util.regex.Pattern ONION_V3 =
 			java.util.regex.Pattern.compile("^[a-z2-7]{56}$");
-	private static final int SOCKET_TIMEOUT_MS = 30_000;
+	static final int SOCKET_TIMEOUT_MS = 20_000;
 	private static final long ACCEPT_RETRY_DELAY_MS = 500;
 	private static final int MAX_INBOUND_CONNECTIONS = 64;
 
@@ -89,6 +89,8 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final AtomicBoolean torDead = new AtomicBoolean(false);
 	private final Map<String, PublishedService> published =
 			Collections.synchronizedMap(new LinkedHashMap<>());
+	private final Map<String, OnionTargetListener> serviceListeners =
+			new java.util.concurrent.ConcurrentHashMap<>();
 	volatile Sleeper sleeper = Thread::sleep;
 	private final InboundBudget openBudget = new InboundBudget(
 			MAX_INBOUND_CONNECTIONS, MAX_PRE_TAG_CONNECTIONS);
@@ -109,6 +111,8 @@ public class ZtpTorTransport implements OverlayTransport {
 	private volatile OnionTargetListener openListener;
 	@Nullable
 	private volatile String openTarget;
+	@Nullable
+	private volatile String openOnion;
 	@Nullable
 	private volatile OnionTargetListener authorizedListener;
 	@Nullable
@@ -209,8 +213,10 @@ public class ZtpTorTransport implements OverlayTransport {
 		try {
 			startAccepting();
 			startAcceptingAuthorized();
-			return publishHiddenService(getOpenTarget(), REMOTE_ONION_PORT,
-					privateKey);
+			HiddenServiceProperties hs = publishHiddenService(getOpenTarget(),
+					REMOTE_ONION_PORT, privateKey);
+			openOnion = hs.onion;
+			return hs;
 		} catch (IOException e) {
 			closeListeners();
 			try {
@@ -226,7 +232,7 @@ public class ZtpTorTransport implements OverlayTransport {
 		OnionTargetListener l = targets.open();
 		this.authorizedListener = l;
 		this.authorizedTarget = l.getTorTarget();
-		ioExecutor.execute(() -> acceptLoop(l, true));
+		ioExecutor.execute(() -> acceptLoop(l, true, null));
 	}
 
 	public OnionTargetListener openServiceListener() throws IOException {
@@ -310,17 +316,46 @@ public class ZtpTorTransport implements OverlayTransport {
 
 	public HiddenServiceProperties publishHiddenService(String target,
 			int remotePort, @Nullable String privateKey) throws IOException {
-		HiddenServiceProperties hs = tor.publishHiddenService(target,
-				remotePort, privateKey);
-		if (hs == null) throw new IOException("hidden service not published");
-		published.put(hs.onion,
-				new PublishedService(target, remotePort, hs.privKey));
+		synchronized (lifecycleLock) {
+			HiddenServiceProperties hs = tor.publishHiddenService(target,
+					remotePort, privateKey);
+			if (hs == null) {
+				throw new IOException("hidden service not published");
+			}
+			published.put(hs.onion,
+					new PublishedService(target, remotePort, hs.privKey));
+			return hs;
+		}
+	}
+
+	public HiddenServiceProperties publishDedicatedService(
+			@Nullable String privateKey) throws IOException {
+		OnionTargetListener l = targets.open();
+		HiddenServiceProperties hs;
+		try {
+			hs = publishHiddenService(l.getTorTarget(), REMOTE_ONION_PORT,
+					privateKey);
+		} catch (IOException | RuntimeException e) {
+			closeQuietly(l);
+			throw e;
+		}
+		OnionTargetListener previous = serviceListeners.put(hs.onion, l);
+		if (previous != null) closeQuietly(previous);
+		String onion = hs.onion;
+		ioExecutor.execute(() -> acceptLoop(l, false, onion));
 		return hs;
 	}
 
 	public void removeHiddenService(String onion) throws IOException {
-		published.remove(onion);
-		tor.removeHiddenService(onion);
+		synchronized (lifecycleLock) {
+			published.remove(onion);
+			try {
+				tor.removeHiddenService(onion);
+			} finally {
+				OnionTargetListener l = serviceListeners.remove(onion);
+				if (l != null) closeQuietly(l);
+			}
+		}
 	}
 
 	List<String> publishedOnions() {
@@ -393,10 +428,11 @@ public class ZtpTorTransport implements OverlayTransport {
 		OnionTargetListener l = targets.open();
 		this.openListener = l;
 		this.openTarget = l.getTorTarget();
-		ioExecutor.execute(() -> acceptLoop(l, false));
+		ioExecutor.execute(() -> acceptLoop(l, false, null));
 	}
 
-	private void acceptLoop(OnionTargetListener ss, boolean authorized) {
+	private void acceptLoop(OnionTargetListener ss, boolean authorized,
+			@Nullable String serviceOnion) {
 		InboundBudget budget = authorized ? authorizedBudget : openBudget;
 		while (!ss.isClosed()) {
 			Socket socket;
@@ -412,26 +448,30 @@ public class ZtpTorTransport implements OverlayTransport {
 				}
 				continue;
 			}
-			if (budget.inbound.availablePermits() <= 0) {
+			if (!budget.inbound.tryAcquire()) {
 				closeQuietly(socket);
 				continue;
 			}
-			ioExecutor.execute(() -> handleAccepted(socket, authorized,
-					budget));
+			if (!budget.preTag.tryAcquire()) {
+				budget.inbound.release();
+				closeQuietly(socket);
+				continue;
+			}
+			String localOnion = authorized ? null
+					: serviceOnion != null ? serviceOnion : openOnion;
+			try {
+				ioExecutor.execute(() -> handleAccepted(socket, authorized,
+						budget, localOnion));
+			} catch (java.util.concurrent.RejectedExecutionException e) {
+				budget.preTag.release();
+				budget.inbound.release();
+				closeQuietly(socket);
+			}
 		}
 	}
 
 	private void handleAccepted(Socket socket, boolean authorized,
-			InboundBudget budget) {
-		if (!budget.inbound.tryAcquire()) {
-			closeQuietly(socket);
-			return;
-		}
-		if (!budget.preTag.tryAcquire()) {
-			closeQuietly(socket);
-			budget.inbound.release();
-			return;
-		}
+			InboundBudget budget, @Nullable String localOnion) {
 		java.util.concurrent.atomic.AtomicBoolean tagDelivered =
 				new java.util.concurrent.atomic.AtomicBoolean(false);
 		Runnable onTagDelivered = () -> {
@@ -453,7 +493,7 @@ public class ZtpTorTransport implements OverlayTransport {
 					socket.getInputStream(), TAG_LENGTH, onTagDelivered,
 					clock, TAG_READ_TIMEOUT_MS);
 			handler.handleIncoming(TorConstants.ID, in,
-					socket.getOutputStream(), authorized);
+					socket.getOutputStream(), authorized, localOnion);
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
@@ -518,10 +558,16 @@ public class ZtpTorTransport implements OverlayTransport {
 	}
 
 	@Override
-	public long dial(int contactId, String peerOnion, boolean fast) {
-		if (!isValidAddress(peerOnion)) return DIAL_NOT_CONNECTED;
+	public DialResult dial(int contactId, String peerOnion, boolean fast) {
+		return dial(contactId, peerOnion, fast, false);
+	}
+
+	@Override
+	public DialResult dial(int contactId, String peerOnion, boolean fast,
+			boolean refusalExpected) {
+		if (!isValidAddress(peerOnion)) return DialResult.NOT_CONNECTED;
 		if (torDead.get() || tor.getTorState() != TorState.CONNECTED) {
-			return DIAL_NOT_CONNECTED;
+			return DialResult.NOT_CONNECTED;
 		}
 		SocketFactory factory = fast ? fastSocketFactory : socketFactory;
 		Socket socket;
@@ -529,20 +575,23 @@ public class ZtpTorTransport implements OverlayTransport {
 			socket = factory.createSocket(peerOnion + ".onion",
 					REMOTE_ONION_PORT);
 		} catch (IOException e) {
-			return DIAL_NOT_CONNECTED;
+			return DialResult.NOT_CONNECTED;
 		}
 		long connectedAt = System.currentTimeMillis();
 		DialListener listener = dialListener;
 		if (listener != null) listener.dialSucceeded(contactId, peerOnion);
+		boolean authenticated = false;
 		try {
 			configureSocket(socket);
-			handler.handleOutgoing(TorConstants.ID, contactId,
-					socket.getInputStream(), socket.getOutputStream());
+			authenticated = handler.handleOutgoingSession(TorConstants.ID,
+					contactId, socket.getInputStream(),
+					socket.getOutputStream(), refusalExpected);
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
 		}
-		return System.currentTimeMillis() - connectedAt;
+		return new DialResult(authenticated,
+				System.currentTimeMillis() - connectedAt);
 	}
 
 	private static void configureSocket(Socket socket) throws IOException {
@@ -613,14 +662,14 @@ public class ZtpTorTransport implements OverlayTransport {
 		restartNetworkNow();
 	}
 
-	private void republishHiddenServices() {
+	void republishHiddenServices() {
 		if (!running.get() || torDead.get()) return;
-		List<Map.Entry<String, PublishedService>> services;
-		synchronized (published) {
-			services = new ArrayList<>(published.entrySet());
-		}
 		synchronized (lifecycleLock) {
 			if (!running.get() || torDead.get()) return;
+			List<Map.Entry<String, PublishedService>> services;
+			synchronized (published) {
+				services = new ArrayList<>(published.entrySet());
+			}
 			for (Map.Entry<String, PublishedService> e : services) {
 				PublishedService svc = e.getValue();
 				try {
@@ -680,6 +729,11 @@ public class ZtpTorTransport implements OverlayTransport {
 		if (open != null) closeQuietly(open);
 		OnionTargetListener authorized = authorizedListener;
 		if (authorized != null) closeQuietly(authorized);
+		for (OnionTargetListener l : serviceListeners.values()) {
+			closeQuietly(l);
+		}
+		serviceListeners.clear();
+		openOnion = null;
 	}
 
 	private static void closeQuietly(java.io.Closeable c) {

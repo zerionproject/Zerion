@@ -90,8 +90,8 @@
         android:layout_marginBottom="48dp"
         android:src="@drawable/ic_add_24dp"
         app:backgroundTint="@color/zerion_primary_accent"
-        app:tint="@android:color/white"
-        app:rippleColor="#FFFFFF"
+        app:tint="@color/zerion_on_accent"
+        app:rippleColor="@color/zerion_on_accent_ripple"
         app:elevation="6dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

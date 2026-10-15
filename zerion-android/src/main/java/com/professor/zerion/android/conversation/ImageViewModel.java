@@ -1,9 +1,7 @@
 package com.professor.zerion.android.conversation;
 
 import android.app.Application;
-import android.content.ContentResolver;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.view.View;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -17,6 +15,7 @@ import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
@@ -25,13 +24,7 @@ import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -41,12 +34,7 @@ import javax.inject.Inject;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import static android.media.MediaScannerConnection.scanFile;
-import static android.os.Environment.DIRECTORY_PICTURES;
-import static android.os.Environment.getExternalStoragePublicDirectory;
-import static java.util.Locale.US;
 import static java.util.Objects.requireNonNull;
-import static org.zerionproject.core.util.IoUtils.copyAndClose;
 
 @NotNullByDefault
 public class ImageViewModel extends DbViewModel implements EventListener {
@@ -60,8 +48,10 @@ public class ImageViewModel extends DbViewModel implements EventListener {
 	private final HashMap<MessageId, MutableLiveEvent<Boolean>>
 			receivedAttachments = new HashMap<>();
 
-	private final MutableLiveEvent<Boolean> saveState =
+	private final MutableLiveEvent<Boolean> savableImage =
 			new MutableLiveEvent<>();
+	@Nullable
+	private volatile SavableImage readImage;
 	private final MutableLiveEvent<Boolean> imageClicked =
 			new MutableLiveEvent<>();
 	private int toolbarTop, toolbarBottom;
@@ -145,89 +135,62 @@ public class ImageViewModel extends DbViewModel implements EventListener {
 		return drawableTop < toolbarBottom && drawableTop != toolbarTop;
 	}
 
-	LiveEvent<Boolean> getSaveState() {
-		return saveState;
-	}
+	static final class SavableImage {
 
-	@UiThread
-	void saveImage(AttachmentItem attachment, @Nullable Uri uri) {
-		if (uri == null) {
-			onSaveImageError();
-		} else {
-			saveImage(attachment, () -> getOutputStream(uri), null);
+		@Nullable
+		private final byte[] data;
+		private final String mimeType;
+
+		SavableImage(@Nullable byte[] data, String mimeType) {
+			this.data = data;
+			this.mimeType = mimeType;
+		}
+
+		@Nullable
+		byte[] getData() {
+			return data;
+		}
+
+		String getMimeType() {
+			return mimeType;
 		}
 	}
 
-	@UiThread
-	void onSaveImageError() {
-		saveState.setEvent(true);
+	LiveEvent<Boolean> getSavableImage() {
+		return savableImage;
 	}
 
-	void saveImage(AttachmentItem attachment) {
-		File file = getImageFile(attachment);
-		saveImage(attachment, () -> getOutputStream(file), () -> scanFile(
-				getApplication(), new String[] {file.toString()}, null, null));
+	@Nullable
+	SavableImage takeSavableImage() {
+		SavableImage image = readImage;
+		readImage = null;
+		return image;
 	}
 
-	private void saveImage(AttachmentItem attachment, OutputStreamProvider osp,
-			@Nullable Runnable afterCopy) {
+	private void offer(SavableImage image) {
+		readImage = image;
+		savableImage.postEvent(true);
+	}
+
+	void readForSaving(AttachmentItem attachment) {
+		String mimeType = attachment.getMimeType();
 		runOnDbThread(() -> {
+			Attachment a;
 			try {
-				Attachment a =
-						attachmentReader.getAttachment(attachment.getHeader());
-				copyImageFromDb(a, osp, afterCopy);
+				a = attachmentReader.getAttachment(attachment.getHeader());
 			} catch (DbException e) {
-				saveState.postEvent(true);
+				offer(new SavableImage(null, mimeType));
+				return;
 			}
+			ioExecutor.execute(() -> {
+				try {
+					offer(new SavableImage(
+							SaveCleanCopy.readAll(a.getStream()), mimeType));
+				} catch (IOException e) {
+					offer(new SavableImage(null, mimeType));
+				}
+			});
 		});
-	}
-
-	private void copyImageFromDb(Attachment a, OutputStreamProvider osp,
-			@Nullable Runnable afterCopy) {
-		ioExecutor.execute(() -> {
-			try {
-				InputStream is = a.getStream();
-				OutputStream os = osp.getOutputStream();
-				copyAndClose(is, os);
-				if (afterCopy != null) afterCopy.run();
-				saveState.postEvent(false);
-			} catch (IOException e) {
-				saveState.postEvent(true);
-			}
-		});
-	}
-
-	String getFileName() {
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HHmmss", US);
-		return sdf.format(new Date());
-	}
-
-	private File getImageFile(AttachmentItem attachment) {
-		File path = getExternalStoragePublicDirectory(DIRECTORY_PICTURES);
-		path.mkdirs();
-		String fileName = getFileName();
-		String ext = "." + attachment.getExtension();
-		File file = new File(path, fileName + ext);
-		int i = 1;
-		while (file.exists()) {
-			file = new File(path, fileName + " (" + i + ")" + ext);
-		}
-		return file;
-	}
-
-	private OutputStream getOutputStream(File file) throws IOException {
-		return new FileOutputStream(file);
-	}
-
-	private OutputStream getOutputStream(Uri uri) throws IOException {
-		ContentResolver contentResolver = getApplication().getContentResolver();
-		OutputStream os = contentResolver.openOutputStream(uri, "wt");
-		if (os == null) throw new IOException();
-		return os;
-	}
-
-	private interface OutputStreamProvider {
-		OutputStream getOutputStream() throws IOException;
 	}
 
 }

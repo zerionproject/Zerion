@@ -25,6 +25,7 @@ public class ProfileManager {
 	private static final String TOR_SUBDIR = "tor";
 	private static final String DEVICE_TOR_DIR = "tor";
 	private static final String MULTI_PROFILE_MARKER = ".multi";
+	private static final String DELETION_MARK = ".deleted";
 
 	private static final String LEGACY_DB_DIR = "db";
 	private static final String LEGACY_KEY_DIR = "key";
@@ -50,7 +51,12 @@ public class ProfileManager {
 	private volatile SessionListener sessionListener = null;
 
 	public ProfileManager(Context appContext) {
+		this(appContext, true);
+	}
+
+	public ProfileManager(Context appContext, boolean maintainStorage) {
 		this.filesDir = appContext.getFilesDir();
+		if (!maintainStorage) return;
 		migrateLegacyLayoutIfNeeded(appContext);
 		moveTorStateOutOfProfiles();
 		removeMultiProfileMarker();
@@ -342,6 +348,20 @@ public class ProfileManager {
 		secureWipeRecursive(root);
 	}
 
+	public void markForDeletion(String profileId) {
+		File root = getProfileRoot(profileId);
+		if (!root.isDirectory()) return;
+		try {
+			LoginThrottle.writeDurably(new File(root, DELETION_MARK),
+					new byte[0]);
+		} catch (java.io.IOException | RuntimeException ignored) {
+		}
+	}
+
+	private static boolean markedForDeletion(File dir) {
+		return new File(dir, DELETION_MARK).exists();
+	}
+
 	public void shredProfileKeys(String profileId) {
 		File keyDir = getKeyDirWithoutCreating(profileId);
 		if (keyDir.exists()) secureWipeRecursive(keyDir);
@@ -413,9 +433,19 @@ public class ProfileManager {
 	private void removeProfilesWithoutKeys() {
 		File[] dirs = getProfilesRoot().listFiles();
 		if (dirs == null) return;
-		boolean anyProfileHasKeys = anyProfileHasKeyFiles();
+		boolean anyProfileHasKeys = false;
+		for (File dir : dirs) {
+			if (dir.isDirectory() && !markedForDeletion(dir)
+					&& hasKeyFiles(dir.getName())) {
+				anyProfileHasKeys = true;
+			}
+		}
 		for (File dir : dirs) {
 			if (!dir.isDirectory()) continue;
+			if (markedForDeletion(dir)) {
+				secureWipeRecursive(dir);
+				continue;
+			}
 			if (!hasKeyFiles(dir.getName())) {
 				if (anyProfileHasKeys || !containsAnyFile(dir)) {
 					secureWipeRecursive(dir);
@@ -475,6 +505,15 @@ public class ProfileManager {
 
 	private void moveIfPresent(File src, File dst) {
 		if (!src.exists()) return;
+		if (src.isDirectory() && dst.isDirectory()) {
+			File[] children = src.listFiles();
+			if (children == null) return;
+			for (File child : children) {
+				moveIfPresent(child, new File(dst, child.getName()));
+			}
+			src.delete();
+			return;
+		}
 		if (dst.exists()) return;
 		if (src.renameTo(dst)) return;
 		copyTreeBestEffort(src, dst);
@@ -492,17 +531,24 @@ public class ProfileManager {
 
 			src.delete();
 		} else {
+			if (dst.exists()) return;
+			File part = new File(dst.getPath() + ".part");
 			try (java.io.FileInputStream in = new java.io.FileInputStream(src);
 					java.io.FileOutputStream out =
-							new java.io.FileOutputStream(dst)) {
+							new java.io.FileOutputStream(part)) {
 				byte[] buf = new byte[8192];
 				int n;
 				while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
 				out.getFD().sync();
-
-				src.delete();
-			} catch (java.io.IOException ignored) {
+			} catch (java.io.IOException e) {
+				part.delete();
+				return;
 			}
+			if (!part.renameTo(dst)) {
+				part.delete();
+				return;
+			}
+			src.delete();
 		}
 	}
 }

@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.professor.zerion.R;
 
 @NotNullByDefault
-class SwipeToReplyCallback extends ItemTouchHelper.Callback {
+public class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 
 	@androidx.annotation.Nullable
 	private Drawable replyIcon;
@@ -24,11 +24,11 @@ class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 	private final OnSwipeReplyListener listener;
 	private boolean triggered;
 
-	interface OnSwipeReplyListener {
+	public interface OnSwipeReplyListener {
 		void onSwipeReply(int position);
 	}
 
-	SwipeToReplyCallback(OnSwipeReplyListener listener) {
+	public SwipeToReplyCallback(OnSwipeReplyListener listener) {
 		this.listener = listener;
 	}
 

@@ -1,6 +1,8 @@
 package com.professor.zerion.android.conversation;
 
 import android.content.Context;
+import android.os.Parcelable;
+import android.util.SparseArray;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +31,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -121,6 +124,26 @@ public class MessageEditUiTest {
 
 		assertNull(input.getEditingItem());
 		assertEquals("", field.getText().toString());
+	}
+
+	@Test
+	public void anEditInProgressIsNotKeptAcrossARestart() {
+		TextInputView input = inputView();
+		EditText field = input.findViewById(R.id.input_text);
+		field.setText("a draft");
+		SparseArray<Parcelable> drafting = new SparseArray<>();
+		input.saveHierarchyState(drafting);
+		assertNotNull(drafting.get(R.id.input_text));
+
+		input.showEditPreview(item(false), "Hey Allfs good");
+		SparseArray<Parcelable> editing = new SparseArray<>();
+		input.saveHierarchyState(editing);
+		assertNull(editing.get(R.id.input_text));
+
+		((ImageButton) input.findViewById(R.id.cancel_reply)).performClick();
+		SparseArray<Parcelable> after = new SparseArray<>();
+		input.saveHierarchyState(after);
+		assertNotNull(after.get(R.id.input_text));
 	}
 
 	@Test

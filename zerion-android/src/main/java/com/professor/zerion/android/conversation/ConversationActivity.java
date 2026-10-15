@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.bumptech.glide.Glide;
 import com.google.android.material.snackbar.Snackbar;
 
 import org.zerionproject.core.api.FeatureFlags;
@@ -37,6 +38,8 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
+import org.zerionproject.app.api.attachment.Attachment;
 import com.professor.zerion.android.attachment.AttachmentRetriever;
 import com.professor.zerion.android.attachment.media.VideoThumbnailExtractor;
 import com.professor.zerion.android.conversation.ConversationVisitor.AttachmentCache;
@@ -178,10 +181,6 @@ public class ConversationActivity extends ZerionActivity
 	android.content.SharedPreferences profilePrefs;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
-	private final java.util.Set<MessageId> deletedIds =
-			java.util.concurrent.ConcurrentHashMap.newKeySet();
-	private final Map<MessageId, String> editedTexts =
-			new ConcurrentHashMap<>();
 
 	private final ActivityResultLauncher<String[]> docLauncher =
 			registerForActivityResult(new OpenMultipleImageDocumentsAdvanced(),
@@ -398,8 +397,12 @@ public class ConversationActivity extends ZerionActivity
 
 		viewModel.getMessageTexts().observe(this, texts -> {
 			if (texts != null) {
-				textCache.putAll(texts);
-				textCache.putAll(editedTexts);
+				for (Map.Entry<MessageId, String> e : texts.entrySet()) {
+					MessageId m = e.getKey();
+					if (viewModel.isDeleted(m)) continue;
+					String edited = viewModel.getEditedText(m);
+					textCache.put(m, edited != null ? edited : e.getValue());
+				}
 			}
 		});
 
@@ -454,16 +457,16 @@ public class ConversationActivity extends ZerionActivity
 			if (cleared != null && cleared) {
 				textCache.clear();
 				adapter.clear();
+				Glide.get(this).clearMemory();
 			}
 		});
 
 		viewModel.getMessagesDeleted().observeEvent(this, messageIds -> {
 			if (messageIds != null) {
-				deletedIds.addAll(messageIds);
 				for (MessageId msgId : messageIds) {
 					textCache.remove(msgId);
-					editedTexts.remove(msgId);
 				}
+				Glide.get(this).clearMemory();
 				adapter.incrementRevision();
 				adapter.removeItems(messageIds);
 				markQuotesUnavailable(messageIds);
@@ -677,7 +680,7 @@ public class ConversationActivity extends ZerionActivity
 		Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
 		try {
 			java.io.File photoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
-					"temp_" + System.currentTimeMillis() + ".jpg");
+					com.professor.zerion.android.util.CameraFileNames.random("temp_", ".jpg"));
 			if (!photoFile.getParentFile().exists()) {
 				photoFile.getParentFile().mkdirs();
 			}
@@ -697,7 +700,7 @@ public class ConversationActivity extends ZerionActivity
 		Intent takeVideoIntent = new Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
 		try {
 			recordedVideoFile = new java.io.File(new java.io.File(getFilesDir(), "camera"),
-					"temp_" + System.currentTimeMillis() + ".mp4");
+					com.professor.zerion.android.util.CameraFileNames.random("temp_", ".mp4"));
 			if (!recordedVideoFile.getParentFile().exists()) {
 				recordedVideoFile.getParentFile().mkdirs();
 			}
@@ -730,7 +733,7 @@ public class ConversationActivity extends ZerionActivity
 					cameraDir.mkdirs();
 				}
 				java.io.File finalizedFile = new java.io.File(cameraDir,
-						"final_" + System.currentTimeMillis() + ".mp4");
+						com.professor.zerion.android.util.CameraFileNames.random("final_", ".mp4"));
 
 				try (java.io.FileInputStream fis = new java.io.FileInputStream(recordedVideoFile);
 					 java.io.FileOutputStream fos = new java.io.FileOutputStream(finalizedFile)) {
@@ -961,7 +964,9 @@ public class ConversationActivity extends ZerionActivity
 				&& result == RESULT_OK && data != null) {
 			ArrayList<Uri> uris = data.getParcelableArrayListExtra(VaultActivity.RESULT_SELECTED_URIS);
 			if (uris != null && !uris.isEmpty() && sendController instanceof TextAttachmentController) {
-				((TextAttachmentController) sendController).onImageReceived(uris);
+				com.professor.zerion.android.attachment.PdfSendNotice.confirm(
+						this, uris, () -> ((TextAttachmentController)
+								sendController).onImageReceived(uris));
 			}
 		}
 	}
@@ -1176,6 +1181,10 @@ public class ConversationActivity extends ZerionActivity
 		if (editItem != null) {
 			editItem.setVisible(selectedEditableItem() != null);
 		}
+		MenuItem saveItem = menu.findItem(R.id.action_save);
+		if (saveItem != null) {
+			saveItem.setVisible(selectedSavableAttachment() != null);
+		}
 		return true;
 	}
 
@@ -1196,8 +1205,54 @@ public class ConversationActivity extends ZerionActivity
 		} else if (item.getItemId() == R.id.action_edit) {
 			editSelectedMessage();
 			return true;
+		} else if (item.getItemId() == R.id.action_save) {
+			saveSelectedAttachment();
+			return true;
 		}
 		return false;
+	}
+
+	@Nullable
+	private AttachmentItem selectedSavableAttachment() {
+		if (tracker == null || tracker.getSelection().size() != 1) return null;
+		String key = tracker.getSelection().iterator().next();
+		int pos = adapter.getPositionOfKey(key);
+		if (pos < 0) return null;
+		ConversationItem item = adapter.getItemAt(pos);
+		if (!(item instanceof ConversationMessageItem)) return null;
+		List<AttachmentItem> list =
+				((ConversationMessageItem) item).getAttachments();
+		if (list == null || list.size() != 1) return null;
+		AttachmentItem a = list.get(0);
+		if (a.getState() != AttachmentItem.State.AVAILABLE) return null;
+		return SaveCleanCopy.canSave(a.getMimeType()) ? a : null;
+	}
+
+	@UiThread
+	private void saveSelectedAttachment() {
+		AttachmentItem a = selectedSavableAttachment();
+		if (actionMode != null) actionMode.finish();
+		if (a == null) return;
+		String mimeType = a.getMimeType();
+		SaveCleanCopy.confirm(this, mimeType, () -> dbExecutor.execute(() -> {
+			byte[] data;
+			try {
+				Attachment att =
+						attachmentRetriever.getMessageAttachment(a.getHeader());
+				data = SaveCleanCopy.readAll(att.getStream());
+			} catch (DbException | java.io.IOException e) {
+				data = null;
+			}
+			byte[] read = data;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (read == null) {
+					Toast.makeText(this, R.string.save_file_error,
+							Toast.LENGTH_LONG).show();
+				} else {
+					SaveCleanCopy.start(this, read, mimeType);
+				}
+			});
+		}));
 	}
 
 	@Nullable
@@ -1239,7 +1294,7 @@ public class ConversationActivity extends ZerionActivity
 
 	@UiThread
 	private void onMessageEdited(MessageId id, String text) {
-		editedTexts.put(id, text);
+		if (viewModel.isDeleted(id)) return;
 		textCache.put(id, text);
 		Pair<Integer, ConversationMessageItem> pair =
 				adapter.getMessageItem(id);
@@ -1248,6 +1303,7 @@ public class ConversationActivity extends ZerionActivity
 			pair.getSecond().markEdited();
 			adapter.notifyItemChanged(pair.getFirst());
 		}
+		textInputView.refreshReplyPreview(id, text);
 		for (int i = 0; i < adapter.getItemCount(); i++) {
 			ConversationItem item = adapter.getItemAt(i);
 			if (item != null && id.equals(item.getReplyToMessageId())) {
@@ -1424,11 +1480,11 @@ public class ConversationActivity extends ZerionActivity
 			Collection<ConversationMessageHeader> headers) {
 		List<ConversationItem> items = new ArrayList<>(headers.size());
 		for (ConversationMessageHeader h : headers) {
-			if (deletedIds.contains(h.getId())) continue;
+			if (viewModel.isDeleted(h.getId())) continue;
 			ConversationItem item = h.accept(visitor);
 			if (item != null) {
 				if (item instanceof ConversationMessageItem
-						&& editedTexts.containsKey(h.getId())) {
+						&& viewModel.getEditedText(h.getId()) != null) {
 					((ConversationMessageItem) item).markEdited();
 				}
 				items.add(item);
@@ -1457,7 +1513,8 @@ public class ConversationActivity extends ZerionActivity
 
 	private void displayMessageText(MessageId m, String loaded) {
 		runOnUiThreadUnlessDestroyed(() -> {
-			String edited = editedTexts.get(m);
+			if (viewModel.isDeleted(m)) return;
+			String edited = viewModel.getEditedText(m);
 			String text = edited != null ? edited : loaded;
 			textCache.put(m, text);
 			com.professor.zerion.android.conversation.voice.VoiceMessageChunkFormat.Part part =
@@ -2103,7 +2160,10 @@ public class ConversationActivity extends ZerionActivity
 		}
 
 		if (!(sendController instanceof TextAttachmentController)) return;
-		((TextAttachmentController) sendController).onImageReceived(uris);
+		List<Uri> picked = uris;
+		com.professor.zerion.android.attachment.PdfSendNotice.confirm(this,
+				picked, () -> ((TextAttachmentController) sendController)
+						.onImageReceived(picked));
 	}
 
 	private void sendMeshImageAsync(Uri uri, boolean deleteSource) {
@@ -2144,9 +2204,9 @@ public class ConversationActivity extends ZerionActivity
 		android.graphics.BitmapFactory.Options opts =
 				new android.graphics.BitmapFactory.Options();
 		opts.inSampleSize = sample;
-		try (java.io.InputStream is =
-				getContentResolver().openInputStream(uri)) {
-			return android.graphics.BitmapFactory.decodeStream(is, null, opts);
+		try {
+			return com.professor.zerion.android.attachment.ImageOrientation
+					.decodeUpright(getContentResolver(), uri, opts);
 		} catch (Exception e) {
 			return null;
 		}
@@ -2174,7 +2234,13 @@ public class ConversationActivity extends ZerionActivity
 						new java.io.ByteArrayOutputStream();
 				scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG,
 						quality, bos);
-				byte[] out = bos.toByteArray();
+				byte[] out;
+				try {
+					out = com.professor.zerion.android.attachment.ImageScrubber
+							.scrub(bos.toByteArray());
+				} catch (java.io.IOException e) {
+					return null;
+				}
 				if (out.length <= cap) return out;
 			}
 			maxDim /= 2;
@@ -2305,6 +2371,36 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void respondToRequest(ConversationRequestItem item, boolean accept) {
+		ConversationRequestItem.RequestType kind = item.getRequestType();
+		byte[] invitedTo = item.getGrouptrGid();
+		boolean groupInvite = kind == ConversationRequestItem.RequestType.GROUPTR
+				|| kind == ConversationRequestItem.RequestType.GROUPTR_MEMBER;
+		if (!accept || !groupInvite || invitedTo == null) {
+			answerRequest(item, accept, null);
+			return;
+		}
+		boolean fromMember =
+				kind == ConversationRequestItem.RequestType.GROUPTR_MEMBER;
+		dbExecutor.execute(() -> {
+			boolean available;
+			try {
+				available = groupTrManager.canAcceptIncognito(invitedTo,
+						fromMember);
+			} catch (DbException e) {
+				available = false;
+			}
+			boolean incognitoAvailable = available;
+			runOnUiThread(() -> {
+				if (isFinishing() || isDestroyed()) return;
+				com.professor.zerion.android.grouptr.GroupTrIncognitoPicker
+						.askToJoin(this, null, incognitoAvailable,
+								name -> answerRequest(item, true, name));
+			});
+		});
+	}
+
+	private void answerRequest(ConversationRequestItem item, boolean accept,
+			@Nullable String incognitoName) {
 		item.setAnswered();
 		SessionId sessionId = item.getSessionId();
 		ConversationRequestItem.RequestType type = item.getRequestType();
@@ -2312,15 +2408,24 @@ public class ConversationActivity extends ZerionActivity
 		final GroupId messageGroupId = item.getGroupId();
 		final MessageId messageId = item.getId();
 
+		final boolean memberInvite =
+				type == ConversationRequestItem.RequestType.GROUPTR_MEMBER;
 		dbExecutor.execute(() -> {
 			try {
-				if (type == ConversationRequestItem.RequestType.GROUPTR) {
+				if (type == ConversationRequestItem.RequestType.GROUPTR
+						|| memberInvite) {
 					if (grouptrGid == null) {
 						revertRequestAnswer(item);
 						return;
 					}
-					if (accept) {
-						groupTrManager.acceptInvite(grouptrGid);
+					if (memberInvite && accept) {
+						groupTrManager.acceptMemberInvite(grouptrGid,
+								contactId, incognitoName);
+					} else if (memberInvite) {
+						groupTrManager.declineMemberInvite(grouptrGid,
+								contactId);
+					} else if (accept) {
+						groupTrManager.acceptInvite(grouptrGid, incognitoName);
 					} else {
 						groupTrManager.declineInvite(grouptrGid);
 					}
@@ -2337,7 +2442,13 @@ public class ConversationActivity extends ZerionActivity
 					introductionManager.respondToIntroduction(contactId, sessionId, accept);
 				}
 				runOnUiThread(() -> {
-					if (type == ConversationRequestItem.RequestType.GROUPTR) {
+					if (memberInvite) {
+						Snackbar.make(list, accept
+										? R.string.grouptr_member_invite_accepted
+										: R.string.groups_invitations_declined,
+								Snackbar.LENGTH_LONG).show();
+					} else if (type
+							== ConversationRequestItem.RequestType.GROUPTR) {
 						Snackbar.make(list,
 								accept ? R.string.groups_invitations_joined
 										: R.string.groups_invitations_declined,
@@ -2346,7 +2457,33 @@ public class ConversationActivity extends ZerionActivity
 					adapter.notifyDataSetChanged();
 				});
 			} catch (org.zerionproject.app.api.grouptr.GroupTrAuthException e) {
-				if (e.getReason() == org.zerionproject.app.api.grouptr
+				if (memberInvite && (e.getReason()
+						== org.zerionproject.app.api.grouptr
+						.GroupTrAuthException.Reason.INVITE_EXPIRED
+						|| e.getReason() == org.zerionproject.app.api.grouptr
+						.GroupTrAuthException.Reason
+						.MEMBER_INVITES_UNAVAILABLE)) {
+					try {
+						conversationManager.setReadFlag(messageGroupId,
+								messageId, true);
+					} catch (DbException ignored) {
+					}
+					runOnUiThread(() -> {
+						adapter.notifyDataSetChanged();
+						Snackbar.make(list,
+								R.string.grouptr_member_invite_unavailable,
+								Snackbar.LENGTH_LONG).show();
+					});
+				} else if (e.getReason() == org.zerionproject.app.api.grouptr
+						.GroupTrAuthException.Reason.INCOGNITO_NOT_SUPPORTED) {
+					runOnUiThread(() -> {
+						item.setAnswered(false);
+						adapter.notifyDataSetChanged();
+						Snackbar.make(list,
+								R.string.grouptr_member_invite_contact_outdated,
+								Snackbar.LENGTH_LONG).show();
+					});
+				} else if (e.getReason() == org.zerionproject.app.api.grouptr
 						.GroupTrAuthException.Reason.INVITE_EXPIRED) {
 					runOnUiThread(() -> {
 						adapter.notifyDataSetChanged();
@@ -2379,7 +2516,9 @@ public class ConversationActivity extends ZerionActivity
 
 	@Override
 	public void openRequestedShareable(ConversationRequestItem item) {
-		if (item.getRequestType() == ConversationRequestItem.RequestType.GROUPTR) {
+		if (item.getRequestType() == ConversationRequestItem.RequestType.GROUPTR
+				|| item.getRequestType()
+				== ConversationRequestItem.RequestType.GROUPTR_MEMBER) {
 			byte[] grouptrGid = item.getGrouptrGid();
 			if (grouptrGid != null) {
 				startActivity(com.professor.zerion.android.grouptr

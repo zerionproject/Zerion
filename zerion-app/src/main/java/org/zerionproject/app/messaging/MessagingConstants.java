@@ -24,6 +24,7 @@ interface MessagingConstants {
 
 	String MSG_KEY_EDITED_TEXT = "editedText";
 	String MSG_KEY_EDITED_AT = "editedAt";
+	String MSG_KEY_ORIGINAL_KEPT = "originalKept";
 
 	String MSG_KEY_MESH = "mesh";
 
@@ -53,11 +54,15 @@ interface MessagingConstants {
 	String MSG_KEY_GROUP_MEMBER_LIST = "groupMemberList";
 	String MSG_KEY_GROUP_TIMER = "groupTimer";
 	String MSG_KEY_GROUP_SETTINGS_TIMESTAMP = "groupSettingsTimestamp";
+	String MSG_KEY_GROUP_TARGET_POST_ID = "groupTargetPostId";
+	String MSG_KEY_GROUP_RECORD_TIMESTAMP = "groupRecordTimestamp";
 
 	String MSG_KEY_GTR_INVITE_NAME = "gtrInviteName";
 	String MSG_KEY_GTR_INVITE_SALT = "gtrInviteSalt";
 	String MSG_KEY_GTR_INVITE_CREATOR_NAME = "gtrInviteCreatorName";
 	String MSG_KEY_GTR_INVITE_CREATOR_PUB = "gtrInviteCreatorPub";
+	String MSG_KEY_GTR_INVITE_INVITER_PUB = "gtrInviteInviterPub";
+	String MSG_KEY_GTR_JOINER_NAME = "gtrJoinerName";
 
 	String SIGNING_LABEL_GROUP_MEMBER_LIST_SNAPSHOT =
 			"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT";

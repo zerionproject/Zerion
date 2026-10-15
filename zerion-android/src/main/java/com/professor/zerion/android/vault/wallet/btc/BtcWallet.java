@@ -53,6 +53,8 @@ public class BtcWallet {
 			"No unspent silent payments found";
 	public static final String ERR_AMOUNT_AFTER_FEE =
 			"Amount is too low to send after the fee";
+	static final String ERR_PLAN_CHANGED =
+			"The transaction changed; review again";
 
 	public static final int GAP_LIMIT = 20;
 	static final int MAX_CHAIN_INDEX = 2000;
@@ -179,6 +181,7 @@ public class BtcWallet {
 	}
 
 	private final BtcKeys.Account keys;
+	private final Object planOwner = new Object();
 	private final int account;
 	private final int socksPort;
 	private volatile ElectrumEndpoint scanEndpoint;
@@ -838,6 +841,8 @@ public class BtcWallet {
 		final String changeCluster;
 		final Set<String> reusedOutpoints;
 		final boolean manual;
+		@Nullable
+		final Object owner;
 
 		SendPlan(String toAddress, long amountSat, long feeSat, long netSat,
 				boolean sweep, List<String> outpoints, String fingerprint,
@@ -845,22 +850,37 @@ public class BtcWallet {
 				List<PrivacyMeta> inputMetas, boolean hasChange,
 				@Nullable String changeCluster, Set<String> reusedOutpoints,
 				boolean manual, int vbytes, int changeIndex) {
+			this(toAddress, amountSat, feeSat, netSat, sweep, outpoints,
+					fingerprint, inputs, outputs, inputMetas, hasChange,
+					changeCluster, reusedOutpoints, manual, vbytes, changeIndex,
+					null);
+		}
+
+		SendPlan(String toAddress, long amountSat, long feeSat, long netSat,
+				boolean sweep, List<String> outpoints, String fingerprint,
+				List<BtcTx.Input> inputs, List<BtcTx.Output> outputs,
+				List<PrivacyMeta> inputMetas, boolean hasChange,
+				@Nullable String changeCluster, Set<String> reusedOutpoints,
+				boolean manual, int vbytes, int changeIndex,
+				@Nullable Object owner) {
 			this.toAddress = toAddress;
 			this.amountSat = amountSat;
 			this.feeSat = feeSat;
 			this.netSat = netSat;
 			this.sweep = sweep;
-			this.outpoints = outpoints;
+			this.outpoints = frozen(outpoints);
 			this.fingerprint = fingerprint;
-			this.inputs = inputs;
-			this.outputs = outputs;
-			this.inputMetas = inputMetas;
+			this.inputs = frozen(inputs);
+			this.outputs = frozen(outputs);
+			this.inputMetas = frozen(inputMetas);
 			this.hasChange = hasChange;
 			this.changeCluster = changeCluster;
-			this.reusedOutpoints = reusedOutpoints;
+			this.reusedOutpoints = java.util.Collections.unmodifiableSet(
+					new java.util.LinkedHashSet<>(reusedOutpoints));
 			this.manual = manual;
 			this.vbytes = vbytes;
 			this.changeIndex = changeIndex;
+			this.owner = owner;
 		}
 
 		public double feeRateSatPerVb() {
@@ -1004,7 +1024,7 @@ public class BtcWallet {
 			outpoints.add(in.txHash + ":" + in.txPos);
 		}
 		long netSat = changeSat - inSat;
-		String fingerprint = planFingerprint(outpoints, outputs);
+		String fingerprint = BtcTx.fingerprint(inputs, outputs);
 
 		List<PrivacyMeta> allMetas =
 				PrivacyEngine.classify(toViews(scan.utxos), privacyStore);
@@ -1038,7 +1058,8 @@ public class BtcWallet {
 
 		return new SendPlan(toAddress, externalSat, feeSat, netSat, sweep,
 				outpoints, fingerprint, inputs, outputs, inputMetas, hasChange,
-				changeCluster, reused, manual, planVBytes, changeIndex);
+				changeCluster, reused, manual, planVBytes, changeIndex,
+				planOwner);
 	}
 
 	public com.professor.zerion.android.vault.wallet.btc.privacy
@@ -1067,25 +1088,79 @@ public class BtcWallet {
 	}
 
 	public String signPlan(SendPlan plan) throws IOException {
-		String rawHex = BtcTx.buildAndSign(plan.inputs, plan.outputs);
+		requireOwnPlan(plan.owner);
+		List<String> signed = new ArrayList<>();
+		long inSat = 0;
+		for (BtcTx.Input in : plan.inputs) {
+			signed.add(in.txHash + ":" + in.txPos);
+			inSat = addAmount(inSat, in.valueSat);
+		}
+		if (!signed.equals(plan.outpoints)) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
+		requireReviewedOutputs(plan, inSat);
+		String rawHex = BtcTx.buildAndSignApproved(plan.inputs, plan.outputs,
+				plan.fingerprint);
+		if (rawHex == null) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
 		if (plan.changeIndex >= 0) setMinChangeProbe(plan.changeIndex + 1);
 		return broadcastTracked(rawHex, plan.outpoints, plan.netSat);
 	}
 
-	private static String planFingerprint(List<String> outpoints,
-			List<BtcTx.Output> outputs) {
-		List<String> ops = new ArrayList<>(outpoints);
-		java.util.Collections.sort(ops);
-		StringBuilder sb = new StringBuilder();
-		for (String o : ops) {
-			sb.append(o).append(',');
+	private void requireOwnPlan(@Nullable Object owner) throws IOException {
+		if (owner != planOwner || keys.isClosed()) {
+			throw new IOException(ERR_PLAN_CHANGED);
 		}
-		sb.append('#');
-		for (BtcTx.Output o : outputs) {
-			sb.append(o.address).append(':').append(o.valueSat).append(',');
+	}
+
+	private void requireReviewedOutputs(SendPlan plan, long inSat)
+			throws IOException {
+		long outSat = 0;
+		for (BtcTx.Output o : plan.outputs) {
+			if (o.valueSat <= 0) {
+				throw new IOException(ERR_PLAN_CHANGED);
+			}
+			outSat = addAmount(outSat, o.valueSat);
 		}
-		return TlsTrust.sha256Hex(
-				sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		long changeSat = inSat - plan.amountSat - plan.feeSat;
+		boolean consistent = plan.feeSat >= 0 && plan.amountSat > 0
+				&& outSat + plan.feeSat == inSat
+				&& plan.netSat == (plan.hasChange ? changeSat : 0) - inSat;
+		if (consistent && plan.hasChange) {
+			BtcTx.Output pay = new BtcTx.Output(plan.toAddress, plan.amountSat);
+			BtcTx.Output change = plan.changeIndex < 0 ? null
+					: new BtcTx.Output(keys.changeAddress(plan.changeIndex),
+							changeSat);
+			consistent = change != null && plan.outputs.size() == 2
+					&& ((same(plan.outputs.get(0), pay)
+							&& same(plan.outputs.get(1), change))
+					|| (same(plan.outputs.get(1), pay)
+							&& same(plan.outputs.get(0), change)));
+		} else if (consistent) {
+			consistent = plan.changeIndex < 0 && plan.outputs.size() == 1
+					&& same(plan.outputs.get(0),
+					new BtcTx.Output(plan.toAddress, plan.amountSat));
+		}
+		if (!consistent) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
+	}
+
+	private static boolean same(BtcTx.Output a, BtcTx.Output b) {
+		return a.valueSat == b.valueSat && a.address.equals(b.address);
+	}
+
+	private static long addAmount(long sum, long value) throws IOException {
+		if (value < 0 || value > BtcAmounts.MAX_MONEY_SAT
+				|| sum > BtcAmounts.MAX_MONEY_SAT) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
+		return sum + value;
+	}
+
+	private static <T> List<T> frozen(List<T> list) {
+		return java.util.Collections.unmodifiableList(new ArrayList<>(list));
 	}
 
 	private Set<String> clustersOfInputs(ScanResult scan,
@@ -1211,19 +1286,35 @@ public class BtcWallet {
 		final List<BtcTx.TaprootInput> inputs;
 		final List<BtcTx.Output> outputs;
 		final long spNetSat;
+		@Nullable
+		final Object owner;
 
 		SpSweepPlan(String toAddress, long amountSat, long feeSat,
 				List<String> outpoints, String fingerprint,
 				List<BtcTx.TaprootInput> inputs, List<BtcTx.Output> outputs,
 				long spNetSat) {
+			this(toAddress, amountSat, feeSat, outpoints, fingerprint, inputs,
+					outputs, spNetSat, null);
+		}
+
+		SpSweepPlan(String toAddress, long amountSat, long feeSat,
+				List<String> outpoints, String fingerprint,
+				List<BtcTx.TaprootInput> inputs, List<BtcTx.Output> outputs,
+				long spNetSat, @Nullable Object owner) {
 			this.toAddress = toAddress;
 			this.amountSat = amountSat;
 			this.feeSat = feeSat;
-			this.outpoints = outpoints;
+			this.outpoints = frozen(outpoints);
 			this.fingerprint = fingerprint;
-			this.inputs = inputs;
-			this.outputs = outputs;
+			List<BtcTx.TaprootInput> copies = new ArrayList<>();
+			for (BtcTx.TaprootInput in : inputs) {
+				copies.add(new BtcTx.TaprootInput(in.txHash, in.txPos,
+						in.valueSat, in.scriptPubKey.clone(), in.privKey));
+			}
+			this.inputs = java.util.Collections.unmodifiableList(copies);
+			this.outputs = frozen(outputs);
 			this.spNetSat = spNetSat;
+			this.owner = owner;
 		}
 	}
 
@@ -1233,7 +1324,26 @@ public class BtcWallet {
 	}
 
 	public String signSpSweep(SpSweepPlan plan) throws IOException {
-		String rawHex = BtcTx.buildAndSignTaproot(plan.inputs, plan.outputs);
+		requireOwnPlan(plan.owner);
+		List<String> signed = new ArrayList<>();
+		long inSat = 0;
+		for (BtcTx.TaprootInput in : plan.inputs) {
+			signed.add(in.txHash + ":" + in.txPos);
+			inSat = addAmount(inSat, in.valueSat);
+		}
+		if (!signed.equals(plan.outpoints) || plan.outputs.size() != 1
+				|| !same(plan.outputs.get(0),
+						new BtcTx.Output(plan.toAddress, plan.amountSat))
+				|| plan.amountSat <= 0 || plan.feeSat < 0
+				|| plan.amountSat + plan.feeSat != inSat
+				|| plan.spNetSat != -inSat) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
+		String rawHex = BtcTx.buildAndSignTaprootApproved(plan.inputs,
+				plan.outputs, plan.fingerprint);
+		if (rawHex == null) {
+			throw new IOException(ERR_PLAN_CHANGED);
+		}
 		return broadcastTracked(rawHex, plan.outpoints, plan.spNetSat);
 	}
 
@@ -1262,7 +1372,8 @@ public class BtcWallet {
 				String sh = BtcKeys.scriptHashOfBytes(spk);
 				boolean stillUnspent = false;
 				for (ElectrumClient.Utxo x : c.listUnspent(sh)) {
-					if (x.txHash.equals(u.txid) && x.txPos == u.vout) {
+					if (x.txHash.equals(u.txid) && x.txPos == u.vout
+							&& x.value == u.valueSat) {
 						stillUnspent = true;
 						break;
 					}
@@ -1290,8 +1401,8 @@ public class BtcWallet {
 			List<BtcTx.Output> outputs = new ArrayList<>();
 			outputs.add(new BtcTx.Output(toAddress, swept));
 			return new SpSweepPlan(toAddress, swept, fee, outpoints,
-					planFingerprint(outpoints, outputs), inputs, outputs,
-					-sumIn);
+					BtcTx.taprootFingerprint(inputs, outputs), inputs, outputs,
+					-sumIn, planOwner);
 		}
 	}
 }

@@ -11,6 +11,8 @@ import org.zerionproject.crypto.StreamCounterContactHook;
 import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
 import org.zerionproject.sync.ZmmDbRecordSink;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
+import org.zerionproject.core.api.connection.ContactConnectionDiagnostics;
+import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.sync.ZppConnectionRegistry;
 import org.zerionproject.sync.ZppConnectionRegistryImpl;
 import org.zerionproject.sync.ZppConnectionRunnerImpl;
@@ -32,6 +34,8 @@ public class ZerionTransportModule {
 	public static class EagerSingletons {
 		@Inject
 		ZtpSessionProvider sessionProvider;
+		@Inject
+		ContactConnectionDiagnostics contactConnectionDiagnostics;
 	}
 
 	@Provides
@@ -113,5 +117,13 @@ public class ZerionTransportModule {
 		return new ZtpConnectionHandlerImpl(establisher, provider, runner,
 				connectionRegistry, onionClientAuthManager,
 				rootEvolutionManager);
+	}
+
+	@Provides
+	@Singleton
+	ContactConnectionDiagnostics provideContactConnectionDiagnostics(
+			EventBus eventBus, ContactConnectionDiagnosticsImpl diagnostics) {
+		eventBus.addListener(diagnostics);
+		return diagnostics;
 	}
 }

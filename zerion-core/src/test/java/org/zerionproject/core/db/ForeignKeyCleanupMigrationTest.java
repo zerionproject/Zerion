@@ -37,6 +37,7 @@ import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getTransportId;
 import static org.zerionproject.core.test.TestUtils.isCryptoStrengthUnlimited;
+import static org.zerionproject.core.util.StringUtils.toHexString;
 
 public class ForeignKeyCleanupMigrationTest extends BrambleTestCase {
 
@@ -162,6 +163,62 @@ public class ForeignKeyCleanupMigrationTest extends BrambleTestCase {
 		db.close();
 		assertTrue("got " + next.getInt() + " after removing "
 				+ last.getInt(), next.getInt() > last.getInt());
+	}
+
+	@Test
+	public void aContactRemovedWithoutCascadeBeforeTheUpgradeKeepsItsId()
+			throws Exception {
+		Database<Connection> db = open();
+		Connection txn = db.startTransaction();
+		db.addIdentity(txn, identity);
+		ContactId kept = db.addContact(txn, getAuthor(),
+				identity.getLocalAuthor().getId(), null, true);
+		ContactId removed = db.addContact(txn, getAuthor(),
+				identity.getLocalAuthor().getId(), null, true);
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, removed, group.getId(), true);
+		db.commitTransaction(txn);
+
+		txn = db.startTransaction();
+		execute(txn, "SET DATABASE REFERENTIAL INTEGRITY FALSE");
+		execute(txn, "DELETE FROM groups WHERE groupId = X'"
+				+ toHexString(group.getId().getBytes()) + "'");
+		execute(txn, "DELETE FROM contacts WHERE contactId = "
+				+ removed.getInt());
+		execute(txn, "SET DATABASE REFERENTIAL INTEGRITY TRUE");
+		execute(txn, "UPDATE settings SET value = '67'"
+				+ " WHERE namespace = 'db' AND settingKey = 'schemaVersion'");
+		execute(txn, "DELETE FROM settings WHERE namespace = 'db'"
+				+ " AND settingKey = 'contactIdHighWater'");
+		assertEquals("only the group visibility is left of the removed"
+				+ " contact", 1, count(txn, "SELECT COUNT(*)"
+				+ " FROM groupVisibilities WHERE contactId = "
+				+ removed.getInt()));
+		assertEquals(removed.getInt(), count(txn,
+				"SELECT MAX(contactId) FROM contacts") + 1);
+		db.commitTransaction(txn);
+		db.close();
+
+		db = open();
+		txn = db.startTransaction();
+		assertEquals("the upgrade removed the left-behind row", 0,
+				count(txn, "SELECT COUNT(*) FROM groupVisibilities"
+						+ " WHERE contactId = " + removed.getInt()));
+		ContactId next = db.addContact(txn, getAuthor(),
+				identity.getLocalAuthor().getId(), null, true);
+		db.commitTransaction(txn);
+		db.close();
+
+		db = open();
+		txn = db.startTransaction();
+		ContactId after = db.addContact(txn, getAuthor(),
+				identity.getLocalAuthor().getId(), null, true);
+		db.commitTransaction(txn);
+		db.close();
+		assertTrue("got " + next.getInt() + " after removing "
+				+ removed.getInt(), next.getInt() > removed.getInt());
+		assertTrue(after.getInt() > next.getInt());
+		assertTrue(kept.getInt() < removed.getInt());
 	}
 
 	@Test

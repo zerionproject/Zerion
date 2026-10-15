@@ -26,7 +26,7 @@
 			android:background="@android:color/transparent"
 			android:elevation="0dp"
 			app:titleTextColor="@color/zerion_text_primary"
-			app:navigationIconTint="@color/zerion_primary_accent" />
+			app:navigationIconTint="@color/zerion_accent_icon" />
 
 	</com.google.android.material.appbar.AppBarLayout>
 

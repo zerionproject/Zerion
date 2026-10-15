@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,12 +48,15 @@ class ChannelStore {
 	private static final String NS_RETIRED_CONTENT_KEYS =
 			"zerion-channels-retired-content-keys";
 	static final int MAX_RETIRED_CONTENT_KEYS = 64;
+	private static final char[] HEX_DIGITS =
+			"0123456789abcdef".toCharArray();
 
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
 	private final BdfWriterFactory writerFactory;
 	private final ChannelPostStore posts;
 	private final ChannelOnionStore onions;
+	private final ChannelAuthorPins pins;
 
 	@Inject
 	ChannelStore(SettingsManager settingsManager,
@@ -67,10 +69,15 @@ class ChannelStore {
 				writerFactory);
 		this.onions = new ChannelOnionStore(settingsManager, readerFactory,
 				writerFactory);
+		this.pins = new ChannelAuthorPins(settingsManager);
 	}
 
 	ChannelOnionStore onions() {
 		return onions;
+	}
+
+	ChannelAuthorPins pins() {
+		return pins;
 	}
 
 	ChannelPostStore posts() {
@@ -90,11 +97,12 @@ class ChannelStore {
 	}
 
 	static String hex(byte[] b) {
-		StringBuilder sb = new StringBuilder(b.length * 2);
-		for (byte x : b) {
-			sb.append(String.format(Locale.US, "%02x", x));
+		char[] out = new char[b.length * 2];
+		for (int i = 0; i < b.length; i++) {
+			out[2 * i] = HEX_DIGITS[(b[i] >> 4) & 0xF];
+			out[2 * i + 1] = HEX_DIGITS[b[i] & 0xF];
 		}
-		return sb.toString();
+		return new String(out);
 	}
 
 	void putChannel(ChannelState s) throws DbException {

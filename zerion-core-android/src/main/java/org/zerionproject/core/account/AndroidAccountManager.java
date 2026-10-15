@@ -200,6 +200,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 			boolean matchedNeedsUpgrade = false;
 			int derivationsBefore = derivations.get();
 			int tried = 0;
+			boolean strengthenerFailed = false;
 			List<String> damaged = new java.util.ArrayList<>();
 			for (String id : order) {
 				profileManager.setActiveProfileId(id);
@@ -221,12 +222,8 @@ public class AndroidAccountManager extends AccountManagerImpl
 					matchedNeedsUpgrade = needsReencryption(stored);
 				} catch (DecryptionException e) {
 					if (e.getDecryptionResult() == KEY_STRENGTHENER_ERROR) {
-						if (matchedKey != null) matchedKey.clear();
-						profileManager.setActiveProfileId(previousActive);
-						cancelAttempt(attempt);
-						throw e;
-					}
-					if (e.getDecryptionResult() == KEY_FILES_DAMAGED) {
+						strengthenerFailed = true;
+					} else if (e.getDecryptionResult() == KEY_FILES_DAMAGED) {
 						damaged.add(id);
 					}
 				}
@@ -247,6 +244,10 @@ public class AndroidAccountManager extends AccountManagerImpl
 				return;
 			}
 			profileManager.setActiveProfileId(previousActive);
+			if (strengthenerFailed) {
+				cancelAttempt(attempt);
+				throw new DecryptionException(KEY_STRENGTHENER_ERROR);
+			}
 			boolean reportDamage = damaged.contains(order.get(0));
 			if (reportDamage) {
 				cancelAttempt(attempt);
@@ -515,20 +516,55 @@ public class AndroidAccountManager extends AccountManagerImpl
 		}
 	}
 
+	interface DatabaseSource {
+		void writeTo(File target) throws IOException;
+	}
+
 	@Nullable
 	public String importProfile(String displayName, char[] typed,
 			byte[] dbBytes, byte[] dbKey) {
 		PasswordForms password = PasswordForms.of(typed);
 		try {
-			return importProfile(displayName, password, dbBytes, dbKey);
+			return importProfile(displayName, password, target -> {
+				try (java.io.FileOutputStream out =
+						new java.io.FileOutputStream(target)) {
+					out.write(dbBytes);
+					out.getFD().sync();
+				}
+			}, dbKey);
 		} finally {
 			password.clear();
 		}
 	}
 
 	@Nullable
+	public String importProfile(String displayName, char[] typed,
+			File dbFile, byte[] dbKey) {
+		PasswordForms password = PasswordForms.of(typed);
+		try {
+			return importProfile(displayName, password,
+					target -> moveDatabase(dbFile, target), dbKey);
+		} finally {
+			password.clear();
+		}
+	}
+
+	private static void moveDatabase(File source, File target)
+			throws IOException {
+		if (source.renameTo(target)) return;
+		try (java.io.FileInputStream in = new java.io.FileInputStream(source);
+				java.io.FileOutputStream out =
+						new java.io.FileOutputStream(target)) {
+			byte[] buf = new byte[1 << 16];
+			int n;
+			while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+			out.getFD().sync();
+		}
+	}
+
+	@Nullable
 	private String importProfile(String displayName, PasswordForms password,
-			byte[] dbBytes, byte[] dbKey) {
+			DatabaseSource database, byte[] dbKey) {
 		lastProfileCreationRefusal = null;
 		if (isEmptyPassword(password.normal)) {
 			refuse(ProfileCreationRefusal.FAILED,
@@ -547,11 +583,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 			try {
 				File dbFile = new File(profileManager.getDbDir(newId),
 						"db.sqlite");
-				try (java.io.FileOutputStream out =
-						new java.io.FileOutputStream(dbFile)) {
-					out.write(dbBytes);
-					out.getFD().sync();
-				}
+				database.writeTo(dbFile);
 				startStrengthenerGeneration();
 				byte[] ciphertext = crypto.encryptWithPassword(dbKey,
 						password.normal, databaseConfig.getKeyStrengthener());
@@ -669,6 +701,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 			if (id == null || !id.equals(expectedProfileId)) return false;
 			if (anotherProfileHoldsAKey(id)) encryptForNothing();
 			else createPlaceholderProfile();
+			profileManager.markForDeletion(id);
 			profileManager.shredProfileKeys(id);
 			profileManager.forgetLastActiveProfileId(id);
 			return true;
@@ -731,6 +764,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@Override
 	protected void shredKeyFiles() {
 		for (String id : profileManager.listProfileIds()) {
+			profileManager.markForDeletion(id);
 			deleteFileOrDir(profileManager.getKeyDirWithoutCreating(id));
 		}
 	}

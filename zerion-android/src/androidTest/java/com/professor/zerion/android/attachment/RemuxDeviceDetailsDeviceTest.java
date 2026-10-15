@@ -3,6 +3,7 @@ package com.professor.zerion.android.attachment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -105,6 +106,8 @@ public class RemuxDeviceDetailsDeviceTest {
 					.sanitize(Uri.fromFile(in), declared, raw, MAX);
 			assertEquals("video/mp4", c.getMimeType());
 			assertNoDeviceDetails("a shared video", c.getData());
+			MuxerFields.assertMp4WriterFieldsCleared("a shared video",
+					c.getData());
 			File out = tempFile(".mp4");
 			Files.write(out.toPath(), c.getData());
 			assertPlaysLike(in, out);
@@ -122,12 +125,29 @@ public class RemuxDeviceDetailsDeviceTest {
 		assertEquals("video/mp4", r.getMimeType());
 		assertNoDeviceDetails("an attached video",
 				Files.readAllBytes(r.getFile().toPath()));
+		MuxerFields.assertMp4WriterFieldsCleared("an attached video",
+				Files.readAllBytes(r.getFile().toPath()));
 		assertPlaysLike(in, r.getFile());
 		File legacy = new MetadataStripper(ctx).stripVideoMetadataFromUri(
 				Uri.fromFile(in), ctx.getContentResolver());
 		temp.add(legacy);
 		assertNoDeviceDetails("an attached video",
 				Files.readAllBytes(legacy.toPath()));
+	}
+
+	@Test
+	public void theMuxerWritesTimesAndHandlerNamesThatTheRemuxClears()
+			throws Exception {
+		File in = recordedVideo();
+		assertTrue("this device's muxer writes no times or handler names",
+				MuxerFields.hasMp4WriterFields(
+						Files.readAllBytes(in.toPath())));
+		MetadataStripper.Remuxed r = new MetadataStripper(ctx)
+				.remuxForSending(Uri.fromFile(in), ctx.getContentResolver(),
+						false);
+		temp.add(r.getFile());
+		MuxerFields.assertMp4WriterFieldsCleared("a remuxed video",
+				Files.readAllBytes(r.getFile().toPath()));
 	}
 
 	@Test
@@ -140,6 +160,8 @@ public class RemuxDeviceDetailsDeviceTest {
 				Uri.fromFile(in), ctx.getContentResolver());
 		temp.add(out);
 		assertNoDeviceDetails("an M4A", Files.readAllBytes(out.toPath()));
+		MuxerFields.assertMp4WriterFieldsCleared("an M4A",
+				Files.readAllBytes(out.toPath()));
 		assertEquals(DeviceMediaFiles.stats(in), DeviceMediaFiles.stats(out));
 	}
 
@@ -153,6 +175,7 @@ public class RemuxDeviceDetailsDeviceTest {
 		assertFalse("the vault kept the video as it was",
 				java.util.Arrays.equals(raw, kept));
 		assertNoDeviceDetails("a vault video", kept);
+		MuxerFields.assertMp4WriterFieldsCleared("a vault video", kept);
 		File out = tempFile(".mp4");
 		Files.write(out.toPath(), kept);
 		assertPlaysLike(in, out);

@@ -8,7 +8,13 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.util.Arrays;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 import static com.professor.zerion.android.backup.BackupException.Reason.CORRUPT;
 import static com.professor.zerion.android.backup.BackupException.Reason.NOT_A_BACKUP;
@@ -29,6 +35,12 @@ public class BackupCrypto {
 	private static final int KEY_LENGTH = 32;
 	private static final int HEADER_LENGTH =
 			MAGIC.length + 2 + SALT_LENGTH + PARAM_LENGTH;
+	private static final String AES_GCM = "AES/GCM/NoPadding";
+	private static final int NONCE_LENGTH = 12;
+	private static final int TAG_LENGTH = 16;
+	private static final int SEALED_PREFIX_LENGTH = 4 + NONCE_LENGTH;
+	static final int OVERHEAD = HEADER_LENGTH + MAC_LENGTH + 4
+			+ SEALED_PREFIX_LENGTH + TAG_LENGTH;
 
 	private static final byte[] AAD_BASE =
 			"Zerion-Account-Backup-ZBK1".getBytes(StandardCharsets.UTF_8);
@@ -46,6 +58,7 @@ public class BackupCrypto {
 
 	private final Argon2 argon2 = new Argon2();
 	private final VaultCrypto crypto = new VaultCrypto();
+	private final SecureRandom random = new SecureRandom();
 
 	public byte[] seal(byte[] bundle, char[] passphrase, byte flags) {
 		return seal(bundle, passphrase, flags,
@@ -63,14 +76,33 @@ public class BackupCrypto {
 				crypto.hkdfSha256(master, salt, INFO_VERIFY, KEY_LENGTH);
 		try {
 			byte[] mac = crypto.computePasswordVerificationMac(verifyKey);
-			byte[] sealed = crypto.encrypt(bundle, encKey, header).toBytes();
-			ByteBuffer buf = ByteBuffer.allocate(
-					header.length + mac.length + 4 + sealed.length);
+			long sealedLength =
+					(long) SEALED_PREFIX_LENGTH + bundle.length + TAG_LENGTH;
+			long total = (long) header.length + mac.length + 4 + sealedLength;
+			if (total > Integer.MAX_VALUE - 8) {
+				throw new IllegalArgumentException("Backup too large");
+			}
+			byte[] out = new byte[(int) total];
+			byte[] nonce = new byte[NONCE_LENGTH];
+			random.nextBytes(nonce);
+			ByteBuffer buf = ByteBuffer.wrap(out);
 			buf.put(header);
 			buf.put(mac);
-			buf.putInt(sealed.length);
-			buf.put(sealed);
-			return buf.array();
+			buf.putInt((int) sealedLength);
+			buf.putInt(NONCE_LENGTH);
+			buf.put(nonce);
+			Cipher cipher = Cipher.getInstance(AES_GCM);
+			cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encKey, "AES"),
+					new GCMParameterSpec(TAG_LENGTH * 8, nonce));
+			cipher.updateAAD(header);
+			int written = cipher.doFinal(bundle, 0, bundle.length, out,
+					buf.position());
+			if (written != bundle.length + TAG_LENGTH) {
+				throw new IllegalStateException("Short encryption");
+			}
+			return out;
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException("Encryption failed", e);
 		} finally {
 			Argon2.clearBytes(master);
 			Argon2.clearBytes(encKey);
@@ -96,7 +128,8 @@ public class BackupCrypto {
 		byte[] paramBytes = new byte[PARAM_LENGTH];
 		Argon2.Argon2Params params;
 		byte[] mac = new byte[MAC_LENGTH];
-		byte[] sealed;
+		int sealedOffset;
+		int sealedLen;
 		byte[] header;
 		try {
 			ByteBuffer buf = ByteBuffer.wrap(file);
@@ -121,12 +154,11 @@ public class BackupCrypto {
 				throw new BackupException(CORRUPT);
 			}
 			buf.get(mac);
-			int sealedLen = buf.getInt();
-			if (sealedLen < 0 || sealedLen > buf.remaining()) {
+			sealedLen = buf.getInt();
+			if (sealedLen < 0 || sealedLen != buf.remaining()) {
 				throw new BackupException(CORRUPT);
 			}
-			sealed = new byte[sealedLen];
-			buf.get(sealed);
+			sealedOffset = buf.position();
 			header = buildHeader(version, flags, salt, paramBytes);
 		} catch (BufferUnderflowException e) {
 			throw new BackupException(CORRUPT);
@@ -155,10 +187,10 @@ public class BackupCrypto {
 				throw new BackupException(WRONG_PASSPHRASE);
 			}
 			try {
-				byte[] bundle = crypto.decrypt(
-						VaultCrypto.EncryptedData.fromBytes(sealed), decKey, aad);
+				byte[] bundle =
+						decrypt(file, sealedOffset, sealedLen, decKey, aad);
 				return new Opened(flags, bundle);
-			} catch (RuntimeException e) {
+			} catch (RuntimeException | GeneralSecurityException e) {
 				throw new BackupException(CORRUPT);
 			}
 		} finally {
@@ -166,6 +198,24 @@ public class BackupCrypto {
 			if (encKey != null) Argon2.clearBytes(encKey);
 			if (verifyKey != null) Argon2.clearBytes(verifyKey);
 		}
+	}
+
+	private static byte[] decrypt(byte[] file, int offset, int length,
+			byte[] key, byte[] aad) throws GeneralSecurityException {
+		if (length < SEALED_PREFIX_LENGTH) {
+			throw new IllegalArgumentException("Invalid encrypted data");
+		}
+		int nonceLength = ByteBuffer.wrap(file, offset, 4).getInt();
+		if (nonceLength != NONCE_LENGTH) {
+			throw new IllegalArgumentException("Invalid nonce length");
+		}
+		Cipher cipher = Cipher.getInstance(AES_GCM);
+		cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"),
+				new GCMParameterSpec(TAG_LENGTH * 8, file, offset + 4,
+						NONCE_LENGTH));
+		cipher.updateAAD(aad);
+		return cipher.doFinal(file, offset + SEALED_PREFIX_LENGTH,
+				length - SEALED_PREFIX_LENGTH);
 	}
 
 	public static class Opened {

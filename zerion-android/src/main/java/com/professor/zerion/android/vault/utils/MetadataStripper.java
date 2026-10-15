@@ -4,7 +4,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.media.ExifInterface;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
@@ -52,6 +51,12 @@ public class MetadataStripper {
 			new HashSet<>(Arrays.asList(VP8, VORBIS));
 
 	private static final int VORBIS_PAGE_SAMPLES = 4;
+
+	static final String[] MUXED_KEYS = {MediaFormat.KEY_MIME, "csd-0",
+			"csd-1", "csd-2", MediaFormat.KEY_WIDTH, MediaFormat.KEY_HEIGHT,
+			MediaFormat.KEY_ROTATION, MediaFormat.KEY_SAMPLE_RATE,
+			MediaFormat.KEY_CHANNEL_COUNT, MediaFormat.KEY_DURATION,
+			MediaFormat.KEY_PROFILE, MediaFormat.KEY_LEVEL};
 
 	private final Context context;
 
@@ -118,11 +123,16 @@ public class MetadataStripper {
 		options.inJustDecodeBounds = false;
 		options.inSampleSize = sampleSize;
 		options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+		options.inPreferredColorSpace = android.graphics.ColorSpace.get(
+				android.graphics.ColorSpace.Named.SRGB);
 
 		Bitmap bitmap = BitmapFactory.decodeByteArray(imageData, 0, imageData.length, options);
 		if (bitmap == null) {
 			throw new IOException("undecodable image");
 		}
+		bitmap = com.professor.zerion.android.attachment.ImageOrientation
+				.upright(bitmap, com.professor.zerion.android.attachment
+						.ImageOrientation.of(imageData));
 
 		Bitmap.CompressFormat format;
 		int quality;
@@ -138,19 +148,16 @@ public class MetadataStripper {
 			quality = JPEG_QUALITY;
 		}
 
-		byte[] strippedData;
+		byte[] encodedData;
 		try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
 			boolean encoded = bitmap.compress(format, quality, output);
 			bitmap.recycle();
 			if (!encoded) throw new IOException("image re-encode failed");
-			strippedData = output.toByteArray();
+			encodedData = output.toByteArray();
 		}
 
-		if (mimeType.equals("image/jpeg") || mimeType.equals("image/jpg")) {
-			strippedData = ensureNoExif(strippedData);
-		}
-
-		return strippedData;
+		return com.professor.zerion.android.attachment.ImageScrubber
+				.scrub(encodedData);
 	}
 
 	public static boolean isReencodableForSending(byte[] data) {
@@ -195,45 +202,13 @@ public class MetadataStripper {
 		return sampleSize;
 	}
 
-	private byte[] ensureNoExif(byte[] jpegData) {
-		File tempFile = null;
-		try {
-			tempFile = File.createTempFile("jpg_meta", ".jpg", context.getCacheDir());
-
-			try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-				fos.write(jpegData);
-			}
-
-			ExifInterface exif = new ExifInterface(tempFile.getAbsolutePath());
-
-			for (String tag : getAllExifTags()) {
-				exif.setAttribute(tag, null);
-			}
-			exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, null);
-
-			exif.saveAttributes();
-
-			try (FileInputStream fis = new FileInputStream(tempFile);
-			     ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-				byte[] buffer = new byte[8192];
-				int read;
-				while ((read = fis.read(buffer)) != -1) {
-					output.write(buffer, 0, read);
-				}
-				return output.toByteArray();
-			}
-
-		} catch (Exception e) {
-			return jpegData;
-		} finally {
-			if (tempFile != null) {
-				secureDelete(tempFile);
-			}
-		}
-	}
-
 	private static void secureDelete(File f) {
 		SecureMemory.secureDeleteFile(f, 512L * 1024 * 1024, true);
+	}
+
+	public static void discard(File f) {
+		secureDelete(f);
+		com.professor.zerion.android.util.CacheSweeper.release(f);
 	}
 
 	private byte[] stripVideoMetadata(byte[] videoData) {
@@ -241,7 +216,9 @@ public class MetadataStripper {
 		File tempIn = null;
 		File tempOut = null;
 		try {
-			tempIn = File.createTempFile("vid_in_", ".mp4", context.getCacheDir());
+			tempIn = com.professor.zerion.android.util.CacheSweeper.claim(
+					File.createTempFile("vid_in_", ".mp4",
+							context.getCacheDir()));
 			try (FileOutputStream fos = new FileOutputStream(tempIn)) {
 				fos.write(videoData);
 			}
@@ -258,8 +235,8 @@ public class MetadataStripper {
 		} catch (IOException e) {
 			return videoData;
 		} finally {
-			if (tempIn != null) secureDelete(tempIn);
-			if (tempOut != null) secureDelete(tempOut);
+			if (tempIn != null) discard(tempIn);
+			if (tempOut != null) discard(tempOut);
 		}
 	}
 
@@ -352,22 +329,31 @@ public class MetadataStripper {
 			for (int trim : trims) {
 				File out = null;
 				try {
-					out = File.createTempFile(prefix, webm ? ".webm" : ".mp4",
-							context.getCacheDir());
+					out = com.professor.zerion.android.util.CacheSweeper.claim(
+							File.createTempFile(prefix, webm ? ".webm" : ".mp4",
+									context.getCacheDir()));
 					mux(source, container, out, trim);
 					if (webm) {
+						WebmMetadataScrubber.scrub(out);
 						requireSameSamples(source, out);
 					} else {
 						Mp4MetadataScrubber.scrub(out);
 					}
 					return new Remuxed(out, webm, video);
 				} catch (Exception | OutOfMemoryError e) {
-					if (out != null) secureDelete(out);
+					if (out != null) discard(out);
 					last = e;
 				}
 			}
 		}
 		throw new IOException("Failed to strip video metadata", last);
+	}
+
+	static int rotationOf(MediaFormat format) {
+		if (!format.containsKey(MediaFormat.KEY_ROTATION)) return 0;
+		int degrees = format.getInteger(MediaFormat.KEY_ROTATION);
+		degrees = ((degrees % 360) + 360) % 360;
+		return degrees % 90 == 0 ? degrees : 0;
 	}
 
 	private static void mux(Source source, int container, File out,
@@ -382,14 +368,24 @@ public class MetadataStripper {
 			int[] trackMap = new int[trackCount];
 			boolean[] includeTrack = new boolean[trackCount];
 			int[] trim = new int[trackCount];
+			int rotation = 0;
 			for (int i = 0; i < trackCount; i++) {
 				MediaFormat format = extractor.getTrackFormat(i);
 				String mime = format.getString(MediaFormat.KEY_MIME);
 				if (isKept(mime)) {
-					trackMap[i] = muxer.addTrack(format);
+					trackMap[i] = muxer.addTrack(muxedFormat(format));
 					includeTrack[i] = true;
 					if (VORBIS.equals(mime)) trim[i] = vorbisTrim;
+					if (rotation == 0 && mime.startsWith("video/")) {
+						rotation = rotationOf(format);
+					}
 				}
+			}
+			if (rotation != 0) {
+				if (container == WEBM) {
+					throw new IOException("WebM cannot keep the rotation");
+				}
+				muxer.setOrientationHint(rotation);
 			}
 			muxer.start();
 			if (container == WEBM) {
@@ -409,6 +405,43 @@ public class MetadataStripper {
 		}
 	}
 
+	static ByteBuffer setupWithoutUserData(@Nullable String mime,
+			ByteBuffer setup) {
+		ByteBuffer view = setup.duplicate();
+		byte[] bytes = new byte[view.remaining()];
+		view.get(bytes);
+		int kept = SeiUserDataFilter.filter(mime, bytes, 0, bytes.length);
+		if (kept == bytes.length) return setup;
+		return ByteBuffer.wrap(java.util.Arrays.copyOf(bytes, kept));
+	}
+
+	static MediaFormat muxedFormat(MediaFormat in) {
+		MediaFormat out = new MediaFormat();
+		String mime = in.containsKey(MediaFormat.KEY_MIME)
+				? in.getString(MediaFormat.KEY_MIME) : null;
+		for (String key : MUXED_KEYS) {
+			if (!in.containsKey(key)) continue;
+			switch (in.getValueTypeForKey(key)) {
+				case MediaFormat.TYPE_INTEGER:
+					out.setInteger(key, in.getInteger(key));
+					break;
+				case MediaFormat.TYPE_LONG:
+					out.setLong(key, in.getLong(key));
+					break;
+				case MediaFormat.TYPE_STRING:
+					out.setString(key, in.getString(key));
+					break;
+				case MediaFormat.TYPE_BYTE_BUFFER:
+					out.setByteBuffer(key,
+							setupWithoutUserData(mime, in.getByteBuffer(key)));
+					break;
+				default:
+					break;
+			}
+		}
+		return out;
+	}
+
 	private static void copyTrackByTrack(MediaExtractor extractor,
 			MediaMuxer muxer, int[] trackMap, boolean[] includeTrack)
 			throws IOException {
@@ -416,13 +449,16 @@ public class MetadataStripper {
 		MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 		for (int i = 0; i < trackMap.length; i++) {
 			if (!includeTrack[i]) continue;
+			String mime = extractor.getTrackFormat(i)
+					.getString(MediaFormat.KEY_MIME);
 			extractor.selectTrack(i);
 			while (true) {
 				buffer = sampleBuffer(buffer, extractor.getSampleSize());
 				int sampleSize = extractor.readSampleData(buffer, 0);
 				if (sampleSize < 0) break;
 				bufferInfo.offset = 0;
-				bufferInfo.size = sampleSize;
+				bufferInfo.size = SeiUserDataFilter.filter(mime, buffer,
+						sampleSize);
 				bufferInfo.presentationTimeUs = extractor.getSampleTime();
 				bufferInfo.flags = extractor.getSampleFlags();
 				muxer.writeSampleData(trackMap[i], buffer, bufferInfo);
@@ -435,8 +471,12 @@ public class MetadataStripper {
 	private static void copyInterleaved(MediaExtractor extractor,
 			MediaMuxer muxer, int[] trackMap, boolean[] includeTrack,
 			int[] trim) throws IOException {
+		String[] mimes = new String[trackMap.length];
 		for (int i = 0; i < trackMap.length; i++) {
-			if (includeTrack[i]) extractor.selectTrack(i);
+			if (!includeTrack[i]) continue;
+			mimes[i] = extractor.getTrackFormat(i)
+					.getString(MediaFormat.KEY_MIME);
+			extractor.selectTrack(i);
 		}
 		ByteBuffer buffer = ByteBuffer.allocate(512 * 1024);
 		MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
@@ -446,7 +486,8 @@ public class MetadataStripper {
 			buffer = sampleBuffer(buffer, extractor.getSampleSize());
 			int sampleSize = extractor.readSampleData(buffer, 0);
 			if (sampleSize < 0) break;
-			int size = sampleSize - trim[track];
+			int size = SeiUserDataFilter.filter(mimes[track], buffer,
+					sampleSize - trim[track]);
 			if (size <= 0) throw new IOException("empty sample");
 			bufferInfo.offset = 0;
 			bufferInfo.size = size;
@@ -652,96 +693,5 @@ public class MetadataStripper {
 				mimeType.contains("ms-excel") ||
 				mimeType.contains("ms-powerpoint") ||
 				mimeType.startsWith("text/");
-	}
-
-	public static void stripExifFromFile(File imageFile) throws IOException {
-		if (!imageFile.exists()) return;
-
-		byte[] head = new byte[12];
-		try (java.io.FileInputStream fis = new java.io.FileInputStream(imageFile)) {
-			int read = 0;
-			while (read < head.length) {
-				int r = fis.read(head, read, head.length - read);
-				if (r < 0) break;
-				read += r;
-			}
-			if (read < 12 || !com.professor.zerion.android.util
-					.SafeImageDecoder.hasAllowedMagic(head)) {
-				throw new IOException("unsupported image format");
-			}
-		}
-
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inJustDecodeBounds = true;
-		BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
-
-		if (options.outWidth <= 0 || options.outHeight <= 0
-				|| options.outWidth > com.professor.zerion.android.util
-						.SafeImageDecoder.MAX_DIMENSION
-				|| options.outHeight > com.professor.zerion.android.util
-						.SafeImageDecoder.MAX_DIMENSION) {
-			throw new IOException("unsupported image dimensions");
-		}
-
-		int maxDimension = 4096;
-		int sampleSize = 1;
-
-		if (options.outWidth > maxDimension || options.outHeight > maxDimension) {
-			int halfWidth = options.outWidth / 2;
-			int halfHeight = options.outHeight / 2;
-
-			while ((halfWidth / sampleSize) >= maxDimension &&
-			       (halfHeight / sampleSize) >= maxDimension) {
-				sampleSize *= 2;
-			}
-		}
-
-		options.inJustDecodeBounds = false;
-		options.inSampleSize = sampleSize;
-
-		Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
-		if (bitmap == null) return;
-
-		try {
-			try (FileOutputStream fos = new FileOutputStream(imageFile)) {
-				bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, fos);
-			}
-		} finally {
-			bitmap.recycle();
-		}
-
-		try {
-			ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
-			for (String tag : getAllExifTags()) {
-				exif.setAttribute(tag, null);
-			}
-			exif.saveAttributes();
-		} catch (IOException e) {
-		}
-	}
-
-	private static String[] getAllExifTags() {
-		return new String[] {
-			ExifInterface.TAG_DATETIME,
-			ExifInterface.TAG_DATETIME_DIGITIZED,
-			ExifInterface.TAG_DATETIME_ORIGINAL,
-			ExifInterface.TAG_GPS_ALTITUDE,
-			ExifInterface.TAG_GPS_ALTITUDE_REF,
-			ExifInterface.TAG_GPS_LATITUDE,
-			ExifInterface.TAG_GPS_LATITUDE_REF,
-			ExifInterface.TAG_GPS_LONGITUDE,
-			ExifInterface.TAG_GPS_LONGITUDE_REF,
-			ExifInterface.TAG_GPS_TIMESTAMP,
-			ExifInterface.TAG_GPS_DATESTAMP,
-			ExifInterface.TAG_MAKE,
-			ExifInterface.TAG_MODEL,
-			ExifInterface.TAG_SOFTWARE,
-			ExifInterface.TAG_ARTIST,
-			ExifInterface.TAG_COPYRIGHT,
-			ExifInterface.TAG_EXIF_VERSION,
-			ExifInterface.TAG_USER_COMMENT,
-			ExifInterface.TAG_IMAGE_DESCRIPTION,
-			ExifInterface.TAG_MAKER_NOTE
-		};
 	}
 }

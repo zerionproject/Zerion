@@ -22,7 +22,7 @@
 	<color name="notice_out">@color/zerion_blue_800</color>
 	<color name="msg_stroke">@color/msg_stroke_dark</color>
 
-	<color name="zerion_message_sent">#0099CC</color>
+	<color name="zerion_message_sent">#007EA8</color>
 	<color name="zerion_message_sent_pressed">#0077AA</color>
 	<color name="zerion_message_received">#2C2D32</color>
 	<color name="zerion_message_received_pressed">#353640</color>
@@ -31,7 +31,20 @@
 	<color name="card_background">@color/zerion_night_800</color>
 	<color name="item_background_highlight">@color/zerion_night_700</color>
 
-	<color name="zerion_button_text_neutral">@color/zerion_blue_400</color>
+	<color name="zerion_button_text_neutral">#5E9EDE</color>
+	<color name="zerion_accent_text">@color/zerion_primary_accent</color>
+	<color name="zerion_accent_text_inverse">#0A6C93</color>
+	<color name="zerion_accent_icon">@color/zerion_primary_accent</color>
+	<color name="zerion_destructive_text">@color/zerion_red_400</color>
+	<color name="zerion_success_text">@color/zerion_success</color>
+	<color name="zerion_warning_text">@color/zerion_warning</color>
+	<color name="zerion_inverse_surface">#E6E0E9</color>
+	<color name="zerion_inverse_on_surface">#322F35</color>
+	<color name="accent_violet_text">#A78BFA</color>
+	<color name="accent_emerald_text">@color/accent_emerald</color>
+	<color name="accent_amber_text">@color/accent_amber</color>
+	<color name="accent_rose_text">#FB7185</color>
+	<color name="accent_blue_text">#60A5FA</color>
 	<color name="zerion_button_text_disabled">#23cccccc</color>
 
 	<color name="thread_indicator">@color/zerion_night_700</color>

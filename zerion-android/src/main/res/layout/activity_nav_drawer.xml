@@ -212,6 +212,6 @@
 		app:fabSize="normal"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
-		app:tint="@android:color/white" />
+		app:tint="@color/zerion_on_accent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

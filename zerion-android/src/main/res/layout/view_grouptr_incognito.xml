@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/incognitoBlock"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical">
+
+	<com.google.android.material.materialswitch.MaterialSwitch
+		android:id="@+id/incognitoSwitch"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:minHeight="48dp"
+		android:text="@string/grouptr_incognito"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="16sp" />
+
+	<TextView
+		android:id="@+id/incognitoSummary"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/grouptr_incognito_summary"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="13sp" />
+
+	<LinearLayout
+		android:id="@+id/incognitoNameRow"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="4dp"
+		android:gravity="center_vertical"
+		android:orientation="horizontal"
+		android:visibility="gone">
+
+		<TextView
+			android:id="@+id/incognitoName"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="15sp" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/incognitoNewName"
+			style="@style/Widget.Material3.Button.TextButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:minHeight="48dp"
+			android:text="@string/grouptr_incognito_new_name"
+			android:textColor="@color/zerion_accent_text" />
+
+	</LinearLayout>
+
+</LinearLayout>

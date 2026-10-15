@@ -98,20 +98,39 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 	private void refresh() {
 		ioExecutor.execute(() -> {
 			List<ChannelSubscriber> subs;
+			int announced;
 			try {
-				subs = channelManager.getAnnouncedSubscribers(channelId);
+				subs = new ArrayList<>(
+						channelManager.getAnnouncedSubscribers(channelId));
+				announced = subs.size();
+				for (byte[] key : channelManager.getBannedKeys(channelId)) {
+					boolean listed = false;
+					for (ChannelSubscriber sub : subs) {
+						if (java.util.Arrays.equals(sub.getEd25519PubKey(),
+								key)) {
+							listed = true;
+							break;
+						}
+					}
+					if (!listed) {
+						subs.add(new ChannelSubscriber("", key, new byte[0],
+								0L, true));
+					}
+				}
 				org.zerionproject.app.api.channel.ChannelState s =
 						channelManager.getChannel(channelId);
 				channelIsClosed = s != null && !s.isPublicChannel();
 			} catch (DbException ex) {
 				subs = new ArrayList<>();
+				announced = 0;
 			}
 			List<ChannelSubscriber> finalSubs = subs;
-			runOnUiThread(() -> render(finalSubs));
+			int finalAnnounced = announced;
+			runOnUiThread(() -> render(finalSubs, finalAnnounced));
 		});
 	}
 
-	private void render(List<ChannelSubscriber> subs) {
+	private void render(List<ChannelSubscriber> subs, int announced) {
 		if (subs.isEmpty()) {
 			recycler.setVisibility(View.GONE);
 			emptyView.setVisibility(View.VISIBLE);
@@ -120,12 +139,14 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 			emptyView.setVisibility(View.GONE);
 			adapter.setItems(subs);
 		}
-		setTitle(getString(R.string.channels_subscribers_count,
-				subs.size()));
+		setTitle(getString(R.string.channels_subscribers_count, announced));
 	}
 
 	private void showActions(ChannelSubscriber sub) {
-		if (sub.isBanned()) return;
+		if (sub.isBanned()) {
+			confirmUnban(sub);
+			return;
+		}
 		String trust = getString(sub.isTrusted()
 				? R.string.channels_subscribers_untrust
 				: R.string.channels_subscribers_trust);
@@ -190,6 +211,30 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 								rotateBox != null && rotateBox.isChecked()))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
+	}
+
+	private void confirmUnban(ChannelSubscriber sub) {
+		new SecureAlertDialogBuilder(this)
+				.setTitle(R.string.channels_subscribers_unban)
+				.setMessage(R.string.channels_subscribers_unban_confirm)
+				.setPositiveButton(R.string.channels_subscribers_unban,
+						(d, w) -> doUnban(sub))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void doUnban(ChannelSubscriber sub) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.unbanSubscriber(channelId,
+						sub.getEd25519PubKey());
+				runOnUiThread(this::refresh);
+			} catch (DbException ignored) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_unban_failed,
+						Toast.LENGTH_SHORT).show());
+			}
+		});
 	}
 
 	private void doBan(ChannelSubscriber sub, boolean alsoRotate) {
@@ -273,7 +318,10 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		}
 
 		void bind(ChannelSubscriber sub) {
-			name.setText(sub.getDisplayName());
+			name.setText(sub.getDisplayName().isEmpty()
+					? itemView.getContext().getString(
+							R.string.channels_comment_anonymous)
+					: sub.getDisplayName());
 			String key = toHexShort(sub.getEd25519PubKey());
 			subtitle.setText(sub.isTrusted() ? key + "  " + itemView
 					.getContext().getString(

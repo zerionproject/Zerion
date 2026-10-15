@@ -23,7 +23,7 @@
 			android:layout_weight="1"
 			android:ellipsize="end"
 			android:maxLines="1"
-			android:textColor="@color/zerion_primary_accent"
+			android:textColor="@color/zerion_accent_text"
 			android:textSize="13sp"
 			android:textStyle="bold"
 			tools:text="Hans" />

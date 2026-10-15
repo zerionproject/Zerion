@@ -14,6 +14,7 @@
 		android:layout_height="wrap_content"
 		android:elevation="4dp"
 		app:navigationIcon="@drawable/abc_ic_ab_back_material"
+		app:navigationContentDescription="@string/abc_action_bar_up_description"
 		tools:title="Onboarding Fullscreen Dialog" />
 
 	<androidx.core.widget.NestedScrollView
@@ -39,7 +40,7 @@
 				app:layout_constraintVertical_bias="0.25"
 				app:layout_constraintVertical_chainStyle="packed"
 				app:srcCompat="@drawable/ic_info_white"
-				app:tint="@color/zerion_text_secondary_inverse"
+				app:tint="@color/zerion_text_secondary"
 				tools:ignore="ContentDescription" />
 
 			<TextView
@@ -48,7 +49,7 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/margin_xlarge"
 				android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
-				android:textColor="@color/zerion_text_secondary_inverse"
+				android:textColor="@color/zerion_text_secondary"
 				app:layout_constraintBottom_toBottomOf="parent"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toStartOf="parent"

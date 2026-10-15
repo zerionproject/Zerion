@@ -281,8 +281,7 @@ public class GroupTrListFragment extends BaseFragment
 		android.widget.Button accept =
 				new android.widget.Button(requireContext());
 		accept.setText(R.string.grouptr_pending_accept);
-		accept.setOnClickListener(v ->
-				respondToInvite(p.getGroupId(), true));
+		accept.setOnClickListener(v -> askToJoin(p.getGroupId(), name));
 		buttons.addView(accept);
 
 		android.widget.Button decline =
@@ -296,11 +295,34 @@ public class GroupTrListFragment extends BaseFragment
 		return container;
 	}
 
+	private void askToJoin(byte[] groupId, String groupName) {
+		ioExecutor.execute(() -> {
+			boolean available;
+			try {
+				available = groupTrManager.canAcceptIncognito(groupId, false);
+			} catch (DbException ex) {
+				available = false;
+			}
+			boolean incognitoAvailable = available;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (!isAdded()) return;
+				GroupTrIncognitoPicker.askToJoin(requireContext(), groupName,
+						incognitoAvailable,
+						incognito -> respondToInvite(groupId, true, incognito));
+			});
+		});
+	}
+
 	private void respondToInvite(byte[] groupId, boolean accept) {
+		respondToInvite(groupId, accept, null);
+	}
+
+	private void respondToInvite(byte[] groupId, boolean accept,
+			@Nullable String incognitoName) {
 		ioExecutor.execute(() -> {
 			try {
 				if (accept) {
-					groupTrManager.acceptInvite(groupId);
+					groupTrManager.acceptInvite(groupId, incognitoName);
 				} else {
 					groupTrManager.declineInvite(groupId);
 				}

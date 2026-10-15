@@ -5,7 +5,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -14,7 +15,10 @@ import javax.annotation.Nullable;
 public final class SilentPaymentScanner {
 
 	private static final Pattern TWEAK = Pattern.compile("[0-9a-fA-F]{66}");
-	private static final Pattern OBJECT = Pattern.compile("\\{[^{}]*\\}");
+	private static final Pattern TXID = Pattern.compile("[0-9a-fA-F]{64}");
+	private static final Pattern HEX = Pattern.compile("(?:[0-9a-fA-F]{2})*");
+	private static final Pattern P2TR = Pattern.compile("5120[0-9a-fA-F]{64}");
+	static final int MAX_HEIGHT = 100_000_000;
 
 	private SilentPaymentScanner() {
 	}
@@ -49,54 +53,106 @@ public final class SilentPaymentScanner {
 		if (r == null) {
 			return null;
 		}
-		Long h = numField(r, "block_height");
-		return h == null ? null : h.intValue();
+		try {
+			return (int) StrictJson.integer(StrictJson.object(
+					StrictJson.parse(r)).get("block_height"), 0, MAX_HEIGHT);
+		} catch (IOException malformed) {
+			return null;
+		}
+	}
+
+	private static final class Candidate {
+		final String txid;
+		final int vout;
+		final long value;
+		final byte[] xonly;
+
+		Candidate(String txid, int vout, long value, byte[] xonly) {
+			this.txid = txid;
+			this.vout = vout;
+			this.value = value;
+			this.xonly = xonly;
+		}
+	}
+
+	private static IOException failed(int height) {
+		return new IOException("silent payment source failed at block "
+				+ height);
+	}
+
+	private static List<Object> document(@Nullable String response, int height)
+			throws IOException {
+		if (response == null) {
+			throw failed(height);
+		}
+		try {
+			return StrictJson.array(StrictJson.parse(response));
+		} catch (IOException malformed) {
+			throw failed(height);
+		}
+	}
+
+	private static List<String> tweaks(List<Object> items, int height)
+			throws IOException {
+		List<String> tweaks = new ArrayList<>();
+		try {
+			for (Object item : items) {
+				String tweak = StrictJson.string(item);
+				if (!TWEAK.matcher(tweak).matches()) {
+					throw failed(height);
+				}
+				tweaks.add(tweak);
+			}
+		} catch (IOException malformed) {
+			throw failed(height);
+		}
+		return tweaks;
+	}
+
+	private static List<Candidate> candidates(List<Object> items, int height)
+			throws IOException {
+		List<Candidate> out = new ArrayList<>();
+		try {
+			for (Object item : items) {
+				Map<String, Object> o = StrictJson.object(item);
+				String spk = StrictJson.string(o.get("scriptpubkey"));
+				if (!HEX.matcher(spk).matches()) {
+					throw failed(height);
+				}
+				if (!P2TR.matcher(spk).matches()) {
+					continue;
+				}
+				String txid = StrictJson.string(o.get("txid"));
+				if (!TXID.matcher(txid).matches()) {
+					throw failed(height);
+				}
+				int vout = (int) StrictJson.integer(o.get("vout"), 0,
+						Integer.MAX_VALUE);
+				long value = StrictJson.integer(o.get("value"), 0,
+						BtcAmounts.MAX_MONEY_SAT);
+				out.add(new Candidate(txid.toLowerCase(Locale.ROOT), vout,
+						value, hexToBytes(spk.substring(4))));
+			}
+		} catch (IOException malformed) {
+			throw failed(height);
+		}
+		return out;
 	}
 
 	public static List<Found> scanBlock(String base, int height, byte[] scanPriv,
 			byte[] spendPub, String isolationTag, Fetcher fetcher)
 			throws IOException {
 		List<Found> found = new ArrayList<>();
-		String tweaksResp = fetcher.get(url(base, "tweaks/" + height),
-				isolationTag);
-		if (tweaksResp == null || !jsonLike(tweaksResp)) {
-			throw new IOException("silent payment source failed at block "
-					+ height);
-		}
-		List<String> tweaks = new ArrayList<>();
-		Matcher tm = TWEAK.matcher(tweaksResp);
-		while (tm.find()) {
-			tweaks.add(tm.group());
-		}
+		List<String> tweaks = tweaks(document(fetcher.get(
+				url(base, "tweaks/" + height), isolationTag), height), height);
 		if (tweaks.isEmpty()) {
 			return found;
 		}
-		String utxosResp = fetcher.get(url(base, "utxos/" + height),
-				isolationTag);
-		if (utxosResp == null || !jsonLike(utxosResp)) {
-			throw new IOException("silent payment source failed at block "
-					+ height);
-		}
-
-		List<String[]> utxoMeta = new ArrayList<>();
+		List<Candidate> candidates = candidates(document(fetcher.get(
+				url(base, "utxos/" + height), isolationTag), height), height);
 		List<byte[]> outXonlys = new ArrayList<>();
-		Matcher om = OBJECT.matcher(utxosResp);
-		while (om.find()) {
-			String o = om.group();
-			String spk = strField(o, "scriptpubkey");
-			if (spk == null || !spk.startsWith("5120") || spk.length() < 68) {
-				continue;
-			}
-			String txid = strField(o, "txid");
-			Long vout = numField(o, "vout");
-			if (txid == null || vout == null) {
-				continue;
-			}
-			Long value = numField(o, "value");
-			byte[] xonly = hexToBytes(spk.substring(4, 68));
-			utxoMeta.add(new String[]{txid, String.valueOf(vout.intValue()),
-					String.valueOf(value == null ? 0L : value)});
-			outXonlys.add(xonly);
+		for (Candidate c : candidates) {
+			outXonlys.add(c.xonly);
 		}
 		if (outXonlys.isEmpty()) {
 			return found;
@@ -114,19 +170,17 @@ public final class SilentPaymentScanner {
 				for (int i = 0; i < outXonlys.size(); i++) {
 					if (java.util.Arrays.equals(outXonlys.get(i),
 							d.outputXOnly)) {
-						String[] m = utxoMeta.get(i);
+						Candidate m = candidates.get(i);
 						boolean dup = false;
 						for (Found f : found) {
-							if (f.txid.equals(m[0])
-									&& f.vout == Integer.parseInt(m[1])) {
+							if (f.txid.equals(m.txid) && f.vout == m.vout) {
 								dup = true;
 								break;
 							}
 						}
 						if (!dup) {
-							found.add(new Found(m[0], Integer.parseInt(m[1]),
-									Long.parseLong(m[2]), outXonlys.get(i),
-									d.tweak));
+							found.add(new Found(m.txid, m.vout, m.value,
+									m.xonly, d.tweak));
 						}
 						break;
 					}
@@ -134,10 +188,6 @@ public final class SilentPaymentScanner {
 			}
 		}
 		return found;
-	}
-
-	private static boolean jsonLike(String s) {
-		return s.indexOf('{') >= 0 || s.indexOf('[') >= 0;
 	}
 
 	private static String url(String base, String path) {
@@ -159,40 +209,5 @@ public final class SilentPaymentScanner {
 			out[i] = (byte) Integer.parseInt(h.substring(i * 2, i * 2 + 2), 16);
 		}
 		return out;
-	}
-
-	@Nullable
-	private static String strField(String json, String key) {
-		String m = "\"" + key + "\":\"";
-		int i = json.indexOf(m);
-		if (i < 0) {
-			return null;
-		}
-		int start = i + m.length();
-		int end = json.indexOf('"', start);
-		return end < 0 ? null : json.substring(start, end);
-	}
-
-	@Nullable
-	private static Long numField(String json, String key) {
-		String m = "\"" + key + "\":";
-		int i = json.indexOf(m);
-		if (i < 0) {
-			return null;
-		}
-		int s = i + m.length();
-		if (s < json.length() && json.charAt(s) == '"') {
-			s++;
-		}
-		int e = s;
-		while (e < json.length()
-				&& (Character.isDigit(json.charAt(e)) || json.charAt(e) == '-')) {
-			e++;
-		}
-		try {
-			return Long.parseLong(json.substring(s, e));
-		} catch (Exception ex) {
-			return null;
-		}
 	}
 }

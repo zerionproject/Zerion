@@ -23,18 +23,25 @@ mkdir -p /builds/fdroid
 git clone -q --depth 1 https://gitlab.com/fdroid/fdroiddata.git "$CI_PROJECT_DIR"
 cp /in/metadata.yml "$CI_PROJECT_DIR/metadata/$APPID.yml"
 cd "$CI_PROJECT_DIR"
-echo "fdroiddata $(git log -1 --format=%H)"
 test -d build || mkdir build
 apt-get update >/dev/null && apt-get -qy dist-upgrade >/dev/null
 yes | sdkmanager "platform-tools" "build-tools;31.0.0" >/dev/null 2>&1 || true
-rm -rf "$fdroidserver"; mkdir "$fdroidserver"
-curl --silent --fail https://gitlab.com/fdroid/fdroidserver/-/archive/master/fdroidserver-master.tar.gz \
-	| tar -xz --directory="$fdroidserver" --strip-components=1
+rm -rf "$fdroidserver"
+git clone -q --depth 1 https://gitlab.com/fdroid/fdroidserver.git "$fdroidserver"
+{
+	echo "fdroiddata $(git log -1 --format=%H)"
+	echo "fdroidserver $(git -C "$fdroidserver" log -1 --format=%H)"
+} | tee /out/provenance.txt
 export PATH="$fdroidserver:$PATH"
 export PYTHONPATH="$fdroidserver:$fdroidserver/examples"
 export PYTHONUNBUFFERED=true
 fdroid readmeta
 fdroid lint "$APPID" > /tmp/lint.log 2>&1 || true
+if grep -q -E "^Traceback|CRITICAL" /tmp/lint.log; then
+	cat /tmp/lint.log
+	echo "fdroid lint did not finish"
+	exit 1
+fi
 if grep -v -E "unsafe permissions on 'config.yml'|Repo: git URLs must use https://" /tmp/lint.log \
 		| grep -q -E "^$APPID:|ERROR|WARNING"; then
 	cat /tmp/lint.log

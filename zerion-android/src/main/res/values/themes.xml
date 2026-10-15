@@ -3,21 +3,24 @@
 
 	<style name="ZerionTheme" parent="Theme.Material3.DayNight">
 		<item name="colorPrimary">@color/zerion_cyan</item>
-		<item name="colorOnPrimary">@android:color/white</item>
+		<item name="colorOnPrimary">@color/zerion_on_accent</item>
 		<item name="colorPrimaryContainer">@color/zerion_card_bg</item>
 		<item name="colorOnPrimaryContainer">@color/zerion_text_primary</item>
 		<item name="colorSecondary">@color/zerion_deep_blue</item>
 		<item name="colorOnSecondary">@android:color/white</item>
 		<item name="colorTertiary">@color/zerion_aqua</item>
-		<item name="colorOnTertiary">@android:color/white</item>
+		<item name="colorOnTertiary">@color/zerion_on_accent</item>
 		<item name="colorTertiaryContainer">@color/zerion_card_bg</item>
-		<item name="colorOnTertiaryContainer">@color/zerion_cyan</item>
+		<item name="colorOnTertiaryContainer">@color/zerion_accent_icon</item>
 		<item name="android:colorBackground">@color/zerion_dark_bg</item>
 		<item name="colorOnBackground">@color/zerion_text_primary</item>
 		<item name="colorSurface">@color/zerion_card_bg</item>
 		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="colorSurfaceDim">@color/zerion_dark_bg</item>
-		<item name="colorError">@color/zerion_error_red</item>
+		<item name="colorError">@color/zerion_destructive_text</item>
+		<item name="colorSurfaceInverse">@color/zerion_inverse_surface</item>
+		<item name="colorOnSurfaceInverse">@color/zerion_inverse_on_surface</item>
+		<item name="zerionAccentText">@color/zerion_accent_text</item>
 		<item name="android:statusBarColor">@android:color/transparent</item>
 		<item name="android:navigationBarColor">@android:color/transparent</item>
 
@@ -25,16 +28,17 @@
 		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
 		<item name="android:textColorSecondary">@color/zerion_text_secondary</item>
-		<item name="android:textColorLink">@color/zerion_cyan</item>
+		<item name="android:textColorLink">@color/zerion_accent_text</item>
 		<item name="android:fontFamily">@font/plex_sans</item>
 		<item name="fontFamily">@font/plex_sans</item>
 		<item name="android:windowAnimationStyle">@style/ActivityAnimation</item>
 		<item name="windowActionModeOverlay">true</item>
 		<item name="toolbarStyle">@style/ZerionToolbar</item>
+		<item name="actionOverflowButtonStyle">@style/Zerion.ActionButton.Overflow</item>
 		<item name="alertDialogTheme">@style/ZerionDialogTheme.Neutral</item>
 		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14</item>
 
-		<item name="colorControlNormal">@color/zerion_cyan</item>
+		<item name="colorControlNormal">@color/zerion_accent_icon</item>
 		<item name="colorControlActivated">@color/zerion_cyan</item>
 		<item name="colorControlHighlight">@color/zerion_ripple</item>
 		<item name="selectableItemBackground">?android:attr/selectableItemBackground</item>
@@ -70,7 +74,7 @@
 		<item name="buttonBarNegativeButtonStyle">@style/ZerionButtonFlat.Negative</item>
 		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
-		<item name="android:textColorLink">@color/zerion_cyan</item>
+		<item name="android:textColorLink">@color/zerion_accent_text</item>
 		<item name="android:fontFamily">@font/plex_sans</item>
 		<item name="fontFamily">@font/plex_sans</item>
 		<item name="android:windowBackground">@color/zerion_card_bg</item>
@@ -159,46 +163,52 @@
 
 	<style name="AccentOverlay.Violet" parent="">
 		<item name="colorPrimary">@color/accent_violet</item>
+		<item name="colorOnPrimary">@android:color/black</item>
 		<item name="colorControlActivated">@color/accent_violet</item>
-		<item name="colorControlNormal">@color/accent_violet</item>
-		<item name="colorOnTertiaryContainer">@color/accent_violet</item>
-		<item name="android:textColorLink">@color/accent_violet</item>
+		<item name="colorControlNormal">@color/accent_violet_text</item>
+		<item name="colorOnTertiaryContainer">@color/accent_violet_text</item>
+		<item name="android:textColorLink">@color/accent_violet_text</item>
+		<item name="zerionAccentText">@color/accent_violet_text</item>
 		<item name="colorAccent">@color/accent_violet</item>
 	</style>
 
 	<style name="AccentOverlay.Emerald" parent="">
 		<item name="colorPrimary">@color/accent_emerald</item>
 		<item name="colorControlActivated">@color/accent_emerald</item>
-		<item name="colorControlNormal">@color/accent_emerald</item>
-		<item name="colorOnTertiaryContainer">@color/accent_emerald</item>
-		<item name="android:textColorLink">@color/accent_emerald</item>
+		<item name="colorControlNormal">@color/accent_emerald_text</item>
+		<item name="colorOnTertiaryContainer">@color/accent_emerald_text</item>
+		<item name="android:textColorLink">@color/accent_emerald_text</item>
+		<item name="zerionAccentText">@color/accent_emerald_text</item>
 		<item name="colorAccent">@color/accent_emerald</item>
 	</style>
 
 	<style name="AccentOverlay.Amber" parent="">
 		<item name="colorPrimary">@color/accent_amber</item>
 		<item name="colorControlActivated">@color/accent_amber</item>
-		<item name="colorControlNormal">@color/accent_amber</item>
-		<item name="colorOnTertiaryContainer">@color/accent_amber</item>
-		<item name="android:textColorLink">@color/accent_amber</item>
+		<item name="colorControlNormal">@color/accent_amber_text</item>
+		<item name="colorOnTertiaryContainer">@color/accent_amber_text</item>
+		<item name="android:textColorLink">@color/accent_amber_text</item>
+		<item name="zerionAccentText">@color/accent_amber_text</item>
 		<item name="colorAccent">@color/accent_amber</item>
 	</style>
 
 	<style name="AccentOverlay.Rose" parent="">
 		<item name="colorPrimary">@color/accent_rose</item>
 		<item name="colorControlActivated">@color/accent_rose</item>
-		<item name="colorControlNormal">@color/accent_rose</item>
-		<item name="colorOnTertiaryContainer">@color/accent_rose</item>
-		<item name="android:textColorLink">@color/accent_rose</item>
+		<item name="colorControlNormal">@color/accent_rose_text</item>
+		<item name="colorOnTertiaryContainer">@color/accent_rose_text</item>
+		<item name="android:textColorLink">@color/accent_rose_text</item>
+		<item name="zerionAccentText">@color/accent_rose_text</item>
 		<item name="colorAccent">@color/accent_rose</item>
 	</style>
 
 	<style name="AccentOverlay.Blue" parent="">
 		<item name="colorPrimary">@color/accent_blue</item>
 		<item name="colorControlActivated">@color/accent_blue</item>
-		<item name="colorControlNormal">@color/accent_blue</item>
-		<item name="colorOnTertiaryContainer">@color/accent_blue</item>
-		<item name="android:textColorLink">@color/accent_blue</item>
+		<item name="colorControlNormal">@color/accent_blue_text</item>
+		<item name="colorOnTertiaryContainer">@color/accent_blue_text</item>
+		<item name="android:textColorLink">@color/accent_blue_text</item>
+		<item name="zerionAccentText">@color/accent_blue_text</item>
 		<item name="colorAccent">@color/accent_blue</item>
 	</style>
 

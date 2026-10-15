@@ -4,21 +4,28 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.professor.zerion.android.conversation.ConversationCache;
+import com.professor.zerion.android.panic.WipePasswordManager;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
+import com.professor.zerion.android.settings.ChatPreferences;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.zerionproject.core.api.contact.ContactId;
 
 import java.security.Provider;
 import java.security.SecureRandomSpi;
 import java.security.Security;
+import java.util.Collections;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -52,6 +59,10 @@ public class TestApplicationIsolationTest {
 			throw new UnsupportedOperationException();
 		}
 	}
+
+	private static final ContactId PROBE_CONTACT = new ContactId(424242);
+
+	private static WipePasswordManager lastWipePasswords;
 
 	private final Application app = RuntimeEnvironment.getApplication();
 
@@ -87,6 +98,36 @@ public class TestApplicationIsolationTest {
 	}
 
 	@Test
+	public void aCachedConversationDoesNotOutliveItsTest() {
+		assertNoCachedConversationAndLeaveOne();
+	}
+
+	@Test
+	public void aCachedConversationDoesNotOutliveTheNextTest() {
+		assertNoCachedConversationAndLeaveOne();
+	}
+
+	@Test
+	public void aTextScaleDoesNotOutliveItsTest() {
+		assertDefaultTextScaleAndLeaveALargerOne();
+	}
+
+	@Test
+	public void aTextScaleDoesNotOutliveTheNextTest() {
+		assertDefaultTextScaleAndLeaveALargerOne();
+	}
+
+	@Test
+	public void theWipePasswordStoreIsTheOneOfThisApplication() {
+		assertWipePasswordStoreIsNewAndRememberIt();
+	}
+
+	@Test
+	public void theWipePasswordStoreOfTheNextTestIsItsOwn() {
+		assertWipePasswordStoreIsNewAndRememberIt();
+	}
+
+	@Test
 	public void theKeyStoreIsTheOneOfThisTestsSandbox() {
 		assertTrue(Security.getProvider("AndroidKeyStore")
 				instanceof TestAndroidKeyStore.KeyStoreProvider);
@@ -103,6 +144,30 @@ public class TestApplicationIsolationTest {
 			}
 		}
 		Security.addProvider(new ProbePrng());
+	}
+
+	private static void assertNoCachedConversationAndLeaveOne() {
+		ConversationCache cache = ConversationCache.getInstance();
+		assertNull("a conversation cached by an earlier test",
+				cache.getSnapshot(PROBE_CONTACT));
+		cache.put(PROBE_CONTACT, Collections.emptyList());
+		assertNotNull(cache.getSnapshot(PROBE_CONTACT));
+	}
+
+	private void assertDefaultTextScaleAndLeaveALargerOne() {
+		assertEquals("a text scale chosen in an earlier test", 1f,
+				ChatPreferences.getGuiFontScale(app), 0f);
+		EarlyPrefs.setGuiTextSize(app, ChatPreferences.TEXT_SIZE_EXTRA_LARGE);
+		ChatPreferences.invalidateGuiFontScale();
+		assertTrue(ChatPreferences.getGuiFontScale(app) > 1f);
+	}
+
+	private void assertWipePasswordStoreIsNewAndRememberIt() {
+		WipePasswordManager store = WipePasswordManager.getInstance(app);
+		assertNotNull(store);
+		assertNotSame("the wipe password store of an earlier test",
+				lastWipePasswords, store);
+		lastWipePasswords = store;
 	}
 
 	private void assertSettingsStoredInThisApplication() {

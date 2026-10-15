@@ -44,6 +44,11 @@ public class TorEventsTest {
 		public void onClockSkewDetected(long skewSeconds) {
 			seen.add("skew:" + skewSeconds);
 		}
+
+		@Override
+		public void onEntryRelayFailing() {
+			seen.add("entry relay failing");
+		}
 	};
 
 	private TestTorWrapper wrapper() throws Exception {
@@ -100,6 +105,33 @@ public class TorEventsTest {
 		w.unrecognized("STATUS_GENERAL", "WARN CLOCK_SKEW SKEW=x");
 		w.unrecognized("STATUS_GENERAL", "NOTICE CLOCK_JUMPED TIME=120");
 		assertEquals(Arrays.asList("skew:-90"), seen);
+	}
+
+	@Test
+	public void aFailingEntryRelayReachesTheObserver() throws Exception {
+		TestTorWrapper w = wrapper();
+		w.message("WARN", "Guard HacklabMondoviPL ($B9A9979A78C8B9AE267594590211"
+				+ "BBE2D23AA367) is failing a very large amount of circuits. Most"
+				+ " likely this means the Tor network is overloaded, but it"
+				+ " could also mean an attack against you or potentially the"
+				+ " guard itself.");
+		w.message("WARN", "Guard HacklabMondoviPL ($B9A9979A78C8B9AE267594590211"
+				+ "BBE2D23AA367) is failing an extremely large amount of"
+				+ " circuits. This could indicate a route manipulation attack,"
+				+ " network overload, bad local network connectivity, or a"
+				+ " bug.");
+		w.message("WARN", "Guard X ($0123456789ABCDEF0123456789ABCDEF01234567)"
+				+ " is failing to carry an extremely large amount of streams"
+				+ " on its circuits.");
+		w.message("NOTICE", "Guard X ($0123456789ABCDEF0123456789ABCDEF01234567)"
+				+ " is failing a very large amount of circuits.");
+		w.message("WARN", "Received http status code 404 (\"Guard X ($0123456789"
+				+ "ABCDEF0123456789ABCDEF01234567) is failing a very large"
+				+ " amount of circuits\") from server 192.0.2.1:443");
+		w.message("WARN", "No circuits are opened. Relaxed timeout for circuit"
+				+ " 8 to 60000ms.");
+		assertEquals(Arrays.asList("entry relay failing",
+				"entry relay failing", "entry relay failing"), seen);
 	}
 
 	@Test

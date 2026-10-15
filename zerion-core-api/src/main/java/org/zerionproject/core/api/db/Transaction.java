@@ -18,6 +18,7 @@ public class Transaction {
 
 	private List<CommitAction> actions = null;
 	private boolean committed = false;
+	private boolean purgeRequested = false;
 
 	public Transaction(Object txn, boolean readOnly) {
 		this.txn = txn;
@@ -40,6 +41,14 @@ public class Transaction {
 	public void attach(Runnable r) {
 		if (actions == null) actions = new ArrayList<>();
 		actions.add(new TaskAction(r));
+	}
+
+	public void requestPurge() {
+		purgeRequested = true;
+	}
+
+	public boolean isPurgeRequested() {
+		return purgeRequested;
 	}
 
 	public List<CommitAction> getActions() {

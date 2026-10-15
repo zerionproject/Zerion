@@ -15,6 +15,7 @@ import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.MessageMetadataVisitor;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.MigrationListener;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.identity.Identity;
@@ -54,6 +55,8 @@ interface Database<T> {
 	void abortTransaction(T txn);
 
 	void commitTransaction(T txn) throws DbException;
+
+	boolean purgeDeletedContent() throws DbException;
 
 	ContactId addContact(T txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified) throws DbException;
@@ -129,6 +132,8 @@ interface Database<T> {
 	void deleteMessage(T txn, MessageId m) throws DbException;
 
 	void deleteMessageMetadata(T txn, MessageId m) throws DbException;
+
+	void eraseMessageBody(T txn, MessageId m) throws DbException;
 
 	Contact getContact(T txn, ContactId c) throws DbException;
 
@@ -225,6 +230,8 @@ interface Database<T> {
 
 	Collection<MessageId> getPendingMessages(T txn) throws DbException;
 
+	Collection<MessageId> getUndeliverableMessages(T txn) throws DbException;
+
 	Collection<MessageId> getMessagesToShare(T txn) throws DbException;
 
 	Map<GroupId, Collection<MessageId>> getMessagesToDelete(T txn)
@@ -303,6 +310,9 @@ interface Database<T> {
 			throws DbException;
 
 	void deleteSettingsNamespaces(T txn, Collection<String> namespaces)
+			throws DbException;
+
+	Collection<String> getSettingsNamespaces(T txn, String prefix)
 			throws DbException;
 
 	void removeGroup(T txn, GroupId g) throws DbException;
@@ -405,7 +415,7 @@ interface Database<T> {
 			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
-	Object[] getPcsMode2SessionState(T txn, ContactId c, int direction)
+	PcsSessionRow getPcsMode2SessionState(T txn, ContactId c, int direction)
 			throws DbException;
 
 	boolean containsPqRatchetState(T txn, ContactId c) throws DbException;

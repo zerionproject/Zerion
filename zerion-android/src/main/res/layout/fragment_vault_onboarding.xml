@@ -20,7 +20,7 @@
             android:text="@string/vault_name"
             android:textSize="32sp"
             android:textStyle="bold"
-            android:textColor="@color/zerion_primary_accent"
+            android:textColor="@color/zerion_accent_large_text"
             android:layout_marginTop="48dp"
             android:layout_marginBottom="8dp" />
 
@@ -138,6 +138,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="⚠️"
+                    android:textColor="#856404"
                     android:textSize="20sp"
                     android:layout_marginEnd="12dp" />
 

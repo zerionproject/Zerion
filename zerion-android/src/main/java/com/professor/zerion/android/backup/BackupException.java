@@ -12,7 +12,8 @@ public class BackupException extends Exception {
 		CORRUPT,
 		NOT_SIGNED_IN,
 		IO_ERROR,
-		IMPORT_FAILED
+		IMPORT_FAILED,
+		TOO_LARGE
 	}
 
 	public final Reason reason;

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -24,6 +25,7 @@ import org.zerionproject.app.api.grouptr.GroupTrState;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.security.SecureRandom;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -38,6 +40,7 @@ public class GroupTrCreateActivity extends ZerionActivity {
 
 	private TextInputEditText nameInput;
 	private TextInputEditText nicknameInput;
+	private GroupTrIncognitoPicker incognito;
 	private TextView disappearingValue;
 	private MaterialSwitch screenshotSwitch;
 	private MaterialButton createButton;
@@ -63,6 +66,14 @@ public class GroupTrCreateActivity extends ZerionActivity {
 
 		nameInput = findViewById(R.id.groupNameInput);
 		nicknameInput = findViewById(R.id.nicknameInput);
+		View nicknameLayout = findViewById(R.id.nicknameLayout);
+		incognito = new GroupTrIncognitoPicker(
+				findViewById(R.id.incognitoBlock), new SecureRandom());
+		incognito.setOnCheckedChangeListener(() -> {
+			boolean on = incognito.isChecked();
+			nicknameLayout.setEnabled(!on);
+			nicknameInput.setEnabled(!on);
+		});
 		disappearingValue = findViewById(R.id.disappearingValue);
 		screenshotSwitch = findViewById(R.id.screenshotSwitch);
 		createButton = findViewById(R.id.createButton);
@@ -127,14 +138,16 @@ public class GroupTrCreateActivity extends ZerionActivity {
 		if (name.isEmpty()) return;
 		String nickname = nicknameInput.getText() == null ? "" :
 				nicknameInput.getText().toString().trim();
+		String incognitoName = incognito.chosenName();
 		createButton.setEnabled(false);
 		boolean screenshotBlock = screenshotSwitch.isChecked();
 		long ttl = ttlSeconds;
 		ioExecutor.execute(() -> {
 			try {
-				GroupTrState s = groupTrManager.createGroup(name);
+				GroupTrState s = groupTrManager.createGroup(name,
+						incognitoName);
 				byte[] gid = s.getGroupId();
-				if (!nickname.isEmpty()) {
+				if (incognitoName == null && !nickname.isEmpty()) {
 					groupTrManager.setStealthName(gid, nickname);
 				}
 				if (ttl > 0L) {

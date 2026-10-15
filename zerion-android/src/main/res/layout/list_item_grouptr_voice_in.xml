@@ -13,8 +13,10 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginStart="14dp"
-		android:layout_marginBottom="2dp"
-		android:textColor="@color/zerion_primary_accent"
+		android:layout_marginBottom="-6dp"
+		android:paddingTop="8dp"
+		android:paddingBottom="8dp"
+		android:textColor="@color/zerion_accent_text"
 		android:textSize="12sp"
 		android:textStyle="bold"
 		tools:text="Alice" />
@@ -34,13 +36,16 @@
 
 		<androidx.appcompat.widget.AppCompatImageButton
 			android:id="@+id/voicePlayButton"
-			android:layout_width="36dp"
-			android:layout_height="36dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:layout_marginStart="-6dp"
+			android:layout_marginTop="-6dp"
+			android:layout_marginBottom="-6dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:clickable="true"
 			android:contentDescription="@string/voice_message"
 			android:focusable="true"
-			android:padding="6dp"
+			android:padding="12dp"
 			android:scaleType="center"
 			app:srcCompat="@drawable/ic_play_arrow_24dp"
 			app:tint="@android:color/white" />
@@ -49,7 +54,7 @@
 			android:id="@+id/voiceDuration"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
-			android:layout_marginStart="6dp"
+			android:layout_marginStart="0dp"
 			android:layout_weight="1"
 			android:textColor="@android:color/white"
 			android:textSize="14sp"
@@ -61,7 +66,7 @@
 			android:layout_height="wrap_content"
 			android:layout_marginStart="8dp"
 			android:textColor="#CCFFFFFF"
-			android:textSize="10sp"
+			android:textSize="12sp"
 			tools:text="13:37" />
 
 	</LinearLayout>

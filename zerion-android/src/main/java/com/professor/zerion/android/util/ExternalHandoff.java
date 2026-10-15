@@ -10,6 +10,8 @@ import android.os.Bundle;
 import android.webkit.MimeTypeMap;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.attachment.MediaRefusedException;
+import com.professor.zerion.android.attachment.SharedMediaSanitizer;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 
@@ -26,6 +28,7 @@ import java.util.concurrent.Executors;
 
 import javax.annotation.Nullable;
 
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.FileProvider;
 
 @NotNullByDefault
@@ -53,6 +56,49 @@ public final class ExternalHandoff {
 
 		void revoke(Context ctx, Uri uri);
 	}
+
+	static final class Prepared {
+
+		final byte[] content;
+		final String type;
+
+		Prepared(byte[] content, String type) {
+			this.content = content;
+			this.type = type;
+		}
+	}
+
+	interface Cleaner {
+
+		Prepared prepare(Context ctx, byte[] content, String type)
+				throws IOException;
+	}
+
+	private static final long MAX_CLEAN_BYTES = 128L * 1024 * 1024;
+
+	static final Cleaner CLEAN_FIRST = (ctx, content, type) -> {
+		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx);
+		if (SharedMediaSanitizer.canClean(type)) {
+			SharedMediaSanitizer.Cleaned clean =
+					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+			return new Prepared(clean.getData(), clean.getMimeType());
+		}
+		try {
+			SharedMediaSanitizer.Cleaned clean =
+					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+			return new Prepared(clean.getData(), clean.getMimeType());
+		} catch (MediaRefusedException e) {
+			if (e.isTooLarge()) throw e;
+			return new Prepared(content, type);
+		} catch (RuntimeException e) {
+			return new Prepared(content, type);
+		}
+	};
+
+	static final Cleaner AS_IS = (ctx, content, type) ->
+			new Prepared(content, type);
+
+	static Cleaner cleaner = CLEAN_FIRST;
 
 	private ExternalHandoff() {
 	}
@@ -84,16 +130,19 @@ public final class ExternalHandoff {
 		Context app = activity.getApplicationContext();
 		io.execute(() -> {
 			File file;
+			String shown;
 			try {
-				file = stage(app, content, type);
-			} catch (IOException e) {
+				Prepared ready = cleaner.prepare(app, content, type);
+				file = stage(app, ready.content, ready.type);
+				shown = ready.type;
+			} catch (IOException | RuntimeException e) {
 				activity.runOnUiThread(onFailure);
 				return;
 			}
 			activity.runOnUiThread(() -> {
 				if (activity.isFinishing() || activity.isDestroyed()) {
 					end(app);
-				} else if (!launch(activity, file, type)) {
+				} else if (!launch(activity, file, shown)) {
 					end(app);
 					onFailure.run();
 				}
@@ -179,6 +228,16 @@ public final class ExternalHandoff {
 	static File current() {
 		synchronized (LOCK) {
 			return staged;
+		}
+	}
+
+	@VisibleForTesting
+	static void resetForTests() {
+		synchronized (LOCK) {
+			staged = null;
+			granted = null;
+			away = false;
+			watched = null;
 		}
 	}
 

@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -146,6 +147,15 @@ public class ZtpConnectionHandlerTest {
 		@Override
 		public void sessionClosed(int contactId) {
 			closed.add(contactId);
+		}
+
+		final List<String> established =
+				Collections.synchronizedList(new ArrayList<>());
+
+		@Override
+		public void sessionEstablished(int contactId,
+				@javax.annotation.Nullable String inboundOnion) {
+			established.add(contactId + ":" + inboundOnion);
 		}
 	}
 
@@ -285,6 +295,96 @@ public class ZtpConnectionHandlerTest {
 		byte[] rootBytes = new byte[SecretKey.LENGTH];
 		crypto.getSecureRandom().nextBytes(rootBytes);
 		return new SecretKey(rootBytes);
+	}
+
+	@Test(timeout = 30_000)
+	public void aSessionReportsItsAuthenticationAndTheOnionItArrivedOn()
+			throws Exception {
+		SecretKey rootKey = randomRootKey();
+		Map<Integer, StoredContactSession> aliceStored = new HashMap<>();
+		aliceStored.put(2, new StoredContactSession(rootKey, true));
+		Map<Integer, StoredContactSession> bobStored = new HashMap<>();
+		bobStored.put(1, new StoredContactSession(rootKey, false));
+		ZwfTagRecogniser bobRecogniser =
+				new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE);
+		bobRecogniser.register(1,
+				sessionFactory.deriveRecvTagKey(rootKey, false), 0);
+		FakeProvider aliceProvider = new FakeProvider(
+				new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), aliceStored);
+		FakeProvider bobProvider = new FakeProvider(bobRecogniser, bobStored);
+		ExchangeRunner runner = new ExchangeRunner(2);
+		ZtpConnectionHandlerImpl alice = handler(aliceProvider, runner);
+		ZtpConnectionHandlerImpl bob = handler(bobProvider, runner);
+		Pipes p = new Pipes();
+		java.util.concurrent.atomic.AtomicBoolean authenticated =
+				new java.util.concurrent.atomic.AtomicBoolean(false);
+
+		runBoth(() -> authenticated.set(alice.handleOutgoingSession(
+				TorConstants.ID, 2, p.aIn, p.aOut)),
+				() -> bob.handleIncoming(TorConstants.ID, p.bIn, p.bOut,
+						false, "bobs-next-onion"),
+				runner);
+
+		assertTrue(authenticated.get());
+		assertEquals(Collections.singletonList("2:null"),
+				aliceProvider.established);
+		assertEquals(Collections.singletonList("1:bobs-next-onion"),
+				bobProvider.established);
+	}
+
+	@Test(timeout = 30_000)
+	public void aDialThatNeverAuthenticatesSaysSo() throws Exception {
+		Map<Integer, StoredContactSession> aliceStored = new HashMap<>();
+		aliceStored.put(2, new StoredContactSession(randomRootKey(), true));
+		FakeProvider aliceProvider = new FakeProvider(
+				new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), aliceStored);
+		ZtpConnectionHandlerImpl alice = handler(aliceProvider,
+				(c, conn) -> {
+				});
+		assertFalse(alice.handleOutgoingSession(TorConstants.ID, 2,
+				new java.io.ByteArrayInputStream(new byte[0]),
+				new java.io.ByteArrayOutputStream()));
+		assertTrue(aliceProvider.established.isEmpty());
+	}
+
+	@Test(timeout = 30_000)
+	public void aRefusedOpenRepairDialIsNotCountedAgainstTheKeys()
+			throws Exception {
+		Map<Integer, StoredContactSession> aliceStored = new HashMap<>();
+		aliceStored.put(2, new StoredContactSession(randomRootKey(), true));
+		FakeProvider aliceProvider = new FakeProvider(
+				new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE), aliceStored);
+		List<Boolean> ended = Collections.synchronizedList(new ArrayList<>());
+		RootEvolutionManager evolutions = new RootEvolutionManager(null,
+				crypto, null, System::currentTimeMillis) {
+			@Override
+			public long dialEpoch(ContactId c, ContactRootKeys keys) {
+				return keys.getSendEpoch();
+			}
+
+			@Override
+			public void dialEnded(ContactId c, boolean peerAuthenticated) {
+				ended.add(peerAuthenticated);
+			}
+		};
+		ZtpConnectionHandlerImpl alice = new ZtpConnectionHandlerImpl(
+				new ZtpConnectionEstablisher(crypto, ratchet,
+						mode3FullRatchet, sessionFactory,
+						new ZwfStreamCounter(new MemStore()), cipherFactory()),
+				aliceProvider, (c, conn) -> {
+				}, noOpConnectionRegistry(),
+				new org.zerionproject.core.test.PermissiveOnionClientAuth(),
+				evolutions);
+		for (int i = 0; i < RootEvolutionManager.OUT_OF_SYNC_AFTER; i++) {
+			assertFalse(alice.handleOutgoingSession(TorConstants.ID, 2,
+					new ByteArrayInputStream(new byte[0]),
+					new ByteArrayOutputStream(), true));
+		}
+		assertTrue(ended.isEmpty());
+		assertFalse(alice.handleOutgoingSession(TorConstants.ID, 2,
+				new ByteArrayInputStream(new byte[0]),
+				new ByteArrayOutputStream(), false));
+		assertEquals(Collections.singletonList(false), ended);
 	}
 
 	@Test(timeout = 30_000)

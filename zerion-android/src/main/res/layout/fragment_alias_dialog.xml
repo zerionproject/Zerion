@@ -24,6 +24,7 @@
 		android:layout_height="wrap_content"
 		android:layout_marginTop="16dp"
 		app:errorEnabled="true"
+		app:errorAccessibilityLiveRegion="1"
 		app:hintEnabled="false">
 
 		<com.google.android.material.textfield.TextInputEditText

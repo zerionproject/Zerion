@@ -190,7 +190,7 @@ public class B4OnionRotationRetireTest extends BrambleMockTestCase {
 		Transport transport = startedWith(ORIGINAL);
 		B4OnionRotation r = rotation(now);
 		r.bindAdapter(transport);
-		r.onPeerSyncSessionEstablished(contactId);
+		r.onPeerSyncSessionEstablished(contactId, NEXT);
 		assertEquals("the rotation completed", "IDLE", open(
 				B4_ALICE_ROTATION_PHASE_KEY));
 		assertFalse("the original onion is still published",

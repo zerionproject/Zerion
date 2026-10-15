@@ -1,10 +1,11 @@
 package com.professor.zerion.android.attachment.media;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.ColorSpace;
 
-import com.professor.zerion.android.vault.utils.MetadataStripper;
+import com.professor.zerion.android.attachment.ImageOrientation;
+import com.professor.zerion.android.attachment.ImageScrubber;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -24,13 +25,10 @@ class ImageCompressorImpl implements ImageCompressor {
 	private static final int MAX_ATTACHMENT_DIMENSION = 1600;
 
 	private final ImageSizeCalculator imageSizeCalculator;
-	private final MetadataStripper metadataStripper;
 
 	@Inject
-	ImageCompressorImpl(ImageSizeCalculator imageSizeCalculator,
-			Context context) {
+	ImageCompressorImpl(ImageSizeCalculator imageSizeCalculator) {
 		this.imageSizeCalculator = imageSizeCalculator;
-		this.metadataStripper = new MetadataStripper(context);
 	}
 
 	@Override
@@ -63,12 +61,9 @@ class ImageCompressorImpl implements ImageCompressor {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		if (!bitmap.compress(JPEG, 75, out))
 			throw new IOException();
-		if (out.size() <= MAX_IMAGE_SIZE) {
-			byte[] imageData = out.toByteArray();
-			byte[] strippedData = metadataStripper.stripMetadata(imageData, "image/jpeg");
-			return new ByteArrayInputStream(strippedData);
-		}
-		throw new IOException();
+		byte[] imageData = ImageScrubber.scrub(out.toByteArray());
+		if (imageData.length > MAX_IMAGE_SIZE) throw new IOException();
+		return new ByteArrayInputStream(imageData);
 	}
 
 	private Bitmap createBitmap(InputStream is, String contentType, int maxSize)
@@ -97,13 +92,17 @@ class ImageCompressorImpl implements ImageCompressor {
 			inSampleSize *= 2;
 			dimension /= 2;
 		}
+		is.mark(ImageOrientation.READ_LIMIT);
+		int orientation = ImageOrientation.of(is);
+		is.reset();
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inSampleSize = inSampleSize;
+		options.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
 		if (contentType.equals("image/png"))
 			options.inPreferredConfig = Bitmap.Config.RGB_565;
 		Bitmap bitmap = decodeStream(is, null, options);
 		if (bitmap == null) throw new IOException();
-		return bitmap;
+		return ImageOrientation.upright(bitmap, orientation);
 	}
 
 }

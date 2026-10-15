@@ -15,7 +15,7 @@ public interface TorConstants {
 
 	int CONNECT_TO_PROXY_TIMEOUT = (int) SECONDS.toMillis(5);
 	int EXTRA_CONNECT_TIMEOUT = (int) SECONDS.toMillis(60);
-	int FAST_CONNECT_TIMEOUT = (int) SECONDS.toMillis(20);
+	int FAST_CONNECT_TIMEOUT = (int) SECONDS.toMillis(40);
 	int EXTRA_SOCKET_TIMEOUT = (int) SECONDS.toMillis(30);
 	String PREF_TOR_NETWORK = "network2";
 	String PREF_TOR_PORT = "port";

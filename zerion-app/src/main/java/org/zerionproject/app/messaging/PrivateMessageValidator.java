@@ -207,6 +207,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.GROUP_SETTINGS) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupSettings(m, list);
+				} else if (messageType == MessageTypes.GROUP_POST_DELETE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupPostDelete(m, list);
 				} else if (messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGrouptrInviteOffer(m, list);
@@ -218,6 +221,36 @@ class PrivateMessageValidator implements MessageValidator {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGrouptrInviteResponse(m, list,
 							MessageTypes.GROUPTR_INVITE_DECLINE);
+				} else if (messageType == MessageTypes.GROUP_PERMISSIONS) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupPermissions(m, list);
+				} else if (messageType
+						== MessageTypes.GROUPTR_MEMBER_INVITE_OFFER
+						|| messageType
+						== MessageTypes.GROUPTR_GRANTED_INVITE_OFFER) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMemberInviteOffer(m, list, messageType);
+				} else if (messageType == MessageTypes.GROUP_INVITER_GRANT) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateInviterGrant(m, list);
+				} else if (messageType
+						== MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateIncognitoInviteAccept(m, list);
+				} else if (messageType
+						== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateIncognitoMemberInviteAccept(m, list);
+				} else if (messageType
+						== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT
+						|| messageType
+						== MessageTypes.GROUPTR_MEMBER_INVITE_DECLINE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMemberInviteResponse(m, list,
+							messageType);
+				} else if (messageType == MessageTypes.GROUPTR_JOIN_REQUEST) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateJoinRequest(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -800,6 +833,164 @@ class PrivateMessageValidator implements MessageValidator {
 		return new BdfMessageContext(meta);
 	}
 
+	private BdfMessageContext validateGroupPermissions(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 5);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		long flags = body.getLong(2);
+		if (flags < 0L) throw new FormatException();
+		body.getLong(3);
+		byte[] sig = body.getRaw(4);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUP_PERMISSIONS);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateInviterGrant(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 6);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		checkLength(body.getRaw(2), 32);
+		if (body.getLong(3) < 0L) throw new FormatException();
+		body.getLong(4);
+		checkLength(body.getRaw(5), 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUP_INVITER_GRANT);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateIncognitoInviteAccept(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 5);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		long timestamp = body.getLong(2);
+		String name = body.getString(3);
+		checkLength(name, 1, org.zerionproject.core.api.identity
+				.AuthorConstants.MAX_AUTHOR_NAME_LENGTH);
+		byte[] sig = body.getRaw(4);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE,
+				(long) MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		meta.put("gtrInviteTimestamp", timestamp);
+		meta.put(MessagingConstants.MSG_KEY_GTR_JOINER_NAME, name);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateIncognitoMemberInviteAccept(Message m,
+			BdfList body) throws FormatException {
+		checkSize(body, 6);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		checkLength(body.getRaw(2), 32);
+		body.getLong(3);
+		checkLength(body.getString(4), 1, org.zerionproject.core.api.identity
+				.AuthorConstants.MAX_AUTHOR_NAME_LENGTH);
+		checkLength(body.getRaw(5), 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE,
+				(long) MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMemberInviteOffer(Message m,
+			BdfList body, int kind) throws FormatException {
+		checkSize(body, 13);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		String groupName = body.getString(2);
+		checkLength(groupName, 0, 100);
+		byte[] salt = body.getRaw(3);
+		checkLength(salt, 32);
+		String creatorName = body.getString(4);
+		checkLength(creatorName, 1,
+				org.zerionproject.core.api.identity.AuthorConstants
+						.MAX_AUTHOR_NAME_LENGTH);
+		byte[] creatorPubKey = body.getRaw(5);
+		checkLength(creatorPubKey, 32);
+		checkLength(body.getRaw(6), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		byte[] inviterPubKey = body.getRaw(7);
+		checkLength(inviterPubKey, 32);
+		if (body.getLong(8) < 0L) throw new FormatException();
+		body.getLong(9);
+		checkLength(body.getRaw(10), 1, 4096);
+		long timestamp = body.getLong(11);
+		checkLength(body.getRaw(12), 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_READ, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) kind);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_NAME, groupName);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_SALT, salt);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_NAME,
+				creatorName);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_CREATOR_PUB,
+				creatorPubKey);
+		meta.put(MessagingConstants.MSG_KEY_GTR_INVITE_INVITER_PUB,
+				inviterPubKey);
+		meta.put("gtrInviteTimestamp", timestamp);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMemberInviteResponse(Message m,
+			BdfList body, int kind) throws FormatException {
+		checkSize(body, 5);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		checkLength(body.getRaw(2), 32);
+		body.getLong(3);
+		checkLength(body.getRaw(4), 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) kind);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateJoinRequest(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 9);
+		byte[] grouptrGroupId = body.getRaw(1);
+		checkLength(grouptrGroupId, 32);
+		checkLength(body.getRaw(2), 32);
+		checkLength(body.getString(3), 1,
+				org.zerionproject.core.api.identity.AuthorConstants
+						.MAX_AUTHOR_NAME_LENGTH);
+		checkLength(body.getRaw(4), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		body.getLong(5);
+		checkLength(body.getRaw(6), 1, 4096);
+		body.getLong(7);
+		checkLength(body.getRaw(8), 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUPTR_JOIN_REQUEST);
+		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
+		return new BdfMessageContext(meta);
+	}
+
 	private void verifyOrThrow(byte[] sig, String label, byte[] signed,
 			byte[] pubKey) throws FormatException {
 		org.zerionproject.core.api.crypto.PublicKey p =
@@ -953,6 +1144,34 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_GROUP_SETTINGS_TIMESTAMP, timestamp);
 		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
 		meta.put("groupMembershipSignedInput", signedInput);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGroupPostDelete(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 7);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		long epoch = body.getLong(2);
+		if (epoch < 0L || epoch > 0xFFFFFFFFL) throw new FormatException();
+		byte[] senderPubKey = body.getRaw(3);
+		checkLength(senderPubKey, 32);
+		byte[] targetPostId = body.getRaw(4);
+		checkLength(targetPostId, 32);
+		long timestamp = body.getLong(5);
+		byte[] sig = body.getRaw(6);
+		checkLength(sig, org.zerionproject.core.api.crypto.PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_POST_DELETE);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		meta.put(MSG_KEY_GROUP_EPOCH, epoch);
+		meta.put(MSG_KEY_GROUP_SENDER_PUBKEY, senderPubKey);
+		meta.put(MessagingConstants.MSG_KEY_GROUP_TARGET_POST_ID, targetPostId);
+		meta.put(MessagingConstants.MSG_KEY_GROUP_RECORD_TIMESTAMP, timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
 		return new BdfMessageContext(meta);
 	}
 

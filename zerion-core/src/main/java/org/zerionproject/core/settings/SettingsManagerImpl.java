@@ -78,6 +78,20 @@ class SettingsManagerImpl implements SettingsManager {
 	}
 
 	@Override
+	public void deleteSettings(Transaction txn, String namespace,
+			Collection<String> keys) throws DbException {
+		if (keys.isEmpty()) return;
+		db.deleteSettings(txn, namespace, new ArrayList<>(keys));
+	}
+
+	@Override
+	public Collection<String> getNamespaces(String prefix)
+			throws DbException {
+		return db.transactionWithResult(true,
+				txn -> db.getSettingsNamespaces(txn, prefix));
+	}
+
+	@Override
 	public void deleteNamespaces(Collection<String> namespaces)
 			throws DbException {
 		if (namespaces.isEmpty()) return;

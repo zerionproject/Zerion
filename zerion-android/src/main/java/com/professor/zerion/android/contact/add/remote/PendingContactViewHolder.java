@@ -57,10 +57,10 @@ class PendingContactViewHolder extends ViewHolder {
 			listener.onPendingContactItemRemoved(item);
 			removeButton.setEnabled(false);
 		});
-		int cyanColor = ContextCompat.getColor(status.getContext(), R.color.zerion_cyan);
+		int cyanColor = ContextCompat.getColor(status.getContext(), R.color.zerion_accent_text);
 		int secondaryColor = ContextCompat.getColor(status.getContext(), R.color.zerion_text_secondary);
-		int errorColor = ContextCompat.getColor(status.getContext(), R.color.zerion_error_red);
-		int successColor = ContextCompat.getColor(status.getContext(), R.color.zerion_success_green);
+		int errorColor = ContextCompat.getColor(status.getContext(), R.color.zerion_destructive_text);
+		int successColor = ContextCompat.getColor(status.getContext(), R.color.zerion_success_text);
 		boolean showSpinner = false;
 		int statusColor = secondaryColor;
 		int indicatorColor = cyanColor;

@@ -1,9 +1,6 @@
 package com.professor.zerion.android.conversation;
 
-import android.content.ActivityNotFoundException;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.transition.Fade;
 import android.transition.Transition;
@@ -21,7 +18,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
-import com.professor.zerion.android.util.ActivityLaunchers.CreateDocumentAdvanced;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 import com.professor.zerion.android.view.PullDownLayout;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -32,9 +29,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
-import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.core.view.WindowCompat;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
@@ -50,7 +45,6 @@ import static android.view.View.VISIBLE;
 import static com.google.android.material.snackbar.Snackbar.LENGTH_LONG;
 import static java.util.Objects.requireNonNull;
 import static com.professor.zerion.android.util.UiUtils.formatDateAbsolute;
-import static com.professor.zerion.android.util.UiUtils.getDialogIcon;
 
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
@@ -74,10 +68,6 @@ public class ImageActivity extends ZerionActivity
 	private ViewPager2 viewPager;
 	private List<AttachmentItem> attachments;
 	private MessageId conversationMessageId;
-
-	private final ActivityResultLauncher<String> launcher =
-			registerForActivityResult(new CreateDocumentAdvanced(),
-					this::onImageUriSelected);
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -106,8 +96,8 @@ public class ImageActivity extends ZerionActivity
 		byte[] messageIdBytes = requireNonNull(i.getByteArrayExtra(ITEM_ID));
 
 		viewModel.expectAttachments(attachments);
-		viewModel.getSaveState().observeEvent(this,
-				this::onImageSaveStateChanged);
+		viewModel.getSavableImage().observeEvent(this,
+				this::onImageReadForSaving);
 
 		setContentView(R.layout.activity_image);
 		layout = findViewById(R.id.layout);
@@ -233,39 +223,22 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	private void showSaveImageDialog() {
-		OnClickListener okListener = (dialog, which) -> {
-			String name = viewModel.getFileName() + "." +
-					getVisibleAttachment().getExtension();
-			try {
-				launcher.launch(name);
-			} catch (ActivityNotFoundException e) {
-				viewModel.onSaveImageError();
-			}
-		};
-		SecureAlertDialogBuilder builder = new SecureAlertDialogBuilder(this,
-				R.style.ZerionDialogTheme);
-		builder.setTitle(getString(R.string.dialog_title_save_image));
-		builder.setMessage(getString(R.string.dialog_message_save_image));
-		builder.setIcon(getDialogIcon(this, R.drawable.ic_security));
-		builder.setPositiveButton(R.string.save_image, okListener);
-		builder.setNegativeButton(R.string.cancel, null);
-		builder.show();
+		AttachmentItem attachment = getVisibleAttachment();
+		SaveCleanCopy.confirm(this, attachment.getMimeType(),
+				() -> viewModel.readForSaving(attachment));
 	}
 
-	private void onImageUriSelected(@Nullable Uri uri) {
-		if (uri == null) return;
-		viewModel.saveImage(getVisibleAttachment(), uri);
-	}
-
-	private void onImageSaveStateChanged(@Nullable Boolean error) {
-		if (error == null) return;
-		int stringRes = error ?
-				R.string.save_image_error : R.string.save_image_success;
-		int colorRes = error ?
-				R.color.zerion_error_red : R.color.zerion_cyan;
+	private void onImageReadForSaving(Boolean ready) {
+		ImageViewModel.SavableImage image = viewModel.takeSavableImage();
+		if (image == null) return;
+		byte[] data = image.getData();
+		if (data != null) {
+			SaveCleanCopy.start(this, data, image.getMimeType());
+			return;
+		}
 		new ZerionSnackbarBuilder()
-				.setBackgroundColor(colorRes)
-				.make(layout, stringRes, LENGTH_LONG)
+				.setBackgroundColor(R.color.zerion_error_fill)
+				.make(layout, R.string.save_image_error, LENGTH_LONG)
 				.show();
 	}
 

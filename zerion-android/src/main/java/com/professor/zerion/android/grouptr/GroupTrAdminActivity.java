@@ -14,6 +14,7 @@ import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -28,13 +29,16 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
+import org.zerionproject.app.api.grouptr.GroupTrPermissions;
 import org.zerionproject.app.api.grouptr.GroupTrSentInvite;
 import org.zerionproject.app.api.grouptr.GroupTrState;
-import org.zerionproject.app.api.grouptr.MemberRole;
+import org.zerionproject.app.api.grouptr.MemberInviteAvailability;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -67,6 +71,19 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private View actionTtl;
 	private TextView actionTtlText;
 	private MaterialButton openChatButton;
+	private View rowMembersMayInvite;
+	private MaterialSwitch membersMayInviteSwitch;
+	private View actionInviteContacts;
+	private TextView actionInviteContactsHint;
+	private View rowIncognito;
+	private TextView incognitoNameText;
+	private long permissions = 0L;
+	private Set<String> granted = new HashSet<>();
+	private Set<String> grantable = new HashSet<>();
+	@Nullable
+	private String incognitoName;
+	private MemberInviteAvailability memberInvites =
+			MemberInviteAvailability.UNAVAILABLE;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -103,6 +120,12 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		actionTtl = findViewById(R.id.actionTtl);
 		actionTtlText = findViewById(R.id.actionTtlText);
 		openChatButton = findViewById(R.id.openChatButton);
+		rowMembersMayInvite = findViewById(R.id.rowMembersMayInvite);
+		membersMayInviteSwitch = findViewById(R.id.membersMayInviteSwitch);
+		actionInviteContacts = findViewById(R.id.actionInviteContacts);
+		actionInviteContactsHint = findViewById(R.id.actionInviteContactsHint);
+		rowIncognito = findViewById(R.id.rowIncognito);
+		incognitoNameText = findViewById(R.id.incognitoNameText);
 
 		openChatButton.setOnClickListener(v -> startActivity(
 				GroupTrConversationActivity.intent(this, groupId)));
@@ -130,6 +153,30 @@ public class GroupTrAdminActivity extends ZerionActivity {
 						s.getCreatorPubKey())) {
 					invites.addAll(groupTrManager.getSentInvites(groupId));
 				}
+				long perms = s == null ? 0L
+						: groupTrManager.getGroupPermissions(groupId);
+				MemberInviteAvailability availability = s == null
+						? MemberInviteAvailability.UNAVAILABLE
+						: groupTrManager.getMemberInviteAvailability(groupId);
+				Set<String> grants = new HashSet<>();
+				Set<String> canGrant = new HashSet<>();
+				if (s != null && Arrays.equals(localPub,
+						s.getCreatorPubKey())) {
+					for (GroupTrMember m : s.getMembers()) {
+						if (Arrays.equals(m.getPubKey(), localPub)) continue;
+						String hex = StringUtils.toHexString(m.getPubKey());
+						if (groupTrManager.hasInviterGrant(groupId,
+								m.getPubKey())) {
+							grants.add(hex);
+						}
+						if (groupTrManager.canReceiveInviterGrant(groupId,
+								m.getPubKey())) {
+							canGrant.add(hex);
+						}
+					}
+				}
+				String incognito = s == null ? null
+						: groupTrManager.getIncognitoName(groupId);
 				runOnUiThread(() -> {
 					if (s == null) {
 						finish();
@@ -137,6 +184,13 @@ public class GroupTrAdminActivity extends ZerionActivity {
 					}
 					this.outOfReach = outOfReach;
 					this.sentInvites = invites;
+					this.permissions = perms;
+					this.granted = grants;
+					this.grantable = canGrant;
+					this.incognitoName = incognito;
+					this.memberInvites = availability == null
+							? MemberInviteAvailability.UNAVAILABLE
+							: availability;
 					bind(s);
 				});
 			} catch (DbException ex) {
@@ -199,6 +253,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView nameView = row.findViewById(R.id.memberName);
 			TextView roleView = row.findViewById(R.id.memberRole);
 			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
+			MaterialSwitch mayAdd = row.findViewById(R.id.memberMayAddSwitch);
 
 			String mName = m.getName().isEmpty() ? "?" : m.getName();
 			boolean self = localPub != null
@@ -214,13 +269,28 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			String role = null;
 			if (memberIsCreator) {
 				role = getString(R.string.grouptr_member_role_creator);
-			} else if (m.getRole() == MemberRole.ADMIN) {
-				role = getString(R.string.grouptr_member_role_admin);
 			}
 			if (!self && outOfReach(m)) {
 				String reach = getString(R.string.grouptr_member_out_of_reach);
 				role = role == null ? reach : role + " \u00b7 " + reach;
 			}
+			String hex = StringUtils.toHexString(m.getPubKey());
+			boolean grantShown = isCreator && !memberIsCreator && !self
+					&& !dissolved;
+			boolean holdsGrant = granted.contains(hex);
+			boolean mayGrant = grantable.contains(hex);
+			if (grantShown && !mayGrant && !holdsGrant && !outOfReach(m)) {
+				String older = getString(
+						R.string.grouptr_member_invite_contact_outdated);
+				role = role == null ? older : role + " \u00b7 " + older;
+			}
+			mayAdd.setOnCheckedChangeListener(null);
+			mayAdd.setVisibility(grantShown ? View.VISIBLE : View.GONE);
+			mayAdd.setChecked(holdsGrant);
+			mayAdd.setEnabled(mayGrant || holdsGrant);
+			final byte[] memberKey = m.getPubKey();
+			mayAdd.setOnCheckedChangeListener((button, checked) ->
+					setInviterGrant(memberKey, checked));
 			if (role != null) {
 				roleView.setText(role);
 				roleView.setVisibility(View.VISIBLE);
@@ -297,8 +367,37 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				.show();
 	}
 
+	private void setInviterGrant(byte[] memberKey, boolean allowed) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.setInviterGrant(groupId, memberKey, allowed);
+				runOnUiThread(this::render);
+			} catch (DbException ex) {
+				runOnUiThread(() -> {
+					toast(R.string.grouptr_error_save);
+					render();
+				});
+			}
+		});
+	}
+
+	private void bindIncognito() {
+		String name = incognitoName;
+		if (name == null) {
+			rowIncognito.setVisibility(View.GONE);
+			return;
+		}
+		rowIncognito.setVisibility(View.VISIBLE);
+		incognitoNameText.setText(getString(R.string.grouptr_incognito_name,
+				name));
+		rowIncognito.setOnClickListener(v ->
+				GroupTrIncognitoPicker.showIncognitoInfo(this, name));
+	}
+
 	private void bindActions(GroupTrState s, boolean isCreator,
 			boolean dissolved) {
+		bindMemberInvites(isCreator, dissolved);
+		bindIncognito();
 		if (dissolved) {
 			actionAddMember.setVisibility(View.GONE);
 			actionTtl.setVisibility(View.GONE);
@@ -322,6 +421,56 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		});
 	}
 
+	private void bindMemberInvites(boolean isCreator, boolean dissolved) {
+		rowMembersMayInvite.setVisibility(isCreator && !dissolved
+				? View.VISIBLE : View.GONE);
+		membersMayInviteSwitch.setOnCheckedChangeListener(null);
+		membersMayInviteSwitch.setChecked(
+				(permissions & GroupTrPermissions.MEMBERS_MAY_INVITE) != 0L);
+		membersMayInviteSwitch.setOnCheckedChangeListener(
+				(button, checked) -> setMembersMayInvite(checked));
+		boolean allowed = memberInvites == MemberInviteAvailability.ALLOWED;
+		int hint = 0;
+		if (memberInvites == MemberInviteAvailability.NOT_ENABLED) {
+			hint = R.string.grouptr_member_invite_creator_only;
+		} else if (memberInvites
+				== MemberInviteAvailability.CREATOR_NOT_A_CONTACT) {
+			hint = R.string.grouptr_member_invite_needs_creator_contact;
+		} else if (memberInvites
+				== MemberInviteAvailability.CREATOR_ON_OLDER_VERSION) {
+			hint = R.string.grouptr_member_invite_creator_outdated;
+		}
+		boolean shown = !isCreator && !dissolved && (allowed || hint != 0);
+		actionInviteContacts.setVisibility(shown ? View.VISIBLE : View.GONE);
+		actionInviteContacts.setEnabled(allowed);
+		if (hint != 0) {
+			actionInviteContactsHint.setText(hint);
+			actionInviteContactsHint.setVisibility(View.VISIBLE);
+		} else {
+			actionInviteContactsHint.setVisibility(View.GONE);
+		}
+		actionInviteContacts.setOnClickListener(v -> {
+			if (memberInvites == MemberInviteAvailability.ALLOWED) {
+				startActivity(GroupTrInviteMembersActivity
+						.memberIntent(this, groupId));
+			}
+		});
+	}
+
+	private void setMembersMayInvite(boolean allowed) {
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.setMembersMayInvite(groupId, allowed);
+				runOnUiThread(this::render);
+			} catch (DbException ex) {
+				runOnUiThread(() -> {
+					toast(R.string.grouptr_error_save);
+					render();
+				});
+			}
+		});
+	}
+
 	private void bindDanger(GroupTrState s, boolean isCreator,
 			boolean dissolved) {
 		dangerContainer.removeAllViews();
@@ -329,7 +478,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView msg = new TextView(this);
 			msg.setText(R.string.grouptr_detail_status_dissolved);
 			msg.setTextColor(getResources().getColor(
-					R.color.zerion_destructive));
+					R.color.zerion_destructive_text));
 			msg.setTextSize(14);
 			int p = (int) (20 * getResources().getDisplayMetrics().density);
 			msg.setPadding(p, p / 2, p, p / 2);
@@ -349,7 +498,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_dissolve);
 			label.setTextColor(getResources().getColor(
-					R.color.zerion_destructive));
+					R.color.zerion_destructive_text));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmDissolve(s));
@@ -362,7 +511,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_leave);
 			label.setTextColor(getResources().getColor(
-					R.color.zerion_destructive));
+					R.color.zerion_destructive_text));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmLeave(s));
@@ -381,46 +530,13 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private void showMemberMenu(GroupTrState s, GroupTrMember m) {
-		boolean isAdmin = m.getRole() == MemberRole.ADMIN;
-		String roleAction = isAdmin
-				? getString(R.string.grouptr_member_action_demote)
-				: getString(R.string.grouptr_member_action_promote);
 		String removeAction =
 				getString(R.string.grouptr_member_action_remove);
 		new SecureAlertDialogBuilder(this)
 				.setTitle(m.getName())
-				.setItems(new String[]{roleAction, removeAction},
-						(d, which) -> {
-							if (which == 0) {
-								if (isAdmin) demote(s, m);
-								else promote(s, m);
-							} else if (which == 1) {
-								confirmRemove(s, m);
-							}
-						})
+				.setItems(new String[]{removeAction},
+						(d, which) -> confirmRemove(s, m))
 				.show();
-	}
-
-	private void promote(GroupTrState s, GroupTrMember m) {
-		ioExecutor.execute(() -> {
-			try {
-				groupTrManager.promoteToAdmin(s.getGroupId(), m.getPubKey());
-				runOnUiThread(this::render);
-			} catch (DbException ex) {
-				runOnUiThread(() -> toast(R.string.grouptr_error_save));
-			}
-		});
-	}
-
-	private void demote(GroupTrState s, GroupTrMember m) {
-		ioExecutor.execute(() -> {
-			try {
-				groupTrManager.demoteToMember(s.getGroupId(), m.getPubKey());
-				runOnUiThread(this::render);
-			} catch (DbException ex) {
-				runOnUiThread(() -> toast(R.string.grouptr_error_save));
-			}
-		});
 	}
 
 	private void showAddMemberDialog(GroupTrState s) {

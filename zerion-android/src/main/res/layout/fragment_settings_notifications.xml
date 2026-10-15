@@ -44,6 +44,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_sign_in_switch"
+					android:contentDescription="@string/notify_sign_in_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -77,6 +78,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_private_messages_switch"
+					android:contentDescription="@string/notify_private_messages_setting_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -110,6 +112,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_group_messages_switch"
+					android:contentDescription="@string/notify_group_messages_setting_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -143,6 +146,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_channel_posts_switch"
+					android:contentDescription="@string/notify_channel_posts_setting_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -176,6 +180,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_voice_calls_switch"
+					android:contentDescription="@string/notify_voice_calls_setting_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -207,6 +212,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_quick_reply_switch"
+					android:contentDescription="@string/notify_quick_reply_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -240,6 +246,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/notify_vibration_switch"
+					android:contentDescription="@string/notify_vibration_setting"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />

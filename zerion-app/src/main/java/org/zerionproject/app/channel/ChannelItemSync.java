@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
@@ -47,6 +48,9 @@ final class ChannelItemSync {
 	private final BdfWriterFactory writerFactory;
 	private final String kind;
 	private final SecureRandom random = new SecureRandom();
+	private final Map<String, byte[]> cursors = new ConcurrentHashMap<>();
+	private final Set<String> storedCursorsForgotten =
+			ConcurrentHashMap.newKeySet();
 
 	ChannelItemSync(SettingsManager settings, BdfReaderFactory readerFactory,
 			BdfWriterFactory writerFactory, String kind) {
@@ -171,31 +175,32 @@ final class ChannelItemSync {
 
 	@Nullable
 	byte[] cursor(byte[] channelId) throws DbException {
-		String v = settings.getSettings(cursorNamespace(channelId)).get(kind);
-		if (v == null || v.isEmpty()) return null;
-		try {
-			byte[] c = java.util.Base64.getDecoder().decode(v);
-			return c.length == CURSOR_BYTES ? c : null;
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
+		forgetStoredCursor(channelId);
+		byte[] c = cursors.get(ChannelStore.hex(channelId));
+		return c == null ? null : c.clone();
 	}
 
 	void setCursor(byte[] channelId, @Nullable byte[] cursor)
 			throws DbException {
-		if (cursor == null) {
-			settings.deleteSettings(cursorNamespace(channelId),
-					Collections.singletonList(kind));
+		forgetStoredCursor(channelId);
+		String id = ChannelStore.hex(channelId);
+		if (cursor == null || cursor.length != CURSOR_BYTES) {
+			cursors.remove(id);
 			return;
 		}
-		Settings s = new Settings();
-		s.put(kind, java.util.Base64.getEncoder()
-				.withoutPadding().encodeToString(cursor));
-		settings.mergeSettings(s, cursorNamespace(channelId));
+		cursors.put(id, cursor.clone());
+	}
+
+	private void forgetStoredCursor(byte[] channelId) throws DbException {
+		String ns = cursorNamespace(channelId);
+		if (storedCursorsForgotten.contains(ns)) return;
+		settings.deleteSettings(ns, Collections.singletonList(kind));
+		storedCursorsForgotten.add(ns);
 	}
 
 	synchronized void removeAll(byte[] channelId) throws DbException {
 		List<String> k = Collections.singletonList(kind);
+		cursors.remove(ChannelStore.hex(channelId));
 		settings.deleteSettings(stateNamespace(channelId), k);
 		settings.deleteSettings(cursorNamespace(channelId), k);
 	}

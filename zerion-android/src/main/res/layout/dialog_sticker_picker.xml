@@ -17,6 +17,8 @@
             android:id="@+id/tabStandard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
             android:text="@string/sticker_tab_standard"
             android:textSize="16sp"
             android:textStyle="bold"
@@ -29,6 +31,8 @@
             android:id="@+id/tabMine"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
             android:layout_marginStart="16dp"
             android:text="@string/sticker_tab_mine"
             android:textSize="16sp"
@@ -45,8 +49,8 @@
 
         <ImageButton
             android:id="@+id/importStickerButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:src="@android:drawable/ic_input_add"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/sticker_import"

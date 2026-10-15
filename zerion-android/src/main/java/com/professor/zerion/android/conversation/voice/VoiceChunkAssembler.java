@@ -61,7 +61,7 @@ public class VoiceChunkAssembler {
 	}
 
 	@Inject
-	VoiceChunkAssembler() {
+	public VoiceChunkAssembler() {
 	}
 
 	private static String scopeKey(ContactId contactId, boolean local) {
@@ -149,6 +149,20 @@ public class VoiceChunkAssembler {
 			if (s == null) return false;
 			Assembly a = s.assemblies.get(memoId);
 			return a != null && a.failed;
+		}
+	}
+
+	public void forget(ContactId contactId, boolean local, String memoId) {
+		synchronized (lock) {
+			Scope s = existingScope(contactId, local);
+			if (s != null) s.assemblies.remove(memoId);
+		}
+	}
+
+	public void forgetContact(ContactId contactId) {
+		synchronized (lock) {
+			scopes.remove(scopeKey(contactId, true));
+			scopes.remove(scopeKey(contactId, false));
 		}
 	}
 

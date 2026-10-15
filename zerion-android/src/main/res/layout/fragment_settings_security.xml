@@ -44,6 +44,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/lock_switch"
+					android:contentDescription="@string/pref_lock_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 
@@ -74,6 +75,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/screenshot_protection_switch"
+					android:contentDescription="@string/pref_screenshot_protection_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -217,6 +219,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/typing_indicators_switch"
+					android:contentDescription="@string/pref_typing_indicators_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -256,6 +259,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/voice_calls_switch"
+					android:contentDescription="@string/pref_voice_calls_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 
@@ -286,6 +290,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/video_calls_switch"
+					android:contentDescription="@string/pref_video_calls_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 
@@ -368,6 +373,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/decoy_switch"
+					android:contentDescription="@string/decoy_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 
@@ -436,7 +442,7 @@
 						android:text="@string/wipe_password_title"
 						android:textSize="15sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_destructive" />
+						android:textColor="@color/zerion_destructive_text" />
 
 					<TextView
 						android:id="@+id/wipe_password_summary"
@@ -445,7 +451,7 @@
 						android:layout_marginTop="2dp"
 						android:text="@string/wipe_password_summary_disabled"
 						android:textSize="12sp"
-						android:textColor="@color/zerion_destructive_muted" />
+						android:textColor="@color/zerion_destructive_text" />
 
 				</LinearLayout>
 
@@ -480,7 +486,7 @@
 						android:text="@string/pref_wipe_on_failed_logins_title"
 						android:textSize="15sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_destructive" />
+						android:textColor="@color/zerion_destructive_text" />
 
 					<TextView
 						android:layout_width="wrap_content"
@@ -488,12 +494,13 @@
 						android:layout_marginTop="2dp"
 						android:text="@string/pref_wipe_on_failed_logins_summary"
 						android:textSize="12sp"
-						android:textColor="@color/zerion_destructive_muted" />
+						android:textColor="@color/zerion_destructive_text" />
 
 				</LinearLayout>
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/wipe_on_failed_logins_switch"
+					android:contentDescription="@string/pref_wipe_on_failed_logins_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 

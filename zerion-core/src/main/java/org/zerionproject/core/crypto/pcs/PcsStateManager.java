@@ -5,6 +5,7 @@ import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.PcsSessionState;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.lifecycle.Service;
@@ -55,14 +56,15 @@ public class PcsStateManager implements Service {
 	@Nullable
 	public PcsSessionState loadSendState(Transaction txn, ContactId contactId)
 			throws DbException {
-		Object[] row = db.getPcsMode2SessionState(txn, contactId,
+		PcsSessionRow row = db.getPcsMode2SessionState(txn, contactId,
 				PCS_DIRECTION_SEND);
 		if (row == null) return null;
-		byte[] rootKeyBytes = (byte[]) row[3];
-		if (!(Boolean) row[7] || rootKeyBytes == null) return null;
+		byte[] rootKeyBytes = row.getRootKey();
+		if (!row.isMode2Enabled() || rootKeyBytes == null) return null;
 		SecretKey rootKey = new SecretKey(rootKeyBytes);
-		return new PcsSessionState(new SecretKey((byte[]) row[0]),
-				(Integer) row[1], (Integer) row[2], rootKey, null);
+		return new PcsSessionState(new SecretKey(row.getChainKey()),
+				row.getMessageNumber(), row.getPreviousChainLength(), rootKey,
+				null);
 	}
 
 	public void stripDeadState(ContactId contactId) throws DbException {
@@ -77,22 +79,23 @@ public class PcsStateManager implements Service {
 
 	private void stripDeadState(Transaction txn, ContactId contactId,
 			int direction) throws DbException {
-		Object[] row = db.getPcsMode2SessionState(txn, contactId, direction);
+		PcsSessionRow row = db.getPcsMode2SessionState(txn, contactId,
+				direction);
 		if (row == null) return;
-		byte[] dhPrivate = (byte[]) row[4];
-		byte[] blob = (byte[]) row[8];
-		if (dhPrivate == null && row[5] == null && row[6] == null
-				&& blob == null) {
+		byte[] dhPrivate = row.getDhPrivateKey();
+		byte[] blob = row.getMode3FullStateBlob();
+		if (dhPrivate == null && row.getDhPublicKey() == null
+				&& row.getDhRemotePublicKey() == null && blob == null) {
 			return;
 		}
 		if (dhPrivate != null) Arrays.fill(dhPrivate, (byte) 0);
 		if (blob != null) Arrays.fill(blob, (byte) 0);
-		byte[] rootKeyBytes = (byte[]) row[3];
+		byte[] rootKeyBytes = row.getRootKey();
 		db.setPcsMode2SessionState(txn, contactId, direction,
-				new SecretKey((byte[]) row[0]), (Integer) row[1],
-				(Integer) row[2],
+				new SecretKey(row.getChainKey()), row.getMessageNumber(),
+				row.getPreviousChainLength(),
 				rootKeyBytes == null ? null : new SecretKey(rootKeyBytes),
-				null, null, null, (Boolean) row[7], null);
+				null, null, null, row.isMode2Enabled(), null);
 	}
 
 	public void initializePairingRoot(Transaction txn, ContactId contactId,

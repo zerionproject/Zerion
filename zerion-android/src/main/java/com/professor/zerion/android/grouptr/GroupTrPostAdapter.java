@@ -21,7 +21,12 @@ import org.zerionproject.app.api.grouptr.GroupTrPost;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import static org.zerionproject.core.util.StringUtils.toHexString;
 
 class GroupTrPostAdapter
 		extends RecyclerView.Adapter<GroupTrPostAdapter.PostHolder> {
@@ -43,6 +48,16 @@ class GroupTrPostAdapter
 		String formatTime(long ts);
 
 		String formatDuration(long ms);
+
+		void onPostLongClick(GroupTrPost p);
+
+		boolean onPostClick(GroupTrPost p);
+
+		boolean isSelected(GroupTrPost p);
+
+		String quoteAuthor(GroupTrPost p);
+
+		void onQuoteClick(byte[] postId);
 	}
 
 	private static void showLinkDialog(android.view.View v, String url) {
@@ -53,6 +68,22 @@ class GroupTrPostAdapter
 							.newInstance(url);
 			f.show(((androidx.fragment.app.FragmentActivity) c)
 					.getSupportFragmentManager(), f.getUniqueTag());
+		}
+	}
+
+	static String excerpt(android.content.Context ctx, GroupTrPost p) {
+		GroupTrBody.Parsed parsed = GroupTrBody.parse(p.getBody());
+		switch (parsed.kind) {
+			case VOICE:
+				return ctx.getString(R.string.voice_message);
+			case IMAGE:
+				return ctx.getString(R.string.image);
+			case VIDEO:
+				return ctx.getString(R.string.video);
+			default:
+				String t = parsed.text == null ? "" : parsed.text;
+				int nl = t.indexOf('\n');
+				return nl >= 0 ? t.substring(0, nl) : t;
 		}
 	}
 
@@ -120,6 +151,7 @@ class GroupTrPostAdapter
 	}
 
 	void removePost(GroupTrPost p) {
+		GroupTrMediaCache.evictPost(p);
 		for (int i = 0; i < posts.size(); i++) {
 			if (samePost(posts.get(i), p)) {
 				posts.remove(i);
@@ -129,25 +161,52 @@ class GroupTrPostAdapter
 		}
 	}
 
-	private static final androidx.collection.LruCache<String, Bitmap>
-			MEDIA_CACHE = new androidx.collection.LruCache<String, Bitmap>(
-					16 * 1024 * 1024) {
-		@Override
-		protected int sizeOf(String key, Bitmap value) {
-			return value.getByteCount();
-		}
-	};
+	static String key(GroupTrPost p) {
+		byte[] id = p.getPostId();
+		if (id != null) return toHexString(id);
+		return p.getEpoch() + ":" + p.getTimestamp() + ":"
+				+ toHexString(p.getSenderPubKey());
+	}
 
-	private static String mediaKey(GroupTrPost p, String kind) {
-		byte[] pk = p.getSenderPubKey();
-		StringBuilder sb = new StringBuilder();
-		sb.append(kind).append('_').append(p.getEpoch()).append('_')
-				.append(p.getTimestamp()).append('_');
-		int n = Math.min(8, pk == null ? 0 : pk.length);
-		for (int i = 0; i < n; i++) {
-			sb.append(String.format(java.util.Locale.US, "%02x", pk[i]));
+	@Nullable
+	GroupTrPost find(String key) {
+		for (GroupTrPost p : posts) {
+			if (key(p).equals(key)) return p;
 		}
-		return sb.toString();
+		return null;
+	}
+
+	int positionOf(String key) {
+		for (int i = 0; i < posts.size(); i++) {
+			if (key(posts.get(i)).equals(key)) return i;
+		}
+		return -1;
+	}
+
+	List<GroupTrPost> currentPosts() {
+		return new ArrayList<>(posts);
+	}
+
+	void refresh(String key) {
+		int i = positionOf(key);
+		if (i >= 0) notifyItemChanged(i);
+	}
+
+	void removePosts(Collection<byte[]> postIds) {
+		Set<String> gone = new HashSet<>();
+		for (byte[] id : postIds) gone.add(toHexString(id));
+		for (int i = posts.size() - 1; i >= 0; i--) {
+			if (gone.contains(key(posts.get(i)))) {
+				posts.remove(i);
+				notifyItemRemoved(i);
+			}
+		}
+		for (int i = 0; i < posts.size(); i++) {
+			byte[] quoted = GroupTrBody.replyTarget(posts.get(i).getBody());
+			if (quoted != null && gone.contains(toHexString(quoted))) {
+				notifyItemChanged(i);
+			}
+		}
 	}
 
 	static boolean samePost(GroupTrPost a, GroupTrPost b) {
@@ -234,6 +293,7 @@ class GroupTrPostAdapter
 		PostHolder(View v, int viewType) {
 			super(v);
 			this.viewType = viewType;
+			v.setBackgroundResource(R.drawable.list_item_background_selectable);
 		}
 
 		void bind(GroupTrPost p) {
@@ -241,6 +301,14 @@ class GroupTrPostAdapter
 			if (sender instanceof TextView) {
 				cb.bindSender((TextView) sender, p);
 			}
+			itemView.setActivated(cb.isSelected(p));
+			selectable(itemView, p);
+			selectable(itemView.findViewById(R.id.bubble), p);
+			selectable(itemView.findViewById(R.id.mediaBubble), p);
+			selectable(itemView.findViewById(R.id.postText), p);
+			selectable(itemView.findViewById(R.id.imageView), p);
+			selectable(itemView.findViewById(R.id.voicePlayButton), p);
+			selectable(itemView.findViewById(R.id.quoteBlock), p);
 			GroupTrBody.Parsed parsed = GroupTrBody.parse(p.getBody());
 			switch (viewType) {
 				case VOICE_IN:
@@ -261,7 +329,51 @@ class GroupTrPostAdapter
 			}
 		}
 
+		private void selectable(@Nullable View v, GroupTrPost p) {
+			if (v == null) return;
+			v.setOnLongClickListener(x -> {
+				cb.onPostLongClick(p);
+				return true;
+			});
+			if (v == itemView || v.getId() == R.id.bubble) {
+				v.setOnClickListener(x -> cb.onPostClick(p));
+			}
+		}
+
+		private void bindQuote(GroupTrPost p, GroupTrBody.Parsed parsed) {
+			View block = itemView.findViewById(R.id.quoteBlock);
+			if (block == null) return;
+			if (parsed.replyTo == null) {
+				block.setVisibility(View.GONE);
+				return;
+			}
+			byte[] target = parsed.replyTo;
+			TextView author = itemView.findViewById(R.id.quoteAuthor);
+			TextView excerpt = itemView.findViewById(R.id.quoteText);
+			GroupTrPost quoted = find(toHexString(target));
+			android.content.Context ctx = itemView.getContext();
+			if (quoted == null) {
+				author.setVisibility(View.GONE);
+				excerpt.setText(R.string.reply_original_unavailable);
+				block.setContentDescription(
+						ctx.getString(R.string.reply_original_unavailable));
+			} else {
+				String name = cb.quoteAuthor(quoted);
+				String line = excerpt(ctx, quoted);
+				author.setVisibility(View.VISIBLE);
+				author.setText(name);
+				excerpt.setText(line);
+				block.setContentDescription(name + ", " + line);
+			}
+			block.setVisibility(View.VISIBLE);
+			block.setOnClickListener(v -> {
+				if (cb.onPostClick(p)) return;
+				cb.onQuoteClick(target);
+			});
+		}
+
 		private void bindText(GroupTrPost p, GroupTrBody.Parsed parsed) {
+			bindQuote(p, parsed);
 			TextView body = itemView.findViewById(R.id.postText);
 			TextView time = itemView.findViewById(R.id.postTime);
 			if (!com.professor.zerion.android.channel.ChannelInviteSpanUtil
@@ -288,7 +400,10 @@ class GroupTrPostAdapter
 			time.setText(cb.formatTime(p.getTimestamp()));
 			byte[] audio = parsed.payload;
 			playBtn.setImageResource(R.drawable.ic_play_arrow_24dp);
-			playBtn.setOnClickListener(v -> cb.onVoiceClick(playBtn, audio));
+			playBtn.setOnClickListener(v -> {
+				if (cb.onPostClick(p)) return;
+				cb.onVoiceClick(playBtn, audio);
+			});
 		}
 
 		private void bindImage(GroupTrPost p, GroupTrBody.Parsed parsed) {
@@ -298,9 +413,13 @@ class GroupTrPostAdapter
 			time.setText(cb.formatTime(p.getTimestamp()));
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
-			img.setOnClickListener(v -> cb.onImageClick(bytes, mime));
-			String cacheKey = mediaKey(p, "i");
-			Bitmap cached = MEDIA_CACHE.get(cacheKey);
+			img.setOnClickListener(v -> {
+				if (cb.onPostClick(p)) return;
+				cb.onImageClick(bytes, mime);
+			});
+			String cacheKey = GroupTrMediaCache.key(p,
+					GroupTrMediaCache.IMAGE);
+			Bitmap cached = GroupTrMediaCache.get(cacheKey);
 			if (cached != null && !cached.isRecycled()) {
 				img.setImageBitmap(cached);
 				return;
@@ -311,7 +430,7 @@ class GroupTrPostAdapter
 			DECODE_EXECUTOR.execute(() -> {
 				Bitmap bmp = SafeImageDecoder.decode(bytes, 1024);
 				if (bmp == null) return;
-				MEDIA_CACHE.put(cacheKey, bmp);
+				GroupTrMediaCache.put(cacheKey, bmp);
 				img.post(() -> {
 					if (imageToken == token && mediaImage == img) {
 						img.setImageBitmap(bmp);
@@ -329,8 +448,9 @@ class GroupTrPostAdapter
 			time.setText(cb.formatTime(p.getTimestamp()));
 			byte[] bytes = parsed.payload;
 			String mime = parsed.mime;
-			String cacheKey = mediaKey(p, "v");
-			Bitmap cachedThumb = MEDIA_CACHE.get(cacheKey);
+			String cacheKey = GroupTrMediaCache.key(p,
+					GroupTrMediaCache.VIDEO);
+			Bitmap cachedThumb = GroupTrMediaCache.get(cacheKey);
 			if (cachedThumb != null && !cachedThumb.isRecycled()) {
 				thumb.setImageBitmap(cachedThumb);
 			} else {
@@ -340,7 +460,7 @@ class GroupTrPostAdapter
 				DECODE_EXECUTOR.execute(() -> {
 					Bitmap thumbBmp = cb.videoThumb(bytes);
 					if (thumbBmp == null) return;
-					MEDIA_CACHE.put(cacheKey, thumbBmp);
+					GroupTrMediaCache.put(cacheKey, thumbBmp);
 					thumb.post(() -> {
 						if (imageToken == token && mediaImage == thumb) {
 							thumb.setImageBitmap(thumbBmp);
@@ -349,10 +469,14 @@ class GroupTrPostAdapter
 				});
 			}
 			View bubble = itemView.findViewById(R.id.mediaBubble);
-			bubble.setOnClickListener(v -> cb.onVideoClick(bytes, mime));
+			bubble.setOnClickListener(v -> {
+				if (cb.onPostClick(p)) return;
+				cb.onVideoClick(bytes, mime);
+			});
 		}
 
 		void recycle() {
+			itemView.setActivated(false);
 			imageToken = null;
 			if (mediaImage != null) {
 				mediaImage.setImageDrawable(null);

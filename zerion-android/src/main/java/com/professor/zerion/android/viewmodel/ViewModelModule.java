@@ -26,6 +26,14 @@ public abstract class ViewModelModule {
 
 	@Binds
 	@IntoMap
+	@ViewModelKey(com.professor.zerion.android.conversation
+			.ContactConnectionViewModel.class)
+	abstract ViewModel bindContactConnectionViewModel(
+			com.professor.zerion.android.conversation
+					.ContactConnectionViewModel contactConnectionViewModel);
+
+	@Binds
+	@IntoMap
 	@ViewModelKey(ChatsViewModel.class)
 	abstract ViewModel bindChatsViewModel(ChatsViewModel chatsViewModel);
 

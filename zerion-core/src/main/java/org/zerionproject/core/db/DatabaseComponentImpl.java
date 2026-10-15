@@ -19,6 +19,7 @@ import org.zerionproject.core.api.db.CommitAction.Visitor;
 import org.zerionproject.core.api.db.ContactExistsException;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbCallable;
+import org.zerionproject.core.api.db.DbClosedException;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.DbRunnable;
 import org.zerionproject.core.api.db.EventAction;
@@ -32,9 +33,11 @@ import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.db.NoSuchPendingContactException;
 import org.zerionproject.core.api.db.NoSuchTransportException;
 import org.zerionproject.core.api.db.NullableDbCallable;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.db.PendingContactExistsException;
 import org.zerionproject.core.api.db.TaskAction;
 import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.db.event.PurgeRequestedEvent;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.identity.Author;
@@ -136,6 +139,21 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public boolean purgeDeletedContent() throws DbException {
+		if (lock.getReadHoldCount() > 0) throw new IllegalStateException();
+		if (lock.getWriteHoldCount() > 0) throw new IllegalStateException();
+		if (closed.get()) return true;
+		lock.writeLock().lock();
+		try {
+			return db.purgeDeletedContent();
+		} catch (DbClosedException e) {
+			return true;
+		} finally {
+			lock.writeLock().unlock();
+		}
+	}
+
+	@Override
 	public Transaction startTransaction(boolean readOnly) throws DbException {
 		if (lock.getReadHoldCount() > 0) throw new IllegalStateException();
 		if (lock.getWriteHoldCount() > 0) throw new IllegalStateException();
@@ -168,6 +186,8 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			if (transaction.isCommitted()) {
 				for (CommitAction a : transaction.getActions())
 					a.accept(visitor);
+				if (transaction.isPurgeRequested())
+					eventBus.broadcast(new PurgeRequestedEvent());
 			} else {
 				db.abortTransaction(txn);
 			}
@@ -428,6 +448,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsMessage(txn, m))
 			throw new NoSuchMessageException();
 		db.deleteMessage(txn, m);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -438,6 +459,18 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsMessage(txn, m))
 			throw new NoSuchMessageException();
 		db.deleteMessageMetadata(txn, m);
+		transaction.requestPurge();
+	}
+
+	@Override
+	public void eraseMessageBody(Transaction transaction, MessageId m)
+			throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsMessage(txn, m))
+			throw new NoSuchMessageException();
+		db.eraseMessageBody(txn, m);
+		transaction.requestPurge();
 	}
 
 	@Nullable
@@ -693,6 +726,13 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public Collection<MessageId> getUndeliverableMessages(
+			Transaction transaction) throws DbException {
+		T txn = unbox(transaction);
+		return db.getUndeliverableMessages(txn);
+	}
+
+	@Override
 	public Collection<MessageId> getMessagesToShare(Transaction transaction)
 			throws DbException {
 		T txn = unbox(transaction);
@@ -932,6 +972,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsPendingContact(txn, p))
 			throw new NoSuchPendingContactException();
 		db.setPendingContactOurKeys(txn, p, publicKey, privateKey);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1119,8 +1160,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (keys.isEmpty()) return;
 		T txn = unbox(transaction);
 		db.deleteSettings(txn, namespace, keys);
+		transaction.requestPurge();
 		transaction.attach(new SettingsUpdatedEvent(namespace,
 				db.getSettings(txn, namespace)));
+	}
+
+	@Override
+	public Collection<String> getSettingsNamespaces(Transaction transaction,
+			String prefix) throws DbException {
+		T txn = unbox(transaction);
+		return db.getSettingsNamespaces(txn, prefix);
 	}
 
 	@Override
@@ -1130,6 +1179,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (namespaces.isEmpty()) return;
 		T txn = unbox(transaction);
 		db.deleteSettingsNamespaces(txn, namespaces);
+		transaction.requestPurge();
 		for (String namespace : namespaces) {
 			transaction.attach(new SettingsUpdatedEvent(namespace,
 					new Settings()));
@@ -1144,6 +1194,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		db.removeContact(txn, c);
+		transaction.requestPurge();
 		transaction.attach(new ContactRemovedEvent(c));
 	}
 
@@ -1158,6 +1209,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		Collection<ContactId> affected =
 				db.getGroupVisibility(txn, id).keySet();
 		db.removeGroup(txn, id);
+		transaction.requestPurge();
 		transaction.attach(new GroupRemovedEvent(g));
 		transaction.attach(new GroupVisibilityUpdatedEvent(INVISIBLE,
 				affected));
@@ -1171,6 +1223,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, a))
 			throw new NoSuchIdentityException();
 		db.removeIdentity(txn, a);
+		transaction.requestPurge();
 		transaction.attach(new IdentityRemovedEvent(a));
 	}
 
@@ -1182,6 +1235,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsMessage(txn, m))
 			throw new NoSuchMessageException();
 		db.removeMessage(txn, m);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1192,6 +1246,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsGroup(txn, g))
 			throw new NoSuchGroupException();
 		db.removeAllGroupMessages(txn, g);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1202,6 +1257,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsPendingContact(txn, p))
 			throw new NoSuchPendingContactException();
 		db.removePendingContact(txn, p);
+		transaction.requestPurge();
 		transaction.attach(new PendingContactRemovedEvent(p));
 	}
 
@@ -1211,6 +1267,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
 		T txn = unbox(transaction);
 		db.removeTemporaryMessages(txn);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1231,6 +1288,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsTransport(txn, t))
 			throw new NoSuchTransportException();
 		db.removeTransportKeys(txn, t, k);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1394,6 +1452,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, local))
 			throw new NoSuchIdentityException();
 		db.setHandshakeKeyPair(txn, local, publicKey, privateKey);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1405,6 +1464,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, local))
 			throw new NoSuchIdentityException();
 		db.setHybridHandshakeKeyPair(txn, local, publicKey, privateKey);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1415,6 +1475,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsIdentity(txn, local))
 			throw new NoSuchIdentityException();
 		db.setMlDsaSigKeyPair(txn, local, publicKey, privateKey);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1502,6 +1563,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 			if (db.containsTransport(txn, t))
 				db.updateTransportKeys(txn, ks);
 		}
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1521,6 +1583,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		db.removePcsState(txn, c);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1531,6 +1594,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		db.removePcsSessionState(txn, c, direction);
+		transaction.requestPurge();
 	}
 
 	@Override
@@ -1548,12 +1612,13 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		db.setPcsMode2SessionState(txn, c, direction, chainKey, messageNumber,
 				previousChainLength, rootKey, dhPrivateKey, dhPublicKey,
 				dhRemotePublicKey, mode2Enabled, mode3FullStateBlob);
+		transaction.requestPurge();
 	}
 
 	@Override
 	@Nullable
-	public Object[] getPcsMode2SessionState(Transaction transaction, ContactId c,
-			int direction) throws DbException {
+	public PcsSessionRow getPcsMode2SessionState(Transaction transaction,
+			ContactId c, int direction) throws DbException {
 		T txn = unbox(transaction);
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
@@ -1577,6 +1642,7 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 		if (!db.containsContact(txn, c))
 			throw new NoSuchContactException();
 		db.removePqRatchetState(txn, c);
+		transaction.requestPurge();
 	}
 
 	private class CommitActionVisitor implements Visitor {

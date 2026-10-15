@@ -46,6 +46,7 @@ public class ChatSettingsActivity extends ZerionActivity {
 	ConnectionRegistry connectionRegistry;
 
 	private ConversationViewModel viewModel;
+	private ContactConnectionViewModel connectionViewModel;
 	private ContactId contactId;
 	private SharedPreferences prefs;
 
@@ -76,6 +77,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 		component.inject(this);
 		viewModel = new ViewModelProvider(this, viewModelFactory)
 				.get(ConversationViewModel.class);
+		connectionViewModel = new ViewModelProvider(this, viewModelFactory)
+				.get(ContactConnectionViewModel.class);
 	}
 
 	@Override
@@ -107,6 +110,10 @@ public class ChatSettingsActivity extends ZerionActivity {
 		trustIndicatorText = findViewById(R.id.trust_indicator_text);
 		muteNotificationsSwitch = findViewById(R.id.mute_notifications_switch);
 		vibrationSwitch = findViewById(R.id.vibration_switch);
+		findViewById(R.id.mute_notifications_option).setOnClickListener(
+				v -> muteNotificationsSwitch.toggle());
+		findViewById(R.id.vibration_option).setOnClickListener(
+				v -> vibrationSwitch.toggle());
 		securityLevelTitle = findViewById(R.id.security_level_title);
 		securityLevelDescription = findViewById(R.id.security_level_description);
 		disappearingMessagesOption = findViewById(R.id.disappearing_messages_option);
@@ -124,6 +131,10 @@ public class ChatSettingsActivity extends ZerionActivity {
 		keysOutOfSyncCard = findViewById(R.id.keys_out_of_sync_card);
 		readdContactButton = findViewById(R.id.readd_contact_button);
 		readdContactButton.setOnClickListener(v -> readdContact());
+		ContactConnectionSection connectionSection =
+				new ContactConnectionSection(findViewById(R.id.connection_rows));
+		connectionViewModel.setContactId(contactId);
+		connectionViewModel.getLines().observe(this, connectionSection::show);
 		viewModel.areKeysOutOfSync().observe(this, outOfSync ->
 				keysOutOfSyncCard.setVisibility(Boolean.TRUE.equals(outOfSync)
 						? View.VISIBLE : View.GONE));

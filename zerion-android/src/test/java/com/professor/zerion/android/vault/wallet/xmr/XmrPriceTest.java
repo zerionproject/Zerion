@@ -51,6 +51,22 @@ public class XmrPriceTest {
 	}
 
 	@Test
+	public void anImplausiblePriceIsRefused() {
+		for (String price : new String[] {"0.000001", "0.5", "1000001",
+				"99999999"}) {
+			assertEquals(price, 0, XmrPrice.parseKrakenLast(
+					KRAKEN_USD.replace("162.95000", price)), 0.0);
+		}
+		assertEquals(1, XmrPrice.parseKrakenLast(
+				KRAKEN_USD.replace("162.95000", "1")), 0.0);
+		assertEquals(1_000_000, XmrPrice.parseKrakenLast(
+				KRAKEN_USD.replace("162.95000", "1000000")), 0.0);
+		assertTrue(new XmrPrice.Rates(0.01, 5e6).isEmpty());
+		assertTrue(XmrPrice.Rates.fromJson(
+				"{\"usd\":0.001,\"eur\":1e9}").isEmpty());
+	}
+
+	@Test
 	public void getSelectsCurrency() {
 		XmrPrice.Rates r = new XmrPrice.Rates(162.95, 150.20);
 		assertEquals(162.95, r.get("USD"), 0.001);

@@ -48,6 +48,8 @@ public interface DatabaseComponent extends TransactionManager {
 
 	void close() throws DbException;
 
+	boolean purgeDeletedContent() throws DbException;
+
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			@Nullable PublicKey handshake, boolean verified) throws DbException;
 
@@ -107,6 +109,8 @@ public interface DatabaseComponent extends TransactionManager {
 	void deleteMessage(Transaction txn, MessageId m) throws DbException;
 
 	void deleteMessageMetadata(Transaction txn, MessageId m) throws DbException;
+
+	void eraseMessageBody(Transaction txn, MessageId m) throws DbException;
 
 	@Nullable
 	Ack generateAck(Transaction txn, ContactId c, int maxMessages)
@@ -175,6 +179,9 @@ public interface DatabaseComponent extends TransactionManager {
 			throws DbException;
 
 	Collection<MessageId> getPendingMessages(Transaction txn)
+			throws DbException;
+
+	Collection<MessageId> getUndeliverableMessages(Transaction txn)
 			throws DbException;
 
 	Collection<MessageId> getMessagesToShare(Transaction txn)
@@ -298,6 +305,9 @@ public interface DatabaseComponent extends TransactionManager {
 	void deleteSettings(Transaction txn, String namespace,
 			Collection<String> keys) throws DbException;
 
+	Collection<String> getSettingsNamespaces(Transaction txn, String prefix)
+			throws DbException;
+
 	void deleteSettingsNamespaces(Transaction txn,
 			Collection<String> namespaces) throws DbException;
 
@@ -407,8 +417,8 @@ public interface DatabaseComponent extends TransactionManager {
 			@Nullable byte[] mode3FullStateBlob) throws DbException;
 
 	@Nullable
-	Object[] getPcsMode2SessionState(Transaction txn, ContactId c, int direction)
-			throws DbException;
+	PcsSessionRow getPcsMode2SessionState(Transaction txn, ContactId c,
+			int direction) throws DbException;
 
 	boolean containsPqRatchetState(Transaction txn, ContactId c)
 			throws DbException;

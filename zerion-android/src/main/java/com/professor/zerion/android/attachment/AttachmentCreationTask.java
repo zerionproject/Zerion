@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import androidx.annotation.Nullable;
 
@@ -67,6 +68,7 @@ class AttachmentCreationTask {
 	private final ContentResolver contentResolver;
 	private final ImageCompressor imageCompressor;
 	private final MetadataStripper metadataStripper;
+	private final PdfCleaner pdfCleaner;
 	private final GroupId groupId;
 	private final Collection<Uri> uris;
 	private final boolean needsSize;
@@ -80,13 +82,14 @@ class AttachmentCreationTask {
 			ContentResolver contentResolver,
 			AttachmentCreator attachmentCreator,
 			ImageCompressor imageCompressor,
-			MetadataStripper metadataStripper,
+			MetadataStripper metadataStripper, PdfCleaner pdfCleaner,
 			GroupId groupId, Collection<Uri> uris, boolean needsSize,
 			PrivateMessageFormat messageFormat) {
 		this.messagingManager = messagingManager;
 		this.contentResolver = contentResolver;
 		this.imageCompressor = imageCompressor;
 		this.metadataStripper = metadataStripper;
+		this.pdfCleaner = pdfCleaner;
 		this.groupId = groupId;
 		this.uris = uris;
 		this.needsSize = needsSize;
@@ -193,16 +196,14 @@ class AttachmentCreationTask {
 				is = new FileInputStream(strippedFile);
 			} else {
 				byte[] audio = cleanAudio(readAtMost(uri, MAX_ATTACHMENT_SIZE));
+				contentType = sentAudioType(audio);
 				fileSize = audio.length;
 				is = new ByteArrayInputStream(audio);
 			}
 		} catch (SecurityException e) {
 			throw new IOException(e);
 		} catch (IOException e) {
-			if (strippedFile != null) {
-				com.professor.zerion.android.vault.utils.SecureMemory
-						.secureDeleteFile(strippedFile);
-			}
+			if (strippedFile != null) MetadataStripper.discard(strippedFile);
 			throw e;
 		}
 
@@ -220,10 +221,7 @@ class AttachmentCreationTask {
 					groupId, timestamp, contentType, is, fileSize, progressCallback);
 		} finally {
 			tryToClose(is);
-			if (strippedFile != null) {
-				com.professor.zerion.android.vault.utils.SecureMemory
-						.secureDeleteFile(strippedFile);
-			}
+			if (strippedFile != null) MetadataStripper.discard(strippedFile);
 		}
 	}
 
@@ -236,22 +234,36 @@ class AttachmentCreationTask {
 		} catch (SecurityException e) {
 			throw new IOException(e);
 		}
-		if (!AttachmentDocuments.contentMatches(type, data)) {
-			throw new IOException("document content does not match its type");
-		}
+		byte[] clean = cleanDocument(type, data);
 		MessagingManager.ProgressCallback progressCallback = progress -> {
 			AttachmentCreator creator = this.attachmentCreator;
 			if (creator != null) {
 				creator.onAttachmentProgress(uri, progress);
 			}
 		};
-		InputStream is = new ByteArrayInputStream(data);
+		InputStream is = new ByteArrayInputStream(clean);
 		try {
 			return messagingManager.addLocalAttachmentStreaming(groupId,
-					System.currentTimeMillis(), type, is, data.length,
+					System.currentTimeMillis(), type, is, clean.length,
 					progressCallback);
 		} finally {
 			tryToClose(is);
+		}
+	}
+
+	private byte[] cleanDocument(String type, byte[] data) throws IOException {
+		if (!AttachmentDocuments.contentMatches(type, data)) {
+			throw MediaRefusedException.cannotClean(
+					"document content does not match its type");
+		}
+		if (!AttachmentDocuments.PDF.equals(type)) return data;
+		try {
+			return pdfCleaner.clean(data, MAX_ATTACHMENT_SIZE);
+		} catch (RuntimeException e) {
+			throw MediaRefusedException.cannotClean(
+					"document cannot be cleaned");
+		} finally {
+			Arrays.fill(data, (byte) 0);
 		}
 	}
 
@@ -293,6 +305,15 @@ class AttachmentCreationTask {
 		return clean;
 	}
 
+	static String sentAudioType(byte[] clean) throws MediaRefusedException {
+		String type = SharedMediaSanitizer.audioType(clean);
+		if (type == null || !SUPPORTED_AUDIO_TYPES.contains(type)) {
+			throw MediaRefusedException.cannotClean(
+					"audio type cannot be sent");
+		}
+		return type;
+	}
+
 	static boolean remuxes(String contentType) {
 		return contentType.startsWith("video/")
 				|| ISO_MEDIA_AUDIO_TYPES.contains(contentType);
@@ -302,8 +323,7 @@ class AttachmentCreationTask {
 			throws MediaRefusedException {
 		if (remuxed.hasVideo()) return remuxed.getMimeType();
 		if (remuxed.isWebm()) {
-			com.professor.zerion.android.vault.utils.SecureMemory
-					.secureDeleteFile(remuxed.getFile());
+			MetadataStripper.discard(remuxed.getFile());
 			throw MediaRefusedException.cannotClean("audio only in webm");
 		}
 		return "audio/mp4";

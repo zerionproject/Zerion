@@ -7,6 +7,8 @@ import org.zerionproject.core.account.ProfileManager;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.settings.Settings;
@@ -17,6 +19,7 @@ import org.robolectric.annotation.Config;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
@@ -63,8 +66,8 @@ public class BackupSnapshotGatesRootChangesTest {
 							if (slot != DatabaseComponent.PCS_DIRECTION_SEND) {
 								return null;
 							}
-							return new Object[] {root, 0, 0, root, null, null,
-									null, true, null};
+							return new PcsSessionRow(root, 0, 0, root, null,
+									null, null, true, null);
 						case "setPcsMode2SessionState":
 						case "removePcsSessionState":
 							writes.add(name);
@@ -148,11 +151,27 @@ public class BackupSnapshotGatesRootChangesTest {
 		AccountBackupManager manager = new AccountBackupManager(app, db,
 				accounts, profiles, identities, store);
 
-		byte[] bundle = manager.snapshotBundle();
+		AtomicReference<Integer> copied = new AtomicReference<>();
+		AtomicReference<Boolean> storedWhileSaving = new AtomicReference<>();
+		manager.copyAccount((bundle, length) -> {
+			copied.set((int) length);
+			int before = writes.size();
+			boolean stored;
+			try {
+				stored = store.storePending(contact, 0,
+						new SecretKey(new byte[SecretKey.LENGTH]), false);
+			} catch (DbException e) {
+				throw new IOException(e);
+			}
+			storedWhileSaving.set(stored || writes.size() > before);
+			assertFalse("no pause before the copy is saved", pauseWritten.get());
+		});
 
-		assertTrue(bundle.length > 0);
+		assertTrue(copied.get() > 0);
 		assertEquals("a root change while the copy was written was refused",
 				Boolean.FALSE, storedDuringSnapshot.get());
+		assertEquals("a root change while the copy was saved was refused",
+				Boolean.FALSE, storedWhileSaving.get());
 		assertTrue("the pause was written", pauseWritten.get());
 		assertFalse("the gate is lifted afterwards", store.isSnapshotting());
 		File[] left = app.getCacheDir().listFiles(

@@ -37,6 +37,15 @@ public interface B4Constants {
 
 	int B4_PENDING_DIAL_FAILURE_THRESHOLD = 3;
 
+	String B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX =
+			"contact_pending_retry_at.";
+
+	long B4_PENDING_RETRY_MIN_MS = 2 * 60_000L;
+
+	long B4_PENDING_RETRY_MAX_MS = 15 * 60_000L;
+
+	long B4_ANNOUNCE_FALLBACK_MS = 10 * 60_000L;
+
 	long B4_ANNOUNCE_RATE_LIMIT_MS = 3_600_000L;
 
 	String B4_LOCAL_KEY_PREFIX = "_local_";
@@ -56,4 +65,5 @@ public interface B4Constants {
 			"alice_onion3_announced_at_ms";
 	String B4_ALICE_LAST_ROTATION_TIME_MS_KEY = "alice_last_rotation_time_ms";
 	String B4_ALICE_ROTATION_PHASE_KEY = "alice_rotation_phase";
+	String B4_ALICE_NEXT_ANNOUNCED_KEY = "alice_onion3_next_announced";
 }

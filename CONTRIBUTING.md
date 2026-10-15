@@ -84,6 +84,9 @@ Historical posts and changelog entries keep their text and carry a dated note.
 * No comments that narrate history ("removed X", "was Y before", "see commit …").
   Put rationale in the commit message and keep the source clean.
 * Fully qualify exceptions when the import isn't already present.
+* Before adding to one of the largest classes, read
+  [docs/MAINTAINABILITY.md](docs/MAINTAINABILITY.md): it names the units that
+  own wallet settings, call audio framing and group post bounds.
 
 ## License
 

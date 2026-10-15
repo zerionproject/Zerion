@@ -42,6 +42,14 @@ public interface SettingsManager {
 		mergeSettings(blank, namespace);
 	}
 
+	default void deleteSettings(Transaction txn, String namespace,
+			Collection<String> keys) throws DbException {
+		if (keys.isEmpty()) return;
+		Settings blank = new Settings();
+		for (String key : keys) blank.put(key, "");
+		mergeSettings(txn, blank, namespace);
+	}
+
 	default void deleteNamespaces(Collection<String> namespaces)
 			throws DbException {
 		for (String namespace : namespaces) {
@@ -49,5 +57,10 @@ public interface SettingsManager {
 			if (stored.isEmpty()) continue;
 			deleteSettings(namespace, stored.keySet());
 		}
+	}
+
+	default Collection<String> getNamespaces(String prefix)
+			throws DbException {
+		return java.util.Collections.emptyList();
 	}
 }

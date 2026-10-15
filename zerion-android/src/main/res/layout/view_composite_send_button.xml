@@ -3,7 +3,7 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="wrap_content"
-	android:layout_height="44dp"
+	android:layout_height="48dp"
 	android:layout_gravity="bottom"
 	android:orientation="horizontal"
 	android:gravity="center_vertical"
@@ -12,70 +12,71 @@
 
 	<androidx.appcompat.widget.AppCompatImageButton
 		android:id="@+id/attachmentButton"
-		android:layout_width="44dp"
-		android:layout_height="44dp"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
 		android:background="?attr/selectableItemBackground"
 		android:clickable="true"
 		android:contentDescription="@string/add_attachment"
 		android:enabled="true"
 		android:focusable="true"
-		android:padding="10dp"
+		android:padding="12dp"
 		android:scaleType="center"
 		android:visibility="visible"
 		app:srcCompat="@drawable/ic_add_circle"
-		app:tint="@color/zerion_primary_accent" />
+		app:tint="@color/zerion_accent_icon" />
 
 	<FrameLayout
-		android:layout_width="44dp"
-		android:layout_height="44dp"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
 		android:layout_marginStart="0dp">
 
 		<androidx.appcompat.widget.AppCompatImageButton
 			android:id="@+id/voiceButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackground"
 			android:clickable="true"
 			android:contentDescription="@string/record_voice_message"
 			android:enabled="true"
 			android:focusable="true"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:scaleType="center"
 			android:visibility="visible"
 			app:srcCompat="@drawable/ic_mic_24dp"
-			app:tint="@color/zerion_primary_accent" />
+			app:tint="@color/zerion_accent_icon" />
 
 		<androidx.appcompat.widget.AppCompatImageButton
 			android:id="@+id/sendButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackground"
 			android:clickable="true"
 			android:contentDescription="@string/send"
 			android:enabled="false"
 			android:focusable="true"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:scaleType="center"
 			android:visibility="invisible"
 			app:srcCompat="@drawable/social_send_now_white"
-			app:tint="@color/zerion_primary_accent" />
+			app:tint="@color/zerion_accent_icon" />
 
 		<ImageView
 			android:id="@+id/bombBadge"
 			android:layout_width="16dp"
 			android:layout_height="16dp"
 			android:layout_gravity="top|end"
-			android:layout_marginTop="4dp"
-			android:layout_marginEnd="4dp"
+			android:layout_marginTop="6dp"
+			android:layout_marginEnd="6dp"
 			android:visibility="invisible"
 			app:srcCompat="@drawable/ic_bomb"
-			app:tint="@color/zerion_warning" />
+			app:tint="@color/zerion_warning_text" />
 
 		<ProgressBar
 			android:id="@+id/progressBar"
 			style="@style/Zerion.Progress.Circular"
 			android:layout_width="44dp"
 			android:layout_height="44dp"
+			android:layout_gravity="center"
 			android:visibility="invisible" />
 
 	</FrameLayout>

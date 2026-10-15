@@ -4,6 +4,7 @@ import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.NoSuchGroupException;
 import org.zerionproject.core.api.db.NoSuchMessageException;
@@ -43,6 +44,7 @@ import static org.zerionproject.core.api.sync.validation.IncomingMessageHook.Del
 import static org.zerionproject.core.api.sync.validation.MessageState.DELIVERED;
 import static org.zerionproject.core.api.sync.validation.MessageState.INVALID;
 import static org.zerionproject.core.api.sync.validation.MessageState.PENDING;
+import static org.zerionproject.core.api.sync.validation.MessageState.UNKNOWN;
 @ThreadSafe
 @NotNullByDefault
 class ValidationManagerImpl implements ValidationManager, Service,
@@ -67,6 +69,7 @@ class ValidationManagerImpl implements ValidationManager, Service,
 	@Override
 	public void startService() {
 		if (used.getAndSet(true)) throw new IllegalStateException();
+		invalidateUndeliverableMessagesAsync();
 		validateOutstandingMessagesAsync();
 		deliverOutstandingMessagesAsync();
 		shareOutstandingMessagesAsync();
@@ -107,12 +110,72 @@ class ValidationManagerImpl implements ValidationManager, Service,
 		dbExecutor.execute(() -> validateNextMessage(unvalidated));
 	}
 
+	private void invalidateUndeliverableMessagesAsync() {
+		dbExecutor.execute(this::invalidateUndeliverableMessages);
+	}
+
+	@DatabaseExecutor
+	private void invalidateUndeliverableMessages() {
+		try {
+			Queue<MessageId> undeliverable = new LinkedList<>(
+					db.transactionWithResult(true,
+							db::getUndeliverableMessages));
+			invalidateNextUndeliverableAsync(undeliverable);
+		} catch (DbException e) {
+		}
+	}
+
+	private void invalidateUndeliverableAsync(MessageId id) {
+		Queue<MessageId> undeliverable = new LinkedList<>();
+		undeliverable.add(id);
+		invalidateNextUndeliverableAsync(undeliverable);
+	}
+
+	private void invalidateNextUndeliverableAsync(
+			Queue<MessageId> undeliverable) {
+		if (undeliverable.isEmpty()) return;
+		dbExecutor.execute(() -> invalidateNextUndeliverable(undeliverable));
+	}
+
+	@DatabaseExecutor
+	private void invalidateNextUndeliverable(Queue<MessageId> undeliverable) {
+		MessageId id = undeliverable.poll();
+		if (id == null) throw new AssertionError();
+		try {
+			Queue<MessageId> invalidate = new LinkedList<>();
+			db.transaction(false, txn -> {
+				if (isUndeliverable(txn, id)) {
+					invalidateMessage(txn, id);
+					addDependentsToInvalidate(txn, id, invalidate);
+				}
+			});
+			invalidateNextMessageAsync(invalidate);
+			invalidateNextUndeliverableAsync(undeliverable);
+		} catch (NoSuchMessageException e) {
+			invalidateNextUndeliverableAsync(undeliverable);
+		} catch (DbException e) {
+		}
+	}
+
+	@DatabaseExecutor
+	private boolean isUndeliverable(Transaction txn, MessageId id)
+			throws DbException {
+		MessageState state = db.getMessageState(txn, id);
+		if (state != UNKNOWN && state != PENDING) return false;
+		try {
+			db.getMessage(txn, id);
+			return false;
+		} catch (MessageDeletedException e) {
+			return true;
+		}
+	}
+
 	@DatabaseExecutor
 	private void validateNextMessage(Queue<MessageId> unvalidated) {
+		MessageId id = unvalidated.poll();
+		if (id == null) throw new AssertionError();
 		try {
 			Pair<Message, Group> mg = db.transactionWithResult(true, txn -> {
-				MessageId id = unvalidated.poll();
-				if (id == null) throw new AssertionError();
 				Message m = db.getMessage(txn, id);
 				Group g = db.getGroup(txn, m.getGroupId());
 				return new Pair<>(m, g);
@@ -120,6 +183,9 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			validateMessageAsync(mg.getFirst(), mg.getSecond());
 			validateNextMessageAsync(unvalidated);
 		} catch (NoSuchMessageException e) {
+			validateNextMessageAsync(unvalidated);
+		} catch (MessageDeletedException e) {
+			invalidateUndeliverableAsync(id);
 			validateNextMessageAsync(unvalidated);
 		} catch (NoSuchGroupException e) {
 			validateNextMessageAsync(unvalidated);
@@ -193,6 +259,9 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			if (!toShare.isEmpty()) shareNextMessageAsync(toShare);
 			deliverNextPendingMessageAsync(pending);
 		} catch (NoSuchMessageException e) {
+			deliverNextPendingMessageAsync(pending);
+		} catch (MessageDeletedException e) {
+			invalidateUndeliverableAsync(id);
 			deliverNextPendingMessageAsync(pending);
 		} catch (NoSuchGroupException e) {
 			deliverNextPendingMessageAsync(pending);

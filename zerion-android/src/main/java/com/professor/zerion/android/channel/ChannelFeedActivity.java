@@ -23,6 +23,7 @@ import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
@@ -107,6 +108,9 @@ public class ChannelFeedActivity extends ZerionActivity
 	private boolean weArePublisher = false;
 	private boolean canPost = false;
 	private boolean discussionsEnabledCached = true;
+	private java.util.Set<Long> commentExceptions =
+			java.util.Collections.emptySet();
+	private byte[] myEditorKey = new byte[0];
 	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
 	private static final int MENU_ITEM_DISCUSSIONS = 7341;
 	private static final int MENU_ITEM_MUTE = 7342;
@@ -200,6 +204,17 @@ public class ChannelFeedActivity extends ZerionActivity
 	private static final long FOREGROUND_REFRESH_IDLE_MS = 12_000L;
 	private static final int ACTIVE_ROUNDS_AFTER_HIT = 4;
 	private int activeRoundsRemaining = 0;
+	private final java.security.SecureRandom refreshJitter =
+			new java.security.SecureRandom();
+
+	static long jitteredRefreshDelay(long baseMs, double unit) {
+		return Math.round(baseMs * (0.5 + unit));
+	}
+
+	private long nextRefreshDelay(long baseMs) {
+		return jitteredRefreshDelay(baseMs, refreshJitter.nextDouble());
+	}
+
 	@Nullable
 	private android.os.Handler refreshHandler;
 	private final Runnable refreshTick = new Runnable() {
@@ -213,7 +228,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				if (activeRoundsRemaining > 0) {
 					activeRoundsRemaining--;
 				}
-				refreshHandler.postDelayed(this, delay);
+				refreshHandler.postDelayed(this, nextRefreshDelay(delay));
 			}
 		}
 	};
@@ -232,7 +247,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		refreshHandler = new android.os.Handler(
 				android.os.Looper.getMainLooper());
 		refreshHandler.postDelayed(refreshTick,
-				FOREGROUND_REFRESH_ACTIVE_MS);
+				nextRefreshDelay(FOREGROUND_REFRESH_ACTIVE_MS));
 	}
 
 	private void refreshFromPublisherSafely() {
@@ -342,10 +357,13 @@ public class ChannelFeedActivity extends ZerionActivity
 			java.util.Map<Long, Integer> commentCounts =
 					new java.util.HashMap<>();
 			boolean discussionsEnabled = true;
+			java.util.Set<Long> exceptions = java.util.Collections.emptySet();
 			if (state != null) {
 				try {
 					discussionsEnabled =
 							channelManager.areDiscussionsEnabled(channelId);
+					exceptions =
+							channelManager.getCommentExceptions(channelId);
 				} catch (DbException ignored) {
 				}
 				java.util.Map<Long, java.util.List<ChannelReaction>>
@@ -408,6 +426,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			boolean mayPost = false;
 			boolean outdated = false;
 			long givenUp = 0L;
+			byte[] editorKey = new byte[0];
 			if (state != null) {
 				try {
 					mayPost = channelManager.canPost(channelId);
@@ -416,6 +435,12 @@ public class ChannelFeedActivity extends ZerionActivity
 								channelId);
 					} else {
 						givenUp = channelManager.getPostsGivenUp(channelId);
+						if (mayPost) {
+							byte[] mine = channelManager
+									.getMyChannelPublicKey(channelId);
+							editorKey = Arrays.copyOf(mine,
+									Math.min(32, mine.length));
+						}
 					}
 				} catch (DbException ignored) {
 				}
@@ -424,11 +449,15 @@ public class ChannelFeedActivity extends ZerionActivity
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
 			boolean finalDiscussionsEnabled = discussionsEnabled;
+			java.util.Set<Long> finalExceptions = exceptions;
 			boolean finalMayPost = mayPost;
 			boolean finalOutdated = outdated;
 			long finalGivenUp = givenUp;
+			byte[] finalEditorKey = editorKey;
 			runOnUiThreadUnlessDestroyed(() -> {
 				canPost = finalMayPost;
+				myEditorKey = finalEditorKey;
+				commentExceptions = finalExceptions;
 				render(finalState, finalPosts, finalStatus,
 						thumbnails, reactions, commentCounts,
 						finalDiscussionsEnabled);
@@ -492,7 +521,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			emptyView.setVisibility(View.GONE);
 			boolean pinToBottom = !feedRendered || isFeedAtBottom();
 			adapter.setPosts(posts, thumbnails, reactions,
-					commentCounts, discussionsEnabled);
+					commentCounts, discussionsEnabled, commentExceptions);
 			if (pinToBottom) {
 				recycler.scrollToPosition(posts.size() - 1);
 			}
@@ -640,7 +669,23 @@ public class ChannelFeedActivity extends ZerionActivity
 		actions.add(() -> showReactionPicker(post));
 		labels.add(getString(R.string.channels_action_copy_text));
 		actions.add(() -> copyPostText(post));
-		if (weArePublisher) {
+		boolean manage = mayChange(post);
+		boolean deleted = ChannelConstants.DELETED_POST_PLACEHOLDER.equals(
+				post.getBody());
+		if (!deleted) addSaveActions(post, labels, actions);
+		if (manage && !deleted
+				&& post.isEditableAt(System.currentTimeMillis())) {
+			labels.add(getString(R.string.action_edit_message));
+			actions.add(() -> showEditDialog(post));
+		}
+		if (manage && !deleted) {
+			boolean on = commentsOn(post);
+			labels.add(getString(on
+					? R.string.channels_action_comments_off
+					: R.string.channels_action_comments_on));
+			actions.add(() -> setPostComments(post, !on));
+		}
+		if (manage) {
 			labels.add(getString(R.string.channels_action_delete));
 			actions.add(() -> confirmDelete(post));
 		}
@@ -651,10 +696,83 @@ public class ChannelFeedActivity extends ZerionActivity
 				.show();
 	}
 
+	private boolean mayChange(ChannelPost post) {
+		if (weArePublisher) return true;
+		byte[] signer = post.getDelegateSignerEd25519PubKey();
+		return canPost && signer != null && myEditorKey.length > 0
+				&& Arrays.equals(signer, myEditorKey);
+	}
+
+	private boolean commentsOn(ChannelPost post) {
+		return discussionsEnabledCached
+				!= commentExceptions.contains(post.getSeqNum());
+	}
+
+	private void showEditDialog(ChannelPost post) {
+		LinearLayout container = new LinearLayout(this);
+		container.setOrientation(LinearLayout.VERTICAL);
+		int pad = (int) (16f * getResources().getDisplayMetrics().density);
+		container.setPadding(pad, pad / 2, pad, 0);
+		EditText input = new EditText(this);
+		input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+				| android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+				| android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+		input.setText(post.getBody());
+		input.setSelection(post.getBody().length());
+		input.setContentDescription(getString(R.string.action_edit_message));
+		container.addView(input, new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				LinearLayout.LayoutParams.WRAP_CONTENT));
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this)
+				.setTitle(R.string.action_edit_message)
+				.setView(container)
+				.setPositiveButton(android.R.string.ok, (d, w) -> {
+					String text = input.getText() == null
+							? "" : input.getText().toString().trim();
+					if (!text.isEmpty() && !text.equals(post.getBody())) {
+						handleEdit(post, text);
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void handleEdit(ChannelPost post, String text) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.editPost(channelId, post.getSeqNum(), text);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (DbException ex) {
+				int message = ex instanceof org.zerionproject.app.api.channel
+						.ChannelPostTooLongException
+						? R.string.text_too_long
+						: R.string.channels_post_edit_failed;
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
+						message, Toast.LENGTH_SHORT).show());
+			}
+		});
+	}
+
+	private void setPostComments(ChannelPost post, boolean enabled) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.setPostCommentsEnabled(channelId,
+						post.getSeqNum(), enabled);
+				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (DbException ex) {
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
+						R.string.channels_discussions_toggle_failed_toast,
+						Toast.LENGTH_LONG).show());
+			}
+		});
+	}
+
 	private void openComments(ChannelPost post) {
-		if (!discussionsEnabledCached && !weArePublisher) {
-			Toast.makeText(this,
-					R.string.channels_comments_disabled_notice,
+		if (!commentsOn(post) && !weArePublisher) {
+			Toast.makeText(this, discussionsEnabledCached
+							? R.string.channels_post_comments_off
+							: R.string.channels_comments_disabled_notice,
 					Toast.LENGTH_SHORT).show();
 			return;
 		}
@@ -723,6 +841,46 @@ public class ChannelFeedActivity extends ZerionActivity
 				Toast.LENGTH_SHORT).show();
 	}
 
+	private void addSaveActions(ChannelPost post, List<CharSequence> labels,
+			List<Runnable> actions) {
+		List<ChannelPost.ChannelAttachment> savable = new ArrayList<>();
+		for (ChannelPost.ChannelAttachment att : post.getAttachments()) {
+			if (SaveCleanCopy.canSave(att.getMimeType())) savable.add(att);
+		}
+		for (int n = 0; n < savable.size(); n++) {
+			ChannelPost.ChannelAttachment att = savable.get(n);
+			String label = getString(att.getMimeType()
+					.toLowerCase(Locale.ROOT).startsWith("image/")
+					? R.string.save_image : R.string.save_file);
+			if (savable.size() > 1) label = label + " " + (n + 1);
+			labels.add(label);
+			actions.add(() -> SaveCleanCopy.confirm(this, att.getMimeType(),
+					() -> saveAttachment(post.getSeqNum(),
+							att.getBlobHash())));
+		}
+	}
+
+	private void saveAttachment(long seq, byte[] hash) {
+		ioExecutor.execute(() -> {
+			AttachmentBlob blob;
+			try {
+				blob = channelManager.fetchAttachment(channelId, seq, hash);
+			} catch (DbException | java.io.IOException ex) {
+				blob = null;
+			}
+			AttachmentBlob found = blob;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (found == null) {
+					Toast.makeText(this, R.string.save_file_error,
+							Toast.LENGTH_LONG).show();
+				} else {
+					SaveCleanCopy.start(this, found.getPlaintextBytes(),
+							found.getMimeType());
+				}
+			});
+		});
+	}
+
 	private long readSelectedTtlSeconds() {
 		return selectedTtlSeconds;
 	}
@@ -753,7 +911,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private void updateTtlButtonTint() {
 		int color = selectedTtlSeconds > 0L
 				? androidx.core.content.ContextCompat.getColor(this,
-						R.color.zerion_primary_accent)
+						R.color.zerion_accent_icon)
 				: androidx.core.content.ContextCompat.getColor(this,
 						R.color.zerion_text_secondary);
 		androidx.core.widget.ImageViewCompat.setImageTintList(ttlButton,
@@ -917,6 +1075,12 @@ public class ChannelFeedActivity extends ZerionActivity
 					Toast.LENGTH_LONG).show();
 			return;
 		}
+		java.util.List<android.net.Uri> picked = uris;
+		com.professor.zerion.android.attachment.PdfSendNotice.confirm(this,
+				picked, () -> publishPicked(picked));
+	}
+
+	private void publishPicked(java.util.List<android.net.Uri> uris) {
 		String body = composeInput.getText() == null
 				? "" : composeInput.getText().toString().trim();
 		String composedBody = body.isEmpty() ? " " : body;
@@ -1042,8 +1206,9 @@ public class ChannelFeedActivity extends ZerionActivity
 					out);
 			if (scaled != frame) scaled.recycle();
 			frame.recycle();
-			return out.toByteArray();
-		} catch (RuntimeException ex) {
+			return com.professor.zerion.android.attachment.ImageScrubber
+					.scrub(out.toByteArray());
+		} catch (java.io.IOException | RuntimeException ex) {
 			return null;
 		} finally {
 			try {
@@ -1257,6 +1422,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		private java.util.Map<Long, Integer> commentCounts =
 				java.util.Collections.emptyMap();
 		private boolean discussionsEnabled = true;
+		private java.util.Set<Long> commentExceptions =
+				java.util.Collections.emptySet();
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
 		private final OnCommentTap commentTapListener;
@@ -1274,12 +1441,14 @@ public class ChannelFeedActivity extends ZerionActivity
 				java.util.Map<Long, java.util.List<org.zerionproject.app
 						.api.channel.ChannelReaction>> reactions,
 				java.util.Map<Long, Integer> commentCounts,
-				boolean discussionsEnabled) {
+				boolean discussionsEnabled,
+				java.util.Set<Long> commentExceptions) {
 			this.posts = p;
 			this.thumbnails = thumbnails;
 			this.reactions = reactions;
 			this.commentCounts = commentCounts;
 			this.discussionsEnabled = discussionsEnabled;
+			this.commentExceptions = commentExceptions;
 			notifyDataSetChanged();
 		}
 
@@ -1299,15 +1468,19 @@ public class ChannelFeedActivity extends ZerionActivity
 			int count = commentCounts.containsKey(p.getSeqNum())
 					? commentCounts.get(p.getSeqNum()) : 0;
 			holder.bind(p, attachmentTapListener, thumbnails, reactions,
-					count, discussionsEnabled, commentTapListener);
+					count, discussionsEnabled
+							!= commentExceptions.contains(p.getSeqNum()),
+					commentTapListener);
 			if (p.isWithheld()) {
 				holder.itemView.setOnLongClickListener(null);
 				holder.itemView.setLongClickable(false);
 			} else {
-				holder.itemView.setOnLongClickListener(v -> {
+				View.OnLongClickListener menu = v -> {
 					longPressListener.onPostLongPress(p);
 					return true;
-				});
+				};
+				holder.itemView.setOnLongClickListener(menu);
+				holder.setAttachmentLongPress(menu);
 			}
 		}
 
@@ -1344,6 +1517,12 @@ public class ChannelFeedActivity extends ZerionActivity
 					R.id.channelPostReactionsView);
 		}
 
+		void setAttachmentLongPress(View.OnLongClickListener listener) {
+			for (int n = 0; n < attachments.getChildCount(); n++) {
+				attachments.getChildAt(n).setOnLongClickListener(listener);
+			}
+		}
+
 		void bind(ChannelPost p,
 				PostAdapter.OnAttachmentTap attachmentTapListener,
 				java.util.Map<String, byte[]> thumbnails,
@@ -1363,6 +1542,10 @@ public class ChannelFeedActivity extends ZerionActivity
 						: "💬 " + itemView.getContext()
 								.getString(R.string.channels_comments_action);
 				commentBadge.setText(label);
+				String action = itemView.getContext()
+						.getString(R.string.channels_action_comments);
+				commentBadge.setContentDescription(commentCount > 0
+						? action + ", " + commentCount : action);
 				commentBadge.setOnClickListener(v ->
 						commentTapListener.onCommentTap(p));
 			} else {
@@ -1399,10 +1582,11 @@ public class ChannelFeedActivity extends ZerionActivity
 					? View.GONE : View.VISIBLE);
 			bindAttachments(p, attachmentTapListener, thumbnails);
 			bindReactions(p, reactions);
-			timestamp.setText(
-					com.professor.zerion.android.util.UiUtils.formatChannelHour(
-							itemView.getContext(),
-							p.getTimestampHourMs()));
+			String when = com.professor.zerion.android.util.UiUtils
+					.formatChannelHour(itemView.getContext(),
+							p.getTimestampHourMs());
+			timestamp.setText(p.isEdited() ? when + " · " + itemView
+					.getContext().getString(R.string.message_edited) : when);
 
 			if (p.signedByDelegate()) {
 				signerBadge.setText(itemView.getContext()

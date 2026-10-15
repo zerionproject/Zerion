@@ -56,6 +56,10 @@ public class TorPublishTracker implements EventListener {
 		return published;
 	}
 
+	public boolean isPublished() {
+		return Boolean.TRUE.equals(published.getValue());
+	}
+
 	LiveData<Long> getClockSkewSeconds() {
 		return clockSkewSeconds;
 	}

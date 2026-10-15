@@ -40,11 +40,16 @@ public class ZerionApplicationImpl extends Application
 	private AndroidComponent applicationComponent;
 	@Nullable
 	private volatile Thread eagerSingletonsInit;
+	private volatile long processStartedAt;
 
 	@Override
 	protected void attachBaseContext(Context base) {
 		if (!IS_DEBUG_BUILD) {
 			com.professor.zerion.android.util.SilentStandardStreams.install();
+		}
+		if (android.os.Process.isIsolated()) {
+			super.attachBaseContext(base);
+			return;
 		}
 		Localizer.initialize(EarlyPrefs.language(base));
 		super.attachBaseContext(
@@ -55,6 +60,8 @@ public class ZerionApplicationImpl extends Application
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		if (android.os.Process.isIsolated()) return;
+		processStartedAt = System.currentTimeMillis();
 
 		DynamicColors.applyToActivitiesIfAvailable(this);
 
@@ -98,6 +105,7 @@ public class ZerionApplicationImpl extends Application
 
 		@Override
 		public void onActivityResumed(@NonNull android.app.Activity a) {
+			com.professor.zerion.android.util.SecureClipboard.watchFocus(a);
 		}
 
 		@Override
@@ -144,6 +152,26 @@ public class ZerionApplicationImpl extends Application
 		}
 	}
 
+	@VisibleForTesting
+	void sweepFilesOfAnEarlierProcess() {
+		if (!getPackageName().equals(Application.getProcessName())) return;
+		try {
+			com.professor.zerion.android.util.CacheSweeper.sweepLeftovers(this,
+					processStartedAt);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@VisibleForTesting
+	void armUsbPanicOfThisProcess(AndroidComponent component) {
+		if (!getPackageName().equals(Application.getProcessName())) return;
+		try {
+			com.professor.zerion.android.security.UsbPanic.armIfConfigured(this,
+					component);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
 	protected AndroidComponent createApplicationComponent() {
 		AndroidComponent androidComponent = DaggerAndroidComponent.builder()
 				.appModule(new AppModule(this))
@@ -155,6 +183,8 @@ public class ZerionApplicationImpl extends Application
 					.injectEagerSingletons(androidComponent);
 			BriarCoreEagerSingletons.Helper.injectEagerSingletons(androidComponent);
 			AndroidEagerSingletons.Helper.injectEagerSingletons(androidComponent);
+			sweepFilesOfAnEarlierProcess();
+			armUsbPanicOfThisProcess(androidComponent);
 		}, "EagerSingletonsInit");
 		eagerSingletonsInit = init;
 		init.start();

@@ -214,7 +214,7 @@ public class B4OnionRotationTest extends BrambleMockTestCase {
 		}});
 		B4OnionRotation early = rotation(now + 1000);
 		early.bindAdapter(new Recording());
-		early.onPeerSyncSessionEstablished(cid);
+		early.onPeerSyncSessionEstablished(cid, null);
 		assertEquals(1, merged.size());
 		String state = new String(FieldEncryption.decrypt(key,
 				org.zerionproject.core.util.StringUtils.fromHexString(

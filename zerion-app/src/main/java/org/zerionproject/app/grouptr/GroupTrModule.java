@@ -2,6 +2,7 @@ package org.zerionproject.app.grouptr;
 
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
+import org.zerionproject.app.api.messaging.MessagingManager;
 
 import javax.inject.Singleton;
 
@@ -19,8 +20,9 @@ public class GroupTrModule {
 	@Provides
 	@Singleton
 	GroupTrManager provideGroupTrManager(LifecycleManager lifecycleManager,
-			GroupTrManagerImpl manager) {
+			MessagingManager messagingManager, GroupTrManagerImpl manager) {
 		lifecycleManager.registerOpenDatabaseHook(manager);
+		messagingManager.setInvitationCards(manager::invitationStillOpen);
 		return manager;
 	}
 }

@@ -20,22 +20,31 @@ A mesh frame wraps one payload for flooding.
 | 18 | payloadLen (uint32) | 4 | |
 | 22 | payload | variable | opaque, a sealed-sender envelope |
 
-Header size is 22 bytes. The maximum payload is 64 KiB. A relay never opens the
-payload; it only decrements the hop count and rebroadcasts.
+Header size is 22 bytes. The forwarder accepts payloads of up to 32 KiB. A relay
+never opens the payload; it only decrements the hop count and rebroadcasts.
 
 ## Forwarding
 
 The forwarder floods frames, deduplicates them, and limits the rate.
 
 - Origination assigns a random 16-byte message id, sets the hop count to a value
-  between 5 and 7 (the maximum of 7 minus a small random amount, so the initial
-  hop count does not reveal the origin), marks the id seen, and broadcasts on all
-  links.
+  between 5 and 7 (the maximum of 7 minus a random 0 to 2), marks the id seen,
+  and broadcasts on all links. A relay cannot tell from a hop count of 5 or 6
+  whether the neighbour it heard the frame from originated it, but relays
+  always decrement, so a frame that arrives with the full 7 comes straight from
+  its origin; that is the case for about one frame in three a device
+  originates.
 - On receiving a frame, the forwarder applies a rate limit, decodes it,
-  deduplicates on the message id against a seen set, delivers the payload to the
-  local listener, and rebroadcasts the decremented frame on every link,
-  excluding only the peer it arrived from on the arriving link.
-- A store holds recent frames so that a device joining a link is caught up.
+  deduplicates on the message id against a seen set, rebroadcasts the
+  decremented frame on every link, excluding only the peer it arrived from on
+  the arriving link, and then delivers the payload to the local listener. From
+  3.0.18 the rebroadcast comes first, so the extra work a recipient does to open
+  an envelope addressed to it no longer delays its relay; up to 3.0.17 the
+  payload was delivered first, and the later relay could show a neighbour
+  which frames were meant for the device.
+- Recent frames are kept in memory, but nothing hands them to a device that
+  links later: a device that comes into range after a frame passed receives
+  that message only when its sender sends it again (see Delivery below).
 
 `MeshForwarder.onReceive` reports whether a frame was new to the node; the
 Bluetooth link uses it to judge whether a neighbour is carrying anything.
@@ -47,7 +56,9 @@ the forwarder accepts at most 200 frames per second in total. When the set is
 full of unexpired entries, the neighbour holding the most entries gives up its
 oldest so a neighbour holding fewer is admitted; neighbour identities on a radio
 link are cheap to invent, so this bounds what a flood spread over many
-identities can shut out. The store holds up to 2 MiB. The maximum hop count is 7.
+identities can shut out. The in-memory store of recent frames holds up to 2 MiB
+and 1024 frames, the neighbour holding the most giving up its oldest first. The
+maximum hop count is 7.
 
 ## Bluetooth Low Energy link
 
@@ -66,10 +77,16 @@ for private discovery.
   devices meet, the one whose nonce sorts higher dials out, so exactly one
   side opens the connection. A fresh nonce is drawn for every advertising set,
   and the device replaces its advertising set after a random 4 to 6 minutes.
-  Android gives every advertising set its own random address and changes it
-  within a set no sooner than every 7 minutes, so the nonce and the address
-  change together: a passive observer can follow one advertising identity for
-  at most about 6 minutes, and the nonce links nothing the address does not.
+  Android is expected to give every advertising set its own random address
+  and to change it within a set no sooner than every 7 minutes (not yet
+  confirmed on a device), so the nonce and the address change together: an
+  observer that sees only the advertisements can follow one advertising
+  identity for at most about 6 minutes, and the nonce links nothing the
+  address does not. That does not hold for a device linked to it, or for
+  anyone who captures the link traffic, which Bluetooth does not encrypt here:
+  the next nonce is announced over the link (next item), and the new set starts
+  right after the old one stops, so timing and signal strength can also join
+  consecutive sets.
   (Up to 3.0.14 the nonce lasted a fixed 10 minutes, longer than the address
   could, so an observer could chain address changes through it.) The first 2
   bytes of the nonce are 0xFF, so it sorts above the uniformly random nonce
@@ -142,6 +159,18 @@ that. The sender's retries are sealed afresh, so they still collect the
 acknowledgement when the first one was lost. A message that arrives later than
 that is still delivered; its sender sees it as sent, not delivered, unless a
 retry is acknowledged.
+
+## Delivery
+
+Relays do not hold frames for devices that are not linked yet, so delivery to a
+recipient who comes into range later rests on the sender. A direct message
+stays in the sender's outbox and is sealed afresh and sent again every 30
+seconds while a neighbour is linked, until it is acknowledged or its attempts
+run out. A group record is sealed once; one that was never delivered is sealed
+again when the sender's mesh next starts. Every repeat is a new envelope with a
+new deduplication id, so relays cannot link the repeats of one message by
+their ids, but the regular 30-second repeats of a device's outbox are visible
+to its neighbours.
 
 ## Component provenance
 

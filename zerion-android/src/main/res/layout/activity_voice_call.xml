@@ -227,7 +227,7 @@
                 android:layout_height="72dp"
                 android:src="@drawable/ic_phone_white"
                 android:contentDescription="@string/call_action_accept"
-                android:backgroundTint="@color/zerion_success"
+                android:backgroundTint="@color/zerion_success_fill"
                 app:fabCustomSize="72dp"
                 app:maxImageSize="32dp"
                 app:tint="@android:color/white"

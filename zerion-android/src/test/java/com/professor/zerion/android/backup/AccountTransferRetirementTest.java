@@ -35,8 +35,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
@@ -105,6 +105,16 @@ public class AccountTransferRetirementTest {
 		return b;
 	}
 
+	private static void copiesABundle(AccountBackupManager backup)
+			throws BackupException {
+		doAnswer(inv -> {
+			byte[] b = bundle();
+			((AccountBackupManager.CopyWriter) inv.getArgument(0)).write(
+					new java.io.ByteArrayInputStream(b), b.length);
+			return null;
+		}).when(backup).copyAccount(any());
+	}
+
 	private static class Answers implements AccountTransferManager.Callback {
 		final CompletableFuture<String> qr = new CompletableFuture<>();
 		final CompletableFuture<String> code = new CompletableFuture<>();
@@ -145,7 +155,7 @@ public class AccountTransferRetirementTest {
 	public void theOldPhoneStopsUsingTheAccountOnceTheNewPhoneConfirms()
 			throws Exception {
 		AccountBackupManager backup = mock(AccountBackupManager.class);
-		when(backup.snapshotBundle()).thenReturn(bundle());
+		copiesABundle(backup);
 		AccountTransferManager sender = new AccountTransferManager(crypto,
 				publisher, loopback, backup, senderRetirement);
 		AccountTransferManager receiver = new AccountTransferManager(crypto,
@@ -174,7 +184,7 @@ public class AccountTransferRetirementTest {
 	public void aNewPhoneThatConfirmsNothingLeavesTheOldPhoneActive()
 			throws Exception {
 		AccountBackupManager backup = mock(AccountBackupManager.class);
-		when(backup.snapshotBundle()).thenReturn(bundle());
+		copiesABundle(backup);
 		AccountTransferManager sender = new AccountTransferManager(crypto,
 				publisher, loopback, backup, senderRetirement);
 		CompletableFuture<String> typed = new CompletableFuture<>();

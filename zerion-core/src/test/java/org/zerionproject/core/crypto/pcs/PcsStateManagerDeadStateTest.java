@@ -5,6 +5,7 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
@@ -81,22 +82,22 @@ public class PcsStateManagerDeadStateTest extends BrambleTestCase {
 			return new ContactId[] {fresh, legacy};
 		});
 
-		Object[] row = db.transactionWithResult(true, txn ->
+		PcsSessionRow row = db.transactionWithResult(true, txn ->
 				db.getPcsMode2SessionState(txn, ids[0], PCS_DIRECTION_SEND));
-		assertArrayEquals(root.getBytes(), (byte[]) row[3]);
-		assertNull(row[4]);
-		assertNull(row[5]);
-		assertNull(row[8]);
+		assertArrayEquals(root.getBytes(), row.getRootKey());
+		assertNull(row.getDhPrivateKey());
+		assertNull(row.getDhPublicKey());
+		assertNull(row.getMode3FullStateBlob());
 
 		manager.stripDeadState(ids[1]);
 		for (int direction : new int[] {PCS_DIRECTION_SEND,
 				PCS_DIRECTION_RECEIVE}) {
-			Object[] stripped = db.transactionWithResult(true, txn ->
+			PcsSessionRow stripped = db.transactionWithResult(true, txn ->
 					db.getPcsMode2SessionState(txn, ids[1], direction));
-			assertArrayEquals(legacyRoot.getBytes(), (byte[]) stripped[3]);
-			assertNull(stripped[4]);
-			assertNull(stripped[5]);
-			assertNull(stripped[8]);
+			assertArrayEquals(legacyRoot.getBytes(), stripped.getRootKey());
+			assertNull(stripped.getDhPrivateKey());
+			assertNull(stripped.getDhPublicKey());
+			assertNull(stripped.getMode3FullStateBlob());
 		}
 		assertNotNull(manager.loadSendState(ids[1]));
 	}

@@ -187,7 +187,52 @@ public class ChannelDeltaSyncTest {
 		assertTrue("every channel's cursors are kept in one value",
 				subscriber.settings.getSettings("zerion-channels-sync-cursor")
 						.isEmpty());
-		assertTrue(!subscriber.settings.getSettings(
+		assertTrue("a cursor is never written to disk",
+				subscriber.settings.getSettings(
+						"zerion-channels-sync-cursor:" + a).isEmpty());
+		assertTrue(subscriber.reactionStore.sync()
+				.cursor(channel.channelId) != null);
+		assertTrue(subscriber.commentStore.sync()
+				.cursor(channel.channelId) != null);
+	}
+
+	@Test
+	public void aRestartForgetsTheCursorsAndTheNextPullGetsTheWholeSets()
+			throws Exception {
+		subscriber.manager.refreshChannel(channel.channelId);
+		assertTrue(subscriber.reactionStore.sync()
+				.cursor(channel.channelId) != null);
+		ChannelItemSync restarted = new ChannelItemSync(subscriber.settings,
+				subscriber.manager.readerFactory,
+				subscriber.manager.writerFactory, "r");
+		assertEquals(null, restarted.cursor(channel.channelId));
+		ChannelItemSync.Delta delta = publisher.reactionStore.sync()
+				.since(channel.channelId, null);
+		assertTrue(delta.full);
+		assertTrue(!delta.changed.isEmpty());
+	}
+
+	@Test
+	public void aCursorStoredByAnEarlierVersionIsDeletedAndNotSent()
+			throws Exception {
+		String a = ChannelStore.hex(channel.channelId);
+		org.zerionproject.core.api.settings.Settings old =
+				new org.zerionproject.core.api.settings.Settings();
+		old.put("r", java.util.Base64.getEncoder().withoutPadding()
+				.encodeToString(new byte[ChannelItemSync.CURSOR_BYTES]));
+		old.put("c", java.util.Base64.getEncoder().withoutPadding()
+				.encodeToString(new byte[ChannelItemSync.CURSOR_BYTES]));
+		subscriber.settings.mergeSettings(old,
+				"zerion-channels-sync-cursor:" + a);
+		ChannelItemSync reactions = new ChannelItemSync(subscriber.settings,
+				subscriber.manager.readerFactory,
+				subscriber.manager.writerFactory, "r");
+		ChannelItemSync comments = new ChannelItemSync(subscriber.settings,
+				subscriber.manager.readerFactory,
+				subscriber.manager.writerFactory, "c");
+		assertEquals(null, reactions.cursor(channel.channelId));
+		assertEquals(null, comments.cursor(channel.channelId));
+		assertTrue(subscriber.settings.getSettings(
 				"zerion-channels-sync-cursor:" + a).isEmpty());
 	}
 

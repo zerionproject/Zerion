@@ -100,14 +100,6 @@ public class VoiceCallService extends Service implements EventListener {
 
 	private static final int PADDED_FRAME_SIZE = 512;
 
-	private static final int AUDIO_SYNC_MARKER = 0x5A455249;
-
-	private static final int AUDIO_READY_MARKER = -1;
-
-	private static final int AUDIO_HEARTBEAT_MARKER = -2;
-
-	private static final int AUDIO_BYE_MARKER = -3;
-
 	public enum CallState {
 		IDLE,
 		CONNECTING,
@@ -167,12 +159,10 @@ public class VoiceCallService extends Service implements EventListener {
 	private NetworkMetrics networkMetrics = new NetworkMetrics();
 
 	private static final int JITTER_BUFFER_CAPACITY = SAMPLE_RATE * 2 * 2;
-	private final byte[] sharedJitterBuffer = new byte[JITTER_BUFFER_CAPACITY];
-	private volatile int jbWritePos = 0;
-	private volatile int jbReadPos = 0;
-	private volatile int jbBufferedBytes = 0;
-	private final Object jbLock = new Object();
-	private volatile boolean playoutStarted = false;
+	private static final int PLAYOUT_START_BYTES =
+			(SAMPLE_RATE * 2) / 1000 * 60;
+	private final AudioJitterBuffer jitterBuffer =
+			new AudioJitterBuffer(JITTER_BUFFER_CAPACITY, PLAYOUT_START_BYTES);
 
 	private DuplexTransportConnection torConnection;
 	private String onionAddress;
@@ -912,12 +902,7 @@ public class VoiceCallService extends Service implements EventListener {
 			networkMetrics.setCodecInfo("PCM", 256);
 		}
 
-		synchronized (jbLock) {
-			jbWritePos = 0;
-			jbReadPos = 0;
-			jbBufferedBytes = 0;
-			playoutStarted = false;
-		}
+		jitterBuffer.reset();
 
 		startHeartbeat(generation);
 		startPlayoutThread(generation);
@@ -958,11 +943,7 @@ public class VoiceCallService extends Service implements EventListener {
 				DataOutputStream dataOut = new DataOutputStream(
 					new BufferedOutputStream(outputStream, frameSize * 2));
 
-				dataOut.writeInt(AUDIO_SYNC_MARKER);
-				dataOut.flush();
-
-				dataOut.writeInt(AUDIO_READY_MARKER);
-				dataOut.flush();
+				CallAudioWire.writePreamble(dataOut);
 
 				AudioRecord recorder = audioRecord;
 				if (recorder == null) {
@@ -1021,20 +1002,15 @@ public class VoiceCallService extends Service implements EventListener {
 									: voiceCallCrypto.encryptAudioFrame(
 											encodedAudio, keys.txKey);
 
-							java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
-							crc32.update(encryptedAudio, 0, encryptedAudio.length);
-							long checksum = crc32.getValue();
+							long checksum = CallAudioWire.checksum(encryptedAudio);
 
 							synchronized (mediaWriteLock) {
-								dataOut.writeInt(encryptedAudio.length);
-								dataOut.writeLong(sequence);
-								dataOut.writeLong(0L);
-								dataOut.writeLong(checksum);
-								dataOut.write(encryptedAudio);
-								dataOut.flush();
+								CallAudioWire.writeFrame(dataOut, sequence,
+										checksum, encryptedAudio);
 							}
 
-							totalBytesSent += encryptedAudio.length + 28;
+							totalBytesSent += encryptedAudio.length
+									+ CallAudioWire.FRAME_HEADER_BYTES;
 							totalFramesSent++;
 							networkMetrics.recordPacketSent();
 
@@ -1084,9 +1060,6 @@ public class VoiceCallService extends Service implements EventListener {
 					return;
 				}
 
-				final int BYTES_PER_MS = (SAMPLE_RATE * 2) / 1000;
-				final int MIN_BUFFER_FLOOR = BYTES_PER_MS * 60;
-
 				int corruptedFrames = 0;
 				int receivedFrames = 0;
 				long lastSequence = -1;
@@ -1104,24 +1077,25 @@ public class VoiceCallService extends Service implements EventListener {
 
 						int encFrameSize = dataIn.readInt();
 
-						if (encFrameSize == AUDIO_READY_MARKER) {
+						if (encFrameSize == CallAudioWire.READY_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
 							lastMediaRealtime = SystemClock.elapsedRealtime();
 							continue;
-						} else if (encFrameSize == AUDIO_HEARTBEAT_MARKER) {
+						} else if (encFrameSize == CallAudioWire.HEARTBEAT_MARKER) {
 							lastReceiveTime = System.currentTimeMillis();
 							lastMediaRealtime = SystemClock.elapsedRealtime();
 							continue;
-						} else if (encFrameSize == AUDIO_BYE_MARKER) {
+						} else if (encFrameSize == CallAudioWire.BYE_MARKER) {
 							mainHandler.post(() -> endCall());
 							return;
 						} else if (encFrameSize < 0) {
 							continue;
 						}
 
-						long sequence = dataIn.readLong();
-						dataIn.readLong();
-						long receivedChecksum = dataIn.readLong();
+						CallAudioWire.FrameHeader header =
+								CallAudioWire.readFrameHeader(dataIn);
+						long sequence = header.sequence;
+						long receivedChecksum = header.checksum;
 
 						long now = System.currentTimeMillis();
 						if (lastReceiveTime > 0) {
@@ -1134,7 +1108,14 @@ public class VoiceCallService extends Service implements EventListener {
 						lastReceiveTime = now;
 
 						if (encFrameSize > MAX_ENCRYPTED_FRAME_SIZE) {
-							continue;
+							if (CallAudioWire.skipPayload(dataIn, encFrameSize)) {
+								networkMetrics.recordCorruptedPacket();
+								continue;
+							}
+							if (!isShuttingDown && callState == CallState.CONNECTED) {
+								handleConnectionError(generation);
+							}
+							break;
 						}
 
 						byte[] encryptedFrame = new byte[encFrameSize];
@@ -1142,13 +1123,13 @@ public class VoiceCallService extends Service implements EventListener {
 						receivedFrames++;
 						lastMediaRealtime = SystemClock.elapsedRealtime();
 
-						totalBytesReceived += encFrameSize + 28;
+						totalBytesReceived += encFrameSize
+								+ CallAudioWire.FRAME_HEADER_BYTES;
 						totalFramesReceived++;
 						networkMetrics.recordPacketReceived(sequence);
 
-						java.util.zip.CRC32 crc32 = new java.util.zip.CRC32();
-						crc32.update(encryptedFrame, 0, encFrameSize);
-						long calculatedChecksum = crc32.getValue();
+						long calculatedChecksum =
+								CallAudioWire.checksum(encryptedFrame);
 
 						if (calculatedChecksum != receivedChecksum) {
 							corruptedFrames++;
@@ -1210,17 +1191,7 @@ public class VoiceCallService extends Service implements EventListener {
 							continue;
 						}
 
-						synchronized (jbLock) {
-							writeToJitterBuffer(sharedJitterBuffer, decoded,
-									jbWritePos, JITTER_BUFFER_CAPACITY);
-							jbWritePos = (jbWritePos + decoded.length) % JITTER_BUFFER_CAPACITY;
-							jbBufferedBytes = Math.min(jbBufferedBytes + decoded.length,
-									JITTER_BUFFER_CAPACITY);
-
-							if (!playoutStarted && jbBufferedBytes >= MIN_BUFFER_FLOOR) {
-								playoutStarted = true;
-							}
-						}
+						jitterBuffer.write(decoded);
 
 					} catch (IOException e) {
 						if (!isShuttingDown && callState == CallState.CONNECTED) {
@@ -1298,11 +1269,9 @@ public class VoiceCallService extends Service implements EventListener {
 					if (torConnection != null) {
 						try {
 							synchronized (mediaWriteLock) {
-								DataOutputStream dataOut = new DataOutputStream(
-										torConnection.getWriter().getOutputStream());
-
-								dataOut.writeInt(AUDIO_HEARTBEAT_MARKER);
-								dataOut.flush();
+								CallAudioWire.writeMarker(
+										torConnection.getWriter().getOutputStream(),
+										CallAudioWire.HEARTBEAT_MARKER);
 							}
 						} catch (IOException e) {
 						}
@@ -1319,7 +1288,7 @@ public class VoiceCallService extends Service implements EventListener {
 			final byte[] playBuffer = new byte[PCM_FRAME];
 
 			while (streaming(generation)) {
-				if (!playoutStarted) {
+				if (!jitterBuffer.started()) {
 					try { Thread.sleep(5); } catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 						return;
@@ -1327,17 +1296,7 @@ public class VoiceCallService extends Service implements EventListener {
 					continue;
 				}
 
-				boolean hasFrame;
-				synchronized (jbLock) {
-					hasFrame = jbBufferedBytes >= PCM_FRAME;
-					if (hasFrame) {
-						for (int i = 0; i < PCM_FRAME; i++) {
-							playBuffer[i] = sharedJitterBuffer[jbReadPos];
-							jbReadPos = (jbReadPos + 1) % JITTER_BUFFER_CAPACITY;
-						}
-						jbBufferedBytes -= PCM_FRAME;
-					}
-				}
+				boolean hasFrame = jitterBuffer.read(playBuffer);
 
 				if (hasFrame) {
 					AudioTrack track = audioTrack;
@@ -1573,14 +1532,6 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 	}
 
-	private static void writeToJitterBuffer(byte[] jitterBuffer, byte[] data,
-			int writePos, int bufferSize) {
-		int toWrite = Math.min(data.length, bufferSize);
-		for (int i = 0; i < toWrite; i++) {
-			jitterBuffer[(writePos + i) % bufferSize] = data[i];
-		}
-	}
-
 	private void releaseAudioDevices() {
 		releaseAudioProcessing();
 		synchronized (streamLock) {
@@ -1666,12 +1617,7 @@ public class VoiceCallService extends Service implements EventListener {
 			}
 		}
 		zeroizeVideoKeys();
-		synchronized (jbLock) {
-			Arrays.fill(sharedJitterBuffer, (byte) 0);
-			jbWritePos = 0;
-			jbReadPos = 0;
-			jbBufferedBytes = 0;
-		}
+		jitterBuffer.wipe();
 		contactName = null;
 	}
 
@@ -1799,10 +1745,8 @@ public class VoiceCallService extends Service implements EventListener {
 		}
 		try {
 			synchronized (mediaWriteLock) {
-				DataOutputStream dataOut = new DataOutputStream(
-						conn.getWriter().getOutputStream());
-				dataOut.writeInt(AUDIO_BYE_MARKER);
-				dataOut.flush();
+				CallAudioWire.writeMarker(conn.getWriter().getOutputStream(),
+						CallAudioWire.BYE_MARKER);
 			}
 		} catch (IOException e) {
 		}

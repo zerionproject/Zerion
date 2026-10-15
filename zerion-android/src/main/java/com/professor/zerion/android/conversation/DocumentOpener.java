@@ -27,6 +27,13 @@ final class DocumentOpener {
 
 	private static final int MAX_OPEN_BYTES = 64 * 1024 * 1024;
 
+	private static final Executor HANDOFF =
+			java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+				Thread t = new Thread(r, "document-handoff");
+				t.setDaemon(true);
+				return t;
+			});
+
 	private DocumentOpener() {
 	}
 
@@ -48,7 +55,7 @@ final class DocumentOpener {
 				}
 				a.runOnUiThread(() -> {
 					if (a.isFinishing() || a.isDestroyed()) return;
-					ExternalHandoff.open(a, dbExecutor, content, viewType,
+					ExternalHandoff.open(a, HANDOFF, content, viewType,
 							() -> toast(a, R.string.media_document_no_app));
 				});
 			} catch (Exception e) {

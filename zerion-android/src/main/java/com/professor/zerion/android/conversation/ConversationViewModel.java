@@ -80,6 +80,7 @@ import androidx.lifecycle.MutableLiveData;
 
 import static androidx.lifecycle.Transformations.map;
 import static java.util.Objects.requireNonNull;
+import static org.zerionproject.core.util.AndroidUtils.isUiThread;
 import static com.professor.zerion.android.settings.SettingsFragment.SETTINGS_NAMESPACE;
 import static com.professor.zerion.android.util.UiUtils.observeForeverOnce;
 import static com.professor.zerion.android.view.TextSendController.SendState.ERROR;
@@ -147,6 +148,7 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final java.util.concurrent.ConcurrentHashMap<MessageId, Pair<MessageId, String>> replyContextMap =
 			new java.util.concurrent.ConcurrentHashMap<>();
+	private final Object replyContextLock = new Object();
 	private final MutableLiveData<ConversationItem> replyTarget =
 			new MutableLiveData<>();
 	private final MutableLiveData<Collection<ConversationMessageHeader>> messageHeaders =
@@ -164,6 +166,10 @@ public class ConversationViewModel extends DbViewModel
 	private final MutableLiveData<Boolean> editAndDeleteSupported =
 			new MutableLiveData<>(false);
 	private final java.util.Set<MessageId> editedMessages =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private final Map<MessageId, String> editedTexts =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Set<MessageId> deletedMessages =
 			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final MutableLiveEvent<Pair<MessageId, String>> messageEdited =
 			new MutableLiveEvent<>();
@@ -331,11 +337,7 @@ public class ConversationViewModel extends DbViewModel
 		} else if (e instanceof ConversationMessagesDeletedEvent) {
 			ConversationMessagesDeletedEvent m = (ConversationMessagesDeletedEvent) e;
 			if (m.getContactId().equals(contactId)) {
-				for (MessageId id : m.getMessageIds()) {
-					ConversationCache.getInstance().removeMessage(contactId, id);
-				}
-				replyContextMap.values().removeIf(quote ->
-						m.getMessageIds().contains(quote.getFirst()));
+				evictDeleted(m.getContactId(), m.getMessageIds());
 				messagesDeleted.setEvent(m.getMessageIds());
 			}
 		} else if (e instanceof ContactRemovedEvent) {
@@ -383,13 +385,20 @@ public class ConversationViewModel extends DbViewModel
 			if (ed.getContactId().equals(contactId)) {
 				ConversationCache.getInstance().invalidate(contactId);
 				editedMessages.add(ed.getMessageId());
-				for (Map.Entry<MessageId, Pair<MessageId, String>> quote :
-						replyContextMap.entrySet()) {
-					if (quote.getValue().getFirst().equals(ed.getMessageId())) {
-						quote.setValue(new Pair<>(ed.getMessageId(),
-								ed.getText()));
+				synchronized (replyContextLock) {
+					if (!deletedMessages.contains(ed.getMessageId())) {
+						editedTexts.put(ed.getMessageId(), ed.getText());
+					}
+					for (Map.Entry<MessageId, Pair<MessageId, String>> quote :
+							replyContextMap.entrySet()) {
+						if (quote.getValue().getFirst()
+								.equals(ed.getMessageId())) {
+							quote.setValue(new Pair<>(ed.getMessageId(),
+									ed.getText()));
+						}
 					}
 				}
+				replaceLoadedText(ed.getMessageId(), ed.getText());
 				messageEdited.setEvent(
 						new Pair<>(ed.getMessageId(), ed.getText()));
 			}
@@ -737,8 +746,13 @@ public class ConversationViewModel extends DbViewModel
 
 	private void storeReplyContext(MessageId sentMessageId,
 			MessageId replyToId, @Nullable String replyToText) {
-		replyContextMap.put(sentMessageId,
-				new Pair<>(replyToId, replyToText != null ? replyToText : "[No text]"));
+		synchronized (replyContextLock) {
+			if (deletedMessages.contains(replyToId)) return;
+			String edited = editedTexts.get(replyToId);
+			String text = edited != null ? edited
+					: replyToText != null ? replyToText : "[No text]";
+			replyContextMap.put(sentMessageId, new Pair<>(replyToId, text));
+		}
 	}
 
 	@Nullable
@@ -1114,7 +1128,8 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Collection<ConversationMessageHeader> headers =
 						conversationManager.getMessageHeaders(c);
-				Map<MessageId, String> texts = messagingManager.getMessageTexts(c);
+				Map<MessageId, String> texts = new java.util.HashMap<>(
+						messagingManager.getMessageTexts(c));
 				Map<MessageId, GroupId> unread = new java.util.HashMap<>();
 				for (ConversationMessageHeader h : headers) {
 					localById.put(h.getId(), h.isLocal());
@@ -1142,8 +1157,8 @@ public class ConversationViewModel extends DbViewModel
 						}
 					}
 				}
-				messageTexts.postValue(texts);
-				messageHeaders.postValue(headers);
+				androidExecutor.runOnUiThread(() ->
+						publishLoaded(texts, headers));
 			} catch (NoSuchContactException e) {
 				contactDeleted.postValue(true);
 			} catch (DbException e) {
@@ -1180,9 +1195,10 @@ public class ConversationViewModel extends DbViewModel
 				DeletionResult result =
 						conversationManager.deleteMessages(c, toDelete);
 				if (result.allDeleted()) {
+					evictDeleted(c, toDelete);
 					messagesDeleted.postEvent(toDelete);
 				} else {
-					loadMessageHeaders();
+					androidExecutor.runOnUiThread(this::loadMessageHeaders);
 				}
 			} catch (DbException e) {
 				handleException(e);
@@ -1213,10 +1229,11 @@ public class ConversationViewModel extends DbViewModel
 		runOnDbThread(() -> {
 			try {
 				conversationManager.deleteAllMessages(c);
-				messageHeaders.postValue(
-						new java.util.ArrayList<>());
-				messageTexts.postValue(
-						new java.util.HashMap<>());
+				evictConversation(c);
+				androidExecutor.runOnUiThread(() -> {
+					messageTexts.setValue(new java.util.HashMap<>());
+					messageHeaders.setValue(new java.util.ArrayList<>());
+				});
 				chatCleared.postEvent(true);
 			} catch (DbException e) {
 				handleException(e);
@@ -1443,6 +1460,114 @@ public class ConversationViewModel extends DbViewModel
 		return editedMessages.contains(m);
 	}
 
+	private void forget(Collection<MessageId> deleted) {
+		deletedMessages.addAll(deleted);
+		editedTexts.keySet().removeAll(deleted);
+	}
+
+	@UiThread
+	private void publishLoaded(Map<MessageId, String> loaded,
+			Collection<ConversationMessageHeader> headers) {
+		Map<MessageId, String> texts = new java.util.HashMap<>(loaded);
+		texts.keySet().removeAll(deletedMessages);
+		for (Map.Entry<MessageId, String> e : editedTexts.entrySet()) {
+			if (texts.containsKey(e.getKey())) {
+				texts.put(e.getKey(), e.getValue());
+			}
+		}
+		messageTexts.setValue(texts);
+		messageHeaders.setValue(headers);
+	}
+
+	@UiThread
+	private void replaceLoadedText(MessageId id, String text) {
+		Map<MessageId, String> texts = messageTexts.getValue();
+		if (texts == null || !texts.containsKey(id)) return;
+		Map<MessageId, String> replaced = new java.util.HashMap<>(texts);
+		if (deletedMessages.contains(id)) replaced.remove(id);
+		else replaced.put(id, text);
+		messageTexts.setValue(replaced);
+	}
+
+	@UiThread
+	private void dropLoadedTexts(ContactId c, java.util.Set<MessageId> ids) {
+		Map<MessageId, String> texts = messageTexts.getValue();
+		if (texts == null) return;
+		Map<MessageId, String> kept = new java.util.HashMap<>(texts);
+		for (MessageId id : ids) {
+			com.professor.zerion.android.conversation.voice
+					.VoiceMessageChunkFormat.Part p =
+					com.professor.zerion.android.conversation.voice
+							.VoiceMessageChunkFormat.parse(kept.remove(id));
+			if (p != null) {
+				voiceAssembler.forget(c, isLocalMessage(id), p.memoId);
+			}
+		}
+		messageTexts.setValue(kept);
+	}
+
+	private void evictDeleted(ContactId c, Collection<MessageId> deleted) {
+		if (deleted.isEmpty()) return;
+		java.util.Set<MessageId> ids = new java.util.HashSet<>(deleted);
+		for (MessageId id : ids) {
+			ConversationCache.getInstance().removeMessage(c, id);
+		}
+		synchronized (replyContextLock) {
+			forget(ids);
+			replyContextMap.keySet().removeAll(ids);
+			replyContextMap.values().removeIf(quote ->
+					ids.contains(quote.getFirst()));
+		}
+		editedMessages.removeAll(ids);
+		if (isUiThread()) dropLoadedState(c, ids);
+		else androidExecutor.runOnUiThread(() -> dropLoadedState(c, ids));
+		ImageViewHolder.evictVideoThumbs(ids);
+	}
+
+	@UiThread
+	private void dropLoadedState(ContactId c, java.util.Set<MessageId> ids) {
+		dropLoadedTexts(c, ids);
+		Map<MessageId, LinkPreview> previews = linkPreviewsMap.getValue();
+		if (previews != null
+				&& !java.util.Collections.disjoint(previews.keySet(), ids)) {
+			Map<MessageId, LinkPreview> kept =
+					new java.util.HashMap<>(previews);
+			kept.keySet().removeAll(ids);
+			linkPreviewsMap.setValue(kept);
+		}
+		Map<MessageId, Map<String, Integer>> reactions =
+				reactionsMap.getValue();
+		if (reactions != null
+				&& !java.util.Collections.disjoint(reactions.keySet(), ids)) {
+			Map<MessageId, Map<String, Integer>> kept =
+					new java.util.HashMap<>(reactions);
+			kept.keySet().removeAll(ids);
+			reactionsMap.setValue(kept);
+		}
+	}
+
+	private void evictConversation(ContactId c) {
+		ConversationCache.getInstance().invalidate(c);
+		synchronized (replyContextLock) {
+			replyContextMap.clear();
+			editedTexts.clear();
+		}
+		editedMessages.clear();
+		linkPreviewsMap.postValue(new java.util.HashMap<>());
+		reactionsMap.postValue(new java.util.HashMap<>());
+		voiceAssembler.forgetContact(c);
+		ImageViewHolder.clearVideoThumbCache();
+	}
+
+	boolean isDeleted(MessageId m) {
+		return deletedMessages.contains(m);
+	}
+
+	@Nullable
+	String getEditedText(MessageId m) {
+		return editedTexts.get(m);
+	}
+
 	LiveData<Boolean> getEditAndDeleteSupported() {
 		return editAndDeleteSupported;
 	}
@@ -1489,11 +1614,19 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Map<MessageId, Map<String, Integer>> reactions =
 						messagingManager.getReactions(c);
-				reactionsMap.postValue(reactions);
+				androidExecutor.runOnUiThread(() ->
+						reactionsMap.setValue(withoutDeleted(reactions)));
 			} catch (DbException e) {
 				handleException(e);
 			}
 		});
+	}
+
+	@UiThread
+	private <V> Map<MessageId, V> withoutDeleted(Map<MessageId, V> loaded) {
+		Map<MessageId, V> kept = new java.util.HashMap<>(loaded);
+		kept.keySet().removeAll(deletedMessages);
+		return kept;
 	}
 
 	void sendTypingIndicator(boolean isTyping) {
@@ -1564,7 +1697,8 @@ public class ConversationViewModel extends DbViewModel
 			try {
 				Map<MessageId, LinkPreview> previews =
 						messagingManager.getLinkPreviews(c);
-				linkPreviewsMap.postValue(previews);
+				androidExecutor.runOnUiThread(() ->
+						linkPreviewsMap.setValue(withoutDeleted(previews)));
 			} catch (DbException e) {
 				handleException(e);
 			}

@@ -99,6 +99,11 @@ public class Mp4MetadataScrubberTest {
 
 	private static byte[] trak(long offset, int sampleLength,
 			byte[]... extra) {
+		return trak(ascii("VideoHandle\0"), offset, sampleLength, extra);
+	}
+
+	private static byte[] trak(byte[] handlerName, long offset,
+			int sampleLength, byte[]... extra) {
 		byte[] stco = box("stco", u32(0), u32(1), u32(offset));
 		byte[] stsz = box("stsz", u32(0), u32(0), u32(1), u32(sampleLength));
 		byte[] stsc = box("stsc", u32(0), u32(1), u32(1), u32(1), u32(1));
@@ -107,7 +112,7 @@ public class Mp4MetadataScrubberTest {
 		byte[] stbl = box("stbl", stsd, stts, stsc, stsz, stco);
 		byte[] minf = box("minf", box("vmhd", new byte[12]), stbl);
 		byte[] hdlr = box("hdlr", u32(0), u32(0), ascii("vide"), u32(0),
-				u32(0), u32(0), ascii("VideoHandle\0"));
+				u32(0), u32(0), handlerName);
 		byte[] mdia = box("mdia", box("mdhd", new byte[24]), hdlr, minf);
 		return box("trak", concat(box("tkhd", new byte[84]), concat(extra),
 				mdia));
@@ -261,10 +266,150 @@ public class Mp4MetadataScrubberTest {
 	public void aFileWithoutMetadataIsLeftAsItIs() throws Exception {
 		long mdatData = ftyp().length + 8;
 		byte[] in = concat(ftyp(), box("mdat", sample()),
-				box("moov", mvhd(), trak(mdatData, 3000)));
+				box("moov", mvhd(), trak(new byte[12], mdatData, 3000)));
 		File f = write(in);
 		Mp4MetadataScrubber.scrub(f);
 		assertArrayEquals(in, Files.readAllBytes(f.toPath()));
+	}
+
+	private static byte[] u64(long v) {
+		return concat(u32(v >>> 32), u32(v));
+	}
+
+	private static byte[] times(int version, long time) {
+		long modified = time == 0 ? 0 : time + 7;
+		return version == 0 ? concat(u32(time), u32(modified))
+				: concat(u64(time), u64(modified));
+	}
+
+	private static byte[] length(int version, long v) {
+		return version == 0 ? u32(v) : u64(v);
+	}
+
+	private static byte[] fullBox(String type, int version,
+			byte[]... body) {
+		return box(type, u32((long) version << 24), concat(body));
+	}
+
+	private static byte[] movieHeader(int version, long time) {
+		byte[] rest = new byte[80];
+		rest[1] = 1;
+		rest[4] = 1;
+		rest[79] = 3;
+		return fullBox("mvhd", version, times(version, time), u32(600),
+				length(version, 6000), rest);
+	}
+
+	private static byte[] trackHeader(int version, long time, int track) {
+		byte[] rest = new byte[60];
+		rest[52] = 1;
+		rest[56] = 1;
+		return fullBox("tkhd", version, times(version, time), u32(track),
+				u32(0), length(version, 6000), rest);
+	}
+
+	private static byte[] mediaHeader(int version, long time, int language) {
+		return fullBox("mdhd", version, times(version, time), u32(48000),
+				length(version, 480000), new byte[] {(byte) (language >> 8),
+						(byte) language, 0, 0});
+	}
+
+	private static byte[] handler(String type, byte[] name) {
+		return box("hdlr", u32(0), u32(0), ascii(type), new byte[12], name);
+	}
+
+	private static byte[] track(int version, long time, int track,
+			String type, byte[] name, int language, long offset) {
+		byte[] stco = box("stco", u32(0), u32(1), u32(offset));
+		byte[] stsz = box("stsz", u32(0), u32(0), u32(1), u32(3000));
+		byte[] stbl = box("stbl", box("stsd", u32(0), u32(0)), stco, stsz);
+		byte[] minf = box("minf", box("smhd", new byte[8]),
+				box("dinf", box("dref", u32(0), u32(0))), stbl);
+		byte[] mdia = box("mdia", mediaHeader(version, time, language),
+				handler(type, name), minf);
+		byte[] elst = fullBox("elst", version, u32(1),
+				length(version, 6000), length(version, 0), u32(0x10000));
+		return box("trak", trackHeader(version, time, track),
+				box("edts", elst), mdia);
+	}
+
+	private static byte[] timedMovie(long time, int language,
+			byte[] videoName, byte[] soundName) {
+		long mdatData = ftyp().length + 8;
+		return concat(ftyp(), box("mdat", sample()),
+				box("moov", movieHeader(0, time),
+						track(0, time, 1, "vide", videoName, language,
+								mdatData),
+						track(1, time, 2, "soun", soundName, language,
+								mdatData)));
+	}
+
+	@Test
+	public void theTimesOfTheMovieAndOfEveryTrackAreCleared()
+			throws Exception {
+		long remuxTime = 0xE1A2B3C4L;
+		int english = 0x15C7;
+		byte[] video = ascii("VideoHandle\0");
+		byte[] sound = ascii("SoundHandle\0");
+		byte[] in = timedMovie(remuxTime, english, video, sound);
+		File f = write(in);
+		Mp4MetadataScrubber.scrub(f);
+		byte[] out = Files.readAllBytes(f.toPath());
+		byte[] expected = timedMovie(0, 0, new byte[video.length],
+				new byte[sound.length]);
+		assertArrayEquals(expected, out);
+		assertSameLayout(in, out, ftyp().length + 8);
+		for (String s : new String[] {"VideoHandle", "SoundHandle"}) {
+			assertFalse(s + " is still in the file", contains(out, ascii(s)));
+		}
+		assertTrue(contains(out, ascii("vide")));
+		assertTrue(contains(out, ascii("soun")));
+	}
+
+	@Test
+	public void sixtyFourBitTimesAreClearedToo() throws Exception {
+		long remuxTime = 0xE1A2B3C4L + (1L << 33);
+		long mdatData = ftyp().length + 8;
+		byte[] in = concat(ftyp(), box("mdat", sample()),
+				box("moov", movieHeader(1, remuxTime),
+						track(1, remuxTime, 1, "vide", ascii("x\0"), 0,
+								mdatData)));
+		File f = write(in);
+		Mp4MetadataScrubber.scrub(f);
+		byte[] out = Files.readAllBytes(f.toPath());
+		byte[] expected = concat(ftyp(), box("mdat", sample()),
+				box("moov", movieHeader(1, 0),
+						track(1, 0, 1, "vide", new byte[2], 0, mdatData)));
+		assertArrayEquals(expected, out);
+	}
+
+	@Test
+	public void headersThatCannotHoldTheirTimesAreRefused() throws Exception {
+		long mdatData = ftyp().length + 8;
+		byte[] unknownVersion = concat(ftyp(), box("mdat", sample()),
+				box("moov", fullBox("mvhd", 2, new byte[96]),
+						trak(mdatData, 3000)));
+		byte[] shortHeader = concat(ftyp(), box("mdat", sample()),
+				box("moov", fullBox("mvhd", 1, new byte[12]),
+						trak(mdatData, 3000)));
+		byte[] shortMedia = concat(ftyp(), box("mdat", sample()),
+				box("moov", mvhd(), box("trak", box("mdia",
+						fullBox("mdhd", 0, new byte[16])))));
+		byte[] shortHandler = concat(ftyp(), box("mdat", sample()),
+				box("moov", mvhd(), box("trak", box("mdia",
+						box("hdlr", u32(0), u32(0), ascii("vide"))))));
+		Object[][] cases = {{"a header of an unknown version", unknownVersion},
+				{"a movie header without room for its times", shortHeader},
+				{"a media header without room for its language", shortMedia},
+				{"a handler box without room for its name", shortHandler}};
+		for (Object[] c : cases) {
+			File f = write((byte[]) c[1]);
+			try {
+				Mp4MetadataScrubber.scrub(f);
+				fail(c[0] + " was accepted");
+			} catch (IOException expected) {
+			}
+		}
 	}
 
 	@Test

@@ -12,9 +12,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,8 +70,13 @@ public class ElectrumClient implements ElectrumRpc {
 	}
 
 	private final Socket socket;
+	private final Socket stream;
 	private final OutputStream writer;
 	private final BufferedReader reader;
+	private final int deadlineMs;
+	private int readTimeoutMs;
+	@Nullable
+	private Deadline active;
 	private int id = 0;
 
 	public ElectrumClient(String host, int port, int socksPort,
@@ -76,44 +87,172 @@ public class ElectrumClient implements ElectrumRpc {
 
 	private static final int HANDSHAKE_TIMEOUT_MS = 15_000;
 	private static final int READ_TIMEOUT_MS = 40_000;
+	static final int EXCHANGE_DEADLINE_MS = 120_000;
 	static final int MAX_SKIPPED_LINES = 64;
+	static final String NO_ANSWER_IN_TIME = "the server did not answer in time";
+
+	private static final ScheduledExecutorService DEADLINES = deadlines();
+
+	private static ScheduledExecutorService deadlines() {
+		ScheduledThreadPoolExecutor e = new ScheduledThreadPoolExecutor(1,
+				r -> {
+					Thread t = new Thread(r, "ElectrumDeadline");
+					t.setDaemon(true);
+					return t;
+				});
+		e.setRemoveOnCancelPolicy(true);
+		return e;
+	}
 
 	public ElectrumClient(ElectrumEndpoint ep, int socksPort,
 			String isolationTag) throws IOException {
-		Socket base;
-		if (ep.viaTor()) {
-			base = com.professor.zerion.android.vault.net.TorSockets.open(
-					socksPort, HANDSHAKE_TIMEOUT_MS);
-			socks5Connect(base, ep.host, ep.port, "zw-" + isolationTag,
-					isolationTag);
-		} else {
-			base = new Socket();
-			if (!ep.direct && !ElectrumEndpoint.isLanHost(ep.host)) {
-				throw new IOException(
-						"Refusing non-Tor connection to non-local endpoint");
-			}
-			base.connect(new InetSocketAddress(ep.host, ep.port),
-					HANDSHAKE_TIMEOUT_MS);
-			base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
-		}
+		this(ep, socksPort, isolationTag, READ_TIMEOUT_MS,
+				EXCHANGE_DEADLINE_MS);
+	}
+
+	ElectrumClient(ElectrumEndpoint ep, int socksPort, String isolationTag,
+			int readTimeoutMs, int deadlineMs) throws IOException {
+		this.readTimeoutMs = Math.min(HANDSHAKE_TIMEOUT_MS, readTimeoutMs);
+		this.deadlineMs = deadlineMs;
+		Deadline deadline = new Deadline(deadlineMs);
+		Socket base = null;
 		try {
+			if (ep.viaTor()) {
+				base = com.professor.zerion.android.vault.net.TorSockets.open(
+						socksPort, Math.min(HANDSHAKE_TIMEOUT_MS,
+								deadline.remainingMs()));
+				deadline.watch(base);
+				socks5Connect(base, ep.host, ep.port, "zw-" + isolationTag,
+						isolationTag);
+			} else {
+				if (!ep.direct && !ElectrumEndpoint.isLanHost(ep.host)) {
+					throw new IOException(
+							"Refusing non-Tor connection to non-local endpoint");
+				}
+				base = new Socket();
+				deadline.watch(base);
+				base.connect(new InetSocketAddress(ep.host, ep.port),
+						Math.min(HANDSHAKE_TIMEOUT_MS, deadline.remainingMs()));
+				base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+			}
 			if (ep.mode == ElectrumEndpoint.Mode.PLAINTEXT && !ep.local) {
 				throw new IOException(
 						"Refusing a plaintext connection to a non-local endpoint");
 			}
-			Socket stream = ep.tls() ? wrapTls(base, ep) : base;
+			stream = ep.tls() ? wrapTls(base, ep) : base;
 			socket = base;
 			writer = stream.getOutputStream();
 			reader = new BufferedReader(new InputStreamReader(
-					stream.getInputStream(), StandardCharsets.UTF_8));
-			call("server.version", "[\"\",\"1.4\"]");
-			base.setSoTimeout(READ_TIMEOUT_MS);
-		} catch (IOException | RuntimeException e) {
-			try {
-				base.close();
-			} catch (IOException ignored) {
-			}
+					new DeadlineInputStream(stream.getInputStream()),
+					StandardCharsets.UTF_8));
+			exchange(deadline, "server.version", "[\"\",\"1.4\"]");
+			this.readTimeoutMs = readTimeoutMs;
+		} catch (IOException e) {
+			closeQuietly(base);
+			throw deadline.failure(e);
+		} catch (RuntimeException e) {
+			closeQuietly(base);
 			throw e;
+		} finally {
+			deadline.cancel();
+		}
+	}
+
+	private static void closeQuietly(@Nullable Socket s) {
+		if (s == null) return;
+		try {
+			s.close();
+		} catch (IOException ignored) {
+		}
+	}
+
+	private static final class Deadline {
+
+		private final long endNanos;
+		private final AtomicBoolean fired = new AtomicBoolean();
+		@Nullable
+		private ScheduledFuture<?> task;
+
+		Deadline(int ms) {
+			endNanos = System.nanoTime() + ms * 1_000_000L;
+		}
+
+		int remainingMs() throws SocketTimeoutException {
+			long left = (endNanos - System.nanoTime()) / 1_000_000L;
+			if (left <= 0) {
+				fired.set(true);
+				throw new SocketTimeoutException(NO_ANSWER_IN_TIME);
+			}
+			return (int) Math.min(Integer.MAX_VALUE, left);
+		}
+
+		synchronized void watch(Socket s) throws SocketTimeoutException {
+			cancel();
+			long left;
+			try {
+				left = remainingMs();
+			} catch (SocketTimeoutException e) {
+				closeQuietly(s);
+				throw e;
+			}
+			task = DEADLINES.schedule(() -> {
+				fired.set(true);
+				closeQuietly(s);
+			}, left, TimeUnit.MILLISECONDS);
+		}
+
+		synchronized void cancel() {
+			ScheduledFuture<?> t = task;
+			task = null;
+			if (t != null) t.cancel(false);
+		}
+
+		boolean timedOut(IOException e) {
+			if (e instanceof ServerRejectedException) return false;
+			return fired.get() || endNanos - System.nanoTime() <= 0;
+		}
+
+		IOException failure(IOException e) {
+			if (!timedOut(e) || NO_ANSWER_IN_TIME.equals(e.getMessage())) {
+				return e;
+			}
+			SocketTimeoutException t =
+					new SocketTimeoutException(NO_ANSWER_IN_TIME);
+			t.initCause(e);
+			return t;
+		}
+	}
+
+	private final class DeadlineInputStream extends InputStream {
+
+		private final InputStream in;
+
+		DeadlineInputStream(InputStream in) {
+			this.in = in;
+		}
+
+		private void arm() throws IOException {
+			Deadline d = active;
+			int timeout = d == null ? readTimeoutMs
+					: Math.min(readTimeoutMs, d.remainingMs());
+			stream.setSoTimeout(timeout);
+		}
+
+		@Override
+		public int read() throws IOException {
+			arm();
+			return in.read();
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			arm();
+			return in.read(b, off, len);
+		}
+
+		@Override
+		public void close() throws IOException {
+			in.close();
 		}
 	}
 
@@ -135,26 +274,41 @@ public class ElectrumClient implements ElectrumRpc {
 
 	public static CapturedCert captureCert(ElectrumEndpoint ep, int socksPort)
 			throws IOException {
+		return captureCert(ep, socksPort, EXCHANGE_DEADLINE_MS);
+	}
+
+	static CapturedCert captureCert(ElectrumEndpoint ep, int socksPort,
+			int deadlineMs) throws IOException {
 		if (!ep.tls()) {
 			throw new IOException("not a TLS endpoint");
 		}
 		String tag = TorIsolation.ephemeral("tofu");
+		Deadline deadline = new Deadline(deadlineMs);
 		try {
-			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
-					true), true);
-		} catch (NotCaValid selfSigned) {
-			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
-					false), false);
+			try {
+				return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+						true, deadline), true);
+			} catch (NotCaValid selfSigned) {
+				return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+						false, deadline), false);
+			}
+		} catch (IOException e) {
+			throw deadline.failure(e);
+		} finally {
+			deadline.cancel();
 		}
 	}
 
 	private static String handshakeAndCapture(ElectrumEndpoint ep,
-			int socksPort, String tag, boolean validate) throws IOException {
+			int socksPort, String tag, boolean validate, Deadline deadline)
+			throws IOException {
 		Socket base = null;
 		try {
 			if (ep.viaTor()) {
 				base = com.professor.zerion.android.vault.net.TorSockets.open(
-						socksPort, HANDSHAKE_TIMEOUT_MS);
+						socksPort, Math.min(HANDSHAKE_TIMEOUT_MS,
+								deadline.remainingMs()));
+				deadline.watch(base);
 				socks5Connect(base, ep.host, ep.port,
 						TorIsolation.socksUser(tag),
 						TorIsolation.socksPassword(tag));
@@ -164,8 +318,9 @@ public class ElectrumClient implements ElectrumRpc {
 							"Refusing non-Tor connection to non-local endpoint");
 				}
 				base = new Socket();
+				deadline.watch(base);
 				base.connect(new InetSocketAddress(ep.host, ep.port),
-						HANDSHAKE_TIMEOUT_MS);
+						Math.min(HANDSHAKE_TIMEOUT_MS, deadline.remainingMs()));
 				base.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
 			}
 			if (validate) {
@@ -366,6 +521,29 @@ public class ElectrumClient implements ElectrumRpc {
 	}
 
 	private String call(String method, String params) throws IOException {
+		Deadline deadline = new Deadline(deadlineMs);
+		try {
+			deadline.watch(socket);
+			return exchange(deadline, method, params);
+		} catch (IOException e) {
+			if (deadline.timedOut(e)) close();
+			throw deadline.failure(e);
+		} finally {
+			deadline.cancel();
+		}
+	}
+
+	private String exchange(Deadline deadline, String method, String params)
+			throws IOException {
+		active = deadline;
+		try {
+			return exchange(method, params);
+		} finally {
+			active = null;
+		}
+	}
+
+	private String exchange(String method, String params) throws IOException {
 		int reqId = ++id;
 		String line = "{\"id\":" + reqId + ",\"method\":\"" + method
 				+ "\",\"params\":" + params + "}\n";

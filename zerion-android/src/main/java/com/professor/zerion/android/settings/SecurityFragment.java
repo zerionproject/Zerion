@@ -64,6 +64,9 @@ public class SecurityFragment extends Fragment {
 	@Inject
 	org.zerionproject.core.api.account.AccountManager accountManager;
 
+	@Inject
+	com.professor.zerion.android.security.AntiForensics antiForensics;
+
 	private SettingsViewModel viewModel;
 	private WipePasswordManager wipePasswordManager;
 
@@ -272,11 +275,42 @@ public class SecurityFragment extends Fragment {
 				.HardenedModeEvaluator.PREF_HARDENED_BOOT, false)) count++;
 		if (uiPrefs.getBoolean(com.professor.zerion.android.security
 				.HardenedModeEvaluator.PREF_HARDENED_TAMPER, false)) count++;
-		if (uiPrefs.getBoolean(com.professor.zerion.android.security
-				.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC, false)) {
-			count++;
+		boolean usbPanicOn = uiPrefs.getBoolean(com.professor.zerion.android
+				.security.HardenedModeEvaluator.PREF_HARDENED_USB_PANIC, false);
+		if (usbPanicOn) count++;
+		return hardenedSummary(requireContext(), count,
+				usbPanicFailed(usbPanicOn, antiForensics.getUsbPanicState()));
+	}
+
+	static boolean usbPanicFailed(boolean usbPanicOn,
+			com.professor.zerion.android.security.AntiForensics.UsbPanicState
+					state) {
+		return usbPanicOn && state != com.professor.zerion.android.security
+				.AntiForensics.UsbPanicState.ARMED;
+	}
+
+	static String hardenedSummary(Context context, int count,
+			boolean usbPanicFailed) {
+		String summary =
+				context.getString(R.string.hardened_mode_summary_format, count);
+		if (!usbPanicFailed) return summary;
+		return summary + "\n"
+				+ context.getString(R.string.hardened_mode_usb_panic_unavailable);
+	}
+
+	private void refreshHardenedSummary() {
+		View view = getView();
+		if (view == null) return;
+		TextView hardenedSummary = view.findViewById(R.id.hardened_mode_summary);
+		if (hardenedSummary != null) {
+			hardenedSummary.setText(buildHardenedSummary());
 		}
-		return getString(R.string.hardened_mode_summary_format, count);
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		refreshHardenedSummary();
 	}
 
 	private void showWipeOnFailedLoginsDialog() {
@@ -397,10 +431,17 @@ public class SecurityFragment extends Fragment {
 						.PREF_HARDENED_USB_PANIC_WIPE,
 						usbPanicWipes)
 				.apply();
-		TextView hardenedSummary = requireView()
-				.findViewById(R.id.hardened_mode_summary);
-		if (hardenedSummary != null) {
-			hardenedSummary.setText(buildHardenedSummary());
+		android.app.Activity activity = getActivity();
+		if (activity instanceof com.professor.zerion.android.activity
+				.ZerionActivity) {
+			((com.professor.zerion.android.activity.ZerionActivity) activity)
+					.armUsbPanicIfConfigured();
+		}
+		refreshHardenedSummary();
+		if (usbPanicFailed(checked[2], antiForensics.getUsbPanicState())) {
+			Toast.makeText(requireContext(),
+					R.string.hardened_mode_usb_panic_unavailable,
+					Toast.LENGTH_LONG).show();
 		}
 	}
 

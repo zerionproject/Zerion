@@ -14,6 +14,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +70,9 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	private static final class TransportSession {
 		private final TransportId transportId;
 		private int count;
+		private int designatedLive = 0;
+		private final List<InterruptibleConnection> otherLive =
+				new ArrayList<>();
 
 		private TransportSession(TransportId transportId) {
 			this.transportId = transportId;
@@ -75,37 +81,101 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	}
 
 	boolean acquireSession(int contactId, TransportId transportId) {
+		return acquireSession(contactId, transportId, true);
+	}
+
+	boolean acquireSession(int contactId, TransportId transportId,
+			boolean byDesignated) {
 		synchronized (liveSessions) {
 			TransportSession s = liveSessions.get(contactId);
 			if (s == null) {
 				liveSessions.put(contactId, new TransportSession(transportId));
 				return true;
 			}
-			if (s.transportId.equals(transportId) && s.count < 2) {
-				s.count++;
-				return true;
+			if (!s.transportId.equals(transportId) || s.count >= 2) {
+				return false;
 			}
-			return false;
+			if (!byDesignated && s.designatedLive > 0) return false;
+			s.count++;
+			return true;
+		}
+	}
+
+	List<InterruptibleConnection> sessionLive(int contactId,
+			TransportId transportId, boolean byDesignated,
+			InterruptibleConnection conn, AtomicBoolean counted) {
+		synchronized (liveSessions) {
+			TransportSession s = liveSessions.get(contactId);
+			if (s == null || !s.transportId.equals(transportId)) {
+				return Collections.emptyList();
+			}
+			if (byDesignated) {
+				s.designatedLive++;
+				counted.set(true);
+				List<InterruptibleConnection> other =
+						new ArrayList<>(s.otherLive);
+				s.otherLive.clear();
+				return other;
+			}
+			if (s.designatedLive > 0) return Collections.singletonList(conn);
+			s.otherLive.add(conn);
+			counted.set(true);
+			return Collections.emptyList();
 		}
 	}
 
 	void releaseSession(int contactId, TransportId transportId) {
+		releaseSession(contactId, transportId, true, false, null);
+	}
+
+	void releaseSession(int contactId, TransportId transportId,
+			boolean byDesignated, boolean counted,
+			@Nullable InterruptibleConnection conn) {
 		synchronized (liveSessions) {
 			TransportSession s = liveSessions.get(contactId);
-			if (s != null && s.transportId.equals(transportId)
-					&& --s.count <= 0) {
-				liveSessions.remove(contactId);
+			if (s == null || !s.transportId.equals(transportId)) return;
+			if (counted) {
+				if (byDesignated) s.designatedLive--;
+				else s.otherLive.remove(conn);
 			}
+			if (--s.count <= 0) liveSessions.remove(contactId);
 		}
 	}
 
 	@Override
 	public void handleOutgoing(TransportId transportId, int contactId,
 			InputStream in, OutputStream out) throws IOException {
+		runOutgoing(transportId, contactId, in, out, new AtomicBoolean(),
+				false);
+	}
+
+	@Override
+	public boolean handleOutgoingSession(TransportId transportId,
+			int contactId, InputStream in, OutputStream out) {
+		return handleOutgoingSession(transportId, contactId, in, out, false);
+	}
+
+	@Override
+	public boolean handleOutgoingSession(TransportId transportId,
+			int contactId, InputStream in, OutputStream out,
+			boolean refusalExpected) {
+		AtomicBoolean authenticated = new AtomicBoolean(false);
+		try {
+			runOutgoing(transportId, contactId, in, out, authenticated,
+					refusalExpected);
+		} catch (IOException e) {
+		}
+		return authenticated.get();
+	}
+
+	private void runOutgoing(TransportId transportId, int contactId,
+			InputStream in, OutputStream out, AtomicBoolean authenticated,
+			boolean refusalExpected) throws IOException {
 		StoredContactSession stored = sessionProvider.getStoredSession(contactId);
 		if (stored == null) throw new FormatException();
 		runResumed(transportId, contactId, stored, in, out, false,
-				dialEpoch(contactId, stored.getRootKeys()), false);
+				dialEpoch(contactId, stored.getRootKeys()), false, null,
+				authenticated, !refusalExpected);
 	}
 
 	private long dialEpoch(int contactId, ContactRootKeys keys) {
@@ -123,6 +193,13 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 	public void handleIncoming(TransportId transportId, InputStream in,
 			OutputStream out, boolean viaAuthorizedService)
 			throws IOException {
+		handleIncoming(transportId, in, out, viaAuthorizedService, null);
+	}
+
+	@Override
+	public void handleIncoming(TransportId transportId, InputStream in,
+			OutputStream out, boolean viaAuthorizedService,
+			@Nullable String localOnion) throws IOException {
 		BufferedInputStream bufferedIn = new BufferedInputStream(in);
 		byte[] tag = peekTag(bufferedIn);
 		int contactId = sessionProvider.recogniseIncoming(tag);
@@ -144,7 +221,9 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 				tag);
 		if (epoch < 0) epoch = keys.getSendEpoch();
 		runResumed(transportId, contactId, stored, bufferedIn, out, true,
-				epoch, tor && viaAuthorizedService);
+				epoch, tor && viaAuthorizedService,
+				tor && !viaAuthorizedService ? localOnion : null,
+				new AtomicBoolean(), true);
 	}
 
 	@Override
@@ -155,19 +234,24 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		if (stored == null) throw new FormatException();
 		runResumed(transportId, contactId, stored, in, out, incoming,
 				incoming ? stored.getRootKeys().getSendEpoch()
-						: dialEpoch(contactId, stored.getRootKeys()), false);
+						: dialEpoch(contactId, stored.getRootKeys()), false,
+				null, new AtomicBoolean(), true);
 	}
 
 	private void runResumed(TransportId transportId, int contactId,
 			StoredContactSession stored, InputStream in, OutputStream out,
-			boolean incoming, long sendEpoch, boolean viaAuthorizedService)
-			throws IOException {
-		if (!acquireSession(contactId, transportId)) {
+			boolean incoming, long sendEpoch, boolean viaAuthorizedService,
+			@Nullable String inboundOnion, AtomicBoolean authenticated,
+			boolean countUnauthenticated) throws IOException {
+		boolean byDesignated = stored.isAlice() != incoming;
+		if (!acquireSession(contactId, transportId, byDesignated)) {
 			wipe(stored.getRootKeys());
 			return;
 		}
 		ZwfDuplexConnection connection = null;
 		AtomicBoolean registered = new AtomicBoolean(false);
+		AtomicBoolean counted = new AtomicBoolean(false);
+		InterruptibleConnection[] live = new InterruptibleConnection[1];
 		try {
 			connection = establisher.resume(contactId, stored.getRootKeys(),
 					sendEpoch, stored.isAlice(), stored.getGeneration(), in,
@@ -193,6 +277,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 					}
 				}
 			};
+			live[0] = ic;
 			connection.setFirstFrameListener(epoch -> {
 				if (viaAuthorizedService) {
 					inboundPolicy.inboundViaAuthorizedService(c);
@@ -207,7 +292,13 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 							transportId, ic, new Priority(nonce));
 				}
 				registered.set(true);
-				sessionProvider.sessionEstablished(contactId);
+				authenticated.set(true);
+				sessionProvider.sessionEstablished(contactId,
+						incoming ? inboundOnion : null);
+				for (InterruptibleConnection redundant : sessionLive(contactId,
+						transportId, byDesignated, ic, counted)) {
+					redundant.forceClose();
+				}
 			});
 			if (evolutions != null) {
 				connection.setControlHandler(
@@ -229,8 +320,10 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		} finally {
 			if (connection != null) connection.destroyKeyMaterial();
 			wipe(stored.getRootKeys());
-			releaseSession(contactId, transportId);
-			if (!incoming && evolutions != null) {
+			releaseSession(contactId, transportId, byDesignated, counted.get(),
+					live[0]);
+			if (!incoming && evolutions != null
+					&& (registered.get() || countUnauthenticated)) {
 				evolutions.dialEnded(new ContactId(contactId),
 						registered.get());
 			}

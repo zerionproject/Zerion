@@ -9,6 +9,7 @@ import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseConfig;
+import org.zerionproject.core.api.db.DbClosedException;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.Metadata;
@@ -191,6 +192,55 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		assertFalse(db.containsContact(txn, contactId));
 		assertFalse(db.containsGroup(txn, groupId));
 		assertFalse(db.containsMessage(txn, messageId));
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testPcsSessionRowRoundTrip() throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+		db.addIdentity(txn, identity);
+		db.addContact(txn, author, localAuthor.getId(), null, true);
+		SecretKey chain = getSecretKey();
+		SecretKey root = getSecretKey();
+		PrivateKey dhPrivate = new org.zerionproject.core.api.crypto
+				.AgreementPrivateKey(getRandomBytes(32));
+		PublicKey dhPublic = new org.zerionproject.core.api.crypto
+				.AgreementPublicKey(getRandomBytes(32));
+		PublicKey dhRemote = new org.zerionproject.core.api.crypto
+				.AgreementPublicKey(getRandomBytes(32));
+		byte[] blob = getRandomBytes(40);
+		db.setPcsMode2SessionState(txn, contactId, 0, chain, 7, 3, root,
+				dhPrivate, dhPublic, dhRemote, true, blob);
+		db.setPcsMode2SessionState(txn, contactId, 1, chain, 0, 0, null,
+				null, null, null, false, null);
+		db.commitTransaction(txn);
+		db.close();
+
+		db = open(true);
+		txn = db.startTransaction();
+		org.zerionproject.core.api.db.PcsSessionRow full =
+				db.getPcsMode2SessionState(txn, contactId, 0);
+		assertArrayEquals(chain.getBytes(), full.getChainKey());
+		assertEquals(7, full.getMessageNumber());
+		assertEquals(3, full.getPreviousChainLength());
+		assertArrayEquals(root.getBytes(), full.getRootKey());
+		assertArrayEquals(dhPrivate.getEncoded(), full.getDhPrivateKey());
+		assertArrayEquals(dhPublic.getEncoded(), full.getDhPublicKey());
+		assertArrayEquals(dhRemote.getEncoded(), full.getDhRemotePublicKey());
+		assertTrue(full.isMode2Enabled());
+		assertArrayEquals(blob, full.getMode3FullStateBlob());
+		org.zerionproject.core.api.db.PcsSessionRow bare =
+				db.getPcsMode2SessionState(txn, contactId, 1);
+		assertArrayEquals(chain.getBytes(), bare.getChainKey());
+		assertNull(bare.getRootKey());
+		assertNull(bare.getDhPrivateKey());
+		assertNull(bare.getDhPublicKey());
+		assertNull(bare.getDhRemotePublicKey());
+		assertFalse(bare.isMode2Enabled());
+		assertNull(bare.getMode3FullStateBlob());
+		assertNull(db.getPcsMode2SessionState(txn, contactId, 2));
 		db.commitTransaction(txn);
 		db.close();
 	}
@@ -523,6 +573,27 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		merged.put("bar", "baz");
 		merged.put("bam", "bam");
 		assertEquals(merged, db.getSettings(txn, "test"));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testSettingsNamespacesAreListedByPrefix() throws Exception {
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		Settings s = new Settings();
+		s.put("k", "v");
+		db.mergeSettings(txn, s, "grouptr.alias.aa");
+		db.mergeSettings(txn, s, "grouptr.alias.bb");
+		db.mergeSettings(txn, s, "grouptr.aliasx");
+		db.mergeSettings(txn, s, "other");
+		java.util.Set<String> listed = new java.util.HashSet<>(
+				db.getSettingsNamespaces(txn, "grouptr.alias."));
+		assertEquals(new java.util.HashSet<>(java.util.Arrays.asList(
+				"grouptr.alias.aa", "grouptr.alias.bb")), listed);
+		assertTrue(db.getSettingsNamespaces(txn, "none.").isEmpty());
 
 		db.commitTransaction(txn);
 		db.close();
@@ -1594,6 +1665,44 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testGetUndeliverableMessages() throws Exception {
+		Message unknown = getMessage(groupId);
+		Message pending = getMessage(groupId);
+		Message delivered = getMessage(groupId);
+		Message invalid = getMessage(groupId);
+		Message unknownWithBody = getMessage(groupId);
+		Message pendingWithBody = getMessage(groupId);
+
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+
+		db.addGroup(txn, group);
+		db.addMessage(txn, unknown, UNKNOWN, true, false, contactId);
+		db.addMessage(txn, pending, PENDING, true, false, contactId);
+		db.addMessage(txn, delivered, DELIVERED, true, false, contactId);
+		db.addMessage(txn, invalid, INVALID, true, false, contactId);
+		db.addMessage(txn, unknownWithBody, UNKNOWN, true, false, contactId);
+		db.addMessage(txn, pendingWithBody, PENDING, true, false, contactId);
+		db.deleteMessage(txn, unknown.getId());
+		db.eraseMessageBody(txn, pending.getId());
+		db.eraseMessageBody(txn, delivered.getId());
+		db.deleteMessage(txn, invalid.getId());
+
+		Collection<MessageId> result = db.getUndeliverableMessages(txn);
+		assertEquals(2, result.size());
+		assertTrue(result.contains(unknown.getId()));
+		assertTrue(result.contains(pending.getId()));
+
+		assertEquals(singletonList(unknownWithBody.getId()),
+				new ArrayList<>(db.getMessagesToValidate(txn)));
+		assertEquals(singletonList(pendingWithBody.getId()),
+				new ArrayList<>(db.getPendingMessages(txn)));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testGetMessagesToShare() throws Exception {
 		Message message1 = getMessage(groupId);
 		Message message2 = getMessage(groupId);
@@ -1740,6 +1849,46 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testPurgeAfterRemovalKeepsWhatWasNotRemoved()
+			throws Exception {
+		Message kept = getMessage(groupId);
+		Database<Connection> db = open(false);
+		Connection txn = db.startTransaction();
+		db.addGroup(txn, group);
+		db.addMessage(txn, message, DELIVERED, true, false, null);
+		db.addMessage(txn, kept, DELIVERED, true, false, null);
+		db.commitTransaction(txn);
+
+		txn = db.startTransaction();
+		db.removeMessage(txn, messageId);
+		db.commitTransaction(txn);
+
+		assertTrue(db.purgeDeletedContent());
+		assertTrue(db.purgeDeletedContent());
+
+		txn = db.startTransaction();
+		assertFalse(db.containsMessage(txn, messageId));
+		assertArrayEquals(kept.getBody(),
+				db.getMessage(txn, kept.getId()).getBody());
+		db.commitTransaction(txn);
+		db.close();
+
+		db = open(true);
+		txn = db.startTransaction();
+		assertFalse(db.containsMessage(txn, messageId));
+		assertTrue(db.containsMessage(txn, kept.getId()));
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test(expected = DbClosedException.class)
+	public void testPurgeAfterCloseThrows() throws Exception {
+		Database<Connection> db = open(false);
+		db.close();
+		db.purgeDeletedContent();
+	}
+
+	@Test
 	public void testDeleteMessage() throws Exception {
 		Database<Connection> db = open(false);
 		Connection txn = db.startTransaction();
@@ -1775,6 +1924,51 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 		} catch (MessageDeletedException expected) {
 
 		}
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
+	public void testErasingABodyKeepsItsMetadataAndItsCleanupDeadline()
+			throws Exception {
+		long duration = 60_000;
+		long now = System.currentTimeMillis();
+		AtomicLong time = new AtomicLong(now);
+		Database<Connection> db =
+				open(false, new TestMessageFactory(), new SettableClock(time));
+		Connection txn = db.startTransaction();
+
+		db.addIdentity(txn, identity);
+		assertEquals(contactId,
+				db.addContact(txn, author, localAuthor.getId(), null, true));
+		db.addGroup(txn, group);
+		db.addGroupVisibility(txn, contactId, groupId, true);
+		db.addMessage(txn, message, DELIVERED, true, false, null);
+		Metadata metadata = new Metadata();
+		metadata.put("editedAt", new byte[] {1, 2, 3});
+		db.mergeMessageMetadata(txn, messageId, metadata);
+		db.setCleanupTimerDuration(txn, messageId, duration);
+		assertEquals(now + duration, db.startCleanupTimer(txn, messageId));
+		assertOneMessageToSendLazily(db, txn);
+
+		db.eraseMessageBody(txn, messageId);
+
+		try {
+			db.getMessage(txn, messageId);
+			fail();
+		} catch (MessageDeletedException expected) {
+		}
+		assertTrue(db.containsVisibleMessage(txn, contactId, messageId));
+		assertEquals(DELIVERED, db.getMessageState(txn, messageId));
+		assertArrayEquals(metadata.get("editedAt"),
+				db.getMessageMetadata(txn, messageId).get("editedAt"));
+		assertNothingToSendLazily(db, txn);
+		assertNothingToSendEagerly(db, txn);
+		assertEquals(now + duration, db.getNextCleanupDeadline(txn));
+		time.set(now + duration);
+		assertEquals(singletonMap(groupId, singletonList(messageId)),
+				db.getMessagesToDelete(txn));
 
 		db.commitTransaction(txn);
 		db.close();

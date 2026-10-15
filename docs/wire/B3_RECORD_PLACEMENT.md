@@ -246,7 +246,7 @@ absorbed.
 |----------------------------|--------------|------------------|
 | `messaging` clientId       | `org.zerionproject.app.messaging` | (unchanged) |
 | `messaging.majorVersion`   | 0            | 0 (unchanged)    |
-| `messaging.minorVersion`   | 4            | **6** (current shipped; `B3_PROOF_ENABLED ? 6 : 5`) |
+| `messaging.minorVersion`   | 4            | **6** (`B3_PROOF_ENABLED ? 6 : 5` in v1.5.0; raised later, see below) |
 | `CONTACT_INFO` BDF list    | 4 slots      | **5 slots**      |
 | Handshake record types     | 0x00..0x05   | (unchanged)      |
 
@@ -280,9 +280,12 @@ release builds and is now permanently on. Retained for history:
 4. ~~Confirm 1.4 ↔ 1.5 cross-version still succeeds (legacy fall-through).~~ Done.
 5. ~~Ship `B3_PROOF_ENABLED = true` in both v1.5.0 release builds.~~ Done.
 
-The current shipped `messaging.minorVersion` is **6**
-(`MINOR_VERSION = B3_PROOF_ENABLED ? 6 : 5`); legacy 4-slot acceptance
-is retained for cross-version interop.
+v1.5.0 shipped `messaging.minorVersion` **6**
+(`MINOR_VERSION = B3_PROOF_ENABLED ? 6 : 5`). Later releases raised it with
+each new messaging feature; from 3.0.18 it is **11**
+(`B3_PROOF_ENABLED ? 11 : 5`, see `MessagingManager.MINOR_VERSION` and
+GROUPTR_WIRE_PROTOCOL.md). Legacy 4-slot acceptance is retained for
+cross-version interop.
 
 ---
 

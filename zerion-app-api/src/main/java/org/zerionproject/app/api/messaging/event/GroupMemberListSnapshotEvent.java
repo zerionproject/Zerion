@@ -17,10 +17,18 @@ public class GroupMemberListSnapshotEvent extends Event {
 	private final byte[] memberCanonical;
 	private final byte[] recordSig;
 	private final byte[] signedInput;
+	private final byte[] record;
 
 	public GroupMemberListSnapshotEvent(ContactId contactId, byte[] groupId,
 			long epoch, long timestamp, byte[] memberCanonical,
 			byte[] recordSig, byte[] signedInput) {
+		this(contactId, groupId, epoch, timestamp, memberCanonical,
+				recordSig, signedInput, new byte[0]);
+	}
+
+	public GroupMemberListSnapshotEvent(ContactId contactId, byte[] groupId,
+			long epoch, long timestamp, byte[] memberCanonical,
+			byte[] recordSig, byte[] signedInput, byte[] record) {
 		this.contactId = contactId;
 		this.groupId = groupId;
 		this.epoch = epoch;
@@ -28,6 +36,11 @@ public class GroupMemberListSnapshotEvent extends Event {
 		this.memberCanonical = memberCanonical;
 		this.recordSig = recordSig;
 		this.signedInput = signedInput;
+		this.record = record;
+	}
+
+	public byte[] getRecord() {
+		return record;
 	}
 
 	public ContactId getContactId() {

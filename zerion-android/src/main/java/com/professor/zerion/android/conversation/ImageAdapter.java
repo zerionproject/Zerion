@@ -78,6 +78,11 @@ class ImageAdapter extends Adapter<ImageViewHolder> {
 		imageViewHolder.itemView.setOnClickListener(v ->
 				listener.onAttachmentClicked(v, conversationItem, item)
 		);
+		ConversationMessageItem message = conversationItem;
+		imageViewHolder.itemView.setOnLongClickListener(v -> {
+			listener.onMessageLongClick(message);
+			return true;
+		});
 		int size = items.size();
 		boolean isIncoming = conversationItem.isIncoming();
 		boolean hasText = conversationItem.getText() != null;

@@ -27,7 +27,7 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 9 : 5;
+					? 11 : 5;
 
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
@@ -36,6 +36,12 @@ public interface MessagingManager extends ConversationClient {
 	int REACTION_REMOVAL_MIN_VERSION = 8;
 
 	int EDIT_DELETE_MIN_VERSION = 9;
+
+	int GROUP_ACTIONS_MIN_VERSION = 10;
+
+	int GROUP_INVITER_GRANTS_MIN_VERSION = 11;
+
+	int GROUP_INCOGNITO_MIN_VERSION = 11;
 
 	long EDIT_WINDOW_MS = 24L * 60 * 60 * 1000;
 
@@ -205,4 +211,7 @@ public interface MessagingManager extends ConversationClient {
 
 	boolean deleteForEveryone(ContactId c, Collection<MessageId> messageIds)
 			throws DbException;
+
+	default void setInvitationCards(@Nullable InvitationCards cards) {
+	}
 }

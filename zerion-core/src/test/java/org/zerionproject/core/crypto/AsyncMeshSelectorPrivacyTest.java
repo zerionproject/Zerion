@@ -120,6 +120,59 @@ public class AsyncMeshSelectorPrivacyTest {
 	}
 
 	@Test
+	public void aSenderRestartDoesNotReuseAOneTimePrekey() throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 1);
+		AsyncPrekeyBundle bundle = r.bundleFor(1);
+		InMemorySettingsManager senderSettings = new InMemorySettingsManager();
+		byte[] first = sendAfterRestart(senderSettings, bundle);
+		byte[] second = sendAfterRestart(senderSettings, bundle);
+		assertEquals(AsyncEnvelope.PREKEY_KIND_ONE_TIME,
+				AsyncEnvelope.decode(first).getPrekeyKind());
+		assertEquals(AsyncEnvelope.PREKEY_KIND_SIGNED,
+				AsyncEnvelope.decode(second).getPrekeyKind());
+		r.delivery.onFrame(first);
+		r.delivery.onFrame(second);
+		assertEquals(2, r.opened.size());
+	}
+
+	@Test
+	public void everyOneTimePrekeyIsUsedOnceAcrossRestarts() throws Exception {
+		Recipient r = new Recipient(new SystemClock(), 5);
+		AsyncPrekeyBundle bundle = r.bundleFor(1);
+		InMemorySettingsManager senderSettings = new InMemorySettingsManager();
+		Set<String> used = new HashSet<>();
+		for (int i = 0; i < 5; i++) {
+			AsyncEnvelope e = AsyncEnvelope.decode(
+					sendAfterRestart(senderSettings, bundle));
+			assertEquals(AsyncEnvelope.PREKEY_KIND_ONE_TIME, e.getPrekeyKind());
+			assertTrue(used.add(StringUtils.toHexString(e.getPrekeyId())));
+		}
+		assertEquals(ids(bundle), used);
+		assertEquals(AsyncEnvelope.PREKEY_KIND_SIGNED, AsyncEnvelope.decode(
+				sendAfterRestart(senderSettings, bundle)).getPrekeyKind());
+		AsyncPrekeyBundle other =
+				new Recipient(new SystemClock(), 1).bundleFor(1);
+		assertEquals(AsyncEnvelope.PREKEY_KIND_ONE_TIME, AsyncEnvelope.decode(
+				sendAfterRestart(senderSettings, other)).getPrekeyKind());
+	}
+
+	private byte[] sendAfterRestart(InMemorySettingsManager senderSettings,
+			AsyncPrekeyBundle bundle) throws Exception {
+		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto, senderSettings,
+				new SystemClock());
+		AsyncMeshDelivery d = new AsyncMeshDelivery(crypto,
+				new AsyncSealedSender(crypto), sStore, (a, b, c, e) -> true,
+				sender, new SystemClock());
+		List<byte[]> captured = new ArrayList<>();
+		MeshForwarder relay = new MeshForwarder(captured::add, random);
+		MeshForwarder origin = new MeshForwarder(d, random);
+		origin.addLink(link(relay));
+		d.send(origin, bundle, 9, "x".getBytes(), 3600L,
+				System.currentTimeMillis(), true);
+		return captured.get(0);
+	}
+
+	@Test
 	public void theBundleCarriesAKeyOfItsOwnNotTheLegacyKey()
 			throws Exception {
 		Recipient r = new Recipient(new SystemClock());

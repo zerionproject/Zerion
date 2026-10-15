@@ -152,10 +152,17 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 
 	@Override
 	public void sessionEstablished(int contactId) {
+		sessionEstablished(contactId, null);
+	}
+
+	@Override
+	public void sessionEstablished(int contactId,
+			@Nullable String inboundOnion) {
 		ContactId cid = new ContactId(contactId);
 		dbExecutor.execute(() -> {
 			try {
-				onionRotation.get().onPeerSyncSessionEstablished(cid);
+				onionRotation.get().onPeerSyncSessionEstablished(cid,
+						inboundOnion);
 			} catch (DbException | RuntimeException ignored) {
 			}
 		});

@@ -107,6 +107,39 @@ public class VoiceChunkAssemblerTest {
 	}
 
 	@Test
+	public void aDeletedMemoIsForgottenAndNoOtherOne() {
+		VoiceChunkAssembler assembler = new VoiceChunkAssembler();
+		String deleted = memoId(0x800);
+		String kept = memoId(0x801);
+		assembler.addPartText(A, RECEIVED, part(deleted, 0, 1));
+		assembler.addPartText(A, RECEIVED, part(kept, 0, 1));
+		assembler.putComplete(A, deleted, "[VOICE:1000:abc]");
+		assertNotNull(assembler.getReassembled(A, RECEIVED, deleted));
+
+		assembler.forget(A, RECEIVED, deleted);
+
+		assertNull(assembler.getReassembled(A, RECEIVED, deleted));
+		assertNotNull(assembler.getReassembled(A, RECEIVED, kept));
+		assertNotNull("the sent memo with the same id is another memo",
+				assembler.getReassembled(A, SENT, deleted));
+	}
+
+	@Test
+	public void aClearedChatLeavesNoMemoOfThatContact() {
+		VoiceChunkAssembler assembler = new VoiceChunkAssembler();
+		String memo = memoId(0x900);
+		assembler.addPartText(A, RECEIVED, part(memo, 0, 1));
+		assembler.putComplete(A, memo, "[VOICE:1000:abc]");
+		assembler.addPartText(B, RECEIVED, part(memo, 0, 1));
+
+		assembler.forgetContact(A);
+
+		assertNull(assembler.getReassembled(A, RECEIVED, memo));
+		assertNull(assembler.getReassembled(A, SENT, memo));
+		assertNotNull(assembler.getReassembled(B, RECEIVED, memo));
+	}
+
+	@Test
 	public void ownCompleteMemoIsScopedToTheConversation() {
 		VoiceChunkAssembler assembler = new VoiceChunkAssembler();
 		String memo = memoId(0x600);

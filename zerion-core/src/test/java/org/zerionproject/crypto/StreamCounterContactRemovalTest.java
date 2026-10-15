@@ -25,6 +25,8 @@ import java.util.Map;
 import static org.zerionproject.core.test.TestUtils.getAuthor;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
+import static org.zerionproject.wire.ZwfConstants.DIRECTION_RECV;
+import static org.zerionproject.wire.ZwfConstants.DIRECTION_SEND;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -81,6 +83,13 @@ public class StreamCounterContactRemovalTest extends BrambleMockTestCase {
 		for (ContactHook hook : hooks) hook.removingContact(txn, c);
 	}
 
+	private void addContact(int id) throws Exception {
+		Contact c = getContact(new ContactId(id), getAuthor(),
+				new AuthorId(getRandomId()), true);
+		Transaction txn = new Transaction(null, false);
+		for (ContactHook hook : hooks) hook.addingContact(txn, c);
+	}
+
 	private static void talk(ZwfStreamCounter counter, int id) {
 		for (long s = 1; s <= SEEN; s++) {
 			assertTrue(counter.acceptRecvStreamId(id, s));
@@ -122,6 +131,39 @@ public class StreamCounterContactRemovalTest extends BrambleMockTestCase {
 		assertEquals(1, restarted.allocateSendStreamId(REUSED));
 		assertFalse(restarted.acceptRecvStreamId(OTHER, 1));
 		assertEquals(51, restarted.allocateSendStreamId(OTHER));
+	}
+
+	@Test
+	public void aContactAddedUnderAnIdWithCountersLeftBehindStartsFresh()
+			throws Exception {
+		store.storeHighWater(REUSED, DIRECTION_RECV, SEEN);
+		store.storeHighWater(REUSED, DIRECTION_SEND, 50);
+		store.storeHighWater(OTHER, DIRECTION_RECV, SEEN);
+		store.storeHighWater(OTHER, DIRECTION_SEND, 50);
+		ZwfStreamCounter counter = wiredCounter();
+		addContact(REUSED);
+		assertTrue("the new contact's first stream is accepted",
+				counter.acceptRecvStreamId(REUSED, 1));
+		assertEquals(1, counter.currentRecvHighWater(REUSED));
+		assertEquals("the new contact's send ids start at 1", 1,
+				counter.allocateSendStreamId(REUSED));
+		assertEquals(SEEN, counter.currentRecvHighWater(OTHER));
+		assertFalse(counter.acceptRecvStreamId(OTHER, 1));
+		assertEquals(51, counter.allocateSendStreamId(OTHER));
+		ZwfStreamCounter restarted = new ZwfStreamCounter(store);
+		assertEquals(1, restarted.currentRecvHighWater(REUSED));
+		assertEquals(SEEN, restarted.currentRecvHighWater(OTHER));
+	}
+
+	@Test
+	public void addingAContactDropsCountersTheProcessStillHolds()
+			throws Exception {
+		ZwfStreamCounter counter = wiredCounter();
+		talk(counter, REUSED);
+		addContact(REUSED);
+		assertTrue("the new contact's first stream is accepted",
+				counter.acceptRecvStreamId(REUSED, 1));
+		assertEquals(1, counter.allocateSendStreamId(REUSED));
 	}
 
 	private static class InMemorySettings implements SettingsManager {

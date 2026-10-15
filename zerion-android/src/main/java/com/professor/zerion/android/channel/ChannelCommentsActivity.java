@@ -204,6 +204,7 @@ public class ChannelCommentsActivity extends ZerionActivity
 		ioExecutor.execute(() -> {
 			List<ChannelComment> comments;
 			boolean enabled = true;
+			boolean channelEnabled = true;
 			byte[] ownerKey = new byte[0];
 			byte[] myKey = new byte[0];
 			boolean owner = false;
@@ -214,8 +215,10 @@ public class ChannelCommentsActivity extends ZerionActivity
 				comments = Collections.emptyList();
 			}
 			try {
-				enabled =
+				channelEnabled =
 						channelManager.areDiscussionsEnabled(channelId);
+				enabled = channelManager.areCommentsEnabled(channelId,
+						parentSeq);
 				org.zerionproject.app.api.channel.ChannelState s =
 						channelManager.getChannel(channelId);
 				if (s != null) {
@@ -228,13 +231,14 @@ public class ChannelCommentsActivity extends ZerionActivity
 			}
 			List<ChannelComment> finalComments = comments;
 			final boolean finalEnabled = enabled;
+			final boolean finalChannelEnabled = channelEnabled;
 			final byte[] finalOwnerKey = ownerKey;
 			final byte[] finalMyKey = myKey;
 			final boolean finalOwner = owner;
 			runOnUiThreadUnlessDestroyed(() -> {
 				adapter.setKeys(finalOwnerKey, finalMyKey, finalOwner);
 				render(finalComments);
-				bindComposerEnabled(finalEnabled);
+				bindComposerEnabled(finalEnabled, finalChannelEnabled);
 			});
 		});
 	}
@@ -261,9 +265,12 @@ public class ChannelCommentsActivity extends ZerionActivity
 				.show();
 	}
 
-	private void bindComposerEnabled(boolean enabled) {
+	private void bindComposerEnabled(boolean enabled, boolean channelEnabled) {
 		composeBar.setVisibility(enabled ? View.VISIBLE : View.GONE);
 		disabledNotice.setVisibility(enabled ? View.GONE : View.VISIBLE);
+		disabledNotice.setText(channelEnabled
+				? R.string.channels_post_comments_off
+				: R.string.channels_comments_disabled_compose);
 	}
 
 	private void render(List<ChannelComment> comments) {

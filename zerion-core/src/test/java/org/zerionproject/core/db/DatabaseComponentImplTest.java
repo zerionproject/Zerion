@@ -7,6 +7,7 @@ import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.crypto.PrivateKey;
+import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.ContactExistsException;
@@ -18,6 +19,7 @@ import org.zerionproject.core.api.db.NoSuchIdentityException;
 import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.db.NoSuchPendingContactException;
 import org.zerionproject.core.api.db.NoSuchTransportException;
+import org.zerionproject.core.api.db.event.PurgeRequestedEvent;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.Author;
@@ -229,6 +231,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			oneOf(eventBus).broadcast(with(any(IdentityRemovedEvent.class)));
 
 			oneOf(database).commitTransaction(txn);
+			oneOf(eventBus).broadcast(with(any(PurgeRequestedEvent.class)));
 
 			oneOf(database).close();
 		}});
@@ -699,11 +702,11 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			throws Exception {
 		context.checking(new Expectations() {{
 
-			exactly(16).of(database).startTransaction();
+			exactly(17).of(database).startTransaction();
 			will(returnValue(txn));
-			exactly(16).of(database).containsMessage(txn, messageId);
+			exactly(17).of(database).containsMessage(txn, messageId);
 			will(returnValue(false));
-			exactly(16).of(database).abortTransaction(txn);
+			exactly(17).of(database).abortTransaction(txn);
 
 			allowing(database).containsContact(txn, contactId);
 			will(returnValue(true));
@@ -722,6 +725,14 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 		try {
 			db.transaction(false, transaction ->
 					db.deleteMessageMetadata(transaction, messageId));
+			fail();
+		} catch (NoSuchMessageException expected) {
+
+		}
+
+		try {
+			db.transaction(false, transaction ->
+					db.eraseMessageBody(transaction, messageId));
 			fail();
 		} catch (NoSuchMessageException expected) {
 
@@ -1562,6 +1573,7 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			will(returnValue(keys));
 
 			oneOf(database).commitTransaction(txn);
+			oneOf(eventBus).broadcast(with(any(PurgeRequestedEvent.class)));
 		}});
 		DatabaseComponent db = createDatabaseComponent(database, eventBus,
 				eventExecutor, shutdownManager);
@@ -1952,6 +1964,234 @@ public class DatabaseComponentImplTest extends BrambleMockTestCase {
 			transaction.attach(action3);
 			transaction.attach(action4);
 		});
+	}
+
+	@Test
+	public void testOnePurgeIsRequestedAfterACommittedDeletion()
+			throws Exception {
+		Sequence sequence = context.sequence("sequence");
+		context.checking(new Expectations() {{
+			oneOf(database).startTransaction();
+			will(returnValue(txn));
+			inSequence(sequence);
+			exactly(2).of(database).containsMessage(txn, messageId);
+			will(returnValue(true));
+			oneOf(database).removeMessage(txn, messageId);
+			oneOf(database).deleteMessage(txn, messageId);
+			oneOf(database).deleteSettings(txn, "namespace",
+					singletonList("key"));
+			oneOf(database).getSettings(txn, "namespace");
+			will(returnValue(new Settings()));
+			oneOf(database).commitTransaction(txn);
+			inSequence(sequence);
+			oneOf(eventBus).broadcast(with(any(SettingsUpdatedEvent.class)));
+			inSequence(sequence);
+			oneOf(eventBus).broadcast(with(any(PurgeRequestedEvent.class)));
+			inSequence(sequence);
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		db.transaction(false, transaction -> {
+			db.removeMessage(transaction, messageId);
+			db.deleteMessage(transaction, messageId);
+			db.deleteSettings(transaction, "namespace",
+					singletonList("key"));
+			assertTrue(transaction.isPurgeRequested());
+		});
+	}
+
+	@Test
+	public void testEveryDeletionRequestsAPurge() throws Exception {
+		context.checking(new Expectations() {{
+			allowing(database).startTransaction();
+			will(returnValue(txn));
+			allowing(database).containsMessage(txn, messageId);
+			will(returnValue(true));
+			allowing(database).containsGroup(txn, groupId);
+			will(returnValue(true));
+			allowing(database).containsContact(txn, contactId);
+			will(returnValue(true));
+			allowing(database).containsIdentity(txn, localAuthor.getId());
+			will(returnValue(true));
+			allowing(database).containsPendingContact(txn, pendingContactId);
+			will(returnValue(true));
+			allowing(database).getGroupVisibility(txn, groupId);
+			will(returnValue(emptyMap()));
+			allowing(database).getSettings(txn, "namespace");
+			will(returnValue(new Settings()));
+			ignoring(database).removeMessage(txn, messageId);
+			ignoring(database).deleteMessage(txn, messageId);
+			ignoring(database).deleteMessageMetadata(txn, messageId);
+			ignoring(database).eraseMessageBody(txn, messageId);
+			ignoring(database).removeAllGroupMessages(txn, groupId);
+			ignoring(database).removeGroup(txn, groupId);
+			ignoring(database).removeContact(txn, contactId);
+			ignoring(database).removeIdentity(txn, localAuthor.getId());
+			ignoring(database).removePendingContact(txn, pendingContactId);
+			ignoring(database).removeTemporaryMessages(txn);
+			ignoring(database).deleteSettings(txn, "namespace",
+					singletonList("key"));
+			ignoring(database).deleteSettingsNamespaces(txn,
+					singletonList("namespace"));
+			ignoring(database).abortTransaction(txn);
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		java.util.List<DbDeletion> deletions = asList(
+				t -> db.removeMessage(t, messageId),
+				t -> db.deleteMessage(t, messageId),
+				t -> db.deleteMessageMetadata(t, messageId),
+				t -> db.eraseMessageBody(t, messageId),
+				t -> db.removeAllGroupMessages(t, groupId),
+				t -> db.removeGroup(t, group),
+				t -> db.removeContact(t, contactId),
+				t -> db.removeIdentity(t, localAuthor.getId()),
+				t -> db.removePendingContact(t, pendingContactId),
+				t -> db.removeTemporaryMessages(t),
+				t -> db.deleteSettings(t, "namespace", singletonList("key")),
+				t -> db.deleteSettingsNamespaces(t,
+						singletonList("namespace")));
+		for (DbDeletion deletion : deletions) {
+			org.zerionproject.core.api.db.Transaction transaction =
+					db.startTransaction(false);
+			try {
+				assertFalse(transaction.isPurgeRequested());
+				deletion.delete(transaction);
+				assertTrue(transaction.isPurgeRequested());
+			} finally {
+				db.endTransaction(transaction);
+			}
+		}
+	}
+
+	@Test
+	public void testNoPurgeIsRequestedWhenTheDeletionIsRolledBack()
+			throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(database).startTransaction();
+			will(returnValue(txn));
+			oneOf(database).containsMessage(txn, messageId);
+			will(returnValue(true));
+			oneOf(database).removeMessage(txn, messageId);
+			oneOf(database).abortTransaction(txn);
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		try {
+			db.transaction(false, transaction -> {
+				db.removeMessage(transaction, messageId);
+				throw new IllegalStateException();
+			});
+			fail();
+		} catch (IllegalStateException expected) {
+		}
+	}
+
+	@Test
+	public void testPurgeRunsOutsideTransactions() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(database).purgeDeletedContent();
+			will(returnValue(true));
+			oneOf(database).purgeDeletedContent();
+			will(returnValue(false));
+			oneOf(database).startTransaction();
+			will(returnValue(txn));
+			oneOf(database).commitTransaction(txn);
+			oneOf(database).close();
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		assertTrue(db.purgeDeletedContent());
+		assertFalse(db.purgeDeletedContent());
+		db.transaction(true, transaction -> {
+			try {
+				db.purgeDeletedContent();
+				fail();
+			} catch (IllegalStateException expected) {
+			}
+		});
+		db.close();
+		assertTrue(db.purgeDeletedContent());
+	}
+
+	@Test
+	public void testEveryKeyMaterialChangeRequestsAPurge() throws Exception {
+		context.checking(new Expectations() {{
+			allowing(database).startTransaction();
+			will(returnValue(txn));
+			allowing(database).containsContact(txn, contactId);
+			will(returnValue(true));
+			allowing(database).containsIdentity(txn, localAuthor.getId());
+			will(returnValue(true));
+			allowing(database).containsPendingContact(txn, pendingContactId);
+			will(returnValue(true));
+			allowing(database).containsTransport(txn, transportId);
+			will(returnValue(true));
+			ignoring(database).setPendingContactOurKeys(
+					with(any(Object.class)), with(any(PendingContactId.class)),
+					with(any(byte[].class)), with(any(byte[].class)));
+			ignoring(database).removeTransportKeys(txn, transportId, keySetId);
+			ignoring(database).setHandshakeKeyPair(with(any(Object.class)),
+					with(any(AuthorId.class)), with(any(PublicKey.class)),
+					with(any(PrivateKey.class)));
+			ignoring(database).setHybridHandshakeKeyPair(
+					with(any(Object.class)), with(any(AuthorId.class)),
+					with(any(PublicKey.class)), with(any(PrivateKey.class)));
+			ignoring(database).setMlDsaSigKeyPair(with(any(Object.class)),
+					with(any(AuthorId.class)), with(any(byte[].class)),
+					with(any(byte[].class)));
+			ignoring(database).removePcsState(txn, contactId);
+			ignoring(database).removePcsSessionState(txn, contactId, 0);
+			ignoring(database).setPcsMode2SessionState(
+					with(any(Object.class)), with(any(ContactId.class)),
+					with(any(Integer.class)), with(any(SecretKey.class)),
+					with(any(Integer.class)), with(any(Integer.class)),
+					with(aNull(SecretKey.class)), with(aNull(PrivateKey.class)),
+					with(aNull(PublicKey.class)), with(aNull(PublicKey.class)),
+					with(any(Boolean.class)), with(aNull(byte[].class)));
+			ignoring(database).removePqRatchetState(txn, contactId);
+			ignoring(database).abortTransaction(txn);
+		}});
+		DatabaseComponent db = createDatabaseComponent(database, eventBus,
+				eventExecutor, shutdownManager);
+
+		PublicKey pub = getAgreementPublicKey();
+		PrivateKey priv = getAgreementPrivateKey();
+		java.util.List<DbDeletion> changes = asList(
+				t -> db.setPendingContactOurKeys(t, pendingContactId,
+						new byte[32], new byte[32]),
+				t -> db.removeTransportKeys(t, transportId, keySetId),
+				t -> db.updateTransportKeys(t, emptyList()),
+				t -> db.setHandshakeKeyPair(t, localAuthor.getId(), pub, priv),
+				t -> db.setHybridHandshakeKeyPair(t, localAuthor.getId(), pub,
+						priv),
+				t -> db.setMlDsaSigKeyPair(t, localAuthor.getId(),
+						new byte[32], new byte[32]),
+				t -> db.removePcsState(t, contactId),
+				t -> db.removePcsSessionState(t, contactId, 0),
+				t -> db.setPcsMode2SessionState(t, contactId, 0, key, 1, 0,
+						null, null, null, null, false, null),
+				t -> db.removePqRatchetState(t, contactId));
+		for (DbDeletion change : changes) {
+			org.zerionproject.core.api.db.Transaction transaction =
+					db.startTransaction(false);
+			try {
+				assertFalse(transaction.isPurgeRequested());
+				change.delete(transaction);
+				assertTrue(transaction.isPurgeRequested());
+			} finally {
+				db.endTransaction(transaction);
+			}
+		}
+	}
+
+	private interface DbDeletion {
+		void delete(org.zerionproject.core.api.db.Transaction t)
+				throws Exception;
 	}
 
 	private static class TestEvent extends Event {

@@ -171,12 +171,15 @@ public class SharedMediaSanitizerGapsTest {
 	}
 
 	@Test
-	public void anIcoFileIsSentAsItIs() throws Exception {
+	public void anIcoFileIsRefusedBecauseItCannotBeCleaned()
+			throws Exception {
 		byte[] ico = withMarker(0, 0, 1, 0, 1, 0, 16, 16, 0, 0, 1, 0, 32, 0);
-		SharedMediaSanitizer.Cleaned c = sanitizer.sanitize(stage(ico),
-				"application/octet-stream", ico, MAX);
-		assertArrayEquals(ico, c.getData());
-		assertEquals("application/octet-stream", c.getMimeType());
+		try {
+			sanitizer.sanitize(stage(ico), "application/octet-stream", ico,
+					MAX);
+			fail("an icon file went out without being cleaned");
+		} catch (MediaRefusedException expected) {
+		}
 	}
 
 	@Test
@@ -187,7 +190,7 @@ public class SharedMediaSanitizerGapsTest {
 		byte[] mp3 = concat(id3v23(MARKER), padded);
 		SharedMediaSanitizer.Cleaned c = sanitizer.sanitize(stage(mp3),
 				"audio/mpeg", mp3, MAX);
-		assertArrayEquals(padded, c.getData());
+		assertArrayEquals(frames, c.getData());
 		byte[] bare = mpegFrames(20);
 		c = sanitizer.sanitize(stage(bare), "audio/mpeg", bare, MAX);
 		assertArrayEquals(bare, c.getData());

@@ -55,7 +55,8 @@
 		android:layout_height="wrap_content"
 		android:layout_marginEnd="4dp"
 		android:minWidth="0dp"
-		android:text="@string/channels_pending_deny" />
+		android:text="@string/channels_pending_deny"
+		android:textColor="?attr/zerionAccentText" />
 
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/applicantApproveButton"

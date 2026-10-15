@@ -11,6 +11,7 @@ import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.data.MetadataParser;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
@@ -92,6 +93,26 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 		this.b4OnionRotation = b4OnionRotation;
 		localGroup = contactGroupFactory.createLocalGroup(CLIENT_ID,
 				MAJOR_VERSION);
+		b4OnionRotation.bindDeliveryCheck(this::hasReceivedNextOnion);
+	}
+
+	private boolean hasReceivedNextOnion(Transaction txn, ContactId c,
+			String nextOnion) throws DbException {
+		try {
+			Group g = getContactGroup(db.getContact(txn, c));
+			LatestUpdate latest = findLatest(txn, g.getId(), TorConstants.ID,
+					true);
+			if (latest == null) return false;
+			BdfList message = clientHelper.getMessageAsList(txn,
+					latest.messageId, false);
+			if (!nextOnion.equals(parseProperties(message)
+					.get(WIRE_KEY_ONION3_NEXT))) {
+				return false;
+			}
+			return db.getMessageStatus(txn, c, latest.messageId).isSeen();
+		} catch (FormatException | NoSuchMessageException e) {
+			return false;
+		}
 	}
 
 	@Override
@@ -313,6 +334,11 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 
 	private TransportProperties getRemoteProperties(Transaction txn, Contact c,
 			TransportId t) throws DbException {
+		return getRemoteProperties(txn, c, t, true);
+	}
+
+	private TransportProperties getRemoteProperties(Transaction txn, Contact c,
+			TransportId t, boolean authorizedFirst) throws DbException {
 		Group g = getContactGroup(c);
 		try {
 			TransportProperties remote;
@@ -335,8 +361,9 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 				merged.putAll(remote);
 			}
 			if (TorConstants.ID.equals(t)) {
-				String authorized = onionClientAuthManager.get()
-						.getDialOnion(c.getId());
+				String authorized = authorizedFirst
+						? onionClientAuthManager.get().getDialOnion(c.getId())
+						: null;
 				if (authorized != null) {
 					merged.put(org.zerionproject.core.api.plugin
 							.TorConstants.PROP_ONION_V3, authorized);
@@ -380,6 +407,13 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 			throws DbException {
 		return db.transactionWithResult(true, txn ->
 				getRemoteProperties(txn, db.getContact(txn, c), t));
+	}
+
+	@Override
+	public TransportProperties getOpenRemoteProperties(ContactId c,
+			TransportId t) throws DbException {
+		return db.transactionWithResult(true, txn ->
+				getRemoteProperties(txn, db.getContact(txn, c), t, false));
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package com.professor.zerion.android.attachment;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -58,6 +59,7 @@ public class WebmRemuxDeviceTest {
 		assertFalse("device details were sent", DeviceMediaFiles.contains(
 				c.getData(), "com.android.".getBytes(
 						StandardCharsets.US_ASCII)));
+		MuxerFields.assertWebmWriterFieldsBlank("a sent WebM", c.getData());
 		return out;
 	}
 
@@ -77,6 +79,9 @@ public class WebmRemuxDeviceTest {
 		File in = tempFile(".webm");
 		DeviceMediaFiles.mux(in, MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM,
 				vp8, opus);
+		assertTrue("this device's muxer names no writer",
+				MuxerFields.hasWebmWriterName(Files.readAllBytes(
+						in.toPath())));
 		SharedMediaSanitizer.Cleaned c = share(in, "video/webm");
 		assertEquals("video/webm", c.getMimeType());
 		File out = sent(c);

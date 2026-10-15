@@ -52,7 +52,7 @@
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:text="@string/channels_pinned_label"
-				android:textColor="@color/zerion_primary_accent"
+				android:textColor="@color/zerion_accent_text"
 				android:textSize="11sp"
 				android:textStyle="bold" />
 
@@ -70,11 +70,14 @@
 
 		<ImageButton
 			android:id="@+id/channelPinnedBannerClose"
-			android:layout_width="40dp"
-			android:layout_height="40dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:layout_marginTop="-4dp"
+			android:layout_marginBottom="-4dp"
+			android:layout_marginEnd="-4dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/channels_action_unpin"
-			android:padding="10dp"
+			android:padding="14dp"
 			android:src="@drawable/ic_close"
 			android:visibility="gone"
 			app:tint="@color/zerion_text_secondary"
@@ -92,7 +95,7 @@
 		android:paddingEnd="16dp"
 		android:paddingTop="10dp"
 		android:paddingBottom="10dp"
-		android:textColor="@android:color/white"
+		android:textColor="@color/zerion_on_accent"
 		android:textSize="13sp"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelPinnedBanner"
@@ -190,21 +193,21 @@
 
 		<ImageButton
 			android:id="@+id/channelComposeTtlButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/channels_ttl_picker_cd"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:src="@drawable/ic_timer"
 			app:tint="@color/zerion_text_secondary" />
 
 		<ImageButton
 			android:id="@+id/channelComposeAttachButton"
-			android:layout_width="44dp"
-			android:layout_height="44dp"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
 			android:contentDescription="@string/channels_attach_cd"
-			android:padding="10dp"
+			android:padding="12dp"
 			android:src="@drawable/ic_attach"
 			app:tint="@color/zerion_text_secondary" />
 
@@ -218,7 +221,7 @@
 			android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
 			android:maxLength="4096"
 			android:maxLines="4"
-			android:minHeight="44dp"
+			android:minHeight="48dp"
 			android:paddingStart="14dp"
 			android:paddingEnd="14dp"
 			android:paddingTop="10dp"
@@ -236,7 +239,7 @@
 			android:layout_marginStart="8dp"
 			android:minWidth="0dp"
 			android:text="@string/channels_compose_send"
-			android:textColor="@color/zerion_primary_accent" />
+			android:textColor="@color/zerion_accent_text" />
 
 		<ProgressBar
 			android:id="@+id/channelComposeProgress"

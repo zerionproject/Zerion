@@ -43,6 +43,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	private final AttachmentRetriever retriever;
 	private final ImageCompressor imageCompressor;
 	private final MetadataStripper metadataStripper;
+	private final PdfCleaner pdfCleaner;
 
 	private final CopyOnWriteArrayList<Uri> uris = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<AttachmentItemResult> itemResults =
@@ -64,6 +65,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 		this.retriever = retriever;
 		this.imageCompressor = imageCompressor;
 		this.metadataStripper = new MetadataStripper(app);
+		this.pdfCleaner = new PdfCleaner(app);
 	}
 
 	@Override
@@ -82,7 +84,7 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 			boolean needsSize = uris.size() == 1;
 			task = new AttachmentCreationTask(messagingManager,
 					app.getContentResolver(), this, imageCompressor,
-					metadataStripper, id, uris, needsSize,
+					metadataStripper, pdfCleaner, id, uris, needsSize,
 					messageFormat);
 			ioExecutor.execute(() -> task.storeAttachments());
 		});
@@ -132,7 +134,9 @@ class AttachmentCreatorImpl implements AttachmentCreator {
 	}
 
 	private String documentErrorMessage(Throwable t) {
-		if (t instanceof ChunkedAttachmentsNotSupportedException) {
+		if (t instanceof MediaRefusedException) {
+			return app.getString(((MediaRefusedException) t).getUserMessage());
+		} else if (t instanceof ChunkedAttachmentsNotSupportedException) {
 			return app.getString(R.string.document_not_supported_by_contact);
 		} else if (t instanceof FileTooBigException) {
 			int mb = org.zerionproject.app.api.attachment.MediaConstants

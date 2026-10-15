@@ -110,6 +110,47 @@ class ChannelPullProtocol {
 			@Nullable ChannelPullCodec.ItemSync reactionsSync,
 			@Nullable ChannelPullCodec.ItemSync commentsSync)
 			throws IOException {
+		return buildResponseAsPublisher(state, publisherEd25519,
+				publisherMlDsa, manifestSignature, discussionsEnabled,
+				postsToSend, contentKeyEnvelope, neighbourHints, reactions,
+				comments, reactionsSync, commentsSync,
+				org.zerionproject.app.api.channel.ChannelConstants
+						.PROTOCOL_VERSION_DELTAS);
+	}
+
+	byte[] buildResponseAsPublisher(ChannelState state,
+			byte[] publisherEd25519, byte[] publisherMlDsa,
+			byte[] manifestSignature, boolean discussionsEnabled,
+			List<ChannelPost> postsToSend,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ChannelPullCodec.ItemSync reactionsSync,
+			@Nullable ChannelPullCodec.ItemSync commentsSync, int version)
+			throws IOException {
+		return buildResponseAsPublisher(state, publisherEd25519,
+				publisherMlDsa, manifestSignature, discussionsEnabled,
+				postsToSend, contentKeyEnvelope, neighbourHints, reactions,
+				comments, reactionsSync, commentsSync, version, null);
+	}
+
+	byte[] buildResponseAsPublisher(ChannelState state,
+			byte[] publisherEd25519, byte[] publisherMlDsa,
+			byte[] manifestSignature, boolean discussionsEnabled,
+			List<ChannelPost> postsToSend,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ChannelPullCodec.ItemSync reactionsSync,
+			@Nullable ChannelPullCodec.ItemSync commentsSync, int version,
+			@Nullable ChannelPullCodec.Discussions discussions)
+			throws IOException {
 		byte[] wireJoinCapability = state.isPublicChannel()
 				? state.getJoinCapability() : null;
 		BdfDictionary manifestDict = pullCodec.encodeManifest(
@@ -125,7 +166,7 @@ class ChannelPullProtocol {
 				discussionsEnabled, manifestSignature);
 		return pullCodec.encodePullResponse(manifestDict, postsToSend,
 				contentKeyEnvelope, neighbourHints, reactions,
-				comments, reactionsSync, commentsSync);
+				comments, reactionsSync, commentsSync, version, discussions);
 	}
 
 	ProcessResult processSubscriberResponse(byte[] responseBytes,
@@ -180,8 +221,20 @@ class ChannelPullProtocol {
 			workingState = withContentKey(localState, envContentKey);
 		}
 
+		boolean bound = resp.version >= org.zerionproject.app.api.channel
+				.ChannelConstants.PROTOCOL_VERSION_AUTHOR_BINDING;
+		boolean postChanges = resp.version >= org.zerionproject.app.api
+				.channel.ChannelConstants.PROTOCOL_VERSION_POST_CHANGES;
+		if (postChanges && resp.discussions == null) {
+			return ProcessResult.failure("discussions missing");
+		}
+		byte[] bindings = bound ? ChannelAuthorBinding.digest(crypto,
+				resp.reactions, resp.comments) : null;
+		byte[] discussions = postChanges && resp.discussions != null
+				? codec.discussionsDigest(resp.discussions.enabled,
+						resp.discussions.exceptions) : null;
 		ChannelState mergedState = mergeManifestIntoLocal(workingState,
-				resp.manifest, envContentKey);
+				resp.manifest, envContentKey, bindings, discussions);
 		if (mergedState == null) {
 			return ProcessResult.failure("manifest merge rejected");
 		}
@@ -194,6 +247,7 @@ class ChannelPullProtocol {
 		List<ChannelPost> provisional = new ArrayList<>();
 		ChannelChainTip prev = tip;
 		long lastKnownSeq = tip == null ? -1L : tip.seqNum;
+		boolean broke = false;
 		for (ChannelPost incoming : resp.newPosts) {
 			if (incoming.getSeqNum() <= lastKnownSeq) {
 				continue;
@@ -219,9 +273,16 @@ class ChannelPullProtocol {
 				provisional.add(incoming);
 				prev = tipOf(incoming);
 			} else {
+				broke = true;
 				break;
 			}
 		}
+		boolean full = resp.newPosts.size() >= org.zerionproject.app.api
+				.channel.ChannelConstants.PULL_BATCH_MAX_POSTS;
+		int taken = accepted.size();
+		accepted = withProvenErasures(mergedState, accepted, broke || full);
+		boolean complete = !broke && !full && provisional.isEmpty()
+				&& accepted.size() == taken;
 
 		boolean wireDiscussions;
 		try {
@@ -234,13 +295,79 @@ class ChannelPullProtocol {
 				resp.neighbourHints, resp.reactions, resp.comments,
 				wireDiscussions);
 		result.publisherVersion = resp.version;
+		result.boundItems = bound;
 		result.reactionsSync = resp.reactionsSync;
 		result.commentsSync = resp.commentsSync;
+		result.discussions = postChanges ? resp.discussions : null;
+		result.complete = complete;
 		return result;
+	}
+
+	@Nullable
+	List<ChannelPost> postsOf(byte[] responseBytes, byte[] channelId) {
+		try {
+			return pullCodec.decodePullResponse(responseBytes, channelId)
+					.newPosts;
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	private ChannelChainTip tipOf(ChannelPost p) {
 		return new ChannelChainTip(p.getSeqNum(), codec.canonicalHashOf(p));
+	}
+
+	private List<ChannelPost> withProvenErasures(ChannelState s,
+			List<ChannelPost> accepted, boolean moreToCome) {
+		List<ChannelPost> out = accepted;
+		boolean more = moreToCome;
+		while (true) {
+			int cut = -1;
+			for (int i = 0; i < out.size() && cut < 0; i++) {
+				ChannelPost p = out.get(i);
+				if (p.isErased() && !more && !editedLater(s, p, out, i + 1)) {
+					cut = i;
+				}
+			}
+			if (cut < 0) return out;
+			out = new ArrayList<>(out.subList(0, cut));
+			more = false;
+		}
+	}
+
+	private boolean editedLater(ChannelState s, ChannelPost target,
+			List<ChannelPost> posts, int from) {
+		String channelIdHex = ChannelStore.hex(s.getChannelId());
+		boolean unreadable = false;
+		for (int i = from; i < posts.size(); i++) {
+			ChannelPost p = posts.get(i);
+			if (p.signedByDelegate() || p.isErased()) continue;
+			String body = openedBody(s, p);
+			if (body == null) {
+				unreadable = true;
+				continue;
+			}
+			ChannelPostMarkers.Edit edit =
+					ChannelPostMarkers.edit(body, channelIdHex);
+			if (edit != null && edit.target == target.getSeqNum()
+					&& target.isEditableAt(p.getTimestampHourMs())) {
+				return true;
+			}
+		}
+		return unreadable;
+	}
+
+	@Nullable
+	private String openedBody(ChannelState s, ChannelPost p) {
+		if (s.isPublicChannel()) return p.getBody();
+		byte[] key = s.getContentKey();
+		if (key == null) return null;
+		try {
+			return contentKey.decryptBodyOf(key, p,
+					java.util.Base64.getDecoder().decode(p.getBody()));
+		} catch (GeneralSecurityException | IllegalArgumentException e) {
+			return null;
+		}
 	}
 
 	@Nullable
@@ -265,7 +392,9 @@ class ChannelPullProtocol {
 	}
 
 	private ChannelState mergeManifestIntoLocal(ChannelState local,
-			BdfDictionary manifest, @Nullable byte[] freshContentKey) {
+			BdfDictionary manifest, @Nullable byte[] freshContentKey,
+			@Nullable byte[] authorBindings,
+			@Nullable byte[] discussionsDigest) {
 		try {
 			byte[] wirePubEd = manifest.getRaw("publisherEd25519");
 			byte[] wirePubMl = manifest.getRaw("publisherMlDsa");
@@ -349,9 +478,21 @@ class ChannelPullProtocol {
 			org.zerionproject.core.api.crypto.HybridSignaturePublicKey
 					pub = new org.zerionproject.core.api.crypto
 					.HybridSignaturePublicKey(wirePubEd, wirePubMl);
-			if (!signatures.verifyManifest(wireSig, signedInput, pub)) {
-				return null;
+			boolean verified;
+			if (authorBindings != null && discussionsDigest != null) {
+				verified = signatures.verifyPostChangesManifest(wireSig,
+						ChannelCodec.postChangesManifestSignedInput(
+								signedInput, authorBindings,
+								discussionsDigest), pub);
+			} else if (authorBindings != null) {
+				verified = signatures.verifyBoundManifest(wireSig,
+						ChannelCodec.boundManifestSignedInput(signedInput,
+								authorBindings), pub);
+			} else {
+				verified = signatures.verifyManifest(wireSig, signedInput,
+						pub);
 			}
+			if (!verified) return null;
 			if (incomingSeq <= local.getManifestSeq()) {
 				return local;
 			}
@@ -415,10 +556,14 @@ class ChannelPullProtocol {
 		final boolean discussionsEnabled;
 		final String error;
 		int publisherVersion = 1;
+		boolean boundItems;
 		@Nullable
 		ChannelPullCodec.ItemSync reactionsSync;
 		@Nullable
 		ChannelPullCodec.ItemSync commentsSync;
+		@Nullable
+		ChannelPullCodec.Discussions discussions;
+		boolean complete;
 
 		private ProcessResult(boolean ok,
 				@Nullable ChannelState mergedState,

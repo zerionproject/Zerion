@@ -36,6 +36,20 @@ public class OnionAuthStore {
 	private static final String K_PROBE_UNTIL = "probeUntil";
 	private static final String K_STARTED = "started";
 	private static final String K_ROTATE_ACKED = "rotateAcked";
+	private static final String K_REPAIRS = "repairs";
+	private static final String K_NEXT_REPAIR = "nextRepair";
+	private static final String K_COMMIT_RESENT = "commitResent";
+	private static final String K_REKEYING = "rekeying";
+	private static final String K_REKEYED = "rekeyed";
+	private static final String K_LAST_SEEN = "lastSeen";
+	private static final String K_OPEN_DIALS = "openDials";
+	private static final String K_NEXT_OPEN_DIAL = "nextOpenDial";
+	private static final String K_SILENCE_REPAIRS = "silenceRepairs";
+	private static final String K_NEXT_SILENCE_REPAIR = "nextSilenceRepair";
+	private static final String K_COMMITTED_KEY = "committedKey";
+	private static final String K_COMMITTED_ONION = "committedOnion";
+	private static final String K_COMMITTED_GEN = "committedGen";
+	private static final String K_COMMITTED_LOCKED = "committedLocked";
 
 	private static final String SVC_ONION = "svc.onion";
 	private static final String SVC_KEY = "svc.key";
@@ -44,7 +58,18 @@ public class OnionAuthStore {
 	private static final String SVC_OLD_KEY = "svc.old.key";
 	private static final String SVC_OLD_SINCE = "svc.old.since";
 	private static final String SVC_LAST_ROTATION = "svc.lastRotation";
+	private static final String SVC_ROTATION_PERIOD = "svc.rotationPeriod";
 	private static final String SVC_REVOCATION_PENDING = "svc.revocationPending";
+
+	private static final String[] CONTACT_FIELDS = {K_STATE, K_LOCAL_GEN,
+			K_PEER_GEN, K_DIAL_PRIV, K_DIAL_PUB, K_PEER_ONION, K_PEER_PUB,
+			K_READY, K_PROBE_OK, K_PEER_PROBE_OK, K_COMMIT_SENT,
+			K_PEER_COMMIT, K_PROBING, K_PROBE_UNTIL, K_STARTED,
+			K_ROTATE_ACKED, K_REPAIRS, K_NEXT_REPAIR, K_COMMIT_RESENT,
+			K_REKEYING, K_REKEYED, K_LAST_SEEN, K_OPEN_DIALS,
+			K_NEXT_OPEN_DIAL, K_SILENCE_REPAIRS, K_NEXT_SILENCE_REPAIR,
+			K_COMMITTED_KEY, K_COMMITTED_ONION, K_COMMITTED_GEN,
+			K_COMMITTED_LOCKED};
 
 	public static final class ServiceRecord {
 
@@ -59,6 +84,7 @@ public class OnionAuthStore {
 		public String oldPrivateKey;
 		public long oldSinceMs;
 		public long lastRotationMs;
+		public long rotationPeriodMs;
 		public boolean revocationPending;
 	}
 
@@ -99,6 +125,20 @@ public class OnionAuthStore {
 		r.probeUntilMs = s.getLong(key(c, K_PROBE_UNTIL), 0);
 		r.negotiationStartedMs = s.getLong(key(c, K_STARTED), 0);
 		r.rotateAcked = s.getBoolean(key(c, K_ROTATE_ACKED), false);
+		r.repairs = s.getInt(key(c, K_REPAIRS), 0);
+		r.nextRepairMs = s.getLong(key(c, K_NEXT_REPAIR), 0);
+		r.commitResent = s.getBoolean(key(c, K_COMMIT_RESENT), false);
+		r.rekeying = s.getBoolean(key(c, K_REKEYING), false);
+		r.rekeyedMs = s.getLong(key(c, K_REKEYED), 0);
+		r.lastSeenMs = s.getLong(key(c, K_LAST_SEEN), 0);
+		r.openDials = s.getInt(key(c, K_OPEN_DIALS), 0);
+		r.nextOpenDialMs = s.getLong(key(c, K_NEXT_OPEN_DIAL), 0);
+		r.silenceRepairs = s.getInt(key(c, K_SILENCE_REPAIRS), 0);
+		r.nextSilenceRepairMs = s.getLong(key(c, K_NEXT_SILENCE_REPAIR), 0);
+		r.committedPeerKey = bytes(s.get(key(c, K_COMMITTED_KEY)));
+		r.committedPeerOnion = empty(s.get(key(c, K_COMMITTED_ONION)));
+		r.committedPeerGen = s.getLong(key(c, K_COMMITTED_GEN), 0);
+		r.committedLocked = s.getBoolean(key(c, K_COMMITTED_LOCKED), false);
 		return r;
 	}
 
@@ -121,18 +161,52 @@ public class OnionAuthStore {
 		s.putLong(key(c, K_PROBE_UNTIL), r.probeUntilMs);
 		s.putLong(key(c, K_STARTED), r.negotiationStartedMs);
 		s.putBoolean(key(c, K_ROTATE_ACKED), r.rotateAcked);
+		s.putInt(key(c, K_REPAIRS), r.repairs);
+		s.putLong(key(c, K_NEXT_REPAIR), r.nextRepairMs);
+		s.putBoolean(key(c, K_COMMIT_RESENT), r.commitResent);
+		s.putBoolean(key(c, K_REKEYING), r.rekeying);
+		s.putLong(key(c, K_REKEYED), r.rekeyedMs);
+		s.putLong(key(c, K_LAST_SEEN), r.lastSeenMs);
+		s.putInt(key(c, K_OPEN_DIALS), r.openDials);
+		s.putLong(key(c, K_NEXT_OPEN_DIAL), r.nextOpenDialMs);
+		s.putInt(key(c, K_SILENCE_REPAIRS), r.silenceRepairs);
+		s.putLong(key(c, K_NEXT_SILENCE_REPAIR), r.nextSilenceRepairMs);
+		s.put(key(c, K_COMMITTED_KEY), hex(r.committedPeerKey));
+		s.put(key(c, K_COMMITTED_ONION),
+				r.committedPeerOnion == null ? "" : r.committedPeerOnion);
+		s.putLong(key(c, K_COMMITTED_GEN), r.committedPeerGen);
+		s.putBoolean(key(c, K_COMMITTED_LOCKED), r.committedLocked);
 		settingsManager.mergeSettings(txn, s, NAMESPACE);
 	}
 
 	public void clear(Transaction txn, ContactId c) throws DbException {
-		Settings s = new Settings();
-		for (String f : new String[] {K_STATE, K_LOCAL_GEN, K_PEER_GEN,
-				K_DIAL_PRIV, K_DIAL_PUB, K_PEER_ONION, K_PEER_PUB, K_READY,
-				K_PROBE_OK, K_PEER_PROBE_OK, K_COMMIT_SENT, K_PEER_COMMIT,
-				K_PROBING,
-				K_PROBE_UNTIL, K_STARTED, K_ROTATE_ACKED}) {
-			s.put(key(c, f), "");
+		List<String> keys = new ArrayList<>(CONTACT_FIELDS.length);
+		for (String f : CONTACT_FIELDS) keys.add(key(c, f));
+		settingsManager.deleteSettings(txn, NAMESPACE, keys);
+	}
+
+	public void deleteClearedRecords(Transaction txn) throws DbException {
+		Settings s = settingsManager.getSettings(txn, NAMESPACE);
+		java.util.Set<String> cleared = new java.util.HashSet<>();
+		for (String k : s.keySet()) {
+			int dot = k.indexOf('.');
+			if (!k.startsWith("c") || dot < 2) continue;
+			if (!k.substring(1, dot).chars().allMatch(Character::isDigit)) {
+				continue;
+			}
+			String prefix = k.substring(0, dot + 1);
+			String state = s.get(prefix + K_STATE);
+			if (state == null || state.isEmpty()) cleared.add(k);
 		}
+		if (!cleared.isEmpty()) {
+			settingsManager.deleteSettings(txn, NAMESPACE, cleared);
+		}
+	}
+
+	public void saveRotationPeriod(Transaction txn, long periodMs)
+			throws DbException {
+		Settings s = new Settings();
+		s.putLong(SVC_ROTATION_PERIOD, periodMs);
 		settingsManager.mergeSettings(txn, s, NAMESPACE);
 	}
 
@@ -161,6 +235,7 @@ public class OnionAuthStore {
 		r.oldPrivateKey = empty(s.get(SVC_OLD_KEY));
 		r.oldSinceMs = s.getLong(SVC_OLD_SINCE, 0);
 		r.lastRotationMs = s.getLong(SVC_LAST_ROTATION, 0);
+		r.rotationPeriodMs = s.getLong(SVC_ROTATION_PERIOD, 0);
 		r.revocationPending = s.getBoolean(SVC_REVOCATION_PENDING, false);
 		return r;
 	}
@@ -175,6 +250,7 @@ public class OnionAuthStore {
 		s.put(SVC_OLD_KEY, r.oldPrivateKey == null ? "" : r.oldPrivateKey);
 		s.putLong(SVC_OLD_SINCE, r.oldSinceMs);
 		s.putLong(SVC_LAST_ROTATION, r.lastRotationMs);
+		s.putLong(SVC_ROTATION_PERIOD, r.rotationPeriodMs);
 		s.putBoolean(SVC_REVOCATION_PENDING, r.revocationPending);
 		settingsManager.mergeSettings(txn, s, NAMESPACE);
 	}

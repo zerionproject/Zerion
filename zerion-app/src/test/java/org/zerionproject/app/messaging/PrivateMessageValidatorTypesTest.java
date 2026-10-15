@@ -1,6 +1,7 @@
 package org.zerionproject.app.messaging;
 
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfList;
@@ -174,6 +175,48 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void groupPostDelete() throws Exception {
+		byte[] hybrid = getRandomBytes(PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		accept(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, hybrid), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, hybrid, 1L), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, getRandomBytes(31),
+				5L, key, getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, -1L, key,
+				getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 0x1_0000_0000L,
+				key, getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L,
+				getRandomBytes(33), getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(31), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), "now", hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, sig), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, getRandomBytes(PostQuantumConstants
+						.HYBRID_SIGNATURE_BYTES + 1)), true);
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, "signature"), true);
+	}
+
+	@Test
+	public void groupPostDeleteMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
+				getRandomBytes(32), now, getRandomBytes(PostQuantumConstants
+						.HYBRID_SIGNATURE_BYTES)), false);
+	}
+
+	@Test
 	public void groupMemberAdded() throws Exception {
 		accept(BdfList.of(GROUP_MEMBER_ADDED, id, key, "bob", 1L, now, sig),
 				true, 0);
@@ -295,6 +338,7 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	public void unknownAndReservedTypesAreRejected() throws Exception {
 		reject(BdfList.of(39, id), false);
 		reject(BdfList.of(40, id), false);
+		reject(BdfList.of(57, id), false);
 		reject(BdfList.of(99, id), false);
 		reject(BdfList.of(-1, id), false);
 	}

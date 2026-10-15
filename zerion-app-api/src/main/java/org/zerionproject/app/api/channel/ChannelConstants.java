@@ -64,7 +64,17 @@ public final class ChannelConstants {
 			"org.zerionproject/CHANNEL_POST_V2";
 	public static final int POST_SALT_BYTES = 16;
 
-	public static final int PROTOCOL_VERSION = 2;
+	public static final int PROTOCOL_VERSION = 5;
+	public static final int PROTOCOL_VERSION_DELTAS = 2;
+	public static final int PROTOCOL_VERSION_AUTHOR_BINDING = 3;
+	public static final int PROTOCOL_VERSION_POST_CHANGES = 4;
+	public static final int PROTOCOL_VERSION_ERASED_EDITS = 5;
+	public static final int POST_BODY_HASH_BYTES = 32;
+	public static final String SIGNING_LABEL_MANIFEST_V3 =
+			"org.zerionproject/CHANNEL_MANIFEST_V3";
+	public static final String SIGNING_LABEL_MANIFEST_V4 =
+			"org.zerionproject/CHANNEL_MANIFEST_V4";
+	public static final int MAX_PINNED_AUTHORS_PER_CHANNEL = 4096;
 	public static final String SIGNING_LABEL_DELEGATION =
 			"org.zerionproject/CHANNEL_DELEGATION";
 
@@ -153,6 +163,12 @@ public final class ChannelConstants {
 			"ZERION_CHANNEL_CHECK_APPROVAL_V1";
 	public static final String WIRE_TYPE_APPROVAL_RESPONSE =
 			"ZERION_CHANNEL_APPROVAL_RESPONSE_V1";
+	public static final String WIRE_TYPE_CONFIRM_ONION =
+			"ZERION_CHANNEL_CONFIRM_ONION_V1";
+	public static final String WIRE_TYPE_ONION_CONFIRMED =
+			"ZERION_CHANNEL_ONION_CONFIRMED_V1";
+	public static final String SIGNING_LABEL_ONION_CONFIRMATION =
+			"org.zerionproject/CHANNEL_ONION_CONFIRMATION";
 	public static final String SIGNING_LABEL_APPLICATION =
 			"org.zerionproject/CHANNEL_APPLICATION";
 	public static final String SIGNING_LABEL_CHECK_APPROVAL =
@@ -169,6 +185,18 @@ public final class ChannelConstants {
 	public static final String SUBMIT_STATUS_OK = "OK";
 	public static final String SUBMIT_STATUS_STALE = "STALE";
 	public static final String SUBMIT_STATUS_REFUSED = "REFUSED";
+
+	public static final String WIRE_TYPE_CHANGE_POST =
+			"ZERION_CHANNEL_CHANGE_POST_V1";
+	public static final String WIRE_TYPE_CHANGE_POST_ACK =
+			"ZERION_CHANNEL_CHANGE_POST_ACK_V1";
+	public static final String SIGNING_LABEL_POST_CHANGE =
+			"org.zerionproject/CHANNEL_POST_CHANGE";
+	public static final String CHANGE_DELETE = "D";
+	public static final String CHANGE_EDIT = "E";
+	public static final String CHANGE_COMMENTS = "C";
+	public static final long POST_EDIT_WINDOW_MS = 24L * 60L * 60L * 1000L;
+	public static final int MAX_COMMENT_EXCEPTIONS_PER_CHANNEL = 4096;
 
 	public static final int ONION_ROTATION_MIN_DAYS = 28;
 	public static final int ONION_ROTATION_MAX_DAYS = 35;
@@ -189,6 +217,7 @@ public final class ChannelConstants {
 	public static final long TTL_THIRTY_DAYS_MS = 30L * TTL_ONE_DAY_MS;
 
 	public static final String TOMBSTONE_PREFIX = "ZRN_TOMBSTONE:";
+	public static final String EDIT_PREFIX = "ZRN_EDIT:";
 	public static final String DELETED_POST_PLACEHOLDER = "[deleted]";
 
 	public static final boolean DISCUSSIONS_IN_MANIFEST = false;

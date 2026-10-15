@@ -29,7 +29,7 @@
             android:layout_height="24dp"
             android:layout_marginStart="-32dp"
             android:src="@drawable/ic_wallet_24dp"
-            app:tint="@android:color/white"
+            app:tint="@color/zerion_warning_text"
             android:importantForAccessibility="no" />
 
         <LinearLayout
@@ -78,7 +78,7 @@
             android:layout_height="24dp"
             android:layout_marginStart="-32dp"
             android:src="@drawable/ic_wallet_24dp"
-            app:tint="@android:color/white"
+            app:tint="@color/zerion_warning_text"
             android:importantForAccessibility="no" />
 
         <LinearLayout

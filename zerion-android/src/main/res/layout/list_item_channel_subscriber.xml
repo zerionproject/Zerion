@@ -42,7 +42,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:ellipsize="end"
-			android:maxLines="1"
+			android:maxLines="2"
 			android:textColor="@color/zerion_text_secondary"
 			android:textSize="13sp"
 			tools:text="abcd1234…" />
@@ -59,8 +59,8 @@
 		android:paddingTop="1dp"
 		android:paddingBottom="1dp"
 		android:text="@string/channels_subscribers_banned_label"
-		android:textColor="@android:color/white"
-		android:textSize="10sp"
+		android:textColor="@color/zerion_on_accent"
+		android:textSize="12sp"
 		android:textStyle="bold"
 		android:visibility="gone"
 		tools:visibility="visible" />

@@ -133,6 +133,7 @@
 				android:layout_marginTop="16dp"
 				android:hint="@string/add_contact_choose_a_nickname"
 				app:errorEnabled="true"
+				app:errorAccessibilityLiveRegion="1"
 				app:layout_constraintBottom_toTopOf="@+id/space"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintHorizontal_bias="0.5"

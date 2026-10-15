@@ -19,6 +19,7 @@
 			android:layout_width="match_parent"
 			android:layout_height="?attr/actionBarSize"
 			app:navigationIcon="@drawable/ic_arrow_back"
+			app:navigationContentDescription="@string/abc_action_bar_up_description"
 			app:navigationIconTint="@color/zerion_text_primary"
 			app:title="@string/grouptr_group_settings"
 			app:titleTextColor="@color/zerion_text_primary" />
@@ -49,7 +50,7 @@
 					android:layout_height="96dp"
 					android:background="@drawable/badge_circle_cyan"
 					android:gravity="center"
-					android:textColor="@android:color/white"
+					android:textColor="@color/zerion_on_accent"
 					android:textSize="34sp"
 					android:textStyle="bold"
 					tools:text="F" />
@@ -137,11 +138,115 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_person_add"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_primary_accent" />
+						app:tint="@color/zerion_accent_icon" />
 
 					<TextView
 						style="@style/GroupTrAdminActionText"
 						android:text="@string/grouptr_add_member" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/rowMembersMayInvite"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:orientation="vertical"
+					android:paddingHorizontal="20dp"
+					android:paddingVertical="8dp"
+					android:visibility="gone">
+
+					<com.google.android.material.materialswitch.MaterialSwitch
+						android:id="@+id/membersMayInviteSwitch"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:minHeight="48dp"
+						android:text="@string/grouptr_members_may_invite"
+						android:textColor="@color/zerion_text_primary"
+						android:textSize="15sp" />
+
+					<TextView
+						android:id="@+id/membersMayInviteSummary"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:text="@string/grouptr_members_may_invite_summary"
+						android:textColor="?android:attr/textColorSecondary"
+						android:textSize="12sp" />
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/actionInviteContacts"
+					style="@style/GroupTrAdminActionRow"
+					android:minHeight="52dp"
+					android:visibility="gone">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_person_add"
+						android:contentDescription="@null"
+						app:tint="@color/zerion_accent_icon" />
+
+					<LinearLayout
+						android:layout_width="0dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="1"
+						android:orientation="vertical">
+
+						<TextView
+							android:id="@+id/actionInviteContactsText"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:text="@string/grouptr_invite_contacts"
+							android:textColor="@color/zerion_text_primary"
+							android:textSize="15sp" />
+
+						<TextView
+							android:id="@+id/actionInviteContactsHint"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="2dp"
+							android:textColor="?android:attr/textColorSecondary"
+							android:textSize="12sp"
+							android:visibility="gone" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+				<LinearLayout
+					android:id="@+id/rowIncognito"
+					style="@style/GroupTrAdminActionRow"
+					android:minHeight="52dp"
+					android:visibility="gone">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_lock"
+						android:contentDescription="@null"
+						app:tint="@color/zerion_accent_icon" />
+
+					<LinearLayout
+						android:layout_width="0dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="1"
+						android:orientation="vertical">
+
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:text="@string/grouptr_incognito"
+							android:textColor="@color/zerion_text_primary"
+							android:textSize="15sp" />
+
+						<TextView
+							android:id="@+id/incognitoNameText"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="2dp"
+							android:textColor="?android:attr/textColorSecondary"
+							android:textSize="12sp" />
+
+					</LinearLayout>
 
 				</LinearLayout>
 
@@ -154,7 +259,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_lock"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_primary_accent" />
+						app:tint="@color/zerion_accent_icon" />
 
 					<TextView
 						style="@style/GroupTrAdminActionText"
@@ -170,7 +275,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_timer"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_primary_accent" />
+						app:tint="@color/zerion_accent_icon" />
 
 					<LinearLayout
 						android:layout_width="0dp"
@@ -215,7 +320,7 @@
 					android:layout_height="wrap_content"
 					android:padding="16dp"
 					android:text="@string/grouptr_admin_section_danger"
-					android:textColor="@color/zerion_destructive"
+					android:textColor="@color/zerion_destructive_text"
 					android:textSize="16sp"
 					android:textStyle="bold" />
 
@@ -239,15 +344,15 @@
 				android:insetTop="0dp"
 				android:insetBottom="0dp"
 				android:text="@string/grouptr_open_chat"
-				android:textColor="@android:color/white"
+				android:textColor="@color/zerion_button_filled_foreground"
 				android:textSize="15sp"
 				android:textStyle="bold"
-				app:backgroundTint="@color/zerion_primary_accent"
+				app:backgroundTint="@color/zerion_button_filled_background"
 				app:cornerRadius="24dp"
 				app:icon="@drawable/ic_chat"
 				app:iconGravity="textStart"
 				app:iconPadding="8dp"
-				app:iconTint="@android:color/white" />
+				app:iconTint="@color/zerion_button_filled_foreground" />
 
 		</LinearLayout>
 

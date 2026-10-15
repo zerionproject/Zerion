@@ -241,7 +241,9 @@ public class PasswordFragment extends BaseFragment implements TextWatcher {
 		builder.setTitle(R.string.dialog_title_lost_password);
 		builder.setBackgroundInsetStart(25);
 		builder.setBackgroundInsetEnd(25);
-		builder.setMessage(R.string.dialog_message_lost_password);
+		builder.setMessage(getString(R.string.dialog_message_lost_password)
+				+ "\n\n"
+				+ getString(R.string.startup_erase_everything_confirm));
 		builder.setView(til);
 		builder.setPositiveButton(R.string.cancel, null);
 		builder.setNegativeButton(R.string.delete,

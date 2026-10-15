@@ -67,6 +67,7 @@ public class WebmRemuxTest {
 			new HashSet<>(Arrays.asList(VP8, VP9, VORBIS, OPUS));
 
 	private static final byte[] MINIMAL_MP4 = minimalMp4();
+	private static final byte[] MINIMAL_WEBM = minimalWebm();
 
 	private Context ctx;
 	private final List<File> temp = new ArrayList<>();
@@ -133,6 +134,56 @@ public class WebmRemuxTest {
 				new byte[100])), box("mdat", new byte[32])};
 		for (byte[] b : boxes) out.write(b, 0, b.length);
 		return out.toByteArray();
+	}
+
+	private static byte[] el(long id, byte[]... body) {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		int idLength = id > 0xFFFFFFL ? 4 : id > 0xFFFFL ? 3
+				: id > 0xFFL ? 2 : 1;
+		for (int i = idLength - 1; i >= 0; i--) {
+			out.write((int) (id >> (8 * i)));
+		}
+		ByteArrayOutputStream b = new ByteArrayOutputStream();
+		for (byte[] part : body) b.write(part, 0, part.length);
+		out.write(0x01);
+		long size = b.size();
+		for (int i = 6; i >= 0; i--) out.write((int) (size >> (8 * i)));
+		out.write(b.toByteArray(), 0, b.size());
+		return out.toByteArray();
+	}
+
+	private static byte[] minimalWebm() {
+		byte[] android = "android".getBytes(StandardCharsets.US_ASCII);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		byte[] header = el(0x1A45DFA3L, el(0x4282L,
+				"webm".getBytes(StandardCharsets.US_ASCII)));
+		byte[] segment = el(0x18538067L,
+				el(0x1549A966L, el(0x4D80L, android), el(0x5741L, android)),
+				el(0x1654AE6BL, el(0xAEL, el(0x86L,
+						"V_VP8".getBytes(StandardCharsets.US_ASCII)))),
+				el(0x1F43B675L, el(0xE7L, new byte[] {0}),
+						el(0xA3L, new byte[32])));
+		out.write(header, 0, header.length);
+		out.write(segment, 0, segment.length);
+		return out.toByteArray();
+	}
+
+	private static boolean contains(byte[] hay, String text) {
+		byte[] needle = text.getBytes(StandardCharsets.US_ASCII);
+		outer:
+		for (int i = 0; i + needle.length <= hay.length; i++) {
+			for (int j = 0; j < needle.length; j++) {
+				if (hay[i + j] != needle[j]) continue outer;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private static void assertWriterBlanked(SharedMediaSanitizer.Cleaned c) {
+		assertTrue("not a WebM file", contains(c.getData(), "webm"));
+		assertFalse("the muxer's writer name was sent",
+				contains(c.getData(), "android"));
 	}
 
 	private static byte[] packet(int track, int index) {
@@ -306,7 +357,10 @@ public class WebmRemuxTest {
 							}).when(m).writeSampleData(anyInt(), any(),
 									any());
 							doAnswer(inv -> {
-								Files.write(Paths.get(path), MINIMAL_MP4);
+								Files.write(Paths.get(path), format
+										== MediaMuxer.OutputFormat
+										.MUXER_OUTPUT_WEBM ? MINIMAL_WEBM
+										: MINIMAL_MP4);
 								return null;
 							}).when(m).stop();
 						})) {
@@ -346,6 +400,7 @@ public class WebmRemuxTest {
 		media(VP8, VORBIS);
 		SharedMediaSanitizer.Cleaned c = share("video/webm");
 		assertEquals("video/webm", c.getMimeType());
+		assertWriterBlanked(c);
 		assertEveryPacketKept(sentRecording(
 				MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM));
 	}
@@ -367,6 +422,7 @@ public class WebmRemuxTest {
 		media(VORBIS);
 		SharedMediaSanitizer.Cleaned c = share("audio/webm");
 		assertEquals("audio/webm", c.getMimeType());
+		assertWriterBlanked(c);
 		assertEveryPacketKept(sentRecording(
 				MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM));
 	}
@@ -378,6 +434,7 @@ public class WebmRemuxTest {
 		media(VP9, OPUS);
 		SharedMediaSanitizer.Cleaned c = share("video/webm");
 		assertEquals("video/webm", c.getMimeType());
+		assertWriterBlanked(c);
 		assertEveryPacketKept(sentRecording(
 				MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM));
 	}

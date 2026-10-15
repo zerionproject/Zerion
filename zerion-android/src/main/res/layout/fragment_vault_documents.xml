@@ -90,7 +90,7 @@
         android:src="@drawable/ic_add_24dp"
         android:contentDescription="@string/vault_document_add_action"
         app:backgroundTint="@color/zerion_primary_accent"
-        app:tint="@android:color/white"
-        app:rippleColor="@color/zerion_text_primary" />
+        app:tint="@color/zerion_on_accent"
+        app:rippleColor="@color/zerion_on_accent_ripple" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

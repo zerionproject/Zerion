@@ -128,7 +128,9 @@ public final class ZerionEncryptedPrefs implements SharedPreferences {
 				ZerionEncryptedPrefs prefs =
 						new ZerionEncryptedPrefs(backing, k, hk, bootReadable);
 				INSTANCES.put(fileName, prefs);
-				deleteLegacyAndroidXFile(app, fileName);
+				if (com.professor.zerion.android.ProcessRole.isMain(app)) {
+					deleteLegacyAndroidXFile(app, fileName);
+				}
 				return prefs;
 			} catch (GeneralSecurityException e) {
 				last = e;

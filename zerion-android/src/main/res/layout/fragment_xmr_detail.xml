@@ -16,12 +16,12 @@
 
         <ImageButton
             android:id="@+id/xmr_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/zerion_text_primary"
-            android:contentDescription="@android:string/cancel" />
+            android:contentDescription="@string/abc_action_bar_up_description" />
 
         <TextView
             android:id="@+id/xmr_header_title"
@@ -37,8 +37,8 @@
 
         <ImageButton
             android:id="@+id/xmr_settings"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_settings"
             app:tint="@color/zerion_text_secondary"
@@ -110,7 +110,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:textColor="@color/zerion_red_500"
+                    android:textColor="@color/zerion_destructive_text"
                     android:textSize="12sp"
                     android:gravity="center"
                     android:visibility="gone" />
@@ -185,7 +185,7 @@
                             android:layout_height="24dp"
                             android:layout_gravity="center"
                             android:src="@drawable/ic_call_received"
-                            app:tint="@android:color/white"
+                            app:tint="@color/zerion_on_accent"
                             android:importantForAccessibility="no" />
 
                     </FrameLayout>
@@ -223,7 +223,7 @@
                             android:layout_height="24dp"
                             android:layout_gravity="center"
                             android:src="@drawable/ic_refresh"
-                            app:tint="@color/zerion_primary_accent"
+                            app:tint="@color/zerion_accent_icon"
                             android:importantForAccessibility="no" />
 
                     </FrameLayout>

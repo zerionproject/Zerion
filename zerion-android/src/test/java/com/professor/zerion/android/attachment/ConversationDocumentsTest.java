@@ -13,11 +13,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockedConstruction;
 import org.robolectric.Robolectric;
 import org.robolectric.annotation.Config;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.attachment.MediaConstants;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.zerionproject.core.api.sync.GroupId;
@@ -44,6 +46,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -107,18 +110,59 @@ public class ConversationDocumentsTest {
 		Uri uri = Uri.parse("content://" + AUTHORITY + "/" + name);
 		new AttachmentCreationTask(messaging, ctx.getContentResolver(),
 				creator, mock(ImageCompressor.class),
-				new MetadataStripper(ctx), new GroupId(new byte[32]),
+				new MetadataStripper(ctx), new PdfCleaner(ctx),
+				new GroupId(new byte[32]),
 				Collections.singletonList(uri), false, format)
 				.storeAttachments();
 		return uri;
 	}
 
 	@Test
-	public void aPdfIsSentAsADocument() throws Exception {
-		attach("report.pdf", "application/pdf", PDF,
-				PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+	public void aPdfIsOnlySentAsItsRedrawnPages() throws Exception {
+		byte[] redrawn = "%PDF-1.4\nredrawn\n%%EOF\n"
+				.getBytes(StandardCharsets.US_ASCII);
+		byte[][] given = new byte[1][];
+		long[] bound = new long[1];
+		try (MockedConstruction<PdfCleaner> cleaners =
+				mockConstruction(PdfCleaner.class, (m, c) ->
+						when(m.clean(any(), anyLong())).thenAnswer(inv -> {
+							given[0] = ((byte[]) inv.getArgument(0)).clone();
+							bound[0] = inv.getArgument(1);
+							return redrawn.clone();
+						}))) {
+			attach("report.pdf", "application/pdf", PDF,
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			assertEquals(1, cleaners.constructed().size());
+		}
+		assertArrayEquals(PDF, given[0]);
+		assertEquals(MediaConstants.MAX_ATTACHMENT_SIZE, bound[0]);
 		assertEquals("application/pdf", sentType);
-		assertArrayEquals(PDF, sent);
+		assertArrayEquals(redrawn, sent);
+	}
+
+	@Test
+	public void aPdfThatCannotBeRedrawnIsNotSent() throws Exception {
+		Uri uri;
+		try (MockedConstruction<PdfCleaner> ignored =
+				mockConstruction(PdfCleaner.class, (m, c) ->
+						when(m.clean(any(), anyLong())).thenThrow(
+								MediaRefusedException.cannotClean(
+										"document cannot be cleaned")))) {
+			uri = attach("report.pdf", "application/pdf", PDF,
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+		}
+		assertNull(sent);
+		verify(creator).onAttachmentError(eq(uri),
+				isA(MediaRefusedException.class));
+	}
+
+	@Test
+	public void textWithBinaryContentIsNotSent() throws Exception {
+		Uri uri = attach("notes.txt", "text/plain", new byte[] {'a', 0, 'b'},
+				PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+		assertNull(sent);
+		verify(creator).onAttachmentError(eq(uri),
+				isA(MediaRefusedException.class));
 	}
 
 	@Test
@@ -132,12 +176,20 @@ public class ConversationDocumentsTest {
 
 	@Test
 	public void aFileThatOnlyClaimsToBeAPdfIsRefused() throws Exception {
-		Uri uri = attach("page.pdf", "application/pdf",
-				"<html><img src=http://x/t></html>"
-						.getBytes(StandardCharsets.US_ASCII),
-				PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+		Uri uri;
+		try (MockedConstruction<PdfCleaner> cleaners =
+				mockConstruction(PdfCleaner.class)) {
+			uri = attach("page.pdf", "application/pdf",
+					"<html><img src=http://x/t></html>"
+							.getBytes(StandardCharsets.US_ASCII),
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			for (PdfCleaner c : cleaners.constructed()) {
+				verify(c, never()).clean(any(), anyLong());
+			}
+		}
 		assertNull(sent);
-		verify(creator).onAttachmentError(eq(uri), any());
+		verify(creator).onAttachmentError(eq(uri),
+				isA(MediaRefusedException.class));
 	}
 
 	@Test

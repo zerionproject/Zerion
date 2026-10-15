@@ -36,6 +36,7 @@
 			android:id="@+id/profile_password_input"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:importantForAutofill="no"
 			android:inputType="textPassword"
 			android:saveEnabled="false" />
 
@@ -53,6 +54,7 @@
 			android:id="@+id/profile_password_confirm_input"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
+			android:importantForAutofill="no"
 			android:inputType="textPassword"
 			android:saveEnabled="false" />
 

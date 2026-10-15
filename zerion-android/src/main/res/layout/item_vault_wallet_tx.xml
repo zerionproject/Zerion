@@ -14,7 +14,7 @@
         android:padding="7dp"
         android:background="@drawable/bg_settings_group"
         android:src="@drawable/ic_call_received"
-        app:tint="@color/zerion_success"
+        app:tint="@color/zerion_success_text"
         android:importantForAccessibility="no" />
 
     <LinearLayout

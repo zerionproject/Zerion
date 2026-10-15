@@ -33,7 +33,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(AndroidJUnit4.class)
 @Config(sdk = 29)
@@ -99,7 +98,12 @@ public class AccountTransferManagerTest {
 			throws Exception {
 		AccountBackupManager backup = mock(AccountBackupManager.class);
 		byte[] bundle = bundle();
-		when(backup.snapshotBundle()).thenReturn(bundle.clone());
+		org.mockito.Mockito.doAnswer(inv -> {
+			((AccountBackupManager.CopyWriter) inv.getArgument(0)).write(
+					new java.io.ByteArrayInputStream(bundle.clone()),
+					bundle.length);
+			return null;
+		}).when(backup).copyAccount(any());
 		AtomicReference<byte[]> received = new AtomicReference<>();
 		AtomicReference<char[]> receivedPassword = new AtomicReference<>();
 		org.mockito.Mockito.doAnswer(inv -> {
@@ -228,7 +232,40 @@ public class AccountTransferManagerTest {
 		if (!(t instanceof TransferException)) throw new AssertionError(t);
 		assertEquals(TransferException.Reason.CODE_MISMATCH,
 				((TransferException) t).reason);
-		verify(backup, never()).snapshotBundle();
+		verify(backup, never()).copyAccount(any());
+	}
+
+	@Test(timeout = 60_000)
+	public void aPanicWhileWaitingForThePeerEndsTheTransfer()
+			throws Exception {
+		AccountBackupManager backup = mock(AccountBackupManager.class);
+		AccountTransferManager sender = new AccountTransferManager(crypto,
+				publisher, loopback, backup, retirement);
+		try {
+			sender.send(new AccountTransferManager.Callback() {
+				@Override
+				public void onStatus(AccountTransferManager.Status status) {
+				}
+
+				@Override
+				public void onPairingReady(String qrPayload) {
+					RunningCopies.abortAll();
+				}
+
+				@Override
+				public void onShowConfirmationCode(String code) {
+				}
+
+				@Override
+				public String onEnterConfirmationCode() {
+					return null;
+				}
+			});
+			fail("the transfer went on after the panic");
+		} catch (TransferException expected) {
+		}
+		assertEquals(0, RunningCopies.running());
+		verify(backup, never()).copyAccount(any());
 	}
 
 	@Test(timeout = 60_000)

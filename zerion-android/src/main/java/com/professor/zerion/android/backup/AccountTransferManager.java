@@ -40,6 +40,7 @@ public class AccountTransferManager {
 	private static final int PUBKEY_LEN = 32;
 	private static final int MAX_BUNDLE_BYTES = 512 * 1024 * 1024;
 	private static final int MAX_LENGTH_HEADER_BYTES = 256;
+	private static final int RECEIVE_COPIES = 4;
 	private static final byte[] AAD =
 			"Zerion-Account-Transfer-v2".getBytes(StandardCharsets.UTF_8);
 	private static final byte[] AAD_LENGTH =
@@ -114,6 +115,16 @@ public class AccountTransferManager {
 
 	public SendResult send(Callback cb) throws TransferException {
 		cancelled = false;
+		RunningCopies.Abort abort = this::cancel;
+		RunningCopies.start(abort);
+		try {
+			return sendRegistered(cb);
+		} finally {
+			RunningCopies.end(abort);
+		}
+	}
+
+	private SendResult sendRegistered(Callback cb) throws TransferException {
 		cb.onStatus(Status.PUBLISHING);
 		KeyPair myKp = crypto.generateAgreementKeyPair();
 		byte[] myPub = myKp.getPublic().getEncoded();
@@ -123,6 +134,7 @@ public class AccountTransferManager {
 		try {
 			ss = onionPublisher.openTarget();
 			currentServer = ss;
+			if (cancelled) throw new TransferException(CANCELLED);
 			handle = onionPublisher.publish(ss.getTorTarget(), null);
 			cb.onPairingReady(LINK_PREFIX + Base32.encode(myPub) + ":"
 					+ handle.getOnion());
@@ -132,6 +144,7 @@ public class AccountTransferManager {
 			acceptDeadline.interrupt();
 			currentSocket = client;
 			try {
+				if (cancelled) throw new TransferException(CANCELLED);
 				return runSend(client, myKp, myPub, cb);
 			} finally {
 				closeQuietly(client);
@@ -170,6 +183,17 @@ public class AccountTransferManager {
 	public void receive(String qrPayload, char[] newPassword, Callback cb)
 			throws TransferException {
 		cancelled = false;
+		RunningCopies.Abort abort = this::cancel;
+		RunningCopies.start(abort);
+		try {
+			receiveRegistered(qrPayload, newPassword, cb);
+		} finally {
+			RunningCopies.end(abort);
+		}
+	}
+
+	private void receiveRegistered(String qrPayload, char[] newPassword,
+			Callback cb) throws TransferException {
 		String body = qrPayload.startsWith(LINK_PREFIX)
 				? qrPayload.substring(LINK_PREFIX.length()) : qrPayload;
 		int sep = body.indexOf(':');
@@ -188,6 +212,7 @@ public class AccountTransferManager {
 		Socket s = dialWithRetry(onion);
 		currentSocket = s;
 		try {
+			if (cancelled) throw new TransferException(CANCELLED);
 			runReceive(s, myKp, myPub, theirPub, newPassword, cb);
 		} finally {
 			currentSocket = null;
@@ -220,19 +245,32 @@ public class AccountTransferManager {
 				out.write(GO);
 				out.flush();
 				cb.onStatus(Status.TRANSFERRING);
-				byte[] bundleBytes = backup.snapshotBundle();
-				byte[] digest;
-				try {
-					byte[] sealed = vaultCrypto.encrypt(bundleBytes,
-							sessionKey.getBytes(), AAD).toBytes();
-					digest = sha256(sealed);
-					writeFrame(out, vaultCrypto.encrypt(int32(sealed.length),
-							sessionKey.getBytes(), AAD_LENGTH).toBytes());
-					writeFrame(out, sealed);
-					out.flush();
-				} finally {
-					Arrays.fill(bundleBytes, (byte) 0);
-				}
+				byte[][] sent = new byte[1][];
+				backup.copyAccount((bundle, length) -> {
+					if (length < 1 || length > BackupMemory.limit()) {
+						throw new BackupException(
+								BackupException.Reason.TOO_LARGE);
+					}
+					byte[] bundleBytes = new byte[(int) length];
+					try {
+						if (!BackupStream.readFully(bundle, bundleBytes,
+								bundleBytes.length) || bundle.read() != -1) {
+							throw new IOException("Bundle length changed");
+						}
+						byte[] sealed = vaultCrypto.encrypt(bundleBytes,
+								sessionKey.getBytes(), AAD).toBytes();
+						sent[0] = sha256(sealed);
+						writeFrame(out, vaultCrypto.encrypt(
+								int32(sealed.length), sessionKey.getBytes(),
+								AAD_LENGTH).toBytes());
+						writeFrame(out, sealed);
+						out.flush();
+					} finally {
+						Arrays.fill(bundleBytes, (byte) 0);
+					}
+				});
+				byte[] digest = sent[0];
+				if (digest == null) throw new TransferException(PROTOCOL);
 				SendResult result = SendResult.SENT_UNCONFIRMED;
 				cb.onStatus(Status.IMPORTING);
 				if (importConfirmed(s, in, sessionKey, digest)) {
@@ -275,7 +313,7 @@ public class AccountTransferManager {
 				int length = int32(vaultCrypto.decrypt(
 						VaultCrypto.EncryptedData.fromBytes(lengthHeader),
 						sessionKey.getBytes(), AAD_LENGTH));
-				if (length < 1 || length > MAX_BUNDLE_BYTES) {
+				if (!receivable(length, Runtime.getRuntime().maxMemory())) {
 					throw new TransferException(PROTOCOL);
 				}
 				byte[] sealed = readFrame(in, length, length);
@@ -297,6 +335,11 @@ public class AccountTransferManager {
 		} catch (BackupException | IOException | RuntimeException e) {
 			throw new TransferException(PROTOCOL);
 		}
+	}
+
+	static boolean receivable(int length, long maxMemory) {
+		return length >= 1 && length <= MAX_BUNDLE_BYTES
+				&& length <= BackupMemory.limit(RECEIVE_COPIES, maxMemory);
 	}
 
 	private boolean importConfirmed(Socket s, DataInputStream in,

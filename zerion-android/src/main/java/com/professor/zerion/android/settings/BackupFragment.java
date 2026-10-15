@@ -1,10 +1,12 @@
 package com.professor.zerion.android.settings;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.OpenableColumns;
 import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,9 +28,7 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
@@ -46,7 +46,7 @@ import static com.professor.zerion.android.AppModule.getAndroidComponent;
 @ParametersNotNullByDefault
 public class BackupFragment extends Fragment {
 
-	private static final int MAX_BACKUP_BYTES = 512 * 1024 * 1024;
+	static final String EXPORT_FILE_NAME = "backup.bin";
 
 	@Inject
 	@IoExecutor
@@ -92,7 +92,7 @@ public class BackupFragment extends Fragment {
 		super.onViewCreated(view, savedInstanceState);
 		view.findViewById(R.id.export_card).setOnClickListener(v ->
 				withAccountPassword(() ->
-						exportLauncher.launch("zerion-backup.zbk")));
+						exportLauncher.launch(EXPORT_FILE_NAME)));
 		view.findViewById(R.id.import_card).setOnClickListener(v ->
 				withAccountPassword(() ->
 						importLauncher.launch(new String[] {"*/*"})));
@@ -243,35 +243,80 @@ public class BackupFragment extends Fragment {
 		Context appContext = requireContext().getApplicationContext();
 		toast(R.string.backup_export_in_progress);
 		ioExecutor.execute(() -> {
-			boolean ok = false;
-			int failMessage = R.string.backup_export_failed;
-			byte[] data = null;
+			int failMessage;
 			try {
-				data = backupManager.exportAccount(passphrase);
-				try (OutputStream os = appContext.getContentResolver()
-						.openOutputStream(dest, "wt")) {
-					if (os == null) throw new IOException("null output stream");
-					os.write(data);
-					os.flush();
-				}
-				ok = true;
-			} catch (BackupException e) {
-				failMessage = exportFailureMessage(e.reason);
-			} catch (Throwable e) {
-				failMessage = R.string.backup_export_failed;
+				failMessage = export(backupManager, appContext, dest,
+						passphrase);
 			} finally {
-				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 			}
-			boolean success = ok;
+			boolean success = failMessage == 0;
 			int message = failMessage;
 			mainHandler.post(() -> onExportFinished(success, message));
 		});
 	}
 
-	private int exportFailureMessage(BackupException.Reason reason) {
+	static int export(AccountBackupManager backupManager, Context context,
+			Uri dest, char[] passphrase) {
+		boolean ok = false;
+		boolean[] opened = {false};
+		int failMessage = R.string.backup_export_failed;
+		try {
+			backupManager.exportAccount(passphrase,
+					new AccountBackupManager.Destination() {
+						@Override
+						public OutputStream open() throws IOException {
+							opened[0] = true;
+							OutputStream os = context.getContentResolver()
+									.openOutputStream(dest, "wt");
+							if (os == null) {
+								throw new IOException("null output stream");
+							}
+							return os;
+						}
+
+						@Override
+						public void discard() {
+							discardIncompleteExport(context, dest, opened[0]);
+						}
+					});
+			ok = true;
+		} catch (BackupException e) {
+			failMessage = exportFailureMessage(e.reason);
+		} catch (Throwable e) {
+			failMessage = R.string.backup_export_failed;
+		} finally {
+			if (!ok) discardIncompleteExport(context, dest, opened[0]);
+		}
+		return ok ? 0 : failMessage;
+	}
+
+	static void discardIncompleteExport(Context context, Uri dest,
+			boolean opened) {
+		if (!opened && !isEmptyDocument(context, dest)) return;
+		try {
+			android.provider.DocumentsContract.deleteDocument(
+					context.getContentResolver(), dest);
+		} catch (Exception ignored) {
+		}
+	}
+
+	private static boolean isEmptyDocument(Context context, Uri dest) {
+		try (Cursor c = context.getContentResolver().query(dest,
+				new String[] {OpenableColumns.SIZE}, null, null, null)) {
+			return c != null && c.moveToFirst() && !c.isNull(0)
+					&& c.getLong(0) == 0;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	private static int exportFailureMessage(BackupException.Reason reason) {
 		if (reason == BackupException.Reason.NOT_SIGNED_IN) {
 			return R.string.backup_export_not_signed_in;
+		}
+		if (reason == BackupException.Reason.TOO_LARGE) {
+			return R.string.backup_export_too_large;
 		}
 		return R.string.backup_export_failed;
 	}
@@ -294,26 +339,18 @@ public class BackupFragment extends Fragment {
 	}
 
 	private void runImport(Uri src, char[] passphrase, char[] newPassword) {
-		Context appContext = requireContext().getApplicationContext();
 		toast(R.string.backup_import_in_progress);
 		ioExecutor.execute(() -> {
 			boolean ok = false;
 			int failMessage = R.string.backup_import_failed;
-			byte[] data = null;
 			try {
-				try (InputStream is =
-						appContext.getContentResolver().openInputStream(src)) {
-					if (is == null) throw new IOException("null input stream");
-					data = readAll(is);
-				}
-				backupManager.importAccount(data, passphrase, newPassword);
+				backupManager.importBackupFile(src, passphrase, newPassword);
 				ok = true;
 			} catch (BackupException e) {
 				failMessage = importFailureMessage(e.reason);
 			} catch (Throwable e) {
 				failMessage = R.string.backup_import_failed;
 			} finally {
-				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 				Arrays.fill(newPassword, '\0');
 			}
@@ -335,6 +372,8 @@ public class BackupFragment extends Fragment {
 				return R.string.backup_import_corrupt;
 			case IO_ERROR:
 				return R.string.backup_import_io_error;
+			case TOO_LARGE:
+				return R.string.backup_import_too_large;
 			default:
 				return R.string.backup_import_failed;
 		}
@@ -373,21 +412,6 @@ public class BackupFragment extends Fragment {
 		int pad = (int) (16 * getResources().getDisplayMetrics().density);
 		layout.setPadding(pad, pad, pad, 0);
 		return layout;
-	}
-
-	private byte[] readAll(InputStream in) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		byte[] buf = new byte[8192];
-		int total = 0;
-		int n;
-		while ((n = in.read(buf)) != -1) {
-			total += n;
-			if (total > MAX_BACKUP_BYTES) {
-				throw new IOException("Backup file too large");
-			}
-			out.write(buf, 0, n);
-		}
-		return out.toByteArray();
 	}
 
 	private char[] chars(EditText field) {

@@ -157,7 +157,11 @@ deduplication identifier is not used for this, because a forgery could carry
 the identifier of a genuine envelope. An envelope that does not authenticate
 never reaches the signature check.
 A one-time prekey is preferred when available and is consumed on first use, which
-gives a fresh key per message. When no one-time prekey is available the signed
+gives a fresh key per message. The sender records in its database, per
+recipient, each one-time prekey it seals to (from 3.0.18; in memory only
+before), so it never seals two envelopes to the same one, even across a
+restart: the two would share a selector that links them, and the recipient
+could open only one. When no one-time prekey is available the signed
 prekey is used. Only a one-time prekey gives forward secrecy for that message:
 an envelope sealed to the signed prekey can be opened by anyone who later obtains
 that signed prekey's private key while it is retained.
@@ -169,7 +173,9 @@ also emit cover envelopes. A cover envelope is sealed to a throwaway keypair wit
 random recipient identity fields, and its selector is that of an envelope
 sealed from a published bundle: signed-prekey id `0`, or a random one-time
 prekey id. A cover envelope is therefore indistinguishable on the wire from a
-message sealed from a current bundle. On receipt, the delivery layer resolves the prekey,
+message sealed from a current bundle in the same size bucket. Cover always
+fills the 4096-byte bucket, so an envelope in the 16384-byte bucket is real
+traffic. On receipt, the delivery layer resolves the prekey,
 opens the envelope, checks the deduplication identifier against a seen-store, and
 consumes the one-time prekey if the message is accepted.
 

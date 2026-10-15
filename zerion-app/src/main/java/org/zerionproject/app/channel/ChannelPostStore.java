@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -54,6 +55,103 @@ final class ChannelPostStore {
 		this.writerFactory = writerFactory;
 	}
 
+	static final class Runs {
+
+		private final TreeMap<Long, Long> runs = new TreeMap<>();
+
+		boolean contains(long seq) {
+			Map.Entry<Long, Long> e = runs.floorEntry(seq);
+			return e != null && seq <= e.getValue();
+		}
+
+		boolean isEmpty() {
+			return runs.isEmpty();
+		}
+
+		int runs() {
+			return runs.size();
+		}
+
+		long highest() {
+			return runs.isEmpty() ? -1L : runs.lastEntry().getValue();
+		}
+
+		boolean joins(long seq) {
+			if (contains(seq)) return true;
+			Map.Entry<Long, Long> below = runs.floorEntry(seq);
+			if (below != null && below.getValue() == seq - 1L) return true;
+			return runs.containsKey(seq + 1L);
+		}
+
+		boolean add(long seq) {
+			if (contains(seq)) return false;
+			long from = seq;
+			long to = seq;
+			Map.Entry<Long, Long> below = runs.floorEntry(seq);
+			if (below != null && below.getValue() == seq - 1L) {
+				from = below.getKey();
+				runs.remove(from);
+			}
+			Long aboveEnd = runs.remove(seq + 1L);
+			if (aboveEnd != null) to = aboveEnd;
+			runs.put(from, to);
+			return true;
+		}
+
+		boolean remove(long seq) {
+			Map.Entry<Long, Long> e = runs.floorEntry(seq);
+			if (e == null || seq > e.getValue()) return false;
+			long from = e.getKey();
+			long to = e.getValue();
+			runs.remove(from);
+			if (from < seq) runs.put(from, seq - 1L);
+			if (seq < to) runs.put(seq + 1L, to);
+			return true;
+		}
+
+		void clear() {
+			runs.clear();
+		}
+
+		Set<Map.Entry<Long, Long>> entries() {
+			return runs.entrySet();
+		}
+
+		BdfList encode() {
+			BdfList out = new BdfList();
+			for (Map.Entry<Long, Long> e : runs.entrySet()) {
+				BdfList pair = new BdfList();
+				pair.add(e.getKey());
+				pair.add(e.getValue());
+				out.add(pair);
+			}
+			return out;
+		}
+
+		void decode(BdfList list) throws FormatException {
+			for (Object o : list) {
+				if (!(o instanceof BdfList)) continue;
+				BdfList pair = (BdfList) o;
+				if (pair.size() != 2) throw new FormatException();
+				long from = pair.getLong(0);
+				long to = pair.getLong(1);
+				if (from < 0 || to < from
+						|| to > ChannelConstants.MAX_SEQUENCE_NUMBER) {
+					throw new FormatException();
+				}
+				Map.Entry<Long, Long> below = runs.floorEntry(to);
+				if (below != null && below.getValue() >= from - 1L) {
+					throw new FormatException();
+				}
+				Map.Entry<Long, Long> above = runs.ceilingEntry(from);
+				if (above != null && above.getKey() <= to + 1L) {
+					throw new FormatException();
+				}
+				runs.put(from, to);
+			}
+		}
+	}
+
 	static final class Meta {
 
 		final List<long[]> held = new ArrayList<>();
@@ -64,6 +162,9 @@ final class ChannelPostStore {
 		long bytes;
 		long readThrough = -1L;
 		final TreeSet<Long> withheld = new TreeSet<>();
+		final TreeSet<Long> pending = new TreeSet<>();
+		final Runs unreadable = new Runs();
+		final Runs late = new Runs();
 		long minExpiry = Long.MAX_VALUE;
 		long pruned;
 		long skipped;
@@ -133,6 +234,18 @@ final class ChannelPostStore {
 			held.clear();
 			held.addAll(next);
 			withheld.remove(seq);
+			pending.remove(seq);
+			unreadable.remove(seq);
+			late.remove(seq);
+		}
+
+		private boolean counted(long seq) {
+			return !withheld.contains(seq) && !pending.contains(seq)
+					&& !unreadable.contains(seq);
+		}
+
+		boolean isRead(long seq) {
+			return seq <= readThrough && !late.contains(seq);
 		}
 
 		int unread() {
@@ -141,11 +254,29 @@ final class ChannelPostStore {
 				if (r[1] <= readThrough) continue;
 				long from = Math.max(r[0], readThrough + 1L);
 				for (long s = from; ; s++) {
-					if (!withheld.contains(s)) n++;
+					if (counted(s)) n++;
 					if (s >= r[1]) break;
 				}
 			}
+			for (Map.Entry<Long, Long> e : late.entries()) {
+				for (long[] r : held) {
+					long from = Math.max(r[0], e.getKey());
+					long to = Math.min(Math.min(r[1], e.getValue()),
+							readThrough);
+					for (long s = from; s <= to; s++) {
+						if (counted(s)) n++;
+					}
+				}
+			}
 			return n;
+		}
+
+		private void countLate(long seq) {
+			if (seq > readThrough) return;
+			if (late.joins(seq)
+					|| late.runs() < ChannelPostCeilings.MAX_LATE_RUNS) {
+				late.add(seq);
+			}
 		}
 	}
 
@@ -392,8 +523,7 @@ final class ChannelPostStore {
 		try {
 			ChannelPost p = dictToPost(channelId,
 					bytesToDict(decodeBase64(encoded)), false);
-			return p.withFlags(seq <= m.readThrough,
-					m.withheld.contains(seq));
+			return p.withFlags(m.isRead(seq), m.withheld.contains(seq));
 		} catch (IOException | IllegalArgumentException e) {
 			throw new DbException(e);
 		}
@@ -408,6 +538,12 @@ final class ChannelPostStore {
 	void append(byte[] channelId, ChannelPost post,
 			@Nullable byte[] chainHash, Map<String, Settings> alsoWrite)
 			throws DbException {
+		append(channelId, post, chainHash, alsoWrite, false, false);
+	}
+
+	void append(byte[] channelId, ChannelPost post,
+			@Nullable byte[] chainHash, Map<String, Settings> alsoWrite,
+			boolean waiting, boolean unreadable) throws DbException {
 		synchronized (lockFor(channelId)) {
 			Meta m = metaLocked(channelId);
 			if (m.holds(post.getSeqNum())) {
@@ -418,6 +554,8 @@ final class ChannelPostStore {
 				m.readThrough = Math.max(m.readThrough, post.getSeqNum());
 			}
 			if (post.isWithheld()) m.withheld.add(post.getSeqNum());
+			if (waiting) m.pending.add(post.getSeqNum());
+			else if (unreadable) m.unreadable.add(post.getSeqNum());
 			if (post.getSeqNum() > m.tipSeq) {
 				m.tipSeq = post.getSeqNum();
 				m.tipHash = chainHash;
@@ -521,6 +659,85 @@ final class ChannelPostStore {
 		}
 	}
 
+	boolean erase(byte[] channelId, long seq, byte[] bodyHash,
+			@Nullable byte[] readableUnder) throws DbException {
+		synchronized (lockFor(channelId)) {
+			Meta m = metaLocked(channelId);
+			if (!m.holds(seq)) return false;
+			ChannelPost p = read(channelId, seq, m);
+			if (p == null || p.isErased()) return false;
+			ChannelPost erased = p.erased(bodyHash, readableUnder);
+			long before = ChannelPostCeilings.storedBytes(p);
+			long after = ChannelPostCeilings.storedBytes(erased);
+			m.bytes = Math.max(0L, m.bytes - before + after);
+			if (p.signedByDelegate()) {
+				m.delegateBytes = Math.max(0L,
+						m.delegateBytes - before + after);
+			}
+			Map<String, Settings> batch = new LinkedHashMap<>();
+			batch.put(postNamespace(channelId, seq), postSettings(erased));
+			batch.put(metaNamespace(channelId), metaSettings(m));
+			settings.mergeSettings(batch);
+			return true;
+		}
+	}
+
+	boolean prove(byte[] channelId, long seq, boolean readable,
+			boolean shown) throws DbException {
+		synchronized (lockFor(channelId)) {
+			Meta m = metaLocked(channelId);
+			if (!m.pending.contains(seq)) return false;
+			m.pending.remove(seq);
+			if (!readable) m.unreadable.add(seq);
+			else if (shown) m.countLate(seq);
+			settings.mergeSettings(metaSettings(m), metaNamespace(channelId));
+			return readable && shown;
+		}
+	}
+
+	boolean opened(byte[] channelId, long seq, boolean shown)
+			throws DbException {
+		synchronized (lockFor(channelId)) {
+			Meta m = metaLocked(channelId);
+			if (!m.unreadable.remove(seq)) return false;
+			if (shown) m.countLate(seq);
+			settings.mergeSettings(metaSettings(m), metaNamespace(channelId));
+			return shown;
+		}
+	}
+
+	boolean restore(byte[] channelId, ChannelPost whole, boolean readable,
+			boolean shown) throws DbException {
+		synchronized (lockFor(channelId)) {
+			long seq = whole.getSeqNum();
+			Meta m = metaLocked(channelId);
+			if (!m.pending.contains(seq) || whole.isErased()) return false;
+			ChannelPost p = read(channelId, seq, m);
+			if (p == null || !p.isErased()) return false;
+			long before = ChannelPostCeilings.storedBytes(p);
+			long after = ChannelPostCeilings.storedBytes(whole);
+			m.bytes = Math.max(0L, m.bytes - before + after);
+			if (p.signedByDelegate()) {
+				m.delegateBytes = Math.max(0L,
+						m.delegateBytes - before + after);
+			}
+			m.pending.remove(seq);
+			if (!readable) m.unreadable.add(seq);
+			else if (shown) m.countLate(seq);
+			Map<String, Settings> batch = new LinkedHashMap<>();
+			batch.put(postNamespace(channelId, seq), postSettings(whole));
+			batch.put(metaNamespace(channelId), metaSettings(m));
+			settings.mergeSettings(batch);
+			return readable && shown;
+		}
+	}
+
+	boolean admitsUnreadable(byte[] channelId, long seq) throws DbException {
+		Meta m = meta(channelId);
+		return m.unreadable.joins(seq) || m.unreadable.runs()
+				< ChannelPostCeilings.MAX_UNREADABLE_RUNS;
+	}
+
 	void setWithheld(byte[] channelId, Collection<Long> seqs)
 			throws DbException {
 		synchronized (lockFor(channelId)) {
@@ -540,8 +757,9 @@ final class ChannelPostStore {
 		synchronized (lockFor(channelId)) {
 			Meta m = metaLocked(channelId);
 			long high = m.highest();
-			if (high <= m.readThrough) return false;
-			m.readThrough = high;
+			if (high <= m.readThrough && m.late.isEmpty()) return false;
+			m.readThrough = Math.max(m.readThrough, high);
+			m.late.clear();
 			settings.mergeSettings(metaSettings(m), metaNamespace(channelId));
 			return true;
 		}
@@ -619,6 +837,13 @@ final class ChannelPostStore {
 		BdfList wh = new BdfList();
 		for (Long seq : m.withheld) wh.add(seq);
 		d.put("withheld", wh);
+		if (!m.pending.isEmpty()) {
+			BdfList pend = new BdfList();
+			for (Long seq : m.pending) pend.add(seq);
+			d.put("pend", pend);
+		}
+		if (!m.unreadable.isEmpty()) d.put("unr", m.unreadable.encode());
+		if (!m.late.isEmpty()) d.put("late", m.late.encode());
 		d.put("minExpiry", m.minExpiry);
 		d.put("pruned", m.pruned);
 		d.put("skipped", m.skipped);
@@ -653,6 +878,11 @@ final class ChannelPostStore {
 		for (Object o : d.getList("withheld", new BdfList())) {
 			if (o instanceof Long) m.withheld.add((Long) o);
 		}
+		for (Object o : d.getList("pend", new BdfList())) {
+			if (o instanceof Long) m.pending.add((Long) o);
+		}
+		m.unreadable.decode(d.getList("unr", new BdfList()));
+		m.late.decode(d.getList("late", new BdfList()));
 		m.minExpiry = d.getLong("minExpiry", Long.MAX_VALUE);
 		m.pruned = d.getLong("pruned", 0L);
 		m.skipped = d.getLong("skipped", 0L);
@@ -668,6 +898,12 @@ final class ChannelPostStore {
 		d.put("prevHash", p.getPrevHash());
 		d.put("timestampHourMs", p.getTimestampHourMs());
 		d.put("body", p.getBody());
+		byte[] erased = p.getErasedBodyHash();
+		if (erased != null) {
+			d.put("bh", erased);
+			byte[] readableUnder = p.getReadableUnder();
+			if (readableUnder != null) d.put("rk", readableUnder);
+		}
 		d.put("ttlMs", p.getTtlMs());
 		d.put("signature", p.getSignature());
 		BdfList atts = new BdfList();
@@ -717,7 +953,7 @@ final class ChannelPostStore {
 					ad.getOptionalRaw("thumb")));
 		}
 		long version = d.getLong("pv", (long) ChannelPost.FORMAT_LEGACY);
-		return new ChannelPost(channelId,
+		ChannelPost p = new ChannelPost(channelId,
 				d.getLong("seqNum"),
 				d.getRaw("prevHash"),
 				d.getLong("timestampHourMs"),
@@ -730,6 +966,9 @@ final class ChannelPostStore {
 				d.getOptionalRaw("delegateSignerMlDsa"),
 				legacy && d.getBoolean("withheld", false),
 				(int) version, d.getOptionalRaw("salt"));
+		byte[] erased = d.getOptionalRaw("bh");
+		return erased == null ? p
+				: p.erased(erased, d.getOptionalRaw("rk"));
 	}
 
 	private byte[] dictToBytes(BdfDictionary d) {

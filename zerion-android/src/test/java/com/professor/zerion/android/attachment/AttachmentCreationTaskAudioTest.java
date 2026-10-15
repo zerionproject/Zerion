@@ -40,6 +40,8 @@ import javax.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import static com.professor.zerion.android.attachment.MpegAudioFramesTest.adtsFrames;
+import static com.professor.zerion.android.attachment.MpegAudioFramesTest.encoderFrame;
 import static com.professor.zerion.android.attachment.SharedMediaSanitizerContentTest.id3v1;
 import static com.professor.zerion.android.attachment.SharedMediaSanitizerContentTest.id3v23;
 import static com.professor.zerion.android.attachment.SharedMediaSanitizerContentTest.mpegFrames;
@@ -52,6 +54,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -201,7 +204,8 @@ public class AttachmentCreationTaskAudioTest {
 		Uri uri = Uri.parse("content://" + AUTHORITY + "/" + name);
 		new AttachmentCreationTask(messaging, ctx.getContentResolver(),
 				creator, mock(ImageCompressor.class),
-				new MetadataStripper(ctx), new GroupId(new byte[32]),
+				new MetadataStripper(ctx), new PdfCleaner(ctx),
+				new GroupId(new byte[32]),
 				Collections.singletonList(uri), false,
 				PrivateMessageFormat.TEXT_IMAGES_CHUNKED).storeAttachments();
 		return uri;
@@ -220,13 +224,61 @@ public class AttachmentCreationTaskAudioTest {
 	}
 
 	@Test
+	public void anMp3IsSentWithoutItsEncoderFrameOrBytesAroundItsFrames()
+			throws Exception {
+		byte[] frames = mpegFrames(4);
+		byte[] mp3 = concat(id3v23(MARKER), new byte[64],
+				encoderFrame("Info", "LAME3.100"), frames, SECOND_MARKER,
+				frames, SECOND_MARKER);
+		attach("song.mp3", "audio/mpeg", mp3);
+		assertArrayEquals(concat(frames, frames), sent);
+		assertFalse("the encoder frame was sent",
+				contains(sent, "LAME".getBytes(StandardCharsets.US_ASCII)));
+		assertFalse("bytes between the frames were sent",
+				contains(sent, SECOND_MARKER));
+		assertEquals("audio/mpeg", sentType);
+	}
+
+	@Test
 	public void anAacStreamIsSentWithoutItsId3Tag() throws Exception {
-		byte[] adts = concat(new byte[] {(byte) 0xFF, (byte) 0xF1, 0x50,
-				(byte) 0x80, 0x02, 0x1F, (byte) 0xFC}, samples(300));
+		byte[] adts = adtsFrames(4);
 		attach("voice.aac", "audio/aac", concat(id3v23(MARKER), adts));
 		assertFalse("the ID3 tag was sent", contains(sent, MARKER));
 		assertArrayEquals(adts, sent);
 		assertEquals(adts.length, sentSize);
+		assertEquals("audio/aac", sentType);
+	}
+
+	@Test
+	public void theSentTypeComesFromTheSoundNotFromThePicker()
+			throws Exception {
+		byte[] mp3 = mpegFrames(4);
+		byte[] adts = adtsFrames(4);
+		byte[] ogg = OggTestFiles.opus(0x5EED, OggTestFiles.EMPTY_OPUS_TAGS,
+				OggTestFiles.audioPackets(6, 1), 255, 40);
+		Object[][] cases = {{"a.mp3", "audio/aac", mp3, "audio/mpeg"},
+				{"b.mp3", "audio/opus", mp3, "audio/mpeg"},
+				{"c.aac", "audio/mpeg", adts, "audio/aac"},
+				{"d.aac", "audio/ogg", adts, "audio/aac"},
+				{"e.opus", "audio/opus", ogg, "audio/ogg"},
+				{"f.ogg", "audio/mpeg", ogg, "audio/ogg"}};
+		for (Object[] c : cases) {
+			sentType = null;
+			Uri uri = attach((String) c[0], (String) c[1], (byte[]) c[2]);
+			verify(creator, never()).onAttachmentError(eq(uri), any());
+			assertEquals(c[0] + " reported as " + c[1], c[3], sentType);
+		}
+	}
+
+	@Test
+	public void aFlacStreamReportedAsAnotherTypeIsNotSent() throws Exception {
+		byte[] flac = concat("fLaC".getBytes(StandardCharsets.US_ASCII),
+				FlacMetadataTest.block(0, true, FlacMetadataTest.streamInfo()),
+				FlacMetadataTest.frames());
+		Uri uri = attach("song.mp3", "audio/mpeg", flac);
+		assertNull("FLAC was sent as " + sentType, sent);
+		verify(creator).onAttachmentError(eq(uri),
+				isA(MediaRefusedException.class));
 	}
 
 	@Test

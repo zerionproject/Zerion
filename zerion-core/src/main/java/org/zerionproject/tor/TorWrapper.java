@@ -78,6 +78,9 @@ public interface TorWrapper {
 		void onHsDescriptorUpload(String onion);
 
 		void onClockSkewDetected(long skewSeconds);
+
+		default void onEntryRelayFailing() {
+		}
 	}
 
 	class HiddenServiceProperties {

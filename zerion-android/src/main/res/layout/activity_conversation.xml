@@ -24,7 +24,8 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             android:paddingStart="4dp"
-            android:paddingEnd="4dp">
+            android:paddingEnd="4dp"
+            app:navigationIconTint="@color/zerion_text_primary">
 
             <LinearLayout
                 android:id="@+id/toolbarTitleBlock"
@@ -66,7 +67,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textColor="@color/zerion_text_secondary"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:letterSpacing="0.02"
                         tools:text="End-to-end encrypted" />
 
@@ -131,7 +132,7 @@
             android:paddingEnd="20dp"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
-            android:textColor="@color/zerion_accent"
+            android:textColor="@color/zerion_accent_text"
             android:textSize="12sp"
             android:textStyle="italic"
             android:visibility="gone" />
@@ -189,6 +190,7 @@
                 android:id="@+id/text_input_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                app:hint="@string/message_hint"
                 android:background="@drawable/bg_input_bar"
                 android:elevation="8dp"
                 android:clipToPadding="false" />

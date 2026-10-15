@@ -1,8 +1,11 @@
 # Onion client authorization
 
-Status: revision 3, shipped in Android 3.0.12; iOS port pending
-(section 10). The control-port primitives (`TorControl`,
-`TorOnionServiceControl`) and everything above them follow this document.
+Status: revision 4. Revision 3 shipped in Android 3.0.12; revision 4 adds
+the partial-commit rules, the lost-key recovery and the `AUTH_READY`
+generation rule of section 5, changes no record format and is not yet
+released. iOS port pending (section 10). The control-port primitives
+(`TorControl`, `TorOnionServiceControl`) and everything above them follow
+this document.
 
 ## 1. Why
 
@@ -80,12 +83,33 @@ Rules:
   the peer's `AUTH_PROBE_SUCCESS` was received.
 - `AUTH_CONFIRMED -> AUTH_REQUIRED`: this side has sent `AUTH_COMMIT` and
   received the peer's `AUTH_COMMIT`.
+- `AUTH_CONFIRMED` with `AUTH_COMMIT` sent (a partial commit): the peer may
+  already have accepted that `AUTH_COMMIT` and be `AUTH_REQUIRED`, which
+  it cannot leave. So this side dials `onion3a` only, keeps the peer's key
+  on its authorized service and its own credential for the peer's
+  `onion3a`, and is never cleared by the pre-commit cleanup (section 5).
+  It still accepts the peer over either service, because it is not
+  `AUTH_REQUIRED` itself. It converges by the repair of section 5; when
+  it hears nothing over the authorized path it also gets the open repair
+  dial and, if the peer lost its keys, a new round that keeps the
+  committed one (section 5, Lost peer keys).
 - `AUTH_REQUIRED`: dial `onion3a` only. A failed client-key registration is
   a hard failure (no dial). An unreachable `onion3a` is retried with backoff
   and never replaced by `onion3`. An inbound session from this contact that
   arrives over the open service is recognised by its tag and then closed:
   it is not a downgrade path. No message from the peer moves this state
-  anywhere but `REVOKED` (a local action).
+  anywhere but `REVOKED` (a local action). The one bounded exception on the
+  outbound side is the open repair dial of section 5 (Lost peer keys),
+  which looks for a peer that lost its keys; it never changes the dial
+  target, the state or the inbound rule.
+- Re-keying: the peer sent a new key after this side committed (section 5,
+  Lost peer keys). The state stays what it was, `AUTH_REQUIRED` or
+  `AUTH_CONFIRMED` with `AUTH_COMMIT` sent, with its inbound rule, while
+  a new round runs underneath it. The committed round stays usable until
+  the new one has proven itself: the committed peer key stays on the
+  authorized service and the committed address stays the dial target. The
+  round ends at the next mutual `AUTH_COMMIT`, or by returning to the
+  committed round when the peer shows that it still holds it.
 - `* -> REVOKED`: contact removed or blocked, section 7. A contact re-added
   later is a new pairing with a new root key and is meant to start at
   `LEGACY`. Known limitation: the record is keyed by the internal contact id,
@@ -118,7 +142,8 @@ Support is advertised with the transport property `onion3auth=<version>`.
 6, linkability).
 
 The open service is retired for a pair at `AUTH_REQUIRED` (inbound from
-that contact closed, outbound never dialled). Retiring the open service for
+that contact closed, outbound dialled only by the bounded open repair dial
+of section 5). Retiring the open service for
 the whole device is a deliberate later step, taken when every contact is
 `AUTH_REQUIRED` or `REVOKED`; it is not automatic.
 
@@ -136,6 +161,18 @@ the sync layer. Each carries `version` (protocol version, 1) and a
     AUTH_ROTATE         { keyVersion, new onion3a and/or new client public key }
     AUTH_ROTATE_ACK     { keyVersion }
 
+In every record but `AUTH_ROTATE_ACK`, `keyVersion` is the sender's own
+generation; `AUTH_ROTATE_ACK` carries the generation it acknowledges,
+which is the receiver's. Versions up to 3.0.17 put the receiver's
+generation in `AUTH_READY` and compared it with the sender's, so a pair
+whose two generations differ (one side has rotated its authorized
+address, after removing a contact, on request or after 30 days) never
+accepted each other's `AUTH_READY`, never probed and never activated; it
+went back to `LEGACY` at the seven-day cleanup and started again. A side
+now sends its own generation in `AUTH_READY`, which those versions accept
+whenever they know this side's current generation, and accepts an
+`AUTH_READY` that carries either the sender's generation or its own.
+
 Sequence for a pair:
 
 1. Both advertise `onion3auth`. Each side generates its dialing key for the
@@ -144,9 +181,10 @@ Sequence for a pair:
 2. On receiving `AUTH_OFFER`: republish `onion3a` with the new public key
    in the set, install the peer's `onion3a` plus own private key in Tor
    (`ONION_CLIENT_AUTH_ADD`), send `AUTH_READY`.
-3. On `AUTH_READY`: probe. Only one side of a pair ever dials (the
-   designated dialer, fixed by the author identifiers), so the probe is
-   directional. The designated dialer is asked to dial the peer at once,
+3. On `AUTH_READY`: probe. Only one side of a pair dials (the designated
+   dialer, fixed by the author identifiers; the only exceptions are the
+   repair dials under Partial commit and Lost peer keys below), so the
+   probe is directional. The designated dialer is asked to dial the peer at once,
    past any backoff, and the transport reports which address the dial
    reached; a dial that reached the peer's `onion3a` is that side's probe.
    The other side's probe is a recognised connection from the peer
@@ -159,7 +197,16 @@ Sequence for a pair:
    re-feed.
 4. A side that holds its own probe success and the peer's sends
    `AUTH_COMMIT`. On receiving the peer's `AUTH_COMMIT` while having sent
-   its own: `AUTH_REQUIRED`.
+   its own: `AUTH_REQUIRED`. A peer sends `AUTH_COMMIT` only after its own
+   probe, so an `AUTH_COMMIT` that passes every check below but arrives
+   before the peer's `AUTH_PROBE_SUCCESS` counts as that probe success.
+   The sync layer does not keep the two records in order: received
+   records are validated concurrently, and a record sent in a session
+   that drops before it is acknowledged is sent again only after its
+   retransmission delay (at least two minutes over Tor), so an
+   `AUTH_COMMIT` created later goes out first in the next session. An
+   `AUTH_COMMIT` that arrives before this side's own probe succeeded still
+   changes nothing.
 
 Invariants: legacy is never closed for a pair before both directions are
 proven (`AUTH_COMMIT` requires both probe successes). Legacy is never
@@ -168,9 +215,11 @@ channel, so no third party and no downgrade message from the peer can move
 the state backwards.
 
 Asymmetry and recovery. A side in `AUTH_REQUIRED` that receives a state
-message from a lower state re-sends `AUTH_COMMIT`. A side in a lower state
+message from a lower state re-sends `AUTH_COMMIT`, paced as described under
+Partial commit below. A side in a lower state
 that receives `AUTH_COMMIT` moves to `AUTH_REQUIRED` only when every one of
-these holds; otherwise the message changes nothing:
+these holds; otherwise the message changes nothing (it has still been
+delivered, so the sync layer does not send it again):
 
 - the message version is supported;
 - its `keyVersion` equals the current negotiation or rotation generation
@@ -189,24 +238,177 @@ A stale `AUTH_COMMIT` (an older generation, including one replayed from a
 restored backup) and a future one (a generation this side has not reached)
 are ignored and noted in the state as a repair trigger. When the local
 state cannot establish these invariants the side fails closed, attempts an
-authenticated repair by re-sending its own current state message, and if
-the generations cannot be reconciled requires re-pairing. The one
-unrecoverable case is a peer that lost its key state entirely (a backup
-older than the negotiation): it cannot reach us over `onion3a`, we refuse
-it over `onion3`, and we do not reopen legacy. That is a key-loss event,
-treated like the loss of transport keys today: the contact must be
-re-paired out of band, which yields a new root key and a fresh run from
-`LEGACY`, stated in the UI as "this contact needs to be paired again".
+authenticated repair by re-sending its own current state message. A peer
+that lost its key state entirely (a backup older than the negotiation, or
+a partial commit cleared by an earlier version) cannot reach us over
+`onion3a` and we refuse it over `onion3`; we do not reopen legacy. The
+pair is recovered without re-pairing by a new round of keys over a session
+that the contact's own keys authenticate (Lost peer keys below).
+
+Partial commit. One side can be `AUTH_REQUIRED` while the other has sent
+`AUTH_COMMIT` but rejected or not yet received the peer's (an
+`AUTH_COMMIT` rejected for a generation or address that changed in
+flight, or one that arrived early on a version that did not yet count it
+as a probe success). The two sides then repair it with bounded records:
+
+- The side with the partial commit sends `AUTH_PROBE_SUCCESS` and
+  `AUTH_COMMIT` again one hour after its commit, then after doubling
+  delays capped at one day, at most ten times per generation. A rotation
+  on this side restarts the count, since it makes the earlier records
+  stale; a rotation announced by the peer only moves the next repair one
+  hour later and adds none, so a peer cannot extend the repairs by
+  rotating. It also re-sends `AUTH_COMMIT` whenever the database is opened.
+  A locked-in peer answers the `AUTH_PROBE_SUCCESS`; a peer with a
+  partial commit of its own accepts the `AUTH_COMMIT`.
+- A side that locks in re-sends its `AUTH_COMMIT` once, one hour later,
+  for a peer that rejected the first copy. A pair locked in by an earlier
+  version does this once at the first check after the update.
+- Each of those repairs and that one re-send also asks the transport for
+  one repair dial: a single dial, past any backoff, to the peer's
+  `onion3a`, made even by the side that is not the designated dialer, so
+  the records reach a peer that never dials this side. Apart from the
+  repairs of a new round of keys (Lost peer keys below) and the silence
+  repair (next item), nothing else asks for it (not a probe, not an
+  answer), so a side makes at most one repair dial after locking in and at
+  most ten per generation with a partial commit. The peer accepts the
+  dial: a locked-in peer through its authorized service, a peer with a
+  partial commit through either.
+- Silence repair. A locked-in side with no contact over the authorized
+  path in either direction for a day (neither its own dial reaching the
+  peer's `onion3a` nor the peer arriving through this side's authorized
+  service) asks for the same repair dial, then again after 2, 4, 8 hours
+  and so on, at most once every seven days, on a schedule of its own that
+  any contact over the authorized path resets. It reaches a peer that is
+  the designated dialer but dials an address this side has retired (it
+  missed this side's `AUTH_ROTATE`, section 6), and delivers the queued
+  records. A healthy pair makes none; a peer silent for 30 days gets
+  about ten.
+- A locked-in side answers `AUTH_OFFER`, `AUTH_READY` and
+  `AUTH_PROBE_SUCCESS` with its `AUTH_COMMIT` at most once an hour, and
+  answers an `AUTH_COMMIT` only while it has not re-sent its own since
+  locking in. An `AUTH_COMMIT` can be another locked-in side's answer, so
+  answering every one would make two locked-in sides send `AUTH_COMMIT`
+  back and forth for as long as both are online. Versions up to 3.0.17
+  answer every one: after a restart repairs a partial commit between two
+  of them, the surplus answers go back and forth without end. Against
+  such a peer this side is the one that stops.
+
+Versions up to 3.0.17 cleared a partial commit at the seven-day cleanup
+below. Their peer had locked in and refuses the open service, so the pair
+lost each other: at once when the side with the partial commit was the
+designated dialer (it went on dialing the open address), seven days after
+the negotiation started when it was not (the dialer reached it through
+its `onion3a` until the cleanup removed that). Updating either side
+repairs a partial commit that has not been cleared yet. When the peer on
+such a version is the designated dialer and holds the partial commit, it
+dials only the open address, which the locked-in side refuses; the
+updated locked-in side then reaches it with the repair dial that comes
+with its one re-send, through the peer's `onion3a`, which still
+authorizes it. A pair whose partial commit was already cleared is a
+lost-key case: it recovers once the side that stayed locked in runs this
+version (Lost peer keys below), and not before.
+
+Lost peer keys. A peer can lose the keys of a committed round: a version
+up to 3.0.17 cleared its partial commit at the seven-day cleanup, or the
+peer restored a backup older than the negotiation. Its side of the pair is
+then `LEGACY`, or negotiating again with a new dialing key, while this side
+is `AUTH_REQUIRED` or holds a partial commit (it sent `AUTH_COMMIT`, which
+the peer never answered). This side's dials to the peer's `onion3a` fail (the
+peer no longer authorizes its key) and the peer's dials to this side's
+open service are refused. The contact itself is intact: both sides still
+hold its root keys, and every session between them is authenticated by
+those keys in the ZWF handshake, whichever onion service carries it. The
+BLE mesh carries only chat and group records, not these records, so it is
+no channel for this. Recovery runs over a Tor session instead:
+
+- Open repair dial. A locked-in side, or a side with a partial commit, with
+  no contact over the authorized path for a day and an hour (one hour
+  after the first silence repair of a locked-in side, so the two dials
+  never coincide) asks the transport for one dial to the
+  peer's open address, made from either side of the pair; then again after
+  2, 4, 8 hours and so on, at most once every seven days, until the
+  authorized path works again. With the first one of
+  a silent period it also sends its current `AUTH_OFFER` once. Dialing
+  out to the open address is safe. The address comes from the peer's
+  authenticated transport properties, only the holder of that onion key
+  can answer, and the ZWF handshake then authenticates the peer's root
+  key; client authorization protects the service side (who can reach and
+  confirm a service), not the dialing side, and the peer publishes its
+  open service anyway. A session forms only if the peer accepts this side
+  on its open service, which a peer that is still `AUTH_REQUIRED` for the
+  pair refuses, so a network that blocks `onion3a` gains nothing and an
+  intact pair cannot be downgraded through it. This side's inbound rule
+  does not change at any point. Because that refusal is expected, an open
+  repair dial that closes before a frame authenticates is not counted
+  towards marking the contact's keys out of sync (ZWF-ROOT-EVOLUTION.md);
+  one that authenticates clears the mark as any dial does.
+- Detection. An `AUTH_OFFER` whose client public key differs from the key
+  this side committed with, arriving over the authenticated per-contact
+  channel, means the peer may have discarded the committed round: a
+  locked-in peer never sends `AUTH_OFFER`, and a negotiating peer repeats
+  its key. No one but the contact can produce it, and no trust is placed
+  in a key that did not arrive that way. It is not proof, though: the sync
+  layer does not keep records in order, so an `AUTH_OFFER` from an
+  abandoned earlier negotiation can arrive after the pair locked in. The
+  new round is therefore built so that it can never lose a pair that
+  still works.
+- Re-keying. On that signal this side keeps its state (`AUTH_REQUIRED`, or
+  `AUTH_CONFIRMED` with its partial commit) and its own dialing key, and
+  starts a new round: the peer's new key goes on this side's authorized
+  service next to the committed key, the credential is installed for the
+  peer's `onion3a`, then `AUTH_OFFER` and `AUTH_READY`, the probes and
+  `AUTH_COMMIT` as in steps 1 to 4. The committed peer key stays
+  authorized and the committed address stays the dial target until the
+  round's probe succeeds; only the round's mutual `AUTH_COMMIT` removes the
+  committed key. The peer runs an ordinary negotiation and needs no change,
+  so a peer on 3.0.15 to 3.0.17 recovers as well. The round is never
+  cleared by the seven-day cleanup.
+- Back to the committed round. An `AUTH_COMMIT` that matches the committed
+  round (the committed peer key's fingerprint, this side's address and
+  generations), or an `AUTH_OFFER` that carries the committed peer key,
+  shows that the peer still holds that round. This side then drops the new
+  round and its key and returns to the committed state; a partial commit
+  answered that way locks in. A healthy pair that received a late
+  `AUTH_OFFER` thus answers the round's `AUTH_OFFER` and `AUTH_READY` with
+  its `AUTH_COMMIT` (every version does) and ends up where it was, over
+  the path it never stopped using. An earlier key is not ignored outright:
+  a peer that restored a backup can hold one again, and acting on it is
+  now harmless and limited to once a day.
+- Round repairs. Until the authorized path has worked since the round
+  started, the open repair dial continues on its schedule; the round's
+  `AUTH_OFFER` and `AUTH_READY` are repeated on the bounded repair
+  schedule above, with one repair dial each, and a partial commit inside
+  the round is repaired as above. A new round starts at most once a day
+  per contact, so a peer
+  cannot make this side republish its service or dial without limit. For the same reason a peer's client key, once this side
+  holds one, is replaced at most once a day, inside a round and in an
+  ordinary negotiation alike: an `AUTH_OFFER` with yet another key
+  within the day changes nothing, and the peer repeats its key with its
+  next offer. The authorized service is shared by every contact and a
+  new key changes its authorized set, so without this limit one contact
+  could take the service down for all of them with every record.
+- What still needs an update. The side that stayed locked in must run this
+  version. A locked-in side up to 3.0.17 never dials the open address and
+  answers a new `AUTH_OFFER` with its old `AUTH_COMMIT`, and the cleared
+  side holds no key for its `onion3a`, so nothing reaches it. Once it is
+  updated, the pair recovers in about a day, without re-pairing. Re-adding
+  an existing contact would not help on its own: it keeps the client
+  authorization state of both sides as it is. Removing the contact on
+  both sides and adding it again does reset that state, but it is not
+  needed for this.
 
 Pre-commit cleanup. `AUTH_REQUIRED` is irreversible except by local
 revocation. `AUTH_NEGOTIATING` and `AUTH_CONFIRMED` are not: a negotiation
-that has not reached commit within seven days, or that the user resets, is
-aborted locally: the temporary dialing key pair for the peer is deleted,
-the peer's public key is removed from the authorized set and the service
-republished, the credential for the peer's `onion3a` is removed from Tor,
-the persisted negotiation row is cleared, and the pair is back at `LEGACY`,
-which is exactly today's posture. Abandoned negotiations therefore never
-leave keys or authorized-client entries behind.
+in which this side has not sent `AUTH_COMMIT` within seven days, or that
+the user resets, is aborted locally (a side that has sent `AUTH_COMMIT`
+holds a partial commit and is kept, and so is a new round that keeps a
+committed one): the temporary dialing key pair for
+the peer is deleted, the peer's public key is removed from the authorized
+set and the service republished, the credential for the peer's `onion3a`
+is removed from Tor, the persisted negotiation row is cleared, and the
+pair is back at `LEGACY`, which is exactly today's posture. Abandoned
+negotiations therefore never leave keys or authorized-client entries
+behind.
 
 Unanswered offers. An `AUTH_OFFER` that has not been answered by the time
 the database is opened again (no key from the peer has been recorded) is
@@ -240,12 +442,23 @@ is versioned and rotated.
   yet.
 - A contact that missed the announcement still has a valid address of its
   own, so we dial it and deliver `AUTH_ROTATE` over that session; the
-  address it holds for us being retired does not strand the pair.
-- Client keys rotate the same way in the other direction: a new dialing
-  key pair, public half in `AUTH_ROTATE`, old credential removed from Tor
-  after the acknowledgement.
-- Triggers: every contact revocation (mandatory); on a schedule at least as
-  long as the open address's rotation period; on request from Settings.
+  address it holds for us being retired does not strand the pair. When
+  that contact is the designated dialer, this dial is the silence repair
+  of section 5: it goes out after a day without contact over the
+  authorized path, from the side that does not normally dial.
+- A client public key in `AUTH_ROTATE` is ignored, and the rest of the
+  record is processed: no version sends one, and honouring it would let a
+  peer make this side take down and republish its authorized service with
+  every record. A new client key travels only in a new round of keys
+  (section 5, Lost peer keys), which starts at most once a day.
+- Triggers: every contact revocation (mandatory), that is removing a
+  contact this device authorizes; on a schedule, a random 28 to 35 days
+  after the last rotation (drawn at each rotation and stored with the
+  service; a fixed 30 days up to 3.0.17), and only once the address before
+  it is retired. A rotation on request exists in the manager
+  (`rotateAuthorizedService`) but no screen offers it: the "Rotate onion
+  now" button in the network settings rotates the open address
+  (`B4OnionRotation`), not this one.
 - Crash recovery: rotation state (`PUBLISHED_NEW`, `ANNOUNCED`, per-contact
   ack, `RETIRED`) is persisted and every step is idempotent, so a restart
   resumes at the persisted phase and re-sends what is unacknowledged.
@@ -316,7 +529,14 @@ confirmed on a device:
   Re-adding a service whose key is still published answers `550 Onion
   address collision`, so a key-set change is `DEL_ONION` first, then
   `ADD_ONION` with the same key; the address is unchanged. `DEL_ONION` of
-  an unknown service answers `552 Unknown Onion Service id`.
+  an unknown service answers `552 Unknown Onion Service id`. Between
+  those two commands the service is unpublished for every contact, so the
+  manager republishes only when the authorized set or the address differs
+  from what it last published successfully to the running Tor; every
+  attach to a started Tor republishes. A record from a peer (an
+  `AUTH_ROTATE`, a repeated `AUTH_OFFER`) therefore no longer takes the
+  service down unless it changes the set, and a peer changes the set with
+  a new key at most once a day (section 5, Lost peer keys).
 - Capacity is bounded by the descriptor size limit (50 000 bytes); each
   authorized client adds one padded `auth-client` line to the
   superencrypted layer, which gives room for several hundred clients, far
@@ -377,6 +597,20 @@ confirmed on a device:
 | `AUTH_COMMIT` with a mismatched client key fingerprint | ignored |
 | `AUTH_COMMIT` after `REVOKED` | ignored, state stays `REVOKED` |
 | Pre-commit abort cleans up | an aborted negotiation leaves no key, no authorized entry, no credential and no row; the pair is `LEGACY` |
+| A partial commit outlives the seven days | a side that has sent `AUTH_COMMIT` keeps its keys, credential and authorized entry past the timeout and a reset, dials `onion3a` only, and repeats `AUTH_PROBE_SUCCESS` and `AUTH_COMMIT` with a doubling delay at most ten times per generation (`OnionClientAuthManagerImplTest`) |
+| Early `AUTH_COMMIT` | an `AUTH_COMMIT` that passes every check but arrives before the peer's `AUTH_PROBE_SUCCESS` locks the pair in; one that arrives before this side's own probe changes nothing |
+| Locked-in answers are bounded | one re-sent `AUTH_COMMIT` after locking in (also for a pair locked in by an earlier version), at most one answer to an `AUTH_COMMIT`, lower-state messages answered at most once an hour |
+| Repair dials | requested with each partial-commit repair and with the one re-send after locking in, never for a probe or an answer; at most one plus ten per generation over thirty days without a connection; a rotation announced by the peer adds none; a locked-in side that is not the designated dialer reaches a 3.0.15 to 3.0.17 dialer stuck with its partial commit, and a side with a partial commit that is not the designated dialer reaches its peer without the dialer polling (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`) |
+| Lost peer keys | a pair whose partial commit a 3.0.15 to 3.0.17 side cleared at day seven recovers, in both dialer roles, once the locked-in side is updated, whether the cleared side is updated or not, with restarts of both sides at every stage of the new round, past day seven and a restart of both; the locked-in side never accepts the open service meanwhile; a locked-in side on 3.0.17 or earlier stays lost until it is updated; a designated dialer holding a partial commit reaches a peer, updated or on 3.0.15 to 3.0.17, that restored a backup older than the negotiation (`OnionClientAuthPairTest`) |
+| Late `AUTH_OFFER` | an `AUTH_OFFER` from an abandoned earlier negotiation delivered after lock-in, with no session after it, on either dialer role and against an updated or a 3.0.15 to 3.0.17 peer, leaves the pair reachable and returns it to the committed round and key (`OnionClientAuthPairTest`) |
+| No record opens a locked-in side | every record type at old, current and future generations, with the committed key and new keys, across restarts, leaves `AUTH_REQUIRED`, the authorized dial target and the closed open service in place; a new round starts at most once a day, keeps this side's dialing key and the committed peer key and address until it locks in; an `AUTH_COMMIT` or `AUTH_OFFER` of the committed round ends a new round in its favour, also for a partial commit, which the seven-day cleanup never clears (`OnionClientAuthManagerImplTest`) |
+| Open repair dial | requested only after a day and an hour without the authorized path, then at most every 2, 4, 8 hours and so on up to seven days, with one `AUTH_OFFER` per silent period; never for a healthy pair; the transport takes the address without the authorized override; a refused open repair dial does not count towards keys out of sync (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`, `ZtpPollerTest`, `TransportPropertyOpenAddressTest`, `ZtpConnectionHandlerTest`) |
+| Silence repair | a locked-in side silent for a day makes one repair dial, then at most every 2, 4, 8 hours and so on up to seven days (at most twelve in 30 days), never in the same step as an open repair dial, reset by any contact over the authorized path; a healthy pair makes none; a designated dialer that missed its peer's rotation while offline for 31 days, until the old address was retired, recovers through the peer's silence repair (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`) |
+| Client key in `AUTH_ROTATE` | ignored: the authorized set, the published service and the peer's key stay as they were, and the address and generation of the record are applied (`OnionClientAuthManagerImplTest`) |
+| Early `AUTH_READY` | an `AUTH_READY` that arrives before the peer's address is kept and the probe starts when the address arrives (`OnionClientAuthManagerImplTest`) |
+| No republish without a change | peer rotations leave the authorized service published; a change of the authorized set and every attach to Tor republish it; a peer that sends a new key with every `AUTH_OFFER`, in a new round of keys or in a negotiation, changes the set at most once a day (`OnionClientAuthManagerImplTest`) |
+| `AUTH_READY` across generations | a pair whose authorized-service generations differ activates, between two updated sides and with a side running 3.0.15 to 3.0.17 in either role; two such older sides never do (`OnionClientAuthPairTest`, `OnionClientAuthManagerImplTest`) |
+| Two peers with one lost or reordered `AUTH_COMMIT` | two managers with a fake clock and a fake Tor network, the designated dialer modelled: an `AUTH_COMMIT` dropped or overtaking its `AUTH_PROBE_SUCCESS`, on either side, across day seven and a restart of both; both end `AUTH_REQUIRED` and reachable with no endless `AUTH_COMMIT` exchange, also with one side running the behaviour shipped in 3.0.15 to 3.0.17 (`OnionClientAuthPairTest`, which also reproduces the loss between two such peers) |
 | Revocation retires the old service at once | after a revocation the old service is deleted before any acknowledgement, and the new set excludes the key |
 | Wrong or replaced client key fails | a service published with key set S refuses a credential outside S (device test against real Tor) |
 | Revoked client cannot reconnect | after revocation the tag is unrecognised and the republished service excludes the key |
@@ -405,7 +639,12 @@ rotation, revocation and the re-feed after every Tor start). The app side is
 ordinary outgoing path so a record survives an offline contact, and the
 hooks the dial path and the listeners call). The records travel in the
 per-contact group of the `org.zerionproject.core.onionauth` client, computed
-exactly as Android computes it.
+exactly as Android computes it. The partial-commit rules of section 5 (no
+cleanup after `AUTH_COMMIT`, the bounded repair, paced answers, an early
+`AUTH_COMMIT` counted as a probe success), its lost-key recovery (the
+open repair dial and the new round of keys) and its `AUTH_READY`
+generation rule change no record format and have to be followed by the
+iOS manager as well.
 
 Platform differences that do not change the protocol:
 

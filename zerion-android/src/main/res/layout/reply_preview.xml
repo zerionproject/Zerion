@@ -23,7 +23,7 @@
             android:id="@+id/reply_author"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/zerion_primary"
+            android:textColor="@color/zerion_accent_text"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -40,9 +40,13 @@
 
     <ImageButton
         android:id="@+id/cancel_reply"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_gravity="center_vertical"
+        android:layout_marginTop="-8dp"
+        android:layout_marginBottom="-8dp"
+        android:layout_marginEnd="-8dp"
+        android:scaleType="center"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/cd_cancel_reply"
         app:srcCompat="@drawable/ic_close"

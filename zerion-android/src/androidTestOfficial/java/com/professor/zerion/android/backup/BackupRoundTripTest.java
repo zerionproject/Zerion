@@ -37,7 +37,10 @@ public class BackupRoundTripTest extends UiTest {
 		lifecycleManager.startServices(key);
 		lifecycleManager.waitForStartup();
 
-		byte[] backup = backupManager.exportAccount(backupPass.clone());
+		java.io.ByteArrayOutputStream saved =
+				new java.io.ByteArrayOutputStream();
+		backupManager.exportAccount(backupPass.clone(), () -> saved);
+		byte[] backup = saved.toByteArray();
 		assertTrue("empty backup", backup.length > 64);
 
 		lifecycleManager.stopServices();

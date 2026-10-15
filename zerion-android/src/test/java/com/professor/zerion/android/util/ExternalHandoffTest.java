@@ -84,6 +84,7 @@ public class ExternalHandoffTest {
 		ExternalHandoff.end(ctx);
 		ExternalHandoff.wiper = savedWiper;
 		ExternalHandoff.revoker = savedRevoker;
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
 	}
 
 	private static byte[] video() {
@@ -194,6 +195,61 @@ public class ExternalHandoffTest {
 		assertNotNull(view);
 		assertFalse(stray.exists());
 		assertEquals(1, dir().list().length);
+	}
+
+	@Test
+	public void theOtherAppOnlyEverGetsTheCleanedCopy() throws Exception {
+		byte[] clean = {7, 7, 7};
+		List<String> asked = new ArrayList<>();
+		ExternalHandoff.cleaner = (c, content, type) -> {
+			asked.add(type);
+			return new ExternalHandoff.Prepared(clean, "video/mp4");
+		};
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		Intent view = open(s, video(), "video/quicktime");
+		assertNotNull(view);
+		assertEquals("video/mp4", view.getType());
+		File copy = ExternalHandoff.current();
+		assertNotNull(copy);
+		assertArrayEquals(clean, Files.readAllBytes(copy.toPath()));
+		assertEquals(Arrays.asList("video/quicktime"), asked);
+	}
+
+	@Test
+	public void nothingLeavesWhenTheFileCannotBeCleaned() throws Exception {
+		ExternalHandoff.cleaner = (c, content, type) -> {
+			throw new java.io.IOException("cannot clean");
+		};
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		assertNull(open(s, video(), "video/mp4"));
+		assertEquals(Arrays.asList("video/mp4"), failures);
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue(left == null || left.length == 0);
+	}
+
+	@Test
+	public void filesThatCanBeCleanedAreCleanedBeforeTheyLeave()
+			throws Exception {
+		byte[] pdf = "%PDF-1.7 author".getBytes("US-ASCII");
+		byte[] drawn = "%PDF-1.4\nclean\n%%EOF\n".getBytes("US-ASCII");
+		try (org.mockito.MockedConstruction<com.professor.zerion.android
+				.attachment.PdfCleaner> cleaners =
+				org.mockito.Mockito.mockConstruction(com.professor.zerion
+						.android.attachment.PdfCleaner.class, (m, c) ->
+						org.mockito.Mockito.when(m.clean(any(),
+								org.mockito.ArgumentMatchers.anyLong()))
+								.thenReturn(drawn))) {
+			ExternalHandoff.Prepared ready = ExternalHandoff.CLEAN_FIRST
+					.prepare(ctx, pdf, "application/pdf");
+			assertArrayEquals(drawn, ready.content);
+			assertEquals("application/pdf", ready.type);
+			assertEquals(1, cleaners.constructed().size());
+		}
+		byte[] zip = {'P', 'K', 3, 4, 1, 2};
+		ExternalHandoff.Prepared kept = ExternalHandoff.CLEAN_FIRST
+				.prepare(ctx, zip, "application/zip");
+		assertArrayEquals(zip, kept.content);
 	}
 
 	@Test

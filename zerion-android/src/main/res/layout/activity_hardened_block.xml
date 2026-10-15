@@ -35,6 +35,7 @@
 		android:layout_height="wrap_content"
 		android:layout_marginBottom="12dp"
 		android:text="@string/hardened_block_disable_action"
+		android:textColor="?attr/zerionAccentText"
 		app:layout_constraintBottom_toTopOf="@+id/hardenedBlockQuitButton" />
 
 	<com.google.android.material.button.MaterialButton

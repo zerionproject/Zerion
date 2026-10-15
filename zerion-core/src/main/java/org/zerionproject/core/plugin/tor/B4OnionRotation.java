@@ -16,6 +16,7 @@ import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.crypto.FieldEncryption;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.transport.ZtpPoller;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -33,6 +34,11 @@ import javax.inject.Singleton;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_LAST_ROTATION_TIME_MS_KEY;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_NEXT_ANNOUNCED_KEY;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_ANNOUNCE_FALLBACK_MS;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_PENDING_RETRY_MAX_MS;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_PENDING_RETRY_MIN_MS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_CURRENT_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT_KEY;
@@ -89,6 +95,15 @@ public class B4OnionRotation {
 		void updateTorCurrentPrivKey(String newPrivKey);
 
 		void mergeTorLocalProperties(TransportProperties props);
+
+		default boolean acceptsOpenInbound(ContactId c) {
+			return true;
+		}
+	}
+
+	public interface DeliveryCheck {
+		boolean hasReceived(Transaction txn, ContactId c, String nextOnion)
+				throws DbException;
 	}
 
 	private static final String B4_ALICE_PROMOTING_SENTINEL_KEY =
@@ -104,6 +119,13 @@ public class B4OnionRotation {
 			"alice_revocation_rotation";
 
 	static final long REVOCATION_RETIRE_MS = 48L * 60 * 60 * 1000;
+
+	static final long ANNOUNCED_AT_GRANULARITY_MS = 60L * 60 * 1000;
+
+	static long announcedAtOnWire(long announcedAtMs) {
+		return announcedAtMs - Math.floorMod(announcedAtMs,
+				ANNOUNCED_AT_GRANULARITY_MS);
+	}
 
 	private final java.security.SecureRandom rotationRng =
 			new java.security.SecureRandom();
@@ -126,6 +148,8 @@ public class B4OnionRotation {
 	private volatile B4TorAdapter adapter;
 	@Nullable
 	private volatile java.util.concurrent.ScheduledFuture<?> periodic;
+	@Nullable
+	private volatile DeliveryCheck deliveryCheck;
 
 	static final long MIGRATION_GRACE_MS = 24L * 60 * 60 * 1000;
 
@@ -156,6 +180,10 @@ public class B4OnionRotation {
 		this.adapter = adapter;
 	}
 
+	public void bindDeliveryCheck(DeliveryCheck check) {
+		this.deliveryCheck = check;
+	}
+
 	public void startPeriodicEvaluation() {
 		java.util.concurrent.ScheduledFuture<?> previous = periodic;
 		if (previous != null) previous.cancel(false);
@@ -166,6 +194,10 @@ public class B4OnionRotation {
 	void evaluateAll() {
 		try {
 			republishPendingOnion();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			announceNext(null);
 		} catch (DbException | RuntimeException ignored) {
 		}
 		try {
@@ -356,6 +388,7 @@ public class B4OnionRotation {
 			s.put(B4_ALICE_ONION3_NEXT_KEY, "");
 			s.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY, "");
 			s.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY, "");
+			s.put(B4_ALICE_NEXT_ANNOUNCED_KEY, "");
 			s.put(B4_ALICE_ROTATION_PHASE_KEY,
 					sealString(RotationPhase.IDLE.name()));
 			settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
@@ -371,8 +404,17 @@ public class B4OnionRotation {
 		String existingPending = loadEncryptedString(txn,
 				B4_CONTACT_ONION3_PENDING_KEY_PREFIX + from.getInt());
 		if (pendingOnion.equals(existingPending)) {
+			if (loadEncryptedString(txn, B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX
+					+ from.getInt()) != null) {
+				Settings retryNow = new Settings();
+				retryNow.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX
+						+ from.getInt(), "");
+				settingsManager.mergeSettings(txn, retryNow,
+						B4_SETTINGS_NAMESPACE);
+			}
 			return;
 		}
+		boolean notify = true;
 		if (existingPending != null) {
 			String lastRaw = loadEncryptedString(txn,
 					B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
@@ -382,7 +424,7 @@ public class B4OnionRotation {
 					long lastMs = Long.parseLong(lastRaw);
 					long now = clock.currentTimeMillis();
 					if (now - lastMs < B4_ANNOUNCE_RATE_LIMIT_MS) {
-						return;
+						notify = false;
 					}
 				} catch (NumberFormatException ignored) {
 				}
@@ -391,15 +433,18 @@ public class B4OnionRotation {
 		Settings update = new Settings();
 		update.put(B4_CONTACT_ONION3_PENDING_KEY_PREFIX + from.getInt(),
 				sealString(pendingOnion));
-		update.put(B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
-						+ from.getInt(),
-				sealString(String.valueOf(clock.currentTimeMillis())));
+		if (notify) {
+			update.put(B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
+							+ from.getInt(),
+					sealString(String.valueOf(clock.currentTimeMillis())));
+		}
 		update.put(B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX
 						+ from.getInt(), "");
 		update.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
 						+ from.getInt(), "");
+		update.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + from.getInt(), "");
 		settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
-		txn.attach(new B4PeerOnionAnnouncedEvent(from));
+		if (notify) txn.attach(new B4PeerOnionAnnouncedEvent(from));
 	}
 
 	public void onSuccessfulConnect(ContactId cid, String dialedOnion)
@@ -410,16 +455,41 @@ public class B4OnionRotation {
 			String pending = loadEncryptedString(txn,
 					B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt());
 			if (pending == null || !pending.equals(dialedOnion)) return;
-			String alreadySucceeded = loadEncryptedString(txn,
+			boolean alreadySucceeded = "1".equals(loadEncryptedString(txn,
 					B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
-							+ cid.getInt());
-			if ("1".equals(alreadySucceeded)) return;
+							+ cid.getInt()));
+			boolean clean = loadPendingDialFailures(txn, cid) == 0
+					&& loadEncryptedString(txn,
+					B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + cid.getInt())
+					== null;
+			if (alreadySucceeded && clean) return;
 			Settings update = new Settings();
 			update.put(B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX
+					+ cid.getInt(), "");
+			update.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX
 					+ cid.getInt(), "");
 			update.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
 					+ cid.getInt(), sealString("1"));
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
+		});
+	}
+
+	public void onFallbackDialFailed(ContactId cid) throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		db.transaction(false, txn -> {
+			if (loadEncryptedString(txn, B4_CONTACT_ONION3_PENDING_KEY_PREFIX
+					+ cid.getInt()) == null) {
+				return;
+			}
+			if (loadEncryptedString(txn, B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX
+					+ cid.getInt()) == null) {
+				return;
+			}
+			Settings retryNow = new Settings();
+			retryNow.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + cid.getInt(),
+					"");
+			settingsManager.mergeSettings(txn, retryNow,
+					B4_SETTINGS_NAMESPACE);
 		});
 	}
 
@@ -438,6 +508,7 @@ public class B4OnionRotation {
 				+ cid.getInt(), "");
 		clear.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
 				+ cid.getInt(), "");
+		clear.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + cid.getInt(), "");
 		settingsManager.mergeSettings(txn, clear, B4_SETTINGS_NAMESPACE);
 	}
 
@@ -450,8 +521,21 @@ public class B4OnionRotation {
 			update.put(B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX
 							+ cid.getInt(),
 					sealString(String.valueOf(next)));
+			if (next >= B4_PENDING_DIAL_FAILURE_THRESHOLD) {
+				long retryAt = clock.currentTimeMillis()
+						+ pendingRetryDelayMs(next);
+				update.put(B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX
+						+ cid.getInt(), sealString(String.valueOf(retryAt)));
+			}
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 		});
+	}
+
+	static long pendingRetryDelayMs(int failures) {
+		int steps = Math.max(0, Math.min(failures
+				- B4_PENDING_DIAL_FAILURE_THRESHOLD, 4));
+		return Math.min(B4_PENDING_RETRY_MIN_MS << steps,
+				B4_PENDING_RETRY_MAX_MS);
 	}
 
 	private int loadPendingDialFailures(Transaction txn, ContactId cid)
@@ -466,25 +550,24 @@ public class B4OnionRotation {
 		}
 	}
 
-	public void onPeerSyncSessionEstablished(ContactId cid)
-			throws DbException {
+	public void onPeerSyncSessionEstablished(ContactId cid,
+			@Nullable String inboundOnion) throws DbException {
 		if (!B4_ROTATION_ENABLED) return;
 		boolean shouldComplete;
 		synchronized (rotationLock) {
 			shouldComplete = db.transactionWithResult(false, txn -> {
 				if (loadPhase(txn) != RotationPhase.ANNOUNCING) return false;
 				PeerRotationState state = loadPeerState(txn, cid);
-				if (state == PeerRotationState.MIGRATED) return false;
-				long announcedAt = loadAnnouncedAtMs(txn);
-				long now = clock.currentTimeMillis();
-				if (announcedAt > 0 && now - announcedAt >= MIGRATION_GRACE_MS) {
+				String next = loadEncryptedString(txn,
+						B4_ALICE_ONION3_NEXT_KEY);
+				if (state != PeerRotationState.MIGRATED
+						&& inboundOnion != null
+						&& inboundOnion.equals(next)) {
 					setPeerState(txn, cid, PeerRotationState.MIGRATED);
-					return shouldRetireOldOnion(txn);
-				}
-				if (state == PeerRotationState.CURRENT) {
+				} else if (state == PeerRotationState.CURRENT) {
 					setPeerState(txn, cid, PeerRotationState.PRE_ANNOUNCED);
 				}
-				return false;
+				return shouldRetireOldOnion(txn);
 			});
 			if (shouldComplete) executePromotion();
 		}
@@ -522,6 +605,7 @@ public class B4OnionRotation {
 				B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX,
 				B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX,
 				B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX,
+				B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX,
 				B4_PEER_ROTATION_STATE_KEY_PREFIX}) {
 			String key = prefix + cid.getInt();
 			String value = stored.get(key);
@@ -558,16 +642,60 @@ public class B4OnionRotation {
 		return db.transactionWithResult(true, this::loadLastRotationTimeMs);
 	}
 
+	public B4RotationDiagnostics diagnostics(ContactId cid)
+			throws DbException {
+		if (!B4_ROTATION_ENABLED) {
+			return new B4RotationDiagnostics(RotationPhase.IDLE, false,
+					PeerRotationState.CURRENT, false, 0L);
+		}
+		return db.transactionWithResult(true, txn -> {
+			int id = cid.getInt();
+			boolean pending = loadEncryptedString(txn,
+					B4_CONTACT_ONION3_PENDING_KEY_PREFIX + id) != null;
+			boolean suppressed = pending
+					&& getPendingOnionForContact(txn, cid) == null;
+			String retry = suppressed ? loadEncryptedString(txn,
+					B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + id) : null;
+			boolean announced = loadEncryptedString(txn,
+					B4_ALICE_NEXT_ANNOUNCED_KEY) != null;
+			RotationPhase phase = loadPhase(txn);
+			PeerRotationState state = loadPeerState(txn, cid);
+			if (phase == RotationPhase.ANNOUNCING
+					&& state != PeerRotationState.MIGRATED
+					&& hasMovedToNextOnion(txn, db.getContact(txn, cid),
+					loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY))) {
+				state = PeerRotationState.MIGRATED;
+			}
+			return new B4RotationDiagnostics(phase, announced, state, pending,
+					retry == null ? 0L : Long.parseLong(retry));
+		});
+	}
+
 	@Nullable
 	public String getPendingOnionForContact(Transaction txn, ContactId cid)
 			throws DbException {
 		if (!B4_ROTATION_ENABLED) return null;
-		int failures = loadPendingDialFailures(txn, cid);
-		if (failures >= B4_PENDING_DIAL_FAILURE_THRESHOLD) {
-			return null;
-		}
-		return loadEncryptedString(txn,
+		String pending = loadEncryptedString(txn,
 				B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt());
+		if (pending == null) return null;
+		if (loadPendingDialFailures(txn, cid)
+				< B4_PENDING_DIAL_FAILURE_THRESHOLD) {
+			return pending;
+		}
+		String retryRaw = loadEncryptedString(txn,
+				B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX + cid.getInt());
+		if (retryRaw == null) return pending;
+		long retryAt;
+		try {
+			retryAt = Long.parseLong(retryRaw);
+		} catch (NumberFormatException e) {
+			return pending;
+		}
+		long now = clock.currentTimeMillis();
+		if (retryAt <= now || retryAt - now > B4_PENDING_RETRY_MAX_MS) {
+			return pending;
+		}
+		return null;
 	}
 
 	public void resumeIfPromotionInterrupted() throws DbException {
@@ -644,6 +772,7 @@ public class B4OnionRotation {
 					sealString(RotationPhase.ANNOUNCING.name()));
 			update.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY,
 					sealString(String.valueOf(now)));
+			update.put(B4_ALICE_NEXT_ANNOUNCED_KEY, "");
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
@@ -652,13 +781,73 @@ public class B4OnionRotation {
 			}
 		});
 
-		TransportProperties props = new TransportProperties();
-		props.put(WIRE_KEY_ONION3_NEXT, newOnion);
-		props.put(WIRE_KEY_ONION3_ANNOUNCED_AT_MS, String.valueOf(now));
-		props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, "0");
-		ad.mergeTorLocalProperties(props);
-		scheduleRebroadcasts(now);
+		scheduleAnnounceFallback();
 		return true;
+	}
+
+	public void onDescriptorUploaded(String onion) {
+		if (!B4_ROTATION_ENABLED) return;
+		try {
+			announceNext(onion);
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	private void scheduleAnnounceFallback() {
+		try {
+			scheduler.schedule(() -> {
+				try {
+					announceNext(null);
+				} catch (DbException | RuntimeException ignored) {
+				}
+			}, B4_ANNOUNCE_FALLBACK_MS + 1000L, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException ignored) {
+		}
+	}
+
+	void announceNext(@Nullable String uploadedOnion) throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		B4TorAdapter ad = adapter;
+		if (ad == null) return;
+		synchronized (rotationLock) {
+			String[] state = db.transactionWithNullableResult(true, txn -> {
+				if (loadPhase(txn) != RotationPhase.ANNOUNCING) return null;
+				String next = loadEncryptedString(txn,
+						B4_ALICE_ONION3_NEXT_KEY);
+				if (next == null) return null;
+				boolean announced = loadEncryptedString(txn,
+						B4_ALICE_NEXT_ANNOUNCED_KEY) != null;
+				return new String[] {next,
+						String.valueOf(loadAnnouncedAtMs(txn)),
+						announced ? "1" : null};
+			});
+			if (state == null) return;
+			long rotatedAt = Long.parseLong(state[1]);
+			TransportProperties props = new TransportProperties();
+			props.put(WIRE_KEY_ONION3_NEXT, state[0]);
+			props.put(WIRE_KEY_ONION3_ANNOUNCED_AT_MS,
+					String.valueOf(announcedAtOnWire(rotatedAt)));
+			if (state[2] != null) {
+				if (uploadedOnion == null) ad.mergeTorLocalProperties(props);
+				return;
+			}
+			if (uploadedOnion == null) {
+				if (clock.currentTimeMillis() - rotatedAt
+						< B4_ANNOUNCE_FALLBACK_MS) {
+					return;
+				}
+			} else if (!uploadedOnion.equals(state[0])) {
+				return;
+			}
+			props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, "0");
+			ad.mergeTorLocalProperties(props);
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.put(B4_ALICE_NEXT_ANNOUNCED_KEY, sealString("1"));
+				settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+			});
+			scheduleRebroadcasts(rotatedAt);
+		}
 	}
 
 	private void scheduleRebroadcasts(long announcedAtMs) {
@@ -780,6 +969,7 @@ public class B4OnionRotation {
 			update.put(B4_ALICE_ONION3_NEXT_KEY, "");
 			update.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY, "");
 			update.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY, "");
+			update.put(B4_ALICE_NEXT_ANNOUNCED_KEY, "");
 			update.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
 					sealString(String.valueOf(completionTime)));
 			update.put(B4_ALICE_ROTATION_PHASE_KEY,
@@ -821,12 +1011,26 @@ public class B4OnionRotation {
 		}
 		Collection<Contact> contacts = db.getContacts(txn);
 		if (contacts.isEmpty()) return revocation;
+		if (now - announcedAt < MIGRATION_GRACE_MS) return false;
+		String next = loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY);
 		for (Contact c : contacts) {
-			if (loadPeerState(txn, c.getId()) != PeerRotationState.MIGRATED) {
-				return false;
-			}
+			if (!hasMovedToNextOnion(txn, c, next)) return false;
 		}
 		return true;
+	}
+
+	private boolean hasMovedToNextOnion(Transaction txn, Contact c,
+			@Nullable String next) throws DbException {
+		if (loadPeerState(txn, c.getId()) == PeerRotationState.MIGRATED) {
+			return true;
+		}
+		if (next == null) return false;
+		B4TorAdapter ad = adapter;
+		boolean dialsOurOpenOnion = !ZtpPoller.isDesignatedDialer(c)
+				&& (ad == null || ad.acceptsOpenInbound(c.getId()));
+		if (dialsOurOpenOnion) return false;
+		DeliveryCheck check = deliveryCheck;
+		return check != null && check.hasReceived(txn, c.getId(), next);
 	}
 
 	private boolean hasActiveContacts(Transaction txn) throws DbException {

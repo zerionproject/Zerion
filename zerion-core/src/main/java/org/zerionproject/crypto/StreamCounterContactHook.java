@@ -20,12 +20,17 @@ public class StreamCounterContactHook implements ContactHook {
 	}
 
 	@Override
-	public void addingContact(Transaction txn, Contact c) {
+	public void addingContact(Transaction txn, Contact c) throws DbException {
+		reset(txn, c);
 	}
 
 	@Override
 	public void removingContact(Transaction txn, Contact c)
 			throws DbException {
+		reset(txn, c);
+	}
+
+	private void reset(Transaction txn, Contact c) throws DbException {
 		int contactId = c.getId().getInt();
 		counter.retireContact(contactId);
 		store.clearHighWater(txn, contactId);

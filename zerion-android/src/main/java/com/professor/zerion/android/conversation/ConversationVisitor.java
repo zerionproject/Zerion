@@ -250,7 +250,14 @@ class ConversationVisitor implements
 					contactName, h);
 		}
 		String text;
-		if (groupName.isEmpty()) {
+		if (h.isMemberInvite() && groupName.isEmpty()) {
+			text = ctx.getString(
+					R.string.grouptr_member_invitation_received_no_name,
+					getContactNameOrDefault(), h.getCreatorName());
+		} else if (h.isMemberInvite()) {
+			text = ctx.getString(R.string.grouptr_member_invitation_received,
+					getContactNameOrDefault(), groupName, h.getCreatorName());
+		} else if (groupName.isEmpty()) {
 			text = ctx.getString(R.string.grouptr_invitation_received_no_name,
 					getContactNameOrDefault());
 		} else {

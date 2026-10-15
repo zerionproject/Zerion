@@ -58,9 +58,9 @@
 						android:layout_width="wrap_content"
 						android:layout_height="wrap_content"
 						android:text="@string/settings_change_avatar"
-						android:textColor="@color/zerion_primary_accent"
+						android:textColor="@color/zerion_accent_text"
 						android:textSize="14sp"
-						android:minHeight="0dp"
+						android:minHeight="48dp"
 						android:paddingVertical="4dp"
 						android:paddingStart="0dp"
 						android:paddingEnd="8dp" />
@@ -385,7 +385,7 @@
 				style="@style/Zerion.Settings.Row.Title"
 				android:layout_width="0dp"
 				android:layout_weight="1"
-				android:textColor="@color/zerion_destructive"
+				android:textColor="@color/zerion_destructive_text"
 				android:text="@string/settings_crash_debug" />
 
 		</LinearLayout>
@@ -444,7 +444,7 @@
 				<ImageView
 					style="@style/Zerion.Settings.Row.Icon"
 					android:src="@drawable/ic_donation_heart_small"
-					app:tint="@color/zerion_primary_accent"
+					app:tint="@color/zerion_accent_icon"
 					android:importantForAccessibility="no" />
 
 				<LinearLayout
@@ -526,6 +526,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/updates_auto_switch"
+					android:contentDescription="@string/updates_auto_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 

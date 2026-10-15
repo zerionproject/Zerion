@@ -75,75 +75,80 @@
 			tools:text="👍 3   ❤️ 1"
 			tools:visibility="visible" />
 
-		<LinearLayout
+		<TextView
+			android:id="@+id/channelPostSignerBadge"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:background="@drawable/bg_unread_pill"
+			android:contentDescription="@string/channels_post_signer_editor_description"
+			android:paddingStart="6dp"
+			android:paddingEnd="6dp"
+			android:paddingTop="1dp"
+			android:paddingBottom="1dp"
+			android:textColor="@color/zerion_on_accent"
+			android:textSize="12sp"
+			android:textStyle="bold"
+			android:visibility="gone"
+			tools:text="EDITOR"
+			tools:visibility="visible" />
+
+		<TextView
+			android:id="@+id/channelPostTtlLabel"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textColor="@color/zerion_text_secondary_inverse"
+			android:textSize="12sp"
+			android:textStyle="italic"
+			android:visibility="gone"
+			tools:text="1h left"
+			tools:visibility="visible" />
+
+		<TextView
+			android:id="@+id/channelPostCommentBadge"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:minWidth="48dp"
+			android:minHeight="48dp"
+			android:gravity="center"
+			android:background="?attr/selectableItemBackground"
+			android:paddingStart="6dp"
+			android:paddingEnd="6dp"
+			android:paddingTop="2dp"
+			android:paddingBottom="2dp"
+			android:textColor="@color/zerion_primary_accent"
+			android:textSize="12sp"
+			android:textStyle="bold"
+			android:visibility="gone"
+			tools:text="💬 3"
+			tools:visibility="visible" />
+
+		<TextView
+			android:id="@+id/channelPostTimestampView"
+			style="@style/TextMessage.Timestamp"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			tools:text="14:00" />
+
+		<androidx.constraintlayout.helper.widget.Flow
 			android:id="@+id/channelPostStatusRow"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
-			android:gravity="center_vertical"
-			android:orientation="horizontal"
+			app:constraint_referenced_ids="channelPostSignerBadge,channelPostTtlLabel,channelPostCommentBadge,channelPostTimestampView"
+			app:flow_horizontalBias="1"
+			app:flow_horizontalGap="6dp"
+			app:flow_horizontalStyle="packed"
+			app:flow_verticalAlign="center"
+			app:flow_verticalGap="2dp"
+			app:flow_wrapMode="chain"
+			app:layout_constrainedWidth="true"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="1.0"
 			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/channelPostReactionsView">
-
-			<TextView
-				android:id="@+id/channelPostSignerBadge"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginEnd="6dp"
-				android:background="@drawable/bg_unread_pill"
-				android:paddingStart="6dp"
-				android:paddingEnd="6dp"
-				android:paddingTop="1dp"
-				android:paddingBottom="1dp"
-				android:textColor="@android:color/white"
-				android:textSize="10sp"
-				android:textStyle="bold"
-				android:visibility="gone"
-				tools:text="EDITOR"
-				tools:visibility="visible" />
-
-			<TextView
-				android:id="@+id/channelPostTtlLabel"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginEnd="6dp"
-				android:textColor="@color/zerion_text_secondary_inverse"
-				android:textSize="11sp"
-				android:textStyle="italic"
-				android:visibility="gone"
-				tools:text="1h left"
-				tools:visibility="visible" />
-
-			<TextView
-				android:id="@+id/channelPostCommentBadge"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_marginEnd="6dp"
-				android:background="?attr/selectableItemBackground"
-				android:paddingStart="6dp"
-				android:paddingEnd="6dp"
-				android:paddingTop="2dp"
-				android:paddingBottom="2dp"
-				android:textColor="@color/zerion_primary_accent"
-				android:textSize="12sp"
-				android:textStyle="bold"
-				android:visibility="gone"
-				tools:text="💬 3"
-				tools:visibility="visible" />
-
-			<TextView
-				android:id="@+id/channelPostTimestampView"
-				style="@style/TextMessage.Timestamp"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				tools:text="14:00" />
-
-		</LinearLayout>
+			app:layout_constraintTop_toBottomOf="@+id/channelPostReactionsView" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 

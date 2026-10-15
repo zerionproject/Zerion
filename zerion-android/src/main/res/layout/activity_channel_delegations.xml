@@ -58,13 +58,13 @@
 						android:layout_marginEnd="14dp"
 						android:contentDescription="@string/channels_delegations_add"
 						android:src="@drawable/ic_admin_add"
-						app:tint="@color/zerion_primary_accent" />
+						app:tint="@color/zerion_accent_icon" />
 
 					<TextView
 						android:layout_width="match_parent"
 						android:layout_height="wrap_content"
 						android:text="@string/channels_delegations_add"
-						android:textColor="@color/zerion_primary_accent"
+						android:textColor="@color/zerion_accent_text"
 						android:textSize="16sp" />
 
 				</LinearLayout>

@@ -20,6 +20,9 @@ public interface GroupTrManager {
 
 	GroupTrState createGroup(String name) throws DbException;
 
+	GroupTrState createGroup(String name, @Nullable String incognitoName)
+			throws DbException;
+
 	boolean isCreator(byte[] groupId, byte[] pubKey) throws DbException;
 
 	boolean isMember(byte[] groupId, byte[] pubKey) throws DbException;
@@ -33,6 +36,15 @@ public interface GroupTrManager {
 
 	void acceptInvite(byte[] grouptrGroupId) throws DbException;
 
+	void acceptInvite(byte[] grouptrGroupId, @Nullable String incognitoName)
+			throws DbException;
+
+	boolean canAcceptIncognito(byte[] grouptrGroupId, boolean memberInvite)
+			throws DbException;
+
+	@Nullable
+	String getIncognitoName(byte[] groupId) throws DbException;
+
 	void declineInvite(byte[] grouptrGroupId) throws DbException;
 
 	void removeFromDevice(byte[] groupId) throws DbException;
@@ -42,6 +54,19 @@ public interface GroupTrManager {
 
 	int countMembersOnOlderVersion(byte[] groupId) throws DbException;
 
+	int sendGroupReply(byte[] groupId, byte[] targetPostId, String text,
+			long autoDeleteTimerMs) throws DbException;
+
+	int countMembersWithPostActions(byte[] groupId) throws DbException;
+
+	int countMembersWithoutPostActions(byte[] groupId) throws DbException;
+
+	int deletePostsForEveryone(byte[] groupId,
+			Collection<byte[]> postIds) throws DbException;
+
+	void deletePostsForMe(byte[] groupId, Collection<byte[]> postIds)
+			throws DbException;
+
 	java.util.List<GroupTrMember> getMembersOutOfReach(byte[] groupId)
 			throws DbException;
 
@@ -50,6 +75,42 @@ public interface GroupTrManager {
 
 	void revokeInvite(byte[] groupId, ContactId contactId)
 			throws DbException;
+
+	long getGroupPermissions(byte[] groupId) throws DbException;
+
+	int setMembersMayInvite(byte[] groupId, boolean allowed)
+			throws DbException;
+
+	MemberInviteAvailability getMemberInviteAvailability(byte[] groupId)
+			throws DbException;
+
+	boolean canReceiveMemberInvite(ContactId contactId) throws DbException;
+
+	boolean canReceiveMemberInvite(byte[] groupId, ContactId contactId)
+			throws DbException;
+
+	boolean hasInviterGrant(byte[] groupId, byte[] memberPubKey)
+			throws DbException;
+
+	boolean canReceiveInviterGrant(byte[] groupId, byte[] memberPubKey)
+			throws DbException;
+
+	int setInviterGrant(byte[] groupId, byte[] memberPubKey, boolean granted)
+			throws DbException;
+
+	void inviteContactAsMember(byte[] groupId, ContactId contactId)
+			throws DbException;
+
+	void acceptMemberInvite(byte[] groupId, ContactId inviter)
+			throws DbException;
+
+	void acceptMemberInvite(byte[] groupId, ContactId inviter,
+			@Nullable String incognitoName) throws DbException;
+
+	void declineMemberInvite(byte[] groupId, ContactId inviter)
+			throws DbException;
+
+	boolean isWaitingForAdmin(byte[] groupId) throws DbException;
 
 	void setMeshSink(GroupTrMeshSink sink);
 

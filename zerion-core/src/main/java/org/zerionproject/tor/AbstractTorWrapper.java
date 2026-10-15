@@ -537,6 +537,18 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	@Override
 	public void message(String severity, String msg) {
+		if (severity.equals("WARN") && isEntryRelayWarning(msg)) {
+			state.onEntryRelayFailing();
+		}
+	}
+
+	private static final Pattern ENTRY_RELAY_WARNING = Pattern.compile(
+			"(?:Your )?Guard [^()]{1,64} \\(\\$[0-9A-Fa-f]{40}\\) is failing"
+					+ " (?:to carry )?an? (?:very|extremely) large amount of"
+					+ " (?:circuits|streams)");
+
+	static boolean isEntryRelayWarning(String msg) {
+		return ENTRY_RELAY_WARNING.matcher(msg).lookingAt();
 	}
 
 	@Override
@@ -820,6 +832,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (observer != null) {
 				Observer o = observer;
 				eventExecutor.execute(() -> o.onHsDescriptorUpload(onion));
+			}
+		}
+
+		private synchronized void onEntryRelayFailing() {
+			if (observer != null) {
+				Observer o = observer;
+				eventExecutor.execute(o::onEntryRelayFailing);
 			}
 		}
 

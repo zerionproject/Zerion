@@ -212,6 +212,7 @@ public class SharedMediaSanitizerDeviceTest {
 					sanitizer.sanitize(Uri.fromFile(f), declared, raw, MAX);
 			assertEquals("video/mp4", c.getMimeType());
 			assertFalse(contains(c.getData(), xyz));
+			MuxerFields.assertMp4WriterFieldsCleared(declared, c.getData());
 			File out = tempFile(".mp4");
 			Files.write(out.toPath(), c.getData());
 			assertNull(location(out));
@@ -334,7 +335,7 @@ public class SharedMediaSanitizerDeviceTest {
 	}
 
 	@Test
-	public void otherFilesPassThroughUnchanged() throws Exception {
+	public void plainTextIsKeptAndOtherFilesAreRefused() throws Exception {
 		byte[] text = "plain notes".getBytes(StandardCharsets.UTF_8);
 		File f = tempFile(".txt");
 		Files.write(f.toPath(), text);
@@ -342,6 +343,56 @@ public class SharedMediaSanitizerDeviceTest {
 				sanitizer.sanitize(Uri.fromFile(f), "text/plain", text, MAX);
 		assertEquals("text/plain", c.getMimeType());
 		assertTrue(Arrays.equals(text, c.getData()));
+		byte[] zip = new byte[512];
+		zip[0] = 'P';
+		zip[1] = 'K';
+		zip[2] = 3;
+		zip[3] = 4;
+		Object[][] others = {{new byte[] {'a', 0, 'b'}, "text/plain"},
+				{text, "text/html"}, {text, "application/octet-stream"},
+				{zip, "application/zip"},
+				{zip, "application/vnd.openxmlformats-officedocument"
+						+ ".wordprocessingml.document"}};
+		for (Object[] other : others) {
+			byte[] data = (byte[]) other[0];
+			File g = tempFile(".bin");
+			Files.write(g.toPath(), data);
+			try {
+				sanitizer.sanitize(Uri.fromFile(g), (String) other[1], data,
+						MAX);
+				fail(other[1] + " was sent");
+			} catch (MediaRefusedException expected) {
+			}
+		}
+	}
+
+	@Test
+	public void aPdfIsSentOnlyAsItsRedrawnPages() throws Exception {
+		android.graphics.pdf.PdfDocument doc =
+				new android.graphics.pdf.PdfDocument();
+		android.graphics.pdf.PdfDocument.Page page = doc.startPage(
+				new android.graphics.pdf.PdfDocument.PageInfo.Builder(200,
+						300, 1).create());
+		android.graphics.Paint paint = new android.graphics.Paint();
+		paint.setTextSize(18);
+		page.getCanvas().drawText(AUTHOR, 10, 40, paint);
+		doc.finishPage(page);
+		ByteArrayOutputStream raw = new ByteArrayOutputStream();
+		doc.writeTo(raw);
+		doc.close();
+		byte[] pdf = raw.toByteArray();
+		File f = tempFile(".pdf");
+		Files.write(f.toPath(), pdf);
+		SharedMediaSanitizer.Cleaned c = sanitizer.sanitize(Uri.fromFile(f),
+				"application/pdf", pdf, MAX);
+		assertEquals("application/pdf", c.getMimeType());
+		byte[] out = c.getData();
+		assertEquals("one page", 1, CleanPdfPages.read(out).size());
+		for (String s : new String[] {AUTHOR, "/Info", "/Producer",
+				"/Metadata", "Skia"}) {
+			assertFalse(s + " is still in the document",
+					contains(out, s.getBytes(StandardCharsets.US_ASCII)));
+		}
 	}
 
 	private static String location(File f) {

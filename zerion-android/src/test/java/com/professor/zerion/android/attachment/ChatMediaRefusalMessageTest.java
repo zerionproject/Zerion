@@ -131,6 +131,22 @@ public class ChatMediaRefusalMessageTest {
 	}
 
 	@Test
+	public void aDocumentThatCannotBeCleanedSaysWhyItWasNotSent() {
+		byte[] pdf = ascii("%PDF-1.7\n1 0 obj << /Author (x) >>\n");
+		try (MockedConstruction<PdfCleaner> ignored =
+				mockConstruction(PdfCleaner.class, (m, c) ->
+						when(m.clean(any(), anyLong())).thenThrow(
+								MediaRefusedException.cannotClean(
+										"document cannot be cleaned")))) {
+			assertTellsWhy("a PDF that cannot be redrawn",
+					errorShownFor("report.pdf", "application/pdf", pdf));
+		}
+		assertTellsWhy("a text file with binary content",
+				errorShownFor("notes.txt", "text/plain",
+						new byte[] {'a', 0, 'b'}));
+	}
+
+	@Test
 	public void oggSoundThatCannotBeCleanedSaysWhyItWasNotSent() {
 		List<byte[]> data = audioPackets(8, 2);
 		java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();

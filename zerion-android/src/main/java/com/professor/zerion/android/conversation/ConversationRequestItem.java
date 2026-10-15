@@ -15,7 +15,7 @@ import androidx.lifecycle.LiveData;
 @NotNullByDefault
 class ConversationRequestItem extends ConversationNoticeItem {
 
-	enum RequestType {INTRODUCTION, GROUPTR}
+	enum RequestType {INTRODUCTION, GROUPTR, GROUPTR_MEMBER}
 
 	private final RequestType requestType;
 	@Nullable
@@ -40,7 +40,8 @@ class ConversationRequestItem extends ConversationNoticeItem {
 			LiveData<String> contactName, GroupTrInvitationHeader h,
 			byte[] grouptrGid, boolean answered) {
 		super(layoutRes, text, contactName, h);
-		this.requestType = RequestType.GROUPTR;
+		this.requestType = h.isMemberInvite()
+				? RequestType.GROUPTR_MEMBER : RequestType.GROUPTR;
 		this.sessionId = null;
 		this.canBeOpened = answered;
 		this.grouptrGid = grouptrGid;

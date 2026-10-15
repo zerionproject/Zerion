@@ -33,6 +33,58 @@ class ChannelSignatures {
 	}
 
 	@CryptoExecutor
+	byte[] signBoundManifest(byte[] signedInput, PrivateKey hybridPrivateKey)
+			throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_MANIFEST_V3,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyBoundManifest(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_MANIFEST_V3,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signPostChangesManifest(byte[] signedInput,
+			PrivateKey hybridPrivateKey) throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_MANIFEST_V4,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyPostChangesManifest(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_MANIFEST_V4,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signUserPostChange(byte[] signedInput,
+			PrivateKey ed25519PrivateKey, @Nullable byte[] mlDsaPriv)
+			throws GeneralSecurityException {
+		return signUser(ChannelConstants.SIGNING_LABEL_POST_CHANGE,
+				signedInput, ed25519PrivateKey, mlDsaPriv);
+	}
+
+	boolean verifyUserPostChange(byte[] signature, byte[] signedInput,
+			PublicKey ed25519PublicKey, @Nullable byte[] mlDsaPub) {
+		return verifyUser(ChannelConstants.SIGNING_LABEL_POST_CHANGE,
+				signature, signedInput, ed25519PublicKey, mlDsaPub);
+	}
+
+	@CryptoExecutor
 	byte[] signPost(byte[] signedInput, PrivateKey hybridPrivateKey)
 			throws GeneralSecurityException {
 		return crypto.hybridSign(
@@ -190,6 +242,25 @@ class ChannelSignatures {
 		try {
 			return crypto.verifyHybridSignature(signature,
 					ChannelConstants.SIGNING_LABEL_CHECK_APPROVAL,
+					signedInput, hybridPublicKey);
+		} catch (GeneralSecurityException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	@CryptoExecutor
+	byte[] signOnionConfirmation(byte[] signedInput,
+			PrivateKey hybridPrivateKey) throws GeneralSecurityException {
+		return crypto.hybridSign(
+				ChannelConstants.SIGNING_LABEL_ONION_CONFIRMATION,
+				signedInput, hybridPrivateKey);
+	}
+
+	boolean verifyOnionConfirmation(byte[] signature, byte[] signedInput,
+			PublicKey hybridPublicKey) {
+		try {
+			return crypto.verifyHybridSignature(signature,
+					ChannelConstants.SIGNING_LABEL_ONION_CONFIRMATION,
 					signedInput, hybridPublicKey);
 		} catch (GeneralSecurityException | RuntimeException e) {
 			return false;

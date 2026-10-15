@@ -15,6 +15,7 @@ import android.widget.ImageButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.conversation.ConversationItem;
 import com.professor.zerion.android.view.EmojiTextInputView.OnKeyboardShownListener;
+import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -175,28 +176,37 @@ public class TextInputView extends LinearLayout {
 			authorName = item.getContactName().getValue();
 		}
 		replyAuthor.setText(authorName);
-
-		String displayText;
-		String rawText = item.getText();
-		if (rawText == null || rawText.isEmpty()) {
-			displayText = getContext().getString(R.string.media);
-		} else if (rawText.startsWith("[VOICE:")
-				|| com.professor.zerion.android.conversation.voice
-						.VoiceMessageChunkFormat.isPart(rawText)) {
-			displayText = getContext().getString(R.string.voice_message);
-		} else if (com.professor.zerion.android.conversation.voice
-				.LegacyCallSignal.isSignal(rawText)
-				|| com.professor.zerion.android.conversation.voice
-						.LegacyCallSignal.isCallEventText(rawText)) {
-			displayText = getContext().getString(R.string.voice_call);
-		} else {
-			displayText = rawText;
-		}
-		replyText.setText(displayText);
+		replyText.setText(replyPreviewText(item.getText()));
 
 		cancelReply.setOnClickListener(v -> hideReplyPreview());
 
 		replyPreview.setVisibility(View.VISIBLE);
+	}
+
+	public void refreshReplyPreview(MessageId changed, String text) {
+		ConversationItem item = replyingToItem;
+		if (replyPreview == null || item == null
+				|| !changed.equals(item.getId())) {
+			return;
+		}
+		TextView replyText = replyPreview.findViewById(R.id.reply_text);
+		replyText.setText(replyPreviewText(text));
+	}
+
+	private String replyPreviewText(@Nullable String rawText) {
+		if (rawText == null || rawText.isEmpty()) {
+			return getContext().getString(R.string.media);
+		} else if (rawText.startsWith("[VOICE:")
+				|| com.professor.zerion.android.conversation.voice
+						.VoiceMessageChunkFormat.isPart(rawText)) {
+			return getContext().getString(R.string.voice_message);
+		} else if (com.professor.zerion.android.conversation.voice
+				.LegacyCallSignal.isSignal(rawText)
+				|| com.professor.zerion.android.conversation.voice
+						.LegacyCallSignal.isCallEventText(rawText)) {
+			return getContext().getString(R.string.voice_call);
+		}
+		return rawText;
 	}
 
 	public void hideReplyPreview() {
@@ -207,6 +217,7 @@ public class TextInputView extends LinearLayout {
 		}
 		replyingToItem = null;
 		editingItem = null;
+		textInput.setTextSaved(true);
 	}
 
 	@Nullable
@@ -234,6 +245,7 @@ public class TextInputView extends LinearLayout {
 			textInput.clearText();
 		});
 
+		textInput.setTextSaved(false);
 		textInput.setText(text);
 		replyPreview.setVisibility(View.VISIBLE);
 	}

@@ -73,6 +73,45 @@ public class OnionAuthStoreTest {
 	}
 
 	@Test
+	public void testRepairStateRoundTripsAndClears() throws Exception {
+		OnionAuthRecord r = new OnionAuthRecord(c);
+		r.state = State.AUTH_CONFIRMED;
+		r.commitSent = true;
+		r.repairs = 3;
+		r.nextRepairMs = 5678;
+		r.commitResent = true;
+		store.save(null, r);
+		OnionAuthRecord back = store.load(null, c);
+		assertTrue(back.awaitsPeerCommit());
+		assertEquals(3, back.repairs);
+		assertEquals(5678, back.nextRepairMs);
+		assertTrue(back.commitResent);
+		store.clear(null, c);
+		OnionAuthRecord cleared = store.load(null, c);
+		assertEquals(0, cleared.repairs);
+		assertEquals(0, cleared.nextRepairMs);
+		assertFalse(cleared.commitResent);
+		assertFalse(cleared.awaitsPeerCommit());
+	}
+
+	@Test
+	public void testARecordSavedWithoutRepairStateLoadsWithNone()
+			throws Exception {
+		InMemorySettingsManager settings = new InMemorySettingsManager();
+		org.zerionproject.core.api.settings.Settings s =
+				new org.zerionproject.core.api.settings.Settings();
+		s.put("c42.state", State.AUTH_REQUIRED.name());
+		s.putBoolean("c42.commitSent", true);
+		s.putBoolean("c42.peerCommit", true);
+		settings.mergeSettings(s, OnionAuthStore.NAMESPACE);
+		OnionAuthRecord r = new OnionAuthStore(settings).load(null, c);
+		assertEquals(State.AUTH_REQUIRED, r.state);
+		assertEquals(0, r.repairs);
+		assertEquals(0, r.nextRepairMs);
+		assertFalse(r.commitResent);
+	}
+
+	@Test
 	public void testServiceRecordRoundTrips() throws Exception {
 		OnionAuthStore.ServiceRecord s = new OnionAuthStore.ServiceRecord();
 		s.onion = "i66iurfyjjh5tqpqhq7luu6defbb5rs7mxzvqgryaabqkzkgmjhql7qd";
@@ -82,6 +121,7 @@ public class OnionAuthStoreTest {
 		s.oldPrivateKey = "ED25519-V3:old=";
 		s.oldSinceMs = 99;
 		s.lastRotationMs = 100;
+		s.rotationPeriodMs = 101;
 		store.saveService(null, s);
 		OnionAuthStore.ServiceRecord back = store.loadService(null);
 		assertEquals(s.onion, back.onion);
@@ -91,6 +131,59 @@ public class OnionAuthStoreTest {
 		assertEquals(s.oldPrivateKey, back.oldPrivateKey);
 		assertEquals(99, back.oldSinceMs);
 		assertEquals(100, back.lastRotationMs);
+		assertEquals(101, back.rotationPeriodMs);
+		store.saveRotationPeriod(null, 102);
+		assertEquals(102, store.loadService(null).rotationPeriodMs);
+		assertEquals(s.onion, store.loadService(null).onion);
+	}
+
+	@Test
+	public void testClearingAContactLeavesNoKeyBehind() throws Exception {
+		InMemorySettingsManager settings = new InMemorySettingsManager();
+		OnionAuthStore s = new OnionAuthStore(settings);
+		OnionAuthRecord r = new OnionAuthRecord(c);
+		r.state = State.AUTH_REQUIRED;
+		r.dialPrivateKey = bytes(1);
+		r.peerOnion = "i66iurfyjjh5tqpqhq7luu6defbb5rs7mxzvqgryaabqkzkgmjhql7qd";
+		s.save(null, r);
+		OnionAuthStore.ServiceRecord svc = new OnionAuthStore.ServiceRecord();
+		svc.onion = "ru3bfvgi52cq7zgscrqw6nhcaga5thrvrnnb23tefpdv7hxwrrhfl6yd";
+		s.saveService(null, svc);
+		s.clear(null, c);
+		for (String k : settings.keys(OnionAuthStore.NAMESPACE)) {
+			assertFalse(k + " is left behind", k.startsWith("c42."));
+		}
+		assertEquals(svc.onion, s.loadService(null).onion);
+		assertEquals(State.LEGACY, s.load(null, c).state);
+	}
+
+	@Test
+	public void testRecordsClearedByAnEarlierVersionAreDeleted()
+			throws Exception {
+		InMemorySettingsManager settings = new InMemorySettingsManager();
+		org.zerionproject.core.api.settings.Settings left =
+				new org.zerionproject.core.api.settings.Settings();
+		left.put("c7.state", "");
+		left.put("c7.peerOnion", "");
+		left.put("c7.dialPriv", "");
+		left.put("c8.repairs", "");
+		settings.mergeSettings(left, OnionAuthStore.NAMESPACE);
+		OnionAuthStore s = new OnionAuthStore(settings);
+		OnionAuthRecord r = new OnionAuthRecord(c);
+		r.state = State.AUTH_REQUIRED;
+		s.save(null, r);
+		OnionAuthStore.ServiceRecord svc = new OnionAuthStore.ServiceRecord();
+		svc.onion = "ru3bfvgi52cq7zgscrqw6nhcaga5thrvrnnb23tefpdv7hxwrrhfl6yd";
+		s.saveService(null, svc);
+		s.deleteClearedRecords(null);
+		java.util.Set<String> keys = settings.keys(OnionAuthStore.NAMESPACE);
+		for (String k : keys) {
+			assertFalse(k + " is left behind",
+					k.startsWith("c7.") || k.startsWith("c8."));
+		}
+		assertTrue(keys.contains("c42.state"));
+		assertEquals(State.AUTH_REQUIRED, s.load(null, c).state);
+		assertEquals(svc.onion, s.loadService(null).onion);
 	}
 
 	@Test

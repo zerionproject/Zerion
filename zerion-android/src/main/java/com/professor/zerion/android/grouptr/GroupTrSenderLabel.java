@@ -1,6 +1,7 @@
 package com.professor.zerion.android.grouptr;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.app.api.grouptr.GroupTrIncognitoNames;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,6 +30,17 @@ final class GroupTrSenderLabel {
 					alias.isEmpty() ? "?" : alias);
 		}
 		return head + " · " + fingerprint;
+	}
+
+	static String label(@Nullable String known, @Nullable String chosen,
+			String fingerprint, String chosenFormat, String unverifiedFormat,
+			String incognitoFormat) {
+		if (GroupTrIncognitoNames.isIncognitoName(chosen)) {
+			return String.format(Locale.ROOT, incognitoFormat, chosen)
+					+ " · " + fingerprint;
+		}
+		return label(known, chosen, fingerprint, chosenFormat,
+				unverifiedFormat);
 	}
 
 	static String fingerprint(byte[] pubKey) {

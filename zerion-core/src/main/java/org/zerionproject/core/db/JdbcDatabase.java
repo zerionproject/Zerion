@@ -23,6 +23,7 @@ import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.MessageMetadataVisitor;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.MigrationListener;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.identity.Identity;
@@ -507,6 +508,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 			throws DbException, SQLException;
 	protected abstract void compactAndClose() throws DbException;
 
+	protected abstract boolean purge(Connection c) throws SQLException;
+
 	JdbcDatabase(DatabaseTypes databaseTypes, MessageFactory messageFactory,
 			Clock clock) {
 		this.dbTypes = databaseTypes;
@@ -712,6 +715,16 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	@Override
 	public Connection startTransaction() throws DbException {
+		Connection txn = takeConnection();
+		try {
+			txn.setAutoCommit(false);
+		} catch (SQLException e) {
+			throw new DbException(e);
+		}
+		return txn;
+	}
+
+	private Connection takeConnection() throws DbException {
 		Connection txn;
 		connectionsLock.lock();
 		try {
@@ -721,27 +734,39 @@ abstract class JdbcDatabase implements Database<Connection> {
 		} finally {
 			connectionsLock.unlock();
 		}
+		if (txn != null) return txn;
 		try {
-			if (txn == null) {
-				txn = createConnection();
-				connectionsLock.lock();
-				try {
-					if (closed) {
-						tryToClose(txn);
-						throw new DbClosedException();
-					}
-					openConnections++;
-					logConnectionCounts();
-					connectionsChanged.signalAll();
-				} finally {
-					connectionsLock.unlock();
-				}
-			}
-			txn.setAutoCommit(false);
+			txn = createConnection();
 		} catch (SQLException e) {
 			throw new DbException(e);
 		}
+		connectionsLock.lock();
+		try {
+			if (closed) {
+				tryToClose(txn);
+				throw new DbClosedException();
+			}
+			openConnections++;
+			logConnectionCounts();
+			connectionsChanged.signalAll();
+		} finally {
+			connectionsLock.unlock();
+		}
 		return txn;
+	}
+
+	@Override
+	public boolean purgeDeletedContent() throws DbException {
+		Connection c = takeConnection();
+		try {
+			c.setAutoCommit(true);
+			boolean complete = purge(c);
+			returnConnectionToPool(c);
+			return complete;
+		} catch (SQLException e) {
+			closeConnection(c);
+			throw new DbException(e);
+		}
 	}
 
 	@GuardedBy("connectionsLock")
@@ -1661,6 +1686,32 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, m.getBytes());
 			int affected = ps.executeUpdate();
+			if (affected < 0) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void eraseMessageBody(Connection txn, MessageId m)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE messages SET raw = NULL, length = 0"
+					+ " WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			int affected = ps.executeUpdate();
+			if (affected < 0) throw new DbStateException();
+			if (affected > 1) throw new DbStateException();
+			ps.close();
+			sql = "UPDATE statuses SET deleted = TRUE, length = 0"
+					+ " WHERE messageId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, m.getBytes());
+			affected = ps.executeUpdate();
 			if (affected < 0) throw new DbStateException();
 			ps.close();
 		} catch (SQLException e) {
@@ -2857,6 +2908,30 @@ abstract class JdbcDatabase implements Database<Connection> {
 		return getMessagesInState(txn, PENDING);
 	}
 
+	@Override
+	public Collection<MessageId> getUndeliverableMessages(Connection txn)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			String sql = "SELECT messageId FROM messages"
+					+ " WHERE (state = ? OR state = ?) AND raw IS NULL";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, UNKNOWN.getValue());
+			ps.setInt(2, PENDING.getValue());
+			rs = ps.executeQuery();
+			List<MessageId> ids = new ArrayList<>();
+			while (rs.next()) ids.add(new MessageId(rs.getBytes(1)));
+			rs.close();
+			ps.close();
+			return ids;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
 	private Collection<MessageId> getMessagesInState(Connection txn,
 			MessageState state) throws DbException {
 		PreparedStatement ps = null;
@@ -3765,6 +3840,29 @@ abstract class JdbcDatabase implements Database<Connection> {
 			ps.close();
 		} catch (SQLException e) {
 			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public Collection<String> getSettingsNamespaces(Connection txn,
+			String prefix) throws DbException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = txn.createStatement();
+			rs = s.executeQuery("SELECT DISTINCT namespace FROM settings");
+			List<String> namespaces = new ArrayList<>();
+			while (rs.next()) {
+				String namespace = rs.getString(1);
+				if (namespace.startsWith(prefix)) namespaces.add(namespace);
+			}
+			rs.close();
+			s.close();
+			return namespaces;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(s);
 			throw new DbException(e);
 		}
 	}
@@ -4742,7 +4840,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 
 	@Override
 	@Nullable
-	public Object[] getPcsMode2SessionState(Connection txn, ContactId c,
+	public PcsSessionRow getPcsMode2SessionState(Connection txn, ContactId c,
 			int direction) throws DbException {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
@@ -4772,11 +4870,10 @@ abstract class JdbcDatabase implements Database<Connection> {
 			byte[] mode3FullStateBlob = rs.getBytes(9);
 			rs.close();
 			ps.close();
-			return new Object[]{
-					chainKeyBytes, messageNumber, previousChainLength,
-					rootKeyBytes, dhPrivateKeyBytes, dhPublicKeyBytes,
-					dhRemotePublicKeyBytes, mode2Enabled, mode3FullStateBlob
-			};
+			return new PcsSessionRow(chainKeyBytes, messageNumber,
+					previousChainLength, rootKeyBytes, dhPrivateKeyBytes,
+					dhPublicKeyBytes, dhRemotePublicKeyBytes, mode2Enabled,
+					mode3FullStateBlob);
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(ps);

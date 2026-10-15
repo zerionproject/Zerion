@@ -39,7 +39,7 @@
 						android:layout_height="wrap_content"
 						android:textSize="26sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_primary_accent"
+						android:textColor="@color/zerion_accent_large_text"
 						tools:text="12" />
 
 					<TextView
@@ -72,7 +72,7 @@
 						android:layout_height="wrap_content"
 						android:textSize="26sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_primary_accent"
+						android:textColor="@color/zerion_accent_large_text"
 						tools:text="3" />
 
 					<TextView
@@ -105,7 +105,7 @@
 						android:layout_height="wrap_content"
 						android:textSize="26sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_primary_accent"
+						android:textColor="@color/zerion_accent_large_text"
 						tools:text="0" />
 
 					<TextView
@@ -154,7 +154,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_notes"
-							app:tint="#A78BFA"
+							app:tint="@color/accent_violet_text"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>
@@ -201,7 +201,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_photo"
-							app:tint="@color/zerion_primary_accent"
+							app:tint="@color/zerion_accent_icon"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>
@@ -248,7 +248,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_document"
-							app:tint="@color/zerion_warning"
+							app:tint="@color/zerion_warning_text"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>
@@ -295,7 +295,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_key"
-							app:tint="@color/zerion_success"
+							app:tint="@color/zerion_success_text"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>
@@ -342,7 +342,7 @@
 							android:layout_height="22dp"
 							android:layout_gravity="center"
 							android:src="@drawable/ic_wallet_24dp"
-							app:tint="@color/zerion_warning"
+							app:tint="@color/zerion_warning_text"
 							android:importantForAccessibility="no" />
 
 					</FrameLayout>

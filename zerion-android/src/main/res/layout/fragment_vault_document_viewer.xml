@@ -19,6 +19,7 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             app:navigationIcon="@drawable/ic_back"
+            app:navigationContentDescription="@string/abc_action_bar_up_description"
             app:titleTextColor="@color/zerion_text_primary" />
 
     </com.google.android.material.appbar.AppBarLayout>

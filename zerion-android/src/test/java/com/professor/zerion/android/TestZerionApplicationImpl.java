@@ -2,8 +2,12 @@ package com.professor.zerion.android;
 
 import android.content.Context;
 
+import com.professor.zerion.android.conversation.ConversationCache;
+import com.professor.zerion.android.panic.TestPanicStatics;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
 import com.professor.zerion.android.security.TestZerionEncryptedPrefs;
+import com.professor.zerion.android.settings.ChatPreferences;
+import com.professor.zerion.android.util.TestUtilStatics;
 
 import org.robolectric.TestLifecycleApplication;
 
@@ -23,6 +27,10 @@ public class TestZerionApplicationImpl extends ZerionApplicationImpl
 		AppModule.SecurePrefsHolder.resetForTests();
 		TestZerionEncryptedPrefs.reset();
 		EarlyPrefs.resetForTests();
+		TestUtilStatics.reset();
+		TestPanicStatics.reset();
+		ConversationCache.getInstance().clearAll();
+		ChatPreferences.invalidateGuiFontScale();
 		super.attachBaseContext(base);
 	}
 

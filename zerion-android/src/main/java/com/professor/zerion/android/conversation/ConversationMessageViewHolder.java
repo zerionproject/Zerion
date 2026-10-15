@@ -250,6 +250,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		if (com.professor.zerion.android.sticker.StickerUtils
 				.isSingleEmojiSticker(body)) {
 			applyStickerTextStyle();
+			applyStatusPill();
 		} else {
 			applyDefaultTextStyle();
 		}
@@ -276,13 +277,9 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		ConstraintSet constraintSet;
 		if (item.getText() == null) {
 			if (isStickerOnly) {
-				resetStatusLayoutForText();
 				layout.setBackground(null);
-			} else {
-				statusLayout.setBackgroundResource(R.drawable.msg_status_bubble);
-				time.setTextColor(timeColorBubble);
-				setImageTintList(bomb, ColorStateList.valueOf(timeColorBubble));
 			}
+			applyStatusPill();
 			constraintSet = imageConstraints;
 		} else {
 			resetStatusLayoutForText();
@@ -308,6 +305,12 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		}
 		constraintSet.applyTo(layout);
 		adapter.setConversationItem(item);
+	}
+
+	private void applyStatusPill() {
+		statusLayout.setBackgroundResource(R.drawable.msg_status_bubble);
+		time.setTextColor(timeColorBubble);
+		setImageTintList(bomb, ColorStateList.valueOf(timeColorBubble));
 	}
 
 	private void resetStatusLayoutForText() {

@@ -3,6 +3,7 @@ package org.zerionproject.transport;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
@@ -16,6 +17,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -104,10 +108,10 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		assertEquals(1, keys.getEpoch());
 		assertNull(keys.getPending());
 
-		Object[] memoRow = db.transactionWithResult(true, txn ->
+		PcsSessionRow memoRow = db.transactionWithResult(true, txn ->
 				db.getPcsMode2SessionState(txn, contact, PCS_DIRECTION_SEND));
 		assertArrayEquals("the pairing root wrapping voice memos is kept",
-				pairingRoot.getBytes(), (byte[]) memoRow[3]);
+				pairingRoot.getBytes(), memoRow.getRootKey());
 
 		db.close();
 		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
@@ -145,6 +149,44 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 		store.endSnapshot();
 		assertTrue(store.promote(contact, 0));
 		assertEquals(1, store.load(contact).getEpoch());
+	}
+
+	private DatabaseComponent copyStartsFirst(
+			AtomicReference<RootKeyStore> racing) {
+		return (DatabaseComponent) Proxy.newProxyInstance(
+				DatabaseComponent.class.getClassLoader(),
+				new Class<?>[] {DatabaseComponent.class},
+				(proxy, method, args) -> {
+					if (method.getName().equals("transactionWithResult")
+							&& Boolean.FALSE.equals(args[0])
+							&& !racing.get().isSnapshotting()) {
+						racing.get().beginSnapshot();
+					}
+					try {
+						return method.invoke(db, args);
+					} catch (InvocationTargetException e) {
+						throw e.getCause();
+					}
+				});
+	}
+
+	@Test
+	public void aCopyStartingJustBeforeAChangeCommitsStillRefusesIt()
+			throws Exception {
+		assertTrue(new RootKeyStore(db).storePending(contact, 0,
+				getSecretKey(), false));
+		AtomicReference<RootKeyStore> racing = new AtomicReference<>();
+		RootKeyStore store = new RootKeyStore(copyStartsFirst(racing));
+		racing.set(store);
+		assertFalse(store.promote(contact, 0));
+		store.endSnapshot();
+		assertFalse(store.discardPending(contact, 0));
+		store.endSnapshot();
+		assertFalse(store.storePending(contact, 0, getSecretKey(), false));
+		store.endSnapshot();
+		ContactRootKeys keys = new RootKeyStore(db).load(contact);
+		assertEquals(0, keys.getEpoch());
+		assertNotNull(keys.getPending());
 	}
 
 	@Test

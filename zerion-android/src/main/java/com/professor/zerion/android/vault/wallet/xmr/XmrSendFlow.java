@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 @NotNullByDefault
@@ -27,6 +28,7 @@ public final class XmrSendFlow {
 	private final Supplier<String> endpointIdSupplier;
 	private final Supplier<Set<String>> outgoingHistorySupplier;
 	private final long refreshIdleTimeoutMs;
+	private final LongSupplier wallClock;
 
 	private final Object flowToken = new Object();
 	private volatile State state = State.INPUT;
@@ -43,7 +45,7 @@ public final class XmrSendFlow {
 			XmrSpendJournalStore journalStore, XmrSendGate.SendGuard guard,
 			Supplier<String> endpointIdSupplier,
 			Supplier<Set<String>> outgoingHistorySupplier,
-			long refreshIdleTimeoutMs) {
+			long refreshIdleTimeoutMs, LongSupplier wallClock) {
 		this.engine = engine;
 		this.session = session;
 		this.account = account;
@@ -54,6 +56,7 @@ public final class XmrSendFlow {
 		this.endpointIdSupplier = endpointIdSupplier;
 		this.outgoingHistorySupplier = outgoingHistorySupplier;
 		this.refreshIdleTimeoutMs = refreshIdleTimeoutMs;
+		this.wallClock = wallClock;
 	}
 
 	public State state() {
@@ -170,7 +173,7 @@ public final class XmrSendFlow {
 		try {
 			journal = XmrSpendJournal.create(XmrSpendJournal.State.RELAYING,
 					walletId, bytesToHex(s.primaryWalletFingerprint()),
-					s.txids(), endpointId, System.currentTimeMillis(),
+					s.txids(), endpointId, wallClock.getAsLong(),
 					java.util.Collections.emptyList());
 			journalStore.writeDurably(journal);
 		} catch (XmrError.XmrException journalFailed) {

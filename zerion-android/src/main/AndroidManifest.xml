@@ -521,6 +521,19 @@
 				android:value="Voice call signaling while waiting for microphone permission" />
 		</service>
 
+		<activity
+			android:name=".android.attachment.SaveCleanCopyActivity"
+			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection"
+			android:excludeFromRecents="true"
+			android:exported="false"
+			android:theme="@style/TranslucentTheme" />
+
+		<service
+			android:name=".android.attachment.PdfFlattenService"
+			android:exported="false"
+			android:isolatedProcess="true"
+			android:process=":pdfclean" />
+
 		<provider
 			android:name="com.professor.zerion.android.vault.share.VaultShareProvider"
 			android:authorities="${applicationId}.vaultshare"

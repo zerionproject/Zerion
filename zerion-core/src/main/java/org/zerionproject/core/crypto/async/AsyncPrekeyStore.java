@@ -55,6 +55,13 @@ public class AsyncPrekeyStore {
 	public static final int MAX_SEEN_SENDERS = 256;
 	private static final String LEGACY_SEEN = "seen";
 	private static final String LEGACY_FLOOR = "seenFloor";
+	private static final String USED_PREFIX = "used.";
+	private static final String USED_BY = "usedBy";
+	private static final String USED_RECIPIENT_LABEL =
+			"org.zerionproject.async/USED_ONE_TIME_PREKEY";
+	static final int MAX_USED_RECIPIENTS = 256;
+	static final int MAX_USED_PER_RECIPIENT =
+			AsyncPrekeyBundle.MAX_ONE_TIME_PREKEYS;
 
 	private static final long SPK_LIFETIME_SECONDS = 7L * 24 * 3600;
 	public static final int MAX_SEEN = 4096;
@@ -392,6 +399,47 @@ public class AsyncPrekeyStore {
 			settingsManager.mergeSettings(upd, NS);
 			aliasIndex = null;
 		}
+	}
+
+	public int claimUnusedOneTimePrekey(byte[] recipientSigPub,
+			List<byte[]> prekeyIds) throws DbException {
+		String recipient = usedRecipientKey(recipientSigPub);
+		synchronized (lock) {
+			Settings s = settingsManager.getSettings(NS);
+			LinkedHashSet<String> used =
+					parseList(s.get(USED_PREFIX + recipient));
+			for (int i = 0; i < prekeyIds.size(); i++) {
+				String id = StringUtils.toHexString(prekeyIds.get(i));
+				if (used.contains(id)) continue;
+				used.add(id);
+				while (used.size() > MAX_USED_PER_RECIPIENT) {
+					used.remove(used.iterator().next());
+				}
+				LinkedHashSet<String> recipients = parseList(s.get(USED_BY));
+				recipients.remove(recipient);
+				recipients.add(recipient);
+				List<String> evicted = new ArrayList<>();
+				while (recipients.size() > MAX_USED_RECIPIENTS) {
+					String oldest = recipients.iterator().next();
+					recipients.remove(oldest);
+					evicted.add(USED_PREFIX + oldest);
+				}
+				Settings upd = new Settings();
+				upd.put(USED_PREFIX + recipient, joinList(used));
+				upd.put(USED_BY, joinList(recipients));
+				settingsManager.mergeSettings(upd, NS);
+				if (!evicted.isEmpty()) {
+					settingsManager.deleteSettings(NS, evicted);
+				}
+				return i;
+			}
+			return -1;
+		}
+	}
+
+	private String usedRecipientKey(byte[] recipientSigPub) {
+		byte[] h = crypto.hash(USED_RECIPIENT_LABEL, recipientSigPub);
+		return StringUtils.toHexString(java.util.Arrays.copyOf(h, 16));
 	}
 
 	public boolean isSeen(byte[] dedupId) throws DbException {

@@ -59,7 +59,7 @@
 				android:src="@drawable/ic_group"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toTopOf="parent"
-				app:tint="@android:color/white"
+				app:tint="@color/zerion_on_accent"
 				tools:ignore="ContentDescription" />
 
 			<com.vanniktech.emoji.EmojiTextView
@@ -90,7 +90,9 @@
 					android:id="@+id/declineButton"
 					style="@style/Widget.Material3.Button.OutlinedButton"
 					android:layout_width="0dp"
-					android:layout_height="40dp"
+					android:layout_height="48dp"
+					android:insetTop="4dp"
+					android:insetBottom="4dp"
 					android:layout_weight="1"
 					android:layout_marginEnd="8dp"
 					android:minWidth="100dp"
@@ -105,16 +107,16 @@
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/acceptButton"
 					android:layout_width="0dp"
-					android:layout_height="40dp"
+					android:layout_height="48dp"
 					android:layout_weight="1"
 					android:minWidth="100dp"
 					android:text="@string/accept"
-					android:textColor="@android:color/white"
+					android:textColor="@color/zerion_button_filled_foreground"
 					android:textSize="14sp"
 					android:textStyle="bold"
-					android:insetTop="0dp"
-					android:insetBottom="0dp"
-					app:backgroundTint="@color/zerion_primary_accent"
+					android:insetTop="4dp"
+					android:insetBottom="4dp"
+					app:backgroundTint="@color/zerion_button_filled_background"
 					app:cornerRadius="20dp" />
 
 			</LinearLayout>

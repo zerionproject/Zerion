@@ -45,6 +45,11 @@ public final class BtcTx {
 	}
 
 	private static final long RBF_SEQUENCE = 0xfffffffdL;
+	private static final int TAPROOT_SIGHASH_DEFAULT = 0;
+	private static final byte[] FINGERPRINT_P2WPKH = "zerion-btc-p2wpkh-v1"
+			.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+	private static final byte[] FINGERPRINT_P2TR = "zerion-btc-p2tr-key-v1"
+			.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
 	private static final java.security.SecureRandom AUX_RANDOM =
 			new java.security.SecureRandom();
 
@@ -91,10 +96,35 @@ public final class BtcTx {
 	}
 
 	public static String buildAndSign(List<Input> inputs, List<Output> outputs) {
-		NetworkParameters params = BtcKeys.PARAMS;
-		java.util.List<Input> ins = new java.util.ArrayList<>(inputs);
-		java.util.List<Output> outs = new java.util.ArrayList<>(outputs);
+		List<Input> ins = sortedInputs(inputs);
+		return sign(unsigned(ins, outputs), ins);
+	}
+
+	@javax.annotation.Nullable
+	static String buildAndSignApproved(List<Input> inputs, List<Output> outputs,
+			String approvedFingerprint) {
+		List<Input> ins = sortedInputs(inputs);
+		Transaction tx = unsigned(ins, outputs);
+		if (!fingerprint(tx, ins).equals(approvedFingerprint)) {
+			return null;
+		}
+		return sign(tx, ins);
+	}
+
+	static String fingerprint(List<Input> inputs, List<Output> outputs) {
+		List<Input> ins = sortedInputs(inputs);
+		return fingerprint(unsigned(ins, outputs), ins);
+	}
+
+	private static List<Input> sortedInputs(List<Input> inputs) {
+		List<Input> ins = new java.util.ArrayList<>(inputs);
 		ins.sort(BtcTx::compareInputsBip69);
+		return ins;
+	}
+
+	private static Transaction unsigned(List<Input> ins, List<Output> outputs) {
+		NetworkParameters params = BtcKeys.PARAMS;
+		List<Output> outs = new java.util.ArrayList<>(outputs);
 		outs.sort((a, b) -> compareOutputsBip69(params, a, b));
 		Transaction tx = new Transaction(params);
 		tx.setVersion(2);
@@ -110,6 +140,10 @@ public final class BtcTx {
 			ti.setSequenceNumber(RBF_SEQUENCE);
 			tx.addInput(ti);
 		}
+		return tx;
+	}
+
+	private static String sign(Transaction tx, List<Input> ins) {
 		for (int i = 0; i < ins.size(); i++) {
 			Input in = ins.get(i);
 			Script scriptCode = ScriptBuilder.createP2PKHOutputScript(in.key);
@@ -119,6 +153,45 @@ public final class BtcTx {
 			tx.getInput(i).setWitness(TransactionWitness.redeemP2WPKH(sig, in.key));
 		}
 		return Utils.HEX.encode(tx.bitcoinSerialize());
+	}
+
+	private static String fingerprint(Transaction tx, List<Input> ins) {
+		java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+		writeField(b, FINGERPRINT_P2WPKH);
+		writeField(b, tx.bitcoinSerialize());
+		for (Input in : ins) {
+			writeAmount(b, in.valueSat);
+			writeField(b, ScriptBuilder.createP2PKHOutputScript(in.key)
+					.getProgram());
+		}
+		b.write(Transaction.SigHash.ALL.byteValue());
+		return TlsTrust.sha256Hex(b.toByteArray());
+	}
+
+	private static String taprootFingerprint(Transaction tx,
+			List<TaprootInput> ins) {
+		java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
+		writeField(b, FINGERPRINT_P2TR);
+		writeField(b, tx.bitcoinSerialize());
+		for (TaprootInput in : ins) {
+			writeAmount(b, in.valueSat);
+			writeField(b, in.scriptPubKey);
+		}
+		b.write(TAPROOT_SIGHASH_DEFAULT);
+		return TlsTrust.sha256Hex(b.toByteArray());
+	}
+
+	static void writeField(java.io.ByteArrayOutputStream b,
+			byte[] field) {
+		writeAmount(b, field.length);
+		b.write(field, 0, field.length);
+	}
+
+	static void writeAmount(java.io.ByteArrayOutputStream b,
+			long value) {
+		for (int i = 0; i < 8; i++) {
+			b.write((int) (value >>> (8 * i)) & 0xff);
+		}
 	}
 
 	private static int compareInputsBip69(Input a, Input b) {
@@ -172,20 +245,46 @@ public final class BtcTx {
 
 	public static String buildAndSignTaproot(List<TaprootInput> inputs,
 			List<Output> outputs) {
-		NetworkParameters params = BtcKeys.PARAMS;
+		List<TaprootInput> tin = sortedTaproot(inputs);
+		return signTaproot(unsignedTaproot(tin, outputs), tin);
+	}
+
+	@javax.annotation.Nullable
+	static String buildAndSignTaprootApproved(List<TaprootInput> inputs,
+			List<Output> outputs, String approvedFingerprint) {
+		List<TaprootInput> tin = sortedTaproot(inputs);
+		Transaction tx = unsignedTaproot(tin, outputs);
+		if (!taprootFingerprint(tx, tin).equals(approvedFingerprint)) {
+			return null;
+		}
+		return signTaproot(tx, tin);
+	}
+
+	static String taprootFingerprint(List<TaprootInput> inputs,
+			List<Output> outputs) {
+		List<TaprootInput> tin = sortedTaproot(inputs);
+		return taprootFingerprint(unsignedTaproot(tin, outputs), tin);
+	}
+
+	private static List<TaprootInput> sortedTaproot(
+			List<TaprootInput> inputs) {
 		List<TaprootInput> tin = new java.util.ArrayList<>(inputs);
-		List<Output> outs = new java.util.ArrayList<>(outputs);
 		tin.sort((a, b) -> {
 			int c = compareUnsigned(Utils.HEX.decode(a.txHash),
 					Utils.HEX.decode(b.txHash));
 			return c != 0 ? c : Integer.compare(a.txPos, b.txPos);
 		});
+		return tin;
+	}
+
+	private static Transaction unsignedTaproot(List<TaprootInput> inputs,
+			List<Output> outputs) {
+		NetworkParameters params = BtcKeys.PARAMS;
+		List<Output> outs = new java.util.ArrayList<>(outputs);
 		outs.sort((a, b) -> compareOutputsBip69(params, a, b));
-		inputs = tin;
-		outputs = outs;
 		Transaction tx = new Transaction(params);
 		tx.setVersion(2);
-		for (Output o : outputs) {
+		for (Output o : outs) {
 			tx.addOutput(Coin.valueOf(o.valueSat),
 					Address.fromString(params, o.address));
 		}
@@ -197,13 +296,19 @@ public final class BtcTx {
 			ti.setSequenceNumber(RBF_SEQUENCE);
 			tx.addInput(ti);
 		}
+		return tx;
+	}
+
+	private static String signTaproot(Transaction tx,
+			List<TaprootInput> inputs) {
 		java.util.List<TaprootSign.Prevout> prevouts =
 				new java.util.ArrayList<>();
 		for (TaprootInput in : inputs) {
 			prevouts.add(new TaprootSign.Prevout(in.scriptPubKey, in.valueSat));
 		}
 		for (int i = 0; i < inputs.size(); i++) {
-			byte[] sighash = TaprootSign.keyPathSigHash(tx, prevouts, i, 0);
+			byte[] sighash = TaprootSign.keyPathSigHash(tx, prevouts, i,
+					TAPROOT_SIGHASH_DEFAULT);
 			byte[] aux = new byte[32];
 			AUX_RANDOM.nextBytes(aux);
 			byte[] sig = TaprootSign.schnorrSign(inputs.get(i).privKey, sighash,

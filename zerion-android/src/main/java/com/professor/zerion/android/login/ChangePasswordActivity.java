@@ -221,6 +221,7 @@ public class ChangePasswordActivity extends ZerionActivity
 	private void tryAgain(DecryptionResult result) {
 		changePasswordButton.setVisibility(VISIBLE);
 		progress.setVisibility(INVISIBLE);
+		setError(currentPasswordEntryWrapper, null, false);
 		if (result == KEY_STRENGTHENER_ERROR) {
 			createKeyStrengthenerErrorDialog(this).show();
 		} else if (result == KEY_REPLACEMENT_FAILED

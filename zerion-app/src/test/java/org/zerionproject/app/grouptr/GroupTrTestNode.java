@@ -120,6 +120,7 @@ final class GroupTrTestNode {
 	private final Set<MessageId> deletedBodies = new HashSet<>();
 	private final Set<MessageId> unparseableMetadata = new HashSet<>();
 	private final List<Runnable> deferred = new ArrayList<>();
+	private boolean failRemovals = false;
 	private final boolean deferIo;
 	private int txnDepth = 0;
 	private boolean writeTxn = false;
@@ -209,6 +210,21 @@ final class GroupTrTestNode {
 		unparseableMetadata.add(id);
 	}
 
+	void failMessageRemovals(boolean fail) {
+		failRemovals = fail;
+	}
+
+	void putPendingMemberOffer(byte[] groupId, ContactId from,
+			byte[] creatorPub, byte[] inviterPub, long inviteTimestamp) {
+		BdfList list = BdfList.of("group", new byte[32], "Creator",
+				creatorPub, ML_DSA_PUB, inviterPub, (long) from.getInt(),
+				inviteTimestamp);
+		settings.computeIfAbsent(
+				GroupTrMemberInvites.SETTINGS_NS_MEMBER_OFFERS_PENDING,
+				k -> new Settings()).put(toHexString(groupId),
+				toHexString(token(list)));
+	}
+
 	void putSentInvite(byte[] groupId, ContactId to, byte[] contactPub,
 			@Nullable Long sent) {
 		BdfList list = sent == null
@@ -275,6 +291,16 @@ final class GroupTrTestNode {
 		String ids = index.get(GroupTrConstants.S_GROUP_IDS);
 		index.put(GroupTrConstants.S_GROUP_IDS, ids == null || ids.isEmpty()
 				? toHexString(groupId) : ids + "," + toHexString(groupId));
+	}
+
+	void putSetting(String namespace, String key, String value) {
+		settings.computeIfAbsent(namespace, k -> new Settings())
+				.put(key, value);
+	}
+
+	@Nullable
+	Settings namespace(String namespace) {
+		return settings.get(namespace);
 	}
 
 	void putPendingOffer(byte[] groupId, ContactId from, byte[] creatorPub,
@@ -533,6 +559,16 @@ final class GroupTrTestNode {
 		((Set<?>) field("historyLoaded")).remove(hex);
 	}
 
+	List<GroupTrPost> cached(byte[] groupId) throws Exception {
+		Object q = ((Map<?, ?>) field("postCache")).get(toHexString(groupId));
+		List<GroupTrPost> out = new ArrayList<>();
+		if (q == null) return out;
+		synchronized (q) {
+			for (Object p : (ArrayDeque<?>) q) out.add((GroupTrPost) p);
+		}
+		return out;
+	}
+
 	long heldBytes() throws Exception {
 		long total = 0;
 		for (Object q : ((Map<?, ?>) field("postCache")).values()) {
@@ -615,10 +651,19 @@ final class GroupTrTestNode {
 
 	@Nullable
 	private Object fieldOrNull(String name) throws Exception {
+		Object v = declared(manager, name);
+		if (v != null) return v;
+		Object posts = declared(manager, "posts");
+		return posts == null ? null : declared(posts, name);
+	}
+
+	@Nullable
+	private static Object declared(Object target, String name)
+			throws Exception {
 		try {
-			Field f = GroupTrManagerImpl.class.getDeclaredField(name);
+			Field f = target.getClass().getDeclaredField(name);
 			f.setAccessible(true);
-			return f.get(manager);
+			return f.get(target);
 		} catch (NoSuchFieldException e) {
 			return null;
 		}
@@ -675,6 +720,9 @@ final class GroupTrTestNode {
 				}
 			}
 			case "removeMessage": {
+				if (failRemovals) {
+					throw new org.zerionproject.core.api.db.DbException();
+				}
 				boolean found = false;
 				for (Map<MessageId, BdfDictionary> h : store.values()) {
 					if (h.remove((MessageId) a[1]) != null) found = true;
@@ -714,6 +762,28 @@ final class GroupTrTestNode {
 
 	@Nullable
 	private Object settings(String name, Object[] a) {
+		if (name.equals("deleteSettings")) {
+			Settings s = settings.get((String) a[a.length - 2]);
+			if (s != null) {
+				for (Object key : (Collection<?>) a[a.length - 1]) {
+					s.remove(key);
+				}
+			}
+			return null;
+		}
+		if (name.equals("deleteNamespaces")) {
+			for (Object namespace : (Collection<?>) a[0]) {
+				settings.remove(namespace);
+			}
+			return null;
+		}
+		if (name.equals("getNamespaces")) {
+			List<String> out = new ArrayList<>();
+			for (String namespace : settings.keySet()) {
+				if (namespace.startsWith((String) a[0])) out.add(namespace);
+			}
+			return out;
+		}
 		String ns = (String) a[a.length - 1];
 		switch (name) {
 			case "getSettings": {

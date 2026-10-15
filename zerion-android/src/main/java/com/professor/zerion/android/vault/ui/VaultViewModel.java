@@ -5,15 +5,20 @@ import android.content.Context;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.VaultManager;
+import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
 import com.professor.zerion.android.vault.model.PasswordEntry;
+import com.professor.zerion.android.vault.model.PasswordEntryCodec;
 import com.professor.zerion.android.vault.model.VaultItem;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 import com.professor.zerion.android.vault.wallet.WalletCoin;
 import com.professor.zerion.android.vault.wallet.WalletRecord;
 import com.professor.zerion.android.vault.wallet.WalletStore;
+import com.professor.zerion.android.vault.wallet.btc.BtcNodeRouting;
 import com.professor.zerion.android.vault.wallet.btc.BtcWallet;
+import com.professor.zerion.android.vault.wallet.btc.BtcWalletSettings;
 import com.professor.zerion.android.vault.wallet.btc.ElectrumClient;
-import com.professor.zerion.android.vault.wallet.btc.SilentPaymentScanner;
+import com.professor.zerion.android.vault.wallet.btc.SilentPaymentCoins;
+import com.professor.zerion.android.vault.wallet.btc.WalletCredential;
 
 import org.bitcoinj.crypto.MnemonicCode;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -87,11 +92,12 @@ public class VaultViewModel extends AndroidViewModel {
 			Executors.newSingleThreadExecutor();
 	private static final Executor CRYPTO_EXECUTOR =
 			Executors.newSingleThreadExecutor();
-	private static final String ELECTRUM_HOST = "electrum.blockstream.info";
-	private static final int ELECTRUM_PORT = 50002;
 
 	private final WalletStore walletStore;
 	private final int torSocksPort;
+	private final BtcWalletSettings walletSettings;
+	private final BtcNodeRouting nodeRouting;
+	private final WalletCredential walletCredential;
 
 	private final MutableLiveData<List<WalletRecord>> wallets =
 			new MutableLiveData<>(new ArrayList<>());
@@ -116,11 +122,11 @@ public class VaultViewModel extends AndroidViewModel {
 	@Nullable
 	private volatile BtcWallet openBtc;
 	@Nullable
-	private java.util.Set<String> lastTxids;
+	private volatile java.util.Set<String> lastTxids;
 	@Nullable
-	private Long lastBalance;
+	private volatile Long lastBalance;
 	@Nullable
-	private List<BtcWallet.TxSummary> lastSummaries;
+	private volatile List<BtcWallet.TxSummary> lastSummaries;
 
 	@Inject
 	public VaultViewModel(Application application, VaultManager vaultManager,
@@ -131,6 +137,10 @@ public class VaultViewModel extends AndroidViewModel {
 		this.dbExecutor = dbExecutor;
 		this.walletStore = walletStore;
 		this.torSocksPort = torGate.port();
+		this.walletSettings = new BtcWalletSettings(walletStore);
+		this.nodeRouting = new BtcNodeRouting(walletSettings);
+		this.walletCredential = new WalletCredential(walletSettings,
+				android.os.SystemClock::elapsedRealtime);
 		vaultManager.setOnLockListener(() -> {
 			resetWalletSession();
 			vaultState.postValue(VaultState.LOCKED);
@@ -186,7 +196,7 @@ public class VaultViewModel extends AndroidViewModel {
 		for (WalletRecord w : walletStore.listWallets()) {
 			if (w.coin == com.professor.zerion.android.vault.wallet
 					.WalletCoin.BTC) {
-				String display = readBtcDisplayName(w.id, w.name);
+				String display = walletSettings.displayName(w.id, w.name);
 				btc.add(display.equals(w.name) ? w
 						: new WalletRecord(w.id, w.coin, display,
 								w.createdTimestamp, w.hasPassword));
@@ -269,7 +279,7 @@ public class VaultViewModel extends AndroidViewModel {
 								.fetch(torSocksPort, priceTag);
 				boolean usable = r != null && !r.isEmpty();
 				if (usable) {
-					persistRates(r);
+					walletSettings.saveRates(r);
 					priceStale.postValue(false);
 					btcRates.postValue(r);
 				}
@@ -281,9 +291,10 @@ public class VaultViewModel extends AndroidViewModel {
 	public void loadCachedPrice() {
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				org.json.JSONObject o = settingsObject();
-				String cached = o.optString("priceRates", "");
-				long at = o.optLong("priceAt", 0);
+				BtcWalletSettings.CachedPrice price =
+						walletSettings.cachedPrice();
+				String cached = price.ratesJson;
+				long at = price.at;
 				boolean found = !cached.isEmpty();
 				if (found) {
 					com.professor.zerion.android.vault.wallet.btc.BtcPrice.Rates r =
@@ -301,19 +312,6 @@ public class VaultViewModel extends AndroidViewModel {
 			} catch (Throwable ignored) {
 			}
 		});
-	}
-
-	private void persistRates(com.professor.zerion.android.vault.wallet.btc
-			.BtcPrice.Rates r) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObject();
-				o.put("priceRates", r.toJson());
-				o.put("priceAt", System.currentTimeMillis());
-				walletStore.writeSettings(o.toString());
-			}
-		} catch (Throwable ignored) {
-		}
 	}
 
 	private final java.util.concurrent.atomic.AtomicInteger receiveIndex =
@@ -341,69 +339,11 @@ public class VaultViewModel extends AndroidViewModel {
 				w.setMinReceiveProbe(idx);
 				btcReceiveAddress.postValue(w.receiveAddressAt(idx));
 				if (id != null && id.equals(currentWalletId) && openBtc == w) {
-					persistReceiveIndex(id, idx);
+					walletSettings.raiseReceiveIndex(id, idx);
 				}
 			} catch (Throwable ignored) {
 			}
 		});
-	}
-
-	private int readReceiveIndex(String walletId) {
-		try {
-			org.json.JSONObject recv = settingsObject().optJSONObject("recv");
-			if (recv != null) {
-				return Math.max(0, recv.optInt(walletId, 0));
-			}
-		} catch (Throwable ignored) {
-		}
-		return 0;
-	}
-
-	private int readChangeIndex(String walletId) {
-		try {
-			org.json.JSONObject chg = settingsObject().optJSONObject("chg");
-			if (chg != null) {
-				return Math.max(0, chg.optInt(walletId, 0));
-			}
-		} catch (Throwable ignored) {
-		}
-		return 0;
-	}
-
-	private void persistChangeIndex(String walletId, int index) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObject();
-				org.json.JSONObject chg = o.optJSONObject("chg");
-				if (chg == null) {
-					chg = new org.json.JSONObject();
-				}
-				if (index > chg.optInt(walletId, 0)) {
-					chg.put(walletId, index);
-					o.put("chg", chg);
-					walletStore.writeSettings(o.toString());
-				}
-			}
-		} catch (Throwable ignored) {
-		}
-	}
-
-	private void persistReceiveIndex(String walletId, int index) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObject();
-				org.json.JSONObject recv = o.optJSONObject("recv");
-				if (recv == null) {
-					recv = new org.json.JSONObject();
-				}
-				if (index > recv.optInt(walletId, 0)) {
-					recv.put(walletId, index);
-					o.put("recv", recv);
-					walletStore.writeSettings(o.toString());
-				}
-			}
-		} catch (Throwable ignored) {
-		}
 	}
 
 	public void ensureReceiveAddress() {
@@ -435,51 +375,24 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void loadWalletCurrency() {
-		WALLET_EXECUTOR.execute(() -> {
-			String cur = "EUR";
-			try {
-				String json = walletStore.readSettings();
-				if (json != null) {
-					cur = new org.json.JSONObject(json)
-							.optString("currency", "EUR");
-				}
-			} catch (Throwable ignored) {
-			}
-			walletCurrency.postValue(cur);
-		});
+		WALLET_EXECUTOR.execute(() ->
+				walletCurrency.postValue(walletSettings.currency()));
 	}
 
 	public void saveWalletCurrency(String cur) {
-		WALLET_EXECUTOR.execute(() -> {
-			try {
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					o.put("currency", cur);
-					walletStore.writeSettings(o.toString());
-				}
-			} catch (Throwable ignored) {
-			}
-		});
+		WALLET_EXECUTOR.execute(() -> walletSettings.saveCurrency(cur));
 	}
 
-	public static final String DEFAULT_NODE =
-			ELECTRUM_HOST + ":" + ELECTRUM_PORT;
-	private static final String LEGACY_DEFAULT_NODE =
-			ELECTRUM_HOST + ":50001";
+	public static final String DEFAULT_NODE = BtcNodeRouting.DEFAULT_NODE;
 
 	public static final String DEFAULT_ONION_NODE =
-			"kittycp2gatrqhlwpmbczk5rblw62enrpo2rzwtkfrrr27hq435d4vid.onion"
-					+ ":50001";
+			BtcNodeRouting.DEFAULT_ONION_NODE;
 
-	public static final String DEFAULT_ONION_NODE_2 = "";
+	public static final String DEFAULT_ONION_NODE_2 =
+			BtcNodeRouting.DEFAULT_ONION_NODE_2;
 
 	public static String preferredDefaultNode() {
-		return com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-				.preferredDefaultSpec(DEFAULT_ONION_NODE, DEFAULT_NODE);
-	}
-
-	private static String normalizeNode(String node) {
-		return LEGACY_DEFAULT_NODE.equals(node) ? preferredDefaultNode() : node;
+		return BtcNodeRouting.preferredDefaultNode();
 	}
 
 	private final MutableLiveData<String> walletPinPrompt =
@@ -489,24 +402,11 @@ public class VaultViewModel extends AndroidViewModel {
 		return walletPinPrompt;
 	}
 
-	@Nullable
-	private String pinFor(String node) {
-		try {
-			org.json.JSONObject pins = settingsObject().optJSONObject("pins");
-			if (pins != null) {
-				String p = pins.optString(node, "");
-				return p.isEmpty() ? null : p;
-			}
-		} catch (Throwable ignored) {
-		}
-		return null;
-	}
-
 	public void captureNodePin(String node) {
 		WALLET_EXECUTOR.execute(() -> {
 			try {
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-						ep = endpointFromNodeString(node);
+						ep = nodeRouting.endpointFor(node);
 				if (!ep.tls()) {
 					walletPinPrompt.postValue(node + "|none");
 					return;
@@ -522,21 +422,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void confirmNodePin(String node, String pin) {
-		WALLET_EXECUTOR.execute(() -> {
-			try {
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					org.json.JSONObject pins = o.optJSONObject("pins");
-					if (pins == null) {
-						pins = new org.json.JSONObject();
-					}
-					pins.put(node, pin);
-					o.put("pins", pins);
-					walletStore.writeSettings(o.toString());
-				}
-			} catch (Throwable ignored) {
-			}
-		});
+		WALLET_EXECUTOR.execute(() -> nodeRouting.savePin(node, pin));
 	}
 
 	private final MutableLiveData<java.util.List<String>> walletNodeList =
@@ -558,158 +444,27 @@ public class VaultViewModel extends AndroidViewModel {
 		return walletNodeHealth;
 	}
 
-	private String[] selectedNodeHostPort() {
-		String node = preferredDefaultNode();
-		try {
-			String json = walletStore.readSettings();
-			if (json != null) {
-				node = new org.json.JSONObject(json).optString("node",
-						preferredDefaultNode());
-			}
-		} catch (Throwable ignored) {
-		}
-		node = normalizeNode(node);
-		int i = node.lastIndexOf(':');
-		if (i <= 0) {
-			return new String[]{ELECTRUM_HOST, String.valueOf(ELECTRUM_PORT)};
-		}
-		return new String[]{node.substring(0, i), node.substring(i + 1)};
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-			endpointFromNodeString(String node) {
-		int i = node.lastIndexOf(':');
-		String host = i <= 0 ? ELECTRUM_HOST : node.substring(0, i);
-		int port = ELECTRUM_PORT;
-		try {
-			port = Integer.parseInt(node.substring(i + 1).trim());
-		} catch (Exception ignored) {
-		}
-		return com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-				.fromUserInput(host, port, pinFor(node));
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-			selectedScanEndpoint() {
-		String[] hp = selectedNodeHostPort();
-		return endpointFromNodeString(hp[0] + ":" + hp[1]);
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-			broadcastEndpointFor(
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scan,
-			String routing) {
-		try {
-			String json = walletStore.readSettings();
-			if (json != null) {
-				org.json.JSONObject o = new org.json.JSONObject(json);
-				String selected = normalizeNode(
-						o.optString("node", preferredDefaultNode()));
-				java.util.List<String> userNodes = new java.util.ArrayList<>();
-				org.json.JSONArray arr = o.optJSONArray("nodes");
-				if (arr != null) {
-					for (int i = 0; i < arr.length(); i++) {
-						userNodes.add(arr.getString(i));
-					}
-				}
-				String chosen = com.professor.zerion.android.vault.wallet.btc
-						.BroadcastRouting.chooseBroadcastNode(selected,
-								preferredDefaultNode(), userNodes, routing);
-				if (chosen.equals(selected)) return scan;
-				return endpointFromNodeString(chosen);
-			}
-		} catch (Throwable ignored) {
-		}
-		return scan;
-	}
-
 	public void loadNodes() {
 		CRYPTO_EXECUTOR.execute(() -> {
-			java.util.List<String> list = new java.util.ArrayList<>();
-			list.add(preferredDefaultNode());
-			String selected = preferredDefaultNode();
-			try {
-				String json = walletStore.readSettings();
-				if (json != null) {
-					org.json.JSONObject o = new org.json.JSONObject(json);
-					org.json.JSONArray arr = o.optJSONArray("nodes");
-					if (arr != null) {
-						for (int i = 0; i < arr.length(); i++) {
-							String n = arr.getString(i);
-							if (!list.contains(n)) {
-								list.add(n);
-							}
-						}
-					}
-					selected = normalizeNode(o.optString("node", preferredDefaultNode()));
-				}
-			} catch (Throwable ignored) {
-			}
-			if (!list.contains(selected)) {
-				selected = preferredDefaultNode();
-			}
-			walletNodeList.postValue(list);
-			walletSelectedNode.postValue(selected);
+			BtcNodeRouting.NodeList nodes = nodeRouting.nodeList();
+			walletNodeList.postValue(nodes.nodes);
+			walletSelectedNode.postValue(nodes.selected);
 		});
 	}
 
 	public void addNode(String node) {
 		WALLET_EXECUTOR.execute(() -> {
-			try {
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					org.json.JSONArray arr = o.optJSONArray("nodes");
-					if (arr == null) {
-						arr = new org.json.JSONArray();
-					}
-					boolean exists = node.equals(preferredDefaultNode());
-					for (int i = 0; i < arr.length(); i++) {
-						if (arr.getString(i).equals(node)) {
-							exists = true;
-						}
-					}
-					if (!exists) {
-						arr.put(node);
-					}
-					o.put("nodes", arr);
-					walletStore.writeSettings(o.toString());
-				}
-			} catch (Throwable ignored) {
-			}
+			nodeRouting.addNode(node);
 			loadNodes();
 		});
 	}
 
 	public void selectNode(String node) {
 		WALLET_EXECUTOR.execute(() -> {
-			try {
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					o.put("node", node);
-					walletStore.writeSettings(o.toString());
-				}
-			} catch (Throwable ignored) {
-			}
+			nodeRouting.selectNode(node);
 			reopenActiveWalletEndpoints();
 			loadNodes();
 		});
-	}
-
-	private java.util.List<com.professor.zerion.android.vault.wallet.btc
-			.ElectrumEndpoint> fallbackChainFor(
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-					scanEp) {
-		java.util.List<com.professor.zerion.android.vault.wallet.btc
-				.ElectrumEndpoint> fbs = new java.util.ArrayList<>();
-		String scanSpec = scanEp.host + ":" + scanEp.port;
-		if (scanSpec.equals(DEFAULT_ONION_NODE)
-				&& !DEFAULT_ONION_NODE.isEmpty()) {
-			if (!DEFAULT_ONION_NODE_2.isEmpty()) {
-				fbs.add(endpointFromNodeString(DEFAULT_ONION_NODE_2));
-			}
-			fbs.add(endpointFromNodeString(DEFAULT_NODE));
-		}
-		return fbs;
 	}
 
 	private void reopenActiveWalletEndpoints() {
@@ -720,62 +475,30 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 		try {
 			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-					scanEp = routedScanEndpoint(id);
+					scanEp = nodeRouting.scanEndpoint(id);
 			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-					bcastEp = routedBroadcastEndpoint(id, scanEp);
+					bcastEp = nodeRouting.broadcastEndpoint(id, scanEp);
 			java.util.List<com.professor.zerion.android.vault.wallet.btc
-					.ElectrumEndpoint> fbs = routedFallbacks(id, scanEp);
+					.ElectrumEndpoint> fbs = nodeRouting.fallbacks(id, scanEp);
 			w.updateEndpoints(scanEp, bcastEp, fbs, fbs);
 			scanOpenBtc(true);
 		} catch (Throwable ignored) {
 		}
 	}
 
-	public static final String ROUTING_TOR = "tor";
-	public static final String ROUTING_DIRECT = "direct";
-	public static final String ROUTING_LOCAL = "local";
+	public static final String ROUTING_TOR = BtcNodeRouting.ROUTING_TOR;
+	public static final String ROUTING_DIRECT = BtcNodeRouting.ROUTING_DIRECT;
+	public static final String ROUTING_LOCAL = BtcNodeRouting.ROUTING_LOCAL;
 
 	public String readWalletRouting(String walletId) {
-		String r = readWalletPrivacy(walletId).optString("routing", ROUTING_TOR);
-		if (ROUTING_DIRECT.equals(r) || ROUTING_LOCAL.equals(r)) {
-			return r;
-		}
-		return ROUTING_TOR;
+		return nodeRouting.routing(walletId);
 	}
 
 	public void setWalletRouting(String walletId, String mode) {
 		WALLET_EXECUTOR.execute(() -> {
-			mutateWalletPrivacy(walletId, w -> w.put("routing", mode));
+			nodeRouting.setRouting(walletId, mode);
 			reopenActiveWalletEndpoints();
 		});
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-			routedScanEndpoint(String walletId) {
-		if (ROUTING_DIRECT.equals(readWalletRouting(walletId))) {
-			return endpointFromNodeString(DEFAULT_NODE).asDirect();
-		}
-		return selectedScanEndpoint();
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-			routedBroadcastEndpoint(String walletId,
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scanEp) {
-		String routing = readWalletRouting(walletId);
-		if (ROUTING_DIRECT.equals(routing)) {
-			return scanEp;
-		}
-		return broadcastEndpointFor(scanEp, routing);
-	}
-
-	private java.util.List<com.professor.zerion.android.vault.wallet.btc
-			.ElectrumEndpoint> routedFallbacks(String walletId,
-			com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint scanEp) {
-		String routing = readWalletRouting(walletId);
-		if (ROUTING_DIRECT.equals(routing) || ROUTING_LOCAL.equals(routing)) {
-			return new java.util.ArrayList<>();
-		}
-		return fallbackChainFor(scanEp);
 	}
 
 	public void deleteNode(String node) {
@@ -783,27 +506,7 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
-			try {
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					org.json.JSONArray arr = o.optJSONArray("nodes");
-					org.json.JSONArray keep = new org.json.JSONArray();
-					if (arr != null) {
-						for (int i = 0; i < arr.length(); i++) {
-							String n = arr.getString(i);
-							if (!n.equals(node)) {
-								keep.put(n);
-							}
-						}
-					}
-					o.put("nodes", keep);
-					if (node.equals(o.optString("node", preferredDefaultNode()))) {
-						o.put("node", preferredDefaultNode());
-					}
-					walletStore.writeSettings(o.toString());
-				}
-			} catch (Throwable ignored) {
-			}
+			nodeRouting.deleteNode(node);
 			loadNodes();
 		});
 	}
@@ -813,7 +516,7 @@ public class VaultViewModel extends AndroidViewModel {
 			boolean ok = false;
 			try {
 				try (ElectrumClient c = new ElectrumClient(
-						endpointFromNodeString(node), torSocksPort,
+						nodeRouting.endpointFor(node), torSocksPort,
 						com.professor.zerion.android.vault.wallet.btc
 								.TorIsolation.ephemeral("nodecheck"))) {
 					ok = c.blockHeight() > 0;
@@ -830,7 +533,7 @@ public class VaultViewModel extends AndroidViewModel {
 			char[] mnemonic = null;
 			try {
 				mnemonic = walletStore.loadMnemonicChars(id, password);
-				persistBtcDisplayName(id, newName);
+				walletSettings.saveDisplayName(id, newName);
 				postBtcWallets();
 			} catch (Throwable e) {
 				walletError.postValue(new Event<>(getApplication().getString(
@@ -844,42 +547,6 @@ public class VaultViewModel extends AndroidViewModel {
 				walletBusy.postValue(false);
 			}
 		});
-	}
-
-	private String readBtcDisplayName(String walletId, String fallback) {
-		try {
-			org.json.JSONObject btc = settingsObject().optJSONObject("btc");
-			if (btc != null) {
-				org.json.JSONObject w = btc.optJSONObject(walletId);
-				if (w != null) {
-					String nm = w.optString("nm", "");
-					if (!nm.isEmpty()) {
-						return nm;
-					}
-				}
-			}
-		} catch (Throwable ignored) {
-		}
-		return fallback;
-	}
-
-	private void persistBtcDisplayName(String walletId, String name)
-			throws Exception {
-		synchronized (walletStore.settingsLock) {
-			org.json.JSONObject o = settingsObject();
-			org.json.JSONObject btc = o.optJSONObject("btc");
-			if (btc == null) {
-				btc = new org.json.JSONObject();
-			}
-			org.json.JSONObject w = btc.optJSONObject(walletId);
-			if (w == null) {
-				w = new org.json.JSONObject();
-			}
-			w.put("nm", name);
-			btc.put(walletId, w);
-			o.put("btc", btc);
-			walletStore.writeSettings(o.toString());
-		}
 	}
 
 	public void changeBtcWalletPassword(String id, String name, char[] oldPw,
@@ -915,8 +582,7 @@ public class VaultViewModel extends AndroidViewModel {
 	private final MutableLiveData<long[]> spInfo = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> spBusy = new MutableLiveData<>(false);
 	private final MutableLiveData<Event<String>> spTxid = new MutableLiveData<>();
-	private final java.util.List<SilentPaymentScanner.Found> spUtxos =
-			new java.util.ArrayList<>();
+	private final SilentPaymentCoins spCoins = new SilentPaymentCoins();
 
 	public LiveData<String> getSpAddress() {
 		return spAddress;
@@ -945,17 +611,8 @@ public class VaultViewModel extends AndroidViewModel {
 				if (id == null) {
 					return;
 				}
-				org.json.JSONObject o = readWalletPrivacy(id);
-				spUtxos.clear();
-				org.json.JSONArray arr = o.optJSONArray("spUtxos");
-				if (arr != null) {
-					for (int i = 0; i < arr.length(); i++) {
-						org.json.JSONObject u = arr.getJSONObject(i);
-						spUtxos.add(new SilentPaymentScanner.Found(
-								u.getString("t"), u.getInt("v"), u.getLong("val"),
-								spHex(u.getString("x")), spHex(u.getString("w"))));
-					}
-				}
+				org.json.JSONObject o = walletSettings.privacy(id);
+				spCoins.load(id, o.optJSONArray("spUtxos"));
 				postSpInfo(o);
 			} catch (Throwable ignored) {
 			}
@@ -963,14 +620,11 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	private void postSpInfo(org.json.JSONObject o) {
-		long bal = 0;
-		for (SilentPaymentScanner.Found f : spUtxos) {
-			bal += f.valueSat;
-		}
+		long[] totals = spCoins.totals();
 		int scanned = o.optInt("spScanned", 0);
 		int birthday = o.optInt("spBirthday", 0);
 		int oracleSet = o.optString("spOracle", "").isEmpty() ? 0 : 1;
-		spInfo.postValue(new long[]{bal, spUtxos.size(), scanned, oracleSet,
+		spInfo.postValue(new long[]{totals[0], totals[1], scanned, oracleSet,
 				birthday});
 	}
 
@@ -986,14 +640,14 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 		WALLET_EXECUTOR.execute(() -> {
 			try {
-				mutateWalletPrivacy(id, w -> {
+				walletSettings.mutatePrivacy(id, w -> {
 					w.put("spOracle", oracle.trim());
 					w.put("spBirthday", Math.max(birthday, 0));
 					if (w.optInt("spScanned", 0) < birthday - 1) {
 						w.put("spScanned", Math.max(birthday - 1, 0));
 					}
 				});
-				postSpInfo(readWalletPrivacy(id));
+				postSpInfo(walletSettings.privacy(id));
 			} catch (Throwable ignored) {
 			}
 		});
@@ -1011,7 +665,7 @@ public class VaultViewModel extends AndroidViewModel {
 		spBusy.postValue(true);
 		WALLET_EXECUTOR.execute(() -> {
 			try {
-				org.json.JSONObject o = readWalletPrivacy(id);
+				org.json.JSONObject o = walletSettings.privacy(id);
 				String oracle = o.optString("spOracle", "");
 				if (oracle.isEmpty()) {
 					oracle = DEFAULT_SP_ORACLE;
@@ -1024,23 +678,15 @@ public class VaultViewModel extends AndroidViewModel {
 				if (openBtc != w || !id.equals(currentWalletId)) {
 					return;
 				}
-				for (SilentPaymentScanner.Found f : r.found) {
-					boolean dup = false;
-					for (SilentPaymentScanner.Found e : spUtxos) {
-						if (e.txid.equals(f.txid) && e.vout == f.vout) {
-							dup = true;
-							break;
-						}
-					}
-					if (!dup) {
-						spUtxos.add(f);
-					}
+				org.json.JSONArray coins = spCoins.addFound(id, r.found);
+				if (coins == null) {
+					return;
 				}
-				mutateWalletPrivacy(id, wp -> {
+				walletSettings.mutatePrivacy(id, wp -> {
 					wp.put("spScanned", r.scannedTo);
-					wp.put("spUtxos", spUtxosJson());
+					wp.put("spUtxos", coins);
 				});
-				postSpInfo(readWalletPrivacy(id));
+				postSpInfo(walletSettings.privacy(id));
 			} catch (Throwable e) {
 				walletError.postValue(new Event<>(
 						walletErrorText(e, R.string.wallet_network_failed)));
@@ -1083,7 +729,7 @@ public class VaultViewModel extends AndroidViewModel {
 		WALLET_EXECUTOR.execute(() -> {
 			try {
 				BtcWallet.SpSweepPlan plan = w.planSweepSilentPayments(
-						new java.util.ArrayList<>(spUtxos), toAddress, feeRate);
+						spCoins.snapshot(w.walletId()), toAddress, feeRate);
 				spSweepGate.prepare(plan, w.walletId());
 				spSweepReview.postValue(new Event<>(new SpSweepReview(plan)));
 			} catch (Throwable e) {
@@ -1132,11 +778,11 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 				String id = currentWalletId;
 				String txid = w.signSpSweep(plan);
-				spUtxos.clear();
+				spCoins.spent();
 				if (id != null) {
-					mutateWalletPrivacy(id, wp ->
+					walletSettings.mutatePrivacy(id, wp ->
 							wp.put("spUtxos", new org.json.JSONArray()));
-					postSpInfo(readWalletPrivacy(id));
+					postSpInfo(walletSettings.privacy(id));
 				}
 				spTxid.postValue(new Event<>(txid));
 				scanOpenBtc(true);
@@ -1153,37 +799,6 @@ public class VaultViewModel extends AndroidViewModel {
 				sending.set(false);
 			}
 		});
-	}
-
-	private org.json.JSONArray spUtxosJson() throws org.json.JSONException {
-		org.json.JSONArray arr = new org.json.JSONArray();
-		for (SilentPaymentScanner.Found f : spUtxos) {
-			org.json.JSONObject u = new org.json.JSONObject();
-			u.put("t", f.txid);
-			u.put("v", f.vout);
-			u.put("val", f.valueSat);
-			u.put("x", spHexStr(f.xonly));
-			u.put("w", spHexStr(f.tweak));
-			arr.put(u);
-		}
-		return arr;
-	}
-
-	private static byte[] spHex(String h) {
-		byte[] out = new byte[h.length() / 2];
-		for (int i = 0; i < out.length; i++) {
-			out[i] = (byte) Integer.parseInt(h.substring(i * 2, i * 2 + 2), 16);
-		}
-		return out;
-	}
-
-	private static String spHexStr(byte[] b) {
-		StringBuilder sb = new StringBuilder(b.length * 2);
-		for (byte x : b) {
-			sb.append(Character.forDigit((x >> 4) & 0xF, 16));
-			sb.append(Character.forDigit(x & 0xF, 16));
-		}
-		return sb.toString();
 	}
 
 	public void loadFeeOptions() {
@@ -1238,13 +853,7 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 		resetWalletSession();
 		CRYPTO_EXECUTOR.execute(() -> {
-			boolean hasAuth = false;
-			try {
-				String json = walletStore.readSettings();
-				hasAuth = json != null
-						&& new org.json.JSONObject(json).has("authHash");
-			} catch (Throwable ignored) {
-			}
+			boolean hasAuth = walletCredential.exists();
 			walletAuthState.postValue(hasAuth ? "verify" : "setup");
 		});
 	}
@@ -1253,20 +862,7 @@ public class VaultViewModel extends AndroidViewModel {
 		walletGateBusy.postValue(true);
 		CRYPTO_EXECUTOR.execute(() -> {
 			try {
-				byte[] salt = new byte[16];
-				new SecureRandom().nextBytes(salt);
-				int iter = 120_000;
-				byte[] hash = pbkdf2(credential, salt, iter, 32);
-				synchronized (walletStore.settingsLock) {
-					org.json.JSONObject o = settingsObject();
-					o.put("authType", type);
-					o.put("authSalt", android.util.Base64.encodeToString(salt,
-							android.util.Base64.NO_WRAP));
-					o.put("authHash", android.util.Base64.encodeToString(hash,
-							android.util.Base64.NO_WRAP));
-					o.put("authIter", iter);
-					walletStore.writeSettings(o.toString());
-				}
+				walletCredential.setup(type, credential);
 				walletSectionUnlocked = true;
 				walletAuthGeneration = vaultManager.getLockGeneration();
 				walletGateGranted.postValue(true);
@@ -1281,23 +877,8 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public boolean isWalletAuthPin() {
-		try {
-			synchronized (walletStore.settingsLock) {
-				return "PIN".equals(settingsObject().optString("authType"));
-			}
-		} catch (Throwable e) {
-			return false;
-		}
+		return walletCredential.isPin();
 	}
-
-	private final com.professor.zerion.android.vault.wallet.btc
-			.WalletCredentialThrottle credentialThrottle =
-			new com.professor.zerion.android.vault.wallet.btc
-					.WalletCredentialThrottle(
-					android.os.SystemClock::elapsedRealtime);
-	private volatile boolean credentialFailuresRestored = false;
-
-	private static final String KEY_AUTH_FAILURES = "authFailures";
 
 	public void verifyWalletAuth(char[] credential) {
 		walletGateBusy.postValue(true);
@@ -1306,180 +887,13 @@ public class VaultViewModel extends AndroidViewModel {
 			if (ok) {
 				walletSectionUnlocked = true;
 				walletAuthGeneration = vaultManager.getLockGeneration();
-			} else if (credentialThrottle.isThrottled()) {
+			} else if (walletCredential.isThrottled()) {
 				walletError.postValue(new Event<>(getApplication().getString(
 						R.string.wallet_auth_too_many)));
 			}
 			walletGateGranted.postValue(ok);
 			walletGateBusy.postValue(false);
 		});
-	}
-
-	private org.json.JSONObject settingsObjectQuiet() throws Exception {
-		String json = walletStore.readSettingsQuiet();
-		return json == null ? new org.json.JSONObject()
-				: new org.json.JSONObject(json);
-	}
-
-	private void restoreCredentialFailures() {
-		if (credentialFailuresRestored) return;
-		try {
-			credentialThrottle.restoreFailures(
-					settingsObjectQuiet().optInt(KEY_AUTH_FAILURES, 0));
-		} catch (Throwable ignored) {
-		}
-		credentialFailuresRestored = true;
-	}
-
-	private void persistCredentialFailures(int failures) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObjectQuiet();
-				if (o.optInt(KEY_AUTH_FAILURES, 0) != failures) {
-					o.put(KEY_AUTH_FAILURES, failures);
-					walletStore.writeSettingsQuiet(o.toString());
-				}
-			}
-		} catch (Throwable ignored) {
-		}
-	}
-
-	private org.json.JSONObject settingsObject() throws Exception {
-		String json = walletStore.readSettings();
-		return json == null ? new org.json.JSONObject()
-				: new org.json.JSONObject(json);
-	}
-
-	private org.json.JSONObject readWalletPrivacy(String walletId) {
-		try {
-			org.json.JSONObject priv =
-					settingsObject().optJSONObject("privacy");
-			if (priv != null) {
-				org.json.JSONObject w = priv.optJSONObject(walletId);
-				if (w != null) {
-					return w;
-				}
-			}
-		} catch (Throwable ignored) {
-		}
-		return new org.json.JSONObject();
-	}
-
-	private interface PrivacyMutation {
-		void apply(org.json.JSONObject walletPrivacy) throws Exception;
-	}
-
-	private void mutateWalletPrivacy(String walletId, PrivacyMutation mutation) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObject();
-				org.json.JSONObject priv = o.optJSONObject("privacy");
-				if (priv == null) {
-					priv = new org.json.JSONObject();
-				}
-				org.json.JSONObject w = priv.optJSONObject(walletId);
-				if (w == null) {
-					w = new org.json.JSONObject();
-				}
-				mutation.apply(w);
-				priv.put(walletId, w);
-				o.put("privacy", priv);
-				walletStore.writeSettings(o.toString());
-			}
-		} catch (Throwable ignored) {
-		}
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyStore
-			privacyStoreFor(String walletId) {
-		return new com.professor.zerion.android.vault.wallet.btc.privacy
-				.PrivacyStore() {
-			@Override
-			public java.util.Set<String> frozen() {
-				java.util.Set<String> s = new java.util.HashSet<>();
-				org.json.JSONArray a =
-						readWalletPrivacy(walletId).optJSONArray("frozen");
-				if (a != null) {
-					for (int i = 0; i < a.length(); i++) {
-						s.add(a.optString(i));
-					}
-				}
-				return s;
-			}
-
-			@Override
-			public java.util.Map<String, String> labels() {
-				return toMap(readWalletPrivacy(walletId)
-						.optJSONObject("labels"));
-			}
-
-			@Override
-			public java.util.Map<String, String> originHints() {
-				return toMap(readWalletPrivacy(walletId)
-						.optJSONObject("originHints"));
-			}
-
-			@Override
-			public void setFrozen(String outpoint, boolean frozen) {
-				mutateWalletPrivacy(walletId, w -> {
-					org.json.JSONArray a = w.optJSONArray("frozen");
-					org.json.JSONArray next = new org.json.JSONArray();
-					if (a != null) {
-						for (int i = 0; i < a.length(); i++) {
-							if (!a.optString(i).equals(outpoint)) {
-								next.put(a.optString(i));
-							}
-						}
-					}
-					if (frozen) {
-						next.put(outpoint);
-					}
-					w.put("frozen", next);
-				});
-			}
-
-			@Override
-			public void setLabel(String outpoint,
-					@Nullable String label) {
-				mutateWalletPrivacy(walletId, w -> {
-					org.json.JSONObject labels = w.optJSONObject("labels");
-					if (labels == null) {
-						labels = new org.json.JSONObject();
-					}
-					if (label == null || label.isEmpty()) {
-						labels.remove(outpoint);
-					} else {
-						labels.put(outpoint, label);
-					}
-					w.put("labels", labels);
-				});
-			}
-
-			@Override
-			public void putOriginHint(String address, String clusterId) {
-				mutateWalletPrivacy(walletId, w -> {
-					org.json.JSONObject hints = w.optJSONObject("originHints");
-					if (hints == null) {
-						hints = new org.json.JSONObject();
-					}
-					hints.put(address, clusterId);
-					w.put("originHints", hints);
-				});
-			}
-		};
-	}
-
-	private static java.util.Map<String, String> toMap(
-			@Nullable org.json.JSONObject o) {
-		java.util.Map<String, String> m = new java.util.HashMap<>();
-		if (o != null) {
-			java.util.Iterator<String> it = o.keys();
-			while (it.hasNext()) {
-				String k = it.next();
-				m.put(k, o.optString(k));
-			}
-		}
-		return m;
 	}
 
 	@Nullable
@@ -1493,7 +907,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public boolean isExtremeMode(String walletId) {
-		return readWalletPrivacy(walletId).optBoolean("extremeMode", false);
+		return walletSettings.privacy(walletId).optBoolean("extremeMode", false);
 	}
 
 	public void setExtremeMode(boolean on) {
@@ -1502,7 +916,7 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
-			mutateWalletPrivacy(id, w -> w.put("extremeMode", on));
+			walletSettings.mutatePrivacy(id, w -> w.put("extremeMode", on));
 			BtcWallet bw = openBtc;
 			if (bw != null) {
 				bw.setPrivacyPolicy(on
@@ -1523,7 +937,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public boolean isSpEnabled(String walletId) {
-		return readWalletPrivacy(walletId).optBoolean("spEnabled", false);
+		return walletSettings.privacy(walletId).optBoolean("spEnabled", false);
 	}
 
 	public void setSpEnabled(boolean on) {
@@ -1532,7 +946,7 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
-			mutateWalletPrivacy(id, w -> w.put("spEnabled", on));
+			walletSettings.mutatePrivacy(id, w -> w.put("spEnabled", on));
 			BtcWallet bw = openBtc;
 			if (bw != null) {
 				bw.setSilentPaymentsEnabled(on);
@@ -1572,7 +986,7 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
-			privacyStoreFor(id).setFrozen(outpoint, frozen);
+			walletSettings.privacyStore(id).setFrozen(outpoint, frozen);
 			loadCoins();
 		});
 	}
@@ -1583,179 +997,9 @@ public class VaultViewModel extends AndroidViewModel {
 			return;
 		}
 		WALLET_EXECUTOR.execute(() -> {
-			privacyStoreFor(id).setLabel(outpoint, label);
+			walletSettings.privacyStore(id).setLabel(outpoint, label);
 			loadCoins();
 		});
-	}
-
-	private static final long PENDING_RETENTION_MS = 7L * 24 * 3600 * 1000;
-
-	private static org.json.JSONObject pendingToJson(
-			com.professor.zerion.android.vault.wallet.btc.PendingTx tx)
-			throws org.json.JSONException {
-		org.json.JSONObject r = new org.json.JSONObject();
-		r.put("id", tx.id);
-		r.put("txid", tx.txid);
-		r.put("rawHex", tx.rawHex);
-		r.put("state", tx.state);
-		r.put("createdAt", tx.createdAt);
-		r.put("netSat", tx.netSat);
-		org.json.JSONArray ops = new org.json.JSONArray();
-		for (String op : tx.outpoints) {
-			ops.put(op);
-		}
-		r.put("outpoints", ops);
-		return r;
-	}
-
-	private com.professor.zerion.android.vault.wallet.btc.PendingLog
-			pendingLogFor(String walletId) {
-		return new com.professor.zerion.android.vault.wallet.btc.PendingLog() {
-			@Override
-			public java.util.List<
-					com.professor.zerion.android.vault.wallet.btc.PendingTx>
-					all() {
-				java.util.List<
-						com.professor.zerion.android.vault.wallet.btc.PendingTx>
-						out = new java.util.ArrayList<>();
-				try {
-					org.json.JSONObject byWallet =
-							settingsObject().optJSONObject("pending");
-					if (byWallet == null) {
-						return out;
-					}
-					org.json.JSONArray arr = byWallet.optJSONArray(walletId);
-					if (arr == null) {
-						return out;
-					}
-					for (int i = 0; i < arr.length(); i++) {
-						org.json.JSONObject r = arr.getJSONObject(i);
-						java.util.List<String> ops = new java.util.ArrayList<>();
-						org.json.JSONArray oa = r.optJSONArray("outpoints");
-						if (oa != null) {
-							for (int j = 0; j < oa.length(); j++) {
-								ops.add(oa.getString(j));
-							}
-						}
-						out.add(new com.professor.zerion.android.vault.wallet
-								.btc.PendingTx(r.optString("id"),
-								r.optString("txid"), r.optString("rawHex"), ops,
-								r.optString("state"), r.optLong("createdAt"),
-								r.optLong("netSat")));
-					}
-				} catch (Throwable ignored) {
-				}
-				return out;
-			}
-
-			@Override
-			public void put(
-					com.professor.zerion.android.vault.wallet.btc.PendingTx tx) {
-				try {
-					synchronized (walletStore.settingsLock) {
-						org.json.JSONObject o = settingsObject();
-						org.json.JSONObject byWallet = o.optJSONObject("pending");
-						if (byWallet == null) {
-							byWallet = new org.json.JSONObject();
-						}
-						org.json.JSONArray arr = byWallet.optJSONArray(walletId);
-						org.json.JSONArray next = new org.json.JSONArray();
-						long cutoff = System.currentTimeMillis()
-								- PENDING_RETENTION_MS;
-						boolean replaced = false;
-						if (arr != null) {
-							for (int i = 0; i < arr.length(); i++) {
-								org.json.JSONObject r = arr.getJSONObject(i);
-								if (tx.id.equals(r.optString("id"))) {
-									next.put(pendingToJson(tx));
-									replaced = true;
-									continue;
-								}
-								String st = r.optString("state");
-								boolean resolved = com.professor.zerion.android
-										.vault.wallet.btc.PendingTx.SETTLED
-										.equals(st) || "failed".equals(st);
-								if (resolved && r.optLong("createdAt") < cutoff) {
-									continue;
-								}
-								next.put(r);
-							}
-						}
-						if (!replaced) {
-							next.put(pendingToJson(tx));
-						}
-						byWallet.put(walletId, next);
-						o.put("pending", byWallet);
-						walletStore.writeSettings(o.toString());
-					}
-				} catch (Throwable e) {
-					throw new RuntimeException("pending persist failed", e);
-				}
-			}
-		};
-	}
-
-	private static byte[] decryptNoteV2(byte[] encryptedData, char[] password)
-			throws Exception {
-		byte[] salt = new byte[32];
-		byte[] iv = new byte[12];
-		byte[] encryptedContent = new byte[encryptedData.length - 45];
-		System.arraycopy(encryptedData, 1, salt, 0, 32);
-		System.arraycopy(encryptedData, 33, iv, 0, 12);
-		System.arraycopy(encryptedData, 45, encryptedContent, 0,
-				encryptedContent.length);
-		com.professor.zerion.android.vault.crypto.Argon2 argon2 =
-				new com.professor.zerion.android.vault.crypto.Argon2();
-		byte[] key = argon2.deriveKey(password, salt,
-				com.professor.zerion.android.vault.crypto.Argon2.Argon2Params
-						.getDefault());
-		try {
-			return aesGcmDecrypt(key, iv, encryptedContent);
-		} finally {
-			Arrays.fill(key, (byte) 0);
-			Arrays.fill(salt, (byte) 0);
-		}
-	}
-
-	private static byte[] decryptNoteV1(byte[] encryptedData, char[] password)
-			throws Exception {
-		byte[] salt = new byte[16];
-		byte[] iv = new byte[12];
-		byte[] encryptedContent = new byte[encryptedData.length - 28];
-		System.arraycopy(encryptedData, 0, salt, 0, 16);
-		System.arraycopy(encryptedData, 16, iv, 0, 12);
-		System.arraycopy(encryptedData, 28, encryptedContent, 0,
-				encryptedContent.length);
-		byte[] key = pbkdf2(password, salt, 200000, 32);
-		try {
-			return aesGcmDecrypt(key, iv, encryptedContent);
-		} finally {
-			Arrays.fill(key, (byte) 0);
-			Arrays.fill(salt, (byte) 0);
-		}
-	}
-
-	private static byte[] aesGcmDecrypt(byte[] key, byte[] iv, byte[] data)
-			throws Exception {
-		javax.crypto.Cipher cipher =
-				javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
-		cipher.init(javax.crypto.Cipher.DECRYPT_MODE,
-				new javax.crypto.spec.SecretKeySpec(key, "AES"),
-				new javax.crypto.spec.GCMParameterSpec(128, iv));
-		return cipher.doFinal(data);
-	}
-
-	private static byte[] pbkdf2(char[] pw, byte[] salt, int iter, int len)
-			throws Exception {
-		javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
-				pw, salt, iter, len * 8);
-		try {
-			return javax.crypto.SecretKeyFactory
-					.getInstance("PBKDF2WithHmacSHA256")
-					.generateSecret(spec).getEncoded();
-		} finally {
-			spec.clearPassword();
-		}
 	}
 
 	public LiveData<char[]> getWalletSeedReveal() {
@@ -1813,7 +1057,7 @@ public class VaultViewModel extends AndroidViewModel {
 					closeBtcWallet();
 				}
 				walletStore.deleteWallet(walletId);
-				removeWalletMetadata(walletId);
+				walletSettings.removeWalletRecords(walletId);
 				postBtcWallets();
 				walletDeleted.postValue(new Event<>(walletId));
 			} catch (Throwable e) {
@@ -1823,56 +1067,14 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	private void migrateWalletMetadata(String oldId, String newId)
-			throws Exception {
-		synchronized (walletStore.settingsLock) {
-			org.json.JSONObject o = settingsObject();
-			boolean changed = false;
-			for (String section : new String[] {"privacy", "recv",
-					"pending", "btc"}) {
-				org.json.JSONObject sub = o.optJSONObject(section);
-				if (sub != null && sub.has(oldId)) {
-					sub.put(newId, sub.get(oldId));
-					sub.remove(oldId);
-					o.put(section, sub);
-					changed = true;
-				}
-			}
-			if (changed) {
-				walletStore.writeSettings(o.toString());
-			}
-		}
-	}
-
 	private void replaceWalletItem(String oldId, String newId) throws Exception {
 		try {
-			migrateWalletMetadata(oldId, newId);
+			walletSettings.moveWalletRecords(oldId, newId);
 		} catch (Throwable me) {
 			walletStore.deleteWallet(newId);
 			throw me;
 		}
 		walletStore.deleteWallet(oldId);
-	}
-
-	private void removeWalletMetadata(String walletId) {
-		try {
-			synchronized (walletStore.settingsLock) {
-				org.json.JSONObject o = settingsObject();
-				boolean changed = false;
-				for (String section : new String[] {"privacy", "recv", "pending", "btc"}) {
-					org.json.JSONObject sub = o.optJSONObject(section);
-					if (sub != null && sub.has(walletId)) {
-						sub.remove(walletId);
-						o.put(section, sub);
-						changed = true;
-					}
-				}
-				if (changed) {
-					walletStore.writeSettings(o.toString());
-				}
-			}
-		} catch (Throwable ignored) {
-		}
 	}
 
 	private final MutableLiveData<Event<String>> walletOpened =
@@ -1893,15 +1095,15 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 				mnemonic = walletStore.loadMnemonicChars(walletId, password);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-						scanEp = routedScanEndpoint(walletId);
+						scanEp = nodeRouting.scanEndpoint(walletId);
 				com.professor.zerion.android.vault.wallet.btc.ElectrumEndpoint
-						bcastEp = routedBroadcastEndpoint(walletId, scanEp);
+						bcastEp = nodeRouting.broadcastEndpoint(walletId, scanEp);
 				BtcWallet w = new BtcWallet(mnemonic, 0, torSocksPort,
 						scanEp, bcastEp, walletId);
 				SecureMemory.shred(mnemonic);
 				mnemonic = null;
-				w.setPendingLog(pendingLogFor(walletId));
-				w.setPrivacyStore(privacyStoreFor(walletId));
+				w.setPendingLog(walletSettings.pendingLog(walletId));
+				w.setPrivacyStore(walletSettings.privacyStore(walletId));
 				boolean epm = isExtremeMode(walletId);
 				w.setPrivacyPolicy(epm
 						? com.professor.zerion.android.vault.wallet.btc.privacy
@@ -1911,11 +1113,11 @@ public class VaultViewModel extends AndroidViewModel {
 				boolean spOn = isSpEnabled(walletId);
 				w.setSilentPaymentsEnabled(spOn);
 				java.util.List<com.professor.zerion.android.vault.wallet.btc
-						.ElectrumEndpoint> fbs = routedFallbacks(walletId, scanEp);
+						.ElectrumEndpoint> fbs = nodeRouting.fallbacks(walletId, scanEp);
 				w.setFallbacks(fbs, fbs);
-				int persistedIndex = readReceiveIndex(walletId);
+				int persistedIndex = walletSettings.receiveIndex(walletId);
 				w.setMinReceiveProbe(persistedIndex);
-				w.setMinChangeProbe(readChangeIndex(walletId));
+				w.setMinChangeProbe(walletSettings.changeIndex(walletId));
 				String firstAddr = w.receiveAddressAt(persistedIndex);
 
 				if (!walletSessionValid()) {
@@ -1976,7 +1178,7 @@ public class VaultViewModel extends AndroidViewModel {
 	public void closeBtcWallet() {
 		scanEpoch++;
 		dropReviewedPlans();
-		spUtxos.clear();
+		spCoins.clear();
 		BtcWallet previous = openBtc;
 		openBtc = null;
 		if (previous != null) previous.close();
@@ -2139,7 +1341,7 @@ public class VaultViewModel extends AndroidViewModel {
 					return;
 				}
 				String txid = w.signPlan(plan);
-				persistChangeIndex(w.walletId(), w.minChangeProbe());
+				walletSettings.raiseChangeIndex(w.walletId(), w.minChangeProbe());
 				w.invalidateCachedScan();
 				btcTxid.postValue(new Event<>(txid));
 				postLocalTxState(w, plan.netSat);
@@ -2153,7 +1355,8 @@ public class VaultViewModel extends AndroidViewModel {
 					.BroadcastUncertainException e) {
 				BtcWallet w = openBtc;
 				if (w != null && plan != null) {
-					persistChangeIndex(w.walletId(), w.minChangeProbe());
+					walletSettings.raiseChangeIndex(w.walletId(),
+							w.minChangeProbe());
 					w.invalidateCachedScan();
 					postLocalTxState(w, plan.netSat);
 				}
@@ -2272,7 +1475,11 @@ public class VaultViewModel extends AndroidViewModel {
 				boolean authed = verifyWalletCredential(credential);
 				com.professor.zerion.android.vault.wallet.btc.PayjoinFinalTx tx =
 						payjoinFlow.authorize(reviewedFingerprint, authed);
-				tx.buildSignedHex();
+				if (tx.buildSignedHexApproved(reviewedFingerprint) == null) {
+					throw new com.professor.zerion.android.vault.wallet.btc
+							.PayjoinGate.AuthorizationException(
+							"the transaction changed; review again");
+				}
 				payjoinState.postValue(payjoinFlow.state());
 			} catch (Throwable e) {
 				payjoinFailure.postValue(new PayjoinFailure(getApplication()
@@ -2304,45 +1511,33 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private void postLocalTxState(BtcWallet w, long netSat) {
 		try {
+			List<BtcWallet.TxSummary> known = lastSummaries;
 			List<BtcWallet.TxSummary> merged = BtcWallet.mergePending(
-					lastSummaries == null ? new java.util.ArrayList<>()
-							: lastSummaries, w.pendingSummaries());
+					known == null ? new java.util.ArrayList<>() : known,
+					w.pendingSummaries());
 			lastSummaries = merged;
 			btcHistory.postValue(merged);
-			if (lastBalance != null) {
-				lastBalance = lastBalance + netSat;
-				btcBalanceSat.postValue(lastBalance);
+			Long balance = lastBalance;
+			if (balance != null) {
+				long next = balance + netSat;
+				lastBalance = next;
+				btcBalanceSat.postValue(next);
 			}
 		} catch (Throwable ignored) {
 		}
 	}
 
 	private synchronized boolean verifyWalletCredential(char[] credential) {
-		restoreCredentialFailures();
-		if (credentialThrottle.isThrottled()) {
+		walletCredential.restoreFailures();
+		if (walletCredential.isThrottled()) {
 			SecureMemory.shred(credential);
 			return false;
 		}
-		boolean ok = false;
-		try {
-			org.json.JSONObject o = settingsObjectQuiet();
-			byte[] salt = android.util.Base64.decode(
-					o.getString("authSalt"), android.util.Base64.NO_WRAP);
-			int iter = o.getInt("authIter");
-			byte[] expected = android.util.Base64.decode(
-					o.getString("authHash"), android.util.Base64.NO_WRAP);
-			byte[] hash = pbkdf2(credential, salt, iter, expected.length);
-			ok = java.security.MessageDigest.isEqual(hash, expected);
-		} catch (Throwable ignored) {
-		} finally {
-			SecureMemory.shred(credential);
-		}
+		boolean ok = walletCredential.matches(credential);
 		if (ok) {
-			credentialThrottle.recordSuccess();
-			persistCredentialFailures(0);
+			walletCredential.recordSuccess();
 		} else {
-			boolean relock = credentialThrottle.recordFailure();
-			persistCredentialFailures(credentialThrottle.failures());
+			boolean relock = walletCredential.recordFailure();
 			dropReviewedPlans();
 			if (relock) resetWalletSession();
 		}
@@ -2392,7 +1587,7 @@ public class VaultViewModel extends AndroidViewModel {
 				btcReceiveAddress.postValue(w.receiveAddressAt(next));
 				String scanId = currentWalletId;
 				if (scanId != null && scanEpoch == epoch && openBtc == w) {
-					persistReceiveIndex(scanId, next);
+					walletSettings.raiseReceiveIndex(scanId, next);
 				}
 			}
 
@@ -2759,19 +1954,8 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 		dbExecutor.execute(() -> {
 			try {
-				PasswordEntry entry = new PasswordEntry(title, username, password, url, notes);
-
-				StringBuilder json = new StringBuilder();
-				json.append("{");
-				json.append("\"title\":\"").append(escapeJson(title)).append("\",");
-				json.append("\"username\":\"").append(escapeJson(username)).append("\",");
-				json.append("\"password\":\"").append(escapeJson(password)).append("\",");
-				json.append("\"url\":\"").append(escapeJson(url)).append("\",");
-				json.append("\"notes\":\"").append(escapeJson(notes)).append("\"");
-				json.append("}");
-				byte[] content = json.toString().getBytes(StandardCharsets.UTF_8);
-
-				json.setLength(0);
+				byte[] content = PasswordEntryCodec.encode(title, username,
+						password, url, notes);
 
 				VaultItem item = vaultManager.addItem(VaultItem.ItemType.PASSWORD, title, content);
 
@@ -2796,7 +1980,7 @@ public class VaultViewModel extends AndroidViewModel {
 				byte[] content = vaultManager.getItemContent(itemId);
 				String json = new String(content, StandardCharsets.UTF_8);
 
-				PasswordEntry entry = parsePasswordEntry(json);
+				PasswordEntry entry = PasswordEntryCodec.decode(json);
 
 				Arrays.fill(content, (byte) 0);
 
@@ -2809,39 +1993,6 @@ public class VaultViewModel extends AndroidViewModel {
 				});
 			}
 		});
-	}
-
-	private String escapeJson(String value) {
-		if (value == null) return "";
-		return value.replace("\\", "\\\\")
-				.replace("\"", "\\\"")
-				.replace("\n", "\\n")
-				.replace("\r", "\\r")
-				.replace("\t", "\\t");
-	}
-
-	private PasswordEntry parsePasswordEntry(String json) {
-		String title = extractJsonValue(json, "title");
-		String username = extractJsonValue(json, "username");
-		String password = extractJsonValue(json, "password");
-		String url = extractJsonValue(json, "url");
-		String notes = extractJsonValue(json, "notes");
-		return new PasswordEntry(title, username, password, url, notes);
-	}
-
-	private String extractJsonValue(String json, String key) {
-		String searchKey = "\"" + key + "\":\"";
-		int startIdx = json.indexOf(searchKey);
-		if (startIdx == -1) return "";
-		startIdx += searchKey.length();
-		int endIdx = json.indexOf("\"", startIdx);
-		if (endIdx == -1) return "";
-		String value = json.substring(startIdx, endIdx);
-		return value.replace("\\\"", "\"")
-				.replace("\\\\", "\\")
-				.replace("\\n", "\n")
-				.replace("\\r", "\r")
-				.replace("\\t", "\t");
 	}
 
 	public interface PasswordCallback {
@@ -2904,44 +2055,18 @@ public class VaultViewModel extends AndroidViewModel {
 		dbExecutor.execute(() -> {
 			char[] passwordChars = password;
 			try {
-				byte[] salt = new byte[32];
-				new java.security.SecureRandom().nextBytes(salt);
-
-				com.professor.zerion.android.vault.crypto.Argon2 argon2 =
-						new com.professor.zerion.android.vault.crypto.Argon2();
-				com.professor.zerion.android.vault.crypto.Argon2.Argon2Params params =
-						com.professor.zerion.android.vault.crypto.Argon2
-								.Argon2Params.getDefault();
-				byte[] passwordKey = argon2.deriveKey(passwordChars, salt, params);
-
-				javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/GCM/NoPadding");
-				javax.crypto.spec.SecretKeySpec keySpec = new javax.crypto.spec.SecretKeySpec(passwordKey, "AES");
-				cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, keySpec);
-
-				byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-				byte[] iv = cipher.getIV();
-				byte[] encryptedContent = cipher.doFinal(contentBytes);
-
-				byte[] combined = new byte[1 + salt.length + iv.length + encryptedContent.length];
-				combined[0] = 0x02;
-				System.arraycopy(salt, 0, combined, 1, salt.length);
-				System.arraycopy(iv, 0, combined, 1 + salt.length, iv.length);
-				System.arraycopy(encryptedContent, 0, combined, 1 + salt.length + iv.length, encryptedContent.length);
+				byte[] combined = ProtectedNoteCodec.seal(content,
+						passwordChars);
 
 				if (existingNoteId != null) {
 					vaultManager.deleteItem(existingNoteId);
 				}
 
-				String protectedTitle = "🔒 " + title;
+				String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX + title;
 				VaultItem item = vaultManager.addItem(VaultItem.ItemType.NOTE, protectedTitle, combined);
 
 				successMessage.postValue(text(R.string.vault_msg_saved));
 				loadVaultItems();
-
-				Arrays.fill(contentBytes, (byte) 0);
-				Arrays.fill(passwordKey, (byte) 0);
-				Arrays.fill(encryptedContent, (byte) 0);
-				Arrays.fill(salt, (byte) 0);
 
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_save_note_failed));
@@ -2983,7 +2108,7 @@ public class VaultViewModel extends AndroidViewModel {
 					return;
 				}
 
-				if (targetItem.name.startsWith("🔒 ")) {
+				if (targetItem.name.startsWith(ProtectedNoteCodec.TITLE_PREFIX)) {
 					content.postValue("__PASSWORD_REQUIRED__");
 				} else {
 					byte[] contentBytes = vaultManager.getItemContent(noteId);
@@ -3021,23 +2146,8 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				byte[] encryptedData = vaultManager.getItemContent(noteId);
 
-				byte[] decryptedContent = null;
-				if (encryptedData.length > 45 && encryptedData[0] == 0x02) {
-					try {
-						decryptedContent =
-								decryptNoteV2(encryptedData, passwordChars);
-					} catch (javax.crypto.BadPaddingException e) {
-						decryptedContent = null;
-					}
-				}
-				if (decryptedContent == null && encryptedData.length > 28) {
-					try {
-						decryptedContent =
-								decryptNoteV1(encryptedData, passwordChars);
-					} catch (javax.crypto.BadPaddingException e) {
-						decryptedContent = null;
-					}
-				}
+				byte[] decryptedContent =
+						ProtectedNoteCodec.open(encryptedData, passwordChars);
 				if (decryptedContent == null) {
 					Arrays.fill(encryptedData, (byte) 0);
 					content.postValue(null);

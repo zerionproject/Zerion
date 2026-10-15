@@ -39,7 +39,7 @@
 			android:layout_gravity="center"
 			android:scaleType="center"
 			app:srcCompat="@drawable/ic_fingerprint"
-			app:tint="@color/zerion_primary_accent"
+			app:tint="@color/zerion_accent_icon"
 			tools:ignore="ContentDescription" />
 
 	</FrameLayout>

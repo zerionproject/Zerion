@@ -43,6 +43,7 @@ public class EmojiTextInputView extends LinearLayout implements
 	private final AppCompatImageButton emojiToggle;
 	private final EmojiPopup emojiPopup;
 	private final EditText editText;
+	private final boolean textSavedByDefault;
 	private final InputMethodManager imm;
 
 	@Nullable
@@ -81,6 +82,7 @@ public class EmojiTextInputView extends LinearLayout implements
 		a.recycle();
 
 		editText = findViewById(R.id.input_text);
+		textSavedByDefault = editText.isSaveEnabled();
 		int left = editText.getPaddingLeft();
 		editText.setPadding(left, 0, paddingEnd, paddingBottom);
 		if (maxLines > 0) editText.setMaxLines(maxLines);
@@ -235,6 +237,10 @@ public class EmojiTextInputView extends LinearLayout implements
 	void setText(String text) {
 		editText.setText(text);
 		editText.setSelection(editText.length());
+	}
+
+	void setTextSaved(boolean saved) {
+		editText.setSaveEnabled(saved && textSavedByDefault);
 	}
 
 	boolean isEmpty() {

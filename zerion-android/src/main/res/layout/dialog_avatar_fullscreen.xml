@@ -26,7 +26,7 @@
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:contentDescription="@string/cancel"
+        android:contentDescription="@string/close"
         android:focusable="true"
         android:padding="12dp"
         android:src="@drawable/ic_close"

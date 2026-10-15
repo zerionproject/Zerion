@@ -329,6 +329,7 @@ public class ZerionService extends Service {
 				.clearVideoThumbCache();
 		com.professor.zerion.android.channel.ChannelFeedActivity
 				.clearFeedThumbCache();
+		com.professor.zerion.android.grouptr.GroupTrMediaCache.clear();
 	}
 
 	private void maybeClearGlideCache() {

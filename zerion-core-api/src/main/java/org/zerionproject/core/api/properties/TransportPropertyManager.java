@@ -38,6 +38,9 @@ public interface TransportPropertyManager {
 	TransportProperties getRemoteProperties(ContactId c, TransportId t)
 			throws DbException;
 
+	TransportProperties getOpenRemoteProperties(ContactId c, TransportId t)
+			throws DbException;
+
 	void mergeLocalProperties(TransportId t, TransportProperties p)
 			throws DbException;
 }

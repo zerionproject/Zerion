@@ -1,8 +1,12 @@
 package org.zerionproject.core.db;
 
 import org.zerionproject.core.TimeLoggingExecutor;
+import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.core.api.system.TaskScheduler;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -27,6 +31,8 @@ public class DatabaseExecutorModule {
 		@Inject
 		@DatabaseExecutor
 		ExecutorService executorService;
+		@Inject
+		DeletedContentPurger deletedContentPurger;
 	}
 
 	@Provides
@@ -50,5 +56,16 @@ public class DatabaseExecutorModule {
 	Executor provideDatabaseExecutor(
 			@DatabaseExecutor ExecutorService dbExecutor) {
 		return dbExecutor;
+	}
+
+	@Provides
+	@Singleton
+	DeletedContentPurger provideDeletedContentPurger(DatabaseComponent db,
+			@DatabaseExecutor Executor dbExecutor, TaskScheduler taskScheduler,
+			Clock clock, EventBus eventBus) {
+		DeletedContentPurger purger = new DeletedContentPurger(db, dbExecutor,
+				taskScheduler, clock);
+		eventBus.addListener(purger);
+		return purger;
 	}
 }

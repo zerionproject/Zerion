@@ -95,8 +95,7 @@ public class LoginThrottleTest {
 				throttle(LoginThrottle.SIGN_IN).failures());
 		t.reset();
 		assertEquals(0, t.failures());
-		assertFalse("a cleared throttle keeps no state file", state.exists()
-				&& state.length() > 0);
+		assertFalse("a cleared throttle keeps no state file", state.exists());
 	}
 
 	@Test
@@ -146,6 +145,35 @@ public class LoginThrottleTest {
 		assertEquals(0, t.failures());
 		assertEquals(0, t.remainingLockoutMs());
 		assertEquals(0, throttle(LoginThrottle.SIGN_IN).failures());
+	}
+
+	@Test
+	public void aClearedThrottleDeletesItsFileAndAMissingFileMeansNoLockout() {
+		LoginThrottle t = throttle(LoginThrottle.SIGN_IN);
+		t.recordFailure();
+		t.recordFailure();
+		t.recordFailure();
+		assertTrue(state.exists());
+		t.reset();
+		assertFalse(state.exists());
+		LoginThrottle fresh = throttle(LoginThrottle.SIGN_IN);
+		assertEquals(0, fresh.failures());
+		assertEquals(0, fresh.remainingLockoutMs());
+		assertFalse(state.exists());
+		fresh.recordFailure();
+		assertTrue(state.exists());
+		assertEquals(1, throttle(LoginThrottle.SIGN_IN).failures());
+	}
+
+	@Test
+	public void anEmptyFileLeftByAnEarlierVersionIsRemoved() throws Exception {
+		testDir.mkdirs();
+		LoginThrottle.writeDurably(state, new byte[0]);
+		assertTrue(state.exists());
+		LoginThrottle t = throttle(LoginThrottle.SIGN_IN);
+		assertEquals(0, t.failures());
+		assertEquals(0, t.remainingLockoutMs());
+		assertFalse(state.exists());
 	}
 
 	@Test

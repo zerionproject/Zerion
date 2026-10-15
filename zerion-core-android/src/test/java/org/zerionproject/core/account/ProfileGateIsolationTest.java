@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.SharedPreferences;
 
 import org.jmock.Expectations;
+import org.jmock.Sequence;
 import org.jmock.api.Action;
 import org.jmock.api.Invocation;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
@@ -249,7 +250,11 @@ public class ProfileGateIsolationTest extends BrambleMockTestCase {
 			allowing(crypto).encryptWithPassword(with(any(byte[].class)),
 					with(any(char[].class)), with(same(strengthener)));
 			will(returnValue(new byte[] {1}));
+			Sequence deletion = context.sequence("deletion");
+			oneOf(profileManager).markForDeletion("a");
+			inSequence(deletion);
 			oneOf(profileManager).shredProfileKeys("a");
+			inSequence(deletion);
 			oneOf(profileManager).forgetLastActiveProfileId("a");
 		}});
 		assertTrue(accountManager.deleteActiveProfile("a"));

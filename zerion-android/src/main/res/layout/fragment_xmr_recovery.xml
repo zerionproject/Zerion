@@ -17,12 +17,12 @@
 
         <ImageButton
             android:id="@+id/recovery_back"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/zerion_text_primary"
-            android:contentDescription="@android:string/cancel" />
+            android:contentDescription="@string/abc_action_bar_up_description" />
 
         <TextView
             android:id="@+id/recovery_title"
@@ -204,7 +204,7 @@
                     android:layout_marginTop="16dp"
                     android:gravity="center"
                     android:minHeight="20dp"
-                    android:textColor="@color/zerion_red_500"
+                    android:textColor="@color/zerion_destructive_text"
                     android:textSize="13sp" />
 
                 <com.google.android.material.button.MaterialButton

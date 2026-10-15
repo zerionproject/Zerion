@@ -99,7 +99,7 @@ public class OggCommentStripTest {
 	private byte[] shared(byte[] ogg, String declared) throws IOException {
 		SharedMediaSanitizer.Cleaned c =
 				sanitizer.sanitize(stage(ogg), declared, ogg, MAX);
-		assertEquals(declared, c.getMimeType());
+		assertEquals(declared, "audio/ogg", c.getMimeType());
 		return c.getData();
 	}
 

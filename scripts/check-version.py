@@ -8,6 +8,11 @@ Fails when:
   docs/release-manifest.json, or names the same version with another code;
 - the released version has no CHANGELOG.md entry or fastlane changelog;
 - a current document names a current release other than the manifest's;
+- a store channel in the manifest is ahead of the released version, the
+  GitHub channel is not the released version, or README.md names no or
+  another Google Play or F-Droid version than the manifest;
+- zerion-android/build.gradle sets or changes the version in any other way
+  than one versionName and one versionCode line;
 - on a tag push (GITHUB_REF_TYPE=tag) the tag is not v<build versionName>,
   does not equal the manifest tag, or the release has no changelogs.
 
@@ -19,6 +24,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
 
 errors = []
+
+OTHER_VERSION_FORMS = re.compile(
+    r"\bversion(Code|Name)\s*[=(]|\bversion(Code|Name)(Suffix|Override)\b"
+    r"|\bsetVersion(Code|Name)\b")
 
 
 def read(path):
@@ -50,6 +59,36 @@ def check_changelogs(name, code):
         errors.append("%s is missing" % path)
 
 
+def check_channels(a, released_name, released):
+    channels = a.get("channels", {})
+    for name in ("github", "play", "fdroid"):
+        if name not in channels:
+            errors.append("manifest has no %s channel" % name)
+            continue
+        v = channels[name].get("version", "")
+        parsed = parse(v)
+        if parsed and released and parsed > released:
+            errors.append("manifest %s channel %s is ahead of the released %s"
+                          % (name, v, released_name))
+    github = channels.get("github", {}).get("version")
+    if github is not None and github != released_name:
+        errors.append("manifest github channel %s is not the released %s"
+                      % (github, released_name))
+    readme = read("README.md")
+    for name, pattern in (
+            ("play", r"\[Google Play\]\([^)]*\) carries ([0-9.]+)"),
+            ("fdroid", r"\[F-Droid\]\([^)]*\) offers ([0-9.]+)")):
+        want = channels.get(name, {}).get("version")
+        found = re.findall(pattern, readme)
+        if not found:
+            errors.append("README.md: no %s version reference matching %r"
+                          % (name, pattern))
+        for v in found:
+            if v != want:
+                errors.append("README.md names %s for %s, the manifest says %s"
+                              % (v, name, want))
+
+
 def main():
     gradle = read("zerion-android/build.gradle")
     names = re.findall(r'^\s*versionName "([^"]+)"', gradle, flags=re.M)
@@ -58,6 +97,9 @@ def main():
         errors.append("zerion-android/build.gradle must set versionName and "
                       "versionCode exactly once")
         return
+    if OTHER_VERSION_FORMS.search(gradle):
+        errors.append("zerion-android/build.gradle sets the version in "
+                      "another form than versionName \"x\" and versionCode n")
     build_name, build_code = names[0], int(codes[0])
     build = parse(build_name)
     if build and expected_code(build) not in (None, build_code):
@@ -81,6 +123,7 @@ def main():
             errors.append("build and manifest name %s with different codes"
                           % build_name)
     check_changelogs(released_name, released_code)
+    check_channels(a, released_name, released)
 
     current = [
         ("README.md", r"describes the current release, \*\*([0-9.]+)\*\*"),

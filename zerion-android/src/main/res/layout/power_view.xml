@@ -32,7 +32,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_check_white"
-		app:tint="@color/zerion_cyan"
+		app:tint="@color/zerion_accent_icon"
 		tools:ignore="ContentDescription" />
 
 	<Button
@@ -52,15 +52,15 @@
 
 	<ImageButton
 		android:id="@+id/helpButton"
-		android:layout_width="24dp"
-		android:layout_height="24dp"
-		android:layout_margin="@dimen/margin_medium"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
 		android:background="?attr/selectableItemBackgroundBorderless"
+		android:scaleType="center"
 		android:contentDescription="@string/help"
 		app:layout_constraintBottom_toBottomOf="@+id/button"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintTop_toTopOf="@+id/button"
 		app:srcCompat="@drawable/ic_info_white"
-		app:tint="@color/zerion_cyan" />
+		app:tint="@color/zerion_accent_icon" />
 
 </merge>

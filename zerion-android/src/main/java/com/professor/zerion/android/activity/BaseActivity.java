@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.Toast;
 
 import com.professor.zerion.R;
 import android.content.SharedPreferences;
@@ -147,6 +148,7 @@ public abstract class BaseActivity extends AppCompatActivity
 		com.professor.zerion.android.security.SecureDialogs.install(this);
 
 		if (SDK_INT >= 31) getWindow().setHideOverlayWindows(true);
+		com.professor.zerion.android.security.RecentsSnapshots.disable(this);
 
 		for (ActivityLifecycleController alc : lifecycleControllers) {
 			alc.onActivityCreate(this);
@@ -297,6 +299,10 @@ public abstract class BaseActivity extends AppCompatActivity
 
 	@UiThread
 	public void handleException(Exception e) {
+		if (!isFinishing()) {
+			Toast.makeText(getApplicationContext(), R.string.generic_error,
+					Toast.LENGTH_LONG).show();
+		}
 		supportFinishAfterTransition();
 	}
 

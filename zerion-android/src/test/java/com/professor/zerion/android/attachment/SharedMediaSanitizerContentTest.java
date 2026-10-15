@@ -31,6 +31,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.when;
@@ -239,6 +240,7 @@ public class SharedMediaSanitizerContentTest {
 					contains(out, SECOND_MARKER));
 			assertArrayEquals(riff("WAVE", chunk("fmt ", fmt),
 					chunk("data", data)), out);
+			assertEquals(declared, "audio/wav", c.getMimeType());
 		}
 	}
 
@@ -285,8 +287,35 @@ public class SharedMediaSanitizerContentTest {
 			assertFalse(declared + ": the ID3v1 tag must go",
 					contains(c.getData(), SECOND_MARKER));
 			assertArrayEquals(frames, c.getData());
-			assertEquals(declared, c.getMimeType());
+			assertEquals(declared, "audio/mpeg", c.getMimeType());
 		}
+	}
+
+	@Test
+	public void mpegAndAdtsAudioAreRebuiltFromTheirFramesOnly()
+			throws Exception {
+		byte[] frames = mpegFrames(3);
+		byte[] mp3 = concat(id3v23(MARKER),
+				MpegAudioFramesTest.encoderFrame("Xing", "LAME3.100"), frames,
+				SECOND_MARKER, frames, SECOND_MARKER, id3v1(ascii("title")));
+		byte[] adts = MpegAudioFramesTest.adtsFrames(5);
+		byte[] aac = concat(id3v23(MARKER), adts, SECOND_MARKER);
+		Object[][] cases = {{mp3, concat(frames, frames), "audio/mpeg"},
+				{aac, adts, "audio/aac"}};
+		for (Object[] c : cases) {
+			byte[] in = (byte[]) c[0];
+			for (String declared : new String[] {"audio/mpeg",
+					"application/octet-stream"}) {
+				SharedMediaSanitizer.Cleaned out =
+						sanitizer.sanitize(stage(in), declared, in, MAX);
+				assertArrayEquals(declared, (byte[]) c[1], out.getData());
+				assertFalse(contains(out.getData(), SECOND_MARKER));
+				assertFalse(contains(out.getData(), ascii("LAME")));
+				assertEquals(declared, c[2], out.getMimeType());
+			}
+		}
+		assertRefused("audio that is mostly other bytes", "audio/mpeg",
+				concat(id3v23(ascii("t")), mpegFrames(1), withMarker('x')));
 	}
 
 	@Test
@@ -303,24 +332,65 @@ public class SharedMediaSanitizerContentTest {
 	}
 
 	@Test
-	public void documentsAndOtherFilesAreSentAsBefore() throws Exception {
-		byte[] pdf = ascii("%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n");
+	public void plainTextIsKeptAndFilesThatCannotBeCleanedAreRefused()
+			throws Exception {
 		byte[] text = ascii("plain notes\n");
+		SharedMediaSanitizer.Cleaned kept =
+				sanitizer.sanitize(stage(text), "text/plain", text, MAX);
+		assertEquals("text/plain", kept.getMimeType());
+		assertArrayEquals(text, kept.getData());
+
 		byte[] zip = concat(new byte[] {'P', 'K', 3, 4}, samples(200));
 		byte[] ole = concat(new byte[] {(byte) 0xD0, (byte) 0xCF, 0x11,
 				(byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1},
 				samples(200));
-		Object[][] cases = {{pdf, "application/pdf"}, {text, "text/plain"},
+		byte[] binary = concat(new byte[] {'t', 'x', 0}, samples(20));
+		Object[][] cases = {
 				{zip, "application/vnd.openxmlformats-officedocument"
 						+ ".wordprocessingml.document"},
-				{ole, "application/msword"}, {zip, "application/zip"}};
+				{ole, "application/msword"}, {zip, "application/zip"},
+				{binary, "text/plain"}};
 		for (Object[] c : cases) {
 			byte[] data = (byte[]) c[0];
 			String declared = (String) c[1];
-			SharedMediaSanitizer.Cleaned out =
-					sanitizer.sanitize(stage(data), declared, data, MAX);
-			assertEquals(declared, out.getMimeType());
-			assertArrayEquals(declared, data, out.getData());
+			try {
+				sanitizer.sanitize(stage(data), declared, data, MAX);
+				fail(declared + " went out without being cleaned");
+			} catch (MediaRefusedException expected) {
+				assertFalse(expected.isTooLarge());
+			}
+		}
+	}
+
+	@Test
+	public void aPdfDeclaredAsTextIsStillRedrawn() throws Exception {
+		byte[] pdf = ascii("%PDF-1.4\n1 0 obj << /Author (Someone) >>\n");
+		byte[] redrawn = ascii("%PDF-1.4\nredrawn\n%%EOF\n");
+		try (MockedConstruction<PdfCleaner> cleaners =
+				mockConstruction(PdfCleaner.class, (m, c) ->
+						when(m.clean(any(), anyLong())).thenReturn(redrawn))) {
+			SharedMediaSanitizer.Cleaned out = new SharedMediaSanitizer(ctx)
+					.sanitize(stage(pdf), "text/plain", pdf, MAX);
+			assertEquals("application/pdf", out.getMimeType());
+			assertArrayEquals(redrawn, out.getData());
+		}
+	}
+
+	@Test
+	public void aPdfIsOnlyEverSentAsItsRedrawnPages() throws Exception {
+		byte[] pdf = ascii("%PDF-1.7\n1 0 obj << /Author (Someone) >>\n");
+		byte[] redrawn = ascii("%PDF-1.4\nredrawn\n%%EOF\n");
+		try (MockedConstruction<PdfCleaner> cleaners =
+				mockConstruction(PdfCleaner.class, (m, c) ->
+						when(m.clean(any(), anyLong())).thenReturn(redrawn))) {
+			for (String declared : new String[] {"application/pdf",
+					"application/octet-stream"}) {
+				SharedMediaSanitizer.Cleaned out = new SharedMediaSanitizer(
+						ctx).sanitize(stage(pdf), declared, pdf, MAX);
+				assertEquals("application/pdf", out.getMimeType());
+				assertArrayEquals(redrawn, out.getData());
+			}
+			assertEquals(2, cleaners.constructed().size());
 		}
 	}
 

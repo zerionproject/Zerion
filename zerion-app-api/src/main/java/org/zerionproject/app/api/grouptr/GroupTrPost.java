@@ -2,6 +2,7 @@ package org.zerionproject.app.api.grouptr;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -17,6 +18,8 @@ public class GroupTrPost {
 	private final boolean local;
 	private final long autoDeleteTimerMs;
 	private final long timerStart;
+	@Nullable
+	private final byte[] postId;
 
 	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
 			String senderName, byte[] body, long timestamp, long epoch,
@@ -35,6 +38,14 @@ public class GroupTrPost {
 	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
 			String senderName, byte[] body, long timestamp, long epoch,
 			boolean local, long autoDeleteTimerMs, long timerStart) {
+		this(groupId, senderPubKey, senderName, body, timestamp, epoch,
+				local, autoDeleteTimerMs, timerStart, null);
+	}
+
+	public GroupTrPost(byte[] groupId, byte[] senderPubKey,
+			String senderName, byte[] body, long timestamp, long epoch,
+			boolean local, long autoDeleteTimerMs, long timerStart,
+			@Nullable byte[] postId) {
 		this.groupId = groupId;
 		this.senderPubKey = senderPubKey;
 		this.senderName = senderName;
@@ -44,6 +55,12 @@ public class GroupTrPost {
 		this.local = local;
 		this.autoDeleteTimerMs = autoDeleteTimerMs;
 		this.timerStart = timerStart;
+		this.postId = postId;
+	}
+
+	@Nullable
+	public byte[] getPostId() {
+		return postId;
 	}
 
 	public long getAutoDeleteTimerMs() {

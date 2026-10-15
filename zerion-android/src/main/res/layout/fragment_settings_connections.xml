@@ -46,6 +46,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/offline_mode_switch"
+					android:contentDescription="@string/offline_mode_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="false" />
@@ -69,7 +70,7 @@
 				android:layout_height="20dp"
 				android:layout_marginEnd="12dp"
 				android:src="@drawable/ic_info_dark"
-				app:tint="@color/zerion_primary_accent"
+				app:tint="@color/zerion_accent_icon"
 				android:importantForAccessibility="no" />
 
 			<TextView
@@ -159,7 +160,7 @@
 				android:layout_height="20dp"
 				android:layout_marginEnd="12dp"
 				android:src="@drawable/ic_info_dark"
-				app:tint="@color/zerion_primary_accent"
+				app:tint="@color/zerion_accent_icon"
 				android:importantForAccessibility="no" />
 
 			<TextView
@@ -191,7 +192,7 @@
 				android:layout_height="20dp"
 				android:layout_marginEnd="12dp"
 				android:src="@drawable/ic_info_dark"
-				app:tint="@color/zerion_primary_accent"
+				app:tint="@color/zerion_accent_icon"
 				android:importantForAccessibility="no" />
 
 			<TextView
@@ -314,6 +315,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/i2p_switch"
+					android:contentDescription="@string/i2p_toggle_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="false" />
@@ -348,6 +350,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/i2p_direct_reseed_switch"
+					android:contentDescription="@string/i2p_direct_reseed_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="false" />
@@ -371,7 +374,7 @@
 				android:layout_height="20dp"
 				android:layout_marginEnd="12dp"
 				android:src="@drawable/ic_info_dark"
-				app:tint="@color/zerion_primary_accent"
+				app:tint="@color/zerion_accent_icon"
 				android:importantForAccessibility="no" />
 
 			<TextView
@@ -418,6 +421,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/mesh_switch"
+					android:contentDescription="@string/mesh_toggle_title"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="false" />
@@ -441,7 +445,7 @@
 				android:layout_height="20dp"
 				android:layout_marginEnd="12dp"
 				android:src="@drawable/ic_info_dark"
-				app:tint="@color/zerion_primary_accent"
+				app:tint="@color/zerion_accent_icon"
 				android:importantForAccessibility="no" />
 
 			<TextView
@@ -514,7 +518,7 @@
 
 					<TextView
 						style="@style/Zerion.Settings.Row.Title"
-						android:textColor="@color/zerion_destructive"
+						android:textColor="@color/zerion_destructive_text"
 						android:text="@string/pref_force_complete_rotation_title" />
 
 					<TextView

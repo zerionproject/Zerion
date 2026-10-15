@@ -318,10 +318,7 @@ public final class XmrWalletManager {
 		} catch (Throwable ignored) {
 			return;
 		}
-		Set<String> outgoing = new java.util.HashSet<>();
-		for (XmrTxInfo tx : published) {
-			if (tx.direction == XmrTxInfo.Direction.OUT) outgoing.add(tx.txid);
-		}
+		Set<String> outgoing = acceptedOutgoingTxids(published);
 		if (outgoing.isEmpty()) return;
 		final String wid = id;
 
@@ -404,7 +401,16 @@ public final class XmrWalletManager {
 		return readPendingSends(walletId);
 	}
 
+	private final java.util.Map<String, List<XmrPendingSend>> unpersistedPending =
+			new java.util.concurrent.ConcurrentHashMap<>();
+
+	boolean hasUnpersistedPendingSends(String walletId) {
+		return unpersistedPending.containsKey(walletId);
+	}
+
 	private List<XmrPendingSend> readPendingSends(String walletId) {
+		List<XmrPendingSend> unpersisted = unpersistedPending.get(walletId);
+		if (unpersisted != null) return new java.util.ArrayList<>(unpersisted);
 		try {
 			org.json.JSONObject xmr = settingsObject().optJSONObject("xmr");
 			if (xmr != null) {
@@ -423,7 +429,7 @@ public final class XmrWalletManager {
 		return new java.util.ArrayList<>();
 	}
 
-	private void persistPendingSends(String walletId,
+	private boolean persistPendingSends(String walletId,
 			List<XmrPendingSend> list) {
 		try {
 			synchronized (walletStore.settingsMonitor()) {
@@ -438,9 +444,20 @@ public final class XmrWalletManager {
 				o.put("xmr", xmr);
 				walletStore.writeSettings(o.toString());
 			}
-			pendingSends = list;
-		} catch (Throwable ignored) {
+		} catch (Throwable writeFailed) {
+			error.postValue(new Event<>(XmrError.STORAGE_COMMIT_FAILED));
+			return false;
 		}
+		unpersistedPending.remove(walletId);
+		pendingSends = list;
+		return true;
+	}
+
+	private boolean flushUnpersistedPendingSends(String walletId) {
+		List<XmrPendingSend> unpersisted = unpersistedPending.get(walletId);
+		return unpersisted == null
+				|| persistPendingSends(walletId, new java.util.ArrayList<>(
+						unpersisted));
 	}
 
 	private void recordPendingSend(@Nullable XmrSendSnapshot snap,
@@ -455,8 +472,13 @@ public final class XmrWalletManager {
 		List<XmrPendingSend> next = new java.util.ArrayList<>(pendingSends);
 		next.add(new XmrPendingSend(wid, txids.toArray(new String[0]),
 				snap.amountAtomic(), snap.feeAtomic(), snap.totalDebitAtomic(),
-				reservedInput, System.currentTimeMillis(), uncertain, converged));
-		persistPendingSends(wid, next);
+				reservedInput, wallClock.getAsLong(), uncertain, converged));
+		if (!persistPendingSends(wid, next)) {
+			List<XmrPendingSend> kept =
+					java.util.Collections.unmodifiableList(next);
+			unpersistedPending.put(wid, kept);
+			pendingSends = kept;
+		}
 	}
 
 	private boolean propagateSpendStateToBackground() {
@@ -589,6 +611,9 @@ public final class XmrWalletManager {
 		XmrSpendReconciler.Outcome outcome =
 				XmrSpendReconciler.decide(st.journal, acceptedTxids);
 		if (outcome == XmrSpendReconciler.Outcome.RESOLVED) {
+			if (!flushUnpersistedPendingSends(walletId)) {
+				return XmrSpendReconciler.Outcome.REMAIN_QUARANTINED;
+			}
 			journalStore.clear(walletId);
 		}
 		return outcome;
@@ -712,7 +737,8 @@ public final class XmrWalletManager {
 							gate, journalStore, sendGuard(),
 							() -> relayEndpointId,
 							() -> outgoingHistoryTxids(sp),
-							SEND_REFRESH_IDLE_TIMEOUT_MS);
+							SEND_REFRESH_IDLE_TIMEOUT_MS,
+							() -> wallClock.getAsLong());
 					sendFlow = flow;
 					sendState.postValue(XmrSendUiState.preparing());
 					int pri = priority < 0 ? 0 : (priority > 4 ? 4 : priority);
@@ -788,6 +814,9 @@ public final class XmrWalletManager {
 				XmrSendSnapshot relayed = flow.snapshot();
 				if (relayed != null && (result == XmrSendFlow.RelayResult.SUCCESS
 						|| result == XmrSendFlow.RelayResult.RELAY_UNCERTAIN)) {
+					recordPendingSend(relayed, changeAtomic,
+							result == XmrSendFlow.RelayResult.RELAY_UNCERTAIN,
+							false);
 					reconcileSpendJournalFromDaemon(relayed.walletId(),
 							spendSession);
 				}
@@ -875,14 +904,19 @@ public final class XmrWalletManager {
 	}
 
 	private Set<String> outgoingHistoryTxids(MoneroEngine.Session s) {
-		Set<String> out = new java.util.HashSet<>();
 		try {
-			for (XmrTxInfo t : s.history()) {
-				if (t.direction == XmrTxInfo.Direction.OUT && !t.failed) {
-					out.add(t.txid);
-				}
-			}
+			return acceptedOutgoingTxids(s.history());
 		} catch (Throwable ignored) {
+			return new java.util.HashSet<>();
+		}
+	}
+
+	static Set<String> acceptedOutgoingTxids(List<XmrTxInfo> history) {
+		Set<String> out = new java.util.HashSet<>();
+		for (XmrTxInfo t : history) {
+			if (t.direction == XmrTxInfo.Direction.OUT && !t.failed) {
+				out.add(t.txid);
+			}
 		}
 		return out;
 	}
@@ -899,7 +933,10 @@ public final class XmrWalletManager {
 	public void refreshNow() {
 		String id = openWalletId();
 		if (id != null) {
-			syncManager.submit(() -> reconcileIfQuarantined(id));
+			syncManager.submit(() -> {
+				flushUnpersistedPendingSends(id);
+				reconcileIfQuarantined(id);
+			});
 		}
 		if (syncManager.isActive()) {
 			syncManager.requestRefresh();
@@ -1623,7 +1660,6 @@ public final class XmrWalletManager {
 			long changeAtomic, boolean uncertain) {
 		final String id = openWalletId;
 		final long epoch = sessionEpoch;
-		recordPendingSend(snap, changeAtomic, uncertain, false);
 		java.util.List<String> justSent = snap == null
 				? java.util.Collections.emptyList() : snap.txids();
 		MoneroEngine.Session bg = openSession;
@@ -1654,9 +1690,9 @@ public final class XmrWalletManager {
 		return ok;
 	}
 
-	private void deconvergePendingSends(String walletId) {
+	private boolean deconvergePendingSends(String walletId) {
 		List<XmrPendingSend> cur = readPendingSends(walletId);
-		if (cur.isEmpty()) return;
+		if (cur.isEmpty()) return true;
 		List<XmrPendingSend> next = new java.util.ArrayList<>();
 		boolean changed = false;
 		for (XmrPendingSend p : cur) {
@@ -1669,7 +1705,7 @@ public final class XmrWalletManager {
 				next.add(p);
 			}
 		}
-		if (changed) persistPendingSends(walletId, next);
+		return !changed || persistPendingSends(walletId, next);
 	}
 
 	private void markSendConverged(String walletId, List<String> txids) {
@@ -1727,6 +1763,7 @@ public final class XmrWalletManager {
 					syncManager.stop();
 				}
 				removeMetadata(walletId);
+				unpersistedPending.remove(walletId);
 				walletStore.deleteWallet(walletId);
 				try {
 					walletStore.removeWalletSecret(walletId,
@@ -1904,17 +1941,23 @@ public final class XmrWalletManager {
 				fail(XmrError.BUSY, walletPassword, null);
 				return;
 			}
-			char[] seed = null;
+			final char[] seedForRebuild;
 			try {
-				try {
-					seed = walletStore.loadMnemonicChars(walletId, walletPassword);
-				} catch (Throwable t) {
-					fail(isWrongPassword(t) ? XmrError.WRONG_PASSWORD
-							: XmrError.CORRUPTED_ITEM, walletPassword, null);
-					return;
-				}
-				final char[] seedForRebuild = seed;
+				seedForRebuild =
+						walletStore.loadMnemonicChars(walletId, walletPassword);
+			} catch (Throwable t) {
+				endExclusive();
+				fail(isWrongPassword(t) ? XmrError.WRONG_PASSWORD
+						: XmrError.CORRUPTED_ITEM, walletPassword, null);
+				return;
+			}
+			try {
 				runSessionTeardown(() -> {
+					if (!deconvergePendingSends(walletId)) {
+						rearmSyncIfIdle();
+						throw new XmrError.XmrException(
+								XmrError.STORAGE_COMMIT_FAILED);
+					}
 					if (walletId.equals(openWalletId)) {
 						closeCurrentSession(false);
 					}
@@ -1926,7 +1969,6 @@ public final class XmrWalletManager {
 					}
 					clearCache(walletId);
 
-					deconvergePendingSends(walletId);
 					File live = liveDir(walletId);
 					live.mkdirs();
 					try {
@@ -1936,13 +1978,14 @@ public final class XmrWalletManager {
 						shred(live);
 					}
 					return null;
+				}, () -> {
+					java.util.Arrays.fill(seedForRebuild, '\0');
+					java.util.Arrays.fill(walletPassword, '\0');
+					endExclusive();
 				});
 			} catch (Throwable e) {
 				error.postValue(new Event<>(XmrError.UNKNOWN));
 			} finally {
-				endExclusive();
-				if (seed != null) java.util.Arrays.fill(seed, '\0');
-				java.util.Arrays.fill(walletPassword, '\0');
 				busy.postValue(false);
 			}
 		});
@@ -2048,27 +2091,50 @@ public final class XmrWalletManager {
 		receiveList.postValue(java.util.Collections.emptyList());
 	}
 
-	private void runSessionTeardown(java.util.concurrent.Callable<Void> action)
-			throws Exception {
+	private void runSessionTeardown(java.util.concurrent.Callable<Void> action,
+			Runnable release) throws Exception {
 		syncManager.stop();
+		java.util.concurrent.atomic.AtomicInteger stage =
+				new java.util.concurrent.atomic.AtomicInteger(TEARDOWN_QUEUED);
 		java.util.concurrent.FutureTask<Void> task =
-				new java.util.concurrent.FutureTask<>(action);
-		sessionExecutor.execute(task);
+				new java.util.concurrent.FutureTask<>(() -> {
+					if (!stage.compareAndSet(TEARDOWN_QUEUED, TEARDOWN_RUNNING)) {
+						return null;
+					}
+					try {
+						return action.call();
+					} finally {
+						release.run();
+					}
+				});
 		try {
-
-			task.get(TEARDOWN_TIMEOUT_MS,
+			sessionExecutor.execute(task);
+			task.get(teardownTimeoutMs,
 					java.util.concurrent.TimeUnit.MILLISECONDS);
-		} catch (java.util.concurrent.TimeoutException te) {
-			task.cancel(true);
-			throw new XmrError.XmrException(XmrError.BUSY);
 		} catch (java.util.concurrent.ExecutionException ee) {
 			Throwable cause = ee.getCause();
 			if (cause instanceof Exception) throw (Exception) cause;
 			throw new RuntimeException(cause);
+		} catch (Throwable notFinished) {
+			if (stage.compareAndSet(TEARDOWN_QUEUED, TEARDOWN_ABANDONED)) {
+				release.run();
+			}
+			if (notFinished instanceof InterruptedException) {
+				Thread.currentThread().interrupt();
+			}
+			throw new XmrError.XmrException(XmrError.BUSY);
 		}
 	}
 
 	private static final long TEARDOWN_TIMEOUT_MS = 45_000;
+	private static final int TEARDOWN_QUEUED = 0;
+	private static final int TEARDOWN_RUNNING = 1;
+	private static final int TEARDOWN_ABANDONED = 2;
+	private volatile long teardownTimeoutMs = TEARDOWN_TIMEOUT_MS;
+
+	void setTeardownTimeoutMs(long ms) {
+		this.teardownTimeoutMs = ms;
+	}
 
 	private void fail(XmrError e, char[] walletPassword, @Nullable File dir) {
 		java.util.Arrays.fill(walletPassword, '\0');

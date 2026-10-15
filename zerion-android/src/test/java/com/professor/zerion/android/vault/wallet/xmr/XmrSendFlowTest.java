@@ -40,6 +40,7 @@ public class XmrSendFlowTest {
 	private Clock clock;
 	private XmrSendGate gate;
 	private Set<String> history;
+	private long wall = 1_000_000_000_000L;
 
 	@Before
 	public void setUp() {
@@ -74,7 +75,7 @@ public class XmrSendFlowTest {
 
 	private XmrSendFlow flow() {
 		return new XmrSendFlow(engine, session, 0, WALLET, gate, journalStore,
-				guard, () -> EP, () -> history, 1000);
+				guard, () -> EP, () -> history, 1000, () -> wall);
 	}
 
 	private void prepareOk(XmrSendFlow f, FakeMoneroEngine.FakePrepared p)
@@ -168,6 +169,22 @@ public class XmrSendFlowTest {
 		assertEquals(XmrSendFlow.State.RELAY_UNCERTAIN, f.state());
 		assertTrue("an uncertain relay stays quarantined until reconciled",
 				journalStore.isQuarantined(WALLET));
+	}
+
+	@Test
+	public void theJournalIsDatedByTheInjectedWallClock() throws Exception {
+		wall = 1_234_567_890_000L;
+		FakeMoneroEngine.FakePrepared p = prepared(T1);
+		p.commitResult = false;
+		XmrSendFlow f = flow();
+		prepareOk(f, p);
+		f.authorize("pw".toCharArray());
+		assertEquals(XmrSendFlow.RelayResult.RELAY_UNCERTAIN,
+				f.confirmAndRelay());
+		XmrSpendJournalStore.Status st = journalStore.read(WALLET);
+		assertNotNull(st.journal);
+		assertEquals("the send time comes from the clock that expires it",
+				1_234_567_890_000L, st.journal.createdAtMs());
 	}
 
 	@Test

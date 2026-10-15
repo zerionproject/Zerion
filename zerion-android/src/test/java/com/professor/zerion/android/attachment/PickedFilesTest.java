@@ -56,7 +56,8 @@ public class PickedFilesTest {
 
 		new AttachmentCreationTask(messaging, ctx.getContentResolver(),
 				creator, mock(ImageCompressor.class),
-				new MetadataStripper(ctx), new GroupId(new byte[32]),
+				new MetadataStripper(ctx), new PdfCleaner(ctx),
+				new GroupId(new byte[32]),
 				Collections.singletonList(uri), false,
 				PrivateMessageFormat.TEXT_IMAGES_CHUNKED).storeAttachments();
 

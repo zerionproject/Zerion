@@ -196,7 +196,7 @@ public class FlacMetadataTest {
 			SharedMediaSanitizer.Cleaned c = sanitizer.sanitize(stage(flac),
 					declared, flac, MAX);
 			assertClean(declared, c.getData());
-			assertEquals(declared, c.getMimeType());
+			assertEquals("audio/flac", c.getMimeType());
 		}
 	}
 

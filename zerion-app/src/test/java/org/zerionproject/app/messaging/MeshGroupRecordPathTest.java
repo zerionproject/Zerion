@@ -101,6 +101,10 @@ public class MeshGroupRecordPathTest extends BrambleTestCase {
 		for (int t = GROUP_POST; t <= GROUPTR_INVITE_DECLINE; t++) {
 			assertTrue(MessagingManagerImpl.isMeshGroupRecordType(t));
 		}
+		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_SETTINGS));
+		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_POST_DELETE));
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(null));
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(0));
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(VOICE_SIGNAL));

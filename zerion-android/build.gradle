@@ -297,15 +297,20 @@ task enforceNoLogs {
                        'Log.wtf(', 'Log.println(', 'android.util.Log.println(',
                        'System.out.print', 'System.err.print',
                        '.printStackTrace(', 'Timber.', 'println(']
+        def bannedForms = [
+                ~/import\s+static\s+android\.util\.Log\.[a-z*]/,
+                ~/\bLog\s*(\.|::)\s*(d|i|w|e|v|wtf|println)\b/,
+                ~/System\s*\.\s*(out|err)\s*\./,
+                ~/Thread\s*\.\s*dumpStack\s*\(/,
+                ~/(^|[^.\w])printStackTrace\s*\(/]
         def violations = []
         srcDirs.each { srcDir ->
             srcDir.eachFileRecurse(groovy.io.FileType.FILES) { f ->
                 if (f.name.endsWith('.java') || f.name.endsWith('.kt')) {
                     f.eachLine { line, num ->
-                        banned.each { pattern ->
-                            if (line.contains(pattern)) {
-                                violations << "${f.path}:${num}: ${line.trim()}"
-                            }
+                        if (banned.any { line.contains(it) }
+                                || bannedForms.any { line =~ it }) {
+                            violations << "${f.path}:${num}: ${line.trim()}"
                         }
                     }
                 }
@@ -315,6 +320,24 @@ task enforceNoLogs {
             throw new GradleException(
                 "LOGGING VIOLATION: Zerion enforces a zero-log policy.\n"
                 + violations.join('\n'))
+        }
+    }
+}
+
+task enforceDependencyVerification {
+    doLast {
+        boolean releaseBuild = gradle.taskGraph.allTasks.any { t ->
+            t.name.toLowerCase() ==~ /(assemble|bundle|package)\w*release/
+        }
+        if (!releaseBuild) return
+        def mode = gradle.startParameter.dependencyVerificationMode
+        def metadata = rootProject.file('gradle/verification-metadata.xml')
+        if (mode != org.gradle.api.artifacts.verification
+                .DependencyVerificationMode.STRICT || !metadata.isFile()) {
+            throw new GradleException(
+                "A release build needs strict dependency verification against "
+                + "gradle/verification-metadata.xml (mode ${mode}, metadata "
+                + "${metadata.isFile() ? 'present' : 'missing'}).")
         }
     }
 }
@@ -360,6 +383,7 @@ task verifyTranslations {
 project.afterEvaluate {
     preBuild.dependsOn.add(verifyTranslations)
     preBuild.dependsOn.add(enforceNoLogs)
+    preBuild.dependsOn.add(enforceDependencyVerification)
 
     def unitTest = tasks.named('testOfficialDebugUnitTest').get()
     tasks.register('walletRegressionTest', Test) {
@@ -372,10 +396,21 @@ project.afterEvaluate {
         maxHeapSize = unitTest.maxHeapSize
         dependsOn 'compileOfficialDebugUnitTestJavaWithJavac'
         useJUnit()
+        def suites = ['com.professor.zerion.android.vault.wallet.btc.',
+                      'com.professor.zerion.android.vault.wallet.xmr.',
+                      'com.professor.zerion.android.vault.crypto.']
         filter {
-            includeTestsMatching 'com.professor.zerion.android.vault.wallet.btc.*'
-            includeTestsMatching 'com.professor.zerion.android.vault.wallet.xmr.*'
-            includeTestsMatching 'com.professor.zerion.android.vault.crypto.*'
+            suites.each { includeTestsMatching "${it}*" }
+        }
+        def ran = [] as Set
+        beforeTest { d -> ran << d.className }
+        doLast {
+            suites.each { s ->
+                if (!ran.any { it.startsWith(s) }) {
+                    throw new GradleException(
+                        "walletRegressionTest ran no test in ${s}")
+                }
+            }
         }
         mustRunAfter tasks.matching { it.name.startsWith('minify') }
     }

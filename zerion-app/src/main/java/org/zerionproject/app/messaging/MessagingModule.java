@@ -5,6 +5,9 @@ import org.zerionproject.core.api.cleanup.CleanupManager;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.data.BdfReaderFactory;
 import org.zerionproject.core.api.data.MetadataEncoder;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.sync.validation.ValidationManager;
 import org.zerionproject.core.api.system.Clock;
@@ -13,6 +16,8 @@ import org.zerionproject.app.api.conversation.ConversationManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.zerionproject.app.api.messaging.VoiceSignalFactory;
+
+import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -67,7 +72,11 @@ public class MessagingModule {
 			ConversationManager conversationManager,
 			ClientVersioningManager clientVersioningManager,
 			CleanupManager cleanupManager, FeatureFlags featureFlags,
+			DatabaseComponent db, EventBus eventBus,
+			@DatabaseExecutor Executor dbExecutor,
 			MessagingManagerImpl messagingManager) {
+		eventBus.addListener(new EditedOriginalEraser(db, dbExecutor,
+				messagingManager));
 		lifecycleManager.registerOpenDatabaseHook(messagingManager);
 		contactManager.registerContactHook(messagingManager);
 		validationManager.registerIncomingMessageHook(CLIENT_ID, MAJOR_VERSION,

@@ -4,6 +4,7 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.AgreementPrivateKey;
 import org.zerionproject.core.api.crypto.AgreementPublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.identity.Identity;
 import org.zerionproject.core.system.SystemClock;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -94,12 +95,12 @@ public class Migration69_70Test extends BrambleTestCase {
 			assertFalse(db.getContact(txn, ids[0]).isVerified());
 			assertTrue(db.getContact(txn, ids[1]).isVerified());
 			assertFalse(db.getContact(txn, ids[2]).isVerified());
-			Object[] row = db.getPcsMode2SessionState(txn, ids[0],
+			PcsSessionRow row = db.getPcsMode2SessionState(txn, ids[0],
 					PCS_DIRECTION_SEND);
-			assertArrayEquals(root.getBytes(), (byte[]) row[3]);
-			assertNull(row[4]);
-			assertNull(row[5]);
-			assertNull(row[8]);
+			assertArrayEquals(root.getBytes(), row.getRootKey());
+			assertNull(row.getDhPrivateKey());
+			assertNull(row.getDhPublicKey());
+			assertNull(row.getMode3FullStateBlob());
 			assertFalse(db.containsPqRatchetState(txn, ids[0]));
 			ResultSet rs = txn.createStatement().executeQuery(
 					"SELECT COUNT(*) FROM pcsSkippedKeys");

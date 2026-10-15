@@ -73,6 +73,12 @@ class ChannelPostValidator {
 	}
 
 	private boolean verifySignature(ChannelPost post, PublicKey signer) {
+		byte[] erased = post.getErasedBodyHash();
+		if (erased != null && (post.getFormatVersion() != ChannelPost.FORMAT_V2
+				|| erased.length != ChannelConstants.POST_BODY_HASH_BYTES
+				|| !post.getBody().isEmpty())) {
+			return false;
+		}
 		if (post.getFormatVersion() == ChannelPost.FORMAT_V2) {
 			byte[] salt = post.getSalt();
 			if (salt == null

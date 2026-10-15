@@ -21,6 +21,7 @@
 			android:layout_height="?attr/actionBarSize"
 			android:background="@android:color/transparent"
 			app:navigationIcon="@drawable/ic_back"
+			app:navigationContentDescription="@string/abc_action_bar_up_description"
 			app:navigationIconTint="@color/zerion_text_primary"
 			app:title="New Document"
 			app:titleTextColor="@color/zerion_text_primary"
@@ -66,8 +67,9 @@
 					app:boxCornerRadiusTopEnd="8dp"
 					app:boxCornerRadiusBottomStart="8dp"
 					app:boxCornerRadiusBottomEnd="8dp"
-					app:hintTextColor="@color/zerion_primary_accent"
-					app:errorEnabled="true">
+					app:hintTextColor="@color/zerion_accent_text"
+					app:errorEnabled="true"
+					app:errorAccessibilityLiveRegion="1">
 
 					<com.google.android.material.textfield.TextInputEditText
 						android:id="@+id/document_name_input"
@@ -111,7 +113,7 @@
 					app:iconSize="18dp"
 					app:iconGravity="textStart"
 					app:iconPadding="4dp"
-					app:iconTint="@color/zerion_primary_accent" />
+					app:iconTint="@color/zerion_accent_icon" />
 
 				<TextView
 					android:id="@+id/word_count"
@@ -149,7 +151,7 @@
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:text="@string/text_editor_content"
-					android:textColor="@color/zerion_primary_accent"
+					android:textColor="@color/zerion_accent_text"
 					android:textSize="12sp"
 					android:layout_marginBottom="8dp"
 					android:paddingStart="4dp" />
@@ -195,7 +197,7 @@
 		android:layout_margin="16dp"
 		android:contentDescription="@string/cd_save_document"
 		app:backgroundTint="@color/zerion_primary_accent"
-		app:tint="@android:color/white"
+		app:tint="@color/zerion_on_accent"
 		app:elevation="6dp"
 		app:hoveredFocusedTranslationZ="8dp"
 		app:pressedTranslationZ="12dp"

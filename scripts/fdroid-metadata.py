@@ -4,7 +4,8 @@
 Takes the build recipe of the newest entry in fdroiddata's
 metadata/com.professor.zerion.yml, so the reference build uses exactly the
 recipe F-Droid builds with, and points it at the current commit and version.
-The recipe may not remove gradle/verification-metadata.xml.
+The recipe may not mention dependency verification in any way, so it can
+neither remove gradle/verification-metadata.xml nor turn verification off.
 
 Usage: fdroid-metadata.py <upstream yml> <commit> <repo url> <out yml>
 """
@@ -15,6 +16,10 @@ if not re.fullmatch(r"[0-9a-f]{40}", commit):
     raise SystemExit("commit must be a full 40-character hash")
 
 gradle = open("zerion-android/build.gradle", encoding="utf-8").read()
+if re.search(r"\bversion(Code|Name)\s*[=(]|\bversion(Code|Name)"
+             r"(Suffix|Override)\b|\bsetVersion(Code|Name)\b", gradle):
+    raise SystemExit("zerion-android/build.gradle sets the version in another "
+                     "form than versionName \"x\" and versionCode n")
 name = re.search(r'^\s*versionName "([^"]+)"', gradle, flags=re.M).group(1)
 code = re.search(r"^\s*versionCode (\d+)", gradle, flags=re.M).group(1)
 
@@ -25,8 +30,8 @@ starts = [m.start() for m in re.finditer(r"^  - versionName: ", y[:end],
 if not starts:
     raise SystemExit("no build entry in %s" % upstream)
 last = y[starts[-1]:end].rstrip("\n") + "\n"
-if "verification-metadata" in last:
-    raise SystemExit("the newest upstream recipe removes dependency "
+if re.search(r"verification|org\.gradle\.dependency", last, flags=re.I):
+    raise SystemExit("the newest upstream recipe touches dependency "
                      "verification; refusing to build with it")
 
 entry = re.sub(r"^  - versionName: .*$", "  - versionName: %s" % name, last,

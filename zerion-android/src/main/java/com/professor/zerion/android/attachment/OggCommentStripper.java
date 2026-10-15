@@ -9,12 +9,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static com.professor.zerion.android.attachment.AudioTagStripper.matches;
 import static com.professor.zerion.android.attachment.AudioTagStripper.u32le;
 
 @NotNullByDefault
-final class OggCommentStripper {
+public final class OggCommentStripper {
 
 	private static final int HEADER = 27;
 	private static final int MAX_SEGMENTS = 255;
@@ -73,7 +74,7 @@ final class OggCommentStripper {
 	private OggCommentStripper() {
 	}
 
-	static byte[] withoutComments(byte[] d) throws IOException {
+	public static byte[] withoutComments(byte[] d) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream(d.length);
 		Map<Long, Stream> streams = new HashMap<>();
 		int pos = 0;
@@ -98,6 +99,35 @@ final class OggCommentStripper {
 		}
 		if (!kept) throw new IOException("ogg file without a stream to send");
 		return out.toByteArray();
+	}
+
+	public static byte[] withFreshSerials(byte[] d, Random random)
+			throws IOException {
+		byte[] out = d.clone();
+		Map<Long, Long> serials = new HashMap<>();
+		int pos = 0;
+		while (pos < out.length) {
+			if (!matches(out, pos, "OggS")) {
+				throw new IOException("malformed ogg stream");
+			}
+			int length = pageLength(out, pos);
+			if (checksum(out, pos, length) != u32le(out, pos + 22)) {
+				throw new IOException("ogg page checksum mismatch");
+			}
+			long old = u32le(out, pos + 14);
+			Long serial = serials.get(old);
+			if (serial == null) {
+				do {
+					serial = random.nextInt() & 0xFFFFFFFFL;
+				} while (serials.containsValue(serial));
+				serials.put(old, serial);
+			}
+			putLe(out, pos + 14, serial, 4);
+			putLe(out, pos + 22, checksum(out, pos, length), 4);
+			pos += length;
+		}
+		if (serials.isEmpty()) throw new IOException("empty ogg stream");
+		return out;
 	}
 
 	private static void page(byte[] d, int pos, int length,

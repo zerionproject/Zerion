@@ -55,12 +55,14 @@ prekey bundle with no interactive handshake.
 | --- | --- |
 | [ZWF-MODE3FULL.md](ZWF-MODE3FULL.md) | The online wire format and the Mode 3-Full post-quantum ratchet |
 | [ZWF-ROOT-EVOLUTION.md](ZWF-ROOT-EVOLUTION.md) | Evolution of the contact root key between connections |
+| [BACKUP-FORMAT.md](BACKUP-FORMAT.md) | The account backup file: the chunked version 3 stream and the versions 1 and 2 it still reads |
 | [ZTP-ZPP.md](ZTP-ZPP.md) | The Tor transport seam and the paced pull protocol |
 | [ASYNC-SEALED-SENDER.md](ASYNC-SEALED-SENDER.md) | The offline sealed-sender envelope used by the mesh |
 | [MESH-TRANSPORT.md](MESH-TRANSPORT.md) | Store-and-forward flooding and the Bluetooth Low Energy link |
 | [EMBEDDED-I2P.md](EMBEDDED-I2P.md) | The embedded I2P carrier of development builds and its privacy trade-off |
 | [VOICE_MEMO_V2.md](VOICE_MEMO_V2.md) | The text forms and encrypted payload of voice memos in private conversations |
 | [MESSAGE-EDIT-DELETE.md](MESSAGE-EDIT-DELETE.md) | Editing a sent message and deleting it for everyone in private conversations |
+| [CHANNEL-AUTHOR-PQ-BINDING.md](CHANNEL-AUTHOR-PQ-BINDING.md) | Binding channel comment and reaction authors to one ML-DSA-65 key |
 
 ## Cryptographic primitives
 
@@ -82,10 +84,13 @@ Public keys and signatures are hybrid: a classical key concatenated with a
 post-quantum key, and a hybrid signature is valid only if both halves verify.
 A break of either family alone does not break a hybrid signature where the
 verifier holds the signer's ML-DSA-65 key from an authenticated source (the
-contact record at pairing, a GroupTr member list, a channel id). The AuthorId
+contact record at pairing, a GroupTr member list, a channel id, and from
+3.0.18 the binding a channel records for each comment and reaction author,
+see CHANNEL-AUTHOR-PQ-BINDING.md). The AuthorId
 names an identity by its Ed25519 key only (format 2, specified in
 `docs/wire/AUTHOR_ID_V2.md`, is not active), so where a protocol takes the
-ML-DSA-65 key from the same message it checks, the signature rests on Ed25519. Sizes are listed in each document and are fixed by
+ML-DSA-65 key from the same message it checks and records no binding for
+it, the signature rests on Ed25519. Sizes are listed in each document and are fixed by
 `PostQuantumConstants` and `PcsConstants`.
 
 ## Conventions

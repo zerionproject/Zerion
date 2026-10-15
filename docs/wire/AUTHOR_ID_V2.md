@@ -18,8 +18,10 @@ uint32-length-prefixed label and inputs). The id commits to the Ed25519 key
 only. The account's ML-DSA-65 key is an attribute that each protocol learns on
 its own: it is authenticated with a hybrid signature at link pairing and stored
 with the contact, pinned for GroupTr members and committed into channel ids,
-but where a protocol takes it from the same message it authenticates (channel
-comments and reactions), a hybrid signature rests on Ed25519 alone. The
+and bound per channel to each comment and reaction author from 3.0.18 (see
+docs/protocol/CHANNEL-AUTHOR-PQ-BINDING.md); where a protocol takes it from the
+same message it authenticates without recording a binding (channel comments
+and reactions up to 3.0.17), a hybrid signature rests on Ed25519 alone. The
 version 2 safety number covers both keys of a contact (see
 SECURITY_CLAIMS.md), which closes the gap for the people comparing numbers, but
 not for software that names an identity by its AuthorId.

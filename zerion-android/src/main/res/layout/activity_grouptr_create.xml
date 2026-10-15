@@ -24,7 +24,8 @@
 			app:title="@string/grouptr_create_title"
 			app:titleTextColor="@color/zerion_text_primary"
 			app:navigationIcon="@drawable/ic_arrow_back"
-			app:navigationIconTint="@color/zerion_primary_accent" />
+			app:navigationContentDescription="@string/abc_action_bar_up_description"
+			app:navigationIconTint="@color/zerion_accent_icon" />
 
 	</com.google.android.material.appbar.AppBarLayout>
 
@@ -71,7 +72,7 @@
 				android:layout_marginHorizontal="20dp"
 				android:hint="@string/grouptr_create_name_hint"
 				app:boxStrokeColor="@color/zerion_primary_accent"
-				app:hintTextColor="@color/zerion_primary_accent">
+				app:hintTextColor="@color/zerion_accent_text">
 
 				<com.google.android.material.textfield.TextInputEditText
 					android:id="@+id/groupNameInput"
@@ -94,7 +95,7 @@
 				android:layout_marginTop="12dp"
 				android:hint="@string/grouptr_create_nickname_hint"
 				app:boxStrokeColor="@color/zerion_primary_accent"
-				app:hintTextColor="@color/zerion_primary_accent">
+				app:hintTextColor="@color/zerion_accent_text">
 
 				<com.google.android.material.textfield.TextInputEditText
 					android:id="@+id/nicknameInput"
@@ -106,6 +107,13 @@
 					android:textColor="@color/zerion_text_primary" />
 
 			</com.google.android.material.textfield.TextInputLayout>
+
+			<include
+				layout="@layout/view_grouptr_incognito"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginHorizontal="20dp"
+				android:layout_marginTop="12dp" />
 
 			<TextView
 				android:layout_width="match_parent"
@@ -156,7 +164,7 @@
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:text="@string/grouptr_ttl_off"
-					android:textColor="@color/zerion_primary_accent"
+					android:textColor="@color/zerion_accent_text"
 					android:textSize="15sp" />
 
 				<ImageView
@@ -205,6 +213,7 @@
 
 				<com.google.android.material.materialswitch.MaterialSwitch
 					android:id="@+id/screenshotSwitch"
+					android:contentDescription="@string/grouptr_create_screenshot_block"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content" />
 
@@ -225,9 +234,9 @@
 		android:minWidth="120dp"
 		android:paddingHorizontal="24dp"
 		android:text="@string/grouptr_create_action"
-		android:textColor="@android:color/white"
+		android:textColor="@color/zerion_button_filled_foreground"
 		android:textStyle="bold"
-		app:backgroundTint="@color/zerion_primary_accent"
+		app:backgroundTint="@color/zerion_button_filled_background"
 		app:cornerRadius="24dp" />
 
 </LinearLayout>

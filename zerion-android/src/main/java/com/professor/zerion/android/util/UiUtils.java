@@ -163,7 +163,10 @@ public class UiUtils {
 	public static void setError(TextInputLayout til, @Nullable String error,
 			boolean set) {
 		if (set) {
-			if (til.getError() == null) til.setError(error);
+			CharSequence current = til.getError();
+			if (current == null || !current.toString().equals(error)) {
+				til.setError(error);
+			}
 		} else {
 			til.setError(null);
 		}

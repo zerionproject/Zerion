@@ -139,31 +139,41 @@ Four steps the 3.0.11 entry carried are gone, and one of them would fail a
   it to fix.
 - `submodules: true`. The repository has no submodules.
 
-`rm: gradle/verification-metadata.xml` is still in the published recipe, as in
-every entry since 2.0.1: it removes strict dependency verification from the
-F-Droid build. Since 3.0.12 the APK published here is the signed output of
-that same build (`fdroid build --test`, see the last section), so the
-published APK is built without dependency verification. Its dependency
-integrity rests on the strictly locked versions, HTTPS downloads and the
-release-time comparison with an independent build that keeps the metadata
-(`scripts/build-fdroid-apk.sh`, which fails closed without it). The recipe
-change that drops the `rm:` step is prepared for the next merge request: a
-strict build from an empty cache passes on Linux (CI job
-`strict-from-clean-cache`) and the metadata lists the Linux `aapt2` artifact,
-so nothing in the buildserver's resolution is outside the metadata. The same
-change pins `reproducible-apk-tools` by commit instead of the movable tag
-`v0.3.0`, and pins the CMake that configures the Monero native build (see
-below).
+Gradle dependency verification is on in the recipe from 3.0.15. The newest
+entry in fdroiddata, 3.0.17 at its release commit (checked 2026-10-10), has no
+`rm:` step for `gradle/verification-metadata.xml`, so F-Droid's build of it
+verifies every dependency by checksum and signature, and so does the APK
+published here, which is the signed output of that build
+(`fdroid build --test`, see the last section). A strict build from an empty
+cache passes on Linux (CI job `strict-from-clean-cache`) and the metadata
+lists the Linux `aapt2` artifact, so nothing in the buildserver's resolution
+is outside the metadata. CI builds the reference APK from the newest
+fdroiddata entry and refuses to start when that entry removes the file
+(`scripts/fdroid-metadata.py`).
+
+Earlier builds ran without it. The fdroiddata entries for 2.0.1 to 3.0.3, the
+versions F-Droid has published so far, carry `rm: gradle/verification-metadata.xml`
+and stay in fdroiddata as history; the recipes behind the APKs published here
+for 3.0.12 to 3.0.14 removed the file as well. Those builds used the strictly
+locked versions without checksum and signature verification, and their
+dependency integrity rested on the locked versions, HTTPS downloads and the
+release-time comparison with an independent build that kept the metadata
+(`scripts/build-fdroid-apk.sh`, which fails closed without it).
+
+Two inputs are still not pinned by the recipe itself: it names
+`reproducible-apk-tools` by the tag `v0.3.0`, which resolved to commit
+`dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` on 2026-10-10 (the commit
+`scripts/build-fdroid-apk.sh` pins), and it installs CMake from the build
+image's Debian packages.
 
 The F-Droid build of 3.0.14 failed on the builder at the Monero hash gate:
 the `libzmonero.so` the recipe's prebuild produced there did not match the
 pinned hash. The gate is meant to fail that way; the cause is that the host
 tools of the builder image (trixie: CMake 3.31, gcc 14) differ from the
 pinned image the accepted hashes were produced in (bookworm: CMake 3.25.1,
-gcc 12), and nothing in the recipe pinned them. The prepared recipe
-downloads the SDK's CMake 3.22.1 by hash and puts it first on `PATH` for the
-prebuild, the Dockerfile does the same, and the pins are only updated once
-both environments produce identical bytes. A pin is never changed to a hash
+gcc 12), and nothing in the recipe pinned them. The recipe still does not pin
+them; the pins are only updated once both environments produce identical
+bytes. A pin is never changed to a hash
 read from a build log, and the gate is never relaxed for one builder; see
 [SUPPLY_CHAIN.md](SUPPLY_CHAIN.md).
 

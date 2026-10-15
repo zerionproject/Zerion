@@ -11,8 +11,8 @@ not in this table is a finding. Companion documents:
 
 | Input | Pin | Gate | Deliberate change |
 |---|---|---|---|
-| Java and Kotlin dependencies, Android Gradle plugin, R8, aapt2 | `gradle/verification-metadata.xml` (SHA-256 of every artifact and PGP signatures, `verify-metadata` and `verify-signatures` true) and strict lockfiles in every module | Gradle refuses an unlisted or changed artifact in every build that keeps the metadata; CI job `strict-from-clean-cache` resolves every compile, test and release runtime classpath from an empty cache with `--dependency-verification strict` and proves a tampered jar is rejected | Edit the metadata entry by hand for the new version, never regenerate it blindly; re-run the strict CI job |
-| The F-Droid reference build | the recipe in fdroiddata | the published recipe still removes `gradle/verification-metadata.xml`, so the published APK is built with locked versions but without checksum and signature verification; a recipe change that keeps the metadata, pins `reproducible-apk-tools` by commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` and pins the CMake of the Monero build is prepared for the owner's merge request (a strict build from an empty cache passes on Linux and the metadata carries the Linux aapt2 artifact) | a recipe change is a merge request to fdroiddata and a matching note here |
+| Java and Kotlin dependencies, Android Gradle plugin, R8, aapt2 | `gradle/verification-metadata.xml` (SHA-256 of every artifact and PGP signatures, `verify-metadata` and `verify-signatures` true) and strict lockfiles in every module | Gradle refuses an unlisted or changed artifact in every build that keeps the metadata, and a release build stops unless verification is strict and the metadata is present; CI job `strict-from-clean-cache` resolves every compile, test and release runtime classpath from an empty cache with `--dependency-verification strict` and proves a tampered jar is rejected | Edit the metadata entry by hand for the new version, never regenerate it blindly; re-run the strict CI job |
+| The F-Droid reference build | the recipe in fdroiddata | from 3.0.15 the recipe keeps `gradle/verification-metadata.xml`, so the F-Droid build, and the published APK that is its signed output, verify every dependency by checksum and signature; the newest fdroiddata entry (3.0.17, checked 2026-10-10) has no `rm:` step for the file, and `scripts/fdroid-metadata.py` refuses to run the CI reference build with a newest entry that removes it. The fdroiddata entries for 2.0.1 to 3.0.3 (the versions F-Droid has published so far) and the recipes behind the published APKs of 3.0.12 to 3.0.14 removed the file, so those builds used locked versions without checksum and signature verification. The recipe names `reproducible-apk-tools` by the tag `v0.3.0` (commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` on 2026-10-10) rather than by commit, and installs CMake from the build image's Debian packages without pinning it | a recipe change is a merge request to fdroiddata and a matching note here |
 | Gradle distribution | `distributionSha256Sum` in `gradle/wrapper/gradle-wrapper.properties` | the wrapper refuses a distribution with another hash | `./gradlew wrapper --gradle-version X --gradle-distribution-sha256-sum <sum from gradle.org/release-checksums>` |
 | Gradle wrapper jar | `gradle/wrapper/gradle-wrapper.jar.sha256` (the jar Gradle 8.14.3 ships) | `scripts/check-wrapper.sh` (run first in CI) and `gradle/actions/wrapper-validation` | regenerate with `./gradlew wrapper`, update the pin file, confirm against `https://services.gradle.org/distributions/gradle-<version>-wrapper.jar.sha256` |
 | Tor executable | built from source: Tor, libevent, OpenSSL and zlib at pinned tags and commits, NDK r29 by zip hash (`packaging/tor-android/build-tor-android.sh`); output hashes in `zerion-core-android/src/main/resources/org/zerionproject/tor/binaries.sha256` | `verifyTorNativeArtifacts` before `merge*JniLibFolders`; the app checks the same file before every start | rebuild in two environments, update `binaries.sha256` and `PROVENANCE.md` together |
@@ -22,7 +22,7 @@ not in this table is a finding. Companion documents:
 | Third-party prebuilt native libraries: SQLCipher (`libsqlcipher.so`, OpenSSL 3.5.4 statically linked, from `net.zetetic:sqlcipher-android:4.13.0`) and CameraX (`libimage_processing_util_jni.so`, `libsurface_util_jni.so`, from `androidx.camera:camera-core:1.4.2`) | Gradle verification of the AAR, and the per-ABI hashes in `zerion-android/native/thirdparty/thirdparty-native.sha256` | `verifyThirdPartyNativeArtifacts<Variant>` runs on the merged native libraries before `package*`, `strip*DebugSymbols` and `bundle*`; every `.so` in a shipped ABI must be either a first-party library pinned by its own gate or listed in the pin file | upgrade the dependency, update the metadata entry, run the gate once to read the new hashes from its failure message, check the vendor's release notes and build provenance, then update the pin file in the same commit |
 | Android NDK for the Tor build | r29, zip SHA-256 in `build-tor-android.sh` | the script refuses an unpacked NDK that it did not verify itself (stamp file), unless `ALLOW_UNVERIFIED_NDK=1` is set for a local experiment | change the hash and revision together |
 | Android NDK for the Monero build | r27b, zip SHA-256 in the Dockerfile and `fdroid-build.sh` | `sha256sum -c` before unpacking | same |
-| reproducible-apk-tools | commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` | `scripts/build-fdroid-apk.sh` refuses any other checkout; the recipe pins the same commit | update both places |
+| reproducible-apk-tools | commit `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` | `scripts/build-fdroid-apk.sh` refuses any other checkout; the fdroiddata recipe names the tag `v0.3.0`, which resolved to the same commit on 2026-10-10 but is not a pin | update both places |
 | OWASP dependency-check CLI | version 12.2.2, archive hash from `DEPENDENCY_CHECK_SHA256` (required, the script refuses to run without it) | `scripts/run-dependency-check.sh` | record the published hash of the new release in the release notes of the run; the tool is not on the release path (it only reports) |
 | Signing | the release certificate `d7fdb111...` | `scripts/sign-release.sh` refuses any other certificate; Gradle never signs and never reads `keystore.properties` | a key rotation is announced with the release |
 | GitHub Actions | `actions/checkout`, `actions/setup-java`, `actions/setup-python`, `actions/upload-artifact` and `gradle/actions/wrapper-validation`, each pinned by commit hash with its version in a comment | every workflow refers to the commit, so a moved tag changes nothing; the workflows have `contents: read` only and no secrets | to move a pin, run `gh api repos/<owner>/<repo>/git/ref/tags/<tag> --jq .object.sha` (dereference an annotated tag with `.../git/tags/<sha>`) and write `uses: <owner>/<repo>@<sha> # <version>` |
@@ -83,16 +83,23 @@ of them holds a secret.
   tests of every module with strict dependency verification and the locked
   configuration copies. A second job builds the commit the way F-Droid does
   (`scripts/fdroid-metadata.py` takes the newest recipe from fdroiddata and
-  refuses one that removes dependency verification;
+  refuses one that mentions dependency verification;
   `scripts/fdroid-reference-build.sh` runs `fdroid build --test --on-server` in
   F-Droid's build server image), so Tor and Monero are compiled from pinned
   source and every release gate runs: the native pins, `enforceNoLogs`,
-  `verifyTranslations`, R8 and the wallet regression suite. The unsigned APK
-  and the build log are kept for two weeks.
+  `verifyTranslations`, R8 and the wallet regression suite. The unsigned APK,
+  the build log, the digest of the build server image and the fdroiddata and
+  fdroidserver commits used are kept for two weeks.
 - `dependency-verification.yml`: resolves every classpath from an empty cache
   with strict verification and proves a tampered artifact is refused.
-- `docs-consistency.yml`: `scripts/check-version.py`, `scripts/check-docs.py`
-  and the published APK against the release manifest.
+- `docs-consistency.yml`: `scripts/check-version.py` (which also keeps the
+  manifest's store channels at or below the released version and README.md's
+  Google Play and F-Droid versions equal to the manifest), `scripts/check-docs.py`
+  and the published APK against the release manifest. A second job, run weekly
+  and by hand only because the stores change without a commit,
+  `scripts/check-channels.py`, compares the manifest with GitHub's latest
+  release, the newest version F-Droid publishes and the fdroiddata recipe.
+  Google Play has no public version API and is confirmed by hand.
 
 Signing stays off CI: `scripts/sign-release.sh` runs on the machine that holds
 the release key, on the APK the F-Droid build produced.

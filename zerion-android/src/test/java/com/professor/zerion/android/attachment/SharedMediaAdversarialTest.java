@@ -88,14 +88,21 @@ public class SharedMediaAdversarialTest {
 
 	@Test
 	public void soundBehindAnAudioTagIsSentWithoutTheTag() throws Exception {
-		byte[] tagged = concat(id3(40), MP3_FRAME);
+		byte[] frames = SharedMediaSanitizerContentTest.mpegFrames(2);
+		byte[] tagged = concat(id3(40), frames);
 		byte[] clean = SharedMediaSanitizer.cleanStream(
 				AudioTagStripper.withoutTags(tagged));
-		assertArrayEquals(MP3_FRAME, clean);
-		byte[] padded = concat(id3(40), new byte[300], MP3_FRAME);
+		assertArrayEquals(frames, clean);
+		byte[] padded = concat(id3(40), new byte[300], frames);
 		byte[] cleanPadded = SharedMediaSanitizer.cleanStream(
 				AudioTagStripper.withoutTags(padded));
-		assertTrue(contains(cleanPadded, MP3_FRAME));
+		assertArrayEquals(frames, cleanPadded);
+		try {
+			SharedMediaSanitizer.cleanStream(AudioTagStripper.withoutTags(
+					concat(id3(40), MP3_FRAME)));
+			fail("a cut frame header was sent as audio");
+		} catch (IOException expected) {
+		}
 		byte[] amr = concat(id3(8), ascii("#!AMR\n"), new byte[32]);
 		assertTrue(SharedMediaSanitizer.cleanStream(
 				AudioTagStripper.withoutTags(amr)).length > 0);

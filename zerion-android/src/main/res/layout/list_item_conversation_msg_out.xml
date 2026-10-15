@@ -77,7 +77,7 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="4"
-					android:textColor="@color/zerion_text_secondary_inverse"
+					android:textColor="@color/zerion_text_primary_inverse"
 					android:textSize="13sp" />
 
 			</LinearLayout>
@@ -133,7 +133,7 @@
 
 		<include
 			android:id="@+id/linkPreviewCard"
-			layout="@layout/view_link_preview"
+			layout="@layout/view_link_preview_out"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginStart="@dimen/message_bubble_padding_sides_inner"
@@ -196,11 +196,12 @@
 			android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginEnd="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
-			android:background="@drawable/reaction_background"
+			android:background="@drawable/reaction_background_out"
 			android:paddingStart="6dp"
 			android:paddingEnd="6dp"
 			android:paddingTop="2dp"
 			android:paddingBottom="2dp"
+			android:textColor="@color/zerion_text_primary_inverse"
 			android:textSize="13sp"
 			android:visibility="gone"
 			app:layout_constraintEnd_toEndOf="parent"

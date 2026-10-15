@@ -68,7 +68,7 @@
             android:padding="6dp"
             android:text="@string/wallet_xmr_send_paste"
             android:textAllCaps="true"
-            android:textColor="@color/zerion_primary_accent"
+            android:textColor="@color/zerion_accent_text"
             android:textSize="13sp"
             android:textStyle="bold"
             android:background="?attr/selectableItemBackground" />
@@ -112,7 +112,7 @@
                 android:padding="6dp"
                 android:text="@string/wallet_xmr_send_switch_currency"
                 android:textAllCaps="true"
-                android:textColor="@color/zerion_primary_accent"
+                android:textColor="@color/zerion_accent_text"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:background="?attr/selectableItemBackground" />
@@ -129,6 +129,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_10"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -140,6 +141,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_25"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -151,6 +153,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_50"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -180,6 +183,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_prio_low"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -188,6 +192,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_prio_normal"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -196,6 +201,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_prio_high"
                 style="?attr/materialButtonOutlinedStyle"
+                android:textColor="@color/zerion_toggle_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

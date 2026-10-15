@@ -16,7 +16,11 @@ public class GroupTrAuthException extends DbException {
 		EPOCH_OVERFLOW,
 		NOT_A_MEMBER,
 		INVITE_EXPIRED,
-		INVALID_TIMER
+		INVALID_TIMER,
+		MEMBER_INVITES_UNAVAILABLE,
+		GROUP_FULL,
+		INCOGNITO_NOT_SUPPORTED,
+		INCOGNITO_NAME_FIXED
 	}
 
 	private final Reason reason;

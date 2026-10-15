@@ -71,9 +71,9 @@ public class NavDrawerActivity extends ZerionActivity implements
 	public static Uri CONTACT_ADDED_URI =
 			Uri.parse("zerion-content://contact-added");
 
-	private static final int TAB_CONTACTS = 0;
-	private static final int TAB_GROUPS = 1;
-	private static final int TAB_CHANNELS = 2;
+	static final int TAB_CONTACTS = 0;
+	static final int TAB_GROUPS = 1;
+	static final int TAB_CHANNELS = 2;
 	private static final int TAB_VAULT = 3;
 
 	private NavDrawerViewModel navDrawerViewModel;
@@ -361,7 +361,15 @@ public class NavDrawerActivity extends ZerionActivity implements
 		applyBottomNavForFragment(f);
 	}
 
+	@androidx.annotation.StringRes
+	static int composeLabel(int tab) {
+		if (tab == TAB_GROUPS) return R.string.grouptr_create_title;
+		if (tab == TAB_CHANNELS) return R.string.channels_action_create;
+		return R.string.add_contact_button;
+	}
+
 	private void updateTabUI() {
+		fabCompose.setContentDescription(getString(composeLabel(currentTab)));
 		int selected = getColor(R.color.zerion_text_primary);
 		int unselected = getColor(R.color.zerion_text_secondary);
 		tabContacts.setTextColor(currentTab == TAB_CONTACTS ? selected : unselected);
@@ -480,10 +488,14 @@ public class NavDrawerActivity extends ZerionActivity implements
 		badgeChannels = BadgeDrawable.create(this);
 		int cyan = com.professor.zerion.android.settings.ChatPreferences
 				.getAccentColor(this);
+		int onAccent = com.google.android.material.color.MaterialColors
+				.getColor(this,
+						com.google.android.material.R.attr.colorOnPrimary,
+						Color.BLACK);
 		BadgeDrawable[] badges = {badgeContacts, badgeGroups, badgeChannels};
 		for (BadgeDrawable b : badges) {
 			b.setBackgroundColor(cyan);
-			b.setBadgeTextColor(Color.WHITE);
+			b.setBadgeTextColor(onAccent);
 			b.setMaxCharacterCount(3);
 			b.setVisible(false);
 		}

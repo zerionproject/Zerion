@@ -181,6 +181,7 @@
 		android:paddingEnd="6dp"
 		android:paddingTop="2dp"
 		android:paddingBottom="2dp"
+		android:textColor="@color/zerion_text_primary_inverse"
 		android:textSize="13sp"
 		android:visibility="gone"
 		app:layout_constraintStart_toStartOf="parent"

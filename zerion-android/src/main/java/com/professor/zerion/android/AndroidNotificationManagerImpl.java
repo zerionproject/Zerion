@@ -334,6 +334,16 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (e instanceof GroupTrPostAcceptedEvent) {
 			GroupTrPostAcceptedEvent g = (GroupTrPostAcceptedEvent) e;
 			if (!g.isLocal()) showGroupTrPostNotification(g.getGroupId());
+		} else if (e instanceof org.zerionproject.app.api.messaging.event
+				.GroupTrPostsRemovedEvent) {
+			org.zerionproject.app.api.messaging.event.GroupTrPostsRemovedEvent
+					r = (org.zerionproject.app.api.messaging.event
+					.GroupTrPostsRemovedEvent) e;
+			GroupTrConversationActivity.evictRemovedMedia(r.getGroupId(),
+					r.getPostIds());
+			if (r.getUnreadRemoved() > 0) {
+				onGroupTrPostsWithdrawn(r.getGroupId(), r.getUnreadRemoved());
+			}
 		} else if (e instanceof ChannelPostReceivedEvent) {
 			ChannelPostReceivedEvent c = (ChannelPostReceivedEvent) e;
 			if (!c.isLocal()) showChannelPostNotification(c.getChannelId());
@@ -651,6 +661,24 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				int id = groupTrNotificationId(hex);
 				notificationManager.cancel(id);
 				activeGroupTrNotificationIds.remove(id);
+			}
+		});
+	}
+
+	private void onGroupTrPostsWithdrawn(byte[] groupTrId, int count) {
+		androidExecutor.runOnUiThread(() -> {
+			String hex = StringUtils.toHexString(groupTrId);
+			if (groupTrCounts.getCount(hex) == 0) return;
+			for (int i = 0; i < count && groupTrCounts.getCount(hex) > 0;
+					i++) {
+				groupTrCounts.remove(hex);
+			}
+			int id = groupTrNotificationId(hex);
+			if (groupTrCounts.getCount(hex) == 0) {
+				notificationManager.cancel(id);
+				activeGroupTrNotificationIds.remove(id);
+			} else if (activeGroupTrNotificationIds.contains(id)) {
+				postGroupTrNotification(groupTrId, hex, false);
 			}
 		});
 	}

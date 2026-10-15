@@ -1,7 +1,12 @@
 package org.zerionproject.app.api.grouptr;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+
+import javax.annotation.Nullable;
 
 public final class GroupTrBody {
 
@@ -12,10 +17,13 @@ public final class GroupTrBody {
 	public static final byte TYPE_VOICE = (byte) 0x02;
 	public static final byte TYPE_IMAGE = (byte) 0x03;
 	public static final byte TYPE_VIDEO = (byte) 0x04;
+	public static final byte TYPE_REPLY = (byte) 0x05;
+
+	public static final int REPLY_TARGET_LENGTH = 32;
 
 	public static final int MAX_MIME_LENGTH = 64;
 
-	public enum Kind {TEXT, VOICE, IMAGE, VIDEO}
+	public enum Kind {TEXT, VOICE, IMAGE, VIDEO, REPLY}
 
 	public static final class Parsed {
 		public final Kind kind;
@@ -23,14 +31,22 @@ public final class GroupTrBody {
 		public final byte[] payload;
 		public final long durationMs;
 		public final String mime;
+		@Nullable
+		public final byte[] replyTo;
 
 		private Parsed(Kind kind, String text, byte[] payload,
 				long durationMs, String mime) {
+			this(kind, text, payload, durationMs, mime, null);
+		}
+
+		private Parsed(Kind kind, String text, byte[] payload,
+				long durationMs, String mime, @Nullable byte[] replyTo) {
 			this.kind = kind;
 			this.text = text;
 			this.payload = payload;
 			this.durationMs = durationMs;
 			this.mime = mime;
+			this.replyTo = replyTo;
 		}
 	}
 
@@ -39,6 +55,27 @@ public final class GroupTrBody {
 
 	public static byte[] encodeText(String text) {
 		return text.getBytes(StandardCharsets.UTF_8);
+	}
+
+	public static byte[] encodeReply(byte[] targetPostId, String text) {
+		if (targetPostId.length != REPLY_TARGET_LENGTH) {
+			throw new IllegalArgumentException("reply target length");
+		}
+		byte[] t = text.getBytes(StandardCharsets.UTF_8);
+		ByteArrayOutputStream out =
+				new ByteArrayOutputStream(3 + REPLY_TARGET_LENGTH + t.length);
+		out.write(MAGIC_BYTE);
+		out.write(VERSION_1);
+		out.write(TYPE_REPLY);
+		out.write(targetPostId, 0, targetPostId.length);
+		out.write(t, 0, t.length);
+		return out.toByteArray();
+	}
+
+	@Nullable
+	public static byte[] replyTarget(@Nullable byte[] body) {
+		Parsed p = parseReply(body);
+		return p == null ? null : p.replyTo;
 	}
 
 	public static byte[] encodeVoice(byte[] opus, long durationMs) {
@@ -101,6 +138,8 @@ public final class GroupTrBody {
 				return Kind.IMAGE;
 			case TYPE_VIDEO:
 				return Kind.VIDEO;
+			case TYPE_REPLY:
+				return parseReply(body) == null ? Kind.TEXT : Kind.REPLY;
 			default:
 				return Kind.TEXT;
 		}
@@ -136,6 +175,10 @@ public final class GroupTrBody {
 			System.arraycopy(body, imgStart, image, 0, image.length);
 			return new Parsed(Kind.IMAGE, "", image, 0L, mime);
 		}
+		if (type == TYPE_REPLY) {
+			Parsed reply = parseReply(body);
+			return reply == null ? text("") : reply;
+		}
 		if (type == TYPE_VIDEO && body.length >= 8) {
 			long durationMs = readUint32(body, 3);
 			int mimeLen = body[7] & 0xff;
@@ -154,6 +197,30 @@ public final class GroupTrBody {
 
 	private static Parsed text(String t) {
 		return new Parsed(Kind.TEXT, t, null, 0L, null);
+	}
+
+	@Nullable
+	private static Parsed parseReply(@Nullable byte[] body) {
+		if (body == null || body.length < 3 + REPLY_TARGET_LENGTH
+				|| body[0] != MAGIC_BYTE || body[1] != VERSION_1
+				|| body[2] != TYPE_REPLY) {
+			return null;
+		}
+		int textStart = 3 + REPLY_TARGET_LENGTH;
+		String t;
+		try {
+			t = StandardCharsets.UTF_8.newDecoder()
+					.onMalformedInput(CodingErrorAction.REPORT)
+					.onUnmappableCharacter(CodingErrorAction.REPORT)
+					.decode(ByteBuffer.wrap(body, textStart,
+							body.length - textStart))
+					.toString();
+		} catch (CharacterCodingException e) {
+			return null;
+		}
+		byte[] target = new byte[REPLY_TARGET_LENGTH];
+		System.arraycopy(body, 3, target, 0, REPLY_TARGET_LENGTH);
+		return new Parsed(Kind.REPLY, t, null, 0L, null, target);
 	}
 
 	private static void writeUint32(ByteArrayOutputStream out, long v) {

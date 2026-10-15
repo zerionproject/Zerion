@@ -37,6 +37,7 @@ import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.vault.wallet.WalletRecord;
+import com.professor.zerion.android.vault.wallet.btc.BtcAmountText;
 import com.professor.zerion.android.vault.wallet.btc.BtcWallet;
 import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyAnalyzer;
 
@@ -593,29 +594,29 @@ public class VaultWalletFragment extends BaseFragment {
 				icon.setColorFilter(colorRes(R.color.zerion_text_secondary));
 			} else if (received) {
 				amount.setText("+" + formatBtc(tx.netSat));
-				amount.setTextColor(colorRes(R.color.zerion_success));
+				amount.setTextColor(colorRes(R.color.zerion_success_text));
 				icon.setImageResource(R.drawable.ic_call_received);
-				icon.setColorFilter(colorRes(R.color.zerion_success));
+				icon.setColorFilter(colorRes(R.color.zerion_success_text));
 			} else {
 				amount.setText("-" + formatBtc(-tx.netSat));
-				amount.setTextColor(colorRes(R.color.zerion_red_500));
+				amount.setTextColor(colorRes(R.color.zerion_destructive_text));
 				icon.setImageResource(R.drawable.ic_call_made);
-				icon.setColorFilter(colorRes(R.color.zerion_red_500));
+				icon.setColorFilter(colorRes(R.color.zerion_destructive_text));
 			}
 
 			txid.setText(shorten(tx.txid));
 			if (BtcWallet.STATE_BROADCASTING.equals(tx.state)) {
 				status.setText(R.string.wallet_tx_state_broadcasting);
-				status.setTextColor(colorRes(R.color.zerion_warning));
+				status.setTextColor(colorRes(R.color.zerion_warning_text));
 			} else if (BtcWallet.STATE_POSSIBLY_SENT.equals(tx.state)) {
 				status.setText(R.string.wallet_tx_state_possibly_sent);
-				status.setTextColor(colorRes(R.color.zerion_warning));
+				status.setTextColor(colorRes(R.color.zerion_warning_text));
 			} else if (BtcWallet.STATE_FAILED.equals(tx.state)) {
 				status.setText(R.string.wallet_tx_state_failed);
-				status.setTextColor(colorRes(R.color.zerion_red_500));
+				status.setTextColor(colorRes(R.color.zerion_destructive_text));
 			} else if (tx.isPending()) {
 				status.setText(R.string.wallet_pending);
-				status.setTextColor(colorRes(R.color.zerion_warning));
+				status.setTextColor(colorRes(R.color.zerion_warning_text));
 			} else {
 				status.setText(getString(R.string.wallet_confirmations,
 						tx.confirmations));
@@ -920,7 +921,7 @@ public class VaultWalletFragment extends BaseFragment {
 			offline.setText(R.string.wallet_receive_offline);
 			offline.setPadding(0, dp(12), 0, 0);
 			offline.setGravity(Gravity.CENTER);
-			offline.setTextColor(colorRes(R.color.zerion_warning));
+			offline.setTextColor(colorRes(R.color.zerion_warning_text));
 			box.addView(offline);
 		}
 
@@ -1235,14 +1236,9 @@ public class VaultWalletFragment extends BaseFragment {
 				.setTitle(R.string.payjoin_review_title)
 				.setMessage(body)
 				.setView(pin)
-				.setPositiveButton(android.R.string.ok, (d, w) -> {
-					CharSequence cs = pin.getText();
-					char[] cred = new char[cs.length()];
-					for (int i = 0; i < cs.length(); i++) {
-						cred[i] = cs.charAt(i);
-					}
-					viewModel.authorizePayjoin(cred, data.fingerprint);
-				})
+				.setPositiveButton(android.R.string.ok, (d, w) ->
+						viewModel.authorizePayjoin(chars(pin),
+								data.fingerprint))
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> viewModel.cancelPayjoin())
 				.show());
@@ -1308,14 +1304,10 @@ public class VaultWalletFragment extends BaseFragment {
 				.setTitle(R.string.wallet_auth_send_title)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_auth_send_button, (d, w) -> {
-					CharSequence cs = pin.getText();
-					if (cs == null || cs.length() == 0) {
+					char[] cred = chars(pin);
+					if (cred.length == 0) {
 						viewModel.cancelSend();
 						return;
-					}
-					char[] cred = new char[cs.length()];
-					for (int i = 0; i < cs.length(); i++) {
-						cred[i] = cs.charAt(i);
 					}
 					viewModel.authorizeAndSend(cred, review.fingerprint);
 				})
@@ -1326,61 +1318,15 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private String unitName(int unit) {
-		return unit == 1 ? "EUR" : unit == 2 ? "USD" : "BTC";
-	}
-
-	private double priceForUnit(int unit) {
-		if (rates == null) {
-			return 0;
-		}
-		return unit == 1 ? rates.eur : rates.usd;
+		return BtcAmountText.unitName(unit);
 	}
 
 	private long computeSats(int unit, String s) {
-		try {
-			if (unit == 0) {
-				return com.professor.zerion.android.vault.wallet.btc
-						.BtcAmounts.parseBtc(s);
-			}
-			BigDecimal v = new BigDecimal(s.trim());
-			if (v.signum() < 0) {
-				return -1;
-			}
-			double price = priceForUnit(unit);
-			if (price <= 0) {
-				return -1;
-			}
-			return com.professor.zerion.android.vault.wallet.btc.BtcAmounts
-					.bounded((long) Math.floor(v.doubleValue() / price * 1e8));
-		} catch (Exception e) {
-			return -1;
-		}
+		return BtcAmountText.toSats(unit, s, rates);
 	}
 
 	private String sendEquivText(int unit, String s) {
-		if (s == null || s.trim().isEmpty()) {
-			return "";
-		}
-		double val;
-		try {
-			val = Double.parseDouble(s.trim());
-		} catch (Exception e) {
-			return "";
-		}
-		if (unit == 0) {
-			double price = fiatPrice();
-			if (price <= 0) {
-				return "";
-			}
-			return "≈ " + fiatSymbol() + String.format(java.util.Locale.US,
-					"%.2f", val * price);
-		}
-		double price = priceForUnit(unit);
-		if (price <= 0) {
-			return "";
-		}
-		return "≈ " + String.format(java.util.Locale.US, "%.8f", val / price)
-				+ " BTC";
+		return BtcAmountText.equivalent(unit, s, rates, fiatCurrency);
 	}
 
 	private String feeDetailText() {
@@ -1778,11 +1724,11 @@ public class VaultWalletFragment extends BaseFragment {
 	private int privacyLevelColor(PrivacyAnalyzer.Level l) {
 		switch (l) {
 			case HIGH:
-				return colorRes(R.color.zerion_success);
+				return colorRes(R.color.zerion_success_text);
 			case MEDIUM:
-				return colorRes(R.color.zerion_warning);
+				return colorRes(R.color.zerion_warning_text);
 			case LOW:
-				return colorRes(R.color.zerion_red_500);
+				return colorRes(R.color.zerion_destructive_text);
 			default:
 				return colorRes(R.color.zerion_text_secondary);
 		}
@@ -1861,8 +1807,8 @@ public class VaultWalletFragment extends BaseFragment {
 	private void applyFreezeStyle(TextView t, boolean frozen) {
 		t.setText(frozen ? getString(R.string.wallet_coin_frozen)
 				: getString(R.string.wallet_coin_freeze));
-		t.setTextColor(colorRes(frozen ? R.color.zerion_red_500
-				: R.color.zerion_primary_accent));
+		t.setTextColor(colorRes(frozen ? R.color.zerion_destructive_text
+				: R.color.zerion_accent_text));
 	}
 
 	private int colorForHealth(String node) {
@@ -1870,7 +1816,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (ok == null) {
 			return colorRes(R.color.zerion_text_secondary);
 		}
-		return colorRes(ok ? R.color.zerion_success : R.color.zerion_red_500);
+		return colorRes(ok ? R.color.zerion_success_text : R.color.zerion_destructive_text);
 	}
 
 	private void showNodesDialog() {
@@ -1926,7 +1872,7 @@ public class VaultWalletFragment extends BaseFragment {
 			TextView mark = new TextView(ctx);
 			mark.setText(sel ? "✓" : "");
 			mark.setTextSize(16);
-			mark.setTextColor(colorRes(R.color.zerion_primary_accent));
+			mark.setTextColor(colorRes(R.color.zerion_accent_text));
 			marks.put(node, mark);
 
 			row.addView(dot);
@@ -2265,7 +2211,7 @@ public class VaultWalletFragment extends BaseFragment {
 		if (bal > 0) {
 			TextView move = new TextView(ctx);
 			move.setText(R.string.wallet_sp_move);
-			move.setTextColor(colorRes(R.color.zerion_primary_accent));
+			move.setTextColor(colorRes(R.color.zerion_accent_text));
 			move.setTypeface(move.getTypeface(),
 					android.graphics.Typeface.BOLD);
 			move.setTextSize(14);
@@ -2375,14 +2321,10 @@ public class VaultWalletFragment extends BaseFragment {
 				.setTitle(R.string.wallet_sp_move)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_auth_send_button, (d, w) -> {
-					CharSequence cs = pin.getText();
-					if (cs == null || cs.length() == 0) {
+					char[] cred = chars(pin);
+					if (cred.length == 0) {
 						viewModel.cancelSpSweep();
 						return;
-					}
-					char[] cred = new char[cs.length()];
-					for (int i = 0; i < cs.length(); i++) {
-						cred[i] = cs.charAt(i);
 					}
 					viewModel.authorizeSpSweep(cred, review.fingerprint);
 				})
@@ -2484,7 +2426,7 @@ public class VaultWalletFragment extends BaseFragment {
 		return e.getText() == null ? "" : e.getText().toString().trim();
 	}
 
-	private static char[] chars(TextInputEditText e) {
+	private static char[] chars(android.widget.EditText e) {
 		android.text.Editable ed = e.getText();
 		int n = ed == null ? 0 : ed.length();
 		char[] out = new char[n];
@@ -2556,38 +2498,12 @@ public class VaultWalletFragment extends BaseFragment {
 		return rates == null ? 0 : rates.get(fiatCurrency);
 	}
 
-	private String fiatSymbol() {
-		return symbolFor(fiatCurrency);
-	}
-
 	private String symbolFor(String cur) {
-		switch (cur) {
-			case "USD":
-				return "$";
-			case "GBP":
-				return "£";
-			case "JPY":
-				return "¥";
-			case "CAD":
-				return "CA$";
-			case "AUD":
-				return "A$";
-			case "CHF":
-				return "CHF ";
-			case "EUR":
-				return "€";
-			default:
-				return cur + " ";
-		}
+		return BtcAmountText.symbolFor(cur);
 	}
 
 	private String formatBtc(long sat) {
-		if (sat == 0) {
-			return "0 BTC";
-		}
-		BigDecimal btc = BigDecimal.valueOf(sat).movePointLeft(8)
-				.stripTrailingZeros();
-		return btc.toPlainString() + " BTC";
+		return BtcAmountText.formatBtc(sat);
 	}
 
 	private static String shorten(String s) {

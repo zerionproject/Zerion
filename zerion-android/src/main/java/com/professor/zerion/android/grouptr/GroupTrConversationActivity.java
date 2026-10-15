@@ -16,6 +16,9 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.view.ActionMode;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -31,6 +34,7 @@ import androidx.annotation.Nullable;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.ItemTouchHelper;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.vanniktech.emoji.EmojiEditText;
@@ -38,6 +42,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.api.AndroidNotificationManager;
+import com.professor.zerion.android.conversation.SwipeToReplyCallback;
 import com.professor.zerion.android.grouptr.voice.GroupTrVoicePlayer;
 import com.professor.zerion.android.grouptr.voice.GroupTrVoiceRecorder;
 
@@ -50,12 +55,14 @@ import org.zerionproject.core.api.identity.LocalAuthor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrBody;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostsRemovedEvent;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -65,8 +72,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
@@ -74,7 +84,7 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 
 public class GroupTrConversationActivity extends ZerionActivity
-		implements EventListener {
+		implements EventListener, ActionMode.Callback {
 
 	public static final String EXTRA_GROUP_ID = "groupTrId";
 
@@ -154,6 +164,14 @@ public class GroupTrConversationActivity extends ZerionActivity
 			new java.util.HashMap<>();
 	@Nullable
 	private volatile GroupTrState lastState;
+	@Nullable
+	private ActionMode actionMode;
+	private final LinkedHashSet<String> selected = new LinkedHashSet<>();
+	@Nullable
+	private GroupTrPost replyingTo;
+	private View replyPreview;
+	private boolean stillMember = true;
+	private volatile boolean waitingForAdmin = false;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -211,6 +229,19 @@ public class GroupTrConversationActivity extends ZerionActivity
 		postsRecycler.setLayoutManager(layoutManager);
 		postAdapter = new GroupTrPostAdapter(new PostCallback());
 		postsRecycler.setAdapter(postAdapter);
+		new ItemTouchHelper(new SwipeToReplyCallback(position -> {
+			List<GroupTrPost> shown = postAdapter.currentPosts();
+			if (position < 0 || position >= shown.size()) return;
+			GroupTrPost p = shown.get(position);
+			if (canReplyTo(p)) {
+				showReplyPreview(p);
+				focusComposer();
+			}
+		})).attachToRecyclerView(postsRecycler);
+		replyPreview = findViewById(R.id.groupReplyPreview);
+		replyPreview.setBackgroundResource(R.drawable.bg_input_bar);
+		replyPreview.findViewById(R.id.cancel_reply)
+				.setOnClickListener(v -> hideReplyPreview());
 		emptyState = findViewById(R.id.emptyState);
 		input = findViewById(R.id.messageInput);
 		sendButton = findViewById(R.id.sendButton);
@@ -308,6 +339,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				return;
 			}
 			knownNames = loadKnownNames(s);
+			waitingForAdmin = groupTrManager.isWaitingForAdmin(gid);
 			List<GroupTrMember> outOfReach =
 					groupTrManager.getMembersOutOfReach(gid);
 			List<GroupTrPost> posts = groupTrManager.getRecentPosts(gid);
@@ -417,7 +449,15 @@ public class GroupTrConversationActivity extends ZerionActivity
 				}
 			}
 		}
-		if (!stillMember && !s.isDissolved()) {
+		this.stillMember = stillMember && !s.isDissolved() && !waitingForAdmin;
+		if (!this.stillMember) hideReplyPreview();
+		if (waitingForAdmin && !s.isDissolved()) {
+			banner.setText(getString(R.string.grouptr_waiting_for_admin,
+					s.getCreatorName()));
+			banner.setVisibility(View.VISIBLE);
+			composerRow.setVisibility(View.GONE);
+			recordingOverlay.setVisibility(View.GONE);
+		} else if (!stillMember && !s.isDissolved()) {
 			banner.setText(getString(R.string.grouptr_removed_banner,
 					s.getCreatorName()));
 			banner.setVisibility(View.VISIBLE);
@@ -487,11 +527,332 @@ public class GroupTrConversationActivity extends ZerionActivity
 			gid = ((GroupTrLocalStateChangedEvent) e).getGroupId();
 		} else if (e instanceof GroupPostReceivedEvent) {
 			gid = ((GroupPostReceivedEvent) e).getGroupId();
+		} else if (e instanceof GroupTrPostsRemovedEvent) {
+			GroupTrPostsRemovedEvent r = (GroupTrPostsRemovedEvent) e;
+			if (!Arrays.equals(r.getGroupId(), groupId)) return;
+			main.post(() -> onPostsRemoved(r.getPostIds()));
+			gid = r.getGroupId();
 		} else {
 			return;
 		}
 		if (!Arrays.equals(gid, groupId)) return;
 		requestReload();
+	}
+
+	public static void evictRemovedMedia(byte[] groupId,
+			Collection<byte[]> postIds) {
+		GroupTrMediaCache.evictPosts(groupId, postIds);
+	}
+
+	private void onPostsRemoved(List<byte[]> postIds) {
+		GroupTrMediaCache.evictPosts(groupId, postIds);
+		postAdapter.removePosts(postIds);
+		GroupTrPost quoting = replyingTo;
+		for (byte[] id : postIds) {
+			String key = StringUtils.toHexString(id);
+			if (quoting != null && key.equals(GroupTrPostAdapter.key(quoting))) {
+				hideReplyPreview();
+			}
+			selected.remove(key);
+		}
+		if (actionMode != null) {
+			if (selected.isEmpty()) actionMode.finish();
+			else updateActionModeTitle();
+		}
+		if (postAdapter.getItemCount() == 0) {
+			emptyState.setVisibility(View.VISIBLE);
+		}
+	}
+
+	@Override
+	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+		mode.getMenuInflater().inflate(R.menu.grouptr_post_actions, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+		List<GroupTrPost> chosen = selectedPosts();
+		MenuItem reply = menu.findItem(R.id.action_reply);
+		if (reply != null) {
+			reply.setVisible(chosen.size() == 1 && canReplyTo(chosen.get(0)));
+		}
+		MenuItem copy = menu.findItem(R.id.action_copy);
+		if (copy != null) {
+			boolean text = !chosen.isEmpty();
+			for (GroupTrPost p : chosen) {
+				if (!isTextPost(p)) text = false;
+			}
+			copy.setVisible(text);
+		}
+		MenuItem save = menu.findItem(R.id.action_save);
+		if (save != null) {
+			save.setVisible(chosen.size() == 1
+					&& savableMedia(chosen.get(0)) != null);
+		}
+		return true;
+	}
+
+	@Nullable
+	private static GroupTrBody.Parsed savableMedia(GroupTrPost p) {
+		GroupTrBody.Kind kind = GroupTrBody.kindOf(p.getBody());
+		if (kind != GroupTrBody.Kind.IMAGE && kind != GroupTrBody.Kind.VIDEO) {
+			return null;
+		}
+		GroupTrBody.Parsed parsed = GroupTrBody.parse(p.getBody());
+		if (parsed.payload == null || parsed.payload.length == 0) return null;
+		return parsed;
+	}
+
+	private void saveSelectedPost() {
+		List<GroupTrPost> chosen = selectedPosts();
+		if (actionMode != null) actionMode.finish();
+		if (chosen.size() != 1) return;
+		GroupTrBody.Parsed parsed = savableMedia(chosen.get(0));
+		if (parsed == null) return;
+		String mimeType = parsed.mime != null && !parsed.mime.isEmpty()
+				? parsed.mime
+				: parsed.kind == GroupTrBody.Kind.VIDEO
+						? "video/mp4" : "image/jpeg";
+		if (!SaveCleanCopy.canSave(mimeType)) return;
+		SaveCleanCopy.confirm(this, mimeType,
+				() -> SaveCleanCopy.start(this, parsed.payload, mimeType));
+	}
+
+	@Override
+	public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+		int id = item.getItemId();
+		if (id == R.id.action_reply) {
+			replyToSelectedPost();
+			return true;
+		} else if (id == R.id.action_copy) {
+			copySelectedPosts();
+			return true;
+		} else if (id == R.id.action_delete) {
+			deleteSelectedPosts();
+			return true;
+		} else if (id == R.id.action_save) {
+			saveSelectedPost();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public void onDestroyActionMode(ActionMode mode) {
+		actionMode = null;
+		List<String> keys = new ArrayList<>(selected);
+		selected.clear();
+		for (String key : keys) postAdapter.refresh(key);
+	}
+
+	private void startOrToggleSelection(GroupTrPost p) {
+		String key = GroupTrPostAdapter.key(p);
+		if (actionMode == null) {
+			selected.clear();
+			selected.add(key);
+			postAdapter.refresh(key);
+			actionMode = startActionMode(this);
+			updateActionModeTitle();
+			return;
+		}
+		toggleSelection(key);
+	}
+
+	private void toggleSelection(String key) {
+		if (!selected.remove(key)) selected.add(key);
+		postAdapter.refresh(key);
+		if (actionMode == null) return;
+		if (selected.isEmpty()) actionMode.finish();
+		else updateActionModeTitle();
+	}
+
+	private void updateActionModeTitle() {
+		if (actionMode == null) return;
+		actionMode.setTitle(String.valueOf(selected.size()));
+		actionMode.invalidate();
+	}
+
+	private List<GroupTrPost> selectedPosts() {
+		List<GroupTrPost> out = new ArrayList<>(selected.size());
+		for (String key : selected) {
+			GroupTrPost p = postAdapter.find(key);
+			if (p != null) out.add(p);
+		}
+		return out;
+	}
+
+	private static boolean isTextPost(GroupTrPost p) {
+		GroupTrBody.Kind kind = GroupTrBody.kindOf(p.getBody());
+		return kind == GroupTrBody.Kind.TEXT || kind == GroupTrBody.Kind.REPLY;
+	}
+
+	private boolean isMine(GroupTrPost p) {
+		return localPub != null && Arrays.equals(p.getSenderPubKey(), localPub);
+	}
+
+	private boolean canReplyTo(GroupTrPost p) {
+		return p.getPostId() != null && stillMember
+				&& composerRow.getVisibility() == View.VISIBLE;
+	}
+
+	private void finishSelection() {
+		if (actionMode != null) actionMode.finish();
+	}
+
+	private void replyToSelectedPost() {
+		List<GroupTrPost> chosen = selectedPosts();
+		finishSelection();
+		if (chosen.size() != 1 || !canReplyTo(chosen.get(0))) return;
+		showReplyPreview(chosen.get(0));
+		focusComposer();
+	}
+
+	private void copySelectedPosts() {
+		StringBuilder sb = new StringBuilder();
+		for (GroupTrPost p : selectedPosts()) {
+			if (!isTextPost(p)) continue;
+			String text = GroupTrBody.parse(p.getBody()).text;
+			if (text == null || text.isEmpty()) continue;
+			if (sb.length() > 0) sb.append("\n");
+			sb.append(text);
+		}
+		if (sb.length() > 0) {
+			com.professor.zerion.android.util.SecureClipboard.copy(this,
+					"message", sb.toString());
+			toast(R.string.copied_to_clipboard);
+		}
+		finishSelection();
+	}
+
+	private void deleteSelectedPosts() {
+		List<GroupTrPost> chosen = selectedPosts();
+		if (chosen.isEmpty()) return;
+		List<byte[]> ids = new ArrayList<>(chosen.size());
+		boolean allMine = stillMember;
+		for (GroupTrPost p : chosen) {
+			byte[] id = p.getPostId();
+			if (id == null) continue;
+			ids.add(id);
+			if (!isMine(p)) allMine = false;
+		}
+		if (ids.isEmpty()) return;
+		boolean mayAskEveryone = allMine;
+		byte[] gid = groupId;
+		ioExecutor.execute(() -> {
+			int supporting = 0;
+			int older = 0;
+			if (mayAskEveryone) {
+				try {
+					supporting = groupTrManager.countMembersWithPostActions(gid);
+					older = groupTrManager.countMembersWithoutPostActions(gid);
+				} catch (DbException ex) {
+				}
+			}
+			boolean everyone = supporting > 0;
+			int keeping = older;
+			main.post(() -> {
+				if (isFinishing() || isDestroyed()) return;
+				showDeleteDialog(ids, everyone, keeping);
+			});
+		});
+	}
+
+	private void showDeleteDialog(List<byte[]> ids, boolean everyone,
+			int keeping) {
+		String question = getResources().getQuantityString(
+				R.plurals.conversation_delete_message, ids.size(), ids.size());
+		SecureAlertDialogBuilder dialog = new SecureAlertDialogBuilder(this);
+		dialog.setTitle(R.string.conversation_delete_title);
+		if (everyone) {
+			StringBuilder message = new StringBuilder(question)
+					.append("\n\n").append(getString(
+							R.string.grouptr_delete_for_everyone_explained));
+			if (keeping > 0) {
+				message.append("\n\n").append(getResources()
+						.getQuantityString(R.plurals.grouptr_delete_kept_older,
+								keeping, keeping));
+			}
+			dialog.setMessage(message.toString());
+			dialog.setPositiveButton(R.string.delete_for_everyone, (d, w) -> {
+				finishSelection();
+				deleteForEveryone(ids);
+			});
+			dialog.setNeutralButton(R.string.delete_for_me, (d, w) -> {
+				finishSelection();
+				deleteForMe(ids);
+			});
+		} else {
+			dialog.setMessage(question);
+			dialog.setPositiveButton(R.string.conversation_delete_action,
+					(d, w) -> {
+						finishSelection();
+						deleteForMe(ids);
+					});
+		}
+		dialog.setNegativeButton(android.R.string.cancel, null);
+		dialog.show();
+	}
+
+	private void deleteForEveryone(List<byte[]> ids) {
+		onPostsRemoved(ids);
+		byte[] gid = groupId;
+		ioExecutor.execute(() -> {
+			try {
+				int keeping = groupTrManager.deletePostsForEveryone(gid, ids);
+				if (keeping > 0) {
+					main.post(() -> Toast.makeText(this, getResources()
+							.getQuantityString(R.plurals.grouptr_delete_kept_older,
+									keeping, keeping), Toast.LENGTH_LONG)
+							.show());
+				}
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.delete_failed));
+			}
+			requestReload();
+		});
+	}
+
+	private void deleteForMe(List<byte[]> ids) {
+		onPostsRemoved(ids);
+		byte[] gid = groupId;
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.deletePostsForMe(gid, ids);
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.delete_failed));
+			}
+			requestReload();
+		});
+	}
+
+	private void showReplyPreview(GroupTrPost p) {
+		replyingTo = p;
+		TextView author = replyPreview.findViewById(R.id.reply_author);
+		TextView text = replyPreview.findViewById(R.id.reply_text);
+		author.setText(senderLabel(p));
+		text.setText(GroupTrPostAdapter.excerpt(this, p));
+		replyPreview.setVisibility(View.VISIBLE);
+	}
+
+	private void hideReplyPreview() {
+		replyingTo = null;
+		if (replyPreview != null) replyPreview.setVisibility(View.GONE);
+	}
+
+	private void focusComposer() {
+		input.requestFocus();
+		com.professor.zerion.android.util.UiUtils.showSoftKeyboard(input);
+	}
+
+	private void onQuoteClicked(byte[] postId) {
+		int position = postAdapter.positionOf(StringUtils.toHexString(postId));
+		if (position < 0) {
+			toast(R.string.reply_original_unavailable);
+			return;
+		}
+		layoutManager.scrollToPositionWithOffset(position,
+				postsRecycler.getHeight() / 3);
 	}
 
 	@Override
@@ -628,6 +989,33 @@ public class GroupTrConversationActivity extends ZerionActivity
 		public String formatDuration(long ms) {
 			return GroupTrConversationActivity.this.formatDuration(ms);
 		}
+
+		@Override
+		public void onPostLongClick(GroupTrPost p) {
+			startOrToggleSelection(p);
+		}
+
+		@Override
+		public boolean onPostClick(GroupTrPost p) {
+			if (actionMode == null) return false;
+			toggleSelection(GroupTrPostAdapter.key(p));
+			return true;
+		}
+
+		@Override
+		public boolean isSelected(GroupTrPost p) {
+			return selected.contains(GroupTrPostAdapter.key(p));
+		}
+
+		@Override
+		public String quoteAuthor(GroupTrPost p) {
+			return senderLabel(p);
+		}
+
+		@Override
+		public void onQuoteClick(byte[] postId) {
+			onQuoteClicked(postId);
+		}
 	}
 
 	@Nullable
@@ -712,10 +1100,16 @@ public class GroupTrConversationActivity extends ZerionActivity
 			toast(R.string.grouptr_post_too_long);
 			return;
 		}
+		GroupTrPost quoting = replyingTo;
+		byte[] target = quoting == null ? null : quoting.getPostId();
 		input.setText("");
+		hideReplyPreview();
 		ioExecutor.execute(() -> {
 			try {
-				int skipped = groupTrManager.sendGroupPost(groupId, body, 0L);
+				int skipped = target == null
+						? groupTrManager.sendGroupPost(groupId, body, 0L)
+						: groupTrManager.sendGroupReply(groupId, target, text,
+								0L);
 				reportSkipped(skipped);
 				requestReload();
 			} catch (DbException ex) {
@@ -724,6 +1118,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 							|| input.getText().length() == 0) {
 						input.setText(text);
 						input.setSelection(text.length());
+						if (quoting != null && replyingTo == null) {
+							showReplyPreview(quoting);
+						}
 					}
 					toast(R.string.grouptr_error_send);
 				});
@@ -736,9 +1133,15 @@ public class GroupTrConversationActivity extends ZerionActivity
 		editor.setInputType(InputType.TYPE_CLASS_TEXT);
 		ioExecutor.execute(() -> {
 			try {
+				String incognito = groupTrManager.getIncognitoName(groupId);
 				String current = groupTrManager.getStealthName(groupId);
 				main.post(() -> {
 					if (isFinishing() || isDestroyed()) return;
+					if (incognito != null) {
+						GroupTrIncognitoPicker.showIncognitoInfo(this,
+								incognito);
+						return;
+					}
 					if (current != null) editor.setText(current);
 					new SecureAlertDialogBuilder(this)
 							.setTitle(R.string.grouptr_stealth_name_set)
@@ -937,9 +1340,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		BitmapFactory.Options opts = new BitmapFactory.Options();
 		opts.inSampleSize = sample;
 		Bitmap bitmap;
-		try (InputStream in = cr.openInputStream(uri)) {
-			if (in == null) return null;
-			bitmap = BitmapFactory.decodeStream(in, null, opts);
+		try {
+			bitmap = com.professor.zerion.android.attachment.ImageOrientation
+					.decodeUpright(cr, uri, opts);
 		} catch (IOException ex) {
 			return null;
 		}
@@ -948,7 +1351,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 		boolean ok = bitmap.compress(Bitmap.CompressFormat.JPEG,
 				IMAGE_JPEG_QUALITY, out);
 		bitmap.recycle();
-		return ok ? out.toByteArray() : null;
+		if (!ok) return null;
+		try {
+			return com.professor.zerion.android.attachment.ImageScrubber
+					.scrub(out.toByteArray());
+		} catch (IOException ex) {
+			return null;
+		}
 	}
 
 	@Nullable
@@ -1107,7 +1516,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		return GroupTrSenderLabel.label(known, p.getSenderName(),
 				shortKeyId(p.getSenderPubKey()),
 				getString(R.string.grouptr_sender_alias_format),
-				getString(R.string.grouptr_sender_unverified_format));
+				getString(R.string.grouptr_sender_unverified_format),
+				getString(R.string.grouptr_sender_incognito_format));
 	}
 
 	private void showFingerprintDialog(

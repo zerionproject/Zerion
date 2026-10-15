@@ -199,7 +199,7 @@ public class TextEditorFragment extends BaseFragment {
 	private void updateMonospaceState() {
 		if (isMonospace) {
 			documentContentInput.setTypeface(android.graphics.Typeface.MONOSPACE);
-			toggleMonospace.setTextColor(getResources().getColor(R.color.zerion_cyan, null));
+			toggleMonospace.setTextColor(getResources().getColor(R.color.zerion_accent_text, null));
 		} else {
 			documentContentInput.setTypeface(android.graphics.Typeface.DEFAULT);
 			toggleMonospace.setTextColor(getResources().getColor(R.color.zerion_text_secondary, null));

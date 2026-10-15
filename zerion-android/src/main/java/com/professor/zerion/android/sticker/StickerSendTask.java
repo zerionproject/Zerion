@@ -3,6 +3,8 @@ package com.professor.zerion.android.sticker;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.professor.zerion.android.attachment.ImageScrubber;
+
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.sync.GroupId;
@@ -38,7 +40,7 @@ public final class StickerSendTask {
 				long ts = System.currentTimeMillis();
 				AttachmentHeader header = messagingManager.addLocalAttachment(
 						groupId, ts, StickerUtils.STICKER_PNG_MIME,
-						new ByteArrayInputStream(pngBytes));
+						new ByteArrayInputStream(ImageScrubber.png(pngBytes)));
 				main.post(() -> cb.onStickerHeaderReady(header));
 			} catch (DbException | IOException e) {
 				main.post(() -> cb.onStickerSendFailed(e));

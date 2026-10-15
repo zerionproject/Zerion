@@ -4,6 +4,7 @@ import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.PcsSessionRow;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.settings.Settings;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -65,24 +66,28 @@ public class RootKeyStore {
 	@Nullable
 	public ContactRootKeys load(Transaction txn, ContactId c)
 			throws DbException {
-		Object[] base = db.getPcsMode2SessionState(txn, c, PCS_DIRECTION_SEND);
-		if (base == null || base[3] == null || !(Boolean) base[7]) return null;
+		PcsSessionRow base = db.getPcsMode2SessionState(txn, c,
+				PCS_DIRECTION_SEND);
+		if (base == null || base.getRootKey() == null
+				|| !base.isMode2Enabled()) {
+			return null;
+		}
 		long epoch = 0;
-		SecretKey current = new SecretKey((byte[]) base[3]);
-		Object[] cur = db.getPcsMode2SessionState(txn, c,
+		SecretKey current = new SecretKey(base.getRootKey());
+		PcsSessionRow cur = db.getPcsMode2SessionState(txn, c,
 				PCS_SLOT_TRANSPORT_ROOT);
-		if (cur != null && cur[3] != null) {
-			epoch = (Integer) cur[1];
-			current = new SecretKey((byte[]) cur[3]);
+		if (cur != null && cur.getRootKey() != null) {
+			epoch = cur.getMessageNumber();
+			current = new SecretKey(cur.getRootKey());
 		}
 		SecretKey pending = null;
 		boolean confirmed = false;
-		Object[] pen = db.getPcsMode2SessionState(txn, c,
+		PcsSessionRow pen = db.getPcsMode2SessionState(txn, c,
 				PCS_SLOT_TRANSPORT_ROOT_PENDING);
-		if (pen != null && pen[3] != null
-				&& (Integer) pen[1] == epoch + 1) {
-			pending = new SecretKey((byte[]) pen[3]);
-			confirmed = (Integer) pen[2] == 1;
+		if (pen != null && pen.getRootKey() != null
+				&& pen.getMessageNumber() == epoch + 1) {
+			pending = new SecretKey(pen.getRootKey());
+			confirmed = pen.getPreviousChainLength() == 1;
 		}
 		return new ContactRootKeys(epoch, current, pending, confirmed);
 	}
@@ -92,6 +97,7 @@ public class RootKeyStore {
 		if (fromEpoch + 1 > Integer.MAX_VALUE) return false;
 		if (isSnapshotting()) return false;
 		boolean stored = db.transactionWithResult(false, txn -> {
+			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
 			if (keys == null || keys.getEpoch() != fromEpoch) return false;
 			writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING, pending,
@@ -106,6 +112,7 @@ public class RootKeyStore {
 			throws DbException {
 		if (isSnapshotting()) return false;
 		boolean discarded = db.transactionWithResult(false, txn -> {
+			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
 			if (keys == null || keys.getEpoch() != fromEpoch
 					|| keys.getPending() == null) {
@@ -121,6 +128,7 @@ public class RootKeyStore {
 	public boolean promote(ContactId c, long fromEpoch) throws DbException {
 		if (isSnapshotting()) return false;
 		boolean promoted = db.transactionWithResult(false, txn -> {
+			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
 			if (keys == null || keys.getEpoch() != fromEpoch) return false;
 			SecretKey pending = keys.getPending();

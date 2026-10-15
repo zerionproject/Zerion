@@ -125,6 +125,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/clipboard_switch"
+					android:contentDescription="@string/vault_settings_clear_clipboard"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -156,6 +157,7 @@
 
 				<com.google.android.material.switchmaterial.SwitchMaterial
 					android:id="@+id/hide_content_switch"
+					android:contentDescription="@string/vault_settings_hide_content"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					android:checked="true" />
@@ -237,7 +239,7 @@
 						android:text="@string/vault_settings_wipe"
 						android:textSize="15sp"
 						android:textStyle="bold"
-						android:textColor="@color/zerion_destructive" />
+						android:textColor="@color/zerion_destructive_text" />
 
 					<TextView
 						android:layout_width="wrap_content"
@@ -245,7 +247,7 @@
 						android:layout_marginTop="2dp"
 						android:text="@string/vault_settings_wipe_summary"
 						android:textSize="12sp"
-						android:textColor="#CCEF4444" />
+						android:textColor="@color/zerion_destructive_text" />
 
 				</LinearLayout>
 
@@ -303,7 +305,7 @@
 			android:layout_marginTop="24dp"
 			android:text="@string/vault_settings_back"
 			android:textSize="16sp"
-			style="@style/Zerion.Button.Primary"
+			style="@style/Zerion.Button.Outlined"
 			app:icon="@drawable/ic_back"
 			app:iconGravity="start"
 			app:cornerRadius="14dp" />

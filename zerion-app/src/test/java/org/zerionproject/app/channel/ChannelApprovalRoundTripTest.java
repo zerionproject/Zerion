@@ -1,5 +1,6 @@
 package org.zerionproject.app.channel;
 
+import org.zerionproject.app.api.channel.ApplicationStatus;
 import org.zerionproject.app.api.channel.ChannelApplication;
 import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelState;
@@ -34,6 +35,7 @@ public class ChannelApprovalRoundTripTest {
 
 	private final Random random = new Random(271);
 	private final List<byte[]> applications = new ArrayList<>();
+	private final List<byte[]> checks = new ArrayList<>();
 	private CryptoComponent crypto;
 	private ChannelTestNode.MutableClock clock;
 	private ChannelTestNode publisher;
@@ -154,6 +156,71 @@ public class ChannelApprovalRoundTripTest {
 				.isEmpty());
 	}
 
+	@Test
+	public void anApplicationThePublisherNoLongerHoldsCanBeMadeAgain()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.applicationStore.removeAll(channel.channelId);
+		clock.advance(31_000L);
+		subscriber.refreshAndReschedule();
+
+		assertEquals("a lost application is not a denial",
+				ApplicationStatus.NOT_APPLIED,
+				subscriber.manager.getMyApplicationStatus(channel.channelId));
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		approveAndRefresh();
+		assertArrayEquals(capability, subscriber.store
+				.getChannel(channel.channelId).getJoinCapability());
+	}
+
+	@Test
+	public void aDeniedApplicationStillReadsDenied() throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.manager.denyApplication(channel.channelId,
+				held().getApplicantEd25519());
+		clock.advance(31_000L);
+		subscriber.refreshAndReschedule();
+
+		assertEquals(ApplicationStatus.DENIED,
+				subscriber.manager.getMyApplicationStatus(channel.channelId));
+	}
+
+	@Test
+	public void anOlderApplicantStillHearsDeniedForALostApplication()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		clock.advance(31_000L);
+		subscriber.refreshAndReschedule();
+		assertEquals("the poll went out", 1, checks.size());
+		publisher.applicationStore.removeAll(channel.channelId);
+
+		assertEquals("UNKNOWN", statusFor(checks.get(0), null));
+		assertEquals("DENIED", statusFor(checks.get(0), 2L));
+	}
+
+	private String statusFor(byte[] check, @Nullable Long version)
+			throws Exception {
+		byte[] request = check;
+		if (version != null) {
+			org.zerionproject.core.api.data.BdfDictionary d =
+					DaggerChannelCodecTestComponent.create()
+							.getBdfReaderFactory()
+							.createReader(new java.io.ByteArrayInputStream(
+									check)).readDictionary();
+			d.put("v", version);
+			java.io.ByteArrayOutputStream out =
+					new java.io.ByteArrayOutputStream();
+			org.zerionproject.core.api.data.BdfWriter w =
+					DaggerChannelCodecTestComponent.create()
+							.getBdfWriterFactory().createWriter(out);
+			w.writeDictionary(d);
+			w.flush();
+			request = out.toByteArray();
+		}
+		return publisher.pullCodec.decodeApprovalResponse(
+				publisher.handle(channel.channelId, request)).status;
+	}
+
 	private void approveAndRefresh() throws Exception {
 		List<ChannelApplication> pending =
 				publisher.manager.listPendingApplications(channel.channelId);
@@ -183,9 +250,12 @@ public class ChannelApprovalRoundTripTest {
 			@Override
 			public byte[] requestFromOnion(String onion, byte[] request)
 					throws java.io.IOException {
-				if (ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN.equals(
-						publisher.pullCodec.peekType(request))) {
+				String type = publisher.pullCodec.peekType(request);
+				if (ChannelConstants.WIRE_TYPE_APPLY_TO_JOIN.equals(type)) {
 					applications.add(request.clone());
+				} else if (ChannelConstants.WIRE_TYPE_CHECK_APPROVAL
+						.equals(type)) {
+					checks.add(request.clone());
 				}
 				return inner.requestFromOnion(onion, request);
 			}

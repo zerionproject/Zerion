@@ -61,8 +61,6 @@ public abstract class ZerionActivity extends BaseActivity {
 	protected LockManager lockManager;
 	@Inject
 	AndroidWakeLockManager wakeLockManager;
-	@Inject
-	com.professor.zerion.android.security.AntiForensics antiForensics;
 
 	@Override
 	public void onStart() {
@@ -92,24 +90,18 @@ public abstract class ZerionActivity extends BaseActivity {
 		}
 	}
 
+	public void armUsbPanicIfConfigured() {
+		try {
+			com.professor.zerion.android.security.UsbPanic
+					.armIfConfigured(this);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
 	@Override
 	public void onResume() {
 		super.onResume();
-		if (briarController
-				instanceof com.professor.zerion.android.controller
-						.ZerionControllerImpl) {
-			try {
-				android.content.SharedPreferences uiPrefs =
-						((com.professor.zerion.android.ZerionApplication)
-								getApplication())
-								.getApplicationComponent()
-								.uiPreferences();
-				((com.professor.zerion.android.controller
-						.ZerionControllerImpl) briarController)
-						.armUsbPanicIfConfigured(antiForensics, uiPrefs);
-			} catch (Exception ignored) {
-			}
-		}
+		armUsbPanicIfConfigured();
 		if (!briarController.accountSignedIn() && !isFinishing()) {
 			Intent i = new Intent(this, StartupActivity.class);
 			startActivityForResult(i, REQUEST_PASSWORD);

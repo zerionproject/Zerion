@@ -2,13 +2,12 @@ package com.professor.zerion.android.vault.wallet.btc;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
+import java.math.BigDecimal;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @NotNullByDefault
 public final class BtcPrice {
@@ -16,6 +15,9 @@ public final class BtcPrice {
 	private static final String HOST =
 			"mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion";
 	private static final int PORT = 80;
+	static final int MAX_BODY = 64 * 1024;
+	static final int READ_TIMEOUT_MS = 30_000;
+	static final int RESPONSE_DEADLINE_MS = 60_000;
 
 	public static final String[] CURRENCIES =
 			{"EUR", "USD", "GBP", "CAD", "CHF", "AUD", "JPY"};
@@ -58,11 +60,23 @@ public final class BtcPrice {
 		}
 
 		public static Rates fromJson(String json) {
+			try {
+				return parse(json);
+			} catch (IOException malformed) {
+				return new Rates(new java.util.HashMap<>());
+			}
+		}
+
+		static Rates parse(String json) throws IOException {
+			Map<String, Object> o = StrictJson.object(StrictJson.parse(json));
 			java.util.Map<String, Double> m = new java.util.HashMap<>();
 			for (String c : CURRENCIES) {
-				double v = parseValue(json, c);
-				if (v > 0) {
-					m.put(c, v);
+				Object v = o.get(c);
+				if (v instanceof BigDecimal) {
+					double d = ((BigDecimal) v).doubleValue();
+					if (Double.isFinite(d) && d >= 100 && d <= 1e12) {
+						m.put(c, d);
+					}
 				}
 			}
 			return new Rates(m);
@@ -79,7 +93,7 @@ public final class BtcPrice {
 	public static Rates fetch(int socksPort, String isolationTag)
 			throws IOException {
 		Socket socket = com.professor.zerion.android.vault.net.TorSockets
-				.open(socksPort, 30_000);
+				.open(socksPort, READ_TIMEOUT_MS);
 		try {
 			TorSocks.connect(socket, HOST, PORT, "zw-" + isolationTag,
 					isolationTag);
@@ -92,69 +106,13 @@ public final class BtcPrice {
 			out.write(request.getBytes(StandardCharsets.US_ASCII));
 			out.flush();
 
-			ByteArrayOutputStream buf = new ByteArrayOutputStream();
-			InputStream in = socket.getInputStream();
-			byte[] tmp = new byte[4096];
-			int r;
-			while ((r = in.read(tmp)) >= 0) {
-				buf.write(tmp, 0, r);
-				if (buf.size() > 65536) {
-					break;
-				}
-			}
-
-			String resp = new String(buf.toByteArray(),
-					StandardCharsets.UTF_8);
-			int firstLineEnd = resp.indexOf("\r\n");
-			String statusLine = firstLineEnd >= 0
-					? resp.substring(0, firstLineEnd) : resp;
-			if (!statusLine.contains(" 200")) {
-				throw new IOException("price http non-200");
-			}
-			int sep = resp.indexOf("\r\n\r\n");
-			String body = sep >= 0 ? resp.substring(sep + 4) : resp;
-			java.util.Map<String, Double> map = new java.util.HashMap<>();
-			for (String c : CURRENCIES) {
-				double v = parseValue(body, c);
-				if (v > 0) {
-					map.put(c, v);
-				}
-			}
-			return new Rates(map);
+			return Rates.parse(TorHttp.readResponse(socket, MAX_BODY,
+					READ_TIMEOUT_MS, RESPONSE_DEADLINE_MS));
 		} finally {
 			try {
 				socket.close();
 			} catch (IOException ignored) {
 			}
-		}
-	}
-
-	private static double parseValue(String body, String key) {
-		int i = body.indexOf("\"" + key + "\"");
-		if (i < 0) {
-			return 0;
-		}
-		int colon = body.indexOf(':', i);
-		if (colon < 0) {
-			return 0;
-		}
-		int j = colon + 1;
-		while (j < body.length() && body.charAt(j) == ' ') {
-			j++;
-		}
-		int k = j;
-		while (k < body.length() && (Character.isDigit(body.charAt(k))
-				|| body.charAt(k) == '.')) {
-			k++;
-		}
-		try {
-			double v = Double.parseDouble(body.substring(j, k));
-			if (!Double.isFinite(v) || v < 100 || v > 1e12) {
-				return 0;
-			}
-			return v;
-		} catch (Exception e) {
-			return 0;
 		}
 	}
 }

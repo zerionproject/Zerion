@@ -12,6 +12,7 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.sync.validation.ValidationManager;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.db.DatabaseModule;
 import org.zerionproject.core.test.BrambleCoreIntegrationTestModule;
@@ -22,10 +23,12 @@ import org.zerionproject.core.test.TimeTravel;
 import org.zerionproject.app.api.autodelete.AutoDeleteManager;
 import org.zerionproject.app.api.client.MessageTracker;
 import org.zerionproject.app.api.conversation.ConversationManager;
+import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.autodelete.AutoDeleteModule;
 import org.zerionproject.app.client.BriarClientModule;
 import org.zerionproject.app.conversation.ConversationModule;
+import org.zerionproject.app.grouptr.GroupTrModule;
 
 import javax.inject.Singleton;
 
@@ -40,6 +43,7 @@ import dagger.Component;
 		DatabaseModule.class,
 		BriarClientModule.class,
 		ConversationModule.class,
+		GroupTrModule.class,
 		MessagingModule.class,
 		TestDnsModule.class,
 		TestSocksModule.class,
@@ -57,6 +61,8 @@ interface ContactGroupScanTestComponent
 	ContactManager getContactManager();
 
 	MessagingManager getMessagingManager();
+
+	GroupTrManager getGroupTrManager();
 
 	ClientHelper getClientHelper();
 
@@ -85,6 +91,8 @@ interface ContactGroupScanTestComponent
 	TimeTravel getTimeTravel();
 
 	CryptoComponent getCryptoComponent();
+
+	ValidationManager getValidationManager();
 
 	class Helper {
 

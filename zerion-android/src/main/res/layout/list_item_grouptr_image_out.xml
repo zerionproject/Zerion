@@ -36,7 +36,7 @@
 			android:layout_height="wrap_content"
 			android:layout_marginEnd="6dp"
 			android:layout_marginBottom="4dp"
-			android:background="#66000000"
+			android:background="@color/msg_status_bubble_background"
 			android:paddingHorizontal="6dp"
 			android:paddingVertical="2dp"
 			android:textColor="#FFFFFF"

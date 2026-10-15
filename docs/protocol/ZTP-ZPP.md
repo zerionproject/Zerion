@@ -20,9 +20,15 @@ Behaviour:
 - Outbound connections dial a contact's Tor v3 onion on port 80 through a SOCKS
   factory. The outbound side knows which contact it dialled.
 - The local side publishes a hidden service and accepts up to 64 inbound
-  connections. The socket timeout is 30 seconds. Before its tag is read, a
+  connections. The socket timeout is 20 seconds (30 seconds up to 3.0.17),
+  about five idle frames, so a session that has gone silent is closed and
+  dialled again within 20 seconds. Before its tag is read, a
   connection holds one of 16 pre-tag slots and must deliver the tag within a
-  5-second deadline.
+  5-second deadline. Both slots are taken before the connection is handed to
+  a worker, and a connection that finds no free slot is closed at once.
+- During an onion rotation the announced next address is served on a
+  listener of its own, so a session that arrives on it is known to have
+  reached the new address.
 - There is no per-connection handshake after pairing. The connection handler
   resumes the persisted session for the contact, under the contact's current
   root key or, once the peer proved it holds it, its pending one (see
@@ -31,7 +37,15 @@ Behaviour:
 - Nothing outside the connection changes before the peer's first frame has
   authenticated: the connection is registered, an arrival through the
   authorized service is recorded, the onion rotation learns of the session
-  and the message layer is offered the send queue only then.
+  and of the address it arrived on, and the message layer is offered the
+  send queue only then. For the onion rotation a dial counts as reaching
+  the contact only when the first frame authenticated, however long the
+  socket stayed open. Two outbound signals come earlier, from the
+  completed Tor connection alone: the dial backoff treats a socket that
+  stayed open for ten seconds as a connection, and a dial that reached the
+  contact's authorized address is a client authorization probe and
+  contact over the authorized path (ONION_CLIENT_AUTH.md sections 3 and
+  5), since only the holder of that address can complete it.
 
 Inbound connections are anonymous, since a Tor onion accept does not name the
 peer. ZTP resolves the peer by peeking the first 16 bytes of the stream, which are
@@ -67,20 +81,26 @@ whether an interval carried a message or was idle, or how large a message was.
 Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
 
 - Two constant base intervals. The active interval, 750 ms, applies while
-  application records flowed in the last two minutes or are queued. The idle
-  interval, 4 s, applies afterwards, the same on every network type.
+  anything is queued, and for two minutes after the connection opens, after
+  this side's own last message and after a received message that counts as
+  activity. The idle interval, 4 s, applies otherwise, the same on every
+  network type.
 - Each interval adds uniform zero-mean jitter of up to one third of its length.
-- A frame is never sent closer than the active spacing, so the onset of
-  activity cannot burst, and a stall lengthens the cadence rather than causing a
-  catch-up burst.
+- Activity shortens a pending idle wait to the jittered active spacing, never
+  below 500 ms after the previous frame as the application hands it to Tor, so
+  the onset of activity cannot burst, and a stall lengthens the cadence rather
+  than causing a catch-up burst. Tor and TCP buffering can still bring frames
+  closer together on the wire.
 - Two lanes share the slots: records that fit one frame (texts, offers,
   requests, acknowledgements, receipts) and the frames of records that need
   several (attachment chunks, large posts). A slot carries the next small
   record when one is waiting and a bulk frame otherwise, so a long attachment
   transfer never holds back the chat behind it. The cadence does not change;
   a fragmented record is reassembled by the peer however its frames are
-  interleaved. At one 4096-byte frame per active slot a connection carries
-  about 5 KB per second, so a 4 MB attachment takes about a quarter of an hour.
+  interleaved. A frame carries at most 1698 bytes of payload (a fragment
+  1686 bytes of the record), so at one frame per active slot a connection
+  carries a little over 2 KB per second and a 4 MB attachment takes about half
+  an hour.
 - A record waits in the bulk lane far longer than the retransmission timer
   the database starts when it hands the record over, so the sender keeps the
   set of messages whose frames have not all left: such a message is neither
@@ -94,15 +114,33 @@ What this hides and what it does not: within a rate, an observer cannot tell
 which frames carried data. The switch from the idle to the active rate, and
 back after two quiet minutes, reveals the coarse onset and end of activity, and
 because the active rate lasts while records are queued, the length of an active
-period gives a rough bound on how much was sent. Only content this side
-produced selects the active rate, and only when it leaves for the first time:
-acknowledgements, offers and requests the peer's records provoke, and resends
-of messages the peer asks for again, go out at the current rate without
-selecting the active one, and receipts extend the active rate only within ten
-minutes of this side's own last message, so a peer that only sends cannot keep
-this side at the active rate. A message composed offline counts when it first
-leaves, up to a day after it was written. A queued message dials the contact at once, so the opening of a
-connection can coincide with a send. Connection existence, lifetime and
+period gives a rough bound on how much was sent. Only messages
+this side created start or extend the two-minute window, and only when they
+leave for the first time; that includes automatic ones such as address
+updates and typing notices. Acknowledgements, offers and requests the peer's
+records provoke, and resends of messages the peer asks for again, do not, but
+the active interval applies while anything is queued, so a backlog of them
+drains at it. A received message counts as activity within ten minutes of
+this side's own last message and otherwise at most once per ten minutes, and
+both that ration and the two-minute window start afresh with every
+connection, so a peer that keeps sending, or keeps reconnecting, can hold this
+side at or near the active rate. A message composed offline counts when it
+first leaves, up to a day after it was written. The side of each pair with
+the lower author id is the dialer (`ZtpPoller`, over Tor and over I2P when it
+is enabled): there a queued message, acknowledgement or new contact dials the
+contact at once, so the opening of a connection can coincide with a send, and
+a contact that is not connected is dialled every 5 s, backing off to about
+72 s after failures. A connection that ends within ten seconds counts as a
+failure and does not reset the backoff. Since 3.0.18 the other side dials
+too, on a timer and never because of a send: 15 to 20 s after its Tor
+connection comes up, or after a connection that lasted at least ten seconds
+drops, it dials on the same backoff for ten minutes, and after that every
+five to six minutes while the contact is not connected, so a pair also
+connects when only one side's Tor path reaches the other. When both sides
+connect at once, the connection dialled by the side with the lower author id
+is kept and the other is closed, on both sides. A connection stays open for
+as long as both devices are online, so
+a contact sees when this device is online. Connection existence, lifetime and
 reconnects are visible to an observer of the Tor link. Calls and channel
 requests do not use this pacing.
 

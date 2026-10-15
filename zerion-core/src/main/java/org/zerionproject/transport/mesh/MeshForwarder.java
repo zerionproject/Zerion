@@ -135,13 +135,13 @@ public class MeshForwarder {
 		}
 		String idHex = StringUtils.toHexString(frame.getMessageId());
 		if (!markSeen(idHex, peer)) return false;
-		listener.onFrame(frame.getPayload(), peer);
 		MeshFrame next = frame.decremented();
 		if (next != null) {
 			byte[] encoded = next.encode();
 			remember(idHex, encoded, peer);
 			relay(encoded, fromLinkId, fromPeerId);
 		}
+		listener.onFrame(frame.getPayload(), peer);
 		return true;
 	}
 

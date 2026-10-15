@@ -2,6 +2,7 @@
 <resources>
 
 	<attr name="colorControlNormal" format="color" />
+	<attr name="zerionAccentText" format="color" />
 	<attr name="selectableItemBackground" format="reference" />
 
 	<integer name="animationSpeed">@android:integer/config_mediumAnimTime</integer>

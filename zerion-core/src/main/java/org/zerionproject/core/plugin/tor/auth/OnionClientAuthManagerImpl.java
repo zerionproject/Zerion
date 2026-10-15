@@ -38,8 +38,10 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -73,9 +75,17 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	static final long PROBE_WINDOW_MS = TimeUnit.MINUTES.toMillis(10);
 	static final long PROBE_PAUSE_MS = TimeUnit.MINUTES.toMillis(30);
 	static final long NEGOTIATION_TIMEOUT_MS = TimeUnit.DAYS.toMillis(7);
-	static final long ROTATION_PERIOD_MS = TimeUnit.DAYS.toMillis(30);
+	static final long MIN_ROTATION_PERIOD_MS = TimeUnit.DAYS.toMillis(28);
+	static final long MAX_ROTATION_PERIOD_MS = TimeUnit.DAYS.toMillis(35);
 	static final long RETIRE_DEADLINE_MS = TimeUnit.DAYS.toMillis(30);
 	static final long TICK_MS = TimeUnit.MINUTES.toMillis(15);
+	static final long REPAIR_DELAY_MS = TimeUnit.HOURS.toMillis(1);
+	static final long MAX_REPAIR_DELAY_MS = TimeUnit.DAYS.toMillis(1);
+	static final int MAX_REPAIRS = 10;
+	static final long SILENCE_MS = TimeUnit.DAYS.toMillis(1);
+	static final long MAX_OPEN_DIAL_DELAY_MS = TimeUnit.DAYS.toMillis(7);
+	static final long REKEY_INTERVAL_MS = TimeUnit.DAYS.toMillis(1);
+	static final long SEEN_WRITE_MS = TimeUnit.HOURS.toMillis(1);
 	static final int MAX_AUTHORIZED_CLIENTS = 200;
 	static final int REMOTE_PORT = 80;
 
@@ -99,8 +109,31 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	private String authorizedTarget = null;
 	@Nullable
 	private ProbeDialer probeDialer = null;
+	@Nullable
+	private String publishedOnion = null;
+	private Set<String> publishedKeys = new HashSet<>();
 
 	private final Map<ContactId, Cached> cache = new ConcurrentHashMap<>();
+	private final Map<ContactId, Long> seenWritten = new ConcurrentHashMap<>();
+	private final java.security.SecureRandom rotationRandom =
+			new java.security.SecureRandom();
+
+	long drawRotationPeriodMs() {
+		long span = MAX_ROTATION_PERIOD_MS - MIN_ROTATION_PERIOD_MS;
+		return MIN_ROTATION_PERIOD_MS
+				+ (long) (rotationRandom.nextDouble() * (span + 1));
+	}
+
+	static boolean isRotationPeriod(long periodMs) {
+		return periodMs >= MIN_ROTATION_PERIOD_MS
+				&& periodMs <= MAX_ROTATION_PERIOD_MS;
+	}
+
+	static boolean periodicRotationDue(ServiceRecord svc, long now) {
+		return svc.onion != null && svc.oldOnion == null
+				&& isRotationPeriod(svc.rotationPeriodMs)
+				&& now - svc.lastRotationMs > svc.rotationPeriodMs;
+	}
 
 	private static final class Cached {
 
@@ -108,11 +141,17 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		@Nullable
 		final String peerOnion;
 		final boolean probing;
+		final boolean committed;
+		@Nullable
+		final String fallbackOnion;
 
-		Cached(State state, @Nullable String peerOnion, boolean probing) {
+		Cached(State state, @Nullable String peerOnion, boolean probing,
+				boolean committed, @Nullable String fallbackOnion) {
+			this.fallbackOnion = fallbackOnion;
 			this.state = state;
 			this.peerOnion = peerOnion;
 			this.probing = probing;
+			this.committed = committed;
 		}
 	}
 
@@ -139,6 +178,12 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	public interface ProbeDialer {
 		void dial(ContactId c);
+
+		default void repair(ContactId c) {
+		}
+
+		default void repairOpen(ContactId c) {
+		}
 	}
 
 	public void attachTor(OnionServiceControl control, int authorizedPort) {
@@ -170,16 +215,46 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	public void dialSucceeded(ContactId c, String onion) {
 		Cached cached = cache.get(c);
-		if (cached != null && cached.probing && onion.equals(cached.peerOnion)) {
+		if (cached == null) return;
+		boolean round = onion.equals(cached.peerOnion);
+		if (!round && !onion.equals(cached.fallbackOnion)) return;
+		if (cached.probing && round) {
 			ioExecutor.execute(() -> probeSucceeded(c));
 		}
+		if (cached.state == AUTH_REQUIRED || cached.committed) seen(c);
 	}
 
 	@Override
 	public void inboundViaAuthorizedService(ContactId c) {
 		Cached cached = cache.get(c);
-		if (cached != null && cached.probing) {
-			ioExecutor.execute(() -> probeSucceeded(c));
+		if (cached == null) return;
+		if (cached.probing) ioExecutor.execute(() -> probeSucceeded(c));
+		if (cached.state == AUTH_REQUIRED || cached.committed) seen(c);
+	}
+
+	private void seen(ContactId c) {
+		long now = clock.currentTimeMillis();
+		Long written = seenWritten.get(c);
+		if (written != null && now - written < SEEN_WRITE_MS) return;
+		seenWritten.put(c, now);
+		ioExecutor.execute(() -> recordSeen(c, now));
+	}
+
+	private void recordSeen(ContactId c, long now) {
+		try {
+			db.transaction(false, txn -> {
+				OnionAuthRecord r = store.load(txn, c);
+				if (!r.holdsCommit()) return;
+				r.lastSeenMs = now;
+				r.silenceRepairs = 0;
+				r.nextSilenceRepairMs = 0;
+				if (!r.rekeying) {
+					r.openDials = 0;
+					r.nextOpenDialMs = 0;
+				}
+				store.save(txn, r);
+			});
+		} catch (DbException | RuntimeException ignored) {
 		}
 	}
 
@@ -189,6 +264,22 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			dialer = probeDialer;
 		}
 		if (dialer != null) ioExecutor.execute(() -> dialer.dial(c));
+	}
+
+	private void requestRepairDial(ContactId c) {
+		ProbeDialer dialer;
+		synchronized (torLock) {
+			dialer = probeDialer;
+		}
+		if (dialer != null) ioExecutor.execute(() -> dialer.repair(c));
+	}
+
+	private void requestOpenDial(ContactId c) {
+		ProbeDialer dialer;
+		synchronized (torLock) {
+			dialer = probeDialer;
+		}
+		if (dialer != null) ioExecutor.execute(() -> dialer.repairOpen(c));
 	}
 
 	@Nullable
@@ -201,6 +292,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	@Override
 	public void onDatabaseOpened(Transaction txn) throws DbException {
 		removeGroupsOfRemovedContacts(txn);
+		store.deleteClearedRecords(txn);
 		for (Contact c : db.getContacts(txn)) ensureGroup(txn, c);
 		for (OnionAuthRecord r : store.loadAll(txn)) {
 			cache(r);
@@ -278,7 +370,13 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			return;
 		}
 		String peerOnion = r.peerOnion;
+		String committedOnion = r.committedPeerOnion;
 		boolean authorized = r.authorizesPeer();
+		if (committedOnion != null && !committedOnion.equals(peerOnion)) {
+			RevocationWork committed = new RevocationWork(c.getId(),
+					committedOnion, false);
+			txn.attach(() -> ioExecutor.execute(() -> revoke(committed)));
+		}
 		store.clear(txn, c.getId());
 		OnionAuthRecord tombstone = new OnionAuthRecord(c.getId());
 		tombstone.state = REVOKED;
@@ -339,27 +437,85 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	private void onOffer(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
-		if (r.state == AUTH_REQUIRED) {
-			resendCommit(txn, r);
+		byte[] pub = msg.publicKey;
+		if (r.rekeying && pub != null && r.committedPeerKey != null
+				&& Arrays.equals(pub, r.committedPeerKey)) {
+			returnToCommittedRound(txn, r, false);
+			if (r.lockedIn()) answerWithCommit(txn, r);
 			return;
 		}
-		byte[] pub = msg.publicKey;
+		boolean committedRound = r.lockedIn()
+				|| (r.awaitsPeerCommit() && !r.rekeying);
+		if (committedRound && pub != null && r.peerPublicKey != null
+				&& !Arrays.equals(r.peerPublicKey, pub)
+				&& (r.rekeyedMs == 0 || clock.currentTimeMillis()
+				- r.rekeyedMs >= REKEY_INTERVAL_MS)) {
+			startRekey(txn, r, msg);
+			return;
+		}
+		if (r.lockedIn()) {
+			answerWithCommit(txn, r);
+			return;
+		}
 		if (pub == null) return;
 		boolean newKey = r.peerPublicKey == null
 				|| !Arrays.equals(r.peerPublicKey, pub);
+		boolean replacesKey = newKey && r.peerPublicKey != null;
+		long now = clock.currentTimeMillis();
+		if (replacesKey && r.rekeyedMs != 0
+				&& now - r.rekeyedMs < REKEY_INTERVAL_MS) {
+			return;
+		}
 		if (r.state == LEGACY) startNegotiation(txn, r);
 		if (r.peerPublicKey != null && !newKey && msg.onion != null
 				&& msg.onion.equals(r.peerOnion) && msg.keyVersion == r.peerGen) {
 			return;
 		}
+		if (replacesKey) r.rekeyedMs = now;
 		r.peerPublicKey = pub;
 		if (msg.onion != null) {
 			r.peerOnion = msg.onion;
 			r.peerGen = msg.keyVersion;
 		}
+		if (r.readyReceived && r.peerOnion != null && !r.probing) {
+			startProbe(txn, r);
+		}
 		store.save(txn, r);
 		cache(r);
 		ContactId id = r.contactId;
+		txn.attach(() -> ioExecutor.execute(() -> authorize(id)));
+	}
+
+	private void startRekey(Transaction txn, OnionAuthRecord r,
+			OnionAuthRecords.Record msg) throws DbException {
+		long now = clock.currentTimeMillis();
+		r.committedLocked = r.lockedIn();
+		r.committedPeerKey = r.peerPublicKey;
+		r.committedPeerOnion = r.peerOnion;
+		r.committedPeerGen = r.peerGen;
+		r.rekeying = true;
+		r.rekeyedMs = now;
+		r.negotiationStartedMs = now;
+		r.peerPublicKey = msg.publicKey;
+		if (msg.onion != null) {
+			r.peerOnion = msg.onion;
+			r.peerGen = msg.keyVersion;
+		}
+		r.readyReceived = false;
+		r.probeSucceeded = false;
+		r.peerProbeSucceeded = false;
+		r.commitSent = false;
+		r.peerCommitReceived = false;
+		r.probing = false;
+		r.probeUntilMs = 0;
+		r.localGen = store.loadService(txn).gen;
+		scheduleRepairs(r);
+		r.openDials = 0;
+		r.nextOpenDialMs = now + REPAIR_DELAY_MS;
+		store.save(txn, r);
+		cache(r);
+		ContactId id = r.contactId;
+		seenWritten.remove(id);
 		txn.attach(() -> ioExecutor.execute(() -> authorize(id)));
 	}
 
@@ -378,14 +534,18 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	private void onReady(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
-		if (r.state == AUTH_REQUIRED) {
-			resendCommit(txn, r);
+		if (r.lockedIn()) {
+			answerWithCommit(txn, r);
 			return;
 		}
-		if (r.state == LEGACY || r.peerOnion == null) return;
-		if (msg.keyVersion != r.peerGen) return;
+		if (r.state == LEGACY) return;
+		boolean addressKnown = r.peerOnion != null;
+		if (addressKnown && msg.keyVersion != r.peerGen
+				&& msg.keyVersion != store.loadService(txn).gen) {
+			return;
+		}
 		r.readyReceived = true;
-		startProbe(txn, r);
+		if (addressKnown) startProbe(txn, r);
 		store.save(txn, r);
 		cache(r);
 	}
@@ -400,8 +560,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	private void onProbeSuccess(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
-		if (r.state == AUTH_REQUIRED) {
-			resendCommit(txn, r);
+		if (r.lockedIn()) {
+			answerWithCommit(txn, r);
 			return;
 		}
 		if (r.state == LEGACY) return;
@@ -425,7 +585,128 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				OnionAuthCommitCheck.fingerprint(r.dialPublicKey)),
 				OnionAuthRecords.TYPE_COMMIT, svc.gen);
 		r.commitSent = true;
-		if (r.peerCommitReceived) r.state = AUTH_REQUIRED;
+		if (r.peerCommitReceived) lockIn(txn, r);
+		else scheduleRepairs(r);
+	}
+
+	private void lockIn(Transaction txn, OnionAuthRecord r) {
+		long now = clock.currentTimeMillis();
+		if (r.rekeying) {
+			ContactId id = r.contactId;
+			txn.attach(() -> ioExecutor.execute(() -> authorize(id)));
+		}
+		r.committedPeerKey = null;
+		r.committedPeerOnion = null;
+		r.committedPeerGen = 0;
+		r.committedLocked = false;
+		r.state = AUTH_REQUIRED;
+		r.rekeying = false;
+		r.probing = false;
+		r.commitResent = false;
+		r.nextRepairMs = now + REPAIR_DELAY_MS;
+		r.lastSeenMs = now;
+		r.openDials = 0;
+		r.nextOpenDialMs = 0;
+		r.silenceRepairs = 0;
+		r.nextSilenceRepairMs = 0;
+	}
+
+	private void scheduleRepairs(OnionAuthRecord r) {
+		r.repairs = 0;
+		r.nextRepairMs = clock.currentTimeMillis() + REPAIR_DELAY_MS;
+	}
+
+	private void returnToCommittedRound(Transaction txn, OnionAuthRecord r,
+			boolean peerCommitted) throws DbException {
+		boolean locked = r.committedLocked || peerCommitted;
+		r.peerPublicKey = r.committedPeerKey;
+		r.peerOnion = r.committedPeerOnion;
+		r.peerGen = r.committedPeerGen;
+		r.readyReceived = true;
+		r.probeSucceeded = true;
+		r.peerProbeSucceeded = true;
+		r.commitSent = true;
+		r.probing = false;
+		if (locked) {
+			r.peerCommitReceived = true;
+			lockIn(txn, r);
+		} else {
+			r.peerCommitReceived = false;
+			r.rekeying = false;
+			r.committedPeerKey = null;
+			r.committedPeerOnion = null;
+			r.committedPeerGen = 0;
+			r.nextRepairMs = clock.currentTimeMillis() + REPAIR_DELAY_MS;
+			ContactId id = r.contactId;
+			txn.attach(() -> ioExecutor.execute(() -> authorize(id)));
+		}
+		store.save(txn, r);
+		cache(r);
+	}
+
+	private static boolean matchesCommittedRound(OnionAuthRecord r,
+			OnionAuthRecords.Record msg, ServiceRecord svc) {
+		if (r.committedPeerKey == null) return false;
+		OnionAuthRecord committed = new OnionAuthRecord(r.contactId);
+		committed.state = AUTH_REQUIRED;
+		committed.localGen = r.localGen;
+		committed.peerGen = r.committedPeerGen;
+		committed.dialPrivateKey = r.dialPrivateKey;
+		committed.dialPublicKey = r.dialPublicKey;
+		committed.peerPublicKey = r.committedPeerKey;
+		committed.readyReceived = true;
+		committed.probeSucceeded = true;
+		committed.peerProbeSucceeded = true;
+		return OnionAuthCommitCheck.check(committed, msg, svc.gen, svc.onion)
+				== OnionAuthCommitCheck.Verdict.ACCEPT;
+	}
+
+	private void rekeyRepair(Transaction txn, OnionAuthRecord r, long now)
+			throws DbException {
+		sendOffer(txn, r);
+		if (r.peerOnion != null) {
+			ServiceRecord svc = store.loadService(txn);
+			send(txn, r.contactId, OnionAuthRecords.ready(svc.gen),
+					OnionAuthRecords.TYPE_READY, svc.gen);
+		}
+		r.repairs++;
+		r.nextRepairMs = now + Math.min(REPAIR_DELAY_MS << r.repairs,
+				MAX_REPAIR_DELAY_MS);
+		store.save(txn, r);
+	}
+
+	private boolean openDialDue(OnionAuthRecord r, long now) {
+		if (!r.holdsCommit() || now < r.nextOpenDialMs) return false;
+		if (r.rekeying) return r.lastSeenMs <= r.rekeyedMs;
+		return now - r.lastSeenMs >= SILENCE_MS + REPAIR_DELAY_MS;
+	}
+
+	private boolean silenceRepairDue(OnionAuthRecord r, long now) {
+		return r.lockedIn() && now >= r.nextSilenceRepairMs
+				&& now - r.lastSeenMs >= SILENCE_MS;
+	}
+
+	private void silenceRepair(Transaction txn, OnionAuthRecord r, long now)
+			throws DbException {
+		r.silenceRepairs++;
+		r.nextSilenceRepairMs = now + Math.min(
+				REPAIR_DELAY_MS << Math.min(r.silenceRepairs, 16),
+				MAX_OPEN_DIAL_DELAY_MS);
+		store.save(txn, r);
+		ContactId c = r.contactId;
+		txn.attach(() -> requestRepairDial(c));
+	}
+
+	private void openDial(Transaction txn, OnionAuthRecord r, long now)
+			throws DbException {
+		if (!r.rekeying && r.openDials == 0) sendOffer(txn, r);
+		r.openDials++;
+		r.nextOpenDialMs = now + Math.min(
+				REPAIR_DELAY_MS << Math.min(r.openDials, 16),
+				MAX_OPEN_DIAL_DELAY_MS);
+		store.save(txn, r);
+		ContactId c = r.contactId;
+		txn.attach(() -> requestOpenDial(c));
 	}
 
 	private void resendCommit(Transaction txn, OnionAuthRecord r)
@@ -437,21 +718,51 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				OnionAuthRecords.TYPE_COMMIT, svc.gen);
 	}
 
+	private void answerWithCommit(Transaction txn, OnionAuthRecord r)
+			throws DbException {
+		long now = clock.currentTimeMillis();
+		if (r.commitResent && now < r.nextRepairMs) return;
+		resendCommit(txn, r);
+		r.commitResent = true;
+		r.nextRepairMs = now + REPAIR_DELAY_MS;
+		store.save(txn, r);
+	}
+
+	private void repair(Transaction txn, OnionAuthRecord r, long now)
+			throws DbException {
+		ServiceRecord svc = store.loadService(txn);
+		send(txn, r.contactId, OnionAuthRecords.probeSuccess(svc.gen),
+				OnionAuthRecords.TYPE_PROBE_SUCCESS, svc.gen);
+		resendCommit(txn, r);
+		r.repairs++;
+		r.nextRepairMs = now + Math.min(REPAIR_DELAY_MS << r.repairs,
+				MAX_REPAIR_DELAY_MS);
+		store.save(txn, r);
+	}
+
 	private void onCommit(Transaction txn, OnionAuthRecord r,
 			OnionAuthRecords.Record msg) throws DbException {
+		if (r.lockedIn()) {
+			if (!r.commitResent) answerWithCommit(txn, r);
+			return;
+		}
 		ServiceRecord svc = store.loadService(txn);
+		if (r.rekeying && matchesCommittedRound(r, msg, svc)) {
+			returnToCommittedRound(txn, r, true);
+			return;
+		}
 		OnionAuthCommitCheck.Verdict v = OnionAuthCommitCheck.check(r, msg,
 				svc.gen, svc.onion);
-		if (r.state == AUTH_REQUIRED) {
-			resendCommit(txn, r);
-			return;
+		if (v == OnionAuthCommitCheck.Verdict.NOT_READY && r.readyReceived
+				&& r.probeSucceeded && !r.peerProbeSucceeded) {
+			r.peerProbeSucceeded = true;
+			v = OnionAuthCommitCheck.check(r, msg, svc.gen, svc.onion);
 		}
 		if (v != OnionAuthCommitCheck.Verdict.ACCEPT) return;
 		r.peerCommitReceived = true;
 		if (r.state == AUTH_NEGOTIATING) r.state = AUTH_CONFIRMED;
 		maybeCommit(txn, r);
-		if (r.commitSent) r.state = AUTH_REQUIRED;
-		if (r.state == AUTH_REQUIRED) r.probing = false;
+		if (r.commitSent && !r.lockedIn()) lockIn(txn, r);
 		store.save(txn, r);
 		cache(r);
 	}
@@ -463,10 +774,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		if (msg.onion != null) {
 			r.peerOnion = msg.onion;
 		}
-		if (msg.publicKey != null) {
-			r.peerPublicKey = msg.publicKey;
-		}
 		r.peerGen = msg.keyVersion;
+		if (r.awaitsPeerCommit()) {
+			r.nextRepairMs = clock.currentTimeMillis() + REPAIR_DELAY_MS;
+		}
 		store.save(txn, r);
 		cache(r);
 		send(txn, r.contactId, OnionAuthRecords.rotateAck(msg.keyVersion),
@@ -505,12 +816,24 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	public String getDialOnion(ContactId c) {
 		Cached cached = cache.get(c);
 		if (cached == null) return null;
-		if (cached.state == AUTH_REQUIRED) return cached.peerOnion;
-		if ((cached.state == AUTH_NEGOTIATING
-				|| cached.state == AUTH_CONFIRMED) && cached.probing) {
-			return cached.peerOnion;
+		boolean dials = cached.state == AUTH_REQUIRED
+				|| ((cached.state == AUTH_NEGOTIATING
+				|| cached.state == AUTH_CONFIRMED)
+				&& (cached.probing || cached.committed));
+		if (!dials) return null;
+		if (!cached.probing && cached.fallbackOnion != null) {
+			return cached.fallbackOnion;
 		}
-		return null;
+		return cached.peerOnion;
+	}
+
+	public OnionAuthDiagnostics diagnostics(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			OnionAuthRecord r = store.load(txn, c);
+			return new OnionAuthDiagnostics(r.state, r.commitSent, r.repairs,
+					r.rekeying, r.silenceRepairs, r.openDials,
+					store.loadService(txn).gen, r.peerGen);
+		});
 	}
 
 	@Override
@@ -635,12 +958,13 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					credentialInstalled = false;
 				}
 			}
+			addCommittedCredential(ctl, r);
 			ServiceRecord svc = store.loadService(txn);
-			if (r.state != AUTH_REQUIRED) {
+			if (!r.lockedIn()) {
 				if (serviceChanged || svc.onion != null) sendOffer(txn, r);
 				if (credentialInstalled && svc.onion != null) {
-					send(txn, c, OnionAuthRecords.ready(r.peerGen),
-							OnionAuthRecords.TYPE_READY, r.peerGen);
+					send(txn, c, OnionAuthRecords.ready(svc.gen),
+							OnionAuthRecords.TYPE_READY, svc.gen);
 				}
 			}
 		});
@@ -657,6 +981,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		ServiceRecord svc = db.transactionWithResult(true, store::loadService);
 		if (keys.isEmpty()) {
 			if (svc.onion != null) {
+				publishedOnion = null;
 				try {
 					ctl.remove(svc.onion);
 				} catch (IOException ignored) {
@@ -669,6 +994,12 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		if (keys.size() > MAX_AUTHORIZED_CLIENTS) {
 			throw new OnionServiceControl.CapacityException();
 		}
+		Set<String> keySet = keySet(keys);
+		if (svc.onion != null && svc.onion.equals(publishedOnion)
+				&& keySet.equals(publishedKeys)) {
+			return false;
+		}
+		publishedOnion = null;
 		if (svc.onion != null) {
 			try {
 				ctl.remove(svc.onion);
@@ -681,18 +1012,45 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		svc.privateKey = p.privateKey;
 		if (svc.gen == 0) svc.gen = 1;
 		if (svc.lastRotationMs == 0) svc.lastRotationMs = clock.currentTimeMillis();
+		if (!isRotationPeriod(svc.rotationPeriodMs)) {
+			svc.rotationPeriodMs = drawRotationPeriodMs();
+		}
 		db.transaction(false, txn -> store.saveService(txn, svc));
+		publishedOnion = p.onion;
+		publishedKeys = keySet;
 		return true;
+	}
+
+	private static Set<String> keySet(List<byte[]> keys) {
+		Set<String> set = new HashSet<>();
+		for (byte[] k : keys) set.add(Arrays.toString(k));
+		return set;
 	}
 
 	private List<byte[]> authorizedKeys(Transaction txn) throws DbException {
 		List<byte[]> keys = new ArrayList<>();
 		for (OnionAuthRecord r : store.loadAll(txn)) {
-			if (r.authorizesPeer() && r.peerPublicKey != null) {
-				keys.add(r.peerPublicKey);
+			if (!r.authorizesPeer()) continue;
+			if (r.peerPublicKey != null) keys.add(r.peerPublicKey);
+			if (r.rekeying && r.committedPeerKey != null
+					&& !Arrays.equals(r.committedPeerKey, r.peerPublicKey)) {
+				keys.add(r.committedPeerKey);
 			}
 		}
 		return keys;
+	}
+
+	private static void addCommittedCredential(OnionServiceControl ctl,
+			OnionAuthRecord r) {
+		if (!r.rekeying || r.committedPeerOnion == null
+				|| r.dialPrivateKey == null
+				|| r.committedPeerOnion.equals(r.peerOnion)) {
+			return;
+		}
+		try {
+			ctl.addClientKey(r.committedPeerOnion, r.dialPrivateKey);
+		} catch (IOException ignored) {
+		}
 	}
 
 	@Override
@@ -712,6 +1070,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 							ctl.addClientKey(r.peerOnion, r.dialPrivateKey);
 						} catch (IOException ignored) {
 						}
+						addCommittedCredential(ctl, r);
 					}
 				} catch (DbException | RuntimeException ignored) {
 				}
@@ -737,6 +1096,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	}
 
 	private void refeedLocked(OnionServiceControl ctl) {
+			publishedOnion = null;
 			try {
 				ServiceRecord pending = db.transactionWithResult(true,
 						store::loadService);
@@ -759,7 +1119,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				for (OnionAuthRecord r : db.transactionWithResult(true,
 						store::loadAll)) {
 					if (r.state == LEGACY || r.state == REVOKED) continue;
-					if (r.state == AUTH_REQUIRED) {
+					if (r.lockedIn()) {
 						if (r.peerOnion != null && r.dialPrivateKey != null) {
 							try {
 								ctl.addClientKey(r.peerOnion, r.dialPrivateKey);
@@ -826,6 +1186,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			List<byte[]> keys = db.transactionWithResult(true, this::authorizedKeys);
 			ServiceRecord svc = db.transactionWithResult(true, store::loadService);
 			if (svc.onion == null && keys.isEmpty()) return;
+			publishedOnion = null;
 			if (revocation) {
 				if (svc.onion != null) {
 					try {
@@ -849,6 +1210,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			}
 			svc.gen++;
 			svc.lastRotationMs = clock.currentTimeMillis();
+			svc.rotationPeriodMs = drawRotationPeriodMs();
 			if (keys.isEmpty()) {
 				svc.onion = null;
 				svc.privateKey = null;
@@ -858,6 +1220,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			}
 			OnionServiceControl.Published p = ctl.publish(null, target,
 					REMOTE_PORT, keys);
+			publishedOnion = p.onion;
+			publishedKeys = keySet(keys);
 			svc.onion = p.onion;
 			svc.privateKey = p.privateKey;
 			svc.revocationPending = false;
@@ -868,6 +1232,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					if (revoked != null && r.contactId.equals(revoked)) continue;
 					r.rotateAcked = false;
 					r.localGen = svc.gen;
+					if (r.awaitsPeerCommit()) scheduleRepairs(r);
 					store.save(txn, r);
 					send(txn, r.contactId, OnionAuthRecords.rotate(svc.gen,
 							p.onion, null), OnionAuthRecords.TYPE_ROTATE, svc.gen);
@@ -909,6 +1274,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			throws DbException {
 		OnionAuthRecord r = store.load(txn, c);
 		if (r.state != AUTH_NEGOTIATING && r.state != AUTH_CONFIRMED) return;
+		if (r.commitSent || r.rekeying) return;
 		String peerOnion = r.peerOnion;
 		store.clear(txn, c);
 		cache.remove(c);
@@ -942,7 +1308,34 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		try {
 			db.transaction(false, txn -> {
 				for (OnionAuthRecord r : store.loadAll(txn)) {
-					if ((r.state == AUTH_NEGOTIATING
+					if (r.holdsCommit()) {
+						if (r.lastSeenMs == 0) {
+							r.lastSeenMs = now;
+							store.save(txn, r);
+						}
+						if (silenceRepairDue(r, now)) silenceRepair(txn, r, now);
+						if (openDialDue(r, now)) openDial(txn, r, now);
+					}
+					if (r.lockedIn()) {
+						if (!r.commitResent && now >= r.nextRepairMs) {
+							answerWithCommit(txn, r);
+							txn.attach(() -> requestRepairDial(r.contactId));
+						}
+						continue;
+					}
+					if (r.awaitsPeerCommit()) {
+						if (r.repairs < MAX_REPAIRS && now >= r.nextRepairMs) {
+							repair(txn, r, now);
+							txn.attach(() -> requestRepairDial(r.contactId));
+						}
+						continue;
+					}
+					if (r.rekeying) {
+						if (r.repairs < MAX_REPAIRS && now >= r.nextRepairMs) {
+							rekeyRepair(txn, r, now);
+							txn.attach(() -> requestRepairDial(r.contactId));
+						}
+					} else if ((r.state == AUTH_NEGOTIATING
 							|| r.state == AUTH_CONFIRMED)
 							&& now - r.negotiationStartedMs
 							> NEGOTIATION_TIMEOUT_MS) {
@@ -955,7 +1348,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 						store.save(txn, r);
 						cache(r);
 					} else if (!r.probing && !r.probeSucceeded
-							&& r.readyReceived && r.state != AUTH_REQUIRED
+							&& r.readyReceived && r.peerOnion != null
+							&& !r.lockedIn()
 							&& r.state != LEGACY && r.state != REVOKED
 							&& now > r.probeUntilMs) {
 						startProbe(txn, r);
@@ -968,8 +1362,11 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 						&& now - svc.oldSinceMs > RETIRE_DEADLINE_MS) {
 					txn.attach(() -> ioExecutor.execute(this::retireOld));
 				}
-				if (svc.onion != null
-						&& now - svc.lastRotationMs > ROTATION_PERIOD_MS) {
+				if (svc.onion != null && !isRotationPeriod(svc.rotationPeriodMs)) {
+					svc.rotationPeriodMs = drawRotationPeriodMs();
+					store.saveRotationPeriod(txn, svc.rotationPeriodMs);
+				}
+				if (periodicRotationDue(svc, now)) {
 					ioExecutor.execute(() -> rotate(false, null));
 				}
 			});
@@ -978,7 +1375,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	}
 
 	private void cache(OnionAuthRecord r) {
-		cache.put(r.contactId, new Cached(r.state, r.peerOnion, r.probing));
+		cache.put(r.contactId, new Cached(r.state, r.peerOnion, r.probing,
+				r.commitSent || r.rekeying, r.fallbackOnion()));
 	}
 
 	private void send(Transaction txn, ContactId c, BdfList body, int type,

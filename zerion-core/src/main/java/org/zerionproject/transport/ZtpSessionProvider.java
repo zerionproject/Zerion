@@ -16,4 +16,9 @@ public interface ZtpSessionProvider {
 
 	default void sessionEstablished(int contactId) {
 	}
+
+	default void sessionEstablished(int contactId,
+			@Nullable String inboundOnion) {
+		sessionEstablished(contactId);
+	}
 }

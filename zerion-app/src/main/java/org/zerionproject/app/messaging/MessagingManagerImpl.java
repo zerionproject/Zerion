@@ -15,11 +15,13 @@ import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.data.MetadataParser;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.Group.Visibility;
 import org.zerionproject.core.api.sync.GroupId;
@@ -81,6 +83,7 @@ import javax.inject.Inject;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.zerionproject.core.api.client.ContactGroupConstants.GROUP_KEY_CONTACT_ID;
+import static org.zerionproject.core.api.data.BdfDictionary.NULL_VALUE;
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
 import static org.zerionproject.core.api.sync.validation.IncomingMessageHook.DeliveryAction.ACCEPT_DO_NOT_SHARE;
 import static org.zerionproject.core.util.IoUtils.copyAndClose;
@@ -112,6 +115,7 @@ import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_SE
 import static org.zerionproject.app.api.messaging.MessagingManager.MESH_STATE_DELIVERED;
 import static org.zerionproject.app.api.messaging.MessagingManager.MSG_KEY_GROUP_RECEIVED_AT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ORIGINAL_KEPT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_DATA_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MANIFEST_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
@@ -128,6 +132,10 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTA
 class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		ConversationClient, OpenDatabaseHook, ContactHook,
 		ClientVersioningHook, CleanupHook {
+
+	@Nullable
+	private volatile org.zerionproject.app.api.messaging.InvitationCards
+			invitationCards;
 	private final DatabaseComponent db;
 	private final ClientHelper clientHelper;
 	private final MetadataParser metadataParser;
@@ -181,10 +189,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		if (db.containsGroup(txn, localGroup.getId())) {
 			purgeStaleEphemeralMessages(txn);
 			startOrphanAttachmentTimers(txn);
+			eraseKeptOriginals(txn);
 			return;
 		}
 		db.addGroup(txn, localGroup);
 		for (Contact c : db.getContacts(txn)) addingContact(txn, c);
+		markOriginalsChecked(txn);
 	}
 
 	private static final long EPHEMERAL_PURGE_AGE_MS = 5 * 60 * 1000;
@@ -378,11 +388,17 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingGroupMemberListSnapshot(txn, m, metaDict);
 			} else if (messageType == MessageTypes.GROUP_SETTINGS) {
 				incomingGroupSettings(txn, m, metaDict);
+			} else if (messageType == MessageTypes.GROUP_POST_DELETE) {
+				incomingGroupPostDelete(txn, m, metaDict);
 			} else if (messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
 				incomingGrouptrInviteOffer(txn, m, metaDict);
 			} else if (messageType == MessageTypes.GROUPTR_INVITE_ACCEPT
-					|| messageType == MessageTypes.GROUPTR_INVITE_DECLINE) {
+					|| messageType == MessageTypes.GROUPTR_INVITE_DECLINE
+					|| messageType
+					== MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO) {
 				incomingGrouptrInviteResponse(txn, m, metaDict, messageType);
+			} else if (isMemberInviteRecordType(messageType)) {
+				incomingMemberInviteRecord(txn, m, messageType);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -406,8 +422,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		byte[] replyToIdBytes = meta.getOptionalRaw(MSG_KEY_REPLY_TO_ID);
 		MessageId replyToId = replyToIdBytes != null ?
 				new MessageId(replyToIdBytes) : null;
-		boolean edited = hasText
-				&& applyPendingEdits(txn, groupId, m.getId(), meta, controls);
+		boolean edited = (hasText
+				&& applyPendingEdits(txn, groupId, m.getId(), meta, controls))
+				|| meta.getOptionalLong(MSG_KEY_EDITED_AT) != null;
 		PrivateMessageHeader header =
 				new PrivateMessageHeader(m.getId(), groupId, timestamp, local,
 						read, false, false, hasText, headers, timer,
@@ -983,8 +1000,27 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	static boolean isMeshGroupRecordType(@Nullable Integer messageType) {
 		if (messageType == null) return false;
 		if (messageType == MessageTypes.GROUP_SETTINGS) return true;
+		if (messageType == MessageTypes.GROUP_POST_DELETE) return true;
+		if (isMemberInviteRecordType(messageType)) return true;
+		if (messageType == MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO) {
+			return true;
+		}
 		return messageType >= MessageTypes.GROUP_POST
 				&& messageType <= MessageTypes.GROUPTR_INVITE_DECLINE;
+	}
+
+	static boolean isMemberInviteRecordType(int messageType) {
+		if (messageType
+				== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO) {
+			return true;
+		}
+		return messageType >= MessageTypes.GROUP_PERMISSIONS
+				&& messageType <= MessageTypes.GROUPTR_GRANTED_INVITE_OFFER;
+	}
+
+	static boolean isMemberInviteOfferType(int messageType) {
+		return messageType == MessageTypes.GROUPTR_MEMBER_INVITE_OFFER
+				|| messageType == MessageTypes.GROUPTR_GRANTED_INVITE_OFFER;
 	}
 
 	@Override
@@ -1318,8 +1354,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			MessageStatus s, BdfDictionary meta) throws FormatException {
 		MessageId id = s.getMessageId();
 		Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
-		if (messageType != null
-				&& messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
+		if (messageType != null && (messageType
+				== MessageTypes.GROUPTR_INVITE_OFFER
+				|| isMemberInviteOfferType(messageType))) {
 			if (meta.getBoolean(MSG_KEY_LOCAL, false)) return null;
 			byte[] grouptrGidRaw = meta.getOptionalRaw(
 					MessagingConstants.MSG_KEY_GROUP_ID);
@@ -1341,11 +1378,17 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					|| creatorName == null || groupName == null) {
 				return null;
 			}
+			byte[] inviterPub = null;
+			if (isMemberInviteOfferType(messageType)) {
+				inviterPub = meta.getOptionalRaw(
+						MessagingConstants.MSG_KEY_GTR_INVITE_INVITER_PUB);
+				if (inviterPub == null) return null;
+			}
 			return new org.zerionproject.app.api.grouptr
 					.GroupTrInvitationHeader(id, g, ts, false, read,
 					s.isSent(), s.isSeen(),
 					new GroupId(grouptrGidRaw), groupName, salt,
-					creatorName, creatorPub, inviteTs);
+					creatorName, creatorPub, inviteTs, inviterPub);
 		}
 		if (messageType != null && messageType != PRIVATE_MESSAGE
 				&& messageType != MessageTypes.LINK_PREVIEW_MESSAGE)
@@ -1411,12 +1454,23 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			String edited = clientHelper.getMessageMetadataAsDictionary(txn, m)
 					.getOptionalString(MSG_KEY_EDITED_TEXT);
 			if (edited != null) return edited;
-			BdfList body = clientHelper.getMessageAsList(txn, m);
-			if (body.size() == 1) return body.getString(0);
-			else return body.getOptionalString(1);
+			return bodyText(txn, m);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+	}
+
+	@Nullable
+	private String bodyText(Transaction txn, MessageId m)
+			throws DbException, FormatException {
+		BdfList body;
+		try {
+			body = clientHelper.getMessageAsList(txn, m);
+		} catch (MessageDeletedException e) {
+			return null;
+		}
+		if (body.size() == 1) return body.getOptionalString(0);
+		return body.getOptionalString(1);
 	}
 
 	@Override
@@ -1444,15 +1498,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					return;
 				}
 				try {
-					BdfList body = clientHelper.getMessageAsList(txn, id);
-					String text;
-					if (body.size() == 1) text = body.getString(0);
-					else text = body.getOptionalString(1);
+					String text = bodyText(txn, id);
 					if (text != null) texts.put(id, text);
-				} catch (FormatException e) {
-				} catch (
-						org.zerionproject.core.api.db.NoSuchMessageException e) {
-
+				} catch (FormatException | NoSuchMessageException e) {
 				}
 			});
 		} catch (FormatException e) {
@@ -1483,10 +1531,122 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	public DeletionResult deleteAllMessages(Transaction txn, ContactId c)
 			throws DbException {
 		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
-
-		db.removeAllGroupMessages(txn, g);
-		messageTracker.initializeGroupCount(txn, g);
+		try {
+			for (MessageId id : conversationRecords(txn, c, g)) {
+				try {
+					db.removeMessage(txn, id);
+				} catch (NoSuchMessageException e) {
+				}
+			}
+		} catch (FormatException e) {
+			throw new DbException(e);
+		}
+		recalculateGroupCount(txn, g);
 		return new DeletionResult();
+	}
+
+	@Override
+	public void setInvitationCards(@Nullable org.zerionproject.app.api
+			.messaging.InvitationCards cards) {
+		invitationCards = cards;
+	}
+
+	private Collection<MessageId> conversationRecords(Transaction txn,
+			ContactId c, GroupId g) throws DbException, FormatException {
+		Set<MessageId> kept = new HashSet<>(clientHelper.getMessageIds(txn, g,
+				BdfDictionary.of(new BdfEntry(MSG_KEY_MSG_TYPE,
+						MessageTypes.GROUP_POST))));
+		Set<MessageId> delivered = new HashSet<>(kept);
+		Set<MessageId> keptUntilAcked = new HashSet<>();
+		Map<MessageId, byte[]> offers = new HashMap<>();
+		Map<MessageId, Integer> offerTypes = new HashMap<>();
+		visitMessageMetadata(txn, g, (id, meta) -> {
+			delivered.add(id);
+			Integer type = messageTypeOrNull(meta);
+			if (isReceivedInvitationCard(type, meta)) {
+				byte[] gid = meta.getOptionalRaw(
+						MessagingConstants.MSG_KEY_GROUP_ID);
+				if (gid != null) {
+					offers.put(id, gid);
+					offerTypes.put(id, type);
+				}
+				kept.add(id);
+			} else if (isGroupRecord(type)) {
+				kept.add(id);
+			} else if (type == null
+					&& meta.getOptionalLong(MSG_KEY_TIMESTAMP) == null) {
+				keptUntilAcked.add(id);
+			} else if (type != null && (type == MessageTypes.MESSAGE_DELETE
+					|| type == MessageTypes.MESSAGE_REACTION_REMOVED)) {
+				if (!meta.getBoolean(MSG_KEY_LOCAL, false)) {
+					if (type == MessageTypes.MESSAGE_DELETE) kept.add(id);
+				} else {
+					keptUntilAcked.add(id);
+				}
+			}
+		});
+		org.zerionproject.app.api.messaging.InvitationCards cards =
+				invitationCards;
+		if (cards != null) {
+			for (Map.Entry<MessageId, byte[]> e : offers.entrySet()) {
+				if (!cards.stillOpen(txn, offerTypes.get(e.getKey()),
+						e.getValue())) {
+					kept.remove(e.getKey());
+				}
+			}
+		}
+		Set<MessageId> unseen = new HashSet<>();
+		for (MessageStatus status : db.getMessageStatus(txn, c, g)) {
+			if (!status.isSeen()) unseen.add(status.getMessageId());
+		}
+		for (MessageId id : keptUntilAcked) {
+			if (unseen.contains(id)) kept.add(id);
+		}
+		List<MessageId> removed = new ArrayList<>();
+		for (MessageId id : db.getAllMessageIds(txn, g)) {
+			if (kept.contains(id)) continue;
+			if (!delivered.contains(id) && (unseen.contains(id)
+					|| awaitingDelivery(txn, id))) {
+				continue;
+			}
+			removed.add(id);
+		}
+		return removed;
+	}
+
+	@Nullable
+	private static Integer messageTypeOrNull(BdfDictionary meta) {
+		try {
+			return meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+		} catch (FormatException e) {
+			return null;
+		}
+	}
+
+	private static boolean isReceivedInvitationCard(@Nullable Integer type,
+			BdfDictionary meta) throws FormatException {
+		if (type == null) return false;
+		if (type != MessageTypes.GROUPTR_INVITE_OFFER
+				&& !isMemberInviteOfferType(type)) {
+			return false;
+		}
+		return !meta.getBoolean(MSG_KEY_LOCAL, false);
+	}
+
+	static boolean isGroupRecord(@Nullable Integer type) {
+		return type != null && type >= MessageTypes.GROUP_POST
+				&& type <= MessageTypes.LAST_GROUP_RECORD;
+	}
+
+	private boolean awaitingDelivery(Transaction txn, MessageId id)
+			throws DbException {
+		try {
+			MessageState state = db.getMessageState(txn, id);
+			return state == MessageState.UNKNOWN
+					|| state == MessageState.PENDING;
+		} catch (NoSuchMessageException e) {
+			return false;
+		}
 	}
 
 	@Override
@@ -1523,7 +1683,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					clientHelper.getMessageMetadataAsDictionary(txn, m);
 			Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
 			boolean counted = isCountedMessage(meta);
-			if (isRetractable(meta)) purgeRemoteEdits(txn, g, m);
+			if (isRetractable(meta)) {
+				purgeRemoteEdits(txn, g, m);
+				removeLocalControlMessages(txn, g, MessageTypes.MESSAGE_EDIT,
+						m);
+				removeReactionsTo(txn, g, m, true);
+			}
 			if (messageType != null && messageType == PRIVATE_MESSAGE) {
 				boolean local = meta.getBoolean(MSG_KEY_LOCAL, false);
 				for (AttachmentHeader h : parseAttachmentHeaders(g, meta)) {
@@ -1542,6 +1707,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			return false;
 		} catch (FormatException e) {
 			removeAttachmentsLeniently(txn, g, m);
+			try {
+				removeReactionsTo(txn, g, m, true);
+			} catch (FormatException ignored) {
+			}
 			try {
 				db.removeMessage(txn, m);
 			} catch (NoSuchMessageException gone) {
@@ -1581,8 +1750,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	static boolean isCountedMessage(BdfDictionary meta)
 			throws FormatException {
 		Integer messageType = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
-		if (messageType != null
-				&& messageType == MessageTypes.GROUPTR_INVITE_OFFER) {
+		if (messageType != null && (messageType
+				== MessageTypes.GROUPTR_INVITE_OFFER
+				|| isMemberInviteOfferType(messageType))) {
 			return !meta.getBoolean(MSG_KEY_LOCAL, false)
 					&& meta.getOptionalLong(MSG_KEY_TIMESTAMP) != null;
 		}
@@ -1634,13 +1804,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		MessageId targetId = new MessageId(targetIdBytes);
 		String emoji = meta.getString(MSG_KEY_REACTION_EMOJI);
 		ContactId contactId = getContactId(txn, groupId);
-		Message target;
 		try {
-			target = db.getMessage(txn, targetId);
+			if (!db.getGroupId(txn, targetId).equals(groupId)
+					|| db.getMessageState(txn, targetId)
+					== MessageState.INVALID) {
+				throw new InvalidMessageException();
+			}
 		} catch (NoSuchMessageException e) {
-			throw new InvalidMessageException();
-		}
-		if (!target.getGroupId().equals(groupId)) {
 			throw new InvalidMessageException();
 		}
 		BdfDictionary targetMeta =
@@ -1865,18 +2035,44 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	static final int MAX_PENDING_CONTROL_RECORDS = 500;
 
 	private void incomingMessageEdit(Transaction txn, Message m,
-			BdfDictionary meta) throws DbException, FormatException {
+			BdfDictionary meta)
+			throws DbException, FormatException, InvalidMessageException {
 		GroupId g = m.getGroupId();
-		MessageId target = resolveMeshParent(txn, g,
-				meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID));
+		byte[] targetBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
+		long editedAt = meta.getLong(MSG_KEY_TIMESTAMP);
+		MessageId target = resolveMeshParent(txn, g, targetBytes);
 		if (target == null) {
+			if (isDeletedForEveryone(txn, g, targetBytes)) {
+				throw new InvalidMessageException();
+			}
+			if (!replacePendingEdits(txn, g, targetBytes, editedAt)) {
+				throw new InvalidMessageException();
+			}
 			keepPending(txn, g, m.getId(), MessageTypes.MESSAGE_EDIT,
 					editRetention(txn, g));
 			return;
 		}
-		applyRemoteEdit(txn, g, target, meta.getString(MSG_KEY_EDITED_TEXT),
-				meta.getLong(MSG_KEY_TIMESTAMP), true, null);
+		EditOutcome outcome = applyRemoteEdit(txn, g, target,
+				meta.getString(MSG_KEY_EDITED_TEXT), editedAt, true, null);
+		if (outcome == EditOutcome.SUPERSEDED) {
+			throw new InvalidMessageException();
+		}
+		if (outcome == EditOutcome.APPLIED) purgeRemoteEdits(txn, g, target);
 		db.setCleanupDeadline(txn, m.getId(), 0L);
+	}
+
+	private boolean replacePendingEdits(Transaction txn, GroupId g,
+			byte[] target, long editedAt) throws DbException, FormatException {
+		List<MessageId> older = new ArrayList<>();
+		for (Entry<MessageId, BdfDictionary> e :
+				controlRecordsFor(txn, g, target).entrySet()) {
+			BdfDictionary edit = e.getValue();
+			if (!isRemoteRecord(edit, MessageTypes.MESSAGE_EDIT)) continue;
+			if (edit.getLong(MSG_KEY_TIMESTAMP, 0L) >= editedAt) return false;
+			older.add(e.getKey());
+		}
+		for (MessageId id : older) db.removeMessage(txn, id);
+		return true;
 	}
 
 	private void incomingMessageDelete(Transaction txn, Message m,
@@ -1884,8 +2080,12 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		GroupId g = m.getGroupId();
 		byte[] targetBytes = meta.getRaw(MSG_KEY_TARGET_MESSAGE_ID);
 		MessageId target = resolveMeshParent(txn, g, targetBytes);
-		if (target != null) applyRemoteDelete(txn, g, target);
-		else withdrawUndelivered(txn, g, targetBytes);
+		if (target != null) {
+			applyRemoteDelete(txn, g, target);
+		} else {
+			withdrawUndelivered(txn, g, targetBytes);
+			purgeRemoteEdits(txn, g, new MessageId(targetBytes));
+		}
 		keepPending(txn, g, m.getId(), MessageTypes.MESSAGE_DELETE,
 				EDIT_DELETE_KEPT_MS);
 	}
@@ -1912,7 +2112,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		return Math.min(timer, EDIT_DELETE_KEPT_MS);
 	}
 
-	private boolean applyRemoteEdit(Transaction txn, GroupId g,
+	private enum EditOutcome {
+		APPLIED, SUPERSEDED, REFUSED
+	}
+
+	private EditOutcome applyRemoteEdit(Transaction txn, GroupId g,
 			MessageId target, String text, long editedAt, boolean notify,
 			@Nullable BdfDictionary targetMeta)
 			throws DbException, FormatException {
@@ -1921,44 +2125,220 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			try {
 				t = clientHelper.getMessageMetadataAsDictionary(txn, target);
 			} catch (NoSuchMessageException e) {
-				return false;
+				return EditOutcome.REFUSED;
 			}
 		}
-		if (!isEditableTarget(txn, target, t, false)) return false;
+		if (!isEditableTarget(txn, target, t, false)) {
+			return EditOutcome.REFUSED;
+		}
 		if (!MessageEdits.withinEditWindow(t.getLong(MSG_KEY_TIMESTAMP),
 				editedAt)) {
-			return false;
+			return EditOutcome.REFUSED;
 		}
 		Long previous = t.getOptionalLong(MSG_KEY_EDITED_AT);
-		if (previous != null && previous >= editedAt) return true;
+		if (previous != null && previous >= editedAt) {
+			return EditOutcome.SUPERSEDED;
+		}
 		BdfDictionary update = new BdfDictionary();
 		update.put(MSG_KEY_EDITED_TEXT, text);
 		update.put(MSG_KEY_EDITED_AT, editedAt);
 		clientHelper.mergeMessageMetadata(txn, target, update);
 		t.putAll(update);
+		ContactId c = getContactId(txn, g);
+		keepOrEraseOriginal(txn, c, target, t);
 		if (notify) {
-			txn.attach(new PrivateMessageEditedEvent(getContactId(txn, g),
-					target, text, false));
+			txn.attach(new PrivateMessageEditedEvent(c, target, text, false));
 		}
-		return true;
+		return EditOutcome.APPLIED;
 	}
 
 	private boolean applyPendingEdits(Transaction txn, GroupId g,
 			MessageId target, BdfDictionary targetMeta,
 			Map<MessageId, BdfDictionary> controls)
 			throws DbException, FormatException {
-		boolean edited = false;
+		List<MessageId> edits = new ArrayList<>();
+		Map<MessageId, Long> editedAt = new HashMap<>();
 		for (Entry<MessageId, BdfDictionary> e : controls.entrySet()) {
 			BdfDictionary edit = e.getValue();
 			if (!isRemoteRecord(edit, MessageTypes.MESSAGE_EDIT)) continue;
-			if (applyRemoteEdit(txn, g, target,
-					edit.getString(MSG_KEY_EDITED_TEXT),
-					edit.getLong(MSG_KEY_TIMESTAMP), false, targetMeta)) {
-				edited = true;
+			edits.add(e.getKey());
+			editedAt.put(e.getKey(), edit.getLong(MSG_KEY_TIMESTAMP, 0L));
+		}
+		edits.sort((a, b) -> Long.compare(editedAt.get(b), editedAt.get(a)));
+		MessageId applied = null;
+		for (MessageId id : edits) {
+			String text = controls.get(id).getOptionalString(
+					MSG_KEY_EDITED_TEXT);
+			if (text == null) continue;
+			if (applyRemoteEdit(txn, g, target, text, editedAt.get(id), false,
+					targetMeta) == EditOutcome.APPLIED) {
+				applied = id;
+				break;
 			}
-			db.setCleanupDeadline(txn, e.getKey(), 0L);
+		}
+		for (MessageId id : edits) {
+			if (id.equals(applied)) db.setCleanupDeadline(txn, id, 0L);
+			else db.removeMessage(txn, id);
+		}
+		return applied != null;
+	}
+
+	static final String EDITS_NAMESPACE = "messaging.edits";
+
+	static final String KEY_ORIGINALS_CHECKED = "originalsChecked";
+
+	private void keepOrEraseOriginal(Transaction txn, ContactId c,
+			MessageId id, BdfDictionary meta)
+			throws DbException, FormatException {
+		try {
+			if (originalErasable(txn, c, id, meta)) {
+				eraseOriginal(txn, id, meta);
+			} else if (!meta.getBoolean(MSG_KEY_ORIGINAL_KEPT, false)) {
+				BdfDictionary kept = BdfDictionary.of(
+						new BdfEntry(MSG_KEY_ORIGINAL_KEPT, true));
+				clientHelper.mergeMessageMetadata(txn, id, kept);
+				meta.putAll(kept);
+			}
+		} catch (NoSuchMessageException e) {
+		}
+	}
+
+	private boolean originalErasable(Transaction txn, ContactId c,
+			MessageId id, BdfDictionary meta)
+			throws DbException, FormatException {
+		if (!hasEditedText(meta)) return false;
+		if (db.getMessageState(txn, id) != MessageState.DELIVERED) {
+			return false;
+		}
+		return !meta.getBoolean(MSG_KEY_LOCAL, false)
+				|| db.getMessageStatus(txn, c, id).isSeen();
+	}
+
+	private void eraseOriginal(Transaction txn, MessageId id,
+			BdfDictionary meta) throws DbException, FormatException {
+		db.eraseMessageBody(txn, id);
+		if (meta.remove(MSG_KEY_ORIGINAL_KEPT) != null) {
+			clientHelper.mergeMessageMetadata(txn, id, BdfDictionary.of(
+					new BdfEntry(MSG_KEY_ORIGINAL_KEPT, NULL_VALUE)));
+		}
+	}
+
+	private void eraseKeptOriginals(Transaction txn) throws DbException {
+		boolean checked = db.getSettings(txn, EDITS_NAMESPACE)
+				.getBoolean(KEY_ORIGINALS_CHECKED, false);
+		boolean complete = true;
+		for (Contact c : db.getContacts(txn)) {
+			GroupId g = getContactGroup(c).getId();
+			Map<MessageId, BdfDictionary> candidates;
+			try {
+				candidates = checked ? keptOriginals(txn, g)
+						: editedMessages(txn, g);
+			} catch (FormatException e) {
+				complete = false;
+				continue;
+			}
+			for (Entry<MessageId, BdfDictionary> e : candidates.entrySet()) {
+				try {
+					keepOrEraseOriginal(txn, c.getId(), e.getKey(),
+							e.getValue());
+				} catch (FormatException ignored) {
+				}
+			}
+		}
+		if (!checked && complete) markOriginalsChecked(txn);
+	}
+
+	private Map<MessageId, BdfDictionary> keptOriginals(Transaction txn,
+			GroupId g) throws DbException, FormatException {
+		BdfDictionary query =
+				BdfDictionary.of(new BdfEntry(MSG_KEY_ORIGINAL_KEPT, true));
+		try {
+			return clientHelper.getMessageMetadataAsDictionary(txn, g, query);
+		} catch (FormatException e) {
+			return editedOneByOne(txn,
+					clientHelper.getMessageIds(txn, g, query));
+		}
+	}
+
+	private Map<MessageId, BdfDictionary> editedMessages(Transaction txn,
+			GroupId g) throws DbException {
+		Map<MessageId, BdfDictionary> edited = new HashMap<>();
+		try {
+			visitMessageMetadata(txn, g, (id, meta) -> {
+				try {
+					if (hasEditedText(meta)) edited.put(id, meta);
+				} catch (FormatException e) {
+				}
+			});
+			return edited;
+		} catch (FormatException e) {
+			return editedOneByOne(txn, db.getMessageIds(txn, g));
+		}
+	}
+
+	private Map<MessageId, BdfDictionary> editedOneByOne(Transaction txn,
+			Collection<MessageId> ids) throws DbException {
+		Map<MessageId, BdfDictionary> edited = new HashMap<>();
+		for (MessageId id : ids) {
+			try {
+				BdfDictionary meta =
+						clientHelper.getMessageMetadataAsDictionary(txn, id);
+				if (hasEditedText(meta)) edited.put(id, meta);
+			} catch (NoSuchMessageException | FormatException e) {
+			}
 		}
 		return edited;
+	}
+
+	private void markOriginalsChecked(Transaction txn) throws DbException {
+		Settings s = new Settings();
+		s.putBoolean(KEY_ORIGINALS_CHECKED, true);
+		db.mergeSettings(txn, s, EDITS_NAMESPACE);
+	}
+
+	void eraseKeptOriginals(Transaction txn, ContactId c,
+			Collection<MessageId> candidates) throws DbException {
+		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
+		for (MessageId id : candidates) {
+			BdfDictionary meta = keptOriginal(txn, c, g, id);
+			if (meta == null) continue;
+			try {
+				eraseOriginal(txn, id, meta);
+			} catch (NoSuchMessageException | FormatException e) {
+			}
+		}
+	}
+
+	Collection<MessageId> findKeptOriginals(Transaction txn, ContactId c,
+			Collection<MessageId> candidates) throws DbException {
+		GroupId g = getContactGroup(db.getContact(txn, c)).getId();
+		List<MessageId> found = new ArrayList<>();
+		for (MessageId id : candidates) {
+			if (keptOriginal(txn, c, g, id) != null) found.add(id);
+		}
+		return found;
+	}
+
+	@Nullable
+	private BdfDictionary keptOriginal(Transaction txn, ContactId c,
+			GroupId g, MessageId id) throws DbException {
+		try {
+			BdfDictionary meta =
+					clientHelper.getMessageMetadataAsDictionary(txn, id);
+			if (!meta.getBoolean(MSG_KEY_ORIGINAL_KEPT, false)) return null;
+			if (!db.getGroupId(txn, id).equals(g)) return null;
+			if (!originalErasable(txn, c, id, meta)) return null;
+			return meta;
+		} catch (NoSuchMessageException | FormatException e) {
+			return null;
+		}
+	}
+
+	private static boolean hasEditedText(BdfDictionary meta)
+			throws FormatException {
+		Integer type = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+		if (type != null && type != PRIVATE_MESSAGE) return false;
+		return meta.getOptionalString(MSG_KEY_EDITED_TEXT) != null;
 	}
 
 	private void applyRemoteDelete(Transaction txn, GroupId g,
@@ -1971,7 +2351,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		}
 		if (!isRetractable(t) || t.getBoolean(MSG_KEY_LOCAL, true)) return;
 		boolean unread = !t.getBoolean(MSG_KEY_READ, true);
-		removeReactionsTo(txn, g, target);
+		removeReactionsTo(txn, g, target, false);
 		deleteMessages(txn, g, singletonList(target));
 		txn.attach(new MessageDeletedForEveryoneEvent(getContactId(txn, g),
 				target, unread));
@@ -1994,10 +2374,25 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				return;
 			}
 			purgeRemoteEdits(txn, g, id);
+			removeArrivedAttachments(txn, g, meta);
 			db.setMessageState(txn, id, MessageState.INVALID);
 			db.deleteMessage(txn, id);
 			db.deleteMessageMetadata(txn, id);
 		} catch (NoSuchMessageException e) {
+		}
+	}
+
+	private void removeArrivedAttachments(Transaction txn, GroupId g,
+			BdfDictionary pendingMeta) throws DbException, FormatException {
+		if (pendingMeta.getOptionalList(MSG_KEY_ATTACHMENT_HEADERS) == null) {
+			return;
+		}
+		for (AttachmentHeader h : parseAttachmentHeaders(g, pendingMeta)) {
+			try {
+				if (!db.getGroupId(txn, h.getMessageId()).equals(g)) continue;
+				removeAttachmentMessage(txn, h.getMessageId(), false);
+			} catch (NoSuchMessageException e) {
+			}
 		}
 	}
 
@@ -2050,14 +2445,33 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	}
 
 	private void removeReactionsTo(Transaction txn, GroupId g,
-			MessageId target) throws DbException, FormatException {
+			MessageId target, boolean keepUnackedRetractions)
+			throws DbException, FormatException {
+		ContactId c = null;
 		for (Entry<MessageId, BdfDictionary> e :
 				controlRecordsFor(txn, g, target.getBytes()).entrySet()) {
-			Integer type = e.getValue().getOptionalInt(MSG_KEY_MSG_TYPE);
-			if (type != null && (type == MessageTypes.MESSAGE_REACTION
-					|| type == MessageTypes.MESSAGE_REACTION_REMOVED)) {
-				db.removeMessage(txn, e.getKey());
+			BdfDictionary meta = e.getValue();
+			Integer type = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+			if (type == null || (type != MessageTypes.MESSAGE_REACTION
+					&& type != MessageTypes.MESSAGE_REACTION_REMOVED)) {
+				continue;
 			}
+			if (keepUnackedRetractions
+					&& type == MessageTypes.MESSAGE_REACTION_REMOVED
+					&& meta.getBoolean(MSG_KEY_LOCAL, false)) {
+				if (c == null) c = getContactId(txn, g);
+				if (!ackedByContact(txn, c, e.getKey())) continue;
+			}
+			db.removeMessage(txn, e.getKey());
+		}
+	}
+
+	private boolean ackedByContact(Transaction txn, ContactId c, MessageId id)
+			throws DbException {
+		try {
+			return db.getMessageStatus(txn, c, id).isSeen();
+		} catch (NoSuchMessageException e) {
+			return true;
 		}
 	}
 
@@ -2079,20 +2493,19 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			return false;
 		}
 		if (meta.getOptionalLong(MSG_KEY_TIMESTAMP) == null) return false;
-		return MessageEdits.isEditableText(originalText(txn, id));
+		String current = meta.getOptionalString(MSG_KEY_EDITED_TEXT);
+		if (current == null) current = originalText(txn, id);
+		return MessageEdits.isEditableText(current);
 	}
 
 	@Nullable
 	private String originalText(Transaction txn, MessageId id)
 			throws DbException, FormatException {
-		BdfList body;
 		try {
-			body = clientHelper.getMessageAsList(txn, id);
+			return bodyText(txn, id);
 		} catch (NoSuchMessageException e) {
 			return null;
 		}
-		if (body.size() == 1) return body.getOptionalString(0);
-		return body.getOptionalString(1);
 	}
 
 	private boolean reachedContact(Transaction txn, ContactId c, MessageId id)
@@ -2102,6 +2515,21 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		} catch (NoSuchMessageException e) {
 			return true;
 		}
+	}
+
+	private boolean anEditReachedContact(Transaction txn, ContactId c,
+			GroupId g, MessageId target) throws DbException, FormatException {
+		for (Entry<MessageId, BdfDictionary> e :
+				controlRecordsFor(txn, g, target.getBytes()).entrySet()) {
+			BdfDictionary meta = e.getValue();
+			Integer t = meta.getOptionalInt(MSG_KEY_MSG_TYPE);
+			if (t != null && t == MessageTypes.MESSAGE_EDIT
+					&& meta.getBoolean(MSG_KEY_LOCAL, false)
+					&& reachedContact(txn, c, e.getKey())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void addLocalControlMessage(Transaction txn, GroupId g,
@@ -2181,6 +2609,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				update.put(MSG_KEY_EDITED_TEXT, text);
 				update.put(MSG_KEY_EDITED_AT, editedAt);
 				clientHelper.mergeMessageMetadata(txn, target, update);
+				t.putAll(update);
+				keepOrEraseOriginal(txn, c, target, t);
+				txn.requestPurge();
 				txn.attach(new PrivateMessageEditedEvent(c, target, text,
 						true));
 				return EditResult.EDITED;
@@ -2215,13 +2646,15 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 							|| !t.getBoolean(MSG_KEY_LOCAL, false)) {
 						continue;
 					}
+					boolean reached = reachedContact(txn, c, id)
+							|| anEditReachedContact(txn, c, g, id);
 					removeLocalControlMessages(txn, g,
 							MessageTypes.MESSAGE_EDIT, id);
 					if (t.getBoolean(MSG_KEY_MESH, false)) {
 						everyone = false;
 						continue;
 					}
-					if (!reachedContact(txn, c, id)) continue;
+					if (!reached) continue;
 					if (!supported) {
 						everyone = false;
 						continue;
@@ -2573,8 +3006,23 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		long timestamp = meta.getLong(MSG_KEY_TIMESTAMP);
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupMemberListSnapshotEvent(contactId, groupId, epoch,
-				timestamp, memberCanonical, recordSig, signedInput));
+				timestamp, memberCanonical, recordSig, signedInput,
+				m.getBody()));
 		startGroupRecordCleanupTimer(txn, m.getId());
+	}
+
+	private void incomingMemberInviteRecord(Transaction txn, Message m,
+			int messageType) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		BdfList record = clientHelper.toList(m);
+		if (isMemberInviteOfferType(messageType)) {
+			conversationManager.trackIncomingMessage(txn, m);
+		} else {
+			startGroupRecordCleanupTimer(txn, m.getId());
+		}
+		txn.attach(new org.zerionproject.app.api.messaging.event
+				.GroupTrMemberInviteRecordEvent(contactId, m.getId(),
+				messageType, record));
 	}
 
 	private void incomingGroupSettings(Transaction txn, Message m,
@@ -2592,6 +3040,20 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupSettingsChangedEvent(contactId, groupId, timer,
 				settingsTimestamp, recordSig, signedInput));
+		startGroupRecordCleanupTimer(txn, m.getId());
+	}
+
+	private void incomingGroupPostDelete(Transaction txn, Message m,
+			BdfDictionary meta) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		txn.attach(new org.zerionproject.app.api.messaging.event
+				.GroupPostDeleteReceivedEvent(contactId, m.getId(),
+				meta.getRaw(MessagingConstants.MSG_KEY_GROUP_ID),
+				meta.getLong(MessagingConstants.MSG_KEY_GROUP_EPOCH),
+				meta.getRaw(MessagingConstants.MSG_KEY_GROUP_SENDER_PUBKEY),
+				meta.getRaw(MessagingConstants.MSG_KEY_GROUP_TARGET_POST_ID),
+				meta.getLong(MessagingConstants.MSG_KEY_GROUP_RECORD_TIMESTAMP),
+				meta.getRaw(MessagingConstants.MSG_KEY_GROUP_RECORD_SIG)));
 		startGroupRecordCleanupTimer(txn, m.getId());
 	}
 
@@ -2625,9 +3087,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		long inviteTs = meta.getLong("gtrInviteTimestamp");
 		byte[] recordSig = meta.getRaw(
 				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		boolean incognito =
+				messageType == MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO;
+		String joinerName = incognito ? meta.getString(
+				MessagingConstants.MSG_KEY_GTR_JOINER_NAME) : null;
 		org.zerionproject.app.api.messaging.event
 				.GroupTrInviteResponseReceivedEvent.Kind kind =
-				messageType == MessageTypes.GROUPTR_INVITE_ACCEPT
+				messageType == MessageTypes.GROUPTR_INVITE_ACCEPT || incognito
 						? org.zerionproject.app.api.messaging.event
 								.GroupTrInviteResponseReceivedEvent.Kind
 								.ACCEPT
@@ -2636,7 +3102,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 								.DECLINE;
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupTrInviteResponseReceivedEvent(contactId, grouptrGid,
-				inviteTs, recordSig, kind));
+				inviteTs, recordSig, kind, joinerName));
 		startGroupRecordCleanupTimer(txn, m.getId());
 	}
 }

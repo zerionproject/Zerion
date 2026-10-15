@@ -9,6 +9,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Collections;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -147,6 +148,73 @@ public class ProfileDirectoryTest extends BrambleMockTestCase {
 		assertFalse(legacyDb.exists());
 		assertEquals(Collections.singletonList("default"),
 				profiles.listProfileIds());
+	}
+
+	@Test
+	public void aCopyOfTheOldLayoutCutShortInsideAFolderIsCompleted()
+			throws Exception {
+		File movedDb = new File(device.profileDir("default"), "db/db.sqlite");
+		assertTrue(movedDb.getParentFile().mkdirs());
+		Files.write(movedDb.toPath(), new byte[] {1});
+		assertTrue(new File(device.profileDir("default"), "key").mkdirs());
+		File legacyWal = new File(testDir, "app_db/db.sqlite-wal");
+		File legacyKey = new File(testDir, "app_key/db.key");
+		assertTrue(legacyWal.getParentFile().mkdirs());
+		assertTrue(legacyKey.getParentFile().mkdirs());
+		Files.write(legacyWal.toPath(), new byte[] {3});
+		Files.write(legacyKey.toPath(), new byte[] {2});
+
+		ProfileManager profiles = device.newProfileManager();
+
+		assertTrue(device.keyFile("default").exists());
+		assertTrue(new File(device.profileDir("default"),
+				"db/db.sqlite-wal").exists());
+		assertTrue(movedDb.exists());
+		assertFalse(legacyKey.exists());
+		assertFalse(legacyWal.exists());
+		assertEquals(Collections.singletonList("default"),
+				profiles.listProfileIds());
+	}
+
+	@Test
+	public void finishingTheMoveNeverOverwritesWhatWasMovedBefore()
+			throws Exception {
+		File movedDb = new File(device.profileDir("default"), "db/db.sqlite");
+		assertTrue(movedDb.getParentFile().mkdirs());
+		Files.write(movedDb.toPath(), new byte[] {1});
+		File legacyDb = new File(testDir, "app_db/db.sqlite");
+		assertTrue(legacyDb.getParentFile().mkdirs());
+		Files.write(legacyDb.toPath(), new byte[] {9, 9});
+
+		device.newProfileManager();
+
+		assertArrayEquals(new byte[] {1}, Files.readAllBytes(movedDb.toPath()));
+		assertTrue(legacyDb.exists());
+	}
+
+	@Test
+	public void aProfileManagerThatDoesNotMaintainStorageTouchesNothing()
+			throws Exception {
+		device.addProfile("u1", "password one");
+		File withoutKey = new File(device.profileDir("b7c1"),
+				"vault/vault.header");
+		assertTrue(withoutKey.getParentFile().mkdirs());
+		Files.write(withoutKey.toPath(), new byte[] {1});
+		File marked = new File(device.profileDir("c3"), "db/db.sqlite");
+		assertTrue(marked.getParentFile().mkdirs());
+		Files.write(marked.toPath(), new byte[] {2});
+		Files.write(new File(device.profileDir("c3"), ".deleted").toPath(),
+				new byte[0]);
+		File tor = new File(device.profileDir("default"), "tor/state");
+		assertTrue(tor.getParentFile().mkdirs());
+		Files.write(tor.toPath(), new byte[] {3});
+
+		device.newProfileManagerOutsideTheMainProcess();
+
+		assertTrue(withoutKey.exists());
+		assertTrue(marked.exists());
+		assertTrue(tor.exists());
+		assertTrue(device.keyFile("u1").exists());
 	}
 
 	@Test

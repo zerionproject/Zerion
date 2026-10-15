@@ -97,6 +97,64 @@ public class ProfileDeletionCleanupTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void deletingTheOnlyProfileIsCompletedEvenWithoutAPlaceholder()
+			throws Exception {
+		device.addProfile("default", DECOY);
+		File db = new File(device.profileDir("default"), "db/db.sqlite");
+		Files.write(db.toPath(), new byte[] {1, 2, 3});
+		ProfileManager profiles =
+				device.newProfileManagerThatCannotAddProfiles();
+		AndroidAccountManager accountManager =
+				device.newAccountManager(profiles);
+		accountManager.signIn(DECOY.toCharArray());
+		assertTrue(accountManager.deleteActiveProfile("default"));
+		assertEquals(Collections.singletonList("default"),
+				profiles.listProfileIds());
+
+		ProfileManager next = device.newProfileManager();
+
+		assertFalse(device.profileDir("default").exists());
+		assertEquals(Collections.emptyList(), next.listProfileIds());
+	}
+
+	@Test
+	public void anEraseWhoseRequestWasLostIsStillCompletedAtTheNextStart()
+			throws Exception {
+		device.addProfile("default", DECOY);
+		device.addProfile("b7c1", HIDDEN);
+		for (String id : new String[] {"default", "b7c1"}) {
+			File db = new File(device.profileDir(id), "db/db.sqlite");
+			Files.write(db.toPath(), new byte[] {1, 2, 3});
+		}
+		AndroidAccountManager accountManager = device.newAccountManager();
+		accountManager.shredDatabaseKey();
+		File eraseRequest = new File(device.testDir, "erase.requested");
+		assertTrue(!eraseRequest.exists() || eraseRequest.delete());
+
+		ProfileManager next = device.newProfileManager();
+
+		assertFalse(device.profileDir("default").exists());
+		assertFalse(device.profileDir("b7c1").exists());
+		assertEquals(Collections.emptyList(), next.listProfileIds());
+	}
+
+	@Test
+	public void aDeletionCutShortBeforeTheKeyWentIsCompleted()
+			throws Exception {
+		device.addProfile("default", DECOY);
+		device.addProfile("b7c1", HIDDEN);
+		File db = new File(device.profileDir("default"), "db/db.sqlite");
+		Files.write(db.toPath(), new byte[] {1, 2, 3});
+		device.newProfileManager().markForDeletion("default");
+
+		ProfileManager next = device.newProfileManager();
+
+		assertFalse(device.profileDir("default").exists());
+		assertEquals(Collections.singletonList("b7c1"),
+				next.listProfileIds());
+	}
+
+	@Test
 	public void aProfileDirectoryWithoutAKeyIsWipedAtStart()
 			throws Exception {
 		device.addProfile("b7c1", HIDDEN);

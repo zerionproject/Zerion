@@ -79,7 +79,7 @@ public class PendingContactListActivity extends ZerionActivity
 		list.showProgressBar();
 
 		offlineSnackbar = new ZerionSnackbarBuilder()
-				.setBackgroundColor(R.color.zerion_error_red)
+				.setBackgroundColor(R.color.zerion_error_fill)
 				.make(list, R.string.offline_state, LENGTH_INDEFINITE);
 	}
 

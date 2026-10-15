@@ -30,6 +30,22 @@ public final class OnionAuthRecord {
 	public long probeUntilMs;
 	public long negotiationStartedMs;
 	public boolean rotateAcked;
+	public int repairs;
+	public long nextRepairMs;
+	public boolean commitResent;
+	public boolean rekeying;
+	public long rekeyedMs;
+	public long lastSeenMs;
+	public int openDials;
+	public long nextOpenDialMs;
+	public int silenceRepairs;
+	public long nextSilenceRepairMs;
+	@Nullable
+	public byte[] committedPeerKey;
+	@Nullable
+	public String committedPeerOnion;
+	public long committedPeerGen;
+	public boolean committedLocked;
 
 	public OnionAuthRecord(ContactId contactId) {
 		this.contactId = contactId;
@@ -38,6 +54,29 @@ public final class OnionAuthRecord {
 
 	public boolean hasPeerService() {
 		return peerOnion != null && dialPrivateKey != null;
+	}
+
+	public boolean awaitsPeerCommit() {
+		return commitSent && !peerCommitReceived
+				&& (state == State.AUTH_CONFIRMED
+				|| (state == State.AUTH_REQUIRED && rekeying));
+	}
+
+	public boolean lockedIn() {
+		return state == State.AUTH_REQUIRED && !rekeying;
+	}
+
+	public boolean holdsCommit() {
+		return state == State.AUTH_REQUIRED || rekeying
+				|| (state == State.AUTH_CONFIRMED && commitSent);
+	}
+
+	@Nullable
+	public String fallbackOnion() {
+		if (!rekeying || probeSucceeded || committedPeerOnion == null) {
+			return null;
+		}
+		return committedPeerOnion;
 	}
 
 	public boolean authorizesPeer() {

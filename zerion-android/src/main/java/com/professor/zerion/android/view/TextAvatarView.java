@@ -60,6 +60,20 @@ public class TextAvatarView extends FrameLayout {
 		int color = Color.rgb(r, g, b);
 
 		background.setImageDrawable(new ColorDrawable(color));
+		int dark = androidx.core.content.ContextCompat.getColor(getContext(),
+				R.color.zerion_on_accent);
+		boolean lightLabel = androidx.core.graphics.ColorUtils
+				.calculateContrast(Color.WHITE, color)
+				>= androidx.core.graphics.ColorUtils
+				.calculateContrast(dark, color);
+		character.setTextColor(lightLabel ? Color.WHITE : dark);
+		if (lightLabel) {
+			character.setShadowLayer(1.5f, 0f, 1.5f,
+					androidx.core.content.ContextCompat.getColor(getContext(),
+							R.color.forum_avatar_shadow));
+		} else {
+			character.setShadowLayer(0f, 0f, 0f, 0);
+		}
 	}
 
 	private byte getByte(byte[] bytes, int index) {

@@ -6,6 +6,8 @@ import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelReaction;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.zerionproject.app.api.channel.ChannelTransport;
+import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridSignaturePrivateKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
@@ -14,6 +16,7 @@ import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfReader;
 import org.zerionproject.core.api.db.DatabaseConfig;
 import org.zerionproject.core.api.db.Transaction;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.settings.Settings;
@@ -60,6 +63,8 @@ final class ChannelTestNode {
 	final ChannelPostTombstoneStore postTombstones;
 	final ChannelManagerImpl manager;
 	final List<Long> scheduledDelays =
+			Collections.synchronizedList(new ArrayList<>());
+	final List<Event> events =
 			Collections.synchronizedList(new ArrayList<>());
 
 	ChannelTestNode(CryptoComponent crypto, MutableClock clock,
@@ -136,7 +141,7 @@ final class ChannelTestNode {
 		ChannelPullProtocol protocol = new ChannelPullProtocol(codec,
 				pullCodec, new ChannelHmacChallenge(crypto), contentKey,
 				validator, signatures, crypto);
-		manager = new ChannelManagerImpl(crypto, inert(EventBus.class),
+		manager = new ChannelManagerImpl(crypto, recordingEventBus(),
 				clock, codec, signatures, chain, store, contentKey,
 				validator, protocol, transport, blobStore, reactionStore,
 				subscriberStore, commentStore,
@@ -149,6 +154,44 @@ final class ChannelTestNode {
 				Runnable::run);
 		manager.readerFactory = bdf.getBdfReaderFactory();
 		manager.writerFactory = bdf.getBdfWriterFactory();
+	}
+
+	private EventBus recordingEventBus() {
+		return (EventBus) Proxy.newProxyInstance(
+				EventBus.class.getClassLoader(),
+				new Class<?>[] {EventBus.class}, (proxy, method, args) -> {
+					if (method.getName().equals("broadcast")) {
+						events.add((Event) args[0]);
+					}
+					return null;
+				});
+	}
+
+	int announced(long seq) {
+		int n = 0;
+		synchronized (events) {
+			for (Event e : events) {
+				if (e instanceof ChannelPostReceivedEvent) {
+					ChannelPostReceivedEvent r = (ChannelPostReceivedEvent) e;
+					if (r.getSeqNum() == seq && !r.isLocal()) n++;
+				}
+			}
+		}
+		return n;
+	}
+
+	int commentAlerts(long parent) {
+		int n = 0;
+		synchronized (events) {
+			for (Event e : events) {
+				if (e instanceof ChannelCommentReceivedEvent
+						&& ((ChannelCommentReceivedEvent) e)
+						.getParentPostSeqNum() == parent) {
+					n++;
+				}
+			}
+		}
+		return n;
 	}
 
 	interface BlobStoreFactory {
@@ -525,8 +568,23 @@ final class ChannelTestNode {
 			wrote();
 		}
 
+		@Nullable
+		private volatile java.util.function.Consumer<String> readHook;
+
+		void onRead(
+				@Nullable java.util.function.Consumer<String> hook) {
+			readHook = hook;
+		}
+
 		@Override
-		public synchronized Settings getSettings(String namespace) {
+		public Settings getSettings(String namespace) {
+			Settings s = read(namespace);
+			java.util.function.Consumer<String> hook = readHook;
+			if (hook != null) hook.accept(namespace);
+			return s;
+		}
+
+		private synchronized Settings read(String namespace) {
 			Settings s = new Settings();
 			Settings stored = byNamespace.get(namespace);
 			if (stored != null) {

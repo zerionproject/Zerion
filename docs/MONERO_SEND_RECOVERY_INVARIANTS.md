@@ -32,7 +32,11 @@ it is after those fixes.
   CONVERGED.
 - Spend session: the transient spend-capable native wallet opened for one
   send; the view-only background session is the runtime session.
-- Exclusive slot: single holder (send, delete, rename, rescan).
+- Exclusive slot: single holder (send, delete, rename, rescan). A rescan
+  that outlives its wait keeps the slot, and the seed and password it
+  rebuilds from, until the rebuild on the session executor has returned;
+  only a rescan that never started is released (and its secrets wiped) by
+  the waiting thread.
 - Vault lock generation: increments on every vault lock; every session and
   authorization is bound to the generation it was created under.
 
@@ -68,7 +72,8 @@ RELAYING, SUCCESS, RELAY_UNCERTAIN: lock and cancel invalidate the token
 ```
 
 After a terminal relay result the manager runs, in order, on the session
-executor: daemon reconciliation on the still-open spend session (uncertain relay),
+executor: the pending record write (`recordPendingSend`), daemon
+reconciliation on the still-open spend session (uncertain relay),
 convergence (`convergeAfterRelay`), then clears the flow, closes the spend
 session, releases the exclusive slot and re-arms sync.
 
@@ -84,7 +89,10 @@ corrupt --(never automatically)--> only removable with the wallet
 ```
 
 Positive acceptance of a txid: the daemon reports it in its pool or in a
-block (`lookupTxs`), or the wallet's own outgoing history records it.
+block (`lookupTxs`), or the wallet's own outgoing history records it. An
+outgoing history entry that wallet2 marks failed is not evidence; every
+path that reads history for reconciliation or convergence applies the same
+rule (`XmrWalletManager.acceptedOutgoingTxids`).
 MISSED and lookup errors never resolve anything, whatever the count, node
 or elapsed time. Reconciliation runs:
 
@@ -113,6 +121,10 @@ RELAY_UNCERTAIN --(explicit release)---------------------------> removed
 CONVERGED -------(rescan rebuilds the view cache)--------------> RESERVED again
 ```
 
+A rescan writes the CONVERGED to RESERVED change before it closes the
+session or rebuilds anything, and is refused when that write fails, so a
+rebuilt cache never runs without its reservations.
+
 The reservation is display-side only; wallet2's own balance is never
 edited. It is released only by positive convergence (the cache reflects the
 spend) or by the explicit release; observing the txid in history alone
@@ -128,7 +140,14 @@ never releases it (reservation release).
 2. An uncertain relay preserves enough state for reconciliation: the
    journal (txids, endpoint, time) is durable before the commit and is kept
    on false and on exception; the pending record is durable and marked
-   uncertain. (`XmrSendFlow.confirmAndRelay`, `convergeAfterRelay`)
+   uncertain. The pending record is written right after the relay, before
+   the manager's daemon reconciliation can clear the journal. If it cannot
+   be written, the failure is reported, the record is kept in memory (it
+   still drives the reservation and the history row), every refresh and
+   every reconciliation tries to write it again, and reconciliation does
+   not clear the journal until the write succeeds, so the wallet stays
+   quarantined. (`XmrSendFlow.confirmAndRelay`, `confirmSend`,
+   `recordPendingSend`, `reconcileSpendJournal`)
 3. No unsafe double spend or re-broadcast: nothing in the code re-broadcasts
    a journalled transaction; a quarantined wallet cannot construct a new
    transaction; the release path requires the password, the expiry, an

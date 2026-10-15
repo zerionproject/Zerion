@@ -37,6 +37,8 @@ class ChannelCodec {
 			"org.zerionproject/CHANNEL_POST_ATTACHMENTS_V2";
 	private static final String LABEL_POST_CHAIN_V2 =
 			"org.zerionproject/CHANNEL_POST_CHAIN_V2";
+	static final String LABEL_DISCUSSIONS =
+			"org.zerionproject/CHANNEL_DISCUSSIONS";
 
 	private final CryptoComponent crypto;
 
@@ -116,6 +118,50 @@ class ChannelCodec {
 		return buf.array();
 	}
 
+	static byte[] boundManifestSignedInput(byte[] manifestSignedInput,
+			byte[] authorBindingsDigest) {
+		ByteBuffer buf = ByteBuffer.allocate(manifestSignedInput.length
+				+ authorBindingsDigest.length);
+		buf.put(manifestSignedInput);
+		buf.put(authorBindingsDigest);
+		return buf.array();
+	}
+
+	static byte[] postChangesManifestSignedInput(byte[] manifestSignedInput,
+			byte[] authorBindingsDigest, byte[] discussionsDigest) {
+		return boundManifestSignedInput(boundManifestSignedInput(
+				manifestSignedInput, authorBindingsDigest), discussionsDigest);
+	}
+
+	byte[] discussionsDigest(boolean enabled,
+			java.util.Collection<Long> exceptions) {
+		java.util.TreeSet<Long> sorted = new java.util.TreeSet<>(exceptions);
+		ByteBuffer buf = ByteBuffer.allocate(1 + 4 + 8 * sorted.size());
+		buf.put((byte) (enabled ? 1 : 0));
+		buf.putInt(sorted.size());
+		for (Long seq : sorted) buf.putLong(seq);
+		return crypto.hash(LABEL_DISCUSSIONS, buf.array());
+	}
+
+	byte[] postChangeSignedInput(byte[] channelId, long targetSeqNum,
+			String op, long base, boolean commentsOn, String body,
+			long timestampHourMs) {
+		byte[] opBytes = op.getBytes(StandardCharsets.UTF_8);
+		byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8
+				+ 4 + opBytes.length + 8 + 1 + 4 + bodyBytes.length + 8);
+		buf.put(channelId);
+		buf.putLong(targetSeqNum);
+		buf.putInt(opBytes.length);
+		buf.put(opBytes);
+		buf.putLong(base);
+		buf.put((byte) (commentsOn ? 1 : 0));
+		buf.putInt(bodyBytes.length);
+		buf.put(bodyBytes);
+		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
 	private byte[] delegationsCanonicalHash(
 			List<ChannelDelegationCert> active) {
 		ByteArrayOutputStream sink = new ByteArrayOutputStream();
@@ -188,6 +234,16 @@ class ChannelCodec {
 		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 8);
 		buf.put(channelId);
 		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
+	byte[] onionConfirmationSignedInput(byte[] channelId, String onion) {
+		byte[] onionBytes = onion.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(channelId.length + 4
+				+ onionBytes.length);
+		buf.put(channelId);
+		buf.putInt(onionBytes.length);
+		buf.put(onionBytes);
 		return buf.array();
 	}
 
@@ -300,7 +356,7 @@ class ChannelCodec {
 			byte[] salt = saltOf(p);
 			return postSignedInputV2(p.getChannelId(), p.getSeqNum(),
 					p.getPrevHash(), p.getTimestampHourMs(), p.getTtlMs(),
-					salt, bodyHashV2(salt, p.getBody()),
+					salt, bodyHashOf(salt, p),
 					attachmentsHashV2(salt, p.getAttachments()));
 		}
 		return postSignedInput(p.getChannelId(), p.getSeqNum(),
@@ -313,7 +369,7 @@ class ChannelCodec {
 			byte[] salt = saltOf(p);
 			return postCanonicalHashV2(p.getChannelId(), p.getSeqNum(),
 					p.getPrevHash(), p.getTimestampHourMs(), p.getTtlMs(),
-					salt, bodyHashV2(salt, p.getBody()),
+					salt, bodyHashOf(salt, p),
 					attachmentsHashV2(salt, p.getAttachments()),
 					p.getSignature());
 		}
@@ -321,6 +377,15 @@ class ChannelCodec {
 				p.getPrevHash(), p.getTimestampHourMs(), p.getBody(),
 				attachmentsHash(p.getAttachments()), p.getTtlMs(),
 				p.getSignature());
+	}
+
+	byte[] bodyHashOf(ChannelPost p) {
+		return bodyHashOf(saltOf(p), p);
+	}
+
+	private byte[] bodyHashOf(byte[] salt, ChannelPost p) {
+		byte[] erased = p.getErasedBodyHash();
+		return erased != null ? erased : bodyHashV2(salt, p.getBody());
 	}
 
 	private static byte[] saltOf(ChannelPost p) {

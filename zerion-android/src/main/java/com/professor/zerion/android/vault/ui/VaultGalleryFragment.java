@@ -357,7 +357,7 @@ public class VaultGalleryFragment extends BaseFragment {
 						requireContext().getCacheDir(), "camera_photos");
 				if (!dir.exists() && !dir.mkdirs()) return;
 				java.io.File photo = new java.io.File(dir,
-						"capture_" + System.currentTimeMillis() + ".jpg");
+						com.professor.zerion.android.util.CameraFileNames.random("capture_", ".jpg"));
 				pendingCaptureFile = photo;
 				Uri uri = FileProvider.getUriForFile(requireContext(),
 						requireContext().getPackageName() + ".fileprovider",

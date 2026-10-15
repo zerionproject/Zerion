@@ -62,6 +62,7 @@ public class TorStatusFragment extends BaseFragment {
 	private int torBootstrap = 0;
 	private boolean torOnionPublished = false;
 	private long torClockSkewSeconds = 0;
+	private boolean torEntryRelayFailing = false;
 	private LinearLayout onionCard;
 	private TextView onionAddressValue;
 	private MaterialButton onionCopyButton;
@@ -174,6 +175,12 @@ public class TorStatusFragment extends BaseFragment {
 					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
 
+		viewModel.getTorEntryRelayFailing().observe(getViewLifecycleOwner(),
+				failing -> {
+					torEntryRelayFailing = Boolean.TRUE.equals(failing);
+					if (lastTorState != null) updateTorStatus(lastTorState);
+				});
+
 		viewModel.getLocalOnion().observe(getViewLifecycleOwner(), onion -> {
 			if (onion != null && !onion.isEmpty()) {
 				String full = onion + ".onion";
@@ -210,7 +217,7 @@ public class TorStatusFragment extends BaseFragment {
 					internetStatusText.setText(
 							online ? R.string.online : R.string.offline);
 					internetStatusText.setTextColor(ContextCompat.getColor(ctx,
-							online ? R.color.zerion_success
+							online ? R.color.zerion_success_text
 									: R.color.zerion_text_secondary));
 					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
@@ -263,21 +270,21 @@ public class TorStatusFragment extends BaseFragment {
 		if (state == Plugin.State.DISABLED) {
 			i2pStatusText.setText(R.string.disabled);
 			i2pStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_destructive));
+					ContextCompat.getColor(ctx, R.color.zerion_destructive_text));
 			i2pStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_destructive));
+					ContextCompat.getColor(ctx, R.color.zerion_destructive_text));
 		} else if (state == Plugin.State.ACTIVE) {
 			i2pStatusText.setText(R.string.connected);
 			i2pStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_success));
+					ContextCompat.getColor(ctx, R.color.zerion_success_text));
 			i2pStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_primary_accent));
+					ContextCompat.getColor(ctx, R.color.zerion_accent_icon));
 		} else {
 			i2pStatusText.setText(R.string.connecting);
 			i2pStatusText.setTextColor(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
+					ContextCompat.getColor(ctx, R.color.zerion_warning_text));
 			i2pStatusIcon.setColorFilter(
-					ContextCompat.getColor(ctx, R.color.zerion_warning));
+					ContextCompat.getColor(ctx, R.color.zerion_warning_text));
 		}
 	}
 
@@ -309,7 +316,8 @@ public class TorStatusFragment extends BaseFragment {
 				&& lastNetworkStatus.isConnected();
 		TorStatusDecider.Status status = TorStatusDecider.decide(
 				pluginManager.isOfflineMode(), state, online,
-				torOnionPublished, torClockSkewSeconds != 0, torBootstrap);
+				torOnionPublished, torClockSkewSeconds != 0,
+				torEntryRelayFailing, torBootstrap);
 		torRestartButton.setVisibility(
 				status == TorStatusDecider.Status.OFFLINE_MODE
 						? View.GONE : View.VISIBLE);
@@ -321,41 +329,47 @@ public class TorStatusFragment extends BaseFragment {
 						R.color.zerion_text_secondary);
 				break;
 			case DISABLED:
-				setStatus(ctx, R.string.disabled, R.color.zerion_destructive,
-						R.string.not_available, R.color.zerion_destructive);
+				setStatus(ctx, R.string.disabled, R.color.zerion_destructive_text,
+						R.string.not_available, R.color.zerion_destructive_text);
 				break;
 			case CONNECTED:
-				setStatus(ctx, R.string.connected, R.color.zerion_success,
+				setStatus(ctx, R.string.connected, R.color.zerion_success_text,
 						R.string.tor_hidden_services_active,
-						R.color.zerion_primary_accent);
+						R.color.zerion_accent_icon);
 				break;
 			case CLOCK_SKEW:
 				setStatus(ctx, R.string.tor_status_clock_skew,
-						R.color.zerion_warning,
+						R.color.zerion_warning_text,
 						R.string.tor_hidden_services_clock_skew,
-						R.color.zerion_warning);
+						R.color.zerion_warning_text);
+				break;
+			case ENTRY_RELAY_FAILING:
+				setStatus(ctx, R.string.tor_status_entry_relay,
+						R.color.zerion_warning_text,
+						R.string.tor_hidden_services_entry_relay,
+						R.color.zerion_warning_text);
 				break;
 			case PUBLISHING:
 				setStatus(ctx, R.string.tor_status_publishing,
-						R.color.zerion_warning,
+						R.color.zerion_warning_text,
 						R.string.tor_hidden_services_publishing,
-						R.color.zerion_warning);
+						R.color.zerion_warning_text);
 				break;
 			case BOOTSTRAPPING:
 				torStatusText.setText(getString(
 						R.string.tor_status_bootstrapping, torBootstrap));
 				torStatusText.setTextColor(
-						ContextCompat.getColor(ctx, R.color.zerion_warning));
+						ContextCompat.getColor(ctx, R.color.zerion_warning_text));
 				torOnionAddress.setText(
 						R.string.tor_hidden_services_connecting);
 				torStatusIcon.setColorFilter(
-						ContextCompat.getColor(ctx, R.color.zerion_warning));
+						ContextCompat.getColor(ctx, R.color.zerion_warning_text));
 				break;
 			case CONNECTING:
 			default:
-				setStatus(ctx, R.string.connecting, R.color.zerion_warning,
+				setStatus(ctx, R.string.connecting, R.color.zerion_warning_text,
 						R.string.tor_hidden_services_connecting,
-						R.color.zerion_warning);
+						R.color.zerion_warning_text);
 				break;
 		}
 	}

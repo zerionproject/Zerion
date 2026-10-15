@@ -44,7 +44,7 @@
 			android:background="#CC26B7F0"
 			android:paddingHorizontal="20dp"
 			android:paddingVertical="8dp"
-			android:textColor="@android:color/white"
+			android:textColor="@color/zerion_on_accent"
 			android:textSize="14sp"
 			android:textStyle="bold"
 			android:visibility="gone" />
@@ -90,8 +90,8 @@
 			android:layout_height="wrap_content"
 			android:layout_marginTop="16dp"
 			android:text="@string/qr_continue_button"
-			android:textColor="@android:color/white"
-			android:backgroundTint="@color/zerion_cyan"
+			android:textColor="@color/zerion_button_filled_foreground"
+			android:backgroundTint="@color/zerion_button_filled_background"
 			android:visibility="gone" />
 
 	</LinearLayout>

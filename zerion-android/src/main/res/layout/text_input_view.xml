@@ -37,7 +37,7 @@
 			android:padding="12dp"
 			android:scaleType="center"
 			app:srcCompat="@drawable/ic_shield_lock"
-			app:tint="@color/zerion_primary_accent" />
+			app:tint="@color/zerion_accent_icon" />
 
 		<com.professor.zerion.android.view.CompositeSendButton
 			android:id="@+id/compositeSendButton"

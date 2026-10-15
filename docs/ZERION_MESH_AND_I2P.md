@@ -55,8 +55,9 @@ matters.
   inherent to any local-radio system.
 
 In one sentence: the mesh is for "communicate when there is no internet," not
-"hide from someone standing next to you that you are communicating." The app
-states this to the user before the mesh is enabled.
+"hide from someone standing next to you that you are communicating." The
+connection settings say so under the switch that turns the mesh on: anyone
+nearby with a Bluetooth scanner can tell that the phone runs the Zerion mesh.
 
 ## 3. Layers
 
@@ -90,10 +91,13 @@ anyone can compute the identifier for any epoch: it names no device, but it
 shows that a device runs the Zerion mesh. The scan response also carries an
 8-byte nonce for the connection tie-break. Since 3.0.15 a fresh nonce is drawn
 for every advertising set and the device replaces its advertising set after a
-random 4 to 6 minutes; Android gives each set its own random address and does
-not change it within a set sooner than every 7 minutes, so nonce and address
-change together and a passive observer can follow one advertising identity for
-at most about 6 minutes. (Up to 3.0.14 the nonce stayed the same for a fixed 10
+random 4 to 6 minutes; Android is expected to give each set its own random
+address and not to change it within a set sooner than every 7 minutes (not yet
+confirmed on a device), so nonce and address change together and an observer
+that sees only the advertisements can follow one advertising identity for at
+most about 6 minutes. A device linked to it, or anyone capturing the link
+traffic, which Bluetooth does not encrypt here, reads the next nonce when it is
+announced over the link and can follow the device while a link lasts. (Up to 3.0.14 the nonce stayed the same for a fixed 10
 minutes, longer than the address, so an observer could chain address changes
 through it.) Before replacing its set, a device tells the devices it is linked
 to its new nonce in a link-local frame that is never relayed, so they do not
@@ -121,23 +125,31 @@ documented, deferred design choice.
 
 ## 5. Managed flooding
 
-`MeshForwarder` implements store-carry-forward flooding:
+`MeshForwarder` implements flooding:
 
 - Each frame carries a message id, a payload, and a hop budget. The initial hop
-  budget starts from a maximum (`MeshFrame.MAX_HOPS`, currently 7) minus a small
-  random amount (0 to 2), so the starting value does not itself identify the
-  origin.
+  budget starts from a maximum (`MeshFrame.MAX_HOPS`, currently 7) minus a
+  random 0 to 2. A budget of 5 or 6 does not show whether the neighbour that
+  sent the frame originated it, but relays always decrement, so a frame that
+  arrives with the full 7 comes straight from its origin (about one frame in
+  three a device originates).
 - A relay that receives a frame it has not seen decrements the hop budget and
-  re-broadcasts it while the budget remains, then stores it for a while so a peer
-  that arrives later still receives it.
+  re-broadcasts it while the budget remains. From 3.0.18 it re-broadcasts before
+  it opens the payload itself, so the extra work of opening an envelope
+  addressed to it no longer delays the relay; up to 3.0.17 that delay could
+  show the neighbours which frames were meant for it.
 - De-duplication is by message id, so the same frame looping through the mesh is
   forwarded once, not repeatedly.
-- The relay store is byte-bounded (`STORE_MAX_BYTES`, currently 2 MB) with
-  oldest-first eviction, so a device cannot be filled up, and a per-node frame
-  rate limit (currently 200 frames/second) bounds abuse.
+- Recent frames are kept in memory only, bounded in bytes (`STORE_MAX_BYTES`,
+  currently 2 MB) and frames, the neighbour holding the most giving up its
+  oldest first, and nothing hands them to a device that links later; a per-node
+  frame rate limit (currently 200 frames/second) bounds abuse.
 
-Delivery is eventual and disruption-tolerant: a message can hop through several
-phones and wait in their stores until the recipient comes into range.
+Delivery to a recipient that comes into range later rests on the sender: a
+direct message stays in the sender's outbox and is sealed afresh and sent again
+every 30 seconds while a neighbour is linked, until it is acknowledged or its
+attempts run out; a group record that was never delivered is sealed again when
+the sender's mesh next starts.
 
 ## 6. Async sealed-sender crypto
 
@@ -319,12 +331,12 @@ Honest limits:
   Oversized payloads are dropped rather than sent.
 - Group posts do not show a per-member delivery tick the way a one-to-one message
   shows two ticks.
-- Group-record durability across a restart is weaker than one-to-one. A
-  one-to-one message reloads its outbox from the database after a restart; the
-  group send outbox is in memory only, so a group record composed fully offline
-  that has not reached any peer before the app restarts may not be re-sent to a
-  member who was never in range. Bringing group-record durability to parity with
-  one-to-one is tracked work.
+- Group records are repeated less than one-to-one messages. A group record
+  composed offline is kept in the database as pending; it is sealed for each
+  member who is a contact when it is written and again each time the mesh
+  starts, but not every 30 seconds, so a member who was out of range at those
+  moments receives it at a later mesh start or over Tor once the sender is
+  online again.
 - Presence rounds are always 8 envelopes, so a co-located BLE observer learns
   neither how many contacts a device beacons to nor who they are. Up to 3.0.14
   the real heartbeats came first, the count was padded to a multiple of 8 and
@@ -336,8 +348,10 @@ Honest limits:
   originates arrive from it first); the size bucket (4096 or 16384 bytes; only
   real traffic uses the larger one); the time-to-live class (180 s for presence,
   7 days otherwise); retry and acknowledgement timing; and the number of
-  envelopes a group post fans out to. A neighbour linked to a device can follow
-  it for as long as the link lasts. A message carried to its recipient within
+  envelopes a group post fans out to. A neighbour linked to a device, or anyone
+  capturing the unencrypted link traffic, can follow it for as long as the
+  link lasts, and the 30-second repeats of a device's outbox are visible to its
+  neighbours. A message carried to its recipient within
   10 minutes of sealing is acknowledged, which still tells an observer who
   watches closely that the recipient is nearby.
 

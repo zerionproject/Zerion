@@ -5,6 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 
+import com.professor.zerion.android.attachment.ImageOrientation;
+import com.professor.zerion.android.attachment.ImageScrubber;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
@@ -43,11 +46,7 @@ public final class StickerImporter {
 		decode.inSampleSize = computeInSampleSize(
 				bounds.outWidth, bounds.outHeight, TARGET_LONG_EDGE);
 		decode.inPreferredConfig = Bitmap.Config.ARGB_8888;
-		Bitmap raw;
-		try (InputStream is = cr.openInputStream(uri)) {
-			if (is == null) throw new IOException("could not open uri (decode)");
-			raw = BitmapFactory.decodeStream(is, null, decode);
-		}
+		Bitmap raw = ImageOrientation.decodeUpright(cr, uri, decode);
 		if (raw == null) throw new IOException("decode returned null");
 
 		try {
@@ -102,6 +101,6 @@ public final class StickerImporter {
 		if (!bmp.compress(Bitmap.CompressFormat.PNG, 100, out)) {
 			throw new IOException("PNG compress failed");
 		}
-		return out.toByteArray();
+		return ImageScrubber.png(out.toByteArray());
 	}
 }

@@ -6,6 +6,7 @@ import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.zerionproject.app.api.conversation.ConversationMessageVisitor;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
@@ -20,12 +21,24 @@ public class GroupTrInvitationHeader extends ConversationMessageHeader {
 	private final String creatorName;
 	private final byte[] creatorPubKey;
 	private final long inviteTimestamp;
+	@Nullable
+	private final byte[] inviterPubKey;
 
 	public GroupTrInvitationHeader(MessageId id, GroupId contactGroupId,
 			long timestamp, boolean local, boolean read, boolean sent,
 			boolean seen, GroupId groupTrGroupId, String groupName,
 			byte[] salt, String creatorName, byte[] creatorPubKey,
 			long inviteTimestamp) {
+		this(id, contactGroupId, timestamp, local, read, sent, seen,
+				groupTrGroupId, groupName, salt, creatorName, creatorPubKey,
+				inviteTimestamp, null);
+	}
+
+	public GroupTrInvitationHeader(MessageId id, GroupId contactGroupId,
+			long timestamp, boolean local, boolean read, boolean sent,
+			boolean seen, GroupId groupTrGroupId, String groupName,
+			byte[] salt, String creatorName, byte[] creatorPubKey,
+			long inviteTimestamp, @Nullable byte[] inviterPubKey) {
 		super(id, contactGroupId, timestamp, local, read, sent, seen,
 				NO_AUTO_DELETE_TIMER);
 		this.groupTrGroupId = groupTrGroupId;
@@ -34,6 +47,16 @@ public class GroupTrInvitationHeader extends ConversationMessageHeader {
 		this.creatorName = creatorName;
 		this.creatorPubKey = creatorPubKey;
 		this.inviteTimestamp = inviteTimestamp;
+		this.inviterPubKey = inviterPubKey;
+	}
+
+	public boolean isMemberInvite() {
+		return inviterPubKey != null;
+	}
+
+	@Nullable
+	public byte[] getInviterPubKey() {
+		return inviterPubKey;
 	}
 
 	public GroupId getGroupTrGroupId() {

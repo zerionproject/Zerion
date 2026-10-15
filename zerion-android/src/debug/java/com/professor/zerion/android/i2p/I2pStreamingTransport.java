@@ -141,24 +141,27 @@ public class I2pStreamingTransport implements I2pOverlayTransport {
 	}
 
 	@Override
-	public long dial(int contactId, String peerAddress, boolean fast) {
+	public DialResult dial(int contactId, String peerAddress, boolean fast) {
 		I2PSocketManager mgr = manager;
-		if (mgr == null) return DIAL_NOT_CONNECTED;
+		if (mgr == null) return DialResult.NOT_CONNECTED;
 		I2PSocket socket;
 		try {
 			socket = mgr.connect(new Destination(peerAddress));
 		} catch (Exception e) {
-			return DIAL_NOT_CONNECTED;
+			return DialResult.NOT_CONNECTED;
 		}
 		long connectedAt = System.currentTimeMillis();
+		boolean authenticated = false;
 		try {
-			handler.handleOutgoing(I2pConstants.ID, contactId,
-					socket.getInputStream(), socket.getOutputStream());
+			authenticated = handler.handleOutgoingSession(I2pConstants.ID,
+					contactId, socket.getInputStream(),
+					socket.getOutputStream());
 		} catch (IOException e) {
 		} finally {
 			closeQuietly(socket);
 		}
-		return System.currentTimeMillis() - connectedAt;
+		return new DialResult(authenticated,
+				System.currentTimeMillis() - connectedAt);
 	}
 
 	@Override

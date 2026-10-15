@@ -187,7 +187,7 @@ public class ZtpTorTransportTest {
 		ZtpTorTransport t = new ZtpTorTransport(new StubTor(), fakeFactory,
 				fakeFactory, exec, handler, null, () -> {
 		});
-		long sessionMs = t.dial(7, PEER_ONION, false);
+		long sessionMs = t.dial(7, PEER_ONION, false).getSessionMs();
 
 		assertTrue(outgoing.await(10, TimeUnit.SECONDS));
 		assertEquals(7, gotContact.get());
@@ -244,7 +244,7 @@ public class ZtpTorTransportTest {
 				failingFactory, exec, handler, null, () -> {
 		});
 		assertEquals(ZtpTorTransport.DIAL_NOT_CONNECTED,
-				t.dial(7, PEER_ONION, true));
+				t.dial(7, PEER_ONION, true).getSessionMs());
 		exec.shutdownNow();
 	}
 

@@ -183,6 +183,8 @@ public class AndroidKeyFileAlignmentTest extends BrambleMockTestCase {
 			allowing(profileManager).getKeyDirWithoutCreating("b");
 			will(returnValue(keyDir("b")));
 			oneOf(strengthener).discardKeyBeforeFirstAccount();
+			oneOf(profileManager).markForDeletion("a");
+			oneOf(profileManager).markForDeletion("b");
 		}});
 
 		manager(false).shredDatabaseKey();

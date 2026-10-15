@@ -14,6 +14,8 @@ public final class Mp4MetadataScrubber {
 
 	private static final int CHUNK = 64 * 1024;
 
+	private static final int HANDLER_NAME = 24;
+
 	private static final byte[] ANDROID_KEY =
 			"com.android.".getBytes(StandardCharsets.US_ASCII);
 
@@ -34,7 +36,7 @@ public final class Mp4MetadataScrubber {
 				Box b = box(f, pos, end);
 				if (b.is("moov")) {
 					movie = true;
-					scrubChildren(f, b, true);
+					scrubChildren(f, b);
 				} else if (b.is("meta") || b.is("udta")) {
 					neutralise(f, b);
 				}
@@ -52,8 +54,8 @@ public final class Mp4MetadataScrubber {
 		}
 	}
 
-	private static void scrubChildren(RandomAccessFile f, Box parent,
-			boolean movie) throws IOException {
+	private static void scrubChildren(RandomAccessFile f, Box parent)
+			throws IOException {
 		long pos = parent.start + parent.header;
 		int count = 0;
 		while (pos < parent.end) {
@@ -64,22 +66,66 @@ public final class Mp4MetadataScrubber {
 			Box b = box(f, pos, parent.end);
 			if (b.is("meta") || b.is("udta")) {
 				neutralise(f, b);
-			} else if (movie && b.is("trak")) {
-				scrubChildren(f, b, false);
+			} else if (b.is("mvhd") || b.is("tkhd") || b.is("mdhd")) {
+				clearTimes(f, b);
+			} else if (b.is("hdlr")) {
+				blankName(f, b);
+			} else if (holds(parent, b)) {
+				scrubChildren(f, b);
 			}
 			pos = b.end;
 		}
+	}
+
+	private static boolean holds(Box parent, Box child) {
+		return (parent.is("moov") && child.is("trak"))
+				|| (parent.is("trak") && child.is("mdia"))
+				|| (parent.is("mdia") && child.is("minf"));
+	}
+
+	private static void clearTimes(RandomAccessFile f, Box b)
+			throws IOException {
+		long body = b.start + b.header;
+		f.seek(body);
+		int version = f.read();
+		if (version != 0 && version != 1) {
+			throw new IOException("unknown " + b.type + " version");
+		}
+		int time = version == 0 ? 4 : 8;
+		long times = body + 4;
+		long end = times + 2L * time;
+		long language = -1;
+		if (b.is("mdhd")) {
+			language = end + 4 + time;
+			end = language + 2;
+		}
+		if (end > b.end) throw new IOException(b.type + " too short");
+		zero(f, times, times + 2L * time);
+		if (language >= 0) zero(f, language, language + 2);
+	}
+
+	private static void blankName(RandomAccessFile f, Box b)
+			throws IOException {
+		long name = b.start + b.header + HANDLER_NAME;
+		if (name > b.end) throw new IOException("hdlr too short");
+		zero(f, name, b.end);
 	}
 
 	private static void neutralise(RandomAccessFile f, Box b)
 			throws IOException {
 		f.seek(b.start + 4);
 		f.write(FREE);
-		byte[] zeros = new byte[(int) Math.min(CHUNK, b.end - b.start)];
-		long pos = b.start + b.header;
+		zero(f, b.start + b.header, b.end);
+	}
+
+	private static void zero(RandomAccessFile f, long from, long to)
+			throws IOException {
+		if (to <= from) return;
+		byte[] zeros = new byte[(int) Math.min(CHUNK, to - from)];
+		long pos = from;
 		f.seek(pos);
-		while (pos < b.end) {
-			int n = (int) Math.min(zeros.length, b.end - pos);
+		while (pos < to) {
+			int n = (int) Math.min(zeros.length, to - pos);
 			f.write(zeros, 0, n);
 			pos += n;
 		}

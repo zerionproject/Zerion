@@ -86,4 +86,56 @@ public class SilentPaymentScannerFailClosedTest {
 		SilentPaymentScanner.Fetcher f = (url, tag) -> "{\"unexpected\":1}";
 		assertNull(SilentPaymentScanner.tipHeight(ORACLE, "w", f));
 	}
+
+	@Test
+	public void tipHeightNullUnlessACompleteObjectWithAPlainHeight() {
+		String[] bad = {"{\"block_height\":\"812345\"}",
+				"{\"block_height\":-1}", "{\"block_height\":8123.5}",
+				"{\"block_height\":4294967296}", "{\"block_height\":812345",
+				"{\"block_height\":812345}x", "{\"block_height\":1-2}",
+				"[{\"block_height\":812345}]",
+				"{\"block_height\":812345,\"block_height\":1}"};
+		for (String b : bad) {
+			assertNull(b, SilentPaymentScanner.tipHeight(ORACLE, "w",
+					(url, tag) -> b));
+		}
+	}
+
+	@Test
+	public void anErrorObjectInsteadOfTweaksFailsTheBlock() {
+		assertThrows(IOException.class, () -> SilentPaymentScanner.scanBlock(
+				ORACLE, 800000, new byte[32], new byte[33], "w",
+				fixed("{\"error\":\"could not fetch header inv\"}", "[]")));
+		assertThrows(IOException.class, () -> SilentPaymentScanner.scanBlock(
+				ORACLE, 800000, new byte[32], new byte[33], "w",
+				fixed("null", "[]")));
+		assertThrows(IOException.class, () -> SilentPaymentScanner.scanBlock(
+				ORACLE, 800000, new byte[32], new byte[33], "w",
+				fixed("[\"02" + HEX64 + "\",\"zz\"]", "[]")));
+	}
+
+	@Test
+	public void malformedUtxoFieldsFailTheBlockInsteadOfBeingGuessed() {
+		String tweaks = "[\"02" + HEX64 + "\"]";
+		String spk = "\"scriptpubkey\":\"5120" + HEX64 + "\"";
+		String[] bad = {
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":0," + spk + "}]",
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":4294967296,"
+						+ "\"value\":1," + spk + "}]",
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":-1,\"value\":1,"
+						+ spk + "}]",
+				"[{\"txid\":\"xyz\",\"vout\":0,\"value\":1," + spk + "}]",
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":0,\"value\":1,"
+						+ "\"scriptpubkey\":\"5120zz\"}]",
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":0,"
+						+ "\"value\":2100000000000001," + spk + "}]",
+				"[{\"txid\":\"" + HEX64 + "\",\"vout\":0,\"value\":1,"
+						+ spk + "}",
+				"{\"error\":\"x\"}"};
+		for (String u : bad) {
+			assertThrows(u, IOException.class, () -> SilentPaymentScanner
+					.scanBlock(ORACLE, 800000, new byte[32], new byte[33], "w",
+							fixed(tweaks, u)));
+		}
+	}
 }

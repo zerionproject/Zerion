@@ -245,6 +245,12 @@ public class ZtpTorTransportRecoveryTest {
 		}
 	};
 
+	private static List<String> snapshot(List<String> calls) {
+		synchronized (calls) {
+			return new ArrayList<>(calls);
+		}
+	}
+
 	private static void waitUntil(java.util.function.BooleanSupplier c)
 			throws InterruptedException {
 		long deadline = System.currentTimeMillis() + 10_000;
@@ -325,21 +331,21 @@ public class ZtpTorTransportRecoveryTest {
 		t.setNetworkEnabled(false);
 		t.onTorState(TorState.DISABLED);
 		assertFalse("nothing is re-added while the network is down",
-				tor.calls.stream().anyMatch(c -> c.startsWith("remove:")));
+				snapshot(tor.calls).stream().anyMatch(c -> c.startsWith("remove:")));
 		t.setNetworkEnabled(true);
 		t.onTorState(TorState.CONNECTING);
 		t.onTorState(TorState.CONNECTED);
-		waitUntil(() -> tor.calls.stream()
+		waitUntil(() -> snapshot(tor.calls).stream()
 				.filter(c -> c.startsWith("publish:")).count() >= onions);
 		assertEquals("every onion is removed once", onions,
-				tor.calls.stream().filter(c -> c.startsWith("remove:")).count());
+				snapshot(tor.calls).stream().filter(c -> c.startsWith("remove:")).count());
 		assertTrue("the removal precedes the re-add",
 				tor.calls.indexOf("remove:" + onion)
 						< tor.calls.lastIndexOf("publish:1234:80:k1"));
 		t.onTorState(TorState.CONNECTED);
 		Thread.sleep(200);
 		assertEquals("a repeated CONNECTED does not re-add again", onions,
-				tor.calls.stream().filter(c -> c.startsWith("remove:")).count());
+				snapshot(tor.calls).stream().filter(c -> c.startsWith("remove:")).count());
 	}
 
 	@Test
@@ -490,7 +496,7 @@ public class ZtpTorTransportRecoveryTest {
 		ZtpTorTransport t = started();
 		tor.state = TorState.CONNECTED;
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, PEER_ONION, false));
+				t.dial(1, PEER_ONION, false).getSessionMs());
 		assertEquals("a live Tor is dialled", 1, dialAttempts.get());
 
 		CountDownLatch release = new CountDownLatch(1);
@@ -503,7 +509,7 @@ public class ZtpTorTransportRecoveryTest {
 		waitUntil(() -> !sleeps.isEmpty());
 		assertTrue(t.isTorDead());
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, PEER_ONION, false));
+				t.dial(1, PEER_ONION, false).getSessionMs());
 		assertEquals("no dial while dead", 1, dialAttempts.get());
 
 		release.countDown();
@@ -530,7 +536,7 @@ public class ZtpTorTransportRecoveryTest {
 		ZtpTorTransport t = started();
 		tor.state = TorState.CONNECTING;
 		assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
-				t.dial(1, PEER_ONION, false));
+				t.dial(1, PEER_ONION, false).getSessionMs());
 		tor.state = TorState.DISABLED;
 		t.dial(1, PEER_ONION, true);
 		assertEquals(0, dialAttempts.get());
@@ -650,7 +656,7 @@ public class ZtpTorTransportRecoveryTest {
 				PEER_ONION.substring(1), PEER_ONION + "a",
 				"192.0.2.1", "example.com"}) {
 			assertEquals(bad, OverlayTransport.DIAL_NOT_CONNECTED,
-					t.dial(1, bad, false));
+					t.dial(1, bad, false).getSessionMs());
 		}
 		assertEquals("a malformed address reached the SOCKS listener", 0,
 				dialAttempts.get());

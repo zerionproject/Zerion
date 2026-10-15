@@ -12,6 +12,7 @@ public class GroupTrSenderLabelTest {
 
 	private static final String CHOSEN = "%1$s (posting as \"%2$s\")";
 	private static final String UNVERIFIED = "\"%1$s\" (not a name you know)";
+	private static final String INCOGNITO = "\"%1$s\" (incognito)";
 
 	@Test
 	public void theKnownNameLeadsAndAChosenNameIsMarked() {
@@ -29,6 +30,26 @@ public class GroupTrSenderLabelTest {
 		assertEquals("\"Alice\" (not a name you know) · fp",
 				GroupTrSenderLabel.label(null, "Alice", "fp", CHOSEN,
 						UNVERIFIED));
+	}
+
+	@Test
+	public void anIncognitoPosterIsShownOnlyByItsGroupNameAndFingerprint() {
+		assertEquals("\"Amber Falcon 27\" (incognito) · fp",
+				GroupTrSenderLabel.label("Mallory", "Amber Falcon 27", "fp",
+						CHOSEN, UNVERIFIED, INCOGNITO));
+		assertEquals("\"Amber Falcon 27\" (incognito) · fp",
+				GroupTrSenderLabel.label(null, "Amber Falcon 27", "fp",
+						CHOSEN, UNVERIFIED, INCOGNITO));
+	}
+
+	@Test
+	public void aChosenNameThatIsNotAnIncognitoNameKeepsTheKnownName() {
+		assertEquals("Mallory (posting as \"Alice\") · fp",
+				GroupTrSenderLabel.label("Mallory", "Alice", "fp", CHOSEN,
+						UNVERIFIED, INCOGNITO));
+		assertEquals("Mallory (posting as \"amber falcon 27\") · fp",
+				GroupTrSenderLabel.label("Mallory", "amber falcon 27", "fp",
+						CHOSEN, UNVERIFIED, INCOGNITO));
 	}
 
 	@Test

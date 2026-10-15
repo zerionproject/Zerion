@@ -73,6 +73,8 @@ class MyStickersAdapter extends RecyclerView.Adapter<MyStickersAdapter.VH> {
 			} catch (Exception ignored) {
 			}
 		});
+		holder.itemView.setContentDescription(holder.itemView.getContext()
+				.getString(R.string.sticker_item_description, position + 1));
 		holder.itemView.setOnClickListener(v -> {
 			ioExecutor.execute(() -> {
 				try {

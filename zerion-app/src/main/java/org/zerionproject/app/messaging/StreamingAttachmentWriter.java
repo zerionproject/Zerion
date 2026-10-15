@@ -300,7 +300,7 @@ public class StreamingAttachmentWriter {
 			db.transaction(false, txn -> {
 				for (MessageId chunkId : chunkIds) {
 					try {
-						db.deleteMessage(txn, chunkId);
+						db.removeMessage(txn, chunkId);
 					} catch (DbException e) {
 					}
 				}

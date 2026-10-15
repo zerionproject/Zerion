@@ -2,6 +2,7 @@ package org.zerionproject.core.sync.validation;
 
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.MessageDeletedException;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.NoSuchGroupException;
 import org.zerionproject.core.api.db.NoSuchMessageException;
@@ -79,6 +80,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 
 	@Test
 	public void testStartAndStop() throws Exception {
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate();
 		expectGetPendingMessages();
 		expectGetMessagesToShare();
@@ -94,6 +96,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn2 = new Transaction(null, true);
 		Transaction txn3 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
@@ -148,6 +151,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, false);
 		Transaction txn1 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate();
 		expectGetPendingMessages(messageId);
 
@@ -204,6 +208,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, false);
 		Transaction txn1 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate();
 		expectGetPendingMessages();
 		expectGetMessagesToShare(messageId);
@@ -271,6 +276,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, true);
 		Transaction txn2 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
@@ -312,6 +318,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, true);
 		Transaction txn2 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate(messageId, messageId1);
 
 		context.checking(new DbExpectations() {{
@@ -734,6 +741,17 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		vm.eventOccurred(new MessageAddedEvent(message, contactId));
 	}
 
+	private void expectGetUndeliverableMessages(MessageId... ids)
+			throws Exception {
+		Transaction txn = new Transaction(null, true);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getUndeliverableMessages(txn);
+			will(returnValue(asList(ids)));
+		}});
+	}
+
 	private void expectGetMessagesToValidate(MessageId... ids)
 			throws Exception {
 		Transaction txn = new Transaction(null, true);
@@ -771,6 +789,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn = new Transaction(null, true);
 		Transaction txn1 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate(messageId);
 
 		context.checking(new DbExpectations() {{
@@ -806,6 +825,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, false);
 		Transaction txn2 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate(messageId);
 
 		context.checking(new DbExpectations() {{
@@ -846,6 +866,7 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		Transaction txn1 = new Transaction(null, false);
 		Transaction txn2 = new Transaction(null, false);
 
+		expectGetUndeliverableMessages();
 		expectGetMessagesToValidate();
 		expectGetPendingMessages(messageId, messageId2);
 
@@ -891,6 +912,203 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(emptyMap()));
 		}});
 
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testPendingDeliveryInvalidatesAMessageWithoutABodyAndContinues()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, false);
+		Transaction txn3 = new Transaction(null, false);
+
+		expectGetUndeliverableMessages();
+		expectGetMessagesToValidate();
+		expectGetPendingMessages(messageId, messageId2);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transaction(with(false), withDbRunnable(txn));
+			oneOf(db).getMessageState(txn, messageId);
+			will(returnValue(PENDING));
+			oneOf(db).getMessageDependencies(txn, messageId);
+			will(returnValue(singletonMap(messageId1, DELIVERED)));
+			oneOf(db).getMessage(txn, messageId);
+			will(throwException(new MessageDeletedException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(PENDING));
+			oneOf(db).getMessage(txn1, messageId);
+			will(throwException(new MessageDeletedException()));
+			oneOf(db).setMessageState(txn1, messageId, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId);
+			oneOf(db).deleteMessageMetadata(txn1, messageId);
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(singletonMap(messageId1, PENDING)));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn2));
+			oneOf(db).getMessageState(txn2, messageId1);
+			will(returnValue(PENDING));
+			oneOf(db).setMessageState(txn2, messageId1, INVALID);
+			oneOf(db).deleteMessage(txn2, messageId1);
+			oneOf(db).deleteMessageMetadata(txn2, messageId1);
+			oneOf(db).getMessageDependents(txn2, messageId1);
+			will(returnValue(emptyMap()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn3));
+			oneOf(db).getMessageState(txn3, messageId2);
+			will(returnValue(PENDING));
+			oneOf(db).getMessageDependencies(txn3, messageId2);
+			will(returnValue(singletonMap(messageId1, DELIVERED)));
+			oneOf(db).getMessage(txn3, messageId2);
+			will(returnValue(message2));
+			oneOf(db).getGroup(txn3, groupId);
+			will(returnValue(group));
+			oneOf(db).getMessageMetadataForValidator(txn3, messageId2);
+			will(returnValue(metadata));
+			oneOf(hook).incomingMessage(txn3, message2, metadata);
+			will(returnValue(ACCEPT_DO_NOT_SHARE));
+			oneOf(db).setMessageState(txn3, messageId2, DELIVERED);
+			oneOf(db).getMessageDependents(txn3, messageId2);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testValidationInvalidatesAMessageWithoutABodyAndContinues()
+			throws Exception {
+		Transaction txn = new Transaction(null, true);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, true);
+		Transaction txn3 = new Transaction(null, false);
+
+		expectGetUndeliverableMessages();
+		expectGetMessagesToValidate(messageId, messageId1);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getMessage(txn, messageId);
+			will(throwException(new MessageDeletedException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
+			oneOf(db).getMessage(txn1, messageId);
+			will(throwException(new MessageDeletedException()));
+			oneOf(db).setMessageState(txn1, messageId, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId);
+			oneOf(db).deleteMessageMetadata(txn1, messageId);
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(emptyMap()));
+
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn2));
+			oneOf(db).getMessage(txn2, messageId1);
+			will(returnValue(message1));
+			oneOf(db).getGroup(txn2, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message1, group);
+			will(throwException(new InvalidMessageException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn3));
+			oneOf(db).getMessageState(txn3, messageId1);
+			will(returnValue(UNKNOWN));
+			oneOf(db).setMessageState(txn3, messageId1, INVALID);
+			oneOf(db).deleteMessage(txn3, messageId1);
+			oneOf(db).deleteMessageMetadata(txn3, messageId1);
+			oneOf(db).getMessageDependents(txn3, messageId1);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testMessagesThatCanNeverBeDeliveredAreInvalidatedAtStartup()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, false);
+
+		expectGetUndeliverableMessages(messageId, messageId2);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transaction(with(false), withDbRunnable(txn));
+			oneOf(db).getMessageState(txn, messageId);
+			will(returnValue(PENDING));
+			oneOf(db).getMessage(txn, messageId);
+			will(throwException(new MessageDeletedException()));
+			oneOf(db).setMessageState(txn, messageId, INVALID);
+			oneOf(db).deleteMessage(txn, messageId);
+			oneOf(db).deleteMessageMetadata(txn, messageId);
+			oneOf(db).getMessageDependents(txn, messageId);
+			will(returnValue(singletonMap(messageId1, PENDING)));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId1);
+			will(returnValue(PENDING));
+			oneOf(db).setMessageState(txn1, messageId1, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId1);
+			oneOf(db).deleteMessageMetadata(txn1, messageId1);
+			oneOf(db).getMessageDependents(txn1, messageId1);
+			will(returnValue(emptyMap()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn2));
+			oneOf(db).getMessageState(txn2, messageId2);
+			will(returnValue(UNKNOWN));
+			oneOf(db).getMessage(txn2, messageId2);
+			will(throwException(new MessageDeletedException()));
+			oneOf(db).setMessageState(txn2, messageId2, INVALID);
+			oneOf(db).deleteMessage(txn2, messageId2);
+			oneOf(db).deleteMessageMetadata(txn2, messageId2);
+			oneOf(db).getMessageDependents(txn2, messageId2);
+			will(returnValue(emptyMap()));
+		}});
+
+		expectGetMessagesToValidate();
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testOnlyAnUndeliveredMessageWithoutABodyIsInvalidated()
+			throws Exception {
+		Transaction txn = new Transaction(null, false);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, false);
+
+		expectGetUndeliverableMessages(messageId, messageId1, messageId2);
+
+		context.checking(new DbExpectations() {{
+			oneOf(db).transaction(with(false), withDbRunnable(txn));
+			oneOf(db).getMessageState(txn, messageId);
+			will(returnValue(DELIVERED));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId1);
+			will(returnValue(PENDING));
+			oneOf(db).getMessage(txn1, messageId1);
+			will(returnValue(message1));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn2));
+			oneOf(db).getMessageState(txn2, messageId2);
+			will(returnValue(INVALID));
+		}});
+
+		expectGetMessagesToValidate();
+		expectGetPendingMessages();
 		expectGetMessagesToShare();
 
 		vm.startService();

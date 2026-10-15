@@ -13,6 +13,21 @@
 		android:layout_weight="1"
 		android:layout_gravity="center_vertical">
 
+		<androidx.appcompat.widget.AppCompatImageButton
+			android:id="@+id/emoji_toggle"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:layout_gravity="start|center_vertical"
+			android:accessibilityTraversalBefore="@+id/input_text"
+			android:background="@android:color/transparent"
+			android:outlineProvider="none"
+			android:padding="12dp"
+			android:scaleType="center"
+			android:translationZ="1dp"
+			android:contentDescription="@string/toggle_emoji_keyboard"
+			app:srcCompat="@drawable/ic_emoji_toggle"
+			app:tint="@color/zerion_accent_icon" />
+
 		<com.vanniktech.emoji.EmojiEditText
 			android:id="@+id/input_text"
 			android:layout_width="match_parent"
@@ -23,27 +38,14 @@
 			android:privateImeOptions="nm"
 			android:importantForAutofill="no"
 			android:maxLines="6"
-			android:minHeight="44dp"
-			android:paddingStart="32dp"
+			android:minHeight="48dp"
+			android:paddingStart="48dp"
 			android:paddingTop="12dp"
 			android:paddingEnd="16dp"
 			android:paddingBottom="12dp"
 			android:scrollbars="vertical"
 			android:textColor="?android:attr/textColorPrimary"
 			tools:text="Line 1\nLine 2\nLine 3" />
-
-		<androidx.appcompat.widget.AppCompatImageButton
-			android:id="@+id/emoji_toggle"
-			android:layout_width="40dp"
-			android:layout_height="40dp"
-			android:layout_gravity="start|center_vertical"
-			android:layout_marginStart="-2dp"
-			android:background="@android:color/transparent"
-			android:padding="8dp"
-			android:scaleType="center"
-			android:contentDescription="@string/toggle_emoji_keyboard"
-			app:srcCompat="@drawable/ic_emoji_toggle"
-			app:tint="@color/zerion_primary_accent" />
 
 	</FrameLayout>
 

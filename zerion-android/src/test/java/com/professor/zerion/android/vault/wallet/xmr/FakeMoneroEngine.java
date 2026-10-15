@@ -11,6 +11,14 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 	boolean available = true;
 	boolean createFails = false;
+	@Nullable
+	volatile java.util.concurrent.CountDownLatch restoreGate;
+	@Nullable
+	volatile String lastRestoreSeed;
+	@Nullable
+	volatile char[] lastRestoreSeedArray;
+	final java.util.concurrent.atomic.AtomicInteger restoreCalls =
+			new java.util.concurrent.atomic.AtomicInteger();
 	int restoreStatusForBadSeed = 1;
 	int openCount = 0;
 	int closeCount = 0;
@@ -34,6 +42,22 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	public Session restore(String path, char[] password, char[] seed,
 			long restoreHeight, char[] seedOffset) {
 		if (!available) return null;
+		restoreCalls.incrementAndGet();
+		java.util.concurrent.CountDownLatch gate = restoreGate;
+		if (gate != null) {
+			boolean interrupted = false;
+			while (true) {
+				try {
+					gate.await();
+					break;
+				} catch (InterruptedException e) {
+					interrupted = true;
+				}
+			}
+			if (interrupted) Thread.currentThread().interrupt();
+		}
+		lastRestoreSeedArray = seed;
+		lastRestoreSeed = new String(seed);
 		String s = new String(seed).trim();
 		boolean valid = s.split("\\s+").length == 25;
 		openCount++;
@@ -288,7 +312,8 @@ public final class FakeMoneroEngine implements MoneroEngine {
 		public final java.util.List<String> refreshLog =
 				java.util.Collections.synchronizedList(
 						new java.util.ArrayList<>());
-		public java.util.List<XmrTxInfo> outgoing = new java.util.ArrayList<>();
+		public volatile java.util.List<XmrTxInfo> outgoing =
+				new java.util.ArrayList<>();
 		@Override
 		public void setRecoveringFromSeed(boolean recovering) {
 			if (recovering) refreshLog.add("recovering");

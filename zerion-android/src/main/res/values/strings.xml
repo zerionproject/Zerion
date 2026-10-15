@@ -69,7 +69,7 @@
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Reach nearby contacts with no internet, over Bluetooth</string>
-	<string name="mesh_info_message">Messages are sealed to the recipient and relayed from device to device. Turning this on requests Bluetooth and nearby-device permissions and broadcasts locally.</string>
+	<string name="mesh_info_message">Messages are sealed to the recipient and relayed from device to device by nearby phones running Zerion. Turning this on requests Bluetooth and nearby-device permissions and broadcasts locally: anyone nearby with a Bluetooth scanner can tell that this phone uses the Zerion mesh, but not what it sends.</string>
 	<string name="mesh_unsupported">Offline mesh needs Android 12 or newer</string>
 	<string name="mesh_permission_denied">Offline mesh needs Bluetooth and nearby-device permissions</string>
 	<string name="via_mesh">via mesh</string>
@@ -99,7 +99,7 @@
 	<string name="identity_fingerprint_hybrid_format">Version 2 (both keys): %1$s</string>
 	<string name="identity_fingerprint_classical_format">Version 1 (classical key): %1$s</string>
 	<string name="identity_keys_out_of_sync_title">Connection keys out of sync</string>
-	<string name="identity_keys_out_of_sync_message">This contact\'s device accepts connections but no longer recognises your connection keys. This happens when one of you restored an older backup after the keys had moved on. Messages cannot be delivered until you add each other again: exchange links once more. Your conversation history is kept.</string>
+	<string name="identity_keys_out_of_sync_message">This contact\'s device accepts connections but no longer recognises your connection keys. This happens when one of you restored an older backup after the keys had moved on, or when this contact removed you. Messages cannot be delivered until you add each other again: exchange links once more. Your conversation history is kept.</string>
 	<string name="identity_keys_out_of_sync_banner">Connection keys out of sync. Tap to repair</string>
 	<string name="identity_readd_contact">Re-add contact to repair the connection</string>
 	<string name="identity_readd_contact_hint">Exchange links with this contact again. The pairing replaces the connection keys on both devices and keeps your conversation.</string>
@@ -237,6 +237,7 @@
 	<string name="setup_failed_title">Setup Failed</string>
 	<string name="setup_failed_message">Something went wrong. Please try again.</string>
 	<string name="generic_error">Something went wrong. Please try again.</string>
+	<string name="channels_post_signer_editor_description">Signed by a channel editor</string>
 	<string name="setup_failed_retry">Retry</string>
 	<string name="more_info">More Information</string>
 	<string name="don_t_ask_again">Don\'t ask again</string>
@@ -268,7 +269,7 @@
 	<string name="sign_in_button">Sign in</string>
 	<string name="forgotten_password">Forgot your password?</string>
 	<string name="dialog_title_lost_password">Lost Password</string>
-	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to delete your account and start again?\n\nCaution: Your identities, contacts and messages will be permanently lost.</string>
+	<string name="dialog_message_lost_password">Your Zerion account is stored encrypted on your device, not in the cloud, so we can\'t reset your password. Would you like to erase everything and start again?\n\nCaution: this erases everything Zerion keeps on this device, every profile with its identities, contacts and messages, the vault and the wallets, and cannot be undone. Wallet funds can then only be restored from their recovery phrase.</string>
 	<string name="delete_confirm_word" translatable="false">DELETE</string>
 	<string name="delete_confirm_hint">Type %1$s to confirm</string>
 	<string name="password_missing">Please enter your password</string>
@@ -334,7 +335,7 @@
 	<string name="channels_create_name_hint">Channel name</string>
 	<string name="channels_create_description_hint">Description</string>
 	<string name="channels_create_public_label">Public: anyone with the link can join</string>
-	<string name="channels_create_closed_label">Private: only people you share the link with can join</string>
+	<string name="channels_create_closed_label">Private: only people who have the link can join</string>
 	<string name="channels_create_action">Create</string>
 	<string name="channels_create_error_name">A channel needs a name.</string>
 	<string name="channels_create_failed">Couldn\'t create the channel. Please try again.</string>
@@ -414,7 +415,7 @@
 	<string name="channels_comment_owner">Owner</string>
 	<string name="channels_comment_you">You</string>
 	<string name="channels_comment_ban_author">Ban this author</string>
-	<string name="channels_comment_ban_confirm">Ban the author of this comment? Their comments and reactions are removed and anything new they send to this channel is refused.</string>
+	<string name="channels_comment_ban_confirm">Ban the author of this comment? Their comments and reactions are removed, anything new they send is refused and any editor role is revoked. A ban cannot stop anyone from reading the channel.</string>
 	<string name="channels_delegations_from_subscribers">Announced subscribers</string>
 	<string name="channels_editor_post_failed">Could not post. The owner\'s device must be online, and you must still be an editor.</string>
 	<string name="channels_post_delete_confirm">Delete this post?</string>
@@ -444,13 +445,13 @@
 	<string name="channels_subscribers_empty">No subscribers have announced themselves yet.</string>
 	<string name="channels_subscribers_count">%1$d announced</string>
 	<string name="channels_subscribers_ban">Ban subscriber</string>
-	<string name="channels_subscribers_ban_confirm">Ban this subscriber? Their posts, reactions and comments will be refused.</string>
+	<string name="channels_subscribers_ban_confirm">Ban this subscriber? Their comments and reactions are removed, anything new they send is refused and any editor role is revoked. A ban cannot stop anyone from reading the channel.</string>
 	<string name="channels_subscribers_trust">Mark as trusted</string>
 	<string name="channels_subscribers_untrust">Remove trust</string>
 	<string name="channels_subscribers_trusted_badge">Trusted</string>
 	<string name="channels_subscribers_trust_failed">Could not change this subscriber\'s trust</string>
 	<string name="channels_react_too_soon">You changed this reaction too often this hour. Try again later.</string>
-	<string name="channels_subscribers_ban_rotate">Also rotate the invite link (kicks unannounced lurkers too; remaining subscribers will need a fresh invite)</string>
+	<string name="channels_subscribers_ban_rotate">Remove from channel: also change the channel address and key, so everyone, this subscriber included, needs a new invite link</string>
 	<string name="channels_subscribers_banned_label">Banned</string>
 	<string name="channels_action_comments">Comments</string>
 	<string name="channels_comments_title">Comments</string>
@@ -477,6 +478,7 @@
 	<string name="hardened_mode_strict_boot_label">Refuse to start on tampered devices (unlocked bootloader or modified system)</string>
 	<string name="hardened_mode_tamper_label">Refuse to start when a debugger, root, or hooking framework is detected</string>
 	<string name="hardened_mode_usb_panic_label">Sign out (or wipe) when a USB cable enables ADB or file transfer</string>
+	<string name="hardened_mode_usb_panic_unavailable">USB panic could not be turned on</string>
 	<string name="hardened_mode_usb_confirm_title">Enable USB panic?</string>
 	<string name="hardened_mode_usb_confirm_message">If anyone plugs Zerion into a computer with ADB or file transfer enabled, you\'ll be signed out automatically. You can choose to also wipe your account on the next screen.</string>
 	<string name="hardened_mode_usb_confirm_action">Continue</string>
@@ -669,20 +671,20 @@
 	<string name="pref_rotate_onion_title">Rotate onion now</string>
 	<string name="pref_rotate_onion_summary">Mint a new Tor address and announce it to your contacts</string>
 	<string name="pref_rotate_onion_confirm_title">Rotate onion address?</string>
-	<string name="pref_rotate_onion_confirm_message">A new Tor address will be generated and shared with your contacts on their next connection. Your old address keeps working until every contact has migrated.</string>
+	<string name="pref_rotate_onion_confirm_message">A new Tor address will be generated and shared with your contacts on their next connection. Your old address keeps working for at least a day and until every contact has moved, for at most 90 days.</string>
 	<string name="pref_rotate_onion_confirm_action">Rotate</string>
 	<string name="pref_rotate_onion_started">Rotation started. Contacts will migrate as they reconnect</string>
 	<string name="pref_rotate_onion_already_running">A rotation is already in progress</string>
 	<string name="pref_rotate_onion_failed">Rotation failed. Check that Tor is running</string>
 	<string name="pref_rotate_onion_success_title">New address minted</string>
-	<string name="pref_rotate_onion_success_message">Your old address keeps working until every contact has connected on the new one.\n\nNew address:\n%1$s</string>
+	<string name="pref_rotate_onion_success_message">Your old address keeps working for at least a day and until every contact has moved to the new one, for at most 90 days.\n\nNew address:\n%1$s</string>
 	<string name="tor_rotation_in_progress">Rotating to new address</string>
 	<string name="tor_rotation_explainer">Old address still active. Contacts migrate as they reconnect.</string>
 	<string name="onion_rotation_section_title">ONION ROTATION</string>
 	<string name="pref_force_complete_rotation_title">Force complete now</string>
 	<string name="pref_force_complete_rotation_summary">Retire the old address immediately</string>
 	<string name="pref_force_complete_rotation_confirm_title">Force complete rotation?</string>
-	<string name="pref_force_complete_rotation_confirm_message">This retires your old onion immediately. Contacts who haven\'t migrated yet will be unable to reach you until they reconnect through another channel. Use this only if rotation is stuck or you need an immediate cleanup.</string>
+	<string name="pref_force_complete_rotation_confirm_message">This retires your old onion immediately. Contacts who haven\'t migrated yet will be unable to reach you until they reconnect through another channel. Use this only when the old address must stop working right away, not to fix connection problems.</string>
 	<string name="pref_force_complete_rotation_confirm_action">Force complete</string>
 	<string name="pref_force_complete_rotation_done">Rotation completed</string>
 	<string name="pref_force_complete_rotation_not_announcing">No rotation in progress</string>
@@ -763,6 +765,7 @@
 	<string name="sticker_tab_standard">Standard</string>
 	<string name="sticker_tab_mine">My Stickers</string>
 	<string name="sticker_import">Import sticker</string>
+	<string name="sticker_item_description">Sticker %1$d</string>
 	<string name="sticker_import_failed">Could not import sticker</string>
 	<string name="sticker_delete_confirm">Delete this sticker?</string>
 
@@ -801,7 +804,7 @@
 	<string name="grouptr_member_key_message">Identity fingerprint\n\n%1$s\n\nThis is derived from this member\'s signing keys. If it does not match what you expect, the messages may be coming from a different key.</string>
 	<string name="grouptr_msg_you">You</string>
 	<string name="grouptr_stealth_name_set">Set name in this group</string>
-	<string name="grouptr_stealth_name_msg">A different name visible to other members in this group only. Leave blank to clear.</string>
+	<string name="grouptr_stealth_name_msg">A name shown with your posts in this group only. Members still see your identity key, and the member list shows the name you were added with. Leave blank to clear.</string>
 	<string name="grouptr_stealth_clear">Clear</string>
 	<string name="grouptr_default_ttl_set">Disappearing messages</string>
 	<string name="grouptr_default_ttl_saved">Saved.</string>
@@ -825,7 +828,7 @@
 	<string name="grouptr_create_name_hint">Group name (required)</string>
 	<string name="grouptr_create_invite_after_hint">You can add or invite friends after creating this group.</string>
 	<string name="grouptr_create_disappearing">Disappearing messages</string>
-	<string name="grouptr_create_screenshot_block">Screenshot blocking</string>
+	<string name="grouptr_create_screenshot_block">Block screenshots on this device</string>
 	<string name="grouptr_create_action">Create</string>
 	<string name="grouptr_set_avatar">Set group avatar</string>
 	<string name="grouptr_ttl_1h">1 hour</string>
@@ -877,10 +880,7 @@
 	<string name="grouptr_detail_status_dissolved">Dissolved</string>
 	<string name="grouptr_open_chat">Open chat</string>
 	<string name="grouptr_member_role_creator">creator</string>
-	<string name="grouptr_member_role_admin">admin</string>
 	<string name="grouptr_member_role_you">you</string>
-	<string name="grouptr_member_action_promote">Promote to admin</string>
-	<string name="grouptr_member_action_demote">Demote to member</string>
 	<string name="grouptr_member_action_remove">Remove from group</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
 	<string name="all_media">All Media</string>
@@ -906,6 +906,40 @@
 	<string name="sound_and_notifications">Sound &amp; Notifications</string>
 	<string name="mute_notifications">Mute Notifications</string>
 	<string name="vibration">Vibration</string>
+	<string name="contact_connection_title">Connection</string>
+	<string name="contact_connection_hint">Checked on this phone only and never sent anywhere. Updates every few seconds.</string>
+	<string name="contact_connection_tor_connected">Tor is connected.</string>
+	<string name="contact_connection_tor_connecting">Tor is still connecting.</string>
+	<string name="contact_connection_tor_off">Tor is turned off.</string>
+	<string name="contact_connection_tor_offline_mode">Offline mode is on, so Tor is stopped.</string>
+	<string name="contact_connection_tor_paused">Connections are paused in your settings.</string>
+	<string name="contact_connection_tor_no_internet">This phone has no internet connection.</string>
+	<string name="contact_connection_tor_clock">Your phone\'s clock is wrong, so Tor cannot connect.</string>
+	<string name="contact_connection_published">Your address is published.</string>
+	<string name="contact_connection_publishing">Your address is still being published.</string>
+	<string name="contact_connection_online">Contact is online now.</string>
+	<string name="contact_connection_dialing">Waiting for contact, trying to reach them now.</string>
+	<string name="contact_connection_retry">Waiting for contact, next attempt in about %1$s.</string>
+	<string name="contact_connection_retry_soon">Waiting for contact, next attempt in a few seconds.</string>
+	<string name="contact_connection_incoming">Waiting for contact to connect to you.</string>
+	<string name="contact_connection_no_address">Waiting for contact\'s address to arrive.</string>
+	<string name="contact_connection_needs_tor">Waiting for Tor before reaching contact.</string>
+	<string name="contact_connection_last">Last connected about %1$s ago.</string>
+	<string name="contact_connection_never">Not connected since Zerion started.</string>
+	<string name="contact_connection_peer_new">Contact announced a new address, trying it.</string>
+	<string name="contact_connection_peer_retry">Contact\'s new address did not answer, retrying in about %1$s.</string>
+	<string name="contact_connection_rotation_preparing">Your address is changing, the new one is not announced yet.</string>
+	<string name="contact_connection_rotation_moved">Your address is changing, this contact has moved to the new one.</string>
+	<string name="contact_connection_rotation_waiting">Your address is changing, this contact has not moved yet.</string>
+	<string name="contact_connection_auth_active">Client authorization is active.</string>
+	<string name="contact_connection_auth_setup">Client authorization is being set up.</string>
+	<string name="contact_connection_auth_confirm">Client authorization is waiting for contact to confirm.</string>
+	<string name="contact_connection_auth_repair">Client authorization repair in progress, attempt %1$d.</string>
+	<string name="contact_connection_auth_unsupported">Client authorization is not supported by this contact.</string>
+	<string name="contact_connection_auth_revoked">Client authorization was withdrawn.</string>
+	<string name="contact_connection_generation">Address generation: yours %1$d, contact\'s %2$d.</string>
+	<string name="contact_connection_auth_renewing">Client authorization is being renewed with this contact.</string>
+	<string name="contact_connection_auth_reaching">Trying to reach this contact through repair, attempt %1$d.</string>
 	<string name="verified_contact">Verified</string>
 	<string name="verify_to_send_media_banner">Verify this contact to send stickers and attachments</string>
 	<string name="verify_to_send_media_title">Verify this contact first</string>
@@ -1006,6 +1040,15 @@
 	<string name="dialog_message_save_image">Saving this image will allow other apps to access it.\n\nAre you sure you want to save?</string>
 	<string name="save_image_success">Image was saved</string>
 	<string name="save_image_error">Could not save image</string>
+	<string name="save_file">Save file</string>
+	<string name="dialog_title_save_file">Save file?</string>
+	<string name="dialog_message_save_clean">Zerion removes hidden data such as location, device details and dates before saving. Other apps will be able to open the saved copy.</string>
+	<string name="dialog_message_save_clean_pdf">Zerion redraws every page as an image, so no hidden data is kept. Text in the saved copy cannot be selected. Other apps will be able to open it.</string>
+	<string name="save_file_cleaning">Removing hidden data…</string>
+	<string name="save_file_success">Saved without hidden data</string>
+	<string name="save_file_error">Could not clean and save this file</string>
+	<string name="dialog_title_send_pdf">Send PDF as page images?</string>
+	<string name="dialog_message_send_pdf">Zerion sends a PDF as images of its pages, so no hidden data such as the author, dates or earlier versions goes with it. Text in the sent copy cannot be selected, and links, forms and signatures will not work.</string>
 	<string name="dialog_title_no_image_support">Images Unavailable</string>
 	<string name="dialog_message_no_image_support">Your contact\'s Zerion does not yet support image attachments. Once they upgrade you\'ll see a different icon.</string>
 	<string name="dialog_title_image_support">You can now send images to this contact</string>
@@ -1114,7 +1157,7 @@
 	<string name="info_both_must_enter_links">You must both add each other\'s links</string>
 
 	<string name="peer_trust_level_unverified">Unverified contact</string>
-	<string name="peer_trust_level_verified">Cryptographically paired</string>
+	<string name="peer_trust_level_verified">Verified contact</string>
 	<string name="peer_trust_level_ourselves">Me</string>
 	<string name="peer_trust_level_stranger">Stranger</string>
 
@@ -1270,7 +1313,7 @@
 
 	<string name="backup_settings_title">Backup &amp; transfer</string>
 	<string name="backup_settings_summary">Move your account to another phone</string>
-	<string name="backup_info_message">A backup is an encrypted copy of your whole account: your identity, your contacts and your messages. Use it to move to a new phone.</string>
+	<string name="backup_info_message">A backup is an encrypted copy of your account: your identity, your contacts and your messages, but not the vault. Use it to move to a new phone.</string>
 	<string name="backup_export_title">Export to file</string>
 	<string name="backup_export_summary">Save an encrypted backup of this account</string>
 	<string name="backup_import_title">Import from file</string>
@@ -1289,6 +1332,7 @@
 	<string name="backup_export_warning_after">Your backup is saved. It holds your account, contacts and messages, but not your Vault entries. Export the Vault separately from the Vault screen if you use it. The backup is protected only by your passphrase, so keep it somewhere safe and delete the file once you have moved your account to the other phone. Your contacts\' connection keys change as you keep talking to them; this phone keeps them unchanged for seven days, so restore the backup within that time. A backup restored later may not reach some contacts until you add each other again.</string>
 	<string name="backup_export_failed">Could not create the backup</string>
 	<string name="backup_export_not_signed_in">Sign in first, then create a backup.</string>
+	<string name="backup_export_too_large">This account is too large to back up on this phone. The app does not have enough memory for it.</string>
 	<string name="backup_import_in_progress">Importing account</string>
 	<string name="backup_import_success">Account imported</string>
 	<string name="backup_import_failed">Could not import this backup. Check the passphrase and try again.</string>
@@ -1297,8 +1341,9 @@
 	<string name="backup_import_unsupported">This backup was made by a newer version of Zerion. Update the app and try again.</string>
 	<string name="backup_import_corrupt">This backup file is damaged and cannot be read.</string>
 	<string name="backup_import_io_error">Could not read the backup file.</string>
+	<string name="backup_import_too_large">This backup is too large to restore on this phone. The app does not have enough memory for it.</string>
 	<string name="backup_import_success_title">Account imported</string>
-	<string name="backup_import_success_message">Sign in with your new device password. If you moved this account from another phone, remove Zerion from that phone so the two do not run the same identity at once. Contacts whose connection keys changed since this backup was made will show as out of sync: add each other again by exchanging links, and your conversation history is kept.</string>
+	<string name="backup_import_success_message">Sign in with your new device password. If you moved this account from another phone, remove Zerion from that phone so the two do not run the same identity at once. Contacts whose connection keys changed since this backup was made cannot be reached until you add each other again by exchanging links: one of the two phones may show the keys as out of sync, while the other only shows the contact as offline. Your conversation history is kept.</string>
 
 	<string name="transfer_section_title">Device transfer</string>
 	<string name="backup_transfer_send_title">Send to a new phone</string>
@@ -1374,7 +1419,7 @@
 	<string name="profiles_switch_action">Sign out</string>
 	<string name="profiles_switch_progress">Switching profile…</string>
 	<string name="profiles_delete_dialog_title">Delete this profile?</string>
-	<string name="profiles_delete_dialog_message">All messages, contacts, and identity for this profile will be deleted from this device. Flash storage can keep traces of deleted data. This cannot be undone.</string>
+	<string name="profiles_delete_dialog_message">All messages, contacts and the identity of this profile, its vault and its wallets will be deleted from this device. Wallet funds can then only be restored from their recovery phrase. Flash storage can keep traces of deleted data. This cannot be undone.</string>
 	<string name="profiles_delete_action">Delete profile</string>
 	<string name="profiles_delete_last_warning">This is the only profile. Deleting it will reset the app.</string>
 	<string name="profiles_hidden_note">Other profiles are never listed here. To use another profile, sign out and enter its password.</string>
@@ -1657,7 +1702,7 @@
 	<string name="wipe_password_summary_enabled">Wipe password is active</string>
 	<string name="wipe_password_summary_disabled">No wipe password set</string>
 	<string name="wipe_password_dialog_title">Set Wipe Password</string>
-	<string name="wipe_password_dialog_message">Enter a password that will immediately wipe all data from this device when entered during login. This is a security feature to protect your data in emergency situations.</string>
+	<string name="wipe_password_dialog_message">Enter a password that will immediately wipe all data from this device when it is entered at any prompt for your account password. This is a security feature to protect your data in emergency situations.</string>
 	<string name="wipe_password_enter">Enter wipe password</string>
 	<string name="wipe_password_confirm">Confirm wipe password</string>
 	<string name="wipe_password_mismatch">Passwords do not match</string>
@@ -1960,9 +2005,9 @@
 	<string name="wallet_xmr_phrase_intro">Write these 25 words down in order and keep them offline. Anyone with this phrase can access your wallet.</string>
 	<string name="wallet_xmr_phrase_verify_action">Verify backup</string>
 	<string name="wallet_xmr_phrase_copy_action">Copy phrase</string>
-	<string name="wallet_xmr_phrase_copy_warning">Other apps may be able to read your clipboard. It will be cleared automatically after 30 seconds. Writing the phrase down by hand is safer.</string>
+	<string name="wallet_xmr_phrase_copy_warning">Other apps may be able to read your clipboard. It will be cleared automatically after 30 seconds. If another app is open at that moment, it is cleared when you return to Zerion. Writing the phrase down by hand is safer.</string>
 	<string name="wallet_xmr_phrase_copy_confirm">Copy anyway</string>
-	<string name="wallet_xmr_phrase_copied">Recovery phrase copied. The clipboard is cleared automatically within 30 seconds, or sooner when the vault locks.</string>
+	<string name="wallet_xmr_phrase_copied">Recovery phrase copied. The clipboard is cleared automatically within 30 seconds, or sooner when the vault locks. If another app is open at that moment, it is cleared when you return to Zerion.</string>
 	<string name="wallet_xmr_phrase_later">I\'ll do this later</string>
 	<string name="wallet_xmr_phrase_skip_note">You can verify your recovery phrase later from the wallet. Until then it is marked as not backed up.</string>
 	<string name="wallet_xmr_phrase_verify_title">Verify your backup</string>
@@ -2263,6 +2308,11 @@
 		<item quantity="one">Not sent to %d member: their app is too old for posts this large.</item>
 		<item quantity="other">Not sent to %d members: their app is too old for posts this large.</item>
 	</plurals>
+	<string name="grouptr_delete_for_everyone_explained">Deleting for everyone also removes them from the devices of the members who received them. Copies already made, such as screenshots, are not affected.</string>
+	<plurals name="grouptr_delete_kept_older">
+		<item quantity="one">%d member runs an older app and keeps them.</item>
+		<item quantity="other">%d members run an older app and keep them.</item>
+	</plurals>
 	<string name="grouptr_ttl_set_by_creator">Disappearing messages in this group: %1$s. Only the group\'s creator can change this.</string>
 	<plurals name="grouptr_ttl_older_members">
 		<item quantity="one">%d member runs an older app that will not delete their own posts on this timer.</item>
@@ -2279,13 +2329,31 @@
 	<string name="grouptr_confirm_revoke">Withdraw the invite to %1$s? An answer from them will be ignored.</string>
 	<string name="grouptr_revoke_invite">Withdraw invite</string>
 	<string name="grouptr_invite_expired">This invite has expired. Ask the group\'s creator for a new one.</string>
+	<string name="grouptr_members_may_invite">Members can invite their contacts</string>
+	<string name="grouptr_members_may_invite_summary">Your phone adds the people they invite automatically while this is on.</string>
+	<string name="grouptr_invite_contacts">Invite contacts</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Only members who have the group\'s creator as a contact can invite.</string>
+	<string name="grouptr_member_invite_creator_outdated">The group\'s creator needs a newer version of the app before members can invite.</string>
+	<string name="grouptr_member_invite_contact_outdated">Needs a newer version of the app</string>
+	<string name="grouptr_member_invitation_received">%1$s invited you to join the group \"%2$s\", created by %3$s.</string>
+	<string name="grouptr_member_invitation_received_no_name">%1$s invited you to join a group created by %2$s.</string>
+	<string name="grouptr_waiting_for_admin">Waiting for %1$s, who created the group, to be online. Their phone adds you automatically, then you can post here.</string>
+	<string name="grouptr_member_invite_accepted">Accepted. You join once the group\'s creator is online.</string>
+	<string name="grouptr_member_invite_unavailable">This invitation can no longer be accepted. Ask for a new one.</string>
+	<string name="grouptr_incognito">Incognito in this group</string>
+	<string name="grouptr_incognito_summary">Others in the group see a random name instead of yours. Members who are your contacts can still recognise you by your key.</string>
+	<string name="grouptr_incognito_name">You appear as \"%1$s\"</string>
+	<string name="grouptr_incognito_new_name">New name</string>
+	<string name="grouptr_sender_incognito_format">\"%1$s\" (incognito)</string>
+	<string name="grouptr_member_may_add">May add members</string>
+	<string name="grouptr_member_invite_creator_only">Only the group\'s creator can add members.</string>
 	<string name="reaction_removed_here_only">Removed on this device only: your contact\'s app is too old to remove it on theirs.</string>
 	<string name="startup_data_without_account_message">Zerion found data on this device, but no account key that opens it: the key files are missing or damaged. Nothing has been deleted.\n\nYou can close Zerion and keep the data, or erase everything and start again.</string>
 	<string name="startup_data_without_account_keep">Close and keep</string>
 	<string name="startup_data_without_account_erase">Erase everything</string>
 	<string name="startup_erase_everything_confirm">Everything Zerion keeps on this device will be permanently erased: identities, contacts, messages, the vault and wallets.</string>
-	<string name="vault_settings_clipboard_timed">%1$s, or sooner when the vault locks</string>
-	<string name="vault_settings_clipboard_untimed">When the vault locks, on sign-out or on panic</string>
+	<string name="vault_settings_clipboard_timed">%1$s, or sooner when the vault locks. If another app is open at that moment, it is cleared when you return to Zerion.</string>
+	<string name="vault_settings_clipboard_untimed">When the vault locks, on sign-out or on panic, while Zerion is open</string>
 	<string name="vault_settings_kdf_strong">Password key: Argon2id, 256 MiB, 3 passes, bound to this device</string>
 	<string name="vault_settings_kdf_reduced">Password key: Argon2id, 128 MiB, 6 passes (this device cannot spare 256 MiB), bound to this device</string>
 	<string name="updates_check_title">Check for updates</string>
@@ -2444,4 +2512,14 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="voice_call_video_no_tor">Video needs a Tor connection</string>
 	<string name="voice_call_video_no_keys">Video encryption is not ready yet</string>
 	<string name="voice_call_video_failed">Video streaming failed</string>
+	<string name="tor_status_entry_relay">Unstable</string>
+	<string name="tor_hidden_services_entry_relay">Tor\'s entry relay is failing most connections, so contacts may not reach you. This can be an overloaded network or interference. Switching the Tor connection method to bridges in Settings, Connections usually helps.</string>
+	<string name="contact_connection_tor_entry_relay">Tor is connected, but its entry relay is failing most connections. Using bridges usually helps.</string>
+	<string name="channels_post_edit_failed">Could not edit the post</string>
+	<string name="channels_action_comments_off">Turn off comments</string>
+	<string name="channels_action_comments_on">Turn on comments</string>
+	<string name="channels_post_comments_off">Comments are off for this post.</string>
+	<string name="channels_subscribers_unban">Lift ban</string>
+	<string name="channels_subscribers_unban_confirm">Lift the ban? This subscriber can comment and react again. What the ban removed does not come back, and an editor role has to be granted again.</string>
+	<string name="channels_unban_failed">Could not lift the ban</string>
 </resources>

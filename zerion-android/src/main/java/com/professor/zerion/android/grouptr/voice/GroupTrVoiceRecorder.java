@@ -1,5 +1,6 @@
 package com.professor.zerion.android.grouptr.voice;
 
+import com.professor.zerion.android.attachment.OggCommentStripper;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 
 import android.content.Context;
@@ -12,6 +13,9 @@ import androidx.annotation.RequiresApi;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Random;
 
 @RequiresApi(Build.VERSION_CODES.Q)
 public class GroupTrVoiceRecorder {
@@ -43,7 +47,8 @@ public class GroupTrVoiceRecorder {
 		try {
 			outputFile = File.createTempFile("grouptr_voice_", ".ogg",
 					context.getCacheDir());
-			recorder = new MediaRecorder(context);
+			recorder = android.os.Build.VERSION.SDK_INT >= 31
+					? new MediaRecorder(context) : new MediaRecorder();
 			recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 			recorder.setOutputFormat(MediaRecorder.OutputFormat.OGG);
 			recorder.setAudioEncoder(MediaRecorder.AudioEncoder.OPUS);
@@ -96,7 +101,26 @@ public class GroupTrVoiceRecorder {
 			listener.onRecordingFailed("empty recording");
 			return;
 		}
-		listener.onRecordingFinished(data, duration);
+		byte[] clean;
+		try {
+			clean = cleanRecording(data, new SecureRandom());
+		} catch (IOException | RuntimeException ex) {
+			listener.onRecordingFailed("recording cannot be cleaned");
+			return;
+		} finally {
+			Arrays.fill(data, (byte) 0);
+		}
+		listener.onRecordingFinished(clean, duration);
+	}
+
+	public static byte[] cleanRecording(byte[] recorded, Random serials)
+			throws IOException {
+		byte[] stripped = OggCommentStripper.withoutComments(recorded);
+		try {
+			return OggCommentStripper.withFreshSerials(stripped, serials);
+		} finally {
+			Arrays.fill(stripped, (byte) 0);
+		}
 	}
 
 	public void cancel() {

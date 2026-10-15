@@ -33,12 +33,15 @@ public class ZerionSnackbarBuilder {
 		Snackbar s = Snackbar.make(view, text, duration);
 		if (backgroundResId != null) {
 			s.setBackgroundTint(getColor(view.getContext(), backgroundResId));
-			s.setTextColor(
-					getColor(view.getContext(), R.color.md_theme_onSecondary));
+			int textResId = backgroundResId == R.color.zerion_cyan
+					|| backgroundResId == R.color.zerion_primary_accent
+					? R.color.zerion_on_accent
+					: R.color.md_theme_onSecondary;
+			s.setTextColor(getColor(view.getContext(), textResId));
 		}
 		if (onClickListener != null) {
 			s.setActionTextColor(getColor(view.getContext(),
-					R.color.zerion_button_text_positive));
+					R.color.zerion_accent_text_inverse));
 			s.setAction(actionResId, onClickListener);
 		}
 		if (anchorView != null) {

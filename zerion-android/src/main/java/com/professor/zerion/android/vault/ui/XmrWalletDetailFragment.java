@@ -294,10 +294,10 @@ public class XmrWalletDetailFragment extends BaseFragment {
 			icon.setImageResource(in ? R.drawable.ic_call_received
 					: R.drawable.ic_call_made);
 			icon.setColorFilter(getResources().getColor(
-					in ? R.color.zerion_success : R.color.zerion_red_500, null));
+					in ? R.color.zerion_success_text : R.color.zerion_destructive_text, null));
 			amount.setText((in ? "+" : "-") + formatXmr(tx.amountAtomic) + " XMR");
 			amount.setTextColor(getResources().getColor(
-					in ? R.color.zerion_success : R.color.zerion_text_primary,
+					in ? R.color.zerion_success_text : R.color.zerion_text_primary,
 					null));
 			txid.setText(tx.txid.substring(0, 12) + "…");
 			status.setText(tx.uncertain
@@ -306,7 +306,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 					: tx.confirmations + " conf");
 			if (tx.uncertain) {
 				status.setTextColor(getResources().getColor(
-						R.color.zerion_warning, null));
+						R.color.zerion_warning_text, null));
 			}
 			final String rowTxid = tx.txid;
 			row.setOnClickListener(x -> showTxDetails(rowTxid));
@@ -339,25 +339,25 @@ public class XmrWalletDetailFragment extends BaseFragment {
 		TextView amount = v.findViewById(R.id.detail_amount);
 		amount.setText((in ? "+" : "-") + formatXmr(tx.amountAtomic) + " XMR");
 		amount.setTextColor(getResources().getColor(
-				in ? R.color.zerion_success : R.color.zerion_text_primary, null));
+				in ? R.color.zerion_success_text : R.color.zerion_text_primary, null));
 
 		TextView state = v.findViewById(R.id.detail_state);
 		if (tx.failed) {
 			state.setText(R.string.wallet_xmr_tx_state_failed);
 			state.setTextColor(getResources().getColor(
-					R.color.zerion_red_500, null));
+					R.color.zerion_destructive_text, null));
 		} else if (tx.uncertain) {
 			state.setText(R.string.wallet_xmr_tx_state_unresolved);
 			state.setTextColor(getResources().getColor(
-					R.color.zerion_warning, null));
+					R.color.zerion_warning_text, null));
 		} else if (tx.pending) {
 			state.setText(R.string.wallet_xmr_tx_state_pending);
 			state.setTextColor(getResources().getColor(
-					R.color.zerion_warning, null));
+					R.color.zerion_warning_text, null));
 		} else {
 			state.setText(R.string.wallet_xmr_tx_state_confirmed);
 			state.setTextColor(getResources().getColor(
-					R.color.zerion_success, null));
+					R.color.zerion_success_text, null));
 		}
 
 		LinearLayout rows = v.findViewById(R.id.detail_rows);
@@ -802,7 +802,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	private void showSendSuccess(List<String> txids) {
 		String amount = lastReview == null ? null
 				: formatXmr(lastReview.amountAtomic) + " XMR";
-		showSendResult("✓", R.color.zerion_success,
+		showSendResult("✓", R.color.zerion_success_fill,
 				getString(R.string.wallet_xmr_send_sent), amount,
 				getString(R.string.wallet_xmr_send_pending), txids,
 				getString(R.string.wallet_xmr_send_done), this::finishSend,
@@ -811,7 +811,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	}
 
 	private void showSendUncertain() {
-		showSendResult("!", R.color.zerion_warning,
+		showSendResult("!", R.color.zerion_warning_fill,
 				getString(R.string.wallet_xmr_send_unresolved), null,
 				getString(R.string.wallet_xmr_send_unresolved_body), null,
 				getString(R.string.wallet_xmr_send_done), this::finishSend,
@@ -820,7 +820,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 	}
 
 	private void showSendFailed(@Nullable XmrError error) {
-		showSendResult("×", R.color.zerion_red_500,
+		showSendResult("×", R.color.zerion_error_fill,
 				getString(R.string.wallet_xmr_send_failed), null,
 				error == null ? getString(R.string.wallet_xmr_send_failed)
 						: sendMessageFor(error), null,
@@ -833,7 +833,7 @@ public class XmrWalletDetailFragment extends BaseFragment {
 
 	private void showSendQuarantined() {
 		sendFlowActive = false;
-		showSendResult("×", R.color.zerion_red_500,
+		showSendResult("×", R.color.zerion_error_fill,
 				getString(R.string.wallet_xmr_send_quarantine), null,
 				getString(R.string.wallet_xmr_send_quarantine_body), null,
 				getString(R.string.wallet_xmr_send_done), this::finishSend,

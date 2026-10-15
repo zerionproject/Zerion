@@ -90,7 +90,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:textSize="12sp"
-                        android:textColor="@color/zerion_primary_accent"
+                        android:textColor="@color/zerion_accent_text"
                         android:visibility="gone"
                         tools:text="Verified Contact"
                         tools:visibility="visible" />
@@ -125,6 +125,7 @@
                     android:gravity="center_vertical"
                     android:clickable="true"
                     android:focusable="true"
+                    android:importantForAccessibility="no"
                     android:background="?attr/selectableItemBackground"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp">
@@ -133,6 +134,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:importantForAccessibility="no"
                         android:text="@string/mute_notifications"
                         android:textColor="@color/zerion_text_primary"
                         android:textSize="16sp" />
@@ -141,6 +143,7 @@
                         android:id="@+id/mute_notifications_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/mute_notifications"
                         app:thumbTint="@color/zerion_primary_accent"
                         app:trackTint="@color/zerion_surface_elevated" />
                 </LinearLayout>
@@ -153,6 +156,7 @@
                     android:gravity="center_vertical"
                     android:clickable="true"
                     android:focusable="true"
+                    android:importantForAccessibility="no"
                     android:background="?attr/selectableItemBackground"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp">
@@ -161,6 +165,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:importantForAccessibility="no"
                         android:text="@string/vibration"
                         android:textColor="@color/zerion_text_primary"
                         android:textSize="16sp" />
@@ -169,6 +174,7 @@
                         android:id="@+id/vibration_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/vibration"
                         app:thumbTint="@color/zerion_primary_accent"
                         app:trackTint="@color/zerion_surface_elevated" />
                 </LinearLayout>
@@ -204,7 +210,7 @@
                             android:id="@+id/disappearing_messages_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/zerion_primary_accent"
+                            android:textColor="@color/zerion_accent_text"
                             android:textSize="14sp"
                             tools:text="Off" />
 
@@ -258,7 +264,7 @@
                         android:layout_height="24dp"
                         android:src="@drawable/ic_lock"
                         android:contentDescription="@string/security_settings_title"
-                        app:tint="@color/zerion_primary_accent" />
+                        app:tint="@color/zerion_accent_icon" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -289,6 +295,8 @@
                 </LinearLayout>
 
             </LinearLayout>
+
+            <include layout="@layout/chat_settings_connection" />
 
             <LinearLayout
                 android:id="@+id/identity_card"

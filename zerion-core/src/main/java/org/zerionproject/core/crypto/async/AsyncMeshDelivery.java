@@ -96,10 +96,6 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
 
-	private static final int MAX_USED_ONE_TIME_KEYS = 4096;
-	private final java.util.LinkedHashSet<String> usedOneTimeKeys =
-			new java.util.LinkedHashSet<>();
-
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
 			Identity identity,
@@ -172,26 +168,23 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			AsyncPrekeyBundle bundle) {
 		List<AsyncPrekeyBundle.OneTimePrekey> otks = bundle.getOneTimePrekeys();
 		if (otks.isEmpty()) return null;
-		String recipient = org.zerionproject.core.util.StringUtils.toHexString(
-				bundle.getIdentitySigPub());
 		int start = random.nextInt(otks.size());
-		synchronized (usedOneTimeKeys) {
-			for (int i = 0; i < otks.size(); i++) {
-				AsyncPrekeyBundle.OneTimePrekey otk =
-						otks.get((start + i) % otks.size());
-				String key = recipient + ":" + org.zerionproject.core.util
-						.StringUtils.toHexString(otk.id);
-				if (usedOneTimeKeys.contains(key)) continue;
-				if (usedOneTimeKeys.size() >= MAX_USED_ONE_TIME_KEYS) {
-					java.util.Iterator<String> it = usedOneTimeKeys.iterator();
-					it.next();
-					it.remove();
-				}
-				usedOneTimeKeys.add(key);
-				return otk;
-			}
+		List<AsyncPrekeyBundle.OneTimePrekey> order =
+				new java.util.ArrayList<>(otks.size());
+		List<byte[]> ids = new java.util.ArrayList<>(otks.size());
+		for (int i = 0; i < otks.size(); i++) {
+			AsyncPrekeyBundle.OneTimePrekey otk =
+					otks.get((start + i) % otks.size());
+			order.add(otk);
+			ids.add(otk.id);
 		}
-		return null;
+		try {
+			int picked = store.claimUnusedOneTimePrekey(
+					bundle.getIdentitySigPub(), ids);
+			return picked < 0 ? null : order.get(picked);
+		} catch (org.zerionproject.core.api.db.DbException e) {
+			return null;
+		}
 	}
 
 	public void sendCover(MeshForwarder forwarder, byte[] payload,

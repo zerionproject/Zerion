@@ -7,6 +7,9 @@ import com.professor.zerion.android.vault.utils.SecureMemory;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @NotNullByDefault
 public final class CacheSweeper {
@@ -24,6 +27,7 @@ public final class CacheSweeper {
 			"vid_clean_",
 			"vid_remux_",
 			"zbk-",
+			"pdf_clean_",
 	};
 
 	private static final String[] TEMP_DIRS = {
@@ -45,12 +49,30 @@ public final class CacheSweeper {
 			"channel_attach_view",
 	};
 
+	private static final String[] PRIVATE_TEMP_DIRS = {
+			"media_docs",
+			"grouptr_view",
+			"channel_attach_view",
+	};
+
 	static final String[] DATA_DIRS = {
 			"app_webview",
 			"app_textures",
 	};
 
+	private static final Set<String> IN_USE =
+			Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 	private CacheSweeper() {
+	}
+
+	public static File claim(File f) {
+		IN_USE.add(f.getAbsolutePath());
+		return f;
+	}
+
+	public static void release(File f) {
+		IN_USE.remove(f.getAbsolutePath());
 	}
 
 	public static void sweepAsync(Context ctx) {
@@ -72,6 +94,7 @@ public final class CacheSweeper {
 	public static void sweep(Context ctx) {
 		com.professor.zerion.android.vault.share.VaultShareRegistry
 				.releaseAll();
+		com.professor.zerion.android.attachment.SaveCleanCopy.clearAll();
 		ExternalHandoff.end(ctx);
 		sweepFilesDirs(ctx);
 		sweepNoBackupDirs(ctx);
@@ -82,7 +105,8 @@ public final class CacheSweeper {
 			File[] files = cache.listFiles();
 			if (files != null) {
 				for (File f : files) {
-					if (f.isFile() && hasTempPrefix(f.getName())) {
+					if (f.isFile() && hasTempPrefix(f.getName())
+							&& !inUse(f)) {
 						SecureMemory.secureDeleteFile(f, 0L, false);
 					}
 				}
@@ -92,6 +116,29 @@ public final class CacheSweeper {
 		for (String dir : TEMP_DIRS) {
 			SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
 		}
+	}
+
+	public static void sweepLeftovers(Context ctx, long processStartedAt) {
+		File cache = ctx.getCacheDir();
+		if (cache != null && cache.isDirectory()) {
+			try {
+				File[] files = cache.listFiles();
+				if (files != null) {
+					for (File f : files) {
+						if (f.isFile() && hasTempPrefix(f.getName())
+								&& f.lastModified() < processStartedAt
+								&& !inUse(f)) {
+							SecureMemory.secureDeleteFile(f, 0L, false);
+						}
+					}
+				}
+			} catch (SecurityException ignored) {
+			}
+			for (String dir : PRIVATE_TEMP_DIRS) {
+				SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
+			}
+		}
+		sweepNoBackupDirs(ctx);
 	}
 
 	public static void sweepFilesDirs(Context ctx) {
@@ -118,6 +165,10 @@ public final class CacheSweeper {
 		}
 		SecureMemory.secureDeleteDir(new File(ctx.getCacheDir(), "WebView"),
 				0L);
+	}
+
+	private static boolean inUse(File f) {
+		return IN_USE.contains(f.getAbsolutePath());
 	}
 
 	private static boolean hasTempPrefix(String name) {

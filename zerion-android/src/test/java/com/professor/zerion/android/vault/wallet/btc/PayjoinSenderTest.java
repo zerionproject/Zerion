@@ -136,7 +136,9 @@ public class PayjoinSenderTest {
 		assertEquals(new HashSet<>(Arrays.asList(ourOp)),
 				rev.finalTx.ownedOutpoints());
 
-		String hex = rev.finalTx.buildSignedHex();
+		String hex = rev.finalTx.buildSignedHexApproved(
+				rev.finalTx.fingerprint());
+		assertNotNull(hex);
 		Transaction tx = new Transaction(BtcKeys.PARAMS, Utils.HEX.decode(hex));
 		assertEquals(2, tx.getInputs().size());
 		assertTrue(tx.getInput(0).getWitness().getPushCount() >= 2);

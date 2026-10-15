@@ -27,9 +27,6 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
 
@@ -48,8 +45,6 @@ import static com.professor.zerion.android.AppModule.getAndroidComponent;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class WelcomeFragment extends Fragment {
-
-	private static final int MAX_BACKUP_BYTES = 512 * 1024 * 1024;
 
 	@Inject
 	@IoExecutor
@@ -189,40 +184,38 @@ public class WelcomeFragment extends Fragment {
 	}
 
 	private void runImport(Uri src, char[] passphrase, char[] newPassword) {
-		Context appContext = requireContext().getApplicationContext();
 		setButtonsEnabled(false);
 		setStatus(getString(R.string.backup_import_in_progress));
 		ioExecutor.execute(() -> {
 			boolean ok = false;
-			byte[] data = null;
+			int failMessage = R.string.backup_import_failed;
 			try {
-				try (InputStream is =
-						appContext.getContentResolver().openInputStream(src)) {
-					if (is == null) throw new IOException("null input stream");
-					data = readAll(is);
-				}
-				backupManager.importAccount(data, passphrase, newPassword);
+				backupManager.importBackupFile(src, passphrase, newPassword);
 				ok = true;
-			} catch (BackupException | IOException | RuntimeException e) {
+			} catch (BackupException e) {
+				if (e.reason == BackupException.Reason.TOO_LARGE) {
+					failMessage = R.string.backup_import_too_large;
+				}
+			} catch (RuntimeException e) {
 				ok = false;
 			} finally {
-				if (data != null) Arrays.fill(data, (byte) 0);
 				Arrays.fill(passphrase, '\0');
 				Arrays.fill(newPassword, '\0');
 			}
 			boolean success = ok;
-			mainHandler.post(() -> onImportFinished(success));
+			int message = failMessage;
+			mainHandler.post(() -> onImportFinished(success, message));
 		});
 	}
 
-	private void onImportFinished(boolean success) {
+	private void onImportFinished(boolean success, int failMessage) {
 		if (!isAdded()) return;
 		if (success) {
 			goToSignIn();
 		} else {
 			setButtonsEnabled(true);
 			setStatus("");
-			toast(R.string.backup_import_failed);
+			toast(failMessage);
 		}
 	}
 
@@ -233,21 +226,6 @@ public class WelcomeFragment extends Fragment {
 				| FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(i);
 		requireActivity().finish();
-	}
-
-	private byte[] readAll(InputStream in) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		byte[] buf = new byte[8192];
-		int total = 0;
-		int n;
-		while ((n = in.read(buf)) != -1) {
-			total += n;
-			if (total > MAX_BACKUP_BYTES) {
-				throw new IOException("Backup file too large");
-			}
-			out.write(buf, 0, n);
-		}
-		return out.toByteArray();
 	}
 
 	private EditText passwordField(Context context, int hintRes) {

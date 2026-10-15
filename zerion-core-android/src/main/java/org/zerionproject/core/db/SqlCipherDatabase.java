@@ -148,6 +148,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 					raf.getFD().sync();
 				}
 			}
+			checkpoint(vc);
 			vc.close();
 		} catch (SQLException | java.io.IOException e) {
 			if (vc != null) {
@@ -228,6 +229,10 @@ class SqlCipherDatabase extends JdbcDatabase {
 			try {
 				c = createConnection();
 				setDirty(c, false);
+				try {
+					checkpoint(c);
+				} catch (SQLException ignored) {
+				}
 				c.close();
 			} catch (SQLException e) {
 				if (c != null) {
@@ -279,8 +284,8 @@ class SqlCipherDatabase extends JdbcDatabase {
 		return hex;
 	}
 
-	private Connection openWithPassphrase(File dbFile, byte[] passphrase)
-			throws DbException, SQLException {
+	static Connection openWithPassphrase(File dbFile, byte[] passphrase)
+			throws SQLException {
 		for (int attempt = 1; attempt <= OPEN_RETRY_MAX; attempt++) {
 			SQLiteDatabase db = null;
 			try {
@@ -330,6 +335,26 @@ class SqlCipherDatabase extends JdbcDatabase {
 	protected void compactAndClose() throws DbException {
 		needsCompaction = true;
 		closeAllConnections();
+	}
+
+	@Override
+	protected boolean purge(Connection c) throws SQLException {
+		return checkpoint(c);
+	}
+
+	static boolean checkpoint(Connection c) throws SQLException {
+		SQLiteDatabase db = ((SqlCipherConnection) c).getDatabase();
+		try {
+			Cursor cursor = db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)",
+					null);
+			try {
+				return cursor.moveToFirst() && cursor.getLong(0) == 0;
+			} finally {
+				cursor.close();
+			}
+		} catch (RuntimeException e) {
+			throw new SQLException(e);
+		}
 	}
 
 	private static void enforceForeignKeys(SQLiteDatabase db)

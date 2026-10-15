@@ -64,7 +64,8 @@ public class VideoThumbnailExtractor {
 			throw new IOException();
 		}
 		thumbnail.recycle();
-		return new ByteArrayInputStream(out.toByteArray());
+		return new ByteArrayInputStream(com.professor.zerion.android
+				.attachment.ImageScrubber.scrub(out.toByteArray()));
 	}
 
 	public long extractDuration(Uri videoUri) {

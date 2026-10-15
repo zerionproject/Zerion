@@ -14,7 +14,9 @@ import org.zerionproject.core.api.plugin.OnionTargetListener;
 import org.zerionproject.core.api.plugin.Plugin;
 import org.zerionproject.core.api.plugin.PluginCallback;
 import org.zerionproject.core.api.db.DbException;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
 import org.zerionproject.core.api.plugin.TorClockSkewStatus;
 import org.zerionproject.core.api.plugin.event.TorClockSkewEvent;
@@ -29,6 +31,7 @@ import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.rendezvous.KeyMaterialSource;
 import org.zerionproject.core.api.rendezvous.RendezvousEndpoint;
 import org.zerionproject.core.api.settings.Settings;
+import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
 import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.zerionproject.core.plugin.tor.ChannelOnionAdapter;
 import org.zerionproject.core.plugin.tor.TorRendezvousCrypto;
@@ -57,7 +60,8 @@ import static org.zerionproject.core.util.IoUtils.tryToClose;
 
 @NotNullByDefault
 class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
-		TorClockSkewStatus {
+		TorClockSkewStatus,
+		org.zerionproject.core.api.plugin.TorEntryRelayStatus {
 
 	static final int MAX_LATENCY = 30 * 1000;
 	static final int MAX_IDLE_TIME = 30 * 1000;
@@ -83,6 +87,10 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Nullable
 	private volatile State lastReportedState = null;
 	private final ClockSkewTracker clockSkew = new ClockSkewTracker();
+	private volatile boolean entryRelayFailing = false;
+	private final EventListener torSettingsListener = e -> {
+		if (isTorSettingsChange(e)) clearEntryRelayFailing();
+	};
 
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
 			SocketFactory socketFactory, TorWrapper tor,
@@ -119,7 +127,10 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 			@Override
 			public void onBootstrapPercentage(int percentage) {
-				if (percentage >= 100) clockSkew.clear();
+				if (percentage >= 100) {
+					clockSkew.clear();
+					clearEntryRelayFailing();
+				}
 				eventBus.broadcast(new TorBootstrapEvent(percentage));
 			}
 
@@ -128,12 +139,21 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 				if (!transport.publishedOnions().contains(onion)) return;
 				clockSkew.clear();
 				eventBus.broadcast(new TorOnionPublishedEvent(onion));
+				ioExecutor.execute(() ->
+						b4OnionRotation.onDescriptorUploaded(onion));
 			}
 
 			@Override
 			public void onClockSkewDetected(long skewSeconds) {
 				clockSkew.onSkew(skewSeconds);
 				eventBus.broadcast(new TorClockSkewEvent(skewSeconds));
+			}
+
+			@Override
+			public void onEntryRelayFailing() {
+				entryRelayFailing = true;
+				eventBus.broadcast(new org.zerionproject.core.api.plugin.event
+						.TorEntryRelayEvent(true));
 			}
 		});
 	}
@@ -200,18 +220,38 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		transport.setTorReconfiguredListener(
 				onionClientAuth::refeedCredentials);
 		String authorizedTarget = transport.getAuthorizedTarget();
+		org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+				.ProbeDialer dialer = new org.zerionproject.core.plugin.tor
+				.auth.OnionClientAuthManagerImpl.ProbeDialer() {
+			@Override
+			public void dial(ContactId c) {
+				poller.dialNow(c.getInt());
+			}
+
+			@Override
+			public void repair(ContactId c) {
+				if (onionClientAuth.getDialOnion(c) != null) {
+					poller.dialFromEitherSide(c.getInt());
+				}
+			}
+
+			@Override
+			public void repairOpen(ContactId c) {
+				if (onionClientAuth.getDialOnion(c) != null) {
+					poller.dialOpenFromEitherSide(c.getInt());
+				}
+			}
+		};
 		onionClientAuth.attachTor(onionServiceControl, authorizedTarget,
-				c -> poller.dialNow(c.getInt()));
+				dialer);
 		transport.setTorRestartedListener(() -> onionClientAuth.attachTor(
-				onionServiceControl, authorizedTarget,
-				c -> poller.dialNow(c.getInt())));
+				onionServiceControl, authorizedTarget, dialer));
 		String startupOnion = hs.onion;
 		b4OnionRotation.bindAdapter(new B4OnionRotation.B4TorAdapter() {
 			@Override
 			public HiddenServiceProperties publishHiddenService(
 					@Nullable String privKey) throws IOException {
-				return transport.publishHiddenService(
-						transport.getOpenTarget(), REMOTE_ONION_PORT, privKey);
+				return transport.publishDedicatedService(privKey);
 			}
 
 			@Override
@@ -240,6 +280,11 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			public void mergeTorLocalProperties(TransportProperties p) {
 				callback.mergeLocalProperties(p);
 			}
+
+			@Override
+			public boolean acceptsOpenInbound(ContactId c) {
+				return onionClientAuth.acceptsInbound(c, false);
+			}
 		});
 		try {
 			b4OnionRotation.republishPendingOnion();
@@ -247,12 +292,15 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			throw new PluginException(e);
 		}
 		b4OnionRotation.startPeriodicEvaluation();
+		eventBus.addListener(torSettingsListener);
 		poller.start();
 	}
 
 	@Override
 	public void stop() throws PluginException {
+		eventBus.removeListener(torSettingsListener);
 		clockSkew.clear();
+		clearEntryRelayFailing();
 		onionClientAuth.detachTor();
 		transport.setTorRestartedListener(null);
 		transport.setTorReconfiguredListener(null);
@@ -272,6 +320,24 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Override
 	public long getCurrentClockSkewSeconds() {
 		return clockSkew.current();
+	}
+
+	@Override
+	public boolean isEntryRelayFailing() {
+		return entryRelayFailing;
+	}
+
+	static boolean isTorSettingsChange(Event e) {
+		return e instanceof SettingsUpdatedEvent
+				&& TorConstants.ID.getString().equals(
+				((SettingsUpdatedEvent) e).getNamespace());
+	}
+
+	private void clearEntryRelayFailing() {
+		if (!entryRelayFailing) return;
+		entryRelayFailing = false;
+		eventBus.broadcast(new org.zerionproject.core.api.plugin.event
+				.TorEntryRelayEvent(false));
 	}
 
 	@Override

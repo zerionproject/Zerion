@@ -16,6 +16,8 @@ import static org.junit.Assert.fail;
 public class ChannelPullCodecDecodeLimitTest {
 
 	private static final byte[] CHANNEL_ID = new byte[32];
+	private static final byte[] ML_DSA_KEY = new byte[org.zerionproject
+			.core.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES];
 
 	private ChannelPullCodec codec;
 
@@ -156,7 +158,7 @@ public class ChannelPullCodecDecodeLimitTest {
 		d.put("body", body);
 		d.put("name", name);
 		d.put("ed", new byte[32]);
-		d.put("ml", new byte[0]);
+		d.put("ml", ML_DSA_KEY);
 		d.put("ts", 0L);
 		return d;
 	}
@@ -166,7 +168,7 @@ public class ChannelPullCodecDecodeLimitTest {
 		d.put("seq", seq % ChannelConstants.PULL_BATCH_MAX_POSTS);
 		d.put("emoji", "x");
 		d.put("ed", new byte[32]);
-		d.put("ml", new byte[0]);
+		d.put("ml", ML_DSA_KEY);
 		d.put("ts", seq);
 		return d;
 	}

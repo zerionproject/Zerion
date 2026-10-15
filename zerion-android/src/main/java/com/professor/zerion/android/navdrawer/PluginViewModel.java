@@ -19,6 +19,7 @@ import org.zerionproject.core.api.plugin.PluginManager;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.plugin.event.TorBootstrapEvent;
+import org.zerionproject.core.api.plugin.event.TorEntryRelayEvent;
 import org.zerionproject.core.api.plugin.event.TransportStateEvent;
 import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
@@ -73,6 +74,9 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Integer> torBootstrap =
 			new MutableLiveData<>(0);
 
+	private final MutableLiveData<Boolean> torEntryRelayFailing =
+			new MutableLiveData<>(false);
+
 	private final TorPublishTracker torPublishTracker;
 
 	private final MutableLiveData<B4OnionRotation.RotationPhase>
@@ -116,6 +120,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		eventBus.addListener(this);
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
+		torEntryRelayFailing.setValue(entryRelayFailingNow());
 		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
 		torPublishTracker.refresh();
 		loadSettings();
@@ -163,7 +168,22 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			}
 		} else if (e instanceof TorBootstrapEvent) {
 			torBootstrap.postValue(((TorBootstrapEvent) e).getPercentage());
+		} else if (e instanceof TorEntryRelayEvent) {
+			torEntryRelayFailing.postValue(
+					((TorEntryRelayEvent) e).isFailing());
 		}
+	}
+
+	private boolean entryRelayFailingNow() {
+		org.zerionproject.core.api.plugin.Plugin p =
+				pluginManager.getPlugin(TorConstants.ID);
+		return p instanceof org.zerionproject.core.api.plugin
+				.TorEntryRelayStatus && ((org.zerionproject.core.api.plugin
+				.TorEntryRelayStatus) p).isEntryRelayFailing();
+	}
+
+	LiveData<Boolean> getTorEntryRelayFailing() {
+		return torEntryRelayFailing;
 	}
 
 	LiveData<Integer> getTorBootstrap() {

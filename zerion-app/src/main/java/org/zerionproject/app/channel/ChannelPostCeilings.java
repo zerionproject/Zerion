@@ -11,6 +11,11 @@ import java.util.List;
 @NotNullByDefault
 final class ChannelPostCeilings {
 
+	static final int MAX_WAITING_ERASED_POSTS =
+			2 * (int) ChannelConstants.PULL_BATCH_MAX_POSTS;
+	static final int MAX_UNREADABLE_RUNS = 64;
+	static final int MAX_LATE_RUNS = 64;
+
 	private ChannelPostCeilings() {
 	}
 
@@ -38,6 +43,10 @@ final class ChannelPostCeilings {
 	static long storedBytes(ChannelPost p) {
 		long n = 64L + utf8(p.getBody()) + p.getPrevHash().length
 				+ p.getSignature().length;
+		byte[] erased = p.getErasedBodyHash();
+		if (erased != null) n += erased.length;
+		byte[] readableUnder = p.getReadableUnder();
+		if (readableUnder != null) n += readableUnder.length;
 		byte[] delegateEd = p.getDelegateSignerEd25519PubKey();
 		if (delegateEd != null) n += delegateEd.length;
 		byte[] delegateMl = p.getDelegateSignerMlDsaPubKey();

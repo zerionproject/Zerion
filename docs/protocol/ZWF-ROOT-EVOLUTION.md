@@ -221,10 +221,17 @@ If the two sides hold roots that never match again (an older backup restored
 on one side after the other side evolved past it more than seven days
 later, or a fork of one side's database), Alice's dials are accepted and
 closed without any frame authenticating. After `OUT_OF_SYNC_AFTER` (6) such
-dials in a row the contact is marked out of sync
+dials in a row the contact is marked out of sync (an open repair dial of
+ONION_CLIENT_AUTH.md section 5 is not counted when it is refused, since a
+peer that requires client authorization refuses it by design)
 (`ContactConnectionKeysEvent`); the conversation shows it and the contact's
 details offer to re-add the contact. Bob's side cannot attribute the refused
-connections to a contact and shows the contact as offline. A new link
+connections to a contact and shows the contact as offline. Alice cannot tell
+diverged roots apart from other dials that end before Bob's first frame:
+Bob having removed the contact while his old address still answers, which
+shows the same mark (the in-app notice names both causes), or six
+connections in a row lost to the network at that point, which shows it until
+the next dial authenticates. A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
@@ -258,13 +265,15 @@ contacts talked to since only after re-adding them. This is the same
 capability a copier of the database has, and the property root evolution
 provides depends on it. To keep the documented "move to a new phone" flow
 working, making a copy pauses new evolutions on the device for seven days
-(`AccountBackupManager.ROOT_EVOLUTION_PAUSE_MS`); no root changes at all while
-the copy is written, and the pause is written after the copy, so the copy
-does not carry it and the new phone evolves its roots at once, after which
-the old phone, and any older copy, can no longer connect. The pause stops new
-offers and answers only: an evolution both sides already hold a root for may
-still complete, and the copy holds that root too. The export and import
-screens say what a late restore means.
+(`AccountBackupManager.ROOT_EVOLUTION_PAUSE_MS`); no root changes at all from
+the start of the copy until the pause is written, and the pause is written
+only once the copy has been saved or sent, so the copy does not carry it and
+the new phone evolves its roots at once, after which the old phone, and any
+older copy, can no longer connect. A copy that fails or is cancelled before it
+is saved or sent writes no pause and leaves an earlier pause as it was. The
+pause stops new offers and answers only: an evolution both sides already hold
+a root for may still complete, and the copy holds that root too. The export
+and import screens say what a late restore means.
 
 ## Limits
 

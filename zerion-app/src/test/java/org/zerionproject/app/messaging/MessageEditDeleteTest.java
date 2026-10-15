@@ -1,6 +1,7 @@
 package org.zerionproject.app.messaging;
 
 import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.cleanup.CleanupHook;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -32,7 +33,10 @@ import org.junit.Test;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -362,6 +366,105 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 
 		assertFalse(conversation().contains(mine));
 		assertEquals(0, localControls(MESSAGE_DELETE).size());
+	}
+
+	@Test
+	public void anEditWaitingToBeSentGoesWithItsExpiredMessage()
+			throws Exception {
+		MessageId mine = own("gone soon", now - HOUR);
+		senderSeeing(9).editMessage(contact, mine, "gone soon too");
+		assertEquals(1, localControls(MESSAGE_EDIT).size());
+
+		db.transaction(false, txn -> ((CleanupHook) messagingManager)
+				.deleteMessages(txn, contactGroup.getId(), singletonList(mine)));
+
+		assertEquals(0, localControls(MESSAGE_EDIT).size());
+	}
+
+	@Test
+	public void anEditWaitingToBeSentGoesWhenItsMessageIsDeletedHere()
+			throws Exception {
+		MessageId mine = own("oops", now - HOUR);
+		senderSeeing(9).editMessage(contact, mine, "oops!");
+
+		db.transaction(false, txn -> messagingManager.deleteMessages(txn,
+				contact, singleton(mine)));
+
+		assertEquals(0, localControls(MESSAGE_EDIT).size());
+	}
+
+	@Test
+	public void aDeleteIsSentWhenOnlyAnEditOfTheMessageLeft()
+			throws Exception {
+		MessagingManagerImpl sender = senderSeeing(9);
+		MessageId mine = own("draft", now - HOUR);
+		sender.editMessage(contact, mine, "the real text");
+		markSent(localControls(MESSAGE_EDIT).iterator().next());
+
+		assertTrue(sender.deleteForEveryone(contact, singletonList(mine)));
+
+		assertEquals(0, localControls(MESSAGE_EDIT).size());
+		assertEquals(1, localControls(MESSAGE_DELETE).size());
+	}
+
+	@Test
+	public void aDeleteDropsEditsWaitingForAMessageNotYetReceived()
+			throws Exception {
+		Message original = create(text("first draft"), now - HOUR);
+		deliverAt(edit(original.getId(), "second draft"), now - HOUR + 500);
+		assertEquals(1, countOf(MESSAGE_EDIT));
+
+		deliverAt(delete(original.getId()), now - HOUR + 1000);
+
+		assertEquals(0, countOf(MESSAGE_EDIT));
+	}
+
+	@Test
+	public void anEditArrivingAfterItsMessageWasDeletedIsNotKept()
+			throws Exception {
+		MessageId target = deliverAt(text("oops"), now - HOUR);
+		deliverAt(delete(target), now - HOUR + 2000);
+
+		deliverAt(edit(target, "oops!"), now - HOUR + 1000);
+
+		assertEquals(0, countOf(MESSAGE_EDIT));
+	}
+
+	@Test
+	public void aWithdrawnMessageTakesTheImagesThatAlreadyArrived()
+			throws Exception {
+		Message first = attachment(now - HOUR);
+		Message second = attachment(now - HOUR + 1);
+		Message photos = create(BdfList.of(PRIVATE_MESSAGE, "two photos",
+				BdfList.of(BdfList.of(first.getId().getBytes(), "image/jpeg"),
+						BdfList.of(second.getId().getBytes(), "image/jpeg"))),
+				now - HOUR + 2);
+		assertEquals(MessageState.PENDING, deliver(photos));
+		assertEquals(MessageState.DELIVERED, deliver(first));
+		assertEquals(1, countOf(ATTACHMENT));
+
+		deliverAt(delete(photos.getId()), now - HOUR + 1000);
+
+		assertEquals(MessageState.INVALID, state(photos.getId()));
+		assertEquals(0, countOf(ATTACHMENT));
+	}
+
+	@Test
+	public void clearingTheChatKeepsADeleteForEveryoneNotYetDelivered()
+			throws Exception {
+		MessageId mine = own("oops", now - HOUR);
+		markSent(mine);
+		assertTrue(senderSeeing(9).deleteForEveryone(contact,
+				singletonList(mine)));
+		Set<MessageId> pending = new HashSet<>(localControls(MESSAGE_DELETE));
+		assertEquals(1, pending.size());
+
+		db.transaction(false, txn ->
+				messagingManager.deleteAllMessages(txn, contact));
+
+		assertEquals(pending, new HashSet<>(localControls(MESSAGE_DELETE)));
+		db.transaction(true, txn -> assertFalse(db.getMessageStatus(txn,
+				contact, pending.iterator().next()).isSeen()));
 	}
 
 	private static BdfList text(String text) {

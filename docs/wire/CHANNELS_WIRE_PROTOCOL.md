@@ -20,6 +20,62 @@ not gossip with each other - they **PULL** directly from the publisher's
 onion (`ChannelTransport.requestFromOnion(onion, requestBytes)`). There is
 no flooding, no store-and-forward between subscribers, no sync-client.
 
+**Who answers a pull.** Only the owner's device binds a channel server
+(`bindPublisherServer`, and `retireDueOnions` for onions still retiring); a
+subscriber binds none, opting in to mirroring (`setMirrorOptedIn`) stores a
+preference that nothing serves from, and the `neighbourHints` of a reply are
+sent empty and never read. A subscriber dials the onion its own state names
+(`onionToPull`): the one in the invite link until it has taken a manifest,
+then the one named by the newest manifest it took, which the channel's key
+signs, and as a fallback one that such a manifest named earlier. The invite
+link is not signed, so whoever hands it over picks the first address
+dialled. From 3.0.18 a subscriber takes posts, reactions, comments and the
+comment setting from a reply only when the onion it dialled is the one its
+newest taken manifest names or the one the reply's own manifest names
+(`pullOnce`); from any other onion it takes the signed manifest alone (and a
+content key only if it matches the hash that manifest signs) and, on its
+first pull, pulls again at once from the onion that manifest names. It keeps
+as a fallback only onions that a manifest it took named. Only the holder of
+an onion's key can answer at that onion, and only the owner's device holds
+the keys of the onions its manifests name, so every post, reaction and
+comment a subscriber takes in was served by the owner's device, and is still
+checked under its signature. Up to 3.0.17 the first pull took posts from the
+link's address and kept that address as a fallback, so whoever handed over
+the link could answer those pulls with genuine signed posts of its choosing,
+leaving gaps or, from the development builds of 3.0.18 that sent erased
+posts, posts stripped of their bodies.
+
+**Where a member's requests go.** Every request that carries something
+about the member (an application to join, a check for approval, an
+announced name, a comment, a reaction, an editor's post or change request,
+an attachment fetch) goes from 3.0.18 only to an onion the owner's device
+vouched for (`confirmedOnion`): the one the newest manifest the member took
+names, or, while it has taken none, an onion the owner's device confirmed
+just before with a signature under the channel's key. A private channel's
+manifest cannot serve here, since its signature covers the join
+capability, which an applicant does not hold. The member asks the onion it
+knows to confirm it (`WIRE_TYPE_CONFIRM_ONION`, below); the owner's device
+answers only for an onion it serves (its current onion or one still
+retiring) and signs `channelId || int32 len || UTF-8 onion` (the onion
+without `.onion`, lower case) under `SIGNING_LABEL_ONION_CONFIRMATION =
+"org.zerionproject/CHANNEL_ONION_CONFIRMATION"`, sending the channel's salt
+and ML-DSA-65 key with it. The member checks that the channel id is the
+hash of the link's Ed25519 key with that ML-DSA-65 key and salt (and the
+ML-DSA-65 key it already holds, if any), that the signature verifies and
+that the onion is a v3 address, and then sends its request to the onion
+the confirmation names, keeping that onion as its current one. A
+confirmation names only an onion the requester already knew (a relay that
+asks for another onion learns nothing it did not send), so it lets no
+holder of an old link follow the channel to a new address. When no
+confirmation can be had (an onion that is not the owner's, a reply that
+does not verify, or an owner up to 3.0.17, which does not know the request
+and answers with an empty reply), the request is not sent and fails as a
+request to an unreachable channel does. Up to 3.0.17 these requests went to
+the address in the state, which before the first manifest is the unsigned
+one of the link, so whoever handed over the link received the application
+(display name, member key, ephemeral key) and could answer a check for
+approval.
+
 Consequences:
 
 - **If the publisher is offline, no new posts propagate.** A subscriber's
@@ -30,13 +86,20 @@ Consequences:
   5 s if a pull of that channel in the last 120 s brought new posts or a
   changed reaction or comment set, otherwise it grows by 5 s up to 60 s, and
   the next pull falls at a uniformly random time between half and one and a
-  half intervals later. No two subscriptions share a schedule, so the
-  publishers of two channels cannot link one subscriber by the timing of its
-  pulls. An open feed also refreshes its own channel.
+  half intervals later. No two subscriptions share a schedule, so their pulls
+  are not synchronised; but every subscription is first pulled within 15 s of
+  sign-in and all of them stop together at sign-out, offline mode or loss of
+  the network, so colluding publishers can match the start and end of a
+  subscriber's sessions. An open feed also refreshes its own channel: at once
+  when it opens, then after about 3.5 s for a few rounds and about 12 s after
+  that, each wait drawn uniformly between half and one and a half of those
+  values (from 3.0.18; fixed intervals before), so the refreshes follow no
+  fixed period, but the publisher can still tell when and for how long the
+  feed is open.
 - The publisher persists each channel's onion key and republishes the same
   onion at startup, on Tor `TransportActiveEvent` and
   `B4OwnRotationCompletedEvent` (for channels not yet bound) and on periodic
-  retries. Every 28 to 35 days it moves the channel to a fresh onion, signs a
+  retries. Every 28 to 36 days it moves the channel to a fresh onion, signs a
   manifest naming it (`manifestSeq` + 1) and keeps the old onion published
   for 30 days, serving that manifest so subscribers follow; then the old
   onion and its key are removed (section 9). The old key moves from the
@@ -47,7 +110,8 @@ Consequences:
   old one, and every onion still retiring, at once. A subscriber remembers
   the last 12 onions a channel used and, once the current one has not
   answered for 15 minutes, tries them in turn on every other pull, so a
-  publisher restored from an older backup is found again (section 9).
+  publisher restored from an older backup is found again (section 9). Only
+  onions that a manifest the subscriber took named are remembered.
 - Pulls are incremental for posts, reactions and comments. A subscriber asks
   for the posts after its chain tip (`sinceSeqNum = -1` when it holds none)
   and names the reaction and comment revisions it holds; a publisher of
@@ -105,18 +169,40 @@ msgType numbers in this protocol.
 | `ZERION_CHANNEL_APPLY_ACK_V1` | `WIRE_TYPE_APPLY_ACK` | pub → sub | Boolean ack of an application |
 | `ZERION_CHANNEL_CHECK_APPROVAL_V1` | `WIRE_TYPE_CHECK_APPROVAL` | sub → pub | Poll whether an application was approved |
 | `ZERION_CHANNEL_APPROVAL_RESPONSE_V1` | `WIRE_TYPE_APPROVAL_RESPONSE` | pub → sub | Approval status + wrapped capability |
+| `ZERION_CHANNEL_CONFIRM_ONION_V1` | `WIRE_TYPE_CONFIRM_ONION` | sub → pub | Ask the owner's device to confirm an onion before a member's first request (from 3.0.18): keys `type`, `v`, `channelId`, `onion` (at most 80 characters) |
+| `ZERION_CHANNEL_ONION_CONFIRMED_V1` | `WIRE_TYPE_ONION_CONFIRMED` | pub → sub | Keys `type`, `channelId`, `onion`, `salt`, `ml` (the channel's ML-DSA-65 key), `sig`; an empty reply when the onion is not the owner's (The one architectural fact, Where a member's requests go) |
 | `ZERION_CHANNEL_DELEGATION_V1` | `WIRE_TYPE_DELEGATION` | (nested) | Editor delegation cert (carried inside manifest) |
 | `ZERION_CHANNEL_SUBMIT_POST_V1` | `WIRE_TYPE_SUBMIT_POST` | editor → pub | An editor's post for the publisher to add to the chain (protocol version 2) |
 | `ZERION_CHANNEL_SUBMIT_POST_ACK_V1` | `WIRE_TYPE_SUBMIT_POST_ACK` | pub → editor | `status` (`OK`, `STALE`, `REFUSED`) and the publisher's chain tip `tip` |
+| `ZERION_CHANNEL_CHANGE_POST_V1` | `WIRE_TYPE_CHANGE_POST` | editor → pub | An editor asks the owner's device to delete, edit or set comments on one of the editor's own posts (protocol version 4, section 6) |
+| `ZERION_CHANNEL_CHANGE_POST_ACK_V1` | `WIRE_TYPE_CHANGE_POST_ACK` | pub → editor | `status` (`OK`, `STALE`, `REFUSED`) |
 | `ZERION_CHANNEL_TOMBSTONE_V1` | `WIRE_TYPE_CHANNEL_TOMBSTONE` | pub → sub | Signed channel-deleted tombstone (returned in place of any response) |
 
 ### Protocol version
 
-Every request a client from 3.0.15 on sends carries `v` (long) = 2
-(`ChannelConstants.PROTOCOL_VERSION`). A request without `v` comes from a
-client up to 3.0.14. A publisher up to 3.0.14 ignores `v` and the other new
-fields, so a 3.0.15 subscriber is served by it as before. A 3.0.15 publisher
-answers a request without `v` in the format such a client understands
+Every request a client from 3.0.18 on sends carries `v` (long) = 5
+(`ChannelConstants.PROTOCOL_VERSION`); clients from 3.0.15 to 3.0.17 send 2,
+and development builds of 3.0.18 made before versions 4 and 5 sent 3 and 4.
+A request without `v` comes from a client up to 3.0.14. Version 2
+(`PROTOCOL_VERSION_DELTAS`) brought item deltas, the covering proof and
+format 2 posts; version 3 (`PROTOCOL_VERSION_AUTHOR_BINDING`) brings the
+owner's countersignature of author bindings: a reply to a request with
+`v >= 3` carries a manifest signature that also covers every
+author binding the reply carries (section 5, Author binding). Version 4
+(`PROTOCOL_VERSION_POST_CHANGES`) brings post edits, comment settings that
+subscribers learn, and editors' change requests: a reply to a request with
+`v >= 4` carries the comment setting `ds` and a manifest signature that also
+covers that setting (sections 3 and 5), and only such a reply carries edit
+marks (section 4, Edits). Version 5 (`PROTOCOL_VERSION_ERASED_EDITS`) brings
+erased posts: only a reply to a request with `v >= 5` carries a post whose
+body an edit erased (section 4, Edits). A reply carries `v` = 5 to a request
+with `v >= 5`, 4 to `v` = 4 and 3 to `v` = 3. A publisher from 3.0.15 to
+3.0.17 treats `v` from 3 on as 2, and a development build of 3.0.18 that
+sent 4 treats 5 as 4. A publisher up
+to 3.0.14 ignores
+`v` and the other new fields, so a newer subscriber is served by it as
+before. A publisher from 3.0.15 on answers a request without `v` in the
+format such a client understands
 (whole reaction and comment sets, and only the leading posts in the legacy
 post format, section 4), and shows its owner that subscribers on an older
 release exist: they cannot read posts made from 3.0.15 on, refuse them
@@ -139,7 +225,7 @@ plumbed end-to-end but unused; iOS may ignore it for now.
 | key | BDF type | notes |
 |---|---|---|
 | `type` | string | `ZERION_CHANNEL_PULL_REQUEST_V1` |
-| `v` | long | protocol version, 2; absent from clients up to 3.0.14 |
+| `v` | long | protocol version: 5 from 3.0.18, 2 from 3.0.15 to 3.0.17; absent from clients up to 3.0.14 |
 | `channelId` | raw | 32 bytes (`CHANNEL_ID_BYTES`) |
 | `sinceSeqNum` | long | `-1` when the subscriber holds no chain tip; otherwise its tip, and the publisher sends posts with `seqNum > sinceSeqNum` |
 | `rc` | raw, optional | 16-byte reactions cursor (8-byte epoch, 8-byte revision) the subscriber holds |
@@ -157,7 +243,8 @@ covering one. A public channel's request carries no proof.
 Pull, comment, reaction, announce, attachment and submit-post requests to a
 private channel carry a proof that the sender holds the current join
 capability; without a valid one the publisher returns an empty reply. Apply
-and check-approval requests carry no proof.
+and check-approval requests carry no proof, nor does an onion
+confirmation request.
 
 - **Covering proof (`hmac2`, protocol version 2).**
   `crypto.mac("org.zerionproject/CHANNEL_REQUEST_PROOF_V2",
@@ -189,7 +276,8 @@ and check-approval requests carry no proof.
 | key | BDF type | notes |
 |---|---|---|
 | `type` | string | `ZERION_CHANNEL_PULL_RESPONSE_V1` |
-| `v` | long, optional | 2 when the reply carries `rs` and `cs` |
+| `v` | long, optional | present when the reply carries `rs` and `cs`: 5 for a request with `v >= 5` (as 4, and the posts may include erased posts, section 4, Edits), 4 for a request with `v` = 4 (the manifest signature then covers the author bindings and `ds`, section 3), 3 for a request with `v` = 3 (it covers the author bindings, section 5), otherwise 2 |
+| `ds` | dictionary, versions 4 and 5 | comment setting: `on` (boolean, the channel's setting) and `x` (list of long, the posts whose setting differs from it, ascending, distinct, at most 4096, `MAX_COMMENT_EXCEPTIONS_PER_CHANNEL`); section 5, Comment settings |
 | `manifest` | dictionary | the signed manifest (section 3) |
 | `posts` | list of dict | each entry is a wire post (section 4) |
 | `contentKeyEnvelope` | raw, optional | AES-GCM-wrapped channel content key (private channels, only when the proof passed) |
@@ -210,9 +298,12 @@ proof passed **and** the channel has a content key
 `ChannelItemSync` keeps, per channel and kind, a random 8-byte epoch, a
 revision counter, the revision and a digest of every held item, and a log of
 the last 512 removals, each channel in a settings namespace of its own
-(`zerion-channels-item-sync:<channelId hex>`; a subscriber's cursors in
-`zerion-channels-sync-cursor:<channelId hex>`), so serving one channel reads
-that channel's state alone. A publisher that finds its database was restored
+(`zerion-channels-item-sync:<channelId hex>`), so serving one channel reads
+that channel's state alone. A subscriber keeps its cursors in memory only,
+so its first pull of a channel after each start takes the whole sets (from
+3.0.18; earlier versions stored them in
+`zerion-channels-sync-cursor:<channelId hex>`, which is deleted the first
+time the channel is pulled). A publisher that finds its database was restored
 from a backup or copied starts a fresh epoch for every hosted channel, so a
 subscriber whose cursor named revisions the copy reissues with other content
 takes the whole sets again instead of silently drifting apart. Every write of the held set is compared with the
@@ -264,7 +355,7 @@ record. Subscribers verify and merge it in
 | `pinnedPostSeq` | long | `-1` = none (`ChannelState.NO_PINNED_POST`) |
 | `requiresApproval` | boolean | private approval-gated channel |
 | `discussionsEnabled` | boolean | **only written when `ChannelConstants.DISCUSSIONS_IN_MANIFEST` is true** |
-| `signature` | raw | hybrid signature over the manifest signed-input |
+| `signature` | raw | hybrid signature over the manifest signed-input; in a version 3 reply over the signed-input followed by the reply's author bindings digest (section 5, Author binding); in a reply of version 4 or 5 over both digests and the comment setting digest (below) |
 
 ### `DISCUSSIONS_IN_MANIFEST` gating
 
@@ -276,16 +367,23 @@ is false:
   signed bytes (see the trailing `if (DISCUSSIONS_IN_MANIFEST)` in both).
 - The decoder reads `manifest.getBoolean("discussionsEnabled", true)` - 
   absent ⇒ defaults to `true`.
-- The subscriber does **not** persist the wire value into its local
-  `ChannelDiscussionStore` (`pullAndApply` only calls
-  `discussionStore.setEnabled` when `DISCUSSIONS_IN_MANIFEST`).
+- The subscriber does **not** persist the manifest value into its local
+  `ChannelDiscussionStore`; it stores the signed `ds` of a version 4 or 5
+  reply instead (section 5, Comment settings).
 
-So today, whether discussions are on is enforced **only at the publisher**:
-the publisher rejects comment RPCs when its local `ChannelDiscussionStore`
-says off (`handleCommentRequest` → `discussionStore.isEnabled`). Flipping
-`DISCUSSIONS_IN_MANIFEST` to true would move the flag into the signed
-manifest. **iOS should treat the manifest `discussionsEnabled` field as
-optional/defaulting-true and rely on the publisher's comment-ack for the
+The manifest itself therefore never carries the setting, and its signed
+bytes are the same for every client, so a subscriber of any release verifies
+it as before. From protocol version 4 the setting reaches subscribers
+outside the manifest dictionary instead: a reply of version 4 or 5 carries
+it in `ds` (section 2) and the owner signs it together with the manifest
+(below).
+The publisher enforces it whatever the subscriber's version: it rejects a
+comment RPC on a post whose comments are off (`handleCommentRequest` →
+`discussionStore.isEnabledFor`). Flipping `DISCUSSIONS_IN_MANIFEST` to true
+would break manifest verification for every subscriber up to 3.0.17 and is
+not planned. **iOS should treat the manifest `discussionsEnabled` field as
+optional/defaulting-true, take the setting from `ds` when it speaks
+version 4 or later, and rely on the publisher's comment-ack for the
 authoritative answer.**
 
 ### Manifest signed-input (byte-exact)
@@ -324,7 +422,27 @@ int64 delegationSeq || signature`, hashed under
 `…/CHANNEL_MANIFEST_DELEGATIONS`. `revokedCanonicalHash`: `int32 count` then
 each `int64 seq`, hashed under `…/CHANNEL_MANIFEST_REVOKED`.
 
-Signed with the publisher's hybrid key under label
+In a reply of version 3 the publisher signs `signed-input || D` instead,
+under label `SIGNING_LABEL_MANIFEST_V3 =
+"org.zerionproject/CHANNEL_MANIFEST_V3"`, where `D` is the author bindings
+digest of the reply (section 5, Author binding), and the subscriber verifies
+it with `verifyBoundManifest`; a version 3 signature does not verify under
+the label below, nor the reverse. In a reply of version 4 or 5 the
+publisher signs `signed-input || D || T` under `SIGNING_LABEL_MANIFEST_V4 =
+"org.zerionproject/CHANNEL_MANIFEST_V4"` (`signPostChangesManifest`,
+`verifyPostChangesManifest`), where `T` is the digest of the reply's comment
+setting `ds`:
+
+```
+T = hash("org.zerionproject/CHANNEL_DISCUSSIONS",
+         on (1) || int32 count || int64 seq ...)
+```
+
+with the post numbers of `x` ascending. A reply of version 4 or 5 without
+`ds`, or
+whose `ds` does not match the signature, fails as a whole, like a reply with
+an altered author binding. Otherwise the manifest is signed with the
+publisher's hybrid key under label
 `SIGNING_LABEL_MANIFEST = "org.zerionproject/CHANNEL_MANIFEST"`
 (`ChannelSignatures.signManifest` → `crypto.hybridSign`). Verified with
 `verifyManifest` → `crypto.verifyHybridSignature`.
@@ -367,7 +485,8 @@ Posts ride inside the pull response `posts` list. `ChannelPullCodec.postToWire`
 | `seqNum` | long | 0-based, at most 2^62 (`MAX_SEQUENCE_NUMBER`; a post above it is unreadable); the publisher assigns one more than its chain tip, never reusing a number (TTL / purge), and after a restore from a backup jumps 2^32 ahead |
 | `prevHash` | raw | 32 bytes; canonical hash of the previous post (all-zero for `seqNum 0`, and for a chain restart, below) |
 | `timestampHourMs` | long | floored to the hour |
-| `body` | string | public: plaintext; private: unpadded standard base64 of the AES-GCM ciphertext including the 16-byte tag (no IV sent) |
+| `body` | string | public: plaintext; private: unpadded standard base64 of the AES-GCM ciphertext including the 16-byte tag (no IV sent); absent from an erased post |
+| `bh` | raw, version 5 replies only | 32 bytes (`POST_BODY_HASH_BYTES`), in place of `body` in a format 2 post whose body an edit erased: the `bodyHash` of its signed-input (Edits, below) |
 | `ttlMs` | long | 0 = no expiry; ephemeral if > 0 |
 | `signature` | raw | hybrid signature over the post signed-input of the post's format |
 | `pv` | long, optional | post format: absent or 1 = legacy, 2 = format 2 |
@@ -382,7 +501,7 @@ published by earlier releases stay in the legacy format and are verified as
 such; format is part of what the signature covers, so a post cannot be moved
 from one format to the other.
 
-At most 8 attachments per post; the publisher accepts up to 50 MiB of plaintext each. `ZERION_CHANNEL_GET_ATTACHMENT_V1` keys: `type`, `v`, `channelId`, `blobHash`, plus `nonce`, `hmac` and `hmac2` in private channels. The reply has `type`, `blobHash` and `blob` (empty if not held). The subscriber reads the reply with a field bound of 16 MiB, the largest reply it accepts. Metadata stripping is a client duty: the Android app re-encodes images and remuxes video and other ISO media before publishing (from 3.0.15); other file types are sent unchanged.
+At most 8 attachments per post; the publisher accepts up to 50 MiB of plaintext each. `ZERION_CHANNEL_GET_ATTACHMENT_V1` keys: `type`, `v`, `channelId`, `blobHash`, plus `nonce`, `hmac` and `hmac2` in private channels. The reply has `type`, `blobHash` and `blob` (empty if not held). The subscriber reads the reply with a field bound of 16 MiB, the largest reply it accepts. Metadata stripping is a client duty: the Android app re-encodes images and remuxes video and other ISO media before publishing (from 3.0.15). From 3.0.18 nothing is published unchanged: a remuxed MP4 has the creation and modification times and the language of its movie, track and media headers and the handler names of its tracks zeroed in place; a remuxed WebM has the muxing and writing application, title, date and file name fields of its segment information, its track names and the vendor string and comments of a Vorbis setup zeroed in place, and is refused if it carries tags, attachments or chapters; sound is labelled with the type its content shows, not the type the picker reports; a PDF is redrawn page by page as JPEG images in an isolated process into a new PDF without a document information dictionary, identifiers or XMP; plain text is kept only when it holds no NUL byte; every other file type is refused with a message that says why.
 
 ### Post signed-input (byte-exact)
 
@@ -439,7 +558,10 @@ delegation checks pass (section 6).
   `hash("org.zerionproject/CHANNEL_POST_CHAIN", channelId || seqNum ||
   prevHash || timestampHourMs || UTF-8 body || attachmentsHash || ttlMs ||
   signature)`. Either way the chain commits to the exact signed bytes and
-  the signature.
+  the signature. A format 2 post's signature and canonical hash depend on
+  its body only through `bodyHash`, so a post whose body an edit erased
+  keeps both (Edits, below); a legacy post's canonical hash covers the body
+  itself, which is one reason a legacy post cannot be edited.
 - Every device keeps a **chain tip** per channel: the sequence number of
   the last post it accepted or, as publisher, issued, and that post's
   canonical hash. The tip stays when the post itself goes (expiry,
@@ -452,8 +574,9 @@ delegation checks pass (section 6).
   post) or any other hash (a publisher restored from a backup whose chain
   no longer ends where this device's does). Every one of these posts is
   verified under its signature, which covers the sequence number and the
-  link, and only the publisher serves posts, so a gap or a new link is the
-  publisher's statement and nothing a third party can cause; refusing a new
+  link, and a subscriber takes posts only from the owner's onion (Who
+  answers a pull, above), so a gap or a new link is the publisher's
+  statement and nothing a third party can cause; refusing a new
   link would add no integrity and only stop the channel for good. A device
   that holds nothing yet accepts its first post at any sequence number
   (sequence number 0 must name the zero hash). A sequence number at or
@@ -498,6 +621,12 @@ the merged state and the tip after the previous accepted post:
   `DELEGATION_OUT_OF_WINDOW`, `BODY_TOO_LARGE`): **breaks** the loop; the
   rest of the batch is discarded.
 
+An erased post that passes these checks is then held to the rule in Edits
+(below): in a complete reply (fewer than 100 posts, none of which broke the
+loop) it is refused, with everything after it, unless a valid mark naming
+it follows; in any other reply it is stored, but not shown, counted or
+announced until such a mark arrives or it is fetched again with its body.
+
 `PULL_BATCH_MAX_POSTS = 100`. Withholding is a subscriber-side view
 decision; nothing about it appears on the wire, and the publisher serves the
 original post bytes unchanged.
@@ -508,8 +637,45 @@ Each post is stored as its own value (settings namespace
 `zerion-channels-post:<channelId hex>:<seqNum>`), next to one small record
 per channel (`zerion-channels-post-meta:<channelId hex>`) holding the ranges
 held, the chain tip, the count and bytes held, the highest post read, the
-withheld posts, the earliest expiry and the posts given up. Appending a post
-writes that post and the record in one transaction. Releases up to 3.0.14
+withheld posts, the erased posts still waiting for their edit mark (at most
+200), the runs of posts the device cannot read (at most 64 runs of
+consecutive sequence numbers, below), the posts at or below the highest
+post read that became visible after it and count as unread again (at most
+64 runs), the earliest expiry and the posts given up. Appending a post
+writes that post and the record in one transaction. A post whose body an
+edit erased is
+stored with an empty body, its body hash (`bh`) and, in a private channel,
+the hash of the content key its body could be read under (Edits, below).
+
+**Unread posts.** The unread count is the number of held posts above the
+highest post read that are not withheld, not erased posts waiting for their
+mark and not posts the device cannot read, plus the posts at or below it
+that became visible after it (until the channel is read again). Opening the
+channel moves the highest post read to the newest held post and clears
+those. A post is announced (`ChannelPostReceivedEvent`) once, when it
+becomes visible: on arrival, or later when its mark arrives, it is fetched
+again with its body or the device gains the key that opens it.
+
+**Posts the device cannot read.** In a private channel, a post that no
+content key the device holds opens (made under a key from before a renewed
+link, or arriving in a reply that brought no key) is stored, so the chain
+moves on, but not shown, counted or announced (from 3.0.18). A subscriber's
+content key changes only when a pull reply's `contentKeyEnvelope` gives it
+a key it did not hold (`ChannelPullProtocol.processSubscriberResponse`,
+stored by `pullOnce`): normally the first reply after it joined or after its
+application was approved; a member cut off by a renewed link gets no new
+key, and leaving and joining again with the new link starts from an empty
+channel. Each
+time the key changes, the device reads the posts it holds but could not
+read (`openNewlyReadable`): a mark among them is stored hidden and applied,
+and every other post that now opens is counted and announced once, also
+when the channel was read past it. Such posts are kept in at
+most 64 runs of consecutive sequence numbers, so a run of thousands of
+posts under an old key costs one entry; a post that would start a 65th run
+is passed over like a post above 1 MiB (the chain moves past it and it is
+counted among the posts given up).
+
+Releases up to 3.0.14
 kept all posts of a channel as one list (`zerion-channels-posts`); the first
 access to such a channel reads that one value, decodes it post by post and
 moves the posts in chunks of at most 64 posts or about 1 MiB, each chunk in
@@ -526,9 +692,16 @@ the database) that tells a restored or copied database apart (Hash chain).
 
 A subscriber keeps at most 10,000 posts and 32 MiB of posts per channel as a
 **rolling window**: the oldest held posts give way to new ones, except the
-pinned post, and a single post above 1 MiB is passed over (the chain moves
-past it and it is not kept). The feed says when older posts were removed
-this way. A full channel therefore keeps receiving new posts.
+pinned post and one edit mark, the newest valid mark naming the pinned post
+within its edit window, which gives the pinned post its text (section 4,
+Edits); every other mark naming the pinned post, an earlier one or one made
+outside the window, gives way like any post, so the ceilings hold whatever
+the owner publishes. A single post above 1 MiB is passed over (the chain
+moves past it and it is not kept). The feed says when older posts were
+removed this way. A full channel therefore keeps receiving new posts. At
+most 200 erased posts wait for their mark at once
+(`ChannelPostCeilings.MAX_WAITING_ERASED_POSTS`); when another arrives, the
+oldest waiting one is given up.
 
 ### TTL / purge
 
@@ -554,15 +727,236 @@ A post delete is itself a published post whose body is a tombstone marker
 channel the marker is encrypted like any body. Only a post **signed by the
 publisher** is a marker: an editor's post is a post whatever its body says,
 and the publisher refuses a submitted post whose body has the marker's shape
-(section 6), so no editor can delete anything. The publisher then deletes
-the target post itself, its attachment blobs, and its reactions and
-comments, and stops serving them; a subscriber of this release that receives
-the marker does the same with its copy. Subscribers that had not fetched the
-target yet bridge the gap. Subscribers on releases up to 3.0.14 keep a copy
-they already hold and show it with a "deleted" placeholder; one that had not
-fetched the target yet stops at the gap, as it stops at the first format 2
-post anyway (the marker itself is one), until it updates. This is distinct
-from the channel-level tombstone (section 8).
+or the shape of an edit mark (section 6), so no editor can make a marker.
+An editor deletes one of its own posts by asking the owner's device
+(`WIRE_TYPE_CHANGE_POST`, section 6), which checks the request and then
+publishes the marker under the channel's key exactly as for the owner's own
+deletes, so subscribers of every release from 3.0.15 apply it. The publisher
+then deletes the target post itself, its attachment blobs, every edit mark
+naming it within its edit window, whatever the post's format (Edits,
+below), and its reactions and comments, and stops serving them; a
+subscriber of this release that receives the marker does the same with its
+copy. The owner's device refuses to delete a marker on its own, so an
+edited post never loses the mark that gives its text. A subscriber from 3.0.18 stores a received marker, deletion or edit,
+as a hidden post: it raises no notification and counts as no unread post
+(up to 3.0.17 a deletion marker did both). Subscribers that had not fetched
+the target yet bridge the gap. Subscribers on releases up to 3.0.14 keep a
+copy they already hold and show it with a "deleted" placeholder; one that
+had not fetched the target yet stops at the gap, as it stops at the first
+format 2 post anyway (the marker itself is one), until it updates. This is
+distinct from the channel-level tombstone (section 8).
+
+### Edits
+
+From protocol version 4. An edit is a published post whose body is an edit
+mark `ZRN_EDIT:<channelIdHex>:<seqNum>:<text>` (`EDIT_PREFIX`), signed by the
+publisher like a deletion marker and encrypted like any body in a private
+channel. As with deletions, only a post signed by the channel's key is a
+mark. A device shows the text of the newest mark naming a post in place of
+the post's own body, keeps the post's attachments and marks it edited; the
+marks themselves are never shown. A mark counts only when it names an
+earlier post the device holds that is neither deleted nor itself a marker,
+and the mark's hour is at most 24 hours after the post's
+(`POST_EDIT_WINDOW_MS`, the window of edits in one-to-one chats; with
+timestamps floored to the hour the owner can edit for 24 to 25 hours after
+posting). A withheld post (section 4, Skip-known rule) stays a placeholder:
+the text of a mark naming it is not shown, but the mark erases its body like
+any other (below). Only a format 2 post can be edited, and no device of
+this release makes a mark for a post in the legacy format. Development
+builds of 3.0.18 made before protocol version 5 could; such a mark still
+gives the legacy post its text and replaces an earlier mark, but a legacy
+post's body is never erased, since its canonical hash covers the body
+itself (Hash chain, above), so its original text stays in the stored
+record. The window keeps what readers read and discussed from being
+rewritten long afterwards; deleting stays possible at any time. The owner
+edits any post; an editor edits only its own posts, through a change request
+(section 6). The mark of an ephemeral post expires when the post does (its
+TTL ends where the post's ends). When a mark is published or taken in, the
+device deletes the earlier marks of the same post, so the publisher serves,
+and a new subscriber fetches, only the newest one, and deleting a post
+deletes its marks.
+
+**The original is erased (from 3.0.18, protocol version 5).** There is no
+edit history, so no device keeps the earlier version of an edited post.
+When a mark is published, or taken in by a subscriber, and names an earlier
+format 2 post the device holds that is not itself a mark, within the window,
+the device first deletes the earlier marks of that post, in a transaction
+of their own (a deletion, which requests the checkpoint below), and then
+erases the post's body, also when the post is withheld: it rewrites the
+stored post, in one transaction with the channel's post record, with an
+empty body and the post's body hash `bh` in its place (the 32-byte
+`bodyHash` of its format 2 signed-input, `hash("…/CHANNEL_POST_BODY_V2",
+salt, UTF-8 wireBody)`, taken over the ciphertext in a private channel)
+and, in a private channel, the hash of the content key it could read the
+body under (Private channels and renewed links, below). It then requests
+the truncating WAL checkpoint that follows every committed deletion, so the
+space SQLCipher's `secure_delete` zeroed when the stored value was replaced
+is written over the old pages in the database file and the log is emptied.
+A second edit therefore leaves neither the original nor the first edit's
+text. What stays of the post is what verification, ordering and display
+need: its sequence number, link, hour, TTL, format, salt, signature, the
+signer keys of an editor's post, its attachments (an edit changes only the
+text) and the body hash. The signature and canonical hash of a format 2 post cover the body
+only through `bodyHash` (Hash chain, above), so the erased post still
+verifies under its signature, keeps its canonical hash, and the chain
+through it is unchanged. A private channel encrypts every body under the
+channel-wide content key, which every member holds, so there is no per-post
+key whose deletion would erase a body cryptographically; the ciphertext
+itself is erased. An erasure cut short (the process killed after the mark
+was stored and before the earlier marks were deleted or the post was
+rewritten) is completed when the feed next reads the mark, if the mark is
+among the newest posts the feed reads (`getRecentPosts` reads the posts it
+returns and the 16 before them), which also deletes an earlier mark it
+finds left behind; a mark further back is completed by the weekly full scan
+of the storage task (`purgeExpiredPosts`), which applies a mark again only
+when its post still holds a body, still waits for its mark or has another
+mark, so the scan reads the channel once however many marks it holds. The
+erased text is in no other record either: a
+notification of new posts shows a count, not text, the channel list and the
+feed show what `getRecentPosts` returns and reload on every post and state
+event, and a backup is made with `VACUUM INTO`, which copies only live
+rows.
+
+A request with `v >= 5` is served the stored posts as they are, so an
+erased post travels with `bh` and without `body`, followed later in the
+chain by its newest mark; in a private channel the publisher passes over an
+erased post that cannot be read under the current content key (Private
+channels and renewed links, below). A subscriber accepts an erased post
+only when it is in format 2, its `bh` has 32 bytes, it verifies under its
+signature over that hash and links like any post. What happens next
+depends on the reply:
+
+- A valid mark naming it (signed by the channel's key, within the window)
+  follows in the same reply: the post is stored and shown with the mark's
+  text. A later post signed by the channel's key that the device cannot
+  decrypt (made under a content key it does not hold) counts as such a
+  mark, since the device can read neither; the erased post is then stored
+  and waits, unseen, until the device can read that post (Storage, Posts
+  the device cannot read).
+- The reply is not complete: it has the full 100 posts
+  (`PULL_BATCH_MAX_POSTS`), whatever became of its last posts (an editor's
+  posts the device cannot check yet are held back, Skip-known rule, above),
+  or one of its posts failed its checks, so the rest of it was discarded.
+  The mark may be in a later reply, so the erased post is stored and waits
+  for it: it is not shown, counts as no unread post and raises no
+  notification, and a comment on it raises none either. When a valid mark
+  naming it is taken in, the post is shown, counted as unread (also when
+  the channel was read past it while it waited) and announced once, like a
+  post that has just arrived; a post withheld meanwhile (its editor was
+  revoked) is neither counted nor announced, and one the device cannot read
+  joins the posts it cannot read. The subscriber moves past a waiting post
+  like past any other, so a full reply that ends in a post it cannot check
+  yet, or a post that fails between an erased post and its mark, never
+  holds it at the erased post.
+- Otherwise the reply is complete and holds no mark for it, which an honest
+  publisher never sends: it keeps the newest mark as long as the post (the
+  mark's TTL ends where the post's ends, and the owner's device refuses to
+  delete a marker on its own). The erased post and every post after it in
+  the reply are refused, and the next pull starts again before it.
+
+A post still waiting once a complete reply has brought the subscriber up to
+the owner's chain tip has no mark coming. The subscriber then asks the same
+onion for the posts from that post on (`repairWaiting`, at most 4 requests
+after a pull) and compares each waiting post with the post the reply
+carries at its number. A post with a body whose canonical hash equals that
+of the stored erased post (so its body hashes to the stored `bh`, which its
+signature covers) and that stays within the 1 MiB a stored post may take is
+stored with that body and shown, counted and announced once like a post
+that has just arrived; a post the reply carries erased again or above that
+size, or does not carry although the reply covers its number, is given up
+and deleted, since it can never be shown. A waiting post followed by a post
+the device cannot read is not asked for, since that post may be its mark.
+So a post whose body went missing (only the owner's device answers a pull,
+Who answers a pull, above) is never hidden for good: it comes back with its
+body or is deleted.
+
+An erased post is shown only with the text of a valid mark naming it and is
+otherwise not shown at all, never as an empty post. A reply of version 4 or
+lower that carries `bh`, and an editor's submitted post that carries it,
+fail to decode. When a subscriber's storage window gives way (Storage,
+above), it keeps the newest valid mark of the pinned post and no other.
+
+**Private channels and renewed links.** A device shows an erased post of a
+private channel only while it holds the content key under which it could
+read the original. The device that erases a body notes in the stored post
+the hash of the content key that opened it (an empty value when the body
+showed as plain text, nothing when the device could not read it), and a
+subscriber that receives an erased post notes the hash of the content key
+that the reply's signed manifest names (`contentKeyHash`, the key the owner
+served it under), also when that reply brought it no key yet, so the post
+shows once the device gains that key; this local field is never sent. The
+owner's device sends an erased post only when the noted key is the
+channel's current content key (or the body was plain text) and passes over
+the others, as it passes over erased posts for older requests (below). A
+post that a development build of 3.0.18 erased before this rule existed
+noted no key: the owner's device, which keeps every content key the channel
+had, shows it, and sends it only while the channel never renewed its link;
+a subscriber keeps it hidden. Every member that can pull holds
+only the current key, so a post made under a key in force before the owner
+renewed the link stays hidden from members who joined after the renewal,
+also once it is edited, as it did before it was erased: a member that
+already held its ciphertext erases it and keeps it hidden, and one that had
+not fetched it sees a gap. An edit mark thus never makes visible a post the
+device could not read, nor attachments whose keys it cannot unwrap. An
+erased post that a device erased while it could not read it, or received
+under a key it never gains, is never counted or announced, also when its
+mark is taken in again (a second edit or the weekly scan).
+
+**Older subscribers.** A subscriber whose request has `v` below 5 is never
+sent an erased post: the publisher passes over erased posts when it fills
+such a reply (`withoutChanges`), so a subscriber that had not fetched a post
+before it was edited sees a gap in the sequence numbers, which it accepts
+(Hash chain, above), and never sees that post: its original text is gone and
+such a subscriber cannot read the erased form. A request with `v` = 4
+(3.0.18 development builds made before version 5) is still sent the marks.
+A request with `v` below 4 (3.0.15 to 3.0.17, and 3.0.18 development builds
+sending 3) is sent no mark either: the publisher passes over marks as well,
+also across pages made only of marks and erased posts. Releases 3.0.15 to
+3.0.17 treat every channel-signed body that starts with
+`ZRN_TOMBSTONE:<channelIdHex>:<number>:` as a deletion and remove the post,
+and show every other channel-signed body as text, so a mark sent to them
+would either delete the post or appear as raw text. Clients up to 3.0.14
+stop at the first format 2 post anyway.
+
+**Limits.** The erasure reaches the devices from 3.0.18 on that hold the
+post when the mark reaches them: the owner's device, editors and every
+subscriber (a subscriber that opted in to mirroring stores posts as any
+subscriber does). A subscriber on 3.0.17 or earlier that fetched the post
+before it was edited keeps the original text, since no edit ever reaches
+it, and so does a subscriber that updates after it passed the mark: its
+chain tip is already past the mark and the publisher does not send it again.
+Nothing erases copies made before the edit reached a device (a backup
+exported earlier, screenshots, another app the text was shared with), and
+the erasure is logical: what flash wear levelling or a copy-on-write file
+system keeps below the database file is out of its reach, and no physical
+overwrite of the flash is claimed. A legacy-format post keeps its original
+text (Edits, above).
+
+**The body hash can be tested against guesses.** The erased post keeps `bh`
+together with the salt it was taken with, and both reach every device the
+post reaches: anyone who can pull a public channel, and in a private
+channel every member, who holds the content key the body was encrypted
+under (the publisher sends an erased post of a private channel only to
+members who hold that key, above). Whoever holds them can test a guess of
+the original offline, as often as they like and without the publisher
+noticing: in a public channel by hashing the candidate text with the salt,
+in a private channel by encrypting the candidate under the content key with
+the nonce that the sequence number and the salt give, which makes the
+ciphertext deterministic, and hashing that. The text the mark shows is a
+strong seed for such guesses. Most edits are small (a typo, a digit, a
+date, an amount, a name, a missing word), so the original is usually a
+small variation of the text on screen: trying every change of one or two
+characters, or of one word from a dictionary, in a text of a few hundred
+characters takes millions of hashes, which an ordinary computer does in
+seconds, and a short original, or one drawn from a small set (an amount, a
+time, yes or no), falls the same way. The erasure keeps the original from
+being read back from a stored record; it does not keep it secret from
+whoever can guess it, so a small correction must be assumed recoverable by
+every reader who receives the erased post. A text that must not be
+recoverable should be deleted (a deleted post keeps no hash, Deletes,
+above) rather than edited. Closing this needs a different format, for
+example a body hash keyed by a per-post secret that is erased with the
+body; this release does not change the format.
 
 ## 5. Comments and reactions
 
@@ -573,8 +967,11 @@ version 2 requests, section 2). Both are signed with a hybrid key (Ed25519 +
 ML-DSA-65), not the publisher's channel key. ML-DSA is mandatory for these
 signatures: `ChannelSignatures.signUser` throws if the ML-DSA private key is
 missing, and `verifyUser` returns false if the signer's ML-DSA public key is
-absent. The ML-DSA public key is taken from the same message and is not
-pinned, so authorship rests on the Ed25519 signature.
+absent. From 3.0.18 every device binds each author's Ed25519 key in a
+channel to one ML-DSA-65 key and refuses an item whose ML-DSA-65 key differs
+(Author binding, below); up to 3.0.17 the ML-DSA public key was taken from
+the same message without any binding, so authorship rested on the Ed25519
+signature.
 
 **Which key signs.** From 3.0.15 a member signs its reactions, comments,
 announcements, applications and approval checks in a channel with a **member
@@ -630,9 +1027,59 @@ to override a later choice, not even one from the same hour.
 (`zerion-channels-bans`, the newest 4096 keys). Banning removes the key's
 reactions and comments, which subscribers drop on their next pull, takes
 away its trusted mark, revokes any editor certificate naming it and refuses
-its future reactions, comments, announcements, applications and submitted
-posts. The owner bans from the subscriber list or by long-pressing a
-comment, and marks subscribers as trusted from the subscriber list.
+its future reactions, comments, announcements, applications, submitted
+posts and change requests. A ban cannot stop anyone from reading: pulls are
+anonymous, so the publisher cannot tell a banned key's pulls apart. The
+owner bans from the subscriber list or by long-pressing a comment, and marks
+subscribers as trusted from the subscriber list. From 3.0.18 the owner can
+lift a ban (`unbanSubscriber`, from the subscriber list, which also lists
+banned keys that never announced a name): the key leaves the list and its
+new items are taken again, but what the ban removed is not restored, the
+trusted mark is not given back and a revoked editor certificate stays
+revoked. To cut someone off from a private channel the owner removes
+everyone from it with the ban's "Remove from channel" option, which rotates
+the invite link: a new capability, content key and onion, so every
+subscriber needs a new link (section 6); there are no per-reader keys.
+
+### Author binding (protocol version 3)
+
+From 3.0.18; the reference, with the analysis, test vectors and limits, is
+[CHANNEL-AUTHOR-PQ-BINDING.md](../protocol/CHANNEL-AUTHOR-PQ-BINDING.md).
+`K(M) = hash("org.zerionproject/CHANNEL_AUTHOR_KEY", M)`. The binding of an
+author key `E` is, in order: `K` of the channel's ML-DSA key if `E` is the
+channel key; the pin stored for `E`; `K` of the ML-DSA key every held
+delegation certificate naming `E` names (certificates that disagree bind
+`E` to nothing); otherwise none. Every comment, reaction, announcement,
+application and approval check the publisher receives, every editor
+certificate it issues, and every comment and reaction a subscriber takes
+from a reply must carry an `ml` whose `K` equals the binding of its `ed`;
+the check runs before the signature is verified and does not depend on the
+peer's protocol version. When an item of a new `E` verifies and is taken
+in, `K(ml)` becomes the pin of `E`, written before the item; a pin is never
+replaced (no rotation). The first time a device checks a binding in a
+channel it pins the keys of the records it already holds (certificates;
+publisher: applications, announced subscribers; comments; reactions; first
+record wins). Pins live in `zerion-channels-author-pins:<channelId hex>`
+(row `hex(E)` = `counter:hex(K)`, rows `n`, `s`, `v`), at most 4096 per
+channel beyond the authors of held records; the oldest pins of authors the
+device holds nothing of are dropped first.
+
+A reply of version 3 is signed over the bindings it carries:
+
+```
+D = hash("org.zerionproject/CHANNEL_AUTHOR_BINDINGS",
+         int32 count || (ed (32) || K(ml) (32)) ...)
+```
+
+over the distinct pairs of all its comment and reaction entries, sorted as
+unsigned bytes; the manifest signature is then over `signed-input || D`
+under `SIGNING_LABEL_MANIFEST_V3` (section 3). Such a reply carries only
+entries with a 32-byte `ed` and a 1952-byte `ml`, and the decoder drops any
+other entry, so both sides hash the same entries. A subscriber that has
+taken in a version 3 reply of a channel (row `v`) takes comments and
+reactions of that channel only from version 3 replies afterwards; a reply
+of an earlier version still updates the manifest and the posts and leaves
+the item cursors where they were.
 
 ### Comment submit - `WIRE_TYPE_POST_COMMENT`
 
@@ -653,10 +1100,12 @@ Label `SIGNING_LABEL_COMMENT = "org.zerionproject/CHANNEL_COMMENT"`.
 
 Publisher acceptance (`handleCommentRequest`), each check returns `ok=false`
 on failure: a valid capability proof in private channels; channelId match;
-discussions enabled; body 1 to 1024 chars and name at most 64 chars; parent
-post held and not withheld; timestamp fresh; the write allowance of the
-author's class not spent (checked before the signature); valid author
-signature; author not banned; no held comment with the same `commentId` (an
+`ed` of 32, `ml` of 1952 and `sig` of 3373 bytes; comments on for the parent
+post (Comment settings, below); body
+1 to 1024 chars and name at most 64 chars; parent post held and not
+withheld; timestamp fresh; the write allowance of the author's class not
+spent (checked before the signature); `ml` matching the author's binding
+(Author binding, above); valid author signature; author not banned; no held comment with the same `commentId` (an
 identical resubmission returns `ok=true` without change); room under the
 retention rule above. Subscribers never learn the ban list.
 
@@ -666,8 +1115,9 @@ only if identical. Stored sets are kept within the same ceilings.
 In the **comments** list of a pull response the keys are: `seq`, `id`,
 `body`, `name`, `ed`, `ml`, `ts`, `sig` (sig omitted if empty). On receipt
 (`applyIncomingComments`) the subscriber applies the reply as a whole set or
-as a delta (section 2): it keeps verified items on held, non-withheld posts,
-fits them to the ceilings and stores the result in one write. It fires
+as a delta (section 2): it keeps verified items on held, non-withheld posts
+whose keys match their authors' bindings, fits them to the ceilings and
+stores the result in one write. It fires
 `ChannelCommentReceivedEvent` for new comments.
 
 ### Reaction submit - `WIRE_TYPE_POST_REACTION`
@@ -685,7 +1135,8 @@ channelId (32) || int64 postSeqNum || int32 emojiLen || UTF-8 emoji
 Label `SIGNING_LABEL_REACTION = "org.zerionproject/CHANNEL_REACTION"`.
 `MAX_REACTION_EMOJI_BYTES = 32`; the ceilings and the retention rule are
 those of comments (section 5). The target post must be held and not
-withheld.
+withheld, the keys and signature must have the sizes of a comment's and
+`ml` must match the signer's binding.
 
 **Reaction identical-skip** (`ChannelReactionPolicy.withAdmitted`): a
 reaction is keyed by `(postSeqNum, signerEd25519)` - one reaction per signer
@@ -710,12 +1161,35 @@ nameLen || UTF-8 name || int64 ts`, label `SIGNING_LABEL_ANNOUNCE`.
 `MAX_DISPLAY_NAME_BYTES = 64`, `MAX_ANNOUNCED_SUBSCRIBERS = 4096`. There is
 no automatic announce.
 
-### Discussions can be disabled per channel by the owner
+### Comment settings
 
-`setDiscussionsEnabled(channelId, enabled)` is publisher-only. It writes the
-local `ChannelDiscussionStore`. With discussions off the publisher returns
-`ok=false` to every comment RPC. (See the `DISCUSSIONS_IN_MANIFEST` note in
-section 3 for where the flag is - and is not - signed.)
+The owner sets whether comments are on for the whole channel
+(`setDiscussionsEnabled`) and for single posts
+(`setPostCommentsEnabled`); an editor sets it for its own posts through a
+change request (section 6). The setting is the channel's value plus a list
+of posts whose setting differs from it (`ChannelDiscussionStore`, rows
+`zerion-channels-discussions` and `zerion-channels-discussion-exceptions`,
+at most 4096 posts; a further post is refused); a post's comments are on
+when the channel's value is on and the post is not listed, or the channel's
+value is off and the post is listed. Changing the channel's value clears the
+list, so it applies to every post until the owner sets single posts again;
+the list keeps only posts the device still shows. The publisher returns
+`ok=false` to a comment on a post whose comments are off, whatever the
+sender's version.
+
+From protocol version 4 every reply carries the setting in `ds` (section 2)
+under the owner's signature (section 3, `T`): `on` is the channel's value and
+`x` the list. A subscriber stores the setting of each reply of version 4
+or 5 it takes, hides the comment entry of a post whose comments are off, shows why,
+and refuses to send a comment there; a reply of an earlier version (an owner
+on an earlier release) clears what it stored, so the entry is shown again
+and the owner's acknowledgement decides. The setting is signed rather than
+merely served over the onion because everything a subscriber takes in is
+verified under the channel's key: a remembered old onion, or a server
+restored from an older backup, can then never make a subscriber hide or show
+comments the owner did not choose. Subscribers up to 3.0.17 never learn the
+setting: they show the comment entry everywhere and are told that a comment
+on a post with comments off could not be sent.
 
 ## 6. Public vs private channels; editor delegations
 
@@ -740,13 +1214,21 @@ capability and the content key and moves the channel to a fresh onion,
 removing the old one at once: every existing subscriber is cut off until it
 gets a new link, holders of the old link can no longer even reach the
 device, and posts from before the rotation stay under the old key, which is
-never sent to new holders; in the current implementation the publisher's own
-view can no longer decrypt them (known limitation).
+never sent to new holders. The owner's device keeps every earlier content
+key (`ChannelStore.getRetiredContentKeys`) and still reads and serves those
+posts; a member that joins with the new link stores them as posts it cannot
+read (section 4, Storage), which are never counted or announced.
 
 ### Private channels - request → owner-approve
 
 When `requiresApproval` is set, the capability is **not** in the link
-(`p=1` flag instead). The join handshake (all over the publisher onion):
+(`p=1` flag instead). The join handshake (all over the publisher onion;
+from 3.0.18 an applicant first has the onion confirmed by the owner's
+device and sends steps 1 and 3 only to the onion the confirmation names,
+The one architectural fact, Where a member's requests go; an applicant
+from 3.0.18 therefore cannot apply to an owner up to 3.0.17, and one whose
+application is still pending learns no decision from such an owner, until
+the owner updates):
 
 1. **Apply** - `WIRE_TYPE_APPLY_TO_JOIN`. Keys: `type`, `v`, `channelId`,
    `name`, `ts`, `ed`, `ml` (the applicant's member key of the channel,
@@ -774,8 +1256,14 @@ When `requiresApproval` is set, the capability is **not** in the link
    int64 ts`, label `SIGNING_LABEL_CHECK_APPROVAL`. Throttled to once per
    30s per channel (`pollApprovalStatusIfPending`).
 4. **Approval response** - `WIRE_TYPE_APPROVAL_RESPONSE`. Keys: `type`,
-   `status` (`"PENDING"` / `"APPROVED"` / `"DENIED"`), `kemCt` (raw,
-   optional), `envelope` (raw, optional). On `"APPROVED"` the applicant
+   `status` (`"PENDING"` / `"APPROVED"` / `"DENIED"` / `"UNKNOWN"`),
+   `kemCt` (raw, optional), `envelope` (raw, optional). `"UNKNOWN"` means
+   the publisher holds no application for that key (it was lost, or the
+   channel was set up again); it is sent only when the poll carries
+   `v >= PROTOCOL_VERSION_POST_CHANGES` (4), and older applicants get
+   `"DENIED"` as before. The applicant then forgets its application, so it
+   reads as not applied and can apply again. A publisher that cannot read
+   its records answers `"PENDING"`, never `"DENIED"`. On `"APPROVED"` the applicant
    decapsulates `kemCt` with its ephemeral key pair
    (`crypto.hybridDecapsulate(ownEphKeyPair, kemCt)`), which yields the same
    ML-KEM-768 shared secret the publisher wrapped with, derives the same wrap
@@ -810,7 +1298,44 @@ history from subscribers' storage windows in less than weeks or grow the
 owner's storage without bound. Subscribers receive the
 post in their next pull and verify it as below. A publisher up to 3.0.14
 does not know the type and answers with an empty reply, which the editor
-reports as a refusal. Each `ChannelDelegationCert`
+reports as a refusal.
+
+**Change requests (protocol version 4).** An editor deletes, edits or sets
+comments on one of its own posts with `WIRE_TYPE_CHANGE_POST` (keys `type`,
+`v`, `channelId`, `seq` = the target post, `op` = `D` delete, `E` edit or
+`C` comments, `base` (long), `on` (boolean), `body` (string), `ts`, `ed`,
+`ml`, `sig`, plus `nonce`, `hmac`, `hmac2` in private channels), signed with
+its member key over `postChangeSignedInput` = `channelId || int64 seq ||
+int32 opLen || UTF-8 op || int64 base || on (1) || int32 bodyLen || UTF-8
+body || int64 ts`, label `SIGNING_LABEL_POST_CHANGE =
+"org.zerionproject/CHANNEL_POST_CHANGE"`. For an edit `body` is the new text
+and `base` the sequence number of the newest edit mark of the post the
+editor holds, or the post's own number when it has none; for `C`, `on` is the
+wanted setting; otherwise `body` is empty, `base` is -1 and `on` false. The
+owner's device (`handleChangePost`) answers `REFUSED` unless the request
+names this channel, has the key and signature sizes of a comment, carries
+this hour or the one before, comes from a key that is not banned and holds
+an active, unrevoked certificate covering this hour whose ML-DSA-65 key is
+`ml`, the signature verifies, the target is held, shown, not deleted and
+signed by that same editor key, an edit is within the window and fits a
+post, and the editor's write allowance and its 30 an hour and 150 a day
+(shared with its posts) are not spent; it answers `STALE` when an edit's
+`base` is not the newest version it holds, and `OK` after it has applied the
+change. It applies a change as if the owner made it: a deletion or an edit
+is published as a marker signed by the channel's key (section 4), so
+subscribers judge it like any owner marker and those from 3.0.15 apply
+deletions; a setting change goes into the comment setting. The editor pulls
+after `OK` and after `STALE`, and tries an edit up to 3 times. Subscribers
+therefore cannot tell an editor's own change from the owner's; the rule that
+an editor changes only its own posts is the owner's device's, which is also
+the only device that could sign any change. The request travels inside the
+Tor circuit to the owner's onion, so only the owner's device sees it; a
+replayed edit is `STALE` once the post has a newer version, a replayed
+deletion changes nothing, and a replayed setting change is refused once the
+hour after the request's hour has passed. A publisher up to 3.0.17 does not know the
+type and answers with an empty reply, which the editor reports as a refusal.
+
+Each `ChannelDelegationCert`
 (`certToWire`) has keys: `type`, `channelId`, `delegateeEd25519`,
 `delegateeMlDsa`, `validFromHourMs`, `validUntilHourMs` (0 = unbounded),
 `delegationSeq`, `signature`. Certs are carried inside the manifest
@@ -846,8 +1371,10 @@ certificate, has passed; such a post is kept withheld (section 4,
 skip-known rule). When a merged manifest adds a sequence number to
 `revokedDelegationSeqs`, the subscriber judges its stored delegate-signed
 posts again under the merged state and withholds those now reported as
-revoked; the unread count is recomputed over posts that are neither read
-nor withheld. The publisher applies the same step to its own copy when it
+revoked; the unread count is recomputed (section 4, Storage, Unread
+posts), and a withheld post is never counted or announced, also when an
+edit mark naming it arrives after it was withheld. The publisher applies
+the same step to its own copy when it
 revokes. A withheld post is never shown again. Withheld posts are stored
 with an extra local key `withheld` (boolean, absent means false) that is
 never sent on the wire.
@@ -878,8 +1405,10 @@ treated as public.
   `store.putPublisherPrivKey`). Members sign comments, reactions, announces,
   applications, approval checks and editor posts with the member key of the
   channel (section 5). User signatures **require** an ML-DSA component
-  (classical-only is refused), but the signer's ML-DSA key is
-  self-asserted per message.
+  (classical-only is refused). From 3.0.18 the signer's ML-DSA key is
+  bound per channel to its Ed25519 key and version 3 replies carry the
+  owner's signature over those bindings (section 5, Author binding); up
+  to 3.0.17 it was self-asserted per message.
 - **Channel id binding**:
   `channelId = hash("org.zerionproject/CHANNEL_ID",
   HybridSignaturePublicKey(ed,mlDsa).getEncoded(), salt)`. Subscribers
@@ -907,6 +1436,10 @@ treated as public.
     `deriveKey(APPROVAL_WRAP_LABEL, SecretKey(ML-KEM-768 sharedSecret),
     channelId)`, AES-GCM with random IV (ML-KEM only, not hybrid). The
     applicant recovers the secret with `hybridDecapsulate` (section 6).
+- **Onion confirmation** (from 3.0.18): the owner's device signs
+  `channelId || int32 len || UTF-8 onion` with the channel's hybrid key
+  under `SIGNING_LABEL_ONION_CONFIRMATION` (The one architectural fact,
+  Where a member's requests go).
 - **MAC challenge** uses `crypto.mac` (keyed BLAKE2b-256) under
   `"org.zerionproject/CHANNEL_HMAC_CHALLENGE"` keyed by the capability,
   over channelId and the client nonce.
@@ -954,7 +1487,7 @@ ends.
 `ChannelOnionStore` keeps, per hosted channel, when the current onion is
 next rotated and the retired onions that stay published until a given time.
 
-- **Periodic rotation.** Every 28 to 35 days (random per channel) the
+- **Periodic rotation.** Every 28 to 36 days (random per channel) the
   publisher binds a fresh onion, makes it current with a manifest naming it
   (`manifestSeq` + 1) and keeps the old onion published for 30 days, still
   answering every request, so subscribers learn the new address from the
@@ -962,9 +1495,10 @@ next rotated and the retired onions that stay published until a given time.
   deleted. Whoever only held the old address, such as an old invite link,
   can no longer reach the device after that; share a fresh link. An
   applicant whose application is still pending checks it at the address of
-  its link and reads no manifest, so an application left pending past the
-  end of a migration window can no longer learn that it was approved; the
-  applicant needs a fresh link.
+  its link once the owner's device confirmed that address, and reads no
+  manifest, so an application left pending past the end of a migration
+  window can no longer learn that it was approved; the applicant needs a
+  fresh link.
 - **Revocation.** Rotating a private channel's invite link moves the
   channel to a fresh onion and removes the old one at once with its key,
   together with every onion still retiring from earlier rotations. The old
@@ -986,20 +1520,27 @@ next rotated and the retired onions that stay published until a given time.
 - **Restore.** A publisher that finds its database was restored from a
   backup or copied (Hash chain, section 4) keeps every onion whose key it
   still holds published for another 30 days. A subscriber remembers the
-  last 12 onions a channel used (`zerion-channels-remembered-onions`); once
-  the current onion has not answered for 15 minutes it tries them in turn on
-  every other pull, and follows the manifest the one that answers serves.
-  Only the holder of an onion's key can serve it and everything served is
-  verified under the channel's key, so trying an old address trusts no one
-  new. A backup older than every onion the subscriber remembers (about a
-  year) cannot be found this way; the owner shares a fresh link.
+  last 12 onions that manifests it took named
+  (`zerion-channels-remembered-onions`; from 3.0.18 never the address of
+  an invite link, which nothing signs, and such an address an earlier
+  release kept gives only its manifest); once the current onion has not
+  answered for 15 minutes it tries them in turn on every other pull, and
+  follows the manifest the one that answers serves, taking posts from it
+  only when that manifest names it (section The one architectural fact,
+  Who answers a pull). Only the holder of an onion's key can serve it and
+  everything served is verified under the channel's key, so trying an old
+  address trusts no one new. A backup older than every onion the
+  subscriber remembers (about a year) cannot be found this way; the owner
+  shares a fresh link.
 - **Deletion.** See section 8.
 - Retired onions are rebound after a restart until their time, and the
   schedule is checked every 15 minutes.
 
 Banning a subscriber does not rotate the onion: in a public channel anyone
 with the link can read anyway, and in a private channel the owner rotates
-the invite link (offered with the ban) to cut a banned member off.
+the invite link (offered with the ban as "Remove from channel", on by
+default) to cut a banned member off, which every other subscriber then needs
+a new link for too.
 
 ## What this doc does NOT cover
 
@@ -1010,10 +1551,12 @@ the invite link (offered with the ban) to cut a banned member off.
   namespaces of the SQLCipher-backed SettingsManager (for example
   `zerion-channels-state`, `zerion-channels-comments`,
   `zerion-channels-reactions`, `zerion-channels-item-sync:<hex>`,
-  `zerion-channels-sync-cursor:<hex>`, `zerion-channels-onions`,
+  `zerion-channels-onions`,
   `zerion-channels-remembered-onions`, `zerion-channels-bans`,
   `zerion-channels-trusted`, `zerion-channels-editor-quota:<hex>`,
-  `zerion-channels-pending-removal`, `zerion-channels-instance`; posts as in
+  `zerion-channels-pending-removal`, `zerion-channels-instance`,
+  `zerion-channels-author-pins:<hex>`, `zerion-channels-discussions`,
+  `zerion-channels-discussion-exceptions`; posts as in
   section 4, Storage); attachment blobs are encrypted files under
   `channel-blobs/`. These are local state, not wire format.
 
@@ -1025,11 +1568,13 @@ the invite link (offered with the ban) to cut a banned member off.
   standalone top-level frame - they only appear inside the pull response
   `posts` list. The tag may be reserved for a future standalone post push.
 - **`discussionsEnabled` in the manifest** is gated off
-  (`DISCUSSIONS_IN_MANIFEST = false`); today it is publisher-enforced only.
-  iOS must default the field to `true` when absent and not include it in the
+  (`DISCUSSIONS_IN_MANIFEST = false`); the comment setting travels in `ds`
+  of version 4 and 5 replies instead (section 5, Comment settings). iOS must
+  default the field to `true` when absent and not include it in the
   manifest signed-input while the flag is false.
 - **Versioning.** `MAJOR_VERSION`/`MINOR_VERSION` (0/1) are not on the wire.
-  Since 3.0.15 every request carries `v` (section Protocol version), a reply
+  Since 3.0.15 every request carries `v` (2; 5 from 3.0.18, section
+  Protocol version), a reply
   carrying deltas carries `v`, and a post carries its format in `pv`; the
   `*_V1` type strings are unchanged. iOS implements none of this protocol:
   its channel code (`ChannelPullProtocol.swift`) sends list-based frames

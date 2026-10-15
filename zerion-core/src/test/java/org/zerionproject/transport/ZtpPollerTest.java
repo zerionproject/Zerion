@@ -30,6 +30,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nullable;
+
 import static org.zerionproject.core.test.TestUtils.getAuthor;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -82,10 +84,16 @@ public class ZtpPollerTest {
 	private final class RecordingTransport implements OverlayTransport {
 		final List<Integer> dials = Collections.synchronizedList(
 				new ArrayList<>());
+		final List<String> addresses = Collections.synchronizedList(
+				new ArrayList<>());
+		final List<Boolean> refusals = Collections.synchronizedList(
+				new ArrayList<>());
 		final List<Boolean> networkEnabled = Collections.synchronizedList(
 				new ArrayList<>());
 		int restarts = 0;
 		volatile long dialResult = DIAL_NOT_CONNECTED;
+		@Nullable
+		volatile Boolean authenticated = null;
 		volatile boolean degraded = false;
 
 		@Override
@@ -99,9 +107,21 @@ public class ZtpPollerTest {
 		}
 
 		@Override
-		public long dial(int contactId, String peerAddress, boolean fast) {
+		public DialResult dial(int contactId, String peerAddress,
+				boolean fast) {
 			dials.add(contactId);
-			return dialResult;
+			addresses.add(peerAddress);
+			long ms = dialResult;
+			Boolean a = authenticated;
+			return new DialResult(a != null ? a : ms != DIAL_NOT_CONNECTED,
+					ms);
+		}
+
+		@Override
+		public DialResult dial(int contactId, String peerAddress,
+				boolean fast, boolean refusalExpected) {
+			refusals.add(refusalExpected);
+			return dial(contactId, peerAddress, fast);
 		}
 
 		@Override
@@ -149,7 +169,11 @@ public class ZtpPollerTest {
 		afterUs.put(KEY, "zzzz");
 		TransportProperties beforeUs = new TransportProperties();
 		beforeUs.put(KEY, "aaaa");
+		TransportProperties beforeUsOpen = new TransportProperties();
+		beforeUsOpen.put(KEY, "bbbb");
 		context.checking(new Expectations() {{
+			allowing(tpm).getOpenRemoteProperties(dialsUs, ID);
+			will(returnValue(beforeUsOpen));
 			allowing(contactManager).getContacts();
 			will(returnValue(Arrays.asList(a, b)));
 			allowing(contactManager).getContact(dialled);
@@ -172,6 +196,31 @@ public class ZtpPollerTest {
 	public void onlyTheDesignatedDiallerDials() {
 		scheduler.runSweep();
 		assertEquals(Collections.singletonList(1), transport.dials);
+	}
+
+	@Test
+	public void aRequestedDialReachesAContactThatNormallyDialsUs() {
+		poller.dialNow(dialsUs.getInt());
+		assertTrue(transport.dials.isEmpty());
+		poller.dialFromEitherSide(dialsUs.getInt());
+		assertEquals(Collections.singletonList(2), transport.dials);
+	}
+
+	@Test
+	public void anOpenRepairDialUsesTheAddressWithoutTheAuthorizedOverride() {
+		poller.dialFromEitherSide(dialsUs.getInt());
+		poller.dialOpenFromEitherSide(dialsUs.getInt());
+		assertEquals(Arrays.asList(2, 2), transport.dials);
+		assertEquals(Arrays.asList("aaaa", "bbbb"), transport.addresses);
+	}
+
+	@Test
+	public void onlyAnOpenRepairDialExpectsToBeRefused() {
+		poller.dialNow(dialled.getInt());
+		poller.dialFromEitherSide(dialsUs.getInt());
+		poller.dialOpenFromEitherSide(dialsUs.getInt());
+		assertEquals(Arrays.asList(1, 2, 2), transport.dials);
+		assertEquals(Arrays.asList(false, false, true), transport.refusals);
 	}
 
 	@Test
@@ -247,6 +296,97 @@ public class ZtpPollerTest {
 		assertEquals(Arrays.asList("failed:1", "connected:1:pendingonion"),
 				hooks);
 		p.stop();
+	}
+
+	private List<String> pendingHooksAfterOneDial(String dialledAddress)
+			throws Exception {
+		Mockery context = new Mockery();
+		ContactManager contactManager = context.mock(ContactManager.class);
+		TransportPropertyManager tpm =
+				context.mock(TransportPropertyManager.class);
+		byte[] low = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		byte[] high = new byte[org.zerionproject.core.api.UniqueId.LENGTH];
+		java.util.Arrays.fill(high, (byte) 0xFF);
+		Contact a = getContact(dialled, new org.zerionproject.core.api.identity
+				.Author(new AuthorId(high), org.zerionproject.core.api.identity
+				.Author.FORMAT_VERSION, "them", getAuthor().getPublicKey()),
+				new AuthorId(low), true);
+		TransportProperties props = new TransportProperties();
+		props.put(KEY, dialledAddress);
+		context.checking(new Expectations() {{
+			allowing(contactManager).getContacts();
+			will(returnValue(Collections.singletonList(a)));
+			allowing(contactManager).getContact(dialled);
+			will(returnValue(a));
+			allowing(tpm).getRemoteProperties(dialled, ID);
+			will(returnValue(props));
+		}});
+		List<String> hooks = Collections.synchronizedList(new ArrayList<>());
+		org.zerionproject.core.plugin.tor.B4OnionRotation rotation =
+				new org.zerionproject.core.plugin.tor.B4OnionRotation(null,
+						null, null, null) {
+					@Override
+					public String getPendingOnionForContact(ContactId cid) {
+						return "pendingonion";
+					}
+
+					@Override
+					public void onPendingDialFailed(ContactId cid) {
+						hooks.add("failed");
+					}
+
+					@Override
+					public void onSuccessfulConnect(ContactId cid,
+							String dialedOnion) {
+						hooks.add("connected");
+					}
+
+					@Override
+					public void onFallbackDialFailed(ContactId cid) {
+						hooks.add("fallbackFailed");
+					}
+				};
+		ZtpPoller p = new ZtpPoller(Runnable::run, scheduler, contactManager,
+				tpm, new NoEvents(), transport, () -> rotation);
+		p.start();
+		scheduler.runSweep();
+		p.stop();
+		return hooks;
+	}
+
+	@Test
+	public void aShortAuthenticatedSessionCountsAsReachingThePendingOnion()
+			throws Exception {
+		transport.dialResult = 500L;
+		transport.authenticated = true;
+		assertEquals(Collections.singletonList("connected"),
+				pendingHooksAfterOneDial("pendingonion"));
+	}
+
+	@Test
+	public void aLongUnauthenticatedSessionCountsAsAFailedPendingDial()
+			throws Exception {
+		transport.dialResult = 60_000L;
+		transport.authenticated = false;
+		assertEquals(Collections.singletonList("failed"),
+				pendingHooksAfterOneDial("pendingonion"));
+	}
+
+	@Test
+	public void aFailedDialToTheCurrentOnionLetsThePendingOneBeRetried()
+			throws Exception {
+		transport.dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+		assertEquals(Collections.singletonList("fallbackFailed"),
+				pendingHooksAfterOneDial("currentonion"));
+	}
+
+	@Test
+	public void aWorkingCurrentOnionLeavesThePendingRetryAlone()
+			throws Exception {
+		transport.dialResult = CONNECTED_SESSION_MS;
+		transport.authenticated = true;
+		assertEquals(Collections.emptyList(),
+				pendingHooksAfterOneDial("currentonion"));
 	}
 
 	@Test

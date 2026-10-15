@@ -359,11 +359,16 @@ public class AppModule {
 		com.professor.zerion.android.navdrawer.TorPublishTracker torPublishTracker;
 		@Inject
 		com.professor.zerion.android.update.UpdateChecker updateChecker;
+		@Inject
+		com.professor.zerion.android.conversation.DeletedContentEvictor
+				deletedContentEvictor;
 
 		@Inject
 		void init() {
 			SecurePrefsHolder.initialize(application);
-			preferencesMigration.migrateVaultSettingsIfNeeded();
+			if (ProcessRole.isMain(application)) {
+				preferencesMigration.migrateVaultSettingsIfNeeded();
+			}
 		}
 	}
 
@@ -396,7 +401,8 @@ public class AppModule {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.allowThreadDiskReads();
 		try {
 			StrictMode.allowThreadDiskWrites();
-			return new ProfileManager(app.getApplicationContext());
+			return new ProfileManager(app.getApplicationContext(),
+					ProcessRole.isMain(app));
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
@@ -668,6 +674,24 @@ public class AppModule {
 		DozeWatchdogImpl dozeWatchdog = new DozeWatchdogImpl(application);
 		lifecycleManager.registerService(dozeWatchdog);
 		return dozeWatchdog;
+	}
+
+	@Provides
+	@Singleton
+	com.professor.zerion.android.conversation.DeletedContentEvictor
+			provideDeletedContentEvictor(EventBus eventBus,
+			com.professor.zerion.android.conversation.voice.VoiceChunkAssembler
+					voiceAssembler,
+			org.zerionproject.core.api.system.AndroidExecutor
+					androidExecutor) {
+		com.professor.zerion.android.conversation.DeletedContentEvictor
+				evictor = new com.professor.zerion.android.conversation
+				.DeletedContentEvictor(voiceAssembler,
+				() -> androidExecutor.runOnUiThread(() ->
+						com.bumptech.glide.Glide.get(application)
+								.clearMemory()));
+		eventBus.addListener(evictor);
+		return evictor;
 	}
 
 	@Provides

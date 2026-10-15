@@ -30,6 +30,11 @@ public class ChannelPost {
 	private final int formatVersion;
 	@Nullable
 	private final byte[] salt;
+	private final boolean edited;
+	@Nullable
+	private final byte[] erasedBodyHash;
+	@Nullable
+	private final byte[] readableUnder;
 
 	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
 			long timestampHourMs, String body,
@@ -70,6 +75,20 @@ public class ChannelPost {
 			@Nullable byte[] delegateSignerEd25519PubKey,
 			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld,
 			int formatVersion, @Nullable byte[] salt) {
+		this(channelId, seqNum, prevHash, timestampHourMs, body, attachments,
+				ttlMs, signature, read, delegateSignerEd25519PubKey,
+				delegateSignerMlDsaPubKey, withheld, formatVersion, salt,
+				false, null, null);
+	}
+
+	private ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, String body,
+			List<ChannelAttachment> attachments, long ttlMs,
+			byte[] signature, boolean read,
+			@Nullable byte[] delegateSignerEd25519PubKey,
+			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld,
+			int formatVersion, @Nullable byte[] salt, boolean edited,
+			@Nullable byte[] erasedBodyHash, @Nullable byte[] readableUnder) {
 		this.channelId = channelId;
 		this.seqNum = seqNum;
 		this.prevHash = prevHash;
@@ -84,6 +103,9 @@ public class ChannelPost {
 		this.withheld = withheld;
 		this.formatVersion = formatVersion;
 		this.salt = salt;
+		this.edited = edited;
+		this.erasedBodyHash = erasedBodyHash;
+		this.readableUnder = readableUnder;
 	}
 
 	public boolean isWithheld() {
@@ -95,7 +117,8 @@ public class ChannelPost {
 		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
 				body, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
-				true, formatVersion, salt);
+				true, formatVersion, salt, edited, erasedBodyHash,
+				readableUnder);
 	}
 
 	public ChannelPost withFlags(boolean read, boolean withheld) {
@@ -103,7 +126,8 @@ public class ChannelPost {
 		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
 				body, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
-				withheld, formatVersion, salt);
+				withheld, formatVersion, salt, edited, erasedBodyHash,
+				readableUnder);
 	}
 
 	public ChannelPost asShown(String shownBody,
@@ -111,7 +135,57 @@ public class ChannelPost {
 		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
 				shownBody, shownAttachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
-				withheld, formatVersion, salt);
+				withheld, formatVersion, salt, edited, erasedBodyHash,
+				readableUnder);
+	}
+
+	public ChannelPost asEdited(String shownBody) {
+		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
+				shownBody, attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				withheld, formatVersion, salt, true, erasedBodyHash,
+				readableUnder);
+	}
+
+	public ChannelPost erased(byte[] bodyHash) {
+		return erased(bodyHash, null);
+	}
+
+	public ChannelPost erased(byte[] bodyHash,
+			@Nullable byte[] readableUnder) {
+		return new ChannelPost(channelId, seqNum, prevHash, timestampHourMs,
+				"", attachments, ttlMs, signature, read,
+				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
+				withheld, formatVersion, salt, edited, bodyHash,
+				readableUnder);
+	}
+
+	public boolean isErased() {
+		return erasedBodyHash != null;
+	}
+
+	@Nullable
+	public byte[] getErasedBodyHash() {
+		return erasedBodyHash;
+	}
+
+	@Nullable
+	public byte[] getReadableUnder() {
+		return readableUnder;
+	}
+
+	public boolean isEdited() {
+		return edited;
+	}
+
+	public boolean isEditableAt(long timeMs) {
+		return formatVersion == FORMAT_V2 && isInEditWindowAt(timeMs);
+	}
+
+	public boolean isInEditWindowAt(long timeMs) {
+		long hour = 60L * 60L * 1000L;
+		return timeMs / hour * hour
+				<= timestampHourMs + ChannelConstants.POST_EDIT_WINDOW_MS;
 	}
 
 	public int getFormatVersion() {

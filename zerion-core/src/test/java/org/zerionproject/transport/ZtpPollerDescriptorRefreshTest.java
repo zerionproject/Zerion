@@ -88,9 +88,11 @@ public class ZtpPollerDescriptorRefreshTest {
 		}
 
 		@Override
-		public long dial(int contactId, String peerAddress, boolean fast) {
+		public DialResult dial(int contactId, String peerAddress,
+				boolean fast) {
 			dials.incrementAndGet();
-			return dialResult;
+			long ms = dialResult;
+			return new DialResult(ms != DIAL_NOT_CONNECTED, ms);
 		}
 
 		@Override

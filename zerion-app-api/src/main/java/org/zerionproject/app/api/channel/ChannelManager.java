@@ -71,6 +71,18 @@ public interface ChannelManager {
 
 	void deletePost(byte[] channelId, long seqNum) throws DbException;
 
+	void editPost(byte[] channelId, long seqNum, String body)
+			throws DbException;
+
+	boolean areCommentsEnabled(byte[] channelId, long postSeqNum)
+			throws DbException;
+
+	void setPostCommentsEnabled(byte[] channelId, long postSeqNum,
+			boolean enabled) throws DbException;
+
+	java.util.Set<Long> getCommentExceptions(byte[] channelId)
+			throws DbException;
+
 	void publishPostWithAttachments(byte[] channelId, String body,
 			long ttlSeconds, List<AttachmentSpec> attachments)
 			throws DbException;
@@ -100,6 +112,11 @@ public interface ChannelManager {
 
 	void banSubscriber(byte[] channelId, byte[] ed25519PubKey)
 			throws DbException;
+
+	void unbanSubscriber(byte[] channelId, byte[] ed25519PubKey)
+			throws DbException;
+
+	List<byte[]> getBannedKeys(byte[] channelId) throws DbException;
 
 	void setSubscriberTrusted(byte[] channelId, byte[] ed25519PubKey,
 			boolean trusted) throws DbException;

@@ -16,6 +16,9 @@ interface GroupTrConstants {
 	String SIGNING_LABEL_GROUP_SETTINGS =
 			"org.zerionproject/GROUP_SETTINGS";
 
+	String SIGNING_LABEL_GROUP_POST_DELETE =
+			"org.zerionproject/GROUP_POST_DELETE";
+
 	String SIGNING_LABEL_GROUPTR_INVITE_OFFER =
 			"org.zerionproject/GROUPTR_INVITE_OFFER";
 	String SIGNING_LABEL_GROUPTR_INVITE_ACCEPT =
@@ -24,6 +27,7 @@ interface GroupTrConstants {
 			"org.zerionproject/GROUPTR_INVITE_DECLINE";
 
 	String SETTINGS_NS_PREFIX = "grouptr.g.";
+	String MSG_KEY_GROUP_ACCEPTED_AT = "groupAcceptedAt";
 	String SETTINGS_NS_INDEX = "grouptr.index";
 	String SETTINGS_NS_LOCAL_PREFIX = "grouptr.local.";
 	String S_SCREENSHOT_BLOCKED = "screenshotBlocked";

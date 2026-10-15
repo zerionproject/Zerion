@@ -11,6 +11,7 @@ import com.bumptech.glide.load.Transformation;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.util.StringUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
 import com.professor.zerion.android.conversation.glide.ZerionImageTransformation;
@@ -24,6 +25,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -48,10 +52,10 @@ public class ImageViewHolder extends ViewHolder {
 	private static final int MAX_THUMBNAIL_RETRY_ATTEMPTS = 5;
 	private static final long THUMBNAIL_RETRY_DELAY_MS = 300;
 
-	private static final LruCache<MessageId, Bitmap> VIDEO_THUMB_CACHE =
-			new LruCache<MessageId, Bitmap>(12 * 1024 * 1024) {
+	private static final LruCache<String, Bitmap> VIDEO_THUMB_CACHE =
+			new LruCache<String, Bitmap>(12 * 1024 * 1024) {
 				@Override
-				protected int sizeOf(MessageId key, Bitmap value) {
+				protected int sizeOf(String key, Bitmap value) {
 					return value.getByteCount();
 				}
 			};
@@ -61,6 +65,22 @@ public class ImageViewHolder extends ViewHolder {
 
 	public static void clearVideoThumbCache() {
 		VIDEO_THUMB_CACHE.evictAll();
+	}
+
+	public static void evictVideoThumbs(Collection<MessageId> items) {
+		if (items.isEmpty()) return;
+		Set<String> prefixes = new HashSet<>();
+		for (MessageId item : items) prefixes.add(thumbPrefix(item));
+		for (String key : VIDEO_THUMB_CACHE.snapshot().keySet()) {
+			int split = key.indexOf(':');
+			if (split > 0 && prefixes.contains(key.substring(0, split + 1))) {
+				VIDEO_THUMB_CACHE.remove(key);
+			}
+		}
+	}
+
+	private static String thumbPrefix(MessageId item) {
+		return StringUtils.toHexString(item.getBytes()) + ":";
 	}
 
 	protected final ImageView imageView;
@@ -218,7 +238,9 @@ public class ImageViewHolder extends ViewHolder {
 			int attemptNumber) {
 		if (dbExecutor == null || attachmentReader == null) return;
 
-		final MessageId thumbKey = a.getHeader().getMessageId();
+		final String thumbKey = thumbPrefix(conversationItemId)
+				+ StringUtils.toHexString(a.getHeader().getMessageId()
+						.getBytes());
 		Bitmap cached = VIDEO_THUMB_CACHE.get(thumbKey);
 		if (cached != null) {
 			renderVideoThumbnail(cached, r);
@@ -266,7 +288,7 @@ public class ImageViewHolder extends ViewHolder {
 		});
 	}
 
-	private void decodeThumbnail(File file, MessageId thumbKey, Radii r) {
+	private void decodeThumbnail(File file, String thumbKey, Radii r) {
 		MediaMetadataRetriever retriever = null;
 		try {
 			retriever = new MediaMetadataRetriever();

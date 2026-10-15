@@ -16,7 +16,7 @@
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:src="@drawable/ic_vault"
-            android:tint="?attr/colorPrimary"
+            android:tint="?attr/colorControlNormal"
             android:layout_marginBottom="24dp" />
 
         <TextView

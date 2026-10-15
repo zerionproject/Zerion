@@ -93,7 +93,7 @@
 			android:layout_marginStart="8dp"
 			android:minWidth="0dp"
 			android:text="@string/channels_comments_send"
-			android:textColor="@color/zerion_primary_accent" />
+			android:textColor="@color/zerion_accent_text" />
 
 	</LinearLayout>
 

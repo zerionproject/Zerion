@@ -22,7 +22,7 @@
             android:layout_height="22dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_wallet_24dp"
-            app:tint="@color/zerion_warning"
+            app:tint="@color/zerion_warning_text"
             android:importantForAccessibility="no" />
 
     </FrameLayout>

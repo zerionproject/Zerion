@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 
 import com.professor.zerion.R;
@@ -27,8 +28,10 @@ import org.zerionproject.core.account.ProfileManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -217,6 +220,115 @@ public class StartupWithoutAccountTest {
 						+ ", vault " + state(vaultHeader)
 						+ ", wallet files " + state(walletFile));
 		c.pause().stop().destroy();
+	}
+
+	@Test
+	public void keepingWhatNoAccountKeyOpensDeletesNothing() throws Exception {
+		leaveData();
+
+		ActivityController<StartupActivity> c =
+				Robolectric.buildActivity(StartupActivity.class).create()
+						.start().resume();
+		start(c);
+		AlertDialog asked = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull(asked);
+		asked.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		boolean closed = c.get().isFinishing();
+		new ProfileManager(app);
+		assertEquals("closed, database kept, key state kept, vault kept,"
+						+ " wallet files kept, erase request absent",
+				(closed ? "closed" : "open")
+						+ ", database " + state(db)
+						+ ", key state " + state(keyState)
+						+ ", vault " + state(vaultHeader)
+						+ ", wallet files " + state(walletFile)
+						+ ", erase request "
+						+ (eraseRequest().exists() ? "present" : "absent"));
+		c.pause().stop().destroy();
+	}
+
+	@Test
+	public void eraseWaitsForTheConfirmationWordAndCancelAsksAgain()
+			throws Exception {
+		leaveData();
+
+		ActivityController<StartupActivity> c =
+				Robolectric.buildActivity(StartupActivity.class).create()
+						.start().resume();
+		start(c);
+		AlertDialog asked = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull(asked);
+		asked.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog confirm = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertTrue(confirm != asked);
+		Button delete = confirm.getButton(DialogInterface.BUTTON_NEGATIVE);
+		boolean enabledAtFirst = delete.isEnabled();
+		EditText word = findEditText(confirm.getWindow().getDecorView());
+		assertNotNull(word);
+		word.setText("erase");
+		boolean enabledOnAnotherWord = delete.isEnabled();
+		confirm.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog again = (AlertDialog) ShadowDialog.getLatestDialog();
+		boolean askedAgain = again != confirm && again.isShowing();
+		assertEquals("delete off, off on another word, asked again,"
+						+ " database kept, vault kept, wallet files kept",
+				"delete " + (enabledAtFirst ? "on" : "off")
+						+ ", " + (enabledOnAnotherWord ? "on" : "off")
+						+ " on another word, "
+						+ (askedAgain ? "asked again" : "not asked again")
+						+ ", database " + state(db)
+						+ ", vault " + state(vaultHeader)
+						+ ", wallet files " + state(walletFile));
+		c.pause().stop().destroy();
+	}
+
+	@Test
+	public void dataBesideAnAccountGoesToSignInAndKeepsTheAccount()
+			throws Exception {
+		leaveData();
+		File accountKey = leftover(new File(app.getFilesDir(),
+				"profiles/u1/key/db.key"));
+		File accountDb = leftover(new File(app.getFilesDir(),
+				"profiles/u1/db/db.sqlite"));
+
+		ActivityController<StartupActivity> c =
+				Robolectric.buildActivity(StartupActivity.class).create();
+		StartupViewModel.StartupDecision decision = decide(c.get());
+		boolean welcome = welcomeStarted(c.get());
+		new ProfileManager(app);
+		assertEquals("SIGN_IN, not asked, welcome not shown, account key"
+						+ " kept, account database kept, vault kept, wallet"
+						+ " files kept, keyless profile removed",
+				decision + ", " + (asked() ? "asked" : "not asked")
+						+ ", " + (welcome ? "welcome shown"
+						: "welcome not shown")
+						+ ", account key " + state(accountKey)
+						+ ", account database " + state(accountDb)
+						+ ", vault " + state(vaultHeader)
+						+ ", wallet files " + state(walletFile)
+						+ ", keyless profile " + (new File(app.getFilesDir(),
+						"profiles/default").exists() ? "kept" : "removed"));
+		c.destroy();
+	}
+
+	private static StartupViewModel.StartupDecision decide(StartupActivity a)
+			throws Exception {
+		Field f = StartupActivity.class.getDeclaredField("viewModel");
+		f.setAccessible(true);
+		StartupViewModel viewModel = (StartupViewModel) f.get(a);
+		AtomicReference<StartupViewModel.StartupDecision> decision =
+				new AtomicReference<>();
+		viewModel.decideStartAsync(decision::set);
+		long end = System.currentTimeMillis() + TIMEOUT_MS;
+		while (decision.get() == null && System.currentTimeMillis() < end) {
+			Thread.sleep(20);
+			shadowOf(Looper.getMainLooper()).idle();
+		}
+		shadowOf(Looper.getMainLooper()).idle();
+		return decision.get();
 	}
 
 	@Test

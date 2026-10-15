@@ -46,6 +46,22 @@ public class TorStatusDeciderTest {
 	}
 
 	@Test
+	public void aFailingEntryRelayIsShownInsteadOfConnected() {
+		assertEquals(Status.ENTRY_RELAY_FAILING, TorStatusDecider.decide(
+				false, ACTIVE, true, true, false, true, 100));
+		assertEquals(Status.ENTRY_RELAY_FAILING, TorStatusDecider.decide(
+				false, ACTIVE, true, false, false, true, 100));
+		assertEquals("a wrong clock comes first", Status.CLOCK_SKEW,
+				TorStatusDecider.decide(false, ACTIVE, true, true, true, true,
+						100));
+		assertEquals("without internet the relay is not the problem",
+				Status.CONNECTING, TorStatusDecider.decide(false, ACTIVE,
+						false, false, false, true, 0));
+		assertEquals(Status.CONNECTED, TorStatusDecider.decide(false, ACTIVE,
+				true, true, false, false, 100));
+	}
+
+	@Test
 	public void offlineWhileActiveFallsBackToBootstrapOrConnecting() {
 		assertEquals(Status.BOOTSTRAPPING,
 				TorStatusDecider.decide(false, ACTIVE, false, false, false, 40));

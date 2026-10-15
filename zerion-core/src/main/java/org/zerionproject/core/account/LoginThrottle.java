@@ -245,6 +245,10 @@ public final class LoginThrottle {
 			@Nullable
 			public String load() {
 				if (!f.exists()) return null;
+				if (f.length() == 0) {
+					clear();
+					return null;
+				}
 				try (BufferedReader r = new BufferedReader(new InputStreamReader(
 						new FileInputStream(f), UTF_8))) {
 					return r.readLine();
@@ -263,11 +267,15 @@ public final class LoginThrottle {
 
 			@Override
 			public void clear() {
-				if (f.exists() && !f.delete()) {
-					try {
-						writeDurably(f, new byte[0]);
-					} catch (IOException ignored) {
-					}
+				if (!f.exists()) return;
+				if (f.delete()) {
+					syncDirectory(f.getAbsoluteFile().getParentFile());
+					return;
+				}
+				if (f.length() == 0) return;
+				try {
+					writeDurably(f, new byte[0]);
+				} catch (IOException ignored) {
 				}
 			}
 		};
