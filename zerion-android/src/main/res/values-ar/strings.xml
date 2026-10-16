@@ -337,7 +337,7 @@
   <string name="groups_dissolve_dialog_message">هل تريد/ين فعلا حلّ هذه المجموعة؟\n\nجميع الأعضاء الآخرين لن يتمكنوا من استكمال حوارهم وربما لن يستقبلوا الرسائل الأخيرة.</string>
   <string name="groups_dissolve_button">حلّ</string>
   <string name="groups_dissolved_dialog_title">تم حلّ المجموعة </string>
-  <string name="groups_dissolved_dialog_message">منشئ هذه المجموعة قام بحلّها.\n\n لن يمكنك كتابة رسائل إلى المجموعة كما ويحتمل أنك لم تستقبل جميع الرسائل التي تم كتابتها.</string>
+  <string name="groups_dissolved_dialog_message">قام مالك المجموعة بحلّ هذه المجموعة.\n\nلن يمكنك كتابة رسائل إلى المجموعة بعد الآن، وقد لا تستقبل جميع الرسائل التي تمت كتابتها.</string>
   
   <string name="groups_invitations_title">دعوات المجموعة</string>
   <string name="groups_invitations_invitation_sent">لقد قمت بدعوة %1$s للإنضمام إلى مجموعة \"%2$s\".</string>
@@ -352,9 +352,9 @@
     <item quantity="other">%d 
 فتح دعوات المجموعات</item>
   </plurals>
-  <string name="sharing_status_groups">فقط مُنشئ/ة المجموعة يمكنه/ها دعوة أعضاء جدد. في الأسفل جميع الأعضاء الحاليين بالمجموعة.</string>
+  <string name="sharing_status_groups">مالك المجموعة وحده يمكنه دعوة أعضاء جدد إلى المجموعة. في الأسفل جميع الأعضاء الحاليين في المجموعة.</string>
   
-  <string name="groups_reveal_dialog_message">يمكن اختيار إظهار جميع جهات الاتصال الحالية والمستقبلية في هذه المجموعة لبعضهم البعض.\n\nإظهار جهات الاتصال سيجعل اتصالك بالمجموعة أسرع وأفضل اعتمادية، حيث سيمكن التواصل بين جهات الاتصال الظاهرة حتى لو كان منشئ المجموعة غير متصل.</string>
+  <string name="groups_reveal_dialog_message">يمكنك اختيار ما إذا كنت تريد إظهار جهات الاتصال لجميع الأعضاء الحاليين والمستقبليين في هذه المجموعة.\n\nإظهار جهات الاتصال سيجعل اتصالك بالمجموعة أسرع وأكثر اعتمادية، لأنه يمكنك التواصل مع جهات الاتصال الظاهرة حتى لو كان مالك المجموعة غير متصل.</string>
   <string name="groups_reveal_visible_revealed_by_us">علاقات جهات الاتصال ظاهرة للمجموعة (قمت/ي أنت بكشفها)</string>
   <string name="groups_reveal_visible_revealed_by_contact">علاقات جهات الاتصال ظاهرة للمجموعة (قام/ت %s بكشفها)</string>
   <string name="groups_reveal_invisible">علاقات جهات الاتصال غير ظاهرة للمجموعة</string>
@@ -791,7 +791,7 @@
 	<string name="channels_feed_empty_publisher">لا توجد منشورات في قناتك بعد. انشر أول منشور لك.</string>
 	<string name="channels_feed_empty_subscriber">لا توجد منشورات بعد. ستظهر المنشورات الجديدة هنا.</string>
 	<string name="channels_feed_connecting">جارٍ الاتصال بالقناة…</string>
-	<string name="channels_feed_connecting_slow">لا يزال الاتصال جاريًا. تأكد من أن الشخص الذي شارك هذه القناة متصل. سيتم التحديث تلقائيًا.</string>
+	<string name="channels_feed_connecting_slow">لا يزال الاتصال جاريًا. ستظهر المنشورات هنا عندما تصبح القناة متاحة.</string>
 	<string name="channels_compose_hint">اكتب إلى مشتركيك…</string>
 	<string name="channels_compose_send">نشر</string>
 	<string name="channels_compose_error_empty">اكتب شيئًا قبل النشر.</string>
@@ -1086,7 +1086,7 @@
 	<string name="grouptr_empty">لا توجد مجموعات بعد.</string>
 	<string name="grouptr_meta">%2$d عضو</string>
 	<string name="grouptr_dissolved_suffix">(تم حلّها)</string>
-	<string name="grouptr_creator_tag">(المنشئ)</string>
+	<string name="grouptr_creator_tag">(مالك المجموعة)</string>
 	<string name="grouptr_admin_tag">(مشرف)</string>
 	<string name="grouptr_promote">ترقية</string>
 	<string name="grouptr_demote">تخفيض</string>
@@ -1185,7 +1185,7 @@
 	<string name="grouptr_detail_status">الحالة</string>
 	<string name="grouptr_detail_status_dissolved">تم حلّها</string>
 	<string name="grouptr_open_chat">فتح المحادثة</string>
-	<string name="grouptr_member_role_creator">المنشئ</string>
+	<string name="grouptr_member_role_creator">مالك المجموعة</string>
 	<string name="grouptr_member_role_you">أنت</string>
 	<string name="grouptr_member_action_remove">إزالة من المجموعة</string>
 	<string name="scroll_to_bottom">التمرير إلى الأسفل</string>
@@ -2335,14 +2335,14 @@
 	<string name="wallet_sp_enable_first">فعّل Silent Payments أولًا</string>
 	<string name="grouptr_reach_title">من تصل إليهم منشوراتك</string>
 	<string name="grouptr_reach_explanation">تنتقل منشورات المجموعة مباشرةً بين الأعضاء الذين هم جهات اتصال لبعضهم، ولا يمرّر الأعضاء المنشورات إلى غيرهم. هؤلاء الأعضاء ليسوا من جهات اتصالك، لذا لا يتلقون منشوراتك ولا تتلقى منشوراتهم:\n\n%1$s\n\nأضفهم كجهات اتصال للوصول إليهم.</string>
-	<string name="grouptr_ttl_set_by_creator">الرسائل المختفية في هذه المجموعة: %1$s. وحده منشئ المجموعة يمكنه تغيير ذلك.</string>
+	<string name="grouptr_ttl_set_by_creator">الرسائل المختفية في هذه المجموعة: %1$s. وحده مالك المجموعة يمكنه تغيير ذلك.</string>
 	<string name="grouptr_sender_alias_format">%1$s (ينشر باسم «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (ليس اسمًا تعرفه)</string>
 	<string name="grouptr_member_out_of_reach">ليس من جهات اتصالك، ولا يتلقى منشوراتك</string>
 	<string name="grouptr_member_invited">تمت دعوته، بانتظار الرد</string>
 	<string name="grouptr_confirm_revoke">سحب الدعوة الموجهة إلى %1$s؟ سيتم تجاهل أي رد منه.</string>
 	<string name="grouptr_revoke_invite">سحب الدعوة</string>
-	<string name="grouptr_invite_expired">انتهت صلاحية هذه الدعوة. اطلب دعوة جديدة من منشئ المجموعة.</string>
+	<string name="grouptr_invite_expired">انتهت صلاحية هذه الدعوة. اطلب دعوة جديدة من مالك المجموعة.</string>
 	<string name="reaction_removed_here_only">أُزيل على هذا الجهاز فقط: تطبيق جهة اتصالك قديم جدًا ولا يستطيع إزالته على جهازها.</string>
 	<string name="startup_data_without_account_message">عثر Zerion على بيانات على هذا الجهاز، لكن لا يوجد مفتاح حساب يفتحها: ملفات المفتاح مفقودة أو تالفة. لم يُحذف أي شيء.\n\nيمكنك إغلاق Zerion والاحتفاظ بالبيانات، أو مسح كل شيء والبدء من جديد.</string>
 	<string name="startup_data_without_account_keep">الإغلاق والاحتفاظ</string>
@@ -2593,13 +2593,13 @@
 	<string name="grouptr_members_may_invite">يمكن للأعضاء دعوة جهات اتصالهم</string>
 	<string name="grouptr_members_may_invite_summary">يضيف هاتفك تلقائيًا الأشخاص الذين يدعونهم ما دام هذا الإعداد مفعّلًا.</string>
 	<string name="grouptr_invite_contacts">دعوة جهات اتصال</string>
-	<string name="grouptr_member_invite_needs_creator_contact">يمكن فقط للأعضاء الذين لديهم منشئ المجموعة كجهة اتصال إرسال الدعوات.</string>
-	<string name="grouptr_member_invite_creator_outdated">يحتاج منشئ المجموعة إلى إصدار أحدث من التطبيق قبل أن يتمكن الأعضاء من الدعوة.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">يمكن فقط للأعضاء الذين لديهم مالك المجموعة كجهة اتصال إرسال الدعوات.</string>
+	<string name="grouptr_member_invite_creator_outdated">يحتاج مالك المجموعة إلى إصدار أحدث من التطبيق قبل أن يتمكن الأعضاء من الدعوة.</string>
 	<string name="grouptr_member_invite_contact_outdated">يحتاج إلى إصدار أحدث من التطبيق</string>
 	<string name="grouptr_member_invitation_received">دعاك %1$s للانضمام إلى المجموعة \"%2$s\" التي أنشأها %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">دعاك %1$s للانضمام إلى مجموعة أنشأها %2$s.</string>
-	<string name="grouptr_waiting_for_admin">بانتظار أن يصبح %1$s، منشئ المجموعة، متصلًا. سيضيفك هاتفه تلقائيًا، وبعدها يمكنك النشر هنا.</string>
-	<string name="grouptr_member_invite_accepted">تم القبول. ستنضم بمجرد أن يكون منشئ المجموعة متصلًا.</string>
+	<string name="grouptr_waiting_for_admin">بانتظار أن يصبح %1$s، مالك المجموعة، متصلًا. سيضيفك هاتفه تلقائيًا، وبعدها يمكنك النشر هنا.</string>
+	<string name="grouptr_member_invite_accepted">تم القبول. ستنضم بمجرد أن يكون مالك المجموعة متصلًا.</string>
 	<string name="grouptr_member_invite_unavailable">لم يعد بالإمكان قبول هذه الدعوة. اطلب دعوة جديدة.</string>
 	<string name="grouptr_incognito">التخفي في هذه المجموعة</string>
 	<string name="grouptr_incognito_summary">يرى الآخرون في المجموعة اسمًا عشوائيًا بدلًا من اسمك. يظل بإمكان الأعضاء الموجودين في جهات اتصالك التعرف عليك من خلال مفتاحك.</string>
@@ -2607,7 +2607,7 @@
 	<string name="grouptr_incognito_new_name">اسم جديد</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (متخفٍ)</string>
 	<string name="grouptr_member_may_add">يمكنه إضافة أعضاء</string>
-	<string name="grouptr_member_invite_creator_only">منشئ المجموعة وحده يمكنه إضافة أعضاء.</string>
+	<string name="grouptr_member_invite_creator_only">مالك المجموعة وحده يمكنه إضافة أعضاء.</string>
 	<string name="tor_status_entry_relay">غير مستقر</string>
 	<string name="tor_hidden_services_entry_relay">مرحّل الدخول في Tor يفشل في معظم الاتصالات، لذلك قد لا تصل إليك جهات الاتصال. قد يكون السبب شبكة مزدحمة أو تشويشًا. عادةً ما يساعد تغيير طريقة اتصال Tor إلى الجسور في الإعدادات، الاتصالات.</string>
 	<string name="contact_connection_tor_entry_relay">Tor متصل، لكن مرحّل الدخول الخاص به يفشل في معظم الاتصالات. عادةً ما يساعد استخدام الجسور.</string>
@@ -2618,4 +2618,50 @@
 	<string name="channels_subscribers_unban">رفع الحظر</string>
 	<string name="channels_subscribers_unban_confirm">رفع الحظر؟ سيتمكن هذا المشترك من التعليق والتفاعل مجددًا. ما أزاله الحظر لا يعود، ودور المحرّر يجب منحه من جديد.</string>
 	<string name="channels_unban_failed">تعذّر رفع الحظر</string>
+	<string name="contact_delete_failed">تعذّر حذف جهة الاتصال</string>
+	<string name="channels_delegations_revoke_failed">تعذّر إبطال هذا المحرّر</string>
+	<string name="channels_invite_rotate_failed">لم يتغيّر رابط الدعوة. الرابط القديم ما زال يعمل.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="zero">تم إرسال الدعوات إلى %d جهة اتصال</item>
+		<item quantity="one">تم إرسال الدعوة إلى %d جهة اتصال</item>
+		<item quantity="two">تم إرسال الدعوات إلى %d جهتي اتصال</item>
+		<item quantity="few">تم إرسال الدعوات إلى %d جهات اتصال</item>
+		<item quantity="many">تم إرسال الدعوات إلى %d جهة اتصال</item>
+		<item quantity="other">تم إرسال الدعوات إلى %d جهة اتصال</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">لم يؤكّد المالك وصول طلبك. حاول مرة أخرى لاحقًا.</string>
+	<string name="channels_apply_banner">انقر لتقديم طلب إلى المالك للوصول إلى هذه القناة.</string>
+	<string name="channels_rejoin_updated">تم تحديث وصولك إلى %1$s.</string>
+	<string name="channels_rejoin_unreachable">تعذّر التحقق من هذا الرابط الآن. حاول مرة أخرى لاحقًا.</string>
+	<string name="channels_rejoin_apply_again">يمكنك تقديم طلب مرة أخرى لقراءة المنشورات الجديدة في هذه القناة. ستبقى المنشورات الموجودة لديك. سيرى المالك اسم العرض الخاص بك ومفتاحًا خاصًا بك في هذه القناة فقط.</string>
+	<string name="channels_sync_last_updated">آخر تحديث: %1$s</string>
+	<string name="channels_sync_saved_posts">تُعرض المنشورات المحفوظة</string>
+	<string name="channels_sync_saved_posts_last_updated">تُعرض المنشورات المحفوظة · آخر تحديث: %1$s</string>
+	<string name="channels_sync_not_updated_since">لم يتم التحديث منذ %1$s</string>
+	<string name="channels_owner_deleted_notice">حذف المالك القناة %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">حذف المالك قناة كنت قد انضممت إليها</string>
+	<string name="channels_queued_waiting">بانتظار الإرسال</string>
+	<string name="channels_queued_not_sent">لم يُرسَل</string>
+	<string name="channels_queued_retry">إعادة المحاولة</string>
+	<string name="channels_queued_delete">حذف</string>
+	<string name="channels_comment_queued_toast">سيُرسَل تعليقك عندما تصبح القناة متاحة.</string>
+	<string name="channels_react_queued_toast">سيُرسَل تفاعلك عندما تصبح القناة متاحة.</string>
+	<string name="channels_announce_queued_toast">سيُرسَل اسمك عندما تصبح القناة متاحة.</string>
+	<string name="channels_post_queued_toast">سيُنشَر منشورك عندما تصبح القناة متاحة.</string>
+	<string name="channels_change_queued_toast">سيُرسَل تغييرك عندما تصبح القناة متاحة.</string>
+	<string name="channels_queued_notice_waiting">بعض ما أرسلته بانتظار الإرسال. سيُرسَل عندما تصبح القناة متاحة.</string>
+	<string name="channels_queued_notice_not_sent">تعذّر إرسال بعض ما أرسلته. انقر لإعادة المحاولة أو لحذفه.</string>
+	<string name="channels_queued_announce_label">اسمك: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">تعذّر الوصول إلى هذه القناة. يمكنك التقديم للانضمام مرة أخرى بهذا الرابط. ستبقى المنشورات الموجودة لديك. سيرى المالك اسم العرض الخاص بك ومفتاحًا خاصًا بك في هذه القناة فقط.</string>
+	<string name="channels_rejoin_not_restored">لم يُعِد هذا الرابط وصولك إلى هذه القناة. يمكنك طلب رابط جديد.</string>
+	<string name="channels_rejoin_check_title">تجربة هذا الرابط؟</string>
+	<string name="channels_rejoin_check_message">يتعذّر الوصول إلى المنشورات الجديدة في هذه القناة الآن. يمكنك تجربة هذا الرابط للحصول عليها مرة أخرى. ستبقى المنشورات الموجودة لديك.</string>
+	<string name="channels_rejoin_check_action">تجربة الرابط</string>
+	<string name="channels_rejoin_try_later">يتعذّر الوصول إلى هذه القناة الآن، وهذا الرابط هو نفسه الذي لديك بالفعل. حاول مرة أخرى لاحقًا. ستبقى المنشورات الموجودة لديك.</string>
+	<string name="channels_rejoin_trying">سنواصل تجربة هذا الرابط. ستبقى المنشورات الموجودة لديك.</string>
+	<string name="channels_queued_already_sent">كان قد أُرسِل بالفعل، لذا تعذّر حذفه.</string>
+	<string name="channels_queued_behind_toast">سيُرسَل هذا بعد ما أرسلته سابقًا إلى هذه القناة.</string>
+	<string name="channels_queued_no_access">لم يُرسَل. لم يعد بإمكانك الوصول إلى هذه القناة.</string>
+	<string name="channels_no_access_toast">لم يعد بإمكانك الوصول إلى هذه القناة. اطلب من المالك رابط دعوة جديدًا.</string>
+	<string name="channels_rejoin_too_many_links">لديك بالفعل عدة روابط قيد الانتظار لهذه القناة، لذلك لم نجرّب هذا الرابط. ستبقى المنشورات الموجودة لديك.</string>
 </resources>

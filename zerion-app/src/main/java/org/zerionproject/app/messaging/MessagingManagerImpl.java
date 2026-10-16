@@ -9,6 +9,7 @@ import org.zerionproject.core.api.client.MessageDictionaryVisitor;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager.ContactHook;
+import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfEntry;
 import org.zerionproject.core.api.data.BdfList;
@@ -93,12 +94,14 @@ import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_D
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_IMAGES;
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_IMAGES_AUTO_DELETE;
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_IMAGES_CHUNKED;
+import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_IMAGES_SALTED;
 import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY;
 import static org.zerionproject.app.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_CHUNK;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT_MANIFEST;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MISSING_ATTACHMENT_CLEANUP_DURATION_MS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
@@ -147,6 +150,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private final StreamingAttachmentWriter streamingAttachmentWriter;
 	private final IdentityManager identityManager;
 	private final PrivateMessageValidator privateMessageValidator;
+	private final CryptoComponent crypto;
 
 	@Inject
 	MessagingManagerImpl(
@@ -160,7 +164,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			AutoDeleteManager autoDeleteManager,
 			StreamingAttachmentWriter streamingAttachmentWriter,
 			IdentityManager identityManager,
-			PrivateMessageValidator privateMessageValidator) {
+			PrivateMessageValidator privateMessageValidator,
+			CryptoComponent crypto) {
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.metadataParser = metadataParser;
@@ -172,6 +177,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		this.streamingAttachmentWriter = streamingAttachmentWriter;
 		this.identityManager = identityManager;
 		this.privateMessageValidator = privateMessageValidator;
+		this.crypto = crypto;
 	}
 
 	@Override
@@ -1514,7 +1520,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			ContactId c) throws DbException {
 		int minorVersion = clientVersioningManager
 				.getClientMinorVersion(txn, c, CLIENT_ID, 0);
-		if (minorVersion >= 4) return TEXT_IMAGES_CHUNKED;
+		if (minorVersion >= SALTED_TEXT_MIN_VERSION) return TEXT_IMAGES_SALTED;
+		else if (minorVersion >= 4) return TEXT_IMAGES_CHUNKED;
 		else if (minorVersion >= 3) return TEXT_IMAGES_AUTO_DELETE;
 		else if (minorVersion >= 1) return TEXT_IMAGES;
 		else return TEXT_ONLY;
@@ -2570,8 +2577,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			throws DbException {
 		return db.transactionWithResult(false, txn -> {
 			try {
-				if (getContactClientMinorVersion(txn, c)
-						< EDIT_DELETE_MIN_VERSION) {
+				int minorVersion = getContactClientMinorVersion(txn, c);
+				if (minorVersion < EDIT_DELETE_MIN_VERSION) {
 					return EditResult.NOT_SUPPORTED_BY_CONTACT;
 				}
 				GroupId g = getContactGroup(db.getContact(txn, c)).getId();
@@ -2601,9 +2608,14 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				}
 				removeLocalControlMessages(txn, g, MessageTypes.MESSAGE_EDIT,
 						target);
-				addLocalControlMessage(txn, g, editedAt,
-						BdfList.of(MessageTypes.MESSAGE_EDIT,
-								target.getBytes(), text),
+				BdfList edit = BdfList.of(MessageTypes.MESSAGE_EDIT,
+						target.getBytes(), text);
+				if (minorVersion >= SALTED_TEXT_MIN_VERSION) {
+					byte[] salt = new byte[BODY_SALT_LENGTH];
+					crypto.getSecureRandom().nextBytes(salt);
+					edit.add(salt);
+				}
+				addLocalControlMessage(txn, g, editedAt, edit,
 						MessageTypes.MESSAGE_EDIT, target);
 				BdfDictionary update = new BdfDictionary();
 				update.put(MSG_KEY_EDITED_TEXT, text);

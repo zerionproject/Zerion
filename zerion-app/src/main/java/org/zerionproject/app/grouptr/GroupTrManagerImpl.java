@@ -35,7 +35,6 @@ import org.zerionproject.app.api.grouptr.GroupTrSentInvite;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.grouptr.MemberRole;
 import org.zerionproject.app.api.messaging.MessagingManager;
-import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
 import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupPostDeleteReceivedEvent;
@@ -149,6 +148,7 @@ class GroupTrManagerImpl
 
 	private final GroupTrReplies replies;
 	private final GroupTrMemberInvites memberInvites;
+	private final GroupTrReceiveOrder order;
 
 	private static java.util.concurrent.locks.ReentrantLock[] newGroupLocks() {
 		java.util.concurrent.locks.ReentrantLock[] locks =
@@ -252,6 +252,7 @@ class GroupTrManagerImpl
 		this.memberInvites = new GroupTrMemberInvites(db, settingsManager,
 				clientHelper, crypto, identityManager, contactManager,
 				messagingManager, eventBus, clock, new MemberInvitesHost());
+		this.order = new GroupTrReceiveOrder(settingsManager);
 	}
 
 	@Override
@@ -270,13 +271,15 @@ class GroupTrManagerImpl
 			sweepRemovedGroups();
 		} catch (DbException | RuntimeException ex) {
 		}
+		order.dropHeldCommits();
 	}
 
 	void sweepRemovedGroups() throws DbException {
 		String[] prefixes = {SETTINGS_NS_PREFIX, SETTINGS_NS_LOCAL_PREFIX,
 				ALIAS_NAMESPACE_PREFIX, SEEN_NAMESPACE_PREFIX,
 				GroupTrPostRemovals.NAMESPACE_PREFIX,
-				GroupTrMemberInvites.SETTINGS_NS_MEMBER_INVITES_PREFIX};
+				GroupTrMemberInvites.SETTINGS_NS_MEMBER_INVITES_PREFIX,
+				GroupTrReceiveOrder.NAMESPACE_PREFIX};
 		Map<String, Boolean> live = new HashMap<>();
 		List<String> gone = new ArrayList<>();
 		for (String prefix : prefixes) {
@@ -511,8 +514,6 @@ class GroupTrManagerImpl
 				.GroupSettingsChangedEvent) {
 			handleGroupSettings((org.zerionproject.app.api.messaging.event
 					.GroupSettingsChangedEvent) e);
-		} else if (e instanceof GroupEpochCommitEvent) {
-			handleEpochCommit((GroupEpochCommitEvent) e);
 		} else if (e instanceof GroupPostReceivedEvent) {
 			receivePost((GroupPostReceivedEvent) e);
 		} else if (e instanceof GroupMemberListSnapshotEvent) {
@@ -2340,7 +2341,6 @@ class GroupTrManagerImpl
 			case MEMBER_REMOVED:
 				if (targetPubKey == null) return null;
 				if (Arrays.equals(targetPubKey, creator)) return null;
-				if (toEpoch < s.getEpoch()) return null;
 				return senderIsCreator ? creator : null;
 			case MEMBER_LEFT:
 				if (targetPubKey == null) return null;
@@ -2353,15 +2353,6 @@ class GroupTrManagerImpl
 			default:
 				return null;
 		}
-	}
-
-	static boolean epochCommitAccepted(GroupTrState s, long fromEpoch,
-			long toEpoch, @Nullable byte[] senderPubKey) {
-		if (s.isDissolved()) return false;
-		if (fromEpoch != s.getEpoch()) return false;
-		if (toEpoch != fromEpoch + 1) return false;
-		return senderPubKey != null
-				&& Arrays.equals(senderPubKey, s.getCreatorPubKey());
 	}
 
 	static boolean snapshotShapeAccepted(GroupTrState s, long epoch,
@@ -2379,26 +2370,11 @@ class GroupTrManagerImpl
 				.MAX_GROUP_MEMBERS;
 	}
 
-	static boolean ownJoinSnapshotAccepted(GroupTrState s, long epoch,
-			byte[] memberCanonical, byte[] localPubKey) {
+	static boolean equalEpochSnapshotAccepted(GroupTrState s, long epoch,
+			int memberCanonicalLength, byte[] localPubKey) {
 		if (epoch != s.getEpoch()) return false;
-		if (!snapshotShapeValid(s, memberCanonical.length)) return false;
-		GroupTrMember self = null;
-		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), localPubKey)) self = m;
-		}
-		if (self == null || self.getJoinedAtEpoch() == epoch) return false;
-		for (int off = 0; off + 37 <= memberCanonical.length; off += 37) {
-			byte[] pk = Arrays.copyOfRange(memberCanonical, off, off + 32);
-			if (!Arrays.equals(pk, localPubKey)) continue;
-			long joinedAtEpoch = 0L;
-			for (int j = 0; j < 4; j++) {
-				joinedAtEpoch = (joinedAtEpoch << 8)
-						| (memberCanonical[off + 33 + j] & 0xFFL);
-			}
-			return joinedAtEpoch == epoch;
-		}
-		return false;
+		if (Arrays.equals(localPubKey, s.getCreatorPubKey())) return false;
+		return snapshotShapeValid(s, memberCanonicalLength);
 	}
 
 	@javax.annotation.Nullable
@@ -2416,23 +2392,6 @@ class GroupTrManagerImpl
 			});
 		} catch (DbException ex) {
 			return null;
-		}
-	}
-
-	private void handleEpochCommit(GroupEpochCommitEvent e) {
-		try {
-			GroupTrState s = getGroup(e.getGroupId());
-			if (s == null) return;
-			byte[] senderPubKey = lookupSenderPubKey(e.getContactId());
-			if (!epochCommitAccepted(s, e.getFromEpoch(), e.getToEpoch(),
-					senderPubKey)) return;
-			if (!verify(e.getRecordSig(), SIGNING_LABEL_GROUP_EPOCH_COMMIT,
-					e.getSignedInput(), senderPubKey)) return;
-			s.setEpoch(e.getToEpoch());
-			persist(s);
-			drainFutureBuffer(s.getGroupId(), e.getToEpoch());
-		} catch (DbException | FormatException ex) {
-
 		}
 	}
 
@@ -2463,14 +2422,19 @@ class GroupTrManagerImpl
 			if (s == null) return;
 			byte[] mc = e.getMemberCanonical();
 			byte[] localPub = localPubKey();
-			if (!snapshotShapeAccepted(s, e.getEpoch(), mc.length)) {
-				if (!ownJoinSnapshotAccepted(s, e.getEpoch(), mc,
-						localPub)) return;
+			boolean newer = snapshotShapeAccepted(s, e.getEpoch(), mc.length);
+			if (!newer && !equalEpochSnapshotAccepted(s, e.getEpoch(),
+					mc.length, localPub)) {
+				return;
 			}
 			if (!verify(e.getRecordSig(),
 					"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT",
 					e.getSignedInput(), s.getCreatorPubKey())) return;
 			boolean listsLocal = canonicalLists(mc, localPub);
+			if (!newer) {
+				if (listsLocal) addMissingMembers(s, mc, localPub);
+				return;
+			}
 			if (!listsLocal && memberInvites.isConfirmedMember(s, localPub)) {
 				removeSelf(s, e.getContactId());
 				return;
@@ -2479,47 +2443,11 @@ class GroupTrManagerImpl
 			List<GroupTrMember> reconciled = new ArrayList<>(n);
 			List<GroupTrMember> prev = s.getMembers();
 			java.util.Map<String, String> contactNames =
-					loadContactNames();
-			String incognito = getIncognitoName(s.getGroupId());
-			if (incognito != null) {
-				contactNames.put(toHexString(localPub), incognito);
-			}
+					snapshotNames(s, localPub);
+			Map<String, Long> departed = order.departures(s.getGroupId());
 			for (int i = 0; i < n; i++) {
-				byte[] pk = new byte[32];
-				System.arraycopy(mc, i * 37, pk, 0, 32);
-				int roleInt = mc[i * 37 + 32] & 0xFF;
-				long joinedAtEpoch = 0L;
-				for (int j = 0; j < 4; j++) {
-					joinedAtEpoch = (joinedAtEpoch << 8)
-							| (mc[i * 37 + 33 + j] & 0xFFL);
-				}
-				MemberRole r = Arrays.equals(pk, s.getCreatorPubKey())
-						? MemberRole.CREATOR
-						: MemberRole.valueOf(roleInt);
-				String name = "";
-				long joinedAt = 0L;
-				byte[] mlDsaPub = null;
-				for (GroupTrMember pm : prev) {
-					if (Arrays.equals(pm.getPubKey(), pk)) {
-						name = pm.getName();
-						joinedAt = pm.getJoinedAt();
-						mlDsaPub = pm.getMlDsaPubKey();
-						break;
-					}
-				}
-				if (name.isEmpty()) {
-					if (Arrays.equals(pk, s.getCreatorPubKey())) {
-						name = s.getCreatorName();
-					} else {
-						String resolved = contactNames.get(toHexString(pk));
-						if (resolved != null) name = resolved;
-					}
-				}
-				if (mlDsaPub == null) {
-					mlDsaPub = lookupPeerMlDsaPubKey(pk);
-				}
-				reconciled.add(new GroupTrMember(pk, name, joinedAt,
-						joinedAtEpoch, r, mlDsaPub));
+				if (departedEntry(s, mc, i, departed, localPub)) continue;
+				reconciled.add(snapshotEntry(s, mc, i, prev, contactNames));
 			}
 			s.setMembers(reconciled);
 			s.setEpoch(e.getEpoch());
@@ -2532,6 +2460,101 @@ class GroupTrManagerImpl
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	private void addMissingMembers(GroupTrState s, byte[] mc, byte[] localPub)
+			throws DbException, FormatException {
+		List<GroupTrMember> prev = s.getMembers();
+		java.util.Set<String> listed = new java.util.HashSet<>();
+		for (GroupTrMember m : prev) listed.add(toHexString(m.getPubKey()));
+		Map<String, Long> departed = order.departures(s.getGroupId());
+		List<GroupTrMember> next = new ArrayList<>(prev);
+		java.util.Map<String, String> contactNames = null;
+		int n = mc.length / 37;
+		for (int i = 0; i < n; i++) {
+			if (next.size() >= GroupTrConstants.MAX_GROUP_MEMBERS) break;
+			String hex = toHexString(Arrays.copyOfRange(mc, i * 37,
+					i * 37 + 32));
+			if (listed.contains(hex)) continue;
+			if (departedEntry(s, mc, i, departed, localPub)) continue;
+			if (contactNames == null) contactNames = snapshotNames(s, localPub);
+			next.add(snapshotEntry(s, mc, i, prev, contactNames));
+			listed.add(hex);
+		}
+		if (next.size() > prev.size()) {
+			s.setMembers(next);
+			persist(s);
+			posts.forgetHistory(toHexString(s.getGroupId()));
+		}
+		if (s.getEpoch() > 0L && listed.contains(toHexString(localPub))) {
+			memberInvites.endJoining(s.getGroupId());
+		}
+	}
+
+	private static boolean departedEntry(GroupTrState s, byte[] mc, int i,
+			Map<String, Long> departed, byte[] localPub) {
+		if (departed.isEmpty()) return false;
+		byte[] pk = Arrays.copyOfRange(mc, i * 37, i * 37 + 32);
+		if (Arrays.equals(pk, localPub)) return false;
+		if (Arrays.equals(pk, s.getCreatorPubKey())) return false;
+		Long leftAt = departed.get(toHexString(pk));
+		if (leftAt == null) return false;
+		long joinedAtEpoch = 0L;
+		for (int j = 0; j < 4; j++) {
+			joinedAtEpoch = (joinedAtEpoch << 8)
+					| (mc[i * 37 + 33 + j] & 0xFFL);
+		}
+		return joinedAtEpoch <= leftAt;
+	}
+
+	private java.util.Map<String, String> snapshotNames(GroupTrState s,
+			byte[] localPub) throws DbException {
+		java.util.Map<String, String> contactNames = loadContactNames();
+		String incognito = getIncognitoName(s.getGroupId());
+		if (incognito != null) {
+			contactNames.put(toHexString(localPub), incognito);
+		}
+		return contactNames;
+	}
+
+	private GroupTrMember snapshotEntry(GroupTrState s, byte[] mc, int i,
+			List<GroupTrMember> prev, Map<String, String> contactNames)
+			throws DbException {
+		byte[] pk = new byte[32];
+		System.arraycopy(mc, i * 37, pk, 0, 32);
+		int roleInt = mc[i * 37 + 32] & 0xFF;
+		long joinedAtEpoch = 0L;
+		for (int j = 0; j < 4; j++) {
+			joinedAtEpoch = (joinedAtEpoch << 8)
+					| (mc[i * 37 + 33 + j] & 0xFFL);
+		}
+		MemberRole r = Arrays.equals(pk, s.getCreatorPubKey())
+				? MemberRole.CREATOR
+				: MemberRole.valueOf(roleInt);
+		String name = "";
+		long joinedAt = 0L;
+		byte[] mlDsaPub = null;
+		for (GroupTrMember pm : prev) {
+			if (Arrays.equals(pm.getPubKey(), pk)) {
+				name = pm.getName();
+				joinedAt = pm.getJoinedAt();
+				mlDsaPub = pm.getMlDsaPubKey();
+				break;
+			}
+		}
+		if (name.isEmpty()) {
+			if (Arrays.equals(pk, s.getCreatorPubKey())) {
+				name = s.getCreatorName();
+			} else {
+				String resolved = contactNames.get(toHexString(pk));
+				if (resolved != null) name = resolved;
+			}
+		}
+		if (mlDsaPub == null) {
+			mlDsaPub = lookupPeerMlDsaPubKey(pk);
+		}
+		return new GroupTrMember(pk, name, joinedAt, joinedAtEpoch, r,
+				mlDsaPub);
 	}
 
 	private static boolean canonicalLists(byte[] memberCanonical,
@@ -2561,7 +2584,10 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
-		if (e.getEpoch() <= s.getEpoch()) return;
+		if (e.getEpoch() <= s.getEpoch()) {
+			applyOlderAddition(s, pk, e.getEpoch(), e.getTimestamp());
+			return;
+		}
 		String mname = e.getTargetName();
 		if (mname == null) mname = "";
 		byte[] localPub = db.transactionWithResult(true,
@@ -2577,7 +2603,7 @@ class GroupTrManagerImpl
 				s.setMembers(next);
 			}
 			s.setEpoch(e.getEpoch());
-			persist(s);
+			persistAdded(s, pk, e.getEpoch());
 			drainFutureBuffer(s.getGroupId(), e.getEpoch());
 			return;
 		}
@@ -2585,9 +2611,41 @@ class GroupTrManagerImpl
 				e.getEpoch()));
 		s.setMembers(next);
 		s.setEpoch(e.getEpoch());
-		persist(s);
+		persistAdded(s, pk, e.getEpoch());
 		drainFutureBuffer(s.getGroupId(), e.getEpoch());
 		posts.forgetHistory(toHexString(s.getGroupId()));
+	}
+
+	private void applyOlderAddition(GroupTrState s, byte[] pk, long epoch,
+			long timestamp) throws DbException, FormatException {
+		byte[] localPub = localPubKey();
+		List<GroupTrMember> next = new ArrayList<>(s.getMembers());
+		boolean raised = false;
+		for (int i = 0; i < next.size(); i++) {
+			GroupTrMember m = next.get(i);
+			if (!Arrays.equals(m.getPubKey(), pk)) continue;
+			if (Arrays.equals(pk, localPub)) break;
+			if (m.getJoinedAtEpoch() >= epoch) break;
+			next.set(i, new GroupTrMember(pk, m.getName(),
+					Math.max(m.getJoinedAt(), timestamp), epoch, m.getRole(),
+					m.getMlDsaPubKey()));
+			raised = true;
+			break;
+		}
+		if (raised) s.setMembers(next);
+		boolean write = raised;
+		db.transaction(false, txn -> {
+			if (write) persist(txn, s);
+			order.clearDepartureBelow(txn, s.getGroupId(), pk, epoch);
+		});
+	}
+
+	private void persistAdded(GroupTrState s, byte[] pk, long epoch)
+			throws DbException, FormatException {
+		db.transaction(false, txn -> {
+			persist(txn, s);
+			order.clearDepartureBelow(txn, s.getGroupId(), pk, epoch);
+		});
 	}
 
 	private void applyMemberRemoved(GroupTrState s,
@@ -2595,14 +2653,16 @@ class GroupTrManagerImpl
 			throws DbException, FormatException {
 		byte[] pk = e.getTargetPubKey();
 		if (pk == null) return;
-		if (e.getToEpoch() < s.getEpoch()) return;
-		boolean advances = e.getToEpoch() > s.getEpoch();
+		byte[] groupId = s.getGroupId();
+		long fromEpoch = e.getFromEpoch();
+		long toEpoch = e.getToEpoch();
+		boolean advances = toEpoch > s.getEpoch();
 		LocalAuthor la = db.transactionWithResult(true,
 				identityManager::getLocalAuthor);
 		byte[] localPub = la.getPublicKey().getEncoded();
 		if (Arrays.equals(pk, localPub)) {
+			if (toEpoch < s.getEpoch()) return;
 			String groupName = s.getName();
-			byte[] groupId = s.getGroupId();
 			try {
 				removeFromDevice(groupId);
 			} catch (DbException ignored) {
@@ -2614,18 +2674,29 @@ class GroupTrManagerImpl
 		}
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		boolean found = false;
+		boolean addedAgain = false;
 		for (GroupTrMember m : s.getMembers()) {
-			if (Arrays.equals(m.getPubKey(), pk)) {
-				found = true;
-			} else {
+			if (!Arrays.equals(m.getPubKey(), pk)) {
 				next.add(m);
+			} else if (m.getJoinedAtEpoch() > fromEpoch) {
+				addedAgain = true;
+				next.add(m);
+			} else {
+				found = true;
 			}
 		}
-		if (!found && !advances) return;
-		s.setMembers(next);
-		if (advances) s.setEpoch(e.getToEpoch());
-		persist(s);
-		drainFutureBuffer(s.getGroupId(), s.getEpoch());
+		boolean changed = found || advances;
+		if (changed) {
+			s.setMembers(next);
+			if (advances) s.setEpoch(toEpoch);
+		}
+		boolean departs = !addedAgain;
+		if (!changed && !departs) return;
+		db.transaction(false, txn -> {
+			if (changed) persist(txn, s);
+			if (departs) order.noteDeparture(txn, groupId, pk, toEpoch);
+		});
+		if (changed) drainFutureBuffer(groupId, s.getEpoch());
 	}
 
 	private void applyMemberLeft(GroupTrState s,
@@ -2655,27 +2726,40 @@ class GroupTrManagerImpl
 			if (e.getEpoch() <= s.getEpoch()) return;
 			s.setMembers(next);
 			s.setEpoch(Math.min(e.getEpoch(), s.getEpoch() + 1));
-			persist(s);
+			persistDeparted(s, pk, e.getEpoch());
 			drainFutureBuffer(s.getGroupId(), s.getEpoch());
 			return;
 		}
 		s.setMembers(next);
-		persist(s);
 		if (localIsCreator) {
+			persist(s);
 			memberInvites.forgetGrant(s.getGroupId(), pk);
 			confirmLeaving(s, pk);
+		} else {
+			persistDeparted(s, pk, e.getEpoch());
 		}
+	}
+
+	private void persistDeparted(GroupTrState s, byte[] pk, long leftAt)
+			throws DbException, FormatException {
+		long epoch = Math.min(leftAt, s.getEpoch());
+		db.transaction(false, txn -> {
+			persist(txn, s);
+			order.noteDeparture(txn, s.getGroupId(), pk, epoch);
+		});
 	}
 
 	private boolean creatorConfirmsLeavings(GroupTrState s)
 			throws DbException {
-		return db.transactionWithResult(true, txn -> {
+		Boolean confirms = db.transactionWithNullableResult(true, txn -> {
 			Contact creator = findContactByPubKey(txn, s.getCreatorPubKey());
-			if (creator == null) return false;
+			if (creator == null) return null;
 			return messagingManager.getContactClientMinorVersion(txn,
 					creator.getId())
 					>= MessagingManager.GROUP_PROTOCOL_V2_MIN_VERSION;
 		});
+		if (confirms != null) return confirms;
+		return memberInvites.joinedThroughMember(s.getGroupId());
 	}
 
 	private void confirmLeaving(GroupTrState s, byte[] leaverPubKey)
@@ -3325,7 +3409,8 @@ class GroupTrManagerImpl
 	private static List<String> groupNamespaces(byte[] groupId) {
 		String hex = toHexString(groupId);
 		return Arrays.asList(nsOf(groupId), SETTINGS_NS_LOCAL_PREFIX + hex,
-				ALIAS_NAMESPACE_PREFIX + hex, SEEN_NAMESPACE_PREFIX + hex);
+				ALIAS_NAMESPACE_PREFIX + hex, SEEN_NAMESPACE_PREFIX + hex,
+				GroupTrReceiveOrder.namespace(groupId));
 	}
 
 	private void clearInvitePendingFor(byte[] groupId) throws DbException {

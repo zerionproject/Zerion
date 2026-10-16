@@ -28,6 +28,12 @@ public interface ChannelManager {
 
 	ChannelState joinChannel(ChannelInviteLink link) throws DbException;
 
+	ChannelRejoinResult rejoinChannel(ChannelInviteLink link)
+			throws DbException;
+
+	ChannelRejoinResult rejoinChannelThroughLink(ChannelInviteLink link)
+			throws DbException;
+
 	void leaveChannel(byte[] channelId) throws DbException;
 
 	void publishPost(byte[] channelId, String body, long ttlSeconds)
@@ -62,6 +68,10 @@ public interface ChannelManager {
 	void bootstrapChannel(byte[] channelId) throws DbException;
 
 	void refreshChannel(byte[] channelId) throws DbException;
+
+	void refreshChannelOnOpen(byte[] channelId) throws DbException;
+
+	boolean refreshChannelTick(byte[] channelId) throws DbException;
 
 	void refreshChannelReachability(byte[] channelId);
 
@@ -145,6 +155,9 @@ public interface ChannelManager {
 	void applyToJoin(byte[] channelId, String displayName)
 			throws DbException;
 
+	void applyToJoin(ChannelInviteLink link, String displayName)
+			throws DbException;
+
 	List<ChannelApplication> listPendingApplications(byte[] channelId)
 			throws DbException;
 
@@ -167,4 +180,18 @@ public interface ChannelManager {
 	boolean canPost(byte[] channelId) throws DbException;
 
 	long getPostsGivenUp(byte[] channelId) throws DbException;
+
+	ChannelSyncStatus getSyncStatus(byte[] channelId) throws DbException;
+
+	List<String> getOwnerDeletedChannelNames() throws DbException;
+
+	void dismissOwnerDeletedChannelName(String name) throws DbException;
+
+	List<ChannelQueuedItem> getQueuedItems(byte[] channelId)
+			throws DbException;
+
+	void retryQueuedItem(byte[] channelId, long itemId) throws DbException;
+
+	ChannelQueuedItem.DeleteResult deleteQueuedItem(byte[] channelId,
+			long itemId) throws DbException;
 }

@@ -300,7 +300,7 @@
   <string name="groups_dissolve_dialog_message">確認要解散該群組嗎？\n\n所有其他成員將無法繼續會話並可能無法接收最新的消息。</string>
   <string name="groups_dissolve_button">解散</string>
   <string name="groups_dissolved_dialog_title">已解散群組</string>
-  <string name="groups_dissolved_dialog_message">群組創建者已解散該群組。\n\n您將無法在群組中發送消息，並可能無法接收所有已發送的消息。</string>
+  <string name="groups_dissolved_dialog_message">群組擁有者已解散該群組。\n\n您將無法在群組中傳送訊息，並可能無法收到所有已發布的貼文。</string>
   
   <string name="groups_invitations_title">群組邀請</string>
   <string name="groups_invitations_invitation_sent">您已邀請 %1$s 加入群組 “%2$s”。</string>
@@ -309,9 +309,9 @@
   <plurals name="groups_invitations_open">
     <item quantity="other">%d 打開了群組邀請</item>
   </plurals>
-  <string name="sharing_status_groups">只有創建者可以邀請新成員加入群組。下面是目前的群組成員。</string>
+  <string name="sharing_status_groups">只有群組擁有者可以邀請新成員加入群組。以下是目前所有的群組成員。</string>
   
-  <string name="groups_reveal_dialog_message">您可以決定是否對所有當前和未來的群組成員展示該群組的聯絡人。\n\n這將使您連接群組更快速更可靠，因爲即使群組創建者離線，您也可以與已展示的聯絡人交流。</string>
+  <string name="groups_reveal_dialog_message">您可以決定是否對所有目前和未來的群組成員展示該群組的聯絡人。\n\n這將使您連接群組更快速更可靠，因為即使群組擁有者離線，您也可以與已展示的聯絡人交流。</string>
   <string name="groups_reveal_visible_revealed_by_us">群組可見聯絡人關係（由您設定）</string>
   <string name="groups_reveal_visible_revealed_by_contact">群組可見聯絡人關係（由 %s 設定）</string>
   <string name="groups_reveal_invisible">群組不可見聯絡人關係</string>
@@ -711,7 +711,7 @@
 	<string name="channels_feed_empty_publisher">您的頻道尚無貼文。發布您的第一則貼文吧。</string>
 	<string name="channels_feed_empty_subscriber">尚無貼文。新貼文將會顯示在這裡。</string>
 	<string name="channels_feed_connecting">正在連線至頻道…</string>
-	<string name="channels_feed_connecting_slow">仍在連線中。請確認分享此頻道的人已上線。此畫面會自動更新。</string>
+	<string name="channels_feed_connecting_slow">仍在連線中。可連線至頻道後，貼文會顯示在這裡。</string>
 	<string name="channels_compose_hint">寫給您的訂閱者…</string>
 	<string name="channels_compose_send">發布</string>
 	<string name="channels_compose_error_empty">發布前請先輸入內容。</string>
@@ -1006,7 +1006,7 @@
 	<string name="grouptr_empty">尚無群組。</string>
 	<string name="grouptr_meta">%2$d 位成員</string>
 	<string name="grouptr_dissolved_suffix">（已解散）</string>
-	<string name="grouptr_creator_tag">（建立者）</string>
+	<string name="grouptr_creator_tag">（群組擁有者）</string>
 	<string name="grouptr_admin_tag">（管理員）</string>
 	<string name="grouptr_promote">升為管理員</string>
 	<string name="grouptr_demote">降為成員</string>
@@ -1105,7 +1105,7 @@
 	<string name="grouptr_detail_status">狀態</string>
 	<string name="grouptr_detail_status_dissolved">已解散</string>
 	<string name="grouptr_open_chat">開啟聊天</string>
-	<string name="grouptr_member_role_creator">建立者</string>
+	<string name="grouptr_member_role_creator">群組擁有者</string>
 	<string name="grouptr_member_role_you">您</string>
 	<string name="grouptr_member_action_remove">從群組移除</string>
 	<string name="scroll_to_bottom">捲動至底部</string>
@@ -2254,14 +2254,14 @@
 	<string name="wallet_sp_enable_first">請先啟用 Silent Payments</string>
 	<string name="grouptr_reach_title">您的貼文能送達誰</string>
 	<string name="grouptr_reach_explanation">群組貼文會在彼此互為聯絡人的成員之間直接傳遞，成員不會轉傳貼文。這些成員不是您的聯絡人，因此他們不會收到您的貼文，您也不會收到他們的貼文：\n\n%1$s\n\n將他們新增為聯絡人，即可與他們互通。</string>
-	<string name="grouptr_ttl_set_by_creator">此群組的自動消失訊息：%1$s。只有群組建立者可以變更此設定。</string>
+	<string name="grouptr_ttl_set_by_creator">此群組的自動消失訊息：%1$s。只有群組擁有者可以變更此設定。</string>
 	<string name="grouptr_sender_alias_format">%1$s（以「%2$s」名義發文）</string>
 	<string name="grouptr_sender_unverified_format">「%1$s」（不是您認識的名稱）</string>
 	<string name="grouptr_member_out_of_reach">不是您的聯絡人，不會收到您的貼文</string>
 	<string name="grouptr_member_invited">已邀請，等待回覆</string>
 	<string name="grouptr_confirm_revoke">要撤回給 %1$s 的邀請嗎？對方的回覆將被忽略。</string>
 	<string name="grouptr_revoke_invite">撤回邀請</string>
-	<string name="grouptr_invite_expired">此邀請已過期。請向群組建立者索取新的邀請。</string>
+	<string name="grouptr_invite_expired">此邀請已過期。請向群組擁有者索取新的邀請。</string>
 	<string name="reaction_removed_here_only">僅在此裝置上移除：您聯絡人的應用程式版本太舊，無法在其裝置上移除。</string>
 	<string name="startup_data_without_account_message">Zerion 在此裝置上找到資料，但沒有能開啟它的帳戶金鑰：金鑰檔案遺失或已損毀。沒有任何資料被刪除。\n\n您可以關閉 Zerion 並保留資料，或清除所有內容並重新開始。</string>
 	<string name="startup_data_without_account_keep">關閉並保留</string>
@@ -2432,13 +2432,13 @@
 	<string name="grouptr_members_may_invite">成員可以邀請其聯絡人</string>
 	<string name="grouptr_members_may_invite_summary">開啟時，您的手機會自動加入他們邀請的人。</string>
 	<string name="grouptr_invite_contacts">邀請聯絡人</string>
-	<string name="grouptr_member_invite_needs_creator_contact">只有將群組建立者設為聯絡人的成員才能邀請。</string>
-	<string name="grouptr_member_invite_creator_outdated">群組建立者需要較新版本的應用程式，成員才能邀請。</string>
+	<string name="grouptr_member_invite_needs_creator_contact">只有將群組擁有者設為聯絡人的成員才能邀請。</string>
+	<string name="grouptr_member_invite_creator_outdated">群組擁有者需要較新版本的應用程式，成員才能邀請。</string>
 	<string name="grouptr_member_invite_contact_outdated">需要較新版本的應用程式</string>
 	<string name="grouptr_member_invitation_received">%1$s 邀請您加入由 %3$s 建立的群組「%2$s」。</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s 邀請您加入由 %2$s 建立的群組。</string>
-	<string name="grouptr_waiting_for_admin">正在等待群組建立者 %1$s 上線。對方的手機會自動將您加入，之後您就可以在此發文。</string>
-	<string name="grouptr_member_invite_accepted">已接受。群組建立者上線後，您就會加入。</string>
+	<string name="grouptr_waiting_for_admin">正在等待群組擁有者 %1$s 上線。對方的手機會自動將您加入，之後您就可以在此發文。</string>
+	<string name="grouptr_member_invite_accepted">已接受。群組擁有者上線後，您就會加入。</string>
 	<string name="grouptr_member_invite_unavailable">此邀請已無法接受。請索取新的邀請。</string>
 	<string name="grouptr_incognito">在此群組中隱身</string>
 	<string name="grouptr_incognito_summary">群組中的其他人看到的是隨機名稱，而不是您的名稱。是您聯絡人的成員仍可透過您的金鑰認出您。</string>
@@ -2446,7 +2446,7 @@
 	<string name="grouptr_incognito_new_name">新名稱</string>
 	<string name="grouptr_sender_incognito_format">「%1$s」（隱身）</string>
 	<string name="grouptr_member_may_add">可以新增成員</string>
-	<string name="grouptr_member_invite_creator_only">只有群組建立者可以新增成員。</string>
+	<string name="grouptr_member_invite_creator_only">只有群組擁有者可以新增成員。</string>
 	<string name="tor_status_entry_relay">不穩定</string>
 	<string name="tor_hidden_services_entry_relay">Tor 入口中繼在大多數連線上失敗，因此聯絡人可能無法聯繫到你。原因可能是網路壅塞或干擾。在設定的連線中將 Tor 連線方式改為橋接通常會有幫助。</string>
 	<string name="contact_connection_tor_entry_relay">Tor 已連線，但其入口中繼在大多數連線上失敗。使用橋接通常會有幫助。</string>
@@ -2457,4 +2457,45 @@
 	<string name="channels_subscribers_unban">解除封鎖</string>
 	<string name="channels_subscribers_unban_confirm">要解除封鎖嗎？此訂閱者將可再次留言和回應。封鎖所刪除的內容不會恢復，編輯者角色需要重新授予。</string>
 	<string name="channels_unban_failed">無法解除封鎖</string>
+	<string name="contact_delete_failed">無法刪除聯絡人</string>
+	<string name="channels_delegations_revoke_failed">無法撤銷此編輯者</string>
+	<string name="channels_invite_rotate_failed">邀請連結未更換。舊連結仍然有效。</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="other">已向 %d 位聯絡人傳送邀請</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">擁有者尚未確認已收到你的申請。請稍後再試。</string>
+	<string name="channels_apply_banner">輕觸以向擁有者申請存取此頻道。</string>
+	<string name="channels_rejoin_updated">已更新您對 %1$s 的存取權。</string>
+	<string name="channels_rejoin_unreachable">目前無法檢查此連結。請稍後再試。</string>
+	<string name="channels_rejoin_apply_again">您可以重新申請，以閱讀此頻道的新貼文。您已有的貼文會保留。擁有者會看到您的顯示名稱，以及一把僅在此頻道中屬於您的金鑰。</string>
+	<string name="channels_sync_last_updated">最後更新於 %1$s</string>
+	<string name="channels_sync_saved_posts">正在顯示已儲存的貼文</string>
+	<string name="channels_sync_saved_posts_last_updated">正在顯示已儲存的貼文 · 最後更新於 %1$s</string>
+	<string name="channels_sync_not_updated_since">自 %1$s 起未更新</string>
+	<string name="channels_owner_deleted_notice">擁有者已刪除頻道「%1$s」</string>
+	<string name="channels_owner_deleted_notice_unnamed">擁有者已刪除您加入的一個頻道</string>
+	<string name="channels_queued_waiting">等待傳送</string>
+	<string name="channels_queued_not_sent">未傳送</string>
+	<string name="channels_queued_retry">重試</string>
+	<string name="channels_queued_delete">刪除</string>
+	<string name="channels_comment_queued_toast">您的留言會在可連線至頻道時傳送。</string>
+	<string name="channels_react_queued_toast">您的表情回應會在可連線至頻道時傳送。</string>
+	<string name="channels_announce_queued_toast">您的名稱會在可連線至頻道時傳送。</string>
+	<string name="channels_post_queued_toast">您的貼文會在可連線至頻道時傳送。</string>
+	<string name="channels_change_queued_toast">您的變更會在可連線至頻道時傳送。</string>
+	<string name="channels_queued_notice_waiting">您傳送的部分內容正在等待。這些內容會在可連線至頻道時傳送。</string>
+	<string name="channels_queued_notice_not_sent">您傳送的部分內容未能傳送。點一下即可重試或刪除。</string>
+	<string name="channels_queued_announce_label">您的名稱：%1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">無法連線至此頻道。您可以透過此連結重新申請加入。您已有的貼文會保留。擁有者會看到您的顯示名稱，以及一把僅在此頻道中屬於您的金鑰。</string>
+	<string name="channels_rejoin_not_restored">此連結未能恢復您對此頻道的存取權。您可以索取新的連結。</string>
+	<string name="channels_rejoin_check_title">要嘗試此連結嗎？</string>
+	<string name="channels_rejoin_check_message">目前無法取得此頻道的新貼文。您可以嘗試此連結來重新取得。您已有的貼文會保留。</string>
+	<string name="channels_rejoin_check_action">嘗試連結</string>
+	<string name="channels_rejoin_try_later">目前無法連線至此頻道，而此連結就是您已有的連結。請稍後再試。您已有的貼文會保留。</string>
+	<string name="channels_rejoin_trying">我們會繼續嘗試此連結。您已有的貼文會保留。</string>
+	<string name="channels_queued_already_sent">該內容已經傳送，因此無法刪除。</string>
+	<string name="channels_queued_behind_toast">這會在您先前傳送至此頻道的內容之後傳送。</string>
+	<string name="channels_queued_no_access">未傳送。您已不再擁有此頻道的存取權。</string>
+	<string name="channels_no_access_toast">您已不再擁有此頻道的存取權。請向擁有者索取新的邀請連結。</string>
+	<string name="channels_rejoin_too_many_links">您已有多個此頻道的連結在等待中，因此未嘗試此連結。您已有的貼文會保留。</string>
 </resources>

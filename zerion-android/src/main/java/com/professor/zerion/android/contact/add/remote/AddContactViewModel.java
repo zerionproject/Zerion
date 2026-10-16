@@ -16,6 +16,7 @@ import org.zerionproject.core.api.db.NoSuchPendingContactException;
 import org.zerionproject.core.api.db.TransactionManager;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
+import org.zerionproject.core.util.ZerionLinks;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.LiveResult;
@@ -139,6 +140,7 @@ public class AddContactViewModel extends DbViewModel {
 	}
 
 	void setRemoteHandshakeLink(String link) {
+		link = ZerionLinks.normalizeScheme(link);
 		remoteHandshakeLink = link;
 		lastRemoteHandshakeLink = link;
 	}

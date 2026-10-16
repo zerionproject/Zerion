@@ -122,6 +122,195 @@
 				<category android:name="android.intent.category.BROWSABLE" />
 
 				<data android:scheme="zerion" />
+				<data
+					android:scheme="zerioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeriOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeriON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zerIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zerIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zerIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zerION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRiOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRiON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zeRION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zEriOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zEriON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zErION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERiOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERiON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="zERION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="Zerion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZerioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeriOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeriON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZerIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZerIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZerIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZerION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRiOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRiON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZeRION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZEriOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZEriON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZErION"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERion"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERioN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERiOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERiON"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERIon"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERIoN"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERIOn"
+					tools:ignore="AppLinkUrlError" />
+				<data
+					android:scheme="ZERION"
+					tools:ignore="AppLinkUrlError" />
 			</intent-filter>
 			<intent-filter android:label="@string/add_contact_remotely_title_case">
 				<action android:name="android.intent.action.SEND" />

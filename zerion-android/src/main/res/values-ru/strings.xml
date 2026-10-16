@@ -323,7 +323,7 @@
   <string name="groups_dissolve_dialog_message">Вы уверены, что хотите распустить эту группу?\n\nДругие участники не смогут продолжить разговор и могут не получить последние сообщения.</string>
   <string name="groups_dissolve_button">Распустить</string>
   <string name="groups_dissolved_dialog_title">Группа была распущена</string>
-  <string name="groups_dissolved_dialog_message">Создатель этой группы распустил ее.\n\nВы больше не можете писать сообщения в группу и можете получить не все сообщения, которые были написаны.</string>
+  <string name="groups_dissolved_dialog_message">Владелец этой группы распустил её.\n\nВы больше не можете писать сообщения в группу и можете получить не все сообщения, которые были написаны.</string>
   
   <string name="groups_invitations_title">Приглашения в группу</string>
   <string name="groups_invitations_invitation_sent">Вы пригласили %1$s присоединиться к группе \"%2$s\".</string>
@@ -335,9 +335,9 @@
     <item quantity="many">%d открытых приглашений в группу</item>
     <item quantity="other">%d открытых приглашений в группу</item>
   </plurals>
-  <string name="sharing_status_groups">Только создатель может пригласить новых участников в группу. Ниже перечислены все текущие участники группы.</string>
+  <string name="sharing_status_groups">Только владелец группы может приглашать в неё новых участников. Ниже перечислены все текущие участники группы.</string>
   
-  <string name="groups_reveal_dialog_message">Вы можете выбрать, показывать ли контакты всем текущим и будущим членам этой группы.\n\nПри открытии контактов связь с группой становится более быстрой и надежной, поскольку вы можете общаться с открытыми контактами, даже если создатель группы находится в автономном режиме.</string>
+  <string name="groups_reveal_dialog_message">Вы можете выбрать, показывать ли контакты всем текущим и будущим участникам этой группы.\n\nПри открытии контактов связь с группой становится быстрее и надёжнее, поскольку вы можете общаться с открытыми контактами, даже если владелец группы не в сети.</string>
   <string name="groups_reveal_visible_revealed_by_us">Связь между контактами видна группе (открыта вами)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Связь между контактами видна группе (открыта %s)</string>
   <string name="groups_reveal_invisible">Связь между контактами не видна группе</string>
@@ -769,7 +769,7 @@
 	<string name="channels_feed_empty_publisher">В вашем канале пока нет публикаций. Опубликуйте первую.</string>
 	<string name="channels_feed_empty_subscriber">Пока нет публикаций. Новые публикации появятся здесь.</string>
 	<string name="channels_feed_connecting">Подключение к каналу…</string>
-	<string name="channels_feed_connecting_slow">Всё ещё подключаемся. Убедитесь, что человек, поделившийся этим каналом, в сети. Обновится автоматически.</string>
+	<string name="channels_feed_connecting_slow">Всё ещё подключаемся. Публикации появятся здесь, как только канал станет доступен.</string>
 	<string name="channels_compose_hint">Напишите вашим подписчикам…</string>
 	<string name="channels_compose_send">Опубликовать</string>
 	<string name="channels_compose_error_empty">Введите что-нибудь перед публикацией.</string>
@@ -1064,7 +1064,7 @@
 	<string name="grouptr_empty">Пока нет групп.</string>
 	<string name="grouptr_meta">%2$d участников</string>
 	<string name="grouptr_dissolved_suffix">(распущена)</string>
-	<string name="grouptr_creator_tag">(создатель)</string>
+	<string name="grouptr_creator_tag">(владелец группы)</string>
 	<string name="grouptr_admin_tag">(администратор)</string>
 	<string name="grouptr_promote">Повысить</string>
 	<string name="grouptr_demote">Понизить</string>
@@ -1163,7 +1163,7 @@
 	<string name="grouptr_detail_status">Статус</string>
 	<string name="grouptr_detail_status_dissolved">Распущена</string>
 	<string name="grouptr_open_chat">Открыть чат</string>
-	<string name="grouptr_member_role_creator">создатель</string>
+	<string name="grouptr_member_role_creator">Владелец группы</string>
 	<string name="grouptr_member_role_you">вы</string>
 	<string name="grouptr_member_action_remove">Удалить из группы</string>
 	<string name="scroll_to_bottom">Прокрутить вниз</string>
@@ -2301,14 +2301,14 @@
 	<string name="wallet_sp_enable_first">Сначала включите Silent Payments</string>
 	<string name="grouptr_reach_title">Кто получает ваши сообщения</string>
 	<string name="grouptr_reach_explanation">Сообщения в группе передаются напрямую между участниками, которые являются контактами друг друга, и участники не пересылают их дальше. Эти участники не входят в ваши контакты, поэтому они не получают ваши сообщения, а вы не получаете их сообщения:\n\n%1$s\n\nДобавьте их в контакты, чтобы связаться с ними.</string>
-	<string name="grouptr_ttl_set_by_creator">Исчезающие сообщения в этой группе: %1$s. Изменить это может только создатель группы.</string>
+	<string name="grouptr_ttl_set_by_creator">Исчезающие сообщения в этой группе: %1$s. Изменить это может только владелец группы.</string>
 	<string name="grouptr_sender_alias_format">%1$s (пишет как «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (незнакомое вам имя)</string>
 	<string name="grouptr_member_out_of_reach">не ваш контакт, не получает ваши сообщения</string>
 	<string name="grouptr_member_invited">Приглашён, ожидается ответ</string>
 	<string name="grouptr_confirm_revoke">Отозвать приглашение для %1$s? Ответ этого человека будет проигнорирован.</string>
 	<string name="grouptr_revoke_invite">Отозвать приглашение</string>
-	<string name="grouptr_invite_expired">Срок действия этого приглашения истёк. Попросите создателя группы прислать новое.</string>
+	<string name="grouptr_invite_expired">Срок действия этого приглашения истёк. Попросите владельца группы прислать новое.</string>
 	<string name="reaction_removed_here_only">Реакция удалена только на этом устройстве: приложение вашего контакта слишком старое, чтобы удалить её у него.</string>
 	<string name="startup_data_without_account_message">Zerion обнаружил данные на этом устройстве, но не нашёл ключ учётной записи, который их открывает: файлы ключей отсутствуют или повреждены. Ничего не удалено.\n\nВы можете закрыть Zerion и сохранить данные или стереть всё и начать заново.</string>
 	<string name="startup_data_without_account_keep">Закрыть и сохранить</string>
@@ -2527,13 +2527,13 @@
 	<string name="grouptr_members_may_invite">Участники могут приглашать свои контакты</string>
 	<string name="grouptr_members_may_invite_summary">Пока это включено, ваш телефон автоматически добавляет приглашённых ими людей.</string>
 	<string name="grouptr_invite_contacts">Пригласить контакты</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Приглашать могут только участники, у которых создатель группы есть в контактах.</string>
-	<string name="grouptr_member_invite_creator_outdated">Создателю группы нужна более новая версия приложения, чтобы участники могли приглашать.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Приглашать могут только участники, у которых владелец группы есть в контактах.</string>
+	<string name="grouptr_member_invite_creator_outdated">Владельцу группы нужна более новая версия приложения, чтобы участники могли приглашать.</string>
 	<string name="grouptr_member_invite_contact_outdated">Нужна более новая версия приложения</string>
 	<string name="grouptr_member_invitation_received">%1$s пригласил вас вступить в группу \"%2$s\", которую создал %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s пригласил вас вступить в группу, которую создал %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Ожидание, пока %1$s, создатель группы, появится в сети. Телефон создателя автоматически добавит вас, после чего вы сможете писать здесь.</string>
-	<string name="grouptr_member_invite_accepted">Принято. Вы вступите в группу, как только её создатель появится в сети.</string>
+	<string name="grouptr_waiting_for_admin">Ожидание, пока %1$s, владелец группы, появится в сети. Телефон владельца автоматически добавит вас, после чего вы сможете писать здесь.</string>
+	<string name="grouptr_member_invite_accepted">Принято. Вы вступите в группу, как только её владелец появится в сети.</string>
 	<string name="grouptr_member_invite_unavailable">Это приглашение больше нельзя принять. Попросите новое.</string>
 	<string name="grouptr_incognito">Инкогнито в этой группе</string>
 	<string name="grouptr_incognito_summary">Остальные в группе видят случайное имя вместо вашего. Участники, которые есть у вас в контактах, всё равно могут узнать вас по вашему ключу.</string>
@@ -2541,7 +2541,7 @@
 	<string name="grouptr_incognito_new_name">Новое имя</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (инкогнито)</string>
 	<string name="grouptr_member_may_add">Может добавлять участников</string>
-	<string name="grouptr_member_invite_creator_only">Добавлять участников может только создатель группы.</string>
+	<string name="grouptr_member_invite_creator_only">Добавлять участников может только владелец группы.</string>
 	<string name="tor_status_entry_relay">Нестабильно</string>
 	<string name="tor_hidden_services_entry_relay">Входной ретранслятор Tor не справляется с большинством соединений, поэтому контакты могут не достучаться до вас. Причиной может быть перегруженная сеть или помехи. Обычно помогает переключить способ подключения Tor на мосты в разделе Настройки, Подключения.</string>
 	<string name="contact_connection_tor_entry_relay">Tor подключён, но его входной ретранслятор не справляется с большинством соединений. Обычно помогают мосты.</string>
@@ -2552,4 +2552,48 @@
 	<string name="channels_subscribers_unban">Разблокировать</string>
 	<string name="channels_subscribers_unban_confirm">Разблокировать? Этот подписчик снова сможет комментировать и ставить реакции. Удалённое блокировкой не вернётся, а роль редактора нужно выдать заново.</string>
 	<string name="channels_unban_failed">Не удалось разблокировать</string>
+	<string name="contact_delete_failed">Не удалось удалить контакт</string>
+	<string name="channels_delegations_revoke_failed">Не удалось отозвать этого редактора</string>
+	<string name="channels_invite_rotate_failed">Ссылка-приглашение не изменилась. Старая ссылка по-прежнему работает.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="one">Приглашение отправлено %d контакту</item>
+		<item quantity="few">Приглашения отправлены %d контактам</item>
+		<item quantity="many">Приглашения отправлены %d контактам</item>
+		<item quantity="other">Приглашения отправлены %d контакта</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">Владелец не подтвердил, что получил вашу заявку. Попробуйте позже.</string>
+	<string name="channels_apply_banner">Нажмите, чтобы подать владельцу заявку на доступ к этому каналу.</string>
+	<string name="channels_rejoin_updated">Ваш доступ к каналу %1$s обновлён.</string>
+	<string name="channels_rejoin_unreachable">Сейчас не удалось проверить эту ссылку. Попробуйте позже.</string>
+	<string name="channels_rejoin_apply_again">Вы можете снова подать заявку, чтобы читать новые публикации этого канала. Публикации, которые у вас уже есть, останутся. Владелец увидит ваше отображаемое имя и ключ, который принадлежит вам только в этом канале.</string>
+	<string name="channels_sync_last_updated">Обновлено %1$s</string>
+	<string name="channels_sync_saved_posts">Показаны сохранённые публикации</string>
+	<string name="channels_sync_saved_posts_last_updated">Показаны сохранённые публикации · Обновлено %1$s</string>
+	<string name="channels_sync_not_updated_since">Не обновлялось с %1$s</string>
+	<string name="channels_owner_deleted_notice">Владелец удалил канал %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Владелец удалил канал, к которому вы присоединились</string>
+	<string name="channels_queued_waiting">Ожидает отправки</string>
+	<string name="channels_queued_not_sent">Не отправлено</string>
+	<string name="channels_queued_retry">Повторить</string>
+	<string name="channels_queued_delete">Удалить</string>
+	<string name="channels_comment_queued_toast">Ваш комментарий будет отправлен, когда канал станет доступен.</string>
+	<string name="channels_react_queued_toast">Ваша реакция будет отправлена, когда канал станет доступен.</string>
+	<string name="channels_announce_queued_toast">Ваше имя будет отправлено, когда канал станет доступен.</string>
+	<string name="channels_post_queued_toast">Ваша публикация будет отправлена, когда канал станет доступен.</string>
+	<string name="channels_change_queued_toast">Ваше изменение будет отправлено, когда канал станет доступен.</string>
+	<string name="channels_queued_notice_waiting">Часть того, что вы отправили, ещё ожидает. Она будет отправлена, когда канал станет доступен.</string>
+	<string name="channels_queued_notice_not_sent">Часть того, что вы отправили, не отправлена. Нажмите, чтобы повторить или удалить.</string>
+	<string name="channels_queued_announce_label">Ваше имя: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Не удалось подключиться к этому каналу. Вы можете снова подать заявку на вступление по этой ссылке. Публикации, которые у вас уже есть, останутся. Владелец увидит ваше отображаемое имя и ключ, который принадлежит вам только в этом канале.</string>
+	<string name="channels_rejoin_not_restored">По этой ссылке не удалось вернуть доступ к каналу. Вы можете попросить новую ссылку.</string>
+	<string name="channels_rejoin_check_title">Попробовать эту ссылку?</string>
+	<string name="channels_rejoin_check_message">Новые публикации этого канала сейчас недоступны. Вы можете попробовать эту ссылку, чтобы снова их получать. Публикации, которые у вас уже есть, останутся.</string>
+	<string name="channels_rejoin_check_action">Попробовать ссылку</string>
+	<string name="channels_rejoin_try_later">Этот канал сейчас недоступен, а это та же ссылка, которая у вас уже есть. Попробуйте позже. Публикации, которые у вас уже есть, останутся.</string>
+	<string name="channels_rejoin_trying">Мы продолжим пробовать эту ссылку. Публикации, которые у вас уже есть, останутся.</string>
+	<string name="channels_queued_already_sent">Это уже отправлено, поэтому удалить не удалось.</string>
+	<string name="channels_queued_behind_toast">Это будет отправлено после того, что вы ранее отправили в этот канал.</string>
+	<string name="channels_queued_no_access">Не отправлено. У вас больше нет доступа к этому каналу.</string>
+	<string name="channels_no_access_toast">У вас больше нет доступа к этому каналу. Попросите у владельца новую ссылку-приглашение.</string>
+	<string name="channels_rejoin_too_many_links">У вас уже есть несколько ожидающих ссылок для этого канала, поэтому эту мы не пробовали. Публикации, которые у вас уже есть, останутся.</string>
 </resources>

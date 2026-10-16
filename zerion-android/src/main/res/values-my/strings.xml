@@ -302,7 +302,7 @@
   <string name="groups_dissolve_dialog_message">ဤအဖွဲ့အား ဖျက်သိမ်းမည်ဆိုတာ သင်သေချာပါသလား။ \n\n အခြားအဖွဲ့ဝင်များအားလုံးသည် ၎င်းတို့ စကားပြောဆိုမှုများနှင့် နောက်ဆုံးမက်ဆေ့ချ်များ ဆက်လက်ပေးပို့လက်ခံရန် မရနိုင်တော့ပါ။</string>
   <string name="groups_dissolve_button">ဖျက်သိမ်းမည်</string>
   <string name="groups_dissolved_dialog_title">အဖွဲ့အား ဖျက်သိမ်းပြီးပြီဖြစ်ပါသည်</string>
-  <string name="groups_dissolved_dialog_message">ဤအဖွဲ့ဖန်တီးသူသည် ဤအဖွဲ့အား ဖျက်သိမ်းခဲ့ပါသည်။ ​\n\n သင်သည် အဖွဲ့စီသို့ မက်ဆေ့ချ်များ ရေးသား၍မရနိုင်ပါ နှင့် ယခင်က ရေးပြီးသားပို့စ်များကိုလည်း မလက်ခံနိုင်လောက်ပါ။</string>
+  <string name="groups_dissolved_dialog_message">အဖွဲ့ ပိုင်ရှင်က ဤအဖွဲ့ကို ဖျက်သိမ်းလိုက်ပါပြီ။\n\nသင်သည် အဖွဲ့ထံ မက်ဆေ့ချ်များ ရေးသား၍ မရတော့ပါ၊ ရေးထားပြီးသော ပို့စ်အချို့ကိုလည်း လက်ခံရရှိနိုင်မည် မဟုတ်ပါ။</string>
   
   <string name="groups_invitations_title">အဖွဲ့သို့ ဖိတ်ခေါ်မှုများ</string>
   <string name="groups_invitations_invitation_sent">သင်မှ %1$s ကို  \"%2$s\" အဖွဲ့သို့ ပါဝင်ရန် ဖိတ်ခေါ်ခဲ့ပါသည်။</string>
@@ -311,9 +311,9 @@
   <plurals name="groups_invitations_open">
     <item quantity="other">%d အဖွဲ့၏ ဖိတ်ကြားခြင်းများကို ဖွင့်လှစ်ခြင်း</item>
   </plurals>
-  <string name="sharing_status_groups">ဖန်းတီးသူသာ အဖွဲ့ထဲသို့ အဖွဲ့ဝင်အသစ်များ ဖိတ်ခေါ်ဆိုနိုင်ပါသည်။ အောက်ပါစာရင်းသည် လက်ရှိအဖွဲ့ဝင်များဖြစ်ပါသည်။</string>
+  <string name="sharing_status_groups">အဖွဲ့ ပိုင်ရှင်သာ အဖွဲ့ထဲသို့ အဖွဲ့ဝင်အသစ်များကို ဖိတ်ကြားနိုင်သည်။ အောက်တွင် အဖွဲ့၏ လက်ရှိအဖွဲ့ဝင်အားလုံး ဖြစ်သည်။</string>
   
-  <string name="groups_reveal_dialog_message">ယခု နှင့် နောင်အဖွဲ့ဝင်များစီသို့ သင်သည် အဆက်အသွယ်များ ထုတ်ဖေါ်ပြရန် ရွေးနိုင်ပါသည်။ \n\n အဆက်အသွယ်များထုတ်ဖေါ်ခြင်းသည် သင့် အဖွဲ့နှင့်ချိတ်ဆက်မှုလိုင်းအား ပိုမြန်စေပြီး ပိုစိတ်ချယုံကြည်စွာဖြစ်စေပါသည်၊ အဘယ်ကြောင့်ဆိုသည်မှာ အဖွဲ့ဖန်တီးသူ လိုင်းပေါ်မရှိလျှင်လည်း သင်သည် ထုတ်ဖေါ်ထားသော အဆက်အသွယ်များနှင့် ဆက်သွယ်နိုင်ပါသည်။</string>
+  <string name="groups_reveal_dialog_message">ဤအဖွဲ့၏ လက်ရှိနှင့် နောင်အဖွဲ့ဝင်အားလုံးထံ အဆက်အသွယ်များကို ထုတ်ဖော်ပြသမည်လား ရွေးချယ်နိုင်သည်။\n\nအဆက်အသွယ်များကို ထုတ်ဖော်ခြင်းက အဖွဲ့နှင့် သင့်ချိတ်ဆက်မှုကို ပိုမြန်ပြီး ပိုစိတ်ချရစေသည်၊ အဘယ်ကြောင့်ဆိုသော် အဖွဲ့ ပိုင်ရှင် လိုင်းပေါ်မရှိချိန်တွင်ပင် ထုတ်ဖော်ထားသော အဆက်အသွယ်များနှင့် ဆက်သွယ်နိုင်သောကြောင့် ဖြစ်သည်။</string>
   <string name="groups_reveal_visible_revealed_by_us">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (သင်မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_visible_revealed_by_contact">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုသည် အဖွဲ့မှ တွေ့မြင်နိုင်ပါသည် (%s မှ ထုတ်ဖော်ထားခြင်းဖြစ်၍)</string>
   <string name="groups_reveal_invisible">အဆက်အသွယ်နှင့် ဆက်သွယ်မှုကို အဖွဲ့မှ မတွေ့မြင်နိုင်ပါ</string>
@@ -937,7 +937,7 @@
 	<string name="channels_feed_empty_subscriber">ပို့စ် မရှိသေးပါ။ ပို့စ်အသစ်များ ဤနေရာတွင် ပေါ်လာမည်။</string>
 	<string name="channels_post_withheld">ပို့စ်ကို ထိန်းထားသည်: ချန်နယ် ပိုင်ရှင်က ဤရေးသားသူ၏ ပို့စ်တင်ခွင့်ကို ရုပ်သိမ်းလိုက်သည်။</string>
 	<string name="channels_feed_connecting">ချန်နယ်သို့ ချိတ်ဆက်နေသည်…</string>
-	<string name="channels_feed_connecting_slow">ချိတ်ဆက်နေဆဲ ဖြစ်သည်။ ဤချန်နယ်ကို မျှဝေသူ လိုင်းတက်နေကြောင်း သေချာပါစေ။ ဤအရာသည် အလိုအလျောက် အပ်ဒိတ်ဖြစ်မည်။</string>
+	<string name="channels_feed_connecting_slow">ချိတ်ဆက်နေဆဲ ဖြစ်သည်။ ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ ပို့စ်များ ဤနေရာတွင် ပေါ်လာမည်။</string>
 	<string name="channels_compose_hint">သင်၏ စာရင်းသွင်းသူများထံ ရေးပါ…</string>
 	<string name="channels_compose_send">ထုတ်ဝေမည်</string>
 	<string name="channels_compose_error_empty">မထုတ်ဝေမီ တစ်ခုခု ရိုက်ထည့်ပါ။</string>
@@ -1234,7 +1234,7 @@
 	<string name="grouptr_empty">အဖွဲ့ မရှိသေးပါ။</string>
 	<string name="grouptr_meta">အဖွဲ့ဝင် %2$d ဦး</string>
 	<string name="grouptr_dissolved_suffix">(ဖျက်သိမ်းပြီး)</string>
-	<string name="grouptr_creator_tag">(ဖန်တီးသူ)</string>
+	<string name="grouptr_creator_tag">(အဖွဲ့ ပိုင်ရှင်)</string>
 	<string name="grouptr_admin_tag">(စီမံခန့်ခွဲသူ)</string>
 	<string name="grouptr_promote">ရာထူးတိုးမည်</string>
 	<string name="grouptr_demote">ရာထူးချမည်</string>
@@ -1336,7 +1336,7 @@
 	<string name="grouptr_detail_status">အခြေအနေ</string>
 	<string name="grouptr_detail_status_dissolved">ဖျက်သိမ်းပြီး</string>
 	<string name="grouptr_open_chat">ချတ် ဖွင့်မည်</string>
-	<string name="grouptr_member_role_creator">ဖန်တီးသူ</string>
+	<string name="grouptr_member_role_creator">အဖွဲ့ ပိုင်ရှင်</string>
 	<string name="grouptr_member_role_you">သင်</string>
 	<string name="grouptr_member_action_remove">အဖွဲ့မှ ဖယ်ရှားမည်</string>
 	<string name="scroll_to_bottom">အောက်ဆုံးသို့ ဆင်းမည်</string>
@@ -2354,14 +2354,14 @@
 	<string name="wallet_sp_move_hint">ငွေ ရွှေ့မည့် Bitcoin လိပ်စာ</string>
 	<string name="grouptr_reach_title">သင့်ပို့စ်များ မည်သူထံ ရောက်သနည်း</string>
 	<string name="grouptr_reach_explanation">အဖွဲ့ ပို့စ်များသည် အချင်းချင်း အဆက်အသွယ်ဖြစ်သော အဖွဲ့ဝင်များကြား တိုက်ရိုက် သွားလာပြီး အဖွဲ့ဝင်များက ပို့စ်များကို ဆင့်မပို့ပါ။ ဤအဖွဲ့ဝင်များသည် သင့်အဆက်အသွယ် မဟုတ်သဖြင့် သင့်ပို့စ်များကို ၎င်းတို့ မရရှိသလို ၎င်းတို့၏ ပို့စ်များကိုလည်း သင် မရရှိပါ:\n\n%1$s\n\n၎င်းတို့ထံ ရောက်စေရန် ၎င်းတို့ကို အဆက်အသွယ်အဖြစ် ထည့်ပါ။</string>
-	<string name="grouptr_ttl_set_by_creator">ဤအဖွဲ့ရှိ ပျောက်ကွယ် မက်ဆေ့ချ်များ: %1$s။ အဖွဲ့ကို ဖန်တီးသူသာ ၎င်းကို ပြောင်းနိုင်သည်။</string>
+	<string name="grouptr_ttl_set_by_creator">ဤအဖွဲ့ရှိ ပျောက်ကွယ် မက်ဆေ့ချ်များ: %1$s။ အဖွဲ့ ပိုင်ရှင်သာ ၎င်းကို ပြောင်းနိုင်သည်။</string>
 	<string name="grouptr_sender_alias_format">%1$s (“%2$s” အမည်ဖြင့် ပို့စ်တင်နေသည်)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (သင် သိသော အမည် မဟုတ်ပါ)</string>
 	<string name="grouptr_member_out_of_reach">သင့်အဆက်အသွယ် မဟုတ်ပါ၊ သင့်ပို့စ်များကို မရရှိပါ</string>
 	<string name="grouptr_member_invited">ဖိတ်ကြားထားသည်၊ အဖြေကို စောင့်နေသည်</string>
 	<string name="grouptr_confirm_revoke">%1$s ထံ ဖိတ်ကြားချက်ကို ပြန်ရုပ်သိမ်းမလား? ၎င်းတို့ထံမှ အဖြေကို လျစ်လျူရှုမည်။</string>
 	<string name="grouptr_revoke_invite">ဖိတ်ကြားချက်ကို ပြန်ရုပ်သိမ်းမည်</string>
-	<string name="grouptr_invite_expired">ဤဖိတ်ကြားချက် သက်တမ်းကုန်သွားပြီ။ အဖွဲ့ကို ဖန်တီးသူထံ အသစ်တစ်ခု တောင်းပါ။</string>
+	<string name="grouptr_invite_expired">ဤဖိတ်ကြားချက် သက်တမ်းကုန်သွားပြီ။ အဖွဲ့ ပိုင်ရှင်ထံ အသစ်တစ်ခု တောင်းပါ။</string>
 	<string name="reaction_removed_here_only">ဤစက်တွင်သာ ဖယ်ရှားပြီးပါပြီ: သင့်အဆက်အသွယ်၏ အက်ပ်သည် ၎င်းတို့ဘက်တွင် ဖယ်ရှားနိုင်ရန် ဗားရှင်းဟောင်းလွန်းသည်။</string>
 	<string name="startup_data_without_account_message">Zerion သည် ဤစက်ပေါ်တွင် ဒေတာကို တွေ့ရှိသော်လည်း ၎င်းကို ဖွင့်နိုင်သော အကောင့် ကီး မတွေ့ပါ: ကီးဖိုင်များ ပျောက်နေသည် သို့မဟုတ် ပျက်စီးနေသည်။ ဘာမှ မဖျက်ရသေးပါ။\n\nZerion ကို ပိတ်ပြီး ဒေတာကို ဆက်ထားနိုင်သည်၊ သို့မဟုတ် အားလုံးကို ဖျက်ပြီး အစမှ ပြန်စနိုင်သည်။</string>
 	<string name="startup_data_without_account_keep">ပိတ်ပြီး ဆက်ထားမည်</string>
@@ -2431,13 +2431,13 @@
 	<string name="grouptr_members_may_invite">အဖွဲ့ဝင်များက ၎င်းတို့၏ အဆက်အသွယ်များကို ဖိတ်ကြားနိုင်သည်</string>
 	<string name="grouptr_members_may_invite_summary">ဤဆက်တင် ဖွင့်ထားစဉ် ၎င်းတို့ ဖိတ်ကြားသူများကို သင့်ဖုန်းက အလိုအလျောက် ထည့်ပေးသည်။</string>
 	<string name="grouptr_invite_contacts">အဆက်အသွယ်များကို ဖိတ်ကြားမည်</string>
-	<string name="grouptr_member_invite_needs_creator_contact">အဖွဲ့ကို ဖန်တီးသူကို အဆက်အသွယ်အဖြစ် ရှိထားသော အဖွဲ့ဝင်များသာ ဖိတ်ကြားနိုင်သည်။</string>
-	<string name="grouptr_member_invite_creator_outdated">အဖွဲ့ဝင်များ ဖိတ်ကြားနိုင်ရန် အဖွဲ့ကို ဖန်တီးသူတွင် အက်ပ်၏ ပိုသစ်သော ဗားရှင်း လိုအပ်သည်။</string>
+	<string name="grouptr_member_invite_needs_creator_contact">အဖွဲ့ ပိုင်ရှင်ကို အဆက်အသွယ်အဖြစ် ရှိထားသော အဖွဲ့ဝင်များသာ ဖိတ်ကြားနိုင်သည်။</string>
+	<string name="grouptr_member_invite_creator_outdated">အဖွဲ့ဝင်များ ဖိတ်ကြားနိုင်ရန် အဖွဲ့ ပိုင်ရှင်တွင် အက်ပ်၏ ပိုသစ်သော ဗားရှင်း လိုအပ်သည်။</string>
 	<string name="grouptr_member_invite_contact_outdated">အက်ပ်၏ ပိုသစ်သော ဗားရှင်း လိုအပ်သည်</string>
 	<string name="grouptr_member_invitation_received">%1$s က %3$s ဖန်တီးထားသော “%2$s” အဖွဲ့သို့ ဝင်ရောက်ရန် သင့်ကို ဖိတ်ကြားထားသည်။</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s က %2$s ဖန်တီးထားသော အဖွဲ့တစ်ခုသို့ ဝင်ရောက်ရန် သင့်ကို ဖိတ်ကြားထားသည်။</string>
-	<string name="grouptr_waiting_for_admin">အဖွဲ့ကို ဖန်တီးသူ %1$s လိုင်းတက်လာရန် စောင့်နေသည်။ ၎င်း၏ဖုန်းက သင့်ကို အလိုအလျောက် ထည့်ပေးမည်ဖြစ်ပြီး ထို့နောက် ဤနေရာတွင် ပို့စ်တင်နိုင်မည်။</string>
-	<string name="grouptr_member_invite_accepted">လက်ခံပြီးပါပြီ။ အဖွဲ့ကို ဖန်တီးသူ လိုင်းတက်လာသည်နှင့် သင် ဝင်ရောက်မည်ဖြစ်သည်။</string>
+	<string name="grouptr_waiting_for_admin">အဖွဲ့ ပိုင်ရှင် %1$s လိုင်းတက်လာရန် စောင့်နေသည်။ ၎င်း၏ဖုန်းက သင့်ကို အလိုအလျောက် ထည့်ပေးမည်ဖြစ်ပြီး ထို့နောက် ဤနေရာတွင် ပို့စ်တင်နိုင်မည်။</string>
+	<string name="grouptr_member_invite_accepted">လက်ခံပြီးပါပြီ။ အဖွဲ့ ပိုင်ရှင် လိုင်းတက်လာသည်နှင့် သင် ဝင်ရောက်မည်ဖြစ်သည်။</string>
 	<string name="grouptr_member_invite_unavailable">ဤဖိတ်ကြားချက်ကို လက်ခံ၍ မရတော့ပါ။ အသစ်တစ်ခု တောင်းပါ။</string>
 	<string name="grouptr_incognito">ဤအဖွဲ့တွင် အမည်ဝှက်ဖြင့်</string>
 	<string name="grouptr_incognito_summary">အဖွဲ့ရှိ အခြားသူများသည် သင့်အမည်အစား ကျပန်းအမည်တစ်ခုကို မြင်ရမည်။ သင်၏ အဆက်အသွယ်များဖြစ်သော အဖွဲ့ဝင်များသည် သင့်ကီးဖြင့် သင့်ကို ဆက်လက် မှတ်မိနိုင်ပါသည်။</string>
@@ -2445,7 +2445,7 @@
 	<string name="grouptr_incognito_new_name">အမည်အသစ်</string>
 	<string name="grouptr_sender_incognito_format">“%1$s” (အမည်ဝှက်)</string>
 	<string name="grouptr_member_may_add">အဖွဲ့ဝင်များ ထည့်နိုင်သည်</string>
-	<string name="grouptr_member_invite_creator_only">အဖွဲ့ကို ဖန်တီးသူသာ အဖွဲ့ဝင်များကို ထည့်နိုင်သည်။</string>
+	<string name="grouptr_member_invite_creator_only">အဖွဲ့ ပိုင်ရှင်သာ အဖွဲ့ဝင်များကို ထည့်နိုင်သည်။</string>
 	<string name="tor_status_entry_relay">မတည်ငြိမ်</string>
 	<string name="tor_hidden_services_entry_relay">Tor ၏ ဝင်ပေါက် relay သည် ချိတ်ဆက်မှုအများစုတွင် မအောင်မြင်နေသောကြောင့် အဆက်အသွယ်များ သင့်ထံ မရောက်နိုင်ပါ။ ကွန်ရက် ပြည့်ကျပ်ခြင်း သို့မဟုတ် နှောင့်ယှက်ခြင်းကြောင့် ဖြစ်နိုင်သည်။ ဆက်တင်များ၊ ချိတ်ဆက်မှုများ တွင် Tor ချိတ်ဆက်နည်းကို bridge သို့ ပြောင်းခြင်းက များသောအားဖြင့် အထောက်အကူ ဖြစ်သည်။</string>
 	<string name="contact_connection_tor_entry_relay">Tor ချိတ်ဆက်ထားသော်လည်း ၎င်း၏ ဝင်ပေါက် relay သည် ချိတ်ဆက်မှုအများစုတွင် မအောင်မြင်ပါ။ bridge အသုံးပြုခြင်းက များသောအားဖြင့် အထောက်အကူ ဖြစ်သည်။</string>
@@ -2456,4 +2456,42 @@
 	<string name="channels_subscribers_unban">ပိတ်ပင်မှုကို ရုပ်သိမ်းမည်</string>
 	<string name="channels_subscribers_unban_confirm">ပိတ်ပင်မှုကို ရုပ်သိမ်းမလား? ဤစာရင်းသွင်းသူသည် မှတ်ချက်ပေးခြင်းနှင့် တုံ့ပြန်ခြင်းကို ထပ်မံ ပြုလုပ်နိုင်ပါမည်။ ပိတ်ပင်မှုက ဖယ်ရှားခဲ့သည်များ ပြန်မလာပါ၊ တည်းဖြတ်သူ အခန်းကဏ္ဍကို ထပ်မံ ပေးရပါမည်။</string>
 	<string name="channels_unban_failed">ပိတ်ပင်မှုကို ရုပ်သိမ်း၍ မရပါ</string>
+	<string name="contact_delete_failed">အဆက်အသွယ်ကို ဖျက်၍ မရပါ</string>
+	<string name="channels_delegations_revoke_failed">ဤတည်းဖြတ်သူကို ရုပ်သိမ်း၍ မရပါ</string>
+	<string name="channels_invite_rotate_failed">ဖိတ်ကြားလင့်ခ် မပြောင်းလဲခဲ့ပါ။ လင့်ခ်ဟောင်း ဆက်လက်အလုပ်လုပ်နေဆဲဖြစ်သည်။</string>
+	<string name="channels_apply_unconfirmed">သင့်လျှောက်လွှာ ရောက်ရှိကြောင်း ပိုင်ရှင်က အတည်မပြုရသေးပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</string>
+	<string name="channels_apply_banner">ဤချန်နယ်ကို ဝင်ရောက်ခွင့်အတွက် ပိုင်ရှင်ထံ လျှောက်ထားရန် နှိပ်ပါ။</string>
+	<string name="channels_rejoin_updated">%1$s အတွက် သင့်ဝင်ရောက်ခွင့်ကို အပ်ဒိတ်လုပ်ပြီးပါပြီ။</string>
+	<string name="channels_rejoin_unreachable">ဤလင့်ခ်ကို ယခု စစ်ဆေး၍ မရပါ။ နောက်မှ ထပ်ကြိုးစားပါ။</string>
+	<string name="channels_rejoin_apply_again">ဤချန်နယ်ရှိ ပို့စ်အသစ်များကို ဖတ်ရန် ထပ်မံ လျှောက်ထားနိုင်သည်။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။ ပိုင်ရှင်သည် သင်၏ ပြသမည့် အမည်နှင့် ဤချန်နယ်တွင်သာ သင်ပိုင်သော ကီးတစ်ခုကို မြင်ရမည်။</string>
+	<string name="channels_sync_last_updated">နောက်ဆုံး အပ်ဒိတ်: %1$s</string>
+	<string name="channels_sync_saved_posts">သိမ်းထားသော ပို့စ်များကို ပြသနေသည်</string>
+	<string name="channels_sync_saved_posts_last_updated">သိမ်းထားသော ပို့စ်များကို ပြသနေသည် · နောက်ဆုံး အပ်ဒိတ်: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s ကတည်းက အပ်ဒိတ် မဖြစ်သေးပါ</string>
+	<string name="channels_owner_deleted_notice">ပိုင်ရှင်က %1$s ချန်နယ်ကို ဖျက်လိုက်သည်</string>
+	<string name="channels_owner_deleted_notice_unnamed">ပိုင်ရှင်က သင်ဝင်ထားသော ချန်နယ်တစ်ခုကို ဖျက်လိုက်သည်</string>
+	<string name="channels_queued_waiting">ပို့ရန် စောင့်နေသည်</string>
+	<string name="channels_queued_not_sent">ပို့၍ မရပါ</string>
+	<string name="channels_queued_retry">ထပ်ကြိုးစားမည်</string>
+	<string name="channels_queued_delete">ဖျက်မည်</string>
+	<string name="channels_comment_queued_toast">ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ သင့်မှတ်ချက်ကို ပို့ပေးမည်။</string>
+	<string name="channels_react_queued_toast">ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ သင့်တုံ့ပြန်မှုကို ပို့ပေးမည်။</string>
+	<string name="channels_announce_queued_toast">ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ သင့်အမည်ကို ပို့ပေးမည်။</string>
+	<string name="channels_post_queued_toast">ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ သင့်ပို့စ်ကို ပို့ပေးမည်။</string>
+	<string name="channels_change_queued_toast">ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ သင့်ပြောင်းလဲမှုကို ပို့ပေးမည်။</string>
+	<string name="channels_queued_notice_waiting">သင်ပို့ထားသည့်အရာအချို့ စောင့်ဆိုင်းနေသည်။ ချန်နယ်ကို ဆက်သွယ်နိုင်သောအခါ ပို့ပေးမည်။</string>
+	<string name="channels_queued_notice_not_sent">သင်ပို့ထားသည့်အရာအချို့ကို ပို့၍ မရပါ။ ထပ်ကြိုးစားရန် သို့မဟုတ် ဖျက်ရန် နှိပ်ပါ။</string>
+	<string name="channels_queued_announce_label">သင့်အမည်: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">ဤချန်နယ်ကို ဆက်သွယ်၍ မရပါ။ ဤလင့်ခ်ဖြင့် ထပ်မံ ဝင်ရန် လျှောက်ထားနိုင်သည်။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။ ပိုင်ရှင်သည် သင်၏ ပြသမည့် အမည်နှင့် ဤချန်နယ်တွင်သာ သင်ပိုင်သော ကီးတစ်ခုကို မြင်ရမည်။</string>
+	<string name="channels_rejoin_not_restored">ဤလင့်ခ်ဖြင့် ဤချန်နယ်သို့ သင့်ဝင်ရောက်ခွင့်ကို ပြန်မရပါ။ လင့်ခ်အသစ်တစ်ခု တောင်းနိုင်သည်။</string>
+	<string name="channels_rejoin_check_title">ဤလင့်ခ်ကို စမ်းကြည့်မလား။</string>
+	<string name="channels_rejoin_check_message">ဤချန်နယ်ရှိ ပို့စ်အသစ်များကို ယခု ရယူ၍ မရပါ။ ၎င်းတို့ကို ပြန်ရရန် ဤလင့်ခ်ကို စမ်းကြည့်နိုင်သည်။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။</string>
+	<string name="channels_rejoin_check_action">လင့်ခ်ကို စမ်းကြည့်မည်</string>
+	<string name="channels_rejoin_try_later">ဤချန်နယ်ကို ယခု ဆက်သွယ်၍ မရပါ၊ ဤလင့်ခ်သည်လည်း သင့်တွင် ရှိပြီးသား လင့်ခ်ဖြစ်သည်။ နောက်မှ ထပ်ကြိုးစားပါ။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။</string>
+	<string name="channels_rejoin_trying">ဤလင့်ခ်ကို ဆက်လက် ကြိုးစားပေးပါမည်။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။</string>
+	<string name="channels_queued_already_sent">ပို့ပြီးသား ဖြစ်နေသောကြောင့် ဖျက်၍ မရပါ။</string>
+	<string name="channels_queued_behind_toast">ဤချန်နယ်သို့ သင်ယခင်က ပို့ထားသည့်အရာများ ပို့ပြီးနောက် ဤအရာကို ပို့ပေးမည်။</string>
+	<string name="channels_queued_no_access">ပို့၍ မရပါ။ ဤချန်နယ်သို့ ဝင်ရောက်ခွင့် သင့်တွင် မရှိတော့ပါ။</string>
+	<string name="channels_no_access_toast">ဤချန်နယ်သို့ ဝင်ရောက်ခွင့် သင့်တွင် မရှိတော့ပါ။ ပိုင်ရှင်ထံ ဖိတ်ကြားလင့်ခ် အသစ်တစ်ခု တောင်းပါ။</string>
+	<string name="channels_rejoin_too_many_links">ဤချန်နယ်အတွက် စောင့်ဆိုင်းနေသော လင့်ခ် အများအပြား သင့်တွင် ရှိပြီးသားဖြစ်သောကြောင့် ဤလင့်ခ်ကို မကြိုးစားခဲ့ပါ။ သင့်တွင် ရှိပြီးသား ပို့စ်များ ဆက်ရှိနေမည်။</string>
 </resources>

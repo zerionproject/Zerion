@@ -37,8 +37,11 @@ import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelComment;
 import org.zerionproject.app.api.channel.ChannelManager;
 import org.zerionproject.app.api.channel.ChannelPost;
+import org.zerionproject.app.api.channel.ChannelQueuedItem;
 import org.zerionproject.app.api.channel.ChannelReaction;
+import org.zerionproject.app.api.channel.ChannelRequestQueuedException;
 import org.zerionproject.app.api.channel.ChannelState;
+import org.zerionproject.app.api.channel.ChannelSyncStatus;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
@@ -103,7 +106,11 @@ public class ChannelFeedActivity extends ZerionActivity
 	private TextView pinnedBannerText;
 	private android.widget.ImageButton pinnedBannerClose;
 	private TextView approvalBanner;
+	private boolean applying = false;
 	private TextView noticeBanner;
+	private TextView syncStatusLine;
+	private boolean syncDormant = false;
+	private boolean refreshAttempted = false;
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
 	private boolean canPost = false;
@@ -111,6 +118,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private java.util.Set<Long> commentExceptions =
 			java.util.Collections.emptySet();
 	private byte[] myEditorKey = new byte[0];
+	private List<ChannelQueuedItem> notSentItems = new ArrayList<>();
 	private long currentPinnedSeq = ChannelState.NO_PINNED_POST;
 	private static final int MENU_ITEM_DISCUSSIONS = 7341;
 	private static final int MENU_ITEM_MUTE = 7342;
@@ -157,6 +165,7 @@ public class ChannelFeedActivity extends ZerionActivity
 		pinnedBannerClose = findViewById(R.id.channelPinnedBannerClose);
 		approvalBanner = findViewById(R.id.channelApprovalBanner);
 		noticeBanner = findViewById(R.id.channelNoticeBanner);
+		syncStatusLine = findViewById(R.id.channelSyncStatusLine);
 
 		setSupportActionBar(toolbar);
 		if (getSupportActionBar() != null) {
@@ -169,7 +178,14 @@ public class ChannelFeedActivity extends ZerionActivity
 						post.getSeqNum() == currentPinnedSeq),
 				(post, att, thumb, spinner) ->
 						handleAttachmentTap(post, att, thumb, spinner),
-				this::openComments);
+				this::openComments,
+				item -> showNotSentDialog(
+						java.util.Collections.singletonList(item)));
+		noticeBanner.setOnClickListener(v -> {
+			if (!notSentItems.isEmpty()) {
+				showNotSentDialog(new ArrayList<>(notSentItems));
+			}
+		});
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -220,7 +236,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private final Runnable refreshTick = new Runnable() {
 		@Override
 		public void run() {
-			refreshFromPublisherSafely();
+			refreshFromPublisherSafely(false);
 			if (refreshHandler != null) {
 				long delay = activeRoundsRemaining > 0
 						? FOREGROUND_REFRESH_ACTIVE_MS
@@ -243,28 +259,36 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 		loadChannel();
 		markRead();
-		refreshFromPublisherSafely();
+		refreshFromPublisherSafely(true);
 		refreshHandler = new android.os.Handler(
 				android.os.Looper.getMainLooper());
 		refreshHandler.postDelayed(refreshTick,
 				nextRefreshDelay(FOREGROUND_REFRESH_ACTIVE_MS));
 	}
 
-	private void refreshFromPublisherSafely() {
+	private void refreshFromPublisherSafely(boolean opening) {
 		ioExecutor.execute(() -> {
 			boolean reached = false;
+			boolean pulled = true;
 			try {
-				channelManager.refreshChannel(channelId);
-				reached = true;
+				if (opening) {
+					channelManager.refreshChannelOnOpen(channelId);
+				} else {
+					pulled = channelManager.refreshChannelTick(channelId);
+				}
+				reached = pulled;
 			} catch (DbException ignored) {
 			} finally {
 				boolean finalReached = reached;
-				runOnUiThreadUnlessDestroyed(() -> {
-					if (finalReached) {
-						reachedPublisherAtLeastOnce = true;
-					}
-					loadChannel();
-				});
+				if (pulled) {
+					runOnUiThreadUnlessDestroyed(() -> {
+						refreshAttempted = true;
+						if (finalReached) {
+							reachedPublisherAtLeastOnce = true;
+						}
+						loadChannel();
+					});
+				}
 			}
 		});
 	}
@@ -358,6 +382,25 @@ public class ChannelFeedActivity extends ZerionActivity
 					new java.util.HashMap<>();
 			boolean discussionsEnabled = true;
 			java.util.Set<Long> exceptions = java.util.Collections.emptySet();
+			java.util.Map<Long, ChannelQueuedItem> queuedReactions =
+					new java.util.HashMap<>();
+			List<ChannelQueuedItem> otherWaiting = new ArrayList<>();
+			List<ChannelQueuedItem> otherNotSent = new ArrayList<>();
+			if (state != null && !state.weArePublisher()) {
+				try {
+					for (ChannelQueuedItem q
+							: channelManager.getQueuedItems(channelId)) {
+						if (q.getKind() == ChannelQueuedItem.Kind.REACTION) {
+							queuedReactions.put(q.getPostSeqNum(), q);
+						} else if (q.getKind()
+								!= ChannelQueuedItem.Kind.COMMENT) {
+							if (q.isNotSent()) otherNotSent.add(q);
+							else otherWaiting.add(q);
+						}
+					}
+				} catch (DbException ignored) {
+				}
+			}
 			if (state != null) {
 				try {
 					discussionsEnabled =
@@ -386,6 +429,7 @@ public class ChannelFeedActivity extends ZerionActivity
 					}
 				} catch (DbException ignored) {
 				}
+				showWaitingReactions(reactionsBySeq, queuedReactions);
 				for (ChannelPost p : posts) {
 					java.util.List<ChannelReaction> rl =
 							reactionsBySeq.get(p.getSeqNum());
@@ -445,6 +489,14 @@ public class ChannelFeedActivity extends ZerionActivity
 				} catch (DbException ignored) {
 				}
 			}
+			ChannelSyncStatus sync = null;
+			if (state != null && !state.weArePublisher()) {
+				try {
+					sync = channelManager.getSyncStatus(channelId);
+				} catch (DbException ignored) {
+				}
+			}
+			ChannelSyncStatus finalSync = sync;
 			ChannelState finalState = state;
 			List<ChannelPost> finalPosts = posts;
 			ApplicationStatus finalStatus = appStatus;
@@ -458,10 +510,106 @@ public class ChannelFeedActivity extends ZerionActivity
 				canPost = finalMayPost;
 				myEditorKey = finalEditorKey;
 				commentExceptions = finalExceptions;
+				syncDormant = finalSync != null && finalSync.isDormant();
+				notSentItems = otherNotSent;
+				adapter.setQueuedReactions(queuedReactions);
 				render(finalState, finalPosts, finalStatus,
 						thumbnails, reactions, commentCounts,
 						finalDiscussionsEnabled);
-				bindNotice(finalOutdated, finalGivenUp);
+				bindNotice(finalOutdated, finalGivenUp,
+						!otherWaiting.isEmpty());
+				bindSyncStatus(finalState, !finalPosts.isEmpty(), finalSync);
+			});
+		});
+	}
+
+	private void showWaitingReactions(
+			java.util.Map<Long, List<ChannelReaction>> reactionsBySeq,
+			java.util.Map<Long, ChannelQueuedItem> queuedReactions) {
+		if (queuedReactions.isEmpty()) return;
+		byte[] mine;
+		try {
+			byte[] key = channelManager.getMyChannelPublicKey(channelId);
+			mine = Arrays.copyOf(key, Math.min(32, key.length));
+		} catch (DbException e) {
+			return;
+		}
+		for (ChannelQueuedItem q : queuedReactions.values()) {
+			if (q.isNotSent()) continue;
+			List<ChannelReaction> list = reactionsBySeq.computeIfAbsent(
+					q.getPostSeqNum(), k -> new ArrayList<>());
+			list.removeIf(r -> Arrays.equals(r.getSignerEd25519PubKey(),
+					mine));
+			list.add(new ChannelReaction(q.getPostSeqNum(), q.getText(),
+					mine, new byte[0], q.getQueuedAtMs()));
+		}
+	}
+
+	private void showNotSentDialog(List<ChannelQueuedItem> items) {
+		if (items.isEmpty()) return;
+		StringBuilder text = new StringBuilder();
+		for (ChannelQueuedItem q : items) {
+			if (text.length() > 0) text.append('\n');
+			String label = queuedLabel(q);
+			if (label.length() > 80) {
+				int end = Character.isHighSurrogate(label.charAt(79))
+						? 79 : 80;
+				label = label.substring(0, end) + "…";
+			}
+			text.append(label);
+		}
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this)
+				.setTitle(R.string.channels_queued_not_sent)
+				.setMessage(text.toString())
+				.setPositiveButton(R.string.channels_queued_retry,
+						(d, w) -> changeQueued(items, true))
+				.setNegativeButton(R.string.channels_queued_delete,
+						(d, w) -> changeQueued(items, false))
+				.setNeutralButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private String queuedLabel(ChannelQueuedItem q) {
+		switch (q.getKind()) {
+			case EDIT:
+				return getString(R.string.action_edit_message) + ": "
+						+ q.getText();
+			case DELETE:
+				return getString(R.string.channels_action_delete);
+			case COMMENTS_SETTING:
+				return getString(q.isCommentsOn()
+						? R.string.channels_action_comments_on
+						: R.string.channels_action_comments_off);
+			case ANNOUNCE:
+				return getString(R.string.channels_queued_announce_label,
+						q.getText());
+			default:
+				return q.getText();
+		}
+	}
+
+	private void changeQueued(List<ChannelQueuedItem> items, boolean retry) {
+		ioExecutor.execute(() -> {
+			boolean alreadySent = false;
+			for (ChannelQueuedItem q : items) {
+				try {
+					if (retry) {
+						channelManager.retryQueuedItem(channelId, q.getId());
+					} else if (channelManager.deleteQueuedItem(channelId,
+							q.getId()) == ChannelQueuedItem.DeleteResult.SENT) {
+						alreadySent = true;
+					}
+				} catch (DbException ignored) {
+				}
+			}
+			boolean finalAlreadySent = alreadySent;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (finalAlreadySent) {
+					Toast.makeText(this, R.string.channels_queued_already_sent,
+							Toast.LENGTH_SHORT).show();
+				}
+				loadChannel();
 			});
 		});
 	}
@@ -496,7 +644,8 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		if (posts.isEmpty()) {
 			recycler.setVisibility(View.GONE);
-			if (weArePublisher || reachedPublisherAtLeastOnce) {
+			if (weArePublisher || reachedPublisherAtLeastOnce
+					|| (syncDormant && refreshAttempted)) {
 				feedProgress.setVisibility(View.GONE);
 				connectingText.setVisibility(View.GONE);
 				cancelSlowConnectHint();
@@ -535,9 +684,16 @@ public class ChannelFeedActivity extends ZerionActivity
 		bindPinnedBanner(state, posts);
 	}
 
-	private void bindNotice(boolean outdated, long givenUp) {
+	private void bindNotice(boolean outdated, long givenUp,
+			boolean waiting) {
 		if (outdated) {
 			noticeBanner.setText(R.string.channels_outdated_subscribers_notice);
+			noticeBanner.setVisibility(View.VISIBLE);
+		} else if (!notSentItems.isEmpty()) {
+			noticeBanner.setText(R.string.channels_queued_notice_not_sent);
+			noticeBanner.setVisibility(View.VISIBLE);
+		} else if (waiting) {
+			noticeBanner.setText(R.string.channels_queued_notice_waiting);
 			noticeBanner.setVisibility(View.VISIBLE);
 		} else if (givenUp > 0L) {
 			noticeBanner.setText(R.string.channels_posts_given_up_notice);
@@ -545,6 +701,56 @@ public class ChannelFeedActivity extends ZerionActivity
 		} else {
 			noticeBanner.setVisibility(View.GONE);
 		}
+	}
+
+	private void bindSyncStatus(@Nullable ChannelState state,
+			boolean postsHeld, @Nullable ChannelSyncStatus sync) {
+		String line = state == null || state.weArePublisher() || sync == null
+				? null : syncStatusText(this, sync, postsHeld);
+		if (line == null) {
+			syncStatusLine.setVisibility(View.GONE);
+		} else {
+			syncStatusLine.setText(line);
+			syncStatusLine.setVisibility(View.VISIBLE);
+		}
+	}
+
+	@Nullable
+	static String syncStatusText(Context ctx, ChannelSyncStatus sync,
+			boolean postsHeld) {
+		long at = sync.getLastUpdatedMs();
+		if (sync.isDormant() && at >= 0L) {
+			return ctx.getString(R.string.channels_sync_not_updated_since,
+					android.text.format.DateUtils.formatDateTime(ctx, at,
+							android.text.format.DateUtils.FORMAT_SHOW_DATE
+							| android.text.format.DateUtils
+									.FORMAT_ABBREV_MONTH));
+		}
+		if (!postsHeld) return null;
+		if (at < 0L) {
+			return sync.isLastAttemptFailed() || sync.isDormant()
+					? ctx.getString(R.string.channels_sync_saved_posts)
+					: null;
+		}
+		int flags = sameDay(at, System.currentTimeMillis())
+				? android.text.format.DateUtils.FORMAT_SHOW_TIME
+				: android.text.format.DateUtils.FORMAT_SHOW_DATE
+				| android.text.format.DateUtils.FORMAT_ABBREV_MONTH;
+		String when = android.text.format.DateUtils.formatDateTime(ctx, at,
+				flags);
+		return ctx.getString(sync.isLastAttemptFailed()
+				? R.string.channels_sync_saved_posts_last_updated
+				: R.string.channels_sync_last_updated, when);
+	}
+
+	private static boolean sameDay(long a, long b) {
+		java.util.Calendar x = java.util.Calendar.getInstance();
+		x.setTimeInMillis(a);
+		java.util.Calendar y = java.util.Calendar.getInstance();
+		y.setTimeInMillis(b);
+		return x.get(java.util.Calendar.YEAR) == y.get(java.util.Calendar.YEAR)
+				&& x.get(java.util.Calendar.DAY_OF_YEAR)
+				== y.get(java.util.Calendar.DAY_OF_YEAR);
 	}
 
 	private boolean slowConnectScheduled = false;
@@ -618,7 +824,12 @@ public class ChannelFeedActivity extends ZerionActivity
 			approvalBanner.setVisibility(View.GONE);
 			return;
 		}
-		if (appStatus == ApplicationStatus.PENDING) {
+		approvalBanner.setOnClickListener(null);
+		approvalBanner.setClickable(false);
+		if (applying) {
+			approvalBanner.setText(R.string.channels_apply_progress);
+			approvalBanner.setVisibility(View.VISIBLE);
+		} else if (appStatus == ApplicationStatus.PENDING) {
 			approvalBanner.setText(
 					R.string.channels_approval_pending_banner);
 			approvalBanner.setVisibility(View.VISIBLE);
@@ -626,9 +837,66 @@ public class ChannelFeedActivity extends ZerionActivity
 			approvalBanner.setText(
 					R.string.channels_approval_denied_banner);
 			approvalBanner.setVisibility(View.VISIBLE);
+		} else if (appStatus == ApplicationStatus.NOT_APPLIED
+				&& state.getJoinCapability() == null) {
+			approvalBanner.setText(R.string.channels_apply_banner);
+			approvalBanner.setOnClickListener(v -> showApplyDialog());
+			approvalBanner.setVisibility(View.VISIBLE);
 		} else {
 			approvalBanner.setVisibility(View.GONE);
 		}
+	}
+
+	private void showApplyDialog() {
+		View view = LayoutInflater.from(this).inflate(
+				R.layout.dialog_apply_to_join, null);
+		com.google.android.material.textfield.TextInputEditText nameInput =
+				view.findViewById(R.id.channelApplyNameInput);
+		nameInput.setFilters(new android.text.InputFilter[] {
+				new com.professor.zerion.android.util.Utf8ByteLengthFilter(
+						org.zerionproject.app.api.channel.ChannelConstants
+								.MAX_DISPLAY_NAME_BYTES)});
+		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
+				this)
+				.setTitle(R.string.channels_apply_title)
+				.setView(view)
+				.setPositiveButton(R.string.channels_apply_action,
+						(d, w) -> applyAs(nameInput.getText() == null ? ""
+								: nameInput.getText().toString().trim()))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void applyAs(String name) {
+		if (name.isEmpty()) {
+			Toast.makeText(this, R.string.channels_create_error_name,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		applying = true;
+		approvalBanner.setOnClickListener(null);
+		approvalBanner.setClickable(false);
+		approvalBanner.setText(R.string.channels_apply_progress);
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.applyToJoin(channelId, name);
+				runOnUiThreadUnlessDestroyed(() -> {
+					applying = false;
+					loadChannel();
+				});
+			} catch (DbException ex) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					applying = false;
+					Toast.makeText(this,
+							ex instanceof org.zerionproject.app.api.channel
+									.ChannelApplicationUnconfirmedException
+									? R.string.channels_apply_unconfirmed
+									: R.string.channels_apply_failed,
+							Toast.LENGTH_LONG).show();
+					loadChannel();
+				});
+			}
+		});
 	}
 
 	private void handlePin(long seqNum) {
@@ -743,6 +1011,14 @@ public class ChannelFeedActivity extends ZerionActivity
 			try {
 				channelManager.editPost(channelId, post.getSeqNum(), text);
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (ChannelRequestQueuedException queued) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_change_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					loadChannel();
+				});
 			} catch (DbException ex) {
 				int message = ex instanceof org.zerionproject.app.api.channel
 						.ChannelPostTooLongException
@@ -760,6 +1036,14 @@ public class ChannelFeedActivity extends ZerionActivity
 				channelManager.setPostCommentsEnabled(channelId,
 						post.getSeqNum(), enabled);
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (ChannelRequestQueuedException queued) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_change_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					loadChannel();
+				});
 			} catch (DbException ex) {
 				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_discussions_toggle_failed_toast,
@@ -798,11 +1082,24 @@ public class ChannelFeedActivity extends ZerionActivity
 				channelManager.reactToPost(channelId, post.getSeqNum(),
 						emoji);
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (ChannelRequestQueuedException queued) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_react_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					loadChannel();
+				});
 			} catch (org.zerionproject.app.api.channel
 					.ChannelReactionTooSoonException tooSoon) {
 				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_react_too_soon,
 						Toast.LENGTH_SHORT).show());
+			} catch (org.zerionproject.app.api.channel
+					.ChannelNoAccessException noAccess) {
+				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
+						R.string.channels_no_access_toast,
+						Toast.LENGTH_LONG).show());
 			} catch (DbException ignored) {
 				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_react_failed,
@@ -826,6 +1123,14 @@ public class ChannelFeedActivity extends ZerionActivity
 			try {
 				channelManager.deletePost(channelId, post.getSeqNum());
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (ChannelRequestQueuedException queued) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_change_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					loadChannel();
+				});
 			} catch (DbException ignored) {
 				runOnUiThreadUnlessDestroyed(() -> Toast.makeText(this,
 						R.string.channels_post_delete_failed,
@@ -943,6 +1248,15 @@ public class ChannelFeedActivity extends ZerionActivity
 				channelManager.publishPost(channelId, body, ttlSeconds);
 				clearDraft();
 				runOnUiThreadUnlessDestroyed(this::loadChannel);
+			} catch (ChannelRequestQueuedException queued) {
+				clearDraft();
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_post_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					loadChannel();
+				});
 			} catch (DbException ex) {
 				int message = ex instanceof org.zerionproject.app.api.channel
 						.ChannelPostTooLongException
@@ -1413,6 +1727,10 @@ public class ChannelFeedActivity extends ZerionActivity
 			void onCommentTap(ChannelPost post);
 		}
 
+		interface OnNotSentReactionTap {
+			void onTap(ChannelQueuedItem item);
+		}
+
 		private List<ChannelPost> posts = new ArrayList<>();
 		private java.util.Map<String, byte[]> thumbnails =
 				java.util.Collections.emptyMap();
@@ -1424,16 +1742,26 @@ public class ChannelFeedActivity extends ZerionActivity
 		private boolean discussionsEnabled = true;
 		private java.util.Set<Long> commentExceptions =
 				java.util.Collections.emptySet();
+		private java.util.Map<Long, ChannelQueuedItem> queuedReactions =
+				java.util.Collections.emptyMap();
 		private final OnPostLongPress longPressListener;
 		private final OnAttachmentTap attachmentTapListener;
 		private final OnCommentTap commentTapListener;
+		private final OnNotSentReactionTap notSentReactionTap;
 
 		PostAdapter(OnPostLongPress longPressListener,
 				OnAttachmentTap attachmentTapListener,
-				OnCommentTap commentTapListener) {
+				OnCommentTap commentTapListener,
+				OnNotSentReactionTap notSentReactionTap) {
 			this.longPressListener = longPressListener;
 			this.attachmentTapListener = attachmentTapListener;
 			this.commentTapListener = commentTapListener;
+			this.notSentReactionTap = notSentReactionTap;
+		}
+
+		void setQueuedReactions(
+				java.util.Map<Long, ChannelQueuedItem> queued) {
+			this.queuedReactions = queued;
 		}
 
 		void setPosts(List<ChannelPost> p,
@@ -1471,6 +1799,8 @@ public class ChannelFeedActivity extends ZerionActivity
 					count, discussionsEnabled
 							!= commentExceptions.contains(p.getSeqNum()),
 					commentTapListener);
+			holder.bindQueuedReaction(p, queuedReactions.get(p.getSeqNum()),
+					notSentReactionTap);
 			if (p.isWithheld()) {
 				holder.itemView.setOnLongClickListener(null);
 				holder.itemView.setLongClickable(false);
@@ -1719,6 +2049,32 @@ public class ChannelFeedActivity extends ZerionActivity
 			}
 			reactionsView.setText(sb.toString());
 			reactionsView.setVisibility(View.VISIBLE);
+		}
+
+		void bindQueuedReaction(ChannelPost p,
+				@Nullable ChannelQueuedItem q,
+				PostAdapter.OnNotSentReactionTap tap) {
+			if (q == null || p.isWithheld()) {
+				reactionsView.setOnClickListener(null);
+				reactionsView.setClickable(false);
+				return;
+			}
+			android.content.Context ctx = itemView.getContext();
+			CharSequence shown = reactionsView.getVisibility() == View.VISIBLE
+					? reactionsView.getText() : "";
+			String status = q.isNotSent()
+					? q.getText() + " " + ctx.getString(
+							R.string.channels_queued_not_sent)
+					: ctx.getString(R.string.channels_queued_waiting);
+			reactionsView.setText(shown.length() == 0 ? status
+					: shown + "  ·  " + status);
+			reactionsView.setVisibility(View.VISIBLE);
+			if (q.isNotSent()) {
+				reactionsView.setOnClickListener(v -> tap.onTap(q));
+			} else {
+				reactionsView.setOnClickListener(null);
+				reactionsView.setClickable(false);
+			}
 		}
 
 		private static String formatRemaining(android.content.Context ctx,

@@ -25,6 +25,7 @@ public class GroupPostCacheTest {
 	private final byte[] creatorKey = key((byte) 1);
 	private final byte[] localKey = key((byte) 2);
 	private final byte[] honestKey = key((byte) 3);
+	private final byte[] departedKey = key((byte) 9);
 	private long clock = 1_000L;
 
 	@Test
@@ -44,12 +45,14 @@ public class GroupPostCacheTest {
 				honestKey));
 		assertEquals(1, node.buffered().size());
 
+		node.removed(fromCreator, groupId, departedKey, EPOCH);
 		node.commit(fromCreator, groupId, EPOCH);
 		assertEquals("one epoch later the far post still waits",
 				1, node.buffered().size());
 		assertEquals(1, countFrom(node.manager.getRecentPosts(groupId),
 				honestKey));
 
+		node.removed(fromCreator, groupId, departedKey, EPOCH + 1);
 		node.commit(fromCreator, groupId, EPOCH + 1);
 		assertEquals(0, node.buffered().size());
 		List<GroupTrPost> shown = node.manager.getRecentPosts(groupId);

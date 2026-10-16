@@ -304,7 +304,7 @@
   <string name="groups_dissolve_dialog_message">Är du säker på att du vill radera denna grupp?\n\nMedlemmar kommer inte att kunna fortsätta sin a konversationer, och de sista meddelandena kanske inte kommer fram.</string>
   <string name="groups_dissolve_button">Radera</string>
   <string name="groups_dissolved_dialog_title">Gruppen har raderats</string>
-  <string name="groups_dissolved_dialog_message">Skaparen av denna grupp har raderat den.\n\nDu kan inte längre skicka meddelande till gruppen, och kan kanske inte ta emot de sista meddelanden.</string>
+  <string name="groups_dissolved_dialog_message">Gruppägaren har upplöst den här gruppen.\n\nDu kan inte längre skriva meddelanden till gruppen och kanske inte får alla inlägg som har skrivits.</string>
   
   <string name="groups_invitations_title">Gruppinbjudningar</string>
   <string name="groups_invitations_invitation_sent">Du har bjudit in %1$s add gå med i gruppen \"%2$s\".</string>
@@ -314,9 +314,9 @@
     <item quantity="one">%dobesvarad gruppinbjudan</item>
     <item quantity="other">%dobesvarade gruppinbjudningar</item>
   </plurals>
-  <string name="sharing_status_groups">Bara skaparen kan bjuda in nya medlemmare till gruppen. Nedan listas gruppens nuvarande medlemmar.</string>
+  <string name="sharing_status_groups">Bara gruppägaren kan bjuda in nya medlemmar till gruppen. Nedan listas gruppens nuvarande medlemmar.</string>
   
-  <string name="groups_reveal_dialog_message">Du kan välja att avslöja dina kontakter för alla nuvarande och framtida medlemmar i den här gruppen.\n\nOm du avslöjer dina kontakter så blir din anslutning till gruppen snabbare och med pålitlig, för kommunikation kan ske med avslöjade kontakter även när gruppens skapare är nedkopplad.</string>
+  <string name="groups_reveal_dialog_message">Du kan välja om du vill avslöja dina kontakter för alla nuvarande och framtida medlemmar i den här gruppen.\n\nOm du avslöjar dina kontakter blir din anslutning till gruppen snabbare och mer pålitlig, eftersom du kan kommunicera med avslöjade kontakter även när gruppägaren inte är uppkopplad.</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktrelationer är synliga för gruppen (avslöjade av dig)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktrelationer är synliga för gruppen (avslöjade av %s)</string>
   <string name="groups_reveal_invisible">Kontaktrelationer är ej synliga för gruppen</string>
@@ -1071,7 +1071,7 @@
 	<string name="channels_feed_empty_subscriber">Inga inlägg ännu. Nya inlägg visas här.</string>
 	<string name="channels_post_withheld">Inlägget hålls inne: kanalens ägare har återkallat författarens behörighet att publicera.</string>
 	<string name="channels_feed_connecting">Ansluter till kanalen…</string>
-	<string name="channels_feed_connecting_slow">Ansluter fortfarande. Se till att personen som delade den här kanalen är uppkopplad. Detta uppdateras av sig självt.</string>
+	<string name="channels_feed_connecting_slow">Ansluter fortfarande. Inlägg visas här när kanalen kan nås.</string>
 	<string name="channels_compose_hint">Skriv till dina prenumeranter…</string>
 	<string name="channels_compose_send">Publicera</string>
 	<string name="channels_compose_error_empty">Skriv något innan du publicerar.</string>
@@ -1368,7 +1368,7 @@
 	<string name="grouptr_empty">Inga grupper än.</string>
 	<string name="grouptr_meta">%2$d medlemmar</string>
 	<string name="grouptr_dissolved_suffix">(upplöst)</string>
-	<string name="grouptr_creator_tag">(skapare)</string>
+	<string name="grouptr_creator_tag">(gruppägare)</string>
 	<string name="grouptr_admin_tag">(admin)</string>
 	<string name="grouptr_promote">Befordra</string>
 	<string name="grouptr_demote">Degradera</string>
@@ -1471,7 +1471,7 @@
 	<string name="grouptr_detail_status">Status</string>
 	<string name="grouptr_detail_status_dissolved">Upplöst</string>
 	<string name="grouptr_open_chat">Öppna chatt</string>
-	<string name="grouptr_member_role_creator">skapare</string>
+	<string name="grouptr_member_role_creator">Gruppägare</string>
 	<string name="grouptr_member_role_you">du</string>
 	<string name="grouptr_member_action_remove">Ta bort från gruppen</string>
 	<string name="scroll_to_bottom">Rulla längst ned</string>
@@ -2367,14 +2367,14 @@
 	<string name="wallet_sp_enable_first">Aktivera Silent Payments först</string>
 	<string name="grouptr_reach_title">Vem dina inlägg når</string>
 	<string name="grouptr_reach_explanation">Gruppinlägg går direkt mellan medlemmar som är varandras kontakter, och medlemmar skickar inte vidare inlägg. De här medlemmarna är inte dina kontakter, så de får inte dina inlägg och du får inte deras:\n\n%1$s\n\nLägg till dem som kontakter för att nå dem.</string>
-	<string name="grouptr_ttl_set_by_creator">Försvinnande meddelanden i den här gruppen: %1$s. Bara gruppens skapare kan ändra detta.</string>
+	<string name="grouptr_ttl_set_by_creator">Försvinnande meddelanden i den här gruppen: %1$s. Bara gruppägaren kan ändra detta.</string>
 	<string name="grouptr_sender_alias_format">%1$s (skriver som ”%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">”%1$s” (inte ett namn du känner)</string>
 	<string name="grouptr_member_out_of_reach">inte din kontakt, får inte dina inlägg</string>
 	<string name="grouptr_member_invited">Inbjuden, väntar på svar</string>
 	<string name="grouptr_confirm_revoke">Dra tillbaka inbjudan till %1$s? Ett svar från personen kommer att ignoreras.</string>
 	<string name="grouptr_revoke_invite">Dra tillbaka inbjudan</string>
-	<string name="grouptr_invite_expired">Den här inbjudan har gått ut. Be gruppens skapare om en ny.</string>
+	<string name="grouptr_invite_expired">Den här inbjudan har gått ut. Be gruppägaren om en ny.</string>
 	<string name="reaction_removed_here_only">Borttagen endast på den här enheten: din kontakts app är för gammal för att ta bort den där.</string>
 	<string name="startup_data_without_account_message">Zerion hittade data på den här enheten, men ingen kontonyckel som kan öppna dem: nyckelfilerna saknas eller är skadade. Inget har raderats.\n\nDu kan stänga Zerion och behålla data, eller radera allt och börja om.</string>
 	<string name="startup_data_without_account_keep">Stäng och behåll</string>
@@ -2459,13 +2459,13 @@
 	<string name="grouptr_members_may_invite">Medlemmar kan bjuda in sina kontakter</string>
 	<string name="grouptr_members_may_invite_summary">Så länge detta är på lägger din telefon automatiskt till personerna de bjuder in.</string>
 	<string name="grouptr_invite_contacts">Bjud in kontakter</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Endast medlemmar som har gruppens skapare som kontakt kan bjuda in.</string>
-	<string name="grouptr_member_invite_creator_outdated">Gruppens skapare behöver en nyare version av appen innan medlemmar kan bjuda in.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Endast medlemmar som har gruppägaren som kontakt kan bjuda in.</string>
+	<string name="grouptr_member_invite_creator_outdated">Gruppägaren behöver en nyare version av appen innan medlemmar kan bjuda in.</string>
 	<string name="grouptr_member_invite_contact_outdated">Behöver en nyare version av appen</string>
 	<string name="grouptr_member_invitation_received">%1$s har bjudit in dig att gå med i gruppen ”%2$s”, som skapades av %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s har bjudit in dig att gå med i en grupp som skapades av %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Väntar på att %1$s, som skapade gruppen, ska vara uppkopplad. Skaparens telefon lägger till dig automatiskt, sedan kan du göra inlägg här.</string>
-	<string name="grouptr_member_invite_accepted">Accepterad. Du går med så snart gruppens skapare är uppkopplad.</string>
+	<string name="grouptr_waiting_for_admin">Väntar på att gruppägaren, %1$s, ska vara uppkopplad. Ägarens telefon lägger till dig automatiskt, sedan kan du göra inlägg här.</string>
+	<string name="grouptr_member_invite_accepted">Accepterad. Du går med så snart gruppägaren är uppkopplad.</string>
 	<string name="grouptr_member_invite_unavailable">Den här inbjudan kan inte längre accepteras. Be om en ny.</string>
 	<string name="grouptr_incognito">Inkognito i den här gruppen</string>
 	<string name="grouptr_incognito_summary">Andra i gruppen ser ett slumpmässigt namn i stället för ditt. Medlemmar som är dina kontakter kan fortfarande känna igen dig på din nyckel.</string>
@@ -2473,7 +2473,7 @@
 	<string name="grouptr_incognito_new_name">Nytt namn</string>
 	<string name="grouptr_sender_incognito_format">”%1$s” (inkognito)</string>
 	<string name="grouptr_member_may_add">Får lägga till medlemmar</string>
-	<string name="grouptr_member_invite_creator_only">Bara den som skapade gruppen kan lägga till medlemmar.</string>
+	<string name="grouptr_member_invite_creator_only">Bara gruppägaren kan lägga till medlemmar.</string>
 	<string name="tor_status_entry_relay">Instabil</string>
 	<string name="tor_hidden_services_entry_relay">Tors ingångsrelä misslyckas för de flesta anslutningar, så kontakter kanske inte når dig. Orsaken kan vara ett överbelastat nät eller störningar. Det brukar hjälpa att byta Tors anslutningsmetod till broar under Inställningar, Anslutningar.</string>
 	<string name="contact_connection_tor_entry_relay">Tor är ansluten, men dess ingångsrelä misslyckas för de flesta anslutningar. Broar brukar hjälpa.</string>
@@ -2484,4 +2484,42 @@
 	<string name="channels_subscribers_unban">Häv bannlysningen</string>
 	<string name="channels_subscribers_unban_confirm">Häva bannlysningen? Den här prenumeranten kan kommentera och reagera igen. Det som bannlysningen tog bort kommer inte tillbaka, och en redaktörsroll måste ges på nytt.</string>
 	<string name="channels_unban_failed">Det gick inte att häva bannlysningen</string>
+	<string name="contact_delete_failed">Det gick inte att radera kontakten</string>
+	<string name="channels_delegations_revoke_failed">Det gick inte att återkalla den här redaktören</string>
+	<string name="channels_invite_rotate_failed">Inbjudningslänken byttes inte. Den gamla länken fungerar fortfarande.</string>
+	<string name="channels_apply_unconfirmed">Ägaren har inte bekräftat att din ansökan har kommit fram. Försök igen senare.</string>
+	<string name="channels_apply_banner">Tryck för att ansöka hos ägaren om åtkomst till den här kanalen.</string>
+	<string name="channels_rejoin_updated">Din åtkomst till %1$s har uppdaterats.</string>
+	<string name="channels_rejoin_unreachable">Det gick inte att kontrollera länken just nu. Försök igen senare.</string>
+	<string name="channels_rejoin_apply_again">Du kan ansöka igen för att läsa nya inlägg i den här kanalen. Inläggen du redan har finns kvar. Ägaren ser ditt visningsnamn och en nyckel som tillhör dig enbart i den här kanalen.</string>
+	<string name="channels_sync_last_updated">Senast uppdaterad %1$s</string>
+	<string name="channels_sync_saved_posts">Visar sparade inlägg</string>
+	<string name="channels_sync_saved_posts_last_updated">Visar sparade inlägg · Senast uppdaterad %1$s</string>
+	<string name="channels_sync_not_updated_since">Inte uppdaterad sedan %1$s</string>
+	<string name="channels_owner_deleted_notice">Ägaren har raderat kanalen %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Ägaren har raderat en kanal som du gick med i</string>
+	<string name="channels_queued_waiting">Väntar på att skickas</string>
+	<string name="channels_queued_not_sent">Skickades inte</string>
+	<string name="channels_queued_retry">Försök igen</string>
+	<string name="channels_queued_delete">Radera</string>
+	<string name="channels_comment_queued_toast">Din kommentar skickas när kanalen kan nås.</string>
+	<string name="channels_react_queued_toast">Din reaktion skickas när kanalen kan nås.</string>
+	<string name="channels_announce_queued_toast">Ditt namn skickas när kanalen kan nås.</string>
+	<string name="channels_post_queued_toast">Ditt inlägg skickas när kanalen kan nås.</string>
+	<string name="channels_change_queued_toast">Din ändring skickas när kanalen kan nås.</string>
+	<string name="channels_queued_notice_waiting">En del av det du har skickat väntar. Det skickas när kanalen kan nås.</string>
+	<string name="channels_queued_notice_not_sent">En del av det du har skickat skickades inte. Tryck för att försöka igen eller radera det.</string>
+	<string name="channels_queued_announce_label">Ditt namn: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Det gick inte att nå den här kanalen. Du kan ansöka om att gå med igen med den här länken. Inläggen du redan har finns kvar. Ägaren ser ditt visningsnamn och en nyckel som tillhör dig enbart i den här kanalen.</string>
+	<string name="channels_rejoin_not_restored">Den här länken gav dig inte tillbaka åtkomsten till kanalen. Du kan be om en ny länk.</string>
+	<string name="channels_rejoin_check_title">Prova den här länken?</string>
+	<string name="channels_rejoin_check_message">Nya inlägg i den här kanalen kan inte nås just nu. Du kan prova den här länken för att få dem igen. Inläggen du redan har finns kvar.</string>
+	<string name="channels_rejoin_check_action">Prova länken</string>
+	<string name="channels_rejoin_try_later">Den här kanalen kan inte nås just nu, och det här är samma länk som du redan har. Försök igen senare. Inläggen du redan har finns kvar.</string>
+	<string name="channels_rejoin_trying">Vi fortsätter att prova den här länken. Inläggen du redan har finns kvar.</string>
+	<string name="channels_queued_already_sent">Det hade redan skickats, så det gick inte att radera.</string>
+	<string name="channels_queued_behind_toast">Det här skickas efter det du skickade tidigare till den här kanalen.</string>
+	<string name="channels_queued_no_access">Skickades inte. Du har inte längre åtkomst till den här kanalen.</string>
+	<string name="channels_no_access_toast">Du har inte längre åtkomst till den här kanalen. Be ägaren om en ny inbjudningslänk.</string>
+	<string name="channels_rejoin_too_many_links">Du har redan flera länkar som väntar för den här kanalen, så den här provades inte. Inläggen du redan har finns kvar.</string>
 </resources>

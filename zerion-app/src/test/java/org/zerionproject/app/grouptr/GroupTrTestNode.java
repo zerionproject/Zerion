@@ -94,9 +94,10 @@ final class GroupTrTestNode {
 	}
 
 	final LocalAuthor local;
-	final GroupTrManagerImpl manager;
+	GroupTrManagerImpl manager;
 	final List<Sent> sent = new ArrayList<>();
 	final List<Object> broadcasts = new ArrayList<>();
+	final List<String> untransactedWrites = new ArrayList<>();
 	long now = 1_000_000L;
 
 	private final Map<ContactId, Contact> contacts = new LinkedHashMap<>();
@@ -140,9 +141,13 @@ final class GroupTrTestNode {
 		local = new LocalAuthor(new AuthorId(getRandomId()), 1, "Local",
 				new SignaturePublicKey(localPub),
 				new SignaturePrivateKey(new byte[32]));
+		manager = newManager();
+	}
+
+	private GroupTrManagerImpl newManager() {
 		java.util.concurrent.Executor io = deferIo
 				? deferred::add : Runnable::run;
-		manager = new GroupTrManagerImpl(
+		return new GroupTrManagerImpl(
 				fake(DatabaseComponent.class, this::db), io,
 				fake(SettingsManager.class, this::settings),
 				fake(ClientHelper.class, this::client),
@@ -155,6 +160,11 @@ final class GroupTrTestNode {
 					return null;
 				}),
 				fake(Clock.class, (name, args) -> now));
+	}
+
+	void restart() throws Exception {
+		manager = newManager();
+		manager.onDatabaseOpened(new Transaction(null, false));
 	}
 
 	ContactId addContact(byte[] pub) {
@@ -352,14 +362,25 @@ final class GroupTrTestNode {
 	}
 
 	void commit(ContactId from, byte[] groupId, long fromEpoch) {
+		commit(from, groupId, fromEpoch, SIG);
+	}
+
+	void commit(ContactId from, byte[] groupId, long fromEpoch, byte[] sig) {
 		manager.eventOccurred(new GroupEpochCommitEvent(from, groupId,
-				fromEpoch, fromEpoch + 1, new byte[32], SIG, SIGNED, now));
+				fromEpoch, fromEpoch + 1, new byte[32], sig, SIGNED, now));
 	}
 
 	void left(ContactId from, byte[] groupId, byte[] leaver, long epoch) {
 		manager.eventOccurred(new GroupMembershipChangedEvent(from,
 				ChangeKind.MEMBER_LEFT, groupId, epoch, now, leaver, null, 0L,
 				0L, SIG, SIGNED));
+	}
+
+	void roleChanged(ContactId from, byte[] groupId, byte[] target,
+			MemberRole role, long epoch) {
+		manager.eventOccurred(new GroupMembershipChangedEvent(from,
+				ChangeKind.ROLE_CHANGED, groupId, epoch, now, target, null, 0L,
+				0L, SIG, SIGNED, role.getInt()));
 	}
 
 	void added(ContactId from, byte[] groupId, byte[] target, long epoch) {
@@ -370,8 +391,13 @@ final class GroupTrTestNode {
 
 	void snapshot(ContactId from, byte[] groupId, long epoch,
 			byte[] memberCanonical) {
+		snapshot(from, groupId, epoch, memberCanonical, SIG);
+	}
+
+	void snapshot(ContactId from, byte[] groupId, long epoch,
+			byte[] memberCanonical, byte[] sig) {
 		manager.eventOccurred(new GroupMemberListSnapshotEvent(from, groupId,
-				epoch, now, memberCanonical, SIG, SIGNED));
+				epoch, now, memberCanonical, sig, SIGNED));
 	}
 
 	void post(ContactId from, byte[] groupId, byte[] sender, long epoch,
@@ -793,6 +819,9 @@ final class GroupTrTestNode {
 				return copy;
 			}
 			case "mergeSettings":
+				if (!(a[0] instanceof Transaction) || !writeTxn) {
+					untransactedWrites.add(ns);
+				}
 				settings.computeIfAbsent(ns, k -> new Settings())
 						.putAll((Settings) a[a.length - 2]);
 				return null;

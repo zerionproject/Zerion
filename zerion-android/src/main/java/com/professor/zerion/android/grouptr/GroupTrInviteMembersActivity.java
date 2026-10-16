@@ -300,12 +300,7 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 					ok++;
 				} catch (Exception e) {
 					if (failures.length() > 0) failures.append(", ");
-					failures.append(nameFor(c)).append(": ")
-							.append(e.getClass().getSimpleName());
-					String msg = e.getMessage();
-					if (msg != null && !msg.isEmpty()) {
-						failures.append(" (").append(msg).append(")");
-					}
+					failures.append(nameFor(c));
 				}
 			}
 			final int okFinal = ok;

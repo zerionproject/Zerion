@@ -26,7 +26,7 @@
 			android:contentDescription="@string/channels_attach_cd"
 			android:padding="4dp"
 			android:src="@drawable/ic_file"
-			app:tint="?android:attr/textColorSecondary" />
+			app:tint="@color/zerion_text_secondary_inverse" />
 
 		<ProgressBar
 			android:id="@+id/channelAttachmentProgress"
@@ -50,7 +50,7 @@
 				android:layout_height="wrap_content"
 				android:ellipsize="end"
 				android:maxLines="1"
-				android:textColor="?android:attr/textColorPrimary"
+				android:textColor="@color/zerion_text_primary_inverse"
 				android:textSize="13sp"
 				tools:text="image/jpeg" />
 
@@ -58,7 +58,7 @@
 				android:id="@+id/channelAttachmentSize"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:textColor="?android:attr/textColorSecondary"
+				android:textColor="@color/zerion_text_secondary_inverse"
 				android:textSize="11sp"
 				tools:text="1.2 MB" />
 

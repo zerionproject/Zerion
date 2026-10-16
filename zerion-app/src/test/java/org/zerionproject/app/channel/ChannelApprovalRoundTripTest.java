@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ChannelApprovalRoundTripTest {
 
@@ -94,7 +95,7 @@ public class ChannelApprovalRoundTripTest {
 	}
 
 	@Test
-	public void anApplicantThatLeftAndAppliedAgainCanBeApprovedAgain()
+	public void anApprovedApplicantThatLeftAndAppliedAgainStaysApproved()
 			throws Exception {
 		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
 		approveAndRefresh();
@@ -107,15 +108,200 @@ public class ChannelApprovalRoundTripTest {
 		clock.advance(ChannelTestNode.HOUR);
 		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
 
-		List<ChannelApplication> pending =
-				publisher.manager.listPendingApplications(channel.channelId);
-		assertEquals("the new application waits for approval again", 1,
-				pending.size());
-		approveAndRefresh();
+		assertTrue("an approved key waits for no new approval",
+				publisher.manager.listPendingApplications(channel.channelId)
+						.isEmpty());
+		assertEquals(ChannelApplication.Status.APPROVED, held().getStatus());
+		clock.advance(31_000L);
+		subscriber.refreshAndReschedule();
 
 		assertArrayEquals("the capability is wrapped to the new key",
 				capability, subscriber.store.getChannel(channel.channelId)
 						.getJoinCapability());
+	}
+
+	@Test
+	public void anApprovalMadeBeforeARenewalIsNeitherAnsweredNorListed()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.manager.approveApplication(channel.channelId,
+				held().getApplicantEd25519());
+		assertEquals("APPROVED", check().status);
+
+		publisher.manager.rotateJoinCapability(channel.channelId);
+
+		ChannelPullCodec.ApprovalResponse answer = check();
+		assertEquals("a revoked approval was answered", "UNKNOWN",
+				answer.status);
+		assertNull(answer.envelope);
+		assertTrue("a revoked approval is listed as approved",
+				publisher.manager.listAllApplications(channel.channelId)
+						.isEmpty());
+	}
+
+	@Test
+	public void aLegacyApprovalIsStillListedAndKnownAfterTheUpgrade()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.manager.approveApplication(channel.channelId,
+				held().getApplicantEd25519());
+
+		ChannelApplication legacy = legacy();
+
+		List<ChannelApplication> listed =
+				publisher.manager.listAllApplications(channel.channelId);
+		assertEquals("an approval from before the upgrade is hidden", 1,
+				listed.size());
+		assertEquals(ChannelApplication.Status.APPROVED,
+				listed.get(0).getStatus());
+		assertTrue("an approval from before the upgrade is not known",
+				known(legacy.getApplicantEd25519()));
+	}
+
+	@Test
+	public void aLegacyKeyThatAppliesAgainWaitsWithNothingWrapped()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		approveAndRefresh();
+		legacy();
+		assertEquals(ChannelApplication.Status.APPROVED, held().getStatus());
+
+		subscriber.manager.leaveChannel(channel.channelId);
+		subscriber.seedSubscriber(channel, false, null, null,
+				Collections.emptyList());
+		clock.advance(ChannelTestNode.HOUR);
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+
+		ChannelApplication again = stored();
+		assertEquals("a legacy approval was renewed",
+				ChannelApplication.Status.PENDING, again.getStatus());
+		assertNull(again.getKemCiphertext());
+		assertNull(again.getEnvelope());
+		assertNull(again.getApprovedUnder());
+	}
+
+	@Test
+	public void aRenewalRevokesALegacyApprovalToo() throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.manager.approveApplication(channel.channelId,
+				held().getApplicantEd25519());
+		ChannelApplication legacy = legacy();
+		assertEquals("APPROVED", check().status);
+		assertTrue(known(legacy.getApplicantEd25519()));
+
+		publisher.manager.rotateJoinCapability(channel.channelId);
+
+		assertTrue("a legacy approval outlived a renewal",
+				publisher.manager.listAllApplications(channel.channelId)
+						.isEmpty());
+		assertFalse(known(legacy.getApplicantEd25519()));
+		ChannelPullCodec.ApprovalResponse answer = check();
+		assertEquals("UNKNOWN", answer.status);
+		assertNull(answer.envelope);
+	}
+
+	@Test
+	public void aCheckForALegacyApprovalNeverWrapsTheCurrentCapability()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		publisher.manager.approveApplication(channel.channelId,
+				held().getApplicantEd25519());
+		ChannelApplication approved = stored();
+		publisher.manager.rotateJoinCapability(channel.channelId);
+		ChannelApplication legacy = legacy();
+
+		ChannelPullCodec.ApprovalResponse answer = check();
+
+		assertEquals("APPROVED", answer.status);
+		assertArrayEquals("a capability was wrapped again",
+				approved.getKemCiphertext(), answer.kemCt);
+		assertArrayEquals(approved.getEnvelope(), answer.envelope);
+
+		publisher.applicationStore.putApplication(channel.channelId,
+				new ChannelApplication(legacy.getDisplayName(),
+						legacy.getApplicantEd25519(),
+						legacy.getApplicantMlDsa(),
+						legacy.getApplicantEphemeralAgreementPub(),
+						legacy.getAppliedAtHourMs(),
+						ChannelApplication.Status.APPROVED, null, null));
+		answer = check();
+		assertEquals("UNKNOWN", answer.status);
+		assertNull(answer.kemCt);
+		assertNull(answer.envelope);
+	}
+
+	private ChannelApplication stored() throws Exception {
+		List<ChannelApplication> all = publisher.applicationStore
+				.getApplications(channel.channelId);
+		assertEquals(1, all.size());
+		return all.get(0);
+	}
+
+	private ChannelApplication legacy() throws Exception {
+		ChannelApplication a = stored();
+		ChannelApplication old = new ChannelApplication(a.getDisplayName(),
+				a.getApplicantEd25519(), a.getApplicantMlDsa(),
+				a.getApplicantEphemeralAgreementPub(),
+				a.getAppliedAtHourMs(), a.getStatus(), a.getKemCiphertext(),
+				a.getEnvelope());
+		publisher.applicationStore.putApplication(channel.channelId, old);
+		assertNull(stored().getApprovedUnder());
+		return old;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean known(byte[] ed) throws Exception {
+		java.util.Set<String> known = (java.util.Set<String>) publisher.call(
+				"knownSigners", new Class<?>[] {ChannelState.class},
+				publisher.store.getChannel(channel.channelId));
+		return known.contains(
+				org.zerionproject.core.util.StringUtils.toHexString(ed));
+	}
+
+	private ChannelPullCodec.ApprovalResponse check() throws Exception {
+		org.zerionproject.core.api.crypto.KeyPair keys =
+				(org.zerionproject.core.api.crypto.KeyPair) subscriber.call(
+						"memberKeys", new Class<?>[] {byte[].class},
+						channel.channelId);
+		org.zerionproject.core.api.crypto.HybridSignaturePublicKey pub =
+				(org.zerionproject.core.api.crypto.HybridSignaturePublicKey)
+						keys.getPublic();
+		org.zerionproject.core.api.crypto.HybridSignaturePrivateKey priv =
+				(org.zerionproject.core.api.crypto.HybridSignaturePrivateKey)
+						keys.getPrivate();
+		long ts = clock.currentTimeMillis() / ChannelTestNode.HOUR
+				* ChannelTestNode.HOUR;
+		byte[] sig = subscriber.signatures.signUserCheckApproval(
+				subscriber.codec.checkApprovalSignedInput(channel.channelId,
+						ts), priv.getEd25519Component(),
+				priv.getMlDsaPrivateKey());
+		byte[] request = subscriber.pullCodec.encodeCheckApprovalRequest(
+				channel.channelId, ts, pub.getEd25519PublicKey(),
+				pub.getMlDsaPublicKey(), sig);
+		return publisher.pullCodec.decodeApprovalResponse(
+				publisher.handle(channel.channelId, request));
+	}
+
+	@Test
+	public void aBannedApprovedApplicantIsNotApprovedAgain()
+			throws Exception {
+		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+		approveAndRefresh();
+		byte[] approvedKey = held().getApplicantEphemeralAgreementPub();
+		publisher.manager.banSubscriber(channel.channelId,
+				held().getApplicantEd25519());
+		subscriber.manager.leaveChannel(channel.channelId);
+		subscriber.seedSubscriber(channel, false, null, null,
+				Collections.emptyList());
+		clock.advance(ChannelTestNode.HOUR);
+
+		try {
+			subscriber.manager.applyToJoin(channel.channelId, "Applicant");
+			fail("a banned key was told its application arrived");
+		} catch (org.zerionproject.core.api.db.DbException expected) {
+		}
+		assertArrayEquals("a banned key was approved again", approvedKey,
+				held().getApplicantEphemeralAgreementPub());
 	}
 
 	@Test
@@ -130,8 +316,9 @@ public class ChannelApprovalRoundTripTest {
 		subscriber.manager.applyToJoin(channel.channelId, "Applicant");
 		byte[] newerKey = held().getApplicantEphemeralAgreementPub();
 
-		assertTrue(ChannelTestNode.ackOk(
-				publisher.handle(channel.channelId, first)));
+		assertFalse("an older application is refused",
+				ChannelTestNode.ackOk(
+						publisher.handle(channel.channelId, first)));
 		assertArrayEquals("the older application is ignored", newerKey,
 				held().getApplicantEphemeralAgreementPub());
 

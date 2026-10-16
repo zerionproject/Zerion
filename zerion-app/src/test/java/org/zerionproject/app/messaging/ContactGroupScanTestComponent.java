@@ -25,6 +25,7 @@ import org.zerionproject.app.api.client.MessageTracker;
 import org.zerionproject.app.api.conversation.ConversationManager;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.zerionproject.app.autodelete.AutoDeleteModule;
 import org.zerionproject.app.client.BriarClientModule;
 import org.zerionproject.app.conversation.ConversationModule;
@@ -83,6 +84,8 @@ interface ContactGroupScanTestComponent
 	StreamingAttachmentWriter getStreamingAttachmentWriter();
 
 	PrivateMessageValidator getPrivateMessageValidator();
+
+	PrivateMessageFactory getPrivateMessageFactory();
 
 	CleanupManager getCleanupManager();
 

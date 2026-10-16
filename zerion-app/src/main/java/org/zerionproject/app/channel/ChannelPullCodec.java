@@ -655,6 +655,15 @@ class ChannelPullCodec {
 		return writeDict(d);
 	}
 
+	boolean decodeAnnounceAck(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		if (!ChannelConstants.WIRE_TYPE_ANNOUNCE_ACK.equals(
+				d.getString("type"))) {
+			throw new FormatException();
+		}
+		return d.getBoolean("ok", false);
+	}
+
 	@NotNullByDefault
 	static final class AnnounceRequest {
 		final byte[] channelId;
@@ -787,6 +796,15 @@ class ChannelPullCodec {
 		d.put("type", ChannelConstants.WIRE_TYPE_APPLY_ACK);
 		d.put("ok", ok);
 		return writeDict(d);
+	}
+
+	boolean decodeApplyAck(byte[] data) throws IOException {
+		BdfDictionary d = readDict(data);
+		String type = d.getString("type");
+		if (!ChannelConstants.WIRE_TYPE_APPLY_ACK.equals(type)) {
+			throw new FormatException();
+		}
+		return d.getBoolean("ok", false);
 	}
 
 	byte[] encodeCheckApprovalRequest(byte[] channelId,

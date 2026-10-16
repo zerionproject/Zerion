@@ -61,6 +61,7 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_I
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_CHUNK_DATA_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ROOT_HASH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TOTAL_SIZE;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_IS_TYPING;
@@ -276,7 +277,7 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validatePrivateMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 3, 5);
+		checkSize(body, 3, 6);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		VoiceMemoFormatCheck.requireCurrentFormat(text);
@@ -299,10 +300,11 @@ class PrivateMessageValidator implements MessageValidator {
 			timer = validateAutoDeleteTimer(body.getOptionalLong(3));
 		}
 		byte[] replyToId = null;
-		if (body.size() == 5) {
+		if (body.size() >= 5) {
 			replyToId = body.getOptionalRaw(4);
 			if (replyToId != null) checkLength(replyToId, UniqueId.LENGTH);
 		}
+		if (body.size() == 6) checkLength(body.getRaw(5), BODY_SALT_LENGTH);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -483,11 +485,12 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateMessageEdit(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 3);
+		checkSize(body, 3, 4);
 		byte[] targetId = body.getRaw(1);
 		checkLength(targetId, UniqueId.LENGTH);
 		String text = body.getString(2);
 		checkLength(text, 1, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+		if (body.size() == 4) checkLength(body.getRaw(3), BODY_SALT_LENGTH);
 		if (!org.zerionproject.app.api.messaging.MessageEdits
 				.isEditableText(text)) {
 			throw new FormatException();

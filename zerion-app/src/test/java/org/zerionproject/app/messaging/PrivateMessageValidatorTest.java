@@ -40,13 +40,18 @@ import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE
 import static org.zerionproject.app.client.MessageTrackerConstants.MSG_KEY_READ;
 import static org.zerionproject.app.messaging.MessageTypes.ATTACHMENT;
 import static org.zerionproject.app.messaging.MessageTypes.LINK_PREVIEW_MESSAGE;
+import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_EDIT;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 import static org.zerionproject.app.messaging.MessageTypes.VOICE_SIGNAL;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ATTACHMENT_HEADERS;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_AUTO_DELETE_TIMER;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_EDITED_TEXT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_TEXT;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_LOCAL;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_MSG_TYPE;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_REPLY_TO_ID;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TARGET_MESSAGE_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW_TITLE;
@@ -436,6 +441,97 @@ public class PrivateMessageValidatorTest extends BrambleMockTestCase {
 
 		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
 				new BdfList(), MAX_AUTO_DELETE_TIMER_MS), maxTimerMeta);
+	}
+
+	@Test
+	public void testAcceptsSaltedPrivateMessageWithoutKeepingTheSalt()
+			throws Exception {
+		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null, getRandomBytes(BODY_SALT_LENGTH)),
+				noAttachmentsMeta);
+	}
+
+	@Test
+	public void testAcceptsSaltedReplyWithTimer() throws Exception {
+		byte[] replyTo = getRandomId();
+		BdfDictionary meta = new BdfDictionary(noAttachmentsMeta);
+		meta.put(MSG_KEY_AUTO_DELETE_TIMER, MIN_AUTO_DELETE_TIMER_MS);
+		meta.put(MSG_KEY_REPLY_TO_ID, replyTo);
+
+		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), MIN_AUTO_DELETE_TIMER_MS, replyTo,
+				getRandomBytes(BODY_SALT_LENGTH)), meta);
+	}
+
+	@Test
+	public void testAcceptsSaltedMessageWithAttachmentsOnly()
+			throws Exception {
+		testAcceptsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, null,
+				BdfList.of(attachmentHeader), null, null,
+				getRandomBytes(BODY_SALT_LENGTH)), noTextMeta,
+				singletonList(getAttachmentId(attachmentHeader)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsTooShortSaltForPrivateMessage() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null,
+				getRandomBytes(BODY_SALT_LENGTH - 1)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsTooLongSaltForPrivateMessage() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null,
+				getRandomBytes(BODY_SALT_LENGTH + 1)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsNullSaltForPrivateMessage() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null, null));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsNonRawSaltForPrivateMessage() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null, "salt"));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsElementAfterSaltForPrivateMessage()
+			throws Exception {
+		testRejectsPrivateMessage(BdfList.of(PRIVATE_MESSAGE, text,
+				new BdfList(), null, null, getRandomBytes(BODY_SALT_LENGTH),
+				null));
+	}
+
+	@Test
+	public void testAcceptsEditWithAndWithoutSalt() throws Exception {
+		byte[] target = getRandomId();
+		BdfDictionary meta = BdfDictionary.of(
+				new BdfEntry(MSG_KEY_TIMESTAMP, message.getTimestamp()),
+				new BdfEntry(MSG_KEY_LOCAL, false),
+				new BdfEntry(MSG_KEY_MSG_TYPE, MESSAGE_EDIT),
+				new BdfEntry(MSG_KEY_TARGET_MESSAGE_ID, target),
+				new BdfEntry(MSG_KEY_EDITED_TEXT, "fixed"));
+
+		testAcceptsPrivateMessage(BdfList.of(MESSAGE_EDIT, target, "fixed"),
+				meta);
+		testAcceptsPrivateMessage(BdfList.of(MESSAGE_EDIT, target, "fixed",
+				getRandomBytes(BODY_SALT_LENGTH)), meta);
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsShortSaltForEdit() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(MESSAGE_EDIT, getRandomId(),
+				"fixed", getRandomBytes(BODY_SALT_LENGTH - 1)));
+	}
+
+	@Test(expected = InvalidMessageException.class)
+	public void testRejectsElementAfterSaltForEdit() throws Exception {
+		testRejectsPrivateMessage(BdfList.of(MESSAGE_EDIT, getRandomId(),
+				"fixed", getRandomBytes(BODY_SALT_LENGTH), null));
 	}
 
 	@Test

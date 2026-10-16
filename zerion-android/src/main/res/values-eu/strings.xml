@@ -246,7 +246,7 @@
   <string name="groups_dissolve_dialog_message">Ziur zaude talde hau desegin nahi duzula?\n\nBeste kideek ezin izango dute elkarrizketarekin jarraitu eta agian ez dituzte azken mezuak jasoko.</string>
   <string name="groups_dissolve_button">Desegin</string>
   <string name="groups_dissolved_dialog_title">Taldea desegin da</string>
-  <string name="groups_dissolved_dialog_message">Talde honen sortzaileak taldea desegin du.\n\nJada ezin duzu talde honetan mezurik idatzi, eta agian ez dituzu idatzi diren sarrera guztiak jasoko.</string>
+  <string name="groups_dissolved_dialog_message">Taldearen jabeak talde hau desegin du.\n\nJada ezin duzu talde honetan mezurik idatzi, eta agian ez dituzu idatzi diren argitalpen guztiak jasoko.</string>
   
   <string name="groups_invitations_title">Talderako gonbidapenak</string>
   <string name="groups_invitations_invitation_sent">%1$s erabiltzailea \"%2$s\" taldera elkartzera gonbidatu duzu.</string>
@@ -256,9 +256,9 @@
     <item quantity="one">talderako gonbidapen %d erantzuteke</item>
     <item quantity="other">%d talderako gonbidapen erantzuteke</item>
   </plurals>
-  <string name="sharing_status_groups">Sortzaileak ez beste inork ezin ditu kide berriak taldera gonbidatu. Behean taldeko oraingo kide guztiak daude.</string>
+  <string name="sharing_status_groups">Taldearen jabeak bakarrik gonbida ditzake kide berriak taldera. Behean taldeko oraingo kide guztiak daude.</string>
   
-  <string name="groups_reveal_dialog_message">Talde honetako oraingo eta etorkizuneko kide guztiei kontaktuak erazagutzea ala ez aukeratu dezakezu.\n\nKontaktuak erazagutzeak taldearekiko zure konexioa azkarragoa eta egonkorragoa egingo du, erazagututako kontaktuekin komunikatu zaitezkeelako taldearen sortzailea deskonektatuta egonik ere.</string>
+  <string name="groups_reveal_dialog_message">Talde honetako oraingo eta etorkizuneko kide guztiei kontaktuak erazagutu ala ez aukera dezakezu.\n\nKontaktuak erazagutzeak taldearekiko zure konexioa azkarragoa eta fidagarriagoa egiten du, erazagututako kontaktuekin komunikatu zaitezkeelako taldearen jabea deskonektatuta egonik ere.</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktuen erlazioa taldean ikusgai dago (Zuk erazagututa)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktuen erlazioa taldean ikusgai dago (%s erabiltzaileak erazagututa)</string>
   <string name="groups_reveal_invisible">Kontaktuen erlazioa ez dago taldean ikusgai</string>
@@ -900,7 +900,7 @@
 	<string name="channels_feed_empty_subscriber">Oraindik ez dago argitalpenik. Argitalpen berriak hemen agertuko dira.</string>
 	<string name="channels_post_withheld">Argitalpena atxikita: kanalaren jabeak egile honi argitaratzeko baimena kendu dio.</string>
 	<string name="channels_feed_connecting">Kanalera konektatzen…</string>
-	<string name="channels_feed_connecting_slow">Oraindik konektatzen. Ziurtatu kanal hau partekatu zuen pertsona konektatuta dagoela. Bere kabuz eguneratuko da.</string>
+	<string name="channels_feed_connecting_slow">Oraindik konektatzen. Argitalpenak hemen agertuko dira kanala eskuragarri dagoenean.</string>
 	<string name="channels_compose_hint">Idatzi zure harpidedunei…</string>
 	<string name="channels_compose_send">Argitaratu</string>
 	<string name="channels_compose_error_empty">Idatzi zerbait argitaratu aurretik.</string>
@@ -1213,7 +1213,7 @@
 	<string name="grouptr_empty">Oraindik ez dago talderik.</string>
 	<string name="grouptr_meta">%2$d kide</string>
 	<string name="grouptr_dissolved_suffix">(desegina)</string>
-	<string name="grouptr_creator_tag">(sortzailea)</string>
+	<string name="grouptr_creator_tag">(taldearen jabea)</string>
 	<string name="grouptr_admin_tag">(administratzailea)</string>
 	<string name="grouptr_promote">Igo maila</string>
 	<string name="grouptr_demote">Jaitsi maila</string>
@@ -1316,7 +1316,7 @@
 	<string name="grouptr_detail_status">Egoera</string>
 	<string name="grouptr_detail_status_dissolved">Desegina</string>
 	<string name="grouptr_open_chat">Ireki txata</string>
-	<string name="grouptr_member_role_creator">sortzailea</string>
+	<string name="grouptr_member_role_creator">Taldearen jabea</string>
 	<string name="grouptr_member_role_you">zu</string>
 	<string name="grouptr_member_action_remove">Kendu taldetik</string>
 	<string name="scroll_to_bottom">Joan behera</string>
@@ -2249,14 +2249,14 @@
 	<string name="wallet_sp_enable_first">Gaitu Silent Payments lehenik</string>
 	<string name="grouptr_reach_title">Zure mezuak nori iristen zaizkion</string>
 	<string name="grouptr_reach_explanation">Taldeko mezuak zuzenean bidaiatzen dute elkarren kontaktu diren kideen artean, eta kideek ez dituzte mezuak birbidaltzen. Kide hauek ez dira zure kontaktuak; beraz, ez dituzte zure mezuak jasotzen, eta zuk ere ez dituzu haienak jasotzen:\n\n%1$s\n\nGehitu kontaktu gisa haiengana iristeko.</string>
-	<string name="grouptr_ttl_set_by_creator">Desagertzen diren mezuak talde honetan: %1$s. Taldearen sortzaileak soilik alda dezake hau.</string>
+	<string name="grouptr_ttl_set_by_creator">Desagertzen diren mezuak talde honetan: %1$s. Taldearen jabeak soilik alda dezake hau.</string>
 	<string name="grouptr_sender_alias_format">%1$s («%2$s» izenarekin idazten)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (ezagutzen ez duzun izena)</string>
 	<string name="grouptr_member_out_of_reach">ez da zure kontaktua, ez ditu zure mezuak jasotzen</string>
 	<string name="grouptr_member_invited">Gonbidatuta, erantzunaren zain</string>
 	<string name="grouptr_confirm_revoke">%1$s kontaktuari bidalitako gonbidapena kendu? Haren erantzuna ez da kontuan hartuko.</string>
 	<string name="grouptr_revoke_invite">Kendu gonbidapena</string>
-	<string name="grouptr_invite_expired">Gonbidapen hau iraungi da. Eskatu berri bat taldearen sortzaileari.</string>
+	<string name="grouptr_invite_expired">Gonbidapen hau iraungi da. Eskatu berri bat taldearen jabeari.</string>
 	<string name="reaction_removed_here_only">Gailu honetan soilik kendu da: zure kontaktuaren aplikazioa zaharregia da bere gailuan kentzeko.</string>
 	<string name="startup_data_without_account_message">Zerion-ek datuak aurkitu ditu gailu honetan, baina ez haiek irekitzen dituen kontu-gakorik: gako-fitxategiak falta dira edo hondatuta daude. Ez da ezer ezabatu.\n\nZerion itxi eta datuak gorde ditzakezu, edo dena ezabatu eta berriro hasi.</string>
 	<string name="startup_data_without_account_keep">Itxi eta gorde</string>
@@ -2443,13 +2443,13 @@
 	<string name="grouptr_members_may_invite">Kideek beren kontaktuak gonbida ditzakete</string>
 	<string name="grouptr_members_may_invite_summary">Hau aktibatuta dagoen bitartean, zure telefonoak automatikoki gehitzen ditu haiek gonbidatutako pertsonak.</string>
 	<string name="grouptr_invite_contacts">Gonbidatu kontaktuak</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Taldearen sortzailea kontaktu gisa duten kideek soilik gonbida dezakete.</string>
-	<string name="grouptr_member_invite_creator_outdated">Taldearen sortzaileak aplikazioaren bertsio berriago bat behar du kideek gonbidatu ahal izateko.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Taldearen jabea kontaktu gisa duten kideek soilik gonbida dezakete.</string>
+	<string name="grouptr_member_invite_creator_outdated">Taldearen jabeak aplikazioaren bertsio berriago bat behar du kideek gonbidatu ahal izateko.</string>
 	<string name="grouptr_member_invite_contact_outdated">Aplikazioaren bertsio berriago bat behar du</string>
 	<string name="grouptr_member_invitation_received">%1$s erabiltzaileak «%2$s» taldera batzeko gonbidatu zaitu. %3$s da taldearen sortzailea.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s erabiltzaileak talde batera batzeko gonbidatu zaitu. %2$s da taldearen sortzailea.</string>
-	<string name="grouptr_waiting_for_admin">Taldearen sortzailea, %1$s, konektatu arte itxaroten. Haren telefonoak automatikoki gehituko zaitu, eta gero hemen argitaratu ahal izango duzu.</string>
-	<string name="grouptr_member_invite_accepted">Onartuta. Taldearen sortzailea konektatzen denean batuko zara.</string>
+	<string name="grouptr_waiting_for_admin">Taldearen jabea, %1$s, konektatu arte itxaroten. Haren telefonoak automatikoki gehituko zaitu, eta gero hemen argitaratu ahal izango duzu.</string>
+	<string name="grouptr_member_invite_accepted">Onartuta. Taldearen jabea konektatzen denean batuko zara.</string>
 	<string name="grouptr_member_invite_unavailable">Gonbidapen hau ezin da onartu jada. Eskatu berri bat.</string>
 	<string name="grouptr_incognito">Ezezagun talde honetan</string>
 	<string name="grouptr_incognito_summary">Taldeko besteek ausazko izen bat ikusten dute zurearen ordez. Zure kontaktuak diren kideek zure gakoaren bidez ezagutu zaitzakete oraindik.</string>
@@ -2457,7 +2457,7 @@
 	<string name="grouptr_incognito_new_name">Izen berria</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (ezezagun)</string>
 	<string name="grouptr_member_may_add">Kideak gehi ditzake</string>
-	<string name="grouptr_member_invite_creator_only">Taldearen sortzaileak bakarrik gehi ditzake kideak.</string>
+	<string name="grouptr_member_invite_creator_only">Taldearen jabeak bakarrik gehi ditzake kideak.</string>
 	<string name="tor_status_entry_relay">Ezegonkorra</string>
 	<string name="tor_hidden_services_entry_relay">Tor-en sarrera-errelea konexio gehienetan huts egiten ari da, beraz baliteke kontaktuak zuregana iritsi ezin izatea. Sare gainkargatua edo interferentziak izan daitezke. Tor-en konexio-metodoa zubietara aldatzeak Ezarpenak, Konexioak atalean lagundu ohi du.</string>
 	<string name="contact_connection_tor_entry_relay">Tor konektatuta dago, baina bere sarrera-errelea konexio gehienetan huts egiten ari da. Zubiak erabiltzeak lagundu ohi du.</string>
@@ -2468,4 +2468,42 @@
 	<string name="channels_subscribers_unban">Kendu debekua</string>
 	<string name="channels_subscribers_unban_confirm">Debekua kendu? Harpidedun honek berriro iruzkindu eta erreakzionatu ahal izango du. Debekuak kendutakoa ez da itzultzen, eta editore rola berriro eman behar da.</string>
 	<string name="channels_unban_failed">Ezin izan da debekua kendu</string>
+	<string name="contact_delete_failed">Ezin izan da kontaktua ezabatu</string>
+	<string name="channels_delegations_revoke_failed">Ezin izan da editore hau baliogabetu</string>
+	<string name="channels_invite_rotate_failed">Gonbidapen-esteka ez da aldatu. Esteka zaharrak oraindik funtzionatzen du.</string>
+	<string name="channels_apply_unconfirmed">Jabeak ez du berretsi zure eskaera iritsi denik. Saiatu berriro geroago.</string>
+	<string name="channels_apply_banner">Sakatu jabeari kanal honetarako sarbidea eskatzeko.</string>
+	<string name="channels_rejoin_updated">%1$s kanalerako zure sarbidea eguneratu da.</string>
+	<string name="channels_rejoin_unreachable">Ezin izan da esteka hau egiaztatu orain. Saiatu berriro geroago.</string>
+	<string name="channels_rejoin_apply_again">Sarbidea berriro eska dezakezu kanal honetako argitalpen berriak irakurtzeko. Dagoeneko dituzun argitalpenak ez dira galduko. Jabeak zure bistaratzeko izena eta kanal honetan soilik zurea den gako bat ikusiko ditu.</string>
+	<string name="channels_sync_last_updated">Azken eguneratzea: %1$s</string>
+	<string name="channels_sync_saved_posts">Gordetako argitalpenak erakusten</string>
+	<string name="channels_sync_saved_posts_last_updated">Gordetako argitalpenak erakusten · Azken eguneratzea: %1$s</string>
+	<string name="channels_sync_not_updated_since">Ez da eguneratu %1$s geroztik</string>
+	<string name="channels_owner_deleted_notice">Jabeak %1$s kanala ezabatu du</string>
+	<string name="channels_owner_deleted_notice_unnamed">Jabeak batu zinen kanal bat ezabatu du</string>
+	<string name="channels_queued_waiting">Bidaltzeko zain</string>
+	<string name="channels_queued_not_sent">Ez da bidali</string>
+	<string name="channels_queued_retry">Saiatu berriro</string>
+	<string name="channels_queued_delete">Ezabatu</string>
+	<string name="channels_comment_queued_toast">Zure iruzkina kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_react_queued_toast">Zure erreakzioa kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_announce_queued_toast">Zure izena kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_post_queued_toast">Zure argitalpena kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_change_queued_toast">Zure aldaketa kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_queued_notice_waiting">Bidali duzunaren zati bat zain dago. Kanala eskuragarri dagoenean bidaliko da.</string>
+	<string name="channels_queued_notice_not_sent">Bidali duzunaren zati bat ez da bidali. Sakatu berriro saiatzeko edo ezabatzeko.</string>
+	<string name="channels_queued_announce_label">Zure izena: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Ezin izan da kanal honetara iritsi. Esteka honekin berriro eska dezakezu batzea. Dagoeneko dituzun argitalpenak ez dira galduko. Jabeak zure bistaratzeko izena eta kanal honetan soilik zurea den gako bat ikusiko ditu.</string>
+	<string name="channels_rejoin_not_restored">Esteka honek ez dizu kanal honetarako sarbidea itzuli. Esteka berri bat eska dezakezu.</string>
+	<string name="channels_rejoin_check_title">Esteka hau probatu?</string>
+	<string name="channels_rejoin_check_message">Ezin da orain kanal honetako argitalpen berrietara iritsi. Esteka hau proba dezakezu berriro jasotzeko. Dagoeneko dituzun argitalpenak ez dira galduko.</string>
+	<string name="channels_rejoin_check_action">Probatu esteka</string>
+	<string name="channels_rejoin_try_later">Ezin da orain kanal honetara iritsi, eta esteka hau dagoeneko duzuna da. Saiatu berriro geroago. Dagoeneko dituzun argitalpenak ez dira galduko.</string>
+	<string name="channels_rejoin_trying">Esteka hau probatzen jarraituko dugu. Dagoeneko dituzun argitalpenak ez dira galduko.</string>
+	<string name="channels_queued_already_sent">Dagoeneko bidalita zegoen, beraz ezin izan da ezabatu.</string>
+	<string name="channels_queued_behind_toast">Hau kanal honetara lehenago bidali duzunaren ondoren bidaliko da.</string>
+	<string name="channels_queued_no_access">Ez da bidali. Jada ez duzu kanal honetarako sarbiderik.</string>
+	<string name="channels_no_access_toast">Jada ez duzu kanal honetarako sarbiderik. Eskatu jabeari gonbidapen-esteka berri bat.</string>
+	<string name="channels_rejoin_too_many_links">Dagoeneko badituzu zain dauden hainbat esteka kanal honetarako; beraz, esteka hau ez dugu probatu. Dagoeneko dituzun argitalpenak ez dira galduko.</string>
 </resources>

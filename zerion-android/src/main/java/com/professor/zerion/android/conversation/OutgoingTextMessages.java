@@ -41,6 +41,10 @@ public final class OutgoingTextMessages {
 		}
 		long timer = autoDeleteManager.getAutoDeleteTimer(txn, contactId,
 				timestamp);
+		if (format.isSalted()) {
+			return factory.createSaltedPrivateMessage(groupId, timestamp, text,
+					Collections.emptyList(), timer, null);
+		}
 		return factory.createPrivateMessage(groupId, timestamp, text,
 				Collections.emptyList(), timer, null);
 	}

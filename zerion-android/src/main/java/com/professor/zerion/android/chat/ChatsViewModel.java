@@ -29,6 +29,8 @@ import com.professor.zerion.android.contact.PinnedContactManager;
 import com.professor.zerion.android.mesh.MeshPresenceTracker;
 import com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent;
 import com.professor.zerion.android.viewmodel.DbViewModel;
+import com.professor.zerion.android.viewmodel.LiveEvent;
+import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -57,6 +59,8 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> hasPendingContacts =
 			new MutableLiveData<>();
+	private final MutableLiveEvent<Boolean> contactDeleted =
+			new MutableLiveEvent<>();
 
 	@Inject
 	ChatsViewModel(Application app, @DatabaseExecutor Executor dbExecutor,
@@ -160,13 +164,18 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 		runOnDbThread(() -> {
 			try {
 				ContactId cid = new ContactId(contactId);
-				pinnedManager.unpin(cid);
 				contactManager.removeContact(cid);
+				pinnedManager.unpin(cid);
+				contactDeleted.postEvent(true);
 				load();
 			} catch (DbException e) {
-				handleException(e);
+				contactDeleted.postEvent(false);
 			}
 		});
+	}
+
+	LiveEvent<Boolean> getContactDeleted() {
+		return contactDeleted;
 	}
 
 	@Override

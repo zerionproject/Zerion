@@ -2,6 +2,7 @@ package org.zerionproject.app.messaging;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
+import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.Message;
@@ -20,6 +21,7 @@ import javax.inject.Inject;
 import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 
 @Immutable
@@ -27,10 +29,13 @@ import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 
 	private final ClientHelper clientHelper;
+	private final CryptoComponent crypto;
 
 	@Inject
-	PrivateMessageFactoryImpl(ClientHelper clientHelper) {
+	PrivateMessageFactoryImpl(ClientHelper clientHelper,
+			CryptoComponent crypto) {
 		this.clientHelper = clientHelper;
+		this.crypto = crypto;
 	}
 
 	@Override
@@ -78,6 +83,24 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 		} else {
 			body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer);
 		}
+		Message m = clientHelper.createMessage(groupId, timestamp, body);
+		return new PrivateMessage(m, text != null, headers, autoDeleteTimer,
+				replyToId);
+	}
+
+	@Override
+	public PrivateMessage createSaltedPrivateMessage(GroupId groupId,
+			long timestamp, @Nullable String text,
+			List<AttachmentHeader> headers, long autoDeleteTimer,
+			@Nullable MessageId replyToId) throws FormatException {
+		validateTextAndAttachmentHeaders(text, headers);
+		BdfList attachmentList = serialiseAttachmentHeaders(headers);
+		Long timer = autoDeleteTimer == NO_AUTO_DELETE_TIMER ?
+				null : autoDeleteTimer;
+		byte[] salt = new byte[BODY_SALT_LENGTH];
+		crypto.getSecureRandom().nextBytes(salt);
+		BdfList body = BdfList.of(PRIVATE_MESSAGE, text, attachmentList, timer,
+				replyToId == null ? null : replyToId.getBytes(), salt);
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
 		return new PrivateMessage(m, text != null, headers, autoDeleteTimer,
 				replyToId);

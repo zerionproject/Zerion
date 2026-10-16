@@ -33,6 +33,9 @@ import org.zerionproject.core.test.TestDatabaseConfigModule;
 import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.MessagingManager.EditResult;
+import org.zerionproject.app.api.messaging.PrivateMessage;
+import org.zerionproject.app.api.messaging.PrivateMessageFactory;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.After;
@@ -45,6 +48,7 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,20 +61,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_DELETE;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_EDIT;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_REACTION;
+import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_ORIGINAL_KEPT;
 import static org.zerionproject.app.messaging.MessagingManagerImpl.EDITS_NAMESPACE;
 import static org.zerionproject.app.messaging.MessagingManagerImpl.KEY_ORIGINALS_CHECKED;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
+import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
@@ -585,6 +594,209 @@ public class EditedTextErasureTest extends BrambleTestCase {
 		assertFalse(stored(me, SECOND_EDIT));
 	}
 
+	@Test
+	public void aGuessOfAnErasedOriginalIsNotConfirmedOnEitherDevice()
+			throws Exception {
+		MessagingManagerImpl sender =
+				seeing(me, MessagingManager.MINOR_VERSION);
+		MessageId mine = send(me, sender, ORIGINAL, now - HOUR);
+		for (Message m : outbox(me)) {
+			assertEquals(MessageState.DELIVERED, deliver(contact, m));
+		}
+		returnAcks(contact, me);
+
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(me.contactId, mine, FIRST_EDIT));
+		for (Message m : outbox(me)) deliver(contact, m);
+
+		assertEquals(FIRST_EDIT, contact.messagingManager.getMessageText(mine));
+		assertBodyErased(me, mine);
+		awaitGone(contact, ORIGINAL);
+		assertBodyErased(contact, mine);
+		assertFalse("the id still confirms the original",
+				confirms(me, mine, ORIGINAL));
+		assertFalse("the id still confirms the original",
+				confirms(contact, mine, ORIGINAL));
+	}
+
+	@Test
+	public void aContactOnAnEarlierVersionStillGetsTheEarlierFormat()
+			throws Exception {
+		MessagingManagerImpl sender = seeing(me, 11);
+		MessageId mine = send(me, sender, ORIGINAL, now - HOUR);
+		BdfList body = me.db.transactionWithResult(true, txn ->
+				me.clientHelper.getMessageAsList(txn, mine));
+		assertEquals(4, body.size());
+		for (Message m : outbox(me)) {
+			assertEquals(MessageState.DELIVERED, deliver(contact, m));
+		}
+		returnAcks(contact, me);
+
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(me.contactId, mine, FIRST_EDIT));
+		List<Message> edits = outbox(me);
+		assertEquals(1, edits.size());
+		assertEquals(3, me.clientHelper.toList(edits.get(0)).size());
+		assertEquals(MessageState.DELIVERED, deliver(contact, edits.get(0)));
+
+		assertEquals(FIRST_EDIT, contact.messagingManager.getMessageText(mine));
+		assertBodyErased(me, mine);
+		awaitGone(contact, ORIGINAL);
+		assertTrue(confirms(me, mine, ORIGINAL));
+		assertTrue(confirms(contact, mine, ORIGINAL));
+	}
+
+	@Test
+	public void everySaltedMessageGetsASaltOfItsOwn() throws Exception {
+		MessagingManagerImpl sender =
+				seeing(me, MessagingManager.MINOR_VERSION);
+		MessageId first = send(me, sender, ORIGINAL, now - HOUR);
+		MessageId second = send(me, sender, ORIGINAL, now - HOUR);
+
+		assertNotEquals(first, second);
+		for (MessageId id : new MessageId[] {first, second}) {
+			BdfList body = me.db.transactionWithResult(true, txn ->
+					me.clientHelper.getMessageAsList(txn, id));
+			assertEquals(6, body.size());
+			assertEquals(BODY_SALT_LENGTH, body.getRaw(5).length);
+			assertFalse("the salt is in the metadata",
+					inMetadata(me, body.getRaw(5)));
+		}
+	}
+
+	@Test
+	public void theSaltConfirmsTheTextOnlyWhileTheBodyIsKeptOnBothPhones()
+			throws Exception {
+		MessagingManagerImpl sender =
+				seeing(me, MessagingManager.MINOR_VERSION);
+		MessageId mine = send(me, sender, ORIGINAL, now - HOUR);
+		byte[] salt = me.db.transactionWithResult(true, txn ->
+				me.clientHelper.getMessageAsList(txn, mine)).getRaw(5);
+		assertTrue("the stored body recomputes the id",
+				confirmsWithSalt(me, mine, ORIGINAL, salt));
+		assertFalse(confirms(me, mine, ORIGINAL));
+		for (Message m : outbox(me)) {
+			assertEquals(MessageState.DELIVERED, deliver(contact, m));
+		}
+		returnAcks(contact, me);
+		assertTrue(stored(contact, salt));
+
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(me.contactId, mine, FIRST_EDIT));
+		for (Message m : outbox(me)) deliver(contact, m);
+		awaitGone(contact, ORIGINAL);
+
+		assertBodyErased(me, mine);
+		assertBodyErased(contact, mine);
+		for (Device d : new Device[] {me, contact}) {
+			assertFalse("the salt is still stored", stored(d, salt));
+			assertFalse("the salt is in the metadata", inMetadata(d, salt));
+		}
+	}
+
+	@Test
+	public void everySaltedEditGetsASaltOfItsOwn() throws Exception {
+		MessagingManagerImpl sender =
+				seeing(me, MessagingManager.MINOR_VERSION);
+		MessageId first = send(me, sender, ORIGINAL, now - HOUR);
+		MessageId second = send(me, sender, ORIGINAL, now - HOUR);
+		for (Message m : outbox(me)) {
+			assertEquals(MessageState.DELIVERED, deliver(contact, m));
+		}
+		returnAcks(contact, me);
+
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(me.contactId, first, FIRST_EDIT));
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(me.contactId, second, FIRST_EDIT));
+		List<byte[]> salts = new ArrayList<>();
+		for (Message m : outbox(me)) {
+			BdfList body = me.clientHelper.toList(m);
+			if (body.getLong(0) != MESSAGE_EDIT) continue;
+			assertEquals(4, body.size());
+			assertEquals(BODY_SALT_LENGTH, body.getRaw(3).length);
+			assertFalse("the salt is in the metadata",
+					inMetadata(me, body.getRaw(3)));
+			salts.add(body.getRaw(3));
+		}
+		assertEquals(2, salts.size());
+		assertFalse("two edits share a salt",
+				Arrays.equals(salts.get(0), salts.get(1)));
+	}
+
+	@Test
+	public void aSaltedMessageFromTheContactLosesItsSaltWithItsOriginal()
+			throws Exception {
+		byte[] salt = getRandomBytes(BODY_SALT_LENGTH);
+		Message original = create(me, salted(ORIGINAL, salt), now - HOUR);
+
+		assertEquals(MessageState.DELIVERED, deliver(me, original));
+		MessageId target = original.getId();
+		assertEquals(ORIGINAL, me.messagingManager.getMessageText(target));
+		assertFalse("the salt is in the metadata", inMetadata(me, salt));
+
+		assertEquals(MessageState.DELIVERED, deliver(me, saltedEdit(target,
+				FIRST_EDIT), now - HOUR + 1000));
+
+		assertEquals(FIRST_EDIT, me.messagingManager.getMessageText(target));
+		assertTrue(header(me, target).isEdited());
+		assertBodyErased(me, target);
+		assertFalse("the salt is still stored", stored(me, salt));
+		assertFalse(stored(me, ORIGINAL));
+		assertFalse(confirms(me, target, ORIGINAL));
+	}
+
+	@Test
+	public void anErasedOriginalInTheEarlierFormatCanStillBeConfirmed()
+			throws Exception {
+		MessageId target = deliverAt(me, text(ORIGINAL), now - HOUR);
+		deliverAt(me, edit(target, FIRST_EDIT), now - HOUR + 1000);
+
+		assertBodyErased(me, target);
+		assertFalse(stored(me, ORIGINAL));
+		assertTrue(confirms(me, target, ORIGINAL));
+		assertFalse(confirms(me, target, SECOND_EDIT));
+	}
+
+	@Test
+	public void anOutdatedSaltedEditLeavesNothingToConfirmAGuessWith()
+			throws Exception {
+		MessageId target = deliverAt(me, salted(ORIGINAL,
+				getRandomBytes(BODY_SALT_LENGTH)), now - HOUR);
+		assertEquals(MessageState.DELIVERED, deliver(me,
+				saltedEdit(target, SECOND_EDIT), now - HOUR + 2000));
+		byte[] salt = getRandomBytes(BODY_SALT_LENGTH);
+		long lateAt = now - HOUR + 1000;
+		Message late = create(me, BdfList.of(MESSAGE_EDIT, target.getBytes(),
+				FIRST_EDIT, salt), lateAt);
+
+		assertEquals(MessageState.INVALID, deliver(me, late));
+
+		assertEquals(SECOND_EDIT, me.messagingManager.getMessageText(target));
+		assertEquals(MessageState.INVALID, state(me, late.getId()));
+		assertFalse(stored(me, FIRST_EDIT));
+		assertFalse("the salt of a rejected edit is still stored",
+				stored(me, salt));
+		assertNotEquals(late.getId(),
+				create(me, edit(target, FIRST_EDIT), lateAt).getId());
+	}
+
+	@Test
+	public void anOutdatedEditInTheEarlierFormatCanStillBeConfirmed()
+			throws Exception {
+		MessageId target = deliverAt(me, text(ORIGINAL), now - HOUR);
+		deliverAt(me, edit(target, SECOND_EDIT), now - HOUR + 2000);
+		long lateAt = now - HOUR + 1000;
+		Message late = create(me, edit(target, FIRST_EDIT), lateAt);
+
+		assertEquals(MessageState.INVALID, deliver(me, late));
+
+		assertFalse(stored(me, FIRST_EDIT));
+		assertEquals(MessageState.INVALID, state(me, late.getId()));
+		assertEquals(late.getId(),
+				create(me, edit(target, FIRST_EDIT), lateAt).getId());
+	}
+
 	private ContactGroupScanTestComponent build(Device d) {
 		ContactGroupScanTestComponent c =
 				DaggerContactGroupScanTestComponent.builder()
@@ -640,6 +852,10 @@ public class EditedTextErasureTest extends BrambleTestCase {
 	}
 
 	private MessagingManagerImpl editor(Device d) {
+		return seeing(d, 9);
+	}
+
+	private MessagingManagerImpl seeing(Device d, int minorVersion) {
 		ContactGroupScanTestComponent c = d.component;
 		assertNotNull(c);
 		ClientVersioningManager real = c.getClientVersioningManager();
@@ -650,7 +866,7 @@ public class EditedTextErasureTest extends BrambleTestCase {
 						(proxy, method, args) -> {
 							if (method.getName().equals(
 									"getClientMinorVersion")) {
-								return 9;
+								return minorVersion;
 							}
 							return method.invoke(real, args);
 						});
@@ -658,7 +874,7 @@ public class EditedTextErasureTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator);
+				c.getIdentityManager(), d.validator, c.getCryptoComponent());
 	}
 
 	private static BdfList text(String text) {
@@ -667,6 +883,83 @@ public class EditedTextErasureTest extends BrambleTestCase {
 
 	private static BdfList edit(MessageId target, String text) {
 		return BdfList.of(MESSAGE_EDIT, target.getBytes(), text);
+	}
+
+	private static BdfList salted(String text, byte[] salt) {
+		return BdfList.of(PRIVATE_MESSAGE, text, new BdfList(), null, null,
+				salt);
+	}
+
+	private static BdfList saltedEdit(MessageId target, String text) {
+		return BdfList.of(MESSAGE_EDIT, target.getBytes(), text,
+				getRandomBytes(BODY_SALT_LENGTH));
+	}
+
+	private MessageId send(Device d, MessagingManagerImpl seen, String text,
+			long ts) throws Exception {
+		ContactGroupScanTestComponent c = d.component;
+		assertNotNull(c);
+		PrivateMessageFactory factory = c.getPrivateMessageFactory();
+		PrivateMessage m = d.db.transactionWithResult(false, txn -> {
+			PrivateMessageFormat format =
+					seen.getContactMessageFormat(txn, d.contactId);
+			PrivateMessage pm = format.isSalted()
+					? factory.createSaltedPrivateMessage(d.group, ts, text,
+							emptyList(), NO_AUTO_DELETE_TIMER, null)
+					: factory.createPrivateMessage(d.group, ts, text,
+							emptyList(), NO_AUTO_DELETE_TIMER, null);
+			d.messagingManager.addLocalMessage(txn, pm);
+			return pm;
+		});
+		return m.getMessage().getId();
+	}
+
+	private boolean confirms(Device d, MessageId id, String guess)
+			throws Exception {
+		BdfDictionary meta = d.db.transactionWithResult(true, txn ->
+				d.clientHelper.getMessageMetadataAsDictionary(txn, id));
+		long ts = meta.getLong("timestamp");
+		BdfList headers = meta.getOptionalList("attachmentHeaders");
+		if (headers == null) headers = new BdfList();
+		Long timer = meta.getOptionalLong("autoDeleteTimer");
+		byte[] replyTo = meta.getOptionalRaw("replyToId");
+		BdfList[] candidates = {
+				BdfList.of(guess),
+				BdfList.of(PRIVATE_MESSAGE, guess, headers),
+				BdfList.of(PRIVATE_MESSAGE, guess, headers, timer),
+				BdfList.of(PRIVATE_MESSAGE, guess, headers, timer, replyTo)
+		};
+		for (BdfList body : candidates) {
+			if (create(d, body, ts).getId().equals(id)) return true;
+		}
+		return false;
+	}
+
+	private boolean confirmsWithSalt(Device d, MessageId id, String guess,
+			byte[] salt) throws Exception {
+		BdfDictionary meta = d.db.transactionWithResult(true, txn ->
+				d.clientHelper.getMessageMetadataAsDictionary(txn, id));
+		BdfList headers = meta.getOptionalList("attachmentHeaders");
+		if (headers == null) headers = new BdfList();
+		BdfList body = BdfList.of(PRIVATE_MESSAGE, guess, headers,
+				meta.getOptionalLong("autoDeleteTimer"),
+				meta.getOptionalRaw("replyToId"), salt);
+		return create(d, body, meta.getLong("timestamp")).getId().equals(id);
+	}
+
+	private boolean inMetadata(Device d, byte[] needle) throws Exception {
+		return d.db.transactionWithResult(true, txn -> {
+			Connection c = (Connection) txn.unbox();
+			try (Statement s = c.createStatement();
+					ResultSet rs = s.executeQuery(
+							"SELECT value FROM messageMetadata")) {
+				while (rs.next()) {
+					byte[] value = rs.getBytes(1);
+					if (value != null && contains(value, needle)) return true;
+				}
+			}
+			return false;
+		});
 	}
 
 	private static BdfList withAttachment(String text, MessageId attachment) {
@@ -826,7 +1119,7 @@ public class EditedTextErasureTest extends BrambleTestCase {
 				c.getConversationManager(), c.getMessageTracker(),
 				c.getContactGroupFactory(), c.getAutoDeleteManager(),
 				c.getStreamingAttachmentWriter(), c.getIdentityManager(),
-				d.validator);
+				d.validator, c.getCryptoComponent());
 		d.db.transaction(false, opener::onDatabaseOpened);
 	}
 
@@ -938,7 +1231,10 @@ public class EditedTextErasureTest extends BrambleTestCase {
 	}
 
 	private boolean stored(Device d, String text) throws Exception {
-		byte[] needle = text.getBytes(UTF_8);
+		return stored(d, text.getBytes(UTF_8));
+	}
+
+	private boolean stored(Device d, byte[] needle) throws Exception {
 		return d.db.transactionWithResult(true, txn -> {
 			Connection c = (Connection) txn.unbox();
 			for (String sql : new String[] {"SELECT raw FROM messages",

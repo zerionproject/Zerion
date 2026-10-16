@@ -309,7 +309,7 @@
   <string name="groups_dissolve_dialog_message">Bu grubu dağıtmak istediğinize emin misiniz?\n\nDiğer üyeler yazışmayı sürdüremeyecek ve son iletileri alamayacak.</string>
   <string name="groups_dissolve_button">Dağıt</string>
   <string name="groups_dissolved_dialog_title">Grup dağıtıldı</string>
-  <string name="groups_dissolved_dialog_message">Bu grubu oluşturan kişi grubu dağıttı.\n\nArtık gruba yeni ileti yazamazsınız ve yazılmış olan tüm iletileri alamayabilirsiniz.</string>
+  <string name="groups_dissolved_dialog_message">Grup sahibi bu grubu dağıttı.\n\nArtık gruba yeni ileti yazamazsınız ve yazılmış olan tüm iletileri alamayabilirsiniz.</string>
   
   <string name="groups_invitations_title">Grup davetleri</string>
   <string name="groups_invitations_invitation_sent">%1$s kişisini \"%2$s\" grubuna katılmaya davet ettiniz.</string>
@@ -319,9 +319,9 @@
     <item quantity="one">%d grup daveti açık</item>
     <item quantity="other">%d grup daveti açık</item>
   </plurals>
-  <string name="sharing_status_groups">Yalnızca grubu oluşturan kişi gruba yeni üyeler davet edebilir. Aşağıda, grubun şimdiki üyelerini görebilirsiniz.</string>
+  <string name="sharing_status_groups">Yalnızca grup sahibi gruba yeni üyeler davet edebilir. Aşağıda, grubun şimdiki üyelerini görebilirsiniz.</string>
   
-  <string name="groups_reveal_dialog_message">Kişilerin bu grubun şimdiki ve gelecekteki üyelerinin tümüne görüntülenip görüntülenmeyeceğini seçebilirsiniz.\n\nKişileri görünür yapmak, grupla olan bağlantınızı daha hızlı ve güvenilir yapar. Böylece grubu oluşturan kişi çevrim dışı olduğunda bile görüntülenen kişilerle iletişim kurabilirsiniz.</string>
+  <string name="groups_reveal_dialog_message">Kişilerin bu grubun şimdiki ve gelecekteki üyelerinin tümüne görüntülenip görüntülenmeyeceğini seçebilirsiniz.\n\nKişileri görünür yapmak, grupla olan bağlantınızı daha hızlı ve güvenilir yapar. Böylece grup sahibi çevrim dışı olduğunda bile görüntülenen kişilerle iletişim kurabilirsiniz.</string>
   <string name="groups_reveal_visible_revealed_by_us">Kişi ilişkisi grup tarafından görülebilir (siz görünür yaptınız)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kişi ilişkileri grup tarafından görülebilir (%s görünür yaptı)</string>
   <string name="groups_reveal_invisible">Kişi ilişkisi grup tarafından görülemez</string>
@@ -1111,7 +1111,7 @@
 	<string name="channels_feed_empty_subscriber">Henüz gönderi yok. Yeni gönderiler burada görünecek.</string>
 	<string name="channels_post_withheld">Gönderi gösterilmiyor: kanal sahibi bu yazarın gönderi paylaşma iznini geri aldı.</string>
 	<string name="channels_feed_connecting">Kanala bağlanılıyor…</string>
-	<string name="channels_feed_connecting_slow">Hâlâ bağlanılıyor. Bu kanalı paylaşan kişinin çevrim içi olduğundan emin olun. Bu ekran kendiliğinden güncellenecek.</string>
+	<string name="channels_feed_connecting_slow">Hâlâ bağlanılıyor. Kanala ulaşılabildiğinde gönderiler burada görünecek.</string>
 	<string name="channels_compose_hint">Abonelerinize yazın…</string>
 	<string name="channels_compose_send">Yayınla</string>
 	<string name="channels_compose_error_empty">Yayınlamadan önce bir şey yazın.</string>
@@ -1408,7 +1408,7 @@
 	<string name="grouptr_empty">Henüz grup yok.</string>
 	<string name="grouptr_meta">%2$d üye</string>
 	<string name="grouptr_dissolved_suffix">(dağıtıldı)</string>
-	<string name="grouptr_creator_tag">(kurucu)</string>
+	<string name="grouptr_creator_tag">(grup sahibi)</string>
 	<string name="grouptr_admin_tag">(yönetici)</string>
 	<string name="grouptr_promote">Yetki ver</string>
 	<string name="grouptr_demote">Yetkiyi al</string>
@@ -1511,7 +1511,7 @@
 	<string name="grouptr_detail_status">Durum</string>
 	<string name="grouptr_detail_status_dissolved">Dağıtıldı</string>
 	<string name="grouptr_open_chat">Sohbeti aç</string>
-	<string name="grouptr_member_role_creator">kurucu</string>
+	<string name="grouptr_member_role_creator">Grup sahibi</string>
 	<string name="grouptr_member_role_you">siz</string>
 	<string name="grouptr_member_action_remove">Gruptan çıkar</string>
 	<string name="scroll_to_bottom">En alta kaydır</string>
@@ -2372,14 +2372,14 @@
 	<string name="wallet_sp_enable_first">Önce Silent Payments\'ı etkinleştirin</string>
 	<string name="grouptr_reach_title">Gönderileriniz kime ulaşıyor</string>
 	<string name="grouptr_reach_explanation">Grup gönderileri, birbirinin kişisi olan üyeler arasında doğrudan iletilir ve üyeler gönderileri başkalarına aktarmaz. Aşağıdaki üyeler kişileriniz değil; bu yüzden gönderilerinizi almazlar, siz de onlarınkini almazsınız:\n\n%1$s\n\nOnlara ulaşmak için onları kişi olarak ekleyin.</string>
-	<string name="grouptr_ttl_set_by_creator">Bu gruptaki kaybolan iletiler: %1$s. Bunu yalnızca grubu oluşturan kişi değiştirebilir.</string>
+	<string name="grouptr_ttl_set_by_creator">Bu gruptaki kaybolan iletiler: %1$s. Bunu yalnızca grup sahibi değiştirebilir.</string>
 	<string name="grouptr_sender_alias_format">%1$s (\"%2$s\" adıyla gönderiyor)</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (tanıdığınız bir ad değil)</string>
 	<string name="grouptr_member_out_of_reach">kişiniz değil, gönderilerinizi almıyor</string>
 	<string name="grouptr_member_invited">Davet edildi, yanıt bekleniyor</string>
 	<string name="grouptr_confirm_revoke">%1$s kişisine gönderilen davet geri çekilsin mi? Bu kişiden gelecek bir yanıt yok sayılır.</string>
 	<string name="grouptr_revoke_invite">Daveti geri çek</string>
-	<string name="grouptr_invite_expired">Bu davetin süresi doldu. Grubu oluşturan kişiden yeni bir davet isteyin.</string>
+	<string name="grouptr_invite_expired">Bu davetin süresi doldu. Grup sahibinden yeni bir davet isteyin.</string>
 	<string name="reaction_removed_here_only">Yalnızca bu cihazda kaldırıldı: kişinizin uygulaması, tepkiyi kendi cihazında kaldıramayacak kadar eski.</string>
 	<string name="startup_data_without_account_message">Zerion bu cihazda veri buldu, ancak bu veriyi açan bir hesap anahtarı bulamadı: anahtar dosyaları eksik veya hasarlı. Hiçbir şey silinmedi.\n\nZerion\'u kapatıp verileri saklayabilir ya da her şeyi silip baştan başlayabilirsiniz.</string>
 	<string name="startup_data_without_account_keep">Kapat ve sakla</string>
@@ -2464,13 +2464,13 @@
 	<string name="grouptr_members_may_invite">Üyeler kişilerini davet edebilir</string>
 	<string name="grouptr_members_may_invite_summary">Bu açıkken, telefonunuz onların davet ettiği kişileri otomatik olarak ekler.</string>
 	<string name="grouptr_invite_contacts">Kişileri davet et</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Yalnızca grubun kurucusu kişileri arasında olan üyeler davet edebilir.</string>
-	<string name="grouptr_member_invite_creator_outdated">Üyelerin davet edebilmesi için grubun kurucusunun uygulamanın daha yeni bir sürümüne ihtiyacı var.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Yalnızca kişileri arasında grup sahibi bulunan üyeler davet edebilir.</string>
+	<string name="grouptr_member_invite_creator_outdated">Üyelerin davet edebilmesi için grup sahibinin uygulamanın daha yeni bir sürümüne ihtiyacı var.</string>
 	<string name="grouptr_member_invite_contact_outdated">Uygulamanın daha yeni bir sürümü gerekiyor</string>
 	<string name="grouptr_member_invitation_received">%1$s sizi, %3$s tarafından oluşturulan “%2$s” grubuna katılmaya davet etti.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s sizi, %2$s tarafından oluşturulan bir gruba katılmaya davet etti.</string>
-	<string name="grouptr_waiting_for_admin">Grubu oluşturan %1$s çevrim içi olana kadar bekleniyor. Onun telefonu sizi otomatik olarak ekler, ardından buraya gönderi paylaşabilirsiniz.</string>
-	<string name="grouptr_member_invite_accepted">Kabul edildi. Grubun kurucusu çevrim içi olduğunda gruba katılırsınız.</string>
+	<string name="grouptr_waiting_for_admin">Grup sahibi %1$s çevrim içi olana kadar bekleniyor. Onun telefonu sizi otomatik olarak ekler, ardından buraya gönderi paylaşabilirsiniz.</string>
+	<string name="grouptr_member_invite_accepted">Kabul edildi. Grup sahibi çevrim içi olduğunda gruba katılırsınız.</string>
 	<string name="grouptr_member_invite_unavailable">Bu davet artık kabul edilemez. Yeni bir davet isteyin.</string>
 	<string name="grouptr_incognito">Bu grupta gizli</string>
 	<string name="grouptr_incognito_summary">Gruptaki diğer kişiler sizin adınız yerine rastgele bir ad görür. Kişileriniz arasında olan üyeler sizi anahtarınızdan yine de tanıyabilir.</string>
@@ -2478,7 +2478,7 @@
 	<string name="grouptr_incognito_new_name">Yeni ad</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (gizli)</string>
 	<string name="grouptr_member_may_add">Üye ekleyebilir</string>
-	<string name="grouptr_member_invite_creator_only">Yalnızca grubun oluşturucusu üye ekleyebilir.</string>
+	<string name="grouptr_member_invite_creator_only">Yalnızca grup sahibi üye ekleyebilir.</string>
 	<string name="tor_status_entry_relay">Kararsız</string>
 	<string name="tor_hidden_services_entry_relay">Tor giriş aktarıcısı bağlantıların çoğunda başarısız oluyor, bu yüzden kişiler size ulaşamayabilir. Nedeni aşırı yüklü bir ağ ya da engelleme olabilir. Ayarlar, Bağlantılar bölümünde Tor bağlantı yöntemini köprülere çevirmek genellikle işe yarar.</string>
 	<string name="contact_connection_tor_entry_relay">Tor bağlı, ancak giriş aktarıcısı bağlantıların çoğunda başarısız oluyor. Köprüler genellikle işe yarar.</string>
@@ -2489,4 +2489,42 @@
 	<string name="channels_subscribers_unban">Engeli kaldır</string>
 	<string name="channels_subscribers_unban_confirm">Engel kaldırılsın mı? Bu abone yeniden yorum yapabilir ve tepki verebilir. Engelin kaldırdıkları geri gelmez ve editör rolü yeniden verilmelidir.</string>
 	<string name="channels_unban_failed">Engel kaldırılamadı</string>
+	<string name="contact_delete_failed">Kişi silinemedi</string>
+	<string name="channels_delegations_revoke_failed">Bu editörün yetkisi kaldırılamadı</string>
+	<string name="channels_invite_rotate_failed">Davet bağlantısı değiştirilmedi. Eski bağlantı hâlâ çalışıyor.</string>
+	<string name="channels_apply_unconfirmed">Sahip başvurunuzun ulaştığını doğrulamadı. Daha sonra tekrar deneyin.</string>
+	<string name="channels_apply_banner">Bu kanala erişim için sahibe başvurmak üzere dokunun.</string>
+	<string name="channels_rejoin_updated">%1$s kanalına erişiminiz güncellendi.</string>
+	<string name="channels_rejoin_unreachable">Bu bağlantı şu anda kontrol edilemedi. Daha sonra yeniden deneyin.</string>
+	<string name="channels_rejoin_apply_again">Bu kanaldaki yeni gönderileri okumak için yeniden başvurabilirsiniz. Cihazınızdaki gönderiler kalır. Sahip, görünen adınızı ve yalnızca bu kanalda size ait olan bir anahtarı görür.</string>
+	<string name="channels_sync_last_updated">Son güncelleme: %1$s</string>
+	<string name="channels_sync_saved_posts">Kaydedilmiş gönderiler gösteriliyor</string>
+	<string name="channels_sync_saved_posts_last_updated">Kaydedilmiş gönderiler gösteriliyor · Son güncelleme: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s tarihinden beri güncellenmedi</string>
+	<string name="channels_owner_deleted_notice">%1$s kanalı sahibi tarafından silindi</string>
+	<string name="channels_owner_deleted_notice_unnamed">Katıldığınız bir kanal sahibi tarafından silindi</string>
+	<string name="channels_queued_waiting">Gönderilmeyi bekliyor</string>
+	<string name="channels_queued_not_sent">Gönderilmedi</string>
+	<string name="channels_queued_retry">Yeniden dene</string>
+	<string name="channels_queued_delete">Sil</string>
+	<string name="channels_comment_queued_toast">Yorumunuz, kanala ulaşılabildiğinde gönderilecek.</string>
+	<string name="channels_react_queued_toast">Tepkiniz, kanala ulaşılabildiğinde gönderilecek.</string>
+	<string name="channels_announce_queued_toast">Adınız, kanala ulaşılabildiğinde gönderilecek.</string>
+	<string name="channels_post_queued_toast">Gönderiniz, kanala ulaşılabildiğinde paylaşılacak.</string>
+	<string name="channels_change_queued_toast">Değişikliğiniz, kanala ulaşılabildiğinde gönderilecek.</string>
+	<string name="channels_queued_notice_waiting">Gönderdiklerinizin bir kısmı bekliyor. Kanala ulaşılabildiğinde gönderilecek.</string>
+	<string name="channels_queued_notice_not_sent">Gönderdiklerinizin bir kısmı gönderilemedi. Yeniden denemek veya silmek için dokunun.</string>
+	<string name="channels_queued_announce_label">Adınız: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Bu kanala ulaşılamadı. Bu bağlantıyla katılmak için yeniden başvurabilirsiniz. Cihazınızdaki gönderiler kalır. Sahip, görünen adınızı ve yalnızca bu kanalda size ait olan bir anahtarı görür.</string>
+	<string name="channels_rejoin_not_restored">Bu bağlantı, bu kanala erişiminizi geri getirmedi. Yeni bir bağlantı isteyebilirsiniz.</string>
+	<string name="channels_rejoin_check_title">Bu bağlantı denensin mi?</string>
+	<string name="channels_rejoin_check_message">Bu kanaldaki yeni gönderilere şu anda ulaşılamıyor. Onları yeniden almak için bu bağlantıyı deneyebilirsiniz. Cihazınızdaki gönderiler kalır.</string>
+	<string name="channels_rejoin_check_action">Bağlantıyı dene</string>
+	<string name="channels_rejoin_try_later">Bu kanala şu anda ulaşılamıyor ve bu bağlantı, zaten sizde olan bağlantıyla aynı. Daha sonra yeniden deneyin. Cihazınızdaki gönderiler kalır.</string>
+	<string name="channels_rejoin_trying">Bu bağlantıyı denemeye devam edeceğiz. Cihazınızdaki gönderiler kalır.</string>
+	<string name="channels_queued_already_sent">Zaten gönderilmişti, bu yüzden silinemedi.</string>
+	<string name="channels_queued_behind_toast">Bu, daha önce bu kanala gönderdiklerinizden sonra gönderilecek.</string>
+	<string name="channels_queued_no_access">Gönderilmedi. Artık bu kanala erişiminiz yok.</string>
+	<string name="channels_no_access_toast">Artık bu kanala erişiminiz yok. Kanal sahibinden yeni bir davet bağlantısı isteyin.</string>
+	<string name="channels_rejoin_too_many_links">Bu kanal için bekleyen birkaç bağlantınız zaten var, bu yüzden bu bağlantı denenmedi. Cihazınızdaki gönderiler kalır.</string>
 </resources>

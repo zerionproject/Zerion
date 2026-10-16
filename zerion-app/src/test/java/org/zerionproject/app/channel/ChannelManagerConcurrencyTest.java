@@ -364,7 +364,7 @@ public class ChannelManagerConcurrencyTest {
 				} catch (InterruptedException e) {
 					throw new IOException(e);
 				}
-				return new byte[0];
+				return pullCodec.encodeApplyAck(true);
 			}
 
 			@Override

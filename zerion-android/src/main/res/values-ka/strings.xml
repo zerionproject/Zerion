@@ -301,7 +301,7 @@
   <string name="groups_dissolve_dialog_message">ნამდვილად გსურთ დაშალოთ ეს ჯგუფი?\n\nდანარჩენი წევრები ვეღარ შეძლებენ საუბრის გაგრძელებას და შესაძლოა, ვეღარ მიიღონ უკანასკნელი შეტყობინებები.</string>
   <string name="groups_dissolve_button">დაშლა</string>
   <string name="groups_dissolved_dialog_title">ჯგუფი დაიშალა</string>
-  <string name="groups_dissolved_dialog_message">ამ ჯგუფის შემქმნელმა დაშალა ჯგუფი.\n\nთქვენ აღარ შეგიძლიათ ჯგუფში შეტყობინებების დაწერა და შესაძლოა არ მიიღოთ ყველა დაწერილი პოსტი.</string>
+  <string name="groups_dissolved_dialog_message">ჯგუფის მფლობელმა ეს ჯგუფი დაშალა.\n\nთქვენ აღარ შეგიძლიათ ჯგუფში შეტყობინებების დაწერა და შესაძლოა არ მიიღოთ ყველა დაწერილი პოსტი.</string>
   
   <string name="groups_invitations_title">ჯგუფის მოწვევები</string>
   <string name="groups_invitations_invitation_sent">თქვენ მოიწვიეთ %1$s, რომ შემოუერთდეს ჯგუფს „%2$s“.</string>
@@ -311,9 +311,9 @@
     <item quantity="one">ღია ჯგუფის %d მოწვევა</item>
     <item quantity="other">ღია ჯგუფის %d მოწვევა</item>
   </plurals>
-  <string name="sharing_status_groups">მხოლოდ ჯგუფის შემქმნელს შეუძლია ახალი წევრების მოწვევა. ქვემოთ მოცემულია ამ ჯგუფის ყველა წევრი.</string>
+  <string name="sharing_status_groups">მხოლოდ ჯგუფის მფლობელს შეუძლია ჯგუფში ახალი წევრების მოწვევა. ქვემოთ მოცემულია ჯგუფის ყველა ამჟამინდელი წევრი.</string>
   
-  <string name="groups_reveal_dialog_message">შეგიძლიათ გაუმხილოთ თქვენი კონტაქტები ჯგუფის ამჟამინდელ და მომავალ წევრებს.\n\nკონტაქტების გამხელით ჯგუფთან კავშირი გახდება უფრო სწრაფი და საიმედო, ვინაიდან გამხელილ კონტაქტებთან კომუნიკაცია მაშინაც შეგეძლებათ, როდესაც ჯგუფის შემქმნელი ხაზზე არ არის.</string>
+  <string name="groups_reveal_dialog_message">შეგიძლიათ აირჩიოთ, გაუმხილოთ თუ არა კონტაქტები ამ ჯგუფის ყველა ამჟამინდელ და მომავალ წევრს.\n\nკონტაქტების გამხელით ჯგუფთან კავშირი გახდება უფრო სწრაფი და საიმედო, ვინაიდან გამხელილ კონტაქტებთან კომუნიკაცია მაშინაც შეგეძლებათ, როდესაც ჯგუფის მფლობელი ხაზზე არ არის.</string>
   <string name="groups_reveal_visible_revealed_by_us">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის (თქვენ მიერ გამხელილი)</string>
   <string name="groups_reveal_visible_revealed_by_contact">კონტაქტთან ურთიერთობა ხილულია ჯგუფისთვის (%s-ის მიერ გამხელილი)</string>
   <string name="groups_reveal_invisible">კონტაქტთან ურთიერთობა დაფარულია ჯგუფისთვის</string>
@@ -939,7 +939,7 @@
 	<string name="channels_feed_empty_subscriber">პოსტები ჯერ არ არის. ახალი პოსტები აქ გამოჩნდება.</string>
 	<string name="channels_post_withheld">პოსტი დამალულია: არხის მფლობელმა ამ ავტორს გამოქვეყნების უფლება გაუუქმა.</string>
 	<string name="channels_feed_connecting">არხთან დაკავშირება…</string>
-	<string name="channels_feed_connecting_slow">დაკავშირება ჯერ კიდევ მიმდინარეობს. დარწმუნდით, რომ ადამიანი, რომელმაც ეს არხი გაგიზიარათ, ონლაინაა. ეს თავისით განახლდება.</string>
+	<string name="channels_feed_connecting_slow">დაკავშირება ჯერ კიდევ მიმდინარეობს. პოსტები აქ გამოჩნდება, როცა არხი ხელმისაწვდომი იქნება.</string>
 	<string name="channels_compose_hint">მისწერეთ თქვენს გამომწერებს…</string>
 	<string name="channels_compose_send">გამოქვეყნება</string>
 	<string name="channels_compose_error_empty">გამოქვეყნებამდე რაიმე დაწერეთ.</string>
@@ -1237,7 +1237,7 @@
 	<string name="grouptr_empty">ჯგუფები ჯერ არ არის.</string>
 	<string name="grouptr_meta">%2$d წევრი</string>
 	<string name="grouptr_dissolved_suffix">(დაშლილი)</string>
-	<string name="grouptr_creator_tag">(შემქმნელი)</string>
+	<string name="grouptr_creator_tag">(ჯგუფის მფლობელი)</string>
 	<string name="grouptr_admin_tag">(ადმინისტრატორი)</string>
 	<string name="grouptr_promote">დაწინაურება</string>
 	<string name="grouptr_demote">ჩამოქვეითება</string>
@@ -1340,7 +1340,7 @@
 	<string name="grouptr_detail_status">სტატუსი</string>
 	<string name="grouptr_detail_status_dissolved">დაშლილია</string>
 	<string name="grouptr_open_chat">ჩატის გახსნა</string>
-	<string name="grouptr_member_role_creator">შემქმნელი</string>
+	<string name="grouptr_member_role_creator">ჯგუფის მფლობელი</string>
 	<string name="grouptr_member_role_you">თქვენ</string>
 	<string name="grouptr_member_action_remove">ჯგუფიდან ამოშლა</string>
 	<string name="scroll_to_bottom">ბოლოში გადასვლა</string>
@@ -2366,14 +2366,14 @@
 	<string name="wallet_sp_move_hint">Bitcoin-ის მისამართი, სადაც თანხები გადაიტანება</string>
 	<string name="grouptr_reach_title">ვინ იღებს თქვენს პოსტებს</string>
 	<string name="grouptr_reach_explanation">ჯგუფის პოსტები პირდაპირ გადაიცემა იმ წევრებს შორის, რომლებიც ერთმანეთის კონტაქტები არიან, და წევრები პოსტებს შემდგომ არ გადასცემენ. ეს წევრები თქვენი კონტაქტები არ არიან, ამიტომ ისინი ვერ იღებენ თქვენს პოსტებს და თქვენ ვერ იღებთ მათსას:\n\n%1$s\n\nდაამატეთ ისინი კონტაქტებად, რომ მათამდე მიაღწიოთ.</string>
-	<string name="grouptr_ttl_set_by_creator">გაქრობადი შეტყობინებები ამ ჯგუფში: %1$s. ამის შეცვლა მხოლოდ ჯგუფის შემქმნელს შეუძლია.</string>
+	<string name="grouptr_ttl_set_by_creator">გაქრობადი შეტყობინებები ამ ჯგუფში: %1$s. ამის შეცვლა მხოლოდ ჯგუფის მფლობელს შეუძლია.</string>
 	<string name="grouptr_sender_alias_format">%1$s (აქვეყნებს როგორც „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (თქვენთვის უცნობი სახელი)</string>
 	<string name="grouptr_member_out_of_reach">არ არის თქვენი კონტაქტი, ვერ იღებს თქვენს პოსტებს</string>
 	<string name="grouptr_member_invited">მოწვეულია, პასუხის მოლოდინში</string>
 	<string name="grouptr_confirm_revoke">გაუქმდეს მოწვევა %1$s-ისთვის? მისი პასუხი უგულებელყოფილი იქნება.</string>
 	<string name="grouptr_revoke_invite">მოწვევის გაუქმება</string>
-	<string name="grouptr_invite_expired">ამ მოწვევას ვადა გაუვიდა. სთხოვეთ ჯგუფის შემქმნელს ახალი.</string>
+	<string name="grouptr_invite_expired">ამ მოწვევას ვადა გაუვიდა. სთხოვეთ ჯგუფის მფლობელს ახალი.</string>
 	<string name="reaction_removed_here_only">წაიშალა მხოლოდ ამ მოწყობილობაზე: თქვენი კონტაქტის აპი ძალიან ძველია, რომ მის მოწყობილობაზეც წაიშალოს.</string>
 	<string name="startup_data_without_account_message">Zerion-მა ამ მოწყობილობაზე მონაცემები იპოვა, მაგრამ ვერ იპოვა ანგარიშის გასაღები, რომელიც მათ გახსნის: გასაღების ფაილები აკლია ან დაზიანებულია. არაფერი წაშლილა.\n\nშეგიძლიათ დახუროთ Zerion და შეინახოთ მონაცემები, ან წაშალოთ ყველაფერი და თავიდან დაიწყოთ.</string>
 	<string name="startup_data_without_account_keep">დახურვა და შენახვა</string>
@@ -2458,13 +2458,13 @@
 	<string name="grouptr_members_may_invite">წევრებს შეუძლიათ საკუთარი კონტაქტების მოწვევა</string>
 	<string name="grouptr_members_may_invite_summary">სანამ ეს ჩართულია, თქვენი ტელეფონი ავტომატურად ამატებს მათ მიერ მოწვეულ ადამიანებს.</string>
 	<string name="grouptr_invite_contacts">კონტაქტების მოწვევა</string>
-	<string name="grouptr_member_invite_needs_creator_contact">მოწვევა შეუძლიათ მხოლოდ იმ წევრებს, რომლებსაც ჯგუფის შემქმნელი კონტაქტებში ჰყავთ.</string>
-	<string name="grouptr_member_invite_creator_outdated">წევრებს მოწვევა რომ შეეძლოთ, ჯგუფის შემქმნელს აპის უფრო ახალი ვერსია სჭირდება.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">მოწვევა შეუძლიათ მხოლოდ იმ წევრებს, რომლებსაც ჯგუფის მფლობელი კონტაქტებში ჰყავთ.</string>
+	<string name="grouptr_member_invite_creator_outdated">წევრებს მოწვევა რომ შეეძლოთ, ჯგუფის მფლობელს აპის უფრო ახალი ვერსია სჭირდება.</string>
 	<string name="grouptr_member_invite_contact_outdated">სჭირდება აპის უფრო ახალი ვერსია</string>
 	<string name="grouptr_member_invitation_received">%1$s-მ მოგიწვიათ ჯგუფში „%2$s“, რომელიც %3$s-მ შექმნა.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s-მ მოგიწვიათ ჯგუფში, რომელიც %2$s-მ შექმნა.</string>
-	<string name="grouptr_waiting_for_admin">ველოდებით, როდის იქნება ონლაინ ჯგუფის შემქმნელი %1$s. მისი ტელეფონი ავტომატურად დაგამატებთ, შემდეგ კი აქ გამოქვეყნებას შეძლებთ.</string>
-	<string name="grouptr_member_invite_accepted">მიღებულია. ჯგუფს შეუერთდებით, როგორც კი მისი შემქმნელი ონლაინ იქნება.</string>
+	<string name="grouptr_waiting_for_admin">ველოდებით, როდის იქნება ონლაინ ჯგუფის მფლობელი %1$s. მისი ტელეფონი ავტომატურად დაგამატებთ, შემდეგ კი აქ გამოქვეყნებას შეძლებთ.</string>
+	<string name="grouptr_member_invite_accepted">მიღებულია. ჯგუფს შეუერთდებით, როგორც კი ჯგუფის მფლობელი ონლაინ იქნება.</string>
 	<string name="grouptr_member_invite_unavailable">ამ მოწვევის მიღება აღარ შეიძლება. სთხოვეთ ახალი.</string>
 	<string name="grouptr_incognito">ინკოგნიტო ამ ჯგუფში</string>
 	<string name="grouptr_incognito_summary">ჯგუფის სხვა წევრები თქვენი სახელის ნაცვლად შემთხვევით სახელს ხედავენ. წევრებს, რომლებიც თქვენი კონტაქტები არიან, მაინც შეუძლიათ თქვენი ამოცნობა თქვენი გასაღებით.</string>
@@ -2472,7 +2472,7 @@
 	<string name="grouptr_incognito_new_name">ახალი სახელი</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (ინკოგნიტო)</string>
 	<string name="grouptr_member_may_add">შეუძლია წევრების დამატება</string>
-	<string name="grouptr_member_invite_creator_only">წევრების დამატება მხოლოდ ჯგუფის შემქმნელს შეუძლია.</string>
+	<string name="grouptr_member_invite_creator_only">წევრების დამატება მხოლოდ ჯგუფის მფლობელს შეუძლია.</string>
 	<string name="tor_status_entry_relay">არასტაბილური</string>
 	<string name="tor_hidden_services_entry_relay">Tor-ის შესასვლელი რელე კავშირების უმეტესობაში ვერ ახერხებს, ამიტომ კონტაქტებმა შეიძლება ვერ მოგაღწიონ. მიზეზი შეიძლება იყოს გადატვირთული ქსელი ან ჩარევა. Tor-ის დაკავშირების მეთოდის ხიდებზე შეცვლა პარამეტრებში, კავშირებში ჩვეულებრივ გეხმარებათ.</string>
 	<string name="contact_connection_tor_entry_relay">Tor დაკავშირებულია, მაგრამ მისი შესასვლელი რელე კავშირების უმეტესობაში ვერ ახერხებს. ხიდების გამოყენება ჩვეულებრივ გეხმარებათ.</string>
@@ -2483,4 +2483,42 @@
 	<string name="channels_subscribers_unban">დაბლოკვის მოხსნა</string>
 	<string name="channels_subscribers_unban_confirm">მოიხსნას დაბლოკვა? ეს გამომწერი კვლავ შეძლებს კომენტარის დაწერას და რეაგირებას. რაც დაბლოკვამ წაშალა, აღარ დაბრუნდება, რედაქტორის როლი კი თავიდან უნდა მიენიჭოს.</string>
 	<string name="channels_unban_failed">დაბლოკვის მოხსნა ვერ მოხერხდა</string>
+	<string name="contact_delete_failed">კონტაქტის წაშლა ვერ მოხერხდა</string>
+	<string name="channels_delegations_revoke_failed">ამ რედაქტორისთვის უფლების ჩამორთმევა ვერ მოხერხდა</string>
+	<string name="channels_invite_rotate_failed">მოწვევის ბმული არ შეცვლილა. ძველი ბმული კვლავ მუშაობს.</string>
+	<string name="channels_apply_unconfirmed">მფლობელს არ დაუდასტურებია, რომ თქვენი განაცხადი მიიღო. მოგვიანებით სცადეთ ხელახლა.</string>
+	<string name="channels_apply_banner">შეეხეთ, რომ მფლობელს ამ არხზე წვდომა სთხოვოთ.</string>
+	<string name="channels_rejoin_updated">თქვენი წვდომა არხზე „%1$s“ განახლდა.</string>
+	<string name="channels_rejoin_unreachable">ამ ბმულის შემოწმება ახლა ვერ მოხერხდა. სცადეთ მოგვიანებით.</string>
+	<string name="channels_rejoin_apply_again">ამ არხის ახალი პოსტების წასაკითხად შეგიძლიათ ხელახლა გაგზავნოთ განაცხადი. პოსტები, რომლებიც უკვე გაქვთ, დარჩება. მფლობელი დაინახავს თქვენს საჩვენებელ სახელს და გასაღებს, რომელიც მხოლოდ ამ არხში გეკუთვნით.</string>
+	<string name="channels_sync_last_updated">ბოლო განახლება: %1$s</string>
+	<string name="channels_sync_saved_posts">ნაჩვენებია შენახული პოსტები</string>
+	<string name="channels_sync_saved_posts_last_updated">ნაჩვენებია შენახული პოსტები · ბოლო განახლება: %1$s</string>
+	<string name="channels_sync_not_updated_since">არ განახლებულა ამ თარიღიდან: %1$s</string>
+	<string name="channels_owner_deleted_notice">მფლობელმა წაშალა არხი „%1$s“</string>
+	<string name="channels_owner_deleted_notice_unnamed">მფლობელმა წაშალა არხი, რომელსაც შეუერთდით</string>
+	<string name="channels_queued_waiting">ელოდება გაგზავნას</string>
+	<string name="channels_queued_not_sent">არ გაიგზავნა</string>
+	<string name="channels_queued_retry">ხელახლა ცდა</string>
+	<string name="channels_queued_delete">წაშლა</string>
+	<string name="channels_comment_queued_toast">თქვენი კომენტარი გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_react_queued_toast">თქვენი რეაქცია გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_announce_queued_toast">თქვენი სახელი გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_post_queued_toast">თქვენი პოსტი გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_change_queued_toast">თქვენი ცვლილება გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_queued_notice_waiting">თქვენ მიერ გაგზავნილის ნაწილი ელოდება. ის გაიგზავნება, როცა არხი ხელმისაწვდომი იქნება.</string>
+	<string name="channels_queued_notice_not_sent">თქვენ მიერ გაგზავნილის ნაწილი არ გაიგზავნა. შეეხეთ ხელახლა საცდელად ან წასაშლელად.</string>
+	<string name="channels_queued_announce_label">თქვენი სახელი: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">ამ არხთან დაკავშირება ვერ მოხერხდა. ამ ბმულით შეგიძლიათ ხელახლა გაგზავნოთ შეერთების განაცხადი. პოსტები, რომლებიც უკვე გაქვთ, დარჩება. მფლობელი დაინახავს თქვენს საჩვენებელ სახელს და გასაღებს, რომელიც მხოლოდ ამ არხში გეკუთვნით.</string>
+	<string name="channels_rejoin_not_restored">ამ ბმულმა ამ არხზე თქვენი წვდომა ვერ აღადგინა. შეგიძლიათ ახალი ბმული ითხოვოთ.</string>
+	<string name="channels_rejoin_check_title">ვცადოთ ეს ბმული?</string>
+	<string name="channels_rejoin_check_message">ამ არხის ახალი პოსტები ახლა ხელმისაწვდომი არ არის. შეგიძლიათ სცადოთ ეს ბმული, რომ ისინი ხელახლა მიიღოთ. პოსტები, რომლებიც უკვე გაქვთ, დარჩება.</string>
+	<string name="channels_rejoin_check_action">ბმულის ცდა</string>
+	<string name="channels_rejoin_try_later">ეს არხი ახლა ხელმისაწვდომი არ არის, ეს ბმული კი ის არის, რომელიც უკვე გაქვთ. სცადეთ მოგვიანებით. პოსტები, რომლებიც უკვე გაქვთ, დარჩება.</string>
+	<string name="channels_rejoin_trying">ამ ბმულის ცდას გავაგრძელებთ. პოსტები, რომლებიც უკვე გაქვთ, დარჩება.</string>
+	<string name="channels_queued_already_sent">ის უკვე გაიგზავნა, ამიტომ მისი წაშლა ვერ მოხერხდა.</string>
+	<string name="channels_queued_behind_toast">ეს გაიგზავნება იმის შემდეგ, რაც ადრე ამ არხში გააგზავნეთ.</string>
+	<string name="channels_queued_no_access">არ გაიგზავნა. ამ არხზე წვდომა აღარ გაქვთ.</string>
+	<string name="channels_no_access_toast">ამ არხზე წვდომა აღარ გაქვთ. სთხოვეთ მფლობელს ახალი მოწვევის ბმული.</string>
+	<string name="channels_rejoin_too_many_links">ამ არხისთვის უკვე გაქვთ რამდენიმე მოლოდინში მყოფი ბმული, ამიტომ ეს ბმული არ ვცადეთ. პოსტები, რომლებიც უკვე გაქვთ, დარჩება.</string>
 </resources>

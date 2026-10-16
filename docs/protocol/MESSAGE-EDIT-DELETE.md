@@ -11,15 +11,17 @@ every implementation.
 
 | Type | Body | Meaning |
 | --- | --- | --- |
-| 12 | `[12, target, text]` | Replace the text of `target` with `text` |
+| 12 | `[12, target, text]` or `[12, target, text, salt]` | Replace the text of `target` with `text` |
 | 13 | `[13, target]` | Remove `target` |
 
 `target` is the 32-byte id under which the sender stored the message. A
 message that reached the receiver over the mesh is stored there under a
-different id; the receiver finds it by the sender's id recorded with the mesh
-copy. `text` is 1 to `MAX_PRIVATE_MESSAGE_TEXT_LENGTH` bytes and may not start
+different id, and neither record applies to it (see the mesh rule below).
+`text` is 1 to `MAX_PRIVATE_MESSAGE_TEXT_LENGTH` bytes and may not start
 with a form the app gives a special meaning (`SECRET:`, `VOICE_CALL:`,
-`[VOICE:`, `[VMP:` or the legacy call signal prefix).
+`[VOICE:`, `[VMP:` or the legacy call signal prefix). `salt` is 32 random
+bytes, sent only to a contact that announces minor version 12 or later (see
+"Salted bodies").
 
 ## Receiving
 
@@ -73,6 +75,68 @@ with a form the app gives a special meaning (`SECRET:`, `VOICE_CALL:`,
   copies flooded through other phones cannot be recalled. Deleting one
   removes it on this device and stops it from being sent again. The edit and
   delete records themselves travel over Tor.
+- To a contact that announces minor version 12 or later, text messages and
+  edits carry a random salt (next section).
+
+## Salted bodies
+
+From 3.0.18, minor version 12 of the messaging client
+(`MessagingManager.SALTED_TEXT_MIN_VERSION`) adds a random salt to the body
+of every type 0 message (text, attachments or both, secret notes included)
+and every edit that this device sends to a contact that announces 12 or
+later:
+
+| Type | Body |
+| --- | --- |
+| 0 | `[0, text, attachments, timer, replyTo, salt]` |
+| 12 | `[12, target, text, salt]` |
+
+`text` may be null when the message has attachments, and `timer` and
+`replyTo` keep their meaning and may be null, as before. `salt` is 32 bytes
+that the sending device draws for each message from the app's
+`SecureRandom` (`CryptoComponent.getSecureRandom`). A contact that announces
+11 or less, which includes every release up to 3.0.17, the development
+builds of 3.0.18 made before version 12 and the iOS client, gets the bodies
+without the salt, byte for byte as before, since its validator refuses the
+longer lists. A receiver from version 12 accepts both forms from any
+contact; a salt of any other length, a salt that is not raw bytes, or
+anything after the salt makes the record invalid. The salt makes a text
+message 35 bytes longer (34 when it quotes a message, since the place of the
+quote is then filled anyway) and an edit 34 bytes longer.
+
+The salt is part of the body only. The receiver's validator does not copy
+it into the metadata, and neither side stores it anywhere else, so it goes
+with the body: when an edit erases the original (next sections), when the
+message is deleted, and when a record is rejected and marked invalid.
+
+The message id is a hash over the conversation, the message time and a hash
+of the encoded body (`MessageFactoryImpl`), so with the salt in the body the
+id is a randomised hash commitment to the text. It still binds the message
+to its exact content, and acknowledgements, the recognition of a copy
+offered again and the references of reactions, edits, deletes and replies
+use it exactly as before. Once the body and its salt are gone, a guessed
+text can no longer be checked against the id, since the guess would have to
+include the 256-bit salt. Nothing new is computed: the salt is hashed with
+the rest of the body by the hash that has always made the id, and the
+encoding of the body is unchanged apart from the extra element.
+
+The salt is not added to: messages and edits exchanged with a contact that
+announces 11 or less; messages stored before this version, sent or received;
+the one-element legacy text, which carries voice memos and the texts sent to
+a contact that announces no image support; link preview records, which
+cannot be edited; mesh copies, which the receiver stores as a legacy
+text under an id of its own; and photo messages sent over the mesh, which
+carry no text. The id of each of these still confirms a guessed text where
+it has one, as described under "What remains" below.
+
+Whether a message or edit is salted is decided from the contact's announced
+version in the transaction that creates it. A contact that later goes back
+to a release below version 12 refuses salted records that were already
+queued for it; this phone counts them as delivered when the contact's
+device takes them, as with every record a contact's version no longer
+accepts, so after such a downgrade the contact may miss them. Release builds
+cannot be installed over a newer version, so this concerns development
+builds.
 
 ## What a deletion leaves on this device
 
@@ -138,6 +202,12 @@ disappearing timer, and for a cleared chat.
 What remains:
 
 - Deleting for me does not touch the contact's copy.
+- A message withdrawn while it waited for its attachments keeps its id,
+  conversation, time and length (above), and the delete records kept for
+  seven days name the id of the message they deleted. For a message without
+  a salt (see "Salted bodies") that id confirms a guessed text when the
+  message's time is known or can be guessed, in the way described for edits
+  below; for a salted message it does not.
 - A backup exported before the deletion still holds the message.
 - Copies already flooded over the mesh stay on the phones that carry them;
   this device cannot recall them.
@@ -152,8 +222,10 @@ What remains:
 
 From 3.0.18 an edited one-to-one message has no readable earlier version on
 this device. The app has no edit history and keeps none. The earlier text
-cannot be read back, but someone who can read the database can confirm a
-guess of it through the message id (see "What remains" below).
+cannot be read back. For a salted message (see "Salted bodies") nothing that
+stays can confirm a guess of it either; for a message without a salt,
+someone who can read the database can confirm a guess of it through the
+message id (see "What remains" below).
 
 - The message is shown, quoted, copied, forwarded and searched with its
   newest text, which is kept in the message's metadata together with the time
@@ -240,22 +312,31 @@ What remains:
 - A message this device sent keeps its original body until the contact
   acknowledges it, however long the contact stays offline; it goes earlier
   only when the message is deleted, disappears or the chat is cleared.
-- The message keeps its id, and the id confirms a guessed original. A message
-  id is a hash over the conversation, the message time and a hash of the
-  encoded body, and every other part of a one-to-one message's body (its
-  type, the attachment list, the disappearing timer and the quoted message)
-  can be read from the metadata; a legacy text message's body is the text
-  alone.
-  Someone who can read the database can therefore try candidate texts, for
-  example the current text with a typo put back or a number changed, and
-  confirm a right guess by computing the id again. The id gives nothing away
-  beyond confirming a guess, but a short or predictable original is easy to
-  guess. The id has to stay: the contact's acknowledgements and the
-  recognition of a copy offered again refer to it. An edit that is rejected
-  because it arrived after a newer one, or after its message was deleted for
-  everyone, keeps its id, time and length, so a guess of its text can be
-  confirmed the same way. Closing this would take a change of the message
-  format.
+- The message keeps its id, a hash over the conversation, the message time
+  and a hash of the encoded body. The id has to stay: both devices store,
+  acknowledge and recognise a copy offered again by it, and the contact's
+  reactions, edits, deletes and replies refer to it. An edit that is
+  rejected because it arrived after a newer one, or after its message was
+  deleted for everyone, likewise keeps its id, time and length.
+  - A salted message or edit (see "Salted bodies") lost its salt with its
+    body, so its id cannot be computed from a guess: the guess would have to
+    include the 256-bit salt. What stays is the time and, for a rejected
+    edit, the length, which shows about how long its text was.
+  - For a message or edit without a salt every other part of the body (its
+    type, the attachment list, the disappearing timer and the quoted
+    message) can be read from the metadata, and a legacy text message's body
+    is the text alone. Someone who can read the database can therefore try
+    candidate texts, for example the current text with a typo put back or a
+    number changed, and confirm a right guess by computing the id again. The
+    id gives nothing away beyond confirming a guess, but a short or
+    predictable original is easy to guess. This holds for every message and
+    edit exchanged with a contact that announces minor version 11 or less
+    and for every message stored before 3.0.18 began to add the salt, and
+    nothing can change it afterwards: the id is fixed when the message is
+    made, both devices hold the message under it, and the salt that would
+    hide the text never existed. Keeping a keyed hash of the id in its place
+    would not help: the key would have to be on the device that holds the
+    database, and the sync layer finds a message by its id.
 - A received message whose delivery is put off keeps its original body until
   the next app start delivers it, and a body whose removal failed three times
   stays until the next time the database is opened.

@@ -1,5 +1,7 @@
 package org.zerionproject.core.api.contact;
 
+import org.zerionproject.core.util.ZerionLinks;
+
 import java.util.regex.Pattern;
 
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
@@ -32,7 +34,8 @@ public interface HandshakeLinkConstants {
 	int RAW_LINK_BYTES = RAW_LINK_BYTES_HYBRID;
 
 	Pattern LINK_REGEX =
-			Pattern.compile("^zerion://([a-z2-7]{" + BASE32_LINK_BYTES_CLASSICAL
+			Pattern.compile("^" + ZerionLinks.SCHEME_PATTERN
+					+ "://([a-z2-7]{" + BASE32_LINK_BYTES_CLASSICAL
 					+ "}|[a-z2-7]{" + BASE32_LINK_BYTES_HYBRID
 					+ "})(?:\\?.*)?$");
 

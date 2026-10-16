@@ -255,7 +255,7 @@
   <string name="groups_dissolve_dialog_message">Weet je zeker dat je deze groep wil opheffen?\n\nAlle andere leden zullen dan niet meer hun gesprek voort kunnen zetten en het zou kunnen dat ze de laatste berichten niet ontvangen.</string>
   <string name="groups_dissolve_button">Hef op</string>
   <string name="groups_dissolved_dialog_title">Groep is opgeheven</string>
-  <string name="groups_dissolved_dialog_message">De maker van deze groep heeft deze opgeheven.\n\nJe kan niet langer berichten aan de groep sturen en het zou kunnen dat je niet alle posts hebt ontvangen die aan deze groep zijn verstuurd.</string>
+  <string name="groups_dissolved_dialog_message">De groepseigenaar heeft deze groep opgeheven.\n\nJe kan niet langer berichten aan de groep sturen en het zou kunnen dat je niet alle posts hebt ontvangen die aan deze groep zijn verstuurd.</string>
   
   <string name="groups_invitations_title">Groepsuitnodigingen</string>
   <string name="groups_invitations_invitation_sent">Je hebt %1$s uitgenodigd om lid te worden van de groep \"%2$s\".</string>
@@ -265,9 +265,9 @@
     <item quantity="one">%d openstaande groepsuitnodiging</item>
     <item quantity="other">%d openstaande groepsuitnodigingen</item>
   </plurals>
-  <string name="sharing_status_groups">Alleen degene die een groep heeft aangemaakt kan nieuwe leden voor die groep uitnodigen. Hieronder staan alle huidige leden van de groep.</string>
+  <string name="sharing_status_groups">Alleen de groepseigenaar kan nieuwe leden voor de groep uitnodigen. Hieronder staan alle huidige leden van de groep.</string>
   
-  <string name="groups_reveal_dialog_message">Je kan ervoor kiezen om contacten te openbaren aan alle huidige en toekomstige leden van deze groep.\n\nOpenbaren van contacten maakt je verbinding met de groep sneller en betrouwbaarder omdat je kan communiceren met geopenbaarde contacten, zelfs als degene die de groep heeft aangemaakt offline is.</string>
+  <string name="groups_reveal_dialog_message">Je kan ervoor kiezen om contacten te openbaren aan alle huidige en toekomstige leden van deze groep.\n\nOpenbaren van contacten maakt je verbinding met de groep sneller en betrouwbaarder omdat je kan communiceren met geopenbaarde contacten, zelfs als de groepseigenaar offline is.</string>
   <string name="groups_reveal_visible_revealed_by_us">Contactrelatie is zichtbaar voor de groep (door jou geopenbaard)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Contactrelaties zijn zichtbaar voor de groep (geopenbaard door %s)</string>
   <string name="groups_reveal_invisible">Contactrelatie is niet zichtbaar voor de groep</string>
@@ -755,7 +755,7 @@
 	<string name="channels_feed_empty_publisher">Je kanaal heeft nog geen berichten. Publiceer je eerste.</string>
 	<string name="channels_feed_empty_subscriber">Nog geen berichten. Nieuwe berichten verschijnen hier.</string>
 	<string name="channels_feed_connecting">Verbinden met het kanaal…</string>
-	<string name="channels_feed_connecting_slow">Nog aan het verbinden. Zorg dat de persoon die dit kanaal deelde online is. Dit wordt vanzelf bijgewerkt.</string>
+	<string name="channels_feed_connecting_slow">Nog aan het verbinden. Berichten verschijnen hier zodra het kanaal bereikbaar is.</string>
 	<string name="channels_compose_hint">Schrijf aan je abonnees…</string>
 	<string name="channels_compose_send">Publiceren</string>
 	<string name="channels_compose_error_empty">Typ iets voordat je publiceert.</string>
@@ -1101,7 +1101,7 @@
 	<string name="grouptr_empty">Nog geen groepen.</string>
 	<string name="grouptr_meta">%2$d leden</string>
 	<string name="grouptr_dissolved_suffix">(opgeheven)</string>
-	<string name="grouptr_creator_tag">(maker)</string>
+	<string name="grouptr_creator_tag">(groepseigenaar)</string>
 	<string name="grouptr_admin_tag">(beheerder)</string>
 	<string name="grouptr_promote">Promoveren</string>
 	<string name="grouptr_demote">Degraderen</string>
@@ -1201,7 +1201,7 @@
 	<string name="grouptr_detail_status">Status</string>
 	<string name="grouptr_detail_status_dissolved">Opgeheven</string>
 	<string name="grouptr_open_chat">Chat openen</string>
-	<string name="grouptr_member_role_creator">maker</string>
+	<string name="grouptr_member_role_creator">Groepseigenaar</string>
 	<string name="grouptr_member_role_you">jij</string>
 	<string name="grouptr_member_action_remove">Uit groep verwijderen</string>
 	<string name="scroll_to_bottom">Naar beneden scrollen</string>
@@ -1908,7 +1908,7 @@
 		<item quantity="one">Niet verzonden naar %d lid: die app is te oud voor zulke grote berichten.</item>
 		<item quantity="other">Niet verzonden naar %d leden: hun app is te oud voor zulke grote berichten.</item>
 	</plurals>
-	<string name="grouptr_ttl_set_by_creator">Verdwijnende berichten in deze groep: %1$s. Alleen de maker van de groep kan dit wijzigen.</string>
+	<string name="grouptr_ttl_set_by_creator">Verdwijnende berichten in deze groep: %1$s. Alleen de groepseigenaar kan dit wijzigen.</string>
 	<plurals name="grouptr_ttl_older_members">
 		<item quantity="one">%d lid gebruikt een oudere app die de eigen berichten niet op deze timer verwijdert.</item>
 		<item quantity="other">%d leden gebruiken een oudere app die hun eigen berichten niet op deze timer verwijdert.</item>
@@ -1923,7 +1923,7 @@
 	<string name="grouptr_member_invited">Uitgenodigd, wacht op antwoord</string>
 	<string name="grouptr_confirm_revoke">De uitnodiging aan %1$s intrekken? Een antwoord van die persoon wordt dan genegeerd.</string>
 	<string name="grouptr_revoke_invite">Uitnodiging intrekken</string>
-	<string name="grouptr_invite_expired">Deze uitnodiging is verlopen. Vraag de maker van de groep om een nieuwe.</string>
+	<string name="grouptr_invite_expired">Deze uitnodiging is verlopen. Vraag de groepseigenaar om een nieuwe.</string>
 	<string name="reaction_removed_here_only">Alleen op dit apparaat verwijderd: de app van je contact is te oud om de reactie daar te verwijderen.</string>
 	<string name="startup_data_without_account_message">Zerion heeft gegevens op dit apparaat gevonden, maar geen accountsleutel die ze opent: de sleutelbestanden ontbreken of zijn beschadigd. Er is niets verwijderd.\n\nJe kunt Zerion sluiten en de gegevens bewaren, of alles wissen en opnieuw beginnen.</string>
 	<string name="startup_data_without_account_keep">Sluiten en bewaren</string>
@@ -2462,13 +2462,13 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="grouptr_members_may_invite">Leden kunnen hun contacten uitnodigen</string>
 	<string name="grouptr_members_may_invite_summary">Zolang dit aan staat, voegt je telefoon de mensen die zij uitnodigen automatisch toe.</string>
 	<string name="grouptr_invite_contacts">Contacten uitnodigen</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Alleen leden die de maker van de groep als contact hebben, kunnen uitnodigen.</string>
-	<string name="grouptr_member_invite_creator_outdated">De maker van de groep heeft een nieuwere versie van de app nodig voordat leden kunnen uitnodigen.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Alleen leden die de groepseigenaar als contact hebben, kunnen uitnodigen.</string>
+	<string name="grouptr_member_invite_creator_outdated">De groepseigenaar heeft een nieuwere versie van de app nodig voordat leden kunnen uitnodigen.</string>
 	<string name="grouptr_member_invite_contact_outdated">Heeft een nieuwere versie van de app nodig</string>
 	<string name="grouptr_member_invitation_received">%1$s heeft je uitgenodigd voor de groep \"%2$s\", gemaakt door %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s heeft je uitgenodigd voor een groep die is gemaakt door %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Wachten tot %1$s, die de groep heeft gemaakt, online is. De telefoon van de maker voegt je automatisch toe, daarna kun je hier berichten plaatsen.</string>
-	<string name="grouptr_member_invite_accepted">Geaccepteerd. Je wordt lid zodra de maker van de groep online is.</string>
+	<string name="grouptr_waiting_for_admin">Wachten tot de groepseigenaar, %1$s, online is. Diens telefoon voegt je automatisch toe, daarna kun je hier berichten plaatsen.</string>
+	<string name="grouptr_member_invite_accepted">Geaccepteerd. Je wordt lid zodra de groepseigenaar online is.</string>
 	<string name="grouptr_member_invite_unavailable">Deze uitnodiging kan niet meer worden geaccepteerd. Vraag om een nieuwe.</string>
 	<string name="grouptr_incognito">Incognito in deze groep</string>
 	<string name="grouptr_incognito_summary">Anderen in de groep zien een willekeurige naam in plaats van de jouwe. Leden die je contacten zijn, kunnen je nog steeds herkennen aan je sleutel.</string>
@@ -2476,7 +2476,7 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="grouptr_incognito_new_name">Nieuwe naam</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (incognito)</string>
 	<string name="grouptr_member_may_add">Mag leden toevoegen</string>
-	<string name="grouptr_member_invite_creator_only">Alleen de maker van de groep kan leden toevoegen.</string>
+	<string name="grouptr_member_invite_creator_only">Alleen de groepseigenaar kan leden toevoegen.</string>
 	<string name="tor_status_entry_relay">Instabiel</string>
 	<string name="tor_hidden_services_entry_relay">Het ingangsrelay van Tor faalt bij de meeste verbindingen, waardoor contacten je mogelijk niet bereiken. Dit kan komen door een overbelast netwerk of verstoring. De verbindingsmethode van Tor op bridges zetten bij Instellingen, Verbindingen helpt meestal.</string>
 	<string name="contact_connection_tor_entry_relay">Tor is verbonden, maar het ingangsrelay faalt bij de meeste verbindingen. Bridges helpen meestal.</string>
@@ -2487,4 +2487,46 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="channels_subscribers_unban">Verbanning opheffen</string>
 	<string name="channels_subscribers_unban_confirm">Verbanning opheffen? Deze abonnee kan weer opmerkingen plaatsen en reageren. Wat de verbanning heeft verwijderd, komt niet terug, en een redacteursrol moet opnieuw worden toegekend.</string>
 	<string name="channels_unban_failed">Kan verbanning niet opheffen</string>
+	<string name="contact_delete_failed">Kan contact niet verwijderen</string>
+	<string name="channels_delegations_revoke_failed">Kan deze redacteur niet intrekken</string>
+	<string name="channels_invite_rotate_failed">De uitnodigingslink is niet vernieuwd. De oude link werkt nog.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="one">Uitnodiging verzonden naar %d contact</item>
+		<item quantity="other">Uitnodigingen verzonden naar %d contacten</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">De eigenaar heeft niet bevestigd dat je aanmelding is aangekomen. Probeer het later opnieuw.</string>
+	<string name="channels_apply_banner">Tik om je bij de eigenaar aan te melden voor toegang tot dit kanaal.</string>
+	<string name="channels_rejoin_updated">Je toegang tot %1$s is bijgewerkt.</string>
+	<string name="channels_rejoin_unreachable">Kan deze link nu niet controleren. Probeer het later opnieuw.</string>
+	<string name="channels_rejoin_apply_again">Je kunt je opnieuw aanmelden om nieuwe berichten in dit kanaal te lezen. De berichten die je al hebt, blijven bewaard. De eigenaar ziet je weergavenaam en een sleutel die alleen in dit kanaal bij jou hoort.</string>
+	<string name="channels_sync_last_updated">Laatst bijgewerkt: %1$s</string>
+	<string name="channels_sync_saved_posts">Opgeslagen berichten worden getoond</string>
+	<string name="channels_sync_saved_posts_last_updated">Opgeslagen berichten worden getoond · Laatst bijgewerkt: %1$s</string>
+	<string name="channels_sync_not_updated_since">Niet bijgewerkt sinds %1$s</string>
+	<string name="channels_owner_deleted_notice">De eigenaar heeft het kanaal %1$s verwijderd</string>
+	<string name="channels_owner_deleted_notice_unnamed">De eigenaar heeft een kanaal verwijderd waaraan je deelnam</string>
+	<string name="channels_queued_waiting">Wacht op verzending</string>
+	<string name="channels_queued_not_sent">Niet verzonden</string>
+	<string name="channels_queued_retry">Opnieuw proberen</string>
+	<string name="channels_queued_delete">Verwijderen</string>
+	<string name="channels_comment_queued_toast">Je opmerking wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_react_queued_toast">Je reactie wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_announce_queued_toast">Je naam wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_post_queued_toast">Je bericht wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_change_queued_toast">Je wijziging wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_queued_notice_waiting">Een deel van wat je verstuurde, wacht nog. Het wordt verzonden zodra het kanaal bereikbaar is.</string>
+	<string name="channels_queued_notice_not_sent">Een deel van wat je verstuurde, kon niet worden verzonden. Tik om het opnieuw te proberen of te verwijderen.</string>
+	<string name="channels_queued_announce_label">Je naam: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Dit kanaal was niet bereikbaar. Je kunt je met deze link opnieuw aanmelden. De berichten die je al hebt, blijven bewaard. De eigenaar ziet je weergavenaam en een sleutel die alleen in dit kanaal bij jou hoort.</string>
+	<string name="channels_rejoin_not_restored">Deze link heeft je toegang tot dit kanaal niet hersteld. Je kunt om een nieuwe link vragen.</string>
+	<string name="channels_rejoin_check_title">Deze link proberen?</string>
+	<string name="channels_rejoin_check_message">Nieuwe berichten in dit kanaal zijn nu niet bereikbaar. Je kunt deze link proberen om ze weer te ontvangen. De berichten die je al hebt, blijven bewaard.</string>
+	<string name="channels_rejoin_check_action">Link proberen</string>
+	<string name="channels_rejoin_try_later">Dit kanaal is nu niet bereikbaar, en dit is de link die je al hebt. Probeer het later opnieuw. De berichten die je al hebt, blijven bewaard.</string>
+	<string name="channels_rejoin_trying">We blijven deze link proberen. De berichten die je al hebt, blijven bewaard.</string>
+	<string name="channels_queued_already_sent">Het was al verzonden en kon daarom niet worden verwijderd.</string>
+	<string name="channels_queued_behind_toast">Dit wordt verzonden na wat je eerder naar dit kanaal hebt verzonden.</string>
+	<string name="channels_queued_no_access">Niet verzonden. Je hebt geen toegang meer tot dit kanaal.</string>
+	<string name="channels_no_access_toast">Je hebt geen toegang meer tot dit kanaal. Vraag de eigenaar om een nieuwe uitnodigingslink.</string>
+	<string name="channels_rejoin_too_many_links">Je hebt al meerdere links voor dit kanaal die nog wachten, dus deze is niet geprobeerd. De berichten die je al hebt, blijven bewaard.</string>
 </resources>

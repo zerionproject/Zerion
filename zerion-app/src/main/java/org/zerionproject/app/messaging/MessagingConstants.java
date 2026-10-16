@@ -26,6 +26,8 @@ interface MessagingConstants {
 	String MSG_KEY_EDITED_AT = "editedAt";
 	String MSG_KEY_ORIGINAL_KEPT = "originalKept";
 
+	int BODY_SALT_LENGTH = 32;
+
 	String MSG_KEY_MESH = "mesh";
 
 	String MSG_KEY_MESH_STATE = "meshState";

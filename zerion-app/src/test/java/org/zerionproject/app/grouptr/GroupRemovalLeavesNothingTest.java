@@ -73,6 +73,8 @@ public class GroupRemovalLeavesNothingTest {
 		node.putPendingOffer(invitedTo, inviter, creatorKey, node.now);
 		String strayHex = toHexString(getRandomId());
 		node.putSetting("grouptr-removed:" + strayHex, "deleted", "x.y.1");
+		node.putSetting("grouptr-order:" + strayHex, "commits", "5.6."
+				+ (node.now + 1_000L));
 
 		node.manager.sweepRemovedGroups();
 
@@ -83,6 +85,7 @@ public class GroupRemovalLeavesNothingTest {
 		assertNull(node.namespace(GroupTrConstants.SETTINGS_NS_LOCAL_PREFIX
 				+ oldHex));
 		assertNull(node.namespace("grouptr-removed:" + strayHex));
+		assertNull(node.namespace("grouptr-order:" + strayHex));
 		Settings unread = node.namespace("grouptr-unread");
 		assertNotNull(unread);
 		assertFalse(unread.containsKey(oldHex));
@@ -226,6 +229,8 @@ public class GroupRemovalLeavesNothingTest {
 		node.putSetting("grouptr-seen:" + hex, "seen", "aa,bb");
 		node.putSetting("grouptr-unread", hex, "3");
 		node.putSetting("grouptr-unread", "kept", "1");
+		node.putSetting("grouptr-order:" + hex, "commits", "5.6."
+				+ (node.now + 1_000L));
 		node.putSentInvite(groupId, other, otherKey, 1_000L);
 		node.putPendingOffer(groupId, other, creatorKey, 1_000L);
 		for (String ns : namespaces()) {
@@ -267,7 +272,8 @@ public class GroupRemovalLeavesNothingTest {
 	private List<String> namespaces() {
 		return Arrays.asList(GroupTrConstants.SETTINGS_NS_PREFIX + hex,
 				GroupTrConstants.SETTINGS_NS_LOCAL_PREFIX + hex,
-				"grouptr.alias." + hex, "grouptr-seen:" + hex);
+				"grouptr.alias." + hex, "grouptr-seen:" + hex,
+				"grouptr-order:" + hex);
 	}
 
 	private GroupTrTestNode memberNode() {

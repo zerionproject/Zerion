@@ -47,4 +47,34 @@
 		android:textSize="14sp"
 		tools:text="Great post!" />
 
+	<LinearLayout
+		android:id="@+id/commentQueuedActions"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="end"
+		android:orientation="horizontal"
+		android:visibility="gone"
+		tools:visibility="visible">
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/commentRetryButton"
+			style="@style/Widget.MaterialComponents.Button.TextButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginEnd="4dp"
+			android:minWidth="0dp"
+			android:text="@string/channels_queued_retry"
+			android:textColor="@color/zerion_accent_text" />
+
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/commentDeleteButton"
+			style="@style/Widget.MaterialComponents.Button.TextButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:minWidth="0dp"
+			android:text="@string/channels_queued_delete"
+			android:textColor="@color/zerion_destructive_text" />
+
+	</LinearLayout>
+
 </LinearLayout>

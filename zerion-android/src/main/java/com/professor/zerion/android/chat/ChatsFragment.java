@@ -97,6 +97,11 @@ public class ChatsFragment extends BaseFragment
 					if (hasPending != null && hasPending) showSnackBar();
 					else dismissSnackBar();
 				});
+		viewModel.getContactDeleted().observeEvent(getViewLifecycleOwner(),
+				deleted -> Toast.makeText(requireContext(), deleted
+						? R.string.contact_deleted_toast
+						: R.string.contact_delete_failed,
+						Toast.LENGTH_SHORT).show());
 
 		return contentView;
 	}
@@ -218,12 +223,8 @@ public class ChatsFragment extends BaseFragment
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.dialog_title_delete_contact)
 				.setMessage(R.string.dialog_message_delete_contact)
-				.setPositiveButton(R.string.delete_contact, (d, w) -> {
-					viewModel.deleteContact(contactId);
-					Toast.makeText(requireContext(),
-							R.string.contact_deleted_toast,
-							Toast.LENGTH_SHORT).show();
-				})
+				.setPositiveButton(R.string.delete_contact, (d, w) ->
+						viewModel.deleteContact(contactId))
 				.setNegativeButton(R.string.cancel, null)
 				.show();
 	}

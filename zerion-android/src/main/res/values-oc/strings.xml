@@ -241,7 +241,7 @@
   <string name="groups_dissolve_dialog_message">Sètz segur de voler suprimir lo grop ? \n\nLa rèsta dels participants poiran pas tenir de charrat e poiriá arribar qu’ajan pas los darrièrs messatges.</string>
   <string name="groups_dissolve_button">Suprimir</string>
   <string name="groups_dissolved_dialog_title">Lo grop es estat suprimit</string>
-  <string name="groups_dissolved_dialog_message">Lo fondador d’aqueste grop l’a suprimit.\n\nPodètz pas mai escriure de messatges e benlèu qu’avètz pas recebuts totes los messatges.</string>
+  <string name="groups_dissolved_dialog_message">Lo proprietari del grop a suprimit aqueste grop.\n\nPodètz pas mai escriure de messatges al grop e benlèu que recebretz pas totas las publicacions que son estadas escrichas.</string>
   
   <string name="groups_invitations_title">Convidacion de grop</string>
   <string name="groups_invitations_invitation_sent">Avètz convidat %1$s a venir al grop « %2$s »</string>
@@ -251,9 +251,9 @@
     <item quantity="one">%d convidacion de grop en espèra</item>
     <item quantity="other">%d convidacions de grop en espèra</item>
   </plurals>
-  <string name="sharing_status_groups">Pas que lo fondador del grop pòt convidar mai de monde. Vaquí la tièra dels membres actuals.</string>
+  <string name="sharing_status_groups">Sonque lo proprietari del grop pòt convidar de membres novèls. Vaquí la tièra dels membres actuals del grop.</string>
   
-  <string name="groups_reveal_dialog_message">Podètz causir de revelar los contactes a totes los membres actuals e venents d’aqueste grop.\n\nEn revelar los contactes auretz una melhora connexion al grop e mai fiabla perque poiretz comunicar amb los contactes revelats quand lo fondator es fòra linha.</string>
+  <string name="groups_reveal_dialog_message">Podètz causir de revelar o non los contactes a totes los membres actuals e venents d\'aqueste grop.\n\nEn revelar los contactes, vòstra connexion al grop serà mai rapida e mai fisabla, perque poiretz comunicar amb los contactes revelats quand lo proprietari del grop es fòra linha.</string>
   <string name="groups_reveal_visible_revealed_by_us">Vòstre ligam – revelat per vos – amb lo contacte es visible pel grop </string>
   <string name="groups_reveal_visible_revealed_by_contact">Vòstre ligam – revelat per %s – amb lo contacte es invisible pel grop</string>
   <string name="groups_reveal_invisible">Vòstre ligam amb lo contacte es invisible pel grop</string>
@@ -866,7 +866,7 @@
 	<string name="channels_feed_empty_subscriber">Cap de publicacion pel moment. Las publicacions novèlas apareisseràn aquí.</string>
 	<string name="channels_post_withheld">Publicacion retenguda: lo proprietari del canal a revocat lo drech de publicar d’aqueste autor.</string>
 	<string name="channels_feed_connecting">Connexion al canal…</string>
-	<string name="channels_feed_connecting_slow">Connexion encara en cors. Asseguratz-vos que la persona qu’a partejat aqueste canal es en linha. Aquò s’actualizarà tot sol.</string>
+	<string name="channels_feed_connecting_slow">Connexion encara en cors. Las publicacions apareisseràn aquí quand lo canal serà accessible.</string>
 	<string name="channels_compose_hint">Escrivètz a vòstres abonats…</string>
 	<string name="channels_compose_send">Publicar</string>
 	<string name="channels_compose_error_empty">Picatz quicòm abans de publicar.</string>
@@ -1181,7 +1181,7 @@
 	<string name="grouptr_empty">Cap de grop pel moment.</string>
 	<string name="grouptr_meta">%2$d membres</string>
 	<string name="grouptr_dissolved_suffix">(suprimit)</string>
-	<string name="grouptr_creator_tag">(fondador)</string>
+	<string name="grouptr_creator_tag">(proprietari del grop)</string>
 	<string name="grouptr_admin_tag">(administrator)</string>
 	<string name="grouptr_promote">Promòure</string>
 	<string name="grouptr_demote">Retrogradar</string>
@@ -1284,7 +1284,7 @@
 	<string name="grouptr_detail_status">Estat</string>
 	<string name="grouptr_detail_status_dissolved">Suprimit</string>
 	<string name="grouptr_open_chat">Dobrir la discussion</string>
-	<string name="grouptr_member_role_creator">fondador</string>
+	<string name="grouptr_member_role_creator">Proprietari del grop</string>
 	<string name="grouptr_member_role_you">vos</string>
 	<string name="grouptr_member_action_remove">Levar del grop</string>
 	<string name="scroll_to_bottom">Desfilar fins en bas</string>
@@ -2349,14 +2349,14 @@
 	<string name="wallet_sp_move_hint">Adreça Bitcoin ont desplaçar los fons</string>
 	<string name="grouptr_reach_title">Qual recep vòstras publicacions</string>
 	<string name="grouptr_reach_explanation">Las publicacions del grop circulan dirèctament entre los membres que son contactes l’un de l’autre, e los membres las transmeton pas. Aqueles membres son pas vòstres contactes, doncas recebon pas vòstras publicacions e vos recebètz pas las lor:\n\n%1$s\n\nAjustatz-los coma contactes per los jónher.</string>
-	<string name="grouptr_ttl_set_by_creator">Messatges efemèrs dins aqueste grop: %1$s. Sonque lo fondador del grop pòt cambiar aquò.</string>
+	<string name="grouptr_ttl_set_by_creator">Messatges efemèrs dins aqueste grop: %1$s. Sonque lo proprietari del grop pòt cambiar aquò.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publica coma « %2$s »)</string>
 	<string name="grouptr_sender_unverified_format">« %1$s » (pas un nom que coneissètz)</string>
 	<string name="grouptr_member_out_of_reach">pas vòstre contacte, recep pas vòstras publicacions</string>
 	<string name="grouptr_member_invited">Convidat, en espèra d’una responsa</string>
 	<string name="grouptr_confirm_revoke">Retirar la convidacion mandada a %1$s? Una responsa de sa part serà ignorada.</string>
 	<string name="grouptr_revoke_invite">Retirar la convidacion</string>
-	<string name="grouptr_invite_expired">Aquesta convidacion a expirat. Demandatz-ne una novèla al fondador del grop.</string>
+	<string name="grouptr_invite_expired">Aquesta convidacion a expirat. Demandatz-ne una novèla al proprietari del grop.</string>
 	<string name="reaction_removed_here_only">Suprimida sonque sus aqueste aparelh: l’aplicacion de vòstre contacte es tròp anciana per la suprimir sus la sieuna.</string>
 	<string name="startup_data_without_account_message">Zerion a trobat de donadas sus aqueste aparelh, mas cap de clau de compte que las pòsca dobrir: los fichièrs de claus mancan o son damatjats. Res es pas estat suprimit.\n\nPodètz tampar Zerion e gardar las donadas, o tot escafar e tornar començar.</string>
 	<string name="startup_data_without_account_keep">Tampar e gardar</string>
@@ -2441,13 +2441,13 @@
 	<string name="grouptr_members_may_invite">Los membres pòdon convidar lors contactes</string>
 	<string name="grouptr_members_may_invite_summary">Tant qu\'aquò es activat, vòstre telefòn ajusta automaticament las personas que convidan.</string>
 	<string name="grouptr_invite_contacts">Convidar de contactes</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Sols los membres qu\'an lo fondador del grop coma contacte pòdon convidar.</string>
-	<string name="grouptr_member_invite_creator_outdated">Lo fondador del grop a besonh d\'una version mai recenta de l\'aplicacion per que los membres pòscan convidar.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Sols los membres qu\'an lo proprietari del grop coma contacte pòdon convidar.</string>
+	<string name="grouptr_member_invite_creator_outdated">Lo proprietari del grop a besonh d\'una version mai recenta de l\'aplicacion per que los membres pòscan convidar.</string>
 	<string name="grouptr_member_invite_contact_outdated">A besonh d\'una version mai recenta de l\'aplicacion</string>
 	<string name="grouptr_member_invitation_received">%1$s vos a convidat a rejónher lo grop « %2$s », creat per %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s vos a convidat a rejónher un grop creat per %2$s.</string>
-	<string name="grouptr_waiting_for_admin">En espèra que %1$s, que creèt lo grop, siá en linha. Son telefòn vos ajustarà automaticament, puèi poiretz publicar aquí.</string>
-	<string name="grouptr_member_invite_accepted">Acceptat. Rejonheretz lo grop tre que son fondador serà en linha.</string>
+	<string name="grouptr_waiting_for_admin">En espèra que lo proprietari del grop, %1$s, siá en linha. Son telefòn vos ajustarà automaticament, puèi poiretz publicar aquí.</string>
+	<string name="grouptr_member_invite_accepted">Acceptat. Rejonheretz lo grop tre que lo proprietari serà en linha.</string>
 	<string name="grouptr_member_invite_unavailable">Aquesta convidacion pòt pas pus èsser acceptada. Demandatz-ne una novèla.</string>
 	<string name="grouptr_incognito">Incognito dins aqueste grop</string>
 	<string name="grouptr_incognito_summary">Los autres membres del grop vesen un nom aleatòri al lòc del vòstre. Los membres que son vòstres contactes vos pòdon totjorn reconéisser per vòstra clau.</string>
@@ -2455,7 +2455,7 @@
 	<string name="grouptr_incognito_new_name">Nom novèl</string>
 	<string name="grouptr_sender_incognito_format">« %1$s » (incognito)</string>
 	<string name="grouptr_member_may_add">Pòt apondre de membres</string>
-	<string name="grouptr_member_invite_creator_only">Sonque lo creator del grop pòt apondre de membres.</string>
+	<string name="grouptr_member_invite_creator_only">Sonque lo proprietari del grop pòt apondre de membres.</string>
 	<string name="tor_status_entry_relay">Instable</string>
 	<string name="tor_hidden_services_entry_relay">Lo relai d\'entrada de Tor fracassa per la màger part de las connexions, doncas los contactes pòdon pas benlèu vos jónher. Pòt venir d\'una ret subrecargada o d\'interferéncias. Cambiar lo metòde de connexion de Tor als ponts dins Paramètres, Connexions ajuda generalament.</string>
 	<string name="contact_connection_tor_entry_relay">Tor es connectat, mas son relai d\'entrada fracassa per la màger part de las connexions. Utilizar de ponts ajuda generalament.</string>
@@ -2466,4 +2466,42 @@
 	<string name="channels_subscribers_unban">Levar lo bandiment</string>
 	<string name="channels_subscribers_unban_confirm">Levar lo bandiment? Aqueste abonat poirà tornar comentar e reagir. Çò que lo bandiment levèt torna pas, e lo ròtle d’editor deu èsser tornat donar.</string>
 	<string name="channels_unban_failed">Impossible de levar lo bandiment</string>
+	<string name="contact_delete_failed">Impossible de suprimir lo contacte</string>
+	<string name="channels_delegations_revoke_failed">Impossible de revocar aqueste editor</string>
+	<string name="channels_invite_rotate_failed">Lo ligam de convidacion es pas estat cambiat. Lo ligam ancian fonciona encara.</string>
+	<string name="channels_apply_unconfirmed">Lo proprietari a pas confirmat la recepcion de vòstra demanda. Ensajatz tornarmai pus tard.</string>
+	<string name="channels_apply_banner">Tocatz per demandar al proprietari l\'accès a aqueste canal.</string>
+	<string name="channels_rejoin_updated">Vòstre accès a %1$s es estat mes a jorn.</string>
+	<string name="channels_rejoin_unreachable">Impossible de verificar aqueste ligam pel moment. Ensajatz tornamai pus tard.</string>
+	<string name="channels_rejoin_apply_again">Podètz demandar tornamai l\'adesion per legir las publicacions novèlas d\'aqueste canal. Las publicacions qu\'avètz ja demòran. Lo proprietari veirà vòstre nom afichat e una clau que vos aparten sonque dins aqueste canal.</string>
+	<string name="channels_sync_last_updated">Darrièra mesa a jorn: %1$s</string>
+	<string name="channels_sync_saved_posts">Afichatge de las publicacions enregistradas</string>
+	<string name="channels_sync_saved_posts_last_updated">Afichatge de las publicacions enregistradas · Darrièra mesa a jorn: %1$s</string>
+	<string name="channels_sync_not_updated_since">Pas mes a jorn dempuèi %1$s</string>
+	<string name="channels_owner_deleted_notice">Lo proprietari a suprimit lo canal %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Lo proprietari a suprimit un canal qu\'aviatz rejunt</string>
+	<string name="channels_queued_waiting">En espèra de mandadís</string>
+	<string name="channels_queued_not_sent">Pas mandat</string>
+	<string name="channels_queued_retry">Tornar ensajar</string>
+	<string name="channels_queued_delete">Suprimir</string>
+	<string name="channels_comment_queued_toast">Vòstre comentari serà mandat quand lo canal serà accessible.</string>
+	<string name="channels_react_queued_toast">Vòstra reaccion serà mandada quand lo canal serà accessible.</string>
+	<string name="channels_announce_queued_toast">Vòstre nom serà mandat quand lo canal serà accessible.</string>
+	<string name="channels_post_queued_toast">Vòstra publicacion serà mandada quand lo canal serà accessible.</string>
+	<string name="channels_change_queued_toast">Vòstra modificacion serà mandada quand lo canal serà accessible.</string>
+	<string name="channels_queued_notice_waiting">Una part de çò qu\'avètz mandat es en espèra. Serà mandada quand lo canal serà accessible.</string>
+	<string name="channels_queued_notice_not_sent">Una part de çò qu\'avètz mandat es pas estada mandada. Tocatz per tornar ensajar o per la suprimir.</string>
+	<string name="channels_queued_announce_label">Vòstre nom: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Impossible d\'accedir a aqueste canal. Podètz demandar tornamai l\'adesion amb aqueste ligam. Las publicacions qu\'avètz ja demòran. Lo proprietari veirà vòstre nom afichat e una clau que vos aparten sonque dins aqueste canal.</string>
+	<string name="channels_rejoin_not_restored">Aqueste ligam vos a pas rendut l\'accès a aqueste canal. Podètz demandar un ligam novèl.</string>
+	<string name="channels_rejoin_check_title">Ensajar aqueste ligam?</string>
+	<string name="channels_rejoin_check_message">Las publicacions novèlas d\'aqueste canal son pas accessiblas pel moment. Podètz ensajar aqueste ligam per las recebre tornamai. Las publicacions qu\'avètz ja demòran.</string>
+	<string name="channels_rejoin_check_action">Ensajar lo ligam</string>
+	<string name="channels_rejoin_try_later">Aqueste canal es pas accessible pel moment, e aqueste ligam es lo qu\'avètz ja. Ensajatz tornamai pus tard. Las publicacions qu\'avètz ja demòran.</string>
+	<string name="channels_rejoin_trying">Contunharem d\'ensajar aqueste ligam. Las publicacions qu\'avètz ja demòran.</string>
+	<string name="channels_queued_already_sent">Ja èra estat mandat, doncas a pas pogut èsser suprimit.</string>
+	<string name="channels_queued_behind_toast">Serà mandat aprèp çò qu\'avètz mandat abans dins aqueste canal.</string>
+	<string name="channels_queued_no_access">Pas mandat. Avètz pas mai accès a aqueste canal.</string>
+	<string name="channels_no_access_toast">Avètz pas mai accès a aqueste canal. Demandatz al proprietari un ligam de convidacion novèl.</string>
+	<string name="channels_rejoin_too_many_links">Avètz ja mantun ligam en espèra per aqueste canal, doncas aqueste es pas estat ensajat. Las publicacions qu\'avètz ja demòran.</string>
 </resources>

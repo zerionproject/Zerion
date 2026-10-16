@@ -1,5 +1,7 @@
 package org.zerionproject.app.api.channel;
 
+import org.zerionproject.core.util.ZerionLinks;
+
 public final class ChannelConstants {
 
 	private ChannelConstants() {
@@ -42,7 +44,7 @@ public final class ChannelConstants {
 	public static final long MAX_SUBSCRIBER_ATTACHMENT_BYTES_PER_CHANNEL =
 			256L * 1024L * 1024L;
 
-	public static final String INVITE_LINK_SCHEME = "zerion";
+	public static final String INVITE_LINK_SCHEME = ZerionLinks.SCHEME;
 	public static final String INVITE_LINK_HOST = "channel";
 	public static final String INVITE_LINK_CAPABILITY_PARAM = "k";
 	public static final String INVITE_LINK_ONION_PARAM = "o";

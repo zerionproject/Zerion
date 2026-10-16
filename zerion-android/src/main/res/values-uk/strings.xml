@@ -320,7 +320,7 @@
   <string name="groups_dissolve_dialog_message">Ви впевнені, що бажаєте розформувати цю групу?\n\nУсі інші учасники групи не матимуть змоги продовжити розмову та можуть не отримати останні повідомлення.</string>
   <string name="groups_dissolve_button">Розформувати</string>
   <string name="groups_dissolved_dialog_title">Групу було розформовано</string>
-  <string name="groups_dissolved_dialog_message">Засновник цієї групи розформував її.\n\nВи більше не зможете створювати повідомлення та можете не отримати усі дописи, що були написані.</string>
+  <string name="groups_dissolved_dialog_message">Власник цієї групи розформував її.\n\nВи більше не можете писати повідомлення в групу та можете не отримати всі дописи, що були написані.</string>
   
   <string name="groups_invitations_title">Запрошення до групи</string>
   <string name="groups_invitations_invitation_sent">Ви запросили %1$s долучитися до групи \"%2$s\".</string>
@@ -332,9 +332,9 @@
     <item quantity="many">%d  відкритих запрошень до групи</item>
     <item quantity="other">%d відкритого запрошення до групи</item>
   </plurals>
-  <string name="sharing_status_groups">Лише засновник групи може запрошувати нових учасників до групи. Нижче зазначено усх актуальних учасників групи.</string>
+  <string name="sharing_status_groups">Лише власник групи може запрошувати до неї нових учасників. Нижче зазначено всіх поточних учасників групи.</string>
   
-  <string name="groups_reveal_dialog_message">Ви можете обрати, чи будуть контакти відкритими для усіх поточних та майбутніх членів групи.\n\nВідкриття контактів робить ваше з\'єднання з групою швидшим та надійнішим, тому що ви можете спілкуватися з відкритими контактами навіть тоді, коли засновник групи знаходиться поза мережею.</string>
+  <string name="groups_reveal_dialog_message">Ви можете обрати, чи будуть контакти відкритими для всіх поточних та майбутніх учасників групи.\n\nВідкриття контактів робить ваше з\'єднання з групою швидшим та надійнішим, тому що ви можете спілкуватися з відкритими контактами навіть тоді, коли власник групи поза мережею.</string>
   <string name="groups_reveal_visible_revealed_by_us">  Зв\'язки між контактами видимі групі (видимість встановлено вами)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Зв\'язки між контактами видимі групі (видимість встановлено %s)</string>
   <string name="groups_reveal_invisible">Зв\'язки між контактами невидимі групі</string>
@@ -1109,7 +1109,7 @@
 	<string name="channels_feed_empty_subscriber">Дописів ще немає. Нові дописи з\'являтимуться тут.</string>
 	<string name="channels_post_withheld">Допис приховано: власник каналу відкликав у цього автора дозвіл публікувати.</string>
 	<string name="channels_feed_connecting">Під\'єднання до каналу…</string>
-	<string name="channels_feed_connecting_slow">Під\'єднання ще триває. Переконайтеся, що людина, яка поділилася цим каналом, у мережі. Стан оновиться автоматично.</string>
+	<string name="channels_feed_connecting_slow">Під\'єднання ще триває. Дописи з\'являться тут, щойно канал стане доступним.</string>
 	<string name="channels_compose_hint">Напишіть своїм підписникам…</string>
 	<string name="channels_compose_send">Опублікувати</string>
 	<string name="channels_compose_error_empty">Напишіть щось перед публікацією.</string>
@@ -1406,7 +1406,7 @@
 	<string name="grouptr_empty">Груп ще немає.</string>
 	<string name="grouptr_meta">Учасників: %2$d</string>
 	<string name="grouptr_dissolved_suffix">(розформовано)</string>
-	<string name="grouptr_creator_tag">(засновник)</string>
+	<string name="grouptr_creator_tag">(власник групи)</string>
 	<string name="grouptr_admin_tag">(адміністратор)</string>
 	<string name="grouptr_promote">Підвищити</string>
 	<string name="grouptr_demote">Понизити</string>
@@ -1511,7 +1511,7 @@
 	<string name="grouptr_detail_status">Стан</string>
 	<string name="grouptr_detail_status_dissolved">Розформовано</string>
 	<string name="grouptr_open_chat">Відкрити чат</string>
-	<string name="grouptr_member_role_creator">засновник</string>
+	<string name="grouptr_member_role_creator">Власник групи</string>
 	<string name="grouptr_member_role_you">ви</string>
 	<string name="grouptr_member_action_remove">Видалити з групи</string>
 	<string name="scroll_to_bottom">Прокрутити донизу</string>
@@ -2403,14 +2403,14 @@
 	<string name="wallet_sp_enable_first">Спершу ввімкніть Silent Payments</string>
 	<string name="grouptr_reach_title">Хто отримує ваші дописи</string>
 	<string name="grouptr_reach_explanation">Дописи в групі передаються напряму між учасниками, які є контактами одне одного, і учасники не пересилають дописи далі. Ці учасники не є вашими контактами, тому вони не отримують ваших дописів, а ви не отримуєте їхніх:\n\n%1$s\n\nДодайте їх у контакти, щоб ваші дописи до них доходили.</string>
-	<string name="grouptr_ttl_set_by_creator">Самознищувані повідомлення в цій групі: %1$s. Змінити це може лише творець групи.</string>
+	<string name="grouptr_ttl_set_by_creator">Самознищувані повідомлення в цій групі: %1$s. Змінити це може лише власник групи.</string>
 	<string name="grouptr_sender_alias_format">%1$s (публікує як «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (незнайоме вам ім\'я)</string>
 	<string name="grouptr_member_out_of_reach">не ваш контакт, не отримує ваших дописів</string>
 	<string name="grouptr_member_invited">Запрошено, очікується відповідь</string>
 	<string name="grouptr_confirm_revoke">Відкликати запрошення для %1$s? Відповідь від цієї людини буде проігноровано.</string>
 	<string name="grouptr_revoke_invite">Відкликати запрошення</string>
-	<string name="grouptr_invite_expired">Термін дії цього запрошення минув. Попросіть творця групи надіслати нове.</string>
+	<string name="grouptr_invite_expired">Термін дії цього запрошення минув. Попросіть власника групи надіслати нове.</string>
 	<string name="reaction_removed_here_only">Видалено лише на цьому пристрої: застосунок вашого контакту надто старий, щоб видалити реакцію на його пристрої.</string>
 	<string name="startup_data_without_account_message">Zerion знайшов дані на цьому пристрої, але не знайшов ключа облікового запису, який їх відкриває: файли ключів відсутні або пошкоджені. Нічого не видалено.\n\nВи можете закрити Zerion і зберегти дані або стерти все й почати заново.</string>
 	<string name="startup_data_without_account_keep">Закрити й зберегти</string>
@@ -2525,13 +2525,13 @@
 	<string name="grouptr_members_may_invite">Учасники можуть запрошувати свої контакти</string>
 	<string name="grouptr_members_may_invite_summary">Поки це ввімкнено, ваш телефон автоматично додає людей, яких вони запросять.</string>
 	<string name="grouptr_invite_contacts">Запросити контакти</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Запрошувати можуть лише учасники, у яких творець групи є в контактах.</string>
-	<string name="grouptr_member_invite_creator_outdated">Творцю групи потрібна новіша версія застосунку, щоб учасники могли запрошувати.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Запрошувати можуть лише учасники, у яких власник групи є в контактах.</string>
+	<string name="grouptr_member_invite_creator_outdated">Власнику групи потрібна новіша версія застосунку, щоб учасники могли запрошувати.</string>
 	<string name="grouptr_member_invite_contact_outdated">Потрібна новіша версія застосунку</string>
 	<string name="grouptr_member_invitation_received">%1$s запросив(-ла) вас приєднатися до групи «%2$s», яку створив(-ла) %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s запросив(-ла) вас приєднатися до групи, яку створив(-ла) %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Очікування, поки %1$s, творець групи, буде в мережі. Телефон творця групи автоматично додасть вас, після чого ви зможете публікувати тут.</string>
-	<string name="grouptr_member_invite_accepted">Прийнято. Ви приєднаєтеся, щойно творець групи буде в мережі.</string>
+	<string name="grouptr_waiting_for_admin">Очікування, поки %1$s, власник групи, буде в мережі. Телефон власника автоматично додасть вас, після чого ви зможете публікувати тут.</string>
+	<string name="grouptr_member_invite_accepted">Прийнято. Ви приєднаєтеся, щойно власник групи буде в мережі.</string>
 	<string name="grouptr_member_invite_unavailable">Це запрошення більше не можна прийняти. Попросіть нове.</string>
 	<string name="grouptr_incognito">Інкогніто в цій групі</string>
 	<string name="grouptr_incognito_summary">Інші в групі бачать випадкове ім\'я замість вашого. Учасники, які є у ваших контактах, усе одно можуть упізнати вас за вашим ключем.</string>
@@ -2539,7 +2539,7 @@
 	<string name="grouptr_incognito_new_name">Нове ім\'я</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (інкогніто)</string>
 	<string name="grouptr_member_may_add">Може додавати учасників</string>
-	<string name="grouptr_member_invite_creator_only">Додавати учасників може лише творець групи.</string>
+	<string name="grouptr_member_invite_creator_only">Додавати учасників може лише власник групи.</string>
 	<string name="tor_status_entry_relay">Нестабільно</string>
 	<string name="tor_hidden_services_entry_relay">Вхідний ретранслятор Tor не впорається з більшістю з\'єднань, тому контакти можуть не достукатися до вас. Причиною може бути перевантажена мережа або перешкоди. Зазвичай допомагає перемкнути спосіб підключення Tor на мости в розділі Налаштування, Підключення.</string>
 	<string name="contact_connection_tor_entry_relay">Tor підключено, але його вхідний ретранслятор не впорається з більшістю з\'єднань. Зазвичай допомагають мости.</string>
@@ -2550,4 +2550,42 @@
 	<string name="channels_subscribers_unban">Розблокувати</string>
 	<string name="channels_subscribers_unban_confirm">Розблокувати? Цей підписник знову зможе коментувати й реагувати. Те, що прибрало блокування, не повернеться, а роль редактора треба надати заново.</string>
 	<string name="channels_unban_failed">Не вдалося розблокувати</string>
+	<string name="contact_delete_failed">Не вдалося вилучити контакт</string>
+	<string name="channels_delegations_revoke_failed">Не вдалося відкликати права цього редактора</string>
+	<string name="channels_invite_rotate_failed">Посилання-запрошення не змінено. Старе посилання досі працює.</string>
+	<string name="channels_apply_unconfirmed">Власник не підтвердив, що отримав вашу заявку. Спробуйте пізніше.</string>
+	<string name="channels_apply_banner">Торкніть, щоб подати власнику заявку на доступ до цього каналу.</string>
+	<string name="channels_rejoin_updated">Ваш доступ до каналу %1$s оновлено.</string>
+	<string name="channels_rejoin_unreachable">Зараз не вдалося перевірити це посилання. Спробуйте пізніше.</string>
+	<string name="channels_rejoin_apply_again">Ви можете знову подати заявку, щоб читати нові дописи цього каналу. Дописи, які у вас уже є, залишаться. Власник побачить ваше відображуване ім\'я та ключ, який належить вам лише в цьому каналі.</string>
+	<string name="channels_sync_last_updated">Оновлено %1$s</string>
+	<string name="channels_sync_saved_posts">Показано збережені дописи</string>
+	<string name="channels_sync_saved_posts_last_updated">Показано збережені дописи · Оновлено %1$s</string>
+	<string name="channels_sync_not_updated_since">Не оновлювалося з %1$s</string>
+	<string name="channels_owner_deleted_notice">Власник видалив канал %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Власник видалив канал, до якого ви приєдналися</string>
+	<string name="channels_queued_waiting">Очікує надсилання</string>
+	<string name="channels_queued_not_sent">Не надіслано</string>
+	<string name="channels_queued_retry">Повторити</string>
+	<string name="channels_queued_delete">Видалити</string>
+	<string name="channels_comment_queued_toast">Ваш коментар буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_react_queued_toast">Вашу реакцію буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_announce_queued_toast">Ваше ім\'я буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_post_queued_toast">Ваш допис буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_change_queued_toast">Вашу зміну буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_queued_notice_waiting">Дещо з того, що ви надсилали, ще очікує. Його буде надіслано, коли канал стане доступним.</string>
+	<string name="channels_queued_notice_not_sent">Дещо з того, що ви надсилали, не надіслано. Торкніть, щоб повторити або видалити.</string>
+	<string name="channels_queued_announce_label">Ваше ім\'я: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Не вдалося під\'єднатися до цього каналу. Ви можете знову подати заявку на вступ за цим посиланням. Дописи, які у вас уже є, залишаться. Власник побачить ваше відображуване ім\'я та ключ, який належить вам лише в цьому каналі.</string>
+	<string name="channels_rejoin_not_restored">За цим посиланням не вдалося повернути доступ до каналу. Ви можете попросити нове посилання.</string>
+	<string name="channels_rejoin_check_title">Спробувати це посилання?</string>
+	<string name="channels_rejoin_check_message">Нові дописи цього каналу зараз недоступні. Ви можете спробувати це посилання, щоб знову їх отримувати. Дописи, які у вас уже є, залишаться.</string>
+	<string name="channels_rejoin_check_action">Спробувати посилання</string>
+	<string name="channels_rejoin_try_later">Цей канал зараз недоступний, а це те саме посилання, яке у вас уже є. Спробуйте пізніше. Дописи, які у вас уже є, залишаться.</string>
+	<string name="channels_rejoin_trying">Ми й далі пробуватимемо це посилання. Дописи, які у вас уже є, залишаться.</string>
+	<string name="channels_queued_already_sent">Це вже надіслано, тому видалити не вдалося.</string>
+	<string name="channels_queued_behind_toast">Це буде надіслано після того, що ви раніше надсилали до цього каналу.</string>
+	<string name="channels_queued_no_access">Не надіслано. У вас більше немає доступу до цього каналу.</string>
+	<string name="channels_no_access_toast">У вас більше немає доступу до цього каналу. Попросіть у власника нове посилання-запрошення.</string>
+	<string name="channels_rejoin_too_many_links">Для цього каналу у вас уже є кілька посилань, які очікують, тому це посилання ми не пробували. Дописи, які у вас уже є, залишаться.</string>
 </resources>

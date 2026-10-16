@@ -255,7 +255,7 @@
   <string name="groups_dissolve_dialog_message">정말로 이 모임을 해체하려고 하세요?\n\n모든 다른 구성원들이 대화를 계속할 수 없게 되고, 최신 메시지를 받지 못할 수 있습니다.</string>
   <string name="groups_dissolve_button">해체하기</string>
   <string name="groups_dissolved_dialog_title">모임이 해체됐습니다</string>
-  <string name="groups_dissolved_dialog_message">이 모임을 만든 분이 모임을 해체하셨습니다.\n\n더 이상 모임에 메시지를 보내지 못하고, 올려진 게시글을 받아보지 못할 수 있습니다.</string>
+  <string name="groups_dissolved_dialog_message">모임 소유자가 이 모임을 해체했습니다.\n\n더 이상 모임에 메시지를 보내지 못하고, 올려진 게시글을 모두 받아보지 못할 수 있습니다.</string>
   
   <string name="groups_invitations_title">모임 초대장</string>
   <string name="groups_invitations_invitation_sent">%1$s을(를) \"%2$s\" 모임에 참가하도록 초대했습니다.</string>
@@ -264,9 +264,9 @@
   <plurals name="groups_invitations_open">
     <item quantity="other">받을 수 있는 초대장 %d개</item>
   </plurals>
-  <string name="sharing_status_groups">모임을 만든 분만 새로운 구성원을 초대할 수 있습니다. 다음은 모임의 모든 현재 구성원입니다.</string>
+  <string name="sharing_status_groups">모임 소유자만 새로운 구성원을 초대할 수 있습니다. 다음은 모임의 모든 현재 구성원입니다.</string>
   
-  <string name="groups_reveal_dialog_message">이 모임의 지금과 앞으로 들어올 구성원에게 연락처를 공개할지를 정할 수 있습니다.\n\n연락처를 공개하면, 모임을 만든 사람이 오프라인이어도 공개된 연락처와 연결할 수 있기 때문에 모임에 더 빠르고 안정적으로 연결할 수 있습니다.</string>
+  <string name="groups_reveal_dialog_message">이 모임의 지금과 앞으로 들어올 구성원에게 연락처를 공개할지를 정할 수 있습니다.\n\n연락처를 공개하면, 모임 소유자가 오프라인이어도 공개된 연락처와 연결할 수 있기 때문에 모임에 더 빠르고 안정적으로 연결할 수 있습니다.</string>
   <string name="groups_reveal_visible_revealed_by_us">(당신이) 모임에게 지인 관계 공개합니다</string>
   <string name="groups_reveal_visible_revealed_by_contact">(%s님이) 모임에게 지인 관계를 공개합니다</string>
   <string name="groups_reveal_invisible">모임에게 지인 관계를 공개하지 않습니다</string>
@@ -682,7 +682,7 @@
 	<string name="channels_feed_empty_publisher">채널에 아직 게시물이 없습니다. 첫 게시물을 게시하세요.</string>
 	<string name="channels_feed_empty_subscriber">아직 게시물이 없습니다. 새 게시물이 여기에 표시됩니다.</string>
 	<string name="channels_feed_connecting">채널에 연결하는 중…</string>
-	<string name="channels_feed_connecting_slow">아직 연결 중입니다. 이 채널을 공유한 사람이 온라인 상태인지 확인하세요. 자동으로 업데이트됩니다.</string>
+	<string name="channels_feed_connecting_slow">아직 연결 중입니다. 채널에 연결되면 여기에 게시물이 표시됩니다.</string>
 	<string name="channels_compose_hint">구독자에게 글쓰기…</string>
 	<string name="channels_compose_send">게시</string>
 	<string name="channels_compose_error_empty">게시하기 전에 내용을 입력하세요.</string>
@@ -981,7 +981,7 @@
 	<string name="grouptr_empty">아직 그룹이 없습니다.</string>
 	<string name="grouptr_meta">구성원 %2$d명</string>
 	<string name="grouptr_dissolved_suffix">(해산됨)</string>
-	<string name="grouptr_creator_tag">(생성자)</string>
+	<string name="grouptr_creator_tag">(그룹 소유자)</string>
 	<string name="grouptr_admin_tag">(관리자)</string>
 	<string name="grouptr_promote">승격</string>
 	<string name="grouptr_demote">강등</string>
@@ -1080,7 +1080,7 @@
 	<string name="grouptr_detail_status">상태</string>
 	<string name="grouptr_detail_status_dissolved">해산됨</string>
 	<string name="grouptr_open_chat">채팅 열기</string>
-	<string name="grouptr_member_role_creator">생성자</string>
+	<string name="grouptr_member_role_creator">그룹 소유자</string>
 	<string name="grouptr_member_role_you">나</string>
 	<string name="grouptr_member_action_remove">그룹에서 제거</string>
 	<string name="scroll_to_bottom">맨 아래로 스크롤</string>
@@ -2244,14 +2244,14 @@
 	<string name="wallet_sp_enable_first">먼저 Silent Payments를 활성화하세요</string>
 	<string name="grouptr_reach_title">내 게시물이 전달되는 사람</string>
 	<string name="grouptr_reach_explanation">그룹 게시물은 서로 연락처인 구성원 사이에서만 직접 전달되며, 구성원은 게시물을 다른 사람에게 전달하지 않습니다. 다음 구성원은 내 연락처가 아니므로 내 게시물을 받지 못하고, 나도 그들의 게시물을 받지 못합니다:\n\n%1$s\n\n이들에게 게시물을 전달하려면 연락처로 추가하세요.</string>
-	<string name="grouptr_ttl_set_by_creator">이 그룹의 사라지는 메시지: %1$s. 그룹 생성자만 이 설정을 변경할 수 있습니다.</string>
+	<string name="grouptr_ttl_set_by_creator">이 그룹의 사라지는 메시지: %1$s. 그룹 소유자만 이 설정을 변경할 수 있습니다.</string>
 	<string name="grouptr_sender_alias_format">%1$s (게시 이름: “%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (알고 있는 이름이 아님)</string>
 	<string name="grouptr_member_out_of_reach">내 연락처가 아님, 내 게시물을 받지 않음</string>
 	<string name="grouptr_member_invited">초대됨, 응답 대기 중</string>
 	<string name="grouptr_confirm_revoke">%1$s님에게 보낸 초대를 철회하시겠습니까? 상대방의 응답은 무시됩니다.</string>
 	<string name="grouptr_revoke_invite">초대 철회</string>
-	<string name="grouptr_invite_expired">이 초대는 만료되었습니다. 그룹 생성자에게 새 초대를 요청하세요.</string>
+	<string name="grouptr_invite_expired">이 초대는 만료되었습니다. 그룹 소유자에게 새 초대를 요청하세요.</string>
 	<string name="reaction_removed_here_only">이 기기에서만 삭제되었습니다. 상대방의 앱이 너무 오래되어 상대방 기기에서는 삭제할 수 없습니다.</string>
 	<string name="startup_data_without_account_message">Zerion이 이 기기에서 데이터를 찾았지만, 이를 열 수 있는 계정 키가 없습니다. 키 파일이 없거나 손상되었습니다. 아무것도 삭제되지 않았습니다.\n\nZerion을 닫고 데이터를 보존하거나, 모두 삭제하고 다시 시작할 수 있습니다.</string>
 	<string name="startup_data_without_account_keep">닫고 보존</string>
@@ -2422,13 +2422,13 @@
 	<string name="grouptr_members_may_invite">구성원이 자신의 연락처를 초대할 수 있음</string>
 	<string name="grouptr_members_may_invite_summary">이 설정이 켜져 있는 동안 구성원이 초대한 사람을 회원님의 휴대폰이 자동으로 추가합니다.</string>
 	<string name="grouptr_invite_contacts">연락처 초대</string>
-	<string name="grouptr_member_invite_needs_creator_contact">그룹 생성자가 연락처에 있는 구성원만 초대할 수 있습니다.</string>
-	<string name="grouptr_member_invite_creator_outdated">구성원이 초대하려면 그룹 생성자가 더 새로운 버전의 앱을 사용해야 합니다.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">그룹 소유자가 연락처에 있는 구성원만 초대할 수 있습니다.</string>
+	<string name="grouptr_member_invite_creator_outdated">구성원이 초대하려면 그룹 소유자가 더 새로운 버전의 앱을 사용해야 합니다.</string>
 	<string name="grouptr_member_invite_contact_outdated">더 새로운 버전의 앱이 필요함</string>
 	<string name="grouptr_member_invitation_received">%1$s님이 회원님을 %3$s님이 만든 \"%2$s\" 그룹에 초대했습니다.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s님이 회원님을 %2$s님이 만든 그룹에 초대했습니다.</string>
-	<string name="grouptr_waiting_for_admin">그룹을 만든 %1$s님이 온라인 상태가 되기를 기다리는 중입니다. 그분의 휴대폰이 회원님을 자동으로 추가하면 여기에 게시할 수 있습니다.</string>
-	<string name="grouptr_member_invite_accepted">수락했습니다. 그룹 생성자가 온라인 상태가 되면 참여하게 됩니다.</string>
+	<string name="grouptr_waiting_for_admin">그룹 소유자 %1$s님이 온라인 상태가 되기를 기다리는 중입니다. 그분의 휴대폰이 회원님을 자동으로 추가하면 여기에 게시할 수 있습니다.</string>
+	<string name="grouptr_member_invite_accepted">수락했습니다. 그룹 소유자가 온라인 상태가 되면 참여하게 됩니다.</string>
 	<string name="grouptr_member_invite_unavailable">이 초대는 더 이상 수락할 수 없습니다. 새 초대를 요청하세요.</string>
 	<string name="grouptr_incognito">이 그룹에서 익명으로 참여</string>
 	<string name="grouptr_incognito_summary">그룹의 다른 사람들에게는 내 이름 대신 무작위 이름이 표시됩니다. 내 연락처인 구성원은 여전히 키로 나를 알아볼 수 있습니다.</string>
@@ -2436,7 +2436,7 @@
 	<string name="grouptr_incognito_new_name">새 이름</string>
 	<string name="grouptr_sender_incognito_format">“%1$s” (익명)</string>
 	<string name="grouptr_member_may_add">구성원 추가 가능</string>
-	<string name="grouptr_member_invite_creator_only">그룹 생성자만 구성원을 추가할 수 있습니다.</string>
+	<string name="grouptr_member_invite_creator_only">그룹 소유자만 구성원을 추가할 수 있습니다.</string>
 	<string name="tor_status_entry_relay">불안정</string>
 	<string name="tor_hidden_services_entry_relay">Tor 입구 릴레이가 대부분의 연결에 실패하고 있어 연락처가 사용자에게 닿지 못할 수 있습니다. 네트워크 혼잡이나 방해가 원인일 수 있습니다. 설정의 연결에서 Tor 연결 방식을 브리지로 바꾸면 대개 도움이 됩니다.</string>
 	<string name="contact_connection_tor_entry_relay">Tor에 연결되어 있지만 입구 릴레이가 대부분의 연결에 실패하고 있습니다. 브리지를 사용하면 대개 도움이 됩니다.</string>
@@ -2447,4 +2447,45 @@
 	<string name="channels_subscribers_unban">차단 해제</string>
 	<string name="channels_subscribers_unban_confirm">차단을 해제하시겠습니까? 이 구독자는 다시 댓글을 달고 반응할 수 있습니다. 차단으로 삭제된 내용은 돌아오지 않으며, 편집자 역할은 다시 부여해야 합니다.</string>
 	<string name="channels_unban_failed">차단을 해제할 수 없습니다</string>
+	<string name="contact_delete_failed">연락처를 삭제할 수 없습니다</string>
+	<string name="channels_delegations_revoke_failed">이 편집자의 권한을 취소할 수 없습니다</string>
+	<string name="channels_invite_rotate_failed">초대 링크가 바뀌지 않았습니다. 기존 링크는 계속 작동합니다.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="other">연락처 %d명에게 초대를 보냈습니다</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">소유자가 신청을 받았다고 확인하지 않았습니다. 나중에 다시 시도하세요.</string>
+	<string name="channels_apply_banner">이 채널에 접근하려면 눌러서 소유자에게 신청하세요.</string>
+	<string name="channels_rejoin_updated">%1$s에 대한 접근 권한을 업데이트했습니다.</string>
+	<string name="channels_rejoin_unreachable">지금은 이 링크를 확인할 수 없습니다. 나중에 다시 시도하세요.</string>
+	<string name="channels_rejoin_apply_again">다시 참여 신청하면 이 채널의 새 게시물을 읽을 수 있습니다. 이미 받은 게시물은 그대로 남습니다. 소유자는 내 표시 이름과 이 채널에서만 사용되는 내 키를 보게 됩니다.</string>
+	<string name="channels_sync_last_updated">마지막 업데이트: %1$s</string>
+	<string name="channels_sync_saved_posts">저장된 게시물 표시 중</string>
+	<string name="channels_sync_saved_posts_last_updated">저장된 게시물 표시 중 · 마지막 업데이트: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s 이후 업데이트되지 않음</string>
+	<string name="channels_owner_deleted_notice">소유자가 ‘%1$s’ 채널을 삭제했습니다</string>
+	<string name="channels_owner_deleted_notice_unnamed">참여했던 채널을 소유자가 삭제했습니다</string>
+	<string name="channels_queued_waiting">전송 대기 중</string>
+	<string name="channels_queued_not_sent">전송되지 않음</string>
+	<string name="channels_queued_retry">다시 시도</string>
+	<string name="channels_queued_delete">삭제</string>
+	<string name="channels_comment_queued_toast">채널에 연결되면 댓글이 전송됩니다.</string>
+	<string name="channels_react_queued_toast">채널에 연결되면 반응이 전송됩니다.</string>
+	<string name="channels_announce_queued_toast">채널에 연결되면 내 이름이 전송됩니다.</string>
+	<string name="channels_post_queued_toast">채널에 연결되면 게시물이 전송됩니다.</string>
+	<string name="channels_change_queued_toast">채널에 연결되면 변경 사항이 전송됩니다.</string>
+	<string name="channels_queued_notice_waiting">보낸 항목 중 일부가 대기 중입니다. 채널에 연결되면 전송됩니다.</string>
+	<string name="channels_queued_notice_not_sent">보낸 항목 중 일부가 전송되지 않았습니다. 눌러서 다시 시도하거나 삭제하세요.</string>
+	<string name="channels_queued_announce_label">내 이름: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">이 채널에 연결할 수 없었습니다. 이 링크로 다시 참여 신청할 수 있습니다. 이미 받은 게시물은 그대로 남습니다. 소유자는 내 표시 이름과 이 채널에서만 사용되는 내 키를 보게 됩니다.</string>
+	<string name="channels_rejoin_not_restored">이 링크로 이 채널에 대한 접근 권한을 되찾지 못했습니다. 새 링크를 요청할 수 있습니다.</string>
+	<string name="channels_rejoin_check_title">이 링크를 시도하시겠습니까?</string>
+	<string name="channels_rejoin_check_message">지금은 이 채널의 새 게시물을 받을 수 없습니다. 이 링크를 시도해서 다시 받아 볼 수 있습니다. 이미 받은 게시물은 그대로 남습니다.</string>
+	<string name="channels_rejoin_check_action">링크 시도</string>
+	<string name="channels_rejoin_try_later">지금은 이 채널에 연결할 수 없으며, 이 링크는 이미 가지고 있는 링크입니다. 나중에 다시 시도하세요. 이미 받은 게시물은 그대로 남습니다.</string>
+	<string name="channels_rejoin_trying">이 링크를 계속 시도하겠습니다. 이미 받은 게시물은 그대로 남습니다.</string>
+	<string name="channels_queued_already_sent">이미 전송되어 삭제할 수 없었습니다.</string>
+	<string name="channels_queued_behind_toast">이 채널에 이전에 보낸 항목 다음에 전송됩니다.</string>
+	<string name="channels_queued_no_access">전송되지 않음. 더 이상 이 채널에 대한 접근 권한이 없습니다.</string>
+	<string name="channels_no_access_toast">더 이상 이 채널에 대한 접근 권한이 없습니다. 소유자에게 새 초대 링크를 요청하세요.</string>
+	<string name="channels_rejoin_too_many_links">이 채널에 대기 중인 링크가 이미 여러 개 있어서 이 링크는 시도하지 않았습니다. 이미 받은 게시물은 그대로 남습니다.</string>
 </resources>

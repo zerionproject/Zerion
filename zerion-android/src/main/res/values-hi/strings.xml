@@ -231,7 +231,7 @@
   <string name="groups_dissolve_dialog_message">क्या आप निश्चित हैं कि आप इस समूह को भंग करना चाहते हैं? \ N \ n अन्य सभी सदस्य अपनी बातचीत जारी नहीं रख पाएंगे और शायद नवीनतम संदेश प्राप्त न हो जाएंगे।</string>
   <string name="groups_dissolve_button">भंग</string>
   <string name="groups_dissolved_dialog_title">समूह भंग कर दिया गया है</string>
-  <string name="groups_dissolved_dialog_message">इस समूह के निर्माता ने उसे भंग कर दिया है। \ N \ n आप अब समूह को संदेश नहीं लिख सकते हैं और जो सभी पोस्ट लिखी गई हैं उन्हें प्राप्त नहीं हो सकता है।</string>
+  <string name="groups_dissolved_dialog_message">समूह के मालिक ने इस समूह को भंग कर दिया है।\n\nआप अब समूह में संदेश नहीं लिख सकते और हो सकता है कि आपको लिखी गई सभी पोस्ट न मिलें।</string>
   
   <string name="groups_invitations_title">समूह आमंत्रण</string>
   <string name="groups_invitations_invitation_sent">आपने समूह \"%2$s\" में शामिल होने के लिए %1$sको आमंत्रित किया है</string>
@@ -241,9 +241,9 @@
     <item quantity="one">%dखुला समूह आमंत्रण</item>
     <item quantity="other">%dखुला समूह आमंत्रण</item>
   </plurals>
-  <string name="sharing_status_groups">केवल निर्माता समूह में नए सदस्यों को आमंत्रित कर सकता है। नीचे समूह के सभी मौजूदा सदस्य हैं</string>
+  <string name="sharing_status_groups">केवल समूह का मालिक समूह में नए सदस्यों को आमंत्रित कर सकता है। नीचे समूह के सभी मौजूदा सदस्य हैं।</string>
   
-  <string name="groups_reveal_dialog_message">आप यह समूह चुन सकते हैं कि इस समूह के सभी वर्तमान और भविष्य के सदस्यों के संपर्कों को प्रकट करना है। \ N \ n संपर्कों का स्वागत करते हुए समूह से आपका कनेक्शन तेज़ और अधिक विश्वसनीय बना देता है, क्योंकि आप समूह के निर्माता ऑफ़लाइन होने पर भी पता चला संपर्कों के साथ संवाद कर सकते हैं।</string>
+  <string name="groups_reveal_dialog_message">आप चुन सकते हैं कि संपर्कों को इस समूह के सभी मौजूदा और भविष्य के सदस्यों के सामने प्रकट करना है या नहीं।\n\nसंपर्कों को प्रकट करने से समूह से आपका कनेक्शन तेज़ और अधिक भरोसेमंद हो जाता है, क्योंकि समूह का मालिक ऑफ़लाइन होने पर भी आप प्रकट किए गए संपर्कों से बात कर सकते हैं।</string>
   <string name="groups_reveal_visible_revealed_by_us">संपर्क संबंध समूह को दिखाई देता है (आपके द्वारा पता चला है)</string>
   <string name="groups_reveal_visible_revealed_by_contact">संपर्क संबंध समूह को दिखाई देता है (%s द्वारा पता चला है)</string>
   <string name="groups_reveal_invisible">संपर्क संबंध समूह को दिखाई नहीं दे रहा है</string>
@@ -1033,7 +1033,7 @@
 	<string name="channels_feed_empty_subscriber">अभी कोई पोस्ट नहीं। नई पोस्ट यहाँ दिखेंगी।</string>
 	<string name="channels_post_withheld">पोस्ट रोकी गई: चैनल के मालिक ने इस लेखक की पोस्ट करने की अनुमति रद्द कर दी है।</string>
 	<string name="channels_feed_connecting">चैनल से कनेक्ट हो रहा है…</string>
-	<string name="channels_feed_connecting_slow">अभी भी कनेक्ट हो रहा है। पक्का करें कि जिस व्यक्ति ने यह चैनल शेयर किया है, वह ऑनलाइन है। यह अपने-आप अपडेट हो जाएगा।</string>
+	<string name="channels_feed_connecting_slow">अभी भी कनेक्ट हो रहा है। चैनल उपलब्ध होते ही पोस्ट यहाँ दिखेंगी।</string>
 	<string name="channels_compose_hint">अपने सब्सक्राइबरों के लिए लिखें…</string>
 	<string name="channels_compose_send">प्रकाशित करें</string>
 	<string name="channels_compose_error_empty">प्रकाशित करने से पहले कुछ लिखें।</string>
@@ -1347,7 +1347,7 @@
 	<string name="grouptr_empty">अभी कोई समूह नहीं।</string>
 	<string name="grouptr_meta">%2$d सदस्य</string>
 	<string name="grouptr_dissolved_suffix">(भंग)</string>
-	<string name="grouptr_creator_tag">(निर्माता)</string>
+	<string name="grouptr_creator_tag">(समूह का मालिक)</string>
 	<string name="grouptr_admin_tag">(एडमिन)</string>
 	<string name="grouptr_promote">एडमिन बनाएँ</string>
 	<string name="grouptr_demote">एडमिन से हटाएँ</string>
@@ -1450,7 +1450,7 @@
 	<string name="grouptr_detail_status">स्थिति</string>
 	<string name="grouptr_detail_status_dissolved">भंग</string>
 	<string name="grouptr_open_chat">चैट खोलें</string>
-	<string name="grouptr_member_role_creator">निर्माता</string>
+	<string name="grouptr_member_role_creator">समूह का मालिक</string>
 	<string name="grouptr_member_role_you">आप</string>
 	<string name="grouptr_member_action_remove">समूह से हटाएँ</string>
 	<string name="scroll_to_bottom">नीचे तक स्क्रॉल करें</string>
@@ -2363,14 +2363,14 @@
 	<string name="wallet_sp_enable_first">पहले Silent Payments चालू करें</string>
 	<string name="grouptr_reach_title">आपकी पोस्ट किन तक पहुँचती हैं</string>
 	<string name="grouptr_reach_explanation">समूह की पोस्ट सीधे उन सदस्यों के बीच जाती हैं जो एक-दूसरे के संपर्क हैं, और सदस्य पोस्ट आगे नहीं भेजते। ये सदस्य आपके संपर्क नहीं हैं, इसलिए इन्हें आपकी पोस्ट नहीं मिलतीं और आपको इनकी पोस्ट नहीं मिलतीं:\n\n%1$s\n\nइन तक पहुँचने के लिए इन्हें संपर्क के रूप में जोड़ें।</string>
-	<string name="grouptr_ttl_set_by_creator">इस समूह में गायब होने वाले संदेश: %1$s। केवल समूह का निर्माता ही इसे बदल सकता है।</string>
+	<string name="grouptr_ttl_set_by_creator">इस समूह में गायब होने वाले संदेश: %1$s। केवल समूह का मालिक ही इसे बदल सकता है।</string>
 	<string name="grouptr_sender_alias_format">%1$s (\"%2$s\" के नाम से पोस्ट कर रहे हैं)</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (ऐसा नाम नहीं जिसे आप जानते हों)</string>
 	<string name="grouptr_member_out_of_reach">आपका संपर्क नहीं है, आपकी पोस्ट नहीं मिलतीं</string>
 	<string name="grouptr_member_invited">आमंत्रित, जवाब का इंतज़ार है</string>
 	<string name="grouptr_confirm_revoke">%1$s को भेजा गया आमंत्रण वापस लें? उनके किसी भी जवाब को अनदेखा किया जाएगा।</string>
 	<string name="grouptr_revoke_invite">आमंत्रण वापस लें</string>
-	<string name="grouptr_invite_expired">इस आमंत्रण की समय-सीमा खत्म हो गई है। समूह के निर्माता से नया आमंत्रण माँगें।</string>
+	<string name="grouptr_invite_expired">इस आमंत्रण की समय-सीमा खत्म हो गई है। समूह के मालिक से नया आमंत्रण माँगें।</string>
 	<string name="reaction_removed_here_only">केवल इस डिवाइस पर हटाया गया: आपके संपर्क का ऐप इतना पुराना है कि उनके डिवाइस पर इसे हटाया नहीं जा सकता।</string>
 	<string name="startup_data_without_account_message">Zerion को इस डिवाइस पर डेटा मिला, लेकिन उसे खोलने वाली कोई खाता कुंजी नहीं मिली: कुंजी फ़ाइलें गायब हैं या खराब हो गई हैं। कुछ भी हटाया नहीं गया है।\n\nआप Zerion बंद करके डेटा रख सकते हैं, या सब कुछ मिटाकर फिर से शुरू कर सकते हैं।</string>
 	<string name="startup_data_without_account_keep">बंद करें और डेटा रखें</string>
@@ -2455,13 +2455,13 @@
 	<string name="grouptr_members_may_invite">सदस्य अपने संपर्कों को आमंत्रित कर सकते हैं</string>
 	<string name="grouptr_members_may_invite_summary">इसके चालू रहने तक, वे जिन लोगों को आमंत्रित करते हैं, आपका फ़ोन उन्हें अपने आप जोड़ देता है।</string>
 	<string name="grouptr_invite_contacts">संपर्कों को आमंत्रित करें</string>
-	<string name="grouptr_member_invite_needs_creator_contact">केवल वे सदस्य आमंत्रित कर सकते हैं जिनके संपर्कों में समूह के निर्माता हैं।</string>
-	<string name="grouptr_member_invite_creator_outdated">सदस्यों के आमंत्रित कर पाने से पहले समूह के निर्माता को ऐप के नए संस्करण की ज़रूरत है।</string>
+	<string name="grouptr_member_invite_needs_creator_contact">केवल वे सदस्य आमंत्रित कर सकते हैं जिनके संपर्कों में समूह का मालिक है।</string>
+	<string name="grouptr_member_invite_creator_outdated">सदस्यों के आमंत्रित कर पाने से पहले समूह के मालिक को ऐप के नए संस्करण की ज़रूरत है।</string>
 	<string name="grouptr_member_invite_contact_outdated">ऐप के नए संस्करण की ज़रूरत है</string>
 	<string name="grouptr_member_invitation_received">%1$s ने आपको \"%2$s\" समूह में शामिल होने के लिए आमंत्रित किया है, जिसे %3$s ने बनाया है।</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s ने आपको %2$s द्वारा बनाए गए समूह में शामिल होने के लिए आमंत्रित किया है।</string>
-	<string name="grouptr_waiting_for_admin">समूह बनाने वाले %1$s के ऑनलाइन होने का इंतज़ार है। उनका फ़ोन आपको अपने आप जोड़ देगा, फिर आप यहाँ पोस्ट कर सकेंगे।</string>
-	<string name="grouptr_member_invite_accepted">स्वीकार किया गया। समूह के निर्माता के ऑनलाइन होते ही आप शामिल हो जाएँगे।</string>
+	<string name="grouptr_waiting_for_admin">समूह के मालिक %1$s के ऑनलाइन होने का इंतज़ार है। उनका फ़ोन आपको अपने आप जोड़ देगा, फिर आप यहाँ पोस्ट कर सकेंगे।</string>
+	<string name="grouptr_member_invite_accepted">स्वीकार किया गया। समूह के मालिक के ऑनलाइन होते ही आप शामिल हो जाएँगे।</string>
 	<string name="grouptr_member_invite_unavailable">यह आमंत्रण अब स्वीकार नहीं किया जा सकता। नया आमंत्रण माँगें।</string>
 	<string name="grouptr_incognito">इस समूह में गुप्त रूप से</string>
 	<string name="grouptr_incognito_summary">समूह के अन्य लोग आपके नाम की जगह एक यादृच्छिक नाम देखेंगे। जो सदस्य आपके संपर्क हैं, वे अब भी आपकी कुंजी से आपको पहचान सकते हैं।</string>
@@ -2469,7 +2469,7 @@
 	<string name="grouptr_incognito_new_name">नया नाम</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (गुप्त)</string>
 	<string name="grouptr_member_may_add">सदस्य जोड़ सकते हैं</string>
-	<string name="grouptr_member_invite_creator_only">केवल समूह का निर्माता सदस्य जोड़ सकता है।</string>
+	<string name="grouptr_member_invite_creator_only">केवल समूह का मालिक सदस्य जोड़ सकता है।</string>
 	<string name="tor_status_entry_relay">अस्थिर</string>
 	<string name="tor_hidden_services_entry_relay">Tor का एंट्री रिले ज़्यादातर कनेक्शन में विफल हो रहा है, इसलिए संपर्क शायद आप तक न पहुँच पाएँ। इसकी वजह भीड़भाड़ वाला नेटवर्क या रुकावट हो सकती है। सेटिंग्स, कनेक्शन में Tor कनेक्शन विधि को ब्रिज पर बदलने से आमतौर पर मदद मिलती है।</string>
 	<string name="contact_connection_tor_entry_relay">Tor कनेक्ट है, लेकिन इसका एंट्री रिले ज़्यादातर कनेक्शन में विफल हो रहा है। ब्रिज इस्तेमाल करने से आमतौर पर मदद मिलती है।</string>
@@ -2480,4 +2480,42 @@
 	<string name="channels_subscribers_unban">बैन हटाएँ</string>
 	<string name="channels_subscribers_unban_confirm">बैन हटाएँ? यह सब्सक्राइबर फिर से टिप्पणी और प्रतिक्रिया कर सकेगा। बैन ने जो हटाया वह वापस नहीं आता, और संपादक की भूमिका फिर से देनी होगी।</string>
 	<string name="channels_unban_failed">बैन हटाया नहीं जा सका</string>
+	<string name="contact_delete_failed">संपर्क हटाया नहीं जा सका</string>
+	<string name="channels_delegations_revoke_failed">इस संपादक की अनुमति रद्द नहीं की जा सकी</string>
+	<string name="channels_invite_rotate_failed">आमंत्रण लिंक नहीं बदला गया। पुराना लिंक अभी भी काम करता है।</string>
+	<string name="channels_apply_unconfirmed">मालिक ने पुष्टि नहीं की है कि आपका आवेदन पहुँच गया है। बाद में फिर कोशिश करें।</string>
+	<string name="channels_apply_banner">इस चैनल तक पहुँच के लिए मालिक को आवेदन करने हेतु टैप करें।</string>
+	<string name="channels_rejoin_updated">%1$s तक आपकी पहुँच अपडेट कर दी गई।</string>
+	<string name="channels_rejoin_unreachable">अभी इस लिंक की जाँच नहीं की जा सकी। बाद में फिर से कोशिश करें।</string>
+	<string name="channels_rejoin_apply_again">इस चैनल की नई पोस्ट पढ़ने के लिए आप फिर से आवेदन कर सकते हैं। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी। मालिक आपका दिखने वाला नाम और एक ऐसी कुंजी देखेगा, जो केवल इसी चैनल में आपकी है।</string>
+	<string name="channels_sync_last_updated">अंतिम अपडेट: %1$s</string>
+	<string name="channels_sync_saved_posts">सहेजी गई पोस्ट दिखाई जा रही हैं</string>
+	<string name="channels_sync_saved_posts_last_updated">सहेजी गई पोस्ट दिखाई जा रही हैं · अंतिम अपडेट: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s से अपडेट नहीं हुआ</string>
+	<string name="channels_owner_deleted_notice">मालिक ने चैनल %1$s हटा दिया</string>
+	<string name="channels_owner_deleted_notice_unnamed">मालिक ने एक चैनल हटा दिया जिसमें आप शामिल थे</string>
+	<string name="channels_queued_waiting">भेजे जाने की प्रतीक्षा में</string>
+	<string name="channels_queued_not_sent">नहीं भेजा गया</string>
+	<string name="channels_queued_retry">फिर से कोशिश करें</string>
+	<string name="channels_queued_delete">हटाएँ</string>
+	<string name="channels_comment_queued_toast">चैनल उपलब्ध होने पर आपकी टिप्पणी भेज दी जाएगी।</string>
+	<string name="channels_react_queued_toast">चैनल उपलब्ध होने पर आपकी प्रतिक्रिया भेज दी जाएगी।</string>
+	<string name="channels_announce_queued_toast">चैनल उपलब्ध होने पर आपका नाम भेज दिया जाएगा।</string>
+	<string name="channels_post_queued_toast">चैनल उपलब्ध होने पर आपकी पोस्ट भेज दी जाएगी।</string>
+	<string name="channels_change_queued_toast">चैनल उपलब्ध होने पर आपका बदलाव भेज दिया जाएगा।</string>
+	<string name="channels_queued_notice_waiting">आपकी भेजी गई कुछ चीज़ें प्रतीक्षा में हैं। चैनल उपलब्ध होने पर उन्हें भेज दिया जाएगा।</string>
+	<string name="channels_queued_notice_not_sent">आपकी भेजी गई कुछ चीज़ें नहीं भेजी गईं। फिर से कोशिश करने या उन्हें हटाने के लिए टैप करें।</string>
+	<string name="channels_queued_announce_label">आपका नाम: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">इस चैनल से कनेक्ट नहीं हो सका। आप इस लिंक से फिर से शामिल होने के लिए आवेदन कर सकते हैं। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी। मालिक आपका दिखने वाला नाम और एक ऐसी कुंजी देखेगा, जो केवल इसी चैनल में आपकी है।</string>
+	<string name="channels_rejoin_not_restored">इस लिंक से इस चैनल तक आपकी पहुँच वापस नहीं मिली। आप नया लिंक माँग सकते हैं।</string>
+	<string name="channels_rejoin_check_title">यह लिंक आज़माएँ?</string>
+	<string name="channels_rejoin_check_message">इस चैनल की नई पोस्ट अभी नहीं मिल पा रही हैं। उन्हें फिर से पाने के लिए आप यह लिंक आज़मा सकते हैं। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी।</string>
+	<string name="channels_rejoin_check_action">लिंक आज़माएँ</string>
+	<string name="channels_rejoin_try_later">यह चैनल अभी उपलब्ध नहीं है, और यह वही लिंक है जो आपके पास पहले से है। बाद में फिर से कोशिश करें। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी।</string>
+	<string name="channels_rejoin_trying">हम यह लिंक आज़माते रहेंगे। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी।</string>
+	<string name="channels_queued_already_sent">यह पहले ही भेजा जा चुका था, इसलिए इसे हटाया नहीं जा सका।</string>
+	<string name="channels_queued_behind_toast">इसे इस चैनल में आपकी पहले भेजी गई चीज़ों के बाद भेजा जाएगा।</string>
+	<string name="channels_queued_no_access">नहीं भेजा गया। अब आपके पास इस चैनल तक पहुँच नहीं है।</string>
+	<string name="channels_no_access_toast">अब आपके पास इस चैनल तक पहुँच नहीं है। मालिक से नया आमंत्रण लिंक माँगें।</string>
+	<string name="channels_rejoin_too_many_links">इस चैनल के लिए आपके पास पहले से कई लिंक इंतज़ार में हैं, इसलिए यह लिंक नहीं आज़माया गया। जो पोस्ट आपके पास पहले से हैं, वे बनी रहेंगी।</string>
 </resources>

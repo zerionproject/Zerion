@@ -76,6 +76,24 @@ public class GroupWaitingForAdminTest {
 				a.findViewById(R.id.composerRow).getVisibility());
 	}
 
+	@Test
+	public void aDissolvedGroupSaysSoAndOffersNoComposer() throws Exception {
+		GroupTrManager m = mock(GroupTrManager.class);
+		when(m.getGroup(any())).thenReturn(state(true));
+		when(m.getRecentPosts(any())).thenReturn(new ArrayList<>());
+		when(m.getMembersOutOfReach(any())).thenReturn(new ArrayList<>());
+		when(m.isWaitingForAdmin(any())).thenReturn(false);
+
+		GroupConversationReloadTest.ProbeConversation a = open(m);
+
+		TextView banner = a.findViewById(R.id.removedBanner);
+		assertEquals(View.VISIBLE, banner.getVisibility());
+		assertEquals(a.getString(R.string.groups_group_is_dissolved),
+				banner.getText().toString());
+		assertEquals(View.GONE,
+				a.findViewById(R.id.composerRow).getVisibility());
+	}
+
 	private GroupConversationReloadTest.ProbeConversation open(
 			GroupTrManager m) throws Exception {
 		GroupConversationReloadTest.ProbeConversation.manager = m;
@@ -112,11 +130,15 @@ public class GroupWaitingForAdminTest {
 	}
 
 	private GroupTrState state() {
+		return state(false);
+	}
+
+	private GroupTrState state(boolean dissolved) {
 		List<GroupTrMember> members = new ArrayList<>();
 		members.add(new GroupTrMember(creatorKey, "Carol", 0L, 0L,
 				MemberRole.CREATOR));
 		return new GroupTrState(groupId, "Club", new byte[32], creatorKey,
-				"Carol", 0L, 0L, false, members);
+				"Carol", 0L, 0L, dissolved, members);
 	}
 
 	private static byte[] key(byte b) {

@@ -1,6 +1,7 @@
 package org.zerionproject.app.grouptr;
 
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
 import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent.ChangeKind;
@@ -503,6 +504,17 @@ final class InviteTestNet {
 							null, 0L, 0L, r.getRaw(4),
 							dissolveSignedInput(gid, (int) epoch, ts));
 				}
+				case 37: {
+					byte[] gid = r.getRaw(1);
+					long fromEpoch = r.getLong(2);
+					long toEpoch = r.getLong(3);
+					byte[] pqSeed = r.getRaw(4);
+					return new GroupEpochCommitEvent(from, gid, fromEpoch,
+							toEpoch, pqSeed, r.getRaw(5),
+							epochCommitSignedInput(gid, (int) fromEpoch,
+									(int) toEpoch, pqSeed, p.timestamp),
+							p.timestamp);
+				}
 				case 41: {
 					byte[] gid = r.getRaw(1);
 					long epoch = r.getLong(2);
@@ -587,6 +599,19 @@ final class InviteTestNet {
 		b.putInt(epoch);
 		b.putLong(timestamp);
 		b.put((byte) 0x04);
+		return b.array();
+	}
+
+	static byte[] epochCommitSignedInput(byte[] groupId, int fromEpoch,
+			int toEpoch, byte[] pqSeed, long timestamp) {
+		ByteBuffer b = ByteBuffer.allocate(81);
+		b.put(groupId);
+		b.putInt(fromEpoch);
+		b.putInt(toEpoch);
+		b.put(hash("org.zerionproject/GROUP_EPOCH_SEED",
+				new byte[][] {pqSeed}));
+		b.putLong(timestamp);
+		b.put((byte) 0x05);
 		return b.array();
 	}
 

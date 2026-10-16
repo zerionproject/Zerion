@@ -36,6 +36,7 @@ public class GroupMetadataBoundsTest {
 	private final byte[] localKey = key((byte) 2);
 	private final byte[] honestKey = key((byte) 3);
 	private final byte[] floodKey = key((byte) 4);
+	private final byte[] departedKey = key((byte) 9);
 	private long clock = 1_000L;
 
 	@Test
@@ -149,6 +150,7 @@ public class GroupMetadataBoundsTest {
 		assertEquals("the other member's buffered posts are kept",
 				3, countFrom(buffered, honestKey));
 
+		node.removed(fromCreator, groupId, departedKey, EPOCH);
 		node.commit(fromCreator, groupId, EPOCH);
 
 		assertEquals("the other member's buffered posts are released",

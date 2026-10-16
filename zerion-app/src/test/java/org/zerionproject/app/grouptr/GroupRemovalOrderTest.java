@@ -83,15 +83,17 @@ public class GroupRemovalOrderTest {
 	}
 
 	@Test
-	public void aRemovalForAnEarlierEpochIsStillRefused() throws Exception {
+	public void aRemovalFromBeforeTheMembersLastAdditionIsRefused()
+			throws Exception {
 		GroupTrTestNode node = receiver();
 		ContactId fromCreator = node.addContact(creatorKey);
 
+		node.removed(fromCreator, groupId, removedKey, EPOCH);
 		node.commit(fromCreator, groupId, EPOCH);
-		node.removed(fromCreator, groupId, otherKey, EPOCH - 1);
+		node.removed(fromCreator, groupId, otherKey, 2L);
 
-		assertTrue("a stale removal must not take effect",
-				node.isMember(groupId, otherKey));
+		assertTrue("a removal older than the member's current membership"
+				+ " must not take effect", node.isMember(groupId, otherKey));
 		assertEquals(EPOCH + 1, node.group(groupId).getEpoch());
 	}
 

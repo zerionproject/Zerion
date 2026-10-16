@@ -28,4 +28,9 @@ public interface PrivateMessageFactory {
 			@Nullable String text, List<AttachmentHeader> headers,
 			long autoDeleteTimer, @Nullable MessageId replyToId)
 			throws FormatException;
+
+	PrivateMessage createSaltedPrivateMessage(GroupId groupId, long timestamp,
+			@Nullable String text, List<AttachmentHeader> headers,
+			long autoDeleteTimer, @Nullable MessageId replyToId)
+			throws FormatException;
 }

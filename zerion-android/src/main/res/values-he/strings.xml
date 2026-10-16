@@ -264,7 +264,7 @@
   <string name="groups_dissolve_dialog_message">האם אכן ברצונך לפרק את הקבוצה הזאת?\n\nכל חברי הקבוצה האחרים לא יוכלו להמשיך בשיחתם וכנראה לא יקבלו את ההודעות האחרונות.</string>
   <string name="groups_dissolve_button">פרק</string>
   <string name="groups_dissolved_dialog_title">הקבוצה פורקה</string>
-  <string name="groups_dissolved_dialog_message">היוצר של הקבוצה הזאת פירק אותה.\n\nאי אפשר לכתוב הודעות לקבוצה יותר וכנראה שלא ייתקבלו כל הרשומות שנכתבו.</string>
+  <string name="groups_dissolved_dialog_message">הבעלים של הקבוצה פירק אותה.\n\nאי אפשר לכתוב הודעות לקבוצה יותר, וייתכן שלא יתקבלו כל הרשומות שנכתבו.</string>
   
   <string name="groups_invitations_title">הזמנות לקבוצה</string>
   <string name="groups_invitations_invitation_sent">הזמנת את %1$s להצטרף אל הקבוצה \"%2$s\".</string>
@@ -276,7 +276,7 @@
     <item quantity="many">%d הזמנות קבוצתיות פתוחות</item>
     <item quantity="other">%d הזמנות קבוצתיות פתוחות</item>
   </plurals>
-  <string name="sharing_status_groups">רק היוצר יכול להזמין חברי קבוצה חדשים אל הקבוצה. להלן כל חברי הקבוצה הנוכחיים.</string>
+  <string name="sharing_status_groups">רק הבעלים של הקבוצה יכול להזמין חברים חדשים אל הקבוצה. להלן כל חברי הקבוצה הנוכחיים.</string>
   
   <string name="groups_reveal_visible_revealed_by_us">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידך)</string>
   <string name="groups_reveal_visible_revealed_by_contact">יחסים עם אנשי קשר גלויים לקבוצה (נחשפים על ידי %s)</string>
@@ -1047,7 +1047,7 @@
 	<string name="channels_feed_empty_subscriber">אין עדיין פוסטים. פוסטים חדשים יופיעו כאן.</string>
 	<string name="channels_post_withheld">הפוסט מוסתר: הבעלים של הערוץ ביטל את ההרשאה של המחבר הזה לפרסם.</string>
 	<string name="channels_feed_connecting">מתחבר לערוץ…</string>
-	<string name="channels_feed_connecting_slow">עדיין מתחבר. יש לוודא שמי ששיתף את הערוץ הזה מחובר. המצב יתעדכן מעצמו.</string>
+	<string name="channels_feed_connecting_slow">עדיין מתחבר. הפוסטים יופיעו כאן כשהערוץ יהיה זמין.</string>
 	<string name="channels_compose_hint">כתיבה למנויים שלך…</string>
 	<string name="channels_compose_send">פרסום</string>
 	<string name="channels_compose_error_empty">יש לכתוב משהו לפני הפרסום.</string>
@@ -1347,7 +1347,7 @@
 	<string name="grouptr_empty">אין עדיין קבוצות.</string>
 	<string name="grouptr_meta">%2$d חברים</string>
 	<string name="grouptr_dissolved_suffix">(פורקה)</string>
-	<string name="grouptr_creator_tag">(יוצר)</string>
+	<string name="grouptr_creator_tag">(בעלי הקבוצה)</string>
 	<string name="grouptr_admin_tag">(מנהל)</string>
 	<string name="grouptr_promote">קידום</string>
 	<string name="grouptr_demote">הורדה בדרגה</string>
@@ -1451,7 +1451,7 @@
 	<string name="grouptr_detail_status">מצב</string>
 	<string name="grouptr_detail_status_dissolved">פורקה</string>
 	<string name="grouptr_open_chat">פתיחת השיחה</string>
-	<string name="grouptr_member_role_creator">יוצר</string>
+	<string name="grouptr_member_role_creator">בעלי הקבוצה</string>
 	<string name="grouptr_member_role_you">את/ה</string>
 	<string name="grouptr_member_action_remove">הסרה מהקבוצה</string>
 	<string name="scroll_to_bottom">גלילה לסוף</string>
@@ -1624,7 +1624,7 @@
 	<string name="peer_trust_level_stranger">זר</string>
 	<string name="introduction_response_error">אירעה שגיאה בתגובה להיכרות.</string>
 	<string name="introduction_response_declined_auto">ההיכרות עם %1$s נדחתה אוטומטית.</string>
-	<string name="groups_reveal_dialog_message">אפשר לבחור אם לחשוף אנשי קשר בפני כל החברים הנוכחיים והעתידיים בקבוצה הזו.\n\nחשיפת אנשי קשר הופכת את החיבור שלך לקבוצה למהיר ואמין יותר, כי אפשר לתקשר עם אנשי קשר חשופים גם כשהיוצר של הקבוצה לא מחובר.</string>
+	<string name="groups_reveal_dialog_message">אפשר לבחור אם לחשוף אנשי קשר בפני כל החברים הנוכחיים והעתידיים בקבוצה הזו.\n\nחשיפת אנשי קשר הופכת את החיבור שלך לקבוצה למהיר ואמין יותר, כי אפשר לתקשר עם אנשי קשר חשופים גם כשהבעלים של הקבוצה לא מחובר.</string>
 	<string name="reblog_button">שיתוף מחדש</string>
 	<string name="share_message">שיתוף עם הודעה</string>
 	<string name="share_hint_short">הוספת הודעה (רשות)</string>
@@ -2376,14 +2376,14 @@
 	<string name="wallet_sp_enable_first">יש להפעיל קודם את Silent Payments</string>
 	<string name="grouptr_reach_title">למי ההודעות שלך מגיעות</string>
 	<string name="grouptr_reach_explanation">הודעות בקבוצה עוברות ישירות בין חברים שהם אנשי קשר זה של זה, וחברים לא מעבירים הודעות הלאה. החברים האלה אינם אנשי הקשר שלך, ולכן הם לא מקבלים את ההודעות שלך וגם ההודעות שלהם לא מגיעות אליך:\n\n%1$s\n\nכדי להגיע אליהם, יש להוסיף אותם כאנשי קשר.</string>
-	<string name="grouptr_ttl_set_by_creator">הודעות נעלמות בקבוצה הזו: %1$s. רק יוצר הקבוצה יכול לשנות זאת.</string>
+	<string name="grouptr_ttl_set_by_creator">הודעות נעלמות בקבוצה הזו: %1$s. רק הבעלים של הקבוצה יכול לשנות זאת.</string>
 	<string name="grouptr_sender_alias_format">%1$s (בשם \"%2$s\")</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (לא שם שמוכר לך)</string>
 	<string name="grouptr_member_out_of_reach">לא איש קשר שלך, לא מקבל את ההודעות שלך</string>
 	<string name="grouptr_member_invited">הוזמן, ממתין לתשובה</string>
 	<string name="grouptr_confirm_revoke">לבטל את ההזמנה אל %1$s? תשובה שתתקבל לא תילקח בחשבון.</string>
 	<string name="grouptr_revoke_invite">ביטול ההזמנה</string>
-	<string name="grouptr_invite_expired">תוקף ההזמנה הזו פג. אפשר לבקש הזמנה חדשה מיוצר הקבוצה.</string>
+	<string name="grouptr_invite_expired">תוקף ההזמנה הזו פג. אפשר לבקש הזמנה חדשה מהבעלים של הקבוצה.</string>
 	<string name="reaction_removed_here_only">התגובה הוסרה רק במכשיר הזה: האפליקציה של איש הקשר שלך ישנה מדי כדי להסיר אותה גם אצלו.</string>
 	<string name="startup_data_without_account_message">Zerion מצא נתונים במכשיר הזה, אבל לא מפתח חשבון שפותח אותם: קובצי המפתח חסרים או פגומים. שום דבר לא נמחק.\n\nאפשר לסגור את Zerion ולשמור את הנתונים, או למחוק הכול ולהתחיל מחדש.</string>
 	<string name="startup_data_without_account_keep">סגירה ושמירה</string>
@@ -2483,13 +2483,13 @@
 	<string name="grouptr_members_may_invite">חברים יכולים להזמין את אנשי הקשר שלהם</string>
 	<string name="grouptr_members_may_invite_summary">כל עוד האפשרות פעילה, הטלפון שלך מוסיף אוטומטית את מי שהם מזמינים.</string>
 	<string name="grouptr_invite_contacts">הזמנת אנשי קשר</string>
-	<string name="grouptr_member_invite_needs_creator_contact">רק חברים שיוצר הקבוצה נמצא באנשי הקשר שלהם יכולים להזמין.</string>
-	<string name="grouptr_member_invite_creator_outdated">יוצר הקבוצה צריך גרסה חדשה יותר של האפליקציה כדי שחברים יוכלו להזמין.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">רק חברים שהבעלים של הקבוצה נמצא באנשי הקשר שלהם יכולים להזמין.</string>
+	<string name="grouptr_member_invite_creator_outdated">הבעלים של הקבוצה צריך גרסה חדשה יותר של האפליקציה כדי שחברים יוכלו להזמין.</string>
 	<string name="grouptr_member_invite_contact_outdated">נדרשת גרסה חדשה יותר של האפליקציה</string>
 	<string name="grouptr_member_invitation_received">%1$s הזמין אותך להצטרף לקבוצה \"%2$s\" שנוצרה על ידי %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s הזמין אותך להצטרף לקבוצה שנוצרה על ידי %2$s.</string>
-	<string name="grouptr_waiting_for_admin">ממתינים ש-%1$s, יוצר הקבוצה, יתחבר. הטלפון שלו יוסיף אותך אוטומטית, ואז אפשר יהיה לפרסם כאן.</string>
-	<string name="grouptr_member_invite_accepted">אושר. ההצטרפות תתבצע כשיוצר הקבוצה יהיה מחובר.</string>
+	<string name="grouptr_waiting_for_admin">ממתינים ש-%1$s, הבעלים של הקבוצה, יתחבר. הטלפון שלו יוסיף אותך אוטומטית, ואז אפשר יהיה לפרסם כאן.</string>
+	<string name="grouptr_member_invite_accepted">אושר. ההצטרפות תתבצע כשהבעלים של הקבוצה יהיה מחובר.</string>
 	<string name="grouptr_member_invite_unavailable">כבר לא ניתן לקבל את ההזמנה הזו. אפשר לבקש הזמנה חדשה.</string>
 	<string name="grouptr_incognito">בזהות בדויה בקבוצה זו</string>
 	<string name="grouptr_incognito_summary">אחרים בקבוצה רואים שם אקראי במקום השם שלך. חברים שהם אנשי הקשר שלך עדיין יכולים לזהות אותך לפי המפתח שלך.</string>
@@ -2497,7 +2497,7 @@
 	<string name="grouptr_incognito_new_name">שם חדש</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (בזהות בדויה)</string>
 	<string name="grouptr_member_may_add">הרשאה להוסיף חברים</string>
-	<string name="grouptr_member_invite_creator_only">רק יוצר הקבוצה יכול להוסיף חברים.</string>
+	<string name="grouptr_member_invite_creator_only">רק הבעלים של הקבוצה יכול להוסיף חברים.</string>
 	<string name="tor_status_entry_relay">לא יציב</string>
 	<string name="tor_hidden_services_entry_relay">ממסר הכניסה של Tor נכשל ברוב החיבורים, ולכן ייתכן שאנשי קשר לא יצליחו להגיע אליך. הסיבה יכולה להיות רשת עמוסה או הפרעה. מעבר של שיטת החיבור של Tor לגשרים בהגדרות, חיבורים בדרך כלל עוזר.</string>
 	<string name="contact_connection_tor_entry_relay">Tor מחובר, אבל ממסר הכניסה שלו נכשל ברוב החיבורים. שימוש בגשרים בדרך כלל עוזר.</string>
@@ -2508,4 +2508,42 @@
 	<string name="channels_subscribers_unban">ביטול החסימה</string>
 	<string name="channels_subscribers_unban_confirm">לבטל את החסימה? המנוי הזה יוכל שוב להגיב ולשלוח תגובות אמוג\'י. מה שהחסימה הסירה לא יחזור, ואת תפקיד העורך יש להעניק מחדש.</string>
 	<string name="channels_unban_failed">לא ניתן היה לבטל את החסימה</string>
+	<string name="contact_delete_failed">לא ניתן היה למחוק את איש הקשר</string>
+	<string name="channels_delegations_revoke_failed">לא ניתן היה לבטל את ההרשאה של העורך הזה</string>
+	<string name="channels_invite_rotate_failed">קישור ההזמנה לא הוחלף. הקישור הישן עדיין עובד.</string>
+	<string name="channels_apply_unconfirmed">הבעלים לא אישר את קבלת הבקשה שלך. נסה שוב מאוחר יותר.</string>
+	<string name="channels_apply_banner">יש להקיש כדי לבקש מהבעלים גישה לערוץ הזה.</string>
+	<string name="channels_rejoin_updated">הגישה שלך אל %1$s עודכנה.</string>
+	<string name="channels_rejoin_unreachable">לא ניתן היה לבדוק את הקישור הזה כרגע. יש לנסות שוב מאוחר יותר.</string>
+	<string name="channels_rejoin_apply_again">אפשר לשלוח בקשה שוב כדי לקרוא פוסטים חדשים בערוץ הזה. הפוסטים שכבר יש לך נשארים. הבעלים יראה את שם התצוגה שלך ומפתח ששייך לך בערוץ הזה בלבד.</string>
+	<string name="channels_sync_last_updated">עודכן לאחרונה: %1$s</string>
+	<string name="channels_sync_saved_posts">מוצגים פוסטים שמורים</string>
+	<string name="channels_sync_saved_posts_last_updated">מוצגים פוסטים שמורים · עודכן לאחרונה: %1$s</string>
+	<string name="channels_sync_not_updated_since">לא עודכן מאז %1$s</string>
+	<string name="channels_owner_deleted_notice">הבעלים מחק את הערוץ %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">הבעלים מחק ערוץ שהצטרפת אליו</string>
+	<string name="channels_queued_waiting">ממתין לשליחה</string>
+	<string name="channels_queued_not_sent">לא נשלח</string>
+	<string name="channels_queued_retry">ניסיון חוזר</string>
+	<string name="channels_queued_delete">מחיקה</string>
+	<string name="channels_comment_queued_toast">התגובה שלך תישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_react_queued_toast">תגובת האמוג\'י שלך תישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_announce_queued_toast">השם שלך יישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_post_queued_toast">הפוסט שלך יישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_change_queued_toast">השינוי שלך יישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_queued_notice_waiting">חלק ממה ששלחת ממתין. הוא יישלח כשהערוץ יהיה זמין.</string>
+	<string name="channels_queued_notice_not_sent">חלק ממה ששלחת לא נשלח. יש להקיש כדי לנסות שוב או למחוק.</string>
+	<string name="channels_queued_announce_label">השם שלך: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">לא ניתן היה להגיע לערוץ הזה. אפשר לשלוח שוב בקשת הצטרפות עם הקישור הזה. הפוסטים שכבר יש לך נשארים. הבעלים יראה את שם התצוגה שלך ומפתח ששייך לך בערוץ הזה בלבד.</string>
+	<string name="channels_rejoin_not_restored">הקישור הזה לא החזיר לך את הגישה לערוץ הזה. אפשר לבקש קישור חדש.</string>
+	<string name="channels_rejoin_check_title">לנסות את הקישור הזה?</string>
+	<string name="channels_rejoin_check_message">כרגע אי אפשר להגיע לפוסטים החדשים בערוץ הזה. אפשר לנסות את הקישור הזה כדי לקבל אותם שוב. הפוסטים שכבר יש לך נשארים.</string>
+	<string name="channels_rejoin_check_action">לנסות את הקישור</string>
+	<string name="channels_rejoin_try_later">כרגע אי אפשר להגיע לערוץ הזה, והקישור הזה הוא הקישור שכבר יש לך. יש לנסות שוב מאוחר יותר. הפוסטים שכבר יש לך נשארים.</string>
+	<string name="channels_rejoin_trying">נמשיך לנסות את הקישור הזה. הפוסטים שכבר יש לך נשארים.</string>
+	<string name="channels_queued_already_sent">זה כבר נשלח, ולכן לא ניתן היה למחוק אותו.</string>
+	<string name="channels_queued_behind_toast">זה יישלח אחרי מה ששלחת קודם לערוץ הזה.</string>
+	<string name="channels_queued_no_access">לא נשלח. כבר אין לך גישה לערוץ הזה.</string>
+	<string name="channels_no_access_toast">כבר אין לך גישה לערוץ הזה. יש לבקש מהבעלים קישור הזמנה חדש.</string>
+	<string name="channels_rejoin_too_many_links">כבר יש לך כמה קישורים שממתינים לערוץ הזה, ולכן לא ניסינו את הקישור הזה. הפוסטים שכבר יש לך נשארים.</string>
 </resources>

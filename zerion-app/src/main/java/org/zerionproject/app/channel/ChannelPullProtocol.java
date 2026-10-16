@@ -300,6 +300,11 @@ class ChannelPullProtocol {
 		result.commentsSync = resp.commentsSync;
 		result.discussions = postChanges ? resp.discussions : null;
 		result.complete = complete;
+		try {
+			result.manifestOnion = resp.manifest.getString("currentOnion");
+		} catch (FormatException e) {
+			return ProcessResult.failure("manifest malformed");
+		}
 		return result;
 	}
 
@@ -564,6 +569,7 @@ class ChannelPullProtocol {
 		@Nullable
 		ChannelPullCodec.Discussions discussions;
 		boolean complete;
+		String manifestOnion = "";
 
 		private ProcessResult(boolean ok,
 				@Nullable ChannelState mergedState,

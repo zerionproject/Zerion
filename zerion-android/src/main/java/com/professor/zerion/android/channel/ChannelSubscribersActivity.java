@@ -242,13 +242,23 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 			try {
 				channelManager.banSubscriber(channelId,
 						sub.getEd25519PubKey());
+				boolean rotated = true;
 				if (alsoRotate) {
 					try {
 						channelManager.rotateJoinCapability(channelId);
-					} catch (DbException ignored) {
+					} catch (DbException e) {
+						rotated = false;
 					}
 				}
-				runOnUiThread(this::refresh);
+				boolean linkKept = !rotated;
+				runOnUiThread(() -> {
+					refresh();
+					if (linkKept) {
+						Toast.makeText(this,
+								R.string.channels_invite_rotate_failed,
+								Toast.LENGTH_LONG).show();
+					}
+				});
 			} catch (DbException ignored) {
 				runOnUiThread(() -> Toast.makeText(this,
 						R.string.channels_ban_failed,

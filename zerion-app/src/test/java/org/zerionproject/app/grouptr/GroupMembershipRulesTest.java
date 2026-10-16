@@ -45,9 +45,15 @@ public class GroupMembershipRulesTest {
 				GroupTrManagerImpl.membershipEventSigner(s,
 						ChangeKind.MEMBER_REMOVED, creator, member, EPOCH,
 						EPOCH));
-		assertNull("stale epoch", GroupTrManagerImpl.membershipEventSigner(
-				s, ChangeKind.MEMBER_REMOVED, creator, member, EPOCH - 1,
-				EPOCH - 1));
+		assertArrayEquals("a late removal from the creator is checked when"
+				+ " it is applied", creator,
+				GroupTrManagerImpl.membershipEventSigner(s,
+						ChangeKind.MEMBER_REMOVED, creator, member, EPOCH - 1,
+						EPOCH - 1));
+		assertNull("a late removal from a member",
+				GroupTrManagerImpl.membershipEventSigner(s,
+						ChangeKind.MEMBER_REMOVED, member, stranger, EPOCH - 1,
+						EPOCH - 1));
 		assertNull("member as sender", GroupTrManagerImpl.membershipEventSigner(
 				s, ChangeKind.MEMBER_REMOVED, member, member, EPOCH + 1,
 				EPOCH + 1));
@@ -100,27 +106,6 @@ public class GroupMembershipRulesTest {
 				ChangeKind.ROLE_CHANGED, member, member, EPOCH + 1, 0L));
 		assertNull(GroupTrManagerImpl.membershipEventSigner(group(true),
 				ChangeKind.ROLE_CHANGED, creator, member, EPOCH + 1, 0L));
-	}
-
-	@Test
-	public void anEpochCommitContinuesExactlyFromTheCurrentEpoch() {
-		GroupTrState s = group(false);
-		assertTrue(GroupTrManagerImpl.epochCommitAccepted(s, EPOCH, EPOCH + 1,
-				creator));
-		assertFalse("replay", GroupTrManagerImpl.epochCommitAccepted(s,
-				EPOCH - 1, EPOCH, creator));
-		assertFalse("skip", GroupTrManagerImpl.epochCommitAccepted(s, EPOCH,
-				EPOCH + 2, creator));
-		assertFalse("from the future", GroupTrManagerImpl.epochCommitAccepted(
-				s, EPOCH + 1, EPOCH + 2, creator));
-		assertFalse("backwards", GroupTrManagerImpl.epochCommitAccepted(s,
-				EPOCH, EPOCH, creator));
-		assertFalse("member", GroupTrManagerImpl.epochCommitAccepted(s, EPOCH,
-				EPOCH + 1, member));
-		assertFalse("unknown", GroupTrManagerImpl.epochCommitAccepted(s, EPOCH,
-				EPOCH + 1, null));
-		assertFalse("dissolved", GroupTrManagerImpl.epochCommitAccepted(
-				group(true), EPOCH, EPOCH + 1, creator));
 	}
 
 	@Test

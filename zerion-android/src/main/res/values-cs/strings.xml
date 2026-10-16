@@ -323,7 +323,7 @@
   <string name="groups_dissolve_dialog_message">Jste si jisti, že chcete tuto skupinu rozpustit?\n\nVšichni členové nebudou moci pokračovat v konverzacích a taktéž nebudou schopni přijímat zprávy.</string>
   <string name="groups_dissolve_button">Rozpuštění</string>
   <string name="groups_dissolved_dialog_title">Skupina byla rozpuštěna</string>
-  <string name="groups_dissolved_dialog_message">Zakladatel tuto skupinu rozpustil.\n\nV této skupině již nemůžeš psát zprávy a taktéž přijímat příspěvky, které byly napsány.</string>
+  <string name="groups_dissolved_dialog_message">Vlastník skupiny tuto skupinu rozpustil.\n\nDo skupiny již nemůžete psát zprávy a nemusíte obdržet všechny příspěvky, které byly napsány.</string>
   
   <string name="groups_invitations_title">Skupinové pozvánky</string>
   <string name="groups_invitations_invitation_sent">Pozvali jste %1$s k připojení ke skupině \"%2$s\".</string>
@@ -335,9 +335,9 @@
     <item quantity="many">%d otevřených skupinových pozvánek</item>
     <item quantity="other">%d otevřených skupinových pozvánek</item>
   </plurals>
-  <string name="sharing_status_groups">Pouze zakladatel může pozvat nové členy do skupiny. Níže jsou všichni současní členové skupiny.</string>
+  <string name="sharing_status_groups">Nové členy může do skupiny zvát pouze vlastník skupiny. Níže jsou všichni současní členové skupiny.</string>
   
-  <string name="groups_reveal_dialog_message">Můžete si vybrat, zda chcete své kontakty odhalit všem současným i budoucím členům této skupiny.\n\nPřidáním kontaktů je vaše připojení ke skupině rychlejší a spolehlivější, protože můžete komunikovat s odhalenými kontakty i když je zakladatel skupiny offline.</string>
+  <string name="groups_reveal_dialog_message">Můžete si vybrat, zda chcete své kontakty odhalit všem současným i budoucím členům této skupiny.\n\nOdhalení kontaktů zrychlí vaše připojení ke skupině a zvýší jeho spolehlivost, protože s odhalenými kontakty můžete komunikovat, i když je vlastník skupiny offline.</string>
   <string name="groups_reveal_visible_revealed_by_us">Vztah s kontaktem je viditelný ve skupině (Tebou odkrytý)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Vztah s kontaktem je viditelný ve skupině (byl odkrytý %s)</string>
   <string name="groups_reveal_invisible">Vztah s kontaktem není viditelný ve skupině</string>
@@ -1005,7 +1005,7 @@
 	<string name="channels_feed_empty_subscriber">Zatím žádné příspěvky. Nové příspěvky se zobrazí zde.</string>
 	<string name="channels_post_withheld">Příspěvek zadržen: vlastník kanálu odebral tomuto autorovi oprávnění přispívat.</string>
 	<string name="channels_feed_connecting">Připojování ke kanálu…</string>
-	<string name="channels_feed_connecting_slow">Stále se připojuje. Ujistěte se, že osoba, která tento kanál sdílela, je online. Stav se aktualizuje sám.</string>
+	<string name="channels_feed_connecting_slow">Stále se připojuje. Příspěvky se tu zobrazí, jakmile bude kanál dostupný.</string>
 	<string name="channels_compose_hint">Napište svým odběratelům…</string>
 	<string name="channels_compose_send">Zveřejnit</string>
 	<string name="channels_compose_error_empty">Před zveřejněním něco napište.</string>
@@ -1302,7 +1302,7 @@
 	<string name="grouptr_empty">Zatím žádné skupiny.</string>
 	<string name="grouptr_meta">Členů: %2$d</string>
 	<string name="grouptr_dissolved_suffix">(rozpuštěna)</string>
-	<string name="grouptr_creator_tag">(zakladatel)</string>
+	<string name="grouptr_creator_tag">(vlastník skupiny)</string>
 	<string name="grouptr_admin_tag">(správce)</string>
 	<string name="grouptr_promote">Povýšit</string>
 	<string name="grouptr_demote">Degradovat</string>
@@ -1407,7 +1407,7 @@
 	<string name="grouptr_detail_status">Stav</string>
 	<string name="grouptr_detail_status_dissolved">Rozpuštěna</string>
 	<string name="grouptr_open_chat">Otevřít chat</string>
-	<string name="grouptr_member_role_creator">zakladatel</string>
+	<string name="grouptr_member_role_creator">Vlastník skupiny</string>
 	<string name="grouptr_member_role_you">vy</string>
 	<string name="grouptr_member_action_remove">Odebrat ze skupiny</string>
 	<string name="scroll_to_bottom">Posunout dolů</string>
@@ -2299,14 +2299,14 @@
 	<string name="wallet_sp_enable_first">Nejprve zapněte Silent Payments</string>
 	<string name="grouptr_reach_title">Ke komu se vaše příspěvky dostanou</string>
 	<string name="grouptr_reach_explanation">Příspěvky ve skupině putují přímo mezi členy, kteří jsou navzájem svými kontakty, a členové příspěvky dál nepředávají. Tito členové nejsou vašimi kontakty, takže nedostávají vaše příspěvky a vy nedostáváte jejich:\n\n%1$s\n\nChcete-li je zastihnout, přidejte si je jako kontakty.</string>
-	<string name="grouptr_ttl_set_by_creator">Mizející zprávy v této skupině: %1$s. Změnit to může jen zakladatel skupiny.</string>
+	<string name="grouptr_ttl_set_by_creator">Mizející zprávy v této skupině: %1$s. Změnit to může jen vlastník skupiny.</string>
 	<string name="grouptr_sender_alias_format">%1$s (přispívá jako „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (jméno, které neznáte)</string>
 	<string name="grouptr_member_out_of_reach">není váš kontakt, nedostává vaše příspěvky</string>
 	<string name="grouptr_member_invited">Pozvánka odeslána, čeká se na odpověď</string>
 	<string name="grouptr_confirm_revoke">Odvolat pozvánku pro %1$s? Případná odpověď od této osoby bude ignorována.</string>
 	<string name="grouptr_revoke_invite">Odvolat pozvánku</string>
-	<string name="grouptr_invite_expired">Platnost této pozvánky vypršela. Požádejte zakladatele skupiny o novou.</string>
+	<string name="grouptr_invite_expired">Platnost této pozvánky vypršela. Požádejte vlastníka skupiny o novou.</string>
 	<string name="reaction_removed_here_only">Odstraněno pouze na tomto zařízení: aplikace vašeho kontaktu je příliš stará na to, aby reakci odstranila i u něj.</string>
 	<string name="startup_data_without_account_message">Zerion našel na tomto zařízení data, ale žádný klíč účtu, který by je otevřel: soubory s klíči chybí nebo jsou poškozené. Nic nebylo smazáno.\n\nMůžete Zerion zavřít a data ponechat, nebo vše vymazat a začít znovu.</string>
 	<string name="startup_data_without_account_keep">Zavřít a ponechat</string>
@@ -2525,13 +2525,13 @@
 	<string name="grouptr_members_may_invite">Členové mohou zvát své kontakty</string>
 	<string name="grouptr_members_may_invite_summary">Když je tato volba zapnutá, váš telefon automaticky přidá lidi, které pozvou.</string>
 	<string name="grouptr_invite_contacts">Pozvat kontakty</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Zvát mohou jen členové, kteří mají zakladatele skupiny mezi kontakty.</string>
-	<string name="grouptr_member_invite_creator_outdated">Zakladatel skupiny potřebuje novější verzi aplikace, aby členové mohli zvát.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Zvát mohou jen členové, kteří mají vlastníka skupiny mezi kontakty.</string>
+	<string name="grouptr_member_invite_creator_outdated">Vlastník skupiny potřebuje novější verzi aplikace, aby členové mohli zvát.</string>
 	<string name="grouptr_member_invite_contact_outdated">Potřebuje novější verzi aplikace</string>
 	<string name="grouptr_member_invitation_received">%1$s vás pozval(a) do skupiny „%2$s“, kterou založil(a) %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s vás pozval(a) do skupiny, kterou založil(a) %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Čeká se, až bude %1$s, zakladatel skupiny, online. Telefon zakladatele vás automaticky přidá a pak sem budete moci přispívat.</string>
-	<string name="grouptr_member_invite_accepted">Přijato. Ke skupině se připojíte, jakmile bude zakladatel skupiny online.</string>
+	<string name="grouptr_waiting_for_admin">Čeká se, až bude %1$s, vlastník skupiny, online. Telefon vlastníka vás automaticky přidá a pak sem budete moci přispívat.</string>
+	<string name="grouptr_member_invite_accepted">Přijato. Ke skupině se připojíte, jakmile bude vlastník skupiny online.</string>
 	<string name="grouptr_member_invite_unavailable">Tuto pozvánku už nelze přijmout. Požádejte o novou.</string>
 	<string name="grouptr_incognito">Inkognito v této skupině</string>
 	<string name="grouptr_incognito_summary">Ostatní ve skupině uvidí místo vašeho jména náhodné jméno. Členové, kteří jsou vašimi kontakty, vás stále mohou poznat podle vašeho klíče.</string>
@@ -2539,7 +2539,7 @@
 	<string name="grouptr_incognito_new_name">Nové jméno</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (inkognito)</string>
 	<string name="grouptr_member_may_add">Může přidávat členy</string>
-	<string name="grouptr_member_invite_creator_only">Členy může přidávat jen tvůrce skupiny.</string>
+	<string name="grouptr_member_invite_creator_only">Členy může přidávat jen vlastník skupiny.</string>
 	<string name="tor_status_entry_relay">Nestabilní</string>
 	<string name="tor_hidden_services_entry_relay">Vstupní relé sítě Tor selhává u většiny spojení, takže se k vám kontakty nemusí dostat. Příčinou může být přetížená síť nebo rušení. Obvykle pomůže přepnout způsob připojení k Toru na mosty v Nastavení, Připojení.</string>
 	<string name="contact_connection_tor_entry_relay">Tor je připojen, ale jeho vstupní relé selhává u většiny spojení. Obvykle pomůže použít mosty.</string>
@@ -2550,4 +2550,42 @@
 	<string name="channels_subscribers_unban">Zrušit blokování</string>
 	<string name="channels_subscribers_unban_confirm">Zrušit blokování? Tento odběratel bude moci znovu komentovat a reagovat. Co blokování odstranilo, se nevrátí, a roli editora je třeba udělit znovu.</string>
 	<string name="channels_unban_failed">Blokování se nepodařilo zrušit</string>
+	<string name="contact_delete_failed">Kontakt se nepodařilo odstranit</string>
+	<string name="channels_delegations_revoke_failed">Tohoto editora se nepodařilo odvolat</string>
+	<string name="channels_invite_rotate_failed">Odkaz s pozvánkou se nezměnil. Starý odkaz stále funguje.</string>
+	<string name="channels_apply_unconfirmed">Vlastník nepotvrdil, že vaše žádost dorazila. Zkuste to znovu později.</string>
+	<string name="channels_apply_banner">Klepnutím požádáte vlastníka o přístup k tomuto kanálu.</string>
+	<string name="channels_rejoin_updated">Váš přístup ke kanálu %1$s byl aktualizován.</string>
+	<string name="channels_rejoin_unreachable">Tento odkaz teď nelze ověřit. Zkuste to znovu později.</string>
+	<string name="channels_rejoin_apply_again">Můžete znovu požádat o přístup, abyste mohli číst nové příspěvky v tomto kanálu. Příspěvky, které už máte, zůstanou. Vlastník uvidí vaše zobrazované jméno a klíč, který vám patří pouze v tomto kanálu.</string>
+	<string name="channels_sync_last_updated">Aktualizováno %1$s</string>
+	<string name="channels_sync_saved_posts">Zobrazují se uložené příspěvky</string>
+	<string name="channels_sync_saved_posts_last_updated">Zobrazují se uložené příspěvky · Aktualizováno %1$s</string>
+	<string name="channels_sync_not_updated_since">Neaktualizováno od %1$s</string>
+	<string name="channels_owner_deleted_notice">Vlastník odstranil kanál %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Vlastník odstranil kanál, ke kterému jste se připojili</string>
+	<string name="channels_queued_waiting">Čeká na odeslání</string>
+	<string name="channels_queued_not_sent">Neodesláno</string>
+	<string name="channels_queued_retry">Zkusit znovu</string>
+	<string name="channels_queued_delete">Odstranit</string>
+	<string name="channels_comment_queued_toast">Váš komentář bude odeslán, až bude kanál dostupný.</string>
+	<string name="channels_react_queued_toast">Vaše reakce bude odeslána, až bude kanál dostupný.</string>
+	<string name="channels_announce_queued_toast">Vaše jméno bude odesláno, až bude kanál dostupný.</string>
+	<string name="channels_post_queued_toast">Váš příspěvek bude odeslán, až bude kanál dostupný.</string>
+	<string name="channels_change_queued_toast">Vaše změna bude odeslána, až bude kanál dostupný.</string>
+	<string name="channels_queued_notice_waiting">Část toho, co jste odeslali, ještě čeká. Bude odeslána, až bude kanál dostupný.</string>
+	<string name="channels_queued_notice_not_sent">Část toho, co jste odeslali, nebyla odeslána. Klepnutím ji odešlete znovu nebo odstraníte.</string>
+	<string name="channels_queued_announce_label">Vaše jméno: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">K tomuto kanálu se nepodařilo připojit. Pomocí tohoto odkazu můžete znovu požádat o připojení. Příspěvky, které už máte, zůstanou. Vlastník uvidí vaše zobrazované jméno a klíč, který vám patří pouze v tomto kanálu.</string>
+	<string name="channels_rejoin_not_restored">Tento odkaz vám přístup k tomuto kanálu nevrátil. Můžete požádat o nový odkaz.</string>
+	<string name="channels_rejoin_check_title">Zkusit tento odkaz?</string>
+	<string name="channels_rejoin_check_message">Nové příspěvky v tomto kanálu teď nejsou dostupné. Můžete zkusit tento odkaz, abyste je znovu dostávali. Příspěvky, které už máte, zůstanou.</string>
+	<string name="channels_rejoin_check_action">Zkusit odkaz</string>
+	<string name="channels_rejoin_try_later">Tento kanál teď není dostupný a jde o stejný odkaz, který už máte. Zkuste to znovu později. Příspěvky, které už máte, zůstanou.</string>
+	<string name="channels_rejoin_trying">Budeme tento odkaz dál zkoušet. Příspěvky, které už máte, zůstanou.</string>
+	<string name="channels_queued_already_sent">Už to bylo odesláno, takže to nešlo odstranit.</string>
+	<string name="channels_queued_behind_toast">Odešle se až po tom, co jste do tohoto kanálu odeslali dříve.</string>
+	<string name="channels_queued_no_access">Neodesláno. K tomuto kanálu už nemáte přístup.</string>
+	<string name="channels_no_access_toast">K tomuto kanálu už nemáte přístup. Požádejte vlastníka o nový odkaz s pozvánkou.</string>
+	<string name="channels_rejoin_too_many_links">Pro tento kanál už máte několik čekajících odkazů, takže tento odkaz jsme nezkoušeli. Příspěvky, které už máte, zůstanou.</string>
 </resources>

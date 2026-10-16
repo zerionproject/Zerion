@@ -309,7 +309,7 @@
   <string name="groups_dissolve_dialog_message">আপনি কি নিশ্চিত যে, আপনি এই গ্রুপটি বিলুপ্ত করতে চান? \n\nঅন্যান্য সদস্যরা তাদের আলোচনা চালিয়ে যেতে পারবে না এবং সম্ভবত সর্বশেষ বার্তাগুলি পাবে না।</string>
   <string name="groups_dissolve_button">বিলুপ্ত করুন</string>
   <string name="groups_dissolved_dialog_title">গ্রুপ বিলুপ্ত করা হয়েছে</string>
-  <string name="groups_dissolved_dialog_message">যিনি গ্রুপটি তৈরি করেছিলেন তিনি এটি বিলুপ্ত করেছে। \n\nআপনি আর গ্রুপে বার্তা পাঠাতে পারবেন না এবং সম্ভবত সমস্ত লেখাগুলিও পাবেন না।</string>
+  <string name="groups_dissolved_dialog_message">গ্রুপের মালিক এই গ্রুপটি বিলুপ্ত করেছেন।\n\nআপনি আর গ্রুপে বার্তা লিখতে পারবেন না এবং হয়তো লেখা সব পোস্ট পাবেন না।</string>
   
   <string name="groups_invitations_title">গ্রুপের আমন্ত্রণ</string>
   <string name="groups_invitations_invitation_sent">আপনি %1$s-কে \"%2$s\" গ্রুপে যোগ দেওয়ার জন্য আমন্ত্রণ জানিয়েছেন।</string>
@@ -319,9 +319,9 @@
     <item quantity="one">%dটি মুক্ত গ্রুপ আমন্ত্রণ রয়েছে</item>
     <item quantity="other">%d মুক্ত গ্রুপে আমন্ত্রণ রয়েছে</item>
   </plurals>
-  <string name="sharing_status_groups">শুধুমাত্র দলের স্রষ্টা নতুন সদস্যদের আমন্ত্রণ করতে পারেন। নীচে দলের সব বর্তমান সদস্য।</string>
+  <string name="sharing_status_groups">শুধু গ্রুপের মালিক গ্রুপে নতুন সদস্যদের আমন্ত্রণ জানাতে পারেন। নিচে গ্রুপের সব বর্তমান সদস্য রয়েছেন।</string>
   
-  <string name="groups_reveal_dialog_message">আপনি ঠিক করুন আপনি কি এই গ্রুপের বর্তমান এবং ভবিষ্যত সকল সদস্যদের কাছে আপনার কন্টাক্টগুলি প্রকাশ করবেন কিনা। \n\nকন্টাক্ট প্রকাশ করলে গ্রুপগুলির সাথে সংযোগকে আরও দ্রুত এবং নির্ভরযোগ্য করে তোলে, কারণ গ্রুপ জীই তৈরি করেছেন তিনি অফলাইনে থাকলেই আপনি প্রকাশিত কন্টাক্টগুলির সাথে যোগাযোগ করতে পারবেন।</string>
+  <string name="groups_reveal_dialog_message">আপনি বেছে নিতে পারেন এই গ্রুপের সব বর্তমান ও ভবিষ্যৎ সদস্যদের কাছে পরিচিতিগুলো প্রকাশ করবেন কিনা।\n\nপরিচিতি প্রকাশ করলে গ্রুপের সাথে আপনার সংযোগ আরও দ্রুত ও নির্ভরযোগ্য হয়, কারণ গ্রুপের মালিক অফলাইনে থাকলেও আপনি প্রকাশিত পরিচিতিদের সাথে যোগাযোগ করতে পারবেন।</string>
   <string name="groups_reveal_visible_revealed_by_us">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান (আপনি প্রকাশ করেছেন)</string>
   <string name="groups_reveal_visible_revealed_by_contact">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান (%s  প্রকাশ করেছেন)</string>
   <string name="groups_reveal_invisible">কন্টাক্টের সাথে সম্পর্ক গ্রুপের কাছে দৃশ্যমান নয়</string>
@@ -978,7 +978,7 @@
 	<string name="channels_feed_empty_subscriber">এখনো কোনো পোস্ট নেই। নতুন পোস্ট এখানে দেখা যাবে।</string>
 	<string name="channels_post_withheld">পোস্ট আটকে রাখা হয়েছে: চ্যানেলের মালিক এই লেখকের পোস্ট করার অনুমতি বাতিল করেছেন।</string>
 	<string name="channels_feed_connecting">চ্যানেলে সংযুক্ত হচ্ছে…</string>
-	<string name="channels_feed_connecting_slow">এখনো সংযুক্ত হচ্ছে। নিশ্চিত করুন যে যিনি এই চ্যানেলটি শেয়ার করেছেন তিনি অনলাইনে আছেন। এটি নিজে থেকেই আপডেট হবে।</string>
+	<string name="channels_feed_connecting_slow">এখনো সংযুক্ত হচ্ছে। চ্যানেলটি উপলব্ধ হলে পোস্টগুলো এখানে দেখা যাবে।</string>
 	<string name="channels_compose_hint">আপনার সাবস্ক্রাইবারদের উদ্দেশে লিখুন…</string>
 	<string name="channels_compose_send">প্রকাশ করুন</string>
 	<string name="channels_compose_error_empty">প্রকাশ করার আগে কিছু লিখুন।</string>
@@ -1275,7 +1275,7 @@
 	<string name="grouptr_empty">এখনো কোনো গ্রুপ নেই।</string>
 	<string name="grouptr_meta">%2$d জন সদস্য</string>
 	<string name="grouptr_dissolved_suffix">(বিলুপ্ত)</string>
-	<string name="grouptr_creator_tag">(নির্মাতা)</string>
+	<string name="grouptr_creator_tag">(গ্রুপের মালিক)</string>
 	<string name="grouptr_admin_tag">(অ্যাডমিন)</string>
 	<string name="grouptr_promote">পদোন্নতি দিন</string>
 	<string name="grouptr_demote">পদাবনতি দিন</string>
@@ -1378,7 +1378,7 @@
 	<string name="grouptr_detail_status">অবস্থা</string>
 	<string name="grouptr_detail_status_dissolved">বিলুপ্ত</string>
 	<string name="grouptr_open_chat">চ্যাট খুলুন</string>
-	<string name="grouptr_member_role_creator">নির্মাতা</string>
+	<string name="grouptr_member_role_creator">গ্রুপের মালিক</string>
 	<string name="grouptr_member_role_you">আপনি</string>
 	<string name="grouptr_member_action_remove">গ্রুপ থেকে সরান</string>
 	<string name="scroll_to_bottom">নিচে স্ক্রোল করুন</string>
@@ -2268,14 +2268,14 @@
 	<string name="wallet_sp_enable_first">আগে Silent Payments চালু করুন</string>
 	<string name="grouptr_reach_title">আপনার পোস্ট কারা পায়</string>
 	<string name="grouptr_reach_explanation">গ্রুপের পোস্ট সরাসরি সেই সদস্যদের মধ্যে যায় যারা একে অপরের পরিচিতি, এবং সদস্যরা পোস্ট অন্যদের কাছে পাঠিয়ে দেয় না। এই সদস্যরা আপনার পরিচিতি নয়, তাই তারা আপনার পোস্ট পায় না এবং আপনিও তাদের পোস্ট পান না:\n\n%1$s\n\nতাদের কাছে পৌঁছাতে তাদের পরিচিতি হিসেবে যোগ করুন।</string>
-	<string name="grouptr_ttl_set_by_creator">এই গ্রুপে অদৃশ্য হওয়া বার্তা: %1$s। গ্রুপটি যিনি তৈরি করেছেন, শুধু তিনিই এটি পরিবর্তন করতে পারেন।</string>
+	<string name="grouptr_ttl_set_by_creator">এই গ্রুপে অদৃশ্য হওয়া বার্তা: %1$s। শুধু গ্রুপের মালিক এটি পরিবর্তন করতে পারেন।</string>
 	<string name="grouptr_sender_alias_format">%1$s (“%2$s” নামে পোস্ট করছেন)</string>
 	<string name="grouptr_sender_unverified_format">“%1$s” (আপনার পরিচিত কোনো নাম নয়)</string>
 	<string name="grouptr_member_out_of_reach">আপনার পরিচিতি নয়, আপনার পোস্ট পায় না</string>
 	<string name="grouptr_member_invited">আমন্ত্রিত, উত্তরের অপেক্ষায়</string>
 	<string name="grouptr_confirm_revoke">%1$s-কে পাঠানো আমন্ত্রণ প্রত্যাহার করবেন? তার কাছ থেকে আসা উত্তর উপেক্ষা করা হবে।</string>
 	<string name="grouptr_revoke_invite">আমন্ত্রণ প্রত্যাহার করুন</string>
-	<string name="grouptr_invite_expired">এই আমন্ত্রণের মেয়াদ শেষ হয়ে গেছে। গ্রুপটি যিনি তৈরি করেছেন, তার কাছে একটি নতুন আমন্ত্রণ চান।</string>
+	<string name="grouptr_invite_expired">এই আমন্ত্রণের মেয়াদ শেষ হয়ে গেছে। গ্রুপের মালিকের কাছে একটি নতুন আমন্ত্রণ চান।</string>
 	<string name="reaction_removed_here_only">শুধু এই ডিভাইসে সরানো হয়েছে: আপনার পরিচিতির অ্যাপ এত পুরোনো যে তার ডিভাইসে এটি সরানো যায় না।</string>
 	<string name="startup_data_without_account_message">Zerion এই ডিভাইসে ডেটা পেয়েছে, কিন্তু সেটি খোলার মতো কোনো অ্যাকাউন্ট কী পায়নি: কী ফাইলগুলো হারিয়ে গেছে বা নষ্ট হয়ে গেছে। কিছুই মুছে ফেলা হয়নি।\n\nআপনি Zerion বন্ধ করে ডেটা রেখে দিতে পারেন, অথবা সবকিছু মুছে ফেলে নতুন করে শুরু করতে পারেন।</string>
 	<string name="startup_data_without_account_keep">বন্ধ করুন ও রেখে দিন</string>
@@ -2462,13 +2462,13 @@
 	<string name="grouptr_members_may_invite">সদস্যরা তাদের পরিচিতিদের আমন্ত্রণ জানাতে পারেন</string>
 	<string name="grouptr_members_may_invite_summary">এটি চালু থাকলে তাঁরা যাদের আমন্ত্রণ জানান, আপনার ফোন তাদের স্বয়ংক্রিয়ভাবে যোগ করে।</string>
 	<string name="grouptr_invite_contacts">পরিচিতিদের আমন্ত্রণ জানান</string>
-	<string name="grouptr_member_invite_needs_creator_contact">শুধু যে সদস্যদের পরিচিতিতে গ্রুপের নির্মাতা আছেন, তাঁরাই আমন্ত্রণ জানাতে পারেন।</string>
-	<string name="grouptr_member_invite_creator_outdated">সদস্যরা আমন্ত্রণ জানানোর আগে গ্রুপের নির্মাতার অ্যাপের একটি নতুন সংস্করণ প্রয়োজন।</string>
+	<string name="grouptr_member_invite_needs_creator_contact">শুধু যে সদস্যদের পরিচিতিতে গ্রুপের মালিক আছেন, তাঁরাই আমন্ত্রণ জানাতে পারেন।</string>
+	<string name="grouptr_member_invite_creator_outdated">সদস্যরা আমন্ত্রণ জানানোর আগে গ্রুপের মালিকের অ্যাপের একটি নতুন সংস্করণ প্রয়োজন।</string>
 	<string name="grouptr_member_invite_contact_outdated">অ্যাপের একটি নতুন সংস্করণ প্রয়োজন</string>
 	<string name="grouptr_member_invitation_received">%1$s আপনাকে “%2$s” গ্রুপে যোগ দিতে আমন্ত্রণ জানিয়েছেন, যেটি %3$s তৈরি করেছেন।</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s আপনাকে %2$s-এর তৈরি একটি গ্রুপে যোগ দিতে আমন্ত্রণ জানিয়েছেন।</string>
-	<string name="grouptr_waiting_for_admin">গ্রুপের নির্মাতা %1$s অনলাইনে আসার অপেক্ষা করা হচ্ছে। তাঁর ফোন আপনাকে স্বয়ংক্রিয়ভাবে যোগ করবে, তারপর আপনি এখানে পোস্ট করতে পারবেন।</string>
-	<string name="grouptr_member_invite_accepted">গৃহীত হয়েছে। গ্রুপের নির্মাতা অনলাইনে এলেই আপনি যোগ দেবেন।</string>
+	<string name="grouptr_waiting_for_admin">গ্রুপের মালিক %1$s অনলাইনে আসার অপেক্ষা করা হচ্ছে। তাঁর ফোন আপনাকে স্বয়ংক্রিয়ভাবে যোগ করবে, তারপর আপনি এখানে পোস্ট করতে পারবেন।</string>
+	<string name="grouptr_member_invite_accepted">গৃহীত হয়েছে। গ্রুপের মালিক অনলাইনে এলেই আপনি যোগ দেবেন।</string>
 	<string name="grouptr_member_invite_unavailable">এই আমন্ত্রণ আর গ্রহণ করা যাবে না। একটি নতুন আমন্ত্রণ চান।</string>
 	<string name="grouptr_incognito">এই গ্রুপে ছদ্মবেশে</string>
 	<string name="grouptr_incognito_summary">গ্রুপের অন্যরা আপনার নামের বদলে একটি এলোমেলো নাম দেখবেন। যে সদস্যরা আপনার পরিচিতি, তারা এখনও আপনার কী দেখে আপনাকে চিনতে পারবেন।</string>
@@ -2476,7 +2476,7 @@
 	<string name="grouptr_incognito_new_name">নতুন নাম</string>
 	<string name="grouptr_sender_incognito_format">“%1$s” (ছদ্মবেশে)</string>
 	<string name="grouptr_member_may_add">সদস্য যোগ করতে পারেন</string>
-	<string name="grouptr_member_invite_creator_only">শুধু গ্রুপের নির্মাতা সদস্য যোগ করতে পারেন।</string>
+	<string name="grouptr_member_invite_creator_only">শুধু গ্রুপের মালিক সদস্য যোগ করতে পারেন।</string>
 	<string name="tor_status_entry_relay">অস্থির</string>
 	<string name="tor_hidden_services_entry_relay">Tor-এর এন্ট্রি রিলে বেশিরভাগ সংযোগে ব্যর্থ হচ্ছে, তাই পরিচিতিরা আপনার কাছে পৌঁছাতে নাও পারে। এটি অতিরিক্ত চাপযুক্ত নেটওয়ার্ক বা বাধার কারণে হতে পারে। সেটিংস, সংযোগ থেকে Tor সংযোগ পদ্ধতি ব্রিজে বদলালে সাধারণত সাহায্য হয়।</string>
 	<string name="contact_connection_tor_entry_relay">Tor সংযুক্ত, কিন্তু এর এন্ট্রি রিলে বেশিরভাগ সংযোগে ব্যর্থ হচ্ছে। ব্রিজ ব্যবহার করলে সাধারণত সাহায্য হয়।</string>
@@ -2487,4 +2487,42 @@
 	<string name="channels_subscribers_unban">নিষেধাজ্ঞা তুলে নিন</string>
 	<string name="channels_subscribers_unban_confirm">নিষেধাজ্ঞা তুলে নেবেন? এই সাবস্ক্রাইবার আবার মন্তব্য ও প্রতিক্রিয়া দিতে পারবেন। নিষেধাজ্ঞায় যা মুছে গেছে তা ফিরে আসবে না, আর সম্পাদকের ভূমিকা আবার দিতে হবে।</string>
 	<string name="channels_unban_failed">নিষেধাজ্ঞা তুলে নেওয়া যায়নি</string>
+	<string name="contact_delete_failed">যোগাযোগ মুছে ফেলা যায়নি</string>
+	<string name="channels_delegations_revoke_failed">এই সম্পাদককে বাতিল করা যায়নি</string>
+	<string name="channels_invite_rotate_failed">আমন্ত্রণ লিংক বদলানো হয়নি। পুরোনো লিংক এখনও কাজ করে।</string>
+	<string name="channels_apply_unconfirmed">মালিক নিশ্চিত করেননি যে আপনার আবেদন পৌঁছেছে। পরে আবার চেষ্টা করুন।</string>
+	<string name="channels_apply_banner">এই চ্যানেলে প্রবেশের জন্য মালিকের কাছে আবেদন করতে ট্যাপ করুন।</string>
+	<string name="channels_rejoin_updated">%1$s চ্যানেলে আপনার অ্যাক্সেস আপডেট হয়েছে।</string>
+	<string name="channels_rejoin_unreachable">এই মুহূর্তে লিংকটি যাচাই করা যায়নি। পরে আবার চেষ্টা করুন।</string>
+	<string name="channels_rejoin_apply_again">এই চ্যানেলের নতুন পোস্ট পড়তে আপনি আবার আবেদন করতে পারেন। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে। মালিক আপনার প্রদর্শিত নাম এবং শুধু এই চ্যানেলের জন্য আপনার একটি কী দেখতে পাবেন।</string>
+	<string name="channels_sync_last_updated">সর্বশেষ আপডেট: %1$s</string>
+	<string name="channels_sync_saved_posts">সংরক্ষিত পোস্ট দেখানো হচ্ছে</string>
+	<string name="channels_sync_saved_posts_last_updated">সংরক্ষিত পোস্ট দেখানো হচ্ছে · সর্বশেষ আপডেট: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s থেকে আপডেট হয়নি</string>
+	<string name="channels_owner_deleted_notice">মালিক %1$s চ্যানেলটি মুছে ফেলেছেন</string>
+	<string name="channels_owner_deleted_notice_unnamed">আপনার যোগ দেওয়া একটি চ্যানেল মালিক মুছে ফেলেছেন</string>
+	<string name="channels_queued_waiting">পাঠানোর অপেক্ষায়</string>
+	<string name="channels_queued_not_sent">পাঠানো হয়নি</string>
+	<string name="channels_queued_retry">আবার চেষ্টা করুন</string>
+	<string name="channels_queued_delete">মুছুন</string>
+	<string name="channels_comment_queued_toast">চ্যানেলটি উপলব্ধ হলে আপনার মন্তব্য পাঠানো হবে।</string>
+	<string name="channels_react_queued_toast">চ্যানেলটি উপলব্ধ হলে আপনার প্রতিক্রিয়া পাঠানো হবে।</string>
+	<string name="channels_announce_queued_toast">চ্যানেলটি উপলব্ধ হলে আপনার নাম পাঠানো হবে।</string>
+	<string name="channels_post_queued_toast">চ্যানেলটি উপলব্ধ হলে আপনার পোস্ট পাঠানো হবে।</string>
+	<string name="channels_change_queued_toast">চ্যানেলটি উপলব্ধ হলে আপনার পরিবর্তন পাঠানো হবে।</string>
+	<string name="channels_queued_notice_waiting">আপনার পাঠানো কিছু জিনিস অপেক্ষায় আছে। চ্যানেলটি উপলব্ধ হলে সেগুলো পাঠানো হবে।</string>
+	<string name="channels_queued_notice_not_sent">আপনার পাঠানো কিছু জিনিস পাঠানো যায়নি। আবার চেষ্টা করতে বা মুছে ফেলতে ট্যাপ করুন।</string>
+	<string name="channels_queued_announce_label">আপনার নাম: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">এই চ্যানেলে সংযুক্ত হওয়া যায়নি। এই লিংক দিয়ে আপনি আবার যোগ দেওয়ার আবেদন করতে পারেন। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে। মালিক আপনার প্রদর্শিত নাম এবং শুধু এই চ্যানেলের জন্য আপনার একটি কী দেখতে পাবেন।</string>
+	<string name="channels_rejoin_not_restored">এই লিংক দিয়ে এই চ্যানেলে আপনার অ্যাক্সেস ফিরে আসেনি। আপনি একটি নতুন লিংক চাইতে পারেন।</string>
+	<string name="channels_rejoin_check_title">এই লিংকটি চেষ্টা করবেন?</string>
+	<string name="channels_rejoin_check_message">এই মুহূর্তে এই চ্যানেলের নতুন পোস্ট পাওয়া যাচ্ছে না। সেগুলো আবার পেতে আপনি এই লিংকটি চেষ্টা করতে পারেন। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে।</string>
+	<string name="channels_rejoin_check_action">লিংক চেষ্টা করুন</string>
+	<string name="channels_rejoin_try_later">এই মুহূর্তে চ্যানেলটি উপলব্ধ নয়, আর এই লিংকটি আপনার কাছে আগে থেকেই আছে। পরে আবার চেষ্টা করুন। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে।</string>
+	<string name="channels_rejoin_trying">আমরা এই লিংকটি চেষ্টা করতে থাকব। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে।</string>
+	<string name="channels_queued_already_sent">এটি আগেই পাঠানো হয়ে গিয়েছিল, তাই মোছা যায়নি।</string>
+	<string name="channels_queued_behind_toast">এই চ্যানেলে আপনি আগে যা পাঠিয়েছেন, তার পরে এটি পাঠানো হবে।</string>
+	<string name="channels_queued_no_access">পাঠানো হয়নি। এই চ্যানেলে আপনার আর অ্যাক্সেস নেই।</string>
+	<string name="channels_no_access_toast">এই চ্যানেলে আপনার আর অ্যাক্সেস নেই। মালিকের কাছে একটি নতুন আমন্ত্রণ লিংক চান।</string>
+	<string name="channels_rejoin_too_many_links">এই চ্যানেলের জন্য আপনার কাছে আগে থেকেই কয়েকটি লিংক অপেক্ষায় আছে, তাই এই লিংকটি চেষ্টা করা হয়নি। আপনার কাছে আগে থেকে থাকা পোস্টগুলো থেকে যাবে।</string>
 </resources>

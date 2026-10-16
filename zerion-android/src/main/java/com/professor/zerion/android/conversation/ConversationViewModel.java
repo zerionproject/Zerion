@@ -670,6 +670,12 @@ public class ConversationViewModel extends DbViewModel
 						conversationTimer != NO_AUTO_DELETE_TIMER) {
 					throw new UnexpectedTimerException();
 				}
+				if (messagingManager.getContactMessageFormat(txn,
+						requireNonNull(contactId)).isSalted()) {
+					return privateMessageFactory.createSaltedPrivateMessage(
+							groupId, timestamp, text, headers, expectedTimer,
+							replyToId);
+				}
 				return privateMessageFactory.createPrivateMessage(groupId,
 						timestamp, text, headers, expectedTimer, replyToId);
 			}
@@ -709,10 +715,20 @@ public class ConversationViewModel extends DbViewModel
 							noteTimer = autoDeleteManager.getAutoDeleteTimer(
 									txn, requireNonNull(contactId),
 									timestamp);
-							m = privateMessageFactory.createPrivateMessage(
-									groupId, timestamp, secretText,
-									java.util.Collections.emptyList(),
-									noteTimer, null);
+							if (messagingManager.getContactMessageFormat(txn,
+									requireNonNull(contactId)).isSalted()) {
+								m = privateMessageFactory
+										.createSaltedPrivateMessage(groupId,
+												timestamp, secretText,
+												java.util.Collections
+														.emptyList(),
+												noteTimer, null);
+							} else {
+								m = privateMessageFactory.createPrivateMessage(
+										groupId, timestamp, secretText,
+										java.util.Collections.emptyList(),
+										noteTimer, null);
+							}
 						}
 					} catch (FormatException e) {
 						throw new AssertionError(e);

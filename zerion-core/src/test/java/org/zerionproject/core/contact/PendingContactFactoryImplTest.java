@@ -97,6 +97,33 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 		testAcceptsValidLink("zerion://" + encodeLink() + "?foo=bar&baz=qux");
 	}
 
+	@Test
+	public void testAcceptsValidLinkWithCapitalisedScheme() throws Exception {
+		testAcceptsValidLink("Zerion://" + encodeLink());
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithUppercaseScheme() throws Exception {
+		testAcceptsValidLink("ZERION://" + encodeLink());
+	}
+
+	@Test
+	public void testAcceptsValidLinkWithMixedCaseScheme() throws Exception {
+		testAcceptsValidLink("zErIoN://" + encodeLink());
+	}
+
+	@Test(expected = FormatException.class)
+	public void testRejectsLinkWithLookalikeScheme() throws Exception {
+		pendingContactFactory.createPendingContact(
+				"zer\u0131on://" + encodeLink(), alias);
+	}
+
+	@Test(expected = FormatException.class)
+	public void testUppercaseSchemeDoesNotLoosenThePayload() throws Exception {
+		pendingContactFactory.createPendingContact(
+				"ZERION://" + encodeLink().toUpperCase(Locale.US), alias);
+	}
+
 	@Test(expected = FormatException.class)
 	public void testRejectsLinkWithRubbish() throws Exception {
 		pendingContactFactory.createPendingContact(

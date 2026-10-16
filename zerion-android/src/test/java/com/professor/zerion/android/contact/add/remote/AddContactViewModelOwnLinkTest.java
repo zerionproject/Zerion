@@ -16,6 +16,8 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,6 +36,54 @@ public class AddContactViewModelOwnLinkTest {
 
 	private static final String PEER =
 			"zerion://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+	private static final String OWN =
+			"zerion://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+	private static final String[] SCHEMES = {"Zerion", "ZERION", "zErIoN"};
+
+	private static AddContactViewModel viewModel(Application app,
+			ContactManager contactManager) throws Exception {
+		when(contactManager.getHandshakeLink(ContactType.ZERION))
+				.thenReturn(OWN);
+		AddContactViewModel vm = new AddContactViewModel(app,
+				contactManager, Runnable::run, mock(LifecycleManager.class),
+				mock(TransactionManager.class), mock(AndroidExecutor.class),
+				new OwnLinkMemory(new OwnLinkMemoryTest.MemPrefs()));
+		vm.onCreate();
+		return vm;
+	}
+
+	@Test
+	public void aPeerLinkWithAnyCaseOfTheSchemeIsKeptWithTheLowercaseScheme()
+			throws Exception {
+		Application app = ApplicationProvider.getApplicationContext();
+		ContactManager contactManager = mock(ContactManager.class);
+		AddContactViewModel vm = viewModel(app, contactManager);
+		for (String scheme : SCHEMES) {
+			String typed = scheme + PEER.substring("zerion".length());
+			assertTrue(scheme, vm.isValidRemoteContactLink(typed));
+			vm.setRemoteHandshakeLink(typed);
+			assertEquals(scheme, PEER, vm.getRemoteHandshakeLink());
+			assertEquals(scheme, PEER, vm.getLastRemoteHandshakeLink());
+		}
+		vm.addContact("Peer");
+		verify(contactManager).addPendingContact(eq(PEER), eq("Peer"),
+				any(), anyBoolean(), anyBoolean());
+	}
+
+	@Test
+	public void theOwnLinkWithAnyCaseOfTheSchemeIsRecognised()
+			throws Exception {
+		Application app = ApplicationProvider.getApplicationContext();
+		AddContactViewModel vm = viewModel(app, mock(ContactManager.class));
+		assertTrue(vm.isOwnLink(OWN));
+		for (String scheme : SCHEMES) {
+			assertTrue(scheme, vm.isOwnLink(
+					scheme + OWN.substring("zerion".length())));
+		}
+		assertFalse(vm.isOwnLink(PEER));
+	}
 
 	@Test
 	public void aContactLinkIsBoundToTheOwnLinkTheUserLastShared()

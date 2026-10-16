@@ -451,13 +451,18 @@ public class GroupTrConversationActivity extends ZerionActivity
 		}
 		this.stillMember = stillMember && !s.isDissolved() && !waitingForAdmin;
 		if (!this.stillMember) hideReplyPreview();
-		if (waitingForAdmin && !s.isDissolved()) {
+		if (s.isDissolved()) {
+			banner.setText(R.string.groups_group_is_dissolved);
+			banner.setVisibility(View.VISIBLE);
+			composerRow.setVisibility(View.GONE);
+			recordingOverlay.setVisibility(View.GONE);
+		} else if (waitingForAdmin) {
 			banner.setText(getString(R.string.grouptr_waiting_for_admin,
 					s.getCreatorName()));
 			banner.setVisibility(View.VISIBLE);
 			composerRow.setVisibility(View.GONE);
 			recordingOverlay.setVisibility(View.GONE);
-		} else if (!stillMember && !s.isDissolved()) {
+		} else if (!stillMember) {
 			banner.setText(getString(R.string.grouptr_removed_banner,
 					s.getCreatorName()));
 			banner.setVisibility(View.VISIBLE);

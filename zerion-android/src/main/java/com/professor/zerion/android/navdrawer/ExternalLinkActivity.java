@@ -11,6 +11,7 @@ import com.professor.zerion.android.util.SafeIntents;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+import org.zerionproject.core.util.ZerionLinks;
 
 import javax.annotation.Nullable;
 
@@ -38,9 +39,9 @@ public class ExternalLinkActivity extends Activity {
 	}
 
 	static void route(Context ctx, Intent i) {
-		Uri data = i.getData();
+		Uri data = IntentRouter.normalized(i.getData());
 		if (ACTION_VIEW.equals(i.getAction()) && data != null
-				&& "zerion".equals(data.getScheme())
+				&& ZerionLinks.SCHEME.equals(data.getScheme())
 				&& "channel".equals(data.getHost())) {
 			String link = data.toString();
 			if (link.length() > MAX_URI_LENGTH) return;

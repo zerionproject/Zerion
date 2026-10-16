@@ -323,7 +323,7 @@
   <string name="groups_dissolve_dialog_message">Ar tikrai norite išformuoti šią grupę?\n\nVisi kiti nariai nebegalės tęsti savo pokalbio ir gali nebegauti naujausių žinučių.</string>
   <string name="groups_dissolve_button">Išformuoti</string>
   <string name="groups_dissolved_dialog_title">Grupė išformuota</string>
-  <string name="groups_dissolved_dialog_message">Šios grupės įkūrėjas ją išformavo.\n\nJūs daugiau nebegalite rašyti žinučių į šią grupę ir galite nebegauti visų parašytų įrašų.</string>
+  <string name="groups_dissolved_dialog_message">Šios grupės savininkas ją išformavo.\n\nJūs daugiau nebegalite rašyti žinučių į šią grupę ir galite negauti visų parašytų įrašų.</string>
   
   <string name="groups_invitations_title">Pakvietimai į grupę</string>
   <string name="groups_invitations_invitation_sent">Jūs pakvietėte, kad %1$s prisijungtų prie grupės „%2$s“.</string>
@@ -335,9 +335,9 @@
     <item quantity="many">%d atvirų pakvietimų į grupę</item>
     <item quantity="other">%d atviras pakvietimas į grupę</item>
   </plurals>
-  <string name="sharing_status_groups">Tik įkūrėjas gali kviesti naujus narius į grupę. Žemiau yra visi esami grupės nariai.</string>
+  <string name="sharing_status_groups">Tik grupės savininkas gali kviesti naujus narius į grupę. Žemiau yra visi esami grupės nariai.</string>
   
-  <string name="groups_reveal_dialog_message">Galite pasirinkti, ar atskleisti adresatus visiems esamiems ir būsimiems šios grupės nariams.\n\nAdresatų atskleidimas paverčia jūsų ryšį su grupe greitesniu ir labiau patikimu, nes galite bendrauti su atskleistais adresatais netgi tuomet, kai grupės įkūrėjas yra atsijungęs.</string>
+  <string name="groups_reveal_dialog_message">Galite pasirinkti, ar atskleisti adresatus visiems esamiems ir būsimiems šios grupės nariams.\n\nAdresatų atskleidimas paverčia jūsų ryšį su grupe greitesniu ir labiau patikimu, nes galite bendrauti su atskleistais adresatais netgi tuomet, kai grupės savininkas yra atsijungęs.</string>
   <string name="groups_reveal_visible_revealed_by_us">Adresatų sąryšiai yra matomi grupei (atskleidėte jūs)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Adresatų sąryšiai yra matomi grupei (atskleidė %s)</string>
   <string name="groups_reveal_invisible">Adresatų sąryšiai nėra matomi grupei</string>
@@ -1109,7 +1109,7 @@
 	<string name="channels_feed_empty_subscriber">Įrašų dar nėra. Nauji įrašai bus rodomi čia.</string>
 	<string name="channels_post_withheld">Įrašas sulaikytas: kanalo savininkas atšaukė šio autoriaus leidimą skelbti.</string>
 	<string name="channels_feed_connecting">Jungiamasi prie kanalo…</string>
-	<string name="channels_feed_connecting_slow">Vis dar jungiamasi. Įsitikinkite, kad asmuo, pasidalijęs šiuo kanalu, yra prisijungęs. Būsena atsinaujins savaime.</string>
+	<string name="channels_feed_connecting_slow">Vis dar jungiamasi. Įrašai bus rodomi čia, kai kanalas bus pasiekiamas.</string>
 	<string name="channels_compose_hint">Rašykite savo prenumeratoriams…</string>
 	<string name="channels_compose_send">Paskelbti</string>
 	<string name="channels_compose_error_empty">Prieš skelbdami ką nors parašykite.</string>
@@ -1406,7 +1406,7 @@
 	<string name="grouptr_empty">Grupių dar nėra.</string>
 	<string name="grouptr_meta">Narių: %2$d</string>
 	<string name="grouptr_dissolved_suffix">(išformuota)</string>
-	<string name="grouptr_creator_tag">(įkūrėjas)</string>
+	<string name="grouptr_creator_tag">(grupės savininkas)</string>
 	<string name="grouptr_admin_tag">(administratorius)</string>
 	<string name="grouptr_promote">Paaukštinti</string>
 	<string name="grouptr_demote">Pažeminti</string>
@@ -1511,7 +1511,7 @@
 	<string name="grouptr_detail_status">Būsena</string>
 	<string name="grouptr_detail_status_dissolved">Išformuota</string>
 	<string name="grouptr_open_chat">Atverti pokalbį</string>
-	<string name="grouptr_member_role_creator">įkūrėjas</string>
+	<string name="grouptr_member_role_creator">Grupės savininkas</string>
 	<string name="grouptr_member_role_you">jūs</string>
 	<string name="grouptr_member_action_remove">Pašalinti iš grupės</string>
 	<string name="scroll_to_bottom">Slinkti į apačią</string>
@@ -2403,14 +2403,14 @@
 	<string name="wallet_sp_enable_first">Pirmiausia įjunkite Silent Payments</string>
 	<string name="grouptr_reach_title">Kas gauna jūsų įrašus</string>
 	<string name="grouptr_reach_explanation">Grupės įrašai keliauja tiesiogiai tarp narių, kurie yra vienas kito adresatai, ir nariai įrašų nepersiunčia toliau. Šie nariai nėra jūsų adresatai, todėl jie negauna jūsų įrašų, o jūs negaunate jų įrašų:\n\n%1$s\n\nPridėkite juos kaip adresatus, kad juos pasiektumėte.</string>
-	<string name="grouptr_ttl_set_by_creator">Išnykstančios žinutės šioje grupėje: %1$s. Pakeisti tai gali tik grupės įkūrėjas.</string>
+	<string name="grouptr_ttl_set_by_creator">Išnykstančios žinutės šioje grupėje: %1$s. Pakeisti tai gali tik grupės savininkas.</string>
 	<string name="grouptr_sender_alias_format">%1$s (rašo kaip „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (jums nežinomas vardas)</string>
 	<string name="grouptr_member_out_of_reach">ne jūsų adresatas, negauna jūsų įrašų</string>
 	<string name="grouptr_member_invited">Pakviestas, laukiama atsakymo</string>
 	<string name="grouptr_confirm_revoke">Atšaukti pakvietimą, skirtą %1$s? Šio asmens atsakymas bus ignoruojamas.</string>
 	<string name="grouptr_revoke_invite">Atšaukti pakvietimą</string>
-	<string name="grouptr_invite_expired">Šio pakvietimo galiojimas pasibaigė. Paprašykite grupės įkūrėjo naujo.</string>
+	<string name="grouptr_invite_expired">Šio pakvietimo galiojimas pasibaigė. Paprašykite grupės savininko naujo.</string>
 	<string name="reaction_removed_here_only">Pašalinta tik šiame įrenginyje: jūsų adresato programėlė per sena, kad reakciją būtų galima pašalinti ir jo įrenginyje.</string>
 	<string name="startup_data_without_account_message">Zerion šiame įrenginyje rado duomenų, bet nerado paskyros rakto, kuriuo juos būtų galima atverti: rakto failų trūksta arba jie sugadinti. Niekas neištrinta.\n\nGalite uždaryti Zerion ir palikti duomenis arba viską ištrinti ir pradėti iš naujo.</string>
 	<string name="startup_data_without_account_keep">Uždaryti ir palikti</string>
@@ -2525,13 +2525,13 @@
 	<string name="grouptr_members_may_invite">Nariai gali kviesti savo adresatus</string>
 	<string name="grouptr_members_may_invite_summary">Kol tai įjungta, jūsų telefonas automatiškai prideda jų pakviestus žmones.</string>
 	<string name="grouptr_invite_contacts">Pakviesti adresatus</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Kviesti gali tik tie nariai, kurių adresatų sąraše yra grupės įkūrėjas.</string>
-	<string name="grouptr_member_invite_creator_outdated">Grupės įkūrėjui reikia naujesnės programėlės versijos, kad nariai galėtų kviesti.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Kviesti gali tik tie nariai, kurių adresatų sąraše yra grupės savininkas.</string>
+	<string name="grouptr_member_invite_creator_outdated">Grupės savininkui reikia naujesnės programėlės versijos, kad nariai galėtų kviesti.</string>
 	<string name="grouptr_member_invite_contact_outdated">Reikia naujesnės programėlės versijos</string>
 	<string name="grouptr_member_invitation_received">%1$s pakvietė jus prisijungti prie grupės „%2$s“, kurią sukūrė %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s pakvietė jus prisijungti prie grupės, kurią sukūrė %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Laukiama, kol grupės įkūrėjas %1$s bus pasiekiamas. Įkūrėjo telefonas jus pridės automatiškai, tada galėsite čia skelbti įrašus.</string>
-	<string name="grouptr_member_invite_accepted">Priimta. Prisijungsite, kai tik grupės įkūrėjas bus pasiekiamas.</string>
+	<string name="grouptr_waiting_for_admin">Laukiama, kol grupės savininkas %1$s bus pasiekiamas. Savininko telefonas jus pridės automatiškai, tada galėsite čia skelbti įrašus.</string>
+	<string name="grouptr_member_invite_accepted">Priimta. Prisijungsite, kai tik grupės savininkas bus pasiekiamas.</string>
 	<string name="grouptr_member_invite_unavailable">Šio pakvietimo nebegalima priimti. Paprašykite naujo.</string>
 	<string name="grouptr_incognito">Inkognito šioje grupėje</string>
 	<string name="grouptr_incognito_summary">Kiti grupės nariai matys atsitiktinį vardą vietoje jūsų. Nariai, kurie yra jūsų adresatai, vis tiek gali jus atpažinti pagal jūsų raktą.</string>
@@ -2539,7 +2539,7 @@
 	<string name="grouptr_incognito_new_name">Naujas vardas</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (inkognito)</string>
 	<string name="grouptr_member_may_add">Gali pridėti narių</string>
-	<string name="grouptr_member_invite_creator_only">Narių pridėti gali tik grupės kūrėjas.</string>
+	<string name="grouptr_member_invite_creator_only">Narių pridėti gali tik grupės savininkas.</string>
 	<string name="tor_status_entry_relay">Nestabilu</string>
 	<string name="tor_hidden_services_entry_relay">Tor įėjimo retransliatorius nepavyksta daugumai ryšių, todėl kontaktai gali jūsų nepasiekti. Priežastis gali būti perkrautas tinklas ar trukdžiai. Paprastai padeda pakeisti Tor jungimosi būdą į tiltus skiltyje Nustatymai, Ryšiai.</string>
 	<string name="contact_connection_tor_entry_relay">Tor prijungtas, bet jo įėjimo retransliatorius nepavyksta daugumai ryšių. Tiltai paprastai padeda.</string>
@@ -2550,4 +2550,42 @@
 	<string name="channels_subscribers_unban">Atblokuoti</string>
 	<string name="channels_subscribers_unban_confirm">Atblokuoti? Šis prenumeratorius vėl galės komentuoti ir reaguoti. Tai, ką pašalino blokavimas, nebegrįš, o redaktoriaus vaidmenį reikės suteikti iš naujo.</string>
 	<string name="channels_unban_failed">Nepavyko atblokuoti</string>
+	<string name="contact_delete_failed">Nepavyko ištrinti adresato</string>
+	<string name="channels_delegations_revoke_failed">Nepavyko atšaukti šio redaktoriaus teisių</string>
+	<string name="channels_invite_rotate_failed">Pakvietimo nuoroda nepakeista. Senoji nuoroda vis dar veikia.</string>
+	<string name="channels_apply_unconfirmed">Savininkas nepatvirtino, kad gavo jūsų prašymą. Bandykite vėliau.</string>
+	<string name="channels_apply_banner">Bakstelėkite, kad paprašytumėte savininko prieigos prie šio kanalo.</string>
+	<string name="channels_rejoin_updated">Atnaujinta jūsų prieiga prie kanalo „%1$s“.</string>
+	<string name="channels_rejoin_unreachable">Šiuo metu nepavyko patikrinti šios nuorodos. Bandykite vėliau.</string>
+	<string name="channels_rejoin_apply_again">Norėdami skaityti naujus šio kanalo įrašus, galite dar kartą pateikti prašymą. Jau turimi įrašai liks. Savininkas matys jūsų rodomą vardą ir raktą, kuris priklauso jums tik šiame kanale.</string>
+	<string name="channels_sync_last_updated">Paskutinį kartą atnaujinta %1$s</string>
+	<string name="channels_sync_saved_posts">Rodomi išsaugoti įrašai</string>
+	<string name="channels_sync_saved_posts_last_updated">Rodomi išsaugoti įrašai · Paskutinį kartą atnaujinta %1$s</string>
+	<string name="channels_sync_not_updated_since">Neatnaujinta nuo %1$s</string>
+	<string name="channels_owner_deleted_notice">Savininkas ištrynė kanalą „%1$s“</string>
+	<string name="channels_owner_deleted_notice_unnamed">Savininkas ištrynė kanalą, prie kurio buvote prisijungę</string>
+	<string name="channels_queued_waiting">Laukiama išsiuntimo</string>
+	<string name="channels_queued_not_sent">Neišsiųsta</string>
+	<string name="channels_queued_retry">Bandyti dar kartą</string>
+	<string name="channels_queued_delete">Ištrinti</string>
+	<string name="channels_comment_queued_toast">Jūsų komentaras bus išsiųstas, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_react_queued_toast">Jūsų reakcija bus išsiųsta, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_announce_queued_toast">Jūsų vardas bus išsiųstas, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_post_queued_toast">Jūsų įrašas bus išsiųstas, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_change_queued_toast">Jūsų pakeitimas bus išsiųstas, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_queued_notice_waiting">Dalis to, ką išsiuntėte, dar laukia. Tai bus išsiųsta, kai kanalas bus pasiekiamas.</string>
+	<string name="channels_queued_notice_not_sent">Dalis to, ką išsiuntėte, nebuvo išsiųsta. Bakstelėkite, kad bandytumėte dar kartą arba ištrintumėte.</string>
+	<string name="channels_queued_announce_label">Jūsų vardas: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Nepavyko pasiekti šio kanalo. Naudodami šią nuorodą galite dar kartą pateikti prašymą prisijungti. Jau turimi įrašai liks. Savininkas matys jūsų rodomą vardą ir raktą, kuris priklauso jums tik šiame kanale.</string>
+	<string name="channels_rejoin_not_restored">Ši nuoroda negrąžino jūsų prieigos prie šio kanalo. Galite paprašyti naujos nuorodos.</string>
+	<string name="channels_rejoin_check_title">Išbandyti šią nuorodą?</string>
+	<string name="channels_rejoin_check_message">Šiuo metu nepavyksta pasiekti naujų šio kanalo įrašų. Galite išbandyti šią nuorodą, kad vėl juos gautumėte. Jau turimi įrašai liks.</string>
+	<string name="channels_rejoin_check_action">Išbandyti nuorodą</string>
+	<string name="channels_rejoin_try_later">Šiuo metu nepavyksta pasiekti šio kanalo, o ši nuoroda yra ta pati, kurią jau turite. Bandykite vėliau. Jau turimi įrašai liks.</string>
+	<string name="channels_rejoin_trying">Toliau bandysime šią nuorodą. Jau turimi įrašai liks.</string>
+	<string name="channels_queued_already_sent">Tai jau buvo išsiųsta, todėl nepavyko ištrinti.</string>
+	<string name="channels_queued_behind_toast">Tai bus išsiųsta po to, ką anksčiau išsiuntėte į šį kanalą.</string>
+	<string name="channels_queued_no_access">Neišsiųsta. Nebeturite prieigos prie šio kanalo.</string>
+	<string name="channels_no_access_toast">Nebeturite prieigos prie šio kanalo. Paprašykite savininko naujos pakvietimo nuorodos.</string>
+	<string name="channels_rejoin_too_many_links">Šiam kanalui jau turite kelias laukiančias nuorodas, todėl šios nebandėme. Jau turimi įrašai liks.</string>
 </resources>

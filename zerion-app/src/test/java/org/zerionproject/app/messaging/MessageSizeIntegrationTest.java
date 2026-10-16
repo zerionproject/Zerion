@@ -22,6 +22,8 @@ import static org.zerionproject.app.api.attachment.MediaConstants.MAX_CONTENT_TY
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.MAX_AUTO_DELETE_TIMER_MS;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_ATTACHMENTS_PER_MESSAGE;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MessageSizeIntegrationTest extends BrambleTestCase {
@@ -75,6 +77,55 @@ public class MessageSizeIntegrationTest extends BrambleTestCase {
 				+ MAX_PRIVATE_MESSAGE_TEXT_LENGTH + MAX_ATTACHMENTS_PER_MESSAGE
 				* (UniqueId.LENGTH + MAX_CONTENT_TYPE_BYTES) + 4);
 		assertTrue(length <= MAX_RECORD_PAYLOAD_BYTES);
+	}
+
+	@Test
+	public void testSaltedPrivateMessageFitsIntoRecord() throws Exception {
+
+		GroupId groupId = new GroupId(getRandomId());
+		long timestamp = Long.MAX_VALUE;
+		String text = getRandomString(MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
+
+		List<AttachmentHeader> headers = new ArrayList<>();
+		for (int i = 0; i < MAX_ATTACHMENTS_PER_MESSAGE; i++) {
+			headers.add(new AttachmentHeader(groupId,
+					new MessageId(getRandomId()),
+					getRandomString(MAX_CONTENT_TYPE_BYTES)));
+		}
+		PrivateMessage message = privateMessageFactory
+				.createSaltedPrivateMessage(groupId, timestamp, text, headers,
+						MAX_AUTO_DELETE_TIMER_MS, new MessageId(getRandomId()));
+
+		int length = message.getMessage().getRawLength();
+		assertTrue(length > UniqueId.LENGTH + 8
+				+ MAX_PRIVATE_MESSAGE_TEXT_LENGTH + MAX_ATTACHMENTS_PER_MESSAGE
+				* (UniqueId.LENGTH + MAX_CONTENT_TYPE_BYTES) + 4
+				+ UniqueId.LENGTH + BODY_SALT_LENGTH);
+		assertTrue(length <= MAX_RECORD_PAYLOAD_BYTES);
+	}
+
+	@Test
+	public void testSaltAddsThirtyFiveBytesOrThirtyFourWithAQuote()
+			throws Exception {
+		GroupId groupId = new GroupId(getRandomId());
+		MessageId quoted = new MessageId(getRandomId());
+		List<AttachmentHeader> none = new ArrayList<>();
+
+		int plain = privateMessageFactory.createPrivateMessage(groupId, 1000L,
+				"hi", none, MAX_AUTO_DELETE_TIMER_MS, null).getMessage()
+				.getRawLength();
+		int salted = privateMessageFactory.createSaltedPrivateMessage(groupId,
+				1000L, "hi", none, MAX_AUTO_DELETE_TIMER_MS, null)
+				.getMessage().getRawLength();
+		int plainReply = privateMessageFactory.createPrivateMessage(groupId,
+				1000L, "hi", none, MAX_AUTO_DELETE_TIMER_MS, quoted)
+				.getMessage().getRawLength();
+		int saltedReply = privateMessageFactory.createSaltedPrivateMessage(
+				groupId, 1000L, "hi", none, MAX_AUTO_DELETE_TIMER_MS, quoted)
+				.getMessage().getRawLength();
+
+		assertEquals(35, salted - plain);
+		assertEquals(34, saltedReply - plainReply);
 	}
 
 }

@@ -16,6 +16,8 @@ import android.widget.Toast;
 import com.professor.zerion.R;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.app.api.channel.ChannelConstants;
+import org.zerionproject.core.util.ZerionLinks;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +28,9 @@ import javax.annotation.Nullable;
 public final class ChannelInviteSpanUtil {
 
 	private static final Pattern INVITE_PATTERN = Pattern.compile(
-			"zerion://channel/[A-Za-z0-9./?=&_-]+");
+			ZerionLinks.SCHEME_PATTERN + "://"
+					+ ChannelConstants.INVITE_LINK_HOST
+					+ "/[A-Za-z0-9./?=&_-]+");
 
 	private ChannelInviteSpanUtil() {
 	}
@@ -35,7 +39,7 @@ public final class ChannelInviteSpanUtil {
 		if (body == null) return false;
 		Matcher m = INVITE_PATTERN.matcher(body);
 		if (!m.find()) return false;
-		String link = m.group();
+		String link = ZerionLinks.normalizeScheme(m.group());
 		Context ctx = textView.getContext();
 		SpannableStringBuilder sb = new SpannableStringBuilder(body);
 		int linkStart = m.start();

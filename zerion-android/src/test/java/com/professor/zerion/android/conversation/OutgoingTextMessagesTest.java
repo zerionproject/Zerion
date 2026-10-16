@@ -48,6 +48,8 @@ public class OutgoingTextMessagesTest {
 				any(), anyLong(), any())).thenReturn(built);
 		when(factory.createPrivateMessage(any(), anyLong(), anyString(),
 				any())).thenReturn(built);
+		when(factory.createSaltedPrivateMessage(any(), anyLong(), anyString(),
+				any(), anyLong(), any())).thenReturn(built);
 		when(factory.createLegacyPrivateMessage(any(), anyLong(),
 				anyString())).thenReturn(built);
 		return OutgoingTextMessages.create(txn, messaging, autoDelete, factory,
@@ -66,6 +68,18 @@ public class OutgoingTextMessagesTest {
 				eq(Collections.emptyList()), eq(HOUR), eq(null));
 		verify(factory, never()).createLegacyPrivateMessage(any(), anyLong(),
 				anyString());
+		verify(factory, never()).createSaltedPrivateMessage(any(), anyLong(),
+				anyString(), any(), anyLong(), any());
+	}
+
+	@Test
+	public void aCurrentContactGetsASaltedMessageWithTheTimer()
+			throws Exception {
+		assertSame(built, send(PrivateMessageFormat.TEXT_IMAGES_SALTED));
+		verify(factory).createSaltedPrivateMessage(eq(group), eq(1000L),
+				eq("hi"), eq(Collections.emptyList()), eq(HOUR), eq(null));
+		verify(factory, never()).createPrivateMessage(any(), anyLong(),
+				anyString(), any(), anyLong(), any());
 	}
 
 	@Test
@@ -77,6 +91,8 @@ public class OutgoingTextMessagesTest {
 				Collections.emptyList());
 		verify(autoDelete, never()).getAutoDeleteTimer(any(), any(),
 				anyLong());
+		verify(factory, never()).createSaltedPrivateMessage(any(), anyLong(),
+				anyString(), any(), anyLong(), any());
 	}
 
 	@Test
@@ -102,5 +118,30 @@ public class OutgoingTextMessagesTest {
 		assertTrue(secret.contains("noteTimer = autoDeleteManager"
 				+ ".getAutoDeleteTimer("));
 		assertFalse(secret.contains("NO_AUTO_DELETE_TIMER, null);"));
+	}
+
+	@Test
+	public void composedMessagesAndSecretNotesAreSaltedForACurrentContact()
+			throws Exception {
+		String vm = new String(Files.readAllBytes(Paths.get(
+				"src/main/java/com/professor/zerion/android/conversation/"
+						+ "ConversationViewModel.java")),
+				StandardCharsets.UTF_8);
+		int compose = vm.indexOf("private PrivateMessage createMessage(");
+		String composed = vm.substring(compose, vm.indexOf(
+				"void sendSecretNote(", compose));
+		int note = vm.indexOf("void sendSecretNote(");
+		String secret = vm.substring(note, vm.indexOf(
+				"private void storeReplyContext(", note));
+		java.util.regex.Pattern decided = java.util.regex.Pattern.compile(
+				"if \\(messagingManager\\.getContactMessageFormat\\(txn,"
+						+ "\\s*requireNonNull\\(contactId\\)\\)\\.isSalted\\(\\)\\)"
+						+ " \\{\\s*(return )?(m = )?privateMessageFactory"
+						+ "\\s*\\.createSaltedPrivateMessage\\(");
+		for (String path : new String[] {composed, secret}) {
+			assertTrue("the salt follows the contact's version at sending",
+					decided.matcher(path).find());
+			assertFalse(path.contains("if (format.isSalted()) {"));
+		}
 	}
 }

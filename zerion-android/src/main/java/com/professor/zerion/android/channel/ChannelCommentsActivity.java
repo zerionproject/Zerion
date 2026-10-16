@@ -28,6 +28,8 @@ import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.app.api.channel.ChannelComment;
 import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelQueuedItem;
+import org.zerionproject.app.api.channel.ChannelRequestQueuedException;
 import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -110,7 +112,18 @@ public class ChannelCommentsActivity extends ZerionActivity
 		sendButton = findViewById(R.id.commentsComposeSendButton);
 		composeBar = findViewById(R.id.commentsComposeBar);
 		disabledNotice = findViewById(R.id.commentsDisabledNotice);
-		adapter = new CommentsAdapter(this::confirmBanAuthor);
+		adapter = new CommentsAdapter(this::confirmBanAuthor,
+				new CommentsAdapter.OnQueued() {
+					@Override
+					public void retry(ChannelQueuedItem item) {
+						retryQueued(item);
+					}
+
+					@Override
+					public void delete(ChannelQueuedItem item) {
+						deleteQueued(item);
+					}
+				});
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 		sendButton.setOnClickListener(v -> handleSend());
@@ -214,6 +227,17 @@ public class ChannelCommentsActivity extends ZerionActivity
 			} catch (DbException ex) {
 				comments = Collections.emptyList();
 			}
+			List<ChannelQueuedItem> queued = new ArrayList<>();
+			try {
+				for (ChannelQueuedItem q
+						: channelManager.getQueuedItems(channelId)) {
+					if (q.getKind() == ChannelQueuedItem.Kind.COMMENT
+							&& q.getPostSeqNum() == parentSeq) {
+						queued.add(q);
+					}
+				}
+			} catch (DbException ignored) {
+			}
 			try {
 				channelEnabled =
 						channelManager.areDiscussionsEnabled(channelId);
@@ -237,8 +261,38 @@ public class ChannelCommentsActivity extends ZerionActivity
 			final boolean finalOwner = owner;
 			runOnUiThreadUnlessDestroyed(() -> {
 				adapter.setKeys(finalOwnerKey, finalMyKey, finalOwner);
-				render(finalComments);
+				render(finalComments, queued);
 				bindComposerEnabled(finalEnabled, finalChannelEnabled);
+			});
+		});
+	}
+
+	private void retryQueued(ChannelQueuedItem item) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.retryQueuedItem(channelId, item.getId());
+			} catch (DbException ignored) {
+			}
+			runOnUiThreadUnlessDestroyed(this::refresh);
+		});
+	}
+
+	private void deleteQueued(ChannelQueuedItem item) {
+		ioExecutor.execute(() -> {
+			ChannelQueuedItem.DeleteResult result =
+					ChannelQueuedItem.DeleteResult.GONE;
+			try {
+				result = channelManager.deleteQueuedItem(channelId,
+						item.getId());
+			} catch (DbException ignored) {
+			}
+			boolean sent = result == ChannelQueuedItem.DeleteResult.SENT;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (sent) {
+					Toast.makeText(this, R.string.channels_queued_already_sent,
+							Toast.LENGTH_SHORT).show();
+				}
+				refresh();
 			});
 		});
 	}
@@ -273,15 +327,19 @@ public class ChannelCommentsActivity extends ZerionActivity
 				: R.string.channels_comments_disabled_compose);
 	}
 
-	private void render(List<ChannelComment> comments) {
-		if (comments.isEmpty()) {
+	private void render(List<ChannelComment> comments,
+			List<ChannelQueuedItem> queued) {
+		List<Row> rows = new ArrayList<>(comments.size() + queued.size());
+		for (ChannelComment c : comments) rows.add(new Row(c, null));
+		for (ChannelQueuedItem q : queued) rows.add(new Row(null, q));
+		if (rows.isEmpty()) {
 			recycler.setVisibility(View.GONE);
 			emptyView.setVisibility(View.VISIBLE);
 		} else {
 			recycler.setVisibility(View.VISIBLE);
 			emptyView.setVisibility(View.GONE);
-			adapter.setItems(comments);
-			recycler.scrollToPosition(comments.size() - 1);
+			adapter.setItems(rows);
+			recycler.scrollToPosition(rows.size() - 1);
 		}
 	}
 
@@ -294,6 +352,22 @@ public class ChannelCommentsActivity extends ZerionActivity
 			try {
 				channelManager.postComment(channelId, parentSeq, body);
 				runOnUiThreadUnlessDestroyed(this::refresh);
+			} catch (ChannelRequestQueuedException queued) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					Toast.makeText(this, queued.isBehindEarlierItems()
+							? R.string.channels_queued_behind_toast
+							: R.string.channels_comment_queued_toast,
+							Toast.LENGTH_SHORT).show();
+					refresh();
+				});
+			} catch (org.zerionproject.app.api.channel
+					.ChannelNoAccessException noAccess) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					composeInput.setText(body);
+					composeInput.setSelection(body.length());
+					Toast.makeText(this, R.string.channels_no_access_toast,
+							Toast.LENGTH_LONG).show();
+				});
 			} catch (DbException ignored) {
 				runOnUiThreadUnlessDestroyed(() -> {
 					composeInput.setText(body);
@@ -305,6 +379,20 @@ public class ChannelCommentsActivity extends ZerionActivity
 		});
 	}
 
+	private static final class Row {
+
+		@Nullable
+		final ChannelComment comment;
+		@Nullable
+		final ChannelQueuedItem queued;
+
+		Row(@Nullable ChannelComment comment,
+				@Nullable ChannelQueuedItem queued) {
+			this.comment = comment;
+			this.queued = queued;
+		}
+	}
+
 	private static class CommentsAdapter
 			extends RecyclerView.Adapter<CommentViewHolder> {
 
@@ -312,14 +400,22 @@ public class ChannelCommentsActivity extends ZerionActivity
 			void onBan(ChannelComment comment);
 		}
 
+		interface OnQueued {
+			void retry(ChannelQueuedItem item);
+
+			void delete(ChannelQueuedItem item);
+		}
+
 		private final OnBan onBan;
-		private List<ChannelComment> items = new ArrayList<>();
+		private final OnQueued onQueued;
+		private List<Row> items = new ArrayList<>();
 		private byte[] ownerKey = new byte[0];
 		private byte[] myKey = new byte[0];
 		private boolean weAreOwner;
 
-		CommentsAdapter(OnBan onBan) {
+		CommentsAdapter(OnBan onBan, OnQueued onQueued) {
 			this.onBan = onBan;
+			this.onQueued = onQueued;
 		}
 
 		void setKeys(byte[] ownerKey, byte[] myKey, boolean weAreOwner) {
@@ -328,8 +424,8 @@ public class ChannelCommentsActivity extends ZerionActivity
 			this.weAreOwner = weAreOwner;
 		}
 
-		void setItems(List<ChannelComment> comments) {
-			this.items = comments;
+		void setItems(List<Row> rows) {
+			this.items = rows;
 			notifyDataSetChanged();
 		}
 
@@ -345,7 +441,15 @@ public class ChannelCommentsActivity extends ZerionActivity
 		@Override
 		public void onBindViewHolder(@NonNull CommentViewHolder h,
 				int position) {
-			ChannelComment c = items.get(position);
+			Row row = items.get(position);
+			ChannelQueuedItem q = row.queued;
+			if (q != null || row.comment == null) {
+				if (q != null) h.bindQueued(q, onQueued);
+				h.itemView.setOnLongClickListener(null);
+				h.itemView.setLongClickable(false);
+				return;
+			}
+			ChannelComment c = row.comment;
 			byte[] author = c.getAuthorEd25519PubKey();
 			boolean byOwner = Arrays.equals(author, ownerKey);
 			boolean byMe = Arrays.equals(author, myKey);
@@ -382,16 +486,42 @@ public class ChannelCommentsActivity extends ZerionActivity
 		final TextView author;
 		final TextView body;
 		final TextView timestamp;
+		final View queuedActions;
+		final View retryButton;
+		final View deleteButton;
 
 		CommentViewHolder(@NonNull View itemView) {
 			super(itemView);
 			author = itemView.findViewById(R.id.commentAuthor);
 			body = itemView.findViewById(R.id.commentBody);
 			timestamp = itemView.findViewById(R.id.commentTimestamp);
+			queuedActions = itemView.findViewById(R.id.commentQueuedActions);
+			retryButton = itemView.findViewById(R.id.commentRetryButton);
+			deleteButton = itemView.findViewById(R.id.commentDeleteButton);
+		}
+
+		void bindQueued(ChannelQueuedItem q, CommentsAdapter.OnQueued on) {
+			android.content.Context ctx = itemView.getContext();
+			author.setText(ctx.getString(R.string.channels_comment_you));
+			body.setText(q.getText());
+			body.setAlpha(q.isNotSent() ? 1f : 0.6f);
+			timestamp.setText(!q.isNotSent()
+					? R.string.channels_queued_waiting
+					: q.getReason() == ChannelQueuedItem.Reason.NO_ACCESS
+					? R.string.channels_queued_no_access
+					: R.string.channels_queued_not_sent);
+			queuedActions.setVisibility(q.isNotSent()
+					? View.VISIBLE : View.GONE);
+			retryButton.setOnClickListener(v -> on.retry(q));
+			deleteButton.setOnClickListener(v -> on.delete(q));
 		}
 
 		void bind(ChannelComment c, boolean byOwner, boolean byMe) {
 			android.content.Context ctx = itemView.getContext();
+			body.setAlpha(1f);
+			queuedActions.setVisibility(View.GONE);
+			retryButton.setOnClickListener(null);
+			deleteButton.setOnClickListener(null);
 			String name = c.getAuthorDisplayName().trim();
 			StringBuilder label = new StringBuilder(name.isEmpty()
 					? ctx.getString(R.string.channels_comment_anonymous)

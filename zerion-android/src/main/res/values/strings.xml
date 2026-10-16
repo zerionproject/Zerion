@@ -345,11 +345,28 @@
 	<string name="channels_join_confirm">Join this channel? Publisher key: %1$s</string>
 	<string name="channels_join_error_link">That doesn\'t look like a valid Zerion channel invite link.</string>
 	<string name="channels_join_already_subscribed">You\'re already subscribed to this channel.</string>
+	<string name="channels_rejoin_updated">Updated your access to %1$s.</string>
+	<string name="channels_rejoin_unreachable">Could not check this link right now. Try again later.</string>
+	<string name="channels_rejoin_apply_again">You can apply again to read new posts in this channel. The posts you already have stay. The owner will see your display name and a key that belongs to you in this channel only.</string>
+	<string name="channels_rejoin_apply_again_unreachable">This channel could not be reached. You can ask to join again with this link. The posts you already have stay. The owner will see your display name and a key that belongs to you in this channel only.</string>
+	<string name="channels_rejoin_not_restored">This link did not bring back your access to this channel. You can ask for a new link.</string>
+	<string name="channels_rejoin_check_title">Try this link?</string>
+	<string name="channels_rejoin_check_message">New posts in this channel cannot be reached right now. You can try this link to get them again. The posts you already have stay.</string>
+	<string name="channels_rejoin_check_action">Try link</string>
+	<string name="channels_rejoin_try_later">This channel cannot be reached right now, and this link is the one you already have. Try again later. The posts you already have stay.</string>
+	<string name="channels_rejoin_too_many_links">You already have several links waiting for this channel, so this one was not tried. The posts you already have stay.</string>
+	<string name="channels_rejoin_trying">We\'ll keep trying this link. The posts you already have stay.</string>
 	<string name="channels_feed_empty_publisher">Your channel has no posts yet. Publish your first one.</string>
 	<string name="channels_feed_empty_subscriber">No posts yet. New posts will appear here.</string>
 	<string name="channels_post_withheld">Post withheld: the channel owner revoked this author\'s permission to post.</string>
 	<string name="channels_feed_connecting">Connecting to the channel…</string>
-	<string name="channels_feed_connecting_slow">Still connecting. Make sure the person who shared this channel is online. This will update on its own.</string>
+	<string name="channels_feed_connecting_slow">Still connecting. Posts will appear here once the channel can be reached.</string>
+	<string name="channels_sync_last_updated">Last updated %1$s</string>
+	<string name="channels_sync_saved_posts">Showing saved posts</string>
+	<string name="channels_sync_saved_posts_last_updated">Showing saved posts · Last updated %1$s</string>
+	<string name="channels_sync_not_updated_since">Not updated since %1$s</string>
+	<string name="channels_owner_deleted_notice">The owner deleted the channel %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">The owner deleted a channel you had joined</string>
 	<string name="channels_compose_hint">Write to your subscribers…</string>
 	<string name="channels_compose_send">Publish</string>
 	<string name="channels_compose_error_empty">Type something before publishing.</string>
@@ -359,6 +376,7 @@
 	<string name="channels_invite_not_ready">Channel is not ready to share yet. Make sure you are connected and try again.</string>
 	<string name="channels_invite_rotate_confirm_title">Rotate invite link?</string>
 	<string name="channels_invite_rotate_confirm_message">Everyone who has the old link loses access, current subscribers included, and the channel moves to a new address at once. Posts from before the change cannot be read with the new link. Share the new link with the people who should stay.</string>
+	<string name="channels_invite_rotate_failed">The invite link was not changed. The old link still works.</string>
 	<string name="channels_leave_confirm_title">Leave channel?</string>
 	<string name="channels_leave_confirm_message">All locally cached posts for this channel will be removed from your device.</string>
 	<string name="channels_leave_confirm_action">Leave</string>
@@ -389,6 +407,7 @@
 	<string name="channels_delegations_validity_unbounded">No expiry</string>
 	<string name="channels_delegations_added">Editor added.</string>
 	<string name="channels_delegations_revoked">Editor revoked. New posts from this editor will be rejected by subscribers.</string>
+	<string name="channels_delegations_revoke_failed">Could not revoke this editor</string>
 	<string name="channels_delegations_error_full">This channel already has the maximum number of editors (8).</string>
 	<string name="channels_delegations_error_key">That doesn\'t look like a valid editor public key.</string>
 	<string name="channels_action_send_to_contact">Send to a contact…</string>
@@ -472,6 +491,22 @@
 	<string name="channels_discussions_confirm_disable_title">Disable discussions?</string>
 	<string name="channels_discussions_confirm_disable_message">Existing comments remain visible. New comment attempts will be rejected until you re-enable.</string>
 	<string name="channels_discussions_toggle_failed_toast">Could not change the discussion setting. Try again.</string>
+	<string name="channels_queued_waiting">Waiting to send</string>
+	<string name="channels_queued_not_sent">Not sent</string>
+	<string name="channels_queued_retry">Retry</string>
+	<string name="channels_queued_delete">Delete</string>
+	<string name="channels_comment_queued_toast">Your comment will be sent when the channel is reachable.</string>
+	<string name="channels_react_queued_toast">Your reaction will be sent when the channel is reachable.</string>
+	<string name="channels_announce_queued_toast">Your name will be sent when the channel is reachable.</string>
+	<string name="channels_post_queued_toast">Your post will be sent when the channel is reachable.</string>
+	<string name="channels_change_queued_toast">Your change will be sent when the channel is reachable.</string>
+	<string name="channels_queued_notice_waiting">Some of what you sent is waiting. It will be sent when the channel is reachable.</string>
+	<string name="channels_queued_notice_not_sent">Some of what you sent was not sent. Tap to retry or delete it.</string>
+	<string name="channels_queued_announce_label">Your name: %1$s</string>
+	<string name="channels_queued_already_sent">It was already sent, so it could not be deleted.</string>
+	<string name="channels_queued_behind_toast">This will be sent after what you sent earlier to this channel.</string>
+	<string name="channels_queued_no_access">Not sent. You no longer have access to this channel.</string>
+	<string name="channels_no_access_toast">You no longer have access to this channel. Ask the owner for a new invite link.</string>
 	<string name="hardened_mode_title">Hardened mode</string>
 	<string name="hardened_mode_summary_format">%1$d of 3 on</string>
 	<string name="hardened_mode_dialog_title">Hardened mode</string>
@@ -504,6 +539,8 @@
 	<string name="channels_apply_message">The channel owner must approve your application before you can read posts. The owner will see your display name and a key that belongs to you in this channel only.</string>
 	<string name="channels_apply_action">Apply</string>
 	<string name="channels_apply_failed">Could not send application</string>
+	<string name="channels_apply_unconfirmed">The owner has not confirmed that your application arrived. Try again later.</string>
+	<string name="channels_apply_banner">Tap to apply to the owner for access to this channel.</string>
 	<string name="channels_approval_pending_banner">Waiting for the owner to approve your application…</string>
 	<string name="channels_approval_denied_banner">Your application was denied.</string>
 	<string name="channels_pending_title">Pending applications</string>
@@ -775,7 +812,7 @@
 	<string name="grouptr_empty">No groups yet.</string>
 	<string name="grouptr_meta">%2$d members</string>
 	<string name="grouptr_dissolved_suffix">(dissolved)</string>
-	<string name="grouptr_creator_tag">(creator)</string>
+	<string name="grouptr_creator_tag">(group owner)</string>
 	<string name="grouptr_admin_tag">(admin)</string>
 	<string name="grouptr_promote">Promote</string>
 	<string name="grouptr_demote">Demote</string>
@@ -879,7 +916,7 @@
 	<string name="grouptr_detail_status">Status</string>
 	<string name="grouptr_detail_status_dissolved">Dissolved</string>
 	<string name="grouptr_open_chat">Open chat</string>
-	<string name="grouptr_member_role_creator">creator</string>
+	<string name="grouptr_member_role_creator">Group owner</string>
 	<string name="grouptr_member_role_you">you</string>
 	<string name="grouptr_member_action_remove">Remove from group</string>
 	<string name="scroll_to_bottom">Scroll to bottom</string>
@@ -1034,6 +1071,7 @@
 	<string name="reply_prefix_you">You</string>
 	<string name="reply_original_unavailable">Original message unavailable</string>
 	<string name="contact_deleted_toast">Contact deleted</string>
+	<string name="contact_delete_failed">Could not delete the contact</string>
 	<string name="you">You</string>
 	<string name="save_image">Save image</string>
 	<string name="dialog_title_save_image">Save image?</string>
@@ -1204,7 +1242,7 @@
 	<string name="groups_dissolve_dialog_message">Are you sure that you want to dissolve this group?\n\nAll other members will not be able to continue their conversation and might not receive the latest messages.</string>
 	<string name="groups_dissolve_button">Dissolve</string>
 	<string name="groups_dissolved_dialog_title">Group Has Been Dissolved</string>
-	<string name="groups_dissolved_dialog_message">The creator of this group has dissolved it.\n\nYou can no longer write messages to the group and might not receive all posts that have been written.</string>
+	<string name="groups_dissolved_dialog_message">The group owner has dissolved this group.\n\nYou can no longer write messages to the group and might not receive all posts that have been written.</string>
 
 	<string name="groups_invitations_title">Group Invitations</string>
 	<string name="groups_invitations_invitation_sent">You have invited %1$s to join the group \"%2$s\".</string>
@@ -1214,9 +1252,9 @@
 		<item quantity="one">%d open group invitation</item>
 		<item quantity="other">%d open group invitations</item>
 	</plurals>
-	<string name="sharing_status_groups">Only the creator can invite new members to the group. Below are all current members of the group.</string>
+	<string name="sharing_status_groups">Only the group owner can invite new members to the group. Below are all current members of the group.</string>
 
-	<string name="groups_reveal_dialog_message">You can choose whether to reveal contacts to all current and future members of this group.\n\nRevealing contacts makes your connection to the group faster and more reliable, because you can communicate with revealed contacts even when the creator of the group is offline.</string>
+	<string name="groups_reveal_dialog_message">You can choose whether to reveal contacts to all current and future members of this group.\n\nRevealing contacts makes your connection to the group faster and more reliable, because you can communicate with revealed contacts even when the group owner is offline.</string>
 	<string name="groups_reveal_visible_revealed_by_us">Contact relationship is visible to the group (revealed by you)</string>
 	<string name="groups_reveal_visible_revealed_by_contact">Contact relationship is visible to the group (revealed by %s)</string>
 	<string name="groups_reveal_invisible">Contact relationship is not visible to the group</string>
@@ -2313,7 +2351,7 @@
 		<item quantity="one">%d member runs an older app and keeps them.</item>
 		<item quantity="other">%d members run an older app and keep them.</item>
 	</plurals>
-	<string name="grouptr_ttl_set_by_creator">Disappearing messages in this group: %1$s. Only the group\'s creator can change this.</string>
+	<string name="grouptr_ttl_set_by_creator">Disappearing messages in this group: %1$s. Only the group owner can change this.</string>
 	<plurals name="grouptr_ttl_older_members">
 		<item quantity="one">%d member runs an older app that will not delete their own posts on this timer.</item>
 		<item quantity="other">%d members run an older app that will not delete their own posts on this timer.</item>
@@ -2328,17 +2366,17 @@
 	<string name="grouptr_member_invited">Invited, waiting for an answer</string>
 	<string name="grouptr_confirm_revoke">Withdraw the invite to %1$s? An answer from them will be ignored.</string>
 	<string name="grouptr_revoke_invite">Withdraw invite</string>
-	<string name="grouptr_invite_expired">This invite has expired. Ask the group\'s creator for a new one.</string>
+	<string name="grouptr_invite_expired">This invite has expired. Ask the group owner for a new one.</string>
 	<string name="grouptr_members_may_invite">Members can invite their contacts</string>
 	<string name="grouptr_members_may_invite_summary">Your phone adds the people they invite automatically while this is on.</string>
 	<string name="grouptr_invite_contacts">Invite contacts</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Only members who have the group\'s creator as a contact can invite.</string>
-	<string name="grouptr_member_invite_creator_outdated">The group\'s creator needs a newer version of the app before members can invite.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Only members who have the group owner as a contact can invite.</string>
+	<string name="grouptr_member_invite_creator_outdated">The group owner needs a newer version of the app before members can invite.</string>
 	<string name="grouptr_member_invite_contact_outdated">Needs a newer version of the app</string>
 	<string name="grouptr_member_invitation_received">%1$s invited you to join the group \"%2$s\", created by %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s invited you to join a group created by %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Waiting for %1$s, who created the group, to be online. Their phone adds you automatically, then you can post here.</string>
-	<string name="grouptr_member_invite_accepted">Accepted. You join once the group\'s creator is online.</string>
+	<string name="grouptr_waiting_for_admin">Waiting for the group owner, %1$s, to be online. Their phone adds you automatically, then you can post here.</string>
+	<string name="grouptr_member_invite_accepted">Accepted. You join once the group owner is online.</string>
 	<string name="grouptr_member_invite_unavailable">This invitation can no longer be accepted. Ask for a new one.</string>
 	<string name="grouptr_incognito">Incognito in this group</string>
 	<string name="grouptr_incognito_summary">Others in the group see a random name instead of yours. Members who are your contacts can still recognise you by your key.</string>
@@ -2346,7 +2384,7 @@
 	<string name="grouptr_incognito_new_name">New name</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (incognito)</string>
 	<string name="grouptr_member_may_add">May add members</string>
-	<string name="grouptr_member_invite_creator_only">Only the group\'s creator can add members.</string>
+	<string name="grouptr_member_invite_creator_only">Only the group owner can add members.</string>
 	<string name="reaction_removed_here_only">Removed on this device only: your contact\'s app is too old to remove it on theirs.</string>
 	<string name="startup_data_without_account_message">Zerion found data on this device, but no account key that opens it: the key files are missing or damaged. Nothing has been deleted.\n\nYou can close Zerion and keep the data, or erase everything and start again.</string>
 	<string name="startup_data_without_account_keep">Close and keep</string>

@@ -316,7 +316,7 @@
   <string name="groups_dissolve_dialog_message">Sei sicuro di voler sciogliere questo gruppo?\n\nTutti gli altri membri non saranno più in grado di continuare le loro conversazioni e potrebbero non ricevere gli ultimi messaggi.</string>
   <string name="groups_dissolve_button">Sciogli</string>
   <string name="groups_dissolved_dialog_title">Il gruppo è stato dissolto</string>
-  <string name="groups_dissolved_dialog_message">Il creatore di questo gruppo l\'ha sciolto.\n\nNon puoi più scrivere messaggi in questo gruppo e potresti non ricevere tutti i messaggi che sono stati scritti.</string>
+  <string name="groups_dissolved_dialog_message">Il proprietario di questo gruppo l\'ha sciolto.\n\nNon puoi più scrivere messaggi in questo gruppo e potresti non ricevere tutti i messaggi che sono stati scritti.</string>
   
   <string name="groups_invitations_title">Inviti spediti</string>
   <string name="groups_invitations_invitation_sent">Hai invitato %1$s ad unirsi al gruppo \"%2$s\".</string>
@@ -327,9 +327,9 @@
     <item quantity="many">%d inviti al gruppo aperti.</item>
     <item quantity="other">%d inviti al gruppo aperti.</item>
   </plurals>
-  <string name="sharing_status_groups">Solo il creatore può invitare nuovi membri nel gruppo. Sotto ci sono i membri correnti del gruppo.</string>
+  <string name="sharing_status_groups">Solo il proprietario del gruppo può invitare nuovi membri nel gruppo. Sotto ci sono i membri correnti del gruppo.</string>
   
-  <string name="groups_reveal_dialog_message">Puoi scegliere se rivelare i contatti a tutti i membri correnti e futuri di questo gruppo.\n\nRivelare i contatti fa diventare la connessione al gruppo più veloce e più affidabile, perchè puoi comunicare con i contatti rivelati anche quando il creatore del gruppo è offline.</string>
+  <string name="groups_reveal_dialog_message">Puoi scegliere se rivelare i contatti a tutti i membri correnti e futuri di questo gruppo.\n\nRivelare i contatti fa diventare la connessione al gruppo più veloce e più affidabile, perché puoi comunicare con i contatti rivelati anche quando il proprietario del gruppo è offline.</string>
   <string name="groups_reveal_visible_revealed_by_us">La relazione fra i contatti è visibile al gruppo (rivelata da te)</string>
   <string name="groups_reveal_visible_revealed_by_contact">La relazione fra i contatti è visibile al gruppo (rivelata da %s)</string>
   <string name="groups_reveal_invisible">La relazione fra i contatti non è visibile al gruppo</string>
@@ -724,7 +724,7 @@
 	<string name="channels_feed_empty_publisher">Il tuo canale non ha ancora post. Pubblica il primo.</string>
 	<string name="channels_feed_empty_subscriber">Ancora nessun post. I nuovi post appariranno qui.</string>
 	<string name="channels_feed_connecting">Connessione al canale in corso…</string>
-	<string name="channels_feed_connecting_slow">Connessione ancora in corso. Assicurati che la persona che ha condiviso questo canale sia online. Si aggiornera\' automaticamente.</string>
+	<string name="channels_feed_connecting_slow">Connessione ancora in corso. I post appariranno qui quando il canale sarà raggiungibile.</string>
 	<string name="channels_compose_hint">Scrivi ai tuoi iscritti…</string>
 	<string name="channels_compose_send">Pubblica</string>
 	<string name="channels_compose_error_empty">Scrivi qualcosa prima di pubblicare.</string>
@@ -1019,7 +1019,7 @@
 	<string name="grouptr_empty">Ancora nessun gruppo.</string>
 	<string name="grouptr_meta">%2$d membri</string>
 	<string name="grouptr_dissolved_suffix">(sciolto)</string>
-	<string name="grouptr_creator_tag">(creatore)</string>
+	<string name="grouptr_creator_tag">(proprietario del gruppo)</string>
 	<string name="grouptr_admin_tag">(amministratore)</string>
 	<string name="grouptr_promote">Promuovi</string>
 	<string name="grouptr_demote">Retrocedi</string>
@@ -1118,7 +1118,7 @@
 	<string name="grouptr_detail_status">Stato</string>
 	<string name="grouptr_detail_status_dissolved">Sciolto</string>
 	<string name="grouptr_open_chat">Apri chat</string>
-	<string name="grouptr_member_role_creator">creatore</string>
+	<string name="grouptr_member_role_creator">Proprietario del gruppo</string>
 	<string name="grouptr_member_role_you">tu</string>
 	<string name="grouptr_member_action_remove">Rimuovi dal gruppo</string>
 	<string name="scroll_to_bottom">Scorri in fondo</string>
@@ -2280,14 +2280,14 @@
 	<string name="wallet_sp_enable_first">Attiva prima i Silent Payments</string>
 	<string name="grouptr_reach_title">Chi raggiungono i tuoi post</string>
 	<string name="grouptr_reach_explanation">I post del gruppo viaggiano direttamente tra i membri che sono contatti l\'uno dell\'altro, e i membri non inoltrano i post. Questi membri non sono tuoi contatti, quindi non ricevono i tuoi post e tu non ricevi i loro:\n\n%1$s\n\nAggiungili come contatti per raggiungerli.</string>
-	<string name="grouptr_ttl_set_by_creator">Messaggi dissolventi in questo gruppo: %1$s. Solo il creatore del gruppo può modificarlo.</string>
+	<string name="grouptr_ttl_set_by_creator">Messaggi dissolventi in questo gruppo: %1$s. Solo il proprietario del gruppo può modificarlo.</string>
 	<string name="grouptr_sender_alias_format">%1$s (pubblica come «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (non è un nome che conosci)</string>
 	<string name="grouptr_member_out_of_reach">non è un tuo contatto, non riceve i tuoi post</string>
 	<string name="grouptr_member_invited">Invitato, in attesa di risposta</string>
 	<string name="grouptr_confirm_revoke">Ritirare l\'invito a %1$s? Una sua eventuale risposta verrà ignorata.</string>
 	<string name="grouptr_revoke_invite">Ritira invito</string>
-	<string name="grouptr_invite_expired">Questo invito è scaduto. Chiedine uno nuovo al creatore del gruppo.</string>
+	<string name="grouptr_invite_expired">Questo invito è scaduto. Chiedine uno nuovo al proprietario del gruppo.</string>
 	<string name="reaction_removed_here_only">Rimossa solo su questo dispositivo: l\'app del tuo contatto è troppo vecchia per rimuoverla anche sul suo.</string>
 	<string name="startup_data_without_account_message">Zerion ha trovato dati su questo dispositivo, ma nessuna chiave dell\'account in grado di aprirli: i file delle chiavi mancano o sono danneggiati. Non è stato eliminato nulla.\n\nPuoi chiudere Zerion e conservare i dati, oppure cancellare tutto e ricominciare.</string>
 	<string name="startup_data_without_account_keep">Chiudi e conserva</string>
@@ -2490,13 +2490,13 @@
 	<string name="grouptr_members_may_invite">I membri possono invitare i propri contatti</string>
 	<string name="grouptr_members_may_invite_summary">Finché questa opzione è attiva, il tuo telefono aggiunge automaticamente le persone che invitano.</string>
 	<string name="grouptr_invite_contacts">Invita contatti</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Possono invitare solo i membri che hanno il creatore del gruppo tra i contatti.</string>
-	<string name="grouptr_member_invite_creator_outdated">Il creatore del gruppo ha bisogno di una versione più recente dell\'app prima che i membri possano invitare.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Possono invitare solo i membri che hanno il proprietario del gruppo tra i contatti.</string>
+	<string name="grouptr_member_invite_creator_outdated">Il proprietario del gruppo ha bisogno di una versione più recente dell\'app prima che i membri possano invitare.</string>
 	<string name="grouptr_member_invite_contact_outdated">Richiede una versione più recente dell\'app</string>
 	<string name="grouptr_member_invitation_received">%1$s ti ha invitato a unirti al gruppo \"%2$s\", creato da %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s ti ha invitato a unirti a un gruppo creato da %2$s.</string>
-	<string name="grouptr_waiting_for_admin">In attesa che %1$s, che ha creato il gruppo, sia online. Il suo telefono ti aggiungerà automaticamente, poi potrai pubblicare qui.</string>
-	<string name="grouptr_member_invite_accepted">Accettato. Ti unirai al gruppo appena il suo creatore sarà online.</string>
+	<string name="grouptr_waiting_for_admin">In attesa che il proprietario del gruppo, %1$s, sia online. Il suo telefono ti aggiungerà automaticamente, poi potrai pubblicare qui.</string>
+	<string name="grouptr_member_invite_accepted">Accettato. Ti unirai al gruppo appena il suo proprietario sarà online.</string>
 	<string name="grouptr_member_invite_unavailable">Questo invito non può più essere accettato. Chiedine uno nuovo.</string>
 	<string name="grouptr_incognito">In incognito in questo gruppo</string>
 	<string name="grouptr_incognito_summary">Gli altri nel gruppo vedono un nome casuale al posto del tuo. I membri che sono tuoi contatti possono comunque riconoscerti dalla tua chiave.</string>
@@ -2504,7 +2504,7 @@
 	<string name="grouptr_incognito_new_name">Nuovo nome</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (in incognito)</string>
 	<string name="grouptr_member_may_add">Può aggiungere membri</string>
-	<string name="grouptr_member_invite_creator_only">Solo il creatore del gruppo può aggiungere membri.</string>
+	<string name="grouptr_member_invite_creator_only">Solo il proprietario del gruppo può aggiungere membri.</string>
 	<string name="tor_status_entry_relay">Instabile</string>
 	<string name="tor_hidden_services_entry_relay">Il relay di ingresso di Tor fallisce nella maggior parte delle connessioni, quindi i contatti potrebbero non raggiungerti. Può dipendere da una rete sovraccarica o da interferenze. Di solito aiuta impostare il metodo di connessione di Tor sui bridge in Impostazioni, Connessioni.</string>
 	<string name="contact_connection_tor_entry_relay">Tor è connesso, ma il suo relay di ingresso fallisce nella maggior parte delle connessioni. Di solito i bridge aiutano.</string>
@@ -2515,4 +2515,47 @@
 	<string name="channels_subscribers_unban">Revoca il bando</string>
 	<string name="channels_subscribers_unban_confirm">Revocare il bando? Questo iscritto potrà di nuovo commentare e reagire. Ciò che il bando ha rimosso non torna, e il ruolo di editor va concesso di nuovo.</string>
 	<string name="channels_unban_failed">Impossibile revocare il bando</string>
+	<string name="contact_delete_failed">Impossibile cancellare il contatto</string>
+	<string name="channels_delegations_revoke_failed">Impossibile revocare questo editor</string>
+	<string name="channels_invite_rotate_failed">Il link d\'invito non è stato cambiato. Il vecchio link funziona ancora.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="one">Invito inviato a %d contatto</item>
+		<item quantity="many">Inviti inviati a %d contatti</item>
+		<item quantity="other">Inviti inviati a %d contatti</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">Il proprietario non ha confermato di aver ricevuto la tua richiesta. Riprova più tardi.</string>
+	<string name="channels_apply_banner">Tocca per chiedere al proprietario l\'accesso a questo canale.</string>
+	<string name="channels_rejoin_updated">Il tuo accesso a %1$s è stato aggiornato.</string>
+	<string name="channels_rejoin_unreachable">Impossibile verificare questo link ora. Riprova più tardi.</string>
+	<string name="channels_rejoin_apply_again">Puoi richiedere di nuovo di unirti per leggere i nuovi post di questo canale. I post che hai già restano. Il proprietario vedrà il tuo nome visualizzato e una chiave che ti appartiene solo in questo canale.</string>
+	<string name="channels_sync_last_updated">Ultimo aggiornamento: %1$s</string>
+	<string name="channels_sync_saved_posts">Visualizzazione dei post salvati</string>
+	<string name="channels_sync_saved_posts_last_updated">Visualizzazione dei post salvati · Ultimo aggiornamento: %1$s</string>
+	<string name="channels_sync_not_updated_since">Non aggiornato dal %1$s</string>
+	<string name="channels_owner_deleted_notice">Il proprietario ha eliminato il canale %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Il proprietario ha eliminato un canale a cui ti eri unito</string>
+	<string name="channels_queued_waiting">In attesa di invio</string>
+	<string name="channels_queued_not_sent">Non inviato</string>
+	<string name="channels_queued_retry">Riprova</string>
+	<string name="channels_queued_delete">Elimina</string>
+	<string name="channels_comment_queued_toast">Il tuo commento verrà inviato quando il canale sarà raggiungibile.</string>
+	<string name="channels_react_queued_toast">La tua reazione verrà inviata quando il canale sarà raggiungibile.</string>
+	<string name="channels_announce_queued_toast">Il tuo nome verrà inviato quando il canale sarà raggiungibile.</string>
+	<string name="channels_post_queued_toast">Il tuo post verrà inviato quando il canale sarà raggiungibile.</string>
+	<string name="channels_change_queued_toast">La tua modifica verrà inviata quando il canale sarà raggiungibile.</string>
+	<string name="channels_queued_notice_waiting">Alcuni dei tuoi invii sono in attesa. Verranno inviati quando il canale sarà raggiungibile.</string>
+	<string name="channels_queued_notice_not_sent">Alcuni dei tuoi invii non sono stati inviati. Tocca per riprovare o eliminarli.</string>
+	<string name="channels_queued_announce_label">Il tuo nome: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Impossibile raggiungere questo canale. Puoi richiedere di nuovo di unirti con questo link. I post che hai già restano. Il proprietario vedrà il tuo nome visualizzato e una chiave che ti appartiene solo in questo canale.</string>
+	<string name="channels_rejoin_not_restored">Questo link non ti ha restituito l\'accesso a questo canale. Puoi chiedere un nuovo link.</string>
+	<string name="channels_rejoin_check_title">Provare questo link?</string>
+	<string name="channels_rejoin_check_message">I nuovi post di questo canale non sono raggiungibili ora. Puoi provare questo link per riceverli di nuovo. I post che hai già restano.</string>
+	<string name="channels_rejoin_check_action">Prova link</string>
+	<string name="channels_rejoin_try_later">Questo canale non è raggiungibile ora e questo link è quello che hai già. Riprova più tardi. I post che hai già restano.</string>
+	<string name="channels_rejoin_trying">Continueremo a provare questo link. I post che hai già restano.</string>
+	<string name="channels_queued_already_sent">Era già stato inviato, quindi non è stato possibile eliminarlo.</string>
+	<string name="channels_queued_behind_toast">Verrà inviato dopo ciò che hai inviato prima a questo canale.</string>
+	<string name="channels_queued_no_access">Non inviato. Non hai più accesso a questo canale.</string>
+	<string name="channels_no_access_toast">Non hai più accesso a questo canale. Chiedi al proprietario un nuovo link d\'invito.</string>
+	<string name="channels_rejoin_too_many_links">Hai già diversi link in attesa per questo canale, quindi questo non è stato provato. I post che hai già restano.</string>
 </resources>

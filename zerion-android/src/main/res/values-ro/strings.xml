@@ -316,7 +316,7 @@
   <string name="groups_dissolve_dialog_message">Sigur doriți să dizolvați acest grup?\n\nToți ceilalți membri vor fi în imposibilitatea de a continua conversația și s-ar putea să nu primească cele mai recente mesaje.</string>
   <string name="groups_dissolve_button">Dizolvați</string>
   <string name="groups_dissolved_dialog_title">Grupul a fost dizolvat</string>
-  <string name="groups_dissolved_dialog_message">Creatorul acestui grup l-a dizolvat.\n\nNu mai puteți scrie mesaje către grup și nu mai puteți primi mesajele deja scrise.</string>
+  <string name="groups_dissolved_dialog_message">Proprietarul grupului l-a dizolvat.\n\nNu mai puteți scrie mesaje către grup și este posibil să nu primiți toate postările care au fost scrise.</string>
   
   <string name="groups_invitations_title">Invitații în grup</string>
   <string name="groups_invitations_invitation_sent">Ați invitat utilizatorul %1$s să se alăture grupului „%2$s”.</string>
@@ -327,9 +327,9 @@
     <item quantity="few">%d invitații în grup deschise</item>
     <item quantity="other">%d invitații în grup deschise</item>
   </plurals>
-  <string name="sharing_status_groups">Doar persoana care a creat grupul poate invita membri noi. Mai jos vedeți toți membrii actuali ai grupului.</string>
+  <string name="sharing_status_groups">Doar proprietarul grupului poate invita membri noi în grup. Mai jos vedeți toți membrii actuali ai grupului.</string>
   
-  <string name="groups_reveal_dialog_message">Puteți alege să arătați contactele tuturor membrilor actuali și viitori ai acestui grup.\n\nAfișarea contactelor face conexiunea dvs. la grup mai rapidă și mai fiabilă, deoarece puteți comunica cu contactele dezvăluite chiar și atunci când creatorul grupului este offline.</string>
+  <string name="groups_reveal_dialog_message">Puteți alege dacă să arătați contactele tuturor membrilor actuali și viitori ai acestui grup.\n\nAfișarea contactelor face conexiunea dvs. la grup mai rapidă și mai fiabilă, deoarece puteți comunica cu contactele dezvăluite chiar și atunci când proprietarul grupului este offline.</string>
   <string name="groups_reveal_visible_revealed_by_us">Relația de contact este vizibilă grupului (dezvăluită de dvs.)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Relația de contact este vizibilă grupului (dezvăluită de %s)</string>
   <string name="groups_reveal_invisible">Relația de contact nu este vizibilă grupului</string>
@@ -1092,7 +1092,7 @@
 	<string name="channels_feed_empty_subscriber">Nicio postare încă. Postările noi vor apărea aici.</string>
 	<string name="channels_post_withheld">Postare reținută: proprietarul canalului a revocat permisiunea acestui autor de a posta.</string>
 	<string name="channels_feed_connecting">Se conectează la canal…</string>
-	<string name="channels_feed_connecting_slow">Încă se conectează. Asigurați-vă că persoana care a partajat acest canal este online. Starea se va actualiza singură.</string>
+	<string name="channels_feed_connecting_slow">Încă se conectează. Postările vor apărea aici când canalul va fi accesibil.</string>
 	<string name="channels_compose_hint">Scrieți abonaților dvs.…</string>
 	<string name="channels_compose_send">Publicați</string>
 	<string name="channels_compose_error_empty">Scrieți ceva înainte de a publica.</string>
@@ -1389,7 +1389,7 @@
 	<string name="grouptr_empty">Încă nu există grupuri.</string>
 	<string name="grouptr_meta">%2$d membri</string>
 	<string name="grouptr_dissolved_suffix">(dizolvat)</string>
-	<string name="grouptr_creator_tag">(creator)</string>
+	<string name="grouptr_creator_tag">(proprietarul grupului)</string>
 	<string name="grouptr_admin_tag">(administrator)</string>
 	<string name="grouptr_promote">Promovați</string>
 	<string name="grouptr_demote">Retrogradați</string>
@@ -1493,7 +1493,7 @@
 	<string name="grouptr_detail_status">Stare</string>
 	<string name="grouptr_detail_status_dissolved">Dizolvat</string>
 	<string name="grouptr_open_chat">Deschideți conversația</string>
-	<string name="grouptr_member_role_creator">creator</string>
+	<string name="grouptr_member_role_creator">Proprietarul grupului</string>
 	<string name="grouptr_member_role_you">dvs.</string>
 	<string name="grouptr_member_action_remove">Eliminați din grup</string>
 	<string name="scroll_to_bottom">Derulați până jos</string>
@@ -2385,14 +2385,14 @@
 	<string name="wallet_sp_enable_first">Activați mai întâi Silent Payments</string>
 	<string name="grouptr_reach_title">Cine vă primește postările</string>
 	<string name="grouptr_reach_explanation">Postările din grup circulă direct între membrii care sunt contacte unii ai altora, iar membrii nu transmit postările mai departe. Acești membri nu sunt contactele dvs., deci nu vă primesc postările și nici dvs. nu le primiți pe ale lor:\n\n%1$s\n\nAdăugați-i ca contacte pentru a ajunge la ei.</string>
-	<string name="grouptr_ttl_set_by_creator">Mesaje care dispar în acest grup: %1$s. Doar creatorul grupului poate modifica această setare.</string>
+	<string name="grouptr_ttl_set_by_creator">Mesaje care dispar în acest grup: %1$s. Doar proprietarul grupului poate modifica această setare.</string>
 	<string name="grouptr_sender_alias_format">%1$s (postează ca „%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s” (nu este un nume cunoscut de dvs.)</string>
 	<string name="grouptr_member_out_of_reach">nu este contactul dvs., nu vă primește postările</string>
 	<string name="grouptr_member_invited">Invitat, se așteaptă un răspuns</string>
 	<string name="grouptr_confirm_revoke">Retrageți invitația trimisă către %1$s? Un eventual răspuns din partea acestei persoane va fi ignorat.</string>
 	<string name="grouptr_revoke_invite">Retrageți invitația</string>
-	<string name="grouptr_invite_expired">Această invitație a expirat. Cereți una nouă creatorului grupului.</string>
+	<string name="grouptr_invite_expired">Această invitație a expirat. Cereți una nouă proprietarului grupului.</string>
 	<string name="reaction_removed_here_only">Eliminată doar pe acest dispozitiv: aplicația contactului dvs. este prea veche pentru a o elimina și pe dispozitivul său.</string>
 	<string name="startup_data_without_account_message">Zerion a găsit date pe acest dispozitiv, dar nicio cheie de cont care să le deschidă: fișierele cheii lipsesc sau sunt deteriorate. Nu s-a șters nimic.\n\nPuteți închide Zerion și păstra datele sau puteți șterge totul și o lua de la capăt.</string>
 	<string name="startup_data_without_account_keep">Închideți și păstrați</string>
@@ -2492,13 +2492,13 @@
 	<string name="grouptr_members_may_invite">Membrii își pot invita contactele</string>
 	<string name="grouptr_members_may_invite_summary">Cât timp această opțiune este activă, telefonul dvs. adaugă automat persoanele invitate de ei.</string>
 	<string name="grouptr_invite_contacts">Invitați contacte</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Pot invita doar membrii care au creatorul grupului printre contacte.</string>
-	<string name="grouptr_member_invite_creator_outdated">Creatorul grupului are nevoie de o versiune mai nouă a aplicației pentru ca membrii să poată invita.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Pot invita doar membrii care au proprietarul grupului printre contacte.</string>
+	<string name="grouptr_member_invite_creator_outdated">Proprietarul grupului are nevoie de o versiune mai nouă a aplicației pentru ca membrii să poată invita.</string>
 	<string name="grouptr_member_invite_contact_outdated">Are nevoie de o versiune mai nouă a aplicației</string>
 	<string name="grouptr_member_invitation_received">%1$s v-a invitat să vă alăturați grupului „%2$s”, creat de %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s v-a invitat să vă alăturați unui grup creat de %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Se așteaptă ca %1$s, creatorul grupului, să fie online. Telefonul creatorului vă adaugă automat, apoi veți putea publica aici.</string>
-	<string name="grouptr_member_invite_accepted">Acceptat. Vă veți alătura imediat ce creatorul grupului este online.</string>
+	<string name="grouptr_waiting_for_admin">Se așteaptă ca proprietarul grupului, %1$s, să fie online. Telefonul proprietarului vă adaugă automat, apoi veți putea publica aici.</string>
+	<string name="grouptr_member_invite_accepted">Acceptat. Vă veți alătura imediat ce proprietarul grupului este online.</string>
 	<string name="grouptr_member_invite_unavailable">Această invitație nu mai poate fi acceptată. Cereți una nouă.</string>
 	<string name="grouptr_incognito">Incognito în acest grup</string>
 	<string name="grouptr_incognito_summary">Ceilalți din grup văd un nume aleatoriu în locul numelui dvs. Membrii care sunt contactele dvs. vă pot recunoaște în continuare după cheia dvs.</string>
@@ -2506,7 +2506,7 @@
 	<string name="grouptr_incognito_new_name">Nume nou</string>
 	<string name="grouptr_sender_incognito_format">„%1$s” (incognito)</string>
 	<string name="grouptr_member_may_add">Poate adăuga membri</string>
-	<string name="grouptr_member_invite_creator_only">Doar creatorul grupului poate adăuga membri.</string>
+	<string name="grouptr_member_invite_creator_only">Doar proprietarul grupului poate adăuga membri.</string>
 	<string name="tor_status_entry_relay">Instabil</string>
 	<string name="tor_hidden_services_entry_relay">Releul de intrare Tor eșuează la majoritatea conexiunilor, așa că este posibil ca persoanele de contact să nu ajungă la tine. Cauza poate fi o rețea supraîncărcată sau interferențe. De obicei ajută schimbarea metodei de conectare Tor la punți în Setări, Conexiuni.</string>
 	<string name="contact_connection_tor_entry_relay">Tor este conectat, dar releul său de intrare eșuează la majoritatea conexiunilor. De obicei punțile ajută.</string>
@@ -2517,4 +2517,42 @@
 	<string name="channels_subscribers_unban">Deblocați</string>
 	<string name="channels_subscribers_unban_confirm">Deblocați? Acest abonat va putea din nou să comenteze și să reacționeze. Ce a eliminat blocarea nu revine, iar rolul de editor trebuie acordat din nou.</string>
 	<string name="channels_unban_failed">Deblocarea nu a reușit</string>
+	<string name="contact_delete_failed">Contactul nu a putut fi șters</string>
+	<string name="channels_delegations_revoke_failed">Acest editor nu a putut fi revocat</string>
+	<string name="channels_invite_rotate_failed">Linkul de invitație nu a fost schimbat. Linkul vechi încă funcționează.</string>
+	<string name="channels_apply_unconfirmed">Proprietarul nu a confirmat că cererea dvs. a ajuns. Încercați din nou mai târziu.</string>
+	<string name="channels_apply_banner">Atingeți pentru a cere proprietarului acces la acest canal.</string>
+	<string name="channels_rejoin_updated">Accesul dvs. la %1$s a fost actualizat.</string>
+	<string name="channels_rejoin_unreachable">Linkul nu a putut fi verificat acum. Încercați din nou mai târziu.</string>
+	<string name="channels_rejoin_apply_again">Puteți solicita din nou accesul pentru a citi postările noi din acest canal. Postările pe care le aveți deja rămân. Proprietarul va vedea numele dvs. afișat și o cheie care vă aparține doar în acest canal.</string>
+	<string name="channels_sync_last_updated">Ultima actualizare: %1$s</string>
+	<string name="channels_sync_saved_posts">Se afișează postările salvate</string>
+	<string name="channels_sync_saved_posts_last_updated">Se afișează postările salvate · Ultima actualizare: %1$s</string>
+	<string name="channels_sync_not_updated_since">Nu a mai fost actualizat din %1$s</string>
+	<string name="channels_owner_deleted_notice">Proprietarul a șters canalul %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Proprietarul a șters un canal la care v-ați alăturat</string>
+	<string name="channels_queued_waiting">Se așteaptă trimiterea</string>
+	<string name="channels_queued_not_sent">Netrimis</string>
+	<string name="channels_queued_retry">Reîncercați</string>
+	<string name="channels_queued_delete">Ștergeți</string>
+	<string name="channels_comment_queued_toast">Comentariul dvs. va fi trimis când canalul va fi accesibil.</string>
+	<string name="channels_react_queued_toast">Reacția dvs. va fi trimisă când canalul va fi accesibil.</string>
+	<string name="channels_announce_queued_toast">Numele dvs. va fi trimis când canalul va fi accesibil.</string>
+	<string name="channels_post_queued_toast">Postarea dvs. va fi trimisă când canalul va fi accesibil.</string>
+	<string name="channels_change_queued_toast">Modificarea dvs. va fi trimisă când canalul va fi accesibil.</string>
+	<string name="channels_queued_notice_waiting">O parte din ce ați trimis este în așteptare. Va fi trimisă când canalul va fi accesibil.</string>
+	<string name="channels_queued_notice_not_sent">O parte din ce ați trimis nu a fost trimisă. Atingeți pentru a reîncerca sau pentru a o șterge.</string>
+	<string name="channels_queued_announce_label">Numele dvs.: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Acest canal nu a putut fi accesat. Puteți solicita din nou alăturarea cu acest link. Postările pe care le aveți deja rămân. Proprietarul va vedea numele dvs. afișat și o cheie care vă aparține doar în acest canal.</string>
+	<string name="channels_rejoin_not_restored">Acest link nu v-a redat accesul la acest canal. Puteți cere un link nou.</string>
+	<string name="channels_rejoin_check_title">Încercați acest link?</string>
+	<string name="channels_rejoin_check_message">Postările noi din acest canal nu pot fi accesate acum. Puteți încerca acest link pentru a le primi din nou. Postările pe care le aveți deja rămân.</string>
+	<string name="channels_rejoin_check_action">Încercați linkul</string>
+	<string name="channels_rejoin_try_later">Acest canal nu poate fi accesat acum, iar acest link este cel pe care îl aveți deja. Încercați din nou mai târziu. Postările pe care le aveți deja rămân.</string>
+	<string name="channels_rejoin_trying">Vom continua să încercăm acest link. Postările pe care le aveți deja rămân.</string>
+	<string name="channels_queued_already_sent">A fost deja trimis, așa că nu a putut fi șters.</string>
+	<string name="channels_queued_behind_toast">Acesta va fi trimis după ceea ce ați trimis mai devreme în acest canal.</string>
+	<string name="channels_queued_no_access">Netrimis. Nu mai aveți acces la acest canal.</string>
+	<string name="channels_no_access_toast">Nu mai aveți acces la acest canal. Cereți proprietarului un link de invitație nou.</string>
+	<string name="channels_rejoin_too_many_links">Aveți deja mai multe linkuri în așteptare pentru acest canal, așa că acest link nu a fost încercat. Postările pe care le aveți deja rămân.</string>
 </resources>

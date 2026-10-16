@@ -119,6 +119,23 @@
 		tools:text="@string/channels_posts_given_up_notice"
 		tools:visibility="visible" />
 
+	<TextView
+		android:id="@+id/channelSyncStatusLine"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/zerion_dark_bg"
+		android:gravity="center"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="4dp"
+		android:paddingBottom="4dp"
+		android:textColor="@color/zerion_text_secondary"
+		android:textSize="12sp"
+		android:visibility="gone"
+		app:layout_constraintTop_toBottomOf="@+id/channelNoticeBanner"
+		tools:text="Last updated 14:02"
+		tools:visibility="visible" />
+
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/channelFeedRecycler"
 		android:layout_width="match_parent"
@@ -128,7 +145,7 @@
 		android:paddingBottom="12dp"
 		android:scrollbars="none"
 		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
-		app:layout_constraintTop_toBottomOf="@+id/channelNoticeBanner" />
+		app:layout_constraintTop_toBottomOf="@+id/channelSyncStatusLine" />
 
 	<TextView
 		android:id="@+id/channelFeedEmptyView"

@@ -62,7 +62,8 @@ class ChannelApplicationStore {
 						d.getLong("ts"),
 						parseStatus(d.getString("status")),
 						d.getOptionalRaw("kem"),
-						d.getOptionalRaw("env")));
+						d.getOptionalRaw("env"),
+						d.getOptionalRaw("under")));
 			}
 			return out;
 		} catch (IOException e) {
@@ -111,7 +112,32 @@ class ChannelApplicationStore {
 				&& a.getAppliedAtHourMs() == b.getAppliedAtHourMs()
 				&& a.getStatus() == b.getStatus()
 				&& Arrays.equals(a.getKemCiphertext(), b.getKemCiphertext())
-				&& Arrays.equals(a.getEnvelope(), b.getEnvelope());
+				&& Arrays.equals(a.getEnvelope(), b.getEnvelope())
+				&& Arrays.equals(a.getApprovedUnder(), b.getApprovedUnder());
+	}
+
+	java.util.Map<String, Settings> legacyApprovalsRevoked(byte[] channelId,
+			byte[] mark) throws DbException {
+		List<ChannelApplication> existing = getApplications(channelId);
+		List<ChannelApplication> out = new ArrayList<>(existing.size());
+		boolean changed = false;
+		for (ChannelApplication a : existing) {
+			if (a.getStatus() == ChannelApplication.Status.APPROVED
+					&& a.getApprovedUnder() == null) {
+				out.add(new ChannelApplication(a.getDisplayName(),
+						a.getApplicantEd25519(), a.getApplicantMlDsa(),
+						a.getApplicantEphemeralAgreementPub(),
+						a.getAppliedAtHourMs(), a.getStatus(),
+						a.getKemCiphertext(), a.getEnvelope(), mark));
+				changed = true;
+			} else {
+				out.add(a);
+			}
+		}
+		java.util.Map<String, Settings> batch =
+				new java.util.LinkedHashMap<>();
+		if (changed) batch.put(NS, encode(channelId, out));
+		return batch;
 	}
 
 	void removeApplication(byte[] channelId, byte[] applicantEd)
@@ -133,6 +159,12 @@ class ChannelApplicationStore {
 
 	private long write(byte[] channelId, List<ChannelApplication> apps)
 			throws DbException {
+		Settings out = encode(channelId, apps);
+		settingsManager.mergeSettings(out, NS);
+		return out.get(ChannelStore.hex(channelId)).length();
+	}
+
+	private Settings encode(byte[] channelId, List<ChannelApplication> apps) {
 		BdfList list = new BdfList();
 		for (ChannelApplication a : apps) {
 			BdfDictionary d = new BdfDictionary();
@@ -148,13 +180,14 @@ class ChannelApplicationStore {
 			if (a.getEnvelope() != null) {
 				d.put("env", a.getEnvelope());
 			}
+			if (a.getApprovedUnder() != null) {
+				d.put("under", a.getApprovedUnder());
+			}
 			list.add(d);
 		}
-		String encoded = encodeBase64(listToBytes(list));
 		Settings out = new Settings();
-		out.put(ChannelStore.hex(channelId), encoded);
-		settingsManager.mergeSettings(out, NS);
-		return encoded.length();
+		out.put(ChannelStore.hex(channelId), encodeBase64(listToBytes(list)));
+		return out;
 	}
 
 	private static ChannelApplication.Status parseStatus(String s) {

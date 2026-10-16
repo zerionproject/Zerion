@@ -306,7 +306,7 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="groups_dissolve_dialog_message">Biztosan felszámolja ezt a csoportot\n\nA többi tag nem folytathatja beszélgetéseit és lehet nem kapják meg a legutolsó üzeneteket.</string>
   <string name="groups_dissolve_button">Feloszlatás</string>
   <string name="groups_dissolved_dialog_title">Ez a csoport feloszlatásra került</string>
-  <string name="groups_dissolved_dialog_message">A csoport létrehozója felszámolta a csoportot.\n\nTöbbé nem írhat üzenetet a csoportba és lehet nem kapja meg az összes bejegyzést ami a csoportban jelent meg.</string>
+  <string name="groups_dissolved_dialog_message">A csoport tulajdonosa feloszlatta a csoportot.\n\nTöbbé nem írhat üzenetet a csoportba, és lehet, hogy nem kapja meg az összes bejegyzést, ami a csoportban megjelent.</string>
   
   <string name="groups_invitations_title">Csoport meghívások</string>
   <string name="groups_invitations_invitation_sent">Meghívta %1$s személyt, hogy csatlakozzon a(z) \"%2$s\" csoporthoz.</string>
@@ -316,9 +316,9 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
     <item quantity="one">Eflogadta %d csoport meghívását</item>
     <item quantity="other">%d nyitott csoport meghívás</item>
   </plurals>
-  <string name="sharing_status_groups">Csak a csoport létrehozója hívhat mg új tagokat a csoportba. Alább az összes aktuális tagja a csoportnak.</string>
+  <string name="sharing_status_groups">Csak a csoport tulajdonosa hívhat meg új tagokat a csoportba. Alább a csoport összes jelenlegi tagja látható.</string>
   
-  <string name="groups_reveal_dialog_message">Választhat, hogy felfedi-e kapcsolatait a jelenlegi és jövőbeli tagjaival ennek a csoportnak.\n\nA kapcsolatok megosztása a csoportot és hálózati kapcsolatát gyorsabbá és megbízhatóbbá tesz, mert akkor is tud kommunikálni a kapcsolataival, ha a csoport létrehozója nincs a hálózaton.</string>
+  <string name="groups_reveal_dialog_message">Választhat, hogy felfedi-e kapcsolatait ennek a csoportnak a jelenlegi és jövőbeli tagjai előtt.\n\nA kapcsolatok felfedése gyorsabbá és megbízhatóbbá teszi a csoporthoz való kapcsolódását, mert a felfedett kapcsolataival akkor is tud kommunikálni, ha a csoport tulajdonosa offline.</string>
   <string name="groups_reveal_visible_revealed_by_us">Kapcsolat viszony látható a csoportnak (Ön által felfedve)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kapcsolat viszony látható a csoportnak (%s által felfedve)</string>
   <string name="groups_reveal_invisible">Kapcsolat viszony nem látható a csoportnak </string>
@@ -1078,7 +1078,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="channels_feed_empty_subscriber">Még nincsenek bejegyzések. Az új bejegyzések itt jelennek meg.</string>
 	<string name="channels_post_withheld">Visszatartott bejegyzés: a csatorna tulajdonosa visszavonta a szerző közzétételi jogát.</string>
 	<string name="channels_feed_connecting">Csatlakozás a csatornához…</string>
-	<string name="channels_feed_connecting_slow">A csatlakozás még folyamatban. Győződjön meg róla, hogy a csatornát megosztó személy online van. Ez magától frissül.</string>
+	<string name="channels_feed_connecting_slow">A csatlakozás még folyamatban. A bejegyzések itt jelennek meg, amint a csatorna elérhető lesz.</string>
 	<string name="channels_compose_hint">Írjon a feliratkozóinak…</string>
 	<string name="channels_compose_send">Közzététel</string>
 	<string name="channels_compose_error_empty">Közzététel előtt írjon valamit.</string>
@@ -1375,7 +1375,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_empty">Még nincsenek csoportok.</string>
 	<string name="grouptr_meta">%2$d tag</string>
 	<string name="grouptr_dissolved_suffix">(feloszlatva)</string>
-	<string name="grouptr_creator_tag">(létrehozó)</string>
+	<string name="grouptr_creator_tag">(csoporttulajdonos)</string>
 	<string name="grouptr_admin_tag">(admin)</string>
 	<string name="grouptr_promote">Előléptetés</string>
 	<string name="grouptr_demote">Lefokozás</string>
@@ -1478,7 +1478,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_detail_status">Állapot</string>
 	<string name="grouptr_detail_status_dissolved">Feloszlatva</string>
 	<string name="grouptr_open_chat">Csevegés megnyitása</string>
-	<string name="grouptr_member_role_creator">létrehozó</string>
+	<string name="grouptr_member_role_creator">Csoporttulajdonos</string>
 	<string name="grouptr_member_role_you">Ön</string>
 	<string name="grouptr_member_action_remove">Eltávolítás a csoportból</string>
 	<string name="scroll_to_bottom">Görgetés az aljára</string>
@@ -2371,14 +2371,14 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="wallet_sp_enable_first">Először engedélyezze a Silent Payments funkciót</string>
 	<string name="grouptr_reach_title">Kikhez jutnak el a bejegyzései</string>
 	<string name="grouptr_reach_explanation">A csoportbejegyzések közvetlenül azok között a tagok között jutnak el, akik egymás kapcsolatai, és a tagok nem adják tovább a bejegyzéseket. Ezek a tagok nem az Ön kapcsolatai, ezért nem kapják meg az Ön bejegyzéseit, és Ön sem kapja meg az övéiket:\n\n%1$s\n\nAdja hozzá őket kapcsolatként, hogy elérje őket.</string>
-	<string name="grouptr_ttl_set_by_creator">Eltűnő üzenetek ebben a csoportban: %1$s. Ezt csak a csoport létrehozója módosíthatja.</string>
+	<string name="grouptr_ttl_set_by_creator">Eltűnő üzenetek ebben a csoportban: %1$s. Ezt csak a csoport tulajdonosa módosíthatja.</string>
 	<string name="grouptr_sender_alias_format">%1$s („%2$s” néven ír)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s” (Ön által nem ismert név)</string>
 	<string name="grouptr_member_out_of_reach">nem az Ön kapcsolata, nem kapja meg a bejegyzéseit</string>
 	<string name="grouptr_member_invited">Meghívva, válaszra vár</string>
 	<string name="grouptr_confirm_revoke">Visszavonja %1$s meghívását? Az esetleges válasza figyelmen kívül marad.</string>
 	<string name="grouptr_revoke_invite">Meghívás visszavonása</string>
-	<string name="grouptr_invite_expired">Ez a meghívás lejárt. Kérjen újat a csoport létrehozójától.</string>
+	<string name="grouptr_invite_expired">Ez a meghívás lejárt. Kérjen újat a csoport tulajdonosától.</string>
 	<string name="reaction_removed_here_only">Csak ezen az eszközön eltávolítva: a kapcsolata alkalmazása túl régi ahhoz, hogy nála is eltávolítsa.</string>
 	<string name="startup_data_without_account_message">A Zerion adatokat talált ezen az eszközön, de nem talált olyan fiókkulcsot, amely megnyitná őket: a kulcsfájlok hiányoznak vagy sérültek. Semmi sem lett törölve.\n\nBezárhatja a Zeriont, és megtarthatja az adatokat, vagy mindent törölhet, és újrakezdheti.</string>
 	<string name="startup_data_without_account_keep">Bezárás és megtartás</string>
@@ -2463,13 +2463,13 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_members_may_invite">A tagok meghívhatják a kapcsolataikat</string>
 	<string name="grouptr_members_may_invite_summary">Amíg ez be van kapcsolva, a telefonja automatikusan hozzáadja az általuk meghívott személyeket.</string>
 	<string name="grouptr_invite_contacts">Kapcsolatok meghívása</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Csak azok a tagok hívhatnak meg másokat, akiknek a kapcsolatai között szerepel a csoport létrehozója.</string>
-	<string name="grouptr_member_invite_creator_outdated">A csoport létrehozójának az alkalmazás újabb verziójára van szüksége, mielőtt a tagok meghívhatnának másokat.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Csak azok a tagok hívhatnak meg másokat, akiknek a kapcsolatai között szerepel a csoport tulajdonosa.</string>
+	<string name="grouptr_member_invite_creator_outdated">A csoport tulajdonosának az alkalmazás újabb verziójára van szüksége, mielőtt a tagok meghívhatnának másokat.</string>
 	<string name="grouptr_member_invite_contact_outdated">Az alkalmazás újabb verziója szükséges</string>
 	<string name="grouptr_member_invitation_received">%1$s meghívta Önt a(z) „%2$s” csoportba, amelyet %3$s hozott létre.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s meghívta Önt egy csoportba, amelyet %2$s hozott létre.</string>
-	<string name="grouptr_waiting_for_admin">Várakozás arra, hogy %1$s, a csoport létrehozója, elérhető legyen. A létrehozó telefonja automatikusan hozzáadja Önt, ezután itt bejegyzéseket küldhet.</string>
-	<string name="grouptr_member_invite_accepted">Elfogadva. Akkor csatlakozik, amikor a csoport létrehozója elérhető lesz.</string>
+	<string name="grouptr_waiting_for_admin">Várakozás arra, hogy %1$s, a csoport tulajdonosa, elérhető legyen. A tulajdonos telefonja automatikusan hozzáadja Önt, ezután itt bejegyzéseket küldhet.</string>
+	<string name="grouptr_member_invite_accepted">Elfogadva. Akkor csatlakozik, amikor a csoport tulajdonosa elérhető lesz.</string>
 	<string name="grouptr_member_invite_unavailable">Ez a meghívás már nem fogadható el. Kérjen újat.</string>
 	<string name="grouptr_incognito">Inkognitóban ebben a csoportban</string>
 	<string name="grouptr_incognito_summary">A csoport többi tagja véletlenszerű nevet lát az Ön neve helyett. Azok a tagok, akik az Ön kapcsolatai, a kulcsa alapján továbbra is felismerhetik Önt.</string>
@@ -2477,7 +2477,7 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="grouptr_incognito_new_name">Új név</string>
 	<string name="grouptr_sender_incognito_format">„%1$s” (inkognitó)</string>
 	<string name="grouptr_member_may_add">Hozzáadhat tagokat</string>
-	<string name="grouptr_member_invite_creator_only">Csak a csoport létrehozója adhat hozzá tagokat.</string>
+	<string name="grouptr_member_invite_creator_only">Csak a csoport tulajdonosa adhat hozzá tagokat.</string>
 	<string name="tor_status_entry_relay">Instabil</string>
 	<string name="tor_hidden_services_entry_relay">A Tor belépő csomópontja a legtöbb kapcsolatnál hibázik, ezért a partnereid lehet, hogy nem érnek el. Oka lehet túlterhelt hálózat vagy zavarás. Általában segít, ha a Tor kapcsolódási módját hidakra állítod a Beállítások, Kapcsolatok menüben.</string>
 	<string name="contact_connection_tor_entry_relay">A Tor csatlakozva van, de a belépő csomópontja a legtöbb kapcsolatnál hibázik. A hidak használata általában segít.</string>
@@ -2488,4 +2488,42 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="channels_subscribers_unban">Kitiltás feloldása</string>
 	<string name="channels_subscribers_unban_confirm">Feloldja a kitiltást? Ez a feliratkozó újra hozzászólhat és reagálhat. Amit a kitiltás eltávolított, nem jön vissza, a szerkesztői szerepet pedig újra meg kell adni.</string>
 	<string name="channels_unban_failed">Nem sikerült feloldani a kitiltást</string>
+	<string name="contact_delete_failed">Nem sikerült törölni a kapcsolatot</string>
+	<string name="channels_delegations_revoke_failed">Nem sikerült visszavonni a szerkesztő jogait</string>
+	<string name="channels_invite_rotate_failed">A meghívólink nem változott. A régi link továbbra is működik.</string>
+	<string name="channels_apply_unconfirmed">A tulajdonos nem erősítette meg, hogy megkapta a kérelmedet. Próbáld újra később.</string>
+	<string name="channels_apply_banner">Koppints, hogy hozzáférést kérj a tulajdonostól ehhez a csatornához.</string>
+	<string name="channels_rejoin_updated">A hozzáférése frissült: %1$s.</string>
+	<string name="channels_rejoin_unreachable">Ezt a linket most nem sikerült ellenőrizni. Próbálja újra később.</string>
+	<string name="channels_rejoin_apply_again">Újra küldhet csatlakozási kérelmet, hogy olvashassa a csatorna új bejegyzéseit. A már meglévő bejegyzései megmaradnak. A tulajdonos látni fogja a megjelenített nevét és egy kulcsot, amely csak ezen a csatornán tartozik Önhöz.</string>
+	<string name="channels_sync_last_updated">Utolsó frissítés: %1$s</string>
+	<string name="channels_sync_saved_posts">Mentett bejegyzések láthatók</string>
+	<string name="channels_sync_saved_posts_last_updated">Mentett bejegyzések láthatók · Utolsó frissítés: %1$s</string>
+	<string name="channels_sync_not_updated_since">Nem frissült %1$s óta</string>
+	<string name="channels_owner_deleted_notice">A tulajdonos törölte a csatornát: %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">A tulajdonos törölt egy csatornát, amelyhez csatlakozott</string>
+	<string name="channels_queued_waiting">Küldésre vár</string>
+	<string name="channels_queued_not_sent">Nincs elküldve</string>
+	<string name="channels_queued_retry">Újra</string>
+	<string name="channels_queued_delete">Törlés</string>
+	<string name="channels_comment_queued_toast">A hozzászólását elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_react_queued_toast">A reakcióját elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_announce_queued_toast">A nevét elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_post_queued_toast">A bejegyzését elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_change_queued_toast">A módosítását elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_queued_notice_waiting">Néhány elküldött tartalma még várakozik. Elküldjük, amint a csatorna elérhető lesz.</string>
+	<string name="channels_queued_notice_not_sent">Néhány elküldött tartalma nem ment el. Koppintson az újrapróbáláshoz vagy a törléshez.</string>
+	<string name="channels_queued_announce_label">Az Ön neve: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Ez a csatorna nem volt elérhető. Ezzel a linkkel újra csatlakozási kérelmet küldhet. A már meglévő bejegyzései megmaradnak. A tulajdonos látni fogja a megjelenített nevét és egy kulcsot, amely csak ezen a csatornán tartozik Önhöz.</string>
+	<string name="channels_rejoin_not_restored">Ez a link nem állította vissza a hozzáférését ehhez a csatornához. Kérhet új linket.</string>
+	<string name="channels_rejoin_check_title">Kipróbálja ezt a linket?</string>
+	<string name="channels_rejoin_check_message">A csatorna új bejegyzései most nem érhetők el. Ezzel a linkkel megpróbálhatja újra megkapni őket. A már meglévő bejegyzései megmaradnak.</string>
+	<string name="channels_rejoin_check_action">Link kipróbálása</string>
+	<string name="channels_rejoin_try_later">Ez a csatorna most nem érhető el, és ez ugyanaz a link, amely már megvan Önnek. Próbálja újra később. A már meglévő bejegyzései megmaradnak.</string>
+	<string name="channels_rejoin_trying">Tovább próbálkozunk ezzel a linkkel. A már meglévő bejegyzései megmaradnak.</string>
+	<string name="channels_queued_already_sent">Ez már el lett küldve, ezért nem lehetett törölni.</string>
+	<string name="channels_queued_behind_toast">Ezt azután küldjük el, amit korábban küldött ebbe a csatornába.</string>
+	<string name="channels_queued_no_access">Nincs elküldve. Már nincs hozzáférése ehhez a csatornához.</string>
+	<string name="channels_no_access_toast">Már nincs hozzáférése ehhez a csatornához. Kérjen új meghívólinket a tulajdonostól.</string>
+	<string name="channels_rejoin_too_many_links">Ehhez a csatornához már több linkje is várakozik, ezért ezzel nem próbálkoztunk. A már meglévő bejegyzései megmaradnak.</string>
 </resources>

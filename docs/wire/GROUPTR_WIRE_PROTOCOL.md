@@ -37,8 +37,7 @@ the three features above with an iOS peer only if that peer announces 8 or
 more. An iOS client that announces 8 must implement them first.
 
 Minor version 10 (Android 3.0.18, `GROUP_ACTIONS_MIN_VERSION`) adds two
-post actions and member invitations; Android announces 10 while `B3Constants.B3_PROOF_ENABLED` is on
-(it is), and 5 otherwise, as before:
+post actions and member invitations:
 
 - **Delete for everyone (msgType 47, `GROUP_POST_DELETE`).** The author of a
   post can withdraw it from the members that received it. The record goes only
@@ -60,8 +59,7 @@ An iOS client that announces 10 must implement all three first, and Android
 uses none of them with a peer that announces less.
 
 Minor version 11 (Android 3.0.18, `GROUP_INVITER_GRANTS_MIN_VERSION` and
-`GROUP_INCOGNITO_MIN_VERSION`) adds two features; Android announces 11 while
-`B3Constants.B3_PROOF_ENABLED` is on, and 5 otherwise:
+`GROUP_INCOGNITO_MIN_VERSION`) adds two features:
 
 - **Per-member add rights (msgTypes 53 and 54).** The creator gives chosen
   members the right to add members; see "Per-member add rights".
@@ -73,6 +71,13 @@ more; an earlier version would refuse it as an unknown type. Everything of
 version 10, including the group-wide switch of msgType 48, works unchanged
 with a peer on version 10. An iOS client must implement 53 to 56, for its
 roles, before it announces 11.
+
+Minor version 12 (Android 3.0.18, `SALTED_TEXT_MIN_VERSION`) changes no
+group record: it adds a random salt to one-to-one text messages and edits
+("Salted bodies" in
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). Android
+announces 12 while `B3Constants.B3_PROOF_ENABLED` is on, and 5 otherwise. An
+iOS client must accept the salted bodies before it announces 12.
 
 ## Two layers: silent membership fan-out + an explicit invite handshake
 
@@ -307,7 +312,10 @@ they arrive. A received record is kept for 5 minutes, a sent record for 5
 minutes after the contact acknowledged it (a record that is never acknowledged
 stays queued and is sent again). An invite offer (42) is a conversation card
 and is kept like a message, and so is a member invitation offer (49 and 54). What a delete (47) leaves behind on the receiving
-device is described under msgType 47.
+device is described under msgType 47. From 3.0.18 each member this device took out by a removal (34) or a leaving (35) leaves its
+key and one epoch in the group's settings (`grouptr-order:<groupHex>`, at most 256 members per group, the oldest goes first), until a
+33 of the creator at a higher epoch clears it (see msgTypes 34, 35 and 41); the record goes when the group is removed from the
+device. Epoch commits that earlier 3.0.18 test builds kept there are deleted when the app starts.
 
 ## Wire format - every membership record
 
@@ -345,7 +353,16 @@ BdfList.of(
 
 Validator size: exactly **7 slots**. `toEpoch == fromEpoch + 1` is enforced.
 
-**Must be paired with msgType 37 (`GROUP_EPOCH_COMMIT`)** on the same outgoing send. Android sends 34 and 37 as two separate messages in one DB transaction: 34 to every member including the removed one, 37 to every member except the removed one. The receiver applies 34 only if its toEpoch is higher than the local epoch, and 37 only if its fromEpoch equals the local epoch; each sets the local epoch to toEpoch. Order therefore matters. If 37 is processed first, the following 34 is refused as stale and the removal is not applied on that device (known limitation). If 34 is processed first, the following 37 is ignored.
+**Must be paired with msgType 37 (`GROUP_EPOCH_COMMIT`)** on the same outgoing send. Android and iOS send 34 and 37 as two separate messages: 34 to every member including the removed one, 37 to every member except the removed one. The two can arrive in either order, and other records of the creator can arrive between them. The receiver (Android from 3.0.18) applies them as follows; the records are unchanged, so this works with every existing sender:
+
+- Only the creator, as pairwise sender and signer, can remove a member, and never the creator itself. A 34 that any other contact delivers is refused, whatever its epochs.
+- A 34 never removes a member whose entry joined at an epoch higher than the 34's fromEpoch: the creator added that member again after this removal. The entry shows this once the device has taken the creator's 33 for that member (also a 33 older than the local epoch, see "State machine - receive") or a snapshot that lists it. A late 34 that arrives before that 33 still removes the member, and the 33 that follows does not add it back: the member returns with the creator's next snapshot.
+- A 34 whose toEpoch is higher than the local epoch removes the member and sets the local epoch to toEpoch.
+- A 34 whose toEpoch equals the local epoch removes the member and leaves the epoch as it is (a device that applied the 37 first with an earlier version reaches this case).
+- A 34 whose toEpoch is lower than the local epoch (a late 34: the creator's later records, or a record of the creator that a member relayed, such as a 38, moved the device on before it arrived) removes the member too and never moves the epoch. It never removes the receiving device itself. Earlier Android versions refused a late 34, so the removal was lost on that device.
+- Applying the same 34 again changes nothing.
+- A 34 that does not find the member added again records the member with the 34's toEpoch (or keeps a higher epoch already recorded), so a snapshot that still lists that membership does not bring the member back (see msgType 41).
+- The 37 of the same step is not needed: the 34 alone removes the member and, as above, moves the epoch when its toEpoch is higher (see msgType 37).
 
 ### 35 - GROUP_MEMBER_LEFT
 
@@ -368,10 +385,19 @@ Validator size: **6 slots**. Signature is verified against the LEAVING member's 
   (`joinedAt`), is a replay and is ignored. A msgType 33 for another member
   already listed moves that entry to the record's epoch and timestamp, so a
   device that takes the new addition before the old removal still refuses
-  the old leaving; a device's own entry keeps its epoch until the snapshot
-  that follows its addition (see msgType 41).
+  the old leaving; a device's own entry keeps its epoch until a snapshot
+  at a higher epoch replaces the member list (see msgType 41).
 - **Version 8, creator on version 8**: the leaver is taken out of the member
-  list and the shared epoch does **not** move. A member's own record cannot
+  list and the shared epoch does **not** move. From 3.0.18 the receiver
+  records the leaver with the lower of the 35's epoch and the local
+  epoch, so a snapshot that still lists that membership does not add it
+  back, while the creator, which adds a member again only above the 35's
+  epoch, can (see msgType 41). This holds also for an old genuine 35
+  that a member relays after the device moved on. From 3.0.18 a
+  device that joined through a member's invitation (msgTypes 49 and 50)
+  treats its creator as on version 8 or later even when the creator is not
+  its contact, since member invitations need the creator on version 10. A
+  member's own record cannot
   advance the epoch, which only the creator's records do, so a leaving sent to
   some devices only cannot put them ahead of the others (where they would
   refuse the creator's next records and drop the others' posts). The creator
@@ -379,11 +405,14 @@ Validator size: **6 slots**. Signature is verified against the LEAVING member's 
   (k to k+1), sent to the remaining members, which moves every device to the
   next epoch together. The creator also confirms a leaving signed at an
   older epoch, so a member that left while behind is still taken out.
-- **Version 8, creator on an earlier version** (or not a contact): the
+- **Version 8, creator on an earlier version** (or not a contact, unless
+  the device joined through a member's invitation): the
   creator does not confirm and moves its own epoch on the leaving, so the
   receiver keeps the earlier behaviour (epoch moves to
   `min(newEpoch, local + 1)` when `newEpoch` is higher than the local epoch),
-  to stay in step with it. In such a group a member can still put a chosen
+  to stay in step with it. From 3.0.18 it records the leaver with the
+  lower of the 35's epoch and that new local epoch, as above. In such a
+  group a member can still put a chosen
   device one epoch ahead per member that leaves; this ends once the creator
   updates.
 - **Earlier versions** receiving the creator's confirmation after having
@@ -418,6 +447,8 @@ BdfList.of(
 ```
 
 Validator size: **6 slots**. Sent only together with msgType 34 (33, 35, 36 and 38 also advance the epoch, without a 37). The pqSeed is hashed under label `"org.zerionproject/GROUP_EPOCH_SEED"` into the signed-input. The record has no timestamp slot: the timestamp in its signed input is the timestamp of the enclosing private message (the sender uses the same value for both).
+
+Receiver (Android from 3.0.18): a 37 changes nothing and is not kept. The 34 of the same step carries the removal and, when its toEpoch is higher than the local epoch, moves the epoch, in whichever order the two arrive (see msgType 34), so the epoch never moves without the removal. Android up to 3.0.17 moved the epoch on a 37 whose fromEpoch equalled the local epoch, which is why senders still send it.
 
 ### 38 - GROUP_MEMBER_ROLE_CHANGED
 
@@ -479,25 +510,58 @@ in two cases:
    - Call `addMember(groupId, responderPubKey, responderName)` first.
    - On success, immediately call `sendMemberListSnapshot(groupId)`.
 
-The second case is intended to reconcile an invitee whose local state
-was created from the invite. On Android it normally has no effect
-(known limitation): the creator sends the msgType-33 record at the new
-epoch E+1 and then the snapshot at the same epoch E+1, and a receiver
-that has already applied the 33 is at epoch E+1 and refuses the
-snapshot, because a snapshot must have a strictly higher epoch. The
-invitee's member list therefore usually holds only the creator and
-itself, and it drops posts from other members.
+The second case reconciles an invitee whose local state was created from
+the invite. The creator sends the msgType-33 record at the new epoch E+1
+and then the snapshot at the same epoch E+1, so a receiver that has
+already applied the 33 is at epoch E+1 when the snapshot arrives. A
+receiver therefore applies a snapshot at a higher epoch and, in a
+limited form, a snapshot at its own epoch:
 
-A receiver applies msgType 41 only if the group exists, is not
-dissolved, the snapshot's epoch is strictly higher than the local
-epoch, the list has at most 256 entries and the signature verifies
-against the creator's keys. It replaces the member list; names,
-joinedAt and ML-DSA keys come from the previous local entry or the
-contact list, not from the snapshot; and it sets the local epoch to the
-snapshot's epoch.
+- **Higher epoch.** A receiver applies msgType 41 if the group exists,
+  is not dissolved, the snapshot's epoch is strictly higher than the
+  local epoch, the list has at most 256 entries and the signature
+  verifies against the creator's keys. It replaces the member list;
+  names, joinedAt and ML-DSA keys come from the previous local entry or
+  the contact list, not from the snapshot; and it sets the local epoch
+  to the snapshot's epoch. From 3.0.18 it leaves out a member that this
+  device recorded as removed or left (see below).
+- **Equal epoch (Android from 3.0.18).** A snapshot whose epoch equals
+  the local epoch passes the same checks (group exists and is not
+  dissolved, at most 256 entries, creator's signature; the contact that
+  delivers it is not checked) and must list the receiving device itself;
+  the creator's own device never takes one. It can only add: every
+  listed member that the local list lacks is added with the role and
+  joinedAtEpoch the snapshot gives, as long as the list holds fewer than
+  256 members, except a member this device recorded as removed or left.
+  It never removes a member, never removes the receiving device, never
+  changes the role, joinedAtEpoch or name of a listed member, and never
+  changes the epoch or the group permissions. Removals and role changes
+  always come with a higher epoch.
+- **Members that left or were removed (Android from 3.0.18).** The
+  device records each member it takes out with one epoch: the toEpoch of
+  the removal (34), or for a leaving (35) the lower of the 35's epoch and
+  the local epoch once the leaving is applied. A snapshot entry for that
+  member whose joinedAtEpoch is at or below that epoch belongs to the
+  membership that ended, and both kinds of snapshot leave it out, so no
+  snapshot brings back a member that left or was removed (the device
+  keeps the newest 256 such records per group). The creator adds a member
+  again only above that epoch, so a snapshot that lists it with a higher
+  joinedAtEpoch adds it. A creator's 33 for the member clears a record
+  below the 33's epoch, also when the 33 is not newer than the local
+  epoch.
 
-A snapshot that passes these checks but does not list the receiver
-itself, on a device that holds itself as a confirmed member (epoch above
+With these rules a new member learns every member from the snapshot of
+its own addition, also when it applied the creator's next addition (a
+33 at a later epoch) before that snapshot arrived: the stale snapshot is
+refused and the next one, at the device's epoch, adds the members it
+lacks. A snapshot at an epoch lower than the local epoch is refused.
+Android 3.0.15 to 3.0.17 applied an equal-epoch snapshot only when it
+was the first snapshot after the device's own addition and listed the
+device at that epoch, and then replaced the list; earlier versions
+refused every equal-epoch snapshot.
+
+A snapshot at a higher epoch that passes these checks but does not list
+the receiver itself, on a device that holds itself as a confirmed member (epoch above
 0, listed in its own member list and not waiting to be admitted, see
 msgType 50), removes the group from the device exactly as a msgType 34
 naming the receiver does, and the device shows that it was removed. This
@@ -1128,8 +1192,10 @@ key being the one from the offer.
   configured (the creator holds a permissions record), the creator sends a
   snapshot after removing a member, so the removal reaches invitees this
   way; additions already end with a snapshot. The invitee takes these
-  records under the existing rules (signer the creator, sender not checked,
-  snapshot epoch strictly higher). The invitee still receives no 46 or 48,
+  records under the existing rules (signer the creator, sender not checked;
+  a snapshot at a strictly higher epoch replaces the list, one at the
+  invitee's own epoch can only add members, see msgType 41). The invitee
+  still receives no 46 or 48,
   and nothing reaches it once its inviting member has left the group.
 
 ### Version gate, older clients and iOS
@@ -1499,7 +1565,9 @@ Records whose sender is not checked are accepted from any contact that
 delivers a validly signed copy with an epoch higher than the local epoch
 (known limitation); for example, a newly accepted invitee (epoch 0)
 accepts an older creator-signed snapshot relayed by any contact until the
-creator's msgType 33 arrives. Android accepts 33, 34 and 37 only from the
+creator's msgType 33 arrives. From 3.0.18 this also holds for a
+creator-signed snapshot at the local epoch, which can only add members the
+device lacks (see msgType 41). Android accepts 33, 34 and 37 only from the
 creator.
 
 ## State machine - receive
@@ -1512,7 +1580,11 @@ GroupTrManagerImpl on MEMBER_ADDED:
     if state is missing, removed from this device, or dissolved: drop
     if the pairwise sender is not the creator: drop
     if the hybrid signature does not verify against the creator's keys: drop
-    if event.epoch <= state.epoch: drop                  (stale or replayed)
+    if event.epoch <= state.epoch:                       (older addition)
+        unless it is this device, raise a listed entry for pubKey to
+            joinedAtEpoch = event.epoch when it is lower
+        clear a departure record of pubKey below event.epoch
+        never add an absent member, never move the epoch; return
     if a member already has this pubKey:
         unless it is this device: move its entry to
             joinedAt = message timestamp, joinedAtEpoch = event.epoch
@@ -1548,11 +1620,12 @@ Concrete checklist:
 5. **In the iOS group state machine**: a MEMBER_ADDED record is applied only to a group that already exists locally. The invitee's group is created when the user accepts the msgType-42 OFFER; the later MEMBER_ADDED for the local user only advances the epoch.
 6. **Hybrid signatures**: every record must be signed with `hybridSign(label, signedInput, HybridSignaturePrivateKey)`; a client without an ML-DSA-65 private key cannot send GroupTr records. On receive, accept only a 3373-byte signature whose Ed25519 and ML-DSA-65 halves both verify.
 7. **Wire format byte-exactness**: pay close attention to big-endian encoding of `epoch` (4 bytes) and `timestamp` (8 bytes) in the signed-inputs. Off-by-one or endianness errors will produce signatures Android rejects.
+8. **Receiver rules for records that arrive out of order (iOS parity required)**: Android 3.0.18 never lets a 37 change anything (msgType 37); applies the creator's late 34 without moving the epoch, never to the receiving device and never to a member added again after the 34's fromEpoch (msgType 34); takes the creator's 33 that is not newer than the local epoch only to raise the listed member's joinedAtEpoch and clear its departure record ("State machine - receive"); records every member it takes out by a 34 or 35 with one epoch (for a 35 the lower of its epoch and the local epoch) and leaves that membership out of every snapshot, so no snapshot adds back a member that left or was removed (msgType 41); takes a creator snapshot at its own epoch to add missing members only, never removing or changing anything (msgType 41); and, on a device that joined through a member's invitation, treats the creator as on version 8 or later for leavings (msgType 35). These rules change no record and need no version gate, but an iOS receiver must implement them the same way, or a removal can be lost on an iOS device whose 37 or a later record arrives first, a member that left can come back with an older snapshot, and a new iOS member can stay unaware of earlier members and keep their posts pending.
 
 ## What this does NOT cover
 
 - GroupTr has no group key and no group ratchet: the sender signs each post once and sends a copy over the pairwise channel to each member that is its contact, and the confidentiality, forward secrecy and post-compromise security of a post are those of the pairwise channel each copy travels over (see the Technical Whitepaper, group section).
-- Recovery from missing membership records: msgType 41 exists, but see the limitation in "When to send a snapshot" above.
+- Full recovery from missing membership records. A snapshot (41) repairs a device only when the creator sends one (after an addition, after a removal in a group where member invitations were configured, or on a manual repair, for which the Android app has no button), and a snapshot at the device's own epoch only adds members. A device that never receives a removal's 34 (for example an invitee that is not the creator's contact) keeps the removed member until a snapshot at a higher epoch arrives, and a leaving reaches a device only from the leaver itself or with the creator's next snapshot. A late 34 is applied only when the creator delivers it; a copy relayed by another member is refused. A member the creator added again can be taken out by the creator's late 34 for its earlier membership when that 34 arrives before the 33 that added it again; it comes back with the creator's next snapshot. A device that took a member out keeps the newest 256 such records per group, so in a group that removed more members than that, a snapshot could list an older removed membership again. Record 38 (role change) is still taken from whichever contact delivers it, so a member can move a device's epoch on with a relayed 38; with these rules a late 34 still applies, but a snapshot from before that 38 is then refused as older.
 
 ## Quick interop sanity test for iOS team
 

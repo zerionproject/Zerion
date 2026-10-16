@@ -311,7 +311,7 @@
   <string name="groups_dissolve_dialog_message">Willst du wirklich diese Gruppe auflösen?\n\nAlle anderen Mitglieder können ihre Unterhaltung nicht fortsetzen und erhalten möglicherweise nicht die neuesten Nachrichten.</string>
   <string name="groups_dissolve_button">Auflösen</string>
   <string name="groups_dissolved_dialog_title">Gruppe wurde aufgelöst</string>
-  <string name="groups_dissolved_dialog_message">Der Ersteller dieser Gruppe hat diese aufgelöst.\n\nEs können keine weiteren Nachrichten mehr in dieser Gruppe geschrieben werden und möglicherweise wurden noch nicht alle Nachrichten empfangen.</string>
+  <string name="groups_dissolved_dialog_message">Der Gruppeneigentümer hat diese Gruppe aufgelöst.\n\nEs können keine weiteren Nachrichten mehr in dieser Gruppe geschrieben werden und möglicherweise wurden noch nicht alle Nachrichten empfangen.</string>
   
   <string name="groups_invitations_title">Gruppeneinladungen</string>
   <string name="groups_invitations_invitation_sent">Du hast %1$s eingeladen, der Gruppe \"%2$s\" beizutreten.</string>
@@ -321,9 +321,9 @@
     <item quantity="one">%d offene Gruppeneinladung</item>
     <item quantity="other">%d offene Gruppeneinladungen</item>
   </plurals>
-  <string name="sharing_status_groups">Nur der Ersteller kann neue Mitglieder zu einer Gruppe einladen. Hier werden alle aktuellen Mitglieder dieser Gruppe angezeigt.</string>
+  <string name="sharing_status_groups">Nur der Gruppeneigentümer kann neue Mitglieder in die Gruppe einladen. Hier werden alle aktuellen Mitglieder dieser Gruppe angezeigt.</string>
   
-  <string name="groups_reveal_dialog_message">Kontakte können mit allen derzeitigen und zukünftigen Mitgliedern dieser Gruppe geteilt werden.\n\nDas beschleunigt die Verbindung zu der Gruppe und macht sie zusätzlich zuverlässiger, da Kommunikation mit den Mitgliedern auch dann erfolgen kann, wenn der Ersteller der Gruppe offline ist.</string>
+  <string name="groups_reveal_dialog_message">Kontakte können mit allen derzeitigen und zukünftigen Mitgliedern dieser Gruppe geteilt werden.\n\nDas beschleunigt die Verbindung zu der Gruppe und macht sie zusätzlich zuverlässiger, da Kommunikation mit den geteilten Kontakten auch dann erfolgen kann, wenn der Gruppeneigentümer offline ist.</string>
   <string name="groups_reveal_visible_revealed_by_us">Verbindung zum Kontakt ist für diese Gruppe sichtbar (selbst offengelegt)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Verbindung zum Kontakt ist für diese Gruppe sichtbar (offengelegt durch %s)</string>
   <string name="groups_reveal_invisible">Verbindung zum Kontakt ist für diese Gruppe nicht sichtbar</string>
@@ -795,7 +795,7 @@
 	<string name="channels_feed_empty_publisher">Dein Kanal hat noch keine Beiträge. Veröffentliche deinen ersten.</string>
 	<string name="channels_feed_empty_subscriber">Noch keine Beiträge. Neue Beiträge erscheinen hier.</string>
 	<string name="channels_feed_connecting">Verbindung zum Kanal wird hergestellt…</string>
-	<string name="channels_feed_connecting_slow">Verbindung wird noch hergestellt. Stelle sicher, dass die Person, die diesen Kanal geteilt hat, online ist. Dies aktualisiert sich von selbst.</string>
+	<string name="channels_feed_connecting_slow">Verbindung wird noch hergestellt. Beiträge erscheinen hier, sobald der Kanal erreichbar ist.</string>
 	<string name="channels_compose_hint">Schreibe an deine Abonnenten…</string>
 	<string name="channels_compose_send">Veröffentlichen</string>
 	<string name="channels_compose_error_empty">Gib etwas ein, bevor du veröffentlichst.</string>
@@ -1090,7 +1090,7 @@
 	<string name="grouptr_empty">Noch keine Gruppen.</string>
 	<string name="grouptr_meta">%2$d Mitglieder</string>
 	<string name="grouptr_dissolved_suffix">(aufgelöst)</string>
-	<string name="grouptr_creator_tag">(Ersteller)</string>
+	<string name="grouptr_creator_tag">(Gruppeneigentümer)</string>
 	<string name="grouptr_admin_tag">(Admin)</string>
 	<string name="grouptr_promote">Befördern</string>
 	<string name="grouptr_demote">Herabstufen</string>
@@ -1189,7 +1189,7 @@
 	<string name="grouptr_detail_status">Status</string>
 	<string name="grouptr_detail_status_dissolved">Aufgelöst</string>
 	<string name="grouptr_open_chat">Chat öffnen</string>
-	<string name="grouptr_member_role_creator">Ersteller</string>
+	<string name="grouptr_member_role_creator">Gruppeneigentümer</string>
 	<string name="grouptr_member_role_you">du</string>
 	<string name="grouptr_member_action_remove">Aus Gruppe entfernen</string>
 	<string name="scroll_to_bottom">Nach unten scrollen</string>
@@ -2274,14 +2274,14 @@
 	<string name="wallet_sp_enable_first">Aktiviere zuerst Silent Payments</string>
 	<string name="grouptr_reach_title">Wen deine Nachrichten erreichen</string>
 	<string name="grouptr_reach_explanation">Gruppennachrichten werden direkt zwischen Mitgliedern übertragen, die gegenseitig Kontakte sind, und Mitglieder leiten Nachrichten nicht weiter. Diese Mitglieder sind nicht deine Kontakte, daher erhalten sie deine Nachrichten nicht und du ihre nicht:\n\n%1$s\n\nFüge sie als Kontakte hinzu, um sie zu erreichen.</string>
-	<string name="grouptr_ttl_set_by_creator">Verschwindende Nachrichten in dieser Gruppe: %1$s. Nur der Ersteller der Gruppe kann dies ändern.</string>
+	<string name="grouptr_ttl_set_by_creator">Verschwindende Nachrichten in dieser Gruppe: %1$s. Nur der Gruppeneigentümer kann dies ändern.</string>
 	<string name="grouptr_sender_alias_format">%1$s (schreibt als „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (kein dir bekannter Name)</string>
 	<string name="grouptr_member_out_of_reach">nicht dein Kontakt, erhält deine Nachrichten nicht</string>
 	<string name="grouptr_member_invited">Eingeladen, wartet auf Antwort</string>
 	<string name="grouptr_confirm_revoke">Die Einladung an %1$s zurückziehen? Eine Antwort dieser Person wird ignoriert.</string>
 	<string name="grouptr_revoke_invite">Einladung zurückziehen</string>
-	<string name="grouptr_invite_expired">Diese Einladung ist abgelaufen. Bitte den Ersteller der Gruppe um eine neue.</string>
+	<string name="grouptr_invite_expired">Diese Einladung ist abgelaufen. Bitte den Gruppeneigentümer um eine neue.</string>
 	<string name="reaction_removed_here_only">Nur auf diesem Gerät entfernt: Die App deines Kontakts ist zu alt, um sie dort zu entfernen.</string>
 	<string name="startup_data_without_account_message">Zerion hat Daten auf diesem Gerät gefunden, aber keinen Kontoschlüssel, der sie öffnet: Die Schlüsseldateien fehlen oder sind beschädigt. Es wurde nichts gelöscht.\n\nDu kannst Zerion schließen und die Daten behalten oder alles löschen und neu beginnen.</string>
 	<string name="startup_data_without_account_keep">Schließen und behalten</string>
@@ -2468,13 +2468,13 @@
 	<string name="grouptr_members_may_invite">Mitglieder können ihre Kontakte einladen</string>
 	<string name="grouptr_members_may_invite_summary">Solange dies aktiv ist, fügt dein Telefon die Personen, die sie einladen, automatisch hinzu.</string>
 	<string name="grouptr_invite_contacts">Kontakte einladen</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Nur Mitglieder, die den Ersteller der Gruppe als Kontakt haben, können einladen.</string>
-	<string name="grouptr_member_invite_creator_outdated">Der Ersteller der Gruppe benötigt eine neuere Version der App, bevor Mitglieder einladen können.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Nur Mitglieder, die den Gruppeneigentümer als Kontakt haben, können einladen.</string>
+	<string name="grouptr_member_invite_creator_outdated">Der Gruppeneigentümer benötigt eine neuere Version der App, bevor Mitglieder einladen können.</string>
 	<string name="grouptr_member_invite_contact_outdated">Benötigt eine neuere Version der App</string>
 	<string name="grouptr_member_invitation_received">%1$s hat dich eingeladen, der Gruppe \"%2$s\" beizutreten, die von %3$s erstellt wurde.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s hat dich eingeladen, einer Gruppe beizutreten, die von %2$s erstellt wurde.</string>
-	<string name="grouptr_waiting_for_admin">Warten, bis %1$s, Ersteller der Gruppe, online ist. Das Telefon des Erstellers fügt dich automatisch hinzu, danach kannst du hier schreiben.</string>
-	<string name="grouptr_member_invite_accepted">Angenommen. Du trittst bei, sobald der Ersteller der Gruppe online ist.</string>
+	<string name="grouptr_waiting_for_admin">Warten, bis der Gruppeneigentümer %1$s online ist. Das Telefon des Eigentümers fügt dich automatisch hinzu, danach kannst du hier schreiben.</string>
+	<string name="grouptr_member_invite_accepted">Angenommen. Du trittst bei, sobald der Gruppeneigentümer online ist.</string>
 	<string name="grouptr_member_invite_unavailable">Diese Einladung kann nicht mehr angenommen werden. Bitte um eine neue.</string>
 	<string name="grouptr_incognito">Inkognito in dieser Gruppe</string>
 	<string name="grouptr_incognito_summary">Die anderen in der Gruppe sehen statt deines Namens einen zufälligen Namen. Mitglieder, die deine Kontakte sind, können dich weiterhin an deinem Schlüssel erkennen.</string>
@@ -2482,7 +2482,7 @@
 	<string name="grouptr_incognito_new_name">Neuer Name</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (inkognito)</string>
 	<string name="grouptr_member_may_add">Darf Mitglieder hinzufügen</string>
-	<string name="grouptr_member_invite_creator_only">Nur der Ersteller der Gruppe kann Mitglieder hinzufügen.</string>
+	<string name="grouptr_member_invite_creator_only">Nur der Gruppeneigentümer kann Mitglieder hinzufügen.</string>
 	<string name="tor_status_entry_relay">Instabil</string>
 	<string name="tor_hidden_services_entry_relay">Das Eingangsrelais von Tor scheitert bei den meisten Verbindungen, daher erreichen dich Kontakte möglicherweise nicht. Ursache kann ein überlastetes Netz oder eine Störung sein. Meist hilft es, die Tor-Verbindungsmethode unter Einstellungen, Verbindungen auf Brücken umzustellen.</string>
 	<string name="contact_connection_tor_entry_relay">Tor ist verbunden, aber sein Eingangsrelais scheitert bei den meisten Verbindungen. Brücken helfen meistens.</string>
@@ -2493,4 +2493,46 @@
 	<string name="channels_subscribers_unban">Sperre aufheben</string>
 	<string name="channels_subscribers_unban_confirm">Sperre aufheben? Dieser Abonnent kann wieder kommentieren und reagieren. Was die Sperre entfernt hat, kommt nicht zurück, und eine Bearbeiterrolle muss neu vergeben werden.</string>
 	<string name="channels_unban_failed">Sperre konnte nicht aufgehoben werden</string>
+	<string name="contact_delete_failed">Kontakt konnte nicht gelöscht werden</string>
+	<string name="channels_delegations_revoke_failed">Bearbeiterrechte konnten nicht entzogen werden</string>
+	<string name="channels_invite_rotate_failed">Der Einladungslink wurde nicht geändert. Der alte Link funktioniert weiterhin.</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="one">Einladung an %d Kontakt gesendet</item>
+		<item quantity="other">Einladungen an %d Kontakte gesendet</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">Der Eigentümer hat nicht bestätigt, dass dein Antrag angekommen ist. Versuche es später erneut.</string>
+	<string name="channels_apply_banner">Antippen, um beim Eigentümer Zugang zu diesem Kanal zu beantragen.</string>
+	<string name="channels_rejoin_updated">Dein Zugang zu %1$s wurde aktualisiert.</string>
+	<string name="channels_rejoin_unreachable">Dieser Link konnte gerade nicht geprüft werden. Versuche es später erneut.</string>
+	<string name="channels_rejoin_apply_again">Du kannst den Beitritt erneut beantragen, um neue Beiträge in diesem Kanal zu lesen. Die Beiträge, die du schon hast, bleiben erhalten. Der Eigentümer sieht deinen Anzeigenamen und einen Schlüssel, der nur in diesem Kanal zu dir gehört.</string>
+	<string name="channels_sync_last_updated">Zuletzt aktualisiert: %1$s</string>
+	<string name="channels_sync_saved_posts">Gespeicherte Beiträge werden angezeigt</string>
+	<string name="channels_sync_saved_posts_last_updated">Gespeicherte Beiträge werden angezeigt · Zuletzt aktualisiert: %1$s</string>
+	<string name="channels_sync_not_updated_since">Seit %1$s nicht aktualisiert</string>
+	<string name="channels_owner_deleted_notice">Der Eigentümer hat den Kanal %1$s gelöscht</string>
+	<string name="channels_owner_deleted_notice_unnamed">Der Eigentümer hat einen Kanal gelöscht, dem du beigetreten warst</string>
+	<string name="channels_queued_waiting">Wartet auf Versand</string>
+	<string name="channels_queued_not_sent">Nicht gesendet</string>
+	<string name="channels_queued_retry">Erneut versuchen</string>
+	<string name="channels_queued_delete">Löschen</string>
+	<string name="channels_comment_queued_toast">Dein Kommentar wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_react_queued_toast">Deine Reaktion wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_announce_queued_toast">Dein Name wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_post_queued_toast">Dein Beitrag wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_change_queued_toast">Deine Änderung wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_queued_notice_waiting">Einiges, was du abgeschickt hast, wartet noch. Es wird gesendet, sobald der Kanal erreichbar ist.</string>
+	<string name="channels_queued_notice_not_sent">Einiges, was du abgeschickt hast, wurde nicht gesendet. Antippen, um es erneut zu versuchen oder zu löschen.</string>
+	<string name="channels_queued_announce_label">Dein Name: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Dieser Kanal war nicht erreichbar. Du kannst mit diesem Link erneut den Beitritt beantragen. Die Beiträge, die du schon hast, bleiben erhalten. Der Eigentümer sieht deinen Anzeigenamen und einen Schlüssel, der nur in diesem Kanal zu dir gehört.</string>
+	<string name="channels_rejoin_not_restored">Dieser Link hat deinen Zugang zu diesem Kanal nicht wiederhergestellt. Du kannst um einen neuen Link bitten.</string>
+	<string name="channels_rejoin_check_title">Diesen Link ausprobieren?</string>
+	<string name="channels_rejoin_check_message">Neue Beiträge in diesem Kanal sind gerade nicht erreichbar. Du kannst diesen Link ausprobieren, um sie wieder zu erhalten. Die Beiträge, die du schon hast, bleiben erhalten.</string>
+	<string name="channels_rejoin_check_action">Link ausprobieren</string>
+	<string name="channels_rejoin_try_later">Dieser Kanal ist gerade nicht erreichbar, und dies ist derselbe Link, den du schon hast. Versuche es später erneut. Die Beiträge, die du schon hast, bleiben erhalten.</string>
+	<string name="channels_rejoin_trying">Wir versuchen es weiter mit diesem Link. Die Beiträge, die du schon hast, bleiben erhalten.</string>
+	<string name="channels_queued_already_sent">Es wurde bereits gesendet und konnte daher nicht gelöscht werden.</string>
+	<string name="channels_queued_behind_toast">Dies wird nach dem gesendet, was du vorher an diesen Kanal gesendet hast.</string>
+	<string name="channels_queued_no_access">Nicht gesendet. Du hast keinen Zugang mehr zu diesem Kanal.</string>
+	<string name="channels_no_access_toast">Du hast keinen Zugang mehr zu diesem Kanal. Bitte den Eigentümer um einen neuen Einladungslink.</string>
+	<string name="channels_rejoin_too_many_links">Du hast für diesen Kanal schon mehrere Links, die noch warten, deshalb wurde dieser nicht ausprobiert. Die Beiträge, die du schon hast, bleiben erhalten.</string>
 </resources>

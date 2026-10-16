@@ -21,12 +21,24 @@ public final class ChannelApplication {
 	private final byte[] kemCiphertext;
 	@Nullable
 	private final byte[] envelope;
+	@Nullable
+	private final byte[] approvedUnder;
 
 	public ChannelApplication(String displayName, byte[] applicantEd25519,
 			byte[] applicantMlDsa, byte[] applicantEphemeralAgreementPub,
 			long appliedAtHourMs, Status status,
 			@Nullable byte[] kemCiphertext,
 			@Nullable byte[] envelope) {
+		this(displayName, applicantEd25519, applicantMlDsa,
+				applicantEphemeralAgreementPub, appliedAtHourMs, status,
+				kemCiphertext, envelope, null);
+	}
+
+	public ChannelApplication(String displayName, byte[] applicantEd25519,
+			byte[] applicantMlDsa, byte[] applicantEphemeralAgreementPub,
+			long appliedAtHourMs, Status status,
+			@Nullable byte[] kemCiphertext,
+			@Nullable byte[] envelope, @Nullable byte[] approvedUnder) {
 		this.displayName = displayName;
 		this.applicantEd25519 = applicantEd25519;
 		this.applicantMlDsa = applicantMlDsa;
@@ -36,6 +48,7 @@ public final class ChannelApplication {
 		this.status = status;
 		this.kemCiphertext = kemCiphertext;
 		this.envelope = envelope;
+		this.approvedUnder = approvedUnder;
 	}
 
 	public String getDisplayName() {
@@ -70,5 +83,10 @@ public final class ChannelApplication {
 	@Nullable
 	public byte[] getEnvelope() {
 		return envelope;
+	}
+
+	@Nullable
+	public byte[] getApprovedUnder() {
+		return approvedUnder;
 	}
 }

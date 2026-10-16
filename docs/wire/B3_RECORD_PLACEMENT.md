@@ -282,10 +282,11 @@ release builds and is now permanently on. Retained for history:
 
 v1.5.0 shipped `messaging.minorVersion` **6**
 (`MINOR_VERSION = B3_PROOF_ENABLED ? 6 : 5`). Later releases raised it with
-each new messaging feature; from 3.0.18 it is **11**
-(`B3_PROOF_ENABLED ? 11 : 5`, see `MessagingManager.MINOR_VERSION` and
-GROUPTR_WIRE_PROTOCOL.md). Legacy 4-slot acceptance is retained for
-cross-version interop.
+each new messaging feature; from 3.0.18 it is **12**
+(`B3_PROOF_ENABLED ? 12 : 5`, see `MessagingManager.MINOR_VERSION`,
+GROUPTR_WIRE_PROTOCOL.md and
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). Legacy
+4-slot acceptance is retained for cross-version interop.
 
 ---
 

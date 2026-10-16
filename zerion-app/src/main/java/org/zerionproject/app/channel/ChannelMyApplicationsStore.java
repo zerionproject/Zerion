@@ -25,6 +25,7 @@ import javax.inject.Singleton;
 class ChannelMyApplicationsStore {
 
 	private static final String NS = "zerion-channels-my-applications";
+	private static final String HOUR_FLOOR = ".floor";
 
 	private final SettingsManager settingsManager;
 	private final BdfReaderFactory readerFactory;
@@ -52,7 +53,10 @@ class ChannelMyApplicationsStore {
 					d.getRaw("ephPub"),
 					d.getLong("ts"),
 					parseStatus(d.getString("status")),
-					"member".equals(d.getOptionalString("signer")));
+					"member".equals(d.getOptionalString("signer")),
+					!Boolean.TRUE.equals(d.getOptionalBoolean("unconfirmed")),
+					emptySince(d.getOptionalLong("emptySince")),
+					Boolean.TRUE.equals(d.getOptionalBoolean("emptyReset")));
 		} catch (IOException e) {
 			return null;
 		}
@@ -68,15 +72,33 @@ class ChannelMyApplicationsStore {
 		d.put("ts", app.appliedAtHourMs);
 		d.put("status", app.status.name());
 		if (app.signedWithMemberKey) d.put("signer", "member");
+		if (!app.confirmed) d.put("unconfirmed", true);
+		if (app.emptySinceMs >= 0L) d.put("emptySince", app.emptySinceMs);
+		if (app.emptyClockReset) d.put("emptyReset", true);
 		Settings out = new Settings();
 		out.put(ChannelStore.hex(channelId),
 				encodeBase64(dictToBytes(d)));
+		if (app.appliedAtHourMs > getHourFloor(channelId)) {
+			out.putLong(ChannelStore.hex(channelId) + HOUR_FLOOR,
+					app.appliedAtHourMs);
+		}
 		settingsManager.mergeSettings(out, NS);
 	}
 
 	void remove(byte[] channelId) throws DbException {
 		settingsManager.deleteSettings(NS, java.util.Collections
 				.singletonList(ChannelStore.hex(channelId)));
+	}
+
+	long getHourFloor(byte[] channelId) throws DbException {
+		return settingsManager.getSettings(NS).getLong(
+				ChannelStore.hex(channelId) + HOUR_FLOOR, -1L);
+	}
+
+	void removeAll(byte[] channelId) throws DbException {
+		String key = ChannelStore.hex(channelId);
+		settingsManager.deleteSettings(NS,
+				java.util.Arrays.asList(key, key + HOUR_FLOOR));
 	}
 
 	static final class MyApplication {
@@ -87,18 +109,66 @@ class ChannelMyApplicationsStore {
 		final long appliedAtHourMs;
 		final ApplicationStatus status;
 		final boolean signedWithMemberKey;
+		final boolean confirmed;
+		final long emptySinceMs;
+		final boolean emptyClockReset;
 
 		MyApplication(String displayName,
 				@Nullable byte[] ephemeralAgreementPriv,
 				byte[] ephemeralAgreementPub, long appliedAtHourMs,
 				ApplicationStatus status, boolean signedWithMemberKey) {
+			this(displayName, ephemeralAgreementPriv, ephemeralAgreementPub,
+					appliedAtHourMs, status, signedWithMemberKey, true);
+		}
+
+		MyApplication(String displayName,
+				@Nullable byte[] ephemeralAgreementPriv,
+				byte[] ephemeralAgreementPub, long appliedAtHourMs,
+				ApplicationStatus status, boolean signedWithMemberKey,
+				boolean confirmed) {
+			this(displayName, ephemeralAgreementPriv, ephemeralAgreementPub,
+					appliedAtHourMs, status, signedWithMemberKey, confirmed,
+					-1L, false);
+		}
+
+		MyApplication(String displayName,
+				@Nullable byte[] ephemeralAgreementPriv,
+				byte[] ephemeralAgreementPub, long appliedAtHourMs,
+				ApplicationStatus status, boolean signedWithMemberKey,
+				boolean confirmed, long emptySinceMs,
+				boolean emptyClockReset) {
 			this.displayName = displayName;
 			this.ephemeralAgreementPriv = ephemeralAgreementPriv;
 			this.ephemeralAgreementPub = ephemeralAgreementPub;
 			this.appliedAtHourMs = appliedAtHourMs;
 			this.status = status;
 			this.signedWithMemberKey = signedWithMemberKey;
+			this.confirmed = confirmed;
+			this.emptySinceMs = emptySinceMs;
+			this.emptyClockReset = emptyClockReset;
 		}
+
+		MyApplication emptySince(long start, boolean clockReset) {
+			return new MyApplication(displayName, ephemeralAgreementPriv,
+					ephemeralAgreementPub, appliedAtHourMs, status,
+					signedWithMemberKey, confirmed, start, clockReset);
+		}
+
+		MyApplication confirmed() {
+			return new MyApplication(displayName, ephemeralAgreementPriv,
+					ephemeralAgreementPub, appliedAtHourMs, status,
+					signedWithMemberKey, true, emptySinceMs, emptyClockReset);
+		}
+
+		MyApplication approved() {
+			return new MyApplication(displayName, null,
+					ephemeralAgreementPub, appliedAtHourMs,
+					ApplicationStatus.APPROVED, signedWithMemberKey, true);
+		}
+	}
+
+	private static long emptySince(@Nullable Long at) {
+		return at == null || at < 0L ? -1L : at;
 	}
 
 	private static ApplicationStatus parseStatus(String s) {

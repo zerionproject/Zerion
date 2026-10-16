@@ -124,6 +124,7 @@ class GroupTrMemberInvites {
 	static final String SETTINGS_NS_MEMBER_OFFERS_PENDING =
 			"grouptr.member_offers_pending";
 	static final String S_JOINING_VIA = "memberInviteJoiningVia";
+	static final String S_JOINED_THROUGH_MEMBER = "memberInviteJoined";
 
 	static final String K_PERM_FLAGS = "permFlags";
 	static final String K_PERM_TIMESTAMP = "permTimestamp";
@@ -766,6 +767,14 @@ class GroupTrMemberInvites {
 		announceUpdated(groupId);
 	}
 
+	boolean joinedThroughMember(byte[] groupId) throws DbException {
+		Settings state = settingsManager.getSettings(
+				SETTINGS_NS_PREFIX + toHexString(groupId));
+		String via = state.get(S_JOINING_VIA);
+		if (via != null && !via.isEmpty()) return true;
+		return state.getBoolean(S_JOINED_THROUGH_MEMBER, false);
+	}
+
 	private boolean unconfirmedJoining(GroupTrState s) throws DbException {
 		return joiningVia(s.getGroupId()) != null && s.getEpoch() == 0L;
 	}
@@ -1025,6 +1034,7 @@ class GroupTrMemberInvites {
 					members);
 			Settings extra = new Settings();
 			extra.put(S_JOINING_VIA, toHexString(o.inviterPubKey));
+			extra.putBoolean(S_JOINED_THROUGH_MEMBER, true);
 			host.materialize(joining, extra);
 			if (incognitoName != null) {
 				host.setIncognitoName(groupId, incognitoName);

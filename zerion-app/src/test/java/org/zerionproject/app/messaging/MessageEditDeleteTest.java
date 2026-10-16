@@ -24,6 +24,7 @@ import org.zerionproject.core.test.TestDatabaseConfigModule;
 import org.zerionproject.app.api.conversation.ConversationMessageHeader;
 import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.api.messaging.MessagingManager.EditResult;
+import org.zerionproject.app.api.messaging.PrivateMessageFormat;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.junit.After;
@@ -38,6 +39,7 @@ import java.util.Set;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -48,6 +50,7 @@ import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_DELETE;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_EDIT;
 import static org.zerionproject.app.messaging.MessageTypes.MESSAGE_REACTION;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
+import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
@@ -297,6 +300,71 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void anEditForACurrentContactCarriesASaltOfItsOwn()
+			throws Exception {
+		MessagingManagerImpl sender =
+				senderSeeing(MessagingManager.MINOR_VERSION);
+		MessageId mine = own("Hey Allfs good", now - HOUR);
+
+		assertEquals(EditResult.EDITED,
+				sender.editMessage(contact, mine, "Hey all good"));
+
+		Collection<MessageId> sent = localControls(MESSAGE_EDIT);
+		assertEquals(1, sent.size());
+		Message edit = db.transactionWithResult(true, txn ->
+				db.getMessage(txn, sent.iterator().next()));
+		BdfList body = clientHelper.toList(edit);
+		assertEquals(4, body.size());
+		assertEquals("Hey all good", body.getString(2));
+		assertEquals(BODY_SALT_LENGTH, body.getRaw(3).length);
+		assertNotNull(validator.validateToBdf(edit, contactGroup));
+	}
+
+	@Test
+	public void anEditForAContactOnAnEarlierVersionKeepsItsShape()
+			throws Exception {
+		int checked = 0;
+		for (int minor : new int[] {9, 10, 11}) {
+			MessageId mine = own("before " + minor, now - HOUR + minor);
+
+			assertEquals(EditResult.EDITED, senderSeeing(minor)
+					.editMessage(contact, mine, "after " + minor));
+
+			for (MessageId id : localControls(MESSAGE_EDIT)) {
+				Message edit = db.transactionWithResult(true, txn ->
+						db.getMessage(txn, id));
+				BdfList body = clientHelper.toList(edit);
+				if (!body.getString(2).equals("after " + minor)) continue;
+				assertEquals(3, body.size());
+				assertEquals(MESSAGE_EDIT, (int) body.getInt(0));
+				assertArrayEquals(mine.getBytes(), body.getRaw(1));
+				checked++;
+			}
+		}
+		assertEquals(3, checked);
+	}
+
+	@Test
+	public void theMessageFormatFollowsTheContactsVersion() throws Exception {
+		assertEquals(PrivateMessageFormat.TEXT_IMAGES_SALTED,
+				formatSeenAt(MessagingManager.MINOR_VERSION));
+		assertEquals(PrivateMessageFormat.TEXT_IMAGES_SALTED,
+				formatSeenAt(MessagingManager.SALTED_TEXT_MIN_VERSION));
+		for (int minor = 4; minor < MessagingManager.SALTED_TEXT_MIN_VERSION;
+				minor++) {
+			assertEquals(PrivateMessageFormat.TEXT_IMAGES_CHUNKED,
+					formatSeenAt(minor));
+		}
+		assertEquals(PrivateMessageFormat.TEXT_IMAGES_AUTO_DELETE,
+				formatSeenAt(3));
+		assertEquals(PrivateMessageFormat.TEXT_IMAGES, formatSeenAt(1));
+		assertEquals(PrivateMessageFormat.TEXT_ONLY, formatSeenAt(0));
+		assertTrue(PrivateMessageFormat.TEXT_IMAGES_SALTED
+				.supportsChunkedAttachments());
+		assertFalse(PrivateMessageFormat.TEXT_IMAGES_CHUNKED.isSalted());
+	}
+
+	@Test
 	public void aSecondEditReplacesTheFirstBeforeItIsSent()
 			throws Exception {
 		MessagingManagerImpl sender = senderSeeing(9);
@@ -501,7 +569,15 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 				device.getMessageTracker(), device.getContactGroupFactory(),
 				device.getAutoDeleteManager(),
 				device.getStreamingAttachmentWriter(),
-				device.getIdentityManager(), validator);
+				device.getIdentityManager(), validator,
+				device.getCryptoComponent());
+	}
+
+	private PrivateMessageFormat formatSeenAt(int minorVersion)
+			throws Exception {
+		MessagingManagerImpl seen = senderSeeing(minorVersion);
+		return db.transactionWithResult(true, txn ->
+				seen.getContactMessageFormat(txn, contact));
 	}
 
 	private MessageId own(String text, long ts) throws Exception {

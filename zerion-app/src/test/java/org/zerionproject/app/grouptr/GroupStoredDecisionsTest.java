@@ -235,6 +235,7 @@ public class GroupStoredDecisionsTest {
 		assertEquals(0, countFrom(node.manager.getRecentPosts(groupId), aKey));
 		node.broadcasts.clear();
 
+		node.removed(fromCreator, groupId, bKey, EPOCH);
 		node.commit(fromCreator, groupId, EPOCH);
 
 		assertEquals(1, countFrom(node.manager.getRecentPosts(groupId), aKey));

@@ -302,7 +302,7 @@
   <string name="groups_dissolve_dialog_message">Er du sikker på at du vil oppløse denne gruppen?\n\nAlle andre medlemmer vil ikke kunne fortsette deres samtaler, og vil kanskje ikke motta de seneste meldingene.</string>
   <string name="groups_dissolve_button">Oppløs</string>
   <string name="groups_dissolved_dialog_title">Gruppen har blitt oppløst</string>
-  <string name="groups_dissolved_dialog_message">Oppretteren av denne gruppen har oppløst den.\n\nDu kan ikke lenger skrive meldinger til gruppen, og vil kanskje ikke få alle poster som har blitt skrevet.</string>
+  <string name="groups_dissolved_dialog_message">Gruppeeieren har oppløst denne gruppen.\n\nDu kan ikke lenger skrive meldinger til gruppen, og får kanskje ikke alle innlegg som har blitt skrevet.</string>
   
   <string name="groups_invitations_title">Gruppeinvitasjoner</string>
   <string name="groups_invitations_invitation_sent">Du har invitert %1$s til å ta del i gruppen \"%2$s\".</string>
@@ -312,9 +312,9 @@
     <item quantity="one">%d åpen gruppeinvitasjon</item>
     <item quantity="other">%d åpne gruppeinvitasjoner</item>
   </plurals>
-  <string name="sharing_status_groups">Bare grunnleggeren kan invitere nye medlemmer til gruppen. Nedenfor har du alle medlemmene i den.</string>
+  <string name="sharing_status_groups">Bare gruppeeieren kan invitere nye medlemmer til gruppen. Nedenfor ser du alle nåværende medlemmer av gruppen.</string>
   
-  <string name="groups_reveal_dialog_message">Du kan velge hvorvidt du vil tilkjennegi kontakter ovenfor alle nåværende og fremtidige medlemmer av denne gruppen.\n\nDette gjør tilkoblingen til gruppen raskere og mer pålitelig, fordi du kan kommunisere med tilkjennegitte kontakter selv om grunnleggeren av gruppen er frakoblet.</string>
+  <string name="groups_reveal_dialog_message">Du kan velge om du vil tilkjennegi kontakter overfor alle nåværende og fremtidige medlemmer av denne gruppen.\n\nDette gjør tilkoblingen til gruppen raskere og mer pålitelig, fordi du kan kommunisere med tilkjennegitte kontakter selv om gruppeeieren er frakoblet.</string>
   <string name="groups_reveal_visible_revealed_by_us">Kontaktforhold er synlige for gruppen (avslørt av deg)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Kontaktforhold er synlige for gruppen (avslørt av %s)</string>
   <string name="groups_reveal_invisible">Kontaktforhold er ikke synlige for gruppen</string>
@@ -1073,7 +1073,7 @@
 	<string name="channels_feed_empty_subscriber">Ingen innlegg ennå. Nye innlegg vises her.</string>
 	<string name="channels_post_withheld">Innlegget er holdt tilbake: kanaleieren har trukket tilbake denne forfatterens tillatelse til å publisere.</string>
 	<string name="channels_feed_connecting">Kobler til kanalen…</string>
-	<string name="channels_feed_connecting_slow">Kobler fortsatt til. Sørg for at personen som delte denne kanalen, er på nett. Dette oppdateres av seg selv.</string>
+	<string name="channels_feed_connecting_slow">Kobler fortsatt til. Innlegg vises her når kanalen er tilgjengelig.</string>
 	<string name="channels_compose_hint">Skriv til abonnentene dine…</string>
 	<string name="channels_compose_send">Publiser</string>
 	<string name="channels_compose_error_empty">Skriv noe før du publiserer.</string>
@@ -1371,7 +1371,7 @@
 	<string name="grouptr_empty">Ingen grupper ennå.</string>
 	<string name="grouptr_meta">%2$d medlemmer</string>
 	<string name="grouptr_dissolved_suffix">(oppløst)</string>
-	<string name="grouptr_creator_tag">(oppretter)</string>
+	<string name="grouptr_creator_tag">(gruppeeier)</string>
 	<string name="grouptr_admin_tag">(administrator)</string>
 	<string name="grouptr_promote">Forfrem</string>
 	<string name="grouptr_demote">Degrader</string>
@@ -1474,7 +1474,7 @@
 	<string name="grouptr_detail_status">Status</string>
 	<string name="grouptr_detail_status_dissolved">Oppløst</string>
 	<string name="grouptr_open_chat">Åpne samtale</string>
-	<string name="grouptr_member_role_creator">oppretter</string>
+	<string name="grouptr_member_role_creator">Gruppeeier</string>
 	<string name="grouptr_member_role_you">deg</string>
 	<string name="grouptr_member_action_remove">Fjern fra gruppen</string>
 	<string name="scroll_to_bottom">Rull til bunnen</string>
@@ -2370,14 +2370,14 @@
 	<string name="wallet_sp_enable_first">Slå på Silent Payments først</string>
 	<string name="grouptr_reach_title">Hvem innleggene dine når</string>
 	<string name="grouptr_reach_explanation">Gruppeinnlegg går direkte mellom medlemmer som er hverandres kontakter, og medlemmer sender ikke innlegg videre. Disse medlemmene er ikke kontaktene dine, så de får ikke innleggene dine, og du får ikke deres:\n\n%1$s\n\nLegg dem til som kontakter for å nå dem.</string>
-	<string name="grouptr_ttl_set_by_creator">Selvforsvinnende meldinger i denne gruppen: %1$s. Bare den som opprettet gruppen, kan endre dette.</string>
+	<string name="grouptr_ttl_set_by_creator">Selvforsvinnende meldinger i denne gruppen: %1$s. Bare gruppeeieren kan endre dette.</string>
 	<string name="grouptr_sender_alias_format">%1$s (skriver som «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (ikke et navn du kjenner)</string>
 	<string name="grouptr_member_out_of_reach">ikke kontakten din, får ikke innleggene dine</string>
 	<string name="grouptr_member_invited">Invitert, venter på svar</string>
 	<string name="grouptr_confirm_revoke">Trekke tilbake invitasjonen til %1$s? Et svar fra vedkommende blir ignorert.</string>
 	<string name="grouptr_revoke_invite">Trekk tilbake invitasjonen</string>
-	<string name="grouptr_invite_expired">Denne invitasjonen er utløpt. Be den som opprettet gruppen, om en ny.</string>
+	<string name="grouptr_invite_expired">Denne invitasjonen er utløpt. Be gruppeeieren om en ny.</string>
 	<string name="reaction_removed_here_only">Fjernet bare på denne enheten: appen til kontakten din er for gammel til å fjerne den der.</string>
 	<string name="startup_data_without_account_message">Zerion fant data på denne enheten, men ingen kontonøkkel som kan åpne dem: nøkkelfilene mangler eller er skadet. Ingenting er slettet.\n\nDu kan lukke Zerion og beholde dataene, eller slette alt og begynne på nytt.</string>
 	<string name="startup_data_without_account_keep">Lukk og behold</string>
@@ -2462,13 +2462,13 @@
 	<string name="grouptr_members_may_invite">Medlemmer kan invitere kontaktene sine</string>
 	<string name="grouptr_members_may_invite_summary">Så lenge dette er på, legger telefonen din automatisk til personene de inviterer.</string>
 	<string name="grouptr_invite_contacts">Inviter kontakter</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Bare medlemmer som har gruppens oppretter som kontakt, kan invitere.</string>
-	<string name="grouptr_member_invite_creator_outdated">Gruppens oppretter trenger en nyere versjon av appen før medlemmer kan invitere.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Bare medlemmer som har gruppeeieren som kontakt, kan invitere.</string>
+	<string name="grouptr_member_invite_creator_outdated">Gruppeeieren trenger en nyere versjon av appen før medlemmer kan invitere.</string>
 	<string name="grouptr_member_invite_contact_outdated">Trenger en nyere versjon av appen</string>
 	<string name="grouptr_member_invitation_received">%1$s inviterte deg til å bli med i gruppen «%2$s», opprettet av %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s inviterte deg til å bli med i en gruppe opprettet av %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Venter på at %1$s, som opprettet gruppen, skal bli pålogget. Telefonen til oppretteren legger deg til automatisk, og så kan du skrive innlegg her.</string>
-	<string name="grouptr_member_invite_accepted">Godtatt. Du blir med så snart gruppens oppretter er pålogget.</string>
+	<string name="grouptr_waiting_for_admin">Venter på at gruppeeieren, %1$s, skal bli pålogget. Telefonen til eieren legger deg til automatisk, og så kan du skrive innlegg her.</string>
+	<string name="grouptr_member_invite_accepted">Godtatt. Du blir med så snart gruppeeieren er pålogget.</string>
 	<string name="grouptr_member_invite_unavailable">Denne invitasjonen kan ikke lenger godtas. Be om en ny.</string>
 	<string name="grouptr_incognito">Inkognito i denne gruppen</string>
 	<string name="grouptr_incognito_summary">Andre i gruppen ser et tilfeldig navn i stedet for ditt. Medlemmer som er kontaktene dine, kan fortsatt kjenne deg igjen på nøkkelen din.</string>
@@ -2476,7 +2476,7 @@
 	<string name="grouptr_incognito_new_name">Nytt navn</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (inkognito)</string>
 	<string name="grouptr_member_may_add">Kan legge til medlemmer</string>
-	<string name="grouptr_member_invite_creator_only">Bare den som opprettet gruppen, kan legge til medlemmer.</string>
+	<string name="grouptr_member_invite_creator_only">Bare gruppeeieren kan legge til medlemmer.</string>
 	<string name="tor_status_entry_relay">Ustabil</string>
 	<string name="tor_hidden_services_entry_relay">Inngangsreléet til Tor mislykkes for de fleste tilkoblinger, så kontakter når deg kanskje ikke. Årsaken kan være et overbelastet nett eller forstyrrelser. Det hjelper som regel å bytte tilkoblingsmåte for Tor til broer under Innstillinger, Tilkoblinger.</string>
 	<string name="contact_connection_tor_entry_relay">Tor er tilkoblet, men inngangsreléet mislykkes for de fleste tilkoblinger. Broer hjelper som regel.</string>
@@ -2487,4 +2487,42 @@
 	<string name="channels_subscribers_unban">Opphev utestengningen</string>
 	<string name="channels_subscribers_unban_confirm">Oppheve utestengningen? Denne abonnenten kan kommentere og reagere igjen. Det utestengningen fjernet, kommer ikke tilbake, og en redaktørrolle må gis på nytt.</string>
 	<string name="channels_unban_failed">Kunne ikke oppheve utestengningen</string>
+	<string name="contact_delete_failed">Kunne ikke slette kontakten</string>
+	<string name="channels_delegations_revoke_failed">Kunne ikke trekke tilbake denne redaktøren</string>
+	<string name="channels_invite_rotate_failed">Invitasjonslenken ble ikke byttet. Den gamle lenken virker fortsatt.</string>
+	<string name="channels_apply_unconfirmed">Eieren har ikke bekreftet at søknaden din har kommet fram. Prøv igjen senere.</string>
+	<string name="channels_apply_banner">Trykk for å søke eieren om tilgang til denne kanalen.</string>
+	<string name="channels_rejoin_updated">Tilgangen din til %1$s er oppdatert.</string>
+	<string name="channels_rejoin_unreachable">Kunne ikke sjekke denne lenken akkurat nå. Prøv igjen senere.</string>
+	<string name="channels_rejoin_apply_again">Du kan søke på nytt for å lese nye innlegg i denne kanalen. Innleggene du allerede har, blir værende. Eieren ser visningsnavnet ditt og en nøkkel som tilhører deg, men bare i denne kanalen.</string>
+	<string name="channels_sync_last_updated">Sist oppdatert %1$s</string>
+	<string name="channels_sync_saved_posts">Viser lagrede innlegg</string>
+	<string name="channels_sync_saved_posts_last_updated">Viser lagrede innlegg · Sist oppdatert %1$s</string>
+	<string name="channels_sync_not_updated_since">Ikke oppdatert siden %1$s</string>
+	<string name="channels_owner_deleted_notice">Eieren har slettet kanalen %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Eieren har slettet en kanal du var med i</string>
+	<string name="channels_queued_waiting">Venter på å bli sendt</string>
+	<string name="channels_queued_not_sent">Ikke sendt</string>
+	<string name="channels_queued_retry">Prøv igjen</string>
+	<string name="channels_queued_delete">Slett</string>
+	<string name="channels_comment_queued_toast">Kommentaren din sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_react_queued_toast">Reaksjonen din sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_announce_queued_toast">Navnet ditt sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_post_queued_toast">Innlegget ditt sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_change_queued_toast">Endringen din sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_queued_notice_waiting">Noe av det du har sendt, venter. Det sendes når kanalen er tilgjengelig.</string>
+	<string name="channels_queued_notice_not_sent">Noe av det du har sendt, ble ikke sendt. Trykk for å prøve igjen eller slette det.</string>
+	<string name="channels_queued_announce_label">Navnet ditt: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Denne kanalen var ikke tilgjengelig. Du kan søke om å bli med på nytt med denne lenken. Innleggene du allerede har, blir værende. Eieren ser visningsnavnet ditt og en nøkkel som tilhører deg, men bare i denne kanalen.</string>
+	<string name="channels_rejoin_not_restored">Denne lenken ga deg ikke tilbake tilgangen til denne kanalen. Du kan be om en ny lenke.</string>
+	<string name="channels_rejoin_check_title">Prøve denne lenken?</string>
+	<string name="channels_rejoin_check_message">Nye innlegg i denne kanalen er ikke tilgjengelige akkurat nå. Du kan prøve denne lenken for å få dem igjen. Innleggene du allerede har, blir værende.</string>
+	<string name="channels_rejoin_check_action">Prøv lenken</string>
+	<string name="channels_rejoin_try_later">Denne kanalen er ikke tilgjengelig akkurat nå, og dette er den samme lenken som du allerede har. Prøv igjen senere. Innleggene du allerede har, blir værende.</string>
+	<string name="channels_rejoin_trying">Vi fortsetter å prøve denne lenken. Innleggene du allerede har, blir værende.</string>
+	<string name="channels_queued_already_sent">Det var allerede sendt, så det kunne ikke slettes.</string>
+	<string name="channels_queued_behind_toast">Dette sendes etter det du sendte tidligere til denne kanalen.</string>
+	<string name="channels_queued_no_access">Ikke sendt. Du har ikke lenger tilgang til denne kanalen.</string>
+	<string name="channels_no_access_toast">Du har ikke lenger tilgang til denne kanalen. Be eieren om en ny invitasjonslenke.</string>
+	<string name="channels_rejoin_too_many_links">Du har allerede flere lenker som venter for denne kanalen, så denne ble ikke prøvd. Innleggene du allerede har, blir værende.</string>
 </resources>

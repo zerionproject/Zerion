@@ -163,7 +163,7 @@
   <string name="groups_dissolve_dialog_message">Oletko varma, että haluat hajauttaa tämän ryhmän?\n\nRyhmän muut jäsenet eivät sen jälkeen voi enää jatkaa ryhmäkeskustelua eivätkä välttämättä tule saamaan viimeisimpiä viestejä.</string>
   <string name="groups_dissolve_button">Hajauta</string>
   <string name="groups_dissolved_dialog_title">Ryhmä on nyt hajautettu</string>
-  <string name="groups_dissolved_dialog_message">Tämän ryhmän aloittaja on hajauttanut sen.\n\nEt voi enää kirjoitta uusia viestejä ryhmälle, etkä välttämättä tule saamaan kaikkia tähän mennessä kirjoitettuja viestejä.</string>
+  <string name="groups_dissolved_dialog_message">Ryhmän omistaja on lakkauttanut tämän ryhmän.\n\nEt voi enää kirjoittaa viestejä ryhmään, etkä välttämättä saa kaikkia tähän mennessä kirjoitettuja viestejä.</string>
   
   <string name="groups_invitations_title">Ryhmäkutsut</string>
   <string name="groups_invitations_invitation_sent">Olet kutsunut käyttäjän %1$s mukaan ryhmään \"%2$s\".</string>
@@ -173,9 +173,9 @@
     <item quantity="one">%d avoin ryhmäkutsu</item>
     <item quantity="other">%d avointa ryhmäkutsua</item>
   </plurals>
-  <string name="sharing_status_groups">Vain ryhmäkeskustelun aloittaja voi pyytää uusia jäseniä mukaan ryhmään. Alla ovat kaikki ryhmän nykyiset jäsenet.</string>
+  <string name="sharing_status_groups">Vain ryhmän omistaja voi kutsua ryhmään uusia jäseniä. Alla ovat kaikki ryhmän nykyiset jäsenet.</string>
   
-  <string name="groups_reveal_dialog_message">Voit valita haluatko paljastaa yhteytesi muihin käyttäjiin tämän ryhmän nykyisille ja tuleville jäsenille.\n\nKäyttäjä yhteyksien paljastaminen tekee yhteydestä nopeamman ja luotettavamman, koska voit pitää yhteyttä muihin käyttäjiin myös silloin kun ryhmän aloittaja on poissa verkosta.</string>
+  <string name="groups_reveal_dialog_message">Voit valita, paljastatko yhteytesi muihin käyttäjiin tämän ryhmän nykyisille ja tuleville jäsenille.\n\nYhteyksien paljastaminen tekee yhteydestäsi ryhmään nopeamman ja luotettavamman, koska voit pitää yhteyttä paljastettuihin yhteyksiin myös silloin, kun ryhmän omistaja on poissa verkosta.</string>
   <string name="groups_reveal_visible_revealed_by_us">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (sinun paljastamana)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Yhteys käyttäjään on näkyvissä ryhmän jäsenille (käyttäjän %s paljastamana)</string>
   <string name="groups_reveal_invisible">Yhteys käyttäjään ei ole näkyvissä ryhmän jäsenille</string>
@@ -907,7 +907,7 @@
 	<string name="channels_feed_empty_subscriber">Ei vielä julkaisuja. Uudet julkaisut näkyvät tässä.</string>
 	<string name="channels_post_withheld">Julkaisu pidätetty: kanavan omistaja on perunut tämän kirjoittajan julkaisuoikeuden.</string>
 	<string name="channels_feed_connecting">Yhdistetään kanavaan…</string>
-	<string name="channels_feed_connecting_slow">Yhdistetään yhä. Varmista, että kanavan jakanut henkilö on verkossa. Tämä päivittyy itsestään.</string>
+	<string name="channels_feed_connecting_slow">Yhdistetään yhä. Julkaisut näkyvät täällä, kun kanava on tavoitettavissa.</string>
 	<string name="channels_compose_hint">Kirjoita tilaajillesi…</string>
 	<string name="channels_compose_send">Julkaise</string>
 	<string name="channels_compose_error_empty">Kirjoita jotain ennen julkaisemista.</string>
@@ -1227,7 +1227,7 @@
 	<string name="grouptr_empty">Ei vielä ryhmiä.</string>
 	<string name="grouptr_meta">%2$d jäsentä</string>
 	<string name="grouptr_dissolved_suffix">(hajautettu)</string>
-	<string name="grouptr_creator_tag">(luoja)</string>
+	<string name="grouptr_creator_tag">(ryhmän omistaja)</string>
 	<string name="grouptr_admin_tag">(ylläpitäjä)</string>
 	<string name="grouptr_promote">Ylennä</string>
 	<string name="grouptr_demote">Alenna</string>
@@ -1330,7 +1330,7 @@
 	<string name="grouptr_detail_status">Tila</string>
 	<string name="grouptr_detail_status_dissolved">Hajautettu</string>
 	<string name="grouptr_open_chat">Avaa keskustelu</string>
-	<string name="grouptr_member_role_creator">luoja</string>
+	<string name="grouptr_member_role_creator">Ryhmän omistaja</string>
 	<string name="grouptr_member_role_you">sinä</string>
 	<string name="grouptr_member_action_remove">Poista ryhmästä</string>
 	<string name="scroll_to_bottom">Vieritä alas</string>
@@ -2341,14 +2341,14 @@
 	<string name="wallet_sp_enable_first">Ota ensin Silent Payments käyttöön</string>
 	<string name="grouptr_reach_title">Ketkä viestisi tavoittavat</string>
 	<string name="grouptr_reach_explanation">Ryhmän viestit kulkevat suoraan sellaisten jäsenten välillä, jotka ovat toistensa yhteystietoja, eivätkä jäsenet välitä viestejä eteenpäin. Nämä jäsenet eivät ole yhteystietojasi, joten he eivät saa viestejäsi etkä sinä saa heidän viestejään:\n\n%1$s\n\nLisää heidät yhteystiedoiksi, niin tavoitat heidät.</string>
-	<string name="grouptr_ttl_set_by_creator">Katoavat viestit tässä ryhmässä: %1$s. Vain ryhmän luoja voi muuttaa tätä.</string>
+	<string name="grouptr_ttl_set_by_creator">Katoavat viestit tässä ryhmässä: %1$s. Vain ryhmän omistaja voi muuttaa tätä.</string>
 	<string name="grouptr_sender_alias_format">%1$s (kirjoittaa nimellä ”%2$s”)</string>
 	<string name="grouptr_sender_unverified_format">”%1$s” (ei tuntemasi nimi)</string>
 	<string name="grouptr_member_out_of_reach">ei yhteystietosi, ei saa viestejäsi</string>
 	<string name="grouptr_member_invited">Kutsuttu, odottaa vastausta</string>
 	<string name="grouptr_confirm_revoke">Perutaanko käyttäjälle %1$s lähetetty kutsu? Hänen vastaustaan ei oteta huomioon.</string>
 	<string name="grouptr_revoke_invite">Peru kutsu</string>
-	<string name="grouptr_invite_expired">Tämä kutsu on vanhentunut. Pyydä ryhmän luojalta uusi kutsu.</string>
+	<string name="grouptr_invite_expired">Tämä kutsu on vanhentunut. Pyydä ryhmän omistajalta uusi kutsu.</string>
 	<string name="reaction_removed_here_only">Poistettu vain tältä laitteelta: yhteystietosi sovellus on liian vanha, jotta reaktion voisi poistaa myös hänen laitteeltaan.</string>
 	<string name="startup_data_without_account_message">Zerion löysi tältä laitteelta tietoja, mutta ei tiliavainta, jolla ne voisi avata: avaintiedostot puuttuvat tai ovat vioittuneet. Mitään ei ole poistettu.\n\nVoit sulkea Zerionin ja säilyttää tiedot tai tyhjentää kaiken ja aloittaa alusta.</string>
 	<string name="startup_data_without_account_keep">Sulje ja säilytä</string>
@@ -2437,13 +2437,13 @@
 	<string name="grouptr_members_may_invite">Jäsenet voivat kutsua yhteystietojaan</string>
 	<string name="grouptr_members_may_invite_summary">Kun tämä on päällä, puhelimesi lisää heidän kutsumansa henkilöt automaattisesti.</string>
 	<string name="grouptr_invite_contacts">Kutsu yhteystietoja</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Vain jäsenet, joilla on ryhmän luoja yhteystietona, voivat kutsua.</string>
-	<string name="grouptr_member_invite_creator_outdated">Ryhmän luoja tarvitsee sovelluksesta uudemman version, ennen kuin jäsenet voivat kutsua.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Vain jäsenet, joilla on ryhmän omistaja yhteystietona, voivat kutsua.</string>
+	<string name="grouptr_member_invite_creator_outdated">Ryhmän omistaja tarvitsee sovelluksesta uudemman version, ennen kuin jäsenet voivat kutsua.</string>
 	<string name="grouptr_member_invite_contact_outdated">Tarvitsee sovelluksesta uudemman version</string>
 	<string name="grouptr_member_invitation_received">%1$s kutsui sinut liittymään ryhmään ”%2$s”, jonka loi %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s kutsui sinut liittymään ryhmään, jonka loi %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Odotetaan, että ryhmän luoja %1$s on verkossa. Luojan puhelin lisää sinut automaattisesti, minkä jälkeen voit kirjoittaa tänne.</string>
-	<string name="grouptr_member_invite_accepted">Hyväksytty. Liityt, kun ryhmän luoja on verkossa.</string>
+	<string name="grouptr_waiting_for_admin">Odotetaan, että ryhmän omistaja %1$s on verkossa. Omistajan puhelin lisää sinut automaattisesti, minkä jälkeen voit kirjoittaa tänne.</string>
+	<string name="grouptr_member_invite_accepted">Hyväksytty. Liityt, kun ryhmän omistaja on verkossa.</string>
 	<string name="grouptr_member_invite_unavailable">Tätä kutsua ei voi enää hyväksyä. Pyydä uusi.</string>
 	<string name="grouptr_incognito">Incognito tässä ryhmässä</string>
 	<string name="grouptr_incognito_summary">Muut ryhmässä näkevät nimesi sijaan satunnaisen nimen. Jäsenet, jotka ovat yhteystietojasi, voivat silti tunnistaa sinut avaimestasi.</string>
@@ -2451,7 +2451,7 @@
 	<string name="grouptr_incognito_new_name">Uusi nimi</string>
 	<string name="grouptr_sender_incognito_format">”%1$s” (incognito)</string>
 	<string name="grouptr_member_may_add">Saa lisätä jäseniä</string>
-	<string name="grouptr_member_invite_creator_only">Vain ryhmän luoja voi lisätä jäseniä.</string>
+	<string name="grouptr_member_invite_creator_only">Vain ryhmän omistaja voi lisätä jäseniä.</string>
 	<string name="tor_status_entry_relay">Epävakaa</string>
 	<string name="tor_hidden_services_entry_relay">Torin sisääntulovälitin epäonnistuu useimmissa yhteyksissä, joten yhteystiedot eivät ehkä tavoita sinua. Syynä voi olla ruuhkainen verkko tai häirintä. Torin yhteystavan vaihtaminen siltoihin kohdassa Asetukset, Yhteydet auttaa yleensä.</string>
 	<string name="contact_connection_tor_entry_relay">Tor on yhdistetty, mutta sen sisääntulovälitin epäonnistuu useimmissa yhteyksissä. Siltojen käyttö auttaa yleensä.</string>
@@ -2462,4 +2462,42 @@
 	<string name="channels_subscribers_unban">Poista esto</string>
 	<string name="channels_subscribers_unban_confirm">Poistetaanko esto? Tämä tilaaja voi taas kommentoida ja reagoida. Eston poistamat asiat eivät palaa, ja toimittajan rooli on annettava uudelleen.</string>
 	<string name="channels_unban_failed">Estoa ei voitu poistaa</string>
+	<string name="contact_delete_failed">Yhteystietoa ei voitu poistaa</string>
+	<string name="channels_delegations_revoke_failed">Toimittajan oikeuksia ei voitu perua</string>
+	<string name="channels_invite_rotate_failed">Kutsulinkkiä ei vaihdettu. Vanha linkki toimii edelleen.</string>
+	<string name="channels_apply_unconfirmed">Omistaja ei ole vahvistanut, että hakemuksesi on saapunut. Yritä myöhemmin uudelleen.</string>
+	<string name="channels_apply_banner">Napauta hakeaksesi omistajalta pääsyä tälle kanavalle.</string>
+	<string name="channels_rejoin_updated">Pääsysi kanavalle %1$s päivitettiin.</string>
+	<string name="channels_rejoin_unreachable">Linkkiä ei voitu tarkistaa juuri nyt. Yritä myöhemmin uudelleen.</string>
+	<string name="channels_rejoin_apply_again">Voit hakea liittymistä uudelleen, jotta näet tämän kanavan uudet julkaisut. Jo saamasi julkaisut säilyvät. Omistaja näkee näyttönimesi ja avaimen, joka kuuluu sinulle vain tällä kanavalla.</string>
+	<string name="channels_sync_last_updated">Päivitetty viimeksi %1$s</string>
+	<string name="channels_sync_saved_posts">Näytetään tallennettuja julkaisuja</string>
+	<string name="channels_sync_saved_posts_last_updated">Näytetään tallennettuja julkaisuja · Päivitetty viimeksi %1$s</string>
+	<string name="channels_sync_not_updated_since">Ei päivityksiä %1$s jälkeen</string>
+	<string name="channels_owner_deleted_notice">Omistaja poisti kanavan %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Omistaja poisti kanavan, johon olit liittynyt</string>
+	<string name="channels_queued_waiting">Odottaa lähetystä</string>
+	<string name="channels_queued_not_sent">Ei lähetetty</string>
+	<string name="channels_queued_retry">Yritä uudelleen</string>
+	<string name="channels_queued_delete">Poista</string>
+	<string name="channels_comment_queued_toast">Kommenttisi lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_react_queued_toast">Reaktiosi lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_announce_queued_toast">Nimesi lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_post_queued_toast">Julkaisusi lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_change_queued_toast">Muutoksesi lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_queued_notice_waiting">Osa lähettämästäsi odottaa. Se lähetetään, kun kanava on tavoitettavissa.</string>
+	<string name="channels_queued_notice_not_sent">Osaa lähettämästäsi ei lähetetty. Napauta yrittääksesi uudelleen tai poistaaksesi sen.</string>
+	<string name="channels_queued_announce_label">Nimesi: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Kanavaa ei tavoitettu. Voit hakea liittymistä uudelleen tällä linkillä. Jo saamasi julkaisut säilyvät. Omistaja näkee näyttönimesi ja avaimen, joka kuuluu sinulle vain tällä kanavalla.</string>
+	<string name="channels_rejoin_not_restored">Tämä linkki ei palauttanut pääsyäsi tälle kanavalle. Voit pyytää uutta linkkiä.</string>
+	<string name="channels_rejoin_check_title">Kokeillaanko tätä linkkiä?</string>
+	<string name="channels_rejoin_check_message">Tämän kanavan uudet julkaisut eivät ole juuri nyt tavoitettavissa. Voit kokeilla tätä linkkiä saadaksesi ne taas. Jo saamasi julkaisut säilyvät.</string>
+	<string name="channels_rejoin_check_action">Kokeile linkkiä</string>
+	<string name="channels_rejoin_try_later">Kanava ei ole juuri nyt tavoitettavissa, ja tämä on sama linkki, joka sinulla jo on. Yritä myöhemmin uudelleen. Jo saamasi julkaisut säilyvät.</string>
+	<string name="channels_rejoin_trying">Kokeilemme tätä linkkiä edelleen. Jo saamasi julkaisut säilyvät.</string>
+	<string name="channels_queued_already_sent">Se oli jo lähetetty, joten sitä ei voitu poistaa.</string>
+	<string name="channels_queued_behind_toast">Tämä lähetetään sen jälkeen, mitä lähetit aiemmin tälle kanavalle.</string>
+	<string name="channels_queued_no_access">Ei lähetetty. Sinulla ei ole enää pääsyä tälle kanavalle.</string>
+	<string name="channels_no_access_toast">Sinulla ei ole enää pääsyä tälle kanavalle. Pyydä omistajalta uusi kutsulinkki.</string>
+	<string name="channels_rejoin_too_many_links">Sinulla on jo useita odottavia linkkejä tälle kanavalle, joten tätä linkkiä ei kokeiltu. Jo saamasi julkaisut säilyvät.</string>
 </resources>

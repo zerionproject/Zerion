@@ -306,7 +306,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="groups_dissolve_dialog_message">Esteu segur que voleu dissoldre aquest grup?\n\nSi el dissoleu cap altre membre podrà continuar la conversa i alguns membres pot ser que no rebin els darrers missatges.</string>
   <string name="groups_dissolve_button">Dissol</string>
   <string name="groups_dissolved_dialog_title">S\'ha dissolt el grup</string>
-  <string name="groups_dissolved_dialog_message">El creador del grup l\'ha dissolt.\n\nJa no hi podeu escriure més. És possible que no hàgeu rebut algun dels darrers missatges que s\'hi havien escrit.</string>
+  <string name="groups_dissolved_dialog_message">El propietari del grup l\'ha dissolt.\n\nJa no hi podeu escriure més. És possible que no hàgeu rebut algun dels darrers missatges que s\'hi havien escrit.</string>
   
   <string name="groups_invitations_title">Convideu a formar part del grup</string>
   <string name="groups_invitations_invitation_sent">Heu convidat a %1$s a afegir-se al grup «%2$s».</string>
@@ -316,9 +316,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
     <item quantity="one">%d invitació a un grup obert</item>
     <item quantity="other">%d invitacions a grups oberts</item>
   </plurals>
-  <string name="sharing_status_groups">Només el creador del grup pot convidar a nous membres. Tot seguit hi ha la llista dels membres del grup.</string>
+  <string name="sharing_status_groups">Només el propietari del grup pot convidar nous membres. Tot seguit hi ha la llista dels membres del grup.</string>
   
-  <string name="groups_reveal_dialog_message">Podeu triar si voleu que es mostrin els contactes a tots els membres actuals i futurs d\'aquest grup.\n\nLa revelació dels contactes fa que la vostra connexió al grup sigui més ràpida i més fiable, ja que podeu comunicar-vos amb els contactes revelats, fins i tot quan el creador del grup està fora de línia.</string>
+  <string name="groups_reveal_dialog_message">Podeu triar si voleu que es mostrin els contactes a tots els membres actuals i futurs d\'aquest grup.\n\nLa revelació dels contactes fa que la vostra connexió al grup sigui més ràpida i més fiable, ja que podeu comunicar-vos amb els contactes revelats, fins i tot quan el propietari del grup està fora de línia.</string>
   <string name="groups_reveal_visible_revealed_by_us">La relació de contactes és visible pel grup (revelada per vós)</string>
   <string name="groups_reveal_visible_revealed_by_contact">La relació de contactes és visible pel grup (revelada per %s)</string>
   <string name="groups_reveal_invisible">La relació de contactes no és visible pel grup</string>
@@ -972,7 +972,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="channels_feed_empty_subscriber">Encara no hi ha cap publicació. Les publicacions noves apareixeran aquí.</string>
 	<string name="channels_post_withheld">Publicació retinguda: el propietari del canal ha revocat el permís d\'aquest autor per publicar.</string>
 	<string name="channels_feed_connecting">S\'està connectant al canal…</string>
-	<string name="channels_feed_connecting_slow">Encara s\'està connectant. Assegura\'t que la persona que ha compartit aquest canal estigui en línia. Això s\'actualitzarà automàticament.</string>
+	<string name="channels_feed_connecting_slow">Encara s\'està connectant. Les publicacions apareixeran aquí quan el canal sigui accessible.</string>
 	<string name="channels_compose_hint">Escriu als teus subscriptors…</string>
 	<string name="channels_compose_send">Publica</string>
 	<string name="channels_compose_error_empty">Escriu alguna cosa abans de publicar.</string>
@@ -1269,7 +1269,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_empty">Encara no hi ha cap grup.</string>
 	<string name="grouptr_meta">%2$d membres</string>
 	<string name="grouptr_dissolved_suffix">(dissolt)</string>
-	<string name="grouptr_creator_tag">(creador)</string>
+	<string name="grouptr_creator_tag">(propietari del grup)</string>
 	<string name="grouptr_admin_tag">(administrador)</string>
 	<string name="grouptr_promote">Promou</string>
 	<string name="grouptr_demote">Degrada</string>
@@ -1372,7 +1372,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_detail_status">Estat</string>
 	<string name="grouptr_detail_status_dissolved">Dissolt</string>
 	<string name="grouptr_open_chat">Obre el xat</string>
-	<string name="grouptr_member_role_creator">creador</string>
+	<string name="grouptr_member_role_creator">Propietari del grup</string>
 	<string name="grouptr_member_role_you">tu</string>
 	<string name="grouptr_member_action_remove">Treu del grup</string>
 	<string name="scroll_to_bottom">Desplaça\'t fins al final</string>
@@ -2266,14 +2266,14 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="wallet_sp_enable_first">Primer activa Silent Payments</string>
 	<string name="grouptr_reach_title">A qui arriben les teves publicacions</string>
 	<string name="grouptr_reach_explanation">Les publicacions del grup viatgen directament entre membres que són contactes entre si, i els membres no les reenvien. Aquests membres no són contactes teus, així que no reben les teves publicacions i tu no reps les seves:\n\n%1$s\n\nAfegeix-los com a contactes per arribar-hi.</string>
-	<string name="grouptr_ttl_set_by_creator">Missatges efímers en aquest grup: %1$s. Només el creador del grup ho pot canviar.</string>
+	<string name="grouptr_ttl_set_by_creator">Missatges efímers en aquest grup: %1$s. Només el propietari del grup ho pot canviar.</string>
 	<string name="grouptr_sender_alias_format">%1$s (publica com a «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (no és un nom que coneguis)</string>
 	<string name="grouptr_member_out_of_reach">no és contacte teu, no rep les teves publicacions</string>
 	<string name="grouptr_member_invited">Convidat, a l\'espera de resposta</string>
 	<string name="grouptr_confirm_revoke">Vols retirar la invitació a %1$s? Si respon, s\'ignorarà la resposta.</string>
 	<string name="grouptr_revoke_invite">Retira la invitació</string>
-	<string name="grouptr_invite_expired">Aquesta invitació ha caducat. Demana\'n una de nova al creador del grup.</string>
+	<string name="grouptr_invite_expired">Aquesta invitació ha caducat. Demana\'n una de nova al propietari del grup.</string>
 	<string name="reaction_removed_here_only">S\'ha eliminat només en aquest dispositiu: l\'aplicació del teu contacte és massa antiga per eliminar-la al seu.</string>
 	<string name="startup_data_without_account_message">Zerion ha trobat dades en aquest dispositiu, però cap clau de compte que les obri: els fitxers de claus falten o estan malmesos. No s\'ha suprimit res.\n\nPots tancar Zerion i conservar les dades, o esborrar-ho tot i tornar a començar.</string>
 	<string name="startup_data_without_account_keep">Tanca i conserva</string>
@@ -2460,13 +2460,13 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_members_may_invite">Els membres poden convidar els seus contactes</string>
 	<string name="grouptr_members_may_invite_summary">Mentre això estigui activat, el teu telèfon afegeix automàticament les persones que convidin.</string>
 	<string name="grouptr_invite_contacts">Convida contactes</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Només poden convidar els membres que tenen el creador del grup com a contacte.</string>
-	<string name="grouptr_member_invite_creator_outdated">El creador del grup necessita una versió més nova de l\'aplicació perquè els membres puguin convidar.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Només poden convidar els membres que tenen el propietari del grup com a contacte.</string>
+	<string name="grouptr_member_invite_creator_outdated">El propietari del grup necessita una versió més nova de l\'aplicació perquè els membres puguin convidar.</string>
 	<string name="grouptr_member_invite_contact_outdated">Necessita una versió més nova de l\'aplicació</string>
 	<string name="grouptr_member_invitation_received">%1$s t\'ha convidat a unir-te al grup «%2$s», creat per %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s t\'ha convidat a unir-te a un grup creat per %2$s.</string>
-	<string name="grouptr_waiting_for_admin">S\'espera que %1$s, que va crear el grup, estigui en línia. El seu telèfon t\'hi afegeix automàticament i després podràs publicar aquí.</string>
-	<string name="grouptr_member_invite_accepted">Acceptada. T\'uniràs al grup quan el seu creador estigui en línia.</string>
+	<string name="grouptr_waiting_for_admin">S\'espera que el propietari del grup, %1$s, estigui en línia. El seu telèfon t\'hi afegeix automàticament i després podràs publicar aquí.</string>
+	<string name="grouptr_member_invite_accepted">Acceptada. T\'uniràs al grup quan el seu propietari estigui en línia.</string>
 	<string name="grouptr_member_invite_unavailable">Aquesta invitació ja no es pot acceptar. Demana\'n una de nova.</string>
 	<string name="grouptr_incognito">D\'incògnit en aquest grup</string>
 	<string name="grouptr_incognito_summary">Els altres membres del grup veuen un nom aleatori en lloc del teu. Els membres que són contactes teus encara et poden reconèixer per la teva clau.</string>
@@ -2474,7 +2474,7 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="grouptr_incognito_new_name">Nom nou</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (d\'incògnit)</string>
 	<string name="grouptr_member_may_add">Pot afegir membres</string>
-	<string name="grouptr_member_invite_creator_only">Només el creador del grup pot afegir membres.</string>
+	<string name="grouptr_member_invite_creator_only">Només el propietari del grup pot afegir membres.</string>
 	<string name="tor_status_entry_relay">Inestable</string>
 	<string name="tor_hidden_services_entry_relay">El repetidor d\'entrada de Tor falla en la majoria de connexions, de manera que els contactes potser no et poden contactar. Pot ser una xarxa saturada o interferències. Canviar el mètode de connexió de Tor a ponts a Configuració, Connexions sol ajudar.</string>
 	<string name="contact_connection_tor_entry_relay">Tor està connectat, però el seu repetidor d\'entrada falla en la majoria de connexions. Fer servir ponts sol ajudar.</string>
@@ -2485,4 +2485,42 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="channels_subscribers_unban">Aixeca el bandeig</string>
 	<string name="channels_subscribers_unban_confirm">Vols aixecar el bandeig? Aquest subscriptor podrà tornar a comentar i reaccionar. El que va eliminar el bandeig no torna, i el rol d\'editor s\'ha de tornar a concedir.</string>
 	<string name="channels_unban_failed">No s\'ha pogut aixecar el bandeig</string>
+	<string name="contact_delete_failed">No s\'ha pogut suprimir el contacte</string>
+	<string name="channels_delegations_revoke_failed">No s\'ha pogut revocar aquest editor</string>
+	<string name="channels_invite_rotate_failed">L\'enllaç d\'invitació no s\'ha canviat. L\'enllaç antic encara funciona.</string>
+	<string name="channels_apply_unconfirmed">El propietari no ha confirmat que la vostra sol·licitud hagi arribat. Torneu-ho a provar més tard.</string>
+	<string name="channels_apply_banner">Premeu per sol·licitar al propietari accés a aquest canal.</string>
+	<string name="channels_rejoin_updated">S\'ha actualitzat el teu accés a %1$s.</string>
+	<string name="channels_rejoin_unreachable">Ara mateix no s\'ha pogut comprovar aquest enllaç. Torna-ho a provar més tard.</string>
+	<string name="channels_rejoin_apply_again">Pots tornar a sol·licitar unir-te per llegir les publicacions noves d\'aquest canal. Les publicacions que ja tens es conserven. El propietari veurà el teu nom visible i una clau que et pertany només en aquest canal.</string>
+	<string name="channels_sync_last_updated">Última actualització: %1$s</string>
+	<string name="channels_sync_saved_posts">Es mostren les publicacions desades</string>
+	<string name="channels_sync_saved_posts_last_updated">Es mostren les publicacions desades · Última actualització: %1$s</string>
+	<string name="channels_sync_not_updated_since">Sense actualitzar des del %1$s</string>
+	<string name="channels_owner_deleted_notice">El propietari ha suprimit el canal %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">El propietari ha suprimit un canal al qual t\'havies unit</string>
+	<string name="channels_queued_waiting">Pendent d\'enviar</string>
+	<string name="channels_queued_not_sent">No enviat</string>
+	<string name="channels_queued_retry">Torna-ho a provar</string>
+	<string name="channels_queued_delete">Suprimeix</string>
+	<string name="channels_comment_queued_toast">El teu comentari s\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_react_queued_toast">La teva reacció s\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_announce_queued_toast">El teu nom s\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_post_queued_toast">La teva publicació s\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_change_queued_toast">El teu canvi s\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_queued_notice_waiting">Una part del que has enviat està pendent. S\'enviarà quan el canal sigui accessible.</string>
+	<string name="channels_queued_notice_not_sent">Una part del que has enviat no s\'ha pogut enviar. Toca per tornar-ho a provar o suprimir-ho.</string>
+	<string name="channels_queued_announce_label">El teu nom: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">No s\'ha pogut accedir a aquest canal. Pots tornar a sol·licitar unir-te amb aquest enllaç. Les publicacions que ja tens es conserven. El propietari veurà el teu nom visible i una clau que et pertany només en aquest canal.</string>
+	<string name="channels_rejoin_not_restored">Aquest enllaç no t\'ha retornat l\'accés a aquest canal. Pots demanar un enllaç nou.</string>
+	<string name="channels_rejoin_check_title">Vols provar aquest enllaç?</string>
+	<string name="channels_rejoin_check_message">Ara mateix no es pot accedir a les publicacions noves d\'aquest canal. Pots provar aquest enllaç per tornar-les a rebre. Les publicacions que ja tens es conserven.</string>
+	<string name="channels_rejoin_check_action">Prova l\'enllaç</string>
+	<string name="channels_rejoin_try_later">Ara mateix no es pot accedir a aquest canal, i aquest enllaç és el que ja tens. Torna-ho a provar més tard. Les publicacions que ja tens es conserven.</string>
+	<string name="channels_rejoin_trying">Continuarem provant aquest enllaç. Les publicacions que ja tens es conserven.</string>
+	<string name="channels_queued_already_sent">Ja s\'havia enviat, així que no s\'ha pogut suprimir.</string>
+	<string name="channels_queued_behind_toast">S\'enviarà després del que has enviat abans a aquest canal.</string>
+	<string name="channels_queued_no_access">No enviat. Ja no tens accés a aquest canal.</string>
+	<string name="channels_no_access_toast">Ja no tens accés a aquest canal. Demana al propietari un enllaç d\'invitació nou.</string>
+	<string name="channels_rejoin_too_many_links">Ja tens diversos enllaços pendents per a aquest canal, així que aquest no s\'ha provat. Les publicacions que ja tens es conserven.</string>
 </resources>

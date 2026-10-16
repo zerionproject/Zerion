@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -49,6 +50,9 @@ public class TextContrastTest {
 	private static final List<String> BUBBLE_COLORS = Arrays.asList(
 			"@color/bubble_blue", "@color/bubble_purple", "@color/bubble_green",
 			"@color/bubble_orange", "@color/bubble_pink", "@color/bubble_cyan");
+	private static final Map<String, String> INFLATED_INTO =
+			Collections.singletonMap("list_item_channel_attachment.xml",
+					"@drawable/msg_in");
 	private static final Set<String> OVER_IMAGES = new HashSet<>(Arrays.asList(
 			"item_gallery_image.xml#@+id/video_icon",
 			"text_avatar_view.xml#@+id/textAvatarView"));
@@ -523,7 +527,13 @@ public class TextContrastTest {
 				if (skip.contains(f.getName())) continue;
 				Element root = parse(f);
 				inline(root);
-				scan.walk(f.getName(), root, m, list(m.screens));
+				List<Integer> under = list(m.screens);
+				String parent = INFLATED_INTO.get(f.getName());
+				if (parent != null) {
+					under = layer(fills(Collections.singletonMap(
+							"android:background", parent), m), under);
+				}
+				scan.walk(f.getName(), root, m, under);
 			}
 		}
 		assertTrue("checked " + scan.checked, scan.checked > 10000);

@@ -291,7 +291,10 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 							Toast.LENGTH_LONG).show();
 					refresh();
 				});
-			} catch (DbException ignored) {
+			} catch (DbException e) {
+				runOnUiThread(() -> Toast.makeText(this,
+						R.string.channels_delegations_revoke_failed,
+						Toast.LENGTH_LONG).show());
 			}
 		});
 	}

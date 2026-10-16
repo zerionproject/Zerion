@@ -291,7 +291,7 @@
   <string name="groups_dissolve_dialog_message">Ertu viss um að þú viljir leysa upp þennan hóp?\n\nAllir aðrir meðlimir hópsins eiga á hættu að geta ekki haldið áfram með samtöl sín og gætu misst af síðustu skilaboðunum.</string>
   <string name="groups_dissolve_button">Leysa upp</string>
   <string name="groups_dissolved_dialog_title">Hópur var leystur upp</string>
-  <string name="groups_dissolved_dialog_message">Stofnandi hópsins hefur leyst hann upp.\n\nÞú getur ekki lengur skrifað skilaboð til hópsins og mögulega færðu ekki öll þau skilaboð sem þegar hafa verið skrifuð.</string>
+  <string name="groups_dissolved_dialog_message">Eigandi hópsins hefur leyst hann upp.\n\nÞú getur ekki lengur skrifað skilaboð til hópsins og færð mögulega ekki allar færslur sem hafa verið skrifaðar.</string>
   
   <string name="groups_invitations_title">Boð í hópa</string>
   <string name="groups_invitations_invitation_sent">Þú hefur boðið %1$s að ganga í hópinn \"%2$s\".</string>
@@ -301,9 +301,9 @@
     <item quantity="one">%d opið boð í hóp</item>
     <item quantity="other">%d opin boð í hóp</item>
   </plurals>
-  <string name="sharing_status_groups">Einungis stofnandinn getur boðið nýjum meðlimum í hópinn. Hé fyrir neðan eru allir skráðir meðlimir í hópnum.</string>
+  <string name="sharing_status_groups">Aðeins eigandi hópsins getur boðið nýjum meðlimum í hópinn. Hér fyrir neðan eru allir núverandi meðlimir hópsins.</string>
   
-  <string name="groups_reveal_dialog_message">Þú getur valið hvort eigi að birta tengiliði fyrir öllum núverandi og verðandi meðlimum þessa hóps.\n\nAð ljóstra upp um tengiliði gerir tengingu þína við hópinn hraðari og áreiðanlegri, vegna þess að þá getur þú átt samskipti við birtu tengiliðina jafnvel þótt stofnandi hópsins sé ekki á netinu.</string>
+  <string name="groups_reveal_dialog_message">Þú getur valið hvort þú birtir tengiliði fyrir öllum núverandi og verðandi meðlimum þessa hóps.\n\nAð birta tengiliði gerir tengingu þína við hópinn hraðari og áreiðanlegri, vegna þess að þá getur þú átt samskipti við birtu tengiliðina jafnvel þótt eigandi hópsins sé ekki á netinu.</string>
   <string name="groups_reveal_visible_revealed_by_us">Vensl tengiliðar eru sýnileg hópnum (uppljóstrað af þér)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Vensl tengiliðar eru sýnileg hópnum (uppljóstrað af %s)</string>
   <string name="groups_reveal_invisible">Vensl tengiliðar eru ekki sýnileg hópnum</string>
@@ -1055,7 +1055,7 @@
 	<string name="channels_feed_empty_subscriber">Engar færslur enn. Nýjar færslur birtast hér.</string>
 	<string name="channels_post_withheld">Færsla ekki birt: eigandi rásarinnar afturkallaði heimild þessa höfundar til að birta færslur.</string>
 	<string name="channels_feed_connecting">Tengist rásinni…</string>
-	<string name="channels_feed_connecting_slow">Enn að tengjast. Gakktu úr skugga um að sá sem deildi þessari rás sé nettengdur. Þetta uppfærist sjálfkrafa.</string>
+	<string name="channels_feed_connecting_slow">Enn að tengjast. Færslur birtast hér þegar hægt er að ná í rásina.</string>
 	<string name="channels_compose_hint">Skrifaðu til áskrifenda þinna…</string>
 	<string name="channels_compose_send">Birta</string>
 	<string name="channels_compose_error_empty">Skrifaðu eitthvað áður en þú birtir.</string>
@@ -1353,7 +1353,7 @@
 	<string name="grouptr_empty">Engir hópar enn.</string>
 	<string name="grouptr_meta">%2$d meðlimir</string>
 	<string name="grouptr_dissolved_suffix">(leystur upp)</string>
-	<string name="grouptr_creator_tag">(stofnandi)</string>
+	<string name="grouptr_creator_tag">(eigandi hópsins)</string>
 	<string name="grouptr_admin_tag">(stjórnandi)</string>
 	<string name="grouptr_promote">Hækka í tign</string>
 	<string name="grouptr_demote">Lækka í tign</string>
@@ -1456,7 +1456,7 @@
 	<string name="grouptr_detail_status">Staða</string>
 	<string name="grouptr_detail_status_dissolved">Leystur upp</string>
 	<string name="grouptr_open_chat">Opna spjall</string>
-	<string name="grouptr_member_role_creator">stofnandi</string>
+	<string name="grouptr_member_role_creator">Eigandi hópsins</string>
 	<string name="grouptr_member_role_you">þú</string>
 	<string name="grouptr_member_action_remove">Fjarlægja úr hópi</string>
 	<string name="scroll_to_bottom">Fletta neðst</string>
@@ -2365,14 +2365,14 @@
 	<string name="wallet_sp_enable_first">Virkjaðu Silent Payments fyrst</string>
 	<string name="grouptr_reach_title">Hverjir fá færslurnar þínar</string>
 	<string name="grouptr_reach_explanation">Færslur í hópnum fara beint á milli meðlima sem eru tengiliðir hver annars, og meðlimir áframsenda ekki færslur. Þessir meðlimir eru ekki tengiliðir þínir, svo þeir fá ekki færslurnar þínar og þú færð ekki þeirra:\n\n%1$s\n\nBættu þeim við sem tengiliðum til að ná til þeirra.</string>
-	<string name="grouptr_ttl_set_by_creator">Sjálfeyðandi skilaboð í þessum hópi: %1$s. Aðeins stofnandi hópsins getur breytt þessu.</string>
+	<string name="grouptr_ttl_set_by_creator">Sjálfeyðandi skilaboð í þessum hópi: %1$s. Aðeins eigandi hópsins getur breytt þessu.</string>
 	<string name="grouptr_sender_alias_format">%1$s (birtir sem „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (ekki nafn sem þú þekkir)</string>
 	<string name="grouptr_member_out_of_reach">ekki tengiliður þinn, fær ekki færslurnar þínar</string>
 	<string name="grouptr_member_invited">Boðið, bíður svars</string>
 	<string name="grouptr_confirm_revoke">Afturkalla boðið til %1$s? Svar frá viðkomandi verður hunsað.</string>
 	<string name="grouptr_revoke_invite">Afturkalla boð</string>
-	<string name="grouptr_invite_expired">Þetta boð er útrunnið. Biddu stofnanda hópsins um nýtt.</string>
+	<string name="grouptr_invite_expired">Þetta boð er útrunnið. Biddu eiganda hópsins um nýtt.</string>
 	<string name="reaction_removed_here_only">Aðeins fjarlægt á þessu tæki: forrit tengiliðarins þíns er of gamalt til að fjarlægja viðbragðið þar.</string>
 	<string name="startup_data_without_account_message">Zerion fann gögn á þessu tæki en engan lykil notandaaðgangs sem opnar þau: lyklaskrárnar vantar eða þær eru skemmdar. Engu hefur verið eytt.\n\nÞú getur lokað Zerion og haldið gögnunum, eða eytt öllu og byrjað upp á nýtt.</string>
 	<string name="startup_data_without_account_keep">Loka og halda gögnum</string>
@@ -2457,13 +2457,13 @@
 	<string name="grouptr_members_may_invite">Meðlimir geta boðið tengiliðum sínum</string>
 	<string name="grouptr_members_may_invite_summary">Á meðan kveikt er á þessu bætir síminn þinn sjálfkrafa við fólkinu sem þeir bjóða.</string>
 	<string name="grouptr_invite_contacts">Bjóða tengiliðum</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Aðeins meðlimir sem hafa stofnanda hópsins sem tengilið geta boðið.</string>
-	<string name="grouptr_member_invite_creator_outdated">Stofnandi hópsins þarf nýrri útgáfu af forritinu áður en meðlimir geta boðið.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Aðeins meðlimir sem hafa eiganda hópsins sem tengilið geta boðið.</string>
+	<string name="grouptr_member_invite_creator_outdated">Eigandi hópsins þarf nýrri útgáfu af forritinu áður en meðlimir geta boðið.</string>
 	<string name="grouptr_member_invite_contact_outdated">Þarf nýrri útgáfu af forritinu</string>
 	<string name="grouptr_member_invitation_received">%1$s bauð þér að ganga í hópinn „%2$s“ sem %3$s stofnaði.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s bauð þér að ganga í hóp sem %2$s stofnaði.</string>
-	<string name="grouptr_waiting_for_admin">Beðið eftir að %1$s, sem stofnaði hópinn, komist á netið. Sími stofnandans bætir þér sjálfkrafa við og þá getur þú sent færslur hér.</string>
-	<string name="grouptr_member_invite_accepted">Samþykkt. Þú gengur í hópinn um leið og stofnandi hópsins kemst á netið.</string>
+	<string name="grouptr_waiting_for_admin">Beðið eftir að eigandi hópsins, %1$s, komist á netið. Sími eigandans bætir þér sjálfkrafa við og þá getur þú sent færslur hér.</string>
+	<string name="grouptr_member_invite_accepted">Samþykkt. Þú gengur í hópinn um leið og eigandi hópsins kemst á netið.</string>
 	<string name="grouptr_member_invite_unavailable">Ekki er lengur hægt að samþykkja þetta boð. Biddu um nýtt.</string>
 	<string name="grouptr_incognito">Huliðsstilling í þessum hópi</string>
 	<string name="grouptr_incognito_summary">Aðrir í hópnum sjá handahófskennt nafn í stað þíns. Meðlimir sem eru tengiliðir þínir geta samt þekkt þig á lyklinum þínum.</string>
@@ -2471,7 +2471,7 @@
 	<string name="grouptr_incognito_new_name">Nýtt nafn</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (huliðsstilling)</string>
 	<string name="grouptr_member_may_add">Má bæta við meðlimum</string>
-	<string name="grouptr_member_invite_creator_only">Aðeins sá sem stofnaði hópinn getur bætt við meðlimum.</string>
+	<string name="grouptr_member_invite_creator_only">Aðeins eigandi hópsins getur bætt við meðlimum.</string>
 	<string name="tor_status_entry_relay">Óstöðugt</string>
 	<string name="tor_hidden_services_entry_relay">Inngangsendurvarpi Tor bregst í flestum tengingum, svo tengiliðir ná hugsanlega ekki til þín. Ástæðan getur verið yfirhlaðið net eða truflun. Það hjálpar yfirleitt að breyta tengiaðferð Tor í brýr í Stillingar, Tengingar.</string>
 	<string name="contact_connection_tor_entry_relay">Tor er tengt, en inngangsendurvarpi þess bregst í flestum tengingum. Brýr hjálpa yfirleitt.</string>
@@ -2482,4 +2482,42 @@
 	<string name="channels_subscribers_unban">Aflétta banni</string>
 	<string name="channels_subscribers_unban_confirm">Aflétta banninu? Þessi áskrifandi getur aftur skrifað athugasemdir og brugðist við. Það sem bannið fjarlægði kemur ekki aftur og veita þarf ritstjórahlutverk upp á nýtt.</string>
 	<string name="channels_unban_failed">Ekki tókst að aflétta banninu</string>
+	<string name="contact_delete_failed">Ekki tókst að eyða tengiliðnum</string>
+	<string name="channels_delegations_revoke_failed">Ekki tókst að afturkalla þennan ritstjóra</string>
+	<string name="channels_invite_rotate_failed">Boðstenglinum var ekki skipt út. Gamli tengillinn virkar enn.</string>
+	<string name="channels_apply_unconfirmed">Eigandinn hefur ekki staðfest að umsóknin þín hafi borist. Reyndu aftur síðar.</string>
+	<string name="channels_apply_banner">Ýttu til að sækja um aðgang að þessari rás hjá eigandanum.</string>
+	<string name="channels_rejoin_updated">Aðgangur þinn að %1$s var uppfærður.</string>
+	<string name="channels_rejoin_unreachable">Ekki tókst að athuga þennan tengil núna. Reyndu aftur síðar.</string>
+	<string name="channels_rejoin_apply_again">Þú getur sótt aftur um aðild til að lesa nýjar færslur á þessari rás. Færslurnar sem þú ert þegar með haldast. Eigandinn sér birtingarnafnið þitt og lykil sem tilheyrir þér aðeins á þessari rás.</string>
+	<string name="channels_sync_last_updated">Síðast uppfært %1$s</string>
+	<string name="channels_sync_saved_posts">Sýnir vistaðar færslur</string>
+	<string name="channels_sync_saved_posts_last_updated">Sýnir vistaðar færslur · Síðast uppfært %1$s</string>
+	<string name="channels_sync_not_updated_since">Ekki uppfært síðan %1$s</string>
+	<string name="channels_owner_deleted_notice">Eigandinn eyddi rásinni %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Eigandinn eyddi rás sem þú hafðir gengið í</string>
+	<string name="channels_queued_waiting">Bíður sendingar</string>
+	<string name="channels_queued_not_sent">Ekki sent</string>
+	<string name="channels_queued_retry">Reyna aftur</string>
+	<string name="channels_queued_delete">Eyða</string>
+	<string name="channels_comment_queued_toast">Athugasemdin þín verður send þegar hægt er að ná í rásina.</string>
+	<string name="channels_react_queued_toast">Viðbragðið þitt verður sent þegar hægt er að ná í rásina.</string>
+	<string name="channels_announce_queued_toast">Nafnið þitt verður sent þegar hægt er að ná í rásina.</string>
+	<string name="channels_post_queued_toast">Færslan þín verður send þegar hægt er að ná í rásina.</string>
+	<string name="channels_change_queued_toast">Breytingin þín verður send þegar hægt er að ná í rásina.</string>
+	<string name="channels_queued_notice_waiting">Sumt af því sem þú sendir bíður. Það verður sent þegar hægt er að ná í rásina.</string>
+	<string name="channels_queued_notice_not_sent">Sumt af því sem þú sendir var ekki sent. Ýttu til að reyna aftur eða eyða því.</string>
+	<string name="channels_queued_announce_label">Nafnið þitt: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Ekki tókst að ná í þessa rás. Þú getur sótt aftur um aðild með þessum tengli. Færslurnar sem þú ert þegar með haldast. Eigandinn sér birtingarnafnið þitt og lykil sem tilheyrir þér aðeins á þessari rás.</string>
+	<string name="channels_rejoin_not_restored">Þessi tengill endurheimti ekki aðgang þinn að þessari rás. Þú getur beðið um nýjan tengil.</string>
+	<string name="channels_rejoin_check_title">Prófa þennan tengil?</string>
+	<string name="channels_rejoin_check_message">Ekki er hægt að ná í nýjar færslur á þessari rás núna. Þú getur prófað þennan tengil til að fá þær aftur. Færslurnar sem þú ert þegar með haldast.</string>
+	<string name="channels_rejoin_check_action">Prófa tengil</string>
+	<string name="channels_rejoin_try_later">Ekki er hægt að ná í þessa rás núna og þetta er sami tengill og þú ert þegar með. Reyndu aftur síðar. Færslurnar sem þú ert þegar með haldast.</string>
+	<string name="channels_rejoin_trying">Við höldum áfram að prófa þennan tengil. Færslurnar sem þú ert þegar með haldast.</string>
+	<string name="channels_queued_already_sent">Þetta var þegar sent og því var ekki hægt að eyða því.</string>
+	<string name="channels_queued_behind_toast">Þetta verður sent á eftir því sem þú sendir áður á þessa rás.</string>
+	<string name="channels_queued_no_access">Ekki sent. Þú hefur ekki lengur aðgang að þessari rás.</string>
+	<string name="channels_no_access_toast">Þú hefur ekki lengur aðgang að þessari rás. Biddu eigandann um nýjan boðstengil.</string>
+	<string name="channels_rejoin_too_many_links">Þú ert þegar með nokkra tengla sem bíða fyrir þessa rás, svo þessi var ekki prófaður. Færslurnar sem þú ert þegar með haldast.</string>
 </resources>

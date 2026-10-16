@@ -296,7 +296,7 @@
   <string name="groups_dissolve_dialog_message">このグループを解散してもよろしいですか？\n\n他の全人員は会話を続けることができなくなり、最新のメッセージは受信できなくなります。</string>
   <string name="groups_dissolve_button">解散</string>
   <string name="groups_dissolved_dialog_title">グループは解散されました</string>
-  <string name="groups_dissolved_dialog_message">このグループの作成者はグループを解散しました。\n\nもうグループにはメッセージを書けなくなり、過去に書かれた全ての投稿は受信できなくなる可能があります。</string>
+  <string name="groups_dissolved_dialog_message">グループのオーナーがこのグループを解散しました。\n\nこのグループにはもうメッセージを書けません。また、これまでに書かれた投稿をすべて受信できるとは限りません。</string>
   
   <string name="groups_invitations_title">グループ招待</string>
   <string name="groups_invitations_invitation_sent">%1$sをグループ\"%2$s\"に招待しています。</string>
@@ -305,9 +305,9 @@
   <plurals name="groups_invitations_open">
     <item quantity="other">%d個のオープングループへの招待</item>
   </plurals>
-  <string name="sharing_status_groups">グループに新規人員を招待できるのは作成者のみです。 以下は、グループの現在の全人員です。</string>
+  <string name="sharing_status_groups">グループに新しいメンバーを招待できるのはグループのオーナーだけです。以下は、グループの現在のメンバー全員です。</string>
   
-  <string name="groups_reveal_dialog_message">このグループの現在および将来の全人員に連絡先を明かすかどうかを選択できます。\n\n連絡先を明かすと、グループの作成者がオフラインの場合でも明かされた連絡先と通信できるため、グループへの接続がより高速で信頼性が高くなります。</string>
+  <string name="groups_reveal_dialog_message">このグループの現在および将来の全メンバーに連絡先を明かすかどうかを選択できます。\n\n連絡先を明かすと、グループのオーナーがオフラインの場合でも明かされた連絡先と通信できるため、グループへの接続がより速く、安定します。</string>
   <string name="groups_reveal_visible_revealed_by_us">連絡先の関係はグループに表示されます（あなたによって明かされました）</string>
   <string name="groups_reveal_visible_revealed_by_contact">連絡先の関係はグループに表示されます（%sによって明かされました）</string>
   <string name="groups_reveal_invisible">連絡先の関係はグループには表示されません</string>
@@ -742,7 +742,7 @@
 	<string name="channels_feed_empty_publisher">チャンネルにはまだ投稿がありません。最初の投稿を公開してください。</string>
 	<string name="channels_feed_empty_subscriber">まだ投稿はありません。新しい投稿はここに表示されます。</string>
 	<string name="channels_feed_connecting">チャンネルに接続しています…</string>
-	<string name="channels_feed_connecting_slow">まだ接続中です。このチャンネルを共有した人がオンラインであることを確認してください。自動的に更新されます。</string>
+	<string name="channels_feed_connecting_slow">まだ接続中です。チャンネルに接続できると、ここに投稿が表示されます。</string>
 	<string name="channels_compose_hint">購読者に向けて書く…</string>
 	<string name="channels_compose_send">公開</string>
 	<string name="channels_compose_error_empty">公開する前に何か入力してください。</string>
@@ -1037,7 +1037,7 @@
 	<string name="grouptr_empty">まだグループはありません。</string>
 	<string name="grouptr_meta">%2$d 人のメンバー</string>
 	<string name="grouptr_dissolved_suffix">（解散済み）</string>
-	<string name="grouptr_creator_tag">（作成者）</string>
+	<string name="grouptr_creator_tag">（グループオーナー）</string>
 	<string name="grouptr_admin_tag">（管理者）</string>
 	<string name="grouptr_promote">昇格</string>
 	<string name="grouptr_demote">降格</string>
@@ -1136,7 +1136,7 @@
 	<string name="grouptr_detail_status">ステータス</string>
 	<string name="grouptr_detail_status_dissolved">解散済み</string>
 	<string name="grouptr_open_chat">チャットを開く</string>
-	<string name="grouptr_member_role_creator">作成者</string>
+	<string name="grouptr_member_role_creator">グループオーナー</string>
 	<string name="grouptr_member_role_you">あなた</string>
 	<string name="grouptr_member_action_remove">グループから削除</string>
 	<string name="scroll_to_bottom">一番下までスクロール</string>
@@ -2253,14 +2253,14 @@
 	<string name="wallet_sp_enable_first">先にサイレントペイメントを有効にしてください</string>
 	<string name="grouptr_reach_title">投稿が届く相手</string>
 	<string name="grouptr_reach_explanation">グループの投稿は、互いに連絡先であるメンバーの間で直接届けられ、メンバーが投稿を中継することはありません。次のメンバーはあなたの連絡先ではないため、あなたの投稿は届かず、あなたも相手の投稿を受け取りません:\n\n%1$s\n\nこれらのメンバーに届けるには、連絡先として追加してください。</string>
-	<string name="grouptr_ttl_set_by_creator">このグループの消えるメッセージ: %1$s。変更できるのはグループの作成者だけです。</string>
+	<string name="grouptr_ttl_set_by_creator">このグループの消えるメッセージ: %1$s。変更できるのはグループのオーナーだけです。</string>
 	<string name="grouptr_sender_alias_format">%1$s（「%2$s」として投稿）</string>
 	<string name="grouptr_sender_unverified_format">「%1$s」（知らない名前）</string>
 	<string name="grouptr_member_out_of_reach">連絡先ではないため、あなたの投稿は届きません</string>
 	<string name="grouptr_member_invited">招待済み、返答待ち</string>
 	<string name="grouptr_confirm_revoke">%1$s への招待を取り消しますか？相手からの返答は無視されます。</string>
 	<string name="grouptr_revoke_invite">招待を取り消す</string>
-	<string name="grouptr_invite_expired">この招待は期限切れです。グループの作成者に新しい招待を依頼してください。</string>
+	<string name="grouptr_invite_expired">この招待は期限切れです。グループのオーナーに新しい招待を依頼してください。</string>
 	<string name="reaction_removed_here_only">この端末でのみ削除されました: 相手のアプリが古いため、相手の端末では削除できません。</string>
 	<string name="startup_data_without_account_message">Zerion はこの端末上にデータを見つけましたが、それを開くアカウント鍵がありません。鍵ファイルが見つからないか、破損しています。何も削除されていません。\n\nZerion を閉じてデータを保持するか、すべてを消去して最初からやり直すことができます。</string>
 	<string name="startup_data_without_account_keep">閉じて保持</string>
@@ -2431,13 +2431,13 @@
 	<string name="grouptr_members_may_invite">メンバーが自分の連絡先を招待できる</string>
 	<string name="grouptr_members_may_invite_summary">オンの間は、メンバーが招待した人をあなたの端末が自動的に追加します。</string>
 	<string name="grouptr_invite_contacts">連絡先を招待</string>
-	<string name="grouptr_member_invite_needs_creator_contact">グループの作成者を連絡先に登録しているメンバーのみ招待できます。</string>
-	<string name="grouptr_member_invite_creator_outdated">メンバーが招待できるようにするには、グループの作成者が新しいバージョンのアプリを使う必要があります。</string>
+	<string name="grouptr_member_invite_needs_creator_contact">グループのオーナーを連絡先に登録しているメンバーのみ招待できます。</string>
+	<string name="grouptr_member_invite_creator_outdated">メンバーが招待できるようにするには、グループのオーナーが新しいバージョンのアプリを使う必要があります。</string>
 	<string name="grouptr_member_invite_contact_outdated">新しいバージョンのアプリが必要です</string>
 	<string name="grouptr_member_invitation_received">%1$s があなたを %3$s が作成したグループ「%2$s」に招待しました。</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s があなたを %2$s が作成したグループに招待しました。</string>
-	<string name="grouptr_waiting_for_admin">グループを作成した %1$s がオンラインになるのを待っています。作成者の端末があなたを自動的に追加し、その後ここに投稿できます。</string>
-	<string name="grouptr_member_invite_accepted">承諾しました。グループの作成者がオンラインになると参加できます。</string>
+	<string name="grouptr_waiting_for_admin">グループのオーナー %1$s がオンラインになるのを待っています。オーナーの端末があなたを自動的に追加し、その後ここに投稿できます。</string>
+	<string name="grouptr_member_invite_accepted">承諾しました。グループのオーナーがオンラインになると参加できます。</string>
 	<string name="grouptr_member_invite_unavailable">この招待はもう承諾できません。新しい招待を依頼してください。</string>
 	<string name="grouptr_incognito">このグループでシークレット参加</string>
 	<string name="grouptr_incognito_summary">グループの他の人には、あなたの名前の代わりにランダムな名前が表示されます。あなたの連絡先であるメンバーは、鍵によって引き続きあなたを識別できます。</string>
@@ -2445,7 +2445,7 @@
 	<string name="grouptr_incognito_new_name">新しい名前</string>
 	<string name="grouptr_sender_incognito_format">「%1$s」（シークレット）</string>
 	<string name="grouptr_member_may_add">メンバーを追加できる</string>
-	<string name="grouptr_member_invite_creator_only">メンバーを追加できるのはグループの作成者だけです。</string>
+	<string name="grouptr_member_invite_creator_only">メンバーを追加できるのはグループのオーナーだけです。</string>
 	<string name="tor_status_entry_relay">不安定</string>
 	<string name="tor_hidden_services_entry_relay">Tor の入口リレーがほとんどの接続に失敗しているため、連絡先があなたに届かないことがあります。ネットワークの混雑や妨害が原因の可能性があります。設定の接続で Tor の接続方法をブリッジに切り替えると、たいてい改善します。</string>
 	<string name="contact_connection_tor_entry_relay">Tor は接続されていますが、入口リレーがほとんどの接続に失敗しています。ブリッジを使うとたいてい改善します。</string>
@@ -2456,4 +2456,45 @@
 	<string name="channels_subscribers_unban">ブロックを解除</string>
 	<string name="channels_subscribers_unban_confirm">ブロックを解除しますか？この購読者は再びコメントやリアクションができるようになります。ブロックで削除されたものは戻らず、編集者の役割は改めて付与する必要があります。</string>
 	<string name="channels_unban_failed">ブロックを解除できませんでした</string>
+	<string name="contact_delete_failed">連絡先を削除できませんでした</string>
+	<string name="channels_delegations_revoke_failed">この編集者を取り消せませんでした</string>
+	<string name="channels_invite_rotate_failed">招待リンクは変更されていません。古いリンクは引き続き使えます。</string>
+	<plurals name="grouptr_invite_sent">
+		<item quantity="other">%d件の連絡先に招待を送信しました</item>
+	</plurals>
+	<string name="channels_apply_unconfirmed">申請が届いたことをオーナーがまだ確認していません。しばらくしてからもう一度お試しください。</string>
+	<string name="channels_apply_banner">タップしてこのチャンネルへの参加をオーナーに申請します。</string>
+	<string name="channels_rejoin_updated">%1$s へのアクセスを更新しました。</string>
+	<string name="channels_rejoin_unreachable">現在このリンクを確認できません。しばらくしてからもう一度お試しください。</string>
+	<string name="channels_rejoin_apply_again">もう一度参加を申請すると、このチャンネルの新しい投稿を読めるようになります。受信済みの投稿はそのまま残ります。オーナーには、あなたの表示名と、このチャンネル内でのみ使われるあなたの鍵が表示されます。</string>
+	<string name="channels_sync_last_updated">最終更新: %1$s</string>
+	<string name="channels_sync_saved_posts">保存済みの投稿を表示中</string>
+	<string name="channels_sync_saved_posts_last_updated">保存済みの投稿を表示中 · 最終更新: %1$s</string>
+	<string name="channels_sync_not_updated_since">%1$s 以降、更新されていません</string>
+	<string name="channels_owner_deleted_notice">オーナーがチャンネル「%1$s」を削除しました</string>
+	<string name="channels_owner_deleted_notice_unnamed">参加していたチャンネルをオーナーが削除しました</string>
+	<string name="channels_queued_waiting">送信待ち</string>
+	<string name="channels_queued_not_sent">未送信</string>
+	<string name="channels_queued_retry">再試行</string>
+	<string name="channels_queued_delete">削除</string>
+	<string name="channels_comment_queued_toast">コメントは、チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_react_queued_toast">リアクションは、チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_announce_queued_toast">あなたの名前は、チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_post_queued_toast">投稿は、チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_change_queued_toast">変更は、チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_queued_notice_waiting">送信したものの一部が待機中です。チャンネルに接続できたときに送信されます。</string>
+	<string name="channels_queued_notice_not_sent">送信したものの一部が送信されませんでした。タップして再試行するか、削除してください。</string>
+	<string name="channels_queued_announce_label">あなたの名前: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">このチャンネルに接続できませんでした。このリンクで、もう一度参加を申請できます。受信済みの投稿はそのまま残ります。オーナーには、あなたの表示名と、このチャンネル内でのみ使われるあなたの鍵が表示されます。</string>
+	<string name="channels_rejoin_not_restored">このリンクでは、このチャンネルへのアクセスは戻りませんでした。新しいリンクを頼むことができます。</string>
+	<string name="channels_rejoin_check_title">このリンクを試しますか？</string>
+	<string name="channels_rejoin_check_message">現在、このチャンネルの新しい投稿を受け取れません。このリンクを試して、もう一度受け取ることができます。受信済みの投稿はそのまま残ります。</string>
+	<string name="channels_rejoin_check_action">リンクを試す</string>
+	<string name="channels_rejoin_try_later">現在このチャンネルに接続できません。また、このリンクはすでにお持ちのものと同じです。しばらくしてからもう一度お試しください。受信済みの投稿はそのまま残ります。</string>
+	<string name="channels_rejoin_trying">このリンクを引き続き試します。受信済みの投稿はそのまま残ります。</string>
+	<string name="channels_queued_already_sent">すでに送信されていたため、削除できませんでした。</string>
+	<string name="channels_queued_behind_toast">このチャンネルに以前送信したものの後に送信されます。</string>
+	<string name="channels_queued_no_access">未送信。このチャンネルにはもうアクセスできません。</string>
+	<string name="channels_no_access_toast">このチャンネルにはもうアクセスできません。オーナーに新しい招待リンクを頼んでください。</string>
+	<string name="channels_rejoin_too_many_links">このチャンネルにはすでに待機中のリンクが複数あるため、このリンクは試していません。受信済みの投稿はそのまま残ります。</string>
 </resources>

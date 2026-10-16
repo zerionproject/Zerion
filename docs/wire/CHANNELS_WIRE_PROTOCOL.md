@@ -27,15 +27,19 @@ preference that nothing serves from, and the `neighbourHints` of a reply are
 sent empty and never read. A subscriber dials the onion its own state names
 (`onionToPull`): the one in the invite link until it has taken a manifest,
 then the one named by the newest manifest it took, which the channel's key
-signs, and as a fallback one that such a manifest named earlier. The invite
-link is not signed, so whoever hands it over picks the first address
+signs, and as a fallback one that such a manifest named earlier. A
+member that opens a link of a channel it already holds never makes the
+link's address its own (section 6, Rejoining with a renewed link). The
+invite link is not signed, so whoever hands it over picks the first address
 dialled. From 3.0.18 a subscriber takes posts, reactions, comments and the
 comment setting from a reply only when the onion it dialled is the one its
-newest taken manifest names or the one the reply's own manifest names
-(`pullOnce`); from any other onion it takes the signed manifest alone (and a
-content key only if it matches the hash that manifest signs) and, on its
-first pull, pulls again at once from the onion that manifest names. It keeps
-as a fallback only onions that a manifest it took named. Only the holder of
+newest taken manifest names or the one named by the manifest in that same
+reply, once its signature verified, whether or not that manifest is newer
+than the one the device holds (`pullOnce`); from any other onion it takes
+the signed manifest alone (and a content key only if it matches the hash
+that manifest signs) and, on its first pull, pulls again at once from the
+onion that manifest names. It keeps as a fallback only onions that a
+manifest it took named. Only the holder of
 an onion's key can answer at that onion, and only the owner's device holds
 the keys of the onions its manifests name, so every post, reaction and
 comment a subscriber takes in was served by the owner's device, and is still
@@ -51,7 +55,12 @@ announced name, a comment, a reaction, an editor's post or change request,
 an attachment fetch) goes from 3.0.18 only to an onion the owner's device
 vouched for (`confirmedOnion`): the one the newest manifest the member took
 names, or, while it has taken none, an onion the owner's device confirmed
-just before with a signature under the channel's key. A private channel's
+just before with a signature under the channel's key. The one exception is
+a member that applies again through a link because the onion it holds does
+not answer: that application, and the checks for its approval that the
+link's candidate makes, go where a new applicant's would, to the onion the
+owner's device confirmed when asked at the link's address (section 6,
+Rejoining with a renewed link). A private channel's
 manifest cannot serve here, since its signature covers the join
 capability, which an applicant does not hold. The member asks the onion it
 knows to confirm it (`WIRE_TYPE_CONFIRM_ONION`, below); the owner's device
@@ -86,16 +95,39 @@ Consequences:
   5 s if a pull of that channel in the last 120 s brought new posts or a
   changed reaction or comment set, otherwise it grows by 5 s up to 60 s, and
   the next pull falls at a uniformly random time between half and one and a
-  half intervals later. No two subscriptions share a schedule, so their pulls
-  are not synchronised; but every subscription is first pulled within 15 s of
-  sign-in and all of them stop together at sign-out, offline mode or loss of
-  the network, so colluding publishers can match the start and end of a
-  subscriber's sessions. An open feed also refreshes its own channel: at once
-  when it opens, then after about 3.5 s for a few rounds and about 12 s after
-  that, each wait drawn uniformly between half and one and a half of those
-  values (from 3.0.18; fixed intervals before), so the refreshes follow no
-  fixed period, but the publisher can still tell when and for how long the
-  feed is open.
+  half intervals later. From 3.0.18 a pull that fails (no answer, or a reply
+  that does not verify) doubles the interval instead, up to 15 minutes, with
+  the same random spread, and a failed pull never brings the next automatic
+  pull earlier than it was due. A successful pull brings back the usual
+  schedule. Opening the channel's feed pulls at once and starts the doubling
+  again from the first step, without bringing the next automatic pull
+  forward; the feed's later refreshes while it stays open are pulls like any
+  other (a failed one doubles the interval) and reset nothing. Tor becoming
+  active on the device also starts the doubling again from the first step,
+  and each failing subscription is then pulled again within about a minute.
+  Up to 3.0.17 failures did not lengthen the interval, so a channel
+  whose owner never answered was pulled every 30 to 90 s for as long as the
+  app ran. From 3.0.18 a subscription with no successful pull for 90 days
+  (since the last successful pull the device recorded or, when it recorded
+  none, since its first attempt from 3.0.18 on) is no longer pulled
+  automatically: opening its feed pulls it once, a successful pull returns
+  it to the usual schedule, and it can be left at any time. No two
+  subscriptions share a schedule, so their pulls are not synchronised; but
+  every subscription is first pulled within 15 s of sign-in, failing ones
+  again within about a minute of Tor becoming active, and all of them stop
+  together at sign-out, offline mode or loss of the network, so colluding
+  publishers can match the start and end of a subscriber's sessions. An
+  open feed also refreshes its own channel: at once when it opens, then
+  after about 3.5 s for a few rounds and about 12 s after that,
+  each wait drawn uniformly between half and one and a half of those values
+  (from 3.0.18; fixed intervals before), so the refreshes follow no fixed
+  period, but the publisher can still tell when and for how long the feed is
+  open. A feed whose subscription has gone 90 days without a successful pull
+  makes only the pull when it opens. The time of the last successful pull and
+  whether the latest attempt failed are kept on the device
+  (`zerion-channels-sync-status`, at most one write a minute while pulls
+  succeed) so the feed can say when it was last updated; they are never
+  sent.
 - The publisher persists each channel's onion key and republishes the same
   onion at startup, on Tor `TransportActiveEvent` and
   `B4OwnRotationCompletedEvent` (for channels not yet bound) and on periodic
@@ -590,10 +622,11 @@ delegation checks pass (section 6).
   would otherwise repeat.
 - `ChannelPostValidator` additionally enforces 4096 chars
   (`MAX_POST_BODY_CHARS`) on the wire body and verifies the post signature.
-  The publisher checks the plaintext, so in the current implementation a
-  private post over 3056 UTF-8 bytes is published but refused by
-  subscribers (`BODY_TOO_LARGE`), blocking all later posts (known
-  limitation).
+  The publisher checks the plaintext and, in a private channel, also the
+  encrypted wire body against the same limit, and refuses a post whose
+  wire body is longer (`ChannelPostTooLongException`, since 3.0.15), so no
+  post is published that subscribers would refuse for its length
+  (`BODY_TOO_LARGE`) and that would hold back the posts after it.
 
 ### Skip-known rule (incremental apply)
 
@@ -662,10 +695,18 @@ link, or arriving in a reply that brought no key) is stored, so the chain
 moves on, but not shown, counted or announced (from 3.0.18). A subscriber's
 content key changes only when a pull reply's `contentKeyEnvelope` gives it
 a key it did not hold (`ChannelPullProtocol.processSubscriberResponse`,
-stored by `pullOnce`): normally the first reply after it joined or after its
-application was approved; a member cut off by a renewed link gets no new
-key, and leaving and joining again with the new link starts from an empty
-channel. Each
+stored by `pullOnce`, or for a renewed link by `rejoinChannelThroughLink`
+or the link's candidate): normally the first reply after it joined or after its application
+was approved. A member cut off by a renewed link gets no new key until it
+uses the new link. Up to 3.0.17 it then had to leave and join again,
+starting from an empty channel; from 3.0.18 it can take the new link
+without leaving (section 6, Rejoining with a renewed link) and keeps the
+content key it held as an earlier key
+(`zerion-channels-retired-content-keys`, the newest 64), as it does when an
+application approved again brings it a new capability. A
+member reads posts with every content key it holds, current or earlier, so
+the posts it holds, and posts under those keys that it fetches later, stay
+readable; posts under a key it never held stay unreadable. Each
 time the key changes, the device reads the posts it holds but could not
 read (`openNewlyReadable`): a mark among them is stored hidden and applied,
 and every other post that now opens is counted and announced once, also
@@ -891,8 +932,10 @@ the others, as it passes over erased posts for older requests (below). A
 post that a development build of 3.0.18 erased before this rule existed
 noted no key: the owner's device, which keeps every content key the channel
 had, shows it, and sends it only while the channel never renewed its link;
-a subscriber keeps it hidden. Every member that can pull holds
-only the current key, so a post made under a key in force before the owner
+a subscriber keeps it hidden. A member that joined after the owner renewed
+the link holds only the keys from then on (one that took the renewed link
+while it held the channel also keeps the keys it held before, Storage
+above), so a post made under a key in force before the owner
 renewed the link stays hidden from members who joined after the renewal,
 also once it is edited, as it did before it was erased: a member that
 already held its ciphertext erases it and keeps it hidden, and one that had
@@ -954,9 +997,29 @@ being read back from a stored record; it does not keep it secret from
 whoever can guess it, so a small correction must be assumed recoverable by
 every reader who receives the erased post. A text that must not be
 recoverable should be deleted (a deleted post keeps no hash, Deletes,
-above) rather than edited. Closing this needs a different format, for
-example a body hash keyed by a per-post secret that is erased with the
-body; this release does not change the format.
+above) rather than edited.
+
+The body hash stays because the format needs it. It is part of the format 2
+signed input, so the post's signature covers it, and through the canonical
+hash the next post's `prevHash` names it. A subscriber that fetches the post
+after the edit verifies the signature over `bh` and links the next post to
+the canonical hash computed from it; the owner's device sends `bh` with the
+erased post to every request of version 5 or later, so that such
+subscribers can do this; a subscriber checks a post taken back by
+`repairWaiting` against it; and a subscriber checks an editor's stored posts
+again under their signatures when the editor's certificate is revoked
+(`ChannelWithholding`), erased posts included. A value keyed by a secret of
+the device, kept in place of the stored hash, would not close the test
+either: the stored signature verifies only over the right body hash, so the
+signature, the salt and the other signed fields confirm a guess on their
+own, and the owner's device has to serve the hash itself to every new
+reader. Closing the test needs a post format whose body hash also covers a
+random secret that travels with the body and is erased with it. Releases
+3.0.15 to 3.0.17 refuse a whole pull reply that carries a post in any format
+other than the legacy one and format 2, so posts in such a format could not
+be published to them. This release does not change the format: every format
+2 post, published before or after it, keeps a body hash that can be tested
+in this way.
 
 ## 5. Comments and reactions
 
@@ -999,7 +1062,10 @@ private channel).
 **Retention.** The publisher tells signers it **knows** from anonymous ones:
 the channel's own key, the subscribers the owner marked as **trusted** in
 the subscriber list (`zerion-channels-trusted`, the newest 4096 keys),
-approved applicants and editors are known, none of them banned. A key that
+approved applicants (from 3.0.18 those approved under the capability the
+channel uses now and, until the first renewal of the link from 3.0.18 on,
+those approved before 3.0.18; section 6, Apply) and editors are known,
+none of them banned. A key that
 merely announced a name is not known: announcing costs nothing, so it would
 let anyone make as many known keys as it likes. Anonymous items share smaller ceilings (128
 per channel, 32 per post, 8 per signer, 768 KiB) and give way only to each
@@ -1191,6 +1257,175 @@ comments the owner did not choose. Subscribers up to 3.0.17 never learn the
 setting: they show the comment entry everywhere and are told that a comment
 on a post with comments off could not be sent.
 
+### Member outbox (device behaviour, no wire change)
+
+From 3.0.18 a member's device keeps a request it could not deliver instead
+of dropping it (`ChannelOutboxStore`). This covers comments, reactions,
+announcements, and an editor's posts and change requests (section 6);
+applications keep their own record (section 6, request and approve).
+Nothing new goes on the wire and nothing is relayed: the requests are the
+ones above, sent only to the owner's own onion, and only while it answers.
+Up to 3.0.17 such a request failed and was lost.
+
+**A new request.** The member first checks what it can on its own
+(comments on for the post, an editor certificate, a post that fits, a
+target that is its own post); a reaction that would have to be signed more
+than 2 hours ahead fails as too soon without removing the reaction waiting
+for that post.
+
+When an item the new request replaces is waiting (a reaction to the same
+post, a name, an edit or comment setting of the same post), the new request
+takes that item's place in the queue: in one step under the channel's lock
+the waiting item's content is replaced by the new one, with the new kept
+time and no failed tries, and other items of that kind for that post,
+waiting or not sent, are removed. The device holds the channel's send lock
+while it does this, so the old content cannot be on its way at that
+moment, and it is never sent afterwards. The queue is then sent as below,
+the new request in the replaced item's place. The call succeeds if the new
+request is accepted; it fails and the request is removed from the queue if
+the owner refuses it, if the owner keeps answering `STALE`, or if it has to
+be signed more than 2 hours ahead. If access is lost in that round the call
+fails with `ChannelNoAccessException` and the request stays in its place,
+not sent for lost access like every other waiting item, and comes back with
+them (below). Otherwise it stays in that place and the call fails with
+`ChannelRequestQueuedException`, as below. Nothing remains of the replaced
+content.
+
+Otherwise, when items are waiting, the device pulls first and sends them
+(below); the new request is then sent only if none is left waiting in front
+of it, otherwise (also when that pull fails) it is kept behind them without
+being sent, and not-sent items of the same kind for the same post are
+removed. A sent request ends one of four ways:
+
+- accepted (`ok=true`, `OK`): done, and not-sent items of the same kind
+  for the same post are removed;
+- refused (`ok=false`, `REFUSED`, an empty reply to a submitted post or
+  change request, which is how an owner on an earlier release answers, or
+  `STALE` three times in a row): the call fails and nothing is kept;
+- no access: in a private channel the owner's onion answered a comment,
+  reaction or announcement with an empty reply, a pull then failed although
+  the onion answered, and the onion the member trusts for the channel
+  (read again after that pull) still answers a request that needs no
+  capability proof (`WIRE_TYPE_CONFIRM_ONION`) with a confirmation of that
+  same onion that verifies under the channel's key with the same checks as
+  when an onion is first confirmed: the member's capability proof is no
+  longer accepted. The call fails with `ChannelNoAccessException` and
+  nothing is kept; a confirmation that is missing, names another onion or
+  does not verify makes it no answer instead. An empty reply alone is never
+  taken as no access, since
+  the owner's device also answers empty when its outgoing allowance is
+  spent, possibly after it stored the item: if the pull succeeds and shows
+  the item it counts as accepted, and otherwise as no answer; an owner on a
+  release that does not answer `WIRE_TYPE_CONFIRM_ONION` never yields no
+  access;
+- no answer (no connection, a timeout, an unreadable reply, or an empty
+  reply that is not no access as above): the item is kept, replacing the
+  items it replaces, and the call fails with
+  `ChannelRequestQueuedException` (a `DbException`), so it is never
+  reported as sent. The apps say it will be sent when the channel is
+  reachable, or, when the exception's `isBehindEarlierItems()` is true (the
+  owner answered, the round stopped at an earlier item that waits for its
+  next try, and the new request was not tried), that it will be sent after
+  what was sent earlier. When 50 items are held and none
+  is replaced, the call fails and nothing is kept.
+
+An announcement counts as delivered only on `ok=true` (up to 3.0.17 the
+member ignored the answer).
+
+**What is stored.** One row per channel in the encrypted settings,
+`zerion-channels-outbox:<channelId hex>`, holding for each item its kind,
+target post, text (comment body, emoji, name, post body or new text), a
+post's lifetime, the wanted comment setting, a local id (a comment's
+`commentId`), the time it was kept, the tip of the chain held when an
+editor's post was kept, the end of the lifetime of the post a deletion
+targets (when it has one), whether it was ever sent without an answer, its
+count of failed tries, the time of its next try, once it is not sent why,
+and for an item not sent for lost access a hash of the capability the
+refused request was proven with. No signature, timestamp, capability proof or request bytes are
+stored: each attempt signs again with the current hour and a fresh proof,
+so an item kept for days still falls inside the owner's 48-hour window
+(section 5, Freshness).
+
+**When it is sent.** Waiting items are sent strictly in the order kept,
+after every successful pull of the channel (the background poll, each
+refresh while the feed is open, and joining), before a new request as
+above, and on a retry. In a private channel where that pull fails although
+the owner's onion answered, waiting items are still sent before a new
+request or on a retry, so they end as no access instead of waiting. For each item in turn:
+
+- an item whose next try is still ahead stops the round; later items wait
+  behind it and never overtake it. A next try more than an hour ahead, which
+  only a clock set back can cause, counts as due;
+- a deletion needs only the post's number, so it is sent even when the
+  member no longer holds the post (the owner checks that the post is the
+  editor's); it is dropped without being sent, and not counted as sent,
+  only once the post's lifetime is over, the member holds neither the post
+  nor the owner's deletion mark for it, and so the post is gone for
+  everyone; a deletion of a post without a lifetime is never dropped this
+  way;
+- an item the pulled state already shows is done without being sent
+  again: a comment by its `commentId` and the member key; a reaction, edit
+  or comment setting by the state the pull brought; a deletion by the
+  owner-signed deletion mark of the post; an
+  editor's post that was sent at least once without an answer by its
+  editor key and text among the posts after the tip held when it was kept,
+  where that tip is moved past each earlier post of the same outbox once
+  that one is delivered, so two posts with the same text are both sent;
+- accepted: done;
+- refused: marked not sent and not tried again on its own; for a comment
+  sent before without an answer the device first asks for the whole comment
+  set again, and if the owner holds the comment it counts as delivered
+  (the owner refuses a second copy of a held `commentId` that differs in
+  hour or signature);
+- no access: marked not sent with that reason, and so is every other
+  waiting item of the channel except one being deleted, without being
+  sent; the round ends there, and a new request waiting for it fails with
+  `ChannelNoAccessException` without being sent, so losing access costs,
+  besides the pull that starts the round, one item's request, one pull and
+  one confirmation request. Every such item is stamped with a hash of the
+  capability the refused request was proven with, also when the member
+  takes a renewed link while that round finishes. When the capability the
+  member holds for the channel differs from the stamp (it is approved again
+  or takes a renewed link), the item is waiting again, with no failed tries
+  and its first kept time, so the 7-day limit still counts from then. An
+  item without a stamp (kept by an earlier 3.0.18 development build) is
+  stamped with the capability held when it is first read, and comes back
+  only after a later change;
+- a reaction that would have to be signed more than 2 hours ahead waits
+  until the hour it can be signed, without counting as a failed try, and
+  stops the round;
+- no answer, or `STALE` three times in a row for an editor's post or
+  change, is a failed try: the item waits 1, 2, 4, 8 and 16 minutes after
+  the first five and stops the round; the sixth failed try marks it not
+  sent, after which the round goes on with later items.
+
+**Retry and delete.** The user can retry a not-sent item, which puts it at
+the end of the queue with a new 7-day limit and no failed tries and sends
+it, after any items waiting before it, if the channel answers; or delete
+it. A delete waits for a send in progress and reports one of three
+results (`deleteQueuedItem`): `DELETED` for an item removed before it was
+sent (a send in progress skips it, so it is never sent), `SENT` for an item
+that this device sent or found delivered (the last 512 such items while
+the app runs), and `GONE` for an item no longer held for another reason
+(deleted already, replaced, removed after a refusal of the new request
+that replaced it, a deletion dropped as above, or removed after 7 days); the
+apps tell the user only about `SENT`.
+
+**Limits.** An item still waiting 7 days after it was kept is marked not
+sent and not sent. A not-sent item is removed 7 days after it was marked.
+At most 50 items are held per channel. Leaving or deleting the channel
+removes its outbox. Items reach the owner only while the owner's device is
+online and its onion answers; there is no other path, and while pulls fail
+nothing is sent in the background, so a waiting item then changes only when
+the member sends or retries something in the channel or after 7 days. An
+item that was sent once without an answer may have reached the owner even
+if it is later deleted or marked not sent. Items sent right after a pull
+arrive close in time to it, which the owner's device can observe, as it
+can when a member comments while reading. The stored text is what the
+member typed; it stays in the encrypted database like the device's own
+copies of comments and posts until it is sent, refused, deleted or
+expired.
+
 ## 6. Public vs private channels; editor delegations
 
 ### Public channels
@@ -1217,7 +1452,10 @@ device, and posts from before the rotation stay under the old key, which is
 never sent to new holders. The owner's device keeps every earlier content
 key (`ChannelStore.getRetiredContentKeys`) and still reads and serves those
 posts; a member that joins with the new link stores them as posts it cannot
-read (section 4, Storage), which are never counted or announced.
+read (section 4, Storage), which are never counted or announced. A member
+that already holds the channel takes the new link without leaving and keeps
+the key it held (Rejoining with a renewed link, below), so it still reads
+the posts it holds and those made under that key.
 
 ### Private channels - request → owner-approve
 
@@ -1225,8 +1463,10 @@ When `requiresApproval` is set, the capability is **not** in the link
 (`p=1` flag instead). The join handshake (all over the publisher onion;
 from 3.0.18 an applicant first has the onion confirmed by the owner's
 device and sends steps 1 and 3 only to the onion the confirmation names,
-The one architectural fact, Where a member's requests go; an applicant
-from 3.0.18 therefore cannot apply to an owner up to 3.0.17, and one whose
+as "Where a member's requests go" under "The one architectural fact"
+describes; an applicant from 3.0.18 that has not taken the owner's signed
+manifest, which is every new applicant, therefore cannot apply to an owner
+up to 3.0.17, and one whose
 application is still pending learns no decision from such an owner, until
 the owner updates):
 
@@ -1238,11 +1478,62 @@ the owner updates):
    int64 ts || int32 ephLen || eph`, label `SIGNING_LABEL_APPLICATION`.
    Response `WIRE_TYPE_APPLY_ACK = {type, ok}`. The publisher stores a
    PENDING `ChannelApplication` (`MAX_PENDING_APPLICATIONS = 256`). For an
-   applicant it already holds (same `ed`), a repeated application or one
-   with an older `ts` is acknowledged and changes nothing. One with a new
+   applicant it already holds (same `ed`), a repeated application (same
+   `eph`) is acknowledged and changes nothing; from 3.0.18 one with another
+   `eph` and an older `ts` (a late copy, or a device that left and applied
+   again before the hour of the application held) is refused (`ok = false`)
+   and changes nothing, so the applicant is told it was not confirmed and
+   can apply again later, where up to 3.0.17 it was acknowledged without
+   being kept. One with a new
    `eph` and a `ts` no older than the held one (the applicant left and
-   applied again) replaces it and waits for approval again, even if the held
-   one was approved. A DENIED application is always replaced.
+   applied again) replaces it and waits for approval again. From 3.0.18
+   the publisher notes in each approval a hash of the capability it wrapped
+   (a local field, never sent); when the held application was approved
+   under the capability the channel uses now and the key is not banned, the
+   new one is approved at once instead: the publisher wraps that same
+   capability to the new `eph` as in step 2 and keeps the key approved, so
+   applying again grants nothing the member does not already hold. Renewing
+   the link (`rotateJoinCapability`) revokes every approval: an approval
+   made under an earlier capability does not count, and the new
+   application waits for approval like a new applicant's. Such an approval
+   is not answered as approved (step 4), is not listed among the channel's
+   applications and does not make its key known (section 5, Retention).
+   An approval made before 3.0.18 notes no capability. It stays listed
+   and known as up to 3.0.17, but it is never approved again at once: a
+   new application from its key (another `eph`) waits for approval with
+   nothing wrapped, and a check for it is answered only with what was
+   stored when it was approved (step 4). The first renewal from 3.0.18 on
+   notes on each such approval the capability that renewal replaces, in
+   the same write as the renewal, so from then on it is revoked like any
+   other approval made before that renewal. A banned key is refused as before. A DENIED application is
+   always replaced. A repeated
+   application the publisher already holds is acknowledged even when its
+   write budget for applications is spent, since it writes nothing.
+   The applicant stores its application with the ephemeral private key
+   before sending it, marked as not yet confirmed: an unconfirmed
+   application is never polled and reads as not applied, and the channel
+   screen offers to apply. `ok = true` confirms it; `ok = false` removes
+   it, and the applicant is told it was not confirmed. With no answer or an
+   unreadable one it stays unconfirmed and the applicant is told the same.
+   From the channel screen, an application already confirmed and still
+   pending is not sent again; through an approval link (Rejoining with a
+   renewed link, below) a new one always is, replacing it. Applying again
+   under the same name while the application is unconfirmed sends the
+   identical application (same hour and ephemeral key), which a publisher from this version
+   acknowledges if it stored the first copy and stores otherwise. Every
+   other new application gets a new key and an hour at least one hour after
+   the latest hour this device has sent for the channel, which it remembers
+   through refusals and forgotten applications, so a late copy of an
+   earlier application is older and changes nothing. Leaving the channel
+   removes that hour with everything else kept for the channel, so an
+   application made right after leaving and joining again can be ignored
+   by the owner until the hour of the last one has passed. A refused copy
+   never removes an application another attempt has confirmed. Success is
+   reported only when the application is still held confirmed (or already
+   decided) afterwards, and an application that was not answered, was
+   refused or could not reach the owner is told apart from one that could
+   not be prepared on this device. The ephemeral private key is kept until the application is
+   approved, refused, replaced or the channel is left.
 2. **Owner approves** (`approveApplication`, publisher-only): the publisher
    calls `crypto.hybridEncapsulate(applicantEphemeralPubKey)`, which
    encapsulates only to the ML-KEM-768 half of the key (the X25519 half is
@@ -1261,16 +1552,224 @@ the owner updates):
    the publisher holds no application for that key (it was lost, or the
    channel was set up again); it is sent only when the poll carries
    `v >= PROTOCOL_VERSION_POST_CHANGES` (4), and older applicants get
-   `"DENIED"` as before. The applicant then forgets its application, so it
+   `"DENIED"` as before. From 3.0.18 the publisher answers `"APPROVED"`,
+   always with the `kemCt` and `envelope` it stored when it approved, only
+   for an approval made under the capability the channel uses now or for
+   one made before 3.0.18 that has both stored (they wrap the capability
+   it was approved under, never a later one); for any other approval, one
+   a renewal revoked included, it answers as for an application it does
+   not hold. The applicant then forgets its application, so it
    reads as not applied and can apply again. A publisher that cannot read
    its records answers `"PENDING"`, never `"DENIED"`. On `"APPROVED"` the applicant
    decapsulates `kemCt` with its ephemeral key pair
    (`crypto.hybridDecapsulate(ownEphKeyPair, kemCt)`), which yields the same
    ML-KEM-768 shared secret the publisher wrapped with, derives the same wrap
-   key, unwraps the capability and stores it. An envelope that does not open
-   leaves the application PENDING and stores nothing. Applicants on releases
+   key and unwraps the capability. An applicant that holds no capability,
+   or the same one, stores it. From 3.0.18 an applicant that holds another
+   capability keeps it and everything it holds: it first pulls, from its
+   chain tip, the onion the check went to with the new capability, and
+   takes the capability, the content key and the manifest only from a
+   reply whose manifest verifies under the channel's key with that
+   capability, is newer than the one it holds and whose content key opens
+   to the hash that manifest signs (keeping the earlier key, as below),
+   and only then marks its application approved. While that onion cannot
+   be reached, or answers with nothing (which is also what an owner's
+   device sends while it sheds load), its application stays waiting and
+   the next check tries again; when it answers with anything else that
+   brings no such manifest, the approval cannot be verified against the
+   channel as it is now, so the applicant forgets the application and can
+   apply again. Empty answers are borne for a day only: the applicant
+   keeps the time of the first one in its application record, in the same
+   write (never sent), so a restart neither resets nor extends it, and once
+   an empty answer comes at least 24 hours after that time with no
+   verified answer or refusal in between, it forgets the application as
+   on any other answer (an owner that kept answering `"APPROVED"` for a
+   capability it has since replaced would otherwise be asked again on
+   every check). A clock set back before that time starts the run again
+   once; after that the run keeps its start. The run ends when a verified
+   answer or a refusal replaces or removes the application record, or when
+   a candidate's confirmed onion answers with something other than an empty
+   reply; a non-empty answer that leaves the record unchanged does not end
+   it. A new application, or a renamed one with a new ephemeral key,
+   starts without one. A ciphertext or
+   envelope that
+   does not open, or a stored ephemeral key that cannot be read or is
+   missing while the applicant has no capability, stores nothing and makes
+   the applicant forget the
+   application, so it reads as not applied and can apply again. Applicants on releases
    up to 3.0.14 used a derivation that never matched the publisher's key, so
    on those releases an approved application stays PENDING.
+
+An application approved again that brings a capability other than the one
+the member holds (it applied again after a renewed link, below) also keeps
+the content key the member held as an earlier key, so the next pull, which
+brings the new key, leaves the posts it holds readable.
+
+### Rejoining with a renewed link (from 3.0.18)
+
+Opening an invite link of a channel the device already holds never
+contacts the link's address by itself. Once the device does contact it, it
+keeps contacting it exactly as a device that joined with that link would:
+the same requests, on the same occasions and the same schedule, until the
+same end. Nothing new goes on the wire and the owner's device does nothing
+different. Up to 3.0.17 such a link was ignored, so a member cut off by a
+renewed link had to leave, losing everything it held, and join again.
+Development builds of 3.0.18 asked the link's address at once, later sent
+it a single request and then nothing more, or kept a link's onion in the
+application record; none of them was released.
+
+1. **Answered without asking anyone.** When the device is the channel's
+   owner, any link with the channel's id is treated as one the device
+   already holds, whatever key, onion or capability it carries: nothing
+   is sent, nothing is kept from the link and nothing changes. The join
+   dialog says the device is already subscribed, as up to 3.0.17, and a
+   link opened from a chat or another app opens the channel (up to 3.0.17
+   an approval link of the owner's own channel showed the apply form,
+   which the owner's device then refused). When the link names a publisher
+   Ed25519 key other than the one the device holds (or an ML-DSA-65 key
+   other than the held one), or when it carries no v3 onion, nothing is
+   sent, nothing changes and the app says the link did not bring back
+   access.
+2. **Check the access held (`rejoinChannel`).** Only once the user chooses
+   to join from the link, and only when the device has taken a manifest or
+   holds a capability, it pulls as usual (`refreshChannel`, from its chain
+   tip) from the onion it holds, keeping what that pull brings; that onion
+   is the one its newest manifest names, or a fallback such a manifest
+   named, or, without a manifest, the onion the device already pulls on its
+   own schedule. If the pull succeeds the access works and the link
+   changes nothing (the app opens the channel or says the member is already
+   subscribed). For an approval link, an applicant whose application is
+   still pending is told nothing new and nothing is sent. When the link
+   names the onion the device already uses and carries no other
+   capability (an approval link carries none), the link brings nothing
+   new: when that onion could not be reached the app says to try again
+   later, and when it refused, for a link that is not an approval link,
+   the app says the link did not bring back access. When the pull brings
+   a tombstone that verifies (section 8), the channel is removed as by any
+   pull and the app says the owner deleted it. Otherwise the
+   app offers to try the link or, for an approval link (`p=1`, no
+   capability), to apply again; when the device holds a capability and
+   its onion could not be reached, the offer says so. Applying again
+   changes nothing the device holds until a verified reply replaces it.
+   Nothing is sent to the link's address before the user accepts.
+3. **Try the link (`rejoinChannelThroughLink`, an open or public link).**
+   If the device took a manifest, it first sends an ordinary pull (section
+   1) from its chain tip, proving the link's capability (or the one it
+   holds when the link carries none), to the onion that manifest names; if
+   that onion answers, the link's address is never contacted and the reply
+   is taken as below (a tombstone that verifies removes the channel, and
+   the app says the owner deleted it). Otherwise the device keeps the
+   link's address as a candidate of the channel (`ChannelLinkCandidates`,
+   `zerion-channels-link-candidates`, at most 4 per channel, with the
+   link's capability or none; while 4 are kept a further link is neither
+   kept nor contacted, and the app says so), returns before sending it
+   anything, and
+   from then on contacts it as a device that joined with that link
+   contacts the address of its link: the same pull (`sinceSeqNum = -1`, no
+   reaction or comment cursors, a proof only of the link's own
+   capability, none for a public link), first through the same first pull
+   a new channel gets once its join returns (`bootstrapChannel`, run while
+   the channel's screen opens and pulls, so the two may overlap exactly as
+   a new channel's do), again when the channel's screen opens (which, as
+   for a new channel, also restarts the backoff) and on its refresh ticks
+   while the screen stays open, none of which waits for a pull still
+   running, as for a new channel. Each tick skips the candidate once its
+   own schedule rests, as a new channel's screen skips a channel that
+   rests, whether or not the channel the device holds rests, and pulls
+   the channel the device holds only when that one does not rest. The
+   candidate is also contacted on its own pull schedule (due at once, then 5 s doubling on each
+   failure up to 15 minutes, each wait drawn between half and one and a
+   half of it), which, as a new channel's, skips the address while a pull
+   of it is running and rests once 90 days have passed since the address
+   last answered or, when it never answered, since its first failure. As
+   for a new channel, a tombstone that does not verify (including one a
+   device cannot check because it holds no ML-DSA-65 key of the channel)
+   counts as an answer for the backoff and those 90 days only, and is
+   never applied. The held capability, the member key and anything else the
+   device holds are never sent to the link's address. The candidate is
+   never the channel's onion. It ends
+   only when a reply verifies (below), when the channel is left, or, for
+   its schedule, after those 90 days; a device that joined with the link
+   would keep asking just as long. A reply verifies when its manifest
+   verifies under the channel's key with the candidate's capability (a
+   private manifest's signature covers the capability) and, in a private
+   channel, its `contentKeyEnvelope` opens under that capability to a key
+   whose hash is the manifest's `contentKeyHash`. If that manifest is newer
+   than the newest the device took, the device stores it, the capability
+   and the key, keeps the content key it held as an earlier key (section
+   4, Storage) and the onion it used until then among its remembered
+   onions (section 9), and reads posts it held but could not read; its
+   current onion is the one the manifest names. Either way the candidate
+   ends there, as a new member's contact with its link's address ends at
+   its first verified reply; a reply that verifies but is not newer
+   changes nothing else. A reply from the onion the device's manifest
+   names also gives its posts, reactions and comments; one from the link's
+   address gives only its manifest and key, and the next pull fetches the
+   posts from the chain tip. Posts, reactions, comments and settings the
+   device holds stay. Any other reply, an empty one included, changes
+   nothing, so a link with a wrong capability never replaces the
+   capability held. The app says the access was updated when the onion
+   the device's manifest names answered, and otherwise that the link will
+   keep being tried in the background.
+4. **Apply again through an approval link (`applyToJoin` with the link).**
+   The application goes to the onion the device holds (the one its
+   manifest names, or for an applicant without a manifest the onion the
+   owner's device confirms), as any application does, and the checks for
+   its approval go there as usual. Only when that onion cannot be reached
+   (or, without a manifest, gives no readable confirmation) does the device
+   keep the link's address as a candidate without a capability and do what
+   a new applicant does: ask it to confirm itself
+   (`WIRE_TYPE_CONFIRM_ONION`), take the confirmation as a new applicant
+   takes it (moving the candidate to the onion it names, checked as in
+   "Where a member's requests go") and send the application there. From
+   then on the candidate is contacted as a new applicant's channel is: on
+   the occasions and schedule of step 3, at most every 30 seconds a
+   confirmation and a check for approval while that application waits,
+   then the pull without a capability; once approved, the pull with the
+   approved capability, whose verified reply ends the candidate as in step
+   3 and only then replaces what the device holds. Only a reply that
+   brings a newer manifest under the capability that this application's
+   own approval wrapped (opened with its ephemeral key) marks the
+   application approved; a verified reply that is not newer, or one under
+   any other capability, ends the candidate and leaves the application as
+   it is, and a reply that is not empty and does not verify under the
+   approved capability makes the device forget the application, so it can
+   apply again; an empty reply counts as a failed pull and joins the same
+   run of empty answers as the check above (step 4 of the approval
+   handshake), so after 24 hours of them it forgets the application in
+   the same way. When
+   the owner's device answers a check that it approved the key while this
+   device holds no waiting application (an approval already taken), the
+   candidate pulls with the capability the device holds, which therefore
+   goes only to the onion the owner's device confirmed for that check,
+   never to the link's address. If the confirmation
+   fails, the candidate stays without an application, as a new applicant
+   whose application failed keeps its channel and goes on pulling. The
+   application record keeps no onion. The application and the checks for
+   its approval carry the member key and go only to an onion the owner's
+   device confirmed with its signature (a relay or impostor at the link's
+   address that answers the confirmation for another onion makes the
+   device dial that onion directly), so the link's address sees only the
+   confirmation question, exactly as from a new applicant. After a renewal
+   the application waits for the owner's approval like a new applicant's;
+   only the owner's device, which receives the member key, can tell it
+   comes from a member approved before.
+
+Limits: an owner up to 3.0.17 answers no confirmation, so applying again
+through an approval link of such an owner fails when the onion the device
+holds is dark. Renewing the link revokes every approval, so a member
+approved before it needs a new approval from the owner (an approval made
+before 3.0.18 counts until the first renewal from 3.0.18 on, and is never
+renewed at once); the owner's device answers a check for a revoked
+approval as for one it does not hold, so
+the member forgets it, and applying again through the new link always
+sends a new application. Posts
+made under a content key the member never held stay unreadable. Once a
+candidate's reply verified and the device took that manifest, the device
+pulls the onion the manifest names as any member does, from its chain tip;
+when that onion is the link's own address, which only the owner's device
+can then answer, the owner's device can tell from the chain tip that the
+device already held posts.
 
 ### Editor delegations - `WIRE_TYPE_DELEGATION`
 
@@ -1334,6 +1833,9 @@ replayed edit is `STALE` once the post has a newer version, a replayed
 deletion changes nothing, and a replayed setting change is refused once the
 hour after the request's hour has passed. A publisher up to 3.0.17 does not know the
 type and answers with an empty reply, which the editor reports as a refusal.
+From 3.0.18 a post or change request the owner's onion does not answer at
+all waits in the member outbox (section 5) and is built and signed again
+when it is sent.
 
 Each `ChannelDelegationCert`
 (`certToWire`) has keys: `type`, `channelId`, `delegateeEd25519`,
@@ -1388,7 +1890,23 @@ zerion://channel/<base32 channelId>/<base32 publisherEd25519>
         [&p=1]                          (requires approval)
 ```
 Scheme `zerion`, host `channel`, params `k` / `o` / `p`
-(`INVITE_LINK_*_PARAM`). An `m=` param (`INVITE_LINK_MLDSA_PARAM`) is
+(`INVITE_LINK_*_PARAM`). Links are always written with the lowercase
+scheme. Readers match the scheme without regard to the case of the
+letters A to Z (`Zerion://`, `ZERION://` and every other mix). On
+Android any other character in the scheme, including look-alike and
+invisible characters, makes the link invalid; iOS first removes
+whitespace, soft hyphens and some dash characters from the whole link.
+On Android a channel link is rewritten to `zerion://` by
+`ZerionLinks.normalizeScheme` before it is parsed or routed, and a
+contact link is matched by `HandshakeLinkConstants.LINK_REGEX` and kept
+with the lowercase scheme. Normalizing the scheme leaves everything
+after `://` untouched, and the rest of the link is parsed exactly as
+before: on Android the host must still be `channel` in lowercase (iOS
+also accepts any case of the host). The Android system matches link
+schemes case-sensitively, so the Android link entry registers all 64
+case variants of `zerion`.
+
+An `m=` param (`INVITE_LINK_MLDSA_PARAM`) is
 reserved but not currently emitted; `parseInviteLink` leaves the publisher
 ML-DSA key null and lets the subscriber learn it from the first signed
 manifest. `INVITE_LINK_MAX_LENGTH = 4096`. A link with no `k` and no `p` is
@@ -1459,8 +1977,20 @@ are removed and their keys and the tombstone deleted. Keys
 `tombstoneSignedInput = channelId || int64 ts`, label
 `SIGNING_LABEL_CHANNEL_TOMBSTONE`. A subscriber that pulls and sees a
 tombstone verifies it against the pinned publisher key
-(`applyTombstoneIfValid`) and, if valid, removes the channel locally.
-Subscribers that do not connect within the grace period keep their copy.
+(`applyTombstoneIfValid`) and, if valid, removes the channel locally. It
+keeps the channel's name and the day it was removed, and nothing else (not
+the channel id), for the notice in the channel list that the owner deleted
+the channel (`zerion-channels-deleted-notices`, at most 32 names); the list
+shows the notice until the user dismisses it or 30 calendar days (UTC)
+have begun since that day, whichever comes first, and the name is deleted
+then (an expired name is deleted when the list is next read or by the daily
+purge, whichever runs first). Subscribers that do not connect within the
+grace period keep their copy. Up to 3.0.17 they went on pulling the
+removed onions every 30 to 90 s indefinitely; from 3.0.18 their failed
+pulls back off to about one every 15 minutes and stop 90 days after the
+last successful pull the device recorded (or after its first attempt, when
+it recorded none), after which only opening the channel's feed tries again
+(see the pull schedule above).
 
 On the owner's device the tombstone, the onion record that now carries the
 key of every onion the channel had (the current one included, whether or
@@ -1473,14 +2003,16 @@ Removing a channel locally (leaving, a verified tombstone, or the owner's
 delete) deletes the channel's state and keys, posts and their record,
 attachment blobs, reactions, comments, their revision history and cursors,
 announced subscribers, bans and trusted marks, applications, deleted-post
-marks, editor post counts, remembered onions, the discussion setting and the
-unread count. The removal is marked as pending (`zerion-channels-pending-
-removal`) before its first step and the mark is cleared after its last, so
-a removal cut short by the process being killed is finished at the next
-start instead of leaving rows nothing would ever remove. The rows are
-deleted, not blanked, so no row naming the channel is left; on the owner's
-device only the tombstone and the onion record remain until the grace period
-ends.
+marks, editor post counts, remembered onions, the discussion setting, the
+pull status and the unread count. The removal is marked as pending
+(`zerion-channels-pending-removal`) before its first step and the mark is
+cleared after its last, so a removal cut short by the process being killed
+is finished at the next start instead of leaving rows nothing would ever
+remove. The rows are deleted, not blanked, so no row naming the channel is
+left; on the owner's device only the tombstone and the onion record remain
+until the grace period ends, and on a subscriber that applied a tombstone
+only the channel's name and the day of its removal remain, without the id,
+until the notice that the owner deleted it is dismissed or 30 days pass.
 
 ## 9. Onion lifecycle
 
@@ -1507,7 +2039,14 @@ next rotated and the retired onions that stay published until a given time.
   as it is back (the publisher retries every 3 minutes and when Tor becomes
   active). Subscribers holding the new capability learn the new address
   from the owner's next invite link or from a manifest; those without it
-  cannot reach the channel any more.
+  cannot reach the channel any more until they use the new link, which
+  from 3.0.18 a member can take without leaving the channel (section 6,
+  Rejoining with a renewed link). Renewing also revokes every approval of
+  an approval channel, those made before 3.0.18 included: the owner's
+  device no longer answers, lists or counts such an approval as approved,
+  and a member approved before it
+  that applies with the new link waits for a new approval, as a new
+  applicant does (section 6, Apply).
 - **Failed periodic rotation.** When the fresh onion cannot be published,
   the current onion stays and the periodic rotation is tried again at the
   next check.

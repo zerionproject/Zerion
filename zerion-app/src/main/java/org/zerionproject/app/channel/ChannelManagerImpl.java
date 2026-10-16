@@ -27,9 +27,12 @@ import org.zerionproject.app.api.channel.ApplicationStatus;
 import org.zerionproject.app.api.channel.ChannelApplication;
 import org.zerionproject.app.api.channel.ChannelComment;
 import org.zerionproject.app.api.channel.ChannelPost;
+import org.zerionproject.app.api.channel.ChannelQueuedItem;
 import org.zerionproject.app.api.channel.ChannelReaction;
+import org.zerionproject.app.api.channel.ChannelRejoinResult;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.zerionproject.app.api.channel.ChannelSubscriber;
+import org.zerionproject.app.api.channel.ChannelSyncStatus;
 import org.zerionproject.app.api.channel.ChannelTransport;
 import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
@@ -113,13 +116,18 @@ class ChannelManagerImpl
 	private static final long PULL_BACKOFF_STEP_MS = 5_000L;
 	private static final long MIN_REFRESH_TICK_MS = 1_000L;
 	private static final long FIRST_PULL_SPREAD_MS = 3L * PULL_MIN_INTERVAL_MS;
+	private static final long PULL_FAILURE_MAX_INTERVAL_MS = 15L * 60L * 1000L;
+	private static final long DORMANT_AT_UNKNOWN = Long.MIN_VALUE;
 
 	private static final class PollState {
-		long nextDueAt;
-		long intervalMs = PULL_MIN_INTERVAL_MS;
+		volatile long nextDueAt;
+		volatile long intervalMs = PULL_MIN_INTERVAL_MS;
 		volatile long lastActivityAt;
 		volatile long failingSince;
 		volatile int nextFallback;
+		int failures;
+		boolean resting;
+		volatile long dormantAt = DORMANT_AT_UNKNOWN;
 	}
 
 	private final java.util.Map<String, PollState> polls =
@@ -353,22 +361,191 @@ class ChannelManagerImpl
 				nextWake = Math.min(nextWake, poll.nextDueAt);
 				continue;
 			}
+			if (restIfDormant(channelId, poll, now)) {
+				nextWake = Math.min(nextWake, poll.nextDueAt);
+				continue;
+			}
 			pullDue(channelId, pullKey);
-			boolean active = clock.currentTimeMillis() - poll.lastActivityAt
-					< PULL_ACTIVE_WINDOW_MS;
-			poll.intervalMs = active ? PULL_MIN_INTERVAL_MS
-					: Math.min(PULL_MAX_INTERVAL_MS,
-					poll.intervalMs + PULL_BACKOFF_STEP_MS);
-			poll.nextDueAt = now + (long) (poll.intervalMs
-					* (0.5 + random.nextDouble()));
-			nextWake = Math.min(nextWake, poll.nextDueAt);
+			nextWake = Math.min(nextWake, planNextPull(poll, now));
 		}
-		return nextWake;
+		return scheduleLinkCandidates(now, nextWake);
+	}
+
+	private long planNextPull(PollState poll, long now) {
+		synchronized (poll) {
+			if (poll.failures == 0) {
+				boolean active = clock.currentTimeMillis()
+						- poll.lastActivityAt < PULL_ACTIVE_WINDOW_MS;
+				poll.intervalMs = active ? PULL_MIN_INTERVAL_MS
+						: Math.min(PULL_MAX_INTERVAL_MS,
+						poll.intervalMs + PULL_BACKOFF_STEP_MS);
+				poll.nextDueAt = now + jittered(poll.intervalMs);
+			} else if (poll.nextDueAt <= now) {
+				poll.nextDueAt = now + jittered(poll.intervalMs);
+			}
+			return poll.nextDueAt;
+		}
+	}
+
+	private long jittered(long intervalMs) {
+		return (long) (intervalMs * (0.5 + random.nextDouble()));
+	}
+
+	private boolean restIfDormant(byte[] channelId, PollState poll,
+			long now) {
+		long at = poll.dormantAt;
+		if (at == DORMANT_AT_UNKNOWN) {
+			try {
+				at = syncStatus().dormantAt(channelId);
+			} catch (DbException e) {
+				return false;
+			}
+			synchronized (poll) {
+				if (poll.dormantAt == DORMANT_AT_UNKNOWN) poll.dormantAt = at;
+				at = poll.dormantAt;
+			}
+		}
+		if (now < at) return false;
+		synchronized (poll) {
+			poll.resting = true;
+			poll.nextDueAt = now + PULL_FAILURE_MAX_INTERVAL_MS;
+		}
+		return true;
+	}
+
+	private void notePullOutcome(String pullKey, boolean reached,
+			boolean failed) {
+		long now = clock.currentTimeMillis();
+		if (failed) {
+			PollState poll = polls.computeIfAbsent(pullKey,
+					k -> new PollState());
+			synchronized (poll) {
+				poll.failures++;
+				poll.intervalMs = Math.min(PULL_FAILURE_MAX_INTERVAL_MS,
+						Math.max(PULL_MIN_INTERVAL_MS, poll.intervalMs) * 2L);
+				poll.nextDueAt = Math.max(poll.nextDueAt,
+						now + jittered(poll.intervalMs));
+			}
+		} else if (reached) {
+			PollState poll = polls.get(pullKey);
+			if (poll == null) return;
+			synchronized (poll) {
+				if (poll.failures == 0 && !poll.resting) return;
+				poll.failures = 0;
+				poll.resting = false;
+				poll.intervalMs = PULL_MIN_INTERVAL_MS;
+				poll.nextDueAt = Math.min(poll.nextDueAt,
+						now + jittered(poll.intervalMs));
+			}
+		}
+	}
+
+	private void resetPullBackoff(byte[] channelId) {
+		PollState poll = polls.get(ChannelStore.hex(channelId));
+		if (poll == null) return;
+		synchronized (poll) {
+			if (poll.failures == 0) return;
+			poll.failures = 0;
+			poll.intervalMs = PULL_MIN_INTERVAL_MS;
+		}
+	}
+
+	private void resetAllPullBackoffs() {
+		long now = clock.currentTimeMillis();
+		for (PollState poll : polls.values()) {
+			synchronized (poll) {
+				if (poll.failures == 0) continue;
+				poll.failures = 0;
+				poll.intervalMs = PULL_MIN_INTERVAL_MS;
+				poll.nextDueAt = Math.min(poll.nextDueAt, now + (long) (
+						random.nextDouble() * FIRST_PULL_SPREAD_MS));
+			}
+		}
+	}
+
+	private void noteSyncOutcome(byte[] channelId, boolean reached,
+			boolean failed) {
+		try {
+			underLock(channelId, () -> {
+				ChannelState s = store.getChannel(channelId);
+				if (s == null || s.weArePublisher()) return;
+				String key = ChannelStore.hex(channelId);
+				notePullOutcome(key, reached, failed);
+				long now = clock.currentTimeMillis();
+				ChannelSyncStatusStore.Record r = null;
+				if (reached) r = syncStatus().noteSuccess(channelId, now);
+				if (failed) r = syncStatus().noteFailure(channelId, now);
+				if (r != null) keepDormantAt(key, r.dormantAt());
+			});
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	private void keepDormantAt(String pullKey, long at) {
+		PollState poll = polls.get(pullKey);
+		if (poll == null) return;
+		synchronized (poll) {
+			poll.dormantAt = at;
+		}
+	}
+
+	private ChannelSyncStatusStore syncStatus() {
+		ChannelSyncStatusStore s = syncStatusInstance;
+		if (s != null) return s;
+		synchronized (syncStatusLock) {
+			if (syncStatusInstance == null) {
+				syncStatusInstance =
+						new ChannelSyncStatusStore(store.settings());
+			}
+			return syncStatusInstance;
+		}
+	}
+
+	private final Object syncStatusLock = new Object();
+	private volatile ChannelSyncStatusStore syncStatusInstance;
+
+	@Override
+	public ChannelSyncStatus getSyncStatus(byte[] channelId)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null || s.weArePublisher()) return ChannelSyncStatus.UNKNOWN;
+		return syncStatus().status(channelId, clock.currentTimeMillis());
+	}
+
+	@Override
+	public List<String> getOwnerDeletedChannelNames() throws DbException {
+		return syncStatus().deletedNotices(clock.currentTimeMillis());
+	}
+
+	@Override
+	public void dismissOwnerDeletedChannelName(String name)
+			throws DbException {
+		syncStatus().dismissDeletedNotice(name, clock.currentTimeMillis());
+	}
+
+	private void noteOwnerDeleted(ChannelState s) {
+		try {
+			syncStatus().addDeletedNotice(s.getName(),
+					clock.currentTimeMillis());
+		} catch (DbException ignored) {
+		}
+	}
+
+	private void purgeOldDeletedNotices() {
+		try {
+			syncStatus().purgeDeletedNotices(clock.currentTimeMillis());
+		} catch (DbException | RuntimeException ignored) {
+		}
 	}
 
 	long pollIntervalMs(byte[] channelId) {
 		PollState p = polls.get(ChannelStore.hex(channelId));
 		return p == null ? PULL_MIN_INTERVAL_MS : p.intervalMs;
+	}
+
+	long nextPullDueMs(byte[] channelId) {
+		PollState p = polls.get(ChannelStore.hex(channelId));
+		return p == null ? -1L : p.nextDueAt;
 	}
 
 	private void pullDue(byte[] channelId, String pullKey) {
@@ -377,6 +554,7 @@ class ChannelManagerImpl
 			ioExecutor.execute(() -> {
 				try {
 					pullAndApply(channelId, false);
+					flushOutboxSafely(channelId);
 				} catch (DbException ignored) {
 				} finally {
 					inFlightPulls.remove(pullKey);
@@ -631,7 +809,7 @@ class ChannelManagerImpl
 					r.nextRotationMs = now + rotationInterval();
 					store.onions().put(channelId, r);
 				} else if (now >= r.nextRotationMs) {
-					rotateOnionLocked(channelId, false);
+					rotateOnionLocked(channelId);
 				}
 			} finally {
 				lock.unlock();
@@ -686,26 +864,10 @@ class ChannelManagerImpl
 		}
 	}
 
-	private void rotateOnionLocked(byte[] channelId, boolean revocation)
-			throws DbException {
+	private void rotateOnionLocked(byte[] channelId) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null || !s.weArePublisher()) return;
 		String key = ChannelStore.hex(channelId);
-		if (revocation) {
-			ChannelOnionStore.Record r = store.onions().get(channelId);
-			for (ChannelOnionStore.Retiring e : r.retiring) {
-				closeQuietly(retiringServers.remove(e.onion));
-			}
-			r.retiring.clear();
-			r.nextRotationMs = clock.currentTimeMillis() + rotationInterval();
-			ChannelTransport.ChannelServer current = boundServers.remove(key);
-			store.putChannel(withoutOnion(s), onionRecordWrite(channelId, r));
-			closeQuietly(current);
-			bindPublisherServer(channelId);
-			fireEvent(channelId,
-					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
-			return;
-		}
 		ChannelTransport.ChannelServer fresh;
 		try {
 			fresh = transport.bindServer(channelId, null,
@@ -744,6 +906,26 @@ class ChannelManagerImpl
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
+	private void revokeOnionsLocked(byte[] channelId, ChannelState next,
+			java.util.Map<String, org.zerionproject.core.api.settings.Settings>
+					alsoWrite) throws DbException {
+		ChannelOnionStore.Record r = store.onions().get(channelId);
+		List<String> retired = new ArrayList<>();
+		for (ChannelOnionStore.Retiring e : r.retiring) retired.add(e.onion);
+		r.retiring.clear();
+		r.nextRotationMs = clock.currentTimeMillis() + rotationInterval();
+		java.util.Map<String, org.zerionproject.core.api.settings.Settings>
+				writes = new java.util.LinkedHashMap<>(alsoWrite);
+		writes.putAll(onionRecordWrite(channelId, r));
+		store.putChannel(withoutOnion(next), writes);
+		for (String onion : retired) {
+			closeQuietly(retiringServers.remove(onion));
+		}
+		closeQuietly(boundServers.remove(ChannelStore.hex(channelId)));
+		bindPublisherServer(channelId);
+		fireEvent(channelId, ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+	}
+
 	private java.util.Map<String, org.zerionproject.core.api.settings.Settings>
 			onionRecordWrite(byte[] channelId, ChannelOnionStore.Record r)
 			throws DbException {
@@ -758,6 +940,7 @@ class ChannelManagerImpl
 			purgeExpiredPosts();
 		} catch (DbException ignored) {
 		}
+		purgeOldDeletedNotices();
 	}
 
 	@Override
@@ -769,6 +952,7 @@ class ChannelManagerImpl
 			} else if (e instanceof TransportActiveEvent) {
 				TransportActiveEvent t = (TransportActiveEvent) e;
 				if (TorConstants.ID.equals(t.getTransportId())) {
+					resetAllPullBackoffs();
 					ioExecutor.execute(this::ensurePublisherServersBound);
 				}
 			}
@@ -1545,7 +1729,11 @@ class ChannelManagerImpl
 	@Override
 	public void bootstrapChannel(byte[] channelId) throws DbException {
 		restartRefreshIfStalled();
+		resetCandidateBackoffs(channelId);
+		pullLinkCandidatesSafely(channelId, false);
+		resetPullBackoff(channelId);
 		pullAndApply(channelId, true);
+		flushOutboxSafely(channelId);
 	}
 
 	@Override
@@ -1559,7 +1747,26 @@ class ChannelManagerImpl
 	@Override
 	public void refreshChannel(byte[] channelId) throws DbException {
 		restartRefreshIfStalled();
+		pullLinkCandidatesSafely(channelId, false);
 		pullAndApply(channelId, false);
+		flushOutboxSafely(channelId);
+	}
+
+	@Override
+	public boolean refreshChannelTick(byte[] channelId) throws DbException {
+		restartRefreshIfStalled();
+		pullLinkCandidatesSafely(channelId, true);
+		if (getSyncStatus(channelId).isDormant()) return false;
+		pullAndApply(channelId, false);
+		flushOutboxSafely(channelId);
+		return true;
+	}
+
+	@Override
+	public void refreshChannelOnOpen(byte[] channelId) throws DbException {
+		resetCandidateBackoffs(channelId);
+		resetPullBackoff(channelId);
+		refreshChannel(channelId);
 	}
 
 	static java.util.List<ChannelPost> nextBatch(
@@ -1575,11 +1782,21 @@ class ChannelManagerImpl
 
 	private static final int MAX_PULL_ROUNDS = 64;
 
+	private static final long EMPTY_VERIFY_RUN_MS = 24L * HOUR_MS;
+
 	private void pullAndApply(byte[] channelId, boolean isBootstrap)
 			throws DbException {
-		for (int round = 0; round < MAX_PULL_ROUNDS; round++) {
-			int accepted = pullOnce(channelId, isBootstrap && round == 0);
-			if (accepted < ChannelConstants.PULL_BATCH_MAX_POSTS) return;
+		boolean reached = false;
+		boolean failed = true;
+		try {
+			for (int round = 0; round < MAX_PULL_ROUNDS; round++) {
+				int accepted = pullOnce(channelId, isBootstrap && round == 0);
+				reached = true;
+				if (accepted < ChannelConstants.PULL_BATCH_MAX_POSTS) break;
+			}
+			failed = false;
+		} finally {
+			noteSyncOutcome(channelId, reached, failed);
 		}
 	}
 
@@ -1644,8 +1861,8 @@ class ChannelManagerImpl
 					r.mergedState.getContentKey())) {
 				openNewlyReadable(r.mergedState);
 			}
-			manifestOnly = !signedOnion
-					&& !onion.equals(r.mergedState.getCurrentOnion());
+			manifestOnly = !signedOnion && !bareOnion(onion).equals(
+					bareOnion(r.manifestOnion));
 			caughtUp = r.complete;
 			accepted = manifestOnly ? 0 : r.acceptedPosts.size();
 			if (!manifestOnly) takeReply(channelId, r);
@@ -2045,12 +2262,17 @@ class ChannelManagerImpl
 		}
 		byte[] signedInput = codec.tombstoneSignedInput(
 				s.getChannelId(), tomb.timestampHourMs);
-		HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
-				s.getPublisherEd25519PubKey(),
-				s.getPublisherMlDsaPubKey());
+		HybridSignaturePublicKey pub;
+		try {
+			pub = new HybridSignaturePublicKey(s.getPublisherEd25519PubKey(),
+					s.getPublisherMlDsaPubKey());
+		} catch (RuntimeException e) {
+			return false;
+		}
 		if (!signatures.verifyTombstone(tomb.hybridSig, signedInput, pub)) {
 			return false;
 		}
+		noteOwnerDeleted(s);
 		removeChannelLocally(s.getChannelId());
 		return true;
 	}
@@ -2249,6 +2471,7 @@ class ChannelManagerImpl
 		legacyPullAt.remove(key);
 		polls.remove(key);
 		onionFailures.remove(key);
+		deniedMarks.remove(key);
 		if (!keepTombstoneOnions) {
 			closeQuietly(boundServers.remove(key));
 			for (ChannelOnionStore.Retiring e
@@ -2266,10 +2489,13 @@ class ChannelManagerImpl
 		commentStore.removeAll(channelId);
 		applicationStore.removeAll(channelId);
 		store.pins().removeAll(channelId);
-		myApplicationsStore.remove(channelId);
+		myApplicationsStore.removeAll(channelId);
+		forgetLinkCandidates(channelId);
 		postTombstoneStore.removeAll(channelId);
 		selfAnnounceStore.remove(channelId);
 		discussionStore.remove(channelId);
+		syncStatus().remove(channelId);
+		outbox().removeAll(channelId);
 		store.settings().deleteNamespaces(java.util.Collections.singletonList(
 				NS_EDITOR_QUOTA_PREFIX + key));
 		store.clearPendingRemoval(channelId);
@@ -2379,6 +2605,689 @@ class ChannelManagerImpl
 	}
 
 	@Override
+	public ChannelRejoinResult rejoinChannel(ChannelInviteLink link)
+			throws DbException {
+		byte[] channelId = link.getChannelId();
+		ChannelState held = store.getChannel(channelId);
+		if (held == null) throw new DbException();
+		if (held.weArePublisher()) return ChannelRejoinResult.UNCHANGED;
+		if (!sameOwner(held, link) || linkOnion(link) == null) {
+			return ChannelRejoinResult.NOT_RESTORED;
+		}
+		boolean applies = appliesThrough(link);
+		byte[] capability = held.getJoinCapability();
+		if (applies && capability == null) {
+			ChannelMyApplicationsStore.MyApplication my =
+					myApplicationsStore.get(channelId);
+			if (my != null && my.status == ApplicationStatus.PENDING
+					&& my.confirmed) {
+				return ChannelRejoinResult.UNCHANGED;
+			}
+		}
+		if (held.getManifestSeq() >= 0L || capability != null) {
+			HeldAccess access = heldAccess(channelId);
+			if (access == HeldAccess.WORKS) {
+				return ChannelRejoinResult.UNCHANGED;
+			}
+			if (access == HeldAccess.GONE) {
+				return ChannelRejoinResult.DELETED;
+			}
+			if (bringsNothingNew(held, link) && access == HeldAccess.DARK) {
+				return ChannelRejoinResult.TRY_LATER;
+			}
+			if (bringsNothingNew(held, link) && !applies) {
+				return ChannelRejoinResult.NOT_RESTORED;
+			}
+			if (applies && capability != null
+					&& access == HeldAccess.DARK) {
+				return ChannelRejoinResult.APPLY_AGAIN_UNREACHABLE;
+			}
+		}
+		return applies ? ChannelRejoinResult.APPLY_AGAIN
+				: ChannelRejoinResult.CHECK_LINK;
+	}
+
+	@Override
+	public ChannelRejoinResult rejoinChannelThroughLink(
+			ChannelInviteLink link) throws DbException {
+		byte[] channelId = link.getChannelId();
+		ChannelState held = store.getChannel(channelId);
+		if (held == null) throw new DbException();
+		if (held.weArePublisher()) return ChannelRejoinResult.UNCHANGED;
+		String onion = linkOnion(link);
+		if (!sameOwner(held, link) || onion == null
+				|| appliesThrough(link)) {
+			return ChannelRejoinResult.NOT_RESTORED;
+		}
+		byte[] linkCapability = link.getJoinCapability();
+		String heldOnion = held.getCurrentOnion();
+		if (bringsNothingNew(held, link)) {
+			switch (heldAccess(channelId)) {
+				case WORKS:
+					return ChannelRejoinResult.UNCHANGED;
+				case GONE:
+					return ChannelRejoinResult.DELETED;
+				case DARK:
+					return ChannelRejoinResult.TRY_LATER;
+				default:
+					return ChannelRejoinResult.NOT_RESTORED;
+			}
+		}
+		if (held.getManifestSeq() >= 0L) {
+			byte[] capability = linkCapability != null
+					? linkCapability : held.getJoinCapability();
+			byte[] reply = null;
+			try {
+				reply = transport.requestFromOnion(heldOnion,
+						pullRequest(channelId, capability, sinceSeqOf(held),
+								true));
+			} catch (IOException ignored) {
+			}
+			if (reply != null && ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE
+					.equals(pullCodec().peekType(reply))) {
+				boolean[] gone = new boolean[1];
+				byte[] tombstone = reply;
+				underLock(channelId, () -> {
+					ChannelState cur = store.getChannel(channelId);
+					gone[0] = cur == null
+							|| applyTombstoneIfValid(cur, tombstone);
+				});
+				if (gone[0]) return ChannelRejoinResult.DELETED;
+			} else if (reply != null) {
+				return adoptManifest(held, capability, reply, heldOnion,
+						true);
+			}
+		}
+		ChannelLinkCandidates.Candidate c = linkCandidates().add(channelId,
+				random.nextLong(), onion, linkCapability, false);
+		return c == null ? ChannelRejoinResult.TOO_MANY_LINKS
+				: ChannelRejoinResult.TRYING;
+	}
+
+	private static boolean appliesThrough(ChannelInviteLink link) {
+		return link.getJoinCapability() == null && link.requiresApproval();
+	}
+
+	private static boolean bringsNothingNew(ChannelState held,
+			ChannelInviteLink link) {
+		String onion = linkOnion(link);
+		return onion != null
+				&& onion.equals(bareOnion(held.getCurrentOnion()))
+				&& (appliesThrough(link) || java.util.Arrays.equals(
+				link.getJoinCapability(), held.getJoinCapability()));
+	}
+
+	@Nullable
+	private static String linkOnion(ChannelInviteLink link) {
+		String given = link.getOnionAddress();
+		if (given == null) return null;
+		String onion = bareOnion(given);
+		return BARE_ONION_V3.matcher(onion).matches() ? onion : null;
+	}
+
+	private static boolean sameOwner(ChannelState held,
+			ChannelInviteLink link) {
+		if (held.weArePublisher() || !java.util.Arrays.equals(
+				held.getPublisherEd25519PubKey(),
+				link.getPublisherEd25519PubKey())) {
+			return false;
+		}
+		byte[] linkMlDsa = link.getPublisherMlDsaPubKey();
+		byte[] heldMlDsa = held.getPublisherMlDsaPubKey();
+		return linkMlDsa == null || linkMlDsa.length == 0
+				|| heldMlDsa == null || heldMlDsa.length == 0
+				|| java.util.Arrays.equals(linkMlDsa, heldMlDsa);
+	}
+
+	private enum HeldAccess { WORKS, DARK, REFUSED, GONE }
+
+	private HeldAccess heldAccess(byte[] channelId) throws DbException {
+		try {
+			refreshChannel(channelId);
+		} catch (DbException e) {
+			if (store.getChannel(channelId) == null) return HeldAccess.GONE;
+			return e.getCause() instanceof IOException ? HeldAccess.DARK
+					: HeldAccess.REFUSED;
+		}
+		return store.getChannel(channelId) == null ? HeldAccess.GONE
+				: HeldAccess.WORKS;
+	}
+
+	private byte[] pullRequest(byte[] channelId, @Nullable byte[] capability,
+			long sinceSeqNum, boolean asMember) throws DbException {
+		try {
+			return pullProtocol.buildRequest(channelId, sinceSeqNum,
+					capability,
+					capability == null ? null : hmacChallenge().freshNonce(),
+					asMember ? reactionStore.sync().cursor(channelId) : null,
+					asMember ? commentStore.sync().cursor(channelId) : null);
+		} catch (IOException e) {
+			throw new DbException(e);
+		}
+	}
+
+	private enum CandidateOutcome { ADOPTED, RESOLVED, REACHED, FAILED, GONE }
+
+	private volatile ChannelLinkCandidates linkCandidatesInstance;
+
+	private ChannelLinkCandidates linkCandidates() {
+		ChannelLinkCandidates c = linkCandidatesInstance;
+		if (c != null) return c;
+		synchronized (syncStatusLock) {
+			if (linkCandidatesInstance == null) {
+				linkCandidatesInstance = new ChannelLinkCandidates(
+						store.settings(), store.readerFactory(),
+						store.writerFactory());
+			}
+			return linkCandidatesInstance;
+		}
+	}
+
+	private static String candidateKey(String channelHex, long id) {
+		return channelHex + "#" + id;
+	}
+
+	private void forgetLinkCandidates(byte[] channelId) throws DbException {
+		String hex = ChannelStore.hex(channelId);
+		for (ChannelLinkCandidates.Candidate c
+				: linkCandidates().list(channelId)) {
+			forgetCandidatePoll(candidateKey(hex, c.id));
+		}
+		linkCandidates().removeAll(channelId);
+	}
+
+	private void forgetCandidatePoll(String key) {
+		polls.remove(key);
+		lastApprovalPollMs.remove(key);
+	}
+
+	private void resetCandidateBackoffs(byte[] channelId) {
+		try {
+			String hex = ChannelStore.hex(channelId);
+			for (ChannelLinkCandidates.Candidate c
+					: linkCandidates().list(channelId)) {
+				PollState poll = polls.get(candidateKey(hex, c.id));
+				if (poll == null) continue;
+				synchronized (poll) {
+					if (poll.failures == 0) continue;
+					poll.failures = 0;
+					poll.intervalMs = PULL_MIN_INTERVAL_MS;
+				}
+			}
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	private void pullLinkCandidatesSafely(byte[] channelId,
+			boolean unlessResting) {
+		long now = clock.currentTimeMillis();
+		try {
+			for (ChannelLinkCandidates.Candidate c
+					: linkCandidates().list(channelId)) {
+				if (unlessResting && now >= c.dormantAt()) continue;
+				pullCandidate(channelId, c.id);
+			}
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	private long scheduleLinkCandidates(long now, long nextWake) {
+		long wake = nextWake;
+		List<String> channels;
+		try {
+			channels = linkCandidates().channels();
+		} catch (DbException e) {
+			return wake;
+		}
+		for (String hex : channels) {
+			byte[] channelId = ChannelOnionStore.unhex(hex);
+			if (channelId == null) continue;
+			List<ChannelLinkCandidates.Candidate> all;
+			try {
+				ChannelState held = store.getChannel(channelId);
+				if (held == null || held.weArePublisher()) continue;
+				all = linkCandidates().list(channelId);
+			} catch (DbException e) {
+				continue;
+			}
+			for (ChannelLinkCandidates.Candidate c : all) {
+				String key = candidateKey(hex, c.id);
+				PollState poll = polls.computeIfAbsent(key, k -> {
+					PollState fresh = new PollState();
+					fresh.nextDueAt = now;
+					return fresh;
+				});
+				if (now < poll.nextDueAt) {
+					wake = Math.min(wake, poll.nextDueAt);
+					continue;
+				}
+				if (now >= c.dormantAt()) {
+					synchronized (poll) {
+						poll.resting = true;
+						poll.nextDueAt = now + PULL_FAILURE_MAX_INTERVAL_MS;
+					}
+					wake = Math.min(wake, poll.nextDueAt);
+					continue;
+				}
+				pullCandidateDue(channelId, c.id, key);
+				wake = Math.min(wake, planNextPull(poll, now));
+			}
+		}
+		return wake;
+	}
+
+	private void pullCandidateDue(byte[] channelId, long id, String key) {
+		if (!inFlightPulls.add(key)) return;
+		try {
+			ioExecutor.execute(() -> {
+				try {
+					pullCandidate(channelId, id);
+				} finally {
+					inFlightPulls.remove(key);
+				}
+			});
+		} catch (java.util.concurrent.RejectedExecutionException re) {
+			inFlightPulls.remove(key);
+		}
+	}
+
+	private CandidateOutcome pullCandidate(byte[] channelId, long id) {
+		String key = candidateKey(ChannelStore.hex(channelId), id);
+		try {
+			ChannelState held = store.getChannel(channelId);
+			ChannelLinkCandidates.Candidate c =
+					linkCandidates().get(channelId, id);
+			if (held == null || held.weArePublisher() || c == null) {
+				return CandidateOutcome.GONE;
+			}
+			if (c.applied) {
+				checkCandidateApproval(channelId, c, key);
+				c = linkCandidates().get(channelId, id);
+				if (c == null) return CandidateOutcome.GONE;
+			}
+			byte[] reply;
+			try {
+				reply = transport.requestFromOnion(c.onion,
+						pullRequest(channelId, c.capability, -1L, false));
+			} catch (IOException dark) {
+				return candidateFailed(channelId, c, key, false, false);
+			}
+			CandidateOutcome outcome = takeCandidateReply(channelId, c,
+					reply);
+			if (outcome == CandidateOutcome.FAILED) {
+				return candidateFailed(channelId, c, key, reply.length > 0,
+						reply.length == 0);
+			}
+			if (outcome == CandidateOutcome.REACHED) {
+				candidateReached(channelId, c, key);
+			} else {
+				forgetCandidatePoll(key);
+			}
+			return outcome;
+		} catch (DbException | RuntimeException e) {
+			return CandidateOutcome.FAILED;
+		}
+	}
+
+	private void candidateReached(byte[] channelId,
+			ChannelLinkCandidates.Candidate c, String key)
+			throws DbException {
+		long now = clock.currentTimeMillis();
+		underLock(channelId, () -> {
+			ChannelLinkCandidates.Candidate cur =
+					linkCandidates().get(channelId, c.id);
+			if (cur != null && !cur.reachedChangesNothing(now)) {
+				linkCandidates().update(channelId, cur.reached(now));
+			}
+			notePullOutcome(key, true, false);
+		});
+	}
+
+	private CandidateOutcome candidateFailed(byte[] channelId,
+			ChannelLinkCandidates.Candidate c, String key, boolean refused,
+			boolean empty) throws DbException {
+		long now = clock.currentTimeMillis();
+		underLock(channelId, () -> {
+			ChannelLinkCandidates.Candidate cur =
+					linkCandidates().get(channelId, c.id);
+			if (cur == null) return;
+			ChannelLinkCandidates.Candidate next = cur.failedAt(now);
+			if (cur.approvedFor != null && (refused || (empty
+					&& emptyRunOver(channelId, cur.approvedFor, now)))) {
+				forgetApplicationFor(channelId, cur.approvedFor);
+				next = next.withoutApproval();
+			}
+			if (next != cur) linkCandidates().update(channelId, next);
+			notePullOutcome(key, false, true);
+		});
+		return CandidateOutcome.FAILED;
+	}
+
+	private boolean emptyRunOver(byte[] channelId, byte[] ephPub, long now)
+			throws DbException {
+		ChannelMyApplicationsStore.MyApplication held =
+				myApplicationsStore.get(channelId);
+		if (held == null || held.status != ApplicationStatus.PENDING
+				|| !held.confirmed || !java.util.Arrays.equals(
+				held.ephemeralAgreementPub, ephPub)) {
+			return false;
+		}
+		long start = held.emptySinceMs;
+		if (start < 0L || (now < start && !held.emptyClockReset)) {
+			myApplicationsStore.put(channelId, held.emptySince(now,
+					start >= 0L || held.emptyClockReset));
+			return false;
+		}
+		return now - start >= EMPTY_VERIFY_RUN_MS;
+	}
+
+	private void endEmptyRun(byte[] channelId, byte[] ephPub)
+			throws DbException {
+		ChannelMyApplicationsStore.MyApplication held =
+				myApplicationsStore.get(channelId);
+		if (held != null && held.emptySinceMs >= 0L && java.util.Arrays.equals(
+				held.ephemeralAgreementPub, ephPub)) {
+			myApplicationsStore.put(channelId, held.emptySince(-1L, false));
+		}
+	}
+
+	private void forgetApplicationFor(byte[] channelId, byte[] ephPub)
+			throws DbException {
+		ChannelMyApplicationsStore.MyApplication held =
+				myApplicationsStore.get(channelId);
+		if (held != null && held.status == ApplicationStatus.PENDING
+				&& java.util.Arrays.equals(held.ephemeralAgreementPub,
+				ephPub)) {
+			forgetApplication(channelId);
+		}
+	}
+
+	private CandidateOutcome takeCandidateReply(byte[] channelId,
+			ChannelLinkCandidates.Candidate c, byte[] reply)
+			throws DbException {
+		boolean tombstone = ChannelConstants.WIRE_TYPE_CHANNEL_TOMBSTONE
+				.equals(pullCodec().peekType(reply));
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState cur = store.getChannel(channelId);
+			if (cur == null || cur.weArePublisher()) {
+				return CandidateOutcome.GONE;
+			}
+			if (tombstone) {
+				return applyTombstoneIfValid(cur, reply)
+						? CandidateOutcome.GONE : CandidateOutcome.REACHED;
+			}
+			ChannelPullProtocol.ProcessResult r =
+					pullProtocol.processSubscriberResponse(reply,
+							asNewcomer(cur, c.capability), chainTip(cur),
+							c.capability);
+			ChannelState next = r.mergedState;
+			if (!r.ok || next == null || !opensWithNamedKey(next)) {
+				return CandidateOutcome.FAILED;
+			}
+			linkCandidates().remove(channelId, c.id);
+			if (next.getManifestSeq() <= cur.getManifestSeq()) {
+				if (c.approvedFor != null) endEmptyRun(channelId, c.approvedFor);
+				return CandidateOutcome.RESOLVED;
+			}
+			storeAdopted(channelId, cur, next);
+			if (c.approvedFor != null) {
+				markApprovedIfPending(channelId, c.approvedFor);
+			}
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			return CandidateOutcome.ADOPTED;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Nullable
+	private String confirmCandidate(ChannelState held,
+			ChannelLinkCandidates.Candidate c) throws DbException {
+		byte[] channelId = held.getChannelId();
+		ChannelPullCodec.OnionConfirmed conf;
+		try {
+			conf = pullCodec().decodeOnionConfirmed(transport.requestFromOnion(
+					c.onion, pullCodec().encodeConfirmOnionRequest(channelId,
+							bareOnion(c.onion))));
+		} catch (IOException e) {
+			return null;
+		}
+		byte[] heldMlDsa = held.getPublisherMlDsaPubKey();
+		if (!java.util.Arrays.equals(conf.channelId, channelId)
+				|| !BARE_ONION_V3.matcher(conf.onion).matches()
+				|| (heldMlDsa != null && heldMlDsa.length > 0
+				&& !java.util.Arrays.equals(heldMlDsa, conf.publisherMlDsa))) {
+			return null;
+		}
+		HybridSignaturePublicKey pub;
+		try {
+			pub = new HybridSignaturePublicKey(
+					held.getPublisherEd25519PubKey(), conf.publisherMlDsa);
+		} catch (RuntimeException e) {
+			return null;
+		}
+		if (!java.util.Arrays.equals(channelId, crypto.hash(
+				"org.zerionproject/CHANNEL_ID", pub.getEncoded(), conf.salt))
+				|| !signatures.verifyOnionConfirmation(conf.signature,
+				codec.onionConfirmationSignedInput(channelId, conf.onion),
+				pub)) {
+			return null;
+		}
+		if (!conf.onion.equals(bareOnion(c.onion))) {
+			ChannelLinkCandidates.Candidate now =
+					linkCandidates().get(channelId, c.id);
+			if (now != null && now.onion.equals(c.onion)) {
+				linkCandidates().update(channelId, now.withOnion(conf.onion));
+			}
+		}
+		return conf.onion;
+	}
+
+	private void checkCandidateApproval(byte[] channelId,
+			ChannelLinkCandidates.Candidate c, String key)
+			throws DbException {
+		ChannelMyApplicationsStore.MyApplication my =
+				myApplicationsStore.get(channelId);
+		long now = clock.currentTimeMillis();
+		Long last = lastApprovalPollMs.get(key);
+		if (last != null && now - last < APPROVAL_POLL_MIN_INTERVAL_MS) {
+			return;
+		}
+		lastApprovalPollMs.put(key, now);
+		ChannelState held = store.getChannel(channelId);
+		if (held == null) return;
+		String onion = confirmCandidate(held, c);
+		if (onion == null) return;
+		byte[] request;
+		try {
+			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+			byte[] signedInput =
+					codec.checkApprovalSignedInput(channelId, ts);
+			KeyPair keys = memberKeys(channelId);
+			HybridSignaturePublicKey pub =
+					(HybridSignaturePublicKey) keys.getPublic();
+			HybridSignaturePrivateKey priv =
+					(HybridSignaturePrivateKey) keys.getPrivate();
+			byte[] sig = signAndClear(priv, (ed, ml) ->
+					signatures.signUserCheckApproval(signedInput, ed, ml));
+			request = pullCodec().encodeCheckApprovalRequest(channelId, ts,
+					pub.getEd25519PublicKey(), pub.getMlDsaPublicKey(), sig);
+		} catch (GeneralSecurityException | IOException e) {
+			return;
+		}
+		ChannelPullCodec.ApprovalResponse resp;
+		try {
+			resp = pullCodec().decodeApprovalResponse(
+					transport.requestFromOnion(onion, request));
+		} catch (IOException e) {
+			return;
+		}
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelLinkCandidates.Candidate cur =
+					linkCandidates().get(channelId, c.id);
+			if (cur == null || !cur.applied
+					|| !bareOnion(cur.onion).equals(bareOnion(onion))) {
+				return;
+			}
+			ChannelMyApplicationsStore.MyApplication record =
+					myApplicationsStore.get(channelId);
+			boolean pending = record != null && my != null
+					&& record.status == ApplicationStatus.PENDING
+					&& record.confirmed && java.util.Arrays.equals(
+					record.ephemeralAgreementPub, my.ephemeralAgreementPub);
+			if ("APPROVED".equals(resp.status)
+					&& resp.kemCt != null && resp.envelope != null) {
+				byte[] capability = pending ? openApproval(channelId, record,
+						resp.kemCt, resp.envelope) : null;
+				byte[] fromApproval = pending && capability != null
+						? record.ephemeralAgreementPub : null;
+				if (!pending) {
+					ChannelState after = store.getChannel(channelId);
+					capability = after == null ? null
+							: after.getJoinCapability();
+				}
+				linkCandidates().update(channelId, capability == null
+						? cur.applied(false)
+						: cur.withCapability(capability, fromApproval));
+			} else if ("DENIED".equals(resp.status)) {
+				if (pending) {
+					myApplicationsStore.put(channelId,
+							new ChannelMyApplicationsStore.MyApplication(
+									record.displayName, null,
+									record.ephemeralAgreementPub,
+									record.appliedAtHourMs,
+									ApplicationStatus.DENIED,
+									record.signedWithMemberKey));
+					fireEvent(channelId,
+							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				}
+				linkCandidates().update(channelId, cur.applied(false));
+			} else if ("UNKNOWN".equals(resp.status)) {
+				if (pending) forgetApplication(channelId);
+				linkCandidates().update(channelId, cur.applied(false));
+			}
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private static ChannelState asNewcomer(ChannelState s,
+			@Nullable byte[] capability) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(), s.getPublisherMlDsaPubKey(),
+				s.getName(), s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(), capability,
+				s.getCurrentOnion(), -1L, s.weArePublisher(),
+				s.getHighestKnownPostSeq(), s.getContentKeyHash(),
+				s.getContentKey(), s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(), s.getNextDelegationSeq(),
+				s.getOnionPrivateKey(), s.getPinnedPostSeq(),
+				s.requiresApproval(), s.getRetiredDelegations());
+	}
+
+	private void storeAdopted(byte[] channelId, ChannelState cur,
+			ChannelState next) throws DbException {
+		byte[] heldKey = cur.getContentKey();
+		boolean newKey = !java.util.Arrays.equals(heldKey,
+				next.getContentKey());
+		if (cur.getManifestSeq() >= 0L && !next.getCurrentOnion()
+				.equals(cur.getCurrentOnion())) {
+			store.onions().remember(channelId, cur.getCurrentOnion());
+		}
+		store.putChannel(next, heldKey == null || !newKey
+				|| isRetired(channelId, heldKey)
+				? java.util.Collections.<String,
+						org.zerionproject.core.api.settings.Settings>
+						emptyMap()
+				: store.retireContentKey(channelId, heldKey));
+		onionFailures.remove(ChannelStore.hex(channelId));
+		withholdNewlyRevoked(channelId, cur, next);
+		if (newKey) openNewlyReadable(next);
+	}
+
+	private ChannelRejoinResult adoptManifest(ChannelState before,
+			@Nullable byte[] capability, byte[] reply, String dialled,
+			boolean asMember) throws DbException {
+		byte[] channelId = before.getChannelId();
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState cur = store.getChannel(channelId);
+			if (cur == null || cur.weArePublisher()
+					|| !java.util.Arrays.equals(cur.getJoinCapability(),
+					before.getJoinCapability())
+					|| !cur.getCurrentOnion().equals(before.getCurrentOnion())
+					|| cur.getManifestSeq() != before.getManifestSeq()) {
+				return ChannelRejoinResult.UNCHANGED;
+			}
+			ChannelPullProtocol.ProcessResult r =
+					pullProtocol.processSubscriberResponse(reply,
+							withCapability(cur, capability), chainTip(cur),
+							capability);
+			ChannelState next = r.mergedState;
+			if (!r.ok || next == null) {
+				return ChannelRejoinResult.NOT_RESTORED;
+			}
+			if (next.getManifestSeq() <= cur.getManifestSeq()) {
+				return java.util.Arrays.equals(capability,
+						cur.getJoinCapability())
+						? ChannelRejoinResult.UNCHANGED
+						: ChannelRejoinResult.NOT_RESTORED;
+			}
+			if (!opensWithNamedKey(next)) {
+				return ChannelRejoinResult.NOT_RESTORED;
+			}
+			storeAdopted(channelId, cur, next);
+			boolean signed = cur.getManifestSeq() >= 0L
+					&& dialled.equals(cur.getCurrentOnion());
+			if (asMember && (signed || bareOnion(dialled).equals(
+					bareOnion(r.manifestOnion)))) {
+				takeReply(channelId, r);
+			}
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			return ChannelRejoinResult.UPDATED;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private boolean isRetired(byte[] channelId, byte[] key)
+			throws DbException {
+		for (byte[] k : store.getRetiredContentKeys(channelId)) {
+			if (java.util.Arrays.equals(k, key)) return true;
+		}
+		return false;
+	}
+
+	private boolean opensWithNamedKey(ChannelState s) {
+		if (s.isPublicChannel()) return true;
+		byte[] key = s.getContentKey();
+		byte[] named = s.getContentKeyHash();
+		return key != null && named != null && java.util.Arrays.equals(
+				named, contentKey.hashContentKey(key));
+	}
+
+	private static ChannelState withCapability(ChannelState s,
+			@Nullable byte[] capability) {
+		return new ChannelState(s.getChannelId(), s.getSalt(),
+				s.getPublisherEd25519PubKey(), s.getPublisherMlDsaPubKey(),
+				s.getName(), s.getDescription(), s.getAvatarHash(),
+				s.getCreatedAtHourMs(), s.isPublicChannel(), capability,
+				s.getCurrentOnion(), s.getManifestSeq(), s.weArePublisher(),
+				s.getHighestKnownPostSeq(), s.getContentKeyHash(),
+				s.getContentKey(), s.getActiveDelegations(),
+				s.getRevokedDelegationSeqs(), s.getNextDelegationSeq(),
+				s.getOnionPrivateKey(), s.getPinnedPostSeq(),
+				s.requiresApproval(), s.getRetiredDelegations());
+	}
+
+	@Override
 	public void leaveChannel(byte[] channelId) throws DbException {
 		deleteChannel(channelId);
 	}
@@ -2439,49 +3348,14 @@ class ChannelManagerImpl
 	private void submitAsEditor(byte[] channelId, String body,
 			long ttlSeconds) throws DbException {
 		validatePostBody(body);
-		for (int attempt = 0; attempt < MAX_SUBMIT_ATTEMPTS; attempt++) {
-			ChannelState s = store.getChannel(channelId);
-			if (s == null) throw new DbException();
-			if (editorCertificate(s) == null) throw new DbException();
-			KeyPair keys = memberKeys(channelId);
-			HybridSignaturePublicKey pub =
-					(HybridSignaturePublicKey) keys.getPublic();
-			HybridSignaturePrivateKey memberPriv =
-					(HybridSignaturePrivateKey) keys.getPrivate();
-			ChannelPost post;
-			try {
-				post = buildPost(s, channelId, body, ttlSeconds,
-						Collections.<ChannelPost.ChannelAttachment>emptyList(),
-						memberPriv, pub.getEd25519PublicKey(),
-						pub.getMlDsaPublicKey());
-			} finally {
-				memberPriv.clear();
-			}
-			String status;
-			try {
-				byte[][] ch = buildChallenge(s, channelId);
-				byte[] request = pullCodec().encodeSubmitPostRequest(
-						channelId, post, ch == null ? null : ch[0],
-						ch == null ? null : ch[1]);
-				if (ch != null) {
-					request = proveV2(s, channelId, request, ch[0]);
-				}
-				status = pullCodec().decodeSubmitPostAck(
-						transport.requestFromOnion(confirmedOnion(s),
-								request));
-			} catch (IOException e) {
-				throw new DbException(e);
-			}
-			if (ChannelConstants.SUBMIT_STATUS_OK.equals(status)) {
-				pullAndApply(channelId, false);
-				return;
-			}
-			if (!ChannelConstants.SUBMIT_STATUS_STALE.equals(status)) {
-				throw new DbException();
-			}
-			pullAndApply(channelId, false);
-		}
-		throw new DbException();
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (editorCertificate(s) == null) throw new DbException();
+		checkEditorBodyFits(s, channelId, body);
+		ChannelChainTip tip = chainTip(s);
+		sendOrQueue(channelId, outboxEntry(random.nextLong(),
+				ChannelQueuedItem.Kind.POST, -1L, body, ttlSeconds, false,
+				tip == null ? -1L : tip.seqNum), false);
 	}
 
 	private byte[] handleSubmitPost(byte[] channelId, byte[] requestBytes) {
@@ -2890,8 +3764,8 @@ class ChannelManagerImpl
 		byte[] current = s.getContentKey();
 		if (s.isPublicChannel() || current == null) return keys;
 		keys.add(current);
-		if (s.weArePublisher()) {
-			keys.addAll(store.getRetiredContentKeys(s.getChannelId()));
+		for (byte[] k : store.getRetiredContentKeys(s.getChannelId())) {
+			if (!java.util.Arrays.equals(k, current)) keys.add(k);
 		}
 		return keys;
 	}
@@ -2986,15 +3860,15 @@ class ChannelManagerImpl
 				s.requiresApproval(),
 				s.getRetiredDelegations());
 		byte[] oldContentKey = s.getContentKey();
-		if (oldContentKey == null) {
-			store.putChannel(updated);
-		} else {
-			store.putChannel(updated,
-					store.retireContentKey(channelId, oldContentKey));
+		java.util.Map<String, org.zerionproject.core.api.settings.Settings>
+				alsoWrite = new java.util.LinkedHashMap<>();
+		if (oldContentKey != null) {
+			alsoWrite.putAll(store.retireContentKey(channelId, oldContentKey));
 		}
-		rotateOnionLocked(channelId, true);
-		fireEvent(channelId,
-				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		byte[] oldCap = s.getJoinCapability();
+		alsoWrite.putAll(applicationStore.legacyApprovalsRevoked(channelId,
+				approvalMark(oldCap == null ? new byte[0] : oldCap)));
+		revokeOnionsLocked(channelId, updated, alsoWrite);
 	}
 
 	@Override
@@ -3402,63 +4276,15 @@ class ChannelManagerImpl
 						.ChannelPostTooLongException();
 			}
 		}
-		for (int attempt = 0; attempt < MAX_SUBMIT_ATTEMPTS; attempt++) {
-			ChannelState s = store.getChannel(channelId);
-			if (s == null) throw new DbException();
-			if (editorCertificate(s) == null) throw new DbException();
-			ChannelPost target = changeTarget(s, seqNum);
-			KeyPair keys = memberKeys(channelId);
-			HybridSignaturePublicKey pub =
-					(HybridSignaturePublicKey) keys.getPublic();
-			HybridSignaturePrivateKey priv =
-					(HybridSignaturePrivateKey) keys.getPrivate();
-			byte[] signerEd = pub.getEd25519PublicKey();
-			byte[] signerMl = pub.getMlDsaPublicKey();
-			if (!target.signedByDelegate() || !java.util.Arrays.equals(
-					target.getDelegateSignerEd25519PubKey(), signerEd)) {
-				priv.clear();
-				throw new DbException();
-			}
-			long base = ChannelConstants.CHANGE_EDIT.equals(op)
-					? currentVersionOf(s, target) : -1L;
-			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
-			byte[] signedInput = codec.postChangeSignedInput(channelId,
-					seqNum, op, base, commentsOn, body, ts);
-			byte[] sig;
-			try {
-				sig = signAndClear(priv, (ed, ml) ->
-						signatures.signUserPostChange(signedInput, ed, ml));
-			} catch (GeneralSecurityException e) {
-				throw new DbException(e);
-			} finally {
-				priv.clear();
-			}
-			String status;
-			try {
-				byte[][] ch = buildChallenge(s, channelId);
-				byte[] request = pullCodec().encodeChangePostRequest(
-						channelId, seqNum, op, base, commentsOn, body, ts,
-						signerEd, signerMl, sig, ch == null ? null : ch[0],
-						ch == null ? null : ch[1]);
-				if (ch != null) {
-					request = proveV2(s, channelId, request, ch[0]);
-				}
-				status = pullCodec().decodeChangePostAck(
-						transport.requestFromOnion(confirmedOnion(s),
-								request));
-			} catch (IOException e) {
-				throw new DbException(e);
-			}
-			if (ChannelConstants.SUBMIT_STATUS_OK.equals(status)) {
-				pullAndApply(channelId, false);
-				return;
-			}
-			if (!ChannelConstants.SUBMIT_STATUS_STALE.equals(status)) {
-				throw new DbException();
-			}
-			pullAndApply(channelId, false);
-		}
-		throw new DbException();
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (editorCertificate(s) == null) throw new DbException();
+		ChannelPost target = changeTarget(s, seqNum);
+		if (!ownDelegatePost(channelId, target)) throw new DbException();
+		ChannelQueuedItem.Kind kind = changeKind(op);
+		sendOrQueue(channelId, outboxEntry(random.nextLong(), kind, seqNum,
+				body, 0L, commentsOn, -1L),
+				kind != ChannelQueuedItem.Kind.DELETE);
 	}
 
 	private byte[] handleChangePost(byte[] channelId, byte[] requestBytes) {
@@ -3777,6 +4603,13 @@ class ChannelManagerImpl
 		if (!discussionStore.isEnabledFor(channelId, parentPostSeqNum)) {
 			throw new DbException();
 		}
+		long commentId = random.nextLong();
+		if (!s.weArePublisher()) {
+			sendOrQueue(channelId, outboxEntry(commentId,
+					ChannelQueuedItem.Kind.COMMENT, parentPostSeqNum, trimmed,
+					0L, false, -1L), false);
+			return;
+		}
 		KeyPair keys = signingKeys(s);
 		HybridSignaturePublicKey pub =
 				(HybridSignaturePublicKey) keys.getPublic();
@@ -3785,7 +4618,6 @@ class ChannelManagerImpl
 		byte[] signerEd = pub.getEd25519PublicKey();
 		byte[] signerMl = pub.getMlDsaPublicKey();
 		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
-		long commentId = random.nextLong();
 		String authorName;
 		byte[] sig;
 		try {
@@ -3803,35 +4635,10 @@ class ChannelManagerImpl
 				new ChannelComment(
 						parentPostSeqNum, commentId, trimmed, authorName,
 						signerEd, signerMl, ts, sig);
-		if (s.weArePublisher()) {
-			underLock(channelId, () -> {
-				if (store.getChannel(channelId) == null) {
-					throw new DbException();
-				}
-				commentStore.putComment(channelId, row);
-				fireEvent(channelId,
-						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
-			});
-			return;
-		}
-		try {
-			byte[][] ch = buildChallenge(s, channelId);
-			byte[] reqBytes = pullCodec().encodeCommentRequest(
-					channelId, parentPostSeqNum, commentId, trimmed,
-					authorName, ts, signerEd, signerMl, sig,
-					ch == null ? null : ch[0], ch == null ? null : ch[1]);
-			if (ch != null) reqBytes = proveV2(s, channelId, reqBytes, ch[0]);
-			byte[] ack = transport.requestFromOnion(
-					confirmedOnion(s), reqBytes);
-			if (!pullCodec().decodeCommentAck(ack)) {
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) {
 				throw new DbException();
 			}
-		} catch (IOException ex) {
-			throw new DbException(ex);
-		}
-		underLock(channelId, () -> {
-			if (store.getChannel(channelId) == null) throw new DbException();
-			bindOwnKey(s, signerEd, signerMl);
 			commentStore.putComment(channelId, row);
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -4052,6 +4859,22 @@ class ChannelManagerImpl
 	@Override
 	public void applyToJoin(byte[] channelId, String displayName)
 			throws DbException {
+		applyToJoin(channelId, displayName, null);
+	}
+
+	@Override
+	public void applyToJoin(ChannelInviteLink link, String displayName)
+			throws DbException {
+		ChannelState held = store.getChannel(link.getChannelId());
+		if (held == null || !sameOwner(held, link)
+				|| linkOnion(link) == null) {
+			throw new DbException();
+		}
+		applyToJoin(link.getChannelId(), displayName, link);
+	}
+
+	private void applyToJoin(byte[] channelId, String displayName,
+			@Nullable ChannelInviteLink link) throws DbException {
 		String trimmed = displayName.trim();
 		if (trimmed.isEmpty()
 				|| trimmed.getBytes(
@@ -4065,9 +4888,21 @@ class ChannelManagerImpl
 		}
 		ChannelMyApplicationsStore.MyApplication held =
 				myApplicationsStore.get(channelId);
-		if (held != null && held.status == ApplicationStatus.PENDING) return;
-		String onion = confirmedOnion(before);
+		if (link == null && held != null
+				&& held.status == ApplicationStatus.PENDING && held.confirmed) {
+			return;
+		}
+		String onion = null;
+		try {
+			onion = confirmedOnion(before);
+		} catch (DbException e) {
+			if (link == null || !(e.getCause() instanceof IOException)) {
+				throw new org.zerionproject.app.api.channel
+						.ChannelApplicationUnconfirmedException();
+			}
+		}
 		byte[] request = null;
+		byte[] ephPub;
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
 		lock.lock();
 		try {
@@ -4076,13 +4911,35 @@ class ChannelManagerImpl
 			if (s.weArePublisher()) throw new DbException();
 			ChannelMyApplicationsStore.MyApplication existing =
 					myApplicationsStore.get(channelId);
-			if (existing != null
-					&& existing.status == ApplicationStatus.PENDING) {
+			if (link == null && existing != null
+					&& existing.status == ApplicationStatus.PENDING
+					&& existing.confirmed) {
 				return;
 			}
-			KeyPair ephKp = crypto.generateHybridAgreementKeyPair();
-			byte[] ephPub = ephKp.getPublic().getEncoded();
-			byte[] ephPriv = ephKp.getPrivate().getEncoded();
+			boolean unconfirmed = existing != null
+					&& existing.status == ApplicationStatus.PENDING
+					&& !existing.confirmed;
+			boolean again = unconfirmed && existing.signedWithMemberKey
+					&& existing.ephemeralAgreementPriv != null
+					&& existing.displayName.equals(trimmed);
+			String name = trimmed;
+			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+			if (again) {
+				ts = existing.appliedAtHourMs;
+			} else {
+				long floor = Math.max(
+						myApplicationsStore.getHourFloor(channelId),
+						existing == null ? -1L : existing.appliedAtHourMs);
+				if (floor >= 0L) ts = Math.max(ts, floor + HOUR_MS);
+			}
+			byte[] ephPriv = null;
+			if (again) {
+				ephPub = existing.ephemeralAgreementPub;
+			} else {
+				KeyPair ephKp = crypto.generateHybridAgreementKeyPair();
+				ephPub = ephKp.getPublic().getEncoded();
+				ephPriv = ephKp.getPrivate().getEncoded();
+			}
 			KeyPair keys = memberKeys(channelId);
 			HybridSignaturePublicKey pub =
 					(HybridSignaturePublicKey) keys.getPublic();
@@ -4090,9 +4947,8 @@ class ChannelManagerImpl
 					(HybridSignaturePrivateKey) keys.getPrivate();
 			byte[] signerEd = pub.getEd25519PublicKey();
 			byte[] signerMl = pub.getMlDsaPublicKey();
-			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
 			byte[] signedInput = codec.applicationSignedInput(channelId,
-					trimmed, ts, ephPub);
+					name, ts, ephPub);
 			byte[] sig;
 			try {
 				sig = signAndClear(priv, (ed, ml) ->
@@ -4100,26 +4956,90 @@ class ChannelManagerImpl
 			} catch (GeneralSecurityException ex) {
 				throw new DbException(ex);
 			}
-			myApplicationsStore.put(channelId,
-					new ChannelMyApplicationsStore.MyApplication(
-							trimmed, ephPriv, ephPub, ts,
-							ApplicationStatus.PENDING, true));
+			if (!again) {
+				myApplicationsStore.put(channelId,
+						new ChannelMyApplicationsStore.MyApplication(
+								name, ephPriv, ephPub, ts,
+								ApplicationStatus.PENDING, true, false));
+			}
 			try {
 				request = pullCodec().encodeApplyRequest(channelId,
-						trimmed, ts, signerEd, signerMl, ephPub, sig);
+						name, ts, signerEd, signerMl, ephPub, sig);
 			} catch (IOException ignored) {
 			}
 		} finally {
 			lock.unlock();
 		}
-		if (request != null) {
+		if (request == null) throw new DbException();
+		byte[] reply = null;
+		if (onion != null) {
 			try {
-				transport.requestFromOnion(onion, request);
+				reply = transport.requestFromOnion(onion, request);
+			} catch (IOException dark) {
+				onion = null;
+			}
+		}
+		ChannelLinkCandidates.Candidate through = null;
+		if (onion == null && link != null) {
+			String given = linkOnion(link);
+			through = given == null ? null : linkCandidates().add(channelId,
+					random.nextLong(), given, null, true);
+			String confirmed = through == null ? null
+					: confirmCandidate(before, through);
+			if (confirmed != null) {
+				try {
+					reply = transport.requestFromOnion(confirmed, request);
+				} catch (IOException ignored) {
+				}
+			}
+		}
+		Boolean accepted = null;
+		if (reply != null) {
+			try {
+				accepted = pullCodec().decodeApplyAck(reply);
 			} catch (IOException ignored) {
 			}
 		}
+		if (accepted == null || !settleApplication(channelId, ephPub,
+				accepted)) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelApplicationUnconfirmedException();
+		}
+		if (through != null && accepted) {
+			ChannelLinkCandidates.Candidate now =
+					linkCandidates().get(channelId, through.id);
+			if (now != null) {
+				linkCandidates().update(channelId, now.applied(true));
+			}
+		}
+	}
+
+	private boolean settleApplication(byte[] channelId, byte[] ephPub,
+			boolean accepted) throws DbException {
+		boolean kept;
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelMyApplicationsStore.MyApplication held =
+					myApplicationsStore.get(channelId);
+			if (held == null || !java.util.Arrays.equals(
+					held.ephemeralAgreementPub, ephPub)) {
+				return false;
+			}
+			boolean open = held.status == ApplicationStatus.PENDING
+					&& !held.confirmed;
+			if (open && accepted) {
+				myApplicationsStore.put(channelId, held.confirmed());
+			} else if (open) {
+				myApplicationsStore.remove(channelId);
+			}
+			kept = accepted || !open;
+		} finally {
+			lock.unlock();
+		}
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		return kept;
 	}
 
 	@Override
@@ -4139,7 +5059,16 @@ class ChannelManagerImpl
 	@Override
 	public java.util.List<ChannelApplication> listAllApplications(
 			byte[] channelId) throws DbException {
-		return applicationStore.getApplications(channelId);
+		ChannelState s = store.getChannel(channelId);
+		java.util.List<ChannelApplication> out = new ArrayList<>();
+		for (ChannelApplication a
+				: applicationStore.getApplications(channelId)) {
+			if (a.getStatus() != ChannelApplication.Status.APPROVED
+					|| (s != null && approvalListed(s, a))) {
+				out.add(a);
+			}
+		}
+		return out;
 	}
 
 	@Override
@@ -4156,41 +5085,12 @@ class ChannelManagerImpl
 			ChannelApplication app = applicationStore.findByApplicant(
 					channelId, applicantEd25519);
 			if (app == null) throw new DbException();
-			byte[] ephPub = app.getApplicantEphemeralAgreementPub();
-			org.zerionproject.core.api.crypto.KeyParser parser =
-					crypto.getHybridAgreementKeyParser();
-			org.zerionproject.core.api.crypto.PublicKey ephPubKey;
 			try {
-				ephPubKey = parser.parsePublicKey(ephPub);
+				applicationStore.putApplication(channelId,
+						approved(channelId, app, capability));
 			} catch (GeneralSecurityException ex) {
 				throw new DbException(ex);
 			}
-			org.zerionproject.core.api.crypto.HybridEncapsulationResult
-					encap;
-			try {
-				encap = crypto.hybridEncapsulate(ephPubKey);
-			} catch (GeneralSecurityException ex) {
-				throw new DbException(ex);
-			}
-			byte[] sharedSecretCopy = encap.getSharedSecret();
-			byte[] envelope;
-			try {
-				envelope = wrapApprovalCapability(channelId,
-						sharedSecretCopy, capability);
-			} catch (GeneralSecurityException ex) {
-				java.util.Arrays.fill(sharedSecretCopy, (byte) 0);
-				encap.clearSecret();
-				throw new DbException(ex);
-			}
-			java.util.Arrays.fill(sharedSecretCopy, (byte) 0);
-			encap.clearSecret();
-			applicationStore.putApplication(channelId,
-					new ChannelApplication(app.getDisplayName(),
-							app.getApplicantEd25519(),
-							app.getApplicantMlDsa(), ephPub,
-							app.getAppliedAtHourMs(),
-							ChannelApplication.Status.APPROVED,
-							encap.getCiphertext(), envelope));
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.APPLICANT_APPROVED);
 			fireEvent(channelId,
@@ -4198,6 +5098,55 @@ class ChannelManagerImpl
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	private ChannelApplication approved(byte[] channelId,
+			ChannelApplication app, byte[] capability)
+			throws GeneralSecurityException {
+		byte[] ephPub = app.getApplicantEphemeralAgreementPub();
+		org.zerionproject.core.api.crypto.HybridEncapsulationResult encap =
+				crypto.hybridEncapsulate(crypto.getHybridAgreementKeyParser()
+						.parsePublicKey(ephPub));
+		byte[] sharedSecretCopy = encap.getSharedSecret();
+		try {
+			byte[] envelope = wrapApprovalCapability(channelId,
+					sharedSecretCopy, capability);
+			return new ChannelApplication(app.getDisplayName(),
+					app.getApplicantEd25519(), app.getApplicantMlDsa(),
+					ephPub, app.getAppliedAtHourMs(),
+					ChannelApplication.Status.APPROVED,
+					encap.getCiphertext(), envelope,
+					approvalMark(capability));
+		} finally {
+			java.util.Arrays.fill(sharedSecretCopy, (byte) 0);
+			encap.clearSecret();
+		}
+	}
+
+	private boolean approvalCounts(ChannelState s, ChannelApplication a) {
+		byte[] capability = s.getJoinCapability();
+		return a.getStatus() == ChannelApplication.Status.APPROVED
+				&& capability != null && java.util.Arrays.equals(
+				a.getApprovedUnder(), approvalMark(capability));
+	}
+
+	private static boolean legacyApproval(ChannelApplication a) {
+		return a.getStatus() == ChannelApplication.Status.APPROVED
+				&& a.getApprovedUnder() == null;
+	}
+
+	private boolean approvalListed(ChannelState s, ChannelApplication a) {
+		return legacyApproval(a) || approvalCounts(s, a);
+	}
+
+	private static boolean servesStoredApproval(ChannelApplication a) {
+		return legacyApproval(a) && a.getKemCiphertext() != null
+				&& a.getEnvelope() != null;
+	}
+
+	private byte[] approvalMark(byte[] capability) {
+		return crypto.hash("org.zerionproject/CHANNEL_APPROVAL_CAPABILITY",
+				capability);
 	}
 
 	@Override
@@ -4234,7 +5183,9 @@ class ChannelManagerImpl
 			throws DbException {
 		ChannelMyApplicationsStore.MyApplication app =
 				myApplicationsStore.get(channelId);
-		if (app == null) return ApplicationStatus.NOT_APPLIED;
+		if (app == null || !app.confirmed) {
+			return ApplicationStatus.NOT_APPLIED;
+		}
 		return app.status;
 	}
 
@@ -4326,7 +5277,9 @@ class ChannelManagerImpl
 			if (!s.requiresApproval()) return safeApplyAck(false);
 			String budgetKey = "a:" + ChannelStore.hex(channelId);
 			long now = clock.currentTimeMillis();
-			if (!writeBudget.hasRoom(budgetKey, now)) {
+			boolean room = writeBudget.hasRoom(budgetKey, now);
+			if (!room && !holdsApplication(channelId, req.signerEd25519,
+					req.ephemeralAgreementPub)) {
 				return safeApplyAck(false);
 			}
 			if (subscriberStore.isBanned(channelId, req.signerEd25519)) {
@@ -4364,11 +5317,38 @@ class ChannelManagerImpl
 				}
 			}
 			if (mine != null
-					&& mine.getStatus() != ChannelApplication.Status.DENIED
-					&& (java.util.Arrays.equals(
-							mine.getApplicantEphemeralAgreementPub(),
-							req.ephemeralAgreementPub)
-					|| req.timestampHourMs < mine.getAppliedAtHourMs())) {
+					&& mine.getStatus() != ChannelApplication.Status.DENIED) {
+				if (java.util.Arrays.equals(
+						mine.getApplicantEphemeralAgreementPub(),
+						req.ephemeralAgreementPub)) {
+					return safeApplyAck(true);
+				}
+				if (req.timestampHourMs < mine.getAppliedAtHourMs()) {
+					return safeApplyAck(false);
+				}
+			}
+			if (!room) return safeApplyAck(false);
+			if (mine != null && approvalCounts(s, mine)) {
+				ChannelApplication again;
+				try {
+					again = approved(channelId, new ChannelApplication(
+							req.displayName, req.signerEd25519,
+							req.signerMlDsa, req.ephemeralAgreementPub,
+							req.timestampHourMs,
+							ChannelApplication.Status.PENDING, null, null),
+							s.getJoinCapability());
+				} catch (GeneralSecurityException ex) {
+					return safeApplyAck(false);
+				}
+				binding.bind(req.signerEd25519, req.signerMlDsa);
+				binding.commit(heldAuthors(s));
+				long rewritten = applicationStore.putApplication(channelId,
+						again);
+				if (rewritten > 0) {
+					writeBudget.spend(budgetKey, rewritten, now);
+					fireEvent(channelId,
+							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+				}
 				return safeApplyAck(true);
 			}
 			boolean addsPending = mine == null
@@ -4441,6 +5421,14 @@ class ChannelManagerImpl
 				return safeApprovalResponse(
 						knowsUnknown ? "UNKNOWN" : "DENIED", null, null);
 			}
+			if (app.getStatus() == ChannelApplication.Status.APPROVED
+					&& !approvalCounts(s, app)
+					&& !servesStoredApproval(app)) {
+				boolean knowsUnknown = pullCodec().peekVersion(requestBytes)
+						>= ChannelConstants.PROTOCOL_VERSION_POST_CHANGES;
+				return safeApprovalResponse(
+						knowsUnknown ? "UNKNOWN" : "DENIED", null, null);
+			}
 			switch (app.getStatus()) {
 				case APPROVED:
 					return safeApprovalResponse("APPROVED",
@@ -4476,7 +5464,7 @@ class ChannelManagerImpl
 			return;
 		}
 		if (my == null) return;
-		if (my.status != ApplicationStatus.PENDING) return;
+		if (my.status != ApplicationStatus.PENDING || !my.confirmed) return;
 		String key = ChannelStore.hex(channelId);
 		long now = clock.currentTimeMillis();
 		Long last = lastApprovalPollMs.get(key);
@@ -4485,10 +5473,13 @@ class ChannelManagerImpl
 			return;
 		}
 		lastApprovalPollMs.put(key, now);
+		byte[] toVerify = null;
+		String verifyAt = null;
 		try {
 			ChannelState s = store.getChannel(channelId);
 			if (s == null) return;
 			String onion = confirmedOnion(s);
+			verifyAt = onion;
 			byte[] signerEd;
 			byte[] signerMl;
 			byte[] sig;
@@ -4538,6 +5529,7 @@ class ChannelManagerImpl
 						myApplicationsStore.get(channelId);
 				if (current == null
 						|| current.status != ApplicationStatus.PENDING
+						|| !current.confirmed
 						|| !java.util.Arrays.equals(
 								current.ephemeralAgreementPub,
 								my.ephemeralAgreementPub)) {
@@ -4545,8 +5537,8 @@ class ChannelManagerImpl
 				}
 				if ("APPROVED".equals(resp.status)
 						&& resp.kemCt != null && resp.envelope != null) {
-					applyApproval(channelId, current, resp.kemCt,
-							resp.envelope);
+					toVerify = acceptApproval(channelId, current,
+							resp.kemCt, resp.envelope);
 				} else if ("DENIED".equals(resp.status)) {
 					myApplicationsStore.put(channelId,
 							new ChannelMyApplicationsStore.MyApplication(
@@ -4567,67 +5559,123 @@ class ChannelManagerImpl
 			}
 		} catch (IOException | DbException ignored) {
 		}
+		if (toVerify != null && verifyAt != null) {
+			verifyApproval(channelId, toVerify, verifyAt,
+					my.ephemeralAgreementPub);
+		}
 	}
 
-	private void applyApproval(byte[] channelId,
+	@Nullable
+	private byte[] acceptApproval(byte[] channelId,
+			ChannelMyApplicationsStore.MyApplication my, byte[] kemCt,
+			byte[] envelope) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) return null;
+		byte[] held = s.getJoinCapability();
+		if (my.ephemeralAgreementPriv == null) {
+			if (held == null) forgetApplication(channelId);
+			else markApprovedStatusOnly(channelId, my);
+			return null;
+		}
+		byte[] capability = openApproval(channelId, my, kemCt, envelope);
+		if (capability == null) return null;
+		if (held != null && !java.util.Arrays.equals(held, capability)) {
+			return capability;
+		}
+		if (held == null) store.putChannel(withCapability(s, capability));
+		markApprovedStatusOnly(channelId, my);
+		return null;
+	}
+
+	@Nullable
+	private byte[] openApproval(byte[] channelId,
 			ChannelMyApplicationsStore.MyApplication my, byte[] kemCt,
 			byte[] envelope) throws DbException {
 		byte[] ephPriv = my.ephemeralAgreementPriv;
-		if (ephPriv != null) {
-			org.zerionproject.core.api.crypto.KeyParser parser =
-					crypto.getHybridAgreementKeyParser();
-			org.zerionproject.core.api.crypto.PrivateKey privKey;
-			org.zerionproject.core.api.crypto.PublicKey pubKey;
-			try {
-				privKey = parser.parsePrivateKey(ephPriv);
-				pubKey = parser.parsePublicKey(my.ephemeralAgreementPub);
-			} catch (GeneralSecurityException ex) {
-				markApprovedStatusOnly(channelId, my);
-				return;
-			}
+		if (ephPriv == null) return null;
+		org.zerionproject.core.api.crypto.KeyParser parser =
+				crypto.getHybridAgreementKeyParser();
+		byte[] sharedSecret = null;
+		try {
 			org.zerionproject.core.api.crypto.KeyPair kp =
-					new org.zerionproject.core.api.crypto.KeyPair(pubKey,
-							privKey);
-			byte[] sharedSecret;
-			try {
-				sharedSecret = crypto.hybridDecapsulate(kp, kemCt);
-			} catch (GeneralSecurityException ex) {
-				return;
-			}
-			byte[] capability;
-			try {
-				capability = unwrapApprovalCapability(channelId,
-						sharedSecret, envelope);
-			} catch (GeneralSecurityException ex) {
+					new org.zerionproject.core.api.crypto.KeyPair(
+							parser.parsePublicKey(my.ephemeralAgreementPub),
+							parser.parsePrivateKey(ephPriv));
+			sharedSecret = crypto.hybridDecapsulate(kp, kemCt);
+			return unwrapApprovalCapability(channelId, sharedSecret,
+					envelope);
+		} catch (GeneralSecurityException ex) {
+			forgetApplication(channelId);
+			return null;
+		} finally {
+			if (sharedSecret != null) {
 				java.util.Arrays.fill(sharedSecret, (byte) 0);
-				return;
 			}
-			java.util.Arrays.fill(sharedSecret, (byte) 0);
-			ChannelState s = store.getChannel(channelId);
-			if (s == null) {
-				java.util.Arrays.fill(capability, (byte) 0);
-				return;
-			}
-			ChannelState updated = new ChannelState(s.getChannelId(),
-					s.getSalt(), s.getPublisherEd25519PubKey(),
-					s.getPublisherMlDsaPubKey(), s.getName(),
-					s.getDescription(), s.getAvatarHash(),
-					s.getCreatedAtHourMs(), s.isPublicChannel(),
-					capability, s.getCurrentOnion(),
-					s.getManifestSeq(), s.weArePublisher(),
-					s.getHighestKnownPostSeq(),
-					s.getContentKeyHash(), s.getContentKey(),
-					s.getActiveDelegations(),
-					s.getRevokedDelegationSeqs(),
-					s.getNextDelegationSeq(),
-					s.getOnionPrivateKey(),
-					s.getPinnedPostSeq(),
-					s.requiresApproval(),
-				s.getRetiredDelegations());
-			store.putChannel(updated);
 			java.util.Arrays.fill(ephPriv, (byte) 0);
 		}
-		markApprovedStatusOnly(channelId, my);
+	}
+
+	private void verifyApproval(byte[] channelId, byte[] capability,
+			String onion, byte[] ephPub) {
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) return;
+			byte[] reply = transport.requestFromOnion(onion,
+					pullRequest(channelId, capability, sinceSeqOf(s), true));
+			if (reply.length == 0) {
+				long now = clock.currentTimeMillis();
+				underLock(channelId, () -> {
+					if (emptyRunOver(channelId, ephPub, now)) {
+						forgetApplicationFor(channelId, ephPub);
+					}
+				});
+				return;
+			}
+			ChannelRejoinResult r = adoptManifest(s, capability, reply, onion,
+					true);
+			if (r == ChannelRejoinResult.UPDATED) {
+				markApprovedIfPending(channelId, ephPub);
+			} else if (r == ChannelRejoinResult.NOT_RESTORED) {
+				underLock(channelId, () -> forgetApplicationFor(channelId,
+						ephPub));
+			}
+		} catch (IOException | DbException ignored) {
+		}
+	}
+
+	private void markApprovedIfPending(byte[] channelId,
+			@Nullable byte[] ephPub) throws DbException {
+		underLock(channelId, () -> {
+			ChannelMyApplicationsStore.MyApplication held =
+					myApplicationsStore.get(channelId);
+			if (held != null && held.status == ApplicationStatus.PENDING
+					&& held.confirmed && (ephPub == null
+					|| java.util.Arrays.equals(held.ephemeralAgreementPub,
+					ephPub))) {
+				markApprovedStatusOnly(channelId, held);
+			}
+		});
+	}
+
+	private boolean holdsApplication(byte[] channelId, byte[] signerEd,
+			byte[] ephPub) throws DbException {
+		for (ChannelApplication a
+				: applicationStore.getApplications(channelId)) {
+			if (a.getStatus() != ChannelApplication.Status.DENIED
+					&& java.util.Arrays.equals(a.getApplicantEd25519(),
+							signerEd)
+					&& java.util.Arrays.equals(
+							a.getApplicantEphemeralAgreementPub(), ephPub)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void forgetApplication(byte[] channelId) throws DbException {
+		myApplicationsStore.remove(channelId);
+		fireEvent(channelId,
+				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
 
 	private void markApprovedStatusOnly(byte[] channelId,
@@ -4638,13 +5686,7 @@ class ChannelManagerImpl
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 			return;
 		}
-		myApplicationsStore.put(channelId,
-				new ChannelMyApplicationsStore.MyApplication(
-						my.displayName, null,
-						my.ephemeralAgreementPub,
-						my.appliedAtHourMs,
-						ApplicationStatus.APPROVED,
-						my.signedWithMemberKey));
+		myApplicationsStore.put(channelId, my.approved());
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 	}
@@ -4661,6 +5703,12 @@ class ChannelManagerImpl
 		}
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) {
+			sendOrQueue(channelId, outboxEntry(random.nextLong(),
+					ChannelQueuedItem.Kind.ANNOUNCE, -1L, trimmed, 0L, false,
+					-1L), true);
+			return;
+		}
 		KeyPair keys = signingKeys(s);
 		HybridSignaturePublicKey pub =
 				(HybridSignaturePublicKey) keys.getPublic();
@@ -4680,20 +5728,6 @@ class ChannelManagerImpl
 		}
 		ChannelSubscriber row = new ChannelSubscriber(trimmed, signerEd,
 				signerMl, ts, false);
-		if (!s.weArePublisher()) {
-			try {
-				byte[][] ch = buildChallenge(s, channelId);
-				byte[] reqBytes = pullCodec().encodeAnnounceRequest(
-						channelId, trimmed, ts, signerEd, signerMl, sig,
-						ch == null ? null : ch[0], ch == null ? null : ch[1]);
-				if (ch != null) {
-					reqBytes = proveV2(s, channelId, reqBytes, ch[0]);
-				}
-				transport.requestFromOnion(confirmedOnion(s), reqBytes);
-			} catch (IOException ex) {
-				throw new DbException(ex);
-			}
-		}
 		underLock(channelId, () -> {
 			if (store.getChannel(channelId) == null) throw new DbException();
 			subscriberStore.putSubscriber(channelId, row);
@@ -4892,7 +5926,7 @@ class ChannelManagerImpl
 		}
 		for (ChannelApplication a
 				: applicationStore.getApplications(channelId)) {
-			if (a.getStatus() == ChannelApplication.Status.APPROVED) {
+			if (approvalListed(s, a)) {
 				out.add(org.zerionproject.core.util.StringUtils.toHexString(
 						a.getApplicantEd25519()));
 			}
@@ -4997,6 +6031,12 @@ class ChannelManagerImpl
 		}
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
+		if (!s.weArePublisher()) {
+			sendOrQueue(channelId, outboxEntry(random.nextLong(),
+					ChannelQueuedItem.Kind.REACTION, postSeqNum, emoji, 0L,
+					false, -1L), true);
+			return;
+		}
 		KeyPair keys = signingKeys(s);
 		HybridSignaturePublicKey pub =
 				(HybridSignaturePublicKey) keys.getPublic();
@@ -5032,35 +6072,10 @@ class ChannelManagerImpl
 		}
 		ChannelReaction reaction = new ChannelReaction(postSeqNum, emoji,
 				signerEd, signerMl, ts, sig);
-		if (s.weArePublisher()) {
-			underLock(channelId, () -> {
-				if (store.getChannel(channelId) == null) {
-					throw new DbException();
-				}
-				reactionStore.putReaction(channelId, reaction);
-				fireEvent(channelId,
-						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
-			});
-			return;
-		}
-		try {
-			byte[][] ch = buildChallenge(s, channelId);
-			byte[] reqBytes = pullCodec().encodeReactionRequest(
-					channelId, postSeqNum, emoji, ts, signerEd,
-					signerMl, sig,
-					ch == null ? null : ch[0], ch == null ? null : ch[1]);
-			if (ch != null) reqBytes = proveV2(s, channelId, reqBytes, ch[0]);
-			byte[] ack = transport.requestFromOnion(
-					confirmedOnion(s), reqBytes);
-			if (!pullCodec().decodeReactionAck(ack)) {
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) {
 				throw new DbException();
 			}
-		} catch (IOException ex) {
-			throw new DbException(ex);
-		}
-		underLock(channelId, () -> {
-			if (store.getChannel(channelId) == null) throw new DbException();
-			bindOwnKey(s, signerEd, signerMl);
 			reactionStore.putReaction(channelId, reaction);
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
@@ -5524,6 +6539,977 @@ class ChannelManagerImpl
 		store.setUnread(channelId, store.posts().meta(channelId).unread());
 		fireEvent(channelId,
 				ChannelStateChangedEvent.Kind.UNREAD_COUNT_CHANGED);
+	}
+
+	private enum Sent {
+		SENT,
+		REFUSED,
+		NO_ACCESS,
+		WAIT,
+		LATER,
+		UNREACHABLE
+	}
+
+	private enum Flow {
+		CLEAR,
+		UNANSWERED,
+		WAITING,
+		NO_ACCESS
+	}
+
+	private static final int MAX_REMEMBERED_SENT = 512;
+
+	private final java.util.Map<String,
+			java.util.concurrent.locks.ReentrantLock> sendLocks =
+					new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Set<String> cancelledItems =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private final java.util.Map<String, String> deniedMarks =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private final java.util.Map<String, Boolean> sentItems =
+			Collections.synchronizedMap(
+					new java.util.LinkedHashMap<String, Boolean>() {
+						@Override
+						protected boolean removeEldestEntry(
+								java.util.Map.Entry<String, Boolean> eldest) {
+							return size() > MAX_REMEMBERED_SENT;
+						}
+					});
+	private final java.util.Map<Long, Long> acceptedPostSeqs =
+			new java.util.concurrent.ConcurrentHashMap<>();
+	private volatile ChannelOutboxStore outboxInstance;
+
+	private ChannelOutboxStore outbox() {
+		ChannelOutboxStore o = outboxInstance;
+		if (o != null) return o;
+		synchronized (sendLocks) {
+			if (outboxInstance == null) {
+				outboxInstance = new ChannelOutboxStore(store.settings());
+			}
+			return outboxInstance;
+		}
+	}
+
+	private java.util.concurrent.locks.ReentrantLock sendLockFor(
+			byte[] channelId) {
+		return sendLocks.computeIfAbsent(ChannelStore.hex(channelId),
+				k -> new java.util.concurrent.locks.ReentrantLock());
+	}
+
+	private ChannelOutboxStore.Entry outboxEntry(long id,
+			ChannelQueuedItem.Kind kind, long postSeq, String text,
+			long ttlSeconds, boolean commentsOn, long afterSeq) {
+		return new ChannelOutboxStore.Entry(id, kind, postSeq, text,
+				ttlSeconds, commentsOn, afterSeq, clock.currentTimeMillis(),
+				0L, false);
+	}
+
+	@Override
+	public List<ChannelQueuedItem> getQueuedItems(byte[] channelId)
+			throws DbException {
+		reviveIfAccessChanged(channelId);
+		outbox().age(channelId, clock.currentTimeMillis());
+		List<ChannelQueuedItem> out = new ArrayList<>();
+		for (ChannelOutboxStore.Entry e : outbox().list(channelId)) {
+			out.add(e.toItem());
+		}
+		return out;
+	}
+
+	@Override
+	public void retryQueuedItem(byte[] channelId, long itemId)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock =
+				sendLockFor(channelId);
+		lock.lock();
+		try {
+			if (store.getChannel(channelId) == null
+					|| !outbox().retry(channelId, itemId,
+					clock.currentTimeMillis())) {
+				throw new DbException();
+			}
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			ownerAnswers(channelId);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public ChannelQueuedItem.DeleteResult deleteQueuedItem(byte[] channelId,
+			long itemId) throws DbException {
+		String key = cancelKey(channelId, itemId);
+		cancelledItems.add(key);
+		try {
+			java.util.concurrent.locks.ReentrantLock lock =
+					sendLockFor(channelId);
+			lock.lock();
+			try {
+				if (outbox().remove(channelId, itemId)) {
+					fireEvent(channelId,
+							ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+					return ChannelQueuedItem.DeleteResult.DELETED;
+				}
+				return sentItems.containsKey(key)
+						? ChannelQueuedItem.DeleteResult.SENT
+						: ChannelQueuedItem.DeleteResult.GONE;
+			} finally {
+				lock.unlock();
+			}
+		} finally {
+			cancelledItems.remove(key);
+		}
+	}
+
+	private static String cancelKey(byte[] channelId, long itemId) {
+		return ChannelStore.hex(channelId) + ":" + itemId;
+	}
+
+	private void sendOrQueue(byte[] channelId,
+			ChannelOutboxStore.Entry entry, boolean replaces)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock =
+				sendLockFor(channelId);
+		lock.lock();
+		try {
+			if (entry.kind == ChannelQueuedItem.Kind.REACTION
+					&& reactionTooSoon(channelId, entry)) {
+				throw new org.zerionproject.app.api.channel
+						.ChannelReactionTooSoonException();
+			}
+			ChannelOutboxStore.Entry fresh =
+					entry.kind == ChannelQueuedItem.Kind.DELETE
+					? withTargetExpiry(channelId, entry) : entry;
+			if (replaces && takeOver(channelId, fresh)) {
+				settleTakenOver(channelId, fresh);
+			} else {
+				sendNowOrKeep(channelId, fresh, replaces);
+			}
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private ChannelOutboxStore.Entry withTargetExpiry(byte[] channelId,
+			ChannelOutboxStore.Entry entry) throws DbException {
+		ChannelPost target = store.posts().getPost(channelId, entry.postSeq);
+		if (target == null || target.getTtlMs() <= 0L) return entry;
+		return entry.withTargetExpiry(target.getTimestampHourMs()
+				+ target.getTtlMs());
+	}
+
+	private boolean takeOver(byte[] channelId,
+			ChannelOutboxStore.Entry entry) throws DbException {
+		boolean[] took = new boolean[1];
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) {
+				throw new DbException();
+			}
+			took[0] = outbox().takeOver(channelId, entry);
+		});
+		if (took[0]) {
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		}
+		return took[0];
+	}
+
+	private void settleTakenOver(byte[] channelId,
+			ChannelOutboxStore.Entry entry) throws DbException {
+		Flow flow = ownerAnswers(channelId);
+		if (sentItems.containsKey(cancelKey(channelId, entry.id))) return;
+		ChannelOutboxStore.Entry now = outbox().get(channelId, entry.id);
+		if (now == null) throw new DbException();
+		if (now.deniedAccess()) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelNoAccessException();
+		}
+		boolean refused = now.notSent() || (now.failures > 0 && !now.tried);
+		boolean tooSoon = !now.notSent() && now.failures == 0
+				&& now.nextTryAtMs > 0L;
+		if (refused || tooSoon) {
+			if (outbox().remove(channelId, entry.id)) {
+				fireEvent(channelId,
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			}
+			if (tooSoon) {
+				throw new org.zerionproject.app.api.channel
+						.ChannelReactionTooSoonException();
+			}
+			throw new DbException();
+		}
+		boolean untouched = now.failures == 0 && !now.tried;
+		throw new org.zerionproject.app.api.channel
+				.ChannelRequestQueuedException(untouched
+				&& flow == Flow.WAITING);
+	}
+
+	private void sendNowOrKeep(byte[] channelId,
+			ChannelOutboxStore.Entry entry, boolean replaces)
+			throws DbException {
+		Flow flow = ownerAnswers(channelId);
+		if (flow == Flow.NO_ACCESS) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelNoAccessException();
+		}
+		Sent sent = flow == Flow.CLEAR ? send(channelId, entry)
+				: Sent.UNREACHABLE;
+		acceptedPostSeqs.remove(entry.id);
+		if (sent == Sent.SENT) {
+			if (replaces && outbox().removeLike(channelId, entry.kind,
+					entry.postSeq)) {
+				fireEvent(channelId,
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			}
+			return;
+		}
+		if (sent == Sent.WAIT) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelReactionTooSoonException();
+		}
+		if (sent == Sent.NO_ACCESS) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelNoAccessException();
+		}
+		if (sent != Sent.UNREACHABLE) throw new DbException();
+		keep(channelId, flow == Flow.CLEAR ? entry.markedTried() : entry,
+				replaces, flow == Flow.WAITING);
+	}
+
+	private boolean reactionTooSoon(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		return ChannelReactionPolicy.nextTimestamp(heldReaction(channelId,
+				e.postSeq, myMemberKey(channelId)),
+				clock.currentTimeMillis()) < 0L;
+	}
+
+	private Flow ownerAnswers(byte[] channelId) {
+		try {
+			reviveIfAccessChanged(channelId);
+			if (!outbox().hasWaiting(channelId)) return Flow.CLEAR;
+			try {
+				pullAndApply(channelId, false);
+			} catch (DbException e) {
+				if (!answeredWithoutAccess(channelId, e)) {
+					return Flow.UNANSWERED;
+				}
+			}
+			return flushLocked(channelId);
+		} catch (DbException e) {
+			return Flow.UNANSWERED;
+		}
+	}
+
+	private boolean answeredWithoutAccess(byte[] channelId, DbException e)
+			throws DbException {
+		if (e.getCause() instanceof IOException) return false;
+		ChannelState s = store.getChannel(channelId);
+		return s != null && needsAccess(s);
+	}
+
+	private static boolean needsAccess(ChannelState s) {
+		return !s.isPublicChannel() && s.getJoinCapability() != null;
+	}
+
+	private void keep(byte[] channelId, ChannelOutboxStore.Entry entry,
+			boolean replaces, boolean behind) throws DbException {
+		boolean[] kept = new boolean[1];
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) {
+				throw new DbException();
+			}
+			if (replaces) {
+				outbox().removeLike(channelId, entry.kind, entry.postSeq);
+			}
+			kept[0] = outbox().add(channelId, entry,
+					clock.currentTimeMillis());
+		});
+		fireEvent(channelId, ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		if (!kept[0]) throw new DbException();
+		throw new org.zerionproject.app.api.channel
+				.ChannelRequestQueuedException(behind);
+	}
+
+	private void flushOutboxSafely(byte[] channelId) {
+		java.util.concurrent.locks.ReentrantLock lock =
+				sendLockFor(channelId);
+		try {
+			reviveIfAccessChanged(channelId);
+			if (!outbox().hasWaiting(channelId) || !lock.tryLock()) return;
+		} catch (DbException e) {
+			return;
+		}
+		try {
+			flushLocked(channelId);
+		} catch (DbException | RuntimeException ignored) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private Flow flushLocked(byte[] channelId) throws DbException {
+		boolean changed = outbox().age(channelId, clock.currentTimeMillis());
+		try {
+			List<ChannelOutboxStore.Entry> listedAll = outbox().list(channelId);
+			for (ChannelOutboxStore.Entry listed : listedAll) {
+				String key = cancelKey(channelId, listed.id);
+				if (listed.notSent() || cancelledItems.contains(key)) {
+					continue;
+				}
+				ChannelOutboxStore.Entry e = outbox().get(channelId,
+						listed.id);
+				if (e == null || e.notSent()) continue;
+				if (notDue(e)) return Flow.WAITING;
+				if (deleteOutlived(channelId, e)) {
+					changed |= outbox().remove(channelId, e.id);
+					continue;
+				}
+				Sent sent = delivered(channelId, e) ? Sent.SENT
+						: resend(channelId, e);
+				if (sent == Sent.REFUSED && refusedCopyHeld(channelId, e)) {
+					sent = Sent.SENT;
+				}
+				long now = clock.currentTimeMillis();
+				if (sent == Sent.SENT) {
+					if (e.kind == ChannelQueuedItem.Kind.POST) {
+						settleLaterPosts(channelId, e);
+					}
+					sentItems.put(key, Boolean.TRUE);
+					changed |= outbox().remove(channelId, e.id);
+				} else if (sent == Sent.REFUSED) {
+					changed |= outbox().markNotSent(channelId, e.id, now,
+							ChannelQueuedItem.Reason.REFUSED);
+				} else if (sent == Sent.NO_ACCESS) {
+					String proven = deniedMarks.remove(
+							ChannelStore.hex(channelId));
+					outbox().markWaitingNotSent(channelId, now,
+							ChannelQueuedItem.Reason.NO_ACCESS,
+							proven == null ? "" : proven,
+							deletingIds(channelId, listedAll));
+					changed = true;
+					return Flow.NO_ACCESS;
+				} else if (sent == Sent.WAIT) {
+					outbox().defer(channelId, e.id,
+							reactionReadyAt(channelId, e, now));
+					return Flow.WAITING;
+				} else {
+					changed = true;
+					if (!outbox().fail(channelId, e.id, now,
+							sent == Sent.UNREACHABLE)) {
+						return sent == Sent.UNREACHABLE ? Flow.UNANSWERED
+								: Flow.WAITING;
+					}
+				}
+			}
+			return Flow.CLEAR;
+		} finally {
+			if (changed) {
+				fireEvent(channelId,
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			}
+		}
+	}
+
+	private java.util.Set<Long> deletingIds(byte[] channelId,
+			List<ChannelOutboxStore.Entry> listed) {
+		java.util.Set<Long> ids = new java.util.HashSet<>();
+		for (ChannelOutboxStore.Entry e : listed) {
+			if (cancelledItems.contains(cancelKey(channelId, e.id))) {
+				ids.add(e.id);
+			}
+		}
+		return ids;
+	}
+
+	private boolean deleteOutlived(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		return e.kind == ChannelQueuedItem.Kind.DELETE
+				&& e.targetExpiresAtMs > 0L
+				&& clock.currentTimeMillis() >= e.targetExpiresAtMs
+				&& !postTombstoneStore.get(channelId).contains(e.postSeq)
+				&& store.posts().getPost(channelId, e.postSeq) == null;
+	}
+
+	private String accessMarkOf(byte[] channelId) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		return accessMark(s == null ? null : s.getJoinCapability());
+	}
+
+	private String accessMark(@Nullable byte[] capability) {
+		if (capability == null) return "";
+		return org.zerionproject.core.util.StringUtils.toHexString(
+				crypto.hash("org.zerionproject/CHANNEL_OUTBOX_ACCESS",
+						capability));
+	}
+
+	private void reviveIfAccessChanged(byte[] channelId)
+			throws DbException {
+		if (!outbox().hasDeniedAccess(channelId)) return;
+		String mark = accessMarkOf(channelId);
+		if (mark.isEmpty()) return;
+		if (outbox().reviveAccess(channelId, mark)) {
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		}
+	}
+
+	private boolean notDue(ChannelOutboxStore.Entry e) {
+		long ahead = e.nextTryAtMs - clock.currentTimeMillis();
+		return ahead > 0L && ahead <= ChannelOutboxStore.MAX_DEFER_MS;
+	}
+
+	private boolean refusedCopyHeld(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		if (e.kind != ChannelQueuedItem.Kind.COMMENT || !e.tried) {
+			return false;
+		}
+		commentStore.sync().setCursor(channelId, null);
+		return pullQuietly(channelId) && delivered(channelId, e);
+	}
+
+	private void settleLaterPosts(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		Long accepted = acceptedPostSeqs.remove(e.id);
+		long seq = accepted != null ? accepted
+				: matchedPostSeq(channelId, e);
+		if (seq >= 0L) outbox().raiseAfterSeq(channelId, e.id, seq);
+	}
+
+	private long reactionReadyAt(byte[] channelId,
+			ChannelOutboxStore.Entry e, long now) throws DbException {
+		ChannelReaction held = heldReaction(channelId, e.postSeq,
+				myMemberKey(channelId));
+		long at = held == null ? now + ChannelOutboxStore.RETRY_BASE_MS
+				: held.getTimestampHourMs() - HOUR_MS;
+		return Math.max(now + 1L, at);
+	}
+
+	private Sent resend(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		try {
+			return send(channelId, e);
+		} catch (org.zerionproject.app.api.channel
+				.ChannelPostTooLongException tooLong) {
+			return Sent.REFUSED;
+		}
+	}
+
+	private Sent send(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		switch (e.kind) {
+			case COMMENT:
+				return sendComment(channelId, e);
+			case REACTION:
+				return sendReaction(channelId, e);
+			case ANNOUNCE:
+				return sendAnnounce(channelId, e);
+			case POST:
+				return sendEditorPost(channelId, e);
+			default:
+				return sendChange(channelId, e);
+		}
+	}
+
+	@Nullable
+	private byte[] askOwner(ChannelState s, byte[] request)
+			throws DbException {
+		String onion;
+		try {
+			onion = confirmedOnion(s);
+		} catch (DbException e) {
+			if (e.getCause() instanceof IOException) return null;
+			throw e;
+		}
+		try {
+			return transport.requestFromOnion(onion, request);
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private Sent unanswered(byte[] channelId, ChannelState s,
+			ChannelOutboxStore.Entry e, @Nullable byte[] reply)
+			throws DbException {
+		if (reply == null || !needsAccess(s)) return Sent.UNREACHABLE;
+		try {
+			pullAndApply(channelId, false);
+			return delivered(channelId, e) ? Sent.SENT : Sent.UNREACHABLE;
+		} catch (DbException ex) {
+			if (ex.getCause() instanceof IOException) {
+				return Sent.UNREACHABLE;
+			}
+		}
+		ChannelState trusted = store.getChannel(channelId);
+		if (trusted == null || !needsAccess(trusted)
+				|| !ownerConfirmsOnion(trusted)) {
+			return Sent.UNREACHABLE;
+		}
+		deniedMarks.put(ChannelStore.hex(channelId),
+				accessMark(s.getJoinCapability()));
+		return Sent.NO_ACCESS;
+	}
+
+	private boolean ownerConfirmsOnion(ChannelState s) {
+		String onion = s.getCurrentOnion();
+		if (onion.isEmpty()) return false;
+		ChannelPullCodec.OnionConfirmed c;
+		try {
+			c = pullCodec().decodeOnionConfirmed(transport.requestFromOnion(
+					onion, pullCodec().encodeConfirmOnionRequest(
+							s.getChannelId(), bareOnion(onion))));
+		} catch (IOException | RuntimeException e) {
+			return false;
+		}
+		return c.onion.equals(bareOnion(onion))
+				&& ownerSignedConfirmation(s, c);
+	}
+
+	private boolean ownerSignedConfirmation(ChannelState s,
+			ChannelPullCodec.OnionConfirmed c) {
+		byte[] channelId = s.getChannelId();
+		byte[] localMlDsa = s.getPublisherMlDsaPubKey();
+		if (!java.util.Arrays.equals(c.channelId, channelId)
+				|| !BARE_ONION_V3.matcher(c.onion).matches()
+				|| (localMlDsa != null && localMlDsa.length > 0
+				&& !java.util.Arrays.equals(localMlDsa, c.publisherMlDsa))) {
+			return false;
+		}
+		try {
+			HybridSignaturePublicKey pub = new HybridSignaturePublicKey(
+					s.getPublisherEd25519PubKey(), c.publisherMlDsa);
+			return java.util.Arrays.equals(channelId, crypto.hash(
+					"org.zerionproject/CHANNEL_ID", pub.getEncoded(), c.salt))
+					&& signatures.verifyOnionConfirmation(c.signature,
+					codec.onionConfirmationSignedInput(channelId, c.onion),
+					pub);
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	private Sent sendComment(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		if (!discussionStore.isEnabledFor(channelId, e.postSeq)) {
+			return Sent.REFUSED;
+		}
+		KeyPair keys = signingKeys(s);
+		HybridSignaturePublicKey pub =
+				(HybridSignaturePublicKey) keys.getPublic();
+		HybridSignaturePrivateKey priv =
+				(HybridSignaturePrivateKey) keys.getPrivate();
+		byte[] signerEd = pub.getEd25519PublicKey();
+		byte[] signerMl = pub.getMlDsaPublicKey();
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		String authorName;
+		byte[] sig;
+		try {
+			authorName = boundedName(pickAuthorName(channelId, signerEd));
+			byte[] signedInput = codec.commentSignedInput(channelId,
+					e.postSeq, e.id, e.text, authorName, ts);
+			sig = signAndClear(priv, (ed, ml) ->
+					signatures.signUserComment(signedInput, ed, ml));
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		} finally {
+			priv.clear();
+		}
+		byte[] request;
+		try {
+			byte[][] ch = buildChallenge(s, channelId);
+			request = pullCodec().encodeCommentRequest(channelId, e.postSeq,
+					e.id, e.text, authorName, ts, signerEd, signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
+			if (ch != null) request = proveV2(s, channelId, request, ch[0]);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+		byte[] reply = askOwner(s, request);
+		if (reply == null || reply.length == 0) {
+			return unanswered(channelId, s, e, reply);
+		}
+		try {
+			if (!pullCodec().decodeCommentAck(reply)) return Sent.REFUSED;
+		} catch (IOException ex) {
+			return Sent.UNREACHABLE;
+		}
+		ChannelComment row = new ChannelComment(e.postSeq, e.id, e.text,
+				authorName, signerEd, signerMl, ts, sig);
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) throw new DbException();
+			bindOwnKey(s, signerEd, signerMl);
+			commentStore.putComment(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		});
+		return Sent.SENT;
+	}
+
+	private Sent sendReaction(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		KeyPair keys = signingKeys(s);
+		HybridSignaturePublicKey pub =
+				(HybridSignaturePublicKey) keys.getPublic();
+		HybridSignaturePrivateKey priv =
+				(HybridSignaturePrivateKey) keys.getPrivate();
+		byte[] signerEd = pub.getEd25519PublicKey();
+		byte[] signerMl = pub.getMlDsaPublicKey();
+		long ts;
+		byte[] sig;
+		try {
+			ts = ChannelReactionPolicy.nextTimestamp(
+					heldReaction(channelId, e.postSeq, signerEd),
+					clock.currentTimeMillis());
+			if (ts < 0L) return Sent.WAIT;
+			byte[] signedInput = codec.reactionSignedInput(channelId,
+					e.postSeq, e.text, ts);
+			sig = signAndClear(priv, (ed, ml) ->
+					signatures.signUserReaction(signedInput, ed, ml));
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		} finally {
+			priv.clear();
+		}
+		byte[] request;
+		try {
+			byte[][] ch = buildChallenge(s, channelId);
+			request = pullCodec().encodeReactionRequest(channelId, e.postSeq,
+					e.text, ts, signerEd, signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
+			if (ch != null) request = proveV2(s, channelId, request, ch[0]);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+		byte[] reply = askOwner(s, request);
+		if (reply == null || reply.length == 0) {
+			return unanswered(channelId, s, e, reply);
+		}
+		try {
+			if (!pullCodec().decodeReactionAck(reply)) return Sent.REFUSED;
+		} catch (IOException ex) {
+			return Sent.UNREACHABLE;
+		}
+		ChannelReaction reaction = new ChannelReaction(e.postSeq, e.text,
+				signerEd, signerMl, ts, sig);
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) throw new DbException();
+			bindOwnKey(s, signerEd, signerMl);
+			reactionStore.putReaction(channelId, reaction);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		});
+		return Sent.SENT;
+	}
+
+	@Nullable
+	private ChannelReaction heldReaction(byte[] channelId, long postSeq,
+			byte[] signerEd) throws DbException {
+		ChannelReaction mine = null;
+		for (ChannelReaction r : reactionStore.getReactions(channelId)) {
+			if (r.getPostSeqNum() == postSeq && java.util.Arrays.equals(
+					r.getSignerEd25519PubKey(), signerEd)) {
+				mine = r;
+			}
+		}
+		return mine;
+	}
+
+	private Sent sendAnnounce(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		KeyPair keys = signingKeys(s);
+		HybridSignaturePublicKey pub =
+				(HybridSignaturePublicKey) keys.getPublic();
+		HybridSignaturePrivateKey priv =
+				(HybridSignaturePrivateKey) keys.getPrivate();
+		byte[] signerEd = pub.getEd25519PublicKey();
+		byte[] signerMl = pub.getMlDsaPublicKey();
+		long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+		byte[] signedInput = codec.announceSignedInput(channelId, e.text,
+				ts);
+		byte[] sig;
+		try {
+			sig = signAndClear(priv, (ed, ml) ->
+					signatures.signUserAnnounce(signedInput, ed, ml));
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		} finally {
+			priv.clear();
+		}
+		byte[] request;
+		try {
+			byte[][] ch = buildChallenge(s, channelId);
+			request = pullCodec().encodeAnnounceRequest(channelId, e.text,
+					ts, signerEd, signerMl, sig,
+					ch == null ? null : ch[0], ch == null ? null : ch[1]);
+			if (ch != null) request = proveV2(s, channelId, request, ch[0]);
+		} catch (IOException ex) {
+			throw new DbException(ex);
+		}
+		byte[] reply = askOwner(s, request);
+		if (reply == null || reply.length == 0) {
+			return unanswered(channelId, s, e, reply);
+		}
+		try {
+			if (!pullCodec().decodeAnnounceAck(reply)) return Sent.REFUSED;
+		} catch (IOException ex) {
+			return Sent.UNREACHABLE;
+		}
+		ChannelSubscriber row = new ChannelSubscriber(e.text, signerEd,
+				signerMl, ts, false);
+		underLock(channelId, () -> {
+			if (store.getChannel(channelId) == null) throw new DbException();
+			subscriberStore.putSubscriber(channelId, row);
+			fireEvent(channelId,
+					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+		});
+		return Sent.SENT;
+	}
+
+	private Sent sendEditorPost(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		for (int attempt = 0; attempt < MAX_SUBMIT_ATTEMPTS; attempt++) {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (editorCertificate(s) == null) return Sent.REFUSED;
+			KeyPair keys = memberKeys(channelId);
+			HybridSignaturePublicKey pub =
+					(HybridSignaturePublicKey) keys.getPublic();
+			HybridSignaturePrivateKey memberPriv =
+					(HybridSignaturePrivateKey) keys.getPrivate();
+			ChannelPost post;
+			try {
+				post = buildPost(s, channelId, e.text, e.ttlSeconds,
+						Collections.<ChannelPost.ChannelAttachment>emptyList(),
+						memberPriv, pub.getEd25519PublicKey(),
+						pub.getMlDsaPublicKey());
+			} finally {
+				memberPriv.clear();
+			}
+			byte[] request;
+			try {
+				byte[][] ch = buildChallenge(s, channelId);
+				request = pullCodec().encodeSubmitPostRequest(channelId,
+						post, ch == null ? null : ch[0],
+						ch == null ? null : ch[1]);
+				if (ch != null) {
+					request = proveV2(s, channelId, request, ch[0]);
+				}
+			} catch (IOException ex) {
+				throw new DbException(ex);
+			}
+			byte[] reply = askOwner(s, request);
+			if (reply == null) return Sent.UNREACHABLE;
+			String status = pullCodec().decodeSubmitPostAck(reply);
+			if (ChannelConstants.SUBMIT_STATUS_OK.equals(status)) {
+				acceptedPostSeqs.put(e.id, post.getSeqNum());
+				pullQuietly(channelId);
+				return Sent.SENT;
+			}
+			if (!ChannelConstants.SUBMIT_STATUS_STALE.equals(status)) {
+				return Sent.REFUSED;
+			}
+			if (!pullQuietly(channelId)) return Sent.UNREACHABLE;
+		}
+		return Sent.LATER;
+	}
+
+	private Sent sendChange(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		String op = changeOp(e.kind);
+		for (int attempt = 0; attempt < MAX_SUBMIT_ATTEMPTS; attempt++) {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null) throw new DbException();
+			if (editorCertificate(s) == null) return Sent.REFUSED;
+			ChannelPost target = null;
+			if (e.kind != ChannelQueuedItem.Kind.DELETE
+					|| store.posts().getPost(channelId, e.postSeq) != null) {
+				try {
+					target = changeTarget(s, e.postSeq);
+				} catch (DbException ex) {
+					return Sent.REFUSED;
+				}
+				if (!ownDelegatePost(channelId, target)) return Sent.REFUSED;
+			}
+			KeyPair keys = memberKeys(channelId);
+			HybridSignaturePublicKey pub =
+					(HybridSignaturePublicKey) keys.getPublic();
+			HybridSignaturePrivateKey priv =
+					(HybridSignaturePrivateKey) keys.getPrivate();
+			byte[] signerEd = pub.getEd25519PublicKey();
+			byte[] signerMl = pub.getMlDsaPublicKey();
+			long base;
+			byte[] sig;
+			long ts = clock.currentTimeMillis() / HOUR_MS * HOUR_MS;
+			try {
+				base = ChannelConstants.CHANGE_EDIT.equals(op)
+						&& target != null ? currentVersionOf(s, target) : -1L;
+				byte[] signedInput = codec.postChangeSignedInput(channelId,
+						e.postSeq, op, base, e.commentsOn, e.text, ts);
+				sig = signAndClear(priv, (ed, ml) ->
+						signatures.signUserPostChange(signedInput, ed, ml));
+			} catch (GeneralSecurityException ex) {
+				throw new DbException(ex);
+			} finally {
+				priv.clear();
+			}
+			byte[] request;
+			try {
+				byte[][] ch = buildChallenge(s, channelId);
+				request = pullCodec().encodeChangePostRequest(channelId,
+						e.postSeq, op, base, e.commentsOn, e.text, ts,
+						signerEd, signerMl, sig, ch == null ? null : ch[0],
+						ch == null ? null : ch[1]);
+				if (ch != null) {
+					request = proveV2(s, channelId, request, ch[0]);
+				}
+			} catch (IOException ex) {
+				throw new DbException(ex);
+			}
+			byte[] reply = askOwner(s, request);
+			if (reply == null) return Sent.UNREACHABLE;
+			String status = pullCodec().decodeChangePostAck(reply);
+			if (ChannelConstants.SUBMIT_STATUS_OK.equals(status)) {
+				pullQuietly(channelId);
+				return Sent.SENT;
+			}
+			if (!ChannelConstants.SUBMIT_STATUS_STALE.equals(status)) {
+				return Sent.REFUSED;
+			}
+			if (!pullQuietly(channelId)) return Sent.UNREACHABLE;
+		}
+		return Sent.LATER;
+	}
+
+	private boolean pullQuietly(byte[] channelId) {
+		try {
+			pullAndApply(channelId, false);
+			return true;
+		} catch (DbException e) {
+			return false;
+		}
+	}
+
+	private boolean ownDelegatePost(byte[] channelId, ChannelPost target)
+			throws DbException {
+		return target.signedByDelegate() && java.util.Arrays.equals(
+				target.getDelegateSignerEd25519PubKey(),
+				myMemberKey(channelId));
+	}
+
+	private byte[] myMemberKey(byte[] channelId) throws DbException {
+		return publicKeyOf(memberKeys(channelId)).getEd25519PublicKey();
+	}
+
+	private static ChannelQueuedItem.Kind changeKind(String op) {
+		if (ChannelConstants.CHANGE_EDIT.equals(op)) {
+			return ChannelQueuedItem.Kind.EDIT;
+		}
+		if (ChannelConstants.CHANGE_DELETE.equals(op)) {
+			return ChannelQueuedItem.Kind.DELETE;
+		}
+		return ChannelQueuedItem.Kind.COMMENTS_SETTING;
+	}
+
+	private static String changeOp(ChannelQueuedItem.Kind kind) {
+		if (kind == ChannelQueuedItem.Kind.EDIT) {
+			return ChannelConstants.CHANGE_EDIT;
+		}
+		if (kind == ChannelQueuedItem.Kind.DELETE) {
+			return ChannelConstants.CHANGE_DELETE;
+		}
+		return ChannelConstants.CHANGE_COMMENTS;
+	}
+
+	private void checkEditorBodyFits(ChannelState s, byte[] channelId,
+			String body) throws DbException {
+		if (s.isPublicChannel()) return;
+		byte[] kContent = s.getContentKey();
+		if (kContent == null) throw new DbException();
+		byte[] ct;
+		try {
+			ct = contentKey.encryptBodyV2(kContent, channelId, 0L,
+					freshBytes(ChannelConstants.POST_SALT_BYTES), body);
+		} catch (GeneralSecurityException ex) {
+			throw new DbException(ex);
+		}
+		if (java.util.Base64.getEncoder().withoutPadding()
+				.encodeToString(ct).length()
+				> ChannelConstants.MAX_POST_BODY_CHARS) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelPostTooLongException();
+		}
+	}
+
+	private boolean delivered(byte[] channelId, ChannelOutboxStore.Entry e)
+			throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) throw new DbException();
+		switch (e.kind) {
+			case COMMENT: {
+				byte[] me = myMemberKey(channelId);
+				for (ChannelComment c : commentStore.getComments(channelId)) {
+					if (c.getCommentId() == e.id && java.util.Arrays.equals(
+							c.getAuthorEd25519PubKey(), me)) {
+						return true;
+					}
+				}
+				return false;
+			}
+			case REACTION: {
+				ChannelReaction held = heldReaction(channelId, e.postSeq,
+						myMemberKey(channelId));
+				return held != null && held.getEmoji().equals(e.text);
+			}
+			case POST:
+				return e.tried && matchedPostSeq(channelId, e) >= 0L;
+			case EDIT: {
+				ChannelPost target =
+						store.posts().getPost(channelId, e.postSeq);
+				if (target == null) return false;
+				List<ChannelPost> edits = editsOf(s, target);
+				if (edits.isEmpty()) return false;
+				ChannelPostMarkers.Edit last = editOf(s, contentKeys(s),
+						edits.get(edits.size() - 1));
+				return last != null && e.text.equals(last.text);
+			}
+			case DELETE:
+				return postTombstoneStore.get(channelId).contains(e.postSeq);
+			case COMMENTS_SETTING:
+				return discussionStore.isEnabledFor(channelId, e.postSeq)
+						== e.commentsOn;
+			default:
+				return false;
+		}
+	}
+
+	private long matchedPostSeq(byte[] channelId,
+			ChannelOutboxStore.Entry e) throws DbException {
+		ChannelState s = store.getChannel(channelId);
+		if (s == null) return -1L;
+		byte[] me = myMemberKey(channelId);
+		List<byte[]> keys = contentKeys(s);
+		long after = e.afterSeq;
+		int page = (int) ChannelConstants.PULL_BATCH_MAX_POSTS;
+		for (int round = 0; round < MAX_PULL_ROUNDS; round++) {
+			List<ChannelPost> next =
+					store.posts().getPostsAfter(channelId, after, page);
+			if (next.isEmpty()) return -1L;
+			for (ChannelPost p : next) {
+				after = p.getSeqNum();
+				if (p.signedByDelegate() && java.util.Arrays.equals(
+						p.getDelegateSignerEd25519PubKey(), me)
+						&& e.text.equals(openedBody(s, keys, p))) {
+					return p.getSeqNum();
+				}
+			}
+		}
+		return -1L;
 	}
 
 	private void fireEvent(byte[] channelId,

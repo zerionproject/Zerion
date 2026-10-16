@@ -310,7 +310,7 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="groups_dissolve_dialog_message">Jeni i sigurt se doni të shkrihet ky grup?\n\nKrejt anëtarët e tjerë s\’do të jenë në gjendje të vazhdojnë bisedat e tyre dhe mundet të mos i marrin mesazhet më të rinj.</string>
   <string name="groups_dissolve_button">Shkrije</string>
   <string name="groups_dissolved_dialog_title">Grupi u Shkri</string>
-  <string name="groups_dissolved_dialog_message">Krijuesi i këtij grupi e ka shkrirë atë.\n\nS\’mund të shkruani më mesazhe për grupin dhe mundet të mos i merrni krejt postimet që janë shkruar.</string>
+  <string name="groups_dissolved_dialog_message">Pronari i grupit e ka shkrirë këtë grup.\n\nS’mund të shkruani më mesazhe për grupin dhe mundet të mos i merrni krejt postimet që janë shkruar.</string>
   
   <string name="groups_invitations_title">Ftesa Grupi</string>
   <string name="groups_invitations_invitation_sent">Keni ftuar %1$s të bëhet pjesë e grupit \"%2$s\".</string>
@@ -320,9 +320,9 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
     <item quantity="one">%d ftesë grupi e hapur</item>
     <item quantity="other">%d ftesa grupi të hapura</item>
   </plurals>
-  <string name="sharing_status_groups">Vetëm krijuesi mund të ftojë anëtarë të rinj në grup. Më poshtë gjenden tërë anëtarët e tanishëm të grupit.</string>
+  <string name="sharing_status_groups">Vetëm pronari i grupit mund të ftojë anëtarë të rinj në grup. Më poshtë gjenden tërë anëtarët e tanishëm të grupit.</string>
   
-  <string name="groups_reveal_dialog_message">Mund të zgjidhni t\’ua shfaqni ose jo kontaktet krejt anëtarëve të tanishëm dhe të ardhshëm të këtij grupi.\n\nShfaqja e kontakteve e bën lidhjen tuaj me grupin më të shpejtë dhe më të besueshme, ngaqë mund të komunikoni me kontaktet e shfaqura edhe kur krijuesi i grupit s\’është në linjë.</string>
+  <string name="groups_reveal_dialog_message">Mund të zgjidhni t’ua shfaqni ose jo kontaktet krejt anëtarëve të tanishëm dhe të ardhshëm të këtij grupi.\n\nShfaqja e kontakteve e bën lidhjen tuaj me grupin më të shpejtë dhe më të besueshme, ngaqë mund të komunikoni me kontaktet e shfaqura edhe kur pronari i grupit s’është në linjë.</string>
   <string name="groups_reveal_visible_revealed_by_us">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga ju)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Marrëdhënia e kontaktit është e dukshme për grupin (shfaqur nga %s)</string>
   <string name="groups_reveal_invisible">Marrëdhënia me kontaktin s\’është e dukshme për grupin</string>
@@ -1076,7 +1076,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="channels_feed_empty_subscriber">Ende s\'ka postime. Postimet e reja do të shfaqen këtu.</string>
 	<string name="channels_post_withheld">Postimi u mbajt: pronari i kanalit ia hoqi këtij autori lejen për të postuar.</string>
 	<string name="channels_feed_connecting">Po lidhet me kanalin…</string>
-	<string name="channels_feed_connecting_slow">Ende po lidhet. Sigurohu që personi që e ndau këtë kanal të jetë në linjë. Kjo do të përditësohet vetë.</string>
+	<string name="channels_feed_connecting_slow">Ende po lidhet. Postimet do të shfaqen këtu kur kanali të jetë i arritshëm.</string>
 	<string name="channels_compose_hint">Shkruaju pajtimtarëve të tu…</string>
 	<string name="channels_compose_send">Publiko</string>
 	<string name="channels_compose_error_empty">Shkruaj diçka para se të publikosh.</string>
@@ -1373,7 +1373,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_empty">Ende s\'ka grupe.</string>
 	<string name="grouptr_meta">%2$d anëtarë</string>
 	<string name="grouptr_dissolved_suffix">(i shkrirë)</string>
-	<string name="grouptr_creator_tag">(krijues)</string>
+	<string name="grouptr_creator_tag">(pronari i grupit)</string>
 	<string name="grouptr_admin_tag">(administrator)</string>
 	<string name="grouptr_promote">Promovo</string>
 	<string name="grouptr_demote">Ule në gradë</string>
@@ -1476,7 +1476,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_detail_status">Gjendja</string>
 	<string name="grouptr_detail_status_dissolved">I shkrirë</string>
 	<string name="grouptr_open_chat">Hap bisedën</string>
-	<string name="grouptr_member_role_creator">krijues</string>
+	<string name="grouptr_member_role_creator">Pronari i grupit</string>
 	<string name="grouptr_member_role_you">ti</string>
 	<string name="grouptr_member_action_remove">Hiqe nga grupi</string>
 	<string name="scroll_to_bottom">Shko në fund</string>
@@ -2368,14 +2368,14 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="wallet_sp_enable_first">Aktivizo më parë Silent Payments</string>
 	<string name="grouptr_reach_title">Kë arrijnë postimet e tua</string>
 	<string name="grouptr_reach_explanation">Postimet e grupit udhëtojnë drejtpërdrejt mes anëtarëve që janë kontakte të njëri-tjetrit, dhe anëtarët nuk i përcjellin postimet më tej. Këta anëtarë nuk janë kontaktet e tua, ndaj nuk marrin postimet e tua dhe ti nuk merr të tyret:\n\n%1$s\n\nShtoji si kontakte për t\'i arritur.</string>
-	<string name="grouptr_ttl_set_by_creator">Mesazhe që treten në këtë grup: %1$s. Këtë mund ta ndryshojë vetëm krijuesi i grupit.</string>
+	<string name="grouptr_ttl_set_by_creator">Mesazhe që treten në këtë grup: %1$s. Këtë mund ta ndryshojë vetëm pronari i grupit.</string>
 	<string name="grouptr_sender_alias_format">%1$s (poston si «%2$s»)</string>
 	<string name="grouptr_sender_unverified_format">«%1$s» (nuk është emër që e njeh)</string>
 	<string name="grouptr_member_out_of_reach">nuk është kontakti yt, nuk i merr postimet e tua</string>
 	<string name="grouptr_member_invited">I ftuar, në pritje të përgjigjes</string>
 	<string name="grouptr_confirm_revoke">Të tërhiqet ftesa për %1$s? Një përgjigje nga ky person do të shpërfillet.</string>
 	<string name="grouptr_revoke_invite">Tërhiq ftesën</string>
-	<string name="grouptr_invite_expired">Kjo ftesë ka skaduar. Kërkoji krijuesit të grupit një të re.</string>
+	<string name="grouptr_invite_expired">Kjo ftesë ka skaduar. Kërkoji pronarit të grupit një të re.</string>
 	<string name="reaction_removed_here_only">U hoq vetëm në këtë pajisje: aplikacioni i kontaktit tënd është shumë i vjetër për ta hequr edhe në pajisjen e tij.</string>
 	<string name="startup_data_without_account_message">Zerion-i gjeti të dhëna në këtë pajisje, por asnjë kyç llogarie që i hap ato: skedarët e kyçeve mungojnë ose janë dëmtuar. Nuk është fshirë asgjë.\n\nMund ta mbyllësh Zerion-in dhe t\'i mbash të dhënat, ose t\'i fshish të gjitha dhe të fillosh nga e para.</string>
 	<string name="startup_data_without_account_keep">Mbyll dhe mbaji</string>
@@ -2460,13 +2460,13 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_members_may_invite">Anëtarët mund të ftojnë kontaktet e tyre</string>
 	<string name="grouptr_members_may_invite_summary">Për sa kohë kjo është aktive, telefoni yt shton automatikisht personat që ftojnë ata.</string>
 	<string name="grouptr_invite_contacts">Fto kontakte</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Mund të ftojnë vetëm anëtarët që e kanë krijuesin e grupit si kontakt.</string>
-	<string name="grouptr_member_invite_creator_outdated">Krijuesi i grupit ka nevojë për një version më të ri të aplikacionit, para se anëtarët të mund të ftojnë.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Mund të ftojnë vetëm anëtarët që e kanë pronarin e grupit si kontakt.</string>
+	<string name="grouptr_member_invite_creator_outdated">Pronari i grupit ka nevojë për një version më të ri të aplikacionit, para se anëtarët të mund të ftojnë.</string>
 	<string name="grouptr_member_invite_contact_outdated">Ka nevojë për një version më të ri të aplikacionit</string>
 	<string name="grouptr_member_invitation_received">%1$s të ftoi të bashkohesh me grupin “%2$s”, krijuar nga %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s të ftoi të bashkohesh me një grup të krijuar nga %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Në pritje që %1$s, krijuesi i grupit, të jetë në linjë. Telefoni i krijuesit të shton automatikisht, pastaj mund të postosh këtu.</string>
-	<string name="grouptr_member_invite_accepted">U pranua. Do të bashkohesh sapo krijuesi i grupit të jetë në linjë.</string>
+	<string name="grouptr_waiting_for_admin">Në pritje që pronari i grupit, %1$s, të jetë në linjë. Telefoni i pronarit të shton automatikisht, pastaj mund të postosh këtu.</string>
+	<string name="grouptr_member_invite_accepted">U pranua. Do të bashkohesh sapo pronari i grupit të jetë në linjë.</string>
 	<string name="grouptr_member_invite_unavailable">Kjo ftesë nuk mund të pranohet më. Kërko një të re.</string>
 	<string name="grouptr_incognito">Inkognito në këtë grup</string>
 	<string name="grouptr_incognito_summary">Të tjerët në grup shohin një emër të rastësishëm në vend të emrit tënd. Anëtarët që janë kontaktet e tua mund të të njohin ende nga çelësi yt.</string>
@@ -2474,7 +2474,7 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="grouptr_incognito_new_name">Emër i ri</string>
 	<string name="grouptr_sender_incognito_format">«%1$s» (inkognito)</string>
 	<string name="grouptr_member_may_add">Mund të shtojë anëtarë</string>
-	<string name="grouptr_member_invite_creator_only">Vetëm krijuesi i grupit mund të shtojë anëtarë.</string>
+	<string name="grouptr_member_invite_creator_only">Vetëm pronari i grupit mund të shtojë anëtarë.</string>
 	<string name="tor_status_entry_relay">I paqëndrueshëm</string>
 	<string name="tor_hidden_services_entry_relay">Releja hyrëse e Tor-it po dështon në shumicën e lidhjeve, ndaj kontaktet mund të mos ju arrijnë. Shkaku mund të jetë një rrjet i mbingarkuar ose ndërhyrje. Ndryshimi i metodës së lidhjes së Tor-it në ura te Cilësimet, Lidhjet zakonisht ndihmon.</string>
 	<string name="contact_connection_tor_entry_relay">Tor është i lidhur, por releja e tij hyrëse po dështon në shumicën e lidhjeve. Urat zakonisht ndihmojnë.</string>
@@ -2485,4 +2485,42 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="channels_subscribers_unban">Hiqe përjashtimin</string>
 	<string name="channels_subscribers_unban_confirm">Të hiqet përjashtimi? Ky pajtimtar do të mund të komentojë dhe të reagojë sërish. Ajo që hoqi përjashtimi nuk kthehet, dhe roli i redaktorit duhet dhënë sërish.</string>
 	<string name="channels_unban_failed">Përjashtimi nuk u hoq dot</string>
+	<string name="contact_delete_failed">Kontakti nuk u fshi dot</string>
+	<string name="channels_delegations_revoke_failed">Ky redaktor nuk u shfuqizua dot</string>
+	<string name="channels_invite_rotate_failed">Lidhja e ftesës nuk u ndërrua. Lidhja e vjetër funksionon ende.</string>
+	<string name="channels_apply_unconfirmed">Pronari nuk ka konfirmuar që kërkesa juaj ka mbërritur. Provoni përsëri më vonë.</string>
+	<string name="channels_apply_banner">Prekeni për t\'i kërkuar pronarit qasje në këtë kanal.</string>
+	<string name="channels_rejoin_updated">Qasja jote në %1$s u përditësua.</string>
+	<string name="channels_rejoin_unreachable">Kjo lidhje nuk u kontrollua dot tani. Provo sërish më vonë.</string>
+	<string name="channels_rejoin_apply_again">Mund të aplikosh sërish për të lexuar postimet e reja në këtë kanal. Postimet që ke tashmë mbeten. Pronari do të shohë emrin tënd në shfaqje dhe një kyç që të përket vetëm në këtë kanal.</string>
+	<string name="channels_sync_last_updated">Përditësimi i fundit: %1$s</string>
+	<string name="channels_sync_saved_posts">Po shfaqen postimet e ruajtura</string>
+	<string name="channels_sync_saved_posts_last_updated">Po shfaqen postimet e ruajtura · Përditësimi i fundit: %1$s</string>
+	<string name="channels_sync_not_updated_since">Nuk është përditësuar që nga %1$s</string>
+	<string name="channels_owner_deleted_notice">Pronari e fshiu kanalin %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Pronari fshiu një kanal ku ishe bashkuar</string>
+	<string name="channels_queued_waiting">Në pritje për t\'u dërguar</string>
+	<string name="channels_queued_not_sent">Nuk u dërgua</string>
+	<string name="channels_queued_retry">Riprovo</string>
+	<string name="channels_queued_delete">Fshije</string>
+	<string name="channels_comment_queued_toast">Komenti yt do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_react_queued_toast">Reagimi yt do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_announce_queued_toast">Emri yt do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_post_queued_toast">Postimi yt do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_change_queued_toast">Ndryshimi yt do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_queued_notice_waiting">Një pjesë e asaj që dërgove është në pritje. Do të dërgohet kur kanali të jetë i arritshëm.</string>
+	<string name="channels_queued_notice_not_sent">Një pjesë e asaj që dërgove nuk u dërgua. Prek për ta riprovuar ose për ta fshirë.</string>
+	<string name="channels_queued_announce_label">Emri yt: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Ky kanal nuk u arrit dot. Mund të aplikosh sërish për t\'u bashkuar me këtë lidhje. Postimet që ke tashmë mbeten. Pronari do të shohë emrin tënd në shfaqje dhe një kyç që të përket vetëm në këtë kanal.</string>
+	<string name="channels_rejoin_not_restored">Kjo lidhje nuk ta ktheu qasjen në këtë kanal. Mund të kërkosh një lidhje të re.</string>
+	<string name="channels_rejoin_check_title">Të provosh këtë lidhje?</string>
+	<string name="channels_rejoin_check_message">Postimet e reja në këtë kanal nuk mund të arrihen tani. Mund ta provosh këtë lidhje për t\'i marrë sërish. Postimet që ke tashmë mbeten.</string>
+	<string name="channels_rejoin_check_action">Provo lidhjen</string>
+	<string name="channels_rejoin_try_later">Ky kanal nuk mund të arrihet tani dhe kjo lidhje është ajo që ke tashmë. Provo sërish më vonë. Postimet që ke tashmë mbeten.</string>
+	<string name="channels_rejoin_trying">Do të vazhdojmë ta provojmë këtë lidhje. Postimet që ke tashmë mbeten.</string>
+	<string name="channels_queued_already_sent">Ishte dërguar tashmë, prandaj nuk u fshi dot.</string>
+	<string name="channels_queued_behind_toast">Kjo do të dërgohet pas asaj që dërgove më parë në këtë kanal.</string>
+	<string name="channels_queued_no_access">Nuk u dërgua. Nuk ke më qasje në këtë kanal.</string>
+	<string name="channels_no_access_toast">Nuk ke më qasje në këtë kanal. Kërkoji pronarit një lidhje të re ftese.</string>
+	<string name="channels_rejoin_too_many_links">Ke tashmë disa lidhje në pritje për këtë kanal, ndaj këtë lidhje nuk e provuam. Postimet që ke tashmë mbeten.</string>
 </resources>

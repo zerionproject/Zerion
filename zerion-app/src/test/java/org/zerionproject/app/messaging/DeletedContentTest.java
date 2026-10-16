@@ -423,7 +423,8 @@ public class DeletedContentTest extends BrambleTestCase {
 				device.getMessageTracker(), device.getContactGroupFactory(),
 				device.getAutoDeleteManager(),
 				device.getStreamingAttachmentWriter(),
-				device.getIdentityManager(), validator);
+				device.getIdentityManager(), validator,
+				device.getCryptoComponent());
 	}
 
 	private MessageId own(String text, long ts) throws Exception {

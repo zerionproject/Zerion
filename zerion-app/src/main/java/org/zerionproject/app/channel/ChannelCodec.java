@@ -5,6 +5,7 @@ import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelDelegationCert;
 import org.zerionproject.app.api.channel.ChannelInviteLink;
 import org.zerionproject.app.api.channel.ChannelPost;
+import org.zerionproject.core.util.ZerionLinks;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.ByteArrayOutputStream;
@@ -511,6 +512,7 @@ class ChannelCodec {
 		if (url.length() > ChannelConstants.INVITE_LINK_MAX_LENGTH) {
 			return null;
 		}
+		url = ZerionLinks.normalizeScheme(url);
 		String prefix = ChannelConstants.INVITE_LINK_SCHEME + "://"
 				+ ChannelConstants.INVITE_LINK_HOST + "/";
 		if (!url.startsWith(prefix)) return null;

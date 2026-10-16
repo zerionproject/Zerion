@@ -257,7 +257,7 @@
   <string name="groups_dissolve_dialog_message">Дали сте сигурни дека сакате да ја распуштите оваа група?\n\nСите нејзини членови нема да можат да го продолжат разговорот и нема да ги допримат последните пораки.</string>
   <string name="groups_dissolve_button">Распуштање</string>
   <string name="groups_dissolved_dialog_title">Групата беше распуштена</string>
-  <string name="groups_dissolved_dialog_message">Создавачот на оваа група ја распушти.\n\nВие повеќе не можете да пишувате пораки во групата и можеби нема да ги примите сите објави кои биле напишани.</string>
+  <string name="groups_dissolved_dialog_message">Сопственикот на оваа група ја распушти.\n\nВие повеќе не можете да пишувате пораки во групата и можеби нема да ги примите сите објави што биле напишани.</string>
   
   <string name="groups_invitations_title">Групни покани</string>
   <string name="groups_invitations_invitation_sent">Вие го / ја поканивте %1$sда се приклучи на групата \"%2$s\".</string>
@@ -267,9 +267,9 @@
     <item quantity="one">%dотвори групна покана</item>
     <item quantity="other">%d отвори групни покани</item>
   </plurals>
-  <string name="sharing_status_groups">Само содавачот може да покани нови членови во групата. Подолу се сите моментални членови на групата.</string>
+  <string name="sharing_status_groups">Само сопственикот на групата може да покани нови членови во неа. Подолу се сите моментални членови на групата.</string>
   
-  <string name="groups_reveal_dialog_message">Можете да одберете да ги покажете контактите на сите моментални и идни членови на оваа група.\n\nОткривањето на контактите го прави вашето поврзување со групата побрзо и поверодостојно, затоа што ќе можете да комуницирате со откриените контакти дури и кога создавачот на групата е исклучен.</string>
+  <string name="groups_reveal_dialog_message">Можете да одберете дали да ги покажете контактите на сите моментални и идни членови на оваа група.\n\nОткривањето на контактите го прави вашето поврзување со групата побрзо и посигурно, затоа што ќе можете да комуницирате со откриените контакти дури и кога сопственикот на групата е исклучен.</string>
   <string name="groups_reveal_visible_revealed_by_us">Контакт врската е видлива во групата (откриена од тебе)</string>
   <string name="groups_reveal_visible_revealed_by_contact">Контакт врската е видилва во групата (открена од %s)</string>
   <string name="groups_reveal_invisible">Контакт врската не е видлива во групата</string>
@@ -1017,7 +1017,7 @@
 	<string name="channels_feed_empty_subscriber">Сè уште нема објави. Новите објави ќе се појават тука.</string>
 	<string name="channels_post_withheld">Објавата е задржана: сопственикот на каналот му ја одзеде дозволата за објавување на овој автор.</string>
 	<string name="channels_feed_connecting">Се поврзува со каналот…</string>
-	<string name="channels_feed_connecting_slow">Сè уште се поврзува. Провери дали лицето што го сподели овој канал е онлајн. Ова ќе се ажурира само од себе.</string>
+	<string name="channels_feed_connecting_slow">Сè уште се поврзува. Објавите ќе се појават тука штом каналот стане достапен.</string>
 	<string name="channels_compose_hint">Напиши им на своите претплатници…</string>
 	<string name="channels_compose_send">Објави</string>
 	<string name="channels_compose_error_empty">Напиши нешто пред да објавиш.</string>
@@ -1319,7 +1319,7 @@
 	<string name="grouptr_empty">Сè уште нема групи.</string>
 	<string name="grouptr_meta">%2$d членови</string>
 	<string name="grouptr_dissolved_suffix">(распуштена)</string>
-	<string name="grouptr_creator_tag">(создавач)</string>
+	<string name="grouptr_creator_tag">(сопственик на групата)</string>
 	<string name="grouptr_admin_tag">(администратор)</string>
 	<string name="grouptr_promote">Унапреди</string>
 	<string name="grouptr_demote">Деградирај</string>
@@ -1422,7 +1422,7 @@
 	<string name="grouptr_detail_status">Статус</string>
 	<string name="grouptr_detail_status_dissolved">Распуштена</string>
 	<string name="grouptr_open_chat">Отвори разговор</string>
-	<string name="grouptr_member_role_creator">создавач</string>
+	<string name="grouptr_member_role_creator">Сопственик на групата</string>
 	<string name="grouptr_member_role_you">ти</string>
 	<string name="grouptr_member_action_remove">Отстрани од групата</string>
 	<string name="scroll_to_bottom">Оди до дното</string>
@@ -2351,14 +2351,14 @@
 	<string name="wallet_sp_enable_first">Прво вклучи Silent Payments</string>
 	<string name="grouptr_reach_title">До кого стигнуваат твоите објави</string>
 	<string name="grouptr_reach_explanation">Објавите во групата патуваат директно меѓу членовите што се меѓусебни контакти, а членовите не ги препраќаат објавите понатаму. Овие членови не се твои контакти, па не ги добиваат твоите објави, а ти не ги добиваш нивните:\n\n%1$s\n\nДодај ги како контакти за да стигнеш до нив.</string>
-	<string name="grouptr_ttl_set_by_creator">Исчезнувачки пораки во оваа група: %1$s. Само создавачот на групата може да го промени ова.</string>
+	<string name="grouptr_ttl_set_by_creator">Исчезнувачки пораки во оваа група: %1$s. Само сопственикот на групата може да го промени ова.</string>
 	<string name="grouptr_sender_alias_format">%1$s (објавува како „%2$s“)</string>
 	<string name="grouptr_sender_unverified_format">„%1$s“ (име што не го познаваш)</string>
 	<string name="grouptr_member_out_of_reach">не е твој контакт, не ги добива твоите објави</string>
 	<string name="grouptr_member_invited">Поканет, се чека одговор</string>
 	<string name="grouptr_confirm_revoke">Да се повлече поканата за %1$s? Одговорот од тоа лице ќе биде игнориран.</string>
 	<string name="grouptr_revoke_invite">Повлечи ја поканата</string>
-	<string name="grouptr_invite_expired">Оваа покана истече. Побарај нова од создавачот на групата.</string>
+	<string name="grouptr_invite_expired">Оваа покана истече. Побарај нова од сопственикот на групата.</string>
 	<string name="reaction_removed_here_only">Отстрането само на овој уред: апликацијата на твојот контакт е премногу стара за да ја отстрани и на неговиот уред.</string>
 	<string name="startup_data_without_account_message">Zerion најде податоци на овој уред, но нема клуч на сметка што ги отвора: датотеките со клучеви недостасуваат или се оштетени. Ништо не е избришано.\n\nМожеш да го затвориш Zerion и да ги задржиш податоците, или да избришеш сè и да почнеш одново.</string>
 	<string name="startup_data_without_account_keep">Затвори и задржи</string>
@@ -2443,13 +2443,13 @@
 	<string name="grouptr_members_may_invite">Членовите можат да ги покануваат своите контакти</string>
 	<string name="grouptr_members_may_invite_summary">Додека ова е вклучено, твојот телефон автоматски ги додава луѓето што тие ќе ги поканат.</string>
 	<string name="grouptr_invite_contacts">Покани контакти</string>
-	<string name="grouptr_member_invite_needs_creator_contact">Само членовите што го имаат создавачот на групата како контакт можат да покануваат.</string>
-	<string name="grouptr_member_invite_creator_outdated">На создавачот на групата му треба понова верзија на апликацијата пред членовите да можат да покануваат.</string>
+	<string name="grouptr_member_invite_needs_creator_contact">Само членовите што го имаат сопственикот на групата како контакт можат да покануваат.</string>
+	<string name="grouptr_member_invite_creator_outdated">На сопственикот на групата му треба понова верзија на апликацијата пред членовите да можат да покануваат.</string>
 	<string name="grouptr_member_invite_contact_outdated">Потребна е понова верзија на апликацијата</string>
 	<string name="grouptr_member_invitation_received">%1$s те покани да се приклучиш на групата „%2$s“, создадена од %3$s.</string>
 	<string name="grouptr_member_invitation_received_no_name">%1$s те покани да се приклучиш на група создадена од %2$s.</string>
-	<string name="grouptr_waiting_for_admin">Се чека %1$s, создавачот на групата, да биде онлајн. Телефонот на создавачот автоматски ќе те додаде, потоа ќе можеш да објавуваш тука.</string>
-	<string name="grouptr_member_invite_accepted">Прифатено. Ќе се приклучиш штом создавачот на групата биде онлајн.</string>
+	<string name="grouptr_waiting_for_admin">Се чека %1$s, сопственикот на групата, да биде онлајн. Телефонот на сопственикот автоматски ќе те додаде, потоа ќе можеш да објавуваш тука.</string>
+	<string name="grouptr_member_invite_accepted">Прифатено. Ќе се приклучиш штом сопственикот на групата биде онлајн.</string>
 	<string name="grouptr_member_invite_unavailable">Оваа покана повеќе не може да се прифати. Побарај нова.</string>
 	<string name="grouptr_incognito">Инкогнито во оваа група</string>
 	<string name="grouptr_incognito_summary">Другите во групата гледаат случајно име наместо твоето. Членовите што се твои контакти сепак можат да те препознаат по твојот клуч.</string>
@@ -2457,7 +2457,7 @@
 	<string name="grouptr_incognito_new_name">Ново име</string>
 	<string name="grouptr_sender_incognito_format">„%1$s“ (инкогнито)</string>
 	<string name="grouptr_member_may_add">Може да додава членови</string>
-	<string name="grouptr_member_invite_creator_only">Само создавачот на групата може да додава членови.</string>
+	<string name="grouptr_member_invite_creator_only">Само сопственикот на групата може да додава членови.</string>
 	<string name="tor_status_entry_relay">Нестабилно</string>
 	<string name="tor_hidden_services_entry_relay">Влезниот реле на Tor не успева кај повеќето врски, па контактите можеби нема да можат да стигнат до тебе. Причината може да е преоптоварена мрежа или пречки. Менувањето на начинот на поврзување на Tor со мостови во Поставки, Врски обично помага.</string>
 	<string name="contact_connection_tor_entry_relay">Tor е поврзан, но неговиот влезен реле не успева кај повеќето врски. Користењето мостови обично помага.</string>
@@ -2468,4 +2468,42 @@
 	<string name="channels_subscribers_unban">Одблокирај</string>
 	<string name="channels_subscribers_unban_confirm">Да се одблокира? Овој претплатник повторно ќе може да коментира и да реагира. Она што блокирањето го отстрани не се враќа, а улогата на уредник треба повторно да се додели.</string>
 	<string name="channels_unban_failed">Не можеше да се одблокира</string>
+	<string name="contact_delete_failed">Контактот не можеше да се избрише</string>
+	<string name="channels_delegations_revoke_failed">Улогата на овој уредник не можеше да се одземе</string>
+	<string name="channels_invite_rotate_failed">Линкот за покана не е променет. Стариот линк сè уште работи.</string>
+	<string name="channels_apply_unconfirmed">Сопственикот не потврди дека ја примил твојата пријава. Обиди се повторно подоцна.</string>
+	<string name="channels_apply_banner">Допри за да побараш од сопственикот пристап до овој канал.</string>
+	<string name="channels_rejoin_updated">Твојот пристап до каналот %1$s е ажуриран.</string>
+	<string name="channels_rejoin_unreachable">Линкот не можеше да се провери во моментов. Обиди се повторно подоцна.</string>
+	<string name="channels_rejoin_apply_again">Можеш повторно да се пријавиш за да ги читаш новите објави во овој канал. Објавите што веќе ги имаш остануваат. Сопственикот ќе го види твоето име за прикажување и клуч што ти припаѓа само во овој канал.</string>
+	<string name="channels_sync_last_updated">Ажурирано %1$s</string>
+	<string name="channels_sync_saved_posts">Се прикажуваат зачуваните објави</string>
+	<string name="channels_sync_saved_posts_last_updated">Се прикажуваат зачуваните објави · Ажурирано %1$s</string>
+	<string name="channels_sync_not_updated_since">Не е ажуриран од %1$s</string>
+	<string name="channels_owner_deleted_notice">Сопственикот го избриша каналот %1$s</string>
+	<string name="channels_owner_deleted_notice_unnamed">Сопственикот избриша канал на кој се приклучи</string>
+	<string name="channels_queued_waiting">Чека на испраќање</string>
+	<string name="channels_queued_not_sent">Не е испратено</string>
+	<string name="channels_queued_retry">Обиди се повторно</string>
+	<string name="channels_queued_delete">Избриши</string>
+	<string name="channels_comment_queued_toast">Твојот коментар ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_react_queued_toast">Твојата реакција ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_announce_queued_toast">Твоето име ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_post_queued_toast">Твојата објава ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_change_queued_toast">Твојата промена ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_queued_notice_waiting">Дел од она што го испрати сè уште чека. Ќе се испрати кога каналот ќе стане достапен.</string>
+	<string name="channels_queued_notice_not_sent">Дел од она што го испрати не е испратено. Допри за да се обидеш повторно или да го избришеш.</string>
+	<string name="channels_queued_announce_label">Твоето име: %1$s</string>
+	<string name="channels_rejoin_apply_again_unreachable">Не можевме да се поврземе со овој канал. Можеш повторно да се пријавиш за приклучување преку овој линк. Објавите што веќе ги имаш остануваат. Сопственикот ќе го види твоето име за прикажување и клуч што ти припаѓа само во овој канал.</string>
+	<string name="channels_rejoin_not_restored">Овој линк не ти го врати пристапот до каналот. Можеш да побараш нов линк.</string>
+	<string name="channels_rejoin_check_title">Да се обидеме со овој линк?</string>
+	<string name="channels_rejoin_check_message">Новите објави во овој канал моментално не се достапни. Можеш да се обидеш со овој линк за повторно да ги добиваш. Објавите што веќе ги имаш остануваат.</string>
+	<string name="channels_rejoin_check_action">Обиди се со линкот</string>
+	<string name="channels_rejoin_try_later">Овој канал моментално не е достапен, а ова е истиот линк што веќе го имаш. Обиди се повторно подоцна. Објавите што веќе ги имаш остануваат.</string>
+	<string name="channels_rejoin_trying">Ќе продолжиме да се обидуваме со овој линк. Објавите што веќе ги имаш остануваат.</string>
+	<string name="channels_queued_already_sent">Веќе беше испратено, па не можеше да се избрише.</string>
+	<string name="channels_queued_behind_toast">Ова ќе се испрати по она што претходно го испрати во овој канал.</string>
+	<string name="channels_queued_no_access">Не е испратено. Веќе немаш пристап до овој канал.</string>
+	<string name="channels_no_access_toast">Веќе немаш пристап до овој канал. Побарај нов линк за покана од сопственикот.</string>
+	<string name="channels_rejoin_too_many_links">Веќе имаш неколку линкови што чекаат за овој канал, па не се обидовме со овој. Објавите што веќе ги имаш остануваат.</string>
 </resources>

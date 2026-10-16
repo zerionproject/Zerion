@@ -28,6 +28,7 @@ import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.app.api.channel.ChannelInviteLink;
 import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelRejoinResult;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
@@ -66,6 +67,7 @@ public class ChannelListFragment extends BaseFragment
 
 	private LinearLayout listContainer;
 	private View emptyView;
+	private final List<String> ownerDeletedNotices = new ArrayList<>();
 
 	@Override
 	public void injectFragment(ActivityComponent component) {
@@ -191,16 +193,69 @@ public class ChannelListFragment extends BaseFragment
 			} catch (DbException ex) {
 				channels = Collections.emptyList();
 			}
+			List<String> deleted = ownerDeletedNames();
 			List<ChannelState> finalChannels = channels;
 			Map<String, Integer> finalUnread = unread;
 			Map<String, String> finalPreview = latestPreview;
 			Map<String, Long> finalTs = latestTs;
 			if (isAdded()) {
-				runOnUiThreadUnlessDestroyed(
-						() -> render(finalChannels, finalUnread,
-								finalPreview, finalTs));
+				runOnUiThreadUnlessDestroyed(() -> {
+					ownerDeletedNotices.clear();
+					ownerDeletedNotices.addAll(deleted);
+					render(finalChannels, finalUnread, finalPreview,
+							finalTs);
+				});
 			}
 		});
+	}
+
+	private List<String> ownerDeletedNames() {
+		try {
+			List<String> names = channelManager.getOwnerDeletedChannelNames();
+			return names == null ? Collections.<String>emptyList() : names;
+		} catch (DbException ignored) {
+			return Collections.emptyList();
+		}
+	}
+
+	private void dismissOwnerDeleted(String name) {
+		ioExecutor.execute(() -> {
+			try {
+				channelManager.dismissOwnerDeletedChannelName(name);
+			} catch (DbException ignored) {
+			}
+			if (isAdded()) runOnUiThreadUnlessDestroyed(this::loadChannels);
+		});
+	}
+
+	private View buildOwnerDeletedNotice(String name) {
+		LinearLayout row = new LinearLayout(requireContext());
+		row.setOrientation(LinearLayout.HORIZONTAL);
+		row.setGravity(Gravity.CENTER_VERTICAL);
+		row.setPadding(dp(16), dp(4), dp(4), dp(4));
+		TextView text = new TextView(requireContext());
+		text.setText(name.isEmpty()
+				? getString(R.string.channels_owner_deleted_notice_unnamed)
+				: getString(R.string.channels_owner_deleted_notice, name));
+		text.setTextSize(14);
+		text.setTextColor(getResources()
+				.getColor(R.color.zerion_text_primary));
+		row.addView(text, new LinearLayout.LayoutParams(0,
+				LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+		android.widget.ImageButton close =
+				new android.widget.ImageButton(requireContext());
+		close.setImageResource(R.drawable.ic_close);
+		close.setColorFilter(getResources()
+				.getColor(R.color.zerion_text_secondary));
+		close.setBackground(null);
+		close.setContentDescription(getString(R.string.close));
+		close.setOnClickListener(v -> {
+			ownerDeletedNotices.remove(name);
+			listContainer.removeView(row);
+			dismissOwnerDeleted(name);
+		});
+		row.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
+		return row;
 	}
 
 	private String summarisePost(
@@ -228,6 +283,9 @@ public class ChannelListFragment extends BaseFragment
 			Map<String, String> latestPreview,
 			Map<String, Long> latestTs) {
 		listContainer.removeAllViews();
+		for (String name : ownerDeletedNotices) {
+			listContainer.addView(buildOwnerDeletedNotice(name));
+		}
 		if (channels.isEmpty()) {
 			emptyView.setVisibility(View.VISIBLE);
 		} else {
@@ -404,24 +462,21 @@ public class ChannelListFragment extends BaseFragment
 					Toast.LENGTH_LONG).show();
 			return;
 		}
-		if (link.requiresApproval()) {
-			showApplyDialog(link);
-			return;
-		}
 		android.app.ProgressDialog progress = showJoinProgress();
 		final byte[] cid = link.getChannelId();
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState s = channelManager.getChannel(cid);
 				if (s != null) {
-					if (isAdded()) {
-						runOnUiThreadUnlessDestroyed(() -> {
-							progress.dismiss();
-							Toast.makeText(requireContext(),
-									R.string.channels_join_already_subscribed,
-									Toast.LENGTH_SHORT).show();
-						});
-					}
+					checkHeld(link, progress);
+					return;
+				}
+				if (link.requiresApproval()) {
+					runOnUiThreadUnlessDestroyed(() -> {
+						try { progress.dismiss(); } catch (Exception ignored) { }
+						if (!isAdded()) return;
+						showApplyDialog(link, 0);
+					});
 					return;
 				}
 				channelManager.joinChannel(link);
@@ -458,11 +513,141 @@ public class ChannelListFragment extends BaseFragment
 		return d;
 	}
 
-	private void showApplyDialog(ChannelInviteLink link) {
+	private void checkHeld(ChannelInviteLink link,
+			android.app.ProgressDialog progress) {
+		String name = nameOf(link.getChannelId());
+		ChannelRejoinResult result;
+		try {
+			result = channelManager.rejoinChannel(link);
+		} catch (DbException ex) {
+			runOnUiThreadUnlessDestroyed(() -> {
+				try { progress.dismiss(); } catch (Exception ignored) { }
+			});
+			return;
+		}
+		runOnUiThreadUnlessDestroyed(() -> {
+			try { progress.dismiss(); } catch (Exception ignored) { }
+			if (!isAdded()) return;
+			if (result == ChannelRejoinResult.DELETED) {
+				loadChannels();
+				Toast.makeText(requireContext(),
+						ChannelInviteHandlerActivity.deletedMessage(
+								requireContext(), name),
+						Toast.LENGTH_LONG).show();
+			} else if (ChannelInviteHandlerActivity.applyMessage(result)
+					!= 0) {
+				showApplyDialog(link,
+						ChannelInviteHandlerActivity.applyMessage(result));
+			} else if (result == ChannelRejoinResult.CHECK_LINK) {
+				showTryLinkDialog(link);
+			} else if (ChannelInviteHandlerActivity.rejoinMessage(result)
+					!= 0) {
+				Toast.makeText(requireContext(),
+						ChannelInviteHandlerActivity.rejoinMessage(result),
+						Toast.LENGTH_LONG).show();
+			} else {
+				Toast.makeText(requireContext(),
+						R.string.channels_join_already_subscribed,
+						Toast.LENGTH_SHORT).show();
+			}
+		});
+	}
+
+	private void showTryLinkDialog(ChannelInviteLink link) {
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.channels_rejoin_check_title)
+				.setMessage(R.string.channels_rejoin_check_message)
+				.setPositiveButton(R.string.channels_rejoin_check_action,
+						(d, w) -> tryLink(link))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void tryLink(ChannelInviteLink link) {
+		android.app.ProgressDialog progress = showJoinProgress();
+		final byte[] cid = link.getChannelId();
+		ioExecutor.execute(() -> {
+			String name = nameOf(cid);
+			ChannelRejoinResult result;
+			try {
+				result = channelManager.rejoinChannelThroughLink(link);
+			} catch (DbException ex) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					try { progress.dismiss(); } catch (Exception ignored) { }
+					if (!isAdded()) return;
+					Toast.makeText(requireContext(),
+							R.string.channels_rejoin_unreachable,
+							Toast.LENGTH_LONG).show();
+				});
+				return;
+			}
+			if (result == ChannelRejoinResult.UPDATED) {
+				ioExecutor.execute(() -> {
+					try {
+						channelManager.refreshChannel(cid);
+					} catch (DbException ignored) {
+					}
+				});
+			} else if (result == ChannelRejoinResult.TRYING) {
+				ioExecutor.execute(() -> {
+					try {
+						channelManager.bootstrapChannel(cid);
+					} catch (DbException ignored) {
+					}
+				});
+			}
+			runOnUiThreadUnlessDestroyed(() -> {
+				try { progress.dismiss(); } catch (Exception ignored) { }
+				if (!isAdded()) return;
+				if (result == ChannelRejoinResult.DELETED) {
+					loadChannels();
+					Toast.makeText(requireContext(),
+							ChannelInviteHandlerActivity.deletedMessage(
+									requireContext(), name),
+							Toast.LENGTH_LONG).show();
+				} else if (result == ChannelRejoinResult.UPDATED) {
+					loadChannels();
+					Toast.makeText(requireContext(),
+							getString(R.string.channels_rejoin_updated, name),
+							Toast.LENGTH_LONG).show();
+					startActivity(ChannelFeedActivity.intent(
+							requireContext(), cid));
+				} else if (ChannelInviteHandlerActivity.rejoinMessage(result)
+						!= 0) {
+					Toast.makeText(requireContext(),
+							ChannelInviteHandlerActivity.rejoinMessage(result),
+							Toast.LENGTH_LONG).show();
+				} else {
+					Toast.makeText(requireContext(),
+							R.string.channels_join_already_subscribed,
+							Toast.LENGTH_SHORT).show();
+				}
+			});
+		});
+	}
+
+	private String nameOf(byte[] channelId) {
+		try {
+			ChannelState s = channelManager.getChannel(channelId);
+			return s == null ? "" : s.getName();
+		} catch (DbException e) {
+			return "";
+		}
+	}
+
+	private void showApplyDialog(ChannelInviteLink link, int message) {
 		View view = LayoutInflater.from(requireContext()).inflate(
 				R.layout.dialog_apply_to_join, null);
+		if (message != 0) {
+			((TextView) view.findViewById(R.id.channelApplyMessage))
+					.setText(message);
+		}
 		TextInputEditText nameInput =
 				view.findViewById(R.id.channelApplyNameInput);
+		nameInput.setFilters(new android.text.InputFilter[] {
+				new com.professor.zerion.android.util.Utf8ByteLengthFilter(
+						org.zerionproject.app.api.channel.ChannelConstants
+								.MAX_DISPLAY_NAME_BYTES)});
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_apply_title)
 				.setView(view)
@@ -487,10 +672,27 @@ public class ChannelListFragment extends BaseFragment
 		ioExecutor.execute(() -> {
 			try {
 				ChannelState existing = channelManager.getChannel(cid);
-				if (existing == null) {
-					channelManager.joinChannel(link);
+				try {
+					if (existing == null) {
+						channelManager.joinChannel(link);
+						channelManager.applyToJoin(cid, name);
+					} else {
+						channelManager.applyToJoin(link, name);
+					}
+				} catch (DbException ex) {
+					runOnUiThreadUnlessDestroyed(() -> {
+						try { progress.dismiss(); } catch (Exception ignored) { }
+						if (!isAdded()) return;
+						loadChannels();
+						Toast.makeText(requireContext(),
+								ex instanceof org.zerionproject.app.api.channel
+										.ChannelApplicationUnconfirmedException
+										? R.string.channels_apply_unconfirmed
+										: R.string.channels_apply_failed,
+								Toast.LENGTH_LONG).show();
+					});
+					return;
 				}
-				channelManager.applyToJoin(cid, name);
 				ioExecutor.execute(() -> {
 					try {
 						channelManager.bootstrapChannel(cid);
@@ -594,6 +796,15 @@ public class ChannelListFragment extends BaseFragment
 		ioExecutor.execute(() -> {
 			try {
 				channelManager.announceMyself(s.getChannelId(), name);
+			} catch (org.zerionproject.app.api.channel
+					.ChannelRequestQueuedException queued) {
+				if (!isAdded()) return;
+				int message = queued.isBehindEarlierItems()
+						? R.string.channels_queued_behind_toast
+						: R.string.channels_announce_queued_toast;
+				runOnUiThreadUnlessDestroyed(() ->
+						Toast.makeText(requireContext(), message,
+								Toast.LENGTH_LONG).show());
 			} catch (DbException ignored) {
 				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() ->
@@ -682,7 +893,13 @@ public class ChannelListFragment extends BaseFragment
 				channelManager.rotateJoinCapability(s.getChannelId());
 				if (!isAdded()) return;
 				runOnUiThreadUnlessDestroyed(() -> shareInvite(s));
-			} catch (DbException ignored) {
+			} catch (DbException e) {
+				runOnUiThreadUnlessDestroyed(() -> {
+					if (!isAdded()) return;
+					Toast.makeText(requireContext(),
+							R.string.channels_invite_rotate_failed,
+							Toast.LENGTH_LONG).show();
+				});
 			}
 		});
 	}
