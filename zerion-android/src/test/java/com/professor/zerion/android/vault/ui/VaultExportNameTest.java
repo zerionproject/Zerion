@@ -30,4 +30,28 @@ public class VaultExportNameTest {
 		assertTrue(VaultDocumentsFragment.safeExportName(
 				new String(new char[500]).replace('\0', 'a')).length() <= 120);
 	}
+
+	@Test
+	public void aPlainExportGetsTheSameCleanNameAsEverySavedCopy() {
+		assertEquals("invoicefdp.pdf",
+				VaultDocumentsFragment.safeExportName("invoice\u202Efdp.pdf"));
+		assertEquals("passport.pdf", VaultDocumentsFragment.safeExportName(
+				"pass\u200Bport.pdf"));
+		assertEquals("_CON.txt", VaultDocumentsFragment.safeExportName(
+				"CON.txt"));
+		assertEquals("hidden", VaultDocumentsFragment.safeExportName(
+				".hidden"));
+		assertEquals("rf", VaultDocumentsFragment.safeExportName("-rf"));
+		assertEquals("a_b.txt", VaultDocumentsFragment.safeExportName(
+				"a<>b.txt"));
+		assertEquals("vault-item", VaultDocumentsFragment.safeExportName(
+				"...."));
+		assertEquals("vault-item", VaultDocumentsFragment.safeExportName(
+				"\u202E\u200B"));
+		String longName = new String(new char[300]).replace('\0', 'n')
+				+ ".pdf";
+		String cut = VaultDocumentsFragment.safeExportName(longName);
+		assertEquals(64, cut.length());
+		assertTrue(cut, cut.endsWith(".pdf"));
+	}
 }

@@ -3,6 +3,7 @@ package org.zerionproject.transport;
 import org.zerionproject.tor.CircumventionProvider;
 import org.zerionproject.tor.LocationUtils;
 import org.zerionproject.tor.TorWrapper;
+import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.plugin.TransportId;
@@ -10,6 +11,8 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.junit.Test;
+import org.zerionproject.core.system.SystemClock;
+import org.zerionproject.core.test.TestFeatureFlagModule;
 
 import java.io.File;
 import java.io.IOException;
@@ -286,7 +289,9 @@ public class ZtpTorTransportTest {
 			allowing(eventBus).addListener(with(any(EventListener.class)));
 		}});
 		return new TorBridgeConfigurator(settingsManager, circumvention,
-				locationUtils, tor, eventBus, Runnable::run) {
+				locationUtils, tor, eventBus, Runnable::run,
+				new TestFeatureFlagModule().provideFeatureFlags(),
+				new NoScheduler(), new SystemClock()) {
 			@Override
 			public boolean apply() {
 				return true;
@@ -325,6 +330,69 @@ public class ZtpTorTransportTest {
 		assertEquals("padding:true", tor.calls.get(1));
 		assertEquals("network:true", tor.calls.get(2));
 		t.stop();
+		exec.shutdownNow();
+	}
+
+	@Test(timeout = 15_000)
+	public void stopTellsTheBridgeConfiguratorSoItsChecksEnd()
+			throws Exception {
+		ExecutorService exec = Executors.newCachedThreadPool();
+		RecordingTor tor = new RecordingTor();
+		ZtpConnectionHandler handler = new ZtpConnectionHandler() {
+			@Override
+			public void handlePaired(TransportId transportId, int contactId,
+					boolean incoming, InputStream in, OutputStream out) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public void handleOutgoing(TransportId transportId, int contactId,
+					InputStream in, OutputStream out) {
+			}
+
+			@Override
+			public void handleIncoming(TransportId transportId, InputStream in,
+					OutputStream out) {
+			}
+		};
+		java.util.concurrent.atomic.AtomicInteger stopped =
+				new java.util.concurrent.atomic.AtomicInteger();
+		TorBridgeConfigurator bridges =
+				new TorBridgeConfigurator(new Mockery().mock(
+						SettingsManager.class), new Mockery().mock(
+						CircumventionProvider.class), () -> "", tor,
+						new EventBus() {
+							public void addListener(EventListener l) {
+							}
+
+							public void removeListener(EventListener l) {
+							}
+
+							public void broadcast(Event e) {
+							}
+						}, Runnable::run,
+						new TestFeatureFlagModule().provideFeatureFlags(),
+						new NoScheduler(), new SystemClock()) {
+					@Override
+					public boolean apply() {
+						return true;
+					}
+
+					@Override
+					public void torStopped() {
+						stopped.incrementAndGet();
+						super.torStopped();
+					}
+				};
+		ZtpTorTransport t = new ZtpTorTransport(tor,
+				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
+				handler, bridges, () -> {
+		});
+		t.start(null);
+		assertEquals(0, stopped.get());
+		t.stop();
+		assertEquals("stop reaches the configurator", 1, stopped.get());
+		assertTrue(tor.calls.contains("stop"));
 		exec.shutdownNow();
 	}
 

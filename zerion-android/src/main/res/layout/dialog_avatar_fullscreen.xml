@@ -4,7 +4,7 @@
     android:id="@+id/dialog_background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#DD000000"
+    android:background="?attr/zerionColorMediaBackdrop"
     android:clickable="true"
     android:focusable="true">
 
@@ -30,6 +30,6 @@
         android:focusable="true"
         android:padding="12dp"
         android:src="@drawable/ic_close"
-        app:tint="@android:color/white" />
+        app:tint="?attr/zerionColorOnScrim" />
 
 </FrameLayout>

@@ -4,7 +4,7 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/zerion_dark_bg"
+	android:background="?attr/zerionColorBackground"
 	android:fitsSystemWindows="true"
 	android:padding="24dp">
 
@@ -35,7 +35,7 @@
 		android:layout_height="wrap_content"
 		android:layout_marginBottom="12dp"
 		android:text="@string/hardened_block_disable_action"
-		android:textColor="?attr/zerionAccentText"
+		android:textColor="?attr/zerionColorAccentText"
 		app:layout_constraintBottom_toTopOf="@+id/hardenedBlockQuitButton" />
 
 	<com.google.android.material.button.MaterialButton

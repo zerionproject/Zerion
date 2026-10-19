@@ -4,7 +4,6 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:background="@drawable/list_item_background_selectable"
 	android:orientation="vertical">
 
 	<include layout="@layout/list_item_conversation_top_notice_in" />
@@ -21,7 +20,6 @@
 		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
 		android:background="@drawable/msg_in_top"
 		android:elevation="@dimen/message_bubble_elevation"
-		android:textColorLink="@color/zerion_text_link"
 		tools:text="Short message"
 		tools:visibility="visible" />
 
@@ -40,6 +38,7 @@
 		<com.vanniktech.emoji.EmojiTextView
 			android:id="@+id/text"
 			style="@style/TextMessage.Notice"
+			android:textColor="@color/selectable_on_bubble_in_muted"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			app:layout_constraintStart_toStartOf="parent"
@@ -69,7 +68,7 @@
 			app:layout_constraintStart_toEndOf="@+id/time"
 			app:layout_constraintTop_toBottomOf="@+id/text"
 			app:srcCompat="@drawable/ic_bomb"
-			app:tint="@color/zerion_text_secondary_inverse"
+			app:tint="@color/selectable_on_bubble_in_muted"
 			tools:ignore="ContentDescription"
 			tools:visibility="visible" />
 

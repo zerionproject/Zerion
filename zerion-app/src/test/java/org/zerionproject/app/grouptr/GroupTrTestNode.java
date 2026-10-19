@@ -122,6 +122,11 @@ final class GroupTrTestNode {
 	private final Set<MessageId> unparseableMetadata = new HashSet<>();
 	private final List<Runnable> deferred = new ArrayList<>();
 	private boolean failRemovals = false;
+	private final Set<ContactId> failingCopies = new HashSet<>();
+	private final Map<ContactId, List<MessageId>> copiesTo = new HashMap<>();
+	private final Set<MessageId> sentCopies = new HashSet<>();
+	private final Set<MessageId> acknowledgedCopies = new HashSet<>();
+	boolean failBroadcasts = false;
 	private final boolean deferIo;
 	private int txnDepth = 0;
 	private boolean writeTxn = false;
@@ -130,6 +135,13 @@ final class GroupTrTestNode {
 	private int maxCopiesPerWriteTxn = 0;
 	private long bodyBytesUnderWriteLock = 0;
 	private int queries = 0;
+	private int readTxns = 0;
+	private int statusReads = 0;
+	private int hashes = 0;
+	@Nullable
+	private Runnable bodyReadHook = null;
+	@Nullable
+	private Runnable copyStoredHook = null;
 	private long tokens = 0;
 
 	GroupTrTestNode(byte[] localPub) {
@@ -156,7 +168,10 @@ final class GroupTrTestNode {
 				fake(ContactManager.class, this::contacts),
 				fake(MessagingManager.class, this::messaging),
 				fake(EventBus.class, (name, args) -> {
-					if (name.equals("broadcast")) broadcasts.add(args[0]);
+					if (name.equals("broadcast")) {
+						if (failBroadcasts) throw new IllegalStateException();
+						broadcasts.add(args[0]);
+					}
 					return null;
 				}),
 				fake(Clock.class, (name, args) -> now));
@@ -174,6 +189,19 @@ final class GroupTrTestNode {
 		contacts.put(id, new Contact(id, a, local.getId(), null, null, true,
 				true, false, ML_DSA_PUB));
 		return id;
+	}
+
+	void removeContact(ContactId id) {
+		contacts.remove(id);
+		Group g = contactGroups.remove(id);
+		if (g != null) {
+			Map<MessageId, BdfDictionary> held = store.remove(g.getId());
+			if (held != null) {
+				for (MessageId m : held.keySet()) messages.remove(m);
+			}
+		}
+		manager.eventOccurred(new org.zerionproject.core.api.contact.event
+				.ContactRemovedEvent(id));
 	}
 
 	void announceMinorVersion(ContactId c, int minor) {
@@ -212,6 +240,26 @@ final class GroupTrTestNode {
 		return queries;
 	}
 
+	int readTxns() {
+		return readTxns;
+	}
+
+	int statusReads() {
+		return statusReads;
+	}
+
+	int hashes() {
+		return hashes;
+	}
+
+	void afterNextBodyRead(Runnable hook) {
+		bodyReadHook = hook;
+	}
+
+	void afterNextCopyStored(Runnable hook) {
+		copyStoredHook = hook;
+	}
+
 	void deleteBody(MessageId id) {
 		deletedBodies.add(id);
 	}
@@ -222,6 +270,24 @@ final class GroupTrTestNode {
 
 	void failMessageRemovals(boolean fail) {
 		failRemovals = fail;
+	}
+
+	void failCopiesTo(ContactId c) {
+		failingCopies.add(c);
+	}
+
+	List<MessageId> copiesTo(ContactId c) {
+		List<MessageId> held = copiesTo.get(c);
+		return held == null ? new ArrayList<>() : new ArrayList<>(held);
+	}
+
+	void markSent(MessageId id) {
+		sentCopies.add(id);
+	}
+
+	void markAcknowledged(MessageId id) {
+		sentCopies.add(id);
+		acknowledgedCopies.add(id);
 	}
 
 	void putPendingMemberOffer(byte[] groupId, ContactId from,
@@ -414,8 +480,27 @@ final class GroupTrTestNode {
 	void post(ContactId from, MessageId id, byte[] groupId, byte[] sender,
 			long epoch, byte[] body, long timestamp, long autoDeleteTimer,
 			byte[] sig) {
+		post(from, id, groupId, sender, "Name", epoch, body, timestamp,
+				autoDeleteTimer, sig);
+	}
+
+	void post(ContactId from, MessageId id, byte[] groupId, byte[] sender,
+			String name, long epoch, byte[] body, long timestamp,
+			long autoDeleteTimer, byte[] sig) {
 		manager.eventOccurred(new GroupPostReceivedEvent(from, id, groupId,
-				epoch, sender, "Name", body, timestamp, autoDeleteTimer, sig));
+				epoch, sender, name, body, timestamp, autoDeleteTimer, sig));
+	}
+
+	MessageId receiveNamed(ContactId from, byte[] groupId, byte[] sender,
+			String name, long epoch, byte[] body, long timestamp) {
+		MessageId id = storeCurrent(from, groupId, sender, epoch, body,
+				timestamp, 0L, SIG);
+		BdfDictionary m = stored(id);
+		if (m == null) throw new AssertionError("post not stored");
+		m.put("groupSenderName", name);
+		post(from, id, groupId, sender, name, epoch, body, timestamp, 0L,
+				SIG);
+		return id;
 	}
 
 	MessageId storeAndPost(ContactId from, byte[] groupId, byte[] sender,
@@ -583,6 +668,8 @@ final class GroupTrTestNode {
 		String hex = toHexString(groupId);
 		((Map<?, ?>) field("postCache")).remove(hex);
 		((Set<?>) field("historyLoaded")).remove(hex);
+		Object summaries = fieldOrNull("summaries");
+		if (summaries != null) ((Map<?, ?>) summaries).remove(hex);
 	}
 
 	List<GroupTrPost> cached(byte[] groupId) throws Exception {
@@ -652,6 +739,70 @@ final class GroupTrTestNode {
 		return identities == null ? 0 : ((Map<?, ?>) identities).size();
 	}
 
+	int ownCopiesHeld() throws Exception {
+		return heldCopies((GroupTrOwnCopies) field("ownCopies"));
+	}
+
+	static int heldCopies(GroupTrOwnCopies copies) throws Exception {
+		Field f = GroupTrOwnCopies.class.getDeclaredField("postOf");
+		f.setAccessible(true);
+		return ((Map<?, ?>) f.get(copies)).size();
+	}
+
+	void useOwnCopies(GroupTrOwnCopies copies) throws Exception {
+		Field f = GroupTrManagerImpl.class.getDeclaredField("ownCopies");
+		f.setAccessible(true);
+		f.set(manager, copies);
+	}
+
+	int distinctHexStrings() throws Exception {
+		Set<Object> seen = java.util.Collections.newSetFromMap(
+				new java.util.IdentityHashMap<>());
+		Set<Object> strings = java.util.Collections.newSetFromMap(
+				new java.util.IdentityHashMap<>());
+		walk(field("ownCopies"), seen, strings);
+		return strings.size();
+	}
+
+	private static void walk(@Nullable Object o, Set<Object> seen,
+			Set<Object> strings) throws Exception {
+		if (o == null) return;
+		if (o instanceof String) {
+			if (((String) o).length() == 64) strings.add(o);
+			return;
+		}
+		if (!seen.add(o)) return;
+		if (o instanceof Map) {
+			for (Map.Entry<?, ?> e : ((Map<?, ?>) o).entrySet()) {
+				walk(e.getKey(), seen, strings);
+				walk(e.getValue(), seen, strings);
+			}
+			return;
+		}
+		if (o instanceof Collection) {
+			for (Object x : (Collection<?>) o) walk(x, seen, strings);
+			return;
+		}
+		if (o instanceof Object[]) {
+			for (Object x : (Object[]) o) walk(x, seen, strings);
+			return;
+		}
+		if (!o.getClass().getName().startsWith(
+				"org.zerionproject.app.grouptr.")) {
+			return;
+		}
+		for (Class<?> c = o.getClass(); c != null; c = c.getSuperclass()) {
+			for (Field f : c.getDeclaredFields()) {
+				if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+					continue;
+				}
+				if (f.getType().isPrimitive()) continue;
+				f.setAccessible(true);
+				walk(f.get(o), seen, strings);
+			}
+		}
+	}
+
 	int groupLockCount() throws Exception {
 		Object locks = field("groupLocks");
 		return locks instanceof Map ? ((Map<?, ?>) locks).size()
@@ -708,13 +859,22 @@ final class GroupTrTestNode {
 			if (writeTxn) {
 				writeTxns++;
 				copiesInWriteTxn = 0;
+			} else {
+				readTxns++;
 			}
 		}
 		return new Transaction(null, ro);
 	}
 
 	private void end() {
-		if (--txnDepth == 0) writeTxn = false;
+		if (--txnDepth > 0) return;
+		boolean storedCopy = writeTxn && copiesInWriteTxn > 0;
+		writeTxn = false;
+		if (storedCopy && copyStoredHook != null) {
+			Runnable hook = copyStoredHook;
+			copyStoredHook = null;
+			hook.run();
+		}
 	}
 
 	@Nullable
@@ -773,6 +933,16 @@ final class GroupTrTestNode {
 				}
 				durations.putIfAbsent(id, (Long) a[2]);
 				return null;
+			}
+			case "getMessageStatus": {
+				statusReads++;
+				MessageId id = (MessageId) a[2];
+				if (stored(id) == null && !messages.containsKey(id)) {
+					throw new NoSuchMessageException();
+				}
+				return new org.zerionproject.core.api.sync.MessageStatus(id,
+						(ContactId) a[1], sentCopies.contains(id),
+						acknowledgedCopies.contains(id));
 			}
 			case "startCleanupTimer": {
 				MessageId id = (MessageId) a[1];
@@ -857,6 +1027,9 @@ final class GroupTrTestNode {
 				break;
 			case "addLocalMessage": {
 				Message m = (Message) a[a.length == 5 ? 1 : 0];
+				if (failingCopies.contains(contactOf(m.getGroupId()))) {
+					throw new org.zerionproject.core.api.db.DbException();
+				}
 				if (writeTxn) {
 					copiesInWriteTxn++;
 					maxCopiesPerWriteTxn = Math.max(maxCopiesPerWriteTxn,
@@ -864,6 +1037,8 @@ final class GroupTrTestNode {
 				}
 				sent.add(new Sent(contactOf(m.getGroupId()),
 						lists.get(toHexString(m.getBody()))));
+				copiesTo.computeIfAbsent(contactOf(m.getGroupId()),
+						k -> new ArrayList<>()).add(m.getId());
 				messages.put(m.getId(), m);
 				BdfDictionary meta = (BdfDictionary) a[a.length == 5 ? 2 : 1];
 				if (!meta.isEmpty()) {
@@ -945,6 +1120,11 @@ final class GroupTrTestNode {
 				BdfList l = lists.get(toHexString(m.getBody()));
 				noteBodyRead(id, l.getRaw(5).length);
 				if (writeTxn) bodyBytesUnderWriteLock += l.getRaw(5).length;
+				if (bodyReadHook != null) {
+					Runnable hook = bodyReadHook;
+					bodyReadHook = null;
+					hook.run();
+				}
 				return l;
 			}
 			default:
@@ -1039,6 +1219,7 @@ final class GroupTrTestNode {
 	private Object crypto(String name, Object[] a) throws Exception {
 		switch (name) {
 			case "hash": {
+				hashes++;
 				MessageDigest d = MessageDigest.getInstance("SHA-256");
 				d.update(((String) a[0]).getBytes(StandardCharsets.UTF_8));
 				for (byte[] in : (byte[][]) a[1]) d.update(in);

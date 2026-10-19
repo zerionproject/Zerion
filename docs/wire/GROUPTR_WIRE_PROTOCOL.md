@@ -1609,6 +1609,47 @@ each relaying member which members it can reach for others and would need
 relay authorisation and loop control, and adding the members as contacts
 already gives the same reach without a third party.
 
+**What the sender is shown (device behaviour, no wire change).** Each copy
+of a post is a message of its own in the pairwise conversation with one
+contact, and the pairwise sync already keeps, for every such message,
+whether it was sent and whether that contact's device acknowledged it; it
+needs that to send again and to start a copy's disappearing timer. From
+3.0.18 the sender's group screen reads the state of its own posts from those
+copies (`GroupTrManager.getOwnPostDeliveries`, `GroupTrPostDeliveries`,
+`GroupTrOwnCopies`). Every copy of the post this device holds counts, in the
+conversation of any contact, also one to a member removed or departed since
+the post:
+
+- "waiting to send" while any copy has not left the device;
+- "sent" once every copy has left it over the internet; a copy flooded over
+  the Bluetooth mesh while the device was offline is still waiting, because
+  the mesh does not report whether any phone received it, until the copy is
+  sent over the internet;
+- "delivered" once every copy is acknowledged and every current member that
+  joined at or before the post's epoch holds an acknowledged copy.
+
+A post stays "sent" while a member of the group never got it: one out of
+reach, one whose app is too old for a post this large, or one whose copy
+could not be stored. A member removed before its copy arrived keeps the
+post "sent" too, because this device still holds that unacknowledged copy.
+A member skipped for an old app, or whose copy could not be stored, has no
+copy on this device, so once that member is removed the post can turn
+"delivered". Deleting a contact also deletes the copies held for it, which
+then no longer count. Message info names the same state.
+
+The device knows which stored messages are copies of its own posts from
+sending them and from reading them when the group's posts are loaded, and
+notes them only for the posts kept within the group's bounds (at most 200);
+it keeps that list in memory only, with one entry per member for the
+member's key rather than one per copy, and reads the sync state in batches
+of 64. When the sync reports one of those copies sent or acknowledged, the
+open group screen reads the state of that post alone; opening or reloading
+the screen reads them all. A state read earlier never replaces one read
+later. Nothing new is stored, sent or kept per member to work this out, no
+read state exists, and the screen shows one state for the whole post,
+never which member has it. Up to 3.0.17 a stored post of one's own showed
+its time only.
+
 ## What the iOS team needs to do to fix Peter's invite
 
 Concrete checklist:

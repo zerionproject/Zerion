@@ -19,12 +19,13 @@ class ChatItem {
 	private final int unread;
 	private final boolean pinned;
 	private final boolean online;
+	private final boolean muted;
 	@Nullable
 	private final AttachmentHeader avatarHeader;
 
 	ChatItem(Type type, int contactId, @Nullable byte[] blobId, String name,
 			long time, int unread, boolean pinned, boolean online,
-			@Nullable AttachmentHeader avatarHeader) {
+			boolean muted, @Nullable AttachmentHeader avatarHeader) {
 		this.type = type;
 		this.contactId = contactId;
 		this.blobId = blobId;
@@ -33,6 +34,7 @@ class ChatItem {
 		this.unread = unread;
 		this.pinned = pinned;
 		this.online = online;
+		this.muted = muted;
 		this.avatarHeader = avatarHeader;
 	}
 
@@ -72,5 +74,9 @@ class ChatItem {
 
 	boolean isOnline() {
 		return online;
+	}
+
+	boolean isMuted() {
+		return muted;
 	}
 }

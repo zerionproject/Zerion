@@ -19,15 +19,19 @@ public final class EarlyPrefs {
 
 	private static final String FILE = "early_ui_prefs";
 	private static final String DEFAULT_LANGUAGE = "default";
+	private static final String LEGACY_THEME_MOVED = "legacy_theme_moved";
+	private static final String THEME_CHOSEN = "theme_chosen";
 
 	@Nullable
 	private static volatile SharedPreferences cached;
+	private static volatile boolean legacyThemeMoved = false;
 
 	private EarlyPrefs() {
 	}
 
 	static void resetForTests() {
 		cached = null;
+		legacyThemeMoved = false;
 	}
 
 	public static String language(Context ctx) {
@@ -46,6 +50,27 @@ public final class EarlyPrefs {
 
 	public static void setTheme(Context ctx, String theme) {
 		prefs(ctx).edit().putString(PREF_THEME, theme).commit();
+	}
+
+	public static void setChosenTheme(Context ctx, String theme) {
+		prefs(ctx).edit().putString(PREF_THEME, theme)
+				.putBoolean(THEME_CHOSEN, true).commit();
+	}
+
+	public static boolean themeChosen(Context ctx) {
+		return prefs(ctx).getBoolean(THEME_CHOSEN, false);
+	}
+
+	public static boolean legacyThemeMoved(Context ctx) {
+		if (legacyThemeMoved) return true;
+		boolean moved = prefs(ctx).getBoolean(LEGACY_THEME_MOVED, false);
+		legacyThemeMoved = moved;
+		return moved;
+	}
+
+	public static void setLegacyThemeMoved(Context ctx) {
+		prefs(ctx).edit().putBoolean(LEGACY_THEME_MOVED, true).commit();
+		legacyThemeMoved = true;
 	}
 
 	public static int guiTextSize(Context ctx, int defaultIndex) {

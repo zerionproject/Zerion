@@ -9,7 +9,7 @@
     android:layout_marginBottom="4dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#20FFFFFF"
+    app:cardBackgroundColor="?attr/zerionColorBubbleInInset"
     android:visibility="gone">
 
     <LinearLayout
@@ -19,8 +19,11 @@
 
         <ImageView
             android:id="@+id/linkPreviewImage"
+            app:tint="@color/selected_media"
+            app:tintMode="src_atop"
             android:layout_width="match_parent"
             android:layout_height="120dp"
+            android:importantForAccessibility="no"
             android:scaleType="centerCrop"
             android:visibility="gone" />
 
@@ -34,32 +37,31 @@
                 android:id="@+id/linkPreviewTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="13sp"
-                android:textStyle="bold"
+                android:textColor="?attr/zerionColorOnBubbleIn"
                 android:maxLines="2"
-                android:ellipsize="end" />
+                android:ellipsize="end"
+                android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
             <TextView
                 android:id="@+id/linkPreviewDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="#B0FFFFFF"
-                android:textSize="12sp"
+                android:textColor="@color/selectable_on_bubble_in_muted"
                 android:maxLines="3"
                 android:ellipsize="end"
                 android:layout_marginTop="2dp"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
             <TextView
                 android:id="@+id/linkPreviewDomain"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/zerion_text_secondary_inverse"
-                android:textSize="12sp"
+                android:textColor="@color/selectable_on_bubble_in_muted"
                 android:maxLines="1"
                 android:ellipsize="end"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="2dp"
+                android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
         </LinearLayout>
 

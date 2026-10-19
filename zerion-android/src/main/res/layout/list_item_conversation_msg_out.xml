@@ -4,7 +4,6 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:background="@drawable/list_item_background_selectable"
 	android:orientation="vertical"
 	android:paddingTop="@dimen/message_bubble_margin">
 
@@ -36,6 +35,7 @@
 			android:background="@drawable/bg_reply_quote_out"
 			android:foreground="?android:attr/selectableItemBackground"
 			android:minWidth="@dimen/reply_quote_min_width"
+			android:minHeight="48dp"
 			android:orientation="horizontal"
 			android:visibility="gone"
 			app:layout_constrainedWidth="true"
@@ -47,7 +47,7 @@
 			<View
 				android:layout_width="3dp"
 				android:layout_height="match_parent"
-				android:background="@android:color/white" />
+				android:background="?attr/zerionColorOnBubbleOut" />
 
 			<LinearLayout
 				android:layout_width="wrap_content"
@@ -66,10 +66,9 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="1"
-					android:textColor="@android:color/white"
-					android:textSize="12sp"
-					android:textStyle="bold"
-					android:visibility="gone" />
+					android:textColor="?attr/zerionColorOnBubbleOut"
+					android:visibility="gone"
+					android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 				<TextView
 					android:id="@+id/replyText"
@@ -77,8 +76,8 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="4"
-					android:textColor="@color/zerion_text_primary_inverse"
-					android:textSize="13sp" />
+					android:textColor="?attr/zerionColorOnBubbleOutMuted"
+					android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 			</LinearLayout>
 
@@ -102,7 +101,7 @@
 		<include
 			android:id="@+id/voiceMessageView"
 			android:inflatedId="@+id/voiceMessageView"
-			layout="@layout/voice_message_view"
+			layout="@layout/voice_message_view_out"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:visibility="gone"
@@ -114,15 +113,13 @@
 
 		<com.vanniktech.emoji.EmojiTextView
 			android:id="@+id/text"
-			style="@style/TextMessage"
+			style="@style/TextMessage.Out"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginLeft="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginTop="@dimen/message_bubble_padding_top_inner"
 			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
-			android:textColor="@color/zerion_text_primary_inverse"
-			android:textColorLink="@color/zerion_text_link_inverse"
 			app:layout_constrainedWidth="true"
 			app:layout_constraintBottom_toTopOf="@+id/statusLayout"
 			app:layout_constraintEnd_toEndOf="parent"
@@ -151,7 +148,7 @@
 			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
 			android:orientation="horizontal"
-			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintBottom_toTopOf="@+id/reactionsView"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="0.0"
 			app:layout_constraintStart_toStartOf="parent"
@@ -160,12 +157,11 @@
 
 			<TextView
 				android:id="@+id/time"
-				style="@style/TextMessage.Timestamp"
+				style="@style/TextMessage.Timestamp.Out"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:layout_marginEnd="4dp"
 				android:layout_marginRight="4dp"
-				android:textColor="@color/private_message_date_inverse"
 				tools:text="Dec 24, 13:37" />
 
 			<ImageView
@@ -175,14 +171,14 @@
 				android:layout_marginEnd="4dp"
 				android:layout_marginRight="4dp"
 				app:srcCompat="@drawable/ic_bomb"
-				app:tint="@color/private_message_date_inverse"
+				app:tint="?attr/zerionColorOnBubbleOutMuted"
 				tools:ignore="ContentDescription" />
 
 			<ImageView
 				android:id="@+id/status"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				app:tint="@color/private_message_date_inverse"
+				app:tint="?attr/zerionColorOnBubbleOutMuted"
 				tools:ignore="ContentDescription"
 				tools:src="@drawable/message_delivered" />
 
@@ -197,15 +193,17 @@
 			android:layout_marginEnd="@dimen/message_bubble_padding_sides_inner"
 			android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 			android:background="@drawable/reaction_background_out"
+			android:layout_marginBottom="@dimen/message_bubble_padding_bottom"
 			android:paddingStart="6dp"
 			android:paddingEnd="6dp"
 			android:paddingTop="2dp"
 			android:paddingBottom="2dp"
-			android:textColor="@color/zerion_text_primary_inverse"
-			android:textSize="13sp"
+			android:textColor="?attr/zerionColorOnBubbleOut"
 			android:visibility="gone"
 			app:layout_constraintEnd_toEndOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/statusLayout" />
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/statusLayout"
+			android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 

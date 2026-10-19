@@ -23,7 +23,7 @@ hashes, and never replaced by an opaque prebuilt download.
 | Component | Pin |
 |---|---|
 | Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
-| OpenSSL | `3.5.8` (LTS; openssl.org source tarball, SHA-256 `a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2`, identical on openssl.org and the GitHub release asset with its published `.sha256`) |
+| OpenSSL | `3.5.9` (LTS; openssl.org source tarball, SHA-256 `603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a`, identical on openssl.org and the GitHub release asset with its published `.sha256`; its `.asc` signature verifies with subkey `C46ED3F2CBEFDA1FDAADA44264ED7B1DCCE71CB2` of the OpenSSL signing certificate `B146647E45A7B33947AB226B2A2C87D161692D40`, the trust anchor named on openssl-library.org/source) |
 | expat | `2.8.5` (SHA-256 `952c03c33a6b337f12dae7a9b0f9dee86f867550d35c994d6bdaaddd37dc8454`, identical from the GitHub release asset and the SourceForge mirror) |
 | unbound | `1.22.0` (SHA-256 `c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43`) |
 | Boost | `1.84.0` (archives.boost.io) |
@@ -48,9 +48,12 @@ become the expected gate on subsequent builds.
   tarballs above and linked statically; the app never calls the OpenAlias
   path, because every daemon address is validated as an onion or IP literal
   (or, in Direct mode, resolved by the device) before it reaches the wallet,
-  and `use_ssl=false` keeps TLS out of reach, so the residual exposure of
-  OpenSSL, unbound and expat is their internal use by the wallet library,
-  which is why all three are kept at maintained versions. Every Tor-mode daemon address (the vetted
+  and OpenSSL, unbound and expat are kept at maintained versions. The shim
+  passes `use_ssl=false`, but the pinned wallet API does not forward it
+  (`WalletImpl::doInit` ignores the flag and `wallet2::init` defaults to SSL
+  autodetect), so the daemon connection attempts a TLS handshake whose
+  verify callback accepts an unverified certificate, and a remote node's
+  certificate is parsed by the bundled OpenSSL. Every Tor-mode daemon address (the vetted
   set, custom nodes and the own node) is handed to the SOCKS proxy unresolved,
   so Tor resolves it remotely and no local DNS query is made. The one exception
   is the explicit Direct mode, which the user must acknowledge as
@@ -154,9 +157,52 @@ features CMake settled on and the SHA-256 of every archive in the link), and
 the Gradle gate prints that file when it refuses a library, so a host that
 builds different bytes can be compared with the reference stage by stage.
 
-## Accepted hashes (friend accessors and pinned build image, 2026-09-22)
+## Accepted hashes (OpenSSL 3.5.9, 2026-10-19)
 
-These are the values the Gradle gate enforces since two changes to the
+These are the values the Gradle gate enforces since the OpenSSL pin moved
+from 3.5.8 to 3.5.9. The daemon connection of the pinned wallet API attempts
+a TLS handshake (SSL autodetect, see the build flags above), so a remote
+node's certificate reaches the bundled OpenSSL and CVE-2026-35189 was within
+reach of a malicious node; `docs/SUPPLY_CHAIN.md` also requires the Tor and
+Monero copies of OpenSSL to be at the same patch release. The tarball hash
+in `build-monero-android.sh` was taken from openssl.org, compared with the
+GitHub release asset and its published `.sha256`, and the `.asc` signature
+was verified against the OpenSSL signing certificate (pins table). Nothing
+else in the recipe changed: the shim, the three documented patches, the
+other dependency pins, the Monero commit, the NDK, the base image and the
+snapshot package versions are the same. The library embeds the string
+`OpenSSL 3.5.9 29 Sep 2026` and no `3.5.8`; the 54 JNI exports are identical
+to the previous build, and the export delta (32 added, 10 removed) is confined
+to OpenSSL's own internal symbols. The ELF facts are unchanged: four
+LOAD segments aligned to 16 KB on arm64-v8a (4 KB on armeabi-v7a), RELRO
+with `BIND_NOW`, no symbol table and no debug sections, and only
+`liblog.so`, `libm.so`, `libdl.so` and `libc.so` as `NEEDED`.
+
+Produced in two independent environments that agree byte for byte: the
+pinned image of this directory's Dockerfile (`docker build -t
+zerion-monero-build:w11-ossl359 .`, one fresh container per ABI, each from
+an empty `/build`) and F-Droid's
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, where
+`fdroid-build.sh` ran as `vagrant` with the NDK under `/opt/ndk` the way the
+recipe's `prebuild` runs it. Each environment built each ABI twice, in two
+rounds on the same day, with the same result. The two environments differ
+in their host tools (CMake 3.25.1 against 3.31.6, Perl, Python and git
+versions, and ccache found only in the pinned image), and the Monero
+archives they compile hash differently (Monero is compiled with `-g`; the
+link step strips the library), while every dependency archive and the
+stripped library are identical; `out/<abi>/buildinfo.txt` records both.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `615d80158238acdd67a896641190a55615f558701a36763f88e1bb84e9620793`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `f87c8c11ea653df6e371d981f009a664d2243e691b72080fe79154f4e08555f9`**
+
+They supersede `36fef47d…` / `f382b119…` (OpenSSL 3.5.8, friend accessors
+and pinned build image), listed below for the record.
+
+## Previous hashes (friend accessors and pinned build image, 2026-09-22)
+
+These were the values the Gradle gate enforced since two changes to the
 recipe. The shim no longer redefines the access specifier around the wallet
 API headers: the build script's third documented patch makes `WalletImpl`
 and `PendingTransactionImpl` declare the shim's `ZerionWalletAccess` struct
@@ -364,7 +410,7 @@ Wrapper history (pinned Monero and dependency versions unchanged throughout):
     lock);
   - `nLookupTxs` (per-txid `/get_transactions` over the wallet's existing
     `invoke_http_json` connection: same proxy/Tor path, no failover, no retry;
-    returns factual per-index codes only — pool / mined-height / missed /
+    returns factual per-index codes only: pool / mined-height / missed /
     error).
   These reach `WalletImpl`'s private `m_refreshMutex2` and `m_wallet` through
   the `ZerionWalletAccess` friend struct the recipe declares in `wallet.h` and

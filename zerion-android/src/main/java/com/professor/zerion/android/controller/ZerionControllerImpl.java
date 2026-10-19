@@ -17,6 +17,7 @@ import com.professor.zerion.android.ZerionService.ZerionServiceConnection;
 import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.controller.handler.ResultHandler;
 import com.professor.zerion.android.api.DozeWatchdog;
+import com.professor.zerion.android.message.PendingSends;
 import com.professor.zerion.android.vault.VaultManager;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -143,6 +144,7 @@ public class ZerionControllerImpl implements ZerionController {
 
 	@Override
 	public void signOut(ResultHandler<Void> handler, boolean deleteAccount) {
+		PendingSends.get().clearSilently();
 		com.professor.zerion.android.util.SecureClipboard.clearOnSignOut(
 				activity.getApplicationContext());
 		com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder

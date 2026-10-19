@@ -109,6 +109,15 @@ public final class XmrSyncManager {
 			} catch (Throwable ignored) {
 			}
 		}
+		releaseTasks();
+	}
+
+	private void releaseTasks() {
+		Token next = active;
+		if (next != null && !next.cancelled) {
+			next.taskPending = true;
+			if (active == next && !next.cancelled) return;
+		}
 		Runnable r;
 		while ((r = tasks.poll()) != null) {
 			sessionExecutor.execute(r);
@@ -125,6 +134,7 @@ public final class XmrSyncManager {
 		if (t != null && !t.cancelled) {
 			tasks.add(task);
 			t.taskPending = true;
+			if (active != t || t.cancelled) releaseTasks();
 		} else {
 			sessionExecutor.execute(task);
 		}
@@ -132,12 +142,9 @@ public final class XmrSyncManager {
 
 	private void drainTasks(Token t) {
 		t.taskPending = false;
-		Runnable r;
-		while ((r = tasks.poll()) != null) {
-			if (!live(t)) {
-				sessionExecutor.execute(r);
-				continue;
-			}
+		while (live(t)) {
+			Runnable r = tasks.poll();
+			if (r == null) return;
 			try {
 				r.run();
 			} catch (Throwable ignored) {
@@ -340,10 +347,7 @@ public final class XmrSyncManager {
 			} catch (Throwable ignored) {
 			}
 			if (active == t) active = null;
-			Runnable r;
-			while ((r = tasks.poll()) != null) {
-				sessionExecutor.execute(r);
-			}
+			releaseTasks();
 		}
 	}
 

@@ -4,7 +4,6 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:background="@drawable/list_item_background_selectable"
 	android:orientation="vertical"
 	android:paddingHorizontal="4dp"
 	android:paddingVertical="2dp">
@@ -23,8 +22,6 @@
 		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
 		android:background="@drawable/msg_in_top"
 		android:elevation="@dimen/message_bubble_elevation"
-		android:textColor="@color/zerion_text_primary_inverse"
-		android:textColorLink="@color/zerion_text_link"
 		tools:text="Short message"
 		tools:visibility="visible" />
 
@@ -38,10 +35,10 @@
 		android:layout_marginEnd="@dimen/message_bubble_margin_non_tail"
 		android:layout_marginRight="@dimen/message_bubble_margin_non_tail"
 		android:layout_marginBottom="@dimen/message_bubble_margin"
-		app:cardBackgroundColor="@color/zerion_surface_elevated"
+		app:cardBackgroundColor="?attr/zerionColorSurfaceVariant"
 		app:cardCornerRadius="16dp"
 		app:cardElevation="2dp"
-		app:strokeColor="@color/zerion_primary_accent"
+		app:strokeColor="?attr/zerionColorAccent"
 		app:strokeWidth="1dp">
 
 		<androidx.constraintlayout.widget.ConstraintLayout
@@ -59,7 +56,7 @@
 				android:src="@drawable/ic_group"
 				app:layout_constraintStart_toStartOf="parent"
 				app:layout_constraintTop_toTopOf="parent"
-				app:tint="@color/zerion_on_accent"
+				app:tint="?attr/zerionColorOnAccent"
 				tools:ignore="ContentDescription" />
 
 			<com.vanniktech.emoji.EmojiTextView
@@ -67,13 +64,13 @@
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
 				android:layout_marginStart="12dp"
-				android:textColor="@color/zerion_text_primary"
-				android:textSize="14sp"
+				android:textColor="?attr/zerionColorOnSurface"
 				app:layout_constraintBottom_toBottomOf="@+id/request_icon"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintStart_toEndOf="@+id/request_icon"
 				app:layout_constraintTop_toTopOf="@+id/request_icon"
-				tools:text="@string/introduction_request_received" />
+				tools:text="@string/introduction_request_received"
+				android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 			<LinearLayout
 				android:id="@+id/buttons_container"
@@ -97,12 +94,11 @@
 					android:layout_marginEnd="8dp"
 					android:minWidth="100dp"
 					android:text="@string/decline"
-					android:textColor="@color/zerion_text_secondary"
-					android:textSize="14sp"
-					android:textStyle="bold"
+					android:textColor="@color/selectable_on_surface_muted"
 					app:cornerRadius="20dp"
-					app:strokeColor="@color/zerion_text_secondary"
-					app:strokeWidth="1dp" />
+					app:strokeColor="@color/selectable_on_surface_muted"
+					app:strokeWidth="1dp"
+					android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 				<com.google.android.material.button.MaterialButton
 					android:id="@+id/acceptButton"
@@ -112,12 +108,11 @@
 					android:minWidth="100dp"
 					android:text="@string/accept"
 					android:textColor="@color/zerion_button_filled_foreground"
-					android:textSize="14sp"
-					android:textStyle="bold"
 					android:insetTop="4dp"
 					android:insetBottom="4dp"
 					app:backgroundTint="@color/zerion_button_filled_background"
-					app:cornerRadius="20dp" />
+					app:cornerRadius="20dp"
+					android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 			</LinearLayout>
 
@@ -136,7 +131,7 @@
 					style="@style/TextMessage.Timestamp"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:textColor="@color/zerion_text_secondary"
+					android:textColor="@color/selectable_on_surface_muted"
 					tools:text="Dec 24, 13:37" />
 
 				<ImageView
@@ -147,7 +142,7 @@
 					android:layout_marginLeft="4dp"
 					android:visibility="gone"
 					app:srcCompat="@drawable/ic_bomb"
-					app:tint="@color/zerion_text_secondary"
+					app:tint="@color/selectable_on_surface_muted"
 					tools:ignore="ContentDescription"
 					tools:visibility="visible" />
 

@@ -2,7 +2,6 @@ package com.professor.zerion.android.settings;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.drawable.GradientDrawable;
 import android.view.View;
 
 import com.professor.zerion.R;
@@ -170,11 +169,6 @@ public class ChatPreferences {
 	}
 
 	public static void applyBubbleColor(View bubbleView, Context context) {
-		if (bubbleView.getBackground() instanceof GradientDrawable) {
-			GradientDrawable bg = (GradientDrawable) bubbleView.getBackground();
-			bg.setColor(getBubbleColor(context));
-		} else {
-			bubbleView.setBackgroundColor(getBubbleColor(context));
-		}
+		MessageStyle.read(context).tintOutgoing(bubbleView);
 	}
 }

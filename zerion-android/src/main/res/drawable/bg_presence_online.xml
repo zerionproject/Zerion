@@ -2,7 +2,7 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 	<item>
 		<shape android:shape="oval">
-			<solid android:color="@color/zerion_dark_bg" />
+			<solid android:color="?attr/zerionColorBackground" />
 		</shape>
 	</item>
 	<item
@@ -11,7 +11,7 @@
 		android:right="2dp"
 		android:top="2dp">
 		<shape android:shape="oval">
-			<solid android:color="@color/zerion_success" />
+			<solid android:color="?attr/zerionColorPresenceOnline" />
 		</shape>
 	</item>
 </layer-list>

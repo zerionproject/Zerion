@@ -1,22 +1,31 @@
 package com.professor.zerion.android.conversation;
 
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.util.LruCache;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.Transformation;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.util.StringUtils;
 import com.professor.zerion.R;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.AttachmentKinds;
 import com.professor.zerion.android.conversation.glide.ZerionImageTransformation;
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.conversation.glide.Radii;
+import com.professor.zerion.android.util.UiUtils;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
 import org.zerionproject.app.api.attachment.AttachmentReader;
@@ -33,6 +42,8 @@ import java.util.concurrent.Executors;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
+import androidx.appcompat.content.res.AppCompatResources;
+import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager.LayoutParams;
 
@@ -93,6 +104,34 @@ public class ImageViewHolder extends ViewHolder {
 	@Nullable
 	@DatabaseExecutor
 	private final Executor dbExecutor;
+	private boolean incoming = true;
+	@Nullable
+	private ColorStateList ownIcon = null;
+	private Object bound = new Object();
+
+	private final class Broken implements RequestListener<Drawable> {
+
+		private final Object token;
+
+		private Broken(Object token) {
+			this.token = token;
+		}
+
+		@Override
+		public boolean onLoadFailed(@Nullable GlideException e,
+				@Nullable Object model, Target<Drawable> target,
+				boolean isFirstResource) {
+			if (token == bound) iconTint(true);
+			return false;
+		}
+
+		@Override
+		public boolean onResourceReady(Drawable resource, Object model,
+				Target<Drawable> target, DataSource dataSource,
+				boolean isFirstResource) {
+			return false;
+		}
+	}
 
 	ImageViewHolder(View v, int imageSize, MessageId conversationItemId) {
 		this(v, imageSize, conversationItemId, null, null);
@@ -110,8 +149,43 @@ public class ImageViewHolder extends ViewHolder {
 		this.dbExecutor = dbExecutor;
 	}
 
+	void inBubble(boolean incoming) {
+		this.incoming = incoming;
+	}
+
+	private void pictureTint() {
+		tint(AppCompatResources.getColorStateList(imageView.getContext(),
+				R.color.selected_media), PorterDuff.Mode.SRC_ATOP);
+	}
+
+	private void iconTint(boolean placeholder) {
+		ColorStateList list;
+		if (incoming) {
+			list = AppCompatResources.getColorStateList(imageView.getContext(),
+					placeholder ? R.color.selectable_on_bubble_in_muted
+							: R.color.selectable_accent_icon);
+		} else {
+			if (ownIcon == null) {
+				ownIcon = ColorStateList.valueOf(UiUtils.resolveColorAttribute(
+						imageView.getContext(), R.attr.zerionColorOnBubbleOut));
+			}
+			list = ownIcon;
+		}
+		tint(list, PorterDuff.Mode.SRC_IN);
+	}
+
+	private void tint(ColorStateList list, PorterDuff.Mode mode) {
+		if (ImageViewCompat.getImageTintList(imageView) == list
+				&& ImageViewCompat.getImageTintMode(imageView) == mode) {
+			return;
+		}
+		ImageViewCompat.setImageTintList(imageView, list);
+		ImageViewCompat.setImageTintMode(imageView, mode);
+	}
+
 	void bind(AttachmentItem attachment, Radii r, boolean single,
 			boolean needsStretch) {
+		bound = new Object();
 		boolean isSticker = attachment.isSticker();
 		setViewDimensions(attachment, single, needsStretch, isSticker);
 
@@ -121,16 +195,18 @@ public class ImageViewHolder extends ViewHolder {
 					isVideo && !isSticker ? View.VISIBLE : View.GONE);
 		}
 
+		imageView.setContentDescription(AttachmentKinds.describe(
+				imageView.getContext(), attachment.getMimeType()));
 		if (attachment.isDocument() && attachment.getState() == AVAILABLE) {
 			Glide.with(imageView).clear(imageView);
+			iconTint(false);
 			imageView.setImageResource("pdf".equals(attachment.getExtension())
 					? R.drawable.ic_pdf : R.drawable.ic_document);
 			imageView.setScaleType(FIT_CENTER);
-			imageView.setContentDescription(imageView.getContext().getString(
-					R.string.document_attachment_description));
 			if (playOverlay != null) playOverlay.setVisibility(View.GONE);
 		} else if (attachment.getState() != AVAILABLE) {
 			Glide.with(imageView).clear(imageView);
+			iconTint(true);
 			if (attachment.getState() == ERROR) {
 				imageView.setImageResource(ERROR_RES);
 			} else {
@@ -139,13 +215,15 @@ public class ImageViewHolder extends ViewHolder {
 			imageView.setScaleType(FIT_CENTER);
 			if (playOverlay != null) playOverlay.setVisibility(View.GONE);
 		} else if (isSticker) {
-
+			pictureTint();
 			loadStickerImage(attachment);
 			imageView.setScaleType(FIT_CENTER);
 		} else if (isVideo) {
+			pictureTint();
 			loadVideoThumbnail(attachment, r);
 			imageView.setScaleType(CENTER_CROP);
 		} else {
+			pictureTint();
 			loadImage(attachment, r);
 			imageView.setScaleType(CENTER_CROP);
 		}
@@ -194,6 +272,7 @@ public class ImageViewHolder extends ViewHolder {
 				.load(a.getHeader())
 				.diskCacheStrategy(NONE)
 				.error(ERROR_RES)
+				.listener(new Broken(bound))
 				.transform(transformation)
 				.transition(withCrossFade())
 				.into(imageView)
@@ -205,6 +284,7 @@ public class ImageViewHolder extends ViewHolder {
 				.load(a.getHeader())
 				.diskCacheStrategy(NONE)
 				.error(ERROR_RES)
+				.listener(new Broken(bound))
 				.transition(withCrossFade())
 				.into(imageView)
 				.waitForLayout();
@@ -212,22 +292,26 @@ public class ImageViewHolder extends ViewHolder {
 
 	private void loadVideoThumbnail(AttachmentItem a, Radii r) {
 		if (attachmentReader == null || dbExecutor == null) {
+			iconTint(false);
 			imageView.setImageResource(R.drawable.ic_video);
 			imageView.setScaleType(FIT_CENTER);
 			return;
 		}
 
-		loadVideoThumbnailWithRetry(a, r, 0);
+		loadVideoThumbnailWithRetry(a, r, 0, bound);
 	}
 
-	private void renderVideoThumbnail(Bitmap thumbnail, Radii r) {
+	private void renderVideoThumbnail(Bitmap thumbnail, Radii r,
+			Object token) {
 		imageView.post(() -> {
+			if (token != bound) return;
 			Transformation<Bitmap> transformation =
 					new ZerionImageTransformation(r);
 			Glide.with(imageView)
 					.load(thumbnail)
 					.diskCacheStrategy(NONE)
 					.error(ERROR_RES)
+					.listener(new Broken(token))
 					.transform(transformation)
 					.transition(withCrossFade())
 					.into(imageView);
@@ -235,7 +319,8 @@ public class ImageViewHolder extends ViewHolder {
 	}
 
 	private void loadVideoThumbnailWithRetry(AttachmentItem a, Radii r,
-			int attemptNumber) {
+			int attemptNumber, Object token) {
+		if (token != bound) return;
 		if (dbExecutor == null || attachmentReader == null) return;
 
 		final String thumbKey = thumbPrefix(conversationItemId)
@@ -243,7 +328,7 @@ public class ImageViewHolder extends ViewHolder {
 						.getBytes());
 		Bitmap cached = VIDEO_THUMB_CACHE.get(thumbKey);
 		if (cached != null) {
-			renderVideoThumbnail(cached, r);
+			renderVideoThumbnail(cached, r, token);
 			return;
 		}
 
@@ -269,16 +354,17 @@ public class ImageViewHolder extends ViewHolder {
 				File decodeFile = tempFile;
 				tempFile = null;
 				THUMBNAIL_DECODE_EXECUTOR.execute(
-						() -> decodeThumbnail(decodeFile, thumbKey, r));
+						() -> decodeThumbnail(decodeFile, thumbKey, r, token));
 			} catch (AttachmentNotYetAvailableException e) {
 				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
 					imageView.postDelayed(() -> loadVideoThumbnailWithRetry(
-							a, r, attemptNumber + 1), THUMBNAIL_RETRY_DELAY_MS);
+							a, r, attemptNumber + 1, token),
+							THUMBNAIL_RETRY_DELAY_MS);
 				} else {
-					showVideoFallback();
+					showVideoFallback(token);
 				}
 			} catch (Exception e) {
-				showVideoFallback();
+				showVideoFallback(token);
 			} finally {
 				if (tempFile != null) {
 					com.professor.zerion.android.vault.utils.SecureMemory
@@ -288,7 +374,8 @@ public class ImageViewHolder extends ViewHolder {
 		});
 	}
 
-	private void decodeThumbnail(File file, String thumbKey, Radii r) {
+	private void decodeThumbnail(File file, String thumbKey, Radii r,
+			Object token) {
 		MediaMetadataRetriever retriever = null;
 		try {
 			retriever = new MediaMetadataRetriever();
@@ -300,12 +387,12 @@ public class ImageViewHolder extends ViewHolder {
 			}
 			if (thumbnail != null) {
 				VIDEO_THUMB_CACHE.put(thumbKey, thumbnail);
-				renderVideoThumbnail(thumbnail, r);
+				renderVideoThumbnail(thumbnail, r, token);
 			} else {
-				showVideoFallback();
+				showVideoFallback(token);
 			}
 		} catch (Exception e) {
-			showVideoFallback();
+			showVideoFallback(token);
 		} finally {
 			if (retriever != null) {
 				try {
@@ -318,8 +405,10 @@ public class ImageViewHolder extends ViewHolder {
 		}
 	}
 
-	private void showVideoFallback() {
+	private void showVideoFallback(Object token) {
 		imageView.post(() -> {
+			if (token != bound) return;
+			iconTint(false);
 			imageView.setImageResource(R.drawable.ic_video);
 			imageView.setScaleType(FIT_CENTER);
 		});

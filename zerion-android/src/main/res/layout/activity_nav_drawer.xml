@@ -33,7 +33,7 @@
 			android:foreground="?attr/selectableItemBackgroundBorderless"
 			app:cardCornerRadius="24dp"
 			app:cardElevation="0dp"
-			app:cardBackgroundColor="@color/zerion_primary_accent"
+			app:cardBackgroundColor="?attr/zerionColorAccent"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toTopOf="parent">
@@ -54,11 +54,12 @@
 			android:id="@+id/toolbarTitle"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
+			android:accessibilityHeading="true"
 			android:layout_marginStart="14dp"
 			android:layout_marginEnd="8dp"
 			android:gravity="start|center_vertical"
-			android:text="@string/contact_list_button"
-			android:textColor="@color/zerion_text_primary"
+			android:text="@string/chats_button"
+			android:textColor="?attr/zerionColorOnSurface"
 			android:textSize="22sp"
 			android:fontFamily="@font/bricolage_grotesque"
 			android:textFontWeight="500"
@@ -66,22 +67,41 @@
 			android:singleLine="true"
 			android:ellipsize="end"
 			app:layout_constraintBottom_toBottomOf="parent"
-			app:layout_constraintEnd_toStartOf="@+id/networkStatusButton"
+			app:layout_constraintEnd_toStartOf="@+id/connectionChip"
 			app:layout_constraintStart_toEndOf="@+id/profileIcon"
 			app:layout_constraintTop_toTopOf="parent" />
 
-		<ImageButton
-			android:id="@+id/networkStatusButton"
-			android:layout_width="48dp"
-			android:layout_height="48dp"
-			android:background="?attr/selectableItemBackgroundBorderless"
-			android:contentDescription="@string/network_status_title"
-			android:padding="12dp"
-			android:src="@drawable/transport_tor"
+		<com.google.android.material.button.MaterialButton
+			android:id="@+id/connectionChip"
+			style="@style/Widget.Material3.Button"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginEnd="4dp"
+			android:insetTop="6dp"
+			android:insetBottom="6dp"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:maxWidth="180dp"
+			android:minWidth="48dp"
+			android:minHeight="48dp"
+			android:paddingStart="12dp"
+			android:paddingTop="4dp"
+			android:paddingEnd="12dp"
+			android:paddingBottom="4dp"
+			android:text="@string/connecting"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta.Strong"
+			android:textColor="?attr/zerionColorWarning"
+			app:backgroundTint="?attr/zerionColorSurfaceVariant"
+			app:cornerRadius="18dp"
+			app:elevation="0dp"
+			app:icon="@drawable/ic_connection_dot"
+			app:iconGravity="textStart"
+			app:iconPadding="6dp"
+			app:iconSize="8dp"
+			app:iconTint="?attr/zerionColorWarning"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toStartOf="@+id/vaultShortcutButton"
-			app:layout_constraintTop_toTopOf="parent"
-			app:tint="@color/zerion_text_primary" />
+			app:layout_constraintTop_toTopOf="parent" />
 
 		<ImageButton
 			android:id="@+id/vaultShortcutButton"
@@ -94,7 +114,7 @@
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toStartOf="@+id/menuButton"
 			app:layout_constraintTop_toTopOf="parent"
-			app:tint="@color/zerion_text_primary" />
+			app:tint="?attr/zerionColorOnSurface" />
 
 		<ImageButton
 			android:id="@+id/menuButton"
@@ -102,13 +122,13 @@
 			android:layout_height="48dp"
 			android:layout_marginEnd="4dp"
 			android:background="?attr/selectableItemBackgroundBorderless"
-			android:contentDescription="@string/settings_button"
+			android:contentDescription="@string/selection_more_description"
 			android:padding="12dp"
 			android:src="@drawable/ic_more_vert_accent"
 			app:layout_constraintBottom_toBottomOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintTop_toTopOf="parent"
-			app:tint="@color/zerion_text_primary" />
+			app:tint="?attr/zerionColorOnSurface" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -126,7 +146,7 @@
 		android:id="@+id/bottomNavDivider"
 		android:layout_width="0dp"
 		android:layout_height="0.5dp"
-		android:background="@color/zerion_divider"
+		android:background="?attr/zerionColorDivider"
 		app:layout_constraintBottom_toTopOf="@+id/bottomNavigation"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />
@@ -134,16 +154,17 @@
 	<LinearLayout
 		android:id="@+id/bottomNavigation"
 		android:layout_width="0dp"
-		android:layout_height="56dp"
+		android:layout_height="wrap_content"
+		android:minHeight="56dp"
 		android:clipChildren="false"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:orientation="horizontal"
 		android:elevation="0dp"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent">
 
-		<TextView
+		<com.professor.zerion.android.navdrawer.TabLabel
 			android:id="@+id/tabContacts"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
@@ -152,17 +173,20 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:maxLines="2"
+			android:paddingStart="4dp"
 			android:paddingTop="6dp"
+			android:paddingEnd="4dp"
 			android:drawableTop="@drawable/ic_chat"
 			android:drawablePadding="3dp"
 			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/chats_button"
-			android:textColor="@color/zerion_text_primary"
+			android:textColor="?attr/zerionColorOnSurface"
 			android:textSize="11sp"
 			android:textStyle="bold"
 			android:letterSpacing="0.0" />
 
-		<TextView
+		<com.professor.zerion.android.navdrawer.TabLabel
 			android:id="@+id/tabGroupChats"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
@@ -171,16 +195,19 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:maxLines="2"
+			android:paddingStart="4dp"
 			android:paddingTop="6dp"
+			android:paddingEnd="4dp"
 			android:drawableTop="@drawable/ic_group"
 			android:drawablePadding="3dp"
 			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/groups_button"
-			android:textColor="@color/zerion_text_secondary"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
-		<TextView
+		<com.professor.zerion.android.navdrawer.TabLabel
 			android:id="@+id/tabChannels"
 			android:layout_width="0dp"
 			android:layout_height="match_parent"
@@ -189,29 +216,46 @@
 			android:clickable="true"
 			android:focusable="true"
 			android:gravity="center"
+			android:maxLines="2"
+			android:paddingStart="4dp"
 			android:paddingTop="6dp"
+			android:paddingEnd="4dp"
 			android:drawableTop="@drawable/ic_channels"
 			android:drawablePadding="3dp"
 			android:drawableTint="@color/tab_icon_tint"
 			android:text="@string/channels_button"
-			android:textColor="@color/zerion_text_secondary"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:textSize="11sp"
 			android:letterSpacing="0.0" />
 
 	</LinearLayout>
+
+	<Space
+		android:id="@+id/fabFloor"
+		android:layout_width="0dp"
+		android:layout_height="80dp"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent" />
+
+	<androidx.constraintlayout.widget.Barrier
+		android:id="@+id/fabBase"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		app:barrierDirection="top"
+		app:constraint_referenced_ids="fabFloor,bottomNavigation" />
 
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/fabCompose"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_marginEnd="16dp"
-		android:layout_marginBottom="80dp"
 		android:contentDescription="@string/add_contact_button"
 		android:src="@drawable/ic_add_24dp"
-		app:backgroundTint="@color/zerion_primary_accent"
+		app:backgroundTint="?attr/zerionColorAccent"
 		app:fabSize="normal"
-		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintBottom_toTopOf="@+id/fabBase"
 		app:layout_constraintEnd_toEndOf="parent"
-		app:tint="@color/zerion_on_accent" />
+		app:tint="?attr/zerionColorOnAccent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

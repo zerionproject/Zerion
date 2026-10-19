@@ -2,6 +2,9 @@ package org.zerionproject.app.api.messaging;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -44,5 +47,21 @@ public class LinkPreview {
 
 	public boolean hasImage() {
 		return imageData != null && imageData.length > 0;
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) return true;
+		if (!(o instanceof LinkPreview)) return false;
+		LinkPreview p = (LinkPreview) o;
+		return url.equals(p.url) && title.equals(p.title)
+				&& Objects.equals(description, p.description)
+				&& Arrays.equals(imageData, p.imageData);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(url, title, description)
+				+ 31 * Arrays.hashCode(imageData);
 	}
 }

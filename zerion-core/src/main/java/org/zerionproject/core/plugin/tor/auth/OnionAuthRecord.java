@@ -36,6 +36,7 @@ public final class OnionAuthRecord {
 	public boolean rekeying;
 	public long rekeyedMs;
 	public long lastSeenMs;
+	public long lastContactMs;
 	public int openDials;
 	public long nextOpenDialMs;
 	public int silenceRepairs;

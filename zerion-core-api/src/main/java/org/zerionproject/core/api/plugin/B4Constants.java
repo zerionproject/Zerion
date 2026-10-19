@@ -10,8 +10,6 @@ public interface B4Constants {
 
 	int ROTATION_MAX_DAYS = 14;
 
-	int FORCE_EXPIRE_DAYS = 90;
-
 	int ANNOUNCE_RETRY_BACKOFF_S = 60;
 
 	String WIRE_KEY_ONION3 = "onion3";
@@ -28,6 +26,10 @@ public interface B4Constants {
 	String B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX =
 			"contact_onion3_announced_at_ms.";
 	String B4_PEER_ROTATION_STATE_KEY_PREFIX = "peer_rotation_state.";
+
+	String B4_PEER_LAST_CONTACT_KEY_PREFIX = "peer_last_contact.";
+
+	long OLD_ADDRESS_SILENCE_LIMIT_MS = 90L * 24 * 60 * 60 * 1000;
 
 	String B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX =
 			"contact_pending_dial_failures.";

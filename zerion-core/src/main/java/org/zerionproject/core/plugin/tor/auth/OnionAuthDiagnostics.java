@@ -17,10 +17,20 @@ public final class OnionAuthDiagnostics {
 	private final int openDials;
 	private final long ownGeneration;
 	private final long contactGeneration;
+	private final boolean holdsPreviousAddress;
 
 	public OnionAuthDiagnostics(State state, boolean commitSent, int repairs,
 			boolean rekeying, int silenceRepairs, int openDials,
 			long ownGeneration, long contactGeneration) {
+		this(state, commitSent, repairs, rekeying, silenceRepairs, openDials,
+				ownGeneration, contactGeneration, false);
+	}
+
+	public OnionAuthDiagnostics(State state, boolean commitSent, int repairs,
+			boolean rekeying, int silenceRepairs, int openDials,
+			long ownGeneration, long contactGeneration,
+			boolean holdsPreviousAddress) {
+		this.holdsPreviousAddress = holdsPreviousAddress;
 		this.state = state;
 		this.commitSent = commitSent;
 		this.repairs = repairs;
@@ -67,5 +77,9 @@ public final class OnionAuthDiagnostics {
 
 	public long getContactGeneration() {
 		return contactGeneration;
+	}
+
+	public boolean isHoldingPreviousAddress() {
+		return holdsPreviousAddress;
 	}
 }

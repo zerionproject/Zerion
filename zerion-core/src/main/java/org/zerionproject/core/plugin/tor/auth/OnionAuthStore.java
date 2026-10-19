@@ -42,6 +42,7 @@ public class OnionAuthStore {
 	private static final String K_REKEYING = "rekeying";
 	private static final String K_REKEYED = "rekeyed";
 	private static final String K_LAST_SEEN = "lastSeen";
+	private static final String K_LAST_CONTACT = "lastContact";
 	private static final String K_OPEN_DIALS = "openDials";
 	private static final String K_NEXT_OPEN_DIAL = "nextOpenDial";
 	private static final String K_SILENCE_REPAIRS = "silenceRepairs";
@@ -66,7 +67,7 @@ public class OnionAuthStore {
 			K_READY, K_PROBE_OK, K_PEER_PROBE_OK, K_COMMIT_SENT,
 			K_PEER_COMMIT, K_PROBING, K_PROBE_UNTIL, K_STARTED,
 			K_ROTATE_ACKED, K_REPAIRS, K_NEXT_REPAIR, K_COMMIT_RESENT,
-			K_REKEYING, K_REKEYED, K_LAST_SEEN, K_OPEN_DIALS,
+			K_REKEYING, K_REKEYED, K_LAST_SEEN, K_LAST_CONTACT, K_OPEN_DIALS,
 			K_NEXT_OPEN_DIAL, K_SILENCE_REPAIRS, K_NEXT_SILENCE_REPAIR,
 			K_COMMITTED_KEY, K_COMMITTED_ONION, K_COMMITTED_GEN,
 			K_COMMITTED_LOCKED};
@@ -131,6 +132,7 @@ public class OnionAuthStore {
 		r.rekeying = s.getBoolean(key(c, K_REKEYING), false);
 		r.rekeyedMs = s.getLong(key(c, K_REKEYED), 0);
 		r.lastSeenMs = s.getLong(key(c, K_LAST_SEEN), 0);
+		r.lastContactMs = s.getLong(key(c, K_LAST_CONTACT), 0);
 		r.openDials = s.getInt(key(c, K_OPEN_DIALS), 0);
 		r.nextOpenDialMs = s.getLong(key(c, K_NEXT_OPEN_DIAL), 0);
 		r.silenceRepairs = s.getInt(key(c, K_SILENCE_REPAIRS), 0);
@@ -167,6 +169,7 @@ public class OnionAuthStore {
 		s.putBoolean(key(c, K_REKEYING), r.rekeying);
 		s.putLong(key(c, K_REKEYED), r.rekeyedMs);
 		s.putLong(key(c, K_LAST_SEEN), r.lastSeenMs);
+		s.putLong(key(c, K_LAST_CONTACT), r.lastContactMs);
 		s.putInt(key(c, K_OPEN_DIALS), r.openDials);
 		s.putLong(key(c, K_NEXT_OPEN_DIAL), r.nextOpenDialMs);
 		s.putInt(key(c, K_SILENCE_REPAIRS), r.silenceRepairs);

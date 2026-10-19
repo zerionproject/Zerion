@@ -4,6 +4,7 @@ import org.zerionproject.core.api.Cancellable;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
@@ -28,6 +29,7 @@ import javax.annotation.Nullable;
 
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ZtpPollerDescriptorRefreshTest {
 
@@ -76,6 +78,7 @@ public class ZtpPollerDescriptorRefreshTest {
 	private final java.util.concurrent.atomic.AtomicLong now =
 			new java.util.concurrent.atomic.AtomicLong(1_800_000_000_000L);
 	private volatile long dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+	private volatile boolean torDown = false;
 	private final OverlayTransport transport = new OverlayTransport() {
 		@Override
 		public TransportId getTransportId() {
@@ -91,6 +94,7 @@ public class ZtpPollerDescriptorRefreshTest {
 		public DialResult dial(int contactId, String peerAddress,
 				boolean fast) {
 			dials.incrementAndGet();
+			if (torDown) return DialResult.NOT_ATTEMPTED;
 			long ms = dialResult;
 			return new DialResult(ms != DIAL_NOT_CONNECTED, ms);
 		}
@@ -151,7 +155,7 @@ public class ZtpPollerDescriptorRefreshTest {
 	}
 
 	@Test
-	public void twoFailedDialsAfterAConnectionRefreshThePeerDescriptorsOnce() {
+	public void twoFailedDialsAfterADropRefreshThePeerDescriptorsOnce() {
 		dialResult = 20_000L;
 		report(true);
 		scheduler.runSweep();
@@ -170,10 +174,72 @@ public class ZtpPollerDescriptorRefreshTest {
 		poller.dialNow(1);
 		assertEquals("later failures do not purge again within the interval",
 				1, refreshes.get());
-		now.addAndGet(ZtpPoller.MIN_REFRESH_INTERVAL_MS);
+		now.addAndGet(ZtpPoller.SECOND_REFRESH_AFTER_MS);
 		poller.dialNow(1);
-		assertEquals("a peer that keeps failing is purged again once the interval has passed",
-				2, refreshes.get());
+		assertEquals("a dial that still fails two minutes later purges once"
+				+ " more, since the peer may have uploaded late", 2,
+				refreshes.get());
+		now.addAndGet(ZtpPoller.SECOND_REFRESH_AFTER_MS);
+		poller.dialNow(1);
+		poller.dialNow(1);
+		assertEquals("two purges per drop at most", 2, refreshes.get());
+		dialResult = 20_000L;
+		poller.dialNow(1);
+		dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+		poller.dialNow(1);
+		poller.dialNow(1);
+		assertEquals("a new drop starts a new budget", 3, refreshes.get());
+	}
+
+	@Test
+	public void dialsTorNeverMadeLeaveTheRefreshAfterADropUnused() {
+		dialResult = 20_000L;
+		report(true);
+		scheduler.runSweep();
+		assertEquals(1, dials.get());
+		torDown = true;
+		for (int i = 0; i < 4; i++) poller.dialNow(1);
+		assertEquals("dials Tor never made used up the refresh", 0,
+				refreshes.get());
+		poller.wallClock = now::get;
+		assertEquals("a dial Tor never made did not set the 30 second wait",
+				now.get() + ZtpPoller.NOT_ATTEMPTED_WAIT_MS,
+				poller.diagnostics(1).getNextDialAtMs());
+		torDown = false;
+		dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+		poller.dialNow(1);
+		poller.dialNow(1);
+		assertEquals(1, refreshes.get());
+	}
+
+	@Test
+	public void aRemovedContactLeavesNothingBehind() {
+		dialResult = 20_000L;
+		report(true);
+		scheduler.runSweep();
+		dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+		poller.dialNow(1);
+		assertTrue("a failed dial leaves a next attempt",
+				poller.diagnostics(1).getNextDialAtMs() > 0);
+		poller.eventOccurred(new ContactRemovedEvent(new ContactId(1)));
+		assertEquals("no next attempt is kept for a removed contact", 0L,
+				poller.diagnostics(1).getNextDialAtMs());
+		poller.dialNow(1);
+		poller.dialNow(1);
+		assertEquals("no descriptor refresh is owed for a removed contact",
+				0, refreshes.get());
+	}
+
+	@Test
+	public void aDropJustBeforeOurOwnBlipStillGetsItsRefresh() {
+		dialResult = 20_000L;
+		report(true);
+		scheduler.runSweep();
+		dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+		poller.pollNow();
+		poller.dialNow(1);
+		assertEquals("a peer drop is still a peer drop after our own blip",
+				1, refreshes.get());
 	}
 
 	@Test

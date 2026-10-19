@@ -11,5 +11,8 @@
 		android:left="14dp"
 		android:right="14dp"
 		android:top="10dp" />
-	<solid android:color="@color/zerion_message_received" />
+	<solid android:color="?attr/zerionColorBubbleIn" />
+	<stroke
+		android:width="@dimen/message_bubble_in_stroke"
+		android:color="?attr/zerionColorOutline" />
 </shape>

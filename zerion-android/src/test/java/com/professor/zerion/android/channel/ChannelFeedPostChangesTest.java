@@ -51,7 +51,7 @@ public class ChannelFeedPostChangesTest {
 	public static class ProbeFeed extends ChannelFeedActivity {
 
 		static final List<Runnable> io = new ArrayList<>();
-		static ChannelManager manager = mock(ChannelManager.class);
+		static ChannelManager manager;
 
 		@Override
 		public void injectActivity(ActivityComponent component) {

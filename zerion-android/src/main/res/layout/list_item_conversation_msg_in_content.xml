@@ -27,6 +27,7 @@
 		android:background="@drawable/bg_reply_quote_in"
 		android:foreground="?android:attr/selectableItemBackground"
 		android:minWidth="@dimen/reply_quote_min_width"
+		android:minHeight="48dp"
 		android:orientation="horizontal"
 		android:visibility="gone"
 		app:layout_constrainedWidth="true"
@@ -38,7 +39,7 @@
 		<View
 			android:layout_width="3dp"
 			android:layout_height="match_parent"
-			android:background="@color/zerion_primary_accent" />
+			android:background="@color/selectable_accent_icon" />
 
 		<LinearLayout
 			android:layout_width="wrap_content"
@@ -57,10 +58,9 @@
 				android:layout_height="wrap_content"
 				android:ellipsize="end"
 				android:maxLines="1"
-				android:textColor="@color/zerion_primary_accent"
-				android:textSize="12sp"
-				android:textStyle="bold"
-				android:visibility="gone" />
+				android:textColor="@color/selectable_accent_text"
+				android:visibility="gone"
+				android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 			<TextView
 				android:id="@+id/replyText"
@@ -68,8 +68,8 @@
 				android:layout_height="wrap_content"
 				android:ellipsize="end"
 				android:maxLines="4"
-				android:textColor="@color/zerion_text_secondary_inverse"
-				android:textSize="13sp" />
+				android:textColor="@color/selectable_on_bubble_in_muted"
+				android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 		</LinearLayout>
 
@@ -112,8 +112,6 @@
 		android:layout_marginTop="@dimen/message_bubble_padding_top_inner"
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
-		android:textColor="@color/zerion_text_primary_inverse"
-		android:textColorLink="@color/zerion_text_link"
 		app:layout_constrainedWidth="true"
 		app:layout_constraintBottom_toTopOf="@+id/statusLayout"
 		app:layout_constraintEnd_toEndOf="parent"
@@ -142,7 +140,7 @@
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginBottom="@dimen/message_bubble_padding_bottom_inner"
 		android:orientation="horizontal"
-		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintBottom_toTopOf="@+id/reactionsView"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintHorizontal_bias="1.0"
 		app:layout_constraintStart_toStartOf="parent"
@@ -162,7 +160,7 @@
 			android:layout_marginStart="4dp"
 			android:layout_marginLeft="4dp"
 			app:srcCompat="@drawable/ic_bomb"
-			app:tint="@color/zerion_text_secondary_inverse"
+			app:tint="@color/selectable_on_bubble_in_muted"
 			tools:ignore="ContentDescription"
 			tools:visibility="visible" />
 
@@ -177,14 +175,16 @@
 		android:layout_marginEnd="@dimen/message_bubble_padding_sides_inner"
 		android:layout_marginRight="@dimen/message_bubble_padding_sides_inner"
 		android:background="@drawable/reaction_background"
+		android:layout_marginBottom="@dimen/message_bubble_padding_bottom"
 		android:paddingStart="6dp"
 		android:paddingEnd="6dp"
 		android:paddingTop="2dp"
 		android:paddingBottom="2dp"
-		android:textColor="@color/zerion_text_primary_inverse"
-		android:textSize="13sp"
+		android:textColor="?attr/zerionColorOnBubbleIn"
 		android:visibility="gone"
 		app:layout_constraintStart_toStartOf="parent"
-		app:layout_constraintTop_toBottomOf="@+id/statusLayout" />
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/statusLayout"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

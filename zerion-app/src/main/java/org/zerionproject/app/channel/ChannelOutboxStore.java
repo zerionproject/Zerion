@@ -168,7 +168,8 @@ final class ChannelOutboxStore {
 		ChannelQueuedItem toItem() {
 			return new ChannelQueuedItem(id, kind, postSeq, text,
 					commentsOn, queuedAtMs, notSent(),
-					notSent() ? reason : ChannelQueuedItem.Reason.NONE);
+					notSent() ? reason : ChannelQueuedItem.Reason.NONE,
+					ttlSeconds);
 		}
 	}
 

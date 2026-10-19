@@ -59,6 +59,7 @@
 	<dimen name="message_bubble_margin_tail">8dp</dimen>
 	<dimen name="message_bubble_margin_non_tail">30dp</dimen>
 	<dimen name="message_bubble_stroke">1px</dimen>
+	<dimen name="message_bubble_in_stroke">1dp</dimen>
 
 	<dimen name="forum_nested_line_width">1dp</dimen>
 	<dimen name="forum_nested_indicator">25dp</dimen>
@@ -68,4 +69,5 @@
 	<dimen name="blogs_avatar_comment_size">20dp</dimen>
 
 	<dimen name="text_input_height">42dp</dimen>
+	<dimen name="message_not_sent_outline">2dp</dimen>
 </resources>

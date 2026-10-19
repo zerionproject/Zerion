@@ -194,6 +194,8 @@ public abstract class ZerionActivity extends BaseActivity {
 							this::runOnUiThread, "SignOut");
 				}, deleteAccount);
 			} else {
+				com.professor.zerion.android.message.PendingSends.get()
+						.clearSilently();
 				com.professor.zerion.android.util.SecureClipboard
 						.clearOnSignOut(this);
 				if (deleteAccount) briarController.deleteAccount();

@@ -205,6 +205,9 @@ class TransportPropertyManagerImpl implements TransportPropertyManager,
 					b4OnionRotation.onPeerRotationComplete(txn, cid,
 							currentOnion);
 				}
+				if (cid != null && isNullOrEmpty(pendingOnion)) {
+					b4OnionRotation.onPeerNextWithdrawn(txn, cid);
+				}
 			}
 			txn.attach(new RemoteTransportPropertiesUpdatedEvent(t));
 		} catch (FormatException e) {

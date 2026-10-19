@@ -44,4 +44,10 @@ class ConversationNoticeItem extends ConversationItem {
 		return msgText;
 	}
 
+	@Override
+	boolean showsTheSameAs(ConversationItem o) {
+		return super.showsTheSameAs(o) && java.util.Objects.equals(msgText,
+				((ConversationNoticeItem) o).msgText);
+	}
+
 }

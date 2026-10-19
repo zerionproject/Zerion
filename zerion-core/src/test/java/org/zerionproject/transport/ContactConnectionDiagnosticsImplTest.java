@@ -186,6 +186,27 @@ public class ContactConnectionDiagnosticsImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void aContactHoldingThePreviousAuthorizedAddressIsShownAsNotMoved() {
+		OnionAuthDiagnostics holding = new OnionAuthDiagnostics(
+				State.AUTH_REQUIRED, true, 0, false, 0, 0, 3, 4, true);
+		OnionAuthDiagnostics moved = new OnionAuthDiagnostics(
+				State.AUTH_REQUIRED, true, 0, false, 0, 0, 3, 4, false);
+		assertEquals(OwnRotation.CONTACT_NOT_MOVED,
+				ContactConnectionDiagnosticsImpl.build(Tor.CONNECTED, true,
+						true, true, null, UNKNOWN, NO_ROTATION, holding, NOW)
+						.getOwnRotation());
+		assertEquals(OwnRotation.IDLE,
+				ContactConnectionDiagnosticsImpl.build(Tor.CONNECTED, true,
+						true, true, null, UNKNOWN, NO_ROTATION, moved, NOW)
+						.getOwnRotation());
+		assertEquals(OwnRotation.CONTACT_NOT_MOVED,
+				ContactConnectionDiagnosticsImpl.ownRotation(
+						new B4RotationDiagnostics(RotationPhase.ANNOUNCING,
+								true, PeerRotationState.MIGRATED, false, 0L),
+						holding));
+	}
+
+	@Test
 	public void authorizationMapsEveryState() {
 		assertEquals(Authorization.NOT_SUPPORTED,
 				ContactConnectionDiagnosticsImpl.authorization(LEGACY));
@@ -319,6 +340,46 @@ public class ContactConnectionDiagnosticsImplTest extends BrambleMockTestCase {
 						t.isPrimitive() || t.isEnum());
 			}
 		}
+	}
+
+	@Test
+	public void theContactsHoldingAnAddressChangeComeFromBothRotations()
+			throws Exception {
+		B4OnionRotation rotation = context.mock(B4OnionRotation.class);
+		OnionClientAuthManagerImpl auth =
+				context.mock(OnionClientAuthManagerImpl.class);
+		ContactId one = new ContactId(1);
+		ContactId two = new ContactId(2);
+		ContactId three = new ContactId(3);
+		context.checking(new Expectations() {{
+			allowing(rotation).getContactsHoldingRotation();
+			will(returnValue(Arrays.asList(one, two)));
+			allowing(auth).getContactsHoldingOldAddress();
+			will(returnValue(Arrays.asList(two, three)));
+			allowing(auth).getLastContactMs(one);
+			will(returnValue(NOW - 3_600_000L));
+			allowing(auth).getLastContactMs(two);
+			will(returnValue(0L));
+			allowing(auth).getLastContactMs(three);
+			will(returnValue(0L));
+			allowing(rotation).getLastContactMs(one);
+			will(returnValue(NOW - 600_000L));
+			allowing(rotation).getLastContactMs(two);
+			will(returnValue(0L));
+			allowing(rotation).getLastContactMs(three);
+			will(returnValue(NOW - 7_200_000L));
+		}});
+		ContactConnectionDiagnosticsImpl d =
+				new ContactConnectionDiagnosticsImpl(() -> null, () -> null,
+						() -> null, () -> null, () -> null, () -> null,
+						() -> rotation, () -> auth, fixedClock());
+		assertEquals(Arrays.asList(one, two, three),
+				d.getContactsHoldingAddressChange());
+		assertEquals("the newer of both records", 600_000L,
+				d.getLastConnectedAgoMs(one));
+		assertEquals(UNKNOWN, d.getLastConnectedAgoMs(two));
+		assertEquals("the record the rotation holds for a legacy contact",
+				7_200_000L, d.getLastConnectedAgoMs(three));
 	}
 
 	@Test

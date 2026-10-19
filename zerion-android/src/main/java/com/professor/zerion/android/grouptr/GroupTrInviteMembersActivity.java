@@ -39,6 +39,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
+
 public class GroupTrInviteMembersActivity extends ZerionActivity {
 
 	private static final String EXTRA_GROUP_ID = "groupId";
@@ -98,10 +100,10 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
 		toolbar.setNavigationContentDescription(
 				androidx.appcompat.R.string.abc_action_bar_up_description);
-		toolbar.setNavigationIconTint(getResources().getColor(
-				R.color.zerion_accent_icon));
-		toolbar.setTitleTextColor(getResources().getColor(
-				R.color.zerion_text_primary));
+		toolbar.setNavigationIconTint(resolveColorAttribute(this,
+				R.attr.zerionColorAccentIcon));
+		toolbar.setTitleTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorOnSurface));
 		toolbar.setNavigationOnClickListener(v -> finish());
 		appBar.addView(toolbar, new AppBarLayout.LayoutParams(
 				AppBarLayout.LayoutParams.MATCH_PARENT,
@@ -127,9 +129,11 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		confirmFab = new FloatingActionButton(this);
 		confirmFab.setImageResource(R.drawable.ic_check_white);
 		confirmFab.setBackgroundTintList(android.content.res.ColorStateList
-				.valueOf(getResources().getColor(R.color.zerion_primary_accent)));
+				.valueOf(resolveColorAttribute(this,
+				R.attr.zerionColorAccent)));
 		confirmFab.setImageTintList(android.content.res.ColorStateList
-				.valueOf(getResources().getColor(R.color.zerion_on_accent)));
+				.valueOf(resolveColorAttribute(this,
+				R.attr.zerionColorOnAccent)));
 		confirmFab.setContentDescription(getString(R.string.grouptr_invite_confirm));
 		confirmFab.setOnClickListener(v -> onConfirm());
 		confirmFab.hide();
@@ -214,13 +218,15 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		String name = nameFor(c);
 		avatar.setText(name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase());
 		avatar.setGravity(Gravity.CENTER);
-		avatar.setTextColor(getResources().getColor(R.color.zerion_on_accent));
+		avatar.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorOnAccent));
 		avatar.setTextSize(16);
 		avatar.setTypeface(avatar.getTypeface(), Typeface.BOLD);
 		android.graphics.drawable.GradientDrawable bg =
 				new android.graphics.drawable.GradientDrawable();
 		bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-		bg.setColor(getResources().getColor(R.color.zerion_primary_accent));
+		bg.setColor(resolveColorAttribute(this,
+				R.attr.zerionColorAccent));
 		avatar.setBackground(bg);
 		LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
 				dp(40), dp(40));
@@ -230,16 +236,16 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		texts.setOrientation(LinearLayout.VERTICAL);
 		TextView nameView = new TextView(this);
 		nameView.setText(name);
-		nameView.setTextColor(getResources().getColor(
-				R.color.zerion_text_primary));
-		nameView.setTextSize(16);
+		nameView.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorOnSurface));
+		nameView.setTextAppearance(R.style.TextAppearance_Zerion_Body);
 		texts.addView(nameView);
 		if (!invitable) {
 			TextView note = new TextView(this);
 			note.setText(R.string.grouptr_member_invite_contact_outdated);
-			note.setTextColor(getResources().getColor(
-					R.color.zerion_text_secondary));
-			note.setTextSize(12);
+			note.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorOnSurfaceMuted));
+			note.setTextAppearance(R.style.TextAppearance_Zerion_Meta);
 			texts.addView(note);
 		}
 		LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(
@@ -252,7 +258,8 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		cb.setEnabled(invitable);
 		row.setEnabled(invitable);
 		cb.setButtonTintList(android.content.res.ColorStateList.valueOf(
-				getResources().getColor(R.color.zerion_accent_icon)));
+				resolveColorAttribute(this,
+				R.attr.zerionColorAccentIcon)));
 		cb.setOnCheckedChangeListener((b, checked) -> {
 			if (checked) {
 				if (!selected.contains(c)) selected.add(c);

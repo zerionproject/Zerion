@@ -28,6 +28,7 @@ import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
 import org.zerionproject.core.api.system.AndroidExecutor;
 import org.zerionproject.core.plugin.tor.B4OnionRotation;
+import org.zerionproject.transport.TorBridgeConfigurator;
 import com.professor.zerion.android.viewmodel.DbViewModel;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -77,7 +78,12 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 	private final MutableLiveData<Boolean> torEntryRelayFailing =
 			new MutableLiveData<>(false);
 
+	private final MutableLiveData<Boolean> torUsingBridges =
+			new MutableLiveData<>(false);
+
 	private final TorPublishTracker torPublishTracker;
+
+	private final TorBridgeConfigurator bridgeConfigurator;
 
 	private final MutableLiveData<B4OnionRotation.RotationPhase>
 			rotationPhase = new MutableLiveData<>(
@@ -106,9 +112,11 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 			TorPublishTracker torPublishTracker,
 			org.zerionproject.core.api.contact.ContactManager contactManager,
 			org.zerionproject.core.api.plugin.OnionClientAuthManager
-					onionClientAuthManager) {
+					onionClientAuthManager,
+			TorBridgeConfigurator bridgeConfigurator) {
 		super(app, dbExecutor, lifecycleManager, db, androidExecutor);
 		this.contactManager = contactManager;
+		this.bridgeConfigurator = bridgeConfigurator;
 		this.onionClientAuthManager = onionClientAuthManager;
 		this.app = app;
 		this.settingsManager = settingsManager;
@@ -121,6 +129,7 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		networkStatus.setValue(networkManager.getNetworkStatus());
 		torPluginState.setValue(getTransportState(TorConstants.ID));
 		torEntryRelayFailing.setValue(entryRelayFailingNow());
+		torUsingBridges.setValue(usingBridgesNow());
 		i2pPluginState.setValue(getTransportState(I2pConstants.ID));
 		torPublishTracker.refresh();
 		loadSettings();
@@ -169,9 +178,22 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		} else if (e instanceof TorBootstrapEvent) {
 			torBootstrap.postValue(((TorBootstrapEvent) e).getPercentage());
 		} else if (e instanceof TorEntryRelayEvent) {
+			torUsingBridges.postValue(usingBridgesNow());
 			torEntryRelayFailing.postValue(
 					((TorEntryRelayEvent) e).isFailing());
 		}
+	}
+
+	private boolean usingBridgesNow() {
+		org.zerionproject.core.api.plugin.Plugin p =
+				pluginManager.getPlugin(TorConstants.ID);
+		return p instanceof org.zerionproject.core.api.plugin
+				.TorEntryRelayStatus && ((org.zerionproject.core.api.plugin
+				.TorEntryRelayStatus) p).isUsingBridges();
+	}
+
+	LiveData<Boolean> getTorUsingBridges() {
+		return torUsingBridges;
 	}
 
 	private boolean entryRelayFailingNow() {
@@ -317,6 +339,15 @@ public class PluginViewModel extends DbViewModel implements EventListener {
 		Settings s = new Settings();
 		s.putBoolean(PREF_PLUGIN_ENABLE, enable);
 		mergeSettings(s, id.getString());
+	}
+
+	public void setHelperTransports(int choice) {
+		Settings s = new Settings();
+		s.putInt(TorConstants.PREF_TOR_HELPER_TRANSPORTS, choice);
+		s.put(TorConstants.PREF_TOR_HELPER_TRANSPORTS_COUNTRY,
+				choice == TorConstants.HELPER_TRANSPORTS_ASK ? ""
+						: bridgeConfigurator.helperChoiceCountry());
+		mergeSettings(s, TorConstants.ID.getString());
 	}
 
 	public void setDirectReseed(boolean enable) {

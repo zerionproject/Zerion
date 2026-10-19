@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/homeRow"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:minHeight="72dp"
+	android:background="?attr/selectableItemBackground"
+	android:clickable="true"
+	android:focusable="true"
+	android:longClickable="true"
+	android:paddingStart="16dp"
+	android:paddingTop="8dp"
+	android:paddingEnd="16dp"
+	android:paddingBottom="8dp">
+
+	<FrameLayout
+		android:id="@+id/homeRowAvatar"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:importantForAccessibility="noHideDescendants"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
+
+		<TextView
+			android:id="@+id/homeRowAvatarText"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:autoSizeMaxTextSize="18sp"
+			android:autoSizeMinTextSize="8sp"
+			android:autoSizeTextType="uniform"
+			android:background="@drawable/bg_chat_avatar"
+			android:gravity="center"
+			android:maxLines="1"
+			android:textAppearance="@style/TextAppearance.Zerion.Avatar"
+			android:textColor="?attr/zerionColorOnAccent"
+			tools:text="A" />
+
+		<com.google.android.material.imageview.ShapeableImageView
+			android:id="@+id/homeRowAvatarImage"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:scaleType="centerCrop"
+			android:visibility="gone"
+			app:shapeAppearanceOverlay="@style/ShapeAppearance.Zerion.Circle" />
+
+		<View
+			android:id="@+id/homeRowPresence"
+			android:layout_width="14dp"
+			android:layout_height="14dp"
+			android:layout_gravity="bottom|end"
+			android:background="@drawable/bg_presence_offline"
+			android:visibility="gone"
+			tools:background="@drawable/bg_presence_online"
+			tools:visibility="visible" />
+
+	</FrameLayout>
+
+	<TextView
+		android:id="@+id/homeRowName"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="16dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:importantForAccessibility="no"
+		android:maxLines="1"
+		android:textAppearance="@style/TextAppearance.Zerion.Body.Strong"
+		android:textColor="?attr/zerionColorOnSurface"
+		app:layout_constraintBottom_toTopOf="@+id/homeRowPreview"
+		app:layout_constraintEnd_toStartOf="@+id/homeRowTime"
+		app:layout_constraintStart_toEndOf="@+id/homeRowAvatar"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintVertical_chainStyle="packed"
+		tools:text="Conversation name" />
+
+	<TextView
+		android:id="@+id/homeRowTime"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:importantForAccessibility="no"
+		android:maxLines="1"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		app:layout_constraintBaseline_toBaselineOf="@+id/homeRowName"
+		app:layout_constraintEnd_toEndOf="parent"
+		tools:text="18:05" />
+
+	<TextView
+		android:id="@+id/homeRowPreview"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="16dp"
+		android:layout_marginTop="3dp"
+		android:layout_marginEnd="8dp"
+		android:ellipsize="end"
+		android:importantForAccessibility="no"
+		android:maxLines="1"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toStartOf="@+id/homeRowPinned"
+		app:layout_constraintStart_toEndOf="@+id/homeRowAvatar"
+		app:layout_constraintTop_toBottomOf="@+id/homeRowName"
+		app:layout_goneMarginEnd="6dp"
+		tools:text="You: See you on Saturday" />
+
+	<ImageView
+		android:id="@+id/homeRowPinned"
+		android:layout_width="16dp"
+		android:layout_height="16dp"
+		android:layout_marginEnd="6dp"
+		android:importantForAccessibility="no"
+		android:src="@drawable/ic_pin"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="@+id/homeRowPreview"
+		app:layout_constraintEnd_toStartOf="@+id/homeRowMuted"
+		app:layout_constraintTop_toTopOf="@+id/homeRowPreview"
+		app:layout_goneMarginEnd="0dp"
+		app:tint="?attr/zerionColorOnSurfaceMuted"
+		tools:visibility="visible" />
+
+	<ImageView
+		android:id="@+id/homeRowMuted"
+		android:layout_width="16dp"
+		android:layout_height="16dp"
+		android:layout_marginEnd="6dp"
+		android:importantForAccessibility="no"
+		android:src="@drawable/ic_notifications_off"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="@+id/homeRowPreview"
+		app:layout_constraintEnd_toStartOf="@+id/homeRowUnread"
+		app:layout_constraintTop_toTopOf="@+id/homeRowPreview"
+		app:layout_goneMarginEnd="0dp"
+		app:tint="?attr/zerionColorOnSurfaceMuted"
+		tools:visibility="visible" />
+
+	<TextView
+		android:id="@+id/homeRowUnread"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:minHeight="22dp"
+		android:background="@drawable/bg_unread_pill"
+		android:gravity="center"
+		android:importantForAccessibility="no"
+		android:maxLines="1"
+		android:minWidth="22dp"
+		android:paddingStart="7dp"
+		android:paddingEnd="7dp"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta.Strong"
+		android:textColor="?attr/zerionColorOnAccent"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="@+id/homeRowPreview"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toTopOf="@+id/homeRowPreview"
+		tools:text="3"
+		tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -195,6 +195,42 @@ public class XmrSyncManagerTest {
 	}
 
 	@Test
+	public void workForAReplacementLoopRunsWhileThatLoopSyncs()
+			throws Exception {
+		Script s = new Script();
+		s.connect = 1;
+		s.wh = 200;
+		s.dh = 200;
+		XmrSyncManager m = manager();
+		m.start("A", 1, s, nodes(N1), 9050);
+		sink.await(st -> st.state == XmrSyncState.SYNCED, AWAIT_MS);
+		CountDownLatch held = new CountDownLatch(1);
+		CountDownLatch release = new CountDownLatch(1);
+		m.submit(() -> {
+			held.countDown();
+			try {
+				release.await(AWAIT_MS, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		assertTrue(held.await(AWAIT_MS, TimeUnit.MILLISECONDS));
+		Script next = new Script();
+		next.connect = 1;
+		next.wh = 300;
+		next.dh = 300;
+		m.start("A", 2, next, nodes(N1), 9050);
+		CountDownLatch ran = new CountDownLatch(1);
+		m.submit(ran::countDown);
+		release.countDown();
+		assertTrue("work submitted for the new loop is not queued behind it",
+				ran.await(AWAIT_MS, TimeUnit.MILLISECONDS));
+		sink.await(st -> st.state == XmrSyncState.SYNCED
+				&& st.walletHeight == 300, AWAIT_MS);
+		assertTrue(m.isActive());
+	}
+
+	@Test
 	public void marksRecoveringFromSeedBeforeConnectingSoHistoryIsScanned()
 			throws Exception {
 		Script s = new Script();

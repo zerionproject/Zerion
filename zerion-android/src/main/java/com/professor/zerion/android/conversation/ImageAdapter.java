@@ -87,6 +87,7 @@ class ImageAdapter extends Adapter<ImageViewHolder> {
 		boolean isIncoming = conversationItem.isIncoming();
 		boolean hasText = conversationItem.getText() != null;
 		Radii r = getRadii(position, size, isIncoming, hasText);
+		imageViewHolder.inBubble(isIncoming);
 		imageViewHolder.bind(item, r, size == 1, singleInRow(position, size));
 	}
 

@@ -22,6 +22,7 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -195,11 +196,7 @@ public class UiUtils {
 	}
 
 	public static String formatChannelHour(Context ctx, long hourMs) {
-		int flags = FORMAT_SHOW_TIME | FORMAT_ABBREV_ALL;
-		long diff = System.currentTimeMillis() - hourMs;
-		if (diff >= DAY_IN_MILLIS) flags |= FORMAT_SHOW_DATE;
-		if (diff >= YEAR_IN_MILLIS) flags |= FORMAT_SHOW_YEAR;
-		return DateUtils.formatDateTime(ctx, hourMs, flags);
+		return HourTimes.format(ctx, hourMs, System.currentTimeMillis());
 	}
 
 	public static String formatDateFull(Context ctx, long time) {
@@ -349,6 +346,19 @@ public class UiUtils {
 		@ColorRes
 		int color = resolveAttribute(ctx, res);
 		return ContextCompat.getColor(ctx, color);
+	}
+
+	public static View listDivider(Context ctx, int startInsetPx) {
+		View divider = new View(ctx);
+		divider.setBackgroundColor(resolveColorAttribute(ctx,
+				R.attr.zerionColorDivider));
+		float density = ctx.getResources().getDisplayMetrics().density;
+		LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+				LinearLayout.LayoutParams.MATCH_PARENT,
+				Math.max(1, (int) (0.5f * density)));
+		lp.setMarginStart(startInsetPx);
+		divider.setLayoutParams(lp);
+		return divider;
 	}
 
 	public static boolean hasScreenLock(Context ctx) {

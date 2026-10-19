@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/homeEmpty"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center_horizontal"
+	android:orientation="vertical"
+	android:paddingStart="32dp"
+	android:paddingTop="96dp"
+	android:paddingEnd="32dp"
+	android:paddingBottom="32dp">
+
+	<ImageView
+		android:id="@+id/homeEmptyIcon"
+		android:layout_width="64dp"
+		android:layout_height="64dp"
+		android:layout_marginBottom="16dp"
+		android:importantForAccessibility="no"
+		app:tint="?attr/zerionColorOnSurfaceMuted"
+		tools:src="@drawable/ic_channels" />
+
+	<TextView
+		android:id="@+id/homeEmptyTitle"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:gravity="center"
+		android:textAppearance="@style/TextAppearance.Zerion.Body.Strong"
+		android:textColor="?attr/zerionColorOnSurface"
+		tools:text="@string/no_chats" />
+
+	<TextView
+		android:id="@+id/homeEmptyBody"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="8dp"
+		android:gravity="center"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		tools:text="@string/no_contacts_action" />
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/homeEmptyRetry"
+		style="@style/Widget.Material3.Button.OutlinedButton"
+		android:layout_width="wrap_content"
+		android:layout_height="48dp"
+		android:layout_marginTop="16dp"
+		android:insetTop="4dp"
+		android:insetBottom="4dp"
+		android:minWidth="120dp"
+		android:text="@string/home_list_retry"
+		android:textAppearance="@style/TextAppearance.Zerion.Label"
+		android:textColor="?attr/zerionColorAccentText"
+		android:visibility="gone"
+		app:cornerRadius="20dp"
+		app:strokeColor="?attr/zerionColorOutline"
+		app:strokeWidth="1dp" />
+
+</LinearLayout>

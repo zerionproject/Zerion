@@ -107,8 +107,9 @@ public class SaveCleanCopyActivity extends AppCompatActivity {
 			return;
 		}
 		try {
-			saver.launch(SavedFileNames.forType(result.getMimeType(),
-					System.currentTimeMillis()));
+			saver.launch(SavedFileNames.named(
+					AttachmentKinds.describe(this, result.getMimeType()),
+					result.getMimeType(), System.currentTimeMillis()));
 			launched = true;
 		} catch (ActivityNotFoundException e) {
 			failed();
@@ -126,10 +127,12 @@ public class SaveCleanCopyActivity extends AppCompatActivity {
 		SaveCleanCopy.Pending clean =
 				token == null ? null : SaveCleanCopy.take(token);
 		if (uri == null) {
+			SaveCleanCopy.done(clean);
 			finish();
 			return;
 		}
 		if (clean == null || !clean.cleaned) {
+			SaveCleanCopy.done(clean);
 			SavedFileNames.discard(getContentResolver(), uri);
 			failed();
 			return;
@@ -138,6 +141,7 @@ public class SaveCleanCopyActivity extends AppCompatActivity {
 		WeakReference<SaveCleanCopyActivity> screen = new WeakReference<>(this);
 		WORKER.execute(() -> {
 			boolean saved = write(app, uri, clean.data);
+			SaveCleanCopy.done(clean);
 			if (!saved) SavedFileNames.discard(app.getContentResolver(), uri);
 			android.os.Handler main =
 					new android.os.Handler(android.os.Looper.getMainLooper());

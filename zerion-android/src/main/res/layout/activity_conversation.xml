@@ -14,23 +14,25 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_toolbar_transparent"
-        android:elevation="6dp"
-        app:elevation="6dp">
+        android:elevation="0dp"
+        app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             style="@style/Zerion.Toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
+            android:minHeight="?attr/actionBarSize"
             android:background="@android:color/transparent"
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
-            app:navigationIconTint="@color/zerion_text_primary">
+            app:navigationIconTint="?attr/zerionColorOnSurface">
 
             <LinearLayout
                 android:id="@+id/toolbarTitleBlock"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="?attr/actionBarSize"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="?attr/selectableItemBackground"
@@ -53,12 +55,12 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:textColor="@color/zerion_text_primary"
-                        android:textSize="17sp"
-                        android:fontFamily="@font/bricolage_grotesque"
+                        android:textColor="?attr/zerionColorOnSurface"
                         android:textFontWeight="500"
                         android:letterSpacing="0.01"
-                        tools:text="Contact Name" />
+                        tools:text="Contact Name"
+                        android:textAppearance="@style/TextAppearance.Zerion.Title"
+                        android:fontFamily="@font/bricolage_grotesque" />
 
                     <TextView
                         android:id="@+id/contactSubtitle"
@@ -66,10 +68,10 @@
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
                         android:maxLines="1"
-                        android:textColor="@color/zerion_text_secondary"
-                        android:textSize="12sp"
+                        android:textColor="?attr/zerionColorOnSurfaceMuted"
                         android:letterSpacing="0.02"
-                        tools:text="End-to-end encrypted" />
+                        tools:text="End-to-end encrypted"
+                        android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
                 </LinearLayout>
 
@@ -132,10 +134,10 @@
             android:paddingEnd="20dp"
             android:paddingTop="2dp"
             android:paddingBottom="2dp"
-            android:textColor="@color/zerion_accent_text"
-            android:textSize="12sp"
+            android:textColor="?attr/zerionColorAccentText"
             android:textStyle="italic"
-            android:visibility="gone" />
+            android:visibility="gone"
+            android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
         <TextView
             android:id="@+id/verifyMediaBanner"
@@ -149,14 +151,14 @@
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
             android:background="@drawable/bg_input_bar"
-            android:textColor="@color/zerion_text_primary"
-            android:textSize="12sp"
+            android:textColor="?attr/zerionColorOnSurface"
             android:drawablePadding="8dp"
             android:gravity="center_vertical"
             android:text="@string/verify_to_send_media_banner"
             android:clickable="true"
             android:focusable="true"
-            android:visibility="gone" />
+            android:visibility="gone"
+            android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
         <TextView
             android:id="@+id/keysOutOfSyncBanner"
@@ -170,13 +172,13 @@
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
             android:background="@drawable/bg_input_bar"
-            android:textColor="@color/zerion_text_primary"
-            android:textSize="12sp"
+            android:textColor="?attr/zerionColorOnSurface"
             android:gravity="center_vertical"
             android:text="@string/identity_keys_out_of_sync_banner"
             android:clickable="true"
             android:focusable="true"
-            android:visibility="gone" />
+            android:visibility="gone"
+            android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
         <FrameLayout
             android:id="@+id/input_container"

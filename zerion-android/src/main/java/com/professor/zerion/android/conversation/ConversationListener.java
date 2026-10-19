@@ -3,9 +3,12 @@ package com.professor.zerion.android.conversation;
 import android.view.View;
 
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.selection.SelectionAction;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import androidx.annotation.UiThread;
 
@@ -26,6 +29,8 @@ interface ConversationListener {
 
 	void onMessageLongClick(ConversationItem item);
 
+	void onMessageClick(ConversationItem item);
+
 	void onReactionClicked(ConversationItem item);
 
 	void onQuoteClicked(org.zerionproject.core.api.sync.MessageId quoted);
@@ -42,5 +47,14 @@ interface ConversationListener {
 	String getReassembledVoiceMessage(boolean local, String memoId);
 
 	boolean isVoiceMemoFailed(boolean local, String memoId);
+
+	default Set<SelectionAction> rowActions(ConversationItem item) {
+		return EnumSet.noneOf(SelectionAction.class);
+	}
+
+	default boolean onRowAction(ConversationItem item,
+			SelectionAction action) {
+		return false;
+	}
 
 }

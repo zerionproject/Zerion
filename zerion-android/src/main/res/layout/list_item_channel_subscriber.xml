@@ -19,7 +19,8 @@
 		android:layout_width="40dp"
 		android:layout_height="40dp"
 		android:layout_marginEnd="14dp"
-		android:src="@drawable/ic_person" />
+		android:src="@drawable/ic_person"
+		app:tint="?attr/zerionColorOnSurfaceMuted" />
 
 	<LinearLayout
 		android:layout_width="0dp"
@@ -33,9 +34,9 @@
 			android:layout_height="wrap_content"
 			android:ellipsize="end"
 			android:maxLines="1"
-			android:textColor="@color/zerion_text_primary"
-			android:textSize="16sp"
-			tools:text="Alice" />
+			android:textColor="?attr/zerionColorOnSurface"
+			tools:text="Alice"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 		<TextView
 			android:id="@+id/subscriberSubtitle"
@@ -43,9 +44,11 @@
 			android:layout_height="wrap_content"
 			android:ellipsize="end"
 			android:maxLines="2"
-			android:textColor="@color/zerion_text_secondary"
-			android:textSize="13sp"
-			tools:text="abcd1234…" />
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
+			android:visibility="gone"
+			tools:text="Trusted"
+			tools:visibility="visible"
+			android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	</LinearLayout>
 
@@ -58,11 +61,10 @@
 		android:paddingEnd="6dp"
 		android:paddingTop="1dp"
 		android:paddingBottom="1dp"
-		android:text="@string/channels_subscribers_banned_label"
-		android:textColor="@color/zerion_on_accent"
-		android:textSize="12sp"
-		android:textStyle="bold"
+		android:text="@string/channels_settings_blocked"
+		android:textColor="?attr/zerionColorOnAccent"
 		android:visibility="gone"
-		tools:visibility="visible" />
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta.Strong" />
 
 </LinearLayout>

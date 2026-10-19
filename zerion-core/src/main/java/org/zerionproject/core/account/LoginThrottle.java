@@ -9,6 +9,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.channels.FileChannel;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -18,6 +20,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
+import static org.zerionproject.core.util.OsUtils.isWindows;
 import static org.zerionproject.core.util.StringUtils.UTF_8;
 
 @ThreadSafe
@@ -294,9 +297,7 @@ public final class LoginThrottle {
 			out.getFD().sync();
 		}
 		try {
-			Files.move(tmp.toPath(), target.toPath(),
-					StandardCopyOption.ATOMIC_MOVE,
-					StandardCopyOption.REPLACE_EXISTING);
+			replace(tmp, target);
 		} catch (IOException e) {
 			if (!tmp.renameTo(target)) {
 				tmp.delete();
@@ -304,6 +305,38 @@ public final class LoginThrottle {
 			}
 		}
 		syncDirectory(dir);
+	}
+
+	private static final int REPLACE_ATTEMPTS = 20;
+	private static final long REPLACE_RETRY_MS = 100;
+
+	private static void replace(File tmp, File target) throws IOException {
+		int attempts = isWindows() ? REPLACE_ATTEMPTS : 1;
+		for (int attempt = 1; ; attempt++) {
+			try {
+				Files.move(tmp.toPath(), target.toPath(),
+						StandardCopyOption.ATOMIC_MOVE,
+						StandardCopyOption.REPLACE_EXISTING);
+				return;
+			} catch (AccessDeniedException e) {
+				if (attempt >= attempts || !waitBeforeRetry()) throw e;
+			} catch (FileSystemException e) {
+				if (e.getClass() != FileSystemException.class
+						|| attempt >= attempts || !waitBeforeRetry()) {
+					throw e;
+				}
+			}
+		}
+	}
+
+	private static boolean waitBeforeRetry() {
+		try {
+			Thread.sleep(REPLACE_RETRY_MS);
+			return true;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return false;
+		}
 	}
 
 	public static void syncDirectory(@Nullable File dir) {

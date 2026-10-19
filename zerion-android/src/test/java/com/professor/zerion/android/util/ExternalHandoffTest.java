@@ -211,7 +211,10 @@ public class ExternalHandoffTest {
 		assertEquals("video/mp4", view.getType());
 		File copy = ExternalHandoff.current();
 		assertNotNull(copy);
-		assertArrayEquals(clean, Files.readAllBytes(copy.toPath()));
+		assertArrayEquals(new byte[] {7, 7, 7},
+				Files.readAllBytes(copy.toPath()));
+		assertArrayEquals("the cleaned copy stays in memory after staging",
+				new byte[clean.length], clean);
 		assertEquals(Arrays.asList("video/quicktime"), asked);
 	}
 

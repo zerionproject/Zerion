@@ -200,7 +200,7 @@ public class OnionTargetsOffLoopbackTest {
 				return "ED25519-V3:key";
 			}
 		};
-		return new ZtpDuplexPlugin(exec, exec, SocketFactory.getDefault(),
+		return new ZtpDuplexPlugin(exec, exec, null, SocketFactory.getDefault(),
 				new ZtpTorTransportTest.StubTor(), t, null, rendezvous, null,
 				null, null, null, null);
 	}

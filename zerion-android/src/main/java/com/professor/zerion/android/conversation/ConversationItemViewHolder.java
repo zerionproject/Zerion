@@ -7,12 +7,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.accessibility.RowReading;
+import com.professor.zerion.android.accessibility.TouchTargets;
+import com.professor.zerion.android.selection.RowActions;
+import com.professor.zerion.android.selection.SelectedFill;
+import com.professor.zerion.android.selection.SelectionAction;
+import com.professor.zerion.android.selection.SelectionRows;
 import org.zerionproject.app.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.core.api.sync.MessageId;
 
 import java.net.URL;
 import java.util.Map;
+import java.util.Set;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.Nullable;
@@ -52,6 +59,9 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	private float lastTextSizeSp = -1f;
 	@Nullable
 	private Integer lastBubbleColor = null;
+	private boolean bare = false;
+	@Nullable
+	private com.professor.zerion.android.settings.MessageStyle messageStyle = null;
 	@Nullable
 	private final android.graphics.drawable.Drawable defaultBubbleBackground;
 	@Nullable
@@ -67,6 +77,12 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	@Nullable
 	private final TextView linkPreviewDomain;
 
+	private java.util.function.BooleanSupplier selecting = () -> false;
+
+	void setSelecting(java.util.function.BooleanSupplier selecting) {
+		this.selecting = selecting;
+	}
+
 	ConversationItemViewHolder(View v, ConversationListener listener,
 			boolean isIncoming) {
 		super(v);
@@ -76,6 +92,7 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		topNotice = v.findViewById(R.id.topNotice);
 		layout = v.findViewById(R.id.layout);
 		defaultBubbleBackground = layout.getBackground();
+		if (isIncoming) SelectedFill.received(layout);
 		text = v.findViewById(R.id.text);
 		time = v.findViewById(R.id.time);
 		bomb = v.findViewById(R.id.bomb);
@@ -83,6 +100,10 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		replyText = layout.findViewById(R.id.replyText);
 		replyAuthor = layout.findViewById(R.id.replyAuthor);
 		reactionsView = layout.findViewById(R.id.reactionsView);
+		if (reactionsView != null) {
+			TouchTargets.atLeast48dp(reactionsView,
+					layout.findViewById(R.id.statusLayout));
+		}
 		linkPreviewCard = layout.findViewById(R.id.linkPreviewCard);
 		if (linkPreviewCard != null) {
 			linkPreviewImage = linkPreviewCard.findViewById(
@@ -104,9 +125,30 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	void onRecycled() {
 	}
 
+	void setMessageStyle(com.professor.zerion.android.settings.MessageStyle style) {
+		messageStyle = style;
+	}
+
+	private com.professor.zerion.android.settings.MessageStyle messageStyle() {
+		com.professor.zerion.android.settings.MessageStyle s = messageStyle;
+		if (s == null) {
+			s = com.professor.zerion.android.settings.MessageStyle.read(text.getContext());
+			messageStyle = s;
+		}
+		return s;
+	}
+
 	void bindTimeOnly(ConversationItem item) {
 		setTopNotice(item);
-		time.setText(timeLabel(item));
+		bindTime(item);
+	}
+
+	private void bindTime(ConversationItem item) {
+		if (outViewHolder == null) {
+			time.setText(timeLabel(item));
+		} else {
+			outViewHolder.bind(item, time, timeLabel(item));
+		}
 	}
 
 	private String timeLabel(ConversationItem item) {
@@ -127,83 +169,76 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	protected void applyStickerTextStyle() {
 		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 64f);
 		lastTextSizeSp = 64f;
-		layout.setBackground(null);
-		lastBubbleColor = null;
+		bareBubble();
 	}
 
 	protected void applyDefaultTextStyle() {
-		float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
-				.getMessageTextSizeSp(text.getContext());
+		float textSizeSp = messageStyle().getTextSizeSp();
 		text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, textSizeSp);
 		lastTextSizeSp = textSizeSp;
-		if (layout.getBackground() == null && defaultBubbleBackground != null
+		restoreBubble();
+	}
+
+	protected void bareBubble() {
+		if (bare) return;
+		SelectedFill.bare(layout);
+		bare = true;
+		lastBubbleColor = null;
+	}
+
+	protected void restoreBubble() {
+		if (bare && defaultBubbleBackground != null
 				&& defaultBubbleBackground.getConstantState() != null) {
 			layout.setBackground(defaultBubbleBackground.getConstantState()
 					.newDrawable().mutate());
 		}
-		if (outViewHolder != null) {
-			int bubbleColor = com.professor.zerion.android.settings.ChatPreferences
-					.getBubbleColor(layout.getContext());
-			android.graphics.drawable.Drawable bg = layout.getBackground();
-			if (bg != null) {
-				bg = bg.mutate();
-				bg.setColorFilter(bubbleColor,
-						android.graphics.PorterDuff.Mode.SRC_IN);
-				layout.setBackground(bg);
-			}
-			lastBubbleColor = bubbleColor;
+		if (bare && outViewHolder == null) SelectedFill.received(layout);
+		bare = false;
+		paintBubble();
+	}
+
+	private void paintBubble() {
+		if (bare || outViewHolder == null) return;
+		int bubbleColor = messageStyle().getBubbleColor();
+		if (lastBubbleColor != null && lastBubbleColor == bubbleColor) return;
+		SelectedFill.own(layout, bubbleColor);
+		lastBubbleColor = bubbleColor;
+		tintOutgoingVoice(bubbleColor);
+	}
+
+	protected void paintPart(View part) {
+		if (outViewHolder == null) SelectedFill.received(part);
+		else SelectedFill.own(part, messageStyle().getBubbleColor());
+	}
+
+	private void tintOutgoingVoice(int bubbleColor) {
+		View play = layout.findViewById(R.id.playPauseButton);
+		if (play instanceof com.google.android.material.button.MaterialButton) {
+			((com.google.android.material.button.MaterialButton) play)
+					.setIconTint(android.content.res.ColorStateList
+							.valueOf(bubbleColor));
 		}
 	}
 
 	@CallSuper
 	void bind(ConversationItem item, boolean selected) {
 		itemKey = item.getKey();
-		root.setActivated(selected);
+		SelectionRows.mark(root, selected);
 
 		setTopNotice(item);
 
-		float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
-				.getMessageTextSizeSp(text.getContext());
+		float textSizeSp = messageStyle().getTextSizeSp();
 		if (textSizeSp != lastTextSizeSp) {
 			text.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
 					textSizeSp);
 			lastTextSizeSp = textSizeSp;
 		}
 
-		if (outViewHolder != null) {
-			int bubbleColor = com.professor.zerion.android.settings.ChatPreferences
-					.getBubbleColor(layout.getContext());
-			if (lastBubbleColor == null || lastBubbleColor != bubbleColor) {
-				android.graphics.drawable.Drawable bg = layout.getBackground();
-				if (bg != null) {
-					bg = bg.mutate();
-					bg.setColorFilter(bubbleColor,
-							android.graphics.PorterDuff.Mode.SRC_IN);
-					layout.setBackground(bg);
-				}
-				lastBubbleColor = bubbleColor;
-			}
-		}
+		paintBubble();
 
-		if (item.getText() != null) {
-			if (item.getText().startsWith("[VOICE:")
-					|| com.professor.zerion.android.conversation.voice
-							.VoiceMessageChunkFormat.isPart(item.getText())) {
-				text.setText("");
-			} else {
-				String body = trim(item.getText());
-				if (!com.professor.zerion.android.channel
-						.ChannelInviteSpanUtil.apply(text, body)) {
-					text.setText(body);
-					if (body.indexOf('.') >= 0 || body.indexOf(':') >= 0) {
-						Linkify.addLinks(text, Linkify.WEB_URLS);
-						makeLinksClickable(text, listener::onLinkClick);
-					}
-				}
-			}
-		}
+		bindBody(item);
 
-		time.setText(timeLabel(item));
+		bindTime(item);
 
 		boolean showBomb = item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER;
 		bomb.setVisibility(showBomb ? VISIBLE : GONE);
@@ -216,12 +251,35 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			listener.onMessageLongClick(item);
 			return true;
 		});
+		SelectionRows.nameLongPress(layout);
+		layout.setOnClickListener(v -> listener.onMessageClick(item));
+		SelectionRows.passPresses(text, layout, selecting);
+		RowReading.partOf(text);
+		RowReading.oneItem(layout);
+		RowActions.bind(layout, rowActions(item));
 
 		bindReplyContext(item);
 		bindReactions(item);
 		bindLinkPreview(item);
+	}
 
-		if (outViewHolder != null) outViewHolder.bind(item);
+	void bindBody(ConversationItem item) {
+		if (item.getText() == null) return;
+		if (item.getText().startsWith("[VOICE:")
+				|| com.professor.zerion.android.conversation.voice
+						.VoiceMessageChunkFormat.isPart(item.getText())) {
+			text.setText("");
+			return;
+		}
+		String body = trim(item.getText());
+		if (!com.professor.zerion.android.channel
+				.ChannelInviteSpanUtil.apply(text, body)) {
+			text.setText(body);
+			if (body.indexOf('.') >= 0 || body.indexOf(':') >= 0) {
+				Linkify.addLinks(text, Linkify.WEB_URLS);
+				makeLinksClickable(text, listener::onLinkClick);
+			}
+		}
 	}
 
 	void bindReactions(ConversationItem item) {
@@ -238,10 +296,15 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 			}
 			reactionsView.setText(sb.toString());
 			reactionsView.setVisibility(VISIBLE);
-			reactionsView.setOnClickListener(v ->
-					listener.onReactionClicked(item));
+			reactionsView.setOnClickListener(v -> {
+				if (selecting.getAsBoolean()) listener.onMessageClick(item);
+				else listener.onReactionClicked(item);
+			});
+			reactionsView.setOnLongClickListener(v ->
+					layout.performLongClick());
 		} else {
 			reactionsView.setVisibility(GONE);
+			TouchTargets.drop(reactionsView);
 		}
 	}
 
@@ -350,6 +413,21 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 	@Nullable
 	String getItemKey() {
 		return itemKey;
+	}
+
+	@Nullable
+	RowActions.Row rowActions(ConversationItem item) {
+		return new RowActions.Row() {
+			@Override
+			public Set<SelectionAction> offered() {
+				return listener.rowActions(item);
+			}
+
+			@Override
+			public boolean perform(SelectionAction action) {
+				return listener.onRowAction(item, action);
+			}
+		};
 	}
 
 	private void setTopNotice(ConversationItem item) {

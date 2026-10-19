@@ -40,6 +40,7 @@ public final class ChannelQueuedItem {
 	private final long queuedAtMs;
 	private final boolean notSent;
 	private final Reason reason;
+	private final long ttlSeconds;
 
 	public ChannelQueuedItem(long id, Kind kind, long postSeqNum,
 			String text, boolean commentsOn, long queuedAtMs,
@@ -51,6 +52,13 @@ public final class ChannelQueuedItem {
 	public ChannelQueuedItem(long id, Kind kind, long postSeqNum,
 			String text, boolean commentsOn, long queuedAtMs,
 			boolean notSent, Reason reason) {
+		this(id, kind, postSeqNum, text, commentsOn, queuedAtMs, notSent,
+				reason, 0L);
+	}
+
+	public ChannelQueuedItem(long id, Kind kind, long postSeqNum,
+			String text, boolean commentsOn, long queuedAtMs,
+			boolean notSent, Reason reason, long ttlSeconds) {
 		this.id = id;
 		this.kind = kind;
 		this.postSeqNum = postSeqNum;
@@ -59,6 +67,7 @@ public final class ChannelQueuedItem {
 		this.queuedAtMs = queuedAtMs;
 		this.notSent = notSent;
 		this.reason = reason;
+		this.ttlSeconds = ttlSeconds;
 	}
 
 	public long getId() {
@@ -91,5 +100,9 @@ public final class ChannelQueuedItem {
 
 	public Reason getReason() {
 		return reason;
+	}
+
+	public long getTtlSeconds() {
+		return ttlSeconds;
 	}
 }

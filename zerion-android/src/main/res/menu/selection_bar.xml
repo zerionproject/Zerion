@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto">
+
+	<item
+		android:id="@+id/action_reply"
+		android:icon="@drawable/ic_reply"
+		android:title="@string/btn_reply"
+		app:actionLayout="@layout/view_selection_action"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_react"
+		android:icon="@drawable/ic_emoji_toggle"
+		android:title="@string/action_react"
+		app:actionLayout="@layout/view_selection_action"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_copy"
+		android:icon="@drawable/ic_content_copy"
+		android:title="@string/copy_text"
+		app:actionLayout="@layout/view_selection_action"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_delete"
+		android:icon="@drawable/action_delete_white"
+		android:title="@string/delete"
+		app:actionLayout="@layout/view_selection_action"
+		app:showAsAction="always" />
+
+	<item
+		android:id="@+id/action_more"
+		android:icon="@drawable/ic_more_vert"
+		android:title="@string/selection_more"
+		app:actionLayout="@layout/view_selection_action"
+		app:showAsAction="always" />
+
+</menu>

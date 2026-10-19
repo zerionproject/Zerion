@@ -27,6 +27,43 @@ public class HardcodedUiTextTest {
 		}
 	}
 
+	private static final Pattern LITERAL = Pattern.compile(
+			"'(?:\\\\.|[^'\\\\])'|\"(?:\\\\.|[^\"\\\\\\n])*\"");
+
+	static String literalSaying(String source, String regex) {
+		Pattern inside = Pattern.compile(regex);
+		Matcher m = LITERAL.matcher(source);
+		while (m.find()) {
+			String literal = m.group();
+			if (literal.startsWith("\"") && inside.matcher(
+					literal.substring(1, literal.length() - 1)).find()) {
+				return literal;
+			}
+		}
+		return null;
+	}
+
+	private static void assertNoLiteral(String file, String regex)
+			throws Exception {
+		String s = new String(Files.readAllBytes(Paths.get(SRC + file)),
+				StandardCharsets.UTF_8);
+		String literal = literalSaying(s, regex);
+		assertFalse(file + " shows fixed English text: " + literal,
+				literal != null);
+	}
+
+	@Test
+	public void onlyTextInsideOneStringLiteralCounts() {
+		assertFalse(literalSaying("x(\"a\" + seq + \"b\");", "\\bseq\\b")
+				!= null);
+		assertFalse(literalSaying("c = '\"'; s = seq; d = '\"';",
+				"\\bseq\\b") != null);
+		assertFalse(literalSaying("f(\"%s · seq %d\");", "\\bseq\\b")
+				== null);
+		assertFalse(literalSaying("f(\"a\\\" seq\");", "\\bseq\\b")
+				== null);
+	}
+
 	@Test
 	public void vaultMessagesComeFromStringResources() throws Exception {
 		assertNone("vault/ui/VaultViewModel.java",
@@ -79,6 +116,19 @@ public class HardcodedUiTextTest {
 		assertNone("view/TextInputView.java", "authorName = \"");
 		assertNone("contact/add/remote/PendingContactViewHolder.java",
 				": \"Unknown\"");
+	}
+
+	@Test
+	public void channelEditorDetailsComeFromStringResources()
+			throws Exception {
+		assertNoLiteral("channel/ChannelDelegationsActivity.java",
+				"\\bseq\\b");
+	}
+
+	@Test
+	public void channelLabelSeparatorComesFromStringResources()
+			throws Exception {
+		assertNoLiteral("channel/ChannelAccessLabel.java", "·");
 	}
 
 	@Test

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 
 import com.professor.zerion.android.ZerionService;
+import com.professor.zerion.android.message.PendingSends;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -17,6 +18,7 @@ final class ProfileSignOut {
 
 	static void signOutAndRestart(Context appContext) {
 		ProfilesFragment.scheduleRestart(appContext);
+		PendingSends.get().clearSilently();
 		com.professor.zerion.android.util.SecureClipboard.clearOnSignOut(
 				appContext);
 		com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder

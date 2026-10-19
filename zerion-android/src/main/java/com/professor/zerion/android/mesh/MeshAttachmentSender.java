@@ -211,4 +211,8 @@ public class MeshAttachmentSender {
 	private static String hex(byte[] b) {
 		return StringUtils.toHexString(b);
 	}
+
+	public void shutDown() {
+		scheduler.shutdownNow();
+	}
 }

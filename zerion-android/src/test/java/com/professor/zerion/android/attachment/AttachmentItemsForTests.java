@@ -12,4 +12,9 @@ public final class AttachmentItemsForTests {
 		return new AttachmentItem(header, 640, 360, extension, 160, 90,
 				AttachmentItem.State.AVAILABLE);
 	}
+
+	public static AttachmentItem missing(AttachmentHeader header) {
+		return new AttachmentItem(header, 640, 360,
+				AttachmentItem.State.MISSING);
+	}
 }

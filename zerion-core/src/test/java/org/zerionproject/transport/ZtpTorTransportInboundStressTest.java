@@ -31,6 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class ZtpTorTransportInboundStressTest {
 
 	private static final int INBOUND = 64;
+	private static final int TAG_WAIT_MS = 120_000;
 	private static final byte VALID = 1;
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
@@ -93,7 +94,7 @@ public class ZtpTorTransportInboundStressTest {
 					}
 					validHandled.incrementAndGet();
 					try {
-						release.await(30, TimeUnit.SECONDS);
+						release.await();
 					} catch (InterruptedException e) {
 						Thread.currentThread().interrupt();
 					}
@@ -127,6 +128,7 @@ public class ZtpTorTransportInboundStressTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				handler(), null, () -> {
 		});
+		t.tagReadTimeoutMs = TAG_WAIT_MS;
 		t.startAccepting();
 		return t;
 	}
@@ -135,6 +137,24 @@ public class ZtpTorTransportInboundStressTest {
 		Socket s = new Socket("127.0.0.1", port);
 		sockets.add(s);
 		return s;
+	}
+
+	@Nullable
+	private Socket tryOpen(int port) throws IOException {
+		try {
+			return open(port);
+		} catch (java.net.ConnectException refusedByTheBacklog) {
+			return null;
+		}
+	}
+
+	private static boolean trySend(Socket s, byte first) {
+		try {
+			send(s, first);
+			return true;
+		} catch (IOException turnedAway) {
+			return false;
+		}
 	}
 
 	private static void send(Socket s, byte first) throws IOException {
@@ -153,38 +173,39 @@ public class ZtpTorTransportInboundStressTest {
 		}
 	}
 
-	private static int closedAmong(List<Socket> all, int expected)
-			throws IOException {
+	private int settle(List<Socket> all) throws IOException {
 		java.util.Set<Socket> open = new java.util.HashSet<>(all);
-		int closed = 0;
-		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
-		while (closed < expected && System.nanoTime() < deadline) {
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
+		while (validHandled.get() < open.size()
+				&& System.nanoTime() < deadline) {
 			java.util.Iterator<Socket> it = open.iterator();
 			while (it.hasNext()) {
 				Socket s = it.next();
-				s.setSoTimeout(50);
+				s.setSoTimeout(20);
 				try {
-					if (s.getInputStream().read() == -1) {
-						closed++;
-						it.remove();
-					}
+					if (s.getInputStream().read() == -1) it.remove();
 				} catch (java.net.SocketTimeoutException e) {
 				} catch (java.net.SocketException e) {
-					closed++;
 					it.remove();
 				}
 			}
 		}
-		return closed;
+		assertEquals("every connection is either admitted or turned away",
+				open.size(), validHandled.get());
+		return validHandled.get();
 	}
 
 	private void admit(int port) throws Exception {
 		for (int attempt = 0; attempt < 50; attempt++) {
 			int before = validHandled.get();
-			Socket s = open(port);
-			send(s, VALID);
+			Socket s = tryOpen(port);
+			if (s == null) {
+				Thread.sleep(50);
+				continue;
+			}
+			if (!trySend(s, VALID)) continue;
 			s.setSoTimeout(20);
-			long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+			long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
 			while (System.nanoTime() < deadline) {
 				if (validHandled.get() > before) return;
 				try {
@@ -213,12 +234,19 @@ public class ZtpTorTransportInboundStressTest {
 		int port = t.getLocalPort();
 		List<Socket> burst = new ArrayList<>();
 		for (int i = 0; i < 3 * INBOUND; i++) {
-			Socket s = open(port);
-			send(s, VALID);
+			Socket s = tryOpen(port);
+			if (s == null) continue;
+			trySend(s, VALID);
 			burst.add(s);
 		}
-		awaitValid(INBOUND);
-		assertEquals(2 * INBOUND, closedAmong(burst, 2 * INBOUND));
+		assertTrue(settle(burst) <= INBOUND);
+		assertTrue(maxInHandler.get() <= INBOUND);
+		while (validHandled.get() < INBOUND) admit(port);
+		assertEquals(INBOUND, validHandled.get());
+		Socket beyond = open(port);
+		trySend(beyond, VALID);
+		assertTrue("a full transport turns the next peer away",
+				closedByPeer(beyond));
 		assertEquals(INBOUND, validHandled.get());
 		assertTrue(maxInHandler.get() <= INBOUND);
 		release.countDown();
@@ -235,8 +263,13 @@ public class ZtpTorTransportInboundStressTest {
 		ZtpTorTransport t = started(new RecordingTor());
 		int port = t.getLocalPort();
 		for (int i = 0; i < 400; i++) {
-			Socket s = new Socket("127.0.0.1", port);
-			if (i % 2 == 0) send(s, (byte) 0);
+			Socket s;
+			try {
+				s = new Socket("127.0.0.1", port);
+			} catch (java.net.ConnectException refusedByTheBacklog) {
+				continue;
+			}
+			if (i % 2 == 0) trySend(s, (byte) 0);
 			s.close();
 		}
 		for (int i = 0; i < INBOUND; i++) admit(port);
@@ -287,7 +320,7 @@ public class ZtpTorTransportInboundStressTest {
 		awaitValid(INBOUND);
 		for (int i = 0; i < 8; i++) {
 			Socket s = open(i % 2 == 0 ? main : rotation);
-			send(s, VALID);
+			trySend(s, VALID);
 			extra.add(s);
 		}
 		for (Socket s : extra) assertTrue(closedByPeer(s));

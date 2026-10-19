@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.badge.BadgeUtils;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -22,6 +23,7 @@ import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.ZerionApplication;
+import com.professor.zerion.android.accessibility.Announcer;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.chat.ChatsFragment;
@@ -39,6 +41,7 @@ import com.professor.zerion.android.vault.ui.VaultDashboardFragment;
 import com.professor.zerion.android.vault.ui.VaultOnboardingFragment;
 import com.professor.zerion.android.vault.ui.VaultScreenProtection;
 import com.professor.zerion.android.vault.ui.VaultUnlockFragment;
+import com.professor.zerion.android.util.UiUtils;
 import com.professor.zerion.android.view.AuthorView;
 import com.professor.zerion.android.widget.DonationDialogFragment;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -74,9 +77,21 @@ public class NavDrawerActivity extends ZerionActivity implements
 	static final int TAB_CONTACTS = 0;
 	static final int TAB_GROUPS = 1;
 	static final int TAB_CHANNELS = 2;
-	private static final int TAB_VAULT = 3;
+	static final int TAB_VAULT = 3;
+	static final String STATE_TAB = "currentTab";
+	private static final int COMPACT_BAR_DP = 48;
+	private static final int COMPACT_TAB_TOP_DP = 4;
 
 	private NavDrawerViewModel navDrawerViewModel;
+	private ConnectionStatusViewModel connectionStatus;
+	private HelperTransportsViewModel helperTransports;
+	@Nullable
+	private ConnectionChip.State chipState;
+	@Nullable
+	private ConnectionChip.State boundChipState;
+	private boolean boundCompact = false;
+	private final Announcer chipAnnouncer =
+			new Announcer(Announcer.SETTLE_MS);
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -108,12 +123,12 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private MaterialCardView profileIcon;
 	private ShapeableImageView profileAvatar;
 	private TextView toolbarTitle;
-	private ImageButton networkStatusButton;
+	private MaterialButton connectionChip;
 	private ImageButton menuButton;
 	private ImageButton vaultShortcutButton;
-	private TextView tabContacts;
-	private TextView tabGroupChats;
-	private TextView tabChannels;
+	private TabLabel tabContacts;
+	private TabLabel tabGroupChats;
+	private TabLabel tabChannels;
 	private BadgeDrawable badgeContacts;
 	private BadgeDrawable badgeGroups;
 	private BadgeDrawable badgeChannels;
@@ -128,6 +143,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 		ViewModelProvider provider =
 				new ViewModelProvider(this, viewModelFactory);
 		navDrawerViewModel = provider.get(NavDrawerViewModel.class);
+		connectionStatus = provider.get(ConnectionStatusViewModel.class);
+		helperTransports = provider.get(HelperTransportsViewModel.class);
 	}
 
 	@Override
@@ -164,17 +181,35 @@ public class NavDrawerActivity extends ZerionActivity implements
 		initializeViews();
 		setupClickListeners();
 		setupUnreadBadges();
+		setupConnectionChip();
 
 		lockManager.isLockable().observe(this, this::setLockMenuItemVisible);
 
-		if (lifecycleManager.getLifecycleState().isAfter(RUNNING)) {
+		boolean signingOut =
+				lifecycleManager.getLifecycleState().isAfter(RUNNING);
+		if (signingOut) {
 			showSignOutFragment();
 		}
 		if (state == null) {
 			switchTab(TAB_CONTACTS, true);
 			onNewIntent(getIntent());
+		} else {
+			currentTab = restoredTab(state);
+			toolbarTitle.setText(titleFor(currentTab));
+			updateTabUI();
+			if (!signingOut) {
+				androidx.fragment.app.Fragment shown =
+						getSupportFragmentManager()
+								.findFragmentById(R.id.fragmentContainer);
+				if (shown instanceof BaseFragment) {
+					updateFabVisibilityForFragment((BaseFragment) shown);
+				}
+				applyBottomNavForFragment(shown);
+			}
 		}
 		maybeShowPostUpdateNotice();
+		helperTransports.getPrompt().observe(this,
+				this::maybeShowHelperTransportsPrompt);
 		updateChecker.getPopup().observe(this, announcement -> {
 			if (announcement == null) return;
 			updateChecker.popupShown(announcement);
@@ -208,6 +243,28 @@ public class NavDrawerActivity extends ZerionActivity implements
 		}, 900);
 	}
 
+	private void maybeShowHelperTransportsPrompt(@Nullable String country) {
+		if (isFinishing() || isDestroyed()) return;
+		androidx.fragment.app.FragmentManager fm = getSupportFragmentManager();
+		if (fm.isStateSaved()) return;
+		androidx.fragment.app.Fragment shown =
+				fm.findFragmentByTag(HelperTransportsDialogFragment.TAG);
+		if (country == null) {
+			if (shown instanceof HelperTransportsDialogFragment) {
+				((HelperTransportsDialogFragment) shown)
+						.dismissAllowingStateLoss();
+			}
+			return;
+		}
+		if (shown != null) return;
+		HelperTransportsDialogFragment.newInstance(country)
+				.show(fm, HelperTransportsDialogFragment.TAG);
+	}
+
+	void answerHelperTransports(String country, boolean use) {
+		helperTransports.answer(country, use);
+	}
+
 	private void clearPostUpdateNotice() {
 		uiPrefs.edit().putBoolean(
 				AppModule.PREF_POST_UPDATE_NOTICE_PENDING, false).apply();
@@ -217,7 +274,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 		profileIcon = findViewById(R.id.profileIcon);
 		profileAvatar = findViewById(R.id.profileAvatar);
 		toolbarTitle = findViewById(R.id.toolbarTitle);
-		networkStatusButton = findViewById(R.id.networkStatusButton);
+		connectionChip = findViewById(R.id.connectionChip);
 		menuButton = findViewById(R.id.menuButton);
 		vaultShortcutButton = findViewById(R.id.vaultShortcutButton);
 		tabContacts = findViewById(R.id.tabContacts);
@@ -226,28 +283,35 @@ public class NavDrawerActivity extends ZerionActivity implements
 		fabCompose = findViewById(R.id.fabCompose);
 
 		bottomNavigation = findViewById(R.id.bottomNavigation);
-		View bottomNav = bottomNavigation;
-		if (bottomNav != null) {
-			int heightDp = com.professor.zerion.android.settings.ChatPreferences
-					.getNavBarHeightDp(this);
-			float density = getResources().getDisplayMetrics().density;
-			ViewGroup.LayoutParams lp = bottomNav.getLayoutParams();
-			lp.height = (int) (heightDp * density);
-			bottomNav.setLayoutParams(lp);
-
-			float textSizeSp = com.professor.zerion.android.settings.ChatPreferences
-					.getNavBarTextSizeSp(this);
-			tabContacts.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
-					textSizeSp);
-			tabGroupChats.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
-					textSizeSp);
-			tabChannels.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP,
-					textSizeSp);
+		if (bottomNavigation != null) {
+			sizeBottomNavigation(bottomNavigation,
+					com.professor.zerion.android.settings.ChatPreferences
+							.getNavBarHeightDp(this),
+					com.professor.zerion.android.settings.ChatPreferences
+							.getNavBarTextSizeSp(this),
+					tabContacts, tabGroupChats, tabChannels);
 		}
 
 		getSupportFragmentManager().addOnBackStackChangedListener(() ->
 				applyBottomNavForFragment(getSupportFragmentManager()
 						.findFragmentById(R.id.fragmentContainer)));
+	}
+
+	static void sizeBottomNavigation(View bar, int heightDp, float textSizeSp,
+			TabLabel... tabs) {
+		float density = bar.getResources().getDisplayMetrics().density;
+		ViewGroup.LayoutParams lp = bar.getLayoutParams();
+		lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+		bar.setLayoutParams(lp);
+		bar.setMinimumHeight(Math.round(heightDp * density));
+		for (TabLabel tab : tabs) {
+			if (heightDp <= COMPACT_BAR_DP) {
+				tab.setPaddingRelative(tab.getPaddingStart(),
+						Math.round(COMPACT_TAB_TOP_DP * density),
+						tab.getPaddingEnd(), tab.getPaddingBottom());
+			}
+			tab.setPreferredTextSize(textSizeSp);
+		}
 	}
 
 	private void applyBottomNavForFragment(androidx.fragment.app.Fragment f) {
@@ -263,7 +327,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 			com.professor.zerion.android.util.Haptics.tap(v);
 			openSettings();
 		});
-		networkStatusButton.setOnClickListener(v -> {
+		connectionChip.setOnClickListener(v -> {
 			com.professor.zerion.android.util.Haptics.tap(v);
 			startActivity(new android.content.Intent(this,
 					NetworkStatusActivity.class));
@@ -320,22 +384,19 @@ public class NavDrawerActivity extends ZerionActivity implements
 		updateTabUI();
 
 		BaseFragment fragment;
+		toolbarTitle.setText(titleFor(tab));
 		switch (tab) {
 			case TAB_CONTACTS:
-				toolbarTitle.setText(R.string.chats_button);
 				fragment = ChatsFragment.newInstance();
 				break;
 			case TAB_GROUPS:
-				toolbarTitle.setText(R.string.groups_button);
 				fragment = GroupTrListFragment.newInstance();
 				break;
 			case TAB_CHANNELS:
-				toolbarTitle.setText(R.string.channels_button);
 				fragment = com.professor.zerion.android.channel
 						.ChannelListFragment.newInstance();
 				break;
 			case TAB_VAULT:
-				toolbarTitle.setText(R.string.vault_button);
 				if (!vaultManager.vaultExists()) {
 					fragment = VaultOnboardingFragment.newInstance();
 				} else if (!vaultManager.isUnlocked()) {
@@ -361,6 +422,31 @@ public class NavDrawerActivity extends ZerionActivity implements
 		applyBottomNavForFragment(f);
 	}
 
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt(STATE_TAB, currentTab);
+	}
+
+	static int restoredTab(@Nullable Bundle state) {
+		if (state == null) return TAB_CONTACTS;
+		int tab = state.getInt(STATE_TAB, TAB_CONTACTS);
+		return tab >= TAB_CONTACTS && tab <= TAB_VAULT ? tab : TAB_CONTACTS;
+	}
+
+	static boolean mustReopenVault(int tab, boolean vaultUnlocked,
+			boolean signingOut) {
+		return tab == TAB_VAULT && !vaultUnlocked && !signingOut;
+	}
+
+	@androidx.annotation.StringRes
+	static int titleFor(int tab) {
+		if (tab == TAB_GROUPS) return R.string.groups_button;
+		if (tab == TAB_CHANNELS) return R.string.channels_button;
+		if (tab == TAB_VAULT) return R.string.vault_button;
+		return R.string.chats_button;
+	}
+
 	@androidx.annotation.StringRes
 	static int composeLabel(int tab) {
 		if (tab == TAB_GROUPS) return R.string.grouptr_create_title;
@@ -370,8 +456,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 
 	private void updateTabUI() {
 		fabCompose.setContentDescription(getString(composeLabel(currentTab)));
-		int selected = getColor(R.color.zerion_text_primary);
-		int unselected = getColor(R.color.zerion_text_secondary);
+		int selected = UiUtils.resolveColorAttribute(this,
+				R.attr.zerionColorOnSurface);
+		int unselected = UiUtils.resolveColorAttribute(this,
+				R.attr.zerionColorOnSurfaceMuted);
 		tabContacts.setTextColor(currentTab == TAB_CONTACTS ? selected : unselected);
 		tabContacts.setTypeface(null, currentTab == TAB_CONTACTS ?
 				Typeface.BOLD : Typeface.NORMAL);
@@ -481,6 +569,58 @@ public class NavDrawerActivity extends ZerionActivity implements
 		finish();
 	}
 
+	private void setupConnectionChip() {
+		View bar = findViewById(R.id.appBar);
+		bar.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
+				bar.post(this::fitConnectionChip));
+		connectionStatus.getState().observe(this, s -> {
+			chipState = s;
+			fitConnectionChip();
+		});
+	}
+
+	private void fitConnectionChip() {
+		ConnectionChip.State state = chipState;
+		if (state == null) return;
+		View bar = findViewById(R.id.appBar);
+		boolean compact = false;
+		if (bar.getWidth() > 0) {
+			int others = bar.getPaddingLeft() + bar.getPaddingRight()
+					+ outerWidth(profileIcon) + outerWidth(vaultShortcutButton)
+					+ outerWidth(menuButton) + margins(toolbarTitle)
+					+ margins(connectionChip);
+			CharSequence title = toolbarTitle.getText();
+			float needed = toolbarTitle.getPaint().measureText(title, 0,
+					title.length());
+			compact = ConnectionChip.folds(state, ConnectionChip.showsText(
+					bar.getWidth(), others,
+					ConnectionChip.widthWithText(connectionChip, state),
+					needed));
+			int max = ConnectionChip.maxWidth(bar.getWidth(), others,
+					getResources().getDisplayMetrics().density);
+			if (connectionChip.getMaxWidth() != max) {
+				connectionChip.setMaxWidth(max);
+			}
+		}
+		if (state == boundChipState && compact == boundCompact) return;
+		boundChipState = state;
+		boundCompact = compact;
+		ConnectionChip.bind(connectionChip, state, compact);
+		CharSequence said = connectionChip.getContentDescription();
+		chipAnnouncer.update(connectionChip, state, said == null ? "" : said);
+	}
+
+	private static int outerWidth(View v) {
+		return v.getWidth() + margins(v);
+	}
+
+	private static int margins(View v) {
+		ViewGroup.LayoutParams lp = v.getLayoutParams();
+		if (!(lp instanceof ViewGroup.MarginLayoutParams)) return 0;
+		ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
+		return m.getMarginStart() + m.getMarginEnd();
+	}
+
 	@SuppressLint("UnsafeOptInUsageError")
 	private void setupUnreadBadges() {
 		badgeContacts = BadgeDrawable.create(this);
@@ -529,6 +669,19 @@ public class NavDrawerActivity extends ZerionActivity implements
 	};
 
 	@Override
+	public void onResume() {
+		super.onResume();
+		boundChipState = null;
+		fitConnectionChip();
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		chipAnnouncer.cancel();
+	}
+
+	@Override
 	protected void onStop() {
 		super.onStop();
 		if (!vaultManager.isUnlocked()) return;
@@ -551,10 +704,13 @@ public class NavDrawerActivity extends ZerionActivity implements
 		super.onStart();
 		updateChecker.onAppForeground();
 		vaultAutolockHandler.removeCallbacks(vaultAutolockRunnable);
-		if (currentTab == TAB_VAULT && !vaultManager.isUnlocked()) {
+		if (mustReopenVault(currentTab, vaultManager.isUnlocked(),
+				getSupportFragmentManager().findFragmentByTag(
+						SignOutFragment.TAG) != null)) {
 			switchTab(TAB_VAULT, true);
 		}
 		navDrawerViewModel.checkUnreadCounts();
+		connectionStatus.refresh();
 		lockManager.checkIfLockable();
 		checkAndShowDonationDialog();
 	}

@@ -21,10 +21,16 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.ui.PlayerView;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
 import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -32,6 +38,9 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.SaveCleanCopy;
+import com.professor.zerion.android.util.ExternalHandoff;
+import com.professor.zerion.android.util.ExternalViewerTypes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -39,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
@@ -47,7 +57,8 @@ import androidx.annotation.Nullable;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 @UnstableApi
-public class VideoPlayerActivity extends ZerionActivity {
+public class VideoPlayerActivity extends ZerionActivity
+		implements EventListener {
 
 	static final String ATTACHMENT = "attachment";
 	static final String ITEM_ID = "itemId";
@@ -68,6 +79,11 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@Inject
 	@DatabaseExecutor
 	Executor dbExecutor;
+	@Inject
+	@IoExecutor
+	Executor ioExecutor;
+	@Inject
+	EventBus eventBus;
 
 	private final android.os.Handler retryHandler =
 			new android.os.Handler(android.os.Looper.getMainLooper());
@@ -82,6 +98,10 @@ public class VideoPlayerActivity extends ZerionActivity {
 	private TextView errorText;
 	@Nullable
 	private volatile byte[] videoBytes;
+	@Nullable
+	private String token;
+	@Nullable
+	private MessageId message;
 
 	private boolean playWhenReady = true;
 	private int currentWindow = 0;
@@ -94,8 +114,28 @@ public class VideoPlayerActivity extends ZerionActivity {
 	}
 
 	@Override
+	protected boolean forceScreenshotProtection() {
+		String shown = getIntent().getStringExtra(MediaViewer.EXTRA_TOKEN);
+		return shown != null && MediaViewer.secure(shown);
+	}
+
+	@Override
 	public void onCreate(@Nullable Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		token = getIntent().getStringExtra(MediaViewer.EXTRA_TOKEN);
+		if (token != null) {
+			if (!MediaViewer.watch(token, this::contentGone)) {
+				finish();
+				return;
+			}
+		} else {
+			byte[] id = getIntent().getByteArrayExtra(ITEM_ID);
+			if (id != null) {
+				message = new MessageId(id);
+				eventBus.addListener(this);
+			}
+		}
 
 		cleanupOrphanedTempFiles();
 
@@ -109,6 +149,13 @@ public class VideoPlayerActivity extends ZerionActivity {
 
 		ImageButton closeButton = findViewById(R.id.close_button);
 		closeButton.setOnClickListener(v -> finish());
+		ImageButton saveButton = findViewById(R.id.save_button);
+		saveButton.setVisibility(SaveCleanCopy.canSave(shownType())
+				? View.VISIBLE : View.GONE);
+		saveButton.setOnClickListener(v -> save());
+		ImageButton openButton = findViewById(R.id.open_elsewhere_button);
+		openButton.setOnClickListener(v -> openElsewhere());
+		showHeading(MediaViewer.get(token));
 
 		if (savedInstanceState != null) {
 			playWhenReady = savedInstanceState.getBoolean("playWhenReady", true);
@@ -120,12 +167,17 @@ public class VideoPlayerActivity extends ZerionActivity {
 	@Override
 	public void onStart() {
 		super.onStart();
+		if (token != null && MediaViewer.get(token) == null) {
+			contentGone();
+			return;
+		}
 		initializePlayer();
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
+		if (isFinishing()) return;
 		hideSystemUi();
 		if (player == null) {
 			initializePlayer();
@@ -150,6 +202,27 @@ public class VideoPlayerActivity extends ZerionActivity {
 		super.onDestroy();
 		retryHandler.removeCallbacksAndMessages(null);
 		wipeVideo();
+		if (message != null) eventBus.removeListener(this);
+		MediaViewer.unwatch(token);
+		if (isFinishing()) MediaViewer.close(token);
+	}
+
+	@Override
+	public void eventOccurred(Event e) {
+		MessageId id = message;
+		if (id != null && e instanceof ConversationMessagesDeletedEvent
+				&& ((ConversationMessagesDeletedEvent) e).getMessageIds()
+				.contains(id)) {
+			runOnUiThread(this::contentGone);
+		}
+	}
+
+	private void contentGone() {
+		retryHandler.removeCallbacksAndMessages(null);
+		releasePlayer();
+		wipeVideo();
+		if (playerView != null) playerView.setVisibility(View.GONE);
+		if (!isFinishing()) finish();
 	}
 
 	@Override
@@ -182,6 +255,16 @@ public class VideoPlayerActivity extends ZerionActivity {
 
 	private void initializePlayer() {
 		if (isLoadingVideo || player != null) {
+			return;
+		}
+
+		if (token != null) {
+			MediaViewer.Shown shown = MediaViewer.get(token);
+			if (shown == null) {
+				contentGone();
+				return;
+			}
+			startPlayback(shown.data);
 			return;
 		}
 
@@ -405,6 +488,82 @@ public class VideoPlayerActivity extends ZerionActivity {
 		if (playerView != null) {
 			playerView.setVisibility(View.GONE);
 		}
+	}
+
+	private void showHeading(@Nullable MediaViewer.Shown shown) {
+		if (shown == null || shown.title.isEmpty()) return;
+		findViewById(R.id.video_heading).setVisibility(View.VISIBLE);
+		TextView title = findViewById(R.id.video_title);
+		title.setText(shown.title);
+		TextView date = findViewById(R.id.video_date);
+		if (shown.time > 0) {
+			date.setText(com.professor.zerion.android.util.UiUtils
+					.formatDateAbsolute(this, shown.time));
+		} else {
+			date.setVisibility(View.GONE);
+		}
+	}
+
+	private String shownType() {
+		MediaViewer.Shown shown = MediaViewer.get(token);
+		if (shown != null) return shown.type;
+		AttachmentItem attachment = getIntent().getParcelableExtra(ATTACHMENT);
+		return attachment == null ? "" : attachment.getMimeType();
+	}
+
+	private void readContent(Consumer<byte[]> ready, int failure) {
+		if (token != null) {
+			MediaViewer.Shown shown = MediaViewer.get(token);
+			if (shown == null) toast(failure);
+			else ready.accept(shown.data.clone());
+			return;
+		}
+		AttachmentItem attachment = getIntent().getParcelableExtra(ATTACHMENT);
+		if (attachment == null) {
+			toast(failure);
+			return;
+		}
+		dbExecutor.execute(() -> {
+			byte[] data;
+			try {
+				Attachment att =
+						attachmentReader.getAttachment(attachment.getHeader());
+				data = SaveCleanCopy.readAll(att.getStream());
+			} catch (Exception | OutOfMemoryError e) {
+				data = null;
+			}
+			byte[] read = data;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (read == null) toast(failure);
+				else ready.accept(read);
+			});
+		});
+	}
+
+	private void save() {
+		String type = shownType();
+		SaveCleanCopy.confirm(this, type, () -> readContent(
+				data -> SaveCleanCopy.startCopy(this, data, type),
+				R.string.save_file_error));
+	}
+
+	private void openElsewhere() {
+		readContent(data -> {
+			String type = ExternalViewerTypes.typeForContent(shownType(),
+					data);
+			if (type == null) {
+				Arrays.fill(data, (byte) 0);
+				toast(R.string.video_playback_error);
+				return;
+			}
+			ExternalHandoff.openCopy(this, ioExecutor, data, type,
+					() -> toast(R.string.media_document_no_app));
+		}, R.string.video_playback_error);
+	}
+
+	private void toast(int res) {
+		android.widget.Toast.makeText(this, res,
+				android.widget.Toast.LENGTH_SHORT).show();
 	}
 
 	private void hideSystemUi() {

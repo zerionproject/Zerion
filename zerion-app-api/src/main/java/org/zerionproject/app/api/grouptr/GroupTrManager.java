@@ -52,10 +52,17 @@ public interface GroupTrManager {
 	int sendGroupPost(byte[] groupId, byte[] body, long autoDeleteTimerMs)
 			throws DbException;
 
+	GroupTrSendResult sendGroupPostReporting(byte[] groupId, byte[] body,
+			long autoDeleteTimerMs) throws DbException;
+
 	int countMembersOnOlderVersion(byte[] groupId) throws DbException;
 
 	int sendGroupReply(byte[] groupId, byte[] targetPostId, String text,
 			long autoDeleteTimerMs) throws DbException;
+
+	GroupTrSendResult sendGroupReplyReporting(byte[] groupId,
+			byte[] targetPostId, String text, long autoDeleteTimerMs)
+			throws DbException;
 
 	int countMembersWithPostActions(byte[] groupId) throws DbException;
 
@@ -69,6 +76,12 @@ public interface GroupTrManager {
 
 	java.util.List<GroupTrMember> getMembersOutOfReach(byte[] groupId)
 			throws DbException;
+
+	java.util.Map<String, GroupTrPostDelivery> getOwnPostDeliveries(
+			byte[] groupId) throws DbException;
+
+	java.util.Map<String, GroupTrPostDelivery> getOwnPostDeliveries(
+			byte[] groupId, Collection<byte[]> postIds) throws DbException;
 
 	Collection<GroupTrSentInvite> getSentInvites(byte[] groupId)
 			throws DbException;
@@ -146,6 +159,10 @@ public interface GroupTrManager {
 			throws DbException;
 
 	java.util.List<GroupTrPost> getRecentPosts(byte[] groupId);
+
+	@Nullable
+	GroupTrPostSummary getLatestPostSummary(byte[] groupId)
+			throws DbException;
 
 	int getUnreadCount(byte[] groupId);
 

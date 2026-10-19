@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:orientation="vertical">
+
+	<TextView
+		style="@style/Zerion.Settings.SectionHeader"
+		android:text="@string/lifecycle_tests_section_title" />
+
+	<LinearLayout style="@style/Zerion.Settings.Group">
+
+		<LinearLayout
+			android:id="@+id/lifecycle_age_card"
+			style="@style/Zerion.Settings.Row.Clickable">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_timer"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_age_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_age_summary" />
+
+			</LinearLayout>
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:src="@drawable/ic_chevron_right"
+				app:tint="@color/zerion_text_secondary"
+				android:importantForAccessibility="no" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/lifecycle_renew_card"
+			style="@style/Zerion.Settings.Row.Clickable">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_refresh"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_renew_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_renew_summary" />
+
+			</LinearLayout>
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:src="@drawable/ic_chevron_right"
+				app:tint="@color/zerion_text_secondary"
+				android:importantForAccessibility="no" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/lifecycle_skip_auth_card"
+			style="@style/Zerion.Settings.Row">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_lock"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_skip_auth_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_skip_auth_summary" />
+
+			</LinearLayout>
+
+			<com.google.android.material.switchmaterial.SwitchMaterial
+				android:id="@+id/lifecycle_skip_auth_switch"
+				android:contentDescription="@string/lifecycle_skip_auth_title"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:checked="false" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/lifecycle_hold_card"
+			style="@style/Zerion.Settings.Row">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_key"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_hold_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_hold_summary" />
+
+			</LinearLayout>
+
+			<com.google.android.material.switchmaterial.SwitchMaterial
+				android:id="@+id/lifecycle_hold_switch"
+				android:contentDescription="@string/lifecycle_hold_title"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:checked="false" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/lifecycle_details_card"
+			style="@style/Zerion.Settings.Row.Clickable">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_info_dark"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:text="@string/lifecycle_details_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_details_summary" />
+
+			</LinearLayout>
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:src="@drawable/ic_chevron_right"
+				app:tint="@color/zerion_text_secondary"
+				android:importantForAccessibility="no" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/lifecycle_force_card"
+			style="@style/Zerion.Settings.Row.Clickable">
+
+			<ImageView
+				style="@style/Zerion.Settings.Row.Icon"
+				android:src="@drawable/ic_warning"
+				app:tint="@color/zerion_destructive"
+				android:importantForAccessibility="no" />
+
+			<LinearLayout
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Title"
+					android:textColor="@color/zerion_destructive_text"
+					android:text="@string/lifecycle_force_title" />
+
+				<TextView
+					style="@style/Zerion.Settings.Row.Summary"
+					android:text="@string/lifecycle_force_summary" />
+
+			</LinearLayout>
+
+			<ImageView
+				android:layout_width="20dp"
+				android:layout_height="20dp"
+				android:src="@drawable/ic_chevron_right"
+				app:tint="@color/zerion_text_secondary"
+				android:importantForAccessibility="no" />
+
+		</LinearLayout>
+
+	</LinearLayout>
+
+</LinearLayout>

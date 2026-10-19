@@ -107,9 +107,14 @@ public class OutgoingTextMessagesTest {
 				StandardCharsets.UTF_8);
 		assertTrue(reply.contains("OutgoingTextMessages.create("));
 		assertFalse(reply.contains("createLegacyPrivateMessage"));
-		int fwd = vm.indexOf("void forwardMessage(");
-		String forward = vm.substring(fwd, vm.indexOf("void loadLinkPreviews(",
-				fwd));
+		String forwarder = new String(Files.readAllBytes(Paths.get(
+				"src/main/java/com/professor/zerion/android/conversation/"
+						+ "TextForwarder.java")),
+				StandardCharsets.UTF_8);
+		assertFalse("one place forwards text", vm.contains("forwardMessage("));
+		int fwd = forwarder.indexOf("void forward(");
+		assertTrue(fwd >= 0);
+		String forward = forwarder.substring(fwd);
 		assertTrue(forward.contains("OutgoingTextMessages.create("));
 		assertFalse(forward.contains("createLegacyPrivateMessage"));
 		int note = vm.indexOf("void sendSecretNote(");

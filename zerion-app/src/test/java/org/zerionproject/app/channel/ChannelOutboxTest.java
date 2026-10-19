@@ -130,6 +130,134 @@ public class ChannelOutboxTest {
 	}
 
 	@Test
+	public void aSentCommentReportsTheIdItIsStoredUnder() throws Exception {
+		long commentId = member.manager.postCommentWithId(id, post, "hi");
+
+		List<ChannelComment> held = owner.manager.getComments(id, post);
+		assertEquals(1, held.size());
+		assertEquals(commentId, held.get(0).getCommentId());
+		assertEquals(commentId,
+				member.manager.getComments(id, post).get(0).getCommentId());
+	}
+
+	@Test
+	public void aQueuedCommentNamesTheItemItWaitsAs() throws Exception {
+		ownerOffline();
+		try {
+			member.manager.postCommentWithId(id, post, "later");
+			fail("reported as sent while the owner could not be reached");
+		} catch (ChannelRequestQueuedException queued) {
+			assertEquals(member.manager.getQueuedItems(id).get(0).getId(),
+					queued.getItemId());
+		}
+	}
+
+	@Test
+	public void aCommentTheOwnerTookIsSentEvenIfThisDeviceCannotKeepIt()
+			throws Exception {
+		onComment = request -> {
+			onComment = null;
+			member.settings.failWritesTo("zerion-channels-comments");
+		};
+		try {
+			member.manager.postCommentWithId(id, post, "taken");
+			fail("a comment the owner took was not reported as sent");
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException sent) {
+			List<ChannelComment> held = owner.manager.getComments(id, post);
+			assertEquals("the owner holds it once", 1, held.size());
+			assertEquals(held.get(0).getCommentId(), sent.getItemId());
+		}
+		assertTrue("nothing is left to send again",
+				member.manager.getQueuedItems(id).isEmpty());
+	}
+
+	@Test
+	public void anOwnersPostReportsItsSequenceNumber() throws Exception {
+		long seq = owner.manager.publishPostWithSeq(id, "second", 0L);
+
+		List<ChannelPost> posts = owner.manager.getRecentPosts(id, 10L);
+		assertEquals(seq, posts.get(posts.size() - 1).getSeqNum());
+		assertEquals("second", posts.get(posts.size() - 1).getBody());
+	}
+
+	@Test
+	public void anOwnersPostThatIsKeptButNotRecordedIsNotAFailure()
+			throws Exception {
+		owner.settings.failWritesTo("zerion-channels-state");
+		try {
+			owner.manager.publishPostWithSeq(id, "second", 0L);
+			fail("a stored post was not reported as stored");
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException kept) {
+			boolean found = false;
+			for (ChannelPost p : owner.manager.getRecentPosts(id, 10L)) {
+				if (p.getSeqNum() == kept.getItemId()
+						&& p.getBody().equals("second")) {
+					found = true;
+				}
+			}
+			assertTrue("the post it names is kept", found);
+		}
+	}
+
+	@Test
+	public void aQueuedPostKeepsItsTimer() throws Exception {
+		makeMemberAnEditor();
+		ownerOffline();
+		queued(() -> member.manager.publishPost(id, "timed", 3600L));
+
+		assertEquals(3600L,
+				member.manager.getQueuedItems(id).get(0).getTtlSeconds());
+	}
+
+	@Test
+	public void aDeleteThatWentOutIsFinishedHereToo() throws Exception {
+		owner.settings.failWritesTo("zerion-channels-state");
+		try {
+			owner.manager.deletePost(id, post);
+			fail("a published deletion was not reported as published");
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException published) {
+		}
+		for (ChannelPost p : owner.manager.getRecentPosts(id, 10L)) {
+			assertFalse("the deleted post is gone here as well",
+					p.getSeqNum() == post);
+		}
+	}
+
+	@Test
+	public void anEditThatWentOutErasesTheOldWordingHereAtOnce()
+			throws Exception {
+		owner.settings.failWritesTo("zerion-channels-state");
+		try {
+			owner.manager.editPost(id, post, "corrected");
+			fail("a published edit was not reported as published");
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException published) {
+		}
+		ChannelPost original = owner.store.posts().getPost(id, post);
+		assertTrue("the old wording is gone at once", original.isErased());
+		assertEquals("", original.getBody());
+		List<String> bodies = new ArrayList<>();
+		for (ChannelPost p : owner.manager.getRecentPosts(id, 10L)) {
+			bodies.add(p.getBody());
+		}
+		assertEquals(Collections.singletonList("corrected"), bodies);
+	}
+
+	@Test
+	public void aCommentOnAClosedDiscussionIsRefused() throws Exception {
+		owner.manager.setDiscussionsEnabled(id, false);
+		try {
+			owner.manager.postCommentWithId(id, post, "closed");
+			fail("a comment on a closed discussion was accepted");
+		} catch (org.zerionproject.app.api.channel
+				.ChannelRefusedException expected) {
+		}
+	}
+
+	@Test
 	public void itemsWaitWhileTheOwnerIsAwayAndArriveOnceInOrder()
 			throws Exception {
 		ownerOffline();

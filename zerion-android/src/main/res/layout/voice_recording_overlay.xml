@@ -26,7 +26,7 @@
             android:padding="12dp"
             android:scaleType="center"
             app:srcCompat="@drawable/ic_close"
-            app:tint="@color/zerion_destructive" />
+            app:tint="?attr/zerionColorDanger" />
 
         <View
             android:id="@+id/recording_pulse"
@@ -35,7 +35,7 @@
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
             android:background="@drawable/ic_circle"
-            android:backgroundTint="@color/zerion_destructive" />
+            android:backgroundTint="?attr/zerionColorDanger" />
 
         <TextView
             android:id="@+id/recording_time"
@@ -43,10 +43,9 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="0:00"
-            android:textColor="@color/zerion_text_primary"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:gravity="start" />
+            android:textColor="?attr/zerionColorOnSurface"
+            android:gravity="start"
+            android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
         <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/send_voice_button"
@@ -57,7 +56,7 @@
             android:padding="12dp"
             android:scaleType="center"
             app:srcCompat="@drawable/social_send_now_white"
-            app:tint="@color/zerion_accent_icon" />
+            app:tint="?attr/zerionColorAccentIcon" />
 
     </LinearLayout>
 

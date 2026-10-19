@@ -767,6 +767,7 @@ public class ConversationViewModel extends DbViewModel
 			String edited = editedTexts.get(replyToId);
 			String text = edited != null ? edited
 					: replyToText != null ? replyToText : "[No text]";
+			text = SecretNotes.quotable(getApplication(), text);
 			replyContextMap.put(sentMessageId, new Pair<>(replyToId, text));
 		}
 	}
@@ -1659,51 +1660,6 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Boolean> isContactTyping() {
 		return contactTyping;
-	}
-
-	void loadContactsForForward(
-			androidx.arch.core.util.Function<List<Contact>, Void> callback) {
-		runOnDbThread(() -> {
-			try {
-				Collection<Contact> contacts = contactManager.getContacts();
-				List<Contact> filtered = new ArrayList<>();
-				for (Contact c : contacts) {
-					if (!c.getId().equals(contactId)) {
-						filtered.add(c);
-					}
-				}
-				androidExecutor.runOnUiThread(
-						() -> callback.apply(filtered));
-			} catch (DbException e) {
-				handleException(e);
-			}
-		});
-	}
-
-	void forwardMessage(ContactId recipientId, String text,
-			Runnable onSuccess, Runnable onFailure) {
-		runOnDbThread(() -> {
-			try {
-				db.transaction(false, txn -> {
-					GroupId groupId = messagingManager
-							.getConversationId(txn, recipientId);
-					long timestamp = conversationManager
-							.getTimestampForOutgoingMessage(txn,
-									recipientId);
-					PrivateMessage pm = OutgoingTextMessages.create(txn,
-							messagingManager, autoDeleteManager,
-							privateMessageFactory, recipientId, groupId,
-							timestamp, text);
-					messagingManager.addLocalMessage(txn, pm);
-				});
-				androidExecutor.runOnUiThread(onSuccess);
-			} catch (DbException e) {
-				handleException(e);
-				androidExecutor.runOnUiThread(onFailure);
-			} catch (FormatException e) {
-				androidExecutor.runOnUiThread(onFailure);
-			}
-		});
 	}
 
 	void loadLinkPreviews() {

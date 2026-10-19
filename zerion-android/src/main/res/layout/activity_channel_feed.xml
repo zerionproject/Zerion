@@ -5,17 +5,23 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/zerion_dark_bg"
+	android:background="?attr/zerionColorBackground"
 	android:fitsSystemWindows="true">
 
 	<androidx.appcompat.widget.Toolbar
 		android:id="@+id/channelFeedToolbar"
 		android:layout_width="match_parent"
-		android:layout_height="?attr/actionBarSize"
-		android:background="@color/zerion_dark_bg"
+		android:layout_height="wrap_content"
+		android:minHeight="?attr/actionBarSize"
+		android:paddingTop="4dp"
+		android:paddingBottom="4dp"
+		android:background="?attr/zerionColorBackground"
+		app:buttonGravity="center_vertical"
 		app:layout_constraintTop_toTopOf="parent"
-		app:titleTextColor="@color/zerion_text_primary"
-		app:subtitleTextColor="@color/zerion_text_secondary"
+		app:titleMarginBottom="0dp"
+		app:titleMarginTop="0dp"
+		app:titleTextColor="?attr/zerionColorOnSurface"
+		app:subtitleTextColor="?attr/zerionColorOnSurfaceMuted"
 		tools:title="Civil Society Watch"
 		tools:subtitle="Public channel" />
 
@@ -40,7 +46,7 @@
 			android:layout_width="3dp"
 			android:layout_height="32dp"
 			android:layout_marginEnd="10dp"
-			android:background="@color/zerion_primary_accent" />
+			android:background="?attr/zerionColorAccentIcon" />
 
 		<LinearLayout
 			android:layout_width="0dp"
@@ -52,9 +58,8 @@
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:text="@string/channels_pinned_label"
-				android:textColor="@color/zerion_accent_text"
-				android:textSize="11sp"
-				android:textStyle="bold" />
+				android:textColor="?attr/zerionColorAccentText"
+				android:textAppearance="@style/TextAppearance.Zerion.Meta.Strong" />
 
 			<TextView
 				android:id="@+id/channelPinnedBannerText"
@@ -62,9 +67,9 @@
 				android:layout_height="wrap_content"
 				android:ellipsize="end"
 				android:maxLines="1"
-				android:textColor="@color/zerion_text_primary"
-				android:textSize="14sp"
-				tools:text="Today's notes: the new disclosure rules drop on Friday." />
+				android:textColor="?attr/zerionColorOnSurface"
+				tools:text="Today's notes: the new disclosure rules drop on Friday."
+				android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 		</LinearLayout>
 
@@ -80,7 +85,7 @@
 			android:padding="14dp"
 			android:src="@drawable/ic_close"
 			android:visibility="gone"
-			app:tint="@color/zerion_text_secondary"
+			app:tint="?attr/zerionColorOnSurfaceMuted"
 			tools:visibility="visible" />
 
 	</LinearLayout>
@@ -89,52 +94,52 @@
 		android:id="@+id/channelApprovalBanner"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@color/zerion_primary_accent"
+		android:background="?attr/zerionColorAccent"
 		android:gravity="center_vertical"
 		android:paddingStart="16dp"
 		android:paddingEnd="16dp"
 		android:paddingTop="10dp"
 		android:paddingBottom="10dp"
-		android:textColor="@color/zerion_on_accent"
-		android:textSize="13sp"
+		android:textColor="?attr/zerionColorOnAccent"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelPinnedBanner"
-		tools:text="@string/channels_approval_pending_banner"
-		tools:visibility="visible" />
+		tools:text="@string/channels_waiting_for_approval_banner"
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	<TextView
 		android:id="@+id/channelNoticeBanner"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:gravity="center_vertical"
 		android:paddingStart="16dp"
 		android:paddingEnd="16dp"
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="13sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner"
 		tools:text="@string/channels_posts_given_up_notice"
-		tools:visibility="visible" />
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	<TextView
 		android:id="@+id/channelSyncStatusLine"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:gravity="center"
 		android:paddingStart="16dp"
 		android:paddingEnd="16dp"
 		android:paddingTop="4dp"
 		android:paddingBottom="4dp"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="12sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelNoticeBanner"
 		tools:text="Last updated 14:02"
-		tools:visibility="visible" />
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/channelFeedRecycler"
@@ -144,8 +149,25 @@
 		android:paddingTop="6dp"
 		android:paddingBottom="12dp"
 		android:scrollbars="none"
-		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
+		app:layout_constraintBottom_toTopOf="@+id/channelFeedReadOnlyFooter"
 		app:layout_constraintTop_toBottomOf="@+id/channelSyncStatusLine" />
+
+	<TextView
+		android:id="@+id/channelFeedReadOnlyFooter"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="?attr/zerionColorBackground"
+		android:gravity="center"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="14dp"
+		android:paddingBottom="18dp"
+		android:text="@string/channels_feed_read_only_footer"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		android:visibility="gone"
+		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	<TextView
 		android:id="@+id/channelFeedEmptyView"
@@ -155,15 +177,15 @@
 		android:paddingStart="32dp"
 		android:paddingEnd="32dp"
 		android:paddingTop="64dp"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="16sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelApprovalBanner"
 		app:layout_constraintBottom_toTopOf="@+id/channelComposeBar"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		tools:text="@string/channels_feed_empty_subscriber"
-		tools:visibility="visible" />
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 	<ProgressBar
 		android:id="@+id/channelFeedProgress"
@@ -184,16 +206,16 @@
 		android:gravity="center"
 		android:paddingStart="40dp"
 		android:paddingEnd="40dp"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="14sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
 		app:layout_constraintTop_toBottomOf="@+id/channelFeedProgress"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		tools:text="@string/channels_feed_connecting"
-		tools:visibility="visible" />
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
-	<LinearLayout
+	<com.professor.zerion.android.view.WrapRow
 		android:id="@+id/channelComposeBar"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
@@ -203,71 +225,91 @@
 		android:paddingTop="10dp"
 		android:paddingBottom="14dp"
 		android:gravity="center_vertical"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:visibility="gone"
 		app:layout_constraintBottom_toBottomOf="parent"
 		tools:visibility="visible">
 
-		<ImageButton
-			android:id="@+id/channelComposeTtlButton"
-			android:layout_width="48dp"
-			android:layout_height="48dp"
-			android:background="?attr/selectableItemBackgroundBorderless"
-			android:contentDescription="@string/channels_ttl_picker_cd"
-			android:padding="12dp"
-			android:src="@drawable/ic_timer"
-			app:tint="@color/zerion_text_secondary" />
-
-		<ImageButton
-			android:id="@+id/channelComposeAttachButton"
-			android:layout_width="48dp"
-			android:layout_height="48dp"
-			android:background="?attr/selectableItemBackgroundBorderless"
-			android:contentDescription="@string/channels_attach_cd"
-			android:padding="12dp"
-			android:src="@drawable/ic_attach"
-			app:tint="@color/zerion_text_secondary" />
-
-		<EditText
-			android:id="@+id/channelComposeInput"
-			android:layout_width="0dp"
-			android:layout_height="wrap_content"
-			android:layout_weight="1"
-			android:background="@drawable/bg_input_bar"
-			android:hint="@string/channels_compose_hint"
-			android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
-			android:maxLength="4096"
-			android:maxLines="4"
-			android:minHeight="48dp"
-			android:paddingStart="14dp"
-			android:paddingEnd="14dp"
-			android:paddingTop="10dp"
-			android:paddingBottom="10dp"
-			android:textColor="@color/zerion_text_primary"
-			android:textColorHint="@color/zerion_text_secondary"
-			android:textSize="15sp"
-			android:importantForAutofill="no" />
-
-		<com.google.android.material.button.MaterialButton
-			android:id="@+id/channelComposeSendButton"
-			style="@style/Widget.MaterialComponents.Button.TextButton"
+		<LinearLayout
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_marginStart="8dp"
-			android:minWidth="0dp"
-			android:text="@string/channels_compose_send"
-			android:textColor="@color/zerion_accent_text" />
+			android:layout_gravity="center_vertical"
+			android:orientation="horizontal">
 
-		<ProgressBar
-			android:id="@+id/channelComposeProgress"
-			style="?android:attr/progressBarStyleSmall"
-			android:layout_width="24dp"
-			android:layout_height="24dp"
-			android:layout_marginStart="4dp"
-			android:indeterminate="true"
-			android:visibility="gone"
-			tools:visibility="gone" />
+			<ImageButton
+				android:id="@+id/channelComposeTtlButton"
+				android:layout_width="48dp"
+				android:layout_height="48dp"
+				android:background="?attr/selectableItemBackgroundBorderless"
+				android:contentDescription="@string/channels_ttl_picker_cd"
+				android:padding="12dp"
+				android:src="@drawable/ic_timer"
+				app:tint="?attr/zerionColorOnSurfaceMuted" />
 
-	</LinearLayout>
+			<ImageButton
+				android:id="@+id/channelComposeAttachButton"
+				android:layout_width="48dp"
+				android:layout_height="48dp"
+				android:background="?attr/selectableItemBackgroundBorderless"
+				android:contentDescription="@string/channels_attach_cd"
+				android:padding="12dp"
+				android:src="@drawable/ic_attach"
+				app:tint="?attr/zerionColorOnSurfaceMuted" />
+
+		</LinearLayout>
+
+		<LinearLayout
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_vertical"
+			android:layout_weight="1"
+			android:gravity="center_vertical"
+			android:orientation="horizontal">
+
+			<EditText
+				android:id="@+id/channelComposeInput"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"
+				android:background="@drawable/text_input_background"
+				android:hint="@string/channels_compose_hint"
+				android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
+				android:maxLength="4096"
+				android:maxLines="4"
+				android:minHeight="48dp"
+				android:paddingStart="16dp"
+				android:paddingEnd="16dp"
+				android:paddingTop="12dp"
+				android:paddingBottom="12dp"
+				android:textColor="?attr/zerionColorOnSurface"
+				android:textColorHint="?attr/zerionColorOnSurfaceMuted"
+				android:importantForAutofill="no"
+				android:textAppearance="@style/TextAppearance.Zerion.Body" />
+
+			<ImageButton
+				android:id="@+id/channelComposeSendButton"
+				android:layout_width="48dp"
+				android:layout_height="48dp"
+				android:layout_marginStart="8dp"
+				android:background="@drawable/bg_chat_avatar"
+				android:contentDescription="@string/channels_compose_send"
+				android:padding="12dp"
+				android:scaleType="center"
+				android:src="@drawable/social_send_now_white"
+				app:tint="?attr/zerionColorOnAccent" />
+
+			<ProgressBar
+				android:id="@+id/channelComposeProgress"
+				style="?android:attr/progressBarStyleSmall"
+				android:layout_width="24dp"
+				android:layout_height="24dp"
+				android:layout_marginStart="4dp"
+				android:indeterminate="true"
+				android:visibility="gone"
+				tools:visibility="gone" />
+
+		</LinearLayout>
+
+	</com.professor.zerion.android.view.WrapRow>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

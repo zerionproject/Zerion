@@ -23,16 +23,16 @@ public class MeshPresenceTracker {
 
 	private final EventBus eventBus;
 	private final Map<Integer, Long> lastSeen = new ConcurrentHashMap<>();
+	private final ScheduledExecutorService sweeper;
 
 	@Inject
 	MeshPresenceTracker(EventBus eventBus) {
 		this.eventBus = eventBus;
-		ScheduledExecutorService sweeper =
-				Executors.newSingleThreadScheduledExecutor(r -> {
-					Thread t = new Thread(r, "MeshPresence");
-					t.setDaemon(true);
-					return t;
-				});
+		sweeper = Executors.newSingleThreadScheduledExecutor(r -> {
+			Thread t = new Thread(r, "MeshPresence");
+			t.setDaemon(true);
+			return t;
+		});
 		sweeper.scheduleWithFixedDelay(this::sweep, SWEEP_MS, SWEEP_MS,
 				TimeUnit.MILLISECONDS);
 	}
@@ -62,5 +62,9 @@ public class MeshPresenceTracker {
 
 	private static long now() {
 		return System.currentTimeMillis();
+	}
+
+	public void shutDown() {
+		sweeper.shutdownNow();
 	}
 }

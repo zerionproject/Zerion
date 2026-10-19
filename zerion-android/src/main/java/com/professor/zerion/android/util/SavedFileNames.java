@@ -21,11 +21,26 @@ public final class SavedFileNames {
 	private SavedFileNames() {
 	}
 
-	public static String forType(String mimeType, long now) {
+	public static String named(String kind, String mimeType, long now) {
 		String stamp = new SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.US)
 				.format(new Date(now));
 		String ext = extension(mimeType);
-		return ext.isEmpty() ? stamp : stamp + "." + ext;
+		String tail = ext.isEmpty() ? stamp : stamp + "." + ext;
+		String label = leading(kind.trim(),
+				SafeFileNames.MAX_LENGTH - tail.length() - 2);
+		return SafeFileNames.sanitize(label.isEmpty() ? tail
+				: label + " " + tail, tail);
+	}
+
+	private static String leading(String s, int codePoints) {
+		if (codePoints <= 0) return "";
+		int end = 0;
+		int n = 0;
+		while (end < s.length() && n < codePoints) {
+			end += Character.charCount(s.codePointAt(end));
+			n++;
+		}
+		return s.substring(0, end);
 	}
 
 	static String extension(String mimeType) {

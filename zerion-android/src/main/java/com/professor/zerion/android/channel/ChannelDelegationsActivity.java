@@ -15,7 +15,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
@@ -86,7 +85,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 
 		recycler = findViewById(R.id.delegationsRecycler);
 		emptyView = findViewById(R.id.delegationsEmptyView);
-		adapter = new DelegationsAdapter(this::confirmRevoke);
+		adapter = new DelegationsAdapter(this::showEditor);
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 
@@ -106,18 +105,40 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	private void refresh() {
 		ioExecutor.execute(() -> {
 			List<ChannelDelegationCert> certs;
+			java.util.Map<String, String> names = new java.util.HashMap<>();
 			try {
 				certs = channelManager.listActiveDelegations(channelId);
 			} catch (DbException ex) {
 				certs = new ArrayList<>();
 			}
+			try {
+				for (ChannelSubscriber sub
+						: channelManager.getAnnouncedSubscribers(channelId)) {
+					String name = sub.getDisplayName().trim();
+					if (!name.isEmpty()) {
+						names.put(hex(sub.getEd25519PubKey()), name);
+					}
+				}
+			} catch (DbException ignored) {
+			}
 			List<ChannelDelegationCert> finalCerts = certs;
-			runOnUiThread(() -> render(finalCerts));
+			runOnUiThread(() -> render(finalCerts, names));
 		});
 	}
 
-	private void render(List<ChannelDelegationCert> certs) {
-		adapter.setItems(certs);
+	private static String hex(byte[] key) {
+		return org.zerionproject.core.util.StringUtils.toHexString(key);
+	}
+
+	private void showEditor(ChannelDelegationCert cert, String name) {
+		ChannelMemberSheet.open(this, channelManager, ioExecutor, channelId,
+				cert.getDelegateeEd25519PubKey(), name,
+				cert.getDelegateeMlDsaPubKey(), this::refresh);
+	}
+
+	private void render(List<ChannelDelegationCert> certs,
+			java.util.Map<String, String> names) {
+		adapter.setItems(certs, names);
 		recycler.setVisibility(certs.isEmpty()
 				? View.GONE : View.VISIBLE);
 		emptyView.setVisibility(certs.isEmpty()
@@ -142,44 +163,58 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 	}
 
 	private void showAddPicker(List<ChannelSubscriber> subs) {
+		List<String> names = pickerLabels(this, subs);
 		CharSequence[] labels = new CharSequence[subs.size() + 1];
-		for (int i = 0; i < subs.size(); i++) {
-			labels[i] = subs.get(i).getDisplayName() + "  "
-					+ DelegationViewHolder.toHexShort(
-					subs.get(i).getEd25519PubKey());
-		}
+		for (int i = 0; i < subs.size(); i++) labels[i] = names.get(i);
 		labels[subs.size()] = getString(
-				R.string.channels_delegations_paste_key);
+				R.string.channels_delegations_paste_id);
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_delegations_add)
 				.setItems(labels, (d, which) -> {
 					if (which == subs.size()) {
 						showPasteKeyDialog();
 					} else {
-						addEditor(subs.get(which).getEd25519PubKey(),
-								subs.get(which).getMlDsaPubKey());
+						ChannelSubscriber sub = subs.get(which);
+						ChannelMemberSheet.open(this, channelManager,
+								ioExecutor, channelId, sub.getEd25519PubKey(),
+								sub.getDisplayName(), sub.getMlDsaPubKey(),
+								this::refresh);
 					}
 				})
 				.show();
 	}
 
-	private void addEditor(byte[] ed25519, byte[] mlDsa) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.delegatePublisher(channelId, ed25519,
-						mlDsa, 0L);
-				runOnUiThread(() -> {
-					Toast.makeText(this,
-							R.string.channels_delegations_added,
-							Toast.LENGTH_SHORT).show();
-					refresh();
-				});
-			} catch (DbException ex) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_delegations_error_full,
-						Toast.LENGTH_LONG).show());
+	static List<String> pickerLabels(Context ctx,
+			List<ChannelSubscriber> subs) {
+		List<String> names = new ArrayList<>();
+		java.util.Map<String, Integer> counts = new java.util.HashMap<>();
+		for (ChannelSubscriber sub : subs) {
+			String name = sub.getDisplayName().trim();
+			if (name.isEmpty()) {
+				name = ctx.getString(
+						R.string.channels_delegations_unnamed_person);
 			}
-		});
+			names.add(name);
+			Integer seen = counts.get(name);
+			counts.put(name, seen == null ? 1 : seen + 1);
+		}
+		List<String> labels = new ArrayList<>();
+		for (int i = 0; i < subs.size(); i++) {
+			String name = names.get(i);
+			long at = subs.get(i).getJoinedAtHourMs();
+			Integer same = counts.get(name);
+			if (same != null && same > 1 && at > 0L) {
+				name = ctx.getString(R.string.channels_label_parts, name,
+						ctx.getString(R.string.channels_delegations_shared_on,
+								android.text.format.DateUtils.formatDateTime(
+										ctx, at, android.text.format.DateUtils
+												.FORMAT_SHOW_DATE
+												| android.text.format
+												.DateUtils.FORMAT_ABBREV_MONTH)));
+			}
+			labels.add(name);
+		}
+		return labels;
 	}
 
 	private void showPasteKeyDialog() {
@@ -204,7 +239,7 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 			decoded = decodeHybridPubKey(pasted);
 		} catch (IllegalArgumentException ex) {
 			Toast.makeText(this,
-					R.string.channels_delegations_error_key,
+					R.string.channels_delegations_error_id,
 					Toast.LENGTH_LONG).show();
 			return;
 		}
@@ -271,50 +306,26 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 		return out;
 	}
 
-	private void confirmRevoke(ChannelDelegationCert cert) {
-		new SecureAlertDialogBuilder(this)
-				.setTitle(R.string.channels_delegations_revoke)
-				.setPositiveButton(R.string.channels_delegations_revoke,
-						(d, w) -> doRevoke(cert))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void doRevoke(ChannelDelegationCert cert) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.revokeDelegation(channelId,
-						cert.getDelegationSeq());
-				runOnUiThread(() -> {
-					Toast.makeText(this,
-							R.string.channels_delegations_revoked,
-							Toast.LENGTH_LONG).show();
-					refresh();
-				});
-			} catch (DbException e) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_delegations_revoke_failed,
-						Toast.LENGTH_LONG).show());
-			}
-		});
-	}
-
 	private static class DelegationsAdapter
 			extends RecyclerView.Adapter<DelegationViewHolder> {
 
-		interface OnRevoke {
-			void onRevoke(ChannelDelegationCert cert);
+		interface OnOpen {
+			void onOpen(ChannelDelegationCert cert, String name);
 		}
 
 		private List<ChannelDelegationCert> items = new ArrayList<>();
-		private final OnRevoke onRevoke;
+		private java.util.Map<String, String> names =
+				new java.util.HashMap<>();
+		private final OnOpen onOpen;
 
-		DelegationsAdapter(OnRevoke onRevoke) {
-			this.onRevoke = onRevoke;
+		DelegationsAdapter(OnOpen onOpen) {
+			this.onOpen = onOpen;
 		}
 
-		void setItems(List<ChannelDelegationCert> certs) {
+		void setItems(List<ChannelDelegationCert> certs,
+				java.util.Map<String, String> names) {
 			this.items = certs;
+			this.names = names;
 			notifyDataSetChanged();
 		}
 
@@ -332,9 +343,10 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 		public void onBindViewHolder(@NonNull DelegationViewHolder h,
 				int position) {
 			ChannelDelegationCert cert = items.get(position);
-			h.bind(cert);
-			h.revokeButton.setOnClickListener(
-					v -> onRevoke.onRevoke(cert));
+			String name = names.get(hex(cert.getDelegateeEd25519PubKey()));
+			h.bind(cert, name);
+			h.itemView.setOnClickListener(v -> onOpen.onOpen(cert,
+					name == null ? "" : name));
 		}
 
 		@Override
@@ -348,37 +360,28 @@ public class ChannelDelegationsActivity extends ZerionActivity {
 
 		final TextView keyView;
 		final TextView validityView;
-		final MaterialButton revokeButton;
 
 		DelegationViewHolder(@NonNull View itemView) {
 			super(itemView);
 			keyView = itemView.findViewById(R.id.delegationKeyView);
 			validityView =
 					itemView.findViewById(R.id.delegationValidityView);
-			revokeButton =
-					itemView.findViewById(R.id.delegationRevokeButton);
 		}
 
-		void bind(ChannelDelegationCert cert) {
-			keyView.setText(toHexShort(
-					cert.getDelegateeEd25519PubKey()));
-			String validity = cert.isUnbounded()
-					? itemView.getContext().getString(
+		void bind(ChannelDelegationCert cert, @Nullable String name) {
+			Context ctx = itemView.getContext();
+			keyView.setText(name != null ? name
+					: ctx.getString(R.string.channels_delegations_unnamed));
+			validityView.setText(cert.isUnbounded()
+					? ctx.getString(
 							R.string.channels_delegations_validity_unbounded)
-					: itemView.getContext().getString(
-							R.string.channels_delegations_validity_label);
-			validityView.setText(String.format(Locale.US,
-					"%s · seq %d", validity, cert.getDelegationSeq()));
-		}
-
-		private static String toHexShort(byte[] b) {
-			StringBuilder sb = new StringBuilder();
-			int take = Math.min(b.length, 12);
-			for (int i = 0; i < take; i++) {
-				sb.append(String.format(Locale.US, "%02x", b[i]));
-			}
-			if (b.length > take) sb.append("…");
-			return sb.toString();
+					: ctx.getString(R.string.channels_delegations_valid_until,
+							android.text.format.DateUtils.formatDateTime(ctx,
+									cert.getValidUntilHourMs(),
+									android.text.format.DateUtils
+											.FORMAT_SHOW_DATE
+											| android.text.format.DateUtils
+											.FORMAT_SHOW_YEAR)));
 		}
 	}
 }

@@ -2,6 +2,7 @@ package com.professor.zerion.android.conversation;
 
 import android.content.Intent;
 import android.os.Looper;
+import android.view.View;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
@@ -9,7 +10,9 @@ import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.api.LockManager;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
+import com.professor.zerion.android.contact.ContactItem;
 import com.professor.zerion.android.view.TextInputView;
+import com.professor.zerion.android.view.ZerionRecyclerView;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -19,11 +22,15 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.zerionproject.app.api.conversation.ConversationMessageHeader;
+import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.messaging.LinkPreview;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.zerionproject.app.api.messaging.event.PrivateMessageEditedEvent;
 import org.zerionproject.core.api.Pair;
+import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.identity.Author;
+import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.MessageId;
 
@@ -40,6 +47,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import androidx.lifecycle.MutableLiveData;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -52,6 +60,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.robolectric.Shadows.shadowOf;
+import static org.zerionproject.core.test.TestUtils.getAuthor;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 
 @RunWith(AndroidJUnit4.class)
@@ -160,6 +169,55 @@ public class MessageChangesInChatTest {
 			ids.add(adapter.getItemAt(i).getId());
 		}
 		return ids;
+	}
+
+	private RecyclerView.ViewHolder holder(int position) throws Exception {
+		RecyclerView list = ((ZerionRecyclerView) field(activity, "list"))
+				.getRecyclerView();
+		list.measure(View.MeasureSpec.makeMeasureSpec(1080,
+				View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
+				1920, View.MeasureSpec.EXACTLY));
+		list.layout(0, 0, 1080, 1920);
+		RecyclerView.ViewHolder h =
+				list.findViewHolderForAdapterPosition(position);
+		assertNotNull("no holder at " + position, h);
+		return h;
+	}
+
+	private static ContactItem contact(Author author,
+			@Nullable String alias) {
+		return new ContactItem(new Contact(CONTACT, author,
+				new AuthorId(getRandomId()), alias, null, false),
+				new AuthorInfo(AuthorInfo.Status.UNVERIFIED));
+	}
+
+	@Test
+	public void renamingTheContactRenamesItsQuotesInTheChat()
+			throws Exception {
+		MutableLiveData<ContactItem> shownContact = inViewModel("contactItem");
+		Author author = getAuthor();
+		shownContact.setValue(contact(author, null));
+		idle();
+		ConversationMessageItem r = new ConversationMessageItem(
+				R.layout.list_item_conversation_msg_out,
+				header(new MessageId(getRandomId()), 2_000L, true),
+				viewModel.getContactDisplayName());
+		r.setText("ok");
+		r.setReplyToMessageId(new MessageId(getRandomId()));
+		r.setReplyToText("see you at eight");
+		r.setReplyToLocal(false);
+		adapter.add(r);
+		idle();
+		TextView quoteAuthor =
+				holder(0).itemView.findViewById(R.id.replyAuthor);
+		assertEquals(author.getName(), quoteAuthor.getText().toString());
+
+		shownContact.setValue(contact(author, "Ally"));
+		idle();
+
+		quoteAuthor = holder(0).itemView.findViewById(R.id.replyAuthor);
+		assertEquals("Ally (" + author.getName() + ")",
+				quoteAuthor.getText().toString());
 	}
 
 	@Test

@@ -112,9 +112,16 @@ public class ElectrumClient implements ElectrumRpc {
 
 	ElectrumClient(ElectrumEndpoint ep, int socksPort, String isolationTag,
 			int readTimeoutMs, int deadlineMs) throws IOException {
+		this(ep, socksPort, isolationTag, readTimeoutMs, deadlineMs,
+				deadlineMs);
+	}
+
+	ElectrumClient(ElectrumEndpoint ep, int socksPort, String isolationTag,
+			int readTimeoutMs, int connectDeadlineMs, int callDeadlineMs)
+			throws IOException {
 		this.readTimeoutMs = Math.min(HANDSHAKE_TIMEOUT_MS, readTimeoutMs);
-		this.deadlineMs = deadlineMs;
-		Deadline deadline = new Deadline(deadlineMs);
+		this.deadlineMs = callDeadlineMs;
+		Deadline deadline = new Deadline(connectDeadlineMs);
 		Socket base = null;
 		try {
 			if (ep.viaTor()) {
@@ -178,7 +185,7 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 
 		int remainingMs() throws SocketTimeoutException {
-			long left = (endNanos - System.nanoTime()) / 1_000_000L;
+			long left = (endNanos - System.nanoTime() + 999_999L) / 1_000_000L;
 			if (left <= 0) {
 				fired.set(true);
 				throw new SocketTimeoutException(NO_ANSWER_IN_TIME);

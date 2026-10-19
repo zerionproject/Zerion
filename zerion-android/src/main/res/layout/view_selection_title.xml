@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/selectionTitle"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_gravity="center_vertical"
+	android:autoSizeMaxTextSize="16sp"
+	android:autoSizeMinTextSize="12sp"
+	android:autoSizeTextType="uniform"
+	android:ellipsize="end"
+	android:maxLines="1"
+	android:paddingStart="8dp"
+	android:paddingEnd="4dp"
+	android:textAppearance="@style/TextAppearance.Zerion.Body"
+	android:textColor="?attr/zerionColorOnSurface"
+	android:textFontWeight="500" />

@@ -17,10 +17,55 @@
 		<item name="colorSurface">@color/zerion_card_bg</item>
 		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="colorSurfaceDim">@color/zerion_dark_bg</item>
+		<item name="elevationOverlayEnabled">false</item>
+		<item name="colorSurfaceVariant">@color/zerion_surface_elevated</item>
+		<item name="colorOnSurfaceVariant">@color/zerion_text_secondary</item>
+		<item name="colorOutline">@color/zerion_text_secondary</item>
+		<item name="colorOutlineVariant">@color/zerion_divider</item>
+		<item name="colorSurfaceBright">@color/zerion_surface_elevated</item>
+		<item name="colorSurfaceContainerLowest">@color/zerion_dark_bg</item>
+		<item name="colorSurfaceContainerLow">@color/zerion_card_bg</item>
+		<item name="colorSurfaceContainer">@color/zerion_card_bg</item>
+		<item name="colorSurfaceContainerHigh">@color/zerion_surface_elevated</item>
+		<item name="colorSurfaceContainerHighest">@color/zerion_surface_elevated</item>
+		<item name="colorSecondaryContainer">@color/zerion_selected_container</item>
+		<item name="colorOnSecondaryContainer">@color/zerion_text_primary</item>
 		<item name="colorError">@color/zerion_destructive_text</item>
 		<item name="colorSurfaceInverse">@color/zerion_inverse_surface</item>
 		<item name="colorOnSurfaceInverse">@color/zerion_inverse_on_surface</item>
-		<item name="zerionAccentText">@color/zerion_accent_text</item>
+		<item name="zerionColorBackground">@color/zerion_dark_bg</item>
+		<item name="zerionColorSurface">@color/zerion_card_bg</item>
+		<item name="zerionColorSurfaceVariant">@color/zerion_surface_elevated</item>
+		<item name="zerionColorOnSurface">@color/zerion_text_primary</item>
+		<item name="zerionColorOnSurfaceMuted">@color/zerion_text_secondary</item>
+		<item name="zerionColorDivider">@color/zerion_divider</item>
+		<item name="zerionColorOutline">@color/zerion_outline</item>
+		<item name="zerionColorAccent">@color/zerion_primary_accent</item>
+		<item name="zerionColorOnAccent">@color/zerion_on_accent</item>
+		<item name="zerionColorAccentText">@color/zerion_accent_text</item>
+		<item name="zerionColorAccentIcon">@color/zerion_accent_icon</item>
+		<item name="zerionColorBubbleIn">@color/zerion_bubble_in</item>
+		<item name="zerionColorOnBubbleIn">@color/zerion_text_primary</item>
+		<item name="zerionColorOnBubbleInMuted">@color/zerion_text_secondary</item>
+		<item name="zerionColorBubbleInInset">@color/zerion_bubble_in_inset</item>
+		<item name="zerionColorBubbleOut">@color/zerion_message_sent</item>
+		<item name="zerionColorOnBubbleOut">@color/zerion_on_bubble_out</item>
+		<item name="zerionColorOnBubbleOutMuted">@color/zerion_on_bubble_out_muted</item>
+		<item name="zerionColorBubbleOutInset">@color/bubble_out_inset</item>
+		<item name="zerionColorDanger">@color/zerion_destructive</item>
+		<item name="zerionColorDangerText">@color/zerion_destructive_text</item>
+		<item name="zerionColorSuccess">@color/zerion_success_text</item>
+		<item name="zerionColorWarning">@color/zerion_warning_text</item>
+		<item name="zerionColorStatusMuted">@color/zerion_text_secondary</item>
+		<item name="zerionColorPresenceOnline">@color/zerion_presence_online</item>
+		<item name="zerionColorPresenceOffline">@color/zerion_presence_offline</item>
+		<item name="zerionColorScrim">@color/zerion_scrim</item>
+		<item name="zerionColorOnScrim">@color/zerion_on_scrim</item>
+		<item name="zerionColorMediaBackdrop">@color/zerion_media_backdrop</item>
+		<item name="zerionColorMessageSelectedOwn">@color/zerion_message_selected_own</item>
+		<item name="zerionColorMessageSelectedReceived">@color/zerion_message_selected_received</item>
+		<item name="zerionColorChannelCardSelected">@color/zerion_channel_card_selected</item>
+		<item name="zerionColorSelectionForeground">@color/zerion_selection_foreground</item>
 		<item name="android:statusBarColor">@android:color/transparent</item>
 		<item name="android:navigationBarColor">@android:color/transparent</item>
 
@@ -33,9 +78,12 @@
 		<item name="fontFamily">@font/plex_sans</item>
 		<item name="android:windowAnimationStyle">@style/ActivityAnimation</item>
 		<item name="windowActionModeOverlay">true</item>
+		<item name="actionModeStyle">@style/Zerion.SelectionBar</item>
+		<item name="actionModeCloseContentDescription">@string/selection_clear</item>
 		<item name="toolbarStyle">@style/ZerionToolbar</item>
 		<item name="actionOverflowButtonStyle">@style/Zerion.ActionButton.Overflow</item>
 		<item name="alertDialogTheme">@style/ZerionDialogTheme.Neutral</item>
+		<item name="materialAlertDialogTheme">@style/ThemeOverlay.Zerion.MaterialAlertDialog</item>
 		<item name="preferenceTheme">@style/PreferenceThemeOverlay.v14</item>
 
 		<item name="colorControlNormal">@color/zerion_accent_icon</item>
@@ -69,6 +117,19 @@
 		<item name="colorSurface">@color/zerion_card_bg</item>
 		<item name="colorOnSurface">@color/zerion_text_primary</item>
 		<item name="android:colorBackground">@color/zerion_card_bg</item>
+		<item name="elevationOverlayEnabled">false</item>
+		<item name="colorSurfaceVariant">@color/zerion_surface_elevated</item>
+		<item name="colorOnSurfaceVariant">@color/zerion_text_secondary</item>
+		<item name="colorOutline">@color/zerion_text_secondary</item>
+		<item name="colorOutlineVariant">@color/zerion_divider</item>
+		<item name="colorSurfaceBright">@color/zerion_surface_elevated</item>
+		<item name="colorSurfaceContainerLowest">@color/zerion_dark_bg</item>
+		<item name="colorSurfaceContainerLow">@color/zerion_card_bg</item>
+		<item name="colorSurfaceContainer">@color/zerion_card_bg</item>
+		<item name="colorSurfaceContainerHigh">@color/zerion_surface_elevated</item>
+		<item name="colorSurfaceContainerHighest">@color/zerion_surface_elevated</item>
+		<item name="colorSecondaryContainer">@color/zerion_selected_container</item>
+		<item name="colorOnSecondaryContainer">@color/zerion_text_primary</item>
 		<item name="buttonBarPositiveButtonStyle">@style/ZerionButtonFlat.Positive</item>
 		<item name="buttonBarNeutralButtonStyle">@style/ZerionButtonFlat.Neutral</item>
 		<item name="buttonBarNegativeButtonStyle">@style/ZerionButtonFlat.Negative</item>
@@ -80,6 +141,48 @@
 		<item name="android:windowBackground">@color/zerion_card_bg</item>
 		<item name="android:windowAnimationStyle">@style/DialogAnimation</item>
 		<item name="android:filterTouchesWhenObscured">true</item>
+		<item name="alertDialogStyle">@style/AlertDialog.Zerion</item>
+		<item name="android:windowTitleStyle">@style/DialogWindowTitle.Zerion</item>
+	</style>
+
+	<style name="DialogWindowTitle.Zerion" parent="RtlOverlay.DialogWindowTitle.AppCompat">
+		<item name="android:breakStrategy">high_quality</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
+	</style>
+
+	<style name="AlertDialog.Zerion" parent="AlertDialog.AppCompat">
+		<item name="android:layout">@layout/zerion_alert_dialog_compat</item>
+	</style>
+
+	<style name="ThemeOverlay.Zerion.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+		<item name="alertDialogStyle">@style/MaterialAlertDialog.Zerion</item>
+		<item name="buttonBarPositiveButtonStyle">@style/Widget.Zerion.Button.TextButton.Dialog</item>
+		<item name="buttonBarNegativeButtonStyle">@style/Widget.Zerion.Button.TextButton.Dialog</item>
+		<item name="buttonBarNeutralButtonStyle">@style/Widget.Zerion.Button.TextButton.Dialog.Flush</item>
+		<item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.Zerion.Title.Text</item>
+	</style>
+
+	<style name="MaterialAlertDialog.Zerion.Title.Text" parent="MaterialAlertDialog.Material3.Title.Text">
+		<item name="android:breakStrategy">high_quality</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
+	</style>
+
+	<style name="MaterialAlertDialog.Zerion" parent="MaterialAlertDialog.Material3">
+		<item name="android:layout">@layout/zerion_alert_dialog</item>
+	</style>
+
+	<style name="Widget.Zerion.Button.TextButton.Dialog" parent="Widget.Material3.Button.TextButton.Dialog">
+		<item name="android:textColor">@color/zerion_dialog_button_text</item>
+		<item name="android:singleLine">false</item>
+		<item name="android:lines">@null</item>
+		<item name="android:ellipsize">none</item>
+		<item name="android:breakStrategy">balanced</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
+	</style>
+
+	<style name="Widget.Zerion.Button.TextButton.Dialog.Flush" parent="Widget.Zerion.Button.TextButton.Dialog">
+		<item name="android:layout_marginStart">0dp</item>
+		<item name="android:layout_marginLeft">0dp</item>
 	</style>
 
 	<style name="ZerionFullScreenDialogTheme" parent="ZerionDialogTheme">
@@ -154,9 +257,19 @@
 		<item name="colorSurface">@color/zerion_amoled_card</item>
 		<item name="colorSurfaceDim">@color/zerion_amoled_bg</item>
 		<item name="colorSurfaceVariant">@color/zerion_amoled_card</item>
+		<item name="colorSurfaceBright">@color/zerion_amoled_surface_variant</item>
+		<item name="colorSurfaceContainerLowest">@color/zerion_amoled_bg</item>
+		<item name="colorSurfaceContainerLow">@color/zerion_amoled_card</item>
+		<item name="colorSurfaceContainer">@color/zerion_amoled_card</item>
+		<item name="colorSurfaceContainerHigh">@color/zerion_amoled_surface_variant</item>
+		<item name="colorSurfaceContainerHighest">@color/zerion_amoled_surface_variant</item>
+		<item name="colorSecondaryContainer">@color/zerion_amoled_selected_container</item>
 		<item name="colorPrimaryContainer">@color/zerion_amoled_card</item>
 		<item name="colorTertiaryContainer">@color/zerion_amoled_card</item>
 		<item name="android:windowBackground">@color/zerion_amoled_bg</item>
+		<item name="zerionColorBackground">@color/zerion_amoled_bg</item>
+		<item name="zerionColorSurface">@color/zerion_amoled_card</item>
+		<item name="zerionColorSurfaceVariant">@color/zerion_amoled_surface_variant</item>
 		<item name="android:statusBarColor">@android:color/transparent</item>
 		<item name="android:navigationBarColor">@android:color/transparent</item>
 	</style>
@@ -168,7 +281,10 @@
 		<item name="colorControlNormal">@color/accent_violet_text</item>
 		<item name="colorOnTertiaryContainer">@color/accent_violet_text</item>
 		<item name="android:textColorLink">@color/accent_violet_text</item>
-		<item name="zerionAccentText">@color/accent_violet_text</item>
+		<item name="zerionColorAccent">@color/accent_violet</item>
+		<item name="zerionColorAccentText">@color/accent_violet_text</item>
+		<item name="zerionColorAccentIcon">@color/accent_violet_text</item>
+		<item name="zerionColorOnAccent">@android:color/black</item>
 		<item name="colorAccent">@color/accent_violet</item>
 	</style>
 
@@ -178,7 +294,9 @@
 		<item name="colorControlNormal">@color/accent_emerald_text</item>
 		<item name="colorOnTertiaryContainer">@color/accent_emerald_text</item>
 		<item name="android:textColorLink">@color/accent_emerald_text</item>
-		<item name="zerionAccentText">@color/accent_emerald_text</item>
+		<item name="zerionColorAccent">@color/accent_emerald</item>
+		<item name="zerionColorAccentText">@color/accent_emerald_text</item>
+		<item name="zerionColorAccentIcon">@color/accent_emerald_text</item>
 		<item name="colorAccent">@color/accent_emerald</item>
 	</style>
 
@@ -188,7 +306,9 @@
 		<item name="colorControlNormal">@color/accent_amber_text</item>
 		<item name="colorOnTertiaryContainer">@color/accent_amber_text</item>
 		<item name="android:textColorLink">@color/accent_amber_text</item>
-		<item name="zerionAccentText">@color/accent_amber_text</item>
+		<item name="zerionColorAccent">@color/accent_amber</item>
+		<item name="zerionColorAccentText">@color/accent_amber_text</item>
+		<item name="zerionColorAccentIcon">@color/accent_amber_text</item>
 		<item name="colorAccent">@color/accent_amber</item>
 	</style>
 
@@ -198,7 +318,9 @@
 		<item name="colorControlNormal">@color/accent_rose_text</item>
 		<item name="colorOnTertiaryContainer">@color/accent_rose_text</item>
 		<item name="android:textColorLink">@color/accent_rose_text</item>
-		<item name="zerionAccentText">@color/accent_rose_text</item>
+		<item name="zerionColorAccent">@color/accent_rose</item>
+		<item name="zerionColorAccentText">@color/accent_rose_text</item>
+		<item name="zerionColorAccentIcon">@color/accent_rose_text</item>
 		<item name="colorAccent">@color/accent_rose</item>
 	</style>
 
@@ -208,7 +330,9 @@
 		<item name="colorControlNormal">@color/accent_blue_text</item>
 		<item name="colorOnTertiaryContainer">@color/accent_blue_text</item>
 		<item name="android:textColorLink">@color/accent_blue_text</item>
-		<item name="zerionAccentText">@color/accent_blue_text</item>
+		<item name="zerionColorAccent">@color/accent_blue</item>
+		<item name="zerionColorAccentText">@color/accent_blue_text</item>
+		<item name="zerionColorAccentIcon">@color/accent_blue_text</item>
 		<item name="colorAccent">@color/accent_blue</item>
 	</style>
 

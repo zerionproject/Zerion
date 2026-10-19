@@ -14,14 +14,18 @@ Fails when:
   table names a primitive that is not in the canonical list;
 - the website (a directory given with --website, or fetched from
   https://zerion.chat) carries release references that differ from what
-  scripts/render-release-refs.py renders from the manifest.
+  scripts/render-release-refs.py renders from the manifest;
+- with --release only: docs/bridges/bridges.json expires less than 30 days
+  after today (UTC), so a release would ship while the published bridge list
+  runs out. Without --release the same finding is printed as a warning, so a
+  push or a pull request is not turned red by the date alone.
 
 Historical pages (blog posts, changelog entries, fastlane changelogs) are
 not scanned for stale phrases; they carry dated notes instead.
 
-Usage: check-docs.py [--website <dir>] [--no-fetch]
+Usage: check-docs.py [--website <dir>] [--no-fetch] [--release]
 """
-import glob, json, os, re, sys, urllib.error, urllib.request
+import datetime, glob, json, os, re, sys, urllib.error, urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
@@ -29,7 +33,7 @@ os.chdir(ROOT)
 CURRENT_DOCS = [
     "README.md", "SECURITY.md", "CONTRIBUTING.md",
     "docs/ZERION_OVERVIEW.md", "docs/ZERION_TECHNICAL_WHITEPAPER.md",
-    "docs/ZERION_MESH_AND_I2P.md", "docs/protocol/README.md",
+    "docs/ZERION_MESH_AND_I2P.md", "docs/bridges/README.md", "docs/protocol/README.md",
     "docs/protocol/SECURITY_CLAIMS.md", "docs/protocol/SECURITY_CLAIMS_MATRIX.md",
     "docs/protocol/ZTP-ZPP.md", "docs/protocol/ZWF-MODE3FULL.md",
     "docs/protocol/ASYNC-SEALED-SENDER.md", "docs/protocol/MESH-TRANSPORT.md",
@@ -69,8 +73,17 @@ FORBIDDEN = [
     (r"schema version 6[0-9]\b", "the schema version is 72"),
 ]
 ALLOW_CONTEXT = [r"not used", r"retired", r"no longer", r"not ", r"never ", r"is written", r"absent", r"instead of", r"Historical", r"older material"]
+RETIRED_UI_LABELS = [
+    ("Also remove from the channel", "Remove from channel"),
+    ("Ban subscriber", "Block"),
+    ("Rotate invite link", "Renew invite link"),
+    ("Closed channel", "Private channel"),
+    ("Open channel", "Public channel"),
+    ("Apply to join", "Request access"),
+]
 
 errors = []
+warnings = []
 
 
 def visible_text(html):
@@ -101,6 +114,12 @@ def check_forbidden(name, text):
             if any(re.search(a, window, flags=re.I) for a in ALLOW_CONTEXT):
                 continue
             errors.append("%s: forbidden phrase %r (%s)" % (name, m.group(0), why))
+
+
+def check_ui_labels(name, text):
+    for old, new in RETIRED_UI_LABELS:
+        if '"%s"' % old in text:
+            errors.append("%s: quotes the retired label %r; the app says %r" % (name, old, new))
 
 
 def check_links(name, text):
@@ -164,6 +183,30 @@ def check_website_crypto(html, crypto):
                 errors.append("website crypto table names %r, not in docs/crypto-primitives.json" % p)
 
 
+BRIDGE_LIST = "docs/bridges/bridges.json"
+BRIDGE_LIST_MIN_DAYS = 30
+
+
+def check_bridge_list(release, today=None):
+    if today is None:
+        today = datetime.datetime.now(datetime.timezone.utc).date()
+    try:
+        with open(BRIDGE_LIST, encoding="ascii") as f:
+            expires = datetime.date.fromisoformat(json.load(f)["expires"])
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        errors.append("%s: cannot read its expiry date (%s)" % (BRIDGE_LIST, e))
+        return
+    left = (expires - today).days
+    if left < BRIDGE_LIST_MIN_DAYS:
+        when = ("expired on %s" % expires if left < 0 else
+                "expires on %s, %d days after today" % (expires, left))
+        (errors if release else warnings).append(
+            "%s %s (%s), less than %d days ahead; publish a new signed"
+            " bridge list before the release (docs/bridges/README.md,"
+            " Publishing a new list)"
+            % (BRIDGE_LIST, when, today, BRIDGE_LIST_MIN_DAYS))
+
+
 def website_files(argv):
     if "--website" in argv:
         d = argv[argv.index("--website") + 1]
@@ -198,15 +241,18 @@ def main():
         text = open(name, encoding="utf-8").read()
         scan = text
         check_forbidden(name, scan)
+        check_ui_labels(name, text)
         if name.endswith(".md"):
             check_links(name, text)
         check_manifest_refs(name, text, m)
         check_crypto(name, scan, crypto)
     for name in PROVENANCE_ONLY_DOCS:
         text = open(name, encoding="utf-8").read()
+        check_ui_labels(name, text)
         for m in re.finditer(r"\bBriar\b|\bBramble\b", text):
             errors.append("%s: forbidden phrase %r (design notes describe Zerion's implementation, not its origin)" % (name, m.group(0)))
     check_claims_matrix()
+    check_bridge_list("--release" in sys.argv)
     sys.path.insert(0, os.path.join(ROOT, "scripts"))
     import importlib.util
     spec = importlib.util.spec_from_file_location("rrr", os.path.join(ROOT, "scripts", "render-release-refs.py"))
@@ -222,6 +268,8 @@ def main():
                     errors.append("website/index.html: release references differ from docs/release-manifest.json")
             except SystemExit as e:
                 errors.append(str(e))
+    for w in warnings:
+        print("WARN " + w)
     if errors:
         for e in errors:
             print("FAIL " + e)

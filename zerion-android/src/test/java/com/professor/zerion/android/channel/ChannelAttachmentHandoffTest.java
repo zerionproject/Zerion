@@ -11,6 +11,10 @@ import android.widget.ImageView;
 
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.api.AndroidNotificationManager;
+import com.professor.zerion.android.conversation.ImageActivity;
+import com.professor.zerion.android.conversation.MediaViewer;
+import com.professor.zerion.android.conversation.TestPictures;
+import com.professor.zerion.android.conversation.VideoPlayerActivity;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
 
 import org.junit.After;
@@ -90,6 +94,8 @@ public class ChannelAttachmentHandoffTest {
 				.addExtensionMimeTypMapping("mp4", "video/mp4");
 		shadowOf(MimeTypeMap.getSingleton())
 				.addExtensionMimeTypMapping("pdf", "application/pdf");
+		shadowOf(MimeTypeMap.getSingleton())
+				.addExtensionMimeTypMapping("wav", "audio/wav");
 		provider = mockStatic(FileProvider.class);
 		provider.when(() -> FileProvider.getUriForFile(any(), anyString(),
 				any(File.class))).thenAnswer(inv -> {
@@ -155,15 +161,84 @@ public class ChannelAttachmentHandoffTest {
 		return d;
 	}
 
+	private static byte[] wav(int seed) {
+		byte[] samples = new byte[400];
+		for (int i = 0; i < samples.length; i++) {
+			samples[i] = (byte) (i * 5 + seed);
+		}
+		byte[] fmt = {1, 0, 1, 0, 0x40, 0x1F, 0, 0, (byte) 0x80, 0x3E, 0, 0,
+				2, 0, 16, 0};
+		java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+		out.write('R');
+		out.write('I');
+		out.write('F');
+		out.write('F');
+		le32(out, 4 + 8 + fmt.length + 8 + samples.length);
+		out.write('W');
+		out.write('A');
+		out.write('V');
+		out.write('E');
+		out.write('f');
+		out.write('m');
+		out.write('t');
+		out.write(' ');
+		le32(out, fmt.length);
+		out.write(fmt, 0, fmt.length);
+		out.write('d');
+		out.write('a');
+		out.write('t');
+		out.write('a');
+		le32(out, samples.length);
+		out.write(samples, 0, samples.length);
+		return out.toByteArray();
+	}
+
+	private static void le32(java.io.ByteArrayOutputStream out, int v) {
+		out.write(v);
+		out.write(v >> 8);
+		out.write(v >> 16);
+		out.write(v >> 24);
+	}
+
+	private static byte[] png(int seed) {
+		return TestPictures.png(("channel picture " + seed)
+				.getBytes(StandardCharsets.US_ASCII));
+	}
+
+	private static List<Intent> started(HandoffFeed feed) {
+		List<Intent> out = new ArrayList<>();
+		Intent i;
+		while ((i = shadowOf(feed).getNextStartedActivity()) != null) {
+			out.add(i);
+		}
+		return out;
+	}
+
 	private void present(HandoffFeed feed, byte[] blobHash, byte[] content,
 			String mime) throws Exception {
+		present(feed, 0L, 0L, blobHash, content, mime);
+	}
+
+	private void present(HandoffFeed feed, long seq, long ttlMs,
+			byte[] blobHash, byte[] content, String mime) throws Exception {
+		present(feed, seq, System.currentTimeMillis(), ttlMs, blobHash,
+				content, mime);
+	}
+
+	private void present(HandoffFeed feed, long seq, long timestamp,
+			long ttlMs, byte[] blobHash, byte[] content, String mime)
+			throws Exception {
 		ChannelPost.ChannelAttachment att = new ChannelPost.ChannelAttachment(
 				blobHash, content.length, mime, new byte[32], null);
+		ChannelPost post = new ChannelPost(new byte[0], seq, new byte[32],
+				timestamp, "post", java.util.Collections.singletonList(att),
+				ttlMs, new byte[64], true);
 		Method m = ChannelFeedActivity.class.getDeclaredMethod(
-				"presentAttachment", ChannelPost.ChannelAttachment.class,
-				AttachmentBlob.class, ImageView.class);
+				"presentAttachment", ChannelPost.class,
+				ChannelPost.ChannelAttachment.class, AttachmentBlob.class,
+				ImageView.class);
 		m.setAccessible(true);
-		m.invoke(feed, att, new AttachmentBlob(content, mime),
+		m.invoke(feed, post, att, new AttachmentBlob(content, mime),
 				new ImageView(feed));
 		runBackgroundWork();
 	}
@@ -247,21 +322,150 @@ public class ChannelAttachmentHandoffTest {
 	}
 
 	@Test
+	public void aVideoPlaysInZerionAndIsNeitherWrittenNorHandedOver()
+			throws Exception {
+		HandoffFeed feed = openFeed().get();
+		byte[] video = mp4(7);
+		present(feed, hash(7), video, "video/mp4");
+		List<Intent> launched = started(feed);
+		assertEquals(1, launched.size());
+		assertEquals(VideoPlayerActivity.class.getName(),
+				launched.get(0).getComponent().getClassName());
+		assertNull("a warning was shown for a video",
+				ShadowDialog.getLatestDialog());
+		assertTrue("the video was written: " + copiesOf(video),
+				copiesOf(video).isEmpty());
+	}
+
+	@Test
+	public void aPictureOpensInZerionsViewerAndIsNeitherWrittenNorHandedOver()
+			throws Exception {
+		HandoffFeed feed = openFeed().get();
+		byte[] picture = png(8);
+		present(feed, hash(8), picture, "image/png");
+		List<Intent> launched = started(feed);
+		assertEquals(1, launched.size());
+		assertEquals(ImageActivity.class.getName(),
+				launched.get(0).getComponent().getClassName());
+		assertTrue("the picture was written: " + copiesOf(picture),
+				copiesOf(picture).isEmpty());
+	}
+
+	private static byte[] bmp(int seed) {
+		byte[] d = new byte[70 + 16];
+		d[0] = 'B';
+		d[1] = 'M';
+		d[2] = (byte) d.length;
+		d[10] = 70;
+		d[14] = 40;
+		d[18] = 2;
+		d[22] = 2;
+		d[26] = 1;
+		d[28] = 24;
+		for (int i = 70; i < d.length; i++) d[i] = (byte) (i + seed);
+		return d;
+	}
+
+	private void opensNowhere(HandoffFeed feed, byte[] content, String mime)
+			throws Exception {
+		present(feed, hash(content.length), content, mime);
+		List<Intent> launched = started(feed);
+		assertEquals("a " + mime + " the viewer refused went to "
+				+ launched, 0, launched.size());
+		assertNull("a warning was shown instead of refusing",
+				ShadowDialog.getLatestDialog());
+		assertTrue("it was written: " + copiesOf(content),
+				copiesOf(content).isEmpty());
+		assertNotNull("the reader was not told",
+				org.robolectric.shadows.ShadowToast.getLatestToast());
+	}
+
+	@Test
+	public void aPictureTheViewerCannotShowOpensNowhere() throws Exception {
+		HandoffFeed feed = openFeed().get();
+		opensNowhere(feed, bmp(1), "image/bmp");
+		opensNowhere(feed, TestPictures.png("wide".getBytes(
+				StandardCharsets.US_ASCII), 17000, 10), "image/png");
+	}
+
+	@Test
+	public void aPictureOfAnExpiredPostIsWipedWhenTheViewerRefusesIt()
+			throws Exception {
+		HandoffFeed feed = openFeed().get();
+		byte[] picture = png(12);
+		long hour = 60L * 60L * 1000L;
+		present(feed, 12L, System.currentTimeMillis() - 2 * hour, hour,
+				hash(12), picture, "image/png");
+
+		assertEquals(0, started(feed).size());
+		assertNotNull("the reader was not told",
+				org.robolectric.shadows.ShadowToast.getLatestToast());
+		assertArrayEquals("the refused picture stays in memory",
+				new byte[picture.length], picture);
+	}
+
+	@Test
+	public void aVideoThePlayerCannotPlayOpensNowhere() throws Exception {
+		HandoffFeed feed = openFeed().get();
+		opensNowhere(feed, mp4(11), "video/x-m4v");
+	}
+
+	@Test
+	public void aShownPictureGoesWhenItsPostIsRemoved() throws Exception {
+		HandoffFeed feed = openFeed().get();
+		present(feed, 9L, 0L, hash(9), png(9), "image/png");
+		List<Intent> launched = started(feed);
+		assertEquals(1, launched.size());
+		String token = launched.get(0).getStringExtra(
+				launched.get(0).getExtras().keySet().iterator().next());
+		assertTrue(MediaViewer.holds(token));
+		com.professor.zerion.android.conversation.DeletedContentEvictor
+				evictor = new com.professor.zerion.android.conversation
+				.DeletedContentEvictor(new com.professor.zerion.android
+				.conversation.voice.VoiceChunkAssembler(), () -> {
+				});
+		evictor.eventOccurred(new org.zerionproject.app.api.channel.event
+				.ChannelPostsRemovedEvent(new byte[0],
+				java.util.Collections.singletonList(8L)));
+		assertTrue(MediaViewer.holds(token));
+		evictor.eventOccurred(new org.zerionproject.app.api.channel.event
+				.ChannelPostsRemovedEvent(new byte[0],
+				java.util.Collections.singletonList(9L)));
+		assertFalse("the removed post is still in the viewer",
+				MediaViewer.holds(token));
+	}
+
+	@Test
+	public void aShownVideoKeepsThePostsTimer() throws Exception {
+		HandoffFeed feed = openFeed().get();
+		present(feed, 3L, 60_000L, hash(3), mp4(3), "video/mp4");
+		List<Intent> launched = started(feed);
+		assertEquals(1, launched.size());
+		String token = launched.get(0).getStringExtra(
+				launched.get(0).getExtras().keySet().iterator().next());
+		assertTrue(MediaViewer.holds(token));
+		shadowOf(Looper.getMainLooper()).idleFor(
+				java.time.Duration.ofSeconds(61));
+		assertFalse("the video outlived its post's timer",
+				MediaViewer.holds(token));
+	}
+
+	@Test
 	public void theCopyNamesNeitherTheAttachmentNorItsHash() throws Exception {
 		HandoffFeed feed = openFeed().get();
 		byte[] blobHash = hash(3);
-		byte[] video = mp4(3);
-		present(feed, blobHash, video, "video/mp4");
+		byte[] audio = wav(3);
+		present(feed, blobHash, audio, "audio/wav");
 		Intent view = nextView(feed);
-		assertNotNull("a checked video still opens without a warning", view);
-		assertEquals("video/mp4", view.getType());
+		assertNotNull("checked audio still opens without a warning", view);
+		assertEquals("audio/wav", view.getType());
 		String name = view.getData().getLastPathSegment();
 		String hashHex = hex(blobHash);
 		for (int len = 6; len <= 16; len += 2) {
 			assertFalse("the copy is named after the attachment hash: "
 					+ name, name.contains(hashHex.substring(0, len)));
 		}
-		assertTrue(name, name.endsWith(".mp4"));
+		assertTrue(name, name.endsWith(".wav"));
 		assertNotEquals(0, view.getFlags()
 				& Intent.FLAG_GRANT_READ_URI_PERMISSION);
 		assertEquals("the other app could write the copy", 0,
@@ -273,12 +477,12 @@ public class ChannelAttachmentHandoffTest {
 	@Test
 	public void onlyTheNewestCopyIsKept() throws Exception {
 		HandoffFeed feed = openFeed().get();
-		byte[] first = mp4(4);
-		byte[] second = mp4(5);
-		present(feed, hash(4), first, "video/mp4");
+		byte[] first = wav(4);
+		byte[] second = wav(5);
+		present(feed, hash(4), first, "audio/wav");
 		Intent one = nextView(feed);
 		assertNotNull(one);
-		present(feed, hash(5), second, "video/mp4");
+		present(feed, hash(5), second, "audio/wav");
 		Intent two = nextView(feed);
 		assertNotNull(two);
 		assertEquals(1, copiesOf(second).size());
@@ -295,14 +499,14 @@ public class ChannelAttachmentHandoffTest {
 	public void theCopyStaysWhileTheOtherAppIsInFrontAndGoesAfter()
 			throws Exception {
 		ActivityController<HandoffFeed> c = openFeed();
-		byte[] video = mp4(6);
-		present(c.get(), hash(6), video, "video/mp4");
+		byte[] audio = wav(6);
+		present(c.get(), hash(6), audio, "audio/wav");
 		Intent view = nextView(c.get());
 		assertNotNull(view);
 		File staged = stagedFile(view);
 		c.pause().stop();
 		runBackgroundWork();
-		assertArrayEquals("the other app would read a removed copy", video,
+		assertArrayEquals("the other app would read a removed copy", audio,
 				Files.readAllBytes(staged.toPath()));
 		c.restart().start().resume();
 		runBackgroundWork();

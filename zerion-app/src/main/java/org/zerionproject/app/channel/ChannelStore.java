@@ -34,7 +34,7 @@ import javax.inject.Inject;
 class ChannelStore {
 
 	private static final String NS_STATE = "zerion-channels-state";
-	private static final String NS_PRIV = "zerion-channels-priv";
+	static final String NS_PRIV = "zerion-channels-priv";
 	private static final String NS_UNREAD = "zerion-channels-unread";
 	private static final String NS_MIRROR = "zerion-channels-mirror";
 	private static final String NS_INDEX = "zerion-channels-index";

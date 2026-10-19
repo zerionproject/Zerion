@@ -8,7 +8,7 @@ import dagger.Provides;
 @Module
 public class TestFeatureFlagModule {
 	@Provides
-	FeatureFlags provideFeatureFlags() {
+	public FeatureFlags provideFeatureFlags() {
 		return new FeatureFlags() {
 			@Override
 			public boolean shouldEnableImageAttachments() {
@@ -27,6 +27,11 @@ public class TestFeatureFlagModule {
 
 			@Override
 			public boolean shouldEnableI2p() {
+				return false;
+			}
+
+			@Override
+			public boolean shouldEnableDebugCountryOverride() {
 				return false;
 			}
 		};

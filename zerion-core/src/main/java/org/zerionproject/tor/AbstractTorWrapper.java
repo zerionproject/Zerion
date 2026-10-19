@@ -525,6 +525,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	public void orConnStatus(String status, String orName) {
 		if (status.equals("CONNECTED")) state.onOrConnectionConnected();
 		else if (status.equals("CLOSED")) state.onOrConnectionClosed();
+		if (status.equals("CONNECTED") || status.equals("FAILED")) {
+			String fingerprint = BridgeLines.relayFingerprint(orName);
+			if (fingerprint != null) {
+				state.onRelayConnection(fingerprint,
+						status.equals("CONNECTED"));
+			}
+		}
 	}
 
 	@Override
@@ -557,10 +564,34 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			handleClientStatus(removeSeverity(msg));
 		} else if (type.equals("STATUS_GENERAL")) {
 			handleGeneralStatus(removeSeverity(msg));
-		} else if (type.equals("HS_DESC") && msg.startsWith("UPLOADED")) {
-			String[] parts = msg.split(" ");
-			if (parts.length >= 2) state.onHsDescriptorUploaded(parts[1]);
+		} else if (type.equals("HS_DESC")) {
+			handleHsDescriptor(msg);
 		}
+	}
+
+	private static final List<String> HS_DIRECTORY_REPLIES = asList(
+			"REASON=NOT_FOUND", "REASON=QUERY_REJECTED", "REASON=BAD_DESC",
+			"REASON=UNEXPECTED", "REASON=UPLOAD_REJECTED");
+
+	private void handleHsDescriptor(String msg) {
+		String[] parts = msg.split(" ");
+		String action = parts[0];
+		if (action.equals("UPLOADED")) {
+			if (parts.length >= 2) state.onHsDescriptorUploaded(parts[1]);
+		} else if (action.equals("RECEIVED")) {
+			state.onHsDirectoryAnswer();
+		} else if (action.equals("REQUESTED") || action.equals("UPLOAD")) {
+			state.onHsDirectoryRequest();
+		} else if (action.equals("FAILED") && isHsDirectoryReply(parts)) {
+			state.onHsDirectoryAnswer();
+		}
+	}
+
+	private static boolean isHsDirectoryReply(String[] parts) {
+		for (String part : parts) {
+			if (HS_DIRECTORY_REPLIES.contains(part)) return true;
+		}
+		return false;
 	}
 
 	private String removeSeverity(String msg) {
@@ -839,6 +870,28 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (observer != null) {
 				Observer o = observer;
 				eventExecutor.execute(o::onEntryRelayFailing);
+			}
+		}
+
+		private synchronized void onRelayConnection(String fingerprint,
+				boolean connected) {
+			if (!networkEnabled || observer == null) return;
+			Observer o = observer;
+			eventExecutor.execute(() ->
+					o.onRelayConnection(fingerprint, connected));
+		}
+
+		private synchronized void onHsDirectoryRequest() {
+			if (observer != null) {
+				Observer o = observer;
+				eventExecutor.execute(o::onHsDirectoryRequest);
+			}
+		}
+
+		private synchronized void onHsDirectoryAnswer() {
+			if (observer != null) {
+				Observer o = observer;
+				eventExecutor.execute(o::onHsDirectoryAnswer);
 			}
 		}
 

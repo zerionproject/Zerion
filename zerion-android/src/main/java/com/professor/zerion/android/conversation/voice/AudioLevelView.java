@@ -7,7 +7,6 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 
 import com.professor.zerion.R;
 
@@ -36,7 +35,8 @@ public class AudioLevelView extends View {
 		super(context, attrs, defStyleAttr);
 
 		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		paint.setColor(ContextCompat.getColor(context, R.color.zerion_success));
+		paint.setColor(com.professor.zerion.android.util.UiUtils
+				.resolveColorAttribute(context, R.attr.zerionColorSuccess));
 		paint.setStyle(Paint.Style.FILL);
 		paint.setStrokeCap(Paint.Cap.ROUND);
 		for (int i = 0; i < BAR_COUNT; i++) {

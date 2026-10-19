@@ -49,7 +49,11 @@ jobs:
       - name: Version and release references agree with the manifest
         run: python3 scripts/check-version.py
       - name: Check documents against the release manifest, the crypto list and the live website
+        if: github.event_name != 'schedule'
         run: python3 scripts/check-docs.py
+      - name: Check documents as for a release, including at least 30 more days of the published bridge list
+        if: github.event_name == 'schedule'
+        run: python3 scripts/check-docs.py --release
       - name: Verify the published APK hash against the manifest
         run: |
           python3 - <<'EOF'

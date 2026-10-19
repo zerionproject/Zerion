@@ -14,7 +14,7 @@ import androidx.lifecycle.LiveData;
 @NotNullByDefault
 class ConversationSecretNoteItem extends ConversationItem {
 
-	private static final String PREFIX = "SECRET:";
+	private static final String PREFIX = SecretNotes.PREFIX;
 	private static final int MIN_COUNTDOWN_SECONDS = 1;
 	private static final int MAX_COUNTDOWN_SECONDS = 43200;
 	private static final int DEFAULT_COUNTDOWN_SECONDS = 10;
@@ -30,6 +30,17 @@ class ConversationSecretNoteItem extends ConversationItem {
 
 	boolean isRevealed() {
 		return revealed;
+	}
+
+	@Override
+	int updateFrom(ConversationItem fresh) {
+		String kept = text;
+		int change = super.updateFrom(fresh);
+		if (revealed) {
+			text = kept;
+			return UNCHANGED;
+		}
+		return change == UNCHANGED ? UNCHANGED : CONTENT_CHANGED;
 	}
 
 	@UiThread
@@ -70,7 +81,7 @@ class ConversationSecretNoteItem extends ConversationItem {
 	}
 
 	static boolean isSecretNoteText(@Nullable String text) {
-		return text != null && text.startsWith(PREFIX);
+		return SecretNotes.isSecret(text);
 	}
 
 	@UiThread

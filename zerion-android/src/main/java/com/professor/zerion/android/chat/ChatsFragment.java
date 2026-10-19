@@ -19,18 +19,25 @@ import com.professor.zerion.android.contact.add.remote.PendingContactListActivit
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.grouptr.GroupTrConversationActivity;
+import com.professor.zerion.android.homelist.HomeList;
+import com.professor.zerion.android.homelist.HomeListAdapter;
+import com.professor.zerion.android.homelist.HomeRow;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
-import com.professor.zerion.android.view.ZerionRecyclerView;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import androidx.annotation.UiThread;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.LinearLayoutManager;
 
 import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_INDEFINITE;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
@@ -38,16 +45,17 @@ import static com.professor.zerion.android.conversation.ConversationActivity.CON
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class ChatsFragment extends BaseFragment
-		implements ChatsAdapter.OnChatClickListener {
+		implements HomeListAdapter.Listener {
 
 	public static final String TAG = ChatsFragment.class.getName();
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
+	@Inject
+	@IoExecutor
+	Executor ioExecutor;
 
-	private ChatsViewModel viewModel;
-	private final ChatsAdapter adapter = new ChatsAdapter(this);
-	private ZerionRecyclerView list;
+	ChatsViewModel viewModel;
 
 	@Nullable
 	private Snackbar snackbar = null;
@@ -78,19 +86,13 @@ public class ChatsFragment extends BaseFragment
 			@Nullable Bundle savedInstanceState) {
 		requireActivity().setTitle(R.string.chats_button);
 
-		View contentView =
-				inflater.inflate(R.layout.fragment_chats, container, false);
-
-		list = contentView.findViewById(R.id.list);
-		list.setLayoutManager(new LinearLayoutManager(requireContext()));
-		list.setAdapter(adapter);
-		list.setEmptyText(getString(R.string.no_chats));
+		HomeList home = HomeList.inflate(inflater, container, this,
+				ioExecutor, R.drawable.ic_chat, R.string.no_chats,
+				R.string.no_contacts_action);
+		View contentView = home.getView();
 
 		viewModel.getItems().observe(getViewLifecycleOwner(), items -> {
-			if (items != null) {
-				adapter.submit(items);
-				list.showData();
-			}
+			if (items != null) home.show(rows(items));
 		});
 		viewModel.getHasPendingContacts()
 				.observe(getViewLifecycleOwner(), hasPending -> {
@@ -145,8 +147,52 @@ public class ChatsFragment extends BaseFragment
 				PendingContactListActivity.class));
 	}
 
+	private List<HomeRow> rows(List<ChatItem> items) {
+		List<HomeRow> rows = new ArrayList<>(items.size());
+		for (ChatItem item : items) rows.add(row(item));
+		return rows;
+	}
+
+	private HomeRow row(ChatItem item) {
+		String key;
+		String status;
+		HomeRow.Presence presence = HomeRow.Presence.NONE;
+		byte[] blob = item.getBlobId();
+		switch (item.getType()) {
+			case GROUP:
+				key = "group:" + (blob == null ? ""
+						: StringUtils.toHexString(blob));
+				status = getString(R.string.chat_type_group);
+				break;
+			case CHANNEL:
+				key = "channel:" + (blob == null ? ""
+						: StringUtils.toHexString(blob));
+				status = getString(R.string.chat_type_channel);
+				break;
+			default:
+				key = "contact:" + item.getContactId();
+				status = getString(item.isOnline()
+						? R.string.online : R.string.offline);
+				presence = item.isOnline() ? HomeRow.Presence.ONLINE
+						: HomeRow.Presence.OFFLINE;
+				break;
+		}
+		return HomeRow.builder(key, item.getName())
+				.avatar(item.getAvatarHeader())
+				.time(item.getTime())
+				.preview(null, status)
+				.unread(item.getUnread())
+				.pinned(item.isPinned())
+				.muted(item.isMuted())
+				.presence(presence)
+				.payload(item)
+				.build();
+	}
+
 	@Override
-	public void onChatClick(ChatItem item) {
+	public void onRowClick(HomeRow row) {
+		if (!(row.getPayload() instanceof ChatItem)) return;
+		ChatItem item = (ChatItem) row.getPayload();
 		Intent i;
 		switch (item.getType()) {
 			case GROUP:
@@ -168,7 +214,9 @@ public class ChatsFragment extends BaseFragment
 	}
 
 	@Override
-	public boolean onChatLongClick(ChatItem item, View anchor) {
+	public boolean onRowLongClick(HomeRow row, View anchor) {
+		if (!(row.getPayload() instanceof ChatItem)) return false;
+		ChatItem item = (ChatItem) row.getPayload();
 		if (item.getType() != ChatItem.Type.CONTACT) return false;
 		int contactId = item.getContactId();
 

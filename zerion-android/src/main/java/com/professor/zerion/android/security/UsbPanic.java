@@ -11,6 +11,7 @@ import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.ZerionService;
 import com.professor.zerion.android.account.AccountWipeCleanup;
 import com.professor.zerion.android.backup.RunningCopies;
+import com.professor.zerion.android.message.PendingSends;
 import com.professor.zerion.android.util.CacheSweeper;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 
@@ -86,6 +87,7 @@ public final class UsbPanic {
 
 		@Override
 		public void clearMemory() {
+			PendingSends.get().clearSilently();
 			com.professor.zerion.android.util.SecureClipboard
 					.clearOnSignOut(app);
 			com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder

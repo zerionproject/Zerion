@@ -196,6 +196,9 @@ public class TextInputView extends LinearLayout {
 	private String replyPreviewText(@Nullable String rawText) {
 		if (rawText == null || rawText.isEmpty()) {
 			return getContext().getString(R.string.media);
+		} else if (com.professor.zerion.android.conversation.SecretNotes
+				.isSecret(rawText)) {
+			return getContext().getString(R.string.secret_note_label);
 		} else if (rawText.startsWith("[VOICE:")
 				|| com.professor.zerion.android.conversation.voice
 						.VoiceMessageChunkFormat.isPart(rawText)) {

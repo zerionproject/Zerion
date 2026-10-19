@@ -20,4 +20,16 @@ public abstract class NavDrawerModule {
 	@IntoMap
 	@ViewModelKey(PluginViewModel.class)
 	abstract ViewModel bindPluginViewModel(PluginViewModel pluginViewModel);
+
+	@Binds
+	@IntoMap
+	@ViewModelKey(ConnectionStatusViewModel.class)
+	abstract ViewModel bindConnectionStatusViewModel(
+			ConnectionStatusViewModel connectionStatusViewModel);
+
+	@Binds
+	@IntoMap
+	@ViewModelKey(HelperTransportsViewModel.class)
+	abstract ViewModel bindHelperTransportsViewModel(
+			HelperTransportsViewModel helperTransportsViewModel);
 }

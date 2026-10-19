@@ -26,6 +26,12 @@ class ConnectionsManager {
 	private final MutableLiveData<Boolean> torEnabled = new MutableLiveData<>();
 	private final MutableLiveData<String> torNetwork = new MutableLiveData<>();
 	private final MutableLiveData<String> customBridges = new MutableLiveData<>();
+	private final MutableLiveData<Integer> helperTransports =
+			new MutableLiveData<>();
+	private final MutableLiveData<String> helperTransportsCountry =
+			new MutableLiveData<>();
+	private final MutableLiveData<String> debugCountry =
+			new MutableLiveData<>();
 
 	ConnectionsManager(Application app, SettingsManager settingsManager,
 			Executor dbExecutor) {
@@ -42,6 +48,25 @@ class ConnectionsManager {
 		torNetwork.postValue(Integer.toString(torNetworkSetting));
 
 		customBridges.postValue(settings.get(PREF_TOR_CUSTOM_BRIDGES));
+		helperTransports.postValue(settings.getInt(
+				TorConstants.PREF_TOR_HELPER_TRANSPORTS,
+				TorConstants.HELPER_TRANSPORTS_ASK));
+		helperTransportsCountry.postValue(settings.get(
+				TorConstants.PREF_TOR_HELPER_TRANSPORTS_COUNTRY));
+		debugCountry.postValue(
+				settings.get(TorConstants.PREF_TOR_DEBUG_COUNTRY));
+	}
+
+	LiveData<Integer> helperTransports() {
+		return helperTransports;
+	}
+
+	LiveData<String> helperTransportsCountry() {
+		return helperTransportsCountry;
+	}
+
+	LiveData<String> debugCountry() {
+		return debugCountry;
 	}
 
 	LiveData<Boolean> torEnabled() {

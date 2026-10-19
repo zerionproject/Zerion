@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -111,33 +112,59 @@ public final class ExternalHandoff {
 
 	public static void open(Activity activity, Executor io, byte[] content,
 			String type, Runnable onFailure) {
+		open(activity, io, content, type, onFailure, false);
+	}
+
+	public static void openCopy(Activity activity, Executor io, byte[] copy,
+			String type, Runnable onFailure) {
+		open(activity, io, copy, type, onFailure, true);
+	}
+
+	private static void open(Activity activity, Executor io, byte[] content,
+			String type, Runnable onFailure, boolean owned) {
 		if (!asksFirst(type)) {
-			stageAndLaunch(activity, io, content, type, onFailure);
+			stageAndLaunch(activity, io, content, type, onFailure, owned);
 			return;
 		}
+		boolean[] confirmed = {false};
 		new SecureAlertDialogBuilder(activity)
 				.setTitle(R.string.external_open_title)
 				.setMessage(R.string.external_open_message)
-				.setPositiveButton(R.string.external_open_confirm, (d, w) ->
-						stageAndLaunch(activity, io, content, type,
-								onFailure))
+				.setPositiveButton(R.string.external_open_confirm, (d, w) -> {
+					confirmed[0] = true;
+					stageAndLaunch(activity, io, content, type, onFailure,
+							owned);
+				})
 				.setNegativeButton(android.R.string.cancel, null)
+				.setOnDismissListener(d -> {
+					if (owned && !confirmed[0]) wipe(content);
+				})
 				.show();
 	}
 
+	private static void wipe(byte[] data) {
+		Arrays.fill(data, (byte) 0);
+	}
+
 	private static void stageAndLaunch(Activity activity, Executor io,
-			byte[] content, String type, Runnable onFailure) {
+			byte[] content, String type, Runnable onFailure, boolean owned) {
 		Context app = activity.getApplicationContext();
 		io.execute(() -> {
 			File file;
 			String shown;
+			Prepared ready = null;
 			try {
-				Prepared ready = cleaner.prepare(app, content, type);
+				ready = cleaner.prepare(app, content, type);
 				file = stage(app, ready.content, ready.type);
 				shown = ready.type;
 			} catch (IOException | RuntimeException e) {
 				activity.runOnUiThread(onFailure);
 				return;
+			} finally {
+				if (ready != null && ready.content != content) {
+					wipe(ready.content);
+				}
+				if (owned) wipe(content);
 			}
 			activity.runOnUiThread(() -> {
 				if (activity.isFinishing() || activity.isDestroyed()) {
@@ -248,7 +275,9 @@ public final class ExternalHandoff {
 		for (byte x : b) sb.append(String.format(Locale.ROOT, "%02x", x));
 		String ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(type);
 		if (ext == null || !ext.matches("[A-Za-z0-9]{1,8}")) ext = "bin";
-		return sb.append('.').append(ext.toLowerCase(Locale.ROOT)).toString();
+		String name = sb.toString();
+		return SafeFileNames.sanitize(name + "." + ext.toLowerCase(Locale.ROOT),
+				name);
 	}
 
 	private static void watch(Application app) {

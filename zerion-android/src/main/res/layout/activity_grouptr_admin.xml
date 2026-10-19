@@ -20,9 +20,9 @@
 			android:layout_height="?attr/actionBarSize"
 			app:navigationIcon="@drawable/ic_arrow_back"
 			app:navigationContentDescription="@string/abc_action_bar_up_description"
-			app:navigationIconTint="@color/zerion_text_primary"
+			app:navigationIconTint="?attr/zerionColorOnSurface"
 			app:title="@string/grouptr_group_settings"
-			app:titleTextColor="@color/zerion_text_primary" />
+			app:titleTextColor="?attr/zerionColorOnSurface" />
 
 	</com.google.android.material.appbar.AppBarLayout>
 
@@ -50,7 +50,7 @@
 					android:layout_height="96dp"
 					android:background="@drawable/badge_circle_cyan"
 					android:gravity="center"
-					android:textColor="@color/zerion_on_accent"
+					android:textColor="?attr/zerionColorOnAccent"
 					android:textSize="34sp"
 					android:textStyle="bold"
 					tools:text="F" />
@@ -59,15 +59,16 @@
 					android:id="@+id/headerName"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
+					android:accessibilityHeading="true"
 					android:layout_marginTop="16dp"
 					android:ellipsize="end"
 					android:gravity="center"
 					android:maxLines="2"
-					android:textColor="@color/zerion_text_primary"
-					android:textSize="22sp"
+					android:textColor="?attr/zerionColorOnSurface"
 					android:fontFamily="@font/bricolage_grotesque"
 					android:textFontWeight="500"
-					tools:text="Family" />
+					tools:text="Family"
+					android:textAppearance="@style/TextAppearance.Zerion.Headline" />
 
 				<TextView
 					android:id="@+id/headerSubtitle"
@@ -77,9 +78,9 @@
 					android:ellipsize="end"
 					android:gravity="center"
 					android:maxLines="1"
-					android:textColor="?android:attr/textColorSecondary"
-					android:textSize="13sp"
-					tools:text="4 members · End-to-end encrypted" />
+					android:textColor="?attr/zerionColorOnSurfaceMuted"
+					tools:text="4 members · End-to-end encrypted"
+					android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 			</LinearLayout>
 
@@ -96,11 +97,11 @@
 					android:id="@+id/membersHeader"
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
+					android:accessibilityHeading="true"
 					android:padding="16dp"
-					android:textColor="@color/zerion_text_primary"
-					android:textSize="16sp"
-					android:textStyle="bold"
-					tools:text="Members (4)" />
+					android:textColor="?attr/zerionColorOnSurface"
+					tools:text="Members (4)"
+					android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
 				<LinearLayout
 					android:id="@+id/membersContainer"
@@ -124,11 +125,11 @@
 				<TextView
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
+					android:accessibilityHeading="true"
 					android:padding="16dp"
 					android:text="@string/grouptr_admin_section_group_settings"
-					android:textColor="@color/zerion_text_primary"
-					android:textSize="16sp"
-					android:textStyle="bold" />
+					android:textColor="?attr/zerionColorOnSurface"
+					android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
 				<LinearLayout
 					android:id="@+id/actionAddMember"
@@ -138,7 +139,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_person_add"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<TextView
 						style="@style/GroupTrAdminActionText"
@@ -161,16 +162,16 @@
 						android:layout_height="wrap_content"
 						android:minHeight="48dp"
 						android:text="@string/grouptr_members_may_invite"
-						android:textColor="@color/zerion_text_primary"
-						android:textSize="15sp" />
+						android:textColor="?attr/zerionColorOnSurface"
+						android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 					<TextView
 						android:id="@+id/membersMayInviteSummary"
 						android:layout_width="match_parent"
 						android:layout_height="wrap_content"
 						android:text="@string/grouptr_members_may_invite_summary"
-						android:textColor="?android:attr/textColorSecondary"
-						android:textSize="12sp" />
+						android:textColor="?attr/zerionColorOnSurfaceMuted"
+						android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 				</LinearLayout>
 
@@ -184,7 +185,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_person_add"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<LinearLayout
 						android:layout_width="0dp"
@@ -197,17 +198,17 @@
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:text="@string/grouptr_invite_contacts"
-							android:textColor="@color/zerion_text_primary"
-							android:textSize="15sp" />
+							android:textColor="?attr/zerionColorOnSurface"
+							android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 						<TextView
 							android:id="@+id/actionInviteContactsHint"
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:layout_marginTop="2dp"
-							android:textColor="?android:attr/textColorSecondary"
-							android:textSize="12sp"
-							android:visibility="gone" />
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							android:visibility="gone"
+							android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 					</LinearLayout>
 
@@ -223,7 +224,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_lock"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<LinearLayout
 						android:layout_width="0dp"
@@ -235,16 +236,16 @@
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:text="@string/grouptr_incognito"
-							android:textColor="@color/zerion_text_primary"
-							android:textSize="15sp" />
+							android:textColor="?attr/zerionColorOnSurface"
+							android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 						<TextView
 							android:id="@+id/incognitoNameText"
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:layout_marginTop="2dp"
-							android:textColor="?android:attr/textColorSecondary"
-							android:textSize="12sp" />
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 					</LinearLayout>
 
@@ -259,7 +260,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_lock"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<TextView
 						style="@style/GroupTrAdminActionText"
@@ -275,7 +276,7 @@
 						style="@style/GroupTrAdminActionIcon"
 						android:src="@drawable/ic_timer"
 						android:contentDescription="@null"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<LinearLayout
 						android:layout_width="0dp"
@@ -287,17 +288,17 @@
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:text="@string/grouptr_default_ttl_set"
-							android:textColor="@color/zerion_text_primary"
-							android:textSize="16sp" />
+							android:textColor="?attr/zerionColorOnSurface"
+							android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 						<TextView
 							android:id="@+id/actionTtlText"
 							android:layout_width="wrap_content"
 							android:layout_height="wrap_content"
 							android:layout_marginTop="2dp"
-							android:textColor="?android:attr/textColorSecondary"
-							android:textSize="12sp"
-							tools:text="Off" />
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="Off"
+							android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 					</LinearLayout>
 
@@ -318,11 +319,11 @@
 				<TextView
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
+					android:accessibilityHeading="true"
 					android:padding="16dp"
 					android:text="@string/grouptr_admin_section_danger"
-					android:textColor="@color/zerion_destructive_text"
-					android:textSize="16sp"
-					android:textStyle="bold" />
+					android:textColor="?attr/zerionColorDangerText"
+					android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
 				<LinearLayout
 					android:id="@+id/dangerContainer"
@@ -345,14 +346,13 @@
 				android:insetBottom="0dp"
 				android:text="@string/grouptr_open_chat"
 				android:textColor="@color/zerion_button_filled_foreground"
-				android:textSize="15sp"
-				android:textStyle="bold"
 				app:backgroundTint="@color/zerion_button_filled_background"
 				app:cornerRadius="24dp"
 				app:icon="@drawable/ic_chat"
 				app:iconGravity="textStart"
 				app:iconPadding="8dp"
-				app:iconTint="@color/zerion_button_filled_foreground" />
+				app:iconTint="@color/zerion_button_filled_foreground"
+				android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
 		</LinearLayout>
 

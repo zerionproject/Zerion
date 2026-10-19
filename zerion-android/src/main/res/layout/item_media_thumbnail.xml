@@ -32,7 +32,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_document"
             android:contentDescription="@string/document"
-            android:tint="@color/zerion_accent_icon" />
+            android:tint="?attr/zerionColorAccentIcon" />
 
         <TextView
             android:id="@+id/document_name"
@@ -41,10 +41,10 @@
             android:layout_marginTop="8dp"
             android:maxLines="2"
             android:ellipsize="end"
-            android:textColor="@color/zerion_text_primary"
-            android:textSize="12sp"
+            android:textColor="?attr/zerionColorOnSurface"
             android:padding="8dp"
-            tools:text="document.pdf" />
+            tools:text="document.pdf"
+            android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
     </LinearLayout>
 

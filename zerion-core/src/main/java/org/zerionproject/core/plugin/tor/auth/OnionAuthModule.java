@@ -18,7 +18,7 @@ import dagger.Provides;
 import static org.zerionproject.core.plugin.tor.auth.OnionAuthRecords.CLIENT_ID;
 import static org.zerionproject.core.plugin.tor.auth.OnionAuthRecords.MAJOR_VERSION;
 
-@Module
+@Module(includes = OnionAuthHooksModule.class)
 public class OnionAuthModule {
 
 	public static class EagerSingletons {

@@ -5,7 +5,7 @@
 	android:layout_height="match_parent"
 	android:orientation="vertical"
 	android:fitsSystemWindows="true"
-	android:background="@color/zerion_dark_bg">
+	android:background="?attr/zerionColorBackground">
 
 	<com.professor.zerion.android.view.ZerionRecyclerView
 		android:id="@+id/list"

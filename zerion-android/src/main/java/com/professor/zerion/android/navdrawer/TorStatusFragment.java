@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
+import com.professor.zerion.android.accessibility.Announcer;
 import com.professor.zerion.android.fragment.BaseFragment;
 
 import org.zerionproject.core.api.plugin.I2pConstants;
@@ -56,6 +57,8 @@ public class TorStatusFragment extends BaseFragment {
 
 	private ImageView torStatusIcon;
 	private TextView torStatusText;
+	private final Announcer statusAnnouncer =
+			new Announcer(Announcer.SETTLE_MS);
 	private TextView torOnionAddress;
 	private MaterialButton torRestartButton;
 	private TextView torAuthSummary;
@@ -63,6 +66,7 @@ public class TorStatusFragment extends BaseFragment {
 	private boolean torOnionPublished = false;
 	private long torClockSkewSeconds = 0;
 	private boolean torEntryRelayFailing = false;
+	private boolean torUsingBridges = false;
 	private LinearLayout onionCard;
 	private TextView onionAddressValue;
 	private MaterialButton onionCopyButton;
@@ -175,6 +179,12 @@ public class TorStatusFragment extends BaseFragment {
 					if (lastTorState != null) updateTorStatus(lastTorState);
 				});
 
+		viewModel.getTorUsingBridges().observe(getViewLifecycleOwner(),
+				bridges -> {
+					torUsingBridges = Boolean.TRUE.equals(bridges);
+					if (lastTorState != null) updateTorStatus(lastTorState);
+				});
+
 		viewModel.getTorEntryRelayFailing().observe(getViewLifecycleOwner(),
 				failing -> {
 					torEntryRelayFailing = Boolean.TRUE.equals(failing);
@@ -227,6 +237,12 @@ public class TorStatusFragment extends BaseFragment {
 
 		boolean offline = pluginManager.isOfflineMode();
 		offlineModeBanner.setVisibility(offline ? View.VISIBLE : View.GONE);
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		statusAnnouncer.cancel();
 	}
 
 	@Override
@@ -346,7 +362,7 @@ public class TorStatusFragment extends BaseFragment {
 			case ENTRY_RELAY_FAILING:
 				setStatus(ctx, R.string.tor_status_entry_relay,
 						R.color.zerion_warning_text,
-						R.string.tor_hidden_services_entry_relay,
+						TorStatusDecider.entryRelayText(torUsingBridges),
 						R.color.zerion_warning_text);
 				break;
 			case PUBLISHING:
@@ -372,6 +388,7 @@ public class TorStatusFragment extends BaseFragment {
 						R.color.zerion_warning_text);
 				break;
 		}
+		statusAnnouncer.update(torStatusText, status, torStatusText.getText());
 	}
 
 	private void setStatus(Context ctx, int statusText, int statusColor,

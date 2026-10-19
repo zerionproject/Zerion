@@ -320,6 +320,28 @@ public class GroupMemberInviteAdminTest {
 		return a;
 	}
 
+	@Test
+	public void aMemberWithoutANameIsCalledThatNotAQuestionMark()
+			throws Exception {
+		GroupTrManager m = manager(MemberInviteAvailability.UNAVAILABLE, 0L);
+		List<GroupTrMember> members = new ArrayList<>();
+		members.add(new GroupTrMember(creatorKey, "Carol", 0L, 0L,
+				MemberRole.CREATOR));
+		members.add(new GroupTrMember(memberKey, "", 0L, 1L));
+		when(m.getGroup(any())).thenReturn(new GroupTrState(groupId, "Club",
+				new byte[32], creatorKey, "Carol", 0L, 1L, false, members));
+		ProbeAdmin a = open(m, creatorKey);
+		ViewGroup list = a.findViewById(R.id.membersContainer);
+		List<String> names = new ArrayList<>();
+		for (int i = 0; i < list.getChildCount(); i++) {
+			TextView name = list.getChildAt(i).findViewById(R.id.memberName);
+			if (name != null) names.add(name.getText().toString());
+		}
+		assertTrue(names.toString(),
+				names.contains(a.getString(R.string.grouptr_member_unnamed)));
+		assertFalse(names.toString(), names.contains("?"));
+	}
+
 	private GroupTrState state() {
 		List<GroupTrMember> members = new ArrayList<>();
 		members.add(new GroupTrMember(creatorKey, "Carol", 0L, 0L,

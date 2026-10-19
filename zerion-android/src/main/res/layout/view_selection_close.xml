@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatImageView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:id="@id/action_mode_close_button"
+	android:layout_width="48dp"
+	android:layout_height="48dp"
+	android:layout_gravity="center_vertical"
+	android:layout_marginStart="4dp"
+	android:minWidth="48dp"
+	android:minHeight="48dp"
+	android:background="?attr/selectableItemBackgroundBorderless"
+	android:clickable="true"
+	android:contentDescription="@string/selection_clear"
+	android:focusable="true"
+	android:scaleType="center"
+	android:src="@drawable/ic_selection_clear"
+	android:tooltipText="@string/selection_clear"
+	app:tint="?attr/zerionColorOnSurface" />

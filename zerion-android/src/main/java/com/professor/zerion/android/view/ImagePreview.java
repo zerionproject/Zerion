@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import static android.content.Context.LAYOUT_INFLATER_SERVICE;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static androidx.core.content.ContextCompat.getColor;
+import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
 import static androidx.recyclerview.widget.RecyclerView.NO_POSITION;
 import static java.util.Objects.requireNonNull;
 
@@ -50,7 +50,8 @@ public class ImagePreview extends ConstraintLayout {
 				context.getSystemService(LAYOUT_INFLATER_SERVICE));
 		inflater.inflate(R.layout.image_preview, this, true);
 
-		setBackgroundColor(getColor(context, R.color.card_background));
+		setBackgroundColor(resolveColorAttribute(context,
+				R.attr.zerionColorSurface));
 
 		imageList = findViewById(R.id.imageList);
 		imageList.addItemDecoration(new ImagePreviewDecoration(context));

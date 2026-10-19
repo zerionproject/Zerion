@@ -15,6 +15,7 @@ import org.zerionproject.core.api.crypto.KeyPair;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfReader;
 import org.zerionproject.core.api.db.DatabaseConfig;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
@@ -532,6 +533,17 @@ final class ChannelTestNode {
 			crashAfterWrite = n < 0 ? -1 : writeCalls + n;
 		}
 
+		private final java.util.Set<String> failingWrites =
+				new java.util.HashSet<>();
+
+		synchronized void failWritesTo(String namespace) {
+			failingWrites.add(namespace);
+		}
+
+		private void mayWrite(String namespace) throws DbException {
+			if (failingWrites.contains(namespace)) throw new DbException();
+		}
+
 		private void wrote() {
 			writeCalls++;
 			if (crashAfterWrite >= 0 && writeCalls >= crashAfterWrite) {
@@ -551,7 +563,10 @@ final class ChannelTestNode {
 
 		@Override
 		public synchronized void mergeSettings(
-				Map<String, Settings> byNamespaceToMerge) {
+				Map<String, Settings> byNamespaceToMerge) throws DbException {
+			for (String namespace : byNamespaceToMerge.keySet()) {
+				mayWrite(namespace);
+			}
 			for (Map.Entry<String, Settings> e
 					: byNamespaceToMerge.entrySet()) {
 				Settings merged = new Settings();
@@ -619,7 +634,9 @@ final class ChannelTestNode {
 		}
 
 		@Override
-		public synchronized void mergeSettings(Settings s, String namespace) {
+		public synchronized void mergeSettings(Settings s, String namespace)
+				throws DbException {
+			mayWrite(namespace);
 			Settings merged = new Settings();
 			Settings stored = byNamespace.get(namespace);
 			if (stored != null) merged.putAll(stored);
@@ -650,7 +667,7 @@ final class ChannelTestNode {
 
 		@Override
 		public void mergeSettings(Transaction txn, Settings s,
-				String namespace) {
+				String namespace) throws DbException {
 			mergeSettings(s, namespace);
 		}
 

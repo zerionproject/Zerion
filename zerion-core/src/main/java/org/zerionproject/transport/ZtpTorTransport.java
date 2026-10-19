@@ -87,6 +87,10 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final OnionTargetFactory targets;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final AtomicBoolean torDead = new AtomicBoolean(false);
+	private final AtomicBoolean restarting = new AtomicBoolean(false);
+	private final java.util.concurrent.atomic.AtomicInteger losses =
+			new java.util.concurrent.atomic.AtomicInteger();
+	private volatile int lossesAtUp;
 	private final Map<String, PublishedService> published =
 			Collections.synchronizedMap(new LinkedHashMap<>());
 	private final Map<String, OnionTargetListener> serviceListeners =
@@ -103,6 +107,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private final java.util.concurrent.atomic.AtomicInteger runGeneration =
 			new java.util.concurrent.atomic.AtomicInteger();
 	volatile LongSupplier clock = System::currentTimeMillis;
+	volatile int tagReadTimeoutMs = TAG_READ_TIMEOUT_MS;
 	private volatile long degradedSinceMs = 0;
 	private volatile boolean republishOnConnect = false;
 	private long lastRestartMs = 0;
@@ -366,7 +371,9 @@ public class ZtpTorTransport implements OverlayTransport {
 
 	void onControlConnectionLost() {
 		if (!running.get()) return;
-		if (!torDead.compareAndSet(false, true)) return;
+		losses.incrementAndGet();
+		if (!restarting.compareAndSet(false, true)) return;
+		torDead.set(true);
 		int run = runGeneration.get();
 		ioExecutor.execute(() -> restartTorUntilUp(run));
 	}
@@ -380,10 +387,21 @@ public class ZtpTorTransport implements OverlayTransport {
 	}
 
 	private void restartTorUntilUp(int run) {
+		try {
+			restartTorWhileCurrent(run);
+		} finally {
+			restarting.set(false);
+			if (losses.get() != lossesAtUp && isCurrentRun(run)) {
+				onControlConnectionLost();
+			}
+		}
+	}
+
+	private void restartTorWhileCurrent(int run) {
 		long backoff = PROCESS_RESTART_BACKOFF_MIN_MS;
 		while (isCurrentRun(run)) {
 			try {
-				if (restartTorOnce(run)) torDead.set(false);
+				restartTorOnce(run);
 				return;
 			} catch (IOException e) {
 			} catch (InterruptedException e) {
@@ -400,15 +418,17 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 	}
 
-	private boolean restartTorOnce(int run)
+	private void restartTorOnce(int run)
 			throws IOException, InterruptedException {
 		synchronized (lifecycleLock) {
-			if (!isCurrentRun(run)) return false;
+			if (!isCurrentRun(run)) return;
 			try {
 				tor.stop();
 			} catch (IOException ignored) {
 			}
 			startTor();
+			lossesAtUp = losses.get();
+			torDead.set(false);
 			List<PublishedService> services;
 			synchronized (published) {
 				services = new ArrayList<>(published.values());
@@ -421,7 +441,6 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 		Runnable listener = torRestartedListener;
 		if (listener != null && isCurrentRun(run)) listener.run();
-		return true;
 	}
 
 	void startAccepting() throws IOException {
@@ -483,15 +502,16 @@ public class ZtpTorTransport implements OverlayTransport {
 				}
 			}
 		};
+		int tagTimeout = tagReadTimeoutMs;
 		try {
-			socket.setSoTimeout(TAG_READ_TIMEOUT_MS);
+			socket.setSoTimeout(tagTimeout);
 			try {
 				socket.setTcpNoDelay(true);
 			} catch (java.net.SocketException ignored) {
 			}
 			InputStream in = new PreambleDeadlineInputStream(
 					socket.getInputStream(), TAG_LENGTH, onTagDelivered,
-					clock, TAG_READ_TIMEOUT_MS);
+					clock, tagTimeout);
 			handler.handleIncoming(TorConstants.ID, in,
 					socket.getOutputStream(), authorized, localOnion);
 		} catch (IOException e) {
@@ -567,7 +587,7 @@ public class ZtpTorTransport implements OverlayTransport {
 			boolean refusalExpected) {
 		if (!isValidAddress(peerOnion)) return DialResult.NOT_CONNECTED;
 		if (torDead.get() || tor.getTorState() != TorState.CONNECTED) {
-			return DialResult.NOT_CONNECTED;
+			return DialResult.NOT_ATTEMPTED;
 		}
 		SocketFactory factory = fast ? fastSocketFactory : socketFactory;
 		Socket socket;
@@ -656,6 +676,16 @@ public class ZtpTorTransport implements OverlayTransport {
 		return b == null || b.apply();
 	}
 
+	boolean isUsingBridges() {
+		TorBridgeConfigurator b = bridgeConfigurator;
+		return b != null && b.isUsingBridges();
+	}
+
+	public void onRelayConnection(String fingerprint, boolean connected) {
+		TorBridgeConfigurator b = bridgeConfigurator;
+		if (b != null) b.onRelayConnection(fingerprint, connected);
+	}
+
 	@Override
 	public void restartNetwork() {
 		if (!running.get()) return;
@@ -720,6 +750,8 @@ public class ZtpTorTransport implements OverlayTransport {
 			processWatch.setListener(null);
 			closeListeners();
 			published.clear();
+			TorBridgeConfigurator b = bridgeConfigurator;
+			if (b != null) b.torStopped();
 			tor.stop();
 		}
 	}

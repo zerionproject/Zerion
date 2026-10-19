@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.professor.zerion.android.view.PullDownLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
 	android:id="@+id/layout"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@drawable/bg_zerion_gradient"
+	android:background="?attr/zerionColorMediaBackdrop"
 	android:fitsSystemWindows="true"
 	tools:context=".android.conversation.ImageActivity">
 
@@ -17,7 +18,8 @@
 		android:id="@+id/appBarLayout"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@drawable/bg_toolbar_gradient">
+		android:background="?attr/zerionColorScrim"
+		app:elevation="0dp">
 
 		<com.google.android.material.appbar.MaterialToolbar
 			android:id="@+id/toolbar"
@@ -25,28 +27,33 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:background="@android:color/transparent"
-			android:fitsSystemWindows="true">
+			android:elevation="0dp"
+			android:fitsSystemWindows="true"
+			app:navigationIconTint="?attr/zerionColorOnScrim">
 
 			<LinearLayout
 				android:layout_width="wrap_content"
 				android:layout_height="match_parent"
+				android:gravity="center_vertical"
 				android:orientation="vertical">
 
 				<com.vanniktech.emoji.EmojiTextView
 					android:id="@+id/contactName"
-					style="@style/TextAppearance.AppCompat.Widget.ActionBar.Title.Inverse"
 					android:layout_width="wrap_content"
-					android:layout_height="match_parent"
+					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="1"
-					android:textColor="@color/zerion_text_primary"
+					android:textAppearance="@style/TextAppearance.Zerion.Title"
+					android:textColor="?attr/zerionColorOnScrim"
 					tools:text="Contact Name of someone who chose a long name" />
 
 				<TextView
 					android:id="@+id/dateView"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:textColor="@color/zerion_text_secondary"
+					android:maxLines="1"
+					android:textAppearance="@style/TextAppearance.Zerion.Meta"
+					android:textColor="?attr/zerionColorOnScrim"
 					tools:text="date" />
 
 			</LinearLayout>

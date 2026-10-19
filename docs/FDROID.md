@@ -29,7 +29,7 @@ The reproducible build is defined by `packaging/monero-android/Dockerfile` and
 | Component | Pin |
 |---|---|
 | Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
-| OpenSSL | `3.5.8` |
+| OpenSSL | `3.5.9` |
 | Boost | `1.84.0` |
 | libsodium | `1.0.19` |
 | Android NDK | r27b (`ndkVersion 27.1.12297006`) |
@@ -49,11 +49,14 @@ Local / release build:
 # build the Tor executable into packaging/tor-android/out/<abi>/
 #   (packaging/tor-android/build-tor-android.sh, see its PROVENANCE.md; the
 #   Gradle build refuses to package without it and verifies its hash)
+# build the lyrebird executable into packaging/lyrebird-android/out/<abi>/
+#   (packaging/lyrebird-android/build-lyrebird-android.sh, see its
+#   PROVENANCE.md; the same gate applies)
 ./gradlew :zerion-android:assembleOfficialRelease -Pfdroid
 ```
 
-Neither native artifact is tracked in git; both are build outputs that the
-pin gates verify, so a checkout without them cannot produce an APK.
+None of these native artifacts is tracked in git; all are build outputs that
+the pin gates verify, so a checkout without them cannot produce an APK.
 
 ## Notes for the F-Droid recipe
 
@@ -62,7 +65,12 @@ pin gates verify, so a checkout without them cannot produce an APK.
   step (a `prebuild`/`build` step replicating the Dockerfile, using F-Droid's
   NDK r27b).
 - Build the Tor executable the same way with `packaging/tor-android/fdroid-build.sh`
-  (the recipe's second `build:` line).
+  (the recipe's second `build:` line). From 3.0.18 that script then builds the
+  lyrebird executable with `packaging/lyrebird-android/fdroid-build.sh`, from
+  the NDK r29 it verified, so the line stays as it is and needs no Debian
+  package beyond what the build image and the Tor build already use (curl, git,
+  tar, gzip and unzip, and gpgv or sqv for the tag signature; apt depends on
+  one of the two, so the build server image carries at least one).
 - Then run the reproducible app build: `assembleOfficialRelease -Pfdroid`
   (`gradle.properties` already sets `fdroid=true` and the build refuses any
   other value, so the flag is redundant: every build has static `BuildConfig`
@@ -184,6 +192,8 @@ of Boost, OpenSSL and libsodium are not byte-identical to the release
 tarballs, so the pinned hashes would have to be re-recorded from that build.
 
 The Tor executable is built the same way by `packaging/tor-android/fdroid-build.sh`: the Tor release tag, libevent, OpenSSL and zlib are cloned at pinned commits that the script asserts, NDK r29 is downloaded and verified by hash, and the two `libtor.so` files land in `packaging/tor-android/out/`, where the Gradle build reads them and verifies them against `binaries.sha256` before packaging. The pins, the recorded hashes and the reproduction evidence are in `packaging/tor-android/PROVENANCE.md`.
+
+The lyrebird pluggable-transport executable is built by `packaging/lyrebird-android/fdroid-build.sh`, which the Tor script runs last: lyrebird is cloned at the commit of its release tag, which the script asserts, the tag's signature is verified against the signer's key committed in `packaging/lyrebird-android/keys/`, the official Go toolchain archive is downloaded and verified by hash, the Go modules are fetched through the Go module proxy and must match the tag's `go.sum`, and the two `liblyrebird.so` files land in `packaging/lyrebird-android/out/`, where the Gradle build reads them and verifies them against the same `binaries.sha256`. The step needs network access to `dl.google.com`, `gitlab.torproject.org` and `proxy.golang.org`, as the Tor step needs it for its sources and the NDK. The pins, the recorded hashes and the reproduction evidence are in `packaging/lyrebird-android/PROVENANCE.md`.
 
 ## Reproducibility of the shipped library
 

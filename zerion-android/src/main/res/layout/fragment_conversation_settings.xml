@@ -62,9 +62,9 @@
 				android:padding="16dp"
 				android:text="@string/learn_more"
 				android:textAllCaps="false"
-				android:textSize="14sp"
 				app:layout_constraintStart_toStartOf="parent"
-				app:layout_constraintTop_toBottomOf="@+id/switchDisappearingMessages" />
+				app:layout_constraintTop_toBottomOf="@+id/switchDisappearingMessages"
+				android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 		</androidx.constraintlayout.widget.ConstraintLayout>
 

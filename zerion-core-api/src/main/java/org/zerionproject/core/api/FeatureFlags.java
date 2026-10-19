@@ -9,4 +9,6 @@ public interface FeatureFlags {
 	boolean shouldEnableDisappearingMessages();
 
 	boolean shouldEnableI2p();
+
+	boolean shouldEnableDebugCountryOverride();
 }

@@ -33,6 +33,7 @@ class ConversationNoticeViewHolder extends ConversationItemViewHolder {
 	void bind(ConversationItem item, boolean selected) {
 		ConversationNoticeItem notice = (ConversationNoticeItem) item;
 		super.bind(notice, selected);
+		paintPart(msgText);
 
 		String text = notice.getMsgText();
 		if (isNullOrEmpty(text)) {

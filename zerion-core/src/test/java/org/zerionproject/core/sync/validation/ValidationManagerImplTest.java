@@ -111,6 +111,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResult));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
 
 			oneOf(hook).incomingMessage(txn1, message, metadata);
@@ -245,6 +247,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResultWithDependencies));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 			oneOf(db).getMessageDependencies(txn1, messageId);
@@ -371,6 +375,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResult));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
 
 			oneOf(hook).incomingMessage(txn1, message, metadata);
@@ -382,6 +388,117 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 		}});
 
 		vm.eventOccurred(new MessageAddedEvent(message, contactId));
+	}
+
+	@Test
+	public void testAMessageValidatedTwiceIsDeliveredOnce() throws Exception {
+		Transaction txn = new Transaction(null, true);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, true);
+		Transaction txn3 = new Transaction(null, false);
+
+		context.checking(new DbExpectations() {{
+
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getGroup(txn, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(returnValue(validResult));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
+			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
+
+			oneOf(hook).incomingMessage(txn1, message, metadata);
+			will(returnValue(ACCEPT_DO_NOT_SHARE));
+			oneOf(db).setMessageState(txn1, messageId, DELIVERED);
+
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(emptyMap()));
+		}});
+
+		vm.eventOccurred(new MessageAddedEvent(message, contactId));
+
+		expectGetUndeliverableMessages();
+		expectGetMessagesToValidate(messageId);
+
+		context.checking(new DbExpectations() {{
+
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn2));
+			oneOf(db).getMessage(txn2, messageId);
+			will(returnValue(message));
+			oneOf(db).getGroup(txn2, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(returnValue(validResult));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn3));
+			oneOf(db).getMessageState(txn3, messageId);
+			will(returnValue(DELIVERED));
+		}});
+
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
+	}
+
+	@Test
+	public void testAMessageInvalidatedMeanwhileIsNotDelivered()
+			throws Exception {
+		Transaction txn = new Transaction(null, true);
+		Transaction txn1 = new Transaction(null, false);
+		Transaction txn2 = new Transaction(null, true);
+		Transaction txn3 = new Transaction(null, false);
+
+		context.checking(new DbExpectations() {{
+
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn));
+			oneOf(db).getGroup(txn, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(throwException(new InvalidMessageException()));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
+			oneOf(db).setMessageState(txn1, messageId, INVALID);
+			oneOf(db).deleteMessage(txn1, messageId);
+			oneOf(db).deleteMessageMetadata(txn1, messageId);
+
+			oneOf(db).getMessageDependents(txn1, messageId);
+			will(returnValue(emptyMap()));
+		}});
+
+		vm.eventOccurred(new MessageAddedEvent(message, contactId));
+
+		expectGetUndeliverableMessages();
+		expectGetMessagesToValidate(messageId);
+
+		context.checking(new DbExpectations() {{
+
+			oneOf(db).transactionWithResult(with(true), withDbCallable(txn2));
+			oneOf(db).getMessage(txn2, messageId);
+			will(returnValue(message));
+			oneOf(db).getGroup(txn2, groupId);
+			will(returnValue(group));
+
+			oneOf(validator).validateMessage(message, group);
+			will(returnValue(validResultWithDependencies));
+
+			oneOf(db).transaction(with(false), withDbRunnable(txn3));
+			oneOf(db).getMessageState(txn3, messageId);
+			will(returnValue(INVALID));
+		}});
+
+		expectGetPendingMessages();
+		expectGetMessagesToShare();
+
+		vm.startService();
 	}
 
 	@Test
@@ -405,6 +522,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResultWithDependencies));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 			oneOf(db).getMessageDependencies(txn1, messageId);
@@ -432,6 +551,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResultWithDependencies));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 			oneOf(db).getMessageDependencies(txn1, messageId);
@@ -466,14 +587,14 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResultWithDependencies));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).addMessageDependencies(txn1, message,
 					validResultWithDependencies.getDependencies());
 
 			oneOf(db).getMessageDependencies(txn1, messageId);
 			will(returnValue(singletonMap(messageId1, INVALID)));
 
-			oneOf(db).getMessageState(txn1, messageId);
-			will(returnValue(UNKNOWN));
 			oneOf(db).setMessageState(txn1, messageId, INVALID);
 			oneOf(db).deleteMessage(txn1, messageId);
 			oneOf(db).deleteMessageMetadata(txn1, messageId);
@@ -606,6 +727,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResult));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
 
 			oneOf(hook).incomingMessage(txn1, message, metadata);
@@ -722,6 +845,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResult));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
 
 			oneOf(hook).incomingMessage(txn1, message, metadata);
@@ -839,6 +964,8 @@ public class ValidationManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(validResult));
 
 			oneOf(db).transaction(with(false), withDbRunnable(txn1));
+			oneOf(db).getMessageState(txn1, messageId);
+			will(returnValue(UNKNOWN));
 			oneOf(db).mergeMessageMetadata(txn1, messageId, metadata);
 			oneOf(hook).incomingMessage(txn1, message, metadata);
 			will(throwException(new IllegalStateException()));

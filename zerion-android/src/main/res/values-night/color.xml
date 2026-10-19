@@ -6,6 +6,7 @@
 	<color name="zerion_text_secondary">#9CA3AF</color>
 	<color name="zerion_divider">#2D2E36</color>
 	<color name="zerion_surface_elevated">#252631</color>
+	<color name="zerion_selected_container">#393B47</color>
 	<color name="zerion_surface_pressed">#2E3039</color>
 	<color name="zerion_ripple">#1AFFFFFF</color>
 	<color name="zerion_hint">#80FFFFFF</color>
@@ -26,6 +27,15 @@
 	<color name="zerion_message_sent_pressed">#0077AA</color>
 	<color name="zerion_message_received">#2C2D32</color>
 	<color name="zerion_message_received_pressed">#353640</color>
+
+	<color name="zerion_bubble_in">#2C2D32</color>
+	<color name="zerion_outline">#00000000</color>
+	<color name="zerion_bubble_in_inset">#59000000</color>
+	<color name="zerion_message_selected_received">#24DBEAFE</color>
+	<color name="zerion_channel_card_selected">#24DBEAFE</color>
+	<color name="zerion_selection_foreground">#D1D5DB</color>
+	<color name="zerion_presence_online">#22C55E</color>
+	<color name="zerion_presence_offline">#60666E</color>
 
 	<color name="window_background">@color/zerion_night_950</color>
 	<color name="card_background">@color/zerion_night_800</color>

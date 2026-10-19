@@ -80,7 +80,8 @@ import dagger.Component;
 		org.zerionproject.transport.ZerionTransportModule.class,
 		org.zerionproject.core.ZerionTorWrapperModule.class,
 		ZerionTorModule.class,
-		com.professor.zerion.android.i2p.I2pStackModule.class
+		com.professor.zerion.android.i2p.I2pStackModule.class,
+		com.professor.zerion.android.settings.LifecycleTestsModule.class
 })
 public interface AndroidComponent
 		extends BrambleCoreEagerSingletons, BrambleAndroidEagerSingletons,
@@ -184,6 +185,14 @@ public interface AndroidComponent
 
 	com.professor.zerion.android.vault.wallet.xmr.XmrWalletManager xmrWalletManager();
 
+	com.professor.zerion.android.vault.net.TorSocksGate torSocksGate();
+
+	com.professor.zerion.android.mesh.MeshTextSender meshTextSender();
+
+	com.professor.zerion.android.mesh.MeshPresenceTracker meshPresenceTracker();
+
+	com.professor.zerion.android.mesh.MeshAttachmentSender meshAttachmentSender();
+
 	com.professor.zerion.android.security.SecurityManager securityManager();
 
 	@org.zerionproject.core.api.plugin.TorSocksPort
@@ -219,6 +228,8 @@ public interface AndroidComponent
 	void inject(SettingsFragment settingsFragment);
 
 	void inject(ConnectionsFragment connectionsFragment);
+
+	void inject(com.professor.zerion.android.settings.LifecycleTests tests);
 
 	void inject(com.professor.zerion.android.settings.BackupFragment backupFragment);
 

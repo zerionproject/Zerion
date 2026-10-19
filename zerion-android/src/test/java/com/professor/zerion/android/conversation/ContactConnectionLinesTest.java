@@ -44,7 +44,7 @@ public class ContactConnectionLinesTest {
 				R.string.contact_connection_tor_no_internet);
 		TOR.put(Tor.CLOCK_WRONG, R.string.contact_connection_tor_clock);
 		TOR.put(Tor.ENTRY_RELAY_FAILING,
-				R.string.contact_connection_tor_entry_relay);
+				R.string.contact_connection_tor_entry_relay_now);
 		TOR.put(Tor.OFF, R.string.contact_connection_tor_off);
 		TOR.put(Tor.PAUSED, R.string.contact_connection_tor_paused);
 		TOR.put(Tor.OFFLINE_MODE,

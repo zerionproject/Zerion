@@ -18,6 +18,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 import org.zerionproject.transport.ZtpPoller;
 
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
+import org.zerionproject.core.api.sync.event.MessageAddedEvent;
+
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -50,10 +55,11 @@ import static org.zerionproject.core.api.plugin.B4Constants.B4_ANNOUNCE_RATE_LIM
 import static org.zerionproject.core.api.plugin.B4Constants.B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_PENDING_DIAL_FAILURE_THRESHOLD;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_PEER_LAST_CONTACT_KEY_PREFIX;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_PEER_ROTATION_STATE_KEY_PREFIX;
+import static org.zerionproject.core.api.plugin.B4Constants.OLD_ADDRESS_SILENCE_LIMIT_MS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ROTATION_ENABLED;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_SETTINGS_NAMESPACE;
-import static org.zerionproject.core.api.plugin.B4Constants.FORCE_EXPIRE_DAYS;
 import static org.zerionproject.core.api.plugin.B4Constants.ROTATION_MAX_DAYS;
 import static org.zerionproject.core.api.plugin.B4Constants.ROTATION_MIN_DAYS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_REBROADCAST_DELAYS_SECONDS;
@@ -68,7 +74,7 @@ import static org.zerionproject.core.util.StringUtils.toHexString;
 @Singleton
 @ThreadSafe
 @NotNullByDefault
-public class B4OnionRotation {
+public class B4OnionRotation implements EventListener {
 
 	public enum RotationPhase {
 		IDLE,
@@ -109,7 +115,7 @@ public class B4OnionRotation {
 	private static final String B4_ALICE_PROMOTING_SENTINEL_KEY =
 			"alice_rotation_promoting";
 
-	private static final String B4_ALICE_NEXT_ROTATION_DAYS_KEY =
+	static final String B4_ALICE_NEXT_ROTATION_DAYS_KEY =
 			"alice_rotation_next_interval_days";
 
 	private static final String B4_ALICE_REVOCATION_OWED_KEY =
@@ -118,7 +124,15 @@ public class B4OnionRotation {
 	private static final String B4_ALICE_REVOCATION_ROTATION_KEY =
 			"alice_revocation_rotation";
 
-	static final long REVOCATION_RETIRE_MS = 48L * 60 * 60 * 1000;
+	private static final String B4_ALICE_ANNOUNCE_REFRESHED_AT_KEY =
+			"alice_announce_refreshed_at";
+
+	private static final String B4_ALICE_ANNOUNCE_REFRESHES_KEY =
+			"alice_announce_refreshes";
+
+	static final long FIRST_REFRESH_AFTER_MS = 60L * 60 * 1000;
+
+	static final long REFRESH_INTERVAL_MS = 24L * 60 * 60 * 1000;
 
 	static final long ANNOUNCED_AT_GRANULARITY_MS = 60L * 60 * 1000;
 
@@ -130,7 +144,7 @@ public class B4OnionRotation {
 	private final java.security.SecureRandom rotationRng =
 			new java.security.SecureRandom();
 
-	private long drawNextRotationDays() {
+	protected long drawNextRotationDays() {
 		int range = (int) (ROTATION_MAX_DAYS - ROTATION_MIN_DAYS + 1);
 		return ROTATION_MIN_DAYS + rotationRng.nextInt(range);
 	}
@@ -153,6 +167,11 @@ public class B4OnionRotation {
 
 	static final long MIGRATION_GRACE_MS = 24L * 60 * 60 * 1000;
 
+	static final long CONTACT_WRITE_INTERVAL_MS = 60L * 60 * 1000;
+
+	private final java.util.Map<ContactId, Long> contactWritten =
+			new java.util.concurrent.ConcurrentHashMap<>();
+
 	@Inject
 	public B4OnionRotation(DatabaseComponent db,
 			SettingsManager settingsManager,
@@ -166,9 +185,9 @@ public class B4OnionRotation {
 				}));
 	}
 
-	B4OnionRotation(DatabaseComponent db, SettingsManager settingsManager,
-			AccountManager accountManager, Clock clock,
-			ScheduledExecutorService scheduler) {
+	protected B4OnionRotation(DatabaseComponent db,
+			SettingsManager settingsManager, AccountManager accountManager,
+			Clock clock, ScheduledExecutorService scheduler) {
 		this.db = db;
 		this.settingsManager = settingsManager;
 		this.accountManager = accountManager;
@@ -184,6 +203,81 @@ public class B4OnionRotation {
 		this.deliveryCheck = check;
 	}
 
+	@Override
+	public void eventOccurred(Event e) {
+		ContactId c = null;
+		if (e instanceof ConnectionOpenedEvent) {
+			c = ((ConnectionOpenedEvent) e).getContactId();
+		} else if (e instanceof MessageAddedEvent) {
+			c = ((MessageAddedEvent) e).getContactId();
+		}
+		if (c == null) return;
+		ContactId contact = c;
+		long now = clock.currentTimeMillis();
+		Long written = contactWritten.get(contact);
+		if (written != null && now - written < CONTACT_WRITE_INTERVAL_MS) {
+			return;
+		}
+		contactWritten.put(contact, now);
+		try {
+			scheduler.execute(() -> recordContact(contact, now));
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	public void recordContact(ContactId c, long now) {
+		try {
+			db.transaction(false, txn -> {
+				String key = B4_PEER_LAST_CONTACT_KEY_PREFIX + c.getInt();
+				if (loadLong(txn, key) >= now) return;
+				Settings s = new Settings();
+				s.put(key, sealString(String.valueOf(now)));
+				settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+			});
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	public long getLastContactMs(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn ->
+				loadLong(txn, B4_PEER_LAST_CONTACT_KEY_PREFIX + c.getInt()));
+	}
+
+	private void seedContactTimes() throws DbException {
+		long now = clock.currentTimeMillis();
+		db.transaction(false, txn -> {
+			Settings s = new Settings();
+			for (Contact c : db.getContacts(txn)) {
+				if (loadEncryptedString(txn, B4_PEER_LAST_CONTACT_KEY_PREFIX
+						+ c.getId().getInt()) == null) {
+					s.put(B4_PEER_LAST_CONTACT_KEY_PREFIX
+							+ c.getId().getInt(), sealString(String.valueOf(now)));
+				}
+			}
+			if (!s.isEmpty()) {
+				settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+			}
+		});
+	}
+
+	private boolean silentTooLong(Transaction txn, ContactId c, long now)
+			throws DbException {
+		long last = loadLong(txn, B4_PEER_LAST_CONTACT_KEY_PREFIX
+				+ c.getInt());
+		return last > 0 && now - last >= OLD_ADDRESS_SILENCE_LIMIT_MS;
+	}
+
+	private boolean everyContactInContactSince(Transaction txn, long since)
+			throws DbException {
+		for (Contact c : db.getContacts(txn)) {
+			if (loadLong(txn, B4_PEER_LAST_CONTACT_KEY_PREFIX
+					+ c.getId().getInt()) <= since) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	public void startPeriodicEvaluation() {
 		java.util.concurrent.ScheduledFuture<?> previous = periodic;
 		if (previous != null) previous.cancel(false);
@@ -193,11 +287,19 @@ public class B4OnionRotation {
 
 	void evaluateAll() {
 		try {
+			seedContactTimes();
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
 			republishPendingOnion();
 		} catch (DbException | RuntimeException ignored) {
 		}
 		try {
 			announceNext(null);
+		} catch (DbException | RuntimeException ignored) {
+		}
+		try {
+			refreshAnnouncement();
 		} catch (DbException | RuntimeException ignored) {
 		}
 		try {
@@ -273,6 +375,7 @@ public class B4OnionRotation {
 				} catch (NumberFormatException e) {
 					last = now;
 				}
+				if (!everyContactInContactSince(txn, last)) return false;
 				long days = DAYS.convert(now - last,
 						java.util.concurrent.TimeUnit.MILLISECONDS);
 				daysHolder[0] = days;
@@ -303,16 +406,16 @@ public class B4OnionRotation {
 		}
 	}
 
-	public void forceRotate() throws DbException {
-		if (!B4_ROTATION_ENABLED) return;
+	public boolean forceRotate() throws DbException {
+		if (!B4_ROTATION_ENABLED) return false;
 		if (adapter == null) {
-			return;
+			return false;
 		}
 		synchronized (rotationLock) {
 			long now = clock.currentTimeMillis();
 			boolean shouldRotate = db.transactionWithResult(true, txn ->
 					loadPhase(txn) == RotationPhase.IDLE);
-			if (shouldRotate) executeRotation(now);
+			return shouldRotate && executeRotation(now);
 		}
 	}
 
@@ -353,23 +456,7 @@ public class B4OnionRotation {
 			});
 			boolean retire = db.transactionWithResult(true,
 					this::shouldRetireOldOnion);
-			if (retire) {
-				executePromotion();
-			} else {
-				scheduleRevocationRetirement();
-			}
-		}
-	}
-
-	private void scheduleRevocationRetirement() {
-		try {
-			scheduler.schedule(() -> {
-				try {
-					evaluateForceExpire();
-				} catch (DbException | RuntimeException ignored) {
-				}
-			}, REVOCATION_RETIRE_MS + 1000L, TimeUnit.MILLISECONDS);
-		} catch (java.util.concurrent.RejectedExecutionException ignored) {
+			if (retire) executePromotion();
 		}
 	}
 
@@ -393,6 +480,11 @@ public class B4OnionRotation {
 					sealString(RotationPhase.IDLE.name()));
 			settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
 		});
+		TransportProperties withdrawn = new TransportProperties();
+		withdrawn.put(WIRE_KEY_ONION3_NEXT, "");
+		withdrawn.put(WIRE_KEY_ONION3_ANNOUNCED_AT_MS, "");
+		withdrawn.put(WIRE_KEY_ONION3_PUBLISH_NONCE, "");
+		ad.mergeTorLocalProperties(withdrawn);
 	}
 
 	public void onAnnounceReceived(Transaction txn, ContactId from,
@@ -415,19 +507,16 @@ public class B4OnionRotation {
 			return;
 		}
 		boolean notify = true;
-		if (existingPending != null) {
-			String lastRaw = loadEncryptedString(txn,
-					B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
-							+ from.getInt());
-			if (lastRaw != null) {
-				try {
-					long lastMs = Long.parseLong(lastRaw);
-					long now = clock.currentTimeMillis();
-					if (now - lastMs < B4_ANNOUNCE_RATE_LIMIT_MS) {
-						notify = false;
-					}
-				} catch (NumberFormatException ignored) {
+		String lastRaw = loadEncryptedString(txn,
+				B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX + from.getInt());
+		if (lastRaw != null) {
+			try {
+				long lastMs = Long.parseLong(lastRaw);
+				long now = clock.currentTimeMillis();
+				if (now - lastMs < B4_ANNOUNCE_RATE_LIMIT_MS) {
+					notify = false;
 				}
+			} catch (NumberFormatException ignored) {
 			}
 		}
 		Settings update = new Settings();
@@ -500,10 +589,27 @@ public class B4OnionRotation {
 		String pending = loadEncryptedString(txn,
 				B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt());
 		if (pending == null || !pending.equals(newCurrentOnion)) return;
+		clearPending(txn, cid, true);
+	}
+
+	public void onPeerNextWithdrawn(Transaction txn, ContactId cid)
+			throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		if (loadEncryptedString(txn, B4_CONTACT_ONION3_PENDING_KEY_PREFIX
+				+ cid.getInt()) == null) {
+			return;
+		}
+		clearPending(txn, cid, false);
+	}
+
+	private void clearPending(Transaction txn, ContactId cid,
+			boolean notificationTime) throws DbException {
 		Settings clear = new Settings();
 		clear.put(B4_CONTACT_ONION3_PENDING_KEY_PREFIX + cid.getInt(), "");
-		clear.put(B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
-				+ cid.getInt(), "");
+		if (notificationTime) {
+			clear.put(B4_CONTACT_ONION3_ANNOUNCED_AT_MS_KEY_PREFIX
+					+ cid.getInt(), "");
+		}
 		clear.put(B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX
 				+ cid.getInt(), "");
 		clear.put(B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX
@@ -606,6 +712,7 @@ public class B4OnionRotation {
 				B4_CONTACT_PENDING_DIAL_FAILURES_KEY_PREFIX,
 				B4_CONTACT_PENDING_DIAL_SUCCEEDED_KEY_PREFIX,
 				B4_CONTACT_PENDING_RETRY_AT_KEY_PREFIX,
+				B4_PEER_LAST_CONTACT_KEY_PREFIX,
 				B4_PEER_ROTATION_STATE_KEY_PREFIX}) {
 			String key = prefix + cid.getInt();
 			String value = stored.get(key);
@@ -728,7 +835,7 @@ public class B4OnionRotation {
 		periodic = null;
 	}
 
-	public boolean forceCompleteRotation() throws DbException {
+	boolean forceCompleteRotation() throws DbException {
 		if (!B4_ROTATION_ENABLED) return false;
 		if (adapter == null) return false;
 		synchronized (rotationLock) {
@@ -773,6 +880,8 @@ public class B4OnionRotation {
 			update.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY,
 					sealString(String.valueOf(now)));
 			update.put(B4_ALICE_NEXT_ANNOUNCED_KEY, "");
+			update.put(B4_ALICE_ANNOUNCE_REFRESHED_AT_KEY, "");
+			update.put(B4_ALICE_ANNOUNCE_REFRESHES_KEY, "");
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
@@ -822,6 +931,7 @@ public class B4OnionRotation {
 						announced ? "1" : null};
 			});
 			if (state == null) return;
+			if (!ad.isPublished(state[0])) return;
 			long rotatedAt = Long.parseLong(state[1]);
 			TransportProperties props = new TransportProperties();
 			props.put(WIRE_KEY_ONION3_NEXT, state[0]);
@@ -848,6 +958,104 @@ public class B4OnionRotation {
 			});
 			scheduleRebroadcasts(rotatedAt);
 		}
+	}
+
+	void refreshAnnouncement() throws DbException {
+		if (!B4_ROTATION_ENABLED) return;
+		B4TorAdapter ad = adapter;
+		if (ad == null) return;
+		synchronized (rotationLock) {
+			long now = clock.currentTimeMillis();
+			String[] state = db.transactionWithNullableResult(true, txn -> {
+				if (loadPhase(txn) != RotationPhase.ANNOUNCING) return null;
+				if (loadEncryptedString(txn, B4_ALICE_NEXT_ANNOUNCED_KEY)
+						== null) {
+					return null;
+				}
+				String next = loadEncryptedString(txn,
+						B4_ALICE_ONION3_NEXT_KEY);
+				if (next == null) return null;
+				long announcedAt = loadAnnouncedAtMs(txn);
+				long last = loadLong(txn, B4_ALICE_ANNOUNCE_REFRESHED_AT_KEY);
+				boolean due = last == 0
+						? now - announcedAt >= FIRST_REFRESH_AFTER_MS
+						: now - last >= REFRESH_INTERVAL_MS;
+				if (!due) return null;
+				boolean waiting = false;
+				for (Contact c : db.getContacts(txn)) {
+					if (!hasMovedToNextOnion(txn, c, next)) waiting = true;
+				}
+				if (!waiting) return null;
+				return new String[] {next, String.valueOf(announcedAt),
+						String.valueOf(loadLong(txn,
+								B4_ALICE_ANNOUNCE_REFRESHES_KEY) + 1)};
+			});
+			if (state == null || !ad.isPublished(state[0])) return;
+			long count = Long.parseLong(state[2]);
+			TransportProperties props = new TransportProperties();
+			props.put(WIRE_KEY_ONION3_NEXT, state[0]);
+			props.put(WIRE_KEY_ONION3_ANNOUNCED_AT_MS, String.valueOf(
+					announcedAtOnWire(Long.parseLong(state[1]))));
+			props.put(WIRE_KEY_ONION3_PUBLISH_NONCE, String.valueOf(
+					B4_REBROADCAST_DELAYS_SECONDS.length + count));
+			ad.mergeTorLocalProperties(props);
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.put(B4_ALICE_ANNOUNCE_REFRESHED_AT_KEY,
+						sealString(String.valueOf(now)));
+				s.put(B4_ALICE_ANNOUNCE_REFRESHES_KEY,
+						sealString(String.valueOf(count)));
+				settingsManager.mergeSettings(txn, s, B4_SETTINGS_NAMESPACE);
+			});
+		}
+	}
+
+	private long loadLong(Transaction txn, String key) throws DbException {
+		String raw = loadEncryptedString(txn, key);
+		if (raw == null) return 0L;
+		try {
+			return Long.parseLong(raw);
+		} catch (NumberFormatException e) {
+			return 0L;
+		}
+	}
+
+	private boolean scheduledRotationDue(Transaction txn, long now, long last)
+			throws DbException {
+		long targetDays = loadLong(txn, B4_ALICE_NEXT_ROTATION_DAYS_KEY);
+		if (targetDays < ROTATION_MIN_DAYS || targetDays > ROTATION_MAX_DAYS) {
+			targetDays = ROTATION_MIN_DAYS;
+		}
+		return DAYS.convert(now - last, TimeUnit.MILLISECONDS) >= targetDays;
+	}
+
+	public List<ContactId> getContactsHoldingRotation() throws DbException {
+		List<ContactId> out = new ArrayList<>();
+		if (!B4_ROTATION_ENABLED) return out;
+		long now = clock.currentTimeMillis();
+		return db.transactionWithResult(true, txn -> {
+			RotationPhase phase = loadPhase(txn);
+			if (phase == RotationPhase.IDLE) {
+				long last = loadLong(txn, B4_ALICE_LAST_ROTATION_TIME_MS_KEY);
+				if (last <= 0 || !scheduledRotationDue(txn, now, last)) {
+					return out;
+				}
+				for (Contact c : db.getContacts(txn)) {
+					long contact = loadLong(txn,
+							B4_PEER_LAST_CONTACT_KEY_PREFIX
+									+ c.getId().getInt());
+					if (contact > 0 && contact <= last) out.add(c.getId());
+				}
+				return out;
+			}
+			if (phase != RotationPhase.ANNOUNCING) return out;
+			if (now - loadAnnouncedAtMs(txn) < MIGRATION_GRACE_MS) return out;
+			String next = loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY);
+			for (Contact c : db.getContacts(txn)) {
+				if (!hasMovedToNextOnion(txn, c, next)) out.add(c.getId());
+			}
+			return out;
+		});
 	}
 
 	private void scheduleRebroadcasts(long announcedAtMs) {
@@ -934,6 +1142,15 @@ public class B4OnionRotation {
 		String newOnion = state[1];
 		String newPrivKey = state[2];
 
+		if (newOnion != null && newPrivKey != null
+				&& !ad.isPublished(newOnion)) {
+			try {
+				ad.publishHiddenService(newPrivKey);
+			} catch (IOException e) {
+				throw new DbException(e);
+			}
+		}
+
 		if (oldOnion != null && newOnion != null && newPrivKey != null
 				&& !oldOnion.equals(newOnion) && ad.isPublished(oldOnion)) {
 			try {
@@ -944,13 +1161,6 @@ public class B4OnionRotation {
 		}
 
 		if (newOnion != null && newPrivKey != null) {
-			if (!ad.isPublished(newOnion)) {
-				try {
-					ad.publishHiddenService(newPrivKey);
-				} catch (IOException e) {
-					throw new DbException(e);
-				}
-			}
 			ad.updateTorCurrentPrivKey(newPrivKey);
 			TransportProperties props = new TransportProperties();
 			props.put(WIRE_KEY_ONION3, newOnion);
@@ -976,8 +1186,9 @@ public class B4OnionRotation {
 					sealString(RotationPhase.IDLE.name()));
 			update.put(B4_ALICE_PROMOTING_SENTINEL_KEY, "");
 			update.put(B4_ALICE_REVOCATION_ROTATION_KEY, "");
-			update.put(B4_ALICE_NEXT_ROTATION_DAYS_KEY,
-					sealString(String.valueOf(drawNextRotationDays())));
+			update.put(B4_ALICE_ANNOUNCE_REFRESHED_AT_KEY, "");
+			update.put(B4_ALICE_ANNOUNCE_REFRESHES_KEY, "");
+			update.put(B4_ALICE_NEXT_ROTATION_DAYS_KEY, "");
 			settingsManager.mergeSettings(txn, update, B4_SETTINGS_NAMESPACE);
 			Collection<Contact> contacts = db.getContacts(txn);
 			for (Contact c : contacts) {
@@ -1001,17 +1212,12 @@ public class B4OnionRotation {
 				announcedAt = now;
 			}
 		}
-		long daysSince = DAYS.convert(now - announcedAt,
-				java.util.concurrent.TimeUnit.MILLISECONDS);
-		if (daysSince >= FORCE_EXPIRE_DAYS) return true;
 		boolean revocation = loadEncryptedString(txn,
 				B4_ALICE_REVOCATION_ROTATION_KEY) != null;
-		if (revocation && now - announcedAt >= REVOCATION_RETIRE_MS) {
-			return true;
-		}
+		boolean graceOver = now - announcedAt >= MIGRATION_GRACE_MS;
 		Collection<Contact> contacts = db.getContacts(txn);
-		if (contacts.isEmpty()) return revocation;
-		if (now - announcedAt < MIGRATION_GRACE_MS) return false;
+		if (contacts.isEmpty()) return revocation || graceOver;
+		if (!graceOver) return false;
 		String next = loadEncryptedString(txn, B4_ALICE_ONION3_NEXT_KEY);
 		for (Contact c : contacts) {
 			if (!hasMovedToNextOnion(txn, c, next)) return false;
@@ -1025,6 +1231,10 @@ public class B4OnionRotation {
 			return true;
 		}
 		if (next == null) return false;
+		if (!ZtpPoller.isDesignatedDialer(c)
+				&& silentTooLong(txn, c.getId(), clock.currentTimeMillis())) {
+			return true;
+		}
 		B4TorAdapter ad = adapter;
 		boolean dialsOurOpenOnion = !ZtpPoller.isDesignatedDialer(c)
 				&& (ad == null || ad.acceptsOpenInbound(c.getId()));

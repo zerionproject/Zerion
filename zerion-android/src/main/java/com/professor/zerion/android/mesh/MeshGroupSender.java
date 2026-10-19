@@ -213,4 +213,8 @@ public class MeshGroupSender implements GroupTrMeshSink {
 			this.firstSeenMs = firstSeenMs;
 		}
 	}
+
+	public void shutDown() {
+		scheduler.shutdownNow();
+	}
 }

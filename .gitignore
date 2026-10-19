@@ -69,6 +69,9 @@ scripts/*_validators/
 # verify-*-native.gradle gates fail the build if a shipped ABI is missing.
 zerion-android/src/main/jniLibs/*/libzmonero.so
 zerion-android/src/main/jniLibs/*/libpayjoin_ffi.so
+# The lyrebird executables built by packaging/lyrebird-android, which the
+# Tor pin gate verifies before they are packaged.
+packaging/lyrebird-android/out/
 # Signing sidecar artifacts
 *.idsig
 __pycache__/

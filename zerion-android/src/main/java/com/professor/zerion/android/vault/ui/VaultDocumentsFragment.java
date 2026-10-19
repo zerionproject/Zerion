@@ -724,20 +724,8 @@ public class VaultDocumentsFragment extends BaseFragment {
 	}
 
 	static String safeExportName(String name) {
-		String last = new java.io.File(name).getName();
-		StringBuilder sb = new StringBuilder(last.length());
-		for (int i = 0; i < last.length(); i++) {
-			char c = last.charAt(i);
-			boolean unsafe = c < 0x20 || c == 0x7F || c == '/' || c == '\\'
-					|| c == ':';
-			sb.append(unsafe ? '_' : c);
-		}
-		String out = sb.toString().trim();
-		if (out.length() > 120) out = out.substring(0, 120);
-		if (out.isEmpty() || out.equals(".") || out.equals("..")) {
-			out = "vault-item";
-		}
-		return out;
+		return com.professor.zerion.android.util.SafeFileNames.sanitize(name,
+				"vault-item");
 	}
 
 	private String getFileName(Uri uri) {

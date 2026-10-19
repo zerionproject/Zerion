@@ -21,6 +21,7 @@ import com.professor.zerion.android.viewmodel.LiveEvent;
 import com.professor.zerion.android.viewmodel.MutableLiveEvent;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentReader;
+import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
 import org.zerionproject.app.api.messaging.event.AttachmentReceivedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
@@ -52,8 +54,16 @@ public class ImageViewModel extends DbViewModel implements EventListener {
 			new MutableLiveEvent<>();
 	@Nullable
 	private volatile SavableImage readImage;
+	private final MutableLiveEvent<Boolean> openableImage =
+			new MutableLiveEvent<>();
+	@Nullable
+	private volatile SavableImage openImage;
 	private final MutableLiveEvent<Boolean> imageClicked =
 			new MutableLiveEvent<>();
+	private final MutableLiveEvent<Boolean> messageGone =
+			new MutableLiveEvent<>();
+	@Nullable
+	private volatile MessageId watchedMessage;
 	private int toolbarTop, toolbarBottom;
 
 	@Inject
@@ -89,7 +99,21 @@ public class ImageViewModel extends DbViewModel implements EventListener {
 			} else {
 				receivedAttachments.put(id, new MutableLiveEvent<>(true));
 			}
+		} else if (e instanceof ConversationMessagesDeletedEvent) {
+			MessageId watched = watchedMessage;
+			if (watched != null && ((ConversationMessagesDeletedEvent) e)
+					.getMessageIds().contains(watched)) {
+				messageGone.postEvent(true);
+			}
 		}
+	}
+
+	void watchMessage(MessageId id) {
+		watchedMessage = id;
+	}
+
+	LiveEvent<Boolean> getMessageGone() {
+		return messageGone;
 	}
 
 	@UiThread
@@ -172,22 +196,46 @@ public class ImageViewModel extends DbViewModel implements EventListener {
 		savableImage.postEvent(true);
 	}
 
+	LiveEvent<Boolean> getOpenableImage() {
+		return openableImage;
+	}
+
+	@Nullable
+	SavableImage takeOpenableImage() {
+		SavableImage image = openImage;
+		openImage = null;
+		return image;
+	}
+
+	private void offerForOpening(SavableImage image) {
+		openImage = image;
+		openableImage.postEvent(true);
+	}
+
 	void readForSaving(AttachmentItem attachment) {
+		read(attachment, this::offer);
+	}
+
+	void readForOpening(AttachmentItem attachment) {
+		read(attachment, this::offerForOpening);
+	}
+
+	private void read(AttachmentItem attachment, Consumer<SavableImage> sink) {
 		String mimeType = attachment.getMimeType();
 		runOnDbThread(() -> {
 			Attachment a;
 			try {
 				a = attachmentReader.getAttachment(attachment.getHeader());
 			} catch (DbException e) {
-				offer(new SavableImage(null, mimeType));
+				sink.accept(new SavableImage(null, mimeType));
 				return;
 			}
 			ioExecutor.execute(() -> {
 				try {
-					offer(new SavableImage(
+					sink.accept(new SavableImage(
 							SaveCleanCopy.readAll(a.getStream()), mimeType));
 				} catch (IOException e) {
-					offer(new SavableImage(null, mimeType));
+					sink.accept(new SavableImage(null, mimeType));
 				}
 			});
 		});

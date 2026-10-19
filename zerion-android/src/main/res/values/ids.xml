@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<item name="selection_presses" type="id" />
+	<item name="selection_named" type="id" />
+	<item name="selected_fill" type="id" />
+	<item name="row_states" type="id" />
+	<item name="row_actions" type="id" />
+	<item name="action_safety_code" type="id" />
+	<item name="touch_target" type="id" />
+</resources>

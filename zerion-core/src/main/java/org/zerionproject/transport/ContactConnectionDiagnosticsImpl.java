@@ -31,7 +31,11 @@ import org.zerionproject.core.plugin.tor.auth.OnionAuthDiagnostics;
 import org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
@@ -113,6 +117,25 @@ public class ContactConnectionDiagnosticsImpl
 				lastConnectedAgoMs(c), rot, auth, clock.currentTimeMillis());
 	}
 
+	@Override
+	public List<ContactId> getContactsHoldingAddressChange()
+			throws DbException {
+		Set<ContactId> out = new LinkedHashSet<>(
+				rotation.get().getContactsHoldingRotation());
+		out.addAll(onionClientAuth.get().getContactsHoldingOldAddress());
+		return new ArrayList<>(out);
+	}
+
+	@Override
+	public long getLastConnectedAgoMs(ContactId c) throws DbException {
+		long ago = lastConnectedAgoMs(c);
+		if (ago != UNKNOWN) return ago;
+		long last = Math.max(onionClientAuth.get().getLastContactMs(c),
+				rotation.get().getLastContactMs(c));
+		if (last <= 0) return UNKNOWN;
+		return Math.max(0, clock.currentTimeMillis() - last);
+	}
+
 	long lastConnectedAgoMs(ContactId c) {
 		Long at = lastConnected.get(c);
 		if (at == null) return UNKNOWN;
@@ -176,7 +199,7 @@ public class ContactConnectionDiagnosticsImpl
 		boolean negotiated = a != Authorization.NOT_SUPPORTED
 				&& a != Authorization.REVOKED;
 		return new ContactConnectionSnapshot(tor, reach, nextIn,
-				lastConnectedAgoMs, peer, peerRetryIn, ownRotation(rot), a,
+				lastConnectedAgoMs, peer, peerRetryIn, ownRotation(rot, auth), a,
 				repairAttempts(a, auth),
 				negotiated ? auth.getOwnGeneration() : 0,
 				negotiated ? auth.getContactGeneration() : 0);
@@ -212,6 +235,14 @@ public class ContactConnectionDiagnosticsImpl
 		if (!r.isContactAddressPending()) return PeerAddress.CURRENT;
 		if (r.getContactRetryAtMs() > now) return PeerAddress.NEW_RETRY_LATER;
 		return PeerAddress.NEW_ANNOUNCED;
+	}
+
+	static OwnRotation ownRotation(B4RotationDiagnostics r,
+			OnionAuthDiagnostics auth) {
+		if (auth.isHoldingPreviousAddress()) {
+			return OwnRotation.CONTACT_NOT_MOVED;
+		}
+		return ownRotation(r);
 	}
 
 	static OwnRotation ownRotation(B4RotationDiagnostics r) {

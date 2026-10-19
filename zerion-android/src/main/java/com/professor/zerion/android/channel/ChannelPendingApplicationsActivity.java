@@ -30,7 +30,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -58,6 +57,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 	private RecyclerView recycler;
 	private TextView emptyView;
 	private PendingAdapter adapter;
+	private Toolbar toolbar;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -75,7 +75,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 		byte[] cid = getIntent().getByteArrayExtra(EXTRA_CHANNEL_ID);
 		if (cid != null) channelId = cid;
 
-		Toolbar toolbar = findViewById(R.id.pendingApplicationsToolbar);
+		toolbar = findViewById(R.id.pendingApplicationsToolbar);
 		setSupportActionBar(toolbar);
 		if (getSupportActionBar() != null) {
 			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -117,7 +117,10 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 			emptyView.setVisibility(View.GONE);
 			adapter.setItems(apps);
 		}
-		setTitle(getString(R.string.channels_pending_count, apps.size()));
+		String title = getString(R.string.channels_access_requests_count,
+				apps.size());
+		toolbar.setTitle(title);
+		setTitle(title);
 	}
 
 	private void confirmApprove(ChannelApplication app) {
@@ -143,7 +146,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_apply_failed,
+						R.string.channels_access_request_answer_failed,
 						Toast.LENGTH_SHORT).show());
 			}
 		});
@@ -172,7 +175,7 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 				});
 			} catch (DbException ex) {
 				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_apply_failed,
+						R.string.channels_access_request_answer_failed,
 						Toast.LENGTH_SHORT).show());
 			}
 		});
@@ -242,18 +245,15 @@ public class ChannelPendingApplicationsActivity extends ZerionActivity {
 		}
 
 		void bind(ChannelApplication app) {
-			name.setText(app.getDisplayName());
-			subtitle.setText(toHexShort(app.getApplicantEd25519()));
-		}
-
-		private static String toHexShort(byte[] b) {
-			StringBuilder sb = new StringBuilder();
-			int take = Math.min(b.length, 12);
-			for (int i = 0; i < take; i++) {
-				sb.append(String.format(Locale.US, "%02x", b[i]));
-			}
-			if (b.length > take) sb.append("…");
-			return sb.toString();
+			android.content.Context ctx = itemView.getContext();
+			String shown = app.getDisplayName().trim();
+			name.setText(shown.isEmpty() ? ctx.getString(
+					R.string.channels_delegations_unnamed_person) : shown);
+			subtitle.setText(ctx.getString(
+					R.string.channels_access_request_when,
+					com.professor.zerion.android.util.HourTimes.withDay(ctx,
+							app.getAppliedAtHourMs(),
+							System.currentTimeMillis())));
 		}
 	}
 }

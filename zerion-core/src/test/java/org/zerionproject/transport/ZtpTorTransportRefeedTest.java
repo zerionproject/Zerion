@@ -2,6 +2,8 @@ package org.zerionproject.transport;
 
 import org.junit.After;
 import org.junit.Test;
+import org.zerionproject.core.system.SystemClock;
+import org.zerionproject.core.test.TestFeatureFlagModule;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
@@ -204,7 +206,9 @@ public class ZtpTorTransportRefeedTest {
 		};
 		TorBridgeConfigurator bridges = new TorBridgeConfigurator(
 				new FixedSettings(settings), new NoBridges(), () -> "", tor,
-				new NoEvents(), exec);
+				new NoEvents(), exec, new TestFeatureFlagModule()
+				.provideFeatureFlags(), new NoScheduler(),
+				new SystemClock());
 		bridgeConfigurator = bridges;
 		ZtpTorTransport t = new ZtpTorTransport(tor, refusingFactory,
 				refusingFactory, exec, handler, bridges, () -> {

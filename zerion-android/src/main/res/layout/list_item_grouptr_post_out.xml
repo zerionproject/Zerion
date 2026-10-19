@@ -41,7 +41,7 @@
 			<View
 				android:layout_width="3dp"
 				android:layout_height="match_parent"
-				android:background="@android:color/white" />
+				android:background="?attr/zerionColorOnBubbleOut" />
 
 			<LinearLayout
 				android:layout_width="wrap_content"
@@ -59,10 +59,9 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="1"
-					android:textColor="@android:color/white"
-					android:textSize="12sp"
-					android:textStyle="bold"
-					tools:text="Bob" />
+					android:textColor="?attr/zerionColorOnBubbleOut"
+					tools:text="Bob"
+					android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 				<TextView
 					android:id="@+id/quoteText"
@@ -71,9 +70,9 @@
 					android:ellipsize="end"
 					android:maxWidth="244dp"
 					android:maxLines="1"
-					android:textColor="@color/zerion_text_primary_inverse"
-					android:textSize="13sp"
-					tools:text="Quoted post" />
+					android:textColor="?attr/zerionColorOnBubbleOutMuted"
+					tools:text="Quoted post"
+					android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 			</LinearLayout>
 
@@ -84,24 +83,34 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:maxWidth="260dp"
-			android:textColor="@android:color/white"
-			android:textSize="15sp"
+			android:textColor="?attr/zerionColorOnBubbleOut"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toBottomOf="@+id/quoteBlock"
-			tools:text="Reply" />
+			tools:text="Reply"
+			android:textColorLink="?attr/zerionColorOnBubbleOut"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 		<TextView
 			android:id="@+id/postTime"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="2dp"
-			android:layout_marginStart="8dp"
-			android:textColor="@android:color/white"
-			android:textSize="12sp"
-			app:layout_constraintBottom_toBottomOf="@+id/postText"
-			app:layout_constraintStart_toEndOf="@+id/postText"
-			tools:text="13:37" />
+			android:gravity="center_vertical"
+			android:textColor="?attr/zerionColorOnBubbleOutMuted"
+			app:layout_constrainedWidth="true"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintHorizontal_bias="1.0"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toBottomOf="@+id/postText"
+			tools:text="13:37"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
+
+	<include
+		layout="@layout/view_message_not_sent_actions"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="4dp" />
 
 </LinearLayout>

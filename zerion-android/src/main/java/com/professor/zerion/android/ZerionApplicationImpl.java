@@ -9,7 +9,6 @@ import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.StrictMode.VmPolicy;
 
-import com.google.android.material.color.DynamicColors;
 import com.vanniktech.emoji.EmojiManager;
 import com.vanniktech.emoji.google.GoogleEmojiProvider;
 
@@ -62,8 +61,6 @@ public class ZerionApplicationImpl extends Application
 		super.onCreate();
 		if (android.os.Process.isIsolated()) return;
 		processStartedAt = System.currentTimeMillis();
-
-		DynamicColors.applyToActivitiesIfAvailable(this);
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
 

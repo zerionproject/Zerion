@@ -11,6 +11,9 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.function.LongSupplier;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.HttpsURLConnection;
@@ -23,6 +26,32 @@ final class TorHttpsGet {
 	static final int CONNECT_TIMEOUT_MS = 60_000;
 	static final int READ_TIMEOUT_MS = 60_000;
 	static final int MAX_HEADER_BYTES = 16 * 1024;
+	static final long NO_DEADLINE = Long.MAX_VALUE;
+
+	interface Watchdog {
+		Runnable arm(Runnable atDeadline, long delayMs);
+	}
+
+	static final Watchdog CLOSER = (atDeadline, delayMs) -> {
+		ScheduledFuture<?> f = Deadlines.EXECUTOR.schedule(atDeadline,
+				delayMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+		return () -> f.cancel(false);
+	};
+
+	private static final class Deadlines {
+		static final ScheduledThreadPoolExecutor EXECUTOR = executor();
+
+		private static ScheduledThreadPoolExecutor executor() {
+			ScheduledThreadPoolExecutor e = new ScheduledThreadPoolExecutor(1,
+					r -> {
+						Thread t = new Thread(r, "https-deadline");
+						t.setDaemon(true);
+						return t;
+					});
+			e.setRemoveOnCancelPolicy(true);
+			return e;
+		}
+	}
 
 	static final class Response {
 		final int status;
@@ -39,6 +68,18 @@ final class TorHttpsGet {
 
 	static Response get(SocketFactory torSockets, String url, int maxBody)
 			throws IOException {
+		return get(torSockets, url, maxBody, NO_DEADLINE,
+				System::currentTimeMillis);
+	}
+
+	static Response get(SocketFactory torSockets, String url, int maxBody,
+			long deadlineMs, LongSupplier clock) throws IOException {
+		return get(torSockets, url, maxBody, deadlineMs, clock, CLOSER);
+	}
+
+	static Response get(SocketFactory torSockets, String url, int maxBody,
+			long deadlineMs, LongSupplier clock, Watchdog watchdog)
+			throws IOException {
 		URI uri = URI.create(url);
 		if (!"https".equals(uri.getScheme())) throw new IOException("not https");
 		String host = uri.getHost();
@@ -46,15 +87,19 @@ final class TorHttpsGet {
 		int port = uri.getPort() == -1 ? 443 : uri.getPort();
 		String path = uri.getRawPath();
 		if (path == null || path.isEmpty()) path = "/";
+		int connectTimeout = remaining(CONNECT_TIMEOUT_MS, deadlineMs, clock);
 		Socket raw = torSockets.createSocket();
+		Runnable disarm = deadlineMs == NO_DEADLINE ? null
+				: watchdog.arm(() -> closeQuietly(raw),
+				remaining(Integer.MAX_VALUE, deadlineMs, clock));
 		try {
 			raw.connect(InetSocketAddress.createUnresolved(host, port),
-					CONNECT_TIMEOUT_MS);
-			raw.setSoTimeout(READ_TIMEOUT_MS);
+					connectTimeout);
+			raw.setSoTimeout(remaining(READ_TIMEOUT_MS, deadlineMs, clock));
 			SSLSocket ssl = (SSLSocket) ((SSLSocketFactory)
 					SSLSocketFactory.getDefault()).createSocket(raw, host, port,
 					true);
-			ssl.setSoTimeout(READ_TIMEOUT_MS);
+			ssl.setSoTimeout(remaining(READ_TIMEOUT_MS, deadlineMs, clock));
 			ssl.startHandshake();
 			if (!HttpsURLConnection.getDefaultHostnameVerifier()
 					.verify(host, ssl.getSession())) {
@@ -67,14 +112,42 @@ final class TorHttpsGet {
 					+ "Connection: close\r\n\r\n";
 			out.write(request.getBytes(StandardCharsets.US_ASCII));
 			out.flush();
-			return parse(readAll(ssl.getInputStream(),
-					maxBody + MAX_HEADER_BYTES), maxBody);
+			return parse(readAll(ssl, ssl.getInputStream(),
+					maxBody + MAX_HEADER_BYTES, deadlineMs, clock), maxBody);
 		} finally {
-			try {
-				raw.close();
-			} catch (IOException ignored) {
-			}
+			if (disarm != null) disarm.run();
+			closeQuietly(raw);
 		}
+	}
+
+	private static void closeQuietly(Socket s) {
+		try {
+			s.close();
+		} catch (IOException ignored) {
+		}
+	}
+
+	static int remaining(int timeoutMs, long deadlineMs, LongSupplier clock)
+			throws IOException {
+		if (deadlineMs == NO_DEADLINE) return timeoutMs;
+		long left = deadlineMs - clock.getAsLong();
+		if (left <= 0) throw new IOException("deadline passed");
+		return (int) Math.min(timeoutMs, left);
+	}
+
+	static byte[] readAll(Socket socket, InputStream in, int limit,
+			long deadlineMs, LongSupplier clock) throws IOException {
+		if (deadlineMs == NO_DEADLINE) return readAll(in, limit);
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		byte[] tmp = new byte[8192];
+		while (true) {
+			socket.setSoTimeout(remaining(READ_TIMEOUT_MS, deadlineMs, clock));
+			int r = in.read(tmp);
+			if (r < 0) break;
+			buf.write(tmp, 0, r);
+			if (buf.size() > limit) throw new IOException("response too large");
+		}
+		return buf.toByteArray();
 	}
 
 	static byte[] readAll(InputStream in, int limit) throws IOException {

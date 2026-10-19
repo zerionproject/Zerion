@@ -255,7 +255,6 @@ public class ZerionService extends Service {
 				boolean sameProcess = pid == myPid();
 				if (sameProcess) {
 					lockManager.setLocked(true);
-					clearBitmapThumbnailCaches();
 				}
 			} else if (ACTION_EXIT.equals(action)) {
 				if (exitInProgress.compareAndSet(false, true)) {
@@ -323,13 +322,7 @@ public class ZerionService extends Service {
 	}
 
 	private void clearBitmapThumbnailCaches() {
-		com.professor.zerion.android.vault.ui.adapters.VaultGalleryAdapter
-				.clearThumbnailCache();
-		com.professor.zerion.android.conversation.ImageViewHolder
-				.clearVideoThumbCache();
-		com.professor.zerion.android.channel.ChannelFeedActivity
-				.clearFeedThumbCache();
-		com.professor.zerion.android.grouptr.GroupTrMediaCache.clear();
+		com.professor.zerion.android.util.MemoryCaches.clearThumbnails();
 	}
 
 	private void maybeClearGlideCache() {

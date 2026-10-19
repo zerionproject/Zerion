@@ -16,10 +16,9 @@
 		android:layout_marginBottom="-6dp"
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
-		android:textColor="@color/zerion_accent_text"
-		android:textSize="12sp"
-		android:textStyle="bold"
-		tools:text="Alice" />
+		android:textColor="?attr/zerionColorAccentText"
+		tools:text="Alice"
+		android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/mediaBubble"
@@ -32,10 +31,12 @@
 
 		<ImageView
 			android:id="@+id/videoThumb"
+			app:tint="@color/selected_media"
+			app:tintMode="src_atop"
 			android:layout_width="240dp"
 			android:layout_height="180dp"
 			android:adjustViewBounds="true"
-			android:background="#000000"
+			android:background="?attr/zerionColorScrim"
 			android:contentDescription="@string/grouptr_video"
 			android:scaleType="centerCrop"
 			app:layout_constraintStart_toStartOf="parent"
@@ -45,6 +46,7 @@
 			android:id="@+id/playCircleBg"
 			android:layout_width="56dp"
 			android:layout_height="56dp"
+			android:importantForAccessibility="no"
 			android:background="@drawable/bg_video_play_circle"
 			app:layout_constraintBottom_toBottomOf="@+id/videoThumb"
 			app:layout_constraintEnd_toEndOf="@+id/videoThumb"
@@ -55,14 +57,14 @@
 			android:id="@+id/videoPlayIcon"
 			android:layout_width="32dp"
 			android:layout_height="32dp"
-			android:contentDescription="@string/grouptr_video"
+			android:importantForAccessibility="no"
 			android:scaleType="center"
 			app:layout_constraintBottom_toBottomOf="@+id/playCircleBg"
 			app:layout_constraintEnd_toEndOf="@+id/playCircleBg"
 			app:layout_constraintStart_toStartOf="@+id/playCircleBg"
 			app:layout_constraintTop_toTopOf="@+id/playCircleBg"
 			app:srcCompat="@drawable/ic_play_arrow_24dp"
-			app:tint="@android:color/white" />
+			app:tint="?attr/zerionColorOnScrim" />
 
 		<TextView
 			android:id="@+id/videoDuration"
@@ -70,26 +72,25 @@
 			android:layout_height="wrap_content"
 			android:layout_marginStart="6dp"
 			android:layout_marginTop="6dp"
-			android:background="@color/msg_status_bubble_background"
+			android:background="?attr/zerionColorScrim"
 			android:paddingHorizontal="6dp"
 			android:paddingVertical="2dp"
-			android:textColor="#FFFFFF"
-			android:textSize="11sp"
+			android:textColor="?attr/zerionColorOnScrim"
 			app:layout_constraintStart_toStartOf="@+id/videoThumb"
 			app:layout_constraintTop_toTopOf="@+id/videoThumb"
-			tools:text="0:08" />
+			tools:text="0:08"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 		<TextView
 			android:id="@+id/videoTime"
-			style="@style/TextMessage.Timestamp"
+			style="@style/TextMessage.Timestamp.Scrim"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginEnd="6dp"
 			android:layout_marginBottom="4dp"
-			android:background="@color/msg_status_bubble_background"
+			android:background="?attr/zerionColorScrim"
 			android:paddingHorizontal="6dp"
 			android:paddingVertical="2dp"
-			android:textColor="#FFFFFF"
 			app:layout_constraintBottom_toBottomOf="@+id/videoThumb"
 			app:layout_constraintEnd_toEndOf="@+id/videoThumb"
 			tools:text="13:37" />

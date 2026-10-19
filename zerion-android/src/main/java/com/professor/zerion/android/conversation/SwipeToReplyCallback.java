@@ -1,5 +1,6 @@
 package com.professor.zerion.android.conversation;
 
+import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.view.View;
@@ -12,29 +13,52 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.util.UiUtils;
 
 @NotNullByDefault
 public class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 
 	@androidx.annotation.Nullable
 	private Drawable replyIcon;
+	private int replyIconTint;
 
 	private static final float TRIGGER_THRESHOLD = 0.3f;
 
 	private final OnSwipeReplyListener listener;
+	private final CanReply canReply;
 	private boolean triggered;
 
 	public interface OnSwipeReplyListener {
 		void onSwipeReply(int position);
 	}
 
+	public interface CanReply {
+		boolean canReplyTo(int position);
+	}
+
 	public SwipeToReplyCallback(OnSwipeReplyListener listener) {
+		this(listener, position -> true);
+	}
+
+	public SwipeToReplyCallback(OnSwipeReplyListener listener,
+			CanReply canReply) {
 		this.listener = listener;
+		this.canReply = canReply;
+	}
+
+	static int replyIconTint(Context ctx) {
+		return UiUtils.resolveColorAttribute(ctx,
+				R.attr.zerionColorOnSurfaceMuted);
 	}
 
 	@Override
 	public int getMovementFlags(@NonNull RecyclerView recyclerView,
 			@NonNull RecyclerView.ViewHolder viewHolder) {
+		int position = viewHolder.getBindingAdapterPosition();
+		if (position != RecyclerView.NO_POSITION
+				&& !canReply.canReplyTo(position)) {
+			return 0;
+		}
 		return makeMovementFlags(0, ItemTouchHelper.RIGHT);
 	}
 
@@ -89,6 +113,7 @@ public class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 			if (replyIcon == null) {
 				replyIcon = ContextCompat.getDrawable(rv.getContext(),
 						R.drawable.ic_reply);
+				replyIconTint = replyIconTint(rv.getContext());
 			}
 			Drawable icon = replyIcon;
 			if (icon != null) {
@@ -106,7 +131,7 @@ public class SwipeToReplyCallback extends ItemTouchHelper.Callback {
 
 				int alpha = (int) (progress * 255);
 				icon.setAlpha(Math.min(alpha, 255));
-				icon.setTint(0xFFFFFFFF);
+				icon.setTint(replyIconTint);
 				icon.draw(c);
 			}
 		} else {

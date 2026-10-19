@@ -11,7 +11,6 @@ import android.os.Parcelable;
 import android.transition.Slide;
 import android.transition.Transition;
 import android.util.SparseArray;
-import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -45,6 +44,11 @@ import com.professor.zerion.android.attachment.media.VideoThumbnailExtractor;
 import com.professor.zerion.android.conversation.ConversationVisitor.AttachmentCache;
 import com.professor.zerion.android.conversation.ConversationVisitor.TextCache;
 import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
+import com.professor.zerion.android.selection.MessageInfo;
+import com.professor.zerion.android.selection.RowActions;
+import com.professor.zerion.android.selection.SelectionAction;
+import com.professor.zerion.android.selection.SelectionBar;
+import com.professor.zerion.android.selection.SelectionRows;
 import com.professor.zerion.android.vault.ui.VaultActivity;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleImagesAdvanced;
 import com.professor.zerion.android.util.ActivityLaunchers.GetMultipleMediaAdvanced;
@@ -76,6 +80,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +136,7 @@ import static org.zerionproject.app.api.messaging.PrivateMessageFormat.TEXT_ONLY
 @ParametersNotNullByDefault
 public class ConversationActivity extends ZerionActivity
 		implements BaseFragmentListener, ConversationListener,
-		TextCache, AttachmentCache, AttachmentListener, ActionMode.Callback,
+		TextCache, AttachmentCache, AttachmentListener, SelectionBar.Host,
 		AttachmentPickerDialog.AttachmentPickerListener,
 		com.professor.zerion.android.sticker.StickerPickerDialog.StickerPickerListener,
 		VoiceRecordingController.VoiceRecordingHost {
@@ -173,6 +178,9 @@ public class ConversationActivity extends ZerionActivity
 	org.zerionproject.app.api.conversation.ConversationManager conversationManager;
 
 	@Inject
+	TextForwarder textForwarder;
+
+	@Inject
 	@com.professor.zerion.android.AppModule.UiPrefs
 	android.content.SharedPreferences uiPrefs;
 
@@ -181,6 +189,8 @@ public class ConversationActivity extends ZerionActivity
 	android.content.SharedPreferences profilePrefs;
 
 	private final Map<MessageId, String> textCache = new ConcurrentHashMap<>();
+	@Nullable
+	private String shownContactName;
 
 	private final ActivityResultLauncher<String[]> docLauncher =
 			registerForActivityResult(new OpenMultipleImageDocumentsAdvanced(),
@@ -215,8 +225,8 @@ public class ConversationActivity extends ZerionActivity
 	private SelectionTracker<String> tracker;
 	@Nullable
 	private Parcelable layoutManagerState;
-	@Nullable
-	private ActionMode actionMode;
+	private SelectionBar selectionBar;
+	private SwipeToReplyCallback swipeCallback;
 	private final Set<String> voiceMemoRebuildsRequested = new HashSet<>();
 	@Nullable
 	private MessageId pendingSecretBurnId;
@@ -297,6 +307,10 @@ public class ConversationActivity extends ZerionActivity
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
 			toolbarTitle.setText(contactName);
+			if (!contactName.equals(shownContactName)) {
+				shownContactName = contactName;
+				adapter.refreshNames();
+			}
 		});
 		viewModel.isContactDeleted().observe(this, deleted -> {
 			requireNonNull(deleted);
@@ -313,7 +327,7 @@ public class ConversationActivity extends ZerionActivity
 						new ConversationSecretNoteItem(h,
 								viewModel.getContactDisplayName());
 				item.setText(text);
-				adapter.add(item);
+				adapter.addOrRefresh(item);
 				scrollToBottom();
 			}
 		});
@@ -334,15 +348,18 @@ public class ConversationActivity extends ZerionActivity
 				new ConversationScrollListener(adapter, viewModel,
 						() -> !lockManager.isLocked());
 		list.getRecyclerView().addOnScrollListener(scrollListener);
+		selectionBar = new SelectionBar(this, this);
+		SelectionRows.clearOnEmptyTap(list.getRecyclerView(), selectionBar);
 
-		SwipeToReplyCallback swipeCallback = new SwipeToReplyCallback(
+		swipeCallback = new SwipeToReplyCallback(
 				position -> {
 					ConversationItem item = adapter.getItemAt(position);
-					if (item != null) {
+					if (canQuote(item)) {
 						textInputView.showReplyPreview(item);
 						textInputView.showSoftKeyboard();
 					}
-				});
+				},
+				position -> canQuote(adapter.getItemAt(position)));
 		new ItemTouchHelper(swipeCallback)
 				.attachToRecyclerView(list.getRecyclerView());
 
@@ -441,9 +458,8 @@ public class ConversationActivity extends ZerionActivity
 			}
 		});
 
-		viewModel.getEditAndDeleteSupported().observe(this, s -> {
-			if (actionMode != null) actionMode.invalidate();
-		});
+		viewModel.getEditAndDeleteSupported().observe(this, s ->
+				selectionBar.refresh());
 
 		viewModel.getReactionRemovedLocallyOnly().observeEvent(this, r -> {
 			if (r != null && r) {
@@ -470,6 +486,7 @@ public class ConversationActivity extends ZerionActivity
 				adapter.incrementRevision();
 				adapter.removeItems(messageIds);
 				markQuotesUnavailable(messageIds);
+				deselectGone(messageIds);
 			}
 		});
 
@@ -979,6 +996,7 @@ public class ConversationActivity extends ZerionActivity
 			return;
 		}
 		conversationShown = true;
+		adapter.setMessageStyle(com.professor.zerion.android.settings.MessageStyle.read(this));
 		notificationManager.blockContactNotification(contactId);
 		notificationManager.clearContactNotification(contactId);
 		displayContactOnlineStatus();
@@ -1156,60 +1174,193 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-		MenuInflater inflater = mode.getMenuInflater();
-		inflater.inflate(R.menu.conversation_message_actions, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-		MenuItem reactItem = menu.findItem(R.id.action_react);
-		if (reactItem != null) {
-			boolean showReact = false;
-			if (tracker.getSelection().size() == 1) {
-				String key = tracker.getSelection().iterator().next();
-				int pos = adapter.getPositionOfKey(key);
-				if (pos >= 0) {
-					ConversationItem item = adapter.getItemAt(pos);
-					showReact = item instanceof ConversationMessageItem;
-				}
+	public Set<SelectionAction> offeredActions() {
+		EnumSet<SelectionAction> offered = offeredFor(selectedItems());
+		if (offered.contains(SelectionAction.INFO)) {
+			if (selectedEditableItem() != null) {
+				offered.add(SelectionAction.EDIT);
 			}
-			reactItem.setVisible(showReact);
+			if (selectedSavableAttachment() != null) {
+				offered.add(SelectionAction.SAVE);
+			}
 		}
-		MenuItem editItem = menu.findItem(R.id.action_edit);
-		if (editItem != null) {
-			editItem.setVisible(selectedEditableItem() != null);
+		return offered;
+	}
+
+	private EnumSet<SelectionAction> offeredFor(
+			List<ConversationItem> chosen) {
+		EnumSet<SelectionAction> offered =
+				EnumSet.noneOf(SelectionAction.class);
+		if (chosen.isEmpty()) return offered;
+		offered.add(SelectionAction.DELETE);
+		boolean allText = true;
+		boolean timed = false;
+		for (ConversationItem item : chosen) {
+			if (textNotLoaded(item)) return offered;
+			if (copyableText(item) == null) allText = false;
+			if (item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER) {
+				timed = true;
+			}
 		}
-		MenuItem saveItem = menu.findItem(R.id.action_save);
-		if (saveItem != null) {
-			saveItem.setVisible(selectedSavableAttachment() != null);
+		if (allText) {
+			offered.add(SelectionAction.COPY);
+			if (!timed) offered.add(SelectionAction.FORWARD);
 		}
-		return true;
+		if (chosen.size() == 1 && canQuote(chosen.get(0))) {
+			if (textInputView.getVisibility() == View.VISIBLE) {
+				offered.add(SelectionAction.REPLY);
+			}
+			offered.add(SelectionAction.REACT);
+			offered.add(SelectionAction.INFO);
+		}
+		return offered;
 	}
 
 	@Override
-	public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-		if (item.getItemId() == R.id.action_react) {
-			reactToSelectedMessage();
-			return true;
-		} else if (item.getItemId() == R.id.action_copy) {
-			copySelectedMessages();
-			return true;
-		} else if (item.getItemId() == R.id.action_forward) {
-			forwardSelectedMessages();
-			return true;
-		} else if (item.getItemId() == R.id.action_delete) {
-			deleteSelectedMessages();
-			return true;
-		} else if (item.getItemId() == R.id.action_edit) {
-			editSelectedMessage();
-			return true;
-		} else if (item.getItemId() == R.id.action_save) {
-			saveSelectedAttachment();
-			return true;
+	public void onSelectionAction(SelectionAction action) {
+		switch (action) {
+			case REPLY:
+				replyToSelectedMessage();
+				break;
+			case REACT:
+				reactToSelectedMessage();
+				break;
+			case COPY:
+				copySelectedMessages();
+				break;
+			case FORWARD:
+				forwardSelectedMessages();
+				break;
+			case DELETE:
+				deleteSelectedMessages();
+				break;
+			case EDIT:
+				editSelectedMessage();
+				break;
+			case SAVE:
+				saveSelectedAttachment();
+				break;
+			case INFO:
+				showSelectedInfo();
+				break;
+			default:
+				break;
 		}
-		return false;
+	}
+
+	@Override
+	public void onSelectionClosed() {
+		if (tracker != null) tracker.clearSelection();
+	}
+
+	@Override
+	public Set<SelectionAction> rowActions(ConversationItem item) {
+		if (selectionBar.isShowing()
+				|| item instanceof ConversationSecretNoteItem) {
+			return RowActions.none();
+		}
+		return RowActions.forRow(offeredFor(
+				java.util.Collections.singletonList(item)));
+	}
+
+	@Override
+	public boolean onRowAction(ConversationItem item,
+			SelectionAction action) {
+		if (!rowActions(item).contains(action)) return false;
+		return selectionBar.performOnly(() -> onMessageLongClick(item),
+				action, () -> tracker == null ? 0
+						: tracker.getSelection().size());
+	}
+
+	private void finishSelection() {
+		if (selectionBar.isShowing()) {
+			selectionBar.close();
+		} else if (tracker != null) {
+			tracker.clearSelection();
+		}
+	}
+
+	private List<ConversationItem> selectedItems() {
+		List<ConversationItem> out = new ArrayList<>();
+		if (tracker == null) return out;
+		List<Integer> positions = new ArrayList<>();
+		for (String key : tracker.getSelection()) {
+			int pos = adapter.getPositionOfKey(key);
+			if (pos >= 0) positions.add(pos);
+		}
+		sort(positions);
+		for (int pos : positions) {
+			ConversationItem item = adapter.getItemAt(pos);
+			if (item != null) out.add(item);
+		}
+		return out;
+	}
+
+	@Nullable
+	private ConversationItem singleSelected() {
+		List<ConversationItem> chosen = selectedItems();
+		return chosen.size() == 1 ? chosen.get(0) : null;
+	}
+
+	static boolean textNotLoaded(@Nullable ConversationItem item) {
+		if (!(item instanceof ConversationMessageItem)) return false;
+		PrivateMessageHeader h = ((ConversationMessageItem) item).getHeader();
+		return h != null && h.hasText() && item.getText() == null;
+	}
+
+	static boolean canQuote(@Nullable ConversationItem item) {
+		return item instanceof ConversationMessageItem && !textNotLoaded(item);
+	}
+
+	@Nullable
+	static String copyableText(ConversationItem item) {
+		if (!(item instanceof ConversationMessageItem)) return null;
+		String text = item.getText();
+		if (text == null || text.isEmpty() || text.startsWith("[VOICE:")
+				|| com.professor.zerion.android.conversation.voice
+						.VoiceMessageChunkFormat.isPart(text)) {
+			return null;
+		}
+		return text;
+	}
+
+	private void deselectGone(Collection<MessageId> gone) {
+		if (tracker == null) return;
+		for (MessageId id : gone) {
+			tracker.deselect(org.zerionproject.core.util.StringUtils
+					.toHexString(id.getBytes()));
+		}
+	}
+
+	@UiThread
+	private void replyToSelectedMessage() {
+		ConversationItem item = singleSelected();
+		finishSelection();
+		if (!canQuote(item)) return;
+		textInputView.showReplyPreview(item);
+		textInputView.showSoftKeyboard();
+	}
+
+	@UiThread
+	private void showSelectedInfo() {
+		ConversationItem item = singleSelected();
+		finishSelection();
+		if (!(item instanceof ConversationMessageItem)) return;
+		MessageInfo info = new MessageInfo(this);
+		info.line(R.string.message_info_sent,
+				UiUtils.formatDateAbsolute(this, item.getTime()));
+		if (!item.isIncoming()) {
+			info.line(R.string.message_info_status,
+					getString(OutItemViewHolder.stateOf(item).getLabel()));
+		}
+		if (item.getAutoDeleteTimer() != NO_AUTO_DELETE_TIMER) {
+			info.line(R.string.message_info_disappears_after,
+					DisappearingTimers.label(this, item.getAutoDeleteTimer()));
+		}
+		if (((ConversationMessageItem) item).isEdited()) {
+			info.note(R.string.message_info_edited);
+		}
+		info.show();
 	}
 
 	@Nullable
@@ -1231,7 +1382,7 @@ public class ConversationActivity extends ZerionActivity
 	@UiThread
 	private void saveSelectedAttachment() {
 		AttachmentItem a = selectedSavableAttachment();
-		if (actionMode != null) actionMode.finish();
+		finishSelection();
 		if (a == null) return;
 		String mimeType = a.getMimeType();
 		SaveCleanCopy.confirm(this, mimeType, () -> dbExecutor.execute(() -> {
@@ -1286,7 +1437,7 @@ public class ConversationActivity extends ZerionActivity
 	@UiThread
 	private void editSelectedMessage() {
 		ConversationMessageItem item = selectedEditableItem();
-		if (actionMode != null) actionMode.finish();
+		finishSelection();
 		if (item == null || item.getText() == null) return;
 		textInputView.showEditPreview(item, item.getText());
 		textInputView.showSoftKeyboard();
@@ -1335,12 +1486,6 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	@Override
-	public void onDestroyActionMode(ActionMode mode) {
-		actionMode = null;
-		if (tracker != null) tracker.clearSelection();
-	}
-
-	@Override
 	public void onLinkClick(String url) {
 		LinkDialogFragment f = LinkDialogFragment.newInstance(url);
 		f.show(getSupportFragmentManager(), f.getUniqueTag());
@@ -1363,28 +1508,12 @@ public class ConversationActivity extends ZerionActivity
 
 		SelectionObserver<String> observer = new SelectionObserver<String>() {
 			@Override
-			public void onItemStateChanged(String key, boolean selected) {
-				if (selected && actionMode == null) {
-					actionMode = startActionMode(ConversationActivity.this);
-					updateActionModeTitle();
-				} else if (actionMode != null) {
-					if (selected || tracker.hasSelection()) {
-						updateActionModeTitle();
-					} else {
-						actionMode.finish();
-					}
-				}
+			public void onSelectionChanged() {
+				selectionBar.show(tracker.getSelection().size());
 			}
 		};
 		tracker.addObserver(observer);
 		adapter.setSelectionTracker(tracker);
-	}
-
-	private void updateActionModeTitle() {
-		if (actionMode == null) throw new IllegalStateException();
-		String title = String.valueOf(tracker.getSelection().size());
-		actionMode.setTitle(title);
-		actionMode.invalidate();
 	}
 
 	private Collection<MessageId> getSelection() {
@@ -1409,17 +1538,17 @@ public class ConversationActivity extends ZerionActivity
 	@UiThread
 	private int onlineSubtitleForTransport() {
 		ContactId c = contactId;
-		if (c != null) {
-			boolean tor = connectionRegistry.isConnected(c,
-					org.zerionproject.core.api.plugin.TorConstants.ID);
-			boolean i2p = connectionRegistry.isConnected(c,
-					org.zerionproject.core.api.plugin.I2pConstants.ID);
-			if (tor && i2p) return R.string.conversation_subtitle_online_both;
-			if (i2p) return R.string.conversation_subtitle_online_i2p;
-			if (tor) return R.string.conversation_subtitle_online_tor;
-			if (meshOnline) {
-				return R.string.conversation_subtitle_online_mesh;
-			}
+		if (c == null) return R.string.conversation_subtitle_online;
+		boolean internet = connectionRegistry.isConnected(c,
+				org.zerionproject.core.api.plugin.TorConstants.ID)
+				|| connectionRegistry.isConnected(c,
+						org.zerionproject.core.api.plugin.I2pConstants.ID);
+		return onlineSubtitle(internet, meshOnline);
+	}
+
+	static int onlineSubtitle(boolean internet, boolean mesh) {
+		if (!internet && mesh) {
+			return R.string.conversation_subtitle_online_mesh;
 		}
 		return R.string.conversation_subtitle_online;
 	}
@@ -1465,8 +1594,23 @@ public class ConversationActivity extends ZerionActivity
 				viewModel.showImageOnboarding().observeEvent(this,
 						show -> { if (show) showImageOnboarding(); });
 			}
-			List<ConversationItem> items = createItems(headers);
+			List<ConversationItem> rebound = new ArrayList<>();
+			List<ConversationItem> delivered = new ArrayList<>();
+			List<ConversationItem> items = createItems(headers, rebound,
+					delivered);
 			adapter.replaceAll(items);
+			for (ConversationItem item : rebound) {
+				int position = adapter.findItemPosition(item);
+				if (position != INVALID_POSITION) {
+					adapter.notifyItemChanged(position);
+				}
+			}
+			for (ConversationItem item : delivered) {
+				int position = adapter.findItemPosition(item);
+				if (position != INVALID_POSITION) {
+					adapter.refreshState(position);
+				}
+			}
 			list.showData();
 			if (layoutManagerState == null) {
 				scrollToBottom();
@@ -1477,7 +1621,10 @@ public class ConversationActivity extends ZerionActivity
 	}
 
 	private List<ConversationItem> createItems(
-			Collection<ConversationMessageHeader> headers) {
+			Collection<ConversationMessageHeader> headers,
+			List<ConversationItem> rebound,
+			List<ConversationItem> delivered) {
+		Map<MessageId, ConversationItem> shown = adapter.itemsById();
 		List<ConversationItem> items = new ArrayList<>(headers.size());
 		for (ConversationMessageHeader h : headers) {
 			if (viewModel.isDeleted(h.getId())) continue;
@@ -1486,6 +1633,18 @@ public class ConversationActivity extends ZerionActivity
 				if (item instanceof ConversationMessageItem
 						&& viewModel.getEditedText(h.getId()) != null) {
 					((ConversationMessageItem) item).markEdited();
+				}
+				ConversationItem kept = shown.get(h.getId());
+				if (kept != null && kept.getClass() == item.getClass()) {
+					int change = kept.updateFrom(item);
+					if (change == ConversationItem.CONTENT_CHANGED) {
+						rebound.add(kept);
+					} else if (change == ConversationItem.STATE_CHANGED) {
+						delivered.add(kept);
+					}
+					item = kept;
+				} else if (kept instanceof ConversationSecretNoteItem) {
+					item = kept;
 				}
 				items.add(item);
 			}
@@ -1553,10 +1712,14 @@ public class ConversationActivity extends ZerionActivity
 									old.getHeader(), viewModel.getContactDisplayName());
 					secretItem.setText(text);
 					boolean scroll = shouldScrollWhenUpdatingMessage();
+					boolean chosen = tracker != null
+							&& tracker.isSelected(old.getKey());
 					adapter.remove(old);
 					adapter.add(secretItem);
+					if (chosen) tracker.select(secretItem.getKey());
 					if (scroll) scrollToBottom();
 				}
+				selectionBar.refresh();
 				return;
 			}
 			Pair<Integer, ConversationMessageItem> pair =
@@ -1567,6 +1730,7 @@ public class ConversationActivity extends ZerionActivity
 				adapter.notifyItemChanged(pair.getFirst());
 				if (scroll) scrollToBottom();
 			}
+			selectionBar.refresh();
 		});
 	}
 
@@ -1627,7 +1791,7 @@ public class ConversationActivity extends ZerionActivity
 		if (item == null) return;
 		adapter.incrementRevision();
 		boolean atBottom = adapter.isScrolledToBottom(layoutManager);
-		adapter.add(item);
+		adapter.addOrRefresh(item);
 		if (atBottom && getLifecycle().getCurrentState().isAtLeast(STARTED))
 			scrollToBottom();
 	}
@@ -1655,9 +1819,11 @@ public class ConversationActivity extends ZerionActivity
 			if (messages.contains(item.getId())) {
 				item.setSent(sent);
 				item.setSeen(seen);
-				adapter.notifyItemChanged(list.keyAt(i));
-				if (seen && item instanceof ConversationSecretNoteItem) {
-					secretNotesToDelete.add(item.getId());
+				if (item instanceof ConversationSecretNoteItem) {
+					adapter.notifyItemChanged(list.keyAt(i));
+					if (seen) secretNotesToDelete.add(item.getId());
+				} else {
+					adapter.refreshState(list.keyAt(i));
 				}
 			}
 		}
@@ -1999,102 +2165,43 @@ public class ConversationActivity extends ZerionActivity
 				.show();
 	}
 
+	private String selectedText() {
+		StringBuilder sb = new StringBuilder();
+		for (ConversationItem item : selectedItems()) {
+			String text = copyableText(item);
+			if (text == null) continue;
+			if (sb.length() > 0) sb.append("\n");
+			sb.append(text);
+		}
+		return sb.toString();
+	}
+
 	@UiThread
 	private void copySelectedMessages() {
-		Selection<String> selection = tracker.getSelection();
-		StringBuilder sb = new StringBuilder();
-		for (String key : selection) {
-			int pos = adapter.getPositionOfKey(key);
-			if (pos < 0) continue;
-			ConversationItem item = adapter.getItemAt(pos);
-			if (item == null) continue;
-			String text = item.getText();
-			if (text != null && !text.isEmpty()) {
-				if (sb.length() > 0) sb.append("\n");
-				sb.append(text);
-			}
-		}
+		String sb = selectedText();
 		if (sb.length() > 0) {
 			com.professor.zerion.android.util.SecureClipboard.copy(this,
 					"message", sb.toString());
 			Snackbar.make(list, R.string.copied_to_clipboard,
 					Snackbar.LENGTH_SHORT).show();
 		}
-		if (actionMode != null) actionMode.finish();
+		finishSelection();
 	}
 
 	@UiThread
 	private void reactToSelectedMessage() {
-		Selection<String> selection = tracker.getSelection();
-		if (selection.size() != 1) return;
-		String key = selection.iterator().next();
-		int pos = adapter.getPositionOfKey(key);
-		if (pos < 0) return;
-		ConversationItem item = adapter.getItemAt(pos);
-		if (item == null) return;
+		ConversationItem item = singleSelected();
 		if (!(item instanceof ConversationMessageItem)) return;
-		if (actionMode != null) actionMode.finish();
+		finishSelection();
 		onReactionClicked(item);
 	}
 
 	@UiThread
 	private void forwardSelectedMessages() {
-		Selection<String> selection = tracker.getSelection();
-		StringBuilder sb = new StringBuilder();
-		for (String key : selection) {
-			int pos = adapter.getPositionOfKey(key);
-			if (pos < 0) continue;
-			ConversationItem item = adapter.getItemAt(pos);
-			if (item == null) continue;
-
-			if (!(item instanceof ConversationMessageItem)) continue;
-			String text = item.getText();
-			if (text != null && !text.isEmpty()) {
-				if (sb.length() > 0) sb.append("\n");
-				sb.append(text);
-			}
-		}
-		if (sb.length() == 0) {
-			if (actionMode != null) actionMode.finish();
-			return;
-		}
-		String rawText = sb.toString();
-
-		int maxLen = org.zerionproject.app.api.messaging
-				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
-		String forwardText = rawText.length() > maxLen
-				? rawText.substring(0, maxLen) : rawText;
-		if (actionMode != null) actionMode.finish();
-
-		viewModel.loadContactsForForward(contacts -> {
-			if (contacts == null || contacts.isEmpty()) {
-				Toast.makeText(this, R.string.no_other_contacts,
-						Toast.LENGTH_SHORT).show();
-				return null;
-			}
-			String[] names = new String[contacts.size()];
-			for (int i = 0; i < contacts.size(); i++) {
-				names[i] = UiUtils.getContactDisplayName(
-						contacts.get(i));
-			}
-			new SecureAlertDialogBuilder(this)
-					.setTitle(R.string.forward_to)
-					.setItems(names, (dialog, which) -> {
-						ContactId recipientId =
-								contacts.get(which).getId();
-						viewModel.forwardMessage(recipientId,
-								forwardText,
-								() -> Toast.makeText(this,
-										R.string.message_forwarded,
-										Toast.LENGTH_SHORT).show(),
-								() -> Toast.makeText(this,
-										R.string.forward_failed,
-										Toast.LENGTH_SHORT).show());
-					})
-					.setNegativeButton(android.R.string.cancel, null)
-					.show();
-			return null;
-		});
+		String rawText = selectedText();
+		finishSelection();
+		if (rawText.isEmpty()) return;
+		textForwarder.pickAndForward(this, rawText, contactId);
 	}
 
 	private void deleteSelectedMessages() {
@@ -2111,18 +2218,18 @@ public class ConversationActivity extends ZerionActivity
 					+ getString(R.string.delete_for_everyone_explained));
 			dialog.setPositiveButton(R.string.delete_for_everyone,
 					(d, which) -> {
-						if (actionMode != null) actionMode.finish();
+						finishSelection();
 						viewModel.deleteForEveryone(selected);
 					});
 			dialog.setNeutralButton(R.string.delete_for_me, (d, which) -> {
-				if (actionMode != null) actionMode.finish();
+				finishSelection();
 				viewModel.deleteMessages(selected);
 			});
 		} else {
 			dialog.setMessage(question);
 			dialog.setPositiveButton(R.string.conversation_delete_action,
 					(d, which) -> {
-						if (actionMode != null) actionMode.finish();
+						finishSelection();
 						viewModel.deleteMessages(selected);
 					});
 		}
@@ -2252,7 +2359,7 @@ public class ConversationActivity extends ZerionActivity
 		ConversationItem item = h.accept(visitor);
 		if (item != null) {
 			runOnUiThreadUnlessDestroyed(() -> {
-				adapter.add(item);
+				adapter.addOrRefresh(item);
 				scrollToBottom();
 			});
 		}
@@ -2276,6 +2383,17 @@ public class ConversationActivity extends ZerionActivity
 				}
 			}
 		}
+	}
+
+	@Override
+	public void onMessageClick(ConversationItem item) {
+		if (tracker == null || !tracker.hasSelection()) return;
+		int position = adapter.findItemPosition(item);
+		if (position == INVALID_POSITION) return;
+		String key = adapter.getItemKey(position);
+		if (key == null) return;
+		if (tracker.isSelected(key)) tracker.deselect(key);
+		else tracker.select(key);
 	}
 
 	private static final String[] REACTION_EMOJIS = {

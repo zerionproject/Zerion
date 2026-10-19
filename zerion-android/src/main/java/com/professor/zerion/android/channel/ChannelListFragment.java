@@ -1,14 +1,11 @@
 package com.professor.zerion.android.channel;
 
-import android.content.ClipData;
+import android.content.Context;
+import android.content.res.Resources;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,14 +17,24 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.homelist.HomeItem;
+import com.professor.zerion.android.homelist.HomeKeys;
+import com.professor.zerion.android.homelist.HomeList;
+import com.professor.zerion.android.homelist.HomeListAdapter;
+import com.professor.zerion.android.homelist.HomeNotice;
+import com.professor.zerion.android.homelist.HomePreview;
+import com.professor.zerion.android.homelist.HomeRow;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelInviteLink;
 import org.zerionproject.app.api.channel.ChannelManager;
+import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelRejoinResult;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
@@ -36,12 +43,8 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -49,7 +52,7 @@ import javax.inject.Inject;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class ChannelListFragment extends BaseFragment
-		implements EventListener {
+		implements EventListener, HomeListAdapter.Listener {
 
 	public static final String TAG = ChannelListFragment.class.getName();
 
@@ -65,9 +68,9 @@ public class ChannelListFragment extends BaseFragment
 	@IoExecutor
 	Executor ioExecutor;
 
-	private LinearLayout listContainer;
-	private View emptyView;
-	private final List<String> ownerDeletedNotices = new ArrayList<>();
+	@Nullable
+	private HomeList home;
+	private int generation = 0;
 
 	@Override
 	public void injectFragment(ActivityComponent component) {
@@ -80,58 +83,17 @@ public class ChannelListFragment extends BaseFragment
 			@Nullable ViewGroup container,
 			@Nullable Bundle savedInstanceState) {
 		requireActivity().setTitle(R.string.channels_button);
+		home = HomeList.inflate(inflater, container, this, ioExecutor,
+				R.drawable.ic_channels, R.string.channels_list_empty, 0);
+		home.reloadWhenAPreviewExpires(this::loadChannels);
+		return home.getView();
+	}
 
-		FrameLayout root = new FrameLayout(requireContext());
-		root.setLayoutParams(new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.MATCH_PARENT));
-
-		ScrollView scroll = new ScrollView(requireContext());
-		listContainer = new LinearLayout(requireContext());
-		listContainer.setOrientation(LinearLayout.VERTICAL);
-		listContainer.setPadding(0, 0, 0, dp(120));
-		scroll.addView(listContainer, new ScrollView.LayoutParams(
-				ScrollView.LayoutParams.MATCH_PARENT,
-				ScrollView.LayoutParams.WRAP_CONTENT));
-		root.addView(scroll, new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.MATCH_PARENT,
-				FrameLayout.LayoutParams.MATCH_PARENT));
-
-		LinearLayout emptyContainer = new LinearLayout(requireContext());
-		emptyContainer.setOrientation(LinearLayout.VERTICAL);
-		emptyContainer.setGravity(Gravity.CENTER_HORIZONTAL);
-		emptyContainer.setPadding(dp(32), dp(64), dp(32), dp(32));
-
-		android.widget.ImageView emptyIcon =
-				new android.widget.ImageView(requireContext());
-		emptyIcon.setImageResource(R.drawable.ic_channels);
-		emptyIcon.setColorFilter(getResources()
-				.getColor(R.color.zerion_text_secondary));
-		emptyIcon.setAlpha(0.5f);
-		LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(
-				dp(64), dp(64));
-		iconLp.bottomMargin = dp(16);
-		emptyContainer.addView(emptyIcon, iconLp);
-
-		TextView emptyText = new TextView(requireContext());
-		emptyText.setText(R.string.channels_list_empty);
-		emptyText.setTextSize(15);
-		emptyText.setTextColor(getResources()
-				.getColor(R.color.zerion_text_secondary));
-		emptyText.setGravity(Gravity.CENTER);
-		emptyContainer.addView(emptyText, new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.WRAP_CONTENT,
-				LinearLayout.LayoutParams.WRAP_CONTENT));
-
-		emptyView = emptyContainer;
-		FrameLayout.LayoutParams emptyLp = new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.MATCH_PARENT,
-				FrameLayout.LayoutParams.WRAP_CONTENT);
-		emptyLp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
-		emptyLp.topMargin = dp(96);
-		root.addView(emptyView, emptyLp);
-
-		return root;
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		if (home != null) home.release();
+		home = null;
 	}
 
 	private static final long RELOAD_DEBOUNCE_MS = 250L;
@@ -165,48 +127,83 @@ public class ChannelListFragment extends BaseFragment
 	}
 
 	private void loadChannels() {
+		int load = ++generation;
+		Context ctx = requireContext();
+		Context app = ctx.getApplicationContext();
+		Resources res = ctx.getResources();
 		ioExecutor.execute(() -> {
-			List<ChannelState> channels;
-			Map<String, Integer> unread = new HashMap<>();
-			Map<String, String> latestPreview = new HashMap<>();
-			Map<String, Long> latestTs = new HashMap<>();
+			List<HomeItem> items = new ArrayList<>();
+			HomeKeys keys = new HomeKeys();
+			for (String name : ownerDeletedNames()) {
+				items.add(new HomeNotice(keys.next("deleted", name),
+						name.isEmpty()
+						? res.getString(
+								R.string.channels_owner_deleted_notice_unnamed)
+						: res.getString(R.string.channels_owner_deleted_notice,
+								name), name));
+			}
+			List<HomeRow> rows = new ArrayList<>();
+			boolean failed = false;
 			try {
-				Collection<ChannelState> c = channelManager.getChannels();
-				channels = new ArrayList<>(c);
-				for (ChannelState s : channels) {
-					String idHex = hex(s.getChannelId());
-					unread.put(idHex,
-							channelManager.getUnreadCount(s.getChannelId()));
-					try {
-						List<org.zerionproject.app.api.channel.ChannelPost>
-								recent = channelManager.getRecentPosts(
-										s.getChannelId(), 1L);
-						if (!recent.isEmpty()) {
-							org.zerionproject.app.api.channel.ChannelPost
-									p = recent.get(recent.size() - 1);
-							latestPreview.put(idHex, summarisePost(p));
-							latestTs.put(idHex, p.getTimestampHourMs());
-						}
-					} catch (DbException ignored) {
-					}
+				for (ChannelState s : channelManager.getChannels()) {
+					rows.add(row(ctx, app, s));
 				}
 			} catch (DbException ex) {
-				channels = Collections.emptyList();
+				rows.clear();
+				failed = true;
 			}
-			List<String> deleted = ownerDeletedNames();
-			List<ChannelState> finalChannels = channels;
-			Map<String, Integer> finalUnread = unread;
-			Map<String, String> finalPreview = latestPreview;
-			Map<String, Long> finalTs = latestTs;
-			if (isAdded()) {
-				runOnUiThreadUnlessDestroyed(() -> {
-					ownerDeletedNotices.clear();
-					ownerDeletedNotices.addAll(deleted);
-					render(finalChannels, finalUnread, finalPreview,
-							finalTs);
-				});
-			}
+			boolean error = failed;
+			Collections.sort(rows, (a, b) ->
+					Long.compare(b.getTime(), a.getTime()));
+			items.addAll(rows);
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (home == null || load != generation) return;
+				if (error) home.showError(items);
+				else home.show(items);
+			});
 		});
+	}
+
+	private HomeRow row(Context ctx, Context app, ChannelState s)
+			throws DbException {
+		byte[] id = s.getChannelId();
+		ChannelPost latest = null;
+		try {
+			List<ChannelPost> recent = channelManager.getRecentPosts(id, 1L);
+			if (!recent.isEmpty()) latest = recent.get(recent.size() - 1);
+		} catch (DbException ignored) {
+		}
+		long expiresAt = latest == null ? Long.MAX_VALUE : expiryOf(latest);
+		if (System.currentTimeMillis() >= expiresAt) {
+			latest = null;
+			expiresAt = Long.MAX_VALUE;
+		}
+		String preview = latest == null ? "" : summarisePost(ctx, latest);
+		String sender = null;
+		if (preview.isEmpty()) {
+			preview = ChannelAccessLabel.withRole(ctx, s);
+		} else if (s.weArePublisher() && latest != null
+				&& !latest.signedByDelegate()) {
+			sender = ctx.getString(R.string.you);
+		}
+		String name = s.getName().isEmpty()
+				? ctx.getString(R.string.channels_button) : s.getName();
+		return HomeRow.builder("channel:" + StringUtils.toHexString(id), name)
+				.time(latest == null ? 0 : latest.getTimestampHourMs())
+				.hourPrecision(true)
+				.preview(sender, preview)
+				.expiresAt(expiresAt)
+				.unread(channelManager.getUnreadCount(id))
+				.muted(ChannelFeedActivity.isChannelMuted(app, id))
+				.payload(s)
+				.build();
+	}
+
+	static long expiryOf(ChannelPost p) {
+		long ttl = p.getTtlMs();
+		if (ttl <= 0L) return Long.MAX_VALUE;
+		long at = p.getTimestampHourMs();
+		return at > Long.MAX_VALUE - ttl ? Long.MAX_VALUE : at + ttl;
 	}
 
 	private List<String> ownerDeletedNames() {
@@ -228,155 +225,54 @@ public class ChannelListFragment extends BaseFragment
 		});
 	}
 
-	private View buildOwnerDeletedNotice(String name) {
-		LinearLayout row = new LinearLayout(requireContext());
-		row.setOrientation(LinearLayout.HORIZONTAL);
-		row.setGravity(Gravity.CENTER_VERTICAL);
-		row.setPadding(dp(16), dp(4), dp(4), dp(4));
-		TextView text = new TextView(requireContext());
-		text.setText(name.isEmpty()
-				? getString(R.string.channels_owner_deleted_notice_unnamed)
-				: getString(R.string.channels_owner_deleted_notice, name));
-		text.setTextSize(14);
-		text.setTextColor(getResources()
-				.getColor(R.color.zerion_text_primary));
-		row.addView(text, new LinearLayout.LayoutParams(0,
-				LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-		android.widget.ImageButton close =
-				new android.widget.ImageButton(requireContext());
-		close.setImageResource(R.drawable.ic_close);
-		close.setColorFilter(getResources()
-				.getColor(R.color.zerion_text_secondary));
-		close.setBackground(null);
-		close.setContentDescription(getString(R.string.close));
-		close.setOnClickListener(v -> {
-			ownerDeletedNotices.remove(name);
-			listContainer.removeView(row);
-			dismissOwnerDeleted(name);
-		});
-		row.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
-		return row;
-	}
-
-	private String summarisePost(
-			org.zerionproject.app.api.channel.ChannelPost p) {
+	static String summarisePost(Context ctx, ChannelPost p) {
+		if (p.isWithheld()) {
+			return HomePreview.oneLine(
+					ctx.getString(R.string.channels_post_withheld));
+		}
+		if (ChannelConstants.DELETED_POST_PLACEHOLDER.equals(p.getBody())) {
+			return ctx.getString(R.string.channels_post_deleted);
+		}
 		String body = p.getBody() == null ? "" : p.getBody().trim();
 		boolean hasAttachments = !p.getAttachments().isEmpty();
 		if (body.isEmpty() && hasAttachments) {
 			int count = p.getAttachments().size();
-			return getResources().getQuantityString(
+			return ctx.getResources().getQuantityString(
 					R.plurals.channels_row_attachment_only, count, count);
 		}
-		String oneLine = body.replace('\n', ' ').replace('\r', ' ');
-		int max = 80;
-		if (oneLine.length() > max) {
-			oneLine = oneLine.substring(0, max) + "…";
-		}
-		if (hasAttachments) {
-			oneLine = "📎 " + oneLine;
+		String oneLine = HomePreview.oneLine(body);
+		if (hasAttachments && !oneLine.isEmpty()) {
+			oneLine = ATTACHMENT_MARK + oneLine;
 		}
 		return oneLine;
 	}
 
-	private void render(List<ChannelState> channels,
-			Map<String, Integer> unread,
-			Map<String, String> latestPreview,
-			Map<String, Long> latestTs) {
-		listContainer.removeAllViews();
-		for (String name : ownerDeletedNotices) {
-			listContainer.addView(buildOwnerDeletedNotice(name));
-		}
-		if (channels.isEmpty()) {
-			emptyView.setVisibility(View.VISIBLE);
-		} else {
-			emptyView.setVisibility(View.GONE);
-			for (ChannelState s : channels) {
-				String idHex = hex(s.getChannelId());
-				int count = unread.containsKey(idHex)
-						? unread.get(idHex) : 0;
-				String preview = latestPreview.get(idHex);
-				Long ts = latestTs.get(idHex);
-				listContainer.addView(
-						buildRow(s, count, preview, ts));
-			}
-		}
+	private static final String ATTACHMENT_MARK = "\uD83D\uDCCE ";
+
+	@Override
+	public void onRowClick(HomeRow row) {
+		if (!(row.getPayload() instanceof ChannelState)) return;
+		startActivity(ChannelFeedActivity.intent(requireContext(),
+				((ChannelState) row.getPayload()).getChannelId()));
 	}
 
-	private static String hex(byte[] b) {
-		StringBuilder sb = new StringBuilder(b.length * 2);
-		for (byte x : b) sb.append(String.format(Locale.US, "%02x", x));
-		return sb.toString();
+	@Override
+	public boolean onRowLongClick(HomeRow row, View anchor) {
+		if (!(row.getPayload() instanceof ChannelState)) return false;
+		showChannelMenu((ChannelState) row.getPayload());
+		return true;
 	}
 
-	private View buildRow(ChannelState s, int unreadCount,
-			@Nullable String latestPreview, @Nullable Long latestTs) {
-		View row = LayoutInflater.from(requireContext()).inflate(
-				R.layout.list_item_channel, listContainer, false);
-		String name = s.getName().isEmpty()
-				? getString(R.string.channels_button) : s.getName();
+	@Override
+	public void onRetry() {
+		loadChannels();
+	}
 
-		TextView avatar = row.findViewById(R.id.avatarView);
-		TextView nameView = row.findViewById(R.id.channelNameView);
-		TextView subtitle = row.findViewById(R.id.channelSubtitleView);
-		TextView unreadView = row.findViewById(R.id.channelUnreadCountView);
-
-		avatar.setText(name.isEmpty() ? "?" : new String(Character.toChars(name.codePointAt(0))).toUpperCase(Locale.ROOT));
-		if (latestTs != null) {
-			CharSequence rel = android.text.format.DateUtils
-					.getRelativeTimeSpanString(latestTs,
-							System.currentTimeMillis(),
-							android.text.format.DateUtils.MINUTE_IN_MILLIS,
-							android.text.format.DateUtils
-									.FORMAT_ABBREV_RELATIVE);
-			nameView.setText(name + "  "
-					+ "• " + rel.toString());
-		} else {
-			nameView.setText(name);
-		}
-
-		String sub;
-		if (latestPreview != null && !latestPreview.isEmpty()) {
-			sub = latestPreview;
-		} else {
-			String visibility = s.isPublicChannel()
-					? getString(R.string.channels_row_public)
-					: getString(R.string.channels_row_closed);
-			sub = s.weArePublisher()
-					? visibility + " · "
-							+ getString(R.string.channels_row_publisher_self)
-					: visibility;
-		}
-		subtitle.setText(sub);
-
-		if (unreadCount > 0) {
-			unreadView.setText(unreadCount > 99 ? "99+"
-					: String.valueOf(unreadCount));
-			unreadView.setVisibility(View.VISIBLE);
-		} else {
-			unreadView.setVisibility(View.GONE);
-		}
-
-		row.setOnClickListener(v -> startActivity(
-				ChannelFeedActivity.intent(requireContext(),
-						s.getChannelId())));
-		row.setOnLongClickListener(v -> {
-			showChannelMenu(s);
-			return true;
-		});
-
-		View divider = new View(requireContext());
-		divider.setBackgroundColor(0x14FFFFFF);
-		LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.MATCH_PARENT,
-				(int) (0.5f * getResources().getDisplayMetrics().density));
-		dlp.leftMargin = dp(82);
-		divider.setLayoutParams(dlp);
-
-		LinearLayout wrapper = new LinearLayout(requireContext());
-		wrapper.setOrientation(LinearLayout.VERTICAL);
-		wrapper.addView(row);
-		wrapper.addView(divider);
-		return wrapper;
+	@Override
+	public void onNoticeDismissed(HomeNotice notice) {
+		generation++;
+		if (home != null) home.remove(notice.getKey());
+		dismissOwnerDeleted(notice.getPayload());
 	}
 
 	public void showCreateDialog() {
@@ -390,6 +286,9 @@ public class ChannelListFragment extends BaseFragment
 				R.id.channelCreateVisibilityGroup);
 		MaterialCheckBox approvalCheckbox = view.findViewById(
 				R.id.channelCreateRequireApprovalCheckbox);
+		matchApprovalToAccess(group, approvalCheckbox);
+		group.setOnCheckedChangeListener((g, checkedId) ->
+				matchApprovalToAccess(group, approvalCheckbox));
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(R.string.channels_create_title)
@@ -399,6 +298,14 @@ public class ChannelListFragment extends BaseFragment
 								approvalCheckbox))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
+	}
+
+	private static void matchApprovalToAccess(
+			android.widget.RadioGroup group, MaterialCheckBox approval) {
+		boolean publicChannel = group.getCheckedRadioButtonId()
+				== R.id.channelCreatePublicRadio;
+		approval.setEnabled(!publicChannel);
+		if (publicChannel) approval.setChecked(false);
 	}
 
 	private void handleCreate(TextInputEditText nameInput,
@@ -649,9 +556,9 @@ public class ChannelListFragment extends BaseFragment
 						org.zerionproject.app.api.channel.ChannelConstants
 								.MAX_DISPLAY_NAME_BYTES)});
 		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.channels_apply_title)
+				.setTitle(R.string.channels_request_access_title)
 				.setView(view)
-				.setPositiveButton(R.string.channels_apply_action,
+				.setPositiveButton(R.string.channels_request_access_action,
 						(d, w) -> handleApply(link, nameInput))
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
@@ -663,7 +570,7 @@ public class ChannelListFragment extends BaseFragment
 				? "" : nameInput.getText().toString().trim();
 		if (name.isEmpty()) {
 			Toast.makeText(requireContext(),
-					R.string.channels_create_error_name,
+					R.string.channels_request_access_name_missing,
 					Toast.LENGTH_SHORT).show();
 			return;
 		}
@@ -687,8 +594,8 @@ public class ChannelListFragment extends BaseFragment
 						Toast.makeText(requireContext(),
 								ex instanceof org.zerionproject.app.api.channel
 										.ChannelApplicationUnconfirmedException
-										? R.string.channels_apply_unconfirmed
-										: R.string.channels_apply_failed,
+										? R.string.channels_request_access_unconfirmed
+										: R.string.channels_request_access_failed,
 								Toast.LENGTH_LONG).show();
 					});
 					return;
@@ -709,7 +616,7 @@ public class ChannelListFragment extends BaseFragment
 					try { progress.dismiss(); } catch (Exception ignored) { }
 					if (!isAdded()) return;
 					Toast.makeText(requireContext(),
-							R.string.channels_apply_failed,
+							R.string.channels_request_access_failed,
 							Toast.LENGTH_SHORT).show();
 				});
 			}
@@ -720,46 +627,16 @@ public class ChannelListFragment extends BaseFragment
 		List<CharSequence> labels = new ArrayList<>();
 		List<Runnable> actions = new ArrayList<>();
 
+		labels.add(getString(R.string.channels_settings_title));
+		actions.add(() -> startActivity(ChannelSettingsActivity.intent(
+				requireContext(), s.getChannelId())));
+
 		labels.add(getString(R.string.channels_action_share_invite));
 		actions.add(() -> shareInvite(s));
 
 		labels.add(getString(R.string.channels_action_send_to_contact));
-		actions.add(() -> shareInviteViaSystemSheet(s));
-
-		if (s.weArePublisher()) {
-			labels.add(getString(R.string.channels_delegations_title));
-			actions.add(() -> startActivity(
-					ChannelDelegationsActivity.intent(
-							requireContext(), s.getChannelId())));
-			labels.add(getString(R.string.channels_subscribers_title));
-			actions.add(() -> startActivity(
-					ChannelSubscribersActivity.intent(
-							requireContext(), s.getChannelId())));
-			if (s.requiresApproval()) {
-				labels.add(getString(R.string.channels_pending_title));
-				actions.add(() -> startActivity(
-						ChannelPendingApplicationsActivity.intent(
-								requireContext(), s.getChannelId())));
-			}
-		}
-
-		if (s.weArePublisher() && !s.isPublicChannel()) {
-			labels.add(getString(R.string.channels_action_rotate_capability));
-			actions.add(() -> confirmRotate(s));
-		}
-
-		if (!s.weArePublisher()) {
-			labels.add(getString(R.string.channels_announce_action));
-			actions.add(() -> showAnnounceDialog(s));
-		}
-
-		if (s.weArePublisher()) {
-			labels.add(getString(R.string.channels_action_delete_channel));
-			actions.add(() -> confirmDelete(s));
-		} else {
-			labels.add(getString(R.string.channels_action_leave));
-			actions.add(() -> confirmLeave(s));
-		}
+		actions.add(() -> ChannelShare.sendInvite(requireActivity(),
+				channelManager, ioExecutor, s.getChannelId()));
 
 		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(s.getName())
@@ -768,182 +645,9 @@ public class ChannelListFragment extends BaseFragment
 				.show();
 	}
 
-	private void showAnnounceDialog(ChannelState s) {
-		View view = LayoutInflater.from(requireContext()).inflate(
-				R.layout.dialog_announce_channel, null);
-		TextInputEditText nameInput =
-				view.findViewById(R.id.channelAnnounceNameInput);
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.channels_announce_title)
-				.setMessage(R.string.channels_announce_message)
-				.setView(view)
-				.setPositiveButton(R.string.channels_announce_action,
-						(d, w) -> handleAnnounce(s, nameInput))
-				.setNegativeButton(R.string.channels_announce_skip, null)
-				.show();
-	}
-
-	private void handleAnnounce(ChannelState s,
-			TextInputEditText nameInput) {
-		String name = nameInput.getText() == null
-				? "" : nameInput.getText().toString().trim();
-		if (name.isEmpty()) {
-			Toast.makeText(requireContext(),
-					R.string.channels_announce_failed,
-					Toast.LENGTH_SHORT).show();
-			return;
-		}
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.announceMyself(s.getChannelId(), name);
-			} catch (org.zerionproject.app.api.channel
-					.ChannelRequestQueuedException queued) {
-				if (!isAdded()) return;
-				int message = queued.isBehindEarlierItems()
-						? R.string.channels_queued_behind_toast
-						: R.string.channels_announce_queued_toast;
-				runOnUiThreadUnlessDestroyed(() ->
-						Toast.makeText(requireContext(), message,
-								Toast.LENGTH_LONG).show());
-			} catch (DbException ignored) {
-				if (!isAdded()) return;
-				runOnUiThreadUnlessDestroyed(() ->
-						Toast.makeText(requireContext(),
-								R.string.channels_announce_failed,
-								Toast.LENGTH_LONG).show());
-			}
-		});
-	}
-
 	private void shareInvite(ChannelState s) {
-		toastPreparingInvite();
-		ioExecutor.execute(() -> {
-			try {
-				String link = channelManager.exportInviteLink(
-						s.getChannelId());
-				if (!isAdded()) return;
-				runOnUiThreadUnlessDestroyed(() ->
-						copyAndToast(link));
-			} catch (DbException e) {
-				runOnUiThreadUnlessDestroyed(this::toastInviteNotReady);
-			}
-		});
-	}
-
-	private void toastInviteNotReady() {
-		if (!isAdded()) return;
-		Toast.makeText(requireContext(),
-				R.string.channels_invite_not_ready,
-				Toast.LENGTH_LONG).show();
-	}
-
-	private void toastPreparingInvite() {
-		if (!isAdded()) return;
-		Toast.makeText(requireContext(),
-				R.string.channels_invite_preparing,
-				Toast.LENGTH_SHORT).show();
-	}
-
-	private void copyAndToast(String link) {
-		com.professor.zerion.android.util.SecureClipboard.copy(
-				requireContext(), "zerion-channel", link);
-		Toast.makeText(requireContext(),
-				R.string.channels_invite_copied,
-				Toast.LENGTH_SHORT).show();
-	}
-
-	private void shareInviteViaSystemSheet(ChannelState s) {
-		toastPreparingInvite();
-		ioExecutor.execute(() -> {
-			try {
-				String link = channelManager.exportInviteLink(
-						s.getChannelId());
-				if (!isAdded()) return;
-				runOnUiThreadUnlessDestroyed(() -> {
-					String body = getString(
-							R.string.channels_share_message_prefix) + link;
-					android.content.Intent send =
-							new android.content.Intent(
-									android.content.Intent.ACTION_SEND);
-					send.setType("text/plain");
-					send.putExtra(android.content.Intent.EXTRA_TEXT, body);
-					startActivity(android.content.Intent.createChooser(send,
-							getString(
-									R.string.channels_share_chooser_title)));
-				});
-			} catch (DbException e) {
-				runOnUiThreadUnlessDestroyed(this::toastInviteNotReady);
-			}
-		});
-	}
-
-	private void confirmRotate(ChannelState s) {
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.channels_invite_rotate_confirm_title)
-				.setMessage(R.string.channels_invite_rotate_confirm_message)
-				.setPositiveButton(R.string.channels_action_rotate_capability,
-						(d, w) -> rotate(s))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void rotate(ChannelState s) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.rotateJoinCapability(s.getChannelId());
-				if (!isAdded()) return;
-				runOnUiThreadUnlessDestroyed(() -> shareInvite(s));
-			} catch (DbException e) {
-				runOnUiThreadUnlessDestroyed(() -> {
-					if (!isAdded()) return;
-					Toast.makeText(requireContext(),
-							R.string.channels_invite_rotate_failed,
-							Toast.LENGTH_LONG).show();
-				});
-			}
-		});
-	}
-
-	private void confirmLeave(ChannelState s) {
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.channels_leave_confirm_title)
-				.setMessage(R.string.channels_leave_confirm_message)
-				.setPositiveButton(R.string.channels_leave_confirm_action,
-						(d, w) -> doLeave(s))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void confirmDelete(ChannelState s) {
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.channels_delete_confirm_title)
-				.setMessage(R.string.channels_delete_confirm_message)
-				.setPositiveButton(R.string.channels_delete_confirm_action,
-						(d, w) -> doLeave(s))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void doLeave(ChannelState s) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.leaveChannel(s.getChannelId());
-				if (!isAdded()) return;
-				runOnUiThreadUnlessDestroyed(this::loadChannels);
-			} catch (DbException e) {
-				runOnUiThreadUnlessDestroyed(() -> {
-					if (!isAdded()) return;
-					Toast.makeText(requireContext(),
-							R.string.channels_leave_failed,
-							Toast.LENGTH_SHORT).show();
-				});
-			}
-		});
-	}
-
-	private int dp(int value) {
-		return (int) (value
-				* getResources().getDisplayMetrics().density);
+		ChannelShare.copyInvite(requireActivity(), channelManager,
+				ioExecutor, s.getChannelId());
 	}
 
 	@Override

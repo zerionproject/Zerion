@@ -95,6 +95,7 @@ public final class CacheSweeper {
 		com.professor.zerion.android.vault.share.VaultShareRegistry
 				.releaseAll();
 		com.professor.zerion.android.attachment.SaveCleanCopy.clearAll();
+		com.professor.zerion.android.conversation.MediaViewer.clearAll();
 		ExternalHandoff.end(ctx);
 		sweepFilesDirs(ctx);
 		sweepNoBackupDirs(ctx);

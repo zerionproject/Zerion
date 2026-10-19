@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView.RecycledViewPool;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static androidx.constraintlayout.widget.ConstraintSet.WRAP_CONTENT;
-import static androidx.core.content.ContextCompat.getColor;
 import static androidx.core.widget.ImageViewCompat.setImageTintList;
 
 @UiThread
@@ -31,7 +30,8 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 	private final ImageAdapter adapter;
 	private final ViewGroup statusLayout;
 	private final View voiceMessageView;
-	private final int timeColor, timeColorBubble;
+	private final ColorStateList timeColors;
+	private final int timeColorBubble;
 	private final ConstraintSet textConstraints = new ConstraintSet();
 	private final ConstraintSet imageConstraints = new ConstraintSet();
 	private final ConstraintSet imageTextConstraints = new ConstraintSet();
@@ -67,9 +67,10 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 		list.setAdapter(adapter);
 		list.addItemDecoration(imageItemDecoration);
 
-		timeColor = time.getCurrentTextColor();
-		timeColorBubble =
-				getColor(v.getContext(), R.color.msg_status_bubble_foreground);
+		timeColors = time.getTextColors();
+		timeColorBubble = com.professor.zerion.android.util.UiUtils
+				.resolveColorAttribute(v.getContext(),
+						R.attr.zerionColorOnScrim);
 
 		textConstraints.clone(v.getContext(),
 				R.layout.list_item_conversation_msg_in_content);
@@ -232,6 +233,7 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 			boundVoiceStateKey = stateKey;
 		}
 
+		restoreBubble();
 		resetStatusLayoutForText();
 		textConstraints.applyTo(layout);
 
@@ -275,10 +277,9 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 				&& item.getAttachments().get(0).isSticker();
 
 		ConstraintSet constraintSet;
+		if (isStickerOnly) bareBubble();
+		else restoreBubble();
 		if (item.getText() == null) {
-			if (isStickerOnly) {
-				layout.setBackground(null);
-			}
 			applyStatusPill();
 			constraintSet = imageConstraints;
 		} else {
@@ -316,8 +317,8 @@ class ConversationMessageViewHolder extends ConversationItemViewHolder {
 	private void resetStatusLayoutForText() {
 		statusLayout.setBackgroundResource(0);
 		statusLayout.setPadding(0, 0, 0, 0);
-		time.setTextColor(timeColor);
-		setImageTintList(bomb, ColorStateList.valueOf(timeColor));
+		time.setTextColor(timeColors);
+		setImageTintList(bomb, timeColors);
 	}
 
 }

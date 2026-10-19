@@ -78,4 +78,21 @@ class ConversationRequestItem extends ConversationNoticeItem {
 		return canBeOpened;
 	}
 
+	@Override
+	int updateFrom(ConversationItem fresh) {
+		int change = super.updateFrom(fresh);
+		boolean now = ((ConversationRequestItem) fresh).answered;
+		if (answered != now) change = CONTENT_CHANGED;
+		answered = now;
+		return change;
+	}
+
+	@Override
+	boolean showsTheSameAs(ConversationItem o) {
+		if (!super.showsTheSameAs(o)) return false;
+		ConversationRequestItem r = (ConversationRequestItem) o;
+		return requestType == r.requestType && answered == r.answered
+				&& canBeOpened == r.canBeOpened;
+	}
+
 }

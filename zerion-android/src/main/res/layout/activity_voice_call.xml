@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/zerion_dark_bg"
+    android:background="?attr/zerionColorBackground"
     android:keepScreenOn="true">
 
     <FrameLayout
@@ -96,6 +96,7 @@
         android:id="@+id/call_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
         android:layout_marginTop="8dp"
         android:text="@string/call_connecting"
         android:textColor="?android:attr/textColorTertiary"
@@ -136,7 +137,7 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_signal_3"
             android:importantForAccessibility="no"
-            app:tint="@color/zerion_success" />
+            app:tint="?attr/zerionColorSuccess" />
 
         <TextView
             android:id="@+id/latency_badge"
@@ -144,7 +145,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:textSize="12sp"
-            android:textColor="@color/zerion_success"
+            android:textColor="?attr/zerionColorSuccess"
             tools:text="120ms" />
 
         <TextView
@@ -153,7 +154,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:textSize="12sp"
-            android:textColor="@color/zerion_orange_500"
+            android:textColor="?attr/zerionColorWarning"
             android:visibility="gone"
             tools:text="Loss: 2%" />
 
@@ -164,7 +165,7 @@
             android:layout_marginStart="8dp"
             android:textSize="12sp"
             tools:text="Opus 16kbps"
-            android:textColor="?android:attr/textColorTertiary" />
+            android:textColor="?attr/zerionColorOnSurfaceMuted" />
 
     </LinearLayout>
 

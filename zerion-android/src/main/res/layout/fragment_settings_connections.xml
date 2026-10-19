@@ -280,6 +280,76 @@
 
 			</LinearLayout>
 
+			<LinearLayout
+				android:id="@+id/helper_transports_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_tor"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/tor_helper_title" />
+
+					<TextView
+						android:id="@+id/helper_transports_value"
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/tor_helper_summary_ask" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/debug_country_card"
+				style="@style/Zerion.Settings.Row.Clickable">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_tor"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/tor_debug_country_title" />
+
+					<TextView
+						android:id="@+id/debug_country_value"
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/tor_debug_country_none" />
+
+				</LinearLayout>
+
+				<ImageView
+					android:layout_width="20dp"
+					android:layout_height="20dp"
+					android:src="@drawable/ic_chevron_right"
+					app:tint="@color/zerion_text_secondary"
+					android:importantForAccessibility="no" />
+
+			</LinearLayout>
+
 		</LinearLayout>
 
 		<TextView
@@ -499,42 +569,31 @@
 
 			</LinearLayout>
 
+		</LinearLayout>
+
+		<LinearLayout
+			android:id="@+id/renewal_waiting_card"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:visibility="gone">
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="14dp"
+				android:background="@drawable/bg_settings_info_card"
+				android:paddingHorizontal="14dp"
+				android:paddingVertical="12dp"
+				android:text="@string/renewal_waiting_message"
+				android:textSize="13sp"
+				android:textColor="@color/zerion_text_secondary"
+				android:lineSpacingExtra="1dp" />
+
 			<LinearLayout
-				android:id="@+id/force_complete_rotation_card"
-				style="@style/Zerion.Settings.Row.Clickable"
-				android:visibility="gone">
-
-				<ImageView
-					style="@style/Zerion.Settings.Row.Icon"
-					android:src="@drawable/ic_warning"
-					app:tint="@color/zerion_destructive"
-					android:importantForAccessibility="no" />
-
-				<LinearLayout
-					android:layout_width="0dp"
-					android:layout_height="wrap_content"
-					android:layout_weight="1"
-					android:orientation="vertical">
-
-					<TextView
-						style="@style/Zerion.Settings.Row.Title"
-						android:textColor="@color/zerion_destructive_text"
-						android:text="@string/pref_force_complete_rotation_title" />
-
-					<TextView
-						style="@style/Zerion.Settings.Row.Summary"
-						android:text="@string/pref_force_complete_rotation_summary" />
-
-				</LinearLayout>
-
-				<ImageView
-					android:layout_width="20dp"
-					android:layout_height="20dp"
-					android:src="@drawable/ic_chevron_right"
-					app:tint="@color/zerion_text_secondary"
-					android:importantForAccessibility="no" />
-
-			</LinearLayout>
+				android:id="@+id/renewal_waiting_list"
+				style="@style/Zerion.Settings.Group"
+				android:layout_marginTop="8dp" />
 
 		</LinearLayout>
 

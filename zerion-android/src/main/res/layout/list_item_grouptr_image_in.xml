@@ -16,10 +16,9 @@
 		android:layout_marginBottom="-6dp"
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
-		android:textColor="@color/zerion_accent_text"
-		android:textSize="12sp"
-		android:textStyle="bold"
-		tools:text="Alice" />
+		android:textColor="?attr/zerionColorAccentText"
+		tools:text="Alice"
+		android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/mediaBubble"
@@ -32,6 +31,8 @@
 
 		<ImageView
 			android:id="@+id/imageView"
+			app:tint="@color/selected_media"
+			app:tintMode="src_atop"
 			android:layout_width="240dp"
 			android:layout_height="180dp"
 			android:adjustViewBounds="true"
@@ -43,15 +44,14 @@
 
 		<TextView
 			android:id="@+id/imageTime"
-			style="@style/TextMessage.Timestamp"
+			style="@style/TextMessage.Timestamp.Scrim"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginEnd="6dp"
 			android:layout_marginBottom="4dp"
-			android:background="@color/msg_status_bubble_background"
+			android:background="?attr/zerionColorScrim"
 			android:paddingHorizontal="6dp"
 			android:paddingVertical="2dp"
-			android:textColor="#FFFFFF"
 			app:layout_constraintBottom_toBottomOf="@+id/imageView"
 			app:layout_constraintEnd_toEndOf="@+id/imageView"
 			tools:text="13:37" />

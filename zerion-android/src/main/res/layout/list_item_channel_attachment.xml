@@ -4,12 +4,17 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:layout_marginBottom="4dp"
+	android:layout_marginBottom="6dp"
+	android:minHeight="48dp"
 	android:orientation="vertical"
-	android:background="?attr/selectableItemBackground"
+	android:background="@drawable/bg_channel_attachment"
+	android:foreground="?attr/selectableItemBackground"
 	android:clickable="true"
 	android:focusable="true"
-	android:padding="6dp">
+	android:paddingStart="12dp"
+	android:paddingEnd="12dp"
+	android:paddingTop="8dp"
+	android:paddingBottom="8dp">
 
 	<LinearLayout
 		android:id="@+id/channelAttachmentRow"
@@ -22,11 +27,11 @@
 			android:id="@+id/channelAttachmentIcon"
 			android:layout_width="32dp"
 			android:layout_height="32dp"
-			android:layout_marginEnd="8dp"
-			android:contentDescription="@string/channels_attach_cd"
+			android:layout_marginEnd="12dp"
+			android:importantForAccessibility="no"
 			android:padding="4dp"
 			android:src="@drawable/ic_file"
-			app:tint="@color/zerion_text_secondary_inverse" />
+			app:tint="@color/selectable_on_surface_muted" />
 
 		<ProgressBar
 			android:id="@+id/channelAttachmentProgress"
@@ -50,17 +55,17 @@
 				android:layout_height="wrap_content"
 				android:ellipsize="end"
 				android:maxLines="1"
-				android:textColor="@color/zerion_text_primary_inverse"
-				android:textSize="13sp"
-				tools:text="image/jpeg" />
+				android:textColor="?attr/zerionColorOnSurface"
+				tools:text="PDF document"
+				android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 			<TextView
 				android:id="@+id/channelAttachmentSize"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
-				android:textColor="@color/zerion_text_secondary_inverse"
-				android:textSize="11sp"
-				tools:text="1.2 MB" />
+				android:textColor="@color/selectable_on_surface_muted"
+				tools:text="1.2 MB"
+				android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 		</LinearLayout>
 
@@ -68,11 +73,13 @@
 
 	<ImageView
 		android:id="@+id/channelAttachmentThumb"
+		app:tint="@color/selected_media"
+		app:tintMode="src_atop"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_marginTop="6dp"
+		android:layout_marginTop="8dp"
 		android:adjustViewBounds="true"
-		android:contentDescription="@string/channels_attach_cd"
+		android:importantForAccessibility="no"
 		android:maxHeight="320dp"
 		android:scaleType="fitStart"
 		android:visibility="gone"

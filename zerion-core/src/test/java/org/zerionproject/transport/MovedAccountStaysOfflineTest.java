@@ -56,7 +56,7 @@ public class MovedAccountStaysOfflineTest {
 				return "key";
 			}
 		};
-		ZtpDuplexPlugin plugin = new ZtpDuplexPlugin(exec, exec,
+		ZtpDuplexPlugin plugin = new ZtpDuplexPlugin(exec, exec, null,
 				SocketFactory.getDefault(), tor, transport, null, rendezvous,
 				callback, null, null, null, null);
 		try {

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/homeNotice"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:gravity="center_vertical"
+	android:minHeight="48dp"
+	android:orientation="horizontal"
+	android:paddingStart="16dp"
+	android:paddingTop="4dp"
+	android:paddingEnd="4dp"
+	android:paddingBottom="4dp">
+
+	<TextView
+		android:id="@+id/homeNoticeText"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+		android:textColor="?attr/zerionColorOnSurface"
+		tools:text="The owner deleted the channel News." />
+
+	<ImageButton
+		android:id="@+id/homeNoticeClose"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:background="?attr/selectableItemBackgroundBorderless"
+		android:contentDescription="@string/close"
+		android:src="@drawable/ic_close"
+		app:tint="?attr/zerionColorOnSurfaceMuted" />
+
+</LinearLayout>

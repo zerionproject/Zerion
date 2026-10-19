@@ -25,12 +25,14 @@ import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.util.ByteUtils;
 import org.zerionproject.app.api.grouptr.GroupTrAuthException;
+import org.zerionproject.app.api.grouptr.GroupTrBody;
 import org.zerionproject.app.api.grouptr.GroupTrIncognitoNames;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMeshSink;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPendingInvite;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrPostSummary;
 import org.zerionproject.app.api.grouptr.GroupTrSentInvite;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.grouptr.MemberRole;
@@ -143,6 +145,7 @@ class GroupTrManagerImpl
 	private final Object indexLock = new Object();
 
 	private final GroupTrPostCache posts = new GroupTrPostCache(this::lockFor);
+	private final GroupTrOwnCopies ownCopies = new GroupTrOwnCopies();
 
 	private final GroupTrPostRemovals removals;
 
@@ -179,6 +182,13 @@ class GroupTrManagerImpl
 		private final boolean checked;
 		@Nullable
 		private List<MessageId> otherCopies;
+		@Nullable
+		private Contact holder;
+		private boolean flooded;
+		@Nullable
+		private List<Contact> otherHolders;
+		@Nullable
+		private java.util.BitSet otherFlooded;
 
 		private StoredPost(MessageId id, long timestamp, long order,
 				int sender, long size) {
@@ -448,6 +458,7 @@ class GroupTrManagerImpl
 		update.put(MessagingManager.MSG_KEY_GROUP_BODY_HASH, bodyHash(body));
 		update.put(MessagingManager.MSG_KEY_GROUP_BODY_LENGTH,
 				(long) body.length);
+		update.put(GroupTrConstants.MSG_KEY_GROUP_BODY_KIND, kindCode(body));
 		update.put("groupCiphertext", BdfDictionary.NULL_VALUE);
 		return new Converted(id, false, expiry, update, body.length);
 	}
@@ -545,6 +556,14 @@ class GroupTrManagerImpl
 							.GroupTrInviteResponseReceivedEvent) e);
 		} else if (e instanceof GroupPostDeleteReceivedEvent) {
 			removals.received((GroupPostDeleteReceivedEvent) e);
+		} else if (e instanceof org.zerionproject.core.api.sync.event
+				.MessagesSentEvent) {
+			ownCopiesChanged(((org.zerionproject.core.api.sync.event
+					.MessagesSentEvent) e).getMessageIds());
+		} else if (e instanceof org.zerionproject.core.api.sync.event
+				.MessagesAckedEvent) {
+			ownCopiesChanged(((org.zerionproject.core.api.sync.event
+					.MessagesAckedEvent) e).getMessageIds());
 		} else if (e instanceof org.zerionproject.core.api.versioning.event
 				.ClientVersionUpdatedEvent) {
 			handleClientVersionUpdated(
@@ -558,6 +577,7 @@ class GroupTrManagerImpl
 				|| e instanceof org.zerionproject.core.api.contact.event
 				.ContactAddedEvent) {
 			mlDsaKeys.invalidate();
+			posts.forgetAllSummaries();
 		} else if (e instanceof org.zerionproject.app.api.autodelete.event
 				.ConversationMessagesDeletedEvent) {
 			purgeExpiredPosts();
@@ -718,7 +738,11 @@ class GroupTrManagerImpl
 		}
 		long acceptedFrom = clock.currentTimeMillis();
 		if (id != null) markAccepted(id, p);
-		posts.deliver(toHexString(p.getGroupId()), p);
+		String key = toHexString(p.getGroupId());
+		long generation = posts.summaryGeneration();
+		GroupTrPostCache.Remembered before = posts.remembered(key);
+		posts.deliver(key, p);
+		rememberDelivered(key, p, before, generation);
 		announceAccepted(p, acceptedFrom);
 		return true;
 	}
@@ -736,6 +760,10 @@ class GroupTrManagerImpl
 				(long) MessagingManager.GROUP_POST_STATE_ACCEPTED);
 		update.put(MessagingManager.MSG_KEY_GROUP_EFFECTIVE_TTL,
 				p.getAutoDeleteTimerMs());
+		if (p.getBody() != null) {
+			update.put(GroupTrConstants.MSG_KEY_GROUP_BODY_KIND,
+					kindCode(p.getBody()));
+		}
 		if (!p.isLocal()) {
 			update.put(MessagingManager.MSG_KEY_GROUP_RECEIVED_AT,
 					p.getTimerStart());
@@ -894,9 +922,13 @@ class GroupTrManagerImpl
 	private void cacheLocalPost(byte[] groupId, byte[] senderPub,
 			String senderName, byte[] body, long timestamp, long epoch,
 			long autoDeleteTimerMs, byte[] postId) {
-		posts.addLocal(toHexString(groupId), new GroupTrPost(groupId,
-				senderPub, senderName, body, timestamp, epoch, true,
-				autoDeleteTimerMs, timestamp, postId));
+		String key = toHexString(groupId);
+		GroupTrPost p = new GroupTrPost(groupId, senderPub, senderName, body,
+				timestamp, epoch, true, autoDeleteTimerMs, timestamp, postId);
+		long generation = posts.summaryGeneration();
+		GroupTrPostCache.Remembered before = posts.remembered(key);
+		posts.addLocal(key, p);
+		rememberDelivered(key, p, before, generation);
 	}
 
 	static final String SEEN_NAMESPACE_PREFIX = "grouptr-seen:";
@@ -1056,6 +1088,277 @@ class GroupTrManagerImpl
 		}
 	}
 
+	static final long BODY_KIND_UNKNOWN = 0L;
+
+	@Override
+	@Nullable
+	public GroupTrPostSummary getLatestPostSummary(byte[] groupId)
+			throws DbException {
+		String key = toHexString(groupId);
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			long generation = posts.summaryGeneration();
+			GroupTrState state = getGroup(groupId);
+			if (state == null) return null;
+			long now = clock.currentTimeMillis();
+			GroupTrPostSummary cached = newestCached(key, state, now);
+			if (posts.isHistoryLoaded(key)) return cached;
+			String members = membershipKey(state);
+			GroupTrPostCache.Remembered r = posts.remembered(key);
+			if (r != null && r.members.equals(members)
+					&& (r.summary == null || !r.summary.isExpiredAt(now))) {
+				return newer(r.summary, cached);
+			}
+			StoredSummary stored =
+					newestStored(groupId, state, localPubKey(), now);
+			GroupTrPostSummary newest = newer(stored.summary, cached);
+			if (newest != null || stored.certain) {
+				posts.remember(key, newest, members, generation);
+			}
+			return newest;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Nullable
+	private static GroupTrPostSummary newer(@Nullable GroupTrPostSummary a,
+			@Nullable GroupTrPostSummary b) {
+		if (a == null) return b;
+		if (b == null) return a;
+		return b.getTimestamp() > a.getTimestamp() ? b : a;
+	}
+
+	private String membershipKey(GroupTrState s) {
+		java.util.List<byte[]> parts = new ArrayList<>();
+		parts.add(java.nio.ByteBuffer.allocate(9).putLong(s.getEpoch())
+				.put((byte) (s.isDissolved() ? 1 : 0)).array());
+		parts.add(s.getCreatorPubKey());
+		for (GroupTrMember m : s.getMembers()) parts.add(m.getPubKey());
+		return toHexString(crypto.hash("org.zerionproject/GROUP_SUMMARY_KEY",
+				parts.toArray(new byte[0][])));
+	}
+
+	private void rememberDelivered(String key, GroupTrPost p,
+			@Nullable GroupTrPostCache.Remembered before, long generation) {
+		if (before == null) return;
+		GroupTrPostSummary delivered = summarise(p);
+		posts.remember(key, newer(before.summary, delivered), before.members,
+				generation);
+	}
+
+	@Nullable
+	private GroupTrPostSummary newestCached(String key, GroupTrState state,
+			long now) {
+		java.util.ArrayDeque<GroupTrPost> q = posts.queue(key);
+		if (q == null) return null;
+		GroupTrPost newest = null;
+		synchronized (q) {
+			for (GroupTrPost p : q) {
+				if (p.isExpiredAt(now)) continue;
+				if (!p.isLocal()
+						&& !isMemberOrCreator(state, p.getSenderPubKey())) {
+					continue;
+				}
+				if (newest == null
+						|| p.getTimestamp() >= newest.getTimestamp()) {
+					newest = p;
+				}
+			}
+		}
+		return newest == null ? null : summarise(newest);
+	}
+
+	private static GroupTrPostSummary summarise(GroupTrPost p) {
+		byte[] body = p.getBody();
+		if (body == null) body = new byte[0];
+		GroupTrPostSummary.Kind kind = summaryKindOf(body);
+		return new GroupTrPostSummary(p.getSenderPubKey(), p.getSenderName(),
+				kind, summaryText(kind, body), p.getTimestamp(),
+				p.getExpiryTime());
+	}
+
+	private static final class StoredSummary {
+
+		@Nullable
+		private final GroupTrPostSummary summary;
+		private final boolean certain;
+
+		private StoredSummary(@Nullable GroupTrPostSummary summary,
+				boolean certain) {
+			this.summary = summary;
+			this.certain = certain;
+		}
+	}
+
+	private static final class Candidate {
+
+		private final MessageId id;
+		private final BdfDictionary meta;
+		private final StoredRecord record;
+		private final boolean unchecked;
+
+		private Candidate(MessageId id, BdfDictionary meta,
+				StoredRecord record, boolean unchecked) {
+			this.id = id;
+			this.meta = meta;
+			this.record = record;
+			this.unchecked = unchecked;
+		}
+	}
+
+	private StoredSummary newestStored(byte[] groupId, GroupTrState state,
+			byte[] localPub, long now) throws DbException {
+		java.util.List<Candidate> candidates = new ArrayList<>();
+		db.transaction(true, txn -> {
+			BdfDictionary query = new BdfDictionary();
+			query.put("messageType", 32L);
+			query.put("groupId", groupId);
+			for (Contact c : contactManager.getContacts(txn)) {
+				org.zerionproject.core.api.sync.GroupId cg =
+						messagingManager.getContactGroup(c).getId();
+				byte[] deliverer = c.getAuthor().getPublicKey().getEncoded();
+				Collection<MessageId> ids;
+				try {
+					ids = clientHelper.getMessageIds(txn, cg, query);
+				} catch (FormatException ex) {
+					continue;
+				}
+				for (MessageId id : ids) {
+					BdfDictionary meta = readStoredMetadata(txn, id);
+					if (meta == null) continue;
+					StoredRecord r;
+					try {
+						r = parseStoredPost(groupId, meta, localPub);
+					} catch (FormatException ex) {
+						continue;
+					}
+					if (r == null || now >= r.expiryTime()) continue;
+					boolean local = r.post.isLocal();
+					if (r.state != null && r.state
+							!= MessagingManager.GROUP_POST_STATE_ACCEPTED) {
+						continue;
+					}
+					if (!local && !groupPostDeliveryAccepted(state,
+							r.post.getSenderPubKey(), deliverer)) {
+						continue;
+					}
+					candidates.add(new Candidate(id, meta, r,
+							r.state == null && !local));
+				}
+			}
+		});
+		candidates.sort((a, b) -> Long.compare(
+				b.record.post.getTimestamp(), a.record.post.getTimestamp()));
+		boolean certain = true;
+		for (Candidate c : candidates) {
+			if (c.unchecked && !checksOut(c.record)) continue;
+			GroupTrPostSummary s = summariseStored(c);
+			if (s != null) return new StoredSummary(s, true);
+			certain = false;
+		}
+		return new StoredSummary(null, certain);
+	}
+
+	private boolean checksOut(StoredRecord r) throws DbException {
+		byte[] sender = r.post.getSenderPubKey();
+		if (!hasHybridSignatureLength(r.sig)) return false;
+		if (lookupPeerMlDsaPubKey(sender) == null) return false;
+		return r.sig != null && verify(r.sig, "org.zerionproject/GROUP_POST",
+				storedPostSignedInput(r), sender);
+	}
+
+	@Nullable
+	private GroupTrPostSummary summariseStored(Candidate c)
+			throws DbException {
+		StoredRecord r = c.record;
+		Long code;
+		try {
+			code = c.meta.getOptionalLong(
+					GroupTrConstants.MSG_KEY_GROUP_BODY_KIND);
+		} catch (FormatException ex) {
+			code = null;
+		}
+		if (code != null) {
+			GroupTrPostSummary.Kind known = kindOfCode(code);
+			if (known != GroupTrPostSummary.Kind.TEXT) {
+				return new GroupTrPostSummary(r.post.getSenderPubKey(),
+						r.post.getSenderName(), known, "",
+						r.post.getTimestamp(), r.expiryTime());
+			}
+		}
+		byte[] body = r.post.getBody();
+		if (body == null) body = readStoredBody(c.id);
+		if (body == null) return null;
+		if (code == null) recordKind(c.id, body);
+		GroupTrPostSummary.Kind kind = summaryKindOf(body);
+		return new GroupTrPostSummary(r.post.getSenderPubKey(),
+				r.post.getSenderName(), kind, summaryText(kind, body),
+				r.post.getTimestamp(), r.expiryTime());
+	}
+
+	private void recordKind(MessageId id, byte[] body) {
+		BdfDictionary update = new BdfDictionary();
+		update.put(GroupTrConstants.MSG_KEY_GROUP_BODY_KIND, kindCode(body));
+		try {
+			db.transaction(false, txn ->
+					clientHelper.mergeMessageMetadata(txn, id, update));
+		} catch (DbException | FormatException ex) {
+		}
+	}
+
+	static GroupTrPostSummary.Kind summaryKindOf(byte[] body) {
+		if (body.length < 3 || body[0] != GroupTrBody.MAGIC_BYTE
+				|| body[1] != GroupTrBody.VERSION_1) {
+			return GroupTrPostSummary.Kind.TEXT;
+		}
+		switch (body[2]) {
+			case GroupTrBody.TYPE_TEXT:
+			case GroupTrBody.TYPE_REPLY:
+				return GroupTrPostSummary.Kind.TEXT;
+			case GroupTrBody.TYPE_VOICE:
+				return GroupTrPostSummary.Kind.VOICE;
+			case GroupTrBody.TYPE_IMAGE:
+				return GroupTrPostSummary.Kind.IMAGE;
+			case GroupTrBody.TYPE_VIDEO:
+				return GroupTrPostSummary.Kind.VIDEO;
+			default:
+				return GroupTrPostSummary.Kind.MEDIA;
+		}
+	}
+
+	static long kindCode(byte[] body) {
+		switch (summaryKindOf(body)) {
+			case TEXT:
+				return GroupTrBody.TYPE_TEXT;
+			case VOICE:
+				return GroupTrBody.TYPE_VOICE;
+			case IMAGE:
+				return GroupTrBody.TYPE_IMAGE;
+			case VIDEO:
+				return GroupTrBody.TYPE_VIDEO;
+			default:
+				return BODY_KIND_UNKNOWN;
+		}
+	}
+
+	static GroupTrPostSummary.Kind kindOfCode(long code) {
+		if (code == GroupTrBody.TYPE_TEXT || code == GroupTrBody.TYPE_REPLY) {
+			return GroupTrPostSummary.Kind.TEXT;
+		}
+		if (code == GroupTrBody.TYPE_VOICE) return GroupTrPostSummary.Kind.VOICE;
+		if (code == GroupTrBody.TYPE_IMAGE) return GroupTrPostSummary.Kind.IMAGE;
+		if (code == GroupTrBody.TYPE_VIDEO) return GroupTrPostSummary.Kind.VIDEO;
+		return GroupTrPostSummary.Kind.MEDIA;
+	}
+
+	private static String summaryText(GroupTrPostSummary.Kind kind,
+			byte[] body) {
+		if (kind != GroupTrPostSummary.Kind.TEXT) return "";
+		return GroupTrBody.parse(body).text;
+	}
+
 	static boolean groupPostDeliveryAccepted(@Nullable GroupTrState s,
 			byte[] signerPubKey, byte[] deliveringPubKey) {
 		return isMemberOrCreator(s, signerPubKey)
@@ -1091,6 +1394,7 @@ class GroupTrManagerImpl
 		byte[][] localPub = new byte[1][];
 		java.util.List<MessageId> ids = new java.util.ArrayList<>();
 		java.util.List<byte[]> deliverers = new java.util.ArrayList<>();
+		java.util.List<Contact> holders = new java.util.ArrayList<>();
 		db.transaction(true, txn -> {
 			try {
 				localPub[0] = identityManager.getLocalAuthor(txn)
@@ -1116,6 +1420,7 @@ class GroupTrManagerImpl
 							: clientHelper.getMessageIds(txn, cg, asked)) {
 						ids.add(m);
 						deliverers.add(deliverer);
+						holders.add(c);
 					}
 				} catch (FormatException ex) {
 				}
@@ -1144,8 +1449,14 @@ class GroupTrManagerImpl
 				if (first != null) {
 					if (first.otherCopies == null) {
 						first.otherCopies = new java.util.ArrayList<>(2);
+						first.otherHolders = new java.util.ArrayList<>(2);
+						first.otherFlooded = new java.util.BitSet();
+					}
+					if (floodedOverMesh(meta)) {
+						first.otherFlooded.set(first.otherCopies.size());
 					}
 					first.otherCopies.add(ids.get(i));
+					first.otherHolders.add(holders.get(i));
 					return;
 				}
 				checked = true;
@@ -1173,12 +1484,15 @@ class GroupTrManagerImpl
 					stored.size(), sender, r.bodyLength, checked);
 			stored.add(sp);
 			if (p.isLocal()) {
+				sp.holder = holders.get(i);
+				sp.flooded = floodedOverMesh(meta);
 				localCopies.put(p.getTimestamp() + ":" + p.getEpoch() + ":"
 						+ toHexString(r.bodyHash), sp);
 			}
 		});
 		ids.clear();
 		deliverers.clear();
+		holders.clear();
 		localCopies.clear();
 		for (int u = 0; u < undecided.size(); u++) {
 			StoredRecord r = decideStoredPost(groupId, undecided.get(u),
@@ -1212,8 +1526,10 @@ class GroupTrManagerImpl
 		stored.sort((a, b) -> a.timestamp != b.timestamp
 				? Long.compare(a.timestamp, b.timestamp)
 				: Long.compare(a.order, b.order));
+		java.util.Map<GroupTrPost, StoredPost> origins =
+				new java.util.IdentityHashMap<>();
 		java.util.List<GroupTrPost> merged = takeStoredPosts(groupId, stored,
-				senderKeys.size(), localPub[0]);
+				senderKeys.size(), localPub[0], origins);
 		for (GroupTrPost lp : preexistingLocal) addIfAbsent(merged, lp);
 		synchronized (q) {
 			for (GroupTrPost p : q) {
@@ -1228,6 +1544,33 @@ class GroupTrManagerImpl
 			q.addAll(next);
 		}
 		posts.capTotal(key);
+		java.util.Set<String> held = new java.util.HashSet<>();
+		synchronized (q) {
+			for (GroupTrPost p : q) {
+				byte[] id = p.getPostId();
+				if (!p.isLocal() || id == null) continue;
+				held.add(toHexString(id));
+				StoredPost sp = origins.get(p);
+				if (sp != null) noteStoredCopies(groupId, id, sp);
+			}
+		}
+		origins.clear();
+		ownCopies.retain(key, held);
+	}
+
+	private void noteStoredCopies(byte[] groupId, byte[] postId,
+			StoredPost sp) {
+		if (sp.holder != null) {
+			noteOwnCopy(groupId, postId, sp.holder, sp.id, sp.flooded);
+		}
+		List<MessageId> others = sp.otherCopies;
+		List<Contact> holders = sp.otherHolders;
+		java.util.BitSet flooded = sp.otherFlooded;
+		if (others == null || holders == null || flooded == null) return;
+		for (int i = 0; i < others.size() && i < holders.size(); i++) {
+			noteOwnCopy(groupId, postId, holders.get(i), others.get(i),
+					flooded.get(i));
+		}
 	}
 
 	private void dropPostsBeyondTheBound(java.util.List<StoredPost> stored,
@@ -1318,6 +1661,14 @@ class GroupTrManagerImpl
 	private java.util.List<GroupTrPost> takeStoredPosts(byte[] groupId,
 			java.util.List<StoredPost> stored, int senderCount,
 			byte[] localPub) throws DbException {
+		return takeStoredPosts(groupId, stored, senderCount, localPub,
+				new java.util.IdentityHashMap<>());
+	}
+
+	private java.util.List<GroupTrPost> takeStoredPosts(byte[] groupId,
+			java.util.List<StoredPost> stored, int senderCount,
+			byte[] localPub, java.util.Map<GroupTrPost, StoredPost> origins)
+			throws DbException {
 		int n = stored.size();
 		int[] olderOfSender = new int[n];
 		int[] nextOfSender = new int[senderCount];
@@ -1407,7 +1758,10 @@ class GroupTrManagerImpl
 			}
 		}
 		java.util.List<GroupTrPost> out = new java.util.ArrayList<>(heldCount);
-		for (int k = 0; k < heldCount; k++) out.add(held[k]);
+		for (int k = 0; k < heldCount; k++) {
+			out.add(held[k]);
+			if (held[k].isLocal()) origins.put(held[k], stored.get(heldAt[k]));
+		}
 		return out;
 	}
 
@@ -2934,6 +3288,115 @@ class GroupTrManagerImpl
 	}
 
 	@Override
+	public Map<String, org.zerionproject.app.api.grouptr.GroupTrPostDelivery>
+			getOwnPostDeliveries(byte[] groupId) throws DbException {
+		return ownPostDeliveries(groupId, null);
+	}
+
+	@Override
+	public Map<String, org.zerionproject.app.api.grouptr.GroupTrPostDelivery>
+			getOwnPostDeliveries(byte[] groupId, Collection<byte[]> postIds)
+			throws DbException {
+		java.util.Set<String> only = new java.util.HashSet<>();
+		for (byte[] id : postIds) only.add(toHexString(id));
+		return ownPostDeliveries(groupId, only);
+	}
+
+	private Map<String, org.zerionproject.app.api.grouptr.GroupTrPostDelivery>
+			ownPostDeliveries(byte[] groupId,
+			@Nullable java.util.Set<String> only) throws DbException {
+		GroupTrState s = getGroup(groupId);
+		if (s == null) return Collections.emptyMap();
+		String group = toHexString(groupId);
+		byte[] localPub = null;
+		Map<String, Long> shown = new java.util.LinkedHashMap<>();
+		List<String> postOf = new ArrayList<>();
+		List<GroupTrOwnCopies.Ref> refs = new ArrayList<>();
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
+		lock.lock();
+		try {
+			java.util.Set<String> held = new java.util.HashSet<>();
+			for (GroupTrPost p : getRecentPosts(groupId)) {
+				byte[] id = p.getPostId();
+				if (!p.isLocal() || id == null) continue;
+				String post = toHexString(id);
+				held.add(post);
+				localPub = p.getSenderPubKey();
+				if (only == null || only.contains(post)) {
+					shown.put(post, p.getEpoch());
+				}
+			}
+			if (only == null) ownCopies.retain(group, held);
+			for (String post : shown.keySet()) {
+				for (GroupTrOwnCopies.Ref r : ownCopies.copies(group, post)) {
+					postOf.add(post);
+					refs.add(r);
+				}
+			}
+		} finally {
+			lock.unlock();
+		}
+		if (localPub == null || shown.isEmpty()) return Collections.emptyMap();
+		List<GroupTrPostDeliveries.Copy> copies = new ArrayList<>();
+		for (int from = 0; from < refs.size(); from += STORED_POSTS_PER_READ) {
+			int start = from;
+			int end = Math.min(refs.size(), from + STORED_POSTS_PER_READ);
+			db.transaction(true, txn -> {
+				for (int i = start; i < end; i++) {
+					GroupTrOwnCopies.Ref r = refs.get(i);
+					org.zerionproject.core.api.sync.MessageStatus status;
+					try {
+						status = db.getMessageStatus(txn, r.holder.contact,
+								r.id);
+					} catch (org.zerionproject.core.api.db
+							.NoSuchMessageException
+							| org.zerionproject.core.api.db
+							.NoSuchContactException ex) {
+						ownCopies.drop(r.id);
+						continue;
+					}
+					String post = postOf.get(i);
+					Long epoch = shown.get(post);
+					copies.add(new GroupTrPostDeliveries.Copy(post,
+							epoch == null ? 0L : epoch, r.holder.member,
+							status.isSent(), status.isSeen()));
+				}
+			});
+		}
+		List<GroupTrMember> others = new ArrayList<>();
+		for (GroupTrMember m : s.getMembers()) {
+			if (!Arrays.equals(m.getPubKey(), localPub)) others.add(m);
+		}
+		return GroupTrPostDeliveries.of(copies, others);
+	}
+
+	private void noteOwnCopy(byte[] groupId, byte[] postId, Contact c,
+			MessageId id, boolean flooded) {
+		ownCopies.add(groupId, postId, c.getId(),
+				c.getAuthor().getPublicKey().getEncoded(), id, flooded);
+	}
+
+	private static boolean floodedOverMesh(BdfDictionary meta) {
+		try {
+			return meta.getBoolean(
+					MessagingManager.MSG_KEY_MESH_GROUP_PENDING, false);
+		} catch (FormatException ex) {
+			return false;
+		}
+	}
+
+	private void ownCopiesChanged(Collection<MessageId> ids) {
+		for (GroupTrOwnCopies.Changed c : ownCopies.changed(ids)) {
+			try {
+				eventBus.broadcast(new org.zerionproject.app.api.messaging
+						.event.GroupTrOwnPostStateChangedEvent(c.groupId,
+						c.postIds));
+			} catch (RuntimeException ex) {
+			}
+		}
+	}
+
+	@Override
 	public long getGroupPermissions(byte[] groupId) throws DbException {
 		return memberInvites.getPermissions(groupId);
 	}
@@ -3394,6 +3857,7 @@ class GroupTrManagerImpl
 			settingsManager.deleteSettings(UNREAD_NAMESPACE,
 					Collections.singletonList(hex));
 			posts.forget(hex);
+			ownCopies.forget(hex);
 			removals.forget(groupId);
 			pendingHeld.keySet().removeIf(k -> k.endsWith(":" + hex));
 			mlDsaKeys.invalidate();
@@ -3451,6 +3915,14 @@ class GroupTrManagerImpl
 
 	@Override
 	public int sendGroupPost(byte[] groupId, byte[] body,
+			long autoDeleteTimerMs) throws DbException {
+		return sendGroupPostReporting(groupId, body, autoDeleteTimerMs)
+				.getSkipped();
+	}
+
+	@Override
+	public org.zerionproject.app.api.grouptr.GroupTrSendResult
+			sendGroupPostReporting(byte[] groupId, byte[] body,
 			long autoDeleteTimerMs) throws DbException {
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
 		lock.lock();
@@ -3515,6 +3987,8 @@ class GroupTrManagerImpl
 							finalSenderName, body, sig, effectiveTtl)
 					: BdfList.of(32L, groupId, (long) epoch, localPub,
 							finalSenderName, body, sig);
+			int failed = 0;
+			byte[] postId = postIdentity(signed);
 			for (Contact c : recipients) {
 				BdfDictionary selfMeta = new BdfDictionary();
 				selfMeta.put("messageType", 32L);
@@ -3528,28 +4002,58 @@ class GroupTrManagerImpl
 						(long) body.length);
 				selfMeta.put(MessagingManager.MSG_KEY_GROUP_POST_STATE,
 						(long) MessagingManager.GROUP_POST_STATE_ACCEPTED);
+				selfMeta.put(GroupTrConstants.MSG_KEY_GROUP_BODY_KIND,
+						kindCode(body));
 				selfMeta.put("timestamp", timestamp);
 				selfMeta.put("autoDeleteTimer", effectiveTtl);
 				selfMeta.put("groupRecordSig", sig);
-				db.transaction(false, txn -> {
-					MessageId copy = dispatchToContact(txn, c, timestamp,
-							msgBody, selfMeta);
-					if (effectiveTtl > 0) {
-						db.setCleanupTimerDuration(txn, copy, effectiveTtl);
-					}
-				});
+				MessageId[] noted = new MessageId[1];
+				try {
+					db.transaction(false, txn -> {
+						MessageId stored = dispatchToContact(txn, c,
+								timestamp, msgBody, selfMeta);
+						if (effectiveTtl > 0) {
+							db.setCleanupTimerDuration(txn, stored,
+									effectiveTtl);
+						}
+						noted[0] = stored;
+						noteOwnCopy(groupId, postId, c, stored,
+								floodedOverMesh(selfMeta));
+					});
+				} catch (DbException | RuntimeException ex) {
+					if (noted[0] != null) ownCopies.drop(noted[0]);
+					failed++;
+				}
 			}
-			cacheLocalPost(groupId, localPub, finalSenderName, body,
-					timestamp, epoch, effectiveTtl, postIdentity(signed));
-			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
-					.GroupTrPostAcceptedEvent(groupId, true));
+			if (!recipients.isEmpty() && failed == recipients.size()) {
+				throw new DbException();
+			}
+			int others = 0;
+			for (GroupTrMember m : s.getMembers()) {
+				if (!Arrays.equals(m.getPubKey(), localPub)) others++;
+			}
+			if (others > 0 && recipients.isEmpty()) {
+				return new org.zerionproject.app.api.grouptr.GroupTrSendResult(
+						postId, others, 0, 0, skipped);
+			}
+			try {
+				cacheLocalPost(groupId, localPub, finalSenderName, body,
+						timestamp, epoch, effectiveTtl, postId);
+			} catch (RuntimeException ex) {
+			}
+			try {
+				eventBus.broadcast(new org.zerionproject.app.api.messaging
+						.event.GroupTrPostAcceptedEvent(groupId, true));
+			} catch (RuntimeException ex) {
+			}
 			if (Arrays.equals(localPub, s.getCreatorPubKey())) {
 				try {
 					memberInvites.refreshPermissions(s);
-				} catch (DbException ex) {
+				} catch (DbException | RuntimeException ex) {
 				}
 			}
-			return skipped;
+			return new org.zerionproject.app.api.grouptr.GroupTrSendResult(
+					postId, others, recipients.size(), failed, skipped);
 		} finally {
 			lock.unlock();
 		}
@@ -3557,6 +4061,14 @@ class GroupTrManagerImpl
 
 	@Override
 	public int sendGroupReply(byte[] groupId, byte[] targetPostId,
+			String text, long autoDeleteTimerMs) throws DbException {
+		return sendGroupReplyReporting(groupId, targetPostId, text,
+				autoDeleteTimerMs).getSkipped();
+	}
+
+	@Override
+	public org.zerionproject.app.api.grouptr.GroupTrSendResult
+			sendGroupReplyReporting(byte[] groupId, byte[] targetPostId,
 			String text, long autoDeleteTimerMs) throws DbException {
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(groupId);
 		lock.lock();
@@ -3570,7 +4082,7 @@ class GroupTrManagerImpl
 					replies.body(txn, s, identityManager.getLocalAuthor(txn)
 							.getPublicKey().getEncoded(), targetPostId, text,
 							this::findContactByPubKey));
-			return sendGroupPost(groupId, body, autoDeleteTimerMs);
+			return sendGroupPostReporting(groupId, body, autoDeleteTimerMs);
 		} finally {
 			lock.unlock();
 		}

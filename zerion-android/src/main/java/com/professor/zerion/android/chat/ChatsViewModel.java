@@ -26,6 +26,7 @@ import org.zerionproject.app.api.conversation.event.ConversationMessageTrackedEv
 import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import com.professor.zerion.android.contact.PinnedContactManager;
+import com.professor.zerion.android.conversation.ChatSettingsActivity;
 import com.professor.zerion.android.mesh.MeshPresenceTracker;
 import com.professor.zerion.android.mesh.event.MeshPresenceChangedEvent;
 import com.professor.zerion.android.viewmodel.DbViewModel;
@@ -123,6 +124,8 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 							pinnedManager.isPinned(c.getId()),
 							connectionRegistry.isConnected(c.getId())
 									|| meshPresenceTracker.isPresent(c.getId()),
+							ChatSettingsActivity.isContactMuted(
+									getApplication(), c.getId()),
 							info.getAvatarHeader()));
 				}
 				Collections.sort(list, (a, b) -> {

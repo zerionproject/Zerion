@@ -29,6 +29,62 @@ Behaviour:
 - During an onion rotation the announced next address is served on a
   listener of its own, so a session that arrives on it is known to have
   reached the new address.
+- A dial the transport did not make because Tor was not connected is
+  reported as not attempted. The poll does not dial the contact again for
+  30 seconds (a wait that neither grows nor counts as a failed dial, and
+  that Tor becoming connected clears at once); a dial asked for by a
+  queued message, an acknowledgement, a contact just added, a dropped
+  connection or a slow reach-out is still made during the wait. A dial
+  Tor did not make uses none of the descriptor refreshes after a dropped
+  connection, is not counted against an announced next address, and does
+  not make a contact try that address again at once as a failed dial to
+  the current address does (from 3.0.18). Up to 3.0.17 such dials counted
+  towards the three failed dials after which a contact stopped trying
+  the announced address until it learned another one.
+- An update from a contact that carries no announced next address clears
+  the one this side holds for that contact, and a rotation abandoned for
+  a revocation withdraws its next address from the update at once, so no
+  contact keeps dialling an address that is never published (from
+  3.0.18). Clearing it does not reset the limit of one notification an
+  hour about a contact's new address.
+- A next address is announced only while it is published, and a
+  promotion publishes the new address before it removes the old one
+  (from 3.0.18).
+- While a rotation waits for a contact that has not moved, the
+  announcement is sent again an hour after the new address was created
+  and then once a day, so a contact on 3.0.17 or earlier, which ignores a
+  second announcement within an hour of the first, receives it (from
+  3.0.18). Such a contact that already failed three dials to the
+  announced address does not try it again until it updates, and the
+  rotation waits for it meanwhile while it still reaches the old
+  address.
+- The phone that is not the designated dialer for a contact (the smaller
+  author id dials) stops waiting for that contact once nothing has been
+  heard from it for 90 days: no authenticated session and no received
+  message on any transport, the time being kept per contact in encrypted
+  settings and updated by a connection opened or a message received, at
+  most once an hour. The designated dialer never stops waiting, so the
+  other phone can always reach it at an address it kept; any contact
+  within the 90 days restarts the clock, and the network settings list
+  only the contacts still holding the rotation back (from 3.0.18). The
+  silence is measured on the device clock, so a clock set 90 or more days
+  ahead retires the old address on that phone at the next hourly check;
+  this cannot split the pair, since the designated dialer never stops
+  waiting. A clock set back writes nothing: a last contact time lower
+  than the one already stored is ignored, so the silence can only grow
+  with the clock, never shrink below what was seen.
+- A scheduled rotation of the open address starts, and its interval is
+  drawn, only once every contact has been in contact since the previous
+  rotation was promoted, so a contact the silence rule passed over is not
+  moved a second time before it comes back (from 3.0.18). A removal still
+  rotates at once. Once the drawn interval, or the shortest one while
+  none is drawn, has passed, the network settings list the contacts such
+  a rotation still waits for before it starts, with when each was last
+  seen.
+- Republishing the announced next address when the transport starts is
+  best effort: a failure there no longer stops the start, so the
+  transport goes on to dial with Tor connected, and the hourly check
+  publishes the address again (from 3.0.18).
 - There is no per-connection handshake after pairing. The connection handler
   resumes the persisted session for the contact, under the contact's current
   root key or, once the peer proved it holds it, its pending one (see
@@ -130,8 +186,24 @@ the lower author id is the dialer (`ZtpPoller`, over Tor and over I2P when it
 is enabled): there a queued message, acknowledgement or new contact dials the
 contact at once, so the opening of a connection can coincide with a send, and
 a contact that is not connected is dialled every 5 s, backing off to about
-72 s after failures. A connection that ends within ten seconds counts as a
-failure and does not reset the backoff. Since 3.0.18 the other side dials
+72 s after failures, and, once thirty minutes have passed since its last
+connection started or ended, since it was added, or since the app started,
+whichever is latest, every five to six minutes; a queued message or
+acknowledgement still dials it at once. A connection that ends within ten
+seconds counts as a failure and does not reset the backoff. After a
+connection that lasted has ended, the second failed dial that follows makes
+Tor forget the onion descriptors it holds (`NEWNYM`), and a dial that fails
+again two minutes or more after that refresh does so once more, since a
+restarted peer uploads its new descriptor only once its introduction
+circuits are built: at most twice per drop, at most once every two minutes
+across all contacts, and the budget survives this side's own network
+blips, so a contact that came back on a fresh descriptor is found again
+without waiting for Tor's own fifteen minute requery. A contact not reached
+since Tor came up gets one such refresh, no earlier than one to two minutes
+after Tor came up, so that the first dials after a reconnect keep their
+circuits. A `NEWNYM` rotates the circuits of everything on the phone, not
+only this contact's, which is why it is rate limited and capped. Since
+3.0.18 the other side dials
 too, on a timer and never because of a send: 15 to 20 s after its Tor
 connection comes up, or after a connection that lasted at least ten seconds
 drops, it dials on the same backoff for ten minutes, and after that every
@@ -142,7 +214,13 @@ is kept and the other is closed, on both sides. A connection stays open for
 as long as both devices are online, so
 a contact sees when this device is online. Connection existence, lifetime and
 reconnects are visible to an observer of the Tor link. Calls and channel
-requests do not use this pacing.
+requests do not use this pacing. A subscribed channel is pulled every 5 s
+while it has recent activity, backing off to 60 s when it is quiet; while
+its owner cannot be reached, every failed pull doubles the wait, up to
+fifteen minutes. When Tor comes back after an outage the waits of channels
+that were failing are halved, not cleared, and their next pulls are spread
+over the first one to two minutes, so a reconnect does not open every
+channel's circuits at once.
 
 The receive side decodes each frame and drops cover before delivering the record
 to the sink. It also drops every record but cover that arrives in a frame

@@ -28,6 +28,8 @@ import org.zerionproject.core.api.db.TaskAction;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.identity.Author;
+import org.zerionproject.transport.ZtpPoller;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.plugin.OnionClientAuthManager.State;
 import org.zerionproject.core.api.plugin.TorConstants;
@@ -61,6 +63,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.AUTH_CONFIRMED;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.AUTH_NEGOTIATING;
@@ -103,6 +106,7 @@ public class OnionClientAuthPairTest {
 		}
 	};
 	private final Group group = getGroup(CLIENT_ID, MAJOR_VERSION);
+	private final Group sink = getGroup(CLIENT_ID, MAJOR_VERSION);
 	private final Map<MessageId, BdfList> bodies = new HashMap<>();
 	private final Map<String, byte[]> publicKeys = new HashMap<>();
 	private final Map<String, List<byte[]>> services = new HashMap<>();
@@ -110,6 +114,7 @@ public class OnionClientAuthPairTest {
 	private int sides = 0;
 	private boolean unsettled = false;
 	private boolean network = true;
+	private boolean aDesignated = true;
 	@Nullable
 	private Side guarded = null;
 	private boolean breach = false;
@@ -139,6 +144,8 @@ public class OnionClientAuthPairTest {
 		void tick();
 
 		void rotate() throws DbException;
+
+		void remove(Transaction txn, Contact c) throws DbException;
 	}
 
 	private interface Build {
@@ -146,80 +153,89 @@ public class OnionClientAuthPairTest {
 		Endpoint start(Side s);
 	}
 
-	private final Build fixed = s -> {
-		OnionClientAuthManagerImpl m = new OnionClientAuthManagerImpl(s.db,
-				s.clientHelper, s.groupFactory, s.parser, s.store, s.crypto,
-				() -> s.properties, s.eventBus, clock, Runnable::run,
-				s.scheduler);
-		return new Endpoint() {
-			@Override
-			public void open(Transaction txn) throws DbException {
-				m.onDatabaseOpened(txn);
-			}
+	private final Build fixed = fixedWith(OnionAuthDebugHooks.NONE);
 
-			@Override
-			public void attach(OnionServiceControl tor) {
-				m.attachTor(tor, AUTHORIZED_PORT,
-						new OnionClientAuthManagerImpl.ProbeDialer() {
-							@Override
-							public void dial(ContactId c) {
-							}
+	private Build fixedWith(OnionAuthDebugHooks hooks) {
+		return s -> {
+			OnionClientAuthManagerImpl m = new OnionClientAuthManagerImpl(s.db,
+					s.clientHelper, s.groupFactory, s.parser, s.store, s.crypto,
+					() -> s.properties, s.eventBus, clock, Runnable::run,
+					s.scheduler, java.util.Optional.of(hooks));
+			return new Endpoint() {
+				@Override
+				public void open(Transaction txn) throws DbException {
+					m.onDatabaseOpened(txn);
+				}
 
-							@Override
-							public void repair(ContactId c) {
-								s.repairCalls++;
-								s.pendingRepairs++;
-							}
+				@Override
+				public void attach(OnionServiceControl tor) {
+					m.attachTor(tor, AUTHORIZED_PORT,
+							new OnionClientAuthManagerImpl.ProbeDialer() {
+								@Override
+								public void dial(ContactId c) {
+								}
 
-							@Override
-							public void repairOpen(ContactId c) {
-								s.openCalls++;
-								s.pendingOpenDials++;
-							}
-						});
-			}
+								@Override
+								public void repair(ContactId c) {
+									s.repairCalls++;
+									s.pendingRepairs++;
+								}
 
-			@Override
-			public void detach() {
-				m.detachTor();
-			}
+								@Override
+								public void repairOpen(ContactId c) {
+									s.openCalls++;
+									s.pendingOpenDials++;
+								}
+							});
+				}
 
-			@Override
-			public void incoming(Transaction txn, Message msg) throws Exception {
-				m.incomingMessage(txn, msg, new Metadata());
-			}
+				@Override
+				public void detach() {
+					m.detachTor();
+				}
 
-			@Override
-			public String dialOnion(ContactId c) {
-				return m.getDialOnion(c);
-			}
+				@Override
+				public void incoming(Transaction txn, Message msg) throws Exception {
+					m.incomingMessage(txn, msg, new Metadata());
+				}
 
-			@Override
-			public boolean accepts(ContactId c, boolean viaAuthorizedService) {
-				return m.acceptsInbound(c, viaAuthorizedService);
-			}
+				@Override
+				public String dialOnion(ContactId c) {
+					return m.getDialOnion(c);
+				}
 
-			@Override
-			public void dialed(ContactId c, String onion) {
-				m.dialSucceeded(c, onion);
-			}
+				@Override
+				public boolean accepts(ContactId c, boolean viaAuthorizedService) {
+					return m.acceptsInbound(c, viaAuthorizedService);
+				}
 
-			@Override
-			public void inboundAuthorized(ContactId c) {
-				m.inboundViaAuthorizedService(c);
-			}
+				@Override
+				public void dialed(ContactId c, String onion) {
+					m.dialSucceeded(c, onion);
+				}
 
-			@Override
-			public void tick() {
-				m.tickForTest();
-			}
+				@Override
+				public void inboundAuthorized(ContactId c) {
+					m.inboundViaAuthorizedService(c);
+				}
 
-			@Override
-			public void rotate() throws DbException {
-				m.rotateAuthorizedService();
-			}
+				@Override
+				public void tick() {
+					m.tickForTest();
+				}
+
+				@Override
+				public void rotate() throws DbException {
+					m.rotateAuthorizedService();
+				}
+
+				@Override
+				public void remove(Transaction txn, Contact c) throws DbException {
+					m.removingContact(txn, c);
+				}
+			};
 		};
-	};
+	}
 
 	private final Build shipped = s -> {
 		ShippedOnionClientAuthManager m = new ShippedOnionClientAuthManager(
@@ -277,6 +293,11 @@ public class OnionClientAuthPairTest {
 			public void rotate() throws DbException {
 				m.rotateAuthorizedService();
 			}
+
+			@Override
+			public void remove(Transaction txn, Contact c) throws DbException {
+				m.removingContact(txn, c);
+			}
 		};
 	};
 
@@ -284,20 +305,40 @@ public class OnionClientAuthPairTest {
 
 		final Set<String> published = new HashSet<>();
 		final Map<String, byte[]> credentials = new HashMap<>();
+		int failRemoves = 0;
+		int failPublishes = 0;
+		int maxPublished = 0;
 
 		@Override
 		public Published publish(@Nullable String privateKey, int localPort,
-				int remotePort, Collection<byte[]> clientPublicKeys) {
+				int remotePort, Collection<byte[]> clientPublicKeys)
+				throws java.io.IOException {
+			if (failPublishes > 0) {
+				failPublishes--;
+				throw new java.io.IOException("publish failed");
+			}
 			String onion = privateKey == null ? mint()
 					: privateKey.substring(KEY_PREFIX.length());
+			if (published.contains(onion)) {
+				throw new java.io.IOException("550 Onion address collision");
+			}
 			services.put(onion, new ArrayList<>(clientPublicKeys));
 			published.add(onion);
+			maxPublished = Math.max(maxPublished, published.size());
 			return new Published(onion, KEY_PREFIX + onion);
 		}
 
 		@Override
-		public void remove(String onion) {
-			if (published.remove(onion)) services.remove(onion);
+		public void remove(String onion) throws java.io.IOException {
+			if (failRemoves > 0) {
+				failRemoves--;
+				throw new java.io.IOException("control connection failed");
+			}
+			if (!published.contains(onion)) {
+				throw new java.io.IOException("552 Unknown Onion Service id");
+			}
+			published.remove(onion);
+			services.remove(onion);
 		}
 
 		@Override
@@ -351,8 +392,14 @@ public class OnionClientAuthPairTest {
 		Side(int peerId, Build build) throws Exception {
 			this.build = build;
 			String name = "side" + (sides++);
-			contact = getContact(new ContactId(peerId), getAuthor(),
-					new AuthorId(getRandomId()), true);
+			boolean designated = (peerId == 1) == aDesignated;
+			byte[] low = new byte[AuthorId.LENGTH];
+			byte[] high = new byte[AuthorId.LENGTH];
+			Arrays.fill(high, (byte) 0x70);
+			Author them = new Author(new AuthorId(designated ? high : low),
+					Author.FORMAT_VERSION, "them", getAuthor().getPublicKey());
+			contact = getContact(new ContactId(peerId), them,
+					new AuthorId(designated ? low : high), true);
 			db = context.mock(DatabaseComponent.class, name + "Db");
 			clientHelper = context.mock(ClientHelper.class, name + "Helper");
 			groupFactory = context.mock(ContactGroupFactory.class,
@@ -414,6 +461,11 @@ public class OnionClientAuthPairTest {
 				allowing(groupFactory).createContactGroup(CLIENT_ID,
 						MAJOR_VERSION, contact);
 				will(returnValue(group));
+				allowing(groupFactory).createContactGroup(with(CLIENT_ID),
+						with(MAJOR_VERSION), with(any(Contact.class)));
+				will(returnValue(sink));
+				allowing(db).removeGroup(with(any(Transaction.class)),
+						with(any(Group.class)));
 				allowing(clientHelper).setContactId(
 						with(any(Transaction.class)), with(any(GroupId.class)),
 						with(any(ContactId.class)));
@@ -439,6 +491,10 @@ public class OnionClientAuthPairTest {
 				will(new CustomAction("queues the record for the peer") {
 					@Override
 					public Object invoke(Invocation i) throws Throwable {
+						if (!((Message) i.getParameter(1)).getGroupId()
+								.equals(group.getId())) {
+							return null;
+						}
 						BdfList body = bodies.get(
 								((Message) i.getParameter(1)).getId());
 						outbox.add(body);
@@ -591,6 +647,53 @@ public class OnionClientAuthPairTest {
 
 		long generation() throws DbException {
 			return store.loadService(null).gen;
+		}
+
+		void remove(Contact c) throws Exception {
+			Transaction txn = begin();
+			try {
+				manager.remove(txn, c);
+			} finally {
+				depth--;
+			}
+			commit(txn);
+		}
+
+		Contact addAuthorizedContact(int id) throws Exception {
+			Contact x = getContact(new ContactId(id), getAuthor(),
+					new AuthorId(getRandomId()), true);
+			OnionAuthRecord r = new OnionAuthRecord(x.getId());
+			r.state = AUTH_REQUIRED;
+			r.localGen = generation();
+			r.peerGen = 1;
+			r.dialPrivateKey = new byte[32];
+			random.nextBytes(r.dialPrivateKey);
+			r.dialPublicKey = new byte[32];
+			random.nextBytes(r.dialPublicKey);
+			r.peerPublicKey = new byte[32];
+			random.nextBytes(r.peerPublicKey);
+			r.peerOnion = mint();
+			r.readyReceived = true;
+			r.probeSucceeded = true;
+			r.peerProbeSucceeded = true;
+			r.commitSent = true;
+			r.peerCommitReceived = true;
+			r.rotateAcked = true;
+			r.lastSeenMs = now.get();
+			store.save(null, r);
+			restart();
+			return x;
+		}
+
+		boolean publishes(byte[] clientKey) {
+			for (String onion : tor.published) {
+				List<byte[]> keys = services.get(onion);
+				if (keys == null) continue;
+				for (byte[] k : keys) {
+					if (Arrays.equals(k, clientKey)) return true;
+				}
+			}
+			return false;
 		}
 	}
 
@@ -747,7 +850,7 @@ public class OnionClientAuthPairTest {
 	private void assertLockedInAndReachable() throws Exception {
 		assertEquals(AUTH_REQUIRED, a.state());
 		assertEquals(AUTH_REQUIRED, b.state());
-		assertTrue(session());
+		assertTrue("the dialer cannot reach its peer", session());
 		assertNotNull(dialer.record().peerOnion);
 		assertEquals(dialer.record().peerOnion,
 				dialer.manager.dialOnion(dialer.contact.getId()));
@@ -768,6 +871,45 @@ public class OnionClientAuthPairTest {
 		pump();
 		dialer.other.release();
 		pump();
+	}
+
+	private static OnionAuthDebugHooks holding(
+			java.util.concurrent.atomic.AtomicBoolean hold) {
+		return new OnionAuthDebugHooks() {
+			@Override
+			public boolean skipsNewNegotiations(Transaction txn) {
+				return false;
+			}
+
+			@Override
+			public boolean holdsConfirmations(Transaction txn) {
+				return hold.get();
+			}
+		};
+	}
+
+	@Test
+	public void testAPairWhoseConfirmationsWereHeldLocksInOnceTheyAreReleased()
+			throws Exception {
+		for (boolean dialerHolds : new boolean[] {true, false}) {
+			java.util.concurrent.atomic.AtomicBoolean hold =
+					new java.util.concurrent.atomic.AtomicBoolean(true);
+			if (dialerHolds) pair(fixedWith(holding(hold)), fixed);
+			else pair(fixed, fixedWith(holding(hold)));
+			Side holder = dialerHolds ? a : b;
+			pump();
+			assertEquals(0, holder.sent(TYPE_COMMIT));
+			assertNotEquals(AUTH_REQUIRED, holder.other.state());
+			elapse(3 * DAY_MS, true);
+			assertEquals(0, holder.sent(TYPE_COMMIT));
+			assertNotEquals(AUTH_REQUIRED, holder.other.state());
+			hold.set(false);
+			elapse(3 * DAY_MS, true);
+			assertLockedInAndReachable();
+			restartBoth();
+			assertTrue(pump());
+			assertLockedInAndReachable();
+		}
 	}
 
 	@Test
@@ -1234,7 +1376,7 @@ public class OnionClientAuthPairTest {
 	}
 
 	@Test
-	public void testARotationTheDialerMissedReachesItThroughTheSilenceRepair()
+	public void testARotationTheDialerMissedKeepsTheOldAddressUntilTheDialerLearnsTheNewOne()
 			throws Exception {
 		pair(fixed, fixed);
 		assertTrue(pump());
@@ -1244,18 +1386,149 @@ public class OnionClientAuthPairTest {
 		String next = b.store.loadService(null).onion;
 		assertNotEquals(old, next);
 		assertEquals(0, elapse(31 * DAY_MS, false));
-		assertFalse(b.tor.published.contains(old));
+		assertTrue("the old address was retired without an acknowledgement",
+				b.tor.published.contains(old));
 		assertTrue(b.tor.published.contains(next));
 		assertEquals(old, a.record().peerOnion);
-		assertFalse(session());
-		elapse(8 * DAY_MS, true);
+		assertTrue(session());
 		assertEquals(next, a.record().peerOnion);
-		assertTrue(b.repairDials >= 1);
+		assertFalse(b.tor.published.contains(old));
+		assertNull(b.store.loadService(null).oldOnion);
+		elapse(8 * DAY_MS, true);
+		assertEquals(b.store.loadService(null).onion, a.record().peerOnion);
 		assertLockedInAndReachable();
 		restartBoth();
 		assertTrue(pump());
 		assertLockedInAndReachable();
 		assertFalse(breach);
+	}
+
+	private void assertPairFindsEachOtherAfterBeingApart(boolean aIsDesignated,
+			long days) throws Exception {
+		aDesignated = aIsDesignated;
+		pair(fixed, fixed);
+		Side designated = aIsDesignated ? a : b;
+		Side other = designated.other;
+		assertTrue(ZtpPoller.isDesignatedDialer(designated.contact));
+		assertFalse(ZtpPoller.isDesignatedDialer(other.contact));
+		dialer = designated;
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		String designatedOld = designated.store.loadService(null).onion;
+		String otherOld = other.store.loadService(null).onion;
+		a.manager.rotate();
+		b.manager.rotate();
+		assertEquals(0, elapse(days * DAY_MS, false));
+		assertTrue("the designated side stopped waiting",
+				designated.tor.published.contains(designatedOld));
+		assertFalse("the other side kept waiting past ninety days",
+				other.tor.published.contains(otherOld));
+		assertTrue(connect(other));
+		elapse(8 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertNull(a.store.loadService(null).oldOnion);
+		assertNull(b.store.loadService(null).oldOnion);
+		restartBoth();
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		assertFalse(breach);
+	}
+
+	@Test
+	public void testPeersApartForOneHundredDaysFindEachOtherAgainWhenTheFirstIsTheDialer()
+			throws Exception {
+		assertPairFindsEachOtherAfterBeingApart(true, 100);
+	}
+
+	@Test
+	public void testPeersApartForOneHundredDaysFindEachOtherAgainWhenTheSecondIsTheDialer()
+			throws Exception {
+		assertPairFindsEachOtherAfterBeingApart(false, 100);
+	}
+
+	@Test
+	public void testTheDialerKeepsItsOldAddressForFourHundredDays()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		String old = a.store.loadService(null).onion;
+		a.manager.rotate();
+		assertEquals(0, elapse(400 * DAY_MS, false));
+		assertTrue(ZtpPoller.isDesignatedDialer(a.contact));
+		assertTrue(a.tor.published.contains(old));
+		assertEquals(old, a.store.loadService(null).oldOnion);
+	}
+
+	@Test
+	public void testTwoLockedInPeersThatBothRotateWhileApartFindEachOtherAgain()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		a.manager.rotate();
+		b.manager.rotate();
+		assertEquals(0, elapse(31 * DAY_MS, false));
+		elapse(8 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertNull(a.store.loadService(null).oldOnion);
+		assertNull(b.store.loadService(null).oldOnion);
+		restartBoth();
+		assertTrue(pump());
+		assertLockedInAndReachable();
+	}
+
+	@Test
+	public void testTwoLockedInPeersThatEachRemoveAContactWhileApartFindEachOtherAgain()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		Contact x = a.addAuthorizedContact(3);
+		Contact y = b.addAuthorizedContact(9);
+		byte[] xKey = a.store.load(null, x.getId()).peerPublicKey;
+		byte[] yKey = b.store.load(null, y.getId()).peerPublicKey;
+		assertTrue(a.publishes(xKey));
+		assertTrue(b.publishes(yKey));
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		String aOld = a.store.loadService(null).onion;
+		String bOld = b.store.loadService(null).onion;
+		a.remove(x);
+		b.remove(y);
+		assertNotEquals(aOld, a.store.loadService(null).onion);
+		assertNotEquals(bOld, b.store.loadService(null).onion);
+		assertFalse(a.publishes(xKey));
+		assertFalse(b.publishes(yKey));
+		assertEquals(0, elapse(60 * DAY_MS, false));
+		assertFalse(a.publishes(xKey));
+		assertFalse(b.publishes(yKey));
+		elapse(8 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertFalse(a.tor.published.contains(aOld));
+		assertFalse(b.tor.published.contains(bOld));
+		restartBoth();
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		assertFalse(a.publishes(xKey));
+		assertFalse(b.publishes(yKey));
+		assertFalse(breach);
+	}
+
+	@Test
+	public void testTwoLockedInPeersApartForLongerThanTheirRotationPeriodFindEachOtherAgain()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		assertEquals(0, elapse(70 * DAY_MS, false));
+		assertEquals(1, a.generation());
+		assertEquals(1, b.generation());
+		elapse(8 * DAY_MS, true);
+		assertLockedInAndReachable();
+		restartBoth();
+		assertTrue(pump());
+		assertLockedInAndReachable();
 	}
 
 	@Test
@@ -1337,5 +1610,183 @@ public class OnionClientAuthPairTest {
 			assertTrue(pump());
 			assertLockedInAndReachable();
 		}
+	}
+
+	private void allowAnyContact(Side s) throws Exception {
+		context.checking(new Expectations() {{
+			allowing(s.db).getContact(with(any(Transaction.class)),
+					with(any(ContactId.class)));
+			will(new CustomAction("returns another contact") {
+				@Override
+				public Object invoke(Invocation i) {
+					return getContact((ContactId) i.getParameter(1),
+							getAuthor(), new AuthorId(getRandomId()), true);
+				}
+			});
+		}});
+	}
+
+	@Test
+	public void testAReturnToTheCommittedRoundIsNoEvidenceOfTheNewAddress()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		Side r = b;
+		Side p = a;
+		String old = r.store.loadService(null).onion;
+		r.hold(OnionAuthRecords.TYPE_ROTATE);
+		r.manager.rotate();
+		assertNotEquals(old, r.store.loadService(null).onion);
+		now.addAndGet(HOUR_MS);
+		deliverALateOfferFromAnAbandonedRound(r);
+		assertTrue(r.record().rekeying);
+		OnionAuthStore.ServiceRecord psvc = p.store.loadService(null);
+		r.deliver(OnionAuthRecords.offer(psvc.gen, psvc.onion,
+				p.record().dialPublicKey));
+		assertFalse(r.record().rekeying);
+		assertEquals(AUTH_REQUIRED, r.state());
+		assertFalse(r.record().rotateAcked);
+		r.manager.tick();
+		assertEquals(old, p.record().peerOnion);
+		assertTrue("the old address was retired while the peer knew only it",
+				r.tor.published.contains(old));
+		r.release();
+		elapse(3 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertFalse(r.tor.published.contains(old));
+	}
+
+	@Test
+	public void testARemovalWhoseDeleteFailsTakesTheKeyOutAtTheNextCheck()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		allowAnyContact(b);
+		Contact x = b.addAuthorizedContact(3);
+		byte[] xKey = b.store.load(null, x.getId()).peerPublicKey;
+		assertTrue(pump());
+		assertTrue(b.publishes(xKey));
+		b.tor.failRemoves = 1;
+		b.remove(x);
+		elapse(TICK_MS, false);
+		assertFalse("the removed key is still published after a check",
+				b.publishes(xKey));
+		assertFalse(b.store.loadService(null).revocationPending);
+		elapse(2 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertFalse(b.publishes(xKey));
+	}
+
+	@Test
+	public void testARemovalDuringAnOverlapWhoseDeletesFailTakesTheKeyOutAtTheNextCheck()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		allowAnyContact(b);
+		Contact x = b.addAuthorizedContact(3);
+		byte[] xKey = b.store.load(null, x.getId()).peerPublicKey;
+		assertTrue(pump());
+		b.manager.rotate();
+		assertNotNull(b.store.loadService(null).oldOnion);
+		b.tor.failRemoves = 2;
+		b.remove(x);
+		elapse(TICK_MS, false);
+		assertFalse("the removed key is still published after a check",
+				b.publishes(xKey));
+		elapse(2 * DAY_MS, true);
+		assertLockedInAndReachable();
+		assertFalse(b.publishes(xKey));
+	}
+
+	@Test
+	public void testATorRestartDuringAnOverlapPublishesTheOldAddressAgain()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		String old = b.store.loadService(null).onion;
+		b.manager.rotate();
+		b.restart();
+		assertTrue("the old address was not published after a Tor restart",
+				b.tor.published.contains(old));
+		assertEquals(old, a.record().peerOnion);
+		assertTrue(session());
+		assertLockedInAndReachable();
+	}
+
+	@Test
+	public void testAPublishThatFailedAtATorStartIsRetriedByTheNextCheck()
+			throws Exception {
+		pair(fixed, fixed);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		String current = b.store.loadService(null).onion;
+		b.manager.detach();
+		b.tor.stop();
+		b.tor = new Tor();
+		b.tor.failPublishes = 1;
+		b.start();
+		assertFalse(b.tor.published.contains(current));
+		elapse(TICK_MS, false);
+		assertTrue("the address was not published again after a failed start",
+				b.tor.published.contains(current));
+		assertTrue(session());
+		assertLockedInAndReachable();
+	}
+
+	@Test
+	public void testAnOlderRotatingSideStrandsItsPeerUntilItIsUpdated()
+			throws Exception {
+		pair(fixed, shipped);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		b.manager.rotate();
+		assertEquals(0, elapse(31 * DAY_MS, false));
+		assertEquals("a peer that rotated on an earlier version kept the"
+				+ " address", 0, elapse(8 * DAY_MS, true));
+		b.upgrade(fixed);
+		elapse(3 * DAY_MS, true);
+		assertLockedInAndReachable();
+	}
+
+	@Test
+	public void testAnOlderRemovingSideStrandsItsPeerUntilItIsUpdated()
+			throws Exception {
+		pair(fixed, shipped);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		allowAnyContact(b);
+		Contact y = b.addAuthorizedContact(9);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		b.remove(y);
+		assertEquals(0, elapse(2 * DAY_MS, false));
+		assertEquals("a peer that removed a contact on an earlier version"
+				+ " kept the address", 0, elapse(8 * DAY_MS, true));
+		b.upgrade(fixed);
+		elapse(3 * DAY_MS, true);
+		assertLockedInAndReachable();
+	}
+
+	@Test
+	public void testTwoOlderPeersSplitByARemovalRecoverOnceTheRemoverIsUpdated()
+			throws Exception {
+		pair(shipped, shipped);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		allowAnyContact(b);
+		Contact y = b.addAuthorizedContact(9);
+		assertTrue(pump());
+		assertLockedInAndReachable();
+		b.remove(y);
+		assertEquals(0, elapse(8 * DAY_MS, true));
+		b.upgrade(fixed);
+		elapse(3 * DAY_MS, true);
+		assertEquals(AUTH_REQUIRED, a.state());
+		assertEquals(AUTH_REQUIRED, b.state());
+		assertTrue(session());
 	}
 }

@@ -631,7 +631,7 @@ public class XmrWalletManagerTest {
 			m.setSendClock(clock::get);
 		}
 
-		void openView() throws Exception {
+		void createSyncable() {
 			m.createWallet("w", "pass".toCharArray());
 			Event<String> reveal = m.getSeedReveal().getValue();
 			id = reveal == null ? null : reveal.getIfNotHandled();
@@ -639,12 +639,15 @@ public class XmrWalletManagerTest {
 			m.setTorSocksPort(9050);
 			m.setSyncNodes(java.util.Collections.singletonList(
 					XmrNode.parse(NODE, XmrNode.Source.VETTED, false)));
+		}
+
+		void openView() throws Exception {
+			createSyncable();
 			m.openWalletForView(id);
 			awaitTrue(m::isSessionValid, AWAIT_MS);
 		}
 
-		FakeMoneroEngine.FakePrepared reachReview() throws Exception {
-			openView();
+		FakeMoneroEngine.FakePrepared stagePrepared() {
 			FakeMoneroEngine.FakePrepared p = new FakeMoneroEngine.FakePrepared();
 			p.ids.add(T1);
 			p.count = 1;
@@ -653,6 +656,12 @@ public class XmrWalletManagerTest {
 			p.dust = 0;
 			p.change = 500_000_000L;
 			engine.preparedForNewSessions = p;
+			return p;
+		}
+
+		FakeMoneroEngine.FakePrepared reachReview() throws Exception {
+			openView();
+			FakeMoneroEngine.FakePrepared p = stagePrepared();
 			m.prepareSend(id, "w", DEST, p.amount, 0, "pass".toCharArray());
 			awaitTrue(() -> kind() == XmrSendUiState.Kind.REVIEW, AWAIT_MS);
 			return p;
@@ -668,6 +677,43 @@ public class XmrWalletManagerTest {
 		public void close() {
 			m.closeSession();
 			session.shutdownNow();
+		}
+	}
+
+	@Test(timeout = 90_000)
+	public void aSendRequestedAsTheSessionOpensWaitsForTheSyncNode()
+			throws Exception {
+		try (Live live = new Live()) {
+			live.createSyncable();
+			java.util.concurrent.CountDownLatch opening =
+					new java.util.concurrent.CountDownLatch(1);
+			java.util.concurrent.CountDownLatch resume =
+					new java.util.concurrent.CountDownLatch(1);
+			engine.onBackgroundHistory = () -> {
+				opening.countDown();
+				try {
+					resume.await(AWAIT_MS,
+							java.util.concurrent.TimeUnit.MILLISECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			};
+			live.m.openWalletForView(live.id);
+			assertTrue(opening.await(AWAIT_MS,
+					java.util.concurrent.TimeUnit.MILLISECONDS));
+			assertTrue("the session is published while it is still opening",
+					live.m.isSessionValid());
+			FakeMoneroEngine.FakePrepared p = live.stagePrepared();
+			live.m.prepareSend(live.id, "w", DEST, p.amount, 0,
+					"pass".toCharArray());
+			resume.countDown();
+			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.REVIEW
+					|| live.kind() == XmrSendUiState.Kind.FAILED, AWAIT_MS);
+			assertEquals("a send made the moment the wallet opened waits for "
+					+ "the sync node instead of failing",
+					XmrSendUiState.Kind.REVIEW, live.kind());
+			assertEquals(XmrTorIsolation.relayProxy(9050, live.id),
+					engine.lastSpendOpened.lastProxy);
 		}
 	}
 
@@ -694,6 +740,8 @@ public class XmrWalletManagerTest {
 			live.m.confirmSend("pass".toCharArray());
 			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED, AWAIT_MS);
 			assertEquals("a cancelled flow never relays", 0, p.commits);
+			awaitTrue(() -> Boolean.FALSE.equals(live.m.getBusy().getValue()),
+					AWAIT_MS);
 		}
 	}
 
@@ -752,7 +800,7 @@ public class XmrWalletManagerTest {
 			p.commitResult = false;
 			live.m.confirmSend("pass".toCharArray());
 			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
-					10_000);
+					AWAIT_MS);
 			assertEquals("relayed exactly once", 1, p.commits);
 			id = live.id;
 			List<XmrPendingSend> pending = live.m.pendingSendsFor(id);
@@ -835,7 +883,7 @@ public class XmrWalletManagerTest {
 
 			live.m.cancelSend();
 			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.CANCELLED,
-					10_000);
+					AWAIT_MS);
 			awaitTrue(() -> engine.lastBackgroundOpened != firstView, AWAIT_MS);
 			assertTrue("the spend state was written to the cache",
 					spend.storeCalls > storesBefore);
@@ -989,7 +1037,7 @@ public class XmrWalletManagerTest {
 				assertEquals(XmrError.WRONG_PASSWORD,
 						live.m.getError().getValue().getIfNotHandled());
 				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.REVIEW,
-						10_000);
+						AWAIT_MS);
 			} finally {
 				store.throwOnLoad = null;
 			}
@@ -1003,7 +1051,7 @@ public class XmrWalletManagerTest {
 			store.holdLoad = hold;
 			live.m.confirmSend("pass".toCharArray());
 			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.AUTHENTICATING,
-					10_000);
+					AWAIT_MS);
 			live.clock.addAndGet(XmrWalletManager.SPEND_SESSION_TTL_MS);
 			assertTrue("a busy flow schedules a follow-up",
 					live.m.expireStaleSendFlow());
@@ -1025,7 +1073,7 @@ public class XmrWalletManagerTest {
 				FakeMoneroEngine.FakePrepared p = live.reachReview();
 				live.m.confirmSend("pass".toCharArray());
 				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.SUCCESS,
-						10_000);
+						AWAIT_MS);
 				assertEquals(1, p.commits);
 				List<XmrPendingSend> pending = live.m.pendingSendsFor(live.id);
 				assertEquals(1, pending.size());
@@ -1156,7 +1204,7 @@ public class XmrWalletManagerTest {
 				live.m.prepareSend(live.id, "w", DEST, 1000, 0,
 						"pass".toCharArray());
 				awaitTrue(() -> live.kind() == XmrSendUiState.Kind.FAILED,
-						10_000);
+						AWAIT_MS);
 			} finally {
 				engine.failSpendInit = false;
 			}
@@ -1174,7 +1222,7 @@ public class XmrWalletManagerTest {
 			p.commitThrows = true;
 			live.m.confirmSend("pass".toCharArray());
 			awaitTrue(() -> live.kind() == XmrSendUiState.Kind.RELAY_UNCERTAIN,
-					10_000);
+					AWAIT_MS);
 			assertTrue(live.m.isSpendQuarantined(live.id));
 			assertEquals(1, live.m.pendingSendsFor(live.id).size());
 		}
@@ -1396,8 +1444,20 @@ public class XmrWalletManagerTest {
 			throws Exception {
 		java.util.concurrent.ExecutorService session =
 				java.util.concurrent.Executors.newSingleThreadExecutor();
+		java.util.concurrent.atomic.AtomicBoolean handOff =
+				new java.util.concurrent.atomic.AtomicBoolean();
 		XmrWalletManager m = new XmrWalletManager(tmpBase, vault, store,
-				engine, Runnable::run, session);
+				engine, Runnable::run, task -> {
+					int restores = engine.restoreCalls.get();
+					session.execute(task);
+					if (!handOff.getAndSet(false)) return;
+					try {
+						awaitTrue(() -> engine.restoreCalls.get() > restores,
+								AWAIT_MS);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+					}
+				});
 		java.util.concurrent.CountDownLatch gate =
 				new java.util.concurrent.CountDownLatch(1);
 		try {
@@ -1407,6 +1467,7 @@ public class XmrWalletManagerTest {
 			engine.restoreGate = gate;
 			char[] password = "pass".toCharArray();
 			int before = engine.restoreCalls.get();
+			handOff.set(true);
 			m.rescan(id, password, 0);
 			assertTrue("the timeout is reported", errors.contains(
 					XmrError.UNKNOWN));

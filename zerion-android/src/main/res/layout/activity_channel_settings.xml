@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="?attr/zerionColorBackground"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<androidx.appcompat.widget.Toolbar
+		android:id="@+id/channelSettingsToolbar"
+		android:layout_width="match_parent"
+		android:layout_height="?attr/actionBarSize"
+		android:background="?attr/zerionColorBackground"
+		app:title="@string/channels_settings_title"
+		app:titleTextColor="?attr/zerionColorOnSurface" />
+
+	<ScrollView
+		android:id="@+id/channelSettingsScroll"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingStart="16dp"
+			android:paddingEnd="16dp"
+			android:paddingBottom="32dp">
+
+			<LinearLayout
+				android:id="@+id/channelSettingsHeader"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:accessibilityHeading="true"
+				android:gravity="center_horizontal"
+				android:orientation="vertical"
+				android:paddingTop="8dp"
+				android:paddingBottom="12dp"
+				android:screenReaderFocusable="true">
+
+				<TextView
+					android:id="@+id/channelSettingsAvatar"
+					android:layout_width="64dp"
+					android:layout_height="64dp"
+					android:background="@drawable/badge_circle_cyan"
+					android:gravity="center"
+					android:importantForAccessibility="no"
+					android:fontFamily="@font/bricolage_grotesque"
+					android:textAppearance="@style/TextAppearance.Zerion.Headline"
+					android:textColor="?attr/zerionColorOnAccent"
+					tools:text="N" />
+
+				<TextView
+					android:id="@+id/channelSettingsName"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="10dp"
+					android:ellipsize="end"
+					android:gravity="center"
+					android:maxLines="2"
+					android:fontFamily="@font/bricolage_grotesque"
+					android:textAppearance="@style/TextAppearance.Zerion.Headline"
+					android:textColor="?attr/zerionColorOnSurface"
+					tools:text="Neighbourhood updates" />
+
+				<TextView
+					android:id="@+id/channelSettingsAccess"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="4dp"
+					android:gravity="center"
+					android:textAppearance="@style/TextAppearance.Zerion.Caption"
+					android:textColor="?attr/zerionColorOnSurfaceMuted"
+					tools:text="Private channel · Approval required · You are the owner" />
+
+				<TextView
+					android:id="@+id/channelSettingsDescription"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:layout_marginTop="8dp"
+					android:gravity="center"
+					android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+					android:textColor="?attr/zerionColorOnSurfaceMuted"
+					android:visibility="gone"
+					tools:text="News from the street"
+					tools:visibility="visible" />
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionChannel"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="12dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_channel"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:divider="@drawable/divider_channel_settings_row"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp"
+					android:showDividers="middle">
+
+					<com.google.android.material.materialswitch.MaterialSwitch
+						android:id="@+id/channelSettingsMute"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:minHeight="52dp"
+						android:saveEnabled="false"
+						android:paddingStart="20dp"
+						android:paddingEnd="20dp"
+						android:text="@string/channels_mute_notifications"
+						android:textAppearance="@style/TextAppearance.Zerion.Body"
+						android:textColor="?attr/zerionColorOnSurface" />
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionAccess"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="20dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_access"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:divider="@drawable/divider_channel_settings_row"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp"
+					android:showDividers="middle">
+
+					<LinearLayout
+						android:id="@+id/channelSettingsShare"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_action_share_invite" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsSend"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_action_send_to_contact" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsWhoCanJoin"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:minHeight="52dp"
+						android:gravity="center_vertical"
+						android:orientation="vertical"
+						android:paddingStart="20dp"
+						android:paddingTop="8dp"
+						android:paddingEnd="20dp"
+						android:paddingBottom="8dp"
+						android:screenReaderFocusable="true">
+
+						<TextView
+							android:layout_width="match_parent"
+							android:layout_height="wrap_content"
+							android:text="@string/channels_settings_who_can_join"
+							android:textAppearance="@style/TextAppearance.Zerion.Body"
+							android:textColor="?attr/zerionColorOnSurface" />
+
+						<TextView
+							android:id="@+id/channelSettingsWhoCanJoinSummary"
+							android:layout_width="match_parent"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="2dp"
+							android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="You approve each new subscriber" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsRenew"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<LinearLayout
+							android:layout_width="0dp"
+							android:layout_height="wrap_content"
+							android:layout_weight="1"
+							android:orientation="vertical">
+
+							<TextView
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:text="@string/channels_action_renew_link"
+								android:textAppearance="@style/TextAppearance.Zerion.Body"
+								android:textColor="?attr/zerionColorOnSurface" />
+
+							<TextView
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:layout_marginTop="2dp"
+								android:text="@string/channels_settings_renew_summary"
+								android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+								android:textColor="?attr/zerionColorOnSurfaceMuted" />
+
+						</LinearLayout>
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionParticipation"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="20dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_participation"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:divider="@drawable/divider_channel_settings_row"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp"
+					android:showDividers="middle">
+
+					<com.google.android.material.materialswitch.MaterialSwitch
+						android:id="@+id/channelSettingsComments"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:minHeight="52dp"
+						android:saveEnabled="false"
+						android:paddingStart="20dp"
+						android:paddingEnd="20dp"
+						android:text="@string/channels_action_comments"
+						android:textAppearance="@style/TextAppearance.Zerion.Body"
+						android:textColor="?attr/zerionColorOnSurface" />
+
+					<LinearLayout
+						android:id="@+id/channelSettingsWhoCanPost"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_settings_who_can_post" />
+
+						<TextView
+							android:id="@+id/channelSettingsWhoCanPostValue"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginStart="12dp"
+							android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="Only you" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsAnnounce"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_settings_announce" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionAvailability"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="20dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_availability"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp">
+
+					<com.professor.zerion.android.view.WrapRow
+						android:id="@+id/channelSettingsConnection"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<LinearLayout
+							android:layout_width="0dp"
+							android:layout_height="wrap_content"
+							android:layout_marginEnd="12dp"
+							android:layout_weight="1"
+							android:orientation="vertical">
+
+							<TextView
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:text="@string/channels_settings_connection"
+								android:textAppearance="@style/TextAppearance.Zerion.Body"
+								android:textColor="?attr/zerionColorOnSurface" />
+
+							<TextView
+								android:id="@+id/channelSettingsConnectionSummary"
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:layout_marginTop="2dp"
+								android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+								android:textColor="?attr/zerionColorOnSurfaceMuted"
+								tools:text="Last updated 14:02" />
+
+						</LinearLayout>
+
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:maxLines="1"
+							android:text="@string/channels_settings_advanced"
+							android:textAppearance="@style/TextAppearance.Zerion.Caption"
+							android:textColor="?attr/zerionColorOnSurfaceMuted" />
+
+					</com.professor.zerion.android.view.WrapRow>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionMembers"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="20dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_members"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:divider="@drawable/divider_channel_settings_row"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp"
+					android:showDividers="middle">
+
+					<LinearLayout
+						android:id="@+id/channelSettingsWaiting"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_settings_waiting" />
+
+						<TextView
+							android:id="@+id/channelSettingsWaitingCount"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginStart="12dp"
+							android:background="@drawable/bg_unread_pill"
+							android:minWidth="24dp"
+							android:gravity="center"
+							android:paddingStart="8dp"
+							android:paddingTop="2dp"
+							android:paddingEnd="8dp"
+							android:paddingBottom="2dp"
+							android:textAppearance="@style/TextAppearance.Zerion.Label"
+							android:textColor="?attr/zerionColorOnAccent"
+							tools:text="3" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsSubscribers"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<LinearLayout
+							android:layout_width="0dp"
+							android:layout_height="wrap_content"
+							android:layout_weight="1"
+							android:orientation="vertical">
+
+							<TextView
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:text="@string/channels_settings_named_people"
+								android:textAppearance="@style/TextAppearance.Zerion.Body"
+								android:textColor="?attr/zerionColorOnSurface" />
+
+							<TextView
+								android:layout_width="match_parent"
+								android:layout_height="wrap_content"
+								android:layout_marginTop="2dp"
+								android:text="@string/channels_settings_named_people_summary"
+								android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+								android:textColor="?attr/zerionColorOnSurfaceMuted" />
+
+						</LinearLayout>
+
+						<TextView
+							android:id="@+id/channelSettingsSubscribersValue"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginStart="12dp"
+							android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="214" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsEditors"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_settings_editors" />
+
+						<TextView
+							android:id="@+id/channelSettingsEditorsValue"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginStart="12dp"
+							android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="2" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsBlocked"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionText"
+							android:text="@string/channels_settings_blocked" />
+
+						<TextView
+							android:id="@+id/channelSettingsBlockedValue"
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginStart="12dp"
+							android:textAppearance="@style/TextAppearance.Zerion.BodySmall"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							tools:text="1" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/channelSettingsSectionAdministration"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:orientation="vertical">
+
+				<TextView
+					style="@style/GroupTrAdminSectionLabel"
+					android:layout_marginTop="20dp"
+					android:accessibilityHeading="true"
+					android:text="@string/channels_settings_section_administration"
+					android:textAllCaps="true" />
+
+				<LinearLayout
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:background="@drawable/bg_contact_card"
+					android:divider="@drawable/divider_channel_settings_row"
+					android:orientation="vertical"
+					android:paddingTop="4dp"
+					android:paddingBottom="4dp"
+					android:showDividers="middle">
+
+					<LinearLayout
+						android:id="@+id/channelSettingsDelete"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<ImageView
+							style="@style/GroupTrAdminActionIcon"
+							android:contentDescription="@null"
+							android:importantForAccessibility="no"
+							android:src="@drawable/ic_delete"
+							app:tint="?attr/zerionColorDangerText" />
+
+						<TextView
+							style="@style/GroupTrAdminActionTextDanger"
+							android:text="@string/channels_settings_delete" />
+
+					</LinearLayout>
+
+					<LinearLayout
+						android:id="@+id/channelSettingsLeave"
+						style="@style/GroupTrAdminActionRow"
+						android:minHeight="52dp">
+
+						<TextView
+							style="@style/GroupTrAdminActionTextDanger"
+							android:text="@string/channels_action_leave" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</ScrollView>
+
+</LinearLayout>

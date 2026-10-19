@@ -11,16 +11,16 @@
 		android:layout_height="wrap_content"
 		android:minHeight="48dp"
 		android:text="@string/grouptr_incognito"
-		android:textColor="@color/zerion_text_primary"
-		android:textSize="16sp" />
+		android:textColor="?attr/zerionColorOnSurface"
+		android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 	<TextView
 		android:id="@+id/incognitoSummary"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:text="@string/grouptr_incognito_summary"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="13sp" />
+		android:text="@string/grouptr_incognito_explained"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	<LinearLayout
 		android:id="@+id/incognitoNameRow"
@@ -36,8 +36,8 @@
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
-			android:textColor="@color/zerion_text_primary"
-			android:textSize="15sp" />
+			android:textColor="?attr/zerionColorOnSurface"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/incognitoNewName"
@@ -46,7 +46,8 @@
 			android:layout_height="wrap_content"
 			android:minHeight="48dp"
 			android:text="@string/grouptr_incognito_new_name"
-			android:textColor="@color/zerion_accent_text" />
+			android:textColor="?attr/zerionColorAccentText"
+			android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 	</LinearLayout>
 

@@ -1,6 +1,7 @@
 package org.zerionproject.app.grouptr;
 
 import org.zerionproject.app.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrPostSummary;
 import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -62,9 +63,63 @@ final class GroupTrPostCache {
 	private final Map<String, TreeMap<Long, List<BufferedPost>>>
 			futureBuffer = new ConcurrentHashMap<>();
 	private final Set<String> historyLoaded = ConcurrentHashMap.newKeySet();
+	private final Map<String, Remembered> summaries =
+			new ConcurrentHashMap<>();
+	private final Object summaryLock = new Object();
+	private long summaryGeneration = 0L;
+
+	static final class Remembered {
+
+		@Nullable
+		final GroupTrPostSummary summary;
+		final String members;
+
+		Remembered(@Nullable GroupTrPostSummary summary, String members) {
+			this.summary = summary;
+			this.members = members;
+		}
+	}
 
 	GroupTrPostCache(Function<String, ReentrantLock> groupLocks) {
 		this.groupLocks = groupLocks;
+	}
+
+	@Nullable
+	Remembered remembered(String key) {
+		return summaries.get(key);
+	}
+
+	long summaryGeneration() {
+		synchronized (summaryLock) {
+			return summaryGeneration;
+		}
+	}
+
+	boolean remember(String key, @Nullable GroupTrPostSummary summary,
+			String members, long generation) {
+		synchronized (summaryLock) {
+			if (generation != summaryGeneration) return false;
+			summaries.put(key, new Remembered(summary, members));
+			return true;
+		}
+	}
+
+	void forgetSummary(String key) {
+		synchronized (summaryLock) {
+			summaryGeneration++;
+			summaries.remove(key);
+		}
+	}
+
+	void forgetAllSummaries() {
+		synchronized (summaryLock) {
+			summaryGeneration++;
+			summaries.clear();
+		}
+	}
+
+	private void dropSummaryOfThisGroup(String key) {
+		summaries.remove(key);
 	}
 
 	@Nullable
@@ -86,12 +141,14 @@ final class GroupTrPostCache {
 
 	void forgetHistory(String key) {
 		historyLoaded.remove(key);
+		forgetSummary(key);
 	}
 
 	void forget(String key) {
 		postCache.remove(key);
 		futureBuffer.remove(key);
 		historyLoaded.remove(key);
+		forgetSummary(key);
 	}
 
 	void purgeExpired(long now) {
@@ -121,6 +178,7 @@ final class GroupTrPostCache {
 	}
 
 	void deliver(String key, GroupTrPost p) {
+		dropSummaryOfThisGroup(key);
 		ArrayDeque<GroupTrPost> q = queueFor(key);
 		synchronized (q) {
 			for (GroupTrPost existing : q) {
@@ -133,6 +191,7 @@ final class GroupTrPostCache {
 	}
 
 	void addLocal(String key, GroupTrPost p) {
+		dropSummaryOfThisGroup(key);
 		ArrayDeque<GroupTrPost> q = queueFor(key);
 		synchronized (q) {
 			q.addLast(p);
@@ -143,6 +202,7 @@ final class GroupTrPostCache {
 
 	Map<String, byte[]> removePosts(String key, Set<String> postIds,
 			@Nullable byte[] sender) {
+		forgetSummary(key);
 		Map<String, byte[]> removed = new HashMap<>();
 		ArrayDeque<GroupTrPost> q = postCache.get(key);
 		if (q == null) return removed;

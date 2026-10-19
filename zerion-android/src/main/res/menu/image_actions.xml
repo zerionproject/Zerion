@@ -5,6 +5,15 @@
 
 	<item
 		android:id="@+id/action_save_image"
+		android:icon="@drawable/ic_file_download"
 		android:title="@string/save_image"
-		app:showAsAction="never"/>
+		app:iconTint="?attr/zerionColorOnScrim"
+		app:showAsAction="always"/>
+
+	<item
+		android:id="@+id/action_open_elsewhere"
+		android:icon="@drawable/ic_open_in_new"
+		android:title="@string/media_viewer_open_elsewhere"
+		app:iconTint="?attr/zerionColorOnScrim"
+		app:showAsAction="always"/>
 </menu>

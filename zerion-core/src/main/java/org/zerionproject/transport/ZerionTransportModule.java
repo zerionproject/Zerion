@@ -122,8 +122,10 @@ public class ZerionTransportModule {
 	@Provides
 	@Singleton
 	ContactConnectionDiagnostics provideContactConnectionDiagnostics(
-			EventBus eventBus, ContactConnectionDiagnosticsImpl diagnostics) {
+			EventBus eventBus, ContactConnectionDiagnosticsImpl diagnostics,
+			org.zerionproject.core.plugin.tor.B4OnionRotation rotation) {
 		eventBus.addListener(diagnostics);
+		eventBus.addListener(rotation);
 		return diagnostics;
 	}
 }

@@ -1060,8 +1060,8 @@ any) and keys, and for every reaction the signer's keys, to every puller
 private channel).
 
 **Retention.** The publisher tells signers it **knows** from anonymous ones:
-the channel's own key, the subscribers the owner marked as **trusted** in
-the subscriber list (`zerion-channels-trusted`, the newest 4096 keys),
+the channel's own key, the subscribers the owner marked as **trusted**
+(`zerion-channels-trusted`, the newest 4096 keys),
 approved applicants (from 3.0.18 those approved under the capability the
 channel uses now and, until the first renewal of the link from 3.0.18 on,
 those approved before 3.0.18; section 6, Apply) and editors are known,
@@ -1096,16 +1096,29 @@ away its trusted mark, revokes any editor certificate naming it and refuses
 its future reactions, comments, announcements, applications, submitted
 posts and change requests. A ban cannot stop anyone from reading: pulls are
 anonymous, so the publisher cannot tell a banned key's pulls apart. The
-owner bans from the subscriber list or by long-pressing a comment, and marks
-subscribers as trusted from the subscriber list. From 3.0.18 the owner can
-lift a ban (`unbanSubscriber`, from the subscriber list, which also lists
-banned keys that never announced a name): the key leaves the list and its
-new items are taken again, but what the ban removed is not restored, the
-trusted mark is not given back and a revoked editor certificate stays
-revoked. To cut someone off from a private channel the owner removes
-everyone from it with the ban's "Remove from channel" option, which rotates
-the invite link: a new capability, content key and onion, so every
-subscriber needs a new link (section 6); there are no per-reader keys.
+owner bans ("Block" on screen) and marks subscribers as trusted ("Trust
+their comments") from the member sheet, which from 3.0.18 opens from the
+list of people who shared their name (announced subscribers that are not
+banned; the settings count exactly these, since anonymous readers are not
+known), from a comment the owner holds and from the editor list, and is
+the only place these actions are offered. Its Safety code, under Advanced,
+is the app's identity fingerprint (`IdentityFingerprint.forIdentity`:
+BLAKE2b-256 over the Ed25519 and the ML-DSA-65 half of the member's
+channel key, shown as six groups of ten numbers); the member sees the
+same code for their own channel key under Advanced in the channel
+settings, and no code is shown while the owner's device does not know the
+ML-DSA half. From 3.0.18 the owner can
+lift a ban (`unbanSubscriber`, "Unblock" in the member sheet; the Blocked
+list in the channel settings also lists banned keys that never announced a
+name): the key leaves the list and its new items are taken again, but what
+the ban removed is not restored, the trusted mark is not given back and a
+revoked editor certificate stays revoked. To cut someone off from a private
+channel the owner removes everyone from it with "Remove from channel" in
+the member sheet, which bans the key and renews the invite link (or with
+"Renew invite link" in the channel settings), which rotates the invite link: a
+new capability, content key and onion, so every subscriber needs a new
+link (section 6) and, in a channel that needs approval, a new approval;
+there are no per-reader keys.
 
 ### Author binding (protocol version 3)
 
@@ -1425,6 +1438,47 @@ can when a member comments while reading. The stored text is what the
 member typed; it stays in the encrypted database like the device's own
 copies of comments and posts until it is sent, refused, deleted or
 expired.
+
+### Times shown on the device (no wire change)
+
+Every time a channel item carries is a whole hour: the `timestampHourMs` of
+a post, the `ts` of a comment or reaction and the hour an application was
+made are floored to the hour (a multiple of an hour in UTC) by the device
+that makes them, so no item that leaves a device carries the minute, and
+the owner's device and every reader keep only the hour. The author's own
+device keeps the exact time of an item only while it waits to be sent: the
+member outbox (`ChannelOutboxStore`) and the list of items being sent keep
+when the item was made until it is sent, refused, deleted or expired. From
+3.0.18 the Android app never shows a channel time as if it knew the minute
+(`HourTimes`, used by `UiUtils.formatChannelHour`):
+
+- An item of today reads "around 10:00": the locale's clock for the start
+  of the hour, which a 12-hour locale writes without minutes ("around
+  10 AM"). An item of another day reads "Oct 17, around 10:00", with the
+  year when it is not the current one. This holds for feed cards,
+  comments, Message info and the times that tell two commenters of the
+  same name apart. The channel row of the home list says "around 10:00"
+  for today and, like chat rows, the weekday or the date for older items
+  (the day alone for the midnight hour).
+- An access request reads "Requested Oct 18, around 10:00".
+- A post or comment that is being sent, waits in the member outbox or was
+  not sent shows the hour its own local time falls in, worded the same, so
+  its time does not change when the stored item takes its place. It changes
+  only when the item is signed in a later hour, for example after waiting
+  in the outbox.
+- In a time zone whose offset is not a whole number of hours the kept hour
+  starts at the half or quarter hour and reads, for example, "around
+  10:30". The day shown is the day that hour starts on, which can be the
+  day before: a comment written at 00:10 in India (UTC+5:30) is kept under
+  18:00 UTC and reads "Oct 17, around 11:30 PM" on Oct 18.
+
+The wording uses two strings, `channels_time_around` ("around %1$s") and
+`channels_time_day_around` ("%1$s, around %2$s"). Up to 3.0.17 a comment
+written at 10:48 showed "10:48" while it was sent and "10:00" once stored,
+cards and Message info showed "10:00", an item from late the previous
+evening showed no day until 24 hours had passed, and an access request
+showed its date with "10:00", which suggested a minute the channel does
+not keep.
 
 ## 6. Public vs private channels; editor delegations
 
@@ -1775,8 +1829,11 @@ device already held posts.
 
 The publisher can issue delegation certificates, up to
 `MAX_ACTIVE_DELEGATIONS_PER_CHANNEL = 8`, naming an editor's member key of
-the channel (the owner picks an announced subscriber, or pastes the key the
-editor copied from the channel menu). An editor posts text (no attachments,
+the channel (the owner picks an announced subscriber by name, which opens
+the member sheet where "Make editor" issues it and the Safety code tells
+two people with the same name apart, or pastes the key the editor copied
+under Advanced in the channel settings; "Remove editor" in the member sheet
+revokes it). An editor posts text (no attachments,
 since blobs live on the publisher): it builds a format 2 post on the chain
 tip it holds, signs it with its member key and submits it with
 `WIRE_TYPE_SUBMIT_POST` (keys `type`, `v`, `channelId`, `post` = the wire
@@ -1967,12 +2024,36 @@ treated as public.
 
 ## 8. Channel tombstone - `WIRE_TYPE_CHANNEL_TOMBSTONE`
 
-When the publisher deletes a channel (`deleteChannel`), it stores a signed
-tombstone (`publishTombstone`) and deletes everything else it keeps for the
-channel. Its onions, the current one and any still retiring, then serve the
-tombstone in place of **any** response for 14 days
+When the publisher deletes a channel (`deleteChannel`, and from 3.0.18
+`deleteChannelForEveryone`, the deletion the owner's app uses; it offers
+`deleteChannel` only in the case described below), it stores a signed tombstone (`publishTombstone`) and deletes everything else it
+keeps for the channel. Its onions, the current one and any still retiring,
+then serve the tombstone in place of **any** response for 14 days
 (`DELETED_CHANNEL_GRACE_DAYS`), also across restarts, after which the onions
-are removed and their keys and the tombstone deleted. Keys
+are removed and their keys and the tombstone deleted. The onions answer
+only while the owner's phone runs Zerion and is connected, so the owner's
+app says, before the delete and when it is done, that for the next 14 days
+subscribers' phones remove the channel when they check for posts while
+this phone runs Zerion and is connected, and that a phone that does not
+check in that time keeps its copy.
+`deleteChannelForEveryone` signs the tombstone before it changes anything:
+when it cannot sign (the channel's signing key is missing or cannot be
+read, for example because it was stored with the wrong length), it removes
+nothing, the channel stays served as before, and it reports the failure
+(`ChannelDeleteNotSignedException`), so the owner is told that nothing was
+removed; `deleteChannel` in that case removes the channel on this device
+only. The owner's app offers that only right after a signed delete failed
+for this reason, as an explicit "Remove from this phone only" choice that
+says subscribers are not told, keep their copy and get no new posts, and
+that again asks for DELETE and the account password; it is never offered
+for any other failure or taken without that choice. The owner's app asks for
+the word DELETE and then the account password, checked like a sign-in (the
+same wrong-password limits and lockout), before `deleteChannelForEveryone`
+runs. The app reports the channel as deleted only when `hasDeletionNotice`
+shows that this device stores the signed notice; when the notice is stored
+but a later step of the removal failed, it reports the channel as deleted
+and says that it is fully removed from the phone at the next sign-in, when
+`finishPendingRemovals` completes it. Keys
 (`encodeTombstone`): `type`, `channelId`, `ts`, `sig`. Signed-input
 `tombstoneSignedInput = channelId || int64 ts`, label
 `SIGNING_LABEL_CHANNEL_TOMBSTONE`. A subscriber that pulls and sees a
@@ -2077,9 +2158,9 @@ next rotated and the retired onions that stay published until a given time.
 
 Banning a subscriber does not rotate the onion: in a public channel anyone
 with the link can read anyway, and in a private channel the owner rotates
-the invite link (offered with the ban as "Remove from channel", on by
-default) to cut a banned member off, which every other subscriber then needs
-a new link for too.
+the invite link ("Remove from channel" in the member sheet bans and renews
+in one step; "Block" bans only) to cut a banned member off, which every
+other subscriber then needs a new link for too.
 
 ## What this doc does NOT cover
 

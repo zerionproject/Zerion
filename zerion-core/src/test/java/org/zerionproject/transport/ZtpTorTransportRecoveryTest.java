@@ -12,6 +12,8 @@ import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.junit.After;
 import org.junit.Test;
+import org.zerionproject.core.system.SystemClock;
+import org.zerionproject.core.test.TestFeatureFlagModule;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +56,8 @@ public class ZtpTorTransportRecoveryTest {
 		volatile boolean refuseEnable = false;
 		@Nullable
 		volatile java.util.concurrent.CountDownLatch holdStart = null;
+		@Nullable
+		volatile java.util.concurrent.CountDownLatch holdPublish = null;
 		private int onions = 0;
 
 		public void start() throws IOException {
@@ -92,6 +96,14 @@ public class ZtpTorTransportRecoveryTest {
 				int remotePort, @Nullable String privateKey) {
 			String key = privateKey == null ? "generated" : privateKey;
 			calls.add("publish:" + localPort + ":" + remotePort + ":" + key);
+			java.util.concurrent.CountDownLatch hold = holdPublish;
+			if (hold != null) {
+				try {
+					hold.await(10, java.util.concurrent.TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			}
 			return hiddenService("onion" + (++onions), key);
 		}
 
@@ -304,7 +316,9 @@ public class ZtpTorTransportRecoveryTest {
 		};
 		TorBridgeConfigurator bridges = new TorBridgeConfigurator(
 				settings, new NoBridges(), () -> "", tor,
-				new NoEvents(), exec);
+				new NoEvents(), exec, new TestFeatureFlagModule()
+				.provideFeatureFlags(), new NoScheduler(),
+				new SystemClock());
 		ZtpTorTransport t = new ZtpTorTransport(tor, refusingFactory,
 				refusingFactory, exec, handler, bridges, () -> {
 				}, watch);
@@ -520,6 +534,86 @@ public class ZtpTorTransportRecoveryTest {
 	}
 
 	@Test
+	public void aRestartedTorIsDialledWhileItsServicesAreStillBeingRepublished()
+			throws Exception {
+		ZtpTorTransport t = started("main-key");
+		tor.state = TorState.CONNECTED;
+		CountDownLatch release = new CountDownLatch(1);
+		CountDownLatch restarted = new CountDownLatch(1);
+		tor.holdPublish = release;
+		t.setTorRestartedListener(restarted::countDown);
+		try {
+			t.onControlConnectionLost();
+			waitUntil(() -> snapshot(tor.calls).contains(
+					"publish:" + t.getLocalPort() + ":80:main-key"));
+			assertFalse("Tor stayed dead until its services were republished",
+					t.isTorDead());
+			assertEquals(OverlayTransport.DIAL_NOT_CONNECTED,
+					t.dial(1, PEER_ONION, false).getSessionMs());
+			assertEquals("no dial while the services were republished", 1,
+					dialAttempts.get());
+		} finally {
+			release.countDown();
+		}
+		assertTrue(restarted.await(10, java.util.concurrent.TimeUnit.SECONDS));
+		assertFalse(t.isTorDead());
+	}
+
+	@Test
+	public void aSecondControlLossDuringTheRepublishRestartsOnlyAfterTheFirst()
+			throws Exception {
+		ZtpTorTransport t = started("main-key");
+		tor.state = TorState.CONNECTED;
+		CountDownLatch release = new CountDownLatch(1);
+		tor.holdPublish = release;
+		t.setTorRestartedListener(() -> tor.calls.add("restarted"));
+		try {
+			t.onControlConnectionLost();
+			waitUntil(() -> snapshot(tor.calls).contains(
+					"publish:" + t.getLocalPort() + ":80:main-key"));
+			t.onControlConnectionLost();
+			Thread.sleep(200);
+			assertEquals("a loss during the republish started a second restart",
+					1, Collections.frequency(snapshot(tor.calls), "start"));
+		} finally {
+			release.countDown();
+		}
+		waitUntil(() -> Collections.frequency(snapshot(tor.calls), "start")
+				== 2);
+		List<String> calls = snapshot(tor.calls);
+		assertTrue("the second restart began before the first had finished",
+				calls.indexOf("restarted") < calls.lastIndexOf("start"));
+		waitUntil(() -> Collections.frequency(snapshot(tor.calls), "restarted")
+				== 2);
+		Thread.sleep(300);
+		assertEquals(2, Collections.frequency(snapshot(tor.calls), "start"));
+		assertFalse(t.isTorDead());
+
+		t.onControlConnectionLost();
+		waitUntil(() -> Collections.frequency(snapshot(tor.calls), "start")
+				== 3);
+	}
+
+	@Test
+	public void aTorThatDiesWhileTheRestartFinishesIsStartedAgain()
+			throws Exception {
+		ZtpTorTransport t = started("main-key");
+		tor.state = TorState.CONNECTED;
+		java.util.concurrent.atomic.AtomicBoolean once =
+				new java.util.concurrent.atomic.AtomicBoolean();
+		t.setTorRestartedListener(() -> {
+			tor.calls.add("restarted");
+			if (once.compareAndSet(false, true)) t.onControlConnectionLost();
+		});
+		t.onControlConnectionLost();
+		waitUntil(() -> Collections.frequency(snapshot(tor.calls), "restarted")
+				== 2);
+		assertEquals("a Tor that died as the restart finished stayed dead",
+				2, Collections.frequency(snapshot(tor.calls), "start"));
+		assertFalse(t.isTorDead());
+	}
+
+	@Test
 	public void restartAttemptsBackOffWithDoublingDelays() throws Exception {
 		ZtpTorTransport t = started();
 		tor.failStarts = 3;
@@ -694,13 +788,17 @@ public class ZtpTorTransportRecoveryTest {
 	public void anUnknownNetworkChoiceKeepsTheNetworkDisabled() {
 		TorBridgeConfigurator never = new TorBridgeConfigurator(
 				new WithNetworkSetting(3), new NoBridges(), () -> "", tor,
-				new NoEvents(), exec);
+				new NoEvents(), exec, new TestFeatureFlagModule()
+				.provideFeatureFlags(), new NoScheduler(),
+				new SystemClock());
 		assertFalse(never.apply());
 		assertFalse(tor.calls.contains("bridges:off"));
 		TorBridgeConfigurator plain = new TorBridgeConfigurator(
 				new WithNetworkSetting(org.zerionproject.core.api.plugin
 						.TorConstants.PREF_TOR_NETWORK_WITHOUT_BRIDGES),
-				new NoBridges(), () -> "", tor, new NoEvents(), exec);
+				new NoBridges(), () -> "", tor, new NoEvents(), exec,
+				new TestFeatureFlagModule().provideFeatureFlags(),
+				new NoScheduler(), new SystemClock());
 		assertTrue(plain.apply());
 	}
 }

@@ -223,4 +223,93 @@ public class TorSocksSocketTest {
 		assertTrue(credentials.get(0).startsWith("abc.onion:"));
 		assertEquals(Collections.singletonList("ABC.onion:80"), hosts);
 	}
+
+	@Test(timeout = 10_000)
+	public void closingTheSocketEndsAStalledHandshake() throws Exception {
+		ServerSocket silent =
+				new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
+		List<Socket> accepted = Collections.synchronizedList(new ArrayList<>());
+		exec.execute(() -> {
+			try {
+				accepted.add(silent.accept());
+			} catch (IOException ignored) {
+			}
+		});
+		TorSocksSocket s = new TorSocksSocket(timeout -> {
+			Socket p = new Socket();
+			p.connect(new InetSocketAddress("127.0.0.1",
+					silent.getLocalPort()), timeout);
+			return p;
+		}, 2000, 60_000, 2000, "u", "p");
+		exec.execute(() -> {
+			try {
+				Thread.sleep(300);
+				s.close();
+			} catch (InterruptedException | IOException ignored) {
+			}
+		});
+		long start = System.nanoTime();
+		try {
+			s.connect(InetSocketAddress.createUnresolved("x.onion", 80),
+					60_000);
+			fail("connected through a silent proxy");
+		} catch (IOException expected) {
+		}
+		long took = (System.nanoTime() - start) / 1_000_000;
+		assertTrue("the close ended the handshake after " + took + " ms",
+				took < 5000);
+		assertFalse(s.isConnected());
+		silent.close();
+		for (Socket a : accepted) a.close();
+	}
+
+	@Test(timeout = 10_000)
+	public void aFailingCloseOfTheHandshakeStillClosesTheSocket()
+			throws Exception {
+		ServerSocket silent =
+				new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
+		List<Socket> accepted = Collections.synchronizedList(new ArrayList<>());
+		java.util.concurrent.CountDownLatch handshaking =
+				new java.util.concurrent.CountDownLatch(1);
+		exec.execute(() -> {
+			try {
+				Socket a = silent.accept();
+				accepted.add(a);
+				if (a.getInputStream().read() >= 0) handshaking.countDown();
+			} catch (IOException ignored) {
+			}
+		});
+		TorSocksSocket s = new TorSocksSocket(timeout -> {
+			Socket p = new Socket() {
+				@Override
+				public synchronized void close() throws IOException {
+					super.close();
+					throw new IOException("close failed");
+				}
+			};
+			p.connect(new InetSocketAddress("127.0.0.1",
+					silent.getLocalPort()), timeout);
+			return p;
+		}, 2000, 60_000, 2000, "u", "p");
+		java.util.concurrent.Future<?> connect = exec.submit(() -> {
+			try {
+				s.connect(InetSocketAddress.createUnresolved("x.onion", 80),
+						60_000);
+			} catch (IOException expected) {
+			}
+		});
+		assertTrue("the handshake began", handshaking.await(5,
+				java.util.concurrent.TimeUnit.SECONDS));
+		try {
+			s.close();
+			fail("the failing close was swallowed");
+		} catch (IOException expected) {
+		}
+		assertTrue(s.isClosed());
+		connect.get(5, java.util.concurrent.TimeUnit.SECONDS);
+		assertFalse(s.isConnected());
+		s.close();
+		silent.close();
+		for (Socket a : accepted) a.close();
+	}
 }

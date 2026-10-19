@@ -13,12 +13,26 @@ public interface OverlayTransport {
 		public static final DialResult NOT_CONNECTED =
 				new DialResult(false, DIAL_NOT_CONNECTED);
 
+		public static final DialResult NOT_ATTEMPTED =
+				new DialResult(false, DIAL_NOT_CONNECTED, false);
+
 		private final boolean authenticated;
 		private final long sessionMs;
+		private final boolean attempted;
 
 		public DialResult(boolean authenticated, long sessionMs) {
+			this(authenticated, sessionMs, true);
+		}
+
+		private DialResult(boolean authenticated, long sessionMs,
+				boolean attempted) {
 			this.authenticated = authenticated;
 			this.sessionMs = sessionMs;
+			this.attempted = attempted;
+		}
+
+		public boolean isAttempted() {
+			return attempted;
 		}
 
 		public boolean isAuthenticated() {

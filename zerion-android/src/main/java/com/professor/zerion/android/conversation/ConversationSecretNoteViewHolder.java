@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.selection.RowActions;
 import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -48,6 +49,7 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		}
 		cancelCountdown();
 		burnPending();
+		secretContent.setText("");
 		super.bind(item, selected);
 		layout.setOnLongClickListener(null);
 		layout.setLongClickable(false);
@@ -59,6 +61,11 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		} else {
 			bindIncoming(secretItem);
 		}
+	}
+
+	@Override
+	void bindBody(ConversationItem item) {
+		text.setText("");
 	}
 
 	private void bindOutgoing(ConversationSecretNoteItem item) {
@@ -108,6 +115,12 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 		startCountdown(item, item.getCountdownSeconds());
 	}
 
+	@Override
+	@Nullable
+	RowActions.Row rowActions(ConversationItem item) {
+		return null;
+	}
+
 	private void startCountdown(ConversationSecretNoteItem item, int seconds) {
 		if (seconds <= 0) {
 			secretContent.setText("");
@@ -143,6 +156,7 @@ class ConversationSecretNoteViewHolder extends ConversationItemViewHolder {
 	void onRecycled() {
 		cancelCountdown();
 		burnPending();
+		secretContent.setText("");
 	}
 
 }

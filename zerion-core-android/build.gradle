@@ -28,10 +28,12 @@ def sha256Of = { File f ->
 }
 
 def torBuiltDir = file("${rootDir}/packaging/tor-android/out")
+def lyrebirdBuiltDir = file("${rootDir}/packaging/lyrebird-android/out")
 
 task unpackTorBinaries {
 	inputs.file torPinFile
-	inputs.dir torBuiltDir
+	inputs.files(fileTree(torBuiltDir)).withPropertyName("torBuilt")
+	inputs.files(fileTree(lyrebirdBuiltDir)).withPropertyName("lyrebirdBuilt")
 	outputs.dir torBinariesDir
 	doLast {
 		def abis = readTorPins().keySet().collect { it.substring(0, it.indexOf('/')) }.unique()
@@ -39,18 +41,12 @@ task unpackTorBinaries {
 		abis.each { abi ->
 			def built = new File(torBuiltDir, "${abi}/libtor.so")
 			if (!built.isFile()) throw new GradleException("Missing built Tor executable ${built}; run packaging/tor-android/build-tor-android.sh")
+			def lyrebird = new File(lyrebirdBuiltDir, "${abi}/liblyrebird.so")
+			if (!lyrebird.isFile()) throw new GradleException("Missing built lyrebird executable ${lyrebird}; run packaging/lyrebird-android/build-lyrebird-android.sh")
 			copy {
 				from built
+				from lyrebird
 				into new File(torBinariesDir, abi)
-			}
-		}
-		configurations.releaseRuntimeClasspath.each { file ->
-			if (file.name.startsWith('lyrebird-android')) {
-				copy {
-					from zipTree(file)
-					into torBinariesDir
-					include abis.collect { "${it}/liblyrebird.so" }
-				}
 			}
 		}
 	}
@@ -70,7 +66,7 @@ task verifyTorNativeArtifacts {
 			if (!lib.isFile()) throw new GradleException("Missing Tor executable ${rel}")
 			def got = sha256Of(lib)
 			if (got != want) {
-				throw new GradleException("Tor executable SHA-256 mismatch for ${rel}: expected ${want}, got ${got} (a deliberate upgrade updates binaries.sha256 together with the dependency version)")
+				throw new GradleException("Tor executable SHA-256 mismatch for ${rel}: expected ${want}, got ${got} (a deliberate upgrade rebuilds in two environments and updates binaries.sha256 together with the pins in packaging/tor-android or packaging/lyrebird-android)")
 			}
 		}
 		def stray = []
@@ -129,7 +125,6 @@ dependencies {
 	implementation 'androidx.annotation:annotation:1.5.0'
 	implementation 'net.zetetic:sqlcipher-android:4.13.0'
 	implementation 'androidx.sqlite:sqlite:2.4.0'
-	implementation "org.briarproject:lyrebird-android:$lyrebird_version"
 	annotationProcessor "com.google.dagger:dagger-compiler:$dagger_version"
 	compileOnly 'javax.annotation:jsr250-api:1.0'
 	testImplementation project(path: ':zerion-core-api', configuration: 'testOutput')

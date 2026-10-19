@@ -52,10 +52,12 @@ public class TextContrastTest {
 			"@color/bubble_orange", "@color/bubble_pink", "@color/bubble_cyan");
 	private static final Map<String, String> INFLATED_INTO =
 			Collections.singletonMap("list_item_channel_attachment.xml",
-					"@drawable/msg_in");
+					"@drawable/bg_channel_card");
 	private static final Set<String> OVER_IMAGES = new HashSet<>(Arrays.asList(
 			"item_gallery_image.xml#@+id/video_icon",
-			"text_avatar_view.xml#@+id/textAvatarView"));
+			"text_avatar_view.xml#@+id/textAvatarView",
+			"list_item_grouptr_video_in.xml#@+id/videoPlayIcon",
+			"list_item_grouptr_video_out.xml#@+id/videoPlayIcon"));
 	private static final List<String> TEXT_TAGS = Arrays.asList("TextView",
 			"EmojiTextView", "AppCompatTextView", "MaterialTextView", "Button",
 			"MaterialButton", "EditText", "EmojiEditText", "TextInputEditText",
@@ -63,6 +65,8 @@ public class TextContrastTest {
 			"RadioButton", "Chip");
 	private static final List<String> BUTTON_TAGS = Arrays.asList("Button",
 			"MaterialButton", "AppCompatButton");
+	private static final List<String> BARS = Arrays.asList("2dp", "3dp",
+			"4dp");
 
 	private static final class Mode {
 		final String name;
@@ -162,17 +166,22 @@ public class TextContrastTest {
 		Map<String, String> night = colors("values", "values-night");
 		Map<String, String> base = styles.get("ZerionTheme");
 		assertNotNull(base);
+		Map<String, String> amoled = new HashMap<>(base);
+		assertNotNull(styles.get("AmoledOverlay"));
+		amoled.putAll(styles.get("AmoledOverlay"));
 		List<Mode> out = new ArrayList<>();
-		for (boolean isNight : new boolean[] {false, true}) {
-			out.add(new Mode(isNight ? "night" : "day", isNight,
-					isNight ? night : day, base,
+		for (String variant : new String[] {"day", "night", "night amoled"}) {
+			boolean isNight = !variant.equals("day");
+			Map<String, String> under = variant.equals("night amoled")
+					? amoled : base;
+			out.add(new Mode(variant, isNight, isNight ? night : day, under,
 					isNight ? NIGHT_SCREENS : DAY_SCREENS));
 			for (Map.Entry<String, Map<String, String>> s : styles.entrySet()) {
 				if (!s.getKey().startsWith("AccentOverlay.")) continue;
-				Map<String, String> theme = new HashMap<>(base);
+				Map<String, String> theme = new HashMap<>(under);
 				theme.putAll(s.getValue());
-				out.add(new Mode((isNight ? "night " : "day ") + s.getKey(),
-						isNight, isNight ? night : day, theme,
+				out.add(new Mode(variant + " " + s.getKey(), isNight,
+						isNight ? night : day, theme,
 						isNight ? NIGHT_SCREENS : DAY_SCREENS));
 			}
 		}
@@ -325,22 +334,30 @@ public class TextContrastTest {
 		return c == null ? null : Arrays.asList(c);
 	}
 
+	private static void putStyle(Map<String, String> out, String style,
+			Map<String, Map<String, String>> styles) {
+		if (style == null || !style.startsWith("@style/")
+				|| !styles.containsKey(style.substring(7))) {
+			return;
+		}
+		for (Map.Entry<String, String> i :
+				styles.get(style.substring(7)).entrySet()) {
+			out.put(i.getKey().contains(":") ? i.getKey()
+					: "app:" + i.getKey(), i.getValue());
+		}
+	}
+
 	private static Map<String, String> attrs(Element e,
 			Map<String, Map<String, String>> styles) {
-		Map<String, String> out = new HashMap<>();
-		String style = e.getAttribute("style");
-		if (style.startsWith("@style/")
-				&& styles.containsKey(style.substring(7))) {
-			for (Map.Entry<String, String> i :
-					styles.get(style.substring(7)).entrySet()) {
-				out.put(i.getKey().contains(":") ? i.getKey()
-						: "app:" + i.getKey(), i.getValue());
-			}
-		}
+		Map<String, String> direct = new HashMap<>();
+		putStyle(direct, e.getAttribute("style"), styles);
 		NamedNodeMap a = e.getAttributes();
 		for (int i = 0; i < a.getLength(); i++) {
-			out.put(a.item(i).getNodeName(), a.item(i).getNodeValue());
+			direct.put(a.item(i).getNodeName(), a.item(i).getNodeValue());
 		}
+		Map<String, String> out = new HashMap<>();
+		putStyle(out, direct.get("android:textAppearance"), styles);
+		out.putAll(direct);
 		return out;
 	}
 
@@ -443,15 +460,29 @@ public class TextContrastTest {
 			}
 			if (OVER_IMAGES.contains(file + "#" + id)) return;
 			List<Integer> f = fills(a, m);
+			String tag = e.getTagName().substring(
+					e.getTagName().lastIndexOf('.') + 1);
+			String where = file + " " + id;
+			if (tag.equals("View") && BARS.contains(a.getOrDefault(
+					"android:layout_width", "")) && f != null
+					&& !f.contains(null)) {
+				for (int fill : f) {
+					checked++;
+					double r = worst(fill, bgs);
+					if (r < GRAPHIC) {
+						problems.add(String.format(Locale.ROOT,
+								"%s bar (%s) %s is %.2f:1, needs %.1f:1",
+								where, m.name, a.get("android:background"),
+								r, GRAPHIC));
+					}
+				}
+			}
 			boolean hasFill = false;
 			if (f != null && !f.contains(null) && !f.isEmpty()
 					&& ((f.get(0) >>> 24) & 0xFF) > 0) {
 				bgs = layer(f, bgs);
 				hasFill = true;
 			}
-			String tag = e.getTagName().substring(
-					e.getTagName().lastIndexOf('.') + 1);
-			String where = file + " " + id;
 			boolean iconOnlyButton = BUTTON_TAGS.contains(tag)
 					&& !a.containsKey("android:text")
 					&& !a.containsKey("app:text")
@@ -635,7 +666,7 @@ public class TextContrastTest {
 				"@color/zerion_button_text_neutral",
 				"@color/zerion_button_text_negative", "@color/zerion_text_primary",
 				"@color/zerion_text_secondary", "@color/zerion_hint",
-				"?attr/zerionAccentText", "?android:textColorLink",
+				"?attr/zerionColorAccentText", "?android:textColorLink",
 				"?attr/colorError"};
 		for (Mode m : modes(styles)) {
 			int[] surfaces = m.night ? NIGHT_SURFACES : DAY_SURFACES;
@@ -682,6 +713,447 @@ public class TextContrastTest {
 					problems.add(String.format(Locale.ROOT,
 							"%s on the snackbar (%s) is %.2f:1", fg, m.name, r));
 				}
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	static final String[] TOKENS = {"zerionColorBackground",
+			"zerionColorSurface", "zerionColorSurfaceVariant",
+			"zerionColorOnSurface", "zerionColorOnSurfaceMuted",
+			"zerionColorDivider", "zerionColorAccent", "zerionColorOnAccent",
+			"zerionColorAccentText", "zerionColorAccentIcon",
+			"zerionColorBubbleIn", "zerionColorOutline",
+			"zerionColorOnBubbleIn", "zerionColorOnBubbleInMuted",
+			"zerionColorBubbleInInset", "zerionColorBubbleOut",
+			"zerionColorOnBubbleOut", "zerionColorOnBubbleOutMuted",
+			"zerionColorBubbleOutInset", "zerionColorDanger",
+			"zerionColorDangerText", "zerionColorSuccess",
+			"zerionColorWarning", "zerionColorStatusMuted",
+			"zerionColorPresenceOnline", "zerionColorPresenceOffline",
+			"zerionColorScrim", "zerionColorOnScrim",
+			"zerionColorMediaBackdrop", "zerionColorMessageSelectedOwn",
+			"zerionColorMessageSelectedReceived",
+			"zerionColorChannelCardSelected",
+			"zerionColorSelectionForeground"};
+	private static final double DIVIDER = 1.1;
+
+	private static int token(String name, Mode m) {
+		Integer c = color("?attr/" + name, m);
+		assertNotNull(name + " (" + m.name + ")", c);
+		return c;
+	}
+
+	private static void need(List<String> problems, String what, int fg,
+			List<Integer> backdrops, double min, Mode m) {
+		double r = worst(fg, backdrops);
+		if (r < min) {
+			problems.add(String.format(Locale.ROOT, "%s (%s) is %.2f:1, needs"
+					+ " %.1f:1", what, m.name, r, min));
+		}
+	}
+
+	@Test
+	public void everyThemeDefinesEveryToken() throws Exception {
+		Map<String, Map<String, String>> styles = styles();
+		Set<String> declared = new TreeSet<>();
+		for (Element e : children(parse(new File(RES, "values/attrs.xml")))) {
+			if (e.getTagName().equals("attr")
+					&& e.getAttribute("name").startsWith("zerionColor")) {
+				declared.add(e.getAttribute("name"));
+			}
+		}
+		assertEquals(new TreeSet<>(Arrays.asList(TOKENS)), declared);
+		for (Mode m : modes(styles)) {
+			for (String t : TOKENS) token(t, m);
+		}
+	}
+
+	@Test
+	public void themeTokensAreReadableInEveryTheme() throws Exception {
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			List<Integer> screens = Arrays.asList(
+					token("zerionColorBackground", m),
+					token("zerionColorSurface", m),
+					token("zerionColorSurfaceVariant", m));
+			for (String t : new String[] {"zerionColorOnSurface",
+					"zerionColorOnSurfaceMuted", "zerionColorAccentText",
+					"zerionColorDangerText", "zerionColorSuccess",
+					"zerionColorWarning", "zerionColorStatusMuted"}) {
+				need(problems, t, token(t, m), screens, TEXT, m);
+			}
+			for (String t : new String[] {"zerionColorAccentIcon",
+					"zerionColorDanger"}) {
+				need(problems, t, token(t, m), screens, GRAPHIC, m);
+			}
+			need(problems, "zerionColorDivider", token("zerionColorDivider",
+					m), screens.subList(0, 2), DIVIDER, m);
+			need(problems, "zerionColorOnAccent on the accent",
+					token("zerionColorOnAccent", m), Arrays.asList(
+							token("zerionColorAccent", m)), TEXT, m);
+
+			int in = token("zerionColorBubbleIn", m);
+			List<Integer> inBackdrops = Arrays.asList(in,
+					over(token("zerionColorBubbleInInset", m), in));
+			for (String t : new String[] {"zerionColorOnBubbleIn",
+					"zerionColorOnBubbleInMuted", "zerionColorAccentText",
+					"zerionColorDangerText"}) {
+				need(problems, t + " in an incoming bubble", token(t, m),
+						inBackdrops, TEXT, m);
+			}
+			need(problems, "zerionColorAccentIcon in an incoming bubble",
+					token("zerionColorAccentIcon", m), inBackdrops, GRAPHIC,
+					m);
+
+			List<Integer> outFills = new ArrayList<>();
+			outFills.add(token("zerionColorBubbleOut", m));
+			for (String b : BUBBLE_COLORS) outFills.add(color(b, m));
+			List<Integer> outBackdrops = new ArrayList<>(outFills);
+			outBackdrops.addAll(layer(Arrays.asList(
+					token("zerionColorBubbleOutInset", m)), outFills));
+			for (String t : new String[] {"zerionColorOnBubbleOut",
+					"zerionColorOnBubbleOutMuted"}) {
+				need(problems, t + " in an outgoing bubble", token(t, m),
+						outBackdrops, TEXT, m);
+			}
+
+			need(problems, "zerionColorOnScrim", token("zerionColorOnScrim",
+					m), layer(Arrays.asList(token("zerionColorScrim", m)),
+					Arrays.asList(0xFFFFFFFF, 0xFF000000)), TEXT, m);
+			need(problems, "zerionColorOnScrim on the media backdrop",
+					token("zerionColorOnScrim", m), layer(Arrays.asList(
+							token("zerionColorMediaBackdrop", m)),
+					Arrays.asList(0xFFFFFFFF, 0xFF000000)), TEXT, m);
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	@Test
+	public void theIncomingBubbleFollowsTheTheme() throws Exception {
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			double bubble = luminance(token("zerionColorBubbleIn", m));
+			double text = luminance(token("zerionColorOnBubbleIn", m));
+			boolean light = bubble > 0.7 && text < 0.05;
+			boolean dark = bubble < 0.05 && text > 0.7;
+			if (m.night ? !dark : !light) {
+				problems.add(m.name + " incoming bubble is not "
+						+ (m.night ? "dark" : "light") + " with "
+						+ (m.night ? "light" : "dark") + " text");
+			}
+			for (String d : new String[] {"msg_in", "msg_in_top", "notice_in",
+					"notice_in_bottom"}) {
+				Integer fill = shapeFill(d, m);
+				if (fill == null || fill != token("zerionColorBubbleIn", m)) {
+					problems.add(m.name + " @drawable/" + d
+							+ " is not the incoming bubble color");
+				}
+			}
+			for (String d : new String[] {"msg_out", "msg_out_top",
+					"notice_out", "notice_out_bottom"}) {
+				Integer fill = shapeFill(d, m);
+				if (fill == null || fill != token("zerionColorBubbleOut", m)) {
+					problems.add(m.name + " @drawable/" + d
+							+ " is not the outgoing bubble color");
+				}
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	@Test
+	public void amoledDarkensTheSurfaces() throws Exception {
+		Map<String, Map<String, String>> styles = styles();
+		for (Mode m : modes(styles)) {
+			if (!m.name.startsWith("night amoled")) continue;
+			assertEquals(m.name, 0xFF000000, token("zerionColorBackground",
+					m));
+			assertTrue(m.name, luminance(token("zerionColorSurface", m))
+					< 0.01);
+		}
+	}
+
+	private static final double SEPARATION = 1.2;
+	private static final double INSET = 1.15;
+
+	private static Map<String, String> effectiveDimens() throws Exception {
+		Map<String, String> out = new HashMap<>();
+		for (String folder : new String[] {"values", "values-v21"}) {
+			File f = new File(new File(RES, folder), "dimens.xml");
+			if (!f.isFile()) continue;
+			for (Element e : children(parse(f))) {
+				if (e.getTagName().equals("dimen")) {
+					out.put(e.getAttribute("name"), e.getTextContent().trim());
+				}
+			}
+		}
+		return out;
+	}
+
+	private static double size(String v, Map<String, String> dimens) {
+		for (int depth = 0; v != null && v.startsWith("@dimen/")
+				&& depth < 10; depth++) {
+			v = dimens.get(v.substring(7));
+		}
+		if (v == null) return 0;
+		Matcher m = Pattern.compile("([\\d.]+)(dp|dip|px|sp)").matcher(v);
+		return m.matches() ? Double.parseDouble(m.group(1)) : 0;
+	}
+
+	private static Element firstShape(String name, Mode m) throws Exception {
+		for (String folder : m.night ? new String[] {"drawable-night",
+				"drawable"} : new String[] {"drawable"}) {
+			File f = new File(new File(RES, folder), name + ".xml");
+			if (!f.isFile()) continue;
+			Element root = parse(f);
+			if (root.getTagName().equals("shape")) return root;
+			NodeList shapes = root.getElementsByTagName("shape");
+			return shapes.getLength() == 0 ? null : (Element) shapes.item(0);
+		}
+		return null;
+	}
+
+	private static Element child(Element parent, String tag) {
+		for (Element c : children(parent)) {
+			if (c.getTagName().equals(tag)) return c;
+		}
+		return null;
+	}
+
+	@Test
+	public void incomingBubblesAndCardsStandOutFromTheScreen()
+			throws Exception {
+		Map<String, String> dimens = effectiveDimens();
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			int screen = token("zerionColorBackground", m);
+			for (String d : new String[] {"msg_in", "msg_in_top", "notice_in",
+					"notice_in_bottom", "bg_contact_card"}) {
+				Element shape = firstShape(d, m);
+				assertNotNull(d, shape);
+				Element solid = child(shape, "solid");
+				assertNotNull(d, solid);
+				int fill = color(solid.getAttribute("android:color"), m);
+				double best = ratio(over(fill, screen), screen);
+				Element stroke = child(shape, "stroke");
+				if (stroke != null && size(stroke.getAttribute("android:width"),
+						dimens) > 0) {
+					int edge = color(stroke.getAttribute("android:color"), m);
+					best = Math.max(best, ratio(over(edge, screen), screen));
+				}
+				if (best < SEPARATION) {
+					problems.add(String.format(Locale.ROOT,
+							"@drawable/%s (%s) stands out by %.2f:1, needs"
+									+ " %.2f:1", d, m.name, best, SEPARATION));
+				}
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	@Test
+	public void theInsetStandsOutInsideTheIncomingBubble() throws Exception {
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			int bubble = token("zerionColorBubbleIn", m);
+			int inset = over(token("zerionColorBubbleInInset", m), bubble);
+			double r = ratio(inset, bubble);
+			if (r < INSET) {
+				problems.add(String.format(Locale.ROOT,
+						"the inset in an incoming bubble (%s) is %.2f:1",
+						m.name, r));
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	@Test
+	public void mutedOutgoingTextStaysWhiteAsNoVisiblyMutedWhitePasses()
+			throws Exception {
+		for (Mode m : modes(styles())) {
+			assertEquals(m.name, 0xFFFFFFFF,
+					token("zerionColorOnBubbleOutMuted", m));
+			List<Integer> bubbles = new ArrayList<>();
+			bubbles.add(token("zerionColorBubbleOut", m));
+			for (String b : BUBBLE_COLORS) bubbles.add(color(b, m));
+			for (int alpha = 0x80; alpha <= 0xF2; alpha++) {
+				int muted = (alpha << 24) | 0xFFFFFF;
+				assertTrue(String.format(Locale.ROOT, "%s white at alpha %02x"
+						+ " passes on every bubble color, so muted outgoing"
+						+ " text could be visibly muted", m.name, alpha),
+						worst(muted, bubbles) < TEXT);
+			}
+		}
+	}
+
+	@Test
+	public void callQualityColorsAreReadableOnTheirPill() throws Exception {
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			Integer pill = shapeFill("bg_network_quality", m);
+			assertNotNull(m.name, pill);
+			List<Integer> under = layer(Arrays.asList(pill), list(m.screens));
+			for (String t : new String[] {"zerionColorSuccess",
+					"zerionColorWarning", "zerionColorDangerText"}) {
+				need(problems, t + " on the call quality pill", token(t, m),
+						under, TEXT, m);
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	private static Element innerShape(String name) throws Exception {
+		NodeList shapes = parse(new File(RES, "drawable/" + name + ".xml"))
+				.getElementsByTagName("shape");
+		assertEquals(name, 2, shapes.getLength());
+		return (Element) shapes.item(1);
+	}
+
+	@Test
+	public void presenceDotsDifferByMoreThanColor() throws Exception {
+		List<String> problems = new ArrayList<>();
+		Element online = innerShape("bg_presence_online");
+		Element offline = innerShape("bg_presence_offline");
+		for (Mode m : modes(styles())) {
+			int screen = token("zerionColorBackground", m);
+			int on = color(child(online, "solid").getAttribute(
+					"android:color"), m);
+			Element ring = child(offline, "stroke");
+			Element hole = child(offline, "solid");
+			int off = color((ring != null ? ring : hole).getAttribute(
+					"android:color"), m);
+			if (ring == null || hole == null || color(hole.getAttribute(
+					"android:color"), m) != screen) {
+				problems.add(m.name + " the offline dot is not a hollow ring");
+			}
+			double apart = ratio(on, off);
+			if (apart < 2.5) {
+				problems.add(String.format(Locale.ROOT,
+						"online and offline dots (%s) are %.2f:1 apart",
+						m.name, apart));
+			}
+			for (int dot : new int[] {on, off}) {
+				double r = ratio(dot, screen);
+				if (r < GRAPHIC) {
+					problems.add(String.format(Locale.ROOT,
+							"a presence dot %08x (%s) is %.2f:1 on the screen",
+							dot, m.name, r));
+				}
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	@Test
+	public void voicePlayButtonsStandOutInEveryBubble() throws Exception {
+		Map<String, String> dimens = effectiveDimens();
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles())) {
+			for (String file : new String[] {"voice_message_view.xml",
+					"voice_message_view_out.xml"}) {
+				List<Integer> bubbles = new ArrayList<>();
+				if (file.contains("_out")) {
+					bubbles.add(token("zerionColorBubbleOut", m));
+					for (String b : BUBBLE_COLORS) bubbles.add(color(b, m));
+				} else {
+					bubbles.add(token("zerionColorBubbleIn", m));
+				}
+				Element button = byId(parse(new File(RES, "layout/" + file)),
+						"@+id/playPauseButton");
+				assertNotNull(file, button);
+				int fill = color(button.getAttribute("android:backgroundTint"),
+						m);
+				Integer edge = null;
+				if (size(button.getAttribute("app:strokeWidth"), dimens) > 0) {
+					edge = color(button.getAttribute("app:strokeColor"), m);
+				}
+				for (int bubble : bubbles) {
+					double best = ratio(over(fill, bubble), bubble);
+					if (edge != null) {
+						best = Math.max(best, ratio(over(edge, bubble),
+								bubble));
+					}
+					if (best < GRAPHIC) {
+						problems.add(String.format(Locale.ROOT,
+								"%s play button (%s) on %08x is %.2f:1",
+								file, m.name, bubble, best));
+					}
+				}
+			}
+		}
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	private static final String[][] STATE_LINES = {
+			{"list_item_conversation_msg_out.xml", "@+id/time", "out"},
+			{"list_item_conversation_notice_out.xml", "@+id/time", "out"},
+			{"list_item_conversation_secret_out.xml", "@+id/time", "out"},
+			{"list_item_grouptr_post_out.xml", "@+id/postTime", "out"},
+			{"list_item_grouptr_voice_out.xml", "@+id/voiceTime", "out"},
+			{"list_item_grouptr_image_out.xml", "@+id/imageTime", "scrim"},
+			{"list_item_grouptr_video_out.xml", "@+id/videoTime", "scrim"},
+			{"list_item_channel_post.xml", "@+id/channelPostTimestampView",
+					"in"},
+			{"list_item_channel_comment.xml", "@+id/commentTimestamp",
+					"in"}};
+	private static final String[] NOT_SENT_OUTLINES = {
+			"bg_message_not_sent_out", "bg_message_not_sent_in",
+			"bg_message_not_sent_row", "bg_message_not_sent_card"};
+
+	@Test
+	public void messageStatesAreReadableOnEveryBubbleAndTheme()
+			throws Exception {
+		Map<String, Map<String, String>> styles = styles();
+		Map<String, String> dimens = effectiveDimens();
+		Element actions = parse(new File(RES,
+				"layout/view_message_not_sent_actions.xml"));
+		List<String> problems = new ArrayList<>();
+		for (Mode m : modes(styles)) {
+			List<Integer> screens = list(m.screens);
+			List<Integer> out = new ArrayList<>();
+			out.add(token("zerionColorBubbleOut", m));
+			for (String b : BUBBLE_COLORS) out.add(color(b, m));
+			Map<String, List<Integer>> under = new HashMap<>();
+			under.put("out", layer(out, screens));
+			under.put("in", layer(Arrays.asList(token("zerionColorBubbleIn",
+					m)), screens));
+			under.put("scrim", layer(Arrays.asList(token("zerionColorScrim",
+					m)), Arrays.asList(0xFFFFFFFF, 0xFF000000)));
+			under.put("screen", screens);
+			for (String[] line : STATE_LINES) {
+				String where = line[0] + " " + line[1];
+				Element view = byId(parse(new File(RES, "layout/" + line[0])),
+						line[1]);
+				assertNotNull(where, view);
+				String fg = attrs(view, styles).get("android:textColor");
+				assertNotNull(where + " has no text color", fg);
+				Integer c = color(fg, m);
+				assertNotNull(where + " " + fg, c);
+				need(problems, where + " state label", c, under.get(line[2]),
+						TEXT, m);
+			}
+			for (String id : new String[] {"@+id/messageEditButton",
+					"@+id/messageRetryButton", "@+id/messageDeleteButton"}) {
+				Element button = byId(actions, id);
+				assertNotNull(id, button);
+				need(problems, id, color(button.getAttribute(
+						"android:textColor"), m), screens, TEXT, m);
+			}
+			Element retry = byId(actions, "@+id/messageRetryButton");
+			for (String k : new String[] {"app:strokeColor", "app:iconTint"}) {
+				need(problems, "Retry " + k, color(retry.getAttribute(k), m),
+						screens, GRAPHIC, m);
+			}
+			for (String d : NOT_SENT_OUTLINES) {
+				Element shape = firstShape(d, m);
+				assertNotNull(d, shape);
+				Element stroke = child(shape, "stroke");
+				assertNotNull(d + " has no outline", stroke);
+				assertTrue(d + " outline is too thin", size(stroke.getAttribute(
+						"android:width"), dimens) >= 1.5);
+				need(problems, d + " outline", color(stroke.getAttribute(
+						"android:color"), m), screens, GRAPHIC, m);
 			}
 		}
 		assertEquals(String.join("\n", problems), 0, problems.size());

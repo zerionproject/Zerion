@@ -15,11 +15,14 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -27,6 +30,7 @@ public class ElectrumClientDeadlineTest {
 
 	private static final Pattern ID = Pattern.compile("\"id\":(\\d+)");
 	private static final long TRICKLE_MS = 50;
+	private static final int CONNECT_DEADLINE_MS = 30_000;
 
 	private interface Behaviour {
 		void serve(Socket client) throws Exception;
@@ -107,6 +111,14 @@ public class ElectrumClientDeadlineTest {
 		return c;
 	}
 
+	private ElectrumClient connectForCalls(ElectrumEndpoint ep,
+			int readTimeoutMs, int callDeadlineMs) throws IOException {
+		ElectrumClient c = new ElectrumClient(ep, 0, "w", readTimeoutMs,
+				CONNECT_DEADLINE_MS, callDeadlineMs);
+		closeables.add(c::close);
+		return c;
+	}
+
 	private static long id(String request) {
 		Matcher m = ID.matcher(request);
 		return m.find() ? Long.parseLong(m.group(1)) : -1;
@@ -170,7 +182,7 @@ public class ElectrumClientDeadlineTest {
 			write(out, "{\"id\":" + id(request) + ",\"result\":{\"height\":");
 			trickle(out, (byte) '1');
 		}));
-		ElectrumClient c = connect(plain(s), 5_000, 1_000);
+		ElectrumClient c = connectForCalls(plain(s), 5_000, 1_000);
 		long start = System.nanoTime();
 		try {
 			c.blockHeight();
@@ -182,6 +194,71 @@ public class ElectrumClientDeadlineTest {
 			c.blockHeight();
 			fail("a client cut off mid reply must not be reused");
 		} catch (IOException expected) {
+		}
+	}
+
+	@Test(timeout = 30_000)
+	public void aReadCutShortByTheDeadlineIsTheDeadlineEvenBeforeTheCloseFires()
+			throws Exception {
+		Server s = server(versionThen(client -> {
+			BufferedReader in = new BufferedReader(new InputStreamReader(
+					client.getInputStream(), StandardCharsets.UTF_8));
+			OutputStream out = client.getOutputStream();
+			String request = in.readLine();
+			write(out, "{\"id\":" + id(request) + ",\"result\":{\"height\":");
+			while (in.readLine() != null) {
+			}
+		}));
+		ElectrumClient c = connectForCalls(plain(s), 5_000, 1_000);
+		java.lang.reflect.Field f =
+				ElectrumClient.class.getDeclaredField("DEADLINES");
+		f.setAccessible(true);
+		CountDownLatch closesHeld = new CountDownLatch(1);
+		((ScheduledExecutorService) f.get(null)).execute(() -> {
+			try {
+				closesHeld.await(20, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		try {
+			long start = System.nanoTime();
+			try {
+				c.blockHeight();
+				fail();
+			} catch (IOException e) {
+				assertTimedOut(e, start, 10_000);
+			}
+			try {
+				c.blockHeight();
+				fail("a client cut off mid reply must not be reused");
+			} catch (IOException expected) {
+				assertFalse("the cut off client was used again",
+						expected instanceof SocketTimeoutException);
+			}
+		} finally {
+			closesHeld.countDown();
+		}
+	}
+
+	@Test
+	public void aWaitBoundByTheDeadlineNeverEndsBeforeIt() throws Exception {
+		Class<?> type = Class.forName(ElectrumClient.class.getName()
+				+ "$Deadline");
+		java.lang.reflect.Constructor<?> create =
+				type.getDeclaredConstructor(int.class);
+		create.setAccessible(true);
+		java.lang.reflect.Method remaining =
+				type.getDeclaredMethod("remainingMs");
+		remaining.setAccessible(true);
+		java.lang.reflect.Field end = type.getDeclaredField("endNanos");
+		end.setAccessible(true);
+		for (int i = 0; i < 1_000; i++) {
+			Object deadline = create.newInstance(1_000);
+			int ms = (Integer) remaining.invoke(deadline);
+			long waitEnds = System.nanoTime() + ms * 1_000_000L;
+			assertTrue("a wait of " + ms + " ms ends before the deadline",
+					waitEnds >= (Long) end.get(deadline));
 		}
 	}
 
@@ -267,10 +344,10 @@ public class ElectrumClientDeadlineTest {
 	@Test(timeout = 30_000)
 	public void everyCallGetsItsOwnDeadline() throws Exception {
 		Server s = server(answersEveryCall());
-		ElectrumClient c = connect(plain(s), 5_000, 700);
+		ElectrumClient c = connectForCalls(plain(s), 5_000, 2_000);
 		for (int i = 0; i < 3; i++) {
 			assertEquals(777, c.blockHeight());
-			Thread.sleep(1_000);
+			Thread.sleep(2_500);
 		}
 		assertEquals(777, c.blockHeight());
 	}

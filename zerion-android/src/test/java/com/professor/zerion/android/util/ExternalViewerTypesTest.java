@@ -76,8 +76,23 @@ public class ExternalViewerTypesTest {
 						+ "ChannelFeedActivity.java",
 				"src/main/java/com/professor/zerion/android/conversation/"
 						+ "DocumentOpener.java",
+				"src/main/java/com/professor/zerion/android/conversation/"
+						+ "ImageActivity.java",
+				"src/main/java/com/professor/zerion/android/conversation/"
+						+ "VideoPlayerActivity.java"};
+		String viewer = new String(Files.readAllBytes(Paths.get(
+				"src/main/java/com/professor/zerion/android/conversation/"
+						+ "MediaViewer.java")), StandardCharsets.UTF_8);
+		assertTrue("the viewer shows content it has not checked",
+				viewer.replaceAll("\\s+", "")
+						.contains("ExternalViewerTypes.typeForContent("));
+		String group = new String(Files.readAllBytes(Paths.get(
 				"src/main/java/com/professor/zerion/android/grouptr/"
-						+ "GroupTrConversationActivity.java"};
+						+ "GroupTrConversationActivity.java")),
+				StandardCharsets.UTF_8);
+		assertTrue("group media skips the checked viewer",
+				group.contains("MediaViewer.showImage(")
+						&& group.contains("MediaViewer.playVideo("));
 		for (String f : new String[] {"AllMediaActivity.java",
 				"ConversationActivity.java"}) {
 			String src = new String(Files.readAllBytes(Paths.get(

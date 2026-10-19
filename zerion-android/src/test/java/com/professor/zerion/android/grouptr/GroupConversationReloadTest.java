@@ -2,6 +2,7 @@ package com.professor.zerion.android.grouptr;
 
 import android.content.Intent;
 import android.os.Looper;
+import android.view.View;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
@@ -13,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.annotation.Config;
+import org.zerionproject.app.api.grouptr.GroupTrBody;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
@@ -40,6 +42,8 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -168,6 +172,64 @@ public class GroupConversationReloadTest {
 		assertTrue("the post is headed only by the name its sender chose: "
 				+ label, label.contains("Mallory"));
 		assertTrue(label.contains("Alice"));
+	}
+
+	@Test
+	public void renamingAMemberRenamesTheirPostsAndQuotesOnScreen()
+			throws Exception {
+		GroupTrManager m = mock(GroupTrManager.class);
+		when(m.getGroup(any())).thenReturn(state("Mallory"));
+		byte[] firstId = new byte[32];
+		firstId[0] = 7;
+		List<GroupTrPost> posts = new ArrayList<>();
+		posts.add(new GroupTrPost(groupId, memberKey, "Alice",
+				"first".getBytes(StandardCharsets.UTF_8), 1_000L, 1L, false,
+				0L, 1_000L, firstId));
+		posts.add(new GroupTrPost(groupId, memberKey, "Alice",
+				GroupTrBody.encodeReply(firstId, "second"), 2_000L, 1L, false,
+				0L, 2_000L, key((byte) 8)));
+		when(m.getRecentPosts(any())).thenReturn(posts);
+		ProbeConversation a = open(m);
+		assertTrue(sender(a, 0), sender(a, 0).contains("Mallory"));
+		assertTrue(quoteAuthor(a, 1), quoteAuthor(a, 1).contains("Mallory"));
+		RecyclerView.ViewHolder post = shown(a, 0);
+		RecyclerView.ViewHolder quote = shown(a, 1);
+
+		when(m.getGroup(any())).thenReturn(state("Maya"));
+		a.eventOccurred(raw());
+		settle();
+
+		assertSame("the rename moved the post to another row", post,
+				shown(a, 0));
+		assertSame("the rename moved the quote to another row", quote,
+				shown(a, 1));
+		assertTrue("the post kept the old name: " + sender(a, 0),
+				sender(a, 0).contains("Maya"));
+		assertTrue("the quote kept the old name: " + quoteAuthor(a, 1),
+				quoteAuthor(a, 1).contains("Maya"));
+	}
+
+	private static RecyclerView.ViewHolder shown(ProbeConversation a,
+			int position) {
+		RecyclerView list = a.findViewById(R.id.postsRecycler);
+		list.measure(View.MeasureSpec.makeMeasureSpec(1080,
+				View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(
+				1920, View.MeasureSpec.EXACTLY));
+		list.layout(0, 0, 1080, 1920);
+		RecyclerView.ViewHolder h =
+				list.findViewHolderForAdapterPosition(position);
+		assertNotNull("no row at " + position, h);
+		return h;
+	}
+
+	private static String sender(ProbeConversation a, int position) {
+		return ((TextView) shown(a, position).itemView.findViewById(
+				R.id.senderName)).getText().toString();
+	}
+
+	private static String quoteAuthor(ProbeConversation a, int position) {
+		return ((TextView) shown(a, position).itemView.findViewById(
+				R.id.quoteAuthor)).getText().toString();
 	}
 
 	private ProbeConversation open(GroupTrManager m) throws Exception {

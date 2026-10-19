@@ -81,6 +81,15 @@ public interface TorWrapper {
 
 		default void onEntryRelayFailing() {
 		}
+
+		default void onHsDirectoryRequest() {
+		}
+
+		default void onHsDirectoryAnswer() {
+		}
+
+		default void onRelayConnection(String fingerprint, boolean connected) {
+		}
 	}
 
 	class HiddenServiceProperties {

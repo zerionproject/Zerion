@@ -17,13 +17,13 @@ import java.util.Arrays;
 import java.util.concurrent.Executor;
 
 @NotNullByDefault
-final class AccountPasswordGate {
+public final class AccountPasswordGate {
 
-	enum Outcome { GRANTED, WRONG, LOCKED, ERASE }
+	public enum Outcome { GRANTED, WRONG, LOCKED, ERASE }
 
-	static final class Result {
-		final Outcome outcome;
-		final long lockedMs;
+	public static final class Result {
+		public final Outcome outcome;
+		public final long lockedMs;
 
 		private Result(Outcome outcome, long lockedMs) {
 			this.outcome = outcome;
@@ -46,7 +46,7 @@ final class AccountPasswordGate {
 		return verify(accountManager, typed -> false, password);
 	}
 
-	static Result verify(AccountManager accountManager,
+	public static Result verify(AccountManager accountManager,
 			AccountPasswordCheck.DuressCheck duress, char[] password) {
 		try {
 			AccountPasswordCheck.Result r =
@@ -69,7 +69,7 @@ final class AccountPasswordGate {
 		}
 	}
 
-	static void eraseFromSession(Context context,
+	public static void eraseFromSession(Context context,
 			AccountManager accountManager, Executor executor) {
 		executor.execute(() -> {
 			try {

@@ -4,28 +4,30 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Looper;
-import android.view.ActionMode;
-import android.view.Menu;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
+import com.professor.zerion.android.conversation.TextForwarder;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
+import com.professor.zerion.android.selection.SelectedLook;
+import com.professor.zerion.android.selection.SelectionAction;
+import com.professor.zerion.android.selection.SelectionBar;
+import com.professor.zerion.android.selection.SelectionBarTest;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.annotation.Config;
-import org.robolectric.fakes.RoboMenu;
-import org.robolectric.fakes.RoboMenuItem;
 import org.robolectric.shadows.ShadowDialog;
 import org.zerionproject.app.api.grouptr.GroupTrBody;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
+import org.zerionproject.app.api.grouptr.GroupTrSendResult;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.grouptr.MemberRole;
 import org.zerionproject.app.api.messaging.event.GroupTrPostsRemovedEvent;
@@ -41,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import androidx.appcompat.app.AlertDialog;
@@ -78,6 +81,7 @@ public class GroupPostActionsTest {
 
 		static GroupTrManager manager;
 		static IdentityManager identity;
+		static TextForwarder forwarder;
 		static final List<Runnable> io = new ArrayList<>();
 
 		@Override
@@ -85,6 +89,7 @@ public class GroupPostActionsTest {
 			super.injectActivity(component);
 			groupTrManager = manager;
 			identityManager = identity;
+			textForwarder = forwarder;
 			ioExecutor = io::add;
 		}
 	}
@@ -129,7 +134,13 @@ public class GroupPostActionsTest {
 				.thenReturn(Arrays.asList(mine, theirs));
 		when(manager.countMembersWithPostActions(any())).thenReturn(2);
 		when(manager.countMembersWithoutPostActions(any())).thenReturn(0);
+		when(manager.sendGroupPostReporting(any(), any(), anyLong()))
+				.thenReturn(new GroupTrSendResult(key((byte) 20), 2, 2, 0, 0));
+		when(manager.sendGroupReplyReporting(any(), any(), anyString(),
+				anyLong())).thenReturn(new GroupTrSendResult(key((byte) 21),
+				2, 2, 0, 0));
 		ProbeConversation.manager = manager;
+		ProbeConversation.forwarder = mock(TextForwarder.class);
 		activity = open();
 	}
 
@@ -137,14 +148,14 @@ public class GroupPostActionsTest {
 	public void aLongPressSelectsAndClosingTheMenuClearsTheSelection()
 			throws Exception {
 		longPress(0);
-		assertNotNull(mode());
+		assertTrue(bar().isShowing());
 		assertEquals(1, selected());
 		assertTrue(holder(0).itemView.isActivated());
 
-		mode().finish();
+		bar().close();
 		idle();
 
-		assertNull(mode());
+		assertFalse(bar().isShowing());
 		assertEquals(0, selected());
 		assertFalse(holder(0).itemView.isActivated());
 		longPress(1);
@@ -164,23 +175,22 @@ public class GroupPostActionsTest {
 
 		holder(0).itemView.performClick();
 		idle();
-		assertNull("unselecting the last post closes the menu", mode());
+		assertFalse("unselecting the last post closes the bar",
+				bar().isShowing());
 	}
 
 	@Test
 	public void replyIsOfferedForASinglePostAndCopyForText()
 			throws Exception {
 		longPress(0);
-		Menu menu = menu();
-		assertTrue(menu.findItem(R.id.action_reply).isVisible());
-		assertTrue(menu.findItem(R.id.action_copy).isVisible());
-		assertTrue(menu.findItem(R.id.action_delete).isVisible());
+		assertTrue(shown().contains(SelectionAction.REPLY));
+		assertTrue(shown().contains(SelectionAction.COPY));
+		assertTrue(shown().contains(SelectionAction.DELETE));
 
 		holder(1).itemView.performClick();
 		idle();
-		menu = menu();
-		assertFalse(menu.findItem(R.id.action_reply).isVisible());
-		assertTrue(menu.findItem(R.id.action_copy).isVisible());
+		assertFalse(shown().contains(SelectionAction.REPLY));
+		assertTrue(shown().contains(SelectionAction.COPY));
 	}
 
 	@Test
@@ -194,7 +204,8 @@ public class GroupPostActionsTest {
 
 		longPress(2);
 
-		assertFalse(menu().findItem(R.id.action_copy).isVisible());
+		assertFalse(shown().contains(SelectionAction.COPY));
+		assertFalse(shown().contains(SelectionAction.FORWARD));
 	}
 
 	@Test
@@ -222,7 +233,7 @@ public class GroupPostActionsTest {
 		idle();
 		assertEquals("the post leaves the screen at once", 1,
 				adapter().getItemCount());
-		assertNull(mode());
+		assertFalse(bar().isShowing());
 		when(manager.getRecentPosts(any()))
 				.thenReturn(Collections.singletonList(theirs));
 		runIo();
@@ -287,7 +298,7 @@ public class GroupPostActionsTest {
 		dialog.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
 		idle();
 
-		assertNotNull(mode());
+		assertTrue(bar().isShowing());
 		assertEquals(1, selected());
 		verify(manager, never()).deletePostsForMe(any(), any());
 	}
@@ -295,13 +306,12 @@ public class GroupPostActionsTest {
 	@Test
 	public void replyShowsAPreviewAndSendsAReply() throws Exception {
 		longPress(1);
-		activity.onActionItemClicked(mode(), new RoboMenuItem(
-				R.id.action_reply));
+		assertTrue(bar().perform(SelectionAction.REPLY));
 		idle();
 
 		View preview = activity.findViewById(R.id.groupReplyPreview);
 		assertEquals(View.VISIBLE, preview.getVisibility());
-		assertNull(mode());
+		assertFalse(bar().isShowing());
 		assertEquals("their post", ((TextView) preview.findViewById(
 				R.id.reply_text)).getText().toString());
 		EditText input = activity.findViewById(R.id.messageInput);
@@ -309,17 +319,17 @@ public class GroupPostActionsTest {
 		activity.findViewById(R.id.sendButton).performClick();
 		runIo();
 
-		verify(manager).sendGroupReply(eq(groupId), eq(theirsId),
+		verify(manager).sendGroupReplyReporting(eq(groupId), eq(theirsId),
 				eq("an answer"), eq(0L));
-		verify(manager, never()).sendGroupPost(any(), any(), anyLong());
+		verify(manager, never()).sendGroupPostReporting(any(), any(),
+				anyLong());
 		assertEquals(View.GONE, preview.getVisibility());
 	}
 
 	@Test
 	public void cancellingTheReplySendsAPlainPost() throws Exception {
 		longPress(1);
-		activity.onActionItemClicked(mode(), new RoboMenuItem(
-				R.id.action_reply));
+		assertTrue(bar().perform(SelectionAction.REPLY));
 		idle();
 		View preview = activity.findViewById(R.id.groupReplyPreview);
 		View cancel = preview.findViewById(R.id.cancel_reply);
@@ -333,9 +343,9 @@ public class GroupPostActionsTest {
 		activity.findViewById(R.id.sendButton).performClick();
 		runIo();
 
-		verify(manager).sendGroupPost(eq(groupId), any(), eq(0L));
-		verify(manager, never()).sendGroupReply(any(), any(), anyString(),
-				anyLong());
+		verify(manager).sendGroupPostReporting(eq(groupId), any(), eq(0L));
+		verify(manager, never()).sendGroupReplyReporting(any(), any(),
+				anyString(), anyLong());
 	}
 
 	@Test
@@ -377,9 +387,249 @@ public class GroupPostActionsTest {
 		assertEquals(1, adapter().getItemCount());
 	}
 
+	@Test
+	public void aPostStillBeingSentNeverJoinsTheSelection() throws Exception {
+		longPress(1);
+		assertTrue(bar().perform(SelectionAction.REPLY));
+		idle();
+		EditText input = activity.findViewById(R.id.messageInput);
+		input.setText("an answer");
+		activity.findViewById(R.id.sendButton).performClick();
+		idle();
+		assertEquals(3, adapter().getItemCount());
+
+		longPress(2);
+		assertFalse("a post still being sent is not selected",
+				bar().isShowing());
+
+		longPress(0);
+		holder(2).itemView.findViewById(R.id.quoteBlock).performClick();
+		idle();
+
+		assertEquals("tapping the quote of a waiting post selects nothing",
+				1, selected());
+		assertTrue(holder(0).itemView.isActivated());
+		assertFalse(holder(2).itemView.isActivated());
+	}
+
+	@Test
+	public void aPostStillBeingSentCannotBeSwipedIntoAReply()
+			throws Exception {
+		EditText input = activity.findViewById(R.id.messageInput);
+		input.setText("on its way");
+		activity.findViewById(R.id.sendButton).performClick();
+		idle();
+		assertEquals(3, adapter().getItemCount());
+		RecyclerView list = activity.findViewById(R.id.postsRecycler);
+		Field f = GroupTrConversationActivity.class.getDeclaredField(
+				"swipeCallback");
+		f.setAccessible(true);
+		androidx.recyclerview.widget.ItemTouchHelper.Callback swipe =
+				(androidx.recyclerview.widget.ItemTouchHelper.Callback)
+						f.get(activity);
+		assertEquals(0, swipe.getMovementFlags(list, holder(2)));
+		assertTrue(swipe.getMovementFlags(list, holder(1)) != 0);
+	}
+
+	@Test
+	public void aGroupOffersOnlyWhatItsPostsSupport() throws Exception {
+		longPress(0);
+
+		assertEquals(EnumSet.of(SelectionAction.REPLY, SelectionAction.COPY,
+				SelectionAction.DELETE, SelectionAction.FORWARD,
+				SelectionAction.INFO), shown());
+	}
+
+	@Test
+	public void severalPostsOfferOnlyActionsForSeveral() throws Exception {
+		longPress(0);
+		holder(1).itemView.performClick();
+		idle();
+
+		assertEquals(EnumSet.of(SelectionAction.COPY, SelectionAction.DELETE,
+				SelectionAction.FORWARD), shown());
+	}
+
+	@Test
+	public void aDisappearingPostIsNeverForwarded() throws Exception {
+		long now = System.currentTimeMillis();
+		GroupTrPost timed = new GroupTrPost(groupId, memberKey, "Name",
+				GroupTrBody.encodeText("gone soon"), now, 1L, false,
+				24L * 60L * 60L * 1000L, now, key((byte) 15));
+		when(manager.getRecentPosts(any()))
+				.thenReturn(Arrays.asList(mine, theirs, timed));
+		activity = open();
+
+		longPress(2);
+		assertTrue(shown().contains(SelectionAction.COPY));
+		assertFalse("its timer would not travel with it",
+				shown().contains(SelectionAction.FORWARD));
+
+		holder(1).itemView.performClick();
+		idle();
+		assertEquals(EnumSet.of(SelectionAction.COPY, SelectionAction.DELETE),
+				shown());
+	}
+
+	@Test
+	public void forwardHandsTheTextToTheContactPicker() throws Exception {
+		longPress(1);
+		assertTrue(bar().perform(SelectionAction.FORWARD));
+		idle();
+
+		verify(ProbeConversation.forwarder).pickAndForward(activity,
+				"their post", null);
+		assertFalse(bar().isShowing());
+		assertEquals(0, selected());
+	}
+
+	@Test
+	public void aSelectedPostIsMarkedForTalkBack() throws Exception {
+		longPress(1);
+
+		assertTrue(holder(1).itemView.isSelected());
+		assertTrue(SelectionBarTest.drawsHighlight(holder(1).itemView));
+		assertFalse(holder(0).itemView.isSelected());
+		assertFalse(SelectionBarTest.drawsHighlight(holder(0).itemView));
+	}
+
+	@Test
+	public void threeSelectedPostsAreEachToldAsSelected() throws Exception {
+		GroupTrPost third = post(memberKey, GroupTrBody.encodeText("third"),
+				3_000L, key((byte) 12));
+		GroupTrPost fourth = post(memberKey, GroupTrBody.encodeText("fourth"),
+				4_000L, key((byte) 13));
+		when(manager.getRecentPosts(any()))
+				.thenReturn(Arrays.asList(mine, theirs, third, fourth));
+		activity = open();
+
+		longPress(0);
+		holder(1).itemView.performClick();
+		idle();
+		holder(2).itemView.performClick();
+		idle();
+
+		assertEquals(3, selected());
+		for (int i = 0; i < 3; i++) {
+			View row = holder(i).itemView;
+			assertTrue(SelectedLook.toldSelected(row));
+			assertTrue(SelectedLook.toldSelected(SelectedLook.bubble(row)));
+			assertTrue(SelectedLook.drawsSelected(row));
+			assertNull(row.getBackground());
+		}
+		assertFalse(SelectedLook.toldSelected(holder(3).itemView));
+		assertFalse(SelectedLook.drawsSelected(holder(3).itemView));
+
+		holder(1).itemView.performClick();
+		idle();
+		assertEquals(2, selected());
+		assertFalse(SelectedLook.toldSelected(holder(1).itemView));
+		assertFalse(SelectedLook.drawsSelected(holder(1).itemView));
+	}
+
+	@Test
+	public void messageInfoNamesWhoSentIt() throws Exception {
+		longPress(1);
+		assertTrue(bar().perform(SelectionAction.INFO));
+		idle();
+
+		AlertDialog dialog = (AlertDialog) ShadowDialog.getLatestDialog();
+		String text = message(dialog);
+		assertTrue(text, text.contains(activity.getString(
+				R.string.message_info_from)));
+		assertTrue(text, text.contains("Member"));
+		assertTrue(text, text.contains(activity.getString(
+				R.string.message_info_sent)));
+		assertFalse(bar().isShowing());
+	}
+
+	@Test
+	public void backAndATapBesideThePostsClearTheSelection()
+			throws Exception {
+		longPress(0);
+		SelectionBarTest.pressBack(activity);
+		assertFalse(bar().isShowing());
+		assertEquals(0, selected());
+		assertFalse(activity.isFinishing());
+
+		longPress(0);
+		RecyclerView list = activity.findViewById(R.id.postsRecycler);
+		long now = android.os.SystemClock.uptimeMillis();
+		android.view.MotionEvent down = android.view.MotionEvent.obtain(now,
+				now, android.view.MotionEvent.ACTION_DOWN, 500f, 5f, 0);
+		android.view.MotionEvent up = android.view.MotionEvent.obtain(now,
+				now + 50, android.view.MotionEvent.ACTION_UP, 500f, 5f, 0);
+		list.dispatchTouchEvent(down);
+		list.dispatchTouchEvent(up);
+		idle();
+		assertFalse(bar().isShowing());
+		assertEquals(0, selected());
+	}
+
+	@Test
+	public void aLongPressOnALinkInAPostSelectsItWithoutOpeningTheLink()
+			throws Exception {
+		GroupTrPost link = post(memberKey,
+				GroupTrBody.encodeText("https://example.org/route"), 3_000L,
+				key((byte) 12));
+		when(manager.getRecentPosts(any()))
+				.thenReturn(Arrays.asList(mine, theirs, link));
+		activity = open();
+		TextView body = holder(2).itemView.findViewById(R.id.postText);
+		assertNotNull("the text is link aware", body.getMovementMethod());
+
+		SelectionBarTest.longPress(body);
+
+		assertTrue(bar().isShowing());
+		assertEquals(1, selected());
+		assertTrue(holder(2).itemView.isActivated());
+		assertNull("the long press does not ask about the link",
+				ShadowDialog.getLatestDialog());
+
+		bar().close();
+		idle();
+		SelectionBarTest.tap(body);
+		assertNotNull("a tap still asks about the link",
+				ShadowDialog.getLatestDialog());
+		assertFalse(bar().isShowing());
+	}
+
+	@Test
+	public void aTapOnTheTextWhileSelectingTogglesThePost() throws Exception {
+		longPress(0);
+		TextView body = holder(1).itemView.findViewById(R.id.postText);
+
+		SelectionBarTest.tap(body);
+		assertEquals("the tapped post joins the selection", 2, selected());
+		assertTrue(holder(1).itemView.isActivated());
+
+		SelectionBarTest.tap(body);
+		assertEquals("a second tap lets it go", 1, selected());
+		assertTrue(bar().isShowing());
+	}
+
+	@Test
+	public void aTapOnALinkWhileSelectingTogglesThePostInsteadOfOpeningIt()
+			throws Exception {
+		GroupTrPost link = post(memberKey,
+				GroupTrBody.encodeText("https://example.org/route"), 3_000L,
+				key((byte) 12));
+		when(manager.getRecentPosts(any()))
+				.thenReturn(Arrays.asList(mine, theirs, link));
+		activity = open();
+		longPress(0);
+		TextView body = holder(2).itemView.findViewById(R.id.postText);
+
+		SelectionBarTest.tap(body);
+
+		assertEquals(2, selected());
+		assertTrue(holder(2).itemView.isActivated());
+		assertNull("the link does not open while selecting",
+				ShadowDialog.getLatestDialog());
+	}
+
 	private AlertDialog deleteDialog() throws Exception {
-		activity.onActionItemClicked(mode(), new RoboMenuItem(
-				R.id.action_delete));
+		assertTrue(bar().perform(SelectionAction.DELETE));
 		runIo();
 		Dialog d = ShadowDialog.getLatestDialog();
 		assertNotNull(d);
@@ -402,11 +652,8 @@ public class GroupPostActionsTest {
 		});
 	}
 
-	private Menu menu() throws Exception {
-		Menu menu = new RoboMenu(activity);
-		activity.getMenuInflater().inflate(R.menu.grouptr_post_actions, menu);
-		activity.onPrepareActionMode(mode(), menu);
-		return menu;
+	private java.util.Set<SelectionAction> shown() throws Exception {
+		return bar().shownActions();
 	}
 
 	private void longPress(int position) throws Exception {
@@ -431,8 +678,8 @@ public class GroupPostActionsTest {
 		return list.getAdapter();
 	}
 
-	private ActionMode mode() throws Exception {
-		return (ActionMode) field("actionMode");
+	private SelectionBar bar() throws Exception {
+		return (SelectionBar) field("selectionBar");
 	}
 
 	private int selected() throws Exception {

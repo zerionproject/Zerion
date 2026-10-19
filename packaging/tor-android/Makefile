@@ -2,8 +2,13 @@
 # which took it from Guardian Project's tor-android external/Makefile
 # (https://github.com/guardianproject/tor-android/blob/7e6cffd6adc5b0d62b104029148bc42694761926/external/Makefile).
 # Copyright (c) 2009-2010, Nathan Freitas, The Guardian Project.
-# Licensed under the 3-clause BSD license. Unmodified apart from this header;
-# the pins live in build-tor-android.sh and PROVENANCE.md next to it.
+# Licensed under the 3-clause BSD license. Modified by the Zerion Project in
+# this header and in one place: Tor's configure runs with
+# CPPFLAGS="-D_FORTIFY_SOURCE=2". From 0.4.9.14 Tor's configure would
+# otherwise pick level 3, which the NDK r29 bionic headers treat like level 1
+# (sys/cdefs.h uses object size type 1 for level 2 only); with the level
+# already defined, its fortify probes add nothing. The pins live in
+# build-tor-android.sh and PROVENANCE.md next to it.
 
 # Based on Guardian Project's tor-android repo. Copied from:
 # https://github.com/guardianproject/tor-android/blob/7e6cffd6adc5b0d62b104029148bc42694761926/external/Makefile
@@ -219,7 +224,7 @@ tor/Makefile: tor/configure.ac tor/Makefile.am
 	@which pkg-config || (echo "ERROR: pkg-config is required! apt-get install pkg-config"; exit 1)
 	cd tor && ./autogen.sh
 	cd tor && \
-			./configure \
+			CPPFLAGS="-D_FORTIFY_SOURCE=2" ./configure \
 				--host=$(ALTHOST) \
 				--enable-android \
 				--enable-pic \

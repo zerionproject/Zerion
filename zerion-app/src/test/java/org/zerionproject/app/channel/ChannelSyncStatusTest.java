@@ -221,15 +221,21 @@ public class ChannelSyncStatusTest {
 	}
 
 	@Test
-	public void torComingBackStartsTheScheduleAgain() throws Exception {
+	public void torComingBackHalvesTheWaitAndSpreadsTheNextPull()
+			throws Exception {
 		ownerUp.set(false);
 		runFor(HOUR);
-		assertTrue(interval() > 60_000L);
+		assertEquals(BACKOFF_CEILING, interval());
 		subscriber.manager.eventOccurred(
 				new TransportActiveEvent(TorConstants.ID));
-		assertEquals(5_000L, interval());
-		assertFalse("failures while Tor was away are not held against "
-				+ "the channel", runFor(16_000L).isEmpty());
+		assertEquals("the wait is halved, not cleared", BACKOFF_CEILING / 2,
+				interval());
+		assertTrue("no pull in the first minute after Tor comes back",
+				runFor(MINUTE).isEmpty());
+		assertFalse("one pull within the second minute",
+				runFor(MINUTE).isEmpty());
+		assertEquals("a failed pull doubles the halved wait",
+				BACKOFF_CEILING, interval());
 	}
 
 	@Test

@@ -7,6 +7,7 @@ import org.w3c.dom.NodeList;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -281,6 +282,54 @@ public class AccentContrastTest {
 			}
 		}
 		assertTrue(overlays >= 10);
+		assertEquals(String.join("\n", problems), 0, problems.size());
+	}
+
+	private static List<Palette> overlayPalettes() throws Exception {
+		Map<String, Map<String, String>> styles = styles();
+		List<Palette> out = new ArrayList<>();
+		for (Palette p : palettes()) {
+			out.add(p);
+			Map<String, String> amoled = new HashMap<>(p.theme);
+			amoled.putAll(styles.get("AmoledOverlay"));
+			for (Map.Entry<String, Map<String, String>> s :
+					styles.entrySet()) {
+				if (!s.getKey().startsWith("AccentOverlay.")) continue;
+				for (Map<String, String> under : p.name.equals("night")
+						? Arrays.asList(p.theme, amoled)
+						: Arrays.asList(p.theme)) {
+					Map<String, String> merged = new HashMap<>(under);
+					merged.putAll(s.getValue());
+					Palette overlay = new Palette(p.name, merged);
+					overlay.colors.putAll(p.colors);
+					out.add(overlay);
+				}
+			}
+		}
+		return out;
+	}
+
+	@Test
+	public void theAccentTokensFollowEveryAccent() throws Exception {
+		List<String> problems = new ArrayList<>();
+		int checked = 0;
+		for (Palette p : overlayPalettes()) {
+			checked++;
+			check(problems, "accent token", "?attr/zerionColorOnAccent",
+					"?attr/zerionColorAccent", p);
+			check(problems, "filled button",
+					"@color/zerion_button_filled_foreground",
+					"@color/zerion_button_filled_background", p);
+			Integer accent = color("?attr/zerionColorAccent", p);
+			Integer primary = color("?attr/colorPrimary", p);
+			assertNotNull(accent);
+			assertNotNull(primary);
+			if ((accent & 0xFFFFFF) != (primary & 0xFFFFFF)) {
+				problems.add(p.name + " zerionColorAccent does not follow"
+						+ " the chosen accent");
+			}
+		}
+		assertTrue("checked " + checked, checked >= 17);
 		assertEquals(String.join("\n", problems), 0, problems.size());
 	}
 

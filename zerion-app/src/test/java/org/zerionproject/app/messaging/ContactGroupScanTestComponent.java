@@ -9,6 +9,7 @@ import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.data.MetadataParser;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
@@ -30,6 +31,8 @@ import org.zerionproject.app.autodelete.AutoDeleteModule;
 import org.zerionproject.app.client.BriarClientModule;
 import org.zerionproject.app.conversation.ConversationModule;
 import org.zerionproject.app.grouptr.GroupTrModule;
+
+import java.util.concurrent.Executor;
 
 import javax.inject.Singleton;
 
@@ -96,6 +99,9 @@ interface ContactGroupScanTestComponent
 	CryptoComponent getCryptoComponent();
 
 	ValidationManager getValidationManager();
+
+	@DatabaseExecutor
+	Executor getDatabaseExecutor();
 
 	class Helper {
 

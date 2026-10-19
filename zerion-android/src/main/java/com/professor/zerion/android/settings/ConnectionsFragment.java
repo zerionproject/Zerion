@@ -41,6 +41,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
+import org.zerionproject.core.api.plugin.TorConstants;
+
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
@@ -72,6 +74,13 @@ public class ConnectionsFragment extends Fragment {
 	@Inject
 	PluginManager pluginManager;
 
+	@Inject
+	org.zerionproject.core.api.connection.ContactConnectionDiagnostics
+			connectionDiagnostics;
+
+	@Inject
+	org.zerionproject.core.api.contact.ContactManager contactManager;
+
 	private SettingsViewModel viewModel;
 	private ConnectionsManager connectionsManager;
 	private PluginViewModel pluginViewModel;
@@ -97,8 +106,12 @@ public class ConnectionsFragment extends Fragment {
 	private TextView torNetworkValue;
 	private View customBridgesCard;
 	private TextView customBridgesValue;
+	private TextView helperTransportsValue;
+	private View debugCountryCard;
+	private TextView debugCountryValue;
 	private View rotateOnionCard;
-	private View forceCompleteRotationCard;
+	private View renewalWaitingCard;
+	private LinearLayout renewalWaitingList;
 
 	private String[] torNetworkEntries;
 	private String[] torNetworkValues;
@@ -128,15 +141,11 @@ public class ConnectionsFragment extends Fragment {
 		torNetworkCard = view.findViewById(R.id.tor_network_card);
 		torNetworkValue = view.findViewById(R.id.tor_network_value);
 		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
-		forceCompleteRotationCard =
-				view.findViewById(R.id.force_complete_rotation_card);
+		renewalWaitingCard = view.findViewById(R.id.renewal_waiting_card);
+		renewalWaitingList = view.findViewById(R.id.renewal_waiting_list);
 
 		if (rotateOnionCard != null) {
 			rotateOnionCard.setOnClickListener(v -> showRotateOnionDialog());
-		}
-		if (forceCompleteRotationCard != null) {
-			forceCompleteRotationCard.setOnClickListener(
-					v -> showForceCompleteRotationDialog());
 		}
 
 		torNetworkEntries = getResources().getStringArray(R.array.tor_network_setting_names);
@@ -145,6 +154,15 @@ public class ConnectionsFragment extends Fragment {
 		customBridgesCard = view.findViewById(R.id.custom_bridges_card);
 		customBridgesValue = view.findViewById(R.id.custom_bridges_value);
 		customBridgesCard.setOnClickListener(v -> showCustomBridgesDialog());
+		View helperTransportsCard =
+				view.findViewById(R.id.helper_transports_card);
+		helperTransportsValue = view.findViewById(R.id.helper_transports_value);
+		helperTransportsCard.setOnClickListener(
+				v -> showHelperTransportsDialog());
+		debugCountryCard = view.findViewById(R.id.debug_country_card);
+		debugCountryValue = view.findViewById(R.id.debug_country_value);
+		debugCountryCard.setOnClickListener(v -> showDebugCountryDialog());
+		if (!IS_DEBUG_BUILD) debugCountryCard.setVisibility(View.GONE);
 		i2pSwitch = view.findViewById(R.id.i2p_switch);
 		i2pSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) onI2pToggle(isChecked);
@@ -175,6 +193,7 @@ public class ConnectionsFragment extends Fragment {
 		setupBackgroundConnections(view);
 
 		observeSettings();
+		LifecycleTests.attach(this, view);
 	}
 
 	private void setupBackgroundConnections(View view) {
@@ -364,6 +383,19 @@ public class ConnectionsFragment extends Fragment {
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
 				this::updateCustomBridgesDisplay);
 
+		connectionsManager.helperTransports().observe(getViewLifecycleOwner(),
+				value -> updateHelperTransportsDisplay());
+		connectionsManager.helperTransportsCountry().observe(
+				getViewLifecycleOwner(),
+				value -> updateHelperTransportsDisplay());
+
+		connectionsManager.debugCountry().observe(getViewLifecycleOwner(),
+				value -> debugCountryValue.setText(
+						value == null || value.trim().isEmpty()
+								? getString(R.string.tor_debug_country_none)
+								: value.trim().toUpperCase(
+								java.util.Locale.US)));
+
 		pluginViewModel.getPluginEnabledSetting(I2pConstants.ID).observe(
 				getViewLifecycleOwner(), enabled -> {
 					i2pSwitch.setOnCheckedChangeListener(null);
@@ -421,6 +453,54 @@ public class ConnectionsFragment extends Fragment {
 					connectionsManager.torStore.putString(PREF_TOR_NETWORK, newValue);
 					updateTorNetworkDisplay(newValue);
 					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void updateHelperTransportsDisplay() {
+		if (helperTransportsValue == null) return;
+		helperTransportsValue.setText(HelperTransportsSummary.of(
+				requireContext(),
+				connectionsManager.helperTransports().getValue(),
+				connectionsManager.helperTransportsCountry().getValue()));
+	}
+
+	private void showHelperTransportsDialog() {
+		String[] entries = getResources()
+				.getStringArray(R.array.tor_helper_setting_names);
+		Integer current = connectionsManager.helperTransports().getValue();
+		int selected = current == null ? 0 : current;
+		if (selected < 0 || selected >= entries.length) selected = 0;
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.tor_helper_title)
+				.setSingleChoiceItems(entries, selected, (dialog, which) -> {
+					pluginViewModel.setHelperTransports(which);
+					dialog.dismiss();
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void showDebugCountryDialog() {
+		Context context = requireContext();
+		EditText input = new EditText(context);
+		input.setInputType(InputType.TYPE_CLASS_TEXT
+				| InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		input.setHint(R.string.tor_debug_country_hint);
+		String current = connectionsManager.debugCountry().getValue();
+		if (current != null) input.setText(current);
+		new SecureAlertDialogBuilder(context)
+				.setTitle(R.string.tor_debug_country_title)
+				.setView(input)
+				.setPositiveButton(R.string.ok, (dialog, which) -> {
+					String value = input.getText().toString().trim();
+					if (!value.isEmpty() && !value.matches("[A-Za-z]{2}")) {
+						return;
+					}
+					connectionsManager.torStore.putString(
+							TorConstants.PREF_TOR_DEBUG_COUNTRY,
+							value.toUpperCase(java.util.Locale.US));
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.show();
@@ -507,31 +587,50 @@ public class ConnectionsFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 		requireActivity().setTitle(R.string.network_settings_title);
-		refreshForceCompleteVisibility();
+		refreshRenewalWait();
 		if (offlineModeSwitch != null) {
 			offlineModeSwitch.setChecked(pluginManager.isOfflineMode());
 		}
 		refreshMeshSwitch();
 	}
 
-	private void refreshForceCompleteVisibility() {
-		if (forceCompleteRotationCard == null) return;
+	private void refreshRenewalWait() {
+		if (renewalWaitingCard == null) return;
 		ioExecutor.execute(() -> {
-			B4OnionRotation.RotationPhase phase;
-			try {
-				phase = b4OnionRotation.getPhase();
-			} catch (DbException e) {
-				phase = B4OnionRotation.RotationPhase.IDLE;
-			}
-			final boolean show =
-					phase == B4OnionRotation.RotationPhase.ANNOUNCING;
+			java.util.List<RenewalWaitList.Row> rows =
+					RenewalWaitList.load(connectionDiagnostics, contactManager);
 			if (getActivity() == null) return;
-			requireActivity().runOnUiThread(() -> {
-				if (forceCompleteRotationCard == null) return;
-				forceCompleteRotationCard.setVisibility(
-						show ? View.VISIBLE : View.GONE);
-			});
+			requireActivity().runOnUiThread(() -> showRenewalWait(rows));
 		});
+	}
+
+	private void showRenewalWait(java.util.List<RenewalWaitList.Row> rows) {
+		if (renewalWaitingCard == null || getContext() == null) return;
+		renewalWaitingList.removeAllViews();
+		LayoutInflater inflater = LayoutInflater.from(requireContext());
+		long now = System.currentTimeMillis();
+		for (RenewalWaitList.Row row : rows) {
+			View v = inflater.inflate(R.layout.item_renewal_waiting,
+					renewalWaitingList, false);
+			TextView name = v.findViewById(R.id.renewal_waiting_name);
+			name.setText(row.name);
+			TextView seen = v.findViewById(R.id.renewal_waiting_seen);
+			seen.setText(RenewalWaitList.lastSeen(getResources(),
+					row.lastConnectedAgoMs, now));
+			v.setOnClickListener(x -> openChat(row.contactId));
+			renewalWaitingList.addView(v);
+		}
+		renewalWaitingCard.setVisibility(rows.isEmpty() ? View.GONE
+				: View.VISIBLE);
+	}
+
+	private void openChat(org.zerionproject.core.api.contact.ContactId c) {
+		android.content.Intent i = new android.content.Intent(requireContext(),
+				com.professor.zerion.android.conversation.ConversationActivity
+						.class);
+		i.putExtra(com.professor.zerion.android.conversation
+				.ConversationActivity.CONTACT_ID, c.getInt());
+		startActivity(i);
 	}
 
 	private void showRotateOnionDialog() {
@@ -544,60 +643,16 @@ public class ConnectionsFragment extends Fragment {
 				.show();
 	}
 
-	private void showForceCompleteRotationDialog() {
-		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(R.string.pref_force_complete_rotation_confirm_title)
-				.setMessage(
-						R.string.pref_force_complete_rotation_confirm_message)
-				.setPositiveButton(
-						R.string.pref_force_complete_rotation_confirm_action,
-						(dialog, which) -> triggerForceCompleteRotation())
-				.setNegativeButton(R.string.cancel, null)
-				.show();
-	}
-
-	private void triggerForceCompleteRotation() {
-		Context appContext = requireContext().getApplicationContext();
-		ioExecutor.execute(() -> {
-			boolean promoted = false;
-			try {
-				promoted = b4OnionRotation.forceCompleteRotation();
-			} catch (DbException ignored) {
-			}
-			final boolean promotedFinal = promoted;
-			if (getActivity() == null) return;
-			requireActivity().runOnUiThread(() -> {
-				if (getContext() == null) return;
-				Toast.makeText(appContext, promotedFinal
-								? R.string.pref_force_complete_rotation_done
-								: R.string.pref_force_complete_rotation_not_announcing,
-						Toast.LENGTH_LONG).show();
-				refreshForceCompleteVisibility();
-				new ViewModelProvider(requireActivity(), viewModelFactory)
-						.get(com.professor.zerion.android.navdrawer
-								.PluginViewModel.class)
-						.refreshTorState();
-			});
-		});
-	}
-
 	private void triggerRotation() {
 		Context appContext = requireContext().getApplicationContext();
 		ioExecutor.execute(() -> {
-			String newOnion = null;
-			boolean success = false;
-			try {
-				b4OnionRotation.forceRotate();
-				newOnion = b4OnionRotation.getAliceNextOnion();
-				success = newOnion != null;
-			} catch (DbException ignored) {
-			}
-			boolean ok = success;
-			String displayOnion = newOnion;
+			OnionRotationRequest.Result result =
+					OnionRotationRequest.run(b4OnionRotation);
 			if (getActivity() == null) return;
 			requireActivity().runOnUiThread(() -> {
 				if (getContext() == null) return;
-				if (ok && displayOnion != null) {
+				if (result.outcome == OnionRotationRequest.Outcome.STARTED
+						&& result.onion != null) {
 					new ViewModelProvider(requireActivity(), viewModelFactory)
 							.get(com.professor.zerion.android.navdrawer
 									.PluginViewModel.class)
@@ -606,15 +661,16 @@ public class ConnectionsFragment extends Fragment {
 							.setTitle(R.string.pref_rotate_onion_success_title)
 							.setMessage(getString(
 									R.string.pref_rotate_onion_success_message,
-									displayOnion + ".onion"))
+									result.onion + ".onion"))
 							.setPositiveButton(android.R.string.ok, null)
 							.show();
 				} else {
-					Toast.makeText(appContext,
-							R.string.pref_rotate_onion_failed,
+					Toast.makeText(appContext, result.outcome
+									== OnionRotationRequest.Outcome.ALREADY_RUNNING
+									? R.string.pref_rotate_onion_already_running
+									: R.string.pref_rotate_onion_failed,
 							Toast.LENGTH_LONG).show();
 				}
-				refreshForceCompleteVisibility();
 			});
 		});
 	}

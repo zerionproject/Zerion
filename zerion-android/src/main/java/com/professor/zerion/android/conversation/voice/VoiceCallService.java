@@ -2542,7 +2542,7 @@ public class VoiceCallService extends Service implements EventListener {
 			mainHandler.post(() -> {
 				if (callActivity != null) {
 					callActivity.showVideoError(getString(videoTorConnection == null
-							? R.string.voice_call_video_no_tor
+							? R.string.voice_call_video_no_connection
 							: R.string.voice_call_video_no_keys));
 				}
 			});

@@ -11,6 +11,16 @@ public class TorStatusDeciderTest {
 	private static final Plugin.State ACTIVE = Plugin.State.ACTIVE;
 
 	@Test
+	public void theEntryRelayTextDoesNotSuggestBridgesToABridgeUser() {
+		assertEquals(com.professor.zerion.R.string
+						.tor_hidden_services_entry_relay_now,
+				TorStatusDecider.entryRelayText(false));
+		assertEquals(com.professor.zerion.R.string
+						.tor_hidden_services_entry_relay_bridges,
+				TorStatusDecider.entryRelayText(true));
+	}
+
+	@Test
 	public void offlineModeWins() {
 		assertEquals(Status.OFFLINE_MODE,
 				TorStatusDecider.decide(true, ACTIVE, true, true, false, 100));

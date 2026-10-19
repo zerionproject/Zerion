@@ -279,9 +279,11 @@ as a probe success). The two sides then repair it with bounded records:
   service) asks for the same repair dial, then again after 2, 4, 8 hours
   and so on, at most once every seven days, on a schedule of its own that
   any contact over the authorized path resets. It reaches a peer that is
-  the designated dialer but dials an address this side has retired (it
-  missed this side's `AUTH_ROTATE`, section 6), and delivers the queued
-  records. A healthy pair makes none; a peer silent for 30 days gets
+  the designated dialer but cannot reach this side, and delivers the
+  queued records. Up to 3.0.17 that included a peer that dialled an
+  address this side had retired after the peer missed its `AUTH_ROTATE`;
+  from 3.0.18 that address stays published until the peer has confirmed
+  the new one (section 6). A healthy pair makes none; a peer silent for 30 days gets
   about ten.
 - A locked-in side answers `AUTH_OFFER`, `AUTH_READY` and
   `AUTH_PROBE_SUCCESS` with its `AUTH_COMMIT` at most once an hour, and
@@ -430,22 +432,75 @@ is versioned and rotated.
   `AUTH_ROTATE` to every contact at `AUTH_NEGOTIATING` or later.
 - A contact installs the new address and credential, probes it, and
   replies `AUTH_ROTATE_ACK`.
-- NORMAL ROTATION (scheduled or manual): overlap is permitted. The old
-  service is deleted (`DEL_ONION`) once every contact has acknowledged, or
-  on the retirement deadline (30 days), whichever is first.
-- REVOCATION ROTATION: no overlap. The old service is deleted immediately
-  as part of the revocation step (section 7), before the new address has
-  reached anyone. Remaining contacts that have not yet received the new
-  address are recovered by dialing their own authorized service and
-  delivering `AUTH_ROTATE` over that session. A revoked contact never
-  keeps Tor-layer access because other contacts have not acknowledged
-  yet.
-- A contact that missed the announcement still has a valid address of its
-  own, so we dial it and deliver `AUTH_ROTATE` over that session; the
-  address it holds for us being retired does not strand the pair. When
-  that contact is the designated dialer, this dial is the silence repair
-  of section 5: it goes out after a day without contact over the
-  authorized path, from the side that does not normally dial.
+- Evidence: a contact has confirmed the new address when its
+  `AUTH_ROTATE_ACK` for the current generation arrives, or when its
+  `AUTH_COMMIT` for the current generation names the current address (a
+  contact that sets up client authorization after the rotation never
+  learns the old address; one that locked in after the rotation under an
+  earlier version, which did not record that, counts as well). Only that
+  evidence, the contact's removal or the rule of 90 days of silence below
+  lets the old address go; there is no other deadline (from 3.0.18).
+- Ninety days of silence (from 3.0.18). On the phone that is not the
+  designated dialer for a contact (the smaller author id dials), the old
+  address stops waiting for that contact once nothing has been heard from
+  it for 90 days: no authenticated session and no received message on any
+  transport. The time is the later of the last authenticated session and
+  `lastContactMs`, which a connection opened or a message received for
+  that contact updates (at most once an hour). A contact with no recorded
+  time is not treated as silent, and any contact within the 90 days
+  restarts the clock. The designated dialer never stops waiting, so the
+  other phone can always reach it at an address it kept and the pair
+  cannot split; a removed contact is unaffected. The check runs at every
+  15 minute check, and the connection details and the list in the network
+  settings then show only the contacts still holding the address back.
+  The silence is measured on the device clock, so a clock set 90 or more
+  days ahead retires the old address on that phone at the next check;
+  this cannot split the pair, since the designated dialer never stops
+  waiting. A clock set back writes nothing: a last contact time lower
+  than the one already stored is ignored, so the silence can only grow
+  with the clock, never shrink below what was seen.
+- NORMAL ROTATION (scheduled or manual): the old service stays published
+  with the current authorized set and is deleted (`DEL_ONION`) once every
+  contact has confirmed the new address. Up to 3.0.17 it was also deleted
+  on a retirement deadline of 30 days, whether or not every contact had
+  acknowledged. A rotation asked for while an old address is still
+  published changes nothing, so there is never more than one old address.
+- REVOCATION ROTATION: the revoked contact's key leaves every published
+  service at once. The current service is published again under its own
+  key with the remaining contacts' keys only and becomes the old address,
+  and a new address is published for the same set and announced with
+  `AUTH_ROTATE`; the old address is then deleted as in a normal rotation.
+  When Tor refuses a step (a failed `DEL_ONION` makes the following
+  `ADD_ONION` collide), the revocation stays owed and the check every 15
+  minutes runs it again, so the key is gone at the latest at the next
+  check while Tor answers. A revocation while an older address is still
+  published publishes both addresses again without the revoked key and
+  stays owed; the new address follows as soon as the older one is
+  retired. Until then the remaining contacts are not moved to a fresh
+  address at all, however many contacts are removed meanwhile, and a
+  removed contact that knew the current address can still see that a
+  descriptor is published for it (it cannot authenticate to any of these
+  services, and its tag is no longer recognised). Up to 3.0.17 the old
+  service was deleted at once, before the new address had reached anyone:
+  two locked-in contacts that both removed someone while apart each held
+  only the other's deleted address, refused the other's open repair dial,
+  and lost each other for good.
+- Versions: keeping the old address is done by the side that rotates or
+  removes, so it protects a pair only when that side runs 3.0.18 or later.
+  A side on 3.0.17 or earlier still deletes its old address after a
+  removal at once and after any other rotation within 30 days; its peer,
+  updated or not, then holds only a deleted address and, being locked in,
+  is refused on the open address, so the pair has no session until the
+  side that rotated or removed updates. Once it does, its own repair
+  dials reach the peer, deliver the rotation and the pair recovers
+  without pairing again (`OnionClientAuthPairTest`).
+- A contact that missed the announcement still finds the old address and
+  learns the new one over that session. A contact that has been away the
+  whole time keeps the old address published and holds back the next
+  rotation for as long as it stays a contact. When this side cannot be
+  reached at all, the silence repair of section 5 dials the contact's own
+  address after a day without contact over the authorized path, from the
+  side that does not normally dial.
 - A client public key in `AUTH_ROTATE` is ignored, and the rest of the
   record is processed: no version sends one, and honouring it would let a
   peer make this side take down and republish its authorized service with
@@ -454,14 +509,23 @@ is versioned and rotated.
 - Triggers: every contact revocation (mandatory), that is removing a
   contact this device authorizes; on a schedule, a random 28 to 35 days
   after the last rotation (drawn at each rotation and stored with the
-  service; a fixed 30 days up to 3.0.17), and only once the address before
-  it is retired. A rotation on request exists in the manager
-  (`rotateAuthorizedService`) but no screen offers it: the "Rotate onion
-  now" button in the network settings rotates the open address
-  (`B4OnionRotation`), not this one.
-- Crash recovery: rotation state (`PUBLISHED_NEW`, `ANNOUNCED`, per-contact
-  ack, `RETIRED`) is persisted and every step is idempotent, so a restart
-  resumes at the persisted phase and re-sends what is unacknowledged.
+  service; a fixed 30 days up to 3.0.17), only once the address before it
+  is retired and, from 3.0.18, only once every contact holding a commit
+  has been in contact since the previous rotation, on any transport (a
+  session that authenticated or a message received from it; the rotation
+  record travels the same way). A rotation on request
+  exists in the manager (`rotateAuthorizedService`); release builds offer
+  no screen for it: the "Rotate onion now" button in the network settings
+  rotates the open address (`B4OnionRotation`), not this one. Development
+  builds offer it as "Renew authorized address" among their lifecycle
+  test steps.
+- Crash recovery: the service record (current address and key, old
+  address and key, generation, whether a revocation is owed) and each
+  contact's acknowledgement flag are persisted, and every step is
+  idempotent. A restart publishes the current and the old address again,
+  runs an owed revocation first, and keeps the rotation records already
+  queued for contacts that have not acknowledged; a publish that fails is
+  tried again at the next check every 15 minutes.
 - A restored stale backup carries an old `keyVersion`; peers at a higher
   version answer with their current `AUTH_ROTATE`, and a peer that had
   revoked us has no key for us at any version (section 7).
@@ -478,12 +542,17 @@ a crash resumes at the next one:
    not close existing connections; Zerion closes them itself.
 3. Remove the credential for the revoked contact's `onion3a`
    (`ONION_CLIENT_AUTH_REMOVE`) and delete the private dialing key.
-4. `DEL_ONION` the current authorized service immediately.
-5. Publish a new `onion3a` with a fresh service key and an authorized set
-   that excludes the revoked contact (a revocation rotation, section 6).
+4. Publish the current authorized service again under its own key with an
+   authorized set that excludes the revoked contact; it becomes the old
+   address, kept for the remaining contacts (section 6).
+5. Publish a new `onion3a` with a fresh service key and the same set (a
+   revocation rotation, section 6). While an older address is still
+   published, both are published again without the revoked key instead,
+   and the new address follows once the older one is retired.
 6. Distribute the new address to the remaining contacts with `AUTH_ROTATE`;
-   contacts that cannot be reached are dialled over their own authorized
-   service and updated there.
+   the old address is deleted once each of them has confirmed it.
+   Contacts that cannot be reached find the old address, or are dialled
+   over their own authorized service and updated there.
 
 The contact's transport keys are deleted with the contact as today.
 
@@ -493,28 +562,40 @@ transaction that removes the contact (`contactRemoved`), so a process killed
 right after the removal still owes it, and it stays owed until it has run; a
 rotation already announcing is abandoned and its next onion unpublished, and
 the address the removed contact knew is retired once every remaining contact
-has moved, within 48 hours at most, checked exactly when the window ends and
-at every hourly round, and at once when no contact is left. Each hourly
+has moved, checked at every hourly round and every session, and at once when
+no contact is left. Up to 3.0.17 it was retired after 48 hours at most whether
+or not every contact had moved, so two contacts that both removed someone
+while apart could lose each other; from 3.0.18 there is no time limit
+except that the phone that is not the designated dialer for a contact stops
+waiting for it after 90 days without any authenticated session or received
+message on any transport (the designated dialer never does), and
+until every remaining contact has moved the removed contact can still see
+that the old open address is published and can still connect to it, where
+the handshake refuses it because its tag is no longer recognised. Each hourly
 check runs whatever happened to the ones before it.
 
 The rotation is recorded as pending in the service record before it is
 attempted and cleared only once the new service is published and announced
 to the remaining contacts. A revocation while Tor is down, or a rotation
-whose publish fails after the old service was deleted, is therefore
-completed at the next Tor start, before the service is re-fed; the old
-address is never republished after a revocation.
+whose publish fails, is therefore completed at the next check every 15
+minutes or at the next Tor start, before the service is re-fed; the revoked
+key is never published again, and the old address is republished only with
+the remaining contacts' keys.
 
 A revoked client that still holds a decrypted descriptor can reach the old
 introduction points until the descriptor expires; those lead to a service
 being deleted and, at the app layer, to a tag that is no longer recognised.
 Regression tests cover both the closed sessions and the refused tag.
 
-## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12, re-confirmed on 0.4.9.13)
+## 8. Tor semantics, confirmed on the shipped binary (0.4.9.12, re-confirmed on 0.4.9.13 and 0.4.9.14)
 
 Observed on 2026-09-24 against the Tor 0.4.9.12 that 3.0.12 ships and on
 2026-09-25 against the Tor 0.4.9.13 built in tree for the next release, both
 on the Moto, over the app's own authenticated control port (replies observed by
-the device check, not logged by the app). These observations used a loopback
+the device check, not logged by the app). On 2026-10-19 the same behaviour was
+re-confirmed on the Tor 0.4.9.14 built in tree: forced address renewal in both
+directions between two phones, aged lifecycle timers, 27 minutes of deep sleep,
+a force stop and a Tor restart, all without re-pairing. These observations used a loopback
 target; since 3.0.15 the target is a Unix socket in the
 app's private directory (`Port=80,unix:<files>/zo/<name>`), which Tor's
 ADD_ONION parses like a HiddenServicePort target. That form is not yet
@@ -605,13 +686,15 @@ confirmed on a device:
 | Late `AUTH_OFFER` | an `AUTH_OFFER` from an abandoned earlier negotiation delivered after lock-in, with no session after it, on either dialer role and against an updated or a 3.0.15 to 3.0.17 peer, leaves the pair reachable and returns it to the committed round and key (`OnionClientAuthPairTest`) |
 | No record opens a locked-in side | every record type at old, current and future generations, with the committed key and new keys, across restarts, leaves `AUTH_REQUIRED`, the authorized dial target and the closed open service in place; a new round starts at most once a day, keeps this side's dialing key and the committed peer key and address until it locks in; an `AUTH_COMMIT` or `AUTH_OFFER` of the committed round ends a new round in its favour, also for a partial commit, which the seven-day cleanup never clears (`OnionClientAuthManagerImplTest`) |
 | Open repair dial | requested only after a day and an hour without the authorized path, then at most every 2, 4, 8 hours and so on up to seven days, with one `AUTH_OFFER` per silent period; never for a healthy pair; the transport takes the address without the authorized override; a refused open repair dial does not count towards keys out of sync (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`, `ZtpPollerTest`, `TransportPropertyOpenAddressTest`, `ZtpConnectionHandlerTest`) |
-| Silence repair | a locked-in side silent for a day makes one repair dial, then at most every 2, 4, 8 hours and so on up to seven days (at most twelve in 30 days), never in the same step as an open repair dial, reset by any contact over the authorized path; a healthy pair makes none; a designated dialer that missed its peer's rotation while offline for 31 days, until the old address was retired, recovers through the peer's silence repair (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`) |
+| Silence repair | a locked-in side silent for a day makes one repair dial, then at most every 2, 4, 8 hours and so on up to seven days (at most twelve in 30 days), never in the same step as an open repair dial, reset by any contact over the authorized path; a healthy pair makes none; a designated dialer that missed its peer's rotation while offline for 31 days still reaches the old address and learns the new one there (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`) |
+| No retirement without evidence | an old address stays published for 100 days without an acknowledgement and goes at the first one; a commit to the new address counts; a rotation asked for during an overlap changes nothing; two locked-in sides that both rotate, both remove a contact (whose key leaves every service at once) or stay apart longer than the rotation period find each other again and retire their old addresses once they meet; the scheduled rotation waits while a committed contact has been silent since the previous one; the phone that is not the designated dialer retires the old address after 90 days of silence from a contact, 89 days do not, the designated dialer never does (400 days tested), a connection or message within the 90 days restarts the clock, and two peers apart for 100 days that both rotated find each other again in both dialer roles; a tick publishes the authorized set again when only the keys changed and a queued revocation rotation that was already done is dropped (`OnionClientAuthManagerImplTest`, `OnionClientAuthPairTest`) |
+| Held confirmations | a side that holds back its `AUTH_COMMIT` (a development switch) leaves its peer with a partial commit in either dialer role; once released, the repair delivers it and both lock in and stay reachable across a restart (`OnionClientAuthPairTest`, `OnionClientAuthManagerImplTest`) |
 | Client key in `AUTH_ROTATE` | ignored: the authorized set, the published service and the peer's key stay as they were, and the address and generation of the record are applied (`OnionClientAuthManagerImplTest`) |
 | Early `AUTH_READY` | an `AUTH_READY` that arrives before the peer's address is kept and the probe starts when the address arrives (`OnionClientAuthManagerImplTest`) |
 | No republish without a change | peer rotations leave the authorized service published; a change of the authorized set and every attach to Tor republish it; a peer that sends a new key with every `AUTH_OFFER`, in a new round of keys or in a negotiation, changes the set at most once a day (`OnionClientAuthManagerImplTest`) |
 | `AUTH_READY` across generations | a pair whose authorized-service generations differ activates, between two updated sides and with a side running 3.0.15 to 3.0.17 in either role; two such older sides never do (`OnionClientAuthPairTest`, `OnionClientAuthManagerImplTest`) |
 | Two peers with one lost or reordered `AUTH_COMMIT` | two managers with a fake clock and a fake Tor network, the designated dialer modelled: an `AUTH_COMMIT` dropped or overtaking its `AUTH_PROBE_SUCCESS`, on either side, across day seven and a restart of both; both end `AUTH_REQUIRED` and reachable with no endless `AUTH_COMMIT` exchange, also with one side running the behaviour shipped in 3.0.15 to 3.0.17 (`OnionClientAuthPairTest`, which also reproduces the loss between two such peers) |
-| Revocation retires the old service at once | after a revocation the old service is deleted before any acknowledgement, and the new set excludes the key |
+| Revocation removes the key at once | after a revocation the revoked key is in no published service, the old address stays for the remaining contacts and is deleted once they acknowledge, also for a revocation during an overlap, which waits for the older address to retire before it rotates (`OnionClientAuthManagerImplTest`) |
 | Wrong or replaced client key fails | a service published with key set S refuses a credential outside S (device test against real Tor) |
 | Revoked client cannot reconnect | after revocation the tag is unrecognised and the republished service excludes the key |
 | Revoked session terminated | live connections of the revoked contact are closed within the revocation step |
@@ -619,7 +702,7 @@ confirmed on a device:
 | Stale backup cannot resurrect revoked authorization | a restored row for a revoked contact stays revoked; a restored older `keyVersion` is answered by rotation, not by acceptance |
 | Tor restart restores `AUTH_REQUIRED` exactly | after a simulated restart the state, the republished service set and the re-added credentials match the database |
 | A reconfiguration of the running Tor re-installs every credential | after the network is disabled, enabled, bounced or the bridges are re-applied the transport announces the change and the manager re-adds the credential of every pair that holds one, and nothing else; revoked and legacy pairs stay without one (`ZtpTorTransportRefeedTest`, `OnionClientAuthManagerImplTest`) |
-| Rotation excludes removed contacts | the new authorized set after a revocation-driven rotation lacks the revoked key, and the old service is deleted |
+| Rotation excludes removed contacts | the new authorized set after a revocation-driven rotation lacks the revoked key, and so does the old service kept for the remaining contacts |
 | Control commands | exact `ADD_ONION`, `DEL_ONION`, `ONION_CLIENT_AUTH_ADD/REMOVE` formats and reply handling (already in `TorOnionServiceControlTest`) |
 
 ## 10. iOS port

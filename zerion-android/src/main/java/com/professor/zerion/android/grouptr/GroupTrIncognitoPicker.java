@@ -107,7 +107,7 @@ public final class GroupTrIncognitoPicker {
 				.setTitle(R.string.grouptr_incognito)
 				.setMessage(context.getString(R.string.grouptr_incognito_name,
 						name) + "\n\n" + context.getString(
-						R.string.grouptr_incognito_summary))
+						R.string.grouptr_incognito_explained))
 				.setPositiveButton(android.R.string.ok, null)
 				.show();
 	}

@@ -13,8 +13,8 @@
 		android:right="@dimen/message_bubble_padding_sides"
 		android:top="@dimen/message_bubble_padding_top"/>
 	<solid
-		android:color="@color/notice_in"/>
+		android:color="?attr/zerionColorBubbleIn"/>
 	<stroke
-		android:width="@dimen/message_bubble_stroke"
-		android:color="@color/msg_stroke"/>
+		android:width="@dimen/message_bubble_in_stroke"
+		android:color="?attr/zerionColorOutline"/>
 </shape>

@@ -30,6 +30,7 @@ import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT_PRIVKEY_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ROTATION_PHASE_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_SETTINGS_NAMESPACE;
+import static org.zerionproject.core.api.plugin.B4Constants.WIRE_KEY_ONION3_NEXT;
 import static org.zerionproject.core.test.TestUtils.getAuthor;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -54,7 +55,6 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 	private final SecretKey key = getSecretKey();
 	private final Settings stored = new Settings();
 	private final List<Contact> contacts = new ArrayList<>();
-	private final List<Long> scheduledMs = new ArrayList<>();
 	private Transaction txn;
 	private long now = 1_700_000_000_000L;
 
@@ -62,6 +62,7 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 			implements B4OnionRotation.B4TorAdapter {
 
 		final List<String> live = new ArrayList<>();
+		final List<TransportProperties> merged = new ArrayList<>();
 		int generated;
 
 		@Override
@@ -94,6 +95,7 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 
 		@Override
 		public void mergeTorLocalProperties(TransportProperties props) {
+			merged.add(props);
 		}
 	}
 
@@ -171,50 +173,6 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 		return new B4OnionRotation(db, settingsManager, accountManager, clock);
 	}
 
-	private B4OnionRotation rotationWithRecordingScheduler()
-			throws Exception {
-		Clock clock = new Clock() {
-			@Override
-			public long currentTimeMillis() {
-				return now;
-			}
-
-			@Override
-			public void sleep(long ms) {
-			}
-		};
-		java.util.concurrent.ScheduledExecutorService scheduler =
-				(java.util.concurrent.ScheduledExecutorService)
-						java.lang.reflect.Proxy.newProxyInstance(
-								getClass().getClassLoader(),
-								new Class<?>[] {java.util.concurrent
-										.ScheduledExecutorService.class},
-								(proxy, method, args) -> {
-									if (method.getName().equals("schedule")
-											&& args.length == 3) {
-										scheduledMs.add(((java.util.concurrent
-												.TimeUnit) args[2]).toMillis(
-												(Long) args[1]));
-									}
-									return null;
-								});
-		try {
-			java.lang.reflect.Constructor<B4OnionRotation> c =
-					B4OnionRotation.class.getDeclaredConstructor(
-							DatabaseComponent.class, SettingsManager.class,
-							AccountManager.class, Clock.class,
-							java.util.concurrent.ScheduledExecutorService
-									.class);
-			c.setAccessible(true);
-			return c.newInstance(db, settingsManager, accountManager, clock,
-					scheduler);
-		} catch (NoSuchMethodException e) {
-			org.junit.Assert.fail("the retirement is checked only by the "
-					+ "hourly round");
-			throw e;
-		}
-	}
-
 	private Contact contact(int id) {
 		return getContact(new ContactId(id), getAuthor(),
 				new AuthorId(getRandomId()), true);
@@ -254,28 +212,6 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 		evaluate(r);
 		assertTrue("the removal transaction did not owe a rotation",
 				t.live.contains("onion-of-fresh1"));
-	}
-
-	@Test
-	public void theRetirementIsCheckedWhenTheWindowEnds() throws Exception {
-		contacts.add(contact(1));
-		expectDatabase();
-		Transport t = new Transport();
-		t.live.add(ORIGINAL);
-		B4OnionRotation r = rotationWithRecordingScheduler();
-		r.bindAdapter(t);
-
-		removeContact(r);
-
-		boolean atTheWindow = false;
-		for (long ms : scheduledMs) {
-			if (ms >= B4OnionRotation.REVOCATION_RETIRE_MS
-					&& ms <= B4OnionRotation.REVOCATION_RETIRE_MS + 60_000L) {
-				atTheWindow = true;
-			}
-		}
-		assertTrue("no check is scheduled for when the window ends: "
-				+ scheduledMs, atTheWindow);
 	}
 
 	@Test
@@ -370,9 +306,10 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void theOldAddressIsRetiredWithinTheRevocationWindow()
+	public void theOldAddressStaysUntilTheRemainingContactHasMoved()
 			throws Exception {
-		contacts.add(contact(1));
+		Contact remaining = contact(1);
+		contacts.add(remaining);
 		expectDatabase();
 		Transport t = new Transport();
 		t.live.add(ORIGINAL);
@@ -381,10 +318,38 @@ public class B4OnionRevocationTest extends BrambleMockTestCase {
 		removeContact(r);
 		assertTrue(t.live.contains(ORIGINAL));
 
-		now += 49 * HOUR;
+		now += 60 * 24 * HOUR;
 		evaluate(r);
 
-		assertFalse("the removed contact's address outlives the window",
-				t.live.contains(ORIGINAL));
+		assertTrue("the address the remaining contact knows was retired"
+				+ " without evidence", t.live.contains(ORIGINAL));
+		r.onPeerSyncSessionEstablished(remaining.getId(), "onion-of-fresh1");
+		assertFalse(t.live.contains(ORIGINAL));
+		assertTrue(t.live.contains("onion-of-fresh1"));
+	}
+
+	@Test
+	public void anAbandonedNextOnionIsWithdrawnFromTheAnnouncement()
+			throws Exception {
+		contacts.add(contact(1));
+		stored.put(B4_ALICE_ROTATION_PHASE_KEY, sealed("ANNOUNCING"));
+		stored.put(B4_ALICE_ONION3_NEXT_KEY, sealed(NEXT));
+		stored.put(B4_ALICE_ONION3_NEXT_PRIVKEY_KEY, sealed(NEXT_KEY));
+		stored.put(B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY,
+				sealed(String.valueOf(now)));
+		expectDatabase();
+		Transport t = new Transport();
+		t.live.add(ORIGINAL);
+		t.live.add(NEXT);
+		B4OnionRotation r = rotation();
+		r.bindAdapter(t);
+
+		removeContact(r);
+
+		boolean withdrawn = false;
+		for (TransportProperties p : t.merged) {
+			if ("".equals(p.get(WIRE_KEY_ONION3_NEXT))) withdrawn = true;
+		}
+		assertTrue("the abandoned next onion is still announced", withdrawn);
 	}
 }

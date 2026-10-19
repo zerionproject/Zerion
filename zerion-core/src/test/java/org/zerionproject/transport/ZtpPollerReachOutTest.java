@@ -39,6 +39,8 @@ public class ZtpPollerReachOutTest {
 			ZtpPoller.REACH_OUT_DELAY_MS + ZtpPoller.REACH_OUT_JITTER_MS;
 	private static final long SLOW =
 			ZtpPoller.SLOW_REACH_OUT_MS + ZtpPoller.SLOW_REACH_OUT_JITTER_MS;
+	private static final long ARRIVAL = ZtpPoller.ARRIVAL_REFRESH_DELAY_MS
+			+ ZtpPoller.ARRIVAL_REFRESH_JITTER_MS;
 
 	private static final class ManualScheduler implements TaskScheduler {
 		final AtomicReference<Runnable> next = new AtomicReference<>();
@@ -340,6 +342,10 @@ public class ZtpPollerReachOutTest {
 		assertEquals("the start dials once", 1, dials.get());
 		assertEquals(0, refreshes.get());
 		poller.dialNow(CONTACT.getInt());
+		assertEquals("the first dials after a start keep their circuits", 0,
+				refreshes.get());
+		now.addAndGet(ARRIVAL);
+		poller.dialNow(CONTACT.getInt());
 		assertEquals("a start counts as recent for a contact not reached yet",
 				1, refreshes.get());
 
@@ -354,6 +360,8 @@ public class ZtpPollerReachOutTest {
 	public void anUnreachedContactRefreshesOncePerStart() throws Exception {
 		ZtpPoller poller = poller(true);
 		poller.pollNow();
+		now.addAndGet(ARRIVAL);
+		poller.dialNow(CONTACT.getInt());
 		poller.dialNow(CONTACT.getInt());
 		assertEquals(1, refreshes.get());
 
@@ -364,6 +372,8 @@ public class ZtpPollerReachOutTest {
 				1, refreshes.get());
 
 		poller.pollNow();
+		now.addAndGet(ARRIVAL);
+		poller.dialNow(CONTACT.getInt());
 		poller.dialNow(CONTACT.getInt());
 		assertEquals("a new start allows one more refresh", 2, refreshes.get());
 	}

@@ -2,13 +2,13 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
 	<style name="GroupTrAdminSectionLabel">
+		<item name="android:accessibilityHeading">true</item>
 		<item name="android:layout_width">match_parent</item>
 		<item name="android:layout_height">wrap_content</item>
 		<item name="android:layout_marginStart">8dp</item>
 		<item name="android:layout_marginBottom">8dp</item>
-		<item name="android:textColor">@color/zerion_text_secondary</item>
-		<item name="android:textSize">11sp</item>
-		<item name="android:textStyle">bold</item>
+		<item name="android:textColor">?attr/zerionColorOnSurfaceMuted</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.Meta.Strong</item>
 		<item name="android:letterSpacing">0.08</item>
 	</style>
 
@@ -35,19 +35,21 @@
 		<item name="android:layout_width">0dp</item>
 		<item name="android:layout_height">wrap_content</item>
 		<item name="android:layout_weight">1</item>
-		<item name="android:textColor">@color/zerion_text_primary</item>
-		<item name="android:textSize">15sp</item>
+		<item name="android:textColor">?attr/zerionColorOnSurface</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.Body</item>
+		<item name="android:breakStrategy">high_quality</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
 	</style>
 
 	<style name="GroupTrAdminActionTextDanger" parent="GroupTrAdminActionText">
-		<item name="android:textColor">@color/zerion_destructive</item>
+		<item name="android:textColor">?attr/zerionColorDangerText</item>
 	</style>
 
 	<style name="GroupTrAdminDivider">
 		<item name="android:layout_width">match_parent</item>
 		<item name="android:layout_height">0.5dp</item>
 		<item name="android:layout_marginStart">60dp</item>
-		<item name="android:background">@color/zerion_divider</item>
+		<item name="android:background">?attr/zerionColorDivider</item>
 	</style>
 
 	<style name="GroupTrAdminDetailRow">
@@ -63,21 +65,21 @@
 		<item name="android:layout_width">0dp</item>
 		<item name="android:layout_height">wrap_content</item>
 		<item name="android:layout_weight">1</item>
-		<item name="android:textColor">@color/zerion_text_secondary</item>
-		<item name="android:textSize">14sp</item>
+		<item name="android:textColor">?attr/zerionColorOnSurfaceMuted</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.BodySmall</item>
 	</style>
 
 	<style name="GroupTrAdminDetailValue">
 		<item name="android:layout_width">wrap_content</item>
 		<item name="android:layout_height">wrap_content</item>
-		<item name="android:textColor">@color/zerion_text_primary</item>
-		<item name="android:textSize">14sp</item>
+		<item name="android:textColor">?attr/zerionColorOnSurface</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.BodySmall</item>
 	</style>
 
 	<style name="ZerionToolbar" parent="Widget.Material3.Toolbar">
-		<item name="android:background">@color/zerion_dark_bg</item>
-		<item name="titleTextColor">@color/zerion_text_secondary</item>
-		<item name="subtitleTextColor">@color/zerion_text_secondary</item>
+		<item name="android:background">?attr/zerionColorBackground</item>
+		<item name="titleTextColor">?attr/zerionColorOnSurfaceMuted</item>
+		<item name="subtitleTextColor">?attr/zerionColorOnSurfaceMuted</item>
 		<item name="titleTextAppearance">@style/TextAppearance.Zerion.ToolbarTitle</item>
 		<item name="android:theme">@style/ZerionToolbarTheme</item>
 		<item name="popupTheme">@style/PopupMenu</item>
@@ -103,7 +105,19 @@
 		<item name="android:tint">@color/zerion_text_primary</item>
 	</style>
 
-	<style name="PopupMenu" parent="Theme.Material3.DayNight">
+	<style name="Zerion.SelectionBar" parent="Widget.Material3.ActionMode">
+		<item name="background">?attr/zerionColorSurface</item>
+		<item name="backgroundSplit">?attr/zerionColorSurface</item>
+		<item name="closeItemLayout">@layout/view_selection_close</item>
+	</style>
+
+	<style name="ThemeOverlay.Zerion.SelectionMenu" parent="">
+		<item name="colorSurfaceContainer">?attr/zerionColorSurfaceVariant</item>
+		<item name="colorOnSurface">?attr/zerionColorOnSurface</item>
+		<item name="android:textColorPrimary">?attr/zerionColorOnSurface</item>
+	</style>
+
+	<style name="PopupMenu" parent="">
 		<item name="android:colorBackground">@color/zerion_card_bg</item>
 		<item name="android:textColor">@color/zerion_text_primary</item>
 		<item name="android:textColorPrimary">@color/zerion_text_primary</item>
@@ -123,6 +137,7 @@
 
 	<style name="ZerionButtonFlat" parent="Widget.Material3.Button.TextButton">
 		<item name="android:textSize">@dimen/text_size_medium</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
 	</style>
 
 	<style name="ZerionButtonFlat.Negative" parent="ZerionButtonFlat">
@@ -176,7 +191,7 @@
 	</style>
 
 	<style name="Divider">
-		<item name="android:background">@color/divider</item>
+		<item name="android:background">?attr/zerionColorDivider</item>
 	</style>
 
 	<style name="Divider.Horizontal" parent="Divider">
@@ -205,24 +220,106 @@
 		<item name="cornerSize">50%</item>
 	</style>
 
+	<style name="TextAppearance.Zerion.Headline" parent="">
+		<item name="android:textSize">20sp</item>
+		<item name="android:fontFamily">@font/bricolage_grotesque</item>
+		<item name="fontFamily">@font/bricolage_grotesque</item>
+		<item name="android:textFontWeight">500</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Title" parent="">
+		<item name="android:textSize">17sp</item>
+		<item name="android:fontFamily">@font/bricolage_grotesque</item>
+		<item name="fontFamily">@font/bricolage_grotesque</item>
+		<item name="android:textFontWeight">500</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Body" parent="">
+		<item name="android:textSize">16sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Body.Strong" parent="TextAppearance.Zerion.Body">
+		<item name="android:textStyle">bold</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.BodySmall" parent="">
+		<item name="android:textSize">14sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Label" parent="">
+		<item name="android:textSize">13sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Caption" parent="">
+		<item name="android:textSize">13sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Meta" parent="">
+		<item name="android:textSize">12sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Meta.Strong" parent="TextAppearance.Zerion.Meta">
+		<item name="android:textStyle">bold</item>
+	</style>
+
+	<style name="TextAppearance.Zerion.Avatar" parent="">
+		<item name="android:textSize">18sp</item>
+		<item name="android:fontFamily">@font/plex_sans</item>
+		<item name="fontFamily">@font/plex_sans</item>
+		<item name="android:textStyle">bold</item>
+	</style>
+
 	<style name="TextMessage">
 		<item name="android:textIsSelectable">true</item>
-		<item name="android:textSize">@dimen/text_size_medium</item>
-		<item name="android:textColor">@color/zerion_text_primary_inverse</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.Body</item>
+		<item name="android:textColor">?attr/zerionColorOnBubbleIn</item>
+		<item name="android:textColorLink">@color/selectable_accent_text</item>
+	</style>
+
+	<style name="TextMessage.Out">
+		<item name="android:textColor">?attr/zerionColorOnBubbleOut</item>
+		<item name="android:textColorLink">?attr/zerionColorOnBubbleOut</item>
 	</style>
 
 	<style name="TextMessage.Notice">
 		<item name="android:textIsSelectable">true</item>
-		<item name="android:textSize">@dimen/text_size_small</item>
-		<item name="android:textColor">@color/zerion_text_secondary_inverse</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.BodySmall</item>
+		<item name="android:textColor">?attr/zerionColorOnBubbleInMuted</item>
 		<item name="android:textStyle">italic</item>
+	</style>
+
+	<style name="TextMessage.Notice.Out">
+		<item name="android:textColor">?attr/zerionColorOnBubbleOutMuted</item>
+		<item name="android:textColorLink">?attr/zerionColorOnBubbleOut</item>
 	</style>
 
 	<style name="TextMessage.Timestamp">
 		<item name="android:textIsSelectable">false</item>
-		<item name="android:textSize">@dimen/text_size_tiny</item>
-		<item name="android:textColor">@color/zerion_text_tertiary_inverse</item>
+		<item name="android:textAppearance">@style/TextAppearance.Zerion.Meta</item>
+		<item name="android:textColor">@color/selectable_on_bubble_in_muted</item>
+		<item name="android:textColorLink">@color/selectable_on_bubble_in_muted</item>
 		<item name="android:maxLines">1</item>
+	</style>
+
+	<style name="TextMessage.Timestamp.Scrim">
+		<item name="android:textColor">?attr/zerionColorOnScrim</item>
+		<item name="android:textColorLink">?attr/zerionColorOnScrim</item>
+	</style>
+
+	<style name="TextMessage.Timestamp.Out">
+		<item name="android:textColor">?attr/zerionColorOnBubbleOutMuted</item>
+		<item name="android:textColorLink">?attr/zerionColorOnBubbleOutMuted</item>
 	</style>
 
 	<style name="DiscussionLevelIndicator">
@@ -273,6 +370,7 @@
 	</style>
 
 	<style name="Zerion.Settings.SectionHeader" parent="">
+		<item name="android:accessibilityHeading">true</item>
 		<item name="android:layout_width">match_parent</item>
 		<item name="android:layout_height">wrap_content</item>
 		<item name="android:textSize">12sp</item>
@@ -334,6 +432,8 @@
 		<item name="android:layout_height">wrap_content</item>
 		<item name="android:textSize">15sp</item>
 		<item name="android:textColor">@color/zerion_text_primary</item>
+		<item name="android:breakStrategy">high_quality</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
 	</style>
 
 	<style name="Zerion.Settings.Row.Summary" parent="">
@@ -342,6 +442,8 @@
 		<item name="android:textSize">12sp</item>
 		<item name="android:textColor">@color/zerion_text_secondary</item>
 		<item name="android:layout_marginTop">2dp</item>
+		<item name="android:breakStrategy">high_quality</item>
+		<item name="android:hyphenationFrequency">@integer/text_hyphenation</item>
 	</style>
 
 	<style name="DecoyCalcKey" parent="@android:style/Widget.Button">

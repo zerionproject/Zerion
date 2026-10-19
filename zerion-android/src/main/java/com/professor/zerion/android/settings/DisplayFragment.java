@@ -296,8 +296,12 @@ public class DisplayFragment extends Fragment {
 				.show();
 	}
 
+	public static void storeChosenTheme(Context ctx, String theme) {
+		EarlyPrefs.setChosenTheme(ctx, theme);
+	}
+
 	private void onThemeChanged(String newTheme) {
-		EarlyPrefs.setTheme(requireContext(), newTheme);
+		storeChosenTheme(requireContext(), newTheme);
 
 		FragmentActivity activity = requireActivity();
 		UiUtils.setTheme(activity, newTheme);

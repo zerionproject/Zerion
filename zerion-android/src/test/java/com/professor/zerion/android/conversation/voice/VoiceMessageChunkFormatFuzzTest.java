@@ -64,7 +64,9 @@ public class VoiceMessageChunkFormatFuzzTest {
 		assertNotNull(VoiceMessageChunkFormat.parse(
 				part(id, 0, 2, 100, repeat('A', 16_000))));
 		assertNull(VoiceMessageChunkFormat.parse(
-				part(id.toUpperCase(), 0, 2, 100, "AA")));
+				part("0123456789ABCDEF", 0, 2, 100, "AA")));
+		assertNotNull(VoiceMessageChunkFormat.parse(
+				part("0123456789abcdef", 0, 2, 100, "AA")));
 		assertNull(VoiceMessageChunkFormat.parse(
 				part(id.substring(1), 0, 2, 100, "AA")));
 		assertNull(VoiceMessageChunkFormat.parse(

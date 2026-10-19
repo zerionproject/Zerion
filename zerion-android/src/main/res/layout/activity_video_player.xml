@@ -34,6 +34,72 @@
 		android:padding="12dp"
 		android:src="@drawable/ic_close" />
 
+	<LinearLayout
+		android:id="@+id/video_heading"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_gravity="top|start"
+		android:layout_marginStart="80dp"
+		android:layout_marginTop="16dp"
+		android:layout_marginEnd="136dp"
+		android:minHeight="48dp"
+		android:gravity="center_vertical"
+		android:orientation="vertical"
+		android:visibility="gone">
+
+		<TextView
+			android:id="@+id/video_title"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:shadowColor="#99000000"
+			android:shadowRadius="4"
+			android:textColor="@android:color/white"
+			android:textSize="16sp" />
+
+		<TextView
+			android:id="@+id/video_date"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:maxLines="1"
+			android:shadowColor="#99000000"
+			android:shadowRadius="4"
+			android:textColor="@android:color/white"
+			android:textSize="12sp" />
+
+	</LinearLayout>
+
+	<LinearLayout
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="top|end"
+		android:layout_margin="16dp"
+		android:orientation="horizontal">
+
+		<ImageButton
+			android:id="@+id/save_button"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:layout_marginEnd="8dp"
+			android:background="@drawable/video_play_background"
+			android:contentDescription="@string/media_viewer_save_video"
+			android:padding="12dp"
+			android:src="@drawable/ic_file_download"
+			app:tint="@android:color/white" />
+
+		<ImageButton
+			android:id="@+id/open_elsewhere_button"
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:background="@drawable/video_play_background"
+			android:contentDescription="@string/media_viewer_open_elsewhere"
+			android:padding="12dp"
+			android:src="@drawable/ic_open_in_new"
+			app:tint="@android:color/white" />
+
+	</LinearLayout>
+
 	<TextView
 		android:id="@+id/error_text"
 		android:layout_width="wrap_content"

@@ -20,6 +20,12 @@ public interface TorConstants {
 	String PREF_TOR_NETWORK = "network2";
 	String PREF_TOR_PORT = "port";
 	String PREF_TOR_CUSTOM_BRIDGES = "customBridges";
+	String PREF_TOR_HELPER_TRANSPORTS = "helperTransports";
+	String PREF_TOR_HELPER_TRANSPORTS_COUNTRY = "helperTransportsCountry";
+	String PREF_TOR_DEBUG_COUNTRY = "debugCountry";
+	int HELPER_TRANSPORTS_ASK = 0;
+	int HELPER_TRANSPORTS_USE = 1;
+	int HELPER_TRANSPORTS_OFF = 2;
 	String HS_PRIVATE_KEY_V3 = "onionPrivKey3";
 
 	String PREF_ACCOUNT_MOVED = "accountMoved";

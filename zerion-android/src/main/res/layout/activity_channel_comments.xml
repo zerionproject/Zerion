@@ -2,27 +2,29 @@
 <androidx.constraintlayout.widget.ConstraintLayout
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/zerion_dark_bg"
+	android:background="?attr/zerionColorBackground"
 	android:fitsSystemWindows="true">
 
 	<androidx.appcompat.widget.Toolbar
 		android:id="@+id/commentsToolbar"
 		android:layout_width="match_parent"
 		android:layout_height="?attr/actionBarSize"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		app:layout_constraintTop_toTopOf="parent"
 		app:title="@string/channels_comments_title"
-		app:titleTextColor="@color/zerion_text_primary" />
+		app:titleTextColor="?attr/zerionColorOnSurface" />
 
 	<androidx.recyclerview.widget.RecyclerView
 		android:id="@+id/commentsRecycler"
 		android:layout_width="match_parent"
 		android:layout_height="0dp"
+		android:clipToPadding="false"
 		android:paddingTop="6dp"
 		android:paddingBottom="12dp"
-		app:layout_constraintBottom_toTopOf="@+id/commentsComposeBar"
+		app:layout_constraintBottom_toTopOf="@+id/commentsDisappearsLine"
 		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar" />
 
 	<TextView
@@ -34,66 +36,86 @@
 		android:paddingEnd="32dp"
 		android:paddingTop="64dp"
 		android:text="@string/channels_comments_empty"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="14sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
-		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar" />
+		app:layout_constraintTop_toBottomOf="@+id/commentsToolbar"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
+
+	<TextView
+		android:id="@+id/commentsDisappearsLine"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="?attr/zerionColorBackground"
+		android:gravity="center"
+		android:paddingStart="16dp"
+		android:paddingEnd="16dp"
+		android:paddingTop="4dp"
+		android:paddingBottom="4dp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		android:visibility="gone"
+		app:layout_constraintBottom_toTopOf="@+id/commentsDisabledNotice"
+		tools:text="Disappears in 6 days"
+		tools:visibility="visible"
+		android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 	<TextView
 		android:id="@+id/commentsDisabledNotice"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:gravity="center"
 		android:padding="14dp"
 		android:text="@string/channels_comments_disabled_compose"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="13sp"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
 		android:visibility="gone"
-		app:layout_constraintBottom_toBottomOf="parent" />
+		app:layout_constraintBottom_toTopOf="@+id/commentsComposeBar"
+		android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	<LinearLayout
 		android:id="@+id/commentsComposeBar"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		android:gravity="center_vertical"
 		android:orientation="horizontal"
-		android:paddingStart="16dp"
-		android:paddingEnd="12dp"
-		android:paddingTop="10dp"
-		android:paddingBottom="14dp"
+		android:paddingStart="8dp"
+		android:paddingEnd="8dp"
+		android:paddingTop="8dp"
+		android:paddingBottom="8dp"
 		app:layout_constraintBottom_toBottomOf="parent">
 
 		<EditText
 			android:id="@+id/commentsComposeInput"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
+			android:layout_marginEnd="8dp"
 			android:layout_weight="1"
-			android:background="@drawable/bg_input_bar"
+			android:background="@drawable/text_input_background"
 			android:hint="@string/channels_comments_hint"
+			android:imeOptions="flagNoPersonalizedLearning|actionSend"
 			android:inputType="textMultiLine|textCapSentences|textNoSuggestions"
 			android:maxLength="1024"
-			android:maxLines="4"
-			android:minHeight="44dp"
-			android:paddingStart="14dp"
-			android:paddingEnd="14dp"
-			android:paddingTop="10dp"
-			android:paddingBottom="10dp"
-			android:textColor="@color/zerion_text_primary"
-			android:textColorHint="@color/zerion_text_secondary"
-			android:textSize="15sp"
-			android:importantForAutofill="no" />
+			android:maxLines="6"
+			android:minHeight="48dp"
+			android:paddingStart="16dp"
+			android:paddingEnd="16dp"
+			android:paddingTop="12dp"
+			android:paddingBottom="12dp"
+			android:textColor="?attr/zerionColorOnSurface"
+			android:textColorHint="?attr/zerionColorOnSurfaceMuted"
+			android:importantForAutofill="no"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
-		<com.google.android.material.button.MaterialButton
+		<ImageButton
 			android:id="@+id/commentsComposeSendButton"
-			style="@style/Widget.MaterialComponents.Button.TextButton"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:layout_marginStart="8dp"
-			android:minWidth="0dp"
-			android:text="@string/channels_comments_send"
-			android:textColor="@color/zerion_accent_text" />
+			android:layout_width="48dp"
+			android:layout_height="48dp"
+			android:background="@drawable/bg_chat_avatar"
+			android:contentDescription="@string/channels_comments_send"
+			android:padding="12dp"
+			android:scaleType="center"
+			android:src="@drawable/social_send_now_white"
+			app:tint="?attr/zerionColorOnAccent" />
 
 	</LinearLayout>
 

@@ -102,7 +102,7 @@ if [ -f "${DEPS}/lib/libcrypto.a" ] && [ -f "${DEPS}/lib/libssl.a" ]; then
 else
   cd ${SRC}
   [ -f openssl.tar.gz ] || curl -fsSL -o openssl.tar.gz https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
-  verify_sha256 openssl.tar.gz a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
+  verify_sha256 openssl.tar.gz 603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a
   rm -rf openssl-${OPENSSL_VERSION}; tar xf openssl.tar.gz
   cd openssl-${OPENSSL_VERSION}
   ANDROID_NDK_ROOT=${NDK} ./Configure ${OSSL_ARCH} -D__ANDROID_API__=${API} \

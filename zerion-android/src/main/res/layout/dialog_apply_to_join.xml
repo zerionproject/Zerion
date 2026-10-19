@@ -14,9 +14,9 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginBottom="14dp"
-		android:text="@string/channels_apply_message"
-		android:textColor="@color/zerion_text_secondary"
-		android:textSize="14sp" />
+		android:text="@string/channels_request_access_message"
+		android:textColor="?attr/zerionColorOnSurfaceMuted"
+		android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 	<com.google.android.material.textfield.TextInputLayout
 		android:layout_width="match_parent"

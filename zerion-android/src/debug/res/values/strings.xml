@@ -2,4 +2,52 @@
 <resources>
 	<string name="app_name" translatable="false">Zerion Debug</string>
 	<string name="app_package" translatable="false">com.professor.zerion.debug</string>
+	<string name="lifecycle_tests_section_title" translatable="false">LIFECYCLE TESTS (DEBUG BUILD ONLY)</string>
+	<string name="lifecycle_age_title" translatable="false">Age lifecycle timers</string>
+	<string name="lifecycle_age_summary" translatable="false">Move the stored rotation and authorization times back, then run the checks at once. The clock is not changed.</string>
+	<string name="lifecycle_age_done" translatable="false">Timers moved back by %1$s. Checks ran.</string>
+	<string name="lifecycle_renew_title" translatable="false">Renew authorized address</string>
+	<string name="lifecycle_renew_summary" translatable="false">Rotate the client authorization address of this device now</string>
+	<string name="lifecycle_renew_started" translatable="false">Renewal started. Contacts confirm the new address as they connect</string>
+	<string name="lifecycle_renew_running" translatable="false">A renewal is already in progress. The old address stays until every contact confirmed the new one</string>
+	<string name="lifecycle_renew_no_address" translatable="false">No authorized address yet. No contact uses client authorization</string>
+	<string name="lifecycle_skip_auth_title" translatable="false">Do not set up client authorization for contacts without it yet</string>
+	<string name="lifecycle_skip_auth_summary" translatable="false">While this is on, every contact without client authorization yet, new or not, stays on the open address. A contact that already uses client authorization keeps it.</string>
+	<string name="lifecycle_hold_title" translatable="false">Hold authorization confirmations</string>
+	<string name="lifecycle_hold_summary" translatable="false">While on, this device does not send its final authorization confirmation, as if it were lost. Turn off to let the repair send it.</string>
+	<string name="lifecycle_details_title" translatable="false">Connection details</string>
+	<string name="lifecycle_details_summary" translatable="false">Rotation and authorization state of one contact</string>
+	<string name="lifecycle_details_choose" translatable="false">Choose a contact</string>
+	<string name="lifecycle_details_none" translatable="false">No contacts</string>
+	<string name="lifecycle_force_title" translatable="false">Force complete now</string>
+	<string name="lifecycle_force_summary" translatable="false">Retire the old open address without waiting for contacts. Skips the migration evidence.</string>
+	<string name="lifecycle_force_confirm_title" translatable="false">Force complete rotation?</string>
+	<string name="lifecycle_force_confirm_message" translatable="false">This retires your old open address immediately, without evidence that your contacts have moved. Contacts that have not moved cannot reach you on it. For tests only.</string>
+	<string name="lifecycle_force_confirm_action" translatable="false">Force complete</string>
+	<string name="lifecycle_force_done" translatable="false">Rotation completed</string>
+	<string name="lifecycle_force_not_announcing" translatable="false">No rotation in progress</string>
+	<string name="lifecycle_failed" translatable="false">The step failed. Check that Tor is running</string>
+	<string name="lifecycle_detail_none" translatable="false">none</string>
+	<string name="lifecycle_detail_yes" translatable="false">yes</string>
+	<string name="lifecycle_detail_no" translatable="false">no</string>
+	<string name="lifecycle_detail_own_rotation" translatable="false">Own open address rotation: %1$s, announced %2$s</string>
+	<string name="lifecycle_detail_peer_state" translatable="false">This contact in that rotation: %1$s</string>
+	<string name="lifecycle_detail_pending" translatable="false">New address the contact announced: %1$s</string>
+	<string name="lifecycle_detail_failures" translatable="false">Failed dials to it: %1$s</string>
+	<string name="lifecycle_detail_retry" translatable="false">Next try of it: %1$s</string>
+	<string name="lifecycle_detail_next_dial" translatable="false">Next dial goes to: %1$s (%2$s)</string>
+	<string name="lifecycle_route_authorized" translatable="false">authorized address</string>
+	<string name="lifecycle_route_announced" translatable="false">announced address</string>
+	<string name="lifecycle_route_open" translatable="false">open address</string>
+	<string name="lifecycle_detail_auth_state" translatable="false">Client authorization: %1$s</string>
+	<string name="lifecycle_detail_auth_flags" translatable="false">Locked in %1$s, commit sent %2$s, contact commit received %3$s, new round of keys %4$s, probing %5$s, current address confirmed %6$s</string>
+	<string name="lifecycle_detail_auth_repairs" translatable="false">Repairs %1$d, silence repairs %2$d, open repair dials %3$d</string>
+	<string name="lifecycle_detail_generations" translatable="false">Generations: own %1$d, last told to the contact %2$d, contact %3$d</string>
+	<string name="lifecycle_detail_old_authorized" translatable="false">Own previous authorized address still published: %1$s, removal rotation owed: %2$s</string>
+	<string-array name="lifecycle_age_choices" translatable="false">
+		<item>+1 hour</item>
+		<item>+1 day</item>
+		<item>+7 days</item>
+		<item>+30 days</item>
+	</string-array>
 </resources>

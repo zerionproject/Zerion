@@ -37,6 +37,22 @@ public class TorBridgeConfiguratorTest {
 	}
 
 	@Test
+	public void bridgesAreInUseWhenChosenOrWhenTheCountryNeedsThem() {
+		assertTrue(TorBridgeConfigurator.usesBridges(
+				org.zerionproject.core.api.plugin.TorConstants
+						.PREF_TOR_NETWORK_WITH_BRIDGES, false));
+		assertTrue(TorBridgeConfigurator.usesBridges(
+				org.zerionproject.core.api.plugin.TorConstants
+						.PREF_TOR_NETWORK_AUTOMATIC, true));
+		assertFalse(TorBridgeConfigurator.usesBridges(
+				org.zerionproject.core.api.plugin.TorConstants
+						.PREF_TOR_NETWORK_AUTOMATIC, false));
+		assertFalse(TorBridgeConfigurator.usesBridges(
+				org.zerionproject.core.api.plugin.TorConstants
+						.PREF_TOR_NETWORK_WITHOUT_BRIDGES, true));
+	}
+
+	@Test
 	public void onlyPlausibleBridgeLinesAreAccepted() {
 		assertTrue(TorBridgeConfigurator.isPlausibleBridgeLine(
 				"obfs4 192.0.2.1:443 0123456789ABCDEF0123456789ABCDEF01234567"

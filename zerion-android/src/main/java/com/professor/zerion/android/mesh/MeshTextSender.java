@@ -226,6 +226,10 @@ public class MeshTextSender {
 		return pluginManager.isOfflineMode();
 	}
 
+	public void shutDown() {
+		scheduler.shutdownNow();
+	}
+
 	public void sendOfflineText(ContactId contactId, MessageId messageId,
 			String text, long composeTimeMs, @Nullable MessageId replyToId) {
 		ioExecutor.execute(() -> {

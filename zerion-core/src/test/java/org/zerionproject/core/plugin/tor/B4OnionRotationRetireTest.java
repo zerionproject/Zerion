@@ -31,7 +31,6 @@ import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT_PRIVKEY_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ROTATION_PHASE_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_SETTINGS_NAMESPACE;
-import static org.zerionproject.core.api.plugin.B4Constants.FORCE_EXPIRE_DAYS;
 import static org.zerionproject.core.test.TestUtils.getAuthor;
 import static org.zerionproject.core.test.TestUtils.getContact;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -200,17 +199,28 @@ public class B4OnionRotationRetireTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void theFirstPromotionAtTheForceExpiryRetiresTheOriginalOnion()
+	public void noAgeRetiresTheOldOnionWithoutEvidenceFromTheContact()
 			throws Exception {
-		announcing(now - (FORCE_EXPIRE_DAYS + 1) * 24L * 60 * 60 * 1000);
+		announcing(now - 400L * 24 * 60 * 60 * 1000);
 		expectDatabase();
 		Transport transport = startedWith(ORIGINAL);
 		B4OnionRotation r = rotation(now);
 		r.bindAdapter(transport);
 		r.evaluateForceExpire();
-		assertFalse("the original onion is still published",
+		assertTrue("the old onion was retired without evidence",
 				transport.live.contains(ORIGINAL));
 		assertTrue(transport.live.contains(NEXT));
+		assertEquals("ANNOUNCING", open(B4_ALICE_ROTATION_PHASE_KEY));
+	}
+
+	@Test
+	public void onlyCodeInThisPackageCanSkipTheMigrationEvidence()
+			throws Exception {
+		java.lang.reflect.Method m =
+				B4OnionRotation.class.getDeclaredMethod("forceCompleteRotation");
+		assertFalse("a promotion without evidence is part of the public API",
+				java.lang.reflect.Modifier.isPublic(m.getModifiers()));
+		assertFalse(java.lang.reflect.Modifier.isProtected(m.getModifiers()));
 	}
 
 	@Test

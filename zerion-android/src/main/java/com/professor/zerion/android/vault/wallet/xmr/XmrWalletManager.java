@@ -791,7 +791,6 @@ public final class XmrWalletManager {
 				if (flow == null) {
 					sendState.postValue(
 							XmrSendUiState.failed(XmrError.SESSION_INVALIDATED));
-					terminal = true;
 					return;
 				}
 				sendState.postValue(XmrSendUiState.authenticating());
@@ -1612,6 +1611,7 @@ public final class XmrWalletManager {
 			throw new XmrError.XmrException(XmrError.SESSION_INVALIDATED);
 		}
 		stripPlaintext(dir);
+		syncManager.start(walletId, epoch, s, syncNodes, torSocksPort);
 		openSession = s;
 		openWorkDir = dir;
 		openWalletId = walletId;
@@ -1624,7 +1624,6 @@ public final class XmrWalletManager {
 			publishHistoryWithOverlay(s.history());
 		} catch (Throwable ignored) {
 		}
-		syncManager.start(walletId, epoch, s, syncNodes, torSocksPort);
 		syncManager.submit(() -> reconcileIfQuarantined(walletId));
 	}
 

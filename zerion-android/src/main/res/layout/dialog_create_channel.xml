@@ -56,16 +56,18 @@
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:checked="true"
-			android:text="@string/channels_create_public_label"
-			android:textColor="@color/zerion_text_primary" />
+			android:text="@string/channels_create_public_option"
+			android:textColor="?attr/zerionColorOnSurface"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 		<RadioButton
 			android:id="@+id/channelCreateClosedRadio"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="6dp"
-			android:text="@string/channels_create_closed_label"
-			android:textColor="@color/zerion_text_primary" />
+			android:text="@string/channels_create_private_option"
+			android:textColor="?attr/zerionColorOnSurface"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 	</RadioGroup>
 
@@ -74,7 +76,8 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:layout_marginTop="14dp"
-		android:text="@string/channels_create_require_approval"
-		android:textColor="@color/zerion_text_primary" />
+		android:text="@string/channels_create_approval_required"
+		android:textColor="?attr/zerionColorOnSurface"
+		android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 </LinearLayout>

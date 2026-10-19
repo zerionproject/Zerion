@@ -310,6 +310,7 @@ class ValidationManagerImpl implements ValidationManager, Service,
 			Queue<MessageId> pending = new LinkedList<>();
 			Queue<MessageId> toShare = new LinkedList<>();
 			db.transaction(false, txn -> {
+				if (db.getMessageState(txn, id) != UNKNOWN) return;
 				boolean anyInvalid = false, allDelivered = true;
 				Collection<MessageId> dependencies = context.getDependencies();
 				if (!dependencies.isEmpty()) {
@@ -322,10 +323,8 @@ class ValidationManagerImpl implements ValidationManager, Service,
 					}
 				}
 				if (anyInvalid) {
-					if (db.getMessageState(txn, id) != INVALID) {
-						invalidateMessage(txn, id);
-						addDependentsToInvalidate(txn, id, invalidate);
-					}
+					invalidateMessage(txn, id);
+					addDependentsToInvalidate(txn, id, invalidate);
 				} else {
 					Metadata meta = context.getMetadata();
 					db.mergeMessageMetadata(txn, id, meta);

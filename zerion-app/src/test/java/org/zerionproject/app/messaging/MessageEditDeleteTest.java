@@ -5,10 +5,12 @@ import org.zerionproject.core.api.cleanup.CleanupHook;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfEntry;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.identity.Identity;
 import org.zerionproject.core.api.identity.IdentityManager;
@@ -17,6 +19,8 @@ import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.InvalidMessageException;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
+import org.zerionproject.core.api.sync.validation.MessageValidator;
 import org.zerionproject.core.api.sync.validation.MessageState;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -36,9 +40,13 @@ import java.lang.reflect.Proxy;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -61,6 +69,8 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 	private static final long HOUR = 60L * 60 * 1000;
 
 	private final File testDir = getTestDirectory();
+	private final File dir = new File(testDir, "device");
+	private final SecretKey dbKey = getSecretKey();
 
 	private ContactGroupScanTestComponent device;
 	private ClientHelper clientHelper;
@@ -73,27 +83,17 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		File dir = new File(testDir, "device");
 		assertTrue(dir.mkdirs());
-		device = DaggerContactGroupScanTestComponent.builder()
-				.testDatabaseConfigModule(new TestDatabaseConfigModule(dir))
-				.build();
-		ContactGroupScanTestComponent.Helper.injectEagerSingletons(device);
+		device = build();
 		IdentityManager identityManager = device.getIdentityManager();
 		Identity local = identityManager.createIdentity("Device");
 		identityManager.registerIdentity(local);
-		LifecycleManager lifecycleManager = device.getLifecycleManager();
-		lifecycleManager.startServices(getSecretKey());
-		lifecycleManager.waitForStartup();
+		start();
 		ContactManager contactManager = device.getContactManager();
 		contact = contactManager.addContact(
 				identityManager.createIdentity("Contact").getLocalAuthor(),
 				local.getId(), getSecretKey(), System.currentTimeMillis(),
 				true, true, true);
-		clientHelper = device.getClientHelper();
-		db = device.getDatabaseComponent();
-		messagingManager = device.getMessagingManager();
-		validator = device.getPrivateMessageValidator();
 		contactGroup = messagingManager.getContactGroup(
 				contactManager.getContact(contact));
 		db.transaction(false, txn -> db.setGroupVisibility(txn, contact,
@@ -150,6 +150,53 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 		assertEquals("Hey all good",
 				messagingManager.getMessageText(original.getId()));
 		assertTrue(header(original.getId()).isEdited());
+	}
+
+	@Test
+	public void anEditValidatedTwiceAtStartupStillWaitsForItsMessage()
+			throws Exception {
+		Message original = create(text("Hey Allfs good"), now - HOUR);
+		Message edit = create(edit(original.getId(), "Hey all good"),
+				now - HOUR + 1000);
+
+		receiveWhileStarting(edit, false);
+
+		assertEquals(MessageState.DELIVERED, state(edit.getId()));
+		assertEquals(MessageState.DELIVERED, deliver(original));
+		assertEquals("Hey all good",
+				messagingManager.getMessageText(original.getId()));
+		assertTrue(header(original.getId()).isEdited());
+	}
+
+	@Test
+	public void aMessageValidatedTwiceAtStartupIsDeliveredOnceAndEditable()
+			throws Exception {
+		Message original = create(text("Hey Allfs good"), now - HOUR);
+
+		receiveWhileStarting(original, false);
+
+		assertEquals(MessageState.DELIVERED, state(original.getId()));
+		assertEquals(1, device.getMessageTracker()
+				.getGroupCount(contactGroup.getId()).getMsgCount());
+		deliverAt(edit(original.getId(), "Hey all good"), now - HOUR + 1000);
+		assertEquals("Hey all good",
+				messagingManager.getMessageText(original.getId()));
+		assertTrue(header(original.getId()).isEdited());
+		assertEquals(1, device.getMessageTracker()
+				.getGroupCount(contactGroup.getId()).getUnreadCount());
+	}
+
+	@Test
+	public void aDeliveryDeferredWhileStartingWaitsForTheNextStart()
+			throws Exception {
+		Message m = create(text("Hey all good"), now - HOUR);
+
+		receiveWhileStarting(m, true);
+
+		assertEquals("a deferred message was delivered by its second "
+				+ "validation", MessageState.PENDING, state(m.getId()));
+		assertEquals(0, device.getMessageTracker()
+				.getGroupCount(contactGroup.getId()).getMsgCount());
 	}
 
 	@Test
@@ -631,6 +678,88 @@ public class MessageEditDeleteTest extends BrambleTestCase {
 			if (h.getId().equals(id)) return (PrivateMessageHeader) h;
 		}
 		throw new AssertionError("no header for the message");
+	}
+
+	private ContactGroupScanTestComponent build() {
+		ContactGroupScanTestComponent c =
+				DaggerContactGroupScanTestComponent.builder()
+						.testDatabaseConfigModule(
+								new TestDatabaseConfigModule(dir))
+						.build();
+		ContactGroupScanTestComponent.Helper.injectEagerSingletons(c);
+		return c;
+	}
+
+	private void start() throws Exception {
+		LifecycleManager lifecycleManager = device.getLifecycleManager();
+		lifecycleManager.startServices(dbKey);
+		lifecycleManager.waitForStartup();
+		clientHelper = device.getClientHelper();
+		db = device.getDatabaseComponent();
+		messagingManager = device.getMessagingManager();
+		validator = device.getPrivateMessageValidator();
+	}
+
+	private void receiveWhileStarting(Message m, boolean deferOnce)
+			throws Exception {
+		LifecycleManager lifecycleManager = device.getLifecycleManager();
+		lifecycleManager.stopServices();
+		lifecycleManager.waitForShutdown();
+		device = build();
+		Executor dbExecutor = device.getDatabaseExecutor();
+		CountDownLatch starting = new CountDownLatch(1);
+		dbExecutor.execute(() -> {
+			try {
+				starting.await();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
+		start();
+		AtomicInteger validations = new AtomicInteger();
+		MessageValidator real = validator;
+		device.getValidationManager().registerMessageValidator(
+				MessagingManager.CLIENT_ID, MessagingManager.MAJOR_VERSION,
+				(msg, g) -> {
+					try {
+						return real.validateMessage(msg, g);
+					} finally {
+						if (msg.getId().equals(m.getId())) {
+							validations.incrementAndGet();
+						}
+					}
+				});
+		if (deferOnce) {
+			IncomingMessageHook hook = (IncomingMessageHook) messagingManager;
+			AtomicInteger deliveries = new AtomicInteger();
+			device.getValidationManager().registerIncomingMessageHook(
+					MessagingManager.CLIENT_ID, MessagingManager.MAJOR_VERSION,
+					(txn, msg, meta) -> {
+						if (msg.getId().equals(m.getId())
+								&& deliveries.getAndIncrement() == 0) {
+							throw new DbException();
+						}
+						return hook.incomingMessage(txn, msg, meta);
+					});
+		}
+		db.transaction(false, txn -> db.receiveMessage(txn, contact, m));
+		starting.countDown();
+		long deadline = System.currentTimeMillis() + 20_000;
+		while (validations.get() < 2) {
+			if (System.currentTimeMillis() > deadline) {
+				throw new AssertionError("validated " + validations.get()
+						+ " times");
+			}
+			Thread.sleep(5);
+		}
+		drain(dbExecutor);
+		drain(dbExecutor);
+	}
+
+	private static void drain(Executor e) throws InterruptedException {
+		CountDownLatch done = new CountDownLatch(1);
+		e.execute(done::countDown);
+		assertTrue(done.await(20, SECONDS));
 	}
 
 	private Message create(BdfList body, long ts) throws FormatException {

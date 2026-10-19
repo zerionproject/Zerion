@@ -53,6 +53,8 @@ public class ReleasePluginConfigTest {
 		Application app = RuntimeEnvironment.getApplication();
 		FeatureFlags flags = new AppModule(app).provideFeatureFlags();
 		assertEquals(BuildConfig.DEBUG, flags.shouldEnableI2p());
+		assertEquals(BuildConfig.DEBUG,
+				flags.shouldEnableDebugCountryOverride());
 	}
 
 	@Test
@@ -102,6 +104,11 @@ public class ReleasePluginConfigTest {
 
 			@Override
 			public boolean shouldEnableI2p() {
+				return i2p;
+			}
+
+			@Override
+			public boolean shouldEnableDebugCountryOverride() {
 				return i2p;
 			}
 		};

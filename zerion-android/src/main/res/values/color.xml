@@ -132,6 +132,7 @@
 	<color name="zerion_text_secondary">#545965</color>
 
 	<color name="zerion_surface_elevated">#FFFFFF</color>
+	<color name="zerion_selected_container">#D9DDE4</color>
 	<color name="zerion_surface_pressed">#ECEEF2</color>
 	<color name="zerion_divider">#E3E5EA</color>
 
@@ -139,6 +140,23 @@
 	<color name="zerion_message_sent_pressed">#15749C</color>
 	<color name="zerion_message_received">#27282F</color>
 	<color name="zerion_message_received_pressed">#32343C</color>
+
+	<color name="zerion_bubble_in">#FFFFFF</color>
+	<color name="zerion_outline">#D5D8DE</color>
+	<color name="zerion_bubble_in_inset">#14000000</color>
+	<color name="zerion_on_bubble_out">#FFFFFF</color>
+	<color name="zerion_on_bubble_out_muted">#FFFFFF</color>
+	<color name="zerion_scrim">#99000000</color>
+	<color name="zerion_presence_online">#16A34A</color>
+	<color name="zerion_presence_offline">#454A52</color>
+	<color name="zerion_on_scrim">#FFFFFF</color>
+	<color name="zerion_media_backdrop">#DD000000</color>
+	<color name="zerion_message_selected_own">#33000000</color>
+	<color name="zerion_message_selected_received">#4D167DA8</color>
+	<color name="zerion_channel_card_selected">#4D167DA8</color>
+	<color name="zerion_selection_foreground">#343A44</color>
+	<color name="zerion_amoled_surface_variant">#1E1E21</color>
+	<color name="zerion_amoled_selected_container">#34343A</color>
 
 	<color name="zerion_destructive">#EF4444</color>
 	<color name="zerion_destructive_muted">#CCEF4444</color>
@@ -172,6 +190,16 @@
 	<color name="bubble_cyan">#077F9C</color>
 	<color name="bubble_out_inset">#26000000</color>
 	<color name="disguise_weather_background">#0891B2</color>
+
+	<color name="zerion_avatar_label">#FFFFFF</color>
+	<color name="zerion_avatar_slate">#3B4A5E</color>
+	<color name="zerion_avatar_plum">#4A3B5E</color>
+	<color name="zerion_avatar_pine">#2F5E4E</color>
+	<color name="zerion_avatar_bronze">#5E4A2F</color>
+	<color name="zerion_avatar_wine">#5E2F3B</color>
+	<color name="zerion_avatar_petrol">#2F4F5E</color>
+	<color name="zerion_avatar_olive">#4E5E2F</color>
+	<color name="zerion_avatar_brick">#5E3B2F</color>
 
 	<color name="video_controls_background">#B3000000</color>
 </resources>

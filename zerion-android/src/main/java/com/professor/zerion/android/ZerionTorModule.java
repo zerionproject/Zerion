@@ -1,9 +1,14 @@
 package com.professor.zerion.android;
 
+import com.professor.zerion.android.update.BridgeListDebug;
+
+import org.zerionproject.core.account.AndroidAccountManager;
+import org.zerionproject.tor.BridgeListKeys;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.plugin.FastConnectSocketFactory;
 import org.zerionproject.core.api.plugin.OnionTargetFactory;
+import org.zerionproject.transport.BridgeHealth;
 import org.zerionproject.transport.TorBridgeConfigurator;
 import org.zerionproject.transport.ZtpConnectionHandler;
 import org.zerionproject.transport.ZtpTorTransport;
@@ -33,5 +38,17 @@ public class ZerionTorModule {
 		return new ZtpTorTransport(tor, torSocketFactory, fastSocketFactory,
 				ioExecutor, handler, bridgeConfigurator, privacyConfigurator,
 				processWatch, onionTargets);
+	}
+
+	@Provides
+	@Singleton
+	BridgeListKeys provideBridgeListKeys() {
+		return BridgeListKeys.withLocalKeys(BridgeListDebug.LOCAL_KEYS);
+	}
+
+	@Provides
+	BridgeHealth.Owner provideBridgeHealthOwner(
+			AndroidAccountManager accounts) {
+		return accounts::getActiveProfileId;
 	}
 }

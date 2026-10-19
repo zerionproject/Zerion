@@ -23,16 +23,16 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
-TOR_TAG="${TOR_TAG:-tor-0.4.9.13}"
-TOR_COMMIT="${TOR_COMMIT:-3c575400909efe6599d88e61e7daf0012655ca44}"
+TOR_TAG="${TOR_TAG:-tor-0.4.9.14}"
+TOR_COMMIT="${TOR_COMMIT:-8fe2745aee2c35116ff1081f19b2952418b43069}"
 TOR_URL=https://gitlab.torproject.org/tpo/core/tor.git
 
 LIBEVENT_TAG=release-2.1.12-stable
 LIBEVENT_COMMIT=5df3037d10556bfcb675bc73e516978b75fc7bc7
 LIBEVENT_URL=https://github.com/libevent/libevent.git
 
-OPENSSL_TAG=openssl-3.5.8
-OPENSSL_COMMIT=f4dc4d58b48d346a8270183f89acf826d459b0ca
+OPENSSL_TAG=openssl-3.5.9
+OPENSSL_COMMIT=45e844fa2a14ec92d146bd8f5778ac130b6625fb
 OPENSSL_URL=https://github.com/openssl/openssl.git
 
 ZLIB_TAG=v1.3.2

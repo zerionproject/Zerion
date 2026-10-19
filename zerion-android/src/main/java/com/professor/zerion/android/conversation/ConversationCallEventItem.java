@@ -50,6 +50,14 @@ public class ConversationCallEventItem extends ConversationItem {
 		return durationMs;
 	}
 
+	@Override
+	boolean showsTheSameAs(ConversationItem o) {
+		if (!super.showsTheSameAs(o)) return false;
+		ConversationCallEventItem c = (ConversationCallEventItem) o;
+		return eventType == c.eventType && callId.equals(c.callId)
+				&& java.util.Objects.equals(durationMs, c.durationMs);
+	}
+
 	public String getFormattedDuration(android.content.Context ctx) {
 		if (durationMs == null) {
 			return "";

@@ -1,11 +1,14 @@
 package com.professor.zerion.android.vault.ui;
 
+import android.content.Context;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +20,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.util.SecureClipboard;
+import com.professor.zerion.android.view.WrapRow;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -125,27 +129,7 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 				.setText(walletName);
 
 		LinearLayout grid = v.findViewById(R.id.recovery_word_grid);
-		for (int i = 0; i < words.length; i += 2) {
-			LinearLayout row = new LinearLayout(requireContext());
-			row.setOrientation(LinearLayout.HORIZONTAL);
-			LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
-					ViewGroup.LayoutParams.MATCH_PARENT,
-					ViewGroup.LayoutParams.WRAP_CONTENT);
-			rp.bottomMargin = dp(8);
-			row.setLayoutParams(rp);
-			row.addView(wordCell(inflater, row, i, true));
-			if (i + 1 < words.length) {
-				row.addView(wordCell(inflater, row, i + 1, false));
-			} else {
-				View spacer = new View(requireContext());
-				LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(0,
-						1, 1f);
-				sp.setMarginStart(dp(8));
-				spacer.setLayoutParams(sp);
-				row.addView(spacer);
-			}
-			grid.addView(row);
-		}
+		fillWordGrid(inflater, grid, words, wordViews);
 
 		v.findViewById(R.id.recovery_back).setOnClickListener(x -> later());
 		v.findViewById(R.id.recovery_verify).setOnClickListener(
@@ -172,25 +156,49 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 		return v;
 	}
 
-	private View wordCell(LayoutInflater inflater, ViewGroup parent, int index,
-			boolean first) {
+	static void fillWordGrid(LayoutInflater inflater, LinearLayout grid,
+			String[] words, List<TextView> wordViews) {
+		Context c = grid.getContext();
+		int gap = Math.round(8 * c.getResources().getDisplayMetrics().density);
+		for (int i = 0; i < words.length; i += 2) {
+			WrapRow row = new WrapRow(c);
+			row.setOrientation(LinearLayout.HORIZONTAL);
+			LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(
+					ViewGroup.LayoutParams.MATCH_PARENT,
+					ViewGroup.LayoutParams.WRAP_CONTENT);
+			rp.bottomMargin = gap;
+			row.setLayoutParams(rp);
+			GradientDrawable space = new GradientDrawable();
+			space.setSize(gap, gap);
+			row.setDividerDrawable(space);
+			row.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
+			row.addView(wordCell(inflater, row, i, words[i], wordViews));
+			if (i + 1 < words.length) {
+				row.addView(wordCell(inflater, row, i + 1, words[i + 1],
+						wordViews));
+			} else {
+				row.addView(new Space(c), new LinearLayout.LayoutParams(0, 1,
+						1f));
+			}
+			grid.addView(row);
+		}
+	}
+
+	static void clearWords(List<TextView> wordViews) {
+		for (TextView tv : wordViews) tv.setText("");
+		wordViews.clear();
+	}
+
+	private static View wordCell(LayoutInflater inflater, ViewGroup parent,
+			int index, String text, List<TextView> wordViews) {
 		View cell = inflater.inflate(R.layout.item_xmr_recovery_word, parent,
 				false);
-		LinearLayout.LayoutParams lp =
-				(LinearLayout.LayoutParams) cell.getLayoutParams();
-		if (first) lp.setMarginEnd(dp(4));
-		else lp.setMarginStart(dp(4));
 		((TextView) cell.findViewById(R.id.recovery_word_index))
 				.setText(String.valueOf(index + 1));
 		TextView word = cell.findViewById(R.id.recovery_word_text);
-		word.setText(wordAt(index));
+		word.setText(text);
 		wordViews.add(word);
 		return cell;
-	}
-
-	private String wordAt(int i) {
-		String[] w = words;
-		return (w != null && i >= 0 && i < w.length) ? w[i] : "";
 	}
 
 	private void confirmCopy() {
@@ -347,8 +355,7 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 
 	private void clearSecrets() {
 		clearVerification();
-		for (TextView tv : wordViews) tv.setText("");
-		wordViews.clear();
+		clearWords(wordViews);
 		String[] w = words;
 		if (w != null) Arrays.fill(w, "");
 		words = null;
@@ -366,10 +373,6 @@ public class XmrRecoveryPhraseFragment extends BaseFragment {
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(new Bundle());
-	}
-
-	private int dp(int val) {
-		return Math.round(val * getResources().getDisplayMetrics().density);
 	}
 
 	private void toast(String s) {

@@ -167,6 +167,42 @@ public class ChannelSubscriberCeilingsTest {
 	}
 
 	@Test
+	public void postsGivenUpForTheCeilingAreNamedSoTheirCopiesGo()
+			throws Exception {
+		List<ChannelPost> history = fakeChain(64, 8);
+		ChannelPost next = publisher.post(channel, 64,
+				publisher.chain.hashOf(history.get(63)), "one more",
+				attachments(8, 32, 32, 65_000));
+		publisher.seedPublisher(channel, true, null, null, false,
+				Collections.singletonList(next));
+		subscriber.seedSubscriber(channel, true, null, null, history);
+
+		subscriber.manager.refreshChannel(channel.channelId);
+
+		ChannelPostStore.Meta meta =
+				subscriber.store.posts().meta(channel.channelId);
+		List<Long> givenUp = new ArrayList<>();
+		for (long seq = 0; seq < 64; seq++) {
+			if (!meta.holds(seq)) givenUp.add(seq);
+		}
+		assertFalse(givenUp.isEmpty());
+		List<Long> named = new ArrayList<>();
+		synchronized (subscriber.events) {
+			for (org.zerionproject.core.api.event.Event e
+					: subscriber.events) {
+				if (e instanceof org.zerionproject.app.api.channel.event
+						.ChannelPostsRemovedEvent) {
+					named.addAll(((org.zerionproject.app.api.channel.event
+							.ChannelPostsRemovedEvent) e).getSeqNums());
+				}
+			}
+		}
+		Collections.sort(named);
+		assertEquals("a post given up for the ceiling was not named",
+				givenUp, named);
+	}
+
+	@Test
 	public void anAttachmentPastTheCeilingIsShownButNotKept()
 			throws Exception {
 		byte[] plain = new byte[4096];

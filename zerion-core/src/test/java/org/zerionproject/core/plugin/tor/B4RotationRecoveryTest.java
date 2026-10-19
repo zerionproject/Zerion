@@ -25,10 +25,12 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
+import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_LAST_ROTATION_TIME_MS_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_ANNOUNCED_AT_MS_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT_KEY;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_ONION3_NEXT_PRIVKEY_KEY;
@@ -39,6 +41,8 @@ import static org.zerionproject.core.api.plugin.B4Constants.B4_CONTACT_PENDING_D
 import static org.zerionproject.core.api.plugin.B4Constants.B4_PENDING_RETRY_MAX_MS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_PENDING_RETRY_MIN_MS;
 import static org.zerionproject.core.api.plugin.B4Constants.B4_SETTINGS_NAMESPACE;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_PEER_LAST_CONTACT_KEY_PREFIX;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_PEER_ROTATION_STATE_KEY_PREFIX;
 import static org.zerionproject.core.api.plugin.B4Constants.WIRE_KEY_ONION3_ANNOUNCED_AT_MS;
 import static org.zerionproject.core.api.plugin.B4Constants.WIRE_KEY_ONION3_NEXT;
 import static org.zerionproject.core.test.TestUtils.getAuthor;
@@ -47,6 +51,9 @@ import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.util.StringUtils.UTF_8;
 import static org.zerionproject.core.util.StringUtils.toHexString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.zerionproject.core.api.plugin.B4Constants.WIRE_KEY_ONION3_PUBLISH_NONCE;
+import static org.zerionproject.core.api.plugin.B4Constants.B4_ALICE_NEXT_ANNOUNCED_KEY;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -57,6 +64,7 @@ public class B4RotationRecoveryTest extends BrambleMockTestCase {
 	private static final String NEXT = "onion-of-nextkey";
 	private static final String NEXT_KEY = "nextkey";
 	private static final long HOUR = 60L * 60 * 1000;
+	private static final long DAY = 24 * HOUR;
 
 	private final DatabaseComponent db = context.mock(DatabaseComponent.class);
 	private final SettingsManager settingsManager =
@@ -74,6 +82,7 @@ public class B4RotationRecoveryTest extends BrambleMockTestCase {
 			implements B4OnionRotation.B4TorAdapter {
 
 		final List<String> live = new ArrayList<>();
+		final List<String> ops = new ArrayList<>();
 		final List<TransportProperties> merged = new ArrayList<>();
 		boolean openInbound = true;
 		boolean dropMerges = false;
@@ -83,6 +92,7 @@ public class B4RotationRecoveryTest extends BrambleMockTestCase {
 				@Nullable String privKey) {
 			String k = privKey == null ? NEXT_KEY : privKey;
 			live.add("onion-of-" + k);
+			ops.add("publish onion-of-" + k);
 			return hiddenService("onion-of-" + k, k);
 		}
 
@@ -99,6 +109,7 @@ public class B4RotationRecoveryTest extends BrambleMockTestCase {
 		@Override
 		public void removeHiddenService(String onion) {
 			live.remove(onion);
+			ops.add("remove " + onion);
 		}
 
 		@Override
@@ -516,12 +527,344 @@ public class B4RotationRecoveryTest extends BrambleMockTestCase {
 		r.onDescriptorUploaded(NEXT);
 		assertTrue(transport.merged.isEmpty());
 		transport.dropMerges = false;
-		rotation(now + HOUR, transport, false).evaluateAll();
+		rotation(now + HOUR - 60_000L, transport, false).evaluateAll();
 		assertEquals(1, transport.merged.size());
 		assertEquals(NEXT, transport.merged.get(0).get(WIRE_KEY_ONION3_NEXT));
 		assertEquals(String.valueOf(B4OnionRotation.announcedAtOnWire(now)),
 				transport.merged.get(0).get(WIRE_KEY_ONION3_ANNOUNCED_AT_MS));
 		assertEquals("ANNOUNCING", phase());
+	}
+
+	@Test
+	public void aPromotionPublishesTheNewOnionBeforeItRemovesTheOldOne()
+			throws Exception {
+		Contact c = contact(1, true);
+		contacts.add(c);
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		expectDatabase();
+		Transport transport = new Transport();
+		transport.live.add(ORIGINAL);
+		rotation(now, transport, false).onPeerSyncSessionEstablished(
+				c.getId(), NEXT);
+		assertEquals("the old onion went before the new one was up",
+				Arrays.asList("publish " + NEXT, "remove " + ORIGINAL),
+				transport.ops);
+		assertEquals("IDLE", phase());
+	}
+
+	@Test
+	public void aWithdrawnAnnouncementDoesNotLetTheNextOneNotifyAgain()
+			throws Exception {
+		ContactId cid = new ContactId(1);
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		announcedByPeer(r, cid);
+		assertEquals(1, announcements());
+		B4OnionRotation later = rotation(now + 60_000L, transport, false);
+		later.onPeerNextWithdrawn(txn, cid);
+		assertNull(later.getPendingOnionForContact(txn, cid));
+		later.onAnnounceReceived(txn, cid, onion('e'), now + 60_000L);
+		assertEquals(onion('e'), later.getPendingOnionForContact(txn, cid));
+		assertEquals("a contact that withdrew and announced again notified"
+				+ " twice within the hour", 1, announcements());
+		B4OnionRotation afterTheHour = rotation(
+				now + B4_ANNOUNCE_RATE_LIMIT_MS, transport, false);
+		afterTheHour.onPeerNextWithdrawn(txn, cid);
+		afterTheHour.onAnnounceReceived(txn, cid, onion('f'),
+				now + B4_ANNOUNCE_RATE_LIMIT_MS);
+		assertEquals(2, announcements());
+	}
+
+	@Test
+	public void anAnnouncementAContactHasNotFollowedIsSentAgainEachDay()
+			throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now);
+		stored.put(B4_ALICE_NEXT_ANNOUNCED_KEY, sealed("1"));
+		expectDatabase();
+		Transport transport = started();
+		rotation(now + 30 * 60_000L, transport, false).evaluateAll();
+		int before = nonces(transport).size();
+		rotation(now + HOUR + 60_000L, transport, false).evaluateAll();
+		List<String> after = nonces(transport);
+		assertEquals("the announcement was not sent again after an hour",
+				before + 1, after.size());
+		rotation(now + 2 * HOUR + 60_000L, transport, false).evaluateAll();
+		assertEquals("sent again within the day", after.size(),
+				nonces(transport).size());
+		rotation(now + HOUR + 60_000L + 24 * HOUR, transport, false)
+				.evaluateAll();
+		List<String> daily = nonces(transport);
+		assertEquals(after.size() + 1, daily.size());
+		assertNotEquals(daily.get(daily.size() - 1),
+				daily.get(daily.size() - 2));
+		for (TransportProperties p : transport.merged) {
+			if (p.containsKey(WIRE_KEY_ONION3_PUBLISH_NONCE)) {
+				assertEquals(NEXT, p.get(WIRE_KEY_ONION3_NEXT));
+			}
+		}
+	}
+
+	@Test
+	public void anAnnouncementEveryContactFollowedIsNotSentAgain()
+			throws Exception {
+		Contact c = contact(1, true);
+		contacts.add(c);
+		announcing(now);
+		stored.put(B4_ALICE_NEXT_ANNOUNCED_KEY, sealed("1"));
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now + HOUR + 60_000L, transport, false);
+		r.onPeerSyncSessionEstablished(c.getId(), NEXT);
+		r.evaluateAll();
+		assertTrue(nonces(transport).isEmpty());
+	}
+
+	private static List<String> nonces(Transport transport) {
+		List<String> out = new ArrayList<>();
+		for (TransportProperties p : transport.merged) {
+			String n = p.get(WIRE_KEY_ONION3_PUBLISH_NONCE);
+			if (n != null && !n.isEmpty()) out.add(n);
+		}
+		return out;
+	}
+
+	@Test
+	public void theContactsARotationWaitsForAreListedOnceTheDayHasPassed()
+			throws Exception {
+		Contact c = contact(1, true);
+		contacts.add(c);
+		announcing(now - HOUR);
+		expectDatabase();
+		Transport transport = started();
+		assertTrue(rotation(now, transport, false)
+				.getContactsHoldingRotation().isEmpty());
+		B4OnionRotation later = rotation(
+				now - HOUR + B4OnionRotation.MIGRATION_GRACE_MS, transport,
+				false);
+		assertEquals(Collections.singletonList(c.getId()),
+				later.getContactsHoldingRotation());
+		stored.put(B4_PEER_ROTATION_STATE_KEY_PREFIX + 1, sealed("MIGRATED"));
+		assertTrue(later.getContactsHoldingRotation().isEmpty());
+	}
+
+	private void lastContactAgo(int id, long ago) throws Exception {
+		stored.put(B4_PEER_LAST_CONTACT_KEY_PREFIX + id,
+				sealed(String.valueOf(now - ago)));
+	}
+
+	@Test
+	public void aContactSilentForNinetyDaysNoLongerHoldsTheOldOnionOnTheSideThatIsDialled()
+			throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 90 * DAY + 60_000L);
+		expectDatabase();
+		Transport transport = started();
+		rotation(now, transport, false).evaluateForceExpire();
+		assertFalse(transport.live.contains(ORIGINAL));
+		assertEquals("IDLE", phase());
+	}
+
+	@Test
+	public void aContactSilentForEightyNineDaysStillHoldsTheOldOnion()
+			throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 89 * DAY);
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		r.evaluateForceExpire();
+		assertTrue(transport.live.contains(ORIGINAL));
+		assertEquals("ANNOUNCING", phase());
+		assertEquals(Collections.singletonList(contacts.get(0).getId()),
+				r.getContactsHoldingRotation());
+	}
+
+	@Test
+	public void theDesignatedDialerNeverStopsWaitingForASilentContact()
+			throws Exception {
+		contacts.add(contact(1, false));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 400 * DAY);
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		r.evaluateForceExpire();
+		assertTrue(transport.live.contains(ORIGINAL));
+		assertEquals("ANNOUNCING", phase());
+		assertEquals(Collections.singletonList(contacts.get(0).getId()),
+				r.getContactsHoldingRotation());
+	}
+
+	@Test
+	public void aContactSilentForNinetyDaysIsNotListedAsHoldingTheRotation()
+			throws Exception {
+		contacts.add(contact(1, true));
+		contacts.add(contact(2, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 91 * DAY);
+		lastContactAgo(2, 10 * DAY);
+		expectDatabase();
+		Transport transport = started();
+		assertEquals(Collections.singletonList(contacts.get(1).getId()),
+				rotation(now, transport, false).getContactsHoldingRotation());
+	}
+
+	@Test
+	public void anyContactWithinNinetyDaysRestartsTheClock() throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 100 * DAY);
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		r.recordContact(contacts.get(0).getId(), now - 5 * DAY);
+		r.evaluateForceExpire();
+		assertTrue(transport.live.contains(ORIGINAL));
+		rotation(now + 84 * DAY, transport, false).evaluateForceExpire();
+		assertTrue(transport.live.contains(ORIGINAL));
+		rotation(now + 86 * DAY, transport, false).evaluateForceExpire();
+		assertFalse(transport.live.contains(ORIGINAL));
+	}
+
+	@Test
+	public void aLastContactWrittenByAClockSetBackIsIgnored()
+			throws Exception {
+		contacts.add(contact(1, true));
+		ContactId c = contacts.get(0).getId();
+		lastContactAgo(1, 5 * DAY);
+		expectDatabase();
+		B4OnionRotation r = rotation(now, started(), false);
+
+		r.recordContact(c, now - 100 * DAY);
+
+		assertEquals("a time before the stored one was written",
+				now - 5 * DAY, r.getLastContactMs(c));
+		r.recordContact(c, now - DAY);
+		assertEquals(now - DAY, r.getLastContactMs(c));
+	}
+
+	@Test
+	public void aContactAddedSinceTheLastSeedIsNotListedAsHoldingTheRotation()
+			throws Exception {
+		contacts.add(contact(1, true));
+		contacts.add(contact(2, true));
+		stored.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
+				sealed(String.valueOf(now - 30 * DAY)));
+		stored.put(B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+				sealed("5"));
+		lastContactAgo(1, 40 * DAY);
+		expectDatabase();
+
+		assertEquals("a contact without a seeded time is not holding",
+				Collections.singletonList(contacts.get(0).getId()),
+				rotation(now, started(), false).getContactsHoldingRotation());
+	}
+
+	private static boolean absent(@Nullable String stored) {
+		return stored == null || stored.isEmpty();
+	}
+
+	@Test
+	public void noScheduledRotationStartsWhileAContactHasNotBeenInContactSinceThePreviousOne()
+			throws Exception {
+		contacts.add(contact(1, true));
+		stored.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
+				sealed(String.valueOf(now - 30 * DAY)));
+		stored.put(B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+				sealed("5"));
+		lastContactAgo(1, 40 * DAY);
+		expectDatabase();
+		Transport transport = started();
+		rotation(now, transport, false).evaluateTrigger();
+		assertTrue("a rotation started while a contact had not moved",
+				absent(stored.get(B4_ALICE_ONION3_NEXT_KEY)));
+		assertTrue(absent(stored.get(B4_ALICE_ROTATION_PHASE_KEY)));
+		lastContactAgo(1, DAY);
+		rotation(now, transport, false).evaluateTrigger();
+		assertEquals("ANNOUNCING", phase());
+		assertFalse(absent(stored.get(B4_ALICE_ONION3_NEXT_KEY)));
+	}
+
+	@Test
+	public void aPromotionLeavesTheNextIntervalToBeDrawnOnceEveryContactHasMoved()
+			throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		lastContactAgo(1, 91 * DAY);
+		stored.put(B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+				sealed("5"));
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		r.evaluateForceExpire();
+		assertEquals("IDLE", phase());
+		assertTrue("the interval was drawn at the promotion", absent(
+				stored.get(B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY)));
+		r.evaluateTrigger();
+		assertTrue("the interval was drawn before the contact came back",
+				absent(stored.get(
+						B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY)));
+		assertEquals("IDLE", phase());
+		lastContactAgo(1, -HOUR);
+		rotation(now + DAY, transport, false).evaluateTrigger();
+		assertFalse(absent(stored.get(
+				B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY)));
+		assertEquals("IDLE", phase());
+	}
+
+	@Test
+	public void theContactsADueRotationWaitsForBeforeItStartsAreListed()
+			throws Exception {
+		contacts.add(contact(1, true));
+		contacts.add(contact(2, true));
+		stored.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
+				sealed(String.valueOf(now - 30 * DAY)));
+		lastContactAgo(1, 40 * DAY);
+		lastContactAgo(2, DAY);
+		expectDatabase();
+		Transport transport = started();
+		B4OnionRotation r = rotation(now, transport, false);
+		r.evaluateTrigger();
+		assertTrue(absent(stored.get(B4_ALICE_ONION3_NEXT_KEY)));
+		assertEquals("the contact a due rotation waits for is not listed",
+				Collections.singletonList(contacts.get(0).getId()),
+				r.getContactsHoldingRotation());
+		lastContactAgo(1, HOUR);
+		assertTrue(r.getContactsHoldingRotation().isEmpty());
+	}
+
+	@Test
+	public void noContactIsListedWhileNoRotationIsDue() throws Exception {
+		contacts.add(contact(1, true));
+		lastContactAgo(1, 40 * DAY);
+		stored.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
+				sealed(String.valueOf(now - 2 * DAY)));
+		expectDatabase();
+		B4OnionRotation r = rotation(now, started(), false);
+		assertTrue(r.getContactsHoldingRotation().isEmpty());
+		stored.put(B4_ALICE_LAST_ROTATION_TIME_MS_KEY,
+				sealed(String.valueOf(now - 7 * DAY)));
+		stored.put(B4OnionRotation.B4_ALICE_NEXT_ROTATION_DAYS_KEY,
+				sealed("10"));
+		assertTrue(r.getContactsHoldingRotation().isEmpty());
+	}
+
+	@Test
+	public void aContactWithNoRecordedContactIsSeededNotTreatedAsSilent()
+			throws Exception {
+		contacts.add(contact(1, true));
+		announcing(now - B4OnionRotation.MIGRATION_GRACE_MS - 1);
+		expectDatabase();
+		Transport transport = started();
+		rotation(now, transport, false).evaluateAll();
+		assertTrue(transport.live.contains(ORIGINAL));
+		assertTrue(stored.containsKey(B4_PEER_LAST_CONTACT_KEY_PREFIX + 1));
+		rotation(now + 91 * DAY, transport, false).evaluateForceExpire();
+		assertFalse(transport.live.contains(ORIGINAL));
 	}
 
 	@Test

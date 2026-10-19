@@ -26,7 +26,7 @@
 			android:translationZ="1dp"
 			android:contentDescription="@string/toggle_emoji_keyboard"
 			app:srcCompat="@drawable/ic_emoji_toggle"
-			app:tint="@color/zerion_accent_icon" />
+			app:tint="?attr/zerionColorAccentIcon" />
 
 		<com.vanniktech.emoji.EmojiEditText
 			android:id="@+id/input_text"
@@ -44,7 +44,8 @@
 			android:paddingEnd="16dp"
 			android:paddingBottom="12dp"
 			android:scrollbars="vertical"
-			android:textColor="?android:attr/textColorPrimary"
+			android:textColor="?attr/zerionColorOnSurface"
+			android:textColorHint="?attr/zerionColorOnSurfaceMuted"
 			tools:text="Line 1\nLine 2\nLine 3" />
 
 	</FrameLayout>

@@ -5,17 +5,17 @@
 	xmlns:tools="http://schemas.android.com/tools"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/zerion_dark_bg"
+	android:background="?attr/zerionColorBackground"
 	android:fitsSystemWindows="true">
 
 	<androidx.appcompat.widget.Toolbar
 		android:id="@+id/delegationsToolbar"
 		android:layout_width="match_parent"
 		android:layout_height="?attr/actionBarSize"
-		android:background="@color/zerion_dark_bg"
+		android:background="?attr/zerionColorBackground"
 		app:layout_constraintTop_toTopOf="parent"
 		app:title="@string/channels_delegations_title"
-		app:titleTextColor="@color/zerion_text_primary" />
+		app:titleTextColor="?attr/zerionColorOnSurface" />
 
 	<ScrollView
 		android:layout_width="match_parent"
@@ -35,7 +35,7 @@
 				android:layout_marginStart="12dp"
 				android:layout_marginTop="8dp"
 				android:layout_marginEnd="12dp"
-				android:background="@color/zerion_card_bg"
+				android:background="?attr/zerionColorSurface"
 				android:orientation="vertical">
 
 				<LinearLayout
@@ -58,14 +58,14 @@
 						android:layout_marginEnd="14dp"
 						android:contentDescription="@string/channels_delegations_add"
 						android:src="@drawable/ic_admin_add"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<TextView
 						android:layout_width="match_parent"
 						android:layout_height="wrap_content"
 						android:text="@string/channels_delegations_add"
-						android:textColor="@color/zerion_accent_text"
-						android:textSize="16sp" />
+						android:textColor="?attr/zerionColorAccentText"
+						android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 				</LinearLayout>
 
@@ -73,7 +73,7 @@
 					android:layout_width="match_parent"
 					android:layout_height="0.5dp"
 					android:layout_marginStart="56dp"
-					android:background="@color/zerion_divider" />
+					android:background="?attr/zerionColorDivider" />
 
 				<LinearLayout
 					android:id="@+id/delegationsOwnerRow"
@@ -93,7 +93,8 @@
 						android:layout_width="40dp"
 						android:layout_height="40dp"
 						android:layout_marginEnd="14dp"
-						android:src="@drawable/ic_person" />
+						android:src="@drawable/ic_person"
+						app:tint="?attr/zerionColorOnSurfaceMuted" />
 
 					<LinearLayout
 						android:layout_width="match_parent"
@@ -104,17 +105,16 @@
 							android:id="@+id/delegationsOwnerName"
 							android:layout_width="match_parent"
 							android:layout_height="wrap_content"
-							android:textColor="@color/zerion_text_primary"
-							android:textSize="16sp"
-							android:textStyle="bold"
-							tools:text="You" />
+							android:textColor="?attr/zerionColorOnSurface"
+							tools:text="You"
+							android:textAppearance="@style/TextAppearance.Zerion.Body.Strong" />
 
 						<TextView
 							android:layout_width="match_parent"
 							android:layout_height="wrap_content"
 							android:text="@string/channels_delegations_role_owner"
-							android:textColor="@color/zerion_text_secondary"
-							android:textSize="13sp" />
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 					</LinearLayout>
 
@@ -136,9 +136,9 @@
 				android:layout_marginStart="16dp"
 				android:layout_marginTop="10dp"
 				android:layout_marginEnd="16dp"
-				android:text="@string/channels_delegations_help"
-				android:textColor="@color/zerion_text_secondary"
-				android:textSize="13sp" />
+				android:text="@string/channels_delegations_help_sheet"
+				android:textColor="?attr/zerionColorOnSurfaceMuted"
+				android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 			<TextView
 				android:id="@+id/delegationsEmptyView"
@@ -149,10 +149,10 @@
 				android:paddingStart="32dp"
 				android:paddingEnd="32dp"
 				android:text="@string/channels_delegations_empty"
-				android:textColor="@color/zerion_text_secondary"
-				android:textSize="14sp"
+				android:textColor="?attr/zerionColorOnSurfaceMuted"
 				android:visibility="gone"
-				tools:visibility="visible" />
+				tools:visibility="visible"
+				android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 		</LinearLayout>
 

@@ -87,8 +87,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 	private void showJoinDialog(ChannelInviteLink link, boolean held) {
 		new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.channels_join_title)
-				.setMessage(getString(R.string.channels_join_confirm,
-						publisherFingerprint(link)))
+				.setMessage(R.string.channels_join_confirm_question)
 				.setCancelable(false)
 				.setPositiveButton(R.string.channels_join_action,
 						(d, w) -> {
@@ -98,17 +97,6 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> finish())
 				.show();
-	}
-
-	static String publisherFingerprint(ChannelInviteLink link) {
-		byte[] key = link.getPublisherEd25519PubKey();
-		StringBuilder sb = new StringBuilder();
-		if (key == null) return "";
-		for (int i = 0; i < Math.min(8, key.length); i++) {
-			if (i > 0 && i % 2 == 0) sb.append(' ');
-			sb.append(String.format(java.util.Locale.US, "%02x", key[i]));
-		}
-		return sb.toString();
 	}
 
 	private boolean isHeld(byte[] channelId) {
@@ -254,10 +242,10 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 
 	static int applyMessage(ChannelRejoinResult result) {
 		if (result == ChannelRejoinResult.APPLY_AGAIN) {
-			return R.string.channels_rejoin_apply_again;
+			return R.string.channels_rejoin_request_again;
 		}
 		if (result == ChannelRejoinResult.APPLY_AGAIN_UNREACHABLE) {
-			return R.string.channels_rejoin_apply_again_unreachable;
+			return R.string.channels_rejoin_request_again_unreachable;
 		}
 		return 0;
 	}
@@ -276,10 +264,10 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 						org.zerionproject.app.api.channel.ChannelConstants
 								.MAX_DISPLAY_NAME_BYTES)});
 		new SecureAlertDialogBuilder(this)
-				.setTitle(R.string.channels_apply_title)
+				.setTitle(R.string.channels_request_access_title)
 				.setView(view)
 				.setCancelable(false)
-				.setPositiveButton(R.string.channels_apply_action,
+				.setPositiveButton(R.string.channels_request_access_action,
 						(d, w) -> handleApply(link, nameInput))
 				.setNegativeButton(android.R.string.cancel,
 						(d, w) -> finish())
@@ -292,7 +280,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				? "" : nameInput.getText().toString().trim();
 		if (name.isEmpty()) {
 			Toast.makeText(this,
-					R.string.channels_create_error_name,
+					R.string.channels_request_access_name_missing,
 					Toast.LENGTH_SHORT).show();
 			finish();
 			return;
@@ -315,8 +303,8 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 						Toast.makeText(this,
 								ex instanceof org.zerionproject.app.api.channel
 										.ChannelApplicationUnconfirmedException
-										? R.string.channels_apply_unconfirmed
-										: R.string.channels_apply_failed,
+										? R.string.channels_request_access_unconfirmed
+										: R.string.channels_request_access_failed,
 								Toast.LENGTH_LONG).show();
 						openChannel(cid);
 					});
@@ -336,7 +324,7 @@ public class ChannelInviteHandlerActivity extends ZerionActivity {
 				runOnUiThreadUnlessDestroyed(() -> {
 					progress.dismiss();
 					Toast.makeText(this,
-							R.string.channels_apply_failed,
+							R.string.channels_request_access_failed,
 							Toast.LENGTH_LONG).show();
 					finish();
 				});

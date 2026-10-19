@@ -24,6 +24,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
+import com.professor.zerion.android.attachment.AttachmentKinds;
 import com.professor.zerion.android.attachment.AttachmentRetriever;
 
 import org.zerionproject.core.api.contact.ContactId;
@@ -300,12 +301,14 @@ public class AllMediaActivity extends ZerionActivity {
 			private final ImageView thumbnail;
 			private final LinearLayout documentOverlay;
 			private final TextView documentName;
+			private final ImageView documentIcon;
 
 			MediaViewHolder(@NonNull View itemView) {
 				super(itemView);
 				thumbnail = itemView.findViewById(R.id.thumbnail);
 				documentOverlay = itemView.findViewById(R.id.document_overlay);
 				documentName = itemView.findViewById(R.id.document_name);
+				documentIcon = itemView.findViewById(R.id.document_icon);
 			}
 
 			void bind(MediaItem item) {
@@ -318,6 +321,9 @@ public class AllMediaActivity extends ZerionActivity {
 					} else {
 						thumbnail.setImageResource(R.drawable.ic_image);
 					}
+					itemView.setContentDescription(itemView.getContext()
+							.getString(item.isVideo ? R.string.video
+									: R.string.image));
 
 					loadThumbnail(item, thumbnail);
 
@@ -329,10 +335,12 @@ public class AllMediaActivity extends ZerionActivity {
 					if (contentType.startsWith("audio/")) {
 						documentName.setText(R.string.voice_message);
 					} else {
-						String extension =
-								getExtensionFromMimeType(contentType);
-						documentName.setText(extension.toUpperCase());
+						documentName.setText(
+								AttachmentKinds.name(contentType));
 					}
+					documentIcon.setImageResource(
+							AttachmentKinds.icon(contentType));
+					itemView.setContentDescription(documentName.getText());
 				}
 
 				itemView.setOnClickListener(v -> openMedia(item));
@@ -416,17 +424,5 @@ public class AllMediaActivity extends ZerionActivity {
 			intent.putExtra(VideoPlayerActivity.ITEM_ID, item.messageId.getBytes());
 			startActivity(intent);
 		}
-	}
-
-	private String getExtensionFromMimeType(@Nullable String mimeType) {
-		if (mimeType == null) return "FILE";
-		if (mimeType.contains("/")) {
-			String ext = mimeType.substring(mimeType.lastIndexOf("/") + 1);
-			if (ext.length() > 4) {
-				return ext.substring(0, 4);
-			}
-			return ext;
-		}
-		return "FILE";
 	}
 }

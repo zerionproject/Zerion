@@ -18,6 +18,8 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.ZerionService;
 import com.professor.zerion.android.api.AndroidNotificationManager;
 import com.professor.zerion.android.api.LockManager;
+import com.professor.zerion.android.message.PendingSends;
+import com.professor.zerion.android.util.MemoryCaches;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -180,8 +182,22 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 			});
 			com.professor.zerion.android.util.SecureClipboard
 					.clearIfOurs(appContext);
+			PendingSends.get().clear();
+			MemoryCaches.clearThumbnails();
 			com.professor.zerion.android.util.CacheSweeper.sweepAsync(appContext);
+		} else {
+			tellWhatTheLockRemoved();
 		}
+	}
+
+	private void tellWhatTheLockRemoved() {
+		int removed = PendingSends.get().takeRemovedOnLock();
+		if (removed <= 0) return;
+		String text = appContext.getResources().getQuantityString(
+				R.plurals.message_state_removed_on_lock, removed, removed);
+		new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->
+				android.widget.Toast.makeText(appContext, text,
+						android.widget.Toast.LENGTH_LONG).show());
 	}
 
 	@Override

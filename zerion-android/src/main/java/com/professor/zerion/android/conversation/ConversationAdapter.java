@@ -39,8 +39,14 @@ class ConversationAdapter
 	private final java.util.concurrent.Executor dbExecutor;
 	private final com.professor.zerion.android.conversation.voice.VoiceMemoKeys
 			voiceMemoKeys;
+	static final Object PAYLOAD_STATE = new Object();
+	static final Object PAYLOAD_HIGHLIGHT = new Object();
+	static final Object PAYLOAD_NAME = new Object();
+
 	@Nullable
 	private SelectionTracker<String> tracker = null;
+	private final com.professor.zerion.android.settings.MessageStyle.Source messageStyle =
+			new com.professor.zerion.android.settings.MessageStyle.Source();
 	private int highlightedPosition = -1;
 
 	ConversationAdapter(Context ctx,
@@ -58,6 +64,10 @@ class ConversationAdapter
 		imageViewPool.setMaxRecycledViews(R.layout.list_item_image, 24);
 		imageItemDecoration = new ImageItemDecoration(ctx);
 		setHasStableIds(true);
+	}
+
+	void setMessageStyle(com.professor.zerion.android.settings.MessageStyle style) {
+		if (messageStyle.update(style)) notifyDataSetChanged();
 	}
 
 	@Override
@@ -141,28 +151,39 @@ class ConversationAdapter
 	@Override
 	public void onBindViewHolder(ConversationItemViewHolder ui, int position,
 			List<Object> payloads) {
-		if (!payloads.isEmpty()) {
-			boolean timeOnly = true;
-			for (Object p : payloads) {
-				if (p != com.professor.zerion.android.view.ZerionRecyclerView
-						.PAYLOAD_TIME_REFRESH) {
-					timeOnly = false;
-					break;
-				}
-			}
-			if (timeOnly) {
-				ui.bindTimeOnly(items.get(position));
+		if (payloads.isEmpty()) {
+			onBindViewHolder(ui, position);
+			return;
+		}
+		boolean time = false;
+		boolean highlight = false;
+		for (Object p : payloads) {
+			if (p == com.professor.zerion.android.view.ZerionRecyclerView
+					.PAYLOAD_TIME_REFRESH || p == PAYLOAD_STATE) {
+				time = true;
+			} else if (p == PAYLOAD_HIGHLIGHT) {
+				highlight = true;
+			} else {
+				onBindViewHolder(ui, position);
 				return;
 			}
 		}
-		super.onBindViewHolder(ui, position, payloads);
+		if (time) ui.bindTimeOnly(items.get(position));
+		if (highlight) applyHighlight(ui, position);
 	}
 
 	@Override
 	public void onBindViewHolder(ConversationItemViewHolder ui, int position) {
 		ConversationItem item = items.get(position);
-		boolean selected = false;
+		SelectionTracker<String> t = tracker;
+		boolean selected = t != null && t.isSelected(item.getKey());
+		ui.setMessageStyle(messageStyle.get(ui.itemView.getContext()));
+		ui.setSelecting(this::hasSelection);
 		ui.bind(item, selected);
+		applyHighlight(ui, position);
+	}
+
+	private void applyHighlight(ConversationItemViewHolder ui, int position) {
 		if (position == highlightedPosition) {
 			ui.itemView.setAlpha(1.0f);
 		} else if (highlightedPosition >= 0) {
@@ -176,12 +197,25 @@ class ConversationAdapter
 	void setHighlightedPosition(int position) {
 		int old = highlightedPosition;
 		highlightedPosition = position;
-		if (old >= 0) notifyItemChanged(old);
-		if (position >= 0) notifyItemChanged(position);
 		if (old < 0 && position >= 0) {
-			notifyItemRangeChanged(0, items.size());
+			notifyItemRangeChanged(0, items.size(), PAYLOAD_HIGHLIGHT);
 		} else if (old >= 0 && position < 0) {
-			notifyItemRangeChanged(0, items.size());
+			notifyItemRangeChanged(0, items.size(), PAYLOAD_HIGHLIGHT);
+		} else {
+			if (old >= 0) notifyItemChanged(old, PAYLOAD_HIGHLIGHT);
+			if (position >= 0) notifyItemChanged(position, PAYLOAD_HIGHLIGHT);
+		}
+	}
+
+	@UiThread
+	void refreshState(int position) {
+		notifyItemChanged(position, PAYLOAD_STATE);
+	}
+
+	@UiThread
+	void refreshNames() {
+		if (items.size() > 0) {
+			notifyItemRangeChanged(0, items.size(), PAYLOAD_NAME);
 		}
 	}
 
@@ -199,12 +233,37 @@ class ConversationAdapter
 	@Override
 	public boolean areContentsTheSame(ConversationItem c1,
 			ConversationItem c2) {
-		return c1.equals(c2);
+		return c1.showsTheSameAs(c2);
 	}
 
 	@Override
 	public void add(ConversationItem item) {
 		items.beginBatchedUpdates();
+		items.add(item);
+		updateTimersInBatch();
+		items.endBatchedUpdates();
+	}
+
+	@UiThread
+	void addOrRefresh(ConversationItem item) {
+		int position = getPositionOfMessage(item.getId());
+		if (position == NO_POSITION) {
+			add(item);
+			return;
+		}
+		ConversationItem kept = items.get(position);
+		if (kept.getClass() == item.getClass()) {
+			int change = kept.updateFrom(item);
+			if (change == ConversationItem.CONTENT_CHANGED) {
+				notifyItemChanged(position);
+			} else if (change == ConversationItem.STATE_CHANGED) {
+				refreshState(position);
+			}
+			return;
+		}
+		if (kept instanceof ConversationSecretNoteItem) return;
+		items.beginBatchedUpdates();
+		items.remove(kept);
 		items.add(item);
 		updateTimersInBatch();
 		items.endBatchedUpdates();
@@ -250,6 +309,11 @@ class ConversationAdapter
 		}
 	}
 
+	private boolean hasSelection() {
+		SelectionTracker<String> t = tracker;
+		return t != null && t.hasSelection();
+	}
+
 	void setSelectionTracker(SelectionTracker<String> tracker) {
 		this.tracker = tracker;
 	}
@@ -263,6 +327,16 @@ class ConversationAdapter
 			}
 		}
 		return messages;
+	}
+
+	java.util.Map<MessageId, ConversationItem> itemsById() {
+		java.util.Map<MessageId, ConversationItem> byId =
+				new java.util.HashMap<>(items.size() * 2);
+		for (int i = 0; i < items.size(); i++) {
+			ConversationItem item = items.get(i);
+			byId.put(item.getId(), item);
+		}
+		return byId;
 	}
 
 	@Nullable

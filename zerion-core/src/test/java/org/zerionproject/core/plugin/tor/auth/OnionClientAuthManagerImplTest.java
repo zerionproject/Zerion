@@ -13,6 +13,10 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbCallable;
 import org.zerionproject.core.api.db.DbRunnable;
 import org.zerionproject.core.api.db.EventAction;
+import org.zerionproject.core.api.identity.Author;
+import org.zerionproject.core.api.identity.AuthorId;
+import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
+import org.zerionproject.core.api.sync.event.MessageAddedEvent;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.TaskAction;
 import org.zerionproject.core.api.db.Transaction;
@@ -93,8 +97,8 @@ public class OnionClientAuthManagerImplTest {
 	private final RecordingControl control = new RecordingControl();
 	private final List<ContactId> dialed = Collections.synchronizedList(new ArrayList<>());
 
-	private final Contact c1 = TestUtils.getContact();
-	private final Contact c2 = TestUtils.getContact();
+	private final Contact c1 = contactWeDial(false);
+	private final Contact c2 = contactWeDial(true);
 	private final Group g1 = TestUtils.getGroup(OnionAuthRecords.CLIENT_ID,
 			OnionAuthRecords.MAJOR_VERSION);
 	private final Group g2 = TestUtils.getGroup(OnionAuthRecords.CLIENT_ID,
@@ -105,6 +109,23 @@ public class OnionClientAuthManagerImplTest {
 			new HashMap<>();
 
 	private OnionClientAuthManagerImpl manager;
+	private boolean deferring = false;
+	private final List<Runnable> deferred = new ArrayList<>();
+	private final java.util.concurrent.atomic.AtomicBoolean skipNew =
+			new java.util.concurrent.atomic.AtomicBoolean(false);
+	private final java.util.concurrent.atomic.AtomicBoolean holdCommits =
+			new java.util.concurrent.atomic.AtomicBoolean(false);
+	private final OnionAuthDebugHooks hooks = new OnionAuthDebugHooks() {
+		@Override
+		public boolean skipsNewNegotiations(Transaction txn) {
+			return skipNew.get();
+		}
+
+		@Override
+		public boolean holdsConfirmations(Transaction txn) {
+			return holdCommits.get();
+		}
+	};
 	private final ThreadLocal<Integer> txnDepth =
 			ThreadLocal.withInitial(() -> 0);
 
@@ -170,6 +191,17 @@ public class OnionClientAuthManagerImplTest {
 			for (byte[] k : keys) if (Arrays.equals(k, pub)) return true;
 			return false;
 		}
+	}
+
+	private static Contact contactWeDial(boolean weDial) {
+		byte[] low = new byte[AuthorId.LENGTH];
+		byte[] high = new byte[AuthorId.LENGTH];
+		Arrays.fill(high, (byte) 0x70);
+		Author them = new Author(new AuthorId(weDial ? high : low),
+				Author.FORMAT_VERSION, "them",
+				TestUtils.getAuthor().getPublicKey());
+		return TestUtils.getContact(TestUtils.getContactId(), them,
+				new AuthorId(weDial ? low : high), true);
 	}
 
 	@Before
@@ -357,7 +389,7 @@ public class OnionClientAuthManagerImplTest {
 							throws InterruptedException {
 					}
 				},
-				Runnable::run, scheduler);
+				this::execute, scheduler, java.util.Optional.of(hooks));
 		manager.onDatabaseOpened(new Transaction(null, false));
 		manager.attachTor(control, 4444, dialed::add);
 	}
@@ -412,6 +444,15 @@ public class OnionClientAuthManagerImplTest {
 		OnionAuthRecords.Record found = null;
 		for (OnionAuthRecords.Record r : sentTo(c)) if (r.type == type) found = r;
 		return found;
+	}
+
+	private void execute(Runnable task) {
+		if (deferring) deferred.add(task);
+		else task.run();
+	}
+
+	private boolean published(String onion) {
+		return control.keysByOnion.containsKey(onion);
 	}
 
 	private byte[] peerPub(int fill) {
@@ -531,7 +572,7 @@ public class OnionClientAuthManagerImplTest {
 	}
 
 	@Test
-	public void testCommitAfterRevocationIsIgnoredAndRevocationIsImmediate()
+	public void testCommitAfterRevocationIsIgnoredAndTheKeyIsRemovedAtOnce()
 			throws Exception {
 		activate(c1, g1, PEER_ONION, peerPub(1));
 		activate(c2, g2, PEER_ONION_2, peerPub(2));
@@ -554,7 +595,9 @@ public class OnionClientAuthManagerImplTest {
 		assertTrue(control.commands.indexOf("ADD " + newOnion + " keys=1 port=4444") > del);
 		assertFalse(control.authorizes(newOnion, peerPub(1)));
 		assertTrue(control.authorizes(newOnion, peerPub(2)));
-		assertNull(service().oldOnion);
+		assertEquals(oldOnion, service().oldOnion);
+		assertFalse(control.authorizes(oldOnion, peerPub(1)));
+		assertTrue(control.authorizes(oldOnion, peerPub(2)));
 		OnionAuthRecords.Record rot = lastSent(c2, OnionAuthRecords.TYPE_ROTATE);
 		assertNotNull(rot);
 		assertEquals(newOnion, rot.onion);
@@ -580,6 +623,530 @@ public class OnionClientAuthManagerImplTest {
 		receive(c1, g1, OnionAuthRecords.rotateAck(2));
 		assertTrue(control.commands.contains("DEL " + oldOnion));
 		assertNull(service().oldOnion);
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+	}
+
+	@Test
+	public void testTheOldAddressIsNeverRetiredWithoutAnAcknowledgement()
+			throws Exception {
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		String oldOnion = service().onion;
+		manager.rotateAuthorizedService();
+		for (int i = 0; i < 100; i++) {
+			now.addAndGet(TimeUnit.DAYS.toMillis(1));
+			manager.tickForTest();
+		}
+		assertEquals("the old address was retired without an acknowledgement",
+				oldOnion, service().oldOnion);
+		assertTrue(control.authorizes(oldOnion, peerPub(2)));
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		assertFalse(published(oldOnion));
+		assertNull(service().oldOnion);
+	}
+
+	@Test
+	public void testARotationRequestDuringAnOverlapChangesNothing()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		String second = service().onion;
+		manager.rotateAuthorizedService();
+		assertEquals("a second rotation replaced the address still in use",
+				2, service().gen);
+		assertEquals(first, service().oldOnion);
+		assertEquals(second, service().onion);
+		assertTrue(control.authorizes(first, peerPub(1)));
+		assertTrue(control.authorizes(second, peerPub(1)));
+	}
+
+	@Test
+	public void testACommitAtTheCurrentGenerationCountsAsAnAcknowledgement()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		assertEquals(first, service().oldOnion);
+		assertTrue(published(first));
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertFalse("a contact that committed to the new address still holds"
+				+ " the old one", published(first));
+		assertNull(service().oldOnion);
+	}
+
+	@Test
+	public void testAContactLockedInAfterTheRotationByAnEarlierVersionDoesNotHoldTheOldAddress()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		now.addAndGet(TimeUnit.HOURS.toMillis(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		OnionAuthRecord stored = record(c2);
+		stored.rotateAcked = false;
+		store.save(null, stored);
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertFalse("a contact that only ever knew the new address holds the"
+				+ " old one", published(first));
+		assertNull(service().oldOnion);
+	}
+
+	@Test
+	public void testACommitOfTheCommittedRoundToTheNewAddressCountsAsAnAcknowledgement()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		String second = service().onion;
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(9)));
+		assertTrue(record(c1).rekeying);
+		receive(c1, g1, OnionAuthRecords.commit(1, second,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertFalse(record(c1).rekeying);
+		assertFalse("a commit to the new address left the old one published",
+				published(first));
+		assertNull(service().oldOnion);
+	}
+
+	@Test
+	public void testAStaleAcknowledgementIsNoEvidence() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		receive(c1, g1, OnionAuthRecords.rotateAck(1));
+		manager.tickForTest();
+		assertTrue("an acknowledgement of an earlier generation retired the"
+				+ " old address", published(first));
+		assertEquals(first, service().oldOnion);
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertFalse(published(first));
+	}
+
+	@Test
+	public void testTheCheckRetiresTheOldAddressOnceTheLastContactHoldingItIsGone()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		peerAdvertisesSupport(c2);
+		receive(c2, g2, OnionAuthRecords.offer(1, PEER_ONION_2, peerPub(2)));
+		assertEquals(State.AUTH_NEGOTIATING, record(c2).state);
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertTrue("the old address went while a contact still held it",
+				published(first));
+		now.addAndGet(OnionClientAuthManagerImpl.NEGOTIATION_TIMEOUT_MS
+				+ TimeUnit.DAYS.toMillis(1));
+		manager.tickForTest();
+		assertEquals(State.LEGACY, record(c2).state);
+		assertFalse("the check did not retire the old address once nobody"
+				+ " held it", published(first));
+		assertNull(service().oldOnion);
+	}
+
+	@Test
+	public void testAQueuedRetirementSparesTheAddressOfARotationThatOvertookIt()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		manager.rotateAuthorizedService();
+		String second = service().onion;
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		deferring = true;
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		Transaction txn = new Transaction(null, false);
+		manager.removingContact(txn, c2);
+		commit(txn);
+		deferring = false;
+		List<Runnable> tasks = new ArrayList<>(deferred);
+		deferred.clear();
+		Collections.reverse(tasks);
+		for (Runnable t : tasks) t.run();
+		assertEquals(3, service().gen);
+		assertEquals(second, service().oldOnion);
+		assertTrue("a retirement queued before the rotation removed the"
+				+ " address the remaining contact knows", published(second));
+		assertTrue(control.authorizes(second, peerPub(1)));
+	}
+
+	@Test
+	public void testWithNoAuthorizedKeyLeftTheOldAddressGoesToo()
+			throws Exception {
+		OnionAuthStore.ServiceRecord svc = new OnionAuthStore.ServiceRecord();
+		svc.gen = 2;
+		svc.oldOnion = PEER_ONION;
+		svc.oldPrivateKey = "KEY:" + PEER_ONION;
+		svc.oldSinceMs = now.get();
+		svc.lastRotationMs = now.get();
+		store.saveService(null, svc);
+		manager.detachTor();
+		manager.attachTor(control, 4444, dialed::add);
+		assertNull("an old address with no authorized contact left was kept",
+				service().oldOnion);
+		assertTrue(control.commands.contains("DEL " + PEER_ONION));
+	}
+
+	private static final long DAY_MS = TimeUnit.DAYS.toMillis(1);
+
+	private void rotateWithOnlyTheDialerAcknowledging() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		manager.rotateAuthorizedService();
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+	}
+
+	@Test
+	public void testAStaleQueuedRevocationRotationDoesNotRotateASecondTime()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		OnionAuthStore.ServiceRecord svc = service();
+		svc.revocationPending = true;
+		store.saveService(null, svc);
+		deferring = true;
+		manager.tickForTest();
+		deferring = false;
+		OnionAuthStore.ServiceRecord done = service();
+		done.revocationPending = false;
+		store.saveService(null, done);
+		long gen = done.gen;
+		String onion = done.onion;
+		for (Runnable t : new ArrayList<>(deferred)) t.run();
+		deferred.clear();
+		assertEquals("a queued revocation rotated after it was already done",
+				gen, service().gen);
+		assertEquals(onion, service().onion);
+	}
+
+	@Test
+	public void testTheTickRepublishesWhenOnlyTheAuthorizedKeysChanged()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		OnionAuthRecord r = record(c1);
+		r.peerPublicKey = peerPub(9);
+		store.save(null, r);
+		assertFalse(control.authorizes(onion, peerPub(9)));
+		manager.tickForTest();
+		assertTrue("the published key set was left stale",
+				control.authorizes(service().onion, peerPub(9)));
+	}
+
+	@Test
+	public void testTheTickLeavesAnUnchangedServiceAlone() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		int before = publishes();
+		manager.tickForTest();
+		manager.tickForTest();
+		assertEquals(before, publishes());
+	}
+
+	@Test
+	public void testTheSideThatIsNotTheDialerRetiresTheOldAddressAfterNinetyDaysOfSilence()
+			throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		String first = service().oldOnion;
+		now.addAndGet(90 * DAY_MS + 60_000L);
+		manager.tickForTest();
+		assertFalse(published(first));
+		assertNull(service().oldOnion);
+		assertTrue(manager.getContactsHoldingOldAddress().isEmpty());
+	}
+
+	@Test
+	public void testTheOldAddressIsKeptAfterEightyNineDaysOfSilence()
+			throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		String first = service().oldOnion;
+		now.addAndGet(89 * DAY_MS);
+		manager.tickForTest();
+		assertTrue(published(first));
+		assertEquals(Collections.singletonList(c1.getId()),
+				manager.getContactsHoldingOldAddress());
+	}
+
+	@Test
+	public void testTheDialerIsNeverTimedOut() throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		manager.rotateAuthorizedService();
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		String first = service().oldOnion;
+		now.addAndGet(400 * DAY_MS);
+		manager.tickForTest();
+		assertTrue(published(first));
+		assertEquals(Collections.singletonList(c2.getId()),
+				manager.getContactsHoldingOldAddress());
+	}
+
+	@Test
+	public void testAConnectionRestartsTheNinetyDayClock() throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		String first = service().oldOnion;
+		now.addAndGet(80 * DAY_MS);
+		manager.eventOccurred(new ConnectionOpenedEvent(c1.getId(),
+				TorConstants.ID, true));
+		now.addAndGet(80 * DAY_MS);
+		manager.tickForTest();
+		assertTrue(published(first));
+		now.addAndGet(11 * DAY_MS);
+		manager.tickForTest();
+		assertFalse(published(first));
+	}
+
+	@Test
+	public void testAClockSetBackDoesNotShortenTheContactRecord()
+			throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		now.addAndGet(80 * DAY_MS);
+		manager.eventOccurred(new ConnectionOpenedEvent(c1.getId(),
+				TorConstants.ID, true));
+		long recorded = manager.getLastContactMs(c1.getId());
+		assertEquals(now.get(), recorded);
+		OnionClientAuthManagerImpl again = restartedManager();
+		now.addAndGet(-70 * DAY_MS);
+
+		again.eventOccurred(new ConnectionOpenedEvent(c1.getId(),
+				TorConstants.ID, true));
+
+		assertEquals("a time before the stored one was written", recorded,
+				again.getLastContactMs(c1.getId()));
+	}
+
+	@Test
+	public void testAClockSetBackDoesNotShortenTheLastSeenTime()
+			throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		now.addAndGet(80 * DAY_MS);
+		manager.inboundViaAuthorizedService(c1.getId());
+		long seen = record(c1).lastSeenMs;
+		assertEquals(now.get(), seen);
+		OnionClientAuthManagerImpl again = restartedManager();
+		now.addAndGet(-70 * DAY_MS);
+
+		again.inboundViaAuthorizedService(c1.getId());
+
+		assertEquals("a time before the stored one was written", seen,
+				record(c1).lastSeenMs);
+	}
+
+	@Test
+	public void testAReceivedMessageOnAnyTransportRestartsTheNinetyDayClock()
+			throws Exception {
+		rotateWithOnlyTheDialerAcknowledging();
+		String first = service().oldOnion;
+		now.addAndGet(80 * DAY_MS);
+		Message m = new Message(new MessageId(TestUtils.getRandomId()),
+				g1.getId(), now.get(), new byte[1]);
+		manager.eventOccurred(new MessageAddedEvent(m, c1.getId()));
+		now.addAndGet(80 * DAY_MS);
+		manager.tickForTest();
+		assertTrue(published(first));
+		now.addAndGet(11 * DAY_MS);
+		manager.tickForTest();
+		assertFalse(published(first));
+	}
+
+	@Test
+	public void testTheContactsStillHoldingTheOldAddressAreListedAfterADay()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		manager.rotateAuthorizedService();
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		assertTrue(manager.getContactsHoldingOldAddress().isEmpty());
+		now.addAndGet(OnionClientAuthManagerImpl.HOLD_NOTICE_MS);
+		assertEquals(Collections.singletonList(c1.getId()),
+				manager.getContactsHoldingOldAddress());
+		assertTrue(manager.getLastContactMs(c1.getId()) > 0);
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertTrue(manager.getContactsHoldingOldAddress().isEmpty());
+	}
+
+	@Test
+	public void testTheDiagnosticsNameTheContactsStillHoldingTheOldAddress()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		assertFalse(manager.diagnostics(c1.getId()).isHoldingPreviousAddress());
+		manager.rotateAuthorizedService();
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		assertTrue(manager.diagnostics(c1.getId()).isHoldingPreviousAddress());
+		assertFalse(manager.diagnostics(c2.getId()).isHoldingPreviousAddress());
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertFalse(manager.diagnostics(c1.getId()).isHoldingPreviousAddress());
+	}
+
+	@Test
+	public void testARevocationRemovesTheKeyAtOnceAndKeepsTheOldAddressForTheOthers()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		String oldOnion = service().onion;
+		control.commands.clear();
+		Transaction txn = new Transaction(null, false);
+		manager.removingContact(txn, c1);
+		commit(txn);
+		assertEquals(State.REVOKED, record(c1).state);
+		assertTrue(control.commands.contains("UNCRED " + PEER_ONION));
+		assertFalse(control.authorizes(oldOnion, peerPub(1)));
+		assertTrue("the old address was deleted before the remaining contact"
+				+ " learned the new one",
+				control.authorizes(oldOnion, peerPub(2)));
+		String newOnion = service().onion;
+		assertNotEquals(oldOnion, newOnion);
+		assertEquals(oldOnion, service().oldOnion);
+		assertFalse(control.authorizes(newOnion, peerPub(1)));
+		assertTrue(control.authorizes(newOnion, peerPub(2)));
+		assertFalse(service().revocationPending);
+		assertEquals(newOnion, lastSent(c2, OnionAuthRecords.TYPE_ROTATE).onion);
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_ROTATE));
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		assertFalse(published(oldOnion));
+		assertNull(service().oldOnion);
+		assertTrue(control.authorizes(newOnion, peerPub(2)));
+	}
+
+	@Test
+	public void testARevocationDuringAnOverlapWaitsUntilTheOldAddressRetires()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		String first = service().onion;
+		manager.rotateAuthorizedService();
+		String second = service().onion;
+		receive(c2, g2, OnionAuthRecords.rotateAck(2));
+		assertEquals(first, service().oldOnion);
+		control.commands.clear();
+		Transaction txn = new Transaction(null, false);
+		manager.removingContact(txn, c2);
+		commit(txn);
+		assertTrue("the address the remaining contact knows was deleted",
+				control.authorizes(first, peerPub(1)));
+		assertFalse(control.authorizes(first, peerPub(2)));
+		assertTrue(control.authorizes(second, peerPub(1)));
+		assertFalse(control.authorizes(second, peerPub(2)));
+		assertEquals(2, service().gen);
+		assertEquals(first, service().oldOnion);
+		assertEquals(second, service().onion);
+		assertTrue(service().revocationPending);
+		receive(c1, g1, OnionAuthRecords.rotateAck(2));
+		assertFalse(published(first));
+		assertEquals(3, service().gen);
+		assertEquals(second, service().oldOnion);
+		String third = service().onion;
+		assertNotEquals(second, third);
+		assertFalse(service().revocationPending);
+		assertTrue(control.authorizes(third, peerPub(1)));
+		assertFalse(control.authorizes(third, peerPub(2)));
+		assertTrue(control.authorizes(second, peerPub(1)));
+		assertEquals(third, lastSent(c1, OnionAuthRecords.TYPE_ROTATE).onion);
+		receive(c1, g1, OnionAuthRecords.rotateAck(3));
+		assertFalse(published(second));
+		assertNull(service().oldOnion);
+		assertTrue(control.authorizes(third, peerPub(1)));
+	}
+
+	@Test
+	public void testAContactInTouchOverAnyTransportLetsTheScheduledRotationRun()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		activate(c2, g2, PEER_ONION_2, peerPub(2));
+		long period = service().rotationPeriodMs;
+		now.addAndGet(period + TimeUnit.DAYS.toMillis(1));
+		manager.tickForTest();
+		assertEquals(1, service().gen);
+		manager.eventOccurred(new org.zerionproject.core.api.plugin.event
+				.ConnectionOpenedEvent(c1.getId(),
+				new org.zerionproject.core.api.plugin.TransportId("mesh"),
+				true));
+		Message m = new Message(new MessageId(TestUtils.getRandomId()),
+				g2.getId(), now.get(), new byte[1]);
+		manager.eventOccurred(new org.zerionproject.core.api.sync.event
+				.MessageAddedEvent(m, c2.getId()));
+		manager.tickForTest();
+		assertEquals("contacts in touch over another transport held the"
+				+ " rotation back", 2, service().gen);
+	}
+
+	@Test
+	public void testContactOverAnotherTransportLeavesTheSilenceRepairDue()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		now.addAndGet(OnionClientAuthManagerImpl.SILENCE_MS
+				+ TimeUnit.HOURS.toMillis(1));
+		manager.eventOccurred(new org.zerionproject.core.api.plugin.event
+				.ConnectionOpenedEvent(c1.getId(),
+				new org.zerionproject.core.api.plugin.TransportId("mesh"),
+				true));
+		manager.tickForTest();
+		assertEquals(1, record(c1).silenceRepairs);
+	}
+
+	@Test
+	public void testNoPeriodicRotationWhileAContactIsSilentSinceTheLastOne()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		long period = service().rotationPeriodMs;
+		now.addAndGet(period + TimeUnit.DAYS.toMillis(1));
+		manager.tickForTest();
+		assertEquals("rotated while the contact was silent", 1,
+				service().gen);
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		manager.tickForTest();
+		assertEquals("the periodic rotation never ran", 2, service().gen);
+	}
+
+	@Test
+	public void testSkippingNewNegotiationsKeepsAFreshPairOnTheOpenAddress()
+			throws Exception {
+		skipNew.set(true);
+		peerAdvertisesSupport(c1);
+		assertEquals(State.LEGACY, record(c1).state);
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_OFFER));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertEquals(State.LEGACY, record(c1).state);
+		assertNull(manager.getDialOnion(c1.getId()));
+		assertTrue(manager.acceptsInbound(c1.getId(), false));
+		assertFalse(control.authorizes(String.valueOf(service().onion),
+				peerPub(1)));
+		skipNew.set(false);
+		peerAdvertisesSupport(c1);
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		assertNotNull(lastSent(c1, OnionAuthRecords.TYPE_OFFER));
+	}
+
+	@Test
+	public void testSkippingNewNegotiationsLeavesALockedPairLocked()
+			throws Exception {
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		skipNew.set(true);
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		assertFalse(manager.acceptsInbound(c1.getId(), false));
+		assertEquals(PEER_ONION, manager.getDialOnion(c1.getId()));
+	}
+
+	@Test
+	public void testAHeldConfirmationIsSentByTheRepairOnceReleased()
+			throws Exception {
+		holdCommits.set(true);
+		peerAdvertisesSupport(c1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		receive(c1, g1, OnionAuthRecords.ready(1));
+		manager.dialSucceeded(c1.getId(), PEER_ONION);
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		assertTrue(record(c1).commitSent);
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		receive(c1, g1, OnionAuthRecords.commit(1, service().onion,
+				OnionAuthCommitCheck.fingerprint(peerPub(1))));
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_COMMIT));
+		holdCommits.set(false);
+		now.addAndGet(OnionClientAuthManagerImpl.REPAIR_DELAY_MS + 1);
+		receive(c1, g1, OnionAuthRecords.probeSuccess(1));
+		assertNotNull(lastSent(c1, OnionAuthRecords.TYPE_COMMIT));
 		assertEquals(State.AUTH_REQUIRED, record(c1).state);
 	}
 
@@ -828,10 +1395,12 @@ public class OnionClientAuthManagerImplTest {
 		assertNotNull(newOnion);
 		assertNotEquals(oldOnion, newOnion);
 		assertFalse(service().revocationPending);
-		assertTrue(control.commands.contains("DEL " + oldOnion));
 		assertTrue(control.commands.contains("ADD " + newOnion + " keys=1 port=4444"));
 		assertFalse(control.authorizes(newOnion, peerPub(1)));
 		assertTrue(control.authorizes(newOnion, peerPub(2)));
+		assertEquals(oldOnion, service().oldOnion);
+		assertFalse(control.authorizes(oldOnion, peerPub(1)));
+		assertTrue(control.authorizes(oldOnion, peerPub(2)));
 		OnionAuthRecords.Record rotate = lastSent(c2, OnionAuthRecords.TYPE_ROTATE);
 		assertNotNull(rotate);
 		assertEquals(newOnion, rotate.onion);

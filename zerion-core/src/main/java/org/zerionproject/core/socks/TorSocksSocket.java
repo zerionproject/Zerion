@@ -38,6 +38,8 @@ public class TorSocksSocket extends Socket {
 
 	@Nullable
 	private volatile Socket raw;
+	@Nullable
+	private Socket connecting = null;
 	private int pendingSoTimeout = 0;
 	private boolean closed = false;
 
@@ -78,6 +80,16 @@ public class TorSocksSocket extends Socket {
 			if (raw != null) throw new SocketException("already connected");
 		}
 		Socket proxy = connector.openProxySocket(connectToProxyTimeout);
+		synchronized (this) {
+			if (closed) {
+				try {
+					proxy.close();
+				} catch (IOException ignored) {
+				}
+				throw new SocketException("Socket is closed");
+			}
+			connecting = proxy;
+		}
 		try {
 			int oldTimeout = pendingSoTimeout;
 			proxy.setSoTimeout(timeout + extraConnectTimeout);
@@ -91,6 +103,9 @@ public class TorSocksSocket extends Socket {
 			receiveConnectResponse(in);
 			proxy.setSoTimeout(oldTimeout + extraSocketTimeout);
 		} catch (IOException | RuntimeException e) {
+			synchronized (this) {
+				connecting = null;
+			}
 			try {
 				proxy.close();
 			} catch (IOException ignored) {
@@ -98,6 +113,7 @@ public class TorSocksSocket extends Socket {
 			throw e;
 		}
 		synchronized (this) {
+			connecting = null;
 			if (closed) {
 				try {
 					proxy.close();
@@ -275,9 +291,18 @@ public class TorSocksSocket extends Socket {
 	public synchronized void close() throws IOException {
 		if (closed) return;
 		closed = true;
-		Socket s = raw;
-		if (s != null) s.close();
-		super.close();
+		Socket pending = connecting;
+		connecting = null;
+		try {
+			if (pending != null) pending.close();
+		} finally {
+			try {
+				Socket s = raw;
+				if (s != null) s.close();
+			} finally {
+				super.close();
+			}
+		}
 	}
 
 	@Override

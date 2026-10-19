@@ -17,10 +17,9 @@
 		android:layout_marginBottom="-6dp"
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
-		android:textColor="@color/zerion_accent_text"
-		android:textSize="12sp"
-		android:textStyle="bold"
-		tools:text="Alice" />
+		android:textColor="?attr/zerionColorAccentText"
+		tools:text="Alice"
+		android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 	<androidx.constraintlayout.widget.ConstraintLayout
 		android:id="@+id/bubble"
@@ -53,7 +52,7 @@
 			<View
 				android:layout_width="3dp"
 				android:layout_height="match_parent"
-				android:background="@color/zerion_primary_accent" />
+				android:background="@color/selectable_accent_icon" />
 
 			<LinearLayout
 				android:layout_width="wrap_content"
@@ -71,10 +70,9 @@
 					android:layout_height="wrap_content"
 					android:ellipsize="end"
 					android:maxLines="1"
-					android:textColor="@color/zerion_primary_accent"
-					android:textSize="12sp"
-					android:textStyle="bold"
-					tools:text="Bob" />
+					android:textColor="@color/selectable_accent_text"
+					tools:text="Bob"
+					android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 				<TextView
 					android:id="@+id/quoteText"
@@ -83,36 +81,46 @@
 					android:ellipsize="end"
 					android:maxWidth="244dp"
 					android:maxLines="1"
-					android:textColor="@color/zerion_text_secondary_inverse"
-					android:textSize="13sp"
-					tools:text="Quoted post" />
+					android:textColor="@color/selectable_on_bubble_in_muted"
+					tools:text="Quoted post"
+					android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 			</LinearLayout>
 
 		</LinearLayout>
 
-		<TextView
-			android:id="@+id/postText"
+		<com.professor.zerion.android.view.WrapRow
+			android:id="@+id/postTextRow"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:maxWidth="260dp"
-			android:textColor="@color/zerion_text_primary_inverse"
-			android:textSize="15sp"
+			android:baselineAligned="false"
+			android:orientation="horizontal"
 			app:layout_constraintStart_toStartOf="parent"
-			app:layout_constraintTop_toBottomOf="@+id/quoteBlock"
-			tools:text="Hello group" />
+			app:layout_constraintTop_toBottomOf="@+id/quoteBlock">
 
-		<TextView
-			android:id="@+id/postTime"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"
-			android:layout_marginTop="2dp"
-			android:layout_marginStart="8dp"
-			android:textColor="@color/zerion_text_secondary_inverse"
-			android:textSize="12sp"
-			app:layout_constraintBottom_toBottomOf="@+id/postText"
-			app:layout_constraintStart_toEndOf="@+id/postText"
-			tools:text="13:37" />
+			<TextView
+				android:id="@+id/postText"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:maxWidth="260dp"
+				android:textColor="?attr/zerionColorOnBubbleIn"
+				tools:text="Hello group"
+				android:textColorLink="@color/selectable_accent_text"
+				android:textAppearance="@style/TextAppearance.Zerion.Body" />
+
+			<TextView
+				android:id="@+id/postTime"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="end|bottom"
+				android:layout_marginTop="2dp"
+				android:layout_marginStart="8dp"
+				android:maxLines="1"
+				android:textColor="@color/selectable_on_bubble_in_muted"
+				tools:text="13:37"
+				android:textAppearance="@style/TextAppearance.Zerion.Meta" />
+
+		</com.professor.zerion.android.view.WrapRow>
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 

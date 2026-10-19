@@ -330,6 +330,11 @@
 		</activity>
 
 		<activity
+			android:name="com.professor.zerion.android.channel.ChannelSettingsActivity"
+			android:exported="false"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
+		<activity
 			android:name="com.professor.zerion.android.channel.ChannelDelegationsActivity"
 			android:exported="false"
 			android:theme="@style/ZerionTheme.NoActionBar" />

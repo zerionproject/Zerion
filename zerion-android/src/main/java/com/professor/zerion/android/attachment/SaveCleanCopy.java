@@ -34,11 +34,14 @@ public final class SaveCleanCopy {
 		final String mimeType;
 		final byte[] data;
 		final boolean cleaned;
+		final boolean owned;
 
-		Pending(String mimeType, byte[] data, boolean cleaned) {
+		Pending(String mimeType, byte[] data, boolean cleaned,
+				boolean owned) {
 			this.mimeType = mimeType;
 			this.data = data;
 			this.cleaned = cleaned;
+			this.owned = owned;
 		}
 	}
 
@@ -68,7 +71,15 @@ public final class SaveCleanCopy {
 
 	public static void start(Activity activity, byte[] data,
 			String mimeType) {
-		String token = offer(data, mimeType);
+		launch(activity, offer(data, mimeType, false));
+	}
+
+	public static void startCopy(Activity activity, byte[] copy,
+			String mimeType) {
+		launch(activity, offer(copy, mimeType, true));
+	}
+
+	private static void launch(Activity activity, String token) {
 		activity.startActivity(new Intent(activity,
 				SaveCleanCopyActivity.class).putExtra(EXTRA_TOKEN, token));
 	}
@@ -89,8 +100,12 @@ public final class SaveCleanCopy {
 	}
 
 	static String offer(byte[] data, String mimeType) {
+		return offer(data, mimeType, false);
+	}
+
+	static String offer(byte[] data, String mimeType, boolean owned) {
 		String token = newToken();
-		PENDING.put(token, new Pending(mimeType, data, false));
+		PENDING.put(token, new Pending(mimeType, data, false, owned));
 		return token;
 	}
 
@@ -100,8 +115,27 @@ public final class SaveCleanCopy {
 	}
 
 	static boolean cleaned(String token, SharedMediaSanitizer.Cleaned clean) {
-		return PENDING.replace(token, new Pending(clean.getMimeType(),
-				clean.getData(), true)) != null;
+		Pending raw = PENDING.get(token);
+		if (raw == null) {
+			wipe(clean.getData());
+			return false;
+		}
+		boolean fresh = clean.getData() != raw.data;
+		if (!PENDING.replace(token, raw, new Pending(clean.getMimeType(),
+				clean.getData(), true, raw.owned || fresh))) {
+			if (fresh) wipe(clean.getData());
+			return false;
+		}
+		if (fresh && raw.owned) wipe(raw.data);
+		return true;
+	}
+
+	static void done(@Nullable Pending pending) {
+		if (pending != null && pending.owned) wipe(pending.data);
+	}
+
+	private static void wipe(byte[] data) {
+		java.util.Arrays.fill(data, (byte) 0);
 	}
 
 	@Nullable
@@ -110,11 +144,13 @@ public final class SaveCleanCopy {
 	}
 
 	static void drop(String token) {
-		PENDING.remove(token);
+		done(PENDING.remove(token));
 	}
 
 	public static void clearAll() {
-		PENDING.clear();
+		for (String token : new java.util.ArrayList<>(PENDING.keySet())) {
+			drop(token);
+		}
 	}
 
 	private static String newToken() {

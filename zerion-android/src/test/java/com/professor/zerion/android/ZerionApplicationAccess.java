@@ -10,4 +10,10 @@ public final class ZerionApplicationAccess {
 	public static void armAtStart(Application app, AndroidComponent component) {
 		((ZerionApplicationImpl) app).armUsbPanicOfThisProcess(component);
 	}
+
+	public static void shutDown(Application app) {
+		if (app instanceof TestZerionApplicationImpl) {
+			((TestZerionApplicationImpl) app).shutDownForTests();
+		}
+	}
 }

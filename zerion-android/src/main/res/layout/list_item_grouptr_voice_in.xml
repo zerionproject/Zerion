@@ -16,10 +16,9 @@
 		android:layout_marginBottom="-6dp"
 		android:paddingTop="8dp"
 		android:paddingBottom="8dp"
-		android:textColor="@color/zerion_accent_text"
-		android:textSize="12sp"
-		android:textStyle="bold"
-		tools:text="Alice" />
+		android:textColor="?attr/zerionColorAccentText"
+		tools:text="Alice"
+		android:textAppearance="@style/TextAppearance.Zerion.Label" />
 
 	<LinearLayout
 		android:id="@+id/voiceBubble"
@@ -48,7 +47,7 @@
 			android:padding="12dp"
 			android:scaleType="center"
 			app:srcCompat="@drawable/ic_play_arrow_24dp"
-			app:tint="@android:color/white" />
+			app:tint="@color/selectable_accent_icon" />
 
 		<TextView
 			android:id="@+id/voiceDuration"
@@ -56,18 +55,18 @@
 			android:layout_height="wrap_content"
 			android:layout_marginStart="0dp"
 			android:layout_weight="1"
-			android:textColor="@android:color/white"
-			android:textSize="14sp"
-			tools:text="0:08" />
+			android:textColor="?attr/zerionColorOnBubbleIn"
+			tools:text="0:08"
+			android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 		<TextView
 			android:id="@+id/voiceTime"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginStart="8dp"
-			android:textColor="#CCFFFFFF"
-			android:textSize="12sp"
-			tools:text="13:37" />
+			android:textColor="@color/selectable_on_bubble_in_muted"
+			tools:text="13:37"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 	</LinearLayout>
 

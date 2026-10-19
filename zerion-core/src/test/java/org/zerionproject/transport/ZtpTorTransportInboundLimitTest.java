@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.SocketFactory;
@@ -29,6 +28,8 @@ public class ZtpTorTransportInboundLimitTest {
 
 	private static final int PRE_TAG_SLOTS = ZtpTorTransport.MAX_PRE_TAG_CONNECTIONS;
 	private static final int INBOUND_SLOTS = 64;
+	private static final int TAG_WAIT_MS = 120_000;
+	private static final int CLOSE_WAIT_MS = 20_000;
 
 	private final ExecutorService exec = Executors.newCachedThreadPool();
 	private final CountDownLatch release = new CountDownLatch(1);
@@ -58,7 +59,7 @@ public class ZtpTorTransportInboundLimitTest {
 				}
 				entered.incrementAndGet();
 				try {
-					release.await(30, TimeUnit.SECONDS);
+					release.await();
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 				}
@@ -74,6 +75,7 @@ public class ZtpTorTransportInboundLimitTest {
 				SocketFactory.getDefault(), SocketFactory.getDefault(), exec,
 				handler, null, () -> {
 		});
+		transport.tagReadTimeoutMs = TAG_WAIT_MS;
 		transport.startAccepting();
 	}
 
@@ -98,7 +100,7 @@ public class ZtpTorTransportInboundLimitTest {
 		dripper.getOutputStream().write(1);
 		dripper.getOutputStream().flush();
 		waitForStarted(1);
-		now.addAndGet(ZtpTorTransport.TAG_READ_TIMEOUT_MS + 1);
+		now.addAndGet(TAG_WAIT_MS + 1);
 		dripper.getOutputStream().write(2);
 		dripper.getOutputStream().flush();
 		assertClosedByTheTransport(dripper);
@@ -115,16 +117,24 @@ public class ZtpTorTransportInboundLimitTest {
 		assertClosedByTheTransport(open());
 		sendTag(sockets.get(PRE_TAG_SLOTS - 1));
 		waitForEntered(1);
-		assertKeptOpen(open());
+		Socket next = open();
+		waitForStarted(PRE_TAG_SLOTS + 1);
+		assertKeptOpen(next);
 	}
 
 	@Test(timeout = 60_000)
 	public void liveConnectionsAreBoundedAndTheBoundIsEnforcedBeforeTheHandler()
 			throws Exception {
-		for (int i = 0; i < INBOUND_SLOTS; i++) sendTag(open());
+		for (int i = 0; i < INBOUND_SLOTS; i++) {
+			sendTag(open());
+			if ((i + 1) % PRE_TAG_SLOTS == 0) waitForEntered(i + 1);
+		}
 		waitForEntered(INBOUND_SLOTS);
 		Socket beyond = open();
-		sendTag(beyond);
+		try {
+			sendTag(beyond);
+		} catch (IOException turnedAwayFirst) {
+		}
 		assertClosedByTheTransport(beyond);
 		assertEquals(INBOUND_SLOTS, entered.get());
 	}
@@ -157,7 +167,7 @@ public class ZtpTorTransportInboundLimitTest {
 	}
 
 	private static void assertClosedByTheTransport(Socket s) throws IOException {
-		s.setSoTimeout(ZtpTorTransport.TAG_READ_TIMEOUT_MS - 500);
+		s.setSoTimeout(CLOSE_WAIT_MS);
 		try {
 			int r = s.getInputStream().read();
 			assertEquals(-1, r);

@@ -1,0 +1,92 @@
+# Tor Project bridge lines the bundled lists in zerion-core/src/main/resources
+# are copied from, verbatim, and the reasons a published line is not bundled.
+# BundledBridgeSourcesTest fails when a bundled line is not in this copy.
+#
+# pt_config: the built-in bridges of Tor Browser, fetched 2026-10-17 from
+# https://gitlab.torproject.org/tpo/applications/tor-browser-build/-/raw/274119c591d405598abf22c3aa56e5519c9b4fdb/projects/tor-expert-bundle/pt_config.json
+# (tor-browser-build main at 274119c591d4, 2026-10-14; the file last changed in
+# 01d3e9d35aab, 2026-04-09). The same file is in maint-15.0 at tag
+# tbb-15.0.25-build2, the current Tor Browser stable release 15.0.25.
+# SHA-256 of the fetched file: 6169848125847b9d471de800b7c4278f2fb142e4bffc03e84700aa654d90ae1c
+#
+# moat: the per-country lines of the Tor Project's circumvention map, the
+# settings Tor Browser's connection assist uses, fetched 2026-10-17 from
+# https://bridges.torproject.org/moat/circumvention/map (POST, empty body).
+# Only lines given verbatim in the map are copied; per-request bridgedb
+# handouts are never bundled.
+# SHA-256 of the fetched response: 0196f9f5af47fdfd70d8b6f0b0d57c1eefa24b2d975357ccfe95a7dd092c9b7b
+#
+# not-bundled: published default obfs4 lines left out, each with the reason,
+# after a real Tor bootstrap through each line alone on 2026-10-17.
+#
+# no-public-source: bundled lines that no public Tor Project list carries;
+# they came with the upstream code base and are kept while a bootstrap through
+# each line alone reaches 100 percent.
+
+[pt_config zz obfs4]
+obfs4 37.218.245.14:38224 D9A82D2F9C2F65A18407B1D2B764F130847F8B5D cert=bjRaMrr1BRiAW8IE9U5z27fQaYgOhX1UCmOpg2pFpoMvo6ZgQMzLsaTzzQNTlm7hNcb+Sg iat-mode=0
+obfs4 209.148.46.65:443 74FAD13168806246602538555B5521A0383A1875 cert=ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw iat-mode=0
+obfs4 146.57.248.225:22 10A6CD36A537FCE513A322361547444B393989F0 cert=K1gDtDAIcUfeLqbstggjIw2rtgIKqdIhUlHp82XRqNSq/mtAjp1BIC9vHKJ2FAEpGssTPw iat-mode=0
+obfs4 45.145.95.6:27015 C5B7CD6946FF10C5B3E89691A7D3F2C122D2117C cert=TD7PbUO0/0k6xYHMPW3vJxICfkMZNdkRrb63Zhl5j9dW3iRGiCx0A7mPhe5T2EDzQ35+Zw iat-mode=0
+obfs4 51.222.13.177:80 5EDAC3B810E12B01F6FD8050D2FD3E277B289A08 cert=2uplIpLQ0q9+0qMFrK5pkaYRDOe460LL9WHBvatgkuRr/SL31wBOEupaMMJ6koRE6Ld0ew iat-mode=0
+obfs4 212.83.43.95:443 BFE712113A72899AD685764B211FACD30FF52C31 cert=ayq0XzCwhpdysn5o0EyDUbmSOx3X/oTEbzDMvczHOdBJKlvIdHHLJGkZARtT4dcBFArPPg iat-mode=1
+obfs4 212.83.43.74:443 39562501228A4D5E27FCA4C0C81A01EE23AE3EE4 cert=PBwr+S8JTVZo6MPdHnkTwXJPILWADLqfMGoVvhZClMq/Urndyd42BwX9YFJHZnBB3H0XCw iat-mode=1
+
+[pt_config zz snowflake]
+snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://1098762253.rsc.cdn77.org/ fronts=app.datapacket.com,www.datapacket.com ice=stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://1098762253.rsc.cdn77.org/ fronts=app.datapacket.com,www.datapacket.com ice=stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[pt_config zz meek]
+meek_lite 192.0.2.20:80 url=https://1603026938.rsc.cdn77.org front=www.phpmyadmin.net utls=HelloRandomizedALPN
+
+[moat by snowflake]
+snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://1098762253.rsc.cdn77.org/ fronts=app.datapacket.com,www.datapacket.com ice=stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://1098762253.rsc.cdn77.org/ fronts=app.datapacket.com,www.datapacket.com ice=stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[moat cn snowflake]
+snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://1098762253.rsc.cdn77.org fronts=www.phpmyadmin.net,cdn.zk.mk ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://1098762253.rsc.cdn77.org fronts=www.phpmyadmin.net,cdn.zk.mk ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.5:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 sqsqueue=https://sqs.us-east-2.amazonaws.com/490393006362/snowflake-broker sqscreds=eyJhd3MtYWNjZXNzLWtleS1pZCI6IkFLSUFYRUxOVE9FTkdCWVU3NkVBIiwiYXdzLXNlY3JldC1rZXkiOiJHdTlTWm9xTVg2WENIa2dZazlHZnBvYlpoVFZMdzNpL0N5cFdVVGZOIn0= ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.6:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA sqsqueue=https://sqs.us-east-2.amazonaws.com/490393006362/snowflake-broker sqscreds=eyJhd3MtYWNjZXNzLWtleS1pZCI6IkFLSUFYRUxOVE9FTkdCWVU3NkVBIiwiYXdzLXNlY3JldC1rZXkiOiJHdTlTWm9xTVg2WENIa2dZazlHZnBvYlpoVFZMdzNpL0N5cFdVVGZOIn0= ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[moat ir snowflake]
+snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://1098762253.rsc.cdn77.org front=www.phpmyadmin.net,cdn.zk.mk ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://1098762253.rsc.cdn77.org front=www.phpmyadmin.net,cdn.zk.mk ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[moat ru snowflake]
+snowflake 192.0.2.3:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://1098762253.rsc.cdn77.org fronts=cdn.zk.mk,img.icons8.com,cdn.kde.org ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.4:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://1098762253.rsc.cdn77.org fronts=cdn.zk.mk,img.icons8.com,cdn.kde.org ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.5:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com  ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.6:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[moat tm snowflake]
+snowflake 192.0.2.5:80 2B280B23E1107BB62ABFC40DDCC8824814F80A72 fingerprint=2B280B23E1107BB62ABFC40DDCC8824814F80A72 url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com  ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+snowflake 192.0.2.6:80 8838024498816A039FCBBAB14E6F40A0843051FA fingerprint=8838024498816A039FCBBAB14E6F40A0843051FA url=https://snowflake-broker.torproject.net/ ampcache=https://cdn.ampproject.org/ front=www.google.com ice=stun:stun.antisip.com:3478,stun:stun.epygi.com:3478,stun:stun.uls.co.za:3478,stun:stun.voipgate.com:3478,stun:stun.mixvoip.com:3478,stun:stun.telnyx.com:3478,stun:stun.hot-chilli.net:3478,stun:stun.fitauto.ru:3478,stun:stun.m-online.net:3478 utls-imitate=hellorandomizedalpn
+
+[moat tm meek]
+meek_lite 192.0.2.20:80 url=https://1603026938.rsc.cdn77.org front=www.phpmyadmin.net utls=HelloRandomizedALPN
+
+[not-bundled zz obfs4]
+# 37.218.245.14:38224 bootstrapped in 3 of 4 runs and the Tor relay search lists it as not running.
+obfs4 37.218.245.14:38224 D9A82D2F9C2F65A18407B1D2B764F130847F8B5D cert=bjRaMrr1BRiAW8IE9U5z27fQaYgOhX1UCmOpg2pFpoMvo6ZgQMzLsaTzzQNTlm7hNcb+Sg iat-mode=0
+# 209.148.46.65:443 accepted TCP, but bootstrap stopped at 10, 50, 50 and 10 percent in four runs of up to 300 s.
+obfs4 209.148.46.65:443 74FAD13168806246602538555B5521A0383A1875 cert=ssH+9rP8dG2NLDN2XuFw63hIO/9MNNinLmxQDpVa+7kTOa9/m+tGWT1SmSYpQ9uTBGa6Hw iat-mode=0
+# 146.57.248.225:22 refused every TCP connection; bootstrap stopped at 2 percent in three runs.
+obfs4 146.57.248.225:22 10A6CD36A537FCE513A322361547444B393989F0 cert=K1gDtDAIcUfeLqbstggjIw2rtgIKqdIhUlHp82XRqNSq/mtAjp1BIC9vHKJ2FAEpGssTPw iat-mode=0
+# 45.145.95.6:27015 accepted TCP, but bootstrap stopped at 10 percent in four runs of up to 300 s.
+obfs4 45.145.95.6:27015 C5B7CD6946FF10C5B3E89691A7D3F2C122D2117C cert=TD7PbUO0/0k6xYHMPW3vJxICfkMZNdkRrb63Zhl5j9dW3iRGiCx0A7mPhe5T2EDzQ35+Zw iat-mode=0
+
+[no-public-source zz obfs4]
+obfs4 120.29.217.52:5223 40FE3DB9800272F9CDC76422F8ED7883280EE96D cert=/71PS4l8c/XJ4DIItlH9xMqNvPFg2RUTrHvPlQWh48u5et8h/yyyjCcYphUadDsfBWpaGQ iat-mode=0
+obfs4 185.177.207.138:8443 53716FE26F23C8C6A71A2BC5D9D8DC64747278C7 cert=6jcYVilMEzxdsWghSrQFpYYJlkkir/GPIXw/EnddUK3S8ToVpMG8u1SwMOEdEs735RrMHw iat-mode=0
+obfs4 94.142.246.132:8088 135C158527AA9FE9A2F26EC515EB6999D813D347 cert=wTUz0/5FhAZRkitil5MprGbSF3JzjxjxI1kAmxAdSeDy98NgcLr11f/qUXWDC76Y97RiSg iat-mode=0
+obfs4 185.177.207.132:8443 4FB781F7A9DD39DA53A7996907817FC479874D19 cert=UL2gCAXWW5kEWY4TQ0lNeu6OAmzh40bXYVhMnTWVG8USnyy/zEKGSIPgmwTDMumWr9c1Pg iat-mode=0
+obfs4 82.64.115.17:990 B08238781C2CD80DBD95AEABEB6F6C75F2E2CEB6 cert=1udeMlFNs3sJ20zwpPE6nShZqqwDb3F1ET4KzfSfD+fktkue9zNx9H3t+yLCPAsg+6UTUA iat-mode=1
+obfs4 185.177.207.153:8443 6574D4D903FDE714F2759A3B3C31C0363A92DCDC cert=VAZd6bOJ6BKUZLLOYhMuaSPxjf+ZGAspvdQkf8C3naGk8r2b77WXWj9JF8+jLYb8l2fnUw iat-mode=0
+obfs4 78.159.118.224:19998 9735DAE37918DD9F0BA9CF56D336294BCB4207CC cert=MIBlPdg69nSskD9Id8bLzwQFJ1zICUMwwG9apMlvF35Y6Z9W8AVbSlahxlY17l8zLvwdEA iat-mode=0
+obfs4 23.94.169.122:63000 1878E0F5DAFFBD4A0F8DC75820ADB9B10E8ABAF0 cert=iESu5/SAcFI8GPUXHaV4Yk1zraP1AjZySYSsKh0lT+Bj0q/pdwa4PjMjsOusMxiOuUQAOA iat-mode=0
+obfs4 185.177.207.146:8443 4EBA78385FCA62C8A26EDEEC6752068C676287F3 cert=IPU7h22MwNmvCogs3TrR4NO/RcIb9asRU0saVWfAPvBbWc1YALuHxDhOl5Sri2rZ7QhKNg iat-mode=0
+
+[no-public-source zz vanilla]
+89.236.127.72:9001 18AFEA11065FFAF045062A373654A3ADE050B087
+185.132.41.102:443 4FBCA9FC7A7882D6DF090B89AEEECA8FC3E05D6C

@@ -9,5 +9,6 @@ public final class TestUtilStatics {
 		ExternalHandoff.resetForTests();
 		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
 		SecureClipboard.resetForTests();
+		com.professor.zerion.android.conversation.MediaViewer.clearAll();
 	}
 }

@@ -10,6 +10,11 @@
 		<item>1</item>
 		<item>2</item>
 	</string-array>
+	<string-array name="tor_helper_setting_names">
+		<item>@string/tor_helper_choice_ask</item>
+		<item>@string/tor_helper_choice_use</item>
+		<item>@string/tor_helper_choice_off</item>
+	</string-array>
 
 	<string-array name="pref_language_values">
 		<item>default</item>
@@ -103,4 +108,15 @@
 		<item>720</item>
 		<item>1440</item>
 	</string-array>
+
+	<array name="zerion_avatar_palette">
+		<item>@color/zerion_avatar_slate</item>
+		<item>@color/zerion_avatar_plum</item>
+		<item>@color/zerion_avatar_pine</item>
+		<item>@color/zerion_avatar_bronze</item>
+		<item>@color/zerion_avatar_wine</item>
+		<item>@color/zerion_avatar_petrol</item>
+		<item>@color/zerion_avatar_olive</item>
+		<item>@color/zerion_avatar_brick</item>
+	</array>
 </resources>

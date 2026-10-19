@@ -10,6 +10,7 @@ import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.plugin.duplex.DuplexPlugin;
 import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.api.system.WakefulIoExecutor;
 import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.zerionproject.core.plugin.tor.TorRendezvousCryptoImpl;
@@ -27,6 +28,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 
 	private final Executor ioExecutor;
 	private final Executor wakefulIoExecutor;
+	private final TaskScheduler taskScheduler;
 	private final SocketFactory socketFactory;
 	private final TorWrapper tor;
 	private final Provider<ZtpTorTransport> transport;
@@ -41,7 +43,8 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	@Inject
 	public ZtpDuplexPluginFactory(@IoExecutor Executor ioExecutor,
 			@WakefulIoExecutor Executor wakefulIoExecutor,
-			SocketFactory socketFactory, TorWrapper tor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
 			Provider<ZtpTorTransport> transport,
 			Provider<ZtpPollerFactory> pollerFactory, CryptoComponent crypto,
 			Provider<B4OnionRotation> b4OnionRotation, EventBus eventBus,
@@ -52,6 +55,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 		this.onionClientAuth = onionClientAuth;
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
+		this.taskScheduler = taskScheduler;
 		this.socketFactory = socketFactory;
 		this.tor = tor;
 		this.transport = transport;
@@ -75,8 +79,8 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	public DuplexPlugin createPlugin(PluginCallback callback) {
 		ZtpTorTransport torTransport = transport.get();
 		ZtpPoller poller = pollerFactory.get().create(torTransport);
-		return new ZtpDuplexPlugin(ioExecutor, wakefulIoExecutor, socketFactory,
-				tor, torTransport, poller,
+		return new ZtpDuplexPlugin(ioExecutor, wakefulIoExecutor,
+				taskScheduler, socketFactory, tor, torTransport, poller,
 				new TorRendezvousCryptoImpl(crypto), callback,
 				b4OnionRotation.get(), eventBus, onionServiceControl,
 				onionClientAuth);

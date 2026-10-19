@@ -26,7 +26,7 @@ public class NoCallsInChannelsAndGroupsTest {
 			new File("src/main/java/com/professor/zerion/android");
 	private static final File RES = new File("src/main/res");
 	private static final List<String> SCREENS =
-			Arrays.asList("channel", "grouptr");
+			Arrays.asList("channel", "grouptr", "selection");
 	private static final List<String> CALL_CODE = Arrays.asList(
 			"action_voice_call", "action_video_call", "R.string.voice_call",
 			"R.string.video_call", "R.menu.conversation_actions",
@@ -63,7 +63,8 @@ public class NoCallsInChannelsAndGroupsTest {
 		}
 		assertTrue(resources.contains("layout/activity_channel_feed"));
 		assertTrue(resources.contains("layout/activity_grouptr_conversation"));
-		assertTrue(resources.contains("menu/grouptr_post_actions"));
+		assertTrue(resources.contains("menu/selection_bar"));
+		assertTrue(resources.contains("menu/selection_more"));
 		for (String r : withNested(resources)) {
 			String text = read(new File(RES, r + ".xml"));
 			for (String token : CALL_RESOURCES) {
@@ -83,7 +84,9 @@ public class NoCallsInChannelsAndGroupsTest {
 		assertTrue(menu.contains("@+id/action_voice_call"));
 		assertTrue(menu.contains("@+id/action_video_call"));
 		assertTrue(activity.contains("action_voice_call"));
-		assertFalse(read(new File(RES, "menu/grouptr_post_actions.xml"))
+		assertFalse(read(new File(RES, "menu/selection_bar.xml"))
+				.contains("call"));
+		assertFalse(read(new File(RES, "menu/selection_more.xml"))
 				.contains("call"));
 	}
 

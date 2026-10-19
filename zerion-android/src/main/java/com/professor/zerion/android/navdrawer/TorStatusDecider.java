@@ -1,6 +1,10 @@
 package com.professor.zerion.android.navdrawer;
 
+import com.professor.zerion.R;
+
 import org.zerionproject.core.api.plugin.Plugin;
+
+import androidx.annotation.StringRes;
 
 final class TorStatusDecider {
 
@@ -16,6 +20,12 @@ final class TorStatusDecider {
 	}
 
 	private TorStatusDecider() {
+	}
+
+	@StringRes
+	static int entryRelayText(boolean usingBridges) {
+		return usingBridges ? R.string.tor_hidden_services_entry_relay_bridges
+				: R.string.tor_hidden_services_entry_relay_now;
 	}
 
 	static Status decide(boolean offlineMode, Plugin.State state,

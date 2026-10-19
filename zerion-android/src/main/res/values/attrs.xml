@@ -2,12 +2,47 @@
 <resources>
 
 	<attr name="colorControlNormal" format="color" />
-	<attr name="zerionAccentText" format="color" />
 	<attr name="selectableItemBackground" format="reference" />
+
+	<attr name="zerionColorBackground" format="color" />
+	<attr name="zerionColorSurface" format="color" />
+	<attr name="zerionColorSurfaceVariant" format="color" />
+	<attr name="zerionColorOnSurface" format="color" />
+	<attr name="zerionColorOnSurfaceMuted" format="color" />
+	<attr name="zerionColorDivider" format="color" />
+	<attr name="zerionColorOutline" format="color" />
+	<attr name="zerionColorAccent" format="color" />
+	<attr name="zerionColorOnAccent" format="color" />
+	<attr name="zerionColorAccentText" format="color" />
+	<attr name="zerionColorAccentIcon" format="color" />
+	<attr name="zerionColorBubbleIn" format="color" />
+	<attr name="zerionColorOnBubbleIn" format="color" />
+	<attr name="zerionColorOnBubbleInMuted" format="color" />
+	<attr name="zerionColorBubbleInInset" format="color" />
+	<attr name="zerionColorBubbleOut" format="color" />
+	<attr name="zerionColorOnBubbleOut" format="color" />
+	<attr name="zerionColorOnBubbleOutMuted" format="color" />
+	<attr name="zerionColorBubbleOutInset" format="color" />
+	<attr name="zerionColorDanger" format="color" />
+	<attr name="zerionColorDangerText" format="color" />
+	<attr name="zerionColorSuccess" format="color" />
+	<attr name="zerionColorWarning" format="color" />
+	<attr name="zerionColorStatusMuted" format="color" />
+	<attr name="zerionColorPresenceOnline" format="color" />
+	<attr name="zerionColorPresenceOffline" format="color" />
+	<attr name="zerionColorScrim" format="color" />
+	<attr name="zerionColorOnScrim" format="color" />
+	<attr name="zerionColorMediaBackdrop" format="color" />
+	<attr name="zerionColorMessageSelectedOwn" format="color" />
+	<attr name="zerionColorMessageSelectedReceived" format="color" />
+	<attr name="zerionColorChannelCardSelected" format="color" />
+	<attr name="zerionColorSelectionForeground" format="color" />
 
 	<integer name="animationSpeed">@android:integer/config_mediumAnimTime</integer>
 
 	<integer name="splashScreenDuration">500</integer>
+
+	<integer name="text_hyphenation">1</integer>
 
 	<declare-styleable name="ZerionRecyclerView">
 		<attr name="scrollToEnd" format="boolean" />

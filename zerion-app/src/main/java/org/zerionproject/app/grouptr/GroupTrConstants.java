@@ -28,6 +28,7 @@ interface GroupTrConstants {
 
 	String SETTINGS_NS_PREFIX = "grouptr.g.";
 	String MSG_KEY_GROUP_ACCEPTED_AT = "groupAcceptedAt";
+	String MSG_KEY_GROUP_BODY_KIND = "groupBodyKind";
 	String SETTINGS_NS_INDEX = "grouptr.index";
 	String SETTINGS_NS_LOCAL_PREFIX = "grouptr.local.";
 	String S_SCREENSHOT_BLOCKED = "screenshotBlocked";

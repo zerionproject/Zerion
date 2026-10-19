@@ -3,6 +3,7 @@ package org.zerionproject.core.account;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
@@ -98,6 +99,40 @@ public class PasswordChangeStorageFaultTest extends PasswordChangeFixture {
 			if (f.getName().equals(PRIMARY) && !once[0]) {
 				once[0] = true;
 				real.write(f, garbageLike(b));
+				return;
+			}
+			real.write(f, b);
+		}));
+		expect("reported=KEY_REPLACEMENT_FAILED after change:"
+				+ " primary=old backup=old; after restart: old unlocks,"
+				+ " new rejected; primary=old backup=old", outcome);
+	}
+
+	@Test
+	public void aKeyFileOpenElsewhereForAMomentIsStillRolledBack() {
+		boolean[] once = {false};
+		int[] backupWrites = {0};
+		String outcome = run(faulty((f, b, real) -> {
+			if (f.getName().equals(PRIMARY) && !once[0]) {
+				once[0] = true;
+				real.write(f, garbageLike(b));
+				return;
+			}
+			if (f.getName().equals(BACKUP) && ++backupWrites[0] == 2) {
+				FileInputStream reader = new FileInputStream(f);
+				Thread closer = new Thread(() -> {
+					try {
+						Thread.sleep(300);
+						reader.close();
+					} catch (IOException | InterruptedException ignored) {
+					}
+				});
+				closer.start();
+				try {
+					real.write(f, b);
+				} finally {
+					reader.close();
+				}
 				return;
 			}
 			real.write(f, b);

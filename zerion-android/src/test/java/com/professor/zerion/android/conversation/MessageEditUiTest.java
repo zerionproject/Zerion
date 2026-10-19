@@ -78,15 +78,21 @@ public class MessageEditUiTest {
 		return ((TextView) v.findViewById(R.id.time)).getText().toString();
 	}
 
+	private String editedThenState() {
+		return ctx.getString(R.string.message_state_meta,
+				ctx.getString(R.string.message_edited),
+				ctx.getString(R.string.message_state_sent));
+	}
+
 	@Test
 	public void anEditedMessageSaysSoNextToItsTime() {
 		String edited = ctx.getString(R.string.message_edited);
-		assertTrue(shownTime(item(true)).endsWith(edited));
+		assertTrue(shownTime(item(true)).endsWith(editedThenState()));
 		assertFalse(shownTime(item(false)).contains(edited));
 
 		ConversationMessageItem later = item(false);
 		later.markEdited();
-		assertTrue(shownTime(later).endsWith(edited));
+		assertTrue(shownTime(later).endsWith(editedThenState()));
 	}
 
 	@Test
@@ -102,7 +108,7 @@ public class MessageEditUiTest {
 		holder.bindTimeOnly(item);
 
 		assertTrue(((TextView) v.findViewById(R.id.time)).getText()
-				.toString().endsWith(ctx.getString(R.string.message_edited)));
+				.toString().endsWith(editedThenState()));
 	}
 
 	@Test

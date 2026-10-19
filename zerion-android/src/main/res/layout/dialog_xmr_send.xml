@@ -129,7 +129,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_10"
                 style="?attr/materialButtonOutlinedStyle"
-                android:textColor="@color/zerion_toggle_text"
+                android:textColor="@color/zerion_dialog_button_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -141,7 +141,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_25"
                 style="?attr/materialButtonOutlinedStyle"
-                android:textColor="@color/zerion_toggle_text"
+                android:textColor="@color/zerion_dialog_button_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -153,7 +153,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/xmr_pct_50"
                 style="?attr/materialButtonOutlinedStyle"
-                android:textColor="@color/zerion_toggle_text"
+                android:textColor="@color/zerion_dialog_button_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

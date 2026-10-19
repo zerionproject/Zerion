@@ -13,6 +13,7 @@ import android.content.SharedPreferences;
 import com.professor.zerion.android.AndroidComponent;
 import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.DestroyableContext;
+import com.professor.zerion.android.EarlyPrefs;
 import com.professor.zerion.android.Localizer;
 import com.professor.zerion.android.controller.ActivityLifecycleController;
 import com.professor.zerion.android.fragment.BaseFragment;
@@ -100,8 +101,8 @@ public abstract class BaseActivity extends AppCompatActivity
 		}
 
 		SharedPreferences uiPrefs = applicationComponent.uiPreferences();
-		String theme = uiPrefs.getString(PREF_THEME, "");
-		if (isAmoledTheme(theme, this)) {
+		moveLegacyTheme(this, uiPrefs);
+		if (wantsAmoledOverlay(this)) {
 			getTheme().applyStyle(R.style.AmoledOverlay, true);
 		}
 
@@ -153,6 +154,27 @@ public abstract class BaseActivity extends AppCompatActivity
 		for (ActivityLifecycleController alc : lifecycleControllers) {
 			alc.onActivityCreate(this);
 		}
+	}
+
+	static void moveLegacyTheme(Context ctx, SharedPreferences uiPrefs) {
+		if (EarlyPrefs.legacyThemeMoved(ctx)) return;
+		if (EarlyPrefs.themeChosen(ctx)) {
+			EarlyPrefs.setLegacyThemeMoved(ctx);
+			return;
+		}
+		String legacy = uiPrefs.getString(PREF_THEME, null);
+		String current = EarlyPrefs.theme(ctx);
+		if (legacy != null && (current == null || (isAmoledTheme(legacy, ctx)
+				&& current.equals(ctx.getString(
+				R.string.pref_theme_dark_value))))) {
+			EarlyPrefs.setTheme(ctx, legacy);
+		}
+		EarlyPrefs.setLegacyThemeMoved(ctx);
+	}
+
+	static boolean wantsAmoledOverlay(Context ctx) {
+		String theme = EarlyPrefs.theme(ctx);
+		return theme != null && isAmoledTheme(theme, ctx);
 	}
 
 	@Override

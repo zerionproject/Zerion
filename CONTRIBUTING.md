@@ -76,6 +76,10 @@ Public documents, the store description and the website are checked against
 `scripts/check-docs.py`, which also refuses the stale phrases listed in it.
 Run it before changing any document; the website's release block is rendered
 from the manifest by `scripts/render-release-refs.py`, never edited by hand.
+Before a release run `python3 scripts/check-docs.py --release`: it also fails
+when the published bridge list `docs/bridges/bridges.json` expires within 30
+days. Lists run 90 days, so publish a new one at least every 60 days
+([docs/bridges/README.md](docs/bridges/README.md)).
 Historical posts and changelog entries keep their text and carry a dated note.
 
 ## Code style

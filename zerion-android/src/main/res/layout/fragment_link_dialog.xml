@@ -60,7 +60,7 @@
 				android:layout_gravity="center_vertical"
 				android:layout_marginTop="16dp"
 				android:layout_marginBottom="16dp"
-				android:background="@color/zerion_card_bg"
+				android:background="?attr/zerionColorSurface"
 				android:padding="8dp"
 				android:textColor="?android:attr/textColorPrimary"
 				android:textIsSelectable="true"

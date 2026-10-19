@@ -16,7 +16,7 @@
 		android:layout_height="36dp"
 		android:background="@drawable/badge_circle_cyan"
 		android:gravity="center"
-		android:textColor="@color/zerion_on_accent"
+		android:textColor="?attr/zerionColorOnAccent"
 		android:textSize="15sp"
 		android:textStyle="bold"
 		tools:text="A" />
@@ -34,20 +34,20 @@
 			android:layout_height="wrap_content"
 			android:ellipsize="end"
 			android:maxLines="1"
-			android:textColor="@color/zerion_text_primary"
-			android:textSize="15sp"
-			tools:text="Alice" />
+			android:textColor="?attr/zerionColorOnSurface"
+			tools:text="Alice"
+			android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 		<TextView
 			android:id="@+id/memberRole"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="2dp"
-			android:textColor="@color/zerion_text_secondary"
-			android:textSize="12sp"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:visibility="gone"
 			tools:text="creator"
-			tools:visibility="visible" />
+			tools:visibility="visible"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 		<com.google.android.material.materialswitch.MaterialSwitch
 			android:id="@+id/memberMayAddSwitch"
@@ -55,10 +55,10 @@
 			android:layout_height="wrap_content"
 			android:minHeight="48dp"
 			android:text="@string/grouptr_member_may_add"
-			android:textColor="@color/zerion_text_secondary"
-			android:textSize="13sp"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:visibility="gone"
-			tools:visibility="visible" />
+			tools:visibility="visible"
+			android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 	</LinearLayout>
 
@@ -67,13 +67,13 @@
 		style="@style/Widget.Material3.Button.IconButton"
 		android:layout_width="48dp"
 		android:layout_height="48dp"
-		android:contentDescription="@string/abc_action_menu_overflow_description"
+		android:contentDescription="@string/selection_more_description"
 		android:insetTop="0dp"
 		android:insetBottom="0dp"
 		android:visibility="gone"
 		app:icon="@drawable/ic_more_vert"
 		app:iconSize="20dp"
-		app:iconTint="@color/zerion_text_secondary"
+		app:iconTint="?attr/zerionColorOnSurfaceMuted"
 		tools:visibility="visible" />
 
 </LinearLayout>

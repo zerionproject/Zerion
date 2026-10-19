@@ -21,6 +21,10 @@ public interface ChannelManager {
 
 	void deleteChannel(byte[] channelId) throws DbException;
 
+	void deleteChannelForEveryone(byte[] channelId) throws DbException;
+
+	boolean hasDeletionNotice(byte[] channelId) throws DbException;
+
 	String exportInviteLink(byte[] channelId) throws DbException;
 
 	@Nullable
@@ -37,6 +41,9 @@ public interface ChannelManager {
 	void leaveChannel(byte[] channelId) throws DbException;
 
 	void publishPost(byte[] channelId, String body, long ttlSeconds)
+			throws DbException;
+
+	long publishPostWithSeq(byte[] channelId, String body, long ttlSeconds)
 			throws DbException;
 
 	List<ChannelPost> getRecentPosts(byte[] channelId, long limit)
@@ -133,6 +140,9 @@ public interface ChannelManager {
 
 	void postComment(byte[] channelId, long parentPostSeqNum, String body)
 			throws DbException;
+
+	long postCommentWithId(byte[] channelId, long parentPostSeqNum,
+			String body) throws DbException;
 
 	List<ChannelComment> getComments(byte[] channelId, long parentPostSeqNum)
 			throws DbException;

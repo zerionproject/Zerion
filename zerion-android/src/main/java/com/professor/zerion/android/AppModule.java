@@ -360,6 +360,9 @@ public class AppModule {
 		@Inject
 		com.professor.zerion.android.update.UpdateChecker updateChecker;
 		@Inject
+		com.professor.zerion.android.update.BridgeListUpdater
+				bridgeListUpdater;
+		@Inject
 		com.professor.zerion.android.conversation.DeletedContentEvictor
 				deletedContentEvictor;
 
@@ -775,6 +778,11 @@ public class AppModule {
 
 			@Override
 			public boolean shouldEnableI2p() {
+				return IS_DEBUG_BUILD;
+			}
+
+			@Override
+			public boolean shouldEnableDebugCountryOverride() {
 				return IS_DEBUG_BUILD;
 			}
 		};

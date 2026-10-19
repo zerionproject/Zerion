@@ -122,7 +122,8 @@ class ConversationVisitor implements
 					viewModel.getReplyContext(h.getId());
 			if (replyContext != null) {
 				item.setReplyToMessageId(replyContext.getFirst());
-				item.setReplyToText(replyContext.getSecond());
+				item.setReplyToText(SecretNotes.quotable(ctx,
+						replyContext.getSecond()));
 				item.setReplyToLocal(viewModel.quotedDirection(
 						replyContext.getFirst()));
 			} else if (h.getReplyToId() != null) {
@@ -146,8 +147,9 @@ class ConversationVisitor implements
 		item.setReplyToLocal(quotedLocal);
 		String replyText = quotedLocal == null ? null
 				: textCache.getText(quoted);
-		item.setReplyToText(replyText != null ? replyText :
-				ctx.getString(R.string.reply_original_unavailable));
+		item.setReplyToText(replyText != null
+				? SecretNotes.quotable(ctx, replyText)
+				: ctx.getString(R.string.reply_original_unavailable));
 	}
 	private String getContactNameOrDefault() {
 		String name = contactName.getValue();

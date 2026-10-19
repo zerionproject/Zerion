@@ -45,6 +45,44 @@ class ConversationMessageItem extends ConversationItem {
 		return attachments;
 	}
 
+	@Override
+	int updateFrom(ConversationItem fresh) {
+		int change = super.updateFrom(fresh);
+		ConversationMessageItem m = (ConversationMessageItem) fresh;
+		if (edited != m.edited) change = CONTENT_CHANGED;
+		edited = m.edited;
+		if (m.attachmentsLoaded) {
+			if (!attachmentsLoaded
+					|| !sameAttachments(attachments, m.attachments)) {
+				change = CONTENT_CHANGED;
+			}
+			attachments = m.attachments;
+			attachmentsLoaded = true;
+		}
+		return change;
+	}
+
+	@Override
+	boolean showsTheSameAs(ConversationItem o) {
+		if (!super.showsTheSameAs(o)) return false;
+		ConversationMessageItem m = (ConversationMessageItem) o;
+		return edited == m.edited && attachmentsLoaded == m.attachmentsLoaded
+				&& sameAttachments(attachments, m.attachments)
+				&& (header == null ? m.header == null : m.header != null
+						&& header.isMesh() == m.header.isMesh());
+	}
+
+	private static boolean sameAttachments(List<AttachmentItem> a,
+			List<AttachmentItem> b) {
+		if (a.size() != b.size()) return false;
+		for (int i = 0; i < a.size(); i++) {
+			AttachmentItem x = a.get(i);
+			AttachmentItem y = b.get(i);
+			if (!x.equals(y) || x.getState() != y.getState()) return false;
+		}
+		return true;
+	}
+
 	boolean needsAttachmentLoading() {
 		return !attachmentsLoaded && header != null && !header.getAttachmentHeaders().isEmpty();
 	}

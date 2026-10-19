@@ -19,6 +19,8 @@ public final class FakeMoneroEngine implements MoneroEngine {
 	volatile char[] lastRestoreSeedArray;
 	final java.util.concurrent.atomic.AtomicInteger restoreCalls =
 			new java.util.concurrent.atomic.AtomicInteger();
+	@Nullable
+	volatile Runnable onBackgroundHistory;
 	int restoreStatusForBadSeed = 1;
 	int openCount = 0;
 	int closeCount = 0;
@@ -343,26 +345,26 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public void startRefresh() {
-			startCalls.incrementAndGet();
 			refreshLog.add("start");
+			startCalls.incrementAndGet();
 		}
 
 		@Override
 		public void pauseRefresh() {
-			pauseCalls.incrementAndGet();
 			refreshLog.add("pause");
+			pauseCalls.incrementAndGet();
 		}
 
 		@Override
 		public void interruptRefresh() {
-			interruptCalls.incrementAndGet();
 			refreshLog.add("interrupt");
+			interruptCalls.incrementAndGet();
 		}
 
 		@Override
 		public boolean rescanBlockchain() {
-			rescanCalls.incrementAndGet();
 			refreshLog.add("rescan@" + refreshFromHeight);
+			rescanCalls.incrementAndGet();
 			return true;
 		}
 
@@ -409,6 +411,11 @@ public final class FakeMoneroEngine implements MoneroEngine {
 
 		@Override
 		public java.util.List<XmrTxInfo> history() {
+			Runnable hook = background ? onBackgroundHistory : null;
+			if (hook != null) {
+				onBackgroundHistory = null;
+				hook.run();
+			}
 			return new java.util.ArrayList<>(outgoing);
 		}
 

@@ -112,7 +112,7 @@ final class ContactConnectionLines {
 			case CLOCK_WRONG:
 				return R.string.contact_connection_tor_clock;
 			case ENTRY_RELAY_FAILING:
-				return R.string.contact_connection_tor_entry_relay;
+				return R.string.contact_connection_tor_entry_relay_now;
 			case OFF:
 				return R.string.contact_connection_tor_off;
 			case PAUSED:

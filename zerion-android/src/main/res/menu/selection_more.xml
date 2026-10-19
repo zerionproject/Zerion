@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<item
+		android:id="@+id/action_react"
+		android:title="@string/action_react" />
+
+	<item
+		android:id="@+id/action_edit"
+		android:title="@string/action_edit_message" />
+
+	<item
+		android:id="@+id/action_save"
+		android:title="@string/selection_save" />
+
+	<item
+		android:id="@+id/action_forward"
+		android:title="@string/forward" />
+
+	<item
+		android:id="@+id/action_pin"
+		android:title="@string/channels_action_pin" />
+
+	<item
+		android:id="@+id/action_unpin"
+		android:title="@string/channels_action_unpin" />
+
+	<item
+		android:id="@+id/action_comments"
+		android:title="@string/channels_action_comments" />
+
+	<item
+		android:id="@+id/action_comments_off"
+		android:title="@string/channels_action_comments_off" />
+
+	<item
+		android:id="@+id/action_comments_on"
+		android:title="@string/channels_action_comments_on" />
+
+	<item
+		android:id="@+id/action_member"
+		android:title="@string/selection_member" />
+
+	<item
+		android:id="@+id/action_info"
+		android:title="@string/selection_info" />
+
+	<item
+		android:id="@+id/action_delete"
+		android:title="@string/delete" />
+
+</menu>

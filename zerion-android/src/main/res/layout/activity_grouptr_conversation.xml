@@ -13,25 +13,27 @@
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
 		android:background="@drawable/bg_toolbar_transparent"
-		android:elevation="6dp"
-		app:elevation="6dp">
+		android:elevation="0dp"
+		app:elevation="0dp">
 
 		<com.google.android.material.appbar.MaterialToolbar
 			android:id="@+id/toolbar"
 			style="@style/Zerion.Toolbar"
 			android:layout_width="match_parent"
-			android:layout_height="?attr/actionBarSize"
+			android:layout_height="wrap_content"
+			android:minHeight="?attr/actionBarSize"
 			android:background="@android:color/transparent"
 			android:paddingStart="4dp"
 			android:paddingEnd="4dp"
 			app:navigationIcon="@drawable/ic_arrow_back"
 			app:navigationContentDescription="@string/abc_action_bar_up_description"
-			app:navigationIconTint="@color/zerion_text_primary">
+			app:navigationIconTint="?attr/zerionColorOnSurface">
 
 			<LinearLayout
 				android:id="@+id/toolbarTitleBlock"
 				android:layout_width="wrap_content"
-				android:layout_height="match_parent"
+				android:layout_height="wrap_content"
+				android:minHeight="?attr/actionBarSize"
 				android:background="?attr/selectableItemBackground"
 				android:clickable="true"
 				android:focusable="true"
@@ -44,9 +46,12 @@
 					android:id="@+id/groupAvatar"
 					android:layout_width="36dp"
 					android:layout_height="36dp"
+					android:autoSizeMaxTextSize="15sp"
+					android:autoSizeMinTextSize="8sp"
+					android:autoSizeTextType="uniform"
 					android:background="@drawable/badge_circle_cyan"
 					android:gravity="center"
-					android:textColor="@color/zerion_on_accent"
+					android:textColor="?attr/zerionColorOnAccent"
 					android:textSize="15sp"
 					android:textStyle="bold"
 					tools:text="F" />
@@ -64,11 +69,11 @@
 						android:ellipsize="end"
 						android:letterSpacing="0.01"
 						android:maxLines="1"
-						android:textColor="@color/zerion_text_primary"
-						android:textSize="17sp"
+						android:textColor="?attr/zerionColorOnSurface"
 						android:fontFamily="@font/bricolage_grotesque"
 						android:textFontWeight="500"
-						tools:text="Family" />
+						tools:text="Family"
+						android:textAppearance="@style/TextAppearance.Zerion.Title" />
 
 					<TextView
 						android:id="@+id/groupSubtitle"
@@ -77,9 +82,9 @@
 						android:ellipsize="end"
 						android:letterSpacing="0.02"
 						android:maxLines="1"
-						android:textColor="@color/zerion_text_secondary"
-						android:textSize="12sp"
-						tools:text="4 members · End-to-end encrypted" />
+						android:textColor="?attr/zerionColorOnSurfaceMuted"
+						tools:text="4 members · End-to-end encrypted"
+						android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 				</LinearLayout>
 
@@ -104,11 +109,11 @@
 			android:background="@drawable/bg_contact_card"
 			android:gravity="center"
 			android:padding="10dp"
-			android:textColor="@color/zerion_text_secondary"
-			android:textSize="12sp"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:visibility="gone"
 			tools:text="2 members are not your contacts and do not get your posts"
-			tools:visibility="visible" />
+			tools:visibility="visible"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 		<FrameLayout
 			android:layout_width="match_parent"
@@ -134,10 +139,10 @@
 				android:gravity="center"
 				android:padding="32dp"
 				android:text="@string/grouptr_empty_conversation"
-				android:textColor="@color/zerion_text_secondary"
-				android:textSize="14sp"
+				android:textColor="?attr/zerionColorOnSurfaceMuted"
 				android:visibility="gone"
-				tools:visibility="visible" />
+				tools:visibility="visible"
+				android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
 
 		</FrameLayout>
 
@@ -150,11 +155,11 @@
 			android:background="@drawable/bg_contact_card"
 			android:gravity="center"
 			android:padding="14dp"
-			android:textColor="@color/zerion_destructive_text"
-			android:textSize="13sp"
+			android:textColor="?attr/zerionColorDangerText"
 			android:visibility="gone"
 			tools:text="You were removed from this group by Alice."
-			tools:visibility="visible" />
+			tools:visibility="visible"
+			android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 		<include
 			android:id="@+id/groupReplyPreview"
@@ -212,9 +217,9 @@
 						android:paddingBottom="12dp"
 						android:privateImeOptions="nm"
 						android:scrollbars="vertical"
-						android:textColor="?android:attr/textColorPrimary"
-						android:textColorHint="@color/zerion_text_secondary"
-						android:textSize="15sp" />
+						android:textColor="?attr/zerionColorOnSurface"
+						android:textColorHint="?attr/zerionColorOnSurfaceMuted"
+						android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 				</FrameLayout>
 
@@ -230,7 +235,7 @@
 					android:padding="12dp"
 					android:scaleType="center"
 					app:srcCompat="@drawable/ic_add_circle"
-					app:tint="@color/zerion_accent_icon" />
+					app:tint="?attr/zerionColorAccentIcon" />
 
 				<FrameLayout
 					android:layout_width="48dp"
@@ -248,7 +253,7 @@
 						android:padding="12dp"
 						android:scaleType="center"
 						app:srcCompat="@drawable/ic_mic_24dp"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 					<androidx.appcompat.widget.AppCompatImageButton
 						android:id="@+id/sendButton"
@@ -263,7 +268,7 @@
 						android:scaleType="center"
 						android:visibility="invisible"
 						app:srcCompat="@drawable/social_send_now_white"
-						app:tint="@color/zerion_accent_icon" />
+						app:tint="?attr/zerionColorAccentIcon" />
 
 				</FrameLayout>
 
@@ -296,9 +301,9 @@
 					android:layout_marginStart="12dp"
 					android:layout_weight="1"
 					android:fontFamily="@font/plex_mono_regular"
-					android:textColor="@color/zerion_text_primary"
-					android:textSize="15sp"
-					tools:text="0:04" />
+					android:textColor="?attr/zerionColorOnSurface"
+					tools:text="0:04"
+					android:textAppearance="@style/TextAppearance.Zerion.Body" />
 
 				<androidx.appcompat.widget.AppCompatImageButton
 					android:id="@+id/recordingCancel"
@@ -311,7 +316,7 @@
 					android:padding="13dp"
 					android:scaleType="center"
 					app:srcCompat="@drawable/ic_close"
-					app:tint="@color/zerion_text_secondary" />
+					app:tint="?attr/zerionColorOnSurfaceMuted" />
 
 				<androidx.appcompat.widget.AppCompatImageButton
 					android:id="@+id/recordingSend"
@@ -324,7 +329,7 @@
 					android:padding="12dp"
 					android:scaleType="center"
 					app:srcCompat="@drawable/social_send_now_white"
-					app:tint="@color/zerion_accent_icon" />
+					app:tint="?attr/zerionColorAccentIcon" />
 
 			</LinearLayout>
 

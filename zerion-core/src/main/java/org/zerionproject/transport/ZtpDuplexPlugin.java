@@ -32,6 +32,7 @@ import org.zerionproject.core.api.rendezvous.KeyMaterialSource;
 import org.zerionproject.core.api.rendezvous.RendezvousEndpoint;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.event.SettingsUpdatedEvent;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.plugin.tor.B4OnionRotation;
 import org.zerionproject.core.plugin.tor.ChannelOnionAdapter;
 import org.zerionproject.core.plugin.tor.TorRendezvousCrypto;
@@ -43,6 +44,7 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -56,6 +58,8 @@ import static org.zerionproject.core.api.plugin.TorConstants.HS_PRIVATE_KEY_V3;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_ACCOUNT_MOVED;
 import static org.zerionproject.core.api.plugin.TorConstants.PROP_ONION_V3;
 import static org.zerionproject.core.plugin.tor.TorRendezvousCrypto.SEED_BYTES;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.zerionproject.transport.EntryRelayHealth.UNANSWERED_MS;
 import static org.zerionproject.core.util.IoUtils.tryToClose;
 
 @NotNullByDefault
@@ -71,6 +75,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 	private final Executor ioExecutor;
 	private final Executor wakefulIoExecutor;
+	private final TaskScheduler taskScheduler;
 	private final SocketFactory socketFactory;
 	private final TorWrapper tor;
 	private final ZtpTorTransport transport;
@@ -87,13 +92,17 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Nullable
 	private volatile State lastReportedState = null;
 	private final ClockSkewTracker clockSkew = new ClockSkewTracker();
-	private volatile boolean entryRelayFailing = false;
+	private final EntryRelayHealth entryRelay =
+			new EntryRelayHealth(this::reportEntryRelay);
+	private volatile LongSupplier clock =
+			() -> System.nanoTime() / 1_000_000L;
 	private final EventListener torSettingsListener = e -> {
-		if (isTorSettingsChange(e)) clearEntryRelayFailing();
+		if (isTorSettingsChange(e)) entryRelay.clear();
 	};
 
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
-			SocketFactory socketFactory, TorWrapper tor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
 			ZtpTorTransport transport, ZtpPoller poller,
 			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
 			B4OnionRotation b4OnionRotation, EventBus eventBus,
@@ -105,6 +114,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		this.onionClientAuth = onionClientAuth;
 		this.ioExecutor = ioExecutor;
 		this.wakefulIoExecutor = wakefulIoExecutor;
+		this.taskScheduler = taskScheduler;
 		this.socketFactory = socketFactory;
 		this.tor = tor;
 		this.transport = transport;
@@ -127,15 +137,14 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 			@Override
 			public void onBootstrapPercentage(int percentage) {
-				if (percentage >= 100) {
-					clockSkew.clear();
-					clearEntryRelayFailing();
-				}
+				if (percentage >= 100) clockSkew.clear();
+				entryRelay.onBootstrap(percentage);
 				eventBus.broadcast(new TorBootstrapEvent(percentage));
 			}
 
 			@Override
 			public void onHsDescriptorUpload(String onion) {
+				entryRelay.onAnswer(clock.getAsLong());
 				if (!transport.publishedOnions().contains(onion)) return;
 				clockSkew.clear();
 				eventBus.broadcast(new TorOnionPublishedEvent(onion));
@@ -151,11 +160,37 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 			@Override
 			public void onEntryRelayFailing() {
-				entryRelayFailing = true;
-				eventBus.broadcast(new org.zerionproject.core.api.plugin.event
-						.TorEntryRelayEvent(true));
+				entryRelay.onWarning(clock.getAsLong());
+			}
+
+			@Override
+			public void onHsDirectoryRequest() {
+				if (entryRelay.onRequest(clock.getAsLong())) {
+					scheduleEntryRelayCheck();
+				}
+			}
+
+			@Override
+			public void onHsDirectoryAnswer() {
+				entryRelay.onAnswer(clock.getAsLong());
+			}
+
+			@Override
+			public void onRelayConnection(String fingerprint,
+					boolean connected) {
+				transport.onRelayConnection(fingerprint, connected);
 			}
 		});
+	}
+
+	private void scheduleEntryRelayCheck() {
+		taskScheduler.schedule(
+				() -> entryRelay.onRecheck(clock.getAsLong()),
+				ioExecutor, UNANSWERED_MS, MILLISECONDS);
+	}
+
+	void setClock(LongSupplier clock) {
+		this.clock = clock;
 	}
 
 	private static State mapState(TorState torState) {
@@ -288,8 +323,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		});
 		try {
 			b4OnionRotation.republishPendingOnion();
-		} catch (DbException e) {
-			throw new PluginException(e);
+		} catch (DbException | RuntimeException ignored) {
 		}
 		b4OnionRotation.startPeriodicEvaluation();
 		eventBus.addListener(torSettingsListener);
@@ -300,7 +334,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	public void stop() throws PluginException {
 		eventBus.removeListener(torSettingsListener);
 		clockSkew.clear();
-		clearEntryRelayFailing();
+		entryRelay.clear();
 		onionClientAuth.detachTor();
 		transport.setTorRestartedListener(null);
 		transport.setTorReconfiguredListener(null);
@@ -324,7 +358,12 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 	@Override
 	public boolean isEntryRelayFailing() {
-		return entryRelayFailing;
+		return entryRelay.isFailing();
+	}
+
+	@Override
+	public boolean isUsingBridges() {
+		return transport.isUsingBridges();
 	}
 
 	static boolean isTorSettingsChange(Event e) {
@@ -333,11 +372,9 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 				((SettingsUpdatedEvent) e).getNamespace());
 	}
 
-	private void clearEntryRelayFailing() {
-		if (!entryRelayFailing) return;
-		entryRelayFailing = false;
+	private void reportEntryRelay(boolean failing) {
 		eventBus.broadcast(new org.zerionproject.core.api.plugin.event
-				.TorEntryRelayEvent(false));
+				.TorEntryRelayEvent(failing));
 	}
 
 	@Override

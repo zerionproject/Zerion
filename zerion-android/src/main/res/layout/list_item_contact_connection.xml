@@ -9,5 +9,5 @@
     android:paddingEnd="16dp"
     android:paddingBottom="4dp"
     android:screenReaderFocusable="true"
-    android:textColor="@color/zerion_text_primary"
-    android:textSize="14sp" />
+    android:textColor="?attr/zerionColorOnSurface"
+    android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />

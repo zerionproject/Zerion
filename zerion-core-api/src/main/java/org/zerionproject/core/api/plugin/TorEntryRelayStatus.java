@@ -6,4 +6,8 @@ import org.briarproject.nullsafety.NotNullByDefault;
 public interface TorEntryRelayStatus {
 
 	boolean isEntryRelayFailing();
+
+	default boolean isUsingBridges() {
+		return false;
+	}
 }

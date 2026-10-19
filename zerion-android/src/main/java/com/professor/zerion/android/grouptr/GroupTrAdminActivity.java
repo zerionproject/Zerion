@@ -43,6 +43,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
+
 public class GroupTrAdminActivity extends ZerionActivity {
 
 	public static final String EXTRA_GROUP_ID = "groupTrId";
@@ -255,13 +257,15 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			MaterialButton menu = row.findViewById(R.id.memberMenuButton);
 			MaterialSwitch mayAdd = row.findViewById(R.id.memberMayAddSwitch);
 
-			String mName = m.getName().isEmpty() ? "?" : m.getName();
+			String mName = m.getName().isEmpty()
+					? getString(R.string.grouptr_member_unnamed) : m.getName();
 			boolean self = localPub != null
 					&& Arrays.equals(m.getPubKey(), localPub);
 			boolean memberIsCreator = Arrays.equals(m.getPubKey(),
 					s.getCreatorPubKey());
 
-			avatar.setText(mName.substring(0, 1).toUpperCase());
+			avatar.setText(m.getName().isEmpty() ? "?"
+					: mName.substring(0, 1).toUpperCase());
 			nameView.setText(self ? mName + " ("
 					+ getString(R.string.grouptr_member_role_you) + ")"
 					: mName);
@@ -311,16 +315,9 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			membersContainer.addView(row);
 
 			if (i < members.size() - 1) {
-				View divider = new View(this);
-				divider.setBackgroundColor(0x1AFFFFFF);
-				LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-						LinearLayout.LayoutParams.MATCH_PARENT,
-						(int) (0.5f * getResources()
-								.getDisplayMetrics().density));
-				lp.leftMargin = (int) (70 * getResources()
-						.getDisplayMetrics().density);
-				divider.setLayoutParams(lp);
-				membersContainer.addView(divider);
+				membersContainer.addView(com.professor.zerion.android.util
+						.UiUtils.listDivider(this, (int) (70 * getResources()
+								.getDisplayMetrics().density)));
 			}
 		}
 		bindSentInvites(s, isCreator, dissolved, inf);
@@ -477,9 +474,9 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		if (dissolved) {
 			TextView msg = new TextView(this);
 			msg.setText(R.string.grouptr_detail_status_dissolved);
-			msg.setTextColor(getResources().getColor(
-					R.color.zerion_destructive_text));
-			msg.setTextSize(14);
+			msg.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorDangerText));
+			msg.setTextAppearance(R.style.TextAppearance_Zerion_BodySmall);
 			int p = (int) (20 * getResources().getDisplayMetrics().density);
 			msg.setPadding(p, p / 2, p, p / 2);
 			dangerContainer.addView(msg);
@@ -497,8 +494,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			row.findViewById(R.id.memberMenuButton).setVisibility(View.GONE);
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_dissolve);
-			label.setTextColor(getResources().getColor(
-					R.color.zerion_destructive_text));
+			label.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorDangerText));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmDissolve(s));
@@ -510,8 +507,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			row.findViewById(R.id.memberMenuButton).setVisibility(View.GONE);
 			TextView label = row.findViewById(R.id.memberName);
 			label.setText(R.string.grouptr_leave);
-			label.setTextColor(getResources().getColor(
-					R.color.zerion_destructive_text));
+			label.setTextColor(resolveColorAttribute(this,
+				R.attr.zerionColorDangerText));
 			row.findViewById(R.id.memberRole).setVisibility(View.GONE);
 			if (rippleRes != 0) row.setBackgroundResource(rippleRes);
 			row.setOnClickListener(v -> confirmLeave(s));

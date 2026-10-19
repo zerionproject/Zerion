@@ -36,6 +36,7 @@ import org.zerionproject.app.api.channel.ChannelSyncStatus;
 import org.zerionproject.app.api.channel.ChannelTransport;
 import org.zerionproject.app.api.channel.event.ChannelCommentReceivedEvent;
 import org.zerionproject.app.api.channel.event.ChannelPostReceivedEvent;
+import org.zerionproject.app.api.channel.event.ChannelPostsRemovedEvent;
 import org.zerionproject.app.api.channel.event.ChannelStateChangedEvent;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -117,6 +118,8 @@ class ChannelManagerImpl
 	private static final long MIN_REFRESH_TICK_MS = 1_000L;
 	private static final long FIRST_PULL_SPREAD_MS = 3L * PULL_MIN_INTERVAL_MS;
 	private static final long PULL_FAILURE_MAX_INTERVAL_MS = 15L * 60L * 1000L;
+	private static final long RECONNECT_SPREAD_FROM_MS = 60_000L;
+	private static final long RECONNECT_SPREAD_MS = 60_000L;
 	private static final long DORMANT_AT_UNKNOWN = Long.MIN_VALUE;
 
 	private static final class PollState {
@@ -450,15 +453,15 @@ class ChannelManagerImpl
 		}
 	}
 
-	private void resetAllPullBackoffs() {
+	private void easeAllPullBackoffs() {
 		long now = clock.currentTimeMillis();
 		for (PollState poll : polls.values()) {
 			synchronized (poll) {
 				if (poll.failures == 0) continue;
-				poll.failures = 0;
-				poll.intervalMs = PULL_MIN_INTERVAL_MS;
-				poll.nextDueAt = Math.min(poll.nextDueAt, now + (long) (
-						random.nextDouble() * FIRST_PULL_SPREAD_MS));
+				poll.intervalMs = Math.max(PULL_MIN_INTERVAL_MS,
+						poll.intervalMs / 2L);
+				poll.nextDueAt = now + RECONNECT_SPREAD_FROM_MS + (long) (
+						random.nextDouble() * RECONNECT_SPREAD_MS);
 			}
 		}
 	}
@@ -952,7 +955,7 @@ class ChannelManagerImpl
 			} else if (e instanceof TransportActiveEvent) {
 				TransportActiveEvent t = (TransportActiveEvent) e;
 				if (TorConstants.ID.equals(t.getTransportId())) {
-					resetAllPullBackoffs();
+					easeAllPullBackoffs();
 					ioExecutor.execute(this::ensurePublisherServersBound);
 				}
 			}
@@ -2074,6 +2077,14 @@ class ChannelManagerImpl
 		java.util.Set<Long> shown = visiblePosts(channelId);
 		reactionStore.retainPosts(channelId, shown);
 		commentStore.retainPosts(channelId, shown);
+		announceRemoved(channelId, gone);
+	}
+
+	private void announceRemoved(byte[] channelId, List<ChannelPost> gone) {
+		if (gone.isEmpty()) return;
+		List<Long> seqs = new ArrayList<>(gone.size());
+		for (ChannelPost p : gone) seqs.add(p.getSeqNum());
+		eventBus.broadcast(new ChannelPostsRemovedEvent(channelId, seqs));
 	}
 
 	private void openNewlyReadable(ChannelState s) throws DbException {
@@ -2405,7 +2416,7 @@ class ChannelManagerImpl
 		try {
 			ChannelState s = store.getChannel(channelId);
 			byte[] tombstone = s == null || !s.weArePublisher() ? null
-					: signTombstone(s);
+					: signedTombstoneOrNull(s);
 			if (tombstone != null) {
 				keepOnionsForTombstone(s, tombstone);
 				removeChannelLocally(channelId, true);
@@ -2416,6 +2427,41 @@ class ChannelManagerImpl
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	@Override
+	public void deleteChannelForEveryone(byte[] channelId)
+			throws DbException {
+		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
+		lock.lock();
+		try {
+			ChannelState s = store.getChannel(channelId);
+			if (s == null || !s.weArePublisher()) throw new DbException();
+			byte[] tombstone = signedTombstoneOrNull(s);
+			if (tombstone == null) {
+				throw new org.zerionproject.app.api.channel
+						.ChannelDeleteNotSignedException();
+			}
+			keepOnionsForTombstone(s, tombstone);
+			removeChannelLocally(channelId, true);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Nullable
+	private byte[] signedTombstoneOrNull(ChannelState s) throws DbException {
+		try {
+			return signTombstone(s);
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	@Override
+	public boolean hasDeletionNotice(byte[] channelId) throws DbException {
+		byte[] tombstone = tombstoneStore.get(channelId);
+		return tombstone != null && tombstone.length > 0;
 	}
 
 	private void keepOnionsForTombstone(ChannelState s, byte[] tombstone)
@@ -3295,16 +3341,21 @@ class ChannelManagerImpl
 	@Override
 	public void publishPost(byte[] channelId, String body, long ttlSeconds)
 			throws DbException {
+		publishPostWithSeq(channelId, body, ttlSeconds);
+	}
+
+	@Override
+	public long publishPostWithSeq(byte[] channelId, String body,
+			long ttlSeconds) throws DbException {
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!s.weArePublisher()) {
-			submitAsEditor(channelId, body, ttlSeconds);
-			return;
+			return submitAsEditor(channelId, body, ttlSeconds);
 		}
 		java.util.concurrent.locks.ReentrantLock lock = lockFor(channelId);
 		lock.lock();
 		try {
-			publishPostLocked(channelId, body, ttlSeconds);
+			return publishPostLocked(channelId, body, ttlSeconds);
 		} finally {
 			lock.unlock();
 		}
@@ -3345,15 +3396,18 @@ class ChannelManagerImpl
 
 	private static final int MAX_SUBMIT_ATTEMPTS = 3;
 
-	private void submitAsEditor(byte[] channelId, String body,
+	private long submitAsEditor(byte[] channelId, String body,
 			long ttlSeconds) throws DbException {
 		validatePostBody(body);
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
-		if (editorCertificate(s) == null) throw new DbException();
+		if (editorCertificate(s) == null) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelRefusedException();
+		}
 		checkEditorBodyFits(s, channelId, body);
 		ChannelChainTip tip = chainTip(s);
-		sendOrQueue(channelId, outboxEntry(random.nextLong(),
+		return sendOrQueue(channelId, outboxEntry(random.nextLong(),
 				ChannelQueuedItem.Kind.POST, -1L, body, ttlSeconds, false,
 				tip == null ? -1L : tip.seqNum), false);
 	}
@@ -3484,14 +3538,14 @@ class ChannelManagerImpl
 		}
 	}
 
-	private void publishPostLocked(byte[] channelId, String body,
+	private long publishPostLocked(byte[] channelId, String body,
 			long ttlSeconds) throws DbException {
-		publishPostLocked(channelId, body, ttlSeconds,
+		return publishPostLocked(channelId, body, ttlSeconds,
 				Collections.<ChannelPost.ChannelAttachment>emptyList(),
 				Collections.<String, byte[]>emptyMap());
 	}
 
-	private void publishPostLocked(byte[] channelId, String body,
+	private long publishPostLocked(byte[] channelId, String body,
 			long ttlSeconds,
 			List<ChannelPost.ChannelAttachment> attachments,
 			java.util.Map<String, byte[]> blobsToStore)
@@ -3521,10 +3575,24 @@ class ChannelManagerImpl
 			}
 		}
 		ChannelState updated = withSeq(s, nextSeq);
-		store.putChannel(updated);
-		applyEditMark(updated, post);
+		boolean recorded = true;
+		try {
+			store.putChannel(updated);
+		} catch (DbException e) {
+			recorded = false;
+		}
+		try {
+			applyEditMark(updated, post);
+		} catch (DbException e) {
+			recorded = false;
+		}
 		eventBus.broadcast(new ChannelPostReceivedEvent(channelId, nextSeq,
 				true));
+		if (!recorded) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelSentNotSavedException(nextSeq);
+		}
+		return nextSeq;
 	}
 
 	@Nullable
@@ -4029,13 +4097,21 @@ class ChannelManagerImpl
 				? Collections.<ChannelPost>emptyList() : editsOf(s, target);
 		boolean autoUnpin = s.getPinnedPostSeq() == seqNum;
 		postTombstoneStore.add(channelId, seqNum);
-		publishPostLocked(channelId,
-				ChannelPostMarkers.deletion(channelId, seqNum), 0L);
+		org.zerionproject.app.api.channel.ChannelSentNotSavedException
+				unrecorded = null;
+		try {
+			publishPostLocked(channelId,
+					ChannelPostMarkers.deletion(channelId, seqNum), 0L);
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException published) {
+			unrecorded = published;
+		}
 		dropDeletedPost(channelId, seqNum, edits);
 		if (autoUnpin) {
 			setPinnedPostSeqLocked(channelId,
 					ChannelState.NO_PINNED_POST);
 		}
+		if (unrecorded != null) throw unrecorded;
 	}
 
 	private void dropDeletedPost(byte[] channelId, long target,
@@ -4054,6 +4130,7 @@ class ChannelManagerImpl
 		reactionStore.retainPosts(channelId, held);
 		commentStore.retainPosts(channelId, held);
 		store.setUnread(channelId, store.posts().meta(channelId).unread());
+		announceRemoved(channelId, gone);
 	}
 
 	private void applyDeletionMark(ChannelState s, ChannelPost post)
@@ -4089,7 +4166,8 @@ class ChannelManagerImpl
 			}
 		}
 		if (!superseded.isEmpty()) {
-			store.posts().remove(channelId, superseded, false);
+			announceRemoved(channelId,
+					store.posts().remove(channelId, superseded, false));
 		}
 		if (target.getFormatVersion() != ChannelPost.FORMAT_V2) return;
 		boolean readable = s.isPublicChannel() || (target.isErased()
@@ -4592,6 +4670,12 @@ class ChannelManagerImpl
 	@Override
 	public void postComment(byte[] channelId, long parentPostSeqNum,
 			String body) throws DbException {
+		postCommentWithId(channelId, parentPostSeqNum, body);
+	}
+
+	@Override
+	public long postCommentWithId(byte[] channelId, long parentPostSeqNum,
+			String body) throws DbException {
 		String trimmed = body.trim();
 		if (trimmed.isEmpty()
 				|| trimmed.length()
@@ -4601,14 +4685,15 @@ class ChannelManagerImpl
 		ChannelState s = store.getChannel(channelId);
 		if (s == null) throw new DbException();
 		if (!discussionStore.isEnabledFor(channelId, parentPostSeqNum)) {
-			throw new DbException();
+			throw new org.zerionproject.app.api.channel
+					.ChannelRefusedException();
 		}
 		long commentId = random.nextLong();
 		if (!s.weArePublisher()) {
 			sendOrQueue(channelId, outboxEntry(commentId,
 					ChannelQueuedItem.Kind.COMMENT, parentPostSeqNum, trimmed,
 					0L, false, -1L), false);
-			return;
+			return commentId;
 		}
 		KeyPair keys = signingKeys(s);
 		HybridSignaturePublicKey pub =
@@ -4643,6 +4728,7 @@ class ChannelManagerImpl
 			fireEvent(channelId,
 					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		});
+		return commentId;
 	}
 
 	static String boundedName(String name) {
@@ -6300,8 +6386,9 @@ class ChannelManagerImpl
 			}
 		}
 		if (!expired.isEmpty()) {
-			for (ChannelPost gone : store.posts().remove(channelId, expired,
-					false)) {
+			List<ChannelPost> purged = store.posts().remove(channelId, expired,
+					false);
+			for (ChannelPost gone : purged) {
 				for (ChannelPost.ChannelAttachment a : gone.getAttachments()) {
 					blobStore.removeBlob(channelId, a.getBlobHash());
 				}
@@ -6311,6 +6398,7 @@ class ChannelManagerImpl
 			commentStore.retainPosts(channelId, held);
 			store.setUnread(channelId,
 					store.posts().meta(channelId).unread());
+			announceRemoved(channelId, purged);
 		}
 		if (s != null) {
 			java.util.Set<Long> waiting = store.posts().meta(channelId).pending;
@@ -6495,12 +6583,14 @@ class ChannelManagerImpl
 			}
 		}
 		if (!victims.isEmpty()) {
-			for (ChannelPost gone : store.posts().remove(channelId, victims,
-					true)) {
+			List<ChannelPost> givenUp = store.posts().remove(channelId,
+					victims, true);
+			for (ChannelPost gone : givenUp) {
 				for (ChannelPost.ChannelAttachment a : gone.getAttachments()) {
 					blobStore.removeBlob(channelId, a.getBlobHash());
 				}
 			}
+			announceRemoved(channelId, givenUp);
 		}
 		store.posts().append(channelId, post, hash,
 				Collections.<String, org.zerionproject.core.api.settings
@@ -6666,7 +6756,7 @@ class ChannelManagerImpl
 		return ChannelStore.hex(channelId) + ":" + itemId;
 	}
 
-	private void sendOrQueue(byte[] channelId,
+	private long sendOrQueue(byte[] channelId,
 			ChannelOutboxStore.Entry entry, boolean replaces)
 			throws DbException {
 		java.util.concurrent.locks.ReentrantLock lock =
@@ -6683,9 +6773,9 @@ class ChannelManagerImpl
 					? withTargetExpiry(channelId, entry) : entry;
 			if (replaces && takeOver(channelId, fresh)) {
 				settleTakenOver(channelId, fresh);
-			} else {
-				sendNowOrKeep(channelId, fresh, replaces);
+				return -1L;
 			}
+			return sendNowOrKeep(channelId, fresh, replaces);
 		} finally {
 			lock.unlock();
 		}
@@ -6742,10 +6832,10 @@ class ChannelManagerImpl
 		boolean untouched = now.failures == 0 && !now.tried;
 		throw new org.zerionproject.app.api.channel
 				.ChannelRequestQueuedException(untouched
-				&& flow == Flow.WAITING);
+				&& flow == Flow.WAITING, entry.id);
 	}
 
-	private void sendNowOrKeep(byte[] channelId,
+	private long sendNowOrKeep(byte[] channelId,
 			ChannelOutboxStore.Entry entry, boolean replaces)
 			throws DbException {
 		Flow flow = ownerAnswers(channelId);
@@ -6755,14 +6845,14 @@ class ChannelManagerImpl
 		}
 		Sent sent = flow == Flow.CLEAR ? send(channelId, entry)
 				: Sent.UNREACHABLE;
-		acceptedPostSeqs.remove(entry.id);
+		Long accepted = acceptedPostSeqs.remove(entry.id);
 		if (sent == Sent.SENT) {
 			if (replaces && outbox().removeLike(channelId, entry.kind,
 					entry.postSeq)) {
 				fireEvent(channelId,
 						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 			}
-			return;
+			return accepted == null ? -1L : accepted;
 		}
 		if (sent == Sent.WAIT) {
 			throw new org.zerionproject.app.api.channel
@@ -6772,9 +6862,14 @@ class ChannelManagerImpl
 			throw new org.zerionproject.app.api.channel
 					.ChannelNoAccessException();
 		}
+		if (sent == Sent.REFUSED) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelRefusedException();
+		}
 		if (sent != Sent.UNREACHABLE) throw new DbException();
 		keep(channelId, flow == Flow.CLEAR ? entry.markedTried() : entry,
 				replaces, flow == Flow.WAITING);
+		return -1L;
 	}
 
 	private boolean reactionTooSoon(byte[] channelId,
@@ -6828,7 +6923,7 @@ class ChannelManagerImpl
 		fireEvent(channelId, ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
 		if (!kept[0]) throw new DbException();
 		throw new org.zerionproject.app.api.channel
-				.ChannelRequestQueuedException(behind);
+				.ChannelRequestQueuedException(behind, entry.id);
 	}
 
 	private void flushOutboxSafely(byte[] channelId) {
@@ -6992,6 +7087,9 @@ class ChannelManagerImpl
 		} catch (org.zerionproject.app.api.channel
 				.ChannelPostTooLongException tooLong) {
 			return Sent.REFUSED;
+		} catch (org.zerionproject.app.api.channel
+				.ChannelSentNotSavedException sentAnyway) {
+			return Sent.SENT;
 		}
 	}
 
@@ -7137,13 +7235,20 @@ class ChannelManagerImpl
 		}
 		ChannelComment row = new ChannelComment(e.postSeq, e.id, e.text,
 				authorName, signerEd, signerMl, ts, sig);
-		underLock(channelId, () -> {
-			if (store.getChannel(channelId) == null) throw new DbException();
-			bindOwnKey(s, signerEd, signerMl);
-			commentStore.putComment(channelId, row);
-			fireEvent(channelId,
-					ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
-		});
+		try {
+			underLock(channelId, () -> {
+				if (store.getChannel(channelId) == null) {
+					throw new DbException();
+				}
+				bindOwnKey(s, signerEd, signerMl);
+				commentStore.putComment(channelId, row);
+				fireEvent(channelId,
+						ChannelStateChangedEvent.Kind.MANIFEST_UPDATED);
+			});
+		} catch (DbException stored) {
+			throw new org.zerionproject.app.api.channel
+					.ChannelSentNotSavedException(e.id);
+		}
 		return Sent.SENT;
 	}
 

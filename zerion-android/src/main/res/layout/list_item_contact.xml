@@ -107,7 +107,7 @@
 		android:minWidth="22dp"
 		android:paddingStart="7dp"
 		android:paddingEnd="7dp"
-		android:textColor="@color/zerion_on_accent"
+		android:textColor="?attr/zerionColorOnAccent"
 		android:textSize="12sp"
 		android:textStyle="bold"
 		app:layout_constraintBottom_toBottomOf="@+id/subtitleRow"

@@ -4,7 +4,10 @@
 
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/zerion_surface_elevated" />
+            <solid android:color="?attr/zerionColorSurfaceVariant" />
+            <stroke
+                android:width="@dimen/message_bubble_in_stroke"
+                android:color="?attr/zerionColorOutline" />
             <corners android:radius="12dp" />
         </shape>
     </item>

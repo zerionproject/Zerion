@@ -9,6 +9,7 @@ import org.zerionproject.app.api.messaging.LinkPreview;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -27,6 +28,7 @@ public abstract class ConversationItem {
 	@Nullable
 	protected String text;
 	private final MessageId id;
+	private final String key;
 	private final GroupId groupId;
 	private final long time, autoDeleteTimer;
 	private final boolean isIncoming;
@@ -42,6 +44,7 @@ public abstract class ConversationItem {
 		this.layoutRes = layoutRes;
 		this.text = null;
 		this.id = h.getId();
+		this.key = toHexString(id.getBytes());
 		this.groupId = h.getGroupId();
 		this.time = h.getTimestamp();
 		this.autoDeleteTimer = h.getAutoDeleteTimer();
@@ -63,7 +66,47 @@ public abstract class ConversationItem {
 	}
 
 	String getKey() {
-		return toHexString(id.getBytes());
+		return key;
+	}
+
+	static final int UNCHANGED = 0;
+	static final int STATE_CHANGED = 1;
+	static final int CONTENT_CHANGED = 2;
+
+	int updateFrom(ConversationItem fresh) {
+		int change = UNCHANGED;
+		if (sent != fresh.sent || seen != fresh.seen) change = STATE_CHANGED;
+		if (!Objects.equals(text, fresh.text)
+				|| !Objects.equals(replyToMessageId, fresh.replyToMessageId)
+				|| !Objects.equals(replyToText, fresh.replyToText)
+				|| !Objects.equals(replyToLocal, fresh.replyToLocal)
+				|| replyToEdited != fresh.replyToEdited) {
+			change = CONTENT_CHANGED;
+		}
+		read = fresh.read;
+		sent = fresh.sent;
+		seen = fresh.seen;
+		text = fresh.text;
+		replyToMessageId = fresh.replyToMessageId;
+		replyToText = fresh.replyToText;
+		replyToLocal = fresh.replyToLocal;
+		replyToEdited = fresh.replyToEdited;
+		return change;
+	}
+
+	boolean showsTheSameAs(ConversationItem o) {
+		return getClass() == o.getClass() && layoutRes == o.layoutRes
+				&& id.equals(o.id) && time == o.time
+				&& autoDeleteTimer == o.autoDeleteTimer
+				&& isIncoming == o.isIncoming && sent == o.sent
+				&& seen == o.seen && showTimerNotice == o.showTimerNotice
+				&& Objects.equals(text, o.text)
+				&& Objects.equals(replyToMessageId, o.replyToMessageId)
+				&& Objects.equals(replyToText, o.replyToText)
+				&& Objects.equals(replyToLocal, o.replyToLocal)
+				&& replyToEdited == o.replyToEdited
+				&& reactions.equals(o.reactions)
+				&& Objects.equals(linkPreview, o.linkPreview);
 	}
 
 	GroupId getGroupId() {

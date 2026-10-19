@@ -6,6 +6,7 @@ import org.junit.rules.TemporaryFolder;
 import org.zerionproject.tor.TorWrapper.Observer;
 import org.zerionproject.tor.TorWrapper.TorState;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -75,6 +76,59 @@ public class TorEventsTest {
 		w.unrecognized("HS_DESC", "UPLOAD_FAILED " + ONION);
 		w.unrecognized("SOMETHING", "UPLOADED " + ONION);
 		assertTrue(seen.toString(), seen.isEmpty());
+	}
+
+	@Test
+	public void directoryLookupsAndTheirAnswersReachTheObserver()
+			throws Exception {
+		TestTorWrapper w = wrapper();
+		w.setObserver(new Observer() {
+			@Override
+			public void onState(TorState s) {
+			}
+
+			@Override
+			public void onBootstrapPercentage(int percentage) {
+			}
+
+			@Override
+			public void onHsDescriptorUpload(String onion) {
+				seen.add("uploaded");
+			}
+
+			@Override
+			public void onClockSkewDetected(long skewSeconds) {
+			}
+
+			@Override
+			public void onHsDirectoryRequest() {
+				seen.add("request");
+			}
+
+			@Override
+			public void onHsDirectoryAnswer() {
+				seen.add("answer");
+			}
+		});
+		String dir = " NO_AUTH $0123456789ABCDEF0123456789ABCDEF01234567~relay";
+		w.unrecognized("HS_DESC", "REQUESTED " + ONION + dir
+				+ " BLINDED HSDIR_INDEX=00");
+		w.unrecognized("HS_DESC", "FAILED " + ONION + dir
+				+ " BLINDED REASON=NOT_FOUND");
+		w.unrecognized("HS_DESC", "RECEIVED " + ONION + dir + " BLINDED");
+		w.unrecognized("HS_DESC", "UPLOAD " + ONION + dir
+				+ " BLINDED HSDIR_INDEX=00");
+		w.unrecognized("HS_DESC", "UPLOADED " + ONION + dir);
+		w.unrecognized("HS_DESC", "FAILED " + ONION + dir
+				+ " BLINDED REASON=UPLOAD_REJECTED");
+		w.unrecognized("HS_DESC", "FAILED " + ONION + dir);
+		w.unrecognized("HS_DESC", "FAILED " + ONION
+				+ " NO_AUTH UNKNOWN REASON=QUERY_NO_HSDIR");
+		w.unrecognized("HS_DESC", "CREATED " + ONION + " UNKNOWN UNKNOWN X");
+		w.unrecognized("HS_DESC", "REQUESTEDX " + ONION);
+		w.unrecognized("STATUS_CLIENT", "REQUESTED " + ONION);
+		assertEquals(Arrays.asList("request", "answer", "answer", "request",
+				"uploaded", "answer"), seen);
 	}
 
 	@Test
@@ -152,5 +206,56 @@ public class TorEventsTest {
 				"NOTICE BOOTSTRAP PROGRESS=10 TAG=conn SUMMARY=\"x\"");
 		assertEquals(Arrays.asList(TorState.NOT_STARTED), states);
 		assertEquals(TorState.NOT_STARTED, w.getTorState());
+	}
+
+	@Test
+	public void orConnectionResultsReachTheObserverWhileTheNetworkIsOn()
+			throws Exception {
+		TestTorWrapper w = wrapper();
+		List<String> relays = new ArrayList<>();
+		w.setObserver(new Observer() {
+			@Override
+			public void onState(TorState s) {
+			}
+
+			@Override
+			public void onBootstrapPercentage(int percentage) {
+			}
+
+			@Override
+			public void onHsDescriptorUpload(String onion) {
+			}
+
+			@Override
+			public void onClockSkewDetected(long skewSeconds) {
+			}
+
+			@Override
+			public void onRelayConnection(String fingerprint,
+					boolean connected) {
+				relays.add(fingerprint + (connected ? " up" : " down"));
+			}
+		});
+		String fp = "0123456789ABCDEF0123456789ABCDEF01234567";
+		w.orConnStatus("FAILED", "$" + fp + "~bridge");
+		assertTrue("the network is off, so nothing counts", relays.isEmpty());
+		try {
+			w.enableNetwork(true);
+		} catch (IOException expected) {
+		}
+		w.orConnStatus("LAUNCHED", "$" + fp);
+		w.orConnStatus("CONNECTED", "$" + fp + "~bridge");
+		w.orConnStatus("FAILED", "$" + fp.toLowerCase(java.util.Locale.US));
+		w.orConnStatus("CLOSED", "$" + fp);
+		w.orConnStatus("FAILED", "45.33.1.1:443");
+		w.orConnStatus("FAILED", "$" + fp.substring(2));
+		assertEquals(Arrays.asList(fp + " up", fp + " down"), relays);
+		try {
+			w.enableNetwork(false);
+		} catch (IOException expected) {
+		}
+		w.orConnStatus("FAILED", "$" + fp);
+		assertEquals("failures while the network goes off are not counted",
+				2, relays.size());
 	}
 }

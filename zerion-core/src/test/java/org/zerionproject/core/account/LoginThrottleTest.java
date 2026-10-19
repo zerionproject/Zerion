@@ -4,6 +4,8 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -215,5 +217,29 @@ public class LoginThrottleTest {
 		String[] names = testDir.list();
 		assertTrue(names != null);
 		for (String n : names) assertFalse(n.endsWith(".tmp"));
+	}
+
+	@Test
+	public void aDurableWriteWaitsForAReaderThatHoldsTheFileForAMoment()
+			throws Exception {
+		File target = new File(testDir, "db.key");
+		LoginThrottle.writeDurably(target, "one".getBytes("UTF-8"));
+		FileInputStream reader = new FileInputStream(target);
+		Thread closer = new Thread(() -> {
+			try {
+				Thread.sleep(300);
+				reader.close();
+			} catch (IOException | InterruptedException ignored) {
+			}
+		});
+		closer.start();
+		try {
+			LoginThrottle.writeDurably(target, "two".getBytes("UTF-8"));
+		} finally {
+			closer.join();
+			reader.close();
+		}
+		assertEquals("two", new String(java.nio.file.Files.readAllBytes(
+				target.toPath()), "UTF-8"));
 	}
 }

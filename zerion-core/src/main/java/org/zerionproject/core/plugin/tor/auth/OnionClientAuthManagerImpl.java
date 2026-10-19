@@ -14,6 +14,7 @@ import org.zerionproject.core.api.data.MetadataParser;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.NoSuchContactException;
+import org.zerionproject.transport.ZtpPoller;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
@@ -23,11 +24,13 @@ import org.zerionproject.core.api.lifecycle.LifecycleManager.OpenDatabaseHook;
 import org.zerionproject.core.api.plugin.OnionClientAuthManager;
 import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
 import org.zerionproject.core.api.properties.event.RemoteTransportPropertiesUpdatedEvent;
 import org.zerionproject.core.api.sync.Group;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.InvalidMessageException;
+import org.zerionproject.core.api.sync.event.MessageAddedEvent;
 import org.zerionproject.core.api.sync.validation.IncomingMessageHook;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.system.TaskScheduler;
@@ -41,6 +44,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -54,6 +58,7 @@ import javax.inject.Provider;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.AUTH_CONFIRMED;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.AUTH_NEGOTIATING;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.AUTH_REQUIRED;
+import static org.zerionproject.core.api.plugin.B4Constants.OLD_ADDRESS_SILENCE_LIMIT_MS;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.LEGACY;
 import static org.zerionproject.core.api.plugin.OnionClientAuthManager.State.REVOKED;
 import static org.zerionproject.core.api.sync.Group.Visibility.SHARED;
@@ -77,7 +82,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	static final long NEGOTIATION_TIMEOUT_MS = TimeUnit.DAYS.toMillis(7);
 	static final long MIN_ROTATION_PERIOD_MS = TimeUnit.DAYS.toMillis(28);
 	static final long MAX_ROTATION_PERIOD_MS = TimeUnit.DAYS.toMillis(35);
-	static final long RETIRE_DEADLINE_MS = TimeUnit.DAYS.toMillis(30);
 	static final long TICK_MS = TimeUnit.MINUTES.toMillis(15);
 	static final long REPAIR_DELAY_MS = TimeUnit.HOURS.toMillis(1);
 	static final long MAX_REPAIR_DELAY_MS = TimeUnit.DAYS.toMillis(1);
@@ -87,6 +91,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	static final long REKEY_INTERVAL_MS = TimeUnit.DAYS.toMillis(1);
 	static final long SEEN_WRITE_MS = TimeUnit.HOURS.toMillis(1);
 	static final int MAX_AUTHORIZED_CLIENTS = 200;
+	static final long HOLD_NOTICE_MS = TimeUnit.DAYS.toMillis(1);
 	static final int REMOTE_PORT = 80;
 
 	private final DatabaseComponent db;
@@ -100,6 +105,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	private final Clock clock;
 	private final Executor ioExecutor;
 	private final TaskScheduler scheduler;
+	private final OnionAuthDebugHooks hooks;
 
 	private final Object torLock = new Object();
 	private final Object serviceLock = new Object();
@@ -110,11 +116,16 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	@Nullable
 	private ProbeDialer probeDialer = null;
 	@Nullable
-	private String publishedOnion = null;
-	private Set<String> publishedKeys = new HashSet<>();
+	private volatile String publishedOnion = null;
+	private volatile Set<String> publishedKeys = new HashSet<>();
+	@Nullable
+	private volatile String publishedOldOnion = null;
+	private volatile Set<String> publishedOldKeys = new HashSet<>();
 
 	private final Map<ContactId, Cached> cache = new ConcurrentHashMap<>();
 	private final Map<ContactId, Long> seenWritten = new ConcurrentHashMap<>();
+	private final Map<ContactId, Long> contactWritten =
+			new ConcurrentHashMap<>();
 	private final java.security.SecureRandom rotationRandom =
 			new java.security.SecureRandom();
 
@@ -155,7 +166,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
-	@Inject
 	OnionClientAuthManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
 			ContactGroupFactory contactGroupFactory,
 			MetadataParser metadataParser, OnionAuthStore store,
@@ -163,6 +173,20 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			Provider<TransportPropertyManager> transportPropertyManager,
 			EventBus eventBus, Clock clock, @IoExecutor Executor ioExecutor,
 			TaskScheduler scheduler) {
+		this(db, clientHelper, contactGroupFactory, metadataParser, store,
+				crypto, transportPropertyManager, eventBus, clock, ioExecutor,
+				scheduler, Optional.empty());
+	}
+
+	@Inject
+	OnionClientAuthManagerImpl(DatabaseComponent db, ClientHelper clientHelper,
+			ContactGroupFactory contactGroupFactory,
+			MetadataParser metadataParser, OnionAuthStore store,
+			CryptoComponent crypto,
+			Provider<TransportPropertyManager> transportPropertyManager,
+			EventBus eventBus, Clock clock, @IoExecutor Executor ioExecutor,
+			TaskScheduler scheduler, Optional<OnionAuthDebugHooks> hooks) {
+		this.hooks = hooks.orElse(OnionAuthDebugHooks.NONE);
 		this.db = db;
 		this.clientHelper = clientHelper;
 		this.contactGroupFactory = contactGroupFactory;
@@ -245,13 +269,33 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			db.transaction(false, txn -> {
 				OnionAuthRecord r = store.load(txn, c);
 				if (!r.holdsCommit()) return;
-				r.lastSeenMs = now;
+				r.lastSeenMs = Math.max(r.lastSeenMs, now);
 				r.silenceRepairs = 0;
 				r.nextSilenceRepairMs = 0;
 				if (!r.rekeying) {
 					r.openDials = 0;
 					r.nextOpenDialMs = 0;
 				}
+				store.save(txn, r);
+			});
+		} catch (DbException | RuntimeException ignored) {
+		}
+	}
+
+	private void contacted(ContactId c) {
+		long now = clock.currentTimeMillis();
+		Long written = contactWritten.get(c);
+		if (written != null && now - written < SEEN_WRITE_MS) return;
+		contactWritten.put(c, now);
+		ioExecutor.execute(() -> recordContact(c, now));
+	}
+
+	private void recordContact(ContactId c, long now) {
+		try {
+			db.transaction(false, txn -> {
+				OnionAuthRecord r = store.load(txn, c);
+				if (!r.holdsCommit() || r.lastContactMs >= now) return;
+				r.lastContactMs = now;
 				store.save(txn, r);
 			});
 		} catch (DbException | RuntimeException ignored) {
@@ -466,7 +510,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				&& now - r.rekeyedMs < REKEY_INTERVAL_MS) {
 			return;
 		}
-		if (r.state == LEGACY) startNegotiation(txn, r);
+		if (r.state == LEGACY) {
+			if (hooks.skipsNewNegotiations(txn)) return;
+			startNegotiation(txn, r);
+		}
 		if (r.peerPublicKey != null && !newKey && msg.onion != null
 				&& msg.onion.equals(r.peerOnion) && msg.keyVersion == r.peerGen) {
 			return;
@@ -495,7 +542,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		r.committedPeerGen = r.peerGen;
 		r.rekeying = true;
 		r.rekeyedMs = now;
-		r.negotiationStartedMs = now;
 		r.peerPublicKey = msg.publicKey;
 		if (msg.onion != null) {
 			r.peerOnion = msg.onion;
@@ -748,7 +794,9 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 		ServiceRecord svc = store.loadService(txn);
 		if (r.rekeying && matchesCommittedRound(r, msg, svc)) {
+			r.rotateAcked = true;
 			returnToCommittedRound(txn, r, true);
+			retireOldOnceAcknowledged(txn, svc);
 			return;
 		}
 		OnionAuthCommitCheck.Verdict v = OnionAuthCommitCheck.check(r, msg,
@@ -760,11 +808,20 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 		if (v != OnionAuthCommitCheck.Verdict.ACCEPT) return;
 		r.peerCommitReceived = true;
+		r.rotateAcked = true;
 		if (r.state == AUTH_NEGOTIATING) r.state = AUTH_CONFIRMED;
 		maybeCommit(txn, r);
 		if (r.commitSent && !r.lockedIn()) lockIn(txn, r);
 		store.save(txn, r);
 		cache(r);
+		retireOldOnceAcknowledged(txn, svc);
+	}
+
+	private void retireOldOnceAcknowledged(Transaction txn, ServiceRecord svc)
+			throws DbException {
+		if (svc.oldOnion != null && allAcked(txn)) {
+			txn.attach(() -> ioExecutor.execute(this::retireOld));
+		}
 	}
 
 	private void onRotate(Transaction txn, OnionAuthRecord r,
@@ -793,16 +850,44 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		if (msg.keyVersion != svc.gen) return;
 		r.rotateAcked = true;
 		store.save(txn, r);
-		if (svc.oldOnion != null && allAcked(txn)) {
-			txn.attach(() -> ioExecutor.execute(this::retireOld));
-		}
+		retireOldOnceAcknowledged(txn, svc);
 	}
 
 	private boolean allAcked(Transaction txn) throws DbException {
+		ServiceRecord svc = store.loadService(txn);
 		for (OnionAuthRecord r : store.loadAll(txn)) {
-			if (r.authorizesPeer() && !r.rotateAcked) return false;
+			if (holdsOldAddress(txn, r, svc)) return false;
 		}
 		return true;
+	}
+
+	private boolean holdsOldAddress(Transaction txn, OnionAuthRecord r,
+			ServiceRecord svc) throws DbException {
+		if (svc.oldOnion == null) return false;
+		if (!r.authorizesPeer() || r.rotateAcked) return false;
+		if (lockedInSinceRotation(r, svc)) return false;
+		return !silentTooLong(txn, r);
+	}
+
+	private boolean silentTooLong(Transaction txn, OnionAuthRecord r)
+			throws DbException {
+		long contact = Math.max(r.lastSeenMs, r.lastContactMs);
+		if (contact <= 0) return false;
+		if (clock.currentTimeMillis() - contact < OLD_ADDRESS_SILENCE_LIMIT_MS) {
+			return false;
+		}
+		try {
+			return !ZtpPoller.isDesignatedDialer(
+					db.getContact(txn, r.contactId));
+		} catch (NoSuchContactException e) {
+			return false;
+		}
+	}
+
+	private static boolean lockedInSinceRotation(OnionAuthRecord r,
+			ServiceRecord svc) {
+		return svc.oldOnion != null && r.lockedIn()
+				&& r.negotiationStartedMs > svc.oldSinceMs;
 	}
 
 	@Override
@@ -830,9 +915,32 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	public OnionAuthDiagnostics diagnostics(ContactId c) throws DbException {
 		return db.transactionWithResult(true, txn -> {
 			OnionAuthRecord r = store.load(txn, c);
+			ServiceRecord svc = store.loadService(txn);
 			return new OnionAuthDiagnostics(r.state, r.commitSent, r.repairs,
-					r.rekeying, r.silenceRepairs, r.openDials,
-					store.loadService(txn).gen, r.peerGen);
+					r.rekeying, r.silenceRepairs, r.openDials, svc.gen,
+					r.peerGen, holdsOldAddress(txn, r, svc));
+		});
+	}
+
+	public List<ContactId> getContactsHoldingOldAddress() throws DbException {
+		long now = clock.currentTimeMillis();
+		return db.transactionWithResult(true, txn -> {
+			List<ContactId> out = new ArrayList<>();
+			ServiceRecord svc = store.loadService(txn);
+			if (svc.oldOnion == null || now - svc.oldSinceMs < HOLD_NOTICE_MS) {
+				return out;
+			}
+			for (OnionAuthRecord r : store.loadAll(txn)) {
+				if (holdsOldAddress(txn, r, svc)) out.add(r.contactId);
+			}
+			return out;
+		});
+	}
+
+	public long getLastContactMs(ContactId c) throws DbException {
+		return db.transactionWithResult(true, txn -> {
+			OnionAuthRecord r = store.load(txn, c);
+			return Math.max(r.lastSeenMs, r.lastContactMs);
 		});
 	}
 
@@ -857,7 +965,12 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	@Override
 	public void eventOccurred(Event e) {
-		if (e instanceof RemoteTransportPropertiesUpdatedEvent) {
+		if (e instanceof ConnectionOpenedEvent) {
+			contacted(((ConnectionOpenedEvent) e).getContactId());
+		} else if (e instanceof MessageAddedEvent) {
+			ContactId c = ((MessageAddedEvent) e).getContactId();
+			if (c != null) contacted(c);
+		} else if (e instanceof RemoteTransportPropertiesUpdatedEvent) {
 			if (TorConstants.ID.equals(((RemoteTransportPropertiesUpdatedEvent) e)
 					.getTransportId())) {
 				ioExecutor.execute(this::evaluateOffers);
@@ -878,6 +991,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					if (v == null || v.isEmpty()) continue;
 					OnionAuthRecord r = store.load(txn, e.getKey());
 					if (r.state != LEGACY) continue;
+					if (hooks.skipsNewNegotiations(txn)) continue;
 					startNegotiation(txn, r);
 					sendOffer(txn, r);
 				}
@@ -980,13 +1094,13 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		List<byte[]> keys = db.transactionWithResult(true, this::authorizedKeys);
 		ServiceRecord svc = db.transactionWithResult(true, store::loadService);
 		if (keys.isEmpty()) {
-			if (svc.onion != null) {
+			if (svc.onion != null || svc.oldOnion != null) {
 				publishedOnion = null;
-				try {
-					ctl.remove(svc.onion);
-				} catch (IOException ignored) {
-				}
+				publishedOldOnion = null;
+				removeQuietly(ctl, svc.onion);
+				removeQuietly(ctl, svc.oldOnion);
 				svc.onion = null;
+				clearOld(svc);
 				db.transaction(false, txn -> store.saveService(txn, svc));
 			}
 			return false;
@@ -995,6 +1109,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			throw new OnionServiceControl.CapacityException();
 		}
 		Set<String> keySet = keySet(keys);
+		try {
+			republishOld(ctl, target, svc, keys, keySet);
+		} catch (IOException ignored) {
+		}
 		if (svc.onion != null && svc.onion.equals(publishedOnion)
 				&& keySet.equals(publishedKeys)) {
 			return false;
@@ -1019,6 +1137,53 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		publishedOnion = p.onion;
 		publishedKeys = keySet;
 		return true;
+	}
+
+	private void republishCurrent(OnionServiceControl ctl, String target,
+			ServiceRecord svc, List<byte[]> keys, Set<String> keySet)
+			throws IOException {
+		if (svc.onion == null || svc.privateKey == null) return;
+		if (svc.onion.equals(publishedOnion) && keySet.equals(publishedKeys)) {
+			return;
+		}
+		publishedOnion = null;
+		removeQuietly(ctl, svc.onion);
+		ctl.publish(svc.privateKey, target, REMOTE_PORT, keys);
+		publishedOnion = svc.onion;
+		publishedKeys = keySet;
+	}
+
+	private void republishOld(OnionServiceControl ctl, String target,
+			ServiceRecord svc, List<byte[]> keys, Set<String> keySet)
+			throws IOException {
+		if (svc.oldOnion == null || svc.oldPrivateKey == null) {
+			publishedOldOnion = null;
+			return;
+		}
+		if (svc.oldOnion.equals(publishedOldOnion)
+				&& keySet.equals(publishedOldKeys)) {
+			return;
+		}
+		publishedOldOnion = null;
+		removeQuietly(ctl, svc.oldOnion);
+		ctl.publish(svc.oldPrivateKey, target, REMOTE_PORT, keys);
+		publishedOldOnion = svc.oldOnion;
+		publishedOldKeys = keySet;
+	}
+
+	private static void removeQuietly(OnionServiceControl ctl,
+			@Nullable String onion) {
+		if (onion == null) return;
+		try {
+			ctl.remove(onion);
+		} catch (IOException ignored) {
+		}
+	}
+
+	private static void clearOld(ServiceRecord svc) {
+		svc.oldOnion = null;
+		svc.oldPrivateKey = null;
+		svc.oldSinceMs = 0;
 	}
 
 	private static Set<String> keySet(List<byte[]> keys) {
@@ -1096,42 +1261,32 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	}
 
 	private void refeedLocked(OnionServiceControl ctl) {
-			publishedOnion = null;
-			try {
-				ServiceRecord pending = db.transactionWithResult(true,
-						store::loadService);
-				if (pending.revocationPending) rotateLocked(true, null);
-				else republishService(ctl);
-				ServiceRecord svc = db.transactionWithResult(true,
-						store::loadService);
-				if (svc.oldOnion != null && svc.oldPrivateKey != null) {
-					String target;
-					synchronized (torLock) {
-						target = authorizedTarget;
-					}
-					List<byte[]> keys = db.transactionWithResult(true,
-							this::authorizedKeys);
-					if (!keys.isEmpty() && target != null) {
-						ctl.publish(svc.oldPrivateKey, target, REMOTE_PORT,
-								keys);
-					}
-				}
-				for (OnionAuthRecord r : db.transactionWithResult(true,
-						store::loadAll)) {
-					if (r.state == LEGACY || r.state == REVOKED) continue;
-					if (r.lockedIn()) {
-						if (r.peerOnion != null && r.dialPrivateKey != null) {
-							try {
-								ctl.addClientKey(r.peerOnion, r.dialPrivateKey);
-							} catch (IOException ignored) {
-							}
+		publishedOnion = null;
+		publishedOldOnion = null;
+		try {
+			ServiceRecord pending = db.transactionWithResult(true,
+					store::loadService);
+			if (pending.revocationPending) rotateLocked(true, null);
+			republishService(ctl);
+		} catch (DbException | IOException ignored) {
+		}
+		try {
+			for (OnionAuthRecord r : db.transactionWithResult(true,
+					store::loadAll)) {
+				if (r.state == LEGACY || r.state == REVOKED) continue;
+				if (r.lockedIn()) {
+					if (r.peerOnion != null && r.dialPrivateKey != null) {
+						try {
+							ctl.addClientKey(r.peerOnion, r.dialPrivateKey);
+						} catch (IOException ignored) {
 						}
-					} else if (r.peerPublicKey != null) {
-						credentialAndAnswer(ctl, r.contactId, false);
 					}
+				} else if (r.peerPublicKey != null) {
+					credentialAndAnswer(ctl, r.contactId, false);
 				}
-			} catch (DbException | IOException ignored) {
 			}
+		} catch (DbException ignored) {
+		}
 	}
 
 	private void revoke(RevocationWork w) {
@@ -1185,45 +1340,52 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		try {
 			List<byte[]> keys = db.transactionWithResult(true, this::authorizedKeys);
 			ServiceRecord svc = db.transactionWithResult(true, store::loadService);
-			if (svc.onion == null && keys.isEmpty()) return;
-			publishedOnion = null;
-			if (revocation) {
-				if (svc.onion != null) {
-					try {
-						ctl.remove(svc.onion);
-					} catch (IOException ignored) {
-					}
-				}
-				if (svc.oldOnion != null) {
-					try {
-						ctl.remove(svc.oldOnion);
-					} catch (IOException ignored) {
-					}
-				}
-				svc.oldOnion = null;
-				svc.oldPrivateKey = null;
-				svc.oldSinceMs = 0;
-			} else if (svc.onion != null) {
-				svc.oldOnion = svc.onion;
-				svc.oldPrivateKey = svc.privateKey;
-				svc.oldSinceMs = clock.currentTimeMillis();
-			}
-			svc.gen++;
-			svc.lastRotationMs = clock.currentTimeMillis();
-			svc.rotationPeriodMs = drawRotationPeriodMs();
-			if (keys.isEmpty()) {
-				svc.onion = null;
-				svc.privateKey = null;
-				svc.revocationPending = false;
-				db.transaction(false, txn -> store.saveService(txn, svc));
+			if (revocation && revoked == null && !svc.revocationPending) {
 				return;
 			}
+			if (keys.isEmpty()) {
+				if (revocation) dropService(ctl, svc);
+				return;
+			}
+			Set<String> keySet = keySet(keys);
+			if (svc.oldOnion != null) {
+				if (!revocation) return;
+				if (!db.transactionWithResult(true, this::allAcked)) {
+					try {
+						republishCurrent(ctl, target, svc, keys, keySet);
+					} catch (IOException ignored) {
+					}
+					republishOld(ctl, target, svc, keys, keySet);
+					return;
+				}
+				publishedOldOnion = null;
+				removeQuietly(ctl, svc.oldOnion);
+				clearOld(svc);
+				db.transaction(false, txn -> store.saveService(txn, svc));
+			}
+			long now = clock.currentTimeMillis();
+			if (svc.onion != null) {
+				if (revocation) republishCurrent(ctl, target, svc, keys, keySet);
+				if (svc.onion.equals(publishedOnion)) {
+					publishedOldOnion = publishedOnion;
+					publishedOldKeys = publishedKeys;
+				} else {
+					publishedOldOnion = null;
+				}
+				svc.oldOnion = svc.onion;
+				svc.oldPrivateKey = svc.privateKey;
+				svc.oldSinceMs = now;
+			}
+			publishedOnion = null;
 			OnionServiceControl.Published p = ctl.publish(null, target,
 					REMOTE_PORT, keys);
 			publishedOnion = p.onion;
-			publishedKeys = keySet(keys);
+			publishedKeys = keySet;
 			svc.onion = p.onion;
 			svc.privateKey = p.privateKey;
+			svc.gen++;
+			svc.lastRotationMs = now;
+			svc.rotationPeriodMs = drawRotationPeriodMs();
 			svc.revocationPending = false;
 			db.transaction(false, txn -> {
 				store.saveService(txn, svc);
@@ -1242,6 +1404,22 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		}
 	}
 
+	private void dropService(OnionServiceControl ctl, ServiceRecord svc)
+			throws DbException {
+		publishedOnion = null;
+		publishedOldOnion = null;
+		removeQuietly(ctl, svc.onion);
+		removeQuietly(ctl, svc.oldOnion);
+		svc.onion = null;
+		svc.privateKey = null;
+		clearOld(svc);
+		svc.gen++;
+		svc.lastRotationMs = clock.currentTimeMillis();
+		svc.rotationPeriodMs = drawRotationPeriodMs();
+		svc.revocationPending = false;
+		db.transaction(false, txn -> store.saveService(txn, svc));
+	}
+
 	private void retireOld() {
 		OnionServiceControl ctl = control();
 		synchronized (serviceLock) {
@@ -1256,16 +1434,14 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		try {
 			ServiceRecord svc = db.transactionWithResult(true, store::loadService);
 			if (svc.oldOnion == null) return;
+			if (!db.transactionWithResult(true, this::allAcked)) return;
 			if (ctl != null) {
-				try {
-					ctl.remove(svc.oldOnion);
-				} catch (IOException ignored) {
-				}
+				publishedOldOnion = null;
+				removeQuietly(ctl, svc.oldOnion);
 			}
-			svc.oldOnion = null;
-			svc.oldPrivateKey = null;
-			svc.oldSinceMs = 0;
+			clearOld(svc);
 			db.transaction(false, txn -> store.saveService(txn, svc));
+			if (svc.revocationPending) rotateLocked(true, null);
 		} catch (DbException ignored) {
 		}
 	}
@@ -1358,20 +1534,55 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					}
 				}
 				ServiceRecord svc = store.loadService(txn);
-				if (svc.oldOnion != null
-						&& now - svc.oldSinceMs > RETIRE_DEADLINE_MS) {
-					txn.attach(() -> ioExecutor.execute(this::retireOld));
+				retireOldOnceAcknowledged(txn, svc);
+				if (svc.revocationPending) {
+					txn.attach(() -> ioExecutor.execute(
+							() -> rotate(true, null)));
+				} else if (unpublished(svc, keySet(authorizedKeys(txn)))) {
+					txn.attach(() -> ioExecutor.execute(this::republish));
 				}
 				if (svc.onion != null && !isRotationPeriod(svc.rotationPeriodMs)) {
 					svc.rotationPeriodMs = drawRotationPeriodMs();
 					store.saveRotationPeriod(txn, svc.rotationPeriodMs);
 				}
-				if (periodicRotationDue(svc, now)) {
-					ioExecutor.execute(() -> rotate(false, null));
+				if (periodicRotationDue(svc, now)
+						&& !silentSinceLastRotation(txn, svc)) {
+					txn.attach(() -> ioExecutor.execute(
+							() -> rotate(false, null)));
 				}
 			});
 		} catch (DbException ignored) {
 		}
+	}
+
+	private boolean unpublished(ServiceRecord svc, Set<String> keySet) {
+		if (svc.onion != null && (!svc.onion.equals(publishedOnion)
+				|| !keySet.equals(publishedKeys))) {
+			return true;
+		}
+		return svc.oldOnion != null && (!svc.oldOnion.equals(publishedOldOnion)
+				|| !keySet.equals(publishedOldKeys));
+	}
+
+	private void republish() {
+		OnionServiceControl ctl = control();
+		if (ctl == null) return;
+		synchronized (serviceLock) {
+			try {
+				republishService(ctl);
+			} catch (DbException | IOException | RuntimeException ignored) {
+			}
+		}
+	}
+
+	private boolean silentSinceLastRotation(Transaction txn, ServiceRecord svc)
+			throws DbException {
+		for (OnionAuthRecord r : store.loadAll(txn)) {
+			if (!r.holdsCommit()) continue;
+			long contact = Math.max(r.lastSeenMs, r.lastContactMs);
+			if (contact <= svc.lastRotationMs) return true;
+		}
+		return false;
 	}
 
 	private void cache(OnionAuthRecord r) {
@@ -1381,6 +1592,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	private void send(Transaction txn, ContactId c, BdfList body, int type,
 			long keyVersion) throws DbException {
+		if (type == OnionAuthRecords.TYPE_COMMIT
+				&& hooks.holdsConfirmations(txn)) {
+			return;
+		}
 		try {
 			Contact contact = db.getContact(txn, c);
 			Group g = getContactGroup(contact);

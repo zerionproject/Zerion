@@ -23,7 +23,7 @@
 			android:layout_marginStart="0dp"
 			android:contentDescription="@string/voice_call"
 			app:srcCompat="@drawable/ic_phone_white"
-			app:tint="@color/zerion_text_secondary"
+			app:tint="?attr/zerionColorOnSurfaceMuted"
 			app:layout_constraintStart_toStartOf="parent"
 			app:layout_constraintTop_toTopOf="@+id/callEventText"
 			app:layout_constraintBottom_toBottomOf="@+id/callEventText" />
@@ -33,28 +33,27 @@
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginStart="6dp"
-			android:textSize="13sp"
-			android:textColor="@color/zerion_text_secondary"
-			android:fontFamily="sans-serif"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:maxLines="2"
 			android:ellipsize="end"
 			app:layout_constraintStart_toEndOf="@+id/callIcon"
 			app:layout_constraintTop_toTopOf="parent"
 			app:layout_constraintEnd_toEndOf="parent"
 			app:layout_constraintHorizontal_bias="0"
-			tools:text="Secure voice call — 3 min 21 sec" />
+			tools:text="Secure voice call · 3 min 21 sec"
+			android:textAppearance="@style/TextAppearance.Zerion.Caption" />
 
 		<TextView
 			android:id="@+id/time"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_marginTop="2dp"
-			android:textSize="11sp"
-			android:textColor="@color/zerion_text_secondary"
+			android:textColor="?attr/zerionColorOnSurfaceMuted"
 			android:alpha="0.6"
 			app:layout_constraintStart_toStartOf="@+id/callEventText"
 			app:layout_constraintTop_toBottomOf="@+id/callEventText"
-			tools:text="14:23" />
+			tools:text="14:23"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
 	</androidx.constraintlayout.widget.ConstraintLayout>
 

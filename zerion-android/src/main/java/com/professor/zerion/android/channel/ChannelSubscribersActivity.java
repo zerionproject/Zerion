@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -15,7 +14,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
@@ -29,7 +27,6 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -40,10 +37,18 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 	private static final String EXTRA_CHANNEL_ID =
 			"com.professor.zerion.android.channel.SUBSCRIBERS_CHANNEL_ID";
+	private static final String EXTRA_BLOCKED_ONLY =
+			"com.professor.zerion.android.channel.SUBSCRIBERS_BLOCKED_ONLY";
 
 	public static Intent intent(Context ctx, byte[] channelId) {
 		Intent i = new Intent(ctx, ChannelSubscribersActivity.class);
 		i.putExtra(EXTRA_CHANNEL_ID, channelId);
+		return i;
+	}
+
+	public static Intent blockedIntent(Context ctx, byte[] channelId) {
+		Intent i = intent(ctx, channelId);
+		i.putExtra(EXTRA_BLOCKED_ONLY, true);
 		return i;
 	}
 
@@ -57,7 +62,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 	private RecyclerView recycler;
 	private TextView emptyView;
 	private SubscribersAdapter adapter;
-	private volatile boolean channelIsClosed = false;
+	private boolean blockedOnly = false;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -74,6 +79,7 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 		byte[] cid = getIntent().getByteArrayExtra(EXTRA_CHANNEL_ID);
 		if (cid != null) channelId = cid;
+		blockedOnly = getIntent().getBooleanExtra(EXTRA_BLOCKED_ONLY, false);
 
 		Toolbar toolbar = findViewById(R.id.subscribersToolbar);
 		setSupportActionBar(toolbar);
@@ -84,7 +90,9 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 
 		recycler = findViewById(R.id.subscribersRecycler);
 		emptyView = findViewById(R.id.subscribersEmptyView);
-		adapter = new SubscribersAdapter(this::showActions);
+		if (blockedOnly) emptyView.setText(R.string.channels_member_none_blocked);
+		else setTitle(R.string.channels_settings_named_people);
+		adapter = new SubscribersAdapter(this::showMember);
 		recycler.setLayoutManager(new LinearLayoutManager(this));
 		recycler.setAdapter(adapter);
 	}
@@ -98,11 +106,9 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 	private void refresh() {
 		ioExecutor.execute(() -> {
 			List<ChannelSubscriber> subs;
-			int announced;
 			try {
 				subs = new ArrayList<>(
 						channelManager.getAnnouncedSubscribers(channelId));
-				announced = subs.size();
 				for (byte[] key : channelManager.getBannedKeys(channelId)) {
 					boolean listed = false;
 					for (ChannelSubscriber sub : subs) {
@@ -112,25 +118,27 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 							break;
 						}
 					}
-					if (!listed) {
+					if (listed) {
+						markBanned(subs, key);
+					} else {
 						subs.add(new ChannelSubscriber("", key, new byte[0],
 								0L, true));
 					}
 				}
-				org.zerionproject.app.api.channel.ChannelState s =
-						channelManager.getChannel(channelId);
-				channelIsClosed = s != null && !s.isPublicChannel();
+				List<ChannelSubscriber> shown = new ArrayList<>();
+				for (ChannelSubscriber sub : subs) {
+					if (sub.isBanned() == blockedOnly) shown.add(sub);
+				}
+				subs = shown;
 			} catch (DbException ex) {
 				subs = new ArrayList<>();
-				announced = 0;
 			}
 			List<ChannelSubscriber> finalSubs = subs;
-			int finalAnnounced = announced;
-			runOnUiThread(() -> render(finalSubs, finalAnnounced));
+			runOnUiThread(() -> render(finalSubs));
 		});
 	}
 
-	private void render(List<ChannelSubscriber> subs, int announced) {
+	private void render(List<ChannelSubscriber> subs) {
 		if (subs.isEmpty()) {
 			recycler.setVisibility(View.GONE);
 			emptyView.setVisibility(View.VISIBLE);
@@ -139,146 +147,41 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 			emptyView.setVisibility(View.GONE);
 			adapter.setItems(subs);
 		}
-		setTitle(getString(R.string.channels_subscribers_count, announced));
+		setTitle(blockedOnly ? getString(R.string.channels_settings_blocked)
+				: getString(R.string.channels_named_people_count,
+						subs.size()));
 	}
 
-	private void showActions(ChannelSubscriber sub) {
-		if (sub.isBanned()) {
-			confirmUnban(sub);
-			return;
+	private static void markBanned(List<ChannelSubscriber> subs, byte[] key) {
+		for (int i = 0; i < subs.size(); i++) {
+			ChannelSubscriber sub = subs.get(i);
+			if (!sub.isBanned() && java.util.Arrays.equals(
+					sub.getEd25519PubKey(), key)) {
+				subs.set(i, new ChannelSubscriber(sub.getDisplayName(),
+						sub.getEd25519PubKey(), sub.getMlDsaPubKey(),
+						sub.getJoinedAtHourMs(), true));
+			}
 		}
-		String trust = getString(sub.isTrusted()
-				? R.string.channels_subscribers_untrust
-				: R.string.channels_subscribers_trust);
-		String ban = getString(R.string.channels_subscribers_ban);
-		new SecureAlertDialogBuilder(this)
-				.setTitle(sub.getDisplayName())
-				.setItems(new CharSequence[] {trust, ban}, (d, which) -> {
-					if (which == 0) setTrusted(sub, !sub.isTrusted());
-					else confirmBan(sub);
-				})
-				.show();
 	}
 
-	private void setTrusted(ChannelSubscriber sub, boolean trusted) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.setSubscriberTrusted(channelId,
-						sub.getEd25519PubKey(), trusted);
-				runOnUiThread(this::refresh);
-			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_subscribers_trust_failed,
-						Toast.LENGTH_SHORT).show());
-			}
-		});
-	}
-
-	private void confirmBan(ChannelSubscriber sub) {
-		if (sub.isBanned()) return;
-		android.widget.LinearLayout container =
-				new android.widget.LinearLayout(this);
-		container.setOrientation(android.widget.LinearLayout.VERTICAL);
-		int pad = (int) (16f * getResources().getDisplayMetrics().density);
-		container.setPadding(pad, 0, pad, 0);
-		android.widget.TextView message = new android.widget.TextView(this);
-		message.setText(R.string.channels_subscribers_ban_confirm);
-		message.setTextColor(getResources()
-				.getColor(R.color.zerion_text_primary, getTheme()));
-		container.addView(message);
-		final com.google.android.material.checkbox.MaterialCheckBox rotateBox;
-		if (channelIsClosed) {
-			rotateBox =
-					new com.google.android.material.checkbox.MaterialCheckBox(
-							this);
-			rotateBox.setText(R.string.channels_subscribers_ban_rotate);
-			rotateBox.setChecked(true);
-			android.widget.LinearLayout.LayoutParams lp =
-					new android.widget.LinearLayout.LayoutParams(
-							android.widget.LinearLayout.LayoutParams
-									.MATCH_PARENT,
-							android.widget.LinearLayout.LayoutParams
-									.WRAP_CONTENT);
-			lp.topMargin = pad;
-			container.addView(rotateBox, lp);
-		} else {
-			rotateBox = null;
-		}
-		new SecureAlertDialogBuilder(this)
-				.setView(container)
-				.setPositiveButton(R.string.channels_subscribers_ban,
-						(d, w) -> doBan(sub,
-								rotateBox != null && rotateBox.isChecked()))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void confirmUnban(ChannelSubscriber sub) {
-		new SecureAlertDialogBuilder(this)
-				.setTitle(R.string.channels_subscribers_unban)
-				.setMessage(R.string.channels_subscribers_unban_confirm)
-				.setPositiveButton(R.string.channels_subscribers_unban,
-						(d, w) -> doUnban(sub))
-				.setNegativeButton(android.R.string.cancel, null)
-				.show();
-	}
-
-	private void doUnban(ChannelSubscriber sub) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.unbanSubscriber(channelId,
-						sub.getEd25519PubKey());
-				runOnUiThread(this::refresh);
-			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_unban_failed,
-						Toast.LENGTH_SHORT).show());
-			}
-		});
-	}
-
-	private void doBan(ChannelSubscriber sub, boolean alsoRotate) {
-		ioExecutor.execute(() -> {
-			try {
-				channelManager.banSubscriber(channelId,
-						sub.getEd25519PubKey());
-				boolean rotated = true;
-				if (alsoRotate) {
-					try {
-						channelManager.rotateJoinCapability(channelId);
-					} catch (DbException e) {
-						rotated = false;
-					}
-				}
-				boolean linkKept = !rotated;
-				runOnUiThread(() -> {
-					refresh();
-					if (linkKept) {
-						Toast.makeText(this,
-								R.string.channels_invite_rotate_failed,
-								Toast.LENGTH_LONG).show();
-					}
-				});
-			} catch (DbException ignored) {
-				runOnUiThread(() -> Toast.makeText(this,
-						R.string.channels_ban_failed,
-						Toast.LENGTH_SHORT).show());
-			}
-		});
+	private void showMember(ChannelSubscriber sub) {
+		ChannelMemberSheet.open(this, channelManager, ioExecutor, channelId,
+				sub.getEd25519PubKey(), sub.getDisplayName(),
+				sub.getMlDsaPubKey(), this::refresh);
 	}
 
 	private static class SubscribersAdapter
 			extends RecyclerView.Adapter<SubscriberViewHolder> {
 
-		interface OnBan {
-			void onBan(ChannelSubscriber sub);
+		interface OnMember {
+			void onMember(ChannelSubscriber sub);
 		}
 
 		private List<ChannelSubscriber> items = new ArrayList<>();
-		private final OnBan onBan;
+		private final OnMember onMember;
 
-		SubscribersAdapter(OnBan onBan) {
-			this.onBan = onBan;
+		SubscribersAdapter(OnMember onMember) {
+			this.onMember = onMember;
 		}
 
 		void setItems(List<ChannelSubscriber> subs) {
@@ -300,8 +203,9 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 				int position) {
 			ChannelSubscriber sub = items.get(position);
 			h.bind(sub);
+			h.itemView.setOnClickListener(v -> onMember.onMember(sub));
 			h.itemView.setOnLongClickListener(v -> {
-				onBan.onBan(sub);
+				onMember.onMember(sub);
 				return true;
 			});
 		}
@@ -330,25 +234,13 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		void bind(ChannelSubscriber sub) {
 			name.setText(sub.getDisplayName().isEmpty()
 					? itemView.getContext().getString(
-							R.string.channels_comment_anonymous)
+							R.string.channels_delegations_unnamed_person)
 					: sub.getDisplayName());
-			String key = toHexShort(sub.getEd25519PubKey());
-			subtitle.setText(sub.isTrusted() ? key + "  " + itemView
-					.getContext().getString(
-							R.string.channels_subscribers_trusted_badge)
-					: key);
+			boolean trusted = sub.isTrusted() && !sub.isBanned();
+			subtitle.setText(R.string.channels_subscribers_trusted_badge);
+			subtitle.setVisibility(trusted ? View.VISIBLE : View.GONE);
 			bannedBadge.setVisibility(sub.isBanned()
 					? View.VISIBLE : View.GONE);
-		}
-
-		private static String toHexShort(byte[] b) {
-			StringBuilder sb = new StringBuilder();
-			int take = Math.min(b.length, 12);
-			for (int i = 0; i < take; i++) {
-				sb.append(String.format(Locale.US, "%02x", b[i]));
-			}
-			if (b.length > take) sb.append("…");
-			return sb.toString();
 		}
 	}
 }

@@ -54,8 +54,8 @@ public class ChannelInviteHandlerPromptTest {
 	public static class ProbeHandler extends ChannelInviteHandlerActivity {
 
 		static final List<Runnable> io = new ArrayList<>();
-		static ChannelManager manager = mock(ChannelManager.class);
-		static AccountManager account = mock(AccountManager.class);
+		static ChannelManager manager;
+		static AccountManager account;
 
 		@Override
 		public void injectActivity(ActivityComponent component) {
@@ -115,6 +115,51 @@ public class ChannelInviteHandlerPromptTest {
 		runBackgroundWork();
 		verify(manager).rejoinChannel(any());
 		verify(manager, never()).rejoinChannelThroughLink(any());
+	}
+
+	@Test
+	public void joiningANewChannelAsksPlainlyWithoutAKey() throws Exception {
+		byte[] publisher = new byte[32];
+		for (int i = 0; i < publisher.length; i++) publisher[i] = (byte) 0xab;
+		ChannelInviteLink link = new ChannelInviteLink(id, publisher, null,
+				true, null, ONION, false);
+		when(manager.parseInviteLink(anyString())).thenReturn(link);
+		when(manager.getChannel(any())).thenReturn(null);
+		Intent intent = new Intent(ctx, ProbeHandler.class);
+		intent.setData(Uri.parse("zerion://channel/a/b?o=" + ONION));
+		Robolectric.buildActivity(ProbeHandler.class, intent).setup();
+		runBackgroundWork();
+
+		Dialog dialog = ShadowDialog.getLatestDialog();
+		assertNotNull("nothing was asked", dialog);
+		android.widget.TextView message =
+				dialog.findViewById(android.R.id.message);
+		assertNotNull(message);
+		String text = message.getText().toString();
+		org.junit.Assert.assertEquals("Join this channel?", text);
+		org.junit.Assert.assertFalse(text,
+				text.matches("(?s).*\\b[0-9a-f]{4}\\b.*"));
+		assertNothingAsked();
+	}
+
+	@Test
+	public void anEmptyNameAsksForTheNameTheOwnerSees() throws Exception {
+		when(manager.getChannel(any())).thenReturn(null);
+		Intent intent = new Intent(ctx, ProbeHandler.class);
+		intent.setData(Uri.parse("zerion://channel/a/b?o=" + ONION + "&p=1"));
+		Robolectric.buildActivity(ProbeHandler.class, intent).setup();
+		runBackgroundWork();
+
+		Dialog dialog = ShadowDialog.getLatestDialog();
+		assertNotNull("nothing was asked", dialog);
+		assertNotNull("not the request dialog", dialog.findViewById(
+				com.professor.zerion.R.id.channelApplyNameInput));
+		((androidx.appcompat.app.AlertDialog) dialog)
+				.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+		runBackgroundWork();
+		org.junit.Assert.assertEquals("Enter the name the owner will see.",
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+		assertNothingAsked();
 	}
 
 	private void assertNothingAsked() throws Exception {

@@ -69,6 +69,9 @@ jobs:
         run: |
           bash -n packaging/tor-android/build-tor-android.sh
           bash -n packaging/tor-android/fdroid-build.sh
+          bash -n packaging/lyrebird-android/build-lyrebird-android.sh
+          bash -n packaging/lyrebird-android/fdroid-build.sh
+          bash -n packaging/lyrebird-android/verify-signed-tag.sh
           bash -n packaging/monero-android/build-monero-android.sh
           bash -n packaging/monero-android/fdroid-build.sh
           bash -n scripts/build-fdroid-apk.sh

@@ -10,5 +10,5 @@
 		android:right="7dp"
 		android:top="2dp"/>
 	<solid
-		android:color="@color/msg_status_bubble_background"/>
+		android:color="?attr/zerionColorScrim"/>
 </shape>

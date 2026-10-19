@@ -1,14 +1,12 @@
 package com.professor.zerion.android.grouptr;
 
+import android.content.res.Resources;
 import android.os.Bundle;
-import android.view.Gravity;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -16,31 +14,41 @@ import androidx.annotation.Nullable;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.homelist.HomeInvite;
+import com.professor.zerion.android.homelist.HomeItem;
+import com.professor.zerion.android.homelist.HomeKeys;
+import com.professor.zerion.android.homelist.HomeList;
+import com.professor.zerion.android.homelist.HomeListAdapter;
+import com.professor.zerion.android.homelist.HomeRow;
+import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
+import org.zerionproject.core.api.contact.Contact;
+import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
+import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrPendingInvite;
+import org.zerionproject.app.api.grouptr.GroupTrPostSummary;
 import org.zerionproject.app.api.grouptr.GroupTrState;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostsRemovedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrLocalStateChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrSelfRemovedEvent;
-
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -48,9 +56,11 @@ import javax.inject.Inject;
 @MethodsNotNullByDefault
 @ParametersNotNullByDefault
 public class GroupTrListFragment extends BaseFragment
-		implements EventListener {
+		implements EventListener, HomeListAdapter.Listener {
 
 	public static final String TAG = GroupTrListFragment.class.getName();
+
+	private static final long RELOAD_DEBOUNCE_MS = 250L;
 
 	public static GroupTrListFragment newInstance() {
 		return new GroupTrListFragment();
@@ -63,9 +73,18 @@ public class GroupTrListFragment extends BaseFragment
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
+	@Inject
+	IdentityManager identityManager;
+	@Inject
+	ContactManager contactManager;
 
-	private LinearLayout listContainer;
-	private TextView emptyView;
+	@Nullable
+	private HomeList home;
+	private int generation = 0;
+	private final Handler reloadHandler = new Handler(Looper.getMainLooper());
+	private final Runnable reloadTask = () -> {
+		if (isAdded()) loadGroups();
+	};
 
 	@Override
 	public void injectFragment(ActivityComponent component) {
@@ -78,36 +97,18 @@ public class GroupTrListFragment extends BaseFragment
 			@Nullable ViewGroup container,
 			@Nullable Bundle savedInstanceState) {
 		requireActivity().setTitle(R.string.groups_button);
+		home = HomeList.inflate(inflater, container, this, ioExecutor,
+				R.drawable.ic_group, R.string.groups_list_empty,
+				R.string.groups_list_empty_action);
+		home.reloadWhenAPreviewExpires(this::loadGroups);
+		return home.getView();
+	}
 
-		FrameLayout root = new FrameLayout(requireContext());
-		root.setLayoutParams(new ViewGroup.LayoutParams(
-				ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.MATCH_PARENT));
-
-		ScrollView scroll = new ScrollView(requireContext());
-		listContainer = new LinearLayout(requireContext());
-		listContainer.setOrientation(LinearLayout.VERTICAL);
-		listContainer.setPadding(0, 0, 0, dp(120));
-		scroll.addView(listContainer, new ScrollView.LayoutParams(
-				ScrollView.LayoutParams.MATCH_PARENT,
-				ScrollView.LayoutParams.WRAP_CONTENT));
-		root.addView(scroll, new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.MATCH_PARENT,
-				FrameLayout.LayoutParams.MATCH_PARENT));
-
-		emptyView = new TextView(requireContext());
-		emptyView.setText(R.string.groups_list_empty);
-		emptyView.setTextSize(16);
-		emptyView.setGravity(Gravity.CENTER);
-		emptyView.setPadding(dp(32), dp(64), dp(32), dp(32));
-		FrameLayout.LayoutParams emptyLp = new FrameLayout.LayoutParams(
-				FrameLayout.LayoutParams.MATCH_PARENT,
-				FrameLayout.LayoutParams.WRAP_CONTENT);
-		emptyLp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.TOP;
-		emptyLp.topMargin = dp(96);
-		root.addView(emptyView, emptyLp);
-
-		return root;
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		if (home != null) home.release();
+		home = null;
 	}
 
 	@Override
@@ -121,6 +122,7 @@ public class GroupTrListFragment extends BaseFragment
 	public void onStop() {
 		super.onStop();
 		eventBus.removeListener(this);
+		reloadHandler.removeCallbacks(reloadTask);
 	}
 
 	@Override
@@ -129,7 +131,8 @@ public class GroupTrListFragment extends BaseFragment
 				|| e instanceof GroupEpochCommitEvent
 				|| e instanceof GroupTrLocalStateChangedEvent
 				|| e instanceof GroupTrSelfRemovedEvent
-				|| e instanceof GroupTrPostAcceptedEvent) {
+				|| e instanceof GroupTrPostAcceptedEvent
+				|| e instanceof GroupTrPostsRemovedEvent) {
 			runOnUiThreadUnlessDestroyed(() -> {
 				if (!isAdded()) return;
 				if (e instanceof GroupMembershipChangedEvent) {
@@ -146,153 +149,157 @@ public class GroupTrListFragment extends BaseFragment
 							R.string.grouptr_removed_neutral,
 							Toast.LENGTH_LONG).show();
 				}
-				loadGroups();
+				reloadHandler.removeCallbacks(reloadTask);
+				reloadHandler.postDelayed(reloadTask, RELOAD_DEBOUNCE_MS);
 			});
 		}
 	}
 
 	private void loadGroups() {
+		int load = ++generation;
+		Resources res = getResources();
 		ioExecutor.execute(() -> {
-			List<GroupTrState> groups;
-			Collection<GroupTrPendingInvite> pending;
-			Map<String, Integer> unread = new HashMap<>();
+			List<HomeItem> items = new ArrayList<>();
+			HomeKeys keys = new HomeKeys();
+			boolean failed = false;
 			try {
-				Collection<GroupTrState> c = groupTrManager.getGroups();
-				groups = new ArrayList<>(c);
-				for (GroupTrState s : groups) {
-					unread.put(hex(s.getGroupId()),
-							groupTrManager.getUnreadCount(s.getGroupId()));
+				for (GroupTrPendingInvite p :
+						groupTrManager.getPendingInvites()) {
+					items.add(invite(res, p, keys));
 				}
-				pending = groupTrManager.getPendingInvites();
+				byte[] me = localKey();
+				Map<String, String> contacts = contactNames();
+				List<HomeRow> rows = new ArrayList<>();
+				for (GroupTrState s : groupTrManager.getGroups()) {
+					rows.add(row(res, s, me, contacts));
+				}
+				Collections.sort(rows, (a, b) ->
+						Long.compare(b.getTime(), a.getTime()));
+				items.addAll(rows);
 			} catch (DbException ex) {
-				groups = Collections.emptyList();
-				pending = Collections.emptyList();
+				items.clear();
+				failed = true;
 			}
-			List<GroupTrState> finalGroups = groups;
-			Collection<GroupTrPendingInvite> finalPending = pending;
-			Map<String, Integer> finalUnread = unread;
-			runOnUiThreadUnlessDestroyed(
-					() -> renderGroups(finalGroups, finalUnread,
-							finalPending));
+			boolean error = failed;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (home == null || load != generation) return;
+				if (error) home.showError(items);
+				else home.show(items);
+			});
 		});
 	}
 
-	private void renderGroups(List<GroupTrState> groups,
-			Map<String, Integer> unread,
-			Collection<GroupTrPendingInvite> pending) {
-		listContainer.removeAllViews();
-		if (groups.isEmpty() && pending.isEmpty()) {
-			emptyView.setVisibility(View.VISIBLE);
-			return;
-		}
-		emptyView.setVisibility(View.GONE);
-		for (GroupTrPendingInvite p : pending) {
-			listContainer.addView(buildPendingRow(p));
-		}
-		for (GroupTrState s : groups) {
-			int count = unread.containsKey(hex(s.getGroupId()))
-					? unread.get(hex(s.getGroupId())) : 0;
-			listContainer.addView(buildRow(s, count));
+	@Nullable
+	private byte[] localKey() {
+		try {
+			return identityManager.getLocalAuthor().getPublicKey()
+					.getEncoded();
+		} catch (DbException | RuntimeException ex) {
+			return null;
 		}
 	}
 
-	private static String hex(byte[] b) {
-		StringBuilder sb = new StringBuilder(b.length * 2);
-		for (byte x : b) sb.append(String.format(Locale.US, "%02x", x));
-		return sb.toString();
+	private Map<String, String> contactNames() {
+		Map<String, String> names = new HashMap<>();
+		try {
+			for (Contact c : contactManager.getContacts()) {
+				String name = c.getAlias() != null ? c.getAlias()
+						: c.getAuthor().getName();
+				names.put(StringUtils.toHexString(
+						c.getAuthor().getPublicKey().getEncoded()), name);
+			}
+		} catch (DbException | RuntimeException ex) {
+			names.clear();
+		}
+		return names;
 	}
 
-	private View buildRow(GroupTrState s, int unreadCount) {
-		View row = LayoutInflater.from(requireContext()).inflate(
-				R.layout.list_item_grouptr_group, listContainer, false);
-		String name = s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group)
-				: s.getName();
-		TextView avatar = row.findViewById(R.id.avatarView);
-		TextView nameView = row.findViewById(R.id.nameView);
-		TextView subtitle = row.findViewById(R.id.subtitleView);
-		TextView unreadView = row.findViewById(R.id.unreadCountView);
+	private static String groupName(Resources res, String name) {
+		return name.isEmpty() ? res.getString(R.string.grouptr_unnamed_group)
+				: name;
+	}
 
-		avatar.setText(name.isEmpty() ? "?" : new String(Character.toChars(name.codePointAt(0))).toUpperCase());
-		nameView.setText(name);
+	private static HomeInvite invite(Resources res, GroupTrPendingInvite p,
+			HomeKeys keys) {
+		String name = groupName(res, p.getGroupName());
+		return new HomeInvite(keys.next("invite", StringUtils.toHexString(
+				p.getGroupId())), res.getString(
+				R.string.grouptr_pending_invite_title, name,
+				p.getCreatorName()), name, p.getGroupId());
+	}
 
-		if (unreadCount > 0) {
-			unreadView.setText(unreadCount > 99
-					? "99+" : String.valueOf(unreadCount));
-			unreadView.setVisibility(View.VISIBLE);
-		} else {
-			unreadView.setVisibility(View.GONE);
+	private HomeRow row(Resources res, GroupTrState s, @Nullable byte[] me,
+			Map<String, String> contacts) {
+		byte[] gid = s.getGroupId();
+		GroupTrPostSummary latest;
+		boolean blocked;
+		try {
+			latest = groupTrManager.getLatestPostSummary(gid);
+			blocked = groupTrManager.isLocalScreenshotBlocked(gid);
+		} catch (DbException ex) {
+			latest = null;
+			blocked = true;
 		}
-
-		int memberCount = s.getMembers().size();
-		String sub = getResources().getQuantityString(
-				R.plurals.grouptr_member_count, memberCount, memberCount);
+		String sender = null;
+		String preview = null;
+		long time = 0;
+		long expiresAt = Long.MAX_VALUE;
+		if (latest != null) {
+			time = latest.getTimestamp();
+			expiresAt = latest.getExpiryTime();
+			preview = GroupRowPreview.summary(res, latest);
+			sender = GroupRowPreview.sender(latest.getSenderPubKey(),
+					latest.getSenderName(), GroupRowPreview.memberNames(s),
+					contacts, me, res.getString(R.string.you),
+					res.getString(R.string.grouptr_sender_incognito_format));
+		}
 		if (s.isDissolved()) {
-			sub = sub + " · "
-					+ getString(R.string.grouptr_dissolved_suffix);
+			sender = null;
+			preview = res.getString(R.string.home_row_group_closed);
+		} else if (preview == null || preview.isEmpty() || blocked) {
+			int members = s.getMembers().size();
+			sender = null;
+			preview = res.getQuantityString(R.plurals.grouptr_member_count,
+					members, members);
 		}
-		subtitle.setText(sub);
-
-		row.setOnClickListener(v ->
-				startActivity(GroupTrConversationActivity.intent(
-						requireContext(), s.getGroupId())));
-		row.setOnLongClickListener(v -> {
-			showDeleteDialog(s);
-			return true;
-		});
-
-		View divider = new View(requireContext());
-		divider.setBackgroundColor(0x14FFFFFF);
-		LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.MATCH_PARENT,
-				(int) (0.5f * getResources().getDisplayMetrics().density));
-		dlp.leftMargin = dp(82);
-		divider.setLayoutParams(dlp);
-
-		LinearLayout wrapper = new LinearLayout(requireContext());
-		wrapper.setOrientation(LinearLayout.VERTICAL);
-		wrapper.addView(row);
-		wrapper.addView(divider);
-		return wrapper;
+		return HomeRow.builder("group:" + StringUtils.toHexString(gid),
+				groupName(res, s.getName()))
+				.time(time)
+				.preview(sender, preview)
+				.expiresAt(expiresAt)
+				.unread(groupTrManager.getUnreadCount(gid))
+				.payload(s)
+				.build();
 	}
 
-	private View buildPendingRow(GroupTrPendingInvite p) {
-		LinearLayout container = new LinearLayout(requireContext());
-		container.setOrientation(LinearLayout.VERTICAL);
-		container.setPadding(dp(16), dp(12), dp(16), dp(12));
+	@Override
+	public void onRowClick(HomeRow row) {
+		if (!(row.getPayload() instanceof GroupTrState)) return;
+		GroupTrState s = (GroupTrState) row.getPayload();
+		startActivity(GroupTrConversationActivity.intent(requireContext(),
+				s.getGroupId()));
+	}
 
-		String name = p.getGroupName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group)
-				: p.getGroupName();
-		TextView title = new TextView(requireContext());
-		title.setText(getString(R.string.grouptr_pending_invite_title,
-				name, p.getCreatorName()));
-		title.setTextSize(16);
-		container.addView(title);
+	@Override
+	public boolean onRowLongClick(HomeRow row, View anchor) {
+		if (!(row.getPayload() instanceof GroupTrState)) return false;
+		showDeleteDialog((GroupTrState) row.getPayload());
+		return true;
+	}
 
-		LinearLayout buttons = new LinearLayout(requireContext());
-		buttons.setOrientation(LinearLayout.HORIZONTAL);
-		LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
-				LinearLayout.LayoutParams.MATCH_PARENT,
-				LinearLayout.LayoutParams.WRAP_CONTENT);
-		blp.topMargin = dp(8);
-		buttons.setLayoutParams(blp);
+	@Override
+	public void onRetry() {
+		loadGroups();
+	}
 
-		android.widget.Button accept =
-				new android.widget.Button(requireContext());
-		accept.setText(R.string.grouptr_pending_accept);
-		accept.setOnClickListener(v -> askToJoin(p.getGroupId(), name));
-		buttons.addView(accept);
+	@Override
+	public void onInviteAccepted(HomeInvite invite) {
+		askToJoin(invite.getId(), invite.getName());
+	}
 
-		android.widget.Button decline =
-				new android.widget.Button(requireContext());
-		decline.setText(R.string.grouptr_pending_decline);
-		decline.setOnClickListener(v ->
-				respondToInvite(p.getGroupId(), false));
-		buttons.addView(decline);
-
-		container.addView(buttons);
-		return container;
+	@Override
+	public void onInviteDeclined(HomeInvite invite) {
+		respondToInvite(invite.getId(), false);
 	}
 
 	private void askToJoin(byte[] groupId, String groupName) {
@@ -338,18 +345,12 @@ public class GroupTrListFragment extends BaseFragment
 		});
 	}
 
-	private int dp(int value) {
-		return (int) (value
-				* getResources().getDisplayMetrics().density);
-	}
-
 	private void showDeleteDialog(GroupTrState s) {
-		String name = s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group) : s.getName();
+		String name = groupName(getResources(), s.getName());
 		int msgRes = s.isDissolved()
 				? R.string.grouptr_remove_local_dissolved_msg
 				: R.string.grouptr_remove_local_active_msg;
-		new com.professor.zerion.android.security.SecureAlertDialogBuilder(requireContext())
+		new SecureAlertDialogBuilder(requireContext())
 				.setTitle(getString(
 						R.string.grouptr_remove_local_title, name))
 				.setMessage(msgRes)
@@ -368,10 +369,10 @@ public class GroupTrListFragment extends BaseFragment
 				}
 			} catch (DbException ex) {
 				if (isAdded()) {
-					runOnUiThreadUnlessDestroyed(() -> android.widget.Toast
+					runOnUiThreadUnlessDestroyed(() -> Toast
 							.makeText(requireContext(),
 									R.string.grouptr_error_save,
-									android.widget.Toast.LENGTH_SHORT).show());
+									Toast.LENGTH_SHORT).show());
 				}
 			}
 		});

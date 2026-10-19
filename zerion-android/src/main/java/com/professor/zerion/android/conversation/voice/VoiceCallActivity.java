@@ -30,9 +30,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.professor.zerion.android.accessibility.Speech;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -43,6 +45,8 @@ import com.professor.zerion.R;
 import org.zerionproject.core.api.contact.ContactId;
 
 import java.util.Locale;
+
+import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
 
 
 public class VoiceCallActivity extends AppCompatActivity {
@@ -212,9 +216,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (intent.getBooleanExtra(EXTRA_ANSWER, false)) requestAnswer();
 		} else {
 			showActiveCallUI();
-			callStatusText.setText(autoVideo ?
-					getString(R.string.voice_call_status_video_connecting_tor)
-					: getString(R.string.voice_call_status_connecting_tor));
+			showStatus(autoVideo ?
+					getString(R.string.voice_call_status_video_connecting)
+					: getString(R.string.voice_call_status_connecting));
 			playDialTone();
 		}
 	}
@@ -273,10 +277,18 @@ public class VoiceCallActivity extends AppCompatActivity {
 			callTypeLabel.setVisibility(concealed ? View.GONE : View.VISIBLE);
 		}
 		if (ringing && callStatusText != null) {
-			callStatusText.setText(lockedForCall()
+			showStatus(lockedForCall()
 					? getString(R.string.voice_call_locked_hint)
 					: getString(incomingStatus()));
 		}
+	}
+
+	private void showStatus(@StringRes int text) {
+		showStatus(getText(text));
+	}
+
+	private void showStatus(CharSequence text) {
+		if (callStatusText != null) Speech.setText(callStatusText, text);
 	}
 
 	private int incomingStatus() {
@@ -590,7 +602,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private void showIncomingCallUI() {
 		incomingCallLayout.setVisibility(View.VISIBLE);
 		activeCallLayout.setVisibility(View.GONE);
-		callStatusText.setText(incomingStatus());
+		showStatus(incomingStatus());
 		applyLockScreenPresentation();
 		playRingtone();
 	}
@@ -605,7 +617,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		showActiveCallUI();
 		if (isBound && voiceCallService != null) {
 			voiceCallService.acceptCall();
-			callStatusText.setText(R.string.call_connecting);
+			showStatus(R.string.call_connecting);
 		}
 	}
 
@@ -705,13 +717,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 				case CONNECTING:
 					if (voiceCallService != null
 							&& voiceCallService.isReconnecting()) {
-						callStatusText.setText(R.string.voice_call_status_reconnecting);
+						showStatus(R.string.voice_call_status_reconnecting);
 					} else {
-						callStatusText.setText(R.string.voice_call_status_connecting_tor);
+						showStatus(R.string.voice_call_status_connecting);
 					}
 					break;
 				case RINGING:
-					callStatusText.setText(R.string.voice_call_status_ringing);
+					showStatus(R.string.voice_call_status_ringing);
 					if (!isIncoming) {
 						stopRingtone();
 						stopDialTone();
@@ -739,7 +751,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			stopRingtone();
 			stopDialTone();
-			callStatusText.setText(R.string.voice_call_status_connected);
+			showStatus(R.string.voice_call_status_connected);
 			long start = isBound && voiceCallService != null
 					? voiceCallService.getConnectedAtRealtime() : 0L;
 			callDuration.setBase(start > 0 ? start
@@ -762,7 +774,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			long mins = secs / 60;
 			secs = secs % 60;
 			String duration = String.format("%d:%02d", mins, secs);
-			callStatusText.setText(
+			showStatus(
 					getString(R.string.voice_call_status_ended, duration));
 			if (!isFinishing) {
 				isFinishing = true;
@@ -775,7 +787,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		runOnUiThread(() -> {
 			stopRingtone();
 			stopDialTone();
-			callStatusText.setText(
+			showStatus(
 					getString(R.string.voice_call_status_failed, reason));
 			if (!isFinishing) {
 				isFinishing = true;
@@ -791,7 +803,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			String name = contactNameText.getText() != null
 					? contactNameText.getText().toString()
 					: getString(R.string.unknown_contact);
-			callStatusText.setText(getString(
+			showStatus(getString(
 					R.string.call_rejected_peer_disabled_calls, name)
 					+ "\n" + getString(
 					R.string.call_rejected_peer_disabled_calls_hint));
@@ -809,7 +821,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			String name = contactNameText.getText() != null
 					? contactNameText.getText().toString()
 					: getString(R.string.unknown_contact);
-			callStatusText.setText(getString(
+			showStatus(getString(
 					R.string.call_rejected_peer_disabled_video, name)
 					+ "\n" + getString(
 					R.string.call_rejected_peer_disabled_video_hint));
@@ -827,13 +839,13 @@ public class VoiceCallActivity extends AppCompatActivity {
 				case CONNECTING:
 					if (voiceCallService != null
 							&& voiceCallService.isReconnecting()) {
-						callStatusText.setText(R.string.voice_call_status_reconnecting);
+						showStatus(R.string.voice_call_status_reconnecting);
 					} else {
-						callStatusText.setText(R.string.voice_call_status_connecting_tor);
+						showStatus(R.string.voice_call_status_connecting);
 					}
 					break;
 				case RINGING:
-					callStatusText.setText(R.string.voice_call_status_ringing);
+					showStatus(R.string.voice_call_status_ringing);
 					if (!isIncoming) {
 						stopRingtone();
 						stopDialTone();
@@ -928,11 +940,14 @@ public class VoiceCallActivity extends AppCompatActivity {
 
 			int latencyColor;
 			if (latency < 150) {
-				latencyColor = ContextCompat.getColor(this, R.color.zerion_success_green);
+				latencyColor = resolveColorAttribute(this,
+						R.attr.zerionColorSuccess);
 			} else if (latency < 300) {
-				latencyColor = ContextCompat.getColor(this, R.color.zerion_warning);
+				latencyColor = resolveColorAttribute(this,
+						R.attr.zerionColorWarning);
 			} else {
-				latencyColor = ContextCompat.getColor(this, R.color.zerion_error_red);
+				latencyColor = resolveColorAttribute(this,
+						R.attr.zerionColorDangerText);
 			}
 			latencyBadge.setTextColor(latencyColor);
 
@@ -943,8 +958,10 @@ public class VoiceCallActivity extends AppCompatActivity {
 				packetLossBadge.setVisibility(View.VISIBLE);
 
 				int lossColor = packetLoss < 5.0 ?
-						ContextCompat.getColor(this, R.color.zerion_warning) :
-						ContextCompat.getColor(this, R.color.zerion_error_red);
+						resolveColorAttribute(this,
+						R.attr.zerionColorWarning) :
+						resolveColorAttribute(this,
+						R.attr.zerionColorDangerText);
 				packetLossBadge.setTextColor(lossColor);
 			} else {
 				packetLossBadge.setVisibility(View.GONE);
@@ -957,23 +974,28 @@ public class VoiceCallActivity extends AppCompatActivity {
 			switch (signalQuality) {
 				case NetworkMetrics.SIGNAL_EXCELLENT:
 					signalIcon = R.drawable.ic_signal_5;
-					signalColor = ContextCompat.getColor(this, R.color.zerion_success_green);
+					signalColor = resolveColorAttribute(this,
+						R.attr.zerionColorSuccess);
 					break;
 				case NetworkMetrics.SIGNAL_GOOD:
 					signalIcon = R.drawable.ic_signal_4;
-					signalColor = ContextCompat.getColor(this, R.color.zerion_success_green);
+					signalColor = resolveColorAttribute(this,
+						R.attr.zerionColorSuccess);
 					break;
 				case NetworkMetrics.SIGNAL_FAIR:
 					signalIcon = R.drawable.ic_signal_3;
-					signalColor = ContextCompat.getColor(this, R.color.zerion_warning);
+					signalColor = resolveColorAttribute(this,
+						R.attr.zerionColorWarning);
 					break;
 				case NetworkMetrics.SIGNAL_POOR:
 					signalIcon = R.drawable.ic_signal_2;
-					signalColor = ContextCompat.getColor(this, R.color.zerion_warning);
+					signalColor = resolveColorAttribute(this,
+						R.attr.zerionColorWarning);
 					break;
 				default:
 					signalIcon = R.drawable.ic_signal_1;
-					signalColor = ContextCompat.getColor(this, R.color.zerion_error_red);
+					signalColor = resolveColorAttribute(this,
+						R.attr.zerionColorDangerText);
 					break;
 			}
 
@@ -1293,7 +1315,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 			} else {
-				callStatusText.setText(R.string.voice_call_status_mic_permission);
+				showStatus(R.string.voice_call_status_mic_permission);
 				handler.postDelayed(this::finish, 2000);
 			}
 		} else if (requestCode == REQUEST_CAMERA_PERMISSION) {
