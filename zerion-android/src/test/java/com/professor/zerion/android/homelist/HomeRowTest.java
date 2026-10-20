@@ -92,6 +92,17 @@ public class HomeRowTest {
 				|| saidNone.contains(offline));
 	}
 
+	@Test
+	public void aStatusShownAsThePreviewIsSaidOnce() {
+		long now = System.currentTimeMillis();
+		String offline = ctx.getString(R.string.offline);
+		View row = bound(HomeRow.builder("contact:1", "Alex").time(now)
+				.preview(null, offline).presence(HomeRow.Presence.OFFLINE)
+				.build());
+		String said = row.getContentDescription().toString();
+		assertEquals(said, said.indexOf(offline), said.lastIndexOf(offline));
+	}
+
 	private static long midnightToday() {
 		java.util.Calendar c = java.util.Calendar.getInstance();
 		c.set(java.util.Calendar.HOUR_OF_DAY, 0);

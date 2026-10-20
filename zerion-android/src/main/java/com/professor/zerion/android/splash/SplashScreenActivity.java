@@ -13,6 +13,7 @@ import android.view.WindowManager;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
 import org.zerionproject.core.api.account.AccountManager;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
@@ -37,6 +38,8 @@ public class SplashScreenActivity extends BaseActivity {
 	protected AccountManager accountManager;
 	@Inject
 	protected AndroidExecutor androidExecutor;
+	@Inject
+	protected LifecycleManager lifecycleManager;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -49,7 +52,14 @@ public class SplashScreenActivity extends BaseActivity {
 				.dropUnreadableExtras(getIntent());
 		super.onCreate(state);
 
-		if (com.professor.zerion.android.ZerionService.isExitPending()) {
+		boolean spent = com.professor.zerion.android.ZerionService.isSpent(
+				lifecycleManager.getLifecycleState());
+		if (spent || com.professor.zerion.android.ZerionService
+				.isExitPending()) {
+			if (spent) {
+				com.professor.zerion.android.ZerionService
+						.endSpentProcess(lifecycleManager);
+			}
 			android.widget.Toast.makeText(this, R.string.exit_in_progress,
 					android.widget.Toast.LENGTH_SHORT).show();
 			finish();

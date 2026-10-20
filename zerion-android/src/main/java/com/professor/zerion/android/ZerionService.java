@@ -120,6 +120,31 @@ public class ZerionService extends Service {
 		exitStartedAt.set(0L);
 	}
 
+	public static boolean isSpent(LifecycleManager.LifecycleState state) {
+		return state.isAfter(LifecycleManager.LifecycleState.RUNNING);
+	}
+
+	public static void endSpentProcess(LifecycleManager lifecycle) {
+		exitInProgress.set(true);
+		exitStartedAt.compareAndSet(0L, android.os.SystemClock.elapsedRealtime());
+		Thread previous = pendingKillWatchdog.get();
+		if (previous != null && previous.isAlive()) return;
+		Thread end = new Thread(() -> {
+			try {
+				lifecycle.waitForShutdown();
+			} catch (InterruptedException e) {
+				return;
+			}
+			if (pendingKillWatchdog.get() != Thread.currentThread()) return;
+			if (!exitInProgress.get()) return;
+			android.os.Process.killProcess(android.os.Process.myPid());
+		});
+		end.setDaemon(true);
+		end.setName("SpentProcessEnd");
+		pendingKillWatchdog.set(end);
+		end.start();
+	}
+
 	public static boolean isExitPending() {
 		if (!exitInProgress.get()) return false;
 		long since = exitStartedAt.get();
@@ -139,12 +164,11 @@ public class ZerionService extends Service {
 		app = (ZerionApplication) getApplication();
 		app.getApplicationComponent().inject(this);
 
-		cancelPendingExit();
-
 		if (created.getAndSet(true)) {
 			stopSelf();
 			return;
 		}
+		cancelPendingExit();
 		final SecretKey dbKey = accountManager.getDatabaseKey();
 		if (dbKey == null) {
 			stopSelf();

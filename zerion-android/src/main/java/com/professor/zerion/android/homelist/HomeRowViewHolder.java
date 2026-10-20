@@ -137,10 +137,12 @@ final class HomeRowViewHolder extends RecyclerView.ViewHolder {
 		if (row.isMuted()) {
 			out = join(ctx, out, ctx.getString(R.string.home_row_muted));
 		}
-		if (row.getPresence() == HomeRow.Presence.ONLINE) {
-			out = join(ctx, out, ctx.getString(R.string.online));
-		} else if (row.getPresence() == HomeRow.Presence.OFFLINE) {
-			out = join(ctx, out, ctx.getString(R.string.offline));
+		String presence = row.getPresence() == HomeRow.Presence.ONLINE
+				? ctx.getString(R.string.online)
+				: row.getPresence() == HomeRow.Presence.OFFLINE
+				? ctx.getString(R.string.offline) : "";
+		if (!presence.isEmpty() && !shown.equals(presence)) {
+			out = join(ctx, out, presence);
 		}
 		return out;
 	}

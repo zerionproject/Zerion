@@ -13,6 +13,7 @@ Release notes for every published version. The current architecture and its secu
 - Tor: updated to 0.4.9.14, built from the signed upstream source with OpenSSL 3.5.9. The obfs4, snowflake and meek transports (lyrebird 0.9.0) are now built from the signed upstream tag in this repository instead of taken from a third-party jar. The built-in bridge lists were refreshed from the Tor Project's published lines and dead bridges removed; snowflake and meek are used only after the user agrees, remembered per country; an installation that uses the built-in bridges can fetch a newer list over Tor from this repository, accepted only with a valid signature by a pinned key, a higher sequence number and before its expiry; bridge health is stored encrypted. The "Unstable, switch to bridges" warning appears only while onion lookups go unanswered, and reconnect attempts are calmer.
 - Wallet: the Monero library is rebuilt on OpenSSL 3.5.9, the same release as Tor.
 - Links: the zerion link scheme is matched in any letter case.
+- Exit: opening Zerion again after Exit no longer crashes when the system kept the old process alive in the background, as some power managers do ([#43](https://github.com/zerionproject/Zerion/issues/43)).
 - Languages: every new and changed text is translated in all 46 supported languages.
 
 ## 3.0.17 (October 2026)

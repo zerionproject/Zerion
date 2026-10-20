@@ -13,6 +13,7 @@ import com.professor.zerion.android.fragment.BaseFragment.BaseFragmentListener;
 import com.professor.zerion.android.login.StartupViewModel.State;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+import org.zerionproject.core.api.lifecycle.LifecycleManager;
 
 import javax.inject.Inject;
 
@@ -34,6 +35,8 @@ public class StartupActivity extends BaseActivity implements
 		BaseFragmentListener {
 
 	@Inject
+	LifecycleManager lifecycleManager;
+	@Inject
 	ViewModelProvider.Factory viewModelFactory;
 
 	private StartupViewModel viewModel;
@@ -53,7 +56,14 @@ public class StartupActivity extends BaseActivity implements
 	@Override
 	public void onCreate(@Nullable Bundle state) {
 		super.onCreate(state);
-		com.professor.zerion.android.ZerionService.cancelPendingExit();
+		if (ZerionService.isSpent(lifecycleManager.getLifecycleState())) {
+			ZerionService.endSpentProcess(lifecycleManager);
+			android.widget.Toast.makeText(this, R.string.exit_in_progress,
+					android.widget.Toast.LENGTH_SHORT).show();
+			finish();
+			return;
+		}
+		ZerionService.cancelPendingExit();
 		getWindow().addFlags(
 				android.view.WindowManager.LayoutParams.FLAG_SECURE);
 		overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
