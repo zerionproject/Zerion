@@ -38,7 +38,7 @@ public class GroupMemberInviteFlowTest {
 	public void setUp() throws Exception {
 		net.connect(creator, member);
 		net.connect(member, invitee);
-		groupId = creator.manager.createGroup("Club").getGroupId();
+		groupId = creator.manager.createLegacyGroup("Club", null).getGroupId();
 		join(member);
 	}
 

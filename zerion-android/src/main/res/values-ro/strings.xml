@@ -2716,4 +2716,11 @@
 	<string name="renewal_waiting_last_seen">Văzut ultima dată %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Va fi generată o nouă adresă Tor, care va fi transmisă contactelor dvs. la următoarea lor conexiune. Vechea adresă continuă să funcționeze cel puțin o zi și până când toate contactele au migrat.</string>
 	<string name="pref_rotate_onion_success_message">Vechea adresă continuă să funcționeze cel puțin o zi și până când toate contactele au trecut la cea nouă.\n\nAdresa nouă:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Alăturarea cu un nume aleatoriu funcționează doar în grupurile noi.</string>
+	<string name="grouptr_older_group_note">Acesta este un grup mai vechi: membrii lui vă pot recunoaște în celelalte grupuri mai vechi ale dvs.</string>
+	<string name="grouptr_create_new_private_group">Creați un grup privat nou</string>
+	<string name="grouptr_contact_must_update">%1$s nu se poate alătura încă grupurilor noi.</string>
+	<string name="grouptr_my_safety_code_in_group">Codul meu de siguranță în acest grup</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nAveți un cod diferit în fiecare grup nou.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nDacă %1$s vede același cod la „Codul meu de siguranță în acest grup”, postările afișate sub acest nume sunt într-adevăr ale acestei persoane.</string>
 </resources>

@@ -994,4 +994,11 @@
 	<string name="renewal_waiting_last_seen">Última conexión %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Se generará una nueva dirección de Tor y se compartirá con tus contactos en su próxima conexión. Tu dirección antigua seguirá funcionando al menos un día y hasta que todos los contactos hayan migrado.</string>
 	<string name="pref_rotate_onion_success_message">Tu dirección antigua seguirá funcionando al menos un día y hasta que todos los contactos hayan pasado a la nueva.\n\nNueva dirección:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Unirse con un nombre aleatorio solo funciona en grupos nuevos.</string>
+	<string name="grouptr_older_group_note">Este es un grupo antiguo: sus miembros pueden reconocerte en tus otros grupos antiguos.</string>
+	<string name="grouptr_create_new_private_group">Crear un grupo privado nuevo</string>
+	<string name="grouptr_contact_must_update">%1$s aún no puede unirse a grupos nuevos.</string>
+	<string name="grouptr_my_safety_code_in_group">Mi código de seguridad en este grupo</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nTienes un código distinto en cada grupo nuevo.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSi %1$s ve el mismo código en «Mi código de seguridad en este grupo», los mensajes que aparecen con este nombre son realmente suyos.</string>
 </resources>

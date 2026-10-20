@@ -213,14 +213,19 @@ class IdentityManagerImpl implements IdentityManager, OpenDatabaseHook {
 		if (cached == null) {
 			cached = db.transactionWithResult(true, this::getCachedIdentity);
 		}
-		return cached.getMlDsaSigPrivateKey();
+		return copyOf(cached.getMlDsaSigPrivateKey());
 	}
 
 	@Override
 	@Nullable
 	public byte[] getLocalMlDsaSigPrivateKey(Transaction txn)
 			throws DbException {
-		return getCachedIdentity(txn).getMlDsaSigPrivateKey();
+		return copyOf(getCachedIdentity(txn).getMlDsaSigPrivateKey());
+	}
+
+	@Nullable
+	private static byte[] copyOf(@Nullable byte[] key) {
+		return key == null ? null : key.clone();
 	}
 
 	@Override

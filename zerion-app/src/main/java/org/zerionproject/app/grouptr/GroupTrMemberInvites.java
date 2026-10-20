@@ -19,7 +19,6 @@ import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.PostQuantumConstants;
-import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
@@ -72,26 +71,61 @@ class GroupTrMemberInvites {
 		ReentrantLock lockFor(byte[] groupId);
 
 		@Nullable
-		byte[] senderPubKey(ContactId contactId);
+		byte[] senderPubKey(GroupTrState s, ContactId contactId);
 
 		@Nullable
-		Contact findContact(Transaction txn, byte[] pubKey) throws DbException;
+		byte[] identityOf(ContactId contactId);
+
+		@Nullable
+		Contact findContact(Transaction txn, GroupTrState s, byte[] pubKey)
+				throws DbException;
+
+		@Nullable
+		byte[] keyOf(Transaction txn, GroupTrState s, Contact c)
+				throws DbException;
+
+		byte[] localKey(GroupTrState s) throws DbException;
+
+		LocalAuthor localAuthor() throws DbException;
+
+		GroupTrKeys.Binding bind(byte[] groupId, GroupTrKeys.Own own,
+				long timestamp) throws DbException;
+
+		byte[] signAsIdentity(String label, byte[] signed) throws DbException;
+
+		GroupTrKeys keys();
 
 		void dispatch(Transaction txn, Contact c, long timestamp, BdfList body)
 				throws DbException;
 
-		byte[] sign(String label, byte[] signed, PrivateKey key)
+		byte[] sign(GroupTrState s, String label, byte[] signed)
 				throws DbException;
 
-		boolean verify(byte[] sig, String label, byte[] signed, byte[] pubKey);
+		boolean verify(GroupTrState s, byte[] sig, String label, byte[] signed,
+				byte[] pubKey);
 
 		@Nullable
 		byte[] knownMlDsaKey(byte[] pubKey) throws DbException;
 
+		@Nullable
+		byte[] knownMlDsaKey(GroupTrState s, byte[] pubKey) throws DbException;
+
 		byte[] deriveGroupId(String creatorName, byte[] creatorPubKey,
 				String name, byte[] salt) throws FormatException;
 
+		byte[] deriveKeyedGroupId(String creatorName, byte[] creatorPubKey,
+				byte[] creatorMlDsa, String name, byte[] salt)
+				throws FormatException;
+
 		void materialize(GroupTrState s, Settings extra) throws DbException;
+
+		void materializeKeyed(GroupTrState s, Settings extra,
+				GroupTrKeys.Own own, ContactId inviter, byte[] inviterIdentity,
+				byte[] inviterKey, byte[] inviterMlDsa, long bindingTimestamp)
+				throws DbException;
+
+		void storeBinding(byte[] groupId, ContactId contactId,
+				byte[] identity, GroupTrKeys.Binding b) throws DbException;
 
 		void removeFromDevice(byte[] groupId) throws DbException;
 
@@ -134,7 +168,12 @@ class GroupTrMemberInvites {
 	static final String K_JOIN_RATE = "joinRate";
 	static final String K_ADMITTED_PREFIX = "admitted.";
 	static final String K_FORWARDED_EPOCH = "forwardedEpoch";
+	static final String K_FORWARDED_SECRET_PREFIX = "forwardedSecret.";
+	static final String K_FORWARDED_SECRET_ID_PREFIX = "forwardedSecretId.";
 	static final String K_REMOVED = "removed";
+	static final String K_REMOVED_TAGS = "removedTags";
+	static final String K_MEMBER_TAG_PREFIX = "memberTag.";
+	static final String K_INVITER_PREFIX = "inviter.";
 	static final String K_GRANT_PREFIX = "grant.";
 
 	static final int MAX_PENDING_OFFERS = 64;
@@ -148,6 +187,8 @@ class GroupTrMemberInvites {
 			INVITE_OFFER_MAX_AGE_MS + INVITE_ANSWER_GRACE_MS;
 	static final long PERMISSIONS_MAX_AGE_MS = JOIN_WINDOW_MS;
 	static final long PERMISSIONS_REFRESH_MS = INVITE_OFFER_MAX_AGE_MS;
+	private static final byte[] NO_INVITEE = new byte[32];
+	private static final byte[] NO_KEY = new byte[0];
 
 	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
@@ -222,11 +263,18 @@ class GroupTrMemberInvites {
 		private final byte[] inviterPubKey;
 		private final ContactId contactId;
 		private final long timestamp;
+		@Nullable
+		private final byte[] inviterMlDsaPubKey;
+		@Nullable
+		private final byte[] inviterIdentity;
+		private final long bindingTimestamp;
 
 		private PendingOffer(String groupName, byte[] salt,
 				String creatorName, byte[] creatorPubKey,
 				byte[] creatorMlDsaPubKey, byte[] inviterPubKey,
-				ContactId contactId, long timestamp) {
+				ContactId contactId, long timestamp,
+				@Nullable byte[] inviterMlDsaPubKey,
+				@Nullable byte[] inviterIdentity, long bindingTimestamp) {
 			this.groupName = groupName;
 			this.salt = salt;
 			this.creatorName = creatorName;
@@ -235,6 +283,13 @@ class GroupTrMemberInvites {
 			this.inviterPubKey = inviterPubKey;
 			this.contactId = contactId;
 			this.timestamp = timestamp;
+			this.inviterMlDsaPubKey = inviterMlDsaPubKey;
+			this.inviterIdentity = inviterIdentity;
+			this.bindingTimestamp = bindingTimestamp;
+		}
+
+		private boolean keyed() {
+			return inviterMlDsaPubKey != null && inviterIdentity != null;
 		}
 	}
 
@@ -295,6 +350,32 @@ class GroupTrMemberInvites {
 		b.put(creatorPubKey);
 		b.putLong(timestamp);
 		putPrefixed(b, inviteeMlDsaPubKey);
+		return b.array();
+	}
+
+	static byte[] responseSignedInput(byte[] groupId, byte[] inviteePubKey,
+			byte[] inviterPubKey, byte[] creatorPubKey, long timestamp,
+			byte[] inviteeMlDsaPubKey, @Nullable byte[] tag) {
+		byte[] base = responseSignedInput(groupId, inviteePubKey,
+				inviterPubKey, creatorPubKey, timestamp, inviteeMlDsaPubKey);
+		if (tag == null) return base;
+		ByteBuffer b = ByteBuffer.allocate(base.length + 4 + tag.length);
+		b.put(base);
+		putPrefixed(b, tag);
+		return b.array();
+	}
+
+	static byte[] joinRequestSignedInput(byte[] groupId, byte[] inviterPubKey,
+			byte[] inviteePubKey, long acceptTimestamp, long timestamp,
+			String inviteeName, byte[] inviteeMlDsaPubKey, byte[] acceptSig,
+			@Nullable byte[] tag) {
+		byte[] base = joinRequestSignedInput(groupId, inviterPubKey,
+				inviteePubKey, acceptTimestamp, timestamp, inviteeName,
+				inviteeMlDsaPubKey, acceptSig);
+		if (tag == null) return base;
+		ByteBuffer b = ByteBuffer.allocate(base.length + 4 + tag.length);
+		b.put(base);
+		putPrefixed(b, tag);
 		return b.array();
 	}
 
@@ -371,30 +452,27 @@ class GroupTrMemberInvites {
 		lock.lock();
 		try {
 			GroupTrState s = requireLive(groupId);
-			LocalAuthor la = localAuthor();
-			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!Arrays.equals(localPub, s.getCreatorPubKey())) {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.NOT_CREATOR);
 			}
-			return publishPermissions(s, la,
-					allowed ? MEMBERS_MAY_INVITE : 0L);
+			return publishPermissions(s, allowed ? MEMBERS_MAY_INVITE : 0L);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private int publishPermissions(GroupTrState s, LocalAuthor la,
-			long flags) throws DbException {
+	private int publishPermissions(GroupTrState s, long flags)
+			throws DbException {
 		byte[] groupId = s.getGroupId();
-		byte[] localPub = la.getPublicKey().getEncoded();
+		byte[] localPub = host.localKey(s);
 		Permissions current = loadPermissions(groupId);
 		long now = clock.currentTimeMillis();
 		long ts = current == null ? now
 				: Math.max(now, current.timestamp + 1);
-		byte[] sig = host.sign(LABEL_PERMISSIONS,
-				permissionsSignedInput(groupId, flags, ts),
-				la.getPrivateKey());
+		byte[] sig = host.sign(s, LABEL_PERMISSIONS,
+				permissionsSignedInput(groupId, flags, ts));
 		Permissions next = new Permissions(flags, ts, sig);
 		List<byte[]> to = new ArrayList<>();
 		for (GroupTrMember m : s.getMembers()) {
@@ -404,7 +482,7 @@ class GroupTrMemberInvites {
 		}
 		int skipped = db.transactionWithResult(false, txn -> {
 			storePermissions(txn, groupId, next);
-			return sendPermissions(txn, groupId, next, to, now);
+			return sendPermissions(txn, s, next, to, now);
 		});
 		announceUpdated(groupId);
 		return skipped;
@@ -422,7 +500,7 @@ class GroupTrMemberInvites {
 		if (Arrays.equals(memberPubKey, s.getCreatorPubKey())) return false;
 		if (!listed(s, memberPubKey)) return false;
 		return db.transactionWithResult(true, txn -> {
-			Contact c = host.findContact(txn, memberPubKey);
+			Contact c = host.findContact(txn, s, memberPubKey);
 			return c != null && supportsGrants(txn, c);
 		});
 	}
@@ -433,8 +511,7 @@ class GroupTrMemberInvites {
 		lock.lock();
 		try {
 			GroupTrState s = requireLive(groupId);
-			LocalAuthor la = localAuthor();
-			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!Arrays.equals(localPub, s.getCreatorPubKey())) {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.NOT_CREATOR);
@@ -447,36 +524,36 @@ class GroupTrMemberInvites {
 			if (!granted && loadGrant(groupId, memberPubKey) == null) {
 				return 0;
 			}
-			return publishGrant(s, la, memberPubKey,
+			return publishGrant(s, memberPubKey,
 					granted ? GRANT_MAY_ADD_MEMBERS : 0L);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private int publishGrant(GroupTrState s, LocalAuthor la,
-			byte[] memberPubKey, long flags) throws DbException {
+	private int publishGrant(GroupTrState s, byte[] memberPubKey, long flags)
+			throws DbException {
 		byte[] groupId = s.getGroupId();
 		Permissions current = loadGrant(groupId, memberPubKey);
 		long now = clock.currentTimeMillis();
 		long ts = current == null ? now
 				: Math.max(now, current.timestamp + 1);
-		byte[] sig = host.sign(LABEL_INVITER_GRANT,
-				grantSignedInput(groupId, memberPubKey, flags, ts),
-				la.getPrivateKey());
+		byte[] sig = host.sign(s, LABEL_INVITER_GRANT,
+				grantSignedInput(groupId, memberPubKey, flags, ts));
 		Permissions next = new Permissions(flags, ts, sig);
 		int skipped = db.transactionWithResult(false, txn -> {
 			storeGrant(txn, groupId, memberPubKey, next);
-			return sendGrant(txn, groupId, memberPubKey, next, now) ? 0 : 1;
+			return sendGrant(txn, s, memberPubKey, next, now) ? 0 : 1;
 		});
 		announceUpdated(groupId);
 		return skipped;
 	}
 
-	private boolean sendGrant(Transaction txn, byte[] groupId,
+	private boolean sendGrant(Transaction txn, GroupTrState s,
 			byte[] memberPubKey, Permissions g, long timestamp)
 			throws DbException {
-		Contact c = host.findContact(txn, memberPubKey);
+		byte[] groupId = s.getGroupId();
+		Contact c = host.findContact(txn, s, memberPubKey);
 		if (c == null || !supportsGrants(txn, c)) return false;
 		host.dispatch(txn, c, timestamp, BdfList.of(
 				(long) MessageTypes.GROUP_INVITER_GRANT, groupId, memberPubKey,
@@ -484,8 +561,7 @@ class GroupTrMemberInvites {
 		return true;
 	}
 
-	private void refreshGrantsIfDue(GroupTrState s, LocalAuthor la)
-			throws DbException {
+	private void refreshGrantsIfDue(GroupTrState s) throws DbException {
 		long now = clock.currentTimeMillis();
 		for (Map.Entry<String, Permissions> e
 				: loadGrants(s.getGroupId()).entrySet()) {
@@ -501,7 +577,7 @@ class GroupTrMemberInvites {
 				continue;
 			}
 			if (!listed(s, memberPub)) continue;
-			publishGrant(s, la, memberPub, g.flags);
+			publishGrant(s, memberPub, g.flags);
 		}
 	}
 
@@ -523,19 +599,19 @@ class GroupTrMemberInvites {
 		try {
 			GroupTrState s = host.getGroup(groupId);
 			if (s == null || s.isDissolved()) return;
-			byte[] sender = host.senderPubKey(e.getContactId());
+			byte[] sender = host.senderPubKey(s, e.getContactId());
 			if (sender == null
 					|| !Arrays.equals(sender, s.getCreatorPubKey())) {
 				return;
 			}
-			byte[] localPub = localAuthor().getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!Arrays.equals(memberPub, localPub)
 					|| Arrays.equals(localPub, s.getCreatorPubKey())) {
 				return;
 			}
 			Permissions current = loadGrant(groupId, memberPub);
 			if (current != null && ts <= current.timestamp) return;
-			if (!host.verify(sig, LABEL_INVITER_GRANT,
+			if (!host.verify(s, sig, LABEL_INVITER_GRANT,
 					grantSignedInput(groupId, memberPub, flags, ts),
 					s.getCreatorPubKey())) {
 				return;
@@ -562,10 +638,8 @@ class GroupTrMemberInvites {
 		lock.lock();
 		try {
 			refreshPermissionsIfDue(s);
-			LocalAuthor la = localAuthor();
-			if (Arrays.equals(la.getPublicKey().getEncoded(),
-					s.getCreatorPubKey())) {
-				refreshGrantsIfDue(s, la);
+			if (Arrays.equals(host.localKey(s), s.getCreatorPubKey())) {
+				refreshGrantsIfDue(s);
 			}
 		} finally {
 			lock.unlock();
@@ -587,41 +661,36 @@ class GroupTrMemberInvites {
 		if (p.timestamp > now || now - p.timestamp < PERMISSIONS_REFRESH_MS) {
 			return false;
 		}
-		LocalAuthor la = localAuthor();
-		if (!Arrays.equals(la.getPublicKey().getEncoded(),
-				s.getCreatorPubKey())) {
+		if (!Arrays.equals(host.localKey(s), s.getCreatorPubKey())) {
 			return false;
 		}
-		publishPermissions(s, la, p.flags);
+		publishPermissions(s, p.flags);
 		return true;
 	}
 
 	void onMemberAdded(GroupTrState s, byte[] addedPubKey)
 			throws DbException {
 		forgetRemoved(s.getGroupId(), addedPubKey);
-		LocalAuthor la = localAuthor();
-		if (Arrays.equals(la.getPublicKey().getEncoded(),
-				s.getCreatorPubKey())) {
-			refreshGrantsIfDue(s, la);
+		if (Arrays.equals(host.localKey(s), s.getCreatorPubKey())) {
+			refreshGrantsIfDue(s);
 		}
 		if (refreshPermissionsIfDue(s)) return;
 		Permissions p = loadPermissions(s.getGroupId());
 		if (p == null) return;
 		long now = clock.currentTimeMillis();
-		db.transaction(false, txn -> sendPermissions(txn, s.getGroupId(), p,
+		db.transaction(false, txn -> sendPermissions(txn, s, p,
 				Collections.singletonList(addedPubKey), now));
 	}
 
 	void onClientVersionUpdated(ContactId contactId, int minorVersion) {
 		if (minorVersion < MessagingManager.GROUP_ACTIONS_MIN_VERSION) return;
-		byte[] memberPub = host.senderPubKey(contactId);
-		if (memberPub == null) return;
 		try {
-			byte[] localPub = localAuthor().getPublicKey().getEncoded();
 			for (GroupTrState s : host.getGroups()) {
 				if (s.isDissolved()) continue;
+				byte[] localPub = host.localKey(s);
 				if (!Arrays.equals(s.getCreatorPubKey(), localPub)) continue;
-				if (!listed(s, memberPub)) continue;
+				byte[] memberPub = host.senderPubKey(s, contactId);
+				if (memberPub == null || !listed(s, memberPub)) continue;
 				ReentrantLock lock = host.lockFor(s.getGroupId());
 				lock.lock();
 				try {
@@ -629,13 +698,12 @@ class GroupTrMemberInvites {
 					Permissions g = loadGrant(s.getGroupId(), memberPub);
 					if (g != null && minorVersion
 							>= MessagingManager.GROUP_INVITER_GRANTS_MIN_VERSION) {
-						db.transaction(false, txn -> sendGrant(txn,
-								s.getGroupId(), memberPub, g, now));
+						db.transaction(false, txn -> sendGrant(txn, s,
+								memberPub, g, now));
 					}
 					Permissions p = loadPermissions(s.getGroupId());
 					if (p == null) continue;
-					db.transaction(false, txn -> sendPermissions(txn,
-							s.getGroupId(), p,
+					db.transaction(false, txn -> sendPermissions(txn, s, p,
 							Collections.singletonList(memberPub), now));
 				} finally {
 					lock.unlock();
@@ -657,7 +725,7 @@ class GroupTrMemberInvites {
 			throws DbException {
 		GroupTrState s = host.getGroup(groupId);
 		if (s == null) return MemberInviteAvailability.UNAVAILABLE;
-		return availability(s, localAuthor().getPublicKey().getEncoded());
+		return availability(s, host.localKey(s));
 	}
 
 	private MemberInviteAvailability availability(GroupTrState s,
@@ -673,7 +741,7 @@ class GroupTrMemberInvites {
 			return MemberInviteAvailability.NOT_ENABLED;
 		}
 		return db.transactionWithResult(true, txn -> {
-			Contact creator = host.findContact(txn, s.getCreatorPubKey());
+			Contact creator = host.findContact(txn, s, s.getCreatorPubKey());
 			if (creator == null) {
 				return MemberInviteAvailability.CREATOR_NOT_A_CONTACT;
 			}
@@ -692,9 +760,13 @@ class GroupTrMemberInvites {
 
 	boolean canReceive(byte[] groupId, ContactId contactId)
 			throws DbException {
-		int needed = groupWideProof(groupId, clock.currentTimeMillis()) != null
+		int proven = groupWideProof(groupId, clock.currentTimeMillis()) != null
 				? MessagingManager.GROUP_ACTIONS_MIN_VERSION
 				: MessagingManager.GROUP_INVITER_GRANTS_MIN_VERSION;
+		GroupTrState s = host.getGroup(groupId);
+		int needed = s != null && s.usesGroupKeys()
+				? Math.max(proven,
+				MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION) : proven;
 		return db.transactionWithResult(true, txn ->
 				messagingManager.getContactClientMinorVersion(txn, contactId)
 						>= needed);
@@ -718,11 +790,7 @@ class GroupTrMemberInvites {
 
 	boolean canAcceptIncognito(byte[] groupId) throws DbException {
 		PendingOffer o = loadPendingOffer(groupId);
-		if (o == null) return false;
-		return db.transactionWithResult(true, txn ->
-				messagingManager.getContactClientMinorVersion(txn,
-						o.contactId)
-						>= MessagingManager.GROUP_INCOGNITO_MIN_VERSION);
+		return o != null && o.keyed();
 	}
 
 	boolean isWaitingForAdmin(byte[] groupId) throws DbException {
@@ -732,7 +800,7 @@ class GroupTrMemberInvites {
 			host.removeFromDevice(groupId);
 			return false;
 		}
-		return isWaiting(s, localAuthor().getPublicKey().getEncoded());
+		return isWaiting(s, host.localKey(s));
 	}
 
 	void expireUnconfirmedJoins() {
@@ -745,7 +813,7 @@ class GroupTrMemberInvites {
 	}
 
 	private boolean expired(GroupTrState s) throws DbException {
-		return isWaiting(s, localAuthor().getPublicKey().getEncoded())
+		return isWaiting(s, host.localKey(s))
 				&& clock.currentTimeMillis() - s.getCreated() > JOIN_WINDOW_MS;
 	}
 
@@ -791,8 +859,7 @@ class GroupTrMemberInvites {
 		lock.lock();
 		try {
 			GroupTrState s = requireLive(groupId);
-			LocalAuthor la = localAuthor();
-			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (availability(s, localPub)
 					!= MemberInviteAvailability.ALLOWED) {
 				throw unavailable();
@@ -814,15 +881,43 @@ class GroupTrMemberInvites {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.CONTACT_NOT_FOUND);
 			}
-			byte[] inviteePub = invitee.getAuthor().getPublicKey().getEncoded();
-			if (Arrays.equals(inviteePub, localPub)
+			byte[] identity = invitee.getAuthor().getPublicKey().getEncoded();
+			boolean keyed = s.usesGroupKeys();
+			if (keyed && db.transactionWithResult(true, txn ->
+					messagingManager.getContactClientMinorVersion(txn,
+							contactId))
+					< MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION) {
+				throw new GroupTrAuthException(
+						GroupTrAuthException.Reason.CONTACT_MUST_UPDATE);
+			}
+			byte[] inviteePub = keyed ? db.transactionWithNullableResult(true,
+					txn -> host.keyOf(txn, s, invitee)) : identity;
+			if (inviteePub != null && (Arrays.equals(inviteePub, localPub)
 					|| Arrays.equals(inviteePub, s.getCreatorPubKey())
-					|| listed(s, inviteePub)) {
+					|| listed(s, inviteePub))) {
 				return;
 			}
+			if (keyed && ((inviteePub != null
+					&& removedByCreator(groupId, inviteePub))
+					|| removedTag(groupId, host.keys().removalTag(groupId,
+					identity)))) {
+				throw unavailable();
+			}
 			if (!canReceive(groupId, contactId)) throw unavailable();
-			byte[] creatorMlDsa = contactMlDsaKey(s.getCreatorPubKey());
+			byte[] creatorMlDsa = keyed
+					? host.knownMlDsaKey(s, s.getCreatorPubKey())
+					: contactMlDsaKey(s, s.getCreatorPubKey());
 			if (creatorMlDsa == null) throw unavailable();
+			GroupTrKeys.Binding offered = null;
+			if (keyed) {
+				GroupTrKeys.Own own = host.keys().own(groupId);
+				if (own == null) throw unavailable();
+				try {
+					offered = host.bind(groupId, own, now);
+				} finally {
+					own.clear();
+				}
+			}
 			Map<String, SentInvite> sent = loadSent(groupId);
 			List<String> expired = new ArrayList<>();
 			int open = 0;
@@ -834,23 +929,24 @@ class GroupTrMemberInvites {
 					expired.add(K_SENT_PREFIX + e.getKey());
 				}
 			}
-			String inviteeHex = toHexString(inviteePub);
+			String inviteeHex = toHexString(identity);
 			if (open >= MAX_OPEN_INVITES_PER_GROUP
 					&& !sent.containsKey(inviteeHex)) {
 				throw unavailable();
 			}
-			byte[] signed = offerSignedInput(groupId, localPub, inviteePub,
-					s.getCreatorPubKey(), now, s.getName(), s.getSalt(),
-					s.getCreatorName(), creatorMlDsa, p.flags, p.timestamp,
-					p.sig);
-			byte[] sig = host.sign(granted ? LABEL_GRANTED_OFFER : LABEL_OFFER,
-					signed, la.getPrivateKey());
+			byte[] signed = offerSignedInput(groupId, localPub,
+					keyed ? NO_INVITEE : identity, s.getCreatorPubKey(), now,
+					s.getName(), s.getSalt(), s.getCreatorName(), creatorMlDsa,
+					p.flags, p.timestamp, p.sig);
+			byte[] sig = host.sign(s, granted ? LABEL_GRANTED_OFFER
+					: LABEL_OFFER, signed);
 			BdfList body = BdfList.of((long) (granted
 							? MessageTypes.GROUPTR_GRANTED_INVITE_OFFER
 							: MessageTypes.GROUPTR_MEMBER_INVITE_OFFER), groupId,
 					s.getName(), s.getSalt(), s.getCreatorName(),
 					s.getCreatorPubKey(), creatorMlDsa, localPub, p.flags,
 					p.timestamp, p.sig, now, sig);
+			if (offered != null) body.add(offered.toList());
 			db.transaction(false, txn -> {
 				host.dispatch(txn, invitee, now, body);
 				settingsManager.deleteSettings(txn, nsOf(groupId), expired);
@@ -874,14 +970,14 @@ class GroupTrMemberInvites {
 		try {
 			GroupTrState s = host.getGroup(groupId);
 			if (s == null || s.isDissolved()) return;
-			byte[] sender = host.senderPubKey(e.getContactId());
+			byte[] sender = host.senderPubKey(s, e.getContactId());
 			if (sender == null
 					|| !Arrays.equals(sender, s.getCreatorPubKey())) {
 				return;
 			}
 			Permissions current = loadPermissions(groupId);
 			if (current != null && ts <= current.timestamp) return;
-			if (!host.verify(sig, LABEL_PERMISSIONS,
+			if (!host.verify(s, sig, LABEL_PERMISSIONS,
 					permissionsSignedInput(groupId, flags, ts),
 					s.getCreatorPubKey())) {
 				return;
@@ -909,37 +1005,64 @@ class GroupTrMemberInvites {
 		byte[] permSig = r.getRaw(10);
 		long ts = r.getLong(11);
 		byte[] sig = r.getRaw(12);
+		GroupTrKeys.Binding binding = r.size() > 13
+				? GroupTrKeys.Binding.parse(r.getList(13)) : null;
+		boolean keyed = binding != null;
 		boolean granted = e.getMessageType()
 				== MessageTypes.GROUPTR_GRANTED_INVITE_OFFER;
 		long now = clock.currentTimeMillis();
 		if (!GroupTrManagerImpl.inviteOfferTimely(now, ts)) return;
-		byte[] sender = host.senderPubKey(e.getContactId());
-		if (sender == null || !Arrays.equals(sender, inviterPub)) return;
-		if (Arrays.equals(inviterPub, creatorPub)) return;
-		byte[] localPub = localAuthor().getPublicKey().getEncoded();
-		if (Arrays.equals(localPub, creatorPub)
-				|| Arrays.equals(localPub, inviterPub)) {
-			return;
+		Contact inviter = contactOrNull(e.getContactId());
+		if (inviter == null) return;
+		byte[] inviterIdentity =
+				inviter.getAuthor().getPublicKey().getEncoded();
+		byte[] inviterMlDsa;
+		if (binding != null) {
+			if (!Arrays.equals(binding.pub, inviterPub)) return;
+			if (!host.keys().verify(groupId, binding, inviterIdentity,
+					inviter.getMlDsaSigPublicKey())) {
+				return;
+			}
+			inviterMlDsa = binding.mlDsa;
+		} else {
+			if (!Arrays.equals(inviterIdentity, inviterPub)) return;
+			inviterMlDsa = host.knownMlDsaKey(inviterPub);
+			if (inviterMlDsa == null) return;
 		}
+		if (Arrays.equals(inviterPub, creatorPub)) return;
 		long needed = granted ? GRANT_MAY_ADD_MEMBERS : MEMBERS_MAY_INVITE;
 		if ((permFlags & needed) == 0L) return;
 		if (!permissionsTimely(now, permTs)) return;
-		if (!Arrays.equals(host.deriveGroupId(creatorName, creatorPub,
-				groupName, salt), groupId)) {
-			return;
-		}
-		byte[] known = host.knownMlDsaKey(creatorPub);
-		if (known != null && !Arrays.equals(known, creatorMlDsa)) return;
+		byte[] derived = keyed
+				? host.deriveKeyedGroupId(creatorName, creatorPub,
+				creatorMlDsa, groupName, salt)
+				: host.deriveGroupId(creatorName, creatorPub, groupName, salt);
+		if (!Arrays.equals(derived, groupId)) return;
 		ReentrantLock lock = host.lockFor(groupId);
 		lock.lock();
 		try {
 			GroupTrState existing = host.getGroup(groupId);
+			if (existing != null && existing.usesGroupKeys() != keyed) return;
+			byte[] localPub = keyed
+					? (existing == null ? NO_KEY : host.localKey(existing))
+					: host.localAuthor().getPublicKey().getEncoded();
+			if (Arrays.equals(localPub, creatorPub)
+					|| Arrays.equals(localPub, inviterPub)) {
+				return;
+			}
+			byte[] known = keyed
+					? (existing == null ? null
+					: host.knownMlDsaKey(existing, creatorPub))
+					: host.knownMlDsaKey(creatorPub);
+			if (known != null && !Arrays.equals(known, creatorMlDsa)) return;
 			if (!admissibleOver(existing, localPub)) return;
 			if (loadPendingOffer(groupId) != null) return;
-			if (!host.verify(sig, granted ? LABEL_GRANTED_OFFER : LABEL_OFFER,
-					offerSignedInput(groupId, inviterPub, localPub, creatorPub,
-							ts, groupName, salt, creatorName, creatorMlDsa,
-							permFlags, permTs, permSig), inviterPub)) {
+			if (!verifyWith(sig, granted ? LABEL_GRANTED_OFFER : LABEL_OFFER,
+					offerSignedInput(groupId, inviterPub,
+							keyed ? NO_INVITEE : localPub, creatorPub, ts,
+							groupName, salt, creatorName, creatorMlDsa,
+							permFlags, permTs, permSig), inviterPub,
+					inviterMlDsa)) {
 				return;
 			}
 			boolean proven = granted
@@ -952,7 +1075,9 @@ class GroupTrMemberInvites {
 			if (!proven) return;
 			storePendingOffer(groupId, new PendingOffer(groupName, salt,
 					creatorName, creatorPub, creatorMlDsa, inviterPub,
-					e.getContactId(), ts));
+					e.getContactId(), ts, keyed ? inviterMlDsa : null,
+					keyed ? inviterIdentity : null,
+					binding == null ? 0L : binding.timestamp));
 		} finally {
 			lock.unlock();
 		}
@@ -984,15 +1109,19 @@ class GroupTrMemberInvites {
 						GroupTrAuthException.Reason.INVITE_EXPIRED);
 			}
 			LocalAuthor la = localAuthor();
-			byte[] localPub = la.getPublicKey().getEncoded();
 			GroupTrState existing = host.getGroup(groupId);
+			byte[] localPub = o.keyed()
+					? (existing == null ? NO_KEY : host.localKey(existing))
+					: la.getPublicKey().getEncoded();
 			if (!admissibleOver(existing, localPub)) {
 				removePendingOffer(groupId);
 				return;
 			}
 			Contact inviter = contactOrNull(o.contactId);
-			if (inviter == null || !Arrays.equals(inviter.getAuthor()
-					.getPublicKey().getEncoded(), o.inviterPubKey)) {
+			byte[] expected = o.keyed() ? o.inviterIdentity : o.inviterPubKey;
+			if (inviter == null || expected == null || !Arrays.equals(
+					inviter.getAuthor().getPublicKey().getEncoded(),
+					expected)) {
 				removePendingOffer(groupId);
 				throw unavailable();
 			}
@@ -1006,11 +1135,17 @@ class GroupTrMemberInvites {
 							.Reason.INCOGNITO_NOT_SUPPORTED);
 				}
 			}
+			if (o.keyed()) {
+				acceptWithGroupKey(groupId, o, la, inviter, existing,
+						incognitoName, now);
+				removePendingOffer(groupId);
+				return;
+			}
 			byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
 			if (localMlDsa == null) throw unavailable();
-			byte[] sig = host.sign(LABEL_ACCEPT, responseSignedInput(groupId,
-					localPub, o.inviterPubKey, o.creatorPubKey, now,
-					localMlDsa), la.getPrivateKey());
+			byte[] sig = host.signAsIdentity(LABEL_ACCEPT,
+					responseSignedInput(groupId, localPub, o.inviterPubKey,
+							o.creatorPubKey, now, localMlDsa));
 			BdfList body = incognitoName == null
 					? BdfList.of((long) MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT,
 							groupId, o.inviterPubKey, now, sig)
@@ -1045,6 +1180,67 @@ class GroupTrMemberInvites {
 		}
 	}
 
+	private void acceptWithGroupKey(byte[] groupId, PendingOffer o,
+			LocalAuthor la, Contact inviter, @Nullable GroupTrState existing,
+			@Nullable String incognitoName, long now) throws DbException {
+		byte[] inviterMlDsa = o.inviterMlDsaPubKey;
+		byte[] inviterIdentity = o.inviterIdentity;
+		if (inviterMlDsa == null || inviterIdentity == null) {
+			throw unavailable();
+		}
+		GroupTrKeys keys = host.keys();
+		GroupTrKeys.Own own = keys.generate(now);
+		try {
+			acceptKeyed(groupId, o, la, inviter, existing, incognitoName, now,
+					inviterMlDsa, inviterIdentity, own);
+		} finally {
+			own.clear();
+		}
+	}
+
+	private void acceptKeyed(byte[] groupId, PendingOffer o, LocalAuthor la,
+			Contact inviter, @Nullable GroupTrState existing,
+			@Nullable String incognitoName, long now, byte[] inviterMlDsa,
+			byte[] inviterIdentity, GroupTrKeys.Own own) throws DbException {
+		GroupTrKeys keys = host.keys();
+		GroupTrKeys.Binding binding = host.bind(groupId, own, now);
+		byte[] tag = keys.removalTag(groupId, la.getPublicKey().getEncoded());
+		byte[] sig = keys.sign(own, LABEL_ACCEPT, responseSignedInput(groupId,
+				own.pub, o.inviterPubKey, o.creatorPubKey, now, own.mlDsa,
+				tag));
+		BdfList body = incognitoName == null
+				? BdfList.of((long) MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT,
+						groupId, o.inviterPubKey, now, sig, binding.toList(),
+						tag)
+				: BdfList.of((long) MessageTypes
+								.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO,
+						groupId, o.inviterPubKey, now, incognitoName, sig,
+						binding.toList(), tag);
+		if (existing != null) host.removeFromDevice(groupId);
+		db.transaction(false, txn -> host.dispatch(txn, inviter, now, body));
+		List<GroupTrMember> members = new ArrayList<>(3);
+		members.add(new GroupTrMember(o.creatorPubKey, o.creatorName,
+				now, 0L, MemberRole.CREATOR, o.creatorMlDsaPubKey));
+		members.add(new GroupTrMember(o.inviterPubKey,
+				inviter.getAuthor().getName(), now, 0L, MemberRole.MEMBER,
+				inviterMlDsa));
+		members.add(new GroupTrMember(own.pub, incognitoName == null
+				? la.getName() : incognitoName, now, 0L, MemberRole.MEMBER,
+				own.mlDsa));
+		GroupTrState joining = new GroupTrState(groupId, o.groupName,
+				o.salt, o.creatorPubKey, o.creatorName, now, 0L, false,
+				members, 0L, GroupTrState.SCHEME_GROUP_KEYS);
+		Settings extra = new Settings();
+		extra.put(S_JOINING_VIA, toHexString(o.inviterPubKey));
+		extra.putBoolean(S_JOINED_THROUGH_MEMBER, true);
+		if (incognitoName != null) {
+			host.setIncognitoName(groupId, incognitoName);
+		}
+		host.materializeKeyed(joining, extra, own, inviter.getId(),
+				inviterIdentity, o.inviterPubKey, inviterMlDsa,
+				o.bindingTimestamp);
+	}
+
 	void decline(byte[] groupId, ContactId from) throws DbException {
 		ReentrantLock lock = host.lockFor(groupId);
 		lock.lock();
@@ -1053,8 +1249,10 @@ class GroupTrMemberInvites {
 			if (o == null || !o.contactId.equals(from)) throw unavailable();
 			removePendingOffer(groupId);
 			Contact inviter = contactOrNull(o.contactId);
-			if (inviter == null || !Arrays.equals(inviter.getAuthor()
-					.getPublicKey().getEncoded(), o.inviterPubKey)) {
+			byte[] expected = o.keyed() ? o.inviterIdentity : o.inviterPubKey;
+			if (inviter == null || expected == null || !Arrays.equals(
+					inviter.getAuthor().getPublicKey().getEncoded(),
+					expected)) {
 				return;
 			}
 			if (!canReceive(inviter.getId())) return;
@@ -1062,9 +1260,9 @@ class GroupTrMemberInvites {
 			if (localMlDsa == null) return;
 			LocalAuthor la = localAuthor();
 			long now = clock.currentTimeMillis();
-			byte[] sig = host.sign(LABEL_DECLINE, responseSignedInput(groupId,
-					la.getPublicKey().getEncoded(), o.inviterPubKey,
-					o.creatorPubKey, now, localMlDsa), la.getPrivateKey());
+			byte[] sig = host.signAsIdentity(LABEL_DECLINE, responseSignedInput(
+					groupId, la.getPublicKey().getEncoded(), o.inviterPubKey,
+					o.creatorPubKey, now, localMlDsa));
 			BdfList body = BdfList.of(
 					(long) MessageTypes.GROUPTR_MEMBER_INVITE_DECLINE, groupId,
 					o.inviterPubKey, now, sig);
@@ -1084,60 +1282,100 @@ class GroupTrMemberInvites {
 		boolean incognito = e.getMessageType()
 				== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO;
 		String joinerName = incognito ? r.getString(4) : null;
-		byte[] sig = r.getRaw(incognito ? 5 : 4);
+		int sigAt = incognito ? 5 : 4;
+		byte[] sig = r.getRaw(sigAt);
 		boolean accepted = incognito || e.getMessageType()
 				== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT;
+		GroupTrKeys.Binding binding = accepted && r.size() > sigAt + 1
+				? GroupTrKeys.Binding.parse(r.getList(sigAt + 1)) : null;
+		byte[] tag = binding != null && r.size() > sigAt + 2
+				? r.getRaw(sigAt + 2) : null;
 		ReentrantLock lock = host.lockFor(groupId);
 		lock.lock();
 		try {
-			LocalAuthor la = localAuthor();
-			byte[] localPub = la.getPublicKey().getEncoded();
-			if (!Arrays.equals(inviterPub, localPub)) return;
-			byte[] inviteePub = host.senderPubKey(e.getContactId());
-			if (inviteePub == null) return;
 			GroupTrState s = host.getGroup(groupId);
 			if (s == null || s.isDissolved()) return;
-			String inviteeHex = toHexString(inviteePub);
-			SentInvite sent = loadSent(groupId).get(inviteeHex);
+			boolean keyed = s.usesGroupKeys();
+			byte[] localPub = host.localKey(s);
+			if (!Arrays.equals(inviterPub, localPub)) return;
+			byte[] identity = host.identityOf(e.getContactId());
+			if (identity == null) return;
+			String identityHex = toHexString(identity);
+			SentInvite sent = loadSent(groupId).get(identityHex);
 			if (sent == null || sent.accepted >= 0L) return;
 			long now = clock.currentTimeMillis();
 			if (!GroupTrManagerImpl.inviteResponseTimely(now, sent.offered,
 					answered)) {
 				if (!GroupTrManagerImpl.sentInviteOpen(now, sent.offered)) {
-					removeSent(groupId, inviteeHex);
+					removeSent(groupId, identityHex);
 				}
-				return;
-			}
-			byte[] inviteeMlDsa = contactMlDsaKey(inviteePub);
-			if (inviteeMlDsa == null) return;
-			if (!verifyWith(sig, accepted ? LABEL_ACCEPT : LABEL_DECLINE,
-					responseSignedInput(groupId, inviteePub, localPub,
-							s.getCreatorPubKey(), answered, inviteeMlDsa),
-					inviteePub, inviteeMlDsa)) {
-				return;
-			}
-			if (!accepted
-					|| availability(s, localPub)
-					!= MemberInviteAvailability.ALLOWED) {
-				removeSent(groupId, inviteeHex);
 				return;
 			}
 			Contact invitee = contactOrNull(e.getContactId());
 			if (invitee == null) return;
+			byte[] inviteePub;
+			byte[] inviteeMlDsa;
+			if (keyed && accepted) {
+				if (binding == null || tag == null) return;
+				if (!Arrays.equals(tag, host.keys().removalTag(groupId,
+						identity))) {
+					return;
+				}
+				if (!host.keys().verify(groupId, binding, identity,
+						invitee.getMlDsaSigPublicKey())) {
+					return;
+				}
+				inviteePub = binding.pub;
+				inviteeMlDsa = binding.mlDsa;
+			} else if (keyed) {
+				inviteePub = identity;
+				inviteeMlDsa = invitee.getMlDsaSigPublicKey();
+			} else {
+				if (binding != null) return;
+				inviteePub = identity;
+				inviteeMlDsa = contactMlDsaKey(s, identity);
+			}
+			if (inviteeMlDsa == null) return;
+			byte[] signedTag = keyed && accepted ? tag : null;
+			if (!verifyWith(sig, accepted ? LABEL_ACCEPT : LABEL_DECLINE,
+					responseSignedInput(groupId, inviteePub, localPub,
+							s.getCreatorPubKey(), answered, inviteeMlDsa,
+							signedTag), inviteePub, inviteeMlDsa)) {
+				return;
+			}
+			if (keyed && accepted && binding != null) {
+				host.storeBinding(groupId, e.getContactId(), identity,
+						binding);
+			}
+			if (!accepted
+					|| availability(s, localPub)
+					!= MemberInviteAvailability.ALLOWED
+					|| (signedTag != null && removedTag(groupId, signedTag))) {
+				removeSent(groupId, identityHex);
+				return;
+			}
 			String inviteeName = joinerName != null ? joinerName
 					: invitee.getAuthor().getName();
-			byte[] reqSig = host.sign(LABEL_JOIN_REQUEST,
+			byte[] reqSig = host.sign(s, LABEL_JOIN_REQUEST,
 					joinRequestSignedInput(groupId, localPub, inviteePub,
-							answered, now, inviteeName, inviteeMlDsa, sig),
-					la.getPrivateKey());
+							answered, now, inviteeName, inviteeMlDsa, sig,
+							signedTag));
 			BdfList body = BdfList.of(
 					(long) MessageTypes.GROUPTR_JOIN_REQUEST, groupId,
 					inviteePub, inviteeName, inviteeMlDsa, answered, sig, now,
 					reqSig);
+			if (signedTag != null) body.add(signedTag);
+			String inviteeHex = toHexString(inviteePub);
 			db.transaction(false, txn -> {
-				Contact creator = host.findContact(txn, s.getCreatorPubKey());
+				Contact creator = host.findContact(txn, s,
+						s.getCreatorPubKey());
 				if (creator == null) return;
 				host.dispatch(txn, creator, now, body);
+				if (!inviteeHex.equals(identityHex)) {
+					settingsManager.deleteSettings(txn, nsOf(groupId),
+							Collections.singletonList(
+									K_SENT_PREFIX + identityHex));
+				}
 				storeSent(txn, groupId, inviteeHex, new SentInvite(
 						e.getContactId().getInt(), sent.offered, now));
 			});
@@ -1157,14 +1395,15 @@ class GroupTrMemberInvites {
 		byte[] acceptSig = r.getRaw(6);
 		long requestTs = r.getLong(7);
 		byte[] requestSig = r.getRaw(8);
+		byte[] tag = r.size() > 9 ? r.getRaw(9) : null;
 		ReentrantLock lock = host.lockFor(groupId);
 		lock.lock();
 		try {
 			GroupTrState s = host.getGroup(groupId);
 			if (s == null || s.isDissolved()) return;
-			byte[] localPub = localAuthor().getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!Arrays.equals(localPub, s.getCreatorPubKey())) return;
-			byte[] inviterPub = host.senderPubKey(e.getContactId());
+			byte[] inviterPub = host.senderPubKey(s, e.getContactId());
 			if (inviterPub == null || Arrays.equals(inviterPub, localPub)) {
 				return;
 			}
@@ -1177,37 +1416,155 @@ class GroupTrMemberInvites {
 			if (s.getMembers().size() >= MAX_GROUP_MEMBERS) return;
 			if (!mayInvite(groupId, inviterPub)) return;
 			if (removedByCreator(groupId, inviteePub)) return;
+			if (s.usesGroupKeys() != (tag != null)) return;
 			long now = clock.currentTimeMillis();
 			if (!joinRequestTimely(now, acceptTs)
 					|| !joinRequestTimely(now, requestTs)) {
 				return;
 			}
-			byte[] known = contactMlDsaKey(inviteePub);
+			byte[] known = s.usesGroupKeys()
+					? host.knownMlDsaKey(s, inviteePub)
+					: contactMlDsaKey(s, inviteePub);
 			if (known != null && !Arrays.equals(known, inviteeMlDsa)) return;
-			if (!host.verify(requestSig, LABEL_JOIN_REQUEST,
+			if (!host.verify(s, requestSig, LABEL_JOIN_REQUEST,
 					joinRequestSignedInput(groupId, inviterPub, inviteePub,
 							acceptTs, requestTs, inviteeName, inviteeMlDsa,
-							acceptSig), inviterPub)) {
+							acceptSig, tag), inviterPub)) {
 				return;
 			}
 			if (!verifyWith(acceptSig, LABEL_ACCEPT, responseSignedInput(
 					groupId, inviteePub, inviterPub, localPub, acceptTs,
-					inviteeMlDsa), inviteePub, inviteeMlDsa)) {
+					inviteeMlDsa, tag), inviteePub, inviteeMlDsa)) {
 				return;
 			}
+			if (tag != null && removedTag(groupId, tag)) return;
 			if (!admitJoin(groupId, inviterPub, inviteePub, acceptTs, now)) {
 				return;
 			}
 			host.addMember(groupId, inviteePub, inviteeName, inviteeMlDsa);
+			if (tag != null) {
+				storeMemberTag(groupId, inviteePub, tag);
+				storeInviter(groupId, inviteePub, inviterPub);
+			}
 			host.sendMemberListSnapshot(groupId);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private boolean removedByCreator(byte[] groupId, byte[] pubKey)
+	void noteRemovedByCreator(byte[] groupId, byte[] pubKey) {
+		try {
+			rememberRemoved(groupId, pubKey);
+		} catch (DbException ex) {
+		}
+	}
+
+	boolean removedByCreator(byte[] groupId, byte[] pubKey)
 			throws DbException {
 		return loadRemoved(groupId).contains(toHexString(pubKey));
+	}
+
+	private List<String> loadList(byte[] groupId, String key)
+			throws DbException {
+		String stored = settingsManager.getSettings(nsOf(groupId)).get(key);
+		List<String> out = new ArrayList<>();
+		if (stored == null || stored.isEmpty()) return out;
+		for (String item : stored.split(",")) {
+			if (!item.isEmpty() && !out.contains(item)) out.add(item);
+		}
+		return out;
+	}
+
+	private void storeList(byte[] groupId, String key, List<String> items)
+			throws DbException {
+		Settings out = new Settings();
+		out.put(key, String.join(",", items));
+		settingsManager.mergeSettings(out, nsOf(groupId));
+	}
+
+	boolean removedTag(byte[] groupId, byte[] tag) throws DbException {
+		return loadList(groupId, K_REMOVED_TAGS).contains(toHexString(tag));
+	}
+
+	void noteRemovedTag(byte[] groupId, byte[] tag) throws DbException {
+		List<String> tags = loadList(groupId, K_REMOVED_TAGS);
+		String hex = toHexString(tag);
+		tags.remove(hex);
+		tags.add(hex);
+		while (tags.size() > MAX_REMOVED_REMEMBERED) tags.remove(0);
+		storeList(groupId, K_REMOVED_TAGS, tags);
+	}
+
+	void forgetRemovedTag(byte[] groupId, byte[] tag) throws DbException {
+		List<String> tags = loadList(groupId, K_REMOVED_TAGS);
+		if (tags.remove(toHexString(tag))) {
+			storeList(groupId, K_REMOVED_TAGS, tags);
+		}
+	}
+
+	void noteRemovedContact(byte[] groupId, byte[] pubKey, byte[] tag)
+			throws DbException {
+		rememberRemoved(groupId, pubKey);
+		noteRemovedTag(groupId, tag);
+	}
+
+	void storeMemberTag(byte[] groupId, byte[] pubKey, byte[] tag)
+			throws DbException {
+		Settings stored = settingsManager.getSettings(nsOf(groupId));
+		int held = 0;
+		for (Map.Entry<String, String> e : stored.entrySet()) {
+			if (e.getKey().startsWith(K_MEMBER_TAG_PREFIX)
+					&& e.getValue() != null && !e.getValue().isEmpty()) {
+				held++;
+			}
+		}
+		String key = K_MEMBER_TAG_PREFIX + toHexString(pubKey);
+		if (stored.get(key) == null && held >= MAX_GROUP_MEMBERS) return;
+		Settings out = new Settings();
+		out.put(key, toHexString(tag));
+		settingsManager.mergeSettings(out, nsOf(groupId));
+	}
+
+	@Nullable
+	byte[] memberTag(byte[] groupId, byte[] pubKey) throws DbException {
+		String v = settingsManager.getSettings(nsOf(groupId))
+				.get(K_MEMBER_TAG_PREFIX + toHexString(pubKey));
+		if (v == null || v.isEmpty()) return null;
+		try {
+			return fromHexString(v);
+		} catch (FormatException ex) {
+			return null;
+		}
+	}
+
+	void dropMemberTag(byte[] groupId, byte[] pubKey) throws DbException {
+		String hex = toHexString(pubKey);
+		settingsManager.deleteSettings(nsOf(groupId), Arrays.asList(
+				K_MEMBER_TAG_PREFIX + hex, K_INVITER_PREFIX + hex));
+	}
+
+	private void storeInviter(byte[] groupId, byte[] inviteePub,
+			byte[] inviterPub) throws DbException {
+		Settings stored = settingsManager.getSettings(nsOf(groupId));
+		int held = 0;
+		for (Map.Entry<String, String> e : stored.entrySet()) {
+			if (e.getKey().startsWith(K_INVITER_PREFIX)
+					&& e.getValue() != null && !e.getValue().isEmpty()) {
+				held++;
+			}
+		}
+		String key = K_INVITER_PREFIX + toHexString(inviteePub);
+		if (stored.get(key) == null && held >= MAX_GROUP_MEMBERS) return;
+		Settings out = new Settings();
+		out.put(key, toHexString(inviterPub));
+		settingsManager.mergeSettings(out, nsOf(groupId));
+	}
+
+	boolean invitedBy(byte[] groupId, byte[] inviteePub, byte[] inviterPub)
+			throws DbException {
+		String v = settingsManager.getSettings(nsOf(groupId))
+				.get(K_INVITER_PREFIX + toHexString(inviteePub));
+		return v != null && v.equals(toHexString(inviterPub));
 	}
 
 	private List<String> loadRemoved(byte[] groupId) throws DbException {
@@ -1314,20 +1671,35 @@ class GroupTrMemberInvites {
 				}
 			}
 			boolean newer = !admitted.isEmpty() && e.getEpoch() > forwarded;
-			if (waiting.isEmpty() && !newer) return;
+			BdfList full = clientHelper.toList(record);
+			long claimed = full.size() > 6 ? full.getList(6).getLong(0) : -1L;
+			String claimedId = full.size() > 6
+					? toHexString(full.getList(6).getRaw(1)) : "";
+			Settings stored = settingsManager.getSettings(nsOf(groupId));
+			boolean fresher = false;
+			for (String inviteeHex : admitted.keySet()) {
+				if (secretDue(stored, inviteeHex, claimed, claimedId)) {
+					fresher = true;
+				}
+			}
+			if (waiting.isEmpty() && !newer && !fresher) return;
 			GroupTrState s = host.getGroup(groupId);
 			if (s == null || s.isDissolved()) return;
-			if (!host.verify(e.getRecordSig(), LABEL_SNAPSHOT,
+			if (!host.verify(s, e.getRecordSig(), LABEL_SNAPSHOT,
 					e.getSignedInput(), s.getCreatorPubKey())) {
 				return;
 			}
-			BdfList body = clientHelper.toList(record);
+			BdfList withoutSecret = full.size() > 6
+					? new BdfList(full.subList(0, 6)) : full;
+			long secretSeq = claimed >= 0L
+					&& secretValid(s, e.getEpoch(), full.getList(6))
+					? claimed : -1L;
+			BdfList body = secretSeq >= 0L ? full : withoutSecret;
 			long now = clock.currentTimeMillis();
 			for (String inviteeHex : waiting) {
 				SentInvite si = sent.get(inviteeHex);
 				Contact invitee = contactOrNull(new ContactId(si.contactId));
-				if (invitee == null || !toHexString(invitee.getAuthor()
-						.getPublicKey().getEncoded()).equals(inviteeHex)) {
+				if (invitee == null || !inviteeHex.equals(keyHex(s, invitee))) {
 					removeSent(groupId, inviteeHex);
 					continue;
 				}
@@ -1341,33 +1713,50 @@ class GroupTrMemberInvites {
 						Settings out = new Settings();
 						out.put(K_ADMITTED_PREFIX + inviteeHex,
 								Integer.toString(si.contactId));
+						if (secretSeq >= 0L) {
+							out.putLong(K_FORWARDED_SECRET_PREFIX + inviteeHex,
+									secretSeq);
+							out.put(K_FORWARDED_SECRET_ID_PREFIX + inviteeHex,
+									claimedId);
+						}
 						settingsManager.mergeSettings(txn, out,
 								nsOf(groupId));
 					}
 				});
 				if (room) admitted.put(inviteeHex, si.contactId);
 			}
-			if (newer) {
-				for (Map.Entry<String, Integer> en : admitted.entrySet()) {
-					String inviteeHex = en.getKey();
-					if (waiting.contains(inviteeHex)) continue;
-					Contact invitee = contactOrNull(
-							new ContactId(en.getValue()));
-					boolean listed = lists(canonical,
-							fromHexString(inviteeHex));
-					db.transaction(false, txn -> {
-						if (invitee != null && toHexString(invitee
-								.getAuthor().getPublicKey().getEncoded())
-								.equals(inviteeHex)) {
-							host.dispatch(txn, invitee, now, body);
+			for (Map.Entry<String, Integer> en : admitted.entrySet()) {
+				String inviteeHex = en.getKey();
+				if (waiting.contains(inviteeHex)) continue;
+				boolean listed = lists(canonical, fromHexString(inviteeHex));
+				boolean secretDue = listed && secretSeq >= 0L
+						&& secretDue(stored, inviteeHex, secretSeq, claimedId);
+				if (!newer && !secretDue) continue;
+				Contact invitee = contactOrNull(new ContactId(en.getValue()));
+				boolean same = invitee != null
+						&& inviteeHex.equals(keyHex(s, invitee));
+				db.transaction(false, txn -> {
+					if (invitee != null && same) {
+						host.dispatch(txn, invitee, now,
+								listed ? body : withoutSecret);
+						if (listed && secretSeq >= 0L) {
+							Settings out = new Settings();
+							out.putLong(K_FORWARDED_SECRET_PREFIX + inviteeHex,
+									secretSeq);
+							out.put(K_FORWARDED_SECRET_ID_PREFIX + inviteeHex,
+									claimedId);
+							settingsManager.mergeSettings(txn, out,
+									nsOf(groupId));
 						}
-						if (invitee == null || !listed) {
-							settingsManager.deleteSettings(txn, nsOf(groupId),
-									Collections.singletonList(
-											K_ADMITTED_PREFIX + inviteeHex));
-						}
-					});
-				}
+					}
+					if (invitee == null || !listed) {
+						settingsManager.deleteSettings(txn, nsOf(groupId),
+								Arrays.asList(K_ADMITTED_PREFIX + inviteeHex,
+										K_FORWARDED_SECRET_PREFIX + inviteeHex,
+										K_FORWARDED_SECRET_ID_PREFIX
+												+ inviteeHex));
+					}
+				});
 			}
 			if (e.getEpoch() > forwarded) {
 				Settings out = new Settings();
@@ -1380,8 +1769,28 @@ class GroupTrMemberInvites {
 		}
 	}
 
-	void forwardDissolved(byte[] groupId, long epoch, long timestamp,
+	private static boolean secretDue(Settings stored, String inviteeHex,
+			long seq, String id) {
+		if (seq < 0L) return false;
+		long sent = stored.getLong(K_FORWARDED_SECRET_PREFIX + inviteeHex, -1L);
+		if (seq != sent) return seq > sent;
+		return !id.equals(stored.get(K_FORWARDED_SECRET_ID_PREFIX + inviteeHex));
+	}
+
+	private boolean secretValid(GroupTrState s, long epoch, BdfList blob) {
+		try {
+			GroupTrKeys.Secret secret = GroupTrKeys.parseSecret(blob);
+			return host.verify(s, blob.getRaw(3), GroupTrKeys.LABEL_SECRET,
+					host.keys().secretInput(s.getGroupId(), epoch, secret),
+					s.getCreatorPubKey());
+		} catch (FormatException ex) {
+			return false;
+		}
+	}
+
+	void forwardDissolved(GroupTrState s, long epoch, long timestamp,
 			byte[] sig) {
+		byte[] groupId = s.getGroupId();
 		ReentrantLock lock = host.lockFor(groupId);
 		lock.lock();
 		try {
@@ -1392,13 +1801,36 @@ class GroupTrMemberInvites {
 			long now = clock.currentTimeMillis();
 			for (Map.Entry<String, Integer> en : admitted.entrySet()) {
 				Contact invitee = contactOrNull(new ContactId(en.getValue()));
-				if (invitee == null || !toHexString(invitee.getAuthor()
-						.getPublicKey().getEncoded()).equals(en.getKey())) {
+				if (invitee == null
+						|| !en.getKey().equals(keyHex(s, invitee))) {
 					continue;
 				}
 				db.transaction(false, txn ->
 						host.dispatch(txn, invitee, now, body));
 			}
+		} catch (DbException ex) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	void forwardLeave(GroupTrState s, ContactId from, byte[] leaverPubKey,
+			long epoch, long timestamp, byte[] sig) {
+		byte[] groupId = s.getGroupId();
+		ReentrantLock lock = host.lockFor(groupId);
+		lock.lock();
+		try {
+			Integer invitee = loadAdmitted(groupId)
+					.get(toHexString(leaverPubKey));
+			if (invitee == null || invitee != from.getInt()) return;
+			BdfList body = BdfList.of((long) MessageTypes.GROUP_MEMBER_LEFT,
+					groupId, leaverPubKey, epoch, timestamp, sig);
+			long now = clock.currentTimeMillis();
+			db.transaction(false, txn -> {
+				Contact creator = host.findContact(txn, s,
+						s.getCreatorPubKey());
+				if (creator != null) host.dispatch(txn, creator, now, body);
+			});
 		} catch (DbException ex) {
 		} finally {
 			lock.unlock();
@@ -1464,14 +1896,14 @@ class GroupTrMemberInvites {
 		}
 	}
 
-	private int sendPermissions(Transaction txn, byte[] groupId,
+	private int sendPermissions(Transaction txn, GroupTrState s,
 			Permissions p, Collection<byte[]> to, long timestamp)
 			throws DbException {
 		BdfList record = BdfList.of((long) MessageTypes.GROUP_PERMISSIONS,
-				groupId, p.flags, p.timestamp, p.sig);
+				s.getGroupId(), p.flags, p.timestamp, p.sig);
 		int skipped = 0;
 		for (byte[] pub : to) {
-			Contact c = host.findContact(txn, pub);
+			Contact c = host.findContact(txn, s, pub);
 			if (c == null) continue;
 			if (!supports(txn, c)) {
 				skipped++;
@@ -1616,9 +2048,12 @@ class GroupTrMemberInvites {
 		if (value == null || value.isEmpty()) return null;
 		try {
 			BdfList l = clientHelper.toList(fromHexString(value));
+			boolean keyed = l.size() >= 11;
 			return new PendingOffer(l.getString(0), l.getRaw(1),
 					l.getString(2), l.getRaw(3), l.getRaw(4), l.getRaw(5),
-					new ContactId(l.getLong(6).intValue()), l.getLong(7));
+					new ContactId(l.getLong(6).intValue()), l.getLong(7),
+					keyed ? l.getRaw(8) : null, keyed ? l.getRaw(9) : null,
+					keyed ? l.getLong(10) : 0L);
 		} catch (FormatException ex) {
 			return null;
 		}
@@ -1646,12 +2081,17 @@ class GroupTrMemberInvites {
 			settingsManager.deleteSettings(SETTINGS_NS_MEMBER_OFFERS_PENDING,
 					stale);
 			if (live >= MAX_PENDING_OFFERS) return;
+			BdfList stored = BdfList.of(o.groupName, o.salt, o.creatorName,
+					o.creatorPubKey, o.creatorMlDsaPubKey, o.inviterPubKey,
+					(long) o.contactId.getInt(), o.timestamp);
+			if (o.keyed()) {
+				stored.add(o.inviterMlDsaPubKey);
+				stored.add(o.inviterIdentity);
+				stored.add(o.bindingTimestamp);
+			}
 			Settings out = new Settings();
 			out.put(toHexString(groupId), toHexString(clientHelper.toByteArray(
-					BdfList.of(o.groupName, o.salt, o.creatorName,
-							o.creatorPubKey, o.creatorMlDsaPubKey,
-							o.inviterPubKey, (long) o.contactId.getInt(),
-							o.timestamp))));
+					stored)));
 			settingsManager.mergeSettings(out,
 					SETTINGS_NS_MEMBER_OFFERS_PENDING);
 		}
@@ -1676,11 +2116,19 @@ class GroupTrMemberInvites {
 	}
 
 	@Nullable
-	private byte[] contactMlDsaKey(byte[] pubKey) throws DbException {
+	private byte[] contactMlDsaKey(GroupTrState s, byte[] pubKey)
+			throws DbException {
 		return db.transactionWithNullableResult(true, txn -> {
-			Contact c = host.findContact(txn, pubKey);
+			Contact c = host.findContact(txn, s, pubKey);
 			return c == null ? null : c.getMlDsaSigPublicKey();
 		});
+	}
+
+	@Nullable
+	private String keyHex(GroupTrState s, Contact c) throws DbException {
+		byte[] key = db.transactionWithNullableResult(true,
+				txn -> host.keyOf(txn, s, c));
+		return key == null ? null : toHexString(key);
 	}
 
 	@Nullable

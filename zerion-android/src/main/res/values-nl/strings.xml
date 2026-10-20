@@ -2680,4 +2680,11 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="renewal_waiting_last_seen">Laatst gezien %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Er wordt een nieuw Tor-adres gegenereerd en gedeeld met je contacten bij hun volgende verbinding. Je oude adres blijft minstens een dag werken en totdat elk contact is overgestapt.</string>
 	<string name="pref_rotate_onion_success_message">Je oude adres blijft minstens een dag werken en totdat elk contact naar het nieuwe adres is overgestapt.\n\nNieuw adres:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Deelnemen onder een willekeurige naam werkt alleen in nieuwe groepen.</string>
+	<string name="grouptr_older_group_note">Dit is een oudere groep: de leden kunnen je herkennen in je andere oudere groepen.</string>
+	<string name="grouptr_create_new_private_group">Nieuwe privégroep aanmaken</string>
+	<string name="grouptr_contact_must_update">%1$s kan nog niet deelnemen aan nieuwe groepen.</string>
+	<string name="grouptr_my_safety_code_in_group">Mijn veiligheidscode in deze groep</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nJe hebt in elke nieuwe groep een andere code.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nAls %1$s dezelfde code ziet onder Mijn veiligheidscode in deze groep, komen de berichten onder deze naam echt van die persoon.</string>
 </resources>

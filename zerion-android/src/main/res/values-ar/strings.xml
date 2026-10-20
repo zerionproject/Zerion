@@ -2855,4 +2855,11 @@
 	<string name="renewal_waiting_last_seen">آخر ظهور %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">سيتم إنشاء عنوان Tor جديد ومشاركته مع جهات اتصالك عند اتصالهم التالي. يستمر عنوانك القديم في العمل يومًا واحدًا على الأقل وحتى ينتقل كل جهات الاتصال.</string>
 	<string name="pref_rotate_onion_success_message">يستمر عنوانك القديم في العمل يومًا واحدًا على الأقل وحتى ينتقل كل جهات الاتصال إلى العنوان الجديد.\n\nالعنوان الجديد:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">الانضمام باسم عشوائي متاح في المجموعات الجديدة فقط.</string>
+	<string name="grouptr_older_group_note">هذه مجموعة أقدم: يمكن لأعضائها التعرف عليك في مجموعاتك الأقدم الأخرى.</string>
+	<string name="grouptr_create_new_private_group">إنشاء مجموعة خاصة جديدة</string>
+	<string name="grouptr_contact_must_update">لا يستطيع %1$s الانضمام إلى المجموعات الجديدة بعد.</string>
+	<string name="grouptr_my_safety_code_in_group">رمز الأمان الخاص بي في هذه المجموعة</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nلديك رمز مختلف في كل مجموعة جديدة.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nإذا رأى %1$s الرمز نفسه تحت «رمز الأمان الخاص بي في هذه المجموعة»، فإن المنشورات الظاهرة تحت هذا الاسم هي منه فعلًا.</string>
 </resources>

@@ -2686,4 +2686,11 @@
 	<string name="renewal_waiting_last_seen">Zuletzt gesehen %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Eine neue Tor-Adresse wird generiert und deinen Kontakten bei ihrer nächsten Verbindung mitgeteilt. Deine alte Adresse funktioniert mindestens einen Tag weiter und bis jeder Kontakt umgezogen ist.</string>
 	<string name="pref_rotate_onion_success_message">Deine alte Adresse funktioniert mindestens einen Tag weiter und bis jeder Kontakt zur neuen umgezogen ist.\n\nNeue Adresse:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Der Beitritt unter einem zufälligen Namen ist nur in neuen Gruppen möglich.</string>
+	<string name="grouptr_older_group_note">Dies ist eine ältere Gruppe: Die Mitglieder können dich in deinen anderen älteren Gruppen erkennen.</string>
+	<string name="grouptr_create_new_private_group">Neue private Gruppe erstellen</string>
+	<string name="grouptr_contact_must_update">%1$s kann neuen Gruppen noch nicht beitreten.</string>
+	<string name="grouptr_my_safety_code_in_group">Mein Sicherheitscode in dieser Gruppe</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nIn jeder neuen Gruppe hast du einen anderen Code.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nWenn %1$s unter „Mein Sicherheitscode in dieser Gruppe“ denselben Code sieht, stammen die Beiträge unter diesem Namen wirklich von diesem Mitglied.</string>
 </resources>

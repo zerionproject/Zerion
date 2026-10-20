@@ -78,7 +78,10 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private View actionInviteContacts;
 	private TextView actionInviteContactsHint;
 	private View rowIncognito;
+	private View rowOlderGroup;
 	private TextView incognitoNameText;
+	private Set<org.zerionproject.core.api.contact.ContactId> memberContacts =
+			new HashSet<>();
 	private long permissions = 0L;
 	private Set<String> granted = new HashSet<>();
 	private Set<String> grantable = new HashSet<>();
@@ -127,6 +130,9 @@ public class GroupTrAdminActivity extends ZerionActivity {
 		actionInviteContacts = findViewById(R.id.actionInviteContacts);
 		actionInviteContactsHint = findViewById(R.id.actionInviteContactsHint);
 		rowIncognito = findViewById(R.id.rowIncognito);
+		rowOlderGroup = findViewById(R.id.rowOlderGroup);
+		rowOlderGroup.setOnClickListener(v ->
+				startActivity(GroupTrCreateActivity.intent(this)));
 		incognitoNameText = findViewById(R.id.incognitoNameText);
 
 		openChatButton.setOnClickListener(v -> startActivity(
@@ -144,9 +150,21 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	private void render() {
 		ioExecutor.execute(() -> {
 			try {
-				LocalAuthor la = identityManager.getLocalAuthor();
-				localPub = la.getPublicKey().getEncoded();
+				byte[] memberKey = groupTrManager.getLocalMemberKey(groupId);
+				if (memberKey == null) {
+					LocalAuthor la = identityManager.getLocalAuthor();
+					memberKey = la.getPublicKey().getEncoded();
+				}
+				localPub = memberKey;
 				GroupTrState s = groupTrManager.getGroup(groupId);
+				Set<org.zerionproject.core.api.contact.ContactId> bound =
+						new HashSet<>();
+				if (s != null) {
+					java.util.Map<String, org.zerionproject.core.api.contact
+							.ContactId> known =
+							groupTrManager.getMemberContacts(groupId);
+					if (known != null) bound.addAll(known.values());
+				}
 				List<GroupTrMember> outOfReach = s == null
 						? new ArrayList<>()
 						: groupTrManager.getMembersOutOfReach(groupId);
@@ -185,6 +203,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 						return;
 					}
 					this.outOfReach = outOfReach;
+					this.memberContacts = bound;
 					this.sentInvites = invites;
 					this.permissions = perms;
 					this.granted = grants;
@@ -395,6 +414,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 			boolean dissolved) {
 		bindMemberInvites(isCreator, dissolved);
 		bindIncognito();
+		rowOlderGroup.setVisibility(!s.usesGroupKeys() && !dissolved
+				? View.VISIBLE : View.GONE);
 		if (dissolved) {
 			actionAddMember.setVisibility(View.GONE);
 			actionTtl.setVisibility(View.GONE);
@@ -544,7 +565,11 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				List<Contact> candidates = new ArrayList<>();
 				for (Contact c : all) {
 					byte[] p = c.getAuthor().getPublicKey().getEncoded();
-					if (!isMember(s, p)) candidates.add(c);
+					if (s.usesGroupKeys()
+							? !memberContacts.contains(c.getId())
+							: !isMember(s, p)) {
+						candidates.add(c);
+					}
 				}
 				runOnUiThread(() -> showCandidatePicker(s, candidates));
 			} catch (DbException ex) {
@@ -579,6 +604,19 @@ public class GroupTrAdminActivity extends ZerionActivity {
 							runOnUiThread(() -> {
 								toast(R.string.grouptr_invite_sent);
 								render();
+							});
+						} catch (org.zerionproject.app.api.grouptr
+								.GroupTrAuthException ex) {
+							runOnUiThread(() -> {
+								if (ex.getReason() == org.zerionproject.app
+										.api.grouptr.GroupTrAuthException
+										.Reason.CONTACT_MUST_UPDATE) {
+									Toast.makeText(this, getString(
+											R.string.grouptr_contact_must_update,
+											name), Toast.LENGTH_LONG).show();
+								} else {
+									toast(R.string.grouptr_error_add);
+								}
 							});
 						} catch (DbException ex) {
 							runOnUiThread(() ->

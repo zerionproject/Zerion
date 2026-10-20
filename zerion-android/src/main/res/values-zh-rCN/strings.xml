@@ -2641,4 +2641,11 @@
 	<string name="renewal_waiting_last_seen">上次在线：%1$s</string>
 	<string name="pref_rotate_onion_confirm_message">系统将生成一个新的 Tor 地址，并在你的联系人下次连接时分享给他们。你的旧地址至少会继续有效一天，直到每个联系人都迁移为止。</string>
 	<string name="pref_rotate_onion_success_message">你的旧地址至少会继续有效一天，直到每个联系人都迁移到新地址为止。\n\n新地址：\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">以随机名称加入仅适用于新群组。</string>
+	<string name="grouptr_older_group_note">这是一个旧版群组：其成员可以在你的其他旧版群组中认出你。</string>
+	<string name="grouptr_create_new_private_group">创建新的私密群组</string>
+	<string name="grouptr_contact_must_update">%1$s 暂时无法加入新群组。</string>
+	<string name="grouptr_my_safety_code_in_group">我在此群组中的安全码</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\n你在每个新群组中都有不同的安全码。</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\n如果 %1$s 在“我在此群组中的安全码”中看到相同的代码，那么以此名称显示的帖子确实是其本人所发。</string>
 </resources>

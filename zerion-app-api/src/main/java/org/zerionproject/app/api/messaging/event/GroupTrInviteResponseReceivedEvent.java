@@ -1,6 +1,7 @@
 package org.zerionproject.app.api.messaging.event;
 
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.event.Event;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -20,6 +21,8 @@ public class GroupTrInviteResponseReceivedEvent extends Event {
 	private final Kind kind;
 	@Nullable
 	private final String joinerName;
+	@Nullable
+	private final BdfList keyBinding;
 
 	public GroupTrInviteResponseReceivedEvent(ContactId contactId,
 			byte[] grouptrGroupId, long inviteTimestamp, byte[] recordSig,
@@ -31,12 +34,21 @@ public class GroupTrInviteResponseReceivedEvent extends Event {
 	public GroupTrInviteResponseReceivedEvent(ContactId contactId,
 			byte[] grouptrGroupId, long inviteTimestamp, byte[] recordSig,
 			Kind kind, @Nullable String joinerName) {
+		this(contactId, grouptrGroupId, inviteTimestamp, recordSig, kind,
+				joinerName, null);
+	}
+
+	public GroupTrInviteResponseReceivedEvent(ContactId contactId,
+			byte[] grouptrGroupId, long inviteTimestamp, byte[] recordSig,
+			Kind kind, @Nullable String joinerName,
+			@Nullable BdfList keyBinding) {
 		this.contactId = contactId;
 		this.grouptrGroupId = grouptrGroupId;
 		this.inviteTimestamp = inviteTimestamp;
 		this.recordSig = recordSig;
 		this.kind = kind;
 		this.joinerName = joinerName;
+		this.keyBinding = keyBinding;
 	}
 
 	public ContactId getContactId() {
@@ -62,5 +74,10 @@ public class GroupTrInviteResponseReceivedEvent extends Event {
 	@Nullable
 	public String getJoinerName() {
 		return joinerName;
+	}
+
+	@Nullable
+	public BdfList getKeyBinding() {
+		return keyBinding;
 	}
 }

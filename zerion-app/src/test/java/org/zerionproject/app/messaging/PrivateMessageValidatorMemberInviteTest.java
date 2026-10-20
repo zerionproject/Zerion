@@ -131,6 +131,47 @@ public class PrivateMessageValidatorMemberInviteTest
 	}
 
 	@Test
+	public void memberInviteRecordsMayCarryABinding() throws Exception {
+		BdfList offer = offer(2, "Club");
+		offer.add(binding());
+		accept(offer);
+		BdfList badOffer = offer(2, "Club");
+		badOffer.add(BdfList.of(key));
+		reject(badOffer);
+		accept(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT, id, key, now, sig,
+				binding(), getRandomBytes(32)));
+		reject(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT, id, key, now, sig,
+				binding()));
+		reject(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT, id, key, now, sig,
+				binding(), getRandomBytes(31)));
+		accept(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO, id, key, now,
+				"Silver Fox 33", sig, binding(), getRandomBytes(32)));
+		reject(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO, id, key, now,
+				"Silver Fox 33", sig, binding()));
+		reject(BdfList.of(GROUPTR_MEMBER_INVITE_DECLINE, id, key, now, sig,
+				binding()));
+		reject(BdfList.of(GROUPTR_MEMBER_INVITE_ACCEPT, id, key, now, sig,
+				binding(), getRandomBytes(32), binding()));
+		BdfList request = request(3, "Xavi");
+		request.add(getRandomBytes(32));
+		accept(request);
+		BdfList shortTag = request(3, "Xavi");
+		shortTag.add(getRandomBytes(31));
+		reject(shortTag);
+		BdfList withReports = request(3, "Xavi");
+		withReports.add(getRandomBytes(32));
+		withReports.add(BdfList.of(BdfList.of(getRandomBytes(32),
+				getRandomBytes(32))));
+		reject(withReports);
+	}
+
+	private BdfList binding() {
+		return BdfList.of(getRandomBytes(32), getRandomBytes(mlDsa.length),
+				now, getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES),
+				getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES));
+	}
+
+	@Test
 	public void joinRequest() throws Exception {
 		accept(request(3, "Xavi"));
 		reject(request(2, getRandomBytes(31)));
@@ -146,16 +187,16 @@ public class PrivateMessageValidatorMemberInviteTest
 
 	@Test
 	public void memberInviteRecordsTravelOverTheMeshLikeOtherGroupRecords() {
-		for (int t = GROUP_PERMISSIONS;
-				t <= GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO; t++) {
+		for (int t = GROUP_PERMISSIONS; t <= MessageTypes.GROUP_KEY_PROBE;
+				t++) {
 			assertTrue(MessagingManagerImpl.isMeshGroupRecordType(t));
 			assertEquals(t != GROUPTR_INVITE_ACCEPT_INCOGNITO,
 					MessagingManagerImpl.isMemberInviteRecordType(t));
 		}
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(
-				GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO + 1));
+				MessageTypes.GROUP_KEY_PROBE + 1));
 		assertFalse(MessagingManagerImpl.isMemberInviteRecordType(
-				GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO + 1));
+				MessageTypes.GROUP_KEY_PROBE + 1));
 		assertFalse(MessagingManagerImpl.isMemberInviteRecordType(
 				GROUP_PERMISSIONS - 1));
 		assertTrue(MessagingManagerImpl.isMemberInviteOfferType(

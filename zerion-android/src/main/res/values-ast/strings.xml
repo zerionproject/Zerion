@@ -2601,4 +2601,11 @@
 	<string name="renewal_waiting_last_seen">Visto per última vegada %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Va xenerase una direición de Tor nueva que se va compartir colos tos contautos na so próxima conexón. La to direición antigua va siguir funcionando polo menos un día y hasta que tolos contautos migren.</string>
 	<string name="pref_rotate_onion_success_message">La to direición antigua va siguir funcionando polo menos un día y hasta que tolos contautos pasen a la nueva.\n\nDireición nueva:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Xunise con un nome al debalu namás funciona en grupos nuevos.</string>
+	<string name="grouptr_older_group_note">Esti ye un grupu antiguu: los sos miembros pueden reconocete nos tos otros grupos antiguos.</string>
+	<string name="grouptr_create_new_private_group">Crear un grupu priváu nuevu</string>
+	<string name="grouptr_contact_must_update">%1$s entá nun pue xunise a grupos nuevos.</string>
+	<string name="grouptr_my_safety_code_in_group">El mio códigu de seguridá nesti grupu</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nTienes un códigu distintu en cada grupu nuevu.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSi %1$s ve\'l mesmu códigu en «El mio códigu de seguridá nesti grupu», les publicaciones que s\'amuesen con esti nome son de verdá suyes.</string>
 </resources>

@@ -2669,4 +2669,11 @@
 	<string name="renewal_waiting_last_seen">आखिरी बार %1$s देखा गया</string>
 	<string name="pref_rotate_onion_confirm_message">एक नया Tor पता बनाया जाएगा और अगली बार कनेक्ट होने पर आपके संपर्कों के साथ शेयर किया जाएगा। आपका पुराना पता कम से कम एक दिन और जब तक सभी संपर्क नए पते पर नहीं आ जाते, तब तक काम करता रहेगा।</string>
 	<string name="pref_rotate_onion_success_message">आपका पुराना पता कम से कम एक दिन और जब तक सभी संपर्क नए पते पर नहीं आ जाते, तब तक काम करता रहेगा।\n\nनया पता:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">किसी यादृच्छिक नाम से जुड़ना केवल नए समूहों में काम करता है।</string>
+	<string name="grouptr_older_group_note">यह एक पुराना समूह है: इसके सदस्य आपके दूसरे पुराने समूहों में आपको पहचान सकते हैं।</string>
+	<string name="grouptr_create_new_private_group">नया निजी समूह बनाएँ</string>
+	<string name="grouptr_contact_must_update">%1$s अभी नए समूहों में शामिल नहीं हो सकते।</string>
+	<string name="grouptr_my_safety_code_in_group">इस समूह में मेरा सुरक्षा कोड</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nहर नए समूह में आपका कोड अलग होता है।</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nअगर %1$s को \"इस समूह में मेरा सुरक्षा कोड\" के नीचे यही कोड दिखता है, तो इस नाम के नीचे दिखने वाली पोस्ट सचमुच उन्हीं की हैं।</string>
 </resources>

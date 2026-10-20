@@ -2605,4 +2605,11 @@
 	<string name="renewal_waiting_last_seen">Son dəfə %1$s görünüb</string>
 	<string name="pref_rotate_onion_confirm_message">Yeni Tor ünvanı yaradılacaq və kontaktlarınızla onların növbəti qoşulmasında paylaşılacaq. Köhnə ünvanınız ən azı bir gün və bütün kontaktlar yeni ünvana keçənədək işləməyə davam edir.</string>
 	<string name="pref_rotate_onion_success_message">Köhnə ünvanınız ən azı bir gün və bütün kontaktlar yeni ünvana keçənədək işləməyə davam edir.\n\nYeni ünvan:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Təsadüfi adla qoşulmaq yalnız yeni qruplarda işləyir.</string>
+	<string name="grouptr_older_group_note">Bu köhnə qrupdur: onun üzvləri sizi digər köhnə qruplarınızda tanıya bilər.</string>
+	<string name="grouptr_create_new_private_group">Yeni şəxsi qrup yarat</string>
+	<string name="grouptr_contact_must_update">%1$s hələ yeni qruplara qoşula bilmir.</string>
+	<string name="grouptr_my_safety_code_in_group">Bu qrupdakı təhlükəsizlik kodum</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nHər yeni qrupda fərqli kodunuz olur.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nƏgər %1$s «Bu qrupdakı təhlükəsizlik kodum» bölməsində eyni kodu görürsə, bu adla göstərilən paylaşımlar həqiqətən ona məxsusdur.</string>
 </resources>

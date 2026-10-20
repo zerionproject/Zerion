@@ -2677,4 +2677,11 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="renewal_waiting_last_seen">Utoljára látva %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Létrejön egy új Tor-cím, amelyet a kapcsolatai a következő csatlakozásukkor megkapnak. A régi címe legalább egy napig és addig működik, amíg minden kapcsolata át nem tér.</string>
 	<string name="pref_rotate_onion_success_message">A régi címe legalább egy napig és addig működik, amíg minden kapcsolata át nem tér az új címre.\n\nÚj cím:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Véletlenszerű névvel csak új csoportokhoz lehet csatlakozni.</string>
+	<string name="grouptr_older_group_note">Ez egy régebbi csoport: a tagjai felismerhetik Önt a többi régebbi csoportjában.</string>
+	<string name="grouptr_create_new_private_group">Új privát csoport létrehozása</string>
+	<string name="grouptr_contact_must_update">%1$s még nem tud új csoportokhoz csatlakozni.</string>
+	<string name="grouptr_my_safety_code_in_group">Saját biztonsági szám ebben a csoportban</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nMinden új csoportban más a biztonsági száma.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nHa %1$s ugyanezt a számot látja a „Saját biztonsági szám ebben a csoportban” alatt, az ezen a néven megjelenő bejegyzések valóban tőle származnak.</string>
 </resources>

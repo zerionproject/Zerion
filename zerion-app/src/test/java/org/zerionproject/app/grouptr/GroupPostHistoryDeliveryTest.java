@@ -74,7 +74,8 @@ public class GroupPostHistoryDeliveryTest extends BrambleMockTestCase {
 	private final GroupTrManagerImpl manager = new GroupTrManagerImpl(db,
 			Runnable::run, settingsManager, clientHelper, crypto,
 			identityManager, contactManager, messagingManager, eventBus,
-			clock);
+			clock, context.mock(org.zerionproject.core.api.system
+					.TaskScheduler.class));
 
 	@Test
 	public void aMembersPostDeliveredByAStrangerStaysHidden()

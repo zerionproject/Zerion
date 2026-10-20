@@ -27,7 +27,7 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 12 : 5;
+					? 13 : 5;
 
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
@@ -44,6 +44,8 @@ public interface MessagingManager extends ConversationClient {
 	int GROUP_INCOGNITO_MIN_VERSION = 11;
 
 	int SALTED_TEXT_MIN_VERSION = 12;
+
+	int GROUP_MEMBER_KEYS_MIN_VERSION = 13;
 
 	long EDIT_WINDOW_MS = 24L * 60 * 60 * 1000;
 

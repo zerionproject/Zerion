@@ -2678,4 +2678,11 @@
 	<string name="renewal_waiting_last_seen">Son görülme %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Yeni bir Tor adresi oluşturulacak ve kişilerinizle bir sonraki bağlantılarında paylaşılacak. Eski adresiniz en az bir gün ve tüm kişileriniz yeni adrese geçene kadar çalışmaya devam eder.</string>
 	<string name="pref_rotate_onion_success_message">Eski adresiniz en az bir gün ve tüm kişileriniz yeni adrese geçene kadar çalışmaya devam eder.\n\nYeni adres:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Rastgele bir adla katılmak yalnızca yeni gruplarda mümkündür.</string>
+	<string name="grouptr_older_group_note">Bu daha eski bir grup: üyeleri sizi diğer eski gruplarınızda tanıyabilir.</string>
+	<string name="grouptr_create_new_private_group">Yeni bir özel grup oluştur</string>
+	<string name="grouptr_contact_must_update">%1$s henüz yeni gruplara katılamıyor.</string>
+	<string name="grouptr_my_safety_code_in_group">Bu gruptaki güvenlik kodum</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nHer yeni grupta farklı bir kodunuz olur.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nEğer %1$s “Bu gruptaki güvenlik kodum” bölümünde aynı kodu görüyorsa, bu adla gösterilen gönderiler gerçekten ona aittir.</string>
 </resources>

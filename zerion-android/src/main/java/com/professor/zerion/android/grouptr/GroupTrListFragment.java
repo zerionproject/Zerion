@@ -171,7 +171,14 @@ public class GroupTrListFragment extends BaseFragment
 				Map<String, String> contacts = contactNames();
 				List<HomeRow> rows = new ArrayList<>();
 				for (GroupTrState s : groupTrManager.getGroups()) {
-					rows.add(row(res, s, me, contacts));
+					if (!s.usesGroupKeys()) {
+						rows.add(row(res, s, me, contacts));
+						continue;
+					}
+					byte[] mine = groupTrManager.getLocalMemberKey(
+							s.getGroupId());
+					rows.add(row(res, s, mine == null ? me : mine,
+							memberNames(s, contacts)));
 				}
 				Collections.sort(rows, (a, b) ->
 						Long.compare(b.getTime(), a.getTime()));
@@ -207,9 +214,27 @@ public class GroupTrListFragment extends BaseFragment
 						: c.getAuthor().getName();
 				names.put(StringUtils.toHexString(
 						c.getAuthor().getPublicKey().getEncoded()), name);
+				names.put(CONTACT_PREFIX + c.getId().getInt(), name);
 			}
 		} catch (DbException | RuntimeException ex) {
 			names.clear();
+		}
+		return names;
+	}
+
+	private static final String CONTACT_PREFIX = "contact:";
+
+	private Map<String, String> memberNames(GroupTrState s,
+			Map<String, String> contacts) throws DbException {
+		Map<String, String> names = new HashMap<>();
+		Map<String, org.zerionproject.core.api.contact.ContactId> bound =
+				groupTrManager.getMemberContacts(s.getGroupId());
+		if (bound == null) return names;
+		for (Map.Entry<String, org.zerionproject.core.api.contact.ContactId> e
+				: bound.entrySet()) {
+			String name = contacts.get(CONTACT_PREFIX
+					+ e.getValue().getInt());
+			if (name != null) names.put(e.getKey(), name);
 		}
 		return names;
 	}

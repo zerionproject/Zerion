@@ -27,6 +27,17 @@ public interface GroupTrManager {
 
 	boolean isMember(byte[] groupId, byte[] pubKey) throws DbException;
 
+	byte[] getLocalMemberKey(byte[] groupId) throws DbException;
+
+	java.util.Map<String, ContactId> getMemberContacts(byte[] groupId)
+			throws DbException;
+
+	java.util.Map<String, byte[]> getMemberMlDsaKeys(byte[] groupId)
+			throws DbException;
+
+	boolean canJoinGroup(byte[] groupId, ContactId contactId)
+			throws DbException;
+
 	long getEpoch(byte[] groupId) throws DbException;
 
 	boolean isDissolved(byte[] groupId) throws DbException;

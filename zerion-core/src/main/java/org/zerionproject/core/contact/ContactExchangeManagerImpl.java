@@ -190,9 +190,14 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (localMlDsaSigPub == null || localMlDsaSigPriv == null) {
 			throw new DbException();
 		}
-		byte[] localHybridSignature = contactExchangeCrypto.hybridSign(
-				localAuthor.getPrivateKey(), localMlDsaSigPriv, masterKey,
-				alice);
+		byte[] localHybridSignature;
+		try {
+			localHybridSignature = contactExchangeCrypto.hybridSign(
+					localAuthor.getPrivateKey(), localMlDsaSigPriv, masterKey,
+					alice);
+		} finally {
+			java.util.Arrays.fill(localMlDsaSigPriv, (byte) 0);
+		}
 		ContactInfo remoteInfo;
 		if (alice) {
 			sendContactInfo(recordWriter, localAuthor, localProperties,

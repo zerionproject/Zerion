@@ -392,8 +392,14 @@ class IntroduceeProtocolEngine
 			mac = crypto.authMac(ourMacKey, s, localAuthor.getId());
 			byte[] localMlDsaPriv =
 					identityManager.getLocalMlDsaSigPrivateKey(txn);
-			signature = crypto.sign(ourMacKey, localAuthor.getPrivateKey(),
-					localMlDsaPriv, s.getRemote().mlDsaPubKey);
+			try {
+				signature = crypto.sign(ourMacKey, localAuthor.getPrivateKey(),
+						localMlDsaPriv, s.getRemote().mlDsaPubKey);
+			} finally {
+				if (localMlDsaPriv != null) {
+					java.util.Arrays.fill(localMlDsaPriv, (byte) 0);
+				}
+			}
 		} catch (GeneralSecurityException e) {
 			return abort(txn, s, s.getLastRemoteMessageId());
 		}

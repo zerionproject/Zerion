@@ -252,6 +252,12 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.GROUPTR_JOIN_REQUEST) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateJoinRequest(m, list);
+				} else if (messageType == MessageTypes.GROUP_KEY_BINDING) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateKeyBinding(m, list);
+				} else if (messageType == MessageTypes.GROUP_KEY_PROBE) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateKeyProbe(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -784,7 +790,8 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateGrouptrInviteOffer(Message m,
 			BdfList body) throws FormatException {
-		checkSize(body, 8);
+		checkSize(body, 8, 9);
+		if (body.size() == 9) checkKeyBinding(body.getList(8));
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		String groupName = body.getString(2);
@@ -820,7 +827,12 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateGrouptrInviteResponse(Message m,
 			BdfList body, int kind) throws FormatException {
-		checkSize(body, 4);
+		if (kind == MessageTypes.GROUPTR_INVITE_ACCEPT) {
+			checkSize(body, 4, 5);
+			if (body.size() == 5) checkKeyBinding(body.getList(4));
+		} else {
+			checkSize(body, 4);
+		}
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		long timestamp = body.getLong(2);
@@ -873,7 +885,8 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateIncognitoInviteAccept(Message m,
 			BdfList body) throws FormatException {
-		checkSize(body, 5);
+		checkSize(body, 5, 6);
+		if (body.size() == 6) checkKeyBinding(body.getList(5));
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		long timestamp = body.getLong(2);
@@ -896,7 +909,12 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateIncognitoMemberInviteAccept(Message m,
 			BdfList body) throws FormatException {
-		checkSize(body, 6);
+		checkSize(body, 6, 8);
+		if (body.size() == 7) throw new FormatException();
+		if (body.size() == 8) {
+			checkKeyBinding(body.getList(6));
+			checkLength(body.getRaw(7), 32);
+		}
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		checkLength(body.getRaw(2), 32);
@@ -915,7 +933,8 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateMemberInviteOffer(Message m,
 			BdfList body, int kind) throws FormatException {
-		checkSize(body, 13);
+		checkSize(body, 13, 14);
+		if (body.size() == 14) checkKeyBinding(body.getList(13));
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		String groupName = body.getString(2);
@@ -957,7 +976,16 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateMemberInviteResponse(Message m,
 			BdfList body, int kind) throws FormatException {
-		checkSize(body, 5);
+		if (kind == MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT) {
+			checkSize(body, 5, 7);
+			if (body.size() == 6) throw new FormatException();
+			if (body.size() == 7) {
+				checkKeyBinding(body.getList(5));
+				checkLength(body.getRaw(6), 32);
+			}
+		} else {
+			checkSize(body, 5);
+		}
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		checkLength(body.getRaw(2), 32);
@@ -973,7 +1001,8 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateJoinRequest(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 9);
+		checkSize(body, 9, 10);
+		if (body.size() == 10) checkLength(body.getRaw(9), 32);
 		byte[] grouptrGroupId = body.getRaw(1);
 		checkLength(grouptrGroupId, 32);
 		checkLength(body.getRaw(2), 32);
@@ -992,6 +1021,71 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUPTR_JOIN_REQUEST);
 		meta.put(MSG_KEY_GROUP_ID, grouptrGroupId);
 		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateKeyBinding(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 3);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		checkKeyBinding(body.getList(2));
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUP_KEY_BINDING);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateKeyProbe(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		BdfList entries = body.getList(1);
+		checkSize(entries, 1, MAX_PROBE_ENTRIES);
+		for (int i = 0; i < entries.size(); i++) {
+			BdfList entry = entries.getList(i);
+			checkSize(entry, 3);
+			checkLength(entry.getRaw(0), 32);
+			checkLength(entry.getRaw(1), 32);
+			checkLength(entry.getRaw(2), SEALED_BINDING_BYTES);
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, (long) MessageTypes.GROUP_KEY_PROBE);
+		return new BdfMessageContext(meta);
+	}
+
+	static final int MAX_PROBE_ENTRIES = 16;
+	static final int MAX_DEPARTED = 16;
+	static final int SEALED_BINDING_BYTES = 32 + org.zerionproject.core.api
+			.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES + 8
+			+ 2 * org.zerionproject.core.api.crypto.PostQuantumConstants
+			.HYBRID_SIGNATURE_BYTES + 16;
+
+	static void checkGroupSecret(BdfList secret) throws FormatException {
+		checkSize(secret, 4);
+		if (secret.getLong(0) < 0L) throw new FormatException();
+		checkLength(secret.getRaw(1), 32);
+		BdfList departed = secret.getList(2);
+		checkSize(departed, 0, MAX_DEPARTED);
+		for (int i = 0; i < departed.size(); i++) {
+			checkLength(departed.getRaw(i), 33);
+		}
+		checkLength(secret.getRaw(3), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
+	}
+
+	static void checkKeyBinding(BdfList binding) throws FormatException {
+		checkSize(binding, 5);
+		checkLength(binding.getRaw(0), 32);
+		checkLength(binding.getRaw(1), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		if (binding.getLong(2) < 0L) throw new FormatException();
+		checkLength(binding.getRaw(3), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
+		checkLength(binding.getRaw(4), org.zerionproject.core.api.crypto
+				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
 	}
 
 	private void verifyOrThrow(byte[] sig, String label, byte[] signed,
@@ -1194,7 +1288,8 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validateGroupMemberListSnapshot(Message m,
 			BdfList body) throws FormatException {
-		checkSize(body, 6);
+		checkSize(body, 6, 7);
+		if (body.size() == 7) checkGroupSecret(body.getList(6));
 		byte[] groupId = body.getRaw(1);
 		checkLength(groupId, 32);
 		long epoch = body.getLong(2);

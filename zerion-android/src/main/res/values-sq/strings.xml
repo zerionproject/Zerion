@@ -2674,4 +2674,11 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="renewal_waiting_last_seen">Parë për herë të fundit %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Do të krijohet një adresë e re Tor, e cila do t\'u jepet kontakteve të tua në lidhjen e tyre të radhës. Adresa jote e vjetër vazhdon të funksionojë të paktën një ditë dhe derisa të gjitha kontaktet të kalojnë te e reja.</string>
 	<string name="pref_rotate_onion_success_message">Adresa jote e vjetër vazhdon të funksionojë të paktën një ditë dhe derisa çdo kontakt të kalojë te adresa e re.\n\nAdresa e re:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Bashkimi me një emër të rastësishëm funksionon vetëm në grupet e reja.</string>
+	<string name="grouptr_older_group_note">Ky është një grup më i vjetër: anëtarët e tij mund të të njohin në grupet e tua të tjera më të vjetra.</string>
+	<string name="grouptr_create_new_private_group">Krijo një grup të ri privat</string>
+	<string name="grouptr_contact_must_update">%1$s ende nuk mund të bashkohet me grupet e reja.</string>
+	<string name="grouptr_my_safety_code_in_group">Kodi im i sigurisë në këtë grup</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nNë çdo grup të ri ke një kod tjetër.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nNëse %1$s sheh të njëjtin kod te «Kodi im i sigurisë në këtë grup», postimet që shfaqen me këtë emër vijnë vërtet nga ky person.</string>
 </resources>

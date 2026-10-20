@@ -2673,4 +2673,11 @@
 	<string name="renewal_waiting_last_seen">Senast sedd %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">En ny Tor-adress genereras och delas med dina kontakter nästa gång de ansluter. Din gamla adress fortsätter att fungera i minst ett dygn och tills alla kontakter har gått över.</string>
 	<string name="pref_rotate_onion_success_message">Din gamla adress fortsätter att fungera i minst ett dygn och tills alla kontakter har gått över till den nya.\n\nNy adress:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Att gå med under ett slumpmässigt namn fungerar bara i nya grupper.</string>
+	<string name="grouptr_older_group_note">Det här är en äldre grupp: medlemmarna kan känna igen dig i dina andra äldre grupper.</string>
+	<string name="grouptr_create_new_private_group">Skapa en ny privat grupp</string>
+	<string name="grouptr_contact_must_update">%1$s kan inte gå med i nya grupper ännu.</string>
+	<string name="grouptr_my_safety_code_in_group">Min säkerhetskod i den här gruppen</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nDu har en annan kod i varje ny grupp.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nOm %1$s ser samma kod under ”Min säkerhetskod i den här gruppen” kommer inläggen som visas under det här namnet verkligen från den personen.</string>
 </resources>

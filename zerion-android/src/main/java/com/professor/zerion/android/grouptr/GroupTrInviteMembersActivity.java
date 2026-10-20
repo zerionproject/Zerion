@@ -61,6 +61,7 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 	private final Set<byte[]> existingPubKeys = new HashSet<>();
 	private final List<Contact> selected = new ArrayList<>();
 	private final Set<ContactId> outdated = new HashSet<>();
+	private final Set<ContactId> joined = new HashSet<>();
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -157,15 +158,24 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 			List<Contact> contacts;
 			GroupTrState state = null;
 			Set<ContactId> older = new HashSet<>();
+			Set<ContactId> members = new HashSet<>();
 			try {
 				contacts = new ArrayList<>(contactManager.getContacts());
 				state = groupTrManager.getGroup(groupId);
-				if (memberMode) {
-					for (Contact c : contacts) {
-						if (!groupTrManager.canReceiveMemberInvite(groupId,
-								c.getId())) {
-							older.add(c.getId());
-						}
+				boolean groupKeys = state != null && state.usesGroupKeys();
+				if (groupKeys) {
+					java.util.Map<String, ContactId> bound =
+							groupTrManager.getMemberContacts(groupId);
+					if (bound != null) members.addAll(bound.values());
+				}
+				for (Contact c : contacts) {
+					if (memberMode && !groupTrManager.canReceiveMemberInvite(
+							groupId, c.getId())) {
+						older.add(c.getId());
+					} else if (!memberMode && groupKeys
+							&& !groupTrManager.canJoinGroup(groupId,
+							c.getId())) {
+						older.add(c.getId());
 					}
 				}
 			} catch (DbException e) {
@@ -176,6 +186,8 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 			runOnUiThread(() -> {
 				outdated.clear();
 				outdated.addAll(older);
+				joined.clear();
+				joined.addAll(members);
 				renderList(finalContacts, finalState);
 			});
 		});
@@ -194,6 +206,7 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 		for (Contact c : contacts) {
 			byte[] pk = c.getAuthor().getPublicKey().getEncoded();
 			if (containsKey(existingPubKeys, pk)) continue;
+			if (joined.contains(c.getId())) continue;
 			listContainer.addView(buildRow(c, !outdated.contains(c.getId())));
 		}
 	}

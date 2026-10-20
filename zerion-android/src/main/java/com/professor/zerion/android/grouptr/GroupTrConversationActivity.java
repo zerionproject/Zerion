@@ -366,8 +366,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 		byte[] gid = groupId;
 		try {
 			if (localPub == null) {
-				LocalAuthor la = identityManager.getLocalAuthor();
-				localPub = la.getPublicKey().getEncoded();
+				byte[] memberKey = groupTrManager.getLocalMemberKey(gid);
+				if (memberKey == null) {
+					LocalAuthor la = identityManager.getLocalAuthor();
+					memberKey = la.getPublicKey().getEncoded();
+				}
+				localPub = memberKey;
 			}
 			GroupTrState s = groupTrManager.getGroup(gid);
 			if (s == null) {
@@ -482,9 +486,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 			}
 		}
 		try {
+			java.util.Map<org.zerionproject.core.api.contact.ContactId,
+					String> contactNames = new java.util.HashMap<>();
 			for (Contact c : contactManager.getContacts()) {
 				String name = c.getAlias() != null ? c.getAlias()
 						: c.getAuthor().getName();
+				contactNames.put(c.getId(), name);
+				if (s.usesGroupKeys()) continue;
 				String key = StringUtils.toHexString(
 						c.getAuthor().getPublicKey().getEncoded());
 				names.put(key, name);
@@ -492,9 +500,26 @@ public class GroupTrConversationActivity extends ZerionActivity
 					mlDsa.put(key, c.getMlDsaSigPublicKey());
 				}
 			}
-			byte[] localMlDsa = identityManager.getLocalMlDsaSigPublicKey();
-			if (localPub != null && localMlDsa != null) {
-				mlDsa.put(StringUtils.toHexString(localPub), localMlDsa);
+			if (s.usesGroupKeys()) {
+				java.util.Map<String, org.zerionproject.core.api.contact
+						.ContactId> bound =
+						groupTrManager.getMemberContacts(s.getGroupId());
+				if (bound != null) {
+					for (java.util.Map.Entry<String, org.zerionproject.core
+							.api.contact.ContactId> e : bound.entrySet()) {
+						String name = contactNames.get(e.getValue());
+						if (name != null) names.put(e.getKey(), name);
+					}
+				}
+				java.util.Map<String, byte[]> keys =
+						groupTrManager.getMemberMlDsaKeys(s.getGroupId());
+				if (keys != null) mlDsa.putAll(keys);
+			} else {
+				byte[] localMlDsa =
+						identityManager.getLocalMlDsaSigPublicKey();
+				if (localPub != null && localMlDsa != null) {
+					mlDsa.put(StringUtils.toHexString(localPub), localMlDsa);
+				}
 			}
 		} catch (DbException | RuntimeException ex) {
 		}
@@ -2010,12 +2035,28 @@ public class GroupTrConversationActivity extends ZerionActivity
 				.IdentityDisplay.lines(p.getSenderPubKey(), mlDsa,
 						getString(R.string.identity_fingerprint_hybrid_format),
 						getString(R.string.identity_fingerprint_classical_format));
+		GroupTrState s = lastState;
+		boolean groupKeys = s != null && s.usesGroupKeys();
+		boolean own = localPub != null
+				&& Arrays.equals(localPub, p.getSenderPubKey());
+		int title = groupKeys && own
+				? R.string.grouptr_my_safety_code_in_group
+				: R.string.grouptr_member_safety_code;
+		String message;
+		if (groupKeys && own) {
+			message = getString(R.string.grouptr_my_safety_code_message, code);
+		} else if (groupKeys) {
+			message = getString(
+					R.string.grouptr_member_safety_code_group_message,
+					safetyCodeName(p), code);
+		} else {
+			message = getString(R.string.grouptr_member_safety_code_message,
+					safetyCodeName(p), code);
+		}
 		new com.professor.zerion.android.security.SecureAlertDialogBuilder(
 				this, R.style.ZerionDialogTheme)
-				.setTitle(R.string.grouptr_member_safety_code)
-				.setMessage(getString(
-						R.string.grouptr_member_safety_code_message,
-						safetyCodeName(p), code))
+				.setTitle(title)
+				.setMessage(message)
 				.setPositiveButton(android.R.string.ok, null)
 				.show();
 	}

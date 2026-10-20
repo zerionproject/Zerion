@@ -2759,4 +2759,11 @@
 	<string name="renewal_waiting_last_seen">Востаннє в мережі %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Буде створено нову адресу Tor, яку ваші контакти отримають під час наступного з\'єднання. Стара адреса працюватиме щонайменше добу й доки всі контакти не перейдуть на нову.</string>
 	<string name="pref_rotate_onion_success_message">Стара адреса працюватиме щонайменше добу й доки всі контакти не перейдуть на нову.\n\nНова адреса:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Приєднатися під випадковим іменем можна лише в нових групах.</string>
+	<string name="grouptr_older_group_note">Це старіша група: її учасники можуть упізнати вас у ваших інших старіших групах.</string>
+	<string name="grouptr_create_new_private_group">Створити нову приватну групу</string>
+	<string name="grouptr_contact_must_update">%1$s поки не може приєднуватися до нових груп.</string>
+	<string name="grouptr_my_safety_code_in_group">Мій номер безпеки в цій групі</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nУ кожній новій групі у вас інший номер.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nЯкщо %1$s бачить той самий номер у розділі «Мій номер безпеки в цій групі», дописи під цим іменем справді належать цій людині.</string>
 </resources>

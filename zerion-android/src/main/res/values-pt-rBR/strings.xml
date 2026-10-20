@@ -2729,4 +2729,11 @@
 	<string name="renewal_waiting_last_seen">Visto por último %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Um novo endereço Tor será gerado e compartilhado com seus contatos na próxima conexão deles. Seu endereço antigo continua funcionando por pelo menos um dia e até que todos os contatos tenham migrado.</string>
 	<string name="pref_rotate_onion_success_message">Seu endereço antigo continua funcionando por pelo menos um dia e até que todos os contatos tenham passado para o novo.\n\nNovo endereço:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Entrar com um nome aleatório só funciona em grupos novos.</string>
+	<string name="grouptr_older_group_note">Este é um grupo antigo: os membros dele podem reconhecer você nos seus outros grupos antigos.</string>
+	<string name="grouptr_create_new_private_group">Criar um novo grupo privado</string>
+	<string name="grouptr_contact_must_update">%1$s ainda não pode entrar em grupos novos.</string>
+	<string name="grouptr_my_safety_code_in_group">Meu código de segurança neste grupo</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nVocê tem um código diferente em cada grupo novo.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSe %1$s vir o mesmo código em “Meu código de segurança neste grupo”, as publicações mostradas com este nome são mesmo dessa pessoa.</string>
 </resources>

@@ -116,7 +116,7 @@ public class GroupIncognitoChoiceTest {
 	}
 
 	@Test
-	public void anOlderInviterLeavesIncognitoOff() {
+	public void anInvitationToAnOlderGroupLeavesIncognitoOff() {
 		AppCompatActivity a = host();
 		GroupTrIncognitoPicker.askToJoin(a, null, false, answers::add);
 		idle();
@@ -125,7 +125,7 @@ public class GroupIncognitoChoiceTest {
 		assertFalse(sw.isEnabled());
 		TextView summary = d.findViewById(R.id.incognitoSummary);
 		assertEquals(a.getString(
-				R.string.grouptr_member_invite_contact_outdated),
+				R.string.grouptr_incognito_new_groups_only),
 				summary.getText().toString());
 		sw.performClick();
 		d.getButton(DialogInterface.BUTTON_POSITIVE).performClick();

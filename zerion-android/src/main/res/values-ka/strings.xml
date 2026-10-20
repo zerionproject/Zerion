@@ -2672,4 +2672,11 @@
 	<string name="renewal_waiting_last_seen">ბოლოს ონლაინ იყო %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">შეიქმნება ახალი Tor-მისამართი, რომელიც თქვენს კონტაქტებს მათი შემდეგი დაკავშირებისას გაეზიარებათ. თქვენი ძველი მისამართი იმუშავებს სულ მცირე ერთი დღე და სანამ ყველა კონტაქტი ახალზე არ გადავა.</string>
 	<string name="pref_rotate_onion_success_message">თქვენი ძველი მისამართი იმუშავებს სულ მცირე ერთი დღე და სანამ ყველა კონტაქტი ახალ მისამართზე არ გადავა.\n\nახალი მისამართი:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">შემთხვევითი სახელით შეერთება მხოლოდ ახალ ჯგუფებში მუშაობს.</string>
+	<string name="grouptr_older_group_note">ეს ძველი ჯგუფია: მის წევრებს შეუძლიათ თქვენი ამოცნობა თქვენს სხვა ძველ ჯგუფებში.</string>
+	<string name="grouptr_create_new_private_group">ახალი დახურული ჯგუფის შექმნა</string>
+	<string name="grouptr_contact_must_update">%1$s ჯერ ვერ შეუერთდება ახალ ჯგუფებს.</string>
+	<string name="grouptr_my_safety_code_in_group">ჩემი უსაფრთხოების კოდი ამ ჯგუფში</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nყოველ ახალ ჯგუფში განსხვავებული კოდი გაქვთ.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nთუ %1$s „ჩემი უსაფრთხოების კოდი ამ ჯგუფში“ განყოფილებაში იმავე კოდს ხედავს, ამ სახელით ნაჩვენები პოსტები ნამდვილად მისია.</string>
 </resources>

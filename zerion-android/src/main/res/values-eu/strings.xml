@@ -2657,4 +2657,11 @@
 	<string name="renewal_waiting_last_seen">Azkenekoz konektatuta %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Tor helbide berri bat sortuko da, eta zure kontaktuekin partekatuko da haien hurrengo konexioan. Zure helbide zaharrak gutxienez egun batez eta kontaktu guztiak berrira pasatu arte funtzionatzen jarraituko du.</string>
 	<string name="pref_rotate_onion_success_message">Zure helbide zaharrak gutxienez egun batez eta kontaktu guztiak helbide berrira pasatu arte funtzionatzen jarraituko du.\n\nHelbide berria:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Ausazko izen batekin batzeak talde berrietan soilik funtzionatzen du.</string>
+	<string name="grouptr_older_group_note">Talde zaharrago bat da hau: bertako kideek zure beste talde zaharragoetan ezagutu zaitzakete.</string>
+	<string name="grouptr_create_new_private_group">Sortu talde pribatu berri bat</string>
+	<string name="grouptr_contact_must_update">%1$s ezin da oraindik talde berrietara batu.</string>
+	<string name="grouptr_my_safety_code_in_group">Nire segurtasun-zenbakia talde honetan</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nZenbaki desberdina duzu talde berri bakoitzean.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\n%1$s erabiltzaileak zenbaki bera ikusten badu «Nire segurtasun-zenbakia talde honetan» atalean, izen honekin agertzen diren mezuak benetan bereak dira.</string>
 </resources>

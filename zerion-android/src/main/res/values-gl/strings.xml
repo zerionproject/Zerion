@@ -2667,4 +2667,11 @@
 	<string name="renewal_waiting_last_seen">Visto por última vez %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Xerarase un novo enderezo de Tor e compartirase cos teus contactos na súa próxima conexión. O teu enderezo antigo seguirá funcionando polo menos un día e ata que todos os contactos migren.</string>
 	<string name="pref_rotate_onion_success_message">O teu enderezo antigo seguirá funcionando polo menos un día e ata que todos os contactos pasen ao novo.\n\nNovo enderezo:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Unirse cun nome aleatorio só funciona nos grupos novos.</string>
+	<string name="grouptr_older_group_note">Este é un grupo antigo: os seus membros poden recoñecerte nos teus outros grupos antigos.</string>
+	<string name="grouptr_create_new_private_group">Crear un grupo privado novo</string>
+	<string name="grouptr_contact_must_update">%1$s aínda non pode unirse a grupos novos.</string>
+	<string name="grouptr_my_safety_code_in_group">O meu código de seguranza neste grupo</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nTes un código distinto en cada grupo novo.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSe %1$s ve o mesmo código en «O meu código de seguranza neste grupo», as publicacións que aparecen con este nome son realmente súas.</string>
 </resources>

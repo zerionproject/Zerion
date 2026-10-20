@@ -1017,7 +1017,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 
 	static boolean isMemberInviteRecordType(int messageType) {
 		if (messageType
-				== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO) {
+				== MessageTypes.GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO
+				|| messageType == MessageTypes.GROUP_KEY_BINDING
+				|| messageType == MessageTypes.GROUP_KEY_PROBE) {
 			return true;
 		}
 		return messageType >= MessageTypes.GROUP_PERMISSIONS
@@ -3084,11 +3086,13 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		long inviteTs = meta.getLong("gtrInviteTimestamp");
 		byte[] recordSig = meta.getRaw(
 				MessagingConstants.MSG_KEY_GROUP_RECORD_SIG);
+		BdfList record = clientHelper.toList(m);
+		BdfList binding = record.size() > 8 ? record.getList(8) : null;
 		conversationManager.trackIncomingMessage(txn, m);
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupTrInviteOfferReceivedEvent(contactId, m.getId(),
 				grouptrGid, groupName, salt, creatorName, creatorPub,
-				inviteTs, recordSig));
+				inviteTs, recordSig, binding));
 	}
 
 	private void incomingGrouptrInviteResponse(Transaction txn, Message m,
@@ -3112,9 +3116,15 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 						: org.zerionproject.app.api.messaging.event
 								.GroupTrInviteResponseReceivedEvent.Kind
 								.DECLINE;
+		BdfList binding = null;
+		if (messageType != MessageTypes.GROUPTR_INVITE_DECLINE) {
+			BdfList record = clientHelper.toList(m);
+			int at = incognito ? 5 : 4;
+			if (record.size() > at) binding = record.getList(at);
+		}
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupTrInviteResponseReceivedEvent(contactId, grouptrGid,
-				inviteTs, recordSig, kind, joinerName));
+				inviteTs, recordSig, kind, joinerName, binding));
 		startGroupRecordCleanupTimer(txn, m.getId());
 	}
 }

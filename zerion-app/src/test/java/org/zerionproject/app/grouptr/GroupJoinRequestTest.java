@@ -37,7 +37,7 @@ public class GroupJoinRequestTest {
 	public void setUp() throws Exception {
 		net.connect(creator, member);
 		net.connect(creator, outsider);
-		groupId = creator.manager.createGroup("Club").getGroupId();
+		groupId = creator.manager.createLegacyGroup("Club", null).getGroupId();
 		creator.manager.inviteContactToGroup(groupId,
 				creator.contactIdOf(member), member.pub, member.name);
 		net.pump();

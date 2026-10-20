@@ -20,7 +20,8 @@ public class GroupTrAuthException extends DbException {
 		MEMBER_INVITES_UNAVAILABLE,
 		GROUP_FULL,
 		INCOGNITO_NOT_SUPPORTED,
-		INCOGNITO_NAME_FIXED
+		INCOGNITO_NAME_FIXED,
+		CONTACT_MUST_UPDATE
 	}
 
 	private final Reason reason;

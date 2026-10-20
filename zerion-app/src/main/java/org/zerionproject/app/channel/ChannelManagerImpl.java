@@ -5590,9 +5590,16 @@ class ChannelManagerImpl
 					byte[] mlDsaPub =
 							identityManager.getLocalMlDsaSigPublicKey();
 					signerMl = mlDsaPub == null ? new byte[0] : mlDsaPub;
-					sig = signatures.signUserCheckApproval(signedInput,
-							me.getPrivateKey(),
-							identityManager.getLocalMlDsaSigPrivateKey());
+					byte[] mlDsaPriv =
+							identityManager.getLocalMlDsaSigPrivateKey();
+					try {
+						sig = signatures.signUserCheckApproval(signedInput,
+								me.getPrivateKey(), mlDsaPriv);
+					} finally {
+						if (mlDsaPriv != null) {
+							java.util.Arrays.fill(mlDsaPriv, (byte) 0);
+						}
+					}
 				}
 			} catch (GeneralSecurityException ex) {
 				return;

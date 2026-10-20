@@ -1,10 +1,12 @@
 package org.zerionproject.app.api.messaging.event;
 
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.sync.MessageId;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -20,11 +22,22 @@ public class GroupTrInviteOfferReceivedEvent extends Event {
 	private final byte[] creatorPubKey;
 	private final long inviteTimestamp;
 	private final byte[] recordSig;
+	@Nullable
+	private final BdfList keyBinding;
 
 	public GroupTrInviteOfferReceivedEvent(ContactId contactId,
 			MessageId messageId, byte[] grouptrGroupId, String groupName,
 			byte[] salt, String creatorName, byte[] creatorPubKey,
 			long inviteTimestamp, byte[] recordSig) {
+		this(contactId, messageId, grouptrGroupId, groupName, salt,
+				creatorName, creatorPubKey, inviteTimestamp, recordSig, null);
+	}
+
+	public GroupTrInviteOfferReceivedEvent(ContactId contactId,
+			MessageId messageId, byte[] grouptrGroupId, String groupName,
+			byte[] salt, String creatorName, byte[] creatorPubKey,
+			long inviteTimestamp, byte[] recordSig,
+			@Nullable BdfList keyBinding) {
 		this.contactId = contactId;
 		this.messageId = messageId;
 		this.grouptrGroupId = grouptrGroupId;
@@ -34,6 +47,7 @@ public class GroupTrInviteOfferReceivedEvent extends Event {
 		this.creatorPubKey = creatorPubKey;
 		this.inviteTimestamp = inviteTimestamp;
 		this.recordSig = recordSig;
+		this.keyBinding = keyBinding;
 	}
 
 	public ContactId getContactId() {
@@ -70,5 +84,10 @@ public class GroupTrInviteOfferReceivedEvent extends Event {
 
 	public byte[] getRecordSig() {
 		return recordSig;
+	}
+
+	@Nullable
+	public BdfList getKeyBinding() {
+		return keyBinding;
 	}
 }

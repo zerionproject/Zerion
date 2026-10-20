@@ -2482,6 +2482,13 @@
 	<string name="grouptr_incognito_explained">Others in the group see a random name instead of yours. Members who are your contacts can still recognise you.</string>
 	<string name="grouptr_incognito_name">You appear as \"%1$s\"</string>
 	<string name="grouptr_incognito_new_name">New name</string>
+	<string name="grouptr_incognito_new_groups_only">Joining under a random name works in new groups only.</string>
+	<string name="grouptr_older_group_note">This is an older group: its members can recognise you in your other older groups.</string>
+	<string name="grouptr_create_new_private_group">Create a new private group</string>
+	<string name="grouptr_contact_must_update">%1$s cannot join new groups yet.</string>
+	<string name="grouptr_my_safety_code_in_group">My safety code in this group</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nYou have a different code in every new group.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nIf %1$s sees the same code under My safety code in this group, the posts shown under this name are really theirs.</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (incognito)</string>
 	<string name="grouptr_member_may_add">May add members</string>
 	<string name="grouptr_member_invite_creator_only">Only the group owner can add members.</string>

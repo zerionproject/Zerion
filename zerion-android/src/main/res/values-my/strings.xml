@@ -2635,4 +2635,11 @@
 	<string name="renewal_waiting_last_seen">%1$s နောက်ဆုံး တွေ့ခဲ့သည်</string>
 	<string name="pref_rotate_onion_confirm_message">Tor လိပ်စာအသစ်တစ်ခု ထုတ်ပေးမည် ဖြစ်ပြီး သင့်အဆက်အသွယ်များ နောက်တစ်ကြိမ် ချိတ်ဆက်သည့်အခါ ၎င်းတို့ထံ မျှဝေမည်။ သင်၏ လိပ်စာဟောင်းသည် အနည်းဆုံး တစ်ရက်နှင့် အဆက်အသွယ်အားလုံး ပြောင်းပြီးသည်အထိ ဆက်အလုပ်လုပ်မည်။</string>
 	<string name="pref_rotate_onion_success_message">သင်၏ လိပ်စာဟောင်းသည် အနည်းဆုံး တစ်ရက်နှင့် အဆက်အသွယ်အားလုံး လိပ်စာသစ်သို့ ပြောင်းပြီးသည်အထိ ဆက်အလုပ်လုပ်မည်။\n\nလိပ်စာသစ်:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">ကျပန်းအမည်ဖြင့် ဝင်ရောက်ခြင်းသည် အဖွဲ့အသစ်များတွင်သာ အလုပ်လုပ်ပါသည်။</string>
+	<string name="grouptr_older_group_note">ဤအဖွဲ့သည် အဖွဲ့ဟောင်းတစ်ခု ဖြစ်သည်: ၎င်း၏ အဖွဲ့ဝင်များသည် သင်၏ အခြား အဖွဲ့ဟောင်းများတွင် သင့်ကို မှတ်မိနိုင်ပါသည်။</string>
+	<string name="grouptr_create_new_private_group">ကိုယ်ရေးကိုယ်တာ အဖွဲ့ အသစ် ဖန်တီးမည်</string>
+	<string name="grouptr_contact_must_update">%1$s သည် အဖွဲ့အသစ်များသို့ မဝင်နိုင်သေးပါ။</string>
+	<string name="grouptr_my_safety_code_in_group">ဤအဖွဲ့ရှိ ကျွန်ုပ်၏ လုံခြုံရေး ကုဒ်</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nအဖွဲ့အသစ်တိုင်းတွင် သင့်တွင် မတူညီသော ကုဒ်တစ်ခု ရှိပါသည်။</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\n%1$s က “ဤအဖွဲ့ရှိ ကျွန်ုပ်၏ လုံခြုံရေး ကုဒ်” အောက်တွင် ဤကုဒ်အတိုင်း မြင်ရပါက ဤအမည်အောက်တွင် ပြသသော ပို့စ်များသည် အမှန်တကယ် ၎င်း၏ ပို့စ်များ ဖြစ်သည်။</string>
 </resources>

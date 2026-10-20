@@ -27,7 +27,7 @@ public class GroupRecordOrderNetTest {
 		net.connect(creator, first);
 		net.connect(creator, second);
 		net.connect(early, first);
-		groupId = creator.manager.createGroup("Club").getGroupId();
+		groupId = creator.manager.createLegacyGroup("Club", null).getGroupId();
 		join(early, p -> false);
 	}
 

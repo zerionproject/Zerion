@@ -7,6 +7,7 @@ interface GroupTrConstants {
 
 	String GROUP_ID_LABEL = "org.zerionproject.core/GROUP_ID";
 	int FORMAT_VERSION = 1;
+	int KEYED_FORMAT_VERSION = 2;
 
 	String SIGNING_LABEL_GROUP_MEMBERSHIP =
 			"org.zerionproject/GROUP_MEMBERSHIP";

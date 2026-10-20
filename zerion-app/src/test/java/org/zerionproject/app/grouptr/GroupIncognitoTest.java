@@ -3,7 +3,6 @@ package org.zerionproject.app.grouptr;
 import org.zerionproject.app.api.grouptr.GroupTrAuthException;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrState;
-import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.app.messaging.MessageTypes;
 import org.zerionproject.core.api.data.BdfList;
 import org.junit.Before;
@@ -42,10 +41,11 @@ public class GroupIncognitoTest {
 			throws Exception {
 		GroupTrState s = creator.manager.createGroup("Club", CREATOR_ALIAS);
 		byte[] groupId = s.getGroupId();
+		assertTrue(s.usesGroupKeys());
 		assertEquals(CREATOR_ALIAS, s.getCreatorName());
 		assertEquals(CREATOR_ALIAS, creator.manager.getIncognitoName(groupId));
-		assertEquals(CREATOR_ALIAS, member(creator, groupId, creator.pub)
-				.getName());
+		assertEquals(CREATOR_ALIAS, member(creator, groupId,
+				key(creator, groupId)).getName());
 
 		creator.manager.inviteContactToGroup(groupId,
 				creator.contactIdOf(member), member.pub, member.name);
@@ -53,7 +53,7 @@ public class GroupIncognitoTest {
 		member.manager.acceptInvite(groupId);
 		net.pump();
 		assertTrue("the group id was derived from the random name",
-				creator.manager.isMember(groupId, member.pub));
+				creator.manager.isMember(groupId, key(member, groupId)));
 		assertEquals(CREATOR_ALIAS, member.manager.getGroup(groupId)
 				.getCreatorName());
 		creator.manager.setMembersMayInvite(groupId, true);
@@ -76,7 +76,7 @@ public class GroupIncognitoTest {
 	public void aContactJoiningIncognitoIsAddedUnderItsRandomName()
 			throws Exception {
 		byte[] groupId = creator.manager.createGroup("Club").getGroupId();
-		assertTrue(creator.manager.isMember(groupId, creator.pub));
+		assertTrue(creator.manager.isMember(groupId, key(creator, groupId)));
 		creator.manager.inviteContactToGroup(groupId,
 				creator.contactIdOf(member), member.pub, member.name);
 		net.pump();
@@ -89,14 +89,15 @@ public class GroupIncognitoTest {
 				.isEmpty());
 		assertEquals(1, sentOfType(member,
 				MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO).size());
-		assertTrue(creator.manager.isMember(groupId, member.pub));
-		assertEquals(MEMBER_ALIAS, member(creator, groupId, member.pub)
+		byte[] memberKey = key(member, groupId);
+		assertTrue(creator.manager.isMember(groupId, memberKey));
+		assertEquals(MEMBER_ALIAS, member(creator, groupId, memberKey)
 				.getName());
 		BdfList added = sentOfType(creator, MessageTypes.GROUP_MEMBER_ADDED)
 				.get(0).body;
 		assertEquals(MEMBER_ALIAS, added.getString(3));
 		assertEquals(MEMBER_ALIAS, member.manager.getIncognitoName(groupId));
-		assertEquals(MEMBER_ALIAS, member(member, groupId, member.pub)
+		assertEquals(MEMBER_ALIAS, member(member, groupId, memberKey)
 				.getName());
 
 		member.manager.sendGroupPost(groupId, new byte[] {2}, 0L);
@@ -132,10 +133,11 @@ public class GroupIncognitoTest {
 		BdfList request = sentOfType(member, MessageTypes.GROUPTR_JOIN_REQUEST)
 				.get(0).body;
 		assertEquals(INVITEE_ALIAS, request.getString(3));
-		assertTrue(creator.manager.isMember(groupId, invitee.pub));
-		assertEquals(INVITEE_ALIAS, member(creator, groupId, invitee.pub)
+		byte[] inviteeKey = key(invitee, groupId);
+		assertTrue(creator.manager.isMember(groupId, inviteeKey));
+		assertEquals(INVITEE_ALIAS, member(creator, groupId, inviteeKey)
 				.getName());
-		assertTrue(invitee.manager.isMember(groupId, invitee.pub));
+		assertTrue(invitee.manager.isMember(groupId, inviteeKey));
 		assertEquals(INVITEE_ALIAS,
 				invitee.manager.getIncognitoName(groupId));
 
@@ -147,14 +149,13 @@ public class GroupIncognitoTest {
 	}
 
 	@Test
-	public void incognitoIsRefusedWhenTheCreatorRunsAnOlderVersion()
+	public void incognitoIsNotOfferedForAnInvitationToAnOlderGroup()
 			throws Exception {
-		byte[] groupId = creator.manager.createGroup("Club").getGroupId();
+		byte[] groupId = creator.manager.createLegacyGroup("Club", null)
+				.getGroupId();
 		creator.manager.inviteContactToGroup(groupId,
 				creator.contactIdOf(member), member.pub, member.name);
 		net.pump();
-		member.setVersion(creator,
-				MessagingManager.GROUP_INCOGNITO_MIN_VERSION - 1);
 
 		assertFalse(member.manager.canAcceptIncognito(groupId, false));
 		try {
@@ -172,9 +173,10 @@ public class GroupIncognitoTest {
 	}
 
 	@Test
-	public void incognitoIsRefusedWhenTheInvitingMemberRunsAnOlderVersion()
+	public void incognitoIsNotOfferedForAMemberInviteToAnOlderGroup()
 			throws Exception {
-		byte[] groupId = creator.manager.createGroup("Club").getGroupId();
+		byte[] groupId = creator.manager.createLegacyGroup("Club", null)
+				.getGroupId();
 		creator.manager.inviteContactToGroup(groupId,
 				creator.contactIdOf(member), member.pub, member.name);
 		net.pump();
@@ -185,8 +187,6 @@ public class GroupIncognitoTest {
 		member.manager.inviteContactAsMember(groupId,
 				member.contactIdOf(invitee));
 		net.pump();
-		invitee.setVersion(member,
-				MessagingManager.GROUP_INCOGNITO_MIN_VERSION - 1);
 
 		assertFalse(invitee.manager.canAcceptIncognito(groupId, true));
 		try {
@@ -247,6 +247,11 @@ public class GroupIncognitoTest {
 		} catch (IllegalArgumentException expected) {
 		}
 		assertTrue(member.sent().isEmpty());
+	}
+
+	private static byte[] key(InviteTestNet.Node n, byte[] groupId)
+			throws Exception {
+		return n.manager.getLocalMemberKey(groupId);
 	}
 
 	private void assertNameNeverSent(String name) {

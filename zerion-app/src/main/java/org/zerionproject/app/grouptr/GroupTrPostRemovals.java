@@ -85,6 +85,13 @@ final class GroupTrPostRemovals {
 		}
 	}
 
+	interface Signer {
+
+		byte[] sign(String label, byte[] signed) throws DbException;
+
+		void clear();
+	}
+
 	interface Host {
 
 		ReentrantLock lockFor(byte[] groupId);
@@ -93,22 +100,25 @@ final class GroupTrPostRemovals {
 		GroupTrState group(byte[] groupId) throws DbException;
 
 		@Nullable
-		byte[] contactPubKey(ContactId c);
+		byte[] contactPubKey(GroupTrState s, ContactId c);
 
-		boolean signerKnown(byte[] pubKey) throws DbException;
+		boolean signerKnown(GroupTrState s, byte[] pubKey) throws DbException;
 
-		boolean verify(byte[] sig, String label, byte[] signed,
-				byte[] pubKey);
+		boolean verify(GroupTrState s, byte[] sig, String label,
+				byte[] signed, byte[] pubKey);
 
-		byte[] sign(String label, byte[] signed, PrivateKey key)
-				throws DbException;
+		Signer signer(GroupTrState s) throws DbException;
+
+		byte[] localKey(GroupTrState s) throws DbException;
+
+		byte[] localKey(Transaction txn, byte[] groupId) throws DbException;
 
 		@Nullable
 		Copy describe(byte[] groupId, BdfDictionary meta, byte[] localPub);
 
 		@Nullable
-		Contact contactByPubKey(Transaction txn, byte[] pubKey)
-				throws DbException;
+		Contact contactByPubKey(Transaction txn, GroupTrState s,
+				byte[] pubKey) throws DbException;
 
 		void dispatchRecord(Transaction txn, Contact c, long timestamp,
 				BdfList body, BdfDictionary meta) throws DbException;
@@ -178,17 +188,17 @@ final class GroupTrPostRemovals {
 		try {
 			GroupTrState s = host.group(groupId);
 			if (s == null || s.isDissolved()) return;
-			byte[] deliverer = host.contactPubKey(e.getContactId());
+			byte[] deliverer = host.contactPubKey(s, e.getContactId());
 			if (deliverer == null) return;
 			byte[] author = e.getSenderPubKey();
 			if (!GroupTrManagerImpl.groupPostDeliveryAccepted(s, author,
 					deliverer)) {
 				return;
 			}
-			if (!host.signerKnown(author)) return;
+			if (!host.signerKnown(s, author)) return;
 			byte[] signed = signedInput(groupId, e.getEpoch(), author,
 					e.getTargetPostId(), e.getTimestamp());
-			if (!host.verify(e.getRecordSig(),
+			if (!host.verify(s, e.getRecordSig(),
 					SIGNING_LABEL_GROUP_POST_DELETE, signed, author)) {
 				return;
 			}
@@ -238,9 +248,7 @@ final class GroupTrPostRemovals {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.GROUP_DISSOLVED);
 			}
-			LocalAuthor la = db.transactionWithResult(true,
-					identityManager::getLocalAuthor);
-			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!isMember(s, localPub)) {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.NOT_A_MEMBER);
@@ -248,45 +256,50 @@ final class GroupTrPostRemovals {
 			long timestamp = clock.currentTimeMillis();
 			long epoch = s.getEpoch();
 			int[] keeping = {0};
-			remove(groupId, localPub, postIds, false, (txn, found) -> {
-				if (found.isEmpty()) return;
-				List<byte[]> targets = new ArrayList<>(found.values());
-				List<BdfList> records = new ArrayList<>(targets.size());
-				for (byte[] target : targets) {
-					byte[] sig = host.sign(SIGNING_LABEL_GROUP_POST_DELETE,
-							signedInput(groupId, epoch, localPub, target,
-									timestamp), la.getPrivateKey());
-					records.add(BdfList.of(
-							(long) MessageTypes.GROUP_POST_DELETE, groupId,
-							epoch, localPub, target, timestamp, sig));
-				}
-				for (GroupTrMember m : s.getMembers()) {
-					if (Arrays.equals(m.getPubKey(), localPub)) continue;
-					Contact c = host.contactByPubKey(txn, m.getPubKey());
-					if (c == null) continue;
-					if (messagingManager.getContactClientMinorVersion(txn,
-							c.getId()) < GROUP_ACTIONS_MIN_VERSION) {
-						keeping[0]++;
-						continue;
-					}
-					for (int i = 0; i < records.size(); i++) {
-						host.dispatchRecord(txn, c, timestamp, records.get(i),
-								recordMetadata(groupId, targets.get(i),
+			Signer signer = host.signer(s);
+			try {
+				remove(groupId, localPub, postIds, false, (txn, found) -> {
+					if (found.isEmpty()) return;
+					List<byte[]> targets = new ArrayList<>(found.values());
+					List<BdfList> records = new ArrayList<>(targets.size());
+					for (byte[] target : targets) {
+						byte[] sig = signer.sign(SIGNING_LABEL_GROUP_POST_DELETE,
+								signedInput(groupId, epoch, localPub, target,
 										timestamp));
+						records.add(BdfList.of(
+								(long) MessageTypes.GROUP_POST_DELETE, groupId,
+								epoch, localPub, target, timestamp, sig));
 					}
-				}
-				String ns = namespace(groupId);
-				Entries own = Entries.parse(
-						settingsManager.getSettings(txn, ns).get(KEY_OWN),
-						timestamp);
-				for (byte[] target : targets) {
-					own.add(toHexString(target), epoch + "_" + timestamp,
-							timestamp + KEPT_MS, MAX_DELETED_PER_GROUP);
-				}
-				Settings update = new Settings();
-				update.put(KEY_OWN, own.join());
-				settingsManager.mergeSettings(txn, update, ns);
-			});
+					for (GroupTrMember m : s.getMembers()) {
+						if (Arrays.equals(m.getPubKey(), localPub)) continue;
+						Contact c = host.contactByPubKey(txn, s, m.getPubKey());
+						if (c == null) continue;
+						if (messagingManager.getContactClientMinorVersion(txn,
+								c.getId()) < GROUP_ACTIONS_MIN_VERSION) {
+							keeping[0]++;
+							continue;
+						}
+						for (int i = 0; i < records.size(); i++) {
+							host.dispatchRecord(txn, c, timestamp, records.get(i),
+									recordMetadata(groupId, targets.get(i),
+											timestamp));
+						}
+					}
+					String ns = namespace(groupId);
+					Entries own = Entries.parse(
+							settingsManager.getSettings(txn, ns).get(KEY_OWN),
+							timestamp);
+					for (byte[] target : targets) {
+						own.add(toHexString(target), epoch + "_" + timestamp,
+								timestamp + KEPT_MS, MAX_DELETED_PER_GROUP);
+					}
+					Settings update = new Settings();
+					update.put(KEY_OWN, own.join());
+					settingsManager.mergeSettings(txn, update, ns);
+				});
+			} finally {
+				signer.clear();
+			}
 			return keeping[0];
 		} finally {
 			lock.unlock();
@@ -300,49 +313,52 @@ final class GroupTrPostRemovals {
 		try {
 			GroupTrState s = host.group(groupId);
 			if (s == null || s.isDissolved()) return;
-			byte[] memberPub = host.contactPubKey(contactId);
+			byte[] memberPub = host.contactPubKey(s, contactId);
 			if (memberPub == null || !isMember(s, memberPub)) return;
-			LocalAuthor la = db.transactionWithResult(true,
-					identityManager::getLocalAuthor);
-			byte[] localPub = la.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(s);
 			if (!isMember(s, localPub)) return;
 			long now = clock.currentTimeMillis();
 			Entries own = Entries.parse(settingsManager.getSettings(
 					namespace(groupId)).get(KEY_OWN), now);
 			if (own.isEmpty()) return;
-			db.transaction(false, txn -> {
-				Contact c = host.contactByPubKey(txn, memberPub);
-				if (c == null) return;
-				if (messagingManager.getContactClientMinorVersion(txn,
-						c.getId()) < GROUP_ACTIONS_MIN_VERSION) {
-					return;
-				}
-				for (String[] e : own.list()) {
-					String[] at = e[1].split("_");
-					if (at.length != 2) continue;
-					long epoch;
-					long timestamp;
-					try {
-						epoch = Long.parseLong(at[0]);
-						timestamp = Long.parseLong(at[1]);
-					} catch (NumberFormatException ex) {
-						continue;
+			Signer signer = host.signer(s);
+			try {
+				db.transaction(false, txn -> {
+					Contact c = host.contactByPubKey(txn, s, memberPub);
+					if (c == null) return;
+					if (messagingManager.getContactClientMinorVersion(txn,
+							c.getId()) < GROUP_ACTIONS_MIN_VERSION) {
+						return;
 					}
-					byte[] target;
-					try {
-						target = fromHexString(e[0]);
-					} catch (FormatException ex) {
-						continue;
+					for (String[] e : own.list()) {
+						String[] at = e[1].split("_");
+						if (at.length != 2) continue;
+						long epoch;
+						long timestamp;
+						try {
+							epoch = Long.parseLong(at[0]);
+							timestamp = Long.parseLong(at[1]);
+						} catch (NumberFormatException ex) {
+							continue;
+						}
+						byte[] target;
+						try {
+							target = fromHexString(e[0]);
+						} catch (FormatException ex) {
+							continue;
+						}
+						byte[] sig = signer.sign(SIGNING_LABEL_GROUP_POST_DELETE,
+								signedInput(groupId, epoch, localPub, target,
+										timestamp));
+						host.dispatchRecord(txn, c, now, BdfList.of(
+								(long) MessageTypes.GROUP_POST_DELETE, groupId,
+								epoch, localPub, target, timestamp, sig),
+								recordMetadata(groupId, target, timestamp));
 					}
-					byte[] sig = host.sign(SIGNING_LABEL_GROUP_POST_DELETE,
-							signedInput(groupId, epoch, localPub, target,
-									timestamp), la.getPrivateKey());
-					host.dispatchRecord(txn, c, now, BdfList.of(
-							(long) MessageTypes.GROUP_POST_DELETE, groupId,
-							epoch, localPub, target, timestamp, sig),
-							recordMetadata(groupId, target, timestamp));
-				}
-			});
+				});
+			} finally {
+				signer.clear();
+			}
 		} finally {
 			lock.unlock();
 		}
@@ -363,12 +379,11 @@ final class GroupTrPostRemovals {
 		GroupTrState s = host.group(groupId);
 		if (s == null) return 0;
 		return db.transactionWithResult(true, txn -> {
-			byte[] localPub = identityManager.getLocalAuthor(txn)
-					.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(txn, groupId);
 			int n = 0;
 			for (GroupTrMember m : s.getMembers()) {
 				if (Arrays.equals(m.getPubKey(), localPub)) continue;
-				Contact c = host.contactByPubKey(txn, m.getPubKey());
+				Contact c = host.contactByPubKey(txn, s, m.getPubKey());
 				if (c == null) continue;
 				boolean actions = messagingManager.getContactClientMinorVersion(
 						txn, c.getId()) >= GROUP_ACTIONS_MIN_VERSION;
@@ -450,8 +465,7 @@ final class GroupTrPostRemovals {
 		String ns = namespace(groupId);
 		List<MessageId> copies = new ArrayList<>();
 		db.transaction(false, txn -> {
-			byte[] localPub = identityManager.getLocalAuthor(txn)
-					.getPublicKey().getEncoded();
+			byte[] localPub = host.localKey(txn, groupId);
 			Settings stored = settingsManager.getSettings(txn, ns);
 			long readAt = stored.getLong(KEY_READ_AT, Long.MAX_VALUE);
 			BdfDictionary query = new BdfDictionary();

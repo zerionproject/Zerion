@@ -2666,4 +2666,11 @@ Umepoteza nenosiri.</string>
 	<string name="renewal_waiting_last_seen">Alionekana mara ya mwisho %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Anwani mpya ya Tor itatengenezwa na kushirikiwa na watu unaowasiliana nao watakapounganisha tena. Anwani yako ya zamani itaendelea kufanya kazi kwa angalau siku moja na hadi kila mmoja wao atakapohamia anwani mpya.</string>
 	<string name="pref_rotate_onion_success_message">Anwani yako ya zamani itaendelea kufanya kazi kwa angalau siku moja na hadi kila mmoja wa watu unaowasiliana nao atakapohamia anwani mpya.\n\nAnwani mpya:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Kujiunga kwa jina la nasibu kunawezekana katika vikundi vipya pekee.</string>
+	<string name="grouptr_older_group_note">Hiki ni kikundi cha zamani: wanachama wake wanaweza kukutambua katika vikundi vyako vingine vya zamani.</string>
+	<string name="grouptr_create_new_private_group">Tengeneza kikundi kipya cha kibinafsi</string>
+	<string name="grouptr_contact_must_update">%1$s bado hawezi kujiunga na vikundi vipya.</string>
+	<string name="grouptr_my_safety_code_in_group">Msimbo wangu wa usalama katika kikundi hiki</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nUna msimbo tofauti katika kila kikundi kipya.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nIkiwa %1$s anaona msimbo huo huo chini ya “Msimbo wangu wa usalama katika kikundi hiki”, machapisho yanayoonyeshwa chini ya jina hili ni yake kweli.</string>
 </resources>

@@ -335,10 +335,108 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void groupKeyBindingsAndProbes() throws Exception {
+		BdfList binding = binding();
+		accept(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, binding), true,
+				0);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, getRandomBytes(31),
+				binding), true);
+		BdfList shortKey = binding();
+		shortKey.set(0, getRandomBytes(31));
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, shortKey), true);
+		BdfList badMlDsa = binding();
+		badMlDsa.set(1, getRandomBytes(32));
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, badMlDsa), true);
+		BdfList shortSig = binding();
+		shortSig.set(4, sig);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, shortSig), true);
+		BdfList negative = binding();
+		negative.set(2, -1L);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, negative), true);
+		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE,
+				BdfList.of(probeEntry())), true, 0);
+		BdfList full = new BdfList();
+		for (int i = 0; i < 16; i++) full.add(probeEntry());
+		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE, full), true, 0);
+		BdfList tooMany = new BdfList(full);
+		tooMany.add(probeEntry());
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, tooMany), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, new BdfList()), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(31), getRandomBytes(32), sealed()))), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32), binding()))), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32),
+				getRandomBytes(SEALED - 1)))), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32)))), true);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, getRandomBytes(32),
+				getRandomBytes(32)), true);
+	}
+
+	private static final int SEALED = 32
+			+ PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES + 8
+			+ 2 * PostQuantumConstants.HYBRID_SIGNATURE_BYTES + 16;
+
+	private byte[] sealed() {
+		return getRandomBytes(SEALED);
+	}
+
+	private BdfList probeEntry() {
+		return BdfList.of(getRandomBytes(32), getRandomBytes(32), sealed());
+	}
+
+	@Test
+	public void snapshotsMayCarryTheGroupSecret() throws Exception {
+		allowHash();
+		BdfList secret = BdfList.of(2L, getRandomBytes(32),
+				BdfList.of(getRandomBytes(33)),
+				getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES));
+		accept(BdfList.of(GROUP_MEMBER_LIST_SNAPSHOT, id, 1L, now,
+				BdfList.of(member(0L)), sig, secret), true, 0);
+		BdfList shortSecret = BdfList.of(2L, getRandomBytes(31),
+				new BdfList(),
+				getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES));
+		reject(BdfList.of(GROUP_MEMBER_LIST_SNAPSHOT, id, 1L, now,
+				BdfList.of(member(0L)), sig, shortSecret), true);
+		BdfList badDeparted = BdfList.of(2L, getRandomBytes(32),
+				BdfList.of(getRandomBytes(32)),
+				getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES));
+		reject(BdfList.of(GROUP_MEMBER_LIST_SNAPSHOT, id, 1L, now,
+				BdfList.of(member(0L)), sig, badDeparted), true);
+	}
+
+	@Test
+	public void invitationsMayCarryABindingAfterTheirFields()
+			throws Exception {
+		accept(BdfList.of(GROUPTR_INVITE_OFFER, id, "Group", getRandomBytes(32),
+				"creator", key, now, sig, binding()), true, 0);
+		reject(BdfList.of(GROUPTR_INVITE_OFFER, id, "Group", getRandomBytes(32),
+				"creator", key, now, sig, BdfList.of(key)), true);
+		accept(BdfList.of(GROUPTR_INVITE_ACCEPT, id, now, sig, binding()),
+				true, 0);
+		reject(BdfList.of(GROUPTR_INVITE_DECLINE, id, now, sig, binding()),
+				true);
+		accept(BdfList.of(MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO, id,
+				now, "Amber Falcon 27", sig, binding()), true, 0);
+		reject(BdfList.of(GROUPTR_INVITE_ACCEPT, id, now, sig, binding(),
+				binding()), true);
+	}
+
+	private BdfList binding() {
+		return BdfList.of(getRandomBytes(32),
+				getRandomBytes(PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES),
+				now, getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES),
+				getRandomBytes(PostQuantumConstants.HYBRID_SIGNATURE_BYTES));
+	}
+
+	@Test
 	public void unknownAndReservedTypesAreRejected() throws Exception {
 		reject(BdfList.of(39, id), false);
 		reject(BdfList.of(40, id), false);
-		reject(BdfList.of(57, id), false);
+		reject(BdfList.of(59, id), false);
 		reject(BdfList.of(99, id), false);
 		reject(BdfList.of(-1, id), false);
 	}

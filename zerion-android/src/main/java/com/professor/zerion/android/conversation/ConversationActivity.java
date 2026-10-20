@@ -2598,7 +2598,7 @@ public class ConversationActivity extends ZerionActivity
 						item.setAnswered(false);
 						adapter.notifyDataSetChanged();
 						Snackbar.make(list,
-								R.string.grouptr_member_invite_contact_outdated,
+								R.string.grouptr_incognito_new_groups_only,
 								Snackbar.LENGTH_LONG).show();
 					});
 				} else if (e.getReason() == org.zerionproject.app.api.grouptr

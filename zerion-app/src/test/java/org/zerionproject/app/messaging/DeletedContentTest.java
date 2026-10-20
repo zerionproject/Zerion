@@ -218,7 +218,12 @@ public class DeletedContentTest extends BrambleTestCase {
 		GroupTrManager groups = device.getGroupTrManager();
 		byte[] contactKey = device.getContactManager().getContact(contact)
 				.getAuthor().getPublicKey().getEncoded();
-		byte[] groupId = groups.createGroup("Group").getGroupId();
+		java.lang.reflect.Method legacy = groups.getClass()
+				.getDeclaredMethod("createLegacyGroup", String.class,
+						String.class);
+		legacy.setAccessible(true);
+		byte[] groupId = ((org.zerionproject.app.api.grouptr.GroupTrState)
+				legacy.invoke(groups, "Group", null)).getGroupId();
 		Collection<MessageId> before = allRecords();
 		groups.addMember(groupId, contactKey, "Contact");
 		groups.removeMember(groupId, contactKey);

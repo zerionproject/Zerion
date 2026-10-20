@@ -2722,4 +2722,11 @@ copies des messages que vous envoyez.
 	<string name="renewal_waiting_last_seen">Vu pour la dernière fois %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Une nouvelle adresse Tor sera générée et partagée avec vos contacts à leur prochaine connexion. Votre ancienne adresse continue de fonctionner au moins un jour et jusqu\'à ce que tous les contacts aient migré.</string>
 	<string name="pref_rotate_onion_success_message">Votre ancienne adresse continue de fonctionner au moins un jour et jusqu\'à ce que tous les contacts soient passés à la nouvelle.\n\nNouvelle adresse :\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Rejoindre sous un nom aléatoire n\'est possible que dans les nouveaux groupes.</string>
+	<string name="grouptr_older_group_note">Ceci est un groupe plus ancien : ses membres peuvent vous reconnaître dans vos autres groupes plus anciens.</string>
+	<string name="grouptr_create_new_private_group">Créer un nouveau groupe privé</string>
+	<string name="grouptr_contact_must_update">%1$s ne peut pas encore rejoindre les nouveaux groupes.</string>
+	<string name="grouptr_my_safety_code_in_group">Mon code de sécurité dans ce groupe</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nVous avez un code différent dans chaque nouveau groupe.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSi %1$s voit le même code sous « Mon code de sécurité dans ce groupe », les messages affichés sous ce nom sont bien les siens.</string>
 </resources>

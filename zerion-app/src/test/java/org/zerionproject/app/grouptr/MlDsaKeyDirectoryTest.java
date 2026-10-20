@@ -53,4 +53,23 @@ public class MlDsaKeyDirectoryTest {
 		assertEquals(2, second.get());
 	}
 
+	@Test
+	public void aGroupKeyIsOnlyFoundInItsOwnGroup() throws Exception {
+		byte[] first = new byte[] {4};
+		byte[] second = new byte[] {5};
+		AtomicInteger calls = new AtomicInteger();
+		MlDsaKeyDirectory d = new MlDsaKeyDirectory((g, pk) -> {
+			calls.incrementAndGet();
+			return java.util.Arrays.equals(g, first) ? mlDsa : null;
+		}, pk -> mlDsa);
+		assertArrayEquals(mlDsa, d.lookupIn(first, ed));
+		assertNull("a hit in one group answers nothing for another",
+				d.lookupIn(second, ed));
+		assertArrayEquals(mlDsa, d.lookupIn(first, ed));
+		assertEquals(2, calls.get());
+		d.invalidate();
+		assertArrayEquals(mlDsa, d.lookupIn(first, ed));
+		assertEquals(3, calls.get());
+		assertNull(new MlDsaKeyDirectory(pk -> mlDsa).lookupIn(first, ed));
+	}
 }

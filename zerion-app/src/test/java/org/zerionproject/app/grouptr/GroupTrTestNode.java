@@ -174,7 +174,12 @@ final class GroupTrTestNode {
 					}
 					return null;
 				}),
-				fake(Clock.class, (name, args) -> now));
+				fake(Clock.class, (name, args) -> now),
+				fake(org.zerionproject.core.api.system.TaskScheduler.class,
+						(name, args) -> {
+							((Runnable) args[0]).run();
+							return null;
+						}));
 	}
 
 	void restart() throws Exception {
@@ -1230,6 +1235,8 @@ final class GroupTrTestNode {
 				return !Arrays.equals((byte[]) a[0], FORGED_SIG);
 			case "hybridSign":
 				return SIG.clone();
+			case "generateHybridSignatureKeyPair":
+				return InviteTestNet.groupKeyPair();
 			default:
 				throw new UnsupportedOperationException(name);
 		}

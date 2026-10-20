@@ -2651,4 +2651,11 @@
 	<string name="renewal_waiting_last_seen">Nähty viimeksi %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Uusi Tor-osoite luodaan ja jaetaan yhteystiedoillesi, kun ne seuraavan kerran yhdistävät. Vanha osoitteesi toimii vähintään vuorokauden ja kunnes kaikki yhteystiedot ovat siirtyneet.</string>
 	<string name="pref_rotate_onion_success_message">Vanha osoitteesi toimii vähintään vuorokauden ja kunnes kaikki yhteystiedot ovat siirtyneet uuteen osoitteeseen.\n\nUusi osoite:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Liittyminen satunnaisella nimellä toimii vain uusissa ryhmissä.</string>
+	<string name="grouptr_older_group_note">Tämä on vanhempi ryhmä: sen jäsenet voivat tunnistaa sinut muissa vanhemmissa ryhmissäsi.</string>
+	<string name="grouptr_create_new_private_group">Luo uusi yksityinen ryhmä</string>
+	<string name="grouptr_contact_must_update">%1$s ei voi vielä liittyä uusiin ryhmiin.</string>
+	<string name="grouptr_my_safety_code_in_group">Oma turvanumero tässä ryhmässä</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nSinulla on eri numero jokaisessa uudessa ryhmässä.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nJos %1$s näkee saman numeron kohdassa ”Oma turvanumero tässä ryhmässä”, tällä nimellä näkyvät viestit ovat todella hänen.</string>
 </resources>

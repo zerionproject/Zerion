@@ -75,9 +75,15 @@ roles, before it announces 11.
 Minor version 12 (Android 3.0.18, `SALTED_TEXT_MIN_VERSION`) changes no
 group record: it adds a random salt to one-to-one text messages and edits
 ("Salted bodies" in
-[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). Android
-announces 12 while `B3Constants.B3_PROOF_ENABLED` is on, and 5 otherwise. An
-iOS client must accept the salted bodies before it announces 12.
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). An iOS
+client must accept the salted bodies before it announces 12.
+
+Minor version 13 (Android 3.0.18, `GROUP_MEMBER_KEYS_MIN_VERSION`) adds
+member keys: every group created from 3.0.18 on signs with a key pair of its
+own for each member instead of the account key, adds the binding (57) and
+probe (58) records, and carries a binding in the invitation records. A
+contact that announces less than 13 cannot be invited to such a group.
+Groups created earlier are unchanged. See "Member keys in private groups".
 
 ## Two layers: silent membership fan-out + an explicit invite handshake
 
@@ -174,13 +180,15 @@ Alice's pairwise messaging Group with Peter (pairwise contact group)
 | 54 | `GROUPTR_GRANTED_INVITE_OFFER` | A member that holds that right offers a contact an invitation (version 11). Signing label `org.zerionproject/GROUPTR_GRANTED_INVITE_OFFER`. |
 | 55 | `GROUPTR_INVITE_ACCEPT_INCOGNITO` | The invitee accepts a creator's offer under its incognito name (version 11). Carries the signature of 43. |
 | 56 | `GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO` | The invited contact accepts a member's invitation under its incognito name (version 11). Carries the signature of 50. |
+| 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by both (version 13). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
+| 58 | `GROUP_KEY_PROBE` | Carries the sender's binding under a tag only holders of the group id recognise, and asks a contact that holds the group to answer with its binding if the sender's key is a current member (version 13). |
 
 `32`'s record format is summarised below; this doc covers 33 to 38 and 41
 (the membership records), 42 to 44 (the invite handshake), 46 (the group
 settings), 47 (delete for everyone), 48 to 52 (member invitations, see
 "Member invitations"), 53 and 54 (see "Per-member add rights"), 55 and 56
-(see "Incognito names"), and the post bodies carried in slot 5
-of msgType 32. msgTypes 39 and 40 are reserved constants only - no validator
+(see "Incognito names"), 57 and 58 (see "Member keys in private groups"),
+and the post bodies carried in slot 5 of msgType 32. msgTypes 39 and 40 are reserved constants only - no validator
 path encodes or accepts them.
 
 ### 32 - GROUP_POST: storage and size
@@ -479,7 +487,9 @@ BdfList.of(
 )
 ```
 
-Validator size: **6 slots**. Each entry in `memberList` is:
+Validator size: **6 slots**, or 7 in a group with member keys, where the last
+slot carries the group secret (see "Group secret"). Each entry in
+`memberList` is:
 
 ```
 BdfList.of(
@@ -761,9 +771,11 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **8 slots**. The validator enforces:
-groupId == 32 B, groupName 0..100, salt == 32 B, creatorName length in
-`[1, MAX_AUTHOR_NAME_LENGTH]`, creatorPubKey == 32 B, sig length in `[1, 4096]`.
+Validator size: **8 slots**, or 9 in a group with member keys, where slot 8
+is the creator's binding (see "Member keys in private groups"). The
+validator enforces: groupId == 32 B, groupName 0..100, salt == 32 B,
+creatorName length in `[1, MAX_AUTHOR_NAME_LENGTH]`, creatorPubKey == 32 B,
+sig length in `[1, 4096]`, and the binding's field lengths.
 On the manager side the OFFER is rejected unless the pairwise sender's pubkey
 equals `creatorPubKey` and the locally-derived groupId matches.
 
@@ -778,7 +790,8 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **4 slots**. groupId == 32 B, sig length in `[1, 4096]`.
+Validator size: **4 slots**, or 5 in a group with member keys, where slot 4
+is the invitee's binding. groupId == 32 B, sig length in `[1, 4096]`.
 
 ### 44 - GROUPTR_INVITE_DECLINE
 
@@ -793,8 +806,8 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **4 slots**, same field checks as ACCEPT. ACCEPT and
-DECLINE share the `validateGrouptrInviteResponse` path; only the signing label
+Validator size: exactly **4 slots** (a decline carries no binding), same
+field checks as ACCEPT. ACCEPT and DECLINE share the `validateGrouptrInviteResponse` path; only the signing label
 and the manager-side handling differ.
 
 ### Invite signed-input (all three: OFFER / ACCEPT / DECLINE)
@@ -943,7 +956,8 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **13 slots**, with the lengths above; a negative
+Validator size: **13 slots**, or 14 in a group with member keys, where slot
+13 is the inviting member's binding, with the lengths above; a negative
 `permFlags` is refused. The validator stores the offer as an unread
 conversation card (`MSG_KEY_READ = false`, the group name, salt, creator name
 and key and the inviter's key in the metadata); it is kept like a message, not
@@ -1026,7 +1040,10 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **5 slots**. Signed input, signer = the invitee X:
+Validator size: **5 slots**; an acceptance in a group with member keys has
+two more slots, the invitee's binding and its removal tag (see "Member keys in
+private groups"), and a decline never has them. Signed input,
+signer = the invitee X:
 
 ```
 [32B groupId]
@@ -1088,7 +1105,9 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **9 slots**, with the lengths above. The inviting
+Validator size: **9 slots**, or 10 in a group with member keys, where slot 9
+is the invitee's removal tag (see "Member keys in private groups"), with the
+lengths above. The inviting
 member is the pairwise sender; it is not repeated in the record. Signed input,
 signer = the inviting member M:
 
@@ -1344,7 +1363,8 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **5 slots**. `sig` is the acceptance signature of 43
+Validator size: **5 slots**, or 6 in a group with member keys, where the
+last slot is the binding. `sig` is the acceptance signature of 43
 (label `org.zerionproject/GROUPTR_INVITE_ACCEPT`, the invite signed input with
 `keyA` the joiner's key and `keyB` the creator's key). The name is not covered
 by it, as the name in 33 is not; the pairwise channel it arrives on
@@ -1365,17 +1385,21 @@ BdfList.of(
 )
 ```
 
-Validator size: exactly **6 slots**. `sig` is the acceptance signature of 50
+Validator size: **6 slots**, or 8 in a group with member keys, where the
+last two slots are the binding and the removal tag. `sig` is the acceptance
+signature of 50
 (same label and signed input), so the inviting member passes it on in 52
 unchanged and a creator on version 10 verifies it as before. The inviting
 member handles 56 exactly as an accepting 50 and puts `name` into 52 as
 `inviteeName`.
 
-A device sends 55 only when the creator (the contact the offer 42 came from)
-announces 11 or later, and 56 only when the inviting member does. With an
-older peer the incognito choice is not offered, and an incognito accept is
-refused with `INCOGNITO_NOT_SUPPORTED` before anything is sent, because an
-older peer would put the account name it knows into 33 or 52.
+From Android 3.0.18 the incognito choice is offered only for a group with
+member keys (version 13, see "Member keys in private groups"), whose creator
+and inviting members therefore announce 13 or later. For an invitation to a
+group created earlier the choice is not offered, and an incognito accept is
+refused with `INCOGNITO_NOT_SUPPORTED` before anything is sent: in such a
+group every member still sees the account key, which a random name would not
+hide. Receivers keep handling 55 and 56 from earlier versions as before.
 
 ### How other members show an incognito member
 
@@ -1389,16 +1413,394 @@ before, the name it knows for the key followed by the posting name. A user who
 types a name of this form as an ordinary per group name is shown the same
 way.
 
-Incognito hides the account name, not the identity key. Every member still
-receives the incognito member's Ed25519 key (in 33, 41 and every post), and a
-member that has that key among its contacts, or learns it elsewhere, can
-recognise the person; the creator and an inviting member know whom they
-invited.
+Incognito hides the account name. In a group with member keys the members
+also never see the account key, only a member key of that group; a member
+that is the person's contact can still recognise the person through the
+binding, and the creator and an inviting member know whom they invited.
 
 iOS: an iOS client that announces 11 must send and handle 55 and 56 as above,
 use the identical word lists and grammar both to draw names and to recognise
 them, and never place the account name into a group record of a group it is
 incognito in.
+
+## Member keys in private groups (scheme 2, msgTypes 57 and 58, version 13)
+
+From Android 3.0.18 every new private group uses **member keys**: each
+member signs everything in the group with a hybrid key pair (Ed25519 and
+ML-DSA-65) that exists for that one group only, instead of the account
+identity key. A member who is not your contact sees a different, unrelated
+key for you in every group, so the keys, the post ids and the signatures it
+receives cannot link you across groups. Contacts still recognise you, through
+a binding record that only goes to them.
+
+Groups created before 3.0.18 keep **account keys** (scheme 1) and work
+exactly as described in the rest of this document; nothing in their records
+changes and they are not migrated. Their group info screen says that their
+members can recognise you in other groups and offers to create a new private
+group. Incognito names (55 and 56) are offered only for groups with member
+keys; an invitation to an older group cannot be accepted incognito.
+
+Implementation: `GroupTrKeys` (key store, binding, probe tag),
+`GroupTrManagerImpl` (scheme-aware signing, verification and delivery, group
+id format 2, probes and bindings), `GroupTrMemberInvites` (member
+invitations), `MlDsaKeyDirectory.lookupIn` (group-scoped ML-DSA lookup),
+`PrivateMessageValidator.checkKeyBinding`.
+
+### Version gate
+
+Messaging minor version 13 (`MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION`)
+carries member keys. Android announces 13 while
+`B3Constants.B3_PROOF_ENABLED` is on and 5 otherwise (5 carries no group
+protocol at all). The creator refuses to invite a contact that announces less
+than 13 (`GroupTrAuthException.Reason.CONTACT_MUST_UPDATE`), a member refuses
+to invite such a contact, and `canReceiveMemberInvite` and `canJoinGroup`
+report it, so the app tells the inviter that the contact cannot join new
+groups yet (for Android 3.0.17 and earlier an update helps; for iOS it does
+not until iOS implements this section).
+There is no fallback to account keys for such a contact. iOS announces 3 and
+cannot be invited to a group with member keys until it implements this
+section and announces 13. A contact whose version is unknown counts as older.
+
+### Scheme in the group id
+
+The scheme is part of the group id, so a group can never change scheme and a
+record of one scheme cannot validate in a group of the other:
+
+```
+groupId = H("org.zerionproject.core/GROUP_ID",
+            [0x02], "org.zerionproject.grouptr", uint32_be(0),
+            BDF([[2, creatorName, creatorGroupEd25519,
+                  H("org.zerionproject/GROUP_KEY_ML_DSA", creatorGroupMlDsa)],
+                 groupName, salt]))
+```
+
+Scheme 1 uses format byte `0x01` and the author list
+`[1, creatorName, creatorAccountEd25519]`. A scheme 2 id contains neither the
+account key nor anything derived from it. The device stores the scheme in the
+group state (`keyScheme` = 2 in `grouptr.g.<groupId>`; absent means 1).
+
+### Key generation and storage
+
+A device generates a fresh hybrid key pair with
+`CryptoComponent.generateHybridSignatureKeyPair()` when it creates a group,
+when it accepts a creator's invitation (42) and when it accepts a member's
+invitation (49 or 54). It keeps the four parts in the settings namespace
+`grouptr.k.<groupId>` of the encrypted database (so a restart and an account
+backup keep them) and never sends the private parts. Leaving, being removed,
+a dissolved group and the start-up sweep of removed groups delete the
+namespace and the binding namespace `grouptr.b.<groupId>` from the database
+(SQLCipher's secure_delete overwrites the freed space; see "Deleted messages
+leave this device's database" in the security claims). In memory the device
+clears every copy of a private key it assembled for a signature right after
+signing.
+
+### Which key each record carries
+
+In a scheme 2 group every slot that holds the account key in scheme 1 holds a
+member key, and every signature that the account key makes in scheme 1 is
+made by the signer's member key in that group:
+
+| msgType | Key slots in scheme 2 | Signed by |
+|---|---|---|
+| 32 post | sender = the author's member key; the post id is derived from it | the author's member key |
+| 33 added | target = the new member's member key | the creator's member key |
+| 34 removed | target = the removed member key | the creator's member key |
+| 35 left | leaver = the leaver's member key | the leaver's member key |
+| 36 dissolved | none | the creator's member key |
+| 37 epoch commit | none | the creator's member key |
+| 38 role changed | target member key | the creator's member key |
+| 41 snapshot | member keys only (32 bytes each) | the creator's member key |
+| 42 offer | creatorPubKey = the creator's member key; a binding in slot 8 | the creator's member key, invitee slot all zero |
+| 43 and 55 accept | a binding in the last slot | the invitee's member key |
+| 44 decline | none | the invitee's account key (sent only to the creator) |
+| 46 settings | none | the creator's member key |
+| 47 post delete | sender = the author's member key | the author's member key |
+| 48 permissions | none | the creator's member key |
+| 49 and 54 member offer | creator and inviter member keys; a binding in slot 13 | the inviter's member key, invitee slot all zero |
+| 50 and 56 member accept | inviter member key; a binding in the last slot | the invitee's member key |
+| 51 member decline | inviter member key | the invitee's account key (sent only to the inviter) |
+| 52 join request | invitee member key and its ML-DSA key | the inviter's member key; the embedded accept by the invitee's member key |
+| 53 grant | member key of the member it names | the creator's member key |
+
+The invite signed input (42 to 44) and the member-invite signed inputs (49
+to 52) keep their byte layout; in scheme 2 the invitee slot of 42 and of 49
+and 54 is 32 zero bytes, because the invitee has no member key yet and its
+account key must not appear. The binding that travels with those offers
+authenticates the sender instead.
+
+### Binding (57 GROUP_KEY_BINDING and the binding slot)
+
+A binding links a contact's account key to its member key in one group. It
+is a list of five fields:
+
+```
+binding = [groupEd25519 (32 B), groupMlDsa (1952 B), timestamp (Long >= 0),
+           identitySig (3373 B), groupSig (3373 B)]
+
+57:  BdfList.of(57L, groupId (32 B), binding)
+```
+
+Both signatures are hybrid signatures with label
+`org.zerionproject/GROUP_KEY_BINDING` over the same 137 bytes
+(`GroupTrKeys.bindingInput`):
+
+```
+[32B groupId][32B account Ed25519 key of the signer][32B groupEd25519]
+[32B H("org.zerionproject/GROUP_KEY_ML_DSA", groupMlDsa)]
+[8B BE timestamp][1B 0x0B]
+```
+
+`identitySig` is made with the account key (Ed25519 and ML-DSA-65),
+`groupSig` with the member key. The account key is not a field of the
+record: the receiver takes it from the pairwise contact the record came from.
+A binding travels only pairwise to a contact: as 57, inside a probe entry
+(58), as slot 8 of 42 (the creator's), slot 13 of 49 and 54 (the inviter's)
+and the binding slot of 43, 55, 50 and 56 (the invitee's).
+
+The receiver accepts a binding only if
+
+- the group is held, has member keys and is not dissolved, and the device
+  holds its own member key for it;
+- the bound key is not the receiver's own member key and differs from the
+  sending contact's account key;
+- `identitySig` verifies with the sending contact's account Ed25519 key and
+  the contact's ML-DSA key (a contact without an ML-DSA key cannot bind), and
+  `groupSig` verifies with the bound key and the ML-DSA key in the record;
+- if the group lists the bound key with an ML-DSA key, it is the same key;
+- the bound key is a current member or the creator of the group. A key that
+  is not listed yet is kept as a pending entry (one per contact, at most 32
+  per group, for 14 days) and taken when a later 33 or 41 lists it; a key
+  the device saw removed or leave is dropped;
+- an earlier binding of the same contact to another key that is still a
+  current member is replaced only by a later timestamp; a binding to a key
+  that has left or was removed is replaced whatever the timestamps.
+
+A binding signed for another group, forwarded by another contact, signed by
+another account or carrying only one valid signature fails these checks. The
+receiver stores `contactId -> (account key, member key, ML-DSA key,
+timestamp)` in `grouptr.b.<groupId>`. A 57 is only ever an answer to a probe
+and is never answered. In 42 the binding timestamp equals the offer timestamp
+and the bound key equals `creatorPubKey`; in 49 and 54 the bound key equals
+the inviter key.
+
+### Group secret
+
+The creator of a group with member keys generates a random 32-byte group
+secret with a sequence number (`GroupTrKeys.Secret`; sequence 1 when the
+group is created). It replaces the secret with a new random one, with the
+next sequence number, whenever the membership shrinks: on every removal (34)
+and every confirmed leave. Dissolving deletes the group, and with it the
+secret, on every device. A creator device that holds a group with member keys
+but no secret (a group made by an earlier 3.0.18 build) makes one with
+sequence 1 at start-up and sends a snapshot carrying it.
+
+The secret travels only as a seventh slot of the creator's snapshot (41),
+which goes only to current members:
+
+```
+41:  BdfList.of(41L, groupId, epoch, timestamp, memberList, sig, secret)
+secret = [sequence (Long >= 0), secret (32 B),
+          departed (0 to 16 entries of 33 B: member key, kind 0 removed
+          or 1 left), secretSig (3373 B)]
+secretSig = hybrid signature by the creator's member key, label
+  "org.zerionproject/GROUP_SECRET", over
+  [32B groupId][8B BE sequence][8B BE epoch of the carrying snapshot]
+  [32B secret]
+  [32B H("org.zerionproject/GROUP_DEPARTED", entry1, entry2, ...)][1B 0x0D]
+```
+
+- The creator sends a snapshot with the new secret right after each removal
+  and confirmed leave, after the departed member is off the list, and every
+  snapshot it sends carries the current secret. It never puts the secret into
+  an invitation (42, 49, 54), so a declined or expired invitee never holds
+  it, and a removed or departed member never receives the next one.
+- A member takes a secret only together with the snapshot that carries it:
+  the snapshot's own signature must verify under the creator's member key,
+  the snapshot must list the member, `secretSig` must verify for that
+  snapshot's epoch, the member must be listed in its group state, and the
+  sequence number must be higher than the one it holds. When a new secret
+  replaces one, the device keeps the replaced one as the previous secret
+  until the next replacement or for 14 days
+  (`GroupTrKeys.PREVIOUS_SECRET_KEPT_MS`), whichever comes first, only to
+  match probes that crossed the rotation. An inviting member that passes the
+  creator's snapshots on to the people it invited strips the secret slot
+  from a copy for someone the snapshot no longer lists. It passes a snapshot
+  on when its epoch is newer than the last one it passed on, and also, to a
+  listed invitee, when the snapshot carries a secret whose `secretSig` it
+  verified and that differs from the last secret it passed to that invitee
+  with a sequence number not lower (it keeps that sequence number and secret
+  per invitee), so the snapshot that brings an older group its first secret
+  at an unchanged epoch reaches member invitees too.
+- `departed` names the last 16 keys that left, each with how it left, signed
+  by the creator. A member that holds a binding for a key the creator marks
+  as removed refuses to invite that contact again (see the removal tags
+  below); a key marked as left clears that refusal for the same contact,
+  because the creator admitted that contact again after the removal. The
+  entries are applied in order, so a later removal refuses again. A leave record (35)
+  never changes this.
+
+### Finding which contacts are members (58 GROUP_KEY_PROBE)
+
+A member list names member keys only, so a device does not know which of its
+contacts are in a group until they exchange bindings. The creator and an
+inviting member learn it from the invitation exchange. For the others the
+device asks with a probe sealed under the current group secret S:
+
+```
+entry = [nonce (32 random bytes),
+         H("org.zerionproject/GROUP_KEY_PROBE", S, nonce) (32 B),
+         sealed binding (8754 B)]
+sealed binding = AES-256-GCM (128-bit tag, all-zero 96-bit IV) under
+  K = H("org.zerionproject/GROUP_KEY_PROBE_KEY", S, nonce) of
+  [32B groupEd25519][1952B groupMlDsa][8B BE timestamp]
+  [3373B identitySig][3373B groupSig]
+58:  BdfList.of(58L, [entry, ...])      1 to 16 entries
+```
+
+The key K is fresh for every nonce, so the fixed IV is never reused under one
+key. A padding entry is 32, 32 and 8754 random bytes, the same lengths as a
+real entry, so without S an entry cannot be told from padding and shows no
+key, no timestamp and nothing of the group.
+
+- When a device receives its first secret for a group (on joining, or when
+  the creator of an older group makes one), it waits a
+  random 2 to 10 minutes (`PROBE_DELAY_MIN_MS` plus up to
+  `PROBE_DELAY_SPREAD_MS`; the due time is stored, so a restart keeps it) and
+  then sends a probe with one entry to every contact that announces 13 or
+  more and is not yet bound in that group. A rotation sends no probes: a
+  device that already holds a secret never probes again because the secret
+  changed, so a contact that is not a member does not receive one record from
+  every member it knows after each removal or leave.
+- When a contact's announced version reaches 13 (a new contact, or an
+  update), the device sends it one probe for all groups in which that contact
+  is not yet bound and whose secret it holds: the real entries in random
+  order, padded to 16 entries (`PROBE_SLOTS`), one more padded record per
+  further 16 groups. Nothing is sent when there is no such group.
+
+A device that receives a probe hashes each entry's nonce with the current
+secret and, while it is kept, the previous secret of every group with member
+keys it holds, takes at most one matching
+entry per group per record, opens it, checks the binding as above against the
+sending contact, and answers with its own binding (57) only if the bound key
+is a current member or the creator; an unlisted key waits as a pending entry
+(at most 32 per group; a contact that would exceed the cap is not kept, and
+no entry of another contact is pushed out) and is answered when a 33 or 41
+lists it. It answers a contact at most once a day for the same bound key (the
+limit is stored, so a restart keeps it); a new key of the same contact, such
+as after the contact left and rejoined, is answered at once. A probe under the
+previous secret is answered by the same rules, so a join probe that crossed a
+rotation still works, and a pending entry for a key the device saw removed is
+still dropped. A probe under any older secret, or under the previous secret
+after 14 days, matches nothing.
+
+What a contact without the current secret sees of a probe: that a record of
+one of two fixed sizes arrived (one entry, sent a random 2 to 10 minutes after
+the sender joined a group; sixteen entries, sent when that contact reaches
+version 13, with one more record per further 16 groups), and nothing else. A
+rotation sends nothing. A removed or departed member, and a declined or
+expired invitee, never hold a later secret, so they cannot recognise or read
+a later probe. A probe such a person sends under the secret it held can match
+a member's previous secret for up to 14 days, but its key is not listed, so
+it is never answered. A device seals each probe under the secret it holds
+when the probe goes out, so a probe sent before the sender received a new
+secret (a narrow race between a rotation and a join probe already due) is
+sealed under the replaced secret and readable by anyone who held that
+secret, a member removed or departed by that rotation included.
+
+### Delivery and authorization
+
+- A post (32), a post delete (47) or a leave (35) delivered by contact C is
+  taken only if it is signed by the member key bound to C in that group, and
+  that key is a member (or the creator). A member cannot relay another
+  member's post; a key of another group, an account key and a key bound to
+  another contact are refused.
+- One exception, for a leave the creator could not otherwise see: a member
+  that receives a valid 35 from the member it invited (the invitee recorded
+  when it passed on the creator's snapshot) forwards the unchanged record to
+  the creator. The creator takes a 35 relayed this way only when the leaver
+  and the relaying contact's bound key are both listed, the relaying key is
+  the one that sent the leaver's join request (52), the signature verifies
+  under the leaver's member key and the usual epoch and replay rules hold.
+  It then confirms the leave and rotates the secret as for any confirmed
+  leave. Every other device refuses a relayed 35.
+- Creator records 36, 38 and 41 are accepted from any contact and verified
+  with the creator's member key taken from the group (and from the group id),
+  as in scheme 1. Records 33, 34, 46, 48 and 53 must come from the contact
+  bound to the creator's member key.
+- Only the creator adds members (33 and 41 list member keys only) and only
+  the creator's member key can remove a member (34). A member's invitation
+  (49 or 54) and the inviting member's join request (52) carry the invitee's
+  member key and ML-DSA key; the invitee's account key never reaches the
+  creator unless the creator is the invitee's contact. The join request
+  names the invitee by the name the inviting member knows it by, or by its
+  incognito name.
+- The creator keeps removed member keys in its removed list, so a replayed
+  join request for a removed key is refused; a removed key's posts and
+  records are refused because it is no longer a member; epochs and the replay
+  windows apply as in scheme 1.
+- A removed person comes back under a new key, so the creator works with
+  removal tags, `H("org.zerionproject/GROUP_REMOVED_TAG", groupId, account
+  Ed25519 key)`:
+  - the invitee puts its own tag in its acceptance, covered by its member key
+    signature (50: `[50, groupId, inviterKey, timestamp, sig, binding, tag]`,
+    56: `[56, groupId, inviterKey, timestamp, name, sig, binding, tag]`, the
+    accept signed input with `[4B BE 32][tag]` appended). The inviting member
+    checks the tag against the invitee's account key, refuses a contact the
+    creator removed (from `departed`, see "Group secret"), and passes the tag
+    on in the join request (52: `[52, ..., requestSig, tag]`, the request
+    signed input with `[4B BE 32][tag]` appended);
+  - when the creator admits a member it keeps that member key's admission
+    tag: the tag from the join request, or for its own invitee the tag of the
+    contact's account key; at most 256 per group;
+  - when the creator removes a member (34), the admission tag of that key
+    becomes a removed tag (at most 256 per group); a confirmed leave just
+    drops the admission tag;
+  - when the creator admits a contact again itself (its own invitation,
+    accepted), it deletes that contact's tag from its removed tags, so a
+    later invitation by a member after a voluntary leave is not refused;
+  - the creator refuses a join request whose tag it keeps as removed.
+
+  Members report nothing to the creator, and the tags are not published to
+  members: a member that knows a removed person's account key from elsewhere
+  could otherwise learn that this person had been in the group.
+- ML-DSA keys for a member key are looked up only in its own group: the
+  device's own key, the member list of that group and the bindings stored for
+  that group. Lookups for account keys never consult a scheme 2 group, and a
+  key of group A is never found when group B is checked.
+
+### Downgrade
+
+The scheme is bound into the group id. A scheme 1 offer (8 slots) whose id
+was made by format 2 fails the id check and is dropped; a scheme 2 offer (with
+a binding) whose id was made by format 1 fails the id check. A record signed
+by an account key in a scheme 2 group fails because account keys are not
+members and are not found by the scoped lookup; a record signed by a member
+key in a scheme 1 group fails because the key is not a member, and an answer
+with a binding to a scheme 1 member invitation is refused. A scheme 2 group
+never falls back to account keys.
+
+### Limits
+
+Contacts can link you: a contact that is in two of your groups learns your
+member key in each. The creator learns the member key of everyone it invites,
+and an inviting member that of its invitee. Names are not keys: a member's
+name, unless incognito, can still link groups. Every contact sees that a
+probe record of one of two fixed sizes arrived (see above). The removal tag
+in a join request lets the creator test account keys it knows from elsewhere
+(its contacts, older groups) against a newcomer; this is inherent to refusing
+a removed person who comes back under a new key. A device keeps at most 32
+pending entries per group, so 32 colluding contacts that each send a valid
+binding for a key that is not listed can fill the cap, and the device then
+does not keep a pending entry for another contact until theirs run out after
+14 days or are dropped. A probe from that other contact for a key the device
+cannot see listed yet is then lost, and the two do not find each other in
+that group until one of them probes again. `departed` names
+only the last 16 keys that left, so after more than 16 departures since a
+removal a member that missed the snapshots in between no longer learns of
+that removal from the secret and does not refuse that contact itself; the
+creator's removed tags still refuse it. Network observers are out of
+scope. Groups created before 3.0.18 stay linkable. iOS cannot be invited to
+these groups until it implements this section.
 
 ## Signed-input format (byte-exact)
 

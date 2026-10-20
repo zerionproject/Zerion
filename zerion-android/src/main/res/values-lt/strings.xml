@@ -2759,4 +2759,11 @@
 	<string name="renewal_waiting_last_seen">Paskutinį kartą prisijungė %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Bus sukurtas naujas Tor adresas, kuris bus perduotas jūsų adresatams, kai jie kitą kartą prisijungs. Senas adresas veiks bent vieną dieną ir kol visi adresatai pereis prie naujo.</string>
 	<string name="pref_rotate_onion_success_message">Senas adresas veiks bent vieną dieną ir kol visi adresatai pereis prie naujojo adreso.\n\nNaujas adresas:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Prisijungti atsitiktiniu vardu galima tik naujose grupėse.</string>
+	<string name="grouptr_older_group_note">Tai senesnė grupė: jos nariai gali jus atpažinti kitose jūsų senesnėse grupėse.</string>
+	<string name="grouptr_create_new_private_group">Sukurti naują privačią grupę</string>
+	<string name="grouptr_contact_must_update">%1$s kol kas negali prisijungti prie naujų grupių.</string>
+	<string name="grouptr_my_safety_code_in_group">Mano saugos numeris šioje grupėje</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nKiekvienoje naujoje grupėje turite kitą numerį.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nJei %1$s mato tą patį numerį skiltyje „Mano saugos numeris šioje grupėje“, šiuo vardu rodomi įrašai tikrai yra jo.</string>
 </resources>

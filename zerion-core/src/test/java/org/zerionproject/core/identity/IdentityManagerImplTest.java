@@ -83,6 +83,27 @@ public class IdentityManagerImplTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void theSigningKeyIsHandedOutAsACopy() throws Exception {
+		byte[] mlDsaPriv = getRandomBytes(ML_DSA_65_PRIVATE_KEY_BYTES);
+		byte[] expected = mlDsaPriv.clone();
+		Identity i = new Identity(localAuthor,
+				identityWithClassicalKeys.getHandshakePublicKey(),
+				identityWithClassicalKeys.getHandshakePrivateKey(),
+				hybridAgreementKeyPair.getPublic(),
+				hybridAgreementKeyPair.getPrivate(),
+				getRandomBytes(ML_DSA_65_PUBLIC_KEY_BYTES), mlDsaPriv, 0L);
+		identityManager.registerIdentity(i);
+		byte[] first = identityManager.getLocalMlDsaSigPrivateKey();
+		java.util.Arrays.fill(first, (byte) 0);
+		org.junit.Assert.assertArrayEquals(expected,
+				identityManager.getLocalMlDsaSigPrivateKey());
+		byte[] inTxn = identityManager.getLocalMlDsaSigPrivateKey(txn);
+		java.util.Arrays.fill(inTxn, (byte) 0);
+		org.junit.Assert.assertArrayEquals(expected,
+				identityManager.getLocalMlDsaSigPrivateKey(txn));
+	}
+
+	@Test
 	public void testGetLocalAuthorIdentityRegistered() throws DbException {
 		identityManager.registerIdentity(identityWithClassicalKeys);
 		assertEquals(localAuthor, identityManager.getLocalAuthor());

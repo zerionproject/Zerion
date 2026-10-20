@@ -2638,4 +2638,11 @@
 	<string name="renewal_waiting_last_seen">最終接続: %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">新しい Tor アドレスが生成され、次回の接続時に連絡先と共有されます。古いアドレスは少なくとも 1 日、そしてすべての連絡先が移行するまで機能し続けます。</string>
 	<string name="pref_rotate_onion_success_message">古いアドレスは少なくとも 1 日、そしてすべての連絡先が新しいアドレスに移行するまで機能し続けます。\n\n新しいアドレス:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">ランダムな名前での参加は、新しいグループでのみ利用できます。</string>
+	<string name="grouptr_older_group_note">これは古いグループです。メンバーは、あなたの他の古いグループであなたを識別できます。</string>
+	<string name="grouptr_create_new_private_group">新しい非公開グループを作成</string>
+	<string name="grouptr_contact_must_update">%1$s はまだ新しいグループに参加できません。</string>
+	<string name="grouptr_my_safety_code_in_group">このグループでの自分の安全コード</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nあなたのコードは新しいグループごとに異なります。</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\n%1$s の「このグループでの自分の安全コード」に同じコードが表示されていれば、この名前で表示されている投稿は本当にその人のものです。</string>
 </resources>

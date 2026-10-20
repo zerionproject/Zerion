@@ -2669,4 +2669,11 @@
 	<string name="renewal_waiting_last_seen">Последно на линия %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Ще бъде генериран нов Tor адрес, който ще бъде споделен с контактите ти при следващата им връзка. Старият ти адрес продължава да работи поне един ден и докато всички контакти не преминат към новия.</string>
 	<string name="pref_rotate_onion_success_message">Старият ти адрес продължава да работи поне един ден и докато всеки контакт не премине към новия.\n\nНов адрес:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Присъединяването със случайно име работи само в нови групи.</string>
+	<string name="grouptr_older_group_note">Това е по-стара група: участниците в нея могат да те разпознаят в другите ти по-стари групи.</string>
+	<string name="grouptr_create_new_private_group">Създай нова частна група</string>
+	<string name="grouptr_contact_must_update">%1$s все още не може да се присъединява към нови групи.</string>
+	<string name="grouptr_my_safety_code_in_group">Моят номер за безопасност в тази група</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nВъв всяка нова група имаш различен номер.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nАко %1$s вижда същия номер в „Моят номер за безопасност в тази група“, публикациите, показвани под това име, наистина са от този човек.</string>
 </resources>

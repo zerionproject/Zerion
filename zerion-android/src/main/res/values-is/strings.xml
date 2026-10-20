@@ -2671,4 +2671,11 @@
 	<string name="renewal_waiting_last_seen">Síðast séð %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Nýtt Tor-vistfang verður búið til og því deilt með tengiliðunum þínum næst þegar þeir tengjast. Gamla vistfangið þitt virkar áfram í minnst einn dag og þar til allir tengiliðir hafa fært sig yfir.</string>
 	<string name="pref_rotate_onion_success_message">Gamla vistfangið þitt virkar áfram í minnst einn dag og þar til allir tengiliðir hafa fært sig yfir á nýja vistfangið.\n\nNýtt vistfang:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Að ganga í hóp undir handahófskenndu nafni virkar aðeins í nýjum hópum.</string>
+	<string name="grouptr_older_group_note">Þetta er eldri hópur: meðlimir hans geta þekkt þig í öðrum eldri hópum þínum.</string>
+	<string name="grouptr_create_new_private_group">Búa til nýjan einkahóp</string>
+	<string name="grouptr_contact_must_update">%1$s getur ekki enn gengið í nýja hópa.</string>
+	<string name="grouptr_my_safety_code_in_group">Öryggiskóðinn minn í þessum hópi</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nÞú ert með annan kóða í hverjum nýjum hópi.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nEf %1$s sér sama kóða undir „Öryggiskóðinn minn í þessum hópi“ eru færslurnar sem birtast undir þessu nafni í raun frá viðkomandi.</string>
 </resources>

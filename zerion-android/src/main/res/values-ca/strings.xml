@@ -2674,4 +2674,11 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="renewal_waiting_last_seen">Última connexió %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Es generarà una adreça de Tor nova i es compartirà amb els teus contactes en la seva propera connexió. La teva adreça antiga continuarà funcionant almenys un dia i fins que tots els contactes hagin migrat.</string>
 	<string name="pref_rotate_onion_success_message">La teva adreça antiga continuarà funcionant almenys un dia i fins que tots els contactes hagin passat a la nova.\n\nAdreça nova:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Unir-se amb un nom aleatori només funciona en grups nous.</string>
+	<string name="grouptr_older_group_note">Aquest és un grup antic: els seus membres et poden reconèixer en els teus altres grups antics.</string>
+	<string name="grouptr_create_new_private_group">Crea un grup privat nou</string>
+	<string name="grouptr_contact_must_update">%1$s encara no es pot unir a grups nous.</string>
+	<string name="grouptr_my_safety_code_in_group">El meu codi de seguretat en aquest grup</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nTens un codi diferent en cada grup nou.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSi %1$s veu el mateix codi a «El meu codi de seguretat en aquest grup», les publicacions que es mostren amb aquest nom són realment seves.</string>
 </resources>

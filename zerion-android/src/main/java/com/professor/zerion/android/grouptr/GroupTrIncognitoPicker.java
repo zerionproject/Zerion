@@ -63,7 +63,7 @@ public final class GroupTrIncognitoPicker {
 		if (available) return;
 		toggle.setChecked(false);
 		toggle.setEnabled(false);
-		summary.setText(R.string.grouptr_member_invite_contact_outdated);
+		summary.setText(R.string.grouptr_incognito_new_groups_only);
 	}
 
 	boolean isChecked() {

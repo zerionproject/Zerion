@@ -15,7 +15,10 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridSignaturePrivateKey;
 import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
+import org.zerionproject.core.api.crypto.KeyPair;
+import org.zerionproject.core.api.crypto.PrivateKey;
 import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.SignaturePrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
@@ -112,7 +115,7 @@ final class InviteTestNet {
 		final byte[] pub;
 		final byte[] mlDsa;
 		final LocalAuthor local;
-		final GroupTrManagerImpl manager;
+		GroupTrManagerImpl manager;
 		final List<Object> broadcasts = new ArrayList<>();
 		final Map<String, Settings> settings = new HashMap<>();
 		private final List<Event> pendingEvents = new ArrayList<>();
@@ -122,6 +125,12 @@ final class InviteTestNet {
 		private final Map<ContactId, Integer> versions = new HashMap<>();
 		@Nullable
 		Long clockOverride = null;
+		private int txnDepth = 0;
+		boolean holdScheduled = false;
+		final List<Runnable> scheduled = new ArrayList<>();
+		final List<Long> scheduledDelays = new ArrayList<>();
+		final List<byte[]> handedMlDsaKeys = new ArrayList<>();
+		private final List<Throwable> nested = new ArrayList<>();
 
 		private Node(String name, byte b) {
 			this.name = name;
@@ -132,7 +141,32 @@ final class InviteTestNet {
 			local = new LocalAuthor(new AuthorId(getRandomId()), 1, name,
 					new SignaturePublicKey(pub),
 					new SignaturePrivateKey(new byte[32]));
-			manager = new GroupTrManagerImpl(
+			manager = newManager();
+		}
+
+		private Node(Node from) {
+			this.name = from.name;
+			this.pub = from.pub;
+			this.mlDsa = from.mlDsa;
+			this.local = from.local;
+			for (Map.Entry<String, Settings> e : from.settings.entrySet()) {
+				Settings copy = new Settings();
+				copy.putAll(e.getValue());
+				settings.put(e.getKey(), copy);
+			}
+			contacts.putAll(from.contacts);
+			contactGroups.putAll(from.contactGroups);
+			versions.putAll(from.versions);
+			manager = newManager();
+		}
+
+		void restart() throws Exception {
+			manager = newManager();
+			manager.onDatabaseOpened(new Transaction(null, false));
+		}
+
+		private GroupTrManagerImpl newManager() {
+			return new GroupTrManagerImpl(
 					fake(DatabaseComponent.class, this::db),
 					Runnable::run,
 					fake(SettingsManager.class, this::settingsCall),
@@ -149,7 +183,33 @@ final class InviteTestNet {
 						return null;
 					}),
 					fake(Clock.class, (n, a) -> clockOverride != null
-							? clockOverride : now));
+							? clockOverride : now),
+					fake(org.zerionproject.core.api.system.TaskScheduler.class,
+							(n, a) -> {
+								if (holdScheduled) {
+									scheduled.add((Runnable) a[0]);
+									scheduledDelays.add(((java.util.concurrent
+											.TimeUnit) a[3]).toMillis(
+											(Long) a[2]));
+								} else {
+									((Runnable) a[0]).run();
+								}
+								return null;
+							}));
+		}
+
+		void runScheduled() {
+			List<Runnable> run = new ArrayList<>(scheduled);
+			scheduled.clear();
+			for (Runnable r : run) r.run();
+		}
+
+		void addContactOf(Node other) {
+			add(this, other);
+		}
+
+		Collection<Contact> contactList() {
+			return new ArrayList<>(contacts.values());
 		}
 
 		long time() {
@@ -178,6 +238,16 @@ final class InviteTestNet {
 
 		void setVersion(Node other, int minor) {
 			versions.put(contactIdOf(other), minor);
+		}
+
+		void versionUpdated(Node other, int minor) {
+			ContactId c = contactIdOf(other);
+			versions.put(c, minor);
+			manager.eventOccurred(new org.zerionproject.core.api.versioning
+					.event.ClientVersionUpdatedEvent(c,
+					new org.zerionproject.core.api.versioning.ClientVersion(
+							MessagingManager.CLIENT_ID,
+							MessagingManager.MAJOR_VERSION, minor)));
 		}
 
 		void forgetContact(Node other) {
@@ -211,17 +281,26 @@ final class InviteTestNet {
 
 		@Nullable
 		private Object db(String n, Object[] a) throws Exception {
+			if (n.startsWith("transaction")) {
+				if (txnDepth++ > 0) nested.add(new Throwable());
+				try {
+					switch (n) {
+						case "transaction":
+							((DbRunnable<?>) a[1]).run(new Transaction(null,
+									Boolean.TRUE.equals(a[0])));
+							return null;
+						case "transactionWithResult":
+							return ((DbCallable<?, ?>) a[1]).call(new Transaction(null,
+									Boolean.TRUE.equals(a[0])));
+						default:
+							return ((NullableDbCallable<?, ?>) a[1]).call(
+									new Transaction(null, Boolean.TRUE.equals(a[0])));
+					}
+				} finally {
+					txnDepth--;
+				}
+			}
 			switch (n) {
-				case "transaction":
-					((DbRunnable<?>) a[1]).run(new Transaction(null,
-							Boolean.TRUE.equals(a[0])));
-					return null;
-				case "transactionWithResult":
-					return ((DbCallable<?, ?>) a[1]).call(new Transaction(null,
-							Boolean.TRUE.equals(a[0])));
-				case "transactionWithNullableResult":
-					return ((NullableDbCallable<?, ?>) a[1]).call(
-							new Transaction(null, Boolean.TRUE.equals(a[0])));
 				case "removeMessage":
 				case "setCleanupDeadline":
 				case "setCleanupTimerDuration":
@@ -264,6 +343,13 @@ final class InviteTestNet {
 						settings.remove((String) ns);
 					}
 					return null;
+				case "getNamespaces": {
+					List<String> out = new ArrayList<>();
+					for (String ns : settings.keySet()) {
+						if (ns.startsWith((String) a[0])) out.add(ns);
+					}
+					return out;
+				}
 				default:
 					throw new UnsupportedOperationException(n);
 			}
@@ -307,8 +393,14 @@ final class InviteTestNet {
 			switch (n) {
 				case "hash":
 					return hash((String) a[0], (byte[][]) a[1]);
-				case "hybridSign":
-					return signature((String) a[0], (byte[]) a[1], pub, mlDsa);
+				case "generateHybridSignatureKeyPair":
+					return groupKeyPair();
+				case "hybridSign": {
+					byte[][] signer = signerOf((PrivateKey) a[2]);
+					return signature((String) a[0], (byte[]) a[1],
+							signer == null ? pub : signer[0],
+							signer == null ? mlDsa : signer[1]);
+				}
 				case "verifyHybridSignature": {
 					HybridSignaturePublicKey k = (HybridSignaturePublicKey) a[3];
 					return Arrays.equals((byte[]) a[0], signature(
@@ -327,9 +419,13 @@ final class InviteTestNet {
 					return local;
 				case "getLocalMlDsaSigPublicKey":
 					return mlDsa;
-				case "getLocalMlDsaSigPrivateKey":
-					return new byte[PostQuantumConstants
+				case "getLocalMlDsaSigPrivateKey": {
+					byte[] key = new byte[PostQuantumConstants
 							.ML_DSA_65_PRIVATE_KEY_BYTES];
+					Arrays.fill(key, (byte) 7);
+					handedMlDsaKeys.add(key);
+					return key;
+				}
 				default:
 					throw new UnsupportedOperationException(n);
 			}
@@ -388,6 +484,47 @@ final class InviteTestNet {
 		return n;
 	}
 
+	Node restore(Node from) throws Exception {
+		Node n = new Node(from);
+		nodes.set(nodes.indexOf(from), n);
+		n.manager.onDatabaseOpened(new Transaction(null, false));
+		return n;
+	}
+
+	private static final AtomicInteger NEXT_KEY = new AtomicInteger(1);
+
+	static KeyPair groupKeyPair() {
+		byte[] ed = hash("test-group-key",
+				new byte[][] {ByteBuffer.allocate(4)
+						.putInt(NEXT_KEY.getAndIncrement()).array()});
+		byte[] ml = new byte[PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES];
+		for (int i = 0; i < ml.length; i++) ml[i] = ed[i % ed.length];
+		ml[0] ^= 0x5A;
+		byte[] mlPriv =
+				new byte[PostQuantumConstants.ML_DSA_65_PRIVATE_KEY_BYTES];
+		System.arraycopy(ml, 0, mlPriv, 0, ml.length);
+		return new KeyPair(new HybridSignaturePublicKey(ed, ml),
+				new HybridSignaturePrivateKey(ed, mlPriv));
+	}
+
+	@Nullable
+	static byte[][] signerOf(PrivateKey key) {
+		if (!(key instanceof HybridSignaturePrivateKey)) return null;
+		HybridSignaturePrivateKey h = (HybridSignaturePrivateKey) key;
+		byte[] ed = h.getEd25519PrivateKey();
+		boolean zero = true;
+		for (byte b : ed) {
+			if (b != 0) {
+				zero = false;
+				break;
+			}
+		}
+		if (zero) return null;
+		byte[] ml = Arrays.copyOf(h.getMlDsaPrivateKey(),
+				PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		return new byte[][] {ed, ml};
+	}
+
 	Packet packet(Node from, Node to, BdfList body) {
 		return new Packet(from, to, body, encode(body), now);
 	}
@@ -410,6 +547,15 @@ final class InviteTestNet {
 	}
 
 	void pump(Predicate<Packet> hold) {
+		for (Node n : nodes) {
+			if (!n.nested.isEmpty()) {
+				AssertionError e = new AssertionError(n.name
+						+ " opened a transaction inside another");
+				e.initCause(n.nested.get(0));
+				n.nested.clear();
+				throw e;
+			}
+		}
 		for (int round = 0; round < 1000; round++) {
 			boolean progress = false;
 			for (Node n : nodes) {
@@ -495,6 +641,21 @@ final class InviteTestNet {
 							removedSignedInput(gid, target, (int) fromEpoch,
 									(int) toEpoch, ts));
 				}
+				case 35: {
+					byte[] gid = r.getRaw(1);
+					byte[] target = r.getRaw(2);
+					long epoch = r.getLong(3);
+					long ts = r.getLong(4);
+					ByteBuffer left = ByteBuffer.allocate(77);
+					left.put(gid);
+					left.put(target);
+					left.putInt((int) epoch);
+					left.putLong(ts);
+					left.put((byte) 0x03);
+					return new GroupMembershipChangedEvent(from,
+							ChangeKind.MEMBER_LEFT, gid, epoch, ts, target,
+							null, 0L, 0L, r.getRaw(5), left.array());
+				}
 				case 36: {
 					byte[] gid = r.getRaw(1);
 					long epoch = r.getLong(2);
@@ -538,19 +699,21 @@ final class InviteTestNet {
 					return new GroupTrInviteOfferReceivedEvent(from,
 							new MessageId(getRandomId()), r.getRaw(1),
 							r.getString(2), r.getRaw(3), r.getString(4),
-							r.getRaw(5), r.getLong(6), r.getRaw(7));
+							r.getRaw(5), r.getLong(6), r.getRaw(7),
+							r.size() > 8 ? r.getList(8) : null);
 				case 43:
 				case 44:
 					return new GroupTrInviteResponseReceivedEvent(from,
 							r.getRaw(1), r.getLong(2), r.getRaw(3),
 							type == 43
 									? GroupTrInviteResponseReceivedEvent.Kind.ACCEPT
-									: GroupTrInviteResponseReceivedEvent.Kind.DECLINE);
+									: GroupTrInviteResponseReceivedEvent.Kind.DECLINE,
+							null, r.size() > 4 ? r.getList(4) : null);
 				case 55:
 					return new GroupTrInviteResponseReceivedEvent(from,
 							r.getRaw(1), r.getLong(2), r.getRaw(4),
 							GroupTrInviteResponseReceivedEvent.Kind.ACCEPT,
-							r.getString(3));
+							r.getString(3), r.size() > 5 ? r.getList(5) : null);
 				case 48:
 				case 49:
 				case 50:
@@ -559,6 +722,8 @@ final class InviteTestNet {
 				case 53:
 				case 54:
 				case 56:
+				case 57:
+				case 58:
 					return new GroupTrMemberInviteRecordEvent(from,
 							new MessageId(getRandomId()), type, r);
 				default:

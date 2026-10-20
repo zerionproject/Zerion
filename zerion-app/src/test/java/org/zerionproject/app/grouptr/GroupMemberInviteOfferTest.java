@@ -35,7 +35,7 @@ public class GroupMemberInviteOfferTest {
 		net.connect(creator, other);
 		net.connect(member, invitee);
 		net.connect(other, invitee);
-		groupId = creator.manager.createGroup("Club").getGroupId();
+		groupId = creator.manager.createLegacyGroup("Club", null).getGroupId();
 		join(member);
 		join(other);
 		creator.manager.setMembersMayInvite(groupId, true);

@@ -2655,4 +2655,11 @@
 	<string name="renewal_waiting_last_seen">Vist per darrièr còp %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">Una novèla adreça Tor serà generada e partejada amb vòstres contactes a lor connexion venenta. Vòstra anciana adreça contunha de foncionar almens un jorn e tant que totes los contactes an pas migrat.</string>
 	<string name="pref_rotate_onion_success_message">Vòstra anciana adreça fonciona encara almens un jorn e tant que totes los contactes son pas passats a la novèla.\n\nNovèla adreça:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">Rejónher amb un nom aleatòri fonciona sonque dins los grops novèls.</string>
+	<string name="grouptr_older_group_note">Aquò\'s un grop ancian: sos membres vos pòdon reconéisser dins vòstres autres grops ancians.</string>
+	<string name="grouptr_create_new_private_group">Crear un grop privat novèl</string>
+	<string name="grouptr_contact_must_update">%1$s pòt pas encara rejónher los grops novèls.</string>
+	<string name="grouptr_my_safety_code_in_group">Mon còdi de seguretat dins aqueste grop</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nAvètz un còdi diferent dins cada grop novèl.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nSe %1$s vei lo meteis còdi jos « Mon còdi de seguretat dins aqueste grop », las publicacions afichadas jos aqueste nom son vertadièrament las sievas.</string>
 </resources>

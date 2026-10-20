@@ -252,6 +252,43 @@
 				</LinearLayout>
 
 				<LinearLayout
+					android:id="@+id/rowOlderGroup"
+					style="@style/GroupTrAdminActionRow"
+					android:minHeight="52dp"
+					android:visibility="gone">
+
+					<ImageView
+						style="@style/GroupTrAdminActionIcon"
+						android:src="@drawable/ic_lock"
+						android:contentDescription="@null"
+						app:tint="?attr/zerionColorAccentIcon" />
+
+					<LinearLayout
+						android:layout_width="0dp"
+						android:layout_height="wrap_content"
+						android:layout_weight="1"
+						android:orientation="vertical">
+
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:text="@string/grouptr_create_new_private_group"
+							android:textColor="?attr/zerionColorOnSurface"
+							android:textAppearance="@style/TextAppearance.Zerion.Body" />
+
+						<TextView
+							android:layout_width="wrap_content"
+							android:layout_height="wrap_content"
+							android:layout_marginTop="2dp"
+							android:text="@string/grouptr_older_group_note"
+							android:textColor="?attr/zerionColorOnSurfaceMuted"
+							android:textAppearance="@style/TextAppearance.Zerion.Meta" />
+
+					</LinearLayout>
+
+				</LinearLayout>
+
+				<LinearLayout
 					android:id="@+id/actionStealth"
 					style="@style/GroupTrAdminActionRow"
 					android:visibility="gone">

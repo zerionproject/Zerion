@@ -2677,4 +2677,11 @@
 	<string name="renewal_waiting_last_seen">آخرین بازدید %1$s</string>
 	<string name="pref_rotate_onion_confirm_message">یک آدرس Tor جدید ساخته می‌شود و در اتصال بعدی مخاطبانتان با آن‌ها به اشتراک گذاشته می‌شود. آدرس قدیمی شما دست‌کم یک روز و تا زمانی که همه مخاطبان منتقل شوند کار می‌کند.</string>
 	<string name="pref_rotate_onion_success_message">آدرس قدیمی شما دست‌کم یک روز و تا زمانی که همه مخاطبان به آدرس جدید منتقل شوند کار می‌کند.\n\nآدرس جدید:\n%1$s</string>
+	<string name="grouptr_incognito_new_groups_only">پیوستن با نام تصادفی فقط در گروه‌های جدید ممکن است.</string>
+	<string name="grouptr_older_group_note">این یک گروه قدیمی‌تر است: اعضای آن می‌توانند شما را در دیگر گروه‌های قدیمی‌ترتان بشناسند.</string>
+	<string name="grouptr_create_new_private_group">ایجاد گروه خصوصی جدید</string>
+	<string name="grouptr_contact_must_update">%1$s هنوز نمی‌تواند به گروه‌های جدید بپیوندد.</string>
+	<string name="grouptr_my_safety_code_in_group">کد امنیتی من در این گروه</string>
+	<string name="grouptr_my_safety_code_message">%1$s\n\nشما در هر گروه جدید کد متفاوتی دارید.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nاگر %1$s همین کد را زیر «کد امنیتی من در این گروه» ببیند، پست‌هایی که با این نام نشان داده می‌شوند واقعاً از او هستند.</string>
 </resources>
