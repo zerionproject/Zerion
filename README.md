@@ -80,7 +80,7 @@ Every pair of contacts whose apps both support it moves from the open onion serv
 
 | Platform | Status | Version |
 |---|---|---|
-| Android 10 and later | AVAILABLE | 3.0.18 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.3 while the update to the current release is pending |
+| Android 10 and later | AVAILABLE | 3.0.18 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.17 while the update to the current release is pending |
 | Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
 | Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
 | macOS | IN DEVELOPMENT | none published |
