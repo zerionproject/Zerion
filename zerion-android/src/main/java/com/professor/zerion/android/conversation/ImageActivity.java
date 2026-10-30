@@ -83,6 +83,7 @@ public class ImageActivity extends ZerionActivity
 	private MessageId conversationMessageId;
 	@Nullable
 	private String token;
+	private boolean once = false;
 	private int announcedPage = -1;
 
 	@Override
@@ -113,6 +114,7 @@ public class ImageActivity extends ZerionActivity
 				finish();
 				return;
 			}
+			once = shown.once;
 			name = shown.title;
 			time = shown.time;
 			position = 0;
@@ -189,6 +191,12 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	@Override
+	public void onStop() {
+		super.onStop();
+		if (once && !isChangingConfigurations()) contentGone();
+	}
+
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		MediaViewer.unwatch(token);
@@ -235,7 +243,11 @@ public class ImageActivity extends ZerionActivity
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		MenuItem save = menu.findItem(R.id.action_save_image);
-		if (save != null) save.setVisible(SaveCleanCopy.canSave(visibleType()));
+		if (save != null) {
+			save.setVisible(!once && SaveCleanCopy.canSave(visibleType()));
+		}
+		MenuItem open = menu.findItem(R.id.action_open_elsewhere);
+		if (open != null && once) open.setVisible(false);
 		return super.onPrepareOptionsMenu(menu);
 	}
 
@@ -340,6 +352,7 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	private void showSaveImageDialog() {
+		if (once) return;
 		if (token != null) {
 			MediaViewer.Shown shown = MediaViewer.get(token);
 			if (shown == null) {
@@ -371,6 +384,7 @@ public class ImageActivity extends ZerionActivity
 	}
 
 	private void openElsewhere() {
+		if (once) return;
 		if (token != null) {
 			MediaViewer.Shown shown = MediaViewer.get(token);
 			if (shown == null) {

@@ -195,7 +195,8 @@ public class AndroidKeyFileAlignmentTest extends BrambleMockTestCase {
 
 	private AndroidAccountManager manager(boolean primaryWritesFail) {
 		return new AndroidAccountManager(databaseConfig, crypto,
-				identityManager, prefs, app, profileManager) {
+				identityManager, prefs, app, profileManager,
+				LockoutStores.plaintext()) {
 			@Override
 			protected LoginThrottle createLoginThrottle(File stateFile) {
 				return LoginThrottle.inFile(new File(testDir, "login.lockout"),

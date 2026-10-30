@@ -27,6 +27,7 @@ public class PrivateMessage {
 	private final PrivateMessageFormat format;
 	@Nullable
 	private final MessageId replyToId;
+	private final boolean viewOnce;
 
 	public PrivateMessage(Message message) {
 		this.message = message;
@@ -35,6 +36,7 @@ public class PrivateMessage {
 		autoDeleteTimer = NO_AUTO_DELETE_TIMER;
 		format = TEXT_ONLY;
 		replyToId = null;
+		viewOnce = false;
 	}
 
 	public PrivateMessage(Message message, boolean hasText,
@@ -45,6 +47,7 @@ public class PrivateMessage {
 		autoDeleteTimer = NO_AUTO_DELETE_TIMER;
 		format = TEXT_IMAGES;
 		replyToId = null;
+		viewOnce = false;
 	}
 
 	public PrivateMessage(Message message, boolean hasText,
@@ -55,11 +58,18 @@ public class PrivateMessage {
 	public PrivateMessage(Message message, boolean hasText,
 			List<AttachmentHeader> headers, long autoDeleteTimer,
 			@Nullable MessageId replyToId) {
+		this(message, hasText, headers, autoDeleteTimer, replyToId, false);
+	}
+
+	public PrivateMessage(Message message, boolean hasText,
+			List<AttachmentHeader> headers, long autoDeleteTimer,
+			@Nullable MessageId replyToId, boolean viewOnce) {
 		this.message = message;
 		this.hasText = hasText;
 		this.attachmentHeaders = headers;
 		this.autoDeleteTimer = autoDeleteTimer;
 		this.replyToId = replyToId;
+		this.viewOnce = viewOnce;
 		format = TEXT_IMAGES_AUTO_DELETE;
 	}
 
@@ -86,5 +96,9 @@ public class PrivateMessage {
 	@Nullable
 	public MessageId getReplyToId() {
 		return replyToId;
+	}
+
+	public boolean isViewOnce() {
+		return viewOnce;
 	}
 }

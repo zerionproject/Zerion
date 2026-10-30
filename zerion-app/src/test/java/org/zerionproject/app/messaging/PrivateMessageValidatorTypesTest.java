@@ -137,6 +137,26 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void linkPreviewAcceptsOnlyWebSchemes() throws Exception {
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "http://example.org/a",
+				"title", null), true, 0);
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "HTTPS://Example.org",
+				"title", null), true, 0);
+		String[] bad = {"tel:+15551234", "sms:+15551234",
+				"market://details?id=x", "content://x/y", "file:///sdcard/x",
+				"intent://x#Intent;scheme=http;end", "javascript:alert(1)",
+				"zerion://channel/abc", "https://", "http:example.org",
+				" https://example.org", "httpsx://example.org",
+				"https://exa\u202Emple.org", "https://example.org/a b",
+				"https://\u0440\u0430ypal.com", "https://example.org/\t",
+				"https://example.org/\u00E9"};
+		for (String url : bad) {
+			reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", url, "title",
+					null), true);
+		}
+	}
+
+	@Test
 	public void meshPrekeyBundle() throws Exception {
 		accept(BdfList.of(MESH_PREKEY_BUNDLE, getRandomBytes(100)), true, 0);
 		reject(BdfList.of(MESH_PREKEY_BUNDLE), true);
@@ -203,6 +223,70 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 						.HYBRID_SIGNATURE_BYTES + 1)), true);
 		reject(BdfList.of(MessageTypes.GROUP_POST_DELETE, id, 5L, key,
 				getRandomBytes(32), now, "signature"), true);
+	}
+
+	@Test
+	public void messagePin() throws Exception {
+		assertEquals(15, MessageTypes.MESSAGE_PIN);
+		accept(BdfList.of(MessageTypes.MESSAGE_PIN, id), true, 0);
+		accept(BdfList.of(MessageTypes.MESSAGE_PIN, BdfDictionary.NULL_VALUE),
+				true, 0);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, id, 1L), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, getRandomBytes(31)), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, getRandomBytes(33)), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, "id"), true);
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, 7L), true);
+	}
+
+	@Test
+	public void messagePinMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.MESSAGE_PIN, id), false);
+	}
+
+	@Test
+	public void groupPin() throws Exception {
+		assertEquals(59, MessageTypes.GROUP_PIN);
+		byte[] hybrid = getRandomBytes(PostQuantumConstants
+				.HYBRID_SIGNATURE_BYTES);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				hybrid), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, BdfDictionary.NULL_VALUE,
+				now, hybrid), true, 0);
+		accept(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				sig), true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				hybrid, 1L), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, getRandomBytes(31),
+				getRandomBytes(32), now, hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(31), now,
+				hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, "post", now, hybrid),
+				true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32),
+				"now", hybrid), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				new byte[0]), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				getRandomBytes(4097)), true);
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				"signature"), true);
+	}
+
+	@Test
+	public void groupPinMustEndTheMessage() throws Exception {
+		context.checking(new Expectations() {{
+			oneOf(reader).eof();
+			will(returnValue(false));
+		}});
+		reject(BdfList.of(MessageTypes.GROUP_PIN, id, getRandomBytes(32), now,
+				sig), false);
 	}
 
 	@Test
@@ -436,7 +520,7 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	public void unknownAndReservedTypesAreRejected() throws Exception {
 		reject(BdfList.of(39, id), false);
 		reject(BdfList.of(40, id), false);
-		reject(BdfList.of(59, id), false);
+		reject(BdfList.of(60, id), false);
 		reject(BdfList.of(99, id), false);
 		reject(BdfList.of(-1, id), false);
 	}

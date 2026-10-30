@@ -28,7 +28,7 @@
   <string name="dnkm_xiaomi_button">Предпазване на Zerion</string>
   <string name="dnkm_xiaomi_help">Ако Zerion не е заключен в списъка с последно използваните приложения, няма да работи на заден план.</string>
   <string name="dnkm_xiaomi_dialog_body_old">1. Отворете списъка с отворени приложения (списък за превключване на приложения)\n\n2. Плъзнете надолу върху изображението на Zerion докато се покаже икона на катинар\n\n3. Ако катинарът е отключен го докоснете, за да го заключите</string>
-  <string name="dnkm_xiaomi_dialog_body_new">1. Отворете списъка с последните приложения\n\n2. Ако до името на Zerion има значка на катинарче, не е необходимо да правите нищо\n\n3. Ако няма – натиснете и задръжте изображението на Zerion, докато се появи бутон за катинарче, след което го докоснете</string>
+  <string name="dnkm_xiaomi_dialog_body_new">1. Отворете списъка с последните приложения\n\n2. Ако до името на Zerion има значка на катинарче, не е необходимо да правите нищо\n\n3. Ако няма, натиснете и задръжте изображението на Zerion, докато се появи бутон за катинарче, след което го докоснете</string>
   <string name="dnkm_warning_dozed_1">Zerion не може да работи във фонов режим</string>
   
   <string name="enter_password">Парола</string>
@@ -110,7 +110,7 @@
   <string name="fix">Поправяне</string>
   <string name="help">Помощ</string>
   <string name="sorry">Съжаляваме</string>
-  <string name="error_start_activity">Недостъпно на вашата система</string>
+  <string name="error_start_activity">Няма приложение за това</string>
   <string name="status_heading">Състояние</string>
   <string name="error">Грешка</string>
   <string name="info">Инфирмация</string>
@@ -200,17 +200,14 @@
   <string name="exchanging_contact_details">Обмяна на данни за контакт\u2026</string>
   <string name="contact_added_toast">Добавен контакт: %s</string>
   <string name="contact_already_exists">Контактът %s вече съществува</string>
-  <string name="contact_already_exists_general">Контактът вече съществува</string>
+  <string name="contact_already_exists_general">Вече е контакт</string>
   <string name="camera_error">Грешка в камерата</string>
   <string name="connecting_to_device">Свързване с устройство\u2026</string>
   <string name="authenticating_with_device">Удостоверяване с устройство\u2026</string>
   <string name="connection_error_title">Не може да бъде установена връзка с контакта</string>
   
-  <string name="add_contact_remotely_title_case">Добавяне на контакт отдалечено</string>
   <string name="add_contact_nearby_title">Добавяне на контакт на живо</string>
   <string name="add_contact_remotely_title">Добавяне на контакт отдалечено</string>
-  <string name="contact_link_intro">Въведете препратката на контакта, когото добавяте</string>
-  <string name="contact_link_hint">Препратка от контакт</string>
   <string name="paste_button">Поставяне</string>
   <string name="add_contact_button">Добавяне на контакт</string>
   <string name="copy_button">Копиране</string>
@@ -219,27 +216,21 @@
   <string name="add_contact_choose_nickname">Избиране на прякор</string>
   <string name="add_contact_choose_a_nickname">Прякор</string>
   <string name="nickname_intro">Изберете прякор на контакта. Той е видим само за вас.</string>
-  <string name="your_link">Споделете тази препратка с контакта, когото добавяте</string>
   <string name="link_clip_label">Препратка на Zerion</string>
   <string name="link_copied_toast">Препратката е копирана</string>
-  <string name="adding_contact_error">Грешка при добавяне на контакт.</string>
+  <string name="adding_contact_error">Контактът не можа да бъде добавен. Опитай отново.</string>
   <string name="pending_contact_requests_snackbar">Има чакащи заявки за контакт</string>
-  <string name="pending_contact_requests">Чакащи заявки за контакт</string>
-  <string name="no_pending_contacts">Няма заявки за контакт</string>
   <string name="waiting_for_contact_to_come_online">Изчакване на контакта да излезе на линия…</string>
   <string name="connecting">Свързване…</string>
   <string name="adding_contact">Добавяне на контакт…</string>
-  <string name="adding_contact_failed">Грешка при добавяне на контакт</string>
-  <string name="dialog_title_remove_pending_contact">Потвърждение на премахване</string>
-  <string name="dialog_message_remove_pending_contact">Контактът е в процес на добавяне. Ако сега го премахнете няма да бъде добавен.</string>
-  <string name="own_link_error">Въведете препратка от ваш контакт, не своята</string>
-  <string name="nickname_missing">Въведете прякор</string>
+  <string name="adding_contact_failed">Контактът не можа да бъде добавен</string>
+  <string name="dialog_title_remove_pending_contact">Да се премахне ли този контакт?</string>
+  <string name="dialog_message_remove_pending_contact">Този контакт още не е добавен. Ако го премахнеш, добавянето спира.</string>
+  <string name="nickname_missing">Въведи име</string>
   <string name="invalid_link">Препратката е недействителна</string>
-  <string name="unsupported_link">Препратката е от по-ново издание на Zerion. Инсталирайте последното издание и пробвайте отново.</string>
-  <string name="intent_own_link">Отваряте своята препратка. Използвайте тази от контакта, когото добавяте.</string>
-  <string name="missing_link">Въведете препратка</string>
+  <string name="unsupported_link">Този линк изисква по-нова версия на Zerion. Обнови и опитай отново.</string>
+  <string name="missing_link">Постави ZerionID или линк</string>
   
-  <string name="step_1">1</string>
   
   <string name="step_2">2</string>
   <plurals name="contact_added_notification_text">
@@ -247,7 +238,7 @@
     <item quantity="other">Добавени са %d нови контакта.</item>
   </plurals>
   <string name="offline_state">Няма връзка с интернет.</string>
-  <string name="duplicate_link_dialog_title">Дублираща се препратка</string>
+  <string name="duplicate_link_dialog_title">Дублиран линк</string>
   <string name="duplicate_link_dialog_text_1">Вече има чакаща заявка за контакт с тази препратка: %s</string>
   <string name="duplicate_link_dialog_text_1_contact">Вече има контакт с тази препратка: %s</string>
   
@@ -256,7 +247,7 @@
   <string name="same_person_button">Да</string>
   
   <string name="different_person_button">Не</string>
-  <string name="duplicate_link_dialog_text_3">%1$s и %2$s са изпратили еднакви препратки.\n\nЕдиният от двамата вероятно се опитва да разбере кои са контактите ви.\n\nНе им споделяйте, че сте получили същата препратка от друг човек.</string>
+  <string name="duplicate_link_dialog_text_3">%1$s и %2$s ти изпратиха един и същ линк. Може би един от тях проверява кои са контактите ти. Не казвай на никого от двамата.</string>
   <string name="pending_contact_updated_toast">Обновена чакаща заявка за контакт</string>
   <string name="info_both_must_enter_links">Трябва взаимно да добавите препратките си</string>
   
@@ -364,6 +355,7 @@
   <string name="security_settings_title">Сигурност</string>
   <string name="pref_lock_title">Заключване на приложението</string>
   <string name="pref_lock_summary">Екранът се заключва, за да се предпази Zerion докато сте вписани</string>
+  <string name="pref_lock_keys_summary">Заключването на приложението заключва екрана и трезора, но акаунтът остава отворен, докато не излезете. Изход или Затваряне изтриват ключовете от паметта.</string>
   <string name="pref_lock_disabled_summary">За да се възползвате от тази възможност, настройте заключване на екрана</string>
   <string name="pref_lock_timeout_title">Заключване при бездействие</string>
   
@@ -397,6 +389,7 @@
   <string name="panic_setting_destructive_action">Разрушителни действия</string>
   <string name="panic_setting_signout_title">Отписване</string>
   <string name="panic_setting_signout_summary">Отписване от Zerion при задействан бутон при паника</string>
+  <string name="panic_setting_signout_needs_app">Първо избери по-долу приложение за бутон при паника. Само това приложение може да те отпише.</string>
   <string name="purge_setting_title">Премахване на профил</string>
   <string name="purge_setting_summary">Профилът на Zerion се изтрива след задействане на бутона при паника. Внимание: Изтрива безвъзвратно профила, контактите и съобщенията</string>
   
@@ -432,7 +425,7 @@
   
   <string name="disappearing_messages_title">Изчезващи съобщения</string>
   <string name="disappearing_messages_explanation_long">При включване, тази настройка прави бъдещите съобщения в този разговор да изчезват след 7\u00A0дни.
-\n\nОтброяването при изпращача започва след като съобщението е било доставено, а при получателя – след като го е прочел.
+\n\nОтброяването при изпращача започва след като съобщението е било доставено, а при получателя, след като го е прочел.
 \n\nСъобщенията, които ще изчезнат са отбелязани с бомба.
 \n\nИмайте предвид, че получателите могат да правят копия на получените от вас съобщения.
 \n\nАко вие промените настройката промяната ще влезе в действие веднага, още върху следващото ви съобщение, а при вашите контакти след получаването му. Контактите ви също могат да правят промяна на тази настройка, което ще се отрази и на двама ви.</string>
@@ -637,6 +630,13 @@
 	<string name="internet_status_label">Свързаност</string>
 	<string name="mesh_info_message">Съобщенията се запечатват за получателя и се предават от устройство на устройство чрез телефони наблизо, на които работи Zerion. Включването изисква разрешения за Bluetooth и за устройства наблизо и излъчва локално: всеки наблизо с Bluetooth скенер може да разбере, че този телефон използва мрежата на Zerion, но не и какво изпраща.</string>
 	<string name="mesh_permission_denied">Офлайн mesh мрежата изисква разрешения за Bluetooth и за устройства наблизо</string>
+	<string name="mesh_alias_title">Bluetooth име, докато mesh мрежата работи</string>
+	<string name="mesh_range_title">Обхват на Bluetooth</string>
+	<string name="mesh_range_normal">Нормален</string>
+	<string name="mesh_range_short">Къс (по-малко телефони в обхват)</string>
+	<string name="mesh_pause_screen_off_title">Пауза на Bluetooth mesh мрежата при изключен екран</string>
+	<string name="mesh_pause_screen_off_summary">Започва около 10 минути след изключване на екрана, понякога по-късно, докато телефонът спи. Съобщенията през устройства наблизо изчакват, докато екранът се включи отново.</string>
+	<string name="mesh_alias_message">Устройствата наблизо виждат това име вместо името на телефона ти, докато работи mesh мрежата или „Сдвояване наблизо“.</string>
 	<plurals name="mesh_status_active">
 		<item quantity="one">Активна · %d устройство в обхват</item>
 		<item quantity="other">Активна · %d устройства в обхват</item>
@@ -672,6 +672,7 @@
 	<string name="settings_section_tor_network">МРЕЖА TOR</string>
 	<string name="tor_client_auth_summary">Клиентска авторизация: активни %1$d, в процес на активиране %2$d, общо контакти: %3$d</string>
 	<string name="tor_custom_bridges_dialog_message">Ако Tor не може да се свърже там, където се намираш, постави тук редове с мостове, по един на ред. Когато добавиш мостове тук, се използват само те, а не вградените. Поддържат се обикновени мостове, obfs4, snowflake, meek и webtunnel. Можеш да получиш мостове от bridges.torproject.org или от GetBridgesBot в Telegram.</string>
+	<string name="tor_custom_bridges_unusable">%1$d от %2$d реда не могат да бъдат използвани</string>
 	<string name="tor_custom_bridges_hint">Постави редове с мостове, по един на ред</string>
 	<string name="tor_custom_bridges_invalid">Един от редовете не е ред с мост. Нищо не е запазено.</string>
 	<string name="tor_custom_bridges_summary_none">Не е зададено</string>
@@ -722,7 +723,7 @@
 	<string name="updates_tor_not_ready">Tor все още не е свързан. Опитай отново след малко.</string>
 	<string name="updates_store_install">Актуализациите за тази инсталация идват от %1$s, а не от GitHub.</string>
 	<string name="updates_available_title">Налична е актуализация</string>
-	<string name="updates_available_message">Наличен е Zerion %1$s. Използваш %2$s.\n\nИзтегли го от изданията на Zerion в GitHub:\n%3$s\n\nSHA-256 на APK файла:\n%4$s\n\nИстинската актуализация се инсталира върху съществуващото приложение. Никога не деинсталирай Zerion, за да инсталираш актуализация: деинсталирането изтрива акаунта ти.\n\nЛинкът се отваря в браузъра ти, който не използва Tor.</string>
+	<string name="updates_available_message">Наличен е Zerion %1$s. Използваш %2$s.\n\nИзтегли го от изданията на Zerion в GitHub:\n%3$s\n\nSHA-256 на APK файла:\n%4$s\n\nАктуализацията се инсталира върху съществуващото приложение. Никога не деинсталирай Zerion, за да инсталираш актуализация: деинсталирането изтрива акаунта ти.\n\nЛинкът се отваря в браузъра ти, който не използва Tor.</string>
 	<string name="updates_open">Отвори в браузъра</string>
 	<string name="updates_copy_link">Копирай линка</string>
 	<string name="updates_later">По-късно</string>
@@ -762,10 +763,12 @@
 	<string name="donation_button_open_in_browser">Отвори в браузъра</string>
 	<string name="donation_link_copied">Линкът за дарение е копиран</string>
 	<string name="browser_warning_title">Да се отвори ли в браузъра?</string>
-	<string name="browser_warning_message">С отварянето на този линк излизаш извън защитата на Tor в Zerion. Истинският ти IP адрес ще бъде видим за сайта и за всеки тракер на страницата. Продължи само ако разбираш риска.</string>
+	<string name="browser_warning_message">С отварянето на този линк излизаш извън защитата на Tor в Zerion. IP адресът ти ще бъде видим за сайта и за всеки тракер на страницата. Продължи само ако разбираш риска.</string>
 	<string name="browser_warning_open">Отвори въпреки това</string>
 	<string name="browser_warning_copy">Копирай линка</string>
 	<string name="browser_warning_link_copied">Линкът е копиран</string>
+	<string name="quick_reply_not_sent">Отговорът ти не беше изпратен. Отвори разговора, за да опиташ отново.</string>
+	<string name="link_unsupported">Неподдържан линк</string>
 	<string name="settings_support_summary">Помогни Zerion да остане безплатен и поверителен</string>
 	<string name="login_tagline">Поверителни съобщения през Tor</string>
 	<string name="setup_password_subtitle">Тази парола за шифроване на акаунта е задължителна. Тя защитава шифрования ти акаунт и базата данни на това устройство. Избери силна и уникална парола.</string>
@@ -783,8 +786,6 @@
 	<string name="settings_section_privacy">ПОВЕРИТЕЛНОСТ</string>
 	<string name="settings_section_emergency_wipe">АВАРИЙНО ИЗТРИВАНЕ</string>
 	<string name="via_mesh">чрез mesh мрежа</string>
-	<string name="nearby_pair_card_title">Сдвояване наблизо (офлайн)</string>
-	<string name="nearby_pair_card_description">Добави човек, който е точно до теб, без интернет, чрез Bluetooth. Сканирайте взаимно кодовете си.</string>
 	<string name="nearby_pairing_title">Добавяне на контакт наблизо</string>
 	<string name="nearby_pairing_hint">Покажи този код на другия човек и сканирай неговия. Не е нужен интернет; дръж двата телефона близо един до друг.</string>
 	<string name="nearby_pairing_scan">Сканирай кода на другия телефон</string>
@@ -799,7 +800,7 @@
 	<string name="settings_section_appearance">ВЪНШЕН ВИД</string>
 	<string name="identity_section_title">Проверка на самоличността</string>
 	<string name="identity_safety_number_label">Номер за безопасност</string>
-	<string name="identity_safety_number_explain">Сравни тези 60 цифри с контакта си лично или по доверен канал. Ако съвпадат на двете устройства, всеки от вас има истинските ключове за самоличност на другия и никой не ги е подменил при сдвояването. Версия 2 обхваща двата ключа на самоличностите ви и се появява, след като двете приложения получат постквантовия ключ за подписване на другото; те си го обменят при следващата връзка. Версия 1 обхваща само класическия ключ. Номера от различни версии никога не съвпадат, затова сравни версията, която виждате и двамата.</string>
+	<string name="identity_safety_number_explain">Сравни тези 60 цифри с контакта си лично или по доверен канал. Ако съвпадат на двете устройства, всеки от вас има ключовете за самоличност на другия и никой не ги е подменил при сдвояването. Версия 2 обхваща двата ключа на самоличностите ви и се появява, след като двете приложения получат постквантовия ключ за подписване на другото; те си го обменят при следващата връзка. Версия 1 обхваща само класическия ключ. Номера от различни версии никога не съвпадат, затова сравни версията, която виждате и двамата.</string>
 	<string name="identity_fingerprint_hybrid_format">Версия 2 (двата ключа): %1$s</string>
 	<string name="identity_fingerprint_classical_format">Версия 1 (класически ключ): %1$s</string>
 	<string name="identity_keys_out_of_sync_title">Ключовете за връзка не са синхронизирани</string>
@@ -807,7 +808,7 @@
 	<string name="identity_keys_out_of_sync_banner">Ключовете за връзка не са синхронизирани. Докосни за поправка</string>
 	<string name="identity_readd_contact">Добави контакта отново, за да поправиш връзката</string>
 	<string name="identity_readd_contact_hint">Разменете си отново линковете с този контакт. Сдвояването заменя ключовете за връзка на двете устройства и запазва разговора ви.</string>
-	<string name="contact_readd_started">Контактът ще бъде добавен отново, след като и той те добави отново с новия ти линк</string>
+	<string name="contact_readd_started">Контактът ще бъде добавен отново, щом използва новия ти линк.</string>
 	<string name="identity_safety_number_version_label">Номер за безопасност, версия %1$d</string>
 	<string name="identity_my_fingerprint_label">Моят отпечатък</string>
 	<string name="identity_their_fingerprint_label">Отпечатък на контакта</string>
@@ -905,6 +906,7 @@
 	<string name="setup_failed_message">Нещо се обърка. Опитай отново.</string>
 	<string name="generic_error">Нещо се обърка. Опитай отново.</string>
 	<string name="channels_post_signer_editor_description">Подписано от редактор на канала</string>
+	<string name="channels_post_signer_subscriber_description">Публикувано от абонат, подписано от канала</string>
 	<string name="setup_failed_retry">Опитай отново</string>
 	<string name="dnkm_xiaomi_lock_apps_text">Докосни бутона по-долу, за да отвориш настройките за сигурност. Докосни „Ускоряване“, след това „Заключване на приложения“ и се увери, че за Zerion е зададено „Заключено“.</string>
 	<string name="dnkm_xiaomi_lock_apps_button">Отвори настройките за сигурност</string>
@@ -949,6 +951,7 @@
 	<string name="channels_feed_connecting">Свързване с канала…</string>
 	<string name="channels_feed_connecting_slow">Свързването продължава. Публикациите ще се появят тук, щом каналът стане достъпен.</string>
 	<string name="channels_compose_hint">Пиши на абонатите си…</string>
+	<string name="channels_compose_hint_member">Напиши публикация</string>
 	<string name="channels_compose_send">Публикувай</string>
 	<string name="channels_compose_error_empty">Напиши нещо, преди да публикуваш.</string>
 	<string name="channels_compose_error_publish">Публикуването не бе успешно. Опитай отново.</string>
@@ -1034,8 +1037,10 @@
 	<string name="hardened_mode_tamper_label">Отказ от стартиране, когато бъде открит дебъгер, root или рамка за прихващане</string>
 	<string name="hardened_mode_usb_panic_label">Отписване (или изтриване), когато USB кабел активира ADB или прехвърляне на файлове</string>
 	<string name="hardened_mode_usb_panic_unavailable">USB паниката не можа да бъде включена</string>
+	<string name="security_settings_not_saved">Тази настройка не можа да бъде запазена. Рестартирай Zerion и опитай отново.</string>
 	<string name="hardened_mode_usb_confirm_title">Да се включи ли USB паника?</string>
 	<string name="hardened_mode_usb_confirm_message">Ако някой свърже Zerion с компютър, докато е включен ADB или прехвърляне на файлове, ще бъдеш отписан автоматично. На следващия екран можеш да избереш и изтриване на акаунта си.</string>
+	<string name="hardened_mode_usb_connected_warning">В момента този телефон е свързан с компютър с включено прехвърляне на файлове или отстраняване на грешки през USB. Zerion ще действа веднага щом потвърдиш: ще те отпише или ще изтрие акаунта ти, ако избереш това на следващия екран. Ако не искаш това, първо извади кабела.</string>
 	<string name="hardened_mode_usb_confirm_action">Продължи</string>
 	<string name="hardened_mode_usb_scope_title">Какво да се случи?</string>
 	<string name="hardened_mode_usb_scope_signout">Отпиши ме (акаунтът ми се запазва)</string>
@@ -1182,6 +1187,7 @@
 	<string name="sticker_import">Импортирай стикер</string>
 	<string name="sticker_item_description">Стикер %1$d</string>
 	<string name="sticker_import_failed">Стикерът не можа да бъде импортиран</string>
+	<string name="sticker_send_failed">Стикерът не можа да бъде изпратен</string>
 	<string name="sticker_delete_confirm">Да се изтрие ли този стикер?</string>
 	<string name="grouptr_title">Групи</string>
 	<string name="grouptr_create">Създай група</string>
@@ -1259,6 +1265,7 @@
 	<string name="grouptr_remove_local_dissolved_msg">Тази група е разпусната. Това я премахва от списъка ти и изчиства съобщенията, съхранени на това устройство. Другите участници не се уведомяват.</string>
 	<string name="grouptr_remove_local_active_msg">Премахва групата от списъка ти и изчиства съобщенията, съхранени на това устройство. Другите участници НЕ се уведомяват и редът ти в техния списък не се променя. Първо използвай „Напусни“, ако искаш те да разберат.</string>
 	<string name="grouptr_remove_local_confirm">Премахни от устройството</string>
+	<string name="grouptr_invite_sent">Поканата е изпратена.</string>
 	<plurals name="grouptr_invite_sent">
 		<item quantity="one">Поканата е изпратена до %d контакт</item>
 		<item quantity="other">Поканите са изпратени до %d контакта</item>
@@ -1275,7 +1282,7 @@
 	<string name="grouptr_image">Изображение</string>
 	<string name="grouptr_removed_banner">%1$s те премахна от тази група. Вече не можеш да изпращаш съобщения тук.</string>
 	<string name="grouptr_create_nickname_hint">Твоето име в тази група (по желание)</string>
-	<string name="grouptr_join_nickname_prompt">Избери име, което да използваш в тази група. Остави празно, за да използваш истинското си име.</string>
+	<string name="grouptr_join_nickname_prompt">Избери име, което да използваш в тази група. Остави празно, за да използваш името от профила си.</string>
 	<string name="grouptr_join_nickname_hint">Твоето име в тази група</string>
 	<string name="grouptr_admin_section_actions">Действия</string>
 	<string name="grouptr_admin_section_group_settings">Настройки на групата</string>
@@ -1353,7 +1360,7 @@
 	<string name="verify_to_send_media_banner">Провери този контакт, за да изпращаш стикери и прикачени файлове</string>
 	<string name="verify_to_send_media_title">Първо провери този контакт</string>
 	<string name="verify_to_send_media_message">За твоя сигурност прикачени файлове, стикери и гласови съобщения могат да се изпращат само до контакти, които са добавени лично от теб или са проверени. Този контакт е добавен чрез запознанство. Отвори информацията за контакта, за да сравните номерата за безопасност.</string>
-	<string name="own_link_changed">Линкът ти се промени, защото междувременно добави друг контакт. Изпрати новия си линк на контакта и го добави отново.</string>
+	<string name="own_link_changed">Линкът ти се промени, след като добави друг човек. Изпрати новия линк и опитай отново.</string>
 	<string name="identity_mark_verified">Отбележи като проверен</string>
 	<string name="identity_mark_verified_title">Да се отбележи ли този контакт като проверен?</string>
 	<string name="identity_mark_verified_message">Направи го само ако приложението на контакта ти показва същия номер за безопасност, сравнен лично или по канал, на който имаш доверие. Ако номерата се различават, някой може да прихваща разговора ви.</string>
@@ -1420,23 +1427,25 @@
 	<string name="secret_note_timer_10m">10 минути</string>
 	<string name="secret_note_timer_1h">1 час</string>
 	<string name="secret_note_timer_12h">12 часа</string>
-	<string name="add_contact_method_subtitle">Избери как да добавиш контакт</string>
-	<string name="qr_exchange_card_title">Сканиране на QR кодове</string>
-	<string name="qr_exchange_card_badge">Лично</string>
-	<string name="qr_exchange_card_description">Покажете си кодовете един на друг и ги сканирайте</string>
-	<string name="link_exchange_card_title">Споделяне на линк</string>
-	<string name="link_exchange_card_badge">От разстояние</string>
-	<string name="link_exchange_card_description">Копирай своя линк и постави линка на другия</string>
+	<string name="view_once">Еднократен преглед</string>
+	<string name="view_once_photo">Снимка, еднократен преглед</string>
+	<string name="view_once_video">Видео, еднократен преглед</string>
+	<string name="view_once_tap">Докосни за еднократен преглед</string>
+	<string name="view_once_viewed">Прегледано</string>
+	<string name="view_once_notice">Това може да бъде отворено само веднъж. Изтрива се веднага щом го отвориш. Подателят ти се доверява да не снимаш и да не записваш екрана.</string>
+	<string name="view_once_offline">Медия с еднократен преглед не се изпраща през mesh мрежата</string>
+	<string name="view_once_missed">Това съобщение с еднократен преглед беше отворено, докато Zerion не беше на екрана, затова не беше показано.</string>
 	<string name="qr_exchange_camera_hint">Насочи към кода на контакта</string>
 	<string name="qr_exchange_your_code">Твоят код: покажи го на контакта си</string>
 	<string name="qr_link_detected">Открит е линк, свързване…</string>
 	<string name="qr_scanned_waiting">Сканирано ✓</string>
 	<string name="qr_scanned_hint">Сега нека контактът ти сканира твоя код</string>
 	<string name="qr_continue_button">Продължи</string>
+	<string name="add_contact_screen_title">Добавяне на контакт</string>
 	<string name="scan_qr_button">Сканирай QR</string>
 	<string name="scan_qr_instruction">Насочи камерата към QR код на Zerion</string>
 	<string name="qr_code_description">Твоят QR код за контакт</string>
-	<string name="camera_permission_denied">За сканиране на QR кодове е нужно разрешение за камерата</string>
+	<string name="camera_permission_denied">Разреши достъп до камерата, за да сканираш QR кодове</string>
 	<string name="introduction_response_error">Възникна грешка при отговора на запознанството.</string>
 	<string name="reblog_button">Препубликувай</string>
 	<string name="share_message">Сподели със съобщение</string>
@@ -1543,7 +1552,7 @@
 	<string name="transfer_status_working">Обработка</string>
 	<string name="transfer_send_show_qr">Сканирай този код с новия телефон</string>
 	<string name="backup_password_empty">Въведи фраза за достъп</string>
-	<string name="backup_password_too_short">Фразата за достъп трябва да е поне 8 знака. Файлът съдържа ключа на базата ти данни, затова всеки, който има файла, може да пробва фрази за достъп офлайн.</string>
+	<string name="backup_passphrase_too_weak">Фразата за достъп трябва да е поне 12 знака, от които поне 8 различни, да съчетава букви с цифри, главни букви или символи и да запълва по-голямата част от индикатора за сила. Файлът съдържа ключа на базата ти данни, така че всеки, който има файла, може да пробва фрази за достъп офлайн.</string>
 	<string name="backup_passwords_mismatch">Паролите не съвпадат</string>
 	<string name="welcome_title">Добре дошли в Zerion</string>
 	<string name="welcome_subtitle">Създай нов акаунт или пренеси съществуващ от друг телефон.</string>
@@ -1641,8 +1650,10 @@
 	<string name="hours_short">часа</string>
 	<string name="week_short">седмица</string>
 	<string name="weeks_short">седмици</string>
-	<string name="pending_contact_remove_action">Премахни заявката</string>
+	<string name="pending_contact_remove_action">Премахни</string>
+	<string name="decoy_calc_clear">C</string>
 	<string name="decoy_calc_delete">DEL</string>
+	<string name="decoy_calc_initial_value">0</string>
 	<string name="password_min_8_chars">Паролата трябва да е поне 8 знака</string>
 	<string name="vault_enter_new_password">Въведи нова парола</string>
 	<string name="permission_camera_location_request_body">Zerion се нуждае от достъп до камерата за видеообаждания.\n\nZerion не съхранява местоположението ти и не го споделя с никого.</string>
@@ -1777,6 +1788,10 @@
 	<string name="call_notification_ongoing_title">Текущо обаждане</string>
 	<string name="call_notification_voice_text">Защитено гласово обаждане</string>
 	<string name="call_notification_video_text">Защитено видеообаждане</string>
+	<string name="call_notification_missed_title">Пропуснато обаждане</string>
+	<string name="missed_call_channel">Пропуснати обаждания</string>
+	<string name="call_full_screen_hint_title">Обаждания на цял екран</string>
+	<string name="call_full_screen_hint_text">Входящите обаждания могат да звънят само като банер, защото Zerion може да няма разрешение да ги показва на цял екран. Докосни, за да го разрешиш в Настройки.</string>
 	<string name="voice_call_status_incoming">Входящо защитено обаждане…</string>
 	<string name="voice_call_status_incoming_video">Входящо защитено видеообаждане…</string>
 	<string name="voice_call_locked_title">Входящо обаждане</string>
@@ -1948,6 +1963,9 @@
 	<string name="wallet_xmr_send_confirm">Потвърди и изпрати</string>
 	<string name="wallet_xmr_send_authorize_hint">Въведи паролата на портфейла си, за да разрешиш точно тази транзакция.</string>
 	<string name="wallet_xmr_send_switch_currency">Смени</string>
+	<string name="wallet_xmr_send_pct_10">10%</string>
+	<string name="wallet_xmr_send_pct_25">25%</string>
+	<string name="wallet_xmr_send_pct_50">50%</string>
 	<string name="wallet_xmr_send_edit">Редактирай</string>
 	<string name="wallet_xmr_send_preparing">Подготвяне на транзакцията…\nПрез Tor това може да отнеме до минута.</string>
 	<string name="wallet_xmr_send_authenticating">Удостоверяване…</string>
@@ -2053,6 +2071,18 @@
 	<string name="wallet_xmr_node_direct_accept">Разбирам, използвай директна връзка</string>
 	<string name="wallet_xmr_node_invalid">Този адрес на възел не е валиден.</string>
 	<string name="wallet_xmr_node_saved">Възелът е обновен. Промяната важи от следващото синхронизиране на портфейла.</string>
+	<string name="wallet_xmr_node_onion_note">Onion адресите се удостоверяват от Tor. Всеки друг публичен адрес не се удостоверява и изисква твоето потвърждение. Възел в собствената ти мрежа работи само в режим „Директна връзка“, защото Tor не се свързва с локални адреси.</string>
+	<string name="wallet_xmr_node_unverified_title">Връзката не е удостоверена</string>
+	<string name="wallet_xmr_node_unverified_warning">Този възел не е onion адрес. Tor скрива IP адреса ти от него, но връзката с него не е удостоверена. Злонамерен изходен релей на Tor може да подмени възела с друг, който може да скрива или забавя транзакции и да вижда кои изходи харчиш. Ключовете ти остават на това устройство. Използвай onion адреса на възела, ако има такъв.</string>
+	<string name="wallet_xmr_node_unverified_accept">Разбирам, използвай този възел</string>
+	<string name="wallet_xmr_node_paused_title">Възелът ти не се използва</string>
+	<string name="wallet_xmr_node_paused_message">Възелът ти %1$s не се използва, докато не го потвърдиш, защото не е onion адрес и връзката с него не е удостоверена. Дотогава портфейлът използва проверените Tor възли, или можеш да спреш синхронизирането на Monero.</string>
+	<string name="wallet_xmr_node_paused_confirm">Прегледай и потвърди</string>
+	<string name="wallet_xmr_node_paused_stop">Спри синхронизирането</string>
+	<string name="wallet_xmr_node_paused_keep">Използвай проверени възли</string>
+	<string name="wallet_xmr_node_paused_vetted">%1$s е на пауза, докато не го потвърдиш. Използват се проверените Tor възли.</string>
+	<string name="wallet_xmr_node_paused_stopped">%1$s е на пауза, докато не го потвърдиш. Синхронизирането на Monero е спряно.</string>
+	<string name="wallet_xmr_node_trust_refused">Доверен може да бъде само onion възел или възел в собствената ти мрежа. Махни отметката за доверие за този адрес.</string>
 	<string name="wallet_xmr_phrase_note">Запиши тези 25 думи и ги пази офлайн. Всеки, който ги има, контролира средствата. Няма друго резервно копие.</string>
 	<string name="wallet_xmr_add_title">Добави Monero портфейл</string>
 	<string name="wallet_xmr_add_create">Създай нов портфейл</string>
@@ -2090,9 +2120,11 @@
 	<string name="wallet_routing_local">Собствен локален възел</string>
 	<string name="wallet_routing_enable_direct">Включи директната връзка</string>
 	<string name="wallet_routing_changed">Маршрутизирането в мрежата е обновено</string>
-	<string name="wallet_routing_direct_warning">Директните връзки разкриват IP адреса ти пред Bitcoin сървъра и могат да улеснят свързването на дейността в портфейла ти. Zerion препоръчва Tor за поверителност.</string>
+	<string name="wallet_routing_direct_warning">Директните връзки разкриват IP адреса ти пред Bitcoin сървъра, позволяват на DNS резолвъра на мрежата ти да види кой сървър търсиш и могат да улеснят свързването на дейността в портфейла ти. Zerion препоръчва Tor за поверителност.</string>
 	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% от сумата</string>
 	<string name="wallet_send_fee_high_warning">Висока такса: %1$d%% от сумата. Възелът може да предлага прекомерни ставки; избери по-ниска ставка, ако това е неочаквано.</string>
+	<string name="wallet_send_fee_jump_warning">Скок на таксата: тази ставка е над три пъти по-висока от последната ставка, която портфейлът е видял. Възел може да предлага прекомерни ставки; откажи и опитай отново по-късно, ако това е неочаквано.</string>
+	<string name="wallet_send_fee_disagree_warning">Сървърите се разминават: два сървъра дадоха оценки на таксата, които се различават над три пъти, и се използва по-ниската. Сървър може да предложи грешна ставка; провери таксата, преди да изпратиш.</string>
 	<string name="wallet_node_add_hint">Въведи сървър. Адрес .onion се свързва през Tor без изходен възел. Частен адрес (192.168.x, 10.x) се свързва в локалната ти мрежа. Всичко останало използва TLS през Tor.</string>
 	<string name="wallet_node_mode_onion">Onion</string>
 	<string name="wallet_node_mode_tls">TLS</string>
@@ -2104,6 +2136,9 @@
 	<string name="wallet_pin_confirm_title">Потвърди сертификата</string>
 	<string name="wallet_pin_confirm_ca_valid">Сертификатът е издаден от доверен удостоверителен орган и съответства на името на сървъра. Фиксирането му добавя проверка, а не заменя съществуваща.</string>
 	<string name="wallet_pin_confirm_self_signed">Сертификатът не е издаден от доверен удостоверителен орган. Преди да потвърдиш, сравни отпечатъка със сървъра си по друг канал; нападател по пътя може да представи свой собствен сертификат.</string>
+	<string name="wallet_pin_interception_title">Възможно прихващане</string>
+	<string name="wallet_pin_interception_msg">По един маршрут през Tor този сървър показа сертификат, издаден от доверен удостоверителен орган, а по друг сертификат, за който не гарантира никой орган. Някой по един от маршрутите може да се представя за сървъра, така че нищо не е фиксирано. Опитай отново по-късно и сравни отпечатъка със сървъра си по друг канал.</string>
+	<string name="wallet_pin_certificates_differ">Сървърът показа различен сертификат по два маршрута през Tor, така че нищо не е фиксирано. Опитай отново по-късно или сравни отпечатъка със сървъра си по друг канал.</string>
 	<string name="wallet_scan_unsupported">Тази заявка за плащане изисква функция, която портфейлът не поддържа</string>
 	<string name="wallet_server_inconsistent">Сървърът отчете празен портфейл, въпреки че имаше история. Запазва се последното проверено състояние.</string>
 	<string name="wallet_sp_oracle_https">Адресът на оракула трябва да използва https</string>
@@ -2192,6 +2227,8 @@
 	<string name="vault_settings_clipboard_untimed">Когато трезорът се заключи, при излизане от акаунта или при паника, докато Zerion е отворен</string>
 	<string name="vault_settings_kdf_strong">Ключ от паролата: Argon2id, 256 MiB, 3 прохода, обвързан с това устройство</string>
 	<string name="vault_settings_kdf_reduced">Ключ от паролата: Argon2id, 128 MiB, 6 прохода (това устройство не може да отдели 256 MiB), обвързан с това устройство</string>
+	<string name="vault_settings_kdf_1gib">Ключ от паролата: Argon2id, 1 GiB, 1 проход, обвързан с това устройство</string>
+	<string name="vault_settings_kdf_512mib">Ключ от паролата: Argon2id, 512 MiB, 2 прохода, обвързан с това устройство</string>
 	<plurals name="text_editor_word_count">
 		<item quantity="one">%1$d дума</item>
 		<item quantity="other">%1$d думи</item>
@@ -2254,6 +2291,7 @@
 	<string name="vault_msg_storage_error">Грешка при съхраняването на данните</string>
 	<string name="vault_msg_create_failed">Трезорът не можа да бъде създаден</string>
 	<string name="vault_msg_unlock_failed">Трезорът не можа да бъде отключен</string>
+	<string name="vault_msg_unlock_needs_native">Zerion не можа да отвори трезора, защото част от приложението липсва или е повредена. Инсталирайте Zerion отново от същия източник и опитайте пак. Нищо в трезора не е променено.</string>
 	<string name="vault_msg_load_failed">Елементите в трезора не можаха да бъдат заредени</string>
 	<string name="vault_msg_unlock_first">Първо отключи трезора</string>
 	<string name="vault_msg_file_name_empty">Името на файла не може да е празно</string>
@@ -2322,12 +2360,14 @@
 	<string name="voice_call_video_integrity">Видеопотокът не премина проверката за цялост</string>
 	<string name="voice_call_camera_error">Грешка в камерата: %1$s</string>
 	<string name="voice_call_reason_timeout">Времето за свързване изтече</string>
+	<string name="voice_call_reason_no_answer">Няма отговор</string>
+	<string name="voice_call_reason_could_not_connect">Неуспешно свързване</string>
 	<string name="voice_call_reason_setup_failed">Обаждането не можа да бъде установено</string>
 	<string name="voice_call_reason_busy">Контактът е зает</string>
 	<string name="voice_call_speaker_on">Високоговорителят е включен</string>
 	<string name="voice_call_packet_loss">Загуби: %1$s%%</string>
-	<string name="voice_call_channel_incoming">Входящи обаждания</string>
-	<string name="voice_call_channel_incoming_desc">Звънене при входящи гласови обаждания</string>
+	<string name="voice_call_channel_ring">Звънящи обаждания</string>
+	<string name="voice_call_channel_ring_desc">Звъни при входящо обаждане, когато Zerion не е на екрана</string>
 	<string name="voice_call_channel_ongoing">Текущи обаждания</string>
 	<string name="voice_call_channel_ongoing_desc">Състояние на текущо гласово обаждане</string>
 	<string name="hardened_reason_verified_boot">Проверката при зареждане (Verified Boot) не е в зелено състояние, така че фърмуерът на устройството не е стандартен подписан образ. Някой с достъп до bootloader може да е променил системата.</string>
@@ -2429,6 +2469,8 @@
 	<string name="channels_create_public_option">Публичен: всеки, който има линка, може да чете</string>
 	<string name="channels_create_private_option">Частен: могат да четат само хората, които имат твоя линк за покана. Можеш да подновиш линка, за да отнемеш достъпа.</string>
 	<string name="channels_join_confirm_question">Да се присъединиш ли към този канал?</string>
+	<string name="channels_join_known_question">Този линк е за канала %1$s, който вече имаш. Да продължим ли?</string>
+	<string name="channels_link_name_unknown">Този линк е за канал, към който не си се присъединил, затова името му още не е известно.</string>
 	<string name="channels_rejoin_request_again">Можеш отново да поискаш достъп, за да четеш новите публикации в този канал. Публикациите, които вече имаш, остават. Собственикът ще вижда показваното ти име и ID, който се използва само в този канал.</string>
 	<string name="channels_rejoin_request_again_unreachable">Не успяхме да се свържем с този канал. Можеш отново да поискаш достъп чрез този линк. Публикациите, които вече имаш, остават. Собственикът ще вижда показваното ти име и ID, който се използва само в този канал.</string>
 	<string name="channels_invite_renew_confirm_title">Да се поднови ли линкът за покана?</string>
@@ -2537,6 +2579,12 @@
 	<string name="channels_settings_renew_summary">Старите линкове спират да работят. Сподели новия линк с хората, които трябва да останат.</string>
 	<string name="channels_settings_who_can_post">Кой може да публикува</string>
 	<string name="channels_settings_only_you">Само ти</string>
+	<string name="channels_settings_you_and_editors_choice">Ти и редакторите</string>
+	<string name="channels_settings_subscribers_you_trust">Абонати, на които имаш доверие</string>
+	<string name="channels_settings_who_can_post_explain">Могат да публикуват абонатите, които си отбелязал като доверени, и одобрените кандидати. Публикациите им носят името им и са подписани от канала.</string>
+	<string name="channels_post_not_accepted">Публикацията не е приета</string>
+	<string name="channels_post_too_many">Твърде много публикации, опитай отново по-късно</string>
+	<string name="channels_feed_read_only_footer_owner">Тук публикува само собственикът</string>
 	<string name="channels_settings_announce">Сподели името си със собственика</string>
 	<string name="channels_settings_connection">Състояние на връзката</string>
 	<string name="channels_settings_connection_owner">Абонатите получават нови публикации, докато Zerion работи на този телефон</string>
@@ -2573,7 +2621,7 @@
 	<string name="channels_member_unblock_failed">Този човек не можа да бъде отблокиран. Опитай отново.</string>
 	<string name="channels_member_none_blocked">Никой не е блокиран.</string>
 	<string name="channels_member_safety_code">Номер за безопасност</string>
-	<string name="channels_member_safety_code_message">%2$s\n\nАко %1$s вижда същия номер в „Разширени“ в настройките на своя канал, коментарите, показвани под това име, наистина са от този човек.</string>
+	<string name="channels_member_safety_code_message">%2$s\n\nАко %1$s вижда същия номер в „Разширени“ в настройките на своя канал, коментарите, показвани под това име, са от този човек.</string>
 	<string name="channels_delegations_unnamed">Редактор без име</string>
 	<string name="channels_delegations_unnamed_person">Човек без име</string>
 	<string name="channels_delegations_shared_on">сподели името си на %1$s</string>
@@ -2627,6 +2675,130 @@
 		<item quantity="one">Да се изтрие ли %d публикация?</item>
 		<item quantity="other">Да се изтрият ли %d публикации?</item>
 	</plurals>
+	<string name="add_contact_send_invite_title">Добавяне на контакт</string>
+	<string name="add_contact_send_invite_description">Използвай ZerionID или линка на другия човек. Може да отговори по-късно.</string>
+	<string name="add_contact_scan_qr_title">Сканирай QR</string>
+	<string name="add_contact_scan_qr_description">Сканирайте кодовете си взаимно, когато сте заедно. Работи и без интернет.</string>
+	<string name="scan_qr_mode_online">Сканирайте кодовете си взаимно</string>
+	<string name="scan_qr_mode_nearby">Няма интернет: сдвояване наблизо през Bluetooth</string>
+	<string name="scan_qr_link_needs_internet">Свържи се с интернет и сканирай отново.</string>
+	<string name="send_invite_title">Добавяне на контакт</string>
+	<string name="send_invite_link_hint">ZerionID или линк на човека</string>
+	<string name="send_invite_scan_button">Сканирай</string>
+	<string name="send_invite_alias_hint">Име на човека (виждаш го само ти)</string>
+	<string name="send_invite_shown_name_hint">Твоето име (човекът го вижда)</string>
+	<string name="send_invite_note_hint">Бележка (по избор)</string>
+	<string name="send_invite_note_info">Човекът вижда бележката, когато отвори заявката ти.</string>
+	<string name="send_invite_send_button">Изпрати заявка</string>
+	<string name="send_invite_add_button">Добави контакт</string>
+	<string name="send_invite_old_link_notice">По-стар линк. Поставете взаимно линковете си на двата телефона или използвайте „Сканирай QR“.</string>
+	<string name="send_invite_own_link">Това е твоят собствен линк</string>
+	<string name="send_invite_damaged_link">Този линк е повреден</string>
+	<string name="send_invite_incomplete_link">Този линк е непълен</string>
+	<string name="send_invite_shown_name_missing">Въведи името си</string>
+	<string name="send_invite_note_too_long">Бележката е твърде дълга</string>
+	<string name="send_invite_too_many">Вече е изпратено до този линк или имаш %d отворени заявки. Отмени някоя или изчакай.</string>
+	<string name="send_invite_sent">Заявката е запазена. Ще бъде изпратена, когато и двамата сте на линия.</string>
+	<string name="send_invite_sent_paused">Запазено. Потвърди, че това е единственото ти устройство, за да се изпрати.</string>
+	<string name="send_invite_classical_link">По-стар линк. Помоли човека да обнови Zerion или използвай „Сканирай QR“.</string>
+	<string name="send_invite_alias_missing">Въведи името на човека</string>
+	<string name="send_invite_zero_id_changed">Твоят ZerionID се промени, след като го сподели. Сподели новия.</string>
+	<string name="zero_id_link_description">Линкът на твоя ZerionID</string>
+	<string name="zero_id_title">Твоят ZerionID</string>
+	<string name="zero_id_info">Сподели го, за да получаваш заявки. Работи %d дни след последното му споделяне в Zerion.</string>
+	<string name="zero_id_receiving_until">Приема заявки до %s</string>
+	<string name="zero_id_not_receiving">Не приема заявки. Сподели го или докосни „Продължи да получаваш“.</string>
+	<string name="zero_id_keep_receiving">Продължи да получаваш</string>
+	<string name="show_qr_button">Покажи QR</string>
+	<string name="qr_dialog_title">QR код</string>
+	<string name="invite_links_title">Линкове за покана</string>
+	<string name="invite_links_summary">Линкове, чрез които хората могат да ти изпращат заявки за контакт</string>
+	<string name="invite_links_intro">Линковете ти за покана остават същите, докато не ги премахнеш. Удобно за поддръжка.</string>
+	<string name="invite_links_limits">Всеки с линка ти може да вижда кога телефонът ти е на линия и да ти изпраща заявки. Всеки може да създаде линк, който изглежда официален, затова взимай линкове за поддръжка от източник, на който имаш доверие, и сравнявай номера за безопасност. Ако линк получи твърде много заявки, той минава на пауза за известно време.</string>
+	<string name="contact_more_info">Повече информация</string>
+	<string name="contact_less_info">По-малко информация</string>
+	<string name="invite_links_add">Добави линк за покана</string>
+	<string name="invite_links_label_hint">Етикет само за теб, например Работа</string>
+	<string name="invite_links_label_missing">Въведи етикет</string>
+	<string name="invite_links_label_too_long">До %d знака</string>
+	<string name="invite_links_limit_reached">Можеш да имаш до %d линка. Първо премахни един.</string>
+	<string name="invite_links_empty">Все още няма линкове за покана</string>
+	<string name="invite_links_inbox_open">Приемат се заявки</string>
+	<string name="invite_links_inbox_closed">В момента не приема заявки</string>
+	<plurals name="invite_links_request_count">
+		<item quantity="one">%d чакаща заявка</item>
+		<item quantity="other">%d чакащи заявки</item>
+	</plurals>
+	<plurals name="invite_links_blocked_count">
+		<item quantity="one">%d блокиран</item>
+		<item quantity="other">%d блокирани</item>
+	</plurals>
+	<string name="invite_links_withdraw">Премахни</string>
+	<string name="invite_links_withdraw_title">Да се премахне ли този линк?</string>
+	<string name="invite_links_withdraw_message">Хората с този линк вече не могат да ти изпращат заявки. Вече получените заявки остават.</string>
+	<string name="zero_id_reset">Нулирай ZerionID</string>
+	<string name="zero_id_reset_title">Да се нулира ли ZerionID?</string>
+	<string name="zero_id_reset_message">Старият ти ZerionID спира да работи. Блокиранията към него не се пренасят.</string>
+	<string name="zero_id_reset_done">Имаш нов ZerionID</string>
+	<string name="blocked_senders_title">Блокирани податели</string>
+	<string name="blocked_sender_row">Блокиран подател %1$d, %2$s</string>
+	<string name="unblock_button">Отблокирай</string>
+	<string name="requests_title">Заявки за контакт</string>
+	<string name="requests_tab_received">Получени</string>
+	<string name="requests_tab_sent">Изпратени</string>
+	<string name="requests_empty_received">Още няма заявки</string>
+	<string name="requests_empty_sent">Още няма изпратени заявки</string>
+	<string name="requests_unnamed">Без име</string>
+	<string name="requests_via_zero_id">чрез твоя ZerionID</string>
+	<string name="requests_via_link">чрез %s</string>
+	<string name="requests_name_unchecked">Името е избрано от подателя, не е проверено.</string>
+	<string name="requests_accept_explain">След приемане сравни номера за безопасност.</string>
+	<string name="requests_clock_hint">Часовникът на подателя е разминат с повече от два дни, така че часовете може да изглеждат грешно.</string>
+	<string name="requests_accept_name_title">Име за този контакт</string>
+	<string name="requests_block">Блокирай</string>
+	<string name="requests_block_title">Да се блокира ли този подател?</string>
+	<string name="requests_block_message">Вече няма да получаваш заявки от този човек чрез линка, от който дойде тази заявка.</string>
+	<string name="requests_block_message_zero_id">Вече няма да получаваш заявки от този човек чрез твоя ZerionID.</string>
+	<string name="requests_block_message_link">Вече няма да получаваш заявки от този човек чрез този линк: %s.</string>
+	<string name="requests_declined">Заявката е отказана</string>
+	<string name="undo_button">Отмени</string>
+	<string name="requests_already_declined">Вече е отказана</string>
+	<string name="requests_state_queued">Още не е изпратена</string>
+	<string name="requests_state_delivered">Доставена</string>
+	<string name="requests_state_accepted">Приета</string>
+	<string name="requests_state_not_delivered">Не е доставена</string>
+	<string name="requests_state_no_answer">Няма отговор</string>
+	<string name="requests_state_cancelled">Отменена</string>
+	<string name="requests_state_withdrawn">Отменена след доставяне</string>
+	<string name="requests_state_cancelled_by_sender">Отменена от подателя</string>
+	<string name="requests_state_contact_added">Контактът е добавен</string>
+	<string name="requests_open_chat">Отвори чата</string>
+	<string name="requests_state_no_answer_yet">Все още няма отговор</string>
+	<string name="requests_notification_accepted">Заявката ви за контакт е приета</string>
+	<string name="requests_state_inbox_busy">Другият телефон е зает. Zerion ще опита отново.</string>
+	<string name="requests_state_withdrawing">Отменяне…</string>
+	<string name="requests_expired">Заявката е изтекла</string>
+	<string name="requests_state_connecting">Приета, ще се свърже, когато и двамата сте на линия</string>
+	<string name="requests_state_could_not_connect">Неуспешно свързване</string>
+	<string name="requests_try_again">Опитай отново</string>
+	<string name="requests_cancel">Отмени заявката</string>
+	<string name="requests_cancel_title">Да се отмени ли тази заявка?</string>
+	<string name="requests_keep">Запази</string>
+	<string name="requests_dismiss">Затвори</string>
+	<string name="requests_remove">Премахни</string>
+	<plurals name="requests_unopened">
+		<item quantity="one">%d нова заявка</item>
+		<item quantity="other">%d нови заявки</item>
+	</plurals>
+	<plurals name="contact_request_notification_text">
+		<item quantity="one">Нова заявка за контакт</item>
+		<item quantity="other">%d нови заявки за контакт</item>
+	</plurals>
+	<string name="restore_pause_title">Това ли е единственото устройство, което използва този профил?</string>
+	<string name="restore_pause_message">След възстановяване заявките са на пауза, за да не си ги разделят два телефона с един профил. Потвърди, за да ги включиш отново.</string>
+	<string name="restore_pause_yes">Да, продължи</string>
+	<string name="restore_pause_not_now">Не сега</string>
+	<string name="invites_paused_banner">Поканите са на пауза. Докосни, за да потвърдиш, че това е единственото ти устройство.</string>
 	<string name="tor_helper_prompt_title">Да се използва ли помощна услуга за свързване?</string>
 	<string name="tor_helper_prompt_message">В тази мрежа Zerion може да се свързва и чрез помощна услуга, поддържана от доброволци (Snowflake), или чрез голям облачен доставчик (meek). Помощната услуга се използва само за достигане до Tor и не вижда съобщенията ти. Ако Zerion не може да се свърже без нея, можеш да я включиш в Настройки, Свързаност, Помощни услуги.</string>
 	<string name="tor_helper_prompt_use">Използвай я</string>
@@ -2641,8 +2813,8 @@
 	<string name="tor_helper_choice_use">Използвай ги</string>
 	<string name="tor_helper_choice_off">Не ги използвай</string>
 	<string name="tor_debug_country_title">Симулирана държава (само за тестова версия)</string>
-	<string name="tor_debug_country_none">Истинска държава</string>
-	<string name="tor_debug_country_hint">Двубуквен код или празно за истинската държава</string>
+	<string name="tor_debug_country_none">Без замяна</string>
+	<string name="tor_debug_country_hint">Двубуквен код или празно, ако не искаш замяна</string>
 	<string name="tor_hidden_services_entry_relay_now">Tor е свързан, но първият му възел от няколко минути отхвърля повечето връзки, затова контактите може да не успеят да се свържат с теб. Това често се случва при бавна или натоварена мрежа и обикновено отминава от само себе си. Ако продължава, опитай друга мрежа или мостове в Настройки, Свързаност.</string>
 	<string name="tor_hidden_services_entry_relay_bridges">Tor е свързан, но първият му възел от няколко минути отхвърля повечето връзки, затова контактите може да не успеят да се свържат с теб. Това често се случва при бавна или натоварена мрежа и обикновено отминава от само себе си. Ако продължава, опитай друга мрежа или друг мост в Настройки, Свързаност.</string>
 	<string name="contact_connection_tor_entry_relay_now">Tor е свързан, но първият му възел от няколко минути отхвърля повечето връзки. Това обикновено отминава от само себе си.</string>
@@ -2653,7 +2825,7 @@
 	<string name="channels_comment_author_first_wrote">%1$s (първи коментар на %2$s)</string>
 	<string name="channels_access_request_when">Заявено на %1$s</string>
 	<string name="grouptr_member_safety_code">Номер за безопасност</string>
-	<string name="grouptr_member_safety_code_message">%2$s\n\nАко %1$s вижда същия номер в „Моят отпечатък“ в своите настройки, публикациите, показвани под това име, наистина са от този човек.</string>
+	<string name="grouptr_member_safety_code_message">%2$s\n\nАко %1$s вижда същия номер в „Моят отпечатък“ в своите настройки, публикациите, показвани под това име, са от този човек.</string>
 	<string name="grouptr_member_joined_format">%1$s (в групата от %2$s)</string>
 	<string name="grouptr_member_first_wrote_format">%1$s (първа публикация на %2$s)</string>
 	<string name="grouptr_member_this_person">този човек</string>
@@ -2675,5 +2847,25 @@
 	<string name="grouptr_contact_must_update">%1$s все още не може да се присъединява към нови групи.</string>
 	<string name="grouptr_my_safety_code_in_group">Моят номер за безопасност в тази група</string>
 	<string name="grouptr_my_safety_code_message">%1$s\n\nВъв всяка нова група имаш различен номер.</string>
-	<string name="grouptr_member_safety_code_group_message">%2$s\n\nАко %1$s вижда същия номер в „Моят номер за безопасност в тази група“, публикациите, показвани под това име, наистина са от този човек.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nАко %1$s вижда същия номер в „Моят номер за безопасност в тази група“, публикациите, показвани под това име, са от този човек.</string>
+	<string name="action_pin_message">Закачи</string>
+	<string name="action_unpin_message">Откачи</string>
+	<string name="pinned_message_label">ЗАКАЧЕНО</string>
+	<string name="pinned_preview_photo">Снимка</string>
+	<string name="pinned_here_only">Закачено само на това устройство: приложението на контакта ти е твърде старо, за да го покаже.</string>
+	<string name="unpinned_here_only">Откачено само на това устройство: приложението на контакта ти е твърде старо, за да види промяната.</string>
+	<string name="pin_not_possible">Това съобщение не може да бъде закачено.</string>
+	<string name="pin_failed">Съобщението не можа да бъде закачено.</string>
+	<string name="pin_hide_banner">Скрий</string>
+	<string name="zero_id_rotates_info">Сменя се след всеки контакт, който приемеш чрез него.</string>
+	<string name="zero_id_more_text">Твоят ZerionID получава заявки %d дни след последното му споделяне в Zerion. Ново споделяне започва отброяването отначало. Докато получава заявки, всеки, който го има, може да вижда кога телефонът ти е на линия. Zerion не вижда споделяния извън приложението. Блокиранията остават към ZerionID, за който са направени.</string>
+	<string name="zero_id_flood_reset">Твърде много заявки. Нулиран на %s</string>
+	<string name="invite_links_flood_paused">Твърде много заявки. На пауза до %s</string>
+	<string name="invite_links_resume_now">Продължи сега</string>
+	<string name="notification_link_flooded">Линкът за покана е на пауза: твърде много заявки. Ще се включи отново сам.</string>
+	<string name="notification_zero_id_flooded">Твърде много заявки, затова твоят ZerionID беше нулиран. Сподели новия.</string>
+	<plurals name="grouptr_pin_kept_older">
+		<item quantity="one">%d член с по-стара версия не вижда закаченото съобщение.</item>
+		<item quantity="other">%d членове с по-стара версия не виждат закаченото съобщение.</item>
+	</plurals>
 </resources>

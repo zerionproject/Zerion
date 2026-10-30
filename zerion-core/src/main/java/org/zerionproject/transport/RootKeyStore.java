@@ -34,6 +34,8 @@ public class RootKeyStore {
 			"org.zerionproject.transport.rootEvolution";
 	public static final String KEY_PAUSED_UNTIL = "pausedUntil";
 	static final String OUT_OF_SYNC_KEY_PREFIX = "outOfSync.";
+	static final int PENDING_FLAG_CONFIRMED = 0x01;
+	static final int PENDING_FLAG_SEPARATED = 0x02;
 
 	private final DatabaseComponent db;
 	private final List<Listener> listeners = new CopyOnWriteArrayList<>();
@@ -68,41 +70,82 @@ public class RootKeyStore {
 			throws DbException {
 		PcsSessionRow base = db.getPcsMode2SessionState(txn, c,
 				PCS_DIRECTION_SEND);
-		if (base == null || base.getRootKey() == null
-				|| !base.isMode2Enabled()) {
-			return null;
+		PcsSessionRow cur = null;
+		PcsSessionRow pen = null;
+		try {
+			if (base == null || base.getRootKey() == null
+					|| !base.isMode2Enabled()) {
+				return null;
+			}
+			long epoch = 0;
+			byte[] current = base.getRootKey();
+			cur = db.getPcsMode2SessionState(txn, c, PCS_SLOT_TRANSPORT_ROOT);
+			if (cur != null && cur.getRootKey() != null) {
+				epoch = cur.getMessageNumber();
+				current = cur.getRootKey();
+			}
+			SecretKey pending = null;
+			SecretKey pendingConfirmKey = null;
+			boolean confirmed = false;
+			pen = db.getPcsMode2SessionState(txn, c,
+					PCS_SLOT_TRANSPORT_ROOT_PENDING);
+			if (pen != null && pen.getRootKey() != null
+					&& pen.getMessageNumber() == epoch + 1) {
+				int flags = pen.getPreviousChainLength();
+				pending = new SecretKey(pen.getRootKey().clone());
+				confirmed = (flags & PENDING_FLAG_CONFIRMED) != 0;
+				if ((flags & PENDING_FLAG_SEPARATED) != 0) {
+					pendingConfirmKey =
+							new SecretKey(pen.getChainKey().clone());
+				}
+			}
+			return new ContactRootKeys(epoch, new SecretKey(current.clone()),
+					pending, pendingConfirmKey, confirmed);
+		} finally {
+			wipe(base);
+			wipe(cur);
+			wipe(pen);
 		}
-		long epoch = 0;
-		SecretKey current = new SecretKey(base.getRootKey());
-		PcsSessionRow cur = db.getPcsMode2SessionState(txn, c,
-				PCS_SLOT_TRANSPORT_ROOT);
-		if (cur != null && cur.getRootKey() != null) {
-			epoch = cur.getMessageNumber();
-			current = new SecretKey(cur.getRootKey());
-		}
-		SecretKey pending = null;
-		boolean confirmed = false;
-		PcsSessionRow pen = db.getPcsMode2SessionState(txn, c,
-				PCS_SLOT_TRANSPORT_ROOT_PENDING);
-		if (pen != null && pen.getRootKey() != null
-				&& pen.getMessageNumber() == epoch + 1) {
-			pending = new SecretKey(pen.getRootKey());
-			confirmed = pen.getPreviousChainLength() == 1;
-		}
-		return new ContactRootKeys(epoch, current, pending, confirmed);
+	}
+
+	private static void wipe(@Nullable PcsSessionRow row) {
+		if (row == null) return;
+		fill(row.getChainKey());
+		fill(row.getRootKey());
+		fill(row.getDhPrivateKey());
+		fill(row.getMode3FullStateBlob());
+	}
+
+	private static void fill(@Nullable byte[] b) {
+		if (b != null) java.util.Arrays.fill(b, (byte) 0);
 	}
 
 	public boolean storePending(ContactId c, long fromEpoch,
 			SecretKey pending, boolean confirmed) throws DbException {
+		return storePending(c, fromEpoch, pending, null, confirmed);
+	}
+
+	public boolean storePending(ContactId c, long fromEpoch,
+			SecretKey pending, @Nullable SecretKey pendingConfirmKey,
+			boolean confirmed) throws DbException {
 		if (fromEpoch + 1 > Integer.MAX_VALUE) return false;
 		if (isSnapshotting()) return false;
 		boolean stored = db.transactionWithResult(false, txn -> {
 			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
-			if (keys == null || keys.getEpoch() != fromEpoch) return false;
-			writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING, pending,
-					fromEpoch + 1, confirmed);
-			return true;
+			if (keys == null) return false;
+			try {
+				if (keys.getEpoch() != fromEpoch) return false;
+				int flags = (confirmed ? PENDING_FLAG_CONFIRMED : 0)
+						| (pendingConfirmKey != null ? PENDING_FLAG_SEPARATED
+						: 0);
+				writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING,
+						pendingConfirmKey != null ? pendingConfirmKey : pending,
+						pending, fromEpoch + 1, flags);
+				return true;
+			} finally {
+				wipe(keys);
+			}
 		});
 		if (stored) notifyChanged(c);
 		return stored;
@@ -114,12 +157,18 @@ public class RootKeyStore {
 		boolean discarded = db.transactionWithResult(false, txn -> {
 			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
-			if (keys == null || keys.getEpoch() != fromEpoch
-					|| keys.getPending() == null) {
-				return false;
+			if (keys == null) return false;
+			try {
+				if (keys.getEpoch() != fromEpoch
+						|| keys.getPending() == null) {
+					return false;
+				}
+				db.removePcsSessionState(txn, c,
+						PCS_SLOT_TRANSPORT_ROOT_PENDING);
+				return true;
+			} finally {
+				wipe(keys);
 			}
-			db.removePcsSessionState(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING);
-			return true;
 		});
 		if (discarded) notifyChanged(c);
 		return discarded;
@@ -130,13 +179,19 @@ public class RootKeyStore {
 		boolean promoted = db.transactionWithResult(false, txn -> {
 			if (isSnapshotting()) return false;
 			ContactRootKeys keys = load(txn, c);
-			if (keys == null || keys.getEpoch() != fromEpoch) return false;
-			SecretKey pending = keys.getPending();
-			if (pending == null) return false;
-			writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT, pending,
-					fromEpoch + 1, false);
-			db.removePcsSessionState(txn, c, PCS_SLOT_TRANSPORT_ROOT_PENDING);
-			return true;
+			if (keys == null) return false;
+			try {
+				if (keys.getEpoch() != fromEpoch) return false;
+				SecretKey pending = keys.getPending();
+				if (pending == null) return false;
+				writeSlot(txn, c, PCS_SLOT_TRANSPORT_ROOT, pending, pending,
+						fromEpoch + 1, 0);
+				db.removePcsSessionState(txn, c,
+						PCS_SLOT_TRANSPORT_ROOT_PENDING);
+				return true;
+			} finally {
+				wipe(keys);
+			}
 		});
 		if (promoted) notifyChanged(c);
 		return promoted;
@@ -199,9 +254,18 @@ public class RootKeyStore {
 	}
 
 	private void writeSlot(Transaction txn, ContactId c, int slot,
-			SecretKey key, long epoch, boolean confirmed) throws DbException {
-		db.setPcsMode2SessionState(txn, c, slot, key, (int) epoch,
-				confirmed ? 1 : 0, key, null, null, null, true, null);
+			SecretKey chainKey, SecretKey root, long epoch, int flags)
+			throws DbException {
+		db.setPcsMode2SessionState(txn, c, slot, chainKey, (int) epoch,
+				flags, root, null, null, null, true, null);
+	}
+
+	private static void wipe(ContactRootKeys keys) {
+		keys.getCurrent().clear();
+		SecretKey pending = keys.getPending();
+		if (pending != null) pending.clear();
+		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
+		if (pendingConfirmKey != null) pendingConfirmKey.clear();
 	}
 
 	void notifyChanged(ContactId c) {

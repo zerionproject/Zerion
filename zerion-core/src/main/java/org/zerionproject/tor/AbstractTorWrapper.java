@@ -102,6 +102,8 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private volatile Socket controlConnectionSocket = null;
 	@Nullable
 	private volatile TorControlConnection controlConnection = null;
+	@Nullable
+	private volatile TorStatePersistence statePersistence = null;
 
 	protected abstract int getProcessId();
 
@@ -182,6 +184,26 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	@Override
+	public void setStateStore(@Nullable TorStateStore store) {
+		statePersistence = store == null ? null
+				: new TorStatePersistence(getDataDirectory(), store);
+	}
+
+	File getDataDirectory() {
+		return new File(torDirectory, ".tor");
+	}
+
+	private void restoreState() {
+		TorStatePersistence p = statePersistence;
+		if (p != null) p.restore();
+	}
+
+	private void persistState() {
+		TorStatePersistence p = statePersistence;
+		if (p != null) p.persist();
+	}
+
+	@Override
 	public void start() throws IOException, InterruptedException {
 		if (!state.setStarting()) return;
 		Process process = null;
@@ -197,6 +219,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (!assetsAreUpToDate()) installAssets();
 			extract(getConfigInputStream(), configFile);
 			cookieFile.delete();
+			restoreState();
 			if (unixControl != null) {
 				prepareControlSocketDirectory(unixControl);
 			}
@@ -259,6 +282,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			if (process != null) terminate(process);
 		} finally {
 			torProcess = null;
+			persistState();
 			state.setStartupFailed();
 		}
 	}
@@ -317,7 +341,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	String torrc() {
-		File dataDirectory = new File(torDirectory, ".tor");
+		File dataDirectory = getDataDirectory();
 		StringBuilder strb = new StringBuilder();
 		String unixControl = controlSocketPath;
 		if (unixControl == null) {
@@ -328,6 +352,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		append(strb, "CookieAuthentication", 1);
 		append(strb, "DataDirectory", dataDirectory.getAbsolutePath());
 		append(strb, "DisableNetwork", 1);
+		append(strb, "AvoidDiskWrites", 1);
 		append(strb, "SafeSocks", 1);
 		if (unixControl == null) {
 			strb.append("SocksPort ").append(torSocksPort);
@@ -475,6 +500,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 				if (process != null) terminate(process);
 			} finally {
 				torProcess = null;
+				persistState();
 				state.setStopped();
 			}
 		}

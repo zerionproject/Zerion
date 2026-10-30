@@ -33,6 +33,15 @@ public class VaultHeaderBoundsTest {
 	}
 
 	@Test
+	public void theTierParametersRoundTrip() {
+		VaultHeader a = VaultHeader.fromBytes(header(1024 * 1024, 1));
+		VaultHeader b = VaultHeader.fromBytes(header(512 * 1024, 2));
+		assertEquals("1048576 t=1, 524288 t=2",
+				a.kdfMemoryKb + " t=" + a.kdfIterations + ", "
+						+ b.kdfMemoryKb + " t=" + b.kdfIterations);
+	}
+
+	@Test
 	public void oversizedKdfParametersAreRefused() {
 		try {
 			VaultHeader.fromBytes(header(Integer.MAX_VALUE, 3));
@@ -40,7 +49,8 @@ public class VaultHeaderBoundsTest {
 		} catch (IllegalArgumentException expected) {
 		}
 		try {
-			VaultHeader.fromBytes(header(Argon2.MAX_MEMORY_KB + 1, 3));
+			VaultHeader.fromBytes(header(
+					Argon2.VAULT_HEADER_MAX_MEMORY_KB + 1, 1));
 			fail("above the largest value the app writes");
 		} catch (IllegalArgumentException expected) {
 		}

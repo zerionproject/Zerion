@@ -73,6 +73,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 			Uri.parse("zerion-content://groups");
 	public static Uri CONTACT_ADDED_URI =
 			Uri.parse("zerion-content://contact-added");
+	public static Uri CONTACT_REQUEST_URI =
+			Uri.parse("zerion-content://contact-requests");
 
 	static final int TAB_CONTACTS = 0;
 	static final int TAB_GROUPS = 1;
@@ -371,9 +373,8 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private void switchTab(int tab, boolean forceSwitch) {
 		if (currentTab == tab && !forceSwitch) return;
 
-		if (currentTab == TAB_VAULT && tab != TAB_VAULT
-				&& vaultManager.isUnlocked()) {
-			vaultManager.lockVault();
+		if (currentTab == TAB_VAULT && tab != TAB_VAULT) {
+			vaultManager.requestLock();
 		}
 		FragmentManager fm = getSupportFragmentManager();
 		if (fm.getBackStackEntryCount() > 0) {
@@ -665,7 +666,7 @@ public class NavDrawerActivity extends ZerionActivity implements
 	private final android.os.Handler vaultAutolockHandler =
 			new android.os.Handler(android.os.Looper.getMainLooper());
 	private final Runnable vaultAutolockRunnable = () -> {
-		if (vaultManager.isUnlocked()) vaultManager.lockVault();
+		vaultManager.requestLock();
 	};
 
 	@Override
@@ -684,15 +685,18 @@ public class NavDrawerActivity extends ZerionActivity implements
 	@Override
 	protected void onStop() {
 		super.onStop();
-		if (!vaultManager.isUnlocked()) return;
+		if (!vaultManager.isUnlocked()
+				&& !vaultManager.isUnlockInProgress()) {
+			return;
+		}
 		if (isFinishing()) {
-			vaultManager.lockVault();
+			vaultManager.requestLock();
 			return;
 		}
 		int timeoutSeconds = profilePrefs.getInt("autolock_timeout", 60);
 		if (timeoutSeconds < 0) return;
 		if (timeoutSeconds == 0) {
-			vaultManager.lockVault();
+			vaultManager.requestLock();
 			return;
 		}
 		vaultAutolockHandler.postDelayed(vaultAutolockRunnable,

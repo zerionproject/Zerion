@@ -6,7 +6,7 @@
 # these values before they are packaged, and the app verifies the file it is
 # about to execute against them before every Tor start. Only the ABIs listed
 # here are packaged.
-arm64-v8a/libtor.so 21604deaa31ecfd954220b25800c96374f92b450df2327aea916836799fbdc47
-armeabi-v7a/libtor.so 75ee09598e7efec2a242a96ce189d3aceab55089ce6d8df5966173ca5e6fc9da
+arm64-v8a/libtor.so 8598ddd59a99bc78053441ecaf09a91b51f4038f5e2dd375428ea05d61030a93
+armeabi-v7a/libtor.so f6068c70a7646847c3b5f92bc79bd0fc258b7cb6ecf07567f34344d00b033724
 arm64-v8a/liblyrebird.so 9a89df982f1137b120fae152d46ab400558cef7d633987d5518c4ff24a088869
 armeabi-v7a/liblyrebird.so 1e521cb83a15fcbbe26a06683b3212d1a924d45c316dde46f0e0a9b25dd5e135

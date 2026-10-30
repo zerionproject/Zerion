@@ -49,8 +49,8 @@ final class RenewalWaitList {
 			try {
 				Contact contact = contacts.getContact(c);
 				String alias = contact.getAlias();
-				String name = alias == null ? contact.getAuthor().getName()
-						: alias;
+				String name = com.professor.zerion.android.util.DisplayNames.clean(
+						alias == null ? contact.getAuthor().getName() : alias);
 				rows.add(new Row(c, name, diagnostics.getLastConnectedAgoMs(c)));
 			} catch (DbException ignored) {
 			}

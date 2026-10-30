@@ -27,6 +27,8 @@ interface GroupTrConstants {
 	String SIGNING_LABEL_GROUPTR_INVITE_DECLINE =
 			"org.zerionproject/GROUPTR_INVITE_DECLINE";
 
+	String SIGNING_LABEL_GROUP_PIN = "org.zerionproject/GROUP_PIN";
+
 	String SETTINGS_NS_PREFIX = "grouptr.g.";
 	String MSG_KEY_GROUP_ACCEPTED_AT = "groupAcceptedAt";
 	String MSG_KEY_GROUP_BODY_KIND = "groupBodyKind";
@@ -46,6 +48,8 @@ interface GroupTrConstants {
 	String S_STEALTH_NAME = "stealthName";
 	String S_REMOVED = "removed";
 	String S_SETTINGS_TIMESTAMP = "settingsTimestamp";
+	String S_PINNED_POST_ID = "pinnedPostId";
+	String S_PINNED_TIMESTAMP = "pinnedTimestamp";
 
 	String SETTINGS_NS_INVITES_SENT = "grouptr.invites_sent";
 	String SETTINGS_NS_OFFERS_PENDING = "grouptr.offers_pending";

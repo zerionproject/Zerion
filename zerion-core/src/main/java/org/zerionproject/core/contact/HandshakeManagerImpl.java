@@ -40,6 +40,7 @@ import static org.zerionproject.core.contact.HandshakeConstants.PROOF_BYTES;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MAJOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeConstants.PROTOCOL_MINOR_VERSION;
 import static org.zerionproject.core.contact.HandshakeConstants.KCI_MINOR_VERSION;
+import static org.zerionproject.core.contact.HandshakeConstants.KEY_SEPARATION_MINOR_VERSION;
 import static org.zerionproject.core.api.Bytes.compare;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_BYTES;
 import static org.zerionproject.core.api.contact.HandshakeLinkConstants.HYBRID_COMMITMENT_LABEL;
@@ -80,6 +81,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 	private final PendingContactFactory pendingContactFactory;
 	private final RecordReaderFactory recordReaderFactory;
 	private final RecordWriterFactory recordWriterFactory;
+	private final byte ourMinorVersion;
 
 	@Inject
 	HandshakeManagerImpl(TransactionManager db,
@@ -90,6 +92,24 @@ class HandshakeManagerImpl implements HandshakeManager {
 			PendingContactFactory pendingContactFactory,
 			RecordReaderFactory recordReaderFactory,
 			RecordWriterFactory recordWriterFactory) {
+		this(db, identityManager, contactManager, handshakeCrypto, crypto,
+				pendingContactFactory, recordReaderFactory,
+				recordWriterFactory, PROTOCOL_MINOR_VERSION);
+	}
+
+	HandshakeManagerImpl(TransactionManager db,
+			IdentityManager identityManager,
+			ContactManager contactManager,
+			HandshakeCrypto handshakeCrypto,
+			CryptoComponent crypto,
+			PendingContactFactory pendingContactFactory,
+			RecordReaderFactory recordReaderFactory,
+			RecordWriterFactory recordWriterFactory, byte ourMinorVersion) {
+		if (ourMinorVersion < KCI_MINOR_VERSION
+				|| ourMinorVersion > PROTOCOL_MINOR_VERSION) {
+			throw new IllegalArgumentException();
+		}
+		this.ourMinorVersion = ourMinorVersion;
 		this.db = db;
 		this.identityManager = identityManager;
 		this.contactManager = contactManager;
@@ -249,7 +269,7 @@ class HandshakeManagerImpl implements HandshakeManager {
 					ephemeralKemCiphertext, ephemeralKemSecret,
 					staticKemCiphertextToAlice, kemSecretToAlice,
 					staticKemCiphertextToBob, kemSecretToBob, alice,
-					PROTOCOL_MINOR_VERSION, (byte) theirMinorVersion);
+					ourMinorVersion, (byte) theirMinorVersion);
 		} catch (GeneralSecurityException e) {
 			throw new FormatException();
 		} finally {
@@ -266,24 +286,41 @@ class HandshakeManagerImpl implements HandshakeManager {
 			}
 		}
 
-		byte[] ourProof = handshakeCrypto.proveOwnership(masterKey, alice);
-		byte[] theirProof;
-		if (alice) {
-			sendProof(recordWriter, ourProof);
-			theirProof = receiveProof(recordReader);
-		} else {
-			theirProof = receiveProof(recordReader);
-			sendProof(recordWriter, ourProof);
+		boolean separated = keySeparationNegotiated(ourMinorVersion,
+				theirMinorVersion);
+		HandshakeKeys keys =
+				handshakeCrypto.deriveSessionKeys(masterKey, separated);
+		if (separated) masterKey.clear();
+		SecretKey confirmationKey = keys.getConfirmationKey();
+		boolean mode3Capable;
+		try {
+			byte[] ourProof =
+					handshakeCrypto.proveOwnership(confirmationKey, alice);
+			byte[] theirProof;
+			if (alice) {
+				sendProof(recordWriter, ourProof);
+				theirProof = receiveProof(recordReader);
+			} else {
+				theirProof = receiveProof(recordReader);
+				sendProof(recordWriter, ourProof);
+			}
+			boolean ownershipOk =
+					handshakeCrypto.verifyOwnership(confirmationKey, !alice,
+							theirProof);
+			if (!ownershipOk) {
+				throw new FormatException();
+			}
+			sendMode3Capability(recordWriter, confirmationKey);
+			out.sendEndOfStream();
+			mode3Capable =
+					receiveMode3Capability(recordReader, confirmationKey);
+			recordReader.readRecord(r -> false, IGNORE);
+		} catch (IOException | RuntimeException e) {
+			keys.clear();
+			throw e;
+		} finally {
+			if (separated) confirmationKey.clear();
 		}
-		boolean ownershipOk =
-				handshakeCrypto.verifyOwnership(masterKey, !alice, theirProof);
-		if (!ownershipOk) {
-			throw new FormatException();
-		}
-		sendMode3Capability(recordWriter, masterKey);
-		out.sendEndOfStream();
-		boolean mode3Capable = receiveMode3Capability(recordReader, masterKey);
-		recordReader.readRecord(r -> false, IGNORE);
 
 		byte[] ourStaticHybridPub =
 				ourHybridStaticKeyPair.getPublic().getEncoded();
@@ -293,9 +330,14 @@ class HandshakeManagerImpl implements HandshakeManager {
 		byte[] ourEphX25519 = Arrays.copyOfRange(ourEphFull, 0, 32);
 		byte[] theirEphX25519 = Arrays.copyOfRange(theirEphFull, 0, 32);
 
-		return new HandshakeResult(masterKey, alice, mode3Capable,
-				ourStaticHybridPub, theirStaticHybridPub,
-				ourEphX25519, theirEphX25519);
+		return new HandshakeResult(keys.getExchangeKey(), keys.getRootKey(),
+				separated, alice, mode3Capable, ourStaticHybridPub,
+				theirStaticHybridPub, ourEphX25519, theirEphX25519);
+	}
+
+	static boolean keySeparationNegotiated(int ourMinor, int theirMinor) {
+		return ourMinor >= KEY_SEPARATION_MINOR_VERSION
+				&& theirMinor >= KEY_SEPARATION_MINOR_VERSION;
 	}
 
 	static boolean rendezvousKeyMatches(byte[] linkKey, byte[] staticKey) {
@@ -406,17 +448,17 @@ class HandshakeManagerImpl implements HandshakeManager {
 	private void sendMinorVersion(RecordWriter w) throws IOException {
 		w.writeRecord(new Record(PROTOCOL_MAJOR_VERSION,
 				RECORD_TYPE_MINOR_VERSION,
-				new byte[] {PROTOCOL_MINOR_VERSION}));
+				new byte[] {ourMinorVersion}));
 		w.flush();
 	}
 
 	private static final String MODE3_CAP_MAC_LABEL =
 			"org.zerionproject/MODE3_CAPABILITY_MAC";
 
-	private void sendMode3Capability(RecordWriter w, SecretKey masterKey)
+	private void sendMode3Capability(RecordWriter w, SecretKey confirmationKey)
 			throws IOException {
 		byte[] cap = new byte[] {0x01};
-		byte[] mac = crypto.mac(MODE3_CAP_MAC_LABEL, masterKey, cap);
+		byte[] mac = crypto.mac(MODE3_CAP_MAC_LABEL, confirmationKey, cap);
 		byte[] payload = new byte[cap.length + mac.length];
 		System.arraycopy(cap, 0, payload, 0, cap.length);
 		System.arraycopy(mac, 0, payload, cap.length, mac.length);
@@ -425,8 +467,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 		w.flush();
 	}
 
-	private boolean receiveMode3Capability(RecordReader r, SecretKey masterKey)
-			throws IOException {
+	private boolean receiveMode3Capability(RecordReader r,
+			SecretKey confirmationKey) throws IOException {
 		RecordPredicate accept = rec ->
 				rec.getProtocolVersion() == PROTOCOL_MAJOR_VERSION &&
 						rec.getRecordType() == RECORD_TYPE_MODE3_CAPABILITY;
@@ -440,7 +482,8 @@ class HandshakeManagerImpl implements HandshakeManager {
 		}
 		byte[] cap = new byte[] {payload[0]};
 		byte[] mac = Arrays.copyOfRange(payload, 1, payload.length);
-		if (!crypto.verifyMac(mac, MODE3_CAP_MAC_LABEL, masterKey, cap)) {
+		if (!crypto.verifyMac(mac, MODE3_CAP_MAC_LABEL, confirmationKey,
+				cap)) {
 			throw new FormatException();
 		}
 		return payload[0] == 0x01;

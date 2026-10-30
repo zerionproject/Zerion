@@ -5,6 +5,7 @@ import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.ContactType;
+import org.zerionproject.core.api.contact.HandshakeManager.HandshakeResult;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.PendingContactState;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
@@ -169,6 +170,217 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
 		assertContacts(verified, true);
 		assertNoPendingContacts();
+	}
+
+	@Test
+	public void testSeparatedKeysKeepTheRootOutOfTheExchange()
+			throws Exception {
+		PendingContact bobFromAlice = addPendingContact(alice, bob, BRIAR);
+		PendingContact aliceFromBob = addPendingContact(bob, alice, BRIAR);
+		SecretKey exchangeKey = getSecretKey();
+		SecretKey aliceRoot = getSecretKey();
+		SecretKey bobRoot = getSecretKey();
+		HandshakeResult aliceResult = new HandshakeResult(
+				new SecretKey(exchangeKey.getBytes().clone()),
+				new SecretKey(aliceRoot.getBytes().clone()), true,
+				true, true, null, null, null, null);
+		HandshakeResult bobResult = new HandshakeResult(
+				new SecretKey(exchangeKey.getBytes().clone()),
+				new SecretKey(bobRoot.getBytes().clone()), true,
+				false, true, null, null, null, null);
+
+		TestDuplexTransportConnection[] pair = createPair();
+		CountDownLatch aliceFinished = new CountDownLatch(1);
+		CountDownLatch bobFinished = new CountDownLatch(1);
+		alice.getIoExecutor().execute(() -> {
+			try {
+				alice.getContactExchangeManager().exchangeContacts(
+						bobFromAlice.getId(), pair[0], aliceResult, false,
+						false);
+				aliceFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		bob.getIoExecutor().execute(() -> {
+			try {
+				bob.getContactExchangeManager().exchangeContacts(
+						aliceFromBob.getId(), pair[1], bobResult, false,
+						false);
+				bobFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
+		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
+		assertContacts(false, true);
+		assertNoPendingContacts();
+		assertStoredRoot(alice, aliceRoot);
+		assertStoredRoot(bob, bobRoot);
+	}
+
+	@Test
+	public void testNearbyExchangeWithSeparatedKeysStoresTheRoot()
+			throws Exception {
+		SecretKey exchangeKey = getSecretKey();
+		SecretKey aliceRoot = getSecretKey();
+		SecretKey bobRoot = getSecretKey();
+		TestDuplexTransportConnection[] pair = createPair();
+		CountDownLatch aliceFinished = new CountDownLatch(1);
+		CountDownLatch bobFinished = new CountDownLatch(1);
+		alice.getIoExecutor().execute(() -> {
+			try {
+				alice.getContactExchangeManager().exchangeContacts(pair[0],
+						new SecretKey(exchangeKey.getBytes().clone()),
+						new SecretKey(aliceRoot.getBytes().clone()), true,
+						true);
+				aliceFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		bob.getIoExecutor().execute(() -> {
+			try {
+				bob.getContactExchangeManager().exchangeContacts(pair[1],
+						new SecretKey(exchangeKey.getBytes().clone()),
+						new SecretKey(bobRoot.getBytes().clone()), false,
+						true);
+				bobFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
+		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
+		assertContacts(true, false);
+		assertStoredRoot(alice, aliceRoot);
+		assertStoredRoot(bob, bobRoot);
+	}
+
+	@Test
+	public void testTheRootIsNeverAKeyDuringTheHandshakeOrTheExchange()
+			throws Exception {
+		HandshakeKeySeparationTest handshake = new HandshakeKeySeparationTest();
+		handshake.setUp();
+		HandshakeKeySeparationTest.Party[] parties =
+				new HandshakeKeySeparationTest.Party[2];
+		HandshakeKeySeparationTest.Outcome o = handshake.pair(
+				HandshakeConstants.PROTOCOL_MINOR_VERSION,
+				HandshakeConstants.PROTOCOL_MINOR_VERSION,
+				HandshakeKeySeparationTest.PASS, parties);
+		assertNotNull(o.first);
+		assertNotNull(o.second);
+		assertTrue(o.first.isKeySeparated());
+		byte[] root = o.first.getRootKey().getBytes().clone();
+		byte[] exchange = o.first.getExchangeKey().getBytes().clone();
+		HandshakeResult aliceResult = o.first.isAlice() ? o.first : o.second;
+		HandshakeResult bobResult = o.first.isAlice() ? o.second : o.first;
+
+		PendingContact bobFromAlice = addPendingContact(alice, bob, BRIAR);
+		PendingContact aliceFromBob = addPendingContact(bob, alice, BRIAR);
+		java.util.List<byte[]> keysUsed = java.util.Collections
+				.synchronizedList(new java.util.ArrayList<>());
+		ContactExchangeManagerImpl aliceExchange =
+				recordingExchange(alice, keysUsed);
+		ContactExchangeManagerImpl bobExchange =
+				recordingExchange(bob, keysUsed);
+		TestDuplexTransportConnection[] pair = createPair();
+		CountDownLatch aliceFinished = new CountDownLatch(1);
+		CountDownLatch bobFinished = new CountDownLatch(1);
+		alice.getIoExecutor().execute(() -> {
+			try {
+				aliceExchange.exchangeContacts(bobFromAlice.getId(), pair[0],
+						aliceResult, false, false);
+				aliceFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		bob.getIoExecutor().execute(() -> {
+			try {
+				bobExchange.exchangeContacts(aliceFromBob.getId(), pair[1],
+						bobResult, false, false);
+				bobFinished.countDown();
+			} catch (Exception e) {
+				fail();
+			}
+		});
+		assertTrue(aliceFinished.await(TIMEOUT, MILLISECONDS));
+		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
+		assertContacts(false, true);
+		assertStoredRoot(alice, new SecretKey(root.clone()));
+		assertStoredRoot(bob, new SecretKey(root.clone()));
+
+		boolean exchangeKeyUsed = false;
+		synchronized (keysUsed) {
+			assertFalse(keysUsed.isEmpty());
+			for (byte[] k : keysUsed) {
+				assertFalse("the root was a key during the contact exchange",
+						Arrays.equals(k, root));
+				if (Arrays.equals(k, exchange)) exchangeKeyUsed = true;
+			}
+		}
+		assertTrue(exchangeKeyUsed);
+		for (HandshakeKeySeparationTest.Party p : parties) {
+			assertFalse("the root was a key during the handshake",
+					p.recorder.usedAsKey(root));
+		}
+	}
+
+	private static Object recording(Object target, Class<?> type,
+			java.util.List<byte[]> keysUsed) {
+		return java.lang.reflect.Proxy.newProxyInstance(
+				type.getClassLoader(), new Class<?>[] {type},
+				(proxy, method, args) -> {
+					if (args != null) {
+						for (Object a : args) {
+							if (a instanceof SecretKey) {
+								keysUsed.add(((SecretKey) a).getBytes()
+										.clone());
+							}
+						}
+					}
+					try {
+						return method.invoke(target, args);
+					} catch (java.lang.reflect.InvocationTargetException e) {
+						throw e.getCause();
+					}
+				});
+	}
+
+	private static ContactExchangeManagerImpl recordingExchange(
+			ContactExchangeIntegrationTestComponent d,
+			java.util.List<byte[]> keysUsed) {
+		ContactExchangeCrypto crypto = d.getContactExchangeCrypto();
+		ContactExchangeCrypto recordingCrypto =
+				(ContactExchangeCrypto) recording(crypto,
+						ContactExchangeCrypto.class, keysUsed);
+		return new ContactExchangeManagerImpl(d.getDatabaseComponent(),
+				d.getClientHelper(), d.getRecordReaderFactory(),
+				d.getRecordWriterFactory(), d.getClock(), d.getContactManager(),
+				d.getIdentityManager(), d.getTransportPropertyManager(),
+				recordingCrypto,
+				(org.zerionproject.core.api.transport.StreamReaderFactory)
+						recording(d.getStreamReaderFactory(),
+								org.zerionproject.core.api.transport
+										.StreamReaderFactory.class, keysUsed),
+				(org.zerionproject.core.api.transport.StreamWriterFactory)
+						recording(d.getStreamWriterFactory(),
+								org.zerionproject.core.api.transport
+										.StreamWriterFactory.class, keysUsed),
+				d.getSettingsManager());
+	}
+
+	private static void assertStoredRoot(
+			ContactExchangeIntegrationTestComponent device, SecretKey root)
+			throws Exception {
+		String label = "org.zerionproject.test/STORED_ROOT_PROBE";
+		Contact c = device.getContactManager().getContacts().iterator().next();
+		SecretKey probe = device.getContactManager().deriveContactKey(
+				c.getId(), label);
+		assertArrayEquals(device.getCryptoComponent().deriveKey(label, root)
+				.getBytes(), probe.getBytes());
 	}
 
 	@Test

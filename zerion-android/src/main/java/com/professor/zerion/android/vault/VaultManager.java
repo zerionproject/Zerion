@@ -18,6 +18,7 @@ import javax.inject.Inject;
 
 import com.professor.zerion.android.vault.crypto.Argon2;
 import com.professor.zerion.android.vault.crypto.VaultCrypto;
+import com.professor.zerion.android.vault.crypto.VaultKdfTier;
 import com.professor.zerion.android.vault.crypto.VaultKeystore;
 import com.professor.zerion.android.vault.model.VaultHeader;
 import com.professor.zerion.android.vault.model.VaultItem;
@@ -33,8 +34,13 @@ import org.zerionproject.core.account.PasswordNormalizer;
 public class VaultManager
 		implements com.professor.zerion.android.vault.wallet.xmr.VaultGate {
 	public static final String TOO_MANY_ATTEMPTS = "Too many failed attempts";
+	public static final String UNLOCK_FIRST = "Please unlock your vault first";
 	private static final String HEADER_FILE = "vault.header";
 	private static final String HEADER_NEW_FILE = "vault.header.new";
+	private static final String KDF_TRIAL_FILE = "kdf.trial";
+	private static final String KDF_CAP_FILE = "kdf.cap";
+	static final int KDF_INTERRUPTIONS_BEFORE_STEP_DOWN = 2;
+	static final long KDF_CAP_LIFETIME_MS = TimeUnit.DAYS.toMillis(30);
 	private static final String ITEMS_DIR = "items";
 	private static final String ITEMS_BACKUP_DIR = "items_rekey_backup";
 	private static final String ITEMS_TEMP_DIR = "items_rekey_temp";
@@ -51,13 +57,13 @@ public class VaultManager
 	private final SecureFileIO fileIO;
 	private final MetadataStripper metadataStripper;
 
-	private VaultHeader currentHeader;
+	private volatile VaultHeader currentHeader;
 	private byte[] vaultMasterKey;
 	private volatile long lastActivityTime;
 	private volatile boolean isUnlocked = false;
 	private final UnlockThrottle unlockThrottle;
-	private volatile long lockGeneration = 0;
-	private volatile Runnable onLockListener = null;
+	private final java.util.concurrent.atomic.AtomicLong lockGeneration =
+			new java.util.concurrent.atomic.AtomicLong();
 
 	private volatile List<VaultItem> cachedItems = null;
 	private volatile long cacheTimestamp = 0;
@@ -78,7 +84,31 @@ public class VaultManager
 				Argon2.Argon2Params params);
 	}
 
+	public interface KdfTierSource {
+		Argon2.Argon2Params headerParams();
+	}
+
 	private final PasswordKdf kdf;
+	private final KdfTierSource tierSource;
+	@Nullable
+	private volatile Argon2.Argon2Params deviceTier = null;
+	private volatile boolean tierUpgradeFailed = false;
+	private volatile java.util.function.LongSupplier appVersion =
+			() -> com.professor.zerion.BuildConfig.VERSION_CODE;
+	private volatile java.util.function.LongSupplier wallClock =
+			System::currentTimeMillis;
+	private volatile boolean unlockRunning = false;
+	private final java.util.concurrent.atomic.AtomicInteger pendingUnlocks =
+			new java.util.concurrent.atomic.AtomicInteger();
+	private final java.util.concurrent.atomic.AtomicLong lockRequests =
+			new java.util.concurrent.atomic.AtomicLong();
+	private long completedUnlockMark = -1;
+	private final java.util.concurrent.ExecutorService lockExecutor =
+			java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+				Thread t = new Thread(r, "vault-lock");
+				t.setDaemon(true);
+				return t;
+			});
 
 	@Inject
 	public VaultManager(Context context) {
@@ -91,7 +121,15 @@ public class VaultManager
 
 	public VaultManager(Context context, VaultLocation location,
 			@Nullable PasswordKdf kdf) {
+		this(context, location, kdf, null);
+	}
+
+	public VaultManager(Context context, VaultLocation location,
+			@Nullable PasswordKdf kdf, @Nullable KdfTierSource tierSource) {
 		this.context = context.getApplicationContext();
+		Context app = this.context;
+		this.tierSource = tierSource != null ? tierSource
+				: () -> VaultKdfTier.forThisDevice(app);
 		this.location = location;
 		try {
 			this.keystore = new VaultKeystore(context, location);
@@ -108,6 +146,15 @@ public class VaultManager
 		this.lastActivityTime = android.os.SystemClock.elapsedRealtime();
 	}
 
+	private volatile org.zerionproject.core.account.LockoutStores
+			lockoutStores =
+			org.zerionproject.core.account.LockoutStores.plaintext();
+
+	public void setLockoutStores(
+			org.zerionproject.core.account.LockoutStores stores) {
+		lockoutStores = stores;
+	}
+
 	private final class UnlockThrottle {
 
 		@Nullable
@@ -116,7 +163,7 @@ public class VaultManager
 		private synchronized org.zerionproject.core.account.LoginThrottle get() {
 			if (throttle == null) {
 				throttle = new org.zerionproject.core.account.LoginThrottle(
-						org.zerionproject.core.account.LoginThrottle.fileStore(
+						lockoutStores.open(
 								new java.io.File(fileIO.getVaultDir(),
 										UNLOCK_THROTTLE_FILE)),
 						android.os.SystemClock::elapsedRealtime,
@@ -154,7 +201,7 @@ public class VaultManager
 		try {
 			VaultHeader header = sealMasterKey(masterKey, password,
 					VaultKeystore.SLOT_A, argon2.generateSalt(16),
-					System.currentTimeMillis());
+					System.currentTimeMillis(), headerCandidates(null), null);
 			fileIO.writeSecure(HEADER_FILE, header.toBytes());
 			fileIO.createDirectory(ITEMS_DIR);
 			this.currentHeader = header;
@@ -179,7 +226,7 @@ public class VaultManager
 		}
 	}
 
-	private DerivedKey deriveForNewHeader(char[] password, byte[] salt) {
+	private DerivedKey derivePortable(char[] password, byte[] salt) {
 		try {
 			return new DerivedKey(kdf.derive(password, salt, STRONG_KDF),
 					STRONG_KDF);
@@ -189,8 +236,229 @@ public class VaultManager
 		}
 	}
 
+	void setKdfCapSources(java.util.function.LongSupplier appVersion,
+			java.util.function.LongSupplier wallClock) {
+		this.appVersion = appVersion;
+		this.wallClock = wallClock;
+	}
+
+	Argon2.Argon2Params deviceTier() {
+		Argon2.Argon2Params t = deviceTier;
+		if (t == null) {
+			try {
+				t = tierSource.headerParams();
+			} catch (RuntimeException e) {
+				t = VaultKdfTier.TIER_C;
+			}
+			deviceTier = t;
+		}
+		if (!aboveTierC(t)) return t;
+		KdfCap cap = loadKdfCap();
+		if (VaultKdfTier.sameCost(t, VaultKdfTier.TIER_A)
+				&& cap.countA >= KDF_INTERRUPTIONS_BEFORE_STEP_DOWN) {
+			t = VaultKdfTier.TIER_B;
+		}
+		if (VaultKdfTier.sameCost(t, VaultKdfTier.TIER_B)
+				&& cap.countB >= KDF_INTERRUPTIONS_BEFORE_STEP_DOWN) {
+			t = VaultKdfTier.TIER_C;
+		}
+		return t;
+	}
+
+	static final class KdfCap {
+
+		final long version;
+		final long since;
+		final int countA;
+		final int countB;
+
+		KdfCap(long version, long since, int countA, int countB) {
+			this.version = version;
+			this.since = since;
+			this.countA = countA;
+			this.countB = countB;
+		}
+
+		byte[] toBytes() {
+			return java.nio.ByteBuffer.allocate(24).putLong(version)
+					.putLong(since).putInt(countA).putInt(countB).array();
+		}
+
+		@Nullable
+		static KdfCap fromBytes(byte[] b) {
+			if (b.length != 24) return null;
+			java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(b);
+			KdfCap cap = new KdfCap(buf.getLong(), buf.getLong(),
+					buf.getInt(), buf.getInt());
+			if (cap.countA < 0 || cap.countB < 0) return null;
+			return cap;
+		}
+	}
+
+	private KdfCap loadKdfCap() {
+		long version = appVersion.getAsLong();
+		long now = wallClock.getAsLong();
+		KdfCap fresh = new KdfCap(version, now, 0, 0);
+		KdfCap cap = null;
+		try {
+			if (fileIO.exists(KDF_CAP_FILE)) {
+				cap = KdfCap.fromBytes(fileIO.readSecure(KDF_CAP_FILE));
+			}
+		} catch (IOException | RuntimeException e) {
+			cap = null;
+		}
+		boolean expired = cap == null || cap.version != version
+				|| now < cap.since || now - cap.since > KDF_CAP_LIFETIME_MS;
+		if (expired && cap != null) {
+			deleteQuietly(KDF_CAP_FILE);
+		}
+		KdfCap current = expired ? fresh : cap;
+		if (!fileIO.exists(KDF_TRIAL_FILE)) return current;
+		int interruptedKb = readTrialMemoryKb(version);
+		KdfCap counted = current;
+		if (interruptedKb == VaultKdfTier.TIER_A_MEMORY_KB) {
+			counted = new KdfCap(version, current.since, current.countA + 1,
+					current.countB);
+		} else if (interruptedKb == VaultKdfTier.TIER_B_MEMORY_KB) {
+			counted = new KdfCap(version, current.since, current.countA,
+					current.countB + 1);
+		}
+		if (counted != current) {
+			try {
+				fileIO.writeSecure(KDF_CAP_FILE, counted.toBytes());
+			} catch (IOException | RuntimeException e) {
+				return counted;
+			}
+		}
+		endKdfTrial();
+		return counted;
+	}
+
+	private int readTrialMemoryKb(long version) {
+		try {
+			byte[] b = fileIO.readSecure(KDF_TRIAL_FILE);
+			if (b.length != 12) return 0;
+			java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(b);
+			int memoryKb = buf.getInt();
+			return buf.getLong() == version ? memoryKb : 0;
+		} catch (IOException | RuntimeException e) {
+			return 0;
+		}
+	}
+
+	private void deleteQuietly(String name) {
+		try {
+			fileIO.secureDelete(name);
+			syncVaultDirectory();
+		} catch (IOException | RuntimeException ignored) {
+		}
+	}
+
+	void syncVaultDirectory() throws IOException {
+		fileIO.fsyncVaultDir();
+	}
+
+	void deleteRekeyBackup() throws IOException {
+		fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
+	}
+
+	private static boolean aboveTierC(Argon2.Argon2Params p) {
+		return !VaultKdfTier.atLeast(VaultKdfTier.TIER_C, p);
+	}
+
+	List<Argon2.Argon2Params> headerCandidates(@Nullable VaultHeader old) {
+		Argon2.Argon2Params tier = deviceTier();
+		List<Argon2.Argon2Params> out = new ArrayList<>();
+		if (old != null) {
+			Argon2.Argon2Params kept = VaultKdfTier.knownTier(old.kdfMemoryKb,
+					old.kdfIterations, old.kdfParallelism);
+			if (kept != null && !VaultKdfTier.atLeast(tier, kept)) {
+				out.add(kept);
+			}
+		}
+		addOnce(out, tier);
+		if (VaultKdfTier.sameCost(tier, VaultKdfTier.TIER_A)) {
+			addOnce(out, VaultKdfTier.TIER_B);
+		}
+		addOnce(out, STRONG_KDF);
+		addOnce(out, REDUCED_KDF);
+		return out;
+	}
+
+	List<Argon2.Argon2Params> passwordChangeCandidates(VaultHeader old) {
+		Argon2.Argon2Params own = paramsOf(old);
+		List<Argon2.Argon2Params> out = new ArrayList<>();
+		for (Argon2.Argon2Params p : headerCandidates(old)) {
+			if (VaultKdfTier.atLeast(p, own)) out.add(p);
+		}
+		addOnce(out, own);
+		return out;
+	}
+
+	List<Argon2.Argon2Params> rewrapCandidates(VaultHeader old,
+			boolean upgradeOnly) {
+		List<Argon2.Argon2Params> out = new ArrayList<>();
+		for (Argon2.Argon2Params p : headerCandidates(old)) {
+			if (!VaultKdfTier.atLeast(p.memoryKb, p.iterations,
+					paramsOf(old))) {
+				continue;
+			}
+			if (upgradeOnly && isWrittenParams(old, p)) continue;
+			out.add(p);
+		}
+		return out;
+	}
+
+	private static void addOnce(List<Argon2.Argon2Params> list,
+			Argon2.Argon2Params p) {
+		for (Argon2.Argon2Params q : list) {
+			if (VaultKdfTier.sameCost(q, p)) return;
+		}
+		list.add(p);
+	}
+
+	private static Argon2.Argon2Params paramsOf(VaultHeader header) {
+		return new Argon2.Argon2Params(header.kdfMemoryKb,
+				header.kdfIterations, header.kdfParallelism, 32);
+	}
+
+	private DerivedKey deriveForVaultHeader(char[] password, byte[] salt,
+			List<Argon2.Argon2Params> candidates,
+			@Nullable Argon2.Argon2Params own) throws IOException {
+		for (Argon2.Argon2Params p : candidates) {
+			boolean trial = aboveTierC(p);
+			boolean isOwn = own != null && VaultKdfTier.sameCost(p, own);
+			boolean marked = trial && startKdfTrial(p);
+			if (trial && !marked && !isOwn) continue;
+			try {
+				return new DerivedKey(kdf.derive(password, salt, p), p);
+			} catch (OutOfMemoryError | RuntimeException e) {
+			} finally {
+				if (marked) endKdfTrial();
+			}
+		}
+		throw new IOException("Key derivation failed");
+	}
+
+	private boolean startKdfTrial(Argon2.Argon2Params p) {
+		try {
+			fileIO.writeSecure(KDF_TRIAL_FILE, java.nio.ByteBuffer.allocate(12)
+					.putInt(p.memoryKb).putLong(appVersion.getAsLong())
+					.array());
+			return true;
+		} catch (IOException | RuntimeException e) {
+			return false;
+		}
+	}
+
+	private void endKdfTrial() {
+		deleteQuietly(KDF_TRIAL_FILE);
+	}
+
 	private VaultHeader sealMasterKey(byte[] masterKey, char[] password,
-			int slot, byte[] bioSalt, long created) throws Exception {
+			int slot, byte[] bioSalt, long created,
+			List<Argon2.Argon2Params> candidates,
+			@Nullable Argon2.Argon2Params own) throws Exception {
 		byte[] salt = argon2.generateSalt();
 		keystore.createSlot(slot);
 		byte[] randomSecret = crypto.generateKey();
@@ -202,7 +470,8 @@ public class VaultManager
 			SecretKey wrapKey = keystore.wrapKey(slot);
 			if (wrapKey == null) throw new IOException("Vault key missing");
 			byte[] wrappedSecret = keystore.wrapSecret(randomSecret, wrapKey);
-			DerivedKey derived = deriveForNewHeader(password, salt);
+			DerivedKey derived = deriveForVaultHeader(password, salt,
+					candidates, own);
 			passwordKey = derived.key;
 			hashed = keystore.hmac(slot, passwordKey);
 			combined = crypto.xor(hashed, randomSecret);
@@ -247,11 +516,12 @@ public class VaultManager
 		if (wrapKey == null) throw new IOException("Vault key missing");
 		byte[] randomSecret = keystore.unwrapSecret(
 				header.wrappedKeystoreBlob, wrapKey);
-		byte[] passwordKey = kdf.derive(password, header.salt, params);
+		byte[] passwordKey = null;
 		byte[] hashed = null;
 		byte[] combined = null;
 		byte[] kek = null;
 		try {
+			passwordKey = kdf.derive(password, header.salt, params);
 			hashed = keystore.hmac(header.keySlot, passwordKey);
 			combined = crypto.xor(hashed, randomSecret);
 			kek = crypto.hkdfSha256(combined, header.salt, KEK_INFO, 32);
@@ -269,7 +539,8 @@ public class VaultManager
 			}
 			return master;
 		} finally {
-			SecureMemory.shredAll(randomSecret, passwordKey);
+			SecureMemory.shred(randomSecret);
+			if (passwordKey != null) SecureMemory.shred(passwordKey);
 			if (hashed != null) SecureMemory.shred(hashed);
 			if (combined != null) SecureMemory.shred(combined);
 			if (kek != null) SecureMemory.shred(kek);
@@ -282,7 +553,13 @@ public class VaultManager
 		SecretKey keystoreKey = keystore.getOrCreateVaultKey();
 		byte[] randomSecret = keystore.unwrapSecret(
 				header.wrappedKeystoreBlob, keystoreKey);
-		byte[] passwordKey = kdf.derive(password, header.salt, params);
+		byte[] passwordKey;
+		try {
+			passwordKey = kdf.derive(password, header.salt, params);
+		} catch (RuntimeException | OutOfMemoryError e) {
+			SecureMemory.shred(randomSecret);
+			throw e;
+		}
 		byte[] combined = crypto.xor(passwordKey, randomSecret);
 		byte[] derivedKey = crypto.hkdfSha256(combined, header.salt,
 				"vault master", 32);
@@ -362,8 +639,20 @@ public class VaultManager
 	boolean needsRewrap(VaultHeader header, boolean legacyForm) {
 		if (legacyForm) return true;
 		if (header.version < VaultHeader.VERSION_KEYSTORE_FACTOR) return true;
-		return !isWrittenParams(header, STRONG_KDF)
-				&& !isWrittenParams(header, REDUCED_KDF);
+		return needsKdfUpgrade(header);
+	}
+
+	private boolean needsKdfUpgrade(VaultHeader header) {
+		Argon2.Argon2Params tier = deviceTier();
+		if (VaultKdfTier.atLeast(header.kdfMemoryKb, header.kdfIterations,
+				tier)) {
+			return false;
+		}
+		if (isWrittenParams(header, REDUCED_KDF)
+				&& VaultKdfTier.sameCost(tier, STRONG_KDF)) {
+			return false;
+		}
+		return !tierUpgradeFailed;
 	}
 
 	private static boolean isWrittenParams(VaultHeader header,
@@ -373,42 +662,121 @@ public class VaultManager
 				&& header.kdfParallelism == params.parallelism;
 	}
 
-	private void rewrapHeader(byte[] masterKey, char[] typed) {
-		char[] password = PasswordNormalizer.normalize(typed);
+	private void rewrapHeader(byte[] masterKey, char[] typed,
+			boolean legacyForm) {
 		VaultHeader old = currentHeader;
+		boolean upgradeOnly = !legacyForm
+				&& old.version >= VaultHeader.VERSION_KEYSTORE_FACTOR;
+		List<Argon2.Argon2Params> candidates =
+				rewrapCandidates(old, upgradeOnly);
+		if (candidates.isEmpty()) {
+			if (upgradeOnly) tierUpgradeFailed = true;
+			return;
+		}
+		char[] password = PasswordNormalizer.normalize(typed);
 		int slot = old.version < VaultHeader.VERSION_KEYSTORE_FACTOR
 				? VaultKeystore.SLOT_A : VaultKeystore.otherSlot(old.keySlot);
 		try {
 			VaultHeader header = sealMasterKey(masterKey, password, slot,
-					old.biometricTokenSalt, old.createdTimestamp);
+					old.biometricTokenSalt, old.createdTimestamp, candidates,
+					paramsOf(old));
 			fileIO.writeSecure(HEADER_FILE, header.toBytes());
 			currentHeader = header;
 			deleteKeysNotNamedBy(header);
 		} catch (Exception | OutOfMemoryError e) {
+			if (upgradeOnly) tierUpgradeFailed = true;
+			reloadHeaderAfterFailedWrite();
 		} finally {
 			java.util.Arrays.fill(password, '\0');
 		}
 	}
 
+	private void reloadHeaderAfterFailedWrite() {
+		try {
+			currentHeader = VaultHeader.fromBytes(
+					fileIO.readSecure(HEADER_FILE));
+		} catch (Exception | OutOfMemoryError e) {
+			currentHeader = null;
+		}
+	}
+
 	private void deleteKeysNotNamedBy(VaultHeader header) {
-		if (header.version < VaultHeader.VERSION_KEYSTORE_FACTOR) {
-			keystore.deleteSlot(VaultKeystore.SLOT_A);
-			keystore.deleteSlot(VaultKeystore.SLOT_B);
+		try {
+			syncVaultDirectory();
+		} catch (IOException | RuntimeException e) {
 			return;
 		}
-		keystore.deleteVersionOneKey();
-		keystore.deleteSlot(VaultKeystore.otherSlot(header.keySlot));
+		try {
+			if (header.version < VaultHeader.VERSION_KEYSTORE_FACTOR) {
+				keystore.deleteSlot(VaultKeystore.SLOT_A);
+				keystore.deleteSlot(VaultKeystore.SLOT_B);
+				return;
+			}
+			keystore.deleteVersionOneKey();
+			keystore.deleteSlot(VaultKeystore.otherSlot(header.keySlot));
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Nullable
-	public synchronized Argon2.Argon2Params kdfParameters() {
+	public Argon2.Argon2Params kdfParameters() {
 		VaultHeader h = currentHeader;
 		if (h == null) return null;
 		return new Argon2.Argon2Params(h.kdfMemoryKb, h.kdfIterations,
 				h.kdfParallelism, 32);
 	}
 
+	public long markUnlockPending() {
+		pendingUnlocks.incrementAndGet();
+		return lockRequests.get();
+	}
+
+	public boolean isUnlockInProgress() {
+		return unlockRunning || pendingUnlocks.get() > 0;
+	}
+
+	public void requestLock() {
+		long request = lockRequests.incrementAndGet();
+		if (isUnlocked) {
+			isUnlocked = false;
+			lockGeneration.incrementAndGet();
+		}
+		lockExecutor.execute(() -> lockForRequest(request));
+	}
+
+	private synchronized void lockForRequest(long request) {
+		if (isUnlocked && completedUnlockMark >= request) {
+			releaseAfterLock();
+			return;
+		}
+		lockVault();
+	}
+
 	public synchronized boolean unlockVault(char[] password) throws Exception {
+		return unlockVaultMarked(password, lockRequests.get());
+	}
+
+	public boolean unlockVault(char[] password, long pendingMark)
+			throws Exception {
+		try {
+			return unlockVaultMarked(password, pendingMark);
+		} finally {
+			pendingUnlocks.decrementAndGet();
+		}
+	}
+
+	private synchronized boolean unlockVaultMarked(char[] password,
+			long mark) throws Exception {
+		unlockRunning = true;
+		try {
+			return unlockVaultLocked(password, mark);
+		} finally {
+			unlockRunning = false;
+		}
+	}
+
+	private boolean unlockVaultLocked(char[] password, long mark)
+			throws Exception {
 		if (!vaultExists()) {
 			throw new IllegalStateException("No vault exists");
 		}
@@ -432,16 +800,26 @@ public class VaultManager
 			if (opened == null) {
 				return registerFailedUnlock();
 			}
+			byte[] previous = this.vaultMasterKey;
 			this.vaultMasterKey = opened.masterKey;
+			if (previous != null && previous != opened.masterKey) {
+				SecureMemory.shred(previous);
+			}
 			if (needsRewrap(currentHeader, opened.legacyForm)) {
-				rewrapHeader(opened.masterKey, password);
+				rewrapHeader(opened.masterKey, password, opened.legacyForm);
 			} else {
 				deleteKeysNotNamedBy(currentHeader);
 			}
+			if (currentHeader == null) {
+				try {
+					loadVaultHeader();
+				} catch (Exception | OutOfMemoryError ignored) {
+				}
+			}
 
 			unlockThrottle.reset();
-			isUnlocked = true;
 			updateActivity();
+			isUnlocked = true;
 
 			invalidateCache();
 
@@ -450,9 +828,14 @@ public class VaultManager
 			} catch (RuntimeException ignored) {
 			}
 
+			if (lockRequests.get() != mark) {
+				lockVault();
+			} else if (mark > completedUnlockMark) {
+				completedUnlockMark = mark;
+			}
 			return true;
 
-		} catch (SecurityException e) {
+		} catch (SecurityException | Argon2.NativeRequiredException e) {
 			throw e;
 		} catch (Exception e) {
 			return registerFailedUnlock();
@@ -481,30 +864,40 @@ public class VaultManager
 	}
 
 	public synchronized void lockVault() {
+		boolean wasUnlocked = isUnlocked;
+		isUnlocked = false;
 		if (vaultMasterKey != null) {
 			SecureMemory.shred(vaultMasterKey);
 			vaultMasterKey = null;
 		}
 		cachedItems = null;
 		cacheTimestamp = 0;
-		if (isUnlocked) {
-			lockGeneration++;
+		if (wasUnlocked) {
+			lockGeneration.incrementAndGet();
 		}
-		isUnlocked = false;
-		com.professor.zerion.android.util.SecureClipboard.clearIfOurs(context);
-		com.professor.zerion.android.vault.share.VaultShareRegistry
-				.releaseAll();
-		com.professor.zerion.android.util.CacheSweeper
-				.sweepDirAsync(context, "vault_share");
-
+		releaseAfterLock();
 		SecureMemory.forceGarbageCollection();
+	}
 
-		Runnable listener = onLockListener;
-		if (listener != null) {
-			try {
-				listener.run();
-			} catch (Throwable ignored) {
-			}
+	public boolean isLockedNow() {
+		return !isUnlocked;
+	}
+
+	private void releaseAfterLock() {
+		try {
+			com.professor.zerion.android.util.SecureClipboard
+					.clearIfOurs(context);
+		} catch (RuntimeException ignored) {
+		}
+		try {
+			com.professor.zerion.android.vault.share.VaultShareRegistry
+					.releaseAll();
+		} catch (RuntimeException ignored) {
+		}
+		try {
+			com.professor.zerion.android.util.CacheSweeper
+					.sweepDirAsync(context, "vault_share");
+		} catch (RuntimeException ignored) {
 		}
 		for (Runnable r : lockListeners) {
 			try {
@@ -514,9 +907,6 @@ public class VaultManager
 		}
 	}
 
-	public void setOnLockListener(Runnable listener) {
-		onLockListener = listener;
-	}
 
 	private final java.util.List<Runnable> lockListeners =
 			new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -525,14 +915,20 @@ public class VaultManager
 		lockListeners.add(listener);
 	}
 
-	public long getLockGeneration() {
-		return lockGeneration;
+	public void removeLockListener(Runnable listener) {
+		lockListeners.remove(listener);
 	}
 
-	public synchronized void checkAutoLock() {
-		if (isUnlocked && android.os.SystemClock.elapsedRealtime()
-				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
-			lockVault();
+	public long getLockGeneration() {
+		return lockGeneration.get();
+	}
+
+	public void checkAutoLock() {
+		if (!isUnlocked || !autoLockDue()) return;
+		synchronized (this) {
+			if (isUnlocked && autoLockDue()) {
+				lockVault();
+			}
 		}
 	}
 
@@ -550,13 +946,21 @@ public class VaultManager
 		}
 	}
 
-	public synchronized boolean isUnlocked() {
-		if (this.isUnlocked && android.os.SystemClock.elapsedRealtime()
-				- lastActivityTime > AUTO_LOCK_TIMEOUT_MS) {
-			lockVault();
-			return false;
+	public boolean isUnlocked() {
+		if (!this.isUnlocked) return false;
+		if (!autoLockDue()) return true;
+		synchronized (this) {
+			if (this.isUnlocked && autoLockDue()) {
+				lockVault();
+				return false;
+			}
+			return this.isUnlocked;
 		}
-		return this.isUnlocked;
+	}
+
+	private boolean autoLockDue() {
+		return android.os.SystemClock.elapsedRealtime() - lastActivityTime
+				> AUTO_LOCK_TIMEOUT_MS;
 	}
 
 	public VaultItem addMediaItem(VaultItem.ItemType type, String name, byte[] content, String mimeType)
@@ -982,12 +1386,16 @@ public class VaultManager
 		}
 		long start = android.os.SystemClock.elapsedRealtime();
 		boolean ok = false;
+		boolean tested = true;
 		try {
 			ok = verifyPasswordUnthrottled(candidate);
 			return ok;
+		} catch (Argon2.NativeRequiredException e) {
+			tested = false;
+			throw e;
 		} finally {
 			if (ok) unlockThrottle.reset();
-			else unlockThrottle.recordFailure();
+			else if (tested) unlockThrottle.recordFailure();
 			enforceUnlockTimeFloor(start);
 		}
 	}
@@ -1011,6 +1419,9 @@ public class VaultManager
 
 	public synchronized void changePassword(char[] oldPassword,
 			char[] newPassword) throws Exception {
+		if (!isUnlocked || vaultMasterKey == null) {
+			throw new SecurityException(UNLOCK_FIRST);
+		}
 		if (!verifyPassword(oldPassword)) {
 			throw new SecurityException("Invalid current password");
 		}
@@ -1019,29 +1430,59 @@ public class VaultManager
 		VaultHeader old = currentHeader;
 		int slot = old.version < VaultHeader.VERSION_KEYSTORE_FACTOR
 				? VaultKeystore.SLOT_A : VaultKeystore.otherSlot(old.keySlot);
-		boolean committed = false;
+		VaultHeader newHeader;
 		try {
-			VaultHeader newHeader = sealMasterKey(newMasterKey, password, slot,
-					old.biometricTokenSalt, old.createdTimestamp);
+			newHeader = sealMasterKey(newMasterKey, password, slot,
+					old.biometricTokenSalt, old.createdTimestamp,
+					passwordChangeCandidates(old), paramsOf(old));
 			commitRekey(vaultMasterKey, newMasterKey, newHeader);
-			committed = true;
-			this.currentHeader = newHeader;
-			SecureMemory.shred(vaultMasterKey);
-			this.vaultMasterKey = newMasterKey;
-			deleteKeysNotNamedBy(newHeader);
 		} catch (Exception e) {
-			if (!committed) keystore.deleteSlot(slot);
+			keystore.deleteSlot(slot);
+			SecureMemory.shred(newMasterKey);
 			throw e;
 		} finally {
-			if (!committed) SecureMemory.shred(newMasterKey);
 			java.util.Arrays.fill(password, '\0');
 		}
+		this.currentHeader = newHeader;
+		byte[] previous = this.vaultMasterKey;
+		this.vaultMasterKey = newMasterKey;
+		try {
+			if (previous != null) SecureMemory.shred(previous);
+			finishRekeyQuietly();
+			deleteKeysNotNamedBy(newHeader);
+			invalidateCache();
+		} catch (Throwable ignored) {
+		}
+	}
 
-		invalidateCache();
+	private void finishRekeyQuietly() {
+		boolean synced;
+		try {
+			syncVaultDirectory();
+			synced = true;
+		} catch (IOException | RuntimeException first) {
+			try {
+				syncVaultDirectory();
+				synced = true;
+			} catch (IOException | RuntimeException second) {
+				synced = false;
+			}
+		}
+		if (!synced) return;
+		try {
+			if (fileIO.exists(ITEMS_BACKUP_DIR)) {
+				deleteRekeyBackup();
+			}
+		} catch (IOException | RuntimeException ignored) {
+		}
 	}
 
 	private void commitRekey(byte[] oldKey, byte[] newKey, VaultHeader newHeader)
 			throws Exception {
+		if (fileIO.exists(ITEMS_BACKUP_DIR)) {
+			syncVaultDirectory();
+			deleteRekeyBackup();
+		}
 		boolean staged = prepareRekeyTemp(oldKey, newKey);
 
 		java.io.File vaultDir = fileIO.getVaultDir();
@@ -1051,9 +1492,6 @@ public class VaultManager
 		java.io.File headerNew = new java.io.File(vaultDir, HEADER_NEW_FILE);
 		java.io.File header = new java.io.File(vaultDir, HEADER_FILE);
 
-		if (fileIO.exists(ITEMS_BACKUP_DIR)) {
-			fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
-		}
 		fileIO.writeSecure(HEADER_NEW_FILE, newHeader.toBytes());
 
 		try {
@@ -1071,7 +1509,6 @@ public class VaultManager
 				fileIO.fsyncVaultDir();
 			}
 			atomicReplace(headerNew, header);
-			fileIO.fsyncVaultDir();
 		} catch (Exception commitFailed) {
 			if (staged && backupDir.exists()) {
 				if (items.exists()) {
@@ -1086,10 +1523,6 @@ public class VaultManager
 				fileIO.secureDelete(HEADER_NEW_FILE);
 			}
 			throw commitFailed;
-		}
-
-		if (fileIO.exists(ITEMS_BACKUP_DIR)) {
-			fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
 		}
 	}
 
@@ -1227,7 +1660,8 @@ public class VaultManager
 				}
 				fileIO.secureDelete(HEADER_NEW_FILE);
 			} else if (backup) {
-				fileIO.deleteDirectory(ITEMS_BACKUP_DIR);
+				syncVaultDirectory();
+				deleteRekeyBackup();
 				if (temp) {
 					fileIO.deleteDirectory(ITEMS_TEMP_DIR);
 				}
@@ -1254,7 +1688,7 @@ public class VaultManager
 			throw new SecurityException("Please create a vault first");
 		}
 		if (!isUnlocked()) {
-			throw new SecurityException("Please unlock your vault first");
+			throw new SecurityException(UNLOCK_FIRST);
 		}
 		updateActivity();
 	}
@@ -1288,7 +1722,7 @@ public class VaultManager
 				PasswordNormalizer.normalize(exportPassword);
 		DerivedKey derived;
 		try {
-			derived = deriveForNewHeader(normalExportPassword, exportSalt);
+			derived = derivePortable(normalExportPassword, exportSalt);
 		} finally {
 			java.util.Arrays.fill(normalExportPassword, '\0');
 		}

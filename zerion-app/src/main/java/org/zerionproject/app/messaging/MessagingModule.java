@@ -28,6 +28,7 @@ import dagger.Provides;
 import static org.zerionproject.app.api.messaging.MessagingManager.CLIENT_ID;
 import static org.zerionproject.app.api.messaging.MessagingManager.MAJOR_VERSION;
 import static org.zerionproject.app.api.messaging.MessagingManager.MINOR_VERSION;
+import static org.zerionproject.app.api.messaging.MessagingManager.VIEW_ONCE_MIN_VERSION;
 
 @Module
 public class MessagingModule {
@@ -65,6 +66,15 @@ public class MessagingModule {
 		return validator;
 	}
 
+	static int announcedMinorVersion(FeatureFlags featureFlags) {
+		if (!featureFlags.shouldEnableImageAttachments()) return 0;
+		if (!featureFlags.shouldEnableDisappearingMessages()) return 2;
+		if (!featureFlags.shouldEnableViewOnce()) {
+			return Math.min(MINOR_VERSION, VIEW_ONCE_MIN_VERSION - 1);
+		}
+		return MINOR_VERSION;
+	}
+
 	@Provides
 	@Singleton
 	MessagingManager getMessagingManager(LifecycleManager lifecycleManager,
@@ -77,16 +87,15 @@ public class MessagingModule {
 			MessagingManagerImpl messagingManager) {
 		eventBus.addListener(new EditedOriginalEraser(db, dbExecutor,
 				messagingManager));
+		eventBus.addListener(new ViewOnceSweeper(db, dbExecutor,
+				messagingManager));
 		lifecycleManager.registerOpenDatabaseHook(messagingManager);
 		contactManager.registerContactHook(messagingManager);
 		validationManager.registerIncomingMessageHook(CLIENT_ID, MAJOR_VERSION,
 				messagingManager);
 		conversationManager.registerConversationClient(messagingManager);
-		boolean images = featureFlags.shouldEnableImageAttachments();
-		boolean disappear = featureFlags.shouldEnableDisappearingMessages();
-		int minorVersion = images ? (disappear ? MINOR_VERSION : 2) : 0;
 		clientVersioningManager.registerClient(CLIENT_ID, MAJOR_VERSION,
-				minorVersion, messagingManager);
+				announcedMinorVersion(featureFlags), messagingManager);
 		cleanupManager.registerCleanupHook(CLIENT_ID, MAJOR_VERSION,
 				messagingManager);
 		return messagingManager;

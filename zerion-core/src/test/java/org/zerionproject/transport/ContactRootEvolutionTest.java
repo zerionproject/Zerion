@@ -243,7 +243,9 @@ public class ContactRootEvolutionTest {
 
 	private static ContactRootKeys copy(ContactRootKeys k) {
 		SecretKey p = k.getPending();
+		SecretKey pc = k.getPendingConfirmKey();
 		return new ContactRootKeys(k.getEpoch(), copy(k.getCurrent()),
-				p == null ? null : copy(p), k.isPendingConfirmed());
+				p == null ? null : copy(p), pc == null ? null : copy(pc),
+				k.isPendingConfirmed());
 	}
 }

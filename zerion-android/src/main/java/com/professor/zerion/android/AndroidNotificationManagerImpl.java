@@ -14,6 +14,9 @@ import org.zerionproject.core.api.Multiset;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.contact.request.event.ContactLinkFloodedEvent;
+import org.zerionproject.core.api.contact.request.event.ContactRequestAddedEvent;
+import org.zerionproject.core.api.contact.request.event.ContactRequestReceivedEvent;
 import org.zerionproject.core.api.plugin.event.B4OwnRotationCompletedEvent;
 import org.zerionproject.core.api.plugin.event.B4PeerOnionAnnouncedEvent;
 import com.professor.zerion.android.conversation.voice.VoiceCallKeyHolder;
@@ -114,6 +117,9 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	static final String SESSION_GROUP = "zerion.session";
 	private static final int CONTACT_ADDED_NOTIFICATION_ID = 4;
 	private static final int REMINDER_NOTIFICATION_ID = 6;
+	static final int CONTACT_REQUEST_NOTIFICATION_ID = 7;
+	static final int LINK_FLOODED_NOTIFICATION_ID = 8;
+	static final int REQUEST_ACCEPTED_NOTIFICATION_ID = 9;
 	static final int CONTACT_NOTIFICATION_ID_BASE = 1000;
 	static final int GROUP_TR_NOTIFICATION_ID_BASE = 0x10000;
 	static final int CHANNEL_NOTIFICATION_ID_BASE = 0x20000;
@@ -134,6 +140,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final com.professor.zerion.android.conversation.voice
 			.CallSignalGate callSignalGate;
 	private final VoiceSignalFactory voiceSignalFactory;
+	private final com.professor.zerion.android.conversation.voice
+			.IncomingCallRinger ringer;
 	private final AtomicBoolean used = new AtomicBoolean(false);
 
 	private final Multiset<ContactId> contactCounts = new Multiset<>();
@@ -152,6 +160,10 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	private final Set<Integer> activeChannelCommentNotificationIds =
 			new HashSet<>();
 	private int contactAddedTotal = 0;
+	private int contactRequestTotal = 0;
+	private boolean blockContactRequests = false;
+	@Nullable
+	private ContactId acceptedContact = null;
 	private int nextRequestId = 0;
 	@Nullable
 	private ContactId blockedContact = null;
@@ -189,6 +201,21 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		appContext = app.getApplicationContext();
 		notificationManager = (NotificationManager)
 				appContext.getSystemService(NOTIFICATION_SERVICE);
+		ringer = new com.professor.zerion.android.conversation.voice
+				.IncomingCallRinger(appContext, notificationManager, uiPrefs,
+				new com.professor.zerion.android.conversation.voice
+						.IncomingCallRinger.Rejecter() {
+					@Override
+					public void reject(int contactId, String callId) {
+						answerRingingCall(contactId, callId, false);
+					}
+
+					@Override
+					public void busy(int contactId, String callId) {
+						answerRingingCall(contactId, callId, true);
+					}
+				});
+		app.registerActivityLifecycleCallbacks(ringer);
 	}
 
 	@Override
@@ -201,6 +228,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		}
 		if (SDK_INT >= 26) {
 			Callable<Void> task = () -> {
+				cancelLeftoverRings();
+				ringer.createChannels();
 				createNotificationChannel(CONTACT_CHANNEL_ID,
 						R.string.contact_list_button);
 				createNotificationChannel(GROUP_CHANNEL_ID,
@@ -208,6 +237,8 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				createNotificationChannel(CHANNEL_CHANNEL_ID,
 						R.string.notify_channel_posts_setting_title);
 				createRotationNotificationChannel();
+				createNotificationChannel(CONTACT_REQUEST_CHANNEL_ID,
+						R.string.requests_title);
 				return null;
 			};
 			try {
@@ -215,6 +246,20 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			} catch (InterruptedException | ExecutionException e) {
 				throw new ServiceException(e);
 			}
+		}
+	}
+
+	@UiThread
+	private void cancelLeftoverRings() {
+		try {
+			for (android.service.notification.StatusBarNotification n :
+					notificationManager.getActiveNotifications()) {
+				if (com.professor.zerion.android.conversation.voice
+						.IncomingCallRinger.RING_TAG.equals(n.getTag())) {
+					notificationManager.cancel(n.getTag(), n.getId());
+				}
+			}
+		} catch (RuntimeException e) {
 		}
 	}
 
@@ -264,10 +309,13 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 	@Override
 	public void stopService() throws ServiceException {
 		Future<Void> f = androidExecutor.runOnUiThread(() -> {
+			ringer.clear();
 			clearContactNotification();
 			clearGroupMessageNotification();
 			clearAllGroupTrNotifications();
 			clearContactAddedNotification();
+			clearContactRequests();
+			clearRequestAccepted();
 			clearAllChannelNotifications();
 			notificationManager.cancelAll();
 			return null;
@@ -354,6 +402,21 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 		} else if (e instanceof ContactAddedEvent) {
 			ContactAddedEvent c = (ContactAddedEvent) e;
 			if (!c.isAddedDirectly()) showContactAddedNotification();
+		} else if (e instanceof ContactRequestReceivedEvent) {
+			if (!((ContactRequestReceivedEvent) e).isOutgoing()) {
+				androidExecutor.runOnUiThread(this::showContactRequest);
+			}
+		} else if (e instanceof ContactRequestAddedEvent) {
+			ContactRequestAddedEvent a = (ContactRequestAddedEvent) e;
+			if (a.isOutgoing()) {
+				ContactId c = a.getContactId();
+				androidExecutor.runOnUiThread(() -> showRequestAccepted(c));
+			}
+		} else if (e instanceof ContactLinkFloodedEvent) {
+			boolean zeroId = ((ContactLinkFloodedEvent) e).getKind()
+					== org.zerionproject.core.api.contact.request.ContactLink
+					.KIND_ZERO_ID;
+			androidExecutor.runOnUiThread(() -> showLinkFlooded(zeroId));
 		} else if (e instanceof ContactRemovedEvent) {
 			com.professor.zerion.android.conversation.ChatSettingsActivity
 					.forgetContact(appContext,
@@ -363,6 +426,12 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			VoiceSignalHeader header = voiceEvent.getSignalHeader();
 			if (header.getSignalType() == VoiceSignalType.CALL_OFFER) {
 				handleIncomingVoiceCall(voiceEvent.getContactId(), header);
+			} else if (header.getSignalType() == VoiceSignalType.CALL_END
+					&& !header.isLocal()) {
+				ContactId caller = voiceEvent.getContactId();
+				String endedCallId = header.getCallId();
+				androidExecutor.runOnUiThread(() -> ringer.remoteEnded(
+						caller.getInt(), endedCallId));
 			}
 		} else if (e instanceof B4OwnRotationCompletedEvent) {
 			showRotationNotification(R.string.rotation_notification_own_body,
@@ -475,6 +544,7 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 			int notifId = CONTACT_NOTIFICATION_ID_BASE + c.getInt();
 			notificationManager.cancel(notifId);
 			activeContactNotificationIds.remove(notifId);
+			if (c.equals(acceptedContact)) clearRequestAccepted();
 		});
 	}
 
@@ -933,6 +1003,146 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				b.build());
 	}
 
+	@UiThread
+	private void showContactRequest() {
+		if (blockContactRequests) return;
+		contactRequestTotal++;
+		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
+				appContext, CONTACT_REQUEST_CHANNEL_ID);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
+		b.setContentText(appContext.getResources().getQuantityString(
+				R.plurals.contact_request_notification_text,
+				contactRequestTotal, contactRequestTotal));
+		b.setNumber(contactRequestTotal);
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		setAlertProperties(b);
+		setDeleteIntent(b, NavDrawerActivity.CONTACT_REQUEST_URI);
+		Intent i = com.professor.zerion.android.contact.request
+				.RequestsActivity.intent(appContext,
+						com.professor.zerion.android.contact.request
+								.RequestsActivity.TAB_RECEIVED);
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addNextIntent(new Intent(appContext, NavDrawerActivity.class));
+		t.addNextIntent(i);
+		b.setContentIntent(
+				t.getPendingIntent(nextRequestId++, getImmutableFlags(0)));
+		notificationManager.notify(CONTACT_REQUEST_NOTIFICATION_ID,
+				b.build());
+	}
+
+	@UiThread
+	private void showRequestAccepted(ContactId c) {
+		if (blockContactRequests) return;
+		if (com.professor.zerion.android.conversation.ChatSettingsActivity
+				.isContactMuted(appContext, c)) return;
+		boolean another = false;
+		try {
+			for (android.service.notification.StatusBarNotification n :
+					notificationManager.getActiveNotifications()) {
+				if (n.getId() == REQUEST_ACCEPTED_NOTIFICATION_ID) {
+					another = true;
+				}
+			}
+		} catch (RuntimeException e) {
+			another = false;
+		}
+		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
+				appContext, CONTACT_REQUEST_CHANNEL_ID);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
+		b.setContentText(appContext.getString(
+				R.string.requests_notification_accepted));
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		setAlertProperties(b);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		if (another) {
+			Intent i = com.professor.zerion.android.contact.request
+					.RequestsActivity.intent(appContext,
+							com.professor.zerion.android.contact.request
+									.RequestsActivity.TAB_SENT);
+			i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+			t.addNextIntent(new Intent(appContext, NavDrawerActivity.class));
+			t.addNextIntent(i);
+		} else {
+			Intent i = new Intent(appContext, ConversationActivity.class);
+			i.putExtra(CONTACT_ID, c.getInt());
+			i.setData(Uri.parse(CONTACT_URI + "/" + c.getInt()));
+			i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+			t.addParentStack(ConversationActivity.class);
+			t.addNextIntent(i);
+		}
+		b.setContentIntent(
+				t.getPendingIntent(nextRequestId++, getImmutableFlags(0)));
+		notificationManager.notify(REQUEST_ACCEPTED_NOTIFICATION_ID,
+				b.build());
+		acceptedContact = another ? null : c;
+	}
+
+	@UiThread
+	private void clearRequestAccepted() {
+		acceptedContact = null;
+		notificationManager.cancel(REQUEST_ACCEPTED_NOTIFICATION_ID);
+	}
+
+	@UiThread
+	private void showLinkFlooded(boolean zeroId) {
+		ZerionNotificationBuilder b = new ZerionNotificationBuilder(
+				appContext, CONTACT_REQUEST_CHANNEL_ID);
+		b.setSmallIcon(com.professor.zerion.android.settings.NotificationDisguise
+				.smallIcon(appContext, R.drawable.ic_stat_zerion));
+		b.setColorRes(R.color.zerion_primary);
+		b.setContentTitle(com.professor.zerion.android.settings
+				.NotificationDisguise.title(appContext));
+		b.setContentText(appContext.getString(zeroId
+				? R.string.notification_zero_id_flooded
+				: R.string.notification_link_flooded));
+		b.setNotificationCategory(CATEGORY_SOCIAL);
+		setAlertProperties(b);
+		Intent i = new Intent(appContext, com.professor.zerion.android.contact
+				.request.InviteLinksActivity.class);
+		i.setFlags(FLAG_ACTIVITY_CLEAR_TOP);
+		TaskStackBuilder t = TaskStackBuilder.create(appContext);
+		t.addNextIntent(new Intent(appContext, NavDrawerActivity.class));
+		t.addNextIntent(i);
+		b.setContentIntent(
+				t.getPendingIntent(nextRequestId++, getImmutableFlags(0)));
+		notificationManager.notify(LINK_FLOODED_NOTIFICATION_ID, b.build());
+	}
+
+	@UiThread
+	private void clearContactRequests() {
+		contactRequestTotal = 0;
+		notificationManager.cancel(CONTACT_REQUEST_NOTIFICATION_ID);
+	}
+
+	@Override
+	public void clearContactRequestNotification() {
+		androidExecutor.runOnUiThread(this::clearContactRequests);
+	}
+
+	@Override
+	public void blockContactRequestNotifications() {
+		androidExecutor.runOnUiThread(() -> {
+			blockContactRequests = true;
+			clearContactRequests();
+			clearRequestAccepted();
+		});
+	}
+
+	@Override
+	public void unblockContactRequestNotifications() {
+		androidExecutor.runOnUiThread(
+				(Runnable) () -> blockContactRequests = false);
+	}
+
 	@Override
 	public void clearAllContactAddedNotifications() {
 		androidExecutor.runOnUiThread(this::clearContactAddedNotification);
@@ -1114,31 +1324,77 @@ class AndroidNotificationManagerImpl implements AndroidNotificationManager,
 				}
 
 				final boolean videoCall = isVideoCall;
-				androidExecutor.runOnUiThread(() -> {
-					Intent intent = new Intent(appContext,
-							com.professor.zerion.android.conversation.voice.VoiceCallActivity.class);
-					intent.putExtra(
-							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CONTACT_ID,
-							contactId.getInt());
-					intent.putExtra(
-							com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_IS_INCOMING,
-							true);
-					intent.putExtra("auto_video", videoCall);
-					if (callId != null) {
-						intent.putExtra(
-								com.professor.zerion.android.conversation.voice.VoiceCallActivity.EXTRA_CALL_ID,
-								callId);
-					}
-					intent.addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP);
-					appContext.startActivity(intent);
-				});
+				androidExecutor.runOnUiThread(() ->
+						ringer.offer(contactId.getInt(), callId, videoCall));
 			} catch (DbException e) {
 			}
 		});
 	}
 
+	@Override
+	public void callServiceStarted(ContactId c, @Nullable String callId) {
+		androidExecutor.runOnUiThread(() ->
+				ringer.callStarted(c.getInt(), callId));
+	}
+
+	@Override
+	public void callServiceStopped() {
+		androidExecutor.runOnUiThread(ringer::callStopped);
+	}
+
+	@Override
+	public void showMissedCall(ContactId c, boolean video) {
+		androidExecutor.runOnUiThread(() ->
+				ringer.showMissedCall(c.getInt(), video));
+	}
+
+	@Override
+	public void showCallFailed(ContactId c, boolean video, int reason) {
+		androidExecutor.runOnUiThread(() ->
+				ringer.showCallFailed(c.getInt(), video, reason));
+	}
+
+	@Override
+	public void declineRingingCall(ContactId c, @Nullable String callId) {
+		androidExecutor.runOnUiThread(() -> ringer.decline(c.getInt(), callId));
+	}
+
+	@Override
+	public boolean hasCall(ContactId c, @Nullable String callId) {
+		return ringer.hasCall(c.getInt(), callId);
+	}
+
+	@Override
+	public void callUnavailable(ContactId c, @Nullable String callId) {
+		androidExecutor.runOnUiThread(() ->
+				ringer.callUnavailable(c.getInt(), callId));
+	}
+
+	private void answerRingingCall(int contactId, String callId,
+			boolean busy) {
+		androidExecutor.runOnBackgroundThread(() -> {
+			try {
+				Contact contact =
+						contactManager.getContact(new ContactId(contactId));
+				if (busy) sendBusy(contact, callId);
+				else rejectIncomingCall(contact, callId, null);
+			} catch (DbException e) {
+			}
+		});
+	}
+
+	private void sendBusy(Contact contact, String callId) {
+		try {
+			GroupId groupId = messagingManager.getContactGroup(contact).getId();
+			VoiceSignal signal = voiceSignalFactory.createCallBusy(groupId,
+					clock.currentTimeMillis(), callId);
+			messagingManager.addLocalVoiceSignal(signal);
+		} catch (Exception ignored) {
+		}
+	}
+
 	private void rejectIncomingCall(Contact contact, String callId,
-			String reason) {
+			@Nullable String reason) {
 		if (callId == null) return;
 		androidExecutor.runOnBackgroundThread(() -> {
 			try {

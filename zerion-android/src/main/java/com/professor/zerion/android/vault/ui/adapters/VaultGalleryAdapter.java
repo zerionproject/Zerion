@@ -41,6 +41,24 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 		thumbnailCache.evictAll();
 	}
 
+	static int cachedThumbnails() {
+		return thumbnailCache.snapshot().size();
+	}
+
+	static boolean keepDecoded(VaultViewModel viewModel, String itemId,
+			Bitmap bitmap) {
+		if (!viewModel.isVaultUnlocked()) {
+			bitmap.recycle();
+			return false;
+		}
+		thumbnailCache.put(itemId, bitmap);
+		if (!viewModel.isVaultUnlocked()) {
+			thumbnailCache.remove(itemId);
+			return false;
+		}
+		return true;
+	}
+
 	public interface OnImageClickListener {
 		void onImageClick(VaultItem item);
 		void onImageLongClick(VaultItem item);
@@ -145,45 +163,11 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 			viewModel.getThumbnail(item.id, new VaultViewModel.ThumbnailCallback() {
 				@Override
 				public void onThumbnailRetrieved(byte[] content) {
-					int currentPosition = getAdapterPosition();
-					if (currentPosition == RecyclerView.NO_POSITION ||
-						currentPosition >= items.size() ||
-						!expectedItemId.equals(items.get(currentPosition).id)) {
+					try {
+						showDecoded(item, expectedItemId, content);
+					} finally {
 						Arrays.fill(content, (byte) 0);
-						return;
 					}
-
-					if (!com.professor.zerion.android.util
-							.SafeImageDecoder.hasAllowedMagic(content)) {
-						Arrays.fill(content, (byte) 0);
-						return;
-					}
-					BitmapFactory.Options bounds = com.professor.zerion.android.util
-							.SafeImageDecoder.probeBounds(content);
-					if (bounds == null) {
-						Arrays.fill(content, (byte) 0);
-						return;
-					}
-					BitmapFactory.Options options = new BitmapFactory.Options();
-					options.outWidth = bounds.outWidth;
-					options.outHeight = bounds.outHeight;
-					options.inSampleSize = calculateInSampleSize(options, 300, 300);
-					options.inJustDecodeBounds = false;
-
-					Bitmap bitmap = BitmapFactory.decodeByteArray(content, 0, content.length, options);
-
-					if (bitmap != null) {
-						thumbnailCache.put(item.id, bitmap);
-						currentBitmap = bitmap;
-
-						imageView.post(() -> {
-							imageView.setAlpha(0f);
-							imageView.setImageBitmap(bitmap);
-							imageView.animate().alpha(1f).setDuration(150).start();
-						});
-					}
-
-					Arrays.fill(content, (byte) 0);
 				}
 
 				@Override
@@ -192,6 +176,43 @@ public class VaultGalleryAdapter extends RecyclerView.Adapter<VaultGalleryAdapte
 						imageView.setImageResource(R.drawable.ic_photo);
 					});
 				}
+			});
+		}
+
+		private void showDecoded(VaultItem item, String expectedItemId,
+				byte[] content) {
+			int currentPosition = getAdapterPosition();
+			if (currentPosition == RecyclerView.NO_POSITION ||
+				currentPosition >= items.size() ||
+				!expectedItemId.equals(items.get(currentPosition).id)) {
+				return;
+			}
+
+			if (!com.professor.zerion.android.util
+					.SafeImageDecoder.hasAllowedMagic(content)) {
+				return;
+			}
+			BitmapFactory.Options bounds = com.professor.zerion.android.util
+					.SafeImageDecoder.probeBounds(content);
+			if (bounds == null) {
+				return;
+			}
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.outWidth = bounds.outWidth;
+			options.outHeight = bounds.outHeight;
+			options.inSampleSize = calculateInSampleSize(options, 300, 300);
+			options.inJustDecodeBounds = false;
+
+			Bitmap bitmap = BitmapFactory.decodeByteArray(content, 0,
+					content.length, options);
+			if (bitmap == null || !keepDecoded(viewModel, item.id, bitmap)) {
+				return;
+			}
+			currentBitmap = bitmap;
+			imageView.post(() -> {
+				imageView.setAlpha(0f);
+				imageView.setImageBitmap(bitmap);
+				imageView.animate().alpha(1f).setDuration(150).start();
 			});
 		}
 

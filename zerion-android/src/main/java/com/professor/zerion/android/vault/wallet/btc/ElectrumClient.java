@@ -1,6 +1,8 @@
 package com.professor.zerion.android.vault.wallet.btc;
 
 
+import com.professor.zerion.android.util.TlsProtocols;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.BufferedReader;
@@ -16,12 +18,12 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
@@ -56,7 +58,6 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	private static final Pattern OBJECT = Pattern.compile("\\{[^{}]*\\}");
 	private static final Pattern TXID = Pattern.compile("^[0-9a-fA-F]{64}$");
 	static final int MAX_LIST_ITEMS = 5000;
 	static final int MAX_TX_HEX_CHARS = 2 * 1_000_000;
@@ -279,6 +280,18 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
+	public static final class PossibleInterception extends IOException {
+		PossibleInterception() {
+			super("a publicly trusted certificate was replaced on one circuit");
+		}
+	}
+
+	public static final class CertificatesDiffer extends IOException {
+		CertificatesDiffer() {
+			super("the server showed different certificates on two circuits");
+		}
+	}
+
 	public static CapturedCert captureCert(ElectrumEndpoint ep, int socksPort)
 			throws IOException {
 		return captureCert(ep, socksPort, EXCHANGE_DEADLINE_MS);
@@ -289,20 +302,44 @@ public class ElectrumClient implements ElectrumRpc {
 		if (!ep.tls()) {
 			throw new IOException("not a TLS endpoint");
 		}
-		String tag = TorIsolation.ephemeral("tofu");
+		String firstTag = TorIsolation.ephemeral("tofu");
+		String secondTag = TorIsolation.ephemeral("tofu");
+		while (secondTag.equals(firstTag)) {
+			secondTag = TorIsolation.ephemeral("tofu");
+		}
 		Deadline deadline = new Deadline(deadlineMs);
+		CapturedCert first;
+		CapturedCert second;
 		try {
-			try {
-				return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
-						true, deadline), true);
-			} catch (NotCaValid selfSigned) {
-				return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
-						false, deadline), false);
-			}
+			first = captureOnCircuit(ep, socksPort, firstTag, deadline);
+			second = captureOnCircuit(ep, socksPort, secondTag, deadline);
 		} catch (IOException e) {
 			throw deadline.failure(e);
 		} finally {
 			deadline.cancel();
+		}
+		return agreed(first, second);
+	}
+
+	static CapturedCert agreed(CapturedCert first, CapturedCert second)
+			throws IOException {
+		if (first.caValid != second.caValid) {
+			throw new PossibleInterception();
+		}
+		if (!TlsTrust.constEq(first.sha256, second.sha256)) {
+			throw new CertificatesDiffer();
+		}
+		return first;
+	}
+
+	private static CapturedCert captureOnCircuit(ElectrumEndpoint ep,
+			int socksPort, String tag, Deadline deadline) throws IOException {
+		try {
+			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+					true, deadline), true);
+		} catch (NotCaValid notTrusted) {
+			return new CapturedCert(handshakeAndCapture(ep, socksPort, tag,
+					false, deadline), false);
 		}
 	}
 
@@ -335,7 +372,7 @@ public class ElectrumClient implements ElectrumRpc {
 						SSLSocketFactory.getDefault();
 				SSLSocket ssl = (SSLSocket) f.createSocket(base, ep.host,
 						ep.port, true);
-				restrictProtocols(ssl);
+				TlsProtocols.restrict(ssl);
 				try {
 					ssl.startHandshake();
 				} catch (javax.net.ssl.SSLHandshakeException e) {
@@ -385,7 +422,7 @@ public class ElectrumClient implements ElectrumRpc {
 					}}, null);
 			SSLSocket ssl = (SSLSocket) ctx.getSocketFactory()
 					.createSocket(base, ep.host, ep.port, true);
-			restrictProtocols(ssl);
+			TlsProtocols.restrict(ssl);
 			ssl.startHandshake();
 			String fp = TlsTrust.sha256Hex(captured[0].getEncoded());
 			ssl.close();
@@ -400,16 +437,6 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	static void restrictProtocols(SSLSocket ssl) {
-		java.util.List<String> keep = new java.util.ArrayList<>();
-		for (String p : ssl.getSupportedProtocols()) {
-			if ("TLSv1.3".equals(p) || "TLSv1.2".equals(p)) keep.add(p);
-		}
-		if (!keep.isEmpty()) {
-			ssl.setEnabledProtocols(keep.toArray(new String[0]));
-		}
-	}
-
 	private static Socket wrapTls(Socket base, ElectrumEndpoint ep)
 			throws IOException {
 		try {
@@ -417,7 +444,7 @@ public class ElectrumClient implements ElectrumRpc {
 			if (ep.pinned()) {
 				SSLSocketFactory f = TlsTrust.pinnedFactory(ep.pinSha256);
 				ssl = (SSLSocket) f.createSocket(base, ep.host, ep.port, true);
-				restrictProtocols(ssl);
+				TlsProtocols.restrict(ssl);
 				try {
 					ssl.startHandshake();
 				} catch (javax.net.ssl.SSLHandshakeException e) {
@@ -428,7 +455,7 @@ public class ElectrumClient implements ElectrumRpc {
 				SSLSocketFactory f = (SSLSocketFactory)
 						SSLSocketFactory.getDefault();
 				ssl = (SSLSocket) f.createSocket(base, ep.host, ep.port, true);
-				restrictProtocols(ssl);
+				TlsProtocols.restrict(ssl);
 				try {
 					ssl.startHandshake();
 				} catch (javax.net.ssl.SSLHandshakeException e) {
@@ -604,17 +631,26 @@ public class ElectrumClient implements ElectrumRpc {
 	}
 
 	public int blockHeight() throws IOException {
-		String r = call("blockchain.headers.subscribe", "[]");
-		Long h = numField(r, "height");
-		return h == null ? 0 : h.intValue();
+		return parseHeight(call("blockchain.headers.subscribe", "[]"));
+	}
+
+	static int parseHeight(String r) throws IOException {
+		Object h = StrictJson.object(result(r)).get("height");
+		if (h == null) {
+			throw new IOException("no height");
+		}
+		return (int) StrictJson.integer(h, 0, Integer.MAX_VALUE);
 	}
 
 	public long getBalanceSat(String scriptHash) throws IOException {
-		String r = call("blockchain.scripthash.get_balance",
-				"[\"" + scriptHash + "\"]");
-		Long c = numField(r, "confirmed");
-		Long u = numField(r, "unconfirmed");
-		return (c == null ? 0 : c) + (u == null ? 0 : u);
+		return parseBalance(call("blockchain.scripthash.get_balance",
+				"[\"" + scriptHash + "\"]"));
+	}
+
+	static long parseBalance(String r) throws IOException {
+		Map<String, Object> b = StrictJson.object(result(r));
+		return optLong(b, "confirmed", 0L, MAX_SAT)
+				+ optLong(b, "unconfirmed", -MAX_SAT, MAX_SAT);
 	}
 
 	public List<HistItem> getHistory(String scriptHash) throws IOException {
@@ -622,15 +658,14 @@ public class ElectrumClient implements ElectrumRpc {
 				"[\"" + scriptHash + "\"]"));
 	}
 
-	static List<HistItem> parseHistory(String r) {
+	static List<HistItem> parseHistory(String r) throws IOException {
 		List<HistItem> out = new ArrayList<>();
-		for (String o : objects(r)) {
-			String h = strField(o, "tx_hash");
-			if (h == null || !isTxid(h)) {
+		for (Map<String, Object> o : objects(r)) {
+			String h = txHash(o);
+			if (h == null) {
 				continue;
 			}
-			Long height = numField(o, "height");
-			out.add(new HistItem(h, height == null ? 0 : height.intValue()));
+			out.add(new HistItem(h, heightOf(o)));
 			if (out.size() >= MAX_LIST_ITEMS) break;
 		}
 		return out;
@@ -651,22 +686,17 @@ public class ElectrumClient implements ElectrumRpc {
 				"[\"" + scriptHash + "\"]"));
 	}
 
-	static List<Utxo> parseUnspent(String r) {
+	static List<Utxo> parseUnspent(String r) throws IOException {
 		List<Utxo> out = new ArrayList<>();
-		for (String o : objects(r)) {
-			String h = strField(o, "tx_hash");
-			if (h == null || !isTxid(h)) {
+		for (Map<String, Object> o : objects(r)) {
+			String h = txHash(o);
+			if (h == null) {
 				continue;
 			}
-			Long pos = numField(o, "tx_pos");
-			Long height = numField(o, "height");
-			Long value = numField(o, "value");
-			if (pos == null || pos < 0 || pos > 0xFFFF) continue;
-			if (value == null || value < 0 || value > 21_000_000L * 100_000_000L) {
-				continue;
-			}
-			out.add(new Utxo(h, pos.intValue(),
-					height == null ? 0 : height.intValue(), value));
+			Long pos = optRange(o.get("tx_pos"), 0, 0xFFFF);
+			Long value = optRange(o.get("value"), 0, MAX_SAT);
+			if (pos == null || value == null) continue;
+			out.add(new Utxo(h, pos.intValue(), heightOf(o), value));
 			if (out.size() >= MAX_LIST_ITEMS) break;
 		}
 		return out;
@@ -675,10 +705,11 @@ public class ElectrumClient implements ElectrumRpc {
 	public String getTransaction(String txid) throws IOException {
 		String wanted = requireTxid(txid);
 		String r = call("blockchain.transaction.get", "[\"" + wanted + "\"]");
-		String result = strField(r, "result");
-		if (result == null) {
+		Object res = result(r);
+		if (!(res instanceof String)) {
 			throw new IOException("no tx");
 		}
+		String result = (String) res;
 		if (result.length() > MAX_TX_HEX_CHARS) {
 			throw new IOException("tx too large");
 		}
@@ -702,10 +733,11 @@ public class ElectrumClient implements ElectrumRpc {
 	}
 
 	static String parseBroadcast(String r) throws IOException {
-		String result = strField(r, "result");
-		if (result == null) {
+		Object res = result(r);
+		if (!(res instanceof String)) {
 			throw new IOException("broadcast failed");
 		}
+		String result = (String) res;
 		if (!TXID.matcher(result).matches()) {
 			throw new IOException("broadcast reply was not a transaction id");
 		}
@@ -717,22 +749,17 @@ public class ElectrumClient implements ElectrumRpc {
 	}
 
 	static double parseFee(String r) {
-		int i = r.indexOf("\"result\":");
-		if (i < 0) {
-			return 0.0;
-		}
-		int s = i + "\"result\":".length();
-		int e = s;
-		while (e < r.length() && r.charAt(e) != ',' && r.charAt(e) != '}') {
-			e++;
-		}
 		try {
-			double fee = Double.parseDouble(r.substring(s, e).trim());
+			Object res = result(r);
+			if (!(res instanceof java.math.BigDecimal)) {
+				return 0.0;
+			}
+			double fee = ((java.math.BigDecimal) res).doubleValue();
 			if (Double.isNaN(fee) || Double.isInfinite(fee) || fee < 0) {
 				return 0.0;
 			}
 			return fee;
-		} catch (NumberFormatException ex) {
+		} catch (IOException malformed) {
 			return 0.0;
 		}
 	}
@@ -745,50 +772,56 @@ public class ElectrumClient implements ElectrumRpc {
 		}
 	}
 
-	@Nullable
-	private static String strField(String json, String key) {
-		String m = "\"" + key + "\":\"";
-		int i = json.indexOf(m);
-		if (i < 0) {
-			return null;
+	private static final long MAX_SAT = 21_000_000L * 100_000_000L;
+
+	private static Object result(String r) throws IOException {
+		Object res = StrictJson.object(StrictJson.parse(r)).get("result");
+		if (res == null) {
+			throw new IOException("no result");
 		}
-		int start = i + m.length();
-		int end = json.indexOf('"', start);
-		return end < 0 ? null : json.substring(start, end);
+		return res;
 	}
 
 	@Nullable
-	private static Long numField(String json, String key) {
-		String m = "\"" + key + "\":";
-		int i = json.indexOf(m);
-		if (i < 0) {
+	private static String txHash(Map<String, Object> o) {
+		Object h = o.get("tx_hash");
+		return h instanceof String && isTxid((String) h) ? (String) h : null;
+	}
+
+	private static int heightOf(Map<String, Object> o) {
+		Long h = optRange(o.get("height"), Integer.MIN_VALUE,
+				Integer.MAX_VALUE);
+		return h == null ? 0 : h.intValue();
+	}
+
+	@Nullable
+	private static Long optRange(@Nullable Object v, long min, long max) {
+		if (v == null) {
 			return null;
-		}
-		int s = i + m.length();
-		if (s < json.length() && json.charAt(s) == '"') {
-			s++;
-		}
-		int e = s;
-		while (e < json.length()
-				&& (Character.isDigit(json.charAt(e)) || json.charAt(e) == '-')) {
-			e++;
 		}
 		try {
-			return Long.parseLong(json.substring(s, e));
-		} catch (NumberFormatException ex) {
+			return StrictJson.integer(v, min, max);
+		} catch (IOException notInRange) {
 			return null;
 		}
 	}
 
-	private static List<String> objects(String json) {
-		List<String> out = new ArrayList<>();
-		int start = json.indexOf("\"result\":[");
-		if (start < 0) {
-			return out;
-		}
-		Matcher matcher = OBJECT.matcher(json.substring(start));
-		while (matcher.find()) {
-			out.add(matcher.group());
+	private static long optLong(Map<String, Object> o, String key, long min,
+			long max) throws IOException {
+		Object v = o.get(key);
+		return v == null ? 0L : StrictJson.integer(v, min, max);
+	}
+
+	private static List<Map<String, Object>> objects(String json)
+			throws IOException {
+		List<Map<String, Object>> out = new ArrayList<>();
+		for (Object item : StrictJson.array(result(json))) {
+			if (item instanceof Map) {
+				try {
+					out.add(StrictJson.object(item));
+				} catch (IOException notAnObject) {
+				}
+			}
 		}
 		return out;
 	}

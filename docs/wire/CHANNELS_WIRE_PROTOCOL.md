@@ -205,16 +205,18 @@ msgType numbers in this protocol.
 | `ZERION_CHANNEL_ONION_CONFIRMED_V1` | `WIRE_TYPE_ONION_CONFIRMED` | pub → sub | Keys `type`, `channelId`, `onion`, `salt`, `ml` (the channel's ML-DSA-65 key), `sig`; an empty reply when the onion is not the owner's (The one architectural fact, Where a member's requests go) |
 | `ZERION_CHANNEL_DELEGATION_V1` | `WIRE_TYPE_DELEGATION` | (nested) | Editor delegation cert (carried inside manifest) |
 | `ZERION_CHANNEL_SUBMIT_POST_V1` | `WIRE_TYPE_SUBMIT_POST` | editor → pub | An editor's post for the publisher to add to the chain (protocol version 2) |
-| `ZERION_CHANNEL_SUBMIT_POST_ACK_V1` | `WIRE_TYPE_SUBMIT_POST_ACK` | pub → editor | `status` (`OK`, `STALE`, `REFUSED`) and the publisher's chain tip `tip` |
+| `ZERION_CHANNEL_SUBMIT_POST_ACK_V1` | `WIRE_TYPE_SUBMIT_POST_ACK` | pub → editor | `status` (`OK`, `STALE`, `REFUSED`, and `QUOTA` to a subscriber's post) and the publisher's chain tip `tip` (to an accepted subscriber's post: the number of the post the owner made of it) |
+| `ZERION_CHANNEL_SUBMIT_MEMBER_POST_V1` | `WIRE_TYPE_SUBMIT_MEMBER_POST` | sub → pub | A subscriber's text for the owner to publish as a format 3 post (protocol version 6, section 6, Subscriber posts); answered with `WIRE_TYPE_SUBMIT_POST_ACK` |
 | `ZERION_CHANNEL_CHANGE_POST_V1` | `WIRE_TYPE_CHANGE_POST` | editor → pub | An editor asks the owner's device to delete, edit or set comments on one of the editor's own posts (protocol version 4, section 6) |
 | `ZERION_CHANNEL_CHANGE_POST_ACK_V1` | `WIRE_TYPE_CHANGE_POST_ACK` | pub → editor | `status` (`OK`, `STALE`, `REFUSED`) |
 | `ZERION_CHANNEL_TOMBSTONE_V1` | `WIRE_TYPE_CHANNEL_TOMBSTONE` | pub → sub | Signed channel-deleted tombstone (returned in place of any response) |
 
 ### Protocol version
 
-Every request a client from 3.0.18 on sends carries `v` (long) = 5
-(`ChannelConstants.PROTOCOL_VERSION`); clients from 3.0.15 to 3.0.17 send 2,
-and development builds of 3.0.18 made before versions 4 and 5 sent 3 and 4.
+Every request a client from 3.0.19 on sends carries `v` (long) = 6
+(`ChannelConstants.PROTOCOL_VERSION`); clients of 3.0.18 send 5, clients
+from 3.0.15 to 3.0.17 send 2, and development builds of 3.0.18 made before
+versions 4 and 5 sent 3 and 4.
 A request without `v` comes from a client up to 3.0.14. Version 2
 (`PROTOCOL_VERSION_DELTAS`) brought item deltas, the covering proof and
 format 2 posts; version 3 (`PROTOCOL_VERSION_AUTHOR_BINDING`) brings the
@@ -227,8 +229,12 @@ subscribers learn, and editors' change requests: a reply to a request with
 covers that setting (sections 3 and 5), and only such a reply carries edit
 marks (section 4, Edits). Version 5 (`PROTOCOL_VERSION_ERASED_EDITS`) brings
 erased posts: only a reply to a request with `v >= 5` carries a post whose
-body an edit erased (section 4, Edits). A reply carries `v` = 5 to a request
-with `v >= 5`, 4 to `v` = 4 and 3 to `v` = 3. A publisher from 3.0.15 to
+body an edit erased (section 4, Edits). Version 6
+(`PROTOCOL_VERSION_MEMBER_POSTS`, from 3.0.19) brings subscriber posts: only a
+reply to a request with `v >= 6` carries the posting setting `wp` and posts
+in format 3, and its manifest signature also covers `wp` (sections 2, 3 and
+4). A reply carries `v` = 6 to a request with `v >= 6`, 5 to `v` = 5, 4 to
+`v` = 4 and 3 to `v` = 3; a 3.0.18 publisher treats 6 as 5. A publisher from 3.0.15 to
 3.0.17 treats `v` from 3 on as 2, and a development build of 3.0.18 that
 sent 4 treats 5 as 4. A publisher up
 to 3.0.14 ignores
@@ -257,7 +263,7 @@ plumbed end-to-end but unused; iOS may ignore it for now.
 | key | BDF type | notes |
 |---|---|---|
 | `type` | string | `ZERION_CHANNEL_PULL_REQUEST_V1` |
-| `v` | long | protocol version: 5 from 3.0.18, 2 from 3.0.15 to 3.0.17; absent from clients up to 3.0.14 |
+| `v` | long | protocol version: 6 from 3.0.19, 5 in 3.0.18, 2 from 3.0.15 to 3.0.17; absent from clients up to 3.0.14 |
 | `channelId` | raw | 32 bytes (`CHANNEL_ID_BYTES`) |
 | `sinceSeqNum` | long | `-1` when the subscriber holds no chain tip; otherwise its tip, and the publisher sends posts with `seqNum > sinceSeqNum` |
 | `rc` | raw, optional | 16-byte reactions cursor (8-byte epoch, 8-byte revision) the subscriber holds |
@@ -308,8 +314,9 @@ confirmation request.
 | key | BDF type | notes |
 |---|---|---|
 | `type` | string | `ZERION_CHANNEL_PULL_RESPONSE_V1` |
-| `v` | long, optional | present when the reply carries `rs` and `cs`: 5 for a request with `v >= 5` (as 4, and the posts may include erased posts, section 4, Edits), 4 for a request with `v` = 4 (the manifest signature then covers the author bindings and `ds`, section 3), 3 for a request with `v` = 3 (it covers the author bindings, section 5), otherwise 2 |
-| `ds` | dictionary, versions 4 and 5 | comment setting: `on` (boolean, the channel's setting) and `x` (list of long, the posts whose setting differs from it, ascending, distinct, at most 4096, `MAX_COMMENT_EXCEPTIONS_PER_CHANNEL`); section 5, Comment settings |
+| `v` | long, optional | present when the reply carries `rs` and `cs`: 6 for a request with `v >= 6` (as 5, plus `wp` and format 3 posts), 5 for a request with `v` = 5 (as 4, and the posts may include erased posts, section 4, Edits), 4 for a request with `v` = 4 (the manifest signature then covers the author bindings and `ds`, section 3), 3 for a request with `v` = 3 (it covers the author bindings, section 5), otherwise 2 |
+| `wp` | long, version 6 | who may post: 0 the owner and editors (`POSTING_EDITORS`, the default), 1 only the owner (`POSTING_OWNER_ONLY`), 2 also the subscribers the owner trusts (`POSTING_EVERYONE`); any other value fails the reply; section 6, Subscriber posts |
+| `ds` | dictionary, versions 4 to 6 | comment setting: `on` (boolean, the channel's setting) and `x` (list of long, the posts whose setting differs from it, ascending, distinct, at most 4096, `MAX_COMMENT_EXCEPTIONS_PER_CHANNEL`); section 5, Comment settings |
 | `manifest` | dictionary | the signed manifest (section 3) |
 | `posts` | list of dict | each entry is a wire post (section 4) |
 | `contentKeyEnvelope` | raw, optional | AES-GCM-wrapped channel content key (private channels, only when the proof passed) |
@@ -473,7 +480,22 @@ T = hash("org.zerionproject/CHANNEL_DISCUSSIONS",
 with the post numbers of `x` ascending. A reply of version 4 or 5 without
 `ds`, or
 whose `ds` does not match the signature, fails as a whole, like a reply with
-an altered author binding. Otherwise the manifest is signed with the
+an altered author binding. In a reply of version 6 the publisher signs
+`signed-input || D || T || W` under `SIGNING_LABEL_MANIFEST_V5 =
+"org.zerionproject/CHANNEL_MANIFEST_V5"` (`signMemberPostsManifest`,
+`verifyMemberPostsManifest`), where `W` is the digest of the reply's
+posting setting `wp`:
+
+```
+W = hash("org.zerionproject/CHANNEL_POSTING", mode (1))
+```
+
+A reply of version 6 without `ds` or `wp`, or whose `wp` does not match the
+signature, fails as a whole; a version 5 signature does not verify under
+the version 6 label, nor the reverse, so a reply cannot be passed off as
+the other version. The setting is not part of the manifest dictionary and
+does not raise `manifestSeq`; the manifest bytes every earlier subscriber
+verifies stay as they were. Otherwise the manifest is signed with the
 publisher's hybrid key under label
 `SIGNING_LABEL_MANIFEST = "org.zerionproject/CHANNEL_MANIFEST"`
 (`ChannelSignatures.signManifest` → `crypto.hybridSign`). Verified with
@@ -521,14 +543,19 @@ Posts ride inside the pull response `posts` list. `ChannelPullCodec.postToWire`
 | `bh` | raw, version 5 replies only | 32 bytes (`POST_BODY_HASH_BYTES`), in place of `body` in a format 2 post whose body an edit erased: the `bodyHash` of its signed-input (Edits, below) |
 | `ttlMs` | long | 0 = no expiry; ephemeral if > 0 |
 | `signature` | raw | hybrid signature over the post signed-input of the post's format |
-| `pv` | long, optional | post format: absent or 1 = legacy, 2 = format 2 |
-| `salt` | raw, format 2 | 16 random bytes per post |
+| `pv` | long, optional | post format: absent or 1 = legacy, 2 = format 2, 3 = format 3 (a subscriber's post, version 6 replies only) |
+| `salt` | raw, formats 2 and 3 | 16 random bytes per post |
+| `au` | dictionary, format 3 only | the author of a subscriber's post: `ed` (32-byte Ed25519 member key), `ml` (ML-DSA-65 member key), `name` (string, at most 64 characters, no control, line or paragraph separator, private use, unassigned or format characters other than the zero width joiner and emoji tag characters), `role` (long, 1 = subscriber, `MEMBER_ROLE_SUBSCRIBER`; any other value fails the reply) |
 | `delegateSignerEd25519` | raw, optional | present only if signed by an editor |
 | `delegateSignerMlDsa` | raw, optional | present only if signed by an editor |
 | `attachments` | list of dict | each: `hash` (32B blob hash), `size` (long), `mime` (string), `key` (per-attachment key, wrapped for private channels), `thumb` (raw, optional) |
 
-Every post published from 3.0.15 on is in format 2. A post with any other
-`pv`, or a format 2 post without a 16-byte salt, is unreadable. Posts
+Every post published from 3.0.15 on is in format 2, except a subscriber's
+post published from 3.0.19 on, which is in format 3 (section 6, Subscriber
+posts). A post with any other `pv`, a format 2 or 3 post without a 16-byte
+salt, a format 3 post in a reply of a version below 6, or a format 3 post
+with attachments, an editor key, an erased body or a malformed `au`, is
+unreadable and fails the reply. Posts
 published by earlier releases stay in the legacy format and are verified as
 such; format is part of what the signature covers, so a post cannot be moved
 from one format to the other.
@@ -559,6 +586,20 @@ sent (wrapped in a private channel), and `thumb` (length -1 when absent).
 The signature therefore covers the per-attachment key: a post served with an
 exchanged key is refused.
 
+Format 3 (`ChannelCodec.postSignedInputV3`), signed by the channel's key
+under `SIGNING_LABEL_POST_V3 = "org.zerionproject/CHANNEL_POST_V3"`: the
+format 2 bytes above with the first byte 3, followed by
+
+```
+authorHash (32)          = hash("…/CHANNEL_POST_AUTHOR", int32 len || ed,
+                           int32 len || ml, int32 len || UTF-8 name,
+                           role (1))
+```
+
+so the author's keys, name and role are covered by the owner's signature
+and by the chain hash. A format 3 post is never signed by an editor key;
+its signature is verified under the channel's key only.
+
 Legacy format (`ChannelCodec.postSignedInput`), signed under
 `SIGNING_LABEL_POST = "org.zerionproject/CHANNEL_POST"`:
 
@@ -586,6 +627,8 @@ delegation checks pass (section 6).
 
 - The canonical hash of a format 2 post is
   `hash("org.zerionproject/CHANNEL_POST_CHAIN_V2", signedInputV2 || int32
+  sigLen || signature)`; of a format 3 post
+  `hash("org.zerionproject/CHANNEL_POST_CHAIN_V3", signedInputV3 || int32
   sigLen || signature)`; of a legacy post
   `hash("org.zerionproject/CHANNEL_POST_CHAIN", channelId || seqNum ||
   prevHash || timestampHourMs || UTF-8 body || attachmentsHash || ttlMs ||
@@ -659,6 +702,34 @@ An erased post that passes these checks is then held to the rule in Edits
 loop) it is refused, with everything after it, unless a valid mark naming
 it follows; in any other reply it is stored, but not shown, counted or
 announced until such a mark arrives or it is fetched again with its body.
+
+**Format 3 posts and older subscribers.** A format 3 post is sent only in
+replies to requests with `v >= 6`. To a request of version 2 to 5 the owner's
+device leaves format 3 posts out of the reply and fills the batch with the
+posts after them, so such a subscriber sees a gap where a subscriber's post
+stands and goes on receiving the owner's and editors' posts. The next post
+still names the left-out post's chain hash in `prevHash`; a subscriber of
+3.0.15 to 3.0.18 checks a link only across a run of provisional editor
+posts (above) and accepts a gap or a new link under the publisher's
+signature, the same rule that already lets it pass edit marks left out of
+replies below version 4 and erased posts left out of replies below 5, so
+leaving the post out breaks nothing for it. The one case that stops it is
+the one that stops it for those posts too: an editor post the subscriber
+cannot verify yet (`DELEGATION_NOT_FOUND`, a certificate that left the
+manifest before this subscriber ever held it) directly before a left-out
+post. Its provisional run then meets a gap, which such a subscriber refuses,
+so it breaks off at the editor post on every pull until the owner's next
+own post after the gap is the first post of a reply. The owner's device
+cannot avoid this on its side: it does not know which certificates a
+subscriber holds, and stopping or ending a reply at that editor post leaves
+the run provisional just the same. Subscribers of 3.0.19 receive the format
+3 post and are not affected. A subscriber from 3.0.19 also remembers, while
+the app runs, that the owner's onion answered a channel with a version 6
+reply, and then keeps the posting setting it holds when a later reply of a
+lower version comes, which it still takes as before (an owner that went
+back to an earlier release keeps being read), so a reply turned into an
+older one cannot change the setting. A request without `v`
+(up to 3.0.14) receives only the leading legacy posts, as before.
 
 `PULL_BATCH_MAX_POSTS = 100`. Withholding is a subscriber-side view
 decision; nothing about it appears on the wire, and the publisher serves the
@@ -766,7 +837,8 @@ constants are defined but not enforced.
 A post delete is itself a published post whose body is a tombstone marker
 `ZRN_TOMBSTONE:<channelIdHex>:<seqNum>:D` (`TOMBSTONE_PREFIX`); in a private
 channel the marker is encrypted like any body. Only a post **signed by the
-publisher** is a marker: an editor's post is a post whatever its body says,
+publisher** is a marker: an editor's post, and a subscriber's format 3
+post although the channel's key signs it, is a post whatever its body says,
 and the publisher refuses a submitted post whose body has the marker's shape
 or the shape of an edit mark (section 6), so no editor can make a marker.
 An editor deletes one of its own posts by asking the owner's device
@@ -1274,7 +1346,8 @@ on a post with comments off could not be sent.
 
 From 3.0.18 a member's device keeps a request it could not deliver instead
 of dropping it (`ChannelOutboxStore`). This covers comments, reactions,
-announcements, and an editor's posts and change requests (section 6);
+announcements, an editor's posts and change requests and, from 3.0.19, a
+subscriber's posts (section 6);
 applications keep their own record (section 6, request and approve).
 Nothing new goes on the wire and nothing is relayed: the requests are the
 ones above, sent only to the owner's own onion, and only while it answers.
@@ -1894,6 +1967,78 @@ From 3.0.18 a post or change request the owner's onion does not answer at
 all waits in the member outbox (section 5) and is built and signed again
 when it is sent.
 
+**Subscriber posts - `WIRE_TYPE_SUBMIT_MEMBER_POST` (protocol version 6,
+from 3.0.19).** The owner chooses who may post: only the owner, the owner
+and editors (the default, as before) or also the subscribers the owner
+trusts ("Subscribers you trust": subscribers marked as trusted and approved
+applicants) (`setPostingMode`, stored on the owner's device in
+`zerion-channels-posting`; it can be changed at any time, and posts already
+published stay). Subscribers learn the setting from `wp` (section 2); a
+subscriber whose owner runs an earlier release never learns it and cannot
+post. With the third choice a subscriber sends a text (no attachments) with
+`WIRE_TYPE_SUBMIT_MEMBER_POST`: keys `type`, `v`, `channelId`, `id` (long,
+random per post, kept across retries), `body` (plaintext, at most 4096
+characters), `name` (the name the subscriber announced, cleaned and cut to
+64 characters), `ts` (the hour), `ed`, `ml`, `sig`, plus `nonce`, `hmac`,
+`hmac2` in private channels, where the request needs the capability proof
+like a comment. `sig` is the subscriber's member key signature over
+`memberPostSignedInput` = `int32 len || channelId || int64 id || int32 len
+|| UTF-8 body || int32 len || UTF-8 name || int64 ts`, label
+`SIGNING_LABEL_MEMBER_POST = "org.zerionproject/CHANNEL_MEMBER_POST"`.
+
+The owner's device (`handleSubmitMemberPost`) answers `REFUSED` unless the
+setting allows subscribers, the request names this channel, keys and
+signature have the sizes of a comment, the name passes the rule of `au`
+(section 4), the body is not blank, does not have the shape of a deletion or
+edit mark (also after trimming) and is not the deleted-post placeholder
+`[deleted]`, the key is not the channel's own, not blocked, holds no active
+editor certificate (an editor posts as an editor), is one the owner vouched
+for (a subscriber marked as trusted or an approved applicant; never an
+anonymous or merely announced one) and has a name on the owner's device (the
+name it announced or gave in its access request), its ML-DSA-65 key is the
+one bound to it in this channel (section 5, Author binding) and the
+signature verifies. A request whose `ts` is more than 2 hours old
+(`MEMBER_POST_MAX_AGE_MS`) or more than 2 hours ahead is answered `STALE`,
+so a member whose clock is off keeps the post and tries again. A request
+whose `id` the owner already published for this key is answered `OK` with
+that post's number and publishes nothing, so a retried or replayed request
+makes no second post (the last 64 ids per key are remembered, more than a
+key can send within the 4 hours a request stays fresh). The answer is
+`QUOTA` when the key already has 10 posts published this hour or 50 today
+(`MAX_MEMBER_POSTS_PER_HOUR`, `MAX_MEMBER_POSTS_PER_DAY`), when the channel
+already has 60 subscriber posts this hour or 300 today from all keys
+together (`MAX_MEMBER_POSTS_PER_CHANNEL_PER_HOUR`,
+`MAX_MEMBER_POSTS_PER_CHANNEL_PER_DAY`), when the key's write allowance is
+spent, or when the subscriber posts the owner's device holds would exceed
+64 MiB (`MAX_MEMBER_POST_BYTES_PER_CHANNEL`, counted like editors' posts and
+freed when a post is deleted). The counts and ids are kept per channel in
+`zerion-channels-member-quota:<channelId hex>` and written in the
+transaction that stores the post. The owner's device then builds the post
+itself on its tip, encrypting the body with the content key in a private
+channel (a body too long once encrypted is `REFUSED`), as format 3 with
+`au` = the request's keys, the name the owner's device holds for the key
+(not the submitted one) and role 1, signs it with the channel's key and
+answers `OK` with the post's number. Subscribers verify the post under the
+channel's key; they do not see the subscriber's own signature, so what they
+rely on is the owner's statement of who wrote it. The owner removes such a
+post with an ordinary delete (section 4, Deletes) and can block its author
+from the member sheet; editors cannot change it, and its author can neither
+edit nor delete it. An owner on 3.0.18 or earlier does not know the type and
+answers with an empty reply.
+
+The subscriber's device keeps the request in the member outbox (section 5)
+while the owner is away. `QUOTA` keeps it waiting until the next hour,
+and a new post written before then waits behind it without being sent; the
+member is told that it posted too much, also when a waiting post meets the
+limit later,
+`STALE` keeps it waiting for the next try, and a refused request stays in
+the queue as not sent with its text, to be retried or deleted, and the
+member is told once that the post was not accepted.
+
+A subscriber's device keeps subscriber posts within the same storage window
+as every other post, and when the window is full it gives up the oldest
+subscriber posts before any post of the owner or an editor.
+
 Each `ChannelDelegationCert`
 (`certToWire`) has keys: `type`, `channelId`, `delegateeEd25519`,
 `delegateeMlDsa`, `validFromHourMs`, `validUntilHourMs` (0 = unbounded),
@@ -1978,8 +2123,11 @@ treated as public.
   reactions with the channel's own hybrid signature key (generated by
   `crypto.generateHybridSignatureKeyPair`, private key stored via
   `store.putPublisherPrivKey`). Members sign comments, reactions, announces,
-  applications, approval checks and editor posts with the member key of the
-  channel (section 5). User signatures **require** an ML-DSA component
+  applications, approval checks, editor posts and, from 3.0.19, the
+  submission of a subscriber's post (`SIGNING_LABEL_MEMBER_POST`) with the
+  member key of the channel (section 5); the format 3 post the owner makes
+  of such a submission is signed with the channel's key
+  (`SIGNING_LABEL_POST_V3`). User signatures **require** an ML-DSA component
   (classical-only is refused). From 3.0.18 the signer's ML-DSA key is
   bound per channel to its Ed25519 key and version 3 replies carry the
   owner's signature over those bindings (section 5, Author binding); up

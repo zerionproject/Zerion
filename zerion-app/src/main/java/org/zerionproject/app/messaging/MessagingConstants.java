@@ -28,6 +28,20 @@ interface MessagingConstants {
 
 	int BODY_SALT_LENGTH = 32;
 
+	int VIEW_ONCE_FLAG = 1;
+
+	String MSG_KEY_VIEW_ONCE = "viewOnce";
+	String MSG_KEY_VIEW_ONCE_OPENED = "viewOnceOpened";
+	String MSG_KEY_VIEW_ONCE_CLEARED = "viewOnceCleared";
+	String MSG_KEY_VIEW_ONCE_PENDING = "viewOncePending";
+
+	String GROUP_KEY_PINNED_MESSAGE_ID = "pinnedMessageId";
+	String GROUP_KEY_PINNED_LOCAL = "pinnedLocal";
+	String GROUP_KEY_PINNED_AT = "pinnedAt";
+	String GROUP_KEY_PINNED_RECORD_ID = "pinnedRecordId";
+
+	String SECRET_NOTE_PREFIX = "SECRET:";
+
 	String MSG_KEY_MESH = "mesh";
 
 	String MSG_KEY_MESH_STATE = "meshState";

@@ -5,6 +5,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.Toast;
+
+import com.professor.zerion.R;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.ContactId;
@@ -22,8 +27,24 @@ import javax.inject.Provider;
 import androidx.core.app.RemoteInput;
 
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
+import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 
 public class NotificationQuickReplyReceiver extends BroadcastReceiver {
+
+	private static void notSent(Context ctx, int contactIdInt) {
+		Context app = ctx.getApplicationContext();
+		new Handler(Looper.getMainLooper()).post(() -> {
+			NotificationManager nm = (NotificationManager)
+					app.getSystemService(Context.NOTIFICATION_SERVICE);
+			if (nm != null) {
+				nm.cancel(AndroidNotificationManagerImpl
+						.CONTACT_NOTIFICATION_ID_BASE + contactIdInt);
+			}
+			Toast.makeText(app, R.string.quick_reply_not_sent,
+					Toast.LENGTH_LONG).show();
+		});
+	}
 
 	static final String KEY_REPLY_TEXT = "key_reply_text";
 
@@ -48,8 +69,6 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 		AndroidComponent component = app.getApplicationComponent();
 		component.inject(this);
 
-		if (lockManager.isLocked()) return;
-
 		Bundle remoteInputResults = RemoteInput.getResultsFromIntent(intent);
 		if (remoteInputResults == null) return;
 		CharSequence replyText =
@@ -60,6 +79,11 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 		if (contactIdInt == -1) return;
 
 		String text = replyText.toString();
+		if (lockManager.isLocked()
+				|| utf8IsTooLong(text, MAX_PRIVATE_MESSAGE_TEXT_LENGTH)) {
+			notSent(ctx, contactIdInt);
+			return;
+		}
 		ContactId recipientId = new ContactId(contactIdInt);
 
 		PendingResult pendingResult = goAsync();
@@ -97,7 +121,8 @@ public class NotificationQuickReplyReceiver extends BroadcastReceiver {
 									.CONTACT_NOTIFICATION_ID_BASE
 									+ contactIdInt);
 				}
-			} catch (DbException | FormatException e) {
+			} catch (DbException | FormatException | RuntimeException e) {
+				notSent(ctx, contactIdInt);
 			} finally {
 				pendingResult.finish();
 			}

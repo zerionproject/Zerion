@@ -33,6 +33,9 @@ import static org.zerionproject.core.api.UniqueId.LENGTH;
 @NotNullByDefault
 class SyncRecordWriterImpl implements SyncRecordWriter {
 
+	private static final java.security.SecureRandom COVER_RANDOM =
+			new java.security.SecureRandom();
+
 	private final MessageFactory messageFactory;
 	private final RecordWriter writer;
 	private final ByteArrayOutputStream payload = new ByteArrayOutputStream();
@@ -113,7 +116,7 @@ class SyncRecordWriterImpl implements SyncRecordWriter {
 	public void writeCover(int paddingBytes) throws IOException {
 		if (paddingBytes < 0) paddingBytes = 0;
 		byte[] padding = new byte[paddingBytes];
-		java.util.concurrent.ThreadLocalRandom.current().nextBytes(padding);
+		COVER_RANDOM.nextBytes(padding);
 		writer.writeRecord(new Record(PROTOCOL_VERSION, COVER, padding));
 	}
 

@@ -168,6 +168,26 @@ dependency integrity rested on the locked versions, HTTPS downloads and the
 release-time comparison with an independent build that kept the metadata
 (`scripts/build-fdroid-apk.sh`, which fails closed without it).
 
+The CI reference build (`scripts/fdroid-reference-build.sh`) runs
+fdroidserver and fdroiddata at fixed commits, not at their `master`
+branches, so fdroidserver and fdroiddata cannot change without a commit here;
+the build image (tag `buildserver-trixie`), `gradlew-fdroid` and the system
+packages still follow upstream.
+The pins are the commits that produced the 3.0.18 reference build:
+fdroiddata `e3d332b139f35112ffe1503ec93606dbfd05ab40` (2026-10-20) and
+fdroidserver `0c3166f227d5917c913fa0d66a1ecab3bc7362b8`, which was
+fdroidserver's `master` on 2026-10-20. The script fetches each commit by its
+hash and stops unless the checkout is exactly that commit, and it writes both
+hashes to `provenance.txt` next to the APK. To move to newer commits, read the
+current ones with
+`git ls-remote https://gitlab.com/fdroid/fdroiddata.git master` and
+`git ls-remote https://gitlab.com/fdroid/fdroidserver.git master`, change
+`FDROIDDATA_COMMIT` and `FDROIDSERVER_COMMIT` in the script and the two
+hashes in this paragraph in one commit, and keep it only when the CI
+reference build passes with the new commits. The recipe itself still comes from the newest fdroiddata
+entry (`scripts/fdroid-metadata.py`), so CI keeps testing what F-Droid will
+build.
+
 Two inputs are still not pinned by the recipe itself: it names
 `reproducible-apk-tools` by the tag `v0.3.0`, which resolved to commit
 `dc069dc4cddf6ab5162f3ed3be1bc8a14711273f` on 2026-10-10 (the commit

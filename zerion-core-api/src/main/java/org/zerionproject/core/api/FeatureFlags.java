@@ -11,4 +11,8 @@ public interface FeatureFlags {
 	boolean shouldEnableI2p();
 
 	boolean shouldEnableDebugCountryOverride();
+
+	default boolean shouldEnableViewOnce() {
+		return true;
+	}
 }

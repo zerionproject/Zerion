@@ -12,6 +12,7 @@ public class ChannelPost {
 
 	public static final int FORMAT_LEGACY = 1;
 	public static final int FORMAT_V2 = 2;
+	public static final int FORMAT_V3 = 3;
 
 	private final byte[] channelId;
 	private final long seqNum;
@@ -35,6 +36,8 @@ public class ChannelPost {
 	private final byte[] erasedBodyHash;
 	@Nullable
 	private final byte[] readableUnder;
+	@Nullable
+	private final MemberAuthor memberAuthor;
 
 	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
 			long timestampHourMs, String body,
@@ -78,7 +81,17 @@ public class ChannelPost {
 		this(channelId, seqNum, prevHash, timestampHourMs, body, attachments,
 				ttlMs, signature, read, delegateSignerEd25519PubKey,
 				delegateSignerMlDsaPubKey, withheld, formatVersion, salt,
-				false, null, null);
+				false, null, null, null);
+	}
+
+	public ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, String body,
+			List<ChannelAttachment> attachments, long ttlMs,
+			byte[] signature, boolean read, boolean withheld,
+			byte[] salt, MemberAuthor memberAuthor) {
+		this(channelId, seqNum, prevHash, timestampHourMs, body, attachments,
+				ttlMs, signature, read, null, null, withheld, FORMAT_V3, salt,
+				false, null, null, memberAuthor);
 	}
 
 	private ChannelPost(byte[] channelId, long seqNum, byte[] prevHash,
@@ -88,7 +101,8 @@ public class ChannelPost {
 			@Nullable byte[] delegateSignerEd25519PubKey,
 			@Nullable byte[] delegateSignerMlDsaPubKey, boolean withheld,
 			int formatVersion, @Nullable byte[] salt, boolean edited,
-			@Nullable byte[] erasedBodyHash, @Nullable byte[] readableUnder) {
+			@Nullable byte[] erasedBodyHash, @Nullable byte[] readableUnder,
+			@Nullable MemberAuthor memberAuthor) {
 		this.channelId = channelId;
 		this.seqNum = seqNum;
 		this.prevHash = prevHash;
@@ -106,6 +120,7 @@ public class ChannelPost {
 		this.edited = edited;
 		this.erasedBodyHash = erasedBodyHash;
 		this.readableUnder = readableUnder;
+		this.memberAuthor = memberAuthor;
 	}
 
 	public boolean isWithheld() {
@@ -118,7 +133,7 @@ public class ChannelPost {
 				body, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
 				true, formatVersion, salt, edited, erasedBodyHash,
-				readableUnder);
+				readableUnder, memberAuthor);
 	}
 
 	public ChannelPost withFlags(boolean read, boolean withheld) {
@@ -127,7 +142,7 @@ public class ChannelPost {
 				body, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
 				withheld, formatVersion, salt, edited, erasedBodyHash,
-				readableUnder);
+				readableUnder, memberAuthor);
 	}
 
 	public ChannelPost asShown(String shownBody,
@@ -136,7 +151,7 @@ public class ChannelPost {
 				shownBody, shownAttachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
 				withheld, formatVersion, salt, edited, erasedBodyHash,
-				readableUnder);
+				readableUnder, memberAuthor);
 	}
 
 	public ChannelPost asEdited(String shownBody) {
@@ -144,7 +159,7 @@ public class ChannelPost {
 				shownBody, attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
 				withheld, formatVersion, salt, true, erasedBodyHash,
-				readableUnder);
+				readableUnder, memberAuthor);
 	}
 
 	public ChannelPost erased(byte[] bodyHash) {
@@ -157,7 +172,7 @@ public class ChannelPost {
 				"", attachments, ttlMs, signature, read,
 				delegateSignerEd25519PubKey, delegateSignerMlDsaPubKey,
 				withheld, formatVersion, salt, edited, bodyHash,
-				readableUnder);
+				readableUnder, memberAuthor);
 	}
 
 	public boolean isErased() {
@@ -249,6 +264,52 @@ public class ChannelPost {
 
 	public boolean signedByDelegate() {
 		return delegateSignerEd25519PubKey != null;
+	}
+
+	@Nullable
+	public MemberAuthor getMemberAuthor() {
+		return memberAuthor;
+	}
+
+	public boolean isMemberPost() {
+		return memberAuthor != null;
+	}
+
+	public boolean carriesOwnerMarks() {
+		return delegateSignerEd25519PubKey == null && memberAuthor == null;
+	}
+
+	@NotNullByDefault
+	public static final class MemberAuthor {
+
+		private final byte[] ed25519PubKey;
+		private final byte[] mlDsaPubKey;
+		private final String name;
+		private final int role;
+
+		public MemberAuthor(byte[] ed25519PubKey, byte[] mlDsaPubKey,
+				String name, int role) {
+			this.ed25519PubKey = ed25519PubKey;
+			this.mlDsaPubKey = mlDsaPubKey;
+			this.name = name;
+			this.role = role;
+		}
+
+		public byte[] getEd25519PubKey() {
+			return ed25519PubKey;
+		}
+
+		public byte[] getMlDsaPubKey() {
+			return mlDsaPubKey;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public int getRole() {
+			return role;
+		}
 	}
 
 	@NotNullByDefault

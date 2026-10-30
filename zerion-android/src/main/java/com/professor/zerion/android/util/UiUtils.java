@@ -152,9 +152,11 @@ public class UiUtils {
 
 	public static String getContactDisplayName(Author author,
 			@Nullable String alias) {
-		String name = author.getName();
+		String name = DisplayNames.clean(author.getName());
+		if (name.trim().isEmpty()) name = DisplayNames.PLACEHOLDER;
 		if (alias == null) return name;
-		else return String.format("%s (%s)", alias, name);
+		else return String.format("%s (%s)", DisplayNames.isolate(alias),
+				DisplayNames.isolate(name));
 	}
 
 	public static String getContactDisplayName(Contact c) {

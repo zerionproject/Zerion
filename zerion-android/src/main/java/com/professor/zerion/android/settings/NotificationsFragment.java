@@ -62,6 +62,9 @@ public class NotificationsFragment extends Fragment {
 	public static final String PREF_NOTIFY_QUICK_REPLY =
 			"pref_key_notify_quick_reply";
 	private static final int NOTIFICATION_CHANNEL_API = 26;
+	private static final String CALL_CHANNEL_ID =
+			com.professor.zerion.android.conversation.voice
+					.IncomingCallRinger.RING_CHANNEL_ID;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -259,9 +262,9 @@ public class NotificationsFragment extends Fragment {
 				openChannelSettings(CHANNEL_CHANNEL_ID));
 		notifyVoiceCallsSwitch.setClickable(false);
 		notifyVoiceCallsSwitch.setChecked(
-				isChannelEnabled(CONTACT_CHANNEL_ID));
+				isChannelEnabled(CALL_CHANNEL_ID));
 		notifyVoiceCallsCard.setOnClickListener(v ->
-				openChannelSettings(CONTACT_CHANNEL_ID));
+				openChannelSettings(CALL_CHANNEL_ID));
 		notifyVibrationSwitch.setClickable(false);
 		notifyVibrationSwitch.setChecked(areAppNotificationsEnabled());
 		notifyVibrationCard.setOnClickListener(v -> openAppNotificationSettings());
@@ -300,7 +303,7 @@ public class NotificationsFragment extends Fragment {
 			notifyChannelPostsSwitch.setChecked(
 					isChannelEnabled(CHANNEL_CHANNEL_ID));
 			notifyVoiceCallsSwitch.setChecked(
-					isChannelEnabled(CONTACT_CHANNEL_ID));
+					isChannelEnabled(CALL_CHANNEL_ID));
 			notifyVibrationSwitch.setChecked(areAppNotificationsEnabled());
 		}
 	}

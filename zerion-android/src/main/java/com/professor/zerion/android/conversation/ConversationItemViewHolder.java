@@ -13,11 +13,11 @@ import com.professor.zerion.android.selection.RowActions;
 import com.professor.zerion.android.selection.SelectedFill;
 import com.professor.zerion.android.selection.SelectionAction;
 import com.professor.zerion.android.selection.SelectionRows;
+import com.professor.zerion.android.util.BrowserGuard;
 import org.zerionproject.app.api.messaging.LinkPreview;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.core.api.sync.MessageId;
 
-import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,6 +81,10 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 	void setSelecting(java.util.function.BooleanSupplier selecting) {
 		this.selecting = selecting;
+	}
+
+	boolean isSelecting() {
+		return selecting.getAsBoolean();
 	}
 
 	ConversationItemViewHolder(View v, ConversationListener listener,
@@ -326,12 +330,8 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 				}
 			}
 			if (linkPreviewDomain != null) {
-				try {
-					String host = new URL(preview.getUrl()).getHost();
-					linkPreviewDomain.setText(host);
-				} catch (Exception e) {
-					linkPreviewDomain.setText(preview.getUrl());
-				}
+				linkPreviewDomain.setText(previewDomainLabel(
+						linkPreviewDomain.getContext(), preview.getUrl()));
 			}
 			if (linkPreviewImage != null) {
 				if (preview.hasImage()) {
@@ -353,6 +353,11 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 		} else {
 			linkPreviewCard.setVisibility(GONE);
 		}
+	}
+
+	static String previewDomainLabel(Context ctx, String url) {
+		String host = BrowserGuard.webHost(url);
+		return host == null ? ctx.getString(R.string.link_unsupported) : host;
 	}
 
 	void bindReplyContext(ConversationItem item) {

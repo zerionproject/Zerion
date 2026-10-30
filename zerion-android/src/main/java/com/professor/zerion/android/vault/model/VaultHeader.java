@@ -163,8 +163,9 @@ public class VaultHeader {
 		int kdfMemoryKb = buffer.getInt();
 		int kdfIterations = buffer.getInt();
 		int kdfParallelism = buffer.getInt();
-		com.professor.zerion.android.vault.crypto.Argon2.requireSaneParams(
-				kdfMemoryKb, kdfIterations, kdfParallelism);
+		com.professor.zerion.android.vault.crypto.Argon2
+				.requireSaneVaultHeaderParams(kdfMemoryKb, kdfIterations,
+						kdfParallelism);
 
 		int blobLength = buffer.getInt();
 		byte[] wrappedKeystoreBlob =

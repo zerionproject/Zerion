@@ -134,6 +134,7 @@ public class BundledI2pRouter implements I2pRouter {
 		p.setProperty("i2np.outboundKBytesPerSecond", "64");
 		p.setProperty("i2np.upnp.enable", "false");
 		p.setProperty("router.enableUPnP", "false");
+		p.setProperty("time.disabled", "true");
 		if (useDirect) {
 			applyDirectReseed(p);
 		} else {

@@ -47,7 +47,10 @@ final class VideoConsentGate {
 
 	synchronized boolean onLocalRequest(boolean connected,
 			boolean videoAllowedLocally) {
-		if (!connected || !videoAllowedLocally || captureArmed) return false;
+		if (!connected || !videoAllowedLocally || captureArmed
+				|| remoteOfferPending) {
+			return false;
+		}
 		localRequestOutstanding = true;
 		captureArmed = true;
 		videoWanted = true;
@@ -93,6 +96,13 @@ final class VideoConsentGate {
 		localRequestOutstanding = false;
 		captureArmed = false;
 		videoWanted = false;
+	}
+
+	synchronized boolean resetUnlessOfferPending() {
+		localRequestOutstanding = false;
+		captureArmed = false;
+		videoWanted = false;
+		return remoteOfferPending;
 	}
 
 	synchronized boolean isCaptureArmed() {

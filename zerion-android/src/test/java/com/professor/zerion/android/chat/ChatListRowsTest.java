@@ -27,6 +27,7 @@ import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.db.TransactionManager;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
 import org.zerionproject.core.api.event.EventBus;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.system.AndroidExecutor;
@@ -78,6 +79,9 @@ public class ChatListRowsTest {
 		public void injectFragment(ActivityComponent component) {
 			viewModel = model;
 			ioExecutor = io::add;
+			dbExecutor = Runnable::run;
+			eventBus = mock(EventBus.class);
+			contactRequestManager = mock(ContactRequestManager.class);
 		}
 	}
 
@@ -106,10 +110,6 @@ public class ChatListRowsTest {
 
 			@Override
 			void load() {
-			}
-
-			@Override
-			void checkForPendingContacts() {
 			}
 		};
 	}

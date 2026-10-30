@@ -5,8 +5,6 @@ import android.app.Application;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
-import org.zerionproject.core.api.contact.event.PendingContactAddedEvent;
-import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
 import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.DbException;
@@ -58,8 +56,6 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 
 	private final MutableLiveData<List<ChatItem>> items =
 			new MutableLiveData<>();
-	private final MutableLiveData<Boolean> hasPendingContacts =
-			new MutableLiveData<>();
 	private final MutableLiveEvent<Boolean> contactDeleted =
 			new MutableLiveEvent<>();
 
@@ -93,21 +89,6 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 		return items;
 	}
 
-	LiveData<Boolean> getHasPendingContacts() {
-		return hasPendingContacts;
-	}
-
-	void checkForPendingContacts() {
-		runOnDbThread(() -> {
-			try {
-				hasPendingContacts.postValue(
-						!contactManager.getPendingContacts().isEmpty());
-			} catch (DbException e) {
-				handleException(e);
-			}
-		});
-	}
-
 	void load() {
 		runOnDbThread(() -> {
 			try {
@@ -115,8 +96,9 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 				for (Contact c : contactManager.getContacts()) {
 					GroupCount count =
 							conversationManager.getGroupCount(c.getId());
-					String name = c.getAlias() != null ? c.getAlias()
-							: c.getAuthor().getName();
+					String name = com.professor.zerion.android.util.DisplayNames.clean(
+							c.getAlias() != null ? c.getAlias()
+									: c.getAuthor().getName());
 					AuthorInfo info = authorManager.getAuthorInfo(c);
 					list.add(new ChatItem(ChatItem.Type.CONTACT,
 							c.getId().getInt(), null, name,
@@ -190,9 +172,6 @@ public class ChatsViewModel extends DbViewModel implements EventListener {
 				|| e instanceof ContactDisconnectedEvent
 				|| e instanceof MeshPresenceChangedEvent) {
 			load();
-		} else if (e instanceof PendingContactAddedEvent
-				|| e instanceof PendingContactRemovedEvent) {
-			checkForPendingContacts();
 		}
 	}
 }

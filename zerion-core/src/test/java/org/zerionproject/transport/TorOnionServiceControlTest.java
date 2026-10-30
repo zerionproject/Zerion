@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -46,6 +47,16 @@ public class TorOnionServiceControlTest {
 	private byte[] cookie;
 	private volatile boolean refuseClientAuth = false;
 	private volatile boolean noCredentialOnRemove;
+	@javax.annotation.Nullable
+	private volatile String torVersion = null;
+	private volatile String powRefusal = null;
+	@javax.annotation.Nullable
+	private volatile String plainRefusal = null;
+	@javax.annotation.Nullable
+	private volatile String versionLine = null;
+	private volatile boolean closeOnVersion = false;
+	private final java.util.concurrent.atomic.AtomicInteger versionQueries =
+			new java.util.concurrent.atomic.AtomicInteger();
 	private final List<String> commands =
 			Collections.synchronizedList(new ArrayList<>());
 
@@ -100,6 +111,29 @@ public class TorOnionServiceControlTest {
 							: "515 Authentication failed";
 				} else if (!authenticated) {
 					reply = "514 Authentication required";
+				} else if (line.equals("GETINFO version")) {
+					versionQueries.incrementAndGet();
+					if (closeOnVersion) return;
+					String v = torVersion;
+					if (versionLine != null) {
+						out.write(versionLine + "\r\n");
+						reply = "250 OK";
+					} else if (v == null) {
+						reply = "552 Unrecognized key \"version\"";
+					} else {
+						out.write("250-version=" + v + "\r\n");
+						reply = "250 OK";
+					}
+				} else if (line.startsWith("ADD_ONION ")
+						&& powRefusal != null
+						&& line.contains("PoWDefensesEnabled")) {
+					commands.add(line);
+					reply = powRefusal;
+				} else if (line.startsWith("ADD_ONION ")
+						&& plainRefusal != null
+						&& !line.contains("PoWDefensesEnabled")) {
+					commands.add(line);
+					reply = plainRefusal;
 				} else if (line.startsWith("ADD_ONION ")) {
 					commands.add(line);
 					out.write("250-ServiceID=" + ONION + "\r\n");
@@ -162,6 +196,179 @@ public class TorOnionServiceControlTest {
 		String b32 = TorOnionServiceControl.encodeClientPublicKey(key(1));
 		assertEquals(52, b32.length());
 		assertTrue(b32.matches("[A-Z2-7]{52}"));
+	}
+
+	@Test(timeout = 20_000)
+	public void anInboxAllowsOneStreamPerCircuitAndOneClientKey()
+			throws Exception {
+		TorOnionServiceControl.InboxPublished p =
+				control().publishInbox(KEY_BLOB, "unix:/data/x/inbox", 80,
+						key(4));
+		assertEquals(ONION, p.onion);
+		assertEquals("ADD_ONION " + KEY_BLOB
+				+ " Flags=Detach,V3Auth,MaxStreamsCloseCircuit MaxStreams=1"
+				+ " ClientAuthV3="
+				+ TorOnionServiceControl.encodeClientPublicKey(key(4))
+				+ " Port=80,unix:/data/x/inbox", commands.get(0));
+	}
+
+	private static final String POW =
+			" PoWDefensesEnabled=1 PoWQueueRate=50 PoWQueueBurst=250";
+
+	private String inboxCommand(boolean pow) {
+		return "ADD_ONION " + KEY_BLOB
+				+ " Flags=Detach,V3Auth,MaxStreamsCloseCircuit MaxStreams=1"
+				+ (pow ? POW : "") + " ClientAuthV3="
+				+ TorOnionServiceControl.encodeClientPublicKey(key(4))
+				+ " Port=80,unix:/data/x/inbox";
+	}
+
+	private TorOnionServiceControl.InboxPublished publishInbox()
+			throws IOException {
+		return control().publishInbox(KEY_BLOB, "unix:/data/x/inbox", 80,
+				key(4));
+	}
+
+	@Test(timeout = 20_000)
+	public void anInboxAsksForProofOfWorkWhenTorSupportsIt()
+			throws Exception {
+		torVersion = "0.4.9.14 (git-0123456789abcdef)";
+		TorOnionServiceControl.InboxPublished p = publishInbox();
+		assertEquals(ONION, p.onion);
+		assertTrue(p.powProtected);
+		assertEquals(1, versionQueries.get());
+		assertEquals(singletonList(inboxCommand(true)), commands);
+	}
+
+	@Test(timeout = 20_000)
+	public void otherOnionsNeverAskForProofOfWork() throws Exception {
+		torVersion = "0.4.9.14";
+		control().publish(null, 4321, 80, asList(key(1)));
+		control().publish(KEY_BLOB, "unix:/data/x/channel", 80,
+				asList(key(2)));
+		assertEquals(2, commands.size());
+		for (String c : commands) {
+			assertFalse(c, c.contains("PoW"));
+		}
+		assertEquals(0, versionQueries.get());
+	}
+
+	@Test(timeout = 20_000)
+	public void anInboxIsRepublishedWithoutProofOfWorkWhenTorRefusesIt()
+			throws Exception {
+		torVersion = "0.4.9.14";
+		for (String refusal : new String[] {
+				"552 Unrecognized key \"PoWDefensesEnabled\"",
+				"512 Unrecognized keyword argument PoWDefensesEnabled"}) {
+			commands.clear();
+			powRefusal = refusal;
+			TorOnionServiceControl.InboxPublished p = publishInbox();
+			assertEquals(ONION, p.onion);
+			assertFalse(refusal, p.powProtected);
+			assertEquals(refusal, asList(inboxCommand(true),
+					inboxCommand(false)), commands);
+		}
+	}
+
+	@Test(timeout = 20_000)
+	public void anotherRefusalIsNotRetriedWithoutProofOfWork()
+			throws Exception {
+		torVersion = "0.4.9.14";
+		for (String refusal : new String[] {"512 Invalid argument",
+				"552 Invalid key type", "513 Unrecognized command"}) {
+			commands.clear();
+			powRefusal = refusal;
+			try {
+				publishInbox();
+				fail(refusal);
+			} catch (IOException expected) {
+			}
+			assertEquals(refusal, singletonList(inboxCommand(true)), commands);
+		}
+	}
+
+	@Test(timeout = 20_000)
+	public void aRefusedPlainRepublishFailsAndClaimsNoProofOfWork()
+			throws Exception {
+		torVersion = "0.4.9.14";
+		powRefusal = "552 Unrecognized key \"PoWDefensesEnabled\"";
+		plainRefusal = "512 Invalid argument";
+		try {
+			publishInbox();
+			fail();
+		} catch (IOException expected) {
+		}
+		assertEquals(asList(inboxCommand(true), inboxCommand(false)),
+				commands);
+	}
+
+	@Test(timeout = 20_000)
+	public void aConnectionClosedOnGetInfoStillPublishesWithoutProofOfWork()
+			throws Exception {
+		closeOnVersion = true;
+		TorOnionServiceControl.InboxPublished p = publishInbox();
+		assertEquals(ONION, p.onion);
+		assertFalse(p.powProtected);
+		assertEquals(1, versionQueries.get());
+		assertEquals(singletonList(inboxCommand(false)), commands);
+	}
+
+	@Test(timeout = 20_000)
+	public void aVersionLineInAnotherFormGetsNoProofOfWork()
+			throws Exception {
+		versionLine = "250-Tor version 0.4.9.14.";
+		TorOnionServiceControl.InboxPublished p = publishInbox();
+		assertEquals(ONION, p.onion);
+		assertFalse(p.powProtected);
+		assertEquals(singletonList(inboxCommand(false)), commands);
+	}
+
+	@Test
+	public void onlyARefusalOfTheKeywordsCountsAsOne() {
+		for (String yes : new String[] {
+				"552 Unrecognized key \"PoWDefensesEnabled\"",
+				"512 Unrecognized keyword argument PoWQueueRate",
+				"513 unrecognized keyword"}) {
+			assertTrue(yes, TorOnionServiceControl.refusesPowKeywords(
+					singletonList(yes)));
+		}
+		for (String no : new String[] {"552 Invalid key type",
+				"512 Invalid argument", "550 PoW something", "250 OK"}) {
+			assertFalse(no, TorOnionServiceControl.refusesPowKeywords(
+					singletonList(no)));
+		}
+		assertFalse(TorOnionServiceControl.refusesPowKeywords(
+				Collections.emptyList()));
+	}
+
+	@Test(timeout = 20_000)
+	public void anOlderOrUnknownTorGetsNoProofOfWorkKeywords()
+			throws Exception {
+		for (String v : new String[] {"0.4.8.16", "0.4.9.1-alpha", null}) {
+			commands.clear();
+			torVersion = v;
+			TorOnionServiceControl.InboxPublished p = publishInbox();
+			assertFalse(String.valueOf(v), p.powProtected);
+			assertEquals(singletonList(inboxCommand(false)), commands);
+		}
+	}
+
+	@Test
+	public void theVersionGateStartsAt0492() {
+		for (String yes : new String[] {"0.4.9.2-alpha", "0.4.9.2",
+				"0.4.9.14 (git-abc)", "0.4.10.0", "0.5.0.1", "1.0.0.0"}) {
+			assertTrue(yes, TorOnionServiceControl.supportsPow(asList(
+					"250-version=" + yes, "250 OK")));
+		}
+		for (String no : new String[] {"0.4.9.1", "0.4.8.99", "0.3.5.17",
+				"0.4.9", "junk"}) {
+			assertFalse(no, TorOnionServiceControl.supportsPow(asList(
+					"250-version=" + no, "250 OK")));
+		}
+		assertFalse(TorOnionServiceControl.supportsPow(asList(
+				"250-version=0.4.9.14", "551 Internal error")));
+		assertFalse(TorOnionServiceControl.supportsPow(
+				Collections.emptyList()));
 	}
 
 	@Test(timeout = 20_000)

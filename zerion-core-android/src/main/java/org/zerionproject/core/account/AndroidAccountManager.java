@@ -67,24 +67,28 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@Nullable
 	private File keyDirOverride = null;
 
+	private final LockoutStores lockoutStores;
+
 	@Inject
 	AndroidAccountManager(DatabaseConfig databaseConfig,
 			CryptoComponent crypto, IdentityManager identityManager,
 			SharedPreferences prefs, Application app,
-			ProfileManager profileManager) {
+			ProfileManager profileManager, LockoutStores lockoutStores) {
 		this(databaseConfig, crypto, identityManager, prefs, app,
-				profileManager, new AtomicInteger());
+				profileManager, lockoutStores, new AtomicInteger());
 	}
 
 	private AndroidAccountManager(DatabaseConfig databaseConfig,
 			CryptoComponent crypto, IdentityManager identityManager,
 			SharedPreferences prefs, Application app,
-			ProfileManager profileManager, AtomicInteger derivations) {
+			ProfileManager profileManager, LockoutStores lockoutStores,
+			AtomicInteger derivations) {
 		super(databaseConfig, countingDerivations(crypto, derivations),
 				identityManager);
 		this.derivations = derivations;
 		this.prefs = prefs;
 		this.profileManager = profileManager;
+		this.lockoutStores = lockoutStores;
 		appContext = app.getApplicationContext();
 	}
 
@@ -375,7 +379,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 	@Override
 	protected LoginThrottle createLoginThrottle(File ignored) {
 		return new LoginThrottle(
-				LoginThrottle.fileStore(profileManager.getLockoutFile()),
+				lockoutStores.open(profileManager.getLockoutFile()),
 				android.os.SystemClock::elapsedRealtime,
 				LoginThrottle.linuxBootId(), LoginThrottle.SIGN_IN);
 	}
@@ -400,7 +404,7 @@ public class AndroidAccountManager extends AccountManagerImpl
 	};
 
 	protected LoginThrottle createPasswordCheckThrottle() {
-		return new LoginThrottle(LoginThrottle.fileStore(
+		return new LoginThrottle(lockoutStores.open(
 				profileManager.getPasswordCheckLockoutFile()),
 				android.os.SystemClock::elapsedRealtime,
 				LoginThrottle.linuxBootId(), PASSWORD_CHECK);

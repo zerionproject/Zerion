@@ -88,6 +88,7 @@ class ImagePreviewViewHolder extends ViewHolder {
 		Glide.with(imageView)
 				.load(attachmentItem.getHeader())
 				.diskCacheStrategy(NONE)
+				.skipMemoryCache(true)
 				.error(ERROR_RES)
 				.downsample(FIT_CENTER)
 				.transition(withCrossFade())

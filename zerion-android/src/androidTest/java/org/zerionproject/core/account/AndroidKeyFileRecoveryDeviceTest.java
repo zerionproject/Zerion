@@ -257,7 +257,7 @@ public class AndroidKeyFileRecoveryDeviceTest {
 				Inert.of(SharedPreferences.class),
 				(Application) InstrumentationRegistry.getInstrumentation()
 						.getTargetContext().getApplicationContext(),
-				profiles);
+				profiles, LockoutStores.plaintext());
 	}
 
 	private Context context() {

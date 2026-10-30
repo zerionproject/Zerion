@@ -37,8 +37,9 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			};
 
 	private static final int RECENTLY_FAILED = 4096;
-	private static final String LABEL_FAILED_OPEN =
-			"org.zerionproject.async/FAILED_OPEN";
+	private static final String LABEL_ENVELOPE_DIGEST =
+			"org.zerionproject.async/ENVELOPE_DIGEST";
+	private static final int ENVELOPE_DIGEST_BYTES = 16;
 	private final java.util.LinkedHashMap<String, Boolean> recentlyFailed =
 			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
 				@Override
@@ -95,6 +96,8 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final Identity identity;
 	private final org.zerionproject.core.api.system.Clock clock;
 	private final SecureRandom random = new SecureRandom();
+	@javax.annotation.Nullable
+	private volatile java.util.function.Consumer<String> openedFromPeer;
 
 	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
 			AsyncPrekeyStore store, OpenedListener listener,
@@ -106,6 +109,12 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		this.listener = listener;
 		this.identity = identity;
 		this.clock = clock;
+	}
+
+	public void setOpenedFromPeerListener(
+			@javax.annotation.Nullable
+					java.util.function.Consumer<String> listener) {
+		openedFromPeer = listener;
 	}
 
 	public static class Identity {
@@ -251,21 +260,22 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		try {
 			long ttl = env.getTtl();
 			if (ttl < 0 || ttl > MAX_TTL_SECONDS) return;
-			String dedupHex = org.zerionproject.core.util.StringUtils
-					.toHexString(env.getDedupId());
+			byte[] digest = java.util.Arrays.copyOf(
+					crypto.hash(LABEL_ENVELOPE_DIGEST, envelopeBytes),
+					ENVELOPE_DIGEST_BYTES);
+			String envelopeKey =
+					org.zerionproject.core.util.StringUtils.toHexString(digest);
 			synchronized (recentlyOpened) {
-				if (recentlyOpened.containsKey(dedupHex)) return;
+				if (recentlyOpened.containsKey(envelopeKey)) return;
 			}
-			if (store.isSeen(env.getDedupId())) return;
+			synchronized (recentlyFailed) {
+				if (recentlyFailed.containsKey(envelopeKey)) return;
+			}
+			if (store.isEnvelopeOpened(digest)) return;
 			List<AsyncPrekeyStore.PrekeyCandidate> candidates =
 					store.resolveCandidates(env.getPrekeyKind(),
 							env.getPrekeyId(), env.getSignedPrekeyId(), ttl);
 			if (candidates.isEmpty()) return;
-			String failedKey = org.zerionproject.core.util.StringUtils
-					.toHexString(crypto.hash(LABEL_FAILED_OPEN, envelopeBytes));
-			synchronized (recentlyFailed) {
-				if (recentlyFailed.containsKey(failedKey)) return;
-			}
 			if (!takeOpenBudget(fromPeer, candidates.size())) return;
 			AsyncSealedSender.OpenedMessage m = null;
 			AsyncPrekeyStore.PrekeyCandidate used = null;
@@ -286,24 +296,29 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			}
 			if (m == null || used == null) {
 				synchronized (recentlyFailed) {
-					recentlyFailed.put(failedKey, Boolean.TRUE);
+					recentlyFailed.put(envelopeKey, Boolean.TRUE);
 				}
 				return;
 			}
 			long now = clock.currentTimeMillis();
 			long expiry = m.getSendTimestamp() + ttl * 1000L;
-			if (now > expiry
-					|| m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) {
+			if (now > expiry) {
+				synchronized (recentlyFailed) {
+					recentlyFailed.put(envelopeKey, Boolean.TRUE);
+				}
 				return;
 			}
+			if (m.getSendTimestamp() > now + CLOCK_SKEW_TOLERANCE_MS) return;
 			synchronized (recentlyOpened) {
-				recentlyOpened.put(dedupHex, Boolean.TRUE);
+				recentlyOpened.put(envelopeKey, Boolean.TRUE);
 			}
 			if (!listener.knowsSender(m.getSenderIdentitySigPub())) return;
 			if (!store.checkAndMarkSeen(m.getSenderIdentitySigPub(),
-					env.getDedupId(), expiry)) {
+					env.getDedupId(), expiry, digest)) {
 				return;
 			}
+			java.util.function.Consumer<String> credit = openedFromPeer;
+			if (credit != null && !fromPeer.isEmpty()) credit.accept(fromPeer);
 			boolean accepted = listener.onOpened(m.getSenderIdentitySigPub(),
 					m.getMessageType(), m.getPayload(), m.getSendTimestamp());
 			if (accepted && used.oneTimeId != null) {

@@ -54,8 +54,8 @@ android {
     defaultConfig {
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 31800
-        versionName "3.0.18"
+        versionCode 31900
+        versionName "3.0.19"
         applicationId "com.professor.zerion"
         buildConfigField "String", "TorVersion", "\"$tor_version\""
         buildConfigField "String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/zerionproject/Zerion/master/docs/release-manifest.json\""
@@ -169,6 +169,7 @@ if (isFdroidBuild) {
 configurations.all {
     resolutionStrategy {
         force 'org.slf4j:slf4j-api:1.7.32'
+        force 'com.google.protobuf:protobuf-javalite:3.25.5'
     }
     exclude group: 'org.bouncycastle', module: 'bcprov-jdk15on'
 }

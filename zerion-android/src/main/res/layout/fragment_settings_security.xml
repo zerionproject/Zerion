@@ -40,6 +40,10 @@
 						style="@style/Zerion.Settings.Row.Summary"
 						android:text="@string/pref_lock_summary" />
 
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/pref_lock_keys_summary" />
+
 				</LinearLayout>
 
 				<com.google.android.material.switchmaterial.SwitchMaterial

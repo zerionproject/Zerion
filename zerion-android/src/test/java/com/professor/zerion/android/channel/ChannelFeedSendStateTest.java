@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelManager;
 import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelPostTooLongException;
@@ -36,6 +37,7 @@ import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.EventBus;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -314,6 +316,214 @@ public class ChannelFeedSendStateTest {
 		assertEquals("the reason is shown once", 1, Collections.frequency(
 				SnackbarProbe.texts(feed),
 				feed.getString(R.string.channels_editor_post_not_sent)));
+	}
+
+	@Test
+	public void aSubscriberMayWriteWhenTheOwnerLetsEveryonePost()
+			throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		open();
+		assertEquals(View.GONE,
+				feed.findViewById(R.id.channelComposeBar).getVisibility());
+
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		open();
+		assertEquals(View.VISIBLE,
+				feed.findViewById(R.id.channelComposeBar).getVisibility());
+		assertEquals(View.GONE, feed.findViewById(
+				R.id.channelFeedReadOnlyFooter).getVisibility());
+	}
+
+	@Test
+	public void anEditorCannotWriteWhileOnlyTheOwnerMayPost()
+			throws Exception {
+		stub(false);
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_OWNER_ONLY);
+		open();
+		assertEquals(View.GONE,
+				feed.findViewById(R.id.channelComposeBar).getVisibility());
+	}
+
+	@Test
+	public void aRefusedSubscriberPostSaysItWasNotAccepted()
+			throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.publishPostWithSeq(any(), anyString(), anyLong()))
+				.thenThrow(new ChannelRefusedException());
+		open();
+
+		type("Road is open");
+		send();
+		runIo();
+
+		assertEquals("Road is open", input().getText().toString());
+		assertEquals(feed.getString(R.string.channels_post_not_accepted),
+				SnackbarProbe.text(feed));
+	}
+
+	@Test
+	public void aWaitingPostTheOwnerRefusedIsReportedOnce() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.takeRefusedPostNotices(any())).thenReturn(1, 0);
+		open();
+
+		assertEquals(1, Collections.frequency(SnackbarProbe.texts(feed),
+				feed.getString(R.string.channels_post_not_accepted)));
+	}
+
+	@Test
+	public void aPostOverTheQuotaSaysTryAgainLater() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.publishPostWithSeq(any(), anyString(), anyLong()))
+				.thenThrow(new org.zerionproject.app.api.channel
+						.ChannelPostQuotaException(5L));
+		open();
+
+		type("Road is open");
+		send();
+		runIo();
+
+		assertEquals(feed.getString(R.string.channels_post_too_many),
+				SnackbarProbe.text(feed));
+		assertEquals("", input().getText().toString());
+	}
+
+	@Test
+	public void onlyTheOwnerPostsHereIsSaidWhenOnlyTheOwnerMay()
+			throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_OWNER_ONLY);
+		open();
+		assertEquals("Only the owner posts here", String.valueOf(
+				((TextView) feed.findViewById(R.id.channelFeedReadOnlyFooter))
+						.getText()));
+
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		open();
+		assertEquals("Only the owner and editors post here", String.valueOf(
+				((TextView) feed.findViewById(R.id.channelFeedReadOnlyFooter))
+						.getText()));
+	}
+
+	@Test
+	public void ownWaitingSubscriberPostsAreLabelledByTheirKind()
+			throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(false);
+		when(manager.getQueuedItems(any())).thenReturn(Arrays.asList(
+				new ChannelQueuedItem(5L, ChannelQueuedItem.Kind.MEMBER_POST,
+						-1L, "rate11", false, System.currentTimeMillis(),
+						false),
+				new ChannelQueuedItem(6L, ChannelQueuedItem.Kind.POST, -1L,
+						"as editor", false, System.currentTimeMillis(),
+						false)));
+		open();
+
+		assertEquals(2, adapter().getItemCount());
+		assertEquals(feed.getString(R.string.channels_comment_you),
+				text(0, R.id.channelPostAuthor));
+		assertEquals("SUBSCRIBER", text(0, R.id.channelPostSignerBadge));
+		assertEquals("EDITOR", text(1, R.id.channelPostSignerBadge));
+		String said = String.valueOf(holder(0).itemView.findViewById(
+				R.id.layout).getContentDescription());
+		assertTrue(said, said.startsWith(
+				feed.getString(R.string.channels_comment_you) + ", "));
+	}
+
+	@Test
+	public void aPostBeingSentIsReadOutAsYours() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		CountDownLatch release = new CountDownLatch(1);
+		when(manager.publishPostWithSeq(any(), anyString(), anyLong()))
+				.thenAnswer(inv -> {
+					release.await(5, TimeUnit.SECONDS);
+					return 3L;
+				});
+		open();
+
+		type("Road is open");
+		send();
+
+		String said = String.valueOf(holder(0).itemView.findViewById(
+				R.id.layout).getContentDescription());
+		assertTrue(said, said.startsWith(
+				feed.getString(R.string.channels_comment_you) + ", "));
+		assertEquals("SUBSCRIBER", text(0, R.id.channelPostSignerBadge));
+		release.countDown();
+	}
+
+	@Test
+	public void aSubscriberIsAskedToWriteAPostNotToSubscribers()
+			throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		open();
+		assertEquals("Write a post", String.valueOf(input().getHint()));
+
+		stub(true);
+		open();
+		assertEquals(feed.getString(R.string.channels_compose_hint),
+				String.valueOf(input().getHint()));
+	}
+
+	@Test
+	public void bothWaitingPostNoticesAreReported() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.takeRefusedPostNotices(any())).thenReturn(1, 0);
+		when(manager.takeTooManyPostNotices(any())).thenReturn(1, 0);
+		open();
+
+		String shown = String.join("\n", SnackbarProbe.texts(feed));
+		assertTrue(shown, shown.contains(
+				feed.getString(R.string.channels_post_not_accepted)));
+		assertTrue(shown, shown.contains(
+				feed.getString(R.string.channels_post_too_many)));
+	}
+
+	@Test
+	public void aWaitingPostTheOwnerLimitedIsReported() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.takeTooManyPostNotices(any())).thenReturn(1, 0);
+		open();
+
+		assertEquals(1, Collections.frequency(SnackbarProbe.texts(feed),
+				feed.getString(R.string.channels_post_too_many)));
+	}
+
+	@Test
+	public void aWaitingSubscriberPostIsShownAsWaiting() throws Exception {
+		stub(false);
+		when(manager.canPost(any())).thenReturn(false);
+		when(manager.canPostAsMember(any())).thenReturn(true);
+		when(manager.getQueuedItems(any())).thenReturn(Collections
+				.singletonList(new ChannelQueuedItem(5L,
+						ChannelQueuedItem.Kind.MEMBER_POST, -1L,
+						"Road is open", false, System.currentTimeMillis(),
+						false)));
+		open();
+
+		assertEquals(1, adapter().getItemCount());
 	}
 
 	@Test

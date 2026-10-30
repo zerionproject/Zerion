@@ -6,13 +6,15 @@ interface HandshakeConstants {
 
 	byte PROTOCOL_MAJOR_VERSION = 0;
 
-	byte PROTOCOL_MINOR_VERSION = 4;
+	byte PROTOCOL_MINOR_VERSION = 5;
 
 	byte FS_MINOR_VERSION = 2;
 
 	byte PQ_AUTH_MINOR_VERSION = 3;
 
 	byte KCI_MINOR_VERSION = 4;
+
+	byte KEY_SEPARATION_MINOR_VERSION = 5;
 
 
 	String MASTER_KEY_LABEL_HYBRID_FS =
@@ -22,6 +24,14 @@ interface HandshakeConstants {
 			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_PQ_AUTH_V3";
 	String MASTER_KEY_LABEL_HYBRID_KCI =
 			"org.zerionproject.core.handshake/HYBRID_MASTER_KEY_KCI_V4";
+
+	String CONFIRMATION_KEY_LABEL =
+			"org.zerionproject.core.handshake/CONFIRMATION_KEY_V5";
+
+	String EXCHANGE_KEY_LABEL =
+			"org.zerionproject.core.handshake/EXCHANGE_KEY_V5";
+
+	String ROOT_KEY_LABEL = "org.zerionproject.core.handshake/ROOT_KEY_V5";
 
 	String ALICE_PROOF_LABEL = "org.zerionproject.core.handshake/ALICE_PROOF";
 

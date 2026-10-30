@@ -30,6 +30,20 @@
 		tools:ignore="ContentDescription"
 		tools:listitem="@layout/list_item_image" />
 
+	<CheckBox
+		android:id="@+id/viewOnceToggle"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="8dp"
+		android:layout_marginTop="4dp"
+		android:background="?attr/zerionColorSurface"
+		android:minHeight="48dp"
+		android:paddingEnd="8dp"
+		android:text="@string/view_once"
+		android:visibility="gone"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/divider" />
+
 	<com.google.android.material.floatingactionbutton.FloatingActionButton
 		android:id="@+id/imageCancelButton"
 		android:layout_width="wrap_content"

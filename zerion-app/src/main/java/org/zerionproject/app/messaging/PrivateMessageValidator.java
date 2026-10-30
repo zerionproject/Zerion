@@ -15,6 +15,7 @@ import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageContext;
 import org.zerionproject.core.api.sync.validation.MessageValidator;
 import org.zerionproject.core.api.system.Clock;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.zerionproject.app.attachment.CountingInputStream;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -25,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 import static org.zerionproject.core.api.sync.SyncConstants.MAX_MESSAGE_BODY_LENGTH;
@@ -75,6 +78,8 @@ import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_PREVIEW
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_HAS_PREVIEW_IMAGE;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TARGET_MESSAGE_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_TIMESTAMP;
+import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_VIEW_ONCE;
+import static org.zerionproject.app.messaging.MessagingConstants.VIEW_ONCE_FLAG;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_ID;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_EPOCH;
 import static org.zerionproject.app.messaging.MessagingConstants.MSG_KEY_GROUP_SENDER_PUBKEY;
@@ -175,6 +180,12 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.MESSAGE_DELETE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateMessageDelete(m, list);
+				} else if (messageType == MessageTypes.VIEW_ONCE_OPENED) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateViewOnceOpened(m, list);
+				} else if (messageType == MessageTypes.MESSAGE_PIN) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMessagePin(m, list);
 				} else if (messageType == LINK_PREVIEW_MESSAGE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateLinkPreviewMessage(m, list);
@@ -258,6 +269,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.GROUP_KEY_PROBE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateKeyProbe(m, list);
+				} else if (messageType == MessageTypes.GROUP_PIN) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateGroupPin(m, list);
 				} else {
 					throw new InvalidMessageException();
 				}
@@ -283,7 +297,7 @@ class PrivateMessageValidator implements MessageValidator {
 
 	private BdfMessageContext validatePrivateMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 3, 6);
+		checkSize(body, 3, 7);
 		String text = body.getOptionalString(1);
 		checkLength(text, 0, MAX_PRIVATE_MESSAGE_TEXT_LENGTH);
 		VoiceMemoFormatCheck.requireCurrentFormat(text);
@@ -310,7 +324,9 @@ class PrivateMessageValidator implements MessageValidator {
 			replyToId = body.getOptionalRaw(4);
 			if (replyToId != null) checkLength(replyToId, UniqueId.LENGTH);
 		}
-		if (body.size() == 6) checkLength(body.getRaw(5), BODY_SALT_LENGTH);
+		if (body.size() >= 6) checkLength(body.getRaw(5), BODY_SALT_LENGTH);
+		boolean viewOnce = body.size() == 7;
+		if (viewOnce) checkViewOnce(body.getLong(6), text, headers);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
@@ -324,10 +340,72 @@ class PrivateMessageValidator implements MessageValidator {
 		if (replyToId != null) {
 			meta.put(MSG_KEY_REPLY_TO_ID, replyToId);
 		}
+		if (viewOnce) meta.put(MSG_KEY_VIEW_ONCE, true);
 		if (dependencies.isEmpty()) {
 			return new BdfMessageContext(meta);
 		}
 		return new BdfMessageContext(meta, dependencies);
+	}
+
+	private static void checkViewOnce(long flag, @Nullable String text,
+			BdfList headers) throws FormatException {
+		if (flag != VIEW_ONCE_FLAG) throw new FormatException();
+		if (text != null || headers.size() != 1) throw new FormatException();
+		String contentType = headers.getList(0).getString(1);
+		if (!ViewOnceMedia.isAllowedType(contentType)) {
+			throw new FormatException();
+		}
+	}
+
+	private BdfMessageContext validateViewOnceOpened(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		byte[] targetId = body.getRaw(1);
+		checkLength(targetId, UniqueId.LENGTH);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.VIEW_ONCE_OPENED);
+		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMessagePin(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 2);
+		byte[] targetId = body.getOptionalRaw(1);
+		if (targetId != null) checkLength(targetId, UniqueId.LENGTH);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESSAGE_PIN);
+		if (targetId != null) meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetId);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateGroupPin(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 5);
+		byte[] groupId = body.getRaw(1);
+		checkLength(groupId, 32);
+		byte[] targetPostId = body.getOptionalRaw(2);
+		if (targetPostId != null) checkLength(targetPostId, 32);
+		long timestamp = body.getLong(3);
+		byte[] sig = body.getRaw(4);
+		checkLength(sig, 1, 4096);
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.GROUP_PIN);
+		meta.put(MSG_KEY_GROUP_ID, groupId);
+		if (targetPostId != null) {
+			meta.put(MessagingConstants.MSG_KEY_GROUP_TARGET_POST_ID,
+					targetPostId);
+		}
+		meta.put(MessagingConstants.MSG_KEY_GROUP_RECORD_TIMESTAMP,
+				timestamp);
+		meta.put(MSG_KEY_GROUP_RECORD_SIG, sig);
+		return new BdfMessageContext(meta);
 	}
 
 	private BdfMessageContext validateAttachment(Message m, BdfList descriptor,
@@ -558,6 +636,7 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		String previewUrl = body.getString(2);
 		checkLength(previewUrl, 1, 2048);
+		checkWebUrl(previewUrl);
 		String previewTitle = body.getString(3);
 		checkLength(previewTitle, 1, 512);
 		String previewDescription = body.getOptionalString(4);
@@ -579,6 +658,24 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, hasImage);
 		return new BdfMessageContext(meta);
+	}
+
+	static void checkWebUrl(String url) throws FormatException {
+		for (int i = 0; i < url.length(); i++) {
+			char c = url.charAt(i);
+			if (c < 0x21 || c > 0x7E) throw new FormatException();
+		}
+		String lower = url.toLowerCase(Locale.ROOT);
+		int hostStart;
+		if (lower.startsWith("https://")) hostStart = 8;
+		else if (lower.startsWith("http://")) hostStart = 7;
+		else throw new FormatException();
+		if (url.length() <= hostStart) throw new FormatException();
+		char first = url.charAt(hostStart);
+		if (first == '/' || first == '?' || first == '#'
+				|| Character.isWhitespace(first)) {
+			throw new FormatException();
+		}
 	}
 
 	private BdfMessageContext validateGroupPost(Message m, BdfList body)

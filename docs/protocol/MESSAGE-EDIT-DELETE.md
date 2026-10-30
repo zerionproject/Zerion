@@ -391,6 +391,222 @@ post body type 5); this section describes the behaviour.
   looked up on the receiving device; when it is missing or deleted the quote
   says that the original is unavailable.
 
+## Pinned message
+
+From 3.0.19, minor version 15 of the messaging client
+(`MessagingManager.PIN_MIN_VERSION`) lets either side of a one-to-one
+conversation pin one message. The pin is a control record of the private
+messaging client, like an edit or a delete:
+
+| Type | Body | Meaning |
+| --- | --- | --- |
+| 15 | `[15, target]` | Pin the message `target` in this conversation |
+| 15 | `[15, null]` | Unpin |
+
+`target` is the 32-byte id under which the sender stored the message; a
+message that reached the receiver over the mesh is resolved to the
+receiver's copy the way edits are. Anything other than a 32-byte raw or null
+in slot 1, or anything after it, makes the record invalid.
+
+Storage: one pinned message per conversation, kept in the metadata of the
+conversation's contact group under `pinnedMessageId` (the message id),
+`pinnedLocal` (whether this device pinned it), `pinnedAt` (the time of the
+last pin or unpin) and `pinnedRecordId` (the id of the record that set it).
+No message row and no table is added. Pinning another message replaces the
+entry; unpinning removes the message id and keeps the time and record id, so
+the order of later records can still be decided. A pin or unpin made on this
+device takes the current time, or one millisecond after the stored time if
+that is later, so it always sorts after what this device has seen.
+
+Receiving:
+
+- A pin applies to a stored message of the conversation that is a text,
+  attachment, voice memo or link preview message (types 0 and 9 or the
+  one-element legacy text), not a view once message and not a secret note.
+  A record that names a message that has not arrived yet (for example a
+  message with attachments that is still being sent, or one that travels
+  over another connection) is kept waiting like a pending edit, for 7 days
+  or the conversation's disappearing timer, whichever is shorter, and is
+  applied when the message arrives; the newest waiting record wins, a pin
+  or unpin from the contact drops the waiting records that are older than
+  it, and a pin or unpin made on this device drops them all. A record that
+  names a message deleted for everyone, a message of another kind, or a
+  message this device cannot pin is ignored without a trace. Either side
+  may pin a message sent by either side.
+- An unpin clears the pinned message, whoever pinned it. An unpin when
+  nothing is pinned changes nothing.
+- A received pin or unpin is applied only if it is newer than the stored
+  state: its message timestamp is later than `pinnedAt`, or equal with a
+  record id that is larger byte by byte (unsigned) than `pinnedRecordId`.
+  An older record is dropped. Two pins made at the same moment on both
+  phones therefore end with the same pin on both.
+- The record itself is removed right after it is applied on the receiving
+  side; the sender keeps its own record until a minute after the contact
+  acknowledged it, and a newer pin or unpin from this device drops the
+  earlier record that has not left yet.
+
+Sending:
+
+- Pin and Unpin are offered for any single message that is not a view once
+  message or a secret note; choosing them for one of those shows "This
+  message cannot be pinned." and sends nothing.
+- The record is sent only to a contact that announces minor version 15 or
+  later. To a contact on 14 or earlier (3.0.18 and before, and the iOS
+  client, which announces 3) the pin is stored on this device only and the
+  app says "Pinned on this device only: your contact's app is too old to
+  show it on theirs." An unpin to such a contact likewise says so. A 3.0.18
+  receiver that is nevertheless sent a type 15 record (a development build)
+  marks it invalid and shows nothing, as for every unknown type.
+- A message sent over the mesh can be pinned on this device only, since its
+  id differs on the contact's device.
+- Deleting the pinned message, on this device, for everyone, by its
+  disappearing timer or by clearing the chat, removes the pin and the pin
+  record still waiting for the contact. The contact's pin goes with the
+  contact's copy when the delete reaches it.
+
+The banner under the chat's title shows the first line of the text, or
+"Photo", "Video", "Voice message" or "File" for an attachment, never the
+content of a view once message or a secret note. Tapping it scrolls to the
+message; the close icon unpins.
+
+Groups: the Group owner (the creator) pins and unpins one post per group
+with the signed record of msgType 59 (`GROUP_PIN`), specified byte for byte
+in [GROUPTR_WIRE_PROTOCOL.md](../wire/GROUPTR_WIRE_PROTOCOL.md). Members on
+3.0.18 or earlier are not sent it and keep working; the owner is told how
+many members do not see the pin. Admins have no pin right: the group's
+permission model gives the admin role no rights, and the pin follows that.
+Members see the banner and can hide it until the next pin; the owner's
+close icon unpins. Deleting the pinned post, for everyone or on this device,
+removes the pin on that device. Channels keep their own pinned post in the
+channel manifest, unchanged.
+
+## View once photos and videos
+
+From 3.0.19, minor version 14 of the messaging client
+(`MessagingManager.VIEW_ONCE_MIN_VERSION`) lets the sender of a private
+message mark one photo or one video as view once: the contact can open it
+once, and then neither device keeps it.
+
+| Type | Body | Meaning |
+| --- | --- | --- |
+| 0 | `[0, null, [[id, contentType]], timer, replyTo, salt, 1]` | A photo or video the contact can open once |
+| 14 | `[14, target]` | The contact opened the view once message `target` |
+
+Slot 6 of a type 0 body is the view once flag, the integer 1. It needs the
+salt in slot 5 (32 bytes, as in "Salted bodies"), no text and exactly one
+attachment whose content type starts with `image/` or `video/`; `timer` and
+`replyTo` keep their meaning and may be null. Any other value in slot 6,
+text, a missing or malformed salt, no attachment or more than one, another
+content type, or anything after slot 6 makes the record invalid. The
+attachment travels as before (a type 1 record for a photo, a type 3 manifest
+with type 4 chunks for a video). `target` in type 14 is the 32-byte id of
+the view once message; anything after it makes the record invalid.
+
+Sending:
+
+- The attachment screen offers the View once switch only when the contact
+  announces minor version 14 or later, only for one photo or one video, and
+  only without a caption; while it is on, the caption field is locked: it
+  cannot take focus, the keyboard is closed, and text that still arrives
+  from an open keyboard is dropped without turning the switch off. The
+  messaging manager refuses a view once message for a contact below 14 and
+  for the mesh (`ViewOnceNotSupportedException`). A contact below 14 is
+  never sent the longer body: Android up to 3.0.18 refuses it (its
+  validator accepts at most six elements) and the iOS client, which
+  announces minor version 3, would show it as an ordinary picture. A client
+  that does not implement view once must announce 13 or lower; in this code
+  base a build does so by returning false from
+  `FeatureFlags.shouldEnableViewOnce` (the desktop client until it
+  implements this section).
+- In offline mode a photo picked from the gallery or taken with the camera
+  is sent over the mesh at once, without the attachment screen, as before
+  3.0.19, so view once is never offered for it. Where the attachment screen
+  is still used in offline mode (a recorded video), the switch is shown
+  switched off with the words "View once is not sent over the mesh".
+- After a view once photo is sent, the app's in-memory image cache is
+  emptied, and the attachment screen never keeps its preview there.
+- The sender's own copy shows a placeholder ("Photo, view once" or "Video,
+  view once"), never the picture or a preview frame. Its media is kept only
+  until the contact has acknowledged the message and every part of the
+  attachment (the photo, or the manifest and every chunk); then the bodies
+  of those parts are erased (`DatabaseComponent.eraseMessageBody`, which
+  also clears the stored length), in the transaction that follows the
+  acknowledgement, at the next start if that was missed, or when the
+  receipt arrives, whichever comes first. The placeholder says "Viewed" once
+  the receipt has arrived. The sender can delete the message for everyone,
+  before or after it was opened.
+
+Receiving:
+
+- The message is shown as a tile without a thumbnail or preview frame
+  ("Tap to view once"); it is not listed under All media, cannot be copied,
+  forwarded, quoted, reacted to or saved, and a notification only counts it.
+  The message depends on its photo, or on the manifest and through it on
+  every chunk of its video, so it is delivered and shown only once all of
+  them have arrived; there is no tile whose media is still on its way.
+- The first time the user opens any view once message, a notice says that it
+  can be opened once, that it is deleted as soon as it is opened, and that
+  the sender trusts the viewer not to photograph or record the screen.
+- Opening reads the media into memory and, in the same transaction, marks
+  the message opened, erases the body of the photo or of every chunk of the
+  video and queues a type 14 record for the contact. A process that is killed
+  afterwards cannot show it again, and a second tap finds nothing; taps
+  while it is being opened are ignored. A view once message is opened only
+  when the message and every part of its attachment were received from the
+  contact: one that names an attachment this device sent is refused, and
+  erasure only ever touches parts on the same side as the message.
+- If the chat is no longer on screen when the media has been read (the user
+  left in that moment), the copy is wiped instead of shown, the tile says
+  "Viewed" and a short message says that it was not shown. Media the viewer
+  cannot decode is used up in the same way: the tile says "Viewed" and a
+  short message says that it could not be shown.
+- The media is shown in the app's own viewer or player from memory, with
+  screenshot protection on whatever the setting, and without Save, Open in
+  another app or Share. The copy is wiped and the viewer closes when the
+  user closes it, when the app leaves the screen (another app, the home
+  screen, the screen turning off), when a video has played to its end, at
+  lock and sign-out. The tile then says "Viewed".
+- A type 14 record applies only to a view once message this device sent and
+  that is not marked opened yet; any other record is ignored. It is removed
+  right after it is applied. The opener keeps its own type 14 record until a
+  minute after the contact acknowledged it, also when the chat is cleared.
+- Deleting on this device, deleting for everyone and the disappearing timer
+  work for view once messages as for any other type 0 message, opened or
+  not.
+
+What remains on both devices: the message row with its time, the attachment
+id and content type in its metadata and the opened mark; the rows of the
+attachment parts with their ids, delivery state and metadata (for a video
+the manifest, which holds the chunk ids, the total size and the hash of the
+chunks, and the size of every chunk), so the parts are recognised and not
+offered or requested again. The pixels and samples are gone from the
+database. The id of each part is a hash over the conversation, its time and
+its body, so someone who holds the exact photo or video file and can read
+the database can confirm that this file was the one sent.
+
+A backup or a transfer to a new phone made while a view once message is
+unopened on the receiving side, or not yet acknowledged on the sending side,
+carries the message without its media: the export erases those bodies in its
+own copy of the database before it is encrypted, so restoring it gives
+nothing that can be opened. A copy of the whole device storage made outside
+the app is out of scope.
+
+View once protects against the media staying on either device after it was
+opened, against it being saved, forwarded or opened in another app from
+Zerion, and against ordinary screenshots and screen recordings on an
+unmodified system. It cannot stop a second camera pointed at the screen, a
+modified client or operating system that keeps the media or captures the
+screen, or a contact's device that never opens the message (the media stays
+there, encrypted at rest, until it is opened, deleted or its timer runs
+out). The sender learns that the message was opened only if the receipt
+arrives.
+
+iOS port: the iOS client announces messaging minor version 3, so Android
+never sends it view once; before announcing 14 it must refuse slot 6
+values other than 1, show the tile without a preview, open the media once
+from memory, erase it and send type 14, and erase its own sent copy as
+described above.
+
 ## Limits
 
 Deleting for everyone removes the message from the contact's app. It cannot

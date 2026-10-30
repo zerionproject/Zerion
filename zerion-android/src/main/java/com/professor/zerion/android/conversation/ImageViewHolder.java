@@ -25,15 +25,16 @@ import com.professor.zerion.android.attachment.AttachmentKinds;
 import com.professor.zerion.android.conversation.glide.ZerionImageTransformation;
 import com.bumptech.glide.Glide;
 import com.professor.zerion.android.conversation.glide.Radii;
+import com.professor.zerion.android.util.ByteArrayMediaDataSource;
 import com.professor.zerion.android.util.UiUtils;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentNotYetAvailableException;
 import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,6 +54,7 @@ import static com.bumptech.glide.load.engine.DiskCacheStrategy.NONE;
 import static com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.AVAILABLE;
 import static com.professor.zerion.android.attachment.AttachmentItem.State.ERROR;
+import static org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT_SIZE;
 
 @NotNullByDefault
 public class ImageViewHolder extends ViewHolder {
@@ -104,10 +106,11 @@ public class ImageViewHolder extends ViewHolder {
 	@Nullable
 	@DatabaseExecutor
 	private final Executor dbExecutor;
+	private final Executor previewExecutor;
 	private boolean incoming = true;
 	@Nullable
 	private ColorStateList ownIcon = null;
-	private Object bound = new Object();
+	private volatile Object bound = new Object();
 
 	private final class Broken implements RequestListener<Drawable> {
 
@@ -140,6 +143,14 @@ public class ImageViewHolder extends ViewHolder {
 	ImageViewHolder(View v, int imageSize, MessageId conversationItemId,
 			@Nullable AttachmentReader attachmentReader,
 			@Nullable @DatabaseExecutor Executor dbExecutor) {
+		this(v, imageSize, conversationItemId, attachmentReader, dbExecutor,
+				THUMBNAIL_DECODE_EXECUTOR);
+	}
+
+	ImageViewHolder(View v, int imageSize, MessageId conversationItemId,
+			@Nullable AttachmentReader attachmentReader,
+			@Nullable @DatabaseExecutor Executor dbExecutor,
+			Executor previewExecutor) {
 		super(v);
 		imageView = v.findViewById(R.id.imageView);
 		playOverlay = v.findViewById(R.id.playOverlay);
@@ -147,6 +158,7 @@ public class ImageViewHolder extends ViewHolder {
 		this.conversationItemId = conversationItemId;
 		this.attachmentReader = attachmentReader;
 		this.dbExecutor = dbExecutor;
+		this.previewExecutor = previewExecutor;
 	}
 
 	void inBubble(boolean incoming) {
@@ -332,29 +344,25 @@ public class ImageViewHolder extends ViewHolder {
 			return;
 		}
 
-		dbExecutor.execute(() -> {
-			File tempFile = null;
+		AttachmentReader reader = attachmentReader;
+		previewExecutor.execute(() -> {
+			if (token != bound) return;
+			Bitmap ready = VIDEO_THUMB_CACHE.get(thumbKey);
+			if (ready != null) {
+				renderVideoThumbnail(ready, r, token);
+				return;
+			}
+			byte[] video = null;
 			try {
-				Attachment attachment = attachmentReader.getAttachment(a.getHeader());
-				InputStream is = attachment.getStream();
-
-				tempFile = File.createTempFile("video_thumb_", ".tmp",
-						imageView.getContext().getCacheDir());
-				tempFile.deleteOnExit();
-
-				FileOutputStream fos = new FileOutputStream(tempFile);
-				byte[] buffer = new byte[8192];
-				int bytesRead;
-				while ((bytesRead = is.read(buffer)) != -1) {
-					fos.write(buffer, 0, bytesRead);
+				Attachment attachment = reader.getAttachment(a.getHeader());
+				try (InputStream is = attachment.getStream()) {
+					video = readBounded(is, MAX_ATTACHMENT_SIZE);
 				}
-				fos.close();
-				is.close();
-
-				File decodeFile = tempFile;
-				tempFile = null;
-				THUMBNAIL_DECODE_EXECUTOR.execute(
-						() -> decodeThumbnail(decodeFile, thumbKey, r, token));
+				if (video == null) {
+					showVideoFallback(token);
+					return;
+				}
+				decodeThumbnail(video, thumbKey, r, token);
 			} catch (AttachmentNotYetAvailableException e) {
 				if (attemptNumber < MAX_THUMBNAIL_RETRY_ATTEMPTS) {
 					imageView.postDelayed(() -> loadVideoThumbnailWithRetry(
@@ -366,20 +374,80 @@ public class ImageViewHolder extends ViewHolder {
 			} catch (Exception e) {
 				showVideoFallback(token);
 			} finally {
-				if (tempFile != null) {
-					com.professor.zerion.android.vault.utils.SecureMemory
-							.secureDeleteFile(tempFile, 0L, false);
-				}
+				if (video != null) Arrays.fill(video, (byte) 0);
 			}
 		});
 	}
 
-	private void decodeThumbnail(File file, String thumbKey, Radii r,
+	@Nullable
+	static byte[] readBounded(InputStream in, int max) throws IOException {
+		WipingBuffer out = new WipingBuffer(64 * 1024);
+		byte[] buffer = new byte[8192];
+		try {
+			int n;
+			while ((n = in.read(buffer)) != -1) {
+				if (out.size() + n > max) return null;
+				out.write(buffer, 0, n);
+			}
+			return out.toExactArray();
+		} finally {
+			Arrays.fill(buffer, (byte) 0);
+			out.wipe();
+		}
+	}
+
+	static final class WipingBuffer {
+
+		private byte[] buf;
+		private int count;
+
+		WipingBuffer(int capacity) {
+			buf = new byte[capacity];
+		}
+
+		int size() {
+			return count;
+		}
+
+		byte[] current() {
+			return buf;
+		}
+
+		void write(byte[] b, int off, int len) {
+			if (count + len > buf.length) {
+				byte[] grown = Arrays.copyOf(buf,
+						Math.max(count + len, buf.length * 2));
+				Arrays.fill(buf, (byte) 0);
+				buf = grown;
+			}
+			System.arraycopy(b, off, buf, count, len);
+			count += len;
+		}
+
+		byte[] toExactArray() {
+			byte[] out = Arrays.copyOf(buf, count);
+			wipe();
+			return out;
+		}
+
+		void wipe() {
+			Arrays.fill(buf, (byte) 0);
+			count = 0;
+		}
+	}
+
+	private void decodeThumbnail(byte[] video, String thumbKey, Radii r,
 			Object token) {
+		if (token != bound) return;
+		Bitmap ready = VIDEO_THUMB_CACHE.get(thumbKey);
+		if (ready != null) {
+			renderVideoThumbnail(ready, r, token);
+			return;
+		}
 		MediaMetadataRetriever retriever = null;
 		try {
 			retriever = new MediaMetadataRetriever();
-			retriever.setDataSource(file.getAbsolutePath());
+			retriever.setDataSource(new ByteArrayMediaDataSource(video));
 			Bitmap thumbnail = retriever.getFrameAtTime(0,
 					MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
 			if (thumbnail == null) {
@@ -400,8 +468,6 @@ public class ImageViewHolder extends ViewHolder {
 				} catch (Exception ignored) {
 				}
 			}
-			com.professor.zerion.android.vault.utils.SecureMemory
-					.secureDeleteFile(file, 0L, false);
 		}
 	}
 

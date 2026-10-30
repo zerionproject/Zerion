@@ -10,6 +10,7 @@ import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.crypto.async.AsyncMeshDelivery;
@@ -50,6 +51,12 @@ public class MeshManager {
 	private final SettingsManager settingsManager;
 	private final Clock clock;
 	private final OpenedHandler openedHandler;
+	private final BluetoothNameGuard nameGuard;
+	@Nullable
+	private final org.briarproject.android.dontkillmelib.wakelock
+			.AndroidWakeLockManager wakeLocks;
+	@Nullable
+	private final org.zerionproject.core.api.system.TaskScheduler scheduler;
 
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private final Object lifecycleLock = new Object();
@@ -68,7 +75,11 @@ public class MeshManager {
 	public MeshManager(Context context, CryptoComponent crypto,
 			IdentityManager identityManager, DatabaseComponent db,
 			SettingsManager settingsManager, Clock clock,
-			OpenedHandler openedHandler) {
+			OpenedHandler openedHandler, BluetoothNameGuard nameGuard,
+			@Nullable org.briarproject.android.dontkillmelib.wakelock
+					.AndroidWakeLockManager wakeLocks,
+			@Nullable org.zerionproject.core.api.system.TaskScheduler
+					scheduler) {
 		this.context = context.getApplicationContext();
 		this.crypto = crypto;
 		this.identityManager = identityManager;
@@ -76,6 +87,9 @@ public class MeshManager {
 		this.settingsManager = settingsManager;
 		this.clock = clock;
 		this.openedHandler = openedHandler;
+		this.nameGuard = nameGuard;
+		this.wakeLocks = wakeLocks;
+		this.scheduler = scheduler;
 	}
 
 	public void start() throws DbException {
@@ -106,14 +120,27 @@ public class MeshManager {
 					}
 				}, identity, clock);
 		delivery = meshDelivery;
+		meshDelivery.setOpenedFromPeerListener(peer -> {
+			MeshForwarder f = forwarder;
+			if (f != null) f.creditPeer(peer);
+			BleMeshTransport b = ble;
+			if (b != null) b.onOpenedFrom(peer);
+		});
 		MeshForwarder meshForwarder =
 				new MeshForwarder(meshDelivery, new SecureRandom());
 		forwarder = meshForwarder;
 		prekeyStore.getSignedPrekey();
 		BleMeshTransport bleTransport =
 				new BleMeshTransport(context, meshForwarder,
-						this::maskBluetoothName, this::notifyPeerConnected);
+						this::maskBluetoothName, this::notifyPeerConnected,
+						wakeLocks, scheduler);
 		ble = bleTransport;
+		Settings meshSettings =
+				settingsManager.getSettings(MeshController.MESH_NAMESPACE);
+		bleTransport.setShortRange(meshSettings.getBoolean(
+				MeshController.PREF_MESH_SHORT_RANGE, false));
+		bleTransport.setPauseWhenScreenOff(meshSettings.getBoolean(
+				MeshController.PREF_MESH_PAUSE_SCREEN_OFF, false));
 		bleTransport.start();
 	}
 
@@ -136,45 +163,25 @@ public class MeshManager {
 	}
 
 	private void maskBluetoothName() {
-		MeshBluetoothName.Adapter adapter = bluetoothNameAdapter();
-		if (adapter == null) return;
-		try {
-			MeshBluetoothName.mask(adapter, settingsManager);
-		} catch (Exception e) {
-		}
+		nameGuard.acquire(BluetoothNameGuard.HOLDER_MESH);
 	}
 
 	public void restoreBluetoothName() {
-		MeshBluetoothName.Adapter adapter = bluetoothNameAdapter();
-		if (adapter == null) return;
-		try {
-			MeshBluetoothName.restore(adapter, settingsManager);
-		} catch (Exception e) {
-		}
+		nameGuard.release(BluetoothNameGuard.HOLDER_MESH);
 	}
 
-	@Nullable
-	private MeshBluetoothName.Adapter bluetoothNameAdapter() {
-		if (android.os.Build.VERSION.SDK_INT
-				< android.os.Build.VERSION_CODES.S) return null;
-		android.bluetooth.BluetoothManager bm =
-				(android.bluetooth.BluetoothManager)
-						context.getSystemService(Context.BLUETOOTH_SERVICE);
-		if (bm == null) return null;
-		android.bluetooth.BluetoothAdapter adapter = bm.getAdapter();
-		if (adapter == null) return null;
-		return new MeshBluetoothName.Adapter() {
-			@Nullable
-			@Override
-			public String getName() {
-				return adapter.getName();
-			}
+	public void setShortRange(boolean shortRange) {
+		BleMeshTransport b = ble;
+		if (b != null) b.setShortRange(shortRange);
+	}
 
-			@Override
-			public boolean setName(String name) {
-				return adapter.setName(name);
-			}
-		};
+	public void setPauseWhenScreenOff(boolean pause) {
+		BleMeshTransport b = ble;
+		if (b != null) b.setPauseWhenScreenOff(pause);
+	}
+
+	public void reapplyBluetoothName() {
+		nameGuard.reapply();
 	}
 
 	public boolean isRunning() {

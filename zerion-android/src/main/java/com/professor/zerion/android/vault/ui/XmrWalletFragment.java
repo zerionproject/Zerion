@@ -76,6 +76,12 @@ public class XmrWalletFragment extends BaseFragment {
 		return v;
 	}
 
+	@Override
+	public void onViewCreated(View view, @Nullable Bundle state) {
+		super.onViewCreated(view, state);
+		if (state == null) XmrNodeSettings.promptIfPaused(this, viewModel);
+	}
+
 	private void observe() {
 		viewModel.getWallets().observe(getViewLifecycleOwner(), this::render);
 		viewModel.getBusy().observe(getViewLifecycleOwner(), busy -> {

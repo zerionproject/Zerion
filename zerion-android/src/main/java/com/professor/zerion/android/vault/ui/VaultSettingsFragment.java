@@ -18,6 +18,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.vault.crypto.VaultKdfTier;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -25,6 +26,7 @@ import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
+import androidx.annotation.StringRes;
 import androidx.lifecycle.ViewModelProvider;
 
 @MethodsNotNullByDefault
@@ -506,12 +508,24 @@ public class VaultSettingsFragment extends BaseFragment {
 		com.professor.zerion.android.vault.crypto.Argon2.Argon2Params p =
 				viewModel.vaultKdfParameters();
 		if (p == null) return;
-		int line = p.memoryKb >= com.professor.zerion.android.vault
+		int line = kdfLine(p);
+		keystoreInfo.setText(getString(R.string.vault_settings_info_keystore)
+				+ '\n' + getString(line));
+	}
+
+	@StringRes
+	static int kdfLine(
+			com.professor.zerion.android.vault.crypto.Argon2.Argon2Params p) {
+		if (VaultKdfTier.sameCost(p, VaultKdfTier.TIER_A)) {
+			return R.string.vault_settings_kdf_1gib;
+		}
+		if (VaultKdfTier.sameCost(p, VaultKdfTier.TIER_B)) {
+			return R.string.vault_settings_kdf_512mib;
+		}
+		return p.memoryKb >= com.professor.zerion.android.vault
 				.VaultManager.STRONG_KDF.memoryKb
 				? R.string.vault_settings_kdf_strong
 				: R.string.vault_settings_kdf_reduced;
-		keystoreInfo.setText(getString(R.string.vault_settings_info_keystore)
-				+ '\n' + getString(line));
 	}
 
 	private void updateClipboardTimeoutDisplay() {

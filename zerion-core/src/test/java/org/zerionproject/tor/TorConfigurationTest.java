@@ -71,6 +71,13 @@ public class TorConfigurationTest {
 	}
 
 	@Test
+	public void torAvoidsDiskWritesWhileItRuns() throws Exception {
+		List<String> l = lines(wrapper().torrc());
+		assertTrue(l.contains("AvoidDiskWrites 1"));
+		assertEquals(1, startingWith(l, "AvoidDiskWrites").size());
+	}
+
+	@Test
 	public void theNetworkStaysOffUntilTheTransportEnablesIt()
 			throws Exception {
 		List<String> l = lines(wrapper().torrc());

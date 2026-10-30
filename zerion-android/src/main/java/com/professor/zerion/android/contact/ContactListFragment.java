@@ -13,7 +13,17 @@ import com.google.android.material.snackbar.Snackbar;
 import org.zerionproject.core.api.contact.ContactId;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
-import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
+import com.professor.zerion.android.contact.request.RequestsActivity;
+import com.professor.zerion.android.contact.request.RequestsEntry;
+import com.professor.zerion.android.contact.request.RestorePausePrompt;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
+import org.zerionproject.core.api.contact.request.event.ContactRequestEvent;
+import org.zerionproject.core.api.contact.request.event.ContactRequestsChangedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+
+import java.util.concurrent.Executor;
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.util.ZerionSnackbarBuilder;
@@ -41,6 +51,23 @@ public class ContactListFragment extends BaseFragment
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
+	@Inject
+	ContactRequestManager contactRequestManager;
+	@Inject
+	EventBus eventBus;
+	@Inject
+	@DatabaseExecutor
+	Executor dbExecutor;
+
+	@Nullable
+	private RequestsEntry requestsEntry;
+	private final EventListener requestEvents = e -> {
+		RequestsEntry entry = requestsEntry;
+		if (entry != null && (e instanceof ContactRequestEvent
+				|| e instanceof ContactRequestsChangedEvent)) {
+			entry.refresh();
+		}
+	};
 
 	private ContactListViewModel viewModel;
 	private final ContactListAdapter adapter = new ContactListAdapter(this);
@@ -90,6 +117,9 @@ public class ContactListFragment extends BaseFragment
 				container, false);
 
 		list = contentView.findViewById(R.id.list);
+		requestsEntry = new RequestsEntry(requireActivity(),
+				contentView.findViewById(R.id.contactRequestsEntry),
+				contactRequestManager, dbExecutor);
 		list.setLayoutManager(new LinearLayoutManager(requireContext()));
 		list.setAdapter(adapter);
 		list.setEmptyImage(R.drawable.il_empty_state_contact_list);
@@ -151,6 +181,11 @@ public class ContactListFragment extends BaseFragment
 		viewModel.clearAllContactAddedNotifications();
 		viewModel.loadContacts();
 		viewModel.checkForPendingContacts();
+		eventBus.addListener(requestEvents);
+		RequestsEntry entry = requestsEntry;
+		if (entry != null) entry.refresh();
+		RestorePausePrompt.showOnce(requireActivity(), contactRequestManager,
+				dbExecutor);
 		list.startPeriodicUpdate();
 		reconcileHandler.postDelayed(reconcileTick, RECONCILE_INTERVAL_MS);
 	}
@@ -158,6 +193,7 @@ public class ContactListFragment extends BaseFragment
 	@Override
 	public void onStop() {
 		super.onStop();
+		eventBus.removeListener(requestEvents);
 		list.stopPeriodicUpdate();
 		reconcileHandler.removeCallbacks(reconcileTick);
 		dismissSnackBar();
@@ -184,7 +220,7 @@ public class ContactListFragment extends BaseFragment
 	}
 
 	private void showPendingContactList() {
-		Intent i = new Intent(requireContext(), PendingContactListActivity.class);
-		startActivity(i);
+		startActivity(RequestsActivity.intent(requireContext(),
+				RequestsActivity.TAB_SENT));
 	}
 }

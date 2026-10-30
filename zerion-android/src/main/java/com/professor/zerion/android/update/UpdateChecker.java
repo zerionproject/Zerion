@@ -126,7 +126,7 @@ public class UpdateChecker implements EventListener {
 	}
 
 	public boolean isAutomaticEnabled() {
-		return prefs.get().getBoolean(PREF_AUTO, true);
+		return prefs.get().getBoolean(PREF_AUTO, false);
 	}
 
 	public void setAutomaticEnabled(boolean enabled) {

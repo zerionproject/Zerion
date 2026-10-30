@@ -1,5 +1,8 @@
 package org.zerionproject.core.api.db;
 
+import org.zerionproject.core.api.contact.request.ContactLink;
+import org.zerionproject.core.api.contact.request.IncomingRequest;
+import org.zerionproject.core.api.contact.request.OutgoingRequest;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContact;
@@ -424,4 +427,80 @@ public interface DatabaseComponent extends TransactionManager {
 			throws DbException;
 
 	void removePqRatchetState(Transaction txn, ContactId c) throws DbException;
+
+	void addContactLink(Transaction txn, ContactLink link)
+			throws DbException;
+
+	void updateContactLink(Transaction txn, ContactLink link)
+			throws DbException;
+
+	void removeContactLink(Transaction txn, byte[] linkId)
+			throws DbException;
+
+	Collection<ContactLink> getContactLinks(Transaction txn)
+			throws DbException;
+
+	@Nullable
+	byte[] getRequestAccountSecret(Transaction txn, AuthorId local)
+			throws DbException;
+
+	void setRequestAccountSecret(Transaction txn, AuthorId local, byte[] secret)
+			throws DbException;
+
+	void addOutgoingRequest(Transaction txn, OutgoingRequest r)
+			throws DbException;
+
+	void updateOutgoingRequest(Transaction txn, OutgoingRequest r)
+			throws DbException;
+
+	void removeOutgoingRequest(Transaction txn, byte[] requestId)
+			throws DbException;
+
+	Collection<OutgoingRequest> getOutgoingRequests(Transaction txn)
+			throws DbException;
+
+	void addIncomingRequest(Transaction txn, IncomingRequest r)
+			throws DbException;
+
+	void updateIncomingRequest(Transaction txn, IncomingRequest r)
+			throws DbException;
+
+	void removeIncomingRequest(Transaction txn, byte[] requestId)
+			throws DbException;
+
+	Collection<IncomingRequest> getIncomingRequests(Transaction txn)
+			throws DbException;
+
+	void addRequestReplay(Transaction txn, byte[] requestIdHash, int kind,
+			@Nullable byte[] oneTimeKeyHash, byte[] linkId, long expiresAt)
+			throws DbException;
+
+	int countRequestReplay(Transaction txn, byte[] linkId)
+			throws DbException;
+
+	boolean containsRequestReplay(Transaction txn, byte[] requestIdHash, int kind)
+			throws DbException;
+
+	boolean containsOneTimeKey(Transaction txn, byte[] oneTimeKeyHash,
+			byte[] requestIdHash)
+			throws DbException;
+
+	void removeExpiredRequestReplay(Transaction txn, long now)
+			throws DbException;
+
+	void addRequestBlock(Transaction txn, byte[] linkId, byte[] senderTag,
+			long createdAt)
+			throws DbException;
+
+	boolean containsRequestBlock(Transaction txn, byte[] linkId, byte[] senderTag)
+			throws DbException;
+
+	Collection<byte[]> getRequestBlocks(Transaction txn, byte[] linkId)
+			throws DbException;
+
+	void removeRequestBlock(Transaction txn, byte[] linkId, byte[] senderTag)
+			throws DbException;
+
+	void removeRequestBlocks(Transaction txn, byte[] linkId)
+			throws DbException;
 }

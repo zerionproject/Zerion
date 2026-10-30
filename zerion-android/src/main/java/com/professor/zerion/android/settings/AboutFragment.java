@@ -1,8 +1,5 @@
 package com.professor.zerion.android.settings;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +9,7 @@ import android.widget.Toast;
 
 import com.professor.zerion.BuildConfig;
 import com.professor.zerion.R;
+import com.professor.zerion.android.util.SecureClipboard;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
@@ -63,11 +61,7 @@ public class AboutFragment extends Fragment {
 	}
 
 	private void copyUrlToClipboard(String url) {
-		ClipboardManager cm = (ClipboardManager)
-				requireActivity().getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm == null) return;
-		ClipData clip = ClipData.newPlainText("Zerion URL", url);
-		cm.setPrimaryClip(clip);
+		SecureClipboard.copy(requireActivity(), "Zerion URL", url);
 		Toast.makeText(requireActivity(),
 				R.string.zerion_url_copied_open_in_tor_browser,
 				Toast.LENGTH_LONG).show();

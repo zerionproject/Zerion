@@ -82,8 +82,12 @@ lock invalidates them all and unlocking the vault never implies wallet access.
 
 Three independent secrets, never conflated:
 
-1. **Vault master password**: unlocks ZVault (Argon2id 256 MiB / t=3, or
-   128 MiB / t=6 where 256 MiB cannot be allocated, plus the keystore factor).
+1. **Vault master password**: unlocks ZVault (Argon2id 1 GiB / t=1 when
+   Android reports more than 6 GB of RAM, 512 MiB / t=2 from 3.5 GB, both
+   only in a 64-bit process on a phone that is not a low-RAM device and
+   with the native library, otherwise 256 MiB / t=3, or 128 MiB / t=6 where
+   256 MiB cannot be allocated, plus the keystore factor). A vault export
+   is the recommended backup for the wallets kept in the vault.
 2. **Per-wallet password**: a second factor sealing an individual wallet's seed
    (Argon2id 64 MiB / t=3, per-item salt). For XMR it also derives the spend
    wallet's main-file key.

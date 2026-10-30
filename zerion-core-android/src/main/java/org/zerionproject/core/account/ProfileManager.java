@@ -37,8 +37,7 @@ public class ProfileManager {
 
 	private final Object lock = new Object();
 	private final File filesDir;
-	private final ProfileMetadataCrypto metadataCrypto =
-			new ProfileMetadataCrypto();
+	private final ProfileMetadataCrypto metadataCrypto;
 
 	@GuardedBy("lock")
 	private String activeProfileId = DEFAULT_PROFILE_ID;
@@ -55,7 +54,13 @@ public class ProfileManager {
 	}
 
 	public ProfileManager(Context appContext, boolean maintainStorage) {
+		this(appContext, maintainStorage, new ProfileMetadataCrypto());
+	}
+
+	ProfileManager(Context appContext, boolean maintainStorage,
+			ProfileMetadataCrypto metadataCrypto) {
 		this.filesDir = appContext.getFilesDir();
+		this.metadataCrypto = metadataCrypto;
 		if (!maintainStorage) return;
 		migrateLegacyLayoutIfNeeded(appContext);
 		moveTorStateOutOfProfiles();
@@ -214,7 +219,11 @@ public class ProfileManager {
 	public String readLastActiveProfileId() {
 		File f = getLastActiveProfileFile();
 		if (!f.exists()) return null;
-		return metadataCrypto.readEncrypted(f);
+		try {
+			return metadataCrypto.readEncrypted(f);
+		} catch (ProfileMetadataCrypto.KeyUnavailableException e) {
+			return null;
+		}
 	}
 
 	public void writeLastActiveProfileId(String profileId) {
@@ -251,12 +260,19 @@ public class ProfileManager {
 	public String readDisplayName(String profileId) {
 		File f = getDisplayNameFile(profileId);
 		if (!f.exists()) return null;
-		String decrypted = metadataCrypto.readEncrypted(f);
+		String decrypted;
+		try {
+			decrypted = metadataCrypto.readEncrypted(f);
+		} catch (ProfileMetadataCrypto.KeyUnavailableException e) {
+			return null;
+		}
 		if (decrypted != null) {
 			return isReadableText(decrypted) ? decrypted : null;
 		}
-		String migrated = migratePlaintextDisplayName(f, profileId);
-		return isReadableText(migrated) ? migrated : null;
+		String legacy = readLegacyPlaintext(f);
+		if (legacy == null) return null;
+		writeDisplayName(profileId, legacy);
+		return legacy;
 	}
 
 	static boolean isReadableText(@Nullable String s) {
@@ -282,7 +298,12 @@ public class ProfileManager {
 	public String readEncryptedMetaFile(String profileId, String fileName) {
 		File f = new File(getKeyDirWithoutCreating(profileId), fileName);
 		if (!f.exists()) return null;
-		String decrypted = metadataCrypto.readEncrypted(f);
+		String decrypted;
+		try {
+			decrypted = metadataCrypto.readEncrypted(f);
+		} catch (ProfileMetadataCrypto.KeyUnavailableException e) {
+			return null;
+		}
 		if (decrypted != null) return decrypted;
 		String legacy = readLegacyPlaintext(f);
 		if (legacy == null) return null;
@@ -302,31 +323,39 @@ public class ProfileManager {
 		metadataCrypto.deleteKey();
 	}
 
+	static final int MAX_LEGACY_METADATA_BYTES = 64 * 1024;
+	static final int MIN_SEALED_METADATA_BYTES = 28;
+
 	@Nullable
-	private String readLegacyPlaintext(File f) {
-		try (java.io.BufferedReader r = new java.io.BufferedReader(
-				new java.io.InputStreamReader(new java.io.FileInputStream(f),
-						java.nio.charset.StandardCharsets.UTF_8))) {
-			String line = r.readLine();
-			return isReadableText(line) ? line : null;
-		} catch (java.io.IOException e) {
+	static String legacyPlaintextLine(byte[] all) {
+		if (all.length == 0 || all.length > MAX_LEGACY_METADATA_BYTES) {
 			return null;
 		}
+		String text = new String(all, java.nio.charset.StandardCharsets.UTF_8);
+		if (all.length >= MIN_SEALED_METADATA_BYTES && !isReadableText(text)) {
+			return null;
+		}
+		int newline = text.indexOf('\n');
+		String line = text;
+		if (newline >= 0) {
+			if (newline != text.length() - 1) return null;
+			line = text.substring(0, newline);
+		}
+		if (line.endsWith("\r")) line = line.substring(0, line.length() - 1);
+		if (line.indexOf('\r') >= 0) return null;
+		return isReadableText(line) ? line : null;
 	}
 
 	@Nullable
-	private String migratePlaintextDisplayName(File f, String profileId) {
-		String legacy;
-		try (java.io.BufferedReader r = new java.io.BufferedReader(
-				new java.io.InputStreamReader(new java.io.FileInputStream(f),
-						java.nio.charset.StandardCharsets.UTF_8))) {
-			legacy = r.readLine();
-		} catch (java.io.IOException e) {
+	private String readLegacyPlaintext(File f) {
+		if (f.length() > MAX_LEGACY_METADATA_BYTES) return null;
+		byte[] all;
+		try {
+			all = java.nio.file.Files.readAllBytes(f.toPath());
+		} catch (java.io.IOException | RuntimeException e) {
 			return null;
 		}
-		if (!isReadableText(legacy)) return null;
-		writeDisplayName(profileId, legacy);
-		return legacy;
+		return legacyPlaintextLine(all);
 	}
 
 	public String generateProfileId() {

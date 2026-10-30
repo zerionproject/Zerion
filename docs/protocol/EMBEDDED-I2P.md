@@ -17,7 +17,10 @@ The I2P transport extends the same overlay transport interface as Tor and is
 implemented by an embedded router reached over I2CP. Like the Tor transport, it
 recreates the destination from a persisted key, accepts inbound streams on a
 server socket, and dials outbound streams. The address property is the I2P
-destination. Inbound connection limit is 64.
+destination. Inbound connection limit is 64. A dial gives up after 60
+seconds, and a dialled or accepted stream that carries nothing for 60 seconds
+is closed, so a silent peer holds neither an inbound slot and its thread nor a
+dial (from 3.0.19; up to 3.0.18 neither had a timeout).
 
 ## Embedded router configuration
 
@@ -36,6 +39,7 @@ router properties are:
 | `i2np.inboundKBytesPerSecond` | 128 | Inbound bandwidth cap |
 | `i2np.outboundKBytesPerSecond` | 64 | Outbound bandwidth cap |
 | `i2np.upnp.enable`, `router.enableUPnP` | false | No UPnP port mapping |
+| `time.disabled` | true | No SNTP time queries (from 3.0.19; up to 3.0.18 it queried public NTP servers directly over UDP, outside Tor) |
 
 Router logging is forced to the critical level. Startup polls for up to 240
 seconds for the router to become ready, and stop performs a hard shutdown.
@@ -84,6 +88,15 @@ Because of this, I2P is presented to the user with a consent screen that states
 plainly that the content stays encrypted and unreadable, but that the user's
 network can see that I2P is in use, and that the user's address is not hidden for
 I2P traffic the way it is for Tor. The user enables I2P only after accepting that.
+
+## Router state at rest
+
+The router keeps its state unencrypted in app-private storage under
+`files/i2p`: its identity keys (`router.keys`), its network database
+(`netDb/`) and its peer profiles (`peerProfiles/`). It is not in the encrypted
+database, so anyone who can read the app's files learns the router identity
+and which I2P peers the device has used. This matters only once I2P ships in
+a release build.
 
 ## Status
 

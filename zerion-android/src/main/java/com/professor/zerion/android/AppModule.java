@@ -352,6 +352,9 @@ public class AppModule {
 		@Inject
 		RecentEmoji recentEmoji;
 		@Inject
+		com.professor.zerion.android.contact.add.remote.OwnLinkPrefsMigration
+				.Registration ownLinkPrefsMigration;
+		@Inject
 		com.professor.zerion.android.vault.PreferencesMigration preferencesMigration;
 		@Inject
 		com.professor.zerion.android.profile.ProfileStorage profileStorage;
@@ -589,6 +592,22 @@ public class AppModule {
 	}
 
 	@Provides
+	@Singleton
+	org.zerionproject.tor.TorStateStore provideTorStateStore(Application app,
+			org.zerionproject.transport.TorStateSettingsStore profileStore) {
+		return new com.professor.zerion.android.security.DeviceTorStateStore(
+				app, profileStore);
+	}
+
+	@Provides
+	@Singleton
+	org.zerionproject.core.account.LockoutStores provideLockoutStores(
+			Application app) {
+		return new com.professor.zerion.android.security
+				.EncryptedLockoutStores(app);
+	}
+
+	@Provides
 	@ProfilePrefs
 	SharedPreferences provideProfilePreferences(
 			com.professor.zerion.android.profile.ProfileStorage storage) {
@@ -598,14 +617,18 @@ public class AppModule {
 	@Provides
 	@Singleton
 	VaultManager provideVaultManager(Context context,
-			com.professor.zerion.android.profile.ProfileStorage storage) {
+			com.professor.zerion.android.profile.ProfileStorage storage,
+			org.zerionproject.core.account.LockoutStores lockoutStores) {
 		StrictMode.ThreadPolicy oldPolicy = StrictMode.getThreadPolicy();
 		StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder(oldPolicy)
 				.permitDiskReads()
 				.permitDiskWrites()
 				.build());
 		try {
-			return new VaultManager(context, storage.vaultLocation());
+			VaultManager vault =
+					new VaultManager(context, storage.vaultLocation());
+			vault.setLockoutStores(lockoutStores);
+			return vault;
 		} finally {
 			StrictMode.setThreadPolicy(oldPolicy);
 		}
@@ -708,6 +731,18 @@ public class AppModule {
 
 	@Provides
 	@Singleton
+	com.professor.zerion.android.contact.add.remote.OwnLinkPrefsMigration
+			.Registration provideOwnLinkPrefsMigration(
+			LifecycleManager lifecycleManager,
+			com.professor.zerion.android.contact.add.remote
+					.OwnLinkPrefsMigration migration) {
+		lifecycleManager.registerOpenDatabaseHook(migration);
+		return new com.professor.zerion.android.contact.add.remote
+				.OwnLinkPrefsMigration.Registration();
+	}
+
+	@Provides
+	@Singleton
 	RecentEmoji provideRecentEmoji(LifecycleManager lifecycleManager,
 			RecentEmojiImpl recentEmoji) {
 		lifecycleManager.registerOpenDatabaseHook(recentEmoji);
@@ -719,9 +754,24 @@ public class AppModule {
 	MeshManager provideMeshManager(Context context, CryptoComponent crypto,
 			IdentityManager identityManager, DatabaseComponent db,
 			SettingsManager settingsManager, Clock clock,
-			MeshMessageRouter router) {
+			MeshMessageRouter router,
+			com.professor.zerion.android.mesh.BluetoothNameGuard nameGuard,
+			org.briarproject.android.dontkillmelib.wakelock
+					.AndroidWakeLockManager wakeLocks,
+			org.zerionproject.core.api.system.TaskScheduler scheduler) {
 		return new MeshManager(context, crypto, identityManager, db,
-				settingsManager, clock, router);
+				settingsManager, clock, router, nameGuard, wakeLocks,
+				scheduler);
+	}
+
+	@Provides
+	@Singleton
+	com.professor.zerion.android.mesh.BluetoothNameGuard
+			provideBluetoothNameGuard(Context context,
+			SettingsManager settingsManager,
+			@IoExecutor java.util.concurrent.Executor ioExecutor) {
+		return new com.professor.zerion.android.mesh.BluetoothNameGuard(
+				context, settingsManager, ioExecutor);
 	}
 
 	@Provides

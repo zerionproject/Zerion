@@ -234,14 +234,52 @@ incomplete state; against that the wallet fails closed for correctness and
 preserves the last known good balance/history rather than replacing it with an
 empty or degraded one on a transient error.
 
-Tor and TLS are separate properties. The Tor path uses SOCKS4a remote hostname
-resolution, so the connector never resolves the daemon hostname locally, and a
-proxy failure fails the connection rather than downgrading to a direct socket.
-Tor hides the client origin from the daemon; it does not authenticate the
-daemon. For an explicit DIRECT clearnet node the effective TLS behavior of the
-underlying wallet library is opportunistic/autodetected, not a strict
-certificate-and-hostname policy, which is part of why DIRECT is labeled reduced
-privacy and kept opt-in behind a warning.
+Tor and TLS are separate properties. The Tor path is a SOCKS5 proxy
+(`socks5://` from `XmrTorIsolation`) that hands the daemon hostname to Tor as a
+domain name, so the connector never resolves it locally, and a proxy failure
+fails the connection rather than downgrading to a direct socket. Tor hides the
+client origin from the daemon; it does not authenticate the daemon. The pinned
+wallet library ignores the shim's `use_ssl=false` and autodetects TLS with a
+verify callback that accepts any certificate (see
+`packaging/monero-android/PROVENANCE.md`), so for every node that is not an
+onion the TLS layer authenticates nothing, whatever the mode:
+
+- **Onion nodes** (the vetted set and any onion OWN or CUSTOM node) are
+  authenticated by Tor itself: only the holder of the onion key can answer.
+- **OWN or CUSTOM nodes given as a public IP address or hostname** go through a
+  Tor exit relay, and a malicious exit could answer in the node's place with a
+  daemon of its own (the hostile-daemon class: hiding or delaying
+  transactions, a stale tip, watching decoy selection; never key loss or a
+  forged spend). The app refuses such a node unless the user accepted a
+  warning that says exactly this for that node: the acknowledgement is stored
+  per node address (`XmrNodeConfig.unverifiedAcks`), the address dialog says
+  that only onion addresses are authenticated, and such a node can never be
+  marked trusted (`XmrNode.parse` clears the flag and the dialog refuses it).
+  A node without an acknowledgement is not used: a node saved before this
+  rule existed is reported as paused, once, in a dialog that offers to review
+  and confirm it, to keep using the vetted onion set, or to stop Monero sync,
+  and the node settings say which of these is in effect
+  (`XmrNodeConfig.pausedNode`, `stopWhenPaused`; `XmrNodeConfig.isAllowed`,
+  `XmrNode.isUnverifiedOverTor`, `XmrUnverifiedNodeTest`,
+  `XmrNodeHardeningTest`).
+- **OWN or CUSTOM nodes on a private address** (RFC 1918, loopback, link-local,
+  IPv6 unique-local, `localhost`) need no acknowledgement, but Tor does not
+  connect to internal addresses, so such a node does not work over Tor; a
+  node on the user's own network needs Direct mode, and the address dialog
+  says so.
+- **DIRECT** nodes skip Tor and are reached with the same unauthenticated
+  TLS; DIRECT is labeled reduced privacy and kept opt-in behind its own
+  warning.
+
+A numeric address is parsed as an IP literal by the app's own parser, with
+no resolver: IPv4 needs four decimal parts without leading zeros, IPv6 needs
+eight hexadecimal groups or one `::`, and anything else that ends in a
+numeric label or contains a colon is refused, so a malformed literal is never
+handed to a resolver as a hostname (`XmrNode.parseIpv4`,
+`XmrNode.parseIpv6`).
+
+Requiring an `https://` node with a pinned certificate would need a change to
+the native library, which is pinned; it is not done.
 
 ## Fiat display
 

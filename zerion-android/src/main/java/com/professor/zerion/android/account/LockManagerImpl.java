@@ -174,12 +174,10 @@ public class LockManagerImpl implements LockManager, Service, EventListener {
 		this.locked = locked;
 		notificationManager.updateForegroundNotification(locked);
 		if (locked) {
-			vaultLockExecutor.execute(() -> {
-				try {
-					vault.get().lockVault();
-				} catch (RuntimeException ignored) {
-				}
-			});
+			try {
+				vault.get().requestLock();
+			} catch (RuntimeException ignored) {
+			}
 			com.professor.zerion.android.util.SecureClipboard
 					.clearIfOurs(appContext);
 			PendingSends.get().clear();

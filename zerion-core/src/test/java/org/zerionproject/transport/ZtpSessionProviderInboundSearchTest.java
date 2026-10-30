@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ZtpSessionProviderInboundSearchTest {
 
@@ -36,7 +37,9 @@ public class ZtpSessionProviderInboundSearchTest {
 		recogniser = new ZwfTagRecogniser(crypto, REPLAY_WINDOW_SIZE);
 		recogniser.register(42, tagKey, 0);
 		provider = new ZtpSessionProviderImpl(recogniser, null, null, null,
-				null, null, null, Runnable::run, null);
+				new org.zerionproject.wire.ZwfStreamCounter(
+						new RootEvolutionTestBed.MemCounterStore()), null, null,
+				Runnable::run, null);
 		provider.clock = now::get;
 	}
 
@@ -93,6 +96,22 @@ public class ZtpSessionProviderInboundSearchTest {
 		now.addAndGet(ZtpSessionProviderImpl.INBOUND_SEARCH_INTERVAL_MS);
 		assertEquals("the contact's retry gets the next search", 42,
 				provider.recogniseIncoming(tag(REPLAY_WINDOW_SIZE + 500)));
+	}
+
+	@Test
+	public void aStreamRecognisedBySearchIsNotHeldBackByTheDialLimit() {
+		org.zerionproject.wire.ZwfStreamCounter counter =
+				new org.zerionproject.wire.ZwfStreamCounter(
+						new RootEvolutionTestBed.MemCounterStore(), now::get);
+		ZtpSessionProviderImpl p = new ZtpSessionProviderImpl(recogniser,
+				null, null, null, counter, null, null, Runnable::run, null);
+		p.clock = now::get;
+		assertTrue("a garbage tag on a dial spent the contact's search",
+				counter.startBeyondWindowSearch(42));
+		long burned = REPLAY_WINDOW_SIZE + 3_000;
+		assertEquals(42, p.recogniseIncoming(tag(burned)));
+		assertTrue("the connection for the recognised stream may search",
+				counter.startBeyondWindowSearch(42));
 	}
 
 	@Test

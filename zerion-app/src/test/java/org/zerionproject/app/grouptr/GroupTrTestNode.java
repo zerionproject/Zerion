@@ -16,6 +16,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
 import org.zerionproject.core.api.crypto.PostQuantumConstants;
 import org.zerionproject.core.api.crypto.SignaturePrivateKey;
 import org.zerionproject.core.api.crypto.SignaturePublicKey;
@@ -111,6 +112,8 @@ final class GroupTrTestNode {
 	private final Map<MessageId, Integer> timesRead = new HashMap<>();
 	private int signatureChecks = 0;
 	private final Set<String> withoutMlDsa = new HashSet<>();
+	private final Map<String, byte[]> entryMlDsa = new HashMap<>();
+	final List<byte[]> verifiedWithMlDsa = new ArrayList<>();
 	private final Map<String, Settings> settings = new HashMap<>();
 	private final Map<String, BdfList> lists = new HashMap<>();
 	private final Map<MessageId, Message> messages = new HashMap<>();
@@ -188,11 +191,15 @@ final class GroupTrTestNode {
 	}
 
 	ContactId addContact(byte[] pub) {
+		return addContact(pub, ML_DSA_PUB);
+	}
+
+	ContactId addContact(byte[] pub, @Nullable byte[] mlDsa) {
 		ContactId id = new ContactId(nextContact.getAndIncrement());
 		Author a = new Author(new AuthorId(getRandomId()), 1, "c" + id.getInt(),
 				new SignaturePublicKey(pub));
 		contacts.put(id, new Contact(id, a, local.getId(), null, null, true,
-				true, false, ML_DSA_PUB));
+				true, false, mlDsa));
 		return id;
 	}
 
@@ -360,9 +367,10 @@ final class GroupTrTestNode {
 						(long) m.getRole().getInt()));
 				continue;
 			}
+			byte[] ml = entryMlDsa.get(toHexString(m.getPubKey()));
 			list.add(BdfList.of(m.getPubKey(), m.getName(), m.getJoinedAt(),
 					m.getJoinedAtEpoch(), (long) m.getRole().getInt(),
-					ML_DSA_PUB));
+					ml == null ? ML_DSA_PUB : ml));
 		}
 		out.put(GroupTrConstants.S_MEMBERS, toHexString(token(list)));
 		settings.put(GroupTrConstants.SETTINGS_NS_PREFIX
@@ -405,6 +413,10 @@ final class GroupTrTestNode {
 
 	void withoutMlDsaKey(byte[] pub) {
 		withoutMlDsa.add(toHexString(pub));
+	}
+
+	void entryMlDsaKey(byte[] pub, byte[] mlDsa) {
+		entryMlDsa.put(toHexString(pub), mlDsa);
 	}
 
 	static GroupTrMember creator(byte[] pub) {
@@ -1232,6 +1244,10 @@ final class GroupTrTestNode {
 			}
 			case "verifyHybridSignature":
 				signatureChecks++;
+				if (a[3] instanceof HybridSignaturePublicKey) {
+					verifiedWithMlDsa.add(((HybridSignaturePublicKey) a[3])
+							.getMlDsaPublicKey());
+				}
 				return !Arrays.equals((byte[]) a[0], FORGED_SIG);
 			case "hybridSign":
 				return SIG.clone();

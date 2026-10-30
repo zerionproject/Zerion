@@ -11,9 +11,9 @@ import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
-import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.AdvertisingSetCallback;
+import android.bluetooth.le.AdvertisingSetParameters;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -26,8 +26,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.ParcelUuid;
 
+import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLock;
+import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.transport.mesh.MeshForwarder;
 import org.zerionproject.transport.mesh.MeshLink;
+import org.zerionproject.transport.mesh.MeshWorkQueue;
 import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -35,10 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
@@ -67,10 +71,16 @@ public class BleMeshTransport implements MeshLink {
 	private static final long CLIENT_STALE_MS = 60_000;
 
 	private static final int MANUFACTURER_ID = 0xFFFF;
+	private static final long SWAP_WAKE_LOCK_MS = 3_000L;
+	private static final long ADVERTISING_RETRY_MS = 10_000L;
 	private static final long CONNECT_COOLDOWN_MS = 4000;
 	private final MeshLinkPolicy policy =
 			new MeshLinkPolicy(new java.security.SecureRandom());
+	private final java.security.SecureRandom advertisingRandom =
+			new java.security.SecureRandom();
 	private volatile byte[] sessionNonce;
+	private volatile int txPowerLevel =
+			AdvertisingSetParameters.TX_POWER_MEDIUM;
 	@Nullable
 	private volatile java.util.concurrent.ScheduledExecutorService nonceRotator;
 	private long scanEpoch = Long.MIN_VALUE;
@@ -78,19 +88,29 @@ public class BleMeshTransport implements MeshLink {
 	private final Context appContext;
 	private final MeshForwarder forwarder;
 	private final BluetoothManager bluetoothManager;
+	private final MeshScreenPause screenPause;
+	@Nullable
+	private final AndroidWakeLockManager wakeLocks;
+	@Nullable
+	private final TaskScheduler scheduler;
+	private final AtomicReference<Runnable> swapRelease =
+			new AtomicReference<>();
+	private volatile long advertisingRetryMs = ADVERTISING_RETRY_MS;
 	@Nullable
 	private final Runnable beforeRadioUp;
 	@Nullable
 	private final Runnable onPeerConnected;
 
-	private final ExecutorService sendExecutor =
-			Executors.newSingleThreadExecutor();
-	private final ExecutorService receiveExecutor =
-			Executors.newSingleThreadExecutor();
+	private final MeshWorkQueue sendExecutor =
+			new MeshWorkQueue("BleMeshSend");
+	private final MeshWorkQueue receiveExecutor =
+			new MeshWorkQueue("BleMeshReceive");
 	private final Semaphore opComplete = new Semaphore(0);
 
 	@Nullable
 	private volatile BluetoothLeAdvertiser advertiser;
+	@Nullable
+	private volatile AdvertisingSetCallback advertiseCallback;
 	@Nullable
 	private volatile BluetoothLeScanner scanner;
 	@Nullable
@@ -100,6 +120,7 @@ public class BleMeshTransport implements MeshLink {
 
 	private final Object radioLock = new Object();
 	private volatile boolean running;
+	private volatile boolean paused;
 	private boolean radioUp;
 	private boolean receiverRegistered;
 
@@ -121,13 +142,109 @@ public class BleMeshTransport implements MeshLink {
 	public BleMeshTransport(Context context, MeshForwarder forwarder,
 			@Nullable Runnable beforeRadioUp,
 			@Nullable Runnable onPeerConnected) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected, null, null);
+	}
+
+	public BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			@Nullable AndroidWakeLockManager wakeLocks,
+			@Nullable TaskScheduler scheduler) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				(BluetoothManager) context.getApplicationContext()
+						.getSystemService(Context.BLUETOOTH_SERVICE),
+				MeshScreenPause.PAUSE_AFTER_MS, wakeLocks, scheduler);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				bluetoothManager, MeshScreenPause.PAUSE_AFTER_MS);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager, long pauseAfterMs) {
+		this(context, forwarder, beforeRadioUp, onPeerConnected,
+				bluetoothManager, pauseAfterMs, null, null);
+	}
+
+	BleMeshTransport(Context context, MeshForwarder forwarder,
+			@Nullable Runnable beforeRadioUp,
+			@Nullable Runnable onPeerConnected,
+			BluetoothManager bluetoothManager, long pauseAfterMs,
+			@Nullable AndroidWakeLockManager wakeLocks,
+			@Nullable TaskScheduler scheduler) {
 		this.appContext = context.getApplicationContext();
 		this.forwarder = forwarder;
 		this.beforeRadioUp = beforeRadioUp;
 		this.onPeerConnected = onPeerConnected;
-		this.bluetoothManager = (BluetoothManager)
-				appContext.getSystemService(Context.BLUETOOTH_SERVICE);
+		this.bluetoothManager = bluetoothManager;
+		this.wakeLocks = wakeLocks;
+		this.scheduler = scheduler;
+		this.screenPause = new MeshScreenPause(new ScreenRadio(),
+				this::schedulePause, pauseAfterMs);
 		sessionNonce = policy.freshNonce();
+	}
+
+	private MeshScreenPause.Cancellable schedulePause(Runnable task,
+			long delayMs) {
+		TaskScheduler s = scheduler;
+		if (s == null) return scheduleOnRotator(task, delayMs);
+		org.zerionproject.core.api.Cancellable c =
+				s.schedule(task, Runnable::run, delayMs, TimeUnit.MILLISECONDS);
+		return c::cancel;
+	}
+
+	public void setPauseWhenScreenOff(boolean pause) {
+		screenPause.setEnabled(pause);
+	}
+
+	private final class ScreenRadio implements MeshScreenPause.Radio {
+
+		@Override
+		public void pause() {
+			paused = true;
+			runOnRotator(BleMeshTransport.this::stopRadio);
+		}
+
+		@Override
+		public void resume() {
+			paused = false;
+			runOnRotator(() -> {
+				BluetoothAdapter adapter = bluetoothManager.getAdapter();
+				if (adapter != null && adapter.isEnabled()) {
+					startRadio(adapter);
+				}
+			});
+		}
+	}
+
+	private void runOnRotator(Runnable task) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.execute(task);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private MeshScreenPause.Cancellable scheduleOnRotator(Runnable task,
+			long delayMs) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return () -> {
+		};
+		try {
+			java.util.concurrent.ScheduledFuture<?> f =
+					rot.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+			return () -> f.cancel(false);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			return () -> {
+			};
+		}
 	}
 
 	@Override
@@ -146,7 +263,6 @@ public class BleMeshTransport implements MeshLink {
 		if (android.os.Build.VERSION.SDK_INT
 				< android.os.Build.VERSION_CODES.S) return;
 		running = true;
-		registerStateReceiver();
 		forwarder.addLink(this);
 		java.util.concurrent.ScheduledExecutorService rot =
 				new java.util.concurrent.ScheduledThreadPoolExecutor(1, r -> {
@@ -155,6 +271,10 @@ public class BleMeshTransport implements MeshLink {
 					return t;
 				});
 		nonceRotator = rot;
+		registerStateReceiver();
+		android.os.PowerManager pm = (android.os.PowerManager)
+				appContext.getSystemService(Context.POWER_SERVICE);
+		if (pm != null && !pm.isInteractive()) screenPause.onScreenOff();
 		scheduleAdvertisingRotation(rot);
 		rot.scheduleWithFixedDelay(this::reap, REAP_INTERVAL_MS,
 				REAP_INTERVAL_MS, TimeUnit.MILLISECONDS);
@@ -170,7 +290,7 @@ public class BleMeshTransport implements MeshLink {
 
 	private void startRadio(BluetoothAdapter adapter) {
 		synchronized (radioLock) {
-			if (radioUp || !running) return;
+			if (radioUp || !running || paused) return;
 		}
 		Runnable hook = beforeRadioUp;
 		if (hook != null) {
@@ -180,7 +300,7 @@ public class BleMeshTransport implements MeshLink {
 			}
 		}
 		synchronized (radioLock) {
-			if (radioUp || !running) return;
+			if (radioUp || !running || paused) return;
 			radioUp = true;
 			try {
 				openServer();
@@ -203,10 +323,7 @@ public class BleMeshTransport implements MeshLink {
 			radioUp = false;
 			BluetoothLeAdvertiser a = advertiser;
 			if (a != null) {
-				try {
-					a.stopAdvertising(advertiseCallback);
-				} catch (Exception e) {
-				}
+				stopAdvertisingSet(a);
 				advertiser = null;
 			}
 			BluetoothLeScanner s = scanner;
@@ -260,7 +377,21 @@ public class BleMeshTransport implements MeshLink {
 		}
 		appContext.registerReceiver(stateReceiver,
 				new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+		IntentFilter screen = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+		screen.addAction(Intent.ACTION_SCREEN_ON);
+		appContext.registerReceiver(screenReceiver, screen);
 	}
+
+	private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) {
+				screenPause.onScreenOff();
+			} else if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
+				screenPause.onScreenOn();
+			}
+		}
+	};
 
 	private final BroadcastReceiver stateReceiver = new BroadcastReceiver() {
 		@Override
@@ -322,15 +453,91 @@ public class BleMeshTransport implements MeshLink {
 				if (!radioUp || !running) return;
 				BluetoothAdapter adapter = bluetoothManager.getAdapter();
 				if (adapter == null || !adapter.isEnabled()) return;
+				holdAwakeForSwap();
 				BluetoothLeAdvertiser a = advertiser;
-				if (a != null) a.stopAdvertising(advertiseCallback);
-				startAdvertising(adapter, fresh);
+				if (a != null) stopAdvertisingSet(a);
+				sessionNonce = fresh;
 				BluetoothLeScanner sc = scanner;
 				if (sc != null && MeshDiscovery.currentEpoch() != scanEpoch) {
 					sc.stopScan(scanCallback);
 					startScanning(adapter);
 				}
 			}
+			scheduleAdvertisingStart(fresh);
+		} catch (Exception e) {
+		}
+	}
+
+	private void scheduleAdvertisingStart(byte[] fresh) {
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.schedule(() -> resumeAdvertising(fresh),
+					BleAdvertising.replacementDelayMs(advertisingRandom),
+					TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			releaseSwapWakeLock();
+		}
+	}
+
+	private void holdAwakeForSwap() {
+		AndroidWakeLockManager w = wakeLocks;
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (w == null || rot == null) return;
+		AndroidWakeLock lock = w.createWakeLock("MeshAdvertisingSwap");
+		lock.acquire();
+		AtomicBoolean released = new AtomicBoolean(false);
+		Runnable release = () -> {
+			if (released.compareAndSet(false, true)) lock.release();
+		};
+		Runnable previous = swapRelease.getAndSet(release);
+		if (previous != null) previous.run();
+		try {
+			rot.schedule(release, SWAP_WAKE_LOCK_MS, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+			release.run();
+		}
+	}
+
+	private void releaseSwapWakeLock() {
+		Runnable release = swapRelease.getAndSet(null);
+		if (release != null) release.run();
+	}
+
+	private void resumeAdvertising(byte[] fresh) {
+		try {
+			synchronized (radioLock) {
+				if (!radioUp || !running || advertiseCallback != null) return;
+				BluetoothAdapter adapter = bluetoothManager.getAdapter();
+				if (adapter == null || !adapter.isEnabled()) return;
+				startAdvertising(adapter, fresh);
+			}
+		} catch (Exception e) {
+		} finally {
+			releaseSwapWakeLock();
+		}
+	}
+
+	private void onAdvertisingFailed(AdvertisingSetCallback cb) {
+		synchronized (radioLock) {
+			if (advertiseCallback != cb) return;
+			advertiseCallback = null;
+		}
+		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
+		if (rot == null) return;
+		try {
+			rot.schedule(() -> resumeAdvertising(policy.freshNonce()),
+					advertisingRetryMs, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.RejectedExecutionException e) {
+		}
+	}
+
+	private void stopAdvertisingSet(BluetoothLeAdvertiser a) {
+		AdvertisingSetCallback cb = advertiseCallback;
+		advertiseCallback = null;
+		if (cb == null) return;
+		try {
+			a.stopAdvertisingSet(cb);
 		} catch (Exception e) {
 		}
 	}
@@ -345,8 +552,22 @@ public class BleMeshTransport implements MeshLink {
 			}
 			byte[] framed = withLengthPrefix(
 					MeshLinkPolicy.encodeAnnounce(sessionNonce));
-			sendExecutor.execute(() -> doBroadcast(framed, null));
+			sendExecutor.offerOwn(() -> doBroadcast(framed, null),
+					framed.length);
 		} catch (Exception e) {
+		}
+	}
+
+	public void setShortRange(boolean shortRange) {
+		int level = shortRange ? AdvertisingSetParameters.TX_POWER_LOW
+				: AdvertisingSetParameters.TX_POWER_MEDIUM;
+		if (level == txPowerLevel) return;
+		txPowerLevel = level;
+		if (!running) return;
+		byte[] fresh = policy.freshNonce();
+		try {
+			sendExecutor.execute(() -> switchAdvertisingSet(fresh));
+		} catch (java.util.concurrent.RejectedExecutionException e) {
 		}
 	}
 
@@ -360,11 +581,16 @@ public class BleMeshTransport implements MeshLink {
 					appContext.unregisterReceiver(stateReceiver);
 				} catch (IllegalArgumentException e) {
 				}
+				try {
+					appContext.unregisterReceiver(screenReceiver);
+				} catch (IllegalArgumentException e) {
+				}
 			}
 		}
 		java.util.concurrent.ScheduledExecutorService rot = nonceRotator;
 		if (rot != null) rot.shutdownNow();
 		nonceRotator = null;
+		releaseSwapWakeLock();
 		stopRadio();
 		sendExecutor.shutdownNow();
 		receiveExecutor.shutdownNow();
@@ -378,7 +604,9 @@ public class BleMeshTransport implements MeshLink {
 	@Override
 	public void broadcast(byte[] frame, @Nullable String exceptPeerId) {
 		byte[] framed = withLengthPrefix(frame);
-		sendExecutor.execute(() -> doBroadcast(framed, exceptPeerId));
+		Runnable send = () -> doBroadcast(framed, exceptPeerId);
+		if (exceptPeerId == null) sendExecutor.offerOwn(send, framed.length);
+		else sendExecutor.offer(send, framed.length);
 	}
 
 	private void doBroadcast(byte[] framed, @Nullable String exceptPeerId) {
@@ -658,11 +886,6 @@ public class BleMeshTransport implements MeshLink {
 		BluetoothLeAdvertiser a = adapter.getBluetoothLeAdvertiser();
 		if (a == null) return;
 		advertiser = a;
-		AdvertiseSettings settings = new AdvertiseSettings.Builder()
-				.setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-				.setConnectable(true)
-				.setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_MEDIUM)
-				.build();
 		AdvertiseData data = new AdvertiseData.Builder()
 				.setIncludeDeviceName(false)
 				.addServiceUuid(new ParcelUuid(MeshDiscovery.discoveryUuid(MeshDiscovery.currentEpoch(), GATT_SERVICE_UUID)))
@@ -671,12 +894,19 @@ public class BleMeshTransport implements MeshLink {
 				.setIncludeDeviceName(false)
 				.addManufacturerData(MANUFACTURER_ID, nonce)
 				.build();
-		a.startAdvertising(settings, data, scanResponse, advertiseCallback);
+		AdvertisingSetCallback cb = new AdvertisingSetCallback() {
+			@Override
+			public void onAdvertisingSetStarted(
+					@Nullable android.bluetooth.le.AdvertisingSet set,
+					int txPower, int status) {
+				if (status != ADVERTISE_SUCCESS) onAdvertisingFailed(this);
+			}
+		};
+		advertiseCallback = cb;
+		a.startAdvertisingSet(
+				BleAdvertising.parameters(txPowerLevel, advertisingRandom),
+				data, scanResponse, null, null, cb);
 	}
-
-	private final AdvertiseCallback advertiseCallback =
-			new AdvertiseCallback() {
-			};
 
 	private void onBytes(String key, @Nullable byte[] value) {
 		if (value == null || value.length == 0) return;
@@ -693,15 +923,13 @@ public class BleMeshTransport implements MeshLink {
 				continue;
 			}
 			byte[] f = frame;
-			try {
-				receiveExecutor.execute(() -> {
-					if (forwarder.onReceive(f, LINK_ID, key)) {
-						policy.onUseful(key, clock());
-					}
-				});
-			} catch (java.util.concurrent.RejectedExecutionException e) {
-			}
+			receiveExecutor.offer(() -> forwarder.onReceive(f, LINK_ID, key),
+					f.length);
 		}
+	}
+
+	public void onOpenedFrom(String peerKey) {
+		policy.onUseful(peerKey, clock());
 	}
 
 	private static final String SERVER_PREFIX = "s:";

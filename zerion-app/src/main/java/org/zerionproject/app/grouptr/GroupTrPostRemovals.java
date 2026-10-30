@@ -124,6 +124,8 @@ final class GroupTrPostRemovals {
 				BdfList body, BdfDictionary meta) throws DbException;
 
 		void lowerUnread(byte[] groupId, int by);
+
+		void postsRemoved(byte[] groupId, List<byte[]> removed);
 	}
 
 	private interface FoundCopies {
@@ -451,6 +453,7 @@ final class GroupTrPostRemovals {
 		}
 		if (!unread.isEmpty()) host.lowerUnread(groupId, unread.size());
 		if (!removed.isEmpty()) {
+			host.postsRemoved(groupId, removed);
 			eventBus.broadcast(new GroupTrPostsRemovedEvent(groupId, removed,
 					unread.size()));
 		}

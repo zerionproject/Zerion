@@ -5,6 +5,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.function.BooleanSupplier;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 @NotNullByDefault
 class ConversationScrollListener extends
 		ZerionRecyclerViewScrollListener<ConversationAdapter, ConversationItem> {
@@ -17,6 +20,14 @@ class ConversationScrollListener extends
 		super(adapter);
 		this.viewModel = viewModel;
 		this.readAllowed = readAllowed;
+	}
+
+	void markVisibleRead(RecyclerView recyclerView) {
+		RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+		if (!(lm instanceof LinearLayoutManager)) return;
+		LinearLayoutManager layout = (LinearLayoutManager) lm;
+		onItemsVisible(layout.findFirstVisibleItemPosition(),
+				layout.findLastVisibleItemPosition(), adapter.getItemCount());
 	}
 
 	@Override

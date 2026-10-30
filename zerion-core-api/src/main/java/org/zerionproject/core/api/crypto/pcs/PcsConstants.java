@@ -81,6 +81,10 @@ public interface PcsConstants {
 
 	int MODE3_FULL_SEND_ROTATION_INTERVAL = 16;
 
+	int MODE3_FULL_RECV_ROTATION_INTERVAL = 16;
+
+	int MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR = 128;
+
 	String MODE3_FULL_CK_PQ_LABEL =
 			"org.zerionproject/MODE3FULL_CK_PQ";
 

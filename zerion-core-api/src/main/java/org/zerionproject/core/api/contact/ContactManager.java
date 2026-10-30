@@ -85,6 +85,27 @@ public interface ContactManager {
 			boolean reAddExisting, boolean verifiedInPerson)
 			throws DbException, FormatException, GeneralSecurityException;
 
+	PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactBoundToSharedLink(String link,
+			String alias, @javax.annotation.Nullable String shownOwnLink,
+			boolean reAddExisting, boolean verifiedInPerson)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	PendingContact addPendingContactFromInvite(String link, String alias,
+			@javax.annotation.Nullable String sharedZeroId)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	void recordPerAddLinkShared(String link)
+			throws DbException, FormatException;
+
+	void recordPerAddLinkShared(Transaction txn, String link, long sharedAt)
+			throws DbException, FormatException;
+
+	void registerPendingContactHook(PendingContactHook hook);
+
 	PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException;
 
@@ -145,6 +166,12 @@ public interface ContactManager {
 
 	SecretKey deriveContactKey(Transaction txn, ContactId c, String label,
 			byte[]... inputs) throws DbException;
+
+	interface PendingContactHook {
+
+		void convertingPendingContact(Transaction txn, PendingContactId p,
+				ContactId c) throws DbException;
+	}
 
 	interface ContactHook {
 

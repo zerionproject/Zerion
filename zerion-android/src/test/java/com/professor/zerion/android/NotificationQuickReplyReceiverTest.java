@@ -26,7 +26,9 @@ import androidx.core.app.RemoteInput;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -92,6 +94,55 @@ public class NotificationQuickReplyReceiverTest {
 		deliver(noResults);
 		deliver(new Intent());
 		assertNoReplyStarted();
+	}
+
+	@Test
+	public void anOverLongReplyIsRefusedBeforeAnythingStarts() {
+		lockManager.setLocked(false);
+		StringBuilder text = new StringBuilder();
+		while (text.length() <= org.zerionproject.app.api.messaging
+				.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH) {
+			text.append("abcdefghij");
+		}
+		android.app.NotificationManager nm =
+				(android.app.NotificationManager) app.getSystemService(
+						Context.NOTIFICATION_SERVICE);
+		int id = AndroidNotificationManagerImpl.CONTACT_NOTIFICATION_ID_BASE
+				+ 7;
+		nm.notify(id, new androidx.core.app.NotificationCompat.Builder(app,
+				"test").setSmallIcon(android.R.drawable.ic_dialog_info)
+				.build());
+		deliver(replyIntent(text.toString(), 7));
+		assertNoReplyStarted();
+		org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+				.idle();
+		assertEquals(app.getString(com.professor.zerion.R.string
+						.quick_reply_not_sent),
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+		assertNull("the reply still spins in the notification",
+				Shadows.shadowOf(nm).getNotification(id));
+	}
+
+	@Test
+	public void aReplyWhileLockedSaysItWasNotSent() {
+		lockManager.setLocked(true);
+		deliver(replyIntent("hello", 7));
+		org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper())
+				.idle();
+		assertEquals(app.getString(com.professor.zerion.R.string
+						.quick_reply_not_sent),
+				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+	}
+
+	@Test
+	public void aReplyThatFailsUnexpectedlyDoesNotCrashTheApp()
+			throws Exception {
+		String src = new String(java.nio.file.Files.readAllBytes(
+				java.nio.file.Paths.get("src/main/java/com/professor/zerion/"
+						+ "android/NotificationQuickReplyReceiver.java")),
+				java.nio.charset.StandardCharsets.UTF_8);
+		assertTrue("an unexpected error in the reply thread kills the app",
+				src.contains("| RuntimeException e"));
 	}
 
 	private void deliver(Intent intent) {

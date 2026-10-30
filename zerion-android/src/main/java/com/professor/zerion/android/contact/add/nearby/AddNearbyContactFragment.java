@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
+import com.professor.zerion.android.contact.request.ScannedCode;
 import com.professor.zerion.android.fragment.BaseFragment;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -61,8 +62,30 @@ public class AddNearbyContactFragment extends BaseFragment {
 					new ActivityResultContracts.RequestMultiplePermissions(),
 					results -> onPermissionsResult());
 
+	public interface LinkScannedHandler {
+		void onLinkScannedWithoutInternet(String text);
+	}
+
+	private static final String ARG_FROM_SCAN = "fromScan";
+
+	@Nullable
+	private volatile String lastHandedOver;
+
 	public static AddNearbyContactFragment newInstance() {
 		return new AddNearbyContactFragment();
+	}
+
+	public static AddNearbyContactFragment newInstance(boolean fromScan) {
+		AddNearbyContactFragment f = new AddNearbyContactFragment();
+		Bundle args = new Bundle();
+		args.putBoolean(ARG_FROM_SCAN, fromScan);
+		f.setArguments(args);
+		return f;
+	}
+
+	private boolean isFromScan() {
+		Bundle args = getArguments();
+		return args != null && args.getBoolean(ARG_FROM_SCAN, false);
 	}
 
 	@Override
@@ -84,6 +107,9 @@ public class AddNearbyContactFragment extends BaseFragment {
 				container, false);
 		previewView = v.findViewById(R.id.cameraPreview);
 		qrCodeImage = v.findViewById(R.id.qrCodeImage);
+		if (isFromScan()) {
+			v.findViewById(R.id.nearbyModeText).setVisibility(View.VISIBLE);
+		}
 		statusText = v.findViewById(R.id.statusText);
 		cameraExecutor = Executors.newSingleThreadExecutor();
 
@@ -155,6 +181,15 @@ public class AddNearbyContactFragment extends BaseFragment {
 		viewModel.startListening();
 	}
 
+	private void useCodeScannedEarlier() {
+		String code = requireActivity().getIntent().getStringExtra(
+				AddNearbyContactActivity.EXTRA_SCANNED_CODE);
+		if (code == null || !scanComplete.compareAndSet(false, true)) return;
+		requireActivity().getIntent().removeExtra(
+				AddNearbyContactActivity.EXTRA_SCANNED_CODE);
+		viewModel.onQrScanned(code);
+	}
+
 	private void startPairing() {
 		startCamera();
 		viewModel.startListening();
@@ -164,6 +199,7 @@ public class AddNearbyContactFragment extends BaseFragment {
 		switch (s) {
 			case SHOW_QR:
 				statusText.setText(R.string.nearby_pairing_scan);
+				useCodeScannedEarlier();
 				break;
 			case SCANNED:
 			case CONNECTING:
@@ -224,7 +260,10 @@ public class AddNearbyContactFragment extends BaseFragment {
 				String decoded = QrCodeUtils.decodeQrFromYuv(yPlane,
 						imageProxy.getWidth(), imageProxy.getHeight(), 0, 0,
 						rotation);
-				if (decoded != null
+				if (decoded != null && isFromScan()
+						&& ScannedCode.extractLink(decoded) != null) {
+					handOver(decoded);
+				} else if (decoded != null
 						&& scanComplete.compareAndSet(false, true)) {
 					viewModel.onQrScanned(decoded);
 				}
@@ -232,6 +271,19 @@ public class AddNearbyContactFragment extends BaseFragment {
 		} finally {
 			imageProxy.close();
 		}
+	}
+
+	private void handOver(String decoded) {
+		if (decoded.equals(lastHandedOver)) return;
+		lastHandedOver = decoded;
+		android.app.Activity a = getActivity();
+		if (a == null) return;
+		a.runOnUiThread(() -> {
+			if (isAdded() && getActivity() instanceof LinkScannedHandler) {
+				((LinkScannedHandler) getActivity())
+						.onLinkScannedWithoutInternet(decoded);
+			}
+		});
 	}
 
 	@Nullable

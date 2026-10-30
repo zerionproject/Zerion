@@ -1,5 +1,6 @@
 package com.professor.zerion.android.vault.wallet.btc;
 
+import com.professor.zerion.android.util.LegacyTlsDefault;
 import com.professor.zerion.android.vault.net.TorSockets;
 
 import org.junit.After;
@@ -30,12 +31,15 @@ public class TorHttpTest {
 
 	private static final int PORT = 9050;
 	private static final String TAG = "walletA";
+	private static final String ONION =
+			"oracle4oracle4oracle4oracle4oracle4oracle4oracle4oracle4.onion";
 
 	private ServerSocket server;
 	private volatile byte[] response = new byte[0];
 	private volatile long dripDelayMs = 0;
 	private volatile boolean holdOpen = false;
 	private volatile boolean stallHandshake = false;
+	private volatile boolean hangUpAfterConnect = false;
 	private final List<String> targets = new CopyOnWriteArrayList<>();
 	private final List<String> credentials = new CopyOnWriteArrayList<>();
 	private final List<String> requestLines = new CopyOnWriteArrayList<>();
@@ -91,6 +95,9 @@ public class TorHttpTest {
 				StandardCharsets.US_ASCII);
 		targets.add(host + ":" + in.readUnsignedShort());
 		out.write(new byte[] {5, 0, 0, 1, 0, 0, 0, 0, 0, 0});
+		if (hangUpAfterConnect) {
+			return;
+		}
 		if (stallHandshake) {
 			drip(out, new byte[] {0x16, 0x03, 0x03, 0x40, 0x00});
 			drip(out, new byte[0x4000]);
@@ -158,7 +165,7 @@ public class TorHttpTest {
 
 	private String fetch(String rawResponse) {
 		response = bytes(rawResponse);
-		return TorHttp.get("http://oracle.example.org/x?y=1", PORT, TAG);
+		return TorHttp.get("http://" + ONION + "/x?y=1", PORT, TAG);
 	}
 
 	@Test
@@ -166,7 +173,7 @@ public class TorHttpTest {
 		assertEquals("{\"a\":1}", fetch("HTTP/1.1 200 OK\r\n"
 				+ "Content-Type: application/json\r\nContent-Length: 7\r\n"
 				+ "\r\n{\"a\":1}"));
-		assertEquals(Collections.singletonList("oracle.example.org:80"),
+		assertEquals(Collections.singletonList(ONION + ":80"),
 				targets);
 		assertEquals(Collections.singletonList("zw-" + TAG + "/" + TAG),
 				credentials);
@@ -203,10 +210,10 @@ public class TorHttpTest {
 	public void anOversizedBodyIsRefusedInsteadOfTruncated() {
 		response = concat(bytes("HTTP/1.1 200 OK\r\n\r\n"),
 				filled(TorHttp.MAX_BODY + 1));
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Length: "
 				+ (TorHttp.MAX_BODY + 1) + "\r\n\r\nabc");
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 	}
 
 	@Test
@@ -229,14 +236,14 @@ public class TorHttpTest {
 	public void aBodyThatIsNotUtf8IsRefused() {
 		response = concat(bytes("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n"),
 				new byte[] {'[', (byte) 0xC3, (byte) 0x28, ']'});
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 		response = concat(bytes("HTTP/1.1 200 OK\r\n\r\n"),
 				new byte[] {'"', (byte) 0xF0, (byte) 0x9F, '"'});
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 		response = concat(bytes("HTTP/1.1 200 OK\r\n\r\n"),
 				"[\"\u00e9\u20ac\"]".getBytes(StandardCharsets.UTF_8));
 		assertEquals("[\"\u00e9\u20ac\"]",
-				TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+				TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 	}
 
 	@Test(timeout = 20_000)
@@ -245,18 +252,18 @@ public class TorHttpTest {
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Length: 20\r\n\r\n"
 				+ "{\"a\":");
 		long start = System.nanoTime();
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG, 300,
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG, 300,
 				10_000));
 		assertTrue((System.nanoTime() - start) / 1_000_000L < 5_000);
 		response = bytes("HTTP/1.1 200 OK\r\n\r\n{\"a\":");
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG, 300,
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG, 300,
 				10_000));
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Le");
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG, 300,
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG, 300,
 				10_000));
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}");
 		assertNull("a server that does not close after the body is refused",
-				TorHttp.get("http://oracle.example.org/x", PORT, TAG, 300,
+				TorHttp.get("http://" + ONION + "/x", PORT, TAG, 300,
 						10_000));
 	}
 
@@ -266,13 +273,13 @@ public class TorHttpTest {
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Length: 40\r\n\r\n"
 				+ "[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]");
 		long start = System.nanoTime();
-		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG, 1000,
+		assertNull(TorHttp.get("http://" + ONION + "/x", PORT, TAG, 1000,
 				600));
 		long took = (System.nanoTime() - start) / 1_000_000L;
 		assertTrue("took " + took + " ms", took < 3_000);
 		dripDelayMs = 1;
 		response = bytes("HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n[]");
-		assertEquals("[]", TorHttp.get("http://oracle.example.org/x", PORT,
+		assertEquals("[]", TorHttp.get("http://" + ONION + "/x", PORT,
 				TAG, 1000, 10_000));
 	}
 
@@ -287,6 +294,18 @@ public class TorHttpTest {
 		assertTrue("took " + took + " ms", took < 6_000);
 		assertEquals(Collections.singletonList("oracle.example.org:443"),
 				targets);
+	}
+
+	@Test(timeout = 20_000)
+	public void theTlsHandshakeOffersOnlyTls12AndTls13() throws Exception {
+		hangUpAfterConnect = true;
+		try (LegacyTlsDefault tls = LegacyTlsDefault.install()) {
+			assertNull(TorHttp.get("https://oracle.example.org/x", PORT, TAG,
+					1000, 5000));
+			assertEquals(1, tls.sockets().size());
+			assertTrue(LegacyTlsDefault.onlyModernProtocols(
+					tls.sockets().get(0)));
+		}
 	}
 
 	@Test
@@ -305,6 +324,20 @@ public class TorHttpTest {
 		assertNull(TorHttp.get("ftp://oracle.example.org/x", PORT, TAG));
 		assertNull(TorHttp.get("oracle.example.org:80/x", PORT, TAG));
 		assertTrue("nothing was sent to Tor", targets.isEmpty());
+	}
+
+	@Test
+	public void plainHttpIsFetchedOnlyFromAnOnion() {
+		response = bytes("HTTP/1.1 200 OK\r\n\r\n{}");
+		assertNull(TorHttp.parseUrl("http://oracle.example.org/x"));
+		assertNull(TorHttp.parseUrl("http://203.0.113.7/x"));
+		assertNull(TorHttp.parseUrl("http://oracle.onion.example.org/x"));
+		assertNull(TorHttp.get("http://oracle.example.org/x", PORT, TAG));
+		assertTrue("nothing was sent to Tor", targets.isEmpty());
+		assertEquals(ONION.toUpperCase(java.util.Locale.ROOT),
+				TorHttp.parseUrl("http://" + ONION.toUpperCase(
+						java.util.Locale.ROOT) + "/x").host);
+		assertEquals("{}", TorHttp.get("http://" + ONION + "/x", PORT, TAG));
 	}
 
 	@Test

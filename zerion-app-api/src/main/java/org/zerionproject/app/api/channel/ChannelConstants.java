@@ -66,16 +66,19 @@ public final class ChannelConstants {
 			"org.zerionproject/CHANNEL_POST_V2";
 	public static final int POST_SALT_BYTES = 16;
 
-	public static final int PROTOCOL_VERSION = 5;
+	public static final int PROTOCOL_VERSION = 6;
 	public static final int PROTOCOL_VERSION_DELTAS = 2;
 	public static final int PROTOCOL_VERSION_AUTHOR_BINDING = 3;
 	public static final int PROTOCOL_VERSION_POST_CHANGES = 4;
 	public static final int PROTOCOL_VERSION_ERASED_EDITS = 5;
+	public static final int PROTOCOL_VERSION_MEMBER_POSTS = 6;
 	public static final int POST_BODY_HASH_BYTES = 32;
 	public static final String SIGNING_LABEL_MANIFEST_V3 =
 			"org.zerionproject/CHANNEL_MANIFEST_V3";
 	public static final String SIGNING_LABEL_MANIFEST_V4 =
 			"org.zerionproject/CHANNEL_MANIFEST_V4";
+	public static final String SIGNING_LABEL_MANIFEST_V5 =
+			"org.zerionproject/CHANNEL_MANIFEST_V5";
 	public static final int MAX_PINNED_AUTHORS_PER_CHANNEL = 4096;
 	public static final String SIGNING_LABEL_DELEGATION =
 			"org.zerionproject/CHANNEL_DELEGATION";
@@ -187,6 +190,27 @@ public final class ChannelConstants {
 	public static final String SUBMIT_STATUS_OK = "OK";
 	public static final String SUBMIT_STATUS_STALE = "STALE";
 	public static final String SUBMIT_STATUS_REFUSED = "REFUSED";
+	public static final String SUBMIT_STATUS_QUOTA = "QUOTA";
+
+	public static final String WIRE_TYPE_SUBMIT_MEMBER_POST =
+			"ZERION_CHANNEL_SUBMIT_MEMBER_POST_V1";
+	public static final String SIGNING_LABEL_MEMBER_POST =
+			"org.zerionproject/CHANNEL_MEMBER_POST";
+	public static final String SIGNING_LABEL_POST_V3 =
+			"org.zerionproject/CHANNEL_POST_V3";
+	public static final int POSTING_EDITORS = 0;
+	public static final int POSTING_OWNER_ONLY = 1;
+	public static final int POSTING_EVERYONE = 2;
+	public static final int MEMBER_ROLE_SUBSCRIBER = 1;
+	public static final int MAX_MEMBER_NAME_CHARS = 64;
+	public static final int MAX_MEMBER_POSTS_PER_HOUR = 10;
+	public static final int MAX_MEMBER_POSTS_PER_DAY = 50;
+	public static final int MAX_MEMBER_POSTS_PER_CHANNEL_PER_HOUR = 60;
+	public static final int MAX_MEMBER_POSTS_PER_CHANNEL_PER_DAY = 300;
+	public static final long MAX_MEMBER_POST_BYTES_PER_CHANNEL =
+			64L * 1024L * 1024L;
+	public static final int MAX_MEMBER_NAME_COMBINING_MARKS = 2;
+	public static final long MEMBER_POST_MAX_AGE_MS = 2L * 60L * 60L * 1000L;
 
 	public static final String WIRE_TYPE_CHANGE_POST =
 			"ZERION_CHANNEL_CHANGE_POST_V1";

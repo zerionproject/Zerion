@@ -102,6 +102,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	private String token;
 	@Nullable
 	private MessageId message;
+	private boolean once = false;
 
 	private boolean playWhenReady = true;
 	private int currentWindow = 0;
@@ -129,6 +130,7 @@ public class VideoPlayerActivity extends ZerionActivity
 				finish();
 				return;
 			}
+			once = MediaViewer.once(token);
 		} else {
 			byte[] id = getIntent().getByteArrayExtra(ITEM_ID);
 			if (id != null) {
@@ -150,10 +152,11 @@ public class VideoPlayerActivity extends ZerionActivity
 		ImageButton closeButton = findViewById(R.id.close_button);
 		closeButton.setOnClickListener(v -> finish());
 		ImageButton saveButton = findViewById(R.id.save_button);
-		saveButton.setVisibility(SaveCleanCopy.canSave(shownType())
+		saveButton.setVisibility(!once && SaveCleanCopy.canSave(shownType())
 				? View.VISIBLE : View.GONE);
 		saveButton.setOnClickListener(v -> save());
 		ImageButton openButton = findViewById(R.id.open_elsewhere_button);
+		if (once) openButton.setVisibility(View.GONE);
 		openButton.setOnClickListener(v -> openElsewhere());
 		showHeading(MediaViewer.get(token));
 
@@ -195,6 +198,7 @@ public class VideoPlayerActivity extends ZerionActivity
 		super.onStop();
 		releasePlayer();
 		wipeVideo();
+		if (once && !isChangingConfigurations()) contentGone();
 	}
 
 	@Override
@@ -435,11 +439,7 @@ public class VideoPlayerActivity extends ZerionActivity
 		player.addListener(new Player.Listener() {
 			@Override
 			public void onPlaybackStateChanged(int playbackState) {
-				if (playbackState == Player.STATE_READY) {
-					showLoading(false);
-				} else if (playbackState == Player.STATE_BUFFERING) {
-					showLoading(true);
-				}
+				onPlaybackState(playbackState);
 			}
 
 			@Override
@@ -456,6 +456,16 @@ public class VideoPlayerActivity extends ZerionActivity
 		player.setPlayWhenReady(playWhenReady);
 		player.seekTo(currentWindow, playbackPosition);
 		player.prepare();
+	}
+
+	void onPlaybackState(int playbackState) {
+		if (playbackState == Player.STATE_READY) {
+			showLoading(false);
+		} else if (playbackState == Player.STATE_BUFFERING) {
+			showLoading(true);
+		} else if (playbackState == Player.STATE_ENDED && once) {
+			contentGone();
+		}
 	}
 
 	private void releasePlayer() {
@@ -541,6 +551,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	}
 
 	private void save() {
+		if (once) return;
 		String type = shownType();
 		SaveCleanCopy.confirm(this, type, () -> readContent(
 				data -> SaveCleanCopy.startCopy(this, data, type),
@@ -548,6 +559,7 @@ public class VideoPlayerActivity extends ZerionActivity
 	}
 
 	private void openElsewhere() {
+		if (once) return;
 		readContent(data -> {
 			String type = ExternalViewerTypes.typeForContent(shownType(),
 					data);

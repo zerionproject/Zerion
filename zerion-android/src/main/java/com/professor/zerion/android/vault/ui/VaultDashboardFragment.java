@@ -92,8 +92,14 @@ public class VaultDashboardFragment extends BaseFragment {
 
 	private void checkVaultState() {
 		viewModel.refreshVaultState();
-		VaultViewModel.VaultState currentState = viewModel.getVaultState().getValue();
+		leaveIfGated(viewModel.getVaultState().getValue());
+	}
 
+	private boolean gateCommitted = false;
+
+	private void leaveIfGated(
+			@Nullable VaultViewModel.VaultState currentState) {
+		if (gateCommitted || isRemoving() || !isAdded()) return;
 		boolean gated = currentState == VaultViewModel.VaultState.NOT_CREATED
 				|| currentState == VaultViewModel.VaultState.LOCKED;
 		View root = getView();
@@ -106,6 +112,7 @@ public class VaultDashboardFragment extends BaseFragment {
 			containerId = ((android.view.ViewGroup) root.getParent()).getId();
 		}
 		if (containerId == View.NO_ID) return;
+		gateCommitted = true;
 		if (currentState == VaultViewModel.VaultState.NOT_CREATED) {
 			VaultOnboardingFragment f = VaultOnboardingFragment.newInstance();
 			UiUtils.showFragment(getParentFragmentManager(), f,
@@ -318,6 +325,8 @@ public class VaultDashboardFragment extends BaseFragment {
 		viewModel.getVaultState().observe(getViewLifecycleOwner(), state -> {
 			if (state == VaultViewModel.VaultState.UNLOCKED) {
 				viewModel.loadVaultItems();
+			} else if (isResumed()) {
+				leaveIfGated(state);
 			}
 		});
 

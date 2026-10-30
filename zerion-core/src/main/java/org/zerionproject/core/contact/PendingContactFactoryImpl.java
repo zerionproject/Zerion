@@ -123,7 +123,7 @@ class PendingContactFactoryImpl implements PendingContactFactory {
 		}
 
 		if (raw.length < 1) throw new FormatException();
-		byte version = raw[0];
+		int version = raw[0] & 0xFF;
 		if (version > FORMAT_VERSION) {
 			throw new UnsupportedVersionException(false);
 		}

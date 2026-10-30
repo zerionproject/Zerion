@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content">
+
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:orientation="vertical"
+		android:paddingHorizontal="24dp"
+		android:paddingTop="16dp">
+
+		<TextView
+			android:id="@+id/requestDetailName"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:accessibilityHeading="true"
+			android:textColor="@color/zerion_text_primary"
+			android:textSize="18sp"
+			android:textStyle="bold" />
+
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="2dp"
+			android:text="@string/requests_name_unchecked"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="12sp" />
+
+		<TextView
+			android:id="@+id/requestDetailVia"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="8dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="14sp" />
+
+		<TextView
+			android:id="@+id/requestDetailTime"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="14sp" />
+
+		<TextView
+			android:id="@+id/requestDetailNote"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:autoLink="none"
+			android:linksClickable="false"
+			android:textColor="@color/zerion_text_primary"
+			android:textIsSelectable="true"
+			android:textSize="15sp"
+			android:visibility="gone" />
+
+		<TextView
+			android:id="@+id/requestDetailClock"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:text="@string/requests_clock_hint"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="13sp"
+			android:visibility="gone" />
+
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:layout_marginTop="12dp"
+			android:text="@string/requests_accept_explain"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="13sp" />
+
+	</LinearLayout>
+
+</ScrollView>

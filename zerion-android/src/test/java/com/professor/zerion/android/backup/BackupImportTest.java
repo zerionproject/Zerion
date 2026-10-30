@@ -95,8 +95,11 @@ public class BackupImportTest {
 				accounts, mock(ProfileManager.class),
 				mock(IdentityManager.class),
 				new RootKeyStore(mock(DatabaseComponent.class)),
+				mock(org.zerionproject.app.api.messaging.MessagingManager.class),
 				new BackupCrypto(),
-				AccountBackupManager.sealer(FAST, BackupStream.MIN_CHUNK));
+				AccountBackupManager.sealer(FAST, BackupStream.MIN_CHUNK),
+				mock(org.zerionproject.core.api.contact.request
+						.ContactRequestManager.class));
 	}
 
 	private static byte[] v3(String name, byte[] db, char[] passphrase)

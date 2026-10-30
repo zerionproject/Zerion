@@ -35,6 +35,8 @@ public class EncryptedFileExporterBoundsTest {
 	public void oversizedParametersAreRefusedBeforeDerivation() throws Exception {
 		assertRefused(zencHeader(Integer.MAX_VALUE, 3, 1, 8));
 		assertRefused(zencHeader(256 * 1024 + 1, 3, 1, 8));
+		assertRefused(zencHeader(512 * 1024, 2, 1, 8));
+		assertRefused(zencHeader(1024 * 1024, 1, 1, 8));
 		assertRefused(zencHeader(64 * 1024, 11, 1, 8));
 		assertRefused(zencHeader(64 * 1024, 3, 5, 8));
 		assertRefused(zencHeader(64 * 1024, 0, 1, 8));

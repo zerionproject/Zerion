@@ -83,10 +83,10 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 			will(returnValue(socketIn));
 			oneOf(handshakeManager).handshake(pendingContactId, socketIn,
 					streamWriter);
-			will(returnValue(new HandshakeResult(masterKey, true, true)));
+			HandshakeResult result1 = new HandshakeResult(masterKey, true, true);
+			will(returnValue(result1));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, true, false, false, null, null, null,
-					null);
+					connection, result1, false, false);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,
 					true);
@@ -122,10 +122,10 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 			will(returnValue(socketOut));
 			oneOf(handshakeManager).handshake(pendingContactId, socketIn,
 					streamWriter);
-			will(returnValue(new HandshakeResult(masterKey, false, true)));
+			HandshakeResult result2 = new HandshakeResult(masterKey, false, true);
+			will(returnValue(result2));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, false, false, false, null, null, null,
-					null);
+					connection, result2, false, false);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,
 					true);
@@ -161,10 +161,10 @@ public class HandshakeConnectionHandOffTest extends BrambleMockTestCase {
 			will(returnValue(socketIn));
 			oneOf(handshakeManager).handshake(pendingContactId, socketIn,
 					streamWriter);
-			will(returnValue(new HandshakeResult(masterKey, true, true)));
+			HandshakeResult result3 = new HandshakeResult(masterKey, true, true);
+			will(returnValue(result3));
 			oneOf(contactExchangeManager).exchangeContacts(pendingContactId,
-					connection, masterKey, true, false, false, null, null, null,
-					null);
+					connection, result3, false, false);
 			will(returnValue(contact));
 			oneOf(connectionRegistry).unregisterConnection(pendingContactId,
 					true);

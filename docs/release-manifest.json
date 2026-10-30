@@ -24,10 +24,10 @@
         "url": "https://play.google.com/store/apps/details?id=com.professor.zerion"
       },
       "fdroid": {
-        "version": "3.0.17",
+        "version": "3.0.18",
         "url": "https://f-droid.org/packages/com.professor.zerion/",
-        "checked": "2026-10-20",
-        "note": "The 3.0.18 entry is submitted to fdroiddata and pins the release commit; F-Droid's build of it is pending. F-Droid publishes 3.0.17."
+        "checked": "2026-10-26",
+        "note": "F-Droid publishes 3.0.18 built from the release commit."
       }
     }
   },

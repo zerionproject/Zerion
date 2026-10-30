@@ -64,6 +64,7 @@ import static org.zerionproject.core.util.IoUtils.tryToClose;
 
 @NotNullByDefault
 class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
+		org.zerionproject.core.plugin.tor.InboxOnionAdapter,
 		TorClockSkewStatus,
 		org.zerionproject.core.api.plugin.TorEntryRelayStatus {
 
@@ -85,6 +86,8 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	private final B4OnionRotation b4OnionRotation;
 	private final EventBus eventBus;
 	private final TorOnionServiceControl onionServiceControl;
+	private final java.util.Set<String> powInboxes =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final org.zerionproject.core.plugin.tor.auth
 			.OnionClientAuthManagerImpl onionClientAuth;
 	private final AtomicBoolean used = new AtomicBoolean(false);
@@ -508,6 +511,31 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	}
 
 	@Override
+	@Nullable
+	public RendezvousEndpoint createDialOnlyRendezvousEndpoint(
+			KeyMaterialSource k, boolean alice) {
+		byte[] aliceSeed = k.getKeyMaterial(SEED_BYTES);
+		byte[] bobSeed = k.getKeyMaterial(SEED_BYTES);
+		byte[] remoteSeed = alice ? bobSeed : aliceSeed;
+		String remoteOnion = torRendezvousCrypto.getOnion(remoteSeed);
+		java.util.Arrays.fill(aliceSeed, (byte) 0);
+		java.util.Arrays.fill(bobSeed, (byte) 0);
+		TransportProperties remoteProperties = new TransportProperties();
+		remoteProperties.put(PROP_ONION_V3, remoteOnion);
+		return new RendezvousEndpoint() {
+
+			@Override
+			public TransportProperties getRemoteTransportProperties() {
+				return remoteProperties;
+			}
+
+			@Override
+			public void close() {
+			}
+		};
+	}
+
+	@Override
 	public ChannelOnionHandle publishChannelOnion(String target,
 			@Nullable String privateKey) throws IOException {
 		HiddenServiceProperties hs = transport.publishHiddenService(target,
@@ -523,6 +551,53 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Override
 	public void removeChannelOnion(String onion) throws IOException {
 		transport.removeHiddenService(onion);
+	}
+
+	@Override
+	public boolean isConnected() {
+		return getState() == ACTIVE;
+	}
+
+	@Override
+	public String publishInboxOnion(String target, String privateKeyBlob,
+			byte[] clientAuthPublicKey) throws IOException {
+		if (getState() != ACTIVE) throw new IOException("Tor not connected");
+		TorOnionServiceControl.InboxPublished p =
+				onionServiceControl.publishInbox(privateKeyBlob, target,
+						REMOTE_ONION_PORT, clientAuthPublicKey);
+		if (p.powProtected) powInboxes.add(p.onion);
+		else powInboxes.remove(p.onion);
+		return p.onion;
+	}
+
+	@Override
+	public void removeInboxOnion(String onion) throws IOException {
+		powInboxes.remove(onion);
+		onionServiceControl.remove(onion);
+	}
+
+	@Override
+	public boolean isInboxPowProtected(String onion) {
+		return powInboxes.contains(onion);
+	}
+
+	@Override
+	public Socket connectToInbox(String onion, byte[] clientAuthPrivateKey)
+			throws IOException {
+		if (getState() != ACTIVE) throw new IOException("Tor not connected");
+		if (!ONION_V3.matcher(onion).matches()) {
+			throw new IOException("Not an onion");
+		}
+		onionServiceControl.addClientKey(onion, clientAuthPrivateKey);
+		Socket s = socketFactory.createSocket(onion + ".onion",
+				REMOTE_ONION_PORT);
+		configureSocket(s);
+		return s;
+	}
+
+	@Override
+	public void forgetInboxClientKey(String onion) throws IOException {
+		onionServiceControl.removeClientKey(onion);
 	}
 
 	private static void configureSocket(Socket s) throws IOException {

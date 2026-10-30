@@ -40,6 +40,12 @@ class ChannelCodec {
 			"org.zerionproject/CHANNEL_POST_CHAIN_V2";
 	static final String LABEL_DISCUSSIONS =
 			"org.zerionproject/CHANNEL_DISCUSSIONS";
+	static final String LABEL_POSTING =
+			"org.zerionproject/CHANNEL_POSTING";
+	private static final String LABEL_POST_AUTHOR =
+			"org.zerionproject/CHANNEL_POST_AUTHOR";
+	private static final String LABEL_POST_CHAIN_V3 =
+			"org.zerionproject/CHANNEL_POST_CHAIN_V3";
 
 	private final CryptoComponent crypto;
 
@@ -142,6 +148,44 @@ class ChannelCodec {
 		buf.putInt(sorted.size());
 		for (Long seq : sorted) buf.putLong(seq);
 		return crypto.hash(LABEL_DISCUSSIONS, buf.array());
+	}
+
+	static byte[] memberPostsManifestSignedInput(byte[] manifestSignedInput,
+			byte[] authorBindingsDigest, byte[] discussionsDigest,
+			byte[] postingDigest) {
+		return boundManifestSignedInput(postChangesManifestSignedInput(
+				manifestSignedInput, authorBindingsDigest, discussionsDigest),
+				postingDigest);
+	}
+
+	byte[] postingDigest(int mode) {
+		return crypto.hash(LABEL_POSTING, new byte[] {(byte) mode});
+	}
+
+	byte[] memberPostSignedInput(byte[] channelId, long submissionId,
+			String body, String authorName, long timestampHourMs) {
+		byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+		byte[] nameBytes = authorName.getBytes(StandardCharsets.UTF_8);
+		ByteBuffer buf = ByteBuffer.allocate(4 + channelId.length + 8
+				+ 4 + bodyBytes.length + 4 + nameBytes.length + 8);
+		buf.putInt(channelId.length);
+		buf.put(channelId);
+		buf.putLong(submissionId);
+		buf.putInt(bodyBytes.length);
+		buf.put(bodyBytes);
+		buf.putInt(nameBytes.length);
+		buf.put(nameBytes);
+		buf.putLong(timestampHourMs);
+		return buf.array();
+	}
+
+	byte[] memberAuthorHash(ChannelPost.MemberAuthor a) {
+		ByteArrayOutputStream sink = new ByteArrayOutputStream();
+		writeField(sink, a.getEd25519PubKey());
+		writeField(sink, a.getMlDsaPubKey());
+		writeField(sink, a.getName().getBytes(StandardCharsets.UTF_8));
+		sink.write(a.getRole() & 0xff);
+		return crypto.hash(LABEL_POST_AUTHOR, sink.toByteArray());
 	}
 
 	byte[] postChangeSignedInput(byte[] channelId, long targetSeqNum,
@@ -353,6 +397,14 @@ class ChannelCodec {
 	}
 
 	byte[] signedInputOf(ChannelPost p) {
+		if (p.getFormatVersion() == ChannelPost.FORMAT_V3) {
+			byte[] salt = saltOf(p);
+			return postSignedInputV3(p.getChannelId(), p.getSeqNum(),
+					p.getPrevHash(), p.getTimestampHourMs(), p.getTtlMs(),
+					salt, bodyHashOf(salt, p),
+					attachmentsHashV2(salt, p.getAttachments()),
+					authorHashOf(p));
+		}
 		if (p.getFormatVersion() == ChannelPost.FORMAT_V2) {
 			byte[] salt = saltOf(p);
 			return postSignedInputV2(p.getChannelId(), p.getSeqNum(),
@@ -366,6 +418,16 @@ class ChannelCodec {
 	}
 
 	byte[] canonicalHashOf(ChannelPost p) {
+		if (p.getFormatVersion() == ChannelPost.FORMAT_V3) {
+			byte[] input = signedInputOf(p);
+			byte[] sig = p.getSignature();
+			ByteBuffer buf = ByteBuffer.allocate(input.length + 4
+					+ sig.length);
+			buf.put(input);
+			buf.putInt(sig.length);
+			buf.put(sig);
+			return crypto.hash(LABEL_POST_CHAIN_V3, buf.array());
+		}
 		if (p.getFormatVersion() == ChannelPost.FORMAT_V2) {
 			byte[] salt = saltOf(p);
 			return postCanonicalHashV2(p.getChannelId(), p.getSeqNum(),
@@ -387,6 +449,12 @@ class ChannelCodec {
 	private byte[] bodyHashOf(byte[] salt, ChannelPost p) {
 		byte[] erased = p.getErasedBodyHash();
 		return erased != null ? erased : bodyHashV2(salt, p.getBody());
+	}
+
+	private byte[] authorHashOf(ChannelPost p) {
+		ChannelPost.MemberAuthor a = p.getMemberAuthor();
+		return a == null ? new byte[ChannelConstants.POST_BODY_HASH_BYTES]
+				: memberAuthorHash(a);
 	}
 
 	private static byte[] saltOf(ChannelPost p) {
@@ -413,6 +481,18 @@ class ChannelCodec {
 		buf.put(salt);
 		buf.put(bodyHash);
 		buf.put(attachmentsHash);
+		return buf.array();
+	}
+
+	byte[] postSignedInputV3(byte[] channelId, long seqNum, byte[] prevHash,
+			long timestampHourMs, long ttlMs, byte[] salt, byte[] bodyHash,
+			byte[] attachmentsHash, byte[] authorHash) {
+		byte[] v2 = postSignedInputV2(channelId, seqNum, prevHash,
+				timestampHourMs, ttlMs, salt, bodyHash, attachmentsHash);
+		v2[0] = (byte) ChannelPost.FORMAT_V3;
+		ByteBuffer buf = ByteBuffer.allocate(v2.length + authorHash.length);
+		buf.put(v2);
+		buf.put(authorHash);
 		return buf.array();
 	}
 

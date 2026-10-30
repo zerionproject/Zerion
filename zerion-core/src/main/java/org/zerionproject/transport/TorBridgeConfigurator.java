@@ -514,17 +514,19 @@ public class TorBridgeConfigurator implements EventListener {
 		return host.matches("[A-Za-z0-9.-]+");
 	}
 
-	static List<String> parseCustomBridges(String value) {
+	public static List<String> parseCustomBridges(String value) {
 		List<String> bridges = new ArrayList<>();
 		for (String line : value.split("\\r?\\n")) {
-			String trimmed = line.trim();
-			if (trimmed.isEmpty()) continue;
-			String lower = trimmed.toLowerCase(java.util.Locale.US);
+			String bare = line.trim();
+			if (bare.isEmpty()) continue;
+			String lower = bare.toLowerCase(java.util.Locale.US);
 			if (lower.startsWith("bridge ")) {
-				bridges.add(trimmed);
-			} else {
-				bridges.add("Bridge " + trimmed);
+				bare = bare.substring("bridge ".length()).trim();
 			}
+			bare = bare.replaceAll(" +", " ");
+			if (!isPlausibleBridgeLine(bare)) continue;
+			if (!BridgeLines.isWellFormed(bare)) continue;
+			bridges.add("Bridge " + bare);
 		}
 		return bridges;
 	}

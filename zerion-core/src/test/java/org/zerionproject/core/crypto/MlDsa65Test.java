@@ -5,11 +5,13 @@ import org.zerionproject.core.test.TestSecureRandomProvider;
 import org.junit.Test;
 
 import java.security.SecureRandom;
+import java.util.Arrays;
 
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_PRIVATE_KEY_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_SIGNATURE_BYTES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -56,5 +58,20 @@ public class MlDsa65Test extends BrambleTestCase {
 
 		assertEquals("Signature length should match constant",
 				ML_DSA_65_SIGNATURE_BYTES, signature.length);
+	}
+
+	@Test
+	public void signingIsHedgedSoTwoSignaturesOfOneMessageDiffer()
+			throws Exception {
+		MlDsa65.MlDsaKeyPair keyPair = mlDsa65.generateKeyPair();
+		byte[] message = "One message signed twice".getBytes();
+
+		byte[] first = mlDsa65.sign(keyPair.getPrivateKey(), message);
+		byte[] second = mlDsa65.sign(keyPair.getPrivateKey(), message);
+
+		assertFalse("hedged signatures of one message must differ",
+				Arrays.equals(first, second));
+		assertTrue(mlDsa65.verify(keyPair.getPublicKey(), message, first));
+		assertTrue(mlDsa65.verify(keyPair.getPublicKey(), message, second));
 	}
 }

@@ -11,10 +11,13 @@ import android.os.ParcelFileDescriptor;
 import org.zerionproject.core.account.AndroidAccountManager;
 import org.zerionproject.core.account.PasswordNormalizer;
 import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.identity.IdentityManager;
+import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.app.api.messaging.MessagingManager;
 import org.zerionproject.transport.RootKeyStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -30,7 +33,9 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.io.SequenceInputStream;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.UUID;
@@ -55,6 +60,8 @@ public class AccountBackupManager {
 	static final long ROOT_EVOLUTION_PAUSE_MS = 7L * 24 * 60 * 60 * 1000;
 
 	private static final int PROBE_BYTES = 5;
+
+	static final String SNAPSHOT_SCHEMA = "zsnapshot";
 
 	public interface CopyWriter {
 		void write(InputStream bundle, long length)
@@ -108,31 +115,37 @@ public class AccountBackupManager {
 	private final ProfileManager profileManager;
 	private final IdentityManager identityManager;
 	private final RootKeyStore rootKeyStore;
+	private final MessagingManager messagingManager;
 	private final BackupCrypto backupCrypto;
 	private final Sealer sealer;
+	private final ContactRequestManager contactRequests;
 
 	@Inject
 	AccountBackupManager(Application app, DatabaseComponent db,
 			AndroidAccountManager accountManager,
 			ProfileManager profileManager, IdentityManager identityManager,
-			RootKeyStore rootKeyStore) {
+			RootKeyStore rootKeyStore, MessagingManager messagingManager,
+			ContactRequestManager contactRequests) {
 		this(app, db, accountManager, profileManager, identityManager,
-				rootKeyStore, new BackupCrypto(),
+				rootKeyStore, messagingManager, new BackupCrypto(),
 				sealer(Argon2.Argon2Params.getBackupStrong(),
-						BackupStream.DEFAULT_CHUNK));
+						BackupStream.DEFAULT_CHUNK), contactRequests);
 	}
 
 	AccountBackupManager(Application app, DatabaseComponent db,
 			AndroidAccountManager accountManager,
 			ProfileManager profileManager, IdentityManager identityManager,
-			RootKeyStore rootKeyStore, BackupCrypto backupCrypto,
-			Sealer sealer) {
+			RootKeyStore rootKeyStore, MessagingManager messagingManager,
+			BackupCrypto backupCrypto, Sealer sealer,
+			ContactRequestManager contactRequests) {
+		this.contactRequests = contactRequests;
 		this.app = app;
 		this.db = db;
 		this.accountManager = accountManager;
 		this.profileManager = profileManager;
 		this.identityManager = identityManager;
 		this.rootKeyStore = rootKeyStore;
+		this.messagingManager = messagingManager;
 		this.backupCrypto = backupCrypto;
 		this.sealer = sealer;
 	}
@@ -144,6 +157,9 @@ public class AccountBackupManager {
 
 	public void exportAccount(char[] passphrase, Destination destination)
 			throws BackupException {
+		if (!BackupPassphrase.wellFormed(passphrase)) {
+			throw new BackupException(BackupException.Reason.WEAK_PASSPHRASE);
+		}
 		char[] normal = PasswordNormalizer.normalize(passphrase);
 		AtomicReference<OutputStream> opened = new AtomicReference<>();
 		try {
@@ -333,7 +349,12 @@ public class AccountBackupManager {
 		RunningCopies.start(copy);
 		rootKeyStore.beginSnapshot();
 		try {
-			writeSnapshot(snapshot);
+			contactRequests.beginBackupSnapshot();
+			try {
+				writeSnapshot(snapshot);
+			} finally {
+				contactRequests.endBackupSnapshot();
+			}
 			copy.check();
 			long length = snapshot.length();
 			if (length <= 0 || length > MAX_DB_BYTES) {
@@ -397,16 +418,44 @@ public class AccountBackupManager {
 		}
 		String target = out.getAbsolutePath().replace("'", "''");
 		db.transaction(true, txn -> {
+			Collection<MessageId> viewOnce =
+					messagingManager.getUnclearedViewOnceMedia(txn);
 			Connection c = (Connection) txn.unbox();
 			c.setAutoCommit(true);
 			try (Statement s = c.createStatement()) {
 				s.execute("VACUUM INTO '" + target + "'");
+				if (!viewOnce.isEmpty()) {
+					eraseFromSnapshot(c, s, target, viewOnce);
+				}
 			} finally {
 				c.setAutoCommit(false);
 			}
 		});
 		try (RandomAccessFile raf = new RandomAccessFile(out, "rw")) {
 			raf.getFD().sync();
+		}
+	}
+
+	static void eraseFromSnapshot(Connection c, Statement s, String target,
+			Collection<MessageId> ids) throws SQLException {
+		s.execute("ATTACH DATABASE '" + target + "' AS " + SNAPSHOT_SCHEMA);
+		try {
+			s.execute("PRAGMA " + SNAPSHOT_SCHEMA + ".secure_delete = ON");
+			try (PreparedStatement bodies = c.prepareStatement("UPDATE "
+					+ SNAPSHOT_SCHEMA + ".messages SET raw = NULL, length = 0"
+					+ " WHERE messageId = ?");
+					PreparedStatement statuses = c.prepareStatement("UPDATE "
+							+ SNAPSHOT_SCHEMA + ".statuses SET deleted = TRUE,"
+							+ " length = 0 WHERE messageId = ?")) {
+				for (MessageId id : ids) {
+					bodies.setBytes(1, id.getBytes());
+					bodies.executeUpdate();
+					statuses.setBytes(1, id.getBytes());
+					statuses.executeUpdate();
+				}
+			}
+		} finally {
+			s.execute("DETACH DATABASE " + SNAPSHOT_SCHEMA);
 		}
 	}
 

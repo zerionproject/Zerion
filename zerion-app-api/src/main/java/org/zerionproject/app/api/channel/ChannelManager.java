@@ -189,6 +189,16 @@ public interface ChannelManager {
 
 	boolean canPost(byte[] channelId) throws DbException;
 
+	int getPostingMode(byte[] channelId) throws DbException;
+
+	void setPostingMode(byte[] channelId, int mode) throws DbException;
+
+	boolean canPostAsMember(byte[] channelId) throws DbException;
+
+	int takeRefusedPostNotices(byte[] channelId) throws DbException;
+
+	int takeTooManyPostNotices(byte[] channelId) throws DbException;
+
 	long getPostsGivenUp(byte[] channelId) throws DbException;
 
 	ChannelSyncStatus getSyncStatus(byte[] channelId) throws DbException;

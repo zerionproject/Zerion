@@ -124,6 +124,25 @@ public class ZwfTagRecogniser {
 	}
 
 	@Nullable
+	public Match recogniseAt(int contactId, byte[] tag, long streamId) {
+		if (streamId < 1) return null;
+		List<Map.Entry<Long, SecretKey>> keys;
+		synchronized (lock) {
+			Map<Long, SecretKey> k = tagKeys.get(contactId);
+			if (k == null) return null;
+			keys = new ArrayList<>(k.entrySet());
+		}
+		for (Map.Entry<Long, SecretKey> e : keys) {
+			byte[] candidate = ZwfTag.computeTag(crypto, e.getValue(),
+					streamId);
+			if (MessageDigest.isEqual(candidate, tag)) {
+				return new Match(contactId, streamId, e.getKey());
+			}
+		}
+		return null;
+	}
+
+	@Nullable
 	public Match recogniseBeyondWindowNext(byte[] tag, long maxGap) {
 		return recogniseBeyondWindowNext(tag, maxGap,
 				java.util.Collections.emptySet());

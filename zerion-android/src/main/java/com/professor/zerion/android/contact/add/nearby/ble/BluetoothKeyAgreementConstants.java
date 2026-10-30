@@ -12,6 +12,9 @@ public interface BluetoothKeyAgreementConstants {
 	UUID FRAME_CHARACTERISTIC =
 			UUID.fromString("a4c1d830-7e59-4b21-9f6d-1c8b0e3a52d7");
 
+	UUID PROOF_CHARACTERISTIC =
+			UUID.fromString("a4c1d831-7e59-4b21-9f6d-1c8b0e3a52d7");
+
 	UUID CCCD =
 			UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 

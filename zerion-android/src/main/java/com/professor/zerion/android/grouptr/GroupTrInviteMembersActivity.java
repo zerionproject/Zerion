@@ -21,6 +21,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
@@ -292,8 +293,10 @@ public class GroupTrInviteMembersActivity extends ZerionActivity {
 
 	private String nameFor(Contact c) {
 		String alias = c.getAlias();
-		if (alias != null && !alias.isEmpty()) return alias;
-		return c.getAuthor().getName();
+		if (alias != null && !alias.isEmpty()) {
+			return DisplayNames.clean(alias);
+		}
+		return DisplayNames.clean(c.getAuthor().getName());
 	}
 
 	static String nameSentToGroup(Contact c) {

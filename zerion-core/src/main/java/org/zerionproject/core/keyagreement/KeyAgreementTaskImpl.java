@@ -102,8 +102,9 @@ class KeyAgreementTaskImpl extends Thread implements KeyAgreementTask,
 			java.util.Arrays.fill(localKeyPair.getPublic().getEncoded(), (byte) 0);
 			java.util.Arrays.fill(localKeyPair.getPrivate().getEncoded(), (byte) 0);
 			KeyAgreementResult result =
-					new KeyAgreementResult(masterKey, transport.getConnection(),
-							transport.getTransportId(), alice);
+					new KeyAgreementResult(masterKey, protocol.getExchangeKey(),
+							transport.getConnection(), transport.getTransportId(),
+							alice);
 			eventBus.broadcast(new KeyAgreementFinishedEvent(result));
 		} catch (AbortException e) {
 			eventBus.broadcast(new KeyAgreementAbortedEvent(e.receivedAbort));

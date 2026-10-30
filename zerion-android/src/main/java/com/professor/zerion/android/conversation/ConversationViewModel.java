@@ -54,7 +54,11 @@ import org.zerionproject.app.api.conversation.DeletionResult;
 import org.zerionproject.app.api.identity.AuthorInfo;
 import org.zerionproject.app.api.identity.AuthorManager;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.PinnedMessage;
+import org.zerionproject.app.api.messaging.event.PinnedMessageChangedEvent;
 import org.zerionproject.app.api.messaging.event.PrivateMessageEditedEvent;
+import org.zerionproject.app.api.messaging.event.ViewOnceOpenedEvent;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.zerionproject.app.api.messaging.PrivateMessage;
 import org.zerionproject.app.api.messaging.PrivateMessageFactory;
 import org.zerionproject.app.api.messaging.PrivateMessageFormat;
@@ -99,6 +103,7 @@ public class ConversationViewModel extends DbViewModel
 			"showOnboardingImage";
 	private static final String SHOW_ONBOARDING_INTRODUCTION =
 			"showOnboardingIntroduction";
+	static final String SHOW_VIEW_ONCE_NOTICE = "showViewOnceNotice";
 
 	private final TransactionManager db;
 	private final EventBus eventBus;
@@ -165,6 +170,23 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveEvent<>();
 	private final MutableLiveData<Boolean> editAndDeleteSupported =
 			new MutableLiveData<>(false);
+	private final MutableLiveData<Boolean> viewOnceSupported =
+			new MutableLiveData<>(false);
+	private final MutableLiveData<Boolean> pinSupported =
+			new MutableLiveData<>(false);
+	private final MutableLiveData<PinnedMessage> pinnedMessage =
+			new MutableLiveData<>();
+	private final MutableLiveEvent<Integer> pinNotice =
+			new MutableLiveEvent<>();
+	private volatile boolean viewOnceNoticeDue = true;
+	private final java.util.Set<MessageId> viewOnceOpening =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private final java.util.Queue<ViewOnceResult> viewOnceResults =
+			new java.util.ArrayDeque<>();
+	private final MutableLiveEvent<Boolean> viewOnceReady =
+			new MutableLiveEvent<>();
+	private final MutableLiveEvent<MessageId> viewOnceViewed =
+			new MutableLiveEvent<>();
 	private final java.util.Set<MessageId> editedMessages =
 			java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private final Map<MessageId, String> editedTexts =
@@ -207,6 +229,17 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveData<>(false);
 	private final MutableLiveData<Map<MessageId, LinkPreview>> linkPreviewsMap =
 			new MutableLiveData<>();
+	static class ViewOnceResult {
+		final MessageId messageId;
+		@Nullable
+		final ViewOnceMedia media;
+
+		ViewOnceResult(MessageId messageId, @Nullable ViewOnceMedia media) {
+			this.messageId = messageId;
+			this.media = media;
+		}
+	}
+
 	static class MarkMessagesEvent {
 		final Collection<MessageId> messageIds;
 		final boolean sent;
@@ -380,6 +413,9 @@ public class ConversationViewModel extends DbViewModel
 			if (c.getContactId().equals(contactId)) {
 				clientVersionUpdated.postEvent(c.getClientVersion().getClientId());
 			}
+		} else if (e instanceof PinnedMessageChangedEvent) {
+			PinnedMessageChangedEvent p = (PinnedMessageChangedEvent) e;
+			if (p.getContactId().equals(contactId)) loadPinnedMessage();
 		} else if (e instanceof PrivateMessageEditedEvent) {
 			PrivateMessageEditedEvent ed = (PrivateMessageEditedEvent) e;
 			if (ed.getContactId().equals(contactId)) {
@@ -401,6 +437,12 @@ public class ConversationViewModel extends DbViewModel
 				replaceLoadedText(ed.getMessageId(), ed.getText());
 				messageEdited.setEvent(
 						new Pair<>(ed.getMessageId(), ed.getText()));
+			}
+		} else if (e instanceof ViewOnceOpenedEvent) {
+			ViewOnceOpenedEvent v = (ViewOnceOpenedEvent) e;
+			if (v.getContactId().equals(contactId)) {
+				ConversationCache.getInstance().invalidate(v.getContactId());
+				viewOnceViewed.postEvent(v.getMessageId());
 			}
 		} else if (e instanceof ReactionReceivedEvent) {
 			ReactionReceivedEvent r = (ReactionReceivedEvent) e;
@@ -556,12 +598,16 @@ public class ConversationViewModel extends DbViewModel
 		privateMessageFormat.postValue(format);
 		editAndDeleteSupported.postValue(
 				messagingManager.supportsEditAndDelete(c));
+		viewOnceSupported.postValue(messagingManager.supportsViewOnce(c));
+		pinSupported.postValue(messagingManager.supportsPin(c));
+		pinnedMessage.postValue(messagingManager.getPinnedMessage(c));
 
 		Collection<Contact> contacts = contactManager.getContacts();
 		boolean introductionSupported = contacts.size() > 1;
 		showIntroductionAction.postValue(introductionSupported);
 
 		Settings settings = settingsManager.getSettings(SETTINGS_NAMESPACE);
+		viewOnceNoticeDue = settings.getBoolean(SHOW_VIEW_ONCE_NOTICE, true);
 		if (format != TEXT_ONLY &&
 				settings.getBoolean(SHOW_ONBOARDING_IMAGE, true)) {
 			onOnboardingShown(SHOW_ONBOARDING_IMAGE);
@@ -584,7 +630,18 @@ public class ConversationViewModel extends DbViewModel
 	LiveData<SendState> sendMessage(@Nullable String text,
 			List<AttachmentHeader> headers, long expectedTimer,
 			@Nullable ConversationItem replyToItem) {
+		return sendMessage(text, headers, expectedTimer, replyToItem, false);
+	}
+
+	@UiThread
+	LiveData<SendState> sendMessage(@Nullable String text,
+			List<AttachmentHeader> headers, long expectedTimer,
+			@Nullable ConversationItem replyToItem, boolean viewOnce) {
 		MutableLiveData<SendState> liveData = new MutableLiveData<>();
+		if (viewOnce && (headers == null || headers.size() != 1)) {
+			liveData.setValue(ERROR);
+			return liveData;
+		}
 		boolean hasText = text != null && !text.trim().isEmpty();
 		boolean hasAttachments = headers != null && !headers.isEmpty();
 		if (!hasText && !hasAttachments) {
@@ -598,8 +655,11 @@ public class ConversationViewModel extends DbViewModel
 				db.transaction(false, txn -> {
 					MessageId replyToId = replyToItem != null ?
 							replyToItem.getId() : null;
-					PrivateMessage m = createMessage(txn, text, headers,
-							expectedTimer, replyToId);
+					PrivateMessage m = viewOnce
+							? createViewOnceMessage(txn, headers.get(0),
+									expectedTimer, replyToId)
+							: createMessage(txn, text, headers,
+									expectedTimer, replyToId);
 					if (offline) {
 						messagingManager.addLocalMeshMessage(txn, m);
 					} else {
@@ -616,7 +676,8 @@ public class ConversationViewModel extends DbViewModel
 									message.getGroupId(), message.getTimestamp(),
 									true, true, false, false, m.hasText(),
 									m.getAttachmentHeaders(),
-									m.getAutoDeleteTimer(), replyToId);
+									m.getAutoDeleteTimer(), replyToId, false,
+									false, m.isViewOnce(), false);
 					MessageId id = message.getId();
 					localById.put(id, true);
 
@@ -682,6 +743,86 @@ public class ConversationViewModel extends DbViewModel
 		} catch (FormatException e) {
 			throw new AssertionError(e);
 		}
+	}
+
+	private PrivateMessage createViewOnceMessage(Transaction txn,
+			AttachmentHeader header, long expectedTimer,
+			@Nullable MessageId replyToId) throws DbException {
+		ContactId c = requireNonNull(contactId);
+		Contact contact = requireNonNull(contactItem.getValue()).getContact();
+		GroupId groupId = messagingManager.getContactGroup(contact).getId();
+		long timestamp =
+				conversationManager.getTimestampForOutgoingMessage(txn, c);
+		long conversationTimer =
+				autoDeleteManager.getAutoDeleteTimer(txn, c, timestamp);
+		if (expectedTimer == NO_AUTO_DELETE_TIMER &&
+				conversationTimer != NO_AUTO_DELETE_TIMER) {
+			throw new UnexpectedTimerException();
+		}
+		try {
+			return privateMessageFactory.createViewOncePrivateMessage(groupId,
+					timestamp, header, expectedTimer, replyToId);
+		} catch (FormatException e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	@UiThread
+	void openViewOnce(MessageId id) {
+		ContactId c = contactId;
+		if (c == null || !viewOnceOpening.add(id)) return;
+		runOnDbThread(() -> {
+			ViewOnceMedia media = null;
+			try {
+				media = messagingManager.openViewOnce(c, id);
+			} catch (DbException e) {
+				handleException(e);
+			}
+			ConversationCache.getInstance().invalidate(c);
+			ViewOnceMedia opened = media;
+			androidExecutor.runOnUiThread(() -> deliverViewOnce(id, opened));
+		});
+	}
+
+	@UiThread
+	private void deliverViewOnce(MessageId id, @Nullable ViewOnceMedia media) {
+		if (media == null) viewOnceOpening.remove(id);
+		viewOnceResults.add(new ViewOnceResult(id, media));
+		viewOnceReady.setEvent(true);
+	}
+
+	@UiThread
+	@Nullable
+	ViewOnceResult takeViewOnceResult() {
+		return viewOnceResults.poll();
+	}
+
+	boolean isViewOnceNoticeDue() {
+		return viewOnceNoticeDue;
+	}
+
+	@UiThread
+	void markViewOnceNoticeShown() {
+		viewOnceNoticeDue = false;
+		runOnDbThread(() -> {
+			try {
+				onOnboardingShown(SHOW_VIEW_ONCE_NOTICE);
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	LiveData<Boolean> getViewOnceSupported() {
+		return viewOnceSupported;
+	}
+
+	LiveEvent<Boolean> getViewOnceReady() {
+		return viewOnceReady;
+	}
+
+	LiveEvent<MessageId> getViewOnceViewed() {
+		return viewOnceViewed;
 	}
 
 	@UiThread
@@ -1143,10 +1284,22 @@ public class ConversationViewModel extends DbViewModel
 		final ContactId c = contactId;
 		runOnDbThread(() -> {
 			try {
+				Collection<MessageId> burned =
+						messagingManager.getSecretNotesOpenedEarlier(c);
+				if (!burned.isEmpty()) {
+					try {
+						messagingManager.deleteSecretNotesOpenedEarlier(c);
+					} catch (NoSuchContactException e) {
+						throw e;
+					} catch (DbException e) {
+					}
+				}
 				Collection<ConversationMessageHeader> headers =
-						conversationManager.getMessageHeaders(c);
+						withoutBurned(conversationManager.getMessageHeaders(c),
+								burned);
 				Map<MessageId, String> texts = new java.util.HashMap<>(
 						messagingManager.getMessageTexts(c));
+				texts.keySet().removeAll(burned);
 				Map<MessageId, GroupId> unread = new java.util.HashMap<>();
 				for (ConversationMessageHeader h : headers) {
 					localById.put(h.getId(), h.isLocal());
@@ -1182,6 +1335,31 @@ public class ConversationViewModel extends DbViewModel
 				handleException(e);
 			} finally {
 				messagesLoading.postValue(false);
+			}
+		});
+	}
+
+	private static Collection<ConversationMessageHeader> withoutBurned(
+			Collection<ConversationMessageHeader> headers,
+			Collection<MessageId> burned) {
+		if (burned.isEmpty()) return headers;
+		List<ConversationMessageHeader> kept = new ArrayList<>(headers.size());
+		for (ConversationMessageHeader h : headers) {
+			if (!burned.contains(h.getId())) kept.add(h);
+		}
+		return kept;
+	}
+
+	void startSecretNoteCountdown(MessageId messageId, int seconds) {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		final long millis = seconds * 1000L;
+		runOnDbThread(() -> {
+			try {
+				messagingManager.startSecretNoteCountdown(c, messageId, millis);
+			} catch (NoSuchContactException e) {
+			} catch (DbException e) {
+				handleException(e);
 			}
 		});
 	}
@@ -1587,6 +1765,63 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Boolean> getEditAndDeleteSupported() {
 		return editAndDeleteSupported;
+	}
+
+	LiveData<Boolean> getPinSupported() {
+		return pinSupported;
+	}
+
+	LiveData<PinnedMessage> getPinnedMessage() {
+		return pinnedMessage;
+	}
+
+	LiveEvent<Integer> getPinNotice() {
+		return pinNotice;
+	}
+
+	private void loadPinnedMessage() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				pinnedMessage.postValue(messagingManager.getPinnedMessage(c));
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
+	}
+
+	void pinMessage(MessageId id) {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				MessagingManager.PinResult r =
+						messagingManager.pinMessage(c, id);
+				if (r == MessagingManager.PinResult.PINNED_HERE_ONLY) {
+					pinNotice.postEvent(R.string.pinned_here_only);
+				} else if (r == MessagingManager.PinResult.NOT_PINNABLE) {
+					pinNotice.postEvent(R.string.pin_not_possible);
+				}
+			} catch (DbException e) {
+				handleException(e);
+				pinNotice.postEvent(R.string.pin_failed);
+			}
+		});
+	}
+
+	void unpinMessage() {
+		if (contactId == null) return;
+		final ContactId c = contactId;
+		runOnDbThread(() -> {
+			try {
+				if (!messagingManager.unpinMessage(c)) {
+					pinNotice.postEvent(R.string.unpinned_here_only);
+				}
+			} catch (DbException e) {
+				handleException(e);
+			}
+		});
 	}
 
 	LiveEvent<Pair<MessageId, String>> getMessageEdited() {

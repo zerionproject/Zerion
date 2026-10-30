@@ -22,6 +22,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 import org.zerionproject.app.api.channel.ChannelComment;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelManager;
 import org.zerionproject.app.api.channel.ChannelPost;
 import org.zerionproject.app.api.channel.ChannelState;
@@ -172,6 +173,8 @@ public class ChannelFeedCardTest {
 		TextView badge = card.findViewById(R.id.channelPostSignerBadge);
 		assertEquals(View.VISIBLE, badge.getVisibility());
 		assertEquals("EDITOR", badge.getText().toString());
+		assertEquals("Signed by a channel editor",
+				String.valueOf(badge.getContentDescription()));
 		assertFalse("the header shows no hex", HEX.matcher(
 				text(card, R.id.channelPostAuthor)).find());
 	}
@@ -202,6 +205,92 @@ public class ChannelFeedCardTest {
 				text(card, R.id.channelPostAuthor));
 		assertEquals(View.VISIBLE, card.findViewById(
 				R.id.channelPostSignerBadge).getVisibility());
+	}
+
+	private static ChannelPost memberPost(long seq, String body, byte[] key,
+			String name) {
+		return new ChannelPost(new byte[32], seq, new byte[32], hourNow(),
+				body, Collections.emptyList(), 0L, new byte[64], true, false,
+				new byte[16], new ChannelPost.MemberAuthor(key, new byte[0],
+						name, ChannelConstants.MEMBER_ROLE_SUBSCRIBER));
+	}
+
+	@Test
+	public void aSubscribersPostNamesThemWithTheSubscriberTag()
+			throws Exception {
+		stub(true, memberPost(1L, "Road is open", key((byte) 7), "Robin"));
+		open();
+
+		View card = holder(0).itemView;
+		assertEquals("Robin", text(card, R.id.channelPostAuthor));
+		TextView badge = card.findViewById(R.id.channelPostSignerBadge);
+		assertEquals(View.VISIBLE, badge.getVisibility());
+		assertEquals("SUBSCRIBER", badge.getText().toString());
+		assertEquals("Posted by a subscriber, signed by the channel",
+				String.valueOf(badge.getContentDescription()));
+		assertTrue("the owner can open the author", card.findViewById(
+				R.id.channelPostAuthor).hasOnClickListeners());
+		String said = String.valueOf(card.findViewById(R.id.layout)
+				.getContentDescription());
+		assertTrue(said, said.startsWith("Robin"));
+		assertTrue(said, said.contains("Subscriber"));
+	}
+
+	@Test
+	public void aSubscriberSeesTheirOwnPostAsYou() throws Exception {
+		stub(false, memberPost(1L, "Road is open", key((byte) 5), "Robin"));
+		open();
+
+		View card = holder(0).itemView;
+		assertEquals(feed.getString(R.string.channels_comment_you),
+				text(card, R.id.channelPostAuthor));
+		assertEquals("SUBSCRIBER", ((TextView) card.findViewById(
+				R.id.channelPostSignerBadge)).getText().toString());
+		assertFalse(card.findViewById(R.id.channelPostAuthor)
+				.hasOnClickListeners());
+	}
+
+	@Test
+	public void anotherSubscribersPostShowsTheirSignedName() throws Exception {
+		stub(false, memberPost(1L, "Road is open", key((byte) 7), "Robin"));
+		open();
+
+		assertEquals("Robin", text(holder(0).itemView,
+				R.id.channelPostAuthor));
+	}
+
+	@Test
+	public void aRightToLeftNameIsIsolatedInTheHeader() throws Exception {
+		String name = "\u05e8\u05d5\u05d1\u05d9\u05df";
+		stub(true, memberPost(1L, "Road is open", key((byte) 7), name));
+		open();
+
+		String shown = text(holder(0).itemView, R.id.channelPostAuthor);
+		assertEquals(androidx.core.text.BidiFormatter.getInstance()
+				.unicodeWrap(name), shown);
+		assertTrue(shown, shown.length() > name.length());
+	}
+
+	@Test
+	public void directionCharactersAreRemovedFromASubscribersName()
+			throws Exception {
+		stub(true, memberPost(1L, "Road is open", key((byte) 7),
+				"Ro\u202ebin"));
+		open();
+
+		assertEquals("Robin", text(holder(0).itemView,
+				R.id.channelPostAuthor));
+	}
+
+	@Test
+	public void aSubscriberWithoutANameIsShownByTheirRole() throws Exception {
+		stub(false, memberPost(1L, "Road is open", key((byte) 7), ""));
+		open();
+
+		View card = holder(0).itemView;
+		assertEquals("Subscriber", text(card, R.id.channelPostAuthor));
+		assertEquals(View.GONE, card.findViewById(R.id.channelPostSignerBadge)
+				.getVisibility());
 	}
 
 	@Test

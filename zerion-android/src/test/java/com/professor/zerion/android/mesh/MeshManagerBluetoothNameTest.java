@@ -63,7 +63,8 @@ public class MeshManagerBluetoothNameTest {
 							byte[] payload, long ts) {
 						return false;
 					}
-				});
+				}, new BluetoothNameGuard(context, settings, Runnable::run),
+				null, null);
 	}
 
 	private static void mask(MeshManager m) throws Exception {

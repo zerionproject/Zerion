@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -232,10 +233,11 @@ public class ChannelSubscribersActivity extends ZerionActivity {
 		}
 
 		void bind(ChannelSubscriber sub) {
-			name.setText(sub.getDisplayName().isEmpty()
+			String shown = DisplayNames.clean(sub.getDisplayName()).trim();
+			name.setText(shown.isEmpty()
 					? itemView.getContext().getString(
 							R.string.channels_delegations_unnamed_person)
-					: sub.getDisplayName());
+					: shown);
 			boolean trusted = sub.isTrusted() && !sub.isBanned();
 			subtitle.setText(R.string.channels_subscribers_trusted_badge);
 			subtitle.setVisibility(trusted ? View.VISIBLE : View.GONE);

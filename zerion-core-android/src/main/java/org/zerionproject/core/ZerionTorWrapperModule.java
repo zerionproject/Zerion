@@ -5,6 +5,7 @@ import android.app.Application;
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
 import org.zerionproject.tor.TorBinaryPins;
 import org.zerionproject.tor.TorBinaryVerifier;
+import org.zerionproject.tor.TorStateStore;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.core.api.event.EventExecutor;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
@@ -20,6 +21,7 @@ import org.zerionproject.transport.TorControlSocketFactory;
 import java.io.File;
 import java.util.concurrent.Executor;
 
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -39,11 +41,14 @@ public class ZerionTorWrapperModule {
 			@TorDirectory File torDirectory, @TorSocksPort int torSocksPort,
 			@TorControlPort int torControlPort,
 			@TorSocksPath File socksPath,
-			org.zerionproject.transport.TorProcessWatch processWatch) {
-		return new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
+			org.zerionproject.transport.TorProcessWatch processWatch,
+			@Nullable TorStateStore stateStore) {
+		TorWrapper tor = new ZerionTorWrapper(app, wakeLockManager, ioExecutor,
 				eventExecutor, architecture(), torDirectory, torSocksPort,
 				torControlPort, controlSocketPath(socksPath.getAbsolutePath()),
 				shippedPins(), processWatch);
+		tor.setStateStore(stateStore);
+		return tor;
 	}
 
 	static String controlSocketPath(String socksPath) {

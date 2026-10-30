@@ -14,6 +14,8 @@ public interface MessageTypes {
 	int MESSAGE_REACTION_REMOVED = 11;
 	int MESSAGE_EDIT = 12;
 	int MESSAGE_DELETE = 13;
+	int VIEW_ONCE_OPENED = 14;
+	int MESSAGE_PIN = 15;
 
 	int GROUP_POST = 32;
 	int GROUP_MEMBER_ADDED = 33;
@@ -41,5 +43,6 @@ public interface MessageTypes {
 	int GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO = 56;
 	int GROUP_KEY_BINDING = 57;
 	int GROUP_KEY_PROBE = 58;
+	int GROUP_PIN = 59;
 	int LAST_GROUP_RECORD = 63;
 }

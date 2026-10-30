@@ -3,12 +3,16 @@
 # (https://github.com/guardianproject/tor-android/blob/7e6cffd6adc5b0d62b104029148bc42694761926/external/Makefile).
 # Copyright (c) 2009-2010, Nathan Freitas, The Guardian Project.
 # Licensed under the 3-clause BSD license. Modified by the Zerion Project in
-# this header and in one place: Tor's configure runs with
-# CPPFLAGS="-D_FORTIFY_SOURCE=2". From 0.4.9.14 Tor's configure would
+# this header and in two places of Tor's configure line. It runs with
+# CPPFLAGS="-D_FORTIFY_SOURCE=2": from 0.4.9.14 Tor's configure would
 # otherwise pick level 3, which the NDK r29 bionic headers treat like level 1
 # (sys/cdefs.h uses object size type 1 for level 2 only); with the level
-# already defined, its fortify probes add nothing. The pins live in
-# build-tor-android.sh and PROVENANCE.md next to it.
+# already defined, its fortify probes add nothing. It passes --enable-gpl,
+# which builds Tor's onion service proof-of-work module (Equi-X and HashX,
+# LGPL-3.0, in src/ext/equix of the Tor source) into the executable; Tor
+# built this way is covered by the GNU GPL version 3 instead of its usual
+# 3-clause BSD licence. The pins live in build-tor-android.sh and
+# PROVENANCE.md next to it.
 
 # Based on Guardian Project's tor-android repo. Copied from:
 # https://github.com/guardianproject/tor-android/blob/7e6cffd6adc5b0d62b104029148bc42694761926/external/Makefile
@@ -226,6 +230,7 @@ tor/Makefile: tor/configure.ac tor/Makefile.am
 	cd tor && \
 			CPPFLAGS="-D_FORTIFY_SOURCE=2" ./configure \
 				--host=$(ALTHOST) \
+				--enable-gpl \
 				--enable-android \
 				--enable-pic \
 				--enable-static-libevent --with-libevent-dir=$(EXTERNAL_ROOT) \

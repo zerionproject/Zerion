@@ -1,6 +1,5 @@
 package com.professor.zerion.android.vault.ui;
 
-import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -40,6 +39,7 @@ import com.professor.zerion.android.vault.wallet.WalletRecord;
 import com.professor.zerion.android.vault.wallet.btc.BtcAmountText;
 import com.professor.zerion.android.vault.wallet.btc.BtcWallet;
 import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyAnalyzer;
+import com.professor.zerion.android.util.SecureClipboard;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -56,6 +56,7 @@ import javax.inject.Inject;
 public class VaultWalletFragment extends BaseFragment {
 
 	private static final long POLL_INTERVAL_MS = 20_000L;
+	private static final long SEED_CLIP_LIFETIME_MS = 30_000L;
 
 	@Inject
 	ViewModelProvider.Factory viewModelFactory;
@@ -358,6 +359,14 @@ public class VaultWalletFragment extends BaseFragment {
 				toast(getString(R.string.wallet_pin_not_tls));
 			} else if ("error".equals(fp)) {
 				toast(getString(R.string.wallet_pin_read_failed));
+			} else if ("intercept".equals(fp)) {
+				track(new SecureAlertDialogBuilder(requireContext())
+						.setTitle(R.string.wallet_pin_interception_title)
+						.setMessage(R.string.wallet_pin_interception_msg)
+						.setPositiveButton(android.R.string.ok, null)
+						.show());
+			} else if ("differ".equals(fp)) {
+				toast(getString(R.string.wallet_pin_certificates_differ));
 			} else {
 				int status = node.lastIndexOf('|');
 				if (status < 0) {
@@ -693,57 +702,14 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void copyToClipboard(String text) {
-		android.content.ClipboardManager cm =
-				(android.content.ClipboardManager) requireContext()
-						.getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm != null) {
-			cm.setPrimaryClip(
-					android.content.ClipData.newPlainText("txid", text));
-		}
+		SecureClipboard.copy(requireContext(), "txid", text);
 	}
-
-	private Runnable pendingSeedClipClear;
 
 	private void copySensitiveToClipboard(String text) {
 		Context ctx = getContext();
-		if (ctx == null) {
-			return;
-		}
-		ClipboardManager cm = (ClipboardManager) ctx
-				.getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm == null) {
-			return;
-		}
-		ClipData clip = ClipData.newPlainText("", text);
-		if (android.os.Build.VERSION.SDK_INT
-				>= android.os.Build.VERSION_CODES.TIRAMISU) {
-			android.os.PersistableBundle extras =
-					new android.os.PersistableBundle();
-			extras.putBoolean(
-					android.content.ClipDescription.EXTRA_IS_SENSITIVE, true);
-			clip.getDescription().setExtras(extras);
-		}
-		cm.setPrimaryClip(clip);
-		if (pendingSeedClipClear != null) {
-			pollHandler.removeCallbacks(pendingSeedClipClear);
-		}
-		pendingSeedClipClear = () -> {
-			pendingSeedClipClear = null;
-			try {
-				if (cm.hasPrimaryClip()) {
-					ClipData cur = cm.getPrimaryClip();
-					if (cur != null && cur.getItemCount() > 0) {
-						CharSequence ct = cur.getItemAt(0).getText();
-						if (ct != null && ct.toString().equals(text)) {
-							cm.setPrimaryClip(
-									ClipData.newPlainText("", "\u200B"));
-						}
-					}
-				}
-			} catch (Throwable ignored) {
-			}
-		};
-		pollHandler.postDelayed(pendingSeedClipClear, 30_000L);
+		if (ctx == null) return;
+		SecureClipboard.copySensitive(ctx, "", text,
+				SEED_CLIP_LIFETIME_MS);
 	}
 
 	private void showAddDialog() {
@@ -930,12 +896,8 @@ public class VaultWalletFragment extends BaseFragment {
 				.setMessage(R.string.wallet_receive_hint)
 				.setView(box)
 				.setPositiveButton(R.string.wallet_copy_address, (d, w) -> {
-					ClipboardManager cm = (ClipboardManager) ctx
-							.getSystemService(Context.CLIPBOARD_SERVICE);
-					if (cm != null) {
-						cm.setPrimaryClip(ClipData.newPlainText("btc", addr));
-						toast(getString(R.string.wallet_address_copied));
-					}
+					SecureClipboard.copy(ctx, "btc", addr);
+					toast(getString(R.string.wallet_address_copied));
 				})
 				.setNeutralButton(R.string.wallet_receive_new, (d, w) -> {
 					reopenReceive = true;
@@ -1285,6 +1247,13 @@ public class VaultWalletFragment extends BaseFragment {
 				? getString(R.string.wallet_send_fee_high_warning,
 						review.feePercentOfAmount) + "\n\n"
 				: "";
+		String feeJump = (review.feeJump
+				? getString(R.string.wallet_send_fee_jump_warning) + "\n\n"
+				: "")
+				+ (review.feeServersDisagree
+				? getString(R.string.wallet_send_fee_disagree_warning)
+						+ "\n\n"
+				: "");
 		summary.setText(getString(R.string.wallet_send_to) + ":\n"
 				+ review.toAddress + "\n\n"
 				+ getString(R.string.wallet_send_amount_label) + ":  "
@@ -1293,6 +1262,7 @@ public class VaultWalletFragment extends BaseFragment {
 				+ formatBtc(review.feeSat) + " (" + review.feeSat + " sat, "
 				+ feeDetail + ")\n\n"
 				+ highFee
+				+ feeJump
 				+ getString(R.string.wallet_auth_send_message));
 		summary.setTextColor(colorRes(R.color.zerion_text_primary));
 		summary.setTextSize(13);
@@ -2186,12 +2156,8 @@ public class VaultWalletFragment extends BaseFragment {
 		addrView.setTextSize(12);
 		addrView.setOnClickListener(v -> {
 			if (spAddress != null) {
-				ClipboardManager cm = (ClipboardManager) ctx
-						.getSystemService(Context.CLIPBOARD_SERVICE);
-				if (cm != null) {
-					cm.setPrimaryClip(ClipData.newPlainText("sp", spAddress));
-					toast(getString(R.string.wallet_address_copied));
-				}
+				SecureClipboard.copy(ctx, "sp", spAddress);
+				toast(getString(R.string.wallet_address_copied));
 			}
 		});
 		box.addView(addrView);

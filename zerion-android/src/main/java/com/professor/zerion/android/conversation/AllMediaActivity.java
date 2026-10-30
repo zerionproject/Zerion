@@ -150,7 +150,7 @@ public class AllMediaActivity extends ZerionActivity {
 				for (ConversationMessageHeader header : headers) {
 					if (header instanceof PrivateMessageHeader) {
 						PrivateMessageHeader pmh = (PrivateMessageHeader) header;
-						List<AttachmentHeader> attachments = pmh.getAttachmentHeaders();
+						List<AttachmentHeader> attachments = listed(pmh);
 
 						for (AttachmentHeader ah : attachments) {
 							String contentType = ah.getContentType();
@@ -247,6 +247,11 @@ public class AllMediaActivity extends ZerionActivity {
 	public boolean onSupportNavigateUp() {
 		onBackPressed();
 		return true;
+	}
+
+	static List<AttachmentHeader> listed(PrivateMessageHeader h) {
+		if (h.isViewOnce()) return Collections.emptyList();
+		return h.getAttachmentHeaders();
 	}
 
 	private static class MediaItem {

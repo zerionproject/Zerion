@@ -39,7 +39,8 @@ public class DecoyCalculatorActivity extends Activity {
 			java.util.concurrent.Executors.newSingleThreadExecutor();
 	private final java.util.concurrent.atomic.AtomicBoolean verifying =
 			new java.util.concurrent.atomic.AtomicBoolean(false);
-	private DecoyUnlockThrottle unlockThrottle;
+	@Nullable
+	private volatile DecoyUnlockThrottle unlockThrottle = null;
 
 	@Override
 	protected void onCreate(@Nullable Bundle state) {
@@ -49,8 +50,7 @@ public class DecoyCalculatorActivity extends Activity {
 			com.professor.zerion.android.util.AppTasks
 					.finishOtherTasks(this, false);
 		}
-		unlockThrottle = new DecoyUnlockThrottle(
-				new java.io.File(getFilesDir(), "decoy.lockout"));
+		decoyExecutor.execute(this::throttle);
 		setContentView(R.layout.activity_decoy_calculator);
 		keepClearOfSystemBars(((android.view.ViewGroup) findViewById(
 				android.R.id.content)).getChildAt(0));
@@ -147,6 +147,23 @@ public class DecoyCalculatorActivity extends Activity {
 		refresh();
 	}
 
+	@Nullable
+	private DecoyUnlockThrottle throttle() {
+		DecoyUnlockThrottle t = unlockThrottle;
+		if (t != null) return t;
+		try {
+			t = new DecoyUnlockThrottle(
+					com.professor.zerion.android.AppModule
+							.getAndroidComponent(this).lockoutStores().open(
+									new java.io.File(getFilesDir(),
+											"decoy.lockout")));
+		} catch (RuntimeException e) {
+			return null;
+		}
+		unlockThrottle = t;
+		return t;
+	}
+
 	private void onEquals() {
 		char[] candidate = toChars(rawInput);
 
@@ -164,10 +181,11 @@ public class DecoyCalculatorActivity extends Activity {
 			decoyExecutor.execute(() -> {
 				boolean ok = false;
 				try {
-					if (unlockThrottle.allow()) {
+					DecoyUnlockThrottle throttle = throttle();
+					if (throttle != null && throttle.allow()) {
 						ok = DecoyConfig.verify(this, candidate);
-						if (ok) unlockThrottle.passed();
-						else unlockThrottle.failed();
+						if (ok) throttle.passed();
+						else throttle.failed();
 					}
 				} finally {
 					Arrays.fill(candidate, '\0');

@@ -18,6 +18,9 @@ public interface TorWrapper {
 
 	void setObserver(@Nullable Observer observer);
 
+	default void setStateStore(@Nullable TorStateStore store) {
+	}
+
 	TorState getTorState();
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")

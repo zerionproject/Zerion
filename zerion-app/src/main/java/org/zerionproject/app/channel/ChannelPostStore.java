@@ -170,6 +170,8 @@ final class ChannelPostStore {
 		long skipped;
 		long lastScanMs;
 		long delegateBytes;
+		long memberBytes;
+		final Runs members = new Runs();
 		long migrated = -1L;
 
 		boolean holds(long seq) {
@@ -177,6 +179,17 @@ final class ChannelPostStore {
 				if (seq >= r[0] && seq <= r[1]) return true;
 			}
 			return false;
+		}
+
+		List<Long> memberSeqs() {
+			List<Long> out = new ArrayList<>();
+			for (Map.Entry<Long, Long> r : members.entries()) {
+				for (long s = r.getKey(); ; s++) {
+					out.add(s);
+					if (s >= r.getValue()) break;
+				}
+			}
+			return out;
 		}
 
 		List<Long> heldSeqs() {
@@ -237,6 +250,7 @@ final class ChannelPostStore {
 			pending.remove(seq);
 			unreadable.remove(seq);
 			late.remove(seq);
+			members.remove(seq);
 		}
 
 		private boolean counted(long seq) {
@@ -453,6 +467,10 @@ final class ChannelPostStore {
 		long b = ChannelPostCeilings.storedBytes(p);
 		m.bytes += b;
 		if (p.signedByDelegate()) m.delegateBytes += b;
+		if (p.isMemberPost()) {
+			m.memberBytes += b;
+			m.members.add(p.getSeqNum());
+		}
 		if (p.getTtlMs() > 0) {
 			m.minExpiry = Math.min(m.minExpiry,
 					p.getTimestampHourMs() + p.getTtlMs());
@@ -621,6 +639,9 @@ final class ChannelPostStore {
 					if (p.signedByDelegate()) {
 						m.delegateBytes = Math.max(0L, m.delegateBytes - b);
 					}
+					if (p.isMemberPost()) {
+						m.memberBytes = Math.max(0L, m.memberBytes - b);
+					}
 					if (p.getTtlMs() > 0 && p.getTimestampHourMs()
 							+ p.getTtlMs() <= m.minExpiry) {
 						m.minExpiry = 0L;
@@ -632,6 +653,8 @@ final class ChannelPostStore {
 			if (m.held.isEmpty()) {
 				m.bytes = 0L;
 				m.delegateBytes = 0L;
+				m.memberBytes = 0L;
+				m.members.clear();
 				m.minExpiry = Long.MAX_VALUE;
 			}
 			settings.deleteNamespaces(gone);
@@ -849,6 +872,8 @@ final class ChannelPostStore {
 		d.put("skipped", m.skipped);
 		d.put("lastScan", m.lastScanMs);
 		d.put("dbytes", m.delegateBytes);
+		if (m.memberBytes > 0L) d.put("mbytes", m.memberBytes);
+		if (!m.members.isEmpty()) d.put("mem", m.members.encode());
 		if (m.migrated >= 0L) d.put("mig", m.migrated);
 		Settings s = new Settings();
 		s.put(META_KEY, encodeBase64(dictToBytes(d)));
@@ -888,6 +913,8 @@ final class ChannelPostStore {
 		m.skipped = d.getLong("skipped", 0L);
 		m.lastScanMs = d.getLong("lastScan", 0L);
 		m.delegateBytes = d.getLong("dbytes", 0L);
+		m.memberBytes = d.getLong("mbytes", 0L);
+		m.members.decode(d.getList("mem", new BdfList()));
 		m.migrated = d.getLong("mig", -1L);
 		return m;
 	}
@@ -934,6 +961,10 @@ final class ChannelPostStore {
 			d.put("pv", (long) p.getFormatVersion());
 		}
 		if (p.getSalt() != null) d.put("salt", p.getSalt());
+		ChannelPost.MemberAuthor author = p.getMemberAuthor();
+		if (author != null) {
+			d.put("au", ChannelPullCodec.authorToWire(author));
+		}
 		return d;
 	}
 
@@ -953,6 +984,18 @@ final class ChannelPostStore {
 					ad.getOptionalRaw("thumb")));
 		}
 		long version = d.getLong("pv", (long) ChannelPost.FORMAT_LEGACY);
+		BdfDictionary author = d.getOptionalDictionary("au");
+		if (author != null) {
+			if (version != ChannelPost.FORMAT_V3) throw new FormatException();
+			byte[] salt = d.getRaw("salt");
+			return new ChannelPost(channelId, d.getLong("seqNum"),
+					d.getRaw("prevHash"), d.getLong("timestampHourMs"),
+					d.getString("body"), atts, d.getLong("ttlMs"),
+					d.getRaw("signature"),
+					legacy && d.getBoolean("read", false),
+					legacy && d.getBoolean("withheld", false), salt,
+					ChannelPullCodec.authorFromWire(author));
+		}
 		ChannelPost p = new ChannelPost(channelId,
 				d.getLong("seqNum"),
 				d.getRaw("prevHash"),

@@ -620,6 +620,13 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
+	@Test(expected = FormatException.class)
+	public void testRejectsNullMacForActivate() throws Exception {
+		BdfList body = BdfList.of(ACTIVATE.getValue(), sessionId.getBytes(),
+				previousMsgId.getBytes(), null);
+		validator.validateMessage(message, group, body);
+	}
+
 	@Test
 	public void testAcceptsAbort() throws Exception {
 		BdfList body = BdfList.of(ABORT.getValue(), sessionId.getBytes(),

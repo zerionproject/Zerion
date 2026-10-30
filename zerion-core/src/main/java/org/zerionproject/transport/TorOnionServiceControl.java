@@ -1,6 +1,7 @@
 package org.zerionproject.transport;
 
 import org.briarproject.nullsafety.NotNullByDefault;
+import org.zerionproject.core.api.contact.request.ContactRequestConstants;
 import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorDirectory;
 import org.zerionproject.core.util.Base32;
@@ -28,6 +29,14 @@ public class TorOnionServiceControl implements
 			Pattern.compile("^250-ServiceID=([a-z2-7]{56})$");
 	private static final Pattern PRIVATE_KEY =
 			Pattern.compile("^250-PrivateKey=(ED25519-V3:[A-Za-z0-9+/=]+)$");
+	private static final Pattern VERSION = Pattern.compile(
+			"^250-version=(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)");
+	static final int[] POW_MIN_VERSION = {0, 4, 9, 2};
+	static final String INBOX_FLAGS = ",MaxStreamsCloseCircuit";
+	static final String INBOX_OPTIONS = " MaxStreams=1";
+	static final String POW_OPTIONS = " PoWDefensesEnabled=1"
+			+ " PoWQueueRate=" + ContactRequestConstants.INBOX_POW_QUEUE_RATE
+			+ " PoWQueueBurst=" + ContactRequestConstants.INBOX_POW_QUEUE_BURST;
 
 	private final File torDirectory;
 	private final TorControl.ConnectionFactory connectionFactory;
@@ -57,6 +66,95 @@ public class TorOnionServiceControl implements
 	public Published publish(@Nullable String privateKey, String target,
 			int remotePort, Collection<byte[]> clientPublicKeys)
 			throws IOException {
+		return publish(privateKey, target, remotePort, clientPublicKeys, "",
+				"");
+	}
+
+	public InboxPublished publishInbox(String privateKey, String target,
+			int remotePort, byte[] clientPublicKey) throws IOException {
+		List<byte[]> keys = java.util.Collections.singletonList(clientPublicKey);
+		byte[] cookie = TorControl.readCookie(torDirectory);
+		try (TorControl.Connection c = connectionFactory.open()) {
+			TorControl.requireOk(c.send("AUTHENTICATE "
+					+ StringUtils.toHexString(cookie)), "authentication");
+			List<String> version;
+			try {
+				version = c.send("GETINFO version");
+			} catch (IOException e) {
+				version = null;
+			}
+			if (version != null) {
+				boolean pow = supportsPow(version);
+				List<String> reply = null;
+				if (pow) {
+					reply = c.send(addOnion(privateKey, target, remotePort, keys,
+							INBOX_FLAGS, INBOX_OPTIONS + POW_OPTIONS));
+					if (refusesPowKeywords(reply)) {
+						pow = false;
+						reply = null;
+					}
+				}
+				if (reply == null) {
+					reply = c.send(addOnion(privateKey, target, remotePort, keys,
+							INBOX_FLAGS, INBOX_OPTIONS));
+				}
+				TorControl.requireOk(reply, "ADD_ONION");
+				TorControl.quit(c);
+				Published p = parseAddOnion(reply, privateKey);
+				return new InboxPublished(p.onion, p.privateKey, pow);
+			}
+		} finally {
+			Arrays.fill(cookie, (byte) 0);
+		}
+		Published p = publish(privateKey, target, remotePort, keys,
+				INBOX_FLAGS, INBOX_OPTIONS);
+		return new InboxPublished(p.onion, p.privateKey, false);
+	}
+
+	static boolean supportsPow(List<String> getInfoVersion) {
+		if (getInfoVersion.isEmpty() || !getInfoVersion
+				.get(getInfoVersion.size() - 1).startsWith("250")) {
+			return false;
+		}
+		for (String line : getInfoVersion) {
+			java.util.regex.Matcher m = VERSION.matcher(line);
+			if (!m.find()) continue;
+			for (int i = 0; i < POW_MIN_VERSION.length; i++) {
+				int part;
+				try {
+					part = Integer.parseInt(m.group(i + 1));
+				} catch (NumberFormatException e) {
+					return false;
+				}
+				if (part != POW_MIN_VERSION[i]) return part > POW_MIN_VERSION[i];
+			}
+			return true;
+		}
+		return false;
+	}
+
+	static boolean refusesPowKeywords(List<String> reply) {
+		if (reply.isEmpty()) return false;
+		String last = reply.get(reply.size() - 1);
+		if (!last.startsWith("552") && !last.startsWith("512")
+				&& !last.startsWith("513")) {
+			return false;
+		}
+		String text = last.toLowerCase(java.util.Locale.ROOT);
+		return text.contains("unrecognized keyword") || text.contains("pow");
+	}
+
+	private Published publish(@Nullable String privateKey, String target,
+			int remotePort, Collection<byte[]> clientPublicKeys,
+			String extraFlags, String extraOptions) throws IOException {
+		List<String> reply = command(addOnion(privateKey, target, remotePort,
+				clientPublicKeys, extraFlags, extraOptions), "ADD_ONION");
+		return parseAddOnion(reply, privateKey);
+	}
+
+	private static String addOnion(@Nullable String privateKey,
+			String target, int remotePort, Collection<byte[]> clientPublicKeys,
+			String extraFlags, String extraOptions) {
 		if (clientPublicKeys.isEmpty()) {
 			throw new IllegalArgumentException("no client keys");
 		}
@@ -65,12 +163,17 @@ public class TorOnionServiceControl implements
 		}
 		StringBuilder cmd = new StringBuilder("ADD_ONION ");
 		cmd.append(privateKey == null ? "NEW:ED25519-V3" : privateKey);
-		cmd.append(" Flags=Detach,V3Auth");
+		cmd.append(" Flags=Detach,V3Auth").append(extraFlags);
+		cmd.append(extraOptions);
 		for (byte[] key : clientPublicKeys) {
 			cmd.append(" ClientAuthV3=").append(encodeClientPublicKey(key));
 		}
 		cmd.append(" Port=").append(remotePort).append(',').append(target);
-		List<String> reply = command(cmd.toString(), "ADD_ONION");
+		return cmd.toString();
+	}
+
+	private static Published parseAddOnion(List<String> reply,
+			@Nullable String privateKey) throws IOException {
 		String onion = null, key = privateKey;
 		for (String line : reply) {
 			java.util.regex.Matcher m = SERVICE_ID.matcher(line);
@@ -137,6 +240,19 @@ public class TorOnionServiceControl implements
 		if (!last.startsWith("250") && !last.startsWith("251")) {
 			throw new IOException("Tor control ONION_CLIENT_AUTH_REMOVE "
 					+ "failed");
+		}
+	}
+
+	public static final class InboxPublished {
+
+		public final String onion;
+		public final String privateKey;
+		public final boolean powProtected;
+
+		InboxPublished(String onion, String privateKey, boolean powProtected) {
+			this.onion = onion;
+			this.privateKey = privateKey;
+			this.powProtected = powProtected;
 		}
 	}
 

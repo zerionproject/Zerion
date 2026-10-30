@@ -25,6 +25,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 import org.zerionproject.app.api.channel.ChannelApplication;
 import org.zerionproject.app.api.channel.ChannelDelegationCert;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelManager;
 import org.zerionproject.app.api.channel.ChannelState;
 import org.zerionproject.app.api.channel.ChannelSubscriber;
@@ -591,6 +592,127 @@ public class ChannelSettingsScreenTest {
 
 	private static void idle() {
 		shadowOf(Looper.getMainLooper()).idle();
+	}
+
+	private AlertDialog openWhoCanPost(ProbeSettings screen) {
+		screen.findViewById(R.id.channelSettingsWhoCanPost).performClick();
+		idle();
+		return (AlertDialog) ShadowDialog.getLatestDialog();
+	}
+
+	private static void choose(AlertDialog d, int position) {
+		android.widget.ListView list = d.getListView();
+		list.performItemClick(list.getAdapter().getView(position, null,
+				list), position, position);
+		idle();
+	}
+
+	@Test
+	public void whoCanPostOffersThreeChoicesAndSavesTheChosenOne()
+			throws Exception {
+		channel(true, true, false);
+		ProbeSettings screen = open();
+		assertEquals("You and editors",
+				text(screen, R.id.channelSettingsWhoCanPostValue));
+
+		AlertDialog d = openWhoCanPost(screen);
+		TextView explain = d.findViewById(
+				R.id.channelSettingsWhoCanPostExplain);
+		assertNotNull(explain);
+		assertEquals("Subscribers you marked as trusted, and approved"
+				+ " applicants, can post. Their posts carry their name and"
+				+ " are signed by the channel.",
+				String.valueOf(explain.getText()));
+		android.widget.ListAdapter items = d.getListView().getAdapter();
+		assertEquals(3, items.getCount());
+		assertEquals("Only you", String.valueOf(items.getItem(0)));
+		assertEquals("You and editors", String.valueOf(items.getItem(1)));
+		assertEquals("Subscribers you trust",
+				String.valueOf(items.getItem(2)));
+		assertEquals("today's choice is marked", 1,
+				d.getListView().getCheckedItemPosition());
+
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_EVERYONE);
+		choose(d, 2);
+		runBackgroundWork();
+
+		verify(manager).setPostingMode(id, ChannelConstants.POSTING_EVERYONE);
+		assertEquals("Subscribers you trust",
+				text(screen, R.id.channelSettingsWhoCanPostValue));
+		assertFalse(openedEditors(screen));
+	}
+
+	@Test
+	public void choosingYouAndEditorsOpensTheEditors() throws Exception {
+		channel(true, true, false);
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_OWNER_ONLY);
+		ProbeSettings screen = open();
+		assertEquals("Only you",
+				text(screen, R.id.channelSettingsWhoCanPostValue));
+
+		choose(openWhoCanPost(screen), 1);
+		runBackgroundWork();
+
+		verify(manager).setPostingMode(id, ChannelConstants.POSTING_EDITORS);
+		assertTrue(openedEditors(screen));
+	}
+
+	private static boolean openedEditors(ProbeSettings screen) {
+		Intent next;
+		while ((next = shadowOf(screen).getNextStartedActivity()) != null) {
+			if (next.getComponent() != null && next.getComponent()
+					.getClassName().equals(
+							ChannelDelegationsActivity.class.getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Test
+	public void theMemberCountFollowsTheChannelWhileTheScreenIsOpen()
+			throws Exception {
+		channel(true, true, false);
+		ProbeSettings screen = open();
+		assertEquals("0", text(screen, R.id.channelSettingsSubscribersValue));
+
+		when(manager.getAnnouncedSubscribers(any())).thenReturn(
+				Collections.singletonList(new ChannelSubscriber("Robin",
+						new byte[32], new byte[0], 0L, false)));
+		screen.eventOccurred(new org.zerionproject.app.api.channel.event
+				.ChannelStateChangedEvent(id, org.zerionproject.app.api
+				.channel.event.ChannelStateChangedEvent.Kind.MANIFEST_UPDATED));
+		runBackgroundWork();
+
+		assertEquals("1", text(screen, R.id.channelSettingsSubscribersValue));
+	}
+
+	@Test
+	public void aSettingThatCouldNotBeSavedSaysSo() throws Exception {
+		channel(true, true, false);
+		org.mockito.Mockito.doThrow(new org.zerionproject.core.api.db
+				.DbException()).when(manager).setPostingMode(any(),
+				org.mockito.ArgumentMatchers.anyInt());
+		ProbeSettings screen = open();
+
+		choose(openWhoCanPost(screen), 2);
+		runBackgroundWork();
+
+		assertTrue(com.professor.zerion.android.util.SnackbarProbe
+				.texts(screen).contains("Could not save setting."));
+	}
+
+	@Test
+	public void onlyYouIsSaidWhenEditorsExistButMayNotPost()
+			throws Exception {
+		ownerWithMembers();
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_OWNER_ONLY);
+		ProbeSettings screen = open();
+		assertEquals("Only you",
+				text(screen, R.id.channelSettingsWhoCanPostValue));
 	}
 
 	private static void runBackgroundWork() {

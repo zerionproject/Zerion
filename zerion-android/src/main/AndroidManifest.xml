@@ -312,7 +312,7 @@
 					android:scheme="ZERION"
 					tools:ignore="AppLinkUrlError" />
 			</intent-filter>
-			<intent-filter android:label="@string/add_contact_remotely_title_case">
+			<intent-filter android:label="@string/add_contact_screen_title">
 				<action android:name="android.intent.action.SEND" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<data android:mimeType="text/plain" />
@@ -606,7 +606,7 @@
 		<activity
 			android:name=".android.contact.add.remote.AddContactActivity"
 			android:exported="false"
-			android:label="@string/add_contact_remotely_title_case"
+			android:label="@string/add_contact_screen_title"
 			android:theme="@style/ZerionTheme.NoActionBar"
 			android:windowSoftInputMode="adjustResize|stateHidden" />
 
@@ -631,10 +631,17 @@
 
 
 		<activity
-			android:name=".android.contact.add.remote.PendingContactListActivity"
+			android:name=".android.contact.request.RequestsActivity"
+			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
 			android:exported="false"
-			android:label="@string/pending_contact_requests"
-			android:theme="@style/ZerionTheme" />
+			android:label="@string/requests_title"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
+		<activity
+			android:name=".android.contact.request.InviteLinksActivity"
+			android:exported="false"
+			android:label="@string/invite_links_title"
+			android:theme="@style/ZerionTheme.NoActionBar" />
 
 		<activity
 			android:name="com.professor.zerion.android.vault.ui.VaultActivity"

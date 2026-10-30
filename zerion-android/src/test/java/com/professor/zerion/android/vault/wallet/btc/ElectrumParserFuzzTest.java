@@ -88,6 +88,11 @@ public class ElectrumParserFuzzTest {
 			for (ElectrumClient.HistItem h : history) {
 				assertTrue(what + ": " + h.txHash, ElectrumClient.isTxid(h.txHash));
 			}
+		} catch (IOException refused) {
+		} catch (RuntimeException e) {
+			throw new AssertionError(what + " (history): " + e, e);
+		}
+		try {
 			List<ElectrumClient.Utxo> unspent = ElectrumClient.parseUnspent(reply);
 			assertTrue(what, unspent.size() <= ElectrumClient.MAX_LIST_ITEMS);
 			for (ElectrumClient.Utxo u : unspent) {
@@ -95,6 +100,11 @@ public class ElectrumParserFuzzTest {
 				assertTrue(what, u.value >= 0);
 				assertTrue(what, u.txPos >= 0);
 			}
+		} catch (IOException refused) {
+		} catch (RuntimeException e) {
+			throw new AssertionError(what + " (unspent): " + e, e);
+		}
+		try {
 			double fee = ElectrumClient.parseFee(reply);
 			assertTrue(what + ": fee " + fee, !Double.isNaN(fee)
 					&& !Double.isInfinite(fee) && fee >= 0);

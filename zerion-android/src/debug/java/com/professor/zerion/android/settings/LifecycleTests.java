@@ -78,6 +78,8 @@ public class LifecycleTests {
 	@Inject
 	ContactManager contactManager;
 	@Inject
+	org.zerionproject.core.contact.request.ContactRequestCrypto requestCrypto;
+	@Inject
 	TransportPropertyManager transportPropertyManager;
 	@Inject
 	@IoExecutor
@@ -117,6 +119,8 @@ public class LifecycleTests {
 				.setOnClickListener(v -> chooseContact());
 		card.findViewById(R.id.lifecycle_force_card)
 				.setOnClickListener(v -> confirmForceComplete());
+		card.findViewById(R.id.lifecycle_puzzle_card)
+				.setOnClickListener(v -> measurePuzzle());
 		bindSwitch(card.findViewById(R.id.lifecycle_skip_auth_switch),
 				LifecycleSwitches.SKIP_NEW_NEGOTIATIONS);
 		bindSwitch(card.findViewById(R.id.lifecycle_hold_switch),
@@ -223,6 +227,38 @@ public class LifecycleTests {
 				message = R.string.lifecycle_failed;
 			}
 			toast(app, app.getString(message));
+		});
+	}
+
+	private void measurePuzzle() {
+		Context ctx = context();
+		if (ctx == null) return;
+		Context app = ctx.getApplicationContext();
+		toast(app, app.getString(R.string.lifecycle_puzzle_running));
+		ioExecutor.execute(() -> {
+			int[] bits = InvitePuzzleBenchmark.paidDifficulties();
+			long[] ms = InvitePuzzleBenchmark.measure(requestCrypto, bits,
+					new java.security.SecureRandom(), System::nanoTime);
+			StringBuilder text = new StringBuilder();
+			text.append(app.getString(R.string.lifecycle_puzzle_rate,
+					Math.round(requestCrypto.hashesPerSecond())));
+			for (int i = 0; i < bits.length; i++) {
+				text.append('\n');
+				String took = ms[i] == InvitePuzzleBenchmark.NOT_SOLVED
+						? app.getString(R.string.lifecycle_puzzle_not_solved)
+						: app.getString(R.string.lifecycle_puzzle_ms, ms[i]);
+				text.append(app.getString(R.string.lifecycle_puzzle_result,
+						bits[i], took));
+			}
+			runOnUi(() -> {
+				Context c = context();
+				if (c == null) return;
+				new SecureAlertDialogBuilder(c)
+						.setTitle(R.string.lifecycle_puzzle_title)
+						.setMessage(text.toString())
+						.setPositiveButton(R.string.ok, null)
+						.show();
+			});
 		});
 	}
 

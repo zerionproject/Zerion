@@ -1,6 +1,8 @@
 package org.zerionproject.sync;
 
+import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.crypto.CryptoComponent;
+import org.zerionproject.core.api.crypto.pcs.Mode3FullState;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.MlKemProvider;
@@ -29,8 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -219,6 +223,119 @@ public class ZppConnectionRunnerTest {
 		assertEquals(n, aliceScheduler.getRealFrameCount());
 		assertTrue("idle slots should emit cover frames",
 				aliceScheduler.getCoverFrameCount() > 0);
+	}
+
+	@Test(timeout = 60_000)
+	public void aFastSenderAndASlowSenderStayConnected() throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		SecretKey rootKey = new SecretKey(rootBytes);
+		ZwfSession aliceSession = sessionFactory.deriveSession(rootKey, true);
+		ZwfSession bobSession = sessionFactory.deriveSession(rootKey, false);
+
+		PipedOutputStream aOut = new PipedOutputStream();
+		PipedInputStream bIn = new PipedInputStream(aOut, 1 << 20);
+		PipedOutputStream bOut = new PipedOutputStream();
+		PipedInputStream aIn = new PipedInputStream(bOut, 1 << 20);
+
+		List<Throwable> ioFailures =
+				Collections.synchronizedList(new ArrayList<>());
+		ZwfDuplexConnection aliceConn = new RecordingConnection(1,
+				aliceSession, new ZwfStreamCounter(new MemStore()), crypto,
+				ratchet, mode3FullRatchet, cipherFactory(), aIn, aOut,
+				ioFailures);
+		ZwfDuplexConnection bobConn = new RecordingConnection(2, bobSession,
+				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), bIn, bOut, ioFailures);
+
+		CapturingRegistry registry = new CapturingRegistry();
+		CollectingSink sink = new CollectingSink();
+		ZppConnectionRunnerImpl slow =
+				new ZppConnectionRunnerImpl(sink, registry, 100);
+		ZppConnectionRunnerImpl fast =
+				new ZppConnectionRunnerImpl(sink, registry, 10);
+		List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
+		Thread aliceThread = new Thread(() -> {
+			try {
+				slow.run(1, aliceConn);
+			} catch (Throwable t) {
+				errors.add(t);
+			}
+		}, "runner-slow");
+		Thread bobThread = new Thread(() -> {
+			try {
+				fast.run(2, bobConn);
+			} catch (Throwable t) {
+				errors.add(t);
+			}
+		}, "runner-fast");
+		aliceThread.start();
+		bobThread.start();
+
+		awaitScheduler(registry, 1);
+		ZppSendScheduler bob = awaitScheduler(registry, 2);
+		Mode3FullState first = aliceConn.currentMode3FullState();
+		long target = 3L * MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
+		long deadline = System.currentTimeMillis() + WAIT_DEADLINE_MS;
+		while (bob.getCoverFrameCount() < target) {
+			if (System.currentTimeMillis() > deadline) {
+				throw new AssertionError("fast side sent only "
+						+ bob.getCoverFrameCount() + " frames");
+			}
+			synchronized (ioFailures) {
+				if (!ioFailures.isEmpty()) {
+					throw new AssertionError("connection ended after "
+							+ bob.getCoverFrameCount() + " frames: "
+							+ ioFailures.get(0), ioFailures.get(0));
+				}
+			}
+			Thread.sleep(10);
+		}
+		assertTrue(aliceThread.isAlive());
+		assertTrue(bobThread.isAlive());
+		assertTrue(ioFailures.isEmpty());
+		assertTrue(first.getOurActiveKeyPair() != aliceConn
+				.currentMode3FullState().getOurActiveKeyPair());
+
+		aOut.close();
+		bOut.close();
+		aIn.close();
+		bIn.close();
+		aliceThread.join(10_000);
+		bobThread.join(10_000);
+		assertTrue(errors.isEmpty());
+	}
+
+	@Test(timeout = 30_000)
+	public void aFrameThatFailsToDecryptEndsTheConnection() throws Exception {
+		byte[] rootBytes = new byte[SecretKey.LENGTH];
+		crypto.getSecureRandom().nextBytes(rootBytes);
+		ZwfSession session =
+				sessionFactory.deriveSession(new SecretKey(rootBytes), true);
+		PipedOutputStream out = new PipedOutputStream();
+		PipedInputStream in = new PipedInputStream(out, 1 << 20);
+		AtomicInteger receives = new AtomicInteger();
+		ZwfDuplexConnection conn = new ZwfDuplexConnection(1, session,
+				new ZwfStreamCounter(new MemStore()), crypto, ratchet,
+				mode3FullRatchet, cipherFactory(), in, out) {
+			@Override
+			public void sendMessage(byte[] payload) {
+			}
+
+			@Override
+			public byte[] receiveMessage() throws java.io.IOException {
+				receives.incrementAndGet();
+				throw new FormatException();
+			}
+		};
+
+		CapturingRegistry registry = new CapturingRegistry();
+		CollectingSink sink = new CollectingSink();
+		new ZppConnectionRunnerImpl(sink, registry, 5).run(1, conn);
+
+		assertEquals(1, receives.get());
+		assertTrue(registry.schedulers.isEmpty());
+		assertTrue(sink.received.isEmpty());
 	}
 
 	private static final long WAIT_DEADLINE_MS = 20_000;

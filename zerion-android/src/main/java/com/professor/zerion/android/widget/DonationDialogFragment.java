@@ -1,8 +1,6 @@
 package com.professor.zerion.android.widget;
 
 import android.app.Dialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -20,6 +18,7 @@ import android.widget.Toast;
 import com.google.android.material.button.MaterialButton;
 import com.professor.zerion.R;
 import com.professor.zerion.android.contact.add.remote.QrCodeUtils;
+import com.professor.zerion.android.util.SecureClipboard;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -102,12 +101,8 @@ public class DonationDialogFragment extends DialogFragment {
 
 	private void copyDonationUrl() {
 		Context ctx = requireContext();
-		ClipboardManager cm = (ClipboardManager)
-				ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm == null) return;
-		ClipData clip = ClipData.newPlainText(
+		SecureClipboard.copy(ctx,
 				getString(R.string.donation_url_label), DONATION_URL);
-		cm.setPrimaryClip(clip);
 		Toast.makeText(ctx, R.string.donation_link_copied,
 				Toast.LENGTH_SHORT).show();
 	}

@@ -76,6 +76,7 @@ public class RootEvolutionManager {
 			new ConcurrentHashMap<>();
 	@Nullable
 	private volatile byte[][] identityRecords;
+	private volatile boolean separatedEvolution = true;
 
 	@Inject
 	public RootEvolutionManager(RootKeyStore store, CryptoComponent crypto,
@@ -96,6 +97,14 @@ public class RootEvolutionManager {
 		this.mlKem = mlKem;
 		this.clock = clock;
 		this.identity = identity;
+	}
+
+	boolean isSeparatedEvolution() {
+		return separatedEvolution;
+	}
+
+	void setSeparatedEvolution(boolean separatedEvolution) {
+		this.separatedEvolution = separatedEvolution;
 	}
 
 	public ZwfControlHandler newEvolution(ContactId c, boolean alice) {

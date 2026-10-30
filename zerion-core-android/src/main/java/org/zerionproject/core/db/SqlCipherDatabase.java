@@ -101,6 +101,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 			if (action == SqlCipherOpenPolicy.Action.REOPEN) {
 				seedPooledConnection(c);
 				SqlCipherRecoveryFiles.markSetupComplete(dir);
+				SqlCipherRecoveryFiles.shredQuarantined(dbFile);
 				reopen = true;
 			} else {
 				if (c != null) {
@@ -113,8 +114,7 @@ class SqlCipherDatabase extends JdbcDatabase {
 					SqlCipherRecoveryFiles.deleteEmpty(dbFile);
 				} else if (action ==
 						SqlCipherOpenPolicy.Action.QUARANTINE_INCOMPLETE) {
-					if (!SqlCipherRecoveryFiles.quarantine(dbFile,
-							System.currentTimeMillis())) {
+					if (!SqlCipherRecoveryFiles.quarantine(dbFile)) {
 						throw new DbOpenFailureException(
 								SqlCipherOpenPolicy.classify(failure),
 								failure);
@@ -328,7 +328,9 @@ class SqlCipherDatabase extends JdbcDatabase {
 	public void addIdentity(Connection txn, org.zerionproject.core.api.identity.Identity i)
 			throws DbException {
 		super.addIdentity(txn, i);
-		SqlCipherRecoveryFiles.markSetupComplete(config.getDatabaseDirectory());
+		File dir = config.getDatabaseDirectory();
+		SqlCipherRecoveryFiles.markSetupComplete(dir);
+		SqlCipherRecoveryFiles.shredQuarantined(new File(dir, SQLCIPHER_FILE));
 	}
 
 	@Override

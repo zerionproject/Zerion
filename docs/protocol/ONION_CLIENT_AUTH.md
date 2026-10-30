@@ -61,6 +61,34 @@ directional design follows it. Evaluation:
 | One contact compromised | reveals nothing about others (keys are per contact either way) | reveals nothing about others |
 | Complexity | lowest | one message type, one table column |
 
+### 2.1 Exception: contact request inboxes (from 3.0.19)
+
+The inbox onion of a ZerionID or of a permanent invite link
+(`docs/wire/CONTACT_REQUESTS.md` section 3) is not a contact address and
+does not follow the directional rule above. It is published with exactly
+one client key, derived from the link itself: the private key is
+`H("org.zerionproject.core.contactrequest/INBOX_CLIENT_AUTH", body,
+inbox public key)` clamped as an X25519 scalar, where `body` is the 65-byte
+link body and the inbox public key is the Ed25519 key inside the
+56-character inbox address. Every holder of the link derives the same key,
+registers it with `ONION_CLIENT_AUTH_ADD` for one delivery attempt and
+removes it with `ONION_CLIENT_AUTH_REMOVE` afterwards
+(`ZtpDuplexPlugin.connectToInbox`, `ContactRequestSender`). The inbox is
+published with `Flags=Detach,V3Auth,MaxStreamsCloseCircuit MaxStreams=1`
+and, when the bundled Tor supports it, Tor's onion-service proof of work
+(`TorOnionServiceControl.publishInbox`, CONTACT_REQUESTS.md section 3).
+
+This is a deliberate exception and its protection is marginal: the shared
+key only stops someone who has the bare 56-character address without the
+link from decrypting the descriptor and introducing; the descriptor itself
+is served to anyone who asks for the address (rend-spec-v3: only its inner
+layer is encrypted to the client key), so a bare address still shows
+whether the inbox is published. It gives no directional isolation, it
+cannot be revoked for one holder, and anyone who ever held the link can
+reach the inbox while it is published. Withdrawing the link or "Reset my
+ZerionID" removes the onion with `DEL_ONION` at once. Contact addresses
+(sections 3 to 7) are unaffected.
+
 ## 3. Per-contact state machine
 
 State is stored per contact in the database (a table keyed by contact id,
@@ -156,7 +184,7 @@ the sync layer. Each carries `version` (protocol version, 1) and a
 
     AUTH_OFFER          { version, keyVersion, my onion3a, my client public key for your service }
     AUTH_READY          { keyVersion }   "your key is on my onion3a; your onion3a and my credential are installed in my Tor"
-    AUTH_PROBE_SUCCESS  { keyVersion }   "an authenticated session over your onion3a succeeded"
+    AUTH_PROBE_SUCCESS  { keyVersion }   "my probe over the authorized path succeeded" (see step 3)
     AUTH_COMMIT         { keyVersion }   "I have my probe success and yours; legacy closes for me now"
     AUTH_ROTATE         { keyVersion, new onion3a and/or new client public key }
     AUTH_ROTATE_ACK     { keyVersion }
@@ -187,6 +215,22 @@ Sequence for a pair:
    probe is directional. The designated dialer is asked to dial the peer at once,
    past any backoff, and the transport reports which address the dial
    reached; a dial that reached the peer's `onion3a` is that side's probe.
+   The dialer's probe succeeds when Tor completes the connection to
+   `onion3a`, before the first ZWF frame: `ZtpTorTransport.dial` reports
+   the reached address to `OnionClientAuthManagerImpl.dialSucceeded` right
+   after the SOCKS connect, and that moves the record to `AUTH_CONFIRMED`,
+   sends `AUTH_PROBE_SUCCESS` and can complete the commit even when the ZWF
+   session that follows fails. This is one of the two changes outside a
+   connection that come before a frame authenticates (the other is the dial
+   backoff, ZTP-ZPP.md), and it is sound for what the probe proves: Tor completes a
+   connection to an onion address only after the holder of that service's
+   private key answers the rendezvous, the descriptor of `onion3a` can be
+   read only with the credential this side installed, and the address
+   itself came from the peer over the authenticated per-contact channel.
+   So the completed connection shows that the peer's authorized service
+   publishes this side's key and answers on it, which is the property the
+   commit needs; the peer's root key is checked by the ZWF handshake on the
+   same connection, not by the probe.
    The other side's probe is a recognised connection from the peer
    (transport tag recognised) that arrived through this device's
    authorized service, which proves the peer's credential and this

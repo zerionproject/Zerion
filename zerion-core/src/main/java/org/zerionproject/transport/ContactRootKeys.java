@@ -14,14 +14,26 @@ public final class ContactRootKeys {
 	private final SecretKey current;
 	@Nullable
 	private final SecretKey pending;
+	@Nullable
+	private final SecretKey pendingConfirmKey;
 	private final boolean pendingConfirmed;
 
 	public ContactRootKeys(long epoch, SecretKey current,
 			@Nullable SecretKey pending, boolean pendingConfirmed) {
+		this(epoch, current, pending, null, pendingConfirmed);
+	}
+
+	public ContactRootKeys(long epoch, SecretKey current,
+			@Nullable SecretKey pending, @Nullable SecretKey pendingConfirmKey,
+			boolean pendingConfirmed) {
 		if (epoch < 0) throw new IllegalArgumentException();
+		if (pending == null && pendingConfirmKey != null) {
+			throw new IllegalArgumentException();
+		}
 		this.epoch = epoch;
 		this.current = current;
 		this.pending = pending;
+		this.pendingConfirmKey = pendingConfirmKey;
 		this.pendingConfirmed = pending != null && pendingConfirmed;
 	}
 
@@ -40,6 +52,15 @@ public final class ContactRootKeys {
 	@Nullable
 	public SecretKey getPending() {
 		return pending;
+	}
+
+	@Nullable
+	public SecretKey getPendingConfirmKey() {
+		return pendingConfirmKey;
+	}
+
+	public boolean isPendingSeparated() {
+		return pendingConfirmKey != null;
 	}
 
 	public long getPendingEpoch() {

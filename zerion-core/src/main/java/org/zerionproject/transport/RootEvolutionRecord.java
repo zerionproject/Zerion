@@ -17,6 +17,7 @@ import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MLKEM_ENCAPSULA
 final class RootEvolutionRecord {
 
 	static final byte VERSION = 2;
+	static final byte VERSION_SEPARATED = 3;
 
 	static final byte KIND_HELLO = 1;
 	static final byte KIND_INIT = 2;
@@ -27,6 +28,7 @@ final class RootEvolutionRecord {
 	static final byte KIND_IDENTITY_SECOND = 7;
 
 	static final byte FLAG_WANT_IDENTITY = 0x01;
+	static final byte FLAG_SEPARATED_EVOLUTION = 0x02;
 
 	static final int X25519_LENGTH = 32;
 	static final int FLAGS_LENGTH = 1;
@@ -38,6 +40,7 @@ final class RootEvolutionRecord {
 	static final int IDENTITY_PART_LENGTH = IDENTITY_LENGTH / 2;
 	private static final int HEADER_LENGTH = 2 + ByteUtils.INT_64_BYTES;
 
+	final byte version;
 	final byte kind;
 	final long epoch;
 	final byte[] a;
@@ -45,8 +48,9 @@ final class RootEvolutionRecord {
 	final byte[] c;
 	final byte flags;
 
-	private RootEvolutionRecord(byte kind, long epoch, byte[] a, byte[] b,
-			byte[] c, byte flags) {
+	private RootEvolutionRecord(byte version, byte kind, long epoch, byte[] a,
+			byte[] b, byte[] c, byte flags) {
+		this.version = version;
 		this.kind = kind;
 		this.epoch = epoch;
 		this.a = a;
@@ -56,25 +60,54 @@ final class RootEvolutionRecord {
 	}
 
 	static byte[] hello(long epoch, byte[] pendingId, byte flags) {
-		return encode(KIND_HELLO, epoch, pendingId, new byte[] {flags});
+		return encode(VERSION, KIND_HELLO, epoch, pendingId,
+				new byte[] {flags});
 	}
 
 	static byte[] init(long epoch, byte[] replaces, byte[] x25519,
 			byte[] ek) {
-		return encode(KIND_INIT, epoch, replaces, x25519, ek);
+		return init(VERSION, epoch, replaces, x25519, ek);
+	}
+
+	static byte[] init(byte version, long epoch, byte[] replaces,
+			byte[] x25519, byte[] ek) {
+		return encode(checkEvolutionVersion(version), KIND_INIT, epoch,
+				replaces, x25519, ek);
 	}
 
 	static byte[] resp(long epoch, byte[] x25519, byte[] ciphertext,
 			byte[] confirm) {
-		return encode(KIND_RESP, epoch, x25519, ciphertext, confirm);
+		return resp(VERSION, epoch, x25519, ciphertext, confirm);
+	}
+
+	static byte[] resp(byte version, long epoch, byte[] x25519,
+			byte[] ciphertext, byte[] confirm) {
+		return encode(checkEvolutionVersion(version), KIND_RESP, epoch,
+				x25519, ciphertext, confirm);
 	}
 
 	static byte[] confirm(long epoch, byte[] mac) {
-		return encode(KIND_CONFIRM, epoch, mac);
+		return confirm(VERSION, epoch, mac);
+	}
+
+	static byte[] confirm(byte version, long epoch, byte[] mac) {
+		return encode(checkEvolutionVersion(version), KIND_CONFIRM, epoch,
+				mac);
 	}
 
 	static byte[] done(long epoch, byte[] mac) {
-		return encode(KIND_DONE, epoch, mac);
+		return done(VERSION, epoch, mac);
+	}
+
+	static byte[] done(byte version, long epoch, byte[] mac) {
+		return encode(checkEvolutionVersion(version), KIND_DONE, epoch, mac);
+	}
+
+	private static byte checkEvolutionVersion(byte version) {
+		if (version != VERSION && version != VERSION_SEPARATED) {
+			throw new IllegalArgumentException();
+		}
+		return version;
 	}
 
 	static byte[][] identity(byte[] mlDsaPublicKey, byte[] signature) {
@@ -87,9 +120,9 @@ final class RootEvolutionRecord {
 		System.arraycopy(signature, 0, all, mlDsaPublicKey.length,
 				signature.length);
 		return new byte[][] {
-				encode(KIND_IDENTITY_FIRST, 0,
+				encode(VERSION, KIND_IDENTITY_FIRST, 0,
 						slice(all, 0, IDENTITY_PART_LENGTH)),
-				encode(KIND_IDENTITY_SECOND, 0,
+				encode(VERSION, KIND_IDENTITY_SECOND, 0,
 						slice(all, IDENTITY_PART_LENGTH, IDENTITY_PART_LENGTH))
 		};
 	}
@@ -97,8 +130,14 @@ final class RootEvolutionRecord {
 	@javax.annotation.Nullable
 	static RootEvolutionRecord decode(byte[] payload) throws FormatException {
 		if (payload.length < HEADER_LENGTH) throw new FormatException();
-		if (payload[0] != VERSION) return null;
+		byte version = payload[0];
+		if (version != VERSION && version != VERSION_SEPARATED) return null;
 		byte kind = payload[1];
+		if (version == VERSION_SEPARATED && kind != KIND_INIT
+				&& kind != KIND_RESP && kind != KIND_CONFIRM
+				&& kind != KIND_DONE) {
+			throw new FormatException();
+		}
 		long epoch = ByteUtils.readUint64(payload, 2);
 		if (epoch < 0) throw new FormatException();
 		int off = HEADER_LENGTH;
@@ -106,19 +145,19 @@ final class RootEvolutionRecord {
 		switch (kind) {
 			case KIND_HELLO:
 				requireLength(payload, off + MAC_LENGTH + FLAGS_LENGTH);
-				return new RootEvolutionRecord(kind, epoch,
+				return new RootEvolutionRecord(version, kind, epoch,
 						slice(payload, off, MAC_LENGTH), empty, empty,
 						payload[off + MAC_LENGTH]);
 			case KIND_CONFIRM:
 			case KIND_DONE:
 				requireLength(payload, off + MAC_LENGTH);
-				return new RootEvolutionRecord(kind, epoch,
+				return new RootEvolutionRecord(version, kind, epoch,
 						slice(payload, off, MAC_LENGTH), empty, empty,
 						(byte) 0);
 			case KIND_INIT:
 				requireLength(payload, off + MAC_LENGTH + X25519_LENGTH
 						+ MLKEM_ENCAPSULATION_KEY_SIZE);
-				return new RootEvolutionRecord(kind, epoch,
+				return new RootEvolutionRecord(version, kind, epoch,
 						slice(payload, off, MAC_LENGTH),
 						slice(payload, off + MAC_LENGTH, X25519_LENGTH),
 						slice(payload, off + MAC_LENGTH + X25519_LENGTH,
@@ -126,7 +165,7 @@ final class RootEvolutionRecord {
 			case KIND_RESP:
 				requireLength(payload, off + X25519_LENGTH
 						+ MLKEM_CIPHERTEXT_SIZE + MAC_LENGTH);
-				return new RootEvolutionRecord(kind, epoch,
+				return new RootEvolutionRecord(version, kind, epoch,
 						slice(payload, off, X25519_LENGTH),
 						slice(payload, off + X25519_LENGTH,
 								MLKEM_CIPHERTEXT_SIZE),
@@ -136,7 +175,7 @@ final class RootEvolutionRecord {
 			case KIND_IDENTITY_SECOND:
 				requireLength(payload, off + IDENTITY_PART_LENGTH);
 				if (epoch != 0) throw new FormatException();
-				return new RootEvolutionRecord(kind, epoch,
+				return new RootEvolutionRecord(version, kind, epoch,
 						slice(payload, off, IDENTITY_PART_LENGTH), empty,
 						empty, (byte) 0);
 			default:
@@ -144,11 +183,12 @@ final class RootEvolutionRecord {
 		}
 	}
 
-	private static byte[] encode(byte kind, long epoch, byte[]... parts) {
+	private static byte[] encode(byte version, byte kind, long epoch,
+			byte[]... parts) {
 		int length = HEADER_LENGTH;
 		for (byte[] p : parts) length += p.length;
 		byte[] out = new byte[length];
-		out[0] = VERSION;
+		out[0] = version;
 		out[1] = kind;
 		ByteUtils.writeUint64(epoch, out, 2);
 		int off = HEADER_LENGTH;

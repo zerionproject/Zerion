@@ -51,15 +51,12 @@ public class AddContactChooserFragment extends BaseFragment {
 		View v = inflater.inflate(R.layout.fragment_add_contact_chooser,
 				container, false);
 
-		CardView qrCard = v.findViewById(R.id.qrExchangeCard);
-		CardView linkCard = v.findViewById(R.id.linkExchangeCard);
-		CardView nearbyCard = v.findViewById(R.id.nearbyPairCard);
+		CardView sendInviteCard = v.findViewById(R.id.sendInviteCard);
+		CardView scanQrCard = v.findViewById(R.id.scanQrCard);
 
-		qrCard.setOnClickListener(view -> viewModel.onQrExchangeChosen());
-		linkCard.setOnClickListener(view -> viewModel.onLinkExchangeChosen());
-		nearbyCard.setOnClickListener(view -> startActivity(new android.content.Intent(
-				requireContext(),
-				com.professor.zerion.android.contact.add.nearby.AddNearbyContactActivity.class)));
+		sendInviteCard.setOnClickListener(
+				view -> viewModel.onSendInviteChosen());
+		scanQrCard.setOnClickListener(view -> viewModel.onQrExchangeChosen());
 
 		return v;
 	}

@@ -114,7 +114,7 @@ public class HardcodedUiTextTest {
 	public void replyAndContactLabelsComeFromStringResources()
 			throws Exception {
 		assertNone("view/TextInputView.java", "authorName = \"");
-		assertNone("contact/add/remote/PendingContactViewHolder.java",
+		assertNone("contact/request/RequestRow.java",
 				": \"Unknown\"");
 	}
 

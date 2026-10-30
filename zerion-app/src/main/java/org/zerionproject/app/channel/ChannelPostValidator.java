@@ -79,6 +79,18 @@ class ChannelPostValidator {
 				|| !post.getBody().isEmpty())) {
 			return false;
 		}
+		if (post.getFormatVersion() == ChannelPost.FORMAT_V3) {
+			byte[] salt = post.getSalt();
+			if (post.signedByDelegate() || erased != null || salt == null
+					|| salt.length != ChannelConstants.POST_SALT_BYTES
+					|| !ChannelMemberPosts.validAuthor(
+					post.getMemberAuthor())) {
+				return false;
+			}
+			return signatures.verifyPostV3(post.getSignature(),
+					codec.signedInputOf(post), signer);
+		}
+		if (post.isMemberPost()) return false;
 		if (post.getFormatVersion() == ChannelPost.FORMAT_V2) {
 			byte[] salt = post.getSalt();
 			if (salt == null
@@ -159,6 +171,10 @@ class ChannelPostValidator {
 		ChannelDelegationCert cert = findDelegation(state, dEd,
 				post.getTimestampHourMs());
 		if (cert == null) return null;
+		if (!ChannelAuthorBinding.wellFormed(cert.getDelegateeEd25519PubKey(),
+				cert.getDelegateeMlDsaPubKey())) {
+			return null;
+		}
 		return new HybridSignaturePublicKey(cert.getDelegateeEd25519PubKey(),
 				cert.getDelegateeMlDsaPubKey());
 	}

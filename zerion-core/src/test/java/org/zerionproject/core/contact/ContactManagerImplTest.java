@@ -18,7 +18,9 @@ import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.identity.IdentityManager;
 import org.zerionproject.core.api.identity.LocalAuthor;
+import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.transport.KeyManager;
+import org.zerionproject.core.contact.request.ContactLinkStore;
 import org.zerionproject.core.test.BrambleMockTestCase;
 import org.zerionproject.core.test.DbExpectations;
 import org.jmock.imposters.ByteBuddyClassImposteriser;
@@ -69,6 +71,8 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 	private boolean alice;
 
 	private ContactManagerImpl contactManager;
+	private ContactLinkStore linkStore;
+	private Clock clock;
 
 	@Before
 	public void setUp() {
@@ -91,16 +95,93 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 		timestamp = System.currentTimeMillis();
 		alice = new Random().nextBoolean();
 
+		linkStore = context.mock(ContactLinkStore.class);
+		clock = context.mock(Clock.class);
 		contactManager = new ContactManagerImpl(db, keyManager, identityManager,
-				pendingContactFactory, crypto, pcsStateManager);
+				pendingContactFactory, crypto, pcsStateManager, linkStore,
+				clock);
 	}
 
 	@Test
 	public void convertingPendingContactRotatesHandshakeKeys()
 			throws Exception {
+		KeyPair perAdd = new KeyPair(
+				new org.zerionproject.core.api.crypto.HybridAgreementPublicKey(
+						org.zerionproject.core.test.TestUtils
+								.getRandomBytes(1216)),
+				new org.zerionproject.core.api.crypto.HybridAgreementPrivateKey(
+						org.zerionproject.core.test.TestUtils
+								.getRandomBytes(2432)));
+		convert(null, perAdd, true);
+		convert(new byte[][] {perAdd.getPublic().getEncoded(),
+				perAdd.getPrivate().getEncoded()}, perAdd, true);
+		for (String other : new String[] {"ZeroID", "permanent", "one-time"}) {
+			byte[][] snapshot = {
+					org.zerionproject.core.test.TestUtils.getRandomBytes(1216),
+					org.zerionproject.core.test.TestUtils.getRandomBytes(2432)};
+			convert(snapshot, perAdd, false);
+		}
+	}
+
+	private void convert(@javax.annotation.Nullable byte[][] snapshot,
+			KeyPair perAdd, boolean rotates) throws Exception {
 		Transaction txn = new Transaction(null, false);
 		PendingContactId p = pendingContact.getId();
 
+		context.checking(new DbExpectations() {{
+			oneOf(db).containsContact(txn, remote.getId(), local);
+			will(returnValue(false));
+			oneOf(db).getPendingContact(txn, p);
+			will(returnValue(pendingContact));
+			oneOf(db).getContactsByAuthorId(txn, remote.getId());
+			will(returnValue(java.util.Collections.emptyList()));
+			oneOf(db).getPendingContactOurKeys(txn, p);
+			will(returnValue(snapshot));
+			if (snapshot != null) {
+				oneOf(identityManager).getHybridHandshakeKeys(txn);
+				will(returnValue(perAdd));
+			}
+			oneOf(db).getSettings(txn, ContactManagerImpl.IN_PERSON_NAMESPACE);
+			will(returnValue(new org.zerionproject.core.api.settings
+					.Settings()));
+			oneOf(db).removePendingContact(txn, p);
+			oneOf(identityManager).getHandshakeKeys(txn);
+			will(returnValue(handshakeKeyPair));
+			oneOf(db).addContact(txn, remote, local,
+					pendingContact.getPublicKey(), verified, false, false,
+					(byte[]) null);
+			will(returnValue(contactId));
+			oneOf(db).setContactAlias(txn, contactId,
+					pendingContact.getAlias());
+			oneOf(keyManager).addContact(txn, contactId,
+					pendingContact.getPublicKey(), handshakeKeyPair);
+			oneOf(keyManager).addRotationKeys(txn, contactId, rootKey,
+					timestamp, alice, active);
+			oneOf(pcsStateManager).initializePairingRoot(txn, contactId,
+					rootKey);
+			oneOf(db).getContact(txn, contactId);
+			will(returnValue(contact));
+			if (rotates) {
+				oneOf(identityManager).rotateHybridHandshakeKeys(txn);
+			} else {
+				never(identityManager).rotateHybridHandshakeKeys(txn);
+			}
+		}});
+
+		assertEquals(contactId, contactManager.addContact(txn, p, remote,
+				local, rootKey, timestamp, alice, verified, active, null));
+		context.assertIsSatisfied();
+	}
+
+	@Test
+	public void aPendingContactHookSeesTheConversion() throws Exception {
+		Transaction txn = new Transaction(null, false);
+		PendingContactId p = pendingContact.getId();
+		java.util.List<ContactId> seen = new java.util.ArrayList<>();
+		contactManager.registerPendingContactHook((t, pc, c) -> {
+			assertEquals(p, pc);
+			seen.add(c);
+		});
 		context.checking(new DbExpectations() {{
 			oneOf(db).containsContact(txn, remote.getId(), local);
 			will(returnValue(false));
@@ -132,9 +213,9 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			will(returnValue(contact));
 			oneOf(identityManager).rotateHybridHandshakeKeys(txn);
 		}});
-
-		assertEquals(contactId, contactManager.addContact(txn, p, remote,
-				local, rootKey, timestamp, alice, verified, active, null));
+		contactManager.addContact(txn, p, remote, local, rootKey, timestamp,
+				alice, verified, active, null);
+		assertEquals(singletonList(contactId), seen);
 	}
 
 	@Test

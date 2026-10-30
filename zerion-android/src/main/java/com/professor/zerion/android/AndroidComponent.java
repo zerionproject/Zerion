@@ -119,6 +119,8 @@ public interface AndroidComponent
 
 	ContactManager contactManager();
 
+	org.zerionproject.core.api.contact.request.ContactRequestManager contactRequestManager();
+
 	ConversationManager conversationManager();
 
 	MessagingManager messagingManager();
@@ -212,6 +214,8 @@ public interface AndroidComponent
 	SharedPreferences profilePreferences();
 
 	com.professor.zerion.android.profile.ProfileStorage profileStorage();
+
+	org.zerionproject.core.account.LockoutStores lockoutStores();
 
 	void inject(SignInReminderReceiver briarService);
 

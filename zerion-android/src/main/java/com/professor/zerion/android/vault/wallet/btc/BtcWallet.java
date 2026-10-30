@@ -94,7 +94,7 @@ public class BtcWallet {
 	}
 	private static final long DUST = 294L;
 	static final double MIN_FEE_RATE = 2.0;
-	static final double MAX_FEE_RATE = 200.0;
+	static final double MAX_FEE_RATE = 100.0;
 	public static final int HIGH_FEE_PERCENT = 20;
 	private static final long PENDING_GRACE_MS = 30L * 60L * 1000L;
 	private static final int PENDING_FAIL_MISSES = 3;
@@ -208,6 +208,15 @@ public class BtcWallet {
 	private volatile List<ElectrumEndpoint> broadcastFallbacks =
 			new ArrayList<>();
 	private PrivacyStore privacyStore = PrivacyStore.NONE;
+	private final FeeGuard feeGuard = new FeeGuard();
+	static final long SECOND_OPINION_CACHE_MS = 5L * 60 * 1000;
+	static final long SECOND_OPINION_DEADLINE_MS = 8_000L;
+	long secondOpinionDeadlineMs = SECOND_OPINION_DEADLINE_MS;
+	private FeeGuard.Clock feeClock = System::currentTimeMillis;
+	@Nullable
+	private volatile ElectrumEndpoint feeCheckEndpoint;
+	private final Map<Integer, double[]> secondOpinionCache =
+			new java.util.concurrent.ConcurrentHashMap<>();
 	private PrivacyEngine.Policy privacyPolicy = PrivacyEngine.Policy.STANDARD;
 	private volatile boolean silentPaymentsEnabled = false;
 
@@ -256,6 +265,7 @@ public class BtcWallet {
 		this.scanEndpoint = scan;
 		this.broadcastEndpoint = broadcast;
 		setFallbacks(scanFbs, broadcastFbs);
+		setFeeCheckEndpoint(broadcast);
 		this.lastScan = null;
 	}
 
@@ -320,6 +330,7 @@ public class BtcWallet {
 		this.isolationTag = isolationTag;
 		this.electrumFactory = electrumFactory;
 		this.spFetcher = spFetcher;
+		setFeeCheckEndpoint(broadcastEndpoint);
 	}
 
 	private static BtcKeys.Account deriveAccount(char[] mnemonic, int account) {
@@ -574,23 +585,153 @@ public class BtcWallet {
 	}
 
 	public double feeRateSatPerVb(int blocks) throws IOException {
-		try (ElectrumRpc c = openScan()) {
-			return rateFor(c, blocks);
-		}
+		double rate = checkedRates(new int[]{blocks}, false)[0];
+		feeGuard.offer(blocks, rate);
+		return rate;
 	}
 
 	public double[] feeOptions() throws IOException {
+		double[] r = checkedRates(new int[]{1, 3, 6}, true);
+		double priority = r[0];
+		double normal = r[1];
+		double economy = r[2];
+		if (normal > priority) {
+			normal = priority;
+		}
+		if (economy > normal) {
+			economy = normal;
+		}
+		feeGuard.offer(1, priority);
+		feeGuard.offer(3, normal);
+		feeGuard.offer(6, economy);
+		return new double[]{economy, normal, priority};
+	}
+
+	public static final class FeeReview {
+
+		public final boolean jump;
+		public final boolean serversDisagree;
+
+		FeeReview(boolean jump, boolean serversDisagree) {
+			this.jump = jump;
+			this.serversDisagree = serversDisagree;
+		}
+	}
+
+	public FeeReview feeReview(double requestedRate) {
+		FeeGuard.Verdict v = feeGuard.review(requestedRate);
+		return new FeeReview(v.jump, v.disagree);
+	}
+
+	public void setFeeBaselineStore(FeeGuard.Store store) {
+		feeGuard.setStore(store);
+	}
+
+	void setFeeClock(FeeGuard.Clock clock) {
+		feeGuard.setClock(clock);
+		this.feeClock = clock;
+	}
+
+	public void setFeeCheckEndpoint(@Nullable ElectrumEndpoint endpoint) {
+		this.feeCheckEndpoint = endpoint == null || endpoint.direct
+				|| sameServer(endpoint, scanEndpoint) ? null : endpoint;
+		secondOpinionCache.clear();
+	}
+
+	@Nullable
+	ElectrumEndpoint feeCheckEndpoint() {
+		return feeCheckEndpoint;
+	}
+
+	private static boolean sameServer(ElectrumEndpoint a, ElectrumEndpoint b) {
+		return a.port == b.port && a.host.equalsIgnoreCase(b.host);
+	}
+
+	private double[] checkedRates(int[] targets, boolean crossCheck)
+			throws IOException {
+		double[] primary = new double[targets.length];
 		try (ElectrumRpc c = openScan()) {
-			double priority = rateFor(c, 1);
-			double normal = rateFor(c, 3);
-			double economy = rateFor(c, 6);
-			if (normal > priority) {
-				normal = priority;
+			for (int i = 0; i < targets.length; i++) {
+				primary[i] = opinion(c.estimateFeeBtcPerKb(targets[i]));
 			}
-			if (economy > normal) {
-				economy = normal;
+		}
+		double[] second = crossCheck ? secondOpinion(targets)
+				: nanArray(targets.length);
+		double[] out = new double[targets.length];
+		for (int i = 0; i < targets.length; i++) {
+			out[i] = feeGuard.accept(targets[i], primary[i], second[i]);
+		}
+		return out;
+	}
+
+	static double opinion(double btcPerKb) {
+		if (!(btcPerKb > 0) || Double.isInfinite(btcPerKb)) return Double.NaN;
+		return sanitizeRate(btcPerKb * 1e8 / 1000.0);
+	}
+
+	private static double[] nanArray(int n) {
+		double[] out = new double[n];
+		java.util.Arrays.fill(out, Double.NaN);
+		return out;
+	}
+
+	private double[] secondOpinion(int[] targets) {
+		double[] out = nanArray(targets.length);
+		ElectrumEndpoint other = feeCheckEndpoint;
+		if (other == null) return out;
+		long now = feeClock.now();
+		boolean allCached = true;
+		for (int i = 0; i < targets.length; i++) {
+			double[] c = secondOpinionCache.get(targets[i]);
+			if (c != null && now - (long) c[1] >= 0
+					&& now - (long) c[1] < SECOND_OPINION_CACHE_MS) {
+				out[i] = c[0];
+			} else {
+				allCached = false;
 			}
-			return new double[]{economy, normal, priority};
+		}
+		if (allCached) return out;
+		java.util.concurrent.atomic.AtomicReference<ElectrumRpc> conn =
+				new java.util.concurrent.atomic.AtomicReference<>();
+		java.util.concurrent.FutureTask<double[]> task =
+				new java.util.concurrent.FutureTask<>(() -> {
+					double[] r = nanArray(targets.length);
+					ElectrumRpc c = electrumFactory.open(other, socksPort,
+							TorIsolation.feeCheck(isolationTag));
+					conn.set(c);
+					try {
+						for (int i = 0; i < targets.length; i++) {
+							r[i] = opinion(c.estimateFeeBtcPerKb(targets[i]));
+						}
+					} finally {
+						c.close();
+					}
+					return r;
+				});
+		Thread worker = new Thread(task, "fee-check");
+		worker.setDaemon(true);
+		worker.start();
+		try {
+			double[] r = task.get(secondOpinionDeadlineMs,
+					java.util.concurrent.TimeUnit.MILLISECONDS);
+			for (int i = 0; i < targets.length; i++) {
+				if (!Double.isNaN(r[i])) {
+					secondOpinionCache.put(targets[i],
+							new double[]{r[i], now});
+				}
+			}
+			return r;
+		} catch (java.util.concurrent.TimeoutException e) {
+			task.cancel(true);
+			ElectrumRpc c = conn.get();
+			if (c != null) c.close();
+			return out;
+		} catch (InterruptedException e) {
+			task.cancel(true);
+			Thread.currentThread().interrupt();
+			return out;
+		} catch (java.util.concurrent.ExecutionException e) {
+			return out;
 		}
 	}
 

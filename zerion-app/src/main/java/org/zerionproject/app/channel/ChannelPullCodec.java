@@ -127,6 +127,23 @@ class ChannelPullCodec {
 			@Nullable ItemSync reactionsSync,
 			@Nullable ItemSync commentsSync, int version,
 			@Nullable Discussions discussions) throws IOException {
+		return encodePullResponse(manifest, newPosts, contentKeyEnvelope,
+				neighbourHints, reactions, comments, reactionsSync,
+				commentsSync, version, discussions, null);
+	}
+
+	byte[] encodePullResponse(BdfDictionary manifest,
+			List<ChannelPost> newPosts,
+			@Nullable byte[] contentKeyEnvelope,
+			List<String> neighbourHints,
+			List<org.zerionproject.app.api.channel.ChannelReaction>
+					reactions,
+			List<org.zerionproject.app.api.channel.ChannelComment>
+					comments,
+			@Nullable ItemSync reactionsSync,
+			@Nullable ItemSync commentsSync, int version,
+			@Nullable Discussions discussions, @Nullable Integer posting)
+			throws IOException {
 		BdfDictionary d = new BdfDictionary();
 		d.put("type", ChannelConstants.WIRE_TYPE_PULL_RESPONSE);
 		if (reactionsSync != null || commentsSync != null) {
@@ -142,6 +159,7 @@ class ChannelPullCodec {
 			ds.put("x", x);
 			d.put("ds", ds);
 		}
+		if (posting != null) d.put("wp", (long) posting);
 		d.put("manifest", manifest);
 		BdfList postList = new BdfList();
 		for (ChannelPost p : newPosts) {
@@ -200,13 +218,24 @@ class ChannelPullCodec {
 		if (postList.size() > ChannelConstants.PULL_BATCH_MAX_POSTS) {
 			throw new FormatException();
 		}
-		boolean erasedAllowed = d.getLong("v", 1L)
+		long replyVersion = d.getLong("v", 1L);
+		boolean erasedAllowed = replyVersion
 				>= ChannelConstants.PROTOCOL_VERSION_ERASED_EDITS;
+		boolean memberPosts = replyVersion
+				>= ChannelConstants.PROTOCOL_VERSION_MEMBER_POSTS;
 		List<ChannelPost> posts = new ArrayList<>(postList.size());
 		for (Object o : postList) {
 			if (!(o instanceof BdfDictionary)) continue;
 			posts.add(wireToPost(channelId, (BdfDictionary) o,
-					erasedAllowed));
+					erasedAllowed, memberPosts));
+		}
+		Integer posting = null;
+		Long wirePosting = d.getOptionalLong("wp");
+		if (wirePosting != null) {
+			if (!ChannelMemberPosts.validMode(wirePosting)) {
+				throw new FormatException();
+			}
+			posting = wirePosting.intValue();
 		}
 		byte[] envelope = d.getOptionalRaw("contentKeyEnvelope");
 		List<String> hints = new ArrayList<>();
@@ -272,6 +301,7 @@ class ChannelPullCodec {
 		PullResponse out = new PullResponse(manifest, posts, envelope, hints,
 				reactions, comments, d.getLong("v", 1L).intValue(), rs, cs);
 		out.discussions = discussionsFromWire(d.getOptionalDictionary("ds"));
+		out.posting = posting;
 		return out;
 	}
 
@@ -431,7 +461,29 @@ class ChannelPullCodec {
 			byte[] salt = p.getSalt();
 			if (salt != null) d.put("salt", salt);
 		}
+		ChannelPost.MemberAuthor author = p.getMemberAuthor();
+		if (author != null) d.put("au", authorToWire(author));
 		return d;
+	}
+
+	static BdfDictionary authorToWire(ChannelPost.MemberAuthor a) {
+		BdfDictionary d = new BdfDictionary();
+		d.put("ed", a.getEd25519PubKey());
+		d.put("ml", a.getMlDsaPubKey());
+		d.put("name", a.getName());
+		d.put("role", (long) a.getRole());
+		return d;
+	}
+
+	static ChannelPost.MemberAuthor authorFromWire(BdfDictionary d)
+			throws FormatException {
+		long role = d.getLong("role");
+		if (!ChannelMemberPosts.validRole(role)) throw new FormatException();
+		ChannelPost.MemberAuthor a = new ChannelPost.MemberAuthor(
+				d.getRaw("ed"), d.getRaw("ml"), d.getString("name"),
+				(int) role);
+		if (!ChannelMemberPosts.validAuthor(a)) throw new FormatException();
+		return a;
 	}
 
 	BdfDictionary postToWireDict(ChannelPost p) {
@@ -440,11 +492,12 @@ class ChannelPullCodec {
 
 	ChannelPost wireDictToPost(byte[] channelId, BdfDictionary d)
 			throws FormatException {
-		return wireToPost(channelId, d, false);
+		return wireToPost(channelId, d, false, false);
 	}
 
 	private ChannelPost wireToPost(byte[] channelId, BdfDictionary d,
-			boolean erasedAllowed) throws FormatException {
+			boolean erasedAllowed, boolean memberPosts)
+			throws FormatException {
 		List<ChannelPost.ChannelAttachment> atts = new ArrayList<>();
 		BdfList rawAtts = d.getList("attachments", new BdfList());
 		if (rawAtts.size() > ChannelConstants.MAX_ATTACHMENTS_PER_POST) {
@@ -460,13 +513,22 @@ class ChannelPullCodec {
 		}
 		long version = d.getLong("pv", (long) ChannelPost.FORMAT_LEGACY);
 		byte[] salt = null;
-		if (version == ChannelPost.FORMAT_V2) {
+		ChannelPost.MemberAuthor author = null;
+		if (version == ChannelPost.FORMAT_V2
+				|| (memberPosts && version == ChannelPost.FORMAT_V3)) {
 			salt = d.getRaw("salt");
 			if (salt.length != ChannelConstants.POST_SALT_BYTES) {
 				throw new FormatException();
 			}
 		} else if (version != ChannelPost.FORMAT_LEGACY) {
 			throw new FormatException();
+		}
+		if (version == ChannelPost.FORMAT_V3) {
+			if (!rawAtts.isEmpty() || d.containsKey("delegateSignerEd25519")
+					|| d.containsKey("delegateSignerMlDsa")) {
+				throw new FormatException();
+			}
+			author = authorFromWire(d.getDictionary("au"));
 		}
 		long seqNum = d.getLong("seqNum");
 		if (seqNum < 0L || seqNum > ChannelConstants.MAX_SEQUENCE_NUMBER) {
@@ -478,6 +540,13 @@ class ChannelPullCodec {
 				|| erased.length != ChannelConstants.POST_BODY_HASH_BYTES
 				|| d.containsKey("body"))) {
 			throw new FormatException();
+		}
+		if (author != null) {
+			if (erased != null) throw new FormatException();
+			return new ChannelPost(channelId, seqNum, d.getRaw("prevHash"),
+					d.getLong("timestampHourMs"), d.getString("body"), atts,
+					d.getLong("ttlMs"), d.getRaw("signature"), false, false,
+					salt, author);
 		}
 		ChannelPost p = new ChannelPost(channelId,
 				seqNum,
@@ -1093,7 +1162,8 @@ class ChannelPullCodec {
 		}
 		byte[] channelId = d.getRaw("channelId");
 		return new SubmitPostRequest(channelId,
-				wireToPost(channelId, d.getDictionary("post"), false));
+				wireToPost(channelId, d.getDictionary("post"), false,
+						false));
 	}
 
 	byte[] encodeSubmitPostAck(String status, long tipSeq)
@@ -1115,6 +1185,82 @@ class ChannelPullCodec {
 			return d.getString("status");
 		} catch (IOException e) {
 			return ChannelConstants.SUBMIT_STATUS_REFUSED;
+		}
+	}
+
+	byte[] encodeMemberPostRequest(byte[] channelId, long submissionId,
+			String body, String authorName, long timestampHourMs,
+			byte[] signerEd, byte[] signerMl, byte[] signature,
+			@Nullable byte[] nonce, @Nullable byte[] hmac)
+			throws IOException {
+		BdfDictionary d = new BdfDictionary();
+		d.put("type", ChannelConstants.WIRE_TYPE_SUBMIT_MEMBER_POST);
+		d.put("v", (long) ChannelConstants.PROTOCOL_VERSION);
+		putChallenge(d, nonce, hmac);
+		d.put("channelId", channelId);
+		d.put("id", submissionId);
+		d.put("body", body);
+		d.put("name", authorName);
+		d.put("ts", timestampHourMs);
+		d.put("ed", signerEd);
+		d.put("ml", signerMl);
+		d.put("sig", signature);
+		return writeDict(d);
+	}
+
+	MemberPostRequest decodeMemberPostRequest(byte[] data)
+			throws IOException {
+		BdfDictionary d = readDict(data);
+		if (!ChannelConstants.WIRE_TYPE_SUBMIT_MEMBER_POST.equals(
+				d.getString("type"))) {
+			throw new FormatException();
+		}
+		String body = d.getString("body");
+		String name = d.getString("name");
+		if (body.length() > ChannelConstants.MAX_POST_BODY_CHARS
+				|| name.length() > ChannelConstants.MAX_MEMBER_NAME_CHARS) {
+			throw new FormatException();
+		}
+		return new MemberPostRequest(d.getRaw("channelId"), d.getLong("id"),
+				body, name, d.getLong("ts"), d.getRaw("ed"), d.getRaw("ml"),
+				d.getRaw("sig"));
+	}
+
+	@NotNullByDefault
+	static final class MemberPostRequest {
+		final byte[] channelId;
+		final long submissionId;
+		final String body;
+		final String authorName;
+		final long timestampHourMs;
+		final byte[] signerEd25519;
+		final byte[] signerMlDsa;
+		final byte[] signature;
+
+		MemberPostRequest(byte[] channelId, long submissionId, String body,
+				String authorName, long timestampHourMs, byte[] signerEd25519,
+				byte[] signerMlDsa, byte[] signature) {
+			this.channelId = channelId;
+			this.submissionId = submissionId;
+			this.body = body;
+			this.authorName = authorName;
+			this.timestampHourMs = timestampHourMs;
+			this.signerEd25519 = signerEd25519;
+			this.signerMlDsa = signerMlDsa;
+			this.signature = signature;
+		}
+	}
+
+	long decodeSubmitPostAckTip(byte[] data) {
+		try {
+			BdfDictionary d = readDict(data);
+			if (!ChannelConstants.WIRE_TYPE_SUBMIT_POST_ACK.equals(
+					d.getString("type"))) {
+				return -1L;
+			}
+			return d.getLong("tip", -1L);
+		} catch (IOException e) {
+			return -1L;
 		}
 	}
 
@@ -1340,6 +1486,8 @@ class ChannelPullCodec {
 		final ItemSync commentsSync;
 		@Nullable
 		Discussions discussions;
+		@Nullable
+		Integer posting;
 
 		PullResponse(BdfDictionary manifest, List<ChannelPost> newPosts,
 				@Nullable byte[] contentKeyEnvelope,

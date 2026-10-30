@@ -54,6 +54,7 @@ public class AsyncPrekeyStore {
 			"org.zerionproject.async/SEEN_SENDER";
 	public static final int MAX_SEEN_SENDERS = 256;
 	private static final String LEGACY_SEEN = "seen";
+	private static final String OPENED_ENVELOPES = "openedEnvelopes";
 	private static final String LEGACY_FLOOR = "seenFloor";
 	private static final String USED_PREFIX = "used.";
 	private static final String USED_BY = "usedBy";
@@ -74,6 +75,9 @@ public class AsyncPrekeyStore {
 	private final int maxSeen;
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
+
+	@Nullable
+	private LinkedHashMap<String, Long> openedEnvelopes = null;
 
 	@Nullable
 	private Map<String, String> aliasIndex = null;
@@ -457,6 +461,43 @@ public class AsyncPrekeyStore {
 		}
 	}
 
+	public boolean isEnvelopeOpened(byte[] envelopeDigest) throws DbException {
+		String h = StringUtils.toHexString(envelopeDigest);
+		synchronized (lock) {
+			Long expiry = openedEnvelopes(null).get(h);
+			return expiry != null && expiry > clock.currentTimeMillis();
+		}
+	}
+
+	private LinkedHashMap<String, Long> openedEnvelopes(@Nullable Settings s)
+			throws DbException {
+		LinkedHashMap<String, Long> opened = openedEnvelopes;
+		if (opened == null) {
+			Settings loaded = s != null ? s : settingsManager.getSettings(NS);
+			opened = parseSeen(loaded.get(OPENED_ENVELOPES));
+			openedEnvelopes = opened;
+		}
+		return opened;
+	}
+
+	private LinkedHashMap<String, Long> recordOpenedEnvelope(Settings s,
+			Settings upd, byte[] envelopeDigest, long expiryMs, long now)
+			throws DbException {
+		LinkedHashMap<String, Long> opened =
+				new LinkedHashMap<>(openedEnvelopes(s));
+		opened.values().removeIf(expiry -> expiry <= now);
+		String h = StringUtils.toHexString(envelopeDigest);
+		opened.remove(h);
+		opened.put(h, expiryMs);
+		java.util.Iterator<String> it = opened.keySet().iterator();
+		while (opened.size() > maxSeen && it.hasNext()) {
+			it.next();
+			it.remove();
+		}
+		upd.put(OPENED_ENVELOPES, joinSeen(opened));
+		return opened;
+	}
+
 	private String senderKey(byte[] senderSigPub) {
 		byte[] h = crypto.hash(SEEN_SENDER_LABEL, senderSigPub);
 		return StringUtils.toHexString(java.util.Arrays.copyOf(h, 16));
@@ -464,6 +505,12 @@ public class AsyncPrekeyStore {
 
 	public boolean checkAndMarkSeen(byte[] senderSigPub, byte[] dedupId,
 			long expiryMs) throws DbException {
+		return checkAndMarkSeen(senderSigPub, dedupId, expiryMs, null);
+	}
+
+	public boolean checkAndMarkSeen(byte[] senderSigPub, byte[] dedupId,
+			long expiryMs, @Nullable byte[] envelopeDigest)
+			throws DbException {
 		String sender = senderKey(senderSigPub);
 		synchronized (lock) {
 			Settings s = settingsManager.getSettings(NS);
@@ -498,8 +545,14 @@ public class AsyncPrekeyStore {
 			Settings upd = new Settings();
 			upd.put(SEEN_PREFIX + sender, joinSeen(set));
 			upd.putLong(FLOOR_PREFIX + sender, floor);
+			LinkedHashMap<String, Long> opened = null;
+			if (admitted && envelopeDigest != null) {
+				opened = recordOpenedEnvelope(s, upd, envelopeDigest,
+						expiryMs, now);
+			}
 			evictSurplusSenders(s, sender, upd);
 			settingsManager.mergeSettings(upd, NS);
+			if (opened != null) openedEnvelopes = opened;
 			return admitted;
 		}
 	}

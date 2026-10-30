@@ -27,6 +27,10 @@ public class MeshController implements OpenDatabaseHook {
 
 	static final String MESH_NAMESPACE = "org.zerionproject.mesh";
 	static final String PREF_MESH_ENABLED = "meshEnabled";
+	static final String PREF_MESH_SHORT_RANGE = "meshShortRange";
+	static final String PREF_MESH_PAUSE_SCREEN_OFF = "meshPauseScreenOff";
+	public static final int MAX_BLUETOOTH_ALIAS_LENGTH =
+			MeshBluetoothName.MAX_ALIAS_LENGTH;
 
 	private final Context appContext;
 	private final MeshManager meshManager;
@@ -81,6 +85,66 @@ public class MeshController implements OpenDatabaseHook {
 
 	public boolean isRunning() {
 		return meshManager.isRunning();
+	}
+
+	public boolean isShortRange() throws DbException {
+		return settingsManager.getSettings(MESH_NAMESPACE)
+				.getBoolean(PREF_MESH_SHORT_RANGE, false);
+	}
+
+	public void setShortRange(boolean shortRange) {
+		ioExecutor.execute(() -> {
+			try {
+				Settings s = new Settings();
+				s.putBoolean(PREF_MESH_SHORT_RANGE, shortRange);
+				settingsManager.mergeSettings(s, MESH_NAMESPACE);
+			} catch (DbException e) {
+				return;
+			}
+			meshManager.setShortRange(shortRange);
+		});
+	}
+
+	public boolean isPauseWhenScreenOff() throws DbException {
+		return settingsManager.getSettings(MESH_NAMESPACE)
+				.getBoolean(PREF_MESH_PAUSE_SCREEN_OFF, false);
+	}
+
+	public void setPauseWhenScreenOff(boolean pause) {
+		ioExecutor.execute(() -> {
+			try {
+				Settings s = new Settings();
+				s.putBoolean(PREF_MESH_PAUSE_SCREEN_OFF, pause);
+				settingsManager.mergeSettings(s, MESH_NAMESPACE);
+			} catch (DbException e) {
+				return;
+			}
+			meshManager.setPauseWhenScreenOff(pause);
+		});
+	}
+
+	public static String cleanBluetoothAlias(String alias) {
+		String clean = MeshBluetoothName.sanitizeAlias(alias);
+		return clean.isEmpty() ? MeshBluetoothName.MASKED_NAME : clean;
+	}
+
+	public String getBluetoothAlias() throws DbException {
+		return MeshBluetoothName.alias(
+				settingsManager.getSettings(MESH_NAMESPACE));
+	}
+
+	public void setBluetoothAlias(String alias) {
+		ioExecutor.execute(() -> {
+			try {
+				Settings s = new Settings();
+				s.put(MeshBluetoothName.ALIAS_KEY,
+						MeshBluetoothName.sanitizeAlias(alias));
+				settingsManager.mergeSettings(s, MESH_NAMESPACE);
+			} catch (DbException e) {
+				return;
+			}
+			meshManager.reapplyBluetoothName();
+		});
 	}
 
 	public int getPeerCount() {

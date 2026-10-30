@@ -11,6 +11,8 @@ import java.util.Set;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -122,5 +124,84 @@ public class MeshLinkPolicyTest {
 		assertEquals("c:silent", policy.idleLinkToEvict(both, later));
 		assertEquals("c:unknown", policy.idleLinkToEvict(
 				new HashSet<>(Arrays.asList("c:useful", "c:unknown")), 2L));
+	}
+
+	@Test
+	public void whenEverySlotIsBusyATenuredLinkIsStillRotatedOut() {
+		Set<String> keys = busyLinks(0L);
+		long now = MeshLinkPolicy.BUSY_EVICT_TENURE_MS;
+		for (String k : keys) policy.onUseful(k, now);
+		assertNotNull("every slot is held and none can be reclaimed",
+				policy.idleLinkToEvict(keys, now));
+	}
+
+	@Test
+	public void aBusyLinkYoungerThanTheTenureIsNotRotatedOut() {
+		Set<String> keys = busyLinks(0L);
+		long now = MeshLinkPolicy.BUSY_EVICT_TENURE_MS - 1;
+		for (String k : keys) policy.onUseful(k, now);
+		assertNull(policy.idleLinkToEvict(keys, now));
+	}
+
+	@Test
+	public void rotationPicksAmongTenuredLinksAtRandom() {
+		Set<String> keys = busyLinks(0L);
+		long now = MeshLinkPolicy.BUSY_EVICT_TENURE_MS;
+		policy.onLinkUp("s:young", now - 1);
+		Set<String> all = new HashSet<>(keys);
+		all.add("s:young");
+		Set<String> victims = new HashSet<>();
+		for (int i = 0; i < 400; i++) {
+			long at = now + i * MeshLinkPolicy.BUSY_ROTATION_INTERVAL_MS;
+			policy.onLinkUp("s:young", at - 1);
+			for (String k : all) policy.onUseful(k, at);
+			String victim = policy.idleLinkToEvict(all, at);
+			assertNotNull(victim);
+			assertNotEquals("s:young", victim);
+			victims.add(victim);
+		}
+		assertEquals("the victim must not be predictable", keys, victims);
+	}
+
+	@Test
+	public void busyLinksAreRotatedAtMostOncePerInterval() {
+		Set<String> keys = busyLinks(0L);
+		long now = MeshLinkPolicy.BUSY_EVICT_TENURE_MS;
+		for (String k : keys) policy.onUseful(k, now);
+		assertNotNull(policy.idleLinkToEvict(keys, now));
+		long soon = now + MeshLinkPolicy.BUSY_ROTATION_INTERVAL_MS - 1;
+		for (String k : keys) policy.onUseful(k, soon);
+		assertNull("a churn storm among busy links",
+				policy.idleLinkToEvict(keys, soon));
+		long later = now + MeshLinkPolicy.BUSY_ROTATION_INTERVAL_MS;
+		for (String k : keys) policy.onUseful(k, later);
+		assertNotNull(policy.idleLinkToEvict(keys, later));
+	}
+
+	@Test
+	public void aFreshUnusedLinkBlocksTheRotationOfBusyOnes() {
+		Set<String> keys = new HashSet<>();
+		for (int i = 0; i < MeshLinkPolicy.MAX_CENTRALS - 1; i++) {
+			String k = "s:" + i;
+			keys.add(k);
+			policy.onLinkUp(k, 0L);
+		}
+		long now = MeshLinkPolicy.BUSY_EVICT_TENURE_MS;
+		for (String k : keys) policy.onUseful(k, now);
+		policy.onLinkUp("s:fresh", now - 1);
+		keys.add("s:fresh");
+		assertNull("a newcomer that carried nothing yet must not cost an"
+						+ " honest busy link its slot",
+				policy.idleLinkToEvict(keys, now));
+	}
+
+	private Set<String> busyLinks(long since) {
+		Set<String> keys = new HashSet<>();
+		for (int i = 0; i < MeshLinkPolicy.MAX_CENTRALS; i++) {
+			String k = "s:" + i;
+			keys.add(k);
+			policy.onLinkUp(k, since);
+		}
+		return keys;
 	}
 }

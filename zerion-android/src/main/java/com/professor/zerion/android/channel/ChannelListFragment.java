@@ -182,12 +182,19 @@ public class ChannelListFragment extends BaseFragment
 		String sender = null;
 		if (preview.isEmpty()) {
 			preview = ChannelAccessLabel.withRole(ctx, s);
+		} else if (latest != null && latest.getMemberAuthor() != null) {
+			String author = com.professor.zerion.android.util.DisplayNames
+					.clean(latest.getMemberAuthor().getName()).trim();
+			String role = ctx.getString(R.string.channels_member_role_subscriber);
+			sender = author.isEmpty() ? role : ctx.getString(
+					R.string.channels_post_card_parts,
+					androidx.core.text.BidiFormatter.getInstance()
+							.unicodeWrap(author), role);
 		} else if (s.weArePublisher() && latest != null
 				&& !latest.signedByDelegate()) {
 			sender = ctx.getString(R.string.you);
 		}
-		String name = s.getName().isEmpty()
-				? ctx.getString(R.string.channels_button) : s.getName();
+		String name = ChannelNames.shown(ctx, s.getName());
 		return HomeRow.builder("channel:" + StringUtils.toHexString(id), name)
 				.time(latest == null ? 0 : latest.getTimestampHourMs())
 				.hourPrecision(true)
@@ -536,7 +543,9 @@ public class ChannelListFragment extends BaseFragment
 	private String nameOf(byte[] channelId) {
 		try {
 			ChannelState s = channelManager.getChannel(channelId);
-			return s == null ? "" : s.getName();
+			return s == null ? ""
+					: com.professor.zerion.android.util.DisplayNames
+							.clean(s.getName()).trim();
 		} catch (DbException e) {
 			return "";
 		}
@@ -639,7 +648,7 @@ public class ChannelListFragment extends BaseFragment
 				channelManager, ioExecutor, s.getChannelId()));
 
 		new SecureAlertDialogBuilder(requireContext())
-				.setTitle(s.getName())
+				.setTitle(ChannelNames.shown(requireContext(), s.getName()))
 				.setItems(labels.toArray(new CharSequence[0]),
 						(d, which) -> actions.get(which).run())
 				.show();

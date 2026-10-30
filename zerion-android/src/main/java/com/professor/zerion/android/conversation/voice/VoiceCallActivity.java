@@ -22,6 +22,7 @@ import android.graphics.SurfaceTexture;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Chronometer;
 import android.widget.ImageButton;
@@ -31,19 +32,28 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.professor.zerion.android.accessibility.Speech;
+import com.professor.zerion.android.api.ScreenFilterMonitor;
+import com.professor.zerion.android.fragment.ScreenFilterDialogFragment;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.professor.zerion.android.security.SecureDialogs;
+import com.professor.zerion.android.widget.TapSafeFrameLayout;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.professor.zerion.R;
 
 import org.zerionproject.core.api.contact.ContactId;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Locale;
 
 import static com.professor.zerion.android.util.UiUtils.resolveColorAttribute;
@@ -115,6 +125,9 @@ public class VoiceCallActivity extends AppCompatActivity {
 	private Surface remoteSurface;
 	private Surface localSurface;
 	private Runnable onRemoteSurfaceReady;
+	@Nullable
+	private AlertDialog videoOffer;
+	private int offerAwaitingCamera = 0;
 	private boolean autoVideo = false;
 	private int remoteVideoRotation = 270;
 	@Nullable
@@ -164,7 +177,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_voice_call);
+		setContentView(tapSafeContent(this));
 		if (android.os.Build.VERSION.SDK_INT >= 31) {
 			getWindow().setHideOverlayWindows(true);
 		}
@@ -192,6 +205,10 @@ public class VoiceCallActivity extends AppCompatActivity {
 		callId = intent.getStringExtra(EXTRA_CALL_ID);
 		String callerAddress = intent.getStringExtra(EXTRA_CALLER_ADDRESS);
 		autoVideo = intent.getBooleanExtra("auto_video", false);
+		if (isIncoming && !incomingCallStillThere(cid, callId)) {
+			finish();
+			return;
+		}
 
 		initViews();
 
@@ -221,6 +238,36 @@ public class VoiceCallActivity extends AppCompatActivity {
 					: getString(R.string.voice_call_status_connecting));
 			playDialTone();
 		}
+	}
+
+	static View tapSafeContent(AppCompatActivity activity) {
+		TapSafeFrameLayout wrapper = new TapSafeFrameLayout(activity);
+		wrapper.setLayoutParams(new ViewGroup.LayoutParams(
+				ViewGroup.LayoutParams.MATCH_PARENT,
+				ViewGroup.LayoutParams.MATCH_PARENT));
+		wrapper.setOnTapFilteredListener(() -> allowCoveredTap(activity));
+		activity.getLayoutInflater().inflate(R.layout.activity_voice_call,
+				wrapper, true);
+		return wrapper;
+	}
+
+	static boolean allowCoveredTap(AppCompatActivity activity) {
+		Collection<ScreenFilterMonitor.AppDetails> apps;
+		if (android.os.Build.VERSION.SDK_INT <= 29) {
+			ScreenFilterMonitor monitor =
+					SecureDialogs.screenFilterMonitor(activity);
+			apps = monitor == null ? Collections.emptyList()
+					: monitor.getApps();
+			if (monitor != null && apps.isEmpty()) return true;
+		} else {
+			apps = Collections.emptyList();
+		}
+		FragmentManager fm = activity.getSupportFragmentManager();
+		Fragment shown = fm.findFragmentByTag(ScreenFilterDialogFragment.TAG);
+		if (shown != null || fm.isStateSaved()) return false;
+		ScreenFilterDialogFragment.newInstance(apps)
+				.show(fm, ScreenFilterDialogFragment.TAG);
+		return false;
 	}
 
 	@Override
@@ -317,6 +364,30 @@ public class VoiceCallActivity extends AppCompatActivity {
 		return lock == null || lock.isLocked();
 	}
 
+	private boolean incomingCallStillThere(int cid, @Nullable String call) {
+		VoiceCallKeyHolder.expireOffers();
+		if (VoiceCallKeyHolder.isHeld(cid, call)) return true;
+		com.professor.zerion.android.api.AndroidNotificationManager n =
+				notifications();
+		if (n == null) return true;
+		ContactId c = new ContactId(cid);
+		if (n.hasCall(c, call)) return true;
+		n.callUnavailable(c, call);
+		return false;
+	}
+
+	@Nullable
+	private com.professor.zerion.android.api.AndroidNotificationManager
+			notifications() {
+		try {
+			return ((com.professor.zerion.android.ZerionApplication)
+					getApplication()).getApplicationComponent()
+					.androidNotificationManager();
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
 	@Nullable
 	private com.professor.zerion.android.api.LockManager lockManager() {
 		try {
@@ -406,15 +477,23 @@ public class VoiceCallActivity extends AppCompatActivity {
 		if (lock != null) lock.onActivityStop();
 	}
 
+	private volatile boolean callScreenVisible = false;
+
+	boolean isCallScreenVisible() {
+		return callScreenVisible;
+	}
+
 	@Override
 	protected void onStart() {
 		super.onStart();
+		callScreenVisible = true;
 		if (appSessionWanted) acquireAppSession();
 	}
 
 	@Override
 	protected void onStop() {
 		super.onStop();
+		callScreenVisible = false;
 		dropAppSession();
 	}
 
@@ -466,10 +545,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 		endCallButton = findViewById(R.id.end_call_button);
 		acceptCallButton = findViewById(R.id.accept_call_button);
 		declineCallButton = findViewById(R.id.decline_call_button);
-		if (android.os.Build.VERSION.SDK_INT >= 30) {
-			acceptCallButton.setFilterTouchesWhenObscured(true);
-			declineCallButton.setFilterTouchesWhenObscured(true);
-		}
+		acceptCallButton.setFilterTouchesWhenObscured(true);
+		declineCallButton.setFilterTouchesWhenObscured(true);
 		muteButton = findViewById(R.id.mute_button);
 		speakerButton = findViewById(R.id.speaker_button);
 
@@ -907,6 +984,7 @@ public class VoiceCallActivity extends AppCompatActivity {
 		super.onDestroy();
 
 		handler.removeCallbacksAndMessages(null);
+		closeVideoOffer();
 		onRemoteSurfaceReady = null;
 		remoteSurface = null;
 		localSurface = null;
@@ -1070,32 +1148,48 @@ public class VoiceCallActivity extends AppCompatActivity {
 		});
 	}
 
-	public void onVideoOfferReceived() {
+	public void onVideoOfferReceived(int generation) {
 		runOnUiThread(() -> {
-			new SecureAlertDialogBuilder(this)
+			closeVideoOffer();
+			AlertDialog offer = new SecureAlertDialogBuilder(this)
 					.setTitle(R.string.video_call)
 					.setMessage(R.string.video_offer_received)
 					.setPositiveButton(R.string.video_offer_accept,
 							(dialog, which) -> runWhenUnlocked(() -> {
 						if (!hasCameraPermission()) {
+							offerAwaitingCamera = generation;
 							ActivityCompat.requestPermissions(this,
 									new String[]{Manifest.permission.CAMERA},
 									REQUEST_CAMERA_FOR_VIDEO_OFFER);
 							return;
 						}
 						if (isBound && voiceCallService != null) {
-							voiceCallService.acceptVideoOffer();
+							voiceCallService.acceptVideoOffer(generation);
 						}
 					}))
 					.setNegativeButton(R.string.video_offer_reject,
 							(dialog, which) -> {
 						if (isBound && voiceCallService != null) {
-							voiceCallService.rejectVideoOffer();
+							voiceCallService.rejectVideoOffer(generation);
 						}
 					})
 					.setCancelable(false)
 					.show();
+			offer.setOnDismissListener(d -> {
+				if (videoOffer == d) videoOffer = null;
+			});
+			videoOffer = offer;
 		});
+	}
+
+	public void onVideoOfferClosed() {
+		runOnUiThread(this::closeVideoOffer);
+	}
+
+	private void closeVideoOffer() {
+		AlertDialog d = videoOffer;
+		videoOffer = null;
+		if (d != null && d.isShowing()) d.dismiss();
 	}
 
 	public void onVideoStarted() {
@@ -1140,6 +1234,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				videoButton.setImageResource(R.drawable.ic_videocam_off);
 				videoButton.setBackgroundResource(
 						R.drawable.bg_call_control_button_active);
+				videoButton.setContentDescription(
+						getString(R.string.call_action_video_off));
 			}
 			if (videoLabel != null) {
 				videoLabel.setText(R.string.voice_call_video_label_on);
@@ -1182,6 +1278,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				videoButton.setImageResource(R.drawable.ic_videocam);
 				videoButton.setBackgroundResource(
 						R.drawable.bg_call_control_button);
+				videoButton.setContentDescription(
+						getString(R.string.call_action_video_on));
 			}
 			if (videoLabel != null) {
 				videoLabel.setText(R.string.video);
@@ -1279,6 +1377,8 @@ public class VoiceCallActivity extends AppCompatActivity {
 				videoButton.setImageResource(R.drawable.ic_videocam);
 				videoButton.setBackgroundResource(
 						R.drawable.bg_call_control_button);
+				videoButton.setContentDescription(
+						getString(R.string.call_action_video_on));
 			}
 			if (videoLabel != null) {
 				videoLabel.setText(R.string.video);
@@ -1326,12 +1426,14 @@ public class VoiceCallActivity extends AppCompatActivity {
 				}
 			}
 		} else if (requestCode == REQUEST_CAMERA_FOR_VIDEO_OFFER) {
+			int generation = offerAwaitingCamera;
+			offerAwaitingCamera = 0;
 			if (!isBound || voiceCallService == null) return;
 			if (grantResults.length > 0 &&
 					grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				voiceCallService.acceptVideoOffer();
+				voiceCallService.acceptVideoOffer(generation);
 			} else {
-				voiceCallService.rejectVideoOffer();
+				voiceCallService.rejectVideoOffer(generation);
 			}
 		}
 	}

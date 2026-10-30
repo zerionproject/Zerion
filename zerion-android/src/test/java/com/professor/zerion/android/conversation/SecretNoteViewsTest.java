@@ -22,6 +22,7 @@ import org.zerionproject.core.api.sync.MessageId;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,8 +30,15 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.robolectric.Shadows.shadowOf;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 
@@ -46,14 +54,15 @@ public class SecretNoteViewsTest {
 	private static final String SECOND = "bring the blue folder";
 
 	private Context ctx;
+	private ConversationListener listener;
 	private ConversationAdapter adapter;
 
 	@Before
 	public void setUp() {
 		ctx = new ContextThemeWrapper(RuntimeEnvironment.getApplication(),
 				R.style.ZerionTheme_NoActionBar);
-		adapter = new ConversationAdapter(ctx,
-				mock(ConversationListener.class),
+		listener = mock(ConversationListener.class);
+		adapter = new ConversationAdapter(ctx, listener,
 				mock(org.zerionproject.app.api.attachment.AttachmentReader.class),
 				Runnable::run, mock(com.professor.zerion.android.conversation
 				.voice.VoiceMemoKeys.class));
@@ -69,6 +78,42 @@ public class SecretNoteViewsTest {
 				new MutableLiveData<>("Bob"));
 		item.setText(ConversationSecretNoteItem.wrapContent(content, 2));
 		return item;
+	}
+
+	private static ConversationSecretNoteItem note(PrivateMessageHeader h,
+			String content, int seconds) {
+		ConversationSecretNoteItem item = new ConversationSecretNoteItem(h,
+				new MutableLiveData<>("Bob"));
+		item.setText(ConversationSecretNoteItem.wrapContent(content, seconds));
+		return item;
+	}
+
+	private static PrivateMessageHeader incoming(long time) {
+		return new PrivateMessageHeader(new MessageId(getRandomId()),
+				new GroupId(getRandomId()), time, false, true, true, false,
+				true, Collections.emptyList(), -1L);
+	}
+
+	private ConversationItemViewHolder holderAt(int position) {
+		ConversationItemViewHolder h = adapter.onCreateViewHolder(
+				new FrameLayout(ctx), adapter.getItemViewType(position));
+		adapter.onBindViewHolder(h, position);
+		return h;
+	}
+
+	private static String content(ConversationItemViewHolder h) {
+		TextView v = h.itemView.findViewById(R.id.secretContent);
+		return v.getVisibility() == View.VISIBLE ? v.getText().toString()
+				: "";
+	}
+
+	private static String subtitle(ConversationItemViewHolder h) {
+		return ((TextView) h.itemView.findViewById(R.id.secretSubtitle))
+				.getText().toString();
+	}
+
+	private static void pass(long millis) {
+		shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(millis));
 	}
 
 	private ConversationItemViewHolder bound(ConversationSecretNoteItem item) {
@@ -164,5 +209,115 @@ public class SecretNoteViewsTest {
 		assertNowhere(h.itemView, FIRST);
 		assertNowhere(h.itemView, SECOND);
 		assertEquals("", hidden(h));
+	}
+
+	@Test
+	public void recyclingOrRebindingACountingRowBurnsNothing() {
+		ConversationSecretNoteItem first = note(incoming(1_000L), FIRST, 5);
+		ConversationSecretNoteItem second = note(incoming(2_000L), SECOND, 9);
+		adapter.setItems(Arrays.asList(first, second));
+		ConversationItemViewHolder h = holderAt(0);
+		h.itemView.findViewById(R.id.layout).performClick();
+		pass(1_000);
+
+		adapter.onViewRecycled(h);
+		adapter.onBindViewHolder(h, 1);
+		pass(1_000);
+
+		verify(listener, never()).onSecretNoteOpened(any());
+		assertEquals(ctx.getString(R.string.secret_note_tap_to_read),
+				subtitle(h));
+		assertNowhere(h.itemView, FIRST);
+
+		ConversationItemViewHolder again = holderAt(0);
+		assertEquals(FIRST, content(again));
+		assertEquals(ctx.getString(R.string.secret_note_deletes_in, 3),
+				subtitle(again));
+
+		pass(3_000);
+		verify(listener, times(1)).onSecretNoteOpened(first.getId());
+		verify(listener, never()).onSecretNoteOpened(second.getId());
+		verify(listener, times(1)).onSecretNoteRevealed(first.getId(), 5);
+		verify(listener, never()).onSecretNoteRevealed(eq(second.getId()),
+				anyInt());
+		assertEquals("", content(again));
+		assertEquals(ctx.getString(R.string.secret_note_expired),
+				subtitle(again));
+	}
+
+	@Test
+	public void twoRowsCountDownTogether() {
+		ConversationSecretNoteItem first = note(incoming(1_000L), FIRST, 3);
+		ConversationSecretNoteItem second = note(incoming(2_000L), SECOND, 6);
+		adapter.setItems(Arrays.asList(first, second));
+		ConversationItemViewHolder one = holderAt(0);
+		ConversationItemViewHolder two = holderAt(1);
+		one.itemView.findViewById(R.id.layout).performClick();
+		pass(1_000);
+		two.itemView.findViewById(R.id.layout).performClick();
+
+		assertEquals(FIRST, content(one));
+		assertEquals(SECOND, content(two));
+		assertEquals(ctx.getString(R.string.secret_note_deletes_in, 2),
+				subtitle(one));
+		assertEquals(ctx.getString(R.string.secret_note_deletes_in, 6),
+				subtitle(two));
+
+		pass(2_000);
+		verify(listener).onSecretNoteOpened(first.getId());
+		assertEquals("", content(one));
+		assertEquals(SECOND, content(two));
+		assertEquals(ctx.getString(R.string.secret_note_deletes_in, 4),
+				subtitle(two));
+
+		pass(4_000);
+		verify(listener).onSecretNoteOpened(second.getId());
+		assertEquals("", content(two));
+		assertNull(first.getText());
+		assertNull(second.getText());
+	}
+
+	@Test
+	public void aNewItemForARevealedNoteShowsItsCountdownWithoutItsOwnText() {
+		PrivateMessageHeader header = incoming(1_000L);
+		ConversationSecretNoteItem first = note(header, FIRST, 5);
+		ConversationItemViewHolder h = bound(first);
+		h.itemView.findViewById(R.id.layout).performClick();
+		pass(2_000);
+
+		ConversationSecretNoteItem reloaded = note(header, FIRST, 5);
+		adapter.onViewRecycled(h);
+		rebind(h, reloaded);
+
+		assertTrue(reloaded.isRevealed());
+		assertNull(reloaded.getText());
+		assertEquals(FIRST, content(h));
+		assertEquals(ctx.getString(R.string.secret_note_deletes_in, 3),
+				subtitle(h));
+		verify(listener, never()).onSecretNoteOpened(any());
+
+		pass(3_000);
+		verify(listener, times(1)).onSecretNoteOpened(header.getId());
+		assertNowhere(h.itemView, FIRST);
+	}
+
+	@Test
+	public void aNoteWhoseCountdownEndedShowsAsDeleted() {
+		PrivateMessageHeader header = incoming(1_000L);
+		ConversationItemViewHolder h = bound(note(header, FIRST, 2));
+		h.itemView.findViewById(R.id.layout).performClick();
+		pass(2_000);
+
+		ConversationSecretNoteItem reloaded = note(header, FIRST, 2);
+		ConversationItemViewHolder later = bound(reloaded);
+
+		assertEquals("", content(later));
+		assertEquals(ctx.getString(R.string.secret_note_expired),
+				subtitle(later));
+		assertNowhere(later.itemView, FIRST);
+		assertNull(reloaded.getText());
+		later.itemView.findViewById(R.id.layout).performClick();
+		pass(5_000);
+		verify(listener, times(1)).onSecretNoteOpened(header.getId());
 	}
 }

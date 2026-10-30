@@ -15,8 +15,12 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 
+import javax.annotation.Nullable;
+
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_KEM_768_CIPHERTEXT_BYTES;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.EXCHANGE_KEY_LABEL;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.HYBRID_SHARED_SECRET_LABEL;
+import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.HYBRID_SHARED_SECRET_LABEL_SEPARATED;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.MASTER_KEY_LABEL;
 import static org.zerionproject.core.api.keyagreement.KeyAgreementConstants.PROTOCOL_VERSION;
 
@@ -38,6 +42,9 @@ class KeyAgreementProtocol {
 	private final Payload theirPayload, ourPayload;
 	private final KeyPair ourKeyPair;
 	private final boolean alice;
+	private boolean separated = false;
+	@Nullable
+	private SecretKey exchangeKey;
 
 	KeyAgreementProtocol(Callbacks callbacks, CryptoComponent crypto,
 			KeyAgreementCrypto keyAgreementCrypto,
@@ -63,9 +70,13 @@ class KeyAgreementProtocol {
 			SecretKey s;
 			try {
 				if (alice) {
+					if (ourPayload.offersKeySeparation()) {
+						transport.sendCapabilities();
+					}
 					sendKey();
 					callbacks.connectionWaiting();
 					theirPublicKey = receiveKey();
+					separated = negotiateKeySeparation();
 					HybridEncapsulationResult enc = encapsulate(theirPublicKey);
 					kemCiphertext = enc.getCiphertext();
 					kemSecret = enc.getSharedSecret();
@@ -74,6 +85,10 @@ class KeyAgreementProtocol {
 							kemCiphertext, kemSecret);
 				} else {
 					theirPublicKey = receiveKey();
+					separated = negotiateKeySeparation();
+					if (ourPayload.offersKeySeparation()) {
+						transport.sendCapabilities();
+					}
 					sendKey();
 					kemCiphertext = receiveKemCiphertext();
 					s = deriveSharedSecretAsDecapsulator(theirPublicKey,
@@ -90,6 +105,7 @@ class KeyAgreementProtocol {
 				sendConfirm(s, theirPublicKey);
 			}
 			SecretKey masterKey = crypto.deriveKey(MASTER_KEY_LABEL, s);
+			if (separated) exchangeKey = crypto.deriveKey(EXCHANGE_KEY_LABEL, s);
 
 			java.util.Arrays.fill(s.getBytes(), (byte) 0);
 			return masterKey;
@@ -97,6 +113,24 @@ class KeyAgreementProtocol {
 			sendAbort(e.getCause() != null);
 			throw e;
 		}
+	}
+
+	@Nullable
+	SecretKey getExchangeKey() {
+		return exchangeKey;
+	}
+
+	private boolean negotiateKeySeparation() throws AbortException {
+		boolean scanned = theirPayload.offersKeySeparation();
+		if (scanned != transport.peerOffersKeySeparation()) {
+			throw new AbortException();
+		}
+		return scanned && ourPayload.offersKeySeparation();
+	}
+
+	private String sharedSecretLabel() {
+		return separated ? HYBRID_SHARED_SECRET_LABEL_SEPARATED
+				: HYBRID_SHARED_SECRET_LABEL;
 	}
 
 	private void sendKey() throws IOException {
@@ -153,7 +187,7 @@ class KeyAgreementProtocol {
 			throws AbortException {
 		try {
 			return crypto.deriveHybridSharedSecretAsResponder(
-					HYBRID_SHARED_SECRET_LABEL, theirPublicKey, ourKeyPair,
+					sharedSecretLabel(), theirPublicKey, ourKeyPair,
 					kemSecret, sharedSecretInputs(theirPublicKey,
 							kemCiphertext));
 		} catch (GeneralSecurityException | IllegalArgumentException e) {
@@ -165,7 +199,7 @@ class KeyAgreementProtocol {
 			PublicKey theirPublicKey, byte[] kemCiphertext)
 			throws AbortException {
 		try {
-			return crypto.deriveHybridSharedSecret(HYBRID_SHARED_SECRET_LABEL,
+			return crypto.deriveHybridSharedSecret(sharedSecretLabel(),
 					theirPublicKey, ourKeyPair, kemCiphertext,
 					sharedSecretInputs(theirPublicKey, kemCiphertext));
 		} catch (GeneralSecurityException | IllegalArgumentException e) {
@@ -176,8 +210,8 @@ class KeyAgreementProtocol {
 	private void sendConfirm(SecretKey s, PublicKey theirPublicKey)
 			throws IOException {
 		byte[] confirm = keyAgreementCrypto.deriveConfirmationRecord(s,
-				payloadEncoder.encode(theirPayload),
-				payloadEncoder.encode(ourPayload),
+				payloadEncoder.encode(theirPayload.withoutCapabilities()),
+				payloadEncoder.encode(ourPayload.withoutCapabilities()),
 				theirPublicKey, ourKeyPair,
 				alice, alice);
 		transport.sendConfirm(confirm);
@@ -187,8 +221,8 @@ class KeyAgreementProtocol {
 			throws AbortException {
 		byte[] confirm = transport.receiveConfirm();
 		byte[] expected = keyAgreementCrypto.deriveConfirmationRecord(s,
-				payloadEncoder.encode(theirPayload),
-				payloadEncoder.encode(ourPayload),
+				payloadEncoder.encode(theirPayload.withoutCapabilities()),
+				payloadEncoder.encode(ourPayload.withoutCapabilities()),
 				theirPublicKey, ourKeyPair,
 				alice, !alice);
 

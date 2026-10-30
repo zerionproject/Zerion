@@ -92,14 +92,14 @@ public class VoiceCallDraftedFixesTest {
 			throws Exception {
 		VoiceCallKeyHolder.setOffer(CallRig.CONTACT, CALL_ID, callKey(),
 				null);
-		VoiceCallService s = rig.ringingIncoming();
 		rig.onCreateEndpoint = () -> {
 			try {
-				CallRig.set(s, "endpointsClosed", true);
+				CallRig.set(rig.controller.get(), "endpointsClosed", true);
 			} catch (Exception e) {
 				throw new AssertionError(e);
 			}
 		};
+		VoiceCallService s = rig.startedWithRig(true);
 		s.acceptCall();
 		CallRig.await(() -> rig.closedEndpoints.contains(CALL_ID), 10_000);
 		Thread.sleep(500);

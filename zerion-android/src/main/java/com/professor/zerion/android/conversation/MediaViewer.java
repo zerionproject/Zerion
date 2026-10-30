@@ -107,6 +107,7 @@ public final class MediaViewer {
 		String post = "";
 		long expiresAt = Long.MAX_VALUE;
 		boolean taken = false;
+		boolean once = false;
 
 		public Item(byte[] content, @Nullable String declared) {
 			this.content = content;
@@ -139,6 +140,12 @@ public final class MediaViewer {
 			this.taken = true;
 			return this;
 		}
+
+		public Item once() {
+			this.once = true;
+			this.secure = true;
+			return this;
+		}
 	}
 
 	static final class Shown {
@@ -152,6 +159,7 @@ public final class MediaViewer {
 		final String scope;
 		final String post;
 		final long expiresAt;
+		final boolean once;
 		volatile long startedAt;
 
 		private Shown(String token, byte[] data, String type, Item item) {
@@ -164,6 +172,7 @@ public final class MediaViewer {
 			this.scope = item.scope;
 			this.post = item.post;
 			this.expiresAt = item.expiresAt;
+			this.once = item.once;
 		}
 	}
 
@@ -395,6 +404,11 @@ public final class MediaViewer {
 	public static boolean secure(@Nullable String token) {
 		Shown shown = get(token);
 		return shown == null || shown.secure;
+	}
+
+	public static boolean once(@Nullable String token) {
+		Shown shown = get(token);
+		return shown != null && shown.once;
 	}
 
 	static boolean watch(String token, Runnable gone) {

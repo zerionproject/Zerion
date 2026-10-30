@@ -334,6 +334,8 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		keys.getCurrent().clear();
 		SecretKey pending = keys.getPending();
 		if (pending != null) pending.clear();
+		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
+		if (pendingConfirmKey != null) pendingConfirmKey.clear();
 	}
 
 	private static byte[] peekTag(BufferedInputStream in) throws IOException {

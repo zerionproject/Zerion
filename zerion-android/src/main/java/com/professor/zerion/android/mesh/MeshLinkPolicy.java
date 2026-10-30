@@ -29,6 +29,8 @@ final class MeshLinkPolicy {
 	static final int MAX_CENTRALS = 6;
 	static final long NEW_LINK_GRACE_MS = 90_000L;
 	static final long IDLE_EVICT_MS = 6 * 60_000L;
+	static final long BUSY_EVICT_TENURE_MS = 10 * 60_000L;
+	static final long BUSY_ROTATION_INTERVAL_MS = 60_000L;
 
 	static final byte LINK_CONTROL = 0x7F;
 	static final byte NONCE_ANNOUNCE = 0x01;
@@ -57,6 +59,7 @@ final class MeshLinkPolicy {
 	private final Object lock = new Object();
 	private final Map<String, Deque<Announced>> announced = new HashMap<>();
 	private final Map<String, Link> links = new HashMap<>();
+	private long lastBusyRotation = Long.MIN_VALUE;
 
 	MeshLinkPolicy(SecureRandom random) {
 		this.random = random;
@@ -154,10 +157,14 @@ final class MeshLinkPolicy {
 			long silentSince = Long.MAX_VALUE;
 			String stale = null;
 			long staleUseful = Long.MAX_VALUE;
+			java.util.List<String> tenured = new java.util.ArrayList<>();
+			boolean newcomerInGrace = false;
 			for (String key : keys) {
 				Link l = links.get(key);
 				if (l == null) return key;
+				if (now - l.since >= BUSY_EVICT_TENURE_MS) tenured.add(key);
 				if (l.lastUseful == Long.MIN_VALUE) {
+					if (now - l.since < NEW_LINK_GRACE_MS) newcomerInGrace = true;
 					if (now - l.since >= NEW_LINK_GRACE_MS
 							&& l.since < silentSince) {
 						silentSince = l.since;
@@ -169,7 +176,15 @@ final class MeshLinkPolicy {
 					stale = key;
 				}
 			}
-			return silent != null ? silent : stale;
+			if (silent != null) return silent;
+			if (stale != null) return stale;
+			if (tenured.isEmpty() || newcomerInGrace) return null;
+			if (lastBusyRotation != Long.MIN_VALUE
+					&& now - lastBusyRotation < BUSY_ROTATION_INTERVAL_MS) {
+				return null;
+			}
+			lastBusyRotation = now;
+			return tenured.get(random.nextInt(tenured.size()));
 		}
 	}
 
@@ -177,6 +192,7 @@ final class MeshLinkPolicy {
 		synchronized (lock) {
 			links.clear();
 			announced.clear();
+			lastBusyRotation = Long.MIN_VALUE;
 		}
 	}
 

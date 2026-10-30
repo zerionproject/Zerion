@@ -136,7 +136,9 @@ public class ChannelInviteHandlerPromptTest {
 				dialog.findViewById(android.R.id.message);
 		assertNotNull(message);
 		String text = message.getText().toString();
-		org.junit.Assert.assertEquals("Join this channel?", text);
+		org.junit.Assert.assertEquals("This link is for a channel you have "
+				+ "not joined, so its name is not known yet. "
+				+ "Join this channel?", text);
 		org.junit.Assert.assertFalse(text,
 				text.matches("(?s).*\\b[0-9a-f]{4}\\b.*"));
 		assertNothingAsked();
@@ -154,11 +156,73 @@ public class ChannelInviteHandlerPromptTest {
 		assertNotNull("nothing was asked", dialog);
 		assertNotNull("not the request dialog", dialog.findViewById(
 				com.professor.zerion.R.id.channelApplyNameInput));
+		android.widget.TextView about = dialog.findViewById(
+				com.professor.zerion.R.id.channelApplyMessage);
+		assertTrue(about.getText().toString(), about.getText().toString()
+				.startsWith("This link is for a channel you have not joined, "
+						+ "so its name is not known yet."));
 		((androidx.appcompat.app.AlertDialog) dialog)
 				.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
 		runBackgroundWork();
 		org.junit.Assert.assertEquals("Enter the name the owner will see.",
 				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+		assertNothingAsked();
+	}
+
+	@Test
+	public void aLinkToAHeldChannelNamesIt() throws Exception {
+		ChannelInviteLink link = new ChannelInviteLink(id, new byte[32],
+				null, false, null, ONION, false);
+		when(manager.parseInviteLink(anyString())).thenReturn(link);
+		Intent intent = new Intent(ctx, ProbeHandler.class);
+		intent.setData(Uri.parse("zerion://channel/a/b?o=" + ONION));
+		Robolectric.buildActivity(ProbeHandler.class, intent).setup();
+		runBackgroundWork();
+
+		Dialog dialog = ShadowDialog.getLatestDialog();
+		assertNotNull("nothing was asked", dialog);
+		android.widget.TextView message =
+				dialog.findViewById(android.R.id.message);
+		org.junit.Assert.assertEquals("This link is for the channel News, "
+				+ "which you already have. Continue?",
+				message.getText().toString());
+	}
+
+	@Test
+	public void aJoinPromptFromAnotherAppCanBeDismissed() throws Exception {
+		Intent intent = new Intent(ctx, ProbeHandler.class);
+		intent.setData(Uri.parse("zerion://channel/a/b?o=" + ONION + "&p=1"));
+		ProbeHandler handler = Robolectric.buildActivity(ProbeHandler.class,
+				intent).setup().get();
+		runBackgroundWork();
+
+		Dialog dialog = ShadowDialog.getLatestDialog();
+		assertNotNull("nothing was asked", dialog);
+		assertTrue("the prompt cannot be dismissed",
+				shadowOf(dialog).isCancelable());
+		dialog.cancel();
+		runBackgroundWork();
+		assertTrue(handler.isFinishing());
+		assertNothingAsked();
+	}
+
+	@Test
+	public void anApprovalPromptFromAnotherAppCanBeDismissed()
+			throws Exception {
+		when(manager.getChannel(any())).thenReturn(null);
+		Intent intent = new Intent(ctx, ProbeHandler.class);
+		intent.setData(Uri.parse("zerion://channel/a/b?o=" + ONION + "&p=1"));
+		ProbeHandler handler = Robolectric.buildActivity(ProbeHandler.class,
+				intent).setup().get();
+		runBackgroundWork();
+
+		Dialog dialog = ShadowDialog.getLatestDialog();
+		assertNotNull("nothing was asked", dialog);
+		assertTrue("the prompt cannot be dismissed",
+				shadowOf(dialog).isCancelable());
+		dialog.cancel();
+		runBackgroundWork();
+		assertTrue(handler.isFinishing());
 		assertNothingAsked();
 	}
 

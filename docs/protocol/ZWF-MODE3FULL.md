@@ -3,10 +3,12 @@
 ZWF is the wire format Zerion uses on an online connection between two paired
 contacts. It carries a stream of fixed-size frames, each protected by an
 authenticated cipher and by the Mode 3-Full ratchet. The ratchet gives forward
-secrecy and post-compromise security within a connection; both properties rest
-on the ML-KEM layer alone (see "The ratchet" below and the security claims
-matrix), not on an independent classical ratchet. Across connections, the
-contact's root key, which seeds every connection, evolves with fresh hybrid
+secrecy through its one-way symmetric chain, and post-quantum confidentiality
+and post-compromise security within a connection through the ML-KEM layer;
+post-compromise security rests on the ML-KEM layer alone (see "The ratchet"
+below and the security claims matrix), not on an independent classical
+ratchet. Across connections, the contact's root key, which seeds every
+connection, evolves with fresh hybrid
 secrets between peers that both support it (see "Session resumption" and
 ZWF-ROOT-EVOLUTION.md), so a copied root stops authenticating after an
 evolution the copier did not take part in.
@@ -40,7 +42,9 @@ sees only fixed-size frames.
 | `MAC_LENGTH` | 16 | Poly1305 tag length |
 | `REPLAY_WINDOW_SIZE` | 256 | Receive-side reorder and replay window |
 | `PCS_PROTOCOL_VERSION` | 6 | Version byte inside each Mode 3-Full header |
-| `MODE3_FULL_SEND_ROTATION_INTERVAL` | 16 | Messages between sender ML-KEM key rotations |
+| `MODE3_FULL_SEND_ROTATION_INTERVAL` | 16 | Own frames on a connection after which the next own frame rotates the ML-KEM key pair |
+| `MODE3_FULL_RECV_ROTATION_INTERVAL` | 16 | Received frames on a connection after which the next own frame rotates the ML-KEM key pair |
+| `MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR` | 128 | Most peer frames in a row encapsulated to one of our key pairs; the next one closes the connection |
 | `MODE3_FULL_RECV_SK_LRU_SIZE` | 32 | Recent decapsulation keypairs retained by the receiver |
 
 ML-KEM-768 sizes: encapsulation key 1184, decapsulation key 2400, ciphertext
@@ -125,10 +129,10 @@ bytes.
 | --- | --- | --- |
 | version | 1 | `PCS_PROTOCOL_VERSION` = 6 |
 | flags | 1 | PCS enabled, DH ratchet, PQ enabled, Mode 3-Full frame; every receiver requires all four, so the DH ratchet flag stays set although no DH ratchet runs |
-| messageNumber | 4 | uint32 |
-| previousChainLength | 4 | uint32 |
+| messageNumber | 4 | uint32; position of the frame in the stream, starting at 0; the receiver requires the next expected value |
+| previousChainLength | 4 | uint32; always 0, ignored by the receiver (see below) |
 | dhPublicKey | 32 | All zero; kept for the frame layout (see "The ratchet") |
-| pqEpoch | 4 | uint32 |
+| pqEpoch | 4 | uint32; always 0, skipped by the receiver |
 | chunk PK_ADVERTISE | 1188 | type 0x10, index, length 1184, then the ML-KEM-768 encapsulation key |
 | chunk KEM_CT | 1092 | type 0x11, index, length 1088, then the ML-KEM-768 ciphertext |
 | chunk KP_ID | 20 | type 0x12, index, length 16, then the id of the recipient key used |
@@ -136,6 +140,25 @@ bytes.
 The three chunks let each side advertise its current ML-KEM encapsulation key,
 send a ciphertext to the peer's advertised key, and name which key a ciphertext
 was made against.
+
+The header field `previousChainLength` (not the database column of the same
+name) is a leftover of the earlier DH-ratchet header layout,
+kept so the frame layout stays the one every peer parses. The sender always
+writes 0 (`ZwfMode3FullStreamEncrypter`) and the receiver decodes it and does
+nothing with it. It is not an epoch, a rotation count or a chain length, and
+an ML-KEM rotation does not change it.
+
+An ML-KEM rotation does not reset `messageNumber` or the frame number in the
+nonce, and does not start a new symmetric chain: one chain runs for the whole
+stream, with each frame's ML-KEM secret folded into it. The receiver requires
+`messageNumber` to equal the next number it expects and builds every nonce
+from its own count of frames read, so a frame dropped, repeated or reordered in
+the middle of a stream makes the next frame fail authentication and the stream
+is dropped. These checks cannot detect truncation at the end of a connection:
+the sender never sets the final-frame flag on a contact connection, so a
+stream cut after any whole frame looks the same as a connection that closed
+there. Messages lost that way are sent again by the message layer, which
+resends until the contact acknowledges them; the frame layer does not.
 
 ## The ratchet
 
@@ -156,8 +179,9 @@ next chain key and the message key.
 
 Post-quantum contribution. For each message, if the peer's ML-KEM encapsulation
 key is known, the sender encapsulates to it and obtains a shared secret. The
-sender rotates its own encapsulation key every 16 messages. The shared secret is
-folded in two places:
+sender rotates its own encapsulation key at its next frame once it has sent 16
+frames or received 16 frames on the connection since its last rotation. The
+shared secret is folded in two places:
 
 - Body key. `deriveHybridMessageKey(classicalMessageKey, sharedSecret)` mixes the
   post-quantum secret into the key that seals the body segment.
@@ -181,14 +205,78 @@ the one the peer last used are pruned and zeroized, but only once the frame
 that used it has authenticated in full, so a frame that fails leaves every
 keypair usable.
 
-Rotation and the retention bound. A side rotates its keypair every 16 of its
-own sends, as long as fewer than 32 retired keypairs are retained. Retained
+Rotation and the retention bound. A side rotates its keypair at its next frame
+once it has sent 16 frames or received 16 frames since its last rotation (cover
+frames count, and once the peer's key is known), as long as fewer than 32
+retired keypairs are retained. The receive count matters because the two sides
+pace their frames independently: while the peer sends at the active rate and
+this side at the idle rate, the peer sends about five frames for each of this
+side's, so a send count alone would leave about 85 peer frames on one keypair.
+The receive count is shared by the connection's send and receive side and only
+counts frames that authenticated in full. Retained
 keypairs are pruned as soon as the peer uses a newer one, which every peer
 frame does once it has read the newer advertisement. Rotation therefore pauses
-only when the peer has not been heard from for about 512 of this side's sends;
+only when the peer has not been heard from for about 512 of this side's frames;
 the pause avoids evicting a keypair that the peer's frames still in flight may
 be encapsulated to, which would break the connection. Rotation is thus bounded
 by the peer's progress in that one case, not independent of the peer.
+
+Old-key limit. A side counts the peer frames in a row that are encapsulated to
+the same one of its keypairs. When a frame would be the 129th
+(`MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR`), it is refused before it is
+decapsulated and the connection closes; the next connection starts with a new
+keypair on each side (see "Session resumption"), and the message layer resends
+what was not acknowledged. Opening frames with the all-zero sentinel are not
+counted: they carry no post-quantum secret and the receiver drops every record
+in them but cover. The limit covers the active keypair as well as retired ones,
+because an adversary who blocks this side's outgoing frames also stalls its
+writes, and a side that cannot send does not rotate. In normal traffic the peer
+uses a new keypair from its first frame after it has read the advertisement,
+so a keypair carries about 16 to 30 peer frames. 128 frames take about 96
+seconds at the active rate and about 8.5 minutes at the idle rate. The margin
+is for a peer whose receive path falls behind for a while, for example on a
+slow database write or a stalled circuit: it keeps sending on the old keypair
+until it reads the newer advertisement, and is cut off only after about a
+minute and a half of that at the active rate, after which it reconnects. A peer
+that goes silent is already cut off by the 20 second read timeout of Tor
+connections; the limit bounds an adversary that holds back this side's frames
+while letting the peer's through. Android applies the receive trigger and the
+limit from 3.0.19; the iOS app applies neither.
+
+What each part gives. The one-way chain gives forward secrecy within a stream
+against a copy of its current chain key. Against a later copy of the persisted
+contact root key, forward secrecy comes from the ML-KEM layer: every
+application frame mixes a secret encapsulated to a per-connection key pair that
+is zeroized once the peer uses a newer one or the connection ends, so after the
+first ML-KEM secret the chain cannot be rebuilt from the root. Only the opening
+cover frames can be, and they carry no application data. A copy of the root
+together with a key pair that is still held exposes the frames of the current
+connection that depend on that key pair. The ML-KEM secrets also give
+post-quantum confidentiality, the encapsulation to the peer's current key gives
+post-compromise security for this side's outgoing frames (as long as the peer's
+decapsulation key is not compromised), and rotating this side's own key pair
+gives it for its incoming frames once the peer uses the new key.
+
+When the incoming direction heals. The rotation counts cover every frame this
+side sends and every frame it receives, cover frames included, and belong to
+the connection: they start at zero with the connection's fresh keypair (see
+"Session resumption") and are not carried over, because the keypair is not
+either. After a copy of a side's
+ML-KEM key, its incoming direction heals only once the peer encapsulates to a
+keypair the copier never saw: on the same connection after this side has sent
+or received 16 frames on it since its last rotation and the peer has received
+the new public key and used it, otherwise on the next connection. An adversary
+who holds back this side's outgoing frames delays this until they get through,
+or until the peer has sent more than 128 frames in a row on one keypair of this side, when
+this side closes the connection and the next one starts with a new keypair;
+rotation pauses while 32 retired keypairs are retained. At the pacing of
+ZTP-ZPP.md, 16 frames take about 12 seconds at the active rate and about 64
+seconds at the idle rate.
+These healing statements assume the attacker only observes after the copy. An
+attacker that also holds the stream chain keys and injects frames can
+substitute the advertised keys and keep its position until the connection ends;
+one that also holds the contact root key can do so in later connections until a
+root evolution it does not take part in.
 
 ## Stream identifiers and replay
 
@@ -208,7 +296,11 @@ any ratchet state (an attacker without the stream-header key cannot reach the
 check with forged identifiers). Nothing outside the connection changes until
 the first frame has authenticated: the connection is registered, the message
 layer is offered the send queue and the onion rotation and client
-authorization learn of the session only then.
+authorization learn of the session only then. The exceptions are two
+dial-side signals that come from the completed Tor connection alone (the
+client authorization probe of a dial that reached the contact's authorized
+address, and the dial backoff); ZTP-ZPP.md and ONION_CLIENT_AUTH.md section 5
+describe them.
 
 ## Session resumption
 

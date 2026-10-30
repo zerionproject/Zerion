@@ -16,6 +16,10 @@ public final class TorIsolation {
 		return walletId + "-b";
 	}
 
+	public static String feeCheck(String walletId) {
+		return walletId + "-fee";
+	}
+
 	public static String silentPayment(String walletId) {
 		return walletId + "-sp";
 	}

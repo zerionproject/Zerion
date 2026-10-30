@@ -39,7 +39,7 @@ Each device holds its own contacts, messages, keys and state in an encrypted dat
 | Classical key agreement | X25519 |
 | Signatures on the pairing contact record and on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify, with the exceptions listed in [SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md)) |
 | Hashing, MAC and key derivation in the messaging core | keyed BLAKE2b-256 |
-| Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; sender key pair rotates every 16 own sends |
+| Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; each side's key pair is new on every connection and rotates after 16 own frames on it |
 | Calls and vault AEAD | AES-256-GCM |
 | Vault chunk keys, call endpoint keys | HKDF-SHA256 |
 | Passwords | Argon2id (database key 64 to 256 MiB adapted to the device; vault 256 MiB; wallet 64 MiB), PBKDF2-HMAC-SHA256 for the duress password and the Bitcoin section credential |
@@ -58,7 +58,7 @@ Voice calls (on by default) and video calls (off by default) run between the two
 
 ## Pairing
 
-A contact is added by link (the normal path) or nearby (QR code or Bluetooth). Link pairing meets at a rendezvous derived from the link and runs a hybrid key agreement: static and ephemeral X25519 agreements, including the static-to-ephemeral terms that resist key-compromise impersonation, plus ML-KEM-768 encapsulations to the peer's ephemeral key and to the peer's committed static key. The static ML-KEM encapsulation makes the authentication post-quantum: completing the handshake requires the static ML-KEM private key behind the out-of-band commitment, a peer holding only the classical half cannot pair, and a peer offering the earlier, classically authenticated handshake version is refused. Nearby pairing (QR code or Bluetooth) is a hybrid X25519 plus ML-KEM-768 key agreement bound to the QR commitment (key-agreement protocol version 5). A post-quantum contact cannot later be re-added as classical, and the pairing key rotates after every completed contact addition. Since 3.0.12 both pairing paths are authenticated with the post-quantum key as well; 3.0.11 and earlier authenticated link pairing classically and paired nearby contacts classically ([SECURITY.md](SECURITY.md)).
+A contact is added by link (the normal path) or nearby (QR code or Bluetooth). From 3.0.19 a contact can also be added by invite: one side sends a contact request to the other's ZerionID or invite link, and the other accepts it later. Compatibility: Android phones on 3.0.18 or older and iOS phones can still be added by pasting each other's links on both phones or by scanning QR codes, but cannot send or receive invites; invites on iOS are not implemented. Link pairing meets at a rendezvous derived from the link and runs a hybrid key agreement: static and ephemeral X25519 agreements, including the static-to-ephemeral terms that resist key-compromise impersonation, plus ML-KEM-768 encapsulations to the peer's ephemeral key and to the peer's committed static key. The static ML-KEM encapsulation makes the authentication post-quantum: completing the handshake requires the static ML-KEM private key behind the out-of-band commitment, a peer holding only the classical half cannot pair, and a peer offering the earlier, classically authenticated handshake version is refused. Nearby pairing (QR code or Bluetooth) is a hybrid X25519 plus ML-KEM-768 key agreement bound to the QR commitment (key-agreement protocol version 5). A post-quantum contact cannot later be re-added as classical, and the pairing key rotates after every completed contact addition. Since 3.0.12 both pairing paths are authenticated with the post-quantum key as well; 3.0.11 and earlier authenticated link pairing classically and paired nearby contacts classically ([SECURITY.md](SECURITY.md)).
 
 ## Vault
 
@@ -80,13 +80,13 @@ Every pair of contacts whose apps both support it moves from the open onion serv
 
 | Platform | Status | Version |
 |---|---|---|
-| Android 10 and later | AVAILABLE | 3.0.18 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.17 while the update to the current release is pending |
+| Android 10 and later | AVAILABLE | 3.0.18 on [GitHub](https://github.com/zerionproject/Zerion/releases/latest); [Google Play](https://play.google.com/store/apps/details?id=com.professor.zerion) carries 3.0.14 until the newer bundle passes review; [F-Droid](https://f-droid.org/packages/com.professor.zerion/) offers 3.0.18 |
 | Windows 10 and 11 (x64) | AVAILABLE | 1.0.1, [Zerion Desktop](https://github.com/zerionproject/Zerion-Desktop/releases/latest), a separate codebase |
 | Linux (x64, aarch64 Flatpak) | AVAILABLE | 1.0.1, Zerion Desktop |
 | macOS | IN DEVELOPMENT | none published |
 | iOS | IN DEVELOPMENT | none published |
 
-APK signing certificate SHA-256: `D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8`. The desktop client has its own documentation and security posture in its repository.
+APK signing certificate SHA-256: `D7FDB11125890D133AE89D8BA4F4331D9045E21EF01D9899A7CDEE6888F704C8`. The certificate itself, and how to verify an APK and the signed release announcement with `apksigner` and `openssl`, are in [docs/RELEASE_VERIFICATION.md](docs/RELEASE_VERIFICATION.md). The desktop client has its own documentation and security posture in its repository.
 
 ## Security reviews
 

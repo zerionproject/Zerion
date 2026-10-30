@@ -6,6 +6,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactExchangeManager;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
+import org.zerionproject.core.api.contact.HandshakeManager.HandshakeResult;
 import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
@@ -115,16 +116,28 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		return exchange(null, conn, masterKey, alice, verified, false,
-				null, null, null, null);
+		return exchange(null, conn, masterKey, masterKey, alice, verified,
+				false, null, null, null, null);
+	}
+
+	@Override
+	public Contact exchangeContacts(DuplexTransportConnection conn,
+			SecretKey exchangeKey, SecretKey rootKey, boolean alice,
+			boolean verified) throws IOException, DbException {
+		try {
+			return exchange(null, conn, exchangeKey, rootKey, alice, verified,
+					false, null, null, null, null);
+		} finally {
+			if (exchangeKey != rootKey) exchangeKey.clear();
+		}
 	}
 
 	@Override
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical,
-				null, null, null, null);
+		return exchange(p, conn, masterKey, masterKey, alice, verified,
+				classical, null, null, null, null);
 	}
 
 	@Override
@@ -136,13 +149,33 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			@Nullable byte[] ourEphX25519,
 			@Nullable byte[] theirEphX25519)
 			throws IOException, DbException {
-		return exchange(p, conn, masterKey, alice, verified, classical,
-				ourStaticHybridPub, theirStaticHybridPub,
+		return exchange(p, conn, masterKey, masterKey, alice, verified,
+				classical, ourStaticHybridPub, theirStaticHybridPub,
 				ourEphX25519, theirEphX25519);
 	}
 
+	@Override
+	public Contact exchangeContacts(PendingContactId p,
+			DuplexTransportConnection conn, HandshakeResult handshake,
+			boolean verified, boolean classical)
+			throws IOException, DbException {
+		try {
+			return exchange(p, conn, handshake.getExchangeKey(),
+					handshake.getRootKey(), handshake.isAlice(), verified,
+					classical, handshake.getOurStaticHybridPub(),
+					handshake.getTheirStaticHybridPub(),
+					handshake.getOurEphX25519(),
+					handshake.getTheirEphX25519());
+		} finally {
+			if (handshake.isKeySeparated()) {
+				handshake.getExchangeKey().clear();
+			}
+		}
+	}
+
 	private Contact exchange(@Nullable PendingContactId p,
-			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
+			DuplexTransportConnection conn, SecretKey exchangeKey,
+			SecretKey rootKey, boolean alice,
 			boolean verified, boolean classical,
 			@Nullable byte[] ourStaticHybridPub,
 			@Nullable byte[] theirStaticHybridPub,
@@ -155,108 +188,113 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		Map<TransportId, TransportProperties> localProperties =
 				transportPropertyManager.getLocalProperties();
 		SecretKey localHeaderKey =
-				contactExchangeCrypto.deriveHeaderKey(masterKey, alice);
+				contactExchangeCrypto.deriveHeaderKey(exchangeKey, alice);
 		SecretKey remoteHeaderKey =
-				contactExchangeCrypto.deriveHeaderKey(masterKey, !alice);
-		InputStream streamReader = streamReaderFactory
-				.createContactExchangeStreamReader(in, remoteHeaderKey);
-		RecordReader recordReader = classical
-				? recordReaderFactory.createRecordReader(streamReader, true)
-				: recordReaderFactory.createRecordReader(streamReader,
-						MAX_CONTACT_INFO_BYTES);
-		StreamWriter streamWriter = streamWriterFactory
-				.createContactExchangeStreamWriter(out, localHeaderKey);
-		RecordWriter recordWriter = recordWriterFactory
-				.createRecordWriter(streamWriter.getOutputStream(), classical);
-		byte[] localSignature = contactExchangeCrypto
-				.sign(localAuthor.getPrivateKey(), masterKey, alice);
-		long localTimestamp = clock.currentTimeMillis();
-
-		byte[] localB3ProofSig = null;
-		if (B3_PROOF_ENABLED
-				&& ourStaticHybridPub != null
-				&& ourEphX25519 != null
-				&& theirEphX25519 != null) {
-			byte[] ourStaticPqPub = java.util.Arrays.copyOfRange(
-					ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
-			localB3ProofSig = B3PqProof.sign(
-					localAuthor.getPrivateKey().getEncoded(),
-					ourEphX25519, theirEphX25519, ourStaticPqPub);
-		}
-
-		byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
-		byte[] localMlDsaSigPriv =
-				identityManager.getLocalMlDsaSigPrivateKey();
-		if (localMlDsaSigPub == null || localMlDsaSigPriv == null) {
-			throw new DbException();
-		}
-		byte[] localHybridSignature;
+				contactExchangeCrypto.deriveHeaderKey(exchangeKey, !alice);
 		try {
-			localHybridSignature = contactExchangeCrypto.hybridSign(
-					localAuthor.getPrivateKey(), localMlDsaSigPriv, masterKey,
-					alice);
-		} finally {
-			java.util.Arrays.fill(localMlDsaSigPriv, (byte) 0);
-		}
-		ContactInfo remoteInfo;
-		if (alice) {
-			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp, localB3ProofSig,
-					localMlDsaSigPub, localHybridSignature);
-			remoteInfo = receiveContactInfo(recordReader);
-		} else {
-			remoteInfo = receiveContactInfo(recordReader);
-			sendContactInfo(recordWriter, localAuthor, localProperties,
-					localSignature, localTimestamp, localB3ProofSig,
-					localMlDsaSigPub, localHybridSignature);
-		}
-		streamWriter.sendEndOfStream();
-		recordReader.readRecord(r -> false, IGNORE);
-		PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
-		boolean sigOk = contactExchangeCrypto.verify(remotePublicKey,
-				masterKey, !alice, remoteInfo.signature);
-		if (!sigOk) {
-			throw new FormatException();
-		}
-		if (remoteInfo.mlDsaSigPubKey == null
-				|| remoteInfo.hybridSignature == null
-				|| !contactExchangeCrypto.verifyHybrid(remotePublicKey,
-				remoteInfo.mlDsaSigPubKey, masterKey, !alice,
-				remoteInfo.hybridSignature)) {
-			throw new FormatException();
-		}
+			InputStream streamReader = streamReaderFactory
+					.createContactExchangeStreamReader(in, remoteHeaderKey);
+			RecordReader recordReader = classical
+					? recordReaderFactory.createRecordReader(streamReader, true)
+					: recordReaderFactory.createRecordReader(streamReader,
+							MAX_CONTACT_INFO_BYTES);
+			StreamWriter streamWriter = streamWriterFactory
+					.createContactExchangeStreamWriter(out, localHeaderKey);
+			RecordWriter recordWriter = recordWriterFactory
+					.createRecordWriter(streamWriter.getOutputStream(), classical);
+			byte[] localSignature = contactExchangeCrypto
+					.sign(localAuthor.getPrivateKey(), exchangeKey, alice);
+			long localTimestamp = clock.currentTimeMillis();
 
-		boolean hybridExchange = B3_PROOF_ENABLED
-				&& theirStaticHybridPub != null
-				&& ourEphX25519 != null
-				&& theirEphX25519 != null;
-		if (hybridExchange && remoteInfo.b3ProofSig == null) {
-			throw new FormatException();
-		}
-		if (remoteInfo.b3ProofSig != null) {
-			if (theirStaticHybridPub == null
-					|| ourEphX25519 == null
-					|| theirEphX25519 == null) {
+			byte[] localB3ProofSig = null;
+			if (B3_PROOF_ENABLED
+					&& ourStaticHybridPub != null
+					&& ourEphX25519 != null
+					&& theirEphX25519 != null) {
+				byte[] ourStaticPqPub = java.util.Arrays.copyOfRange(
+						ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+				localB3ProofSig = B3PqProof.sign(
+						localAuthor.getPrivateKey().getEncoded(),
+						ourEphX25519, theirEphX25519, ourStaticPqPub);
+			}
+
+			byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
+			byte[] localMlDsaSigPriv =
+					identityManager.getLocalMlDsaSigPrivateKey();
+			if (localMlDsaSigPub == null || localMlDsaSigPriv == null) {
+				throw new DbException();
+			}
+			byte[] localHybridSignature;
+			try {
+				localHybridSignature = contactExchangeCrypto.hybridSign(
+						localAuthor.getPrivateKey(), localMlDsaSigPriv, exchangeKey,
+						alice);
+			} finally {
+				java.util.Arrays.fill(localMlDsaSigPriv, (byte) 0);
+			}
+			ContactInfo remoteInfo;
+			if (alice) {
+				sendContactInfo(recordWriter, localAuthor, localProperties,
+						localSignature, localTimestamp, localB3ProofSig,
+						localMlDsaSigPub, localHybridSignature);
+				remoteInfo = receiveContactInfo(recordReader);
+			} else {
+				remoteInfo = receiveContactInfo(recordReader);
+				sendContactInfo(recordWriter, localAuthor, localProperties,
+						localSignature, localTimestamp, localB3ProofSig,
+						localMlDsaSigPub, localHybridSignature);
+			}
+			streamWriter.sendEndOfStream();
+			recordReader.readRecord(r -> false, IGNORE);
+			PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
+			boolean sigOk = contactExchangeCrypto.verify(remotePublicKey,
+					exchangeKey, !alice, remoteInfo.signature);
+			if (!sigOk) {
 				throw new FormatException();
 			}
-			byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
-					theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
-			byte[] remoteSigningPubBytes = remotePublicKey.getEncoded();
-			boolean ok = B3PqProof.verify(remoteSigningPubBytes,
-					theirEphX25519, ourEphX25519,
-					theirStaticPqPub, remoteInfo.b3ProofSig);
-			if (!ok) throw new FormatException();
-		}
-		long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
-		if (timestamp < MIN_REASONABLE_TIME_MS) {
-			throw new FormatException();
-		}
-		Contact contact = addContact(p, remoteInfo.author, localAuthor,
-				masterKey, timestamp, alice, verified, remoteInfo.properties,
-				remoteInfo.b3ProofSig != null,
-				remoteInfo.mlDsaSigPubKey);
+			if (remoteInfo.mlDsaSigPubKey == null
+					|| remoteInfo.hybridSignature == null
+					|| !contactExchangeCrypto.verifyHybrid(remotePublicKey,
+					remoteInfo.mlDsaSigPubKey, exchangeKey, !alice,
+					remoteInfo.hybridSignature)) {
+				throw new FormatException();
+			}
 
-		return contact;
+			boolean hybridExchange = B3_PROOF_ENABLED
+					&& theirStaticHybridPub != null
+					&& ourEphX25519 != null
+					&& theirEphX25519 != null;
+			if (hybridExchange && remoteInfo.b3ProofSig == null) {
+				throw new FormatException();
+			}
+			if (remoteInfo.b3ProofSig != null) {
+				if (theirStaticHybridPub == null
+						|| ourEphX25519 == null
+						|| theirEphX25519 == null) {
+					throw new FormatException();
+				}
+				byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
+						theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+				byte[] remoteSigningPubBytes = remotePublicKey.getEncoded();
+				boolean ok = B3PqProof.verify(remoteSigningPubBytes,
+						theirEphX25519, ourEphX25519,
+						theirStaticPqPub, remoteInfo.b3ProofSig);
+				if (!ok) throw new FormatException();
+			}
+			long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
+			if (timestamp < MIN_REASONABLE_TIME_MS) {
+				throw new FormatException();
+			}
+			Contact contact = addContact(p, remoteInfo.author, localAuthor,
+					rootKey, timestamp, alice, verified, remoteInfo.properties,
+					remoteInfo.b3ProofSig != null,
+					remoteInfo.mlDsaSigPubKey);
+
+			return contact;
+		} finally {
+			localHeaderKey.clear();
+			remoteHeaderKey.clear();
+		}
 	}
 
 	private void sendContactInfo(RecordWriter recordWriter, Author author,
@@ -312,7 +350,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	}
 
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
-			Author remoteAuthor, LocalAuthor localAuthor, SecretKey masterKey,
+			Author remoteAuthor, LocalAuthor localAuthor, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
 			boolean b3SlotPresent,
@@ -324,11 +362,11 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				ContactId contactId;
 				if (pendingContactId == null) {
 					contactId = contactManager.addContact(txn, remoteAuthor,
-							localAuthor.getId(), masterKey, timestamp, alice,
+							localAuthor.getId(), rootKey, timestamp, alice,
 							verified, true, peerMlDsaSigPubKey);
 				} else {
 					contactId = contactManager.addContact(txn, pendingContactId,
-							remoteAuthor, localAuthor.getId(), masterKey,
+							remoteAuthor, localAuthor.getId(), rootKey,
 							timestamp, alice, verified, true,
 							peerMlDsaSigPubKey);
 				}

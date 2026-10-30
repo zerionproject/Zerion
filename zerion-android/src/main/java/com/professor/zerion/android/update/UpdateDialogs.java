@@ -1,8 +1,6 @@
 package com.professor.zerion.android.update;
 
 import android.content.ActivityNotFoundException;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -10,6 +8,7 @@ import android.widget.Toast;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.professor.zerion.android.util.SecureClipboard;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -81,10 +80,7 @@ public final class UpdateDialogs {
 	}
 
 	private static void copy(Context ctx, String url) {
-		ClipboardManager cm = (ClipboardManager)
-				ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-		if (cm == null) return;
-		cm.setPrimaryClip(ClipData.newPlainText("Zerion", url));
+		SecureClipboard.copy(ctx, "Zerion", url);
 		Toast.makeText(ctx, R.string.updates_link_copied, Toast.LENGTH_SHORT)
 				.show();
 	}

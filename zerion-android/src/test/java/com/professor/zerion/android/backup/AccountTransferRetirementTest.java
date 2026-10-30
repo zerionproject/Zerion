@@ -50,6 +50,9 @@ public class AccountTransferRetirementTest {
 			"Zerion-Account-Transfer-v2-length"
 					.getBytes(StandardCharsets.UTF_8);
 
+	private static final String ONION =
+			"fakeonionfakeonionfakeonionfakeonionfakeonionfakeonionfa";
+
 	private CryptoComponent crypto;
 	private final AccountRetirement senderRetirement =
 			mock(AccountRetirement.class);
@@ -61,7 +64,7 @@ public class AccountTransferRetirementTest {
 		@Override
 		public OnionHandle publish(int localPort, @Nullable String privateKey) {
 			port.set(localPort);
-			return new OnionHandle("fakeonionfakeonionfakeonion", "");
+			return new OnionHandle(ONION, "");
 		}
 
 		@Override
@@ -267,7 +270,7 @@ public class AccountTransferRetirementTest {
 			AccountTransferManager receiver = new AccountTransferManager(
 					crypto, publisher, loopback, backup, receiverRetirement);
 			receiver.receive(AccountTransferManager.LINK_PREFIX
-							+ Base32.encode(oldPub) + ":oldphone",
+							+ Base32.encode(oldPub) + ":" + ONION,
 					"pw".toCharArray(), new Answers(null));
 			earlierSender.join(10_000);
 		}

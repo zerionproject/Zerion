@@ -130,6 +130,8 @@ public class GroupPostHistoryDeliveryTest extends BrambleMockTestCase {
 			allowing(db).transaction(with(true), withDbRunnable(txn));
 			allowing(db).transactionWithNullableResult(with(true),
 					withNullableDbCallable(txn));
+			allowing(db).transactionWithResult(with(true),
+					withDbCallable(txn));
 			allowing(identityManager).getLocalAuthor(txn);
 			will(returnValue(local));
 			allowing(contactManager).getContacts(txn);

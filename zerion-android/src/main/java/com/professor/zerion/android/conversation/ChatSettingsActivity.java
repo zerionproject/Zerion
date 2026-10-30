@@ -183,7 +183,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 		viewModel.getContactItem().observe(this, contactItem -> {
 			if (contactItem != null) {
 				setAvatar(contactAvatar, contactItem);
-				contactName.setText(contactItem.getContact().getAuthor().getName());
+				contactName.setText(com.professor.zerion.android.util.DisplayNames.clean(
+						contactItem.getContact().getAuthor().getName()));
 
 				contactAvatar.setOnClickListener(v -> showAvatarFullScreen(contactItem));
 				boolean hybridSig = contactItem.getContact()

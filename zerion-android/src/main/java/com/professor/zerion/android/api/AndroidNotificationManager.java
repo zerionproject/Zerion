@@ -5,6 +5,8 @@ import android.app.Notification;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.sync.GroupId;
 
+import javax.annotation.Nullable;
+
 public interface AndroidNotificationManager {
     String ONGOING_CHANNEL_ID = "ONGOING_CHANNEL_ID";
     String ONGOING_CHANNEL_OLD_ID = "ONGOING_CHANNEL";
@@ -15,6 +17,7 @@ public interface AndroidNotificationManager {
     String CHANNEL_CHANNEL_ID = "CHANNEL_CHANNEL_ID";
     String REMINDER_CHANNEL_ID = "REMINDER_CHANNEL_ID";
     String ROTATION_CHANNEL_ID = "ROTATION_CHANNEL_ID";
+    String CONTACT_REQUEST_CHANNEL_ID = "CONTACT_REQUEST_CHANNEL_ID";
 
     String PREF_NOTIFY_GROUP = "pref_key_notify_group";
     String PREF_NOTIFY_PRIVATE = "pref_key_notify_private";
@@ -49,11 +52,21 @@ public interface AndroidNotificationManager {
     void blockAllGroupMessageNotifications();
     void unblockAllGroupMessageNotifications();
     void clearContactAddedNotification();
+    void clearContactRequestNotification();
+    void blockContactRequestNotifications();
+    void unblockContactRequestNotifications();
     void showSignInNotification();
     void clearSignInNotification();
     void blockSignInNotification();
     void unblockSignInNotification();
     Notification getForegroundNotification();
     void updateForegroundNotification(boolean locked);
+    void callServiceStarted(ContactId c, @Nullable String callId);
+    void callServiceStopped();
+    void showMissedCall(ContactId c, boolean video);
+    void showCallFailed(ContactId c, boolean video, int reason);
+    void declineRingingCall(ContactId c, @Nullable String callId);
+    boolean hasCall(ContactId c, @Nullable String callId);
+    void callUnavailable(ContactId c, @Nullable String callId);
 
 }

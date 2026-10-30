@@ -18,10 +18,15 @@ and the vault UI in `vault/ui/`. Bitcoin primitives use bitcoinj on mainnet.
   (`WalletStore.createWallet`) as `[version byte][UTF-8 mnemonic]`, encrypted by
   the vault (`VaultManager.addItem` / `addItemWithPassword`); plaintext buffers
   are shredded after use.
-- **KDF.** Argon2id. Vault master 256 MiB / 3 iterations / parallelism 1
-  / 32-byte key (128 MiB / 6 iterations only where 256 MiB cannot be
+- **KDF.** Argon2id. Vault master 1 GiB / 1 iteration when Android
+  reports more than 6 GB of RAM (phones sold with 8 GB or more) or
+  512 MiB / 2 iterations from 3.5 GB (phones sold with 4 or 6 GB), both
+  only in a 64-bit process on a phone that is not a low-RAM device and with
+  the native library; otherwise 256 MiB / 3 iterations, parallelism 1 /
+  32-byte key (128 MiB / 6 iterations only where 256 MiB cannot be
   allocated); the per-wallet ("extra") password uses 64 MiB / 3 iterations.
-  The native Argon2 is preferred with a fail-closed BouncyCastle fallback.
+  The native Argon2 is preferred with a fail-closed BouncyCastle fallback
+  up to 256 MiB; above 256 MiB there is no fallback.
 - **Per-wallet password.** A wallet may carry its own password. Reads are
   fail-closed (`WalletStore.accessFor`): a password-protected wallet with an
   empty/absent password is rejected and never falls through to the no-password
@@ -98,6 +103,17 @@ settled (inputs spent) or failed. Server error text never reaches the user. If a
 scan reports no history for a wallet that had history earlier in the session,
 the reply is refused and the last verified balance and history stay on screen;
 the first scan of a session has no baseline and is published as received.
+
+Replies are read in two steps. The JSON-RPC envelope (the `id` that pairs a
+reply with its request, and the `error` field) is read with `org.json`. The
+`result` payload of every reply the wallet uses (tip height, balance,
+history, unspent outputs, transaction, broadcast txid, fee estimate) is then
+parsed with `StrictJson`: values are taken only from the top-level `result`
+and its items, a repeated key refuses the reply, numbers must be integers in
+range, and a history or unspent reply whose `result` is missing, null or not
+a list fails the request, so the scan keeps its last good state instead of
+reading an empty list as an unused address (`ElectrumClient`,
+`ElectrumStrictJsonTest`, `MalformedReplyScanTest`).
 
 What it **may** influence (availability / observation, within local-validation
 limits): it can withhold or delay responses (denial of service), hide a

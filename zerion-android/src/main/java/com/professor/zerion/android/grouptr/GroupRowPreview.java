@@ -4,6 +4,7 @@ import android.content.res.Resources;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.homelist.HomePreview;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.grouptr.GroupTrIncognitoNames;
@@ -43,8 +44,9 @@ final class GroupRowPreview {
 	static Map<String, String> memberNames(GroupTrState s) {
 		Map<String, String> names = new HashMap<>();
 		for (GroupTrMember m : s.getMembers()) {
-			if (!m.getName().isEmpty()) {
-				names.put(StringUtils.toHexString(m.getPubKey()), m.getName());
+			String name = DisplayNames.clean(m.getName()).trim();
+			if (!name.isEmpty()) {
+				names.put(StringUtils.toHexString(m.getPubKey()), name);
 			}
 		}
 		return names;

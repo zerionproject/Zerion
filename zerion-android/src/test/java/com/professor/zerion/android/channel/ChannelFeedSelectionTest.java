@@ -182,6 +182,24 @@ public class ChannelFeedSelectionTest {
 	}
 
 	@Test
+	public void anEditorKeepsControlOfItsOwnPostWhileOnlyTheOwnerMayPost()
+			throws Exception {
+		stub(false, new ChannelPost(new byte[32], 1L, new byte[32],
+				System.currentTimeMillis() / HOUR * HOUR, "Route for Saturday",
+				Collections.emptyList(), 0L, new byte[64], true, key((byte) 5),
+				new byte[0], false, ChannelPost.FORMAT_V2, new byte[16]));
+		when(manager.canPost(any())).thenReturn(true);
+		when(manager.getPostingMode(any()))
+				.thenReturn(ChannelConstants.POSTING_OWNER_ONLY);
+		open();
+		longPress(0);
+
+		assertTrue(bar().shownActions().contains(SelectionAction.DELETE));
+		assertTrue(bar().shownActions().contains(
+				SelectionAction.COMMENTS_OFF));
+	}
+
+	@Test
 	public void aDeletedPostCannotBeCopiedReactedToOrChanged()
 			throws Exception {
 		stub(true, post(1L, ChannelConstants.DELETED_POST_PLACEHOLDER));

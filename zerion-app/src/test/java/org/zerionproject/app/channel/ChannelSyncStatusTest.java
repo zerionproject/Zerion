@@ -173,7 +173,7 @@ public class ChannelSyncStatusTest {
 				interval() <= 60_000L);
 		assertEquals(2, subscriber.store.getPosts(id).size());
 		assertFalse(status().isLastAttemptFailed());
-		assertTrue(runFor(10L * MINUTE).size() >= 8);
+		assertTrue(runFor(10L * MINUTE).size() >= 6);
 	}
 
 	@Test

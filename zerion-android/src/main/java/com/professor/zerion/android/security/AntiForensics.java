@@ -38,7 +38,7 @@ public class AntiForensics {
 
 	interface Registrar {
 		@Nullable
-		Intent register(Context context, BroadcastReceiver receiver,
+		Intent register(Context context, @Nullable BroadcastReceiver receiver,
 				IntentFilter filter);
 	}
 
@@ -149,6 +149,15 @@ public class AntiForensics {
 				context.unregisterReceiver(r);
 			} catch (Exception ignored) {
 			}
+		}
+	}
+
+	public boolean isDataTransferActive() {
+		try {
+			return isDataTransfer(registrar.register(context, null,
+					new IntentFilter(ACTION_USB_STATE)));
+		} catch (RuntimeException e) {
+			return false;
 		}
 	}
 

@@ -85,11 +85,20 @@ probe (58) records, and carries a binding in the invitation records. A
 contact that announces less than 13 cannot be invited to such a group.
 Groups created earlier are unchanged. See "Member keys in private groups".
 
+Minor version 14 (Android 3.0.19, `VIEW_ONCE_MIN_VERSION`) changes no group
+record: it adds view once photos and videos to one-to-one chats (slot 6 of a
+type 0 body and record type 14, "View once photos and videos" in
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). iOS parity: an
+iOS client must refuse slot 6 values other than 1, show view once media only
+once and send and apply record 14 before it announces 14. The same holds for
+the desktop client: a build that does not implement view once announces 13
+(`FeatureFlags.shouldEnableViewOnce` returns false).
+
 ## Two layers: silent membership fan-out + an explicit invite handshake
 
 GroupTr has **two** distinct wire layers, and iOS must implement both:
 
-1. **Membership records (msgTypes 33–41) are silent fan-out.** These are
+1. **Membership records (msgTypes 33 to 41) are silent fan-out.** These are
    signed state-transition records consumed by the membership state machine.
    They are NOT shown in any chat thread and require no user action.
 2. **The invite handshake (msgTypes 42 OFFER / 43 ACCEPT / 44 DECLINE),
@@ -101,7 +110,7 @@ GroupTr has **two** distinct wire layers, and iOS must implement both:
 So the earlier framing - "there is no group invite or accept wire message,
 GroupTr is fan-out-of-signed-records, not invitation-and-accept" - is no
 longer accurate as of the 2026-05 invite layer. Both statements describe the
-membership records (33–41) correctly, but the 42/43/44 handshake layer now
+membership records (33 to 41) correctly, but the 42/43/44 handshake layer now
 sits on top.
 
 When Alice (creator) directly adds Peter to a group via `addMember` (Android
@@ -182,6 +191,7 @@ Alice's pairwise messaging Group with Peter (pairwise contact group)
 | 56 | `GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO` | The invited contact accepts a member's invitation under its incognito name (version 11). Carries the signature of 50. |
 | 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by both (version 13). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
 | 58 | `GROUP_KEY_PROBE` | Carries the sender's binding under a tag only holders of the group id recognise, and asks a contact that holds the group to answer with its binding if the sender's key is a current member (version 13). |
+| 59 | `GROUP_PIN` | The creator pins one post for every member, or unpins it (version 15 and later). Signing label `org.zerionproject/GROUP_PIN`. |
 
 `32`'s record format is summarised below; this doc covers 33 to 38 and 41
 (the membership records), 42 to 44 (the invite handshake), 46 (the group
@@ -531,9 +541,18 @@ limited form, a snapshot at its own epoch:
   is not dissolved, the snapshot's epoch is strictly higher than the
   local epoch, the list has at most 256 entries and the signature
   verifies against the creator's keys. It replaces the member list;
-  names, joinedAt and ML-DSA keys come from the previous local entry or
-  the contact list, not from the snapshot; and it sets the local epoch
-  to the snapshot's epoch. From 3.0.18 it leaves out a member that this
+  names and joinedAt come from the previous local entry or the contact
+  list, not from the snapshot. ML-DSA keys do not come from the snapshot
+  either: in a group with account keys (from Android 3.0.19) they come
+  from the contact record, then this device's own key, then the previous
+  local entry of the same group, so an entry whose key differs from the
+  contact record is not kept and no key is taken from another group's
+  member list, and a lookup outside a known group (joining, member
+  invitations) uses the contact record and this device's own key only
+  (earlier releases took the previous entry first and could fall back to
+  another group's entries); in a group with member keys they
+  come from the previous local entry or that group's own key records. It
+  sets the local epoch to the snapshot's epoch. From 3.0.18 it leaves out a member that this
   device recorded as removed or left (see below).
 - **Equal epoch (Android from 3.0.18).** A snapshot whose epoch equals
   the local epoch passes the same checks (group exists and is not
@@ -703,6 +722,66 @@ minutes later.
 
 Delete for me removes every local copy of the selected posts and sends
 nothing; a copy of such a post that arrives again within 7 days is dropped.
+
+### 59 - GROUP_PIN
+
+```
+BdfList.of(
+    59L,                       // msgType
+    groupId,                   // 32 bytes
+    postId,                    // 32 bytes: the post identity to pin, or null to unpin
+    timestamp,                 // Long: when the creator pinned or unpinned
+    sig                        // hybrid signature of the CREATOR
+)
+```
+
+Validator size: exactly **5 slots**; slot 2 is a 32-byte raw or null; the
+signature is 1 to 4096 bytes. Signed input
+`[32B groupId][1B flag][32B postId or 32 zero bytes][8B BE timestamp][0x0C]`
+(74 bytes) under the label `org.zerionproject/GROUP_PIN`, where `flag` is
+`0x01` for a pin and `0x00` for an unpin.
+
+The creator sends the record to every member that announces messaging
+minor version 15 or later when it pins or unpins, to a member it adds while
+a pin is set, and to a member whose announced version reaches 15 after the
+pin was set (re-signed over the same timestamp). Members on 14 or earlier
+are counted and shown to the creator as not seeing the pin. A receiver
+applies the record only for a live group, only when the pairwise sender is
+the creator, only when its timestamp is newer than the pin it holds (an
+unpin takes its place in that order), and only when the creator's hybrid
+signature verifies. The pinned post identity and the timestamp are kept in
+the group's settings namespace (`pinnedPostId`, `pinnedTimestamp`); a post
+that is deleted on a device is unpinned there. The admin role has no pin
+right; only the creator's key signs. The creator writes the pin into its
+settings inside the transaction that queues the record, so a send that fails
+leaves no pin, and when the creator deletes the pinned post it records the
+unpin at a later timestamp, so the record re-signed for a member that joins
+or updates later carries a time newer than the pin it replaces.
+The receiver checks only that the pinned post identity is 32 bytes signed by
+the creator, not that it names a post of the group: it stores any such id,
+and a pin of a post the member does not hold shows no banner.
+
+#### Domain bytes of signed inputs
+
+Every signed input of a group record ends in one domain byte; together with
+the signing label it keeps the inputs of different records apart. This is the
+complete list, so a new record takes the next free byte.
+
+| Byte | Signed input | Label |
+| --- | --- | --- |
+| `0x01` | GROUP_MEMBER_ADDED (msgType 33) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x02` | GROUP_MEMBER_REMOVED (34) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x03` | GROUP_MEMBER_LEFT (35) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x04` | GROUP_DISSOLVED (36) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x05` | GROUP_EPOCH_COMMIT (37) | `org.zerionproject/GROUP_EPOCH_COMMIT` |
+| `0x06` | GROUP_MEMBER_ROLE_CHANGED (38) | `org.zerionproject/GROUP_MEMBERSHIP` |
+| `0x07` | GROUP_MEMBER_LIST_SNAPSHOT (41) | `org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT` |
+| `0x08` | GROUP_SETTINGS (46) | `org.zerionproject/GROUP_SETTINGS` |
+| `0x09` | GROUP_POST_DELETE (47), and the member permissions input of the member invites | `org.zerionproject/GROUP_POST_DELETE` and `org.zerionproject/GROUP_PERMISSIONS`: the one byte is shared, the two inputs are kept apart by their labels and by their lengths (109 and 49 bytes); a later format change should give GROUP_PERMISSIONS its own byte |
+| `0x0A` | inviter grant of the member invites | `org.zerionproject/GROUP_INVITER_GRANT` |
+| `0x0B` | per-group key binding | `org.zerionproject/GROUP_KEY_BINDING` |
+| `0x0C` | GROUP_PIN (59) | `org.zerionproject/GROUP_PIN` |
+| `0x0D` | group secret | `org.zerionproject/GROUP_SECRET` |
 
 ## Invite handshake (msgTypes 42 / 43 / 44, added 2026-05)
 
@@ -1449,7 +1528,7 @@ invitations), `MlDsaKeyDirectory.lookupIn` (group-scoped ML-DSA lookup),
 ### Version gate
 
 Messaging minor version 13 (`MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION`)
-carries member keys. Android announces 13 while
+carries member keys. Android announces 14 from 3.0.19 (13 in 3.0.18) while
 `B3Constants.B3_PROOF_ENABLED` is on and 5 otherwise (5 carries no group
 protocol at all). The creator refuses to invite a contact that announces less
 than 13 (`GroupTrAuthException.Reason.CONTACT_MUST_UPDATE`), a member refuses
@@ -1515,6 +1594,7 @@ made by the signer's member key in that group:
 | 44 decline | none | the invitee's account key (sent only to the creator) |
 | 46 settings | none | the creator's member key |
 | 47 post delete | sender = the author's member key | the author's member key |
+| 59 pin | none | the creator's member key |
 | 48 permissions | none | the creator's member key |
 | 49 and 54 member offer | creator and inviter member keys; a binding in slot 13 | the inviter's member key, invitee slot all zero |
 | 50 and 56 member accept | inviter member key; a binding in the last slot | the invitee's member key |
@@ -1897,6 +1977,7 @@ Labels used in GroupTr:
 - `"org.zerionproject/GROUP_MEMBER_LIST_SNAPSHOT"` for msgType 41
 - `"org.zerionproject/GROUP_SETTINGS"` for msgType 46
 - `"org.zerionproject/GROUP_POST_DELETE"` for msgType 47
+- `"org.zerionproject/GROUP_PIN"` for msgType 59
 - `"org.zerionproject/GROUPTR_INVITE_OFFER"` for msgType 42
 - `"org.zerionproject/GROUPTR_INVITE_ACCEPT"` for msgType 43
 - `"org.zerionproject/GROUPTR_INVITE_DECLINE"` for msgType 44
@@ -2056,7 +2137,7 @@ its time only.
 
 Concrete checklist:
 
-1. **Do not reuse the legacy private-group invitation carrier** (the `privategroup.invitation` client inherited from upstream). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33–41) are still silent fan-out and must NOT appear as visible chat messages.
+1. **Do not reuse the legacy private-group invitation carrier** (the `privategroup.invitation` client inherited from upstream). GroupTr replaced it. The invite layer GroupTr DOES use is the 42/43/44 handshake on the pairwise messaging channel documented above - implement that, not the upstream invitation client. The membership records (33 to 41) are still silent fan-out and must NOT appear as visible chat messages.
 2. **In the iOS group-create UI**: `createGroup(name)` must be purely local. Do NOT send anything over the wire when a group is created. The group is invisible to peers until the first `addMember` call.
 3. **In the iOS "add member" handler**: build the msgType-33 record exactly as specified above, sign with the hybrid key, and send it to the new member AND every other existing member over their pairwise messaging channels.
 4. **In the iOS private-message receive path**: when a record's first BdfList element is `33L`, route to a membership handler. Do NOT show it as a visible chat message. Just verify the signature and apply.
@@ -2080,4 +2161,4 @@ When iOS is wired up, the smallest test that proves the protocol works end-to-en
 4. Peter's iOS Zerion receives, validates the signature, applies the state.
 5. **Peter's group "Test" advances to Alice's epoch** without any further user action.
 
-If that flow fails on iOS, the bug is in steps 4–5 (receive routing or state apply). Send the BdfList bytes of the msgType-33 record from the wire dump and Android can verify byte-exact equality against what its validator expects.
+If that flow fails on iOS, the bug is in steps 4 to 5 (receive routing or state apply). Send the BdfList bytes of the msgType-33 record from the wire dump and Android can verify byte-exact equality against what its validator expects.

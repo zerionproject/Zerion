@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,6 +31,7 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
+import static org.zerionproject.core.api.crypto.pcs.PcsConstants.MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
 import static org.zerionproject.wire.ZwfConstants.FRAME_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.NONCE_LENGTH;
 import static org.zerionproject.wire.ZwfConstants.REPLAY_WINDOW_SIZE;
@@ -50,6 +52,9 @@ public class ZwfDuplexConnection {
 	private final BufferedInputStream in;
 	private final ZwfTagRecogniser recogniser;
 	private final AtomicReference<Mode3FullState> sharedM3f;
+	private final AtomicLong receivedSinceRotation = new AtomicLong();
+	private int maxRecvFramesPerKeyPair =
+			MODE3_FULL_MAX_RECV_FRAMES_PER_KEY_PAIR;
 	private final Lock directionLock = new ReentrantLock();
 
 	static final long MAX_RECV_STREAM_GAP = 1L << 16;
@@ -150,6 +155,7 @@ public class ZwfDuplexConnection {
 						session.getSendHeaderKey(), session.getSendState(), null,
 						sharedM3f::get, sharedM3f::set, directionLock,
 						session.isAlice());
+				encrypter.setReceivedSinceRotation(receivedSinceRotation);
 			}
 			encrypter.writeFrame(payload, payload.length, false);
 		}
@@ -178,8 +184,16 @@ public class ZwfDuplexConnection {
 			byte[] tag = peekTag();
 			ZwfTagRecogniser.Match match = recogniser.recognise(tag);
 			if (match == null) {
+				match = recogniser.recogniseAt(contactId, tag,
+						counter.foundBeyondWindow(contactId));
+			}
+			if (match == null && counter.startBeyondWindowSearch(contactId)) {
 				match = recogniser.recogniseBeyondWindow(contactId, tag,
 						MAX_RECV_STREAM_GAP);
+				if (match != null) {
+					counter.beyondWindowSearchMatched(contactId,
+							match.streamId);
+				}
 			}
 			if (match == null) {
 				throw new FormatException();
@@ -194,6 +208,8 @@ public class ZwfDuplexConnection {
 					sharedM3f::get, sharedM3f::set, directionLock,
 					!session.isAlice());
 			d.setStreamIdAcceptor(this::commitRecvStreamId);
+			d.setReceivedSinceRotation(receivedSinceRotation);
+			d.setMaxRecvFramesPerKeyPair(maxRecvFramesPerKeyPair);
 			decrypter = d;
 		}
 		byte[] buf = new byte[FRAME_LENGTH];
@@ -222,6 +238,10 @@ public class ZwfDuplexConnection {
 		recogniser.advanceTo(contactId, streamId);
 		recvStreamCommitted = true;
 		return true;
+	}
+
+	protected void setMaxRecvFramesPerKeyPair(int max) {
+		maxRecvFramesPerKeyPair = max;
 	}
 
 	public boolean lastFrameCarriedPqSecret() {

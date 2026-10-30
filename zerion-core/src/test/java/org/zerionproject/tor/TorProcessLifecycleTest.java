@@ -169,6 +169,39 @@ public class TorProcessLifecycleTest {
 	}
 
 	@Test
+	public void aFailedStartStoresTheStateAndWipesTheDataDirectory()
+			throws Exception {
+		TestTorWrapper w = wrapper();
+		TorStatePersistenceTest.MemoryStore store =
+				new TorStatePersistenceTest.MemoryStore();
+		store.stored = new TorStateStore.StoredState(
+				"Guard stored".getBytes(), 1000L);
+		w.setStateStore(store);
+		File data = w.getDataDirectory();
+		assertTrue(data.mkdirs());
+		File cached = new File(data, "cached-microdescs");
+		java.nio.file.Files.write(cached.toPath(), "descs".getBytes());
+		File pt = new File(data, "pt_state");
+		assertTrue(pt.mkdir());
+		File ptState = new File(pt, "obfs4_state.json");
+		java.nio.file.Files.write(ptState.toPath(), "{}".getBytes());
+		w.torScript = ChildProcess.script(tmp.getRoot(), "dies2",
+				ChildProcess.EXIT);
+		try {
+			w.start();
+			fail();
+		} catch (IOException expected) {
+		}
+		assertEquals(STOPPED, w.getTorState());
+		assertTrue("the public directory cache survives", cached.exists());
+		assertFalse(ptState.exists());
+		assertFalse(pt.exists());
+		assertFalse(new File(data, "state").exists());
+		assertNotNull(store.stored);
+		assertEquals("Guard stored", new String(store.stored.bytes));
+	}
+
+	@Test
 	public void stopBeforeStartIsANoOp() throws Exception {
 		TestTorWrapper w = wrapper();
 		w.stop();

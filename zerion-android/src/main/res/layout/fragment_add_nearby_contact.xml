@@ -7,6 +7,17 @@
 	android:padding="16dp">
 
 	<TextView
+		android:id="@+id/nearbyModeText"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="8dp"
+		android:gravity="center"
+		android:text="@string/scan_qr_mode_nearby"
+		android:textSize="14sp"
+		android:textStyle="bold"
+		android:visibility="gone" />
+
+	<TextView
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:text="@string/nearby_pairing_hint"

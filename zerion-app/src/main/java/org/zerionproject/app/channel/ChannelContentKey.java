@@ -164,8 +164,10 @@ class ChannelContentKey {
 			org.zerionproject.app.api.channel.ChannelPost post,
 			byte[] ciphertextBody) throws GeneralSecurityException {
 		byte[] salt = post.getSalt();
-		if (post.getFormatVersion()
-				== org.zerionproject.app.api.channel.ChannelPost.FORMAT_V2) {
+		int format = post.getFormatVersion();
+		if (format == org.zerionproject.app.api.channel.ChannelPost.FORMAT_V2
+				|| format == org.zerionproject.app.api.channel.ChannelPost
+				.FORMAT_V3) {
 			if (salt == null) throw new GeneralSecurityException();
 			return decryptBodyV2(contentKey, post.getChannelId(),
 					post.getSeqNum(), salt, ciphertextBody);

@@ -1,5 +1,8 @@
 package org.zerionproject.core.db;
 
+import org.zerionproject.core.api.contact.request.ContactLink;
+import org.zerionproject.core.api.contact.request.IncomingRequest;
+import org.zerionproject.core.api.contact.request.OutgoingRequest;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContact;
@@ -69,6 +72,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
 
+import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
 import static java.sql.Types.BOOLEAN;
 import static java.sql.Types.INTEGER;
@@ -96,7 +100,7 @@ import static org.zerionproject.core.db.JdbcUtils.tryToClose;
 @NotNullByDefault
 abstract class JdbcDatabase implements Database<Connection> {
 
-	static final int CODE_SCHEMA_VERSION = 72;
+	static final int CODE_SCHEMA_VERSION = 73;
 
 	private static final int MAX_CONNECTION_POOL_SIZE = 8;
 	static final int MAX_METADATA_BATCH_MESSAGES = 512;
@@ -292,6 +296,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 					+ " formatVersion INT DEFAULT 0 NOT NULL,"
 					+ " ourPublicKey _BINARY,"
 					+ " ourPrivateKey _BINARY,"
+					+ " expiry BIGINT,"
+					+ " rendezvousMode INT DEFAULT 0 NOT NULL,"
 					+ " PRIMARY KEY (pendingContactId))";
 
 	private static final String CREATE_OUTGOING_KEYS =
@@ -625,7 +631,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 				new Migration68_69(),
 				new Migration69_70(),
 				new Migration70_71(),
-				new Migration71_72(dbTypes)
+				new Migration71_72(dbTypes),
+				new Migration72_73(dbTypes)
 		);
 	}
 
@@ -678,6 +685,9 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_SENDER_KEYS));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_KEY_HISTORY));
 			s.executeUpdate(dbTypes.replaceTypes(CREATE_GROUP_CRYPTO_STATE));
+			for (String[] table : Migration72_73.TABLES) {
+				s.executeUpdate(dbTypes.replaceTypes(table[1]));
+			}
 			s.close();
 		} catch (SQLException e) {
 			tryToClose(s);
@@ -703,6 +713,7 @@ abstract class JdbcDatabase implements Database<Connection> {
 			s.executeUpdate(INDEX_PCS_SKIPPED_KEYS_BY_CHAIN_ID);
 			s.executeUpdate(INDEX_GROUP_KEY_HISTORY_BY_EXPIRY);
 			s.executeUpdate(INDEX_GROUP_SENDER_KEYS_BY_GROUP);
+			for (String index : Migration72_73.INDEXES) s.executeUpdate(index);
 			for (String index : ForeignKeyIndexes.STATEMENTS) {
 				s.executeUpdate(dbTypes.replaceTypes(index));
 			}
@@ -1231,14 +1242,17 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		try {
 			String sql = "INSERT INTO pendingContacts (pendingContactId,"
-					+ " publicKey, alias, timestamp, formatVersion)"
-					+ " VALUES (?, ?, ?, ?, ?)";
+					+ " publicKey, alias, timestamp, formatVersion, expiry,"
+					+ " rendezvousMode)"
+					+ " VALUES (?, ?, ?, ?, ?, ?, ?)";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, p.getId().getBytes());
 			ps.setBytes(2, p.getPublicKey().getEncoded());
 			ps.setString(3, p.getAlias());
 			ps.setLong(4, p.getTimestamp());
 			ps.setInt(5, p.getFormatVersion());
+			setOptionalTime(ps, 6, p.getExpiry());
+			ps.setInt(7, p.getRendezvousMode());
 			int affected = ps.executeUpdate();
 			if (affected != 1) throw new DbStateException();
 			ps.close();
@@ -3173,8 +3187,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		try {
-			String sql = "SELECT publicKey, alias, timestamp, formatVersion"
-					+ " FROM pendingContacts"
+			String sql = "SELECT publicKey, alias, timestamp, formatVersion,"
+					+ " expiry, rendezvousMode FROM pendingContacts"
 					+ " WHERE pendingContactId = ?";
 			ps = txn.prepareStatement(sql);
 			ps.setBytes(1, p.getBytes());
@@ -3184,9 +3198,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 			String alias = rs.getString(2);
 			long timestamp = rs.getLong(3);
 			int formatVersion = rs.getInt(4);
+			long expiry = rs.getLong(5);
+			int rendezvousMode = rs.getInt(6);
 			PublicKey publicKey = parsePendingContactKey(publicKeyBytes,
 					formatVersion);
-			return new PendingContact(p, publicKey, alias, timestamp, formatVersion);
+			return new PendingContact(p, publicKey, alias, timestamp,
+					formatVersion, expiry, rendezvousMode);
 		} catch (SQLException e) {
 			tryToClose(rs);
 			tryToClose(ps);
@@ -3266,7 +3283,8 @@ abstract class JdbcDatabase implements Database<Connection> {
 		ResultSet rs = null;
 		try {
 			String sql = "SELECT pendingContactId, publicKey, alias, timestamp,"
-					+ " formatVersion FROM pendingContacts";
+					+ " formatVersion, expiry, rendezvousMode"
+					+ " FROM pendingContacts";
 			s = txn.createStatement();
 			rs = s.executeQuery(sql);
 			List<PendingContact> pendingContacts = new ArrayList<>();
@@ -3276,10 +3294,12 @@ abstract class JdbcDatabase implements Database<Connection> {
 				String alias = rs.getString(3);
 				long timestamp = rs.getLong(4);
 				int formatVersion = rs.getInt(5);
+				long expiry = rs.getLong(6);
+				int rendezvousMode = rs.getInt(7);
 				PublicKey publicKey = parsePendingContactKey(publicKeyBytes,
 						formatVersion);
 				pendingContacts.add(new PendingContact(id, publicKey, alias,
-						timestamp, formatVersion));
+						timestamp, formatVersion, expiry, rendezvousMode));
 			}
 			rs.close();
 			s.close();
@@ -4859,15 +4879,15 @@ abstract class JdbcDatabase implements Database<Connection> {
 				ps.close();
 				return null;
 			}
-			byte[] chainKeyBytes = rs.getBytes(1);
+			byte[] chainKeyBytes = ownedBytes(rs, 1);
 			int messageNumber = rs.getInt(2);
 			int previousChainLength = rs.getInt(3);
-			byte[] rootKeyBytes = rs.getBytes(4);
-			byte[] dhPrivateKeyBytes = rs.getBytes(5);
-			byte[] dhPublicKeyBytes = rs.getBytes(6);
-			byte[] dhRemotePublicKeyBytes = rs.getBytes(7);
+			byte[] rootKeyBytes = ownedBytes(rs, 4);
+			byte[] dhPrivateKeyBytes = ownedBytes(rs, 5);
+			byte[] dhPublicKeyBytes = ownedBytes(rs, 6);
+			byte[] dhRemotePublicKeyBytes = ownedBytes(rs, 7);
 			boolean mode2Enabled = rs.getBoolean(8);
-			byte[] mode3FullStateBlob = rs.getBytes(9);
+			byte[] mode3FullStateBlob = ownedBytes(rs, 9);
 			rs.close();
 			ps.close();
 			return new PcsSessionRow(chainKeyBytes, messageNumber,
@@ -4953,4 +4973,566 @@ abstract class JdbcDatabase implements Database<Connection> {
 			throw new DbException(e);
 		}
 	}
+
+	private static void setOptionalBytes(PreparedStatement ps, int i,
+			@Nullable byte[] b) throws SQLException {
+		if (b == null) ps.setNull(i, BINARY);
+		else ps.setBytes(i, b);
+	}
+
+	private static void setOptionalString(PreparedStatement ps, int i,
+			@Nullable String s) throws SQLException {
+		if (s == null) ps.setNull(i, VARCHAR);
+		else ps.setString(i, s);
+	}
+
+	private static void setOptionalTime(PreparedStatement ps, int i, long t)
+			throws SQLException {
+		if (t == 0) ps.setNull(i, BIGINT);
+		else ps.setLong(i, t);
+	}
+
+	private static final String CONTACT_LINK_COLUMNS = "linkId, localAuthorId,"
+			+ " kind, state, label, hybridPublicKey, hybridPrivateKey,"
+			+ " inboxKey, createdAt, lastSharedAt, retiredAt, withdrawnAt";
+
+	@Override
+	public void addContactLink(Connection txn, ContactLink l)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "INSERT INTO contactLinks (" + CONTACT_LINK_COLUMNS
+					+ ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, l.getLinkId());
+			ps.setBytes(2, l.getLocalAuthorId().getBytes());
+			ps.setInt(3, l.getKind());
+			ps.setInt(4, l.getState());
+			setOptionalString(ps, 5, l.getLabel());
+			setOptionalBytes(ps, 6, l.getHybridPublicKey());
+			setOptionalBytes(ps, 7, l.getHybridPrivateKey());
+			setOptionalBytes(ps, 8, l.getInboxKey());
+			ps.setLong(9, l.getCreatedAt());
+			setOptionalTime(ps, 10, l.getLastSharedAt());
+			setOptionalTime(ps, 11, l.getRetiredAt());
+			setOptionalTime(ps, 12, l.getWithdrawnAt());
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void updateContactLink(Connection txn, ContactLink l)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE contactLinks SET state = ?, label = ?,"
+					+ " hybridPublicKey = ?, hybridPrivateKey = ?,"
+					+ " inboxKey = ?, lastSharedAt = ?, retiredAt = ?,"
+					+ " withdrawnAt = ? WHERE linkId = ?";
+			ps = txn.prepareStatement(sql);
+			ps.setInt(1, l.getState());
+			setOptionalString(ps, 2, l.getLabel());
+			setOptionalBytes(ps, 3, l.getHybridPublicKey());
+			setOptionalBytes(ps, 4, l.getHybridPrivateKey());
+			setOptionalBytes(ps, 5, l.getInboxKey());
+			setOptionalTime(ps, 6, l.getLastSharedAt());
+			setOptionalTime(ps, 7, l.getRetiredAt());
+			setOptionalTime(ps, 8, l.getWithdrawnAt());
+			ps.setBytes(9, l.getLinkId());
+			int affected = ps.executeUpdate();
+			if (affected != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeContactLink(Connection txn, byte[] linkId)
+			throws DbException {
+		executeDelete(txn, "DELETE FROM contactLinks WHERE linkId = ?",
+				linkId);
+	}
+
+	@Override
+	public Collection<ContactLink> getContactLinks(Connection txn)
+			throws DbException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = txn.createStatement();
+			rs = s.executeQuery("SELECT " + CONTACT_LINK_COLUMNS
+					+ " FROM contactLinks");
+			List<ContactLink> links = new ArrayList<>();
+			while (rs.next()) {
+				links.add(new ContactLink(rs.getBytes(1),
+						new AuthorId(rs.getBytes(2)), rs.getInt(3),
+						rs.getInt(4), rs.getString(5), rs.getBytes(6),
+						rs.getBytes(7), rs.getBytes(8), rs.getLong(9),
+						rs.getLong(10), rs.getLong(11), rs.getLong(12)));
+			}
+			rs.close();
+			s.close();
+			return links;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(s);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	@Nullable
+	public byte[] getRequestAccountSecret(Connection txn, AuthorId local)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT accountTagSecret"
+					+ " FROM requestAccount WHERE localAuthorId = ?");
+			ps.setBytes(1, local.getBytes());
+			rs = ps.executeQuery();
+			byte[] secret = rs.next() ? rs.getBytes(1) : null;
+			rs.close();
+			ps.close();
+			return secret;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void setRequestAccountSecret(Connection txn, AuthorId local,
+			byte[] secret) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			executeDelete(txn, "DELETE FROM requestAccount"
+					+ " WHERE localAuthorId = ?", local.getBytes());
+			ps = txn.prepareStatement("INSERT INTO requestAccount"
+					+ " (localAuthorId, accountTagSecret) VALUES (?, ?)");
+			ps.setBytes(1, local.getBytes());
+			ps.setBytes(2, secret);
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	private static final String OUTGOING_COLUMNS = "requestId, localAuthorId,"
+			+ " targetLink, alias, shownName, note, oneTimePublicKey,"
+			+ " oneTimePrivateKey, createdAt, state, attempts, nextAttemptAt,"
+			+ " deliveredAt, pendingContactId, cancelledAt";
+
+	@Override
+	public void addOutgoingRequest(Connection txn, OutgoingRequest r)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("INSERT INTO outgoingRequests ("
+					+ OUTGOING_COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+					+ " ?, ?, ?, ?, ?, ?, ?)");
+			ps.setBytes(1, r.getRequestId());
+			ps.setBytes(2, r.getLocalAuthorId().getBytes());
+			ps.setString(3, r.getTargetLink());
+			ps.setString(4, r.getAlias());
+			ps.setString(5, r.getShownName());
+			setOptionalString(ps, 6, r.getNote());
+			setOptionalBytes(ps, 7, r.getOneTimePublicKey());
+			setOptionalBytes(ps, 8, r.getOneTimePrivateKey());
+			ps.setLong(9, r.getCreatedAt());
+			ps.setInt(10, r.getState());
+			ps.setInt(11, r.getAttempts());
+			ps.setLong(12, r.getNextAttemptAt());
+			setOptionalTime(ps, 13, r.getDeliveredAt());
+			PendingContactId p = r.getPendingContactId();
+			setOptionalBytes(ps, 14, p == null ? null : p.getBytes());
+			setOptionalTime(ps, 15, r.getCancelledAt());
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void updateOutgoingRequest(Connection txn, OutgoingRequest r)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("UPDATE outgoingRequests SET"
+					+ " oneTimePublicKey = ?, oneTimePrivateKey = ?,"
+					+ " state = ?, attempts = ?, nextAttemptAt = ?,"
+					+ " deliveredAt = ?, pendingContactId = ?,"
+					+ " cancelledAt = ? WHERE requestId = ?");
+			setOptionalBytes(ps, 1, r.getOneTimePublicKey());
+			setOptionalBytes(ps, 2, r.getOneTimePrivateKey());
+			ps.setInt(3, r.getState());
+			ps.setInt(4, r.getAttempts());
+			ps.setLong(5, r.getNextAttemptAt());
+			setOptionalTime(ps, 6, r.getDeliveredAt());
+			PendingContactId p = r.getPendingContactId();
+			setOptionalBytes(ps, 7, p == null ? null : p.getBytes());
+			setOptionalTime(ps, 8, r.getCancelledAt());
+			ps.setBytes(9, r.getRequestId());
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeOutgoingRequest(Connection txn, byte[] requestId)
+			throws DbException {
+		executeDelete(txn, "DELETE FROM outgoingRequests WHERE requestId = ?",
+				requestId);
+	}
+
+	@Override
+	public Collection<OutgoingRequest> getOutgoingRequests(Connection txn)
+			throws DbException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = txn.createStatement();
+			rs = s.executeQuery("SELECT " + OUTGOING_COLUMNS
+					+ " FROM outgoingRequests");
+			List<OutgoingRequest> requests = new ArrayList<>();
+			while (rs.next()) {
+				byte[] p = rs.getBytes(14);
+				requests.add(new OutgoingRequest(rs.getBytes(1),
+						new AuthorId(rs.getBytes(2)), rs.getString(3),
+						rs.getString(4), rs.getString(5), rs.getString(6),
+						rs.getBytes(7), rs.getBytes(8), rs.getLong(9),
+						rs.getInt(10), rs.getInt(11), rs.getLong(12),
+						rs.getLong(13),
+						p == null ? null : new PendingContactId(p),
+						rs.getLong(15)));
+			}
+			rs.close();
+			s.close();
+			return requests;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(s);
+			throw new DbException(e);
+		}
+	}
+
+	private static final String INCOMING_COLUMNS = "requestId, linkId,"
+			+ " oneTimeLink, name, note, senderTag, senderTimestamp,"
+			+ " receivedAt, state, acceptedAt, pendingContactId";
+
+	@Override
+	public void addIncomingRequest(Connection txn, IncomingRequest r)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("INSERT INTO incomingRequests ("
+					+ INCOMING_COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+					+ " ?, ?, ?)");
+			ps.setBytes(1, r.getRequestId());
+			ps.setBytes(2, r.getLinkId());
+			ps.setBytes(3, r.getOneTimeLink());
+			setOptionalString(ps, 4, r.getName());
+			setOptionalString(ps, 5, r.getNote());
+			ps.setBytes(6, r.getSenderTag());
+			ps.setLong(7, r.getSenderTimestamp());
+			ps.setLong(8, r.getReceivedAt());
+			ps.setInt(9, r.getState());
+			setOptionalTime(ps, 10, r.getAcceptedAt());
+			PendingContactId p = r.getPendingContactId();
+			setOptionalBytes(ps, 11, p == null ? null : p.getBytes());
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void updateIncomingRequest(Connection txn, IncomingRequest r)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("UPDATE incomingRequests SET"
+					+ " name = ?, note = ?, state = ?, acceptedAt = ?,"
+					+ " pendingContactId = ? WHERE requestId = ?");
+			setOptionalString(ps, 1, r.getName());
+			setOptionalString(ps, 2, r.getNote());
+			ps.setInt(3, r.getState());
+			setOptionalTime(ps, 4, r.getAcceptedAt());
+			PendingContactId p = r.getPendingContactId();
+			setOptionalBytes(ps, 5, p == null ? null : p.getBytes());
+			ps.setBytes(6, r.getRequestId());
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeIncomingRequest(Connection txn, byte[] requestId)
+			throws DbException {
+		executeDelete(txn, "DELETE FROM incomingRequests WHERE requestId = ?",
+				requestId);
+	}
+
+	@Override
+	public Collection<IncomingRequest> getIncomingRequests(Connection txn)
+			throws DbException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = txn.createStatement();
+			rs = s.executeQuery("SELECT " + INCOMING_COLUMNS
+					+ " FROM incomingRequests");
+			List<IncomingRequest> requests = new ArrayList<>();
+			while (rs.next()) {
+				byte[] p = rs.getBytes(11);
+				requests.add(new IncomingRequest(rs.getBytes(1),
+						rs.getBytes(2), rs.getBytes(3), rs.getString(4),
+						rs.getString(5), rs.getBytes(6), rs.getLong(7),
+						rs.getLong(8), rs.getInt(9), rs.getLong(10),
+						p == null ? null : new PendingContactId(p)));
+			}
+			rs.close();
+			s.close();
+			return requests;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(s);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void addRequestReplay(Connection txn, byte[] requestIdHash,
+			int kind, @Nullable byte[] oneTimeKeyHash, byte[] linkId,
+			long expiresAt) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("INSERT INTO requestReplay"
+					+ " (requestIdHash, kind, oneTimeKeyHash, linkId,"
+					+ " expiresAt) VALUES (?, ?, ?, ?, ?)");
+			ps.setBytes(1, requestIdHash);
+			ps.setInt(2, kind);
+			setOptionalBytes(ps, 3, oneTimeKeyHash);
+			ps.setBytes(4, linkId);
+			ps.setLong(5, expiresAt);
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public int countRequestReplay(Connection txn, byte[] linkId)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT COUNT(*) FROM requestReplay"
+					+ " WHERE linkId = ?");
+			ps.setBytes(1, linkId);
+			rs = ps.executeQuery();
+			if (!rs.next()) throw new DbStateException();
+			int count = rs.getInt(1);
+			rs.close();
+			ps.close();
+			return count;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public boolean containsRequestReplay(Connection txn, byte[] requestIdHash,
+			int kind) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT NULL FROM requestReplay"
+					+ " WHERE requestIdHash = ? AND kind = ?");
+			ps.setBytes(1, requestIdHash);
+			ps.setInt(2, kind);
+			rs = ps.executeQuery();
+			boolean found = rs.next();
+			rs.close();
+			ps.close();
+			return found;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public boolean containsOneTimeKey(Connection txn, byte[] oneTimeKeyHash,
+			byte[] requestIdHash) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT requestIdHash"
+					+ " FROM requestReplay WHERE oneTimeKeyHash = ?");
+			ps.setBytes(1, oneTimeKeyHash);
+			rs = ps.executeQuery();
+			boolean other = false;
+			while (rs.next()) {
+				if (!java.util.Arrays.equals(rs.getBytes(1), requestIdHash)) {
+					other = true;
+				}
+			}
+			rs.close();
+			ps.close();
+			return other;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeExpiredRequestReplay(Connection txn, long now)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("DELETE FROM requestReplay"
+					+ " WHERE expiresAt <= ?");
+			ps.setLong(1, now);
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void addRequestBlock(Connection txn, byte[] linkId,
+			byte[] senderTag, long createdAt) throws DbException {
+		if (containsRequestBlock(txn, linkId, senderTag)) return;
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("INSERT INTO requestBlocks"
+					+ " (linkId, senderTag, createdAt) VALUES (?, ?, ?)");
+			ps.setBytes(1, linkId);
+			ps.setBytes(2, senderTag);
+			ps.setLong(3, createdAt);
+			if (ps.executeUpdate() != 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public boolean containsRequestBlock(Connection txn, byte[] linkId,
+			byte[] senderTag) throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT NULL FROM requestBlocks"
+					+ " WHERE linkId = ? AND senderTag = ?");
+			ps.setBytes(1, linkId);
+			ps.setBytes(2, senderTag);
+			rs = ps.executeQuery();
+			boolean found = rs.next();
+			rs.close();
+			ps.close();
+			return found;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public Collection<byte[]> getRequestBlocks(Connection txn, byte[] linkId)
+			throws DbException {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try {
+			ps = txn.prepareStatement("SELECT senderTag FROM requestBlocks"
+					+ " WHERE linkId = ?");
+			ps.setBytes(1, linkId);
+			rs = ps.executeQuery();
+			List<byte[]> tags = new ArrayList<>();
+			while (rs.next()) tags.add(rs.getBytes(1));
+			rs.close();
+			ps.close();
+			return tags;
+		} catch (SQLException e) {
+			tryToClose(rs);
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeRequestBlock(Connection txn, byte[] linkId,
+			byte[] senderTag) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement("DELETE FROM requestBlocks"
+					+ " WHERE linkId = ? AND senderTag = ?");
+			ps.setBytes(1, linkId);
+			ps.setBytes(2, senderTag);
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
+	public void removeRequestBlocks(Connection txn, byte[] linkId)
+			throws DbException {
+		executeDelete(txn, "DELETE FROM requestBlocks WHERE linkId = ?",
+				linkId);
+	}
+
+	private static void executeDelete(Connection txn, String sql, byte[] key)
+			throws DbException {
+		PreparedStatement ps = null;
+		try {
+			ps = txn.prepareStatement(sql);
+			ps.setBytes(1, key);
+			ps.executeUpdate();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Nullable
+	protected byte[] ownedBytes(ResultSet rs, int column) throws SQLException {
+		return rs.getBytes(column);
+	}
+
 }

@@ -67,4 +67,26 @@ public class ProtectedNoteCodecTest {
 	public void theTitlePrefixIsTheLockSymbol() {
 		assertEquals("🔒 ", ProtectedNoteCodec.TITLE_PREFIX);
 	}
+
+	@Test
+	public void versionTwoBlobsAreBoundTo256MiBThreePasses() throws Exception {
+		byte[] salt = new byte[32];
+		new SecureRandom().nextBytes(salt);
+		byte[] iv = new byte[12];
+		new SecureRandom().nextBytes(iv);
+		byte[] key = Argon2.deriveKeyBouncyCastle(
+				"v2 password".getBytes(StandardCharsets.UTF_8), salt,
+				new Argon2.Argon2Params(262144, 3, 1, 32));
+		Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+		c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),
+				new GCMParameterSpec(128, iv));
+		byte[] ct = c.doFinal("v2 body".getBytes(StandardCharsets.UTF_8));
+		byte[] blob = new byte[45 + ct.length];
+		blob[0] = 0x02;
+		System.arraycopy(salt, 0, blob, 1, 32);
+		System.arraycopy(iv, 0, blob, 33, 12);
+		System.arraycopy(ct, 0, blob, 45, ct.length);
+		assertArrayEquals("v2 body".getBytes(StandardCharsets.UTF_8),
+				ProtectedNoteCodec.open(blob, "v2 password".toCharArray()));
+	}
 }

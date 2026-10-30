@@ -106,6 +106,52 @@ public class MeshBundlePrivacyTest {
 		assertEquals(1, a.opened.size());
 	}
 
+	@Test
+	public void aShortRangeChosenEarlierIsUsedFromTheStart() throws Exception {
+		MeshTestSettings settings = new MeshTestSettings();
+		org.zerionproject.core.api.settings.Settings s =
+				new org.zerionproject.core.api.settings.Settings();
+		s.putBoolean("meshShortRange", true);
+		settings.mergeSettings(s, "org.zerionproject.mesh");
+		Account a = new Account(settings);
+		a.meshManager.start();
+		assertEquals(android.bluetooth.le.AdvertisingSetParameters
+				.TX_POWER_LOW, transportField(a, "txPowerLevel"));
+	}
+
+	@Test
+	public void theNormalRangeIsTheDefault() throws Exception {
+		Account a = new Account(new MeshTestSettings());
+		a.meshManager.start();
+		assertEquals(android.bluetooth.le.AdvertisingSetParameters
+				.TX_POWER_MEDIUM, transportField(a, "txPowerLevel"));
+	}
+
+	@Test
+	public void aScreenPauseChosenEarlierIsUsedFromTheStart() throws Exception {
+		MeshTestSettings settings = new MeshTestSettings();
+		org.zerionproject.core.api.settings.Settings s =
+				new org.zerionproject.core.api.settings.Settings();
+		s.putBoolean("meshPauseScreenOff", true);
+		settings.mergeSettings(s, "org.zerionproject.mesh");
+		Account a = new Account(settings);
+		a.meshManager.start();
+		Object pause = transportField(a, "screenPause");
+		Field enabled = pause.getClass().getDeclaredField("enabled");
+		enabled.setAccessible(true);
+		assertTrue((Boolean) enabled.get(pause));
+	}
+
+	private static Object transportField(Account a, String name)
+			throws Exception {
+		Field ble = MeshManager.class.getDeclaredField("ble");
+		ble.setAccessible(true);
+		Object transport = ble.get(a.meshManager);
+		Field f = BleMeshTransport.class.getDeclaredField(name);
+		f.setAccessible(true);
+		return f.get(transport);
+	}
+
 	private byte[] sealTo(AsyncPrekeyBundle bundle) throws Exception {
 		KeyPair sig = crypto.generateHybridSignatureKeyPair();
 		AsyncMeshDelivery.Identity sender = new AsyncMeshDelivery.Identity(
@@ -191,7 +237,7 @@ public class MeshBundlePrivacyTest {
 						public boolean knowsSender(byte[] sender) {
 							return true;
 						}
-					});
+					}, new BluetoothNameGuard(settings, () -> null), null, null);
 			EventBus eventBus = mock(EventBus.class);
 			new MeshBundleManager(eventBus, mock(MeshBundleStore.class), crypto,
 					mock(ContactManager.class), meshManager, messagingManager,

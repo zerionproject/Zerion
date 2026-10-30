@@ -111,8 +111,15 @@ epoch. A tag outside every contact's current window triggers, at most once every
 taking the contacts in turn, so the work of a search, and its timing, does not
 depend on the number of contacts; a tag still unrecognised is rejected. A
 contact whose counter ran ahead is found once its turn comes round, or at once
-when this side dials it. First-time pairing uses a separate rendezvous path, not
-this one.
+when this side dials it. On a connection to a known contact, dialled or already
+recognised, a tag beyond the window is searched for up to 65536 stream ids
+ahead; from 3.0.19 that search runs at most once a minute per contact unless it
+finds the tag, so a party that answers a dial with a tag it cannot produce costs
+one bounded search a minute and any further unknown tag in that minute is
+refused without a search; a stream the inbound search above already found
+releases that minute and is taken at the stream id it found, without a second
+search. First-time pairing uses a separate rendezvous path,
+not this one.
 
 On the wire, an online connection is therefore:
 

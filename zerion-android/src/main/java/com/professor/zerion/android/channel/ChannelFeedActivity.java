@@ -39,6 +39,7 @@ import com.professor.zerion.android.selection.SelectionAction;
 import com.professor.zerion.android.selection.SelectionBar;
 import com.professor.zerion.android.selection.SelectionRows;
 import com.professor.zerion.android.util.Feedback;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
@@ -136,6 +137,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private PostAdapter adapter;
 	private boolean weArePublisher = false;
 	private boolean canPost = false;
+	private boolean memberPoster = false;
 	private boolean discussionsEnabledCached = true;
 	private java.util.Set<Long> commentExceptions =
 			java.util.Collections.emptySet();
@@ -274,6 +276,9 @@ public class ChannelFeedActivity extends ZerionActivity
 						return ChannelFeedActivity.this.composerShown();
 					}
 				});
+		adapter.setAuthorTap(post -> {
+			if (!tapWhileSelecting(post)) openAuthor(post);
+		});
 		noticeBanner.setOnClickListener(v -> {
 			if (!notSentItems.isEmpty()) {
 				showNotSentDialog(new ArrayList<>(notSentItems));
@@ -492,7 +497,9 @@ public class ChannelFeedActivity extends ZerionActivity
 							: channelManager.getQueuedItems(channelId)) {
 						if (q.getKind() == ChannelQueuedItem.Kind.REACTION) {
 							queuedReactions.put(q.getPostSeqNum(), q);
-						} else if (q.getKind() == ChannelQueuedItem.Kind.POST) {
+						} else if (q.getKind() == ChannelQueuedItem.Kind.POST
+								|| q.getKind()
+								== ChannelQueuedItem.Kind.MEMBER_POST) {
 							queuedPosts.add(q);
 						} else if (q.getKind()
 								!= ChannelQueuedItem.Kind.COMMENT) {
@@ -570,6 +577,10 @@ public class ChannelFeedActivity extends ZerionActivity
 				}
 			}
 			boolean mayPost = false;
+			boolean asMember = false;
+			int postingMode = ChannelConstants.POSTING_EDITORS;
+			int notAccepted = 0;
+			int tooMany = 0;
 			boolean outdated = false;
 			long givenUp = 0L;
 			byte[] editorKey = new byte[0];
@@ -580,13 +591,28 @@ public class ChannelFeedActivity extends ZerionActivity
 						outdated = channelManager.hasOutdatedSubscribers(
 								channelId);
 					} else {
-						givenUp = channelManager.getPostsGivenUp(channelId);
-						if (mayPost) {
+						boolean editor = mayPost;
+						postingMode = channelManager.getPostingMode(channelId);
+						if (editor) {
 							byte[] mine = channelManager
 									.getMyChannelPublicKey(channelId);
 							editorKey = Arrays.copyOf(mine,
 									Math.min(32, mine.length));
 						}
+						if (mayPost && postingMode
+								== ChannelConstants.POSTING_OWNER_ONLY) {
+							mayPost = false;
+						}
+						if (!mayPost && channelManager.canPostAsMember(
+								channelId)) {
+							mayPost = true;
+							asMember = true;
+						}
+						notAccepted = channelManager.takeRefusedPostNotices(
+								channelId);
+						tooMany = channelManager.takeTooManyPostNotices(
+								channelId);
+						givenUp = channelManager.getPostsGivenUp(channelId);
 					}
 				} catch (DbException ignored) {
 				}
@@ -607,11 +633,20 @@ public class ChannelFeedActivity extends ZerionActivity
 			boolean finalDiscussionsEnabled = discussionsEnabled;
 			java.util.Set<Long> finalExceptions = exceptions;
 			boolean finalMayPost = mayPost;
+			boolean finalAsMember = asMember;
+			int finalPostingMode = postingMode;
+			int finalNotAccepted = notAccepted;
+			int finalTooMany = tooMany;
 			boolean finalOutdated = outdated;
 			long finalGivenUp = givenUp;
 			byte[] finalEditorKey = editorKey;
 			runOnUiThreadUnlessDestroyed(() -> {
 				canPost = finalMayPost;
+				memberPoster = finalAsMember;
+				readOnlyFooter.setText(finalPostingMode
+						== ChannelConstants.POSTING_OWNER_ONLY
+						? R.string.channels_feed_read_only_footer_owner
+						: R.string.channels_feed_read_only_footer);
 				myEditorKey = finalEditorKey;
 				commentExceptions = finalExceptions;
 				syncDormant = finalSync != null && finalSync.isDormant();
@@ -625,9 +660,12 @@ public class ChannelFeedActivity extends ZerionActivity
 				takeBackReturned();
 				adapter.setQueuedReactions(queuedReactions);
 				adapter.setAuthors(finalState == null ? ""
-						: finalState.getName(), "channel:"
+						: DisplayNames.clean(finalState.getName()).trim(),
+						"channel:"
 						+ org.zerionproject.core.util.StringUtils.toHexString(
-								channelId), editorNames, weArePublisher);
+								channelId), editorNames, weArePublisher,
+						memberPoster);
+				adapter.setOwnEditor(myEditorKey.length > 0);
 				render(finalState, finalPosts, finalStatus,
 						thumbnails, reactions, commentCounts,
 						finalDiscussionsEnabled);
@@ -635,6 +673,14 @@ public class ChannelFeedActivity extends ZerionActivity
 						!otherWaiting.isEmpty());
 				showHeldNotices();
 				bindSyncStatus(finalState, !finalPosts.isEmpty(), finalSync);
+				if (finalNotAccepted > 0 && finalTooMany > 0) {
+					feedback(getString(R.string.channels_post_not_accepted)
+							+ "\n" + getString(R.string.channels_post_too_many));
+				} else if (finalNotAccepted > 0) {
+					feedback(R.string.channels_post_not_accepted);
+				} else if (finalTooMany > 0) {
+					feedback(R.string.channels_post_too_many);
+				}
 			});
 		});
 	}
@@ -665,7 +711,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			for (org.zerionproject.app.api.channel.ChannelSubscriber sub
 					: channelManager.getAnnouncedSubscribers(channelId)) {
 				String key = bytesToHex(sub.getEd25519PubKey());
-				String name = sub.getDisplayName().trim();
+				String name = DisplayNames.clean(sub.getDisplayName()).trim();
 				if (wanted.contains(key) && !name.isEmpty()) {
 					names.put(key, name);
 				}
@@ -787,7 +833,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			return;
 		}
 		weArePublisher = state.weArePublisher();
-		toolbar.setTitle(state.getName());
+		composeInput.setHint(weArePublisher ? R.string.channels_compose_hint
+				: R.string.channels_compose_hint_member);
+		toolbar.setTitle(ChannelNames.shown(this, state.getName()));
 		toolbar.setSubtitle(ChannelAccessLabel.access(this, state));
 		bindApprovalBanner(state, appStatus);
 
@@ -932,12 +980,26 @@ public class ChannelFeedActivity extends ZerionActivity
 	static PendingSends.Attempt postAttempt(ChannelManager manager,
 			byte[] channelId, String body, long ttlSeconds,
 			boolean publisher) {
+		return postAttempt(manager, channelId, body, ttlSeconds, publisher,
+				false);
+	}
+
+	static PendingSends.Attempt postAttempt(ChannelManager manager,
+			byte[] channelId, String body, long ttlSeconds,
+			boolean publisher, boolean member) {
+		int notSent = member ? R.string.channels_post_not_accepted
+				: R.string.channels_editor_post_not_sent;
 		return () -> {
 			try {
 				long seq = manager.publishPostWithSeq(channelId, body,
 						ttlSeconds);
 				return PendingSends.Result.stored(seq < 0L ? null
 						: postIdentity(seq), null);
+			} catch (org.zerionproject.app.api.channel
+					.ChannelPostQuotaException tooMany) {
+				return PendingSends.Result.handedOver(
+						queuedIdentity(tooMany.getItemId()),
+						PendingSends.Notice.of(R.string.channels_post_too_many));
 			} catch (ChannelRequestQueuedException queued) {
 				return PendingSends.Result.handedOver(
 						queued.getItemId() == -1L ? null
@@ -960,11 +1022,11 @@ public class ChannelFeedActivity extends ZerionActivity
 			} catch (org.zerionproject.app.api.channel
 					.ChannelRefusedException refused) {
 				return PendingSends.Result.refused(PendingSends.Notice.of(
-						R.string.channels_editor_post_not_sent));
+						notSent));
 			} catch (DbException ex) {
 				return PendingSends.Result.failed(PendingSends.Notice.of(
 						publisher ? R.string.channels_compose_error_publish
-								: R.string.channels_editor_post_not_sent));
+								: notSent));
 			}
 		};
 	}
@@ -1153,7 +1215,7 @@ public class ChannelFeedActivity extends ZerionActivity
 								item.getText().length(), true,
 								postAttempt(channelManager, channelId,
 										item.getText(), item.getTtlSeconds(),
-										publisher));
+										publisher, memberPoster));
 						showExtraRows();
 					};
 					if (edit) {
@@ -1665,7 +1727,7 @@ public class ChannelFeedActivity extends ZerionActivity
 	private boolean mayChange(ChannelPost post) {
 		if (weArePublisher) return true;
 		byte[] signer = post.getDelegateSignerEd25519PubKey();
-		return canPost && signer != null && myEditorKey.length > 0
+		return signer != null && myEditorKey.length > 0
 				&& Arrays.equals(signer, myEditorKey);
 	}
 
@@ -2008,7 +2070,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		long ttlSeconds = readSelectedTtlSeconds();
 		PendingSends.Entry pending = pendingSends.add(pendingScope, body,
 				ttlSeconds, body.length(), true, postAttempt(channelManager,
-						channelId, body, ttlSeconds, weArePublisher));
+						channelId, body, ttlSeconds, weArePublisher,
+						memberPoster));
 		scrollNext = true;
 		showExtraRows();
 		composeInput.setText("");
@@ -2407,6 +2470,14 @@ public class ChannelFeedActivity extends ZerionActivity
 		return super.onOptionsItemSelected(item);
 	}
 
+	private void openAuthor(ChannelPost post) {
+		ChannelPost.MemberAuthor a = post.getMemberAuthor();
+		if (a == null || !weArePublisher) return;
+		ChannelMemberSheet.open(this, channelManager, ioExecutor, channelId,
+				a.getEd25519PubKey(), DisplayNames.clean(a.getName()),
+				a.getMlDsaPubKey(), this::loadChannel);
+	}
+
 	private void openSettings() {
 		if (channelId.length == 0) return;
 		startActivity(ChannelSettingsActivity.intent(this, channelId));
@@ -2421,6 +2492,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		final String author;
 		final String avatarKey;
 		final boolean editorTag;
+		@androidx.annotation.StringRes
+		final int badge;
 		final List<ChannelReaction> reactions;
 		final int commentCount;
 		final boolean commentsOn;
@@ -2429,7 +2502,8 @@ public class ChannelFeedActivity extends ZerionActivity
 		final List<byte[]> thumbnails;
 
 		Shown(ChannelPost post, String author, String avatarKey,
-				boolean editorTag, List<ChannelReaction> reactions,
+				boolean editorTag, @androidx.annotation.StringRes int badge,
+				List<ChannelReaction> reactions,
 				int commentCount, boolean commentsOn,
 				@Nullable ChannelQueuedItem queuedReaction,
 				List<byte[]> thumbnails) {
@@ -2438,6 +2512,7 @@ public class ChannelFeedActivity extends ZerionActivity
 			this.author = author;
 			this.avatarKey = avatarKey;
 			this.editorTag = editorTag;
+			this.badge = badge;
 			this.reactions = reactions;
 			this.commentCount = commentCount;
 			this.commentsOn = commentsOn;
@@ -2446,12 +2521,13 @@ public class ChannelFeedActivity extends ZerionActivity
 		}
 
 		Shown(FeedRow row, String author, String avatarKey,
-				boolean editorTag) {
+				boolean editorTag, @androidx.annotation.StringRes int badge) {
 			this.post = null;
 			this.row = row;
 			this.author = author;
 			this.avatarKey = avatarKey;
 			this.editorTag = editorTag;
+			this.badge = badge;
 			this.reactions = java.util.Collections.emptyList();
 			this.commentCount = 0;
 			this.commentsOn = false;
@@ -2469,6 +2545,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				return row != null && o.row != null && sameRow(row, o.row);
 			}
 			return author.equals(o.author) && editorTag == o.editorTag
+					&& badge == o.badge
 					&& commentCount == o.commentCount
 					&& commentsOn == o.commentsOn
 					&& samePost(post, o.post)
@@ -2576,6 +2653,10 @@ public class ChannelFeedActivity extends ZerionActivity
 			void onTap(ChannelPost post, ChannelQueuedItem item);
 		}
 
+		interface OnAuthorTap {
+			void onAuthorTap(ChannelPost post);
+		}
+
 		interface OnExtraRow {
 			void retry(FeedRow row);
 
@@ -2605,6 +2686,10 @@ public class ChannelFeedActivity extends ZerionActivity
 		private java.util.Map<String, String> editorNames =
 				java.util.Collections.emptyMap();
 		private boolean ownerView = false;
+		private boolean memberPoster = false;
+		private boolean ownEditor = false;
+		@Nullable
+		private OnAuthorTap authorTap;
 		private final OnPostSelection selection;
 		private final Set<Long> selected;
 		private final OnAttachmentTap attachmentTapListener;
@@ -2655,6 +2740,21 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		void setAuthors(String channelName, String channelKey,
 				java.util.Map<String, String> editorNames, boolean ownerView) {
+			setAuthors(channelName, channelKey, editorNames, ownerView, false);
+		}
+
+		void setOwnEditor(boolean ownEditor) {
+			this.ownEditor = ownEditor;
+		}
+
+		void setAuthorTap(@Nullable OnAuthorTap tap) {
+			this.authorTap = tap;
+		}
+
+		void setAuthors(String channelName, String channelKey,
+				java.util.Map<String, String> editorNames, boolean ownerView,
+				boolean memberPoster) {
+			this.memberPoster = memberPoster;
 			this.channelName = channelName;
 			this.channelKey = channelKey;
 			this.editorNames = editorNames;
@@ -2678,10 +2778,22 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		private Shown shownPost(ChannelPost p) {
 			byte[] signer = p.getDelegateSignerEd25519PubKey();
+			ChannelPost.MemberAuthor member = p.getMemberAuthor();
 			String author = channelName;
 			String avatarKey = channelKey;
 			boolean editorTag = false;
-			if (signer != null) {
+			int badge = R.string.channels_post_signer_editor;
+			if (member != null) {
+				String hex = bytesToHex(member.getEd25519PubKey());
+				String mine = ownerView ? null : editorNames.get(hex);
+				String name = DisplayNames.clean(member.getName()).trim();
+				badge = R.string.channels_member_role_subscriber;
+				editorTag = true;
+				avatarKey = hex;
+				author = mine != null ? mine
+						: androidx.core.text.BidiFormatter.getInstance()
+						.unicodeWrap(name);
+			} else if (signer != null) {
 				String hex = bytesToHex(signer);
 				String name = editorNames.get(hex);
 				editorTag = true;
@@ -2697,12 +2809,19 @@ public class ChannelFeedActivity extends ZerionActivity
 				thumbs.add(thumbnails.get(thumbnailKey(p.getSeqNum(),
 						att.getBlobHash())));
 			}
-			return new Shown(p, author, avatarKey, editorTag,
+			return new Shown(p, author, avatarKey, editorTag, badge,
 					rl == null ? java.util.Collections.emptyList() : rl,
 					cc == null ? 0 : cc,
 					discussionsEnabled != commentExceptions.contains(
 							p.getSeqNum()),
 					queuedReactions.get(p.getSeqNum()), thumbs);
+		}
+
+		private boolean ownRowAsEditor(FeedRow row) {
+			if (row.queued != null) {
+				return row.queued.getKind() != ChannelQueuedItem.Kind.MEMBER_POST;
+			}
+			return ownEditor && !memberPoster;
 		}
 
 		private void rebuild() {
@@ -2712,8 +2831,12 @@ public class ChannelFeedActivity extends ZerionActivity
 			for (ChannelPost p : posts) fresh.add(shownPost(p));
 			for (FeedRow row : extraRows) {
 				fresh.add(ownerView
-						? new Shown(row, channelName, channelKey, false)
-						: new Shown(row, "", channelKey, true));
+						? new Shown(row, channelName, channelKey, false,
+								R.string.channels_post_signer_editor)
+						: new Shown(row, "", channelKey, true,
+								ownRowAsEditor(row)
+								? R.string.channels_post_signer_editor
+								: R.string.channels_member_role_subscriber));
 			}
 			items = fresh;
 			androidx.recyclerview.widget.DiffUtil.calculateDiff(
@@ -2764,6 +2887,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			holder.bind(shown, attachmentTapListener, commentTapListener,
 					reactTapListener,
 					messageStyle.get(holder.itemView.getContext()));
+			OnAuthorTap tap = authorTap;
+			holder.bindAuthorTap(ownerView && p.isMemberPost()
+					&& tap != null ? () -> tap.onAuthorTap(p) : null);
 			holder.bindQueuedReaction(p, shown.queuedReaction,
 					notSentReactionTap);
 			if (p.isWithheld()) {
@@ -2864,21 +2990,38 @@ public class ChannelFeedActivity extends ZerionActivity
 			}
 		}
 
+		void bindAuthorTap(@Nullable Runnable tap) {
+			for (View v : new View[] {author, avatar}) {
+				if (tap == null) {
+					v.setOnClickListener(null);
+					v.setClickable(false);
+				} else {
+					v.setOnClickListener(x -> tap.run());
+				}
+			}
+		}
+
 		private void bindHeader(String name, String avatarKey,
-				boolean editorTag) {
+				boolean editorTag, int badge, boolean emptyIsMe) {
 			android.content.Context ctx = itemView.getContext();
-			String shown = name.trim().isEmpty() && editorTag
-					? ctx.getString(R.string.channels_comment_you) : name;
+			boolean unnamed = name.trim().isEmpty() && editorTag;
+			boolean roleOnly = unnamed && !emptyIsMe;
+			String shown = !unnamed ? name : emptyIsMe
+					? ctx.getString(R.string.channels_comment_you)
+					: ctx.getString(badge);
 			author.setText(shown);
 			avatar.setText(com.professor.zerion.android.channel
 					.ChannelSettingsActivity.initial(shown));
 			avatar.setBackgroundTintList(android.content.res.ColorStateList
 					.valueOf(palette.fillFor(avatarKey)));
 			avatar.setTextColor(palette.getLabel());
-			if (editorTag) {
-				signerBadge.setText(ctx
-						.getString(R.string.channels_post_signer_editor)
+			if (editorTag && !roleOnly) {
+				signerBadge.setText(ctx.getString(badge)
 						.toUpperCase(Locale.ROOT));
+				signerBadge.setContentDescription(ctx.getString(
+						badge == R.string.channels_member_role_subscriber
+								? R.string.channels_post_signer_subscriber_description
+								: R.string.channels_post_signer_editor_description));
 				signerBadge.setVisibility(View.VISIBLE);
 			} else {
 				signerBadge.setVisibility(View.GONE);
@@ -2903,7 +3046,9 @@ public class ChannelFeedActivity extends ZerionActivity
 			MessageStates.outline(bubble, false,
 					R.drawable.bg_message_not_sent_card);
 			MessageStates.hideActions(notSentActions);
-			bindHeader(shown.author, shown.avatarKey, shown.editorTag);
+			bindHeader(shown.author, shown.avatarKey, shown.editorTag,
+					shown.badge,
+					shown.badge == R.string.channels_post_signer_editor);
 			if (p.isWithheld()) {
 				bindWithheld(p);
 				return;
@@ -2993,10 +3138,11 @@ public class ChannelFeedActivity extends ZerionActivity
 
 		static String describe(android.content.Context ctx, Shown shown,
 				String time, String body, @Nullable String comments) {
-			String out = shown.author;
+			String out = shown.author.trim().isEmpty() && shown.row != null
+					? ctx.getString(R.string.channels_comment_you)
+					: shown.author;
 			if (shown.editorTag) {
-				out = join(ctx, out,
-						ctx.getString(R.string.channels_post_signer_editor));
+				out = join(ctx, out, ctx.getString(shown.badge));
 			}
 			out = join(ctx, out, time);
 			if (!body.trim().isEmpty()) out = join(ctx, out, body.trim());
@@ -3044,7 +3190,8 @@ public class ChannelFeedActivity extends ZerionActivity
 			FeedRow row = shown.row;
 			if (row == null) return;
 			style.applyTextSize(body);
-			bindHeader(shown.author, shown.avatarKey, shown.editorTag);
+			bindHeader(shown.author, shown.avatarKey, shown.editorTag,
+					shown.badge, true);
 			body.setTypeface(bodyTypeface);
 			body.setTextColor(bodyColor);
 			body.setText(row.text);

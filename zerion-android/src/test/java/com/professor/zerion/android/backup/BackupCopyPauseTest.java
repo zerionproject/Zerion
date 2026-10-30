@@ -10,6 +10,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
 import org.zerionproject.core.account.AndroidAccountManager;
 import org.zerionproject.core.account.ProfileManager;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.Transaction;
@@ -56,6 +57,8 @@ public class BackupCopyPauseTest {
 	private final List<Long> pauses = new ArrayList<>();
 	private byte[] snapshot = new byte[64];
 	private RootKeyStore store;
+	private final ContactRequestManager requests =
+			mock(ContactRequestManager.class);
 
 	@After
 	public void noCopyIsLeftBehind() {
@@ -87,7 +90,9 @@ public class BackupCopyPauseTest {
 		when(profiles.getActiveProfileId()).thenReturn("p");
 		when(profiles.readDisplayName("p")).thenReturn(name);
 		return new AccountBackupManager(app, db, accounts, profiles,
-				mock(IdentityManager.class), store, new BackupCrypto(), sealer);
+				mock(IdentityManager.class), store,
+				mock(org.zerionproject.app.api.messaging.MessagingManager.class),
+				new BackupCrypto(), sealer, requests);
 	}
 
 	private DatabaseComponent db() {
@@ -162,6 +167,35 @@ public class BackupCopyPauseTest {
 	private void assertNoPauseAndTheGateIsOpen() {
 		assertEquals("an incomplete copy wrote a pause", 0, pauses.size());
 		assertFalse(store.isSnapshotting());
+	}
+
+	@Test
+	public void theSnapshotCarriesTheContactRequestPauseOnly()
+			throws Exception {
+		snapshot = new byte[4096];
+		AccountBackupManager manager = manager("Name", PLAIN);
+		org.mockito.InOrder order = org.mockito.Mockito.inOrder(requests);
+		manager.exportAccount(PASSPHRASE.clone(),
+				ByteArrayOutputStream::new);
+		order.verify(requests).beginBackupSnapshot();
+		order.verify(requests).endBackupSnapshot();
+		org.mockito.Mockito.verifyNoMoreInteractions(requests);
+	}
+
+	@Test
+	public void aPauseThatCannotEndFailsTheExport() throws Exception {
+		snapshot = new byte[4096];
+		AccountBackupManager manager = manager("Name", PLAIN);
+		org.mockito.Mockito.doAnswer(inv -> {
+			throw new org.zerionproject.core.api.db.DbException();
+		}).when(requests).endBackupSnapshot();
+		try {
+			manager.exportAccount(PASSPHRASE.clone(),
+					ByteArrayOutputStream::new);
+		} catch (BackupException expected) {
+		}
+		org.mockito.Mockito.verify(requests,
+				org.mockito.Mockito.atLeastOnce()).endBackupSnapshot();
 	}
 
 	@Test
@@ -318,6 +352,26 @@ public class BackupCopyPauseTest {
 			assertEquals(IO_ERROR, e.reason);
 		}
 		assertNoPauseAndTheGateIsOpen();
+	}
+
+	@Test
+	public void aWeakPassphraseIsRefusedBeforeAnythingIsCopied() {
+		for (String weak : new String[]{"aaaaaaaaaaaa", "123456789012",
+				"short1A!"}) {
+			AccountBackupManager manager = manager("Name", PLAIN);
+			boolean[] opened = {false};
+			try {
+				manager.exportAccount(weak.toCharArray(), () -> {
+					opened[0] = true;
+					return new ByteArrayOutputStream();
+				});
+				fail("expected " + weak + " to be refused");
+			} catch (BackupException e) {
+				assertEquals(BackupException.Reason.WEAK_PASSPHRASE, e.reason);
+			}
+			assertFalse(opened[0]);
+			assertNoPauseAndTheGateIsOpen();
+		}
 	}
 
 	@Test

@@ -17,6 +17,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
 
 import com.professor.zerion.R;
+import com.professor.zerion.android.ZerionApplication;
 import com.professor.zerion.android.activity.BaseActivity;
 import com.professor.zerion.android.api.ScreenFilterMonitor;
 import com.professor.zerion.android.api.ScreenFilterMonitor.AppDetails;
@@ -69,7 +70,14 @@ public class ScreenFilterDialogFragment extends DialogFragment {
 	@Override
 	public void onAttach(Context ctx) {
 		super.onAttach(ctx);
-		((BaseActivity) requireActivity()).getActivityComponent().inject(this);
+		Activity activity = requireActivity();
+		if (activity instanceof BaseActivity) {
+			((BaseActivity) activity).getActivityComponent().inject(this);
+		} else {
+			screenFilterMonitor = ((ZerionApplication) activity
+					.getApplication()).getApplicationComponent()
+					.screenFilterMonitor();
+		}
 	}
 
 	@NotNull

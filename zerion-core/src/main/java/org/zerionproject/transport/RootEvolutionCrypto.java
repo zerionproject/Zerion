@@ -27,6 +27,8 @@ public class RootEvolutionCrypto {
 			"org.zerionproject.transport/ROOT_EVOLVE_V1";
 	static final String LABEL_CONFIRM_KEY =
 			"org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V1";
+	static final String LABEL_SEPARATED_CONFIRM_KEY =
+			"org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V3";
 	static final String LABEL_RESPONDER_CONFIRM =
 			"org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_CONFIRM_V1";
 	static final String LABEL_INITIATOR_CONFIRM =
@@ -35,6 +37,30 @@ public class RootEvolutionCrypto {
 			"org.zerionproject.transport/ROOT_EVOLVE_RESPONDER_DONE_V1";
 	static final String LABEL_PENDING_ID =
 			"org.zerionproject.transport/ROOT_PENDING_ID_V1";
+
+	@Immutable
+	@NotNullByDefault
+	static final class EvolvedKeys {
+
+		final byte version;
+		final SecretKey root;
+		final SecretKey confirmKey;
+
+		EvolvedKeys(byte version, SecretKey root, SecretKey confirmKey) {
+			this.version = version;
+			this.root = root;
+			this.confirmKey = confirmKey;
+		}
+
+		boolean isSeparated() {
+			return version == RootEvolutionRecord.VERSION_SEPARATED;
+		}
+
+		void clear() {
+			root.clear();
+			confirmKey.clear();
+		}
+	}
 
 	private final CryptoComponent crypto;
 
@@ -47,10 +73,9 @@ public class RootEvolutionCrypto {
 		return crypto.deriveKey(LABEL_EPOCH_TRANSPORT, root, u64(epoch));
 	}
 
-	byte[] transcriptHash(long epoch, byte[] initiatorX25519,
+	byte[] transcriptHash(byte version, long epoch, byte[] initiatorX25519,
 			byte[] initiatorEk, byte[] responderX25519, byte[] ciphertext) {
-		return crypto.hash(LABEL_TRANSCRIPT,
-				new byte[] {RootEvolutionRecord.VERSION}, u64(epoch),
+		return crypto.hash(LABEL_TRANSCRIPT, new byte[] {version}, u64(epoch),
 				initiatorX25519, initiatorEk, responderX25519, ciphertext);
 	}
 
@@ -61,73 +86,87 @@ public class RootEvolutionCrypto {
 				initiatorX25519, responderX25519);
 	}
 
-	SecretKey nextRoot(SecretKey root, long epoch, byte[] kemSecret,
-			SecretKey dh, byte[] transcriptHash) {
+	EvolvedKeys evolve(byte version, SecretKey root, long epoch,
+			byte[] kemSecret, SecretKey dh, byte[] transcriptHash) {
+		if (version != RootEvolutionRecord.VERSION
+				&& version != RootEvolutionRecord.VERSION_SEPARATED) {
+			throw new IllegalArgumentException();
+		}
 		SecretKey chain = crypto.deriveKey(LABEL_EPOCH_CHAIN, root,
 				u64(epoch));
 		try {
-			return crypto.deriveKey(LABEL_ROOT, chain, u64(epoch + 1),
-					kemSecret, dh.getBytes(), transcriptHash);
+			SecretKey next = crypto.deriveKey(LABEL_ROOT, chain,
+					u64(epoch + 1), kemSecret, dh.getBytes(), transcriptHash);
+			SecretKey confirmKey;
+			if (version == RootEvolutionRecord.VERSION_SEPARATED) {
+				confirmKey = crypto.deriveKey(LABEL_SEPARATED_CONFIRM_KEY,
+						chain, u64(epoch + 1), kemSecret, dh.getBytes(),
+						transcriptHash);
+			} else {
+				confirmKey = legacyConfirmKey(next);
+			}
+			return new EvolvedKeys(version, next, confirmKey);
 		} finally {
 			chain.clear();
 		}
 	}
 
-	byte[] responderConfirm(SecretKey next, long nextEpoch) {
-		return confirmMac(LABEL_RESPONDER_CONFIRM, next, u64(nextEpoch));
+	SecretKey legacyConfirmKey(SecretKey next) {
+		return crypto.deriveKey(LABEL_CONFIRM_KEY, next);
 	}
 
-	byte[] initiatorConfirm(SecretKey next, long nextEpoch) {
-		return confirmMac(LABEL_INITIATOR_CONFIRM, next, u64(nextEpoch));
+	SecretKey pendingConfirmKey(ContactRootKeys keys) {
+		SecretKey pending = keys.getPending();
+		if (pending == null) throw new IllegalStateException();
+		SecretKey stored = keys.getPendingConfirmKey();
+		if (stored != null) return new SecretKey(stored.getBytes().clone());
+		return legacyConfirmKey(pending);
 	}
 
-	byte[] responderDone(SecretKey next, long nextEpoch) {
-		return confirmMac(LABEL_RESPONDER_DONE, next, u64(nextEpoch));
+	static byte pendingVersion(ContactRootKeys keys) {
+		return keys.isPendingSeparated()
+				? RootEvolutionRecord.VERSION_SEPARATED
+				: RootEvolutionRecord.VERSION;
 	}
 
-	boolean verifyResponderConfirm(byte[] mac, SecretKey next,
+	byte[] responderConfirmWith(SecretKey confirmKey, long nextEpoch) {
+		return crypto.mac(LABEL_RESPONDER_CONFIRM, confirmKey, u64(nextEpoch));
+	}
+
+	byte[] initiatorConfirmWith(SecretKey confirmKey, long nextEpoch) {
+		return crypto.mac(LABEL_INITIATOR_CONFIRM, confirmKey, u64(nextEpoch));
+	}
+
+	byte[] responderDoneWith(SecretKey confirmKey, long nextEpoch) {
+		return crypto.mac(LABEL_RESPONDER_DONE, confirmKey, u64(nextEpoch));
+	}
+
+	byte[] pendingIdWith(SecretKey confirmKey, long pendingEpoch) {
+		return crypto.mac(LABEL_PENDING_ID, confirmKey, u64(pendingEpoch));
+	}
+
+	boolean verifyResponderConfirmWith(byte[] mac, SecretKey confirmKey,
 			long nextEpoch) {
-		return verifyConfirmMac(mac, LABEL_RESPONDER_CONFIRM, next,
+		return crypto.verifyMac(mac, LABEL_RESPONDER_CONFIRM, confirmKey,
 				u64(nextEpoch));
 	}
 
-	boolean verifyInitiatorConfirm(byte[] mac, SecretKey next,
+	boolean verifyInitiatorConfirmWith(byte[] mac, SecretKey confirmKey,
 			long nextEpoch) {
-		return verifyConfirmMac(mac, LABEL_INITIATOR_CONFIRM, next,
+		return crypto.verifyMac(mac, LABEL_INITIATOR_CONFIRM, confirmKey,
 				u64(nextEpoch));
 	}
 
-	boolean verifyResponderDone(byte[] mac, SecretKey next, long nextEpoch) {
-		return verifyConfirmMac(mac, LABEL_RESPONDER_DONE, next,
+	boolean verifyResponderDoneWith(byte[] mac, SecretKey confirmKey,
+			long nextEpoch) {
+		return crypto.verifyMac(mac, LABEL_RESPONDER_DONE, confirmKey,
 				u64(nextEpoch));
 	}
 
-	byte[] pendingId(SecretKey pending, long pendingEpoch) {
-		return confirmMac(LABEL_PENDING_ID, pending, u64(pendingEpoch));
-	}
-
-	boolean verifyPendingId(byte[] id, SecretKey pending, long pendingEpoch) {
-		return verifyConfirmMac(id, LABEL_PENDING_ID, pending,
+	boolean verifyPendingIdWith(byte[] id, SecretKey confirmKey,
+			long pendingEpoch) {
+		return crypto.verifyMac(id, LABEL_PENDING_ID, confirmKey,
 				u64(pendingEpoch));
-	}
-
-	private byte[] confirmMac(String label, SecretKey root, byte[] input) {
-		SecretKey confirmKey = crypto.deriveKey(LABEL_CONFIRM_KEY, root);
-		try {
-			return crypto.mac(label, confirmKey, input);
-		} finally {
-			confirmKey.clear();
-		}
-	}
-
-	private boolean verifyConfirmMac(byte[] mac, String label, SecretKey root,
-			byte[] input) {
-		SecretKey confirmKey = crypto.deriveKey(LABEL_CONFIRM_KEY, root);
-		try {
-			return crypto.verifyMac(mac, label, confirmKey, input);
-		} finally {
-			confirmKey.clear();
-		}
 	}
 
 	static byte[] u64(long v) {

@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.contact.identity.IdentityFingerprint;
+import com.professor.zerion.android.util.DisplayNames;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
@@ -104,8 +105,10 @@ final class ChannelMember {
 				break;
 			}
 		}
-		String name = sub != null && !sub.getDisplayName().trim().isEmpty()
-				? sub.getDisplayName().trim() : nameHint.trim();
+		String announced = sub == null ? ""
+				: DisplayNames.clean(sub.getDisplayName()).trim();
+		String name = !announced.isEmpty() ? announced
+				: DisplayNames.clean(nameHint).trim();
 		byte[] mlDsa = sub != null && sub.getMlDsaPubKey().length > 0
 				? sub.getMlDsaPubKey() : mlDsaHint;
 		return new ChannelMember(ed25519, mlDsa, name,

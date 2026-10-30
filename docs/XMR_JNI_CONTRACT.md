@@ -84,11 +84,14 @@ kind:
 - Pending JNI exceptions are checked and cleared (`clearPending`) around JNI
   calls that can throw (string and byte-array construction, history and lookup
   encoding), so a pending exception cannot corrupt a later call.
-- Secrets copied across the boundary (passwords, seeds) are wiped: incoming
-  byte arrays are zeroed and released with `JNI_ABORT`, `std::string` copies are
-  wiped (`wipe`) after use, and byte arrays returned to Java are wiped after the
-  region copy. On the Java side, `NativeMoneroEngine` encodes `char[]` to a
-  scratch `byte[]`, passes it, and zeroes it in a `finally`.
+- Secrets copied across the boundary (passwords, seeds) are wiped. For an
+  incoming byte array the native side zeroes the buffer that
+  `GetByteArrayElements` returned and releases it with `JNI_ABORT`
+  (`bytesToStd`). When the VM handed out a copy, that zeroes the native copy
+  only and leaves the Java array as it was, so the Java array is wiped by its
+  owner: `NativeMoneroEngine` encodes `char[]` to a scratch `byte[]`, passes
+  it, and zeroes it in a `finally`. `std::string` copies are wiped (`wipe`)
+  after use, and byte arrays returned to Java are wiped after the region copy.
 
 ## Thread ownership and lifecycle
 

@@ -73,13 +73,14 @@ class IncomingHandshakeConnection extends HandshakeConnection
 			out.getOutputStream().flush();
 			HandshakeResult result =
 					handshakeManager.handshake(pendingContactId, in, out);
-			Contact contact = contactExchangeManager.exchangeContacts(
-					pendingContactId, connection, result.getMasterKey(),
-					result.isAlice(), false, classical,
-					result.getOurStaticHybridPub(),
-					result.getTheirStaticHybridPub(),
-					result.getOurEphX25519(),
-					result.getTheirEphX25519());
+			Contact contact;
+			try {
+				contact = contactExchangeManager.exchangeContacts(
+						pendingContactId, connection, result, false,
+						classical);
+			} finally {
+				result.getRootKey().clear();
+			}
 			cancelTimeout();
 			connectionRegistry.unregisterConnection(pendingContactId, true);
 			runPairedSession(contact.getId(), true);

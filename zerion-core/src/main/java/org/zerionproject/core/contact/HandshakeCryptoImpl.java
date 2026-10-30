@@ -14,8 +14,11 @@ import javax.inject.Inject;
 
 import static org.zerionproject.core.contact.HandshakeConstants.ALICE_PROOF_LABEL;
 import static org.zerionproject.core.contact.HandshakeConstants.BOB_PROOF_LABEL;
+import static org.zerionproject.core.contact.HandshakeConstants.CONFIRMATION_KEY_LABEL;
+import static org.zerionproject.core.contact.HandshakeConstants.EXCHANGE_KEY_LABEL;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_FS;
 import static org.zerionproject.core.contact.HandshakeConstants.MASTER_KEY_LABEL_HYBRID_KCI;
+import static org.zerionproject.core.contact.HandshakeConstants.ROOT_KEY_LABEL;
 
 @Immutable
 @NotNullByDefault
@@ -115,15 +118,25 @@ class HandshakeCryptoImpl implements HandshakeCrypto {
 	}
 
 	@Override
-	public byte[] proveOwnership(SecretKey masterKey, boolean alice) {
-		String label = alice ? ALICE_PROOF_LABEL : BOB_PROOF_LABEL;
-		return crypto.mac(label, masterKey);
+	public HandshakeKeys deriveSessionKeys(SecretKey handshakeSecret,
+			boolean separated) {
+		if (!separated) return HandshakeKeys.legacy(handshakeSecret);
+		return HandshakeKeys.separated(
+				crypto.deriveKey(CONFIRMATION_KEY_LABEL, handshakeSecret),
+				crypto.deriveKey(EXCHANGE_KEY_LABEL, handshakeSecret),
+				crypto.deriveKey(ROOT_KEY_LABEL, handshakeSecret));
 	}
 
 	@Override
-	public boolean verifyOwnership(SecretKey masterKey, boolean alice,
+	public byte[] proveOwnership(SecretKey confirmationKey, boolean alice) {
+		String label = alice ? ALICE_PROOF_LABEL : BOB_PROOF_LABEL;
+		return crypto.mac(label, confirmationKey);
+	}
+
+	@Override
+	public boolean verifyOwnership(SecretKey confirmationKey, boolean alice,
 			byte[] proof) {
 		String label = alice ? ALICE_PROOF_LABEL : BOB_PROOF_LABEL;
-		return crypto.verifyMac(proof, label, masterKey);
+		return crypto.verifyMac(proof, label, confirmationKey);
 	}
 }

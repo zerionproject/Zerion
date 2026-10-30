@@ -46,19 +46,48 @@ The forwarder floods frames, deduplicates them, and limits the rate.
   links later: a device that comes into range after a frame passed receives
   that message only when its sender sends it again (see Delivery below).
 
-`MeshForwarder.onReceive` reports whether a frame was new to the node; the
-Bluetooth link uses it to judge whether a neighbour is carrying anything.
+`MeshForwarder.onReceive` reports whether a frame was new to the node. From
+3.0.19 the Bluetooth link no longer judges a neighbour by that: a link earns
+its slot only when an envelope it delivered opens on this device, comes from a
+contact and is not a replay, which `AsyncMeshDelivery` reports together with
+the neighbour it came from (see the link slots below). Up to 3.0.18 any frame
+new to the device counted, and a random frame costs nothing to make.
 
 Limits: the seen set holds 8192 message ids for 15 minutes each; entries do not
 leave before they expire, except as described next. Each
-neighbour may hold at most 1024 entries and send at most 50 frames per second;
-the forwarder accepts at most 200 frames per second in total. When the set is
+neighbour may hold at most 1024 entries and send at most 50 frames and two
+maximum-size frames' worth of bytes (about 64 KiB) per second; the forwarder
+accepts at most 200 frames and eight maximum-size frames' worth of bytes
+(about 256 KiB) per second in total. Bytes are counted from 3.0.19; up to
+3.0.18 only frames were, so one neighbour could push 50 full frames, about
+1.6 MB, a second. When the set is
 full of unexpired entries, the neighbour holding the most entries gives up its
 oldest so a neighbour holding fewer is admitted; neighbour identities on a radio
 link are cheap to invent, so this bounds what a flood spread over many
 identities can shut out. The in-memory store of recent frames holds up to 2 MiB
 and 1024 frames, the neighbour holding the most giving up its oldest first. The
 maximum hop count is 7.
+
+A neighbour is known here only by its Bluetooth address, which the platform
+randomises and which a sender can change at will. Every per-neighbour limit
+above therefore binds only a neighbour that keeps its address; against one
+that invents addresses, only the device-wide limits bind: 200 frames and about
+256 KiB a second, 8192 seen entries and the 2 MiB store. Counting bytes is
+what makes the device-wide rate bound volume and not only frames: up to 3.0.18
+invented addresses could together push 200 full frames, about 6.5 MB, a
+second, far more than the radio can pass on, into a send queue that had no
+bound (see the Bluetooth link below).
+
+Half of the device-wide rate, 100 frames and about 128 KiB a second, is kept
+for neighbours that delivered an envelope which opened on this device in the
+last 6 minutes (`MeshForwarder.creditPeer`, called on the same report that
+keeps a link's slot); every other neighbour shares the other half. A flood
+over invented addresses therefore cannot take the whole rate from a working
+contact nearby. The rate windows run on a monotonic clock, start afresh if
+the clock ever reads earlier than a window's start, and a frame is charged to
+its neighbour and to the device only when every limit admits it, so a frame
+the device-wide limit refuses does not use up its neighbour's share (from
+3.0.19).
 
 ## Bluetooth Low Energy link
 
@@ -84,9 +113,10 @@ for private discovery.
   identity for at most about 6 minutes, and the nonce links nothing the
   address does not. That does not hold for a device linked to it, or for
   anyone who captures the link traffic, which Bluetooth does not encrypt here:
-  the next nonce is announced over the link (next item), and the new set starts
-  right after the old one stops, so timing and signal strength can also join
-  consecutive sets.
+  the next nonce is announced over the link (next item). From 3.0.19 the new
+  set starts after a random pause of 0.25 to 2.5 seconds instead of right after
+  the old one stops, but timing and signal strength can still join consecutive
+  sets.
   (Up to 3.0.14 the nonce lasted a fixed 10 minutes, longer than the address
   could, so an observer could chain address changes through it.) The first 2
   bytes of the nonce are 0xFF, so it sorts above the uniformly random nonce
@@ -103,24 +133,84 @@ for private discovery.
   first byte is not a mesh frame version.
 - Each device holds at most 6 outbound and 6 inbound links. When the slots
   are full and another device is to be linked, a link gives up its slot: the
-  oldest link that has carried no frame new to this device in the 90 seconds
-  since it came up, else the link whose last new frame is at least 6 minutes
-  old. Every mesh device emits cover at least every 5 minutes, so a working
-  neighbour keeps its slot, while advertisers that win the dial decision but
-  carry nothing cannot hold the slots.
+  oldest link that has delivered no envelope this device opened in the 90
+  seconds since it came up, else the link whose last such envelope is at
+  least 6 minutes old, else, at most once a minute, a link chosen at random
+  among those up for at least 10 minutes. An envelope counts only when it
+  opens here, comes from a contact and is not a replay, so random frames,
+  cover and replayed envelopes keep no slot, and a neighbour that only relays
+  other devices' traffic keeps its slot only while it is not needed. From
+  3.0.19; up to 3.0.18 any frame new to the device counted, so a neighbour
+  holding every slot kept them all by sending one random frame every few
+  minutes per link, and a slot held by a busy neighbour was never given up. A
+  neighbour that keeps dropping and reopening links under fresh addresses can
+  still take a slot the moment it frees, ahead of a device that is waiting.
+  No busy link is rotated out while a link that has delivered no such
+  envelope is still in its first 90 seconds, so a newcomer cannot push out
+  busy links one after another. A device that keeps reappearing under fresh
+  addresses can still cost one busy link its slot each time its own link has
+  been dropped as silent, about once every 90 seconds per side, and it takes
+  that slot itself until it is dropped again.
 - Frames are sent with a 4-byte big-endian length prefix and then split into
   Bluetooth writes or notifications sized to the negotiated transfer unit. The
   receiver reassembles by the length prefix and passes whole frames to the
   forwarder.
+- Frames wait for the radio in a send queue and for the forwarder in a receive
+  queue. Each holds at most 64 frames or 1 MiB; when either bound is reached
+  the oldest frame waiting is dropped. In the send queue, frames relayed for
+  other devices are dropped first; frames this device originated (its
+  envelopes and nonce announcements) are dropped only when no relayed frame
+  is waiting, or when more than 16 of them, or more than 256 KiB, are
+  waiting. The switch to a new advertising set is never dropped ahead of a
+  frame. A direct message whose frame is dropped is sealed and sent again at
+  its next outbox attempt (see Delivery below), and a flood that lasts can use
+  up those attempts; a presence round or group record whose frame is dropped
+  is not sent again until the next round or the next mesh start. From 3.0.19;
+  up to 3.0.18 both queues were unbounded, so a neighbour sending faster than
+  the radio drains could grow the app's memory until Android stopped it.
+- From 3.0.19 the device advertises through an advertising set in legacy mode
+  (connectable, scannable, no transmit power field, no device name), so the
+  packets are the ones a 3.0.14 or later scanner expects; the discovery
+  identifier and the nonce format are unchanged. Each set picks a random
+  interval between 160 and 400 units of 0.625 ms (100 to 250 ms); up to 3.0.18
+  the interval was a fixed 250 ms. During a set replacement the device holds a
+  partial wake lock of at most 3 seconds, and a set that fails to start is
+  tried again after 10 seconds. The advertising transmit power is medium, or
+  low when the user picks the Short Bluetooth range; the power on an open
+  connection is chosen by the Bluetooth controller, some controllers ignore
+  the requested advertising level, signal strength stays measurable either
+  way, and lowering the power only shrinks the range.
+- The user can let the mesh pause while the screen is off (off by default).
+  When that is on, the device stops advertising, scanning and its links about
+  10 minutes after the screen turns off, counted in real time on the app's
+  alarm-backed scheduler, so a sleeping device may pause up to about 15
+  minutes later; it starts again when the screen turns on. A paused device
+  relays nothing.
 
-While the mesh runs, the device's Bluetooth name is set to `Android`, the same
-for every device, before the radio starts serving; a central that connects
-can read the name, and it neither tells devices apart nor links one device's
-advertising sets. The user's own name is kept in the encrypted settings and
-put back when the mesh stops or is disabled, and at the next start of the app
-if the app ended while the mesh ran. (Up to 3.0.14 the name was `BT-` and 6
-random hex digits, fixed for a whole session, and was set only after the
-radio had started.)
+The fixed GATT service and characteristic, the rotating discovery identifier
+and the 0xFFFF manufacturer marker are the same on every device: they identify
+the app, not the person. The app never sets a Bluetooth address; whether each
+advertising set gets its own random address, and how often it changes, is up
+to the Android Bluetooth stack.
+
+Neither the mesh nor Pair Nearby exposes the device's Bluetooth name: it is
+never advertised, and while either runs the name, which a central that
+connects can read, is set to a mask before the radio starts serving. The mask
+is `Android` unless the user chose another name under "Bluetooth name while the
+mesh runs" (at most 32 characters, control and invisible characters removed).
+`Android` is the same for every device that keeps it; a chosen name is the
+same in every session of one device and can link them. One owner holds the
+name for the mesh and Pair Nearby, so neither puts the real name back while
+the other runs. The user's own name is kept in the encrypted settings and put
+back when the last of them stops, and at the next start of the app if the app
+ended while the name was masked, or when Bluetooth is next switched on if
+putting it back failed. The app waits up to one second for Android to apply the
+mask and then starts the radio even if the change is still pending; it cannot
+hide the name if Android does not apply it. Masking needs Android 12 or newer
+and the BLUETOOTH_CONNECT permission. (Up to
+3.0.14 the name was `BT-` and 6 random hex digits, fixed for a whole session,
+and was set only after the radio had started; up to 3.0.18 Pair Nearby left the
+real name in place.)
 
 ## Payload size padding
 

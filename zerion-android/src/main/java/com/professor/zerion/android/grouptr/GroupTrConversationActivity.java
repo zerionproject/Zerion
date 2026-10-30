@@ -63,6 +63,7 @@ import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 import org.zerionproject.app.api.grouptr.GroupTrBody;
 import com.professor.zerion.android.attachment.SaveCleanCopy;
+import com.professor.zerion.android.util.DisplayNames;
 import org.zerionproject.app.api.grouptr.GroupTrManager;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.grouptr.GroupTrPostDelivery;
@@ -178,6 +179,13 @@ public class GroupTrConversationActivity extends ZerionActivity
 	private boolean statesQueued = false;
 	@Nullable
 	private volatile GroupTrState lastState;
+	@Nullable
+	private volatile byte[] pinnedPostId;
+	@Nullable
+	private String hiddenPinKey;
+	private View pinnedBanner;
+	private TextView pinnedBannerText;
+	private View pinnedBannerClose;
 	private SelectionBar selectionBar;
 	private SwipeToReplyCallback swipeCallback;
 	private final LinkedHashSet<String> selected = new LinkedHashSet<>();
@@ -260,6 +268,23 @@ public class GroupTrConversationActivity extends ZerionActivity
 		postsRecycler.setAdapter(postAdapter);
 		selectionBar = new SelectionBar(this, this);
 		SelectionRows.clearOnEmptyTap(postsRecycler, selectionBar);
+		pinnedBanner = findViewById(R.id.pinnedBanner);
+		pinnedBannerText = findViewById(R.id.pinnedBannerText);
+		pinnedBannerClose = findViewById(R.id.pinnedBannerClose);
+		pinnedBanner.setOnClickListener(v -> {
+			byte[] id = pinnedPostId;
+			if (id != null) onQuoteClicked(id);
+		});
+		pinnedBannerClose.setOnClickListener(v -> {
+			byte[] id = pinnedPostId;
+			if (id == null) return;
+			if (mayPin()) {
+				unpinPost();
+			} else {
+				hiddenPinKey = StringUtils.toHexString(id);
+				pinnedBanner.setVisibility(View.GONE);
+			}
+		});
 		swipeCallback = new SwipeToReplyCallback(position -> {
 			GroupTrPost p = postAdapter.postAt(position);
 			if (p != null && canReplyTo(p)) {
@@ -388,13 +413,16 @@ public class GroupTrConversationActivity extends ZerionActivity
 					groupTrManager.getMembersOutOfReach(gid);
 			long seq = stateReads.incrementAndGet();
 			java.util.Map<String, MessageState> states = ownPostStates(gid);
+			byte[] pinned = groupTrManager.getPinnedPostId(gid);
 			GroupTrPostAdapter.Update update = postAdapter.prepare(posts);
 			main.post(() -> {
 				lastState = s;
+				pinnedPostId = pinned;
 				updateHeader(s);
 				bindReachBanner(s, outOfReach);
 				if (states != null) postAdapter.setDeliveries(states, seq);
 				renderPosts(posts, update, renamed);
+				bindPinnedBanner(posts);
 			});
 		} catch (DbException | RuntimeException ex) {
 			main.post(() -> toast(R.string.grouptr_error_load));
@@ -479,7 +507,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 		java.util.Map<String, byte[]> mlDsa = new java.util.HashMap<>();
 		for (GroupTrMember m : s.getMembers()) {
 			String key = StringUtils.toHexString(m.getPubKey());
-			if (!m.getName().isEmpty()) names.put(key, m.getName());
+			String memberName = DisplayNames.clean(m.getName()).trim();
+			if (!memberName.isEmpty()) names.put(key, memberName);
 			byte[] memberMlDsa = m.getMlDsaPubKey();
 			if (memberMlDsa != null && memberMlDsa.length > 0) {
 				mlDsa.put(key, memberMlDsa);
@@ -489,8 +518,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			java.util.Map<org.zerionproject.core.api.contact.ContactId,
 					String> contactNames = new java.util.HashMap<>();
 			for (Contact c : contactManager.getContacts()) {
-				String name = c.getAlias() != null ? c.getAlias()
-						: c.getAuthor().getName();
+				String name = DisplayNames.clean(c.getAlias() != null
+						? c.getAlias() : c.getAuthor().getName());
 				contactNames.put(c.getId(), name);
 				if (s.usesGroupKeys()) continue;
 				String key = StringUtils.toHexString(
@@ -551,9 +580,10 @@ public class GroupTrConversationActivity extends ZerionActivity
 		StringBuilder names = new StringBuilder();
 		for (GroupTrMember m : outOfReach) {
 			if (names.length() > 0) names.append('\n');
-			names.append(m.getName().isEmpty()
+			String memberName = DisplayNames.clean(m.getName()).trim();
+			names.append(memberName.isEmpty()
 					? getString(R.string.grouptr_member_unnamed)
-					: m.getName());
+					: memberName);
 		}
 		String list = names.toString();
 		banner.setOnClickListener(v -> new SecureAlertDialogBuilder(this)
@@ -565,9 +595,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void updateHeader(GroupTrState s) {
-		String name = s.getName().isEmpty()
-				? getString(R.string.grouptr_unnamed_group)
-				: s.getName();
+		String name = GroupTrListFragment.groupName(getResources(),
+				s.getName());
 		titleView.setText(name);
 		String initial = name.isEmpty() ? "?"
 				: new String(Character.toChars(name.codePointAt(0)))
@@ -764,9 +793,98 @@ public class GroupTrConversationActivity extends ZerionActivity
 			if (save && savableMedia(p) != null) {
 				offered.add(SelectionAction.SAVE);
 			}
+			if (mayPin()) {
+				offered.add(isPinned(p) ? SelectionAction.UNPIN
+						: SelectionAction.PIN);
+			}
 			offered.add(SelectionAction.INFO);
 		}
 		return offered;
+	}
+
+	private boolean mayPin() {
+		return stillMember && GroupTrPins.mayPin(lastState, localPub);
+	}
+
+	private boolean isPinned(GroupTrPost p) {
+		byte[] pinned = pinnedPostId;
+		return pinned != null && p.getPostId() != null
+				&& Arrays.equals(pinned, p.getPostId());
+	}
+
+	@Override
+	public int titleFor(SelectionAction action) {
+		if (action == SelectionAction.PIN) return R.string.action_pin_message;
+		if (action == SelectionAction.UNPIN) {
+			return R.string.action_unpin_message;
+		}
+		return 0;
+	}
+
+	private void bindPinnedBanner(List<GroupTrPost> posts) {
+		byte[] pinned = pinnedPostId;
+		if (pinned == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		String key = StringUtils.toHexString(pinned);
+		if (key.equals(hiddenPinKey)) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		GroupTrPost target = null;
+		for (GroupTrPost p : posts) {
+			if (p.getPostId() != null && Arrays.equals(p.getPostId(), pinned)) {
+				target = p;
+				break;
+			}
+		}
+		if (target == null) {
+			pinnedBanner.setVisibility(View.GONE);
+			return;
+		}
+		pinnedBannerText.setText(GroupTrPostAdapter.excerpt(this, target));
+		pinnedBannerClose.setContentDescription(getString(mayPin()
+				? R.string.action_unpin_message : R.string.pin_hide_banner));
+		pinnedBanner.setVisibility(View.VISIBLE);
+	}
+
+	private void pinSelectedPost() {
+		List<GroupTrPost> chosen = selectedPosts();
+		finishSelection();
+		if (chosen.size() != 1 || !mayPin()) return;
+		byte[] postId = chosen.get(0).getPostId();
+		if (postId == null) return;
+		byte[] gid = groupId;
+		hiddenPinKey = null;
+		ioExecutor.execute(() -> {
+			try {
+				int keeping = groupTrManager.pinPost(gid, postId);
+				if (keeping > 0) {
+					main.post(() -> Toast.makeText(this, getResources()
+							.getQuantityString(R.plurals.grouptr_pin_kept_older,
+									keeping, keeping), Toast.LENGTH_LONG)
+							.show());
+				}
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.pin_failed));
+			}
+			requestReload();
+		});
+	}
+
+	private void unpinPost() {
+		finishSelection();
+		if (!mayPin()) return;
+		byte[] gid = groupId;
+		ioExecutor.execute(() -> {
+			try {
+				groupTrManager.unpinPost(gid);
+			} catch (DbException ex) {
+				main.post(() -> toast(R.string.pin_failed));
+			}
+			requestReload();
+		});
 	}
 
 	private Set<SelectionAction> rowActions(GroupTrPost p) {
@@ -801,6 +919,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 				break;
 			case INFO:
 				showSelectedInfo();
+				break;
+			case PIN:
+				pinSelectedPost();
+				break;
+			case UNPIN:
+				unpinPost();
 				break;
 			default:
 				break;

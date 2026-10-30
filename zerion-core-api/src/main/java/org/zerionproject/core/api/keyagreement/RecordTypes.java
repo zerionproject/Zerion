@@ -7,4 +7,6 @@ public interface RecordTypes {
 	byte ABORT = 2;
 
 	byte KEM_CIPHERTEXT = 3;
+
+	byte CAPABILITIES = 4;
 }

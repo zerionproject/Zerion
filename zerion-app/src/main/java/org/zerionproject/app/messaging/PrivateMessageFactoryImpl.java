@@ -10,6 +10,7 @@ import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.messaging.PrivateMessage;
 import org.zerionproject.app.api.messaging.PrivateMessageFactory;
+import org.zerionproject.app.api.messaging.ViewOnceMedia;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.List;
@@ -21,7 +22,9 @@ import javax.inject.Inject;
 import static org.zerionproject.core.util.StringUtils.utf8IsTooLong;
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.api.messaging.MessagingConstants.MAX_PRIVATE_MESSAGE_TEXT_LENGTH;
+import static java.util.Collections.singletonList;
 import static org.zerionproject.app.messaging.MessagingConstants.BODY_SALT_LENGTH;
+import static org.zerionproject.app.messaging.MessagingConstants.VIEW_ONCE_FLAG;
 import static org.zerionproject.app.messaging.MessageTypes.PRIVATE_MESSAGE;
 
 @Immutable
@@ -104,6 +107,27 @@ class PrivateMessageFactoryImpl implements PrivateMessageFactory {
 		Message m = clientHelper.createMessage(groupId, timestamp, body);
 		return new PrivateMessage(m, text != null, headers, autoDeleteTimer,
 				replyToId);
+	}
+
+	@Override
+	public PrivateMessage createViewOncePrivateMessage(GroupId groupId,
+			long timestamp, AttachmentHeader header, long autoDeleteTimer,
+			@Nullable MessageId replyToId) throws FormatException {
+		if (!ViewOnceMedia.isAllowedType(header.getContentType())) {
+			throw new IllegalArgumentException();
+		}
+		List<AttachmentHeader> headers = singletonList(header);
+		BdfList attachmentList = serialiseAttachmentHeaders(headers);
+		Long timer = autoDeleteTimer == NO_AUTO_DELETE_TIMER ?
+				null : autoDeleteTimer;
+		byte[] salt = new byte[BODY_SALT_LENGTH];
+		crypto.getSecureRandom().nextBytes(salt);
+		BdfList body = BdfList.of(PRIVATE_MESSAGE, null, attachmentList, timer,
+				replyToId == null ? null : replyToId.getBytes(), salt,
+				VIEW_ONCE_FLAG);
+		Message m = clientHelper.createMessage(groupId, timestamp, body);
+		return new PrivateMessage(m, false, headers, autoDeleteTimer,
+				replyToId, true);
 	}
 
 	private void validateTextAndAttachmentHeaders(@Nullable String text,

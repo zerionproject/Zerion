@@ -18,7 +18,9 @@ public interface HandshakeManager {
 
 	class HandshakeResult {
 
-		private final SecretKey masterKey;
+		private final SecretKey exchangeKey;
+		private final SecretKey rootKey;
+		private final boolean keySeparated;
 		private final boolean alice;
 		private final boolean mode3Capable;
 
@@ -46,7 +48,20 @@ public interface HandshakeManager {
 				@Nullable byte[] theirStaticHybridPub,
 				@Nullable byte[] ourEphX25519,
 				@Nullable byte[] theirEphX25519) {
-			this.masterKey = masterKey;
+			this(masterKey, masterKey, false, alice, mode3Capable,
+					ourStaticHybridPub, theirStaticHybridPub, ourEphX25519,
+					theirEphX25519);
+		}
+
+		public HandshakeResult(SecretKey exchangeKey, SecretKey rootKey,
+				boolean keySeparated, boolean alice, boolean mode3Capable,
+				@Nullable byte[] ourStaticHybridPub,
+				@Nullable byte[] theirStaticHybridPub,
+				@Nullable byte[] ourEphX25519,
+				@Nullable byte[] theirEphX25519) {
+			this.exchangeKey = exchangeKey;
+			this.rootKey = rootKey;
+			this.keySeparated = keySeparated;
 			this.alice = alice;
 			this.mode3Capable = mode3Capable;
 			this.ourStaticHybridPub = ourStaticHybridPub;
@@ -55,8 +70,16 @@ public interface HandshakeManager {
 			this.theirEphX25519 = theirEphX25519;
 		}
 
-		public SecretKey getMasterKey() {
-			return masterKey;
+		public SecretKey getExchangeKey() {
+			return exchangeKey;
+		}
+
+		public SecretKey getRootKey() {
+			return rootKey;
+		}
+
+		public boolean isKeySeparated() {
+			return keySeparated;
 		}
 
 		public boolean isAlice() {

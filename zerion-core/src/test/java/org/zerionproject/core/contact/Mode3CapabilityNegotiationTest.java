@@ -37,7 +37,7 @@ public class Mode3CapabilityNegotiationTest extends BrambleMockTestCase {
 		assertFalse("Default mode3Capable should be false",
 				result1.isMode3Capable());
 		assertTrue("Alice flag should be preserved", result1.isAlice());
-		assertNotNull("Master key should be preserved", result1.getMasterKey());
+		assertNotNull("Master key should be preserved", result1.getRootKey());
 
 		HandshakeResult result2 = new HandshakeResult(masterKey, false, true);
 		assertTrue("mode3Capable should be true when explicitly set",

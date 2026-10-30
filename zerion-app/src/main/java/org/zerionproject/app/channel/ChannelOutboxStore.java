@@ -341,7 +341,8 @@ final class ChannelOutboxStore {
 		boolean after = false;
 		boolean changed = false;
 		for (Entry e : current) {
-			if (after && e.kind == ChannelQueuedItem.Kind.POST
+			if (after && (e.kind == ChannelQueuedItem.Kind.POST
+					|| e.kind == ChannelQueuedItem.Kind.MEMBER_POST)
 					&& e.afterSeq < seq) {
 				next.add(e.withAfterSeq(seq));
 				changed = true;

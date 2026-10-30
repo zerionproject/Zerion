@@ -193,10 +193,14 @@ public class PrivateMessageValidatorMemberInviteTest
 			assertEquals(t != GROUPTR_INVITE_ACCEPT_INCOGNITO,
 					MessagingManagerImpl.isMemberInviteRecordType(t));
 		}
-		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(
-				MessageTypes.GROUP_KEY_PROBE + 1));
+		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_PIN));
 		assertFalse(MessagingManagerImpl.isMemberInviteRecordType(
-				MessageTypes.GROUP_KEY_PROBE + 1));
+				MessageTypes.GROUP_PIN));
+		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_PIN + 1));
+		assertFalse(MessagingManagerImpl.isMemberInviteRecordType(
+				MessageTypes.GROUP_PIN + 1));
 		assertFalse(MessagingManagerImpl.isMemberInviteRecordType(
 				GROUP_PERMISSIONS - 1));
 		assertTrue(MessagingManagerImpl.isMemberInviteOfferType(

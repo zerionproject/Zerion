@@ -1,5 +1,6 @@
 package com.professor.zerion.android.grouptr;
 
+import com.professor.zerion.android.util.DisplayNames;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.app.api.grouptr.GroupTrIncognitoNames;
 import org.zerionproject.app.api.grouptr.GroupTrMember;
@@ -26,10 +27,11 @@ final class GroupTrSenderLabel {
 
 	static String label(@Nullable String known, @Nullable String chosen,
 			String chosenFormat, String unverifiedFormat) {
-		String alias = chosen == null ? "" : chosen.trim();
-		if (known != null && !known.isEmpty()) {
-			return alias.isEmpty() || alias.equals(known) ? known
-					: String.format(Locale.ROOT, chosenFormat, known, alias);
+		String alias = DisplayNames.clean(chosen).trim();
+		String shown = DisplayNames.clean(known).trim();
+		if (!shown.isEmpty()) {
+			return alias.isEmpty() || alias.equals(shown) ? shown
+					: String.format(Locale.ROOT, chosenFormat, shown, alias);
 		}
 		return String.format(Locale.ROOT, unverifiedFormat,
 				alias.isEmpty() ? "?" : alias);

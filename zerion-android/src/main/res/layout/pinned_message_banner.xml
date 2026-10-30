@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/pinnedBanner"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:background="?attr/selectableItemBackground"
+	android:clickable="true"
+	android:focusable="true"
+	android:gravity="center_vertical"
+	android:orientation="horizontal"
+	android:paddingStart="16dp"
+	android:paddingEnd="8dp"
+	android:paddingTop="10dp"
+	android:paddingBottom="10dp"
+	android:visibility="gone"
+	tools:visibility="visible">
+
+	<View
+		android:layout_width="3dp"
+		android:layout_height="32dp"
+		android:layout_marginEnd="10dp"
+		android:background="?attr/zerionColorAccentIcon" />
+
+	<LinearLayout
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_weight="1"
+		android:orientation="vertical">
+
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/pinned_message_label"
+			android:textColor="?attr/zerionColorAccentText"
+			android:textAppearance="@style/TextAppearance.Zerion.Meta.Strong" />
+
+		<TextView
+			android:id="@+id/pinnedBannerText"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:ellipsize="end"
+			android:maxLines="1"
+			android:textColor="?attr/zerionColorOnSurface"
+			tools:text="Meet at the station at nine."
+			android:textAppearance="@style/TextAppearance.Zerion.BodySmall" />
+
+	</LinearLayout>
+
+	<ImageButton
+		android:id="@+id/pinnedBannerClose"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_marginTop="-4dp"
+		android:layout_marginBottom="-4dp"
+		android:layout_marginEnd="-4dp"
+		android:background="?attr/selectableItemBackgroundBorderless"
+		android:contentDescription="@string/action_unpin_message"
+		android:padding="14dp"
+		android:src="@drawable/ic_close"
+		app:tint="?attr/zerionColorOnSurfaceMuted" />
+
+</LinearLayout>

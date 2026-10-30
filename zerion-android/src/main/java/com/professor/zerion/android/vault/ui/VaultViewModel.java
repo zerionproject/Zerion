@@ -141,10 +141,7 @@ public class VaultViewModel extends AndroidViewModel {
 		this.nodeRouting = new BtcNodeRouting(walletSettings);
 		this.walletCredential = new WalletCredential(walletSettings,
 				android.os.SystemClock::elapsedRealtime);
-		vaultManager.setOnLockListener(() -> {
-			resetWalletSession();
-			vaultState.postValue(VaultState.LOCKED);
-		});
+		vaultManager.addLockListener(lockHook);
 		refreshVaultState();
 	}
 
@@ -415,6 +412,10 @@ public class VaultViewModel extends AndroidViewModel {
 						ElectrumClient.captureCert(ep, torSocksPort);
 				walletPinPrompt.postValue(node + "|"
 						+ (cert.caValid ? "ca" : "self") + "|" + cert.sha256);
+			} catch (ElectrumClient.PossibleInterception e) {
+				walletPinPrompt.postValue(node + "|intercept");
+			} catch (ElectrumClient.CertificatesDiffer e) {
+				walletPinPrompt.postValue(node + "|differ");
 			} catch (Throwable e) {
 				walletPinPrompt.postValue(node + "|error");
 			}
@@ -481,6 +482,8 @@ public class VaultViewModel extends AndroidViewModel {
 			java.util.List<com.professor.zerion.android.vault.wallet.btc
 					.ElectrumEndpoint> fbs = nodeRouting.fallbacks(id, scanEp);
 			w.updateEndpoints(scanEp, bcastEp, fbs, fbs);
+			w.setFeeCheckEndpoint(
+					nodeRouting.feeCheckEndpoint(id, scanEp, bcastEp));
 			scanOpenBtc(true);
 		} catch (Throwable ignored) {
 		}
@@ -1115,6 +1118,9 @@ public class VaultViewModel extends AndroidViewModel {
 				java.util.List<com.professor.zerion.android.vault.wallet.btc
 						.ElectrumEndpoint> fbs = nodeRouting.fallbacks(walletId, scanEp);
 				w.setFallbacks(fbs, fbs);
+				w.setFeeCheckEndpoint(
+						nodeRouting.feeCheckEndpoint(walletId, scanEp, bcastEp));
+				w.setFeeBaselineStore(walletSettings.feeBaselineStore(walletId));
 				int persistedIndex = walletSettings.receiveIndex(walletId);
 				w.setMinReceiveProbe(persistedIndex);
 				w.setMinChangeProbe(walletSettings.changeIndex(walletId));
@@ -1226,12 +1232,15 @@ public class VaultViewModel extends AndroidViewModel {
 		public final String fingerprint;
 		public final double feeRateSatPerVb;
 		public final int feePercentOfAmount;
+		public final boolean feeJump;
+		public final boolean feeServersDisagree;
 		public final com.professor.zerion.android.vault.wallet.btc.privacy
 				.PrivacyAnalyzer.Analysis analysis;
 
 		SendReview(com.professor.zerion.android.vault.wallet.btc.BtcWallet
 				.SendPlan p, com.professor.zerion.android.vault.wallet.btc
-				.privacy.PrivacyAnalyzer.Analysis analysis) {
+				.privacy.PrivacyAnalyzer.Analysis analysis,
+				BtcWallet.FeeReview fee) {
 			this.toAddress = p.toAddress;
 			this.amountSat = p.amountSat;
 			this.feeSat = p.feeSat;
@@ -1239,6 +1248,8 @@ public class VaultViewModel extends AndroidViewModel {
 			this.fingerprint = p.fingerprint;
 			this.feeRateSatPerVb = p.feeRateSatPerVb();
 			this.feePercentOfAmount = p.feePercentOfAmount();
+			this.feeJump = fee.jump;
+			this.feeServersDisagree = fee.serversDisagree;
 			this.analysis = analysis;
 		}
 	}
@@ -1297,7 +1308,8 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 				sendGate.prepare(plan, w.walletId());
 				walletSendReview.postValue(new Event<>(
-						new SendReview(plan, w.analyzePlan(plan))));
+						new SendReview(plan, w.analyzePlan(plan),
+								w.feeReview(feeRate))));
 			} catch (com.professor.zerion.android.vault.wallet.btc.privacy
 					.PrivacyMergeException e) {
 				walletMergePrompt.postValue(new MergePrompt(toAddress, amountSat,
@@ -1770,19 +1782,27 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void unlockVault(char[] password) {
 		isLoading.postValue(true);
+		long pendingMark = vaultManager.markUnlockPending();
 
 		dbExecutor.execute(() -> {
 			try {
-				boolean success = vaultManager.unlockVault(password);
-				if (success) {
+				boolean success = vaultManager.unlockVault(password,
+						pendingMark);
+				if (success && vaultManager.isUnlocked()) {
 					errorMessage.postValue(null);
 					vaultState.postValue(VaultState.UNLOCKED);
 					loadVaultItems();
+				} else if (success) {
+					vaultState.postValue(VaultState.LOCKED);
 				} else {
 					errorMessage.postValue(text(R.string.vault_unlock_failed));
 				}
 			} catch (SecurityException e) {
 				errorMessage.postValue(text(R.string.vault_unlock_failed));
+			} catch (com.professor.zerion.android.vault.crypto.Argon2
+					.NativeRequiredException e) {
+				errorMessage.postValue(
+						text(R.string.vault_msg_unlock_needs_native));
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_unlock_failed));
 			} finally{
@@ -1800,7 +1820,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	public void lockVault() {
 		resetWalletSession();
-		vaultManager.lockVault();
+		vaultManager.requestLock();
 		vaultState.postValue(VaultState.LOCKED);
 		clearSensitiveMemory();
 		com.professor.zerion.android.vault.ui.adapters.VaultGalleryAdapter
@@ -1821,6 +1841,9 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				List<VaultItem> items = vaultManager.listItems();
 				vaultItems.postValue(items);
+				if (!vaultManager.isUnlocked()) {
+					vaultItems.postValue(new ArrayList<>());
+				}
 			} catch (SecurityException e) {
 				vaultItems.postValue(new ArrayList<>());
 			} catch (Exception e) {
@@ -2265,12 +2288,18 @@ public class VaultViewModel extends AndroidViewModel {
 			});
 			return;
 		}
+		long generation = vaultManager.getLockGeneration();
 		dbExecutor.execute(() -> {
 			try {
 				byte[] thumbnail = vaultManager.getThumbnail(itemId);
 
 				if (thumbnail == null) {
 					thumbnail = vaultManager.getItemContent(itemId);
+				}
+
+				if (thumbnail != null && !stillUnlocked(generation)) {
+					java.util.Arrays.fill(thumbnail, (byte) 0);
+					throw new SecurityException(VaultManager.UNLOCK_FIRST);
 				}
 
 				if (thumbnail == null || thumbnail.length == 0) {
@@ -2281,8 +2310,13 @@ public class VaultViewModel extends AndroidViewModel {
 				}
 
 				byte[] finalThumbnail = thumbnail;
-				THUMB_DECODE_EXECUTOR.execute(() ->
-						callback.onThumbnailRetrieved(finalThumbnail));
+				THUMB_DECODE_EXECUTOR.execute(() -> {
+					if (!stillUnlocked(generation)) {
+						java.util.Arrays.fill(finalThumbnail, (byte) 0);
+						return;
+					}
+					callback.onThumbnailRetrieved(finalThumbnail);
+				});
 			} catch (SecurityException e) {
 				new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
 					callback.onError(text(R.string.vault_locked));
@@ -2293,6 +2327,15 @@ public class VaultViewModel extends AndroidViewModel {
 				});
 			}
 		});
+	}
+
+	boolean stillUnlocked(long generation) {
+		return vaultManager.isUnlocked()
+				&& vaultManager.getLockGeneration() == generation;
+	}
+
+	public boolean isVaultUnlocked() {
+		return vaultManager.isUnlocked();
 	}
 
 	public interface ThumbnailCallback {
@@ -2414,7 +2457,7 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void lockIfUnlocked() {
-		if (vaultManager.isUnlocked()) {
+		if (vaultManager.isUnlocked() || vaultManager.isUnlockInProgress()) {
 			lockVault();
 		} else {
 			resetWalletSession();
@@ -2458,6 +2501,8 @@ public class VaultViewModel extends AndroidViewModel {
 				errorMessage.postValue(m != null
 						&& m.startsWith(VaultManager.TOO_MANY_ATTEMPTS)
 						? text(R.string.vault_msg_too_many_attempts)
+						: VaultManager.UNLOCK_FIRST.equals(m)
+						? text(R.string.vault_msg_unlock_first)
 						: text(R.string.vault_msg_invalid_current_password));
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_change_password_failed));
@@ -2491,12 +2536,23 @@ public class VaultViewModel extends AndroidViewModel {
 		void onExportError(String error);
 	}
 
+	private final Runnable lockHook = this::onVaultLocked;
+
+	private void onVaultLocked() {
+		resetWalletSession();
+		if (vaultManager.isLockedNow()) {
+			clearSensitiveMemory();
+			com.professor.zerion.android.vault.ui.adapters.VaultGalleryAdapter
+					.clearThumbnailCache();
+			vaultState.postValue(VaultState.LOCKED);
+		}
+	}
+
 	@Override
 	protected void onCleared() {
+		vaultManager.removeLockListener(lockHook);
 		super.onCleared();
 		clearSensitiveMemory();
-		if (vaultManager.isUnlocked()) {
-			vaultManager.lockVault();
-		}
+		vaultManager.requestLock();
 	}
 }

@@ -1,0 +1,46 @@
+Equi-X and HashX in the Tor executable (libtor.so)
+
+The Tor executable this repository builds and the app ships (libtor.so for
+arm64-v8a and armeabi-v7a, see packaging/tor-android/PROVENANCE.md) is
+configured with --enable-gpl, which links Tor's onion service proof-of-work
+module into it. That module uses two libraries that Tor carries in its own
+source tree:
+
+  Equi-X, in src/ext/equix of the Tor source
+  HashX, in src/ext/equix/hashx of the Tor source
+
+  Copyright (c) 2020 tevador <tevador@gmail.com>
+
+Both are licensed under the GNU Lesser General Public License, version 3
+(LGPL-3.0-only, as src/ext/equix/Cargo.toml declares). The licence text,
+byte for byte the same in src/ext/equix/LICENSE and
+src/ext/equix/hashx/LICENSE, is in lgpl-3.0.txt next to this file. The GNU
+General Public License, version 3, which that licence supplements, is
+LICENSE.txt at the root of this repository.
+
+HashX's src/blake2.c is based on the BLAKE2b code of the Argon2 reference
+implementation (Copyright 2015 Daniel Dinu, Dmitry Khovratovich,
+Jean-Philippe Aumasson and Samuel Neves), which is used under CC0.
+
+Licence of the executable as built. Tor's configure describes --enable-gpl
+as "allow the inclusion of GPL-licensed code, building a version of tor and
+libtor covered by the GPL rather than its usual 3-clause BSD license", and an
+executable built this way prints "This build of Tor is covered by the GNU
+General Public License (https://www.gnu.org/licenses/gpl-3.0.en.html)" for
+--version. libtor.so is therefore distributed under the GNU General Public
+License, version 3. The code it contains under the 3-clause BSD licence and
+other permissive licences keeps its copyright notices and licence texts,
+which apply to those parts: Tor's LICENSE file, with the notices of the code
+Tor includes, is reproduced in tor.txt next to this file. The libraries Tor
+links statically are libevent (3-clause BSD), OpenSSL (Apache License 2.0)
+and zlib (zlib licence), all of which may be combined with code under the GNU
+General Public License, version 3.
+
+Source. The Equi-X and HashX code in the executable is the code in the Tor
+release tag tor-0.4.9.14, commit 8fe2745aee2c35116ff1081f19b2952418b43069,
+at https://gitlab.torproject.org/tpo/core/tor.git, which
+packaging/tor-android/build-tor-android.sh clones and checks. The recipe
+that builds the executable from it (that script, the Makefile and
+fdroid-build.sh next to it) is in this repository. The release tarball
+tor-0.4.9.14.tar.gz on dist.torproject.org carries the Equi-X and HashX
+sources but not their LICENSE files; the git tag carries both.

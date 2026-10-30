@@ -285,8 +285,7 @@ v1.5.0 shipped `messaging.minorVersion` **6**
 each new messaging feature; from 3.0.18 it is **12**
 (`B3_PROOF_ENABLED ? 12 : 5`, see `MessagingManager.MINOR_VERSION`,
 GROUPTR_WIRE_PROTOCOL.md and
-[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)). Legacy
-4-slot acceptance is retained for cross-version interop.
+[MESSAGE-EDIT-DELETE.md](../protocol/MESSAGE-EDIT-DELETE.md)).
 
 ---
 

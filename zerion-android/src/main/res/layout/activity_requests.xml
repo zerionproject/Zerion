@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/requestsRoot"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="?attr/zerionColorBackground"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<include layout="@layout/toolbar" />
+
+	<TextView
+		android:id="@+id/invitesPausedBanner"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="?attr/zerionColorSurfaceVariant"
+		android:clickable="true"
+		android:focusable="true"
+		android:gravity="center_vertical"
+		android:minHeight="48dp"
+		android:padding="12dp"
+		android:textColor="@color/zerion_text_primary"
+		android:textSize="14sp"
+		android:visibility="gone" />
+
+	<com.google.android.material.tabs.TabLayout
+		android:id="@+id/requestsTabs"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@android:color/transparent"
+		app:tabIndicatorColor="@color/zerion_primary_accent"
+		app:tabSelectedTextColor="@color/zerion_accent_text"
+		app:tabTextColor="?android:attr/textColorSecondary" />
+
+	<FrameLayout
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1">
+
+		<androidx.recyclerview.widget.RecyclerView
+			android:id="@+id/requestsList"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:clipToPadding="false"
+			android:paddingBottom="16dp" />
+
+		<TextView
+			android:id="@+id/requestsEmpty"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center"
+			android:padding="24dp"
+			android:textColor="@color/zerion_text_secondary"
+			android:textSize="15sp"
+			android:visibility="gone" />
+
+	</FrameLayout>
+
+</LinearLayout>

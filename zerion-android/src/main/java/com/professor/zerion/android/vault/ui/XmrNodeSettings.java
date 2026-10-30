@@ -4,7 +4,6 @@ import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
@@ -103,7 +102,7 @@ final class XmrNodeSettings {
 		String active = activeLabel(f, cfg);
 		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.wallet_xmr_node_title)
-				.setMessage(active == null ? null
+				.setMessage(active == null ? null : cfg.isPaused() ? active
 						: f.getString(R.string.wallet_xmr_node_active, active))
 				.setView(scroll)
 				.setPositiveButton(android.R.string.ok,
@@ -119,19 +118,22 @@ final class XmrNodeSettings {
 				save(f, vm, new XmrNodeConfig(mode, "", cfg.customNodes, ""));
 				break;
 			case OWN:
-				promptOwnNode(f, cfg, (addr, trusted) -> save(f, vm,
-						new XmrNodeConfig(mode, addr, trusted, cfg.customNodes,
-								"")));
+				promptOwnNode(f, cfg, (addr, trusted) -> confirmUnverified(f,
+						addr, XmrNode.Source.USER_OWNED, acks -> save(f, vm,
+								new XmrNodeConfig(mode, addr, trusted,
+										cfg.customNodes, "", acks))));
 				break;
 			case CUSTOM:
 				promptAddress(f, R.string.wallet_xmr_node_custom_hint,
 						cfg.customNodes.isEmpty() ? "" : cfg.customNodes.get(0),
-						addr -> {
-							List<String> c = new ArrayList<>();
-							c.add(addr);
-							save(f, vm, new XmrNodeConfig(mode, cfg.ownNode, c,
-									cfg.directNode));
-						});
+						true, addr -> confirmUnverified(f, addr,
+								XmrNode.Source.CUSTOM, acks -> {
+									List<String> c = new ArrayList<>();
+									c.add(addr);
+									save(f, vm, new XmrNodeConfig(mode,
+											cfg.ownNode, false, c,
+											cfg.directNode, acks));
+								}));
 				break;
 			case DIRECT:
 				new SecureAlertDialogBuilder(f.requireContext())
@@ -140,7 +142,7 @@ final class XmrNodeSettings {
 						.setPositiveButton(R.string.wallet_xmr_node_direct_accept,
 								(d, w) -> promptAddress(f,
 										R.string.wallet_xmr_node_direct_hint,
-										cfg.directNode, addr -> save(f, vm,
+										cfg.directNode, false, addr -> save(f, vm,
 												new XmrNodeConfig(mode, "",
 														cfg.customNodes, addr))))
 						.setNegativeButton(android.R.string.cancel, null)
@@ -157,8 +159,86 @@ final class XmrNodeSettings {
 		void accept(String address, boolean trusted);
 	}
 
+	private interface AckSink {
+		void accept(List<String> acks);
+	}
+
+	private static void confirmUnverified(Fragment f, String addr,
+			XmrNode.Source source, AckSink sink) {
+		XmrNode node;
+		try {
+			node = XmrNode.parse(addr, source, false);
+		} catch (RuntimeException e) {
+			toast(f, R.string.wallet_xmr_node_invalid);
+			return;
+		}
+		List<String> acks = new ArrayList<>();
+		if (!node.isUnverifiedOverTor()) {
+			sink.accept(acks);
+			return;
+		}
+		acks.add(node.endpointId());
+		new SecureAlertDialogBuilder(f.requireContext())
+				.setTitle(R.string.wallet_xmr_node_unverified_title)
+				.setMessage(R.string.wallet_xmr_node_unverified_warning)
+				.setPositiveButton(R.string.wallet_xmr_node_unverified_accept,
+						(d, w) -> sink.accept(acks))
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	static boolean unverifiedOwn(String addr) {
+		try {
+			return XmrNode.parse(addr, XmrNode.Source.USER_OWNED, false)
+					.isUnverifiedOverTor();
+		} catch (RuntimeException invalid) {
+			return false;
+		}
+	}
+
+	private static TextView onionNote(Fragment f) {
+		TextView note = new TextView(f.requireContext());
+		note.setText(R.string.wallet_xmr_node_onion_note);
+		note.setTextSize(13);
+		note.setTextColor(MaterialColors.getColor(f.requireContext(),
+				com.google.android.material.R.attr.colorOnSurfaceVariant,
+				0xFF666666));
+		return note;
+	}
+
+	static void promptIfPaused(Fragment f, XmrViewModel vm) {
+		XmrNodeConfig cfg = vm.getNodeConfig();
+		XmrNode paused = cfg.pausedNode();
+		if (paused == null || cfg.pausePrompted || !f.isAdded()) return;
+		new SecureAlertDialogBuilder(f.requireContext())
+				.setTitle(R.string.wallet_xmr_node_paused_title)
+				.setMessage(f.getString(R.string.wallet_xmr_node_paused_message,
+						paused.shortLabel()))
+				.setPositiveButton(R.string.wallet_xmr_node_paused_confirm,
+						(d, w) -> confirmUnverified(f, paused.address(),
+								paused.source, acks -> save(f, vm,
+										cfg.withAcknowledged(acks))))
+				.setNegativeButton(R.string.wallet_xmr_node_paused_stop,
+						(d, w) -> save(f, vm, cfg.withPauseChoice(true)))
+				.setNeutralButton(R.string.wallet_xmr_node_paused_keep,
+						(d, w) -> save(f, vm, cfg.withPauseChoice(false)))
+				.setCancelable(false)
+				.show();
+	}
+
+	@Nullable
+	static String pausedLabel(Fragment f, XmrNodeConfig cfg) {
+		XmrNode paused = cfg.pausedNode();
+		if (paused == null) return null;
+		return f.getString(cfg.stopWhenPaused
+				? R.string.wallet_xmr_node_paused_stopped
+				: R.string.wallet_xmr_node_paused_vetted, paused.shortLabel());
+	}
+
 	@Nullable
 	private static String activeLabel(Fragment f, XmrNodeConfig cfg) {
+		String paused = pausedLabel(f, cfg);
+		if (paused != null) return paused;
 		List<XmrNode> order = cfg.toFailoverList();
 		if (order.isEmpty()) return null;
 		String node = order.get(0).shortLabel();
@@ -189,28 +269,36 @@ final class XmrNodeSettings {
 		box.setOrientation(LinearLayout.VERTICAL);
 		box.setPadding(p, p / 2, p, 0);
 		box.addView(input);
+		box.addView(onionNote(f));
 		box.addView(trust);
 		new SecureAlertDialogBuilder(f.requireContext())
 				.setTitle(R.string.wallet_xmr_node_address)
 				.setView(box)
 				.setPositiveButton(android.R.string.ok, (d, w) -> {
 					String v = input.getText().toString().trim();
-					if (!v.isEmpty()) sink.accept(v, trust.isChecked());
+					if (v.isEmpty()) return;
+					if (trust.isChecked() && unverifiedOwn(v)) {
+						toast(f, R.string.wallet_xmr_node_trust_refused);
+						return;
+					}
+					sink.accept(v, trust.isChecked());
 				})
 				.setNegativeButton(android.R.string.cancel, null)
 				.show();
 	}
 
 	private static void promptAddress(Fragment f, int hintRes, String current,
-			AddrSink sink) {
+			boolean overTor, AddrSink sink) {
 		EditText input = new EditText(f.requireContext());
 		input.setHint(hintRes);
 		input.setText(current);
 		input.setSingleLine(true);
 		int p = Math.round(20 * f.getResources().getDisplayMetrics().density);
-		FrameLayout box = new FrameLayout(f.requireContext());
+		LinearLayout box = new LinearLayout(f.requireContext());
+		box.setOrientation(LinearLayout.VERTICAL);
 		box.setPadding(p, p / 2, p, 0);
 		box.addView(input);
+		if (overTor) box.addView(onionNote(f));
 		new SecureAlertDialogBuilder(f.requireContext())
 				.setTitle(R.string.wallet_xmr_node_address)
 				.setView(box)
@@ -235,13 +323,15 @@ final class XmrNodeSettings {
 		try {
 			switch (cfg.mode) {
 				case OWN:
-					XmrNode.parse(cfg.ownNode, XmrNode.Source.USER_OWNED,
-							cfg.ownTrusted);
-					return true;
+					return cfg.isAllowed(XmrNode.parse(cfg.ownNode,
+							XmrNode.Source.USER_OWNED, cfg.ownTrusted))
+							|| cfg.pausePrompted;
 				case CUSTOM:
-					XmrNode.parse(cfg.customNodes.isEmpty() ? ""
-							: cfg.customNodes.get(0), XmrNode.Source.CUSTOM, false);
-					return true;
+					return cfg.isAllowed(XmrNode.parse(
+							cfg.customNodes.isEmpty() ? ""
+									: cfg.customNodes.get(0),
+							XmrNode.Source.CUSTOM, false))
+							|| cfg.pausePrompted;
 				case DIRECT:
 					XmrNode.parse(cfg.directNode, XmrNode.Source.DIRECT, false);
 					return true;

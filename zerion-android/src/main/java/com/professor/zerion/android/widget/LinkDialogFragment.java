@@ -55,7 +55,8 @@ public class LinkDialogFragment extends DialogFragment {
 				false);
 
 		TextView urlView = v.findViewById(R.id.urlView);
-		urlView.setText(url);
+		urlView.setText(com.professor.zerion.android.util.DisplayNames
+				.clean(url));
 
 		Context ctx = requireContext();
 

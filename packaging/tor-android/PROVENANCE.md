@@ -24,7 +24,13 @@ artifact's executables exactly (see the verification section).
 - `libtor.so` for `arm64-v8a` and `armeabi-v7a`: the Tor client, statically
   linked against libevent, OpenSSL and zlib, built with
   `--disable-module-relay --disable-module-dirauth` (client and onion service
-  only), `--enable-android`, PIE, stripped. The exact configure lines are in
+  only), `--enable-android`, PIE, stripped. Since 3.0.19 it is also built
+  with `--enable-gpl`, which adds Tor's onion service proof-of-work module
+  (proposal 327, configure: "pow: yes"); it uses Equi-X and HashX from
+  `src/ext/equix` of the pinned Tor tag (Copyright (c) 2020 tevador,
+  LGPL-3.0-only), and Tor built this way is covered by the GNU GPL,
+  version 3, instead of its usual 3-clause BSD licence (see NOTICE.md and
+  `docs/licenses/tor-equix-hashx.txt`). The exact configure lines are in
   `Makefile`.
 - The lyrebird pluggable-transport executable is not part of this build. Since
   3.0.18 it is built in tree as well, from its signed upstream release tag with
@@ -46,7 +52,7 @@ artifact's executables exactly (see the verification section).
 | Android NDK | r29 (`29.0.14206865`), zip SHA-256 `4abbbcdc842f3d4879206e9695d52709603e52dd68d3c1fff04b3b5e7a308ecf` |
 | Android API | 21 (the NDK platform level the makefile targets) |
 | Build clock | `SOURCE_DATE_EPOCH=1234567890`, `TZ=UTC`, `-fdebug-compilation-dir .`, `-Os`, set by the makefile |
-| Makefile | vendored from the Briar Project's tor-reproducer, originally Guardian Project's `tor-android/external/Makefile` (BSD 3-clause); modified only in its header and in Tor's configure line, which sets `CPPFLAGS="-D_FORTIFY_SOURCE=2"` (see the dependency review) |
+| Makefile | vendored from the Briar Project's tor-reproducer, originally Guardian Project's `tor-android/external/Makefile` (BSD 3-clause); modified only in its header and in Tor's configure line, which sets `CPPFLAGS="-D_FORTIFY_SOURCE=2"` (see the dependency review) and, since 3.0.19, passes `--enable-gpl` for the proof-of-work module; every other configure flag is unchanged |
 | ABIs | arm64-v8a, armeabi-v7a |
 
 The script asserts every commit after checkout and aborts on a mismatch; it
@@ -94,8 +100,8 @@ records the resolved commits in `out/SOURCES.txt` and the SHA-256 of each
 
 | File | SHA-256 | Size |
 |---|---|---|
-| `out/arm64-v8a/libtor.so` | `21604deaa31ecfd954220b25800c96374f92b450df2327aea916836799fbdc47` | 8842144 bytes |
-| `out/armeabi-v7a/libtor.so` | `75ee09598e7efec2a242a96ce189d3aceab55089ce6d8df5966173ca5e6fc9da` | 7127292 bytes |
+| `out/arm64-v8a/libtor.so` | `8598ddd59a99bc78053441ecaf09a91b51f4038f5e2dd375428ea05d61030a93` | 8884656 bytes |
+| `out/armeabi-v7a/libtor.so` | `f6068c70a7646847c3b5f92bc79bd0fc258b7cb6ecf07567f34344d00b033724` | 7190108 bytes |
 
 Both are stripped position-independent executables with `BIND_NOW`, no text
 relocations and a non-executable stack; the arm64-v8a segments are aligned to
@@ -103,33 +109,48 @@ relocations and a non-executable stack; the arm64-v8a segments are aligned to
 `tor 0.4.9.14` with the git id `8fe2745aee2c3511`, `OpenSSL 3.5.9 29 Sep 2026`,
 libevent `2.1.12-stable` and zlib `1.3.2`, and Tor is compiled at
 `-D_FORTIFY_SOURCE=2` (configure: "whether to add -D_FORTIFY_SOURCE=3 to
-CPPFLAGS... no", the same for 2).
+CPPFLAGS... no", the same for 2). Tor's configure summary reports
+`License Option: GPL` and `pow (--disable-module-pow): yes` for both ABIs and
+is otherwise the same as for the 3.0.18 build, apart from the configure line,
+which adds `--enable-gpl`. The executables contain the Equi-X and HashX code
+(for example the strings `HashX v1` and "Constructing EquiX challenge") and
+print "This build of Tor is covered by the GNU General Public License" for
+`--version`, and they no longer contain the message "this build of tor does
+not include the required 'pow' module". The compiler's only new warning, on
+armeabi-v7a, is Tor's own `src/ext/compat_blake2.h:38`, which narrows a 64-bit
+length to `size_t` when it calls HashX's BLAKE2b; Tor passes fixed-size
+buffers there.
 
 Calls to bionic's checked functions, counted as branch instructions to their
 PLT entries in the `llvm-objdump` disassembly of NDK r29 (for armeabi-v7a the
 PLT entries are decoded to their `R_ARM_JUMP_SLOT` relocations;
 `__stack_chk_fail` is not counted):
 
-| Function | 0.4.9.13 | 0.4.9.14 at level 3 | 0.4.9.14 as built |
-|---|---|---|---|
-| `__strlcpy_chk` | 49 | 26 | 49 |
-| `__strrchr_chk` | 1 | 0 | 1 |
-| `__strlen_chk` | 29 | 29 | 29 |
-| `__memcpy_chk` | 13 | 13 | 13 |
-| `__read_chk` | 4 | 4 | 4 |
-| `__strlcat_chk` | 3 | 3 | 3 |
-| `__strchr_chk`, `__strncpy_chk2`, `__FD_SET_chk`, `__FD_CLR_chk`, `__FD_ISSET_chk` | 2 each | 2 each | 2 each |
-| `__memset_chk` | 1 | 1 | 1 |
-| `__vsnprintf_chk` (armeabi-v7a only) | 6 | 6 | 6 |
-| Total arm64-v8a / armeabi-v7a | 110 / 116 | 86 / 92 | 110 / 116 |
+| Function | 0.4.9.13 | 0.4.9.14 at level 3 | 0.4.9.14 in 3.0.18 | 0.4.9.14 with pow, as built |
+|---|---|---|---|---|
+| `__strlcpy_chk` | 49 | 26 | 49 | 49 |
+| `__strrchr_chk` | 1 | 0 | 1 | 1 |
+| `__strlen_chk` | 29 | 29 | 29 | 29 |
+| `__memcpy_chk` | 13 | 13 | 13 | 14 |
+| `__read_chk` | 4 | 4 | 4 | 4 |
+| `__strlcat_chk` | 3 | 3 | 3 | 3 |
+| `__strchr_chk`, `__strncpy_chk2`, `__FD_SET_chk`, `__FD_CLR_chk`, `__FD_ISSET_chk` | 2 each | 2 each | 2 each | 2 each |
+| `__memset_chk` | 1 | 1 | 1 | 1 |
+| `__vsnprintf_chk` (armeabi-v7a only) | 6 | 6 | 6 | 6 |
+| Total arm64-v8a / armeabi-v7a | 110 / 116 | 86 / 92 | 110 / 116 | 111 / 117 |
 
-The counts are the same on both ABIs apart from `__vsnprintf_chk`.
+The counts are the same on both ABIs apart from `__vsnprintf_chk`. The one
+additional `__memcpy_chk` comes from the code that `--enable-gpl` adds; no
+checked call of the 3.0.18 build is lost. The 3.0.18 column was measured again
+with the same counter on 2026-10-26 and matched the values recorded then.
 
 The same values are the pins in
 `zerion-core-android/src/main/resources/org/zerionproject/tor/binaries.sha256`,
 which the Gradle gate `verifyTorNativeArtifacts` checks before the files are
-merged and the app checks before every Tor start. A change of any pin above
-has to be accompanied by a rebuild and an update of both places.
+merged and the app checks before every Tor start, and in
+`zerion-core-android/src/test/java/org/zerionproject/tor/TorBinaryPinsTest.java`.
+A change of any pin above has to be accompanied by a rebuild and an update of
+all three places.
 
 ## Verification
 
@@ -140,9 +161,29 @@ has to be accompanied by a rebuild and an update of both places.
   published `tor-android-0.4.9.12.jar` executables
   (`bf36260486d44c2745fda8e4448668a1ee758db0aa79156299979916b03124a3` and
   `e28eee1ce24a54c8518a5ea91de9365f7db3ea0a9c67a6c2c039b6a85e632485`).
-- Two environments (2026-10-19, Tor 0.4.9.14 with OpenSSL 3.5.9 and the
-  makefile with the `CPPFLAGS` line): the hashes above came out byte for byte
-  the same from `build-tor-android.sh` as root in
+- Two environments (2026-10-26, Tor 0.4.9.14 with OpenSSL 3.5.9 and the
+  makefile with the `CPPFLAGS` line and `--enable-gpl`): the hashes above came
+  out byte for byte the same from `build-tor-android.sh` as root in the Briar
+  reproducer image (`zerion/tor-reproducer-android`, image
+  `sha256:01e6005fd3297208d7bbabbc2687c765f0a5e9a3ca62b6b7be0b9989bb235875`)
+  and from `fdroid-build.sh` run the way the recipe runs it, as the `vagrant`
+  user from `zerion-android` with `NDK_CACHE=/build` after the recipe's
+  `sudo` lines, in `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie`
+  (`sha256:9cb68105642ca4e7b295f0ceab10f069f5b3247dc18fa7c36046e9d81aa469a8`),
+  the same images as on 2026-10-19 (Debian 13.7 with gcc 14.2.0, autoconf
+  2.72 and automake 1.17). The NDK r29 zip kept from the 2026-10-18 download
+  was checked against the pinned SHA-256 inside each environment before it
+  was unpacked there, and the sources resolved to the pinned commits in both.
+  The second environment ran the recipe's whole line twice: both runs gave
+  these Tor hashes, and in the second the lyrebird build that follows it gave
+  the hashes pinned in `../lyrebird-android/PROVENANCE.md` (in the first, the
+  Go module download failed on a transient error from `proxy.golang.org`).
+- Two environments (2026-10-19, the build shipped in 3.0.18, without
+  `--enable-gpl`): `21604deaa31ecfd954220b25800c96374f92b450df2327aea916836799fbdc47`
+  (arm64-v8a, 8842144 bytes) and
+  `75ee09598e7efec2a242a96ce189d3aceab55089ce6d8df5966173ca5e6fc9da`
+  (armeabi-v7a, 7127292 bytes) came out byte for byte the same from
+  `build-tor-android.sh` as root in
   the Briar reproducer image (`zerion/tor-reproducer-android`, image
   `sha256:01e6005fd3297208d7bbabbc2687c765f0a5e9a3ca62b6b7be0b9989bb235875`)
   and from `fdroid-build.sh` run the way the recipe runs it, as the `vagrant`
@@ -155,7 +196,8 @@ has to be accompanied by a rebuild and an update of both places.
   0.4.9.14 build of 2026-10-18, at fortify level 3 without the `CPPFLAGS`
   line (`66171a3c07be68cc95be9c1ba2d492d528441ef228591d592a4b3ea15f010bb5`
   and `83d0e90a3faa2839b3c180eb059ae7116697b00553785d24a07175af7bd24061`),
-  was equally identical in both environments and is superseded by this one.
+  was equally identical in both environments; both are superseded by the
+  2026-10-26 build.
 - Previous build (Tor 0.4.9.13 with OpenSSL 3.5.8, shipped in 3.0.15 to
   3.0.17): `586209695b73aea897086d0500b7ef1dcccb0a5a8a002c4e1903ab2ad866dced`
   (arm64-v8a) and `1b83790304f4c15a283ada143d35ef86a30027d814d0cd8cf6e1004c360eeb09`
@@ -165,11 +207,12 @@ has to be accompanied by a rebuild and an update of both places.
   each other over Tor and established audio calls, and a call survived a 35 s
   connection loss and ended on both sides within the liveness deadline after
   a lasting loss.
-- Runtime of this build: on 2026-10-19 the 0.4.9.14 executable from this build
-  ran as the app's Tor on two phones (Android 15 and Android 16, debug builds
-  of the same tree). Both reached Online and exchanged messages; address
-  renewal, client authorization repair, deep sleep and a Tor restart were
-  exercised on it.
+- Runtime of the 3.0.18 build: on 2026-10-19 the 0.4.9.14 executable built
+  without `--enable-gpl` ran as the app's Tor on two phones (Android 15 and
+  Android 16, debug builds of the same tree). Both reached Online and
+  exchanged messages; address renewal, client authorization repair, deep
+  sleep and a Tor restart were exercised on it. The 2026-10-26 build with the
+  proof-of-work module has not yet run on a phone.
 
 ## How to rebuild
 

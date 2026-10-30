@@ -206,10 +206,18 @@ public class ZppTwoSessionReassemblyDeviceTest {
 					XSalsa20Poly1305AuthenticatedCipher::new;
 			alice = new ZwfDuplexConnection(aliceSideId, aliceSession,
 					new ZwfStreamCounter(new MemStore()), crypto, ratchet,
-					mode3FullRatchet, ciphers, aIn, aOut);
+					mode3FullRatchet, ciphers, aIn, aOut) {
+				{
+					setMaxRecvFramesPerKeyPair(Integer.MAX_VALUE);
+				}
+			};
 			bob = new ZwfDuplexConnection(BOB_SEES_ALICE_AS, bobSession,
 					new ZwfStreamCounter(new MemStore()), crypto, ratchet,
-					mode3FullRatchet, ciphers, bIn, bOut);
+					mode3FullRatchet, ciphers, bIn, bOut) {
+				{
+					setMaxRecvFramesPerKeyPair(Integer.MAX_VALUE);
+				}
+			};
 			maxRecordBytes = alice.getMaxMessageLength();
 		}
 

@@ -180,6 +180,53 @@ public class ChannelListRowsTest {
 	}
 
 	@Test
+	public void aSubscribersPostIsPreviewedUnderTheirNameNotYou()
+			throws Exception {
+		channels(channel(news, "News", true, false));
+		ChannelPost p = new ChannelPost(news, 3L, new byte[32], hour,
+				"Road is open",
+				Collections.<ChannelPost.ChannelAttachment>emptyList(), 0L,
+				new byte[0], false, false, new byte[16],
+				new ChannelPost.MemberAuthor(new byte[32], new byte[0],
+						"Robin", ChannelConstants.MEMBER_ROLE_SUBSCRIBER));
+		when(manager.getRecentPosts(eq(news), eq(1L)))
+				.thenReturn(Collections.singletonList(p));
+		assertEquals("Robin, Subscriber: Road is open",
+				text(onlyRow(open()), R.id.homeRowPreview));
+	}
+
+	@Test
+	public void directionCharactersAreRemovedFromThePreviewedName()
+			throws Exception {
+		channels(channel(news, "News", true, false));
+		ChannelPost p = new ChannelPost(news, 3L, new byte[32], hour,
+				"Road is open",
+				Collections.<ChannelPost.ChannelAttachment>emptyList(), 0L,
+				new byte[0], false, false, new byte[16],
+				new ChannelPost.MemberAuthor(new byte[32], new byte[0],
+						"Ro\u202ebin", ChannelConstants.MEMBER_ROLE_SUBSCRIBER));
+		when(manager.getRecentPosts(eq(news), eq(1L)))
+				.thenReturn(Collections.singletonList(p));
+		assertEquals("Robin, Subscriber: Road is open",
+				text(onlyRow(open()), R.id.homeRowPreview));
+	}
+
+	@Test
+	public void aSubscriberNamedYouIsNotTakenForTheOwner() throws Exception {
+		channels(channel(news, "News", true, false));
+		ChannelPost p = new ChannelPost(news, 3L, new byte[32], hour,
+				"Road is open",
+				Collections.<ChannelPost.ChannelAttachment>emptyList(), 0L,
+				new byte[0], false, false, new byte[16],
+				new ChannelPost.MemberAuthor(new byte[32], new byte[0],
+						"You", ChannelConstants.MEMBER_ROLE_SUBSCRIBER));
+		when(manager.getRecentPosts(eq(news), eq(1L)))
+				.thenReturn(Collections.singletonList(p));
+		assertEquals("You, Subscriber: Road is open",
+				text(onlyRow(open()), R.id.homeRowPreview));
+	}
+
+	@Test
 	public void withoutPostsTheRowSaysWhoMayRead() throws Exception {
 		channels(channel(news, "News", false, true));
 		View row = onlyRow(open());

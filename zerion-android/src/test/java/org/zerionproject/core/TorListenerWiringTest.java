@@ -55,7 +55,7 @@ public class TorListenerWiringTest {
 		TorWrapper tor = new ZerionTorWrapperModule().provideZerionTorWrapper(
 				app, mock(AndroidWakeLockManager.class), Runnable::run,
 				Runnable::run, new File(app.getFilesDir(), "tor"), 59060,
-				59061, socks, new TorProcessWatch());
+				59061, socks, new TorProcessWatch(), null);
 		assertEquals(socks.getAbsolutePath() + "c",
 				wrapperField(tor, "controlSocketPath"));
 	}

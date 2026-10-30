@@ -24,17 +24,19 @@ Zerion has received independent focused reviews. Zerion has **not** received an 
 | Date | Kind | Reviewer | Scope | Outcome | Publication |
 |---|---|---|---|---|---|
 | continuous | internal review | project | whole codebase before each release | findings fixed before tagging | not published |
-| August 2026 | external vulnerability report | a researcher (private) | Mode 3-Full ML-KEM rotation | fixed in 3.0.7 (`c1fbbdcf`) with regression tests | fix public; report private |
-| August to September 2026 | independent focused review | ZeroTrace | Monero wallet native integration and JNI boundary | one Low (native object lifetime race) fixed in 3.0.7; documentation rescoped | fixes public; report private |
-| September 2026 | independent focused review | a researcher (private) | 3.0.6 transport and privacy properties | PROTO and PRIV findings fixed in 3.0.7 | fixes public; report private |
-| September 2026 | independent focused review | ZeroTrace | Bitcoin wallet and the dormant PayJoin component | two Medium and one Low fixed in 3.0.9; one PayJoin blocker open by design while the feature stays disabled | fixes public; report private |
-| September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation shipped in 3.0.12; the two assurance findings left open there and a runtime defect found afterwards are fixed in 3.0.13 | not published |
-| September 2026 | release review | project | 3.0.13 setup path and build reproducibility, after the Google Play review of 3.0.13 failed at account creation | first-account key store failure and the build-path dependency of the Argon2 library fixed in 3.0.14 | not published |
-| October 2026 | internal assessment | project | whole Android product (3.0.14) with two-phone device testing, followed by a review of the remediated tree | 7 High, 84 Medium and the lower-rated findings fixed in 3.0.15 | not published |
+| August 2026 | external vulnerability report | a researcher (private) | Mode 3-Full ML-KEM rotation | fixed in 3.0.4 (release commit `5cb08669`, verify with `git rev-parse v3.0.4^{commit}`) with regression tests; the original fix commit was folded into that release and is not in the public history | fix public; report private |
+| August to September 2026 | independent focused review | ZeroTrace | Monero wallet native integration and JNI boundary | one Low (native object lifetime race) fixed in 3.0.7 (release commit `3f287562`); documentation rescoped | fixes public; report private |
+| September 2026 | independent focused review | a researcher (private) | 3.0.6 transport and privacy properties | PROTO and PRIV findings fixed in 3.0.7 (release commit `3f287562`) | fixes public; report private |
+| September 2026 | independent focused review | ZeroTrace | Bitcoin wallet and the dormant PayJoin component | two Medium and one Low fixed in 3.0.9 (release commit `ba9ece4a`); one PayJoin blocker open by design while the feature stays disabled | fixes public; report private |
+| September 2026 | internal assessment | project | whole Android product (3.0.11), followed by a second internal assessment of the remediated tree | remediation shipped in 3.0.12 (release commit `fecfc69d`); the two assurance findings left open there and a runtime defect found afterwards are fixed in 3.0.13 (`1d26de37`) | not published |
+| September 2026 | release review | project | 3.0.13 setup path and build reproducibility, after the Google Play review of 3.0.13 failed at account creation | first-account key store failure and the build-path dependency of the Argon2 library fixed in 3.0.14 (release commit `7ae2d991`) | not published |
+| October 2026 | internal assessment | project | whole Android product (3.0.14) with two-phone device testing, followed by a review of the remediated tree | 7 High, 84 Medium and the lower-rated findings fixed in 3.0.15 (release commit `0849b088`) | not published |
+
+A release commit is the commit of the release tag (`git rev-parse v3.0.15^{commit}` prints `0849b088...`); it contains the fixes that release names. Later releases and their release commits: 3.0.16 (`e79a2122`), 3.0.17 (`cc2eceed`) and 3.0.18 (`d550478a`); their fixes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Limitations of 3.0.14, fixed in 3.0.15
 
-Recorded here so that no document overstates what 3.0.14 shipped. All are fixed in 3.0.15 and later releases; the entries are kept as the history of 3.0.14. None of them is known to have been exploited. The list names the issues rated High and the main Medium ones; the lower-rated fixes are summarised in [CHANGELOG.md](CHANGELOG.md).
+Recorded here so that no document overstates what 3.0.14 shipped. All are fixed in 3.0.15 (release commit `0849b088`) and later releases; the entries are kept as the history of 3.0.14. None of them is known to have been exploited. The list names the issues rated High and the main Medium ones; the lower-rated fixes are summarised in [CHANGELOG.md](CHANGELOG.md).
 
 - Profiles: a profile marked hidden was listed by name on the Profiles screen, and the vault, the wallets, stickers and several settings were shared by every profile on the device. The Profiles screen now shows only the signed-in profile and those stores are kept per profile; someone with root or forensic access to the device can still see how many profiles exist.
 - Password checks: the password prompts for switching to a profile and for deleting one signed in on the running session, so the wrong profile could be switched to or deleted. They now only verify the password.
@@ -51,14 +53,14 @@ Recorded here so that no document overstates what 3.0.14 shipped. All are fixed 
 
 ## Limitations of 3.0.13, fixed in 3.0.14
 
-Kept as history. Both are fixed in 3.0.14. Neither is a vulnerability.
+Kept as history. Both are fixed in 3.0.14 (release commit `7ae2d991`). Neither is a vulnerability.
 
 - First account on some devices: since 3.0.12 the app refuses to generate its Android key store key when the key store throws on the lookup of that key, so that a temporary key store failure can never replace the key that existing profiles depend on. On a fresh installation there is no profile to protect, but the guard still applied, and on devices whose key store throws when a key that was never created is looked up, account creation failed with "Setup Failed" on every attempt (Google Play's review device is such a device; 3.0.12 and 3.0.13 could not be set up there). No data was at risk: the failure happened before any profile existed. 3.0.14 generates the key for the first account regardless of the lookup and keeps the guard from then on; the dialog names the cause.
 - Reproducibility (REPRO-13-01): 3.0.13 was reproducible only under the original `/src` build layout; F-Droid's canonical build path exposed a DWARF path variance in `libzargon2.so`, the Argon2 library the app build compiles from source and packages unstripped. Every other entry of the APK is identical between the two layouts. Fixed in 3.0.14, which compiles that library without debug sections; the 3.0.13 release manifest's statement that the F-Droid recipe builds the same payload holds only for a build at `/src`.
 
 ## Limitations of 3.0.12, fixed in 3.0.13
 
-Kept as history. All are fixed in 3.0.13. None of them is known to have been exploited.
+Kept as history. All are fixed in 3.0.13 (release commit `1d26de37`). None of them is known to have been exploited.
 
 - Client authorization after a network change: Tor discards the credentials the app installs over its control port whenever its configuration changes, and the app changes it on every connectivity change. In 3.0.12, after the first such change following a Tor start, every locked-in contact was unreachable until Tor was restarted. The protected path never fell back to the open address; it was unavailable. Messages from such contacts still arrived.
 - Tor 0.4.9.12: the release carries the Tor version that preceded the 0.4.9.13 security release of 23 September 2026.
@@ -66,7 +68,7 @@ Kept as history. All are fixed in 3.0.13. None of them is known to have been exp
 
 ## Limitations of 3.0.11, fixed in 3.0.12
 
-Kept as history. All four were fixed in 3.0.12. None of them is known to have been exploited.
+Kept as history. All four were fixed in 3.0.12 (release commit `fecfc69d`). None of them is known to have been exploited.
 
 - Call media: the per-call key derivation has a defect (the derived key material is zeroed before use, so the application-layer cipher adds no confidentiality or integrity) and video nonces can repeat when video is restarted within a call. In 3.0.11 call confidentiality rests on the Tor onion-service layer between the two devices; using the defect would require an adversary inside that connection or at an endpoint.
 - Pairing: post-quantum protection at link pairing is confidentiality only; authentication is classical (X25519 ownership proofs bound to the out-of-band commitment and an Ed25519 signature), so only an adversary with a quantum computer active during the pairing could impersonate a peer. Nearby (QR/Bluetooth) pairing is classical.

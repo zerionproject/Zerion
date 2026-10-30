@@ -29,6 +29,7 @@ import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+import org.zerionproject.app.api.channel.ChannelConstants;
 import org.zerionproject.app.api.channel.ChannelManager;
 import org.zerionproject.app.api.channel.ChannelRequestQueuedException;
 import org.zerionproject.app.api.channel.ChannelState;
@@ -182,8 +183,7 @@ public class ChannelSettingsActivity extends ZerionActivity
 		rows.get(Row.SEND).setOnClickListener(v -> ChannelShare.sendInvite(
 				this, channelManager, ioExecutor, channelId));
 		rows.get(Row.RENEW).setOnClickListener(v -> confirmRenew());
-		rows.get(Row.WHO_CAN_POST).setOnClickListener(v -> startActivity(
-				ChannelDelegationsActivity.intent(this, channelId)));
+		rows.get(Row.WHO_CAN_POST).setOnClickListener(v -> chooseWhoCanPost());
 		rows.get(Row.ANNOUNCE).setOnClickListener(v -> showAnnounceDialog());
 		rows.get(Row.CONNECTION).setOnClickListener(v -> showAdvanced());
 		rows.get(Row.WAITING).setOnClickListener(v -> startActivity(
@@ -256,6 +256,7 @@ public class ChannelSettingsActivity extends ZerionActivity
 		int waiting;
 		int subscribers;
 		int editors;
+		int postingMode = ChannelConstants.POSTING_EDITORS;
 		int blocked;
 		boolean outdated;
 		long givenUp;
@@ -298,6 +299,8 @@ public class ChannelSettingsActivity extends ZerionActivity
 				out.blocked = bans.size();
 				out.editors = quiet(() -> m.listActiveDelegations(id),
 						new ArrayList<>()).size();
+				out.postingMode = quiet(() -> m.getPostingMode(id),
+						ChannelConstants.POSTING_EDITORS);
 				out.outdated = quiet(() -> m.hasOutdatedSubscribers(id), false);
 			} else {
 				out.editor = quiet(() -> m.canPost(id), false);
@@ -333,8 +336,7 @@ public class ChannelSettingsActivity extends ZerionActivity
 		shown = s;
 		ChannelState state = s.state;
 		boolean owner = state.weArePublisher();
-		String title = state.getName().isEmpty()
-				? getString(R.string.channels_button) : state.getName();
+		String title = ChannelNames.shown(this, state.getName());
 		avatar.setText(initial(title));
 		name.setText(title);
 		access.setText(ChannelAccessLabel.withRole(this, state, s.editor));
@@ -360,11 +362,7 @@ public class ChannelSettingsActivity extends ZerionActivity
 		binding = false;
 
 		whoCanJoin.setText(joinSummary(state));
-		whoCanPost.setText(s.editors == 0
-				? getString(R.string.channels_settings_only_you)
-				: getResources().getQuantityString(
-						R.plurals.channels_settings_you_and_editors,
-						s.editors, s.editors));
+		whoCanPost.setText(whoCanPostSummary(s));
 		connection.setText(owner
 				? getString(R.string.channels_settings_connection_owner)
 				: connectionSummary(this, s.sync));
@@ -381,6 +379,73 @@ public class ChannelSettingsActivity extends ZerionActivity
 				s.editors);
 		count(Row.BLOCKED, blocked, R.string.channels_settings_blocked,
 				s.blocked);
+	}
+
+	private String whoCanPostSummary(Snapshot s) {
+		if (s.postingMode == ChannelConstants.POSTING_EVERYONE) {
+			return getString(R.string.channels_settings_subscribers_you_trust);
+		}
+		if (s.postingMode == ChannelConstants.POSTING_OWNER_ONLY) {
+			return getString(R.string.channels_settings_only_you);
+		}
+		if (s.editors == 0) {
+			return getString(R.string.channels_settings_you_and_editors_choice);
+		}
+		return getResources().getQuantityString(
+				R.plurals.channels_settings_you_and_editors, s.editors,
+				s.editors);
+	}
+
+	private static final int[] POSTING_MODES = {
+			ChannelConstants.POSTING_OWNER_ONLY,
+			ChannelConstants.POSTING_EDITORS,
+			ChannelConstants.POSTING_EVERYONE};
+
+	private void chooseWhoCanPost() {
+		Snapshot s = shown;
+		if (s == null) return;
+		String[] labels = {
+				getString(R.string.channels_settings_only_you),
+				getString(R.string.channels_settings_you_and_editors_choice),
+				getString(R.string.channels_settings_subscribers_you_trust)};
+		int checked = 0;
+		for (int i = 0; i < POSTING_MODES.length; i++) {
+			if (POSTING_MODES[i] == s.postingMode) checked = i;
+		}
+		TextView explain = new TextView(this);
+		explain.setText(R.string.channels_settings_who_can_post_explain);
+		int pad = Math.round(24f * getResources().getDisplayMetrics().density);
+		explain.setPadding(pad, pad / 3, pad, 0);
+		explain.setId(R.id.channelSettingsWhoCanPostExplain);
+		new SecureAlertDialogBuilder(this)
+				.setTitle(R.string.channels_settings_who_can_post)
+				.setView(explain)
+				.setSingleChoiceItems(labels, checked, (d, which) -> {
+					d.dismiss();
+					applyWhoCanPost(POSTING_MODES[which]);
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void applyWhoCanPost(int mode) {
+		if (mode == ChannelConstants.POSTING_EDITORS) {
+			startActivity(ChannelDelegationsActivity.intent(this, channelId));
+		}
+		ioExecutor.execute(() -> {
+			boolean saved;
+			try {
+				channelManager.setPostingMode(channelId, mode);
+				saved = true;
+			} catch (DbException e) {
+				saved = false;
+			}
+			boolean finalSaved = saved;
+			runOnUiThreadUnlessDestroyed(() -> {
+				if (!finalSaved) say(R.string.settings_save_failed);
+				load();
+			});
+		});
 	}
 
 	boolean isMuted() {
@@ -635,7 +700,8 @@ public class ChannelSettingsActivity extends ZerionActivity
 	private void startDelete() {
 		Snapshot s = shown;
 		if (s == null || !s.state.weArePublisher()) return;
-		deleteFlow.start(s.state.getName());
+		deleteFlow.start(com.professor.zerion.android.util.DisplayNames
+				.clean(s.state.getName()).trim());
 	}
 
 	private void confirmLeave() {

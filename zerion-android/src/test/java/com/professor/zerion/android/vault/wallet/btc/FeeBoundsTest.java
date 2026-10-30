@@ -29,7 +29,7 @@ public class FeeBoundsTest {
 		e.feeBtcPerKb = 1.0;
 		assertEquals(BtcWallet.MAX_FEE_RATE, BtcWallet.rateFor(e, 1), 1e-9);
 		assertTrue("server ceiling is a plausible rate",
-				BtcWallet.MAX_FEE_RATE <= 200.0);
+				BtcWallet.MAX_FEE_RATE <= 100.0);
 	}
 
 	@Test

@@ -123,6 +123,117 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void aSeparatedPendingRootKeepsItsConfirmKeyAcrossARestart()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		SecretKey root = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, true));
+		db.close();
+		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
+				messageFactory);
+		store = new RootKeyStore(db);
+		ContactRootKeys keys = store.load(contact);
+		assertNotNull(keys);
+		assertTrue(keys.isPendingSeparated());
+		assertTrue(keys.isPendingConfirmed());
+		assertArrayEquals(root.getBytes(), keys.getPending().getBytes());
+		assertArrayEquals(confirmKey.getBytes(),
+				keys.getPendingConfirmKey().getBytes());
+		assertTrue(store.promote(contact, 0));
+		keys = store.load(contact);
+		assertEquals(1, keys.getEpoch());
+		assertArrayEquals(root.getBytes(), keys.getCurrent().getBytes());
+		assertNull(keys.getPending());
+		assertNull(keys.getPendingConfirmKey());
+
+		SecretKey unproved = getSecretKey();
+		assertTrue(store.storePending(contact, 1, unproved, getSecretKey(),
+				false));
+		keys = store.load(contact);
+		assertTrue(keys.isPendingSeparated());
+		assertFalse(keys.isPendingConfirmed());
+		assertTrue(store.storePending(contact, 1, getSecretKey(), false));
+		keys = store.load(contact);
+		assertFalse("a version 2 pending root replaces the confirm key",
+				keys.isPendingSeparated());
+	}
+
+	@Test
+	public void aPendingRootStoredByAnEarlierReleaseReadsAsVersionTwo()
+			throws Exception {
+		SecretKey pending = getSecretKey();
+		for (int confirmed = 0; confirmed < 2; confirmed++) {
+			int flag = confirmed;
+			db.transaction(false, txn -> db.setPcsMode2SessionState(txn,
+					contact, DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING,
+					pending, 1, flag, pending, null, null, null, true, null));
+			ContactRootKeys keys = new RootKeyStore(db).load(contact);
+			assertNotNull(keys);
+			assertArrayEquals(pending.getBytes(), keys.getPending().getBytes());
+			assertFalse(keys.isPendingSeparated());
+			assertNull(keys.getPendingConfirmKey());
+			assertEquals(confirmed == 1, keys.isPendingConfirmed());
+		}
+	}
+
+	@Test
+	public void wipingTheCallersKeysLeavesTheStoredKeysIntact()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		SecretKey root = getSecretKey();
+		SecretKey confirmKey = getSecretKey();
+		byte[] rootCopy = root.getBytes().clone();
+		byte[] confirmCopy = confirmKey.getBytes().clone();
+		assertTrue(store.storePending(contact, 0, root, confirmKey, true));
+		root.clear();
+		confirmKey.clear();
+		ContactRootKeys keys = store.load(contact);
+		assertArrayEquals(rootCopy, keys.getPending().getBytes());
+		assertArrayEquals(confirmCopy, keys.getPendingConfirmKey().getBytes());
+		keys.getPending().clear();
+		keys.getCurrent().clear();
+		assertTrue(store.promote(contact, 0));
+		keys = store.load(contact);
+		assertArrayEquals(rootCopy, keys.getCurrent().getBytes());
+		SecretKey pairing = getSecretKey();
+		byte[] pairingCopy = pairing.getBytes().clone();
+		db.transaction(false, txn -> db.setPcsMode2SessionState(txn, contact,
+				PCS_DIRECTION_SEND, pairing, 0, 0, pairing, null, null, null,
+				true, null));
+		pairing.clear();
+		PcsSessionRow row = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact, PCS_DIRECTION_SEND));
+		assertArrayEquals(pairingCopy, row.getRootKey());
+	}
+
+	@Test
+	public void wipingALoadedRowLeavesTheStoredRowIntact() throws Exception {
+		SecretKey k = getSecretKey();
+		byte[] copy = k.getBytes().clone();
+		db.transaction(false, txn -> db.setPcsMode2SessionState(txn, contact,
+				DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING, k, 1, 0, k,
+				null, null, null, true, null));
+		PcsSessionRow first = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		java.util.Arrays.fill(first.getRootKey(), (byte) 0);
+		java.util.Arrays.fill(first.getChainKey(), (byte) 0);
+		PcsSessionRow second = db.transactionWithResult(true, txn ->
+				db.getPcsMode2SessionState(txn, contact,
+						DatabaseComponent.PCS_SLOT_TRANSPORT_ROOT_PENDING));
+		assertArrayEquals(copy, second.getRootKey());
+		assertArrayEquals(copy, second.getChainKey());
+		RootKeyStore store = new RootKeyStore(db);
+		ContactRootKeys keys = store.load(contact);
+		keys.getCurrent().clear();
+		keys.getPending().clear();
+		keys = store.load(contact);
+		assertArrayEquals(pairingRoot.getBytes(), keys.getCurrent().getBytes());
+		assertArrayEquals(copy, keys.getPending().getBytes());
+	}
+
+	@Test
 	public void theKeysGoWithTheContact() throws Exception {
 		RootKeyStore store = new RootKeyStore(db);
 		assertTrue(store.storePending(contact, 0, getSecretKey(), false));

@@ -1,4 +1,4 @@
-# ZWF contact root evolution, version 2
+# ZWF contact root evolution, versions 2 and 3
 
 Every connection between two contacts derives its transport keys from the
 contact's **root key**. Until Android 3.0.15 the root was the master key
@@ -12,7 +12,15 @@ copier did not take part in.
 
 This document is the reference for every implementation. Version 1 of the
 record format was a development format of 3.0.15 that never shipped; a
-receiver ignores it like any other unknown version.
+receiver ignores it like any other unknown version. Version 2 shipped in
+3.0.15. Version 3 (Android 3.0.19) is the same protocol with one change: the
+key that the proofs and the pending-root id are made with is derived beside
+the new root instead of from it, so the new root is not an input of any
+record of the evolution that produces it. Transport use of the new root
+starts only after Alice has verified Bob's RESP; from then on a frame under
+the new root can complete the evolution on Bob's side instead of the
+CONFIRM (see "Which root a connection uses"), as in version 2. Version 3 is used only between two peers that
+both announce it (see "Version negotiation").
 
 ## Terms
 
@@ -37,7 +45,13 @@ epoch above 0 and the pending root are kept in rows of their own
 `PCS_SLOT_TRANSPORT_ROOT_PENDING`). All of them are deleted with the contact.
 
 Every change checks, in the same transaction, the epoch it starts from, so two
-connections to the same contact never interleave two changes. Bob's pending
+connections to the same contact never interleave two changes. A version 3 pending root is stored with
+its confirmation key (in the `chainKey` column of the pending row, with bit 1
+of `previousChainLength` set; bit 0 is the proved flag, as before), so that a
+later connection can still make and check its pending-root id and its DONE.
+A row written by an earlier release has neither bit 1 nor a separate key and
+reads as version 2. The confirmation key is deleted with the pending row when
+the root is promoted or dropped. Bob's pending
 root is always unproved by Alice (he stores it before Alice has seen it);
 Alice's pending root is always proved by Bob (she stores it only after
 checking his proof). While a copy of the database is being written
@@ -59,10 +73,17 @@ dh            = H("org.zerionproject.transport/ROOT_EVOLVE_DH_V1",
                   X25519(own, peer), x25519_A, x25519_B)
 root(e + 1)   = KDF("org.zerionproject.transport/ROOT_EVOLVE_V1", chain(e),
                   u64(e + 1), ss, dh, transcript)
-confirm(e+1)  = KDF("org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V1", root(e + 1))
+confirm(e+1)  = KDF("org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V1", root(e + 1))      version 2
+confirm(e+1)  = KDF("org.zerionproject.transport/ROOT_EVOLVE_CONFIRM_KEY_V3", chain(e),
+                  u64(e + 1), ss, dh, transcript)                                          version 3
 ```
 
-The transcript's first input is the record version byte (`0x02`). `ss` is the
+The transcript's first input is the record version byte of the evolution
+(`0x02` or `0x03`), so the two versions never produce the same root from the
+same exchange. In version 3 `root(e + 1)` and `confirm(e + 1)` are two
+outputs of the same keyed KDF over the same material under distinct labels:
+holding one gives nothing about the other, and `root(e + 1)` is not an input
+of any MAC sent in the evolution records. `ss` is the
 ML-KEM-768 shared secret Bob encapsulates to Alice's ephemeral encapsulation
 key `ek_A`; `ct` is its ciphertext. `x25519_A` and `x25519_B` are ephemeral
 X25519 public keys. The new root therefore depends on the previous root and on
@@ -81,7 +102,9 @@ The proofs are MACs of `u64(e + 1)` under `confirm(e + 1)`:
 **Domain separation.** The root of an epoch above 0 is never used directly as
 a MAC or KDF key for two purposes: the transport keys come from
 `transport(e)`, the next root from `chain(e)`, and the proofs from
-`confirm(e + 1)`. The ZWF direction keys of epoch `e` are
+`confirm(e + 1)`. In version 2 `confirm(e + 1)` is a subkey of the new root,
+so the new root is an input of the proofs of its own evolution; version 3
+removes that. The ZWF direction keys of epoch `e` are
 `KDF(DIR_{A,B}_{ROOT,TAG,HEADER}, transport(e))`. Epoch 0 keeps the direction
 keys from the pairing root itself, which is what peers without root evolution
 use; the pairing root's other uses are one-shot pairing MACs under labels of
@@ -96,12 +119,12 @@ type that arrives in the classical opening frame, as it drops any record but
 cover there. Layout, big-endian:
 
 ```
-version[1] = 0x02   kind[1]   epoch[8]   body
+version[1] = 0x02 or 0x03   kind[1]   epoch[8]   body
 ```
 
 | Kind | Sender | Body |
 | --- | --- | --- |
-| 1 HELLO | both | `pendingId[32] flags[1]`; the id is all zero when no root is pending; flag `0x01` asks the peer for its ML-DSA identity key |
+| 1 HELLO | both | `pendingId[32] flags[1]`; the id is all zero when no root is pending; flag `0x01` asks the peer for its ML-DSA identity key; flag `0x02` says the sender accepts version 3 evolutions |
 | 2 INIT | Alice | `replaces[32] x25519_A[32] ek_A[1184]`; `replaces` is the pending-root id Bob showed in his HELLO on this connection, all zero when he showed none |
 | 3 RESP | Bob | `x25519_B[32] ct[1088] bobConfirm[32]` |
 | 4 CONFIRM | Alice | `aliceConfirm[32]` |
@@ -109,9 +132,12 @@ version[1] = 0x02   kind[1]   epoch[8]   body
 | 6 IDENTITY_FIRST | both | the first 1008 bytes of `mlDsaPublicKey[1952] ed25519Signature[64]`; epoch 0 |
 | 7 IDENTITY_SECOND | both | the last 1008 bytes of the same; epoch 0 |
 
-A record of another version is ignored. A malformed record of version 2 is
-ignored. Each record fits one ZWF frame; the identity is split in two because
-it does not.
+HELLO and the identity records are always sent as version 2, so every peer
+that implements root evolution reads them. INIT, RESP, CONFIRM and DONE carry
+the version of the evolution they belong to. A record of another version is
+ignored, and so is a malformed record; a version 3 HELLO or identity record
+is malformed. Each record fits one ZWF frame; the identity is split in two
+because it does not.
 
 ## Protocol
 
@@ -192,6 +218,40 @@ it already holds for the contact, and never replaces a key it knows. This is
 how contacts paired before both devices had hybrid identities come to share
 version 2 safety numbers.
 
+## Version negotiation
+
+There was no capability signal for root evolution before 3.0.19, and the
+contact's messaging minor version describes the messaging client, not the
+transport, so version 3 is announced in the HELLO itself: a 3.0.19 side sets
+flag `0x02` in every HELLO. Earlier releases ignore flags they do not know
+and records of a version they do not know.
+
+- Alice chooses the version of an evolution when she offers it: version 3 if
+  she supports it and the HELLO that triggered the offer, on the same
+  connection, carries flag `0x02`; otherwise version 2. Her INIT carries that
+  version.
+- Bob answers an INIT in the version of the INIT. An earlier Bob never sees a
+  version 3 INIT, because he never sets the flag, and an earlier Alice only
+  sends version 2.
+- RESP, CONFIRM and DONE must carry the version of the evolution: Alice drops
+  a RESP whose version is not that of her offer, and both sides check
+  CONFIRM, DONE and the pending-root id under the version stored with the
+  pending root, never under the version of the incoming record.
+
+Both sides therefore always run one evolution in one version. The HELLO
+travels in an authenticated post-quantum frame under the current root, so
+only a holder of the current root can remove the flag, and such a party can
+already run the evolution with each side (see Limits).
+
+**Across an update.** A pending root keeps the version it was stored with.
+A version 2 root stored by an earlier release is promoted, matched or
+replaced as before: its pending-root id is still the version 2 one, so a
+HELLO from either release proves it, and an INIT that replaces it may be
+version 3. The next evolution after both sides run 3.0.19 is version 3.
+`RootEvolutionVersionTest` cuts an evolution at every step for every pairing
+of current and earlier peers, and updates one side or the other in the
+middle of an interrupted version 2 evolution.
+
 ## Interruption and interleaving
 
 A side proves possession of a root only after storing it, sends under a
@@ -243,6 +303,10 @@ the copier back in and defeat the property this document provides.
 
 ## Compatibility
 
+- **Android 3.0.15 to 3.0.18** run version 2. They never set HELLO flag
+  `0x02` and ignore version 3 records, so a 3.0.19 peer evolves with them in
+  version 2 and the new root is still used for the proofs of its own
+  evolution, as in those releases.
 - **Android 3.0.14 and earlier** drop ZMM records of unknown type
   (`ZmmDbRecordSink` delivers only `TYPE_SYNC`), never send HELLO, and so never
   take part: the contact keeps its pairing root and everything works as
@@ -254,7 +318,15 @@ the copier back in and defeat the property this document provides.
 - **Downgrade.** An Android build older than this one would read only the
   pairing root and could not reach a contact whose root has evolved. Android
   does not install older versions over newer ones, and the database schema
-  version refuses older code.
+  version refuses older code. A backup made by 3.0.19 and restored into
+  3.0.15 to 3.0.18 (possible while the schema version is the same) would
+  also misread a version 3 pending root: those releases treat the pending
+  row as unproved and check its id under a key derived from the root, so an
+  evolution that was in flight when the backup was made does not complete,
+  and if the other phone had already moved to the new root the contact shows
+  as out of sync until it is re-added. The backup format carries no app
+  version, so this is documented rather than refused; restore a backup with
+  the same or a newer app.
 
 ## Backups and account transfer
 

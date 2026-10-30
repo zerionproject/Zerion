@@ -46,14 +46,23 @@ become the expected gate on subsequent builds.
   no switch to leave unbound out: `wallet2` links `libunbound` (and through it
   expat) for OpenAlias resolution, so both are compiled from the pinned
   tarballs above and linked statically; the app never calls the OpenAlias
-  path, because every daemon address is validated as an onion or IP literal
-  (or, in Direct mode, resolved by the device) before it reaches the wallet,
-  and OpenSSL, unbound and expat are kept at maintained versions. The shim
-  passes `use_ssl=false`, but the pinned wallet API does not forward it
+  path, because every daemon address is validated as an onion, an IP
+  literal, or a hostname handed to Tor unresolved (Direct mode: resolved by
+  the device) before it reaches the wallet, and OpenSSL, unbound and expat
+  are kept at maintained versions. The shim passes `use_ssl=false`, but
+  the pinned wallet API does not forward it
   (`WalletImpl::doInit` ignores the flag and `wallet2::init` defaults to SSL
   autodetect), so the daemon connection attempts a TLS handshake whose
   verify callback accepts an unverified certificate, and a remote node's
-  certificate is parsed by the bundled OpenSSL. Every Tor-mode daemon address (the vetted
+  certificate is parsed by the bundled OpenSSL. TLS therefore authenticates
+  no daemon: an onion node is authenticated by Tor, a node on a private
+  address needs no confirmation (Tor does not connect to it, so it works
+  only in Direct mode), and an own or custom node given as a public IP
+  address or hostname, which a Tor exit relay could impersonate, is not used
+  unless the user accepted a warning saying so for that node
+  (`XmrNodeConfig.isAllowed`; see `docs/XMR_ARCHITECTURE.md`). IP literals
+  are parsed by the app without a resolver and a malformed numeric address
+  is refused, so it never reaches a resolver as a hostname. Every Tor-mode daemon address (the vetted
   set, custom nodes and the own node) is handed to the SOCKS proxy unresolved,
   so Tor resolves it remotely and no local DNS query is made. The one exception
   is the explicit Direct mode, which the user must acknowledge as

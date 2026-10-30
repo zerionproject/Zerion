@@ -107,6 +107,8 @@ final class RootEvolutionTestBed {
 		private final Map<Integer, long[]> epochs = new HashMap<>();
 		private final Map<Integer, byte[]> current = new HashMap<>();
 		private final Map<Integer, byte[]> pending = new HashMap<>();
+		private final Map<Integer, byte[]> pendingConfirmKeys =
+				new HashMap<>();
 		private final Map<Integer, Boolean> confirmed = new HashMap<>();
 		volatile boolean paused = false;
 		final AtomicInteger pendingStores = new AtomicInteger();
@@ -122,6 +124,9 @@ final class RootEvolutionTestBed {
 			SecretKey p = keys.getPending();
 			if (p == null) pending.remove(c.getInt());
 			else pending.put(c.getInt(), p.getBytes().clone());
+			SecretKey pc = keys.getPendingConfirmKey();
+			if (pc == null) pendingConfirmKeys.remove(c.getInt());
+			else pendingConfirmKeys.put(c.getInt(), pc.getBytes().clone());
 			confirmed.put(c.getInt(), keys.isPendingConfirmed());
 		}
 
@@ -131,19 +136,24 @@ final class RootEvolutionTestBed {
 			long[] e = epochs.get(c.getInt());
 			if (e == null) return null;
 			byte[] p = pending.get(c.getInt());
+			byte[] pc = p == null ? null : pendingConfirmKeys.get(c.getInt());
 			return new ContactRootKeys(e[0],
 					new SecretKey(current.get(c.getInt()).clone()),
 					p == null ? null : new SecretKey(p.clone()),
+					pc == null ? null : new SecretKey(pc.clone()),
 					Boolean.TRUE.equals(confirmed.get(c.getInt())));
 		}
 
 		@Override
 		public boolean storePending(ContactId c, long fromEpoch,
-				SecretKey key, boolean conf) {
+				SecretKey key, @Nullable SecretKey confirmKey, boolean conf) {
 			synchronized (this) {
 				long[] e = epochs.get(c.getInt());
 				if (e == null || e[0] != fromEpoch) return false;
 				pending.put(c.getInt(), key.getBytes().clone());
+				if (confirmKey == null) pendingConfirmKeys.remove(c.getInt());
+				else pendingConfirmKeys.put(c.getInt(),
+						confirmKey.getBytes().clone());
 				confirmed.put(c.getInt(), conf);
 				pendingStores.incrementAndGet();
 			}
@@ -157,6 +167,7 @@ final class RootEvolutionTestBed {
 				long[] e = epochs.get(c.getInt());
 				if (e == null || e[0] != fromEpoch) return false;
 				if (pending.remove(c.getInt()) == null) return false;
+				pendingConfirmKeys.remove(c.getInt());
 				confirmed.put(c.getInt(), false);
 			}
 			notifyChanged(c);
@@ -170,6 +181,7 @@ final class RootEvolutionTestBed {
 				if (e == null || e[0] != fromEpoch) return false;
 				byte[] p = pending.remove(c.getInt());
 				if (p == null) return false;
+				pendingConfirmKeys.remove(c.getInt());
 				e[0] = fromEpoch + 1;
 				current.put(c.getInt(), p);
 				confirmed.put(c.getInt(), false);
@@ -264,6 +276,8 @@ final class RootEvolutionTestBed {
 		final List<Byte> receivedKinds =
 				Collections.synchronizedList(new ArrayList<>());
 		final List<Byte> handledKinds =
+				Collections.synchronizedList(new ArrayList<>());
+		final List<byte[]> receivedRecords =
 				Collections.synchronizedList(new ArrayList<>());
 		final ZtpConnectionHandlerImpl handler;
 		final Provider provider;
@@ -459,6 +473,8 @@ final class RootEvolutionTestBed {
 				public void onRecord(byte[] payload) {
 					if (payload.length > 1) {
 						device.receivedKinds.add(payload[1]);
+						device.receivedRecords.add(new byte[] {payload[0],
+								payload[1]});
 						Gate g = device.gate;
 						if (g != null && payload[1] == g.kind) {
 							g.reached.countDown();

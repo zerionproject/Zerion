@@ -176,8 +176,24 @@ prekey id. A cover envelope is therefore indistinguishable on the wire from a
 message sealed from a current bundle in the same size bucket. Cover always
 fills the 4096-byte bucket, so an envelope in the 16384-byte bucket is real
 traffic. On receipt, the delivery layer resolves the prekey,
-opens the envelope, checks the deduplication identifier against a seen-store, and
-consumes the one-time prekey if the message is accepted.
+opens the envelope, checks the deduplication identifier against the seen set of
+the sender the envelope names, and consumes the one-time prekey if the message
+is accepted. The deduplication identifier is checked only after the envelope
+has opened and its sender is a known contact, and only against that sender's
+own set. Before opening, the only shortcuts are keyed on a hash of the whole
+envelope: in memory, the 1024 envelopes most recently opened and the 4096
+most recent that did not open or had expired; stored with the seen sets, the
+4096 envelopes whose message the seen set of a contact most recently
+admitted. A replayed envelope is therefore refused without being opened while
+the app runs. After a restart that holds only for those 4096 admitted
+envelopes: an envelope from a stranger, an expired one or an older one is
+opened once more, and the seen set or the expiry check then refuses it.
+From 3.0.19; up to
+3.0.18 both shortcuts were keyed on the deduplication identifier itself, which
+relays see, and the in-memory one was filled before the sender was checked, so
+anyone holding the recipient's bundle could seal an envelope of its own under
+an identifier seen in flight and make the device drop the genuine envelope for
+good.
 
 ## Note on status
 

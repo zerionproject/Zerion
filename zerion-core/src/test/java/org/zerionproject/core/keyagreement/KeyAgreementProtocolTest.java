@@ -94,6 +94,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
 
 			oneOf(callbacks).connectionWaiting();
@@ -169,6 +172,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			oneOf(keyAgreementCrypto).deriveKeyCommitment(alicePubKey);
 			will(returnValue(aliceCommit));
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			oneOf(transport).sendKey(bobPubKey.getEncoded());
 
 			oneOf(transport).receiveKemCiphertext();
@@ -216,6 +222,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
 
 			oneOf(callbacks).connectionWaiting();
@@ -263,6 +272,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 
 			oneOf(transport).sendAbort(false);
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			never(transport).sendKey(bobPubKey.getEncoded());
 		}});
 
@@ -290,6 +302,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			allowing(crypto).getHybridAgreementKeyParser();
 			will(returnValue(keyParser));
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			oneOf(transport).sendKey(alicePubKey.getEncoded());
 
 			oneOf(callbacks).connectionWaiting();
@@ -365,6 +380,9 @@ public class KeyAgreementProtocolTest extends BrambleTestCase {
 			oneOf(keyAgreementCrypto).deriveKeyCommitment(alicePubKey);
 			will(returnValue(aliceCommit));
 
+			never(transport).sendCapabilities();
+			allowing(transport).peerOffersKeySeparation();
+			will(returnValue(false));
 			oneOf(transport).sendKey(bobPubKey.getEncoded());
 
 			oneOf(transport).receiveKemCiphertext();

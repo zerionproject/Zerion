@@ -13,10 +13,12 @@
 	<string name="donation_button_open_in_browser">Open in browser</string>
 	<string name="donation_link_copied">Donation link copied</string>
 	<string name="browser_warning_title">Open in browser?</string>
-	<string name="browser_warning_message">Opening this link leaves Zerion\'s Tor boundary. Your real IP address will be visible to the destination and any tracker on the page. Continue only if you understand the risk.</string>
+	<string name="browser_warning_message">Opening this link leaves Zerion\'s Tor boundary. Your IP address will be visible to the destination and any tracker on the page. Continue only if you understand the risk.</string>
 	<string name="browser_warning_open">Open anyway</string>
 	<string name="browser_warning_copy">Copy link</string>
 	<string name="browser_warning_link_copied">Link copied</string>
+	<string name="quick_reply_not_sent">Your reply was not sent. Open the chat to try again.</string>
+	<string name="link_unsupported">Unsupported link</string>
 	<string name="settings_support_summary">Help keep Zerion free and private</string>
 
 	<string name="setup_title">Welcome to Zerion</string>
@@ -72,9 +74,14 @@
 	<string name="mesh_info_message">Messages are sealed to the recipient and relayed from device to device by nearby phones running Zerion. Turning this on requests Bluetooth and nearby-device permissions and broadcasts locally: anyone nearby with a Bluetooth scanner can tell that this phone uses the Zerion mesh, but not what it sends.</string>
 	<string name="mesh_unsupported">Offline mesh needs Android 12 or newer</string>
 	<string name="mesh_permission_denied">Offline mesh needs Bluetooth and nearby-device permissions</string>
+	<string name="mesh_alias_title">Bluetooth name while the mesh runs</string>
+	<string name="mesh_range_title">Bluetooth range</string>
+	<string name="mesh_range_normal">Normal</string>
+	<string name="mesh_range_short">Short (fewer phones in reach)</string>
+	<string name="mesh_pause_screen_off_title">Pause Bluetooth mesh while the screen is off</string>
+	<string name="mesh_pause_screen_off_summary">Starts about 10 minutes after the screen turns off, sometimes later while the phone sleeps. Nearby messages wait until the screen is on again.</string>
+	<string name="mesh_alias_message">Nearby devices see this name instead of your phone\'s name while the mesh or Pair Nearby is running.</string>
 	<string name="via_mesh">via mesh</string>
-	<string name="nearby_pair_card_title">Pair nearby (offline)</string>
-	<string name="nearby_pair_card_description">Add someone right next to you with no internet, over Bluetooth. Scan each other\'s code.</string>
 	<string name="nearby_pairing_title">Add contact nearby</string>
 	<string name="nearby_pairing_hint">Show this code to the other person and scan theirs. No internet needed; keep both phones close.</string>
 	<string name="nearby_pairing_scan">Scan the other phone\'s code</string>
@@ -95,7 +102,7 @@
 	<string name="settings_section_appearance">APPEARANCE</string>
 	<string name="identity_section_title">Identity verification</string>
 	<string name="identity_safety_number_label">Safety number</string>
-	<string name="identity_safety_number_explain">Compare these 60 digits with your contact in person or over a trusted channel. If they match on both devices, you both have each other\'s real identity keys and nobody replaced them when you paired. Version 2 covers both keys of your identities and appears once both apps know each other\'s post-quantum signing key, which they exchange on their next connection; version 1 covers the classical key only. Numbers of different versions never match, so compare the version both of you can see.</string>
+	<string name="identity_safety_number_explain">Compare these 60 digits with your contact in person or over a trusted channel. If they match on both devices, you both have each other\'s identity keys and nobody replaced them when you paired. Version 2 covers both keys of your identities and appears once both apps know each other\'s post-quantum signing key, which they exchange on their next connection; version 1 covers the classical key only. Numbers of different versions never match, so compare the version both of you can see.</string>
 	<string name="identity_fingerprint_hybrid_format">Version 2 (both keys): %1$s</string>
 	<string name="identity_fingerprint_classical_format">Version 1 (classical key): %1$s</string>
 	<string name="identity_keys_out_of_sync_title">Connection keys out of sync</string>
@@ -103,7 +110,7 @@
 	<string name="identity_keys_out_of_sync_banner">Connection keys out of sync. Tap to repair</string>
 	<string name="identity_readd_contact">Re-add contact to repair the connection</string>
 	<string name="identity_readd_contact_hint">Exchange links with this contact again. The pairing replaces the connection keys on both devices and keeps your conversation.</string>
-	<string name="contact_readd_started">The contact will be re-added once they add you again with your new link</string>
+	<string name="contact_readd_started">They will be added again once they use your new link.</string>
 	<string name="identity_safety_number_version_label">Safety number, version %1$d</string>
 	<string name="identity_my_fingerprint_label">My fingerprint</string>
 	<string name="identity_their_fingerprint_label">Their fingerprint</string>
@@ -140,7 +147,7 @@
 	<string name="vault_documents_empty_title">No documents</string>
 	<string name="vault_documents_empty_subtitle">Tap + to add secure documents</string>
 	<string name="vault_search_hint">Search</string>
-	<string name="vault_sort_name">Sort: A–Z</string>
+	<string name="vault_sort_name">Sort: A to Z</string>
 	<string name="vault_sort_recent">Sort: Recent</string>
 	<string name="vault_onboarding_create_password">Create password</string>
 	<string name="vault_onboarding_step_create">Create</string>
@@ -235,6 +242,7 @@
 	<string name="setup_failed_message">Something went wrong. Please try again.</string>
 	<string name="generic_error">Something went wrong. Please try again.</string>
 	<string name="channels_post_signer_editor_description">Signed by a channel editor</string>
+	<string name="channels_post_signer_subscriber_description">Posted by a subscriber, signed by the channel</string>
 	<string name="setup_failed_retry">Retry</string>
 	<string name="more_info">More Information</string>
 	<string name="don_t_ask_again">Don\'t ask again</string>
@@ -355,6 +363,8 @@
 	<string name="channels_join_link_hint">Paste channel invite link</string>
 	<string name="channels_join_action">Join</string>
 	<string name="channels_join_confirm_question">Join this channel?</string>
+	<string name="channels_join_known_question">This link is for the channel %1$s, which you already have. Continue?</string>
+	<string name="channels_link_name_unknown">This link is for a channel you have not joined, so its name is not known yet.</string>
 	<string name="channels_join_error_link">That doesn\'t look like a valid Zerion channel invite link.</string>
 	<string name="channels_join_already_subscribed">You\'re already subscribed to this channel.</string>
 	<string name="channels_rejoin_updated">Updated your access to %1$s.</string>
@@ -380,6 +390,7 @@
 	<string name="channels_owner_deleted_notice">The owner deleted the channel %1$s</string>
 	<string name="channels_owner_deleted_notice_unnamed">The owner deleted a channel you had joined</string>
 	<string name="channels_compose_hint">Write to your subscribers…</string>
+	<string name="channels_compose_hint_member">Write a post</string>
 	<string name="channels_compose_send">Publish</string>
 	<string name="channels_compose_error_empty">Type something before publishing.</string>
 	<string name="channels_compose_error_publish">Couldn\'t publish your post. Please try again.</string>
@@ -501,8 +512,10 @@
 	<string name="hardened_mode_tamper_label">Refuse to start when a debugger, root, or hooking framework is detected</string>
 	<string name="hardened_mode_usb_panic_label">Sign out (or wipe) when a USB cable enables ADB or file transfer</string>
 	<string name="hardened_mode_usb_panic_unavailable">USB panic could not be turned on</string>
+	<string name="security_settings_not_saved">This setting could not be saved. Restart Zerion and try again.</string>
 	<string name="hardened_mode_usb_confirm_title">Enable USB panic?</string>
 	<string name="hardened_mode_usb_confirm_message">If anyone plugs Zerion into a computer with ADB or file transfer enabled, you\'ll be signed out automatically. You can choose to also wipe your account on the next screen.</string>
+	<string name="hardened_mode_usb_connected_warning">This phone is connected to a computer with file transfer or USB debugging on right now. Zerion will act as soon as you confirm: it signs you out, or wipes your account if you choose that on the next screen. Unplug the cable first if you do not want that.</string>
 	<string name="hardened_mode_usb_confirm_action">Continue</string>
 	<string name="hardened_mode_usb_scope_title">What should happen?</string>
 	<string name="hardened_mode_usb_scope_signout">Sign me out (keeps my account)</string>
@@ -572,6 +585,12 @@
 	<string name="channels_settings_renew_summary">Old links stop working. Share the new link with the people who should stay.</string>
 	<string name="channels_settings_who_can_post">Who can post</string>
 	<string name="channels_settings_only_you">Only you</string>
+	<string name="channels_settings_you_and_editors_choice">You and editors</string>
+	<string name="channels_settings_subscribers_you_trust">Subscribers you trust</string>
+	<string name="channels_settings_who_can_post_explain">Subscribers you marked as trusted, and approved applicants, can post. Their posts carry their name and are signed by the channel.</string>
+	<string name="channels_post_not_accepted">Post not accepted</string>
+	<string name="channels_post_too_many">Too many posts, try again later</string>
+	<string name="channels_feed_read_only_footer_owner">Only the owner posts here</string>
 	<plurals name="channels_settings_you_and_editors">
 		<item quantity="one">You and %d editor</item>
 		<item quantity="other">You and %d editors</item>
@@ -621,7 +640,7 @@
 	<string name="channels_member_unblock_failed">Could not unblock this person. Try again.</string>
 	<string name="channels_member_none_blocked">No one is blocked.</string>
 	<string name="channels_member_safety_code">Safety code</string>
-	<string name="channels_member_safety_code_message">%2$s\n\nIf %1$s sees the same code under Advanced in their channel settings, the comments shown under this name are really theirs.</string>
+	<string name="channels_member_safety_code_message">%2$s\n\nIf %1$s sees the same code under Advanced in their channel settings, the comments shown under this name are theirs.</string>
 	<string name="channels_delegations_unnamed">Editor without a name</string>
 	<string name="channels_delegations_unnamed_person">Person without a name</string>
 	<string name="channels_delegations_shared_on">shared their name %1$s</string>
@@ -829,7 +848,7 @@
 	<string name="fix">Fix</string>
 	<string name="help">Help</string>
 	<string name="sorry">Sorry</string>
-	<string name="error_start_activity">Unavailable on your system</string>
+	<string name="error_start_activity">No app found for this</string>
 	<string name="status_heading">Status:</string>
 	<string name="error">Error</string>
 	<string name="info">Information</string>
@@ -876,6 +895,7 @@
 	<string name="sticker_import">Import sticker</string>
 	<string name="sticker_item_description">Sticker %1$d</string>
 	<string name="sticker_import_failed">Could not import sticker</string>
+	<string name="sticker_send_failed">Could not send sticker</string>
 	<string name="sticker_delete_confirm">Delete this sticker?</string>
 
 	<string name="grouptr_title">Groups</string>
@@ -910,7 +930,7 @@
 	<string name="grouptr_open">Open</string>
 	<string name="grouptr_input_hint">Message</string>
 	<string name="grouptr_member_safety_code">Safety code</string>
-	<string name="grouptr_member_safety_code_message">%2$s\n\nIf %1$s sees the same code under My fingerprint in their settings, the posts shown under this name are really theirs.</string>
+	<string name="grouptr_member_safety_code_message">%2$s\n\nIf %1$s sees the same code under My fingerprint in their settings, the posts shown under this name are theirs.</string>
 	<string name="grouptr_member_joined_format">%1$s (joined %2$s)</string>
 	<string name="grouptr_member_first_wrote_format">%1$s (first wrote %2$s)</string>
 	<string name="grouptr_member_this_person">this person</string>
@@ -978,7 +998,7 @@
 	<string name="grouptr_image">Image</string>
 	<string name="grouptr_removed_banner">%1$s removed you from this group. You can no longer send messages here.</string>
 	<string name="grouptr_create_nickname_hint">Your name in this group (optional)</string>
-	<string name="grouptr_join_nickname_prompt">Pick a name to use in this group. Leave blank to use your real name.</string>
+	<string name="grouptr_join_nickname_prompt">Pick a name to use in this group. Leave blank to use your profile name.</string>
 	<string name="grouptr_join_nickname_hint">Your name in this group</string>
 	<string name="grouptr_admin_section_actions">Actions</string>
 	<string name="grouptr_admin_section_group_settings">Group settings</string>
@@ -1056,7 +1076,7 @@
 	<string name="verify_to_send_media_banner">Verify this contact to send stickers and attachments</string>
 	<string name="verify_to_send_media_title">Verify this contact first</string>
 	<string name="verify_to_send_media_message">For your security, attachments, stickers and voice messages can only be sent to contacts you added yourself or have verified. This contact was introduced to you. Open contact info to compare safety numbers.</string>
-	<string name="own_link_changed">Your link changed because you added another contact in the meantime. Send your contact your new link and add them again.</string>
+	<string name="own_link_changed">Your link changed after you added someone else. Send them the new link and try again.</string>
 	<string name="identity_mark_verified">Mark as verified</string>
 	<string name="identity_mark_verified_title">Mark this contact as verified?</string>
 	<string name="identity_mark_verified_message">Only do this if your contact\'s app shows the same safety number, compared in person or over a channel you trust. If the numbers differ, someone may be intercepting your conversation.</string>
@@ -1109,7 +1129,7 @@
 	<string name="dialog_message_delete_contact">Are you sure that you want to remove this contact and all messages exchanged with this contact?</string>
 	<string name="block_contact_error">Failed to block contact</string>
 	<string name="contact_blocked">Contact has been blocked</string>
-	<string name="unknown_contact">Unknown Contact</string>
+	<string name="unknown_contact">Unknown contact</string>
 	<string name="keystore_unavailable_title">Secure storage unavailable</string>
 	<string name="keystore_unavailable_message">The secure key store on this device is not responding, so nothing can run safely right now. Restart the device and try again.</string>
 	<string name="keystore_unavailable_close">Close</string>
@@ -1186,7 +1206,7 @@
 	<string name="exchanging_contact_details">Exchanging contact details\u2026</string>
 	<string name="contact_added_toast">Contact added: %s</string>
 	<string name="contact_already_exists">Contact %s already exists</string>
-	<string name="contact_already_exists_general">Contact already exists</string>
+	<string name="contact_already_exists_general">Already a contact</string>
 	<string name="camera_error">Camera error</string>
 	<string name="no_camera_app">No camera app available</string>
 	<string name="connecting_to_device">Connecting to device\u2026</string>
@@ -1210,14 +1230,15 @@
 	<string name="secret_note_timer_10m">10 minutes</string>
 	<string name="secret_note_timer_1h">1 hour</string>
 	<string name="secret_note_timer_12h">12 hours</string>
+	<string name="view_once">View once</string>
+	<string name="view_once_photo">Photo, view once</string>
+	<string name="view_once_video">Video, view once</string>
+	<string name="view_once_tap">Tap to view once</string>
+	<string name="view_once_viewed">Viewed</string>
+	<string name="view_once_notice">This can be opened once. It is deleted as soon as you open it. The sender trusts you not to photograph or record the screen.</string>
+	<string name="view_once_offline">View once is not sent over the mesh</string>
+	<string name="view_once_missed">This view once message was opened while Zerion was not on screen, so it was not shown.</string>
 
-	<string name="add_contact_method_subtitle">Choose how to add a contact</string>
-	<string name="qr_exchange_card_title">Scan QR Codes</string>
-	<string name="qr_exchange_card_badge">In Person</string>
-	<string name="qr_exchange_card_description">Show your codes to each other and scan</string>
-	<string name="link_exchange_card_title">Share a Link</string>
-	<string name="link_exchange_card_badge">Remote</string>
-	<string name="link_exchange_card_description">Copy your link and paste theirs</string>
 	<string name="qr_exchange_camera_hint">Point at contact\'s code</string>
 	<string name="qr_exchange_your_code">Your code: show this to your contact</string>
 	<string name="qr_link_detected">Link found, connecting…</string>
@@ -1225,16 +1246,14 @@
 	<string name="qr_scanned_hint">Now let your contact scan your code</string>
 	<string name="qr_continue_button">Continue</string>
 
-	<string name="add_contact_remotely_title_case">Add contact</string>
+	<string name="add_contact_screen_title">Add contact</string>
 	<string name="add_contact_nearby_title">Add contact nearby</string>
 	<string name="add_contact_remotely_title">Add contact at a distance</string>
-	<string name="contact_link_intro">Enter the link from your contact here</string>
-	<string name="contact_link_hint">Contact\'s link</string>
 	<string name="paste_button">Paste</string>
 	<string name="scan_qr_button">Scan QR</string>
 	<string name="scan_qr_instruction">Point camera at a Zerion QR code</string>
 	<string name="qr_code_description">Your contact QR code</string>
-	<string name="camera_permission_denied">Camera permission is required to scan QR codes</string>
+	<string name="camera_permission_denied">Allow camera access to scan QR codes</string>
 	<string name="add_contact_button">Add contact</string>
 	<string name="copy_button">Copy</string>
 	<string name="share_button">Share</string>
@@ -1242,39 +1261,33 @@
 	<string name="add_contact_choose_nickname">Choose nickname</string>
 	<string name="add_contact_choose_a_nickname">Enter a nickname</string>
 	<string name="nickname_intro">Give your contact a nickname. Only you can see it.</string>
-	<string name="your_link">Give this link to the contact you want to add</string>
 	<string name="link_clip_label">Zerion link</string>
 	<string name="link_copied_toast">Link copied</string>
-	<string name="adding_contact_error">There was an error adding the contact.</string>
+	<string name="adding_contact_error">Could not add contact. Try again.</string>
 	<string name="pending_contact_requests_snackbar">There are pending contact requests</string>
-	<string name="pending_contact_requests">Pending Contact Requests</string>
-	<string name="no_pending_contacts">No pending contacts</string>
 	<string name="waiting_for_contact_to_come_online">Waiting for contact to come online…</string>
 	<string name="connecting">Connecting…</string>
 	<string name="adding_contact">Adding contact…</string>
-	<string name="adding_contact_failed">Adding contact has failed</string>
-	<string name="dialog_title_remove_pending_contact">Confirm Removal</string>
-	<string name="dialog_message_remove_pending_contact">This contact is still being added. If you remove it now, it will not be added.</string>
-	<string name="own_link_error">Enter your contact\'s link, not your own</string>
-	<string name="nickname_missing">Please enter a nickname</string>
+	<string name="adding_contact_failed">Could not add contact</string>
+	<string name="dialog_title_remove_pending_contact">Remove this contact?</string>
+	<string name="dialog_message_remove_pending_contact">This contact is not added yet. If you remove it, adding stops.</string>
+	<string name="nickname_missing">Enter a name</string>
 	<string name="invalid_link">Invalid link</string>
-	<string name="unsupported_link">This link comes from a newer version of Zerion. Please upgrade to the latest version and try again.</string>
-	<string name="intent_own_link">You opened your own link. Use the one of the contact you want to add!</string>
-	<string name="missing_link">Please enter a link</string>
-	<string name="step_1">1</string>
+	<string name="unsupported_link">This link needs a newer Zerion. Update and try again.</string>
+	<string name="missing_link">Paste a ZerionID or link</string>
 	<string name="step_2">2</string>
 	<plurals name="contact_added_notification_text">
 		<item quantity="one">New contact added.</item>
 		<item quantity="other">%d new contacts added.</item>
 	</plurals>
 	<string name="offline_state">No Internet connection</string>
-	<string name="duplicate_link_dialog_title">Duplicate Link</string>
+	<string name="duplicate_link_dialog_title">Duplicate link</string>
 	<string name="duplicate_link_dialog_text_1">You already have a pending contact with this link: %s</string>
 	<string name="duplicate_link_dialog_text_1_contact">You already have a contact with this link: %s</string>
 	<string name="duplicate_link_dialog_text_2">Are %1$s and %2$s the same person?</string>
-	<string name="same_person_button">Same Person</string>
-	<string name="different_person_button">Different Person</string>
-	<string name="duplicate_link_dialog_text_3">%1$s and %2$s sent you the same link.\n\nOne of them may be trying to discover who your contacts are.\n\nDon\'t tell them you received the same link from someone else.</string>
+	<string name="same_person_button">Same person</string>
+	<string name="different_person_button">Different person</string>
+	<string name="duplicate_link_dialog_text_3">%1$s and %2$s sent you the same link. One of them may be checking who your contacts are. Do not tell either of them.</string>
 	<string name="pending_contact_updated_toast">Pending contact updated</string>
 	<string name="info_both_must_enter_links">You must both add each other\'s links</string>
 
@@ -1430,6 +1443,7 @@
 		<item quantity="other">%1$d custom bridges</item>
 	</plurals>
 	<string name="tor_custom_bridges_dialog_message">If Tor cannot connect where you are, paste bridge lines here, one per line. When you add bridges here, only these are used, not the built-in ones. Plain, obfs4, snowflake, meek and webtunnel bridges are supported. You can get bridges from bridges.torproject.org or the GetBridgesBot on Telegram.</string>
+	<string name="tor_custom_bridges_unusable">%1$d of %2$d lines cannot be used</string>
 	<string name="tor_custom_bridges_invalid">One of the lines is not a bridge line. Nothing was saved.</string>
 	<string name="tor_custom_bridges_hint">Paste bridge lines, one per line</string>
 	<string name="tor_helper_prompt_title">Use a helper service to connect?</string>
@@ -1446,8 +1460,8 @@
 	<string name="tor_helper_choice_use">Use them</string>
 	<string name="tor_helper_choice_off">Don\'t use them</string>
 	<string name="tor_debug_country_title">Pretend country (debug build only)</string>
-	<string name="tor_debug_country_none">Real country</string>
-	<string name="tor_debug_country_hint">Two-letter code, or empty for the real country</string>
+	<string name="tor_debug_country_none">No override</string>
+	<string name="tor_debug_country_hint">Two-letter code, or empty for no override</string>
 
 	<string name="backup_settings_title">Backup &amp; transfer</string>
 	<string name="backup_settings_summary">Move your account to another phone</string>
@@ -1513,7 +1527,7 @@
 	<string name="transfer_status_working">Working</string>
 	<string name="transfer_send_show_qr">Scan this code with the new phone</string>
 	<string name="backup_password_empty">Enter a passphrase</string>
-	<string name="backup_password_too_short">The passphrase must be at least 8 characters. The file contains your database key, so anyone with the file can try passphrases offline.</string>
+	<string name="backup_passphrase_too_weak">The passphrase must be at least 12 characters with at least 8 different characters, mix letters with digits, capitals or symbols, and fill most of the strength bar. The file contains your database key, so anyone with the file can try passphrases offline.</string>
 	<string name="backup_passwords_mismatch">Passwords do not match</string>
 
 	<string name="welcome_title">Welcome to Zerion</string>
@@ -1577,6 +1591,7 @@
 	<string name="security_settings_title">Security</string>
 	<string name="pref_lock_title">App lock</string>
 	<string name="pref_lock_summary">Optional. Adds an extra device-level lock when you reopen Zerion, using your device screen lock or biometrics. This is separate from your account encryption password and does not change how your data is encrypted. While locked, Zerion stays signed in and connected in the background; sign out to close the account completely.</string>
+	<string name="pref_lock_keys_summary">The app lock locks the screen and the vault, but the account stays open until you sign out. Sign out or Exit clears the keys from memory.</string>
 	<string name="pref_lock_disabled_summary">To use this feature, set up a screen lock for your device</string>
 	<string name="pref_lock_timeout_title">App lock inactivity timeout</string>
 	<string name="pref_default_disappearing_title">Default disappearing timer</string>
@@ -1616,6 +1631,7 @@
 	<string name="panic_setting_destructive_action">Destructive Actions</string>
 	<string name="panic_setting_signout_title">Sign Out</string>
 	<string name="panic_setting_signout_summary">Sign out of Zerion if a panic button is pressed</string>
+	<string name="panic_setting_signout_needs_app">Choose a panic button app below first. Only that app can sign you out.</string>
 	<string name="purge_setting_title">Delete account</string>
 	<string name="purge_setting_summary">Delete your Zerion account if a panic button is pressed. Caution: This will permanently delete your identities, contacts and messages</string>
 
@@ -1697,7 +1713,7 @@
 	<string name="link_warning_text">This can be used to identify you. Think about whether you trust the person that sent you this link and consider opening it with Tor Browser.</string>
 	<string name="link_warning_open_link">Open link</string>
 
-	<string name="pending_contact_remove_action">Remove request</string>
+	<string name="pending_contact_remove_action">Remove</string>
 	<string name="decoy_calc_clear">C</string>
 	<string name="decoy_calc_delete">DEL</string>
 	<string name="decoy_calc_initial_value">0</string>
@@ -1882,6 +1898,10 @@
 	<string name="call_notification_ongoing_title">Ongoing call</string>
 	<string name="call_notification_voice_text">Secure voice call</string>
 	<string name="call_notification_video_text">Secure video call</string>
+	<string name="call_notification_missed_title">Missed call</string>
+	<string name="missed_call_channel">Missed calls</string>
+	<string name="call_full_screen_hint_title">Let calls fill the screen</string>
+	<string name="call_full_screen_hint_text">Incoming calls can only ring as a banner because Zerion may not show them on the full screen. Tap to allow it in Settings.</string>
 	<string name="voice_call_status_incoming">Incoming secure call…</string>
 	<string name="voice_call_status_incoming_video">Incoming secure video call…</string>
 	<string name="voice_call_locked_title">Incoming call</string>
@@ -1908,6 +1928,19 @@
 	<string name="message_edited">edited</string>
 	<string name="edit_too_late">Messages can only be edited within 24 hours of sending.</string>
 	<string name="edit_not_possible">This message cannot be edited.</string>
+	<string name="action_pin_message">Pin</string>
+	<string name="action_unpin_message">Unpin</string>
+	<string name="pinned_message_label">PINNED</string>
+	<string name="pinned_preview_photo">Photo</string>
+	<string name="pinned_here_only">Pinned on this device only: your contact\'s app is too old to show it on theirs.</string>
+	<string name="unpinned_here_only">Unpinned on this device only: your contact\'s app is too old to see the change.</string>
+	<string name="pin_not_possible">This message cannot be pinned.</string>
+	<string name="pin_failed">The message could not be pinned.</string>
+	<string name="pin_hide_banner">Hide</string>
+	<plurals name="grouptr_pin_kept_older">
+		<item quantity="one">%d member on an older version does not see the pinned message.</item>
+		<item quantity="other">%d members on an older version do not see the pinned message.</item>
+	</plurals>
 
 	<string name="vault_settings_export_open_failed">Failed to open destination</string>
 	<string name="vault_settings_export_saved">Vault backup saved</string>
@@ -2125,7 +2158,7 @@
 	<string name="wallet_xmr_share">Share</string>
 	<string name="wallet_xmr_copy">Copy</string>
 	<string name="wallet_synced">Synced</string>
-	<string name="wallet_offline">Offline — could not reach a node over Tor</string>
+	<string name="wallet_offline">Offline: could not reach a node over Tor</string>
 	<string name="wallet_xmr_starting_tor">Starting Tor…</string>
 	<string name="wallet_xmr_connected">Connected · starting sync…</string>
 	<string name="wallet_xmr_synchronizing">Synchronizing %1$s / %2$s blocks</string>
@@ -2189,6 +2222,18 @@
 	<string name="wallet_xmr_node_direct_accept">I understand, use Direct</string>
 	<string name="wallet_xmr_node_invalid">That node address is not valid.</string>
 	<string name="wallet_xmr_node_saved">Node updated. It applies the next time the wallet syncs.</string>
+	<string name="wallet_xmr_node_onion_note">Onion addresses are authenticated by Tor. Any other public address is not, and needs your confirmation. A node on your own network only works in Direct mode, because Tor does not connect to local addresses.</string>
+	<string name="wallet_xmr_node_unverified_title">Connection not authenticated</string>
+	<string name="wallet_xmr_node_unverified_warning">This node is not an onion address. Tor hides your IP address from it, but the connection to it is not authenticated. A malicious Tor exit relay could put a different node in its place, which could hide or delay transactions and see which outputs you spend. Your keys stay on this device. Use the node\'s onion address if it has one.</string>
+	<string name="wallet_xmr_node_unverified_accept">I understand, use this node</string>
+	<string name="wallet_xmr_node_paused_title">Your node is not in use</string>
+	<string name="wallet_xmr_node_paused_message">Your node %1$s is not used until you confirm it, because it is not an onion address and the connection to it is not authenticated. Until then the wallet uses the vetted Tor nodes, or you can stop Monero sync.</string>
+	<string name="wallet_xmr_node_paused_confirm">Review and confirm</string>
+	<string name="wallet_xmr_node_paused_stop">Stop syncing</string>
+	<string name="wallet_xmr_node_paused_keep">Use vetted nodes</string>
+	<string name="wallet_xmr_node_paused_vetted">%1$s is paused until you confirm it. The vetted Tor nodes are in use.</string>
+	<string name="wallet_xmr_node_paused_stopped">%1$s is paused until you confirm it. Monero sync is stopped.</string>
+	<string name="wallet_xmr_node_trust_refused">Only an onion node or a node on your own network can be trusted. Untick trust for this address.</string>
 	<string name="wallet_xmr_phrase_note">Write these 25 words down and keep them offline. Anyone with them controls the funds. There is no other backup.</string>
 	<string name="wallet_xmr_add_title">Add Monero wallet</string>
 	<string name="wallet_xmr_add_create">Create new wallet</string>
@@ -2247,7 +2292,7 @@
 	<string name="payjoin_review_title">Review Payjoin</string>
 	<string name="payjoin_review_body">Payjoin private payment\nTo: %1$s\nAmount: %2$d sat\nNetwork fee: %3$d sat\nTotal: %4$d sat\nPrivacy: %5$s</string>
 	<string name="wallet_network_failed">Couldn\'t reach the Bitcoin network over Tor</string>
-	<string name="wallet_receive_offline">Offline — incoming transactions will appear after reconnecting</string>
+	<string name="wallet_receive_offline">Offline: incoming transactions will appear after reconnecting</string>
 	<string name="wallet_preparing_tx">Preparing transaction…</string>
 	<string name="wallet_unlocking">Unlocking wallet…</string>
 	<string name="wallet_settings_backup">Show Recovery Phrase</string>
@@ -2257,12 +2302,12 @@
 	<string name="wallet_delete_warning_strong">Deleting this wallet permanently removes it from this device. Your coins cannot be recovered without your recovery phrase. Make sure you have written it down and stored it safely.</string>
 	<string name="wallet_delete_auth_hint">Enter your wallet password to permanently delete this wallet. This cannot be undone.</string>
 	<string name="wallet_settings_routing">Bitcoin network routing</string>
-	<string name="wallet_routing_tor">Tor — Recommended / Private</string>
-	<string name="wallet_routing_direct">Direct connection — Faster, reduced privacy</string>
+	<string name="wallet_routing_tor">Tor (recommended, private)</string>
+	<string name="wallet_routing_direct">Direct connection (faster, reduced privacy)</string>
 	<string name="wallet_routing_local">Own local node</string>
 	<string name="wallet_routing_enable_direct">Enable Direct</string>
 	<string name="wallet_routing_changed">Network routing updated</string>
-	<string name="wallet_routing_direct_warning">Direct connections expose your IP address to the Bitcoin server and can make wallet activity easier to correlate. Zerion recommends Tor for privacy.</string>
+	<string name="wallet_routing_direct_warning">Direct connections expose your IP address to the Bitcoin server, let the DNS resolver of your network see which server you look up, and can make wallet activity easier to correlate. Zerion recommends Tor for privacy.</string>
 	<string name="wallet_amount_invalid">Enter a valid amount</string>
 	<string name="wallet_pending">Pending</string>
 	<string name="wallet_confirmations">%1$d conf</string>
@@ -2277,6 +2322,8 @@
 	<string name="wallet_send_fee_label">Network fee</string>
 	<string name="wallet_send_fee_rate_detail">%1$s sat/vB, %2$d%% of the amount</string>
 	<string name="wallet_send_fee_high_warning">High fee: %1$d%% of the amount. A node can suggest excessive rates; choose a lower rate if this is unexpected.</string>
+	<string name="wallet_send_fee_jump_warning">Fee jump: this rate is more than three times the last rate the wallet saw. A node can suggest excessive rates; cancel and try again later if this is unexpected.</string>
+	<string name="wallet_send_fee_disagree_warning">Servers disagree: two servers gave fee estimates more than three times apart, and the lower one is used. A server can suggest a wrong rate; check the fee before you send.</string>
 	<string name="wallet_fee_economy">Economy</string>
 	<string name="wallet_fee_normal">Normal</string>
 	<string name="wallet_fee_priority">Priority</string>
@@ -2356,6 +2403,9 @@
 	<string name="wallet_pin_confirm_title">Confirm certificate</string>
 	<string name="wallet_pin_confirm_ca_valid">The certificate is issued by a trusted authority and matches the server name. Pinning it adds a check; it does not replace one.</string>
 	<string name="wallet_pin_confirm_self_signed">The certificate is not issued by a trusted authority. Compare the fingerprint with your server through another channel before confirming; an attacker on the path could present their own certificate.</string>
+	<string name="wallet_pin_interception_title">Possible interception</string>
+	<string name="wallet_pin_interception_msg">Over one Tor route this server showed a certificate issued by a trusted authority, over another a certificate no authority vouches for. Someone on one of the routes may be posing as the server, so nothing was pinned. Try again later and compare the fingerprint with your server through another channel.</string>
+	<string name="wallet_pin_certificates_differ">The server showed a different certificate over two Tor routes, so nothing was pinned. Try again later or compare the fingerprint with your server through another channel.</string>
 	<string name="wallet_scan_unsupported">This payment request requires a feature the wallet does not support</string>
 	<string name="wallet_server_inconsistent">The server reported an empty wallet where history existed. The last verified state is kept.</string>
 	<string name="wallet_sp_oracle_https">The oracle address must use https</string>
@@ -2488,7 +2538,7 @@
 	<string name="grouptr_contact_must_update">%1$s cannot join new groups yet.</string>
 	<string name="grouptr_my_safety_code_in_group">My safety code in this group</string>
 	<string name="grouptr_my_safety_code_message">%1$s\n\nYou have a different code in every new group.</string>
-	<string name="grouptr_member_safety_code_group_message">%2$s\n\nIf %1$s sees the same code under My safety code in this group, the posts shown under this name are really theirs.</string>
+	<string name="grouptr_member_safety_code_group_message">%2$s\n\nIf %1$s sees the same code under My safety code in this group, the posts shown under this name are theirs.</string>
 	<string name="grouptr_sender_incognito_format">\"%1$s\" (incognito)</string>
 	<string name="grouptr_member_may_add">May add members</string>
 	<string name="grouptr_member_invite_creator_only">Only the group owner can add members.</string>
@@ -2501,6 +2551,8 @@
 	<string name="vault_settings_clipboard_untimed">When the vault locks, on sign-out or on panic, while Zerion is open</string>
 	<string name="vault_settings_kdf_strong">Password key: Argon2id, 256 MiB, 3 passes, bound to this device</string>
 	<string name="vault_settings_kdf_reduced">Password key: Argon2id, 128 MiB, 6 passes (this device cannot spare 256 MiB), bound to this device</string>
+	<string name="vault_settings_kdf_1gib">Password key: Argon2id, 1 GiB, 1 pass, bound to this device</string>
+	<string name="vault_settings_kdf_512mib">Password key: Argon2id, 512 MiB, 2 passes, bound to this device</string>
 	<string name="updates_check_title">Check for updates</string>
 	<string name="updates_check_summary">Version %1$s. Checked over Tor, only for installs from GitHub.</string>
 	<string name="updates_check_summary_store">Updates for this installation come from %1$s.</string>
@@ -2521,7 +2573,7 @@ Download it from the Zerion releases on GitHub:
 SHA-256 of the APK:
 %4$s
 
-A real update installs over the existing app. Never uninstall Zerion to install an update: uninstalling deletes your account.
+An update installs over the existing app. Never uninstall Zerion to install an update: uninstalling deletes your account.
 
 The link opens in your browser, which does not use Tor.</string>
 	<string name="updates_open">Open in browser</string>
@@ -2560,6 +2612,7 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="vault_msg_storage_error">Storage error</string>
 	<string name="vault_msg_create_failed">Failed to create vault</string>
 	<string name="vault_msg_unlock_failed">Failed to unlock vault</string>
+	<string name="vault_msg_unlock_needs_native">Zerion could not open the vault because part of the app is missing or damaged. Install Zerion again from the same source, then try again. Nothing in the vault was changed.</string>
 	<string name="vault_msg_load_failed">Failed to load vault items</string>
 	<string name="vault_msg_unlock_first">Please unlock your vault first</string>
 	<string name="vault_msg_file_name_empty">File name cannot be empty</string>
@@ -2628,13 +2681,15 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="voice_call_video_integrity">The video stream failed an integrity check</string>
 	<string name="voice_call_camera_error">Camera error: %1$s</string>
 	<string name="voice_call_reason_timeout">Connection timed out</string>
+	<string name="voice_call_reason_no_answer">No answer</string>
+	<string name="voice_call_reason_could_not_connect">Could not connect</string>
 	<string name="voice_call_reason_setup_failed">The call could not be set up</string>
 	<string name="voice_call_reason_busy">Contact is busy</string>
 	<string name="voice_call_speaker_on">Speaker on</string>
 	<string name="voice_call_muted">Muted</string>
 	<string name="voice_call_packet_loss">Loss: %1$s%%</string>
-	<string name="voice_call_channel_incoming">Incoming calls</string>
-	<string name="voice_call_channel_incoming_desc">Ringing alerts for incoming voice calls</string>
+	<string name="voice_call_channel_ring">Ringing calls</string>
+	<string name="voice_call_channel_ring_desc">Rings when a call arrives while Zerion is not on screen</string>
 	<string name="voice_call_channel_ongoing">Ongoing calls</string>
 	<string name="voice_call_channel_ongoing_desc">Status of a voice call in progress</string>
 	<string name="hardened_reason_verified_boot">Verified boot is not in the green state, so the device firmware is not a stock signed image. Someone with bootloader access could have modified the system.</string>
@@ -2720,4 +2775,135 @@ The link opens in your browser, which does not use Tor.</string>
 		<item quantity="one">Delete %d post?</item>
 		<item quantity="other">Delete %d posts?</item>
 	</plurals>
+	<string name="add_contact_send_invite_title">Add contact</string>
+	<string name="add_contact_send_invite_description">Use their ZerionID or link. They can answer later.</string>
+	<string name="add_contact_scan_qr_title">Scan QR</string>
+	<string name="add_contact_scan_qr_description">Scan each other\'s code in person. Also works without internet.</string>
+	<string name="scan_qr_mode_online">Scan each other\'s code</string>
+	<string name="scan_qr_mode_nearby">No internet: pairing nearby over Bluetooth</string>
+	<string name="scan_qr_link_needs_internet">Connect to the internet, then scan again.</string>
+	<string name="send_invite_title">Add contact</string>
+	<string name="send_invite_link_hint">Their ZerionID or link</string>
+	<string name="send_invite_scan_button">Scan</string>
+	<string name="send_invite_alias_hint">Their name (only you see it)</string>
+	<string name="send_invite_shown_name_hint">Your name (they see it)</string>
+	<string name="send_invite_note_hint">Note (optional)</string>
+	<string name="send_invite_note_info">They see it when they open your request.</string>
+	<string name="send_invite_send_button">Send request</string>
+	<string name="send_invite_add_button">Add contact</string>
+	<string name="send_invite_old_link_notice">Older link. Both of you paste each other\'s link, or use Scan QR.</string>
+	<string name="send_invite_own_link">This is your own link</string>
+	<string name="send_invite_damaged_link">This link is damaged</string>
+	<string name="send_invite_incomplete_link">This link is incomplete</string>
+	<string name="send_invite_shown_name_missing">Enter your name</string>
+	<string name="send_invite_note_too_long">Note is too long</string>
+	<string name="send_invite_too_many">Already sent to this link, or %d requests are still open. Cancel one or wait.</string>
+	<string name="send_invite_sent">Request saved. It goes out when you are both online.</string>
+	<string name="send_invite_sent_paused">Saved. Confirm this is your only device to send it.</string>
+	<string name="send_invite_classical_link">Older link. Ask them to update Zerion, or use Scan QR.</string>
+	<string name="send_invite_alias_missing">Enter their name</string>
+	<string name="send_invite_zero_id_changed">Your ZerionID changed after you shared it. Share the new one.</string>
+	<string name="zero_id_link_description">Your ZerionID link</string>
+	<string name="zero_id_title">Your ZerionID</string>
+	<string name="zero_id_info">Share it to get requests. It works for %d days after you last share it in Zerion.</string>
+	<string name="zero_id_receiving_until">Receiving requests until %s</string>
+	<string name="zero_id_not_receiving">Not receiving requests. Share it or tap Keep receiving.</string>
+	<string name="zero_id_keep_receiving">Keep receiving</string>
+	<string name="zero_id_rotates_info">It changes after each contact you accept with it.</string>
+	<string name="zero_id_more_text">Your ZerionID gets requests for %d days after you last share it in Zerion. Sharing it again starts the count over. While it gets requests, anyone who has it can see when your phone is online. Zerion cannot see shares outside the app. Blocks stay with the ZerionID they were made on.</string>
+	<string name="zero_id_flood_reset">Too many requests. Reset on %s</string>
+	<string name="invite_links_flood_paused">Too many requests. Paused until %s</string>
+	<string name="invite_links_resume_now">Resume now</string>
+	<string name="notification_link_flooded">Invite link paused: too many requests. It resumes by itself.</string>
+	<string name="notification_zero_id_flooded">Too many requests, so your ZerionID was reset. Share the new one.</string>
+	<string name="show_qr_button">Show QR</string>
+	<string name="qr_dialog_title">QR code</string>
+	<string name="invite_links_title">Invite links</string>
+	<string name="invite_links_summary">Links people can use to send you contact requests</string>
+	<string name="invite_links_intro">Invite links stay the same until you remove them. Good for support.</string>
+	<string name="invite_links_limits">Anyone with your link can see when your phone is online and send you requests. Anyone can make a link that looks official, so get support links from a source you trust and compare the safety code. If a link gets too many requests, it pauses for a while.</string>
+	<string name="contact_more_info">More info</string>
+	<string name="contact_less_info">Less info</string>
+	<string name="invite_links_add">Add invite link</string>
+	<string name="invite_links_label_hint">Label only you see, like Work</string>
+	<string name="invite_links_label_missing">Enter a label</string>
+	<string name="invite_links_label_too_long">Up to %d characters</string>
+	<string name="invite_links_limit_reached">You can have up to %d links. Remove one first.</string>
+	<string name="invite_links_empty">No invite links yet</string>
+	<string name="invite_links_inbox_open">Receiving requests</string>
+	<string name="invite_links_inbox_closed">Not receiving right now</string>
+	<plurals name="invite_links_request_count">
+		<item quantity="one">%d request waiting</item>
+		<item quantity="other">%d requests waiting</item>
+	</plurals>
+	<plurals name="invite_links_blocked_count">
+		<item quantity="one">%d blocked</item>
+		<item quantity="other">%d blocked</item>
+	</plurals>
+	<string name="invite_links_withdraw">Remove</string>
+	<string name="invite_links_withdraw_title">Remove this link?</string>
+	<string name="invite_links_withdraw_message">People with this link can no longer send you requests. Requests you already got stay.</string>
+	<string name="zero_id_reset">Reset ZerionID</string>
+	<string name="zero_id_reset_title">Reset ZerionID?</string>
+	<string name="zero_id_reset_message">Your old ZerionID stops working. Blocks made on it do not carry over.</string>
+	<string name="zero_id_reset_done">You have a new ZerionID</string>
+	<string name="blocked_senders_title">Blocked senders</string>
+	<string name="blocked_sender_row">Blocked sender %1$d, %2$s</string>
+	<string name="unblock_button">Unblock</string>
+	<string name="requests_title">Contact requests</string>
+	<string name="requests_tab_received">Received</string>
+	<string name="requests_tab_sent">Sent</string>
+	<string name="requests_empty_received">No requests yet</string>
+	<string name="requests_empty_sent">No sent requests yet</string>
+	<string name="requests_unnamed">No name</string>
+	<string name="requests_via_zero_id">via your ZerionID</string>
+	<string name="requests_via_link">via %s</string>
+	<string name="requests_name_unchecked">Name chosen by the sender, not checked.</string>
+	<string name="requests_accept_explain">After you accept, compare the safety code.</string>
+	<string name="requests_clock_hint">Their clock is off by more than two days, so times may look wrong.</string>
+	<string name="requests_accept_name_title">Name for this contact</string>
+	<string name="requests_block">Block</string>
+	<string name="requests_block_title">Block this sender?</string>
+	<string name="requests_block_message">You will get no more requests from them through the link this request came from.</string>
+	<string name="requests_block_message_zero_id">You will get no more requests from them through your ZerionID.</string>
+	<string name="requests_block_message_link">You will get no more requests from them through this link: %s.</string>
+	<string name="requests_declined">Request declined</string>
+	<string name="undo_button">Undo</string>
+	<string name="requests_already_declined">Already declined</string>
+	<string name="requests_state_queued">Not sent yet</string>
+	<string name="requests_state_delivered">Delivered</string>
+	<string name="requests_state_accepted">Accepted</string>
+	<string name="requests_state_not_delivered">Not delivered</string>
+	<string name="requests_state_no_answer">No answer</string>
+	<string name="requests_state_cancelled">Cancelled</string>
+	<string name="requests_state_withdrawn">Cancelled after delivery</string>
+	<string name="requests_state_cancelled_by_sender">Cancelled by sender</string>
+	<string name="requests_state_contact_added">Contact added</string>
+	<string name="requests_open_chat">Open chat</string>
+	<string name="requests_state_no_answer_yet">No answer yet</string>
+	<string name="requests_notification_accepted">Your contact request was accepted</string>
+	<string name="requests_state_inbox_busy">Their phone is busy. Zerion will try again.</string>
+	<string name="requests_state_withdrawing">Cancelling…</string>
+	<string name="requests_expired">Request expired</string>
+	<string name="requests_state_connecting">Accepted, connects when you are both online</string>
+	<string name="requests_state_could_not_connect">Could not connect</string>
+	<string name="requests_try_again">Try again</string>
+	<string name="requests_cancel">Cancel request</string>
+	<string name="requests_cancel_title">Cancel this request?</string>
+	<string name="requests_keep">Keep</string>
+	<string name="requests_dismiss">Dismiss</string>
+	<string name="requests_remove">Remove</string>
+	<plurals name="requests_unopened">
+		<item quantity="one">%d new request</item>
+		<item quantity="other">%d new requests</item>
+	</plurals>
+	<plurals name="contact_request_notification_text">
+		<item quantity="one">New contact request</item>
+		<item quantity="other">%d new contact requests</item>
+	</plurals>
+	<string name="restore_pause_title">Is this the only device using this account?</string>
+	<string name="restore_pause_message">After a restore, requests pause so two phones on one account do not split them. Confirm to turn them back on.</string>
+	<string name="restore_pause_yes">Yes, continue</string>
+	<string name="restore_pause_not_now">Not now</string>
+	<string name="invites_paused_banner">Invites paused. Tap to confirm this is your only device.</string>
 </resources>

@@ -147,7 +147,9 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 		}
 		m = recogniser.recogniseBeyondWindowNext(tag, INBOUND_SEARCH_GAP,
 				peerDials);
-		return m == null ? -1 : m.contactId;
+		if (m == null) return -1;
+		counter.beyondWindowSearchMatched(m.contactId, m.streamId);
+		return m.contactId;
 	}
 
 	@Override
@@ -244,6 +246,8 @@ public class ZtpSessionProviderImpl implements ZtpSessionProvider, Service,
 		keys.getCurrent().clear();
 		SecretKey pending = keys.getPending();
 		if (pending != null) pending.clear();
+		SecretKey pendingConfirmKey = keys.getPendingConfirmKey();
+		if (pendingConfirmKey != null) pendingConfirmKey.clear();
 		long recvHighWater = counter.currentRecvHighWater(cid.getInt());
 		recogniser.register(cid.getInt(), tagKeys, recvHighWater);
 	}

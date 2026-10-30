@@ -158,6 +158,15 @@ public interface GroupTrManager {
 
 	void setGroupAutoDeleteTimer(byte[] groupId, long ms) throws DbException;
 
+	boolean canPin(byte[] groupId) throws DbException;
+
+	@Nullable
+	byte[] getPinnedPostId(byte[] groupId) throws DbException;
+
+	int pinPost(byte[] groupId, byte[] postId) throws DbException;
+
+	int unpinPost(byte[] groupId) throws DbException;
+
 	@Nullable
 	String getStealthName(byte[] groupId) throws DbException;
 

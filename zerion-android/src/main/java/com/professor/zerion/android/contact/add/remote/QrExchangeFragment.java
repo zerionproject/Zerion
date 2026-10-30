@@ -1,6 +1,7 @@
 package com.professor.zerion.android.contact.add.remote;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -26,6 +27,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
+import com.professor.zerion.android.contact.add.nearby.AddNearbyContactActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -61,6 +63,8 @@ public class QrExchangeFragment extends BaseFragment {
 
 	private ExecutorService cameraExecutor;
 	private final AtomicBoolean scanComplete = new AtomicBoolean(false);
+	@Nullable
+	private volatile String lastRefused, scanned;
 
 	private final ActivityResultLauncher<String> requestCameraLauncher =
 			registerForActivityResult(
@@ -108,16 +112,15 @@ public class QrExchangeFragment extends BaseFragment {
 		viewModel.getHandshakeLink().observe(getViewLifecycleOwner(), link -> {
 			if (link != null) {
 				Bitmap qr = QrCodeUtils.generateQrCode(link);
-				if (qr != null) {
-					qrCodeImage.setImageBitmap(qr);
-					viewModel.onOwnLinkShared();
-				}
+				if (qr != null) qrCodeImage.setImageBitmap(qr);
 			}
 		});
 
 		continueButton.setOnClickListener(btn -> {
 			viewModel.onRemoteLinkEntered();
 		});
+		viewModel.getScanRoute().observeEvent(getViewLifecycleOwner(),
+				this::onScanRoute);
 
 		if (ContextCompat.checkSelfPermission(requireContext(),
 				Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -176,9 +179,10 @@ public class QrExchangeFragment extends BaseFragment {
 				String decoded = QrCodeUtils.decodeQrFromYuv(
 						yPlane, imageProxy.getWidth(), imageProxy.getHeight(),
 						0, 0, rotation);
-				if (decoded != null
-						&& viewModel.isValidRemoteContactLink(decoded)) {
-					onLinkScanned(decoded);
+				if (decoded != null && !decoded.equals(lastRefused)
+						&& scanComplete.compareAndSet(false, true)) {
+					scanned = decoded;
+					viewModel.onCodeScanned(decoded);
 				}
 			}
 		} finally {
@@ -208,23 +212,43 @@ public class QrExchangeFragment extends BaseFragment {
 		return out;
 	}
 
-	private void onLinkScanned(String link) {
-		if (!scanComplete.compareAndSet(false, true)) return;
-
-		requireActivity().runOnUiThread(() -> {
-			if (viewModel.isOwnLink(link)) {
-				Toast.makeText(requireContext(),
-						R.string.own_link_error, LENGTH_SHORT).show();
+	private void onScanRoute(AddContactViewModel.ScanRoute route) {
+		switch (route.getKind()) {
+			case NEARBY:
+				openNearby(route.getText());
+				break;
+			case INVITE:
+				viewModel.onSendInviteChosen(route.getText());
+				break;
+			case IN_PERSON:
+				viewModel.setRemoteHandshakeLink(route.getText());
+				viewModel.setRemoteLinkScannedInPerson(true);
+				statusText.setText(R.string.qr_scanned_waiting);
+				statusText.setVisibility(View.VISIBLE);
+				qrHintText.setText(R.string.qr_scanned_hint);
+				continueButton.setVisibility(View.VISIBLE);
+				break;
+			case REFUSED:
+				lastRefused = scanned;
+				Toast.makeText(requireContext(), route.getMessage(),
+						LENGTH_SHORT).show();
 				scanComplete.set(false);
-				return;
-			}
-			viewModel.setRemoteHandshakeLink(link);
-			viewModel.setRemoteLinkScannedInPerson(true);
-			statusText.setText(R.string.qr_scanned_waiting);
-			statusText.setVisibility(View.VISIBLE);
-			qrHintText.setText(R.string.qr_scanned_hint);
-			continueButton.setVisibility(View.VISIBLE);
-		});
+				break;
+			default:
+				lastRefused = scanned;
+				scanComplete.set(false);
+				break;
+		}
+	}
+
+	private void openNearby(@Nullable String scannedCode) {
+		Intent i = new Intent(requireContext(), AddNearbyContactActivity.class);
+		if (scannedCode != null) {
+			i.putExtra(AddNearbyContactActivity.EXTRA_SCANNED_CODE,
+					scannedCode);
+		}
+		startActivity(i);
+		finish();
 	}
 
 	@Override

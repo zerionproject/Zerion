@@ -11,21 +11,27 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar;
 import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.channel.ChannelFeedActivity;
-import com.professor.zerion.android.contact.add.remote.PendingContactListActivity;
+import com.professor.zerion.android.contact.request.RequestsEntry;
 import com.professor.zerion.android.conversation.ConversationActivity;
 import com.professor.zerion.android.fragment.BaseFragment;
 import com.professor.zerion.android.grouptr.GroupTrConversationActivity;
 import com.professor.zerion.android.homelist.HomeList;
 import com.professor.zerion.android.homelist.HomeListAdapter;
 import com.professor.zerion.android.homelist.HomeRow;
-import com.professor.zerion.android.util.ZerionSnackbarBuilder;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
+import org.zerionproject.core.api.contact.event.PendingContactAddedEvent;
+import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
+import org.zerionproject.core.api.contact.request.ContactRequestManager;
+import org.zerionproject.core.api.contact.request.event.ContactRequestEvent;
+import org.zerionproject.core.api.contact.request.event.ContactRequestsChangedEvent;
+import org.zerionproject.core.api.db.DatabaseExecutor;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.util.StringUtils;
 
@@ -36,10 +42,8 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import androidx.annotation.UiThread;
 import androidx.lifecycle.ViewModelProvider;
 
-import static com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_INDEFINITE;
 import static com.professor.zerion.android.conversation.ConversationActivity.CONTACT_ID;
 
 @MethodsNotNullByDefault
@@ -54,11 +58,27 @@ public class ChatsFragment extends BaseFragment
 	@Inject
 	@IoExecutor
 	Executor ioExecutor;
+	@Inject
+	ContactRequestManager contactRequestManager;
+	@Inject
+	EventBus eventBus;
+	@Inject
+	@DatabaseExecutor
+	Executor dbExecutor;
 
 	ChatsViewModel viewModel;
 
 	@Nullable
-	private Snackbar snackbar = null;
+	private RequestsEntry requestsEntry;
+	private final EventListener requestEvents = e -> {
+		RequestsEntry entry = requestsEntry;
+		if (entry != null && (e instanceof ContactRequestEvent
+				|| e instanceof ContactRequestsChangedEvent
+				|| e instanceof PendingContactAddedEvent
+				|| e instanceof PendingContactRemovedEvent)) {
+			entry.refresh();
+		}
+	};
 
 	public static ChatsFragment newInstance() {
 		Bundle args = new Bundle();
@@ -89,16 +109,17 @@ public class ChatsFragment extends BaseFragment
 		HomeList home = HomeList.inflate(inflater, container, this,
 				ioExecutor, R.drawable.ic_chat, R.string.no_chats,
 				R.string.no_contacts_action);
-		View contentView = home.getView();
+		View contentView = inflater.inflate(R.layout.view_chats_home,
+				container, false);
+		((ViewGroup) contentView.findViewById(R.id.chatsHomeList))
+				.addView(home.getView());
+		requestsEntry = new RequestsEntry(requireActivity(),
+				contentView.findViewById(R.id.contactRequestsEntry),
+				contactRequestManager, dbExecutor);
 
 		viewModel.getItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) home.show(rows(items));
 		});
-		viewModel.getHasPendingContacts()
-				.observe(getViewLifecycleOwner(), hasPending -> {
-					if (hasPending != null && hasPending) showSnackBar();
-					else dismissSnackBar();
-				});
 		viewModel.getContactDeleted().observeEvent(getViewLifecycleOwner(),
 				deleted -> Toast.makeText(requireContext(), deleted
 						? R.string.contact_deleted_toast
@@ -112,39 +133,21 @@ public class ChatsFragment extends BaseFragment
 	public void onStart() {
 		super.onStart();
 		viewModel.load();
-		viewModel.checkForPendingContacts();
+		eventBus.addListener(requestEvents);
+		RequestsEntry entry = requestsEntry;
+		if (entry != null) entry.refresh();
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
-		dismissSnackBar();
+		eventBus.removeListener(requestEvents);
 	}
 
-	@UiThread
-	private void showSnackBar() {
-		if (snackbar != null) return;
-		int bottomMargin =
-				(int) (72 * getResources().getDisplayMetrics().density);
-		snackbar = new ZerionSnackbarBuilder()
-				.setAction(R.string.show, v -> showPendingContactList())
-				.setBottomMargin(bottomMargin)
-				.make(requireView(),
-						R.string.pending_contact_requests_snackbar,
-						LENGTH_INDEFINITE);
-		snackbar.show();
-	}
-
-	@UiThread
-	private void dismissSnackBar() {
-		if (snackbar == null) return;
-		snackbar.dismiss();
-		snackbar = null;
-	}
-
-	private void showPendingContactList() {
-		startActivity(new Intent(requireContext(),
-				PendingContactListActivity.class));
+	@Override
+	public void onDestroyView() {
+		requestsEntry = null;
+		super.onDestroyView();
 	}
 
 	private List<HomeRow> rows(List<ChatItem> items) {

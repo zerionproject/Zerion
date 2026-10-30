@@ -28,10 +28,12 @@ import static org.zerionproject.core.api.identity.AuthorConstants.MAX_AUTHOR_NAM
 import static org.zerionproject.core.test.TestUtils.getAgreementPublicKey;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
+import static org.zerionproject.core.util.StringUtils.getRandomBase32String;
 import static org.zerionproject.core.util.StringUtils.getRandomString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class PendingContactFactoryImplTest extends BrambleMockTestCase {
@@ -206,6 +208,48 @@ public class PendingContactFactoryImplTest extends BrambleMockTestCase {
 				p.getPublicKey().getEncoded());
 		assertEquals(alias, p.getAlias());
 		assertEquals(timestamp, p.getTimestamp());
+	}
+
+	@Test
+	public void aTypeByteAboveOneHundredTwentySevenIsNewerNotOlder()
+			throws Exception {
+		for (int type : new int[] {0x02, 0x7F, 0x80, 0xFF}) {
+			try {
+				pendingContactFactory.createPendingContact(
+						"zerion://" + encodeHybridLink(type), alias);
+				fail();
+			} catch (UnsupportedVersionException e) {
+				assertFalse("type " + type, e.isTooOld());
+			}
+		}
+	}
+
+	@Test
+	public void aVersionTwoZeroIdIsPairedMutuallyWithItsQueryIgnored()
+			throws Exception {
+		String body = encodeHybridLink(1);
+		String link = "zerion://" + body + "?i="
+				+ getRandomBase32String(56) + "&name=x";
+		assertTrue(org.zerionproject.core.api.contact.HandshakeLinkConstants
+				.LINK_REGEX.matcher(link).matches());
+		byte[] raw = Base32.decode(body, true);
+		byte[] key = java.util.Arrays.copyOfRange(raw, 1, raw.length);
+		context.checking(new Expectations() {{
+			oneOf(crypto).hash(ID_LABEL, key);
+			will(returnValue(idBytes));
+			oneOf(clock).currentTimeMillis();
+			will(returnValue(timestamp));
+		}});
+		PendingContact p =
+				pendingContactFactory.createPendingContact(link, alias);
+		assertArrayEquals(key, p.getPublicKey().getEncoded());
+		assertTrue(p.isPostQuantum());
+	}
+
+	private String encodeHybridLink(int type) {
+		byte[] raw = getRandomBytes(65);
+		raw[0] = (byte) type;
+		return Base32.encode(raw).toLowerCase(Locale.US);
 	}
 
 	private String encodeLink() {

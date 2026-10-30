@@ -99,7 +99,7 @@ public class AttachmentSelectedTintTest {
 		v.setLayoutParams(new StaggeredGridLayoutManager.LayoutParams(100,
 				100));
 		return new ImageViewHolder(v, 100, new MessageId(getRandomId()),
-				reader, db);
+				reader, db, db == null ? Runnable::run : db);
 	}
 
 	private static ImageView shown(AttachmentItem item, boolean incoming) {

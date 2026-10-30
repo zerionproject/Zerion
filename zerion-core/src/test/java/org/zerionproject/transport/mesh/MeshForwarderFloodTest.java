@@ -49,6 +49,11 @@ public class MeshForwarderFloodTest {
 		node.onReceive(frame, "ble", peer);
 	}
 
+	private void receiveWithinByteBudget(byte[] frame, String peer) {
+		now.addAndGet(501);
+		node.onReceive(frame, "ble", peer);
+	}
+
 	private List<byte[]> carried() {
 		List<byte[]> handed = new ArrayList<>();
 		node.addLink(new MeshLink() {
@@ -103,7 +108,9 @@ public class MeshForwarderFloodTest {
 		node.clock = now::get;
 		receive(frame(2, 0, 100), "b");
 		int flood = (3 * MeshForwarder.STORE_MAX_BYTES) / FULL_PAYLOAD;
-		for (int i = 0; i < flood; i++) receive(frame(1, i, FULL_PAYLOAD), "a");
+		for (int i = 0; i < flood; i++) {
+			receiveWithinByteBudget(frame(1, i, FULL_PAYLOAD), "a");
+		}
 		List<byte[]> carried = carried();
 		Map<Integer, Long> held = heldBytes(carried);
 		assertTrue("b's frame was pushed out", held.containsKey(2));
@@ -153,12 +160,116 @@ public class MeshForwarderFloodTest {
 				carried.size() <= MeshForwarder.STORE_MAX_FRAMES);
 	}
 
+	@Test
+	public void oneNeighbourIsHeldToAByteBudgetNotAFrameCount() {
+		node.clock = now::get;
+		long accepted = 0;
+		for (int i = 0; i < MeshForwarder.MAX_FRAMES_PER_SEC_PER_PEER; i++) {
+			byte[] f = frame(1, i, FULL_PAYLOAD);
+			if (node.onReceive(f, "ble", "a")) accepted += f.length;
+		}
+		assertTrue("one neighbour got " + accepted + " bytes in one second",
+				accepted <= MeshForwarder.MAX_BYTES_PER_SEC_PER_PEER);
+		assertTrue("a full frame still fits the budget", accepted > 0);
+		now.addAndGet(1001);
+		assertTrue("the budget refills",
+				node.onReceive(frame(1, 999, FULL_PAYLOAD), "ble", "a"));
+	}
+
+	@Test
+	public void manyInventedAddressesAreHeldToTheGlobalByteBudget() {
+		node.clock = now::get;
+		long accepted = 0;
+		for (int p = 0; p < MeshForwarder.MAX_FRAMES_PER_SEC; p++) {
+			byte[] f = frame(500 + p, 0, FULL_PAYLOAD);
+			if (node.onReceive(f, "ble", "fresh" + p)) accepted += f.length;
+		}
+		assertTrue("all addresses together got " + accepted
+						+ " bytes in one second",
+				accepted <= MeshForwarder.MAX_BYTES_PER_SEC);
+	}
+
+	@Test
+	public void smallFramesAreStillCountedPerFrame() {
+		node.clock = now::get;
+		int accepted = 0;
+		for (int i = 0; i < 2 * MeshForwarder.MAX_FRAMES_PER_SEC_PER_PEER;
+				i++) {
+			if (node.onReceive(frame(1, i, 1), "ble", "a")) accepted++;
+		}
+		assertEquals(MeshForwarder.MAX_FRAMES_PER_SEC_PER_PEER, accepted);
+	}
+
+	@Test
+	public void aClockThatStepsBackDoesNotStallANeighbour() {
+		node.clock = now::get;
+		for (int i = 0; i < MeshForwarder.MAX_FRAMES_PER_SEC_PER_PEER; i++) {
+			assertTrue(node.onReceive(frame(1, i, 1), "ble", "a"));
+		}
+		now.addAndGet(-500_000L);
+		assertTrue("a neighbour stalled after the clock stepped back",
+				node.onReceive(frame(1, 999, 1), "ble", "a"));
+	}
+
+	@Test
+	public void aFrameRefusedByTheGlobalLimitIsNotChargedToItsNeighbour() {
+		node.clock = now::get;
+		long start = now.get();
+		for (int p = 0; p < MeshForwarder.MAX_FRAMES_PER_SEC; p++) {
+			node.onReceive(frame(700 + p, 0, 1), "ble", "filler" + p);
+		}
+		now.set(start + 900);
+		for (int i = 0; i < MeshForwarder.MAX_FRAMES_PER_SEC_PER_PEER + 10;
+				i++) {
+			node.onReceive(frame(2, i, 1), "ble", "x");
+		}
+		now.set(start + 1001);
+		assertTrue("frames the global limit refused were charged to x",
+				node.onReceive(frame(2, 999, 1), "ble", "x"));
+	}
+
+	@Test
+	public void aCreditedNeighbourIsServedWhileInventedAddressesFlood() {
+		node.clock = now::get;
+		node.creditPeer("good");
+		long uncredited = 0;
+		for (int p = 0; p < 100; p++) {
+			byte[] f = frame(800 + p, 0, FULL_PAYLOAD);
+			if (node.onReceive(f, "ble", "invented" + p)) {
+				uncredited += f.length;
+			}
+		}
+		assertTrue("invented addresses took " + uncredited + " bytes",
+				uncredited <= MeshForwarder.MAX_BYTES_PER_SEC / 2);
+		assertTrue("a credited neighbour was shut out by the flood",
+				node.onReceive(frame(3, 0, FULL_PAYLOAD), "ble", "good"));
+	}
+
+	@Test
+	public void creditLapsesAfterTheIdlePeriod() {
+		node.clock = now::get;
+		node.creditPeer("good");
+		now.addAndGet(MeshForwarder.CREDIT_TTL_MS + 1);
+		for (int p = 0; p < 100; p++) {
+			node.onReceive(frame(900 + p, 0, FULL_PAYLOAD), "ble", "inv" + p);
+		}
+		int admitted = 0;
+		for (int i = 0; i < 2; i++) {
+			if (node.onReceive(frame(4, i, FULL_PAYLOAD), "ble", "good")) {
+				admitted++;
+			}
+		}
+		assertTrue("lapsed credit still reserved bytes, admitted "
+				+ admitted, admitted < 2);
+	}
+
 	private void floodFromManyIdentities() {
 		int identities = 16;
 		int perIdentity = 12;
 		for (int n = 0; n < perIdentity; n++) {
 			for (int p = 0; p < identities; p++) {
-				receive(frame(10 + p, n, FULL_PAYLOAD), "fake" + p);
+				receiveWithinByteBudget(frame(10 + p, n, FULL_PAYLOAD),
+						"fake" + p);
 			}
 		}
 	}
