@@ -18,12 +18,22 @@ public final class IncomingRequestInfo {
 	private final String linkLabel, name, note;
 	private final long receivedAt, acceptedAt;
 	private final int state;
-	private final boolean clockDiffers;
+	private final boolean clockDiffers, reconnect;
 	@Nullable
 	private final PendingContactId pendingContactId;
 
 	public IncomingRequestInfo(IncomingRequest r, int linkKind,
 			@Nullable String linkLabel) {
+		this(r, linkKind, linkLabel, false);
+	}
+
+	/**
+	 * reconnect says that the request asks to replace the keys of someone
+	 * who is already a contact.
+	 */
+	public IncomingRequestInfo(IncomingRequest r, int linkKind,
+			@Nullable String linkLabel, boolean reconnect) {
+		this.reconnect = reconnect;
 		requestId = r.getRequestId().clone();
 		linkId = r.getLinkId().clone();
 		this.linkKind = linkKind;
@@ -75,6 +85,10 @@ public final class IncomingRequestInfo {
 
 	public int getState() {
 		return state;
+	}
+
+	public boolean isReconnect() {
+		return reconnect;
 	}
 
 	public boolean isClockDifferent() {

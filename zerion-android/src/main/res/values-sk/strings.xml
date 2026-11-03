@@ -2874,6 +2874,9 @@
 	<string name="requests_expired">Platnosť žiadosti vypršala</string>
 	<string name="requests_state_connecting">Prijaté, spojí sa, keď budete obaja online</string>
 	<string name="requests_state_could_not_connect">Nepodarilo sa spojiť</string>
+	<string name="requests_reconnect_label">Žiada o opätovné spojenie ako existujúci kontakt</string>
+	<string name="requests_reconnect_notice">Táto žiadosť hovorí, že odosielateľ už je vaším kontaktom a chce sa znova spojiť, napríklad z nového telefónu. Ak prijmete, kľúče spojenia tohto kontaktu sa nahradia na oboch telefónoch a jeho starý telefón vás už nebude môcť zastihnúť. Prijmite len vtedy, ak to očakávate.</string>
+	<string name="send_invite_reconnect_notice">Táto žiadosť druhej strane oznamuje, že už ste jej kontaktom a chcete sa znova spojiť. Ak prijme, oba telefóny nahradia kľúče spojenia pre tento kontakt a zachovajú konverzáciu.</string>
 	<string name="requests_try_again">Skúsiť znova</string>
 	<string name="requests_cancel">Zrušiť žiadosť</string>
 	<string name="requests_cancel_title">Zrušiť túto žiadosť?</string>

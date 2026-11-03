@@ -15,7 +15,7 @@ public final class OutgoingRequestInfo {
 	@Nullable
 	private final String note;
 	private final int state;
-	private final boolean withdrawing, inboxBusy;
+	private final boolean withdrawing, inboxBusy, reconnect;
 	private final long createdAt, deliveredAt;
 	@Nullable
 	private final PendingContactId pendingContactId;
@@ -25,7 +25,17 @@ public final class OutgoingRequestInfo {
 	}
 
 	public OutgoingRequestInfo(OutgoingRequest r, boolean inboxBusy) {
+		this(r, inboxBusy, false);
+	}
+
+	/**
+	 * reconnect says that the request was sent from Re-add contact and asks
+	 * the receiver to replace the keys of an existing contact.
+	 */
+	public OutgoingRequestInfo(OutgoingRequest r, boolean inboxBusy,
+			boolean reconnect) {
 		this.inboxBusy = inboxBusy;
+		this.reconnect = reconnect;
 		requestId = r.getRequestId().clone();
 		targetLink = r.getTargetLink();
 		alias = r.getAlias();
@@ -42,6 +52,10 @@ public final class OutgoingRequestInfo {
 
 	public byte[] getRequestId() {
 		return requestId.clone();
+	}
+
+	public boolean isReconnect() {
+		return reconnect;
 	}
 
 	public String getTargetLink() {

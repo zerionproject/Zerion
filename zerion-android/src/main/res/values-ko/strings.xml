@@ -2735,6 +2735,9 @@
 	<string name="requests_expired">요청이 만료되었습니다</string>
 	<string name="requests_state_connecting">수락됨, 서로 온라인일 때 연결됩니다</string>
 	<string name="requests_state_could_not_connect">연결할 수 없음</string>
+	<string name="requests_reconnect_label">기존 연락처로 다시 연결을 요청함</string>
+	<string name="requests_reconnect_notice">이 요청은 보낸 사람이 이미 내 연락처이며 다시 연결하고 싶다는 뜻입니다. 예를 들어 새 휴대폰에서 보냈을 수 있습니다. 수락하면 두 휴대폰에서 해당 연락처의 연결 키가 교체되며 상대방의 이전 휴대폰은 더 이상 나에게 연락할 수 없습니다. 예상한 경우에만 수락하세요.</string>
+	<string name="send_invite_reconnect_notice">이 요청은 내가 이미 상대방의 연락처이며 다시 연결하고 싶다는 것을 알립니다. 상대방이 수락하면 두 휴대폰이 이 연락처의 연결 키를 교체하고 대화는 유지됩니다.</string>
 	<string name="requests_try_again">다시 시도</string>
 	<string name="requests_cancel">요청 취소</string>
 	<string name="requests_cancel_title">이 요청을 취소하시겠습니까?</string>

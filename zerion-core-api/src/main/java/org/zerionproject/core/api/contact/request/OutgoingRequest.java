@@ -18,6 +18,12 @@ public final class OutgoingRequest {
 	public static final int STATE_NO_ANSWER = 4;
 	public static final int STATE_CANCELLED = 5;
 	public static final int STATE_WITHDRAWING = 6;
+	/**
+	 * The request was accepted and the pairing ran, but the receiver turned
+	 * out to be someone who is already a contact and the add was refused;
+	 * that contact's keys were left as they were.
+	 */
+	public static final int STATE_ALREADY_CONTACT = 7;
 
 	private final byte[] requestId;
 	private final AuthorId localAuthorId;

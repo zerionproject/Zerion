@@ -2763,6 +2763,9 @@
 	<string name="requests_expired">Zahtev je istekao</string>
 	<string name="requests_state_connecting">Prihvaćen, povezaće se kada ste oboje na vezi</string>
 	<string name="requests_state_could_not_connect">Povezivanje nije uspelo</string>
+	<string name="requests_reconnect_label">Traži ponovno povezivanje kao postojeći kontakt</string>
+	<string name="requests_reconnect_notice">Ovaj zahtev kaže da je pošiljalac već tvoj kontakt i želi ponovo da se poveže, na primer sa novog telefona. Ako prihvatiš, ključevi veze tog kontakta zamenjuju se na oba telefona i njegov stari telefon više ne može da te dosegne. Prihvati samo ako to očekuješ.</string>
+	<string name="send_invite_reconnect_notice">Ovaj zahtev govori drugoj osobi da si već njen kontakt i da želiš ponovo da se povežete. Ako prihvati, oba telefona zamenjuju ključeve veze za ovaj kontakt i zadržavaju razgovor.</string>
 	<string name="requests_try_again">Pokušaj ponovo</string>
 	<string name="requests_cancel">Otkaži zahtev</string>
 	<string name="requests_cancel_title">Otkazati ovaj zahtev?</string>

@@ -2747,6 +2747,9 @@
 	<string name="requests_expired">请求已过期</string>
 	<string name="requests_state_connecting">已接受，将在你们双方都在线时连接</string>
 	<string name="requests_state_could_not_connect">无法连接</string>
+	<string name="requests_reconnect_label">请求以现有联系人身份重新连接</string>
+	<string name="requests_reconnect_notice">此请求表示发送者已经是你的联系人，并希望重新连接，例如从新手机发起。如果你接受，该联系人的连接密钥会在两台手机上被替换，其旧手机将无法再联系到你。只有在你预期如此时才接受。</string>
+	<string name="send_invite_reconnect_notice">此请求告诉对方你已经是其联系人，并希望重新连接。如果对方接受，两台手机都会替换此联系人的连接密钥，并保留对话。</string>
 	<string name="requests_try_again">重试</string>
 	<string name="requests_cancel">取消请求</string>
 	<string name="requests_cancel_title">取消此请求？</string>

@@ -2874,6 +2874,9 @@
 	<string name="requests_expired">Термін запиту минув</string>
 	<string name="requests_state_connecting">Прийнято, з\'єднається, коли ви обоє будете в мережі</string>
 	<string name="requests_state_could_not_connect">Не вдалося з\'єднатися</string>
+	<string name="requests_reconnect_label">Просить відновити з\'єднання як наявний контакт</string>
+	<string name="requests_reconnect_notice">У цьому запиті сказано, що відправник уже є вашим контактом і хоче відновити з\'єднання, наприклад з нового телефона. Якщо ви приймете його, ключі з\'єднання цього контакту буде замінено на обох телефонах, і його старий телефон більше не зможе з вами зв\'язатися. Приймайте лише якщо очікуєте цього.</string>
+	<string name="send_invite_reconnect_notice">Цей запит повідомляє співрозмовнику, що ви вже є його контактом і хочете відновити з\'єднання. Якщо він прийме його, обидва телефони замінять ключі з\'єднання для цього контакту та збережуть розмову.</string>
 	<string name="requests_try_again">Спробувати ще раз</string>
 	<string name="requests_cancel">Скасувати запит</string>
 	<string name="requests_cancel_title">Скасувати цей запит?</string>

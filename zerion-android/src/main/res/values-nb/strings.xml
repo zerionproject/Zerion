@@ -2787,6 +2787,9 @@
 	<string name="requests_expired">Forespørselen er utløpt</string>
 	<string name="requests_state_connecting">Godtatt, kobler til når dere begge er på nett</string>
 	<string name="requests_state_could_not_connect">Kunne ikke koble til</string>
+	<string name="requests_reconnect_label">Ber om å koble til på nytt som eksisterende kontakt</string>
+	<string name="requests_reconnect_notice">Denne forespørselen sier at avsenderen allerede er kontakten din og vil koble til på nytt, for eksempel fra en ny telefon. Hvis du godtar, erstattes tilkoblingsnøklene til den kontakten på begge telefonene, og den gamle telefonen kan ikke lenger nå deg. Godta bare hvis du forventer dette.</string>
+	<string name="send_invite_reconnect_notice">Denne forespørselen forteller den andre at du allerede er kontakten deres og vil koble til på nytt. Hvis de godtar, erstatter begge telefonene tilkoblingsnøklene for denne kontakten og beholder samtalen.</string>
 	<string name="requests_try_again">Prøv igjen</string>
 	<string name="requests_cancel">Avbryt forespørsel</string>
 	<string name="requests_cancel_title">Avbryte denne forespørselen?</string>

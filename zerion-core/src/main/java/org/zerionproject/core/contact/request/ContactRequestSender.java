@@ -6,6 +6,7 @@ import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContactId;
+import org.zerionproject.core.contact.PendingContactFlags;
 import org.zerionproject.core.api.contact.request.InviteLink;
 import org.zerionproject.core.api.contact.request.OutgoingRequest;
 import org.zerionproject.core.api.contact.request.OutgoingRequestLimitException;
@@ -81,6 +82,7 @@ import static org.zerionproject.core.api.contact.request.ContactRequestConstants
 import static org.zerionproject.core.api.contact.request.ContactRequestConstants.TOR_UP_MIN_DELAY_MS;
 import static org.zerionproject.core.api.contact.request.ContactRequestConstants.X25519_BYTES;
 import static org.zerionproject.core.api.contact.request.OutgoingRequest.STATE_ADDED;
+import static org.zerionproject.core.api.contact.request.OutgoingRequest.STATE_ALREADY_CONTACT;
 import static org.zerionproject.core.api.contact.request.OutgoingRequest.STATE_CANCELLED;
 import static org.zerionproject.core.api.contact.request.OutgoingRequest.STATE_DELIVERED;
 import static org.zerionproject.core.api.contact.request.OutgoingRequest.STATE_NOT_DELIVERED;
@@ -106,6 +108,8 @@ public class ContactRequestSender implements Service, EventListener {
 	private final Clock clock;
 	private final TaskScheduler scheduler;
 	private final Executor ioExecutor;
+	private final ReconnectMarks marks;
+	private final PendingContactFlags flags;
 	private final Random random;
 	private final java.util.concurrent.ExecutorService solver =
 			java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
@@ -140,6 +144,8 @@ public class ContactRequestSender implements Service, EventListener {
 		this.clock = clock;
 		this.scheduler = scheduler;
 		this.ioExecutor = ioExecutor;
+		this.marks = new ReconnectMarks(db);
+		this.flags = new PendingContactFlags(db);
 		random = crypto.getCrypto().getSecureRandom();
 		client = new InboxClient(crypto, random);
 	}
@@ -167,8 +173,37 @@ public class ContactRequestSender implements Service, EventListener {
 		}
 	}
 
+	/**
+	 * The pairing of a delivered request ran, but the receiver is already a
+	 * contact and the add was refused: the request ends as "Already a
+	 * contact" and keeps no keys.
+	 */
+	void alreadyContact(Transaction txn, PendingContactId p)
+			throws DbException {
+		for (OutgoingRequest r : db.getOutgoingRequests(txn)) {
+			if (r.getState() == STATE_DELIVERED
+					&& p.equals(r.getPendingContactId())) {
+				db.updateOutgoingRequest(txn, r.ended(STATE_ALREADY_CONTACT));
+				solutions.remove(key(r.getRequestId()));
+				paid.remove(key(r.getRequestId()));
+				txn.attach(new ContactRequestsChangedEvent());
+			}
+		}
+	}
+
+	boolean isReconnect(Transaction txn, byte[] requestId)
+			throws DbException {
+		return marks.get(txn, requestId, ReconnectMarks.OUTGOING);
+	}
+
 	public byte[] submit(InviteLink link, String linkString, String alias,
 			String shownName, @Nullable String note)
+			throws DbException, OutgoingRequestLimitException {
+		return submit(link, linkString, alias, shownName, note, false);
+	}
+
+	public byte[] submit(InviteLink link, String linkString, String alias,
+			String shownName, @Nullable String note, boolean reconnect)
 			throws DbException, OutgoingRequestLimitException {
 		if (link.getFlow() != InviteLink.Flow.REQUEST) {
 			throw new IllegalArgumentException();
@@ -206,6 +241,7 @@ public class ContactRequestSender implements Service, EventListener {
 					oneTime.getPrivate().getEncoded().clone(), now,
 					STATE_QUEUED, 0,
 					now, 0, null, 0));
+			if (reconnect) marks.put(txn, requestId, ReconnectMarks.OUTGOING);
 			txn.attach(new ContactRequestsChangedEvent());
 			return true;
 		});
@@ -244,6 +280,7 @@ public class ContactRequestSender implements Service, EventListener {
 			OutgoingRequest r = find(txn, requestId);
 			if (r == null || r.isOpen()) return;
 			db.removeOutgoingRequest(txn, requestId);
+			marks.clear(txn, requestId, ReconnectMarks.OUTGOING);
 			txn.attach(new ContactRequestsChangedEvent());
 		});
 	}
@@ -435,6 +472,8 @@ public class ContactRequestSender implements Service, EventListener {
 				links::getAccountTagSecret);
 		byte[] tag = crypto.senderTag(secret, link.getCommitment());
 		Arrays.fill(secret, (byte) 0);
+		boolean reconnect = db.transactionWithResult(true,
+				txn -> isReconnect(txn, r.getRequestId()));
 		byte[] pub = r.getOneTimePublicKey();
 		byte[] priv = r.getOneTimePrivateKey();
 		if (pub == null || priv == null) throw new DbException();
@@ -451,8 +490,8 @@ public class ContactRequestSender implements Service, EventListener {
 					long timestamp = clock.currentTimeMillis() / hour * hour;
 					return RequestPlaintext.request(r.getRequestId(),
 							link.getCommitment(), oneTimeLink(pub), pop,
-							r.getShownName(), r.getNote(), timestamp, tag)
-							.encode(writers);
+							r.getShownName(), r.getNote(), timestamp, tag,
+							reconnect).encode(writers);
 				} finally {
 					((HybridAgreementPrivateKey) oneTime.getPrivate()).clear();
 				}
@@ -552,11 +591,13 @@ public class ContactRequestSender implements Service, EventListener {
 				new HybridCommitmentPublicKey(blob), r.getAlias(), now,
 				FORMAT_VERSION_HYBRID, now + DELIVERED_WINDOW_MS,
 				RENDEZVOUS_MODE_DIAL_ONLY);
+		boolean reconnect = isReconnect(txn, r.getRequestId());
 		try {
-			db.addPendingContact(txn, p, r.getLocalAuthorId(), false);
+			db.addPendingContact(txn, p, r.getLocalAuthorId(), reconnect);
 		} catch (ContactExistsException | PendingContactExistsException e) {
 			return null;
 		}
+		if (reconnect) flags.put(txn, p, PendingContactFlags.RE_ADD);
 		db.setPendingContactOurKeys(txn, id, pub, priv);
 		return id;
 	}
@@ -662,6 +703,7 @@ public class ContactRequestSender implements Service, EventListener {
 		if (p == null) return;
 		for (PendingContact pc : db.getPendingContacts(txn)) {
 			if (pc.getId().equals(p)) {
+				flags.clear(txn, pc);
 				db.removePendingContact(txn, p);
 				return;
 			}

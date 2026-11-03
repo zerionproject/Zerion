@@ -2782,6 +2782,9 @@
 	<string name="requests_expired">Beiðnin er útrunnin</string>
 	<string name="requests_state_connecting">Samþykkt, tengist þegar þið eruð bæði nettengd</string>
 	<string name="requests_state_could_not_connect">Ekki tókst að tengjast</string>
+	<string name="requests_reconnect_label">Biður um að tengjast aftur sem núverandi tengiliður</string>
+	<string name="requests_reconnect_notice">Þessi beiðni segir að sendandinn sé þegar tengiliður þinn og vilji tengjast aftur, til dæmis úr nýjum síma. Ef þú samþykkir er tengilyklum þess tengiliðar skipt út á báðum símum og gamli síminn hans nær ekki lengur til þín. Samþykktu aðeins ef þú átt von á þessu.</string>
+	<string name="send_invite_reconnect_notice">Þessi beiðni segir viðkomandi að þú sért þegar tengiliður hans og viljir tengjast aftur. Ef hann samþykkir skipta báðir símar út tengilyklunum fyrir þennan tengilið og halda samtalinu.</string>
 	<string name="requests_try_again">Reyna aftur</string>
 	<string name="requests_cancel">Hætta við beiðni</string>
 	<string name="requests_cancel_title">Hætta við þessa beiðni?</string>

@@ -45,6 +45,21 @@ public interface ContactManager {
 			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey)
 			throws DbException, GeneralSecurityException;
 
+	/**
+	 * Like the method above. If the remote author is already a contact, its
+	 * keys are replaced only when this side intends to replace them (see
+	 * {@link #intendsToReplaceKeys}) and the peer did not say that it does
+	 * not; peerReplacesKeys is null when the peer sent no such record.
+	 * Otherwise a ContactExistsException is thrown and the contact is left
+	 * as it was.
+	 */
+	ContactId addContact(Transaction txn, PendingContactId p, Author remote,
+			AuthorId local, SecretKey rootKey, long timestamp, boolean alice,
+			boolean verified, boolean active,
+			@javax.annotation.Nullable byte[] peerMlDsaSigPublicKey,
+			@javax.annotation.Nullable Boolean peerReplacesKeys)
+			throws DbException, GeneralSecurityException;
+
 	ContactId addContact(Transaction txn, Author remote, AuthorId local,
 			boolean verified) throws DbException;
 
@@ -97,6 +112,24 @@ public interface ContactManager {
 	PendingContact addPendingContactFromInvite(String link, String alias,
 			@javax.annotation.Nullable String sharedZeroId)
 			throws DbException, FormatException, GeneralSecurityException;
+
+	/**
+	 * Like the method above; when reAddExisting is true the user started the
+	 * add to replace the keys of a contact they already have, so the pairing
+	 * may re-key an existing contact instead of being refused.
+	 */
+	PendingContact addPendingContactFromInvite(String link, String alias,
+			@javax.annotation.Nullable String sharedZeroId,
+			boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	/**
+	 * Returns true if the add behind the given pending contact may replace
+	 * the keys of an existing contact: the user started it as a re-add, or
+	 * scanned the code in person.
+	 */
+	boolean intendsToReplaceKeys(Transaction txn, PendingContactId p)
+			throws DbException;
 
 	void recordPerAddLinkShared(String link)
 			throws DbException, FormatException;

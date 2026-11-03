@@ -2879,6 +2879,9 @@
 	<string name="requests_expired">Срок запроса истёк</string>
 	<string name="requests_state_connecting">Принят, соединится, когда вы оба будете в сети</string>
 	<string name="requests_state_could_not_connect">Не удалось соединиться</string>
+	<string name="requests_reconnect_label">Просит восстановить связь как существующий контакт</string>
+	<string name="requests_reconnect_notice">В этом запросе сказано, что отправитель уже является вашим контактом и хочет восстановить связь, например с нового телефона. Если вы примете его, ключи соединения этого контакта будут заменены на обоих телефонах, и его старый телефон больше не сможет с вами связаться. Принимайте только если ожидаете этого.</string>
+	<string name="send_invite_reconnect_notice">Этот запрос сообщает собеседнику, что вы уже являетесь его контактом и хотите восстановить связь. Если он примет его, оба телефона заменят ключи соединения для этого контакта и сохранят переписку.</string>
 	<string name="requests_try_again">Повторить</string>
 	<string name="requests_cancel">Отменить запрос</string>
 	<string name="requests_cancel_title">Отменить этот запрос?</string>

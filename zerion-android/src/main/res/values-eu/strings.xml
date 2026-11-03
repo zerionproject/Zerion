@@ -2767,6 +2767,9 @@
 	<string name="requests_expired">Eskaera iraungi da</string>
 	<string name="requests_state_connecting">Onartuta, biak konektatuta zaudetenean konektatuko da</string>
 	<string name="requests_state_could_not_connect">Ezin izan da konektatu</string>
+	<string name="requests_reconnect_label">Lehendik dagoen kontaktu gisa berriro konektatzeko eskatzen du</string>
+	<string name="requests_reconnect_notice">Eskaera honek dio bidaltzailea jada zure kontaktua dela eta berriro konektatu nahi duela, adibidez telefono berri batetik. Onartzen baduzu, kontaktu horren konexio-gakoak bi telefonoetan ordezkatuko dira eta bere telefono zaharrak ezingo zaitu gehiago aurkitu. Onartu soilik hori espero baduzu.</string>
+	<string name="send_invite_reconnect_notice">Eskaera honek besteari esaten dio jada bere kontaktua zarela eta berriro konektatu nahi duzula. Onartzen badu, bi telefonoek kontaktu honen konexio-gakoak ordezkatuko dituzte eta elkarrizketa gordeko dute.</string>
 	<string name="requests_try_again">Saiatu berriro</string>
 	<string name="requests_cancel">Ezeztatu eskaera</string>
 	<string name="requests_cancel_title">Eskaera hau ezeztatu?</string>

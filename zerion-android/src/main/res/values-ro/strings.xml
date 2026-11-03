@@ -2829,6 +2829,9 @@
 	<string name="requests_expired">Cererea a expirat</string>
 	<string name="requests_state_connecting">Acceptată, se conectează când sunteți amândoi online</string>
 	<string name="requests_state_could_not_connect">Nu s-a putut conecta</string>
+	<string name="requests_reconnect_label">Cere reconectarea ca un contact existent</string>
+	<string name="requests_reconnect_notice">Această cerere spune că expeditorul este deja contactul dvs. și dorește să se reconecteze, de exemplu de pe un telefon nou. Dacă acceptați, cheile de conexiune ale acelui contact sunt înlocuite pe ambele telefoane, iar vechiul său telefon nu vă mai poate contacta. Acceptați doar dacă vă așteptați la acest lucru.</string>
+	<string name="send_invite_reconnect_notice">Această cerere îi spune persoanei că sunteți deja contactul ei și doriți să vă reconectați. Dacă acceptă, ambele telefoane înlocuiesc cheile de conexiune pentru acest contact și păstrează conversația.</string>
 	<string name="requests_try_again">Încercați din nou</string>
 	<string name="requests_cancel">Anulați cererea</string>
 	<string name="requests_cancel_title">Anulați această cerere?</string>

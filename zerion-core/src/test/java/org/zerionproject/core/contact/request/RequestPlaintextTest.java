@@ -71,6 +71,34 @@ public class RequestPlaintextTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void theReconnectFlagRoundTripsAndIsRequired() throws Exception {
+		byte[] otl = oneTimeLink();
+		for (boolean reconnect : new boolean[] {false, true}) {
+			RequestPlaintext p = RequestPlaintext.request(requestId, linkId,
+					otl, pop, "a", null, 0, tag, reconnect);
+			byte[] encoded = p.encode(writers);
+			assertEquals(1536, encoded.length);
+			assertEquals(reconnect,
+					RequestPlaintext.decode(readers, encoded).reconnect);
+		}
+		assertFalse(RequestPlaintext.request(requestId, linkId, otl, pop,
+				"a", null, 0, tag).reconnect);
+		BdfList tenFields = BdfList.of(1, KIND_REQUEST, requestId, linkId,
+				otl, pop, "a", null, 0, tag);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		writers.createWriter(out).writeList(tenFields);
+		byte[] bdf = out.toByteArray();
+		byte[] padded = new byte[1536];
+		ByteUtils.writeUint16(bdf.length, padded, 0);
+		System.arraycopy(bdf, 0, padded, 2, bdf.length);
+		try {
+			RequestPlaintext.decode(readers, padded);
+			fail();
+		} catch (FormatException expected) {
+		}
+	}
+
+	@Test
 	public void aWithdrawCarriesTheFirstFourFields() throws Exception {
 		byte[] encoded = RequestPlaintext.withdraw(requestId, linkId)
 				.encode(writers);

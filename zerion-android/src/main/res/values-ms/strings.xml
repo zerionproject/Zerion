@@ -2671,6 +2671,9 @@
 	<string name="requests_expired">Permintaan tamat tempoh</string>
 	<string name="requests_state_connecting">Diterima, bersambung apabila anda berdua dalam talian</string>
 	<string name="requests_state_could_not_connect">Tidak dapat bersambung</string>
+	<string name="requests_reconnect_label">Meminta untuk bersambung semula sebagai kenalan sedia ada</string>
+	<string name="requests_reconnect_notice">Permintaan ini menyatakan bahawa penghantar sudah menjadi kenalan anda dan mahu bersambung semula, contohnya daripada telefon baharu. Jika anda terima, kunci sambungan kenalan itu digantikan pada kedua-dua telefon dan telefon lamanya tidak lagi dapat menghubungi anda. Terima hanya jika anda menjangkakannya.</string>
+	<string name="send_invite_reconnect_notice">Permintaan ini memberitahu mereka bahawa anda sudah menjadi kenalan mereka dan mahu bersambung semula. Jika mereka terima, kedua-dua telefon menggantikan kunci sambungan untuk kenalan ini dan mengekalkan perbualan.</string>
 	<string name="requests_try_again">Cuba lagi</string>
 	<string name="requests_cancel">Batalkan permintaan</string>
 	<string name="requests_cancel_title">Batalkan permintaan ini?</string>

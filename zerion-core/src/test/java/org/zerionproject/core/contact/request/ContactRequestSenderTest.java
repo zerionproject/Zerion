@@ -25,6 +25,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -89,8 +90,69 @@ public class ContactRequestSenderTest extends BrambleTestCase {
 	}
 
 	private byte[] send(String link) throws Exception {
+		return send(link, false);
+	}
+
+	private byte[] send(String link, boolean reconnect) throws Exception {
 		return alice.sender.submit(alice.codec.parse(link), link, "Bob",
-				"Alice", null);
+				"Alice", null, reconnect);
+	}
+
+	private PendingContact pendingOf(byte[] id) throws Exception {
+		PendingContactId p = alice.outgoing(id).getPendingContactId();
+		for (PendingContact pc : pending()) {
+			if (pc.getId().equals(p)) return pc;
+		}
+		return null;
+	}
+
+	private boolean reAddMark(PendingContact p) throws Exception {
+		org.zerionproject.core.contact.PendingContactFlags flags =
+				new org.zerionproject.core.contact.PendingContactFlags(
+						alice.db);
+		return alice.db.transactionWithResult(true, txn -> flags.peek(txn,
+				p, org.zerionproject.core.contact.PendingContactFlags.RE_ADD));
+	}
+
+	@Test
+	public void aReconnectRequestMarksItsPendingContactAsAReAdd()
+			throws Exception {
+		String link = bobsLink();
+		byte[] plain = send(link);
+		alice.sender.attempt(plain);
+		assertFalse(alice.db.transactionWithResult(true,
+				txn -> alice.sender.isReconnect(txn, plain)));
+		assertFalse(reAddMark(pendingOf(plain)));
+		assertFalse(bob.db.transactionWithResult(true,
+				txn -> bob.receiver.isReconnect(txn, plain)));
+
+		alice.sender.cancel(plain);
+		byte[] reconnect = send(bobsLink(), true);
+		alice.sender.attempt(reconnect);
+		assertTrue(alice.db.transactionWithResult(true,
+				txn -> alice.sender.isReconnect(txn, reconnect)));
+		assertTrue(reAddMark(pendingOf(reconnect)));
+		assertTrue(bob.db.transactionWithResult(true,
+				txn -> bob.receiver.isReconnect(txn, reconnect)));
+		assertTrue(alice.manager.getOutgoingRequests().stream().anyMatch(
+				r -> java.util.Arrays.equals(r.getRequestId(), reconnect)
+						&& r.isReconnect()));
+	}
+
+	@Test
+	public void aRefusedAddEndsTheRequestAsAlreadyAContact()
+			throws Exception {
+		byte[] id = send(bobsLink());
+		alice.sender.attempt(id);
+		PendingContactId p = alice.outgoing(id).getPendingContactId();
+		alice.manager.alreadyContact(p, null);
+		OutgoingRequest r = alice.outgoing(id);
+		assertEquals(OutgoingRequest.STATE_ALREADY_CONTACT, r.getState());
+		assertNull(r.getPendingContactId());
+		assertNull(r.getOneTimePrivateKey());
+		assertTrue(alice.bus.of(ContactRequestAddedEvent.class).isEmpty());
+		alice.sender.dismiss(id);
+		assertNull(alice.outgoing(id));
 	}
 
 	private List<PendingContact> pending() throws Exception {

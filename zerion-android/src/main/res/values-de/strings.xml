@@ -2794,6 +2794,9 @@
 	<string name="requests_expired">Anfrage abgelaufen</string>
 	<string name="requests_state_connecting">Angenommen, verbindet sich, wenn ihr beide online seid</string>
 	<string name="requests_state_could_not_connect">Verbindung nicht möglich</string>
+	<string name="requests_reconnect_label">Bittet darum, sich als bestehender Kontakt neu zu verbinden</string>
+	<string name="requests_reconnect_notice">Diese Anfrage besagt, dass der Absender bereits dein Kontakt ist und sich neu verbinden möchte, zum Beispiel von einem neuen Telefon. Wenn du annimmst, werden die Verbindungsschlüssel dieses Kontakts auf beiden Telefonen ersetzt und sein altes Telefon kann dich nicht mehr erreichen. Nimm nur an, wenn du das erwartest.</string>
+	<string name="send_invite_reconnect_notice">Diese Anfrage teilt der Person mit, dass du bereits ihr Kontakt bist und dich neu verbinden möchtest. Wenn sie annimmt, ersetzen beide Telefone die Verbindungsschlüssel für diesen Kontakt und behalten die Unterhaltung bei.</string>
 	<string name="requests_try_again">Erneut versuchen</string>
 	<string name="requests_cancel">Anfrage abbrechen</string>
 	<string name="requests_cancel_title">Diese Anfrage abbrechen?</string>

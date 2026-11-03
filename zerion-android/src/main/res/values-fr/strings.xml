@@ -2832,6 +2832,9 @@ copies des messages que vous envoyez.
 	<string name="requests_expired">Demande expirée</string>
 	<string name="requests_state_connecting">Acceptée, connexion quand vous serez tous les deux en ligne</string>
 	<string name="requests_state_could_not_connect">Connexion impossible</string>
+	<string name="requests_reconnect_label">Demande à se reconnecter en tant que contact existant</string>
+	<string name="requests_reconnect_notice">Cette demande indique que l\'expéditeur est déjà votre contact et souhaite se reconnecter, par exemple depuis un nouveau téléphone. Si vous acceptez, les clés de connexion de ce contact sont remplacées sur les deux téléphones et son ancien téléphone ne peut plus vous joindre. N\'acceptez que si vous vous y attendez.</string>
+	<string name="send_invite_reconnect_notice">Cette demande indique à la personne que vous êtes déjà son contact et que vous souhaitez vous reconnecter. Si elle accepte, les deux téléphones remplacent les clés de connexion de ce contact et conservent la conversation.</string>
 	<string name="requests_try_again">Réessayer</string>
 	<string name="requests_cancel">Annuler la demande</string>
 	<string name="requests_cancel_title">Annuler cette demande ?</string>

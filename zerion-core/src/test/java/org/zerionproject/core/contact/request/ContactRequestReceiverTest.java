@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.request.IncomingRequest;
 import org.zerionproject.core.api.contact.request.ContactLink;
 import org.zerionproject.core.api.contact.request.ContactLinkInfo;
 import org.zerionproject.core.api.contact.request.IncomingRequestInfo;
@@ -21,6 +22,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -56,13 +58,61 @@ public class ContactRequestReceiverTest extends BrambleTestCase {
 	}
 
 	private byte[] deliver() throws Exception {
+		return deliver(false);
+	}
+
+	private byte[] deliver(boolean reconnect) throws Exception {
 		ContactLink z = bob.zeroIdShared();
 		bob.publish(network);
 		String link = bob.links.linkString(z);
 		byte[] id = alice.sender.submit(alice.codec.parse(link), link, "Bob",
-				"Alice", "hi");
+				"Alice", "hi", reconnect);
 		alice.sender.attempt(id);
 		return id;
+	}
+
+	private boolean reAddMark(PendingContact p) throws Exception {
+		org.zerionproject.core.contact.PendingContactFlags flags =
+				new org.zerionproject.core.contact.PendingContactFlags(bob.db);
+		return bob.db.transactionWithResult(true, txn -> flags.peek(txn,
+				p, org.zerionproject.core.contact.PendingContactFlags.RE_ADD));
+	}
+
+	@Test
+	public void acceptingAReconnectRequestMarksThePendingContactAsAReAdd()
+			throws Exception {
+		byte[] plain = deliver(false);
+		assertFalse(bob.manager.getIncomingRequests().get(0).isReconnect());
+		assertFalse(reAddMark(bob.manager.accept(plain, "Alice")));
+
+		byte[] reconnect = deliver(true);
+		IncomingRequestInfo shown = bob.manager.getIncomingRequests().stream()
+				.filter(r -> Arrays.equals(r.getRequestId(), reconnect))
+				.findFirst().get();
+		assertTrue(shown.isReconnect());
+		PendingContact p = bob.manager.accept(reconnect, "Alice");
+		assertTrue(reAddMark(p));
+		bobClock.now = NOW + 1;
+		bob.manager.retryAccepted(reconnect);
+		PendingContact again = pending().stream()
+				.filter(pc -> pc.getId().equals(p.getId())).findFirst().get();
+		assertTrue(reAddMark(again));
+	}
+
+	@Test
+	public void aRefusedAddShowsTheRequestAsAlreadyAContact()
+			throws Exception {
+		byte[] id = deliver();
+		PendingContact p = bob.manager.accept(id, "Alice");
+		bob.manager.alreadyContact(p.getId(), "Alice");
+		IncomingRequest r = bob.incoming().get(0);
+		assertEquals(IncomingRequest.STATE_ALREADY_CONTACT, r.getState());
+		assertEquals("Alice", r.getName());
+		assertNull(r.getNote());
+		assertNull(r.getPendingContactId());
+		assertTrue(bob.bus.of(ContactRequestAddedEvent.class).isEmpty());
+		bob.manager.dismissIncoming(id);
+		assertTrue(bob.incoming().isEmpty());
 	}
 
 	private List<PendingContact> pending() throws Exception {

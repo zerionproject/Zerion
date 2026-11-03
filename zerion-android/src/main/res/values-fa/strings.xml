@@ -2788,6 +2788,9 @@
 	<string name="requests_expired">درخواست منقضی شد</string>
 	<string name="requests_state_connecting">پذیرفته شد، وقتی هر دو آنلاین باشید وصل می‌شود</string>
 	<string name="requests_state_could_not_connect">اتصال برقرار نشد</string>
+	<string name="requests_reconnect_label">درخواست اتصال دوباره به عنوان مخاطب موجود</string>
+	<string name="requests_reconnect_notice">این درخواست می‌گوید فرستنده از قبل مخاطب شماست و می‌خواهد دوباره وصل شود، مثلًا از یک گوشی جدید. اگر بپذیرید، کلیدهای اتصال آن مخاطب روی هر دو گوشی جایگزین می‌شوند و گوشی قدیمی او دیگر نمی‌تواند به شما دسترسی داشته باشد. فقط در صورتی بپذیرید که انتظارش را دارید.</string>
+	<string name="send_invite_reconnect_notice">این درخواست به او می‌گوید که شما از قبل مخاطب او هستید و می‌خواهید دوباره وصل شوید. اگر بپذیرد، هر دو گوشی کلیدهای اتصال این مخاطب را جایگزین می‌کنند و گفتگو حفظ می‌شود.</string>
 	<string name="requests_try_again">تلاش دوباره</string>
 	<string name="requests_cancel">لغو درخواست</string>
 	<string name="requests_cancel_title">این درخواست لغو شود؟</string>

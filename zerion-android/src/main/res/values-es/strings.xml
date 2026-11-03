@@ -2839,6 +2839,9 @@
 	<string name="requests_expired">Solicitud caducada</string>
 	<string name="requests_state_connecting">Aceptada, se conectará cuando ambos estén en línea</string>
 	<string name="requests_state_could_not_connect">No se pudo conectar</string>
+	<string name="requests_reconnect_label">Pide reconectarse como contacto existente</string>
+	<string name="requests_reconnect_notice">Esta solicitud dice que el remitente ya es tu contacto y quiere reconectarse, por ejemplo desde un teléfono nuevo. Si aceptas, las claves de conexión de ese contacto se sustituyen en ambos teléfonos y su teléfono antiguo ya no podrá comunicarse contigo. Acepta solo si lo esperas.</string>
+	<string name="send_invite_reconnect_notice">Esta solicitud le indica que ya eres su contacto y quieres reconectarte. Si acepta, ambos teléfonos sustituyen las claves de conexión de este contacto y conservan la conversación.</string>
 	<string name="requests_try_again">Reintentar</string>
 	<string name="requests_cancel">Cancelar solicitud</string>
 	<string name="requests_cancel_title">¿Cancelar esta solicitud?</string>

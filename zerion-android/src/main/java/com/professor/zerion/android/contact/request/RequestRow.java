@@ -209,8 +209,14 @@ public final class RequestRow {
 			if (s == IncomingRequest.STATE_RECEIVED
 					|| s == IncomingRequest.STATE_OPENED) {
 				rows.add(new RequestRow(Kind.INCOMING, r, null, null, null,
-						title, via, 0, r.getReceivedAt(), Action.NONE,
+						title, via, r.isReconnect()
+						? R.string.requests_reconnect_label : 0,
+						r.getReceivedAt(), Action.NONE,
 						s == IncomingRequest.STATE_RECEIVED));
+			} else if (s == IncomingRequest.STATE_ALREADY_CONTACT) {
+				rows.add(new RequestRow(Kind.INCOMING, r, null, null, null,
+						title, via, R.string.contact_already_exists_general,
+						r.getAcceptedAt(), Action.DISMISS, false));
 			} else if (s == IncomingRequest.STATE_ACCEPTED) {
 				Pair<PendingContact, PendingContactState> p =
 						r.getPendingContactId() == null ? null
@@ -327,6 +333,8 @@ public final class RequestRow {
 				return R.string.requests_state_not_delivered;
 			case OutgoingRequest.STATE_NO_ANSWER:
 				return R.string.requests_state_no_answer;
+			case OutgoingRequest.STATE_ALREADY_CONTACT:
+				return R.string.contact_already_exists_general;
 			default:
 				if (r.isWithdrawing()) {
 					return R.string.requests_state_withdrawing;

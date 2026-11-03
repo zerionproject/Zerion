@@ -8,6 +8,12 @@
 > superseded inline.
 >
 > **Current wire format (3.0.x), where it differs from the record below.**
+> From Android 3.0.19 each side sends one more record after `CONTACT_INFO`,
+> `REPLACE_KEYS` (type 1): a BDF list with one boolean saying whether this
+> side means to replace the keys of an existing contact (see
+> ZWF-ROOT-EVOLUTION.md, "Who may re-key"). Earlier releases skip it as an
+> unknown record type before the end of the stream.
+>
 > `CONTACT_INFO` is a BDF list of exactly 7 slots:
 > `[authorList, propsDict, signature, timestamp, b3ProofSig, mlDsaSigPub,
 > hybridSignature]`, and any other size is rejected (the 4- and 5-slot forms

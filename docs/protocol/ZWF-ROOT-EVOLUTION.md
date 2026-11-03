@@ -295,8 +295,36 @@ the next dial authenticates. A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
-verification are kept. The mark clears when a dial authenticates or the
-contact is re-keyed. No automatic recovery from persisted secrets is
+verification are kept.
+
+**Who may re-key (from 3.0.19).** Up to 3.0.18 every completed add whose
+peer turned out to be an existing contact re-keyed that contact, so a holder
+of a copied identity whose contact request was accepted took over the
+existing contact with its verification and history, and displaced the real
+peer. From 3.0.19 a side re-keys an existing contact only when it meant to:
+the user started the add from Re-add contact (a request sent from there is
+marked as a reconnect, and a link pasted there pairs as a re-add), or
+accepted a request marked as a reconnect after the warning it shows, or
+scanned the other phone's code in person. The mark belongs to that one
+pending contact (its id and creation time, `PendingContactFlags`): an add
+that succeeds consumes it, a refused add removes the pending contact and
+its marks with it, and so does every other removal of the pending contact
+through the contact manager or the request code; a later pending contact
+under the same link has another creation time and never inherits it. At the end of the pairing exchange each 3.0.19 side also
+sends a `REPLACE_KEYS` record saying whether it means to re-key; a side
+re-keys only if it means to and the peer did not say that it does not, and
+otherwise refuses the add (`ContactExistsException`), leaves the contact's
+keys as they were and shows the request as "Already a contact". Two 3.0.19
+phones therefore either both re-key or both refuse. A 3.0.18 phone sends no
+such record and always re-keys: against it the 3.0.19 side's own intent
+decides, so a 3.0.18 phone that pairs with an existing contact without a
+re-add on the 3.0.19 side ends up re-keyed while the 3.0.19 side keeps its
+keys; the 3.0.19 side then sees the contact out of sync and repairs it with
+Re-add contact. A copier of a contact's identity can still ask to reconnect
+through a request marked as such: the receiver is warned that accepting
+replaces that contact's keys and must confirm, and, as above, the displaced
+real peer sees the keys out of sync. The mark clears when a dial
+authenticates or the contact is re-keyed. No automatic recovery from persisted secrets is
 offered: a copier of the database holds those secrets too, so anything that
 let two diverged devices re-key without a new out-of-band exchange would let
 the copier back in and defeat the property this document provides.

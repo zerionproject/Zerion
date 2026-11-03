@@ -5,6 +5,7 @@ import org.zerionproject.core.api.Cancellable;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.PendingContact;
+import org.zerionproject.core.api.contact.PendingContactId;
 import org.zerionproject.core.api.contact.request.ContactLink;
 import org.zerionproject.core.api.contact.request.ContactLinkInfo;
 import org.zerionproject.core.api.contact.request.ContactLinkLimitException;
@@ -18,6 +19,9 @@ import org.zerionproject.core.api.contact.request.OutgoingRequestInfo;
 import org.zerionproject.core.api.contact.request.OutgoingRequestLimitException;
 import org.zerionproject.core.api.contact.request.OwnLinkException;
 import org.zerionproject.core.api.contact.request.event.ContactLinksChangedEvent;
+import org.zerionproject.core.api.contact.event.PendingContactAlreadyContactEvent;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
@@ -48,7 +52,7 @@ import static org.zerionproject.core.api.contact.request.ContactLink.STATE_ACTIV
 @ThreadSafe
 @NotNullByDefault
 class ContactRequestManagerImpl implements ContactRequestManager, Service,
-		ContactManager.PendingContactHook {
+		ContactManager.PendingContactHook, EventListener {
 
 	private final DatabaseComponent db;
 	private final ContactLinkStore links;
@@ -230,11 +234,20 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 	public byte[] sendRequest(String link, String alias, String shownName,
 			@Nullable String note) throws DbException, FormatException,
 			OutgoingRequestLimitException {
+		return sendRequest(link, alias, shownName, note, false);
+	}
+
+	@Override
+	public byte[] sendRequest(String link, String alias, String shownName,
+			@Nullable String note, boolean reconnect)
+			throws DbException, FormatException,
+			OutgoingRequestLimitException {
 		InviteLink parsed = parseLink(link);
 		if (parsed.getFlow() != InviteLink.Flow.REQUEST) {
 			throw new FormatException();
 		}
-		return sender.submit(parsed, link.trim(), alias, shownName, note);
+		return sender.submit(parsed, link.trim(), alias, shownName, note,
+				reconnect);
 	}
 
 	@Override
@@ -254,7 +267,8 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 			List<OutgoingRequestInfo> out = new ArrayList<>();
 			for (OutgoingRequest r : db.getOutgoingRequests(txn)) {
 				out.add(new OutgoingRequestInfo(r,
-						sender.isBusy(r.getRequestId())));
+						sender.isBusy(r.getRequestId()),
+						sender.isReconnect(txn, r.getRequestId())));
 			}
 			return out;
 		});
@@ -275,7 +289,8 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 						label = l.getLabel();
 					}
 				}
-				out.add(new IncomingRequestInfo(r, kind, label));
+				out.add(new IncomingRequestInfo(r, kind, label,
+						receiver.isReconnect(txn, r.getRequestId())));
 			}
 			return out;
 		});
@@ -319,6 +334,25 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 	}
 
 	@Override
+	public void eventOccurred(Event e) {
+		if (e instanceof PendingContactAlreadyContactEvent) {
+			PendingContactAlreadyContactEvent a =
+					(PendingContactAlreadyContactEvent) e;
+			ioExecutor.execute(() -> alreadyContact(a.getId(), a.getAlias()));
+		}
+	}
+
+	void alreadyContact(PendingContactId p, @Nullable String alias) {
+		try {
+			db.transaction(false, txn -> {
+				sender.alreadyContact(txn, p);
+				receiver.alreadyContact(txn, p, alias);
+			});
+		} catch (DbException ignored) {
+		}
+	}
+
+	@Override
 	public void dismissIncoming(byte[] requestId) throws DbException {
 		receiver.dismiss(requestId);
 	}
@@ -327,8 +361,15 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 	public PendingContact addMutualFromInvite(String link, String alias,
 			@Nullable String sharedZeroId)
 			throws DbException, FormatException, GeneralSecurityException {
+		return addMutualFromInvite(link, alias, sharedZeroId, false);
+	}
+
+	@Override
+	public PendingContact addMutualFromInvite(String link, String alias,
+			@Nullable String sharedZeroId, boolean reAddExisting)
+			throws DbException, FormatException, GeneralSecurityException {
 		return contactManager.addPendingContactFromInvite(link, alias,
-				sharedZeroId);
+				sharedZeroId, reAddExisting);
 	}
 
 	@Override

@@ -2744,6 +2744,9 @@
 	<string name="requests_expired">リクエストの期限が切れました</string>
 	<string name="requests_state_connecting">承諾済み、お互いがオンラインのときに接続します</string>
 	<string name="requests_state_could_not_connect">接続できませんでした</string>
+	<string name="requests_reconnect_label">既存の連絡先として再接続を求めています</string>
+	<string name="requests_reconnect_notice">このリクエストは、送信者がすでにあなたの連絡先であり、たとえば新しい端末から再接続したいことを示しています。承諾すると、その連絡先の接続鍵が両方の端末で置き換えられ、相手の古い端末からはあなたに連絡できなくなります。心当たりがある場合にのみ承諾してください。</string>
+	<string name="send_invite_reconnect_notice">このリクエストは、あなたがすでに相手の連絡先であり、再接続したいことを相手に伝えます。相手が承諾すると、両方の端末でこの連絡先の接続鍵が置き換えられ、会話は保持されます。</string>
 	<string name="requests_try_again">再試行</string>
 	<string name="requests_cancel">リクエストをキャンセル</string>
 	<string name="requests_cancel_title">このリクエストをキャンセルしますか？</string>

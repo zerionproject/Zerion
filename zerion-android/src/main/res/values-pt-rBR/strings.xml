@@ -2839,6 +2839,9 @@
 	<string name="requests_expired">Solicitação expirada</string>
 	<string name="requests_state_connecting">Aceita, conecta quando os dois estiverem online</string>
 	<string name="requests_state_could_not_connect">Não foi possível conectar</string>
+	<string name="requests_reconnect_label">Pede para reconectar como contato existente</string>
+	<string name="requests_reconnect_notice">Esta solicitação diz que o remetente já é seu contato e quer se reconectar, por exemplo de um telefone novo. Se você aceitar, as chaves de conexão desse contato são substituídas nos dois telefones e o telefone antigo dele não consegue mais falar com você. Aceite apenas se estiver esperando isso.</string>
+	<string name="send_invite_reconnect_notice">Esta solicitação informa à pessoa que você já é contato dela e quer se reconectar. Se ela aceitar, os dois telefones substituem as chaves de conexão deste contato e mantêm a conversa.</string>
 	<string name="requests_try_again">Tentar novamente</string>
 	<string name="requests_cancel">Cancelar solicitação</string>
 	<string name="requests_cancel_title">Cancelar esta solicitação?</string>

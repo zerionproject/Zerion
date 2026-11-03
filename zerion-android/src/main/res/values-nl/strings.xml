@@ -2808,6 +2808,9 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="requests_expired">Verzoek verlopen</string>
 	<string name="requests_state_connecting">Geaccepteerd, verbindt als jullie allebei online zijn</string>
 	<string name="requests_state_could_not_connect">Kon geen verbinding maken</string>
+	<string name="requests_reconnect_label">Vraagt om opnieuw te verbinden als bestaand contact</string>
+	<string name="requests_reconnect_notice">Dit verzoek zegt dat de afzender al je contact is en opnieuw verbinding wil maken, bijvoorbeeld vanaf een nieuwe telefoon. Als je accepteert, worden de verbindingssleutels van dat contact op beide telefoons vervangen en kan de oude telefoon je niet meer bereiken. Accepteer alleen als je dit verwacht.</string>
+	<string name="send_invite_reconnect_notice">Dit verzoek laat de ander weten dat je al een contact bent en opnieuw verbinding wilt maken. Als die accepteert, vervangen beide telefoons de verbindingssleutels voor dit contact en blijft het gesprek bewaard.</string>
 	<string name="requests_try_again">Opnieuw proberen</string>
 	<string name="requests_cancel">Verzoek annuleren</string>
 	<string name="requests_cancel_title">Dit verzoek annuleren?</string>

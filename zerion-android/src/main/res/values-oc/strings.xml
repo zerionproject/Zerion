@@ -2766,6 +2766,9 @@
 	<string name="requests_expired">La demanda a expirat</string>
 	<string name="requests_state_connecting">Acceptada, connexion quand seretz totes dos en linha</string>
 	<string name="requests_state_could_not_connect">Connexion impossibla</string>
+	<string name="requests_reconnect_label">Demanda de se reconnectar coma contacte existent</string>
+	<string name="requests_reconnect_notice">Aquesta demanda indica que l’expeditor es ja vòstre contacte e vòl se reconnectar, per exemple dempuèi un telefòn novèl. S’acceptatz, las claus de connexion d’aqueste contacte son remplaçadas suls dos telefòns e son telefòn ancian vos pòt pas mai jónher. Acceptatz solament se vos i esperatz.</string>
+	<string name="send_invite_reconnect_notice">Aquesta demanda indica a la persona que sètz ja son contacte e que volètz vos reconnectar. S’accèpta, los dos telefòns remplaçan las claus de connexion d’aqueste contacte e gardan la conversacion.</string>
 	<string name="requests_try_again">Tornar ensajar</string>
 	<string name="requests_cancel">Anullar la demanda</string>
 	<string name="requests_cancel_title">Anullar aquesta demanda?</string>

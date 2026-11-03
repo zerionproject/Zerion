@@ -214,7 +214,8 @@ public class SendInviteControllerTest {
 	public void sendingWithoutALinkAsksForOne() throws Exception {
 		send();
 		assertEquals("Paste a ZerionID or link", linkError());
-		verify(requests, never()).sendRequest(any(), any(), any(), any());
+		verify(requests, never()).sendRequest(any(), any(), any(), any(),
+				anyBoolean());
 	}
 
 	@Test
@@ -299,9 +300,25 @@ public class SendInviteControllerTest {
 		type(R.id.inviteNoteInput, "Hi, from the club");
 		send();
 		verify(requests).sendRequest(THEIRS, "Sam", "Robin",
-				"Hi, from the club");
+				"Hi, from the club", false);
 		assertEquals(1, events.size());
 		assertEquals("saved", events.get(0));
+	}
+
+	@Test
+	public void reAddModeSendsAReconnectRequestAndSaysSo() throws Exception {
+		when(requests.parseLink(THEIRS)).thenReturn(
+				link(InviteLink.Flow.REQUEST));
+		controller.setReAdd(true);
+		TextView notice = view(R.id.inviteNotice);
+		assertEquals(View.GONE, notice.getVisibility());
+		type(R.id.inviteLinkInput, THEIRS);
+		assertEquals(View.VISIBLE, notice.getVisibility());
+		assertTrue(notice.getText().toString(), notice.getText().toString()
+				.contains("tells them you are already their contact"));
+		type(R.id.inviteAliasInput, "Sam");
+		send();
+		verify(requests).sendRequest(THEIRS, "Sam", "Robin", null, true);
 	}
 
 	@Test
@@ -311,7 +328,7 @@ public class SendInviteControllerTest {
 		type(R.id.inviteLinkInput, THEIRS);
 		type(R.id.inviteAliasInput, "Sam");
 		send();
-		verify(requests).sendRequest(THEIRS, "Sam", "Robin", null);
+		verify(requests).sendRequest(THEIRS, "Sam", "Robin", null, false);
 	}
 
 	@Test
@@ -343,8 +360,9 @@ public class SendInviteControllerTest {
 		send();
 		InOrder order = inOrder(requests);
 		order.verify(requests, times(2)).parseLink(OLD);
-		order.verify(requests).addMutualFromInvite(OLD, "Sam", null);
-		verify(requests, never()).sendRequest(any(), any(), any(), any());
+		order.verify(requests).addMutualFromInvite(OLD, "Sam", null, false);
+		verify(requests, never()).sendRequest(any(), any(), any(), any(),
+				anyBoolean());
 		assertEquals("mutual", events.get(0));
 	}
 
@@ -357,7 +375,7 @@ public class SendInviteControllerTest {
 		type(R.id.inviteLinkInput, OLD);
 		type(R.id.inviteAliasInput, "Sam");
 		send();
-		verify(requests).addMutualFromInvite(OLD, "Sam", ZERO_ID);
+		verify(requests).addMutualFromInvite(OLD, "Sam", ZERO_ID, false);
 	}
 
 	@Test
@@ -368,7 +386,7 @@ public class SendInviteControllerTest {
 		type(R.id.inviteAliasInput, "Sam");
 		send();
 		verify(requests, never()).addMutualFromInvite(anyString(),
-				anyString(), any());
+				anyString(), any(), anyBoolean());
 		assertEquals("This is your own link", linkError());
 	}
 
@@ -385,15 +403,16 @@ public class SendInviteControllerTest {
 		verify(contacts, never()).addPendingContactBoundToSharedLink(any(),
 				any(), anyBoolean(), anyBoolean());
 		verify(requests, never()).addMutualFromInvite(anyString(),
-				anyString(), any());
-		verify(requests, never()).sendRequest(any(), any(), any(), any());
+				anyString(), any(), anyBoolean());
+		verify(requests, never()).sendRequest(any(), any(), any(), any(),
+				anyBoolean());
 	}
 
 	@Test
 	public void aResetZeroIdAfterSharingAsksToShareAgain() throws Exception {
 		when(requests.parseLink(OLD)).thenReturn(
 				link(InviteLink.Flow.MUTUAL_V1));
-		when(requests.addMutualFromInvite(any(), any(), any()))
+		when(requests.addMutualFromInvite(any(), any(), any(), anyBoolean()))
 				.thenThrow(new OwnLinkChangedException());
 		type(R.id.inviteLinkInput, OLD);
 		type(R.id.inviteAliasInput, "Sam");
@@ -420,7 +439,7 @@ public class SendInviteControllerTest {
 		type(R.id.inviteLinkInput, OLD);
 		type(R.id.inviteAliasInput, "Sam");
 		send();
-		verify(requests).addMutualFromInvite(OLD, "Sam", reset);
+		verify(requests).addMutualFromInvite(OLD, "Sam", reset, false);
 	}
 
 	@Test
@@ -491,7 +510,7 @@ public class SendInviteControllerTest {
 	public void tooManyOpenRequestsIsExplained() throws Exception {
 		when(requests.parseLink(THEIRS)).thenReturn(
 				link(InviteLink.Flow.REQUEST));
-		when(requests.sendRequest(any(), any(), any(), any()))
+		when(requests.sendRequest(any(), any(), any(), any(), anyBoolean()))
 				.thenThrow(new OutgoingRequestLimitException());
 		type(R.id.inviteLinkInput, THEIRS);
 		type(R.id.inviteAliasInput, "Sam");
@@ -509,7 +528,8 @@ public class SendInviteControllerTest {
 				link(InviteLink.Flow.REQUEST));
 		type(R.id.inviteLinkInput, THEIRS);
 		send();
-		verify(requests, never()).sendRequest(any(), any(), any(), any());
+		verify(requests, never()).sendRequest(any(), any(), any(), any(),
+				anyBoolean());
 		assertEquals("Enter their name",
 				String.valueOf(this.<TextInputLayout>view(
 						R.id.inviteAliasLayout).getError()));

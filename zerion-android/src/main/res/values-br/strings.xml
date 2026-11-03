@@ -2849,6 +2849,9 @@
 	<string name="requests_expired">Aet eo ar goulenn da get</string>
 	<string name="requests_state_connecting">Asantet, kennaskañ a raio pa viot enlinenn hoc\'h-daou</string>
 	<string name="requests_state_could_not_connect">N\'eus ket bet gallet kennaskañ</string>
+	<string name="requests_reconnect_label">Goulenn a ra adkennaskañ evel un darempred a zo dija</string>
+	<string name="requests_reconnect_notice">Lavaret e vez gant ar goulenn-mañ ez eo ar c\'haser unan eus ho tarempredoù dija hag e fell dezhañ adkennaskañ, da skouer adalek ur pellgomzer nevez. Ma asantit, e vo erlec\'hiet alc\'hwezioù kennaskañ an darempred-se war an daou bellgomzer ha ne c\'hallo ket ken e bellgomzer kozh tizhout ac\'hanoc\'h. Asantit nemet ma c\'hortozit kement-se.</string>
+	<string name="send_invite_reconnect_notice">Lavaret e vez gant ar goulenn-mañ d\'an den ez oc\'h unan eus e zarempredoù dija hag e fell deoc\'h adkennaskañ. Ma asant, e vo erlec\'hiet alc\'hwezioù kennaskañ an darempred-mañ gant an daou bellgomzer hag e vo miret ar gaozeadenn.</string>
 	<string name="requests_try_again">Klask en-dro</string>
 	<string name="requests_cancel">Nullañ ar goulenn</string>
 	<string name="requests_cancel_title">Nullañ ar goulenn-mañ?</string>

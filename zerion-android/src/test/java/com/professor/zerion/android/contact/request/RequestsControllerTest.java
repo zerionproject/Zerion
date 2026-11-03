@@ -196,6 +196,57 @@ public class RequestsControllerTest {
 	}
 
 	@Test
+	public void aReconnectRequestIsLabelledAndWarnsBeforeAccept() {
+		in.add(incoming(1, "Alex", null, IncomingRequest.STATE_RECEIVED,
+				ContactLink.KIND_ZERO_ID, null, NOW, NOW, null, true));
+		in.add(incoming(2, "Sam", null, IncomingRequest.STATE_RECEIVED,
+				ContactLink.KIND_ZERO_ID, null, NOW - DAY, NOW - DAY, null));
+		open(RequestsController.TAB_RECEIVED);
+		String reconnect = text(row(0));
+		String plain = text(row(1));
+		assertTrue(reconnect, reconnect.contains(
+				"Asks to reconnect as an existing contact"));
+		assertFalse(plain, plain.contains("reconnect"));
+		row(0).performClick();
+		AlertDialog d = RequestFixtures.latestAlert();
+		TextView notice = d.findViewById(R.id.requestDetailReconnect);
+		assertNotNull(notice);
+		assertEquals(View.VISIBLE, notice.getVisibility());
+		assertTrue(notice.getText().toString().contains(
+				"the connection keys of that contact are replaced on both "
+						+ "phones"));
+		d.dismiss();
+		idle();
+		row(1).performClick();
+		assertEquals(View.GONE, RequestFixtures.latestAlert()
+				.findViewById(R.id.requestDetailReconnect).getVisibility());
+	}
+
+	@Test
+	public void aRefusedAddShowsAlreadyAContactWithDismiss()
+			throws Exception {
+		in.add(incoming(1, null, null, IncomingRequest.STATE_ALREADY_CONTACT,
+				ContactLink.KIND_ZERO_ID, null, NOW, NOW, null));
+		open(RequestsController.TAB_RECEIVED);
+		String row = text(row(0));
+		assertTrue(row, row.contains("Already a contact"));
+		assertFalse(row, row.contains("Could not connect"));
+		row(0).findViewById(R.id.requestAction).performClick();
+		db.runAll();
+		verify(requests).dismissIncoming(id(1));
+		verify(requests, never()).retryAccepted(any());
+
+		out.add(outgoing(2, "Sam", OutgoingRequest.STATE_ALREADY_CONTACT, NOW,
+				NOW, null));
+		open(RequestsController.TAB_SENT);
+		String sent = text(row(0));
+		assertTrue(sent, sent.contains("Already a contact"));
+		row(0).findViewById(R.id.requestAction).performClick();
+		db.runAll();
+		verify(requests).dismissOutgoing(id(2));
+	}
+
+	@Test
 	public void acceptAsksForTheNameWithTheRequestNamePrefilled()
 			throws Exception {
 		in.add(incoming(1, "Alex", null, IncomingRequest.STATE_OPENED,

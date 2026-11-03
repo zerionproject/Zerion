@@ -2778,6 +2778,9 @@
 	<string name="requests_expired">A solicitude caducou</string>
 	<string name="requests_state_connecting">Aceptada, conectarase cando os dous estiverdes en liña</string>
 	<string name="requests_state_could_not_connect">Non se puido conectar</string>
+	<string name="requests_reconnect_label">Pide reconectarse como contacto existente</string>
+	<string name="requests_reconnect_notice">Esta solicitude di que o remitente xa é o teu contacto e quere reconectarse, por exemplo desde un teléfono novo. Se aceptas, as chaves de conexión dese contacto substitúense nos dous teléfonos e o seu teléfono antigo xa non poderá contactar contigo. Acepta só se o esperas.</string>
+	<string name="send_invite_reconnect_notice">Esta solicitude indícalle que xa es o seu contacto e que queres reconectarte. Se acepta, os dous teléfonos substitúen as chaves de conexión deste contacto e manteñen a conversa.</string>
 	<string name="requests_try_again">Tentar de novo</string>
 	<string name="requests_cancel">Cancelar solicitude</string>
 	<string name="requests_cancel_title">Cancelar esta solicitude?</string>

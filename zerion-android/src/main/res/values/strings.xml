@@ -2887,6 +2887,9 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="requests_expired">Request expired</string>
 	<string name="requests_state_connecting">Accepted, connects when you are both online</string>
 	<string name="requests_state_could_not_connect">Could not connect</string>
+	<string name="requests_reconnect_label">Asks to reconnect as an existing contact</string>
+	<string name="requests_reconnect_notice">This request says the sender is already your contact and wants to reconnect, for example from a new phone. If you accept, the connection keys of that contact are replaced on both phones and their old phone can no longer reach you. Accept only if you expect this.</string>
+	<string name="send_invite_reconnect_notice">This request tells them you are already their contact and want to reconnect. If they accept, both phones replace the connection keys for this contact and keep the conversation.</string>
 	<string name="requests_try_again">Try again</string>
 	<string name="requests_cancel">Cancel request</string>
 	<string name="requests_cancel_title">Cancel this request?</string>

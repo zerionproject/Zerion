@@ -2837,6 +2837,9 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="requests_expired">Pedido expirado</string>
 	<string name="requests_state_connecting">Aceite, a ligação é feita quando ambos estiverem online</string>
 	<string name="requests_state_could_not_connect">Não foi possível ligar</string>
+	<string name="requests_reconnect_label">Pede para voltar a ligar-se como contacto existente</string>
+	<string name="requests_reconnect_notice">Este pedido diz que o remetente já é seu contacto e quer voltar a ligar-se, por exemplo a partir de um telemóvel novo. Se aceitar, as chaves de ligação desse contacto são substituídas nos dois telemóveis e o telemóvel antigo dele deixa de o conseguir contactar. Aceite apenas se estiver à espera disto.</string>
+	<string name="send_invite_reconnect_notice">Este pedido informa a pessoa de que já é contacto dela e quer voltar a ligar-se. Se ela aceitar, os dois telemóveis substituem as chaves de ligação deste contacto e mantêm a conversa.</string>
 	<string name="requests_try_again">Tentar novamente</string>
 	<string name="requests_cancel">Cancelar pedido</string>
 	<string name="requests_cancel_title">Cancelar este pedido?</string>

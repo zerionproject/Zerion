@@ -2786,6 +2786,9 @@
 	<string name="requests_expired">অনুরোধের মেয়াদ শেষ</string>
 	<string name="requests_state_connecting">গৃহীত, আপনারা দুজনেই অনলাইনে থাকলে সংযোগ হবে</string>
 	<string name="requests_state_could_not_connect">সংযোগ করা যায়নি</string>
+	<string name="requests_reconnect_label">বিদ্যমান পরিচিতি হিসেবে পুনরায় সংযোগ করতে চায়</string>
+	<string name="requests_reconnect_notice">এই অনুরোধে বলা হয়েছে যে প্রেরক ইতিমধ্যে আপনার পরিচিতি এবং পুনরায় সংযোগ করতে চান, যেমন নতুন ফোন থেকে। আপনি গ্রহণ করলে, সেই পরিচিতির সংযোগ কী দুটি ফোনেই প্রতিস্থাপিত হবে এবং তার পুরোনো ফোন আর আপনার কাছে পৌঁছাতে পারবে না। শুধু তখনই গ্রহণ করুন যদি আপনি এটি আশা করে থাকেন।</string>
+	<string name="send_invite_reconnect_notice">এই অনুরোধ তাকে জানায় যে আপনি ইতিমধ্যে তার পরিচিতি এবং পুনরায় সংযোগ করতে চান। তিনি গ্রহণ করলে, দুটি ফোনই এই পরিচিতির সংযোগ কী প্রতিস্থাপন করবে এবং কথোপকথন রেখে দেবে।</string>
 	<string name="requests_try_again">আবার চেষ্টা করুন</string>
 	<string name="requests_cancel">অনুরোধ বাতিল করুন</string>
 	<string name="requests_cancel_title">এই অনুরোধ বাতিল করবেন?</string>

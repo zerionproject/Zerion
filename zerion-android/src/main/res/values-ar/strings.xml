@@ -2971,6 +2971,9 @@
 	<string name="requests_expired">انتهت صلاحية الطلب</string>
 	<string name="requests_state_connecting">مقبول، يتصل عندما تكونان متصلين معًا</string>
 	<string name="requests_state_could_not_connect">تعذّر الاتصال</string>
+	<string name="requests_reconnect_label">يطلب إعادة الاتصال كجهة اتصال موجودة</string>
+	<string name="requests_reconnect_notice">يقول هذا الطلب إن المرسل هو جهة اتصال لديك بالفعل ويريد إعادة الاتصال، مثلًا من هاتف جديد. إذا قبلت، تُستبدل مفاتيح الاتصال لجهة الاتصال هذه على كلا الهاتفين ولن يتمكن هاتفه القديم من الوصول إليك بعد ذلك. اقبل فقط إذا كنت تتوقع ذلك.</string>
+	<string name="send_invite_reconnect_notice">يخبر هذا الطلب الطرف الآخر بأنك جهة اتصال لديه بالفعل وتريد إعادة الاتصال. إذا قبل، يستبدل كلا الهاتفين مفاتيح الاتصال لجهة الاتصال هذه ويحتفظان بالمحادثة.</string>
 	<string name="requests_try_again">إعادة المحاولة</string>
 	<string name="requests_cancel">إلغاء الطلب</string>
 	<string name="requests_cancel_title">إلغاء هذا الطلب؟</string>

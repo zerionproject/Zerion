@@ -2785,6 +2785,9 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="requests_expired">Kërkesa skadoi</string>
 	<string name="requests_state_connecting">E pranuar, lidhet kur jeni të dy në linjë</string>
 	<string name="requests_state_could_not_connect">Nuk u lidh dot</string>
+	<string name="requests_reconnect_label">Kërkon të rilidhet si kontakt ekzistues</string>
+	<string name="requests_reconnect_notice">Kjo kërkesë thotë se dërguesi është tashmë kontakti yt dhe dëshiron të rilidhet, për shembull nga një telefon i ri. Nëse pranon, kyçet e lidhjes së atij kontakti zëvendësohen në të dy telefonat dhe telefoni i tij i vjetër nuk mund të të arrijë më. Prano vetëm nëse e pret këtë.</string>
+	<string name="send_invite_reconnect_notice">Kjo kërkesë i tregon personit se je tashmë kontakti i tij dhe dëshiron të rilidhesh. Nëse pranon, të dy telefonat i zëvendësojnë kyçet e lidhjes për këtë kontakt dhe e ruajnë bisedën.</string>
 	<string name="requests_try_again">Provo sërish</string>
 	<string name="requests_cancel">Anulo kërkesën</string>
 	<string name="requests_cancel_title">Të anulohet kjo kërkesë?</string>

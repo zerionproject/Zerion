@@ -2829,6 +2829,9 @@
 	<string name="requests_expired">Richiesta scaduta</string>
 	<string name="requests_state_connecting">Accettata, vi collegherete quando sarete entrambi online</string>
 	<string name="requests_state_could_not_connect">Impossibile connettersi</string>
+	<string name="requests_reconnect_label">Chiede di riconnettersi come contatto esistente</string>
+	<string name="requests_reconnect_notice">Questa richiesta dice che il mittente è già un tuo contatto e vuole riconnettersi, ad esempio da un nuovo telefono. Se accetti, le chiavi di connessione di quel contatto vengono sostituite su entrambi i telefoni e il suo vecchio telefono non potrà più raggiungerti. Accetta solo se te lo aspetti.</string>
+	<string name="send_invite_reconnect_notice">Questa richiesta comunica alla persona che sei già un suo contatto e vuoi riconnetterti. Se accetta, entrambi i telefoni sostituiscono le chiavi di connessione di questo contatto e mantengono la conversazione.</string>
 	<string name="requests_try_again">Riprova</string>
 	<string name="requests_cancel">Annulla richiesta</string>
 	<string name="requests_cancel_title">Annullare questa richiesta?</string>

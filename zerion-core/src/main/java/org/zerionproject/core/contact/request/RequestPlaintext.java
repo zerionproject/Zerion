@@ -42,11 +42,13 @@ final class RequestPlaintext {
 	@Nullable
 	final String name, note;
 	final long timestamp;
+	final boolean reconnect;
 
 	private RequestPlaintext(int kind, byte[] requestId, byte[] linkId,
 			@Nullable byte[] oneTimeLink, @Nullable byte[] pop,
 			@Nullable String name, @Nullable String note, long timestamp,
-			@Nullable byte[] senderTag) {
+			@Nullable byte[] senderTag, boolean reconnect) {
+		this.reconnect = reconnect;
 		this.kind = kind;
 		this.requestId = requestId;
 		this.linkId = linkId;
@@ -61,15 +63,27 @@ final class RequestPlaintext {
 	static RequestPlaintext request(byte[] requestId, byte[] linkId,
 			byte[] oneTimeLink, byte[] pop, String name, @Nullable String note,
 			long timestamp, byte[] senderTag) {
+		return request(requestId, linkId, oneTimeLink, pop, name, note,
+				timestamp, senderTag, false);
+	}
+
+	/**
+	 * A request; reconnect says that the sender is already a contact of the
+	 * receiver and wants to replace the keys of that contact.
+	 */
+	static RequestPlaintext request(byte[] requestId, byte[] linkId,
+			byte[] oneTimeLink, byte[] pop, String name, @Nullable String note,
+			long timestamp, byte[] senderTag, boolean reconnect) {
 		RequestPlaintext p = new RequestPlaintext(KIND_REQUEST, requestId,
-				linkId, oneTimeLink, pop, name, note, timestamp, senderTag);
+				linkId, oneTimeLink, pop, name, note, timestamp, senderTag,
+				reconnect);
 		p.check();
 		return p;
 	}
 
 	static RequestPlaintext withdraw(byte[] requestId, byte[] linkId) {
 		return new RequestPlaintext(KIND_WITHDRAW, requestId, linkId, null,
-				null, null, null, 0, null);
+				null, null, null, 0, null, false);
 	}
 
 	static boolean isValidName(String name) {
@@ -111,6 +125,7 @@ final class RequestPlaintext {
 			list.add(note);
 			list.add(timestamp);
 			list.add(senderTag);
+			list.add(reconnect);
 		}
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		BdfWriter w = writerFactory.createWriter(out);
@@ -162,7 +177,7 @@ final class RequestPlaintext {
 			if (list.size() != 4) throw new FormatException();
 			return withdraw(requestId, linkId);
 		}
-		if (kind != KIND_REQUEST || list.size() != 10) {
+		if (kind != KIND_REQUEST || list.size() != 11) {
 			throw new FormatException();
 		}
 		byte[] oneTimeLink = list.getRaw(4);
@@ -171,9 +186,10 @@ final class RequestPlaintext {
 		String note = list.getOptionalString(7);
 		long timestamp = list.getLong(8);
 		byte[] senderTag = list.getRaw(9);
+		boolean reconnect = list.getBoolean(10);
 		try {
 			return request(requestId, linkId, oneTimeLink, pop, name, note,
-					timestamp, senderTag);
+					timestamp, senderTag, reconnect);
 		} catch (IllegalArgumentException e) {
 			throw new FormatException();
 		}

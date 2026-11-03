@@ -405,8 +405,9 @@ Plaintext: `uint16 length || BDF list || zero padding`, always 1536 bytes:
 | 7 | note | null or 1 to 200 characters (code points), at most 800 UTF-8 bytes |
 | 8 | timestamp | sender clock rounded down to the hour, ms |
 | 9 | senderTag | `mac(".../SENDER_TAG", accountTagSecret, linkId)`, 32 bytes |
+| 10 | reconnect | boolean: the sender started the request from Re-add contact and asks the receiver, who already has the sender as a contact, to replace that contact's keys (section 9) |
 
-A withdraw carries fields 0 to 3. The one-time link has no inbox: after
+A withdraw carries fields 0 to 3. A request has all eleven fields. The one-time link has no inbox: after
 acceptance the rendezvous connects A to B (section 5). `pop` proves A holds the
 private half of the one-time X25519 key, so A cannot point B's rendezvous at a
 third party's key. The label text never leaves B.
@@ -454,6 +455,12 @@ Schema 72 to 73 (`Migration72_73`), private material in `_SECRET` columns:
 | `incomingRequests` | requestId, linkId, oneTimeLink, name, note, senderTag, senderTimestamp, receivedAt, state, acceptedAt, pendingContactId |
 | `requestReplay` | requestIdHash, kind, oneTimeKeyHash, linkId, expiresAt (receivedAt + 32 days) |
 | `requestBlocks` | linkId, senderTag, createdAt |
+
+The reconnect flag of a request is kept in the settings, per request id
+(`ReconnectMarks`: one namespace for sent and one for received requests), and
+the pending contact that an accepted or delivered reconnect request creates
+carries the re-add mark of `PendingContactFlags` (see ZWF-ROOT-EVOLUTION.md,
+"Who may re-key"), so that the pairing may replace an existing contact's keys.
 
 A per-add binding row holds no key (the per-add key stays in the identity);
 section 10 explains it. The migration is idempotent (add a column only if
@@ -549,7 +556,20 @@ deliveredAt + 32 days; B handles it by rule 0 of section 4.
 - Accepted rows stay under Received as "Accepted, connects when you are both
   online" until the contact is added; at the end of the window they show
   "Could not connect" with **Try again**. A request the sender withdrew after
-  acceptance shows "Cancelled by sender" with **Dismiss**.
+  acceptance shows "Cancelled by sender" with **Dismiss**. A request whose
+  pairing ran but was refused because the sender is already a contact and
+  the add was not a re-add on both sides shows "Already a contact" with
+  **Dismiss**, under the name the user gave when accepting
+  (`IncomingRequest.STATE_ALREADY_CONTACT`, set from
+  `PendingContactAlreadyContactEvent` by `ContactRequestManagerImpl`); a
+  sent request ends the same way (`OutgoingRequest.STATE_ALREADY_CONTACT`,
+  **Remove**).
+- A received request marked as a reconnect (field 10) shows "Asks to
+  reconnect as an existing contact" under the link in its row, and its detail
+  says that the sender claims to be an existing contact and that accepting
+  replaces that contact's connection keys on both phones, so that their old
+  phone can no longer reach this one. Accepting it marks the pending contact
+  as a re-add; a request without the flag never replaces a contact's keys.
 - Sent rows: Not sent yet, Delivered (no answer yet), Accepted, Not
   delivered, No answer, Cancelled, Cancelled after delivery, and Cancelling
   (a cancellation still being delivered), which has no action until it ends.
@@ -703,6 +723,15 @@ Two cards replace today's three (`AddContactChooserFragment`):
   says that the code needs an internet connection. There is no separate
   "Pair nearby" entry.
 
+Re-add contact (from a chat's settings, for a contact whose keys are out of
+sync) opens the same Add contact screen in re-add mode: a request sent from
+it carries the reconnect flag and the screen says so ("This request tells
+them you are already their contact and want to reconnect..."), a pasted v1
+link pairs as a re-add, and a code scanned in person is a re-add by itself.
+The pairing replaces the existing contact's keys only when both sides meant
+to; the rule and its 3.0.18 limit are in ZWF-ROOT-EVOLUTION.md, "Who may
+re-key".
+
 Compatibility. Android phones on 3.0.18 or older and iOS phones can still be
 added by pasting each other's links on both phones (from Send invite, as in
 section 2) or with Scan QR. They cannot send or receive invites. Invites on
@@ -756,6 +785,7 @@ DESIGN GOAL until section 12 passes, external review NONE):
 | Decline and block are silent | No message; blocked senders get a normal ACK | `InboxService` | `InboxServiceTest` | The sender sees delivery |
 | Request notifications show no content | Fixed text, own channel | `AndroidNotificationManagerImpl` | `RequestNotificationTest` | Shows that a request arrived |
 | Inbox onions are separate and removed on withdraw or reset | One onion per link; DEL_ONION | `ContactLinkStore`, `InboxService` | `InboxLifecycleTest` | See limits |
+| A request cannot replace an existing contact's keys unless both users meant it | The pairing re-keys an existing contact only when this side's pending contact carries the re-add mark (Re-add contact, a reconnect request accepted after its warning, or an in-person scan) and the peer's `REPLACE_KEYS` record does not say no; otherwise the add is refused and the request shows "Already a contact" | `ContactManagerImpl`, `PendingContactFlags`, `ContactExchangeManagerImpl`, `ContactRequestReceiver`, `ContactRequestSender`, `ReconnectMarks` | `ContactManagerImplTest`, `ContactExchangeIntegrationTest`, `ContactRequestReceiverTest`, `ContactRequestSenderTest` | A holder of a copied identity can send a reconnect request; the receiver must confirm after a warning. A 3.0.18 peer always re-keys (ZWF-ROOT-EVOLUTION.md, "Who may re-key") |
 | The ZerionID rotates after every accepted request | `ContactRequestReceiver.accept` retires the active ZerionID and creates a new key, inbox and link in the accepting transaction (not published until the next share; the rotation never fails the accept); permanent links and Scan QR pairings rotate nothing | `ContactRequestReceiver`, `ContactLinkStore` | `InboxLifecycleTest`, `ContactRequestReceiverTest` | The old key stays while requests through it are undecided or accepted; blocks stay with the old ZerionID |
 | A flooded inbox is paused or reset by the app | Per-inbox detector (300 zero-work connections in 10 minutes or level 3 for 3 epochs) pauses a permanent link (DEL_ONION for 1 hour, doubling within 24 hours, cap 24 hours, republished by itself; Resume now and Remove) or resets the ZerionID, with a fixed-text notification; no Tor setting changes; bounded flood slots; a failed report is retried | `InboxPuzzle`, `InboxService`, `ContactLinkStore`, `AndroidNotificationManagerImpl`, `InviteLinksController` | `InboxPuzzleTest`, `InboxLifecycleTest`, `RequestNotificationTest`, `InviteLinksControllerTest` | An attacker who holds a link can make it unreachable for the cooldown, at the cost of a rendezvous circuit and a proof-of-work gated introduction per connection; a ZerionID shared outside the app must be shared again after a reset |
 
@@ -928,6 +958,10 @@ revision 3 and the puzzle and slot amendments, except as listed here.
 6. FULL is answered before KEY (limit 12 of section 11); no protocol change.
 7. The backup copy carries the paused flag and a stop during the copy leaves
    the live device paused (limit 13 of section 11).
+9. Field 10 (reconnect) was added after revision 3, with the re-add mark on
+   pending contacts and the `REPLACE_KEYS` record of the pairing exchange, so
+   that a request can repair an out-of-sync contact from a distance without
+   letting any accepted request replace an existing contact's keys.
 8. SLOTS_BUSY at level 0 is retried up to 3 times too, with a fresh
    in-connection solution, since there is nothing to reuse.
 9. A level 0 solution is accepted only for the `(e, 0)` that the HELLO of the

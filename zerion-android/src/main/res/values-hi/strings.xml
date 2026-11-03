@@ -2780,6 +2780,9 @@
 	<string name="requests_expired">अनुरोध की समय-सीमा समाप्त हो गई</string>
 	<string name="requests_state_connecting">स्वीकार किया गया, आप दोनों के ऑनलाइन होने पर कनेक्ट होगा</string>
 	<string name="requests_state_could_not_connect">कनेक्ट नहीं हो सका</string>
+	<string name="requests_reconnect_label">मौजूदा संपर्क के रूप में फिर से जुड़ने का अनुरोध करता है</string>
+	<string name="requests_reconnect_notice">यह अनुरोध कहता है कि भेजने वाला पहले से आपका संपर्क है और फिर से जुड़ना चाहता है, जैसे किसी नए फ़ोन से। अगर आप स्वीकार करते हैं, तो उस संपर्क की कनेक्शन कुंजियाँ दोनों फ़ोन पर बदल दी जाती हैं और उसका पुराना फ़ोन अब आप तक नहीं पहुँच सकेगा। केवल तभी स्वीकार करें, जब आप इसकी उम्मीद कर रहे हों।</string>
+	<string name="send_invite_reconnect_notice">यह अनुरोध उन्हें बताता है कि आप पहले से उनके संपर्क हैं और फिर से जुड़ना चाहते हैं। अगर वे स्वीकार करते हैं, तो दोनों फ़ोन इस संपर्क की कनेक्शन कुंजियाँ बदल देते हैं और बातचीत बनी रहती है।</string>
 	<string name="requests_try_again">फिर से कोशिश करें</string>
 	<string name="requests_cancel">अनुरोध रद्द करें</string>
 	<string name="requests_cancel_title">यह अनुरोध रद्द करें?</string>

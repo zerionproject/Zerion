@@ -144,10 +144,18 @@ final class RequestFixtures {
 			@Nullable String note, int state, int linkKind,
 			@Nullable String label, long senderTime, long receivedAt,
 			@Nullable PendingContactId pending) {
+		return incoming(n, name, note, state, linkKind, label, senderTime,
+				receivedAt, pending, false);
+	}
+
+	static IncomingRequestInfo incoming(int n, @Nullable String name,
+			@Nullable String note, int state, int linkKind,
+			@Nullable String label, long senderTime, long receivedAt,
+			@Nullable PendingContactId pending, boolean reconnect) {
 		IncomingRequest r = new IncomingRequest(id(n), new byte[32],
 				new byte[65], name, note, new byte[32], senderTime, receivedAt,
 				state, receivedAt + 1, pending);
-		return new IncomingRequestInfo(r, linkKind, label);
+		return new IncomingRequestInfo(r, linkKind, label, reconnect);
 	}
 
 	static OutgoingRequestInfo outgoing(int n, String alias, int state,

@@ -2745,6 +2745,9 @@
 	<string name="requests_expired">請求已過期</string>
 	<string name="requests_state_connecting">已接受，將在雙方都上線時連線</string>
 	<string name="requests_state_could_not_connect">無法連線</string>
+	<string name="requests_reconnect_label">請求以現有聯絡人身分重新連線</string>
+	<string name="requests_reconnect_notice">此請求表示傳送者已經是您的聯絡人，並希望重新連線，例如從新手機發起。如果您接受，該聯絡人的連線金鑰會在兩台手機上被替換，其舊手機將無法再聯絡您。只有在您預期如此時才接受。</string>
+	<string name="send_invite_reconnect_notice">此請求告訴對方您已經是其聯絡人，並希望重新連線。如果對方接受，兩台手機都會替換此聯絡人的連線金鑰，並保留對話。</string>
 	<string name="requests_try_again">重試</string>
 	<string name="requests_cancel">取消請求</string>
 	<string name="requests_cancel_title">要取消此請求嗎？</string>

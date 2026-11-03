@@ -74,6 +74,7 @@ public class SendInviteController {
 	private final Button sendButton, shareButton, copyButton, qrButton;
 
 	private Mode mode = Mode.NONE;
+	private boolean reAdd = false;
 	private boolean hasLink = false;
 	private int generation = 0;
 	private boolean busy = false;
@@ -272,6 +273,18 @@ public class SendInviteController {
 		}
 	}
 
+	/**
+	 * The screen was opened from Re-add contact: a request sent from it
+	 * tells the receiver that the sender is already their contact, and a
+	 * pasted link pairs as a re-add, so the pairing may replace an existing
+	 * contact's keys.
+	 */
+	@UiThread
+	public void setReAdd(boolean reAdd) {
+		this.reAdd = reAdd;
+		applyMode(mode);
+	}
+
 	@UiThread
 	private void applyMode(Mode m) {
 		mode = m;
@@ -282,6 +295,9 @@ public class SendInviteController {
 		noteLayout.setVisibility(requestOnly);
 		if (m == Mode.MUTUAL_V1) {
 			notice.setText(R.string.send_invite_old_link_notice);
+			notice.setVisibility(View.VISIBLE);
+		} else if (reAdd && hasLink) {
+			notice.setText(R.string.send_invite_reconnect_notice);
 			notice.setVisibility(View.VISIBLE);
 		} else {
 			notice.setText(null);
@@ -318,18 +334,21 @@ public class SendInviteController {
 		busy = true;
 		sendButton.setEnabled(false);
 		String shared = sharedZeroId;
+		boolean reconnect = reAdd;
 		db.execute(() -> {
 			Runnable result;
 			try {
 				InviteLink parsed = requests.parseLink(link);
 				switch (parsed.getFlow()) {
 					case REQUEST:
-						requests.sendRequest(link, alias, shownName, note);
+						requests.sendRequest(link, alias, shownName, note,
+								reconnect);
 						boolean paused = requests.isPausedAfterRestore();
 						result = () -> onRequestSaved(paused);
 						break;
 					case MUTUAL_V1:
-						requests.addMutualFromInvite(link, alias, shared);
+						requests.addMutualFromInvite(link, alias, shared,
+								reconnect);
 						result = listener::onMutualAdded;
 						break;
 					default:

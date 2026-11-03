@@ -2784,6 +2784,9 @@
 	<string name="requests_expired">Förfrågan har gått ut</string>
 	<string name="requests_state_connecting">Accepterad, ansluter när ni båda är uppkopplade</string>
 	<string name="requests_state_could_not_connect">Kunde inte ansluta</string>
+	<string name="requests_reconnect_label">Ber om att återansluta som befintlig kontakt</string>
+	<string name="requests_reconnect_notice">Den här förfrågan säger att avsändaren redan är din kontakt och vill återansluta, till exempel från en ny telefon. Om du accepterar ersätts den kontaktens anslutningsnycklar på båda telefonerna, och den gamla telefonen kan inte längre nå dig. Acceptera bara om du förväntar dig detta.</string>
+	<string name="send_invite_reconnect_notice">Den här förfrågan talar om för personen att du redan är dennes kontakt och vill återansluta. Om personen accepterar ersätter båda telefonerna anslutningsnycklarna för den här kontakten och behåller konversationen.</string>
 	<string name="requests_try_again">Försök igen</string>
 	<string name="requests_cancel">Avbryt förfrågan</string>
 	<string name="requests_cancel_title">Avbryta den här förfrågan?</string>

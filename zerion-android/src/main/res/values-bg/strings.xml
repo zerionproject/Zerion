@@ -2780,6 +2780,9 @@
 	<string name="requests_expired">Заявката е изтекла</string>
 	<string name="requests_state_connecting">Приета, ще се свърже, когато и двамата сте на линия</string>
 	<string name="requests_state_could_not_connect">Неуспешно свързване</string>
+	<string name="requests_reconnect_label">Иска да се свърже отново като съществуващ контакт</string>
+	<string name="requests_reconnect_notice">Тази заявка казва, че подателят вече е твой контакт и иска да се свърже отново, например от нов телефон. Ако приемеш, ключовете за връзка на този контакт се заменят на двата телефона и старият му телефон вече няма да може да се свърже с теб. Приеми само ако очакваш това.</string>
+	<string name="send_invite_reconnect_notice">Тази заявка съобщава на другия, че вече си негов контакт и искаш да се свържете отново. Ако приеме, двата телефона заменят ключовете за връзка за този контакт и запазват разговора.</string>
 	<string name="requests_try_again">Опитай отново</string>
 	<string name="requests_cancel">Отмени заявката</string>
 	<string name="requests_cancel_title">Да се отмени ли тази заявка?</string>

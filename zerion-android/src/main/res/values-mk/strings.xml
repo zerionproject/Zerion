@@ -2768,6 +2768,9 @@
 	<string name="requests_expired">Барањето истече</string>
 	<string name="requests_state_connecting">Прифатено, ќе се поврзе кога двајцата ќе бидете онлајн</string>
 	<string name="requests_state_could_not_connect">Не можеше да се поврзе</string>
+	<string name="requests_reconnect_label">Бара повторно поврзување како постоечки контакт</string>
+	<string name="requests_reconnect_notice">Ова барање вели дека испраќачот веќе е твој контакт и сака повторно да се поврзе, на пример од нов телефон. Ако прифатиш, клучевите за поврзување на тој контакт се заменуваат на двата телефона и неговиот стар телефон повеќе не може да те достигне. Прифати само ако го очекуваш ова.</string>
+	<string name="send_invite_reconnect_notice">Ова барање му кажува на другиот дека веќе си негов контакт и дека сакаш повторно да се поврзете. Ако прифати, двата телефона ги заменуваат клучевите за поврзување за овој контакт и го задржуваат разговорот.</string>
 	<string name="requests_try_again">Обиди се повторно</string>
 	<string name="requests_cancel">Откажи барање</string>
 	<string name="requests_cancel_title">Да се откаже ова барање?</string>

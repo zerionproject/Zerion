@@ -5,6 +5,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.PendingContactId;
+import org.zerionproject.core.contact.PendingContactFlags;
 import org.zerionproject.core.api.contact.request.ContactLink;
 import org.zerionproject.core.api.contact.request.IncomingRequest;
 import org.zerionproject.core.api.contact.request.event.ContactRequestAcceptedEvent;
@@ -68,6 +69,8 @@ public class ContactRequestReceiver {
 	private final ContactRequestCrypto crypto;
 	private final IdentityManager identityManager;
 	private final Clock clock;
+	private final ReconnectMarks marks;
+	private final PendingContactFlags flags;
 
 	private final Map<String, ArrayDeque<Long>> churn =
 			new ConcurrentHashMap<>();
@@ -83,6 +86,30 @@ public class ContactRequestReceiver {
 		this.crypto = crypto;
 		this.identityManager = identityManager;
 		this.clock = clock;
+		this.marks = new ReconnectMarks(db);
+		this.flags = new PendingContactFlags(db);
+	}
+
+	/**
+	 * The pairing of an accepted request ran, but the sender is already a
+	 * contact and the add was refused: the request is kept under the name
+	 * the user gave, as "Already a contact", until it is dismissed.
+	 */
+	void alreadyContact(Transaction txn, PendingContactId p,
+			@Nullable String alias) throws DbException {
+		for (IncomingRequest r : db.getIncomingRequests(txn)) {
+			if (r.getState() == IncomingRequest.STATE_ACCEPTED
+					&& p.equals(r.getPendingContactId())) {
+				db.updateIncomingRequest(txn, r.alreadyContact(alias));
+				links.removeUnneededLinks(txn);
+				txn.attach(new ContactRequestsChangedEvent());
+			}
+		}
+	}
+
+	boolean isReconnect(Transaction txn, byte[] requestId)
+			throws DbException {
+		return marks.get(txn, requestId, ReconnectMarks.INCOMING);
 	}
 
 	InboxSession.Receiver forLink(byte[] linkId) {
@@ -236,6 +263,8 @@ public class ContactRequestReceiver {
 						&& Arrays.equals(old.getLinkId(), linkId)
 						&& MessageDigest.isEqual(old.getSenderTag(), tag)) {
 					db.removeIncomingRequest(txn, old.getRequestId());
+					marks.clear(txn, old.getRequestId(),
+							ReconnectMarks.INCOMING);
 					replaced = true;
 				}
 			}
@@ -246,6 +275,11 @@ public class ContactRequestReceiver {
 			db.addIncomingRequest(txn, new IncomingRequest(p.requestId,
 					linkId, oneTimeLink, name, note, tag, p.timestamp,
 					receivedAt, IncomingRequest.STATE_RECEIVED, 0, null));
+			if (p.reconnect) {
+				marks.put(txn, p.requestId, ReconnectMarks.INCOMING);
+			} else {
+				marks.clear(txn, p.requestId, ReconnectMarks.INCOMING);
+			}
 			if (replaced) {
 				if (replacementEventDue(linkId, tag, receivedAt)) {
 					txn.attach(new ContactRequestReceivedEvent(p.requestId,
@@ -272,10 +306,12 @@ public class ContactRequestReceiver {
 		}
 		if (r.isUndecided()) {
 			db.removeIncomingRequest(txn, requestId);
+			marks.clear(txn, requestId, ReconnectMarks.INCOMING);
 			links.removeUnneededLinks(txn);
 			txn.attach(new ContactRequestWithdrawnEvent(requestId, false));
 		} else if (r.getState() == IncomingRequest.STATE_ACCEPTED) {
 			removePending(txn, r.getPendingContactId());
+			marks.clear(txn, requestId, ReconnectMarks.INCOMING);
 			db.updateIncomingRequest(txn, r.withdrawn());
 			links.removeUnneededLinks(txn);
 			txn.attach(new ContactRequestWithdrawnEvent(requestId, false));
@@ -343,6 +379,7 @@ public class ContactRequestReceiver {
 		if (p == null) return;
 		for (PendingContact pc : db.getPendingContacts(txn)) {
 			if (pc.getId().equals(p)) {
+				flags.clear(txn, pc);
 				db.removePendingContact(txn, p);
 				return;
 			}
@@ -376,8 +413,10 @@ public class ContactRequestReceiver {
 			long now = clock.currentTimeMillis();
 			PendingContact p = pendingFor(r, alias, now,
 					expiryFor(r, now));
+			boolean reconnect = isReconnect(txn, requestId);
 			db.addPendingContact(txn, p,
-					identityManager.getLocalAuthor(txn).getId(), false);
+					identityManager.getLocalAuthor(txn).getId(), reconnect);
+			if (reconnect) flags.put(txn, p, PendingContactFlags.RE_ADD);
 			KeyPair keys = links.keyPair(link);
 			try {
 				db.setPendingContactOurKeys(txn, p.getId(),
@@ -431,11 +470,16 @@ public class ContactRequestReceiver {
 				if (pc.getId().equals(r.getPendingContactId())) old = pc;
 			}
 			String alias = old == null ? "" : old.getAlias();
-			if (old != null) db.removePendingContact(txn, old.getId());
+			if (old != null) {
+				flags.clear(txn, old);
+				db.removePendingContact(txn, old.getId());
+			}
 			if (alias.isEmpty()) throw new IllegalStateException();
 			PendingContact p = pendingFor(r, alias, now, expiry);
+			boolean reconnect = isReconnect(txn, requestId);
 			db.addPendingContact(txn, p,
-					identityManager.getLocalAuthor(txn).getId(), false);
+					identityManager.getLocalAuthor(txn).getId(), reconnect);
+			if (reconnect) flags.put(txn, p, PendingContactFlags.RE_ADD);
 			KeyPair keys = links.keyPair(link);
 			try {
 				db.setPendingContactOurKeys(txn, p.getId(),
@@ -453,6 +497,7 @@ public class ContactRequestReceiver {
 			IncomingRequest r = find(txn, requestId);
 			if (r == null || !r.isUndecided()) return;
 			db.removeIncomingRequest(txn, requestId);
+			marks.clear(txn, requestId, ReconnectMarks.INCOMING);
 			links.removeUnneededLinks(txn);
 			txn.attach(new ContactRequestsChangedEvent());
 		});
@@ -473,10 +518,13 @@ public class ContactRequestReceiver {
 	public void dismiss(byte[] requestId) throws DbException {
 		db.transaction(false, txn -> {
 			IncomingRequest r = find(txn, requestId);
-			if (r == null || r.getState() != IncomingRequest.STATE_WITHDRAWN) {
+			if (r == null || (r.getState() != IncomingRequest.STATE_WITHDRAWN
+					&& r.getState()
+					!= IncomingRequest.STATE_ALREADY_CONTACT)) {
 				return;
 			}
 			db.removeIncomingRequest(txn, requestId);
+			marks.clear(txn, requestId, ReconnectMarks.INCOMING);
 			links.removeUnneededLinks(txn);
 			txn.attach(new ContactRequestsChangedEvent());
 		});
@@ -487,6 +535,7 @@ public class ContactRequestReceiver {
 		for (IncomingRequest r : db.getIncomingRequests(txn)) {
 			if (p.equals(r.getPendingContactId())) {
 				db.removeIncomingRequest(txn, r.getRequestId());
+				marks.clear(txn, r.getRequestId(), ReconnectMarks.INCOMING);
 				links.removeUnneededLinks(txn);
 				txn.attach(new ContactRequestsChangedEvent());
 				txn.attach(new ContactRequestAddedEvent(r.getRequestId(),
@@ -504,6 +553,8 @@ public class ContactRequestReceiver {
 				if (r.isUndecided()
 						&& now >= r.getReceivedAt() + UNDECIDED_WINDOW_MS) {
 					db.removeIncomingRequest(txn, r.getRequestId());
+					marks.clear(txn, r.getRequestId(),
+							ReconnectMarks.INCOMING);
 					txn.attach(new ContactRequestExpiredEvent(
 							r.getRequestId(), false));
 					changed = true;
@@ -511,6 +562,8 @@ public class ContactRequestReceiver {
 						&& now >= r.getReceivedAt() + DELIVERED_WINDOW_MS) {
 					removePending(txn, r.getPendingContactId());
 					db.removeIncomingRequest(txn, r.getRequestId());
+					marks.clear(txn, r.getRequestId(),
+							ReconnectMarks.INCOMING);
 					txn.attach(new ContactRequestExpiredEvent(
 							r.getRequestId(), false));
 					changed = true;

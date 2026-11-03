@@ -2874,6 +2874,9 @@
 	<string name="requests_expired">Užklausos galiojimas baigėsi</string>
 	<string name="requests_state_connecting">Priimta, susijungs, kai abu būsite tinkle</string>
 	<string name="requests_state_could_not_connect">Nepavyko prisijungti</string>
+	<string name="requests_reconnect_label">Prašo iš naujo susijungti kaip esamas adresatas</string>
+	<string name="requests_reconnect_notice">Ši užklausa nurodo, kad siuntėjas jau yra jūsų adresatas ir nori susijungti iš naujo, pavyzdžiui iš naujo telefono. Jei priimsite, to adresato ryšio raktai bus pakeisti abiejuose telefonuose, o jo senas telefonas nebegalės jūsų pasiekti. Priimkite tik tada, jei to tikitės.</string>
+	<string name="send_invite_reconnect_notice">Ši užklausa praneša adresatui, kad jūs jau esate jo adresatas ir norite susijungti iš naujo. Jei jis priims, abu telefonai pakeis šio adresato ryšio raktus ir išsaugos pokalbį.</string>
 	<string name="requests_try_again">Bandyti dar kartą</string>
 	<string name="requests_cancel">Atšaukti užklausą</string>
 	<string name="requests_cancel_title">Atšaukti šią užklausą?</string>

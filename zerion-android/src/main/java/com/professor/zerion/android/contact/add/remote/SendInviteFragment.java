@@ -76,6 +76,7 @@ public class SendInviteFragment extends BaseFragment
 		SendInviteController c = new SendInviteController(requireActivity(),
 				view, contactRequestManager, identityManager, dbExecutor, this);
 		controller = c;
+		c.setReAdd(viewModel.isReAddExisting());
 		String prefill = viewModel.takeInvitePrefill();
 		if (prefill != null) c.setLink(prefill);
 	}

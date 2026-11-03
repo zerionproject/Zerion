@@ -42,6 +42,7 @@ public class ContactRequestModule {
 			InboxService inboxService, ContactRequestManagerImpl manager) {
 		lifecycleManager.registerService(sender);
 		eventBus.addListener(sender);
+		eventBus.addListener(manager);
 		lifecycleManager.registerService(inboxService);
 		eventBus.addListener(inboxService);
 		lifecycleManager.registerService(manager);

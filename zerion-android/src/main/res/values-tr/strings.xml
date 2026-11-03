@@ -2789,6 +2789,9 @@
 	<string name="requests_expired">İsteğin süresi doldu</string>
 	<string name="requests_state_connecting">Kabul edildi, ikiniz de çevrim içi olduğunuzda bağlanır</string>
 	<string name="requests_state_could_not_connect">Bağlanılamadı</string>
+	<string name="requests_reconnect_label">Mevcut bir kişi olarak yeniden bağlanmak istiyor</string>
+	<string name="requests_reconnect_notice">Bu istek, gönderenin zaten kişilerinizden biri olduğunu ve örneğin yeni bir telefondan yeniden bağlanmak istediğini belirtir. Kabul ederseniz, o kişinin bağlantı anahtarları iki telefonda da değiştirilir ve eski telefonu artık size ulaşamaz. Yalnızca bunu bekliyorsanız kabul edin.</string>
+	<string name="send_invite_reconnect_notice">Bu istek, karşı tarafa zaten kişilerinden biri olduğunuzu ve yeniden bağlanmak istediğinizi bildirir. Kabul ederse, iki telefon da bu kişi için bağlantı anahtarlarını değiştirir ve yazışmayı korur.</string>
 	<string name="requests_try_again">Yeniden dene</string>
 	<string name="requests_cancel">İsteği iptal et</string>
 	<string name="requests_cancel_title">Bu istek iptal edilsin mi?</string>

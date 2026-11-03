@@ -2785,6 +2785,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="requests_expired">La sol·licitud ha caducat</string>
 	<string name="requests_state_connecting">Acceptada, es connectarà quan tots dos estigueu en línia</string>
 	<string name="requests_state_could_not_connect">No s\'ha pogut connectar</string>
+	<string name="requests_reconnect_label">Demana reconnectar-se com a contacte existent</string>
+	<string name="requests_reconnect_notice">Aquesta sol·licitud diu que el remitent ja és el teu contacte i vol reconnectar-se, per exemple des d\'un telèfon nou. Si acceptes, les claus de connexió d\'aquest contacte se substitueixen en tots dos telèfons i el seu telèfon antic ja no et podrà contactar. Accepta-ho només si t\'ho esperes.</string>
+	<string name="send_invite_reconnect_notice">Aquesta sol·licitud li indica que ja ets el seu contacte i que vols reconnectar-te. Si accepta, tots dos telèfons substitueixen les claus de connexió d\'aquest contacte i conserven la conversa.</string>
 	<string name="requests_try_again">Torna-ho a provar</string>
 	<string name="requests_cancel">Cancel·la la sol·licitud</string>
 	<string name="requests_cancel_title">Vols cancel·lar aquesta sol·licitud?</string>

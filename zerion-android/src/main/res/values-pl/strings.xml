@@ -2874,6 +2874,9 @@
 	<string name="requests_expired">Prośba wygasła</string>
 	<string name="requests_state_connecting">Zaakceptowano, połączy się, gdy oboje będziecie online</string>
 	<string name="requests_state_could_not_connect">Nie udało się połączyć</string>
+	<string name="requests_reconnect_label">Prosi o ponowne połączenie jako istniejący kontakt</string>
+	<string name="requests_reconnect_notice">Ta prośba mówi, że nadawca jest już twoim kontaktem i chce połączyć się ponownie, na przykład z nowego telefonu. Jeśli zaakceptujesz, klucze połączenia tego kontaktu zostaną zastąpione na obu telefonach, a jego stary telefon nie będzie już mógł się z tobą połączyć. Zaakceptuj tylko wtedy, gdy się tego spodziewasz.</string>
+	<string name="send_invite_reconnect_notice">Ta prośba informuje drugą osobę, że jesteś już jej kontaktem i chcesz połączyć się ponownie. Jeśli zaakceptuje, oba telefony zastąpią klucze połączenia dla tego kontaktu i zachowają rozmowę.</string>
 	<string name="requests_try_again">Spróbuj ponownie</string>
 	<string name="requests_cancel">Anuluj prośbę</string>
 	<string name="requests_cancel_title">Anulować tę prośbę?</string>

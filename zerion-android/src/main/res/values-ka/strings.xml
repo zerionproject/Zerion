@@ -2783,6 +2783,9 @@
 	<string name="requests_expired">მოთხოვნას ვადა გაუვიდა</string>
 	<string name="requests_state_connecting">მიღებულია, დაკავშირდება, როცა ორივე ონლაინ იქნებით</string>
 	<string name="requests_state_could_not_connect">დაკავშირება ვერ მოხერხდა</string>
+	<string name="requests_reconnect_label">ითხოვს ხელახლა დაკავშირებას არსებულ კონტაქტად</string>
+	<string name="requests_reconnect_notice">ეს მოთხოვნა ამბობს, რომ გამომგზავნი უკვე თქვენი კონტაქტია და სურს ხელახლა დაკავშირება, მაგალითად ახალი ტელეფონიდან. თუ მიიღებთ, ამ კონტაქტის კავშირის გასაღებები ორივე ტელეფონზე ჩანაცვლდება და მისი ძველი ტელეფონი თქვენთან ვეღარ დაუკავშირდება. მიიღეთ მხოლოდ მაშინ, თუ ამას ელოდებით.</string>
+	<string name="send_invite_reconnect_notice">ეს მოთხოვნა მას ატყობინებს, რომ თქვენ უკვე მისი კონტაქტი ხართ და ხელახლა დაკავშირება გსურთ. თუ მიიღებს, ორივე ტელეფონი ამ კონტაქტის კავშირის გასაღებებს ჩაანაცვლებს და მიმოწერას შეინარჩუნებს.</string>
 	<string name="requests_try_again">ხელახლა სცადეთ</string>
 	<string name="requests_cancel">მოთხოვნის გაუქმება</string>
 	<string name="requests_cancel_title">გაუქმდეს ეს მოთხოვნა?</string>

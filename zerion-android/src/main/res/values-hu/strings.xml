@@ -2788,6 +2788,9 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="requests_expired">A kérés lejárt</string>
 	<string name="requests_state_connecting">Elfogadva, akkor kapcsolódik, amikor mindketten online vannak</string>
 	<string name="requests_state_could_not_connect">Nem sikerült kapcsolódni</string>
+	<string name="requests_reconnect_label">Újrakapcsolódást kér meglévő kapcsolatként</string>
+	<string name="requests_reconnect_notice">Ez a kérés azt jelzi, hogy a küldő már az Ön kapcsolata, és újra szeretne kapcsolódni, például egy új telefonról. Ha elfogadja, annak a kapcsolatnak a kapcsolati kulcsai mindkét telefonon lecserélődnek, és a régi telefonja többé nem éri el Önt. Csak akkor fogadja el, ha számít erre.</string>
+	<string name="send_invite_reconnect_notice">Ez a kérés közli a másik féllel, hogy Ön már az ő kapcsolata, és újra szeretne kapcsolódni. Ha elfogadja, mindkét telefon lecseréli ennek a kapcsolatnak a kapcsolati kulcsait, és megtartja a beszélgetést.</string>
 	<string name="requests_try_again">Újrapróbálás</string>
 	<string name="requests_cancel">Kérés visszavonása</string>
 	<string name="requests_cancel_title">Visszavonja ezt a kérést?</string>

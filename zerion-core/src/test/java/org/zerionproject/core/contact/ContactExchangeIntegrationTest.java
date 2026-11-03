@@ -12,6 +12,7 @@ import org.zerionproject.core.api.contact.event.ContactAddedEvent;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
 import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.db.ContactExistsException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.identity.Identity;
@@ -218,6 +219,89 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertNoPendingContacts();
 		assertStoredRoot(alice, aliceRoot);
 		assertStoredRoot(bob, bobRoot);
+	}
+
+	@Test
+	public void aSecondPairingReplacesAnExistingContactsKeysOnlyOnReAdd()
+			throws Exception {
+		SecretKey first = getSecretKey();
+		assertNull(exchange(addPendingContact(alice, bob, BRIAR),
+				addPendingContact(bob, alice, BRIAR), first)[0]);
+		assertStoredRoot(alice, first);
+		assertStoredRoot(bob, first);
+
+		Throwable[] refused = exchange(addPendingContact(alice, bob, ZERION),
+				addPendingContact(bob, alice, ZERION), getSecretKey());
+		assertTrue(refused[0] instanceof ContactExistsException);
+		assertTrue(refused[1] instanceof ContactExistsException);
+		assertContacts(false, true);
+		assertNoPendingContacts();
+		assertStoredRoot(alice, first);
+		assertStoredRoot(bob, first);
+
+		Throwable[] oneSided = exchange(reAdd(alice, bob),
+				addPendingContact(bob, alice, ZERION), getSecretKey());
+		assertTrue(oneSided[0] instanceof ContactExistsException);
+		assertTrue(oneSided[1] instanceof ContactExistsException);
+		assertNoPendingContacts();
+		assertStoredRoot(alice, first);
+		assertStoredRoot(bob, first);
+
+		SecretKey reAdded = getSecretKey();
+		Throwable[] done = exchange(reAdd(alice, bob), reAdd(bob, alice),
+				reAdded);
+		assertNull(done[0]);
+		assertNull(done[1]);
+		assertContacts(false, true);
+		assertNoPendingContacts();
+		assertStoredRoot(alice, reAdded);
+		assertStoredRoot(bob, reAdded);
+	}
+
+	private PendingContact reAdd(ContactExchangeIntegrationTestComponent local,
+			ContactExchangeIntegrationTestComponent remote) throws Exception {
+		String link = remote.getContactManager().getHandshakeLink(ZERION);
+		String alias = remote.getIdentityManager().getLocalAuthor().getName();
+		return local.getContactManager().addPendingContact(link, alias, null,
+				true, false);
+	}
+
+	private Throwable[] exchange(PendingContact bobFromAlice,
+			PendingContact aliceFromBob, SecretKey root) throws Exception {
+		SecretKey exchangeKey = getSecretKey();
+		HandshakeResult aliceResult = new HandshakeResult(
+				new SecretKey(exchangeKey.getBytes().clone()),
+				new SecretKey(root.getBytes().clone()), true, true, true, null,
+				null, null, null);
+		HandshakeResult bobResult = new HandshakeResult(
+				new SecretKey(exchangeKey.getBytes().clone()),
+				new SecretKey(root.getBytes().clone()), true, false, true, null,
+				null, null, null);
+		TestDuplexTransportConnection[] pair = createPair();
+		Throwable[] thrown = new Throwable[2];
+		CountDownLatch finished = new CountDownLatch(2);
+		alice.getIoExecutor().execute(() -> {
+			try {
+				alice.getContactExchangeManager().exchangeContacts(
+						bobFromAlice.getId(), pair[0], aliceResult, false,
+						false);
+			} catch (Exception e) {
+				thrown[0] = e;
+			}
+			finished.countDown();
+		});
+		bob.getIoExecutor().execute(() -> {
+			try {
+				bob.getContactExchangeManager().exchangeContacts(
+						aliceFromBob.getId(), pair[1], bobResult, false,
+						false);
+			} catch (Exception e) {
+				thrown[1] = e;
+			}
+			finished.countDown();
+		});
+		assertTrue(finished.await(TIMEOUT, MILLISECONDS));
+		return thrown;
 	}
 
 	@Test

@@ -345,6 +345,10 @@ public class RequestsController {
 		if (r.isClockDifferent()) {
 			v.findViewById(R.id.requestDetailClock).setVisibility(View.VISIBLE);
 		}
+		if (r.isReconnect()) {
+			v.findViewById(R.id.requestDetailReconnect)
+					.setVisibility(View.VISIBLE);
+		}
 		new SecureAlertDialogBuilder(activity, R.style.ZerionDialogTheme)
 				.setView(v)
 				.setPositiveButton(R.string.accept,

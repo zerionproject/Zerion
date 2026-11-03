@@ -2716,6 +2716,9 @@
 	<string name="requests_expired">Sorğunun müddəti bitdi</string>
 	<string name="requests_state_connecting">Qəbul edildi, hər ikiniz onlayn olanda qoşulur</string>
 	<string name="requests_state_could_not_connect">Qoşulmaq mümkün olmadı</string>
+	<string name="requests_reconnect_label">Mövcud kontakt kimi yenidən qoşulmaq istəyir</string>
+	<string name="requests_reconnect_notice">Bu sorğu göndərənin artıq sizin kontaktınız olduğunu və yenidən qoşulmaq istədiyini bildirir, məsələn yeni telefondan. Qəbul etsəniz, həmin kontaktın bağlantı açarları hər iki telefonda əvəz olunur və onun köhnə telefonu artıq sizə çata bilməz. Yalnız bunu gözləyirsinizsə qəbul edin.</string>
+	<string name="send_invite_reconnect_notice">Bu sorğu ona artıq onun kontaktı olduğunuzu və yenidən qoşulmaq istədiyinizi bildirir. Qəbul etsə, hər iki telefon bu kontakt üçün bağlantı açarlarını əvəz edir və söhbəti saxlayır.</string>
 	<string name="requests_try_again">Yenidən cəhd et</string>
 	<string name="requests_cancel">Sorğunu ləğv et</string>
 	<string name="requests_cancel_title">Bu sorğu ləğv edilsin?</string>

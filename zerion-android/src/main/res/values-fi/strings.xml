@@ -2762,6 +2762,9 @@
 	<string name="requests_expired">Pyyntö vanheni</string>
 	<string name="requests_state_connecting">Hyväksytty, yhdistyy kun olette molemmat verkossa</string>
 	<string name="requests_state_could_not_connect">Yhteyttä ei saatu</string>
+	<string name="requests_reconnect_label">Pyytää yhdistämään uudelleen olemassa olevana yhteystietona</string>
+	<string name="requests_reconnect_notice">Tämä pyyntö kertoo, että lähettäjä on jo yhteystietosi ja haluaa yhdistää uudelleen, esimerkiksi uudesta puhelimesta. Jos hyväksyt, kyseisen yhteystiedon yhteysavaimet korvataan molemmissa puhelimissa, eikä hänen vanha puhelimensa enää tavoita sinua. Hyväksy vain, jos odotat tätä.</string>
+	<string name="send_invite_reconnect_notice">Tämä pyyntö kertoo hänelle, että olet jo hänen yhteystietonsa ja haluat yhdistää uudelleen. Jos hän hyväksyy, molemmat puhelimet korvaavat tämän yhteystiedon yhteysavaimet ja säilyttävät keskustelun.</string>
 	<string name="requests_try_again">Yritä uudelleen</string>
 	<string name="requests_cancel">Peruuta pyyntö</string>
 	<string name="requests_cancel_title">Peruutetaanko tämä pyyntö?</string>

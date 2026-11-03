@@ -2776,6 +2776,9 @@ Umepoteza nenosiri.</string>
 	<string name="requests_expired">Muda wa ombi umeisha</string>
 	<string name="requests_state_connecting">Limekubaliwa, mtaunganishwa mkiwa mkondoni nyote wawili</string>
 	<string name="requests_state_could_not_connect">Imeshindwa kuunganisha</string>
+	<string name="requests_reconnect_label">Anaomba kuunganishwa tena kama mtu aliyepo tayari</string>
+	<string name="requests_reconnect_notice">Ombi hili linasema mtumaji tayari ni mtu uliye naye na anataka kuunganishwa tena, kwa mfano kutoka simu mpya. Ukikubali, funguo za muunganisho za mtu huyo zitabadilishwa kwenye simu zote mbili na simu yake ya zamani haitaweza tena kukufikia. Kubali tu ikiwa unatarajia hili.</string>
+	<string name="send_invite_reconnect_notice">Ombi hili linamwambia kwamba tayari wewe ni mtu aliye naye na unataka kuunganishwa tena. Akikubali, simu zote mbili zitabadilisha funguo za muunganisho za mtu huyu na kuhifadhi mazungumzo.</string>
 	<string name="requests_try_again">Jaribu tena</string>
 	<string name="requests_cancel">Ghairi ombi</string>
 	<string name="requests_cancel_title">Ughairi ombi hili?</string>

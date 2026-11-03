@@ -45,6 +45,15 @@ public interface ContactRequestManager {
 			@Nullable String note) throws DbException, FormatException,
 			OutgoingRequestLimitException;
 
+	/**
+	 * Like the method above; reconnect marks the request as sent from Re-add
+	 * contact, so that the receiver is told the sender is already their
+	 * contact and, if they accept, both phones replace that contact's keys.
+	 */
+	byte[] sendRequest(String link, String alias, String shownName,
+			@Nullable String note, boolean reconnect)
+			throws DbException, FormatException, OutgoingRequestLimitException;
+
 	void cancelRequest(byte[] requestId) throws DbException;
 
 	void dismissOutgoing(byte[] requestId) throws DbException;
@@ -69,6 +78,15 @@ public interface ContactRequestManager {
 
 	PendingContact addMutualFromInvite(String link, String alias,
 			@Nullable String sharedZeroId)
+			throws DbException, FormatException, GeneralSecurityException;
+
+	/**
+	 * Like the method above; reAddExisting says the user started the add
+	 * from Re-add contact, so the pairing may replace an existing contact's
+	 * keys instead of being refused.
+	 */
+	PendingContact addMutualFromInvite(String link, String alias,
+			@Nullable String sharedZeroId, boolean reAddExisting)
 			throws DbException, FormatException, GeneralSecurityException;
 
 	boolean isPausedAfterRestore() throws DbException;

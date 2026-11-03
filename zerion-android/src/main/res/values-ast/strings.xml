@@ -2714,6 +2714,9 @@
 	<string name="requests_expired">La solicitú caducó</string>
 	<string name="requests_state_connecting">Aceutada, coneutará cuando teáis los dos en llinia</string>
 	<string name="requests_state_could_not_connect">Nun se pudo coneutar</string>
+	<string name="requests_reconnect_label">Pide reconeutase como contautu esistente</string>
+	<string name="requests_reconnect_notice">Esta solicitú diz que\'l remitente yá ye un contautu tuyu y quier reconeutase, por exemplu dende un teléfonu nuevu. Si aceutes, les claves de conexón d\'esi contautu sustitúyense nos dos teléfonos y el so teléfonu vieyu yá nun va poder contautar contigo. Aceuta namái si lo esperes.</string>
+	<string name="send_invite_reconnect_notice">Esta solicitú diz-y que yá yes un contautu suyu y que quies reconeutate. Si aceuta, los dos teléfonos sustitúin les claves de conexón d\'esti contautu y caltienen la conversación.</string>
 	<string name="requests_try_again">Tentar de nueves</string>
 	<string name="requests_cancel">Encaboxar la solicitú</string>
 	<string name="requests_cancel_title">¿Encaboxar esta solicitú?</string>

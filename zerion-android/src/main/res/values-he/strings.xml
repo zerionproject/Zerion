@@ -2822,6 +2822,9 @@
 	<string name="requests_expired">תוקף הבקשה פג</string>
 	<string name="requests_state_connecting">אושרה, החיבור ייווצר כששניכם מחוברים</string>
 	<string name="requests_state_could_not_connect">לא ניתן היה להתחבר</string>
+	<string name="requests_reconnect_label">מבקש להתחבר מחדש כאיש קשר קיים</string>
+	<string name="requests_reconnect_notice">בקשה זו אומרת שהשולח כבר איש קשר שלך ורוצה להתחבר מחדש, למשל מטלפון חדש. אם הבקשה תאושר, מפתחות החיבור של איש הקשר הזה יוחלפו בשני הטלפונים והטלפון הישן שלו לא יוכל עוד להגיע אליך. יש לאשר רק אם זה צפוי.</string>
+	<string name="send_invite_reconnect_notice">בקשה זו מודיעה לצד השני שכבר יש לו אותך כאיש קשר ושברצונך להתחבר מחדש. אם הבקשה תאושר, שני הטלפונים יחליפו את מפתחות החיבור של איש הקשר הזה וישמרו את השיחה.</string>
 	<string name="requests_try_again">ניסיון חוזר</string>
 	<string name="requests_cancel">ביטול הבקשה</string>
 	<string name="requests_cancel_title">לבטל את הבקשה הזו?</string>

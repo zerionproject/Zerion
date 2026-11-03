@@ -56,6 +56,7 @@ import static org.zerionproject.core.api.identity.AuthorConstants.MAX_SIGNATURE_
 import static org.zerionproject.core.api.system.Clock.MIN_REASONABLE_TIME_MS;
 import static org.zerionproject.core.contact.ContactExchangeConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.contact.ContactExchangeRecordTypes.CONTACT_INFO;
+import static org.zerionproject.core.contact.ContactExchangeRecordTypes.REPLACE_KEYS;
 import static org.zerionproject.core.util.ValidationUtils.checkLength;
 
 @Immutable
@@ -64,13 +65,16 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 
 	private static final RecordPredicate ACCEPT = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
-					isKnownRecordType(r.getRecordType());
+					r.getRecordType() == CONTACT_INFO;
+	private static final RecordPredicate ACCEPT_REPLACE_KEYS = r ->
+			r.getProtocolVersion() == PROTOCOL_VERSION &&
+					r.getRecordType() == REPLACE_KEYS;
 	private static final RecordPredicate IGNORE = r ->
 			r.getProtocolVersion() == PROTOCOL_VERSION &&
 					!isKnownRecordType(r.getRecordType());
 
 	private static boolean isKnownRecordType(byte type) {
-		return type == CONTACT_INFO;
+		return type == CONTACT_INFO || type == REPLACE_KEYS;
 	}
 
 	private final DatabaseComponent db;
@@ -232,18 +236,22 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			} finally {
 				java.util.Arrays.fill(localMlDsaSigPriv, (byte) 0);
 			}
+			boolean localReplacesKeys = intendsToReplaceKeys(p);
 			ContactInfo remoteInfo;
 			if (alice) {
 				sendContactInfo(recordWriter, localAuthor, localProperties,
 						localSignature, localTimestamp, localB3ProofSig,
 						localMlDsaSigPub, localHybridSignature);
+				sendReplaceKeys(recordWriter, localReplacesKeys);
 				remoteInfo = receiveContactInfo(recordReader);
 			} else {
 				remoteInfo = receiveContactInfo(recordReader);
 				sendContactInfo(recordWriter, localAuthor, localProperties,
 						localSignature, localTimestamp, localB3ProofSig,
 						localMlDsaSigPub, localHybridSignature);
+				sendReplaceKeys(recordWriter, localReplacesKeys);
 			}
+			Boolean remoteReplacesKeys = receiveReplaceKeys(recordReader);
 			streamWriter.sendEndOfStream();
 			recordReader.readRecord(r -> false, IGNORE);
 			PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
@@ -288,7 +296,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Contact contact = addContact(p, remoteInfo.author, localAuthor,
 					rootKey, timestamp, alice, verified, remoteInfo.properties,
 					remoteInfo.b3ProofSig != null,
-					remoteInfo.mlDsaSigPubKey);
+					remoteInfo.mlDsaSigPubKey, remoteReplacesKeys);
 
 			return contact;
 		} finally {
@@ -310,6 +318,36 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, CONTACT_INFO,
 				clientHelper.toByteArray(payload)));
 		recordWriter.flush();
+	}
+
+	private boolean intendsToReplaceKeys(@Nullable PendingContactId p)
+			throws DbException {
+		if (p == null) return false;
+		return db.transactionWithResult(true,
+				txn -> contactManager.intendsToReplaceKeys(txn, p));
+	}
+
+	private void sendReplaceKeys(RecordWriter recordWriter, boolean replace)
+			throws IOException {
+		BdfList payload = BdfList.of(replace);
+		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, REPLACE_KEYS,
+				clientHelper.toByteArray(payload)));
+		recordWriter.flush();
+	}
+
+	/**
+	 * Reads the peer's REPLACE_KEYS record, which follows its CONTACT_INFO.
+	 * Returns null when the peer ended its stream without one, which an
+	 * earlier release does.
+	 */
+	@Nullable
+	private Boolean receiveReplaceKeys(RecordReader recordReader)
+			throws IOException {
+		Record record = recordReader.readRecord(ACCEPT_REPLACE_KEYS, IGNORE);
+		if (record == null) return null;
+		BdfList payload = clientHelper.toList(record.getPayload());
+		if (payload.size() != 1) throw new FormatException();
+		return payload.getBoolean(0);
 	}
 
 	private ContactInfo receiveContactInfo(RecordReader recordReader)
@@ -354,7 +392,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
 			boolean b3SlotPresent,
-			@Nullable byte[] peerMlDsaSigPubKey)
+			@Nullable byte[] peerMlDsaSigPubKey,
+			@Nullable Boolean peerReplacesKeys)
 			throws DbException, FormatException {
 		try {
 			Transaction txn = db.startTransaction(false);
@@ -368,7 +407,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					contactId = contactManager.addContact(txn, pendingContactId,
 							remoteAuthor, localAuthor.getId(), rootKey,
 							timestamp, alice, verified, true,
-							peerMlDsaSigPubKey);
+							peerMlDsaSigPubKey, peerReplacesKeys);
 				}
 				transportPropertyManager.addRemoteProperties(txn, contactId,
 						remoteProperties);
@@ -388,10 +427,14 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			if (pendingContactId != null) {
 				Transaction txn2 = db.startTransaction(false);
 				try {
-					db.removePendingContact(txn2, pendingContactId);
+					String alias = db.getPendingContact(txn2, pendingContactId)
+							.getAlias();
+					contactManager.removePendingContact(txn2, pendingContactId);
 					txn2.attach(new PendingContactAlreadyContactEvent(
-							pendingContactId));
+							pendingContactId, alias));
 					db.commitTransaction(txn2);
+				} catch (org.zerionproject.core.api.db
+						.NoSuchPendingContactException ignored) {
 				} finally {
 					db.endTransaction(txn2);
 				}
