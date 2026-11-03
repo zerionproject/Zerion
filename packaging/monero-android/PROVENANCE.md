@@ -85,6 +85,10 @@ docker run --rm -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:
 # artifacts: out/<abi>/libzmonero.so (+ .sha256, SOURCES.sha256)
 ```
 
+The container runs as the unprivileged user `builder` (uid 1000), not as root.
+On a Linux host, create `out` first and make it writable by uid 1000; Docker
+Desktop maps the mount for you.
+
 Then copy each `libzmonero.so` into
 `zerion-android/src/main/jniLibs/<abi>/` and run the 16 KB verification
 (`packaging/monero-android/verify-16k.sh`) plus the equivalence/lifecycle tests.
