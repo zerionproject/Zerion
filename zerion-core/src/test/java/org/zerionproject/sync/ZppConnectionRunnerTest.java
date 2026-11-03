@@ -363,6 +363,7 @@ public class ZppConnectionRunnerTest {
 				List<Throwable> failures) {
 			super(contactId, session, counter, crypto, ratchet,
 					mode3FullRatchet, cipherFactory, in, out);
+			setMaxRecvFramesPerKeyPair(Integer.MAX_VALUE);
 			this.id = contactId;
 			this.failures = failures;
 		}
