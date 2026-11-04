@@ -757,6 +757,8 @@
 	<string name="vault_msg_decrypt_note_failed">Ekki tókst að afkóða minnispunktinn</string>
 	<string name="vault_msg_added">Bætt í hvelfinguna</string>
 	<string name="vault_msg_add_failed">Ekki tókst að bæta í hvelfinguna</string>
+	<string name="vault_msg_cannot_clean">Zerion gat ekki fjarlægt faldar upplýsingar (eins og staðsetningu eða upplýsingar um tæki) úr þessari skrá, svo henni var ekki bætt í hvelfinguna. Umbreyttu henni í JPEG, PNG, MP4 eða PDF og reyndu aftur.</string>
+	<string name="vault_msg_too_large_to_clean">Þessi skrá er of stór til að Zerion geti fjarlægt faldar upplýsingar hennar (eins og staðsetningu eða upplýsingar um tæki) á þessum síma, svo henni var ekki bætt í hvelfinguna. Minnkaðu hana og reyndu aftur.</string>
 	<string name="vault_msg_item_deleted">Atriði eytt</string>
 	<string name="vault_msg_delete_failed">Eyðing mistókst</string>
 	<string name="vault_msg_wiped">Hvelfingin var þurrkuð út</string>

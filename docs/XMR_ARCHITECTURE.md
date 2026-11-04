@@ -8,8 +8,8 @@ present.
 Primary code: `zerion-android/src/main/java/com/professor/zerion/android/vault/wallet/xmr/`,
 the UI in `vault/ui/Xmr*.java`, and the native JNI boundary in
 `packaging/monero-android/jni/zmonero.cpp` (built into `libzmonero.so`). The
-native layer wraps Monero `wallet2_api`, pinned to v0.18.5.1 (commit
-`4f92268d`); see `packaging/monero-android/PROVENANCE.md`. Shared ZVault behavior
+native layer wraps Monero `wallet2_api`, pinned to v0.18.5.4 (commit
+`85f036ba`); see `packaging/monero-android/PROVENANCE.md`. Shared ZVault behavior
 is in `WALLET_ARCHITECTURE.md`; this document covers Monero specifics.
 
 ## Storage layers and the Store-1 invariant

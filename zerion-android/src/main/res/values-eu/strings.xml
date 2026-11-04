@@ -2297,6 +2297,8 @@
 	<string name="vault_msg_decrypt_note_failed">Ezin izan da oharra deszifratu</string>
 	<string name="vault_msg_added">Kutxara gehitu da</string>
 	<string name="vault_msg_add_failed">Ezin izan da kutxara gehitu</string>
+	<string name="vault_msg_cannot_clean">Zerion-ek ezin izan du fitxategi honetatik informazio ezkutua kendu (kokapena edo gailuaren xehetasunak, adibidez); beraz, ez da kutxara gehitu. Bihurtu JPEG, PNG, MP4 edo PDF formatura eta saiatu berriro.</string>
+	<string name="vault_msg_too_large_to_clean">Fitxategi hau handiegia da Zerion-ek telefono honetan bere informazio ezkutua (kokapena edo gailuaren xehetasunak, adibidez) kentzeko; beraz, ez da kutxara gehitu. Txikiagotu eta saiatu berriro.</string>
 	<string name="vault_msg_item_deleted">Elementua ezabatu da</string>
 	<string name="vault_msg_delete_failed">Ezabatzeak huts egin du</string>
 	<string name="vault_msg_wiped">Kutxa ezabatu da</string>

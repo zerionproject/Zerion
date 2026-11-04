@@ -2246,6 +2246,8 @@
 	<string name="vault_msg_decrypt_note_failed">Qeydin şifrəsi açıla bilmədi</string>
 	<string name="vault_msg_added">Seyfə əlavə edildi</string>
 	<string name="vault_msg_add_failed">Seyfə əlavə edilə bilmədi</string>
+	<string name="vault_msg_cannot_clean">Zerion bu fayldan gizli məlumatları (məsələn, yer və ya cihaz məlumatlarını) silə bilmədi, ona görə fayl seyfə əlavə edilmədi. Faylı JPEG, PNG, MP4 və ya PDF formatına çevirin və yenidən cəhd edin.</string>
+	<string name="vault_msg_too_large_to_clean">Bu fayl Zerion-un bu telefonda gizli məlumatları (məsələn, yer və ya cihaz məlumatlarını) silməsi üçün çox böyükdür, ona görə seyfə əlavə edilmədi. Faylı kiçildin və yenidən cəhd edin.</string>
 	<string name="vault_msg_item_deleted">Element silindi</string>
 	<string name="vault_msg_delete_failed">Silmək alınmadı</string>
 	<string name="vault_msg_wiped">Seyf silindi</string>

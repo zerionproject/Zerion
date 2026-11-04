@@ -741,6 +741,8 @@
 	<string name="vault_msg_decrypt_note_failed">פענוח הפתק נכשל</string>
 	<string name="vault_msg_added">נוסף לכספת</string>
 	<string name="vault_msg_add_failed">ההוספה לכספת נכשלה</string>
+	<string name="vault_msg_cannot_clean">Zerion לא הצליח להסיר מהקובץ הזה את המידע המוסתר (כמו מיקום או פרטי המכשיר), ולכן הוא לא נוסף לכספת. יש להמיר אותו ל-JPEG, PNG, MP4 או PDF ולנסות שוב.</string>
+	<string name="vault_msg_too_large_to_clean">הקובץ הזה גדול מדי כדי ש-Zerion יוכל להסיר ממנו את המידע המוסתר (כמו מיקום או פרטי המכשיר) בטלפון הזה, ולכן הוא לא נוסף לכספת. יש להקטין אותו ולנסות שוב.</string>
 	<string name="vault_msg_item_deleted">הפריט נמחק</string>
 	<string name="vault_msg_delete_failed">המחיקה נכשלה</string>
 	<string name="vault_msg_wiped">הכספת נמחקה</string>

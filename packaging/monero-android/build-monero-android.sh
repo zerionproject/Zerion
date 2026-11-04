@@ -315,6 +315,27 @@ for H in "${WALLET_API_H}" "${PENDING_TX_H}"; do
   [ "${PATCH_COUNT}" = "1" ] || { echo "friend patch count=${PATCH_COUNT} in ${H} (expected 1)"; exit 4; }
 done
 echo "wallet API friend patches verified (wallet.h + pending_transaction.h)"
+# Documented minimal patch: epee's HTTP client collects a whole response body
+# in memory and trusts the node for its size, so a node could answer a wallet
+# request with a body of any length. The wallet talks to a node the user chose,
+# over Tor. The client now refuses a Content-Length over 128 MiB before reading
+# the body and stops a body (sized, chunked or connection-close) once it would
+# exceed 128 MiB; the request fails and the wallet retries as for any other
+# node error. The largest reply an honest daemon sends is a get_blocks.bin
+# chunk, bounded by FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE (100 MiB) plus its
+# output indices, so the cap sits above what a correct node can send. Each
+# patch must apply exactly once.
+EPEE_HTTP_H=/build/monero/contrib/epee/include/net/http_client.h
+HTTP_BODY_CAP='(size_t) 128 * 1024 * 1024'
+if ! grep -q 'Zerion: bounded response body' "${EPEE_HTTP_H}"; then
+  sed -i "s|^\(\t*\)m_response_info.m_body += piece_of_transfer;|\1if (m_response_info.m_body.size() + piece_of_transfer.size() > ${HTTP_BODY_CAP}) { LOG_ERROR(\"response body over 128 MiB, closing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body\n\1m_response_info.m_body += piece_of_transfer;|" "${EPEE_HTTP_H}"
+  sed -i "s|^\(\t*\)\tcontent_len_valid = string_tools::get_xtype_from_string(m_len_in_summary, m_response_info.m_header_info.m_content_length);|&\n\1if (content_len_valid \&\& m_len_in_summary > ${HTTP_BODY_CAP}) { LOG_ERROR(\"Content-Length over 128 MiB, refusing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body|" "${EPEE_HTTP_H}"
+fi
+PATCH_COUNT=$(grep -c 'Zerion: bounded response body' "${EPEE_HTTP_H}")
+[ "${PATCH_COUNT}" = "2" ] || { echo "epee http_client.h body cap patch count=${PATCH_COUNT} (expected 2)"; exit 4; }
+grep -q 'm_body.size() + piece_of_transfer.size() >' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in handle_target_data"; exit 4; }
+grep -q 'content_len_valid && m_len_in_summary >' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in header analysis"; exit 4; }
+echo "epee HTTP response body cap patch verified (http_client.h)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its

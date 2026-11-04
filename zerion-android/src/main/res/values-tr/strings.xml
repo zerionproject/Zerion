@@ -821,6 +821,8 @@
 	<string name="vault_msg_decrypt_note_failed">Notun şifresi çözülemedi</string>
 	<string name="vault_msg_added">Kasaya eklendi</string>
 	<string name="vault_msg_add_failed">Kasaya eklenemedi</string>
+	<string name="vault_msg_cannot_clean">Zerion bu dosyadaki gizli bilgileri (konum veya cihaz ayrıntıları gibi) kaldıramadığı için dosya kasaya eklenmedi. Dosyayı JPEG, PNG, MP4 veya PDF biçimine dönüştürüp yeniden deneyin.</string>
+	<string name="vault_msg_too_large_to_clean">Bu dosya, Zerion\'un bu telefonda gizli bilgilerini (konum veya cihaz ayrıntıları gibi) kaldırabilmesi için çok büyük, bu yüzden kasaya eklenmedi. Dosyayı küçültüp yeniden deneyin.</string>
 	<string name="vault_msg_item_deleted">Öğe silindi</string>
 	<string name="vault_msg_delete_failed">Silinemedi</string>
 	<string name="vault_msg_wiped">Kasa temizlendi</string>

@@ -28,7 +28,7 @@ The reproducible build is defined by `packaging/monero-android/Dockerfile` and
 
 | Component | Pin |
 |---|---|
-| Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
+| Monero | tag `v0.18.5.4`, commit `85f036ba7019cd36f08e8a38a27c37ea7b522618` |
 | OpenSSL | `3.5.9` |
 | Boost | `1.84.0` |
 | libsodium | `1.0.19` |
@@ -156,8 +156,10 @@ published here, which is the signed output of that build
 cache passes on Linux (CI job `strict-from-clean-cache`) and the metadata
 lists the Linux `aapt2` artifact, so nothing in the buildserver's resolution
 is outside the metadata. CI builds the reference APK from the newest
-fdroiddata entry and refuses to start when that entry removes the file
-(`scripts/fdroid-metadata.py`).
+fdroiddata entry and refuses to start when that entry differs, after YAML
+decoding and apart from the version and commit, from the recipe pinned in
+`scripts/fdroid-recipe.yml`; a recipe change in fdroiddata therefore comes
+with a reviewed change to that file (`scripts/fdroid-metadata.py`).
 
 Earlier builds ran without it. The fdroiddata entries for 2.0.1 to 3.0.3, the
 versions F-Droid has published so far, carry `rm: gradle/verification-metadata.xml`

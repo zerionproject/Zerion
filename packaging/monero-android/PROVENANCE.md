@@ -22,7 +22,7 @@ hashes, and never replaced by an opaque prebuilt download.
 
 | Component | Pin |
 |---|---|
-| Monero | tag `v0.18.5.1`, commit `4f92268d7c16741cfb41e5bbe2aa46cc260a9ea5` |
+| Monero | tag `v0.18.5.4`, commit `85f036ba7019cd36f08e8a38a27c37ea7b522618` |
 | OpenSSL | `3.5.9` (LTS; openssl.org source tarball, SHA-256 `603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a`, identical on openssl.org and the GitHub release asset with its published `.sha256`; its `.asc` signature verifies with subkey `C46ED3F2CBEFDA1FDAADA44264ED7B1DCCE71CB2` of the OpenSSL signing certificate `B146647E45A7B33947AB226B2A2C87D161692D40`, the trust anchor named on openssl-library.org/source) |
 | expat | `2.8.5` (SHA-256 `952c03c33a6b337f12dae7a9b0f9dee86f867550d35c994d6bdaaddd37dc8454`, identical from the GitHub release asset and the SourceForge mirror) |
 | unbound | `1.22.0` (SHA-256 `c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43`) |
@@ -79,9 +79,9 @@ become the expected gate on subsequent builds.
 
 ```
 cd packaging/monero-android
-docker build -t zerion-monero-build:v0.18.5.1 .
-docker run --rm -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.1
-docker run --rm -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.1
+docker build -t zerion-monero-build:v0.18.5.4 .
+docker run --rm -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+docker run --rm -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
 # artifacts: out/<abi>/libzmonero.so (+ .sha256, SOURCES.sha256)
 ```
 
@@ -112,7 +112,7 @@ checklist).
 
 ## Additional pinned dependencies (required by Monero)
 
-Monero v0.18.5.1 hard-requires these; all are built from source, none prebuilt:
+Monero v0.18.5.4 hard-requires these; all are built from source, none prebuilt:
 
 | Component | Pin |
 |---|---|
@@ -139,6 +139,22 @@ Notes recorded during bring-up:
   template, whose out-of-range conditional branch cannot be
   linked into a library this large. The build asserts both patches are present
   exactly once and fails otherwise, so the change cannot silently drift.
+- epee's HTTP client (`contrib/epee/include/net/http_client.h`), which carries
+  every wallet request to the node, collects a whole response body in memory
+  and takes its size from the node. Two minimal patches bound it at 128 MiB: a
+  `Content-Length` above that is refused before the body is read, and a body
+  (sized, chunked or connection-close) that would grow past it ends the
+  request with an error, which the wallet treats like any other failed request
+  to the node. The largest reply a correct daemon sends is a `get_blocks.bin`
+  chunk, which the daemon stops filling at `FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE`
+  (100 MiB) or 1000 blocks, plus the chunk's output indices; the daemon's
+  `--rpc-response-soft-limit` (25 MiB by default) bounds its send queue, not a
+  single reply. The cap therefore sits above anything an honest node can send,
+  and a hostile node can no longer make the app allocate without limit. A
+  reply with a Content-Length is stopped by the header check alone (the body
+  cannot exceed the declared length); the running check is what stops a
+  chunked or connection-close body. The build asserts both patches are present
+  exactly once and fails otherwise.
 - The C++ runtime is linked statically (`-static-libstdc++`) so `libzmonero.so`
   is self-contained: its only dynamic dependencies are Android-system libraries
   (`liblog.so`, `libm.so`, `libdl.so`, `libc.so`) - no `libc++_shared.so`.
@@ -170,9 +186,50 @@ features CMake settled on and the SHA-256 of every archive in the link), and
 the Gradle gate prints that file when it refuses a library, so a host that
 builds different bytes can be compared with the reference stage by stage.
 
-## Accepted hashes (OpenSSL 3.5.9, 2026-10-19)
+## Accepted hashes (Monero v0.18.5.4 and the HTTP body cap, 2026-11-04)
 
-These are the values the Gradle gate enforces since the OpenSSL pin moved
+These are the values the Gradle gate enforces since the Monero pin moved
+from v0.18.5.1 (`4f92268d`) to v0.18.5.4 (`85f036ba`), the newest release
+of the 0.18 line (17 October 2026), and since the fourth documented patch
+bounded epee's HTTP response body at 128 MiB (build flags above). v0.18.5.3
+fixed lifetime and data race bugs in the wallet's refresh path (upstream
+#11151, #11135, #11173) and hardened the wallet against misbehaving nodes;
+v0.18.5.4 added DNSSEC and RPC fixes. The RandomX submodule moved with the
+tag (`6c4340ba` to `12f2c2ff`); all four documented patches apply exactly
+once, which the build asserts. Nothing else in the recipe changed: the
+shim, the dependency pins, the NDK, the base image and the snapshot package
+versions are the same, and every dependency archive (`dep` lines of
+`buildinfo.txt`) hashes exactly as in the previous build, so the new bytes
+come from Monero alone. The library embeds `0.18.5.4-release` and no
+`0.18.5.1`, and `OpenSSL 3.5.9 29 Sep 2026`; the 54 exported `Java_` and
+`JNI_` symbols (`llvm-nm -D --defined-only`) are identical to the previous
+build. The ELF facts are unchanged: four LOAD
+segments aligned to 16 KB on arm64-v8a (4 KB on armeabi-v7a), and only
+`liblog.so`, `libm.so`, `libdl.so` and `libc.so` as `NEEDED`.
+
+Produced in two independent environments that agree byte for byte: the
+pinned image of this directory's Dockerfile (`docker build -t
+zerion-monero-build:v0.18.5.4 .`, one fresh container per ABI, each from an
+empty `/build`, as the `builder` user) and F-Droid's
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, where
+`fdroid-build.sh` ran as `vagrant` with NDK r27b under
+`/opt/android-sdk/ndk/27.1.12297006` the way the recipe's `build` step runs
+it. A first round with the body cap at 64 MiB had produced `03f5aabd…` /
+`4e8cde70…`, also identical in both environments; the cap was raised to
+128 MiB before anything shipped (see the build flags) and both environments
+rebuilt.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `672277dc1371cc3e8e267f6e83cbb26523ac27ceef804b7a4b1d6e0633e8e30a`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `3d6039a50ae40d42e91350f8ddfc11502d31e24bbbe6258d0f1a17638251a784`**
+
+They supersede `615d8015…` / `f87c8c11…` (OpenSSL 3.5.9, Monero v0.18.5.1),
+listed below for the record.
+
+## Previous hashes (OpenSSL 3.5.9, 2026-10-19)
+
+These are the values the Gradle gate enforced since the OpenSSL pin moved
 from 3.5.8 to 3.5.9. The daemon connection of the pinned wallet API attempts
 a TLS handshake (SSL autodetect, see the build flags above), so a remote
 node's certificate reaches the bundled OpenSSL and CVE-2026-35189 was within

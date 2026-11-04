@@ -2343,6 +2343,8 @@ copies des messages que vous envoyez.
 	<string name="vault_msg_decrypt_note_failed">Échec du déchiffrement de la note</string>
 	<string name="vault_msg_added">Ajouté au coffre</string>
 	<string name="vault_msg_add_failed">Échec de l\'ajout au coffre</string>
+	<string name="vault_msg_cannot_clean">Zerion n\'a pas pu retirer les informations cachées (comme la position ou les détails de l\'appareil) de ce fichier ; il n\'a donc pas été ajouté au coffre. Convertissez-le en JPEG, PNG, MP4 ou PDF et réessayez.</string>
+	<string name="vault_msg_too_large_to_clean">Ce fichier est trop volumineux pour que Zerion puisse en retirer les informations cachées (comme la position ou les détails de l\'appareil) sur ce téléphone ; il n\'a donc pas été ajouté au coffre. Réduisez sa taille et réessayez.</string>
 	<string name="vault_msg_item_deleted">Élément supprimé</string>
 	<string name="vault_msg_delete_failed">Échec de la suppression</string>
 	<string name="vault_msg_wiped">Coffre effacé</string>

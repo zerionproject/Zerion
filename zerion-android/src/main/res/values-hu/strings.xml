@@ -784,6 +784,8 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="vault_msg_decrypt_note_failed">Nem sikerült visszafejteni a jegyzetet</string>
 	<string name="vault_msg_added">Hozzáadva a széfhez</string>
 	<string name="vault_msg_add_failed">Nem sikerült hozzáadni a széfhez</string>
+	<string name="vault_msg_cannot_clean">A Zerion nem tudta eltávolítani a rejtett információkat (például a helyadatokat vagy az eszköz adatait) ebből a fájlból, ezért nem adta hozzá a széfhez. Alakítsa át JPEG, PNG, MP4 vagy PDF formátumba, és próbálja újra.</string>
+	<string name="vault_msg_too_large_to_clean">Ez a fájl túl nagy ahhoz, hogy a Zerion ezen a telefonon eltávolítsa belőle a rejtett információkat (például a helyadatokat vagy az eszköz adatait), ezért nem adta hozzá a széfhez. Csökkentse a méretét, és próbálja újra.</string>
 	<string name="vault_msg_item_deleted">Elem törölve</string>
 	<string name="vault_msg_delete_failed">A törlés sikertelen</string>
 	<string name="vault_msg_wiped">Széf törölve</string>

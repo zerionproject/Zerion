@@ -261,10 +261,8 @@ public class TextEditorFragment extends BaseFragment {
 
 		if (isEditMode && itemId != null) {
 			viewModel.updateDocument(itemId, name, contentBytes);
-			showSnackbar(getString(R.string.text_editor_document_updated));
 		} else {
 			viewModel.addDocumentWithPassword(name, contentBytes, null);
-			showSnackbar(getString(R.string.text_editor_document_saved));
 		}
 
 		hasUnsavedChanges = false;
@@ -301,9 +299,6 @@ public class TextEditorFragment extends BaseFragment {
 			public void onPasswordEntered(@Nullable char[] password) {
 				byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
 				viewModel.addDocumentWithPassword(finalName, contentBytes, password);
-
-				showSnackbar(getString(
-						R.string.text_editor_saved_with_password));
 				hasUnsavedChanges = false;
 
 				if (getActivity() != null) {

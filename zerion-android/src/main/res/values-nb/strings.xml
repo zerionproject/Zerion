@@ -780,6 +780,8 @@
 	<string name="vault_msg_decrypt_note_failed">Kunne ikke dekryptere notatet</string>
 	<string name="vault_msg_added">Lagt til i hvelvet</string>
 	<string name="vault_msg_add_failed">Kunne ikke legge til i hvelvet</string>
+	<string name="vault_msg_cannot_clean">Zerion kunne ikke fjerne den skjulte informasjonen (som posisjon eller enhetsdetaljer) fra denne filen, så den ble ikke lagt til i hvelvet. Konverter den til JPEG, PNG, MP4 eller PDF og prøv igjen.</string>
+	<string name="vault_msg_too_large_to_clean">Denne filen er for stor til at Zerion kan fjerne den skjulte informasjonen (som posisjon eller enhetsdetaljer) på denne telefonen, så den ble ikke lagt til i hvelvet. Gjør den mindre og prøv igjen.</string>
 	<string name="vault_msg_item_deleted">Elementet er slettet</string>
 	<string name="vault_msg_delete_failed">Sletting mislyktes</string>
 	<string name="vault_msg_wiped">Hvelvet er slettet fullstendig</string>

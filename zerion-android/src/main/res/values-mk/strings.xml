@@ -716,6 +716,8 @@
 	<string name="vault_msg_decrypt_note_failed">Белешката не може да се дешифрира</string>
 	<string name="vault_msg_added">Додадено во сефот</string>
 	<string name="vault_msg_add_failed">Не може да се додаде во сефот</string>
+	<string name="vault_msg_cannot_clean">Zerion не можеше да ги отстрани скриените информации (како локација или податоци за уредот) од оваа датотека, па таа не е додадена во сефот. Претвори ја во JPEG, PNG, MP4 или PDF и обиди се повторно.</string>
+	<string name="vault_msg_too_large_to_clean">Оваа датотека е преголема за Zerion да ги отстрани нејзините скриени информации (како локација или податоци за уредот) на овој телефон, па таа не е додадена во сефот. Намали ја и обиди се повторно.</string>
 	<string name="vault_msg_item_deleted">Ставката е избришана</string>
 	<string name="vault_msg_delete_failed">Бришењето не успеа</string>
 	<string name="vault_msg_wiped">Сефот е избришан</string>

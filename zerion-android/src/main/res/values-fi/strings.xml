@@ -610,6 +610,8 @@
 	<string name="vault_msg_decrypt_note_failed">Muistiinpanon salauksen purkaminen epäonnistui</string>
 	<string name="vault_msg_added">Lisätty holviin</string>
 	<string name="vault_msg_add_failed">Holviin lisääminen epäonnistui</string>
+	<string name="vault_msg_cannot_clean">Zerion ei voinut poistaa tästä tiedostosta piilotettuja tietoja (kuten sijaintia tai laitteen tietoja), joten sitä ei lisätty holviin. Muunna se JPEG-, PNG-, MP4- tai PDF-muotoon ja yritä uudelleen.</string>
+	<string name="vault_msg_too_large_to_clean">Tämä tiedosto on liian suuri, jotta Zerion voisi poistaa siitä piilotetut tiedot (kuten sijainnin tai laitteen tiedot) tällä puhelimella, joten sitä ei lisätty holviin. Pienennä tiedostoa ja yritä uudelleen.</string>
 	<string name="vault_msg_item_deleted">Kohde poistettu</string>
 	<string name="vault_msg_delete_failed">Poistaminen epäonnistui</string>
 	<string name="vault_msg_wiped">Holvi tyhjennetty</string>

@@ -814,6 +814,8 @@
 	<string name="vault_msg_decrypt_note_failed">Не вдалося розшифрувати нотатку</string>
 	<string name="vault_msg_added">Додано до сховища</string>
 	<string name="vault_msg_add_failed">Не вдалося додати до сховища</string>
+	<string name="vault_msg_cannot_clean">Zerion не зміг видалити з цього файлу приховану інформацію (наприклад, місцезнаходження або дані пристрою), тому файл не додано до сховища. Перетворіть його на JPEG, PNG, MP4 або PDF і спробуйте ще раз.</string>
+	<string name="vault_msg_too_large_to_clean">Цей файл надто великий, щоб Zerion міг видалити з нього приховану інформацію (наприклад, місцезнаходження або дані пристрою) на цьому телефоні, тому файл не додано до сховища. Зменште його і спробуйте ще раз.</string>
 	<string name="vault_msg_item_deleted">Елемент видалено</string>
 	<string name="vault_msg_delete_failed">Не вдалося видалити</string>
 	<string name="vault_msg_wiped">Сховище стерто</string>

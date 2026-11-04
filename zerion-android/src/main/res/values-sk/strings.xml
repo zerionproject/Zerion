@@ -817,6 +817,8 @@
 	<string name="vault_msg_decrypt_note_failed">Poznámku sa nepodarilo dešifrovať</string>
 	<string name="vault_msg_added">Pridané do trezoru</string>
 	<string name="vault_msg_add_failed">Pridanie do trezoru zlyhalo</string>
+	<string name="vault_msg_cannot_clean">Zerion nedokázal z tohto súboru odstrániť skryté informácie (napríklad polohu alebo údaje o zariadení), preto nebol pridaný do trezoru. Prekonvertujte ho do formátu JPEG, PNG, MP4 alebo PDF a skúste to znova.</string>
+	<string name="vault_msg_too_large_to_clean">Tento súbor je príliš veľký na to, aby Zerion v tomto telefóne odstránil jeho skryté informácie (napríklad polohu alebo údaje o zariadení), preto nebol pridaný do trezoru. Zmenšite ho a skúste to znova.</string>
 	<string name="vault_msg_item_deleted">Položka bola odstránená</string>
 	<string name="vault_msg_delete_failed">Odstránenie zlyhalo</string>
 	<string name="vault_msg_wiped">Trezor bol vymazaný</string>

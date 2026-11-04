@@ -2350,6 +2350,8 @@
 	<string name="vault_msg_decrypt_note_failed">Falha ao descriptografar a nota</string>
 	<string name="vault_msg_added">Adicionado ao cofre</string>
 	<string name="vault_msg_add_failed">Falha ao adicionar ao cofre</string>
+	<string name="vault_msg_cannot_clean">O Zerion não conseguiu remover as informações ocultas (como localização ou detalhes do dispositivo) deste arquivo, então ele não foi adicionado ao cofre. Converta-o para JPEG, PNG, MP4 ou PDF e tente novamente.</string>
+	<string name="vault_msg_too_large_to_clean">Este arquivo é grande demais para o Zerion remover as informações ocultas dele (como localização ou detalhes do dispositivo) neste telefone, então ele não foi adicionado ao cofre. Reduza o tamanho e tente novamente.</string>
 	<string name="vault_msg_item_deleted">Item excluído</string>
 	<string name="vault_msg_delete_failed">Falha ao excluir</string>
 	<string name="vault_msg_wiped">Cofre apagado</string>

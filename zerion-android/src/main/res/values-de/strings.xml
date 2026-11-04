@@ -2320,6 +2320,8 @@
 	<string name="vault_msg_decrypt_note_failed">Notiz konnte nicht entschlüsselt werden</string>
 	<string name="vault_msg_added">Zum Tresor hinzugefügt</string>
 	<string name="vault_msg_add_failed">Konnte nicht zum Tresor hinzugefügt werden</string>
+	<string name="vault_msg_cannot_clean">Zerion konnte die versteckten Informationen (z. B. Standort oder Gerätedetails) nicht aus dieser Datei entfernen, daher wurde sie nicht zum Tresor hinzugefügt. Konvertiere sie in JPEG, PNG, MP4 oder PDF und versuche es erneut.</string>
+	<string name="vault_msg_too_large_to_clean">Diese Datei ist zu groß, als dass Zerion auf diesem Telefon ihre versteckten Informationen (z. B. Standort oder Gerätedetails) entfernen könnte, daher wurde sie nicht zum Tresor hinzugefügt. Verkleinere sie und versuche es erneut.</string>
 	<string name="vault_msg_item_deleted">Element gelöscht</string>
 	<string name="vault_msg_delete_failed">Löschen fehlgeschlagen</string>
 	<string name="vault_msg_wiped">Tresor gelöscht</string>

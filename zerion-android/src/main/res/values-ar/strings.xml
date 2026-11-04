@@ -2437,6 +2437,8 @@
 	<string name="vault_msg_decrypt_note_failed">فشل فك تشفير الملاحظة</string>
 	<string name="vault_msg_added">تمت الإضافة إلى الخزنة</string>
 	<string name="vault_msg_add_failed">فشلت الإضافة إلى الخزنة</string>
+	<string name="vault_msg_cannot_clean">تعذّر على Zerion إزالة المعلومات المخفية (مثل الموقع أو تفاصيل الجهاز) من هذا الملف، لذا لم تتم إضافته إلى الخزنة. حوّله إلى JPEG أو PNG أو MP4 أو PDF وحاول مرة أخرى.</string>
+	<string name="vault_msg_too_large_to_clean">هذا الملف أكبر من أن يتمكن Zerion من إزالة معلوماته المخفية (مثل الموقع أو تفاصيل الجهاز) على هذا الهاتف، لذا لم تتم إضافته إلى الخزنة. صغّر حجمه وحاول مرة أخرى.</string>
 	<string name="vault_msg_item_deleted">تم حذف العنصر</string>
 	<string name="vault_msg_delete_failed">فشل الحذف</string>
 	<string name="vault_msg_wiped">تم مسح الخزنة</string>

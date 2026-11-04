@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,24 +65,81 @@ public class MetadataStripper {
 		this.context = context.getApplicationContext();
 	}
 
-	public byte[] stripMetadata(byte[] fileData, String mimeType) {
+	public byte[] stripMetadataOrThrow(byte[] fileData,
+			@Nullable String mimeType)
+			throws com.professor.zerion.android.attachment
+			.MediaRefusedException {
 		try {
-			if (mimeType.startsWith("image/")) {
-				return stripImageMetadata(fileData, mimeType);
-			} else if (mimeType.startsWith("video/")) {
-				return stripVideoMetadata(fileData);
-			} else if (isDocument(mimeType)) {
-				return stripDocumentMetadata(fileData, mimeType);
+			String sniffed = sniffedType(fileData);
+			String type = sniffed.equals(UNKNOWN_TYPE) ? mimeType : sniffed;
+			if (type == null) {
+				throw com.professor.zerion.android.attachment
+						.MediaRefusedException.cannotClean("content not recognised");
 			}
-		} catch (Exception | OutOfMemoryError e) {
+			if (type.startsWith("image/")) {
+				return stripImageMetadataOrThrow(fileData, type);
+			} else if (type.startsWith("video/")) {
+				return stripVideoMetadataOrThrow(fileData);
+			} else if (type.equals("application/pdf")) {
+				return new com.professor.zerion.android.attachment
+						.PdfCleaner(context).clean(fileData, Long.MAX_VALUE);
+			} else if (type.contains("officedocument")) {
+				return stripOfficeMetadata(fileData);
+			} else if (type.equals("text/plain") && isPlainText(fileData)) {
+				return fileData;
+			}
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean("no cleaner for " + type);
+		} catch (com.professor.zerion.android.attachment
+				.MediaRefusedException e) {
+			throw e;
+		} catch (IOException | RuntimeException e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean(new IOException(e));
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.tooLarge("file too large to clean");
 		}
-		return fileData;
+	}
+
+	static final String UNKNOWN_TYPE = "application/octet-stream";
+
+	static boolean isPlainText(byte[] data) {
+		for (byte b : data) {
+			if (b == 0) return false;
+		}
+		return true;
+	}
+
+	static String sniffedType(byte[] data) {
+		if (data.length >= 8 && (data[0] & 0xFF) == 0x89 && data[1] == 'P'
+				&& data[2] == 'N' && data[3] == 'G') {
+			return "image/png";
+		}
+		if (com.professor.zerion.android.util.MediaMagic.isRiff(data, "WEBP")) {
+			return "image/webp";
+		}
+		if (com.professor.zerion.android.util.SafeImageDecoder
+				.hasAllowedMagic(data) || isReencodableForSending(data)) {
+			return "image/jpeg";
+		}
+		if (com.professor.zerion.android.util.MediaMagic.isIsoMedia(data)) {
+			return "video/mp4";
+		}
+		if (data.length >= 5 && data[0] == '%' && data[1] == 'P'
+				&& data[2] == 'D' && data[3] == 'F') {
+			return "application/pdf";
+		}
+		if (data.length >= 4 && data[0] == 'P' && data[1] == 'K') {
+			return "application/vnd.openxmlformats-officedocument";
+		}
+		return UNKNOWN_TYPE;
 	}
 
 	public byte[] stripImageMetadataOrThrow(byte[] imageData, String mimeType)
 			throws IOException {
 		try {
-			return stripImageMetadata(imageData, mimeType, true);
+			return stripImageMetadata(imageData, mimeType);
 		} catch (OutOfMemoryError e) {
 			throw com.professor.zerion.android.attachment.MediaRefusedException
 					.tooLarge("image too large to clean");
@@ -94,30 +152,21 @@ public class MetadataStripper {
 		return "image/jpeg";
 	}
 
-	private byte[] stripImageMetadata(byte[] imageData, String mimeType) throws IOException {
-		return stripImageMetadata(imageData, mimeType, false);
-	}
-
-	private byte[] stripImageMetadata(byte[] imageData, String mimeType,
-			boolean bounded) throws IOException {
+	private byte[] stripImageMetadata(byte[] imageData, String mimeType)
+			throws IOException {
 		boolean known = com.professor.zerion.android.util
 				.SafeImageDecoder.hasAllowedMagic(imageData);
-		if (!known && !(bounded && isReencodableForSending(imageData))) {
+		if (!known && !isReencodableForSending(imageData)) {
 			throw new IOException("unsupported image format");
 		}
-		BitmapFactory.Options bounds = bounded ? probeDimensions(imageData)
-				: com.professor.zerion.android.util.SafeImageDecoder
-						.probeBounds(imageData);
+		BitmapFactory.Options bounds = probeDimensions(imageData);
 		if (bounds == null) {
 			throw new IOException("unsupported image format");
 		}
 
 		int maxDimension = 4096;
-		int sampleSize = bounded
-				? boundedSampleSize(bounds.outWidth, bounds.outHeight,
-						maxDimension)
-				: calculateSampleSize(bounds.outWidth, bounds.outHeight,
-						maxDimension);
+		int sampleSize = boundedSampleSize(bounds.outWidth, bounds.outHeight,
+				maxDimension);
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
@@ -177,22 +226,6 @@ public class MetadataStripper {
 		return bounds;
 	}
 
-	private int calculateSampleSize(int width, int height, int maxDimension) {
-		int sampleSize = 1;
-
-		if (width > maxDimension || height > maxDimension) {
-			int halfWidth = width / 2;
-			int halfHeight = height / 2;
-
-			while ((halfWidth / sampleSize) >= maxDimension &&
-			       (halfHeight / sampleSize) >= maxDimension) {
-				sampleSize *= 2;
-			}
-		}
-
-		return sampleSize;
-	}
-
 	static int boundedSampleSize(int width, int height, int maxDimension) {
 		int sampleSize = 1;
 		while (width / sampleSize > maxDimension
@@ -211,7 +244,8 @@ public class MetadataStripper {
 		com.professor.zerion.android.util.CacheSweeper.release(f);
 	}
 
-	private byte[] stripVideoMetadata(byte[] videoData) {
+	private byte[] stripVideoMetadataOrThrow(byte[] videoData)
+			throws IOException {
 
 		File tempIn = null;
 		File tempOut = null;
@@ -232,8 +266,6 @@ public class MetadataStripper {
 				}
 				return bos.toByteArray();
 			}
-		} catch (IOException e) {
-			return videoData;
 		} finally {
 			if (tempIn != null) discard(tempIn);
 			if (tempOut != null) discard(tempOut);
@@ -609,52 +641,20 @@ public class MetadataStripper {
 		return ByteBuffer.allocate((int) sampleSize);
 	}
 
-	private byte[] stripDocumentMetadata(byte[] documentData, String mimeType) {
+	static final String OFFICE_PROPERTY_OVERRIDES =
+			"(?is)<(?:\\w+:)?Override[^>]*PartName=[\"']/docProps/[^\"']*[\"']"
+					+ "[^>]*(?:/>|>\\s*</(?:\\w+:)?Override>)";
+	static final String OFFICE_PROPERTY_RELATIONSHIPS =
+			"(?is)<(?:\\w+:)?Relationship[^>]*Target=[\"']/?docProps/[^\"']*"
+					+ "[\"'][^>]*(?:/>|>\\s*</(?:\\w+:)?Relationship>)";
 
-		if (mimeType.equals("application/pdf")) {
-			return stripPdfMetadata(documentData);
-		} else if (mimeType.contains("officedocument") || mimeType.contains("msword")) {
-			return stripOfficeMetadata(documentData);
-		}
-
-		return documentData;
-	}
-
-	private byte[] stripPdfMetadata(byte[] pdfData) {
-
-		try {
-			String pdfString = new String(pdfData, "ISO-8859-1");
-
-			pdfString = pdfString.replaceAll("/Producer\\s*\\([^)]*\\)", "/Producer ()");
-			pdfString = pdfString.replaceAll("/Creator\\s*\\([^)]*\\)", "/Creator ()");
-			pdfString = pdfString.replaceAll("/Author\\s*\\([^)]*\\)", "/Author ()");
-			pdfString = pdfString.replaceAll("/Title\\s*\\([^)]*\\)", "/Title ()");
-			pdfString = pdfString.replaceAll("/Subject\\s*\\([^)]*\\)", "/Subject ()");
-			pdfString = pdfString.replaceAll("/Keywords\\s*\\([^)]*\\)", "/Keywords ()");
-			pdfString = pdfString.replaceAll("/CreationDate\\s*\\([^)]*\\)", "/CreationDate ()");
-			pdfString = pdfString.replaceAll("/ModDate\\s*\\([^)]*\\)", "/ModDate ()");
-			pdfString = pdfString.replaceAll("/Trapped\\s*/\\w+", "/Trapped /False");
-
-			pdfString = pdfString.replaceAll("<x:xmpmeta[^>]*>.*?</x:xmpmeta>", "");
-			pdfString = pdfString.replaceAll("<\\?xpacket.*?\\?>", "");
-
-			pdfString = pdfString.replaceAll("/Info\\s+\\d+\\s+\\d+\\s+R", "");
-
-			pdfString = pdfString.replaceAll("/Type\\s*/Metadata[^>]*>>stream.*?endstream", "");
-
-			byte[] cleaned = pdfString.getBytes("ISO-8859-1");
-			return cleaned;
-
-		} catch (Exception e) {
-			return pdfData;
-		}
-	}
-
-	private byte[] stripOfficeMetadata(byte[] officeData) {
+	private byte[] stripOfficeMetadata(byte[] officeData) throws IOException {
 		if (officeData.length < 4 || officeData[0] != 'P' || officeData[1]
 				!= 'K') {
-			return officeData;
+			throw new IOException("not a zip based Office document");
 		}
+		boolean contentTypes = false;
+		boolean mainPart = false;
 		try (java.io.ByteArrayInputStream bin =
 					new java.io.ByteArrayInputStream(officeData);
 				java.util.zip.ZipInputStream zin =
@@ -667,31 +667,45 @@ public class MetadataStripper {
 			java.util.zip.ZipEntry e;
 			while ((e = zin.getNextEntry()) != null) {
 				String n = e.getName();
-				if (n.startsWith("docProps/") || n.endsWith("/core.xml")
-						|| n.endsWith("/app.xml")
-						|| n.endsWith("/custom.xml")) {
+				String lower = n.toLowerCase(java.util.Locale.ROOT);
+				if (lower.startsWith("docprops/") || lower.endsWith("/core.xml")
+						|| lower.endsWith("/app.xml")
+						|| lower.endsWith("/custom.xml")) {
 					continue;
+				}
+				if (lower.equals("[content_types].xml")) contentTypes = true;
+				if (lower.startsWith("word/") || lower.startsWith("xl/")
+						|| lower.startsWith("ppt/")) {
+					mainPart = true;
 				}
 				java.util.zip.ZipEntry out =
 						new java.util.zip.ZipEntry(n);
 				zout.putNextEntry(out);
-				int read;
-				while ((read = zin.read(buf)) > 0) zout.write(buf, 0, read);
+				if (lower.equals("[content_types].xml")
+						|| lower.equals("_rels/.rels")) {
+					java.io.ByteArrayOutputStream part =
+							new java.io.ByteArrayOutputStream();
+					int read;
+					while ((read = zin.read(buf)) > 0) part.write(buf, 0, read);
+					String xml = new String(part.toByteArray(),
+							StandardCharsets.UTF_8);
+					xml = xml.replaceAll(lower.equals("_rels/.rels")
+							? OFFICE_PROPERTY_RELATIONSHIPS
+							: OFFICE_PROPERTY_OVERRIDES, "");
+					zout.write(xml.getBytes(StandardCharsets.UTF_8));
+				} else {
+					int read;
+					while ((read = zin.read(buf)) > 0) zout.write(buf, 0, read);
+				}
 				zout.closeEntry();
 			}
 			zout.finish();
+			if (!contentTypes || !mainPart) {
+				throw new IOException("not an Office document");
+			}
 			return bout.toByteArray();
-		} catch (Exception ex) {
-			return officeData;
+		} catch (RuntimeException ex) {
+			throw new IOException("Office document cleaning failed", ex);
 		}
-	}
-
-	private boolean isDocument(String mimeType) {
-		return mimeType.startsWith("application/pdf") ||
-				mimeType.contains("document") ||
-				mimeType.contains("msword") ||
-				mimeType.contains("ms-excel") ||
-				mimeType.contains("ms-powerpoint") ||
-				mimeType.startsWith("text/");
 	}
 }

@@ -225,6 +225,18 @@ public class VaultListFragment extends BaseFragment {
 			allItems.addAll(noteItems);
 			applyFilterAndSort();
 		});
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showToast(m);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showToast(m);
+				viewModel.clearMessages();
+			}
+		});
 	}
 
 	private static final int REQUEST_IMAGE_PICK = 1001;
@@ -280,8 +292,6 @@ public class VaultListFragment extends BaseFragment {
 				String mimeType = resolver.getType(uri);
 
 				viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, imageData, mimeType);
-
-				showToast(getString(R.string.vault_image_added));
 			}
 		} catch (Exception e) {
 			showToast(getString(R.string.vault_image_add_failed));
@@ -300,8 +310,6 @@ public class VaultListFragment extends BaseFragment {
 				String mimeType = resolver.getType(uri);
 
 				viewModel.addMediaToVault(VaultItem.ItemType.DOCUMENT, fileName, documentData, mimeType);
-
-				showToast(getString(R.string.vault_document_added));
 			}
 		} catch (Exception e) {
 			showToast(getString(R.string.vault_document_add_failed));

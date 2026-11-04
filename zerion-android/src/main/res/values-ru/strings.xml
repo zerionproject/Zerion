@@ -2375,6 +2375,8 @@
 	<string name="vault_msg_decrypt_note_failed">Не удалось расшифровать заметку</string>
 	<string name="vault_msg_added">Добавлено в хранилище</string>
 	<string name="vault_msg_add_failed">Не удалось добавить в хранилище</string>
+	<string name="vault_msg_cannot_clean">Zerion не удалось удалить из этого файла скрытые сведения (например, местоположение или данные об устройстве), поэтому он не был добавлен в хранилище. Преобразуйте его в JPEG, PNG, MP4 или PDF и повторите попытку.</string>
+	<string name="vault_msg_too_large_to_clean">Этот файл слишком большой, чтобы Zerion мог удалить из него скрытые сведения (например, местоположение или данные об устройстве) на этом телефоне, поэтому он не был добавлен в хранилище. Уменьшите его и повторите попытку.</string>
 	<string name="vault_msg_item_deleted">Элемент удалён</string>
 	<string name="vault_msg_delete_failed">Не удалось удалить</string>
 	<string name="vault_msg_wiped">Хранилище стёрто</string>

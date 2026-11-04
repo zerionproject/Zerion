@@ -88,6 +88,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/fd/in" "$RUNNER_TEMP/fd/out"
           curl -fsSL -o "$RUNNER_TEMP/fd/upstream.yml" \
             https://gitlab.com/fdroid/fdroiddata/-/raw/master/metadata/com.professor.zerion.yml
+          python3 -c 'import yaml' 2>/dev/null || (sudo apt-get update -qq && sudo apt-get install -y python3-yaml >/dev/null)
           python3 scripts/fdroid-metadata.py "$RUNNER_TEMP/fd/upstream.yml" \
             "$GITHUB_SHA" /in/zerion.git "$RUNNER_TEMP/fd/in/metadata.yml"
           git clone -q --bare "$GITHUB_WORKSPACE" "$RUNNER_TEMP/fd/in/zerion.git"

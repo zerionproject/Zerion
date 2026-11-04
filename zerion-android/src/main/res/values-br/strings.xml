@@ -2337,6 +2337,8 @@
 	<string name="vault_msg_decrypt_note_failed">N\'eus ket bet gallet dizrinegañ an notenn</string>
 	<string name="vault_msg_added">Ouzhpennet d\'ar c\'hofr-kreñv</string>
 	<string name="vault_msg_add_failed">N\'eus ket bet gallet ouzhpennañ d\'ar c\'hofr-kreñv</string>
+	<string name="vault_msg_cannot_clean">N\'eo ket bet gouest Zerion da zilemel an titouroù kuzh (evel al lec\'hiadur pe munudoù an trevnad) eus ar restr-mañ, setu n\'eo ket bet ouzhpennet d\'ar c\'hofr-kreñv. Amdroit anezhi da JPEG, PNG, MP4 pe PDF ha klaskit en-dro.</string>
+	<string name="vault_msg_too_large_to_clean">Re vras eo ar restr-mañ evit ma c\'hallfe Zerion dilemel an titouroù kuzh (evel al lec\'hiadur pe munudoù an trevnad) war ar pellgomzer-mañ, setu n\'eo ket bet ouzhpennet d\'ar c\'hofr-kreñv. Bihanait anezhi ha klaskit en-dro.</string>
 	<string name="vault_msg_item_deleted">Elfenn dilemet</string>
 	<string name="vault_msg_delete_failed">C\'hwitet eo an dilemel</string>
 	<string name="vault_msg_wiped">Skarzhet eo ar c\'hofr-kreñv</string>

@@ -564,6 +564,8 @@
 	<string name="vault_msg_decrypt_note_failed">Impossible de deschifrar la nòta</string>
 	<string name="vault_msg_added">Ajustat al còfre</string>
 	<string name="vault_msg_add_failed">Impossible d’ajustar al còfre</string>
+	<string name="vault_msg_cannot_clean">Zerion a pas pogut levar las informacions amagadas (coma la localizacion o los detalhs de l’aparelh) d’aqueste fichièr, doncas es pas estat ajustat al còfre. Convertissètz-lo en JPEG, PNG, MP4 o PDF e tornatz ensajar.</string>
+	<string name="vault_msg_too_large_to_clean">Aqueste fichièr es tròp pesuc per que Zerion ne pòsca levar las informacions amagadas (coma la localizacion o los detalhs de l’aparelh) sus aqueste telefòn, doncas es pas estat ajustat al còfre. Reduisètz-lo e tornatz ensajar.</string>
 	<string name="vault_msg_item_deleted">Element suprimit</string>
 	<string name="vault_msg_delete_failed">La supression a fracassat</string>
 	<string name="vault_msg_wiped">Còfre escafat</string>

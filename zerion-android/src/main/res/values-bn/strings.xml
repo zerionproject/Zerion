@@ -2316,6 +2316,8 @@
 	<string name="vault_msg_decrypt_note_failed">নোট ডিক্রিপ্ট করা যায়নি</string>
 	<string name="vault_msg_added">Vault-এ যোগ করা হয়েছে</string>
 	<string name="vault_msg_add_failed">Vault-এ যোগ করা যায়নি</string>
+	<string name="vault_msg_cannot_clean">Zerion এই ফাইল থেকে লুকানো তথ্য (যেমন অবস্থান বা ডিভাইসের বিবরণ) সরাতে পারেনি, তাই এটি Vault-এ যোগ করা হয়নি। এটিকে JPEG, PNG, MP4 বা PDF-এ রূপান্তর করে আবার চেষ্টা করুন।</string>
+	<string name="vault_msg_too_large_to_clean">এই ফোনে লুকানো তথ্য (যেমন অবস্থান বা ডিভাইসের বিবরণ) সরানোর জন্য ফাইলটি Zerion-এর পক্ষে খুব বড়, তাই এটি Vault-এ যোগ করা হয়নি। ফাইলটি ছোট করে আবার চেষ্টা করুন।</string>
 	<string name="vault_msg_item_deleted">আইটেম মুছে ফেলা হয়েছে</string>
 	<string name="vault_msg_delete_failed">মুছে ফেলা যায়নি</string>
 	<string name="vault_msg_wiped">Vault মুছে ফেলা হয়েছে</string>

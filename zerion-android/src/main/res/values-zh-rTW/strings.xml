@@ -2286,6 +2286,8 @@
 	<string name="vault_msg_decrypt_note_failed">解密筆記失敗</string>
 	<string name="vault_msg_added">已新增至保險庫</string>
 	<string name="vault_msg_add_failed">新增至保險庫失敗</string>
+	<string name="vault_msg_cannot_clean">Zerion 無法移除此檔案中的隱藏資訊（例如位置或裝置詳細資料），因此未將它新增至保險庫。請將它轉換為 JPEG、PNG、MP4 或 PDF 後再試一次。</string>
+	<string name="vault_msg_too_large_to_clean">此檔案太大，Zerion 無法在這支手機上移除其隱藏資訊（例如位置或裝置詳細資料），因此未將它新增至保險庫。請將檔案縮小後再試一次。</string>
 	<string name="vault_msg_item_deleted">已刪除項目</string>
 	<string name="vault_msg_delete_failed">刪除失敗</string>
 	<string name="vault_msg_wiped">已清除保險庫</string>

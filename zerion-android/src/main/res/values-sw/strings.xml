@@ -708,6 +708,8 @@ Umepoteza nenosiri.</string>
 	<string name="vault_msg_decrypt_note_failed">Imeshindwa kusimbua dokezo</string>
 	<string name="vault_msg_added">Imeongezwa kwenye Hazina</string>
 	<string name="vault_msg_add_failed">Imeshindwa kuongeza kwenye Hazina</string>
+	<string name="vault_msg_cannot_clean">Zerion haikuweza kuondoa taarifa zilizofichwa (kama vile eneo au maelezo ya kifaa) kwenye faili hii, kwa hivyo haikuongezwa kwenye Hazina. Ibadilishe kuwa JPEG, PNG, MP4 au PDF kisha ujaribu tena.</string>
+	<string name="vault_msg_too_large_to_clean">Faili hii ni kubwa mno kwa Zerion kuondoa taarifa zake zilizofichwa (kama vile eneo au maelezo ya kifaa) kwenye simu hii, kwa hivyo haikuongezwa kwenye Hazina. Ipunguze ukubwa kisha ujaribu tena.</string>
 	<string name="vault_msg_item_deleted">Kipengee kimefutwa</string>
 	<string name="vault_msg_delete_failed">Imeshindwa kufuta</string>
 	<string name="vault_msg_wiped">Hazina imefutwa kabisa</string>

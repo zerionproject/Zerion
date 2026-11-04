@@ -346,6 +346,8 @@
 	<string name="vault_msg_decrypt_note_failed">Gagal menyahsulit nota</string>
 	<string name="vault_msg_added">Ditambah ke bilik kebal</string>
 	<string name="vault_msg_add_failed">Gagal menambah ke bilik kebal</string>
+	<string name="vault_msg_cannot_clean">Zerion tidak dapat membuang maklumat tersembunyi (seperti lokasi atau butiran peranti) daripada fail ini, jadi ia tidak ditambah ke bilik kebal. Tukarkannya kepada JPEG, PNG, MP4 atau PDF dan cuba lagi.</string>
+	<string name="vault_msg_too_large_to_clean">Fail ini terlalu besar untuk Zerion membuang maklumat tersembunyinya (seperti lokasi atau butiran peranti) pada telefon ini, jadi ia tidak ditambah ke bilik kebal. Kecilkan fail itu dan cuba lagi.</string>
 	<string name="vault_msg_item_deleted">Item dipadam</string>
 	<string name="vault_msg_delete_failed">Gagal memadam</string>
 	<string name="vault_msg_wiped">Bilik kebal telah dihapuskan</string>

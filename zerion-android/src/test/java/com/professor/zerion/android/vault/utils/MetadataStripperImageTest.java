@@ -42,6 +42,7 @@ import static com.professor.zerion.android.attachment.ImageScrubberTest.vp8x;
 import static com.professor.zerion.android.attachment.ImageScrubberTest.webp;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -105,7 +106,7 @@ public class MetadataStripperImageTest {
 		assertArrayEquals(cleanJpeg, decodedAs(encodingAs(skiaStyleJpeg()),
 				s -> s.stripImageMetadataOrThrow(photo, "image/jpeg")));
 		assertArrayEquals(cleanJpeg, decodedAs(encodingAs(skiaStyleJpeg()),
-				s -> s.stripMetadata(photo, "image/jpeg")));
+				s -> s.stripMetadataOrThrow(photo, "image/jpeg")));
 		byte[] png = pngWith(chunk("iCCP", concat(ascii("Skia\0\0"),
 				MARKER)), chunk("sRGB", bytes(0)));
 		assertArrayEquals(cleanPng(), decodedAs(encodingAs(png),
@@ -128,8 +129,14 @@ public class MetadataStripperImageTest {
 			fail("uncleaned image accepted");
 		} catch (IOException expected) {
 		}
-		assertArrayEquals(photo, decodedAs(encodingAs(broken),
-				s -> s.stripMetadata(photo.clone(), "image/jpeg")));
+		try {
+			decodedAs(encodingAs(broken),
+					s -> s.stripMetadataOrThrow(photo.clone(), "image/jpeg"));
+			fail("uncleaned image kept in the vault");
+		} catch (com.professor.zerion.android.attachment
+				.MediaRefusedException expected) {
+			assertFalse(expected.isTooLarge());
+		}
 	}
 
 	@Test

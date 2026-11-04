@@ -2285,6 +2285,8 @@
 	<string name="vault_msg_decrypt_note_failed">ノートの復号に失敗しました</string>
 	<string name="vault_msg_added">保管庫に追加しました</string>
 	<string name="vault_msg_add_failed">保管庫への追加に失敗しました</string>
+	<string name="vault_msg_cannot_clean">Zerion はこのファイルから隠れた情報（位置情報や端末の詳細など）を削除できなかったため、保管庫に追加しませんでした。JPEG、PNG、MP4、PDF のいずれかに変換してもう一度お試しください。</string>
+	<string name="vault_msg_too_large_to_clean">このファイルは大きすぎるため、この端末では Zerion が隠れた情報（位置情報や端末の詳細など）を削除できず、保管庫に追加されませんでした。ファイルを小さくしてもう一度お試しください。</string>
 	<string name="vault_msg_item_deleted">項目を削除しました</string>
 	<string name="vault_msg_delete_failed">削除に失敗しました</string>
 	<string name="vault_msg_wiped">保管庫を消去しました</string>

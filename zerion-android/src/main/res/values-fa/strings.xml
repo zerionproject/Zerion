@@ -2318,6 +2318,8 @@
 	<string name="vault_msg_decrypt_note_failed">رمزگشایی یادداشت ناموفق بود</string>
 	<string name="vault_msg_added">به گاوصندوق افزوده شد</string>
 	<string name="vault_msg_add_failed">افزودن به گاوصندوق ناموفق بود</string>
+	<string name="vault_msg_cannot_clean">Zerion نتوانست اطلاعات پنهان (مانند موقعیت مکانی یا مشخصات دستگاه) را از این فایل حذف کند، بنابراین فایل به گاوصندوق افزوده نشد. آن را به JPEG، PNG، MP4 یا PDF تبدیل کنید و دوباره تلاش کنید.</string>
+	<string name="vault_msg_too_large_to_clean">این فایل بزرگ‌تر از آن است که Zerion بتواند اطلاعات پنهان آن (مانند موقعیت مکانی یا مشخصات دستگاه) را روی این گوشی حذف کند، بنابراین به گاوصندوق افزوده نشد. آن را کوچک‌تر کنید و دوباره تلاش کنید.</string>
 	<string name="vault_msg_item_deleted">مورد حذف شد</string>
 	<string name="vault_msg_delete_failed">حذف ناموفق بود</string>
 	<string name="vault_msg_wiped">گاوصندوق پاک شد</string>

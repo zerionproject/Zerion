@@ -644,6 +644,8 @@
 	<string name="vault_msg_decrypt_note_failed">ჩანაწერის გაშიფვრა ვერ მოხერხდა</string>
 	<string name="vault_msg_added">დაემატა სეიფში</string>
 	<string name="vault_msg_add_failed">სეიფში დამატება ვერ მოხერხდა</string>
+	<string name="vault_msg_cannot_clean">Zerion-მა ვერ მოაშორა ამ ფაილს დამალული ინფორმაცია (მაგალითად, მდებარეობა ან მოწყობილობის მონაცემები), ამიტომ ფაილი სეიფში არ დაემატა. გადაიყვანეთ ის JPEG, PNG, MP4 ან PDF ფორმატში და ხელახლა სცადეთ.</string>
+	<string name="vault_msg_too_large_to_clean">ეს ფაილი ძალიან დიდია იმისთვის, რომ Zerion-მა ამ ტელეფონზე მოაშოროს მას დამალული ინფორმაცია (მაგალითად, მდებარეობა ან მოწყობილობის მონაცემები), ამიტომ ის სეიფში არ დაემატა. შეამცირეთ მისი ზომა და ხელახლა სცადეთ.</string>
 	<string name="vault_msg_item_deleted">ელემენტი წაიშალა</string>
 	<string name="vault_msg_delete_failed">წაშლა ვერ მოხერხდა</string>
 	<string name="vault_msg_wiped">სეიფი სრულად წაიშალა</string>

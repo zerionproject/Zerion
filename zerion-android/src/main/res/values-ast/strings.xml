@@ -2244,6 +2244,8 @@
 	<string name="vault_msg_decrypt_note_failed">Nun se pudo descifrar la nota</string>
 	<string name="vault_msg_added">Amestóse a la caxa fuerte</string>
 	<string name="vault_msg_add_failed">Nun se pudo amestar a la caxa fuerte</string>
+	<string name="vault_msg_cannot_clean">Zerion nun pudo quitar la información anubrida (como l\'allugamientu o los detalles del dispositivu) d\'esti ficheru, asina que nun s\'amestó a la caxa fuerte. Conviértelu a JPEG, PNG, MP4 o PDF y volvi tentalo.</string>
+	<string name="vault_msg_too_large_to_clean">Esti ficheru ye enforma grande pa que Zerion quite la so información anubrida (como l\'allugamientu o los detalles del dispositivu) nesti teléfonu, asina que nun s\'amestó a la caxa fuerte. Failu más pequeñu y volvi tentalo.</string>
 	<string name="vault_msg_item_deleted">Desanicióse l\'elementu</string>
 	<string name="vault_msg_delete_failed">Nun se pudo desaniciar</string>
 	<string name="vault_msg_wiped">Desanicióse la caxa fuerte</string>

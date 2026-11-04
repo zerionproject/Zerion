@@ -2288,6 +2288,8 @@
 	<string name="vault_msg_decrypt_note_failed">解密笔记失败</string>
 	<string name="vault_msg_added">已添加到保险库</string>
 	<string name="vault_msg_add_failed">添加到保险库失败</string>
+	<string name="vault_msg_cannot_clean">Zerion 无法移除此文件中的隐藏信息（例如位置或设备详情），因此未将其添加到保险库。请将其转换为 JPEG、PNG、MP4 或 PDF 后重试。</string>
+	<string name="vault_msg_too_large_to_clean">此文件过大，Zerion 无法在这部手机上移除其中的隐藏信息（例如位置或设备详情），因此未将其添加到保险库。请缩小文件后重试。</string>
 	<string name="vault_msg_item_deleted">项目已删除</string>
 	<string name="vault_msg_delete_failed">删除失败</string>
 	<string name="vault_msg_wiped">保险库已擦除</string>

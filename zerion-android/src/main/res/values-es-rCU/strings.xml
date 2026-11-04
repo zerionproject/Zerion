@@ -1154,4 +1154,6 @@
 		<item quantity="many">%d miembros con una versión anterior no ven el mensaje fijado.</item>
 		<item quantity="other">%d miembros con una versión anterior no ven el mensaje fijado.</item>
 	</plurals>
+	<string name="vault_msg_cannot_clean">Zerion no pudo eliminar la información oculta (como la ubicación o los datos del dispositivo) de este archivo, así que no se añadió al baúl. Conviértelo a JPEG, PNG, MP4 o PDF e inténtalo de nuevo.</string>
+	<string name="vault_msg_too_large_to_clean">Este archivo es demasiado grande para que Zerion elimine su información oculta (como la ubicación o los datos del dispositivo) en este teléfono, así que no se añadió al baúl. Reduce su tamaño e inténtalo de nuevo.</string>
 </resources>

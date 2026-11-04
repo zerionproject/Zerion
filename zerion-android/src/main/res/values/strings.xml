@@ -2631,6 +2631,8 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="vault_msg_decrypt_note_failed">Failed to decrypt note</string>
 	<string name="vault_msg_added">Added to vault</string>
 	<string name="vault_msg_add_failed">Failed to add to vault</string>
+	<string name="vault_msg_cannot_clean">Zerion could not remove the hidden information (such as location or device details) from this file, so it was not added to the vault. Convert it to JPEG, PNG, MP4 or PDF and try again.</string>
+	<string name="vault_msg_too_large_to_clean">This file is too large for Zerion to remove its hidden information (such as location or device details) on this phone, so it was not added to the vault. Make it smaller and try again.</string>
 	<string name="vault_msg_item_deleted">Item deleted</string>
 	<string name="vault_msg_delete_failed">Delete failed</string>
 	<string name="vault_msg_wiped">Vault wiped</string>

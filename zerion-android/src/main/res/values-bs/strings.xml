@@ -2277,6 +2277,8 @@
 	<string name="vault_msg_decrypt_note_failed">Dešifrovanje bilješke nije uspjelo</string>
 	<string name="vault_msg_added">Dodano u sef</string>
 	<string name="vault_msg_add_failed">Dodavanje u sef nije uspjelo</string>
+	<string name="vault_msg_cannot_clean">Zerion nije mogao ukloniti skrivene informacije (kao što su lokacija ili podaci o uređaju) iz ove datoteke, pa nije dodana u sef. Pretvori je u JPEG, PNG, MP4 ili PDF i pokušaj ponovo.</string>
+	<string name="vault_msg_too_large_to_clean">Ova datoteka je prevelika da bi Zerion na ovom telefonu uklonio njene skrivene informacije (kao što su lokacija ili podaci o uređaju), pa nije dodana u sef. Smanji je i pokušaj ponovo.</string>
 	<string name="vault_msg_item_deleted">Stavka je obrisana</string>
 	<string name="vault_msg_delete_failed">Brisanje nije uspjelo</string>
 	<string name="vault_msg_wiped">Sef je obrisan</string>

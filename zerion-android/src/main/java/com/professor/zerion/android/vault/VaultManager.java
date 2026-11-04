@@ -965,11 +965,21 @@ public class VaultManager
 
 	public VaultItem addMediaItem(VaultItem.ItemType type, String name, byte[] content, String mimeType)
 			throws Exception {
+		return addMediaItemWithPassword(type, name, content, mimeType, null);
+	}
+
+	public VaultItem addMediaItemWithPassword(VaultItem.ItemType type,
+			String name, byte[] content, @Nullable String mimeType,
+			@Nullable char[] extraPassword) throws Exception {
 		requireUnlocked();
+		if (extraPassword != null && extraPassword.length == 0) {
+			throw new IllegalArgumentException("Extra password cannot be empty");
+		}
 
-		byte[] cleanedContent = metadataStripper.stripMetadata(content, mimeType);
+		byte[] cleanedContent =
+				metadataStripper.stripMetadataOrThrow(content, mimeType);
 
-		return addItemInternal(type, name, cleanedContent, null);
+		return addItemInternal(type, name, cleanedContent, extraPassword);
 	}
 
 	public VaultItem addItem(VaultItem.ItemType type, String name, byte[] content)

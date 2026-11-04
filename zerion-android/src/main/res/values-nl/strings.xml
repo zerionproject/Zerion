@@ -2314,6 +2314,8 @@ De link opent in je browser, die geen Tor gebruikt.</string>
 	<string name="vault_msg_decrypt_note_failed">Ontsleutelen van notitie mislukt</string>
 	<string name="vault_msg_added">Toegevoegd aan kluis</string>
 	<string name="vault_msg_add_failed">Toevoegen aan kluis mislukt</string>
+	<string name="vault_msg_cannot_clean">Zerion kon de verborgen informatie (zoals locatie of apparaatgegevens) niet uit dit bestand verwijderen, dus het is niet aan de kluis toegevoegd. Zet het om naar JPEG, PNG, MP4 of PDF en probeer het opnieuw.</string>
+	<string name="vault_msg_too_large_to_clean">Dit bestand is te groot voor Zerion om de verborgen informatie (zoals locatie of apparaatgegevens) op deze telefoon te verwijderen, dus het is niet aan de kluis toegevoegd. Maak het kleiner en probeer het opnieuw.</string>
 	<string name="vault_msg_item_deleted">Item verwijderd</string>
 	<string name="vault_msg_delete_failed">Verwijderen mislukt</string>
 	<string name="vault_msg_wiped">Kluis gewist</string>

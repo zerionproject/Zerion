@@ -427,8 +427,6 @@ public class VaultGalleryFragment extends BaseFragment {
 								"photo_" + System.currentTimeMillis() + ".jpg";
 						viewModel.addMediaToVault(VaultItem.ItemType.IMAGE,
 								fileName, content, "image/jpeg");
-						showSnackbar(getString(
-								R.string.vault_gallery_photo_saved));
 					}
 				} finally {
 					SecureMemory.secureDeleteFile(photo, 0L, false);
@@ -470,7 +468,6 @@ public class VaultGalleryFragment extends BaseFragment {
 							}
 
 							viewModel.addMediaToVault(VaultItem.ItemType.IMAGE, fileName, content, "image/jpeg");
-							showSnackbar(getString(R.string.vault_gallery_image_saved));
 						}
 					} catch (Exception e) {
 						showSnackbar(getString(R.string.vault_gallery_image_save_failed));
@@ -565,6 +562,18 @@ public class VaultGalleryFragment extends BaseFragment {
 				allItems.clear();
 				allItems.addAll(mediaItems);
 				applyFilterAndSort();
+			}
+		});
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), m -> {
+			if (m != null && !m.isEmpty()) {
+				showSnackbar(m);
+				viewModel.clearMessages();
 			}
 		});
 

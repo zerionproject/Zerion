@@ -644,6 +644,8 @@
 	<string name="vault_msg_decrypt_note_failed">မှတ်စုကို ကုဒ်ပြန်ဖြည်၍ မရပါ</string>
 	<string name="vault_msg_added">လုံခြုံသေတ္တာထဲသို့ ထည့်ပြီးပါပြီ</string>
 	<string name="vault_msg_add_failed">လုံခြုံသေတ္တာထဲသို့ ထည့်၍ မရပါ</string>
+	<string name="vault_msg_cannot_clean">Zerion သည် ဤဖိုင်မှ ဝှက်ထားသော အချက်အလက်များ (တည်နေရာ သို့မဟုတ် စက်အသေးစိတ်ကဲ့သို့) ကို ဖယ်ရှား၍ မရသဖြင့် ၎င်းကို လုံခြုံသေတ္တာထဲသို့ မထည့်ခဲ့ပါ။ ၎င်းကို JPEG၊ PNG၊ MP4 သို့မဟုတ် PDF သို့ ပြောင်းပြီး ထပ်ကြိုးစားပါ။</string>
+	<string name="vault_msg_too_large_to_clean">ဤဖိုင်သည် ကြီးလွန်းသဖြင့် Zerion သည် ဤဖုန်းပေါ်တွင် ၎င်း၏ ဝှက်ထားသော အချက်အလက်များ (တည်နေရာ သို့မဟုတ် စက်အသေးစိတ်ကဲ့သို့) ကို ဖယ်ရှား၍ မရသောကြောင့် ၎င်းကို လုံခြုံသေတ္တာထဲသို့ မထည့်ခဲ့ပါ။ ဖိုင်ကို သေးအောင် ပြုလုပ်ပြီး ထပ်ကြိုးစားပါ။</string>
 	<string name="vault_msg_item_deleted">အရာကို ဖျက်ပြီးပါပြီ</string>
 	<string name="vault_msg_delete_failed">ဖျက်၍ မရပါ</string>
 	<string name="vault_msg_wiped">လုံခြုံသေတ္တာကို အပြီးဖျက်ပြီးပါပြီ</string>

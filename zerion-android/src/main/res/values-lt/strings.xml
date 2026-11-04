@@ -817,6 +817,8 @@
 	<string name="vault_msg_decrypt_note_failed">Nepavyko iššifruoti užrašo</string>
 	<string name="vault_msg_added">Pridėta į saugyklą</string>
 	<string name="vault_msg_add_failed">Nepavyko pridėti į saugyklą</string>
+	<string name="vault_msg_cannot_clean">Zerion nepavyko pašalinti paslėptos informacijos (pavyzdžiui, vietovės ar įrenginio duomenų) iš šio failo, todėl jis nebuvo pridėtas į saugyklą. Konvertuokite jį į JPEG, PNG, MP4 arba PDF ir bandykite dar kartą.</string>
+	<string name="vault_msg_too_large_to_clean">Šis failas per didelis, kad Zerion šiame telefone galėtų pašalinti jo paslėptą informaciją (pavyzdžiui, vietovės ar įrenginio duomenis), todėl jis nebuvo pridėtas į saugyklą. Sumažinkite jį ir bandykite dar kartą.</string>
 	<string name="vault_msg_item_deleted">Elementas ištrintas</string>
 	<string name="vault_msg_delete_failed">Nepavyko ištrinti</string>
 	<string name="vault_msg_wiped">Saugykla išvalyta</string>

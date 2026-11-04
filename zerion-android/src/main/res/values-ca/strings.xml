@@ -2315,6 +2315,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_msg_decrypt_note_failed">No s\'ha pogut desxifrar la nota</string>
 	<string name="vault_msg_added">S\'ha afegit a la caixa forta</string>
 	<string name="vault_msg_add_failed">No s\'ha pogut afegir a la caixa forta</string>
+	<string name="vault_msg_cannot_clean">Zerion no ha pogut eliminar la informació oculta (com ara la ubicació o les dades del dispositiu) d\'aquest fitxer, així que no s\'ha afegit a la caixa forta. Converteix-lo a JPEG, PNG, MP4 o PDF i torna-ho a provar.</string>
+	<string name="vault_msg_too_large_to_clean">Aquest fitxer és massa gran perquè Zerion en pugui eliminar la informació oculta (com ara la ubicació o les dades del dispositiu) en aquest telèfon, així que no s\'ha afegit a la caixa forta. Fes-lo més petit i torna-ho a provar.</string>
 	<string name="vault_msg_item_deleted">S\'ha suprimit l\'element</string>
 	<string name="vault_msg_delete_failed">No s\'ha pogut suprimir</string>
 	<string name="vault_msg_wiped">S\'ha esborrat la caixa forta</string>

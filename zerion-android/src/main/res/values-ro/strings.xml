@@ -801,6 +801,8 @@
 	<string name="vault_msg_decrypt_note_failed">Notița nu a putut fi decriptată</string>
 	<string name="vault_msg_added">Adăugat în seif</string>
 	<string name="vault_msg_add_failed">Adăugarea în seif a eșuat</string>
+	<string name="vault_msg_cannot_clean">Zerion nu a putut elimina informațiile ascunse (cum ar fi locația sau detaliile dispozitivului) din acest fișier, așa că nu a fost adăugat în seif. Convertiți-l în JPEG, PNG, MP4 sau PDF și încercați din nou.</string>
+	<string name="vault_msg_too_large_to_clean">Acest fișier este prea mare pentru ca Zerion să poată elimina informațiile ascunse (cum ar fi locația sau detaliile dispozitivului) pe acest telefon, așa că nu a fost adăugat în seif. Micșorați-l și încercați din nou.</string>
 	<string name="vault_msg_item_deleted">Element șters</string>
 	<string name="vault_msg_delete_failed">Ștergerea a eșuat</string>
 	<string name="vault_msg_wiped">Seiful a fost șters</string>

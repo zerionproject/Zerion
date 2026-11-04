@@ -2340,6 +2340,8 @@
 	<string name="vault_msg_decrypt_note_failed">Impossibile decrittografare la nota</string>
 	<string name="vault_msg_added">Aggiunto al vault</string>
 	<string name="vault_msg_add_failed">Impossibile aggiungere al vault</string>
+	<string name="vault_msg_cannot_clean">Zerion non è riuscito a rimuovere le informazioni nascoste (come la posizione o i dettagli del dispositivo) da questo file, quindi non è stato aggiunto al vault. Convertilo in JPEG, PNG, MP4 o PDF e riprova.</string>
+	<string name="vault_msg_too_large_to_clean">Questo file è troppo grande perché Zerion possa rimuoverne le informazioni nascoste (come la posizione o i dettagli del dispositivo) su questo telefono, quindi non è stato aggiunto al vault. Riducine le dimensioni e riprova.</string>
 	<string name="vault_msg_item_deleted">Elemento eliminato</string>
 	<string name="vault_msg_delete_failed">Eliminazione non riuscita</string>
 	<string name="vault_msg_wiped">Vault cancellato</string>

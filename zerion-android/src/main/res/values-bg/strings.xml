@@ -2310,6 +2310,8 @@
 	<string name="vault_msg_decrypt_note_failed">Бележката не можа да бъде дешифрирана</string>
 	<string name="vault_msg_added">Добавено в трезора</string>
 	<string name="vault_msg_add_failed">Добавянето в трезора не бе успешно</string>
+	<string name="vault_msg_cannot_clean">Zerion не успя да премахне скритата информация (като местоположение или данни за устройството) от този файл, затова той не беше добавен в трезора. Преобразувай го в JPEG, PNG, MP4 или PDF и опитай отново.</string>
+	<string name="vault_msg_too_large_to_clean">Този файл е твърде голям, за да може Zerion да премахне скритата му информация (като местоположение или данни за устройството) на този телефон, затова той не беше добавен в трезора. Намали размера му и опитай отново.</string>
 	<string name="vault_msg_item_deleted">Елементът е изтрит</string>
 	<string name="vault_msg_delete_failed">Изтриването не бе успешно</string>
 	<string name="vault_msg_wiped">Трезорът е изтрит</string>

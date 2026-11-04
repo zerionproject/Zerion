@@ -1883,11 +1883,18 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void addDocumentWithPassword(String fileName, byte[] content, @Nullable char[] extraPassword) {
+		addDocumentWithPassword(fileName, content, "text/plain", extraPassword);
+	}
+
+	public void addDocumentWithPassword(String fileName, byte[] content,
+			@Nullable String mimeType, @Nullable char[] extraPassword) {
 		if (!vaultManager.isUnlocked()) {
+			if (content != null) Arrays.fill(content, (byte) 0);
 			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
 			return;
 		}
 		if (fileName == null || fileName.trim().isEmpty()) {
+			if (content != null) Arrays.fill(content, (byte) 0);
 			errorMessage.postValue(text(R.string.vault_msg_file_name_empty));
 			return;
 		}
@@ -1899,27 +1906,28 @@ public class VaultViewModel extends AndroidViewModel {
 		isLoading.postValue(true);
 		dbExecutor.execute(() -> {
 			try {
-				VaultItem item;
-				if (extraPassword != null && extraPassword.length > 0) {
-					item = vaultManager.addItemWithPassword(
-							VaultItem.ItemType.DOCUMENT,
-							fileName,
-							content,
-							extraPassword
-					);
-				} else {
-					item = vaultManager.addItem(VaultItem.ItemType.DOCUMENT, fileName, content);
-				}
+				vaultManager.addMediaItemWithPassword(
+						VaultItem.ItemType.DOCUMENT, fileName, content,
+						mimeType, extraPassword != null
+								&& extraPassword.length > 0 ? extraPassword
+								: null);
 				loadVaultItems();
 				successMessage.postValue(text(R.string.vault_msg_document_saved));
 				isLoading.postValue(false);
 			} catch (SecurityException e) {
 				errorMessage.postValue(text(R.string.vault_locked));
 				isLoading.postValue(false);
+			} catch (com.professor.zerion.android.attachment
+					.MediaRefusedException e) {
+				errorMessage.postValue(text(e.isTooLarge()
+						? R.string.vault_msg_too_large_to_clean
+						: R.string.vault_msg_cannot_clean));
+				isLoading.postValue(false);
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_add_document_failed));
 				isLoading.postValue(false);
 			} finally {
+				Arrays.fill(content, (byte) 0);
 				if (extraPassword != null) {
 					Arrays.fill(extraPassword, '\0');
 				}
@@ -1949,7 +1957,8 @@ public class VaultViewModel extends AndroidViewModel {
 		dbExecutor.execute(() -> {
 			try {
 				vaultManager.deleteItem(itemId);
-				vaultManager.addItem(VaultItem.ItemType.DOCUMENT, fileName, content);
+				vaultManager.addMediaItemWithPassword(VaultItem.ItemType.DOCUMENT,
+						fileName, content, "text/plain", null);
 				loadVaultItems();
 				successMessage.postValue(text(R.string.vault_msg_document_updated));
 				isLoading.postValue(false);
@@ -2209,6 +2218,11 @@ public class VaultViewModel extends AndroidViewModel {
 				loadVaultItems();
 			} catch (SecurityException e) {
 				errorMessage.postValue(text(R.string.vault_msg_security_error));
+			} catch (com.professor.zerion.android.attachment
+					.MediaRefusedException e) {
+				errorMessage.postValue(text(e.isTooLarge()
+						? R.string.vault_msg_too_large_to_clean
+						: R.string.vault_msg_cannot_clean));
 			} catch (IOException e) {
 				errorMessage.postValue(text(R.string.vault_msg_storage_error));
 			} catch (Exception e) {

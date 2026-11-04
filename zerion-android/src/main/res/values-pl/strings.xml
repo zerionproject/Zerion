@@ -811,6 +811,8 @@
 	<string name="vault_msg_decrypt_note_failed">Nie udało się odszyfrować notatki</string>
 	<string name="vault_msg_added">Dodano do sejfu</string>
 	<string name="vault_msg_add_failed">Nie udało się dodać do sejfu</string>
+	<string name="vault_msg_cannot_clean">Zerion nie mógł usunąć ukrytych informacji (takich jak lokalizacja lub dane urządzenia) z tego pliku, więc nie został on dodany do sejfu. Przekonwertuj go do formatu JPEG, PNG, MP4 lub PDF i spróbuj ponownie.</string>
+	<string name="vault_msg_too_large_to_clean">Ten plik jest za duży, aby Zerion mógł usunąć z niego ukryte informacje (takie jak lokalizacja lub dane urządzenia) na tym telefonie, więc nie został on dodany do sejfu. Zmniejsz go i spróbuj ponownie.</string>
 	<string name="vault_msg_item_deleted">Usunięto element</string>
 	<string name="vault_msg_delete_failed">Usuwanie nie powiodło się</string>
 	<string name="vault_msg_wiped">Wyczyszczono sejf</string>

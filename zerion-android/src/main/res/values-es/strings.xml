@@ -2350,6 +2350,8 @@
 	<string name="vault_msg_decrypt_note_failed">No se pudo descifrar la nota</string>
 	<string name="vault_msg_added">Añadido al baúl</string>
 	<string name="vault_msg_add_failed">No se pudo añadir al baúl</string>
+	<string name="vault_msg_cannot_clean">Zerion no pudo eliminar la información oculta (como la ubicación o los datos del dispositivo) de este archivo, así que no se añadió al baúl. Conviértelo a JPEG, PNG, MP4 o PDF e inténtalo de nuevo.</string>
+	<string name="vault_msg_too_large_to_clean">Este archivo es demasiado grande para que Zerion elimine su información oculta (como la ubicación o los datos del dispositivo) en este teléfono, así que no se añadió al baúl. Reduce su tamaño e inténtalo de nuevo.</string>
 	<string name="vault_msg_item_deleted">Elemento eliminado</string>
 	<string name="vault_msg_delete_failed">No se pudo eliminar</string>
 	<string name="vault_msg_wiped">Baúl borrado</string>

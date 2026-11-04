@@ -777,6 +777,8 @@
 	<string name="vault_msg_decrypt_note_failed">Det gick inte att dekryptera anteckningen</string>
 	<string name="vault_msg_added">Tillagt i valvet</string>
 	<string name="vault_msg_add_failed">Det gick inte att lägga till i valvet</string>
+	<string name="vault_msg_cannot_clean">Zerion kunde inte ta bort den dolda informationen (till exempel plats eller enhetsuppgifter) från den här filen, så den lades inte till i valvet. Konvertera den till JPEG, PNG, MP4 eller PDF och försök igen.</string>
+	<string name="vault_msg_too_large_to_clean">Den här filen är för stor för att Zerion ska kunna ta bort dess dolda information (till exempel plats eller enhetsuppgifter) på den här telefonen, så den lades inte till i valvet. Gör den mindre och försök igen.</string>
 	<string name="vault_msg_item_deleted">Objektet har raderats</string>
 	<string name="vault_msg_delete_failed">Det gick inte att radera</string>
 	<string name="vault_msg_wiped">Valvet har raderats helt</string>

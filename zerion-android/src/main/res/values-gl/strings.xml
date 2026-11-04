@@ -743,6 +743,8 @@
 	<string name="vault_msg_decrypt_note_failed">Non se puido descifrar a nota</string>
 	<string name="vault_msg_added">Engadido ao cofre</string>
 	<string name="vault_msg_add_failed">Non se puido engadir ao cofre</string>
+	<string name="vault_msg_cannot_clean">Zerion non puido eliminar a información oculta (como a localización ou os datos do dispositivo) deste ficheiro, así que non se engadiu ao cofre. Convérteo a JPEG, PNG, MP4 ou PDF e téntao de novo.</string>
+	<string name="vault_msg_too_large_to_clean">Este ficheiro é demasiado grande para que Zerion elimine a súa información oculta (como a localización ou os datos do dispositivo) neste teléfono, así que non se engadiu ao cofre. Faino máis pequeno e téntao de novo.</string>
 	<string name="vault_msg_item_deleted">Elemento eliminado</string>
 	<string name="vault_msg_delete_failed">Non se puido eliminar</string>
 	<string name="vault_msg_wiped">Cofre borrado</string>

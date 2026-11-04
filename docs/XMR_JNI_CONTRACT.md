@@ -2,7 +2,7 @@
 
 The hardened contract of the `libzmonero.so` JNI boundary
 (`packaging/monero-android/jni/zmonero.cpp`) as currently shipped. This layer
-forwards to Monero `wallet2_api` (pinned v0.18.5.1 / `4f92268d`) and makes no
+forwards to Monero `wallet2_api` (pinned v0.18.5.4 / `85f036ba`) and makes no
 policy decision: authentication, session lifetime, storage sealing and the
 send-authorization gate are enforced in Java. It contains no key logic of its
 own beyond wiping secrets it copies.

@@ -729,6 +729,8 @@
 	<string name="vault_msg_decrypt_note_failed">नोट डिक्रिप्ट नहीं किया जा सका</string>
 	<string name="vault_msg_added">तिजोरी में जोड़ा गया</string>
 	<string name="vault_msg_add_failed">तिजोरी में नहीं जोड़ा जा सका</string>
+	<string name="vault_msg_cannot_clean">Zerion इस फ़ाइल से छिपी जानकारी (जैसे स्थान या डिवाइस की जानकारी) नहीं हटा सका, इसलिए इसे तिजोरी में नहीं जोड़ा गया। इसे JPEG, PNG, MP4 या PDF में बदलें और फिर से कोशिश करें।</string>
+	<string name="vault_msg_too_large_to_clean">यह फ़ाइल इतनी बड़ी है कि Zerion इस फ़ोन पर इसकी छिपी जानकारी (जैसे स्थान या डिवाइस की जानकारी) नहीं हटा सकता, इसलिए इसे तिजोरी में नहीं जोड़ा गया। इसे छोटा करें और फिर से कोशिश करें।</string>
 	<string name="vault_msg_item_deleted">आइटम हटा दिया गया</string>
 	<string name="vault_msg_delete_failed">हटाया नहीं जा सका</string>
 	<string name="vault_msg_wiped">तिजोरी मिटा दी गई</string>

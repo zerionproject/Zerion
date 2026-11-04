@@ -786,6 +786,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_msg_decrypt_note_failed">Shënimi nuk u shfshehtëzua dot</string>
 	<string name="vault_msg_added">U shtua në kasafortë</string>
 	<string name="vault_msg_add_failed">Shtimi në kasafortë dështoi</string>
+	<string name="vault_msg_cannot_clean">Zerion-i nuk mundi t\'i heqë të dhënat e fshehura (si vendndodhja ose hollësitë e pajisjes) nga ky skedar, ndaj ai nuk u shtua në kasafortë. Shndërroje në JPEG, PNG, MP4 ose PDF dhe provo sërish.</string>
+	<string name="vault_msg_too_large_to_clean">Ky skedar është shumë i madh që Zerion-i t\'i heqë të dhënat e fshehura (si vendndodhja ose hollësitë e pajisjes) në këtë telefon, ndaj nuk u shtua në kasafortë. Zvogëloje dhe provo sërish.</string>
 	<string name="vault_msg_item_deleted">Zëri u fshi</string>
 	<string name="vault_msg_delete_failed">Fshirja dështoi</string>
 	<string name="vault_msg_wiped">Kasaforta u fshi</string>
