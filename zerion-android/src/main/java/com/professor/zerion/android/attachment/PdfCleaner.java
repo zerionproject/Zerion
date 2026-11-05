@@ -5,8 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ColorSpace;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
@@ -91,6 +89,7 @@ public final class PdfCleaner {
 		List<CleanPdfPages.Page> pages = CleanPdfPages.read(drawn);
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		CleanPdfWriter writer = new CleanPdfWriter(out, maxBytes);
+		com.professor.zerion.android.util.ReceivedImageGate.releaseDecoder();
 		try {
 			for (CleanPdfPages.Page page : pages) {
 				writer.addPage(reencodedPage(page), page.width, page.height,
@@ -99,6 +98,9 @@ public final class PdfCleaner {
 			writer.finish();
 		} catch (CleanPdfWriter.TooLargeException e) {
 			throw MediaRefusedException.tooLarge("cleaned document too large");
+		} finally {
+			com.professor.zerion.android.util.ReceivedImageGate
+					.releaseDecoder();
 		}
 		return out.toByteArray();
 	}
@@ -120,18 +122,19 @@ public final class PdfCleaner {
 		}
 		source = com.professor.zerion.android.util.ReceivedImageGate
 				.checked(source, (int) MAX_PDF_BYTES);
-		BitmapFactory.Options bounds = new BitmapFactory.Options();
-		bounds.inJustDecodeBounds = true;
-		BitmapFactory.decodeByteArray(source, 0, source.length, bounds);
-		if (bounds.outWidth != page.width || bounds.outHeight != page.height) {
+		long size = com.professor.zerion.android.util.ReceivedImageGate
+				.dimensions(source);
+		if (size != ((long) page.width << 32 | page.height)) {
 			throw new IOException("page image does not match its page");
 		}
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-		options.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
-		Bitmap bitmap = BitmapFactory.decodeByteArray(source, 0,
-				source.length, options);
+		Bitmap bitmap = com.professor.zerion.android.util.ReceivedImageGate
+				.decodeChecked(source, PdfFlattenService.MAX_SIDE_PX);
 		if (bitmap == null) throw new IOException("page image unreadable");
+		if (bitmap.getWidth() != page.width
+				|| bitmap.getHeight() != page.height) {
+			bitmap.recycle();
+			throw new IOException("page image does not match its page");
+		}
 		try {
 			ByteArrayOutputStream jpeg = new ByteArrayOutputStream();
 			if (!bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY,

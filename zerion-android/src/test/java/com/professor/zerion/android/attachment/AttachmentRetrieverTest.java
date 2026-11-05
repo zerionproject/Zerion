@@ -5,7 +5,6 @@ import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.test.BrambleMockTestCase;
 import org.zerionproject.core.test.ImmediateExecutor;
 import com.professor.zerion.android.attachment.media.ImageHelper;
-import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.attachment.media.Size;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
@@ -15,8 +14,11 @@ import org.jmock.imposters.ByteBuddyClassImposteriser;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
+
+import javax.annotation.Nullable;
 
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -32,41 +34,39 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 	private final GroupId groupId = new GroupId(getRandomId());
 	private final MessageId msgId = new MessageId(getRandomId());
 	private final ImageHelper imageHelper = context.mock(ImageHelper.class);
-	private final ImageSizeCalculator imageSizeCalculator;
 	private final AttachmentRetriever retriever;
+
+	@Nullable
+	private Size measured;
+	private int measurements = 0;
 
 	public AttachmentRetrieverTest() {
 		context.setImposteriser(ByteBuddyClassImposteriser.INSTANCE);
 		AttachmentReader attachmentReader =
 				context.mock(AttachmentReader.class);
-		imageSizeCalculator = context.mock(ImageSizeCalculator.class);
 		Executor dbExecutor = new ImmediateExecutor();
 		retriever = new AttachmentRetrieverImpl(dbExecutor, attachmentReader,
-				dimensions, imageHelper, imageSizeCalculator, in -> {
-			byte[] all = new byte[42];
-			int read = in.read(all);
-			if (refuse) throw new java.io.IOException("refused");
-			return java.util.Arrays.copyOf(all, Math.max(read, 0));
+				dimensions, imageHelper, in -> {
+			measurements++;
+			Size size = measured;
+			if (size == null) throw new IOException("refused");
+			return size;
 		});
 	}
 
-	private boolean refuse = false;
-
 	@Test
-	public void anImageTheGateRefusesIsNeverMeasuredAndShowsAsBroken() {
-		String mimeType = "image/jpeg";
-		Attachment attachment = getAttachment(mimeType);
-		refuse = true;
+	public void anImageTheGateRefusesShowsAsBroken() {
+		Attachment attachment = getAttachment("image/jpeg");
+		measured = null;
 
 		context.checking(new Expectations() {{
-			never(imageSizeCalculator).getSize(with(any(InputStream.class)),
-					with(any(String.class)));
 			oneOf(imageHelper).getExtensionFromMimeType("");
 			will(returnValue(null));
 		}});
 
 		AttachmentItem item = retriever.createAttachmentItem(attachment, true);
 		assertEquals(ERROR, item.getState());
+		assertEquals(1, measurements);
 	}
 
 	@Test
@@ -83,6 +83,7 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 		assertEquals(mimeType, item.getMimeType());
 		assertEquals("jpg", item.getExtension());
 		assertEquals(AVAILABLE, item.getState());
+		assertEquals(0, measurements);
 	}
 
 	@Test
@@ -103,11 +104,9 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 	public void testSmallJpegImage() {
 		String mimeType = "image/jpeg";
 		Attachment attachment = getAttachment(mimeType);
+		measured = new Size(160, 240, mimeType);
 
 		context.checking(new Expectations() {{
-			oneOf(imageSizeCalculator).getSize(with(any(InputStream.class)),
-					with(mimeType));
-			will(returnValue(new Size(160, 240, mimeType)));
 			oneOf(imageHelper).getExtensionFromMimeType(mimeType);
 			will(returnValue("jpg"));
 		}});
@@ -127,11 +126,9 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 	public void testBigJpegImage() {
 		String mimeType = "image/jpeg";
 		Attachment attachment = getAttachment(mimeType);
+		measured = new Size(1728, 2592, mimeType);
 
 		context.checking(new Expectations() {{
-			oneOf(imageSizeCalculator).getSize(with(any(InputStream.class)),
-					with(mimeType));
-			will(returnValue(new Size(1728, 2592, mimeType)));
 			oneOf(imageHelper).getExtensionFromMimeType(mimeType);
 			will(returnValue("jpg"));
 		}});
@@ -145,16 +142,13 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 	}
 
 	@Test
-	public void testMalformedError() {
-		String mimeType = "image/jpeg";
-		Attachment attachment = getAttachment(mimeType);
+	public void anImageWhoseContentIsNotWhatItsTypeSaysShowsAsBroken() {
+		Attachment attachment = getAttachment("image/jpeg");
+		measured = new Size(160, 240, "image/png");
 
 		context.checking(new Expectations() {{
-			oneOf(imageSizeCalculator).getSize(with(any(InputStream.class)),
-					with(mimeType));
-			will(returnValue(new Size()));
-			oneOf(imageHelper).getExtensionFromMimeType("");
-			will(returnValue(null));
+			oneOf(imageHelper).getExtensionFromMimeType("image/png");
+			will(returnValue("png"));
 		}});
 
 		AttachmentItem item = retriever.createAttachmentItem(attachment, true);

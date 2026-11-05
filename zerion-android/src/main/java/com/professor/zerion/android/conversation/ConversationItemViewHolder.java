@@ -370,7 +370,16 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 								com.professor.zerion.android.util
 										.ReceivedImageGate.decode(previewImage,
 												PREVIEW_IMAGE_MAX_SIDE);
-						if (bitmap == null) return;
+						if (bitmap == null) {
+							target.post(() -> {
+								if (key.equals(target.getTag(
+										R.id.linkPreviewImage))) {
+									target.setTag(R.id.linkPreviewImage,
+											null);
+								}
+							});
+							return;
+						}
 						target.post(() -> {
 							if (generation == PREVIEW_GENERATION.get()) {
 								PREVIEW_IMAGES.put(key, bitmap);

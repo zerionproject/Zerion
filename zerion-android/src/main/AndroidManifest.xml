@@ -735,6 +735,12 @@
 			android:isolatedProcess="true"
 			android:process=":pdfclean" />
 
+		<service
+			android:name=".android.attachment.ImageDecodeService"
+			android:exported="false"
+			android:isolatedProcess="true"
+			android:process=":imgdecode" />
+
 		<provider
 			android:name="com.professor.zerion.android.vault.share.VaultShareProvider"
 			android:authorities="${applicationId}.vaultshare"

@@ -1,7 +1,6 @@
 package com.professor.zerion.android.util;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -17,6 +16,20 @@ import static org.zerionproject.app.api.attachment.MediaConstants.MAX_ATTACHMENT
 @NotNullByDefault
 public final class ReceivedImageGate {
 
+	public interface PixelDecoder {
+
+		@Nullable
+		Bitmap decode(byte[] checkedImage, int maxSide);
+
+		@Nullable
+		default Bitmap decodeAlone(byte[] checkedImage, int maxSide) {
+			return decode(checkedImage, maxSide);
+		}
+
+		default void release() {
+		}
+	}
+
 	public static final int MAX_BYTES = MAX_ATTACHMENT_SIZE;
 
 	public static final long MAX_PIXELS = 40_000_000L;
@@ -24,6 +37,8 @@ public final class ReceivedImageGate {
 	public static final long MAX_PROGRESSIVE_PIXELS = 8_000_000L;
 
 	public static final int MAX_GIF_FRAMES = 1000;
+
+	public static final int MAX_JPEG_SCANS = 100;
 
 	private static final int SOF_BASELINE = 0xC0;
 	private static final int SOF_EXTENDED = 0xC1;
@@ -40,7 +55,17 @@ public final class ReceivedImageGate {
 	private static final byte[] HDR_GAIN_MAP = ascii("HDRGM\0");
 	private static final byte[] HDR_GAIN_MAP_14 = ascii("HDR_GAIN_MAP\0");
 
+	private static volatile PixelDecoder decoder = (image, maxSide) -> null;
+
 	private ReceivedImageGate() {
+	}
+
+	public static void useDecoder(PixelDecoder pixelDecoder) {
+		decoder = pixelDecoder;
+	}
+
+	public static void releaseDecoder() {
+		decoder.release();
 	}
 
 	private static byte[] ascii(String s) {
@@ -49,7 +74,8 @@ public final class ReceivedImageGate {
 
 	private static boolean isPng(byte[] d) {
 		return d.length >= 8 && (d[0] & 0xFF) == 0x89 && d[1] == 'P'
-				&& d[2] == 'N' && d[3] == 'G';
+				&& d[2] == 'N' && d[3] == 'G' && d[4] == 0x0D && d[5] == 0x0A
+				&& d[6] == 0x1A && d[7] == 0x0A;
 	}
 
 	private static boolean isJpeg(byte[] d) {
@@ -57,48 +83,110 @@ public final class ReceivedImageGate {
 				&& (d[1] & 0xFF) == 0xD8 && (d[2] & 0xFF) == 0xFF;
 	}
 
+	private static boolean isGif(byte[] d) {
+		return d.length >= 13 && d[0] == 'G' && d[1] == 'I' && d[2] == 'F'
+				&& d[3] == '8' && (d[4] == '7' || d[4] == '9') && d[5] == 'a';
+	}
+
+	private static boolean isWebp(byte[] d) {
+		return d.length >= 16 && d[0] == 'R' && d[1] == 'I' && d[2] == 'F'
+				&& d[3] == 'F' && d[8] == 'W' && d[9] == 'E' && d[10] == 'B'
+				&& d[11] == 'P';
+	}
+
 	public static boolean isAcceptedFormat(@Nullable byte[] d) {
 		if (d == null || d.length < 12) return false;
 		if (isJpeg(d)) {
-			int layout = jpegLayout(d);
+			int[] found = new int[3];
+			int layout = jpegLayout(d, found);
 			int frame = layout & 0xFF;
 			return layout != -1 && (frame == SOF_BASELINE
-					|| frame == SOF_EXTENDED || frame == SOF_PROGRESSIVE);
+					|| frame == SOF_EXTENDED || frame == SOF_PROGRESSIVE)
+					&& jpegScans(d, found[2]) <= MAX_JPEG_SCANS;
 		}
-		if ((d[0] & 0xFF) == 0x89 && d[1] == 'P' && d[2] == 'N' && d[3] == 'G'
-				&& d[4] == 0x0D && d[5] == 0x0A && d[6] == 0x1A
-				&& d[7] == 0x0A) {
+		if (isPng(d)) {
 			return d.length >= 29 && d[12] == 'I' && d[13] == 'H'
 					&& d[14] == 'D' && d[15] == 'R' && d[28] == 0;
 		}
-		if (d[0] == 'G' && d[1] == 'I' && d[2] == 'F' && d[3] == '8'
-				&& (d[4] == '7' || d[4] == '9') && d[5] == 'a') {
+		if (isGif(d)) {
 			int frames = gifFrames(d);
 			return frames >= 1 && frames <= MAX_GIF_FRAMES;
 		}
-		if (d[0] == 'R' && d[1] == 'I' && d[2] == 'F' && d[3] == 'F'
-				&& d[8] == 'W' && d[9] == 'E' && d[10] == 'B' && d[11] == 'P') {
-			if (d.length < 16 || d[12] != 'V' || d[13] != 'P' || d[14] != '8'
+		if (isWebp(d)) {
+			if (d[12] != 'V' || d[13] != 'P' || d[14] != '8'
 					|| (d[15] != ' ' && d[15] != 'L' && d[15] != 'X')) {
 				return false;
 			}
 			if (d[15] == 'X' && (d.length < 21 || (d[20] & 0x02) != 0)) {
 				return false;
 			}
-			long declared = (d[4] & 0xFFL) | (d[5] & 0xFFL) << 8
-					| (d[6] & 0xFFL) << 16 | (d[7] & 0xFFL) << 24;
-			return declared == d.length - 8L;
+			return u32le(d, 4) == d.length - 8L;
 		}
 		return false;
 	}
 
+	public static String mimeType(byte[] d) {
+		if (isPng(d)) return "image/png";
+		if (isGif(d)) return "image/gif";
+		if (isWebp(d)) return "image/webp";
+		return "image/jpeg";
+	}
+
+	public static long dimensions(byte[] d) {
+		long width = -1;
+		long height = -1;
+		if (isJpeg(d)) {
+			int[] size = new int[2];
+			if (jpegLayout(d, size) == -1) return -1;
+			width = size[0];
+			height = size[1];
+		} else if (isPng(d) && d.length >= 24) {
+			width = u32be(d, 16);
+			height = u32be(d, 20);
+		} else if (isGif(d)) {
+			width = u16le(d, 6);
+			height = u16le(d, 8);
+		} else if (isWebp(d)) {
+			if (d[15] == ' ' && d.length >= 30 && (d[23] & 0xFF) == 0x9D
+					&& d[24] == 0x01 && d[25] == 0x2A) {
+				width = u16le(d, 26) & 0x3FFF;
+				height = u16le(d, 28) & 0x3FFF;
+			} else if (d[15] == 'L' && d.length >= 25 && d[20] == 0x2F) {
+				long bits = u32le(d, 21);
+				width = (bits & 0x3FFF) + 1;
+				height = ((bits >> 14) & 0x3FFF) + 1;
+			} else if (d[15] == 'X' && d.length >= 30) {
+				width = (u16le(d, 24) | (d[26] & 0xFFL) << 16) + 1;
+				height = (u16le(d, 27) | (d[29] & 0xFFL) << 16) + 1;
+			}
+		}
+		if (width < 1 || height < 1 || width > SafeImageDecoder.MAX_DIMENSION
+				|| height > SafeImageDecoder.MAX_DIMENSION) {
+			return -1;
+		}
+		return width << 32 | height;
+	}
+
+	private static long u16le(byte[] d, int at) {
+		return (d[at] & 0xFFL) | (d[at + 1] & 0xFFL) << 8;
+	}
+
+	private static long u32le(byte[] d, int at) {
+		return u16le(d, at) | u16le(d, at + 2) << 16;
+	}
+
+	private static long u32be(byte[] d, int at) {
+		return (d[at] & 0xFFL) << 24 | (d[at + 1] & 0xFFL) << 16
+				| (d[at + 2] & 0xFFL) << 8 | (d[at + 3] & 0xFFL);
+	}
+
 	public static boolean isSequentialJpeg(byte[] d) {
 		if (!isJpeg(d)) return false;
-		int layout = jpegLayout(d);
+		int layout = jpegLayout(d, null);
 		return layout == SOF_BASELINE || layout == SOF_EXTENDED;
 	}
 
-	static int jpegLayout(byte[] d) {
+	static int jpegLayout(byte[] d, @Nullable int[] size) {
 		int i = 2;
 		int frame = -1;
 		int components = 0;
@@ -124,8 +212,13 @@ public final class ReceivedImageGate {
 				if (frame != -1 || length < 8) return -1;
 				frame = marker;
 				components = d[i + 9] & 0xFF;
+				if (size != null) {
+					size[1] = ((d[i + 5] & 0xFF) << 8) | (d[i + 6] & 0xFF);
+					size[0] = ((d[i + 7] & 0xFF) << 8) | (d[i + 8] & 0xFF);
+				}
 			} else if (marker == 0xDA) {
 				if (frame == -1 || length < 3) return -1;
+				if (size != null && size.length > 2) size[2] = i;
 				int inScan = d[i + 4] & 0xFF;
 				return inScan < components ? frame | SEVERAL_SCANS : frame;
 			} else if (!skippable) {
@@ -134,6 +227,34 @@ public final class ReceivedImageGate {
 			i += 2 + length;
 		}
 		return -1;
+	}
+
+	static int jpegScans(byte[] d, int firstScan) {
+		int scans = 0;
+		int i = firstScan;
+		while (true) {
+			while (i + 1 < d.length && ((d[i] & 0xFF) != 0xFF
+					|| d[i + 1] == 0 || (d[i + 1] & 0xFF) == 0xFF)) {
+				i++;
+			}
+			if (i + 1 >= d.length) return scans;
+			int marker = d[i + 1] & 0xFF;
+			if (marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+				i += 2;
+				continue;
+			}
+			if (marker == 0xD9) return scans;
+			boolean skippable = (marker >= 0xE0 && marker <= 0xEF)
+					|| marker == 0xFE || marker == 0xDB || marker == 0xC4
+					|| marker == 0xCC || marker == 0xDD || marker == 0xDC;
+			if (marker != 0xDA && !skippable) return MAX_JPEG_SCANS + 1;
+			if (i + 3 >= d.length) return scans;
+			int length = ((d[i + 2] & 0xFF) << 8) | (d[i + 3] & 0xFF);
+			if (length < 2) return MAX_JPEG_SCANS + 1;
+			if (marker == 0xDA && ++scans > MAX_JPEG_SCANS) return scans;
+			if (i + 2 + length > d.length) return scans;
+			i += 2 + length;
+		}
 	}
 
 	static byte[] withoutGainMap(byte[] d) {
@@ -263,25 +384,16 @@ public final class ReceivedImageGate {
 				throw new IOException("image format not accepted", e);
 			}
 		}
-		BitmapFactory.Options bounds = new BitmapFactory.Options();
-		bounds.inJustDecodeBounds = true;
-		try {
-			BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
-		} catch (RuntimeException e) {
-			throw new IOException("image not readable", e);
-		}
 		long budget = MAX_PIXELS;
 		if (isJpeg(data)) {
-			int layout = jpegLayout(data);
+			int layout = jpegLayout(data, null);
 			if ((layout & 0xFF) == SOF_PROGRESSIVE
 					|| (layout & SEVERAL_SCANS) != 0) {
 				budget = MAX_PROGRESSIVE_PIXELS;
 			}
 		}
-		if (bounds.outWidth <= 0 || bounds.outHeight <= 0
-				|| bounds.outWidth > SafeImageDecoder.MAX_DIMENSION
-				|| bounds.outHeight > SafeImageDecoder.MAX_DIMENSION
-				|| (long) bounds.outWidth * bounds.outHeight > budget) {
+		long size = dimensions(data);
+		if (size == -1 || (size >> 32) * (size & 0xFFFFFFFFL) > budget) {
 			throw new IOException("image dimensions not accepted");
 		}
 		return withoutGainMap(data);
@@ -296,14 +408,38 @@ public final class ReceivedImageGate {
 	}
 
 	@Nullable
-	public static Bitmap decode(@Nullable byte[] data, int targetMaxDim) {
+	public static Bitmap decode(@Nullable byte[] data, int maxSide) {
 		byte[] image;
 		try {
 			image = checked(data, SafeImageDecoder.MAX_BYTES);
 		} catch (IOException e) {
 			return null;
 		}
-		return SafeImageDecoder.decode(image, targetMaxDim);
+		return decodeChecked(image, maxSide);
+	}
+
+	@Nullable
+	public static Bitmap decodeAlone(@Nullable byte[] data, int maxSide) {
+		byte[] image;
+		try {
+			image = checked(data, SafeImageDecoder.MAX_BYTES);
+		} catch (IOException e) {
+			return null;
+		}
+		try {
+			return decoder.decodeAlone(image, maxSide);
+		} catch (RuntimeException | OutOfMemoryError e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	public static Bitmap decodeChecked(byte[] checkedImage, int maxSide) {
+		try {
+			return decoder.decode(checkedImage, maxSide);
+		} catch (RuntimeException | OutOfMemoryError e) {
+			return null;
+		}
 	}
 
 	@Nullable

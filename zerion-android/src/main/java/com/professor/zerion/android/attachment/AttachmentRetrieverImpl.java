@@ -6,7 +6,6 @@ import org.zerionproject.core.api.db.NoSuchMessageException;
 import org.zerionproject.core.api.sync.MessageId;
 import com.professor.zerion.android.attachment.AttachmentItem.State;
 import com.professor.zerion.android.attachment.media.ImageHelper;
-import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.attachment.media.Size;
 import org.zerionproject.app.api.attachment.Attachment;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
@@ -64,7 +63,6 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 	private final Executor dbExecutor;
 	private final AttachmentReader attachmentReader;
 	private final ImageHelper imageHelper;
-	private final ImageSizeCalculator imageSizeCalculator;
 	private final int defaultSize;
 	private final int minWidth, maxWidth;
 	private final int minHeight, maxHeight;
@@ -76,7 +74,23 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 
 	interface ImageGate {
 
-		byte[] checked(InputStream in) throws java.io.IOException;
+		Size measured(InputStream in) throws java.io.IOException;
+	}
+
+	static Size measured(InputStream in) throws java.io.IOException {
+		byte[] image = com.professor.zerion.android.util.ReceivedImageGate
+				.checked(in);
+		long size = com.professor.zerion.android.util.ReceivedImageGate
+				.dimensions(image);
+		if (size == -1) throw new java.io.IOException("image not measured");
+		int width = (int) (size >> 32);
+		int height = (int) size;
+		boolean turned =
+				ImageOrientation.swapsSides(ImageOrientation.of(image));
+		String mime = com.professor.zerion.android.util.ReceivedImageGate
+				.mimeType(image);
+		return turned ? new Size(height, width, mime)
+				: new Size(width, height, mime);
 	}
 
 	private final ImageGate imageGate;
@@ -84,21 +98,18 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 	@Inject
 	AttachmentRetrieverImpl(@DatabaseExecutor Executor dbExecutor,
 			AttachmentReader attachmentReader, AttachmentDimensions dimensions,
-			ImageHelper imageHelper, ImageSizeCalculator imageSizeCalculator) {
+			ImageHelper imageHelper) {
 		this(dbExecutor, attachmentReader, dimensions, imageHelper,
-				imageSizeCalculator, com.professor.zerion.android.util
-						.ReceivedImageGate::checked);
+				AttachmentRetrieverImpl::measured);
 	}
 
 	AttachmentRetrieverImpl(Executor dbExecutor,
 			AttachmentReader attachmentReader, AttachmentDimensions dimensions,
-			ImageHelper imageHelper, ImageSizeCalculator imageSizeCalculator,
-			ImageGate imageGate) {
+			ImageHelper imageHelper, ImageGate imageGate) {
 		this.imageGate = imageGate;
 		this.dbExecutor = dbExecutor;
 		this.attachmentReader = attachmentReader;
 		this.imageHelper = imageHelper;
-		this.imageSizeCalculator = imageSizeCalculator;
 		defaultSize = dimensions.defaultSize;
 		minWidth = dimensions.minWidth;
 		maxWidth = dimensions.maxWidth;
@@ -260,9 +271,7 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 			InputStream is = a.getStream();
 			Size size;
 			try {
-				byte[] image = imageGate.checked(is);
-				size = imageSizeCalculator.getSize(
-						new java.io.ByteArrayInputStream(image), baseType);
+				size = imageGate.measured(is);
 			} catch (java.io.IOException | RuntimeException
 					| OutOfMemoryError e) {
 				size = new Size();

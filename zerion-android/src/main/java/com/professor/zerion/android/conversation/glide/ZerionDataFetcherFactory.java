@@ -23,8 +23,15 @@ public class ZerionDataFetcherFactory {
 		this.dbExecutor = dbExecutor;
 	}
 
-	ZerionDataFetcher createZerionDataFetcher(AttachmentHeader model) {
-		return new ZerionDataFetcher(attachmentReader, dbExecutor, model);
+	ZerionGifLoader.Fetcher createGifFetcher(AttachmentHeader model) {
+		return new ZerionGifLoader.Fetcher(attachmentReader, dbExecutor,
+				model);
+	}
+
+	ZerionDataFetcher createZerionDataFetcher(AttachmentHeader model,
+			int targetWidth, int targetHeight, boolean fitInside) {
+		return new ZerionDataFetcher(attachmentReader, dbExecutor, model,
+				targetWidth, targetHeight, fitInside);
 	}
 
 }

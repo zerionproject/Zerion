@@ -85,7 +85,7 @@ public class SaveCleanCopyActivity extends AppCompatActivity {
 				try {
 					byte[] checked = com.professor.zerion.android.util
 							.ReceivedImageGate.checkedIfImage(raw.data);
-					clean = new SharedMediaSanitizer(app).sanitize(
+					clean = new SharedMediaSanitizer(app, true).sanitize(
 							raw.mimeType, checked, SaveCleanCopy.MAX_BYTES);
 				} catch (IOException | RuntimeException e) {
 					clean = null;

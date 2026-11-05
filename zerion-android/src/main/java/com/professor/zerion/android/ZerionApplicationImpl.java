@@ -61,6 +61,7 @@ public class ZerionApplicationImpl extends Application
 		super.onCreate();
 		if (android.os.Process.isIsolated()) return;
 		processStartedAt = System.currentTimeMillis();
+		installImageDecoder();
 
 		if (IS_DEBUG_BUILD) enableStrictMode();
 
@@ -74,6 +75,12 @@ public class ZerionApplicationImpl extends Application
 		EmojiManager.install(new GoogleEmojiProvider());
 
 		registerActivityLifecycleCallbacks(new ForegroundTracker());
+	}
+
+	protected void installImageDecoder() {
+		com.professor.zerion.android.util.ReceivedImageGate.useDecoder(
+				new com.professor.zerion.android.attachment
+						.IsolatedImageDecoder(this));
 	}
 
 	private final java.util.concurrent.atomic.AtomicInteger startedActivities =

@@ -43,6 +43,12 @@ public class TestZerionApplicationImpl extends ZerionApplicationImpl
 		super.attachBaseContext(base);
 	}
 
+	@Override
+	protected void installImageDecoder() {
+		com.professor.zerion.android.util.ReceivedImageGate.useDecoder(
+				com.professor.zerion.android.util.SafeImageDecoder::decode);
+	}
+
 	private static void shutDownEarlierApplication() {
 		TestZerionApplicationImpl app = earlier;
 		earlier = null;

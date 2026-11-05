@@ -5,7 +5,6 @@ import android.net.Uri;
 
 import com.professor.zerion.android.attachment.media.ImageCompressor;
 import com.professor.zerion.android.attachment.media.ImageHelper;
-import com.professor.zerion.android.attachment.media.ImageSizeCalculator;
 import com.professor.zerion.android.security.TestAndroidKeyStore;
 import com.professor.zerion.android.vault.utils.MetadataStripper;
 
@@ -207,11 +206,14 @@ public class ConversationDocumentsTest {
 	@Test
 	public void aReceivedDocumentIsShownAsADocument() throws Exception {
 		AttachmentReader reader = mock(AttachmentReader.class);
-		ImageSizeCalculator sizes = mock(ImageSizeCalculator.class);
 		Executor now = Runnable::run;
+		int[] measurements = new int[1];
 		AttachmentRetrieverImpl retriever = new AttachmentRetrieverImpl(now,
 				reader, new AttachmentDimensions(100, 50, 200, 75, 300),
-				mock(ImageHelper.class), sizes);
+				mock(ImageHelper.class), in -> {
+			measurements[0]++;
+			throw new IOException("a document is not an image");
+		});
 		for (String type : new String[] {"application/pdf", "text/plain"}) {
 			AttachmentHeader h = new AttachmentHeader(
 					new GroupId(new byte[32]), new MessageId(new byte[32]),
@@ -221,7 +223,7 @@ public class ConversationDocumentsTest {
 			assertEquals(type, AttachmentItem.State.AVAILABLE,
 					item.getState());
 			assertTrue(item.getThumbnailWidth() > 0);
-			verify(sizes, never()).getSize(any(), anyString());
+			assertEquals(0, measurements[0]);
 		}
 	}
 }

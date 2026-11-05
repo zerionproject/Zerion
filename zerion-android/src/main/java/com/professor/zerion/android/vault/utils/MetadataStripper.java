@@ -179,6 +179,27 @@ public class MetadataStripper {
 		if (bitmap == null) {
 			throw new IOException("undecodable image");
 		}
+		return encodedUpright(bitmap, imageData, mimeType);
+	}
+
+	public byte[] stripReceivedImageOrThrow(byte[] imageData, String mimeType)
+			throws IOException {
+		Bitmap bitmap = com.professor.zerion.android.util.ReceivedImageGate
+				.decodeAlone(imageData, 4096);
+		if (bitmap == null) {
+			throw com.professor.zerion.android.attachment.MediaRefusedException
+					.cannotClean("image not decoded");
+		}
+		try {
+			return encodedUpright(bitmap, imageData, mimeType);
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment.MediaRefusedException
+					.tooLarge("image too large to clean");
+		}
+	}
+
+	private static byte[] encodedUpright(Bitmap bitmap, byte[] imageData,
+			String mimeType) throws IOException {
 		bitmap = com.professor.zerion.android.attachment.ImageOrientation
 				.upright(bitmap, com.professor.zerion.android.attachment
 						.ImageOrientation.of(imageData));

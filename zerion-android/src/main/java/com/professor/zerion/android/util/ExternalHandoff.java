@@ -78,7 +78,7 @@ public final class ExternalHandoff {
 	private static final long MAX_CLEAN_BYTES = 128L * 1024 * 1024;
 
 	static final Cleaner CLEAN_FIRST = (ctx, content, type) -> {
-		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx);
+		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx, true);
 		byte[] checked;
 		try {
 			checked = ReceivedImageGate.checkedIfImage(content);

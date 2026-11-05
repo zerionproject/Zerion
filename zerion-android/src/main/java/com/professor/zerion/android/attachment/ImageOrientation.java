@@ -37,6 +37,13 @@ public final class ImageOrientation {
 	private ImageOrientation() {
 	}
 
+	public static boolean swapsSides(int orientation) {
+		return orientation == ORIENTATION_ROTATE_90
+				|| orientation == ORIENTATION_ROTATE_270
+				|| orientation == ORIENTATION_TRANSPOSE
+				|| orientation == ORIENTATION_TRANSVERSE;
+	}
+
 	public static int of(byte[] image) {
 		return of(new ByteArrayInputStream(image));
 	}

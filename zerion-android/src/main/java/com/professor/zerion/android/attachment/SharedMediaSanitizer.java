@@ -50,10 +50,16 @@ public class SharedMediaSanitizer {
 	private static final String WAV = "audio/wav";
 
 	private final Context context;
+	private final boolean received;
 	private final MetadataStripper stripper;
 	private final ContentResolver resolver;
 
 	public SharedMediaSanitizer(Context context) {
+		this(context, false);
+	}
+
+	public SharedMediaSanitizer(Context context, boolean received) {
+		this.received = received;
 		this.context = context.getApplicationContext();
 		this.stripper = new MetadataStripper(context);
 		this.resolver = this.context.getContentResolver();
@@ -130,7 +136,9 @@ public class SharedMediaSanitizer {
 			String mime = reencodedType(declaredMime, data);
 			byte[] clean;
 			try {
-				clean = stripper.stripImageMetadataOrThrow(data, mime);
+				clean = received
+						? stripper.stripReceivedImageOrThrow(data, mime)
+						: stripper.stripImageMetadataOrThrow(data, mime);
 			} catch (IOException e) {
 				throw MediaRefusedException.cannotClean(e);
 			}

@@ -6,13 +6,15 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.GlideBuilder;
 import com.bumptech.glide.Registry;
 import com.bumptech.glide.annotation.GlideModule;
+import com.bumptech.glide.load.resource.gif.ByteBufferGifDecoder;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.module.AppGlideModule;
 
 import com.professor.zerion.android.ZerionApplication;
 import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.InputStream;
+import android.graphics.Bitmap;
 
 import static android.util.Log.ERROR;
 
@@ -26,7 +28,14 @@ public final class ZerionGlideModule extends AppGlideModule {
 		ZerionApplication app =
 				(ZerionApplication) context.getApplicationContext();
 		ZerionModelLoaderFactory factory = new ZerionModelLoaderFactory(app);
-		registry.prepend(AttachmentHeader.class, InputStream.class, factory);
+		registry.prepend(AttachmentHeader.class, Bitmap.class, factory);
+		registry.prepend(AttachmentHeader.class, CheckedGif.class,
+				new ZerionGifLoader.Factory(app));
+		registry.prepend(Registry.BUCKET_ANIMATION, CheckedGif.class,
+				GifDrawable.class, new CheckedGif.Decoder(
+						new ByteBufferGifDecoder(context,
+								registry.getImageHeaderParsers(),
+								glide.getBitmapPool(), glide.getArrayPool())));
 	}
 
 	@Override
