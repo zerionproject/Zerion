@@ -16,8 +16,16 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.ByteArrayDataSource;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.Renderer;
+import androidx.media3.exoplayer.RenderersFactory;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.extractor.Extractor;
+import androidx.media3.extractor.ExtractorsFactory;
+import androidx.media3.extractor.mkv.MatroskaExtractor;
+import androidx.media3.extractor.mp4.FragmentedMp4Extractor;
+import androidx.media3.extractor.mp4.Mp4Extractor;
 import androidx.media3.ui.PlayerView;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
@@ -427,12 +435,57 @@ public class VideoPlayerActivity extends ZerionActivity
 		}
 	}
 
+	static RenderersFactory videoRenderers(android.content.Context context) {
+		return new DefaultRenderersFactory(context) {
+			@Override
+			protected void buildImageRenderers(
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildTextRenderers(
+					android.content.Context context,
+					androidx.media3.exoplayer.text.TextOutput output,
+					android.os.Looper outputLooper, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildMetadataRenderers(
+					android.content.Context context,
+					androidx.media3.exoplayer.metadata.MetadataOutput output,
+					android.os.Looper outputLooper, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+
+			@Override
+			protected void buildCameraMotionRenderers(
+					android.content.Context context, int extensionRendererMode,
+					java.util.ArrayList<Renderer> out) {
+			}
+		};
+	}
+
+	static ExtractorsFactory videoExtractors() {
+		return () -> new Extractor[] {new Mp4Extractor(),
+				new FragmentedMp4Extractor(), new MatroskaExtractor()};
+	}
+
 	private void startPlayback(byte[] video) {
 		if (isFinishing() || isDestroyed()) return;
+		if (!com.professor.zerion.android.util.MediaMagic.isVideo(video)) {
+			showLoading(false);
+			showError(getString(R.string.video_playback_error));
+			wipeVideo();
+			return;
+		}
 
-		player = new ExoPlayer.Builder(this).build();
+		player = new ExoPlayer.Builder(this, videoRenderers(this)).build();
 
 		if (playerView != null) {
+			playerView.setArtworkDisplayMode(
+					PlayerView.ARTWORK_DISPLAY_MODE_OFF);
+			playerView.setDefaultArtwork(null);
 			playerView.setPlayer(player);
 		}
 
@@ -440,6 +493,22 @@ public class VideoPlayerActivity extends ZerionActivity
 			@Override
 			public void onPlaybackStateChanged(int playbackState) {
 				onPlaybackState(playbackState);
+			}
+
+			@Override
+			public void onTracksChanged(
+					androidx.media3.common.Tracks tracks) {
+				if (!tracks.getGroups().isEmpty() && !tracks.isTypeSelected(
+						androidx.media3.common.C.TRACK_TYPE_VIDEO)) {
+					ExoPlayer current = player;
+					if (current != null) {
+						current.stop();
+						current.clearMediaItems();
+					}
+					showLoading(false);
+					showError(getString(R.string.video_playback_error));
+					wipeVideo();
+				}
 			}
 
 			@Override
@@ -451,7 +520,7 @@ public class VideoPlayerActivity extends ZerionActivity
 		});
 
 		player.setMediaSource(new ProgressiveMediaSource.Factory(
-				() -> new ByteArrayDataSource(video))
+				() -> new ByteArrayDataSource(video), videoExtractors())
 				.createMediaSource(MediaItem.fromUri(Uri.EMPTY)));
 		player.setPlayWhenReady(playWhenReady);
 		player.seekTo(currentWindow, playbackPosition);

@@ -1669,6 +1669,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 
 	@Nullable
 	private Bitmap extractVideoThumb(byte[] videoBytes) {
+		if (!com.professor.zerion.android.util.MediaMagic.isVideo(videoBytes)) {
+			return null;
+		}
 		MediaMetadataRetriever mmr = new MediaMetadataRetriever();
 		try {
 			mmr.setDataSource(new com.professor.zerion.android.util

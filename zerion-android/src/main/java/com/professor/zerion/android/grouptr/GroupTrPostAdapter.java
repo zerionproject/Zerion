@@ -24,7 +24,7 @@ import com.professor.zerion.android.selection.RowActions;
 import com.professor.zerion.android.selection.SelectedFill;
 import com.professor.zerion.android.selection.SelectionAction;
 import com.professor.zerion.android.selection.SelectionRows;
-import com.professor.zerion.android.util.SafeImageDecoder;
+import com.professor.zerion.android.util.ReceivedImageGate;
 
 import org.zerionproject.app.api.grouptr.GroupTrBody;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
@@ -907,7 +907,7 @@ class GroupTrPostAdapter
 			Object token = new Object();
 			imageToken = token;
 			DECODE_EXECUTOR.execute(() -> {
-				Bitmap bmp = SafeImageDecoder.decode(bytes, 1024);
+				Bitmap bmp = ReceivedImageGate.decode(bytes, 1024);
 				if (bmp == null) return;
 				GroupTrMediaCache.put(cacheKey, bmp);
 				img.post(() -> {

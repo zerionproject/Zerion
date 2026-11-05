@@ -2143,7 +2143,7 @@ public class ChannelFeedActivity extends ZerionActivity
 				String ck = bytesToHex(att.getBlobHash());
 				android.graphics.Bitmap bmp = FEED_THUMB_CACHE.get(ck);
 				if (bmp == null || bmp.isRecycled()) {
-					bmp = com.professor.zerion.android.util.SafeImageDecoder
+					bmp = com.professor.zerion.android.util.ReceivedImageGate
 							.decode(content, 1280);
 					if (bmp != null) FEED_THUMB_CACHE.put(ck, bmp);
 				}
@@ -3280,7 +3280,7 @@ public class ChannelFeedActivity extends ZerionActivity
 						THUMB_DECODE_EXECUTOR.execute(() -> {
 							android.graphics.Bitmap bmp =
 									com.professor.zerion.android.util
-											.SafeImageDecoder.decode(
+											.ReceivedImageGate.decode(
 													decrypted, 1280);
 							if (bmp == null) return;
 							FEED_THUMB_CACHE.put(ck, bmp);

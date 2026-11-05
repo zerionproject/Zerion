@@ -15,7 +15,6 @@ import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.zerionproject.app.api.messaging.PrivateMessageHeader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,10 +74,27 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 	private final ConcurrentMap<MessageId, MutableLiveData<AttachmentItem>>
 			itemsWithoutSize = new ConcurrentHashMap<>();
 
+	interface ImageGate {
+
+		byte[] checked(InputStream in) throws java.io.IOException;
+	}
+
+	private final ImageGate imageGate;
+
 	@Inject
 	AttachmentRetrieverImpl(@DatabaseExecutor Executor dbExecutor,
 			AttachmentReader attachmentReader, AttachmentDimensions dimensions,
 			ImageHelper imageHelper, ImageSizeCalculator imageSizeCalculator) {
+		this(dbExecutor, attachmentReader, dimensions, imageHelper,
+				imageSizeCalculator, com.professor.zerion.android.util
+						.ReceivedImageGate::checked);
+	}
+
+	AttachmentRetrieverImpl(Executor dbExecutor,
+			AttachmentReader attachmentReader, AttachmentDimensions dimensions,
+			ImageHelper imageHelper, ImageSizeCalculator imageSizeCalculator,
+			ImageGate imageGate) {
+		this.imageGate = imageGate;
 		this.dbExecutor = dbExecutor;
 		this.attachmentReader = attachmentReader;
 		this.imageHelper = imageHelper;
@@ -241,9 +257,18 @@ class AttachmentRetrieverImpl implements AttachmentRetriever {
 		}
 
 		if (needsSize) {
-			InputStream is = new BufferedInputStream(a.getStream());
-			Size size = imageSizeCalculator.getSize(is, baseType);
-			tryToClose(is);
+			InputStream is = a.getStream();
+			Size size;
+			try {
+				byte[] image = imageGate.checked(is);
+				size = imageSizeCalculator.getSize(
+						new java.io.ByteArrayInputStream(image), baseType);
+			} catch (java.io.IOException | RuntimeException
+					| OutOfMemoryError e) {
+				size = new Size();
+			} finally {
+				tryToClose(is);
+			}
 			item = createAttachmentItem(h, size);
 		} else {
 			String extension =

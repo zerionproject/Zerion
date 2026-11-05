@@ -114,6 +114,14 @@ public class SharedMediaSanitizer {
 					throw MediaRefusedException.tooLarge(
 							"cleaned image too large");
 				}
+				long pixels = (long) ((gif[6] & 0xFF) | (gif[7] & 0xFF) << 8)
+						* ((gif[8] & 0xFF) | (gif[9] & 0xFF) << 8);
+				if (!com.professor.zerion.android.util.ReceivedImageGate
+						.isAcceptedFormat(gif) || pixels > com.professor
+						.zerion.android.util.ReceivedImageGate.MAX_PIXELS) {
+					throw MediaRefusedException.tooLarge(
+							"animation has too many frames or pixels");
+				}
 				return new Cleaned("image/gif", gif);
 			}
 		}
@@ -188,7 +196,9 @@ public class SharedMediaSanitizer {
 	@Nullable
 	private static byte[] rebuiltGif(byte[] data) {
 		try {
-			return GifMetadataStripper.withoutMetadata(data);
+			byte[] gif = GifMetadataStripper.withoutMetadata(data);
+			return com.professor.zerion.android.util.ReceivedImageGate
+					.gifFrames(gif) < 1 ? null : gif;
 		} catch (IOException e) {
 			return null;
 		}

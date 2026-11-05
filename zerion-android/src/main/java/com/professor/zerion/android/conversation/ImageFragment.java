@@ -24,7 +24,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.BaseActivity;
 import com.professor.zerion.android.attachment.AttachmentItem;
-import com.professor.zerion.android.util.SafeImageDecoder;
+import com.professor.zerion.android.util.ReceivedImageGate;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
@@ -206,7 +206,7 @@ public class ImageFragment extends Fragment
 		Object ticket = new Object();
 		decoding = ticket;
 		decoder.execute(() -> {
-			Bitmap bmp = SafeImageDecoder.decode(data, size);
+			Bitmap bmp = ReceivedImageGate.decode(data, size);
 			MAIN.post(() -> onDecoded(ticket, bmp));
 		});
 	}

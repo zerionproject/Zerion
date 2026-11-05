@@ -42,7 +42,31 @@ public class AttachmentRetrieverTest extends BrambleMockTestCase {
 		imageSizeCalculator = context.mock(ImageSizeCalculator.class);
 		Executor dbExecutor = new ImmediateExecutor();
 		retriever = new AttachmentRetrieverImpl(dbExecutor, attachmentReader,
-				dimensions, imageHelper, imageSizeCalculator);
+				dimensions, imageHelper, imageSizeCalculator, in -> {
+			byte[] all = new byte[42];
+			int read = in.read(all);
+			if (refuse) throw new java.io.IOException("refused");
+			return java.util.Arrays.copyOf(all, Math.max(read, 0));
+		});
+	}
+
+	private boolean refuse = false;
+
+	@Test
+	public void anImageTheGateRefusesIsNeverMeasuredAndShowsAsBroken() {
+		String mimeType = "image/jpeg";
+		Attachment attachment = getAttachment(mimeType);
+		refuse = true;
+
+		context.checking(new Expectations() {{
+			never(imageSizeCalculator).getSize(with(any(InputStream.class)),
+					with(any(String.class)));
+			oneOf(imageHelper).getExtensionFromMimeType("");
+			will(returnValue(null));
+		}});
+
+		AttachmentItem item = retriever.createAttachmentItem(attachment, true);
+		assertEquals(ERROR, item.getState());
 	}
 
 	@Test

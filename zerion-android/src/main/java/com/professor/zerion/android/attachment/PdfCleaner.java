@@ -109,18 +109,28 @@ public final class PdfCleaner {
 				|| page.height > PdfFlattenService.MAX_SIDE_PX) {
 			throw new IOException("page image too large");
 		}
+		if (page.length < 12 || page.length > MAX_PDF_BYTES) {
+			throw new IOException("page image is not a plain JPEG");
+		}
+		byte[] source = java.util.Arrays.copyOfRange(page.source, page.offset,
+				page.offset + page.length);
+		if (!com.professor.zerion.android.util.ReceivedImageGate
+				.isSequentialJpeg(source)) {
+			throw new IOException("page image is not a plain JPEG");
+		}
+		source = com.professor.zerion.android.util.ReceivedImageGate
+				.checked(source, (int) MAX_PDF_BYTES);
 		BitmapFactory.Options bounds = new BitmapFactory.Options();
 		bounds.inJustDecodeBounds = true;
-		BitmapFactory.decodeByteArray(page.source, page.offset, page.length,
-				bounds);
+		BitmapFactory.decodeByteArray(source, 0, source.length, bounds);
 		if (bounds.outWidth != page.width || bounds.outHeight != page.height) {
 			throw new IOException("page image does not match its page");
 		}
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 		options.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
-		Bitmap bitmap = BitmapFactory.decodeByteArray(page.source,
-				page.offset, page.length, options);
+		Bitmap bitmap = BitmapFactory.decodeByteArray(source, 0,
+				source.length, options);
 		if (bitmap == null) throw new IOException("page image unreadable");
 		try {
 			ByteArrayOutputStream jpeg = new ByteArrayOutputStream();

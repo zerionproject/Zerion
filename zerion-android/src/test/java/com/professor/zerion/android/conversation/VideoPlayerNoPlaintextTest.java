@@ -79,6 +79,9 @@ public class VideoPlayerNoPlaintextTest {
 	@Test
 	public void aPlayedVideoLeavesNoCopyInStorage() throws Exception {
 		byte[] video = new byte[200_000];
+		byte[] head = {0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'i', 's', 'o', 'm',
+				0, 0, 2, 0, 'i', 's', 'o', 'm', 'm', 'p', '4', '1'};
+		System.arraycopy(head, 0, video, 0, head.length);
 		byte[] marker = MARKER.getBytes(StandardCharsets.US_ASCII);
 		System.arraycopy(marker, 0, video, 1000, marker.length);
 		File stale = new File(app.getCacheDir(), "zerion_video_1.mp4");

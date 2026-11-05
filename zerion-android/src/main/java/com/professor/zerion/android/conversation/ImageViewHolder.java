@@ -358,7 +358,8 @@ public class ImageViewHolder extends ViewHolder {
 				try (InputStream is = attachment.getStream()) {
 					video = readBounded(is, MAX_ATTACHMENT_SIZE);
 				}
-				if (video == null) {
+				if (video == null || !com.professor.zerion.android.util
+						.MediaMagic.isVideo(video)) {
 					showVideoFallback(token);
 					return;
 				}

@@ -3,6 +3,7 @@ package com.professor.zerion.android.conversation.glide;
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.data.DataFetcher;
+import com.professor.zerion.android.util.ReceivedImageGate;
 
 import org.zerionproject.core.api.db.DatabaseExecutor;
 import org.zerionproject.core.api.db.DbException;
@@ -11,6 +12,8 @@ import org.zerionproject.app.api.attachment.AttachmentHeader;
 import org.zerionproject.app.api.attachment.AttachmentReader;
 import org.briarproject.nullsafety.NotNullByDefault;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
 
@@ -49,10 +52,19 @@ class ZerionDataFetcher implements DataFetcher<InputStream> {
 			if (cancel) return;
 			try {
 				Attachment a = attachmentReader.getAttachment(attachmentHeader);
-				inputStream = a.getStream();
+				InputStream raw = a.getStream();
+				byte[] image;
+				try {
+					image = ReceivedImageGate.checked(raw);
+				} finally {
+					tryToClose(raw);
+				}
+				inputStream = new ByteArrayInputStream(image);
 				callback.onDataReady(inputStream);
-			} catch (DbException e) {
+			} catch (DbException | IOException e) {
 				callback.onLoadFailed(e);
+			} catch (OutOfMemoryError e) {
+				callback.onLoadFailed(new IOException("image too large"));
 			}
 		});
 	}

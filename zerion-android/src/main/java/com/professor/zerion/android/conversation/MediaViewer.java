@@ -11,7 +11,7 @@ import android.widget.Toast;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.util.ExternalViewerTypes;
-import com.professor.zerion.android.util.SafeImageDecoder;
+import com.professor.zerion.android.util.ReceivedImageGate;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
@@ -201,7 +201,7 @@ public final class MediaViewer {
 				declared == null || declared.isEmpty() ? "image/jpeg"
 						: declared, content);
 		if (type == null || !type.startsWith("image/")) return null;
-		return SafeImageDecoder.hasAllowedMagic(content) ? type : null;
+		return ReceivedImageGate.isAcceptedFormat(content) ? type : null;
 	}
 
 	@Nullable

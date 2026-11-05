@@ -79,14 +79,23 @@ public final class ExternalHandoff {
 
 	static final Cleaner CLEAN_FIRST = (ctx, content, type) -> {
 		SharedMediaSanitizer sanitizer = new SharedMediaSanitizer(ctx);
+		byte[] checked;
+		try {
+			checked = ReceivedImageGate.checkedIfImage(content);
+		} catch (IOException e) {
+			if (SharedMediaSanitizer.canClean(type)) {
+				throw MediaRefusedException.cannotClean(e);
+			}
+			return new Prepared(content, type);
+		}
 		if (SharedMediaSanitizer.canClean(type)) {
 			SharedMediaSanitizer.Cleaned clean =
-					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+					sanitizer.sanitize(type, checked, MAX_CLEAN_BYTES);
 			return new Prepared(clean.getData(), clean.getMimeType());
 		}
 		try {
 			SharedMediaSanitizer.Cleaned clean =
-					sanitizer.sanitize(type, content, MAX_CLEAN_BYTES);
+					sanitizer.sanitize(type, checked, MAX_CLEAN_BYTES);
 			return new Prepared(clean.getData(), clean.getMimeType());
 		} catch (MediaRefusedException e) {
 			if (e.isTooLarge()) throw e;

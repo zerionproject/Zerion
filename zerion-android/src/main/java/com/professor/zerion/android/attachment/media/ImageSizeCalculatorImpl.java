@@ -56,7 +56,9 @@ class ImageSizeCalculatorImpl implements ImageSizeCalculator {
 		ExifInterface exif = new ExifInterface(is);
 		int width = exif.getAttributeInt(TAG_IMAGE_WIDTH, 0);
 		int height = exif.getAttributeInt(TAG_IMAGE_LENGTH, 0);
-		if (width == 0 || height == 0) return new Size();
+		if (width <= 0 || height <= 0 || width > 16384 || height > 16384) {
+			return new Size();
+		}
 		int orientation = exif.getAttributeInt(TAG_ORIENTATION, 0);
 		if (orientation == ORIENTATION_ROTATE_90 ||
 				orientation == ORIENTATION_ROTATE_270 ||

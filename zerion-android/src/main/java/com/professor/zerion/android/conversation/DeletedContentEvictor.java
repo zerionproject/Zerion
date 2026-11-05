@@ -49,6 +49,7 @@ public class DeletedContentEvictor implements EventListener {
 			}
 			voiceAssembler.forgetContact(d.getContactId());
 			ImageViewHolder.evictVideoThumbs(d.getMessageIds());
+			ConversationItemViewHolder.clearPreviewImages();
 			clearImageMemory.run();
 		} else if (e instanceof PrivateMessageEditedEvent) {
 			ConversationCache.getInstance().invalidate(
@@ -58,6 +59,7 @@ public class DeletedContentEvictor implements EventListener {
 			ConversationCache.getInstance().invalidate(c);
 			voiceAssembler.forgetContact(c);
 			ImageViewHolder.clearVideoThumbCache();
+			ConversationItemViewHolder.clearPreviewImages();
 			clearImageMemory.run();
 		} else if (e instanceof GroupTrLocalStateChangedEvent) {
 			GroupTrLocalStateChangedEvent g = (GroupTrLocalStateChangedEvent) e;
