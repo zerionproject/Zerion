@@ -108,6 +108,38 @@ public class BrowserGuardSchemeTest {
 	}
 
 	@Test
+	public void aLookalikeHostIsSpelledInPlainLettersBeforeTheLinkOpens() {
+		assertEquals("https://xn--ypal-43d9g.com/login",
+				BrowserGuard.shown("https://\u0440\u0430ypal.com/login"));
+		assertEquals("https://user@xn--ypal-43d9g.com:8443/a?b=\u00E9#c",
+				BrowserGuard.shown(
+						"https://user@\u0440\u0430ypal.com:8443/a?b=\u00E9#c"));
+		assertEquals("https://example.org/caf\u00E9",
+				BrowserGuard.shown("https://example.org/caf\u00E9"));
+		assertEquals("HTTPS://Example.org/Page",
+				BrowserGuard.shown("HTTPS://Example.org/Page"));
+		assertEquals("https://[2001:db8::1]:443/",
+				BrowserGuard.shown("https://[2001:db8::1]:443/"));
+		assertEquals("tel:+15551234", BrowserGuard.shown("tel:+15551234"));
+		assertEquals("https://xn--mnchen-3ya.de",
+				BrowserGuard.shown("https://m\u00FCnchen.de"));
+		assertEquals("https://bank.example@xn--ypal-43d9g.com/",
+				BrowserGuard.shown(
+						"https://bank.example@\u0440\u0430ypal.com/"));
+		FragmentActivity a = host();
+		BrowserGuard.openUrl(a, "https://\u0440\u0430ypal.com/login");
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		android.widget.TextView message =
+				d.findViewById(android.R.id.message);
+		String text = message.getText().toString();
+		assertTrue(text, text.endsWith("https://xn--ypal-43d9g.com/login"));
+		Intent i = openAndConfirm(a, "https://\u0440\u0430ypal.com/login");
+		assertNotNull(i);
+		assertEquals("https://\u0440\u0430ypal.com/login", i.getDataString());
+	}
+
+	@Test
 	public void aLinkNothingCanOpenSaysSo() {
 		FragmentActivity a = host();
 		shadowOf(a.getApplication()).checkActivities(true);

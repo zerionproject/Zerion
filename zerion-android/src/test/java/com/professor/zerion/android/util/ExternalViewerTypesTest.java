@@ -46,6 +46,106 @@ public class ExternalViewerTypesTest {
 		}
 	}
 
+	private static byte[] zip(String... names) throws Exception {
+		java.io.ByteArrayOutputStream out =
+				new java.io.ByteArrayOutputStream();
+		try (java.util.zip.ZipOutputStream z =
+				new java.util.zip.ZipOutputStream(out)) {
+			for (String name : names) {
+				z.putNextEntry(new java.util.zip.ZipEntry(name));
+				z.write(("content of " + name)
+						.getBytes(StandardCharsets.UTF_8));
+				z.closeEntry();
+			}
+		}
+		return out.toByteArray();
+	}
+
+	private static byte[] after(int junk, byte[] content) {
+		byte[] out = new byte[junk + content.length];
+		System.arraycopy(content, 0, out, junk, content.length);
+		return out;
+	}
+
+	@Test
+	public void aTypeTheSystemInstallsOrImportsIsNeverOpened()
+			throws Exception {
+		byte[] plain = zip("readme.md", "data/numbers.csv");
+		for (String t : new String[] {
+				"application/vnd.android.package-archive",
+				"Application/VND.Android.Package-Archive; x=1",
+				"application/x-apk", "application/vnd.apkm",
+				"application/xapk-package-archive",
+				"application/vnd.android.dex", "application/x-dex",
+				"application/java-archive", "application/x-java-archive",
+				"application/x-executable", "application/x-elf",
+				"application/x-msdownload", "application/x-sharedlib",
+				"application/x-x509-ca-cert", "application/x-x509-user-cert",
+				"application/x-x509-server-cert", "application/pkix-cert",
+				"application/pkix-crl", "application/x-pkcs12",
+				"application/pkcs12", "application/x-pkcs7-certificates",
+				"application/x-pkcs7-certreqresp", "application/pkcs7-mime",
+				"application/pkcs7-signature", "application/x-pkcs7-mime",
+				"application/pkcs8", "application/pkcs10",
+				"application/x-pem-file", "application/x-wifi-config",
+				"application/vnd.wfa.wsc", "application/vnd.oma.drm.message",
+				"application/x-android-drm-fl",
+				"application/x-apple-aspen-config",
+				"vnd.android.cursor.item/contact",
+				"vnd.android.cursor.dir/person", "x-scheme-handler/http",
+				"inode/directory", "x-world/x-vrml"}) {
+			assertEquals(t, null,
+					ExternalViewerTypes.typeForContent(t, plain));
+			assertEquals(t, null, ExternalViewerTypes.typeForContent(t,
+					"just some words".getBytes(StandardCharsets.UTF_8)));
+		}
+		for (String t : new String[] {"application/webbundle",
+				"application/x-webbundle"}) {
+			assertEquals(t, ExternalViewerTypes.TEXT,
+					ExternalViewerTypes.typeForContent(t, plain));
+		}
+	}
+
+	@Test
+	public void aProgramIsNeverOpenedWhateverItsTypeSays() throws Exception {
+		byte[] apk = zip("META-INF/MANIFEST.MF", "AndroidManifest.xml",
+				"classes.dex", "resources.arsc");
+		byte[] manifestFirst = zip("AndroidManifest.xml");
+		byte[] dex = after(0, "dex\n035\0 and the rest of it follows here"
+				.getBytes(StandardCharsets.ISO_8859_1));
+		byte[] elf = after(0, "\u007FELF\2\1\1 and the rest of it follows"
+				.getBytes(StandardCharsets.ISO_8859_1));
+		for (String t : new String[] {"application/zip",
+				"application/octet-stream", "application/pdf",
+				"application/x-zip-compressed", "image/jpeg", "audio/mpeg",
+				"text/plain", "text/html", "not a type", null}) {
+			for (byte[] program : new byte[][] {apk, manifestFirst,
+					after(700, apk), after(70_000, apk), dex, elf}) {
+				assertEquals(String.valueOf(t), null,
+						ExternalViewerTypes.typeForContent(t, program));
+			}
+		}
+		byte[] plain = zip("readme.md", "src/main/AndroidManifest.xml",
+				"AndroidManifest.xml.txt", "androidmanifest.xml");
+		assertEquals("application/zip",
+				ExternalViewerTypes.typeForContent("application/zip", plain));
+		assertEquals(ExternalViewerTypes.OPAQUE, ExternalViewerTypes
+				.typeForContent("application/octet-stream", plain));
+		assertEquals(ExternalViewerTypes.TEXT,
+				ExternalViewerTypes.typeForContent("text/plain",
+						"AndroidManifest.xml is only mentioned here PK\5\6"
+								.getBytes(StandardCharsets.ISO_8859_1)));
+		byte[] comment = zip("notes.txt");
+		byte[] withComment = after(0, comment);
+		byte[] tail = "AndroidManifest.xml".getBytes(StandardCharsets.UTF_8);
+		byte[] commented = new byte[withComment.length + tail.length];
+		System.arraycopy(withComment, 0, commented, 0, withComment.length);
+		System.arraycopy(tail, 0, commented, withComment.length, tail.length);
+		commented[withComment.length - 2] = (byte) tail.length;
+		assertEquals("application/zip", ExternalViewerTypes
+				.typeForContent("application/zip", commented));
+	}
+
 	@Test
 	public void passiveTypesAreKept() {
 		for (String t : new String[] {"image/jpeg", "image/png",

@@ -256,7 +256,13 @@ class AttachmentCreationTask {
 			throw MediaRefusedException.cannotClean(
 					"document content does not match its type");
 		}
-		if (!AttachmentDocuments.PDF.equals(type)) return data;
+		if (!AttachmentDocuments.PDF.equals(type)) {
+			if (!SharedMediaSanitizer.isPlainText(type, data, true)) {
+				throw MediaRefusedException.cannotClean(
+						"text content is a document that cannot be cleaned");
+			}
+			return data;
+		}
 		try {
 			return pdfCleaner.clean(data, MAX_ATTACHMENT_SIZE);
 		} catch (RuntimeException e) {

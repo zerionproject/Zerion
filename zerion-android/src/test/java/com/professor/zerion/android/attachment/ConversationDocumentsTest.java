@@ -165,6 +165,66 @@ public class ConversationDocumentsTest {
 	}
 
 	@Test
+	public void aDocumentThatIsOnlyLabelledAsTextIsNotSent() throws Exception {
+		String pdf = "%PDF-1.4\n1 0 obj\n<< /Author (Someone) /Creator (An "
+				+ "editor) /CreationDate (D:20260101120000+01'00') >>\n"
+				+ "endobj\ntrailer\n<< /Info 1 0 R >>\n%%EOF\n";
+		String[][] cases = {{"report.txt", "text/plain", pdf},
+				{"report.md", "text/markdown", pdf},
+				{"report.txt", "text/plain", "\n\n  " + pdf},
+				{"report.txt", "text/plain", "\uFEFF" + pdf},
+				{"letter.txt", "text/plain",
+						"{\\rtf1\\ansi{\\info{\\author Someone}}Hello}"},
+				{"drawing.txt", "text/plain", "<?xml version=\"1.0\"?>\n"
+						+ "<svg><metadata>Someone</metadata></svg>"},
+				{"drawing.txt", "text/plain",
+						"  <SVG xmlns=\"http://www.w3.org/2000/svg\"/>"},
+				{"page.txt", "text/plain",
+						"<!DOCTYPE html><html><head></head></html>"},
+				{"page.txt", "text/x-markdown", "<html><body>x</body></html>"},
+				{"print.txt", "text/plain",
+						"%!PS-Adobe-3.0\n%%Creator: Someone\n"},
+				{"odd.txt", "text/plain", "escape \u001B[31m codes"},
+				{"odd.txt", "text/plain", "a bell \u0007 rings"}};
+		for (String[] c : cases) {
+			sent = null;
+			org.mockito.Mockito.clearInvocations(creator);
+			Uri uri = attach(c[0], c[1],
+					c[2].getBytes(StandardCharsets.UTF_8),
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			assertNull(c[2], sent);
+			verify(creator).onAttachmentError(eq(uri),
+					isA(MediaRefusedException.class));
+		}
+	}
+
+	@Test
+	public void ordinaryTextIsStillSentAsItIs() throws Exception {
+		String[] texts = {"plain words\nand a second line\r\n",
+				"\uFEFFwith a byte order mark",
+				"tabs\tand a form feed\f and accents: caf\u00E9 \u4E2D\u6587",
+				"a note that names the format only far below\n"
+						+ new String(new char[1100]).replace('\0', '.')
+						+ "%PDF-1.4",
+				"# Title\n\n<b>inline markup</b> in markdown\n",
+				"x = 1 < 2 and <svg> is only mentioned later"};
+		for (String text : texts) {
+			sent = null;
+			byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+			attach("notes.txt", "text/plain", bytes,
+					PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+			assertEquals("text/plain", sentType);
+			assertArrayEquals(text, bytes, sent);
+		}
+		byte[] latin1 = "na\u00EFve r\u00E9sum\u00E9"
+				.getBytes(StandardCharsets.ISO_8859_1);
+		sent = null;
+		attach("notes.txt", "text/plain", latin1,
+				PrivateMessageFormat.TEXT_IMAGES_CHUNKED);
+		assertArrayEquals(latin1, sent);
+	}
+
+	@Test
 	public void aMarkdownNoteFromTheVaultIsSentAsText() throws Exception {
 		byte[] md = "# Notes\nsome *text*\n".getBytes(StandardCharsets.UTF_8);
 		attach("notes.md", "text/markdown", md,

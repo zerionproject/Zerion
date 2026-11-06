@@ -86,6 +86,7 @@ public final class ExternalViewerTypes {
 			"application/dash+xml",
 			"application/x-bittorrent",
 			"application/x-mimearchive",
+			"application/webbundle",
 			"application/epub+zip",
 			"audio/x-pn-realaudio",
 			"audio/x-pn-realaudio-plugin",
@@ -94,8 +95,26 @@ public final class ExternalViewerTypes {
 
 	private static final String[] ACTIVE_PARTS = {"mpegurl", "m3u", "html",
 			"script", "svg", "smil", "scpls", "bittorrent", "mimearchive",
-			"webarchive", "xspf", "realaudio", "realmedia", "ms-asx",
-			"ms-wax", "ms-wvx", "ms-wmx", "ms-wpl", "sdp"};
+			"webarchive", "webbundle", "xspf", "realaudio", "realmedia",
+			"ms-asx", "ms-wax", "ms-wvx", "ms-wmx", "ms-wpl", "sdp"};
+
+	private static final Set<String> TOP_LEVEL = new HashSet<>(Arrays.asList(
+			"application", "image", "video", "audio", "text", "message",
+			"multipart", "font", "model"));
+
+	private static final String[] SYSTEM_PARTS = {"package-archive", "apk",
+			"vnd.android", "x-dex", "java-archive", "executable", "x-elf",
+			"msdownload", "msdos-program", "x-sharedlib", "x509", "pkcs",
+			"pkix", "pem-file", "x-pem", "wifi-config", "vnd.wfa", "oma.drm",
+			"android-drm", "mobileconfig", "aspen-config"};
+
+	private static final byte[] PACKAGE_MANIFEST = {'A', 'n', 'd', 'r', 'o',
+			'i', 'd', 'M', 'a', 'n', 'i', 'f', 'e', 's', 't', '.', 'x', 'm',
+			'l'};
+
+	private static final int ZIP_TAIL = 65_557;
+
+	private static final int MAX_DIRECTORY_BYTES = 8 * 1024 * 1024;
 
 	private static final String[] MARKUP_TEXT_STARTS = {"#ext", "rtsptext",
 			"v=0\n", "v=0\r", "mime-version:", "content-type:",
@@ -151,10 +170,72 @@ public final class ExternalViewerTypes {
 		return false;
 	}
 
+	static boolean isHandledBySystem(String m) {
+		int slash = m.indexOf('/');
+		if (slash < 1 || !TOP_LEVEL.contains(m.substring(0, slash))) {
+			return true;
+		}
+		for (String part : SYSTEM_PARTS) {
+			if (m.contains(part)) return true;
+		}
+		return false;
+	}
+
+	static boolean isProgram(Source source) throws IOException {
+		byte[] head = source.head(8);
+		if (MediaMagic.ascii(head, 0, "dex\n")
+				|| MediaMagic.ascii(head, 0, "dey\n")
+				|| MediaMagic.ascii(head, 0, "\u007FELF")) {
+			return true;
+		}
+		long length = source.length();
+		if (length < 22) return false;
+		int tailSize = (int) Math.min(length, ZIP_TAIL);
+		byte[] tail = source.read(length - tailSize, tailSize);
+		for (int i = tail.length - 22; i >= 0; i--) {
+			if (tail[i] != 'P' || tail[i + 1] != 'K' || tail[i + 2] != 5
+					|| tail[i + 3] != 6) {
+				continue;
+			}
+			long size = u32le(tail, i + 12);
+			long start = length - tailSize + i - size;
+			if (size > 0 && start >= 0
+					&& listsPackageManifest(source, start, size)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean listsPackageManifest(Source source, long start,
+			long size) throws IOException {
+		byte[] d = source.read(start,
+				(int) Math.min(size, MAX_DIRECTORY_BYTES));
+		int p = 0;
+		while (p + 46 <= d.length && d[p] == 'P' && d[p + 1] == 'K'
+				&& d[p + 2] == 1 && d[p + 3] == 2) {
+			int name = (d[p + 28] & 0xFF) | (d[p + 29] & 0xFF) << 8;
+			int extra = (d[p + 30] & 0xFF) | (d[p + 31] & 0xFF) << 8;
+			int comment = (d[p + 32] & 0xFF) | (d[p + 33] & 0xFF) << 8;
+			if (name == PACKAGE_MANIFEST.length
+					&& p + 46 + name <= d.length) {
+				boolean same = true;
+				for (int i = 0; i < name && same; i++) {
+					same = d[p + 46 + i] == PACKAGE_MANIFEST[i];
+				}
+				if (same) return true;
+			}
+			p += 46 + name + extra + comment;
+		}
+		return false;
+	}
+
 	@Nullable
 	private static String typeFor(@Nullable String declared, Source source)
 			throws IOException {
 		String type = effectiveType(declared);
+		if (!TEXT.equals(type) && isHandledBySystem(type)) return null;
+		if (isProgram(source)) return null;
 		if (TEXT.equals(type)) return type;
 		byte[] head = source.head(HEAD_BYTES);
 		if (readsAsActiveText(head)) return null;

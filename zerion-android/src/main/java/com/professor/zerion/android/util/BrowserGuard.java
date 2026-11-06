@@ -25,7 +25,7 @@ public final class BrowserGuard {
 		new SecureAlertDialogBuilder(ctx)
 				.setTitle(R.string.browser_warning_title)
 				.setMessage(ctx.getString(R.string.browser_warning_message)
-						+ "\n\n" + DisplayNames.clean(url))
+						+ "\n\n" + shown(url))
 				.setPositiveButton(R.string.browser_warning_open,
 						(d, w) -> launchSystemBrowser(ctx, url))
 				.setNeutralButton(R.string.browser_warning_copy,
@@ -37,6 +37,25 @@ public final class BrowserGuard {
 
 	public static void openUrl(Context ctx, Uri uri) {
 		openUrl(ctx, uri.toString());
+	}
+
+	public static String shown(String url) {
+		String clean = DisplayNames.clean(url);
+		String host = webHost(url);
+		int start = url.indexOf("//");
+		if (host == null || host.startsWith("[") || start < 0) return clean;
+		start += 2;
+		int end = start;
+		while (end < url.length() && "/\\?#".indexOf(url.charAt(end)) < 0) {
+			end++;
+		}
+		int user = url.lastIndexOf('@', end - 1) + 1;
+		if (user < start) user = start;
+		int port = url.lastIndexOf(':', end - 1);
+		if (port < user) port = end;
+		if (url.substring(user, port).equalsIgnoreCase(host)) return clean;
+		return DisplayNames.clean(url.substring(0, user) + host
+				+ url.substring(port));
 	}
 
 	@Nullable

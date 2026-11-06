@@ -138,6 +138,14 @@ public class VaultImportMediaTest {
 		assertEquals("image/png", MetadataStripper.sniffedType(png));
 		assertEquals("image/jpeg", MetadataStripper.sniffedType(jpeg));
 		assertEquals("application/pdf", MetadataStripper.sniffedType(pdf));
+		assertEquals("application/pdf", MetadataStripper.sniffedType(
+				"\n\n%PDF-1.4\n1 0 obj << /Author (Someone) >>\n"
+						.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+		assertEquals(false, MetadataStripper.isPlainText(
+				"{\\rtf1{\\info{\\author Someone}}}"
+						.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+		assertEquals(true, MetadataStripper.isPlainText("ordinary words\n"
+				.getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
 		assertEquals("application/vnd.openxmlformats-officedocument",
 				MetadataStripper.sniffedType(zip));
 		assertEquals("video/mp4", MetadataStripper.sniffedType(mp4));

@@ -44,6 +44,49 @@ public final class AttachmentDocuments {
 		return null;
 	}
 
+	private static final String[] STRUCTURED_STARTS = {"%!ps", "{\\rtf",
+			"<?xml", "<svg", "<!doctype", "<html", "<head", "<body"};
+
+	public static boolean isPdf(byte[] data) {
+		return contentMatches(PDF, data);
+	}
+
+	public static boolean isSendableText(byte[] data) {
+		if (data.length == 0) return false;
+		for (byte b : data) {
+			int c = b & 0xFF;
+			if (c == 0x7F || (c < 0x20 && c != '\t' && c != '\n'
+					&& c != '\r' && c != 0x0C)) {
+				return false;
+			}
+		}
+		if (isPdf(data)) return false;
+		int i = 0;
+		if (data.length >= 3 && (data[0] & 0xFF) == 0xEF
+				&& (data[1] & 0xFF) == 0xBB && (data[2] & 0xFF) == 0xBF) {
+			i = 3;
+		}
+		while (i < data.length && (data[i] == ' ' || data[i] == '\t'
+				|| data[i] == '\n' || data[i] == '\r' || data[i] == 0x0C)) {
+			i++;
+		}
+		for (String start : STRUCTURED_STARTS) {
+			if (startsWithIgnoringCase(data, i, start)) return false;
+		}
+		return true;
+	}
+
+	private static boolean startsWithIgnoringCase(byte[] data, int at,
+			String lower) {
+		if (data.length - at < lower.length()) return false;
+		for (int i = 0; i < lower.length(); i++) {
+			int c = data[at + i] & 0xFF;
+			if (c >= 'A' && c <= 'Z') c += 'a' - 'A';
+			if (c != lower.charAt(i)) return false;
+		}
+		return true;
+	}
+
 	static boolean contentMatches(String type, byte[] data) {
 		if (data.length == 0) return false;
 		if (PDF.equals(type)) {

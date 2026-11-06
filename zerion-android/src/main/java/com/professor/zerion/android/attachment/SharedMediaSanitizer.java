@@ -110,7 +110,7 @@ public class SharedMediaSanitizer {
 
 	private Cleaned clean(Uri source, String declaredMime, byte[] data,
 			long maxBytes) throws IOException {
-		if (isPlainText(declaredMime, data)) {
+		if (isPlainText(declaredMime, data, !received)) {
 			return new Cleaned(AttachmentDocuments.TEXT, data);
 		}
 		if (GifMetadataStripper.isGif(data)) {
@@ -282,6 +282,12 @@ public class SharedMediaSanitizer {
 		return MediaMagic.isRiffContainer(data)
 				&& !MediaMagic.isRiff(data, "WAVE")
 				&& !MediaMagic.isRiff(data, "AVI ");
+	}
+
+	static boolean isPlainText(String declaredMime, byte[] data,
+			boolean toSend) {
+		return isPlainText(declaredMime, data)
+				&& (!toSend || AttachmentDocuments.isSendableText(data));
 	}
 
 	static boolean isPlainText(String declaredMime, byte[] data) {

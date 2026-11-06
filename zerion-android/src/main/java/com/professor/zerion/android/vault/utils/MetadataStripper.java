@@ -105,10 +105,8 @@ public class MetadataStripper {
 	static final String UNKNOWN_TYPE = "application/octet-stream";
 
 	static boolean isPlainText(byte[] data) {
-		for (byte b : data) {
-			if (b == 0) return false;
-		}
-		return true;
+		return com.professor.zerion.android.attachment.AttachmentDocuments
+				.isSendableText(data);
 	}
 
 	static String sniffedType(byte[] data) {
@@ -126,8 +124,8 @@ public class MetadataStripper {
 		if (com.professor.zerion.android.util.MediaMagic.isIsoMedia(data)) {
 			return "video/mp4";
 		}
-		if (data.length >= 5 && data[0] == '%' && data[1] == 'P'
-				&& data[2] == 'D' && data[3] == 'F') {
+		if (com.professor.zerion.android.attachment.AttachmentDocuments
+				.isPdf(data)) {
 			return "application/pdf";
 		}
 		if (data.length >= 4 && data[0] == 'P' && data[1] == 'K') {

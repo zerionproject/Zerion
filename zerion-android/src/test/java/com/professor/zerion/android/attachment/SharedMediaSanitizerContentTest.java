@@ -363,6 +363,34 @@ public class SharedMediaSanitizerContentTest {
 	}
 
 	@Test
+	public void aStructuredDocumentLabelledAsTextIsNotSentButCanStillBeSaved()
+			throws Exception {
+		String[] documents = {"{\\rtf1{\\info{\\author Someone}}Hello}",
+				"<?xml version=\"1.0\"?><svg><metadata>x</metadata></svg>",
+				"\n <!DOCTYPE html><html></html>",
+				"%!PS-Adobe-3.0\n%%Creator: Someone\n",
+				"control \u001B[31m codes"};
+		for (String document : documents) {
+			byte[] data = ascii(document);
+			try {
+				new SharedMediaSanitizer(ctx).sanitize(stage(data),
+						"text/plain", data, MAX);
+				fail(document + " went out as plain text");
+			} catch (MediaRefusedException expected) {
+				assertFalse(expected.isTooLarge());
+			}
+			SharedMediaSanitizer.Cleaned kept =
+					new SharedMediaSanitizer(ctx, true).sanitize(stage(data),
+							"text/plain", data, MAX);
+			assertEquals("text/plain", kept.getMimeType());
+			assertArrayEquals(data, kept.getData());
+		}
+		byte[] text = ascii("ordinary words\n");
+		assertArrayEquals(text, new SharedMediaSanitizer(ctx).sanitize(
+				stage(text), "text/plain", text, MAX).getData());
+	}
+
+	@Test
 	public void aPdfDeclaredAsTextIsStillRedrawn() throws Exception {
 		byte[] pdf = ascii("%PDF-1.4\n1 0 obj << /Author (Someone) >>\n");
 		byte[] redrawn = ascii("%PDF-1.4\nredrawn\n%%EOF\n");
