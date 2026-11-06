@@ -91,7 +91,16 @@ public class BleMeshPrivateModeTest {
 		private Node(byte[] advertKey, List<MeshPeer> known) throws Exception {
 			Context context = RuntimeEnvironment.getApplication();
 			BluetoothServerSocket server = mock(BluetoothServerSocket.class);
+			CountDownLatch closed = new CountDownLatch(1);
 			when(server.getPsm()).thenReturn(CHANNEL);
+			when(server.accept()).thenAnswer(invocation -> {
+				closed.await();
+				throw new java.io.IOException();
+			});
+			org.mockito.Mockito.doAnswer(invocation -> {
+				closed.countDown();
+				return null;
+			}).when(server).close();
 			when(manager.getAdapter()).thenReturn(adapter);
 			when(adapter.isEnabled()).thenReturn(true);
 			when(adapter.getBluetoothLeAdvertiser()).thenReturn(advertiser);
