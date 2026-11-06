@@ -177,6 +177,47 @@ final class GroupTrPostCache {
 		}
 	}
 
+	void retime(String key, long since, long until, long timer) {
+		forgetSummary(key);
+		ArrayDeque<GroupTrPost> q = postCache.get(key);
+		if (q != null) {
+			synchronized (q) {
+				List<GroupTrPost> kept = new ArrayList<>(q.size());
+				for (GroupTrPost p : q) {
+					kept.add(retimed(p, since, until, timer));
+				}
+				q.clear();
+				q.addAll(kept);
+			}
+		}
+		TreeMap<Long, List<BufferedPost>> bucket = futureBuffer.get(key);
+		if (bucket == null) return;
+		synchronized (bucket) {
+			for (List<BufferedPost> list : bucket.values()) {
+				for (int i = 0; i < list.size(); i++) {
+					BufferedPost b = list.get(i);
+					GroupTrPost p = retimed(b.post, since, until, timer);
+					if (p != b.post) {
+						list.set(i, new BufferedPost(p, b.identity, b.id));
+					}
+				}
+			}
+		}
+	}
+
+	private static GroupTrPost retimed(GroupTrPost p, long since,
+			long until, long timer) {
+		if (p.getTimerStart() < since || p.getTimerStart() >= until) {
+			return p;
+		}
+		long held = p.getAutoDeleteTimerMs();
+		if (held > 0 && held <= timer) return p;
+		return new GroupTrPost(p.getGroupId(), p.getSenderPubKey(),
+				p.getSenderName(), p.getBody(), p.getTimestamp(),
+				p.getEpoch(), p.isLocal(), timer, p.getTimerStart(),
+				p.getPostId());
+	}
+
 	void deliver(String key, GroupTrPost p) {
 		dropSummaryOfThisGroup(key);
 		ArrayDeque<GroupTrPost> q = queueFor(key);

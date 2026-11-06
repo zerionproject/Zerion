@@ -130,6 +130,8 @@ final class GroupTrTestNode {
 	private final Set<MessageId> sentCopies = new HashSet<>();
 	private final Set<MessageId> acknowledgedCopies = new HashSet<>();
 	boolean failBroadcasts = false;
+	boolean deferTimers = false;
+	private final List<Runnable> timers = new ArrayList<>();
 	private final boolean deferIo;
 	private int txnDepth = 0;
 	private boolean writeTxn = false;
@@ -180,7 +182,8 @@ final class GroupTrTestNode {
 				fake(Clock.class, (name, args) -> now),
 				fake(org.zerionproject.core.api.system.TaskScheduler.class,
 						(name, args) -> {
-							((Runnable) args[0]).run();
+							if (deferTimers) timers.add((Runnable) args[0]);
+							else ((Runnable) args[0]).run();
 							return null;
 						}));
 	}
@@ -228,6 +231,12 @@ final class GroupTrTestNode {
 	@Nullable
 	Long cleanupTimerDuration(MessageId id) {
 		return durations.get(id);
+	}
+
+	void runTimers() {
+		List<Runnable> run = new ArrayList<>(timers);
+		timers.clear();
+		for (Runnable r : run) r.run();
 	}
 
 	void runDeferred() {
@@ -949,6 +958,16 @@ final class GroupTrTestNode {
 					throw new NoSuchMessageException();
 				}
 				durations.putIfAbsent(id, (Long) a[2]);
+				return null;
+			}
+			case "lowerCleanupTimerDuration": {
+				MessageId id = (MessageId) a[1];
+				if (stored(id) == null && !messages.containsKey(id)) {
+					throw new NoSuchMessageException();
+				}
+				if (!deadlines.containsKey(id)) {
+					durations.merge(id, (Long) a[2], Math::min);
+				}
 				return null;
 			}
 			case "getMessageStatus": {

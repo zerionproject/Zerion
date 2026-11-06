@@ -2551,6 +2551,31 @@ public abstract class JdbcDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void testCleanupTimerDurationIsLoweredOnlyBeforeItStarts()
+			throws Exception {
+		long now = System.currentTimeMillis();
+		AtomicLong time = new AtomicLong(now);
+		Database<Connection> db =
+				open(false, new TestMessageFactory(), new SettableClock(time));
+		Connection txn = db.startTransaction();
+		db.addGroup(txn, group);
+		db.addMessage(txn, message, DELIVERED, false, false, null);
+
+		db.lowerCleanupTimerDuration(txn, messageId, 60_000);
+		db.lowerCleanupTimerDuration(txn, messageId, 90_000);
+		db.lowerCleanupTimerDuration(txn, messageId, 30_000);
+		assertEquals(NO_CLEANUP_DEADLINE, db.getNextCleanupDeadline(txn));
+
+		assertEquals(now + 30_000, db.startCleanupTimer(txn, messageId));
+
+		db.lowerCleanupTimerDuration(txn, messageId, 10_000);
+		assertEquals(now + 30_000, db.getNextCleanupDeadline(txn));
+
+		db.commitTransaction(txn);
+		db.close();
+	}
+
+	@Test
 	public void testMessagesToDeleteOfEachGroup() throws Exception {
 		long now = System.currentTimeMillis();
 		AtomicLong time = new AtomicLong(now);

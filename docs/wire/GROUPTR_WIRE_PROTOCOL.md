@@ -85,6 +85,13 @@ probe (58) records, and carries a binding in the invitation records. A
 contact that announces less than 13 cannot be invited to such a group.
 Groups created earlier are unchanged. See "Member keys in private groups".
 
+Minor version 16 (Android 3.0.19, `GROUP_SETTINGS_RELAY_MIN_VERSION`) changes
+no record format: a member on it takes the creator's settings record (46)
+also from another member and passes it on (see msgType 46). The same version
+adds the mesh link keys record to one-to-one chats (type 16, "Contacts only
+mode" in [MESH-TRANSPORT.md](../protocol/MESH-TRANSPORT.md)). Minor version 15
+adds pinned messages (msgType 59 and the one-to-one pin record).
+
 Minor version 14 (Android 3.0.19, `VIEW_ONCE_MIN_VERSION`) changes no group
 record: it adds view once photos and videos to one-to-one chats (slot 6 of a
 type 0 body and record type 14, "View once photos and videos" in
@@ -622,17 +629,86 @@ conversation timer is refused. Signed input
 label `org.zerionproject/GROUP_SETTINGS`.
 
 The creator sends the record to every member on version 8 when it sets the
-timer, to a member it adds while a timer is set, and to a member whose
-announced messaging version reaches 8 after the timer was set or whose
-version was not yet known when it was set (each re-signed over the same
-timestamp, so every copy orders the same and a member that holds it drops the
-copy as not newer). A timer set under an earlier version has no timestamp and
-was never sent; the first start of version 8 dates it with the current time
-and sends it. A receiver applies the record only for a live group, only when
-the pairwise sender is the creator, only when its timestamp is newer than the
-settings it holds, and only when the creator's hybrid signature verifies. The
-timer then applies to the posts the member sends (when they carry none or a
-longer one) and to the posts it receives, counted from their arrival.
+timer, to a member it adds once a setting was ever chosen (until 3.0.18 only
+while a timer was set), and to a member whose announced messaging version
+reaches 8 after the timer was set or whose version was not yet known when it
+was set (each re-signed over the same timestamp, so every copy orders the
+same). A timer set under an earlier version has no timestamp and was never
+sent; the first start of version 8 dates it with the current time and sends
+it. A receiver takes the record as the setting in force only for a live
+group, only when the pairwise sender is the creator or a member of the group,
+only when its timestamp is newer than the settings it holds, and only when the
+creator's hybrid signature verifies. The creator's own device takes none.
+Until 3.0.18 the pairwise sender had to be the creator, and a device on that
+version still ignores a record a member passes on. The timer then applies to
+the posts the member sends (when they carry none or a longer one) and to the
+posts it receives, counted from their arrival.
+
+From 3.0.19 (messaging version 16) the timer no longer depends on the one
+copy the creator sends:
+
+- A member keeps the creator's signature with the setting (settings key
+  `settingsSig`) and passes the record on unchanged: to the members its next
+  post goes to, once per setting (`settingsPassedOn`), to a member whose
+  post arrives signed with a timer other than the group's, and to a member
+  whose app reaches version 16. The creator answers such a post the same way
+  with a record it signs again over the same timestamp. A device that is
+  handed a record older than the one it holds answers with the one it holds.
+  The answers to a post and to an older record are limited to one per ten
+  minutes per member and setting (the limit is kept in memory and starts
+  afresh with the app). A member sends a passed-on record only to members on
+  version 16; an earlier version ignores it.
+- A record a member passed on applies from then on: to the posts the device
+  sends and to the posts that arrive after it. It does not touch posts the
+  device already holds, because a member can only show that the creator
+  signed the setting once, not that it is still the creator's setting.
+- A copy that comes from the creator's own contact also reaches the posts
+  the device already holds, each setting for its own period: from its
+  timestamp up to the timestamp of the next setting the device knows of, or
+  without an end if it is the newest. The device notes such copies (settings
+  key `settingsPending`, at most 16; `settingsConfirmed` marks the setting in
+  force as seen from the creator) and applies them two minutes later, off the
+  main thread, so that several settings the creator had waiting for the
+  device are all in before a post is touched; a note that is still there at
+  the next start is applied then. This also covers a copy with the timestamp
+  the device already holds, when it first took that setting from a member,
+  and a copy older than the setting it holds. Within a period, a post that
+  arrived in it, and an own post made in it, that has no timer or a longer
+  one takes that setting's timer, counted from its arrival or, for an own
+  post, from its own time (`groupEffectiveTtl` and the cleanup deadline of
+  the stored copy, and the copy held in memory). An own copy that its member
+  has not yet received gets the timer as its duration, lowered if it carried
+  a longer one; it starts when the member has the copy. A setting that
+  switches the timer off or makes it longer changes no post already held.
+  A device updated from 3.0.18 holds its setting without that mark, so the
+  creator's next copy, which the creator sends when the member's new version
+  is announced, reaches back to the setting's timestamp once.
+- The creator sends the record to a member it adds whenever a setting was
+  ever chosen, also while the timer is off, so a new member holds the newest
+  record.
+
+Limits. A device learns the timer only from a record the creator signed, so a
+member that reaches neither the creator nor a member holding the record keeps
+posting without the timer until it does; the other members' devices still
+apply the timer to its posts. Posts that two such members exchanged before
+the setting reached either of them keep no timer until the creator's own copy
+of that setting arrives; a creator on 3.0.19 or 3.0.18 keeps each copy
+waiting for a member until it is delivered. A member can pass an older record
+the creator signed on to a device that holds none newer; that device then
+applies the older setting to what it sends and receives from then on, until a
+newer record reaches it, which happens when it exchanges a post with a member
+on version 16 that holds the newer record and its signature. If the
+connection to the creator breaks between two settings the creator had
+waiting and stays down for more than the two minutes, the earlier one is
+applied without an end until the later one arrives, and posts from after the
+later setting can then be shortened by the earlier timer. The timestamp is
+the creator's clock, compared with the device's own clock for the posts it
+holds: a creator can date a setting back as far as it likes and so shorten
+the posts members hold since then, a far-future timestamp cannot be replaced
+by a later setting, and a device whose clock differs from the creator's draws
+each line that much earlier or later. iOS and the desktop client take the
+record from the creator only until they implement this and announce
+version 16.
 
 ### 47 - GROUP_POST_DELETE
 
@@ -1293,7 +1369,8 @@ key being the one from the offer.
   records under the existing rules (signer the creator, sender not checked;
   a snapshot at a strictly higher epoch replaces the list, one at the
   invitee's own epoch can only add members, see msgType 41). The invitee
-  still receives no 46 or 48,
+  still receives no 48, and a 46 only when a member passes it on (from
+  3.0.19),
   and nothing reaches it once its inviting member has left the group.
 
 ### Version gate, older clients and iOS
@@ -1805,8 +1882,9 @@ secret, a member removed or departed by that rotation included.
   leave. Every other device refuses a relayed 35.
 - Creator records 36, 38 and 41 are accepted from any contact and verified
   with the creator's member key taken from the group (and from the group id),
-  as in scheme 1. Records 33, 34, 46, 48 and 53 must come from the contact
-  bound to the creator's member key.
+  as in scheme 1. Records 33, 34, 48 and 53 must come from the contact
+  bound to the creator's member key; a 46 from the contact bound to the
+  creator's or a member's key (from 3.0.19).
 - Only the creator adds members (33 and 41 list member keys only) and only
   the creator's member key can remove a member (34). A member's invitation
   (49 or 54) and the inviting member's join request (52) carry the invitee's
@@ -2008,7 +2086,10 @@ For each membership record, after the validator's structural check, `GroupTrMana
          the pairwise sender must be the CREATOR; signer = CREATOR
      - MEMBER_LEFT:
          signer = the leaving member (never the creator); sender not checked
-     - GROUP_SETTINGS, GROUP_PERMISSIONS:
+     - GROUP_SETTINGS:
+         the pairwise sender must be the CREATOR or a member (from 3.0.19,
+         the CREATOR before); signer = CREATOR
+     - GROUP_PERMISSIONS:
          the pairwise sender must be the CREATOR; signer = CREATOR
      - GROUP_INVITER_GRANT:
          the pairwise sender must be the CREATOR; signer = CREATOR; the

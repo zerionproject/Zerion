@@ -348,6 +348,9 @@ interface Database<T> {
 	void setCleanupTimerDuration(T txn, MessageId m, long duration)
 			throws DbException;
 
+	void lowerCleanupTimerDuration(T txn, MessageId m, long duration)
+			throws DbException;
+
 	void setContactVerified(T txn, ContactId c) throws DbException;
 
 	void setContactAlias(T txn, ContactId c, @Nullable String alias)

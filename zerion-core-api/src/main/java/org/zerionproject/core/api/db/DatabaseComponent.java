@@ -339,6 +339,9 @@ public interface DatabaseComponent extends TransactionManager {
 	void setCleanupTimerDuration(Transaction txn, MessageId m, long duration)
 			throws DbException;
 
+	void lowerCleanupTimerDuration(Transaction txn, MessageId m,
+			long duration) throws DbException;
+
 	void setContactVerified(Transaction txn, ContactId c) throws DbException;
 
 	void setContactAlias(Transaction txn, ContactId c, @Nullable String alias)

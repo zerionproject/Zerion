@@ -42,7 +42,9 @@ public class GroupSettingsRecordTest {
 		node.manager.sendGroupPost(groupId, "x".getBytes("UTF-8"), 0L);
 		BdfList post = null;
 		for (GroupTrTestNode.Sent s : node.sent) {
-			if (s.to.equals(toMember)) post = s.body;
+			if (s.to.equals(toMember) && s.body.getLong(0) == 32L) {
+				post = s.body;
+			}
 		}
 		if (post == null) throw new AssertionError("post not sent");
 		assertEquals("a member's own posts carry the group's timer", DAY,
@@ -50,11 +52,12 @@ public class GroupSettingsRecordTest {
 	}
 
 	@Test
-	public void settingsFromAnyoneButTheCreatorAreRefused() throws Exception {
+	public void settingsTheCreatorDidNotSignAreRefusedFromAMember()
+			throws Exception {
 		GroupTrTestNode node = memberDevice();
 		ContactId fromMember = node.addContact(aKey);
 
-		settings(node, fromMember, DAY, 10L, SIG);
+		settings(node, fromMember, DAY, 10L, FORGED_SIG);
 
 		assertEquals(0L, node.group(groupId).getDefaultAutoDeleteTimerMs());
 	}

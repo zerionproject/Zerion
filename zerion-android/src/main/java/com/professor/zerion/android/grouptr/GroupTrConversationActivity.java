@@ -130,8 +130,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 	private androidx.recyclerview.widget.RecyclerView postsRecycler;
 	private androidx.recyclerview.widget.LinearLayoutManager layoutManager;
 	private GroupTrPostAdapter postAdapter;
-	private final java.util.Set<String> autoDeleteScheduled =
-			new java.util.HashSet<>();
+	private final java.util.Map<String, Long> autoDeleteScheduled =
+			new java.util.HashMap<>();
 	private TextView emptyState;
 	private TextView titleView;
 	private TextView subtitleView;
@@ -1539,7 +1539,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 		long expiry = p.getExpiryTime();
 		if (expiry == Long.MAX_VALUE) return;
 		String key = postKey(p);
-		if (!autoDeleteScheduled.add(key)) return;
+		Long scheduled = autoDeleteScheduled.get(key);
+		if (scheduled != null && scheduled <= expiry) return;
+		autoDeleteScheduled.put(key, expiry);
 		long now = System.currentTimeMillis();
 		long remaining = expiry <= now ? 0L : expiry - now;
 		if (remaining <= 0L) {

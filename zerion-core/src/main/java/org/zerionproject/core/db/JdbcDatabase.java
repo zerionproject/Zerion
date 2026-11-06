@@ -4276,6 +4276,28 @@ abstract class JdbcDatabase implements Database<Connection> {
 	}
 
 	@Override
+	public void lowerCleanupTimerDuration(Connection txn, MessageId m,
+			long duration) throws DbException {
+		PreparedStatement ps = null;
+		try {
+			String sql = "UPDATE messages SET cleanupTimerDuration = ?"
+					+ " WHERE messageId = ? AND cleanupDeadline IS NULL"
+					+ " AND (cleanupTimerDuration IS NULL"
+					+ " OR cleanupTimerDuration > ?)";
+			ps = txn.prepareStatement(sql);
+			ps.setLong(1, duration);
+			ps.setBytes(2, m.getBytes());
+			ps.setLong(3, duration);
+			int affected = ps.executeUpdate();
+			if (affected < 0 || affected > 1) throw new DbStateException();
+			ps.close();
+		} catch (SQLException e) {
+			tryToClose(ps);
+			throw new DbException(e);
+		}
+	}
+
+	@Override
 	public void setContactVerified(Connection txn, ContactId c)
 			throws DbException {
 		PreparedStatement ps = null;

@@ -1315,6 +1315,16 @@ class DatabaseComponentImpl<T> implements DatabaseComponent {
 	}
 
 	@Override
+	public void lowerCleanupTimerDuration(Transaction transaction,
+			MessageId m, long duration) throws DbException {
+		if (transaction.isReadOnly()) throw new IllegalArgumentException();
+		T txn = unbox(transaction);
+		if (!db.containsMessage(txn, m))
+			throw new NoSuchMessageException();
+		db.lowerCleanupTimerDuration(txn, m, duration);
+	}
+
+	@Override
 	public void setContactVerified(Transaction transaction, ContactId c)
 			throws DbException {
 		if (transaction.isReadOnly()) throw new IllegalArgumentException();
