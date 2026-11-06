@@ -455,7 +455,11 @@
 	<string name="i2p_toggle_summary">Trafiki I2P şəbəkəsi üzərindən də yönləndir</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Bağlantı</string>
-	<string name="mesh_info_message">Mesajlar yalnız alıcının aça biləcəyi şəkildə möhürlənir və yaxınlıqdakı Zerion işlədən telefonlar vasitəsilə cihazdan cihaza ötürülür. Bunu aktiv etdikdə Bluetooth və yaxınlıqdakı cihazlar icazələri tələb olunur və cihaz yaxın ətrafa siqnal yayımlayır: Bluetooth skaneri olan yaxınlıqdakı hər kəs bu telefonun Zerion şəbəkəsindən istifadə etdiyini bilə bilər, lakin nə göndərdiyini yox.</string>
+	<string name="mesh_info_message">Mesajlar yalnız alıcının aça biləcəyi şəkildə möhürlənir və Bluetooth vasitəsilə telefondan telefona ötürülür. Bunu aktiv etdikdə Bluetooth və yaxınlıqdakı cihazlar icazələri tələb olunur. «Yalnız kontaktlar» seçildikdə telefonunuz yalnız kontaktlarınızın telefonlarına qoşulur və onun Bluetooth siqnalında Zerion tətbiqinə aid heç bir sabit işarə olmur. Bunun üçün kontaktda Zerion 3.0.19 və ya daha yeni versiya olmalıdır və yeniləmədən sonra ikiniz də ən azı bir dəfə eyni vaxtda onlayn olmuş olmalısınız.</string>
+	<string name="mesh_reach_title">Mesh bunlara qoşulur</string>
+	<string name="mesh_reach_contacts">Yalnız kontaktlar</string>
+	<string name="mesh_reach_everyone">Yaxınlıqdakı bütün Zerion telefonları</string>
+	<string name="mesh_reach_everyone_message">Telefonunuz yaxınlıqda Zerion mesh-i bu rejimdə işlədən bütün telefonlara qoşulacaq. Onlar sizin möhürlənmiş mesajlarınızı ötürür, siz də onların mesajlarını ötürürsünüz, beləliklə mesajlar daha uzağa çatır. Bluetooth skaneri olan yaxınlıqdakı hər kəs o zaman bu telefonun Zerion mesh-dən istifadə etdiyini bilə bilər, lakin nə göndərdiyini yox. «Yalnız kontaktlar» seçilmiş telefonlar bu rejimdəki telefonlara qoşulmur.</string>
 	<string name="mesh_permission_denied">Offline mesh üçün Bluetooth və yaxınlıqdakı cihazlar icazələri lazımdır</string>
 	<string name="mesh_alias_title">Mesh işləyərkən Bluetooth adı</string>
 	<string name="mesh_range_title">Bluetooth əhatə dairəsi</string>

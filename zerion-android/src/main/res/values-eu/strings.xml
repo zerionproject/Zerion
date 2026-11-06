@@ -530,7 +530,11 @@
 	<string name="i2p_toggle_summary">Bideratu I2P sarearen bidez ere</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Konektagarritasuna</string>
-	<string name="mesh_info_message">Mezuak zigilatu egiten dira hartzaileak soilik ireki ditzan, eta Zerion darabilten inguruko telefonoek gailutik gailura igortzen dituzte. Hau aktibatzean, Bluetooth eta inguruko gailuen baimenak eskatzen dira, eta tokian bertan igortzen da: Bluetooth eskaner bat duen inguruko edonork jakin dezake telefono honek Zerion sarea erabiltzen duela, baina ez zer bidaltzen duen.</string>
+	<string name="mesh_info_message">Mezuak zigilatu egiten dira hartzaileak soilik ireki ditzan, eta telefonotik telefonora igarotzen dira Bluetooth bidez. Hau aktibatzean, Bluetooth eta inguruko gailuen baimenak eskatzen dira. «Kontaktuak soilik» aukerarekin, zure telefonoa zure kontaktuen telefonoekin bakarrik konektatzen da, eta haren Bluetooth seinaleak ez darama Zerion aplikazioaren marka finkorik. Horretarako, kontaktuak Zerion 3.0.19 edo berriagoa behar du, eta biek aldi berean konektatuta egon behar izan duzue gutxienez behin, eguneratu ondoren.</string>
+	<string name="mesh_reach_title">Mesh sarea hauekin konektatzen da</string>
+	<string name="mesh_reach_contacts">Kontaktuak soilik</string>
+	<string name="mesh_reach_everyone">Inguruko Zerion telefono guztiak</string>
+	<string name="mesh_reach_everyone_message">Zure telefonoa Zerion mesh sarea modu honetan darabilten inguruko telefono guztiekin konektatuko da. Haiek zure mezu zigilatuak igortzen dituzte eta zuk haienak, eta horrela mezuak urrunago iristen dira. Bluetooth eskaner bat duen inguruko edonork jakin dezake orduan telefono honek Zerion mesh sarea erabiltzen duela, baina ez zer bidaltzen duen. «Kontaktuak soilik» aukeran dauden telefonoak ez dira modu honetako telefonoekin konektatzen.</string>
 	<string name="mesh_permission_denied">Lineaz kanpoko mesh sareak Bluetooth eta inguruko gailuen baimenak behar ditu</string>
 	<string name="mesh_alias_title">Bluetooth izena mesh sarea abian dagoen bitartean</string>
 	<string name="mesh_range_title">Bluetooth irismena</string>

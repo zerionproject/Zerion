@@ -635,7 +635,11 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="i2p_toggle_summary">Kalo trafikun edhe përmes rrjetit I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Lidhja</string>
-	<string name="mesh_info_message">Mesazhet vulosen për marrësin dhe përcillen nga pajisja në pajisje nga telefonat aty pranë që përdorin Zerion. Aktivizimi i kësaj kërkon leje për Bluetooth dhe për pajisjet në afërsi, dhe transmeton në nivel lokal: kushdo aty pranë me një skaner Bluetooth mund ta kuptojë se ky telefon përdor rrjetin e Zerion-it, por jo se çfarë dërgon.</string>
+	<string name="mesh_info_message">Mesazhet vulosen për marrësin dhe kalojnë nga telefoni në telefon përmes Bluetooth-it. Aktivizimi i kësaj kërkon leje për Bluetooth dhe për pajisjet në afërsi. Me «Vetëm kontaktet», telefoni yt lidhet vetëm me telefonat e kontakteve të tua, dhe sinjali i tij Bluetooth nuk mban asnjë shenjë të pandryshueshme të Zerion-it. Për këtë, kontakti duhet të ketë Zerion 3.0.19 ose më të ri, dhe ju të dy duhet të keni qenë në linjë në të njëjtën kohë të paktën një herë që nga përditësimi.</string>
+	<string name="mesh_reach_title">Rrjeti mesh lidhet me</string>
+	<string name="mesh_reach_contacts">Vetëm kontaktet</string>
+	<string name="mesh_reach_everyone">Çdo telefon me Zerion aty pranë</string>
+	<string name="mesh_reach_everyone_message">Telefoni yt do të lidhet me çdo telefon aty pranë që përdor rrjetin mesh të Zerion-it në këtë mënyrë. Ata i përcjellin mesazhet e tua të vulosura dhe ti përcjell të tyret, kështu që mesazhet shkojnë më larg. Kushdo aty pranë me një skaner Bluetooth mund ta kuptojë atëherë se ky telefon përdor rrjetin mesh të Zerion-it, por jo se çfarë dërgon. Telefonat e vendosur në «Vetëm kontaktet» nuk lidhen me telefonat në këtë mënyrë.</string>
 	<string name="mesh_permission_denied">Rrjeti mesh jashtë linje ka nevojë për leje për Bluetooth dhe për pajisjet në afërsi</string>
 	<string name="mesh_alias_title">Emri Bluetooth ndërkohë që punon rrjeti mesh</string>
 	<string name="mesh_range_title">Rrezja e Bluetooth-it</string>

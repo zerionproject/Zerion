@@ -29,6 +29,7 @@ public class MeshController implements OpenDatabaseHook {
 	static final String PREF_MESH_ENABLED = "meshEnabled";
 	static final String PREF_MESH_SHORT_RANGE = "meshShortRange";
 	static final String PREF_MESH_PAUSE_SCREEN_OFF = "meshPauseScreenOff";
+	static final String PREF_MESH_OPEN = "meshOpen";
 	public static final int MAX_BLUETOOTH_ALIAS_LENGTH =
 			MeshBluetoothName.MAX_ALIAS_LENGTH;
 
@@ -102,6 +103,23 @@ public class MeshController implements OpenDatabaseHook {
 				return;
 			}
 			meshManager.setShortRange(shortRange);
+		});
+	}
+
+	public boolean isOpenMesh() throws DbException {
+		return settingsManager.getSettings(MESH_NAMESPACE)
+				.getBoolean(PREF_MESH_OPEN, false);
+	}
+
+	public void setOpenMesh(boolean open) {
+		ioExecutor.execute(() -> {
+			try {
+				Settings s = new Settings();
+				s.putBoolean(PREF_MESH_OPEN, open);
+				settingsManager.mergeSettings(s, MESH_NAMESPACE);
+				meshManager.restart();
+			} catch (DbException e) {
+			}
 		});
 	}
 

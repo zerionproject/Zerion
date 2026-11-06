@@ -652,7 +652,11 @@
 	<string name="i2p_toggle_summary">Maršrutizuoti ir per I2P tinklą</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Ryšys</string>
-	<string name="mesh_info_message">Žinutės užšifruojamos taip, kad jas atidaryti galėtų tik gavėjas, ir netoliese esantys telefonai su Zerion jas perduoda iš įrenginio į įrenginį. Įjungus šią funkciją, prašoma Bluetooth ir netoliese esančių įrenginių leidimų, o duomenys transliuojami vietoje: bet kas netoliese su Bluetooth skeneriu gali sužinoti, kad šis telefonas naudoja Zerion tinklą, bet ne tai, ką jis siunčia.</string>
+	<string name="mesh_info_message">Žinutės užšifruojamos taip, kad jas atidaryti galėtų tik gavėjas, ir per Bluetooth perduodamos iš telefono į telefoną. Įjungus šią funkciją, prašoma Bluetooth ir netoliese esančių įrenginių leidimų. Pasirinkus „Tik adresatai“, jūsų telefonas jungiasi tik su jūsų adresatų telefonais, o jo Bluetooth signale nėra jokios pastovios Zerion žymės. Tam adresatui reikia Zerion 3.0.19 arba naujesnės versijos, o po atnaujinimo jūs abu bent kartą turėjote būti prisijungę prie interneto tuo pačiu metu.</string>
+	<string name="mesh_reach_title">Su kuo jungiasi mesh tinklas</string>
+	<string name="mesh_reach_contacts">Tik adresatai</string>
+	<string name="mesh_reach_everyone">Visi netoliese esantys telefonai su Zerion</string>
+	<string name="mesh_reach_everyone_message">Jūsų telefonas jungsis su visais netoliese esančiais telefonais, kuriuose Zerion mesh tinklas veikia šiuo režimu. Jie perduoda jūsų užšifruotas žinutes, o jūs perduodate jų žinutes, todėl žinutės nukeliauja toliau. Bet kas netoliese su Bluetooth skeneriu tada gali sužinoti, kad šis telefonas naudoja Zerion mesh tinklą, bet ne tai, ką jis siunčia. Telefonai, kuriuose pasirinkta „Tik adresatai“, nesijungia su telefonais, veikiančiais šiuo režimu.</string>
 	<string name="mesh_permission_denied">Mesh tinklui be interneto reikia Bluetooth ir netoliese esančių įrenginių leidimų</string>
 	<string name="mesh_alias_title">Bluetooth pavadinimas, kai veikia mesh tinklas</string>
 	<string name="mesh_range_title">Bluetooth veikimo nuotolis</string>

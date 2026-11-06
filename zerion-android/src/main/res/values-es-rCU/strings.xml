@@ -531,7 +531,11 @@
 	<string name="i2p_toggle_summary">Enrutar también a través de la red I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectividad</string>
-	<string name="mesh_info_message">Los mensajes van sellados para el destinatario y los retransmiten de dispositivo en dispositivo los teléfonos cercanos que usan Zerion. Al activar esto se piden los permisos de Bluetooth y de dispositivos cercanos, y se emite localmente: cualquier persona cercana con un escáner de Bluetooth puede saber que este teléfono usa la red de Zerion, pero no lo que envía.</string>
+	<string name="mesh_info_message">Los mensajes van sellados para el destinatario y pasan de teléfono en teléfono por Bluetooth. Al activar esto se piden los permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos, y su señal de Bluetooth no lleva ninguna marca fija de Zerion. Para eso, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
+	<string name="mesh_reach_title">La red en malla se conecta con</string>
+	<string name="mesh_reach_contacts">Solo contactos</string>
+	<string name="mesh_reach_everyone">Todos los teléfonos con Zerion cercanos</string>
+	<string name="mesh_reach_everyone_message">Tu teléfono se conectará con todos los teléfonos cercanos que usen la red en malla de Zerion en este modo. Ellos retransmiten tus mensajes sellados y tú retransmites los suyos, así los mensajes llegan más lejos. Cualquier persona cercana con un escáner de Bluetooth puede saber entonces que este teléfono usa la red en malla de Zerion, pero no lo que envía. Los teléfonos configurados en «Solo contactos» no se conectan con teléfonos en este modo.</string>
 	<string name="mesh_permission_denied">La red en malla sin conexión necesita los permisos de Bluetooth y de dispositivos cercanos</string>
 	<plurals name="mesh_status_active">
 		<item quantity="one">Activo · %d dispositivo al alcance</item>

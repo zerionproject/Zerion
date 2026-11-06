@@ -606,7 +606,11 @@
 	<string name="i2p_toggle_summary">Beina umferð einnig um I2P-netið</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Tenging</string>
-	<string name="mesh_info_message">Skilaboð eru innsigluð fyrir viðtakandann og nálægir símar sem keyra Zerion áframsenda þau frá tæki til tækis. Þegar kveikt er á þessu er beðið um heimildir fyrir Bluetooth og nálæg tæki og sent út staðbundið: hver sem er í nágrenninu með Bluetooth-skanna getur séð að þessi sími notar Zerion-netið, en ekki hvað hann sendir.</string>
+	<string name="mesh_info_message">Skilaboð eru innsigluð fyrir viðtakandann og berast frá síma til síma um Bluetooth. Þegar kveikt er á þessu er beðið um heimildir fyrir Bluetooth og nálæg tæki. Með „Aðeins tengiliðum“ tengist síminn þinn aðeins símum tengiliða þinna og Bluetooth-merki hans ber ekkert fast auðkenni Zerion. Til þess þarf tengiliður að vera með Zerion 3.0.19 eða nýrra og þið bæði þurfið að hafa verið nettengd á sama tíma að minnsta kosti einu sinni eftir uppfærslu.</string>
+	<string name="mesh_reach_title">Möskvanetið tengist</string>
+	<string name="mesh_reach_contacts">Aðeins tengiliðum</string>
+	<string name="mesh_reach_everyone">Öllum Zerion-símum í nágrenninu</string>
+	<string name="mesh_reach_everyone_message">Síminn þinn tengist öllum símum í nágrenninu sem keyra Zerion-möskvanetið í þessum ham. Þeir senda innsigluð skilaboð þín áfram og þú sendir þeirra áfram, þannig að skilaboð berast lengra. Hver sem er í nágrenninu með Bluetooth-skanna getur þá séð að þessi sími notar Zerion-möskvanetið, en ekki hvað hann sendir. Símar sem eru stilltir á „Aðeins tengiliðum“ tengjast ekki símum í þessum ham.</string>
 	<string name="mesh_permission_denied">Ónettengt möskvanet þarf heimildir fyrir Bluetooth og nálæg tæki</string>
 	<string name="mesh_alias_title">Bluetooth-heiti á meðan möskvanetið er í gangi</string>
 	<string name="mesh_range_title">Drægni Bluetooth</string>

@@ -394,7 +394,11 @@
 	<string name="i2p_toggle_summary">Encaminar tanben via la ret I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Connectivitat</string>
-	<string name="mesh_info_message">Los messatges son sagelats pel destinatari e los telefòns pròches qu’utilizan Zerion los transmeton d’aparelh en aparelh. Activar aquò demanda las autorizacions Bluetooth e d’aparelhs pròches e difusa localament: quina persona que siá a proximitat amb un escàner Bluetooth pòt saber qu’aqueste telefòn utiliza la ret de Zerion, mas pas çò que manda.</string>
+	<string name="mesh_info_message">Los messatges son sagelats pel destinatari e passan de telefòn en telefòn per Bluetooth. Activar aquò demanda las autorizacions Bluetooth e d’aparelhs pròches. Amb « Sonque los contactes », vòstre telefòn se connecta sonque als telefòns de vòstres contactes, e son senhal Bluetooth pòrta pas cap de marca fixa de Zerion. Per aquò, lo contacte a besonh de Zerion 3.0.19 o mai recent, e vos cal aver estat en linha totes dos al meteis moment almens un còp dempuèi la mesa a jorn.</string>
+	<string name="mesh_reach_title">Lo mesh se connecta a</string>
+	<string name="mesh_reach_contacts">Sonque los contactes</string>
+	<string name="mesh_reach_everyone">Totes los telefòns Zerion pròches</string>
+	<string name="mesh_reach_everyone_message">Vòstre telefòn se connectarà a totes los telefòns pròches qu’utilizan lo mesh Zerion dins aqueste mòde. Transmeton vòstres messatges sagelats e transmetètz los lors, atal los messatges van mai luènh. Quina persona que siá a proximitat amb un escàner Bluetooth pòt alara saber qu’aqueste telefòn utiliza lo mesh Zerion, mas pas çò que manda. Los telefòns reglats sus « Sonque los contactes » se connectan pas als telefòns dins aqueste mòde.</string>
 	<string name="mesh_permission_denied">La ret mesh fòra linha a besonh de las autorizacions Bluetooth e d’aparelhs pròches</string>
 	<string name="mesh_alias_title">Nom Bluetooth pendent que lo mesh fonciona</string>
 	<string name="mesh_range_title">Portada Bluetooth</string>

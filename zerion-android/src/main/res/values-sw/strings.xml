@@ -542,7 +542,11 @@ Umepoteza nenosiri.</string>
 	<string name="i2p_toggle_summary">Pitisha pia kupitia mtandao wa I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Muunganisho</string>
-	<string name="mesh_info_message">Ujumbe hufungwa ili mpokeaji pekee aweze kuufungua, na hupitishwa kutoka kifaa hadi kifaa na simu zilizo karibu zinazotumia Zerion. Kuwasha hii huomba ruhusa za Bluetooth na vifaa vilivyo karibu, na hutangaza karibu nawe: mtu yeyote aliye karibu mwenye kichanganuzi cha Bluetooth anaweza kujua kwamba simu hii inatumia mtandao wa Zerion, lakini si kile inachotuma.</string>
+	<string name="mesh_info_message">Ujumbe hufungwa ili mpokeaji pekee aweze kuufungua, na hupitishwa kutoka simu hadi simu kupitia Bluetooth. Kuwasha hii huomba ruhusa za Bluetooth na vifaa vilivyo karibu. Ukichagua “Watu unaowasiliana nao pekee”, simu yako huunganishwa tu na simu za watu unaowasiliana nao, na mawimbi yake ya Bluetooth hayabebi alama yoyote ya kudumu ya Zerion. Kwa hilo, mtu unayewasiliana naye anahitaji Zerion 3.0.19 au mpya zaidi, na nyinyi wawili lazima muwe mmewahi kuunganishwa kwenye intaneti kwa wakati mmoja angalau mara moja tangu kusasisha.</string>
+	<string name="mesh_reach_title">Mesh huunganishwa na</string>
+	<string name="mesh_reach_contacts">Watu unaowasiliana nao pekee</string>
+	<string name="mesh_reach_everyone">Kila simu ya Zerion iliyo karibu</string>
+	<string name="mesh_reach_everyone_message">Simu yako itaunganishwa na kila simu iliyo karibu inayotumia mesh ya Zerion katika hali hii. Simu hizo hupitisha ujumbe wako uliofungwa na wewe hupitisha wa kwao, kwa hivyo ujumbe hufika mbali zaidi. Mtu yeyote aliye karibu mwenye kichanganuzi cha Bluetooth anaweza basi kujua kwamba simu hii inatumia mesh ya Zerion, lakini si kile inachotuma. Simu zilizowekwa kwenye “Watu unaowasiliana nao pekee” haziunganishwi na simu zilizo katika hali hii.</string>
 	<string name="mesh_permission_denied">Mesh ya nje ya mkondo inahitaji ruhusa za Bluetooth na vifaa vilivyo karibu</string>
 	<string name="mesh_alias_title">Jina la Bluetooth wakati mesh inatumika</string>
 	<string name="mesh_range_title">Masafa ya Bluetooth</string>

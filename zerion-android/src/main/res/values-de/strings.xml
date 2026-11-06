@@ -616,7 +616,11 @@
 	<string name="settings_section_mesh">OFFLINE-MESH</string>
 	<string name="mesh_toggle_title">Offline-Mesh</string>
 	<string name="mesh_toggle_summary">Nahe Kontakte ohne Internet über Bluetooth erreichen</string>
-	<string name="mesh_info_message">Nachrichten werden für den Empfänger versiegelt und von Telefonen in der Nähe, auf denen Zerion läuft, von Gerät zu Gerät weitergeleitet. Beim Aktivieren werden Berechtigungen für Bluetooth und Geräte in der Nähe angefordert, und das Gerät sendet lokal: Jeder in der Nähe mit einem Bluetooth-Scanner kann erkennen, dass dieses Telefon das Zerion-Mesh nutzt, aber nicht, was es sendet.</string>
+	<string name="mesh_info_message">Nachrichten werden für den Empfänger versiegelt und über Bluetooth von Telefon zu Telefon weitergegeben. Beim Aktivieren werden Berechtigungen für Bluetooth und Geräte in der Nähe angefordert. Bei „Nur mit Kontakten“ verbindet sich dein Telefon nur mit den Telefonen deiner Kontakte, und sein Bluetooth-Signal enthält kein festes Zerion-Kennzeichen. Dafür braucht ein Kontakt Zerion 3.0.19 oder neuer, und ihr beide müsst seit dem Update mindestens einmal gleichzeitig online gewesen sein.</string>
+	<string name="mesh_reach_title">Mesh verbindet sich</string>
+	<string name="mesh_reach_contacts">Nur mit Kontakten</string>
+	<string name="mesh_reach_everyone">Mit jedem Zerion-Telefon in der Nähe</string>
+	<string name="mesh_reach_everyone_message">Dein Telefon verbindet sich mit jedem Telefon in der Nähe, das das Zerion-Mesh in diesem Modus nutzt. Diese Telefone geben deine versiegelten Nachrichten weiter und du gibst ihre weiter, sodass Nachrichten weiter kommen. Jeder in der Nähe mit einem Bluetooth-Scanner kann dann erkennen, dass dieses Telefon das Zerion-Mesh nutzt, aber nicht, was es sendet. Telefone, die auf „Nur mit Kontakten“ eingestellt sind, verbinden sich nicht mit Telefonen in diesem Modus.</string>
 	<string name="mesh_unsupported">Offline-Mesh benötigt Android 12 oder neuer</string>
 	<string name="mesh_permission_denied">Offline-Mesh benötigt Berechtigungen für Bluetooth und Geräte in der Nähe</string>
 	<string name="mesh_alias_title">Bluetooth-Name bei aktivem Mesh</string>

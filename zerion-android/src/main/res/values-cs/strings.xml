@@ -652,7 +652,11 @@
 	<string name="i2p_toggle_summary">Směrovat také přes síť I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Připojení</string>
-	<string name="mesh_info_message">Zprávy jsou zapečetěné tak, že je otevře jen příjemce, a předávají je ze zařízení na zařízení telefony v okolí, na kterých běží Zerion. Zapnutím se vyžádají oprávnění pro Bluetooth a zařízení v okolí a zahájí se místní vysílání: kdokoli poblíž s Bluetooth skenerem pozná, že tento telefon používá síť Zerion, ale ne, co posílá.</string>
+	<string name="mesh_info_message">Zprávy jsou zapečetěné tak, že je otevře jen příjemce, a předávají se z telefonu na telefon přes Bluetooth. Zapnutím se vyžádají oprávnění pro Bluetooth a zařízení v okolí. Při volbě „Jen kontakty“ se váš telefon propojuje jen s telefony vašich kontaktů a jeho signál Bluetooth neobsahuje žádnou stálou značku aplikace Zerion. Kontakt k tomu potřebuje Zerion 3.0.19 nebo novější a od aktualizace jste oba museli být alespoň jednou online ve stejnou chvíli.</string>
+	<string name="mesh_reach_title">S kým se síť mesh propojuje</string>
+	<string name="mesh_reach_contacts">Jen kontakty</string>
+	<string name="mesh_reach_everyone">Každý telefon s aplikací Zerion v okolí</string>
+	<string name="mesh_reach_everyone_message">Váš telefon se bude propojovat s každým telefonem v okolí, na kterém běží síť mesh Zerion v tomto režimu. Tyto telefony předávají dál vaše zapečetěné zprávy a vy předáváte jejich, takže se zprávy dostanou dál. Kdokoli poblíž s Bluetooth skenerem pak pozná, že tento telefon používá síť mesh Zerion, ale ne, co posílá. Telefony nastavené na „Jen kontakty“ se s telefony v tomto režimu nepropojují.</string>
 	<string name="mesh_permission_denied">Offline síť mesh vyžaduje oprávnění pro Bluetooth a zařízení v okolí</string>
 	<string name="mesh_alias_title">Název Bluetooth během běhu sítě mesh</string>
 	<string name="mesh_range_title">Dosah Bluetooth</string>

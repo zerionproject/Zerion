@@ -71,6 +71,22 @@ public class MeshManager {
 	private volatile BleMeshTransport ble;
 	@Nullable
 	private volatile Runnable peerConnectedListener;
+	@Nullable
+	private volatile BleMeshTransport.PrivatePeers linkKeys;
+
+	private static final BleMeshTransport.PrivatePeers NO_PEERS =
+			new BleMeshTransport.PrivatePeers() {
+				@Override
+				@Nullable
+				public byte[] ownAdvertKey() {
+					return null;
+				}
+
+				@Override
+				public List<MeshPeer> peers() {
+					return java.util.Collections.emptyList();
+				}
+			};
 
 	public MeshManager(Context context, CryptoComponent crypto,
 			IdentityManager identityManager, DatabaseComponent db,
@@ -92,8 +108,20 @@ public class MeshManager {
 		this.scheduler = scheduler;
 	}
 
+	public void setLinkKeys(@Nullable BleMeshTransport.PrivatePeers keys) {
+		linkKeys = keys;
+	}
+
 	public void start() throws DbException {
 		synchronized (lifecycleLock) {
+			startLocked();
+		}
+	}
+
+	public void restart() throws DbException {
+		synchronized (lifecycleLock) {
+			if (!running.get()) return;
+			stopLocked();
 			startLocked();
 		}
 	}
@@ -141,6 +169,10 @@ public class MeshManager {
 				MeshController.PREF_MESH_SHORT_RANGE, false));
 		bleTransport.setPauseWhenScreenOff(meshSettings.getBoolean(
 				MeshController.PREF_MESH_PAUSE_SCREEN_OFF, false));
+		if (!meshSettings.getBoolean(MeshController.PREF_MESH_OPEN, false)) {
+			BleMeshTransport.PrivatePeers keys = linkKeys;
+			bleTransport.setPrivatePeers(keys == null ? NO_PEERS : keys);
+		}
 		bleTransport.start();
 	}
 

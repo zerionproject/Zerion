@@ -192,6 +192,9 @@ class PrivateMessageValidator implements MessageValidator {
 				} else if (messageType == MessageTypes.MESH_PREKEY_BUNDLE) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateMeshPrekeyBundle(m, list);
+				} else if (messageType == MessageTypes.MESH_LINK_KEYS) {
+					if (!reader.eof()) throw new FormatException();
+					context = validateMeshLinkKeys(m, list);
 				} else if (messageType == GROUP_POST) {
 					if (!reader.eof()) throw new FormatException();
 					context = validateGroupPost(m, list);
@@ -623,6 +626,22 @@ class PrivateMessageValidator implements MessageValidator {
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
 		meta.put(MSG_KEY_LOCAL, false);
 		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_PREKEY_BUNDLE);
+		return new BdfMessageContext(meta);
+	}
+
+	private BdfMessageContext validateMeshLinkKeys(Message m, BdfList body)
+			throws FormatException {
+		checkSize(body, 3);
+		int length = org.zerionproject.app.api.messaging.MessagingManager
+				.MESH_LINK_KEY_BYTES;
+		if (body.getRaw(1).length != length
+				|| body.getRaw(2).length != length) {
+			throw new FormatException();
+		}
+		BdfDictionary meta = new BdfDictionary();
+		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
+		meta.put(MSG_KEY_LOCAL, false);
+		meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_LINK_KEYS);
 		return new BdfMessageContext(meta);
 	}
 

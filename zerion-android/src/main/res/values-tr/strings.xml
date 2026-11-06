@@ -670,7 +670,11 @@
 	<string name="i2p_toggle_summary">Trafiği I2P ağı üzerinden de yönlendir</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Bağlantı</string>
-	<string name="mesh_info_message">İletiler yalnızca alıcının açabileceği şekilde mühürlenir ve yakındaki Zerion çalıştıran telefonlar tarafından cihazdan cihaza aktarılır. Bunu açmak Bluetooth ve yakındaki cihazlar izinlerini ister ve yakın çevreye yayın yapar: yakındaki Bluetooth tarayıcısı olan herkes bu telefonun Zerion ağını kullandığını anlayabilir, ancak ne gönderdiğini anlayamaz.</string>
+	<string name="mesh_info_message">İletiler yalnızca alıcının açabileceği şekilde mühürlenir ve Bluetooth üzerinden telefondan telefona aktarılır. Bunu açmak Bluetooth ve yakındaki cihazlar izinlerini ister. “Yalnızca kişiler” seçiliyken telefonunuz yalnızca kişilerinizin telefonlarına bağlanır ve Bluetooth sinyali Zerion uygulamasına ait sabit bir işaret taşımaz. Bunun için kişide Zerion 3.0.19 veya daha yeni bir sürüm olmalı ve güncellemeden sonra ikiniz en az bir kez aynı anda çevrim içi olmuş olmalısınız.</string>
+	<string name="mesh_reach_title">Mesh şunlara bağlanır</string>
+	<string name="mesh_reach_contacts">Yalnızca kişiler</string>
+	<string name="mesh_reach_everyone">Yakındaki tüm Zerion telefonları</string>
+	<string name="mesh_reach_everyone_message">Telefonunuz, yakında Zerion mesh ağını bu modda çalıştıran tüm telefonlara bağlanır. Onlar sizin mühürlü iletilerinizi aktarır, siz de onlarınkini aktarırsınız, böylece iletiler daha uzağa ulaşır. Yakındaki Bluetooth tarayıcısı olan herkes o zaman bu telefonun Zerion mesh ağını kullandığını anlayabilir, ancak ne gönderdiğini anlayamaz. “Yalnızca kişiler” olarak ayarlanmış telefonlar bu moddaki telefonlara bağlanmaz.</string>
 	<string name="mesh_permission_denied">Çevrim dışı mesh için Bluetooth ve yakındaki cihazlar izinleri gerekir</string>
 	<string name="mesh_alias_title">Mesh çalışırken Bluetooth adı</string>
 	<string name="mesh_range_title">Bluetooth menzili</string>

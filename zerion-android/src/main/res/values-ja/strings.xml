@@ -557,7 +557,11 @@
 	<string name="settings_section_mesh">オフラインメッシュ</string>
 	<string name="mesh_toggle_title">オフラインメッシュ</string>
 	<string name="mesh_toggle_summary">インターネットなしで、Bluetooth 経由で近くの連絡先に接続</string>
-	<string name="mesh_info_message">メッセージは受信者宛てに封印され、近くで Zerion を使っている端末によって端末から端末へと中継されます。これをオンにすると Bluetooth と近距離デバイスの権限が要求され、ローカルにブロードキャストします。近くで Bluetooth スキャナーを持つ人なら誰でも、この端末が Zerion のメッシュを使っていることはわかりますが、何を送っているかはわかりません。</string>
+	<string name="mesh_info_message">メッセージは受信者宛てに封印され、Bluetooth 経由で端末から端末へと渡されます。これをオンにすると Bluetooth と近距離デバイスの権限が要求されます。「連絡先のみ」では、この端末はあなたの連絡先の端末とだけ接続し、Bluetooth の信号に Zerion を示す固定の目印は含まれません。そのためには、連絡先の相手が Zerion 3.0.19 以降を使っていて、更新後に少なくとも一度、あなたと相手が同時にオンラインになっている必要があります。</string>
+	<string name="mesh_reach_title">メッシュの接続先</string>
+	<string name="mesh_reach_contacts">連絡先のみ</string>
+	<string name="mesh_reach_everyone">近くにあるすべての Zerion 端末</string>
+	<string name="mesh_reach_everyone_message">この端末は、このモードで Zerion のメッシュを使っている近くのすべての端末と接続します。相手の端末があなたの封印されたメッセージを中継し、あなたの端末も相手のメッセージを中継するため、メッセージがより遠くまで届きます。その場合、近くで Bluetooth スキャナーを持つ人なら誰でも、この端末が Zerion のメッシュを使っていることはわかりますが、何を送っているかはわかりません。「連絡先のみ」に設定した端末は、このモードの端末とは接続しません。</string>
 	<string name="mesh_unsupported">オフラインメッシュには Android 12 以降が必要です</string>
 	<string name="mesh_permission_denied">オフラインメッシュには Bluetooth と近距離デバイスの権限が必要です</string>
 	<string name="mesh_alias_title">メッシュ実行中の Bluetooth 名</string>

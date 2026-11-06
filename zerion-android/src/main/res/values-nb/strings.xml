@@ -629,7 +629,11 @@
 	<string name="i2p_toggle_summary">Send også trafikk gjennom I2P-nettverket</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Tilkobling</string>
-	<string name="mesh_info_message">Meldinger forsegles for mottakeren og videresendes fra enhet til enhet av telefoner i nærheten som kjører Zerion. Når du slår på dette, blir du bedt om tillatelser for Bluetooth og enheter i nærheten, og appen sender lokalt: hvem som helst i nærheten med en Bluetooth-skanner kan se at denne telefonen bruker Zerion-nettet, men ikke hva den sender.</string>
+	<string name="mesh_info_message">Meldinger forsegles for mottakeren og sendes fra telefon til telefon via Bluetooth. Når du slår på dette, blir du bedt om tillatelser for Bluetooth og enheter i nærheten. Med «Bare kontakter» kobler telefonen din seg bare til telefonene til kontaktene dine, og Bluetooth-signalet har ikke noe fast Zerion-kjennetegn. Til det trenger kontakten Zerion 3.0.19 eller nyere, og dere to må ha vært på nett samtidig minst én gang etter oppdateringen.</string>
+	<string name="mesh_reach_title">Meshen kobler seg til</string>
+	<string name="mesh_reach_contacts">Bare kontakter</string>
+	<string name="mesh_reach_everyone">Alle Zerion-telefoner i nærheten</string>
+	<string name="mesh_reach_everyone_message">Telefonen din kobler seg til alle telefoner i nærheten som kjører Zerion-meshen i denne modusen. De sender videre de forseglede meldingene dine, og du sender videre deres, slik at meldinger når lenger. Hvem som helst i nærheten med en Bluetooth-skanner kan da se at denne telefonen bruker Zerion-meshen, men ikke hva den sender. Telefoner som er satt til «Bare kontakter», kobler seg ikke til telefoner i denne modusen.</string>
 	<string name="mesh_permission_denied">Offline-mesh trenger tillatelser for Bluetooth og enheter i nærheten</string>
 	<string name="mesh_alias_title">Bluetooth-navn mens meshen kjører</string>
 	<string name="mesh_range_title">Bluetooth-rekkevidde</string>

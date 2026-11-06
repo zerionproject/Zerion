@@ -625,7 +625,11 @@
 	<string name="settings_section_mesh">MALHA OFFLINE</string>
 	<string name="mesh_toggle_title">Malha offline</string>
 	<string name="mesh_toggle_summary">Alcance contatos próximos sem internet, via Bluetooth</string>
-	<string name="mesh_info_message">As mensagens são seladas para o destinatário e retransmitidas de dispositivo em dispositivo por telefones próximos que usam o Zerion. Ativar isto solicita permissões de Bluetooth e de dispositivos próximos e transmite localmente: qualquer pessoa por perto com um scanner Bluetooth pode saber que este telefone usa a rede do Zerion, mas não o que ele envia.</string>
+	<string name="mesh_info_message">As mensagens são seladas para o destinatário e passam de celular em celular por Bluetooth. Ativar isto solicita permissões de Bluetooth e de dispositivos próximos. Com “Somente contatos”, seu celular se conecta apenas aos celulares dos seus contatos, e o sinal Bluetooth dele não carrega nenhuma marca fixa do Zerion. Para isso, o contato precisa do Zerion 3.0.19 ou mais recente, e vocês dois precisam ter ficado online ao mesmo tempo pelo menos uma vez desde a atualização.</string>
+	<string name="mesh_reach_title">A malha se conecta com</string>
+	<string name="mesh_reach_contacts">Somente contatos</string>
+	<string name="mesh_reach_everyone">Todos os celulares com Zerion por perto</string>
+	<string name="mesh_reach_everyone_message">Seu celular vai se conectar a todos os celulares por perto que usam a malha do Zerion neste modo. Eles repassam suas mensagens seladas e você repassa as deles, assim as mensagens chegam mais longe. Qualquer pessoa por perto com um scanner Bluetooth pode então saber que este celular usa a malha do Zerion, mas não o que ele envia. Celulares configurados como “Somente contatos” não se conectam a celulares neste modo.</string>
 	<string name="mesh_unsupported">A malha offline precisa do Android 12 ou mais recente</string>
 	<string name="mesh_permission_denied">A malha offline precisa das permissões de Bluetooth e de dispositivos próximos</string>
 	<string name="mesh_alias_title">Nome Bluetooth enquanto a malha está ativa</string>

@@ -181,7 +181,11 @@
 	<string name="i2p_toggle_summary">Turut halakan melalui rangkaian I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Kesambungan</string>
-	<string name="mesh_info_message">Mesej dimeterai supaya hanya penerima dapat membukanya, dan disampaikan dari peranti ke peranti oleh telefon berdekatan yang menjalankan Zerion. Menghidupkan ini akan meminta kebenaran Bluetooth dan peranti berdekatan, serta membuat siaran secara setempat: sesiapa berdekatan yang mempunyai pengimbas Bluetooth boleh tahu bahawa telefon ini menggunakan jaringan Zerion, tetapi bukan apa yang dihantarnya.</string>
+	<string name="mesh_info_message">Mesej dimeterai supaya hanya penerima dapat membukanya, dan disampaikan dari telefon ke telefon melalui Bluetooth. Menghidupkan ini akan meminta kebenaran Bluetooth dan peranti berdekatan. Dengan “Kenalan sahaja”, telefon anda hanya bersambung dengan telefon kenalan anda, dan isyarat Bluetooth telefon itu tidak membawa sebarang tanda tetap Zerion. Untuk itu, kenalan memerlukan Zerion 3.0.19 atau lebih baharu, dan anda berdua mesti pernah berada dalam talian pada masa yang sama sekurang-kurangnya sekali sejak mengemas kini.</string>
+	<string name="mesh_reach_title">Mesh bersambung dengan</string>
+	<string name="mesh_reach_contacts">Kenalan sahaja</string>
+	<string name="mesh_reach_everyone">Setiap telefon Zerion berdekatan</string>
+	<string name="mesh_reach_everyone_message">Telefon anda akan bersambung dengan setiap telefon berdekatan yang menjalankan mesh Zerion dalam mod ini. Telefon itu menyampaikan mesej termeterai anda dan anda menyampaikan mesej mereka, jadi mesej dapat pergi lebih jauh. Sesiapa berdekatan yang mempunyai pengimbas Bluetooth kemudiannya boleh tahu bahawa telefon ini menggunakan mesh Zerion, tetapi bukan apa yang dihantarnya. Telefon yang ditetapkan kepada “Kenalan sahaja” tidak bersambung dengan telefon dalam mod ini.</string>
 	<string name="mesh_permission_denied">Mesh luar talian memerlukan kebenaran Bluetooth dan peranti berdekatan</string>
 	<string name="mesh_alias_title">Nama Bluetooth semasa mesh berjalan</string>
 	<string name="mesh_range_title">Julat Bluetooth</string>

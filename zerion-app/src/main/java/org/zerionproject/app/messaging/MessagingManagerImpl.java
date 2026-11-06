@@ -441,6 +441,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingLinkPreviewMessage(txn, m, metaDict);
 			} else if (messageType == MessageTypes.MESH_PREKEY_BUNDLE) {
 				incomingPrekeyBundle(txn, m);
+			} else if (messageType == MessageTypes.MESH_LINK_KEYS) {
+				incomingMeshLinkKeys(txn, m);
 			} else if (messageType == MessageTypes.GROUP_POST) {
 				incomingGroupPost(txn, m, metaDict);
 			} else if (messageType == MessageTypes.GROUP_MEMBER_ADDED
@@ -1231,6 +1233,50 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				throw new DbException(e);
 			}
 		});
+	}
+
+	@Override
+	public boolean sendMeshLinkKeys(ContactId contactId, byte[] advertKey,
+			byte[] pairSecret) throws DbException {
+		if (advertKey.length != MESH_LINK_KEY_BYTES
+				|| pairSecret.length != MESH_LINK_KEY_BYTES) {
+			throw new IllegalArgumentException();
+		}
+		return db.transactionWithResult(false, txn -> {
+			if (getContactClientMinorVersion(txn, contactId)
+					< MESH_LINK_KEYS_MIN_VERSION) {
+				return false;
+			}
+			try {
+				Contact contact = db.getContact(txn, contactId);
+				GroupId groupId = getContactGroup(contact).getId();
+				long timestamp = System.currentTimeMillis();
+				BdfList body = BdfList.of(MessageTypes.MESH_LINK_KEYS,
+						advertKey, pairSecret);
+				Message m = clientHelper.createMessage(groupId, timestamp, body);
+				BdfDictionary meta = new BdfDictionary();
+				meta.put(MSG_KEY_TIMESTAMP, timestamp);
+				meta.put(MSG_KEY_LOCAL, true);
+				meta.put(MSG_KEY_READ, true);
+				meta.put(MSG_KEY_MSG_TYPE, MessageTypes.MESH_LINK_KEYS);
+				clientHelper.addLocalMessage(txn, m, meta, true, false);
+				db.setCleanupTimerDuration(txn, m.getId(),
+						CONTROL_KEPT_AFTER_ACK_MS);
+			} catch (FormatException e) {
+				throw new DbException(e);
+			}
+			return true;
+		});
+	}
+
+	private void incomingMeshLinkKeys(Transaction txn, Message m)
+			throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		BdfList body = clientHelper.toList(m.getBody());
+		txn.attach(new org.zerionproject.app.api.messaging.event
+				.MeshLinkKeysReceivedEvent(contactId, body.getRaw(1),
+				body.getRaw(2)));
+		startEphemeralCleanupTimer(txn, m.getId());
 	}
 
 	private void incomingPrekeyBundle(Transaction txn, Message m)

@@ -444,7 +444,11 @@
 	<string name="i2p_toggle_summary">Reititä liikenne myös I2P-verkon kautta</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Yhteys</string>
-	<string name="mesh_info_message">Viestit sinetöidään vastaanottajalle, ja lähellä olevat Zerionia käyttävät puhelimet välittävät ne laitteelta toiselle. Kun otat tämän käyttöön, sovellus pyytää Bluetooth- ja lähilaiteluvat ja lähettää paikallisesti: kuka tahansa lähellä oleva, jolla on Bluetooth-skanneri, voi havaita, että tämä puhelin käyttää Zerionin verkkoa, mutta ei sitä, mitä se lähettää.</string>
+	<string name="mesh_info_message">Viestit sinetöidään vastaanottajalle, ja ne kulkevat puhelimesta toiseen Bluetoothin kautta. Kun otat tämän käyttöön, sovellus pyytää Bluetooth- ja lähilaiteluvat. Kun valittuna on ”Vain yhteystiedot”, puhelimesi muodostaa yhteyden vain yhteystietojesi puhelimiin, eikä sen Bluetooth-signaalissa ole pysyvää Zerion-tunnistetta. Tätä varten yhteystiedolla on oltava Zerion 3.0.19 tai uudempi, ja teidän molempien on täytynyt olla verkossa samaan aikaan ainakin kerran päivityksen jälkeen.</string>
+	<string name="mesh_reach_title">Meshin yhteydet</string>
+	<string name="mesh_reach_contacts">Vain yhteystiedot</string>
+	<string name="mesh_reach_everyone">Kaikki lähellä olevat Zerion-puhelimet</string>
+	<string name="mesh_reach_everyone_message">Puhelimesi muodostaa yhteyden kaikkiin lähellä oleviin puhelimiin, jotka käyttävät Zerionin meshiä tässä tilassa. Ne välittävät sinetöityjä viestejäsi ja sinä välität niiden viestejä, joten viestit kulkevat pidemmälle. Kuka tahansa lähellä oleva, jolla on Bluetooth-skanneri, voi silloin havaita, että tämä puhelin käyttää Zerionin meshiä, mutta ei sitä, mitä se lähettää. Puhelimet, joissa on valittuna ”Vain yhteystiedot”, eivät muodosta yhteyttä tässä tilassa oleviin puhelimiin.</string>
 	<string name="mesh_permission_denied">Offline-mesh tarvitsee Bluetooth- ja lähilaiteluvat</string>
 	<string name="mesh_alias_title">Bluetooth-nimi meshin ollessa käynnissä</string>
 	<string name="mesh_range_title">Bluetooth-kantama</string>

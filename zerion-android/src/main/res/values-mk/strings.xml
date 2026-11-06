@@ -550,7 +550,11 @@
 	<string name="i2p_toggle_summary">Насочувај сообраќај и преку мрежата I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Поврзаност</string>
-	<string name="mesh_info_message">Пораките се запечатени за примачот и ги пренесуваат од уред до уред телефоните во близина на кои работи Zerion. Со вклучување се бараат дозволи за Bluetooth и за уреди во близина и се емитува локално: секој во близина со Bluetooth скенер може да види дека овој телефон ја користи мрежата на Zerion, но не и што испраќа.</string>
+	<string name="mesh_info_message">Пораките се запечатени за примачот и се пренесуваат од телефон до телефон преку Bluetooth. Со вклучување се бараат дозволи за Bluetooth и за уреди во близина. Со „Само контакти“, твојот телефон се поврзува само со телефоните на твоите контакти, а неговиот Bluetooth сигнал не носи никаква постојана ознака на Zerion. За тоа, контактот треба да има Zerion 3.0.19 или понова верзија, а вие двајцата мора барем еднаш по ажурирањето да сте биле онлајн во исто време.</string>
+	<string name="mesh_reach_title">Mesh мрежата се поврзува со</string>
+	<string name="mesh_reach_contacts">Само контакти</string>
+	<string name="mesh_reach_everyone">Секој телефон со Zerion во близина</string>
+	<string name="mesh_reach_everyone_message">Твојот телефон ќе се поврзува со секој телефон во близина на кој mesh мрежата на Zerion работи во овој режим. Тие ги пренесуваат твоите запечатени пораки, а ти ги пренесуваш нивните, па пораките стигнуваат подалеку. Секој во близина со Bluetooth скенер тогаш може да види дека овој телефон ја користи mesh мрежата на Zerion, но не и што испраќа. Телефоните поставени на „Само контакти“ не се поврзуваат со телефони во овој режим.</string>
 	<string name="mesh_permission_denied">Офлајн mesh мрежата бара дозволи за Bluetooth и за уреди во близина</string>
 	<string name="mesh_alias_title">Bluetooth име додека работи mesh мрежата</string>
 	<string name="mesh_range_title">Bluetooth опсег</string>

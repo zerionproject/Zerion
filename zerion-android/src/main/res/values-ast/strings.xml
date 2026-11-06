@@ -124,7 +124,11 @@
 	<string name="i2p_toggle_summary">Enrutar tamién pela rede I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conexón</string>
-	<string name="mesh_info_message">Los mensaxes van sellaos pal destinatariu y pasen de dispositivu en dispositivu al traviés de los teléfonos cercanos qu\'usen Zerion. Activar esto pide los permisos de Bluetooth y de dispositivos cercanos, y emite llocalmente: cualquier persona cercana con un escáner de Bluetooth pue saber qu\'esti teléfonu usa la rede de Zerion, pero non lo que unvia.</string>
+	<string name="mesh_info_message">Los mensaxes van sellaos pal destinatariu y pasen de teléfonu en teléfonu per Bluetooth. Activar esto pide los permisos de Bluetooth y de dispositivos cercanos. Con «Namás contautos», el to teléfonu coneútase namás colos teléfonos de los tos contautos, y la so señal de Bluetooth nun lleva nenguna marca fixa de Zerion. Pa eso, el contautu precisa Zerion 3.0.19 o posterior, y los dos tenéis qu\'haber tao en llinia al empar polo menos una vegada dende l\'anovamientu.</string>
+	<string name="mesh_reach_title">La rede en malla coneútase con</string>
+	<string name="mesh_reach_contacts">Namás contautos</string>
+	<string name="mesh_reach_everyone">Tolos teléfonos con Zerion cercanos</string>
+	<string name="mesh_reach_everyone_message">El to teléfonu va coneutase con tolos teléfonos cercanos qu\'usen la rede en malla de Zerion nesti mou. Ellos pasen los tos mensaxes sellaos y tu pases los suyos, asina los mensaxes lleguen más lloñe. Cualquier persona cercana con un escáner de Bluetooth pue saber entós qu\'esti teléfonu usa la rede en malla de Zerion, pero non lo que unvia. Los teléfonos configuraos en «Namás contautos» nun se coneuten con teléfonos nesti mou.</string>
 	<string name="mesh_permission_denied">La rede en malla sin conexón precisa los permisos de Bluetooth y de dispositivos cercanos</string>
 	<string name="mesh_alias_title">Nome de Bluetooth mentes funciona la rede en malla</string>
 	<string name="mesh_range_title">Algame del Bluetooth</string>

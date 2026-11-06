@@ -122,10 +122,14 @@ Bluetooth is off, it registers for `ACTION_STATE_CHANGED` and brings the radio
 up the moment Bluetooth is switched on, and tears it back down when Bluetooth is
 switched off, without needing the mesh to be toggled again.
 
-Residual: the discovery secret ships in the app and its public source, so anyone
-can compute the current identifier and detect Zerion presence. Fully hiding participation
-would require contact-scoped discovery, which breaks open relaying. This is a
-documented, deferred design choice.
+From 3.0.19 the mesh links with contacts only unless the user chooses the open
+mode: the advertisement is then a random value with a tag only the device's
+contacts can check, valid for about half an hour, and a link passes frames only
+after both sides proved a key the two contacts share (see "Contacts only mode" in
+protocol/MESH-TRANSPORT.md). In the open mode the discovery seed ships in the
+app and its public source, so anyone can compute the current identifier and
+detect a device that runs the open mesh. In both modes a device that connects
+can read the fixed GATT service.
 
 ### Bluetooth privacy
 

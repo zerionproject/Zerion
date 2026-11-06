@@ -548,7 +548,11 @@ copies des messages que vous envoyez.
 	<string name="settings_section_mesh">MAILLAGE HORS LIGNE</string>
 	<string name="mesh_toggle_title">Maillage hors ligne</string>
 	<string name="mesh_toggle_summary">Joindre les contacts proches sans Internet, via Bluetooth</string>
-	<string name="mesh_info_message">Les messages sont scellés pour le destinataire et relayés d\'appareil en appareil par les téléphones à proximité qui utilisent Zerion. Activer cette option demande les autorisations Bluetooth et d\'appareils à proximité, et diffuse localement : toute personne à proximité équipée d\'un scanner Bluetooth peut savoir que ce téléphone utilise le réseau maillé de Zerion, mais pas ce qu\'il envoie.</string>
+	<string name="mesh_info_message">Les messages sont scellés pour le destinataire et passent de téléphone en téléphone par Bluetooth. Activer cette option demande les autorisations Bluetooth et d\'appareils à proximité. Avec « Contacts uniquement », votre téléphone se connecte uniquement aux téléphones de vos contacts, et son signal Bluetooth ne porte aucune marque fixe de Zerion. Pour cela, le contact doit avoir Zerion 3.0.19 ou une version plus récente, et vous devez tous les deux avoir été en ligne en même temps au moins une fois depuis la mise à jour.</string>
+	<string name="mesh_reach_title">Le maillage se connecte à</string>
+	<string name="mesh_reach_contacts">Contacts uniquement</string>
+	<string name="mesh_reach_everyone">Tous les téléphones Zerion à proximité</string>
+	<string name="mesh_reach_everyone_message">Votre téléphone se connectera à tous les téléphones à proximité qui utilisent le maillage Zerion dans ce mode. Ils relaient vos messages scellés et vous relayez les leurs, ce qui permet aux messages d\'aller plus loin. Toute personne à proximité équipée d\'un scanner Bluetooth peut alors savoir que ce téléphone utilise le maillage Zerion, mais pas ce qu\'il envoie. Les téléphones réglés sur « Contacts uniquement » ne se connectent pas aux téléphones dans ce mode.</string>
 	<string name="mesh_unsupported">Le maillage hors ligne nécessite Android 12 ou une version plus récente</string>
 	<string name="mesh_permission_denied">Le maillage hors ligne nécessite les autorisations Bluetooth et d\'appareils à proximité</string>
 	<string name="mesh_alias_title">Nom Bluetooth pendant le fonctionnement du maillage</string>

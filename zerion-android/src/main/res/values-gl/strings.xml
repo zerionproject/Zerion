@@ -592,7 +592,11 @@
 	<string name="i2p_toggle_summary">Enrutar tamén a través da rede I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectividade</string>
-	<string name="mesh_info_message">As mensaxes van seladas para o destinatario e retransmítenas de dispositivo en dispositivo os teléfonos próximos que usan Zerion. Ao activar isto, pídense os permisos de Bluetooth e de dispositivos próximos, e emítese localmente: calquera persoa próxima cun escáner de Bluetooth pode saber que este teléfono usa a rede de Zerion, pero non o que envía.</string>
+	<string name="mesh_info_message">As mensaxes van seladas para o destinatario e pasan de teléfono en teléfono por Bluetooth. Ao activar isto, pídense os permisos de Bluetooth e de dispositivos próximos. Con «Só contactos», o teu teléfono conéctase só cos teléfonos dos teus contactos, e o seu sinal de Bluetooth non leva ningunha marca fixa de Zerion. Para iso, o contacto precisa Zerion 3.0.19 ou posterior, e os dous tedes que ter estado en liña ao mesmo tempo polo menos unha vez desde a actualización.</string>
+	<string name="mesh_reach_title">A rede en malla conéctase con</string>
+	<string name="mesh_reach_contacts">Só contactos</string>
+	<string name="mesh_reach_everyone">Todos os teléfonos con Zerion próximos</string>
+	<string name="mesh_reach_everyone_message">O teu teléfono conectarase con todos os teléfonos próximos que usan a rede en malla de Zerion neste modo. Eles retransmiten as túas mensaxes seladas e ti retransmites as súas, así as mensaxes chegan máis lonxe. Calquera persoa próxima cun escáner de Bluetooth pode saber entón que este teléfono usa a rede en malla de Zerion, pero non o que envía. Os teléfonos configurados en «Só contactos» non se conectan con teléfonos neste modo.</string>
 	<string name="mesh_permission_denied">A rede en malla sen conexión necesita os permisos de Bluetooth e de dispositivos próximos</string>
 	<string name="mesh_alias_title">Nome Bluetooth mentres funciona a rede en malla</string>
 	<string name="mesh_range_title">Alcance do Bluetooth</string>

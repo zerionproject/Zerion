@@ -612,7 +612,11 @@
 	<string name="settings_section_mesh">الشبكة المتداخلة دون اتصال</string>
 	<string name="mesh_toggle_title">الشبكة المتداخلة دون اتصال</string>
 	<string name="mesh_toggle_summary">الوصول إلى جهات الاتصال القريبة دون إنترنت، عبر Bluetooth</string>
-	<string name="mesh_info_message">تُختم الرسائل للمستلم وتنقلها الهواتف القريبة التي تشغّل Zerion من جهاز إلى آخر. تشغيل هذا يطلب أذونات Bluetooth والأجهزة القريبة ويبث محليًا: يمكن لأي شخص قريب لديه ماسح Bluetooth أن يعرف أن هذا الهاتف يستخدم شبكة Zerion، لكن ليس ما يرسله.</string>
+	<string name="mesh_info_message">تُختم الرسائل للمستلم وتنتقل من هاتف إلى آخر عبر Bluetooth. تشغيل هذا يطلب أذونات Bluetooth والأجهزة القريبة. مع خيار «جهات الاتصال فقط»، يتصل هاتفك بهواتف جهات اتصالك فقط، ولا تحمل إشارة Bluetooth الصادرة عنه أي علامة ثابتة تدل على Zerion. لذلك يجب أن يكون لدى جهة الاتصال Zerion 3.0.19 أو أحدث، وأن تكونا قد كنتما متصلين بالإنترنت في الوقت نفسه مرة واحدة على الأقل منذ التحديث.</string>
+	<string name="mesh_reach_title">الشبكة المتداخلة تتصل مع</string>
+	<string name="mesh_reach_contacts">جهات الاتصال فقط</string>
+	<string name="mesh_reach_everyone">كل هاتف قريب يستخدم Zerion</string>
+	<string name="mesh_reach_everyone_message">سيتصل هاتفك بكل هاتف قريب يشغّل شبكة Zerion المتداخلة في هذا الوضع. تنقل تلك الهواتف رسائلك المختومة وتنقل أنت رسائلها، فتصل الرسائل إلى مسافة أبعد. يمكن عندها لأي شخص قريب لديه ماسح Bluetooth أن يعرف أن هذا الهاتف يستخدم شبكة Zerion المتداخلة، لكن ليس ما يرسله. الهواتف المضبوطة على «جهات الاتصال فقط» لا تتصل بالهواتف في هذا الوضع.</string>
 	<string name="mesh_unsupported">تتطلب الشبكة المتداخلة دون اتصال Android 12 أو أحدث</string>
 	<string name="mesh_permission_denied">تتطلب الشبكة المتداخلة دون اتصال أذونات Bluetooth والأجهزة القريبة</string>
 	<string name="mesh_alias_title">اسم Bluetooth أثناء تشغيل الشبكة المتداخلة</string>

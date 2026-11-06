@@ -628,7 +628,11 @@
 	<string name="i2p_toggle_summary">Маршрутизиране и през мрежата I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Свързаност</string>
-	<string name="mesh_info_message">Съобщенията се запечатват за получателя и се предават от устройство на устройство чрез телефони наблизо, на които работи Zerion. Включването изисква разрешения за Bluetooth и за устройства наблизо и излъчва локално: всеки наблизо с Bluetooth скенер може да разбере, че този телефон използва мрежата на Zerion, но не и какво изпраща.</string>
+	<string name="mesh_info_message">Съобщенията се запечатват за получателя и се предават от телефон на телефон чрез Bluetooth. Включването изисква разрешения за Bluetooth и за устройства наблизо. При „Само контакти“ телефонът ти се свързва само с телефоните на твоите контакти и неговият Bluetooth сигнал не съдържа постоянен белег на Zerion. За това контактът трябва да има Zerion 3.0.19 или по-нова версия и двамата трябва да сте били на линия по едно и също време поне веднъж след актуализацията.</string>
+	<string name="mesh_reach_title">Mesh мрежата се свързва с</string>
+	<string name="mesh_reach_contacts">Само контакти</string>
+	<string name="mesh_reach_everyone">Всеки телефон със Zerion наблизо</string>
+	<string name="mesh_reach_everyone_message">Телефонът ти ще се свързва с всеки телефон наблизо, на който mesh мрежата на Zerion работи в този режим. Те препредават твоите запечатани съобщения, а ти препредаваш техните, така че съобщенията стигат по-далеч. Всеки наблизо с Bluetooth скенер може тогава да разбере, че този телефон използва mesh мрежата на Zerion, но не и какво изпраща. Телефоните, настроени на „Само контакти“, не се свързват с телефони в този режим.</string>
 	<string name="mesh_permission_denied">Офлайн mesh мрежата изисква разрешения за Bluetooth и за устройства наблизо</string>
 	<string name="mesh_alias_title">Bluetooth име, докато mesh мрежата работи</string>
 	<string name="mesh_range_title">Обхват на Bluetooth</string>

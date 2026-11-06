@@ -528,7 +528,11 @@
 	<string name="settings_section_mesh">離線網狀網路</string>
 	<string name="mesh_toggle_title">離線網狀網路</string>
 	<string name="mesh_toggle_summary">在沒有網際網路的情況下透過 Bluetooth 聯絡附近的聯絡人</string>
-	<string name="mesh_info_message">訊息會針對收件者密封，並由附近執行 Zerion 的手機在裝置之間轉送。開啟此功能會要求 Bluetooth 與鄰近裝置權限，並於本機廣播：附近任何擁有 Bluetooth 掃描器的人都能看出這支手機在使用 Zerion 網狀網路，但看不到它傳送的內容。</string>
+	<string name="mesh_info_message">訊息會針對收件者密封，並透過 Bluetooth 在手機之間傳遞。開啟此功能會要求 Bluetooth 與鄰近裝置權限。選擇「僅限聯絡人」時，您的手機只會與聯絡人的手機連線，其 Bluetooth 訊號中不帶有 Zerion 的固定標記。為此，聯絡人需要使用 Zerion 3.0.19 或更新版本，而且更新後雙方至少要同時上線過一次。</string>
+	<string name="mesh_reach_title">網狀網路連線對象</string>
+	<string name="mesh_reach_contacts">僅限聯絡人</string>
+	<string name="mesh_reach_everyone">附近所有 Zerion 手機</string>
+	<string name="mesh_reach_everyone_message">您的手機會與附近所有以此模式執行 Zerion 網狀網路的手機連線。它們會轉送您的密封訊息，您也會轉送它們的訊息，因此訊息可以傳得更遠。這樣一來，附近任何擁有 Bluetooth 掃描器的人都能看出這支手機在使用 Zerion 網狀網路，但看不到它傳送的內容。設定為「僅限聯絡人」的手機不會與此模式下的手機連線。</string>
 	<string name="mesh_unsupported">離線網狀網路需要 Android 12 或更新版本</string>
 	<string name="mesh_permission_denied">離線網狀網路需要 Bluetooth 與鄰近裝置權限</string>
 	<string name="mesh_alias_title">網狀網路執行時的 Bluetooth 名稱</string>

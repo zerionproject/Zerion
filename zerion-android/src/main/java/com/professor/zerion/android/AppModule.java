@@ -758,10 +758,13 @@ public class AppModule {
 			com.professor.zerion.android.mesh.BluetoothNameGuard nameGuard,
 			org.briarproject.android.dontkillmelib.wakelock
 					.AndroidWakeLockManager wakeLocks,
-			org.zerionproject.core.api.system.TaskScheduler scheduler) {
-		return new MeshManager(context, crypto, identityManager, db,
-				settingsManager, clock, router, nameGuard, wakeLocks,
-				scheduler);
+			org.zerionproject.core.api.system.TaskScheduler scheduler,
+			com.professor.zerion.android.mesh.MeshLinkKeys linkKeys) {
+		MeshManager manager = new MeshManager(context, crypto,
+				identityManager, db, settingsManager, clock, router,
+				nameGuard, wakeLocks, scheduler);
+		manager.setLinkKeys(linkKeys);
+		return manager;
 	}
 
 	@Provides

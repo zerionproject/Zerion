@@ -565,7 +565,11 @@
 	<string name="i2p_toggle_summary">ניתוב גם דרך רשת I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">קישוריות</string>
-	<string name="mesh_info_message">ההודעות מוצפנות כך שרק הנמען יכול לפתוח אותן, וטלפונים קרובים שמריצים את Zerion מעבירים אותן ממכשיר למכשיר. הפעלת האפשרות מבקשת הרשאות Bluetooth ומכשירים בקרבת מקום, ומשדרת באופן מקומי: כל מי שנמצא בקרבת מקום עם סורק Bluetooth יכול לדעת שהטלפון הזה משתמש ברשת של Zerion, אבל לא מה הוא שולח.</string>
+	<string name="mesh_info_message">ההודעות מוצפנות כך שרק הנמען יכול לפתוח אותן, ועוברות מטלפון לטלפון דרך Bluetooth. הפעלת האפשרות מבקשת הרשאות Bluetooth ומכשירים בקרבת מקום. עם \"אנשי קשר בלבד\", הטלפון שלך מתחבר רק לטלפונים של אנשי הקשר שלך, ואות ה-Bluetooth שלו לא נושא שום סימן קבוע של Zerion. לשם כך איש הקשר צריך Zerion 3.0.19 ומעלה, ושניכם צריכים להיות מחוברים לאינטרנט באותו זמן לפחות פעם אחת מאז העדכון.</string>
+	<string name="mesh_reach_title">רשת ה-Mesh מתחברת אל</string>
+	<string name="mesh_reach_contacts">אנשי קשר בלבד</string>
+	<string name="mesh_reach_everyone">כל טלפון עם Zerion בקרבת מקום</string>
+	<string name="mesh_reach_everyone_message">הטלפון שלך יתחבר לכל טלפון בקרבת מקום שמריץ את רשת ה-Mesh של Zerion במצב הזה. הם מעבירים הלאה את ההודעות המוצפנות שלך והטלפון שלך מעביר את שלהם, וכך ההודעות מגיעות רחוק יותר. כל מי שנמצא בקרבת מקום עם סורק Bluetooth יכול אז לדעת שהטלפון הזה משתמש ברשת ה-Mesh של Zerion, אבל לא מה הוא שולח. טלפונים שמוגדרים למצב \"אנשי קשר בלבד\" לא מתחברים לטלפונים במצב הזה.</string>
 	<string name="mesh_permission_denied">רשת Mesh לא מקוונת דורשת הרשאות Bluetooth ומכשירים בקרבת מקום</string>
 	<string name="mesh_alias_title">שם Bluetooth בזמן שרשת ה-Mesh פועלת</string>
 	<string name="mesh_range_title">טווח Bluetooth</string>

@@ -547,7 +547,11 @@
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Bereik contacten in de buurt zonder internet, via Bluetooth</string>
-	<string name="mesh_info_message">Berichten worden verzegeld voor de ontvanger en door telefoons in de buurt waarop Zerion draait van apparaat naar apparaat doorgegeven. Dit inschakelen vraagt om Bluetooth- en nabije-apparaten-toestemmingen en zendt lokaal uit: iedereen in de buurt met een Bluetooth-scanner kan zien dat deze telefoon het Zerion-mesh gebruikt, maar niet wat hij verstuurt.</string>
+	<string name="mesh_info_message">Berichten worden verzegeld voor de ontvanger en gaan via Bluetooth van telefoon naar telefoon. Dit inschakelen vraagt om toestemming voor Bluetooth en apparaten in de buurt. Met Alleen contacten maakt je telefoon alleen verbinding met de telefoons van je contacten, en bevat het Bluetooth-signaal geen vast kenmerk van Zerion. Daarvoor heeft een contact Zerion 3.0.19 of nieuwer nodig, en moeten jullie sinds het updaten minstens één keer tegelijk online zijn geweest.</string>
+	<string name="mesh_reach_title">Mesh maakt verbinding met</string>
+	<string name="mesh_reach_contacts">Alleen contacten</string>
+	<string name="mesh_reach_everyone">Elke Zerion-telefoon in de buurt</string>
+	<string name="mesh_reach_everyone_message">Je telefoon maakt verbinding met elke telefoon in de buurt die de Zerion-mesh in deze modus gebruikt. Zij geven jouw verzegelde berichten door en jij die van hen, zodat berichten verder komen. Iedereen in de buurt met een Bluetooth-scanner kan dan zien dat deze telefoon de Zerion-mesh gebruikt, maar niet wat hij verstuurt. Telefoons die op Alleen contacten staan, maken geen verbinding met telefoons in deze modus.</string>
 	<string name="mesh_unsupported">Offline mesh vereist Android 12 of nieuwer</string>
 	<string name="mesh_permission_denied">Offline mesh vereist Bluetooth- en nabije-apparaten-toestemmingen</string>
 	<string name="mesh_alias_title">Bluetooth-naam terwijl de mesh actief is</string>

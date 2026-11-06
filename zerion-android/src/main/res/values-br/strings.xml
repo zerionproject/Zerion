@@ -137,7 +137,11 @@
 	<string name="i2p_toggle_summary">Tremen ivez dre ar rouedad I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Kennaskadurezh</string>
-	<string name="mesh_info_message">Ar c\'hemennadennoù a vez siellet evit an degemerer hag a vez treuzkaset eus un trevnad d\'egile gant ar pellgomzerioù tost a implij Zerion. Gweredekaat an dra-se a c\'houlenn an aotreoù Bluetooth hag an aotreoù evit an trevnadoù tost, hag a skign tro-dro: n\'eus forzh piv tost gant ur skanner Bluetooth a c\'hall gouzout e implij ar pellgomzer-mañ rouedad Zerion, met ket petra a gas.</string>
+	<string name="mesh_info_message">Ar c\'hemennadennoù a vez siellet evit an degemerer hag a dremen eus ur pellgomzer d\'egile dre Bluetooth. Gweredekaat an dra-se a c\'houlenn an aotreoù Bluetooth hag an aotreoù evit an trevnadoù tost. Gant « Darempredoù hepken » ne gennask ho pellgomzer nemet ouzh pellgomzerioù ho tarempredoù, ha n\'eus merk digemm ebet eus Zerion en e sinal Bluetooth. Evit se e rank an darempred kaout Zerion 3.0.19 pe nevesoc\'h, hag e rankit bezañ bet enlinenn ho-taou war un dro ur wech da nebeutañ abaoe an hizivadenn.</string>
+	<string name="mesh_reach_title">Ar mesh a gennask ouzh</string>
+	<string name="mesh_reach_contacts">Darempredoù hepken</string>
+	<string name="mesh_reach_everyone">Kement pellgomzer Zerion tost</string>
+	<string name="mesh_reach_everyone_message">Kennaskañ a raio ho pellgomzer ouzh kement pellgomzer tost a implij mesh Zerion er mod-mañ. Treuzkas a reont ho kemennadennoù siellet ha c\'hwi a dreuzkas o re, evel-se ez a ar c\'hemennadennoù pelloc\'h. N\'eus forzh piv tost gant ur skanner Bluetooth a c\'hall neuze gouzout e implij ar pellgomzer-mañ mesh Zerion, met ket petra a gas. Ar pellgomzerioù lakaet war « Darempredoù hepken » ne gennaskont ket ouzh ar pellgomzerioù er mod-mañ.</string>
 	<string name="mesh_permission_denied">Ar rouedad mesh ezlinenn he deus ezhomm eus an aotreoù Bluetooth hag an aotreoù evit an trevnadoù tost</string>
 	<string name="mesh_alias_title">Anv Bluetooth e-keit ha ma ya en-dro ar mesh</string>
 	<string name="mesh_range_title">Hedad Bluetooth</string>

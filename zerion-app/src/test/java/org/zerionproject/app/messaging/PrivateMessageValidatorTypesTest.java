@@ -165,6 +165,22 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void meshLinkKeys() throws Exception {
+		accept(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(32)), true, 0);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32)),
+				true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(31),
+				getRandomBytes(32)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(33)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, "not raw",
+				getRandomBytes(32)), true);
+		reject(BdfList.of(MessageTypes.MESH_LINK_KEYS, getRandomBytes(32),
+				getRandomBytes(32), 1), true);
+	}
+
+	@Test
 	public void groupPost() throws Exception {
 		allowHash();
 		allowSignature(true);

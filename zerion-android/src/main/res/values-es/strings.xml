@@ -625,7 +625,11 @@
 	<string name="settings_section_mesh">MALLA SIN CONEXIÓN</string>
 	<string name="mesh_toggle_title">Malla sin conexión</string>
 	<string name="mesh_toggle_summary">Contacta con personas cercanas sin internet, por Bluetooth</string>
-	<string name="mesh_info_message">Los mensajes se sellan para el destinatario y los retransmiten de dispositivo a dispositivo los teléfonos cercanos que usan Zerion. Al activar esto se solicitan permisos de Bluetooth y de dispositivos cercanos y se emite localmente: cualquier persona cercana con un escáner de Bluetooth puede saber que este teléfono usa la red de Zerion, pero no lo que envía.</string>
+	<string name="mesh_info_message">Los mensajes se sellan para el destinatario y pasan de teléfono a teléfono por Bluetooth. Al activar esto se solicitan permisos de Bluetooth y de dispositivos cercanos. Con «Solo contactos», tu teléfono se conecta únicamente con los teléfonos de tus contactos, y su señal de Bluetooth no lleva ninguna marca fija de Zerion. Para ello, el contacto necesita Zerion 3.0.19 o posterior, y los dos deben haber estado en línea al mismo tiempo al menos una vez desde la actualización.</string>
+	<string name="mesh_reach_title">La malla se conecta con</string>
+	<string name="mesh_reach_contacts">Solo contactos</string>
+	<string name="mesh_reach_everyone">Todos los teléfonos con Zerion cercanos</string>
+	<string name="mesh_reach_everyone_message">Tu teléfono se conectará con todos los teléfonos cercanos que usen la malla de Zerion en este modo. Ellos retransmiten tus mensajes sellados y tú retransmites los suyos, así los mensajes llegan más lejos. Cualquier persona cercana con un escáner de Bluetooth puede saber entonces que este teléfono usa la malla de Zerion, pero no lo que envía. Los teléfonos configurados en «Solo contactos» no se conectan con teléfonos en este modo.</string>
 	<string name="mesh_unsupported">La malla sin conexión necesita Android 12 o posterior</string>
 	<string name="mesh_permission_denied">La malla sin conexión necesita permisos de Bluetooth y de dispositivos cercanos</string>
 	<string name="mesh_alias_title">Nombre Bluetooth mientras la malla está activa</string>

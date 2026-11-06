@@ -633,7 +633,11 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="i2p_toggle_summary">Forgalom irányítása az I2P hálózaton keresztül is</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Kapcsolódás</string>
-	<string name="mesh_info_message">Az üzeneteket a rendszer a címzett számára lepecsételi, és a közelben lévő, Zeriont futtató telefonok továbbítják eszközről eszközre. Bekapcsoláskor az alkalmazás engedélyt kér a Bluetooth és a közeli eszközök használatára, és helyben sugároz: bárki a közelben, akinek Bluetooth-szkennere van, megállapíthatja, hogy ez a telefon a Zerion hálózatát használja, azt azonban nem, hogy mit küld.</string>
+	<string name="mesh_info_message">Az üzeneteket a rendszer a címzett számára lepecsételi, és Bluetooth-on keresztül telefonról telefonra továbbítja. Bekapcsoláskor az alkalmazás engedélyt kér a Bluetooth és a közeli eszközök használatára. A „Csak kapcsolatok” beállításnál a telefonja csak a kapcsolatai telefonjaihoz csatlakozik, és a Bluetooth-jele nem tartalmaz állandó Zerion-azonosítót. Ehhez a kapcsolatnak Zerion 3.0.19 vagy újabb verzióra van szüksége, és a frissítés óta legalább egyszer mindkettőjüknek egyszerre kellett online lennie.</string>
+	<string name="mesh_reach_title">A mesh ezekhez csatlakozik</string>
+	<string name="mesh_reach_contacts">Csak kapcsolatok</string>
+	<string name="mesh_reach_everyone">Minden közeli Zerion-telefon</string>
+	<string name="mesh_reach_everyone_message">A telefonja minden olyan közeli telefonhoz csatlakozik, amelyen a Zerion mesh ebben a módban fut. Ezek a telefonok továbbadják a lepecsételt üzeneteit, a telefonja pedig továbbadja az övéiket, így az üzenetek messzebbre jutnak. Bárki a közelben, akinek Bluetooth-szkennere van, ekkor megállapíthatja, hogy ez a telefon a Zerion mesh hálózatát használja, azt azonban nem, hogy mit küld. A „Csak kapcsolatok” beállítású telefonok nem csatlakoznak az ebben a módban lévő telefonokhoz.</string>
 	<string name="mesh_permission_denied">Az offline mesh hálózathoz engedély kell a Bluetooth és a közeli eszközök használatára</string>
 	<string name="mesh_alias_title">Bluetooth-név a mesh futása közben</string>
 	<string name="mesh_range_title">Bluetooth-hatótávolság</string>

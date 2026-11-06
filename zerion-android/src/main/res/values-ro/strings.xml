@@ -643,7 +643,11 @@
 	<string name="i2p_toggle_summary">Rutare și prin rețeaua I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectivitate</string>
-	<string name="mesh_info_message">Mesajele sunt sigilate pentru destinatar și transmise din dispozitiv în dispozitiv de telefoanele din apropiere care rulează Zerion. Activarea solicită permisiunile Bluetooth și pentru dispozitive din apropiere și emite local: oricine din apropiere are un scaner Bluetooth poate afla că acest telefon folosește rețeaua Zerion, dar nu și ce trimite.</string>
+	<string name="mesh_info_message">Mesajele sunt sigilate pentru destinatar și trec de la un telefon la altul prin Bluetooth. Activarea solicită permisiunile Bluetooth și pentru dispozitive din apropiere. Cu „Doar contacte”, telefonul dvs. se conectează doar cu telefoanele contactelor dvs., iar semnalul său Bluetooth nu poartă niciun marcaj fix al aplicației Zerion. Pentru aceasta, contactul are nevoie de Zerion 3.0.19 sau o versiune mai nouă, iar amândoi trebuie să fi fost online în același timp cel puțin o dată de la actualizare.</string>
+	<string name="mesh_reach_title">Rețeaua mesh se conectează cu</string>
+	<string name="mesh_reach_contacts">Doar contacte</string>
+	<string name="mesh_reach_everyone">Orice telefon cu Zerion din apropiere</string>
+	<string name="mesh_reach_everyone_message">Telefonul dvs. se va conecta cu orice telefon din apropiere care rulează rețeaua mesh Zerion în acest mod. Acestea transmit mai departe mesajele dvs. sigilate, iar dvs. le transmiteți pe ale lor, astfel încât mesajele ajung mai departe. Oricine din apropiere are un scaner Bluetooth poate afla atunci că acest telefon folosește rețeaua mesh Zerion, dar nu și ce trimite. Telefoanele setate pe „Doar contacte” nu se conectează cu telefoanele din acest mod.</string>
 	<string name="mesh_permission_denied">Rețeaua mesh offline necesită permisiunile Bluetooth și pentru dispozitive din apropiere</string>
 	<string name="mesh_alias_title">Numele Bluetooth cât timp rulează rețeaua mesh</string>
 	<string name="mesh_range_title">Raza Bluetooth</string>

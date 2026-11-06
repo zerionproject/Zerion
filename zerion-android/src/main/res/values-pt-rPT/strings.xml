@@ -695,7 +695,11 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="i2p_toggle_summary">Encaminhar também pela rede I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Conectividade</string>
-	<string name="mesh_info_message">As mensagens são seladas para o destinatário e retransmitidas de dispositivo em dispositivo pelos telemóveis próximos que usam o Zerion. Ativar esta opção pede as permissões de Bluetooth e de dispositivos próximos e faz emissões locais: qualquer pessoa por perto com um scanner Bluetooth pode saber que este telemóvel usa a rede do Zerion, mas não o que envia.</string>
+	<string name="mesh_info_message">As mensagens são seladas para o destinatário e passam de telemóvel em telemóvel por Bluetooth. Ativar esta opção pede as permissões de Bluetooth e de dispositivos próximos. Com «Apenas contactos», o seu telemóvel liga-se apenas aos telemóveis dos seus contactos, e o sinal Bluetooth dele não tem nenhuma marca fixa do Zerion. Para isso, o contacto precisa do Zerion 3.0.19 ou mais recente, e os dois têm de ter estado online ao mesmo tempo pelo menos uma vez desde a atualização.</string>
+	<string name="mesh_reach_title">A mesh liga-se a</string>
+	<string name="mesh_reach_contacts">Apenas contactos</string>
+	<string name="mesh_reach_everyone">Todos os telemóveis com Zerion por perto</string>
+	<string name="mesh_reach_everyone_message">O seu telemóvel vai ligar-se a todos os telemóveis por perto que usam a mesh do Zerion neste modo. Eles passam as suas mensagens seladas e o seu telemóvel passa as deles, pelo que as mensagens chegam mais longe. Qualquer pessoa por perto com um scanner Bluetooth pode então saber que este telemóvel usa a mesh do Zerion, mas não o que envia. Os telemóveis definidos como «Apenas contactos» não se ligam a telemóveis neste modo.</string>
 	<string name="mesh_permission_denied">A mesh offline precisa das permissões de Bluetooth e de dispositivos próximos</string>
 	<string name="mesh_alias_title">Nome Bluetooth enquanto a mesh está ativa</string>
 	<string name="mesh_range_title">Alcance do Bluetooth</string>

@@ -51,7 +51,11 @@ public interface MessagingManager extends ConversationClient {
 
 	int PIN_MIN_VERSION = 15;
 
+	int MESH_LINK_KEYS_MIN_VERSION = 16;
+
 	int GROUP_SETTINGS_RELAY_MIN_VERSION = 16;
+
+	int MESH_LINK_KEY_BYTES = 32;
 
 	long EDIT_WINDOW_MS = 24L * 60 * 60 * 1000;
 
@@ -97,6 +101,9 @@ public interface MessagingManager extends ConversationClient {
 
 	void addLocalMeshMessage(Transaction txn, PrivateMessage m)
 			throws DbException;
+
+	boolean sendMeshLinkKeys(ContactId contactId, byte[] advertKey,
+			byte[] pairSecret) throws DbException;
 
 	void sendPrekeyBundle(ContactId contactId, byte[] bundle)
 			throws DbException;

@@ -92,16 +92,21 @@ the device-wide limit refuses does not use up its neighbour's share (from
 ## Bluetooth Low Energy link
 
 The link runs both a GATT server and a GATT client on each device. It uses a fixed
-service and characteristic for frame transfer, and a rotating service identifier
-for private discovery.
+service and characteristic for frame transfer. How devices find each other
+depends on the mode. From 3.0.19 the default mode is Contacts only, described
+in the next section; the items below describe the open mode, which the user
+can choose under "Mesh links with" and which is the only mode of 3.0.18 and
+older and of iOS. A device in one mode does not link with a device in the
+other.
 
 - The frame characteristic supports write, write without response, and notify.
-- Discovery uses a rotating service identifier computed as
-  `SHA-256(discovery secret, epoch)` where the epoch advances every 10 minutes. A
-  scanner matches a small window of epochs to tolerate clock skew. The discovery
-  secret is a constant in the public source, so anyone can compute the current
-  identifier and detect that a device runs the Zerion mesh; the identifier is the
-  same for every device and names none of them.
+- Open mode discovery uses a rotating service identifier computed as
+  `SHA-256(seed, epoch)` where the epoch advances every 10 minutes. A
+  scanner matches a small window of epochs to tolerate clock skew. The seed
+  is a constant in the public source (`OPEN_DISCOVERY_SEED`; it was named a
+  secret up to 3.0.18, which it never was), so anyone can compute the current
+  identifier and detect that a device runs the Zerion mesh in the open mode;
+  the identifier is the same for every such device and names none of them.
 - Each device advertises an 8-byte nonce in the scan response. When two
   devices meet, the one whose nonce sorts higher dials out, so exactly one
   side opens the connection. A fresh nonce is drawn for every advertising set,
@@ -187,30 +192,146 @@ for private discovery.
   minutes later; it starts again when the screen turns on. A paused device
   relays nothing.
 
-The fixed GATT service and characteristic, the rotating discovery identifier
-and the 0xFFFF manufacturer marker are the same on every device: they identify
-the app, not the person. The app never sets a Bluetooth address; whether each
-advertising set gets its own random address, and how often it changes, is up
-to the Android Bluetooth stack.
+In the open mode the fixed GATT service and characteristic, the rotating
+discovery identifier and the 0xFFFF manufacturer marker are the same on every
+device: they identify the app, not the person. In the Contacts only mode the
+advertisement carries none of them; the GATT service and characteristic stay
+the same and are seen only by a device that connects. The app never sets a
+Bluetooth address; whether each advertising set gets its own random address,
+and how often it changes, is up to the Android Bluetooth stack.
 
-Neither the mesh nor Pair Nearby exposes the device's Bluetooth name: it is
-never advertised, and while either runs the name, which a central that
-connects can read, is set to a mask before the radio starts serving. The mask
-is `Android` unless the user chose another name under "Bluetooth name while the
-mesh runs" (at most 32 characters, control and invisible characters removed).
-`Android` is the same for every device that keeps it; a chosen name is the
-same in every session of one device and can link them. One owner holds the
-name for the mesh and Pair Nearby, so neither puts the real name back while
-the other runs. The user's own name is kept in the encrypted settings and put
-back when the last of them stops, and at the next start of the app if the app
-ended while the name was masked, or when Bluetooth is next switched on if
-putting it back failed. The app waits up to one second for Android to apply the
-mask and then starts the radio even if the change is still pending; it cannot
-hide the name if Android does not apply it. Masking needs Android 12 or newer
-and the BLUETOOTH_CONNECT permission. (Up to
-3.0.14 the name was `BT-` and 6 random hex digits, fixed for a whole session,
-and was set only after the radio had started; up to 3.0.18 Pair Nearby left the
-real name in place.)
+## Contacts only mode
+
+From 3.0.19 this is the mode the mesh runs in unless the user chooses the
+open mode. A device then links only with devices of its own contacts, and
+frames are flooded only across those links, so a message can still take
+several hops, through contacts of contacts, but is not handed to a stranger's
+phone. The frame format, forwarding, padding, presence, cover and delivery
+are those of the open mode.
+
+Keys. Every account holds a random 32-byte advert key, the same for all its
+contacts, and for each contact a random 32-byte pair secret. Both are sent to
+the contact over the one-to-one connection in a record of their own
+(message type 16, `[16, advertKey, pairSecret]`, both exactly 32 bytes), only
+to a contact that announces messaging version 16: when the contact connects
+and they were not sent yet, again at most once a day, after the advert key
+changed, and once in answer when the contact's own record brought keys this
+device did not hold (so a contact that lost its data is served at once, at
+most once in ten minutes). A record that claims this device's own advert key
+is ignored. The link key of two contacts is
+`SHA-256("org.zerionproject/MESH_PAIR", lower pair secret, higher pair secret)`,
+so only those two devices hold it. When a contact is removed, its keys are
+deleted and a new advert key is drawn in the same database transaction as the
+removal, and the new key is sent to the remaining contacts; until a contact
+has the new key it does not recognise this device's advertisement, but this
+device still recognises and dials that contact. If both of two contacts
+replaced their advert key and neither has the other's new one yet, they do
+not find each other over the mesh until both have been online. The keys are
+kept in the encrypted database (settings namespace
+`org.zerionproject.mesh/linkKeys`) and are exchanged whether or not the mesh
+is on.
+
+Advertisement. One 128-bit service identifier, no manufacturer data, no scan
+response, no name, no transmit power (Android adds the flags field of every
+connectable advertisement). Its first 8 bytes are random, drawn anew for
+every advertising set; its last 8 bytes are the first 8 bytes of
+`HMAC-SHA256(advert key, "org.zerionproject/MESH_ADVERT", first 8 bytes,
+epoch)`, where the epoch is the time in units of 10 minutes. The version and
+variant bits are set as in a random (version 4) identifier, which leaves a
+62-bit tag. A contact accepts a tag made for the current epoch or one of the
+three before or after it, so an advertisement is recognised for about half
+an hour and the clocks of two contacts may differ by that much. Without the
+advert key the value cannot be told from any other random identifier and two
+advertisements of one device cannot be linked by it; it contains no value
+the app ships with.
+
+Scanning. One filter on the 6 version and variant bits of a random
+identifier, so the scan keeps running with the screen off, then a check off
+the main thread of every identifier seen against the advert key of each
+contact (the last 1024 results are remembered until the epoch changes). The
+filter matches every device that advertises such an identifier, of any app.
+
+Linking. A device dials a contact whose advertisement it recognises unless
+it already has a link with that contact or two dials to it under way. If
+more than one contact claims the advert key that fits, each is tried in
+turn; an advertisement whose dial proved nothing is not dialled again for
+that contact, and a contact whose link ended within a minute of being proved
+is not dialled again for a minute, so two devices do not reconnect in a loop
+when one of them has no slot free. Over the frame characteristic the two then prove the pair's
+link key in three link-local control frames that are never relayed (first
+byte `0x7F`):
+
+| Frame | From | Bytes after `0x7F` |
+| --- | --- | --- |
+| hello | dialler | `0x02`, dialler nonce (16), MAC (16) over `0x02`, the answerer's advertised identifier, the dialler nonce |
+| reply | answerer | `0x03`, answerer nonce (16), MAC (16) over `0x03`, both nonces |
+| confirm | dialler | `0x04`, MAC (16) over `0x04`, both nonces |
+| start again | answerer | `0x05` |
+
+Each MAC is the first 16 bytes of `HMAC-SHA256(link key,
+"org.zerionproject/MESH_LINK", ...)`. The answerer finds the contact by
+trying the link key of each contact against the hello, for the
+advertisement it is sending, the one it is starting, and the one before for
+30 seconds after it was replaced, and answers nothing when none fits; the
+advertisements are forgotten when the radio stops. A hello recorded earlier
+and played to the device after that draws no reply. A link carries mesh
+frames in either direction only after the handshake: frames from a link that
+has not completed it are dropped, and nothing is sent to it but handshake
+frames. A link that has not completed it within 15 seconds, or that sends
+more than two hellos that fit no contact, is dropped; the device asks
+Android to close the connection, which Android does only for a connection
+the app holds, so the device takes hold of every connection that is dialled
+in. When a dialled-in link sends mesh frames without having completed the
+handshake, which happens when a confirm was lost, the answerer sends "start
+again" once and the dialler drops the link and dials anew at the next
+advertisement it recognises; a write on a connection the answerer no longer
+holds makes it close that connection. If both devices dialled each other
+within 20 seconds, both links complete and each side drops the same one,
+the link dialled by the device whose pair secret is the higher; when a link
+with a contact completes later than that, it replaces the older one, which
+may be dead on the other side. A dialling device that loses its connection
+does not reconnect by address. Nonce announcements are not used in this
+mode.
+
+Slots. Up to 6 dialled-in links with contacts are kept, plus at most 3
+dialled-in connections that have not completed the handshake; a fourth
+replaces one of those 3, never a contact's link. A seventh contact that
+dials in takes the place of a contact link that is idle under the rules of
+the open mode, or is dropped. A connection the device itself dialled is not
+counted as dialled in.
+
+What an observer learns, and the limits.
+
+- Someone listening to advertisements sees a connectable device with one
+  random-looking identifier that changes with the address. The
+  advertisement carries no fixed identifier of the app; its shape (one such
+  identifier, nothing else, renewed every 4 to 6 minutes) can still be used
+  to guess that a device may run this mode.
+- Someone who connects to the device can read the GATT service and
+  characteristic, which are the same on every device, and so can tell that
+  it runs the Zerion mesh, not whose it is.
+- Someone who records a contact's advertisement can send it again for about
+  half an hour. A device that holds that contact then dials the sender and
+  writes a hello, which shows the sender that the device runs this mode and
+  knows that contact; the link gets no further, and the device does not dial
+  that advertisement again. Relaying a device's advertisements and link
+  traffic as they happen cannot be told from a longer radio range: the
+  frames after the handshake carry no further proof, so such a relay, or
+  someone who takes over an open connection, can pass frames across the
+  link. It reads none of them: every frame is a sealed envelope.
+- A contact, or a former contact until the advert key has been replaced and
+  the new one has reached the others, recognises the advertisement, which is
+  the purpose. A contact that also knows another of the device's contacts
+  can claim that contact's advert key as its own; the device then tries both
+  and links with the one that proves the pair's key, at the cost of one
+  failed dial.
+- Someone who captures the unencrypted link traffic of a linked pair sees
+  the handshake and the frames, as in the open mode, but learns no key from
+  them.
+- Contacts on 3.0.18 or older, and iOS, have no keys for this mode and are
+  reached over the mesh only in the open mode. After the update a contact is
+  reached in this mode only once both devices were online together and
+  exchanged their keys.
 
 ## Payload size padding
 

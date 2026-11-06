@@ -629,7 +629,11 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="i2p_toggle_summary">Encamina també a través de la xarxa I2P</string>
 	<string name="i2p_toggle_title">I2P</string>
 	<string name="internet_status_label">Connectivitat</string>
-	<string name="mesh_info_message">Els missatges se segellen per al destinatari i els retransmeten de dispositiu en dispositiu els telèfons propers que fan servir Zerion. Si actives aquesta opció, es demanen els permisos de Bluetooth i de dispositius propers, i s\'emet localment: qualsevol persona propera amb un escàner de Bluetooth pot saber que aquest telèfon fa servir la xarxa de Zerion, però no què envia.</string>
+	<string name="mesh_info_message">Els missatges se segellen per al destinatari i passen de telèfon en telèfon per Bluetooth. Si actives aquesta opció, es demanen els permisos de Bluetooth i de dispositius propers. Amb «Només contactes», el teu telèfon es connecta només amb els telèfons dels teus contactes, i el seu senyal de Bluetooth no porta cap marca fixa de Zerion. Per a això, el contacte necessita Zerion 3.0.19 o posterior, i tots dos heu d\'haver estat en línia alhora almenys una vegada des de l\'actualització.</string>
+	<string name="mesh_reach_title">La xarxa en malla es connecta amb</string>
+	<string name="mesh_reach_contacts">Només contactes</string>
+	<string name="mesh_reach_everyone">Tots els telèfons amb Zerion propers</string>
+	<string name="mesh_reach_everyone_message">El teu telèfon es connectarà amb tots els telèfons propers que fan servir la xarxa en malla de Zerion en aquest mode. Ells retransmeten els teus missatges segellats i tu retransmets els seus, de manera que els missatges arriben més lluny. Qualsevol persona propera amb un escàner de Bluetooth pot saber llavors que aquest telèfon fa servir la xarxa en malla de Zerion, però no què envia. Els telèfons configurats amb «Només contactes» no es connecten amb telèfons en aquest mode.</string>
 	<string name="mesh_permission_denied">La xarxa en malla fora de línia necessita els permisos de Bluetooth i de dispositius propers</string>
 	<string name="mesh_alias_title">Nom de Bluetooth mentre funciona la xarxa en malla</string>
 	<string name="mesh_range_title">Abast del Bluetooth</string>

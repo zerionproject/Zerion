@@ -16,6 +16,7 @@ public interface MessageTypes {
 	int MESSAGE_DELETE = 13;
 	int VIEW_ONCE_OPENED = 14;
 	int MESSAGE_PIN = 15;
+	int MESH_LINK_KEYS = 16;
 
 	int GROUP_POST = 32;
 	int GROUP_MEMBER_ADDED = 33;

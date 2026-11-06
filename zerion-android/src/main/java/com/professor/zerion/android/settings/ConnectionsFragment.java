@@ -92,6 +92,8 @@ public class ConnectionsFragment extends Fragment {
 	private TextView meshAliasValue;
 	private TextView meshRangeValue;
 	private boolean meshShortRange = false;
+	private TextView meshReachValue;
+	private boolean meshOpen = false;
 	private SwitchMaterial meshPauseSwitch;
 	private SwitchMaterial offlineModeSwitch;
 	private boolean enableMeshForOffline = false;
@@ -199,6 +201,9 @@ public class ConnectionsFragment extends Fragment {
 		meshRangeValue = view.findViewById(R.id.mesh_range_value);
 		view.findViewById(R.id.mesh_range_card)
 				.setOnClickListener(v -> showMeshRangeDialog());
+		meshReachValue = view.findViewById(R.id.mesh_reach_value);
+		view.findViewById(R.id.mesh_reach_card)
+				.setOnClickListener(v -> showMeshReachDialog());
 		meshPauseSwitch = view.findViewById(R.id.mesh_pause_switch);
 		showMeshOptions(view, MeshController.isSupported());
 		refreshMeshOptions();
@@ -431,6 +436,7 @@ public class ConnectionsFragment extends Fragment {
 		int visibility = supported ? View.VISIBLE : View.GONE;
 		root.findViewById(R.id.mesh_alias_card).setVisibility(visibility);
 		root.findViewById(R.id.mesh_range_card).setVisibility(visibility);
+		root.findViewById(R.id.mesh_reach_card).setVisibility(visibility);
 		root.findViewById(R.id.mesh_pause_card).setVisibility(visibility);
 	}
 
@@ -439,10 +445,12 @@ public class ConnectionsFragment extends Fragment {
 			String alias;
 			boolean shortRange;
 			boolean pause;
+			boolean open;
 			try {
 				alias = meshController.getBluetoothAlias();
 				shortRange = meshController.isShortRange();
 				pause = meshController.isPauseWhenScreenOff();
+				open = meshController.isOpenMesh();
 			} catch (DbException e) {
 				return;
 			}
@@ -450,6 +458,7 @@ public class ConnectionsFragment extends Fragment {
 			requireActivity().runOnUiThread(() -> {
 				if (meshAliasValue != null) meshAliasValue.setText(alias);
 				showMeshRange(shortRange);
+				showMeshReach(open);
 				if (meshPauseSwitch == null) return;
 				meshPauseSwitch.setOnCheckedChangeListener(null);
 				meshPauseSwitch.setChecked(pause);
@@ -467,6 +476,45 @@ public class ConnectionsFragment extends Fragment {
 		if (meshRangeValue == null) return;
 		meshRangeValue.setText(shortRange ? R.string.mesh_range_short
 				: R.string.mesh_range_normal);
+	}
+
+	private void showMeshReach(boolean open) {
+		meshOpen = open;
+		if (meshReachValue == null) return;
+		meshReachValue.setText(open ? R.string.mesh_reach_everyone
+				: R.string.mesh_reach_contacts);
+	}
+
+	private void showMeshReachDialog() {
+		String[] entries = {getString(R.string.mesh_reach_contacts),
+				getString(R.string.mesh_reach_everyone)};
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.mesh_reach_title)
+				.setSingleChoiceItems(entries, meshOpen ? 1 : 0,
+						(dialog, which) -> {
+							dialog.dismiss();
+							if (which == 0) {
+								if (!meshOpen) return;
+								meshController.setOpenMesh(false);
+								showMeshReach(false);
+							} else if (!meshOpen) {
+								confirmOpenMesh();
+							}
+						})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
+	}
+
+	private void confirmOpenMesh() {
+		new SecureAlertDialogBuilder(requireContext())
+				.setTitle(R.string.mesh_reach_everyone)
+				.setMessage(R.string.mesh_reach_everyone_message)
+				.setPositiveButton(R.string.ok, (dialog, which) -> {
+					meshController.setOpenMesh(true);
+					showMeshReach(true);
+				})
+				.setNegativeButton(R.string.cancel, null)
+				.show();
 	}
 
 	private void showMeshRangeDialog() {

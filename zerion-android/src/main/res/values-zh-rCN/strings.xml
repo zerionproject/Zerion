@@ -568,7 +568,11 @@
 	<string name="settings_section_mesh">离线网状网络</string>
 	<string name="mesh_toggle_title">离线网状网络</string>
 	<string name="mesh_toggle_summary">无需互联网，通过 Bluetooth 联系附近的联系人</string>
-	<string name="mesh_info_message">消息会封装给收件人，并由附近运行 Zerion 的手机在设备间中继。开启此项会请求 Bluetooth 和附近设备权限，并在本地广播：附近任何拥有 Bluetooth 扫描器的人都能看出这部手机在使用 Zerion 网状网络，但看不到它发送的内容。</string>
+	<string name="mesh_info_message">消息会封装给收件人，并通过 Bluetooth 在手机之间传递。开启此项会请求 Bluetooth 和附近设备权限。选择“仅联系人”时，你的手机只与你联系人的手机连接，其 Bluetooth 信号中不带有 Zerion 的固定标记。为此，联系人需要使用 Zerion 3.0.19 或更高版本，并且更新后你们双方至少要同时在线过一次。</string>
+	<string name="mesh_reach_title">网状网络连接对象</string>
+	<string name="mesh_reach_contacts">仅联系人</string>
+	<string name="mesh_reach_everyone">附近所有 Zerion 手机</string>
+	<string name="mesh_reach_everyone_message">你的手机会与附近所有以此模式运行 Zerion 网状网络的手机连接。它们会转发你的封装消息，你也会转发它们的消息，因此消息可以传得更远。这样，附近任何拥有 Bluetooth 扫描器的人都能看出这部手机在使用 Zerion 网状网络，但看不到它发送的内容。设置为“仅联系人”的手机不会与处于此模式的手机连接。</string>
 	<string name="mesh_unsupported">离线网状网络需要 Android 12 或更高版本</string>
 	<string name="mesh_permission_denied">离线网状网络需要 Bluetooth 和附近设备权限</string>
 	<string name="mesh_alias_title">网状网络运行时的 Bluetooth 名称</string>
