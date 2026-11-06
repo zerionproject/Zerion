@@ -2,12 +2,10 @@ package com.professor.zerion.android.mesh;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattCallback;
-import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertisingSetCallback;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -29,13 +27,20 @@ import org.mockito.ArgumentCaptor;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSystemClock;
 import org.zerionproject.transport.mesh.MeshForwarder;
 import org.zerionproject.transport.mesh.MeshFrame;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,10 +59,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -70,71 +74,168 @@ public class BleMeshPrivateModeTest {
 
 	private static final UUID GATT_SERVICE_UUID =
 			UUID.fromString("9f2a7c14-6b38-4d0e-8a51-c3e7d924b6f8");
+	private static final int CHANNEL = 0x91;
+
+	private final class Node {
+
+		private final BluetoothManager manager = mock(BluetoothManager.class);
+		private final BluetoothAdapter adapter = mock(BluetoothAdapter.class);
+		private final BluetoothLeAdvertiser advertiser =
+				mock(BluetoothLeAdvertiser.class);
+		private final BluetoothLeScanner scanner =
+				mock(BluetoothLeScanner.class);
+		private final MeshForwarder forwarder = new MeshForwarder(payload -> {
+		}, new SecureRandom());
+		private final BleMeshTransport transport;
+
+		private Node(byte[] advertKey, List<MeshPeer> known) throws Exception {
+			Context context = RuntimeEnvironment.getApplication();
+			BluetoothServerSocket server = mock(BluetoothServerSocket.class);
+			when(server.getPsm()).thenReturn(CHANNEL);
+			when(manager.getAdapter()).thenReturn(adapter);
+			when(adapter.isEnabled()).thenReturn(true);
+			when(adapter.getBluetoothLeAdvertiser()).thenReturn(advertiser);
+			when(adapter.getBluetoothLeScanner()).thenReturn(scanner);
+			when(adapter.listenUsingInsecureL2capChannel()).thenReturn(server);
+			transport = new BleMeshTransport(context, forwarder, null, null,
+					manager);
+			List<MeshPeer> snapshot = Collections.unmodifiableList(
+					new ArrayList<>(known));
+			transport.setPrivatePeers(new BleMeshTransport.PrivatePeers() {
+				@Override
+				@Nullable
+				public byte[] ownAdvertKey() {
+					return advertKey;
+				}
+
+				@Override
+				public List<MeshPeer> peers() {
+					return snapshot;
+				}
+			});
+			transport.start();
+			started();
+		}
+
+		private void started() throws Exception {
+			AdvertisingSetCallback cb =
+					(AdvertisingSetCallback) field("advertiseCallback");
+			cb.onAdvertisingSetStarted(null, 0,
+					AdvertisingSetCallback.ADVERTISE_SUCCESS);
+		}
+
+		private Object field(String name) throws Exception {
+			Field f = BleMeshTransport.class.getDeclaredField(name);
+			f.setAccessible(true);
+			return f.get(transport);
+		}
+
+		private Object call(String name, Class<?>[] types, Object... args)
+				throws Exception {
+			Method m = BleMeshTransport.class.getDeclaredMethod(name, types);
+			m.setAccessible(true);
+			return m.invoke(transport, args);
+		}
+
+		private UUID ownAdvert() throws Exception {
+			UUID advert = (UUID) field("ownAdvert");
+			if (advert == null) throw new AssertionError("not advertising");
+			return advert;
+		}
+
+		@SuppressWarnings("unchecked")
+		private Map<String, Integer> linked() throws Exception {
+			return (Map<String, Integer>) field("linkedContact");
+		}
+
+		private Map<?, ?> channels() throws Exception {
+			return (Map<?, ?>) field("channels");
+		}
+
+		@Nullable
+		private Object pending(String key) throws Exception {
+			return ((Map<?, ?>) field("pendingLinks")).get(key);
+		}
+
+		private void frameFrom(String key, byte[] frame) throws Exception {
+			call("onFrame", new Class<?>[] {String.class, byte[].class}, key,
+					frame);
+		}
+
+		private void drop(String key) throws Exception {
+			call("dropLink", new Class<?>[] {String.class}, key);
+		}
+
+		private String dialledIn(BluetoothSocket socket) throws Exception {
+			call("onDialledIn", new Class<?>[] {BluetoothSocket.class},
+					socket);
+			return "s:" + socket.getRemoteDevice().getAddress();
+		}
+
+		private void seen(BluetoothDevice device, UUID service)
+				throws Exception {
+			ScanCallback scan = (ScanCallback) field("scanCallback");
+			scan.onScanResult(ScanSettings.CALLBACK_TYPE_ALL_MATCHES,
+					result(device, service));
+			CountDownLatch matched = new CountDownLatch(1);
+			((Executor) field("scanMatcher")).execute(matched::countDown);
+			assertTrue(matched.await(5, TimeUnit.SECONDS));
+		}
+
+		private void await(Check check) throws Exception {
+			long until = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+			while (!check.holds()) {
+				if (System.nanoTime() > until) {
+					throw new AssertionError("timed out");
+				}
+				Thread.sleep(10);
+			}
+		}
+
+		private void drain() throws Exception {
+			CountDownLatch drained = new CountDownLatch(1);
+			((Executor) field("receiveExecutor")).execute(drained::countDown);
+			assertTrue(drained.await(5, TimeUnit.SECONDS));
+		}
+	}
+
+	private interface Check {
+		boolean holds() throws Exception;
+	}
 
 	private final SecureRandom random = new SecureRandom();
-	private final BluetoothManager manager = mock(BluetoothManager.class);
-	private final BluetoothAdapter adapter = mock(BluetoothAdapter.class);
-	private final BluetoothLeAdvertiser advertiser =
-			mock(BluetoothLeAdvertiser.class);
-	private final BluetoothLeScanner scanner = mock(BluetoothLeScanner.class);
 	private final byte[] ownAdvertKey = bytes(32);
-	private final List<MeshPeer> peers = new ArrayList<>();
 	private final MeshPeer friend =
 			new MeshPeer(7, bytes(32), bytes(32), true);
 	private final MeshPeer other =
 			new MeshPeer(8, bytes(32), bytes(32), false);
-	private MeshForwarder forwarder;
-	private BleMeshTransport transport;
+	private final List<Node> nodes = new ArrayList<>();
+	private Node node;
 
 	@Before
 	public void setUp() throws Exception {
-		Context context = RuntimeEnvironment.getApplication();
-		when(manager.getAdapter()).thenReturn(adapter);
-		when(adapter.isEnabled()).thenReturn(true);
-		when(adapter.getBluetoothLeAdvertiser()).thenReturn(advertiser);
-		when(adapter.getBluetoothLeScanner()).thenReturn(scanner);
-		when(manager.openGattServer(any(Context.class),
-				any(BluetoothGattServerCallback.class)))
-				.thenReturn(mock(BluetoothGattServer.class));
-		peers.add(friend);
-		peers.add(other);
-		setUpTransport();
-	}
-
-	private void setUpTransport() throws Exception {
-		Context context = RuntimeEnvironment.getApplication();
-		forwarder = new MeshForwarder(payload -> {
-		}, new SecureRandom());
-		transport = new BleMeshTransport(context, forwarder, null, null,
-				manager);
-		List<MeshPeer> snapshot = Collections.unmodifiableList(
-				new ArrayList<>(peers));
-		transport.setPrivatePeers(new BleMeshTransport.PrivatePeers() {
-			@Override
-			@Nullable
-			public byte[] ownAdvertKey() {
-				return ownAdvertKey;
-			}
-
-			@Override
-			public List<MeshPeer> peers() {
-				return snapshot;
-			}
-		});
-		transport.start();
-		advertisingStarted();
+		node = node(ownAdvertKey, friend, other);
 	}
 
 	@After
 	public void tearDown() {
-		transport.stop();
+		for (Node n : nodes) n.transport.stop();
+	}
+
+	private Node node(byte[] advertKey, MeshPeer... known) throws Exception {
+		List<MeshPeer> list = new ArrayList<>();
+		Collections.addAll(list, known);
+		Node n = new Node(advertKey, list);
+		nodes.add(n);
+		return n;
 	}
 
 	@Test
-	public void theAdvertCarriesNothingButAValueOnlyContactsRecognise() {
+	public void theAdvertCarriesNothingButAValueOnlyContactsRecognise()
+			throws Exception {
 		ArgumentCaptor<AdvertiseData> data =
 				ArgumentCaptor.forClass(AdvertiseData.class);
-		verify(advertiser).startAdvertisingSet(
+		verify(node.advertiser).startAdvertisingSet(
 				any(AdvertisingSetParameters.class), data.capture(),
 				isNull(), isNull(), isNull(),
 				any(AdvertisingSetCallback.class));
@@ -147,6 +248,8 @@ public class BleMeshPrivateModeTest {
 		assertTrue(MeshPrivateLink.recognises(ownAdvertKey, advert, epoch()));
 		assertFalse(MeshPrivateLink.recognises(friend.advertKey, advert,
 				epoch()));
+		assertEquals("a contact must find the channel in the advert",
+				CHANNEL, MeshPrivateLink.channelOf(ownAdvertKey, advert));
 		for (long e = MeshDiscovery.currentEpoch() - 3;
 				e <= MeshDiscovery.currentEpoch() + 3; e++) {
 			assertNotEquals("the advert is the identifier every open mesh"
@@ -158,12 +261,18 @@ public class BleMeshPrivateModeTest {
 	}
 
 	@Test
+	public void noServiceThatAConnectingDeviceCouldReadIsOffered() {
+		verify(node.manager, never()).openGattServer(any(Context.class),
+				any(BluetoothGattServerCallback.class));
+	}
+
+	@Test
 	public void theScanAsksForAnyRandomIdentifierNotForTheMeshOne() {
 		@SuppressWarnings("unchecked")
 		ArgumentCaptor<List<ScanFilter>> filters =
 				ArgumentCaptor.forClass(List.class);
-		verify(scanner).startScan(filters.capture(), any(ScanSettings.class),
-				any(ScanCallback.class));
+		verify(node.scanner).startScan(filters.capture(),
+				any(ScanSettings.class), any(ScanCallback.class));
 		assertEquals(1, filters.getValue().size());
 		ScanFilter f = filters.getValue().get(0);
 		assertEquals(new ParcelUuid(MeshPrivateLink.RANDOM_UUID_BITS),
@@ -174,391 +283,409 @@ public class BleMeshPrivateModeTest {
 	}
 
 	@Test
-	public void onlyAContactsAdvertIsDialledAndOnlyOnce() throws Exception {
+	public void onlyAContactsAdvertIsDialledOnItsChannelAndOnlyOnce()
+			throws Exception {
 		BluetoothDevice stranger = device("AA:00:00:00:00:01");
-		seen(stranger, UUID.randomUUID());
-		seen(stranger, MeshDiscovery.discoveryUuid(
+		node.seen(stranger, UUID.randomUUID());
+		node.seen(stranger, MeshDiscovery.discoveryUuid(
 				MeshDiscovery.currentEpoch(), GATT_SERVICE_UUID));
-		seen(stranger, MeshPrivateLink.advert(friend.advertKey, random,
-				epoch() - 10));
-		verify(stranger, never()).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
+		node.seen(stranger, advertOf(friend, epoch() - 10));
+		Thread.sleep(100);
+		verify(stranger, never()).createInsecureL2capChannel(anyInt());
 
 		BluetoothDevice near = device("AA:00:00:00:00:02");
-		when(near.connectGatt(any(), anyBoolean(), any(), anyInt()))
-				.thenReturn(mock(BluetoothGatt.class));
+		BluetoothSocket opened = socket(near, new ByteArrayOutputStream());
+		when(near.createInsecureL2capChannel(anyInt())).thenReturn(opened);
 		UUID advert = MeshPrivateLink.advert(friend.advertKey, random,
-				epoch());
-		seen(near, advert);
-		seen(near, advert);
-		verify(near, times(1)).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
+				epoch(), 0xA3);
+		node.seen(near, advert);
+		node.await(() -> node.channels().containsKey("c:AA:00:00:00:00:02"));
+		node.seen(near, advert);
+		verify(near, times(1)).createInsecureL2capChannel(0xA3);
 	}
 
 	@Test
 	public void anAdvertWhoseDialProvedNothingIsNotDialledAgain()
 			throws Exception {
-		BluetoothDevice replayer = device("AA:00:00:00:00:05");
-		BluetoothGatt gatt = mock(BluetoothGatt.class);
-		when(gatt.getDevice()).thenReturn(replayer);
-		when(replayer.connectGatt(any(), anyBoolean(), any(), anyInt()))
-				.thenReturn(gatt);
-		UUID advert = MeshPrivateLink.advert(friend.advertKey, random,
-				epoch());
-		seen(replayer, advert);
-		verify(replayer, times(1)).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
+		UUID advert = advertOf(friend, epoch());
+		String key = dial("AA:00:00:00:00:05", advert);
 
-		Method evict = BleMeshTransport.class.getDeclaredMethod(
-				"evictClient", String.class);
-		evict.setAccessible(true);
-		evict.invoke(transport, "AA:00:00:00:00:05");
-		seen(replayer, advert);
+		node.drop(key);
 		BluetoothDevice elsewhere = device("AA:00:00:00:00:06");
-		seen(elsewhere, advert);
+		node.seen(elsewhere, advert);
+		Thread.sleep(100);
 
-		verify(replayer, times(1)).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
-		verify(elsewhere, never()).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
+		verify(elsewhere, never()).createInsecureL2capChannel(anyInt());
 
-		BluetoothDevice real = device("AA:00:00:00:00:07");
-		when(real.connectGatt(any(), anyBoolean(), any(), anyInt()))
-				.thenReturn(mock(BluetoothGatt.class));
-		seen(real, MeshPrivateLink.advert(friend.advertKey, random,
-				epoch()));
-		verify(real, times(1)).connectGatt(any(), anyBoolean(), any(),
-				anyInt());
+		dial("AA:00:00:00:00:07", advertOf(friend, epoch()));
 	}
 
 	@Test
 	public void anAdvertTwoContactsClaimIsTriedWithEachOfThem()
 			throws Exception {
-		transport.stop();
 		MeshPeer impostor = new MeshPeer(5, friend.advertKey, bytes(32),
 				true);
-		peers.clear();
-		peers.add(impostor);
-		peers.add(friend);
-		setUpTransport();
-		UUID advert = MeshPrivateLink.advert(friend.advertKey, random,
-				epoch());
+		Node n = node(bytes(32), impostor, friend);
+		UUID advert = advertOf(friend, epoch());
 		BluetoothDevice near = device("AA:00:00:00:00:08");
-		BluetoothGatt gatt = mock(BluetoothGatt.class);
-		when(gatt.getDevice()).thenReturn(near);
-		when(near.connectGatt(any(), anyBoolean(), any(), anyInt()))
-				.thenReturn(gatt);
-		seen(near, advert);
-		assertEquals(impostor, pendingField(pending("c:AA:00:00:00:00:08"),
-				"peer"));
-		Method evict = BleMeshTransport.class.getDeclaredMethod(
-				"evictClient", String.class);
-		evict.setAccessible(true);
-		evict.invoke(transport, "AA:00:00:00:00:08");
+		BluetoothSocket first = socket(near, new ByteArrayOutputStream());
+		BluetoothSocket second = socket(near, new ByteArrayOutputStream());
+		when(near.createInsecureL2capChannel(anyInt()))
+				.thenReturn(first, second);
+		String key = "c:AA:00:00:00:00:08";
+		n.seen(near, advert);
+		n.await(() -> n.channels().containsKey(key));
+		assertEquals(impostor, pendingField(n.pending(key), "peer"));
+		n.drop(key);
+		ShadowSystemClock.advanceBy(Duration.ofSeconds(5));
 
-		seen(near, advert);
+		n.seen(near, advert);
+		n.await(() -> n.channels().containsKey(key));
 
 		assertEquals("the contact that really holds the key was not tried",
-				friend, pendingField(pending("c:AA:00:00:00:00:08"),
-						"peer"));
+				friend, pendingField(n.pending(key), "peer"));
 	}
 
 	@Test
 	public void aContactThatDialsInIsLinkedAfterTheHandshake()
 			throws Exception {
-		String key = central("BB:00:00:00:00:01");
-		UUID advert = ownAdvert();
+		String key = dialledIn("BB:00:00:00:00:01");
 		byte[] dialerNonce = bytes(16);
 
-		bytesFrom(key, MeshPrivateLink.hello(friend.linkKey, advert,
-				dialerNonce));
+		node.frameFrom(key, MeshPrivateLink.hello(friend.linkKey,
+				node.ownAdvert(), dialerNonce));
 
-		Object pending = pending(key);
+		Object pending = node.pending(key);
 		assertNotNull("a contact's hello was not taken", pending);
-		assertFalse(linked().containsKey(key));
+		assertFalse(node.linked().containsKey(key));
 		byte[] answererNonce = (byte[]) pendingField(pending,
 				"answererNonce");
-		bytesFrom(key, MeshPrivateLink.confirm(friend.linkKey, dialerNonce,
-				bytes(16)));
+		node.frameFrom(key, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, bytes(16)));
 		assertFalse("a confirm for another session linked the contact",
-				linked().containsKey(key));
+				node.linked().containsKey(key));
 
-		bytesFrom(key, MeshPrivateLink.confirm(friend.linkKey, dialerNonce,
-				answererNonce));
+		node.frameFrom(key, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, answererNonce));
 
-		assertEquals(Integer.valueOf(friend.contact), linked().get(key));
-		assertEquals(1, transport.getPeerCount());
+		assertEquals(Integer.valueOf(friend.contact),
+				node.linked().get(key));
+		assertEquals(1, node.transport.getPeerCount());
 	}
 
 	@Test
 	public void aHelloFromSomeoneWhoIsNoContactIsNotAnswered()
 			throws Exception {
-		String key = central("BB:00:00:00:00:02");
-		UUID advert = ownAdvert();
+		String key = dialledIn("BB:00:00:00:00:02");
 
-		bytesFrom(key, MeshPrivateLink.hello(bytes(32), advert, bytes(16)));
+		node.frameFrom(key, MeshPrivateLink.hello(bytes(32),
+				node.ownAdvert(), bytes(16)));
 
-		assertNull(pending(key));
-		assertFalse(linked().containsKey(key));
+		assertNull(node.pending(key));
+		assertFalse(node.linked().containsKey(key));
 	}
 
 	@Test
 	public void aHelloRecordedUnderAnEarlierAdvertIsNotAnswered()
 			throws Exception {
-		String key = central("BB:00:00:00:00:03");
-		UUID earlier = MeshPrivateLink.advert(ownAdvertKey, random, epoch());
+		String key = dialledIn("BB:00:00:00:00:03");
+		UUID earlier = MeshPrivateLink.advert(ownAdvertKey, random, epoch(),
+				CHANNEL);
 
-		bytesFrom(key, MeshPrivateLink.hello(friend.linkKey, earlier,
+		node.frameFrom(key, MeshPrivateLink.hello(friend.linkKey, earlier,
 				bytes(16)));
 
 		assertNull("a replayed hello showed that this device knows the"
-				+ " contact", pending(key));
+				+ " contact", node.pending(key));
 	}
 
 	@Test
 	public void theAdvertBeforeTheCurrentOneIsAnsweredForHalfAMinuteOnly()
 			throws Exception {
-		UUID first = ownAdvert();
-		Method start = BleMeshTransport.class.getDeclaredMethod(
-				"startAdvertising", BluetoothAdapter.class, byte[].class);
-		start.setAccessible(true);
-		start.invoke(transport, adapter, new byte[8]);
-		advertisingStarted();
-		assertNotEquals(first, ownAdvert());
+		UUID first = node.ownAdvert();
+		node.call("startAdvertising",
+				new Class<?>[] {BluetoothAdapter.class, byte[].class},
+				node.adapter, new byte[8]);
+		node.started();
+		assertNotEquals(first, node.ownAdvert());
 
-		String soon = central("BB:00:00:00:00:06");
-		bytesFrom(soon, MeshPrivateLink.hello(friend.linkKey, first,
+		String soon = dialledIn("BB:00:00:00:00:06");
+		node.frameFrom(soon, MeshPrivateLink.hello(friend.linkKey, first,
 				bytes(16)));
 		assertNotNull("a dial that began under the advert just replaced was"
-				+ " refused", pending(soon));
+				+ " refused", node.pending(soon));
 
-		org.robolectric.shadows.ShadowSystemClock.advanceBy(
-				java.time.Duration.ofMillis(
-						BleMeshTransport.PREVIOUS_ADVERT_MS + 1));
-		String later = central("BB:00:00:00:00:07");
-		bytesFrom(later, MeshPrivateLink.hello(friend.linkKey, first,
+		ShadowSystemClock.advanceBy(Duration.ofMillis(
+				BleMeshTransport.PREVIOUS_ADVERT_MS + 1));
+		String later = dialledIn("BB:00:00:00:00:07");
+		node.frameFrom(later, MeshPrivateLink.hello(friend.linkKey, first,
 				bytes(16)));
-		assertNull(pending(later));
+		assertNull(node.pending(later));
 	}
 
 	@Test
-	public void aLinkThatSendsFramesWithoutProofIsToldToStartAgainOnce()
+	public void aStrangerThatWritesAnythingReadsNothingBack()
 			throws Exception {
-		String key = central("BB:00:00:00:00:08");
+		ByteArrayOutputStream written = new ByteArrayOutputStream();
+		String key = node.dialledIn(socket(device("BB:00:00:00:00:08"),
+				written));
 
-		bytesFrom(key, frame());
-		bytesFrom(key, frame());
+		node.frameFrom(key, frame());
+		node.frameFrom(key, new byte[] {0});
+		node.frameFrom(key, new byte[] {0x7F, 0x05});
+		node.frameFrom(key, MeshPrivateLink.hello(bytes(32),
+				node.ownAdvert(), bytes(16)));
+		node.frameFrom(key, MeshPrivateLink.confirm(friend.linkKey,
+				bytes(16), bytes(16)));
+		CountDownLatch sent = new CountDownLatch(1);
+		((Executor) node.field("sendExecutor")).execute(sent::countDown);
+		assertTrue(sent.await(5, TimeUnit.SECONDS));
 
-		assertTrue(((java.util.Set<?>) field("resetsSent")).contains(key));
-		assertFalse(linked().containsKey(key));
+		assertEquals("a connection that proved nothing was sent something"
+				+ " that marks the app", 0, written.size());
+		assertFalse(node.linked().containsKey(key));
 	}
 
 	@Test
-	public void aDiallerToldToStartAgainDropsItsLink() throws Exception {
-		String key = dialAndLink("CC:00:00:00:00:05");
-		assertTrue(linked().containsKey(key));
+	public void aDialThatCannotConnectClosesItsSocketAndMayBeTriedAgain()
+			throws Exception {
+		BluetoothDevice near = device("CC:00:00:00:00:07");
+		BluetoothSocket failing = socket(near, new ByteArrayOutputStream());
+		org.mockito.Mockito.doThrow(new java.io.IOException())
+				.when(failing).connect();
+		BluetoothSocket working = socket(near, new ByteArrayOutputStream());
+		when(near.createInsecureL2capChannel(anyInt()))
+				.thenReturn(failing, working);
+		UUID advert = advertOf(friend, epoch());
+		String key = "c:CC:00:00:00:00:07";
 
-		bytesFrom(key, MeshPrivateLink.reset());
+		node.seen(near, advert);
+		node.await(() -> node.pending(key) == null);
+		verify(failing, atLeastOnce()).close();
+		assertFalse(node.channels().containsKey(key));
+		ShadowSystemClock.advanceBy(Duration.ofSeconds(5));
 
-		assertFalse(linked().containsKey(key));
-		assertFalse(((Map<?, ?>) field("connectedClients"))
-				.containsKey("CC:00:00:00:00:05"));
+		node.seen(near, advert);
+
+		node.await(() -> node.channels().containsKey(key));
 	}
 
 	@Test
-	public void ourOwnDialIsNotCountedAsSomeoneDiallingIn() throws Exception {
-		String key = dialAndLink("CC:00:00:00:00:06");
-		BluetoothGattServerCallback server =
-				(BluetoothGattServerCallback) field("serverCallback");
+	public void aDroppedLinkClosesItsChannel() throws Exception {
+		BluetoothSocket[] opened = new BluetoothSocket[1];
+		String key = dialAndLink("CC:00:00:00:00:05", opened);
 
-		server.onConnectionStateChange(device("CC:00:00:00:00:06"),
-				BluetoothGatt.GATT_SUCCESS, BluetoothProfile.STATE_CONNECTED);
+		node.drop(key);
 
-		assertFalse(((Map<?, ?>) field("connectedCentrals"))
-				.containsKey("CC:00:00:00:00:06"));
-		assertTrue(linked().containsKey(key));
+		assertFalse(node.linked().containsKey(key));
+		assertFalse(node.channels().containsKey(key));
+		verify(opened[0], atLeastOnce()).close();
 	}
 
 	@Test
 	public void strangersWaitingForProofDoNotPushOutLinkedContacts()
 			throws Exception {
-		String proved = central("BB:00:00:00:00:10");
-		UUID advert = ownAdvert();
+		String proved = dialledIn("BB:00:00:00:00:10");
 		byte[] dialerNonce = bytes(16);
-		bytesFrom(proved, MeshPrivateLink.hello(friend.linkKey, advert,
-				dialerNonce));
-		bytesFrom(proved, MeshPrivateLink.confirm(friend.linkKey,
-				dialerNonce, (byte[]) pendingField(pending(proved),
+		node.frameFrom(proved, MeshPrivateLink.hello(friend.linkKey,
+				node.ownAdvert(), dialerNonce));
+		node.frameFrom(proved, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, (byte[]) pendingField(node.pending(proved),
 						"answererNonce")));
-		assertTrue(linked().containsKey(proved));
-		org.robolectric.shadows.ShadowSystemClock.advanceBy(
-				java.time.Duration.ofMinutes(30));
+		assertTrue(node.linked().containsKey(proved));
+		ShadowSystemClock.advanceBy(Duration.ofMinutes(30));
 
 		for (int i = 0; i < 12; i++) {
-			central("EE:00:00:00:00:" + (10 + i));
+			dialledIn("EE:00:00:00:00:" + (10 + i));
 		}
 
 		assertTrue("an unproved newcomer took a linked contact's place",
-				linked().containsKey(proved));
-		Map<?, ?> centrals = (Map<?, ?>) field("connectedCentrals");
-		assertTrue(centrals.containsKey("BB:00:00:00:00:10"));
+				node.linked().containsKey(proved));
+		assertTrue(node.channels().containsKey(proved));
 		assertEquals(1 + BleMeshTransport.MAX_UNPROVED_CENTRALS,
-				centrals.size());
+				node.channels().size());
 	}
 
 	@Test
 	public void framesFromALinkThatHasNotProvedAContactAreDropped()
 			throws Exception {
-		String stranger = central("BB:00:00:00:00:04");
+		String stranger = dialledIn("BB:00:00:00:00:04");
 		byte[] unproved = frame();
 
-		bytesFrom(stranger, unproved);
-		drain();
+		node.frameFrom(stranger, unproved);
+		node.drain();
 
 		assertTrue("a frame from an unproved link reached the forwarder",
-				forwarder.onReceive(unproved, "test", "fresh"));
+				node.forwarder.onReceive(unproved, "test", "fresh"));
 
-		String key = central("BB:00:00:00:00:05");
-		UUID advert = ownAdvert();
+		String key = dialledIn("BB:00:00:00:00:05");
 		byte[] dialerNonce = bytes(16);
-		bytesFrom(key, MeshPrivateLink.hello(friend.linkKey, advert,
-				dialerNonce));
-		byte[] answererNonce = (byte[]) pendingField(pending(key),
-				"answererNonce");
-		bytesFrom(key, MeshPrivateLink.confirm(friend.linkKey, dialerNonce,
-				answererNonce));
+		node.frameFrom(key, MeshPrivateLink.hello(friend.linkKey,
+				node.ownAdvert(), dialerNonce));
+		node.frameFrom(key, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, (byte[]) pendingField(node.pending(key),
+						"answererNonce")));
 		byte[] proved = frame();
 
-		bytesFrom(key, proved);
-		drain();
+		node.frameFrom(key, proved);
+		node.drain();
 
 		assertFalse("a frame from a linked contact did not reach the"
-				+ " forwarder", forwarder.onReceive(proved, "test", "fresh"));
+				+ " forwarder", node.forwarder.onReceive(proved, "test",
+				"fresh"));
+	}
+
+	@Test
+	public void nothingButTheHandshakeIsWrittenToALinkWithoutProof()
+			throws Exception {
+		ByteArrayOutputStream written = new ByteArrayOutputStream();
+		BluetoothDevice remote = device("BB:00:00:00:00:20");
+		node.dialledIn(socket(remote, written));
+
+		node.transport.broadcast(frame());
+		CountDownLatch sent = new CountDownLatch(1);
+		((Executor) node.field("sendExecutor")).execute(sent::countDown);
+		assertTrue(sent.await(5, TimeUnit.SECONDS));
+
+		assertEquals("a mesh frame was sent to a link that proved nothing",
+				0, written.size());
 	}
 
 	@Test
 	public void aDialledContactIsLinkedOnlyAfterItsReplyProvesTheLinkKey()
 			throws Exception {
-		String key = dial("CC:00:00:00:00:01");
+		String key = dial("CC:00:00:00:00:01", advertOf(friend, epoch()));
 
-		byte[] dialerNonce = (byte[]) pendingField(pending(key),
+		byte[] dialerNonce = (byte[]) pendingField(node.pending(key),
 				"dialerNonce");
 		assertNotNull(dialerNonce);
-		assertFalse(linked().containsKey(key));
-		bytesFrom(key, MeshPrivateLink.reply(other.linkKey, dialerNonce,
+		assertFalse(node.linked().containsKey(key));
+		node.frameFrom(key, MeshPrivateLink.reply(other.linkKey, dialerNonce,
 				bytes(16)));
 		assertFalse("a reply under another key linked the device",
-				linked().containsKey(key));
+				node.linked().containsKey(key));
 
-		bytesFrom(key, MeshPrivateLink.reply(friend.linkKey, dialerNonce,
-				bytes(16)));
+		node.frameFrom(key, MeshPrivateLink.reply(friend.linkKey,
+				dialerNonce, bytes(16)));
 
-		assertEquals(Integer.valueOf(friend.contact), linked().get(key));
+		assertEquals(Integer.valueOf(friend.contact),
+				node.linked().get(key));
 	}
 
 	@Test
 	public void ofTwoLinksMadeTogetherTheAgreedOneIsKept() throws Exception {
-		String outbound = dial("DD:00:00:00:00:02");
-		String inbound = central("DD:00:00:00:00:01");
-		UUID advert = ownAdvert();
+		String outbound = dial("DD:00:00:00:00:02",
+				advertOf(friend, epoch()));
+		String inbound = dialledIn("DD:00:00:00:00:01");
 		byte[] dialerNonce = bytes(16);
-		bytesFrom(inbound, MeshPrivateLink.hello(friend.linkKey, advert,
-				dialerNonce));
-		bytesFrom(inbound, MeshPrivateLink.confirm(friend.linkKey,
-				dialerNonce, (byte[]) pendingField(pending(inbound),
+		node.frameFrom(inbound, MeshPrivateLink.hello(friend.linkKey,
+				node.ownAdvert(), dialerNonce));
+		node.frameFrom(inbound, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, (byte[]) pendingField(node.pending(inbound),
 						"answererNonce")));
-		assertTrue(linked().containsKey(inbound));
+		assertTrue(node.linked().containsKey(inbound));
 
-		bytesFrom(outbound, MeshPrivateLink.reply(friend.linkKey,
-				(byte[]) pendingField(pending(outbound), "dialerNonce"),
+		node.frameFrom(outbound, MeshPrivateLink.reply(friend.linkKey,
+				(byte[]) pendingField(node.pending(outbound), "dialerNonce"),
 				bytes(16)));
 
 		assertTrue("this side keeps the link it dialled",
-				linked().containsKey(outbound));
-		assertFalse(linked().containsKey(inbound));
-		assertEquals(1, transport.getPeerCount());
+				node.linked().containsKey(outbound));
+		assertFalse(node.linked().containsKey(inbound));
+		assertEquals(1, node.transport.getPeerCount());
 	}
 
 	@Test
 	public void aFreshLinkReplacesAnOldOneWhoeverDialled() throws Exception {
-		String outbound = dialAndLink("DD:00:00:00:00:03");
-		org.robolectric.shadows.ShadowSystemClock.advanceBy(
-				java.time.Duration.ofMillis(
-						BleMeshTransport.DUPLICATE_WINDOW_MS + 1));
+		String outbound = dialAndLink("DD:00:00:00:00:03",
+				new BluetoothSocket[1]);
+		ShadowSystemClock.advanceBy(Duration.ofMillis(
+				BleMeshTransport.DUPLICATE_WINDOW_MS + 1));
 
-		String inbound = central("DD:00:00:00:00:04");
-		UUID advert = ownAdvert();
+		String inbound = dialledIn("DD:00:00:00:00:04");
 		byte[] dialerNonce = bytes(16);
-		bytesFrom(inbound, MeshPrivateLink.hello(friend.linkKey, advert,
-				dialerNonce));
-		bytesFrom(inbound, MeshPrivateLink.confirm(friend.linkKey,
-				dialerNonce, (byte[]) pendingField(pending(inbound),
+		node.frameFrom(inbound, MeshPrivateLink.hello(friend.linkKey,
+				node.ownAdvert(), dialerNonce));
+		node.frameFrom(inbound, MeshPrivateLink.confirm(friend.linkKey,
+				dialerNonce, (byte[]) pendingField(node.pending(inbound),
 						"answererNonce")));
 
 		assertTrue("the link the contact just proved was dropped for an old"
-				+ " one that may be dead", linked().containsKey(inbound));
-		assertFalse(linked().containsKey(outbound));
+				+ " one that may be dead",
+				node.linked().containsKey(inbound));
+		assertFalse(node.linked().containsKey(outbound));
 	}
 
-	private String dial(String address) throws Exception {
+	@Test
+	public void twoContactsLinkOverTheChannelAndPassAFrame() throws Exception {
+		byte[] keyA = bytes(32);
+		byte[] keyB = bytes(32);
+		byte[] linkKey = bytes(32);
+		Node a = node(keyA, new MeshPeer(1, keyB, linkKey, true));
+		Node b = node(keyB, new MeshPeer(2, keyA, linkKey, false));
+		PipedInputStream atB = new PipedInputStream(1 << 16);
+		PipedOutputStream fromA = new PipedOutputStream(atB);
+		PipedInputStream atA = new PipedInputStream(1 << 16);
+		PipedOutputStream fromB = new PipedOutputStream(atA);
+		BluetoothDevice deviceB = device("B0:00:00:00:00:01");
+		BluetoothDevice deviceA = device("A0:00:00:00:00:01");
+		BluetoothSocket socketAtA = socket(deviceB, atA, fromA);
+		BluetoothSocket socketAtB = socket(deviceA, atB, fromB);
+		when(deviceB.createInsecureL2capChannel(CHANNEL))
+				.thenReturn(socketAtA);
+
+		b.dialledIn(socketAtB);
+		a.seen(deviceB, b.ownAdvert());
+
+		a.await(() -> a.linked().containsKey("c:B0:00:00:00:00:01"));
+		b.await(() -> b.linked().containsKey("s:A0:00:00:00:00:01"));
+		assertEquals(1, a.transport.getPeerCount());
+		assertEquals(1, b.transport.getPeerCount());
+
+		byte[] sent = frame();
+		a.transport.broadcast(sent);
+
+		b.await(() -> {
+			b.drain();
+			return !b.forwarder.onReceive(sent, "test", "fresh");
+		});
+	}
+
+	private String dialledIn(String address) throws Exception {
+		return node.dialledIn(socket(device(address),
+				new ByteArrayOutputStream()));
+	}
+
+	private String dial(String address, UUID advert) throws Exception {
 		BluetoothDevice near = device(address);
-		BluetoothGatt gatt = mock(BluetoothGatt.class);
-		when(gatt.getDevice()).thenReturn(near);
-		when(gatt.getService(any())).thenReturn(
-				mock(android.bluetooth.BluetoothGattService.class));
-		when(near.connectGatt(any(), anyBoolean(), any(), anyInt()))
-				.thenReturn(gatt);
-		seen(near, MeshPrivateLink.advert(friend.advertKey, random,
-				epoch()));
-		BluetoothGattCallback client =
-				(BluetoothGattCallback) field("clientCallback");
-		client.onServicesDiscovered(gatt, BluetoothGatt.GATT_SUCCESS);
-		return "c:" + address;
-	}
-
-	private String dialAndLink(String address) throws Exception {
-		String key = dial(address);
-		byte[] dialerNonce = (byte[]) pendingField(pending(key),
-				"dialerNonce");
-		bytesFrom(key, MeshPrivateLink.reply(friend.linkKey, dialerNonce,
-				bytes(16)));
-		assertTrue(linked().containsKey(key));
+		BluetoothSocket opened = socket(near, new ByteArrayOutputStream());
+		when(near.createInsecureL2capChannel(anyInt())).thenReturn(opened);
+		node.seen(near, advert);
+		String key = "c:" + address;
+		node.await(() -> node.channels().containsKey(key)
+				&& pendingField(node.pending(key), "dialerNonce") != null);
 		return key;
 	}
 
-	private void seen(BluetoothDevice device, UUID service) throws Exception {
-		ScanCallback scan = (ScanCallback) field("scanCallback");
-		scan.onScanResult(ScanSettings.CALLBACK_TYPE_ALL_MATCHES,
-				result(device, service));
-		CountDownLatch matched = new CountDownLatch(1);
-		((Executor) field("scanMatcher")).execute(matched::countDown);
-		assertTrue(matched.await(5, TimeUnit.SECONDS));
+	private String dialAndLink(String address, BluetoothSocket[] opened)
+			throws Exception {
+		BluetoothDevice near = device(address);
+		BluetoothSocket socket = socket(near, new ByteArrayOutputStream());
+		opened[0] = socket;
+		when(near.createInsecureL2capChannel(anyInt())).thenReturn(socket);
+		node.seen(near, advertOf(friend, epoch()));
+		String key = "c:" + address;
+		node.await(() -> node.channels().containsKey(key)
+				&& pendingField(node.pending(key), "dialerNonce") != null);
+		node.frameFrom(key, MeshPrivateLink.reply(friend.linkKey,
+				(byte[]) pendingField(node.pending(key), "dialerNonce"),
+				bytes(16)));
+		assertTrue(node.linked().containsKey(key));
+		return key;
 	}
 
-	private UUID ownAdvert() throws Exception {
-		UUID advert = (UUID) field("ownAdvert");
-		if (advert == null) throw new AssertionError("not advertising");
-		return advert;
-	}
-
-	private void advertisingStarted() throws Exception {
-		AdvertisingSetCallback cb =
-				(AdvertisingSetCallback) field("advertiseCallback");
-		cb.onAdvertisingSetStarted(null, 0,
-				AdvertisingSetCallback.ADVERTISE_SUCCESS);
-	}
-
-	private static long epoch() {
-		return MeshPrivateLink.currentEpoch();
-	}
-
-	private String central(String address) throws Exception {
-		BluetoothDevice device = device(address);
-		BluetoothGattServerCallback server =
-				(BluetoothGattServerCallback) field("serverCallback");
-		server.onConnectionStateChange(device, BluetoothGatt.GATT_SUCCESS,
-				BluetoothProfile.STATE_CONNECTED);
-		return "s:" + address;
+	private UUID advertOf(MeshPeer peer, long epoch) {
+		return MeshPrivateLink.advert(peer.advertKey, random, epoch, CHANNEL);
 	}
 
 	private BluetoothDevice device(String address) {
@@ -567,35 +694,25 @@ public class BleMeshPrivateModeTest {
 		return device;
 	}
 
-	private void bytesFrom(String key, byte[] frame) throws Exception {
-		Method onBytes = BleMeshTransport.class.getDeclaredMethod("onBytes",
-				String.class, byte[].class);
-		onBytes.setAccessible(true);
-		byte[] out = new byte[4 + frame.length];
-		ByteBuffer.wrap(out).putInt(frame.length).put(frame);
-		onBytes.invoke(transport, key, out);
+	private BluetoothSocket socket(BluetoothDevice remote, OutputStream out)
+			throws Exception {
+		return socket(remote, new PipedInputStream(new PipedOutputStream()),
+				out);
+	}
+
+	private BluetoothSocket socket(BluetoothDevice remote, InputStream in,
+			OutputStream out) throws Exception {
+		BluetoothSocket socket = mock(BluetoothSocket.class);
+		when(socket.getRemoteDevice()).thenReturn(remote);
+		when(socket.getInputStream()).thenReturn(in);
+		when(socket.getOutputStream()).thenReturn(out);
+		return socket;
 	}
 
 	private byte[] frame() {
 		byte[] id = new byte[MeshFrame.MESSAGE_ID_BYTES];
 		random.nextBytes(id);
 		return new MeshFrame(3, id, new byte[100]).encode();
-	}
-
-	private void drain() throws Exception {
-		CountDownLatch drained = new CountDownLatch(1);
-		((Executor) field("receiveExecutor")).execute(drained::countDown);
-		assertTrue(drained.await(5, TimeUnit.SECONDS));
-	}
-
-	@SuppressWarnings("unchecked")
-	private Map<String, Integer> linked() throws Exception {
-		return (Map<String, Integer>) field("linkedContact");
-	}
-
-	@Nullable
-	private Object pending(String key) throws Exception {
-		return ((Map<?, ?>) field("pendingLinks")).get(key);
 	}
 
 	private static Object pendingField(@Nullable Object pending, String name)
@@ -606,7 +723,7 @@ public class BleMeshPrivateModeTest {
 		return f.get(pending);
 	}
 
-	private ScanResult result(BluetoothDevice device, UUID service)
+	private static ScanResult result(BluetoothDevice device, UUID service)
 			throws Exception {
 		byte[] raw = new byte[18];
 		raw[0] = 17;
@@ -622,10 +739,8 @@ public class BleMeshPrivateModeTest {
 		return new ScanResult(device, record, -50, 0L);
 	}
 
-	private Object field(String name) throws Exception {
-		Field f = BleMeshTransport.class.getDeclaredField(name);
-		f.setAccessible(true);
-		return f.get(transport);
+	private static long epoch() {
+		return MeshPrivateLink.currentEpoch();
 	}
 
 	private byte[] bytes(int n) {

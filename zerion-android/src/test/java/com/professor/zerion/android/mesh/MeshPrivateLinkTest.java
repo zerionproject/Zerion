@@ -23,7 +23,7 @@ public class MeshPrivateLinkTest {
 	@Test
 	public void anAdvertIsRecognisedForAboutHalfAnHourAndNotAfter() {
 		byte[] key = bytes(32);
-		UUID advert = MeshPrivateLink.advert(key, random, EPOCH);
+		UUID advert = MeshPrivateLink.advert(key, random, EPOCH, 0x85);
 
 		for (long e = EPOCH - 3; e <= EPOCH + 3; e++) {
 			assertTrue(MeshPrivateLink.recognises(key, advert, e));
@@ -34,10 +34,21 @@ public class MeshPrivateLinkTest {
 	}
 
 	@Test
-	public void theRestartFrameIsNoHandshakeFrame() {
-		assertTrue(MeshPrivateLink.isReset(MeshPrivateLink.reset()));
-		assertFalse(MeshPrivateLink.isHandshake(MeshPrivateLink.reset()));
-		assertFalse(MeshPrivateLink.isReset(new byte[] {0x7F, 0x05, 0}));
+	public void onlyAHolderOfTheKeyReadsTheChannelFromTheAdvert() {
+		byte[] key = bytes(32);
+		java.util.Set<Long> lastBytes = new HashSet<>();
+		for (int channel : new int[] {0x80, 0x85, 0xFF}) {
+			for (int i = 0; i < 40; i++) {
+				UUID advert = MeshPrivateLink.advert(key, random, EPOCH,
+						channel);
+				assertEquals(channel, MeshPrivateLink.channelOf(key, advert));
+				assertTrue(MeshPrivateLink.recognises(key, advert, EPOCH));
+				assertTrue(MeshPrivateLink.looksRandom(advert));
+				lastBytes.add(advert.getMostSignificantBits() & 0xFFL);
+			}
+		}
+		assertTrue("the channel shows in the advert",
+				lastBytes.size() > 40);
 	}
 
 	@Test
@@ -45,7 +56,7 @@ public class MeshPrivateLinkTest {
 		byte[] key = bytes(32);
 		byte[] other = bytes(32);
 
-		UUID advert = MeshPrivateLink.advert(key, random, EPOCH);
+		UUID advert = MeshPrivateLink.advert(key, random, EPOCH, 0x85);
 
 		assertTrue(MeshPrivateLink.recognises(key, advert, EPOCH));
 		assertFalse(MeshPrivateLink.recognises(other, advert, EPOCH));
@@ -56,7 +67,7 @@ public class MeshPrivateLinkTest {
 		byte[] key = bytes(32);
 		Set<UUID> seen = new HashSet<>();
 		for (int i = 0; i < 200; i++) {
-			UUID advert = MeshPrivateLink.advert(key, random, EPOCH);
+			UUID advert = MeshPrivateLink.advert(key, random, EPOCH, 0x85);
 			assertEquals(4, advert.version());
 			assertEquals(2, advert.variant());
 			assertTrue(MeshPrivateLink.looksRandom(advert));
@@ -68,7 +79,7 @@ public class MeshPrivateLinkTest {
 	@Test
 	public void anAdvertChangedInAnyHalfIsNotRecognised() {
 		byte[] key = bytes(32);
-		UUID advert = MeshPrivateLink.advert(key, random, EPOCH);
+		UUID advert = MeshPrivateLink.advert(key, random, EPOCH, 0x85);
 
 		assertFalse(MeshPrivateLink.recognises(key, new UUID(
 				advert.getMostSignificantBits() ^ 1L,
@@ -109,7 +120,7 @@ public class MeshPrivateLinkTest {
 	@Test
 	public void theHandshakeCompletesBetweenTwoHoldersOfTheLinkKey() {
 		byte[] linkKey = bytes(32);
-		UUID answererAdvert = MeshPrivateLink.advert(bytes(32), random, EPOCH);
+		UUID answererAdvert = MeshPrivateLink.advert(bytes(32), random, EPOCH, 0x85);
 		byte[] dialerNonce = bytes(16);
 		byte[] answererNonce = bytes(16);
 
@@ -135,8 +146,8 @@ public class MeshPrivateLinkTest {
 	public void aHelloForAnEarlierAdvertIsRefused() {
 		byte[] linkKey = bytes(32);
 		byte[] advertKey = bytes(32);
-		UUID earlier = MeshPrivateLink.advert(advertKey, random, EPOCH);
-		UUID current = MeshPrivateLink.advert(advertKey, random, EPOCH);
+		UUID earlier = MeshPrivateLink.advert(advertKey, random, EPOCH, 0x85);
+		UUID current = MeshPrivateLink.advert(advertKey, random, EPOCH, 0x85);
 
 		byte[] captured = MeshPrivateLink.hello(linkKey, earlier, bytes(16));
 
@@ -146,7 +157,7 @@ public class MeshPrivateLinkTest {
 
 	@Test
 	public void aHelloUnderAnotherLinkKeyIsRefused() {
-		UUID advert = MeshPrivateLink.advert(bytes(32), random, EPOCH);
+		UUID advert = MeshPrivateLink.advert(bytes(32), random, EPOCH, 0x85);
 		byte[] hello = MeshPrivateLink.hello(bytes(32), advert, bytes(16));
 
 		assertFalse(MeshPrivateLink.helloMatches(hello, bytes(32), advert));
@@ -189,7 +200,7 @@ public class MeshPrivateLinkTest {
 	@Test
 	public void framesOfTheWrongLengthAreRefused() {
 		byte[] linkKey = bytes(32);
-		UUID advert = MeshPrivateLink.advert(bytes(32), random, EPOCH);
+		UUID advert = MeshPrivateLink.advert(bytes(32), random, EPOCH, 0x85);
 		byte[] hello = MeshPrivateLink.hello(linkKey, advert, bytes(16));
 		byte[] shorter = java.util.Arrays.copyOf(hello, hello.length - 1);
 		byte[] longer = java.util.Arrays.copyOf(hello, hello.length + 1);

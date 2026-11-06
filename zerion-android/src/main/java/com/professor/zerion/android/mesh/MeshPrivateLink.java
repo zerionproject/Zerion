@@ -20,7 +20,6 @@ final class MeshPrivateLink {
 	static final byte TYPE_HELLO = 0x02;
 	static final byte TYPE_REPLY = 0x03;
 	static final byte TYPE_CONFIRM = 0x04;
-	static final byte TYPE_RESET = 0x05;
 	static final long EPOCH_MS = 10L * 60L * 1000L;
 	static final int EPOCHS_ACCEPTED = 3;
 	static final int HELLO_BYTES = 2 + NONCE_BYTES + MAC_BYTES;
@@ -36,6 +35,8 @@ final class MeshPrivateLink {
 			"org.zerionproject/MESH_ADVERT".getBytes(StandardCharsets.UTF_8);
 	private static final byte[] LINK_LABEL =
 			"org.zerionproject/MESH_LINK".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] CHANNEL_LABEL =
+			"org.zerionproject/MESH_CHANNEL".getBytes(StandardCharsets.UTF_8);
 	private static final byte[] PAIR_LABEL =
 			"org.zerionproject/MESH_PAIR".getBytes(StandardCharsets.UTF_8);
 
@@ -46,13 +47,27 @@ final class MeshPrivateLink {
 		return System.currentTimeMillis() / EPOCH_MS;
 	}
 
-	static UUID advert(byte[] advertKey, SecureRandom random, long epoch) {
+	static UUID advert(byte[] advertKey, SecureRandom random, long epoch,
+			int channel) {
+		if (channel < 0 || channel > 0xFF) {
+			throw new IllegalArgumentException();
+		}
 		byte[] r = new byte[8];
 		random.nextBytes(r);
-		long msb = shaped(ByteBuffer.wrap(r).getLong(),
+		long head = shaped(ByteBuffer.wrap(r).getLong(),
 				RANDOM_UUID_MASK.getMostSignificantBits(),
-				RANDOM_UUID_BITS.getMostSignificantBits());
+				RANDOM_UUID_BITS.getMostSignificantBits()) & ~0xFFL;
+		long msb = head | ((channel ^ channelMask(advertKey, head)) & 0xFFL);
 		return new UUID(msb, tagFor(advertKey, msb, epoch));
+	}
+
+	static int channelOf(byte[] advertKey, UUID advert) {
+		long msb = advert.getMostSignificantBits();
+		return (int) ((msb ^ channelMask(advertKey, msb & ~0xFFL)) & 0xFFL);
+	}
+
+	private static long channelMask(byte[] advertKey, long head) {
+		return mac(advertKey, CHANNEL_LABEL, longBytes(head))[0] & 0xFFL;
 	}
 
 	static boolean recognises(byte[] advertKey, UUID seen, long epoch) {
@@ -183,15 +198,6 @@ final class MeshPrivateLink {
 		if (!isType(frame, TYPE_CONFIRM, CONFIRM_BYTES)) return false;
 		return MessageDigest.isEqual(sessionMac(linkKey, TYPE_CONFIRM,
 				dialerNonce, answererNonce), part(frame, 2, MAC_BYTES));
-	}
-
-	static byte[] reset() {
-		return new byte[] {CONTROL, TYPE_RESET};
-	}
-
-	static boolean isReset(byte[] frame) {
-		return frame.length == 2 && frame[0] == CONTROL
-				&& frame[1] == TYPE_RESET;
 	}
 
 	static boolean isHandshake(byte[] frame) {

@@ -91,9 +91,10 @@ the device-wide limit refuses does not use up its neighbour's share (from
 
 ## Bluetooth Low Energy link
 
-The link runs both a GATT server and a GATT client on each device. It uses a fixed
-service and characteristic for frame transfer. How devices find each other
-depends on the mode. From 3.0.19 the default mode is Contacts only, described
+In the open mode the link runs both a GATT server and a GATT client on each
+device and uses a fixed service and characteristic for frame transfer. The
+Contacts only mode uses neither. How devices find each other depends on the
+mode. From 3.0.19 the default mode is Contacts only, described
 in the next section; the items below describe the open mode, which the user
 can choose under "Mesh links with" and which is the only mode of 3.0.18 and
 older and of iOS. A device in one mode does not link with a device in the
@@ -195,8 +196,8 @@ other.
 In the open mode the fixed GATT service and characteristic, the rotating
 discovery identifier and the 0xFFFF manufacturer marker are the same on every
 device: they identify the app, not the person. In the Contacts only mode the
-advertisement carries none of them; the GATT service and characteristic stay
-the same and are seen only by a device that connects. The app never sets a
+advertisement carries none of them and the device offers no GATT service of
+its own at all. The app never sets a
 Bluetooth address; whether each advertising set gets its own random address,
 and how often it changes, is up to the Android Bluetooth stack.
 
@@ -234,16 +235,19 @@ is on.
 Advertisement. One 128-bit service identifier, no manufacturer data, no scan
 response, no name, no transmit power (Android adds the flags field of every
 connectable advertisement). Its first 8 bytes are random, drawn anew for
-every advertising set; its last 8 bytes are the first 8 bytes of
+every advertising set, except that the last of them carries the number of
+the channel the device listens on (see Linking), hidden by XOR with the first
+byte of `HMAC-SHA256(advert key, "org.zerionproject/MESH_CHANNEL", the 8
+bytes with the last one set to zero)`. Its last 8 bytes are the first 8 bytes of
 `HMAC-SHA256(advert key, "org.zerionproject/MESH_ADVERT", first 8 bytes,
 epoch)`, where the epoch is the time in units of 10 minutes. The version and
 variant bits are set as in a random (version 4) identifier, which leaves a
 62-bit tag. A contact accepts a tag made for the current epoch or one of the
 three before or after it, so an advertisement is recognised for about half
 an hour and the clocks of two contacts may differ by that much. Without the
-advert key the value cannot be told from any other random identifier and two
-advertisements of one device cannot be linked by it; it contains no value
-the app ships with.
+advert key the value cannot be told from any other random identifier, the
+channel number cannot be read from it, and two advertisements of one device
+cannot be linked by it; it contains no value the app ships with.
 
 Scanning. One filter on the 6 version and variant bits of a random
 identifier, so the scan keeps running with the screen off, then a check off
@@ -251,22 +255,28 @@ the main thread of every identifier seen against the advert key of each
 contact (the last 1024 results are remembered until the epoch changes). The
 filter matches every device that advertises such an identifier, of any app.
 
-Linking. A device dials a contact whose advertisement it recognises unless
-it already has a link with that contact or two dials to it under way. If
-more than one contact claims the advert key that fits, each is tried in
-turn; an advertisement whose dial proved nothing is not dialled again for
-that contact, and a contact whose link ended within a minute of being proved
-is not dialled again for a minute, so two devices do not reconnect in a loop
-when one of them has no slot free. Over the frame characteristic the two then prove the pair's
-link key in three link-local control frames that are never relayed (first
-byte `0x7F`):
+Linking. The link is a Bluetooth LE connection-oriented channel (L2CAP), not
+GATT: the device opens a listening channel without pairing
+(`listenUsingInsecureL2capChannel`) while the radio is up, Android assigns
+its number (0x80 to 0xFF), and the number travels in the advertisement as
+described above. In this mode the device opens no GATT server, so a device
+that connects and lists the services finds none of Zerion's. A device dials
+a contact whose advertisement it recognises, on the channel the
+advertisement names, unless it already has a link with that contact or two
+dials to it under way. If more than one contact claims the advert key that
+fits, each is tried in turn; an advertisement whose dial proved nothing is
+not dialled again for that contact, and a contact whose link ended within a
+minute of being proved is not dialled again for a minute, so two devices do
+not reconnect in a loop when one of them has no slot free. Frames travel on
+the channel with a 4-byte big-endian length prefix. The two devices first
+prove the pair's link key in three link-local control frames that are never
+relayed (first byte `0x7F`):
 
 | Frame | From | Bytes after `0x7F` |
 | --- | --- | --- |
 | hello | dialler | `0x02`, dialler nonce (16), MAC (16) over `0x02`, the answerer's advertised identifier, the dialler nonce |
 | reply | answerer | `0x03`, answerer nonce (16), MAC (16) over `0x03`, both nonces |
 | confirm | dialler | `0x04`, MAC (16) over `0x04`, both nonces |
-| start again | answerer | `0x05` |
 
 Each MAC is the first 16 bytes of `HMAC-SHA256(link key,
 "org.zerionproject/MESH_LINK", ...)`. The answerer finds the contact by
@@ -277,21 +287,21 @@ advertisements are forgotten when the radio stops. A hello recorded earlier
 and played to the device after that draws no reply. A link carries mesh
 frames in either direction only after the handshake: frames from a link that
 has not completed it are dropped, and nothing is sent to it but handshake
-frames. A link that has not completed it within 15 seconds, or that sends
-more than two hellos that fit no contact, is dropped; the device asks
-Android to close the connection, which Android does only for a connection
-the app holds, so the device takes hold of every connection that is dialled
-in. When a dialled-in link sends mesh frames without having completed the
-handshake, which happens when a confirm was lost, the answerer sends "start
-again" once and the dialler drops the link and dials anew at the next
-advertisement it recognises; a write on a connection the answerer no longer
-holds makes it close that connection. If both devices dialled each other
-within 20 seconds, both links complete and each side drops the same one,
+frames, and a link that has not completed it is sent nothing at all unless
+its hello fitted a contact. A link that has not completed it within 15
+seconds, counted for a dialler from the start of the dial, is closed; until
+then anything it sends that is no fitting hello, also a frame longer than a
+hello, is ignored without an answer, and more than two hellos that fit no
+contact close it at once. Closing the channel ends the channel on both
+sides; the radio connection underneath is Android's to close. A write that
+does not finish within 5 seconds closes the link too. A dial that cannot
+connect is given up and may be tried again at the next advertisement. If the
+listening channel cannot be opened or stops, the device opens it again
+within 10 seconds and advertises anew. If both devices dialled each other
+within 20 seconds, both links complete and each side closes the same one,
 the link dialled by the device whose pair secret is the higher; when a link
-with a contact completes later than that, it replaces the older one, which
-may be dead on the other side. A dialling device that loses its connection
-does not reconnect by address. Nonce announcements are not used in this
-mode.
+with a contact completes later than that, it replaces the older one. Nonce
+announcements are not used in this mode.
 
 Slots. Up to 6 dialled-in links with contacts are kept, plus at most 3
 dialled-in connections that have not completed the handshake; a fourth
@@ -307,9 +317,18 @@ What an observer learns, and the limits.
   advertisement carries no fixed identifier of the app; its shape (one such
   identifier, nothing else, renewed every 4 to 6 minutes) can still be used
   to guess that a device may run this mode.
-- Someone who connects to the device can read the GATT service and
-  characteristic, which are the same on every device, and so can tell that
-  it runs the Zerion mesh, not whose it is.
+- Someone who connects to the device finds no GATT service of Zerion's;
+  a GATT service with a fixed identifier is what the open mode uses. By
+  trying the channel
+  numbers 0x80 to 0xFF, which Android hands out in order, it can find that
+  some app accepts a channel without pairing; the channel answers nothing
+  and is closed after 15 seconds. That a phone has such a channel open is
+  unusual, so it can still suggest this mode, like the shape of the
+  advertisement. The channel number is sent in clear when a contact dials
+  and stays the same while the radio is up; hiding it in the advertisement
+  keeps it out of the broadcast, no more. A device can also hold a radio
+  connection to the phone without opening any channel; the app neither sees
+  nor ends that.
 - Someone who records a contact's advertisement can send it again for about
   half an hour. A device that holds that contact then dials the sender and
   writes a hello, which shows the sender that the device runs this mode and

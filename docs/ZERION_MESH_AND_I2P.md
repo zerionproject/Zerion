@@ -76,6 +76,11 @@ From the radio up:
 
 ## 4. BLE transport
 
+This section describes the open mode. In the Contacts only mode, the default
+from 3.0.19, devices advertise and scan in the same way but link over a plain
+connection-oriented channel and offer no GATT service (see "Contacts only
+mode" in protocol/MESH-TRANSPORT.md).
+
 Every device acts at the same time as a GATT peripheral (advertising and
 accepting connections) and a GATT central (scanning and connecting). This lets
 any two devices in range link up without fixed roles. To avoid both sides
@@ -128,8 +133,9 @@ contacts can check, valid for about half an hour, and a link passes frames only
 after both sides proved a key the two contacts share (see "Contacts only mode" in
 protocol/MESH-TRANSPORT.md). In the open mode the discovery seed ships in the
 app and its public source, so anyone can compute the current identifier and
-detect a device that runs the open mesh. In both modes a device that connects
-can read the fixed GATT service.
+detect a device that runs the open mesh. A device that
+connects can read the fixed GATT service only in the open mode; the Contacts
+only mode uses a plain channel and offers no service.
 
 ### Bluetooth privacy
 
@@ -159,7 +165,7 @@ What the mesh and Pair Nearby show to nearby radios, and what they cannot hide:
   Bluetooth is off, the app tries again when Bluetooth is switched on. (Up to
   3.0.18 Pair Nearby left the real name in place, so a device that connected
   during pairing could read it.)
-- **App markers.** The fixed GATT service and characteristic of the mesh, the
+- **App markers.** In the open mode of the mesh, the fixed GATT service and characteristic of the mesh, the
   fixed frame and proof characteristics of Pair Nearby, the rotating discovery
   identifier (which anyone can compute) and the 0xFFFF manufacturer marker
   whose nonce starts with 0xFF 0xFF are the same on every device. They identify
