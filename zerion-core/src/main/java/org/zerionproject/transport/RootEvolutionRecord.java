@@ -29,6 +29,9 @@ final class RootEvolutionRecord {
 
 	static final byte FLAG_WANT_IDENTITY = 0x01;
 	static final byte FLAG_SEPARATED_EVOLUTION = 0x02;
+	static final byte FLAG_ENFORCES_EVOLUTION = 0x04;
+	static final byte FLAG_EVOLUTION_PAUSED = 0x08;
+	static final byte FLAG_EVOLUTION_DUE = 0x10;
 
 	static final int X25519_LENGTH = 32;
 	static final int FLAGS_LENGTH = 1;

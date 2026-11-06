@@ -1653,7 +1653,7 @@
 	<string name="settings_section_account">Účet</string>
 	<string name="backup_export_success">Záloha uložená</string>
 	<string name="backup_export_success_title">Záloha uložená</string>
-	<string name="backup_export_warning_after">Vaša záloha je uložená. Obsahuje váš účet, kontakty a správy, ale nie položky trezoru. Ak trezor používate, exportujte ho samostatne na obrazovke trezoru. Záloha je chránená len vašou prístupovou frázou, preto ju uchovávajte na bezpečnom mieste a súbor odstráňte, len čo svoj účet presuniete do druhého telefónu. Kľúče spojenia s vašimi kontaktmi sa menia, ako s nimi ďalej komunikujete; tento telefón ich ponechá nezmenené sedem dní, preto zálohu obnovte v tejto lehote. Záloha obnovená neskôr sa nemusí k niektorým kontaktom dostať, kým sa navzájom znova nepridáte.</string>
+	<string name="backup_export_warning_after">Vaša záloha je uložená. Obsahuje váš účet, kontakty a správy, ale nie položky trezoru. Ak trezor používate, exportujte ho samostatne na obrazovke trezoru. Záloha je chránená len vašou prístupovou frázou, preto ju uchovávajte na bezpečnom mieste a súbor odstráňte, len čo svoj účet presuniete do druhého telefónu. Kľúče spojenia s vašimi kontaktmi sa menia, ako s nimi ďalej komunikujete; tento telefón ich ponechá nezmenené 24 hodín, preto zálohu obnovte v tejto lehote. Záloha obnovená neskôr sa nemusí k niektorým kontaktom dostať, kým sa navzájom znova nepridáte.</string>
 	<string name="backup_export_failed">Zálohu sa nepodarilo vytvoriť</string>
 	<string name="backup_export_not_signed_in">Najprv sa prihláste a potom vytvorte zálohu.</string>
 	<string name="backup_export_too_large">Tento účet je príliš veľký na vytvorenie zálohy v tomto telefóne. Aplikácia na to nemá dosť pamäte.</string>

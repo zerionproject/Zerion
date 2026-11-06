@@ -72,6 +72,8 @@ public class ZtpPollerBackoffTest {
 	}
 
 	private final AtomicInteger dials = new AtomicInteger();
+	private volatile OverlayTransport.DialResult outcome =
+			OverlayTransport.DialResult.NOT_CONNECTED;
 	private final OverlayTransport transport = new OverlayTransport() {
 		@Override
 		public TransportId getTransportId() {
@@ -87,7 +89,7 @@ public class ZtpPollerBackoffTest {
 		public DialResult dial(int contactId, String peerAddress,
 				boolean fast) {
 			dials.incrementAndGet();
-			return DialResult.NOT_CONNECTED;
+			return outcome;
 		}
 
 		@Override
@@ -156,6 +158,25 @@ public class ZtpPollerBackoffTest {
 		report(true);
 		scheduler.runSweep();
 		assertEquals("a real transition clears the backoff", 2,
+				dials.get());
+	}
+
+	@Test
+	public void aSessionEndedByAStalledKeyRenewalBacksOffLikeAFailedDial() {
+		outcome = new OverlayTransport.DialResult(true, 31_000);
+		boolean[] stalled = {true};
+		poller.setStallCheck(c -> stalled[0]);
+		report(true);
+		scheduler.runSweep();
+		assertEquals(1, dials.get());
+		scheduler.runSweep();
+		assertEquals("a stalled session is not redialled at once", 1,
+				dials.get());
+		stalled[0] = false;
+		poller.pollNow();
+		assertEquals(2, dials.get());
+		scheduler.runSweep();
+		assertEquals("a long session that ended by itself is redialled", 3,
 				dials.get());
 	}
 

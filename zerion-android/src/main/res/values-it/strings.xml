@@ -1229,7 +1229,7 @@
 	<string name="settings_section_account">Account</string>
 	<string name="backup_export_success">Backup salvato</string>
 	<string name="backup_export_success_title">Backup salvato</string>
-	<string name="backup_export_warning_after">Il tuo backup è salvato. Contiene il tuo account, i contatti e i messaggi, ma non le voci del tuo Vault. Esporta il Vault separatamente dalla schermata Vault se lo usi. Il backup è protetto solo dalla tua passphrase, quindi conservalo in un luogo sicuro ed elimina il file una volta spostato l\'account sull\'altro telefono.</string>
+	<string name="backup_export_warning_after">Il tuo backup è salvato. Contiene il tuo account, i contatti e i messaggi, ma non le voci del tuo Vault. Esporta il Vault separatamente dalla schermata Vault se lo usi. Il backup è protetto solo dalla tua passphrase, quindi conservalo in un luogo sicuro ed elimina il file una volta spostato l\'account sull\'altro telefono. Le chiavi di connessione con i tuoi contatti cambiano man mano che continui a parlare con loro; questo telefono le mantiene invariate per 24 ore, quindi ripristina il backup entro questo periodo. Un backup ripristinato più tardi potrebbe non raggiungere alcuni contatti finché non vi aggiungete di nuovo a vicenda.</string>
 	<string name="backup_export_failed">Impossibile creare il backup</string>
 	<string name="backup_export_not_signed_in">Accedi prima, poi crea un backup.</string>
 	<string name="backup_export_too_large">Questo account è troppo grande per eseguirne il backup su questo telefono. L\'app non ha memoria sufficiente per farlo.</string>

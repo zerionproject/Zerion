@@ -1247,7 +1247,7 @@
 	<string name="settings_section_account">アカウント</string>
 	<string name="backup_export_success">バックアップを保存しました</string>
 	<string name="backup_export_success_title">バックアップを保存しました</string>
-	<string name="backup_export_warning_after">バックアップを保存しました。アカウント、連絡先、メッセージは含まれますが、保管庫の項目は含まれません。保管庫を使用している場合は、保管庫画面から別途エクスポートしてください。バックアップはパスフレーズのみで保護されているため、安全な場所に保管し、アカウントを別の端末に移動したらファイルを削除してください。</string>
+	<string name="backup_export_warning_after">バックアップを保存しました。アカウント、連絡先、メッセージは含まれますが、保管庫の項目は含まれません。保管庫を使用している場合は、保管庫画面から別途エクスポートしてください。バックアップはパスフレーズのみで保護されているため、安全な場所に保管し、アカウントを別の端末に移動したらファイルを削除してください。連絡先との接続キーは、やり取りを続けるうちに変わります。この端末は接続キーを24時間変更せずに保持するので、その間にバックアップを復元してください。それ以降に復元したバックアップでは、お互いを追加し直すまで一部の連絡先に届かない場合があります。</string>
 	<string name="backup_export_failed">バックアップを作成できませんでした</string>
 	<string name="backup_export_not_signed_in">先にサインインしてからバックアップを作成してください。</string>
 	<string name="backup_export_too_large">このアカウントは大きすぎるため、この端末ではバックアップできません。アプリのメモリが足りません。</string>

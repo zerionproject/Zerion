@@ -145,6 +145,12 @@ public class ZtpPoller implements EventListener {
 		this.connected = connected;
 	}
 
+	private volatile java.util.function.IntPredicate stalled = c -> false;
+
+	public void setStallCheck(java.util.function.IntPredicate stalled) {
+		this.stalled = stalled;
+	}
+
 	public void dialNow(int contactId) {
 		if (!running) return;
 		Contact c;
@@ -379,7 +385,8 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private void recordDialOutcome(int contactId, long sessionMs, long epoch) {
-		boolean connected = sessionMs >= MIN_CONNECTED_MS;
+		boolean connected = sessionMs >= MIN_CONNECTED_MS
+				&& !stalled.test(contactId);
 		long now = clock.getAsLong();
 		if (connected) {
 			failStreak.remove(contactId);
@@ -447,6 +454,7 @@ public class ZtpPoller implements EventListener {
 		lastConnectedAt.put(contactId, now);
 		Long since = connectedSince.remove(contactId);
 		if (since != null && now - since < MIN_CONNECTED_MS) return;
+		if (stalled.test(contactId)) return;
 		Contact c;
 		try {
 			c = contactManager.getContact(new ContactId(contactId));

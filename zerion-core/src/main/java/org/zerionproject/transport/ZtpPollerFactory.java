@@ -33,6 +33,9 @@ public class ZtpPollerFactory {
 	private final Map<TransportId, ZtpPoller> pollers =
 			new ConcurrentHashMap<>();
 
+	@Nullable
+	private final RootEvolutionManager evolutions;
+
 	public ZtpPollerFactory(Executor ioExecutor,
 			TaskScheduler taskScheduler, ContactManager contactManager,
 			TransportPropertyManager transportPropertyManager,
@@ -43,6 +46,19 @@ public class ZtpPollerFactory {
 				transportPropertyManager, eventBus, rotation, null);
 	}
 
+	public ZtpPollerFactory(Executor ioExecutor,
+			TaskScheduler taskScheduler, ContactManager contactManager,
+			TransportPropertyManager transportPropertyManager,
+			EventBus eventBus,
+			javax.inject.Provider<org.zerionproject.core.plugin.tor
+					.B4OnionRotation> rotation,
+			@Nullable org.zerionproject.core.api.connection.ConnectionRegistry
+					connectionRegistry) {
+		this(ioExecutor, taskScheduler, contactManager,
+				transportPropertyManager, eventBus, rotation,
+				connectionRegistry, null);
+	}
+
 	@Inject
 	public ZtpPollerFactory(@IoExecutor Executor ioExecutor,
 			TaskScheduler taskScheduler, ContactManager contactManager,
@@ -51,7 +67,9 @@ public class ZtpPollerFactory {
 			javax.inject.Provider<org.zerionproject.core.plugin.tor
 					.B4OnionRotation> rotation,
 			@Nullable org.zerionproject.core.api.connection.ConnectionRegistry
-					connectionRegistry) {
+					connectionRegistry,
+			@Nullable RootEvolutionManager evolutions) {
+		this.evolutions = evolutions;
 		this.connectionRegistry = connectionRegistry;
 		this.ioExecutor = ioExecutor;
 		this.taskScheduler = taskScheduler;
@@ -71,6 +89,8 @@ public class ZtpPollerFactory {
 			poller.setConnectedCheck(c -> registry.isConnected(
 					new org.zerionproject.core.api.contact.ContactId(c)));
 		}
+		RootEvolutionManager stalls = evolutions;
+		if (stalls != null) poller.setStallCheck(stalls::recentlyStalled);
 		pollers.put(transport.getTransportId(), poller);
 		return poller;
 	}

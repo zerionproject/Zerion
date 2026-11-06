@@ -245,7 +245,7 @@ Zerion is designed to resist not only the network adversary but also examination
 | AEAD | XSalsa20-Poly1305 | 24-byte nonce, 256-bit key, 128-bit tag |
 | KDF / MAC | Keyed BLAKE2b | 256-bit output, domain-separated labels (`org.zerionproject/...`) |
 | Message ratchet | Mode 3-Full | per-message ML-KEM-768; new key pair on every connection and after every 16 frames sent or received on it; connection closed after more than 128 peer frames in a row on one key pair; up to 32 retained key pairs per connection |
-| Root evolution (from 3.0.15) | X25519 + ML-KEM-768 (hybrid) | at the start of a connection, at most once per 10 min per contact; paused 7 days after a backup or transfer |
+| Root evolution (from 3.0.15) | X25519 + ML-KEM-768 (hybrid) | at the start of a connection when 10 min or more have passed since the last one, before any record is sent between two 3.0.19 sides, and every hour on an open connection; paused 24 hours after a backup or transfer |
 | Wire frame | ZWF | fixed 4096 B; 16-byte tag; 8-byte persistent stream id; replay window 256 |
 | Transport pacing | ZPP | one frame per 750 ms (active) or 4 s (idle, on every network type) ±1/3 jitter, real-or-cover; idle once nothing is queued and 2 min have passed since the connection opened, since this side's own last message and since a received message that counted as activity |
 | Voice | PCM + AES-256-GCM (see §8 for the 3.0.11 status) | 16 kHz mono 256 kbit/s, 20 ms / 640-byte frames |

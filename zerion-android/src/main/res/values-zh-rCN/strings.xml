@@ -1252,7 +1252,7 @@
 	<string name="settings_section_account">账户</string>
 	<string name="backup_export_success">备份已保存</string>
 	<string name="backup_export_success_title">备份已保存</string>
-	<string name="backup_export_warning_after">你的备份已保存。它包含你的账户、联系人和消息，但不包含你的保险库条目。如果你使用保险库，请在保险库界面单独导出。此备份仅由你的口令保护，因此请将其保存在安全的地方，并在将账户迁移到另一部手机后删除该文件。</string>
+	<string name="backup_export_warning_after">你的备份已保存。它包含你的账户、联系人和消息，但不包含你的保险库条目。如果你使用保险库，请在保险库界面单独导出。此备份仅由你的口令保护，因此请将其保存在安全的地方，并在将账户迁移到另一部手机后删除该文件。你与联系人之间的连接密钥会随着持续交流而变化；本手机会将其保持不变 24 小时，因此请在这段时间内恢复备份。之后才恢复的备份可能无法连接到部分联系人，直到你们重新互相添加。</string>
 	<string name="backup_export_failed">无法创建备份</string>
 	<string name="backup_export_not_signed_in">请先登录，然后创建备份。</string>
 	<string name="backup_export_too_large">此账户太大，无法在这部手机上备份。应用没有足够的内存。</string>

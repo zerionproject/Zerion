@@ -34,6 +34,9 @@ public class RootKeyStore {
 			"org.zerionproject.transport.rootEvolution";
 	public static final String KEY_PAUSED_UNTIL = "pausedUntil";
 	static final String OUT_OF_SYNC_KEY_PREFIX = "outOfSync.";
+	public static final String ENFORCES_KEY_PREFIX = "enforces.";
+	public static final String EVOLVED_AT_KEY_PREFIX = "evolvedAt.";
+	public static final String EVOLVES_KEY_PREFIX = "evolves.";
 	static final int PENDING_FLAG_CONFIRMED = 0x01;
 	static final int PENDING_FLAG_SEPARATED = 0x02;
 
@@ -244,6 +247,69 @@ public class RootKeyStore {
 							OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false));
 		} catch (DbException e) {
 			return false;
+		}
+	}
+
+	public boolean peerEnforces(ContactId c) {
+		try {
+			return db.transactionWithResult(true, txn ->
+					db.getSettings(txn, SETTINGS_NAMESPACE).getBoolean(
+							ENFORCES_KEY_PREFIX + c.getInt(), false));
+		} catch (DbException e) {
+			return true;
+		}
+	}
+
+	public void setPeerEnforces(ContactId c, boolean enforces) {
+		try {
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.putBoolean(ENFORCES_KEY_PREFIX + c.getInt(), enforces);
+				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
+			});
+		} catch (DbException e) {
+		}
+	}
+
+	public boolean peerEvolves(ContactId c) {
+		try {
+			return db.transactionWithResult(true, txn ->
+					db.getSettings(txn, SETTINGS_NAMESPACE).getBoolean(
+							EVOLVES_KEY_PREFIX + c.getInt(), false));
+		} catch (DbException e) {
+			return true;
+		}
+	}
+
+	public void setPeerEvolves(ContactId c) {
+		try {
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.putBoolean(EVOLVES_KEY_PREFIX + c.getInt(), true);
+				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
+			});
+		} catch (DbException e) {
+		}
+	}
+
+	public long evolvedAt(ContactId c) {
+		try {
+			return db.transactionWithResult(true, txn ->
+					db.getSettings(txn, SETTINGS_NAMESPACE).getLong(
+							EVOLVED_AT_KEY_PREFIX + c.getInt(), 0));
+		} catch (DbException e) {
+			return 0;
+		}
+	}
+
+	public void setEvolvedAt(ContactId c, long at) {
+		try {
+			db.transaction(false, txn -> {
+				Settings s = new Settings();
+				s.putLong(EVOLVED_AT_KEY_PREFIX + c.getInt(), at);
+				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
+			});
+		} catch (DbException e) {
 		}
 	}
 

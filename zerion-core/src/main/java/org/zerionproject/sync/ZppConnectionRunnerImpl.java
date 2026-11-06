@@ -73,27 +73,52 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		long sessionId = NEXT_SESSION_ID.incrementAndGet();
 		ZwfControlHandler control = connection.getControlHandler();
 		boolean opened = false;
+		AtomicBoolean authenticated = new AtomicBoolean(false);
+		Object sourceLock = new Object();
+		boolean[] source = new boolean[2];
+		Runnable startSource = () -> {
+			if (!authenticated.get()) return;
+			if (control != null && control.holdsUserRecords()) return;
+			synchronized (sourceLock) {
+				if (source[0] || source[1]) return;
+				source[0] = true;
+				registry.onConnectionOpened(contactId, scheduler,
+						connection.getMaxMessageLength());
+			}
+			scheduler.wake();
+		};
 		Thread ticker = new Thread(
 				() -> tickLoop(scheduler, clock, gate, running),
 				"zpp-send-" + contactId);
 		ticker.start();
 		try {
 			if (control != null) {
+				scheduler.setHold(control::holdsUserRecords);
 				control.start(new ZwfControlHandler.Sender() {
 					@Override
 					public void send(byte[] payload) {
-						scheduler.enqueueRecord(ZmmRecord.encode(
-								ZmmConstants.TYPE_ROOT_EVOLUTION, payload),
-								false);
+						scheduler.enqueueControl(ZmmRecord.encode(
+								ZmmConstants.TYPE_ROOT_EVOLUTION, payload));
 					}
 
 					@Override
 					public void sendWhenDue(Supplier<byte[]> builder) {
-						scheduler.enqueueRecordWhenDue(() -> {
+						scheduler.enqueueControlWhenDue(() -> {
 							byte[] payload = builder.get();
 							return payload == null ? null : ZmmRecord.encode(
 									ZmmConstants.TYPE_ROOT_EVOLUTION, payload);
 						});
+					}
+
+					@Override
+					public void close() {
+						running.set(false);
+						connection.closeStreams();
+					}
+
+					@Override
+					public void released() {
+						startSource.run();
 					}
 				});
 			}
@@ -109,10 +134,10 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				}
 				if (!opened) {
 					opened = true;
-					registry.onConnectionOpened(contactId, scheduler,
-							connection.getMaxMessageLength());
+					authenticated.set(true);
 					recordSink.onConnected(contactId, sessionId);
 				}
+				startSource.run();
 				if (record.length < 2 || ZmmRecord.isCover(record)) continue;
 				if (!connection.lastFrameCarriedPqSecret()) continue;
 				int type = ZmmRecord.getType(record);
@@ -131,10 +156,13 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			ticker.interrupt();
 			joinTicker(ticker, connection);
 			if (control != null) control.close();
-			if (opened) {
-				registry.onConnectionClosed(contactId, scheduler);
-				recordSink.onDisconnected(contactId, sessionId);
+			boolean started;
+			synchronized (sourceLock) {
+				started = source[0];
+				source[1] = true;
 			}
+			if (started) registry.onConnectionClosed(contactId, scheduler);
+			if (opened) recordSink.onDisconnected(contactId, sessionId);
 		}
 	}
 

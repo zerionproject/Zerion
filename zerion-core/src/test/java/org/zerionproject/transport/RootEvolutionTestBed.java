@@ -197,6 +197,51 @@ final class RootEvolutionTestBed {
 
 		private final java.util.Set<Integer> outOfSync =
 				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		private final java.util.Set<Integer> enforcing =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		private final Map<Integer, Long> evolvedAt =
+				new java.util.concurrent.ConcurrentHashMap<>();
+
+		@Override
+		public boolean peerEnforces(ContactId c) {
+			return enforcing.contains(c.getInt());
+		}
+
+		@Override
+		public void setPeerEnforces(ContactId c, boolean enforces) {
+			if (enforces) enforcing.add(c.getInt());
+			else enforcing.remove(c.getInt());
+		}
+
+		private final java.util.Set<Integer> evolving =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		volatile boolean snapshotting = false;
+
+		@Override
+		public boolean peerEvolves(ContactId c) {
+			return evolving.contains(c.getInt());
+		}
+
+		@Override
+		public void setPeerEvolves(ContactId c) {
+			evolving.add(c.getInt());
+		}
+
+		@Override
+		public boolean isSnapshotting() {
+			return snapshotting;
+		}
+
+		@Override
+		public long evolvedAt(ContactId c) {
+			Long at = evolvedAt.get(c.getInt());
+			return at == null ? 0 : at;
+		}
+
+		@Override
+		public void setEvolvedAt(ContactId c, long at) {
+			evolvedAt.put(c.getInt(), at);
+		}
 
 		@Override
 		public void markOutOfSync(ContactId c, boolean flag) {
@@ -271,6 +316,7 @@ final class RootEvolutionTestBed {
 		volatile Runnable cutAction;
 		@Nullable
 		volatile Hold hold;
+		volatile byte withheld = 0;
 		@Nullable
 		volatile Gate gate;
 		final List<Byte> receivedKinds =
@@ -432,6 +478,7 @@ final class RootEvolutionTestBed {
 					inner.start(new Sender() {
 						@Override
 						public void send(byte[] payload) {
+							if (payload[1] == device.withheld) return;
 							Cut cut = device.cut;
 							if (cut != null && !cut.fired
 									&& payload[1] == cut.kind) {
@@ -455,6 +502,7 @@ final class RootEvolutionTestBed {
 							sender.sendWhenDue(() -> {
 								byte[] payload = builder.get();
 								if (payload == null) return null;
+								if (payload[1] == device.withheld) return null;
 								Cut cut = device.cut;
 								if (cut != null && !cut.fired
 										&& payload[1] == cut.kind) {
@@ -463,10 +511,31 @@ final class RootEvolutionTestBed {
 									if (a != null) a.run();
 									return null;
 								}
+								Hold hold = device.hold;
+								if (hold != null && !hold.caught
+										&& payload[1] == hold.kind) {
+									hold.caught = true;
+									return null;
+								}
 								return payload;
 							});
 						}
+
+						@Override
+						public void close() {
+							sender.close();
+						}
+
+						@Override
+						public void released() {
+							sender.released();
+						}
 					});
+				}
+
+				@Override
+				public boolean holdsUserRecords() {
+					return inner.holdsUserRecords();
 				}
 
 				@Override

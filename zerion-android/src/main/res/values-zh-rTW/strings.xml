@@ -1217,7 +1217,7 @@
 	<string name="settings_section_account">帳戶</string>
 	<string name="backup_export_success">已儲存備份</string>
 	<string name="backup_export_success_title">已儲存備份</string>
-	<string name="backup_export_warning_after">您的備份已儲存。它包含您的帳戶、聯絡人與訊息，但不包含您的保險庫項目。如有使用保險庫，請從保險庫畫面另行匯出。此備份僅由您的通關密語保護，因此請將它妥善保管，並在您將帳戶移轉到另一支手機後刪除該檔案。</string>
+	<string name="backup_export_warning_after">您的備份已儲存。它包含您的帳戶、聯絡人與訊息，但不包含您的保險庫項目。如有使用保險庫，請從保險庫畫面另行匯出。此備份僅由您的通關密語保護，因此請將它妥善保管，並在您將帳戶移轉到另一支手機後刪除該檔案。您與聯絡人之間的連線金鑰會隨著持續交談而變更；本手機會將其維持不變 24 小時，因此請在這段時間內還原備份。之後才還原的備份可能無法連線到部分聯絡人，直到你們重新互相加入為止。</string>
 	<string name="backup_export_failed">無法建立備份</string>
 	<string name="backup_export_not_signed_in">請先登入，再建立備份。</string>
 	<string name="backup_export_too_large">此帳戶太大，無法在這支手機上備份。應用程式沒有足夠的記憶體。</string>

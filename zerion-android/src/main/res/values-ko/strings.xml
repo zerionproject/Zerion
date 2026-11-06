@@ -1212,7 +1212,7 @@
 	<string name="settings_section_account">계정</string>
 	<string name="backup_export_success">백업이 저장되었습니다</string>
 	<string name="backup_export_success_title">백업이 저장되었습니다</string>
-	<string name="backup_export_warning_after">백업이 저장되었습니다. 계정, 연락처, 메시지는 포함되지만 보관함 항목은 포함되지 않습니다. 보관함을 사용하는 경우 보관함 화면에서 별도로 내보내세요. 백업은 암호구절로만 보호되므로 안전한 곳에 보관하고 계정을 다른 휴대폰으로 옮긴 후에는 파일을 삭제하세요.</string>
+	<string name="backup_export_warning_after">백업이 저장되었습니다. 계정, 연락처, 메시지는 포함되지만 보관함 항목은 포함되지 않습니다. 보관함을 사용하는 경우 보관함 화면에서 별도로 내보내세요. 백업은 암호구절로만 보호되므로 안전한 곳에 보관하고 계정을 다른 휴대폰으로 옮긴 후에는 파일을 삭제하세요. 연락처와의 연결 키는 대화를 계속하는 동안 바뀝니다. 이 휴대폰은 연결 키를 24시간 동안 변경하지 않고 유지하므로 그 안에 백업을 복원하세요. 나중에 복원한 백업은 서로 다시 추가할 때까지 일부 연락처에 연결되지 않을 수 있습니다.</string>
 	<string name="backup_export_failed">백업을 생성할 수 없습니다</string>
 	<string name="backup_export_not_signed_in">먼저 로그인한 다음 백업을 생성하세요.</string>
 	<string name="backup_export_too_large">이 계정은 너무 커서 이 휴대폰에서 백업할 수 없습니다. 앱에 필요한 메모리가 부족합니다.</string>

@@ -14,6 +14,16 @@ public interface ZwfControlHandler {
 		void send(byte[] payload);
 
 		void sendWhenDue(Supplier<byte[]> builder);
+
+		default void close() {
+		}
+
+		default void released() {
+		}
+	}
+
+	default boolean holdsUserRecords() {
+		return false;
 	}
 
 	void start(Sender sender);

@@ -1413,7 +1413,7 @@
 	<string name="settings_section_account">Račun</string>
 	<string name="backup_export_success">Rezervna kopija je sačuvana</string>
 	<string name="backup_export_success_title">Rezervna kopija je sačuvana</string>
-	<string name="backup_export_warning_after">Tvoja rezervna kopija je sačuvana. Sadrži tvoj račun, kontakte i poruke, ali ne i stavke iz sefa. Ako koristiš sef, izvezi ga posebno s ekrana sefa. Rezervnu kopiju štiti samo tvoja pristupna fraza, zato je čuvaj na sigurnom mjestu i obriši datoteku čim premjestiš račun na drugi telefon. Ključevi veze s tvojim kontaktima mijenjaju se dok s njima razgovaraš; ovaj telefon ih čuva nepromijenjene sedam dana, zato vrati rezervnu kopiju u tom roku. Rezervna kopija vraćena kasnije možda neće doći do nekih kontakata dok se ponovo međusobno ne dodate.</string>
+	<string name="backup_export_warning_after">Tvoja rezervna kopija je sačuvana. Sadrži tvoj račun, kontakte i poruke, ali ne i stavke iz sefa. Ako koristiš sef, izvezi ga posebno s ekrana sefa. Rezervnu kopiju štiti samo tvoja pristupna fraza, zato je čuvaj na sigurnom mjestu i obriši datoteku čim premjestiš račun na drugi telefon. Ključevi veze s tvojim kontaktima mijenjaju se dok s njima razgovaraš; ovaj telefon ih čuva nepromijenjene 24 sata, zato vrati rezervnu kopiju u tom roku. Rezervna kopija vraćena kasnije možda neće doći do nekih kontakata dok se ponovo međusobno ne dodate.</string>
 	<string name="backup_export_failed">Nije moguće napraviti rezervnu kopiju</string>
 	<string name="backup_export_not_signed_in">Prvo se prijavi, a zatim napravi rezervnu kopiju.</string>
 	<string name="backup_export_too_large">Ovaj račun je prevelik za izradu rezervne kopije na ovom telefonu. Aplikacija nema dovoljno memorije za to.</string>

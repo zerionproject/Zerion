@@ -1300,7 +1300,7 @@
 	<string name="settings_section_account">Konto</string>
 	<string name="backup_export_success">Backup gespeichert</string>
 	<string name="backup_export_success_title">Backup gespeichert</string>
-	<string name="backup_export_warning_after">Dein Backup ist gespeichert. Es enthält dein Konto, deine Kontakte und Nachrichten, aber nicht deine Tresor-Einträge. Exportiere den Tresor separat über den Tresor-Bildschirm, falls du ihn nutzt. Das Backup ist nur durch deine Passphrase geschützt, bewahre es also an einem sicheren Ort auf und lösche die Datei, sobald du dein Konto auf das andere Telefon umgezogen hast.</string>
+	<string name="backup_export_warning_after">Dein Backup ist gespeichert. Es enthält dein Konto, deine Kontakte und Nachrichten, aber nicht deine Tresor-Einträge. Exportiere den Tresor separat über den Tresor-Bildschirm, falls du ihn nutzt. Das Backup ist nur durch deine Passphrase geschützt, bewahre es also an einem sicheren Ort auf und lösche die Datei, sobald du dein Konto auf das andere Telefon umgezogen hast. Die Verbindungsschlüssel zu deinen Kontakten ändern sich, während ihr weiter miteinander schreibt; dieses Telefon lässt sie 24 Stunden lang unverändert, stelle das Backup also innerhalb dieser Zeit wieder her. Ein später wiederhergestelltes Backup erreicht manche Kontakte möglicherweise erst wieder, wenn ihr euch erneut hinzufügt.</string>
 	<string name="backup_export_failed">Backup konnte nicht erstellt werden</string>
 	<string name="backup_export_not_signed_in">Melde dich zuerst an und erstelle dann ein Backup.</string>
 	<string name="backup_export_too_large">Dieses Konto ist zu groß für ein Backup auf diesem Telefon. Der App fehlt dafür der Arbeitsspeicher.</string>

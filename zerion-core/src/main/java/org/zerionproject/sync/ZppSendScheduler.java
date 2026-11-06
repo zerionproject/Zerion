@@ -49,6 +49,8 @@ public class ZppSendScheduler {
 		}
 	}
 
+	private final Queue<Entry> control = new ConcurrentLinkedQueue<>();
+
 	private final Queue<Entry> outgoing = new ConcurrentLinkedQueue<>();
 
 	private final Queue<Entry> bulk = new ConcurrentLinkedQueue<>();
@@ -61,6 +63,27 @@ public class ZppSendScheduler {
 
 	public void setWakeListener(@javax.annotation.Nullable Runnable listener) {
 		wakeListener = listener;
+	}
+
+	private volatile BooleanSupplier held = () -> false;
+
+	public void setHold(BooleanSupplier held) {
+		this.held = held;
+	}
+
+	public void enqueueControl(byte[] record) {
+		control.add(new Entry(record, null, false, null));
+		wake();
+	}
+
+	public void enqueueControlWhenDue(Supplier<byte[]> builder) {
+		control.add(new Entry(null, builder, false, null));
+		wake();
+	}
+
+	public void wake() {
+		Runnable listener = wakeListener;
+		if (listener != null) listener.run();
 	}
 
 	public ZppSendScheduler(FrameSink sink) {
@@ -98,10 +121,6 @@ public class ZppSendScheduler {
 		if (listener != null) listener.run();
 	}
 
-	public void enqueueRecordWhenDue(Supplier<byte[]> builder) {
-		outgoing.add(new Entry(null, builder, false, null));
-	}
-
 	public boolean lastRealFrameWasUserOriginated() {
 		return lastRealUserOriginated;
 	}
@@ -111,8 +130,11 @@ public class ZppSendScheduler {
 		Entry record = null;
 		if (pqReady.getAsBoolean()) {
 			while (bytes == null) {
-				record = outgoing.poll();
-				if (record == null) record = bulk.poll();
+				record = control.poll();
+				if (record == null && !held.getAsBoolean()) {
+					record = outgoing.poll();
+					if (record == null) record = bulk.poll();
+				}
 				if (record == null) break;
 				bytes = record.materialise();
 			}
@@ -140,7 +162,7 @@ public class ZppSendScheduler {
 	}
 
 	public int getQueueDepth() {
-		return outgoing.size() + bulk.size();
+		return control.size() + outgoing.size() + bulk.size();
 	}
 
 	public int getSmallDepth() {

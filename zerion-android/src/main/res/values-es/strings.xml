@@ -1309,7 +1309,7 @@
 	<string name="settings_section_account">Cuenta</string>
 	<string name="backup_export_success">Copia de seguridad guardada</string>
 	<string name="backup_export_success_title">Copia de seguridad guardada</string>
-	<string name="backup_export_warning_after">Tu copia de seguridad está guardada. Contiene tu cuenta, contactos y mensajes, pero no las entradas de tu Baúl. Exporta el Baúl por separado desde la pantalla del Baúl si lo utilizas. La copia de seguridad está protegida únicamente por tu frase de contraseña, así que guárdala en un lugar seguro y elimina el archivo una vez que hayas trasladado tu cuenta al otro teléfono.</string>
+	<string name="backup_export_warning_after">Tu copia de seguridad está guardada. Contiene tu cuenta, contactos y mensajes, pero no las entradas de tu Baúl. Exporta el Baúl por separado desde la pantalla del Baúl si lo utilizas. La copia de seguridad está protegida únicamente por tu frase de contraseña, así que guárdala en un lugar seguro y elimina el archivo una vez que hayas trasladado tu cuenta al otro teléfono. Las claves de conexión con tus contactos cambian a medida que sigues hablando con ellos; este teléfono las mantiene sin cambios durante 24 horas, así que restaura la copia de seguridad dentro de ese plazo. Una copia de seguridad restaurada más tarde puede no llegar a algunos contactos hasta que os volváis a añadir.</string>
 	<string name="backup_export_failed">No se pudo crear la copia de seguridad</string>
 	<string name="backup_export_not_signed_in">Inicia sesión primero y luego crea una copia de seguridad.</string>
 	<string name="backup_export_too_large">Esta cuenta es demasiado grande para hacer una copia de seguridad en este teléfono. La aplicación no tiene memoria suficiente para ello.</string>

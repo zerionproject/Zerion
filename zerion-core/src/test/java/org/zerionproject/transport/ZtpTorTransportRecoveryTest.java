@@ -497,11 +497,11 @@ public class ZtpTorTransportRecoveryTest {
 		assertFalse(t.isTorDead());
 
 		t.onControlConnectionLost();
-		waitUntil(() -> !t.isTorDead());
+		waitUntil(() -> !t.isTorDead() && snapshot(tor.calls).size() >= 6);
 
 		assertEquals(asList("stop", "start", "bridges:off", "network:true",
 				"publish:" + t.getLocalPort() + ":80:main-key",
-				"publish:4444:80:channel-key"), tor.calls);
+				"publish:4444:80:channel-key"), snapshot(tor.calls));
 		assertTrue(sleeps.isEmpty());
 	}
 
@@ -618,11 +618,16 @@ public class ZtpTorTransportRecoveryTest {
 		ZtpTorTransport t = started();
 		tor.failStarts = 3;
 		t.onControlConnectionLost();
-		waitUntil(() -> !t.isTorDead());
+		waitUntil(() -> !t.isTorDead() && Collections.frequency(
+				snapshot(tor.calls), "start") >= 4);
+		List<Long> slept;
+		synchronized (sleeps) {
+			slept = new ArrayList<>(sleeps);
+		}
 		assertEquals(asList(ZtpTorTransport.PROCESS_RESTART_BACKOFF_MIN_MS,
 				ZtpTorTransport.PROCESS_RESTART_BACKOFF_MIN_MS * 2,
-				ZtpTorTransport.PROCESS_RESTART_BACKOFF_MIN_MS * 4), sleeps);
-		assertEquals(4, Collections.frequency(tor.calls, "start"));
+				ZtpTorTransport.PROCESS_RESTART_BACKOFF_MIN_MS * 4), slept);
+		assertEquals(4, Collections.frequency(snapshot(tor.calls), "start"));
 	}
 
 	@Test

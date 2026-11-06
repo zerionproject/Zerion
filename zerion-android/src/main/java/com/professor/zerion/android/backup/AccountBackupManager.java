@@ -57,7 +57,7 @@ public class AccountBackupManager {
 
 	static final long MAX_DB_BYTES = Integer.MAX_VALUE - (1L << 20);
 
-	static final long ROOT_EVOLUTION_PAUSE_MS = 7L * 24 * 60 * 60 * 1000;
+	static final long ROOT_EVOLUTION_PAUSE_MS = 24L * 60 * 60 * 1000;
 
 	private static final int PROBE_BYTES = 5;
 

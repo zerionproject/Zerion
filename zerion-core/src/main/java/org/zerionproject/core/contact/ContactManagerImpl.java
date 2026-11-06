@@ -274,6 +274,12 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		if (inPerson && !existing.isVerified()) db.setContactVerified(txn, c);
 		Settings s = new Settings();
 		s.putBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.EVOLVES_KEY_PREFIX + c.getInt(), false);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.ENFORCES_KEY_PREFIX + c.getInt(), false);
+		s.putLong(org.zerionproject.transport.RootKeyStore
+				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
 		db.mergeSettings(txn, s, CONNECTION_KEYS_NAMESPACE);
 		txn.attach(new ContactConnectionKeysEvent(c, false));
 		if (perAdd) identityManager.rotateHybridHandshakeKeys(txn);
@@ -735,6 +741,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 		Contact contact = db.getContact(txn, c);
 		for (ContactHook hook : hooks) hook.removingContact(txn, contact);
 		db.removeContact(txn, c);
+		Settings forgotten = new Settings();
+		forgotten.putBoolean(OUT_OF_SYNC_KEY_PREFIX + c.getInt(), false);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.EVOLVES_KEY_PREFIX + c.getInt(), false);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.ENFORCES_KEY_PREFIX + c.getInt(), false);
+		forgotten.putLong(org.zerionproject.transport.RootKeyStore
+				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
+		db.mergeSettings(txn, forgotten, CONNECTION_KEYS_NAMESPACE);
 	}
 
 	@Override

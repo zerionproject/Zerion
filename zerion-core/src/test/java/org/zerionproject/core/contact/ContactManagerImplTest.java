@@ -321,6 +321,10 @@ public class ContactManagerImplTest extends BrambleMockTestCase {
 			oneOf(db).getContact(txn, contactId);
 			will(returnValue(contact));
 			oneOf(db).removeContact(txn, contactId);
+			oneOf(db).mergeSettings(with(txn),
+					with(any(org.zerionproject.core.api.settings.Settings
+							.class)),
+					with(ContactManagerImpl.CONNECTION_KEYS_NAMESPACE));
 		}});
 
 		contactManager.removeContact(contactId);

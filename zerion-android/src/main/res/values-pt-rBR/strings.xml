@@ -1309,7 +1309,7 @@
 	<string name="settings_section_account">Conta</string>
 	<string name="backup_export_success">Backup salvo</string>
 	<string name="backup_export_success_title">Backup salvo</string>
-	<string name="backup_export_warning_after">Seu backup foi salvo. Ele contém sua conta, contatos e mensagens, mas não os itens do seu cofre. Exporte o cofre separadamente pela tela do cofre, se você o usar. O backup é protegido apenas pela sua frase-senha, então guarde-o em um local seguro e exclua o arquivo assim que tiver movido sua conta para o outro telefone.</string>
+	<string name="backup_export_warning_after">Seu backup foi salvo. Ele contém sua conta, contatos e mensagens, mas não os itens do seu cofre. Exporte o cofre separadamente pela tela do cofre, se você o usar. O backup é protegido apenas pela sua frase-senha, então guarde-o em um local seguro e exclua o arquivo assim que tiver movido sua conta para o outro telefone. As chaves de conexão com seus contatos mudam à medida que você continua conversando com eles; este telefone as mantém inalteradas por 24 horas, então restaure o backup dentro desse prazo. Um backup restaurado mais tarde pode não alcançar alguns contatos até que vocês se adicionem novamente.</string>
 	<string name="backup_export_failed">Não foi possível criar o backup</string>
 	<string name="backup_export_not_signed_in">Faça login primeiro e depois crie um backup.</string>
 	<string name="backup_export_too_large">Esta conta é grande demais para fazer backup neste telefone. O app não tem memória suficiente para isso.</string>

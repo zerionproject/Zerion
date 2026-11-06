@@ -163,7 +163,7 @@ public class RootEvolutionInterleavingTest {
 		boolean second = bed.exchange(alice, bob);
 		assertTrue(first || second);
 		assertTrue(RootEvolutionTestBed.sameRoot(alice, bob));
-		assertEquals(1, alice.keys().getEpoch());
+		assertTrue(alice.keys().getEpoch() >= 1);
 	}
 
 	@Test(timeout = 300_000)

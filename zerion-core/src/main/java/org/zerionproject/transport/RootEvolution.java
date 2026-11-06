@@ -13,6 +13,7 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nullable;
@@ -44,18 +45,33 @@ public class RootEvolution implements ZwfControlHandler {
 	@Nullable
 	private Sender sender;
 	private long offerEpoch = -1;
+	private long offeredAt;
 	private byte offerVersion = VERSION;
 	private boolean peerAcceptsSeparated = false;
 	@Nullable
 	private KeyPair offerX25519;
 	@Nullable
 	private MlKemKeyPair offerKem;
-	private boolean closed = false;
+	private volatile boolean closed = false;
 	@Nullable
 	private byte[] startPendingId;
 	@Nullable
 	private byte[] identityFirstHalf;
 	private boolean identitySent = false;
+	private volatile boolean holding = false;
+	private boolean expected = false;
+	private boolean awaitingHello = false;
+	private boolean peerEnforces = false;
+	private boolean peerPaused = false;
+	private boolean selfPaused = false;
+	private boolean helloSeen = false;
+	@Nullable
+	private ScheduledFuture<?> deadline;
+	private int deadlineRound;
+	@Nullable
+	private ScheduledFuture<?> live;
+	@Nullable
+	private ScheduledFuture<?> nudge;
 
 	RootEvolution(RootEvolutionManager manager, ContactId contactId,
 			boolean alice) {
@@ -73,8 +89,10 @@ public class RootEvolution implements ZwfControlHandler {
 		lock.lock();
 		try {
 			ContactRootKeys keys = store.load(contactId);
+			long epoch = 0;
 			if (keys != null) {
 				try {
+					epoch = keys.getEpoch();
 					SecretKey pending = keys.getPending();
 					if (pending != null && keys.isPendingConfirmed()) {
 						startPendingId = pendingId(keys);
@@ -83,14 +101,178 @@ public class RootEvolution implements ZwfControlHandler {
 					wipe(keys);
 				}
 			}
+			manager.watch(contactId, this);
+			if (keys != null && manager.isEnforcing()) {
+				selfPaused = paused();
+				peerEnforces = store.peerEnforces(contactId);
+				boolean speaks = epoch > 0 || peerEnforces
+						|| store.peerEvolves(contactId);
+				if (speaks && !selfPaused) {
+					awaitingHello = true;
+					holding = true;
+					armDeadline();
+				}
+				scheduleLive(manager.isDue(contactId)
+						? manager.liveIntervalMs()
+						: manager.untilLiveEvolution(contactId));
+			}
 		} finally {
 			lock.unlock();
 		}
 		sender.sendWhenDue(this::buildHello);
 	}
 
+	@Override
+	public boolean holdsUserRecords() {
+		return holding && !closed;
+	}
+
+	private boolean paused() {
+		return store.isPaused(manager.now()) || store.isSnapshotting();
+	}
+
+	private void armDeadline() {
+		if (deadline != null) return;
+		int round = ++deadlineRound;
+		deadline = manager.after(manager.deadlineMs(),
+				() -> onDeadline(round));
+	}
+
+	private void disarmDeadline() {
+		ScheduledFuture<?> d = deadline;
+		if (d != null) d.cancel(false);
+		deadline = null;
+		deadlineRound++;
+	}
+
+	private void release() {
+		boolean held = holding;
+		expected = false;
+		awaitingHello = false;
+		holding = false;
+		disarmDeadline();
+		if (!closed) manager.healthy(contactId);
+		ScheduledFuture<?> n = nudge;
+		if (n != null) n.cancel(false);
+		nudge = null;
+		Sender s = sender;
+		if (held && s != null && !closed) s.released();
+	}
+
+	void onEvolved() {
+		release();
+		if (!closed && manager.isEnforcing()) {
+			scheduleLive(manager.liveIntervalMs());
+		}
+	}
+
+	private void scheduleLive(long delayMs) {
+		ScheduledFuture<?> old = live;
+		if (old != null) old.cancel(false);
+		live = closed ? null : manager.after(delayMs, this::onLive);
+	}
+
+	private void startNudging() {
+		if (alice || nudge != null || closed) return;
+		nudge = manager.after(manager.nudgeMs(), this::onNudge);
+	}
+
+	private void onNudge() {
+		ReentrantLock lock = manager.lock(contactId);
+		lock.lock();
+		try {
+			nudge = null;
+			if (closed || !expected) return;
+			notePause();
+			if (selfPaused) {
+				release();
+				return;
+			}
+			byte[] hello = buildHello(true);
+			if (hello != null) send(hello);
+			startNudging();
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void onDeadline(int round) {
+		ReentrantLock lock = manager.lock(contactId);
+		lock.lock();
+		try {
+			if (closed || round != deadlineRound
+					|| !(expected || awaitingHello)) {
+				return;
+			}
+			if (!manager.hasOtherConnection(contactId, this)) {
+				manager.stalled(contactId);
+			}
+		} finally {
+			lock.unlock();
+		}
+		Sender s = sender;
+		if (s != null) s.close();
+	}
+
+	private void onLive() {
+		ReentrantLock lock = manager.lock(contactId);
+		lock.lock();
+		try {
+			if (closed) return;
+			scheduleLive(manager.liveIntervalMs());
+			if (!helloSeen) return;
+			if (paused()) {
+				if (!selfPaused) {
+					selfPaused = true;
+					byte[] hello = buildHello(false);
+					if (hello != null) send(hello);
+				}
+				return;
+			}
+			selfPaused = false;
+			if (peerPaused) return;
+			if (alice) offerOnLiveConnection();
+			if (!peerEnforces) return;
+			expected = true;
+			armDeadline();
+			if (!alice) {
+				byte[] hello = buildHello(true);
+				if (hello != null) send(hello);
+				startNudging();
+			}
+		} catch (RuntimeException e) {
+			endOffer();
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void offerOnLiveConnection() {
+		ContactRootKeys keys = store.load(contactId);
+		if (keys == null) return;
+		try {
+			if (keys.getPending() != null) return;
+			if (offerEpoch >= 0) {
+				if (System.nanoTime() - offeredAt
+						< manager.deadlineMs() * 1_000_000L) {
+					return;
+				}
+				endOffer();
+			}
+			if (!manager.mayOffer(contactId, this, true)) return;
+			offer(keys.getEpoch(), new byte[MAC_LENGTH]);
+		} finally {
+			wipe(keys);
+		}
+	}
+
 	@Nullable
 	private byte[] buildHello() {
+		return buildHello(false);
+	}
+
+	@Nullable
+	private byte[] buildHello(boolean dueNow) {
 		if (closed) return null;
 		ReentrantLock lock = manager.lock(contactId);
 		lock.lock();
@@ -105,6 +287,15 @@ public class RootEvolution implements ZwfControlHandler {
 						: RootEvolutionRecord.FLAG_WANT_IDENTITY;
 				if (manager.isSeparatedEvolution()) {
 					flags |= RootEvolutionRecord.FLAG_SEPARATED_EVOLUTION;
+				}
+				if (manager.isEnforcing()) {
+					flags |= RootEvolutionRecord.FLAG_ENFORCES_EVOLUTION;
+					if (selfPaused || paused()) {
+						flags |= RootEvolutionRecord.FLAG_EVOLUTION_PAUSED;
+					} else if (dueNow || expected
+							|| manager.isDue(contactId)) {
+						flags |= RootEvolutionRecord.FLAG_EVOLUTION_DUE;
+					}
 				}
 				return RootEvolutionRecord.hello(keys.getEpoch(), pendingId,
 						flags);
@@ -194,6 +385,15 @@ public class RootEvolution implements ZwfControlHandler {
 		ReentrantLock lock = manager.lock(contactId);
 		lock.lock();
 		try {
+			if ((expected || awaitingHello)
+					&& !manager.hasOtherConnection(contactId, this)) {
+				manager.stalled(contactId);
+			}
+			manager.unwatch(contactId, this);
+			release();
+			ScheduledFuture<?> l = live;
+			if (l != null) l.cancel(false);
+			live = null;
 			endOffer();
 		} finally {
 			lock.unlock();
@@ -207,17 +407,73 @@ public class RootEvolution implements ZwfControlHandler {
 		}
 		peerAcceptsSeparated =
 				(flags & RootEvolutionRecord.FLAG_SEPARATED_EVOLUTION) != 0;
+		boolean first = !helloSeen;
+		helloSeen = true;
 		ContactRootKeys keys = store.load(contactId);
+		boolean peerDue = false;
+		if (manager.isEnforcing()) {
+			if (first && !store.peerEvolves(contactId)) {
+				store.setPeerEvolves(contactId);
+			}
+			if (!peerEnforces && (flags
+					& RootEvolutionRecord.FLAG_ENFORCES_EVOLUTION) != 0) {
+				peerEnforces = true;
+				store.setPeerEnforces(contactId, true);
+			}
+			peerPaused = peerEnforces && (flags
+					& RootEvolutionRecord.FLAG_EVOLUTION_PAUSED) != 0;
+			peerDue = peerEnforces && !peerPaused && keys != null
+					&& peerEpoch == keys.getEpoch() && (flags
+					& RootEvolutionRecord.FLAG_EVOLUTION_DUE) != 0;
+			awaitingHello = false;
+			notePause();
+			if (!peerEnforces || peerPaused || selfPaused) {
+				release();
+			} else if (peerDue || manager.isDue(contactId)) {
+				expected = true;
+				if (first) {
+					holding = true;
+					disarmDeadline();
+				}
+				armDeadline();
+				startNudging();
+			} else if (first) {
+				release();
+			}
+		}
 		if (keys == null) return;
 		try {
-			onHello(keys, peerEpoch, peerPendingId);
+			onHello(keys, peerEpoch, peerPendingId, peerDue, first);
 		} finally {
 			wipe(keys);
 		}
 	}
 
+	private void notePause() {
+		boolean pausedNow = paused();
+		if (pausedNow && !selfPaused) {
+			selfPaused = true;
+			byte[] hello = buildHello(false);
+			if (hello != null) send(hello);
+		} else if (!pausedNow) {
+			selfPaused = false;
+		}
+	}
+
+	private void resendConfirm(ContactRootKeys keys, long e) {
+		SecretKey confirmKey = evolutionCrypto.pendingConfirmKey(keys);
+		try {
+			send(RootEvolutionRecord.confirm(
+					RootEvolutionCrypto.pendingVersion(keys), e,
+					evolutionCrypto.initiatorConfirmWith(confirmKey, e + 1)));
+		} finally {
+			confirmKey.clear();
+		}
+	}
+
 	private void onHello(ContactRootKeys keys, long peerEpoch,
-			byte[] peerPendingId) throws DbException {
+			byte[] peerPendingId, boolean peerDue, boolean first)
+			throws DbException {
 		if (peerEpoch != keys.getEpoch()) return;
 		long e = keys.getEpoch();
 		boolean peerHasPending = !isZero(peerPendingId);
@@ -227,6 +483,8 @@ public class RootEvolution implements ZwfControlHandler {
 				if (!alice && store.promote(contactId, e)) {
 					manager.evolved(contactId);
 					sendDone(keys, e);
+				} else if (alice && keys.isPendingConfirmed()) {
+					resendConfirm(keys, e);
 				}
 				return;
 			}
@@ -239,7 +497,13 @@ public class RootEvolution implements ZwfControlHandler {
 			if (!store.discardPending(contactId, e)) return;
 			startPendingId = null;
 		}
-		if (alice && offerEpoch < 0 && manager.mayOffer(contactId, this)) {
+		if (alice && !first && peerDue && offerEpoch >= 0
+				&& System.nanoTime() - offeredAt
+				>= manager.nudgeMs() * 3 * 1_000_000L) {
+			endOffer();
+		}
+		if (alice && offerEpoch < 0
+				&& manager.mayOffer(contactId, this, peerDue || expected)) {
 			offer(e, peerHasPending ? peerPendingId : new byte[MAC_LENGTH]);
 		}
 	}
@@ -250,6 +514,7 @@ public class RootEvolution implements ZwfControlHandler {
 		byte version = manager.isSeparatedEvolution() && peerAcceptsSeparated
 				? VERSION_SEPARATED : VERSION;
 		offerEpoch = e;
+		offeredAt = System.nanoTime();
 		offerVersion = version;
 		offerX25519 = x25519;
 		offerKem = kem;
@@ -264,13 +529,17 @@ public class RootEvolution implements ZwfControlHandler {
 		ContactRootKeys keys = store.load(contactId);
 		if (keys == null) return;
 		try {
+			peerPaused = false;
 			if (keys.getEpoch() != e) return;
 			SecretKey pending = keys.getPending();
 			if (pending != null) {
 				if (keys.isPendingConfirmed()) return;
 				if (!verifyPendingId(keys, replaces)) return;
 			}
-			if (!manager.mayAnswer(contactId)) return;
+			if (!manager.mayAnswer(contactId)) {
+				if (manager.isEnforcing()) notePause();
+				return;
+			}
 			answer(keys, version, e, initiatorX25519, ek);
 		} finally {
 			wipe(keys);
@@ -351,7 +620,7 @@ public class RootEvolution implements ZwfControlHandler {
 					next.isSeparated() ? next.confirmKey : null, true)) {
 				return;
 			}
-			manager.evolved(contactId);
+			manager.proved(contactId);
 			send(RootEvolutionRecord.confirm(version, e,
 					evolutionCrypto.initiatorConfirmWith(next.confirmKey,
 							e + 1)));

@@ -8,7 +8,11 @@ import org.briarproject.nullsafety.NotNullByDefault;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongSupplier;
 
@@ -24,7 +28,15 @@ public class RootEvolutionManager {
 
 	public static final long MIN_EVOLUTION_INTERVAL_MS = 10 * 60_000L;
 
-	public static final int MAX_ANSWERS_PER_INTERVAL = 3;
+	public static final long LIVE_EVOLUTION_INTERVAL_MS = 60 * 60_000L;
+
+	public static final long EVOLUTION_DEADLINE_MS = 30_000L;
+
+	public static final long EVOLUTION_NUDGE_MS = 5_000L;
+
+	public static final long STALL_MEMORY_MS = 60_000L;
+
+	public static final int MAX_ANSWERS_PER_INTERVAL = 6;
 	public static final long ANSWER_INTERVAL_MS = 10 * 60_000L;
 
 	public static final int PENDING_DIAL_FALLBACK_AFTER = 2;
@@ -74,9 +86,28 @@ public class RootEvolutionManager {
 			new ConcurrentHashMap<>();
 	private final Map<Integer, Integer> unauthenticatedDials =
 			new ConcurrentHashMap<>();
+	private final Map<Integer, Set<RootEvolution>> watchers =
+			new ConcurrentHashMap<>();
+	private final Map<Integer, Long> stalledAt = new ConcurrentHashMap<>();
+	private final ScheduledThreadPoolExecutor timer = newTimer();
 	@Nullable
 	private volatile byte[][] identityRecords;
 	private volatile boolean separatedEvolution = true;
+	private volatile boolean enforcing = true;
+	private volatile long deadlineMs = EVOLUTION_DEADLINE_MS;
+	private volatile long liveIntervalMs = LIVE_EVOLUTION_INTERVAL_MS;
+	private volatile long nudgeMs = EVOLUTION_NUDGE_MS;
+
+	private static ScheduledThreadPoolExecutor newTimer() {
+		ScheduledThreadPoolExecutor t = new ScheduledThreadPoolExecutor(1,
+				r -> {
+					Thread thread = new Thread(r, "root-evolution-timer");
+					thread.setDaemon(true);
+					return thread;
+				});
+		t.setRemoveOnCancelPolicy(true);
+		return t;
+	}
 
 	@Inject
 	public RootEvolutionManager(RootKeyStore store, CryptoComponent crypto,
@@ -105,6 +136,85 @@ public class RootEvolutionManager {
 
 	void setSeparatedEvolution(boolean separatedEvolution) {
 		this.separatedEvolution = separatedEvolution;
+	}
+
+	boolean isEnforcing() {
+		return enforcing;
+	}
+
+	void setEnforcing(boolean enforcing) {
+		this.enforcing = enforcing;
+	}
+
+	void setTimings(long deadlineMs, long liveIntervalMs) {
+		this.deadlineMs = deadlineMs;
+		this.liveIntervalMs = liveIntervalMs;
+	}
+
+	void setNudge(long nudgeMs) {
+		this.nudgeMs = nudgeMs;
+	}
+
+	long nudgeMs() {
+		return nudgeMs;
+	}
+
+	void stalled(ContactId c) {
+		stalledAt.put(c.getInt(), now());
+	}
+
+	void healthy(ContactId c) {
+		stalledAt.remove(c.getInt());
+	}
+
+	public boolean recentlyStalled(int contactId) {
+		Long at = stalledAt.get(contactId);
+		if (at == null) return false;
+		long elapsed = now() - at;
+		return elapsed >= 0 && elapsed < STALL_MEMORY_MS;
+	}
+
+	long untilLiveEvolution(ContactId c) {
+		long elapsed = now() - store.evolvedAt(c);
+		if (elapsed < 0 || elapsed >= liveIntervalMs) return liveIntervalMs;
+		return liveIntervalMs - elapsed;
+	}
+
+	long deadlineMs() {
+		return deadlineMs;
+	}
+
+	boolean isDue(ContactId c) {
+		long at = store.evolvedAt(c);
+		long elapsed = now() - at;
+		return at == 0 || elapsed < 0 || elapsed >= MIN_EVOLUTION_INTERVAL_MS;
+	}
+
+	long liveIntervalMs() {
+		return liveIntervalMs;
+	}
+
+	ScheduledFuture<?> after(long delayMs, Runnable task) {
+		return timer.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+	}
+
+	void watch(ContactId c, RootEvolution e) {
+		watchers.computeIfAbsent(c.getInt(),
+				k -> ConcurrentHashMap.newKeySet()).add(e);
+	}
+
+	boolean hasOtherConnection(ContactId c, RootEvolution e) {
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set == null) return false;
+		for (RootEvolution other : set) {
+			if (other != e) return true;
+		}
+		return false;
+	}
+
+	void unwatch(ContactId c, RootEvolution e) {
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set != null) set.remove(e);
 	}
 
 	public ZwfControlHandler newEvolution(ContactId c, boolean alice) {
@@ -163,25 +273,27 @@ public class RootEvolutionManager {
 	}
 
 	boolean mayOffer(ContactId c, RootEvolution e) {
+		return mayOffer(c, e, false);
+	}
+
+	boolean mayOffer(ContactId c, RootEvolution e, boolean dueNow) {
 		RootEvolution other = offers.get(c.getInt());
 		if (other != null && other != e) return false;
 		Long last = lastEvolution.get(c.getInt());
 		long now = now();
-		if (last != null && now - last < MIN_EVOLUTION_INTERVAL_MS) {
+		if (!dueNow && last != null
+				&& now - last < MIN_EVOLUTION_INTERVAL_MS) {
 			return false;
 		}
-		return !store.isPaused(now);
+		return !store.isPaused(now) && !store.isSnapshotting();
 	}
 
 	boolean mayAnswer(ContactId c) {
 		long now = now();
-		if (store.isPaused(now)) return false;
+		if (store.isPaused(now) || store.isSnapshotting()) return false;
 		Deque<Long> recent = answers.computeIfAbsent(c.getInt(),
 				k -> new ArrayDeque<>());
-		while (!recent.isEmpty()
-				&& now - recent.peekFirst() >= ANSWER_INTERVAL_MS) {
-			recent.pollFirst();
-		}
+		recent.removeIf(at -> at > now || now - at >= ANSWER_INTERVAL_MS);
 		if (recent.size() >= MAX_ANSWERS_PER_INTERVAL) return false;
 		recent.addLast(now);
 		return true;
@@ -195,8 +307,18 @@ public class RootEvolutionManager {
 		offers.remove(c.getInt(), e);
 	}
 
-	void evolved(ContactId c) {
+	void proved(ContactId c) {
 		lastEvolution.put(c.getInt(), now());
+	}
+
+	void evolved(ContactId c) {
+		long now = now();
+		lastEvolution.put(c.getInt(), now);
+		stalledAt.remove(c.getInt());
+		store.setEvolvedAt(c, now);
+		Set<RootEvolution> set = watchers.get(c.getInt());
+		if (set == null) return;
+		for (RootEvolution e : set) e.onEvolved();
 	}
 
 	@Nullable

@@ -314,8 +314,10 @@ ratchet does not extend to the next. Within a single connection, both
 directions share one Mode 3-Full state under a lock, so a peer key learned
 while receiving is available to the sender on the same connection.
 
-The root key evolves. Each connection between two peers that support it runs
-the root evolution of ZWF-ROOT-EVOLUTION.md: the peers fold fresh X25519 and
+The root key evolves. A connection between two peers that support it runs
+the root evolution of ZWF-ROOT-EVOLUTION.md when one is due (between two
+3.0.19 sides before any user record is sent, with earlier releases as an
+attempt beside the records): the peers fold fresh X25519 and
 ML-KEM-768 secrets into a new root, confirm it, and delete the old one, after
 which a copy of the old root no longer authenticates in either direction. A
 connection is keyed under one root epoch: the dialler chooses (its pending root
