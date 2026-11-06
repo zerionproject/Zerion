@@ -30,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.db.DatabaseConstants.DB_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.db.DatabaseConstants.SCHEMA_VERSION_KEY;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
+import static org.zerionproject.core.test.TestUtils.getIdentity;
 import static org.zerionproject.core.test.TestUtils.getRandomBytes;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
@@ -82,6 +83,7 @@ public class Migration72_73DeviceTest {
 		SqlCipherDatabase db = newDatabase();
 		assertFalse(db.open(key, null));
 		Connection txn = db.startTransaction();
+		db.addIdentity(txn, getIdentity());
 		Statement st = txn.createStatement();
 		for (String table : NEW_TABLES) st.execute("DROP TABLE " + table);
 		st.execute("ALTER TABLE pendingContacts DROP COLUMN expiry");
