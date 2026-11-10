@@ -220,7 +220,15 @@ connect at once, the connection dialled by the side with the lower author id
 is kept and the other is closed, on both sides. A connection stays open for
 as long as both devices are online, so
 a contact sees when this device is online. Connection existence, lifetime and
-reconnects are visible to an observer of the Tor link. Calls and channel
+reconnects are visible to an observer of the Tor link, and so is the shape
+of the stream: the device's own ISP or entry guard does not see the frames,
+but sees equal-sized bursts of cells at a steady rate that never stops while
+a contact is connected, and can classify the device as running a
+cover-traffic messenger. That is the price of hiding message timing within
+the connection: a stream that fell silent between messages would show the
+moment and the size of each one. It reveals use of the app on a link where
+Tor use is already visible, not the contacts or the content, and is an
+accepted limit. Calls and channel
 requests do not use this pacing. A subscribed channel is pulled every 5 s
 while it has recent activity, backing off to 60 s when it is quiet; while
 its owner cannot be reached, every failed pull doubles the wait, up to
