@@ -584,6 +584,9 @@
 	<string name="identity_keys_out_of_sync_title">Verbindingssleutels lopen niet gelijk</string>
 	<string name="identity_keys_out_of_sync_message">Het apparaat van dit contact accepteert verbindingen, maar herkent je verbindingssleutels niet meer. Dit gebeurt als een van jullie een oudere back-up heeft teruggezet nadat de sleutels waren veranderd, of als dit contact je heeft verwijderd. Berichten kunnen pas weer worden afgeleverd als jullie elkaar opnieuw toevoegen: wissel nog eens links uit. Je gespreksgeschiedenis blijft bewaard.</string>
 	<string name="identity_keys_out_of_sync_banner">Verbindingssleutels lopen niet gelijk. Tik om te herstellen</string>
+	<string name="identity_keys_not_renewing_title">Verbindingssleutels niet vernieuwd</string>
+	<string name="identity_keys_not_renewing_message">Zerion vervangt de sleutels van deze verbinding regelmatig en houdt berichten vast tot dat klaar is. Bij dit contact blijft de vervanging mislukken, hoewel de verbinding zelf wel tot stand komt. Een slecht netwerk kan dit veroorzaken, en dan verdwijnt deze melding vanzelf zodra een vervanging slaagt. Blijft ze staan, dan grijpt mogelijk iemand in op de verbinding: wissel nog eens links uit om elkaar opnieuw toe te voegen. Je gespreksgeschiedenis blijft bewaard.</string>
+	<string name="identity_keys_not_renewing_banner">Verbindingssleutels niet vernieuwd. Tik voor details</string>
 	<string name="identity_readd_contact">Contact opnieuw toevoegen om de verbinding te herstellen</string>
 	<string name="identity_readd_contact_hint">Wissel opnieuw links uit met dit contact. De koppeling vervangt de verbindingssleutels op beide apparaten en bewaart je gesprek.</string>
 	<string name="contact_readd_started">Het contact wordt weer toegevoegd zodra het je nieuwe link gebruikt.</string>

@@ -307,12 +307,10 @@ public class ConversationActivity extends ZerionActivity
 			contactVerified = mayReceiveMedia(contactItem.getContact());
 			updateVerifyBanner();
 		});
-		viewModel.areKeysOutOfSync().observe(this, outOfSync -> {
-			TextView banner = findViewById(R.id.keysOutOfSyncBanner);
-			if (banner == null) return;
-			banner.setVisibility(Boolean.TRUE.equals(outOfSync)
-					? View.VISIBLE : View.GONE);
-		});
+		viewModel.areKeysOutOfSync().observe(this, outOfSync ->
+				updateKeysBanner());
+		viewModel.areKeysNotRenewing().observe(this, notRenewing ->
+				updateKeysBanner());
 		viewModel.getContactDisplayName().observe(this, contactName -> {
 			requireNonNull(contactName);
 			toolbarTitle.setText(contactName);
@@ -650,6 +648,26 @@ public class ConversationActivity extends ZerionActivity
 		TextView keysBanner = findViewById(R.id.keysOutOfSyncBanner);
 		if (keysBanner != null) {
 			keysBanner.setOnClickListener(v -> openContactInfo());
+		}
+		TextView renewalBanner = findViewById(R.id.keysNotRenewingBanner);
+		if (renewalBanner != null) {
+			renewalBanner.setOnClickListener(v -> openContactInfo());
+		}
+	}
+
+	private void updateKeysBanner() {
+		boolean outOfSync = Boolean.TRUE.equals(
+				viewModel.areKeysOutOfSync().getValue());
+		boolean notRenewing = Boolean.TRUE.equals(
+				viewModel.areKeysNotRenewing().getValue());
+		TextView outOfSyncBanner = findViewById(R.id.keysOutOfSyncBanner);
+		if (outOfSyncBanner != null) {
+			outOfSyncBanner.setVisibility(outOfSync ? View.VISIBLE : View.GONE);
+		}
+		TextView notRenewingBanner = findViewById(R.id.keysNotRenewingBanner);
+		if (notRenewingBanner != null) {
+			notRenewingBanner.setVisibility(!outOfSync && notRenewing
+					? View.VISIBLE : View.GONE);
 		}
 	}
 

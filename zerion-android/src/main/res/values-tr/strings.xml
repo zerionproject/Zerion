@@ -958,6 +958,9 @@
 	<string name="identity_keys_out_of_sync_title">Bağlantı anahtarları uyumsuz</string>
 	<string name="identity_keys_out_of_sync_message">Bu kişinin cihazı bağlantıları kabul ediyor ancak bağlantı anahtarlarınızı artık tanımıyor. Bu durum, anahtarlar değiştikten sonra biriniz daha eski bir yedeği geri yüklediğinde ya da bu kişi sizi kaldırdığında oluşur. Birbirinizi yeniden ekleyene kadar iletiler teslim edilemez: bağlantıları bir kez daha takas edin. Yazışma geçmişiniz korunur.</string>
 	<string name="identity_keys_out_of_sync_banner">Bağlantı anahtarları uyumsuz. Onarmak için dokunun</string>
+	<string name="identity_keys_not_renewing_title">Bağlantı anahtarları yenilenmedi</string>
+	<string name="identity_keys_not_renewing_message">Zerion bu bağlantının anahtarlarını düzenli olarak değiştirir ve bu tamamlanana kadar iletileri bekletir. Bu kişiyle bağlantının kendisi açılsa da değiştirme sürekli başarısız oluyor. Buna zayıf bir ağ neden olabilir ve bu durumda bir değiştirme tamamlandığında uyarı kendiliğinden kaybolur. Kalıcı olursa birisi bağlantıya müdahale ediyor olabilir: birbirinizi yeniden eklemek için bağlantıları bir kez daha takas edin. Yazışma geçmişiniz korunur.</string>
+	<string name="identity_keys_not_renewing_banner">Bağlantı anahtarları yenilenmedi. Ayrıntılar için dokunun</string>
 	<string name="identity_readd_contact">Bağlantıyı onarmak için kişiyi yeniden ekleyin</string>
 	<string name="identity_readd_contact_hint">Bu kişiyle bağlantıları yeniden takas edin. Eşleştirme, iki cihazdaki bağlantı anahtarlarını yenileriyle değiştirir ve yazışmanızı korur.</string>
 	<string name="contact_readd_started">Yeni bağlantınızı kullandığında yeniden eklenecek.</string>

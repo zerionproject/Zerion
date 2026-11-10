@@ -182,6 +182,26 @@
             android:visibility="gone"
             android:textAppearance="@style/TextAppearance.Zerion.Meta" />
 
+        <TextView
+            android:id="@+id/keysNotRenewingBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="4dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:background="@drawable/bg_input_bar"
+            android:textColor="?attr/zerionColorOnSurface"
+            android:gravity="center_vertical"
+            android:text="@string/identity_keys_not_renewing_banner"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            android:textAppearance="@style/TextAppearance.Zerion.Meta" />
+
         <FrameLayout
             android:id="@+id/input_container"
             android:layout_width="match_parent"

@@ -950,6 +950,9 @@
 	<string name="identity_keys_out_of_sync_title">Klucze połączenia niezsynchronizowane</string>
 	<string name="identity_keys_out_of_sync_message">Urządzenie tego kontaktu przyjmuje połączenia, ale nie rozpoznaje już twoich kluczy połączenia. Dzieje się tak, gdy jedno z was przywróciło starszą kopię zapasową po tym, jak klucze zostały już zmienione, albo gdy ten kontakt cię usunął. Wiadomości nie mogą zostać dostarczone, dopóki nie dodacie się ponownie: wymieńcie się linkami jeszcze raz. Historia rozmowy zostanie zachowana.</string>
 	<string name="identity_keys_out_of_sync_banner">Klucze połączenia niezsynchronizowane. Dotknij, aby naprawić</string>
+	<string name="identity_keys_not_renewing_title">Klucze połączenia nieodnowione</string>
+	<string name="identity_keys_not_renewing_message">Zerion regularnie wymienia klucze tego połączenia i wstrzymuje wiadomości, dopóki to się nie zakończy. Przy tym kontakcie wymiana stale się nie udaje, mimo że samo połączenie się otwiera. Przyczyną może być słaba sieć, a wtedy powiadomienie znika samo, gdy tylko wymiana się powiedzie. Jeśli pozostaje, ktoś może ingerować w połączenie: wymieńcie się linkami jeszcze raz, aby dodać się ponownie. Historia rozmowy zostanie zachowana.</string>
+	<string name="identity_keys_not_renewing_banner">Klucze połączenia nieodnowione. Dotknij, aby zobaczyć szczegóły</string>
 	<string name="identity_readd_contact">Dodaj kontakt ponownie, aby naprawić połączenie</string>
 	<string name="identity_readd_contact_hint">Wymień się ponownie linkami z tym kontaktem. Parowanie zastąpi klucze połączenia na obu urządzeniach i zachowa waszą rozmowę.</string>
 	<string name="contact_readd_started">Kontakt zostanie dodany ponownie, gdy użyje twojego nowego linku.</string>

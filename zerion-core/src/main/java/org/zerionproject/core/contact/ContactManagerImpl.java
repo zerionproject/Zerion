@@ -280,8 +280,16 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				.ENFORCES_KEY_PREFIX + c.getInt(), false);
 		s.putLong(org.zerionproject.transport.RootKeyStore
 				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
+		s.putInt(org.zerionproject.transport.RootKeyStore
+				.STALLS_KEY_PREFIX + c.getInt(), 0);
+		s.putLong(org.zerionproject.transport.RootKeyStore
+				.STALLED_SINCE_KEY_PREFIX + c.getInt(), 0);
+		s.putBoolean(org.zerionproject.transport.RootKeyStore
+				.NOT_RENEWING_KEY_PREFIX + c.getInt(), false);
 		db.mergeSettings(txn, s, CONNECTION_KEYS_NAMESPACE);
 		txn.attach(new ContactConnectionKeysEvent(c, false));
+		txn.attach(new org.zerionproject.core.api.contact.event
+				.ContactKeyRenewalEvent(c, false));
 		if (perAdd) identityManager.rotateHybridHandshakeKeys(txn);
 		return c;
 	}
@@ -614,6 +622,15 @@ class ContactManagerImpl implements ContactManager, EventListener {
 	}
 
 	@Override
+	public boolean isConnectionRenewalStalled(ContactId c)
+			throws DbException {
+		return db.transactionWithResult(true, txn ->
+				db.getSettings(txn, CONNECTION_KEYS_NAMESPACE).getBoolean(
+						org.zerionproject.transport.RootKeyStore
+								.NOT_RENEWING_KEY_PREFIX + c.getInt(), false));
+	}
+
+	@Override
 	public PendingContact getPendingContact(Transaction txn, PendingContactId p)
 			throws DbException {
 		return db.getPendingContact(txn, p);
@@ -749,6 +766,12 @@ class ContactManagerImpl implements ContactManager, EventListener {
 				.ENFORCES_KEY_PREFIX + c.getInt(), false);
 		forgotten.putLong(org.zerionproject.transport.RootKeyStore
 				.EVOLVED_AT_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putInt(org.zerionproject.transport.RootKeyStore
+				.STALLS_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putLong(org.zerionproject.transport.RootKeyStore
+				.STALLED_SINCE_KEY_PREFIX + c.getInt(), 0);
+		forgotten.putBoolean(org.zerionproject.transport.RootKeyStore
+				.NOT_RENEWING_KEY_PREFIX + c.getInt(), false);
 		db.mergeSettings(txn, forgotten, CONNECTION_KEYS_NAMESPACE);
 	}
 

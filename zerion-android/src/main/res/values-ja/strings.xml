@@ -1787,6 +1787,9 @@
 	<string name="identity_keys_out_of_sync_title">接続鍵が同期していません</string>
 	<string name="identity_keys_out_of_sync_message">この連絡先の端末は接続を受け付けていますが、あなたの接続鍵をもう認識していません。これは、鍵が更新された後にどちらかが古いバックアップを復元した場合や、この連絡先があなたを削除した場合に起こります。お互いをもう一度追加するまでメッセージは配信できません。もう一度リンクを交換してください。会話の履歴は保持されます。</string>
 	<string name="identity_keys_out_of_sync_banner">接続鍵が同期していません。タップして修復</string>
+	<string name="identity_keys_not_renewing_title">接続鍵が更新されていません</string>
+	<string name="identity_keys_not_renewing_message">Zerionはこの接続の鍵を定期的に置き換え、それが完了するまでメッセージを保留します。この連絡先では、接続自体は開くのに鍵の置き換えが繰り返し失敗しています。ネットワークの状態が悪いとこうなることがあり、その場合は置き換えが完了すると、この通知は自動的に消えます。消えない場合は、誰かが接続に干渉している可能性があります。お互いをもう一度追加するために、もう一度リンクを交換してください。会話の履歴は保持されます。</string>
+	<string name="identity_keys_not_renewing_banner">接続鍵が更新されていません。タップして詳細を表示</string>
 	<string name="identity_readd_contact">連絡先を再追加して接続を修復</string>
 	<string name="identity_readd_contact_hint">この連絡先ともう一度リンクを交換してください。ペアリングにより両方の端末の接続鍵が置き換えられ、会話は保持されます。</string>
 	<string name="contact_readd_started">相手があなたの新しいリンクを使うと、再び追加されます。</string>

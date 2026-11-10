@@ -811,6 +811,9 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="identity_keys_out_of_sync_title">Claus de connexió desincronitzades</string>
 	<string name="identity_keys_out_of_sync_message">El dispositiu d\'aquest contacte accepta connexions però ja no reconeix les teves claus de connexió. Això passa quan un de vosaltres ha restaurat una còpia de seguretat antiga després que les claus haguessin canviat, o quan aquest contacte t\'ha eliminat. Els missatges no es poden lliurar fins que us torneu a afegir: torneu a intercanviar els enllaços. L\'historial de la conversa es conserva.</string>
 	<string name="identity_keys_out_of_sync_banner">Claus de connexió desincronitzades. Toca per reparar-ho</string>
+	<string name="identity_keys_not_renewing_title">Claus de connexió no renovades</string>
+	<string name="identity_keys_not_renewing_message">Zerion substitueix regularment les claus d\'aquesta connexió i retén els missatges fins que això s\'ha fet. Amb aquest contacte la substitució continua fallant tot i que la connexió en si s\'obre. Una xarxa deficient pot causar-ho, i llavors l\'avís desapareix tot sol quan es completa una substitució. Si persisteix, pot ser que algú estigui interferint en la connexió: torneu a intercanviar els enllaços per afegir-vos de nou. L\'historial de la conversa es conserva.</string>
+	<string name="identity_keys_not_renewing_banner">Claus de connexió no renovades. Toca per veure els detalls</string>
 	<string name="identity_readd_contact">Torna a afegir el contacte per reparar la connexió</string>
 	<string name="identity_readd_contact_hint">Torna a intercanviar els enllaços amb aquest contacte. La vinculació substitueix les claus de connexió en tots dos dispositius i conserva la conversa.</string>
 	<string name="contact_readd_started">Es tornarà a afegir quan faci servir el teu enllaç nou.</string>

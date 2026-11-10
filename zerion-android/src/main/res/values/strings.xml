@@ -112,6 +112,9 @@
 	<string name="identity_keys_out_of_sync_title">Connection keys out of sync</string>
 	<string name="identity_keys_out_of_sync_message">This contact\'s device accepts connections but no longer recognises your connection keys. This happens when one of you restored an older backup after the keys had moved on, or when this contact removed you. Messages cannot be delivered until you add each other again: exchange links once more. Your conversation history is kept.</string>
 	<string name="identity_keys_out_of_sync_banner">Connection keys out of sync. Tap to repair</string>
+	<string name="identity_keys_not_renewing_title">Connection keys not renewed</string>
+	<string name="identity_keys_not_renewing_message">Zerion replaces the keys of this connection regularly and holds messages back until that is done. With this contact the replacement keeps failing although the connection itself opens. A poor network can cause this, and the notice then clears by itself once a replacement completes. If it stays, someone may be interfering with the connection: exchange links once more to add each other again. Your conversation history is kept.</string>
+	<string name="identity_keys_not_renewing_banner">Connection keys not renewed. Tap for details</string>
 	<string name="identity_readd_contact">Re-add contact to repair the connection</string>
 	<string name="identity_readd_contact_hint">Exchange links with this contact again. The pairing replaces the connection keys on both devices and keeps your conversation.</string>
 	<string name="contact_readd_started">They will be added again once they use your new link.</string>

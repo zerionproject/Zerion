@@ -956,6 +956,9 @@
 	<string name="identity_keys_out_of_sync_title">Ryšio raktai nesinchronizuoti</string>
 	<string name="identity_keys_out_of_sync_message">Šio adresato įrenginys priima ryšius, bet nebeatpažįsta jūsų ryšio raktų. Taip nutinka, kai vienas iš jūsų atkūrė senesnę atsarginę kopiją, o raktai jau buvo pasikeitę, arba kai šis adresatas jus pašalino. Žinučių nepavyks pristatyti, kol vėl nepridėsite vienas kito: dar kartą apsikeiskite nuorodomis. Jūsų pokalbio istorija išsaugoma.</string>
 	<string name="identity_keys_out_of_sync_banner">Ryšio raktai nesinchronizuoti. Bakstelėkite, kad pataisytumėte</string>
+	<string name="identity_keys_not_renewing_title">Ryšio raktai neatnaujinti</string>
+	<string name="identity_keys_not_renewing_message">Zerion reguliariai pakeičia šio ryšio raktus ir sulaiko žinutes, kol tai bus atlikta. Su šiuo adresatu pakeitimas vis nepavyksta, nors pats ryšys užsimezga. Tai gali lemti prastas tinklas, ir tada pranešimas išnyksta savaime, kai tik pakeitimas pavyksta. Jei jis išlieka, galbūt kažkas kišasi į ryšį: dar kartą apsikeiskite nuorodomis, kad vėl pridėtumėte vienas kitą. Jūsų pokalbio istorija išsaugoma.</string>
+	<string name="identity_keys_not_renewing_banner">Ryšio raktai neatnaujinti. Bakstelėkite, kad sužinotumėte daugiau</string>
 	<string name="identity_readd_contact">Iš naujo pridėkite adresatą, kad pataisytumėte ryšį</string>
 	<string name="identity_readd_contact_hint">Dar kartą apsikeiskite nuorodomis su šiuo adresatu. Susiejimas pakeis ryšio raktus abiejuose įrenginiuose ir išsaugos jūsų pokalbį.</string>
 	<string name="contact_readd_started">Adresatas bus pridėtas vėl, kai jis panaudos jūsų naują nuorodą.</string>

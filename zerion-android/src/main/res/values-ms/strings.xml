@@ -482,6 +482,9 @@
 	<string name="identity_keys_out_of_sync_title">Kunci sambungan tidak segerak</string>
 	<string name="identity_keys_out_of_sync_message">Peranti kenalan ini menerima sambungan tetapi tidak lagi mengenali kunci sambungan anda. Ini berlaku apabila salah seorang daripada anda memulihkan sandaran lama selepas kunci telah berubah, atau apabila kenalan ini membuang anda. Mesej tidak dapat dihantar sehingga anda menambah satu sama lain semula: tukar pautan sekali lagi. Sejarah perbualan anda disimpan.</string>
 	<string name="identity_keys_out_of_sync_banner">Kunci sambungan tidak segerak. Ketik untuk membaiki</string>
+	<string name="identity_keys_not_renewing_title">Kunci sambungan tidak diperbaharui</string>
+	<string name="identity_keys_not_renewing_message">Zerion menggantikan kunci sambungan ini secara berkala dan menahan mesej sehingga penggantian selesai. Dengan kenalan ini penggantian terus gagal walaupun sambungan itu sendiri terbuka. Rangkaian yang lemah boleh menyebabkannya, dan notis ini akan hilang sendiri setelah satu penggantian selesai. Jika ia kekal, mungkin ada orang yang mengganggu sambungan: tukar pautan sekali lagi untuk menambah satu sama lain semula. Sejarah perbualan anda disimpan.</string>
+	<string name="identity_keys_not_renewing_banner">Kunci sambungan tidak diperbaharui. Ketik untuk butiran</string>
 	<string name="identity_readd_contact">Tambah semula kenalan untuk membaiki sambungan</string>
 	<string name="identity_readd_contact_hint">Tukar pautan dengan kenalan ini sekali lagi. Pemasangan menggantikan kunci sambungan pada kedua-dua peranti dan mengekalkan perbualan anda.</string>
 	<string name="contact_readd_started">Mereka akan ditambah semula sebaik sahaja mereka menggunakan pautan baharu anda.</string>

@@ -194,6 +194,8 @@ public interface ContactManager {
 	boolean isConnectionOutOfSync(Transaction txn, ContactId c)
 			throws DbException;
 
+	boolean isConnectionRenewalStalled(ContactId c) throws DbException;
+
 	SecretKey deriveContactKey(ContactId c, String label, byte[]... inputs)
 			throws DbException;
 

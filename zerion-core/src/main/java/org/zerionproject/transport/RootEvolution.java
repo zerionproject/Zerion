@@ -65,6 +65,7 @@ public class RootEvolution implements ZwfControlHandler {
 	private boolean peerPaused = false;
 	private boolean selfPaused = false;
 	private boolean helloSeen = false;
+	private volatile boolean peerAuthenticated = false;
 	@Nullable
 	private ScheduledFuture<?> deadline;
 	private int deadlineRound;
@@ -317,6 +318,7 @@ public class RootEvolution implements ZwfControlHandler {
 			return;
 		}
 		if (r == null) return;
+		peerAuthenticated = true;
 		if (r.version == VERSION_SEPARATED
 				&& !manager.isSeparatedEvolution()) {
 			return;
@@ -359,6 +361,7 @@ public class RootEvolution implements ZwfControlHandler {
 
 	@Override
 	public void onPeerStreamAuthenticated(long epoch) {
+		peerAuthenticated = true;
 		ReentrantLock lock = manager.lock(contactId);
 		lock.lock();
 		try {
@@ -381,13 +384,22 @@ public class RootEvolution implements ZwfControlHandler {
 
 	@Override
 	public void close() {
-		closed = true;
 		ReentrantLock lock = manager.lock(contactId);
 		lock.lock();
 		try {
-			if ((expected || awaitingHello)
-					&& !manager.hasOtherConnection(contactId, this)) {
-				manager.stalled(contactId);
+			boolean first = !closed;
+			closed = true;
+			boolean waiting = expected || awaitingHello;
+			boolean alone = !manager.hasOtherConnection(contactId, this);
+			if (waiting && alone) manager.stalled(contactId);
+			if (first) {
+				boolean stalled = peerAuthenticated && waiting && peerEnforces;
+				if (alone) {
+					manager.connectionEnded(contactId, peerAuthenticated,
+							stalled);
+				} else if (stalled) {
+					manager.stalledBesideAnother(contactId);
+				}
 			}
 			manager.unwatch(contactId, this);
 			release();

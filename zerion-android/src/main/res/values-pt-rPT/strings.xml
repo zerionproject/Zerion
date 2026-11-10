@@ -990,6 +990,9 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 	<string name="identity_keys_out_of_sync_title">Chaves de ligação dessincronizadas</string>
 	<string name="identity_keys_out_of_sync_message">O dispositivo deste contacto aceita ligações, mas já não reconhece as suas chaves de ligação. Isto acontece quando um de vocês restaurou uma cópia de segurança antiga depois de as chaves terem mudado, ou quando este contacto o removeu. As mensagens não podem ser entregues até voltarem a adicionar-se um ao outro: troquem novamente os links. O histórico da conversa é mantido.</string>
 	<string name="identity_keys_out_of_sync_banner">Chaves de ligação dessincronizadas. Toque para reparar</string>
+	<string name="identity_keys_not_renewing_title">Chaves de ligação não renovadas</string>
+	<string name="identity_keys_not_renewing_message">O Zerion substitui regularmente as chaves desta ligação e retém as mensagens até que isso esteja concluído. Com este contacto a substituição continua a falhar, embora a ligação em si se estabeleça. Uma rede fraca pode causar isto, e nesse caso o aviso desaparece por si só assim que uma substituição for concluída. Se persistir, alguém pode estar a interferir na ligação: troquem novamente os links para voltarem a adicionar-se um ao outro. O histórico da conversa é mantido.</string>
+	<string name="identity_keys_not_renewing_banner">Chaves de ligação não renovadas. Toque para ver detalhes</string>
 	<string name="identity_readd_contact">Voltar a adicionar o contacto para reparar a ligação</string>
 	<string name="identity_readd_contact_hint">Troque novamente os links com este contacto. O emparelhamento substitui as chaves de ligação nos dois dispositivos e mantém a sua conversa.</string>
 	<string name="contact_readd_started">A pessoa será adicionada de novo quando usar o seu novo link.</string>

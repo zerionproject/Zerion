@@ -917,6 +917,9 @@
 	<string name="identity_keys_out_of_sync_title">Tilkoblingsnøklene er ikke synkronisert</string>
 	<string name="identity_keys_out_of_sync_message">Enheten til denne kontakten godtar tilkoblinger, men gjenkjenner ikke lenger tilkoblingsnøklene dine. Dette skjer når en av dere har gjenopprettet en eldre sikkerhetskopi etter at nøklene var blitt fornyet, eller når denne kontakten har fjernet deg. Meldinger kan ikke leveres før dere legger hverandre til igjen: utveksle lenker en gang til. Samtaleloggen din beholdes.</string>
 	<string name="identity_keys_out_of_sync_banner">Tilkoblingsnøklene er ikke synkronisert. Trykk for å reparere</string>
+	<string name="identity_keys_not_renewing_title">Tilkoblingsnøklene er ikke fornyet</string>
+	<string name="identity_keys_not_renewing_message">Zerion bytter ut nøklene for denne tilkoblingen regelmessig og holder meldinger tilbake til det er gjort. Med denne kontakten mislykkes byttet gang på gang, selv om selve tilkoblingen åpnes. Et dårlig nettverk kan forårsake dette, og varselet forsvinner da av seg selv så snart et bytte lykkes. Hvis det blir stående, kan det være at noen forstyrrer tilkoblingen: utveksle lenker en gang til for å legge hverandre til igjen. Samtaleloggen din beholdes.</string>
+	<string name="identity_keys_not_renewing_banner">Tilkoblingsnøklene er ikke fornyet. Trykk for detaljer</string>
 	<string name="identity_readd_contact">Legg til kontakten på nytt for å reparere tilkoblingen</string>
 	<string name="identity_readd_contact_hint">Utveksle lenker med denne kontakten igjen. Sammenkoblingen erstatter tilkoblingsnøklene på begge enhetene og beholder samtalen deres.</string>
 	<string name="contact_readd_started">Kontakten blir lagt til igjen når den nye lenken din blir brukt.</string>

@@ -939,6 +939,9 @@
 	<string name="identity_keys_out_of_sync_title">Cheile de conexiune nu sunt sincronizate</string>
 	<string name="identity_keys_out_of_sync_message">Dispozitivul acestui contact acceptă conexiuni, dar nu mai recunoaște cheile dvs. de conexiune. Acest lucru se întâmplă când unul dintre dvs. a restaurat o copie de rezervă mai veche după ce cheile se schimbaseră între timp, sau când acest contact v-a eliminat. Mesajele nu pot fi livrate până când nu vă adăugați din nou unul pe celălalt: schimbați din nou linkurile. Istoricul conversației se păstrează.</string>
 	<string name="identity_keys_out_of_sync_banner">Cheile de conexiune nu sunt sincronizate. Atingeți pentru a repara</string>
+	<string name="identity_keys_not_renewing_title">Cheile de conexiune nu au fost reînnoite</string>
+	<string name="identity_keys_not_renewing_message">Zerion înlocuiește periodic cheile acestei conexiuni și reține mesajele până când acest lucru este finalizat. Cu acest contact înlocuirea eșuează în mod repetat, deși conexiunea în sine se deschide. O rețea slabă poate cauza acest lucru, iar atunci avertizarea dispare de la sine imediat ce o înlocuire reușește. Dacă persistă, este posibil ca cineva să interfereze cu conexiunea: schimbați din nou linkurile pentru a vă adăuga din nou unul pe celălalt. Istoricul conversației se păstrează.</string>
+	<string name="identity_keys_not_renewing_banner">Cheile de conexiune nu au fost reînnoite. Atingeți pentru detalii</string>
 	<string name="identity_readd_contact">Adăugați din nou contactul pentru a repara conexiunea</string>
 	<string name="identity_readd_contact_hint">Schimbați din nou linkurile cu acest contact. Asocierea înlocuiește cheile de conexiune pe ambele dispozitive și păstrează conversația.</string>
 	<string name="contact_readd_started">Persoana va fi adăugată din nou când folosește noul dvs. link.</string>

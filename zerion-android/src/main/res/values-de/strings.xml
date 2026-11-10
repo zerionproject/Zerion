@@ -1808,6 +1808,9 @@
 	<string name="identity_keys_out_of_sync_title">Verbindungsschlüssel nicht synchron</string>
 	<string name="identity_keys_out_of_sync_message">Das Gerät dieses Kontakts nimmt Verbindungen an, erkennt deine Verbindungsschlüssel aber nicht mehr. Das passiert, wenn einer von euch ein älteres Backup wiederhergestellt hat, nachdem sich die Schlüssel bereits geändert hatten, oder wenn dieser Kontakt dich entfernt hat. Nachrichten können erst zugestellt werden, wenn ihr euch gegenseitig erneut hinzufügt: Tauscht noch einmal Links aus. Dein Chatverlauf bleibt erhalten.</string>
 	<string name="identity_keys_out_of_sync_banner">Verbindungsschlüssel nicht synchron. Zum Reparieren tippen</string>
+	<string name="identity_keys_not_renewing_title">Verbindungsschlüssel nicht erneuert</string>
+	<string name="identity_keys_not_renewing_message">Zerion ersetzt die Schlüssel dieser Verbindung regelmäßig und hält Nachrichten zurück, bis das erledigt ist. Bei diesem Kontakt schlägt der Austausch immer wieder fehl, obwohl die Verbindung selbst zustande kommt. Ein schlechtes Netz kann das verursachen, und der Hinweis verschwindet dann von selbst, sobald ein Austausch gelingt. Bleibt er bestehen, greift möglicherweise jemand in die Verbindung ein: Tauscht noch einmal Links aus, um euch gegenseitig erneut hinzuzufügen. Dein Chatverlauf bleibt erhalten.</string>
+	<string name="identity_keys_not_renewing_banner">Verbindungsschlüssel nicht erneuert. Für Details tippen</string>
 	<string name="identity_readd_contact">Kontakt erneut hinzufügen, um die Verbindung zu reparieren</string>
 	<string name="identity_readd_contact_hint">Tausche erneut Links mit diesem Kontakt aus. Die Kopplung ersetzt die Verbindungsschlüssel auf beiden Geräten und behält eure Unterhaltung bei.</string>
 	<string name="contact_readd_started">Die Person wird erneut hinzugefügt, sobald sie deinen neuen Link nutzt.</string>

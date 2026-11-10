@@ -1824,6 +1824,9 @@
 	<string name="identity_keys_out_of_sync_title">Chaves de conexão fora de sincronia</string>
 	<string name="identity_keys_out_of_sync_message">O dispositivo deste contato aceita conexões, mas não reconhece mais suas chaves de conexão. Isso acontece quando um de vocês restaurou um backup mais antigo depois que as chaves já tinham mudado, ou quando este contato removeu você. As mensagens não podem ser entregues até que vocês se adicionem novamente: troquem os links mais uma vez. Seu histórico de conversa é mantido.</string>
 	<string name="identity_keys_out_of_sync_banner">Chaves de conexão fora de sincronia. Toque para reparar</string>
+	<string name="identity_keys_not_renewing_title">Chaves de conexão não renovadas</string>
+	<string name="identity_keys_not_renewing_message">O Zerion substitui as chaves desta conexão regularmente e retém as mensagens até que isso seja concluído. Com este contato a substituição continua falhando, embora a conexão em si se abra. Uma rede ruim pode causar isso, e então o aviso desaparece sozinho assim que uma substituição é concluída. Se ele permanecer, alguém pode estar interferindo na conexão: troquem os links mais uma vez para se adicionarem novamente. Seu histórico de conversa é mantido.</string>
+	<string name="identity_keys_not_renewing_banner">Chaves de conexão não renovadas. Toque para ver detalhes</string>
 	<string name="identity_readd_contact">Adicionar o contato novamente para reparar a conexão</string>
 	<string name="identity_readd_contact_hint">Troque links com este contato novamente. O pareamento substitui as chaves de conexão nos dois dispositivos e mantém sua conversa.</string>
 	<string name="contact_readd_started">A pessoa será adicionada de novo quando usar seu novo link.</string>

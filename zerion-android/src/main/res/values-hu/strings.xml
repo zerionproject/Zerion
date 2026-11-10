@@ -921,6 +921,9 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="identity_keys_out_of_sync_title">A kapcsolati kulcsok nincsenek szinkronban</string>
 	<string name="identity_keys_out_of_sync_message">Ennek a kapcsolatnak az eszköze fogadja a kapcsolódásokat, de már nem ismeri fel az Ön kapcsolati kulcsait. Ez akkor fordul elő, ha egyikük egy régebbi biztonsági mentést állított vissza, miután a kulcsok már megváltoztak, vagy ha ez a kapcsolat eltávolította Önt. Az üzenetek nem kézbesíthetők, amíg újra hozzá nem adják egymást: cseréljenek ismét linket. A beszélgetési előzmények megmaradnak.</string>
 	<string name="identity_keys_out_of_sync_banner">A kapcsolati kulcsok nincsenek szinkronban. Koppintson a javításhoz</string>
+	<string name="identity_keys_not_renewing_title">A kapcsolati kulcsok nem újultak meg</string>
+	<string name="identity_keys_not_renewing_message">A Zerion rendszeresen lecseréli ennek a kapcsolatnak a kulcsait, és addig visszatartja az üzeneteket, amíg ez meg nem történik. Ennél a kapcsolatnál a csere folyamatosan sikertelen, bár maga a kapcsolódás létrejön. Ezt gyenge hálózat is okozhatja, és akkor az értesítés magától eltűnik, amint egy csere befejeződik. Ha megmarad, lehet, hogy valaki beavatkozik a kapcsolatba: cseréljenek ismét linket, hogy újra hozzáadják egymást. A beszélgetési előzmények megmaradnak.</string>
+	<string name="identity_keys_not_renewing_banner">A kapcsolati kulcsok nem újultak meg. Koppintson a részletekért</string>
 	<string name="identity_readd_contact">Kapcsolat újbóli hozzáadása a kapcsolódás javításához</string>
 	<string name="identity_readd_contact_hint">Cseréljen újra linket ezzel a kapcsolattal. A párosítás mindkét eszközön lecseréli a kapcsolati kulcsokat, és megtartja a beszélgetést.</string>
 	<string name="contact_readd_started">Újra hozzáadódik, amint az új linkjét használja.</string>

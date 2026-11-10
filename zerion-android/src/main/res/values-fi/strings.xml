@@ -747,6 +747,9 @@
 	<string name="identity_keys_out_of_sync_title">Yhteysavaimet eivät ole synkronissa</string>
 	<string name="identity_keys_out_of_sync_message">Tämän yhteystiedon laite hyväksyy yhteydet, mutta ei enää tunnista yhteysavaimiasi. Näin käy, kun toinen teistä on palauttanut vanhemman varmuuskopion sen jälkeen, kun avaimet olivat jo vaihtuneet, tai kun tämä yhteystieto on poistanut sinut. Viestejä ei voi toimittaa ennen kuin lisäätte toisenne uudelleen: vaihtakaa linkit vielä kerran. Keskusteluhistoriasi säilyy.</string>
 	<string name="identity_keys_out_of_sync_banner">Yhteysavaimet eivät ole synkronissa. Napauta korjataksesi</string>
+	<string name="identity_keys_not_renewing_title">Yhteysavaimia ei ole uusittu</string>
+	<string name="identity_keys_not_renewing_message">Zerion vaihtaa tämän yhteyden avaimet säännöllisesti ja pidättää viestit, kunnes vaihto on tehty. Tämän yhteystiedon kanssa vaihto epäonnistuu toistuvasti, vaikka yhteys itsessään avautuu. Heikko verkko voi aiheuttaa tämän, ja silloin ilmoitus poistuu itsestään, kun vaihto onnistuu. Jos se jää näkyviin, joku saattaa häiritä yhteyttä: vaihtakaa linkit vielä kerran lisätäksenne toisenne uudelleen. Keskusteluhistoriasi säilyy.</string>
+	<string name="identity_keys_not_renewing_banner">Yhteysavaimia ei ole uusittu. Napauta nähdäksesi tiedot</string>
 	<string name="identity_readd_contact">Lisää yhteystieto uudelleen korjataksesi yhteyden</string>
 	<string name="identity_readd_contact_hint">Vaihda linkit tämän yhteystiedon kanssa uudelleen. Pariliitos korvaa yhteysavaimet molemmilla laitteilla ja säilyttää keskustelunne.</string>
 	<string name="contact_readd_started">Hänet lisätään uudelleen, kun hän käyttää uutta linkkiäsi.</string>

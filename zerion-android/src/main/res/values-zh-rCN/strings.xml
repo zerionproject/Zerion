@@ -1790,6 +1790,9 @@
 	<string name="identity_keys_out_of_sync_title">连接密钥不同步</string>
 	<string name="identity_keys_out_of_sync_message">此联系人的设备接受连接，但已不再识别你的连接密钥。当你们其中一方在密钥更新后恢复了较旧的备份，或此联系人删除了你时，就会出现这种情况。在你们重新互相添加之前，消息无法送达：请再次交换链接。你的对话记录会保留。</string>
 	<string name="identity_keys_out_of_sync_banner">连接密钥不同步。点按以修复</string>
+	<string name="identity_keys_not_renewing_title">连接密钥未更换</string>
+	<string name="identity_keys_not_renewing_message">Zerion 会定期更换此连接的密钥，并在更换完成前暂缓发送消息。对于此联系人，连接本身可以建立，但密钥更换一直失败。网络状况不佳可能导致这种情况，此时只要一次更换成功，此提示就会自动消失。如果提示一直存在，可能有人在干扰连接：请再次交换链接，重新互相添加。你的对话记录会保留。</string>
+	<string name="identity_keys_not_renewing_banner">连接密钥未更换。点按查看详情</string>
 	<string name="identity_readd_contact">重新添加联系人以修复连接</string>
 	<string name="identity_readd_contact_hint">与此联系人再次交换链接。配对会替换两台设备上的连接密钥，并保留你们的对话。</string>
 	<string name="contact_readd_started">对方使用你的新链接后，就会被重新添加。</string>

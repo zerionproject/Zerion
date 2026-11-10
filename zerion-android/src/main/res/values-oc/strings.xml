@@ -701,6 +701,9 @@
 	<string name="identity_keys_out_of_sync_title">Claus de connexion desincronizadas</string>
 	<string name="identity_keys_out_of_sync_message">L’aparelh d’aqueste contacte accepta las connexions mas reconeis pas mai vòstras claus de connexion. Aquò arriba quand l’un de vos a restaurat una salvagarda mai anciana aprèp que las claus avián cambiat, o quand aqueste contacte vos a suprimit. Los messatges pòdon pas èsser liurats tant que vos ajustatz pas tornamai l’un l’autre: escambiatz los ligams tornamai. Vòstre istoric de conversacion es conservat.</string>
 	<string name="identity_keys_out_of_sync_banner">Claus de connexion desincronizadas. Tocatz per reparar</string>
+	<string name="identity_keys_not_renewing_title">Claus de connexion pas renovadas</string>
+	<string name="identity_keys_not_renewing_message">Zerion remplaça regularament las claus d’aquesta connexion e reten los messatges fins qu’aquò siá fach. Amb aqueste contacte lo remplaçament fracassa sens relambi, mentre que la connexion ela meteissa se dobrís. Una ret de marrida qualitat pòt n’èsser la causa, e alara l’avís desapareis tot sol tre qu’un remplaçament capita. Se demòra, benlèu que qualqu’un interferís amb la connexion: escambiatz los ligams tornamai per vos ajustar tornamai l’un l’autre. Vòstre istoric de conversacion es conservat.</string>
+	<string name="identity_keys_not_renewing_banner">Claus de connexion pas renovadas. Tocatz per mai de detalhs</string>
 	<string name="identity_readd_contact">Tornar ajustar lo contacte per reparar la connexion</string>
 	<string name="identity_readd_contact_hint">Escambiatz tornamai los ligams amb aqueste contacte. L’associacion remplaça las claus de connexion suls dos aparelhs e garda vòstra conversacion.</string>
 	<string name="contact_readd_started">Serà tornat ajustar quand utilizarà vòstre novèl ligam.</string>

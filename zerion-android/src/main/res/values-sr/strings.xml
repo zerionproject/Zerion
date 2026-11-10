@@ -722,6 +722,9 @@
 	<string name="identity_keys_out_of_sync_title">Ključevi veze nisu usklađeni</string>
 	<string name="identity_keys_out_of_sync_message">Uređaj ovog kontakta prihvata veze, ali više ne prepoznaje tvoje ključeve veze. To se dešava kada neko od vas vrati stariju rezervnu kopiju nakon što su se ključevi već promenili, ili kada te ovaj kontakt ukloni. Poruke ne mogu da se isporuče dok ponovo ne dodate jedno drugo: još jednom razmenite linkove. Istorija razgovora se čuva.</string>
 	<string name="identity_keys_out_of_sync_banner">Ključevi veze nisu usklađeni. Dodirni za popravku</string>
+	<string name="identity_keys_not_renewing_title">Ključevi veze nisu obnovljeni</string>
+	<string name="identity_keys_not_renewing_message">Zerion redovno menja ključeve ove veze i zadržava poruke dok to ne bude gotovo. Kod ovog kontakta zamena stalno ne uspeva iako se sama veza otvara. Uzrok može biti loša mreža, a obaveštenje tada nestaje samo od sebe čim se jedna zamena završi. Ako ostane, moguće je da se neko meša u vezu: još jednom razmenite linkove da biste ponovo dodali jedno drugo. Istorija razgovora se čuva.</string>
+	<string name="identity_keys_not_renewing_banner">Ključevi veze nisu obnovljeni. Dodirni za detalje</string>
 	<string name="identity_readd_contact">Ponovo dodaj kontakt da popraviš vezu</string>
 	<string name="identity_readd_contact_hint">Ponovo razmeni linkove sa ovim kontaktom. Uparivanje zamenjuje ključeve veze na oba uređaja i zadržava vaš razgovor.</string>
 	<string name="contact_readd_started">Kontakt će biti ponovo dodat kada iskoristi tvoj novi link.</string>

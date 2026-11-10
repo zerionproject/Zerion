@@ -879,6 +879,9 @@
 	<string name="identity_keys_out_of_sync_title">מפתחות החיבור אינם מסונכרנים</string>
 	<string name="identity_keys_out_of_sync_message">המכשיר של איש הקשר הזה מקבל חיבורים, אבל כבר לא מזהה את מפתחות החיבור שלך. זה קורה כשאחד מכם שחזר גיבוי ישן אחרי שהמפתחות כבר התחלפו, או כשאיש הקשר הזה הסיר אותך. לא ניתן למסור הודעות עד שתוסיפו זה את זה מחדש: יש להחליף קישורים פעם נוספת. היסטוריית השיחה שלך נשמרת.</string>
 	<string name="identity_keys_out_of_sync_banner">מפתחות החיבור אינם מסונכרנים. יש להקיש כדי לתקן</string>
+	<string name="identity_keys_not_renewing_title">מפתחות החיבור לא חודשו</string>
+	<string name="identity_keys_not_renewing_message">Zerion מחליף את המפתחות של החיבור הזה באופן קבוע ומעכב הודעות עד שההחלפה מסתיימת. עם איש הקשר הזה ההחלפה נכשלת שוב ושוב, אף שהחיבור עצמו נפתח. רשת חלשה עלולה לגרום לזה, ואז ההודעה נעלמת מעצמה ברגע שהחלפה מסתיימת בהצלחה. אם היא נשארת, ייתכן שמישהו מתערב בחיבור: יש להחליף קישורים פעם נוספת כדי להוסיף זה את זה מחדש. היסטוריית השיחה שלך נשמרת.</string>
+	<string name="identity_keys_not_renewing_banner">מפתחות החיבור לא חודשו. יש להקיש לפרטים</string>
 	<string name="identity_readd_contact">הוספת איש הקשר מחדש כדי לתקן את החיבור</string>
 	<string name="identity_readd_contact_hint">יש להחליף שוב קישורים עם איש הקשר הזה. ההתאמה מחליפה את מפתחות החיבור בשני המכשירים ושומרת את השיחה שלך.</string>
 	<string name="contact_readd_started">הוא יתווסף שוב ברגע שישתמש בקישור החדש שלך.</string>

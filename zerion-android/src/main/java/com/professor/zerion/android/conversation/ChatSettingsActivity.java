@@ -70,6 +70,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 	private com.google.android.material.button.MaterialButton copySafetyNumberButton;
 	private com.google.android.material.button.MaterialButton markVerifiedButton;
 	private LinearLayout keysOutOfSyncCard;
+	private TextView keysOutOfSyncTitle;
+	private TextView keysOutOfSyncMessage;
 	private com.google.android.material.button.MaterialButton readdContactButton;
 
 	@Override
@@ -129,6 +131,8 @@ public class ChatSettingsActivity extends ZerionActivity {
 		markVerifiedButton = findViewById(R.id.mark_verified_button);
 		markVerifiedButton.setOnClickListener(v -> confirmMarkVerified());
 		keysOutOfSyncCard = findViewById(R.id.keys_out_of_sync_card);
+		keysOutOfSyncTitle = findViewById(R.id.keys_out_of_sync_title);
+		keysOutOfSyncMessage = findViewById(R.id.keys_out_of_sync_message);
 		readdContactButton = findViewById(R.id.readd_contact_button);
 		readdContactButton.setOnClickListener(v -> readdContact());
 		ContactConnectionSection connectionSection =
@@ -136,8 +140,9 @@ public class ChatSettingsActivity extends ZerionActivity {
 		connectionViewModel.setContactId(contactId);
 		connectionViewModel.getLines().observe(this, connectionSection::show);
 		viewModel.areKeysOutOfSync().observe(this, outOfSync ->
-				keysOutOfSyncCard.setVisibility(Boolean.TRUE.equals(outOfSync)
-						? View.VISIBLE : View.GONE));
+				updateKeysCard());
+		viewModel.areKeysNotRenewing().observe(this, notRenewing ->
+				updateKeysCard());
 
 		viewModel.getIdentityKeys().observeEvent(this, keys -> {
 			if (keys == null) return;
@@ -356,5 +361,25 @@ public class ChatSettingsActivity extends ZerionActivity {
 			sb.append(groups[i]);
 		}
 		return sb.toString();
+	}
+
+	private void updateKeysCard() {
+		boolean outOfSync = Boolean.TRUE.equals(
+				viewModel.areKeysOutOfSync().getValue());
+		boolean notRenewing = Boolean.TRUE.equals(
+				viewModel.areKeysNotRenewing().getValue());
+		if (outOfSync) {
+			keysOutOfSyncTitle.setText(
+					R.string.identity_keys_out_of_sync_title);
+			keysOutOfSyncMessage.setText(
+					R.string.identity_keys_out_of_sync_message);
+		} else if (notRenewing) {
+			keysOutOfSyncTitle.setText(
+					R.string.identity_keys_not_renewing_title);
+			keysOutOfSyncMessage.setText(
+					R.string.identity_keys_not_renewing_message);
+		}
+		keysOutOfSyncCard.setVisibility(outOfSync || notRenewing
+				? View.VISIBLE : View.GONE);
 	}
 }

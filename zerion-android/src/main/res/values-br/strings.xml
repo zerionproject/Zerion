@@ -369,6 +369,9 @@
 	<string name="identity_keys_out_of_sync_title">Alc\'hwezioù kennaskañ digoubredet</string>
 	<string name="identity_keys_out_of_sync_message">Trevnad an darempred-mañ a zegemer kennaskoù met ne anavez ket ken hoc\'h alc\'hwezioù kennaskañ. C\'hoarvezout a ra pa vez bet assavet gant unan ac\'hanoc\'h ur gwared koshoc\'h goude ma oa bet cheñchet an alc\'hwezioù, pe pa vez bet dilamet ac\'hanoc\'h gant an darempred-mañ. Ne c\'haller ket kas kemennadennoù betek ma ouzhpennot an eil egile en-dro: eskemmit an ereoù ur wech c\'hoazh. Miret eo istor ho kaozeadenn.</string>
 	<string name="identity_keys_out_of_sync_banner">Alc\'hwezioù kennaskañ digoubredet. Touchit evit reizhañ</string>
+	<string name="identity_keys_not_renewing_title">Alc\'hwezioù kennaskañ n\'int ket nevesaet</string>
+	<string name="identity_keys_not_renewing_message">Zerion a cheñch ingal alc\'hwezioù ar c\'hennask-mañ hag a zalc\'h ar c\'hemennadennoù betek ma vo graet. Gant an darempred-mañ e c\'hwit ar cheñchamant bep gwech, daoust ma tigor ar c\'hennask e-unan. Ur rouedad fall a c\'hall bezañ an abeg, ha neuze e steuz ar c\'hemenn e-unan kerkent ha ma vo echu ur cheñchamant. Ma chom, marteze ez eus unan bennak oc\'h enebiñ ouzh ar c\'hennask: eskemmit an ereoù ur wech c\'hoazh evit ouzhpennañ an eil egile en-dro. Miret eo istor ho kaozeadenn.</string>
+	<string name="identity_keys_not_renewing_banner">Alc\'hwezioù kennaskañ n\'int ket nevesaet. Touchit evit gouzout hiroc\'h</string>
 	<string name="identity_readd_contact">Adouzhpennañ an darempred evit reizhañ ar c\'hennask</string>
 	<string name="identity_readd_contact_hint">Eskemmit an ereoù gant an darempred-mañ en-dro. Ar c\'henstagañ a erlec\'h an alc\'hwezioù kennaskañ war an daou drevnad hag a vir ho kaozeadenn.</string>
 	<string name="contact_readd_started">Adouzhpennet e vo kerkent ha ma implijo hoc\'h ere nevez.</string>

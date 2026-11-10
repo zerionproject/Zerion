@@ -731,6 +731,9 @@
 	<string name="identity_keys_out_of_sync_title">Konexio-gakoak desinkronizatuta</string>
 	<string name="identity_keys_out_of_sync_message">Kontaktu honen gailuak konexioak onartzen ditu, baina jada ez ditu zure konexio-gakoak ezagutzen. Hori gertatzen da zuetako batek babeskopia zaharrago bat leheneratu duenean, gakoak aldatu ondoren, edo kontaktu honek zu kendu zaituenean. Mezuak ezin dira entregatu elkar berriro gehitu arte: trukatu estekak berriro. Zuen elkarrizketaren historia gorde egiten da.</string>
 	<string name="identity_keys_out_of_sync_banner">Konexio-gakoak desinkronizatuta. Sakatu konpontzeko</string>
+	<string name="identity_keys_not_renewing_title">Konexio-gakoak berritu gabe</string>
+	<string name="identity_keys_not_renewing_message">Zerionek aldian-aldian ordezkatzen ditu konexio honen gakoak eta mezuak atxikitzen ditu hori egin arte. Kontaktu honekin ordezkapenak huts egiten du behin eta berriz, konexioa bera irekitzen den arren. Sare eskas batek eragin dezake hori, eta orduan oharra berez desagertzen da ordezkapen bat osatzen denean. Mantentzen bada, baliteke norbait konexioan tartean sartzen aritzea: trukatu estekak berriro elkar berriz gehitzeko. Zuen elkarrizketaren historia gorde egiten da.</string>
+	<string name="identity_keys_not_renewing_banner">Konexio-gakoak berritu gabe. Sakatu xehetasunak ikusteko</string>
 	<string name="identity_readd_contact">Gehitu kontaktua berriro konexioa konpontzeko</string>
 	<string name="identity_readd_contact_hint">Trukatu estekak kontaktu honekin berriro. Parekatzeak bi gailuetako konexio-gakoak ordezkatzen ditu eta zuen elkarrizketa gordetzen du.</string>
 	<string name="contact_readd_started">Zure esteka berria erabiltzen duenean berriro gehituko da.</string>

@@ -1824,6 +1824,9 @@
 	<string name="identity_keys_out_of_sync_title">Claves de conexión desincronizadas</string>
 	<string name="identity_keys_out_of_sync_message">El dispositivo de este contacto acepta conexiones, pero ya no reconoce tus claves de conexión. Esto ocurre cuando uno de los dos restauró una copia de seguridad antigua después de que las claves hubieran cambiado, o cuando este contacto te eliminó. Los mensajes no se pueden entregar hasta que os volváis a añadir: intercambiad los enlaces otra vez. Tu historial de conversación se conserva.</string>
 	<string name="identity_keys_out_of_sync_banner">Claves de conexión desincronizadas. Toca para reparar</string>
+	<string name="identity_keys_not_renewing_title">Claves de conexión no renovadas</string>
+	<string name="identity_keys_not_renewing_message">Zerion sustituye con regularidad las claves de esta conexión y retiene los mensajes hasta que eso termina. Con este contacto la sustitución sigue fallando aunque la conexión en sí se abre. Una red deficiente puede causarlo, y entonces el aviso desaparece por sí solo en cuanto se completa una sustitución. Si persiste, puede que alguien esté interfiriendo en la conexión: intercambiad los enlaces otra vez para volver a añadiros. Tu historial de conversación se conserva.</string>
+	<string name="identity_keys_not_renewing_banner">Claves de conexión no renovadas. Toca para ver los detalles</string>
 	<string name="identity_readd_contact">Volver a añadir el contacto para reparar la conexión</string>
 	<string name="identity_readd_contact_hint">Vuelve a intercambiar enlaces con este contacto. El emparejamiento sustituye las claves de conexión en ambos dispositivos y conserva vuestra conversación.</string>
 	<string name="contact_readd_started">Se volverá a añadir cuando use tu nuevo enlace.</string>

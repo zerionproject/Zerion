@@ -316,6 +316,31 @@ public class RootKeyStoreDatabaseTest extends BrambleTestCase {
 	}
 
 	@Test
+	public void theRenewalStateIsStoredAndClearedByARenewal()
+			throws Exception {
+		RootKeyStore store = new RootKeyStore(db);
+		assertArrayEquals(new long[] {0, 0}, store.stalls(contact));
+		assertFalse(store.isNotRenewing(contact));
+		store.setStalls(contact, 4, 1234);
+		store.markNotRenewing(contact, true);
+		store.markOutOfSync(contact, true);
+		db.close();
+		db = HyperSqlDatabaseForTests.open(testDir, dbKey, new NoBus(),
+				messageFactory);
+		store = new RootKeyStore(db);
+		assertArrayEquals(new long[] {4, 1234}, store.stalls(contact));
+		assertTrue(store.isNotRenewing(contact));
+		store.renewed(contact, 5678);
+		assertArrayEquals(new long[] {0, 0}, store.stalls(contact));
+		assertFalse(store.isNotRenewing(contact));
+		assertFalse(store.isOutOfSync(contact));
+		assertEquals(5678, store.evolvedAt(contact));
+		store.markNotRenewing(contact, true);
+		store.markNotRenewing(contact, false);
+		assertFalse(store.isNotRenewing(contact));
+	}
+
+	@Test
 	public void evolutionPausesUntilTheGivenTime() throws Exception {
 		RootKeyStore store = new RootKeyStore(db);
 		assertFalse(store.isPaused(1_000));

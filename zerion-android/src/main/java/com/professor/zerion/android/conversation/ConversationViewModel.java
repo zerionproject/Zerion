@@ -19,6 +19,7 @@ import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
 import org.zerionproject.core.api.sync.event.MessagesSentEvent;
 import org.zerionproject.core.api.contact.event.ContactConnectionKeysEvent;
+import org.zerionproject.core.api.contact.event.ContactKeyRenewalEvent;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.plugin.event.ContactDisconnectedEvent;
@@ -211,6 +212,8 @@ public class ConversationViewModel extends DbViewModel
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> keysOutOfSync =
 			new MutableLiveData<>(false);
+	private final MutableLiveData<Boolean> keysNotRenewing =
+			new MutableLiveData<>(false);
 
 	private static final long OFFLINE_DEBOUNCE_MS = 10_000L;
 	private final android.os.Handler offlineDebounceHandler =
@@ -383,6 +386,11 @@ public class ConversationViewModel extends DbViewModel
 			if (k.getContactId().equals(contactId)) {
 				keysOutOfSync.postValue(k.isOutOfSync());
 			}
+		} else if (e instanceof ContactKeyRenewalEvent) {
+			ContactKeyRenewalEvent k = (ContactKeyRenewalEvent) e;
+			if (k.getContactId().equals(contactId)) {
+				keysNotRenewing.postValue(k.isStalled());
+			}
 		} else if (e instanceof ContactConnectedEvent) {
 			ContactConnectedEvent c = (ContactConnectedEvent) e;
 			if (c.getContactId().equals(contactId)) {
@@ -501,6 +509,8 @@ public class ConversationViewModel extends DbViewModel
 				contactItem.postValue(new ContactItem(c, authorInfo));
 				keysOutOfSync.postValue(
 						contactManager.isConnectionOutOfSync(contactId));
+				keysNotRenewing.postValue(
+						contactManager.isConnectionRenewalStalled(contactId));
 				long timer = db.transactionWithResult(true, txn ->
 						autoDeleteManager.getAutoDeleteTimer(txn, contactId));
 				autoDeleteTimer.postValue(timer);
@@ -1588,6 +1598,10 @@ public class ConversationViewModel extends DbViewModel
 
 	LiveData<Boolean> areKeysOutOfSync() {
 		return keysOutOfSync;
+	}
+
+	LiveData<Boolean> areKeysNotRenewing() {
+		return keysNotRenewing;
 	}
 
 	LiveData<Boolean> isMeshOnline() {

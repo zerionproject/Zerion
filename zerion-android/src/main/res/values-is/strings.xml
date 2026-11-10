@@ -894,6 +894,9 @@
 	<string name="identity_keys_out_of_sync_title">Tengilyklar ekki samstilltir</string>
 	<string name="identity_keys_out_of_sync_message">Tæki þessa tengiliðar tekur við tengingum en þekkir ekki lengur tengilyklana þína. Þetta gerist þegar annað ykkar endurheimti eldra öryggisafrit eftir að lyklarnir höfðu breyst, eða þegar þessi tengiliður fjarlægði þig. Ekki er hægt að koma skilaboðum til skila fyrr en þið bætið hvort öðru við aftur: skiptist aftur á tenglum. Samtalsferillinn þinn er varðveittur.</string>
 	<string name="identity_keys_out_of_sync_banner">Tengilyklar ekki samstilltir. Ýttu til að lagfæra</string>
+	<string name="identity_keys_not_renewing_title">Tengilyklar ekki endurnýjaðir</string>
+	<string name="identity_keys_not_renewing_message">Zerion skiptir reglulega um lykla þessarar tengingar og heldur skilaboðum eftir þar til því er lokið. Hjá þessum tengilið mistekst skiptingin í hvert sinn þótt tengingin sjálf opnist. Lélegt net getur valdið þessu, og þá hverfur tilkynningin af sjálfu sér þegar skipting tekst. Ef hún er áfram sýnileg gæti einhver verið að grípa inn í tenginguna: skiptist aftur á tenglum til að bæta hvort öðru við aftur. Samtalsferillinn þinn er varðveittur.</string>
+	<string name="identity_keys_not_renewing_banner">Tengilyklar ekki endurnýjaðir. Ýttu til að sjá nánar</string>
 	<string name="identity_readd_contact">Bæta tengiliðnum við aftur til að lagfæra tenginguna</string>
 	<string name="identity_readd_contact_hint">Skiptstu aftur á tenglum við þennan tengilið. Pörunin skiptir út tengilyklunum á báðum tækjum og heldur samtalinu þínu.</string>
 	<string name="contact_readd_started">Viðkomandi verður bætt við aftur þegar hann notar nýja tengilinn þinn.</string>

@@ -239,11 +239,6 @@ final class RootEvolutionTestBed {
 		}
 
 		@Override
-		public void setEvolvedAt(ContactId c, long at) {
-			evolvedAt.put(c.getInt(), at);
-		}
-
-		@Override
 		public void markOutOfSync(ContactId c, boolean flag) {
 			if (flag) outOfSync.add(c.getInt());
 			else outOfSync.remove(c.getInt());
@@ -252,6 +247,41 @@ final class RootEvolutionTestBed {
 		@Override
 		public boolean isOutOfSync(ContactId c) {
 			return outOfSync.contains(c.getInt());
+		}
+
+		private final Map<Integer, long[]> stalls =
+				new java.util.concurrent.ConcurrentHashMap<>();
+		private final java.util.Set<Integer> notRenewing =
+				java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+		@Override
+		public long[] stalls(ContactId c) {
+			long[] s = stalls.get(c.getInt());
+			return s == null ? new long[] {0, 0} : s.clone();
+		}
+
+		@Override
+		public void setStalls(ContactId c, int count, long since) {
+			stalls.put(c.getInt(), new long[] {count, since});
+		}
+
+		@Override
+		public void markNotRenewing(ContactId c, boolean flag) {
+			if (flag) notRenewing.add(c.getInt());
+			else notRenewing.remove(c.getInt());
+		}
+
+		@Override
+		public boolean isNotRenewing(ContactId c) {
+			return notRenewing.contains(c.getInt());
+		}
+
+		@Override
+		public void renewed(ContactId c, long at) {
+			evolvedAt.put(c.getInt(), at);
+			stalls.remove(c.getInt());
+			notRenewing.remove(c.getInt());
+			outOfSync.remove(c.getInt());
 		}
 	}
 

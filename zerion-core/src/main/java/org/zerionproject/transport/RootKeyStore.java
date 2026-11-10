@@ -37,6 +37,9 @@ public class RootKeyStore {
 	public static final String ENFORCES_KEY_PREFIX = "enforces.";
 	public static final String EVOLVED_AT_KEY_PREFIX = "evolvedAt.";
 	public static final String EVOLVES_KEY_PREFIX = "evolves.";
+	public static final String STALLS_KEY_PREFIX = "stalls.";
+	public static final String STALLED_SINCE_KEY_PREFIX = "stalledSince.";
+	public static final String NOT_RENEWING_KEY_PREFIX = "notRenewing.";
 	static final int PENDING_FLAG_CONFIRMED = 0x01;
 	static final int PENDING_FLAG_SEPARATED = 0x02;
 
@@ -302,11 +305,81 @@ public class RootKeyStore {
 		}
 	}
 
-	public void setEvolvedAt(ContactId c, long at) {
+	@Nullable
+	public long[] stalls(ContactId c) {
+		try {
+			return db.transactionWithResult(true, txn -> {
+				Settings s = db.getSettings(txn, SETTINGS_NAMESPACE);
+				return new long[] {
+						s.getInt(STALLS_KEY_PREFIX + c.getInt(), 0),
+						s.getLong(STALLED_SINCE_KEY_PREFIX + c.getInt(), 0)};
+			});
+		} catch (DbException e) {
+			return null;
+		}
+	}
+
+	public void setStalls(ContactId c, int count, long since) {
 		try {
 			db.transaction(false, txn -> {
 				Settings s = new Settings();
+				s.putInt(STALLS_KEY_PREFIX + c.getInt(), count);
+				s.putLong(STALLED_SINCE_KEY_PREFIX + c.getInt(), since);
+				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
+			});
+		} catch (DbException e) {
+		}
+	}
+
+	public void markNotRenewing(ContactId c, boolean notRenewing) {
+		try {
+			db.transaction(false, txn -> {
+				String key = NOT_RENEWING_KEY_PREFIX + c.getInt();
+				boolean before = db.getSettings(txn, SETTINGS_NAMESPACE)
+						.getBoolean(key, false);
+				if (before == notRenewing) return;
+				Settings s = new Settings();
+				s.putBoolean(key, notRenewing);
+				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
+				txn.attach(new org.zerionproject.core.api.contact.event
+						.ContactKeyRenewalEvent(c, notRenewing));
+			});
+		} catch (DbException e) {
+		}
+	}
+
+	public boolean isNotRenewing(ContactId c) {
+		try {
+			return db.transactionWithResult(true, txn ->
+					db.getSettings(txn, SETTINGS_NAMESPACE).getBoolean(
+							NOT_RENEWING_KEY_PREFIX + c.getInt(), false));
+		} catch (DbException e) {
+			return false;
+		}
+	}
+
+	public void renewed(ContactId c, long at) {
+		try {
+			db.transaction(false, txn -> {
+				Settings before = db.getSettings(txn, SETTINGS_NAMESPACE);
+				String stalls = STALLS_KEY_PREFIX + c.getInt();
+				String since = STALLED_SINCE_KEY_PREFIX + c.getInt();
+				String notRenewing = NOT_RENEWING_KEY_PREFIX + c.getInt();
+				String outOfSync = OUT_OF_SYNC_KEY_PREFIX + c.getInt();
+				Settings s = new Settings();
 				s.putLong(EVOLVED_AT_KEY_PREFIX + c.getInt(), at);
+				if (before.getInt(stalls, 0) != 0) s.putInt(stalls, 0);
+				if (before.getLong(since, 0) != 0) s.putLong(since, 0);
+				if (before.getBoolean(notRenewing, false)) {
+					s.putBoolean(notRenewing, false);
+					txn.attach(new org.zerionproject.core.api.contact.event
+							.ContactKeyRenewalEvent(c, false));
+				}
+				if (before.getBoolean(outOfSync, false)) {
+					s.putBoolean(outOfSync, false);
+					txn.attach(new org.zerionproject.core.api.contact.event
+							.ContactConnectionKeysEvent(c, false));
+				}
 				db.mergeSettings(txn, s, SETTINGS_NAMESPACE);
 			});
 		} catch (DbException e) {

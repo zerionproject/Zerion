@@ -848,6 +848,9 @@
 	<string name="identity_keys_out_of_sync_title">Klíče spojení nejsou synchronizované</string>
 	<string name="identity_keys_out_of_sync_message">Zařízení tohoto kontaktu přijímá spojení, ale už nerozpozná vaše klíče spojení. To se stane, když jeden z vás obnovil starší zálohu poté, co se klíče mezitím změnily, nebo když vás tento kontakt odebral. Zprávy nelze doručit, dokud se znovu nepřidáte: vyměňte si odkazy ještě jednou. Historie vaší konverzace zůstane zachována.</string>
 	<string name="identity_keys_out_of_sync_banner">Klíče spojení nejsou synchronizované. Klepněte pro opravu</string>
+	<string name="identity_keys_not_renewing_title">Klíče spojení nebyly obnoveny</string>
+	<string name="identity_keys_not_renewing_message">Zerion pravidelně vyměňuje klíče tohoto spojení a do dokončení výměny zadržuje zprávy. U tohoto kontaktu výměna stále selhává, i když se samotné spojení otevře. Příčinou může být špatná síť a upozornění pak samo zmizí, jakmile se výměna dokončí. Pokud zůstává, může někdo do spojení zasahovat: vyměňte si odkazy ještě jednou a znovu se přidejte. Historie vaší konverzace zůstane zachována.</string>
+	<string name="identity_keys_not_renewing_banner">Klíče spojení nebyly obnoveny. Klepněte pro podrobnosti</string>
 	<string name="identity_readd_contact">Znovu přidat kontakt a opravit spojení</string>
 	<string name="identity_readd_contact_hint">Vyměňte si s tímto kontaktem znovu odkazy. Párování nahradí klíče spojení na obou zařízeních a vaši konverzaci zachová.</string>
 	<string name="contact_readd_started">Kontakt bude znovu přidán, jakmile použije váš nový odkaz.</string>

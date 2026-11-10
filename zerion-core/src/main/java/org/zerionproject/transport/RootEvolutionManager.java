@@ -43,6 +43,12 @@ public class RootEvolutionManager {
 
 	public static final int OUT_OF_SYNC_AFTER = 6;
 
+	public static final int NOT_RENEWING_AFTER_CONNECTIONS = 6;
+
+	public static final long NOT_RENEWING_AFTER_MS = 60 * 60_000L;
+
+	public static final int NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS = 3;
+
 	public interface PeerIdentity {
 
 		boolean knowsPeerKey(ContactId c);
@@ -89,6 +95,8 @@ public class RootEvolutionManager {
 	private final Map<Integer, Set<RootEvolution>> watchers =
 			new ConcurrentHashMap<>();
 	private final Map<Integer, Long> stalledAt = new ConcurrentHashMap<>();
+	private final Set<Integer> stalledBeside =
+			ConcurrentHashMap.newKeySet();
 	private final ScheduledThreadPoolExecutor timer = newTimer();
 	@Nullable
 	private volatile byte[][] identityRecords;
@@ -235,17 +243,47 @@ public class RootEvolutionManager {
 	public void dialEnded(ContactId c, boolean peerAuthenticated) {
 		if (peerAuthenticated) {
 			pendingDialFailures.remove(c.getInt());
-			Integer failed = unauthenticatedDials.remove(c.getInt());
-			if (failed != null && failed >= OUT_OF_SYNC_AFTER) {
-				store.markOutOfSync(c, false);
-			} else if (store.isOutOfSync(c)) {
-				store.markOutOfSync(c, false);
-			}
+			unauthenticatedDials.remove(c.getInt());
 			return;
 		}
 		pendingDialFailures.merge(c.getInt(), 1, Integer::sum);
 		int failed = unauthenticatedDials.merge(c.getInt(), 1, Integer::sum);
 		if (failed == OUT_OF_SYNC_AFTER) store.markOutOfSync(c, true);
+	}
+
+	void stalledBesideAnother(ContactId c) {
+		stalledBeside.add(c.getInt());
+	}
+
+	void connectionEnded(ContactId c, boolean renewalOutstanding) {
+		connectionEnded(c, true, renewalOutstanding);
+	}
+
+	void connectionEnded(ContactId c, boolean peerAuthenticated,
+			boolean renewalOutstanding) {
+		boolean stalled = stalledBeside.remove(c.getInt())
+				|| renewalOutstanding;
+		if (peerAuthenticated && !renewalOutstanding
+				&& store.isOutOfSync(c)) {
+			store.markOutOfSync(c, false);
+		}
+		if (!stalled) return;
+		long now = now();
+		long[] stalls = store.stalls(c);
+		if (stalls == null) return;
+		long count = stalls[0];
+		long since = stalls[1];
+		if (count <= 0 || since <= 0 || since > now) {
+			count = 0;
+			since = now;
+		}
+		if (count < Integer.MAX_VALUE) count++;
+		store.setStalls(c, (int) count, since);
+		if (count >= NOT_RENEWING_AFTER_CONNECTIONS
+				|| (count >= NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS
+				&& now - since >= NOT_RENEWING_AFTER_MS)) {
+			store.markNotRenewing(c, true);
+		}
 	}
 
 	RootKeyStore getStore() {
@@ -315,7 +353,8 @@ public class RootEvolutionManager {
 		long now = now();
 		lastEvolution.put(c.getInt(), now);
 		stalledAt.remove(c.getInt());
-		store.setEvolvedAt(c, now);
+		stalledBeside.remove(c.getInt());
+		store.renewed(c, now);
 		Set<RootEvolution> set = watchers.get(c.getInt());
 		if (set == null) return;
 		for (RootEvolution e : set) e.onEvolved();

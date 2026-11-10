@@ -923,6 +923,9 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="identity_keys_out_of_sync_title">Kyçet e lidhjes nuk janë të sinkronizuar</string>
 	<string name="identity_keys_out_of_sync_message">Pajisja e këtij kontakti i pranon lidhjet, por nuk i njeh më kyçet e tua të lidhjes. Kjo ndodh kur njëri prej jush ka rikthyer një kopjeruajtje më të vjetër pasi kyçet kishin ndryshuar, ose kur ky kontakt të ka hequr. Mesazhet nuk mund të dorëzohen derisa ta shtoni sërish njëri-tjetrin: shkëmbeni lidhjet edhe një herë. Historiku i bisedës ruhet.</string>
 	<string name="identity_keys_out_of_sync_banner">Kyçet e lidhjes nuk janë të sinkronizuar. Prek për ta riparuar</string>
+	<string name="identity_keys_not_renewing_title">Kyçet e lidhjes nuk janë rinovuar</string>
+	<string name="identity_keys_not_renewing_message">Zerion i zëvendëson rregullisht kyçet e kësaj lidhjeje dhe i mban mesazhet derisa kjo të kryhet. Me këtë kontakt zëvendësimi vazhdon të dështojë, ndonëse vetë lidhja hapet. Një rrjet i dobët mund ta shkaktojë këtë, dhe atëherë njoftimi zhduket vetvetiu sapo një zëvendësim përfundon. Nëse mbetet, dikush mund të jetë duke ndërhyrë në lidhje: shkëmbeni lidhjet edhe një herë për ta shtuar sërish njëri-tjetrin. Historiku i bisedës ruhet.</string>
+	<string name="identity_keys_not_renewing_banner">Kyçet e lidhjes nuk janë rinovuar. Prek për hollësi</string>
 	<string name="identity_readd_contact">Shtoje sërish kontaktin për të riparuar lidhjen</string>
 	<string name="identity_readd_contact_hint">Shkëmbe sërish lidhjet me këtë kontakt. Çiftimi i zëvendëson kyçet e lidhjes në të dyja pajisjet dhe e ruan bisedën tënde.</string>
 	<string name="contact_readd_started">Do të shtohet sërish sapo të përdorë lidhjen tënde të re.</string>

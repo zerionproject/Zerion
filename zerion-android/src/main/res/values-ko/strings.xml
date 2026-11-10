@@ -1778,6 +1778,9 @@
 	<string name="identity_keys_out_of_sync_title">연결 키가 동기화되지 않음</string>
 	<string name="identity_keys_out_of_sync_message">이 연락처의 기기는 연결을 수락하지만 더 이상 내 연결 키를 인식하지 못합니다. 키가 갱신된 후에 둘 중 한 명이 이전 백업을 복원했거나, 이 연락처가 나를 삭제한 경우에 이런 일이 발생합니다. 서로 다시 추가할 때까지 메시지를 전달할 수 없습니다. 링크를 한 번 더 교환하세요. 대화 기록은 유지됩니다.</string>
 	<string name="identity_keys_out_of_sync_banner">연결 키가 동기화되지 않았습니다. 눌러서 복구하세요</string>
+	<string name="identity_keys_not_renewing_title">연결 키가 갱신되지 않음</string>
+	<string name="identity_keys_not_renewing_message">Zerion은 이 연결의 키를 정기적으로 교체하며, 교체가 끝날 때까지 메시지를 보류합니다. 이 연락처와는 연결 자체는 열리지만 키 교체가 계속 실패하고 있습니다. 네트워크 상태가 나쁠 때 이런 일이 생길 수 있으며, 그 경우 교체가 한 번 완료되면 이 알림은 자동으로 사라집니다. 알림이 계속 남아 있다면 누군가 연결에 개입하고 있을 수 있습니다. 서로 다시 추가하려면 링크를 한 번 더 교환하세요. 대화 기록은 유지됩니다.</string>
+	<string name="identity_keys_not_renewing_banner">연결 키가 갱신되지 않았습니다. 눌러서 자세히 보기</string>
 	<string name="identity_readd_contact">연락처를 다시 추가하여 연결 복구</string>
 	<string name="identity_readd_contact_hint">이 연락처와 링크를 다시 교환하세요. 페어링하면 두 기기의 연결 키가 교체되며 대화는 유지됩니다.</string>
 	<string name="contact_readd_started">상대방이 내 새 링크를 사용하면 다시 추가됩니다.</string>

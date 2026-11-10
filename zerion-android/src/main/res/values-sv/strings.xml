@@ -914,6 +914,9 @@
 	<string name="identity_keys_out_of_sync_title">Anslutningsnycklarna är inte synkroniserade</string>
 	<string name="identity_keys_out_of_sync_message">Den här kontaktens enhet tar emot anslutningar men känner inte längre igen dina anslutningsnycklar. Det händer när någon av er har återställt en äldre säkerhetskopia efter att nycklarna hade uppdaterats, eller när den här kontakten har tagit bort dig. Meddelanden kan inte levereras förrän ni lägger till varandra igen: utbyt länkar en gång till. Er konversationshistorik behålls.</string>
 	<string name="identity_keys_out_of_sync_banner">Anslutningsnycklarna är inte synkroniserade. Tryck för att reparera</string>
+	<string name="identity_keys_not_renewing_title">Anslutningsnycklarna har inte förnyats</string>
+	<string name="identity_keys_not_renewing_message">Zerion byter ut nycklarna för den här anslutningen regelbundet och håller tillbaka meddelanden tills det är klart. Med den här kontakten misslyckas bytet gång på gång, trots att själva anslutningen öppnas. Ett dåligt nätverk kan orsaka detta, och då försvinner meddelandet av sig självt så snart ett byte lyckas. Om det kvarstår kan någon störa anslutningen: utbyt länkar en gång till för att lägga till varandra igen. Er konversationshistorik behålls.</string>
+	<string name="identity_keys_not_renewing_banner">Anslutningsnycklarna har inte förnyats. Tryck för mer information</string>
 	<string name="identity_readd_contact">Lägg till kontakten igen för att reparera anslutningen</string>
 	<string name="identity_readd_contact_hint">Utbyt länkar med den här kontakten igen. Parkopplingen ersätter anslutningsnycklarna på båda enheterna och behåller er konversation.</string>
 	<string name="contact_readd_started">Kontakten läggs till igen när den använder din nya länk.</string>

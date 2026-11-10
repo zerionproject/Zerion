@@ -845,6 +845,9 @@ Umepoteza nenosiri.</string>
 	<string name="identity_keys_out_of_sync_title">Funguo za muunganisho hazijasawazishwa</string>
 	<string name="identity_keys_out_of_sync_message">Kifaa cha mtu huyu kinakubali miunganisho lakini hakitambui tena funguo zako za muunganisho. Hii hutokea mmoja wenu anaporejesha nakala rudufu ya zamani baada ya funguo kuwa zimeshabadilika, au mtu huyu anapokuondoa. Ujumbe hauwezi kuwasilishwa hadi muongezane tena: badilishaneni viungo mara nyingine. Historia ya mazungumzo yenu itabaki.</string>
 	<string name="identity_keys_out_of_sync_banner">Funguo za muunganisho hazijasawazishwa. Gusa ili kurekebisha</string>
+	<string name="identity_keys_not_renewing_title">Funguo za muunganisho hazijasasishwa</string>
+	<string name="identity_keys_not_renewing_message">Zerion hubadilisha funguo za muunganisho huu mara kwa mara na huzuia ujumbe hadi hilo likamilike. Kwa mtu huyu ubadilishaji unaendelea kushindwa ingawa muunganisho wenyewe unafunguka. Mtandao dhaifu unaweza kusababisha hili, na wakati huo taarifa hii huondoka yenyewe mara ubadilishaji unapokamilika. Ikiendelea kubaki, inawezekana mtu anaingilia muunganisho: badilishaneni viungo mara nyingine ili muongezane tena. Historia ya mazungumzo yenu itabaki.</string>
+	<string name="identity_keys_not_renewing_banner">Funguo za muunganisho hazijasasishwa. Gusa kuona maelezo</string>
 	<string name="identity_readd_contact">Mwongeze tena mtu huyu ili kurekebisha muunganisho</string>
 	<string name="identity_readd_contact_hint">Badilishaneni viungo tena na mtu huyu. Kuoanisha kunabadilisha funguo za muunganisho kwenye vifaa vyote viwili na kunahifadhi mazungumzo yenu.</string>
 	<string name="contact_readd_started">Ataongezwa tena pindi atakapotumia kiungo chako kipya.</string>

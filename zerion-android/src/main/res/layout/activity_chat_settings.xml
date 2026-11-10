@@ -450,6 +450,7 @@
                     tools:visibility="visible">
 
                     <TextView
+                        android:id="@+id/keys_out_of_sync_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/identity_keys_out_of_sync_title"
@@ -458,6 +459,7 @@
                         android:textColor="@color/zerion_text_primary" />
 
                     <TextView
+                        android:id="@+id/keys_out_of_sync_message"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"

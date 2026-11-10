@@ -325,6 +325,9 @@
 	<string name="identity_keys_out_of_sync_title">Claves de conexón desincronizaes</string>
 	<string name="identity_keys_out_of_sync_message">El dispositivu d\'esti contautu aceuta conexones, pero yá nun reconoz les tos claves de conexón. Esto pasa cuando ún de vós restauró una copia de seguridá antigua dempués de que les claves cambiaren, o cuando esti contautu te desanició. Los mensaxes nun se puen entregar hasta que vos amestéis otra vegada: intercambiái los enllaces de nueves. L\'historial de la conversación caltiénse.</string>
 	<string name="identity_keys_out_of_sync_banner">Claves de conexón desincronizaes. Toca pa iguales</string>
+	<string name="identity_keys_not_renewing_title">Claves de conexón non anovaes</string>
+	<string name="identity_keys_not_renewing_message">Zerion sustitúi davezu les claves d\'esta conexón y retién los mensaxes hasta que se faiga. Con esti contautu la sustitución sigue fallando anque la conexón mesma s\'abre. Una rede mala pue causalo, y entós l\'avisu quita por sí mesmu en cuantes se complete una sustitución. Si sigue ehí, pue que daquién tea interfiriendo na conexón: intercambiái los enllaces de nueves pa amestavos otra vegada. L\'historial de la conversación caltiénse.</string>
+	<string name="identity_keys_not_renewing_banner">Claves de conexón non anovaes. Toca pa ver los detalles</string>
 	<string name="identity_readd_contact">Amestar de nueves el contautu pa iguar la conexón</string>
 	<string name="identity_readd_contact_hint">Intercambia otra vegada los enllaces con esti contautu. L\'emparexamientu sustitúi les claves de conexón nos dos dispositivos y caltién la conversación.</string>
 	<string name="contact_readd_started">Va amestase de nueves cuando use\'l to enllaz nuevu.</string>

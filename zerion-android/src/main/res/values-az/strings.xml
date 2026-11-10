@@ -656,6 +656,9 @@
 	<string name="identity_keys_out_of_sync_title">Bağlantı açarları uyğunsuzdur</string>
 	<string name="identity_keys_out_of_sync_message">Bu kontaktın cihazı bağlantıları qəbul edir, lakin artıq sizin bağlantı açarlarınızı tanımır. Bu, açarlar yeniləndikdən sonra sizdən biri köhnə ehtiyat nüsxəni bərpa etdikdə və ya bu kontakt sizi sildikdə baş verir. Bir-birinizi yenidən əlavə edənədək mesajlar çatdırıla bilməz: keçidləri bir daha mübadilə edin. Söhbət tarixçəniz saxlanılır.</string>
 	<string name="identity_keys_out_of_sync_banner">Bağlantı açarları uyğunsuzdur. Bərpa etmək üçün toxunun</string>
+	<string name="identity_keys_not_renewing_title">Bağlantı açarları yenilənməyib</string>
+	<string name="identity_keys_not_renewing_message">Zerion bu bağlantının açarlarını müntəzəm olaraq dəyişdirir və bu tamamlananadək mesajları saxlayır. Bu kontaktla bağlantı özü açılsa da, dəyişdirmə hər dəfə uğursuz olur. Buna zəif şəbəkə səbəb ola bilər və bu halda dəyişdirmə tamamlanan kimi bildiriş öz-özünə itir. Əgər qalırsa, kimsə bağlantıya müdaxilə edə bilər: bir-birinizi yenidən əlavə etmək üçün keçidləri bir daha mübadilə edin. Söhbət tarixçəniz saxlanılır.</string>
+	<string name="identity_keys_not_renewing_banner">Bağlantı açarları yenilənməyib. Təfərrüatlar üçün toxunun</string>
 	<string name="identity_readd_contact">Bağlantını bərpa etmək üçün kontaktı yenidən əlavə et</string>
 	<string name="identity_readd_contact_hint">Bu kontaktla keçidləri yenidən mübadilə edin. Cütləşdirmə hər iki cihazda bağlantı açarlarını əvəz edir və söhbətinizi saxlayır.</string>
 	<string name="contact_readd_started">O, yeni keçidinizi istifadə edən kimi yenidən əlavə olunacaq.</string>

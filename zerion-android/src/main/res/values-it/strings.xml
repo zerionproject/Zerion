@@ -1814,6 +1814,9 @@
 	<string name="identity_keys_out_of_sync_title">Chiavi di connessione non sincronizzate</string>
 	<string name="identity_keys_out_of_sync_message">Il dispositivo di questo contatto accetta le connessioni ma non riconosce più le tue chiavi di connessione. Succede quando uno di voi ha ripristinato un backup più vecchio dopo che le chiavi erano già cambiate, o quando questo contatto ti ha rimosso. I messaggi non possono essere consegnati finché non vi aggiungete di nuovo a vicenda: scambiatevi di nuovo i link. La cronologia della conversazione viene conservata.</string>
 	<string name="identity_keys_out_of_sync_banner">Chiavi di connessione non sincronizzate. Tocca per riparare</string>
+	<string name="identity_keys_not_renewing_title">Chiavi di connessione non rinnovate</string>
+	<string name="identity_keys_not_renewing_message">Zerion sostituisce regolarmente le chiavi di questa connessione e trattiene i messaggi finché non è fatto. Con questo contatto la sostituzione continua a fallire anche se la connessione in sé si apre. Una rete scadente può causarlo, e in quel caso l\'avviso scompare da solo appena una sostituzione va a buon fine. Se rimane, qualcuno potrebbe interferire con la connessione: scambiatevi di nuovo i link per aggiungervi di nuovo a vicenda. La cronologia della conversazione viene conservata.</string>
+	<string name="identity_keys_not_renewing_banner">Chiavi di connessione non rinnovate. Tocca per i dettagli</string>
 	<string name="identity_readd_contact">Aggiungi di nuovo il contatto per riparare la connessione</string>
 	<string name="identity_readd_contact_hint">Scambia di nuovo i link con questo contatto. L\'abbinamento sostituisce le chiavi di connessione su entrambi i dispositivi e mantiene la conversazione.</string>
 	<string name="contact_readd_started">Il contatto verrà aggiunto di nuovo quando userà il tuo nuovo link.</string>

@@ -1817,6 +1817,9 @@ copies des messages que vous envoyez.
 	<string name="identity_keys_out_of_sync_title">Clés de connexion désynchronisées</string>
 	<string name="identity_keys_out_of_sync_message">L\'appareil de ce contact accepte les connexions mais ne reconnaît plus vos clés de connexion. Cela arrive lorsque l\'un de vous a restauré une ancienne sauvegarde alors que les clés avaient déjà changé, ou lorsque ce contact vous a supprimé. Les messages ne peuvent pas être distribués tant que vous ne vous êtes pas rajoutés mutuellement : échangez à nouveau vos liens. Votre historique de conversation est conservé.</string>
 	<string name="identity_keys_out_of_sync_banner">Clés de connexion désynchronisées. Appuyez pour réparer</string>
+	<string name="identity_keys_not_renewing_title">Clés de connexion non renouvelées</string>
+	<string name="identity_keys_not_renewing_message">Zerion remplace régulièrement les clés de cette connexion et retient les messages jusqu\'à ce que ce soit fait. Avec ce contact, le remplacement échoue sans cesse alors que la connexion elle-même s\'établit. Un réseau de mauvaise qualité peut en être la cause, et l\'avis disparaît alors de lui-même dès qu\'un remplacement aboutit. S\'il persiste, quelqu\'un interfère peut-être avec la connexion : échangez à nouveau vos liens pour vous rajouter mutuellement. Votre historique de conversation est conservé.</string>
+	<string name="identity_keys_not_renewing_banner">Clés de connexion non renouvelées. Appuyez pour plus de détails</string>
 	<string name="identity_readd_contact">Rajouter le contact pour réparer la connexion</string>
 	<string name="identity_readd_contact_hint">Échangez à nouveau vos liens avec ce contact. L\'association remplace les clés de connexion sur les deux appareils et conserve votre conversation.</string>
 	<string name="contact_readd_started">La personne sera ajoutée à nouveau dès qu\'elle utilisera votre nouveau lien.</string>

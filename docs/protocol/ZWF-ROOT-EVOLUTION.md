@@ -285,8 +285,9 @@ What this gives: a side sends only after its own root has been replaced, so
 holding back the evolution holds back the records too. A party with a copied
 root that only drops or delays traffic has two choices, to let an evolution
 complete, after which its copy authenticates nothing, or to stop the pair
-from exchanging records, which they notice. What it does not give is in
-Limits.
+from exchanging records, which they notice. How a rotation that keeps
+failing is shown to them is in "Renewal that does not complete". What it
+does not give is in Limits.
 
 Evolution records leave on a lane of their own that is never held back
 (`ZppSendScheduler`), so two sides that both wait can still complete the
@@ -375,7 +376,8 @@ diverged roots apart from other dials that end before Bob's first frame:
 Bob having removed the contact while his old address still answers, which
 shows the same mark (the in-app notice names both causes), or six
 connections in a row lost to the network at that point, which shows it until
-the next dial authenticates. A new link
+an evolution completes or a connection on which no evolution was due
+authenticates (see "Renewal that does not complete"). A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
@@ -407,11 +409,79 @@ keys; the 3.0.19 side then sees the contact out of sync and repairs it with
 Re-add contact. A copier of a contact's identity can still ask to reconnect
 through a request marked as such: the receiver is warned that accepting
 replaces that contact's keys and must confirm, and, as above, the displaced
-real peer sees the keys out of sync. The mark clears when a dial
-authenticates or the contact is re-keyed. No automatic recovery from persisted secrets is
+real peer sees the keys out of sync. The mark clears when an evolution
+completes, when a connection with no evolution outstanding authenticates,
+or when the contact is re-keyed. No automatic recovery from persisted secrets is
 offered: a copier of the database holds those secrets too, so anything that
 let two diverged devices re-key without a new out-of-band exchange would let
 the copier back in and defeat the property this document provides.
+
+## Renewal that does not complete
+
+The rules of "Evolution before records" hold the records back; this section
+makes a rotation that keeps failing visible. Up to 3.0.18 the only health
+notice was the out-of-sync mark above, raised by dials that did not
+authenticate, and any dial that authenticated cleared it. A party holding a
+copied root that let every connection authenticate and cut it before RESP,
+CONFIRM or DONE therefore kept the pair on the old root with nothing shown
+on either side. From 3.0.19 each side keeps per contact, in the settings
+table beside the other evolution state (`RootKeyStore`, keys `stalls.`,
+`stalledSince.`, `notRenewing.`):
+
+- how many connections in a row ended with an evolution outstanding. A
+  connection counts when the peer's stream, or a record from it, had
+  authenticated on it; this side was still waiting for the peer's HELLO or
+  for a due evolution to complete when the connection ended; no other
+  connection to the contact was open; and the peer is one that waits for
+  evolutions (it once sent flag `0x04`). The dialler counts it when its
+  connection ends, the responder when its own does, so both sides count.
+- when the first connection of the current run ended.
+
+When the run reaches `NOT_RENEWING_AFTER_CONNECTIONS` (6), or it holds at
+least `NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS` (3) connections and the latest
+is counted `NOT_RENEWING_AFTER_MS` (one hour) or more after the first one of
+the run, the contact is marked as not renewing (`ContactKeyRenewalEvent`). The
+conversation and the contact's details then say that the connection keys are
+not being renewed, that a poor network can cause it, and offer to re-add the
+contact. The run and the mark are cleared only by a completed evolution with
+the contact (`RootKeyStore.renewed`, which also clears the out-of-sync mark,
+since a completed evolution proves that the peer holds the root), by
+re-keying the contact or by removing it. A connection on which nothing from
+the peer authenticated is not counted; the six-dial rule above covers it on
+the dialling side. A connection that ends with an evolution outstanding
+while another connection to the contact is open is noted and counted once
+when the last of those connections ends, whatever its own state, so a group
+of overlapping connections counts at most once; a connection closed twice
+counts once. If the stored run cannot be read the connection is not counted.
+A clock that jumps forward by an hour between two stalled connections of a
+run of three brings the notice forward; a clock that went back starts the
+run again.
+
+The out-of-sync mark is no longer cleared by a dial that merely
+authenticated. It clears when an evolution completes, or when a connection on
+which the peer authenticated ends with no evolution outstanding: the peer
+does not wait for evolutions (an earlier release, iOS), either side has said
+in its HELLO that it is paused, or this side made a new root current less
+than ten minutes ago. In every other case an authenticated connection leaves
+the mark as it is. Ordinary records, which between two 3.0.19 sides do not
+flow before a due evolution anyway, can therefore not paper over a stalled
+rotation on either side. The run of failed dials that raises the mark is
+still ended by a dial that authenticates, so the mark is not raised by
+failures spread over authenticated connections; the run of stalled
+connections covers those.
+
+What this does not give: six connections, or an hour, of a network that cuts
+every connection between the HELLO and the DONE show the notice too; the
+notice names that cause and goes away at the next completed evolution. With
+a peer on 3.0.15 to 3.0.18, which cannot say that it is paused, no run is
+kept and an authenticated connection still clears the out-of-sync mark, as
+before, so the notice needs both sides on 3.0.19. A party holding the root
+and active on the connection can run the evolution with each side, as
+before, and causes no notice. `RootEvolutionStallWarningTest` runs the
+stalled connections against the real connection code on both sides, the
+hour bound, a paused and a not-due connection, an earlier release and the
+unauthenticated and parallel cases; `RootEvolutionManagerTest` and
+`RootKeyStoreDatabaseTest` cover the counting and the stored state.
 
 ## Compatibility
 
@@ -500,6 +570,10 @@ and import screens say what a late restore means.
   only.
 - A path on which one direction takes longer than a few seconds can miss
   the 30 second limits and is then retried, where 3.0.18 delivered slowly.
+- A pair whose connections authenticate but never complete a due evolution
+  is shown as not renewing after six such connections in a row, or after
+  three of them spread over an hour or more, not before; until then, and
+  toward earlier releases always, the only sign is that records do not flow.
 - A paused side keeps its roots for 24 hours after a copy of the account is
   made, and each new copy starts that time again. Someone who can make a
   backup on the device already holds everything on it.

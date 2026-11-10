@@ -1788,6 +1788,9 @@
 	<string name="identity_keys_out_of_sync_title">連線金鑰不同步</string>
 	<string name="identity_keys_out_of_sync_message">此聯絡人的裝置接受連線，但已無法辨識您的連線金鑰。這是因為你們其中一方在金鑰更新後還原了較舊的備份，或此聯絡人已將您移除。在你們重新互相新增之前，訊息都無法送達：請再交換一次連結。您的對話記錄會保留。</string>
 	<string name="identity_keys_out_of_sync_banner">連線金鑰不同步。點一下即可修復</string>
+	<string name="identity_keys_not_renewing_title">連線金鑰未更換</string>
+	<string name="identity_keys_not_renewing_message">Zerion 會定期更換此連線的金鑰，並在更換完成前暫緩傳送訊息。對於此聯絡人，連線本身可以建立，但金鑰更換一直失敗。網路狀況不佳可能導致這種情況，此時只要一次更換成功，此提示就會自動消失。如果提示持續存在，可能有人正在干擾連線：請再交換一次連結，重新互相新增。您的對話記錄會保留。</string>
+	<string name="identity_keys_not_renewing_banner">連線金鑰未更換。點一下查看詳細資訊</string>
 	<string name="identity_readd_contact">重新新增聯絡人以修復連線</string>
 	<string name="identity_readd_contact_hint">再次與此聯絡人交換連結。配對會替換雙方裝置上的連線金鑰，並保留你們的對話。</string>
 	<string name="contact_readd_started">對方使用您的新連結後，就會重新新增。</string>
