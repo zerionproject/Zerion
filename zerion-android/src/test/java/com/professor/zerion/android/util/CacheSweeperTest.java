@@ -95,13 +95,6 @@ public class CacheSweeperTest {
 				touch(new File(cache, "channel_attach_view"), "y"),
 				touch(new File(ctx.getNoBackupFilesDir(),
 						"channel_attach_view"), "att_1.pdf"),
-		};
-		File[] stay = {
-				modifiedAt(touch(cache, "voice_attachment_live.m4a"),
-						start + 1000),
-				modifiedAt(touch(cache, "grouptr_voice_play_live.ogg"),
-						start + 1000),
-				modifiedAt(touch(cache, "zerion_video_live.mp4"), start),
 				modifiedAt(touch(new File(cache, ExternalHandoff.DIR),
 						"open.pdf"), before),
 				modifiedAt(touch(new File(cache, "camera_photos"),
@@ -112,11 +105,31 @@ public class CacheSweeperTest {
 						before),
 				modifiedAt(touch(new File(ctx.getFilesDir(), "camera"),
 						"c.jpg"), before),
+				modifiedAt(touch(new File(ctx.getFilesDir(), "camera_photos"),
+						"old.jpg"), before),
+				touch(new File(new File(cache, ExternalHandoff.DIR), "sub"),
+						"nested.pdf"),
+		};
+		File[] stay = {
+				modifiedAt(touch(cache, "voice_attachment_live.m4a"),
+						start + 1000),
+				modifiedAt(touch(cache, "grouptr_voice_play_live.ogg"),
+						start + 1000),
+				modifiedAt(touch(cache, "zerion_video_live.mp4"), start),
+				modifiedAt(touch(new File(cache, ExternalHandoff.DIR),
+						"opening.pdf"), start),
+				modifiedAt(touch(new File(cache, "camera_photos"),
+						"capturing.jpg"), start + 1000),
+				modifiedAt(touch(new File(ctx.getFilesDir(), "camera"),
+						"recording.mp4"), start + 1000),
 				modifiedAt(touch(cache, "unrelated.bin"), before),
 		};
 		CacheSweeper.sweepLeftovers(ctx, start);
 		for (File f : gone) assertFalse(f.getPath(), f.exists());
 		for (File f : stay) assertTrue(f.getPath(), f.exists());
+		assertTrue("a directory another app may still write into stays",
+				new File(cache, "camera_photos").isDirectory());
+		assertTrue(new File(ctx.getFilesDir(), "camera").isDirectory());
 	}
 
 	@Test

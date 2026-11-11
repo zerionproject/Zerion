@@ -55,6 +55,13 @@ public final class CacheSweeper {
 			"channel_attach_view",
 	};
 
+	private static final String[] HANDOFF_CACHE_DIRS = {
+			"vault_share",
+			"zenc_share",
+			"camera_photos",
+			ExternalHandoff.DIR,
+	};
+
 	static final String[] DATA_DIRS = {
 			"app_webview",
 			"app_textures",
@@ -138,8 +145,34 @@ public final class CacheSweeper {
 			for (String dir : PRIVATE_TEMP_DIRS) {
 				SecureMemory.secureDeleteDir(new File(cache, dir), 0L);
 			}
+			for (String dir : HANDOFF_CACHE_DIRS) {
+				sweepOlderThan(new File(cache, dir), processStartedAt);
+			}
+		}
+		File files = ctx.getFilesDir();
+		if (files != null) {
+			for (String dir : FILES_DIRS) {
+				sweepOlderThan(new File(files, dir), processStartedAt);
+			}
 		}
 		sweepNoBackupDirs(ctx);
+	}
+
+	private static void sweepOlderThan(File dir, long processStartedAt) {
+		File[] files;
+		try {
+			files = dir.listFiles();
+		} catch (SecurityException e) {
+			return;
+		}
+		if (files == null) return;
+		for (File f : files) {
+			if (f.isDirectory()) {
+				SecureMemory.secureDeleteDir(f, 0L);
+			} else if (f.lastModified() < processStartedAt && !inUse(f)) {
+				SecureMemory.secureDeleteFile(f, 0L, false);
+			}
+		}
 	}
 
 	public static void sweepFilesDirs(Context ctx) {
