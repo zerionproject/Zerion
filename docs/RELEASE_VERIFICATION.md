@@ -42,8 +42,32 @@ Check the certificate file and a downloaded APK:
 
 Both must show the SHA-256 above (`apksigner` prints it as the
 `certificate SHA-256 digest` of signer 1). An installation from Google Play
-carries Google's app signing certificate instead and does not check release
-announcements.
+carries Google's app signing certificate instead (next section) and does not
+check release announcements.
+
+## Certificates the app accepts
+
+The app knows exactly two signing certificates. They are named in
+`SecureBootGuard`
+(`zerion-android/src/main/java/com/professor/zerion/android/security/SecureBootGuard.java`)
+and pinned by its unit test:
+
+| Certificate SHA-256 | Signs | Held by |
+|---|---|---|
+| `d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8` | The APKs on GitHub Releases and the reproducible F-Droid build | The project (the release key above) |
+| `b12ddf964ac59e3914984ec93e068768756bb0b917cb45c3fb2b65dc6c7940c6` | The APK that Google Play installs | Google: Play app signing re-signs the uploaded bundle with a key Google holds. The certificate is shown in the Play Console under App signing, and `apksigner verify --print-certs` prints it for an APK pulled from a Play installation |
+
+Two checks use the list. With the tamper protection of Hardened mode turned
+on, the app refuses to start unless every certificate the installed APK is
+signed with is one of the two (`SecureBootGuard.verifyAppSignature`; debug
+builds skip this check); a repackaged APK is signed with another key and is
+refused. The release announcement check (next section) accepts an
+announcement only when its signature verifies under a certificate the
+installed APK is signed with, so an installation from GitHub Releases or
+F-Droid accepts announcements signed with the release key, and an
+installation from Google Play, which carries Google's certificate, accepts
+none and relies on Play for updates. No other certificate is accepted, and
+adding one is a code change in this repository.
 
 ## Release announcement
 

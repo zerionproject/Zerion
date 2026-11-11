@@ -28,9 +28,12 @@ public final class SecureBootGuard {
 	public static final int RESULT_ADB_DAEMON_LISTENING = 8;
 	public static final int RESULT_SIGNATURE_MISMATCH = 9;
 
+	static final String RELEASE_CERT_SHA256 =
+			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8";
+	static final String PLAY_APP_SIGNING_CERT_SHA256 =
+			"b12ddf964ac59e3914984ec93e068768756bb0b917cb45c3fb2b65dc6c7940c6";
 	private static final String[] ACCEPTED_CERT_SHA256 = {
-			"d7fdb11125890d133ae89d8ba4f4331d9045e21ef01d9899a7cdee6888f704c8",
-			"b12ddf964ac59e3914984ec93e068768756bb0b917cb45c3fb2b65dc6c7940c6"
+			RELEASE_CERT_SHA256, PLAY_APP_SIGNING_CERT_SHA256
 	};
 
 	private SecureBootGuard() {
@@ -75,14 +78,18 @@ public final class SecureBootGuard {
 			return RESULT_SIGNATURE_MISMATCH;
 		}
 		for (String hex : digests) {
-			if (hex == null) return RESULT_SIGNATURE_MISMATCH;
-			for (String accepted : ACCEPTED_CERT_SHA256) {
-				if (accepted.equalsIgnoreCase(hex)) {
-					return RESULT_OK;
-				}
+			if (hex == null || !isAccepted(hex)) {
+				return RESULT_SIGNATURE_MISMATCH;
 			}
 		}
-		return RESULT_SIGNATURE_MISMATCH;
+		return RESULT_OK;
+	}
+
+	private static boolean isAccepted(String hex) {
+		for (String accepted : ACCEPTED_CERT_SHA256) {
+			if (accepted.equalsIgnoreCase(hex)) return true;
+		}
+		return false;
 	}
 
 	public static int evaluateStrictBoot() {

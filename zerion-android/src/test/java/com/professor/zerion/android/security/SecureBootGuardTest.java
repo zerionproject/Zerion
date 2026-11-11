@@ -46,16 +46,28 @@ public class SecureBootGuardTest {
 	}
 
 	@Test
-	public void unknownSignerIsAMismatchUnlessAnAcceptedOneIsPresent() {
+	public void anyUnknownSignerIsAMismatch() {
 		assertEquals(SecureBootGuard.RESULT_SIGNATURE_MISMATCH,
 				SecureBootGuard.classifySigners(new Signature[] {
 						new Signature(new byte[] {1, 2, 3, 4})}));
 		assertEquals(SecureBootGuard.RESULT_SIGNATURE_MISMATCH,
 				SecureBootGuard.classifyDigests(
 						Collections.singletonList(zeros())));
-		assertEquals(SecureBootGuard.RESULT_OK,
+		assertEquals(SecureBootGuard.RESULT_SIGNATURE_MISMATCH,
 				SecureBootGuard.classifyDigests(
 						Arrays.asList(zeros(), RELEASE)));
+		assertEquals(SecureBootGuard.RESULT_SIGNATURE_MISMATCH,
+				SecureBootGuard.classifyDigests(
+						Arrays.asList(PLAY, null)));
+	}
+
+	@Test
+	public void theTwoDocumentedCertificatesAreTheOnesAccepted() {
+		assertEquals(RELEASE, SecureBootGuard.RELEASE_CERT_SHA256);
+		assertEquals(PLAY, SecureBootGuard.PLAY_APP_SIGNING_CERT_SHA256);
+		assertEquals(SecureBootGuard.RESULT_OK,
+				SecureBootGuard.classifyDigests(
+						Arrays.asList(RELEASE, PLAY)));
 	}
 
 	@Test
