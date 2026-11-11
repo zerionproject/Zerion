@@ -154,6 +154,24 @@ theirEph, ourStaticPqPub)` per the helper at
 `Packages/ZerionCrypto/.../B3PqKeyProof.swift` (iOS). Byte-identical
 across platforms - pinned by `docs/wire/test_vectors/B3_v1.txt`.
 
+> **3.0.19.** When the link handshake negotiated key separation (both sides
+> at minor version 5, see PAIRING-HANDSHAKE.md), the session value the proof
+> signs is no longer the public sessionId but
+> `MAC("org.zerionproject.core.handshake/B3_SESSION_V2", exchangeKey,
+> sessionId)` (keyed BLAKE2b-256, 32 bytes, so `B3_SIG_INPUT_LEN` is
+> unchanged), and the sig-input label is `ZERION_PQ_KEY_PROOF_v2`. The proof
+> can then be checked only by a holder of the exchange key, which both sides
+> wipe when the exchange ends; with the public sessionId anyone holding the
+> two ephemerals and the two contact records could verify both signatures
+> and prove that the two identities paired. The `EXCHANGE` and
+> `EXCHANGE_HYBRID` signatures of slots 2 and 6 already sign a MAC under the
+> exchange key. A pairing with an earlier Android phone keeps the v1 form
+> above, byte for byte. iOS announces minor version 2 and is refused by the
+> link handshake, so `B3PqKeyProof.swift` stays byte-identical to the v1
+> form; when iOS adopts key separation it must sign the session tag under the
+> v2 label in the same way. Tests: `B3PqProofTest`,
+> `ContactExchangeB3ProofTest`.
+
 ### Why B-revised, not C-1
 
 | Concern                              | C-1 (two new record types) | B-revised (slot[4]) |
@@ -351,7 +369,14 @@ Once shipped on both sides:
   sessionId differ.
 - **Domain separation.** Both labels (`ZERION_PQ_KEY_PROOF_v1` for the
   sig input, `ZERION_HANDSHAKE_SESSION_v1` as the BLAKE2b key for
-  sessionId) are unique to this purpose. No cross-protocol reuse.
+  sessionId) are unique to this purpose. No cross-protocol reuse. From
+  3.0.19 the separated form uses `ZERION_PQ_KEY_PROOF_v2` and the MAC label
+  `org.zerionproject.core.handshake/B3_SESSION_V2` (see the 3.0.19 note in
+  section 3).
+- **No transferable proof of pairing (3.0.19, key separation).** The
+  signed session value is a MAC under the exchange key, so the signature is
+  unverifiable to anyone without that key, which is wiped after the
+  exchange.
 - **Symmetric role.** Both sides compute role + sessionId from the same
   unsigned-byte lex sort of the ephemerals. No initiator/responder
   asymmetry.

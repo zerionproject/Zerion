@@ -6,6 +6,11 @@ public interface B3Constants {
 
 	String B3_KEY_PROOF_LABEL = "ZERION_PQ_KEY_PROOF_v1";
 
+	String B3_KEY_PROOF_LABEL_V2 = "ZERION_PQ_KEY_PROOF_v2";
+
+	String B3_SESSION_TAG_LABEL =
+			"org.zerionproject.core.handshake/B3_SESSION_V2";
+
 	String B3_HANDSHAKE_SESSION_LABEL = "ZERION_HANDSHAKE_SESSION_v1";
 
 	byte B3_ROLE_ALICE = 0x01;
