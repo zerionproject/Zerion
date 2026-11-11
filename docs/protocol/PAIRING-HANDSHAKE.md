@@ -64,6 +64,38 @@ The BQP confirmation records were already keyed by a separate
 `KDF(CONFIRMATION_KEY, s)` and do not change; the change is that the contact
 exchange after a nearby pairing uses `exchange` instead of the root.
 
+### The B.3 proof signs a MAC under the exchange key
+
+The contact record of a link pairing carries the B.3 proof: an Ed25519
+signature by the identity key over the signer's role, a session value and
+the signer's static ML-KEM-768 public key (`B3PqProof`,
+[B3_RECORD_PLACEMENT.md](../wire/B3_RECORD_PLACEMENT.md)). Up to 3.0.18 the
+session value was the public session id, `BLAKE2b(key =
+ZERION_HANDSHAKE_SESSION_v1, sorted ephemeral X25519 keys)`. Anyone holding
+the two ephemeral keys and the two contact records could therefore check both
+signatures and prove, without the cooperation of either party, that the two
+identities paired with each other. From 3.0.19, when key separation was
+negotiated, the session value is instead
+
+```
+sessionTag = MAC("org.zerionproject.core.handshake/B3_SESSION_V2", exchange, sessionId)
+```
+
+(`CryptoComponent.mac`, keyed BLAKE2b-256, 32 bytes) and the proof input
+carries the label `ZERION_PQ_KEY_PROOF_v2` instead of
+`ZERION_PQ_KEY_PROOF_v1`, so a proof of one form never verifies as the
+other. The signature can only be checked by someone who holds the exchange
+key, and both phones wipe that key when the contact exchange ends, so
+afterwards not even the two parties can produce a verifiable record of the
+pairing. The `EXCHANGE` and `EXCHANGE_HYBRID` signatures of the contact
+record already sign a MAC under the exchange key and are unchanged. A pairing
+with an earlier phone (minor version 4, no key separation) keeps the v1
+proof over the public session id, byte for byte as before. `B3PqProofTest`
+pins the v1 vectors and checks that a v2 proof verifies only with the same
+exchange key and never as v1, and `ContactExchangeB3ProofTest` runs the
+contact exchange in both forms and checks that a proof of the other form is
+refused.
+
 ## Negotiation
 
 ### Link handshake: minor version 5

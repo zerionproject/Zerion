@@ -47,6 +47,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
+import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL;
+import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL_V2;
 import static org.zerionproject.core.api.contact.B3Constants.B3_PQ_PUB_LEN;
 import static org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
@@ -120,8 +122,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(DuplexTransportConnection conn,
 			SecretKey masterKey, boolean alice,
 			boolean verified) throws IOException, DbException {
-		return exchange(null, conn, masterKey, masterKey, alice, verified,
-				false, null, null, null, null);
+		return exchange(null, conn, masterKey, masterKey, false, alice,
+				verified, false, null, null, null, null);
 	}
 
 	@Override
@@ -129,8 +131,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			SecretKey exchangeKey, SecretKey rootKey, boolean alice,
 			boolean verified) throws IOException, DbException {
 		try {
-			return exchange(null, conn, exchangeKey, rootKey, alice, verified,
-					false, null, null, null, null);
+			return exchange(null, conn, exchangeKey, rootKey, false, alice,
+					verified, false, null, null, null, null);
 		} finally {
 			if (exchangeKey != rootKey) exchangeKey.clear();
 		}
@@ -140,8 +142,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	public Contact exchangeContacts(PendingContactId p,
 			DuplexTransportConnection conn, SecretKey masterKey, boolean alice,
 			boolean verified, boolean classical) throws IOException, DbException {
-		return exchange(p, conn, masterKey, masterKey, alice, verified,
-				classical, null, null, null, null);
+		return exchange(p, conn, masterKey, masterKey, false, alice,
+				verified, classical, null, null, null, null);
 	}
 
 	@Override
@@ -153,8 +155,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			@Nullable byte[] ourEphX25519,
 			@Nullable byte[] theirEphX25519)
 			throws IOException, DbException {
-		return exchange(p, conn, masterKey, masterKey, alice, verified,
-				classical, ourStaticHybridPub, theirStaticHybridPub,
+		return exchange(p, conn, masterKey, masterKey, false, alice,
+				verified, classical, ourStaticHybridPub, theirStaticHybridPub,
 				ourEphX25519, theirEphX25519);
 	}
 
@@ -165,8 +167,9 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			throws IOException, DbException {
 		try {
 			return exchange(p, conn, handshake.getExchangeKey(),
-					handshake.getRootKey(), handshake.isAlice(), verified,
-					classical, handshake.getOurStaticHybridPub(),
+					handshake.getRootKey(), handshake.isKeySeparated(),
+					handshake.isAlice(), verified, classical,
+					handshake.getOurStaticHybridPub(),
 					handshake.getTheirStaticHybridPub(),
 					handshake.getOurEphX25519(),
 					handshake.getTheirEphX25519());
@@ -179,7 +182,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 
 	private Contact exchange(@Nullable PendingContactId p,
 			DuplexTransportConnection conn, SecretKey exchangeKey,
-			SecretKey rootKey, boolean alice,
+			SecretKey rootKey, boolean keySeparated, boolean alice,
 			boolean verified, boolean classical,
 			@Nullable byte[] ourStaticHybridPub,
 			@Nullable byte[] theirStaticHybridPub,
@@ -217,9 +220,12 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					&& theirEphX25519 != null) {
 				byte[] ourStaticPqPub = java.util.Arrays.copyOfRange(
 						ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+				byte ourRole = B3PqProof.roleFor(ourEphX25519, theirEphX25519);
 				localB3ProofSig = B3PqProof.sign(
-						localAuthor.getPrivateKey().getEncoded(),
-						ourEphX25519, theirEphX25519, ourStaticPqPub);
+						localAuthor.getPrivateKey().getEncoded(), ourRole,
+						b3SessionValue(exchangeKey, keySeparated, ourEphX25519,
+								theirEphX25519),
+						ourStaticPqPub, b3ProofLabel(keySeparated));
 			}
 
 			byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
@@ -284,9 +290,14 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
 						theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
 				byte[] remoteSigningPubBytes = remotePublicKey.getEncoded();
+				byte theirRole =
+						B3PqProof.roleFor(theirEphX25519, ourEphX25519);
 				boolean ok = B3PqProof.verify(remoteSigningPubBytes,
-						theirEphX25519, ourEphX25519,
-						theirStaticPqPub, remoteInfo.b3ProofSig);
+						theirRole,
+						b3SessionValue(exchangeKey, keySeparated,
+								theirEphX25519, ourEphX25519),
+						theirStaticPqPub, remoteInfo.b3ProofSig,
+						b3ProofLabel(keySeparated));
 				if (!ok) throw new FormatException();
 			}
 			long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
@@ -303,6 +314,17 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			localHeaderKey.clear();
 			remoteHeaderKey.clear();
 		}
+	}
+
+	private byte[] b3SessionValue(SecretKey exchangeKey,
+			boolean keySeparated, byte[] localEph, byte[] remoteEph) {
+		byte[] sessionId = B3PqProof.computeSessionId(localEph, remoteEph);
+		if (!keySeparated) return sessionId;
+		return contactExchangeCrypto.b3SessionTag(exchangeKey, sessionId);
+	}
+
+	private static String b3ProofLabel(boolean keySeparated) {
+		return keySeparated ? B3_KEY_PROOF_LABEL_V2 : B3_KEY_PROOF_LABEL;
 	}
 
 	private void sendContactInfo(RecordWriter recordWriter, Author author,

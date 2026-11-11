@@ -10,6 +10,7 @@ import java.security.GeneralSecurityException;
 
 import javax.inject.Inject;
 
+import static org.zerionproject.core.api.contact.B3Constants.B3_SESSION_TAG_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.ALICE_KEY_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.ALICE_NONCE_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.BOB_KEY_LABEL;
@@ -88,6 +89,11 @@ class ContactExchangeCryptoImpl implements ContactExchangeCrypto {
 		} catch (GeneralSecurityException | IllegalArgumentException e) {
 			return false;
 		}
+	}
+
+	@Override
+	public byte[] b3SessionTag(SecretKey exchangeKey, byte[] sessionId) {
+		return crypto.mac(B3_SESSION_TAG_LABEL, exchangeKey, sessionId);
 	}
 
 	private byte[] deriveNonce(SecretKey masterKey, boolean alice) {

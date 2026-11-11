@@ -66,19 +66,26 @@ public final class B3PqProof {
 
 	public static byte[] computeSigInput(byte role, byte[] sessionId,
 			byte[] pqPubKey) {
+		return computeSigInput(B3_KEY_PROOF_LABEL, role, sessionId, pqPubKey);
+	}
+
+	public static byte[] computeSigInput(String label, byte role,
+			byte[] sessionValue, byte[] pqPubKey) {
+		byte[] labelBytes = label.getBytes(StandardCharsets.UTF_8);
+		requireLen(labelBytes, LABEL.length, "label");
 		if (role != B3_ROLE_ALICE && role != B3_ROLE_BOB) {
 			throw new IllegalArgumentException("role must be 0x01 or 0x02");
 		}
-		requireLen(sessionId, B3_SESSION_ID_LEN, "sessionId");
+		requireLen(sessionValue, B3_SESSION_ID_LEN, "sessionValue");
 		requireLen(pqPubKey, B3_PQ_PUB_LEN, "pqPubKey");
 
 		ByteBuffer buf = ByteBuffer.allocate(B3_SIG_INPUT_LEN)
 				.order(ByteOrder.BIG_ENDIAN);
-		buf.putInt(LABEL.length);
-		buf.put(LABEL);
+		buf.putInt(labelBytes.length);
+		buf.put(labelBytes);
 		buf.put(role);
-		buf.putInt(sessionId.length);
-		buf.put(sessionId);
+		buf.putInt(sessionValue.length);
+		buf.put(sessionValue);
 		buf.putInt(pqPubKey.length);
 		buf.put(pqPubKey);
 		return buf.array();
@@ -86,10 +93,16 @@ public final class B3PqProof {
 
 	public static byte[] sign(byte[] signingPriv,
 			byte[] localEph, byte[] remoteEph, byte[] pqPubKey) {
-		requireLen(signingPriv, 32, "signingPriv");
 		byte role = roleFor(localEph, remoteEph);
 		byte[] sessionId = computeSessionId(localEph, remoteEph);
-		byte[] input = computeSigInput(role, sessionId, pqPubKey);
+		return sign(signingPriv, role, sessionId, pqPubKey,
+				B3_KEY_PROOF_LABEL);
+	}
+
+	public static byte[] sign(byte[] signingPriv, byte role,
+			byte[] sessionValue, byte[] pqPubKey, String label) {
+		requireLen(signingPriv, 32, "signingPriv");
+		byte[] input = computeSigInput(label, role, sessionValue, pqPubKey);
 		Ed25519PrivateKeyParameters sk =
 				new Ed25519PrivateKeyParameters(signingPriv, 0);
 		Ed25519Signer signer = new Ed25519Signer();
@@ -101,11 +114,19 @@ public final class B3PqProof {
 	public static boolean verify(byte[] signingPub,
 			byte[] signerEph, byte[] verifierEph,
 			byte[] pqPubKey, @Nullable byte[] sig) {
-		requireLen(signingPub, 32, "signingPub");
-		if (sig == null || sig.length != B3_SIG_LEN) return false;
 		byte signerRole = roleFor(signerEph, verifierEph);
 		byte[] sessionId = computeSessionId(signerEph, verifierEph);
-		byte[] input = computeSigInput(signerRole, sessionId, pqPubKey);
+		return verify(signingPub, signerRole, sessionId, pqPubKey, sig,
+				B3_KEY_PROOF_LABEL);
+	}
+
+	public static boolean verify(byte[] signingPub, byte signerRole,
+			byte[] sessionValue, byte[] pqPubKey, @Nullable byte[] sig,
+			String label) {
+		requireLen(signingPub, 32, "signingPub");
+		if (sig == null || sig.length != B3_SIG_LEN) return false;
+		byte[] input = computeSigInput(label, signerRole, sessionValue,
+				pqPubKey);
 		Ed25519PublicKeyParameters pk =
 				new Ed25519PublicKeyParameters(signingPub, 0);
 		Ed25519Signer verifier = new Ed25519Signer();
