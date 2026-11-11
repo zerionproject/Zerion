@@ -144,10 +144,11 @@ whether an interval carried a message or was idle, or how large a message was.
 Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
 
 - Two constant base intervals. The active interval, 750 ms, applies while
-  anything is queued, and for two minutes after the connection opens, after
-  this side's own last message and after a received message that counts as
-  activity. The idle interval, 4 s, applies otherwise, the same on every
-  network type.
+  anything is queued, for two minutes after a connection opens (from 3.0.19
+  only when no connection to that contact opened at the active rate in the
+  last ten minutes), and for two minutes after this side's own last message
+  and after a received message that counts as activity. The idle interval,
+  4 s, applies otherwise, the same on every network type.
 - Each interval adds uniform zero-mean jitter of up to one third of its length.
 - Activity shortens a pending idle wait to the jittered active spacing, never
   below 500 ms after the previous frame as the application hands it to Tor, so
@@ -181,13 +182,27 @@ period gives a rough bound on how much was sent. Only messages
 this side created start or extend the two-minute window, and only when they
 leave for the first time; that includes automatic ones such as address
 updates and typing notices. Acknowledgements, offers and requests the peer's
-records provoke, and resends of messages the peer asks for again, do not, but
-the active interval applies while anything is queued, so a backlog of them
-drains at it. A received message counts as activity within ten minutes of
-this side's own last message and otherwise at most once per ten minutes, and
-both that ration and the two-minute window start afresh with every
-connection, so a peer that keeps sending, or keeps reconnecting, can hold this
-side at or near the active rate. A message composed offline counts when it
+records provoke, and resends of messages the peer asks for again, do not, and
+from 3.0.19 neither do the records of the root key evolution (up to 3.0.18
+every such record opened the window, so every connection and every hourly
+renewal did), but the active interval applies while anything is queued, so a
+backlog of them drains at it, and a record that is queued during an idle wait
+shortens that one wait to the active spacing. A received message counts as
+activity within ten minutes of
+this side's own last message and otherwise at most once per ten minutes.
+From 3.0.19 that ration, and the active window a connection opens with, are
+kept per contact across connections: a reconnect does not refill the ration,
+and a new connection starts at the active rate only when no connection to
+that contact did so in the last ten minutes (up to 3.0.18 both started
+afresh with every connection). So a peer that keeps reconnecting, or keeps
+sending while this side stays silent, opens this side's active window at
+most once per ten minutes, though the active rate still applies while
+anything is queued, so its messages still make this side send
+acknowledgements at that rate. A contact who works with an observer of this
+side's network link needs none of this: it can open and close the connection
+at will, which starts and stops this side's cover stream, and it times its
+own frames, which arrive on that link; both are part of the connection
+lifecycle that is visible. A message composed offline counts when it
 first leaves, up to a day after it was written. The side of each pair with
 the lower author id is the dialer (`ZtpPoller`, over Tor and over I2P when it
 is enabled): there a queued message, acknowledgement or new contact dials the

@@ -92,6 +92,7 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	@Singleton
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry,
 			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {

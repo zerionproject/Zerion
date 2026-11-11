@@ -9,7 +9,9 @@ import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -21,6 +23,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	private static final int JITTER_DIVISOR = 3;
 	static final long REPLY_WINDOW_MS = 10 * 60_000L;
 	static final long RECEIVE_ACTIVATION_INTERVAL_MS = 10 * 60_000L;
+	static final long OPENING_WINDOW_INTERVAL_MS = 10 * 60_000L;
+	static final long NEVER = -1L;
 	static final long TICKER_JOIN_MS = 5_000L;
 	static final long TICKER_FORCE_JOIN_MS = 30_000L;
 
@@ -29,7 +33,12 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	private final ZppRecordSink recordSink;
 	private final ZppConnectionRegistry registry;
 	private final ZppPacing pacing;
+	private final LongSupplier now;
 	private final SecureRandom random = new SecureRandom();
+	private final Map<Integer, Long> openingWindows =
+			new ConcurrentHashMap<>();
+	private final Map<Integer, ReceiveActivityGate> gates =
+			new ConcurrentHashMap<>();
 
 	public ZppConnectionRunnerImpl(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry, long tickIntervalMs) {
@@ -53,9 +62,45 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 
 	public ZppConnectionRunnerImpl(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry, ZppPacing pacing) {
+		this(recordSink, registry, pacing, System::currentTimeMillis);
+	}
+
+	ZppConnectionRunnerImpl(ZppRecordSink recordSink,
+			ZppConnectionRegistry registry, ZppPacing pacing,
+			LongSupplier now) {
 		this.recordSink = recordSink;
 		this.registry = registry;
 		this.pacing = pacing;
+		this.now = now;
+	}
+
+	boolean grantsOpeningWindow(int contactId, long at) {
+		boolean[] granted = new boolean[1];
+		openingWindows.compute(contactId, (id, last) -> {
+			if (last != null && at >= last
+					&& at - last < OPENING_WINDOW_INTERVAL_MS) {
+				return last;
+			}
+			granted[0] = true;
+			return at;
+		});
+		return granted[0];
+	}
+
+	ReceiveActivityGate gateFor(int contactId) {
+		return gates.computeIfAbsent(contactId, id ->
+				new ReceiveActivityGate(now, REPLY_WINDOW_MS,
+						RECEIVE_ACTIVATION_INTERVAL_MS));
+	}
+
+	static void wire(ZppSendScheduler scheduler, SlotClock clock) {
+		scheduler.setWakeListener(clock::snap);
+	}
+
+	static boolean isActive(int queueDepth, long lastRealMs, long now,
+			long idleAfterMs) {
+		if (queueDepth > 0) return true;
+		return lastRealMs != NEVER && now - lastRealMs < idleAfterMs;
 	}
 
 	@Override
@@ -65,11 +110,11 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		ZppSendScheduler scheduler =
 				new ZppSendScheduler(connection::sendMessage,
 						connection::isPqReady);
-		SlotClock clock = new SlotClock();
-		ReceiveActivityGate gate = new ReceiveActivityGate(
-				System::currentTimeMillis, REPLY_WINDOW_MS,
-				RECEIVE_ACTIVATION_INTERVAL_MS);
-		scheduler.setWakeListener(clock::noteActivity);
+		long openedAt = now.getAsLong();
+		SlotClock clock = new SlotClock(now,
+				grantsOpeningWindow(contactId, openedAt) ? openedAt : NEVER);
+		ReceiveActivityGate gate = gateFor(contactId);
+		wire(scheduler, clock);
 		long sessionId = NEXT_SESSION_ID.incrementAndGet();
 		ZwfControlHandler control = connection.getControlHandler();
 		boolean opened = false;
@@ -187,18 +232,18 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		try {
 			while (running.get()) {
 				boolean realSent = scheduler.tick();
-				long now = System.currentTimeMillis();
+				long sentAt = now.getAsLong();
 				afterFrame(clock, gate, realSent,
-						scheduler.lastRealFrameWasUserOriginated(), now);
-				boolean active = scheduler.getQueueDepth() > 0
-						|| now - clock.lastRealMs < pacing.idleAfterMs();
+						scheduler.lastRealFrameWasUserOriginated(), sentAt);
+				boolean active = isActive(scheduler.getQueueDepth(),
+						clock.lastRealMs, sentAt, pacing.idleAfterMs());
 				long activeDelay = computeInterval(pacing.activeIntervalMs(),
 						pacing.activeIntervalMs() / JITTER_DIVISOR, random);
 				long delay = active ? activeDelay
 						: computeInterval(pacing.idleIntervalMs(),
 								pacing.idleIntervalMs() / JITTER_DIVISOR,
 								random);
-				clock.awaitNextSlot(running, now, delay, activeDelay);
+				clock.awaitNextSlot(running, sentAt, delay, activeDelay);
 			}
 		} catch (IOException e) {
 			running.set(false);
@@ -255,11 +300,25 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	static final class SlotClock {
 
 		private final Object lock = new Object();
+		private final LongSupplier clock;
 		private boolean activityFlag = false;
-		volatile long lastRealMs = System.currentTimeMillis();
+		volatile long lastRealMs;
+
+		SlotClock() {
+			this(System::currentTimeMillis, System.currentTimeMillis());
+		}
+
+		SlotClock(LongSupplier clock, long lastRealMs) {
+			this.clock = clock;
+			this.lastRealMs = lastRealMs;
+		}
 
 		void noteActivity() {
-			lastRealMs = System.currentTimeMillis();
+			lastRealMs = clock.getAsLong();
+			snap();
+		}
+
+		void snap() {
 			synchronized (lock) {
 				activityFlag = true;
 				lock.notifyAll();
@@ -272,7 +331,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			synchronized (lock) {
 				activityFlag = false;
 				while (running.get()) {
-					long remaining = deadline - System.currentTimeMillis();
+					long remaining = deadline - clock.getAsLong();
 					if (remaining <= 0) return;
 					if (activityFlag) {
 						activityFlag = false;
