@@ -244,7 +244,7 @@ public class VideoOfferPromptTest {
 		VoiceCallService s = rig.controller.get();
 		int first = (Integer) CallRig.get(s, "remoteOfferGeneration");
 		((Runnable) CallRig.get(s, "remoteOfferTimeoutRunnable")).run();
-		CallRig.idle();
+		CallRig.await(() -> count("createVideoReject") == 1, 15_000);
 		assertEquals(1, count("createVideoReject"));
 		s.acceptVideoOffer(first);
 		CallRig.idle();
