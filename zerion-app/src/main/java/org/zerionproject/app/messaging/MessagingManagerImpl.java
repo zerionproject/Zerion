@@ -470,6 +470,9 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				incomingGrouptrInviteResponse(txn, m, metaDict, messageType);
 			} else if (isMemberInviteRecordType(messageType)) {
 				incomingMemberInviteRecord(txn, m, messageType);
+			} else if (messageType == MessageTypes.GROUP_RELAY_REQUEST
+					|| messageType == MessageTypes.GROUP_MEMBER_KEYS) {
+				incomingGroupRelayRecord(txn, m, messageType);
 			} else {
 				throw new InvalidMessageException();
 			}
@@ -1080,6 +1083,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		if (messageType == MessageTypes.GROUP_SETTINGS) return true;
 		if (messageType == MessageTypes.GROUP_POST_DELETE) return true;
 		if (messageType == MessageTypes.GROUP_PIN) return true;
+		if (messageType == MessageTypes.GROUP_RELAY_REQUEST) return true;
+		if (messageType == MessageTypes.GROUP_MEMBER_KEYS) return true;
 		if (isMemberInviteRecordType(messageType)) return true;
 		if (messageType == MessageTypes.GROUPTR_INVITE_ACCEPT_INCOGNITO) {
 			return true;
@@ -3970,6 +3975,16 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		txn.attach(new org.zerionproject.app.api.messaging.event
 				.GroupTrMemberInviteRecordEvent(contactId, m.getId(),
 				messageType, record));
+	}
+
+	private void incomingGroupRelayRecord(Transaction txn, Message m,
+			int messageType) throws DbException, FormatException {
+		ContactId contactId = getContactId(txn, m.getGroupId());
+		BdfList record = clientHelper.toList(m);
+		startGroupRecordCleanupTimer(txn, m.getId());
+		txn.attach(new org.zerionproject.app.api.messaging.event
+				.GroupTrRelayRecordEvent(contactId, m.getId(), messageType,
+				record, m.getTimestamp()));
 	}
 
 	private void incomingGroupSettings(Transaction txn, Message m,

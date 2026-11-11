@@ -28,6 +28,12 @@ interface GroupTrConstants {
 			"org.zerionproject/GROUPTR_INVITE_DECLINE";
 
 	String SIGNING_LABEL_GROUP_PIN = "org.zerionproject/GROUP_PIN";
+	String SIGNING_LABEL_GROUP_MEMBER_KEYS =
+			"org.zerionproject/GROUP_MEMBER_KEYS";
+	String GROUP_MEMBER_KEYS_ML_DSA_LABEL =
+			"org.zerionproject/GROUP_MEMBER_KEYS_ML_DSA";
+	String GROUP_RELAY_SEEN_LABEL = "org.zerionproject/GROUP_RELAY_SEEN";
+	byte GROUP_MEMBER_KEYS_DOMAIN = (byte) 0x0E;
 
 	String SETTINGS_NS_PREFIX = "grouptr.g.";
 	String MSG_KEY_GROUP_ACCEPTED_AT = "groupAcceptedAt";

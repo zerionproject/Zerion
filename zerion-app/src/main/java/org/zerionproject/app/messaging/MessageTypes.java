@@ -45,5 +45,7 @@ public interface MessageTypes {
 	int GROUP_KEY_BINDING = 57;
 	int GROUP_KEY_PROBE = 58;
 	int GROUP_PIN = 59;
+	int GROUP_RELAY_REQUEST = 60;
+	int GROUP_MEMBER_KEYS = 61;
 	int LAST_GROUP_RECORD = 63;
 }

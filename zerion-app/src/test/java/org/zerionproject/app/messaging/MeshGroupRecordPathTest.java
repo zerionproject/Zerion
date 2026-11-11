@@ -107,6 +107,10 @@ public class MeshGroupRecordPathTest extends BrambleTestCase {
 				MessageTypes.GROUP_POST_DELETE));
 		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
 				MessageTypes.GROUP_PIN));
+		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_RELAY_REQUEST));
+		assertTrue(MessagingManagerImpl.isMeshGroupRecordType(
+				MessageTypes.GROUP_MEMBER_KEYS));
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(
 				MessageTypes.MESSAGE_PIN));
 		assertFalse(MessagingManagerImpl.isMeshGroupRecordType(null));

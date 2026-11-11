@@ -411,6 +411,8 @@ public class GroupTrConversationActivity extends ZerionActivity
 			waitingForAdmin = groupTrManager.isWaitingForAdmin(gid);
 			List<GroupTrMember> outOfReach =
 					groupTrManager.getMembersOutOfReach(gid);
+			boolean throughOwner = !outOfReach.isEmpty()
+					&& groupTrManager.ownerPassesPostsOn(gid);
 			long seq = stateReads.incrementAndGet();
 			java.util.Map<String, MessageState> states = ownPostStates(gid);
 			byte[] pinned = groupTrManager.getPinnedPostId(gid);
@@ -419,7 +421,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 				lastState = s;
 				pinnedPostId = pinned;
 				updateHeader(s);
-				bindReachBanner(s, outOfReach);
+				bindReachBanner(s, outOfReach, throughOwner);
 				if (states != null) postAdapter.setDeliveries(states, seq);
 				renderPosts(posts, update, renamed);
 				bindPinnedBanner(posts);
@@ -566,7 +568,7 @@ public class GroupTrConversationActivity extends ZerionActivity
 	}
 
 	private void bindReachBanner(GroupTrState s,
-			List<GroupTrMember> outOfReach) {
+			List<GroupTrMember> outOfReach, boolean throughOwner) {
 		TextView banner = findViewById(R.id.reachBanner);
 		if (banner == null) return;
 		if (outOfReach.isEmpty() || s.isDissolved()) {
@@ -574,8 +576,9 @@ public class GroupTrConversationActivity extends ZerionActivity
 			return;
 		}
 		int n = outOfReach.size();
-		banner.setText(getResources().getQuantityString(
-				R.plurals.grouptr_reach_banner, n, n));
+		banner.setText(getResources().getQuantityString(throughOwner
+				? R.plurals.grouptr_reach_banner_owner
+				: R.plurals.grouptr_reach_banner, n, n));
 		banner.setVisibility(View.VISIBLE);
 		StringBuilder names = new StringBuilder();
 		for (GroupTrMember m : outOfReach) {
@@ -586,10 +589,12 @@ public class GroupTrConversationActivity extends ZerionActivity
 					: memberName);
 		}
 		String list = names.toString();
+		int explanation = throughOwner
+				? R.string.grouptr_reach_explanation_owner
+				: R.string.grouptr_reach_explanation;
 		banner.setOnClickListener(v -> new SecureAlertDialogBuilder(this)
 				.setTitle(R.string.grouptr_reach_title)
-				.setMessage(getString(R.string.grouptr_reach_explanation,
-						list))
+				.setMessage(getString(explanation, list))
 				.setPositiveButton(android.R.string.ok, null)
 				.show());
 	}

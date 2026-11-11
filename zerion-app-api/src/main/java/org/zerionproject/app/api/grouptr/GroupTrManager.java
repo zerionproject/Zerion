@@ -88,6 +88,8 @@ public interface GroupTrManager {
 	java.util.List<GroupTrMember> getMembersOutOfReach(byte[] groupId)
 			throws DbException;
 
+	boolean ownerPassesPostsOn(byte[] groupId) throws DbException;
+
 	java.util.Map<String, GroupTrPostDelivery> getOwnPostDeliveries(
 			byte[] groupId) throws DbException;
 
