@@ -68,8 +68,8 @@ From the radio up:
 2. **Managed flooding** (`MeshForwarder`). Store-carry-forward across multiple
    hops, with de-duplication and bounded storage.
 3. **Async sealed-sender crypto** (`AsyncMeshDelivery`, `AsyncSealedSender`).
-   Post-quantum encryption to a recipient's published prekey, with an inner
-   sender signature.
+   Post-quantum encryption to a recipient's published prekey, with the sender
+   authenticated inside the sealed record.
 4. **Message routing** (`MeshMessageRouter`). Turns an opened payload into a
    stored message, an acknowledgement, a presence update, or a group record.
 5. **Application senders** (`MeshTextSender`, `MeshGroupSender`).
@@ -263,18 +263,26 @@ the live online Mode 3-Full ratchet.
 Each message is sealed to the recipient's published **prekey bundle** using a
 hybrid key encapsulation: ML-KEM-768 (post-quantum) combined with X25519
 (classical), mixed through a keyed KDF, feeding an XSalsa20-Poly1305
-authenticated cipher. Inside the sealed envelope is a signature over the sender
-identity, the recipient, and the payload, using the sender's hybrid Ed25519 +
-ML-DSA-65 identity key; both halves must verify. This gives:
+authenticated cipher. Inside the sealed envelope the sender authenticates the
+sender identity, the recipient, and the payload. From 3.0.19, between two
+phones that have exchanged mesh link keys over Tor, this is a tag under a key
+only the two contacts hold, so the opened record proves the sender to the
+recipient and to nobody else, as messages over Tor always have; towards a
+contact that has not exchanged them it is a signature with the sender's hybrid
+Ed25519 + ML-DSA-65 identity key, both halves of which must verify. The two
+forms have the same length, so a relay cannot tell them apart. This gives:
 
 - **Confidentiality and integrity to relays.** Only the holder of the recipient
   prekey's private half can open the envelope. Every relay sees a padded opaque
   blob plus the routing fields (prekey selector, ephemeral key, time-to-live,
   deduplication id), not the sender or the content.
 - **Sender authentication.** The recipient knows for certain which contact sent
-  the message, and a relay cannot forge or alter one.
-- **Post-quantum protection.** Both the key agreement and the signature combine a
-  classical and a post-quantum primitive, so an attacker must break both.
+  the message, and a relay cannot forge or alter one. With the keyed tag, the
+  recipient alone can check this; a record copied from its phone proves nothing
+  to a third party.
+- **Post-quantum protection.** The key agreement, and the signature where one
+  is used, combine a classical and a post-quantum primitive, so an attacker must
+  break both; the keyed tag is symmetric.
 
 The envelope is padded to one of two sizes, 4096 or 16384 bytes (`MeshPadding`),
 so the plaintext length is observable only as which of the two it needed, and it carries a send timestamp used for replay-window and

@@ -764,6 +764,7 @@ public class AppModule {
 				identityManager, db, settingsManager, clock, router,
 				nameGuard, wakeLocks, scheduler);
 		manager.setLinkKeys(linkKeys);
+		manager.setSenderLinkKeys(linkKeys);
 		return manager;
 	}
 

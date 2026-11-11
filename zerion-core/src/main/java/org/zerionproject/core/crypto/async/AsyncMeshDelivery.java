@@ -26,6 +26,16 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 		}
 	}
 
+	public interface SenderLinkKeys {
+		@javax.annotation.Nullable
+		byte[] linkKeyFor(byte[] peerIdentitySigPub);
+
+		@javax.annotation.Nullable
+		default byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub) {
+			return null;
+		}
+	}
+
 	private static final int RECENTLY_OPENED = 1024;
 	private final java.util.LinkedHashMap<String, Boolean> recentlyOpened =
 			new java.util.LinkedHashMap<String, Boolean>(64, 0.75f, true) {
@@ -95,6 +105,8 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 	private final OpenedListener listener;
 	private final Identity identity;
 	private final org.zerionproject.core.api.system.Clock clock;
+	@javax.annotation.Nullable
+	private final SenderLinkKeys linkKeys;
 	private final SecureRandom random = new SecureRandom();
 	@javax.annotation.Nullable
 	private volatile java.util.function.Consumer<String> openedFromPeer;
@@ -103,12 +115,21 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			AsyncPrekeyStore store, OpenedListener listener,
 			Identity identity,
 			org.zerionproject.core.api.system.Clock clock) {
+		this(crypto, sealer, store, listener, identity, clock, null);
+	}
+
+	public AsyncMeshDelivery(CryptoComponent crypto, AsyncSealedSender sealer,
+			AsyncPrekeyStore store, OpenedListener listener,
+			Identity identity,
+			org.zerionproject.core.api.system.Clock clock,
+			@javax.annotation.Nullable SenderLinkKeys linkKeys) {
 		this.crypto = crypto;
 		this.sealer = sealer;
 		this.store = store;
 		this.listener = listener;
 		this.identity = identity;
 		this.clock = clock;
+		this.linkKeys = linkKeys;
 	}
 
 	public void setOpenedFromPeerListener(
@@ -140,7 +161,21 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			AsyncPrekeyBundle recipientBundle, int messageType,
 			byte[] payload, long ttlSeconds, long sendTimestamp,
 			boolean preferOneTime) throws GeneralSecurityException {
+		SenderLinkKeys keys = linkKeys;
+		byte[] linkKey = keys == null ? null
+				: keys.sendingLinkKeyFor(recipientBundle.getIdentitySigPub());
+		return send(forwarder, recipientBundle, messageType, payload,
+				ttlSeconds, sendTimestamp, preferOneTime, linkKey);
+	}
+
+	public byte[] send(MeshForwarder forwarder,
+			AsyncPrekeyBundle recipientBundle, int messageType,
+			byte[] payload, long ttlSeconds, long sendTimestamp,
+			boolean preferOneTime,
+			@javax.annotation.Nullable byte[] recipientLinkKey)
+			throws GeneralSecurityException {
 		AsyncSealedSender.SealRequest r = new AsyncSealedSender.SealRequest();
+		r.senderLinkKey = recipientLinkKey;
 		long nowSeconds = clock.currentTimeMillis() / 1000L;
 		if (recipientBundle.getSignedPrekeyExpiry() <= nowSeconds) {
 			throw new GeneralSecurityException("recipient signed prekey expired");
@@ -226,6 +261,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 			r.ttl = ttlSeconds;
 			r.dedupId = randomBytes(AsyncEnvelope.DEDUP_ID_BYTES);
 			r.sendTimestamp = sendTimestamp;
+			r.senderLinkKey = randomBytes(AsyncSealedSender.LINK_KEY_BYTES);
 			byte[] envelope = sealer.seal(r);
 			forwarder.originate(envelope);
 		} finally {
@@ -286,6 +322,7 @@ public class AsyncMeshDelivery implements MeshForwarder.FrameListener {
 				o.recipientIdentitySigPub = identity.sigPub;
 				o.recipientIdentityAgreePub = c.published
 						? identity.agreePub : identity.legacyAgreePub;
+				o.senderLinkKeys = linkKeys;
 				try {
 					m = sealer.open(envelopeBytes, o);
 					used = c;

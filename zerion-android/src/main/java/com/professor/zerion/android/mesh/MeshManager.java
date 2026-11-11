@@ -73,6 +73,8 @@ public class MeshManager {
 	private volatile Runnable peerConnectedListener;
 	@Nullable
 	private volatile BleMeshTransport.PrivatePeers linkKeys;
+	@Nullable
+	private volatile AsyncMeshDelivery.SenderLinkKeys senderLinkKeys;
 
 	private static final BleMeshTransport.PrivatePeers NO_PEERS =
 			new BleMeshTransport.PrivatePeers() {
@@ -112,6 +114,11 @@ public class MeshManager {
 		linkKeys = keys;
 	}
 
+	public void setSenderLinkKeys(
+			@Nullable AsyncMeshDelivery.SenderLinkKeys keys) {
+		senderLinkKeys = keys;
+	}
+
 	public void start() throws DbException {
 		synchronized (lifecycleLock) {
 			startLocked();
@@ -146,7 +153,7 @@ public class MeshManager {
 					public boolean knowsSender(byte[] senderPub) {
 						return openedHandler.knowsSender(senderPub);
 					}
-				}, identity, clock);
+				}, identity, clock, senderLinkKeys);
 		delivery = meshDelivery;
 		meshDelivery.setOpenedFromPeerListener(peer -> {
 			MeshForwarder f = forwarder;

@@ -381,7 +381,8 @@ seconds after the previous round, so connecting over and over neither makes a
 device send round after round nor times a round exactly.
 
 A message is acknowledged only when the envelope that carried it was sealed at
-most 10 minutes earlier (by the sender's signed timestamp), at most once every 5
+most 10 minutes earlier (by the send timestamp authenticated inside the sealed
+record), at most once every 5
 minutes for the same message, and after a random delay of 3 to 30 seconds. A
 captured envelope replayed next to a device therefore stops drawing a reply
 once it is 10 minutes old, and draws at most one reply in 5 minutes before

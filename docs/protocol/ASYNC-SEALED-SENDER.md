@@ -24,8 +24,10 @@ envelopes; the envelope protects them.
   (`prekeyKind`, `prekeyId`, `signedPrekeyId`), the sender's ephemeral key and
   KEM ciphertext, a time-to-live and a deduplication identifier (see the
   visibility column below).
-- The recipient authenticates the sender after opening, from a signature inside
-  the sealed record. A relay cannot see who signed.
+- The recipient authenticates the sender after opening, from an authenticator
+  inside the sealed record: from 3.0.19, between two phones that have exchanged
+  mesh link keys, a tag under a key only the two hold; otherwise the sender's
+  account signature. A relay cannot see who sent the envelope.
 
 ## Primitive sizes
 
@@ -70,15 +72,16 @@ the advisory time-to-live, the deduplication identifier, and the blob length.
    identity agreement key (1216), prekey kind, prekey id (16), signed-prekey id,
    ephemeral public key (1216), KEM ciphertext (1088), time-to-live, and
    deduplication identifier. The send timestamp is deliberately left out of the
-   key transcript and is instead signed inside the record, so the timestamp
-   cannot be used to grind the key.
+   key transcript and is instead authenticated inside the record, so the
+   timestamp cannot be used to grind the key.
 3. The AEAD key is `KDF(ENVELOPE_KEY, messageKey)`. The AEAD nonce is
    `MAC(ENVELOPE_NONCE, messageKey, transcript)` truncated to 24 bytes. The
    cipher is XSalsa20-Poly1305.
 
-## Inner signed record
+## Inner authenticated record
 
-Before AEAD sealing, the plaintext is a signed record:
+Before AEAD sealing, the plaintext is an authenticated record. Its prefix is
+the same in both forms:
 
 ```
 senderIdentitySigPub[1984]
@@ -87,15 +90,51 @@ payload[...]
 ttl[4]  (uint32)
 dedupId[16]
 sendTimestamp[8]  (uint64)
-signature[3373]   hybrid Ed25519 + ML-DSA-65 over the transcript and the prefix above
 ```
 
-The signature label is `SENDER_AUTH`. On open, the recipient decrypts, reads the
-trailer, checks that the inner time-to-live and deduplication identifier equal the
-outer ones, and verifies the hybrid signature against the sender identity key it
-just learned. Deciding whether that identity is a trusted contact, consuming the
-one-time prekey, and persisting the deduplication identifier are the caller's
-responsibility.
+followed by a 3373-byte trailer in one of two forms:
+
+```
+signed:  signature[3373]   hybrid Ed25519 + ML-DSA-65 over the transcript and the prefix above
+keyed:   tag[32]           MAC over the transcript and the prefix above
+         padding[3341]     all zero
+```
+
+Both trailers have the same length, so the record, the AEAD blob and the whole
+envelope are the same size whichever form the sender used, and nothing a relay
+sees differs; the envelope version stays `0x01`.
+
+**Keyed trailer (from 3.0.19).** Two contacts whose phones both run 3.0.19 or
+later exchange mesh link keys over their Tor connection (`MeshLinkKeys`: each
+sends the other a 32-byte pair secret, and both derive the same link key from
+the two secrets). A sender that holds both secrets for the recipient, and knows
+that the recipient announces messaging minor version 17 or later, seals with
+the keyed trailer: `authKey = KDF(SENDER_AUTH_KEY_V2, linkKey)` and
+`tag = MAC(SENDER_AUTH_V2, authKey, transcript || prefix)`. Because the key is
+held by exactly the two contacts, the opened record proves to the recipient
+that the sender wrote it, and proves nothing to anyone else: the recipient
+could have computed the same tag itself, so a record taken from its phone does
+not show a third party who wrote what to whom and when. This is the property
+messages over Tor have always had, where records are authenticated under
+pairwise keys and never signed.
+
+**Signed trailer.** Towards a contact that has not exchanged mesh link keys,
+or runs an earlier version, the trailer is the sender's hybrid account
+signature under the label `SENDER_AUTH`, as in every release up to 3.0.18. A
+signature is transferable: whoever holds the opened record can show others
+that this account signed this text at this time to this recipient.
+
+**Opening.** The recipient decrypts, reads the trailer, and checks that the
+inner time-to-live and deduplication identifier equal the outer ones. If the
+last 3341 bytes of the trailer are all zero the record is keyed: the recipient
+looks up the link key it holds for the sender identity it just read, refuses
+the record when it holds none, and compares the tag in constant time. Otherwise
+the record is signed and the hybrid signature is verified against that
+identity key. A genuine hybrid signature never ends in 3341 zero bytes, so a
+signed record is never taken for a keyed one, and a keyed record never reaches
+the signature check, so it is never taken for a signed one. Deciding whether
+the sender identity is a trusted contact, consuming the one-time prekey, and
+persisting the deduplication identifier are the caller's responsibility.
 
 ## Prekey bundle
 
@@ -155,7 +194,7 @@ envelope that arrives with either budget spent is not opened. An envelope that n
 is remembered by a hash of its whole encoding, so a repeat costs a lookup; the
 deduplication identifier is not used for this, because a forgery could carry
 the identifier of a genuine envelope. An envelope that does not authenticate
-never reaches the signature check.
+never reaches the sender check.
 A one-time prekey is preferred when available and is consumed on first use, which
 gives a fresh key per message. The sender records in its database, per
 recipient, each one-time prekey it seals to (from 3.0.18; in memory only
@@ -170,7 +209,8 @@ that signed prekey's private key while it is retained.
 
 The delivery layer floods a sealed envelope through the mesh forwarder. It can
 also emit cover envelopes. A cover envelope is sealed to a throwaway keypair with
-random recipient identity fields, and its selector is that of an envelope
+random recipient identity fields and a keyed trailer under a random link key,
+and its selector is that of an envelope
 sealed from a published bundle: signed-prekey id `0`, or a random one-time
 prekey id. A cover envelope is therefore indistinguishable on the wire from a
 message sealed from a current bundle in the same size bucket. Cover always

@@ -8,6 +8,8 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
+import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.Event;
@@ -18,12 +20,15 @@ import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
 import org.zerionproject.core.api.versioning.event.ClientVersionUpdatedEvent;
+import org.zerionproject.core.crypto.async.AsyncMeshDelivery;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nullable;
@@ -38,7 +43,8 @@ import static org.zerionproject.core.util.StringUtils.toHexString;
 @ThreadSafe
 @NotNullByDefault
 public class MeshLinkKeys implements EventListener,
-		ContactManager.ContactHook, BleMeshTransport.PrivatePeers {
+		ContactManager.ContactHook, BleMeshTransport.PrivatePeers,
+		AsyncMeshDelivery.SenderLinkKeys {
 
 	static final String NAMESPACE = "org.zerionproject.mesh/linkKeys";
 	static final String KEY_ADVERT = "advert";
@@ -51,12 +57,14 @@ public class MeshLinkKeys implements EventListener,
 	static final long RESEND_INTERVAL_MS = 24L * 60L * 60L * 1000L;
 	static final long REPLY_INTERVAL_MS = 10L * 60L * 1000L;
 
+	private final DatabaseComponent db;
 	private final SettingsManager settingsManager;
 	private final ContactManager contactManager;
 	private final MessagingManager messagingManager;
 	private final Executor ioExecutor;
 	private final SecureRandom random = new SecureRandom();
 	private final Object lock = new Object();
+	private final Map<Integer, byte[]> identityKeys = new HashMap<>();
 
 	@Nullable
 	private volatile List<MeshPeer> peers;
@@ -64,9 +72,11 @@ public class MeshLinkKeys implements EventListener,
 	private volatile byte[] ownAdvertKey;
 
 	@Inject
-	MeshLinkKeys(EventBus eventBus, SettingsManager settingsManager,
-			ContactManager contactManager, MessagingManager messagingManager,
+	MeshLinkKeys(EventBus eventBus, DatabaseComponent db,
+			SettingsManager settingsManager, ContactManager contactManager,
+			MessagingManager messagingManager,
 			@IoExecutor Executor ioExecutor) {
+		this.db = db;
 		this.settingsManager = settingsManager;
 		this.contactManager = contactManager;
 		this.messagingManager = messagingManager;
@@ -137,6 +147,74 @@ public class MeshLinkKeys implements EventListener,
 				return null;
 			}
 		}
+	}
+
+	@Override
+	@Nullable
+	public byte[] linkKeyFor(byte[] peerIdentitySigPub) {
+		try {
+			ContactId c = resolveContact(peerIdentitySigPub);
+			return c == null ? null : linkKeyFor(c);
+		} catch (DbException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	@Override
+	@Nullable
+	public byte[] sendingLinkKeyFor(byte[] peerIdentitySigPub) {
+		try {
+			ContactId c = resolveContact(peerIdentitySigPub);
+			if (c == null) return null;
+			byte[] linkKey = linkKeyFor(c);
+			if (linkKey == null) return null;
+			int minor = db.transactionWithResult(true, txn ->
+					messagingManager.getContactClientMinorVersion(txn, c));
+			if (minor < MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION) {
+				return null;
+			}
+			return linkKey;
+		} catch (DbException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	byte[] linkKeyFor(ContactId c) throws DbException {
+		Settings s = settingsManager.getSettings(NAMESPACE);
+		String id = String.valueOf(c.getInt());
+		byte[] theirPair = key(s, THEIR_PAIR + id);
+		byte[] ourPair = key(s, OUR_PAIR + id);
+		if (theirPair == null || ourPair == null) return null;
+		if (Arrays.equals(theirPair, ourPair)) return null;
+		return MeshPrivateLink.linkKey(ourPair, theirPair);
+	}
+
+	@Nullable
+	private ContactId resolveContact(byte[] peerIdentitySigPub)
+			throws DbException {
+		for (Contact contact : contactManager.getContacts()) {
+			int id = contact.getId().getInt();
+			byte[] hybrid;
+			synchronized (identityKeys) {
+				hybrid = identityKeys.get(id);
+			}
+			if (hybrid == null) {
+				byte[] mlDsa = contact.getMlDsaSigPublicKey();
+				if (mlDsa == null) continue;
+				byte[] ed25519 =
+						contact.getAuthor().getPublicKey().getEncoded();
+				hybrid = new HybridSignaturePublicKey(ed25519, mlDsa)
+						.getEncoded();
+				synchronized (identityKeys) {
+					identityKeys.put(id, hybrid);
+				}
+			}
+			if (Arrays.equals(hybrid, peerIdentitySigPub)) {
+				return contact.getId();
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -235,6 +313,9 @@ public class MeshLinkKeys implements EventListener,
 		synchronized (lock) {
 			ownAdvertKey = null;
 			peers = null;
+		}
+		synchronized (identityKeys) {
+			identityKeys.remove(c.getInt());
 		}
 		List<Contact> remaining;
 		try {
