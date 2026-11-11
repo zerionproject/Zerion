@@ -116,7 +116,11 @@ that the sender wrote it, and proves nothing to anyone else: the recipient
 could have computed the same tag itself, so a record taken from its phone does
 not show a third party who wrote what to whom and when. This is the property
 messages over Tor have always had, where records are authenticated under
-pairwise keys and never signed.
+pairwise keys and never signed. Between the moment a phone has received the
+other's pair secret and the moment its own secret has reached the other phone,
+a keyed envelope is refused at the recipient; the text and group senders
+reseal and send such a message again on their next pass, so the window delays
+a message but does not lose it.
 
 **Signed trailer.** Towards a contact that has not exchanged mesh link keys,
 or runs an earlier version, the trailer is the sender's hybrid account

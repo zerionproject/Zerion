@@ -155,7 +155,7 @@ public class MeshLinkKeys implements EventListener,
 		try {
 			ContactId c = resolveContact(peerIdentitySigPub);
 			return c == null ? null : linkKeyFor(c);
-		} catch (DbException | RuntimeException e) {
+		} catch (DbException e) {
 			return null;
 		}
 	}
@@ -174,7 +174,7 @@ public class MeshLinkKeys implements EventListener,
 				return null;
 			}
 			return linkKey;
-		} catch (DbException | RuntimeException e) {
+		} catch (DbException e) {
 			return null;
 		}
 	}

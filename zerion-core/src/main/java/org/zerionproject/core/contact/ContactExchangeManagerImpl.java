@@ -131,8 +131,9 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			SecretKey exchangeKey, SecretKey rootKey, boolean alice,
 			boolean verified) throws IOException, DbException {
 		try {
-			return exchange(null, conn, exchangeKey, rootKey, false, alice,
-					verified, false, null, null, null, null);
+			return exchange(null, conn, exchangeKey, rootKey,
+					exchangeKey != rootKey, alice, verified, false, null, null,
+					null, null);
 		} finally {
 			if (exchangeKey != rootKey) exchangeKey.clear();
 		}
