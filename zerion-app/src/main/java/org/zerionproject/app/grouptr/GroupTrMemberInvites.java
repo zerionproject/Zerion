@@ -89,7 +89,7 @@ class GroupTrMemberInvites {
 		LocalAuthor localAuthor() throws DbException;
 
 		GroupTrKeys.Binding bind(byte[] groupId, GroupTrKeys.Own own,
-				long timestamp) throws DbException;
+				long timestamp, boolean identitySigned) throws DbException;
 
 		byte[] signAsIdentity(String label, byte[] signed) throws DbException;
 
@@ -883,9 +883,10 @@ class GroupTrMemberInvites {
 			}
 			byte[] identity = invitee.getAuthor().getPublicKey().getEncoded();
 			boolean keyed = s.usesGroupKeys();
-			if (keyed && db.transactionWithResult(true, txn ->
+			int inviteeMinor = db.transactionWithResult(true, txn ->
 					messagingManager.getContactClientMinorVersion(txn,
-							contactId))
+							contactId));
+			if (keyed && inviteeMinor
 					< MessagingManager.GROUP_MEMBER_KEYS_MIN_VERSION) {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.CONTACT_MUST_UPDATE);
@@ -913,7 +914,8 @@ class GroupTrMemberInvites {
 				GroupTrKeys.Own own = host.keys().own(groupId);
 				if (own == null) throw unavailable();
 				try {
-					offered = host.bind(groupId, own, now);
+					offered = host.bind(groupId, own, now, GroupTrManagerImpl
+							.bindingIdentitySigned(inviteeMinor));
 				} finally {
 					own.clear();
 				}
@@ -1019,10 +1021,7 @@ class GroupTrMemberInvites {
 		byte[] inviterMlDsa;
 		if (binding != null) {
 			if (!Arrays.equals(binding.pub, inviterPub)) return;
-			if (!host.keys().verify(groupId, binding, inviterIdentity,
-					inviter.getMlDsaSigPublicKey())) {
-				return;
-			}
+			if (!host.keys().verify(groupId, binding, inviter)) return;
 			inviterMlDsa = binding.mlDsa;
 		} else {
 			if (!Arrays.equals(inviterIdentity, inviterPub)) return;
@@ -1203,7 +1202,11 @@ class GroupTrMemberInvites {
 			@Nullable String incognitoName, long now, byte[] inviterMlDsa,
 			byte[] inviterIdentity, GroupTrKeys.Own own) throws DbException {
 		GroupTrKeys keys = host.keys();
-		GroupTrKeys.Binding binding = host.bind(groupId, own, now);
+		int inviterMinor = db.transactionWithResult(true, txn ->
+				messagingManager.getContactClientMinorVersion(txn,
+						inviter.getId()));
+		GroupTrKeys.Binding binding = host.bind(groupId, own, now,
+				GroupTrManagerImpl.bindingIdentitySigned(inviterMinor));
 		byte[] tag = keys.removalTag(groupId, la.getPublicKey().getEncoded());
 		byte[] sig = keys.sign(own, LABEL_ACCEPT, responseSignedInput(groupId,
 				own.pub, o.inviterPubKey, o.creatorPubKey, now, own.mlDsa,
@@ -1321,10 +1324,7 @@ class GroupTrMemberInvites {
 						identity))) {
 					return;
 				}
-				if (!host.keys().verify(groupId, binding, identity,
-						invitee.getMlDsaSigPublicKey())) {
-					return;
-				}
+				if (!host.keys().verify(groupId, binding, invitee)) return;
 				inviteePub = binding.pub;
 				inviteeMlDsa = binding.mlDsa;
 			} else if (keyed) {

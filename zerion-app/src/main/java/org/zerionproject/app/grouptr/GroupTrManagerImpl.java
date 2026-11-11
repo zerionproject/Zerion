@@ -1169,24 +1169,40 @@ class GroupTrManagerImpl
 	}
 
 	private GroupTrKeys.Binding bindAs(byte[] groupId, GroupTrKeys.Own own,
-			long timestamp) throws DbException {
+			long timestamp, boolean identitySigned) throws DbException {
 		LocalAuthor la = localAuthor();
+		byte[] identity = la.getPublicKey().getEncoded();
+		if (!identitySigned) {
+			return keys.bind(groupId, own, identity, null, timestamp);
+		}
 		org.zerionproject.core.api.crypto.HybridSignaturePrivateKey key =
 				identitySigningKey(la);
 		try {
-			return keys.bind(groupId, own, la.getPublicKey().getEncoded(),
-					key, timestamp);
+			return keys.bind(groupId, own, identity, key, timestamp);
 		} finally {
 			key.clear();
 		}
 	}
 
+	static boolean bindingIdentitySigned(int contactMinorVersion) {
+		return contactMinorVersion
+				< MessagingManager.GROUP_BINDING_V2_MIN_VERSION;
+	}
+
+	private boolean bindingIdentitySignedFor(ContactId contactId)
+			throws DbException {
+		int minor = db.transactionWithResult(true, txn ->
+				messagingManager.getContactClientMinorVersion(txn, contactId));
+		return bindingIdentitySigned(minor);
+	}
+
 	@Nullable
-	private GroupTrKeys.Binding ownBinding(byte[] groupId) throws DbException {
+	private GroupTrKeys.Binding ownBinding(byte[] groupId,
+			boolean identitySigned) throws DbException {
 		GroupTrKeys.Own own = keys.own(groupId);
 		if (own == null) return null;
 		try {
-			return bindAs(groupId, own, own.created);
+			return bindAs(groupId, own, own.created, identitySigned);
 		} finally {
 			own.clear();
 		}
@@ -2679,7 +2695,8 @@ class GroupTrManagerImpl
 		GroupTrKeys.Binding binding;
 		byte[] sig;
 		try {
-			binding = bindAs(groupId, own, timestamp);
+			binding = bindAs(groupId, own, timestamp,
+					bindingIdentitySigned(minor));
 			byte[] signed = offerSignedInputBound(groupId, own.pub,
 					NO_INVITEE, timestamp, s.getName(), s.getSalt(),
 					s.getCreatorName());
@@ -2811,7 +2828,8 @@ class GroupTrManagerImpl
 			LocalAuthor la, @Nullable String incognitoName,
 			byte[] creatorMlDsa, long ts, GroupTrKeys.Own own)
 			throws DbException {
-		GroupTrKeys.Binding binding = bindAs(groupId, own, ts);
+		GroupTrKeys.Binding binding = bindAs(groupId, own, ts,
+				bindingIdentitySignedFor(pi.contactId));
 		byte[] signed = offerSignedInputBound(groupId, own.pub,
 				pi.creatorPubKey, ts, pi.groupName, pi.salt, pi.creatorName);
 		byte[] sig = keys.sign(own, SIGNING_LABEL_GROUPTR_INVITE_ACCEPT,
@@ -3286,10 +3304,7 @@ class GroupTrManagerImpl
 		if (b.timestamp != ev.getInviteTimestamp()) return;
 		Contact c = contactOrNull(ev.getContactId());
 		if (c == null) return;
-		if (!keys.verify(groupId, b, c.getAuthor().getPublicKey().getEncoded(),
-				c.getMlDsaSigPublicKey())) {
-			return;
-		}
+		if (!keys.verify(groupId, b, c)) return;
 		byte[] derived = deriveKeyedGroupId(ev.getCreatorName(), creatorPub,
 				b.mlDsa, ev.getGroupName(), ev.getSalt());
 		GroupTrState existing = getGroup(groupId);
@@ -3402,7 +3417,7 @@ class GroupTrManagerImpl
 		BdfList list = ev.getKeyBinding();
 		if (list == null) return;
 		GroupTrKeys.Binding b = GroupTrKeys.Binding.parse(list);
-		if (!keys.verify(groupId, b, responderIdentity, identityMlDsa)) return;
+		if (!keys.verify(groupId, b, c)) return;
 		if (isMemberOrCreator(s, b.pub)) return;
 		byte[] signed = offerSignedInputBound(groupId, b.pub,
 				s.getCreatorPubKey(), ev.getInviteTimestamp(), s.getName(),
@@ -4756,8 +4771,8 @@ class GroupTrManagerImpl
 
 		@Override
 		public GroupTrKeys.Binding bind(byte[] groupId, GroupTrKeys.Own own,
-				long timestamp) throws DbException {
-			return bindAs(groupId, own, timestamp);
+				long timestamp, boolean identitySigned) throws DbException {
+			return bindAs(groupId, own, timestamp, identitySigned);
 		}
 
 		@Override
@@ -4927,9 +4942,10 @@ class GroupTrManagerImpl
 
 		@Nullable
 		@Override
-		public GroupTrKeys.Binding ownBinding(byte[] groupId)
-				throws DbException {
-			return GroupTrManagerImpl.this.ownBinding(groupId);
+		public GroupTrKeys.Binding ownBinding(byte[] groupId,
+				boolean identitySigned) throws DbException {
+			return GroupTrManagerImpl.this.ownBinding(groupId,
+					identitySigned);
 		}
 
 		@Override

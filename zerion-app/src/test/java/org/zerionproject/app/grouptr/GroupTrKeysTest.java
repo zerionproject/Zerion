@@ -51,6 +51,23 @@ public class GroupTrKeysTest {
 				zero(seen.get(3)));
 	}
 
+	@Test
+	public void aBindingWithoutAnIdentitySignatureNeverSeesTheIdentityKey()
+			throws Exception {
+		GroupTrKeys.Own own = keys.generate(1L);
+		GroupTrKeys.Binding b = keys.bind(new byte[32], own, filled(32), null,
+				1L);
+		assertEquals(1, used.size());
+		assertFalse(b.identitySigned());
+		assertEquals(0, b.identitySig.length);
+		assertEquals(PostQuantumConstants.HYBRID_SIGNATURE_BYTES,
+				b.groupSig.length);
+		assertEquals(0, GroupTrKeys.Binding.parse(b.toList())
+				.identitySig.length);
+		assertEquals(GroupTrKeys.BINDING_V2_BYTES,
+				GroupTrKeys.encodeBinding(b).length);
+	}
+
 	private static boolean zero(byte[] b) {
 		for (byte x : b) if (x != 0) return false;
 		return true;

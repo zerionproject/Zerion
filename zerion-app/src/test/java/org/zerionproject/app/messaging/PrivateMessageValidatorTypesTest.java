@@ -454,6 +454,32 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 		BdfList negative = binding();
 		negative.set(2, -1L);
 		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, negative), true);
+		BdfList unsigned = binding();
+		unsigned.set(3, new byte[0]);
+		accept(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, unsigned), true,
+				0);
+		accept(BdfList.of(GROUPTR_INVITE_ACCEPT, id, now, sig, unsigned),
+				true, 0);
+		BdfList oneByte = binding();
+		oneByte.set(3, new byte[1]);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id, oneByte), true);
+		BdfList shortIdentitySig = binding();
+		shortIdentitySig.set(3, getRandomBytes(
+				PostQuantumConstants.HYBRID_SIGNATURE_BYTES - 1));
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id,
+				shortIdentitySig), true);
+		BdfList unsignedGroupSig = binding();
+		unsignedGroupSig.set(4, new byte[0]);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_BINDING, id,
+				unsignedGroupSig), true);
+		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32), getRandomBytes(
+						SEALED - PostQuantumConstants.HYBRID_SIGNATURE_BYTES)))),
+				true, 0);
+		reject(BdfList.of(MessageTypes.GROUP_KEY_PROBE, BdfList.of(BdfList.of(
+				getRandomBytes(32), getRandomBytes(32), getRandomBytes(SEALED
+						- PostQuantumConstants.HYBRID_SIGNATURE_BYTES - 1)))),
+				true);
 		accept(BdfList.of(MessageTypes.GROUP_KEY_PROBE,
 				BdfList.of(probeEntry())), true, 0);
 		BdfList full = new BdfList();

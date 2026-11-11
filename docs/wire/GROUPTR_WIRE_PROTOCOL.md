@@ -85,6 +85,15 @@ probe (58) records, and carries a binding in the invitation records. A
 contact that announces less than 13 cannot be invited to such a group.
 Groups created earlier are unchanged. See "Member keys in private groups".
 
+Minor version 17 (Android 3.0.19, `GROUP_BINDING_V2_MIN_VERSION`) changes
+one slot of the binding: towards a contact that announces 17 or more the
+`identitySig` slot is empty, so the account key no longer signs the binding
+and the binding is bound to the account only by the authenticated contact
+connection it arrives on and by the member key signature, whose input names
+that account key. Towards a contact that announces less the account key still
+signs it. A receiver on 17 takes both forms. See "Binding (57
+GROUP_KEY_BINDING and the binding slot)".
+
 Minor version 16 (Android 3.0.19, `GROUP_SETTINGS_RELAY_MIN_VERSION`) changes
 no record format: a member on it takes the creator's settings record (46)
 also from another member and passes it on (see msgType 46). The same version
@@ -196,7 +205,7 @@ Alice's pairwise messaging Group with Peter (pairwise contact group)
 | 54 | `GROUPTR_GRANTED_INVITE_OFFER` | A member that holds that right offers a contact an invitation (version 11). Signing label `org.zerionproject/GROUPTR_GRANTED_INVITE_OFFER`. |
 | 55 | `GROUPTR_INVITE_ACCEPT_INCOGNITO` | The invitee accepts a creator's offer under its incognito name (version 11). Carries the signature of 43. |
 | 56 | `GROUPTR_MEMBER_INVITE_ACCEPT_INCOGNITO` | The invited contact accepts a member's invitation under its incognito name (version 11). Carries the signature of 50. |
-| 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by both (version 13). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
+| 57 | `GROUP_KEY_BINDING` | Links the sending contact's account key to its member key in one group, signed by the member key over an input that names the account key, and towards a contact below version 17 also by the account key (version 13; from version 17 the account signature slot is empty). Signing label `org.zerionproject/GROUP_KEY_BINDING`. |
 | 58 | `GROUP_KEY_PROBE` | Carries the sender's binding under a tag only holders of the group id recognise, and asks a contact that holds the group to answer with its binding if the sender's key is a current member (version 13). |
 | 59 | `GROUP_PIN` | The creator pins one post for every member, or unpins it (version 15 and later). Signing label `org.zerionproject/GROUP_PIN`. |
 
@@ -1692,13 +1701,13 @@ is a list of five fields:
 
 ```
 binding = [groupEd25519 (32 B), groupMlDsa (1952 B), timestamp (Long >= 0),
-           identitySig (3373 B), groupSig (3373 B)]
+           identitySig (0 B or 3373 B), groupSig (3373 B)]
 
 57:  BdfList.of(57L, groupId (32 B), binding)
 ```
 
-Both signatures are hybrid signatures with label
-`org.zerionproject/GROUP_KEY_BINDING` over the same 137 bytes
+`groupSig`, and `identitySig` when it is present, are hybrid signatures with
+label `org.zerionproject/GROUP_KEY_BINDING` over the same 137 bytes
 (`GroupTrKeys.bindingInput`):
 
 ```
@@ -1707,9 +1716,21 @@ Both signatures are hybrid signatures with label
 [8B BE timestamp][1B 0x0B]
 ```
 
-`identitySig` is made with the account key (Ed25519 and ML-DSA-65),
-`groupSig` with the member key. The account key is not a field of the
-record: the receiver takes it from the pairwise contact the record came from.
+`groupSig` is made with the member key, `identitySig` with the account key
+(Ed25519 and ML-DSA-65). The account key is not a field of the record: the
+receiver takes it from the pairwise contact the record came from, and the
+member key signature covers it, so a binding is valid for exactly one
+contact whichever form it has. From version 17 (`GROUP_BINDING_V2_MIN_VERSION`)
+a device leaves the `identitySig` slot empty in every binding it sends to a
+contact that announces 17 or more (the invitation slots, 57 and the sealed
+probe entry alike) and still signs with the account key towards a contact
+that announces less (`GroupTrManagerImpl.bindingIdentitySigned`). The
+account signature gave the receiver nothing it did not already have, because
+the authenticated contact connection the binding arrives on proves which
+account sent it; it only made a proof that could be shown to a third party,
+with everything the member key ever signed. A binding is never forwarded: the
+join request (52) carries the invitee's member key and ML-DSA key, which the
+inviter checked against the invitee's binding, never the binding itself.
 A binding travels only pairwise to a contact: as 57, inside a probe entry
 (58), as slot 8 of 42 (the creator's), slot 13 of 49 and 54 (the inviter's)
 and the binding slot of 43, 55, 50 and 56 (the invitee's).
@@ -1720,9 +1741,14 @@ The receiver accepts a binding only if
   holds its own member key for it;
 - the bound key is not the receiver's own member key and differs from the
   sending contact's account key;
-- `identitySig` verifies with the sending contact's account Ed25519 key and
-  the contact's ML-DSA key (a contact without an ML-DSA key cannot bind), and
-  `groupSig` verifies with the bound key and the ML-DSA key in the record;
+- `groupSig` verifies with the bound key and the ML-DSA key in the record
+  over the input that names the sending contact's account Ed25519 key, taken
+  from the contact record of the connection the record came on, never from
+  the record (`GroupTrKeys.verify(groupId, binding, contact)`); the sending
+  contact has an ML-DSA key (a contact without one cannot bind); and
+  `identitySig`, when present, verifies with that account key and the
+  contact's ML-DSA key. The validator refuses an `identitySig` of any length
+  other than 0 or 3373 bytes;
 - if the group lists the bound key with an ML-DSA key, it is the same key;
 - the bound key is a current member or the creator of the group. A key that
   is not listed yet is kept as a pending entry (one per contact, at most 32
@@ -1732,8 +1758,9 @@ The receiver accepts a binding only if
   current member is replaced only by a later timestamp; a binding to a key
   that has left or was removed is replaced whatever the timestamps.
 
-A binding signed for another group, forwarded by another contact, signed by
-another account or carrying only one valid signature fails these checks. The
+A binding signed for another group, forwarded by another contact, made for
+another account (the account key is part of the signed input) or carrying an
+invalid signature in a slot that is present fails these checks. The
 receiver stores `contactId -> (account key, member key, ML-DSA key,
 timestamp)` in `grouptr.b.<groupId>`. A 57 is only ever an answer to a probe
 and is never answered. In 42 the binding timestamp equals the offer timestamp
@@ -1806,18 +1833,22 @@ device asks with a probe sealed under the current group secret S:
 ```
 entry = [nonce (32 random bytes),
          H("org.zerionproject/GROUP_KEY_PROBE", S, nonce) (32 B),
-         sealed binding (8754 B)]
+         sealed binding (8754 B, or 5381 B without identitySig)]
 sealed binding = AES-256-GCM (128-bit tag, all-zero 96-bit IV) under
   K = H("org.zerionproject/GROUP_KEY_PROBE_KEY", S, nonce) of
   [32B groupEd25519][1952B groupMlDsa][8B BE timestamp]
-  [3373B identitySig][3373B groupSig]
+  [0B or 3373B identitySig][3373B groupSig]
 58:  BdfList.of(58L, [entry, ...])      1 to 16 entries
 ```
 
 The key K is fresh for every nonce, so the fixed IV is never reused under one
-key. A padding entry is 32, 32 and 8754 random bytes, the same lengths as a
-real entry, so without S an entry cannot be told from padding and shows no
-key, no timestamp and nothing of the group.
+key. The sealed binding is 8754 bytes towards a contact below version 17 and
+5381 bytes towards a contact on 17 or more (the account signature is left
+out, see "Binding"); the validator takes both lengths and the receiver tells
+the form from the length. A padding entry is 32, 32 and 8754 (or 5381) random
+bytes, the same lengths as the real entries of the same record, so without S
+an entry cannot be told from padding and shows no key, no timestamp and
+nothing of the group.
 
 - When a device receives its first secret for a group (on joining, or when
   the creator of an older group makes one), it waits a

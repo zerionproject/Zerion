@@ -60,7 +60,8 @@ final class GroupTrKeyExchange {
 				throws DbException;
 
 		@Nullable
-		GroupTrKeys.Binding ownBinding(byte[] groupId) throws DbException;
+		GroupTrKeys.Binding ownBinding(byte[] groupId, boolean identitySigned)
+				throws DbException;
 
 		boolean isRemoved(byte[] groupId, byte[] pubKey) throws DbException;
 
@@ -296,9 +297,7 @@ final class GroupTrKeyExchange {
 			Contact c = contactOrNull(contactId);
 			if (c == null) return;
 			byte[] identity = c.getAuthor().getPublicKey().getEncoded();
-			if (!keys.verify(groupId, b, identity, c.getMlDsaSigPublicKey())) {
-				return;
-			}
+			if (!keys.verify(groupId, b, c)) return;
 			for (GroupTrMember m : s.getMembers()) {
 				if (!Arrays.equals(m.getPubKey(), b.pub)) continue;
 				byte[] known = m.getMlDsaPubKey();
@@ -341,7 +340,7 @@ final class GroupTrKeyExchange {
 		boolean store = !same && !refused;
 		GroupTrKeys.Binding mine = answer && !refused
 				&& !keys.answeredRecently(groupId, id, b.pub, now)
-				? host.ownBinding(groupId) : null;
+				? host.ownBinding(groupId, identitySigned(c.getId())) : null;
 		db.transaction(false, txn -> {
 			keys.dropPending(txn, groupId, Collections.singletonList(id));
 			if (store) {
@@ -431,8 +430,9 @@ final class GroupTrKeyExchange {
 			if (s == null || s.isDissolved() || !s.usesGroupKeys()) return;
 			GroupTrKeys.Secret secret = keys.secret(groupId);
 			if (secret == null) return;
-			GroupTrKeys.Binding mine = host.ownBinding(groupId);
-			if (mine == null) return;
+			GroupTrKeys.Binding signed = host.ownBinding(groupId, true);
+			GroupTrKeys.Binding plain = host.ownBinding(groupId, false);
+			if (signed == null || plain == null) return;
 			long now = clock.currentTimeMillis();
 			db.transaction(false, txn -> {
 				Map<Integer, GroupTrKeys.Bound> bound =
@@ -440,7 +440,8 @@ final class GroupTrKeyExchange {
 				for (Contact c : contactManager.getContacts(txn)) {
 					if (!wanted(txn, groupId, c, bound)) continue;
 					List<BdfList> entries = new ArrayList<>(1);
-					entries.add(entry(secret.secret, mine));
+					entries.add(entry(secret.secret,
+							identitySigned(txn, c.getId()) ? signed : plain));
 					host.dispatch(txn, c, now, probe(entries));
 					keys.markProbed(txn, groupId, c.getId().getInt(), now);
 				}
@@ -454,6 +455,7 @@ final class GroupTrKeyExchange {
 		try {
 			Contact c = contactOrNull(contactId);
 			if (c == null) return;
+			boolean identitySigned = identitySigned(contactId);
 			List<byte[]> groups = new ArrayList<>();
 			List<byte[]> secrets = new ArrayList<>();
 			List<GroupTrKeys.Binding> mine = new ArrayList<>();
@@ -465,7 +467,8 @@ final class GroupTrKeyExchange {
 				boolean wanted = db.transactionWithResult(true, txn ->
 						wanted(txn, groupId, c, keys.bindings(txn, groupId)));
 				if (!wanted) continue;
-				GroupTrKeys.Binding b = host.ownBinding(groupId);
+				GroupTrKeys.Binding b = host.ownBinding(groupId,
+						identitySigned);
 				if (b == null) continue;
 				groups.add(groupId);
 				secrets.add(secret.secret);
@@ -481,7 +484,7 @@ final class GroupTrKeyExchange {
 						entries.add(entry(secrets.get(i), mine.get(i)));
 					}
 					while (entries.size() < PROBE_SLOTS) {
-						entries.add(padding());
+						entries.add(padding(identitySigned));
 					}
 					Collections.shuffle(entries, random);
 					host.dispatch(txn, c, now, probe(entries));
@@ -514,9 +517,20 @@ final class GroupTrKeyExchange {
 				keys.seal(secret, nonce, mine));
 	}
 
-	private BdfList padding() {
+	private BdfList padding(boolean identitySigned) {
 		return BdfList.of(bytes(GroupTrKeys.PROBE_NONCE_LENGTH), bytes(32),
-				bytes(GroupTrKeys.SEALED_BINDING_BYTES));
+				bytes(GroupTrKeys.sealedBindingBytes(identitySigned)));
+	}
+
+	private boolean identitySigned(ContactId contactId) throws DbException {
+		return db.transactionWithResult(true,
+				txn -> identitySigned(txn, contactId));
+	}
+
+	private boolean identitySigned(Transaction txn, ContactId contactId)
+			throws DbException {
+		return GroupTrManagerImpl.bindingIdentitySigned(messagingManager
+				.getContactClientMinorVersion(txn, contactId));
 	}
 
 	private byte[] bytes(int n) {

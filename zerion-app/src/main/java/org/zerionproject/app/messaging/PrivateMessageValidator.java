@@ -1163,7 +1163,11 @@ class PrivateMessageValidator implements MessageValidator {
 			checkSize(entry, 3);
 			checkLength(entry.getRaw(0), 32);
 			checkLength(entry.getRaw(1), 32);
-			checkLength(entry.getRaw(2), SEALED_BINDING_BYTES);
+			int sealed = entry.getRaw(2).length;
+			if (sealed != SEALED_BINDING_BYTES
+					&& sealed != SEALED_BINDING_V2_BYTES) {
+				throw new FormatException();
+			}
 		}
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, m.getTimestamp());
@@ -1178,6 +1182,9 @@ class PrivateMessageValidator implements MessageValidator {
 			.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES + 8
 			+ 2 * org.zerionproject.core.api.crypto.PostQuantumConstants
 			.HYBRID_SIGNATURE_BYTES + 16;
+	static final int SEALED_BINDING_V2_BYTES = SEALED_BINDING_BYTES
+			- org.zerionproject.core.api.crypto.PostQuantumConstants
+			.HYBRID_SIGNATURE_BYTES;
 
 	static void checkGroupSecret(BdfList secret) throws FormatException {
 		checkSize(secret, 4);
@@ -1198,8 +1205,11 @@ class PrivateMessageValidator implements MessageValidator {
 		checkLength(binding.getRaw(1), org.zerionproject.core.api.crypto
 				.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
 		if (binding.getLong(2) < 0L) throw new FormatException();
-		checkLength(binding.getRaw(3), org.zerionproject.core.api.crypto
-				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
+		int identitySig = binding.getRaw(3).length;
+		if (identitySig != 0 && identitySig != org.zerionproject.core.api
+				.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES) {
+			throw new FormatException();
+		}
 		checkLength(binding.getRaw(4), org.zerionproject.core.api.crypto
 				.PostQuantumConstants.HYBRID_SIGNATURE_BYTES);
 	}

@@ -81,6 +81,21 @@ final class GroupKeysKit {
 		return BdfList.of(pub, ml, timestamp, identitySig, groupSig);
 	}
 
+	static BdfList bindingWithoutIdentitySig(byte[] signedGroupId,
+			InviteTestNet.Node identity, byte[] pub, long timestamp,
+			boolean groupSigned) {
+		byte[] ml = mlOf(pub);
+		byte[] signed = bindingInput(signedGroupId, identity.pub, pub, ml,
+				timestamp);
+		byte[] groupSig = signAs(pub, GroupTrKeys.LABEL_BINDING, signed);
+		if (!groupSigned) groupSig[0] ^= 1;
+		return BdfList.of(pub, ml, timestamp, new byte[0], groupSig);
+	}
+
+	static int identitySigLength(BdfList binding) throws Exception {
+		return binding.getRaw(3).length;
+	}
+
 	static byte[] postSignedInput(byte[] groupId, int epoch, byte[] sender,
 			String name, byte[] body, long timestamp, long ttl) {
 		ByteBuffer b = ByteBuffer.allocate(32 + 4 + 32 + 32 + 32 + 8 + 8);
@@ -144,7 +159,7 @@ final class GroupKeysKit {
 
 	private static void collect(Object o, Set<String> out) {
 		if (o instanceof byte[]) {
-			out.add(toHexString((byte[]) o));
+			if (((byte[]) o).length > 0) out.add(toHexString((byte[]) o));
 		} else if (o instanceof List) {
 			for (Object item : (List<?>) o) collect(item, out);
 		} else if (o instanceof Map) {
