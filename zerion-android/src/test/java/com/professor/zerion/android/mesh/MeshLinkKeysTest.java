@@ -8,9 +8,15 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactRemovedEvent;
+import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
+import org.zerionproject.core.api.crypto.PostQuantumConstants;
+import org.zerionproject.core.api.crypto.PublicKey;
+import org.zerionproject.core.api.db.DatabaseComponent;
+import org.zerionproject.core.api.db.DbCallable;
 import org.zerionproject.core.api.db.NoSuchContactException;
 import org.zerionproject.core.api.db.Transaction;
 import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.plugin.event.ContactConnectedEvent;
 import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.settings.SettingsManager;
@@ -26,8 +32,10 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -50,7 +58,10 @@ public class MeshLinkKeysTest {
 	}
 
 	private final Settings stored = new Settings();
+	private final DatabaseComponent db = mock(DatabaseComponent.class);
 	private final SettingsManager settings = mock(SettingsManager.class);
+	private final Map<ContactId, Integer> versions = new HashMap<>();
+	private final Map<ContactId, byte[]> identities = new HashMap<>();
 	private final ContactManager contacts = mock(ContactManager.class);
 	private final MessagingManager messaging = mock(MessagingManager.class);
 	private final Map<ContactId, Contact> known = new HashMap<>();
@@ -96,9 +107,17 @@ public class MeshLinkKeysTest {
 					i.getArgument(2)));
 			return true;
 		});
+		when(db.transactionWithResult(anyBoolean(), any()))
+				.thenAnswer(i -> ((DbCallable<?, ?>) i.getArgument(1))
+						.call(new Transaction(null, true)));
+		when(messaging.getContactClientMinorVersion(any(Transaction.class),
+				any(ContactId.class))).thenAnswer(i -> {
+			Integer v = versions.get((ContactId) i.getArgument(1));
+			return v == null ? 0 : v;
+		});
 		add(alice);
 		add(bob);
-		keys = new MeshLinkKeys(mock(EventBus.class), settings, contacts,
+		keys = new MeshLinkKeys(mock(EventBus.class), db, settings, contacts,
 				messaging, Runnable::run);
 	}
 
@@ -247,6 +266,46 @@ public class MeshLinkKeysTest {
 		assertTrue(keys.peers().isEmpty());
 	}
 
+	@Test
+	public void theLinkKeyOfAContactIsKnownOnceBothPairSecretsAreHeld()
+			throws Exception {
+		assertNull(keys.linkKeyFor(identities.get(alice)));
+		assertNull(keys.linkKeyFor(alice));
+		byte[] theirPair = bytes();
+
+		keys.eventOccurred(new MeshLinkKeysReceivedEvent(alice, bytes(),
+				theirPair));
+
+		byte[] expected = MeshPrivateLink.linkKey(pairSentTo(alice),
+				theirPair);
+		assertArrayEquals(expected, keys.linkKeyFor(alice));
+		assertArrayEquals(expected, keys.linkKeyFor(identities.get(alice)));
+		assertNull(keys.linkKeyFor(identities.get(bob)));
+		assertNull(keys.linkKeyFor(bytes(
+				PostQuantumConstants.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES)));
+	}
+
+	@Test
+	public void aContactIsSentKeyedEnvelopesOnlyFromMessagingVersion17() {
+		byte[] theirPair = bytes();
+		keys.eventOccurred(new MeshLinkKeysReceivedEvent(alice, bytes(),
+				theirPair));
+		byte[] expected = MeshPrivateLink.linkKey(pairSentTo(alice),
+				theirPair);
+
+		versions.put(alice, MessagingManager.MESH_LINK_KEYS_MIN_VERSION);
+		assertNull(keys.sendingLinkKeyFor(identities.get(alice)));
+
+		versions.put(alice,
+				MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		assertArrayEquals(expected,
+				keys.sendingLinkKeyFor(identities.get(alice)));
+
+		versions.put(bob, MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION);
+		assertNull("no pair secret from this contact yet",
+				keys.sendingLinkKeyFor(identities.get(bob)));
+	}
+
 	private byte[] pairSentTo(ContactId c) {
 		for (Sent s : sent) {
 			if (s.to.equals(c)) return s.pairSecret;
@@ -257,11 +316,25 @@ public class MeshLinkKeysTest {
 	private void add(ContactId id) {
 		Contact c = mock(Contact.class);
 		when(c.getId()).thenReturn(id);
+		byte[] ed25519 = bytes();
+		byte[] mlDsa = bytes(PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES);
+		PublicKey pub = mock(PublicKey.class);
+		when(pub.getEncoded()).thenReturn(ed25519);
+		Author author = mock(Author.class);
+		when(author.getPublicKey()).thenReturn(pub);
+		when(c.getAuthor()).thenReturn(author);
+		when(c.getMlDsaSigPublicKey()).thenReturn(mlDsa);
+		identities.put(id,
+				new HybridSignaturePublicKey(ed25519, mlDsa).getEncoded());
 		known.put(id, c);
 	}
 
 	private static byte[] bytes() {
-		byte[] b = new byte[32];
+		return bytes(32);
+	}
+
+	private static byte[] bytes(int n) {
+		byte[] b = new byte[n];
 		new SecureRandom().nextBytes(b);
 		return b;
 	}

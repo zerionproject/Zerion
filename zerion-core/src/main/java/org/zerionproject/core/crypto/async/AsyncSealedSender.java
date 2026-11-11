@@ -16,6 +16,8 @@ import java.io.ByteArrayOutputStream;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
+
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_PUBLIC_KEY_BYTES;
@@ -32,6 +34,10 @@ public class AsyncSealedSender {
 			"org.zerionproject.async/ENVELOPE_NONCE";
 	private static final String LABEL_SENDER_AUTH =
 			"org.zerionproject.async/SENDER_AUTH";
+	private static final String LABEL_SENDER_AUTH_KEY_V2 =
+			"org.zerionproject.async/SENDER_AUTH_KEY_V2";
+	private static final String LABEL_SENDER_AUTH_V2 =
+			"org.zerionproject.async/SENDER_AUTH_V2";
 
 	private static final int SIG_PUB = HYBRID_SIGNATURE_PUBLIC_KEY_BYTES;
 	private static final int AGREE_PUB = HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
@@ -39,6 +45,9 @@ public class AsyncSealedSender {
 	private static final int TTL = ByteUtils.INT_32_BYTES;
 	private static final int TS = ByteUtils.INT_64_BYTES;
 	private static final int DEDUP = AsyncEnvelope.DEDUP_ID_BYTES;
+	public static final int TAG_BYTES = SecretKey.LENGTH;
+	public static final int LINK_KEY_BYTES = SecretKey.LENGTH;
+	private static final int PADDING = SIG - TAG_BYTES;
 
 	private final CryptoComponent crypto;
 
@@ -65,9 +74,15 @@ public class AsyncSealedSender {
 					new byte[] {(byte) r.messageType}, r.payload,
 					uint32(r.ttl), r.dedupId, uint64(r.sendTimestamp));
 			byte[] signedContent = concat(transcript, innerPrefix);
-			byte[] sig = crypto.hybridSign(LABEL_SENDER_AUTH, signedContent,
-					r.senderIdentitySigPrivateKey);
-			byte[] innerRecord = concat(innerPrefix, sig);
+			byte[] trailer;
+			if (r.senderLinkKey == null) {
+				trailer = crypto.hybridSign(LABEL_SENDER_AUTH, signedContent,
+						r.senderIdentitySigPrivateKey);
+			} else {
+				trailer = concat(tag(r.senderLinkKey, signedContent),
+						new byte[PADDING]);
+			}
+			byte[] innerRecord = concat(innerPrefix, trailer);
 			byte[] aeadBlob = aead(true, mk, transcript, innerRecord);
 			AsyncEnvelope env = new AsyncEnvelope(r.prekeyKind, r.prekeyId,
 					r.signedPrekeyId, ephemeralPub, kemCt, r.ttl, r.dedupId,
@@ -124,14 +139,48 @@ public class AsyncSealedSender {
 		}
 		byte[] innerPrefix = Arrays.copyOfRange(innerRecord, 0, off);
 		byte[] signedContent = concat(transcript, innerPrefix);
-		PublicKey senderSig = crypto.getHybridSignatureKeyParser()
-				.parsePublicKey(senderSigPub);
-		if (!crypto.verifyHybridSignature(sig, LABEL_SENDER_AUTH,
-				signedContent, senderSig)) {
-			throw new FormatException();
+		boolean keyed = isZero(sig, TAG_BYTES, SIG);
+		if (keyed) {
+			byte[] linkKey = r.senderLinkKeys == null ? null
+					: r.senderLinkKeys.linkKeyFor(senderSigPub);
+			if (linkKey == null) throw new FormatException();
+			byte[] expected = tag(linkKey, signedContent);
+			if (!constantTimeEquals(expected,
+					Arrays.copyOf(sig, TAG_BYTES))) {
+				throw new FormatException();
+			}
+		} else {
+			PublicKey senderSig = crypto.getHybridSignatureKeyParser()
+					.parsePublicKey(senderSigPub);
+			if (!crypto.verifyHybridSignature(sig, LABEL_SENDER_AUTH,
+					signedContent, senderSig)) {
+				throw new FormatException();
+			}
 		}
 		return new OpenedMessage(senderSigPub, messageType, payload,
-				sendTimestamp);
+				sendTimestamp, keyed);
+	}
+
+	private byte[] tag(byte[] linkKey, byte[] signedContent) {
+		if (linkKey.length != LINK_KEY_BYTES) {
+			throw new IllegalArgumentException("bad link key length");
+		}
+		SecretKey authKey = crypto.deriveKey(LABEL_SENDER_AUTH_KEY_V2,
+				new SecretKey(linkKey));
+		try {
+			byte[] tag = crypto.mac(LABEL_SENDER_AUTH_V2, authKey,
+					signedContent);
+			if (tag.length != TAG_BYTES) throw new IllegalStateException();
+			return tag;
+		} finally {
+			authKey.clear();
+		}
+	}
+
+	private static boolean isZero(byte[] b, int from, int to) {
+		int r = 0;
+		for (int i = from; i < to; i++) r |= b[i];
+		return r == 0;
 	}
 
 	private byte[] transcript(byte[] recipientIdentitySigPub,
@@ -218,12 +267,16 @@ public class AsyncSealedSender {
 		public long ttl;
 		public byte[] dedupId;
 		public long sendTimestamp;
+		@Nullable
+		public byte[] senderLinkKey;
 	}
 
 	public static class OpenRequest {
 		public KeyPair recipientAgreementKeyPair;
 		public byte[] recipientIdentitySigPub;
 		public byte[] recipientIdentityAgreePub;
+		@Nullable
+		public AsyncMeshDelivery.SenderLinkKeys senderLinkKeys;
 	}
 
 	public static class OpenedMessage {
@@ -231,13 +284,15 @@ public class AsyncSealedSender {
 		private final int messageType;
 		private final byte[] payload;
 		private final long sendTimestamp;
+		private final boolean keyed;
 
 		OpenedMessage(byte[] senderIdentitySigPub, int messageType,
-				byte[] payload, long sendTimestamp) {
+				byte[] payload, long sendTimestamp, boolean keyed) {
 			this.senderIdentitySigPub = senderIdentitySigPub;
 			this.messageType = messageType;
 			this.payload = payload;
 			this.sendTimestamp = sendTimestamp;
+			this.keyed = keyed;
 		}
 
 		public byte[] getSenderIdentitySigPub() {
@@ -254,6 +309,10 @@ public class AsyncSealedSender {
 
 		public long getSendTimestamp() {
 			return sendTimestamp;
+		}
+
+		public boolean isKeyed() {
+			return keyed;
 		}
 	}
 }
