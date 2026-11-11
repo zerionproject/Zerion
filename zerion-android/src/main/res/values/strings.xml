@@ -2499,6 +2499,11 @@
 	</plurals>
 	<string name="grouptr_reach_title">Who your posts reach</string>
 	<string name="grouptr_reach_explanation">Group posts travel directly between members who are each other\'s contacts, and members do not pass posts on. These members are not your contacts, so they do not get your posts and you do not get theirs:\n\n%1$s\n\nAdd them as contacts to reach them.</string>
+	<plurals name="grouptr_reach_banner_owner">
+		<item quantity="one">%d member is not your contact and is reached through the group owner\'s phone. Tap for details.</item>
+		<item quantity="other">%d members are not your contacts and are reached through the group owner\'s phone. Tap for details.</item>
+	</plurals>
+	<string name="grouptr_reach_explanation_owner">Group posts travel directly between members who are each other\'s contacts. These members are not your contacts, so the group owner\'s phone passes your posts on to them and their posts on to you:\n\n%1$s\n\nPosts arrive once the owner\'s phone has passed them on. Add them as contacts for a direct path.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Not sent to %d member: their app is too old for posts this large.</item>
 		<item quantity="other">Not sent to %d members: their app is too old for posts this large.</item>
@@ -2520,6 +2525,7 @@
 	<string name="grouptr_sender_alias_format">%1$s (posting as \"%2$s\")</string>
 	<string name="grouptr_sender_unverified_format">\"%1$s\" (not a name you know)</string>
 	<string name="grouptr_member_out_of_reach">not your contact, does not get your posts</string>
+	<string name="grouptr_member_out_of_reach_owner">not your contact, reached through the group owner</string>
 	<string name="grouptr_member_invited">Invited, waiting for an answer</string>
 	<string name="grouptr_confirm_revoke">Withdraw the invite to %1$s? An answer from them will be ignored.</string>
 	<string name="grouptr_revoke_invite">Withdraw invite</string>

@@ -376,9 +376,12 @@ post body type 5); this section describes the behaviour.
   messaging minor version 10 or later. Members on an earlier version, including
   3.0.17 and before, and members whose version is not known keep the post; the
   delete dialog and a notice after deleting say how many. Members that are not
-  the author's contacts never received the post. A member that announces
-  version 10 or later within 7 days of the delete is sent it then, re-signed
-  over the same epoch and time, and drops the post. There is no time limit on
+  the author's contacts hold the post only when the group owner's phone passed
+  it on (from 3.0.19); the author hands the delete to the owner's phone the
+  same way (msgType 60), and the owner passes it on to each such member that
+  runs 3.0.19. A member that announces version 10 or later within 7 days of
+  the delete is sent it then, re-signed over the same epoch and time, and
+  drops the post. There is no time limit on
   deleting itself.
 - Delete for me removes every local copy of the selected posts, own or not,
   and sends nothing.

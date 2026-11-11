@@ -169,6 +169,8 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				List<GroupTrMember> outOfReach = s == null
 						? new ArrayList<>()
 						: groupTrManager.getMembersOutOfReach(groupId);
+				boolean throughOwner = !outOfReach.isEmpty()
+						&& groupTrManager.ownerPassesPostsOn(groupId);
 				List<GroupTrSentInvite> invites = new ArrayList<>();
 				if (s != null && Arrays.equals(localPub,
 						s.getCreatorPubKey())) {
@@ -204,6 +206,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 						return;
 					}
 					this.outOfReach = outOfReach;
+					this.reachedThroughOwner = throughOwner;
 					this.memberContacts = bound;
 					this.sentInvites = invites;
 					this.permissions = perms;
@@ -222,6 +225,7 @@ public class GroupTrAdminActivity extends ZerionActivity {
 	}
 
 	private List<GroupTrMember> outOfReach = new ArrayList<>();
+	private boolean reachedThroughOwner = false;
 	private List<GroupTrSentInvite> sentInvites = new ArrayList<>();
 
 	private boolean outOfReach(GroupTrMember m) {
@@ -296,7 +300,9 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				role = getString(R.string.grouptr_member_role_creator);
 			}
 			if (!self && outOfReach(m)) {
-				String reach = getString(R.string.grouptr_member_out_of_reach);
+				String reach = getString(reachedThroughOwner
+						? R.string.grouptr_member_out_of_reach_owner
+						: R.string.grouptr_member_out_of_reach);
 				role = role == null ? reach : role + " \u00b7 " + reach;
 			}
 			String hex = StringUtils.toHexString(m.getPubKey());

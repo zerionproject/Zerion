@@ -5,10 +5,12 @@ import org.zerionproject.app.api.messaging.event.GroupEpochCommitEvent;
 import org.zerionproject.app.api.messaging.event.GroupMemberListSnapshotEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent;
 import org.zerionproject.app.api.messaging.event.GroupMembershipChangedEvent.ChangeKind;
+import org.zerionproject.app.api.messaging.event.GroupPostDeleteReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupPostReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrInviteOfferReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrInviteResponseReceivedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrMemberInviteRecordEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrRelayRecordEvent;
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
 import org.zerionproject.core.api.contact.Contact;
@@ -695,6 +697,15 @@ final class InviteTestNet {
 							snapshotSignedInput(gid, (int) epoch, ts, mc),
 							p.bytes);
 				}
+				case 47:
+					return new GroupPostDeleteReceivedEvent(from,
+							new MessageId(getRandomId()), r.getRaw(1),
+							r.getLong(2), r.getRaw(3), r.getRaw(4), r.getLong(5),
+							r.getRaw(6));
+				case 60:
+				case 61:
+					return new GroupTrRelayRecordEvent(from,
+							new MessageId(getRandomId()), type, r, p.timestamp);
 				case 42:
 					return new GroupTrInviteOfferReceivedEvent(from,
 							new MessageId(getRandomId()), r.getRaw(1),

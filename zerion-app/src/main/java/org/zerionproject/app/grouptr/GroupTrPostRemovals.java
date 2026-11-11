@@ -123,6 +123,10 @@ final class GroupTrPostRemovals {
 		void dispatchRecord(Transaction txn, Contact c, long timestamp,
 				BdfList body, BdfDictionary meta) throws DbException;
 
+		void relayThroughCreator(Transaction txn, GroupTrState s,
+				byte[] localPub, BdfList record, long timestamp)
+				throws DbException;
+
 		void lowerUnread(byte[] groupId, int by);
 
 		void postsRemoved(byte[] groupId, List<byte[]> removed);
@@ -286,6 +290,10 @@ final class GroupTrPostRemovals {
 									recordMetadata(groupId, targets.get(i),
 											timestamp));
 						}
+					}
+					for (BdfList record : records) {
+						host.relayThroughCreator(txn, s, localPub, record,
+								timestamp);
 					}
 					String ns = namespace(groupId);
 					Entries own = Entries.parse(
