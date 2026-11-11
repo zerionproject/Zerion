@@ -8,12 +8,15 @@ import org.zerionproject.core.api.data.BdfList;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.app.grouptr.GroupKeysKit.join;
 import static org.zerionproject.app.grouptr.GroupKeysKit.key;
@@ -21,6 +24,7 @@ import static org.zerionproject.app.grouptr.GroupKeysKit.mlOf;
 import static org.zerionproject.app.grouptr.GroupKeysKit.post;
 import static org.zerionproject.app.grouptr.GroupKeysKit.remotePostsAccepted;
 import static org.zerionproject.app.grouptr.GroupKeysKit.sentOfType;
+import static org.zerionproject.core.util.StringUtils.toHexString;
 
 public class GroupPostRelayNetTest {
 
@@ -141,17 +145,7 @@ public class GroupPostRelayNetTest {
 		net.pump();
 		assertEquals(1, remotePostsAccepted(dirk, groupId));
 		assertFalse(removed(dirk, sent.getPostId()));
-		byte[] vinceKey = key(vince, groupId);
-		long epoch = vince.manager.getGroup(groupId).getEpoch();
-		byte[] signed = GroupTrPostRemovals.signedInput(groupId, epoch,
-				vinceKey, sent.getPostId(), net.now);
-		BdfList delete = BdfList.of((long) MessageTypes.GROUP_POST_DELETE,
-				groupId, epoch, vinceKey, sent.getPostId(), net.now,
-				GroupKeysKit.signAs(vinceKey,
-						GroupTrConstants.SIGNING_LABEL_GROUP_POST_DELETE,
-						signed));
-		BdfList request = BdfList.of((long) MessageTypes.GROUP_RELAY_REQUEST,
-				groupId, BdfList.of(key(dirk, groupId)), delete);
+		BdfList request = deleteRequestFromVince(sent.getPostId());
 
 		peter.receive(net.packet(vince, peter, request));
 		net.pump();
@@ -167,6 +161,59 @@ public class GroupPostRelayNetTest {
 		net.pump();
 		assertEquals(1, sentOfType(peter, MessageTypes.GROUP_POST_DELETE)
 				.size());
+	}
+
+	@Test
+	public void theKeysAreSentFirstAndAHeldDeleteIsAppliedWhenTheyArrive()
+			throws Exception {
+		GroupTrSendResult sent = vince.manager.sendGroupPostReporting(groupId,
+				new byte[] {1}, 0L);
+		net.pump(p -> p.from == peter && p.to == dirk);
+		List<InviteTestNet.Packet> toDirk = new ArrayList<>(net.heldPackets());
+		assertEquals(2, toDirk.size());
+		toDirk.sort((x, y) -> Long.compare(x.timestamp, y.timestamp));
+		assertEquals(MessageTypes.GROUP_MEMBER_KEYS, toDirk.get(0).type());
+		assertEquals(MessageTypes.GROUP_POST, toDirk.get(1).type());
+		assertTrue(toDirk.get(0).timestamp < toDirk.get(1).timestamp);
+
+		dirk.receive(toDirk.get(1));
+		assertEquals("without the keys the post waits", 0,
+				remotePostsAccepted(dirk, groupId));
+
+		peter.receive(net.packet(vince, peter,
+				deleteRequestFromVince(sent.getPostId())));
+		net.pump(p -> p.to == dirk);
+		InviteTestNet.Packet deleteCopy = null;
+		for (InviteTestNet.Packet p : net.heldPackets()) {
+			if (p.type() == MessageTypes.GROUP_POST_DELETE) deleteCopy = p;
+		}
+		assertNotNull(deleteCopy);
+		dirk.receive(deleteCopy);
+		String ns = GroupTrPostRemovals.NAMESPACE_PREFIX + toHexString(groupId);
+		assertNotNull("the delete waits for the author's keys",
+				dirk.namespace(ns).get(GroupTrPostRemovals.KEY_HELD));
+
+		dirk.receive(toDirk.get(0));
+
+		assertNull(dirk.namespace(ns).get(GroupTrPostRemovals.KEY_HELD));
+		String pending = dirk.namespace(ns).get("pending");
+		assertNotNull(pending);
+		assertTrue(pending.contains(toHexString(sent.getPostId())));
+		assertEquals(0, remotePostsAccepted(dirk, groupId));
+	}
+
+	private BdfList deleteRequestFromVince(byte[] postId) throws Exception {
+		byte[] vinceKey = key(vince, groupId);
+		long epoch = vince.manager.getGroup(groupId).getEpoch();
+		byte[] signed = GroupTrPostRemovals.signedInput(groupId, epoch,
+				vinceKey, postId, net.now);
+		BdfList delete = BdfList.of((long) MessageTypes.GROUP_POST_DELETE,
+				groupId, epoch, vinceKey, postId, net.now,
+				GroupKeysKit.signAs(vinceKey,
+						GroupTrConstants.SIGNING_LABEL_GROUP_POST_DELETE,
+						signed));
+		return BdfList.of((long) MessageTypes.GROUP_RELAY_REQUEST, groupId,
+				BdfList.of(key(dirk, groupId)), delete);
 	}
 
 	private boolean removed(InviteTestNet.Node n, byte[] postId) {

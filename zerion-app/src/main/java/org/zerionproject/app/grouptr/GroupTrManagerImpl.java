@@ -3960,6 +3960,7 @@ class GroupTrManagerImpl
 		s.setMembers(next);
 		if (localIsCreator) {
 			persist(s);
+			forgetRelayPairs(s.getGroupId(), pk);
 			memberInvites.forgetGrant(s.getGroupId(), pk);
 			confirmLeaving(s, pk);
 		} else {
@@ -4661,12 +4662,19 @@ class GroupTrManagerImpl
 				}
 				java.util.LinkedHashSet<String> keysSent =
 						parseSeen(held.get(KEYS_SENT_KEY));
+				java.util.Set<String> handled = new java.util.HashSet<>();
 				Reach reach = reach(txn, s);
+				long keysTimestamp = Math.min(now, timestamp - 1);
 				for (int i = 0; i < listed.size(); i++) {
 					byte[] pub = listed.getRaw(i);
 					if (Arrays.equals(pub, signer)) continue;
 					if (Arrays.equals(pub, localPub)) continue;
-					if (!isMemberOrCreator(s, pub)) continue;
+					if (!handled.add(toHexString(pub))) continue;
+					GroupTrMember listedMember = null;
+					for (GroupTrMember m : s.getMembers()) {
+						if (Arrays.equals(m.getPubKey(), pub)) listedMember = m;
+					}
+					if (listedMember == null) continue;
 					Contact c = reach.contact(pub);
 					if (c == null) continue;
 					if (messagingManager.getContactClientMinorVersion(txn,
@@ -4674,9 +4682,9 @@ class GroupTrManagerImpl
 							< MessagingManager.GROUP_POST_RELAY_MIN_VERSION) {
 						continue;
 					}
-					if (keysSent.add(toHexString(pub) + ":"
-							+ toHexString(signer))) {
-						dispatchToContact(txn, c, now, keysRecord);
+					if (keysSent.add(relayPair(pub,
+							listedMember.getJoinedAtEpoch(), signer))) {
+						dispatchToContact(txn, c, keysTimestamp, keysRecord);
 					}
 					MessageId copy = dispatchToContact(txn, c, timestamp, inner,
 							dispatchedRecordMetadata(inner));
@@ -4694,6 +4702,63 @@ class GroupTrManagerImpl
 		} catch (DbException | FormatException | RuntimeException ex) {
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	private static String relayPair(byte[] memberPub, long joinedAtEpoch,
+			byte[] authorPub) {
+		return toHexString(memberPub) + ":" + joinedAtEpoch + ":"
+				+ toHexString(authorPub);
+	}
+
+	private void forgetRelayPairs(byte[] groupId, byte[] memberPub) {
+		String ns = RELAY_NAMESPACE_PREFIX + toHexString(groupId);
+		String prefix = toHexString(memberPub) + ":";
+		try {
+			db.transaction(false, txn -> {
+				Settings held = settingsManager.getSettings(txn, ns);
+				java.util.LinkedHashSet<String> keysSent =
+						parseSeen(held.get(KEYS_SENT_KEY));
+				if (!keysSent.removeIf(pair -> pair.startsWith(prefix))) return;
+				Settings upd = new Settings();
+				upd.put(KEYS_SENT_KEY, joinSeen(keysSent));
+				settingsManager.mergeSettings(txn, upd, ns);
+			});
+		} catch (DbException ex) {
+		}
+	}
+
+	private void redecidePendingPostsOf(GroupTrState s, byte[] author)
+			throws DbException {
+		byte[] groupId = s.getGroupId();
+		List<MessageId> ids = new ArrayList<>();
+		List<byte[]> deliverers = new ArrayList<>();
+		byte[] localPub = db.transactionWithResult(true, txn -> {
+			Reach reach = reach(txn, s);
+			BdfDictionary query = new BdfDictionary();
+			query.put("messageType", 32L);
+			query.put("groupId", groupId);
+			query.put("groupSenderPubKey", author);
+			query.put(MessagingManager.MSG_KEY_GROUP_POST_STATE,
+					(long) MessagingManager.GROUP_POST_STATE_PENDING);
+			for (Contact c : contactManager.getContacts(txn)) {
+				org.zerionproject.core.api.sync.GroupId cg =
+						messagingManager.getContactGroup(c).getId();
+				try {
+					for (MessageId id : clientHelper.getMessageIds(txn, cg,
+							query)) {
+						ids.add(id);
+						deliverers.add(reach.keyOrNone(c.getId()));
+					}
+				} catch (FormatException ex) {
+				}
+			}
+			return localKeyIn(txn, s);
+		});
+		long now = clock.currentTimeMillis();
+		for (int i = 0; i < ids.size(); i++) {
+			decideStoredPost(groupId, ids.get(i), deliverers.get(i), s, now,
+					localPub);
 		}
 	}
 
@@ -4770,6 +4835,8 @@ class GroupTrManagerImpl
 			s.setMembers(next);
 			persist(s);
 			mlDsaKeys.invalidate();
+			removals.retryHeld(groupId, member);
+			redecidePendingPostsOf(s, member);
 			posts.forgetHistory(toHexString(groupId));
 			eventBus.broadcast(new org.zerionproject.app.api.messaging.event
 					.GroupTrLocalStateChangedEvent(groupId,
@@ -6574,6 +6641,7 @@ class GroupTrManagerImpl
 
 	private void applyLocalRemove(GroupTrState s, byte[] pk, int newEpoch)
 			throws DbException {
+		forgetRelayPairs(s.getGroupId(), pk);
 		List<GroupTrMember> next = new ArrayList<>(s.getMembers().size());
 		for (GroupTrMember m : s.getMembers()) {
 			if (!Arrays.equals(m.getPubKey(), pk)) next.add(m);

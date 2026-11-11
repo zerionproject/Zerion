@@ -62,6 +62,8 @@ final class GroupTrPostRemovals {
 	static final int SIGNED_INPUT_LENGTH = 32 + 4 + 32 + 32 + 8 + 1;
 
 	static final String NAMESPACE_PREFIX = "grouptr-removed:";
+	static final String KEY_HELD = "held";
+	static final int MAX_HELD_PER_GROUP = 32;
 	private static final String KEY_PENDING = "pending";
 	private static final String KEY_DELETED = "deleted";
 	private static final String KEY_READ_AT = "readAt";
@@ -201,7 +203,11 @@ final class GroupTrPostRemovals {
 					deliverer)) {
 				return;
 			}
-			if (!host.signerKnown(s, author)) return;
+			if (!host.signerKnown(s, author)) {
+				hold(groupId, author, e.getTargetPostId(), e.getEpoch(),
+						e.getTimestamp(), e.getRecordSig());
+				return;
+			}
 			byte[] signed = signedInput(groupId, e.getEpoch(), author,
 					e.getTargetPostId(), e.getTimestamp());
 			if (!host.verify(s, e.getRecordSig(),
@@ -215,6 +221,105 @@ final class GroupTrPostRemovals {
 		} finally {
 			lock.unlock();
 		}
+	}
+
+	private void hold(byte[] groupId, byte[] author, byte[] target,
+			long epoch, long timestamp, byte[] sig) throws DbException {
+		String ns = namespace(groupId);
+		long now = clock.currentTimeMillis();
+		List<String[]> held = parseHeld(
+				settingsManager.getSettings(ns).get(KEY_HELD), now);
+		String a = toHexString(author);
+		String t = toHexString(target);
+		held.removeIf(h -> h[0].equals(a) && h[1].equals(t));
+		held.add(new String[] {a, t, Long.toString(epoch),
+				Long.toString(timestamp), Long.toString(now + KEPT_MS),
+				toHexString(sig)});
+		while (held.size() > MAX_HELD_PER_GROUP) held.remove(0);
+		Settings update = new Settings();
+		update.put(KEY_HELD, joinHeld(held));
+		settingsManager.mergeSettings(update, ns);
+	}
+
+	void retryHeld(byte[] groupId, byte[] author) {
+		ReentrantLock lock = host.lockFor(groupId);
+		lock.lock();
+		try {
+			GroupTrState s = host.group(groupId);
+			if (s == null || s.isDissolved()) return;
+			if (!host.signerKnown(s, author)) return;
+			String ns = namespace(groupId);
+			long now = clock.currentTimeMillis();
+			List<String[]> held = parseHeld(
+					settingsManager.getSettings(ns).get(KEY_HELD), now);
+			String a = toHexString(author);
+			List<byte[]> targets = new ArrayList<>();
+			Iterator<String[]> it = held.iterator();
+			boolean changed = false;
+			while (it.hasNext()) {
+				String[] h = it.next();
+				if (!h[0].equals(a)) continue;
+				it.remove();
+				changed = true;
+				byte[] target;
+				byte[] sig;
+				long epoch;
+				long timestamp;
+				try {
+					target = fromHexString(h[1]);
+					epoch = Long.parseLong(h[2]);
+					timestamp = Long.parseLong(h[3]);
+					sig = fromHexString(h[5]);
+				} catch (FormatException | NumberFormatException ex) {
+					continue;
+				}
+				if (target.length != 32) continue;
+				if (host.verify(s, sig, SIGNING_LABEL_GROUP_POST_DELETE,
+						signedInput(groupId, epoch, author, target, timestamp),
+						author)) {
+					targets.add(target);
+				}
+			}
+			if (changed) {
+				Settings update = new Settings();
+				update.put(KEY_HELD, joinHeld(held));
+				settingsManager.mergeSettings(update, ns);
+			}
+			if (!targets.isEmpty()) remove(groupId, author, targets, true, null);
+		} catch (DbException | RuntimeException ex) {
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	static List<String[]> parseHeld(@Nullable String stored, long now) {
+		List<String[]> out = new ArrayList<>();
+		if (stored == null || stored.isEmpty()) return out;
+		for (String entry : stored.split(",")) {
+			String[] parts = entry.split("\\.");
+			if (parts.length != 6) continue;
+			long keptUntil;
+			try {
+				keptUntil = Long.parseLong(parts[4]);
+			} catch (NumberFormatException ex) {
+				continue;
+			}
+			if (keptUntil <= now) continue;
+			out.add(parts);
+		}
+		return out;
+	}
+
+	private static String joinHeld(List<String[]> held) {
+		StringBuilder sb = new StringBuilder();
+		for (String[] h : held) {
+			if (sb.length() > 0) sb.append(',');
+			for (int i = 0; i < h.length; i++) {
+				if (i > 0) sb.append('.');
+				sb.append(h[i]);
+			}
+		}
+		return sb.toString();
 	}
 
 	boolean dropsArrival(byte[] groupId, byte[] identity, byte[] sender) {

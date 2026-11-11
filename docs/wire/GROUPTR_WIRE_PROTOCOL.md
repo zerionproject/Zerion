@@ -763,7 +763,11 @@ otherwise ignores it without a trace:
 2. the pairwise contact that delivered the record is a member or the creator,
    and so is `senderPubKey` (the same rule as for a post);
 3. the Ed25519 and ML-DSA-65 keys of `senderPubKey` are known (a member entry,
-   the local identity or a contact);
+   the local identity or a contact); from 3.0.19 a record that passes rule 2
+   but whose author key is not yet known is held instead of dropped (at most
+   32 per group, for 7 days, `grouptr-removed:<groupHex>` key `held`) and
+   checked by rules 4 and 5 when the creator's keys record (61) for that
+   author arrives;
 4. both halves of `sig` verify over the signed input (the same rule as for
    every group record, see "Verification");
 5. the target post's signer is `senderPubKey`: only the author of a post can
@@ -864,8 +868,10 @@ BdfList.of(
 ```
 
 Validator size: exactly **4 slots**, and the record must end the message.
-groupId is exactly 32 bytes; slot 2 is a list of 1 to 256 raw entries of
-exactly 32 bytes; slot 3 is a list whose slot 0 is 32 or 47 and which passes
+groupId is exactly 32 bytes; slot 2 is a list of 1 to 256 distinct raw
+entries of exactly 32 bytes (a key listed twice is refused, so a request
+cannot make the creator queue more than one copy per member); slot 3 is a
+list whose slot 0 is 32 or 47 and which passes
 the validator of that type unchanged (for a 32 that includes the Ed25519
 check of the post signature over the message timestamp, so the request
 carries the same timestamp as the post it wraps), and whose groupId equals
@@ -895,15 +901,28 @@ halves of the author's hybrid signature over the same signed input; an
 expired post is dropped); the author's ML-DSA-65 key must be known to the
 creator (it is, from the binding or the contact record). The creator
 remembers the identity of every record it passed on (a hash of the signed
-input, `grouptr-relayed:<groupHex>`, the last 512 per group) and ignores a
+input, `grouptr-relayed:<groupHex>`, the last 512 per group, the oldest
+going first, so a request replayed after 512 newer ones is passed on again
+and the receivers drop the second copy by their own seen set) and ignores a
 request for a record it already handled. For each listed key that is a
 current member, is not the author or the creator, is the creator's contact
-and announces version 17 or later, the creator queues the inner record
-unchanged, with the request's timestamp, in that member's pairwise queue,
-and before the first record of that author for that member a 61 naming the
-author's keys (remembered as a pair, at most 2048 per group). A member on an
-earlier version, or one that is not the creator's contact, is skipped
-silently: it keeps the behaviour of 3.0.18. The queued copy carries a
+and announces version 17 or later (a key listed more than once counts once),
+the creator queues the inner record unchanged, with the request's timestamp,
+in that member's pairwise queue. The first time it passes a record of that
+author on to that member since the member joined, it queues before it a 61
+naming the author's keys, with a timestamp one millisecond below the
+record's (or the current time when that is lower): the pairwise queue is
+sent in timestamp order, so the keys reach the member before the record.
+The pairs are remembered as member key, the member's joinedAtEpoch and
+author (`keysSent`, at most 2048 per group) and forgotten for a member the
+creator removes or whose leave it confirms, so a member added again, or one
+that comes back under the same key at a later epoch, is sent the keys again.
+A member on an earlier version, or one that is not the creator's contact,
+is skipped silently: it keeps the behaviour of 3.0.18. Privacy: the list in
+the request tells the creator which members are not the author's contacts,
+which the creator did not learn before 3.0.19; nothing else about the
+author's contacts is disclosed, and no member other than the creator sees
+the list. The queued copy carries a
 cleanup duration of 7 days, or the post's effective timer when that is
 shorter, started when it is queued, so a copy a member never fetches does not
 outlive the post. The creator does not take the record into its own group
@@ -940,8 +959,10 @@ already know an ML-DSA-65 key for that member (a key known from a binding, a
 contact record or the member list is never replaced), and only when the
 creator's hybrid signature verifies. It stores the key in the member's entry
 of the group's member list, where the usual lookup (`MlDsaKeyDirectory`,
-"Member keys in private groups") finds it, and then decides again the posts
-of that author it was holding as pending. Trust: the receiver takes the
+"Member keys in private groups") finds it, applies a delete (47) of that
+author it was holding because the key was unknown (see msgType 47), and then
+decides again the posts of that author it was holding as pending, so they
+show and count at once without the group being opened. Trust: the receiver takes the
 author's post-quantum key on the creator's word, as an invitee already takes
 the creator's key on the inviting member's word (see "Trust model"); the
 author's Ed25519 half is the key the creator-signed membership lists name,
