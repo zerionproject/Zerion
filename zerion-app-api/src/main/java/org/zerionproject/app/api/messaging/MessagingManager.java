@@ -27,7 +27,7 @@ public interface MessagingManager extends ConversationClient {
 
 	int MINOR_VERSION =
 			org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED
-					? 16 : 5;
+					? 17 : 5;
 
 	int VOICE_MEMO_V2_MIN_VERSION = 7;
 
@@ -54,6 +54,12 @@ public interface MessagingManager extends ConversationClient {
 	int MESH_LINK_KEYS_MIN_VERSION = 16;
 
 	int GROUP_SETTINGS_RELAY_MIN_VERSION = 16;
+
+	int GROUP_POST_RELAY_MIN_VERSION = 17;
+
+	int GROUP_BINDING_V2_MIN_VERSION = 17;
+
+	int MESH_SENDER_AUTH_V2_MIN_VERSION = 17;
 
 	int MESH_LINK_KEY_BYTES = 32;
 
