@@ -228,6 +228,12 @@ final class GroupTrTestNode {
 		return deadlines.get(id);
 	}
 
+	long timestampOf(MessageId id) {
+		Message m = messages.get(id);
+		if (m == null) throw new AssertionError("no message");
+		return m.getTimestamp();
+	}
+
 	@Nullable
 	Long cleanupTimerDuration(MessageId id) {
 		return durations.get(id);

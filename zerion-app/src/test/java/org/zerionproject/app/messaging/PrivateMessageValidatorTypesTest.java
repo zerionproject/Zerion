@@ -323,6 +323,9 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 		for (int i = 0; i < 257; i++) tooMany.add(getRandomBytes(32));
 		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, tooMany,
 				delete), true);
+		byte[] twice = getRandomBytes(32);
+		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id,
+				BdfList.of(twice, getRandomBytes(32), twice), delete), true);
 		reject(BdfList.of(MessageTypes.GROUP_RELAY_REQUEST, id, members,
 				BdfList.of(MessageTypes.GROUP_POST_DELETE, getRandomBytes(32),
 						5L, key, getRandomBytes(32), now, hybrid)), true);

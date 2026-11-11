@@ -4,15 +4,20 @@ import org.zerionproject.app.api.grouptr.GroupTrMember;
 import org.zerionproject.app.api.grouptr.GroupTrPost;
 import org.zerionproject.app.api.grouptr.GroupTrSendResult;
 import org.zerionproject.app.api.messaging.MessagingManager;
+import org.zerionproject.app.api.messaging.event.GroupPostDeleteReceivedEvent;
+import org.zerionproject.app.api.messaging.event.GroupTrPostAcceptedEvent;
 import org.zerionproject.app.api.messaging.event.GroupTrRelayRecordEvent;
 import org.zerionproject.app.messaging.MessageTypes;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfList;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.sync.MessageId;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -177,6 +182,163 @@ public class GroupPostRelayTest {
 		relay(node, a, post(aKey, "two", node.now + 1, 0L, SIG), bKey);
 		assertEquals(2, recordsTo(node, b, 32L).size());
 		assertEquals(1, recordsTo(node, b, 61L).size());
+	}
+
+	@Test
+	public void theKeysRecordIsQueuedBeforeThePassedOnCopy() throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+
+		relay(node, a, post(aKey, "hello", node.now, 0L, SIG), bKey);
+
+		MessageId keys = copyOfType(node, b, 61L);
+		MessageId copy = copyOfType(node, b, 32L);
+		assertEquals(node.now, node.timestampOf(copy));
+		assertTrue("the keys must be sent before the copy",
+				node.timestampOf(keys) < node.timestampOf(copy));
+	}
+
+	@Test
+	public void aKeyListedMoreThanOnceGetsOneCopy() throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+
+		relay(node, a, post(aKey, "hello", node.now, 0L, SIG), bKey, bKey,
+				bKey, bKey);
+
+		assertEquals(1, recordsTo(node, b, 32L).size());
+		assertEquals(1, recordsTo(node, b, 61L).size());
+		assertEquals(2, node.sent.size());
+	}
+
+	@Test
+	public void aMemberAddedAgainIsSentTheKeysAgain() throws Exception {
+		GroupTrTestNode node = ownerDevice();
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		relay(node, a, post(aKey, "one", node.now, 0L, SIG), bKey);
+		assertEquals(1, recordsTo(node, b, 61L).size());
+		relay(node, a, post(aKey, "two", node.now + 1, 0L, SIG), bKey);
+		assertEquals(1, recordsTo(node, b, 61L).size());
+
+		node.manager.removeMember(groupId, bKey);
+		Settings relayed = node.namespace(
+				GroupTrManagerImpl.RELAY_NAMESPACE_PREFIX
+						+ toHexString(groupId));
+		assertNotNull(relayed);
+		String pairs = relayed.get(GroupTrManagerImpl.KEYS_SENT_KEY);
+		assertFalse(pairs != null && pairs.contains(toHexString(bKey)));
+		node.putGroup(groupId, creatorKey, EPOCH + 2, creator(creatorKey),
+				member(aKey, 1L), member(bKey, EPOCH + 2), member(cKey, 1L),
+				member(dKey, 1L));
+
+		relay(node, a, post(aKey, "three", node.now + 2, 0L, SIG), bKey);
+
+		assertEquals(2, recordsTo(node, b, 61L).size());
+	}
+
+	@Test
+	public void aPendingPostShowsAtOnceWhenTheKeysArrive() throws Exception {
+		GroupTrTestNode node = new GroupTrTestNode(localKey);
+		node.withoutMlDsaKey(bKey);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		ContactId owner = node.addContact(creatorKey);
+		MessageId copy = node.receive(owner, groupId, bKey, EPOCH,
+				bytes("hello"), node.now, 0L, SIG);
+		assertEquals(0, accepted(node));
+		assertEquals(0, node.manager.getUnreadCount(groupId));
+
+		memberKeys(node, owner, bKey, ML_DSA_PUB, SIG);
+
+		assertEquals("the post is announced without opening the group", 1,
+				accepted(node));
+		assertEquals(1, node.manager.getUnreadCount(groupId));
+		BdfDictionary meta = node.metadata(copy);
+		assertNotNull(meta);
+		assertEquals(Long.valueOf(MessagingManager.GROUP_POST_STATE_ACCEPTED),
+				meta.getOptionalLong(MessagingManager.MSG_KEY_GROUP_POST_STATE));
+		assertEquals(1, node.manager.getRecentPosts(groupId).size());
+	}
+
+	@Test
+	public void aDeleteWhoseAuthorIsUnknownWaitsForTheKeys() throws Exception {
+		GroupTrTestNode node = new GroupTrTestNode(localKey);
+		node.withoutMlDsaKey(bKey);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		ContactId owner = node.addContact(creatorKey);
+		MessageId copy = node.receive(owner, groupId, bKey, EPOCH,
+				bytes("hello"), 1_000L, 0L, SIG);
+
+		delete(node, owner, bKey, postId(bKey, "hello", 1_000L), SIG);
+
+		assertTrue("an unverifiable delete is held, not applied",
+				node.isStored(copy));
+		assertNotNull(removals(node).get(GroupTrPostRemovals.KEY_HELD));
+
+		memberKeys(node, owner, bKey, ML_DSA_PUB, SIG);
+
+		assertFalse(node.isStored(copy));
+		assertTrue(node.manager.getRecentPosts(groupId).isEmpty());
+		assertTrue(nothingHeld(node));
+	}
+
+	@Test
+	public void aHeldDeleteDropsItsPostWhenThePostArrivesAfterTheKeys()
+			throws Exception {
+		GroupTrTestNode node = new GroupTrTestNode(localKey);
+		node.withoutMlDsaKey(bKey);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		ContactId owner = node.addContact(creatorKey);
+		delete(node, owner, bKey, postId(bKey, "early", 1_000L), SIG);
+		memberKeys(node, owner, bKey, ML_DSA_PUB, SIG);
+
+		MessageId copy = node.receive(owner, groupId, bKey, EPOCH,
+				bytes("early"), 1_000L, 0L, SIG);
+
+		assertFalse(node.isStored(copy));
+		assertTrue(node.manager.getRecentPosts(groupId).isEmpty());
+	}
+
+	@Test
+	public void aHeldDeleteWithAForgedSignatureIsDroppedWhenTheKeysArrive()
+			throws Exception {
+		GroupTrTestNode node = new GroupTrTestNode(localKey);
+		node.withoutMlDsaKey(bKey);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		ContactId owner = node.addContact(creatorKey);
+		delete(node, owner, bKey, postId(bKey, "early", 1_000L), FORGED_SIG);
+		memberKeys(node, owner, bKey, ML_DSA_PUB, SIG);
+
+		MessageId copy = node.receive(owner, groupId, bKey, EPOCH,
+				bytes("early"), 1_000L, 0L, SIG);
+
+		assertTrue(node.isStored(copy));
+		assertEquals(1, node.manager.getRecentPosts(groupId).size());
+		assertTrue(nothingHeld(node));
+	}
+
+	@Test
+	public void heldDeletesAreBounded() throws Exception {
+		GroupTrTestNode node = new GroupTrTestNode(localKey);
+		node.withoutMlDsaKey(bKey);
+		node.putGroup(groupId, creatorKey, EPOCH, creator(creatorKey),
+				member(localKey, 1L), member(aKey, 1L), member(bKey, 1L));
+		ContactId owner = node.addContact(creatorKey);
+
+		for (int i = 0; i < GroupTrPostRemovals.MAX_HELD_PER_GROUP + 5; i++) {
+			delete(node, owner, bKey, postId(bKey, "p" + i, 1_000L), SIG);
+		}
+
+		String held = removals(node).get(GroupTrPostRemovals.KEY_HELD);
+		assertNotNull(held);
+		assertEquals(GroupTrPostRemovals.MAX_HELD_PER_GROUP,
+				held.split(",").length);
 	}
 
 	@Test
@@ -460,6 +622,56 @@ public class GroupPostRelayTest {
 		node.manager.eventOccurred(new GroupTrRelayRecordEvent(from,
 				new MessageId(getRandomId()), MessageTypes.GROUP_MEMBER_KEYS,
 				record, node.now));
+	}
+
+	private void delete(GroupTrTestNode node, ContactId from, byte[] author,
+			byte[] target, byte[] sig) {
+		node.manager.eventOccurred(new GroupPostDeleteReceivedEvent(from,
+				new MessageId(getRandomId()), groupId, EPOCH, author, target,
+				node.now, sig));
+	}
+
+	private boolean nothingHeld(GroupTrTestNode node) {
+		String held = removals(node).get(GroupTrPostRemovals.KEY_HELD);
+		return held == null || held.isEmpty();
+	}
+
+	private Settings removals(GroupTrTestNode node) {
+		Settings s = node.namespace(GroupTrPostRemovals.NAMESPACE_PREFIX
+				+ toHexString(groupId));
+		return s == null ? new Settings() : s;
+	}
+
+	private static int accepted(GroupTrTestNode node) {
+		int n = 0;
+		for (Object b : node.broadcasts) {
+			if (b instanceof GroupTrPostAcceptedEvent
+					&& !((GroupTrPostAcceptedEvent) b).isLocal()) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	private byte[] postId(byte[] author, String text, long timestamp) {
+		byte[] body = bytes(text);
+		ByteBuffer signed = ByteBuffer.allocate(32 + 4 + 32 + 32 + 32 + 8 + 8);
+		signed.put(groupId).putInt((int) EPOCH).put(author)
+				.put(sha256("org.zerionproject/GROUP_POST_NAME", bytes("Name")))
+				.put(sha256(MessagingManager.GROUP_POST_BODY_HASH_LABEL, body))
+				.putLong(timestamp).putLong(0L);
+		return sha256("org.zerionproject/GROUP_POST_SEEN", signed.array());
+	}
+
+	private static byte[] sha256(String label, byte[] input) {
+		try {
+			MessageDigest d = MessageDigest.getInstance("SHA-256");
+			d.update(label.getBytes(StandardCharsets.UTF_8));
+			d.update(input);
+			return d.digest();
+		} catch (java.security.NoSuchAlgorithmException e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	private GroupTrMember memberEntry(GroupTrTestNode node, byte[] pub)

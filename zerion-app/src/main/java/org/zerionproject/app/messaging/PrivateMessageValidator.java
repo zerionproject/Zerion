@@ -424,8 +424,14 @@ class PrivateMessageValidator implements MessageValidator {
 		checkLength(groupId, 32);
 		BdfList members = body.getList(2);
 		checkSize(members, 1, 256);
+		java.util.Set<String> distinct = new java.util.HashSet<>();
 		for (int i = 0; i < members.size(); i++) {
-			checkLength(members.getRaw(i), 32);
+			byte[] member = members.getRaw(i);
+			checkLength(member, 32);
+			if (!distinct.add(org.zerionproject.core.util.StringUtils
+					.toHexString(member))) {
+				throw new FormatException();
+			}
 		}
 		BdfList inner = body.getList(3);
 		int innerType = inner.getInt(0);
