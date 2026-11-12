@@ -12,9 +12,9 @@ contact exchange:
   connection after either one. Each side sends its author, its ML-DSA-65
   public key and its transport properties, encrypted under header keys,
   together with a tag under the exchange key when key separation was
-  negotiated or, with an earlier peer, an Ed25519 signature and a hybrid
-  Ed25519 + ML-DSA-65 signature over a nonce; the contact is then stored
-  with the session root.
+  negotiated and the pairing creates a new contact or, otherwise, an
+  Ed25519 signature and a hybrid Ed25519 + ML-DSA-65 signature over a
+  nonce; the contact is then stored with the session root.
 
 This document describes the keys each step uses. The record layouts are in
 `HandshakeRecordTypes`, `RecordTypes` and
@@ -82,8 +82,10 @@ keys and the two records can check both B.3 proofs, and either peer can hand
 over `K` and let a third party check all three signatures, which proves that
 the two identities paired with each other.
 
-From 3.0.19, when key separation was negotiated, the record carries no
-signature at all. The `signature` slot holds a 32-byte tag
+From 3.0.19, when key separation was negotiated and the pairing creates a
+new contact (a link, invite or contact-request pairing on which this side
+did not choose Re-add), the record carries no signature at all. The
+`signature` slot holds a 32-byte tag
 
 ```
 tag = MAC("org.zerionproject.app.contact/EXCHANGE_TAG_V2", exchange,
@@ -105,8 +107,12 @@ has no B.3 state, the last two inputs are empty. The `b3ProofSig` and
 `hybridSignature` slots are sent as empty raws, so the record keeps its 7
 slots. The receiver recomputes the tag with the peer's role over the fields
 it received and compares in constant time (`CryptoComponent.verifyMac`). A
-record that carries signatures where a tag is expected, a tag next to
-signatures, or a tag where signatures are expected, is refused.
+tag next to signatures is refused, and a tag is refused when key separation
+was not negotiated. With separated keys the receiver accepts either form,
+decided by the record itself: the tag form is a 32-byte slot 2 with slots 4
+and 6 empty; the signed form is a 64-byte Ed25519 signature in slot 2 with
+the hybrid signature present, and the B.3 proof present on the link path,
+checked exactly as with an earlier peer.
 
 What this keeps. The identity public keys sent under the tag are bound to
 the committed static keys: the exchange key exists only for a party that
@@ -119,13 +125,34 @@ where the B.3 proof bound it, so the flag the exchange stores for the
 contact (`B3_SLOT_PRESENT_KEY_PREFIX`, read by
 `ClientVersioningManagerImpl`) keeps its meaning: it is set after a link
 pairing, where the static key and the session id are inputs of the tag, and
-not after a nearby pairing. A peer could present an identity public key it
-does not own (an unknown key share); before, that required producing
-signatures under that key. It gains nothing: it cannot sign or decrypt as
-that identity later, an introduction of that contact fails because the
+not after a nearby pairing.
+
+The tag form does not prove possession of the identity keys: a peer could
+present an identity public key it does not own (an unknown key share). For
+a new contact that gains it nothing, because it cannot sign or decrypt as
+that identity afterwards, an introduction of that contact fails when the
 introducee must sign with the identity key, and the stored ML-DSA-65 key
-means the later identity exchange (`ContactIdentityExchange`) is never run
-for the contact.
+means the later identity exchange (`ContactIdentityExchange`) is never run.
+Replacing the keys of a contact the phone already has is different: whoever
+re-keys a stored contact must prove possession of that contact's identity
+keys, or anyone who knows a contact's public keys could, by having their own
+link or request accepted with Re-add, replace that contact's root key and
+transport properties with their own. Therefore a side that intends to
+replace keys (`ContactManager.intendsToReplaceKeys`: the pending contact
+carries the Re-add flag, set by Re-add in the contact list, by a contact
+request that asks to reconnect or by a QR code scanned in person) and every
+in-person pairing (the `verified` argument of the exchange, the nearby key
+agreement) send the signed form, the three signatures exactly as with an
+earlier peer, and a receiver that intends to replace keys refuses a tag
+record whose author it already has as a contact (`FormatException` before
+any contact logic runs; the pending contact is kept and no key changes). A
+receiver with no such intent never replaces keys, so a tag record naming a
+stored author ends as it did before: the pending contact is removed and the
+contact is kept as it was. A re-key therefore happens only when both sides
+chose Re-add, both send the signed form and both verify it. When only one
+side chose Re-add, that side's exchange fails and its pending contact stays,
+so the handshake is retried, while the other side sees that the contact
+already exists; both phones have to use Re-add, as before.
 
 What this changes. A holder of the exchange key can compute both tags
 itself, so the records prove nothing to a third party even while the key
@@ -133,15 +160,21 @@ exists: both peers can produce them, and so could anyone who was given the
 key. Without the exchange key a record cannot be checked at all. Both phones
 wipe the exchange key when the contact exchange ends, and neither record
 carries a signature by an identity key, so afterwards not even the two
-parties can show that the other identity took part. With an earlier peer
-(minor version 4, no key separation) the three signatures are sent and
-checked byte for byte as before, with the B.3 proof over the public session
-id. `ContactExchangeTagTest` pins the tag layout and that the receiving side
+parties can show that the other identity took part. A pairing that replaces the
+keys of a stored contact, and an in-person pairing, keep the identity
+signatures; they sign values derived from the exchange key and are provable
+only to a holder of that key. With an earlier peer (minor version 4, no key
+separation) the three signatures are sent and checked byte for byte as
+before, with the B.3 proof over the public session id.
+`ContactExchangeTagTest` pins the tag layout and that the receiving side
 computes the same tag with the same key; `ContactExchangeB3ProofTest` runs
 the contact exchange in both forms and checks that a tag under another key,
 under the other role, over another timestamp or without the static key is
-refused, that signatures in place of a tag, and a tag next to signatures,
-are refused with separated keys, and that a tag is refused without them.
+refused, that a tag next to signatures is refused, that a tag is refused
+without separated keys, that a re-adding side sends the signed form, re-keys
+on a signed record and refuses a tag naming a stored author, that a stored
+author added again without Re-add keeps its keys, and that an in-person
+pairing sends the signed form.
 
 ## Negotiation
 

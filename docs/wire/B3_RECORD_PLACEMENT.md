@@ -27,8 +27,9 @@
 >
 > **3.0.19, separated keys.** When the key agreement negotiated key
 > separation (both sides at handshake minor version 5, or both QR codes
-> marked, see [PAIRING-HANDSHAKE.md](../protocol/PAIRING-HANDSHAKE.md)) the
-> record carries no signature at all. Slot 2 is a 32-byte tag
+> marked, see [PAIRING-HANDSHAKE.md](../protocol/PAIRING-HANDSHAKE.md)) and
+> the pairing creates a new contact, the record carries no signature at all.
+> Slot 2 is a 32-byte tag
 > `MAC("org.zerionproject.app.contact/EXCHANGE_TAG_V2", exchangeKey, role,
 > authorList, mlDsaSigPub, propsDict, timestamp, staticPqPub, sessionId)`
 > (keyed BLAKE2b-256, every input length-prefixed) over the record's own
@@ -38,8 +39,15 @@
 > id of this handshake, both empty after a nearby pairing. Slots 4 and 6 are
 > empty raws and slot 5 still carries the ML-DSA-65 public key, which the tag
 > covers. The receiver recomputes the tag with the peer's role and compares
-> in constant time; signatures in place of the tag are refused, and a tag is
-> refused when separation was not negotiated. iOS announces handshake minor
+> in constant time; a tag is refused when separation was not negotiated.
+> Re-adding a stored contact, a contact request that asks to reconnect, a QR
+> code scanned in person and the nearby pairing keep the signed 7-slot form
+> above, because replacing a stored contact's keys must prove possession of
+> that contact's identity keys. With separated keys the receiver accepts
+> either form by its content (a 32-byte slot 2 with empty slots 4 and 6, or
+> a 64-byte slot 2 with the hybrid signature), and a receiver that intends
+> to replace keys refuses a tag record naming an author it already has as a
+> contact. iOS announces handshake minor
 > version 2 and is refused by the link handshake, so its `CONTACT_INFO` is
 > unchanged; when iOS adopts key separation it must send and check the tag
 > form. The handshake has a seventh record type,
@@ -383,10 +391,13 @@ Once shipped on both sides:
   of the separated form has its own label,
   `org.zerionproject.app.contact/EXCHANGE_TAG_V2`.
 - **No transferable proof of pairing (3.0.19, key separation).** With
-  separated keys the record carries no B.3 proof and no other identity
-  signature; the static ML-KEM-768 key is bound by a tag under the exchange
-  key that both peers can compute, so the two records prove nothing to a
-  third party, and the exchange key is wiped when the exchange ends.
+  separated keys, for a pairing that creates a new contact, the record
+  carries no B.3 proof and no other identity signature; the static
+  ML-KEM-768 key is bound by a tag under the exchange key that both peers
+  can compute, so the two records prove nothing to a third party, and the
+  exchange key is wiped when the exchange ends. Re-adds and in-person
+  pairings keep the signatures, which sign values derived from the exchange
+  key and are provable only to a holder of that key.
 - **Symmetric role.** Both sides compute role + sessionId from the same
   unsigned-byte lex sort of the ephemerals. No initiator/responder
   asymmetry.

@@ -1,6 +1,7 @@
 package org.zerionproject.core.contact;
 
 import org.zerionproject.core.BrambleCoreIntegrationTestEagerSingletons;
+import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -241,9 +242,11 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 
 		Throwable[] oneSided = exchange(reAdd(alice, bob),
 				addPendingContact(bob, alice, ZERION), getSecretKey());
-		assertTrue(oneSided[0] instanceof ContactExistsException);
+		assertTrue("the re-adding side refuses the unsigned record",
+				oneSided[0] instanceof FormatException);
 		assertTrue(oneSided[1] instanceof ContactExistsException);
-		assertNoPendingContacts();
+		assertEquals(1, alice.getContactManager().getPendingContacts().size());
+		assertEquals(0, bob.getContactManager().getPendingContacts().size());
 		assertStoredRoot(alice, first);
 		assertStoredRoot(bob, first);
 

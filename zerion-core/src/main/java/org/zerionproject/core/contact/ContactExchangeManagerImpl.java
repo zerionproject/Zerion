@@ -222,10 +222,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			BdfList localAuthorList = clientHelper.toList(localAuthor);
 			BdfDictionary localProps =
 					clientHelper.toDictionary(localProperties);
+			boolean localReplacesKeys = intendsToReplaceKeys(p);
+			boolean localTagForm = keySeparated && !verified
+					&& !localReplacesKeys;
 			byte[] localSignature;
 			byte[] localB3ProofSig = null;
 			byte[] localHybridSignature;
-			if (keySeparated) {
+			if (localTagForm) {
 				localSignature = contactExchangeCrypto.exchangeTag(exchangeKey,
 						alice, transcript(localAuthorList, localMlDsaSigPub,
 								localProps, localTimestamp,
@@ -253,7 +256,6 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					Arrays.fill(localMlDsaSigPriv, (byte) 0);
 				}
 			}
-			boolean localReplacesKeys = intendsToReplaceKeys(p);
 			ContactInfo remoteInfo;
 			if (alice) {
 				sendContactInfo(recordWriter, localAuthorList, localProps,
@@ -275,13 +277,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					&& theirStaticHybridPub != null
 					&& ourEphX25519 != null
 					&& theirEphX25519 != null;
+			boolean remoteTagForm =
+					remoteInfo.signature.length == EXCHANGE_TAG_LENGTH
+							&& remoteInfo.b3ProofSig == null
+							&& remoteInfo.hybridSignature == null;
 			boolean staticPqBound;
-			if (keySeparated) {
-				if (remoteInfo.signature.length != EXCHANGE_TAG_LENGTH
-						|| remoteInfo.b3ProofSig != null
-						|| remoteInfo.hybridSignature != null) {
-					throw new FormatException();
-				}
+			if (remoteTagForm) {
+				if (!keySeparated) throw new FormatException();
 				boolean tagOk = contactExchangeCrypto.verifyExchangeTag(
 						remoteInfo.signature, exchangeKey, !alice,
 						transcript(remoteInfo.authorList,
@@ -303,8 +305,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			Contact contact = addContact(p, remoteInfo.author, localAuthor,
 					rootKey, timestamp, alice, verified, remoteInfo.properties,
-					staticPqBound, remoteInfo.mlDsaSigPubKey,
-					remoteReplacesKeys);
+					staticPqBound, remoteTagForm && localReplacesKeys,
+					remoteInfo.mlDsaSigPubKey, remoteReplacesKeys);
 
 			return contact;
 		} finally {
@@ -449,13 +451,17 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean b3SlotPresent,
+			boolean b3SlotPresent, boolean mustBeNew,
 			@Nullable byte[] peerMlDsaSigPubKey,
 			@Nullable Boolean peerReplacesKeys)
 			throws DbException, FormatException {
 		try {
 			Transaction txn = db.startTransaction(false);
 			try {
+				if (mustBeNew && db.containsContact(txn,
+						remoteAuthor.getId(), localAuthor.getId())) {
+					throw new FormatException();
+				}
 				ContactId contactId;
 				if (pendingContactId == null) {
 					contactId = contactManager.addContact(txn, remoteAuthor,
