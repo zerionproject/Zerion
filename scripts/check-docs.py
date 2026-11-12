@@ -33,7 +33,7 @@ os.chdir(ROOT)
 CURRENT_DOCS = [
     "README.md", "SECURITY.md", "CONTRIBUTING.md",
     "docs/ZERION_OVERVIEW.md", "docs/ZERION_TECHNICAL_WHITEPAPER.md",
-    "docs/ZERION_MESH_AND_I2P.md", "docs/bridges/README.md", "docs/protocol/README.md",
+    "docs/ZERION_MESH_AND_I2P.md", "docs/DENIABILITY.md", "docs/bridges/README.md", "docs/protocol/README.md",
     "docs/protocol/SECURITY_CLAIMS.md", "docs/protocol/SECURITY_CLAIMS_MATRIX.md",
     "docs/protocol/ZTP-ZPP.md", "docs/protocol/ZWF-MODE3FULL.md",
     "docs/protocol/ASYNC-SEALED-SENDER.md", "docs/protocol/MESH-TRANSPORT.md",

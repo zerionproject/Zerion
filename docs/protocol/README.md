@@ -64,6 +64,7 @@ prekey bundle with no interactive handshake.
 | [VOICE_MEMO_V2.md](VOICE_MEMO_V2.md) | The text forms and encrypted payload of voice memos in private conversations |
 | [MESSAGE-EDIT-DELETE.md](MESSAGE-EDIT-DELETE.md) | Editing a sent message, deleting it for everyone and view once photos and videos in private conversations |
 | [CHANNEL-AUTHOR-PQ-BINDING.md](CHANNEL-AUTHOR-PQ-BINDING.md) | Binding channel comment and reaction authors to one ML-DSA-65 key |
+| [DENIABILITY.md](../DENIABILITY.md) | What a record proves to a third party: which records are deniable, which are signed and why, and the transcript simulator that forges deniable records |
 | [NETWORK_PATHS.md](../NETWORK_PATHS.md) | Every network connection of the app: endpoint, route (onion only, clearnet via a Tor exit, direct) and what authenticates it |
 
 ## Cryptographic primitives

@@ -48,3 +48,26 @@ task jarTest(type: Jar, dependsOn: testClasses) {
 artifacts {
 	testOutput jarTest
 }
+
+def toolsSource = file('src/tools/java')
+def toolsClasses = layout.buildDirectory.dir('classes/java/tools')
+def toolsOutput = files(toolsClasses).builtBy('compileToolsJava')
+
+tasks.register('compileToolsJava', JavaCompile) {
+	description = 'Compiles the developer tools in src/tools/java against the main classes; they are not part of any shipped artefact'
+	source = fileTree(toolsSource)
+	classpath = sourceSets.main.output + sourceSets.main.compileClasspath
+	destinationDirectory = toolsClasses
+	options.annotationProcessorPath = files()
+	options.encoding = 'UTF-8'
+}
+
+sourceSets.test.compileClasspath += toolsOutput
+sourceSets.test.runtimeClasspath += toolsOutput
+
+tasks.register('simulateTranscript', JavaExec) {
+	group = 'tools'
+	description = 'Forges one-to-one frames, a mesh envelope or pairing values under a key both peers hold and checks them with the production code; pass the scenario with --args'
+	classpath = toolsOutput + sourceSets.main.runtimeClasspath
+	mainClass = 'org.zerionproject.tools.TranscriptSimulator'
+}
