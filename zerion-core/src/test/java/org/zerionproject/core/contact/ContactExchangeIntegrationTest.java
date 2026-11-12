@@ -2,6 +2,7 @@ package org.zerionproject.core.contact;
 
 import org.zerionproject.core.BrambleCoreIntegrationTestEagerSingletons;
 import org.zerionproject.core.api.FormatException;
+import org.zerionproject.core.api.contact.event.PendingContactReAddRefusedEvent;
 import org.zerionproject.core.api.Pair;
 import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static junit.framework.TestCase.assertNotNull;
@@ -240,15 +242,25 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertStoredRoot(alice, first);
 		assertStoredRoot(bob, first);
 
-		Throwable[] oneSided = exchange(reAdd(alice, bob),
+		ReAddRefusedWaiter waiter = new ReAddRefusedWaiter();
+		alice.getEventBus().addListener(waiter);
+		PendingContact reAdding = reAdd(alice, bob);
+		Throwable[] oneSided = exchange(reAdding,
 				addPendingContact(bob, alice, ZERION), getSecretKey());
 		assertTrue("the re-adding side refuses the unsigned record",
 				oneSided[0] instanceof FormatException);
 		assertTrue(oneSided[1] instanceof ContactExistsException);
-		assertEquals(1, alice.getContactManager().getPendingContacts().size());
-		assertEquals(0, bob.getContactManager().getPendingContacts().size());
+		assertTrue(waiter.latch.await(TIMEOUT, MILLISECONDS));
+		PendingContactReAddRefusedEvent e = waiter.event.get();
+		assertNotNull(e);
+		assertEquals(reAdding.getId(), e.getId());
+		assertEquals(bobIdentity.getLocalAuthor().getId(),
+				e.getAuthor().getId());
+		assertEquals(reAdding.getAlias(), e.getAlias());
+		assertNoPendingContacts();
 		assertStoredRoot(alice, first);
 		assertStoredRoot(bob, first);
+		alice.getEventBus().removeListener(waiter);
 
 		SecretKey reAdded = getSecretKey();
 		Throwable[] done = exchange(reAdd(alice, bob), reAdd(bob, alice),
@@ -656,6 +668,20 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 				PendingContactStateChangedEvent p =
 						(PendingContactStateChangedEvent) e;
 				if (p.getPendingContactState() == OFFLINE) latch.countDown();
+			}
+		}
+	}
+	private static class ReAddRefusedWaiter implements EventListener {
+
+		private final CountDownLatch latch = new CountDownLatch(1);
+		private final AtomicReference<PendingContactReAddRefusedEvent> event =
+				new AtomicReference<>();
+
+		@Override
+		public void eventOccurred(Event e) {
+			if (e instanceof PendingContactReAddRefusedEvent) {
+				event.set((PendingContactReAddRefusedEvent) e);
+				latch.countDown();
 			}
 		}
 	}

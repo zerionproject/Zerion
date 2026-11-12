@@ -470,7 +470,7 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 		assertTrue("expected a format error, got " + t,
 				t instanceof FormatException);
 		assertEquals(1, alice.getContactManager().getContacts().size());
-		assertEquals("the pending contact is kept", 1,
+		assertEquals("the pending contact is removed", 0,
 				alice.getContactManager().getPendingContacts().size());
 		assertStoredRoot(rootKey);
 	}

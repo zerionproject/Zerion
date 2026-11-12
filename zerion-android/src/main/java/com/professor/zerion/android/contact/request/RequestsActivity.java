@@ -14,6 +14,7 @@ import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.event.ContactAddedEvent;
+import org.zerionproject.core.api.contact.event.PendingContactReAddRefusedEvent;
 import org.zerionproject.core.api.contact.event.PendingContactRemovedEvent;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
 import org.zerionproject.core.api.contact.request.ContactRequestManager;
@@ -149,6 +150,11 @@ public class RequestsActivity extends ZerionActivity implements EventListener {
 			ContactRequestAddedEvent a = (ContactRequestAddedEvent) e;
 			RequestsController c = controller;
 			if (c != null) c.onContactAdded(a.getRequestId(), a.getContactId());
+		} else if (e instanceof PendingContactReAddRefusedEvent) {
+			PendingContactReAddRefusedEvent r =
+					(PendingContactReAddRefusedEvent) e;
+			RequestsController c = controller;
+			if (c != null) c.onReAddRefused(r.getAuthor().getName());
 		} else if (e instanceof ContactRequestEvent
 				|| e instanceof ContactRequestsChangedEvent
 				|| e instanceof PendingContactStateChangedEvent

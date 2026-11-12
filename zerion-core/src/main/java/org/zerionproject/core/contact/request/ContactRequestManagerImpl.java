@@ -20,6 +20,7 @@ import org.zerionproject.core.api.contact.request.OutgoingRequestLimitException;
 import org.zerionproject.core.api.contact.request.OwnLinkException;
 import org.zerionproject.core.api.contact.request.event.ContactLinksChangedEvent;
 import org.zerionproject.core.api.contact.event.PendingContactAlreadyContactEvent;
+import org.zerionproject.core.api.contact.event.PendingContactReAddRefusedEvent;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.db.DatabaseComponent;
@@ -339,6 +340,10 @@ class ContactRequestManagerImpl implements ContactRequestManager, Service,
 			PendingContactAlreadyContactEvent a =
 					(PendingContactAlreadyContactEvent) e;
 			ioExecutor.execute(() -> alreadyContact(a.getId(), a.getAlias()));
+		} else if (e instanceof PendingContactReAddRefusedEvent) {
+			PendingContactReAddRefusedEvent r =
+					(PendingContactReAddRefusedEvent) e;
+			ioExecutor.execute(() -> alreadyContact(r.getId(), r.getAlias()));
 		}
 	}
 

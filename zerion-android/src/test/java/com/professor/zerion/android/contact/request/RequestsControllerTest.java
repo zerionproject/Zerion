@@ -425,6 +425,22 @@ public class RequestsControllerTest {
 		assertEquals(View.GONE, banner.getVisibility());
 	}
 
+	@Test
+	public void aRefusedReAddIsExplained() throws Exception {
+		open(RequestsController.TAB_RECEIVED);
+		controller.onReAddRefused("Alex");
+		db.runAll();
+		layout();
+		View bar = root.getRootView().findViewById(
+				com.google.android.material.R.id.snackbar_text);
+		assertNotNull(bar);
+		assertEquals("Re-adding Alex needs Re-add on both phones. Ask them"
+				+ " to open your chat settings and choose Re-add contact to"
+				+ " repair the connection, then try again.",
+				((TextView) bar).getText().toString());
+		verify(contacts, atLeast(2)).getPendingContacts();
+	}
+
 	private View findSnackbarAction() {
 		View v = root.getRootView().findViewById(
 				com.google.android.material.R.id.snackbar_action);

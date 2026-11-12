@@ -192,6 +192,16 @@ public class RequestsController {
 		reload();
 	}
 
+	@UiThread
+	public void onReAddRefused(String name) {
+		if (undoBar == null) {
+			Snackbar.make(root, activity.getString(
+					R.string.requests_readd_needs_both_phones, name),
+					Snackbar.LENGTH_LONG).show();
+		}
+		reload();
+	}
+
 	private void remember(List<RequestRow> rows) {
 		for (RequestRow r : rows) {
 			byte[] id = r.getRequestId();

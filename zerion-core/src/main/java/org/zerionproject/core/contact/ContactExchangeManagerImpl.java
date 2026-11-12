@@ -13,6 +13,7 @@ import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfList;
 import org.zerionproject.core.api.contact.event.PendingContactAlreadyContactEvent;
+import org.zerionproject.core.api.contact.event.PendingContactReAddRefusedEvent;
 import org.zerionproject.core.api.db.ContactExistsException;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
@@ -305,8 +306,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			Contact contact = addContact(p, remoteInfo.author, localAuthor,
 					rootKey, timestamp, alice, verified, remoteInfo.properties,
-					staticPqBound, remoteTagForm && localReplacesKeys,
-					remoteInfo.mlDsaSigPubKey, remoteReplacesKeys);
+					staticPqBound, remoteTagForm, remoteInfo.mlDsaSigPubKey,
+					remoteReplacesKeys);
 
 			return contact;
 		} finally {
@@ -451,15 +452,24 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
-			boolean b3SlotPresent, boolean mustBeNew,
+			boolean b3SlotPresent, boolean identityUnproven,
 			@Nullable byte[] peerMlDsaSigPubKey,
 			@Nullable Boolean peerReplacesKeys)
 			throws DbException, FormatException {
 		try {
 			Transaction txn = db.startTransaction(false);
 			try {
-				if (mustBeNew && db.containsContact(txn,
-						remoteAuthor.getId(), localAuthor.getId())) {
+				if (identityUnproven && pendingContactId != null
+						&& contactManager.intendsToReplaceKeys(txn,
+						pendingContactId)
+						&& db.containsContact(txn, remoteAuthor.getId(),
+						localAuthor.getId())) {
+					String alias = db.getPendingContact(txn, pendingContactId)
+							.getAlias();
+					contactManager.removePendingContact(txn, pendingContactId);
+					txn.attach(new PendingContactReAddRefusedEvent(
+							pendingContactId, remoteAuthor, alias));
+					db.commitTransaction(txn);
 					throw new FormatException();
 				}
 				ContactId contactId;

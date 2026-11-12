@@ -139,20 +139,26 @@ keys, or anyone who knows a contact's public keys could, by having their own
 link or request accepted with Re-add, replace that contact's root key and
 transport properties with their own. Therefore a side that intends to
 replace keys (`ContactManager.intendsToReplaceKeys`: the pending contact
-carries the Re-add flag, set by Re-add in the contact list, by a contact
-request that asks to reconnect or by a QR code scanned in person) and every
+carries the Re-add flag, set by Re-add in the chat settings or by a contact
+request that asks to reconnect, or the separate in-person flag, set by a QR
+code scanned in person, `PendingContactFlags`) and every
 in-person pairing (the `verified` argument of the exchange, the nearby key
 agreement) send the signed form, the three signatures exactly as with an
 earlier peer, and a receiver that intends to replace keys refuses a tag
-record whose author it already has as a contact (`FormatException` before
-any contact logic runs; the pending contact is kept and no key changes). A
+record whose author it already has as a contact: inside the write
+transaction that would add or re-key the contact, and so with the same view
+of the flags that `ContactManagerImpl.addContact` consumes, it removes the
+pending contact, broadcasts `PendingContactReAddRefusedEvent` and throws
+`FormatException`; no key changes. A
 receiver with no such intent never replaces keys, so a tag record naming a
 stored author ends as it did before: the pending contact is removed and the
 contact is kept as it was. A re-key therefore happens only when both sides
 chose Re-add, both send the signed form and both verify it. When only one
-side chose Re-add, that side's exchange fails and its pending contact stays,
-so the handshake is retried, while the other side sees that the contact
-already exists; both phones have to use Re-add, as before.
+side chose Re-add, that side's pending contact is removed and the Requests
+screen tells the user that re-adding needs Re-add on both phones (the
+contact request that produced the pending contact, if any, ends as already
+a contact), while the other side sees that the contact already exists; both
+phones have to use Re-add, as before.
 
 What this changes. A holder of the exchange key can compute both tags
 itself, so the records prove nothing to a third party even while the key

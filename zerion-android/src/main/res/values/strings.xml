@@ -2894,6 +2894,7 @@ The link opens in your browser, which does not use Tor.</string>
 	<string name="requests_state_withdrawn">Cancelled after delivery</string>
 	<string name="requests_state_cancelled_by_sender">Cancelled by sender</string>
 	<string name="requests_state_contact_added">Contact added</string>
+	<string name="requests_readd_needs_both_phones">Re-adding %1$s needs Re-add on both phones. Ask them to open your chat settings and choose Re-add contact to repair the connection, then try again.</string>
 	<string name="requests_open_chat">Open chat</string>
 	<string name="requests_state_no_answer_yet">No answer yet</string>
 	<string name="requests_notification_accepted">Your contact request was accepted</string>
