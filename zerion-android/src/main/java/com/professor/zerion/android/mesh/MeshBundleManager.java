@@ -4,7 +4,7 @@ import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
-import org.zerionproject.core.api.crypto.HybridSignaturePublicKey;
+import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.DbException;
 import org.zerionproject.core.api.event.Event;
 import org.zerionproject.core.api.event.EventBus;
@@ -24,6 +24,8 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static org.zerionproject.app.api.messaging.MessagingManager.MESH_SENDER_AUTH_V2_MIN_VERSION;
+
 @Singleton
 @NotNullByDefault
 public class MeshBundleManager implements EventListener {
@@ -35,6 +37,7 @@ public class MeshBundleManager implements EventListener {
 	private final ContactManager contactManager;
 	private final MeshManager meshManager;
 	private final MessagingManager messagingManager;
+	private final DatabaseComponent db;
 	private final Executor ioExecutor;
 	private final Map<Integer, Long> lastSent = new ConcurrentHashMap<>();
 
@@ -42,12 +45,13 @@ public class MeshBundleManager implements EventListener {
 	MeshBundleManager(EventBus eventBus, MeshBundleStore store,
 			CryptoComponent crypto, ContactManager contactManager,
 			MeshManager meshManager, MessagingManager messagingManager,
-			@IoExecutor Executor ioExecutor) {
+			DatabaseComponent db, @IoExecutor Executor ioExecutor) {
 		this.store = store;
 		this.crypto = crypto;
 		this.contactManager = contactManager;
 		this.meshManager = meshManager;
 		this.messagingManager = messagingManager;
+		this.db = db;
 		this.ioExecutor = ioExecutor;
 		eventBus.addListener(this);
 	}
@@ -68,16 +72,10 @@ public class MeshBundleManager implements EventListener {
 	private void storeBundle(ContactId contactId, byte[] bundleBytes) {
 		try {
 			AsyncPrekeyBundle bundle = AsyncPrekeyBundle.decode(bundleBytes);
-			if (!bundle.verify(crypto)) {
-				return;
-			}
 			Contact c = contactManager.getContact(contactId);
-			byte[] ed = c.getAuthor().getPublicKey().getEncoded();
-			byte[] mlDsa = c.getMlDsaSigPublicKey();
-			if (mlDsa == null) return;
-			byte[] identitySigPub =
-					new HybridSignaturePublicKey(ed, mlDsa).getEncoded();
-			if (!MeshBundleStore.matchesIdentity(bundle, identitySigPub)) {
+			byte[] identitySigPub = MeshBundleStore.identityOf(c);
+			if (identitySigPub == null) return;
+			if (!bundle.verifyFromContact(crypto, identitySigPub)) {
 				return;
 			}
 			store.putContactBundle(contactId.getInt(), bundleBytes);
@@ -90,10 +88,19 @@ public class MeshBundleManager implements EventListener {
 		long now = System.currentTimeMillis();
 		if (last != null && now - last < RESEND_INTERVAL_MS) return;
 		try {
-			AsyncPrekeyBundle bundle = meshManager.publishBundle(contactId);
+			boolean signed = !contactAcceptsUnsignedBundle(contactId);
+			AsyncPrekeyBundle bundle =
+					meshManager.publishBundle(contactId, signed);
 			messagingManager.sendPrekeyBundle(contactId, bundle.encode());
 			lastSent.put(contactId.getInt(), now);
 		} catch (Exception e) {
 		}
+	}
+
+	private boolean contactAcceptsUnsignedBundle(ContactId contactId)
+			throws DbException {
+		int minor = db.transactionWithResult(true, txn ->
+				messagingManager.getContactClientMinorVersion(txn, contactId));
+		return minor >= MESH_SENDER_AUTH_V2_MIN_VERSION;
 	}
 }

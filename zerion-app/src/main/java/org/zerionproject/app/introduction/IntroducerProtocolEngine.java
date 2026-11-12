@@ -255,10 +255,12 @@ class IntroducerProtocolEngine
 		receiveAutoDeleteTimer(txn, m);
 		Introducee i = getOtherIntroducee(s, m.getGroupId());
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
+		boolean macOnlyAuth = m.isMacOnlyAuth()
+				&& contactSupportsMacOnlyAuth(txn, i.groupId);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
 				m.getTransportProperties(), false, m.getMlDsaPubKey(),
-				m.getMlKemEphemeralPublicKey());
+				m.getMlKemEphemeralPublicKey(), macOnlyAuth);
 		IntroducerState state = AWAIT_AUTHS;
 		Introducee introduceeA, introduceeB;
 		Author sender, other;
@@ -303,10 +305,12 @@ class IntroducerProtocolEngine
 		receiveAutoDeleteTimer(txn, m);
 		Introducee i = getOtherIntroducee(s, m.getGroupId());
 		long localTimestamp = getTimestampForInvisibleMessage(s, i);
+		boolean macOnlyAuth = m.isMacOnlyAuth()
+				&& contactSupportsMacOnlyAuth(txn, i.groupId);
 		Message sent = sendAcceptMessage(txn, i, localTimestamp,
 				m.getEphemeralPublicKey(), m.getAcceptTimestamp(),
 				m.getTransportProperties(), false, m.getMlDsaPubKey(),
-				m.getMlKemEphemeralPublicKey());
+				m.getMlKemEphemeralPublicKey(), macOnlyAuth);
 
 		Introducee introduceeA, introduceeB;
 		Author sender, other;

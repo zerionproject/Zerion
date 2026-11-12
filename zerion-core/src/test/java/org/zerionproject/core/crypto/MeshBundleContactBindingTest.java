@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
@@ -52,6 +53,17 @@ public class MeshBundleContactBindingTest extends BrambleMockTestCase {
 		KeyPair agree = crypto.generateHybridAgreementKeyPair();
 		return AsyncPrekeyBundle.create(crypto,
 				identity.getPublic().getEncoded(), identity.getPrivate(),
+				agree.getPublic().getEncoded(), 1L,
+				crypto.generateHybridAgreementKeyPair().getPublic()
+						.getEncoded(), 9999999999L,
+				Collections.<AsyncPrekeyBundle.OneTimePrekey>emptyList())
+				.encode();
+	}
+
+	private byte[] unsignedBundleOf(KeyPair identity) {
+		KeyPair agree = crypto.generateHybridAgreementKeyPair();
+		return AsyncPrekeyBundle.createUnsigned(
+				identity.getPublic().getEncoded(),
 				agree.getPublic().getEncoded(), 1L,
 				crypto.generateHybridAgreementKeyPair().getPublic()
 						.getEncoded(), 9999999999L,
@@ -101,6 +113,35 @@ public class MeshBundleContactBindingTest extends BrambleMockTestCase {
 		store.putContactBundle(ID, bundleOf(removedIdentity));
 		theIdBelongsTo(contactWith(nextIdentity));
 		assertNull(store.getContactBundle(ID, crypto));
+	}
+
+	@Test
+	public void anUnsignedBundleIsUsedForItsOwnContact() throws Exception {
+		MeshBundleStore store = new MeshBundleStore(settings, contactManager);
+		theIdBelongsTo(contactWith(removedIdentity));
+		store.putContactBundle(ID, unsignedBundleOf(removedIdentity));
+		AsyncPrekeyBundle bundle = store.getContactBundle(ID, crypto);
+		assertNotNull(bundle);
+		assertFalse(bundle.isSigned());
+	}
+
+	@Test
+	public void anUnsignedBundleUnderAReusedIdIsNotUsedForTheNextContact()
+			throws Exception {
+		MeshBundleStore store = new MeshBundleStore(settings, contactManager);
+		store.putContactBundle(ID, unsignedBundleOf(removedIdentity));
+		theIdBelongsTo(contactWith(nextIdentity));
+		assertNull(store.getContactBundle(ID, crypto));
+	}
+
+	@Test
+	public void aStoreWithoutContactsRefusesAnUnsignedBundle()
+			throws Exception {
+		MeshBundleStore store = new MeshBundleStore(settings);
+		store.putContactBundle(ID, unsignedBundleOf(removedIdentity));
+		assertNull(store.getContactBundle(ID, crypto));
+		store.putContactBundle(ID, bundleOf(removedIdentity));
+		assertNotNull(store.getContactBundle(ID, crypto));
 	}
 
 	@Test

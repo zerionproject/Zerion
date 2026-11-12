@@ -36,6 +36,7 @@ import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_K
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_LOCAL;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_LOCAL_TIMESTAMP;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MAC_KEY;
+import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MAC_ONLY_AUTH;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY;
@@ -121,6 +122,7 @@ class SessionEncoderImpl implements SessionEncoder {
 		putNullable(d, SESSION_KEY_ML_DSA_PUB_KEY, s.mlDsaPubKey);
 		putNullable(d, SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY,
 				s.mlKemEphemeralPublicKey);
+		d.put(SESSION_KEY_MAC_ONLY_AUTH, s.macOnlyAuth);
 		return d;
 	}
 

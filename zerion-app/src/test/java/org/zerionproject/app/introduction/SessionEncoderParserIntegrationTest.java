@@ -35,6 +35,9 @@ import static org.zerionproject.app.introduction.IntroduceeSession.Local;
 import static org.zerionproject.app.introduction.IntroduceeSession.Remote;
 import static org.zerionproject.app.introduction.IntroduceeState.LOCAL_ACCEPTED;
 import static org.zerionproject.app.introduction.IntroducerState.AWAIT_AUTHS;
+import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_LOCAL;
+import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MAC_ONLY_AUTH;
+import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_REMOTE;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_ROLE;
 import static org.zerionproject.app.test.BriarTestUtils.getRealAuthor;
 import static org.junit.Assert.assertArrayEquals;
@@ -288,6 +291,40 @@ public class SessionEncoderParserIntegrationTest extends BrambleTestCase {
 				s2.getRemote().transportProperties);
 		assertNull(s1.getRemote().macKey);
 		assertEquals(s1.getRemote().macKey, s2.getRemote().macKey);
+	}
+
+	@Test
+	public void testIntroduceeSessionMacOnlyAuth() throws FormatException {
+		IntroduceeSession s1 = getIntroduceeSession();
+		assertFalse(s1.getLocal().macOnlyAuth);
+		assertFalse(s1.getRemote().macOnlyAuth);
+		BdfDictionary d1 = sessionEncoder.encodeIntroduceeSession(s1);
+		IntroduceeSession s2 =
+				sessionParser.parseIntroduceeSession(groupId1, d1);
+		assertFalse(s2.getLocal().macOnlyAuth);
+		assertFalse(s2.getRemote().macOnlyAuth);
+
+		Local local = new Local(true, lastLocalMessageId, localTimestamp,
+				ephemeralPublicKey, ephemeralPrivateKey, transportProperties,
+				acceptTimestamp, localMacKey, null, null, null, null, true);
+		Remote remote = new Remote(false, author2, lastRemoteMessageId,
+				remoteEphemeralPublicKey, remoteTransportProperties,
+				remoteAcceptTimestamp, remoteMacKey, null, null, true);
+		IntroduceeSession s3 = new IntroduceeSession(sessionId,
+				LOCAL_ACCEPTED, requestTimestamp, groupId1, author1, local,
+				remote, masterKey, transportKeys);
+		BdfDictionary d3 = sessionEncoder.encodeIntroduceeSession(s3);
+		IntroduceeSession s4 =
+				sessionParser.parseIntroduceeSession(groupId1, d3);
+		assertTrue(s4.getLocal().macOnlyAuth);
+		assertTrue(s4.getRemote().macOnlyAuth);
+
+		d3.getDictionary(SESSION_KEY_LOCAL).remove(SESSION_KEY_MAC_ONLY_AUTH);
+		d3.getDictionary(SESSION_KEY_REMOTE).remove(SESSION_KEY_MAC_ONLY_AUTH);
+		IntroduceeSession s5 =
+				sessionParser.parseIntroduceeSession(groupId1, d3);
+		assertFalse(s5.getLocal().macOnlyAuth);
+		assertFalse(s5.getRemote().macOnlyAuth);
 	}
 
 	@Test(expected = FormatException.class)

@@ -234,6 +234,56 @@ public class MessageEncoderParserIntegrationTest extends BrambleTestCase {
 		assertEquals(NO_AUTO_DELETE_TIMER, am.getAutoDeleteTimer());
 		assertArrayEquals(mlDsaPubKey, am.getMlDsaPubKey());
 		assertArrayEquals(mlKemPubKey, am.getMlKemEphemeralPublicKey());
+		assertFalse(am.isMacOnlyAuth());
+	}
+
+	@Test
+	public void testAcceptMessageWithMacOnlyAuth() throws Exception {
+		Map<TransportId, TransportProperties> transportProperties =
+				getTransportPropertiesMap(2);
+		long acceptTimestamp = 1337L;
+		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
+				previousMsgId, sessionId, ephemeralPublicKey, acceptTimestamp,
+				transportProperties, NO_AUTO_DELETE_TIMER, mlDsaPubKey,
+				mlKemPubKey, true);
+		assertEquals(10, clientHelper.toList(m).size());
+		validator.validateMessage(m, group, clientHelper.toList(m));
+		AcceptMessage am =
+				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
+
+		assertEquals(sessionId, am.getSessionId());
+		assertEquals(acceptTimestamp, am.getAcceptTimestamp());
+		assertArrayEquals(mlDsaPubKey, am.getMlDsaPubKey());
+		assertArrayEquals(mlKemPubKey, am.getMlKemEphemeralPublicKey());
+		assertTrue(am.isMacOnlyAuth());
+	}
+
+	@Test
+	public void testAcceptMessageWithoutMacOnlyAuthHasNineSlots()
+			throws Exception {
+		Message m = messageEncoder.encodeAcceptMessage(groupId, timestamp,
+				previousMsgId, sessionId, ephemeralPublicKey, 1337L,
+				getTransportPropertiesMap(2), NO_AUTO_DELETE_TIMER,
+				mlDsaPubKey, mlKemPubKey, false);
+		assertEquals(9, clientHelper.toList(m).size());
+		validator.validateMessage(m, group, clientHelper.toList(m));
+		AcceptMessage am =
+				messageParser.parseAcceptMessage(m, clientHelper.toList(m));
+		assertFalse(am.isMacOnlyAuth());
+	}
+
+	@Test
+	public void testAuthMessageWithEmptySignature() throws Exception {
+		Message m = messageEncoder.encodeAuthMessage(groupId, timestamp,
+				previousMsgId, sessionId, mac, new byte[0], kemCiphertext);
+		validator.validateMessage(m, group, clientHelper.toList(m));
+		AuthMessage am =
+				messageParser.parseAuthMessage(m, clientHelper.toList(m));
+
+		assertEquals(sessionId, am.getSessionId());
+		assertArrayEquals(mac, am.getMac());
+		assertEquals(0, am.getSignature().length);
+		assertArrayEquals(kemCiphertext, am.getKemCiphertext());
 	}
 
 	@Test

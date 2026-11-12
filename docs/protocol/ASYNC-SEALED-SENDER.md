@@ -142,10 +142,16 @@ persisting the deduplication identifier are the caller's responsibility.
 
 ## Prekey bundle
 
-A recipient publishes this bundle so senders can seal to it offline.
+A recipient publishes this bundle so senders can seal to it offline. A bundle
+is never carried over the mesh: it is sent as a private message (type 10) to
+one contact inside the authenticated one-to-one connection, so the connection
+already proves who sent it. Two versions exist.
+
+Version 1 (`0x01`), sent to a contact on messaging minor version 16 or older,
+and the only version up to 3.0.18:
 
 ```
-version[1]
+version[1]                0x01
 identitySigPub[1984]
 identityAgreePub[1216]
 signedPrekeyId[4]
@@ -158,6 +164,39 @@ bundleSig[3373]           over everything above
 ```
 
 Both signatures are hybrid and are verified against the bundle's own identity key.
+
+Version 2 (`0x02`), sent from 3.0.19 to a contact on messaging minor version
+17 or later (`MESH_SENDER_AUTH_V2_MIN_VERSION`): the same fields with both
+signature fields absent, 6746 bytes shorter.
+
+```
+version[1]                0x02
+identitySigPub[1984]
+identityAgreePub[1216]
+signedPrekeyId[4]
+signedPrekeyPub[1216]
+signedPrekeyExpiry[8]
+oneTimePrekeyCount[2]     up to 1000
+oneTimePrekeys[]          each is id[16] then pub[1216]
+```
+
+The signatures of version 1 add nothing the connection does not already give:
+they bind the keys to the account that sent them, which the receiver checks
+anyway by comparing `identitySigPub` with the sending contact's identity key,
+and they are a transferable proof that this account published these keys,
+which a recipient could show to others. Version 2 removes that proof. A
+receiver accepts a bundle only from a contact, only when `identitySigPub` is
+that contact's hybrid identity key, and, for version 1, only when both
+signatures verify; a version 2 bundle whose identity key is not the sending
+contact's is dropped, and the bundle store used without a contact list
+(`MeshBundleStore` without a `ContactManager`) accepts signed bundles only.
+Version 1 bundles are still accepted from any contact and are still sent to
+older contacts. The envelope built from either version is the same: the
+transcript carries the recipient's identity keys and prekeys, not the bundle
+version or its signatures, so a sender that holds a version 2 bundle seals
+exactly as one that holds version 1, and the cover and padding sizes of the
+mesh are untouched. Looking a bundle up by its identity key (`MeshBundleStore`,
+`AsyncMeshDelivery`) works the same for both versions.
 
 `identityAgreePub` is bound into the key transcript and used for nothing else.
 From 3.0.15 it is a hybrid agreement key generated once for this purpose and

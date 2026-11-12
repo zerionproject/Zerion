@@ -18,7 +18,7 @@ v1.6; shipped and current as of v2.0.x). Android implementation: commit
 `11f0e95` (dev + master).
 
 ## TL;DR
-The introduction protocol's `AuthMessage` signs the AUTH nonce with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key (and an ML-KEM-768 key) in the **AcceptMessage**. AuthMessage always carries a 3373-byte hybrid signature; a peer that does not advertise an ML-DSA-65 key cannot complete an introduction.
+The introduction protocol's `AuthMessage` signs the AUTH nonce with a **hybrid Ed25519 + ML-DSA-65** key. Each side advertises its ML-DSA-65 public key (and an ML-KEM-768 key) in the **AcceptMessage**. AuthMessage carries a 3373-byte hybrid signature, except between two introducees that both announced introduction minor version 2 through a version 2 introducer (3.0.19, section 10), where the signature slot is empty and the AUTH MAC alone authenticates; a peer that does not advertise an ML-DSA-65 key cannot complete an introduction.
 
 Not backward-compatible: a peer that does not send ML-DSA-65 and ML-KEM-768 keys fails validation or the session aborts.
 
@@ -36,7 +36,8 @@ Legacy (v1.5):
 
 Current:
 ```
-[ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, null|timer, mlDsaPubKey, mlKemEphemeralPublicKey ]  // size 9, the only accepted size
+[ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, null|timer, mlDsaPubKey, mlKemEphemeralPublicKey ]        // size 9
+[ ACCEPT.value, sessionId, prevMsgId, ephPubKey, acceptTs, transportProps, null|timer, mlDsaPubKey, mlKemEphemeralPublicKey, true ]  // size 10, from 3.0.19 (section 10)
 ```
 
 - **Slot 7: `mlDsaPubKey`** - raw byte array, exactly `ML_DSA_65_PUBLIC_KEY_BYTES = 1952`, required.
@@ -51,12 +52,12 @@ Current:
 ```
 
 - `mac`: 32 bytes.
-- `signature`: the validator accepts 1..3373 bytes, but only a 3373-byte hybrid signature (Ed25519 64 B || ML-DSA-65 3309 B) verifies.
+- `signature`: the validator accepts 0..3373 bytes (0 from 3.0.19), but only a 3373-byte hybrid signature (Ed25519 64 B || ML-DSA-65 3309 B) verifies, and an empty slot is accepted by the protocol engine only under the conditions of section 10.
 - `kemCiphertext`: exactly 1088 bytes (ML-KEM-768).
 
 ### Validator
-- AcceptMessage: exactly 9 slots, slots 7 and 8 as above.
-- AuthMessage: exactly 6 slots, slot 5 exactly 1088 bytes.
+- AcceptMessage: 9 slots, or 10 with slot 9 the boolean `true` (from 3.0.19; `false` or any other type is rejected); slots 7 and 8 as above.
+- AuthMessage: exactly 6 slots, slot 4 of 0 to 3373 bytes (up to 3.0.18: 1 to 3373), slot 5 exactly 1088 bytes.
 
 ---
 
@@ -246,3 +247,90 @@ LABEL_BOB_ACTIVATE_KEY   = "org.zerionproject.app.introduction/BOB_ACTIVATE_KEY"
    - Tamper one byte of an ML-DSA pubkey advertised in Accept → AuthMessage hybrid verify fails → session aborts.
    - Send 3373-byte sig where the ML-DSA portion is random garbage → hybrid verify fails.
    - Send 64-byte sig, or a 3373-byte sig whose ML-DSA-65 half is invalid → rejected, session aborts.
+   - Send an empty signature to a peer that did not receive slot 9 in the relayed Accept, or did not send it → session aborts (section 10).
+
+---
+
+## 10. MAC-only AUTH between 3.0.19 peers (introduction minor version 2)
+
+Up to 3.0.18 every AUTH carried the sender's identity signature. The
+introducer relays both AUTH messages, so it ended up holding both introducees'
+signatures over values that only the introduction's shared key produces, and
+with one introducee's cooperation (who can reveal that key) those signatures
+prove to anyone that the other introducee accepted this introduction. From
+3.0.19 the signature is left out between peers that can both do without it.
+
+**What the MAC already binds.** The AUTH MAC is computed under the sender's
+per-direction MAC key, derived from the X25519 master key and the sender's
+ML-KEM-768 secret, so only the two introducees can derive it. Its input is the
+introducer's author id and, for each introducee, the author id, the accept
+timestamp, the ephemeral X25519 key, the transport properties and the ML-KEM
+key (section 2 and `IntroductionCryptoImpl.getAuthMacInputs`). The MAC
+therefore authenticates everything the signature authenticated, to the one
+party that needs it. The signature only added a proof that was transferable
+to third parties. It never protected against the introducer: the introducer
+relays the Accept messages and could already substitute the ephemeral keys and
+the ML-KEM keys in both directions, which is why both introducees are told to
+compare safety numbers afterwards. Nothing is lost against anyone else.
+
+**Version announcement.** `IntroductionManager.MINOR_VERSION` is 2 from
+3.0.19 (`MAC_ONLY_AUTH_MIN_VERSION = 2`); up to 3.0.18 it was 1. The client
+versioning exchange tells every contact pair which minor version the other
+side runs, so an introducee knows the introducer's version and the introducer
+knows both introducees' versions. The two introducees are not yet contacts, so
+the introducer carries the announcement between them in the relayed Accept:
+
+- An introducee that runs version 2 sends its Accept with slot 9 = `true` if
+  and only if the introducer's introduction client is at minor version 2 or
+  later (an older introducer's validator accepts exactly 9 slots and would
+  reject the message). The introducee records `Local.macOnlyAuth = true`.
+- The introducer, when relaying an Accept that carried slot 9, keeps it if and
+  only if the receiving introducee is at minor version 2 or later, and drops it
+  otherwise. An Accept that arrived without slot 9 is relayed without it. The
+  introducer stores nothing for this; it relays each Accept as it arrives
+  (`IntroducerProtocolEngine.onRemoteAccept` and `onRemoteAcceptWhenDeclined`).
+- An introducee that receives a relayed Accept with slot 9 records
+  `Remote.macOnlyAuth = true`. Both flags are persisted in the session under
+  the key `"macOnlyAuth"` of the Local and Remote dictionaries and read as
+  `false` when absent, so a session saved by 3.0.18 continues unchanged.
+
+**Rule.** MAC-only AUTH is in force for a session exactly when
+`Local.macOnlyAuth && Remote.macOnlyAuth` (`IntroduceeProtocolEngine.isMacOnlyAuth`).
+
+- Sending: in force, the signature slot is the empty byte string and no
+  identity key is used; not in force, the AUTH is signed exactly as in
+  section 2.
+- Receiving: the MAC is verified first and unchanged. In force, a non-empty
+  signature slot aborts the session; not in force, the slot must be a verifying
+  3373-byte hybrid signature (section 3), so an empty slot aborts the session.
+  An empty signature is therefore never accepted from a peer that did not
+  announce version 2, and a peer that announced it cannot be made to accept a
+  signed AUTH in its place: there is no downgrade by omission in either
+  direction.
+
+Both introducees reach the same decision because each flag reaches the other
+side only through the introducer: with an honest introducer, A sends slot 9
+iff the introducer is new, the introducer keeps it iff B is new, and
+symmetrically, so both see both flags exactly when all three run version 2.
+
+| Introducer | Introducee A | Introducee B | Slot 9 relayed to A | Slot 9 relayed to B | AUTH |
+|---|---|---|---|---|---|
+| old | any | any | no (A never sends it) | no | signed both ways, as up to 3.0.18 |
+| new | new | old | no (B never sends it) | no (dropped for B) | signed both ways |
+| new | old | new | no (dropped for A) | no (A never sends it) | signed both ways |
+| new | new | new | yes | yes | MAC only, both ways |
+
+**What a dishonest introducer can still do.** The introducer carries the
+announcements, so it can drop one of them and make the other introducee
+believe its peer is older; that introducee then signs, as every introducee did
+up to 3.0.18, and the introduction completes or aborts depending on what the
+introducer relays back. The introducer gains exactly the signature it always
+received, and nothing else changes: the keys stay bound by the MAC, and the
+flags are not inputs of the MAC on purpose, so the MAC verification stays as it
+was. When a future release makes minor version 2 the minimum, the signed form
+can be removed entirely.
+
+**Older peers.** An introducee on 3.0.18 never sees slot 9 (its introducer
+drops it, or its own introducer is old and the other introducee does not send
+it), always receives a signed AUTH and sends one, and its validator still
+rejects an empty signature. An introducer on 3.0.18 never receives slot 9.

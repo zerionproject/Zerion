@@ -241,7 +241,7 @@ public class MeshBundlePrivacyTest {
 			EventBus eventBus = mock(EventBus.class);
 			new MeshBundleManager(eventBus, mock(MeshBundleStore.class), crypto,
 					mock(ContactManager.class), meshManager, messagingManager,
-					Runnable::run);
+					db, Runnable::run);
 			ArgumentCaptor<EventListener> listener =
 					ArgumentCaptor.forClass(EventListener.class);
 			verify(eventBus).addListener(listener.capture());
