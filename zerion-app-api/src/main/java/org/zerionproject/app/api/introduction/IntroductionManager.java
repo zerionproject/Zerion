@@ -23,7 +23,9 @@ public interface IntroductionManager extends ConversationClient {
 	boolean canIntroduce(Transaction txn, Contact c1, Contact c2)
 			throws DbException;
 
-	int MINOR_VERSION = 1;
+	int MINOR_VERSION = 2;
+
+	int MAC_ONLY_AUTH_MIN_VERSION = 2;
 
 	void makeIntroduction(Contact c1, Contact c2, @Nullable String text)
 			throws DbException;

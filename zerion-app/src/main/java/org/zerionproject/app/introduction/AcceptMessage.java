@@ -25,6 +25,7 @@ class AcceptMessage extends AbstractIntroductionMessage {
 	private final byte[] mlDsaPubKey;
 	@Nullable
 	private final byte[] mlKemEphemeralPublicKey;
+	private final boolean macOnlyAuth;
 
 	protected AcceptMessage(MessageId messageId, GroupId groupId,
 			long timestamp, @Nullable MessageId previousMessageId,
@@ -32,7 +33,7 @@ class AcceptMessage extends AbstractIntroductionMessage {
 			long acceptTimestamp,
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
-			@Nullable byte[] mlKemEphemeralPublicKey) {
+			@Nullable byte[] mlKemEphemeralPublicKey, boolean macOnlyAuth) {
 		super(messageId, groupId, timestamp, previousMessageId,
 				autoDeleteTimer);
 		this.sessionId = sessionId;
@@ -41,6 +42,19 @@ class AcceptMessage extends AbstractIntroductionMessage {
 		this.transportProperties = transportProperties;
 		this.mlDsaPubKey = mlDsaPubKey;
 		this.mlKemEphemeralPublicKey = mlKemEphemeralPublicKey;
+		this.macOnlyAuth = macOnlyAuth;
+	}
+
+	protected AcceptMessage(MessageId messageId, GroupId groupId,
+			long timestamp, @Nullable MessageId previousMessageId,
+			SessionId sessionId, PublicKey ephemeralPublicKey,
+			long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey) {
+		this(messageId, groupId, timestamp, previousMessageId, sessionId,
+				ephemeralPublicKey, acceptTimestamp, transportProperties,
+				autoDeleteTimer, mlDsaPubKey, mlKemEphemeralPublicKey, false);
 	}
 
 	protected AcceptMessage(MessageId messageId, GroupId groupId,
@@ -89,6 +103,10 @@ class AcceptMessage extends AbstractIntroductionMessage {
 	@Nullable
 	public byte[] getMlKemEphemeralPublicKey() {
 		return mlKemEphemeralPublicKey;
+	}
+
+	public boolean isMacOnlyAuth() {
+		return macOnlyAuth;
 	}
 
 }

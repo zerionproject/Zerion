@@ -108,7 +108,7 @@ class IntroductionValidator extends BdfMessageValidator {
 
 	private BdfMessageContext validateAcceptMessage(Message m, BdfList body)
 			throws FormatException {
-		checkSize(body, 6, 9);
+		checkSize(body, 6, 10);
 
 		byte[] sessionIdBytes = body.getRaw(1);
 		checkLength(sessionIdBytes, UniqueId.LENGTH);
@@ -128,7 +128,7 @@ class IntroductionValidator extends BdfMessageValidator {
 		clientHelper
 				.parseAndValidateTransportPropertiesMap(transportProperties);
 
-		checkSize(body, 9);
+		checkSize(body, 9, 10);
 		long timer = validateAutoDeleteTimer(body.getOptionalLong(6));
 		byte[] mlDsaPubKey = body.getRaw(7);
 		checkLength(mlDsaPubKey, ML_DSA_65_PUBLIC_KEY_BYTES);
@@ -136,6 +136,9 @@ class IntroductionValidator extends BdfMessageValidator {
 		checkLength(mlKemEphemeralPublicKey,
 				INTRODUCTION_ML_KEM_PUBLIC_KEY_BYTES);
 		if (!mlKemKeyCheck.test(mlKemEphemeralPublicKey)) {
+			throw new FormatException();
+		}
+		if (body.size() == 10 && !body.getBoolean(9)) {
 			throw new FormatException();
 		}
 
@@ -190,7 +193,7 @@ class IntroductionValidator extends BdfMessageValidator {
 		checkLength(mac, MAC_BYTES);
 
 		byte[] signature = body.getRaw(4);
-		checkLength(signature, 1, Math.max(MAX_SIGNATURE_BYTES,
+		checkLength(signature, 0, Math.max(MAX_SIGNATURE_BYTES,
 				HYBRID_SIGNATURE_BYTES));
 
 		byte[] kemCiphertext = body.getRaw(5);

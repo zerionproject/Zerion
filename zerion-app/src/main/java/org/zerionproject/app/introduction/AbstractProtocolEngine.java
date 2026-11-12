@@ -39,6 +39,7 @@ import javax.annotation.concurrent.Immutable;
 
 import static org.zerionproject.app.api.autodelete.AutoDeleteConstants.NO_AUTO_DELETE_TIMER;
 import static org.zerionproject.app.api.introduction.IntroductionManager.CLIENT_ID;
+import static org.zerionproject.app.api.introduction.IntroductionManager.MAC_ONLY_AUTH_MIN_VERSION;
 import static org.zerionproject.app.api.introduction.IntroductionManager.MAJOR_VERSION;
 import static org.zerionproject.app.api.introduction.Role.INTRODUCEE;
 import static org.zerionproject.app.introduction.MessageType.ABORT;
@@ -133,6 +134,17 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 			Map<TransportId, TransportProperties> transportProperties,
 			boolean visible, @Nullable byte[] mlDsaPubKey,
 			@Nullable byte[] mlKemEphemeralPublicKey) throws DbException {
+		return sendAcceptMessage(txn, s, timestamp, ephemeralPublicKey,
+				acceptTimestamp, transportProperties, visible, mlDsaPubKey,
+				mlKemEphemeralPublicKey, false);
+	}
+
+	Message sendAcceptMessage(Transaction txn, PeerSession s, long timestamp,
+			PublicKey ephemeralPublicKey, long acceptTimestamp,
+			Map<TransportId, TransportProperties> transportProperties,
+			boolean visible, @Nullable byte[] mlDsaPubKey,
+			@Nullable byte[] mlKemEphemeralPublicKey, boolean macOnlyAuth)
+			throws DbException {
 		Message m;
 		ContactId c = clientHelper.getContactId(txn, s.getContactGroupId());
 		long timer = NO_AUTO_DELETE_TIMER;
@@ -142,7 +154,7 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		m = messageEncoder.encodeAcceptMessage(s.getContactGroupId(),
 				timestamp, s.getLastLocalMessageId(), s.getSessionId(),
 				ephemeralPublicKey, acceptTimestamp, transportProperties,
-				timer, mlDsaPubKey, mlKemEphemeralPublicKey);
+				timer, mlDsaPubKey, mlKemEphemeralPublicKey, macOnlyAuth);
 		sendMessage(txn, ACCEPT, s.getSessionId(), m, visible, timer);
 		if (timer != NO_AUTO_DELETE_TIMER) {
 			db.setCleanupTimerDuration(txn, m.getId(), timer);
@@ -298,5 +310,13 @@ abstract class AbstractProtocolEngine<S extends Session<?>>
 		int minorVersion = clientVersioningManager.getClientMinorVersion(txn, c,
 				CLIENT_ID, MAJOR_VERSION);
 		return minorVersion >= 1;
+	}
+
+	boolean contactSupportsMacOnlyAuth(Transaction txn, GroupId contactGroupId)
+			throws DbException {
+		ContactId c = clientHelper.getContactId(txn, contactGroupId);
+		int minorVersion = clientVersioningManager.getClientMinorVersion(txn, c,
+				CLIENT_ID, MAJOR_VERSION);
+		return minorVersion >= MAC_ONLY_AUTH_MIN_VERSION;
 	}
 }

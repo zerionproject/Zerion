@@ -44,6 +44,7 @@ import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_K
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_LOCAL;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_LOCAL_TIMESTAMP;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MAC_KEY;
+import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MAC_ONLY_AUTH;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_MASTER_KEY;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_ML_DSA_PUB_KEY;
 import static org.zerionproject.app.introduction.IntroductionConstants.SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY;
@@ -145,10 +146,11 @@ class SessionParserImpl implements SessionParser {
 		byte[] mlKemPriv = d.getOptionalRaw(
 				SESSION_KEY_ML_KEM_EPHEMERAL_PRIVATE_KEY);
 		byte[] ownKemSecret = d.getOptionalRaw(SESSION_KEY_OWN_KEM_SECRET);
+		boolean macOnlyAuth = d.getBoolean(SESSION_KEY_MAC_ONLY_AUTH, false);
 		return new Local(alice, lastLocalMessageId, localTimestamp,
 				ephemeralPublicKey, ephemeralPrivateKey, transportProperties,
 				acceptTimestamp, macKey, mlDsaPubKey, mlKemPub, mlKemPriv,
-				ownKemSecret);
+				ownKemSecret, macOnlyAuth);
 	}
 
 	private Remote parseRemote(BdfDictionary d) throws FormatException {
@@ -167,9 +169,10 @@ class SessionParserImpl implements SessionParser {
 		byte[] mlDsaPubKey = d.getOptionalRaw(SESSION_KEY_ML_DSA_PUB_KEY);
 		byte[] mlKemPub = d.getOptionalRaw(
 				SESSION_KEY_ML_KEM_EPHEMERAL_PUBLIC_KEY);
+		boolean macOnlyAuth = d.getBoolean(SESSION_KEY_MAC_ONLY_AUTH, false);
 		return new Remote(alice, remoteAuthor, lastRemoteMessageId,
 				ephemeralPublicKey, transportProperties, acceptTimestamp,
-				macKey, mlDsaPubKey, mlKemPub);
+				macKey, mlDsaPubKey, mlKemPub, macOnlyAuth);
 	}
 
 	private int getState(BdfDictionary d) throws FormatException {
