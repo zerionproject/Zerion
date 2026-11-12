@@ -41,7 +41,6 @@ that one could exist. The transcript simulator below is that tool for Zerion.
 | Root key renewals | confirmation MACs under keys derived from the evolving root (`RootEvolutionCrypto`) | anyone holding the root being renewed |
 | Mesh envelopes between two phones that have exchanged mesh link keys (3.0.19) | the keyed trailer: a MAC under a key derived from the pair's link key (`AsyncSealedSender`, V2) | anyone holding the link key |
 | Pairing between two 3.0.19 phones | the contact record carries one tag under the exchange key over the record's contents (role, author record, ML-DSA-65 key, transport properties, timestamp, static ML-KEM-768 key and session id); the identity keys sign nothing | anyone holding the exchange key, which both phones wipe when the exchange ends |
-| Introductions between two 3.0.19 introducees through a 3.0.19 introducer | the AUTH step carries only the MAC under the key the two introducees derive, which already binds the introducer, both author ids, both timestamps, both ephemeral keys, both transport property sets and both ML-KEM keys; the identity keys sign nothing | either introducee, or anyone holding their shared key |
 | Prekey bundles to a contact on 3.0.19 | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | the two contacts |
 
 None of these records carries a signature by an identity key, so none of them
@@ -63,17 +62,18 @@ binds an identity to content in a way a third party can check.
 - **Channel feeds** are signed by the channel key, and comments and reactions
   by a key derived per channel from the member's identity key; the publisher
   and every subscriber must verify them without any shared key.
-- **Introductions with an older introducer or introducee, and prekey bundles
-  to a contact on 3.0.18 or earlier,** keep the signed forms of the earlier
-  releases: the introduction's AUTH step then carries an identity signature over
-  a value derived from the introduction's shared key, provable to a third party
-  only with one introducee's cooperation, and the bundle is signed by the
-  account key. Because the introducer relays the version announcements, a
-  dishonest introducer can present the other introducee as older and so still
-  obtain such a signature; that is what every introducer obtained up to 3.0.18,
-  and the signature never protected against the introducer, which could already
-  substitute the keys it relays. The simulator does not cover these two record
-  kinds.
+- **Introductions** always carry, in the AUTH step, an identity signature over
+  a value derived from the key only the two introducees share, so an
+  introduction is provable to a third party only with one introducee's
+  cooperation (the third party cannot check the signature without that key).
+  The signature is kept because the introducer relays both introducees'
+  identities and keys: with a MAC alone it could present one introducee's real
+  identity while running the other side itself and bind that identity to a
+  contact only the introducer can reach, which the signature makes detectable.
+  The simulator does not cover introductions.
+- **Prekey bundles to a contact on 3.0.18 or earlier** are signed by the
+  account key, as every bundle was up to 3.0.18. The simulator does not cover
+  them.
 - **Mesh envelopes towards a phone without mesh link keys** (3.0.18 and
   earlier) carry the account signature, and a pairing with a phone on an
   earlier version keeps the identity signatures of the older contact exchange.

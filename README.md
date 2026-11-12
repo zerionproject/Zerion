@@ -37,7 +37,7 @@ Each device holds its own contacts, messages, keys and state in an encrypted dat
 | Message AEAD on the wire | XSalsa20-Poly1305 (24-byte nonce, 16-byte tag) |
 | Post-quantum key encapsulation | ML-KEM-768 |
 | Classical key agreement | X25519 |
-| Signatures on the pairing contact record and on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify, with the exceptions listed in [SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md); from 3.0.19 introductions between 3.0.19 peers and prekey bundles to 3.0.19 contacts carry a keyed MAC or the authenticated connection instead of a signature, as that file records) |
+| Signatures on the pairing contact record and on channel, group, introduction and mesh records | ML-DSA-65 + Ed25519 (hybrid; both halves must verify, with the exceptions listed in [SECURITY_CLAIMS.md](docs/protocol/SECURITY_CLAIMS.md); from 3.0.19 prekey bundles to 3.0.19 contacts rely on the authenticated connection instead of a signature, as that file records) |
 | Hashing, MAC and key derivation in the messaging core | keyed BLAKE2b-256 |
 | Message ratchet | Mode 3-Full: per-message ML-KEM-768 over a forward-secret chain; each side's key pair is new on every connection and rotates after 16 own frames on it |
 | Calls and vault AEAD | AES-256-GCM |

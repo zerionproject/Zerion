@@ -22,6 +22,8 @@ The introduction protocol's `AuthMessage` signs the AUTH nonce with a **hybrid E
 
 Not backward-compatible: a peer that does not send ML-DSA-65 and ML-KEM-768 keys fails validation or the session aborts.
 
+**Why the signature stays, and what it costs.** The AUTH MAC alone would authenticate the keys to the other introducee, but not against the introducer: the introducer relays both introducees' author records, identity keys and ephemeral keys, so with a MAC alone it could present one introducee's real author id and identity keys while running the other side of the introduction itself, and the victim would store a contact under a genuine identity that only the introducer can reach, with a safety-number comparison against the real person passing. The identity signature over the AUTH nonce is what makes that detectable: the introducer cannot produce it for an identity it does not hold. The cost is a limit on deniability, and a bounded one: the nonce is derived from the key only the two introducees share, so a third party cannot check the signature unless one introducee reveals that key, and the introduction is therefore provable only with one introducee's cooperation (docs/DENIABILITY.md).
+
 ---
 
 ## 1. Wire format changes
