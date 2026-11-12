@@ -250,6 +250,11 @@ public class MeshManager {
 
 	public AsyncPrekeyBundle publishBundle(ContactId audience)
 			throws DbException, GeneralSecurityException {
+		return publishBundle(audience, true);
+	}
+
+	public AsyncPrekeyBundle publishBundle(ContactId audience, boolean signed)
+			throws DbException, GeneralSecurityException {
 		AsyncPrekeyStore prekeyStore = store;
 		if (prekeyStore == null) {
 			prekeyStore = new AsyncPrekeyStore(crypto, settingsManager, clock);
@@ -259,6 +264,11 @@ public class MeshManager {
 						audienceOf(audience));
 		AsyncPrekeyStore.SignedPrekey spk = prekeyStore.getSignedPrekey();
 		AsyncMeshDelivery.Identity id = loadIdentity(prekeyStore);
+		if (!signed) {
+			return AsyncPrekeyBundle.createUnsigned(id.sigPub, id.agreePub,
+					AsyncPrekeyStore.PUBLISHED_SIGNED_PREKEY_ID, spk.pub,
+					spk.expiry, otks);
+		}
 		return AsyncPrekeyBundle.create(crypto, id.sigPub, id.sigPriv,
 				id.agreePub, AsyncPrekeyStore.PUBLISHED_SIGNED_PREKEY_ID,
 				spk.pub, spk.expiry, otks);
