@@ -253,45 +253,7 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
 				acceptTimestamp, transportProperties, null, mlDsaPubKey,
-				mlKemPubKey, true, null);
-		validator.validateMessage(message, group, body);
-	}
-
-	@Test
-	public void testAcceptsAcceptWithMacOnlyAuth() throws Exception {
-		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, null, mlDsaPubKey,
-				mlKemPubKey, true);
-		expectParsePublicKey();
-		expectParseTransportProperties();
-		expectEncodeMetadata(ACCEPT, NO_AUTO_DELETE_TIMER);
-		BdfMessageContext messageContext =
-				validator.validateMessage(message, group, body);
-
-		assertExpectedContext(messageContext, previousMsgId);
-	}
-
-	@Test(expected = FormatException.class)
-	public void testRejectsAcceptWithFalseMacOnlyAuth() throws Exception {
-		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, null, mlDsaPubKey,
-				mlKemPubKey, false);
-		expectParsePublicKey();
-		expectParseTransportProperties();
-		validator.validateMessage(message, group, body);
-	}
-
-	@Test(expected = FormatException.class)
-	public void testRejectsAcceptWithNonBooleanMacOnlyAuth()
-			throws Exception {
-		BdfList body = BdfList.of(ACCEPT.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), ephemeralPublicKey.getEncoded(),
-				acceptTimestamp, transportProperties, null, mlDsaPubKey,
-				mlKemPubKey, 1);
-		expectParsePublicKey();
-		expectParseTransportProperties();
+				mlKemPubKey, null);
 		validator.validateMessage(message, group, body);
 	}
 
@@ -580,21 +542,10 @@ public class IntroductionValidatorTest extends ValidatorTestCase {
 		validator.validateMessage(message, group, body);
 	}
 
-	@Test
-	public void testAcceptsEmptySignatureForAuth() throws Exception {
+	@Test(expected = FormatException.class)
+	public void testRejectsTooShortSignatureForAuth() throws Exception {
 		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
 				previousMsgId.getBytes(), mac, getRandomBytes(0), kemCiphertext);
-		expectEncodeMetadata(AUTH, NO_AUTO_DELETE_TIMER);
-		BdfMessageContext messageContext =
-				validator.validateMessage(message, group, body);
-
-		assertExpectedContext(messageContext, previousMsgId);
-	}
-
-	@Test(expected = FormatException.class)
-	public void testRejectsNullSignatureForAuth() throws Exception {
-		BdfList body = BdfList.of(AUTH.getValue(), sessionId.getBytes(),
-				previousMsgId.getBytes(), mac, null, kemCiphertext);
 		validator.validateMessage(message, group, body);
 	}
 

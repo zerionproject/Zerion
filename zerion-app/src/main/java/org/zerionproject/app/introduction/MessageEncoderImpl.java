@@ -168,34 +168,8 @@ class MessageEncoderImpl implements MessageEncoder {
 			Map<TransportId, TransportProperties> transportProperties,
 			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
 			@Nullable byte[] mlKemEphemeralPublicKey) {
-		return encodeAcceptMessage(contactGroupId, timestamp, previousMessageId,
-				sessionId, ephemeralPublicKey, acceptTimestamp,
-				transportProperties, autoDeleteTimer, mlDsaPubKey,
-				mlKemEphemeralPublicKey, false);
-	}
-
-	@Override
-	public Message encodeAcceptMessage(GroupId contactGroupId, long timestamp,
-			@Nullable MessageId previousMessageId, SessionId sessionId,
-			PublicKey ephemeralPublicKey, long acceptTimestamp,
-			Map<TransportId, TransportProperties> transportProperties,
-			long autoDeleteTimer, @Nullable byte[] mlDsaPubKey,
-			@Nullable byte[] mlKemEphemeralPublicKey, boolean macOnlyAuth) {
 		BdfList body;
-		if (macOnlyAuth && mlKemEphemeralPublicKey != null) {
-			body = BdfList.of(
-					ACCEPT.getValue(),
-					sessionId,
-					previousMessageId,
-					ephemeralPublicKey.getEncoded(),
-					acceptTimestamp,
-					clientHelper.toDictionary(transportProperties),
-					encodeTimer(autoDeleteTimer),
-					mlDsaPubKey,
-					mlKemEphemeralPublicKey,
-					true
-			);
-		} else if (mlKemEphemeralPublicKey != null) {
+		if (mlKemEphemeralPublicKey != null) {
 			body = BdfList.of(
 					ACCEPT.getValue(),
 					sessionId,

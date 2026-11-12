@@ -283,18 +283,16 @@ class IntroduceeProtocolEngine
 		long localTimestamp = getTimestampForVisibleMessage(txn, s);
 		byte[] localMlDsaPubKey =
 				identityManager.getLocalMlDsaSigPublicKey(txn);
-		boolean macOnlyAuth =
-				contactSupportsMacOnlyAuth(txn, s.getContactGroupId());
 		Message sent = sendAcceptMessage(txn, s, localTimestamp, publicKey,
 				localTimestamp, transportProperties, true, localMlDsaPubKey,
-				mlKemPub, macOnlyAuth);
+				mlKemPub);
 		conversationManager.trackOutgoingMessage(txn, sent);
 		switch (s.getState()) {
 			case AWAIT_RESPONSES:
 				return IntroduceeSession.addLocalAccept(s, LOCAL_ACCEPTED, sent,
 						publicKey, privateKey, localTimestamp,
 						transportProperties, localMlDsaPubKey, mlKemPub,
-						mlKemPriv, macOnlyAuth);
+						mlKemPriv);
 			case REMOTE_DECLINED:
 				return IntroduceeSession.clear(s, START, sent.getId(),
 						localTimestamp, s.getLastRemoteMessageId());
@@ -302,7 +300,7 @@ class IntroduceeProtocolEngine
 				return onLocalAuth(txn, IntroduceeSession.addLocalAccept(s,
 						AWAIT_AUTH, sent, publicKey, privateKey, localTimestamp,
 						transportProperties, localMlDsaPubKey, mlKemPub,
-						mlKemPriv, macOnlyAuth));
+						mlKemPriv));
 			default:
 				throw new AssertionError();
 		}
@@ -392,19 +390,14 @@ class IntroduceeProtocolEngine
 			SecretKey ourMacKey = s.getLocal().alice ? aliceMacKey : bobMacKey;
 			LocalAuthor localAuthor = identityManager.getLocalAuthor(txn);
 			mac = crypto.authMac(ourMacKey, s, localAuthor.getId());
-			if (isMacOnlyAuth(s)) {
-				signature = new byte[0];
-			} else {
-				byte[] localMlDsaPriv =
-						identityManager.getLocalMlDsaSigPrivateKey(txn);
-				try {
-					signature = crypto.sign(ourMacKey,
-							localAuthor.getPrivateKey(), localMlDsaPriv,
-							s.getRemote().mlDsaPubKey);
-				} finally {
-					if (localMlDsaPriv != null) {
-						java.util.Arrays.fill(localMlDsaPriv, (byte) 0);
-					}
+			byte[] localMlDsaPriv =
+					identityManager.getLocalMlDsaSigPrivateKey(txn);
+			try {
+				signature = crypto.sign(ourMacKey, localAuthor.getPrivateKey(),
+						localMlDsaPriv, s.getRemote().mlDsaPubKey);
+			} finally {
+				if (localMlDsaPriv != null) {
+					java.util.Arrays.fill(localMlDsaPriv, (byte) 0);
 				}
 			}
 		} catch (GeneralSecurityException e) {
@@ -440,14 +433,7 @@ class IntroduceeProtocolEngine
 						!s.getLocal().alice);
 				crypto.verifyAuthMacWithKey(m.getMac(), s, localAuthor.getId(),
 						peerMacKey);
-				if (isMacOnlyAuth(s)) {
-					if (m.getSignature().length != 0) {
-						throw new GeneralSecurityException();
-					}
-				} else {
-					crypto.verifySignatureWithKey(m.getSignature(), s,
-							peerMacKey);
-				}
+				crypto.verifySignatureWithKey(m.getSignature(), s, peerMacKey);
 				byte[] ownSs = s.getLocal().ownKemSecret;
 				byte[] aliceSs = s.getLocal().alice ? ownSs : peerKemSecret;
 				byte[] bobSs = s.getLocal().alice ? peerKemSecret : ownSs;
@@ -486,10 +472,6 @@ class IntroduceeProtocolEngine
 		long localTimestamp = getTimestampForInvisibleMessage(s);
 		Message sent = sendActivateMessage(txn, s, localTimestamp, mac);
 		return IntroduceeSession.awaitActivate(s, m, sent, keys);
-	}
-
-	static boolean isMacOnlyAuth(IntroduceeSession s) {
-		return s.getLocal().macOnlyAuth && s.getRemote().macOnlyAuth;
 	}
 
 	static IntroduceeSession withFinalKeys(IntroductionCrypto crypto,

@@ -46,6 +46,4 @@ interface IntroductionConstants {
 
 	String SESSION_KEY_OWN_KEM_SECRET = "ownKemSecret";
 
-	String SESSION_KEY_MAC_ONLY_AUTH = "macOnlyAuth";
-
 }

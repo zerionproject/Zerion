@@ -16,7 +16,6 @@ import org.zerionproject.core.test.BrambleTestCase;
 import org.zerionproject.app.api.client.SessionId;
 import org.junit.Test;
 
-import java.security.GeneralSecurityException;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -149,16 +148,6 @@ public class IntroductionCryptoIntegrationTest extends BrambleTestCase {
 				crypto.sign(macKey, alice.getPrivateKey(), mlDsaPriv, mlDsaPub);
 		crypto.verifySignature(macKey, alice.getPublicKey(), signature,
 				mlDsaPub);
-	}
-
-	@Test(expected = GeneralSecurityException.class)
-	public void testEmptySignatureIsRefused() throws Exception {
-		SecretKey macKey = crypto.deriveMacKey(masterKey, true);
-		KeyPair hybridKeyPair = cryptoComponent.generateHybridSignatureKeyPair();
-		HybridSignaturePublicKey hybridPublic =
-				(HybridSignaturePublicKey) hybridKeyPair.getPublic();
-		crypto.verifySignature(macKey, alice.getPublicKey(), new byte[0],
-				hybridPublic.getMlDsaPublicKey());
 	}
 
 	@Test
