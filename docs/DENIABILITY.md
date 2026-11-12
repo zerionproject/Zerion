@@ -40,7 +40,7 @@ that one could exist. The transcript simulator below is that tool for Zerion.
 | Contact requests | MACs and an AEAD seal under keys agreed for the request (`ContactRequestCrypto`) | anyone holding the request's agreed key |
 | Root key renewals | confirmation MACs under keys derived from the evolving root (`RootEvolutionCrypto`) | anyone holding the root being renewed |
 | Mesh envelopes between two phones that have exchanged mesh link keys (3.0.19) | the keyed trailer: a MAC under a key derived from the pair's link key (`AsyncSealedSender`, V2) | anyone holding the link key |
-| Pairing between two 3.0.19 phones | the contact record carries one tag under the exchange key over the record's contents (role, author record, ML-DSA-65 key, transport properties, timestamp, static ML-KEM-768 key and session id); the identity keys sign nothing | anyone holding the exchange key, which both phones wipe when the exchange ends |
+| Pairing by link or invite that creates a new contact between two 3.0.19 phones | the contact record carries one tag under the exchange key over the record's contents (role, author record, ML-DSA-65 key, transport properties, timestamp, static ML-KEM-768 key and session id); the identity keys sign nothing | anyone holding the exchange key, which both phones wipe when the exchange ends |
 | Prekey bundles to a contact on 3.0.19 | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | anyone can fabricate the bundle bytes; only the authenticated contact connection they arrive over binds them to a sender |
 
 None of these records carries a signature by an identity key, so none of them
@@ -77,6 +77,12 @@ binds an identity to content in a way a third party can check.
 - **Mesh envelopes towards a phone without mesh link keys** (3.0.18 and
   earlier) carry the account signature, and a pairing with a phone on an
   earlier version keeps the identity signatures of the older contact exchange.
+- **Re-adding a contact you already have, and in-person pairings** (a QR code
+  scanned in person, the nearby pairing) carry the identity signatures of the
+  contact exchange even between two 3.0.19 phones, because replacing a stored
+  contact's keys must prove possession of that contact's identity keys. The
+  signatures cover values derived from the exchange key, so they are provable
+  only to a holder of that key, which both phones wipe when the exchange ends.
 
 ## The transcript simulator
 
@@ -126,7 +132,8 @@ The last command prints every option. What each scenario forges:
   contact information (name and Ed25519 key for the author record, ML-DSA-65
   key, transport properties, timestamp, static ML-KEM-768 key and ephemeral
   X25519 key) and computes the tag each contact record carries between two
-  3.0.19 phones, over the production `ExchangeTranscript` inputs and under
+  3.0.19 phones when the pairing creates a new contact, over the production
+  `ExchangeTranscript` inputs and under
   the production label. With `--verify` both tags must pass
   `CryptoComponent.verifyMac`.
 
