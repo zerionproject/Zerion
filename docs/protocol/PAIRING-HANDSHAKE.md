@@ -9,10 +9,12 @@ contact exchange:
 - **Nearby key agreement** (`KeyAgreementProtocol`, BQP version 5): used by
   the nearby pairing code over Bluetooth or the local network.
 - **Contact exchange** (`ContactExchangeManagerImpl`): runs on the same
-  connection after either one. Each side sends its author, transport
-  properties, an Ed25519 signature and a hybrid Ed25519 + ML-DSA-65 signature
-  over a nonce, encrypted under header keys; the contact is then stored with
-  the session root.
+  connection after either one. Each side sends its author, its ML-DSA-65
+  public key and its transport properties, encrypted under header keys,
+  together with a tag under the exchange key when key separation was
+  negotiated or, with an earlier peer, an Ed25519 signature and a hybrid
+  Ed25519 + ML-DSA-65 signature over a nonce; the contact is then stored
+  with the session root.
 
 This document describes the keys each step uses. The record layouts are in
 `HandshakeRecordTypes`, `RecordTypes` and
@@ -43,11 +45,11 @@ root         = KDF("org.zerionproject.core.handshake/ROOT_KEY_V5", K)
 length-prefixed). The confirmation key keys the two proofs of ownership
 (`ALICE_PROOF`, `BOB_PROOF`) and the Mode 3 capability MAC. The exchange key
 replaces `K` in the contact exchange: the header keys
-(`ALICE_HEADER_KEY`, `BOB_HEADER_KEY`) and the signed nonces (`ALICE_NONCE`,
-`BOB_NONCE`) are derived from it. The root is stored for the contact and is
-never an input of anything sent during the handshake or the contact
-exchange. The labels of the MACs and of the contact exchange are unchanged;
-only their key changes. `HandshakeKeySeparationTest` checks that no key used
+(`ALICE_HEADER_KEY`, `BOB_HEADER_KEY`) are derived from it and it keys the
+authentication tag of the contact record (below). The root is stored for the
+contact and is never an input of anything sent during the handshake or the
+contact exchange. The labels of the handshake MACs and of the header keys
+are unchanged; only their key changes. `HandshakeKeySeparationTest` checks that no key used
 during the run equals the root or the exchange key, and that the proofs are
 MACs under the confirmation key; `ContactExchangeIntegrationTest` runs the
 same check across a handshake and the contact exchange that follows it.
@@ -64,37 +66,82 @@ The BQP confirmation records were already keyed by a separate
 `KDF(CONFIRMATION_KEY, s)` and do not change; the change is that the contact
 exchange after a nearby pairing uses `exchange` instead of the root.
 
-### The B.3 proof signs a MAC under the exchange key
+### The contact record carries a tag under the exchange key
 
-The contact record of a link pairing carries the B.3 proof: an Ed25519
-signature by the identity key over the signer's role, a session value and
-the signer's static ML-KEM-768 public key (`B3PqProof`,
-[B3_RECORD_PLACEMENT.md](../wire/B3_RECORD_PLACEMENT.md)). Up to 3.0.18 the
-session value was the public session id, `BLAKE2b(key =
-ZERION_HANDSHAKE_SESSION_v1, sorted ephemeral X25519 keys)`. Anyone holding
-the two ephemeral keys and the two contact records could therefore check both
-signatures and prove, without the cooperation of either party, that the two
-identities paired with each other. From 3.0.19, when key separation was
-negotiated, the session value is instead
+Up to 3.0.18 the contact record carried three signatures by the long-term
+identity keys: `signature` (Ed25519 over `MAC(ALICE_NONCE or BOB_NONCE,
+K)`), `hybridSignature` (Ed25519 + ML-DSA-65 over the same nonce) and the
+B.3 proof (`B3PqProof`, Ed25519 over the signer's role, the session id
+`BLAKE2b(key = ZERION_HANDSHAKE_SESSION_v1, sorted ephemeral X25519 keys)`
+and the signer's static ML-KEM-768 public key,
+[B3_RECORD_PLACEMENT.md](../wire/B3_RECORD_PLACEMENT.md)). They are only
+ever checked by the peer, who holds `K` and therefore already knows who
+completed the handshake. But they are signatures by identity keys over
+values that either party can later reveal: whoever holds the two ephemeral
+keys and the two records can check both B.3 proofs, and either peer can hand
+over `K` and let a third party check all three signatures, which proves that
+the two identities paired with each other.
+
+From 3.0.19, when key separation was negotiated, the record carries no
+signature at all. The `signature` slot holds a 32-byte tag
 
 ```
-sessionTag = MAC("org.zerionproject.core.handshake/B3_SESSION_V2", exchange, sessionId)
+tag = MAC("org.zerionproject.app.contact/EXCHANGE_TAG_V2", exchange,
+          role, author, mlDsaSigPub, properties, timestamp,
+          staticPqPub, sessionId)
 ```
 
-(`CryptoComponent.mac`, keyed BLAKE2b-256, 32 bytes) and the proof input
-carries the label `ZERION_PQ_KEY_PROOF_v2` instead of
-`ZERION_PQ_KEY_PROOF_v1`, so a proof of one form never verifies as the
-other. The signature can only be checked by someone who holds the exchange
-key, and both phones wipe that key when the contact exchange ends, so
-afterwards not even the two parties can produce a verifiable record of the
-pairing. The `EXCHANGE` and `EXCHANGE_HYBRID` signatures of the contact
-record already sign a MAC under the exchange key and are unchanged. A pairing
-with an earlier phone (minor version 4, no key separation) keeps the v1
-proof over the public session id, byte for byte as before. `B3PqProofTest`
-pins the v1 vectors and checks that a v2 proof verifies only with the same
-exchange key and never as v1, and `ContactExchangeB3ProofTest` runs the
-contact exchange in both forms and checks that a proof of the other form is
-refused.
+(`CryptoComponent.mac`, keyed BLAKE2b-256; the label and every input are
+length-prefixed) over everything the record asserts, in this order: the
+sender's role (one byte, `0x01` for Alice and `0x02` for Bob, the roles of
+the header keys), the BDF encoding of the author list exactly as sent
+(format version, name, Ed25519 public key), the ML-DSA-65 public key (slot
+5), the BDF encoding of the transport properties dictionary exactly as sent
+(slot 1), the timestamp as 8 big-endian bytes (slot 3), the sender's static
+ML-KEM-768 public key (the 1184 bytes the B.3 proof covered) and the B.3
+session id of this handshake (32 bytes), which bind the tag to the committed
+static key and to this run's ephemeral keys. After a nearby pairing, which
+has no B.3 state, the last two inputs are empty. The `b3ProofSig` and
+`hybridSignature` slots are sent as empty raws, so the record keeps its 7
+slots. The receiver recomputes the tag with the peer's role over the fields
+it received and compares in constant time (`CryptoComponent.verifyMac`). A
+record that carries signatures where a tag is expected, a tag next to
+signatures, or a tag where signatures are expected, is refused.
+
+What this keeps. The identity public keys sent under the tag are bound to
+the committed static keys: the exchange key exists only for a party that
+completed the handshake, which requires the static X25519 and ML-KEM-768
+private keys behind the link or QR commitment, so the Ed25519 and ML-DSA-65
+public keys in a record whose tag verifies come from the holder of the
+committed keys. The ML-DSA-65 key is stored for the contact as before,
+because the tag covers it. The static ML-KEM-768 key is bound in the record
+where the B.3 proof bound it, so the flag the exchange stores for the
+contact (`B3_SLOT_PRESENT_KEY_PREFIX`, read by
+`ClientVersioningManagerImpl`) keeps its meaning: it is set after a link
+pairing, where the static key and the session id are inputs of the tag, and
+not after a nearby pairing. A peer could present an identity public key it
+does not own (an unknown key share); before, that required producing
+signatures under that key. It gains nothing: it cannot sign or decrypt as
+that identity later, an introduction of that contact fails because the
+introducee must sign with the identity key, and the stored ML-DSA-65 key
+means the later identity exchange (`ContactIdentityExchange`) is never run
+for the contact.
+
+What this changes. A holder of the exchange key can compute both tags
+itself, so the records prove nothing to a third party even while the key
+exists: both peers can produce them, and so could anyone who was given the
+key. Without the exchange key a record cannot be checked at all. Both phones
+wipe the exchange key when the contact exchange ends, and neither record
+carries a signature by an identity key, so afterwards not even the two
+parties can show that the other identity took part. With an earlier peer
+(minor version 4, no key separation) the three signatures are sent and
+checked byte for byte as before, with the B.3 proof over the public session
+id. `ContactExchangeTagTest` pins the tag layout and that the receiving side
+computes the same tag with the same key; `ContactExchangeB3ProofTest` runs
+the contact exchange in both forms and checks that a tag under another key,
+under the other role, over another timestamp or without the static key is
+refused, that signatures in place of a tag, and a tag next to signatures,
+are refused with separated keys, and that a tag is refused without them.
 
 ## Negotiation
 
@@ -178,8 +225,8 @@ with a peer that does not support the change.
 | 3.0.19 | iOS, desktop | refused: they announce handshake minor version 2, below the minimum of 4 that Android has required since 3.0.12, so this change does not affect them | iOS has no BQP implementation in its repository (checked at commit `cfa4742`); the desktop branch speaks BQP version 4, which is refused |
 
 The contact exchange learns the decision from the key agreement
-(`HandshakeResult.isKeySeparated`, `KeyAgreementResult.isKeySeparated`) and
-runs unchanged otherwise. Contacts added before 3.0.19 keep their stored
+(`HandshakeResult.isKeySeparated`, `KeyAgreementResult.isKeySeparated`),
+sends the tag form with separated keys and the signature form otherwise. Contacts added before 3.0.19 keep their stored
 root; nothing is re-derived.
 
 ## Wiping

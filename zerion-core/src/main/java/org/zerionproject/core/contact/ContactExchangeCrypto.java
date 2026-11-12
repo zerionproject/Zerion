@@ -21,5 +21,9 @@ interface ContactExchangeCrypto {
 	boolean verifyHybrid(PublicKey ed25519PublicKey, byte[] mlDsaPublicKey,
 			SecretKey masterKey, boolean alice, byte[] signature);
 
-	byte[] b3SessionTag(SecretKey exchangeKey, byte[] sessionId);
+	byte[] exchangeTag(SecretKey exchangeKey, boolean alice,
+			ExchangeTranscript transcript);
+
+	boolean verifyExchangeTag(byte[] tag, SecretKey exchangeKey,
+			boolean alice, ExchangeTranscript transcript);
 }

@@ -1,19 +1,12 @@
 package org.zerionproject.core.contact;
 
-import org.zerionproject.core.api.crypto.CryptoComponent;
-import org.zerionproject.core.api.crypto.SecretKey;
-import org.zerionproject.core.test.TestSecureRandomProvider;
 import org.junit.Test;
 
-import java.lang.reflect.Constructor;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL;
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL_V2;
 import static org.zerionproject.core.api.contact.B3Constants.B3_ROLE_ALICE;
 import static org.zerionproject.core.api.contact.B3Constants.B3_ROLE_BOB;
-import static org.zerionproject.core.api.contact.B3Constants.B3_SESSION_TAG_LABEL;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SIG_INPUT_LEN;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -260,116 +253,6 @@ public class B3PqProofTest {
 		byte[] sig2 = B3PqProof.sign(signing.priv, bobEph, aliceEph, pq2);
 		assertNotEquals("One bit flip in input must change the sig",
 				toHex(sig1), toHex(sig2));
-	}
-
-	@Test
-	public void v2ProofVerifiesOnlyWithTheSameExchangeKey() throws Exception {
-		CryptoComponent crypto = cryptoComponent();
-		ContactExchangeCryptoImpl exchangeCrypto =
-				new ContactExchangeCryptoImpl(crypto);
-		Ed25519KeyPair signing = Ed25519KeyPair.generate(seededRng(70));
-		byte[] aliceEph = randomBytes(32, 71);
-		byte[] bobEph = randomBytes(32, 72);
-		byte[] bobPq = randomBytes(1184, 73);
-		SecretKey exchangeKey = new SecretKey(randomBytes(32, 74));
-		SecretKey otherKey = new SecretKey(randomBytes(32, 75));
-
-		byte role = B3PqProof.roleFor(bobEph, aliceEph);
-		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
-		byte[] tag = exchangeCrypto.b3SessionTag(exchangeKey, sessionId);
-		assertEquals(32, tag.length);
-		assertArrayEquals(crypto.mac(B3_SESSION_TAG_LABEL, exchangeKey,
-				sessionId), tag);
-		assertArrayEquals("Both sides derive the same session tag",
-				exchangeCrypto.b3SessionTag(exchangeKey,
-						B3PqProof.computeSessionId(aliceEph, bobEph)), tag);
-		assertFalse(Arrays.equals(sessionId, tag));
-
-		byte[] sig = B3PqProof.sign(signing.priv, role, tag, bobPq,
-				B3_KEY_PROOF_LABEL_V2);
-		assertEquals(64, sig.length);
-		assertTrue("v2 proof verifies with the same exchange key",
-				B3PqProof.verify(signing.pub, role, tag, bobPq, sig,
-						B3_KEY_PROOF_LABEL_V2));
-
-		byte[] otherTag = exchangeCrypto.b3SessionTag(otherKey, sessionId);
-		assertFalse("another exchange key gives another session tag",
-				Arrays.equals(tag, otherTag));
-		assertFalse("v2 proof fails with another exchange key",
-				B3PqProof.verify(signing.pub, role, otherTag, bobPq, sig,
-						B3_KEY_PROOF_LABEL_V2));
-		assertFalse("v2 proof fails against the public session id",
-				B3PqProof.verify(signing.pub, role, sessionId, bobPq, sig,
-						B3_KEY_PROOF_LABEL_V2));
-		assertFalse("v2 proof fails when checked as v1",
-				B3PqProof.verify(signing.pub, bobEph, aliceEph, bobPq, sig));
-		assertFalse("v2 proof fails as v1 even over the tag",
-				B3PqProof.verify(signing.pub, role, tag, bobPq, sig,
-						B3_KEY_PROOF_LABEL));
-	}
-
-	@Test
-	public void v1ProofFailsWhenCheckedAsV2() throws Exception {
-		CryptoComponent crypto = cryptoComponent();
-		ContactExchangeCryptoImpl exchangeCrypto =
-				new ContactExchangeCryptoImpl(crypto);
-		Ed25519KeyPair signing = Ed25519KeyPair.generate(seededRng(80));
-		byte[] aliceEph = randomBytes(32, 81);
-		byte[] bobEph = randomBytes(32, 82);
-		byte[] bobPq = randomBytes(1184, 83);
-		SecretKey exchangeKey = new SecretKey(randomBytes(32, 84));
-
-		byte[] v1 = B3PqProof.sign(signing.priv, bobEph, aliceEph, bobPq);
-		assertTrue(B3PqProof.verify(signing.pub, bobEph, aliceEph, bobPq, v1));
-
-		byte role = B3PqProof.roleFor(bobEph, aliceEph);
-		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
-		byte[] tag = exchangeCrypto.b3SessionTag(exchangeKey, sessionId);
-		assertFalse("v1 proof fails when checked as v2",
-				B3PqProof.verify(signing.pub, role, tag, bobPq, v1,
-						B3_KEY_PROOF_LABEL_V2));
-		assertFalse("v1 proof fails under the v2 label over the session id",
-				B3PqProof.verify(signing.pub, role, sessionId, bobPq, v1,
-						B3_KEY_PROOF_LABEL_V2));
-		assertArrayEquals("the explicit v1 form equals the v1 helper",
-				v1, B3PqProof.sign(signing.priv, role, sessionId, bobPq,
-						B3_KEY_PROOF_LABEL));
-	}
-
-	@Test
-	public void v2SigInputDiffersFromV1OnlyInTheLabel() {
-		byte[] sessionValue = randomBytes(32, 90);
-		byte[] pq = randomBytes(1184, 91);
-		byte[] v1 = B3PqProof.computeSigInput(B3_ROLE_ALICE, sessionValue, pq);
-		byte[] v2 = B3PqProof.computeSigInput(B3_KEY_PROOF_LABEL_V2,
-				B3_ROLE_ALICE, sessionValue, pq);
-		assertEquals(B3_SIG_INPUT_LEN, v1.length);
-		assertEquals(B3_SIG_INPUT_LEN, v2.length);
-		assertArrayEquals("ZERION_PQ_KEY_PROOF_v2".getBytes(),
-				Arrays.copyOfRange(v2, 4, 26));
-		assertArrayEquals(Arrays.copyOfRange(v1, 0, 25),
-				Arrays.copyOfRange(v2, 0, 25));
-		assertNotEquals(v1[25], v2[25]);
-		assertArrayEquals(Arrays.copyOfRange(v1, 26, v1.length),
-				Arrays.copyOfRange(v2, 26, v2.length));
-	}
-
-	@Test(expected = IllegalArgumentException.class)
-	public void aLabelOfAnotherLengthIsRefused() {
-		B3PqProof.computeSigInput("ZERION_PQ_KEY_PROOF_v10", B3_ROLE_ALICE,
-				randomBytes(32, 92), randomBytes(1184, 93));
-	}
-
-	private static CryptoComponent cryptoComponent() throws Exception {
-		Class<?> cryptoImpl = Class.forName(
-				"org.zerionproject.core.crypto.CryptoComponentImpl");
-		Constructor<?> cc = cryptoImpl.getDeclaredConstructor(
-				Class.forName(
-						"org.zerionproject.core.api.system.SecureRandomProvider"),
-				Class.forName("org.zerionproject.core.crypto.PasswordBasedKdf"));
-		cc.setAccessible(true);
-		return (CryptoComponent) cc.newInstance(
-				new TestSecureRandomProvider(), null);
 	}
 
 	private static byte[] bytes(int value, int len) {

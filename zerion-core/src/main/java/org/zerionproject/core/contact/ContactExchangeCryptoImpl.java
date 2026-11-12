@@ -10,11 +10,13 @@ import java.security.GeneralSecurityException;
 
 import javax.inject.Inject;
 
-import static org.zerionproject.core.api.contact.B3Constants.B3_SESSION_TAG_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.ALICE_KEY_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.ALICE_NONCE_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.BOB_KEY_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.BOB_NONCE_LABEL;
+import static org.zerionproject.core.contact.ContactExchangeConstants.EXCHANGE_ROLE_ALICE;
+import static org.zerionproject.core.contact.ContactExchangeConstants.EXCHANGE_ROLE_BOB;
+import static org.zerionproject.core.contact.ContactExchangeConstants.EXCHANGE_TAG_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.contact.ContactExchangeConstants.HYBRID_SIGNING_LABEL;
 import static org.zerionproject.core.contact.ContactExchangeConstants.SIGNING_LABEL;
@@ -92,8 +94,17 @@ class ContactExchangeCryptoImpl implements ContactExchangeCrypto {
 	}
 
 	@Override
-	public byte[] b3SessionTag(SecretKey exchangeKey, byte[] sessionId) {
-		return crypto.mac(B3_SESSION_TAG_LABEL, exchangeKey, sessionId);
+	public byte[] exchangeTag(SecretKey exchangeKey, boolean alice,
+			ExchangeTranscript transcript) {
+		return crypto.mac(EXCHANGE_TAG_LABEL, exchangeKey,
+				transcript.inputs(alice));
+	}
+
+	@Override
+	public boolean verifyExchangeTag(byte[] tag, SecretKey exchangeKey,
+			boolean alice, ExchangeTranscript transcript) {
+		return crypto.verifyMac(tag, EXCHANGE_TAG_LABEL, exchangeKey,
+				transcript.inputs(alice));
 	}
 
 	private byte[] deriveNonce(SecretKey masterKey, boolean alice) {
