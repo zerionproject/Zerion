@@ -30,6 +30,7 @@ public class AsyncMeshSenderAuthTest {
 	private AsyncSealedSender sealer;
 	private AsyncMeshDelivery.Identity sender;
 	private byte[] linkKey;
+	private AsyncPrekeyStore senderStore;
 
 	@Before
 	public void setUp() {
@@ -38,6 +39,8 @@ public class AsyncMeshSenderAuthTest {
 		sealer = new AsyncSealedSender(crypto);
 		sender = newIdentity();
 		linkKey = bytes(AsyncSealedSender.LINK_KEY_BYTES);
+		senderStore = new AsyncPrekeyStore(crypto,
+				new InMemorySettingsManager(), new SystemClock());
 	}
 
 	@Test
@@ -79,10 +82,11 @@ public class AsyncMeshSenderAuthTest {
 		byte[] payload = "signed as before".getBytes();
 
 		r.delivery.onFrame(sealTo(r, payload, null));
+		assertEquals(1, r.opened.size());
 		r.delivery.onFrame(sealTo(r, payload, peer -> null));
-
 		assertEquals(2, r.opened.size());
 		assertArrayEquals(payload, r.opened.get(0));
+		assertArrayEquals(payload, r.opened.get(1));
 	}
 
 	@Test
@@ -119,8 +123,7 @@ public class AsyncMeshSenderAuthTest {
 	private byte[] sealTo(Recipient r, byte[] payload,
 			@Nullable AsyncMeshDelivery.SenderLinkKeys keys)
 			throws Exception {
-		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
-				new InMemorySettingsManager(), new SystemClock());
+		AsyncPrekeyStore sStore = senderStore;
 		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
 				sStore, (a, b, c, d) -> true, sender, new SystemClock(),
 				keys);
@@ -133,8 +136,7 @@ public class AsyncMeshSenderAuthTest {
 	}
 
 	private byte[] cover(byte[] payload) throws Exception {
-		AsyncPrekeyStore sStore = new AsyncPrekeyStore(crypto,
-				new InMemorySettingsManager(), new SystemClock());
+		AsyncPrekeyStore sStore = senderStore;
 		AsyncMeshDelivery sDelivery = new AsyncMeshDelivery(crypto, sealer,
 				sStore, (a, b, c, d) -> true, sender, new SystemClock());
 		List<byte[]> captured = new ArrayList<>();
