@@ -2,10 +2,12 @@ package org.zerionproject.core.contact;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.client.ClientHelper;
+import org.zerionproject.core.api.contact.Contact;
 import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.contact.HandshakeManager.HandshakeResult;
 import org.zerionproject.core.api.contact.PendingContact;
 import org.zerionproject.core.api.contact.event.PendingContactStateChangedEvent;
+import org.zerionproject.core.api.crypto.PublicKey;
 import org.zerionproject.core.api.crypto.SecretKey;
 import org.zerionproject.core.api.data.BdfDictionary;
 import org.zerionproject.core.api.data.BdfList;
@@ -18,6 +20,7 @@ import org.zerionproject.core.api.lifecycle.LifecycleManager;
 import org.zerionproject.core.api.record.Record;
 import org.zerionproject.core.api.record.RecordReader;
 import org.zerionproject.core.api.record.RecordWriter;
+import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.api.transport.StreamWriter;
 import org.zerionproject.core.BrambleCoreIntegrationTestEagerSingletons;
 import org.zerionproject.core.test.BrambleTestCase;
@@ -31,6 +34,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,19 +42,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL;
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL_V2;
 import static org.zerionproject.core.api.contact.B3Constants.B3_PQ_PUB_LEN;
+import static org.zerionproject.core.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SIG_LEN;
+import static org.zerionproject.core.api.contact.B3Constants.B3_SLOT_PRESENT_KEY_PREFIX;
 import static org.zerionproject.core.api.contact.ContactType.BRIAR;
 import static org.zerionproject.core.api.contact.PendingContactState.OFFLINE;
 import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_AGREEMENT_PUBLIC_KEY_BYTES;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
+import static org.zerionproject.core.contact.ContactExchangeConstants.EXCHANGE_TAG_LENGTH;
 import static org.zerionproject.core.contact.ContactExchangeConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.contact.ContactExchangeRecordTypes.CONTACT_INFO;
 import static org.zerionproject.core.test.TestDuplexTransportConnection.createPair;
 import static org.zerionproject.core.test.TestUtils.deleteTestDirectory;
 import static org.zerionproject.core.test.TestUtils.getSecretKey;
 import static org.zerionproject.core.test.TestUtils.getTestDirectory;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -61,8 +68,9 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 
 	private static final int TIMEOUT = 30_000;
 
-	private enum BobProof {
-		V1, V2, V2_OTHER_KEY
+	private enum BobRecord {
+		SIGNATURES, TAG, TAG_OTHER_KEY, TAG_OTHER_ROLE, TAG_OTHER_TIMESTAMP,
+		TAG_WITHOUT_STATIC_KEY, TAG_WITH_SIGNATURES
 	}
 
 	private final File testDir = getTestDirectory();
@@ -123,7 +131,7 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 	}
 
 	@Nullable
-	private Throwable exchangeAgainst(boolean keySeparated, BobProof proof)
+	private Throwable exchangeAgainst(boolean keySeparated, BobRecord form)
 			throws Exception {
 		PendingContact bobFromAlice = addPendingContact(alice, bob);
 		HandshakeResult aliceResult = new HandshakeResult(
@@ -173,18 +181,62 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 		Record aliceRecord = recordReader.readRecord();
 		assertNotNull("Alice sends her info first", aliceRecord);
 		assertEquals(CONTACT_INFO, aliceRecord.getRecordType());
-		checkAliceProof(keySeparated, clientHelper.toList(
+		checkAliceRecord(keySeparated, clientHelper.toList(
 				aliceRecord.getPayload()));
 
-		byte[] signature = exchangeCrypto.sign(author.getPrivateKey(),
-				exchangeKey, false);
-		byte[] hybrid = exchangeCrypto.hybridSign(author.getPrivateKey(),
-				mlDsaPriv, exchangeKey, false);
-		byte[] bobProof = bobProof(proof, author, exchangeCrypto);
 		BdfList authorList = clientHelper.toList(author);
-		BdfList payload = BdfList.of(authorList, new BdfDictionary(),
-				signature, System.currentTimeMillis(), bobProof, mlDsaPub,
-				hybrid);
+		BdfDictionary props = new BdfDictionary();
+		long timestamp = System.currentTimeMillis();
+		byte[] bobPq = Arrays.copyOfRange(bobStaticHybridPub, 32,
+				32 + B3_PQ_PUB_LEN);
+		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
+		byte[] signingPriv = author.getPrivateKey().getEncoded();
+		byte[] slot2;
+		byte[] slot4 = new byte[0];
+		byte[] slot6 = new byte[0];
+		switch (form) {
+			case SIGNATURES:
+				slot2 = exchangeCrypto.sign(author.getPrivateKey(),
+						exchangeKey, false);
+				slot4 = B3PqProof.sign(signingPriv, bobEph, aliceEph, bobPq);
+				slot6 = exchangeCrypto.hybridSign(author.getPrivateKey(),
+						mlDsaPriv, exchangeKey, false);
+				break;
+			case TAG_WITH_SIGNATURES:
+				slot2 = tag(exchangeCrypto, clientHelper, exchangeKey, false,
+						authorList, mlDsaPub, props, timestamp, bobPq,
+						sessionId);
+				slot4 = B3PqProof.sign(signingPriv, bobEph, aliceEph, bobPq);
+				slot6 = exchangeCrypto.hybridSign(author.getPrivateKey(),
+						mlDsaPriv, exchangeKey, false);
+				break;
+			case TAG_OTHER_KEY:
+				slot2 = tag(exchangeCrypto, clientHelper, otherKey, false,
+						authorList, mlDsaPub, props, timestamp, bobPq,
+						sessionId);
+				break;
+			case TAG_OTHER_ROLE:
+				slot2 = tag(exchangeCrypto, clientHelper, exchangeKey, true,
+						authorList, mlDsaPub, props, timestamp, bobPq,
+						sessionId);
+				break;
+			case TAG_OTHER_TIMESTAMP:
+				slot2 = tag(exchangeCrypto, clientHelper, exchangeKey, false,
+						authorList, mlDsaPub, props, timestamp + 1, bobPq,
+						sessionId);
+				break;
+			case TAG_WITHOUT_STATIC_KEY:
+				slot2 = tag(exchangeCrypto, clientHelper, exchangeKey, false,
+						authorList, mlDsaPub, props, timestamp, null, null);
+				break;
+			default:
+				slot2 = tag(exchangeCrypto, clientHelper, exchangeKey, false,
+						authorList, mlDsaPub, props, timestamp, bobPq,
+						sessionId);
+				break;
+		}
+		BdfList payload = BdfList.of(authorList, props, slot2, timestamp,
+				slot4, mlDsaPub, slot6);
 		recordWriter.writeRecord(new Record(PROTOCOL_VERSION, CONTACT_INFO,
 				clientHelper.toByteArray(payload)));
 		recordWriter.flush();
@@ -194,50 +246,64 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 		return aliceError.get();
 	}
 
-	private byte[] bobProof(BobProof proof, LocalAuthor author,
-			ContactExchangeCrypto exchangeCrypto) {
-		byte[] bobPq = java.util.Arrays.copyOfRange(bobStaticHybridPub, 32,
-				32 + B3_PQ_PUB_LEN);
-		byte[] signingPriv = author.getPrivateKey().getEncoded();
-		if (proof == BobProof.V1) {
-			return B3PqProof.sign(signingPriv, bobEph, aliceEph, bobPq);
-		}
-		byte role = B3PqProof.roleFor(bobEph, aliceEph);
-		byte[] sessionId = B3PqProof.computeSessionId(bobEph, aliceEph);
-		SecretKey macKey = proof == BobProof.V2 ? exchangeKey : otherKey;
-		byte[] tag = exchangeCrypto.b3SessionTag(macKey, sessionId);
-		return B3PqProof.sign(signingPriv, role, tag, bobPq,
-				B3_KEY_PROOF_LABEL_V2);
+	private static byte[] tag(ContactExchangeCrypto exchangeCrypto,
+			ClientHelper clientHelper, SecretKey key, boolean alice,
+			BdfList authorList, byte[] mlDsaPub, BdfDictionary props,
+			long timestamp, @Nullable byte[] staticPqPub,
+			@Nullable byte[] sessionId) throws FormatException {
+		return exchangeCrypto.exchangeTag(key, alice, new ExchangeTranscript(
+				clientHelper.toByteArray(authorList), mlDsaPub,
+				clientHelper.toByteArray(props), timestamp, staticPqPub,
+				sessionId));
 	}
 
-	private void checkAliceProof(boolean keySeparated, BdfList payload)
+	private void checkAliceRecord(boolean keySeparated, BdfList payload)
 			throws Exception {
 		assertEquals(7, payload.size());
-		byte[] aliceProof = payload.getRaw(4);
-		assertEquals(B3_SIG_LEN, aliceProof.length);
-		byte[] aliceSigningPub =
-				alice.getIdentityManager().getLocalAuthor().getPublicKey()
-						.getEncoded();
-		byte[] alicePq = java.util.Arrays.copyOfRange(aliceStaticHybridPub,
-				32, 32 + B3_PQ_PUB_LEN);
-		byte role = B3PqProof.roleFor(aliceEph, bobEph);
+		ClientHelper clientHelper = bob.getClientHelper();
+		ContactExchangeCrypto exchangeCrypto = bob.getContactExchangeCrypto();
+		BdfList authorList = payload.getList(0);
+		BdfDictionary props = payload.getDictionary(1);
+		byte[] slot2 = payload.getRaw(2);
+		long timestamp = payload.getLong(3);
+		byte[] slot4 = payload.getRaw(4);
+		byte[] mlDsaPub = payload.getRaw(5);
+		byte[] slot6 = payload.getRaw(6);
+		PublicKey aliceSigningPub =
+				alice.getIdentityManager().getLocalAuthor().getPublicKey();
+		assertArrayEquals(alice.getIdentityManager()
+				.getLocalMlDsaSigPublicKey(), mlDsaPub);
+		byte[] alicePq = Arrays.copyOfRange(aliceStaticHybridPub, 32,
+				32 + B3_PQ_PUB_LEN);
 		byte[] sessionId = B3PqProof.computeSessionId(aliceEph, bobEph);
-		byte[] tag = bob.getContactExchangeCrypto()
-				.b3SessionTag(exchangeKey, sessionId);
-		boolean v1 = B3PqProof.verify(aliceSigningPub, aliceEph, bobEph,
-				alicePq, aliceProof);
-		boolean v2 = B3PqProof.verify(aliceSigningPub, role, tag, alicePq,
-				aliceProof, B3_KEY_PROOF_LABEL_V2);
-		boolean v2PublicSession = B3PqProof.verify(aliceSigningPub, role,
-				sessionId, alicePq, aliceProof, B3_KEY_PROOF_LABEL_V2);
-		boolean v1OverTag = B3PqProof.verify(aliceSigningPub, role, tag,
-				alicePq, aliceProof, B3_KEY_PROOF_LABEL);
-		assertEquals("with separated keys the proof signs the session tag",
-				keySeparated, v2);
-		assertEquals("without separated keys the proof signs the session id",
-				!keySeparated, v1);
-		assertFalse(v2PublicSession);
-		assertFalse(v1OverTag);
+		if (keySeparated) {
+			assertEquals(EXCHANGE_TAG_LENGTH, slot2.length);
+			assertEquals("no B.3 proof with separated keys", 0, slot4.length);
+			assertEquals("no hybrid signature with separated keys", 0,
+					slot6.length);
+			byte[] recomputed = tag(exchangeCrypto, clientHelper, exchangeKey,
+					true, authorList, mlDsaPub, props, timestamp, alicePq,
+					sessionId);
+			assertArrayEquals("the receiving side computes the same tag",
+					recomputed, slot2);
+			assertFalse("another key gives another tag", Arrays.equals(
+					tag(exchangeCrypto, clientHelper, otherKey, true,
+							authorList, mlDsaPub, props, timestamp, alicePq,
+							sessionId), slot2));
+			assertFalse("the tag is no signature by the identity key",
+					exchangeCrypto.verify(aliceSigningPub, exchangeKey, true,
+							slot2));
+		} else {
+			assertEquals(B3_SIG_LEN, slot2.length);
+			assertTrue(exchangeCrypto.verify(aliceSigningPub, exchangeKey,
+					true, slot2));
+			assertEquals(B3_SIG_LEN, slot4.length);
+			assertTrue(B3PqProof.verify(aliceSigningPub.getEncoded(),
+					aliceEph, bobEph, alicePq, slot4));
+			assertEquals(HYBRID_SIGNATURE_BYTES, slot6.length);
+			assertTrue(exchangeCrypto.verifyHybrid(aliceSigningPub, mlDsaPub,
+					exchangeKey, true, slot6));
+		}
 	}
 
 	private PendingContact addPendingContact(
@@ -253,51 +319,79 @@ public class ContactExchangeB3ProofTest extends BrambleTestCase {
 		return pendingContact;
 	}
 
-	private void assertAccepted(boolean keySeparated, BobProof proof)
+	private Contact assertAccepted(boolean keySeparated, BobRecord form)
 			throws Exception {
-		assertNull(exchangeAgainst(keySeparated, proof));
+		assertNull(exchangeAgainst(keySeparated, form));
 		ContactManager contacts = alice.getContactManager();
 		assertEquals(1, contacts.getContacts().size());
+		Contact contact = contacts.getContacts().iterator().next();
 		assertEquals(bob.getIdentityManager().getLocalAuthor().getId(),
-				contacts.getContacts().iterator().next().getAuthor().getId());
+				contact.getAuthor().getId());
+		assertArrayEquals(bob.getIdentityManager()
+				.getLocalMlDsaSigPublicKey(), contact.getMlDsaSigPublicKey());
+		Settings b3 = alice.getSettingsManager()
+				.getSettings(B3_SETTINGS_NAMESPACE);
+		assertEquals("the static ML-KEM key was bound in this exchange", "1",
+				b3.get(B3_SLOT_PRESENT_KEY_PREFIX + contact.getId().getInt()));
+		return contact;
 	}
 
-	private void assertRejected(boolean keySeparated, BobProof proof)
+	private void assertRejected(boolean keySeparated, BobRecord form)
 			throws Exception {
-		Throwable t = exchangeAgainst(keySeparated, proof);
-		assertTrue(proof + ": expected a format error, got " + t,
+		Throwable t = exchangeAgainst(keySeparated, form);
+		assertTrue(form + ": expected a format error, got " + t,
 				t instanceof FormatException);
-		assertEquals(proof + ": no contact may be stored", 0,
+		assertEquals(form + ": no contact may be stored", 0,
 				alice.getContactManager().getContacts().size());
 	}
 
 	@Test
-	public void separatedKeysAcceptAProofOverTheSessionTag()
+	public void separatedKeysAcceptATagUnderTheExchangeKey()
 			throws Exception {
-		assertAccepted(true, BobProof.V2);
-	}
-
-	@Test
-	public void separatedKeysRejectAProofOverThePublicSessionId()
-			throws Exception {
-		assertRejected(true, BobProof.V1);
+		assertAccepted(true, BobRecord.TAG);
 	}
 
 	@Test
 	public void separatedKeysRejectATagUnderAnotherKey() throws Exception {
-		assertRejected(true, BobProof.V2_OTHER_KEY);
+		assertRejected(true, BobRecord.TAG_OTHER_KEY);
 	}
 
 	@Test
-	public void earlierPeersKeepTheProofOverThePublicSessionId()
-			throws Exception {
-		assertAccepted(false, BobProof.V1);
+	public void separatedKeysRejectATagUnderTheOtherRole() throws Exception {
+		assertRejected(true, BobRecord.TAG_OTHER_ROLE);
 	}
 
 	@Test
-	public void earlierPeersRejectAProofOverTheSessionTag()
+	public void separatedKeysRejectATagOverAnotherTimestamp()
 			throws Exception {
-		assertRejected(false, BobProof.V2);
+		assertRejected(true, BobRecord.TAG_OTHER_TIMESTAMP);
+	}
+
+	@Test
+	public void separatedKeysRejectATagThatLeavesOutTheStaticKey()
+			throws Exception {
+		assertRejected(true, BobRecord.TAG_WITHOUT_STATIC_KEY);
+	}
+
+	@Test
+	public void separatedKeysRejectSignaturesInsteadOfATag()
+			throws Exception {
+		assertRejected(true, BobRecord.SIGNATURES);
+	}
+
+	@Test
+	public void separatedKeysRejectATagNextToSignatures() throws Exception {
+		assertRejected(true, BobRecord.TAG_WITH_SIGNATURES);
+	}
+
+	@Test
+	public void earlierPeersKeepTheThreeSignatures() throws Exception {
+		assertAccepted(false, BobRecord.SIGNATURES);
+	}
+
+	@Test
+	public void earlierPeersRejectATag() throws Exception {
+		assertRejected(false, BobRecord.TAG);
 	}
 
 	private byte[] randomBytes(int len) {

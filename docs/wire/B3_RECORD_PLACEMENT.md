@@ -23,7 +23,26 @@
 > empty. Slot 5 is the 1952-byte ML-DSA-65 public key and slot 6 a 3373-byte
 > hybrid Ed25519 + ML-DSA-65 signature over the same master-key nonce; both
 > are required and must verify. The nearby (QR / Bluetooth) path sends no B.3
-> proof (slot 4 is empty there). The handshake has a seventh record type,
+> proof (slot 4 is empty there).
+>
+> **3.0.19, separated keys.** When the key agreement negotiated key
+> separation (both sides at handshake minor version 5, or both QR codes
+> marked, see [PAIRING-HANDSHAKE.md](../protocol/PAIRING-HANDSHAKE.md)) the
+> record carries no signature at all. Slot 2 is a 32-byte tag
+> `MAC("org.zerionproject.app.contact/EXCHANGE_TAG_V2", exchangeKey, role,
+> authorList, mlDsaSigPub, propsDict, timestamp, staticPqPub, sessionId)`
+> (keyed BLAKE2b-256, every input length-prefixed) over the record's own
+> fields: the sender's role (`0x01` Alice, `0x02` Bob), the BDF bytes of
+> slots 0 and 1 exactly as sent, slot 5, slot 3 as 8 big-endian bytes, the
+> sender's 1184-byte static ML-KEM-768 public key and the 32-byte B.3 session
+> id of this handshake, both empty after a nearby pairing. Slots 4 and 6 are
+> empty raws and slot 5 still carries the ML-DSA-65 public key, which the tag
+> covers. The receiver recomputes the tag with the peer's role and compares
+> in constant time; signatures in place of the tag are refused, and a tag is
+> refused when separation was not negotiated. iOS announces handshake minor
+> version 2 and is refused by the link handshake, so its `CONTACT_INFO` is
+> unchanged; when iOS adopts key separation it must send and check the tag
+> form. The handshake has a seventh record type,
 > `0x06` `RECORD_TYPE_STATIC_KEM_CIPHERTEXT`, and received hybrid keys are
 > parsed, not only length-checked. The local hybrid handshake key pair rotates
 > after every completed contact addition, so it is not a long-term identity
@@ -154,23 +173,14 @@ theirEph, ourStaticPqPub)` per the helper at
 `Packages/ZerionCrypto/.../B3PqKeyProof.swift` (iOS). Byte-identical
 across platforms - pinned by `docs/wire/test_vectors/B3_v1.txt`.
 
-> **3.0.19.** When the link handshake negotiated key separation (both sides
-> at minor version 5, see PAIRING-HANDSHAKE.md), the session value the proof
-> signs is no longer the public sessionId but
-> `MAC("org.zerionproject.core.handshake/B3_SESSION_V2", exchangeKey,
-> sessionId)` (keyed BLAKE2b-256, 32 bytes, so `B3_SIG_INPUT_LEN` is
-> unchanged), and the sig-input label is `ZERION_PQ_KEY_PROOF_v2`. The proof
-> can then be checked only by a holder of the exchange key, which both sides
-> wipe when the exchange ends; with the public sessionId anyone holding the
-> two ephemerals and the two contact records could verify both signatures
-> and prove that the two identities paired. The `EXCHANGE` and
-> `EXCHANGE_HYBRID` signatures of slots 2 and 6 already sign a MAC under the
-> exchange key. A pairing with an earlier Android phone keeps the v1 form
-> above, byte for byte. iOS announces minor version 2 and is refused by the
-> link handshake, so `B3PqKeyProof.swift` stays byte-identical to the v1
-> form; when iOS adopts key separation it must sign the session tag under the
-> v2 label in the same way. Tests: `B3PqProofTest`,
-> `ContactExchangeB3ProofTest`.
+> **3.0.19.** When the key agreement negotiated key separation (see
+> PAIRING-HANDSHAKE.md) the record carries no B.3 proof: slot 4 is empty, and
+> the sender's static ML-KEM-768 public key and the session id are inputs of
+> the tag in slot 2 instead, together with the identity keys (see the current
+> wire format note at the top of this file). The v1 proof above is sent, byte
+> for byte, only to a peer without key separation (Android 3.0.12 to 3.0.18).
+> `B3PqKeyProof.swift` is unaffected. Tests: `B3PqProofTest`,
+> `ContactExchangeB3ProofTest`, `ContactExchangeTagTest`.
 
 ### Why B-revised, not C-1
 
@@ -369,14 +379,14 @@ Once shipped on both sides:
   sessionId differ.
 - **Domain separation.** Both labels (`ZERION_PQ_KEY_PROOF_v1` for the
   sig input, `ZERION_HANDSHAKE_SESSION_v1` as the BLAKE2b key for
-  sessionId) are unique to this purpose. No cross-protocol reuse. From
-  3.0.19 the separated form uses `ZERION_PQ_KEY_PROOF_v2` and the MAC label
-  `org.zerionproject.core.handshake/B3_SESSION_V2` (see the 3.0.19 note in
-  section 3).
-- **No transferable proof of pairing (3.0.19, key separation).** The
-  signed session value is a MAC under the exchange key, so the signature is
-  unverifiable to anyone without that key, which is wiped after the
-  exchange.
+  sessionId) are unique to this purpose. No cross-protocol reuse. The tag
+  of the separated form has its own label,
+  `org.zerionproject.app.contact/EXCHANGE_TAG_V2`.
+- **No transferable proof of pairing (3.0.19, key separation).** With
+  separated keys the record carries no B.3 proof and no other identity
+  signature; the static ML-KEM-768 key is bound by a tag under the exchange
+  key that both peers can compute, so the two records prove nothing to a
+  third party, and the exchange key is wiped when the exchange ends.
 - **Symmetric role.** Both sides compute role + sessionId from the same
   unsigned-byte lex sort of the ephemerals. No initiator/responder
   asymmetry.

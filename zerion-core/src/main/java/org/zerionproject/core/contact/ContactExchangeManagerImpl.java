@@ -43,19 +43,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 import javax.inject.Inject;
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL;
-import static org.zerionproject.core.api.contact.B3Constants.B3_KEY_PROOF_LABEL_V2;
 import static org.zerionproject.core.api.contact.B3Constants.B3_PQ_PUB_LEN;
 import static org.zerionproject.core.api.contact.B3Constants.B3_PROOF_ENABLED;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SETTINGS_NAMESPACE;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SIG_LEN;
 import static org.zerionproject.core.api.contact.B3Constants.B3_SLOT_PRESENT_KEY_PREFIX;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.HYBRID_SIGNATURE_BYTES;
+import static org.zerionproject.core.api.crypto.PostQuantumConstants.ML_DSA_65_PUBLIC_KEY_BYTES;
 import static org.zerionproject.core.api.identity.AuthorConstants.MAX_SIGNATURE_LENGTH;
 import static org.zerionproject.core.api.system.Clock.MIN_REASONABLE_TIME_MS;
+import static org.zerionproject.core.contact.ContactExchangeConstants.EXCHANGE_TAG_LENGTH;
 import static org.zerionproject.core.contact.ContactExchangeConstants.PROTOCOL_VERSION;
 import static org.zerionproject.core.contact.ContactExchangeRecordTypes.CONTACT_INFO;
 import static org.zerionproject.core.contact.ContactExchangeRecordTypes.REPLACE_KEYS;
@@ -210,50 +212,58 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 					.createContactExchangeStreamWriter(out, localHeaderKey);
 			RecordWriter recordWriter = recordWriterFactory
 					.createRecordWriter(streamWriter.getOutputStream(), classical);
-			byte[] localSignature = contactExchangeCrypto
-					.sign(localAuthor.getPrivateKey(), exchangeKey, alice);
 			long localTimestamp = clock.currentTimeMillis();
-
-			byte[] localB3ProofSig = null;
-			if (B3_PROOF_ENABLED
+			byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
+			if (localMlDsaSigPub == null) throw new DbException();
+			boolean localHybrid = B3_PROOF_ENABLED
 					&& ourStaticHybridPub != null
 					&& ourEphX25519 != null
-					&& theirEphX25519 != null) {
-				byte[] ourStaticPqPub = java.util.Arrays.copyOfRange(
-						ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
-				byte ourRole = B3PqProof.roleFor(ourEphX25519, theirEphX25519);
-				localB3ProofSig = B3PqProof.sign(
-						localAuthor.getPrivateKey().getEncoded(), ourRole,
-						b3SessionValue(exchangeKey, keySeparated, ourEphX25519,
-								theirEphX25519),
-						ourStaticPqPub, b3ProofLabel(keySeparated));
-			}
-
-			byte[] localMlDsaSigPub = identityManager.getLocalMlDsaSigPublicKey();
-			byte[] localMlDsaSigPriv =
-					identityManager.getLocalMlDsaSigPrivateKey();
-			if (localMlDsaSigPub == null || localMlDsaSigPriv == null) {
-				throw new DbException();
-			}
+					&& theirEphX25519 != null;
+			BdfList localAuthorList = clientHelper.toList(localAuthor);
+			BdfDictionary localProps =
+					clientHelper.toDictionary(localProperties);
+			byte[] localSignature;
+			byte[] localB3ProofSig = null;
 			byte[] localHybridSignature;
-			try {
-				localHybridSignature = contactExchangeCrypto.hybridSign(
-						localAuthor.getPrivateKey(), localMlDsaSigPriv, exchangeKey,
-						alice);
-			} finally {
-				java.util.Arrays.fill(localMlDsaSigPriv, (byte) 0);
+			if (keySeparated) {
+				localSignature = contactExchangeCrypto.exchangeTag(exchangeKey,
+						alice, transcript(localAuthorList, localMlDsaSigPub,
+								localProps, localTimestamp,
+								localHybrid ? ourStaticHybridPub : null,
+								ourEphX25519, theirEphX25519));
+				localHybridSignature = new byte[0];
+			} else {
+				localSignature = contactExchangeCrypto
+						.sign(localAuthor.getPrivateKey(), exchangeKey, alice);
+				if (localHybrid) {
+					byte[] ourStaticPqPub = Arrays.copyOfRange(
+							ourStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+					localB3ProofSig = B3PqProof.sign(
+							localAuthor.getPrivateKey().getEncoded(),
+							ourEphX25519, theirEphX25519, ourStaticPqPub);
+				}
+				byte[] localMlDsaSigPriv =
+						identityManager.getLocalMlDsaSigPrivateKey();
+				if (localMlDsaSigPriv == null) throw new DbException();
+				try {
+					localHybridSignature = contactExchangeCrypto.hybridSign(
+							localAuthor.getPrivateKey(), localMlDsaSigPriv,
+							exchangeKey, alice);
+				} finally {
+					Arrays.fill(localMlDsaSigPriv, (byte) 0);
+				}
 			}
 			boolean localReplacesKeys = intendsToReplaceKeys(p);
 			ContactInfo remoteInfo;
 			if (alice) {
-				sendContactInfo(recordWriter, localAuthor, localProperties,
+				sendContactInfo(recordWriter, localAuthorList, localProps,
 						localSignature, localTimestamp, localB3ProofSig,
 						localMlDsaSigPub, localHybridSignature);
 				sendReplaceKeys(recordWriter, localReplacesKeys);
 				remoteInfo = receiveContactInfo(recordReader);
 			} else {
 				remoteInfo = receiveContactInfo(recordReader);
-				sendContactInfo(recordWriter, localAuthor, localProperties,
+				sendContactInfo(recordWriter, localAuthorList, localProps,
 						localSignature, localTimestamp, localB3ProofSig,
 						localMlDsaSigPub, localHybridSignature);
 				sendReplaceKeys(recordWriter, localReplacesKeys);
@@ -261,45 +271,31 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Boolean remoteReplacesKeys = receiveReplaceKeys(recordReader);
 			streamWriter.sendEndOfStream();
 			recordReader.readRecord(r -> false, IGNORE);
-			PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
-			boolean sigOk = contactExchangeCrypto.verify(remotePublicKey,
-					exchangeKey, !alice, remoteInfo.signature);
-			if (!sigOk) {
-				throw new FormatException();
-			}
-			if (remoteInfo.mlDsaSigPubKey == null
-					|| remoteInfo.hybridSignature == null
-					|| !contactExchangeCrypto.verifyHybrid(remotePublicKey,
-					remoteInfo.mlDsaSigPubKey, exchangeKey, !alice,
-					remoteInfo.hybridSignature)) {
-				throw new FormatException();
-			}
-
 			boolean hybridExchange = B3_PROOF_ENABLED
 					&& theirStaticHybridPub != null
 					&& ourEphX25519 != null
 					&& theirEphX25519 != null;
-			if (hybridExchange && remoteInfo.b3ProofSig == null) {
-				throw new FormatException();
-			}
-			if (remoteInfo.b3ProofSig != null) {
-				if (theirStaticHybridPub == null
-						|| ourEphX25519 == null
-						|| theirEphX25519 == null) {
+			boolean staticPqBound;
+			if (keySeparated) {
+				if (remoteInfo.signature.length != EXCHANGE_TAG_LENGTH
+						|| remoteInfo.b3ProofSig != null
+						|| remoteInfo.hybridSignature != null) {
 					throw new FormatException();
 				}
-				byte[] theirStaticPqPub = java.util.Arrays.copyOfRange(
-						theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
-				byte[] remoteSigningPubBytes = remotePublicKey.getEncoded();
-				byte theirRole =
-						B3PqProof.roleFor(theirEphX25519, ourEphX25519);
-				boolean ok = B3PqProof.verify(remoteSigningPubBytes,
-						theirRole,
-						b3SessionValue(exchangeKey, keySeparated,
-								theirEphX25519, ourEphX25519),
-						theirStaticPqPub, remoteInfo.b3ProofSig,
-						b3ProofLabel(keySeparated));
-				if (!ok) throw new FormatException();
+				boolean tagOk = contactExchangeCrypto.verifyExchangeTag(
+						remoteInfo.signature, exchangeKey, !alice,
+						transcript(remoteInfo.authorList,
+								remoteInfo.mlDsaSigPubKey, remoteInfo.props,
+								remoteInfo.timestamp,
+								hybridExchange ? theirStaticHybridPub : null,
+								theirEphX25519, ourEphX25519));
+				if (!tagOk) throw new FormatException();
+				staticPqBound = hybridExchange;
+			} else {
+				verifySignatures(remoteInfo, exchangeKey, alice,
+						hybridExchange, theirStaticHybridPub, ourEphX25519,
+						theirEphX25519);
+				staticPqBound = remoteInfo.b3ProofSig != null;
 			}
 			long timestamp = Math.min(localTimestamp, remoteInfo.timestamp);
 			if (timestamp < MIN_REASONABLE_TIME_MS) {
@@ -307,8 +303,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			}
 			Contact contact = addContact(p, remoteInfo.author, localAuthor,
 					rootKey, timestamp, alice, verified, remoteInfo.properties,
-					remoteInfo.b3ProofSig != null,
-					remoteInfo.mlDsaSigPubKey, remoteReplacesKeys);
+					staticPqBound, remoteInfo.mlDsaSigPubKey,
+					remoteReplacesKeys);
 
 			return contact;
 		} finally {
@@ -317,24 +313,63 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		}
 	}
 
-	private byte[] b3SessionValue(SecretKey exchangeKey,
-			boolean keySeparated, byte[] localEph, byte[] remoteEph) {
-		byte[] sessionId = B3PqProof.computeSessionId(localEph, remoteEph);
-		if (!keySeparated) return sessionId;
-		return contactExchangeCrypto.b3SessionTag(exchangeKey, sessionId);
+	private void verifySignatures(ContactInfo remoteInfo,
+			SecretKey exchangeKey, boolean alice, boolean hybridExchange,
+			@Nullable byte[] theirStaticHybridPub,
+			@Nullable byte[] ourEphX25519, @Nullable byte[] theirEphX25519)
+			throws FormatException {
+		PublicKey remotePublicKey = remoteInfo.author.getPublicKey();
+		boolean sigOk = contactExchangeCrypto.verify(remotePublicKey,
+				exchangeKey, !alice, remoteInfo.signature);
+		if (!sigOk) {
+			throw new FormatException();
+		}
+		if (remoteInfo.hybridSignature == null
+				|| !contactExchangeCrypto.verifyHybrid(remotePublicKey,
+				remoteInfo.mlDsaSigPubKey, exchangeKey, !alice,
+				remoteInfo.hybridSignature)) {
+			throw new FormatException();
+		}
+		if (hybridExchange && remoteInfo.b3ProofSig == null) {
+			throw new FormatException();
+		}
+		if (remoteInfo.b3ProofSig != null) {
+			if (theirStaticHybridPub == null
+					|| ourEphX25519 == null
+					|| theirEphX25519 == null) {
+				throw new FormatException();
+			}
+			byte[] theirStaticPqPub = Arrays.copyOfRange(
+					theirStaticHybridPub, 32, 32 + B3_PQ_PUB_LEN);
+			boolean ok = B3PqProof.verify(remotePublicKey.getEncoded(),
+					theirEphX25519, ourEphX25519, theirStaticPqPub,
+					remoteInfo.b3ProofSig);
+			if (!ok) throw new FormatException();
+		}
 	}
 
-	private static String b3ProofLabel(boolean keySeparated) {
-		return keySeparated ? B3_KEY_PROOF_LABEL_V2 : B3_KEY_PROOF_LABEL;
+	private ExchangeTranscript transcript(BdfList authorList,
+			byte[] mlDsaSigPub, BdfDictionary props, long timestamp,
+			@Nullable byte[] staticHybridPub, @Nullable byte[] senderEph,
+			@Nullable byte[] receiverEph) throws FormatException {
+		byte[] staticPqPub = null;
+		byte[] sessionId = null;
+		if (staticHybridPub != null && senderEph != null
+				&& receiverEph != null) {
+			staticPqPub = Arrays.copyOfRange(staticHybridPub, 32,
+					32 + B3_PQ_PUB_LEN);
+			sessionId = B3PqProof.computeSessionId(senderEph, receiverEph);
+		}
+		return new ExchangeTranscript(clientHelper.toByteArray(authorList),
+				mlDsaSigPub, clientHelper.toByteArray(props), timestamp,
+				staticPqPub, sessionId);
 	}
 
-	private void sendContactInfo(RecordWriter recordWriter, Author author,
-			Map<TransportId, TransportProperties> properties, byte[] signature,
+	private void sendContactInfo(RecordWriter recordWriter,
+			BdfList authorList, BdfDictionary props, byte[] signature,
 			long timestamp, @Nullable byte[] b3ProofSig,
 			byte[] mlDsaSigPub, byte[] hybridSignature)
 			throws IOException {
-		BdfList authorList = clientHelper.toList(author);
-		BdfDictionary props = clientHelper.toDictionary(properties);
 		byte[] safeB3 = b3ProofSig != null ? b3ProofSig : new byte[0];
 		BdfList payload = BdfList.of(authorList, props, signature, timestamp,
 				safeB3, mlDsaSigPub, hybridSignature);
@@ -379,7 +414,8 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 		if (record == null) throw new EOFException();
 		BdfList payload = clientHelper.toList(record.getPayload());
 		if (payload.size() != 7) throw new FormatException();
-		Author author = clientHelper.parseAndValidateAuthor(payload.getList(0));
+		BdfList authorList = payload.getList(0);
+		Author author = clientHelper.parseAndValidateAuthor(authorList);
 		BdfDictionary props = payload.getDictionary(1);
 		Map<TransportId, TransportProperties> properties =
 				clientHelper.parseAndValidateTransportPropertiesMap(props);
@@ -395,19 +431,18 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			throw new FormatException();
 		}
 		byte[] mlDsaSigPub = payload.getRaw(5);
-		checkLength(mlDsaSigPub,
-				org.zerionproject.core.api.crypto.PostQuantumConstants
-						.ML_DSA_65_PUBLIC_KEY_BYTES,
-				org.zerionproject.core.api.crypto.PostQuantumConstants
-						.ML_DSA_65_PUBLIC_KEY_BYTES);
-		byte[] hybridSignature = payload.getRaw(6);
-		checkLength(hybridSignature,
-				org.zerionproject.core.api.crypto.PostQuantumConstants
-						.HYBRID_SIGNATURE_BYTES,
-				org.zerionproject.core.api.crypto.PostQuantumConstants
-						.HYBRID_SIGNATURE_BYTES);
-		return new ContactInfo(author, properties, signature, timestamp,
-				b3ProofSig, mlDsaSigPub, hybridSignature);
+		checkLength(mlDsaSigPub, ML_DSA_65_PUBLIC_KEY_BYTES,
+				ML_DSA_65_PUBLIC_KEY_BYTES);
+		byte[] hybridSignature = null;
+		byte[] slot6 = payload.getRaw(6);
+		if (slot6.length == HYBRID_SIGNATURE_BYTES) {
+			hybridSignature = slot6;
+		} else if (slot6.length != 0) {
+			throw new FormatException();
+		}
+		return new ContactInfo(author, authorList, properties, props,
+				signature, timestamp, b3ProofSig, mlDsaSigPub,
+				hybridSignature);
 	}
 
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
@@ -469,25 +504,27 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 	private static class ContactInfo {
 
 		private final Author author;
+		private final BdfList authorList;
 		private final Map<TransportId, TransportProperties> properties;
+		private final BdfDictionary props;
 		private final byte[] signature;
 		private final long timestamp;
 
 		@Nullable
 		private final byte[] b3ProofSig;
-		@Nullable
 		private final byte[] mlDsaSigPubKey;
 		@Nullable
 		private final byte[] hybridSignature;
 
-		private ContactInfo(Author author,
+		private ContactInfo(Author author, BdfList authorList,
 				Map<TransportId, TransportProperties> properties,
-				byte[] signature, long timestamp,
-				@Nullable byte[] b3ProofSig,
-				@Nullable byte[] mlDsaSigPubKey,
+				BdfDictionary props, byte[] signature, long timestamp,
+				@Nullable byte[] b3ProofSig, byte[] mlDsaSigPubKey,
 				@Nullable byte[] hybridSignature) {
 			this.author = author;
+			this.authorList = authorList;
 			this.properties = properties;
+			this.props = props;
 			this.signature = signature;
 			this.timestamp = timestamp;
 			this.b3ProofSig = b3ProofSig;
