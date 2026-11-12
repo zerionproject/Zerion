@@ -12,7 +12,7 @@ are specified in [protocol/ZWF-MODE3FULL.md](protocol/ZWF-MODE3FULL.md),
 
 ## What deniability means here
 
-Every one-to-one record in Zerion is authenticated with a key that both peers
+Every one-to-one record listed below is authenticated with a key that both peers
 hold: a MAC tag or an AEAD tag under a key derived from the pair's shared
 secret. The receiver knows the record came from the peer, because nobody else
 holds the key. A third party learns nothing of the kind from the same record:
@@ -41,7 +41,7 @@ that one could exist. The transcript simulator below is that tool for Zerion.
 | Root key renewals | confirmation MACs under keys derived from the evolving root (`RootEvolutionCrypto`) | anyone holding the root being renewed |
 | Mesh envelopes between two phones that have exchanged mesh link keys (3.0.19) | the keyed trailer: a MAC under a key derived from the pair's link key (`AsyncSealedSender`, V2) | anyone holding the link key |
 | Pairing between two 3.0.19 phones | the contact record carries one tag under the exchange key over the record's contents (role, author record, ML-DSA-65 key, transport properties, timestamp, static ML-KEM-768 key and session id); the identity keys sign nothing | anyone holding the exchange key, which both phones wipe when the exchange ends |
-| Prekey bundles to a contact on 3.0.19 | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | the two contacts |
+| Prekey bundles to a contact on 3.0.19 | bundle version 2 carries no signature; the authenticated contact connection proves who sent it and the identity key inside must be the sending contact's | anyone can fabricate the bundle bytes; only the authenticated contact connection they arrive over binds them to a sender |
 
 None of these records carries a signature by an identity key, so none of them
 binds an identity to content in a way a third party can check.
@@ -108,10 +108,14 @@ The last command prints every option. What each scenario forges:
   16-byte stream tag, the stream header and the 4096-byte frame for the first
   message of a direction, one frame for each later message. The frames are
   what a real connection writes, including the ML-KEM-768 encapsulations to the
-  peer's connection key once the peer has spoken. With `--verify` the
-  production receiver must have accepted and decrypted every frame to its text,
-  and a `ZwfTagRecogniser` built from the root key alone must recognise the
-  first frame of each direction.
+  peer's connection key once the peer has spoken. The endpoints draw their
+  ML-KEM connection key pairs from a connection seed that is printed with the
+  transcript. With `--verify` two fresh endpoints are built from the root key
+  and that seed, the forged bytes are fed to them in order, and every frame
+  must decrypt to its text; a `ZwfTagRecogniser` built from the root key alone
+  must recognise the first frame of each direction. A real receiving phone
+  holds its connection key pairs in memory instead of deriving them from a
+  seed; the frames are the same either way.
 - `mesh` takes or generates a 32-byte mesh link key, the sender's identity
   public key (1984 bytes; no private key is used), the send time, message type,
   time to live and the recipient's published prekey material, and seals a V2

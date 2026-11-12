@@ -15,7 +15,6 @@ import org.zerionproject.core.api.data.BdfWriterFactory;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.system.SecureRandomProvider;
 import org.zerionproject.core.contact.B3PqProof;
-import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.core.crypto.XSalsa20Poly1305AuthenticatedCipher;
 import org.zerionproject.core.crypto.async.AsyncEnvelope;
 import org.zerionproject.core.crypto.async.AsyncSealedSender;
@@ -40,6 +39,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,7 +47,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -69,6 +68,8 @@ public final class TranscriptSimulator {
 	private static final int ED25519_PUBLIC_KEY_BYTES = 32;
 	private static final int FIRST_FRAME_BYTES =
 			TAG_LENGTH + STREAM_HEADER_LENGTH + FRAME_LENGTH;
+	private static final String SEED_LABEL =
+			"org.zerionproject.tools/TRANSCRIPT_SIMULATOR_CONNECTION_SEED";
 
 	public static final class Message {
 
@@ -86,16 +87,14 @@ public final class TranscriptSimulator {
 		public final boolean fromAlice;
 		public final String text;
 		public final byte[] bytes;
-		public final String received;
 		public final boolean carriedPqSecret;
 		public final long streamId;
 
 		public Frame(boolean fromAlice, String text, byte[] bytes,
-				String received, boolean carriedPqSecret, long streamId) {
+				boolean carriedPqSecret, long streamId) {
 			this.fromAlice = fromAlice;
 			this.text = text;
 			this.bytes = bytes;
-			this.received = received;
 			this.carriedPqSecret = carriedPqSecret;
 			this.streamId = streamId;
 		}
@@ -104,16 +103,18 @@ public final class TranscriptSimulator {
 	public static final class OneToOneTranscript {
 
 		public final byte[] rootKey;
+		public final byte[] connectionSeed;
 		public final byte[] aliceTagKey;
 		public final byte[] bobTagKey;
 		public final byte[] aliceHeaderKey;
 		public final byte[] bobHeaderKey;
 		public final List<Frame> frames;
 
-		public OneToOneTranscript(byte[] rootKey, byte[] aliceTagKey,
-				byte[] bobTagKey, byte[] aliceHeaderKey, byte[] bobHeaderKey,
-				List<Frame> frames) {
+		public OneToOneTranscript(byte[] rootKey, byte[] connectionSeed,
+				byte[] aliceTagKey, byte[] bobTagKey, byte[] aliceHeaderKey,
+				byte[] bobHeaderKey, List<Frame> frames) {
 			this.rootKey = rootKey;
+			this.connectionSeed = connectionSeed;
 			this.aliceTagKey = aliceTagKey;
 			this.bobTagKey = bobTagKey;
 			this.aliceHeaderKey = aliceHeaderKey;
@@ -184,7 +185,6 @@ public final class TranscriptSimulator {
 
 	private final CryptoComponent crypto;
 	private final PcsRatchet ratchet;
-	private final Mode3FullRatchet mode3FullRatchet;
 	private final ZwfSessionFactory sessionFactory;
 	private final AsyncSealedSender sealer;
 	private final BdfWriterFactory bdfWriterFactory;
@@ -193,8 +193,8 @@ public final class TranscriptSimulator {
 	public TranscriptSimulator() throws ReflectiveOperationException {
 		crypto = newCryptoComponent();
 		ratchet = new PcsRatchetImpl(crypto);
-		mode3FullRatchet = newMode3FullRatchet(crypto);
-		sessionFactory = new ZwfSessionFactory(crypto, mode3FullRatchet);
+		sessionFactory = new ZwfSessionFactory(crypto,
+				newMode3FullRatchet(crypto, crypto.getSecureRandom()));
 		sealer = new AsyncSealedSender(crypto);
 		bdfWriterFactory = newBdfWriterFactory();
 		exchangeTranscripts = new ExchangeTranscripts();
@@ -212,101 +212,109 @@ public final class TranscriptSimulator {
 
 	public OneToOneTranscript forgeOneToOne(byte[] rootKey,
 			List<Message> messages) throws IOException {
+		return forgeOneToOne(rootKey, randomBytes(SecretKey.LENGTH), messages);
+	}
+
+	public OneToOneTranscript forgeOneToOne(byte[] rootKey,
+			byte[] connectionSeed, List<Message> messages) throws IOException {
 		requireLength(rootKey, SecretKey.LENGTH, "root key");
+		requireLength(connectionSeed, SecretKey.LENGTH, "connection seed");
 		if (messages.isEmpty()) {
 			throw new IllegalArgumentException("at least one message");
 		}
-		SecretKey root = new SecretKey(rootKey.clone());
-		ZwfSession aliceSession = sessionFactory.deriveSession(root, true);
-		ZwfSession bobSession = sessionFactory.deriveSession(root, false);
-		byte[] aliceTagKey = aliceSession.getSendTagKey().getBytes().clone();
-		byte[] bobTagKey = bobSession.getSendTagKey().getBytes().clone();
-		byte[] aliceHeaderKey =
-				aliceSession.getSendHeaderKey().getBytes().clone();
-		byte[] bobHeaderKey = bobSession.getSendHeaderKey().getBytes().clone();
 		ByteQueue toAlice = new ByteQueue();
 		ByteQueue toBob = new ByteQueue();
 		Capture aliceOut = new Capture(toBob);
 		Capture bobOut = new Capture(toAlice);
-		Supplier<AuthenticatedCipher> ciphers =
-				XSalsa20Poly1305AuthenticatedCipher::new;
-		ZwfDuplexConnection alice = new ZwfDuplexConnection(
-				CONTACT_ALICE_SEES_BOB, aliceSession,
-				new ZwfStreamCounter(new MemoryCounterStore()), crypto,
-				ratchet, mode3FullRatchet, ciphers, toAlice, aliceOut);
-		ZwfDuplexConnection bob = new ZwfDuplexConnection(
-				CONTACT_BOB_SEES_ALICE, bobSession,
-				new ZwfStreamCounter(new MemoryCounterStore()), crypto,
-				ratchet, mode3FullRatchet, ciphers, toBob, bobOut);
+		Endpoint alice = new Endpoint(rootKey, connectionSeed, true, toAlice,
+				aliceOut);
+		Endpoint bob = new Endpoint(rootKey, connectionSeed, false, toBob,
+				bobOut);
 		ZwfTagRecogniser recogniser = rootRecogniser(rootKey);
 		List<Frame> frames = new ArrayList<>();
 		try {
 			for (Message m : messages) {
-				ZwfDuplexConnection sender = m.fromAlice ? alice : bob;
-				ZwfDuplexConnection receiver = m.fromAlice ? bob : alice;
+				Endpoint sender = m.fromAlice ? alice : bob;
+				Endpoint receiver = m.fromAlice ? bob : alice;
 				Capture capture = m.fromAlice ? aliceOut : bobOut;
 				byte[] payload = m.text.getBytes(StandardCharsets.UTF_8);
-				if (payload.length > sender.getMaxMessageLength()) {
+				int max = sender.connection.getMaxMessageLength();
+				if (payload.length > max) {
 					throw new IllegalArgumentException(
-							"a message must fit in one frame: at most "
-									+ sender.getMaxMessageLength() + " bytes");
+							"a message must fit in one frame: at most " + max
+									+ " bytes");
 				}
-				sender.sendMessage(payload);
+				sender.connection.sendMessage(payload);
 				byte[] bytes = capture.take();
-				byte[] got = receiver.receiveMessage();
-				String received = got == null ? ""
-						: new String(got, StandardCharsets.UTF_8);
+				byte[] got = receiver.connection.receiveMessage();
+				if (got == null || !Arrays.equals(got, payload)) {
+					throw new IllegalStateException(
+							"the forged frame did not reach the peer");
+				}
 				long streamId = -1;
 				if (bytes.length == FIRST_FRAME_BYTES) {
 					ZwfTagRecogniser.Match match = recogniser.recognise(
 							Arrays.copyOf(bytes, TAG_LENGTH));
 					if (match != null) streamId = match.streamId;
 				}
-				frames.add(new Frame(m.fromAlice, m.text, bytes, received,
-						receiver.lastFrameCarriedPqSecret(), streamId));
+				frames.add(new Frame(m.fromAlice, m.text, bytes,
+						receiver.connection.lastFrameCarriedPqSecret(),
+						streamId));
 			}
 		} finally {
-			alice.destroyKeyMaterial();
-			bob.destroyKeyMaterial();
+			alice.connection.destroyKeyMaterial();
+			bob.connection.destroyKeyMaterial();
 		}
-		return new OneToOneTranscript(rootKey.clone(), aliceTagKey, bobTagKey,
-				aliceHeaderKey, bobHeaderKey, frames);
+		return new OneToOneTranscript(rootKey.clone(), connectionSeed.clone(),
+				alice.sendTagKey, bob.sendTagKey, alice.sendHeaderKey,
+				bob.sendHeaderKey, frames);
 	}
 
 	public boolean verifyOneToOne(OneToOneTranscript t) {
 		if (t.frames.isEmpty()) return false;
 		ZwfTagRecogniser recogniser = rootRecogniser(t.rootKey);
-		SecretKey root = new SecretKey(t.rootKey.clone());
-		ZwfSession aliceSession = sessionFactory.deriveSession(root, true);
-		ZwfSession bobSession = sessionFactory.deriveSession(root, false);
-		boolean ok = MessageDigest.isEqual(t.aliceTagKey,
-				aliceSession.getSendTagKey().getBytes());
-		ok &= MessageDigest.isEqual(t.bobTagKey,
-				bobSession.getSendTagKey().getBytes());
-		ok &= MessageDigest.isEqual(t.aliceHeaderKey,
-				aliceSession.getSendHeaderKey().getBytes());
-		ok &= MessageDigest.isEqual(t.bobHeaderKey,
-				bobSession.getSendHeaderKey().getBytes());
-		aliceSession.clear();
-		bobSession.clear();
+		ByteQueue toAlice = new ByteQueue();
+		ByteQueue toBob = new ByteQueue();
+		Endpoint alice = new Endpoint(t.rootKey, t.connectionSeed, true,
+				toAlice, OutputStream.nullOutputStream());
+		Endpoint bob = new Endpoint(t.rootKey, t.connectionSeed, false, toBob,
+				OutputStream.nullOutputStream());
+		boolean ok = MessageDigest.isEqual(t.aliceTagKey, alice.sendTagKey);
+		ok &= MessageDigest.isEqual(t.bobTagKey, bob.sendTagKey);
+		ok &= MessageDigest.isEqual(t.aliceHeaderKey, alice.sendHeaderKey);
+		ok &= MessageDigest.isEqual(t.bobHeaderKey, bob.sendHeaderKey);
 		boolean aliceStarted = false, bobStarted = false;
-		for (Frame f : t.frames) {
-			ok &= f.text.equals(f.received);
-			boolean first = f.fromAlice ? !aliceStarted : !bobStarted;
-			if (first) {
-				ok &= f.bytes.length == FIRST_FRAME_BYTES;
-				if (!ok) return false;
-				ZwfTagRecogniser.Match match = recogniser.recognise(
-						Arrays.copyOf(f.bytes, TAG_LENGTH));
-				int expected = f.fromAlice ? CONTACT_BOB_SEES_ALICE
-						: CONTACT_ALICE_SEES_BOB;
-				ok &= match != null && match.contactId == expected
-						&& match.streamId == f.streamId;
-				if (f.fromAlice) aliceStarted = true;
-				else bobStarted = true;
-			} else {
-				ok &= f.bytes.length == FRAME_LENGTH;
+		try {
+			for (Frame f : t.frames) {
+				boolean first = f.fromAlice ? !aliceStarted : !bobStarted;
+				if (first) {
+					if (f.bytes.length != FIRST_FRAME_BYTES) return false;
+					ZwfTagRecogniser.Match match = recogniser.recognise(
+							Arrays.copyOf(f.bytes, TAG_LENGTH));
+					int expected = f.fromAlice ? CONTACT_BOB_SEES_ALICE
+							: CONTACT_ALICE_SEES_BOB;
+					ok &= match != null && match.contactId == expected
+							&& match.streamId == f.streamId;
+					if (f.fromAlice) aliceStarted = true;
+					else bobStarted = true;
+				} else if (f.bytes.length != FRAME_LENGTH) {
+					return false;
+				}
+				Endpoint sender = f.fromAlice ? alice : bob;
+				Endpoint receiver = f.fromAlice ? bob : alice;
+				ByteQueue in = f.fromAlice ? toBob : toAlice;
+				byte[] payload = f.text.getBytes(StandardCharsets.UTF_8);
+				sender.connection.sendMessage(payload);
+				in.append(f.bytes, 0, f.bytes.length);
+				byte[] got = receiver.connection.receiveMessage();
+				ok &= got != null && Arrays.equals(got, payload);
+				ok &= in.available() == 0;
 			}
+		} catch (IOException | RuntimeException e) {
+			return false;
+		} finally {
+			alice.connection.destroyKeyMaterial();
+			bob.connection.destroyKeyMaterial();
 		}
 		return ok;
 	}
@@ -490,10 +498,12 @@ public final class TranscriptSimulator {
 		out.println("Zerion transcript simulator: forges records under a key"
 				+ " both peers hold and checks them with the production code.");
 		out.println();
-		out.println("one-to-one [--root HEX] [--verify] a:TEXT b:TEXT ...");
+		out.println("one-to-one [--root HEX] [--seed HEX] [--verify] a:TEXT"
+				+ " b:TEXT ...");
 		out.println("    ZWF Mode 3-Full frames of a Tor connection; a: is a"
 				+ " message from Alice, b: one from Bob, a word without a"
-				+ " prefix continues the previous message");
+				+ " prefix continues the previous message; the seed draws the"
+				+ " endpoints' ML-KEM connection key pairs");
 		out.println("mesh [--link-key HEX] [--sender-pub HEX]"
 				+ " [--send-time MILLIS] [--message-type N] [--ttl SECONDS]"
 				+ " [--recipient-sig-pub HEX] [--recipient-agree-pub HEX]"
@@ -516,6 +526,7 @@ public final class TranscriptSimulator {
 			List<String> positional, boolean verify, PrintStream out)
 			throws Exception {
 		byte[] root = optionBytes(options, "root", SecretKey.LENGTH);
+		byte[] seed = optionBytes(options, "seed", SecretKey.LENGTH);
 		List<Message> messages = new ArrayList<>();
 		for (String p : positional) {
 			if (p.startsWith("a:") || p.startsWith("b:")) {
@@ -532,11 +543,15 @@ public final class TranscriptSimulator {
 			messages.add(new Message(true, "Hello Bob"));
 			messages.add(new Message(false, "Hello Alice"));
 		}
-		OneToOneTranscript t = forgeOneToOne(root, messages);
+		OneToOneTranscript t = forgeOneToOne(root, seed, messages);
 		out.println("Scenario one-to-one: ZWF frames of a Tor connection"
 				+ " between two paired phones");
 		out.println("Root key both phones hold: " + hex(t.rootKey));
-		out.println("Keys either phone derives from it (ZwfSessionFactory):");
+		out.println("Connection seed (draws the two endpoints' ML-KEM"
+				+ " connection key pairs, so the receiving endpoints can be"
+				+ " rebuilt): " + hex(t.connectionSeed));
+		out.println("Keys either phone derives from the root"
+				+ " (ZwfSessionFactory):");
 		out.println("  Alice to Bob: tag key " + hex(t.aliceTagKey)
 				+ " header key " + hex(t.aliceHeaderKey));
 		out.println("  Bob to Alice: tag key " + hex(t.bobTagKey)
@@ -565,10 +580,11 @@ public final class TranscriptSimulator {
 		boolean ok = verifyOneToOne(t);
 		out.println("Verification with the production receiver"
 				+ " (ZwfDuplexConnection, ZwfMode3FullStreamDecrypter,"
-				+ " ZwfTagRecogniser): every frame was accepted and decrypted"
-				+ " to its text, and a recogniser holding only the root key"
-				+ " recognised the first frame of each direction: "
-				+ (ok ? "OK" : "FAILED"));
+				+ " ZwfTagRecogniser): fresh endpoints rebuilt from the root"
+				+ " key and the connection seed accepted every forged frame"
+				+ " and decrypted it to its text, and a recogniser holding"
+				+ " only the root key recognised the first frame of each"
+				+ " direction: " + (ok ? "OK" : "FAILED"));
 		return ok ? 0 : 1;
 	}
 
@@ -795,6 +811,17 @@ public final class TranscriptSimulator {
 		return recogniser;
 	}
 
+	private SecureRandom seededRandom(byte[] connectionSeed, boolean alice) {
+		try {
+			SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+			random.setSeed(crypto.hash(SEED_LABEL, connectionSeed,
+					new byte[] {alice ? (byte) 1 : (byte) 2}));
+			return random;
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	private static CryptoComponent newCryptoComponent()
 			throws ReflectiveOperationException {
 		Class<?> impl = Class.forName(
@@ -808,15 +835,15 @@ public final class TranscriptSimulator {
 		return (CryptoComponent) c.newInstance(provider, kdf);
 	}
 
-	private static Mode3FullRatchet newMode3FullRatchet(CryptoComponent crypto)
-			throws ReflectiveOperationException {
+	private static Mode3FullRatchet newMode3FullRatchet(CryptoComponent crypto,
+			SecureRandom random) throws ReflectiveOperationException {
 		Class<?> providerImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.MlKemProviderImpl");
 		Constructor<?> providerCtor =
 				providerImpl.getDeclaredConstructor(SecureRandom.class);
 		providerCtor.setAccessible(true);
-		MlKemProvider mlKemProvider = (MlKemProvider) providerCtor
-				.newInstance(crypto.getSecureRandom());
+		MlKemProvider mlKemProvider =
+				(MlKemProvider) providerCtor.newInstance(random);
 		Class<?> ratchetImpl = Class.forName(
 				"org.zerionproject.core.crypto.pcs.Mode3FullRatchetImpl");
 		Constructor<?> ratchetCtor = ratchetImpl.getDeclaredConstructor(
@@ -833,6 +860,35 @@ public final class TranscriptSimulator {
 		Constructor<?> c = impl.getDeclaredConstructor();
 		c.setAccessible(true);
 		return (BdfWriterFactory) c.newInstance();
+	}
+
+	private final class Endpoint {
+
+		final ZwfDuplexConnection connection;
+		final byte[] sendTagKey;
+		final byte[] sendHeaderKey;
+
+		Endpoint(byte[] rootKey, byte[] connectionSeed, boolean alice,
+				InputStream in, OutputStream out) {
+			Mode3FullRatchet connectionRatchet;
+			try {
+				connectionRatchet = newMode3FullRatchet(crypto,
+						seededRandom(connectionSeed, alice));
+			} catch (ReflectiveOperationException e) {
+				throw new IllegalStateException(e);
+			}
+			ZwfSessionFactory factory =
+					new ZwfSessionFactory(crypto, connectionRatchet);
+			ZwfSession session = factory.deriveSession(
+					new SecretKey(rootKey.clone()), alice);
+			sendTagKey = session.getSendTagKey().getBytes().clone();
+			sendHeaderKey = session.getSendHeaderKey().getBytes().clone();
+			connection = new ZwfDuplexConnection(
+					alice ? CONTACT_ALICE_SEES_BOB : CONTACT_BOB_SEES_ALICE,
+					session, new ZwfStreamCounter(new MemoryCounterStore()),
+					crypto, ratchet, connectionRatchet,
+					XSalsa20Poly1305AuthenticatedCipher::new, in, out);
+		}
 	}
 
 	private static final class ExchangeTranscripts {
