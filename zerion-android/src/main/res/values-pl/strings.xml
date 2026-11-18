@@ -364,6 +364,8 @@
   <string name="tor_network_setting_without_bridges">Używaj sieci Tor bez mostów</string>
   <string name="tor_network_setting_with_bridges">Używaj sieci Tor z mostami</string>
   <string name="tor_network_setting_never">Nie łącz się z internetem</string>
+	<string name="cover_traffic_title">Ruch maskujący</string>
+	<string name="cover_traffic_summary">Utrzymuje każde połączenie zajęte danymi wypełniającymi, więc twoja sieć nie może rozpoznać, kiedy wysyłasz lub odbierasz. Do około 200 MB danych dziennie na każdy połączony kontakt, także przez dane mobilne. Działa, gdy oba kontakty mają to włączone.</string>
   
   <string name="tor_network_setting_summary">Automatycznie: %1$s (za %2$s)</string>
   <string name="tor_mobile_data_title">Używaj danych komórkowych</string>

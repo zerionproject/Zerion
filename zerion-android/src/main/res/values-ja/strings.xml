@@ -335,6 +335,8 @@
   <string name="tor_network_setting_without_bridges">ブリッジなしでTorネットワークを使用する</string>
   <string name="tor_network_setting_with_bridges">ブリッジを通してTorネットワークを使用する</string>
   <string name="tor_network_setting_never">インターネットに接続しない</string>
+	<string name="cover_traffic_title">カバートラフィック</string>
+	<string name="cover_traffic_summary">各接続をダミーデータで常に使用中にし、送受信のタイミングをネットワークに知られないようにします。接続中の連絡先ごとに1日あたり最大約200 MBのデータを使い、モバイルデータでも同様です。双方の連絡先がオンにしていると機能します。</string>
   
   <string name="tor_network_setting_summary">自動：%1$s（%2$s内）</string>
   <string name="tor_mobile_data_title">携帯電話回線を使用する</string>

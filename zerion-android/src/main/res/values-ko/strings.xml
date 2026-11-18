@@ -294,6 +294,8 @@
   <string name="tor_network_setting_without_bridges">브리지 없이 Tor 네트워크 사용하기</string>
   <string name="tor_network_setting_with_bridges">브리지를 통해 Tor 네트워크 사용하기</string>
   <string name="tor_network_setting_never">인터넷에 연결하지 않기</string>
+	<string name="cover_traffic_title">위장 트래픽</string>
+	<string name="cover_traffic_summary">모든 연결을 더미 데이터로 계속 사용 중 상태로 유지하여, 네트워크가 언제 보내고 받는지 알 수 없게 합니다. 연결된 연락처마다 하루 최대 약 200 MB의 데이터를 쓰며, 모바일 데이터에서도 같습니다. 두 연락처가 모두 켰을 때 작동합니다.</string>
   
   <string name="tor_network_setting_summary">자동: %1$s(%2$s에서)</string>
   <string name="tor_mobile_data_title">모바일 데이터 사용하기</string>

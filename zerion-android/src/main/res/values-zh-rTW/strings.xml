@@ -340,6 +340,8 @@
   <string name="tor_network_setting_without_bridges">使用無橋接的 Tor 網路</string>
   <string name="tor_network_setting_with_bridges">使用橋接的 Tor 網路</string>
   <string name="tor_network_setting_never">不要連接到網際網路</string>
+	<string name="cover_traffic_title">掩護流量</string>
+	<string name="cover_traffic_summary">用填充資料讓每個連線持續處於忙碌狀態，使你的網路無法得知你何時傳送或接收。每個已連線的聯絡人每天最多約 200 MB 資料，使用行動數據時也是如此。雙方聯絡人都開啟時才生效。</string>
   
   <string name="tor_network_setting_summary">自動選擇：%1$s（在 %2$s）</string>
   <string name="tor_mobile_data_title">使用移動數據</string>

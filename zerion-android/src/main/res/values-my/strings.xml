@@ -342,6 +342,8 @@
   <string name="tor_network_setting_without_bridges">Tor ကွန်ယက်အား ချိတ်ဆက်တံတားများမပါဘဲ အသုံးပြုမည်</string>
   <string name="tor_network_setting_with_bridges">Tor ကွန်ယက်အား ချိတ်ဆက်တံတားဖြင့် အသုံးပြုမည်</string>
   <string name="tor_network_setting_never">အင်တာနက်နှင့် မချိတ်ဆက်ပါ</string>
+	<string name="cover_traffic_title">ဖုံးကွယ်ဒေတာလမ်းကြောင်း</string>
+	<string name="cover_traffic_summary">ချိတ်ဆက်မှုတိုင်းကို အတုဒေတာများဖြင့် အလုပ်ရှုပ်နေစေသဖြင့် သင်မည်သည့်အချိန်ပေးပို့သည် လက်ခံသည်ကို သင့်ကွန်ရက်မသိနိုင်ပါ။ ချိတ်ဆက်ထားသောအဆက်အသွယ်တစ်ဦးလျှင် တစ်ရက်ကို ဒေတာ 200 MB ခန့်အထိ၊ မိုဘိုင်းဒေတာတွင်လည်း ထိုနည်းတူပါ။ အဆက်အသွယ်နှစ်ဦးစလုံးဖွင့်ထားမှ အလုပ်လုပ်ပါသည်။</string>
   
   <string name="tor_network_setting_summary">အလိုအလျောက် - %1$s (%2$s တွင်းရှိလျှင်)</string>
   <string name="tor_mobile_data_title">မိုဘိုင်းလ်ဒေတာ အသုံးပြုမည်</string>

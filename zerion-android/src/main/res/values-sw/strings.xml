@@ -290,6 +290,8 @@ Umepoteza nenosiri.</string>
   <string name="tor_network_setting_without_bridges">Tumia mtandao wa Tor bila madaraja</string>
   <string name="tor_network_setting_with_bridges">Tumia mtandao wa Tor na madaraja</string>
   <string name="tor_network_setting_never">Usiunganishe kwenye mtandao</string>
+	<string name="cover_traffic_title">Trafiki ya kuficha</string>
+	<string name="cover_traffic_summary">Huweka kila muunganisho ukiwa na shughuli ya data bandia, hivyo mtandao wako hauwezi kujua unapotuma au kupokea. Hadi takriban MB 200 za data kwa siku kwa kila anwani iliyounganishwa, pia kwenye data ya simu. Hufanya kazi wakati anwani zote mbili zimeiwasha.</string>
   
   <string name="tor_network_setting_summary">kiotomatiki:%1$s (ndani%2$s)</string>
   <string name="tor_mobile_data_title">Tumia Data ya simu</string>

@@ -1415,6 +1415,8 @@
 	<string name="tor_enable_title">Sambung kepada kenalan melalui Internet</string>
 	<string name="tor_enable_summary">Semua sambungan melalui rangkaian Tor demi privasi</string>
 	<string name="tor_network_setting_never">Jangan sambung ke Internet</string>
+	<string name="cover_traffic_title">Trafik penutup</string>
+	<string name="cover_traffic_summary">Memastikan setiap sambungan sibuk dengan data palsu, supaya rangkaian anda tidak dapat tahu bila anda menghantar atau menerima. Sehingga kira-kira 200 MB data sehari bagi setiap kenalan yang bersambung, juga pada data mudah alih. Berfungsi apabila kedua-dua kenalan menghidupkannya.</string>
 	<string name="tor_network_setting_summary">Automatik: %1$s (di %2$s)</string>
 	<string name="tor_mobile_data_title">Gunakan data mudah alih</string>
 	<string name="tor_mobile_data_summary">Benarkan sambungan melalui rangkaian selular</string>

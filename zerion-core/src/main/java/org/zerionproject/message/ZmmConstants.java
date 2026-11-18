@@ -31,6 +31,7 @@ public interface ZmmConstants {
 	int TYPE_FRAGMENT = 0xF2;
 	int TYPE_SYNC = 0xF3;
 	int TYPE_ROOT_EVOLUTION = 0xF4;
+	int TYPE_LINK_PARAMS = 0xF5;
 
 	int MAX_TYPE = 0xFFFF;
 

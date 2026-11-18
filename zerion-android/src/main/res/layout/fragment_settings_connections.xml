@@ -246,6 +246,40 @@
 			</LinearLayout>
 
 			<LinearLayout
+				android:id="@+id/cover_traffic_card"
+				style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_tor"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/cover_traffic_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/cover_traffic_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/cover_traffic_switch"
+					android:contentDescription="@string/cover_traffic_title"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
+			<LinearLayout
 				android:id="@+id/custom_bridges_card"
 				style="@style/Zerion.Settings.Row.Clickable">
 

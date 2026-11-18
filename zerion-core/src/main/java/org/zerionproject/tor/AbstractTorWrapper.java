@@ -678,6 +678,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	@Override
+	public void enableReducedConnectionPadding(boolean enable)
+			throws IOException {
+		if (!state.enableReducedConnectionPadding(enable)) return;
+		getControlConnection().setConf("ReducedConnectionPadding",
+				enable ? "1" : "0");
+	}
+
+	@Override
 	public void enableIpv6(boolean enable) throws IOException {
 		if (!state.enableIpv6(enable)) return;
 		getControlConnection().setConf("ClientUseIPv4", enable ? "0" : "1");
@@ -721,6 +729,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		private boolean networkInitialised = false,
 				networkEnabled = false,
 				paddingEnabled = true,
+				reducedPaddingEnabled = false,
 				ipv6Enabled = false,
 				circuitBuilt = false;
 
@@ -806,6 +815,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			networkInitialised = false;
 			networkEnabled = false;
 			paddingEnabled = true;
+			reducedPaddingEnabled = false;
 			ipv6Enabled = false;
 			circuitBuilt = false;
 			bootstrapPercentage = 0;
@@ -843,6 +853,13 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		private synchronized boolean enableConnectionPadding(boolean enable) {
 			if (enable == paddingEnabled) return false;
 			paddingEnabled = enable;
+			return true;
+		}
+
+		private synchronized boolean enableReducedConnectionPadding(
+				boolean enable) {
+			if (enable == reducedPaddingEnabled) return false;
+			reducedPaddingEnabled = enable;
 			return true;
 		}
 

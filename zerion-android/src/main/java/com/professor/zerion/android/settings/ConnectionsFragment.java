@@ -43,6 +43,7 @@ import static com.professor.zerion.android.TestingConstants.IS_DEBUG_BUILD;
 import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import org.zerionproject.core.api.plugin.TorConstants;
 
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_COVER_TRAFFIC;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
@@ -96,6 +97,7 @@ public class ConnectionsFragment extends Fragment {
 	private boolean meshOpen = false;
 	private SwitchMaterial meshPauseSwitch;
 	private SwitchMaterial offlineModeSwitch;
+	private SwitchMaterial coverTrafficSwitch;
 	private boolean enableMeshForOffline = false;
 
 	private final ActivityResultLauncher<String[]> meshPermissionLauncher =
@@ -152,6 +154,13 @@ public class ConnectionsFragment extends Fragment {
 
 		torNetworkCard = view.findViewById(R.id.tor_network_card);
 		torNetworkValue = view.findViewById(R.id.tor_network_value);
+		coverTrafficSwitch = view.findViewById(R.id.cover_traffic_switch);
+		coverTrafficSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) {
+				connectionsManager.torStore.putBoolean(PREF_TOR_COVER_TRAFFIC,
+						isChecked);
+			}
+		});
 		rotateOnionCard = view.findViewById(R.id.rotate_onion_card);
 		renewalWaitingCard = view.findViewById(R.id.renewal_waiting_card);
 		renewalWaitingList = view.findViewById(R.id.renewal_waiting_list);
@@ -575,6 +584,12 @@ public class ConnectionsFragment extends Fragment {
 		connectionsManager.torNetwork().observe(getViewLifecycleOwner(), value -> {
 			updateTorNetworkDisplay(value);
 		});
+
+		connectionsManager.coverTraffic().observe(getViewLifecycleOwner(),
+				enabled -> {
+					if (coverTrafficSwitch.isPressed()) return;
+					coverTrafficSwitch.setChecked(Boolean.TRUE.equals(enabled));
+				});
 
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
 				this::updateCustomBridgesDisplay);

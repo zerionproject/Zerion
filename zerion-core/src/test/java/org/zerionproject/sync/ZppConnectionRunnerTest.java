@@ -220,7 +220,9 @@ public class ZppConnectionRunnerTest {
 			assertEquals("2|" + ZmmConstants.TYPE_TEXT + "|hello-" + i,
 					bobGot.get(i));
 		}
-		assertEquals(n, aliceScheduler.getRealFrameCount());
+		int linkParamsRecords = 1;
+		assertEquals(n + linkParamsRecords,
+				aliceScheduler.getRealFrameCount());
 		assertTrue("idle slots should emit cover frames",
 				aliceScheduler.getCoverFrameCount() > 0);
 	}

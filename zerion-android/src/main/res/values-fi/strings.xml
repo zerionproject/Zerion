@@ -207,6 +207,8 @@
   <string name="tor_network_setting_without_bridges">Käytä Tor:ia ilman siltoja</string>
   <string name="tor_network_setting_with_bridges">Käytä Tor:ia siltojen kanssa</string>
   <string name="tor_network_setting_never">Älä yhdistä</string>
+	<string name="cover_traffic_title">Peiteliikenne</string>
+	<string name="cover_traffic_summary">Pitää jokaisen yhteyden kiireisenä täytedatalla, jotta verkkosi ei näe, milloin lähetät tai vastaanotat. Enintään noin 200 MB dataa päivässä jokaista yhdistettyä kontaktia kohti, myös mobiilidatalla. Toimii, kun molemmilla kontakteilla on se päällä.</string>
   
   <string name="tor_network_setting_summary">Automaattinen: %1$s (sijainnissa %2$s)</string>
   <string name="tor_mobile_data_title">Käytä mobiilitiedonsiirtoa</string>

@@ -135,7 +135,11 @@ Everything below the connection handler is identical for Tor and I2P.
 
 ## ZPP: paced pull protocol with two constant rates
 
-ZPP runs over a ZWF duplex connection and shapes its timing. The send side emits
+Since 3.0.19 the paced cover traffic described in this section is a setting
+(`PREF_TOR_COVER_TRAFFIC`, Settings, Connections, "Cover traffic"), off by
+default; the section "Connections without cover traffic" below describes the
+behaviour when it is off. With it on, ZPP runs over a ZWF duplex connection and
+shapes its timing. The send side emits
 exactly one fixed-size ZWF frame per interval. That frame carries the next queued
 record if there is one, or a cover record if the queue is empty. Because a real
 record and a cover record are both a 4096-byte ZWF frame, an observer cannot tell
@@ -230,7 +234,50 @@ too, on a timer and never because of a send: 15 to 20 s after its Tor
 connection comes up, or after a connection that lasted at least ten seconds
 drops, it dials on the same backoff for ten minutes, and after that every
 five to six minutes while the contact is not connected, so a pair also
-connects when only one side's Tor path reaches the other. When both sides
+connects when only one side's Tor path reaches the other.
+
+### Connections without cover traffic
+
+When a connection opens, each side enqueues one `TYPE_LINK_PARAMS` record
+(`ZppLinkParams`: a version byte and a flags byte) as a control record; it
+leaves in the first frame that carries a post-quantum secret and says that this
+side tolerates gaps of up to 90 s between frames and whether it wants cover
+traffic. A phone on 3.0.18 or older never sends one and ignores the record. A
+connection runs at the paced cadence above only while this side wants cover
+traffic and the peer has either said the same or not spoken yet. Otherwise it
+runs sparse (`ZppConnectionRunnerImpl`, `ZppSendScheduler.tickSparse`):
+
+- A frame is sent when a record is queued, at the active spacing while records
+  remain, and any queued record wakes the sender at once.
+- The first frame of a connection is sent at once, so the two sides exchange
+  their ML-KEM public keys as before.
+- After 16 received frames without a frame sent, one cover frame is sent, so
+  this side's rotated message key pair reaches the peer long before the peer
+  would have encrypted 128 frames to the old one.
+- While nothing is queued, one keepalive cover frame is sent per period, at
+  period boundaries shared by every connection of the phone, and only if this
+  side has sent nothing for at least half a period, so the gap between two
+  frames is between half a period and one and a half periods. The period is
+  30 s once the peer has said it tolerates 90 s gaps, and 9 s before that or
+  towards an older phone whose read timeout is 20 s. Aligned slots let the
+  radio sleep between them.
+- Once the peer has said it tolerates gaps and the link is sparse, this side's
+  socket read timeout is raised from 20 s to 90 s for the rest of the
+  connection.
+- A change of the setting takes effect on open connections: the side that
+  changed sends a new `TYPE_LINK_PARAMS` record and both sides switch cadence.
+- When cover traffic is off, Tor's `ReducedConnectionPadding` is set to 1, so
+  Tor's own link padding runs at its reduced profile for mobile use;
+  `ConnectionPadding` stays 1.
+
+What a sparse connection shows an observer of the Tor link, who already sees
+that the device uses Tor: that a connection is open, when a message passes and
+roughly how large it is (as a count of 4096-byte frames). It never shows the
+content, the contact or which messages belong together, and the fixed frame
+size still hides the exact size. The data cost is the reason for the default:
+the paced cadence costs about 200 MB a day for each connected contact and keeps
+the radio awake; a sparse idle connection costs about 12 MB a day per contact
+and lets the radio sleep between slots. When both sides
 connect at once, the connection dialled by the side with the lower author id
 is kept and the other is closed, on both sides. A connection stays open for
 as long as both devices are online, so

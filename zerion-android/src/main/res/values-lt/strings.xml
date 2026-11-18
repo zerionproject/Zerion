@@ -368,6 +368,8 @@
   <string name="tor_network_setting_without_bridges">Naudoti Tor tinklą be tinklų tilto</string>
   <string name="tor_network_setting_with_bridges">Naudoti Tor tinklą su tinklų tiltu</string>
   <string name="tor_network_setting_never">Neprisijungti prie interneto</string>
+	<string name="cover_traffic_title">Dengiamasis srautas</string>
+	<string name="cover_traffic_summary">Kiekvieną ryšį laiko užimtą fiktyviais duomenimis, todėl jūsų tinklas negali sužinoti, kada siunčiate ar gaunate. Iki apie 200 MB duomenų per dieną kiekvienam prisijungusiam kontaktui, taip pat mobiliaisiais duomenimis. Veikia, kai įjungę abu kontaktai.</string>
   
   <string name="tor_network_setting_summary">Automatiškai: %1$s (šalyje %2$s)</string>
   <string name="tor_mobile_data_title">Naudoti mobiliuosius duomenis</string>

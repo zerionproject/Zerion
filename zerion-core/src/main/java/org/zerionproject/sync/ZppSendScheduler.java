@@ -20,6 +20,10 @@ public class ZppSendScheduler {
 		void send(byte[] zmmRecord) throws IOException;
 	}
 
+	public enum Sent {
+		REAL, COVER, NONE
+	}
+
 	private final FrameSink sink;
 	private final BooleanSupplier pqReady;
 	private static final class Entry {
@@ -66,6 +70,11 @@ public class ZppSendScheduler {
 	}
 
 	private volatile BooleanSupplier held = () -> false;
+	private volatile boolean wakeOnAnyEnqueue = false;
+
+	public void setWakeOnAnyEnqueue(boolean wake) {
+		wakeOnAnyEnqueue = wake;
+	}
 
 	public void setHold(BooleanSupplier held) {
 		this.held = held;
@@ -116,7 +125,7 @@ public class ZppSendScheduler {
 			boolean bulkLane, @javax.annotation.Nullable Runnable onSent) {
 		(bulkLane ? bulk : outgoing).add(
 				new Entry(record, null, userOriginated, onSent));
-		if (!userOriginated) return;
+		if (!userOriginated && !wakeOnAnyEnqueue) return;
 		Runnable listener = wakeListener;
 		if (listener != null) listener.run();
 	}
@@ -126,6 +135,10 @@ public class ZppSendScheduler {
 	}
 
 	public boolean tick() throws IOException {
+		return tickSparse(true) == Sent.REAL;
+	}
+
+	public Sent tickSparse(boolean coverWhenIdle) throws IOException {
 		byte[] bytes = null;
 		Entry record = null;
 		if (pqReady.getAsBoolean()) {
@@ -145,12 +158,12 @@ public class ZppSendScheduler {
 			realFrames.incrementAndGet();
 			Runnable onSent = record.onSent;
 			if (onSent != null) onSent.run();
-			return true;
-		} else {
-			sink.send(ZmmRecord.cover());
-			coverFrames.incrementAndGet();
-			return false;
+			return Sent.REAL;
 		}
+		if (!coverWhenIdle) return Sent.NONE;
+		sink.send(ZmmRecord.cover());
+		coverFrames.incrementAndGet();
+		return Sent.COVER;
 	}
 
 	public long getRealFrameCount() {

@@ -345,6 +345,8 @@
   <string name="tor_network_setting_without_bridges">Använd Tor-nätverket utan bryggor</string>
   <string name="tor_network_setting_with_bridges">Anvädn Tor-nätverket med bryggor</string>
   <string name="tor_network_setting_never">Anslut inte till internet</string>
+	<string name="cover_traffic_title">Täcktrafik</string>
+	<string name="cover_traffic_summary">Håller varje anslutning upptagen med fylldata, så att ditt nätverk inte kan se när du skickar eller tar emot. Upp till ungefär 200 MB data per dag för varje ansluten kontakt, även på mobildata. Fungerar när båda kontakterna har slagit på det.</string>
   
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Använd mobildata</string>

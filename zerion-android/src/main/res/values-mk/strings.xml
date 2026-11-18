@@ -297,6 +297,8 @@
   <string name="tor_network_setting_without_bridges">Користете Tor мрежа без мостови</string>
   <string name="tor_network_setting_with_bridges">Користете Tor мрежа со мостови</string>
   <string name="tor_network_setting_never">Не се поврзувај на Интернет</string>
+	<string name="cover_traffic_title">Прикривачки сообраќај</string>
+	<string name="cover_traffic_summary">Ја држи секоја врска зафатена со лажни податоци, па вашата мрежа не може да знае кога праќате или примате. До околу 200 MB податоци дневно за секој поврзан контакт, и преку мобилни податоци. Работи кога двата контакта го имаат вклучено.</string>
   
   <string name="tor_network_setting_summary">Автоматски: %1$s (во %2$s)</string>
   <string name="tor_mobile_data_title">Користи мобилни податоци</string>

@@ -1253,6 +1253,8 @@
 	<string name="tor_enable_title">Kennaskañ ouzh an darempredoù dre ar Genrouedad</string>
 	<string name="tor_enable_summary">An holl gennaskoù a dremen dre ar rouedad Tor evit ar prevezded</string>
 	<string name="tor_network_setting_never">Arabat kennaskañ ouzh ar Genrouedad</string>
+	<string name="cover_traffic_title">Trafik goloiñ</string>
+	<string name="cover_traffic_summary">Mirout a ra pep kennask ac\'hub gant roadennoù faos, evel-se ne c\'hell ket ho rouedad gouzout pegoulz e kasit pe e resevit. Betek war-dro 200 Mo a roadennoù bemdez evit pep darempred kennasket, gant roadennoù hezoug ivez. Mont a ra en-dro pa vez enaouet gant an daou zarempred.</string>
 	<string name="tor_network_setting_summary">Emgefreek: %1$s (e %2$s)</string>
 	<string name="tor_mobile_data_title">Implijout ar roadennoù hezoug</string>
 	<string name="tor_mobile_data_summary">Aotren ar c\'hennaskoù dre ar rouedad hezoug</string>

@@ -361,6 +361,8 @@
   <string name="tor_network_setting_without_bridges">Use a rede Tor sem pontes</string>
   <string name="tor_network_setting_with_bridges">Use a rede Tor com pontes</string>
   <string name="tor_network_setting_never">Não se conectar à Internet</string>
+	<string name="cover_traffic_title">Tráfego de cobertura</string>
+	<string name="cover_traffic_summary">Mantém cada conexão ocupada com dados fictícios, para que sua rede não saiba quando você envia ou recebe. Até cerca de 200 MB de dados por dia para cada contato conectado, também em dados móveis. Funciona quando os dois contatos o ativaram.</string>
   
   <string name="tor_network_setting_summary">Automático: %1$s (em %2$s) </string>
   <string name="tor_mobile_data_title">Usar dados móveis</string>

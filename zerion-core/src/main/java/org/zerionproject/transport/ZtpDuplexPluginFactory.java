@@ -39,6 +39,7 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 	private final TorOnionServiceControl onionServiceControl;
 	private final org.zerionproject.core.plugin.tor.auth
 			.OnionClientAuthManagerImpl onionClientAuth;
+	private final org.zerionproject.sync.ZppPacingPolicy pacingPolicy;
 
 	@Inject
 	public ZtpDuplexPluginFactory(@IoExecutor Executor ioExecutor,
@@ -50,7 +51,9 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 			Provider<B4OnionRotation> b4OnionRotation, EventBus eventBus,
 			TorOnionServiceControl onionServiceControl,
 			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
-					onionClientAuth) {
+					onionClientAuth,
+			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
+		this.pacingPolicy = pacingPolicy;
 		this.onionServiceControl = onionServiceControl;
 		this.onionClientAuth = onionClientAuth;
 		this.ioExecutor = ioExecutor;
@@ -83,6 +86,6 @@ public class ZtpDuplexPluginFactory implements DuplexPluginFactory {
 				taskScheduler, socketFactory, tor, torTransport, poller,
 				new TorRendezvousCryptoImpl(crypto), callback,
 				b4OnionRotation.get(), eventBus, onionServiceControl,
-				onionClientAuth);
+				onionClientAuth, pacingPolicy);
 	}
 }

@@ -351,6 +351,8 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
   <string name="tor_network_setting_without_bridges">Përdor rrjet Tor pa ura</string>
   <string name="tor_network_setting_with_bridges">Përdor rrjet Tor me ura</string>
   <string name="tor_network_setting_never">Mos u lidh në Internet</string>
+	<string name="cover_traffic_title">Trafik mbulues</string>
+	<string name="cover_traffic_summary">E mban çdo lidhje të zënë me të dhëna fiktive, kështu që rrjeti juaj nuk mund të dijë kur dërgoni ose merrni. Deri në rreth 200 MB të dhëna në ditë për çdo kontakt të lidhur, edhe me të dhëna celulare. Funksionon kur të dy kontaktet e kanë ndezur.</string>
   
   <string name="tor_network_setting_summary">Automatike: %1$s (në %2$s)</string>
   <string name="tor_mobile_data_title">Përdor të dhëna celulare</string>

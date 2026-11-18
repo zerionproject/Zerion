@@ -352,6 +352,8 @@
   <string name="tor_network_setting_without_bridges">Tor-Netzwerk ohne Bridges nutzen</string>
   <string name="tor_network_setting_with_bridges">Tor-Netzwerk mit Bridges nutzen</string>
   <string name="tor_network_setting_never">Keine Verbindung zum Internet herstellen</string>
+	<string name="cover_traffic_title">Tarnverkehr</string>
+	<string name="cover_traffic_summary">Hält jede Verbindung mit Fülldaten beschäftigt, damit dein Netz nicht erkennen kann, wann du sendest oder empfängst. Bis zu etwa 200 MB Daten pro Tag für jeden verbundenen Kontakt, auch über mobile Daten. Wirkt, wenn beide Kontakte es eingeschaltet haben.</string>
   
   <string name="tor_network_setting_summary">Automatisch: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Mobile Daten benutzen</string>

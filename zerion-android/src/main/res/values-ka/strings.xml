@@ -342,6 +342,8 @@
   <string name="tor_network_setting_without_bridges">Tor-ქსელის გამოყენება ხიდების გარეშე</string>
   <string name="tor_network_setting_with_bridges">Tor-ქსელის გამოყენება ხიდებით</string>
   <string name="tor_network_setting_never">არ დაუკავშირდეთ ინტერნეტით</string>
+	<string name="cover_traffic_title">შემნიღბავი ტრაფიკი</string>
+	<string name="cover_traffic_summary">ყოველ კავშირს ფიქტიური მონაცემებით დაკავებულს ინახავს, რათა თქვენმა ქსელმა ვერ გაიგოს, როდის აგზავნით ან იღებთ. დღეში დაახლოებით 200 MB-მდე მონაცემი ყოველ დაკავშირებულ კონტაქტზე, მობილურ ინტერნეტზეც. მუშაობს, როცა ორივე კონტაქტს ჩართული აქვს.</string>
   
   <string name="tor_network_setting_summary">ავტომატური: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">მობილური მონაცემების გამოყენებით</string>

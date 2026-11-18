@@ -309,6 +309,8 @@
   <string name="tor_network_setting_without_bridges">השתמש ברשת Tor בלי גשרים</string>
   <string name="tor_network_setting_with_bridges">השתמש ברשת Tor עם גשרים</string>
   <string name="tor_network_setting_never">אל תתחבר אל האינטרנט</string>
+	<string name="cover_traffic_title">תעבורת הסוואה</string>
+	<string name="cover_traffic_summary">שומר על כל חיבור עסוק בנתוני דמה, כך שהרשת שלך לא יכולה לדעת מתי אתה שולח או מקבל. עד כ‑200 MB נתונים ביום לכל איש קשר מחובר, גם בנתונים סלולריים. פועל כאשר שני אנשי הקשר הפעילו אותו.</string>
   
   <string name="tor_network_setting_summary">אוטומטי: %1$s (תוך %2$s)</string>
   <string name="tor_mobile_data_title">השתמש בנתונים סלולריים</string>

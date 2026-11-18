@@ -1617,6 +1617,8 @@
 	<string name="tor_enable_title">इंटरनेट के ज़रिए संपर्कों से कनेक्ट करें</string>
 	<string name="tor_enable_summary">निजता के लिए सभी कनेक्शन Tor नेटवर्क से होकर जाते हैं</string>
 	<string name="tor_network_setting_never">इंटरनेट से कनेक्ट न करें</string>
+	<string name="cover_traffic_title">कवर ट्रैफ़िक</string>
+	<string name="cover_traffic_summary">हर कनेक्शन को नकली डेटा से व्यस्त रखता है, ताकि आपका नेटवर्क यह न जान सके कि आप कब भेजते या पाते हैं। हर जुड़े संपर्क के लिए प्रतिदिन लगभग 200 MB तक डेटा, मोबाइल डेटा पर भी। तब काम करता है जब दोनों संपर्कों ने इसे चालू किया हो।</string>
 	<string name="tor_mobile_data_summary">मोबाइल नेटवर्क पर कनेक्शन की अनुमति दें</string>
 	<string name="backup_settings_title">बैकअप और ट्रांसफ़र</string>
 	<string name="backup_settings_summary">अपना खाता दूसरे फ़ोन पर ले जाएँ</string>

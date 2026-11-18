@@ -387,6 +387,8 @@
   <string name="tor_network_setting_without_bridges">استخدام شبكة تور بدون جسور</string>
   <string name="tor_network_setting_with_bridges">استخدام شبكة تور مع جسور</string>
   <string name="tor_network_setting_never">لا يمكن الاتصال بالإنترنت</string>
+	<string name="cover_traffic_title">حركة تغطية</string>
+	<string name="cover_traffic_summary">يُبقي كل اتصال مشغولاً ببيانات وهمية، فلا تستطيع شبكتك معرفة متى تُرسل أو تستقبل. حتى نحو 200 ميغابايت من البيانات يومياً لكل جهة اتصال متصلة، أيضاً عبر بيانات الجوال. يعمل عندما يُفعّله الطرفان.</string>
   
   <string name="tor_network_setting_summary">تلقائيا: %1$s (في %2$s)</string>
   <string name="tor_mobile_data_title">إستخدام بيانات الجوال</string>

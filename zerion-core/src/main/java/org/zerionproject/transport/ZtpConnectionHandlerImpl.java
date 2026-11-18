@@ -175,7 +175,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		if (stored == null) throw new FormatException();
 		runResumed(transportId, contactId, stored, in, out, false,
 				dialEpoch(contactId, stored.getRootKeys()), false, null,
-				authenticated, !refusalExpected);
+				authenticated, !refusalExpected, readTimeoutControl(in));
 	}
 
 	private long dialEpoch(int contactId, ContactRootKeys keys) {
@@ -223,7 +223,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		runResumed(transportId, contactId, stored, bufferedIn, out, true,
 				epoch, tor && viaAuthorizedService,
 				tor && !viaAuthorizedService ? localOnion : null,
-				new AtomicBoolean(), true);
+				new AtomicBoolean(), true, readTimeoutControl(in));
 	}
 
 	@Override
@@ -235,14 +235,21 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 		runResumed(transportId, contactId, stored, in, out, incoming,
 				incoming ? stored.getRootKeys().getSendEpoch()
 						: dialEpoch(contactId, stored.getRootKeys()), false,
-				null, new AtomicBoolean(), true);
+				null, new AtomicBoolean(), true, null);
+	}
+
+	@Nullable
+	private static ZtpReadTimeoutControl readTimeoutControl(InputStream in) {
+		return in instanceof ZtpReadTimeoutControl
+				? (ZtpReadTimeoutControl) in : null;
 	}
 
 	private void runResumed(TransportId transportId, int contactId,
 			StoredContactSession stored, InputStream in, OutputStream out,
 			boolean incoming, long sendEpoch, boolean viaAuthorizedService,
 			@Nullable String inboundOnion, AtomicBoolean authenticated,
-			boolean countUnauthenticated) throws IOException {
+			boolean countUnauthenticated,
+			@Nullable ZtpReadTimeoutControl readTimeout) throws IOException {
 		boolean byDesignated = stored.isAlice() != incoming;
 		if (!acquireSession(contactId, transportId, byDesignated)) {
 			wipe(stored.getRootKeys());
@@ -306,7 +313,7 @@ public class ZtpConnectionHandlerImpl implements ZtpConnectionHandler {
 			}
 			boolean exception = false;
 			try {
-				connectionRunner.run(contactId, connection);
+				connectionRunner.run(contactId, connection, readTimeout);
 			} catch (IOException e) {
 				exception = true;
 				throw e;

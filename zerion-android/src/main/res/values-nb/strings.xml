@@ -344,6 +344,8 @@
   <string name="tor_network_setting_without_bridges">Bruke Tor-nettverket uten broer</string>
   <string name="tor_network_setting_with_bridges">Bruke Tor-nettverket med broer</string>
   <string name="tor_network_setting_never">Ikke koble til Internettet</string>
+	<string name="cover_traffic_title">Dekktrafikk</string>
+	<string name="cover_traffic_summary">Holder hver forbindelse opptatt med fylldata, slik at nettverket ditt ikke kan se når du sender eller mottar. Opptil omtrent 200 MB data per dag for hver tilkoblet kontakt, også på mobildata. Virker når begge kontaktene har slått det på.</string>
   
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Bruke mobildata</string>

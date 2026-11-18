@@ -99,8 +99,13 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			new EntryRelayHealth(this::reportEntryRelay);
 	private volatile LongSupplier clock =
 			() -> System.nanoTime() / 1_000_000L;
+	@Nullable
+	private final org.zerionproject.sync.ZppPacingPolicy pacingPolicy;
 	private final EventListener torSettingsListener = e -> {
-		if (isTorSettingsChange(e)) entryRelay.clear();
+		if (isTorSettingsChange(e)) {
+			entryRelay.clear();
+			applyCoverTraffic(((SettingsUpdatedEvent) e).getSettings());
+		}
 	};
 
 	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
@@ -112,6 +117,23 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			TorOnionServiceControl onionServiceControl,
 			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
 					onionClientAuth) {
+		this(ioExecutor, wakefulIoExecutor, taskScheduler, socketFactory, tor,
+				transport, poller, torRendezvousCrypto, callback,
+				b4OnionRotation, eventBus, onionServiceControl,
+				onionClientAuth, null);
+	}
+
+	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
+			ZtpTorTransport transport, ZtpPoller poller,
+			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
+			B4OnionRotation b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth,
+			@Nullable org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
+		this.pacingPolicy = pacingPolicy;
 		this.eventBus = eventBus;
 		this.onionServiceControl = onionServiceControl;
 		this.onionClientAuth = onionClientAuth;
@@ -231,6 +253,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		if (settings.getBoolean(PREF_ACCOUNT_MOVED, false)) {
 			throw new PluginException();
 		}
+		applyCoverTraffic(settings);
 		@Nullable String privateKey = settings.get(HS_PRIVATE_KEY_V3);
 		HiddenServiceProperties hs;
 		try {
@@ -367,6 +390,15 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	@Override
 	public boolean isUsingBridges() {
 		return transport.isUsingBridges();
+	}
+
+	private void applyCoverTraffic(Settings settings) {
+		boolean cover = settings.getBoolean(
+				TorConstants.PREF_TOR_COVER_TRAFFIC,
+				TorConstants.DEFAULT_PREF_TOR_COVER_TRAFFIC);
+		org.zerionproject.sync.ZppPacingPolicy policy = pacingPolicy;
+		if (policy != null) policy.setCoverTraffic(cover);
+		transport.setReducedConnectionPadding(!cover);
 	}
 
 	static boolean isTorSettingsChange(Event e) {

@@ -368,6 +368,8 @@
   <string name="tor_network_setting_without_bridges">Использовать сеть Tor без мостов</string>
   <string name="tor_network_setting_with_bridges">Использовать сеть Tor с мостами</string>
   <string name="tor_network_setting_never">Не подключаться к интернету</string>
+	<string name="cover_traffic_title">Маскирующий трафик</string>
+	<string name="cover_traffic_summary">Держит каждое соединение занятым фиктивными данными, чтобы ваша сеть не могла узнать, когда вы отправляете или получаете. До примерно 200 МБ данных в день на каждый подключённый контакт, в том числе через мобильные данные. Работает, когда оба контакта включили его.</string>
   
   <string name="tor_network_setting_summary">Автоматически: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">Использовать мобильные данные</string>

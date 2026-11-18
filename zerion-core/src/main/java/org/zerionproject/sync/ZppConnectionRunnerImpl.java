@@ -3,6 +3,7 @@ package org.zerionproject.sync;
 import org.zerionproject.message.ZmmConstants;
 import org.zerionproject.message.ZmmRecord;
 import org.zerionproject.transport.ZppConnectionRunner;
+import org.zerionproject.transport.ZtpReadTimeoutControl;
 import org.zerionproject.transport.ZwfControlHandler;
 import org.zerionproject.transport.ZwfDuplexConnection;
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -13,9 +14,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 @NotNullByDefault
 public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
@@ -27,6 +31,11 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	static final long NEVER = -1L;
 	static final long TICKER_JOIN_MS = 5_000L;
 	static final long TICKER_FORCE_JOIN_MS = 30_000L;
+
+	public static final long SPARSE_KEEPALIVE_LEGACY_MS = 9_000L;
+	public static final long SPARSE_KEEPALIVE_MS = 30_000L;
+	public static final int SPARSE_READ_TIMEOUT_MS = 90_000;
+	public static final int SPARSE_REFRESH_RECV_FRAMES = 16;
 
 	private static final AtomicLong NEXT_SESSION_ID = new AtomicLong();
 
@@ -103,9 +112,28 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		return lastRealMs != NEVER && now - lastRealMs < idleAfterMs;
 	}
 
+	static long keepaliveSlot(long lastSentAt, long periodMs) {
+		long earliest = lastSentAt + periodMs / 2;
+		long slots = (earliest + periodMs - 1) / periodMs;
+		return slots * periodMs;
+	}
+
+	static boolean sparseFrameDue(long lastSentAt, int receivedSinceSend,
+			long now, long periodMs) {
+		if (lastSentAt == NEVER) return true;
+		if (receivedSinceSend >= SPARSE_REFRESH_RECV_FRAMES) return true;
+		return now >= keepaliveSlot(lastSentAt, periodMs);
+	}
+
 	@Override
 	public void run(int contactId, ZwfDuplexConnection connection)
 			throws IOException {
+		run(contactId, connection, null);
+	}
+
+	@Override
+	public void run(int contactId, ZwfDuplexConnection connection,
+			@Nullable ZtpReadTimeoutControl readTimeout) throws IOException {
 		AtomicBoolean running = new AtomicBoolean(true);
 		ZppSendScheduler scheduler =
 				new ZppSendScheduler(connection::sendMessage,
@@ -115,9 +143,12 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				grantsOpeningWindow(contactId, openedAt) ? openedAt : NEVER);
 		ReceiveActivityGate gate = gateFor(contactId);
 		wire(scheduler, clock);
+		LinkState link = new LinkState();
+		AtomicInteger receivedSinceSend = new AtomicInteger();
 		long sessionId = NEXT_SESSION_ID.incrementAndGet();
 		ZwfControlHandler control = connection.getControlHandler();
 		boolean opened = false;
+		boolean pqReadySeen = false;
 		AtomicBoolean authenticated = new AtomicBoolean(false);
 		Object sourceLock = new Object();
 		boolean[] source = new boolean[2];
@@ -133,7 +164,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			scheduler.wake();
 		};
 		Thread ticker = new Thread(
-				() -> tickLoop(scheduler, clock, gate, running),
+				() -> tickLoop(scheduler, clock, gate, running, link,
+						receivedSinceSend, readTimeout),
 				"zpp-send-" + contactId);
 		ticker.start();
 		try {
@@ -183,12 +215,32 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					recordSink.onConnected(contactId, sessionId);
 				}
 				startSource.run();
+				int received = receivedSinceSend.incrementAndGet();
+				if (!link.dense(pacing.coverTraffic())) {
+					if (received >= SPARSE_REFRESH_RECV_FRAMES) clock.snap();
+					if (!pqReadySeen && connection.isPqReady()) {
+						pqReadySeen = true;
+						clock.snap();
+					}
+				}
 				if (record.length < 2 || ZmmRecord.isCover(record)) continue;
 				if (!connection.lastFrameCarriedPqSecret()) continue;
 				int type = ZmmRecord.getType(record);
 				if (type == ZmmConstants.TYPE_ROOT_EVOLUTION) {
 					if (control != null) {
 						control.onRecord(ZmmRecord.getPayload(record));
+					}
+					continue;
+				}
+				if (type == ZmmConstants.TYPE_LINK_PARAMS) {
+					ZppLinkParams params =
+							ZppLinkParams.decode(ZmmRecord.getPayload(record));
+					if (params != null) {
+						boolean localCover = pacing.coverTraffic();
+						boolean before = link.dense(localCover);
+						link.onPeerParams(params);
+						boolean after = link.dense(localCover);
+						if (after != before || !after) clock.snap();
 					}
 					continue;
 				}
@@ -228,22 +280,76 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	}
 
 	private void tickLoop(ZppSendScheduler scheduler, SlotClock clock,
-			ReceiveActivityGate gate, AtomicBoolean running) {
+			ReceiveActivityGate gate, AtomicBoolean running, LinkState link,
+			AtomicInteger receivedSinceSend,
+			@Nullable ZtpReadTimeoutControl readTimeout) {
+		long lastSentAt = NEVER;
+		Boolean announced = null;
+		boolean timeoutRaised = false;
 		try {
 			while (running.get()) {
-				boolean realSent = scheduler.tick();
-				long sentAt = now.getAsLong();
-				afterFrame(clock, gate, realSent,
-						scheduler.lastRealFrameWasUserOriginated(), sentAt);
-				boolean active = isActive(scheduler.getQueueDepth(),
-						clock.lastRealMs, sentAt, pacing.idleAfterMs());
-				long activeDelay = computeInterval(pacing.activeIntervalMs(),
-						pacing.activeIntervalMs() / JITTER_DIVISOR, random);
-				long delay = active ? activeDelay
-						: computeInterval(pacing.idleIntervalMs(),
-								pacing.idleIntervalMs() / JITTER_DIVISOR,
+				boolean localCover = pacing.coverTraffic();
+				if (announced == null || announced != localCover) {
+					announced = localCover;
+					scheduler.enqueueControl(ZmmRecord.encode(
+							ZmmConstants.TYPE_LINK_PARAMS,
+							ZppLinkParams.encode(localCover)));
+				}
+				boolean dense = link.dense(localCover);
+				if (!dense && !timeoutRaised && link.peerTolerant()
+						&& readTimeout != null) {
+					timeoutRaised = true;
+					try {
+						readTimeout.setReadTimeout(SPARSE_READ_TIMEOUT_MS);
+					} catch (IOException ignored) {
+					}
+				}
+				if (dense) {
+					scheduler.setWakeOnAnyEnqueue(false);
+					boolean realSent = scheduler.tick();
+					long sentAt = now.getAsLong();
+					lastSentAt = sentAt;
+					receivedSinceSend.set(0);
+					afterFrame(clock, gate, realSent,
+							scheduler.lastRealFrameWasUserOriginated(), sentAt);
+					boolean active = isActive(scheduler.getQueueDepth(),
+							clock.lastRealMs, sentAt, pacing.idleAfterMs());
+					long activeDelay = computeInterval(pacing.activeIntervalMs(),
+							pacing.activeIntervalMs() / JITTER_DIVISOR, random);
+					long delay = active ? activeDelay
+							: computeInterval(pacing.idleIntervalMs(),
+									pacing.idleIntervalMs() / JITTER_DIVISOR,
+									random);
+					clock.awaitNextSlot(running, sentAt, delay, activeDelay);
+				} else {
+					scheduler.setWakeOnAnyEnqueue(true);
+					long period = link.keepalivePeriodMs();
+					boolean due = sparseFrameDue(lastSentAt,
+							receivedSinceSend.get(), now.getAsLong(), period);
+					ZppSendScheduler.Sent sent = scheduler.tickSparse(due);
+					long sentAt = now.getAsLong();
+					if (sent != ZppSendScheduler.Sent.NONE) {
+						lastSentAt = sentAt;
+						receivedSinceSend.set(0);
+						afterFrame(clock, gate,
+								sent == ZppSendScheduler.Sent.REAL,
+								scheduler.lastRealFrameWasUserOriginated(),
+								sentAt);
+					}
+					long deadline;
+					if (scheduler.getQueueDepth() > 0) {
+						long activeDelay = computeInterval(
+								pacing.activeIntervalMs(),
+								pacing.activeIntervalMs() / JITTER_DIVISOR,
 								random);
-				clock.awaitNextSlot(running, sentAt, delay, activeDelay);
+						long base = sent == ZppSendScheduler.Sent.NONE
+								? sentAt : lastSentAt;
+						deadline = base + activeDelay;
+					} else {
+						deadline = keepaliveSlot(lastSentAt, period);
+					}
+					clock.awaitSparse(running, deadline);
+				}
 			}
 		} catch (IOException e) {
 			running.set(false);
@@ -257,6 +363,33 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		if (realSent && userOriginated) {
 			clock.lastRealMs = now;
 			gate.noteLocalSend();
+		}
+	}
+
+	static final class LinkState {
+
+		private volatile boolean peerAnnounced;
+		private volatile boolean peerTolerant;
+		private volatile boolean peerCoverWanted;
+
+		void onPeerParams(ZppLinkParams params) {
+			peerTolerant = params.sparseTolerant;
+			peerCoverWanted = params.coverWanted;
+			peerAnnounced = true;
+		}
+
+		boolean peerTolerant() {
+			return peerTolerant;
+		}
+
+		boolean dense(boolean localCover) {
+			if (!localCover) return false;
+			return !peerAnnounced || peerCoverWanted;
+		}
+
+		long keepalivePeriodMs() {
+			return peerTolerant ? SPARSE_KEEPALIVE_MS
+					: SPARSE_KEEPALIVE_LEGACY_MS;
 		}
 	}
 
@@ -339,6 +472,21 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 						if (snapped < deadline) deadline = snapped;
 						continue;
 					}
+					lock.wait(remaining);
+				}
+			}
+		}
+
+		void awaitSparse(AtomicBoolean running, long deadline)
+				throws InterruptedException {
+			synchronized (lock) {
+				while (running.get()) {
+					if (activityFlag) {
+						activityFlag = false;
+						return;
+					}
+					long remaining = deadline - clock.getAsLong();
+					if (remaining <= 0) return;
 					lock.wait(remaining);
 				}
 			}
