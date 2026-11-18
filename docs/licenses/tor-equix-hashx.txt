@@ -37,10 +37,10 @@ and zlib (zlib licence), all of which may be combined with code under the GNU
 General Public License, version 3.
 
 Source. The Equi-X and HashX code in the executable is the code in the Tor
-release tag tor-0.4.9.14, commit 8fe2745aee2c35116ff1081f19b2952418b43069,
+release tag tor-0.4.9.17, commit a00b3e0bd288e9ae8eada8af2258a3002dfab6ff,
 at https://gitlab.torproject.org/tpo/core/tor.git, which
 packaging/tor-android/build-tor-android.sh clones and checks. The recipe
 that builds the executable from it (that script, the Makefile and
 fdroid-build.sh next to it) is in this repository. The release tarball
-tor-0.4.9.14.tar.gz on dist.torproject.org carries the Equi-X and HashX
+tor-0.4.9.17.tar.gz on dist.torproject.org carries the Equi-X and HashX
 sources but not their LICENSE files; the git tag carries both.

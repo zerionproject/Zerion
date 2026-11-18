@@ -155,7 +155,7 @@ link from decrypting the descriptor and introducing. The descriptor is served
 to anyone who asks for the address, so a bare address still shows whether the
 inbox is published.
 
-Tor proof of work. From 3.0.19 the in-tree Tor 0.4.9.14 (`packaging/tor-android`)
+Tor proof of work. From 3.0.19 the in-tree Tor 0.4.9.17 (`packaging/tor-android`)
 is built with `--enable-gpl`, which includes Tor's onion-service `pow` module,
 and every inbox is published with the ADD_ONION keywords
 `PoWDefensesEnabled=1 PoWQueueRate=50 PoWQueueBurst=250`
