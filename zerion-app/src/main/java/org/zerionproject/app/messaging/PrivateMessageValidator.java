@@ -729,9 +729,13 @@ class PrivateMessageValidator implements MessageValidator {
 		checkWebUrl(previewUrl);
 		String previewTitle = body.getString(3);
 		checkLength(previewTitle, 1, 512);
+		previewTitle = displayText(previewTitle, false);
+		if (previewTitle.isEmpty()) throw new FormatException();
 		String previewDescription = body.getOptionalString(4);
 		if (previewDescription != null) {
 			checkLength(previewDescription, 0, 1024);
+			previewDescription = displayText(previewDescription, true);
+			if (previewDescription.isEmpty()) previewDescription = null;
 		}
 		boolean hasImage = body.size() == 6 && body.getRaw(5) != null;
 
@@ -748,6 +752,33 @@ class PrivateMessageValidator implements MessageValidator {
 		}
 		meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, hasImage);
 		return new BdfMessageContext(meta);
+	}
+
+	public static String displayText(String s, boolean keepLineBreaks) {
+		StringBuilder out = new StringBuilder(s.length());
+		int i = 0;
+		while (i < s.length()) {
+			int cp = s.codePointAt(i);
+			i += Character.charCount(cp);
+			int type = Character.getType(cp);
+			if (type == Character.FORMAT || type == Character.UNASSIGNED
+					|| type == Character.PRIVATE_USE
+					|| type == Character.SURROGATE) {
+				continue;
+			}
+			if (type == Character.CONTROL || type == Character.LINE_SEPARATOR
+					|| type == Character.PARAGRAPH_SEPARATOR) {
+				if (keepLineBreaks && (cp == '\n' || cp == 0x2028
+						|| cp == 0x2029)) {
+					out.append('\n');
+				} else if (cp == '\t' || cp == '\n' || cp == '\r') {
+					out.append(' ');
+				}
+				continue;
+			}
+			out.appendCodePoint(cp);
+		}
+		return out.toString().trim();
 	}
 
 	static void checkWebUrl(String url) throws FormatException {

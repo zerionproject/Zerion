@@ -137,6 +137,34 @@ public class PrivateMessageValidatorTypesTest extends BrambleMockTestCase {
 	}
 
 	@Test
+	public void linkPreviewTextMadeOfFormattingCharactersIsRejected()
+			throws Exception {
+		reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"\u202E\u200B\u2066", null), true);
+		reject(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"\u0007\u001B\r", null), true);
+		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "https://example.org",
+				"title\u202E", "\u202Edescription"), true, 0);
+	}
+
+	@Test
+	public void displayTextDropsFormattingAndControlCharacters() {
+		assertEquals("paypal.com", PrivateMessageValidator.displayText(
+				"\u202Epaypal\u200B.com\u2069", false));
+		assertEquals("a b", PrivateMessageValidator.displayText(
+				"a\tb\u0007", false));
+		assertEquals("a b", PrivateMessageValidator.displayText(
+				"a\nb", false));
+		assertEquals("a\nb\nc", PrivateMessageValidator.displayText(
+				"a\nb\u2028c", true));
+		assertEquals("Z\u00FCrich \u65E5\u672C \u0440\u0430",
+				PrivateMessageValidator.displayText(
+						" Z\u00FCrich \u65E5\u672C \u0440\u0430 ", false));
+		assertEquals("", PrivateMessageValidator.displayText(
+				"\u00AD\uFEFF\u061C", false));
+	}
+
+	@Test
 	public void linkPreviewAcceptsOnlyWebSchemes() throws Exception {
 		accept(BdfList.of(LINK_PREVIEW_MESSAGE, "text", "http://example.org/a",
 				"title", null), true, 0);

@@ -3790,10 +3790,14 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			meta.put(MSG_KEY_MSG_TYPE, MessageTypes.LINK_PREVIEW_MESSAGE);
 			meta.put(MSG_KEY_HAS_TEXT, text != null);
 			meta.put(MSG_KEY_PREVIEW_URL, preview.getUrl());
-			meta.put(MSG_KEY_PREVIEW_TITLE, preview.getTitle());
+			meta.put(MSG_KEY_PREVIEW_TITLE, PrivateMessageValidator
+					.displayText(preview.getTitle(), false));
 			if (preview.getDescription() != null) {
-				meta.put(MSG_KEY_PREVIEW_DESCRIPTION,
-						preview.getDescription());
+				String description = PrivateMessageValidator.displayText(
+						preview.getDescription(), true);
+				if (!description.isEmpty()) {
+					meta.put(MSG_KEY_PREVIEW_DESCRIPTION, description);
+				}
 			}
 			meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, preview.hasImage());
 			clientHelper.addLocalMessage(txn, m, meta, true, false);
