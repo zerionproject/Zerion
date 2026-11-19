@@ -39,6 +39,7 @@ import com.professor.zerion.android.vault.wallet.WalletRecord;
 import com.professor.zerion.android.vault.wallet.btc.BtcAmountText;
 import com.professor.zerion.android.vault.wallet.btc.BtcWallet;
 import com.professor.zerion.android.vault.wallet.btc.privacy.PrivacyAnalyzer;
+import com.professor.zerion.android.util.BrowserGuard;
 import com.professor.zerion.android.util.SecureClipboard;
 
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
@@ -691,14 +692,14 @@ public class VaultWalletFragment extends BaseFragment {
 	}
 
 	private void openMempool(String txid) {
-		try {
-			startActivity(new android.content.Intent(
-					android.content.Intent.ACTION_VIEW,
-					android.net.Uri.parse(MEMPOOL_ONION + txid)));
-		} catch (Throwable e) {
-			copyToClipboard(txid);
-			toast(getString(R.string.wallet_tx_mempool_no_browser));
+		Context ctx = requireContext();
+		if (BrowserGuard.hasTorBrowser(ctx)) {
+			BrowserGuard.openUrl(ctx, MEMPOOL_ONION + txid);
+			return;
 		}
+		copyToClipboard(txid);
+		BrowserGuard.offerTorBrowser(ctx,
+				getString(R.string.wallet_tx_mempool_no_browser));
 	}
 
 	private void copyToClipboard(String text) {
