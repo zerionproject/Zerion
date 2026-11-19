@@ -135,4 +135,41 @@ public class PasswordEntryCodecTest {
 		assertEquals(PasswordEntry.KIND_BOOKMARK,
 				PasswordEntry.bookmark("t", "https://a.example", "").kind);
 	}
+
+	@Test
+	public void aBookmarkIsRecognisedFromItsBytesWithoutDecoding() {
+		byte[] bookmark = PasswordEntryCodec.encodeBookmark("Shop",
+				"https://shop.example.org/", "fast delivery");
+		assertTrue(PasswordEntryCodec.isBookmark(bookmark));
+		assertFalse(PasswordEntryCodec.isBookmark(
+				PasswordEntryCodec.encode("t", "u", "p", "l", "n")));
+		assertFalse(PasswordEntryCodec.isBookmark(PasswordEntryCodec.encode(
+				"totp", "t", "u", "p", "l", "n")));
+		assertFalse(PasswordEntryCodec.isBookmark(new byte[0]));
+		assertFalse(PasswordEntryCodec.isBookmark("{\"kind\":\"bookmark"
+				.getBytes(StandardCharsets.UTF_8)));
+		assertEquals("\"kind\":\"bookmark\"", new String(
+				PasswordEntryCodec.BOOKMARK_MARKER, StandardCharsets.UTF_8));
+	}
+
+	@Test
+	public void theMarkerTextInsideAFieldIsStoredEscapedAndNotDetected() {
+		String marker = "\"kind\":\"bookmark\"";
+		byte[] bytes = PasswordEntryCodec.encode(marker, marker, "secret",
+				marker, "note " + marker);
+		String json = new String(bytes, StandardCharsets.UTF_8);
+		assertTrue(json, json.contains("\\\"kind\\\":\\\"bookmark\\\""));
+		assertFalse(json, json.contains(marker));
+		assertFalse(PasswordEntryCodec.isBookmark(bytes));
+		assertFalse(PasswordEntryCodec.isBookmark(json));
+		PasswordEntry e = PasswordEntryCodec.decode(json);
+		assertEquals(marker, e.title);
+		assertEquals("secret", e.password);
+		assertEquals(PasswordEntry.KIND_PASSWORD, e.kind);
+		byte[] bookmark = PasswordEntryCodec.encodeBookmark(marker,
+				"https://a.example/" + marker, marker);
+		assertTrue(PasswordEntryCodec.isBookmark(bookmark));
+		assertEquals(PasswordEntry.KIND_BOOKMARK, PasswordEntryCodec.decode(
+				new String(bookmark, StandardCharsets.UTF_8)).kind);
+	}
 }

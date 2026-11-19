@@ -1906,8 +1906,8 @@ public class VaultViewModel extends AndroidViewModel {
 		byte[] content = null;
 		try {
 			content = vaultManager.getItemContent(itemId);
+			if (!PasswordEntryCodec.isBookmark(content)) return null;
 			String json = new String(content, StandardCharsets.UTF_8);
-			if (!PasswordEntryCodec.isBookmark(json)) return null;
 			return PasswordEntryCodec.decode(json).url;
 		} catch (Exception e) {
 			return null;
@@ -1936,18 +1936,23 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				byte[] content = PasswordEntryCodec.encodeBookmark(title, url,
 						notes);
+				VaultItem item;
+				try {
+					item = vaultManager.addItem(
+							VaultItem.ItemType.PASSWORD, title, content);
+				} finally {
+					Arrays.fill(content, (byte) 0);
+				}
+				synchronized (bookmarkLock) {
+					bookmarkUrls.put(item.id, url);
+				}
 				if (existingId != null) {
 					vaultManager.deleteItem(existingId);
 					synchronized (bookmarkLock) {
 						bookmarkUrls.remove(existingId);
+						plainPasswordIds.remove(existingId);
 					}
 				}
-				VaultItem item = vaultManager.addItem(
-						VaultItem.ItemType.PASSWORD, title, content);
-				synchronized (bookmarkLock) {
-					bookmarkUrls.put(item.id, url);
-				}
-				Arrays.fill(content, (byte) 0);
 				successMessage.postValue(text(R.string.vault_bookmark_saved));
 				loadVaultItems();
 			} catch (SecurityException e) {

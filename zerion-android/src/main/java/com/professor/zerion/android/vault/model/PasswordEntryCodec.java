@@ -57,6 +57,22 @@ public final class PasswordEntryCodec {
 		return PasswordEntry.KIND_BOOKMARK.equals(extract(json, "kind"));
 	}
 
+	static final byte[] BOOKMARK_MARKER = ("\"kind\":\""
+			+ PasswordEntry.KIND_BOOKMARK + "\"")
+			.getBytes(StandardCharsets.US_ASCII);
+
+	public static boolean isBookmark(byte[] json) {
+		byte[] marker = BOOKMARK_MARKER;
+		outer:
+		for (int i = 0; i + marker.length <= json.length; i++) {
+			for (int j = 0; j < marker.length; j++) {
+				if (json[i + j] != marker[j]) continue outer;
+			}
+			return true;
+		}
+		return false;
+	}
+
 	private static String escape(@Nullable String value) {
 		if (value == null) return "";
 		return value.replace("\\", "\\\\")
