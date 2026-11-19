@@ -402,20 +402,29 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private void observeViewModel() {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
-				List<VaultItem> passwordItems = new ArrayList<>();
-				for (VaultItem item : items) {
-					if (item.type == VaultItem.ItemType.PASSWORD) {
-						passwordItems.add(item);
-					}
-				}
+				showPasswords(items);
+			}
+		});
 
-				allItems.clear();
-				allItems.addAll(passwordItems);
-				applyFilterAndSort();
+		viewModel.getBookmarks().observe(getViewLifecycleOwner(), bookmarks -> {
+			List<VaultItem> items = viewModel.getVaultItems().getValue();
+			if (items != null) {
+				showPasswords(items);
 			}
 		});
 
 		viewModel.loadVaultItems();
+	}
+
+	private void showPasswords(List<VaultItem> items) {
+		java.util.Map<String, String> bookmarks =
+				viewModel.getBookmarks().getValue();
+		java.util.Set<String> bookmarkIds = bookmarks == null
+				? java.util.Collections.<String>emptySet() : bookmarks.keySet();
+		allItems.clear();
+		allItems.addAll(com.professor.zerion.android.vault.util.BookmarkRules
+				.passwords(items, bookmarkIds));
+		applyFilterAndSort();
 	}
 
 	@Override

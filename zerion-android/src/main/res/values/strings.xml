@@ -2082,6 +2082,27 @@
 
 	<string name="vault_password_dialog_default_title">Enter password</string>
 	<string name="vault_password_dialog_no_password">No password</string>
+	<string name="vault_card_bookmarks_title">Bookmarks</string>
+	<string name="vault_card_bookmarks_subtitle">Saved links</string>
+	<string name="vault_bookmark_add_action">Add bookmark</string>
+	<string name="vault_bookmark_edit_action">Edit bookmark</string>
+	<string name="vault_bookmarks_empty_title">No bookmarks saved</string>
+	<string name="vault_bookmarks_empty_subtitle">Tap + to save a link</string>
+	<string name="vault_bookmark_field_title">Title</string>
+	<string name="vault_bookmark_field_url">Link (http or https)</string>
+	<string name="vault_bookmark_field_notes">Notes (optional)</string>
+	<string name="vault_bookmark_action_open">Open link</string>
+	<string name="vault_bookmark_action_edit">Edit</string>
+	<string name="vault_bookmark_action_copy">Copy link</string>
+	<string name="vault_bookmark_options">Bookmark options</string>
+	<string name="vault_bookmark_title_required">Enter a title</string>
+	<string name="vault_bookmark_url_invalid">Enter a link that starts with http:// or https://</string>
+	<string name="vault_bookmark_saved">Bookmark saved</string>
+	<string name="vault_bookmark_delete_title">Delete bookmark</string>
+	<string name="vault_bookmark_delete_message">Delete this bookmark?</string>
+	<string name="vault_bookmark_deleted">Bookmark deleted</string>
+	<string name="vault_bookmark_load_failed">Could not load bookmark</string>
+	<string name="vault_bookmark_save_failed">Could not save bookmark</string>
 
 	<string name="wallet">Wallet</string>
 	<string name="wallet_card_title">Wallet</string>

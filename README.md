@@ -62,7 +62,7 @@ A contact is added by link (the normal path) or nearby (QR code or Bluetooth). F
 
 ## Vault
 
-A separate encrypted store for passwords, notes, documents and media, locked with its own password. The key is derived with Argon2id and combined with a random secret wrapped by a key in the Android Keystore (StrongBox where the device has it), so the vault is bound to the device: neither the password alone nor a copied data directory alone opens it. Items are AES-256-GCM encrypted, vault screens block screenshots by default, and there is no recovery path.
+A separate encrypted store for passwords, bookmarks, notes, documents and media, locked with its own password. The key is derived with Argon2id and combined with a random secret wrapped by a key in the Android Keystore (StrongBox where the device has it), so the vault is bound to the device: neither the password alone nor a copied data directory alone opens it. Items are AES-256-GCM encrypted, vault screens block screenshots by default, and there is no recovery path.
 
 ## Bitcoin and Monero
 

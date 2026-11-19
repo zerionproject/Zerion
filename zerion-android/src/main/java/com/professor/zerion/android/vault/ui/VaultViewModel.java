@@ -9,6 +9,7 @@ import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
 import com.professor.zerion.android.vault.model.PasswordEntry;
 import com.professor.zerion.android.vault.model.PasswordEntryCodec;
 import com.professor.zerion.android.vault.model.VaultItem;
+import com.professor.zerion.android.vault.util.BookmarkRules;
 import com.professor.zerion.android.vault.utils.SecureMemory;
 import com.professor.zerion.android.vault.wallet.WalletCoin;
 import com.professor.zerion.android.vault.wallet.WalletRecord;
@@ -31,8 +32,10 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -80,6 +83,11 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private final MutableLiveData<VaultState> vaultState = new MutableLiveData<>();
 	private final MutableLiveData<List<VaultItem>> vaultItems = new MutableLiveData<>();
+	private final MutableLiveData<Map<String, String>> bookmarks =
+			new MutableLiveData<>(new HashMap<>());
+	private final Object bookmarkLock = new Object();
+	private final Map<String, String> bookmarkUrls = new HashMap<>();
+	private final Set<String> plainPasswordIds = new HashSet<>();
 	private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 	private final MutableLiveData<String> successMessage = new MutableLiveData<>();
 	private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
@@ -1657,6 +1665,10 @@ public class VaultViewModel extends AndroidViewModel {
 		return vaultItems;
 	}
 
+	public LiveData<Map<String, String>> getBookmarks() {
+		return bookmarks;
+	}
+
 	public LiveData<String> getErrorMessage() {
 		return errorMessage;
 	}
@@ -1706,6 +1718,11 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void clearSensitiveMemory() {
+		synchronized (bookmarkLock) {
+			bookmarkUrls.clear();
+			plainPasswordIds.clear();
+		}
+		bookmarks.postValue(new HashMap<>());
 		vaultItems.postValue(new ArrayList<>());
 		errorMessage.postValue(null);
 		successMessage.postValue(null);
@@ -1840,14 +1857,105 @@ public class VaultViewModel extends AndroidViewModel {
 		dbExecutor.execute(() -> {
 			try {
 				List<VaultItem> items = vaultManager.listItems();
+				bookmarks.postValue(classifyBookmarks(items));
 				vaultItems.postValue(items);
 				if (!vaultManager.isUnlocked()) {
+					bookmarks.postValue(new HashMap<>());
 					vaultItems.postValue(new ArrayList<>());
 				}
 			} catch (SecurityException e) {
+				bookmarks.postValue(new HashMap<>());
 				vaultItems.postValue(new ArrayList<>());
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_load_failed));
+			}
+		});
+	}
+
+	private Map<String, String> classifyBookmarks(List<VaultItem> items) {
+		Map<String, String> found = new HashMap<>();
+		Set<String> present = new HashSet<>();
+		for (VaultItem item : items) {
+			if (item.type != VaultItem.ItemType.PASSWORD) continue;
+			present.add(item.id);
+			String known;
+			synchronized (bookmarkLock) {
+				if (plainPasswordIds.contains(item.id)) continue;
+				known = bookmarkUrls.get(item.id);
+			}
+			if (known != null) {
+				found.put(item.id, known);
+				continue;
+			}
+			String url = item.hasExtraPassword ? null : bookmarkUrl(item.id);
+			synchronized (bookmarkLock) {
+				if (url == null) plainPasswordIds.add(item.id);
+				else bookmarkUrls.put(item.id, url);
+			}
+			if (url != null) found.put(item.id, url);
+		}
+		synchronized (bookmarkLock) {
+			bookmarkUrls.keySet().retainAll(present);
+			plainPasswordIds.retainAll(present);
+		}
+		return found;
+	}
+
+	@Nullable
+	private String bookmarkUrl(String itemId) {
+		byte[] content = null;
+		try {
+			content = vaultManager.getItemContent(itemId);
+			String json = new String(content, StandardCharsets.UTF_8);
+			if (!PasswordEntryCodec.isBookmark(json)) return null;
+			return PasswordEntryCodec.decode(json).url;
+		} catch (Exception e) {
+			return null;
+		} finally {
+			if (content != null) Arrays.fill(content, (byte) 0);
+		}
+	}
+
+	public void saveBookmark(String title, String url, String notes,
+			@Nullable String existingId) {
+		if (!vaultManager.isUnlocked()) {
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
+			return;
+		}
+		if (!BookmarkRules.validTitle(BookmarkRules.cleanTitle(title))) {
+			errorMessage.postValue(text(R.string.vault_bookmark_title_required));
+			return;
+		}
+		if (BookmarkRules.host(url) == null) {
+			errorMessage.postValue(text(R.string.vault_bookmark_url_invalid));
+			return;
+		}
+
+		isLoading.postValue(true);
+		dbExecutor.execute(() -> {
+			try {
+				byte[] content = PasswordEntryCodec.encodeBookmark(title, url,
+						notes);
+				if (existingId != null) {
+					vaultManager.deleteItem(existingId);
+					synchronized (bookmarkLock) {
+						bookmarkUrls.remove(existingId);
+					}
+				}
+				VaultItem item = vaultManager.addItem(
+						VaultItem.ItemType.PASSWORD, title, content);
+				synchronized (bookmarkLock) {
+					bookmarkUrls.put(item.id, url);
+				}
+				Arrays.fill(content, (byte) 0);
+				successMessage.postValue(text(R.string.vault_bookmark_saved));
+				loadVaultItems();
+			} catch (SecurityException e) {
+				errorMessage.postValue(text(R.string.vault_locked));
+			} catch (Exception e) {
+				errorMessage.postValue(text(R.string.vault_bookmark_save_failed));
+			} finally {
+				isLoading.postValue(false);
 			}
 		});
 	}
