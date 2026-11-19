@@ -596,6 +596,10 @@ public class GroupTrConversationActivity extends ZerionActivity
 				.setTitle(R.string.grouptr_reach_title)
 				.setMessage(getString(explanation, list))
 				.setPositiveButton(android.R.string.ok, null)
+				.setNeutralButton(R.string.grouptr_reach_add_contact,
+						(dialog, which) -> startActivity(new Intent(this,
+								com.professor.zerion.android.contact.add
+										.remote.AddContactActivity.class)))
 				.show());
 	}
 
