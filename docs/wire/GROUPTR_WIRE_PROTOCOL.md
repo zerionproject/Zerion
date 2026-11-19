@@ -2359,10 +2359,12 @@ member's pairwise queue, where it waits until the member is online, for at
 most 7 days. The receiving member verifies the record under the author's own
 hybrid signature exactly as a copy from the author, so the creator can
 neither alter nor forge a post; it can only withhold one. The creator is a
-contact of every member by construction (it adds every member, and a member's
-invitee is added to the creator automatically), so every member can reach
-every other member as long as the creator's phone comes online; posts arrive
-once it has passed them on. A copy from the author and a copy from the
+contact of every member it added itself; a member's invitee (msgTypes 48-52)
+joins the group without becoming the creator's contact, and the creator
+passes nothing on to or from such a member until the two add each other.
+So every member that is the creator's contact can reach every other such
+member as long as the creator's phone comes online; posts arrive once it has
+passed them on. The administrator's guide is [docs/TEAM_SETUP.md](../TEAM_SETUP.md). A copy from the author and a copy from the
 creator of the same post show once (the post identity is the same). Nobody
 passes the creator's own posts on; the creator reaches every member
 directly. Members do not pass posts on for each other: that would reveal to

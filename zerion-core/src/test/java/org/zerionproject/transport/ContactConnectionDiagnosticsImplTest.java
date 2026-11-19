@@ -224,6 +224,10 @@ public class ContactConnectionDiagnosticsImplTest extends BrambleMockTestCase {
 				State.AUTH_REQUIRED, true, 2));
 		assertEquals(Authorization.REVOKED, authorization(
 				State.REVOKED, false, 0));
+		assertEquals(Authorization.FULL,
+				ContactConnectionDiagnosticsImpl.authorization(
+						new OnionAuthDiagnostics(State.LEGACY, false, 0, false,
+								0, 0, 0, 0, false, true)));
 	}
 
 	@Test

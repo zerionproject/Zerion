@@ -2438,6 +2438,10 @@
 		<item quantity="one">%d üye kişiniz değil ve gönderilerinizi almıyor. Ayrıntılar için dokunun.</item>
 		<item quantity="other">%d üye kişiniz değil ve gönderilerinizi almıyor. Ayrıntılar için dokunun.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Kişi ekle</string>
+	<string name="grouptr_team_help_title">Bir ekip kurun</string>
+	<string name="grouptr_team_help_text">Bir kişi grubu oluşturur ve grup sahibi olur.\n\nGrup sahibi Davet bağlantıları altında bir davet bağlantısı oluşturur (kaldırılana kadar aynı kalır) ve ekiple paylaşır. Herkes Kişi ekle bölümünü açar, bağlantıyı yapıştırır ve istek gönderir; grup sahibi her birini kabul eder.\n\nArdından grup sahibi tüm üyeleri gruba davet eder.\n\nBirbirinin kişisi olmayan üyeler, gönderileri grup sahibinin telefonu çevrimiçi olduğunda onun üzerinden alır. O zamana kadar gönderi gönderenin telefonunda bekler; hiçbir sunucuda hiçbir şey saklanmaz.\n\nÜyeler doğrudan iletim ve aramalar için birbirini kişi olarak ekleyebilir.\n\nSınırlar: bir grupta en fazla 256 üye olur, bir telefon özel bağlantılı en fazla 200 kişi tutar ve büyük bir ekibin grup sahibinin telefonu sık sık çevrimiçi olmalıdır.</string>
+	<string name="contact_connection_auth_full">Bu cihaz özel bağlantılı 200\'den fazla kişi tutamaz.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">%d üyeye gönderilmedi: uygulaması bu kadar büyük gönderiler için çok eski.</item>
 		<item quantity="other">%d üyeye gönderilmedi: uygulamaları bu kadar büyük gönderiler için çok eski.</item>

@@ -2301,6 +2301,10 @@
 	<plurals name="grouptr_reach_banner">
 		<item quantity="other">%d 人のメンバーはあなたの連絡先ではないため、あなたの投稿は届きません。タップして詳細を表示。</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">連絡先を追加</string>
+	<string name="grouptr_team_help_title">チームを作る</string>
+	<string name="grouptr_team_help_text">1人がグループを作成し、そのグループのオーナーになります。\n\nグループのオーナーは「招待リンク」で招待リンクを1つ作成し(削除するまで変わりません)、チームに共有します。全員が「連絡先を追加」を開き、リンクを貼り付けてリクエストを送ります。グループのオーナーがそれぞれを承認します。\n\n次に、グループのオーナーが全員をグループに招待します。\n\n互いに連絡先でないメンバーには、グループのオーナーの端末がオンラインのときに、その端末を通じて投稿が届きます。それまで投稿は送信者の端末で待機します。サーバーには何も保存されません。\n\nメンバー同士で連絡先に追加すると、直接の配信と通話ができます。\n\n上限: グループは最大256人、1台の端末がプライベート接続で保持できる連絡先は最大200件です。大きなチームのオーナーの端末は、頻繫にオンラインにしてください。</string>
+	<string name="contact_connection_auth_full">この端末はプライベート接続の連絡先を200件より多く保持できません。</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="other">%d 人のメンバーには送信されていません: アプリが古いため、このサイズの投稿を受信できません。</item>
 	</plurals>

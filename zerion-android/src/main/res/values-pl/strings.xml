@@ -2491,6 +2491,10 @@
 		<item quantity="many">%d członków nie jest twoimi kontaktami i nie otrzymuje twoich postów. Dotknij, aby zobaczyć szczegóły.</item>
 		<item quantity="other">%d członka nie jest twoim kontaktem i nie otrzymuje twoich postów. Dotknij, aby zobaczyć szczegóły.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Dodaj kontakt</string>
+	<string name="grouptr_team_help_title">Konfiguracja zespołu</string>
+	<string name="grouptr_team_help_text">Jedna osoba tworzy grupę i jest jej właścicielem.\n\nWłaściciel grupy tworzy jeden link z zaproszeniem w sekcji Linki z zaproszeniem (pozostaje taki sam, dopóki nie zostanie usunięty) i udostępnia go zespołowi. Każdy otwiera Dodaj kontakt, wkleja link i wysyła prośbę; właściciel grupy akceptuje każdą z nich.\n\nNastępnie właściciel grupy zaprasza wszystkich członków do grupy.\n\nCzłonkowie, którzy nie są wzajemnie kontaktami, otrzymują wpisy przez telefon właściciela grupy, gdy jest on online. Do tego czasu wpis czeka na telefonie nadawcy; nic nie jest zapisywane na serwerze.\n\nCzłonkowie mogą dodać siebie wzajemnie jako kontakty, aby dostarczać bezpośrednio i dzwonić.\n\nLimity: grupa ma do 256 członków, jeden telefon przechowuje do 200 kontaktów z prywatnym połączeniem, a telefon właściciela dużego zespołu powinien być często online.</string>
+	<string name="contact_connection_auth_full">To urządzenie nie może przechowywać więcej niż 200 kontaktów z prywatnym połączeniem.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nie wysłano do %d członka: jego aplikacja jest zbyt stara na tak duże posty.</item>
 		<item quantity="few">Nie wysłano do %d członków: ich aplikacje są zbyt stare na tak duże posty.</item>

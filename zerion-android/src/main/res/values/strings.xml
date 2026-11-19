@@ -2547,6 +2547,10 @@
 		<item quantity="other">%d members are not your contacts. Posts reach them through the group owner\'s phone when they run 3.0.19 or later. Tap for details.</item>
 	</plurals>
 	<string name="grouptr_reach_explanation_owner">Group posts travel directly between members who are each other\'s contacts. These members are not your contacts, so the group owner\'s phone passes your posts on to them and their posts on to you, when they run 3.0.19 or later:\n\n%1$s\n\nPosts arrive once the owner\'s phone has passed them on. Very large posts travel only directly. Add them as contacts for a direct path.</string>
+	<string name="grouptr_reach_add_contact">Add contact</string>
+	<string name="grouptr_team_help_title">Set up a team</string>
+	<string name="grouptr_team_help_text">One person creates the group and is its Group owner.\n\nThe Group owner makes one invite link under Invite links (it stays the same until removed) and shares it with the team. Everyone opens Add contact, pastes the link and sends a request; the Group owner accepts each one.\n\nThe Group owner then invites every member to the group.\n\nMembers who are not each other\'s contacts get their posts through the Group owner\'s phone whenever it is online. Until then a post waits on the sender\'s phone; nothing is stored on a server.\n\nMembers may add each other as contacts for direct delivery and calls.\n\nLimits: a group holds up to 256 members, one phone holds up to 200 contacts with a private connection, and the phone of the Group owner of a large team should be online often.</string>
+	<string name="contact_connection_auth_full">This device cannot hold more than 200 contacts with a private connection.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Not sent to %d member: their app is too old for posts this large.</item>
 		<item quantity="other">Not sent to %d members: their app is too old for posts this large.</item>

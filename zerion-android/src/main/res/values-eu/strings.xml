@@ -2310,6 +2310,10 @@
 		<item quantity="one">Kide %d ez da zure kontaktua eta ez ditu zure mezuak jasotzen. Sakatu xehetasunetarako.</item>
 		<item quantity="other">%d kide ez dira zure kontaktuak eta ez dituzte zure mezuak jasotzen. Sakatu xehetasunetarako.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Gehitu kontaktua</string>
+	<string name="grouptr_team_help_title">Talde bat prestatu</string>
+	<string name="grouptr_team_help_text">Pertsona batek taldea sortzen du eta haren jabea da.\n\nTaldearen jabeak gonbidapen-esteka bat sortzen du Gonbidapen-estekak atalean (berdin jarraitzen du kendu arte) eta taldearekin partekatzen du. Denek Gehitu kontaktua irekitzen dute, esteka itsatsi eta eskaera bidaltzen dute; taldearen jabeak bakoitza onartzen du.\n\nOndoren taldearen jabeak kide guztiak gonbidatzen ditu taldera.\n\nElkarren kontaktu ez diren kideek taldearen jabearen telefonoaren bidez jasotzen dituzte mezuak, hau linean dagoen bakoitzean. Ordura arte mezua bidaltzailearen telefonoan itxaroten du; ez da ezer gordetzen zerbitzari batean.\n\nKideek elkar kontaktu gisa gehitu dezakete entrega zuzenerako eta deietarako.\n\nMugak: talde batek gehienez 256 kide ditu, telefono batek gehienez 200 kontaktu gordetzen ditu konexio pribatuarekin, eta talde handi baten jabearen telefonoa maiz egon beharko litzateke linean.</string>
+	<string name="contact_connection_auth_full">Gailu honek ezin ditu 200 kontaktu baino gehiago gorde konexio pribatuarekin.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Ez zaio kide bati bidali: haren aplikazioa zaharregia da hain mezu handietarako.</item>
 		<item quantity="other">Ez zaie %d kideri bidali: haien aplikazioa zaharregia da hain mezu handietarako.</item>

@@ -115,6 +115,7 @@ Report vulnerabilities through a private GitHub security advisory or to `support
 - [Security claims](docs/protocol/SECURITY_CLAIMS.md), [Claims matrix (protocol invariants)](docs/protocol/SECURITY_CLAIMS_MATRIX.md), [SECURITY.md](SECURITY.md)
 - [Mesh and I2P](docs/ZERION_MESH_AND_I2P.md), [Wallet architecture](docs/WALLET_ARCHITECTURE.md), [Bitcoin](docs/BTC_ARCHITECTURE.md), [Monero](docs/XMR_ARCHITECTURE.md), [Wallet security invariants](docs/WALLET_SECURITY_INVARIANTS.md)
 - [F-Droid and native builds](docs/FDROID.md), [Native provenance](packaging/monero-android/PROVENANCE.md)
+- [Setting up a team](docs/TEAM_SETUP.md) (groups for organisations: one owner, one permanent invite link, what the owner's phone does, limits)
 
 How large language models are used in development, and what they are not used for: [zerion.chat/blog/llm-use-in-zerion.html](https://zerion.chat/blog/llm-use-in-zerion.html).
 

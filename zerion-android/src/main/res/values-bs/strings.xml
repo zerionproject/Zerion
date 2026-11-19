@@ -2287,6 +2287,10 @@
 		<item quantity="few">%d člana nisu među tvojim kontaktima i ne primaju tvoje objave. Dodirni za detalje.</item>
 		<item quantity="other">%d članova nije među tvojim kontaktima i ne prima tvoje objave. Dodirni za detalje.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Dodaj kontakt</string>
+	<string name="grouptr_team_help_title">Postavljanje tima</string>
+	<string name="grouptr_team_help_text">Jedna osoba kreira grupu i njen je vlasnik.\n\nVlasnik grupe napravi jedan link za pozivnicu pod Linkovi za pozivnice (ostaje isti dok se ne ukloni) i podijeli ga s timom. Svi otvore Dodaj kontakt, zalijepe link i pošalju zahtjev; vlasnik grupe prihvati svaki.\n\nZatim vlasnik grupe pozove sve članove u grupu.\n\nČlanovi koji nisu međusobno kontakti dobijaju objave preko telefona vlasnika grupe kad god je on online. Do tada objava čeka na telefonu pošiljaoca; ništa se ne čuva na serveru.\n\nČlanovi se mogu međusobno dodati kao kontakti za direktnu dostavu i pozive.\n\nOgraničenja: grupa ima do 256 članova, jedan telefon drži do 200 kontakata s privatnom vezom, a telefon vlasnika velikog tima trebao bi često biti online.</string>
+	<string name="contact_connection_auth_full">Ovaj uređaj ne može držati više od 200 kontakata s privatnom vezom.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">%d član nije primio objavu: njegova aplikacija je prestara za ovako velike objave.</item>
 		<item quantity="few">%d člana nisu primila objavu: njihove aplikacije su prestare za ovako velike objave.</item>

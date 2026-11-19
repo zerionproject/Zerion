@@ -19,6 +19,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.activity.ZerionActivity;
 import com.professor.zerion.android.util.DisplayNames;
+import com.professor.zerion.android.widget.OnboardingFullDialogFragment;
 
 import org.zerionproject.core.api.FormatException;
 import org.zerionproject.core.api.contact.Contact;
@@ -115,6 +116,14 @@ public class GroupTrAdminActivity extends ZerionActivity {
 
 		MaterialToolbar toolbar = findViewById(R.id.toolbar);
 		toolbar.setNavigationOnClickListener(v -> finish());
+		toolbar.inflateMenu(R.menu.grouptr_admin_actions);
+		toolbar.setOnMenuItemClickListener(item -> {
+			if (item.getItemId() == R.id.action_team_help) {
+				showTeamHelp();
+				return true;
+			}
+			return false;
+		});
 
 		headerAvatar = findViewById(R.id.headerAvatar);
 		headerName = findViewById(R.id.headerName);
@@ -403,6 +412,13 @@ public class GroupTrAdminActivity extends ZerionActivity {
 				});
 			}
 		});
+	}
+
+	private void showTeamHelp() {
+		OnboardingFullDialogFragment.newInstance(
+				R.string.grouptr_team_help_title,
+				R.string.grouptr_team_help_text
+		).show(getSupportFragmentManager(), OnboardingFullDialogFragment.TAG);
 	}
 
 	private void bindIncognito() {

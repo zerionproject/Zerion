@@ -2433,6 +2433,10 @@
 		<item quantity="one">%d medlem är inte din kontakt och får inte dina inlägg. Tryck för mer information.</item>
 		<item quantity="other">%d medlemmar är inte dina kontakter och får inte dina inlägg. Tryck för mer information.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Lägg till kontakt</string>
+	<string name="grouptr_team_help_title">Skapa ett team</string>
+	<string name="grouptr_team_help_text">En person skapar gruppen och är dess gruppägare.\n\nGruppägaren skapar en inbjudningslänk under Inbjudningslänkar (den förblir densamma tills den tas bort) och delar den med teamet. Alla öppnar Lägg till kontakt, klistrar in länken och skickar en förfrågan; gruppägaren godtar var och en.\n\nSedan bjuder gruppägaren in alla medlemmar till gruppen.\n\nMedlemmar som inte är varandras kontakter får inläggen via gruppägarens telefon när den är online. Till dess väntar inlägget på avsändarens telefon; ingenting lagras på en server.\n\nMedlemmar kan lägga till varandra som kontakter för direkt leverans och samtal.\n\nGränser: en grupp har upp till 256 medlemmar, en telefon håller upp till 200 kontakter med privat anslutning, och telefonen hos ägaren av ett stort team bör ofta vara online.</string>
+	<string name="contact_connection_auth_full">Den här enheten kan inte hålla fler än 200 kontakter med privat anslutning.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Skickades inte till %d medlem: medlemmens app är för gammal för så stora inlägg.</item>
 		<item quantity="other">Skickades inte till %d medlemmar: deras app är för gammal för så stora inlägg.</item>

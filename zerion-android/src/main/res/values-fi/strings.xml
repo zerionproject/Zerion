@@ -2411,6 +2411,10 @@
 		<item quantity="one">%d jäsen ei ole yhteystietosi eikä saa viestejäsi. Napauta nähdäksesi lisätietoja.</item>
 		<item quantity="other">%d jäsentä ei ole yhteystietojasi, eivätkä he saa viestejäsi. Napauta nähdäksesi lisätietoja.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Lisää yhteystieto</string>
+	<string name="grouptr_team_help_title">Tiimin perustaminen</string>
+	<string name="grouptr_team_help_text">Yksi henkilö luo ryhmän ja on sen omistaja.\n\nRyhmän omistaja luo yhden kutsulinkin kohdassa Kutsulinkit (se pysyy samana, kunnes se poistetaan) ja jakaa sen tiimille. Jokainen avaa Lisää yhteystieto, liittää linkin ja lähettää pyynnön; ryhmän omistaja hyväksyy jokaisen.\n\nSitten ryhmän omistaja kutsuu kaikki jäsenet ryhmään.\n\nJäsenet, jotka eivät ole toistensa yhteystietoja, saavat julkaisut ryhmän omistajan puhelimen kautta aina kun se on verkossa. Siihen asti julkaisu odottaa lähettäjän puhelimessa; mitään ei tallenneta palvelimelle.\n\nJäsenet voivat lisätä toisensa yhteystiedoiksi suoraa toimitusta ja puheluita varten.\n\nRajat: ryhmässä on enintään 256 jäsentä, yksi puhelin pitää enintään 200 yhteystietoa yksityisellä yhteydellä, ja suuren tiimin omistajan puhelimen tulisi olla usein verkossa.</string>
+	<string name="contact_connection_auth_full">Tämä laite ei voi pitää yli 200 yhteystietoa yksityisellä yhteydellä.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Ei lähetetty %d jäsenelle: hänen sovelluksensa on liian vanha näin suurille viesteille.</item>
 		<item quantity="other">Ei lähetetty %d jäsenelle: heidän sovelluksensa on liian vanha näin suurille viesteille.</item>

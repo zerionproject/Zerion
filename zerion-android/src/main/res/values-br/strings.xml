@@ -2341,6 +2341,10 @@
 		<item quantity="many">%d a izili n\'int ket en ho tarempredoù ha ne resevont ket ho kemennadennoù. Touchit evit ar munudoù.</item>
 		<item quantity="other">%d ezel n\'int ket en ho tarempredoù ha ne resevont ket ho kemennadennoù. Touchit evit ar munudoù.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Ouzhpennañ un darempred</string>
+	<string name="grouptr_team_help_title">Sevel ur skipailh</string>
+	<string name="grouptr_team_help_text">Un den a grou ar strollad hag a zo e berc\'henn.\n\nPerc\'henn ar strollad a grou ul liamm pediñ e Liammoù pediñ (chom a ra heñvel betek ma vo lamet) hag a rann anezhañ gant ar skipailh. Pep hini a zigor Ouzhpennañ un darempred, a bega al liamm hag a gas ur goulenn; perc\'henn ar strollad a zegemer pep hini.\n\nGoude-se perc\'henn ar strollad a bed an holl izili d\'ar strollad.\n\nAn izili n\'int ket darempredoù an eil egile a resev ar c\'hemennadennoù dre bellgomzer perc\'henn ar strollad pa vez enlinenn. Betek neuze e chom ar gemennadenn war pellgomzer ar c\'haser; netra n\'eo miret war ur servijer.\n\nAn izili a c\'hall ouzhpennañ an eil egile evel darempredoù evit ur c\'has eeun ha pellgomzadennoù.\n\nBevennoù: betek 256 ezel en ur strollad, betek 200 darempred gant ur gevreadenn brevez war ur pellgomzer, ha pellgomzer perc\'henn ur skipailh bras a rankfe bezañ alies enlinenn.</string>
+	<string name="contact_connection_auth_full">N\'hall ket an trobarzhell-mañ mirout ouzhpenn 200 darempred gant ur gevreadenn brevez.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">N\'eo ket bet kaset da %d ezel: re gozh eo e arload evit kemennadennoù ken bras.</item>
 		<item quantity="two">N\'eo ket bet kaset da %d ezel: re gozh eo o arload evit kemennadennoù ken bras.</item>

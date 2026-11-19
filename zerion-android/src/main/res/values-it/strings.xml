@@ -2350,6 +2350,10 @@
 		<item quantity="many">%d membri non sono tuoi contatti e non ricevono i tuoi post. Tocca per i dettagli.</item>
 		<item quantity="other">%d membri non sono tuoi contatti e non ricevono i tuoi post. Tocca per i dettagli.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Aggiungi contatto</string>
+	<string name="grouptr_team_help_title">Configurare un team</string>
+	<string name="grouptr_team_help_text">Una persona crea il gruppo e ne è il proprietario.\n\nIl proprietario del gruppo crea un link di invito in Link di invito (resta uguale finché non viene rimosso) e lo condivide con il team. Ognuno apre Aggiungi contatto, incolla il link e invia una richiesta; il proprietario del gruppo accetta ciascuna.\n\nPoi il proprietario del gruppo invita tutti i membri nel gruppo.\n\nI membri che non sono contatti tra loro ricevono i post tramite il telefono del proprietario del gruppo ogni volta che è online. Fino ad allora il post attende sul telefono del mittente; nulla viene salvato su un server.\n\nI membri possono aggiungersi a vicenda come contatti per la consegna diretta e le chiamate.\n\nLimiti: un gruppo ha fino a 256 membri, un telefono conserva fino a 200 contatti con connessione privata, e il telefono del proprietario di un team grande dovrebbe essere spesso online.</string>
+	<string name="contact_connection_auth_full">Questo dispositivo non può conservare più di 200 contatti con connessione privata.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Non inviato a %d membro: la sua app è troppo vecchia per post così grandi.</item>
 		<item quantity="many">Non inviato a %d membri: la loro app è troppo vecchia per post così grandi.</item>

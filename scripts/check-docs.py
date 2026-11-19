@@ -40,6 +40,7 @@ CURRENT_DOCS = [
     "docs/protocol/EMBEDDED-I2P.md", "docs/WALLET_ARCHITECTURE.md",
     "docs/BTC_ARCHITECTURE.md", "docs/XMR_ARCHITECTURE.md",
     "docs/WALLET_SECURITY_INVARIANTS.md", "docs/FDROID.md", "docs/NETWORK_PATHS.md",
+    "docs/TEAM_SETUP.md",
     "fastlane/metadata/android/en-US/full_description.txt",
     "fastlane/metadata/android/en-US/short_description.txt",
 ]

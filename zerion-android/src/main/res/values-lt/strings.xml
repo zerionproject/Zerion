@@ -2491,6 +2491,10 @@
 		<item quantity="many">%d nario nėra jūsų adresatai ir negauna jūsų įrašų. Bakstelėkite, kad sužinotumėte daugiau.</item>
 		<item quantity="other">%d narių nėra jūsų adresatai ir negauna jūsų įrašų. Bakstelėkite, kad sužinotumėte daugiau.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Pridėti adresatą</string>
+	<string name="grouptr_team_help_title">Komandos sukūrimas</string>
+	<string name="grouptr_team_help_text">Vienas žmogus sukuria grupę ir yra jos savininkas.\n\nGrupės savininkas skiltyje Pakvietimo nuorodos sukuria vieną pakvietimo nuorodą (ji nesikeičia, kol nepašalinama) ir pasidalija ja su komanda. Visi atveria Pridėti adresatą, įklijuoja nuorodą ir išsiunčia užklausą; grupės savininkas kiekvieną priima.\n\nTada grupės savininkas pakviečia visus narius į grupę.\n\nNariai, kurie nėra vienas kito adresatai, įrašus gauna per grupės savininko telefoną, kai tik jis prisijungęs. Iki tol įrašas laukia siuntėjo telefone; serveryje nieko nesaugoma.\n\nNariai gali pridėti vienas kitą kaip adresatus tiesioginiam pristatymui ir skambučiams.\n\nRibos: grupėje yra iki 256 narių, viename telefone laikoma iki 200 adresatų su privačiu ryšiu, o didelės komandos savininko telefonas turėtų būti dažnai prisijungęs.</string>
+	<string name="contact_connection_auth_full">Šis įrenginys negali laikyti daugiau nei 200 adresatų su privačiu ryšiu.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">%d narys negavo įrašo: jo programėlė per sena tokio dydžio įrašams.</item>
 		<item quantity="few">%d nariai negavo įrašo: jų programėlės per senos tokio dydžio įrašams.</item>

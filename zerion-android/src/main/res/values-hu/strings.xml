@@ -2437,6 +2437,10 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 		<item quantity="one">%d tag nem az Ön kapcsolata, és nem kapja meg a bejegyzéseit. Koppintson a részletekért.</item>
 		<item quantity="other">%d tag nem az Ön kapcsolata, és nem kapja meg a bejegyzéseit. Koppintson a részletekért.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Kapcsolat hozzáadása</string>
+	<string name="grouptr_team_help_title">Csapat beállítása</string>
+	<string name="grouptr_team_help_text">Egy személy létrehozza a csoportot, és ő a tulajdonosa.\n\nA csoport tulajdonosa a Meghívó hivatkozások alatt létrehoz egy meghívó hivatkozást (ez változatlan marad, amíg el nem távolítják), és megosztja a csapattal. Mindenki megnyitja a Kapcsolat hozzáadása lehetőséget, beilleszti a hivatkozást és kérést küld; a csoport tulajdonosa mindegyiket elfogadja.\n\nEzután a csoport tulajdonosa minden tagot meghív a csoportba.\n\nAzok a tagok, akik nem egymás kapcsolatai, a bejegyzéseket a csoport tulajdonosának telefonján keresztül kapják, amikor az online van. Addig a bejegyzés a küldő telefonján vár; semmi nem tárolódik szerveren.\n\nA tagok felvehetik egymást kapcsolatként a közvetlen kézbesítéshez és a hívásokhoz.\n\nKorlátok: egy csoportban legfeljebb 256 tag lehet, egy telefon legfeljebb 200 kapcsolatot tart privát kapcsolattal, és egy nagy csapat tulajdonosának telefonja legyen gyakran online.</string>
+	<string name="contact_connection_auth_full">Ez az eszköz nem tarthat 200-nál több kapcsolatot privát kapcsolattal.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nem lett elküldve %d tagnak: az alkalmazása túl régi az ilyen nagy bejegyzésekhez.</item>
 		<item quantity="other">Nem lett elküldve %d tagnak: az alkalmazásuk túl régi az ilyen nagy bejegyzésekhez.</item>

@@ -2257,6 +2257,10 @@
 		<item quantity="one">%d miembru nun ye contautu tuyu y nun recibe les tos publicaciones. Toca pa ver los detalles.</item>
 		<item quantity="other">%d miembros nun son contautos tuyos y nun reciben les tos publicaciones. Toca pa ver los detalles.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Amestar contautu</string>
+	<string name="grouptr_team_help_title">Configurar un equipu</string>
+	<string name="grouptr_team_help_text">Una persona crea el grupu y ye el so propietariu.\n\nEl propietariu del grupu crea un enllaz d\'invitación en Enllaces d\'invitación (queda igual hasta que se quite) y compártelu col equipu. Toos abren Amestar contautu, apieguen l\'enllaz y manden una solicitú; el propietariu del grupu aceuta caúna.\n\nDempués el propietariu del grupu invita a tolos miembros al grupu.\n\nLos miembros que nun son contautos ente sí reciben los mensaxes pel teléfonu del propietariu del grupu siempres qu\'esti tea en llinia. Hasta entós el mensaxe espera nel teléfonu del remitente; nun s\'atroxa nada en nengún sirvidor.\n\nLos miembros puen amestase ente sí como contautos pa la entrega direuta y les llamaes.\n\nLlendes: un grupu tien hasta 256 miembros, un teléfonu guarda hasta 200 contautos con conexón privada y el teléfonu del propietariu d\'un equipu grande tendría de tar en llinia davezu.</string>
+	<string name="contact_connection_auth_full">Esti preséu nun pue guardar más de 200 contautos con conexón privada.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nun s\'unvió a %d miembru: la so aplicación ye enforma antigua pa publicaciones tan grandes.</item>
 		<item quantity="other">Nun s\'unvió a %d miembros: la so aplicación ye enforma antigua pa publicaciones tan grandes.</item>

@@ -82,6 +82,7 @@ public class ContactConnectionLinesTest {
 				R.string.contact_connection_auth_reaching);
 		AUTH.put(Authorization.REVOKED,
 				R.string.contact_connection_auth_revoked);
+		AUTH.put(Authorization.FULL, R.string.contact_connection_auth_full);
 	}
 
 	static ContactConnectionSnapshot snapshot(Tor tor, Reach reach,

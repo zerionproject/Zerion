@@ -2333,6 +2333,10 @@
 		<item quantity="one">%d Mitglied ist nicht dein Kontakt und erhält deine Nachrichten nicht. Tippe für Details.</item>
 		<item quantity="other">%d Mitglieder sind nicht deine Kontakte und erhalten deine Nachrichten nicht. Tippe für Details.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Kontakt hinzufügen</string>
+	<string name="grouptr_team_help_title">Ein Team einrichten</string>
+	<string name="grouptr_team_help_text">Eine Person erstellt die Gruppe und ist ihr Gruppeneigentümer.\n\nDer Gruppeneigentümer erstellt unter Einladungslinks einen Einladungslink (er bleibt gleich, bis er entfernt wird) und teilt ihn mit dem Team. Alle öffnen Kontakt hinzufügen, fügen den Link ein und senden eine Anfrage; der Gruppeneigentümer nimmt jede an.\n\nDanach lädt der Gruppeneigentümer alle Mitglieder in die Gruppe ein.\n\nMitglieder, die nicht gegenseitig Kontakte sind, erhalten die Beiträge über das Telefon des Gruppeneigentümers, sobald es online ist. Bis dahin wartet ein Beitrag auf dem Telefon des Absenders; auf einem Server wird nichts gespeichert.\n\nMitglieder können sich gegenseitig als Kontakte hinzufügen, für direkte Zustellung und Anrufe.\n\nGrenzen: eine Gruppe hat bis zu 256 Mitglieder, ein Telefon hält bis zu 200 Kontakte mit privater Verbindung, und das Telefon des Gruppeneigentümers eines großen Teams sollte oft online sein.</string>
+	<string name="contact_connection_auth_full">Dieses Gerät kann nicht mehr als 200 Kontakte mit privater Verbindung halten.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nicht an %d Mitglied gesendet: Seine App ist zu alt für so große Nachrichten.</item>
 		<item quantity="other">Nicht an %d Mitglieder gesendet: Ihre App ist zu alt für so große Nachrichten.</item>

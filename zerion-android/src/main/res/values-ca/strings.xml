@@ -2328,6 +2328,10 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 		<item quantity="one">%d membre no és contacte teu i no rep les teves publicacions. Toca per veure\'n els detalls.</item>
 		<item quantity="other">%d membres no són contactes teus i no reben les teves publicacions. Toca per veure\'n els detalls.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Afegiu un contacte</string>
+	<string name="grouptr_team_help_title">Configurar un equip</string>
+	<string name="grouptr_team_help_text">Una persona crea el grup i n\'és el propietari.\n\nEl propietari del grup crea un enllaç d\'invitació a Enllaços d\'invitació (es manté igual fins que s\'elimina) i el comparteix amb l\'equip. Tothom obre Afegiu un contacte, enganxa l\'enllaç i envia una sol·licitud; el propietari del grup accepta cada una.\n\nDesprés el propietari del grup convida tots els membres al grup.\n\nEls membres que no són contactes entre si reben les publicacions a través del telèfon del propietari del grup sempre que estigui en línia. Fins aleshores la publicació espera al telèfon del remitent; no es desa res a cap servidor.\n\nEls membres poden afegir-se entre si com a contactes per a l\'entrega directa i les trucades.\n\nLímits: un grup té fins a 256 membres, un telèfon conserva fins a 200 contactes amb connexió privada, i el telèfon del propietari d\'un equip gran hauria d\'estar en línia sovint.</string>
+	<string name="contact_connection_auth_full">Aquest dispositiu no pot conservar més de 200 contactes amb connexió privada.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">No s\'ha enviat a %d membre: la seva aplicació és massa antiga per a publicacions tan grans.</item>
 		<item quantity="other">No s\'ha enviat a %d membres: les seves aplicacions són massa antigues per a publicacions tan grans.</item>

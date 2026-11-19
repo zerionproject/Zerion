@@ -2302,6 +2302,10 @@
 	<plurals name="grouptr_reach_banner">
 		<item quantity="other">%d 位成員不是您的聯絡人，不會收到您的貼文。點一下即可查看詳細資訊。</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">添加聯絡人</string>
+	<string name="grouptr_team_help_title">建立團隊</string>
+	<string name="grouptr_team_help_text">由一個人建立群組，並成為群組擁有者。\n\n群組擁有者在「邀請連結」中建立一個邀請連結（在移除之前保持不變），並分享給團隊。每個人開啟「添加聯絡人」，貼上連結並送出請求；群組擁有者逐一接受。\n\n然後群組擁有者邀請所有成員加入群組。\n\n彼此不是聯絡人的成員，會在群組擁有者的手機上線時透過該手機收到貼文。在此之前，貼文留在傳送者的手機上等待；伺服器上不儲存任何內容。\n\n成員可以互相加為聯絡人，以便直接送達和通話。\n\n限制：一個群組最多 256 名成員，一部手機最多保留 200 個具有私密連線的聯絡人，大型團隊的群組擁有者手機應經常上線。</string>
+	<string name="contact_connection_auth_full">此裝置最多只能保留 200 個具有私密連線的聯絡人。</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="other">未傳送給 %d 位成員：他們的應用程式版本太舊，無法接收這麼大的貼文。</item>
 	</plurals>

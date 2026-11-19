@@ -2415,6 +2415,10 @@
 		<item quantity="one">%d membre es pas vòstre contacte e recep pas vòstras publicacions. Tocatz per los detalhs.</item>
 		<item quantity="other">%d membres son pas vòstres contactes e recebon pas vòstras publicacions. Tocatz per los detalhs.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Ajustar un contacte</string>
+	<string name="grouptr_team_help_title">Configurar una equipa</string>
+	<string name="grouptr_team_help_text">Una persona crèa lo grop e n\'es lo proprietari.\n\nLo proprietari del grop crèa un ligam de convit dins Ligams de convit (demòra parièr fins que siá suprimit) e lo parteja amb l\'equipa. Cadun dobrís Ajustar un contacte, pega lo ligam e manda una demanda; lo proprietari del grop accèpta caduna.\n\nPuèi lo proprietari del grop convida totes los membres dins lo grop.\n\nLos membres que son pas contactes entre eles recebon los messatges pel telefòn del proprietari del grop tre qu\'es en linha. Fins alara lo messatge espèra sul telefòn del mandaire; res es pas gardat sus un servidor.\n\nLos membres se pòdon ajustar entre eles coma contactes per una liurason dirècta e las sonadas.\n\nLimits: un grop a fins a 256 membres, un telefòn garda fins a 200 contactes amb una connexion privada, e lo telefòn del proprietari d\'una granda equipa deuriá èsser sovent en linha.</string>
+	<string name="contact_connection_auth_full">Aqueste aparelh pòt pas gardar mai de 200 contactes amb una connexion privada.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Pas mandat a %d membre: son aplicacion es tròp anciana per de publicacions tan grandas.</item>
 		<item quantity="other">Pas mandat a %d membres: lor aplicacion es tròp anciana per de publicacions tan grandas.</item>

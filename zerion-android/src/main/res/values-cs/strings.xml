@@ -2383,6 +2383,10 @@
 		<item quantity="many">%d členů není vašimi kontakty a nedostává vaše příspěvky. Klepněte pro podrobnosti.</item>
 		<item quantity="other">%d členů není vašimi kontakty a nedostává vaše příspěvky. Klepněte pro podrobnosti.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Přidat kontakt</string>
+	<string name="grouptr_team_help_title">Nastavení týmu</string>
+	<string name="grouptr_team_help_text">Jedna osoba vytvoří skupinu a je jejím vlastníkem.\n\nVlastník skupiny vytvoří v části Odkazy pozvánek jeden odkaz (zůstává stejný, dokud není odebrán) a sdílí ho s týmem. Každý otevře Přidat kontakt, vloží odkaz a odešle žádost; vlastník skupiny každou přijme.\n\nPoté vlastník skupiny pozve všechny členy do skupiny.\n\nČlenové, kteří nejsou navzájem kontakty, dostávají příspěvky přes telefon vlastníka skupiny, kdykoli je online. Do té doby příspěvek čeká na telefonu odesílatele; na žádném serveru se nic neukládá.\n\nČlenové si mohou navzájem přidat kontakty pro přímé doručení a hovory.\n\nLimity: skupina má až 256 členů, jeden telefon drží až 200 kontaktů se soukromým spojením a telefon vlastníka velkého týmu by měl být často online.</string>
+	<string name="contact_connection_auth_full">Toto zařízení nemůže držet více než 200 kontaktů se soukromým spojením.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Neodesláno %d členovi: jeho aplikace je na tak velké příspěvky příliš stará.</item>
 		<item quantity="few">Neodesláno %d členům: jejich aplikace je na tak velké příspěvky příliš stará.</item>
