@@ -318,24 +318,65 @@ echo "wallet API friend patches verified (wallet.h + pending_transaction.h)"
 # Documented minimal patch: epee's HTTP client collects a whole response body
 # in memory and trusts the node for its size, so a node could answer a wallet
 # request with a body of any length. The wallet talks to a node the user chose,
-# over Tor. The client now refuses a Content-Length over 128 MiB before reading
-# the body and stops a body (sized, chunked or connection-close) once it would
-# exceed 128 MiB; the request fails and the wallet retries as for any other
-# node error. The largest reply an honest daemon sends is a get_blocks.bin
-# chunk, bounded by FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE (100 MiB) plus its
-# output indices, so the cap sits above what a correct node can send. Each
-# patch must apply exactly once.
+# over Tor. The client now refuses a Content-Length over the cap of the request
+# before reading the body and stops a body (sized, chunked or connection-close)
+# once it would exceed that cap; the request fails and the wallet retries as
+# for any other node error. The cap depends on the request the wallet made:
+# 128 MiB for the binary endpoints (*.bin) and the transaction fetch
+# (/gettransactions), whose honest replies can be large (a get_blocks.bin
+# chunk is bounded by FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE, 100 MiB, plus its
+# output indices); 1 MiB for the JSON-RPC methods whose replies are a few
+# hundred bytes of metadata (get_version, get_info, get_fee_estimate,
+# hard_fork_info, the block header lookups and the RPC access methods); 64 MiB
+# for every other request (the JSON-RPC output distribution and histogram, the
+# block header range, the transaction pool and the small JSON endpoints). The
+# JSON-RPC method is read from the request body the wallet built, never from
+# the reply. Each patch must apply exactly once.
 EPEE_HTTP_H=/build/monero/contrib/epee/include/net/http_client.h
-HTTP_BODY_CAP='(size_t) 128 * 1024 * 1024'
+cat > /build/zerion_body_cap.inc <<'ZERION_EOF'
+			size_t m_zerion_body_cap = (size_t) 128 * 1024 * 1024; // Zerion: bounded response body
+			static size_t zerion_body_cap_for(const boost::string_ref uri, const boost::string_ref body)
+			{
+				const size_t large = (size_t) 128 * 1024 * 1024;
+				const size_t medium = (size_t) 64 * 1024 * 1024;
+				const size_t small = (size_t) 1024 * 1024;
+				const std::string u(uri.data(), uri.size());
+				if (u.size() >= 4 && u.compare(u.size() - 4, 4, ".bin") == 0) return large;
+				if (u == "/gettransactions" || u == "/get_transactions") return large;
+				if (u != "/json_rpc") return medium;
+				const std::string b(body.data(), body.size());
+				const size_t key = b.find("\"method\"");
+				if (key == std::string::npos) return medium;
+				const size_t q1 = b.find('"', key + 8);
+				if (q1 == std::string::npos) return medium;
+				const size_t q2 = b.find('"', q1 + 1);
+				if (q2 == std::string::npos) return medium;
+				const std::string method = b.substr(q1 + 1, q2 - q1 - 1);
+				static const char* const small_methods[] = {
+					"get_version", "get_info", "get_fee_estimate", "hard_fork_info",
+					"getblockheaderbyheight", "get_block_header_by_height",
+					"getlastblockheader", "get_last_block_header",
+					"getblockcount", "get_block_count",
+					"rpc_access_info", "rpc_access_submit_nonce"
+				};
+				for (const char* const m : small_methods)
+					if (method == m) return small;
+				return medium;
+			}
+ZERION_EOF
 if ! grep -q 'Zerion: bounded response body' "${EPEE_HTTP_H}"; then
-  sed -i "s|^\(\t*\)m_response_info.m_body += piece_of_transfer;|\1if (m_response_info.m_body.size() + piece_of_transfer.size() > ${HTTP_BODY_CAP}) { LOG_ERROR(\"response body over 128 MiB, closing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body\n\1m_response_info.m_body += piece_of_transfer;|" "${EPEE_HTTP_H}"
-  sed -i "s|^\(\t*\)\tcontent_len_valid = string_tools::get_xtype_from_string(m_len_in_summary, m_response_info.m_header_info.m_content_length);|&\n\1if (content_len_valid \&\& m_len_in_summary > ${HTTP_BODY_CAP}) { LOG_ERROR(\"Content-Length over 128 MiB, refusing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body|" "${EPEE_HTTP_H}"
+  sed -i "/^\t*size_t m_len_in_remain;/r /build/zerion_body_cap.inc" "${EPEE_HTTP_H}"
+  sed -i "/inline bool invoke(const boost::string_ref uri, const boost::string_ref method, const boost::string_ref body/{n;n;s|^\(\t*\)CRITICAL_REGION_LOCAL(m_lock);|&\n\1m_zerion_body_cap = zerion_body_cap_for(uri, body); // Zerion: bounded response body|}" "${EPEE_HTTP_H}"
+  sed -i "s|^\(\t*\)m_response_info.m_body += piece_of_transfer;|\1if (m_response_info.m_body.size() + piece_of_transfer.size() > m_zerion_body_cap) { LOG_ERROR(\"response body over the cap of this request, closing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body\n\1m_response_info.m_body += piece_of_transfer;|" "${EPEE_HTTP_H}"
+  sed -i "s|^\(\t*\)\tcontent_len_valid = string_tools::get_xtype_from_string(m_len_in_summary, m_response_info.m_header_info.m_content_length);|&\n\1if (content_len_valid \&\& m_len_in_summary > m_zerion_body_cap) { LOG_ERROR(\"Content-Length over the cap of this request, refusing\"); m_state = reciev_machine_state_error; return false; } // Zerion: bounded response body|" "${EPEE_HTTP_H}"
 fi
 PATCH_COUNT=$(grep -c 'Zerion: bounded response body' "${EPEE_HTTP_H}")
-[ "${PATCH_COUNT}" = "2" ] || { echo "epee http_client.h body cap patch count=${PATCH_COUNT} (expected 2)"; exit 4; }
-grep -q 'm_body.size() + piece_of_transfer.size() >' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in handle_target_data"; exit 4; }
-grep -q 'content_len_valid && m_len_in_summary >' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in header analysis"; exit 4; }
-echo "epee HTTP response body cap patch verified (http_client.h)"
+[ "${PATCH_COUNT}" = "4" ] || { echo "epee http_client.h body cap patch count=${PATCH_COUNT} (expected 4)"; exit 4; }
+grep -q 'static size_t zerion_body_cap_for(const boost::string_ref uri, const boost::string_ref body)' "${EPEE_HTTP_H}" || { echo "epee body cap helper missing"; exit 4; }
+grep -q 'm_zerion_body_cap = zerion_body_cap_for(uri, body);' "${EPEE_HTTP_H}" || { echo "epee body cap not set in invoke"; exit 4; }
+grep -q 'm_body.size() + piece_of_transfer.size() > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in handle_target_data"; exit 4; }
+grep -q 'content_len_valid && m_len_in_summary > m_zerion_body_cap' "${EPEE_HTTP_H}" || { echo "epee body cap patch missing in header analysis"; exit 4; }
+echo "epee HTTP response body cap patch verified (http_client.h, per-request caps)"
 MB=/build/monero/build/${ABI}
 # Dependencies are built; drop the cross compilers from the environment so
 # Monero's translations ExternalProject (which has no toolchain file) builds its

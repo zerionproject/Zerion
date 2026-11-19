@@ -141,20 +141,30 @@ Notes recorded during bring-up:
   exactly once and fails otherwise, so the change cannot silently drift.
 - epee's HTTP client (`contrib/epee/include/net/http_client.h`), which carries
   every wallet request to the node, collects a whole response body in memory
-  and takes its size from the node. Two minimal patches bound it at 128 MiB: a
-  `Content-Length` above that is refused before the body is read, and a body
-  (sized, chunked or connection-close) that would grow past it ends the
-  request with an error, which the wallet treats like any other failed request
-  to the node. The largest reply a correct daemon sends is a `get_blocks.bin`
-  chunk, which the daemon stops filling at `FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE`
-  (100 MiB) or 1000 blocks, plus the chunk's output indices; the daemon's
-  `--rpc-response-soft-limit` (25 MiB by default) bounds its send queue, not a
-  single reply. The cap therefore sits above anything an honest node can send,
-  and a hostile node can no longer make the app allocate without limit. A
-  reply with a Content-Length is stopped by the header check alone (the body
-  cannot exceed the declared length); the running check is what stops a
-  chunked or connection-close body. The build asserts both patches are present
-  exactly once and fails otherwise.
+  and takes its size from the node. Four minimal patches bound it with a cap
+  chosen per request: a `Content-Length` above the cap is refused before the
+  body is read, and a body (sized, chunked or connection-close) that would grow
+  past it ends the request with an error, which the wallet treats like any
+  other failed request to the node. The cap is set when the wallet sends the
+  request, from the request alone: 128 MiB for the binary endpoints (`*.bin`)
+  and the transaction fetch (`/gettransactions`), 1 MiB for the JSON-RPC
+  methods whose replies are a few hundred bytes of metadata (`get_version`,
+  `get_info`, `get_fee_estimate`, `hard_fork_info`, the block header lookups,
+  the RPC access methods), and 64 MiB for every other request (the JSON-RPC
+  output distribution and histogram, the block header range, the transaction
+  pool and the small JSON endpoints). The JSON-RPC method name is read from
+  the request body the wallet built, never from the reply. The largest reply a
+  correct daemon sends is a `get_blocks.bin` chunk, which the daemon stops
+  filling at `FIND_BLOCKCHAIN_SUPPLEMENT_MAX_SIZE` (100 MiB) or 1000 blocks,
+  plus the chunk's output indices; the daemon's `--rpc-response-soft-limit`
+  (25 MiB by default) bounds its send queue, not a single reply. The large cap
+  therefore sits above anything an honest node can send, the small cap above
+  any honest metadata reply, and a hostile node can no longer make the app
+  allocate without limit, nor make it hold tens of megabytes for a request
+  that asks for a version string. A reply with a Content-Length is stopped by
+  the header check alone (the body cannot exceed the declared length); the
+  running check is what stops a chunked or connection-close body. The build
+  asserts all four patches are present exactly once and fails otherwise.
 - The C++ runtime is linked statically (`-static-libstdc++`) so `libzmonero.so`
   is self-contained: its only dynamic dependencies are Android-system libraries
   (`liblog.so`, `libm.so`, `libdl.so`, `libc.so`) - no `libc++_shared.so`.
@@ -186,7 +196,41 @@ features CMake settled on and the SHA-256 of every archive in the link), and
 the Gradle gate prints that file when it refuses a library, so a host that
 builds different bytes can be compared with the reference stage by stage.
 
-## Accepted hashes (Monero v0.18.5.4 and the HTTP body cap, 2026-11-04)
+## Accepted hashes (per-request HTTP body caps, 2026-11-19)
+
+These are the values the Gradle gate enforces since the epee patch set grew
+from two pieces to four (build flags above): the response body cap is now
+chosen per request when the wallet sends it, 128 MiB for the binary endpoints
+and the transaction fetch, 1 MiB for the small JSON-RPC metadata methods and
+64 MiB for everything else, in place of one 128 MiB cap for every request.
+Nothing else in the recipe changed: the Monero commit, the shim, the
+dependency pins, the NDK, the base image and the snapshot package versions
+are the same, and every dependency archive (`dep` lines of `buildinfo.txt`)
+hashes exactly as in the previous build, so the new bytes come from the
+patched header alone. The library embeds `0.18.5.4-release` and the two new
+cap messages, and no `0.18.5.1`; the 54 exported `Java_` and `JNI_` symbols
+are identical to the previous build. The ELF facts are unchanged: four LOAD
+segments aligned to 16 KB on arm64-v8a (4 KB on armeabi-v7a), `BIND_NOW`,
+and only `liblog.so`, `libm.so`, `libdl.so` and `libc.so` as `NEEDED`.
+
+Produced in two independent environments that agree byte for byte: the
+pinned image of this directory's Dockerfile (`docker build -t
+zerion-monero-build:v0.18.5.4-caps .`, one fresh container per ABI, each
+from an empty `/build`, as the `builder` user) and F-Droid's
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, prepared
+as the recipe's `sudo` step prepares it, where `fdroid-build.sh` ran as
+`vagrant` with NDK r27b under `/opt/android-sdk/ndk/27.1.12297006` the way
+the recipe's `build` step runs it.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `92c826d09da094e937213b765aff9070b89da87a342b397831770d96c265a201`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `e2c49fcd9f62b7c5c679352c9607dfa0b324314b3ded39101ba3256c292c1fbc`**
+
+They supersede `672277dc…` / `3d6039a5…` (one 128 MiB cap), listed below for
+the record.
+
+## Previous hashes (Monero v0.18.5.4 and the HTTP body cap, 2026-11-04)
 
 These are the values the Gradle gate enforces since the Monero pin moved
 from v0.18.5.1 (`4f92268d`) to v0.18.5.4 (`85f036ba`), the newest release
