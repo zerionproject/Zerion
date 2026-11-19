@@ -76,4 +76,20 @@ public class CleanFileManifestTest {
 				src.contains("CleanFilePolicy.mayDecodeInAppProcess("));
 		assertTrue(src.contains("stripOfficeMetadataOrThrow("));
 	}
+
+	@Test
+	public void aShareNeverSweepsTheCopyAnEarlierReceiverMayStillRead()
+			throws Exception {
+		String src = new String(Files.readAllBytes(Paths.get(
+				"src/main/java/com/professor/zerion/android/attachment/"
+						+ "CleanFileActivity.java")), StandardCharsets.UTF_8);
+		assertFalse("the share directory is not emptied before a new copy",
+				src.contains("secureDeleteDir("));
+		assertTrue("each copy gets a name no other copy has",
+				src.contains("unusedFile(dir, name, RANDOM)"));
+		assertTrue("closing the screen shreds every copy older than the rule",
+				src.contains("CacheSweeper.sweepDirOlderThan(app,"));
+		assertTrue("the save worker writes its own copy of the bytes",
+				src.contains("byte[] copy = data.clone();"));
+	}
 }

@@ -102,6 +102,13 @@ public final class CacheSweeper {
 		SecureMemory.secureDeleteDir(new File(cache, name), 0L);
 	}
 
+	public static void sweepDirOlderThan(Context ctx, String name,
+			long before) {
+		File cache = ctx.getCacheDir();
+		if (cache == null) return;
+		sweepOlderThan(new File(cache, name), before);
+	}
+
 	public static void sweep(Context ctx) {
 		com.professor.zerion.android.vault.share.VaultShareRegistry
 				.releaseAll();

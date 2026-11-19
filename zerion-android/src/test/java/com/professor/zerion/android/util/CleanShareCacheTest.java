@@ -48,6 +48,27 @@ public class CleanShareCacheTest {
 	}
 
 	@Test
+	public void closingTheScreenShredsEveryCopyOlderThanTenMinutes()
+			throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File dir = new File(ctx.getCacheDir(), CacheSweeper.CLEAN_SHARE_DIR);
+		long now = System.currentTimeMillis();
+		File first = touch(dir, "Document 2026-11-19_101500.docx");
+		File second = touch(dir, "Document 2026-11-19_101500-3f9c.docx");
+		File fresh = touch(dir, "Image 2026-11-19_102500.jpg");
+		assertTrue(first.setLastModified(now - 11 * 60_000L));
+		assertTrue(second.setLastModified(now - 11 * 60_000L));
+		assertTrue(fresh.setLastModified(now - 60_000L));
+		CacheSweeper.sweepDirOlderThan(ctx, CacheSweeper.CLEAN_SHARE_DIR,
+				now - 10 * 60_000L);
+		assertFalse("an old copy is shredded", first.exists());
+		assertFalse("every old copy is shredded, not only the last",
+				second.exists());
+		assertTrue("a copy shared less than ten minutes ago is kept for its"
+				+ " reader", fresh.exists());
+	}
+
+	@Test
 	public void atStartACopyLeftByAnEarlierProcessIsSweptAndAFreshOneKept()
 			throws Exception {
 		Context ctx = RuntimeEnvironment.getApplication();

@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.Executor;
@@ -58,6 +59,7 @@ public class CleanFileActivity extends ZerionActivity {
 	private static final String UNKNOWN = "application/octet-stream";
 	private static final Executor WORKER =
 			Executors.newSingleThreadExecutor();
+	private static final SecureRandom RANDOM = new SecureRandom();
 
 	private static final class Picked {
 
@@ -116,9 +118,6 @@ public class CleanFileActivity extends ZerionActivity {
 	private byte[] clean;
 	@Nullable
 	private String cleanMime;
-	@Nullable
-	private File shared;
-	private long sharedAt;
 
 	@Override
 	public void injectActivity(ActivityComponent component) {
@@ -161,12 +160,10 @@ public class CleanFileActivity extends ZerionActivity {
 		super.onDestroy();
 		job++;
 		wipeClean();
-		File f = shared;
-		shared = null;
-		if (f != null && System.currentTimeMillis() - sharedAt
-				> SHRED_SHARED_AFTER_MS) {
-			WORKER.execute(() -> SecureMemory.secureDeleteFile(f));
-		}
+		Context app = getApplicationContext();
+		long before = System.currentTimeMillis() - SHRED_SHARED_AFTER_MS;
+		WORKER.execute(() -> CacheSweeper.sweepDirOlderThan(app,
+				CacheSweeper.CLEAN_SHARE_DIR, before));
 	}
 
 	private void wipeClean() {
@@ -258,8 +255,18 @@ public class CleanFileActivity extends ZerionActivity {
 			return new SharedMediaSanitizer(app, false).sanitize(
 					picked.mimeType, picked.data, MAX_BYTES);
 		}
-		return new SharedMediaSanitizer(app, true).sanitize(picked.mimeType,
-				checked, MAX_BYTES);
+		byte[] result = null;
+		try {
+			SharedMediaSanitizer.Cleaned cleaned =
+					new SharedMediaSanitizer(app, true).sanitize(
+							picked.mimeType, checked, MAX_BYTES);
+			result = cleaned.getData();
+			return cleaned;
+		} finally {
+			if (checked != picked.data && checked != result) {
+				Arrays.fill(checked, (byte) 0);
+			}
+		}
 	}
 
 	private static Picked read(Context app, Uri uri) throws IOException {
@@ -382,9 +389,8 @@ public class CleanFileActivity extends ZerionActivity {
 		WeakReference<CleanFileActivity> screen = new WeakReference<>(this);
 		WORKER.execute(() -> {
 			File dir = new File(app.getCacheDir(), CacheSweeper.CLEAN_SHARE_DIR);
-			SecureMemory.secureDeleteDir(dir, 0L);
-			File f = new File(dir, name);
 			boolean written = dir.mkdirs() || dir.isDirectory();
+			File f = unusedFile(dir, name, RANDOM);
 			if (written) {
 				try (OutputStream out = new FileOutputStream(f)) {
 					out.write(data);
@@ -399,6 +405,20 @@ public class CleanFileActivity extends ZerionActivity {
 				if (a != null) a.send(ok ? f : null, mime);
 			});
 		});
+	}
+
+	static File unusedFile(File dir, String name, SecureRandom random) {
+		File f = new File(dir, name);
+		if (!f.exists()) return f;
+		int dot = name.lastIndexOf('.');
+		String stem = dot > 0 ? name.substring(0, dot) : name;
+		String ext = dot > 0 ? name.substring(dot) : "";
+		do {
+			String suffix = String.format(Locale.ROOT, "%04x",
+					random.nextInt(0x10000));
+			f = new File(dir, stem + "-" + suffix + ext);
+		} while (f.exists());
+		return f;
 	}
 
 	private void send(@Nullable File f, String mime) {
@@ -421,8 +441,6 @@ public class CleanFileActivity extends ZerionActivity {
 			send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 			startActivity(Intent.createChooser(send,
 					getString(R.string.clean_file_share_chooser)));
-			shared = f;
-			sharedAt = System.currentTimeMillis();
 		} catch (RuntimeException e) {
 			WORKER.execute(() -> SecureMemory.secureDeleteFile(f));
 			Toast.makeText(this, R.string.clean_file_share_failed,
@@ -448,11 +466,17 @@ public class CleanFileActivity extends ZerionActivity {
 			SavedFileNames.discard(getContentResolver(), uri);
 			return;
 		}
+		byte[] copy = data.clone();
 		Context app = getApplicationContext();
 		choose.setEnabled(false);
 		WeakReference<CleanFileActivity> screen = new WeakReference<>(this);
 		WORKER.execute(() -> {
-			boolean saved = write(app, uri, data);
+			boolean saved;
+			try {
+				saved = write(app, uri, copy);
+			} finally {
+				Arrays.fill(copy, (byte) 0);
+			}
 			if (!saved) SavedFileNames.discard(app.getContentResolver(), uri);
 			new Handler(Looper.getMainLooper()).post(() -> {
 				Toast.makeText(app, saved ? R.string.save_file_success
