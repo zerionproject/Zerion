@@ -5,6 +5,8 @@ import org.junit.Test;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class PasswordEntryCodecTest {
 
@@ -83,5 +85,54 @@ public class PasswordEntryCodecTest {
 		PasswordEntry e = PasswordEntryCodec.decode("not json");
 		assertEquals("", e.title);
 		assertEquals("", e.password);
+	}
+
+	@Test
+	public void aPasswordEntryCarriesNoKind() {
+		PasswordEntry e = PasswordEntryCodec.decode(encode("t", "u", "p", "l", "n"));
+		assertEquals(PasswordEntry.KIND_PASSWORD, e.kind);
+		assertFalse(e.isBookmark());
+		assertFalse(PasswordEntryCodec.isBookmark(encode("t", "u", "p", "l", "n")));
+	}
+
+	@Test
+	public void aBookmarkRoundTripsWithItsKind() {
+		String json = new String(PasswordEntryCodec.encodeBookmark("Shop",
+				"https://shop.example.org/", "fast delivery"),
+				StandardCharsets.UTF_8);
+		assertEquals("{\"title\":\"Shop\",\"username\":\"\",\"password\":"
+				+ "\"\",\"url\":\"https://shop.example.org/\",\"notes\":"
+				+ "\"fast delivery\",\"kind\":\"bookmark\"}", json);
+		assertTrue(PasswordEntryCodec.isBookmark(json));
+		PasswordEntry e = PasswordEntryCodec.decode(json);
+		assertTrue(e.isBookmark());
+		assertEquals("Shop", e.title);
+		assertEquals("https://shop.example.org/", e.url);
+		assertEquals("fast delivery", e.notes);
+		assertEquals("", e.username);
+		assertEquals("", e.password);
+	}
+
+	@Test
+	public void anUnknownKindIsKeptButIsNotABookmark() {
+		String json = new String(PasswordEntryCodec.encode("totp", "t", "u",
+				"p", "l", "n"), StandardCharsets.UTF_8);
+		PasswordEntry e = PasswordEntryCodec.decode(json);
+		assertEquals("totp", e.kind);
+		assertFalse(e.isBookmark());
+		assertFalse(PasswordEntryCodec.isBookmark(json));
+		assertEquals("p", e.password);
+	}
+
+	@Test
+	public void aKindWrittenInsideAnotherFieldIsNotRead() {
+		String trick = "\",\"kind\":\"bookmark";
+		String json = encode("t", "u", "p", "l", trick);
+		assertFalse(PasswordEntryCodec.isBookmark(json));
+		PasswordEntry e = PasswordEntryCodec.decode(json);
+		assertEquals(trick, e.notes);
+		assertEquals(PasswordEntry.KIND_PASSWORD, e.kind);
+		assertEquals(PasswordEntry.KIND_BOOKMARK,
+				PasswordEntry.bookmark("t", "https://a.example", "").kind);
 	}
 }

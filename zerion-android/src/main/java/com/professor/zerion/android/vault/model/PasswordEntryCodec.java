@@ -15,6 +15,18 @@ public final class PasswordEntryCodec {
 	public static byte[] encode(String title, @Nullable String username,
 			@Nullable String password, @Nullable String url,
 			@Nullable String notes) {
+		return encode(PasswordEntry.KIND_PASSWORD, title, username, password,
+				url, notes);
+	}
+
+	public static byte[] encodeBookmark(String title, String url,
+			@Nullable String notes) {
+		return encode(PasswordEntry.KIND_BOOKMARK, title, "", "", url, notes);
+	}
+
+	public static byte[] encode(String kind, String title,
+			@Nullable String username, @Nullable String password,
+			@Nullable String url, @Nullable String notes) {
 		StringBuilder json = new StringBuilder();
 		json.append("{");
 		json.append("\"title\":\"").append(escape(title)).append("\",");
@@ -22,6 +34,9 @@ public final class PasswordEntryCodec {
 		json.append("\"password\":\"").append(escape(password)).append("\",");
 		json.append("\"url\":\"").append(escape(url)).append("\",");
 		json.append("\"notes\":\"").append(escape(notes)).append("\"");
+		if (!kind.isEmpty()) {
+			json.append(",\"kind\":\"").append(escape(kind)).append("\"");
+		}
 		json.append("}");
 		byte[] content = json.toString().getBytes(StandardCharsets.UTF_8);
 		json.setLength(0);
@@ -34,7 +49,12 @@ public final class PasswordEntryCodec {
 		String password = extract(json, "password");
 		String url = extract(json, "url");
 		String notes = extract(json, "notes");
-		return new PasswordEntry(title, username, password, url, notes);
+		String kind = extract(json, "kind");
+		return new PasswordEntry(kind, title, username, password, url, notes);
+	}
+
+	public static boolean isBookmark(String json) {
+		return PasswordEntry.KIND_BOOKMARK.equals(extract(json, "kind"));
 	}
 
 	private static String escape(@Nullable String value) {
