@@ -919,6 +919,11 @@
 	<string name="browser_warning_open">Napriek tomu otvoriť</string>
 	<string name="browser_warning_copy">Kopírovať odkaz</string>
 	<string name="browser_warning_link_copied">Odkaz skopírovaný</string>
+	<string name="browser_tor_title">Otvoriť v Tor Browseri?</string>
+	<string name="browser_tor_message">Tento odkaz sa otvorí v Tor Browseri. Vaše pripojenie zostane vnútri Toru.</string>
+	<string name="browser_tor_open">Otvoriť v Tor Browseri</string>
+	<string name="browser_tor_install_hint">Nainštalujte Tor Browser, aby ste otvárali odkazy bez opustenia Toru.</string>
+	<string name="browser_tor_get">Získať Tor Browser</string>
 	<string name="quick_reply_not_sent">Odpoveď sa neodoslala. Otvorte chat a skúste to znova.</string>
 	<string name="link_unsupported">Nepodporovaný odkaz</string>
 	<string name="settings_support_summary">Pomôžte udržať Zerion bezplatný a súkromný</string>

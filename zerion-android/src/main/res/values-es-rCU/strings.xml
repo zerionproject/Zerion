@@ -1162,4 +1162,9 @@
 	</plurals>
 	<string name="vault_msg_cannot_clean">Zerion no pudo eliminar la información oculta (como la ubicación o los datos del dispositivo) de este archivo, así que no se añadió al baúl. Conviértelo a JPEG, PNG, MP4 o PDF e inténtalo de nuevo.</string>
 	<string name="vault_msg_too_large_to_clean">Este archivo es demasiado grande para que Zerion elimine su información oculta (como la ubicación o los datos del dispositivo) en este teléfono, así que no se añadió al baúl. Reduce su tamaño e inténtalo de nuevo.</string>
+	<string name="browser_tor_title">¿Abrir en Tor Browser?</string>
+	<string name="browser_tor_message">Este enlace se abre en Tor Browser. Tu conexión se mantiene dentro de Tor.</string>
+	<string name="browser_tor_open">Abrir en Tor Browser</string>
+	<string name="browser_tor_install_hint">Instala Tor Browser para abrir enlaces sin salir de Tor.</string>
+	<string name="browser_tor_get">Obtener Tor Browser</string>
 </resources>

@@ -552,6 +552,11 @@
 	<string name="browser_warning_open">Всё равно открыть</string>
 	<string name="browser_warning_copy">Копировать ссылку</string>
 	<string name="browser_warning_link_copied">Ссылка скопирована</string>
+	<string name="browser_tor_title">Открыть в Tor Browser?</string>
+	<string name="browser_tor_message">Эта ссылка откроется в Tor Browser. Ваше соединение остаётся внутри Tor.</string>
+	<string name="browser_tor_open">Открыть в Tor Browser</string>
+	<string name="browser_tor_install_hint">Установите Tor Browser, чтобы открывать ссылки, не покидая Tor.</string>
+	<string name="browser_tor_get">Скачать Tor Browser</string>
 	<string name="quick_reply_not_sent">Ответ не отправлен. Откройте чат, чтобы повторить попытку.</string>
 	<string name="link_unsupported">Неподдерживаемая ссылка</string>
 	<string name="settings_support_summary">Помогите сохранить Zerion бесплатным и приватным</string>

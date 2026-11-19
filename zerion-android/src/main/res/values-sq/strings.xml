@@ -886,6 +886,11 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="browser_warning_open">Hape gjithsesi</string>
 	<string name="browser_warning_copy">Kopjo lidhjen</string>
 	<string name="browser_warning_link_copied">Lidhja u kopjua</string>
+	<string name="browser_tor_title">Të hapet në Tor Browser?</string>
+	<string name="browser_tor_message">Kjo lidhje hapet në Tor Browser. Lidhja juaj mbetet brenda Tor.</string>
+	<string name="browser_tor_open">Hape në Tor Browser</string>
+	<string name="browser_tor_install_hint">Instaloni Tor Browser për të hapur lidhje pa dalë nga Tor.</string>
+	<string name="browser_tor_get">Merrni Tor Browser</string>
 	<string name="quick_reply_not_sent">Përgjigjja jote nuk u dërgua. Hap bisedën për të provuar sërish.</string>
 	<string name="link_unsupported">Lidhje e pambështetur</string>
 	<string name="settings_support_summary">Ndihmo që Zerion-i të mbetet falas dhe privat</string>

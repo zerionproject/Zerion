@@ -662,6 +662,11 @@
 	<string name="browser_warning_open">Dobrir çaquelà</string>
 	<string name="browser_warning_copy">Copiar lo ligam</string>
 	<string name="browser_warning_link_copied">Ligam copiat</string>
+	<string name="browser_tor_title">Dobrir dins Tor Browser?</string>
+	<string name="browser_tor_message">Aqueste ligam se dobrís dins Tor Browser. Vòstra connexion demòra dins Tor.</string>
+	<string name="browser_tor_open">Dobrir dins Tor Browser</string>
+	<string name="browser_tor_install_hint">Installatz Tor Browser per dobrir los ligams sens quitar Tor.</string>
+	<string name="browser_tor_get">Obténer Tor Browser</string>
 	<string name="quick_reply_not_sent">Vòstra responsa es pas estada mandada. Dobrissètz la discussion per tornar ensajar.</string>
 	<string name="link_unsupported">Ligam pas pres en carga</string>
 	<string name="settings_support_summary">Ajudatz Zerion a demorar gratuit e privat</string>

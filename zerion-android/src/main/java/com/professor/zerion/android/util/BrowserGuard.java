@@ -6,11 +6,14 @@ import android.net.Uri;
 import android.widget.Toast;
 
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.professor.zerion.android.update.InstallSource;
 import com.professor.zerion.R;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.net.IDN;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import javax.annotation.Nullable;
@@ -18,25 +21,81 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public final class BrowserGuard {
 
+	static final String TOR_BROWSER = "org.torproject.torbrowser";
+	static final String TOR_BROWSER_ALPHA = "org.torproject.torbrowser_alpha";
+	static final String PLAY_STORE = "com.android.vending";
+	static final String TOR_BROWSER_PLAY =
+			"market://details?id=" + TOR_BROWSER;
+	static final String TOR_BROWSER_PLAY_WEB =
+			"https://play.google.com/store/apps/details?id=" + TOR_BROWSER;
+	static final String GUARDIAN_REPO_FINGERPRINT =
+			"B7C2EEFD8DAC7806AF67DFCD92EB18126BC08312A7F2D6F3862E46013C7A6135";
+	static final String GUARDIAN_REPO =
+			"fdroidrepos://guardianproject.info/fdroid/repo?fingerprint="
+					+ GUARDIAN_REPO_FINGERPRINT;
+	static final String GUARDIAN_PAGE = "https://guardianproject.info/fdroid/";
+	static final String TOR_BROWSER_DOWNLOAD =
+			"https://www.torproject.org/download/#android";
+	private static final String PROBE_URL = "https://www.torproject.org/";
+
 	private BrowserGuard() {
 	}
 
 	public static void openUrl(Context ctx, String url) {
+		showDialog(ctx, url, true);
+	}
+
+	public static void openUrl(Context ctx, Uri uri) {
+		openUrl(ctx, uri.toString());
+	}
+
+	public static boolean hasTorBrowser(Context ctx) {
+		return torBrowserPackage(ctx) != null;
+	}
+
+	public static void offerTorBrowser(Context ctx, String message) {
 		new SecureAlertDialogBuilder(ctx)
-				.setTitle(R.string.browser_warning_title)
-				.setMessage(ctx.getString(R.string.browser_warning_message)
-						+ "\n\n" + shown(url))
-				.setPositiveButton(R.string.browser_warning_open,
-						(d, w) -> launchSystemBrowser(ctx, url))
-				.setNeutralButton(R.string.browser_warning_copy,
-						(d, w) -> copyToClipboard(ctx, url))
+				.setTitle(R.string.browser_tor_get)
+				.setMessage(message + "\n\n"
+						+ ctx.getString(R.string.browser_tor_install_hint))
+				.setPositiveButton(R.string.browser_tor_get,
+						(d, w) -> getTorBrowser(ctx))
 				.setNegativeButton(android.R.string.cancel, null)
 				.setCancelable(true)
 				.show();
 	}
 
-	public static void openUrl(Context ctx, Uri uri) {
-		openUrl(ctx, uri.toString());
+	private static void showDialog(Context ctx, String url,
+			boolean offerInstall) {
+		SecureAlertDialogBuilder b = new SecureAlertDialogBuilder(ctx);
+		if (torBrowserPackage(ctx) != null) {
+			b.setTitle(R.string.browser_tor_title)
+					.setMessage(ctx.getString(R.string.browser_tor_message)
+							+ "\n\n" + shown(url))
+					.setPositiveButton(R.string.browser_tor_open,
+							(d, w) -> launchSystemBrowser(ctx, url))
+					.setNegativeButton(android.R.string.cancel, null);
+		} else {
+			String message = ctx.getString(R.string.browser_warning_message);
+			if (offerInstall) {
+				message += "\n\n"
+						+ ctx.getString(R.string.browser_tor_install_hint);
+			}
+			b.setTitle(R.string.browser_warning_title)
+					.setMessage(message + "\n\n" + shown(url))
+					.setPositiveButton(R.string.browser_warning_open,
+							(d, w) -> launchSystemBrowser(ctx, url));
+			if (offerInstall) {
+				b.setNegativeButton(R.string.browser_tor_get,
+						(d, w) -> getTorBrowser(ctx));
+			} else {
+				b.setNegativeButton(android.R.string.cancel, null);
+			}
+		}
+		b.setNeutralButton(R.string.browser_warning_copy,
+						(d, w) -> copyToClipboard(ctx, url))
+				.setCancelable(true)
+				.show();
 	}
 
 	public static String shown(String url) {
@@ -93,6 +152,67 @@ public final class BrowserGuard {
 		return ascii.toLowerCase(Locale.ROOT);
 	}
 
+	@Nullable
+	static String torBrowserPackage(Context ctx) {
+		Intent probe = new Intent(Intent.ACTION_VIEW, Uri.parse(PROBE_URL));
+		probe.addCategory(Intent.CATEGORY_BROWSABLE);
+		for (String pkg : new String[] {TOR_BROWSER, TOR_BROWSER_ALPHA}) {
+			if (handles(ctx, pkg, probe)) return pkg;
+		}
+		return null;
+	}
+
+	private static boolean handles(Context ctx, String pkg, Intent intent) {
+		Intent probe = new Intent(intent);
+		probe.setPackage(pkg);
+		try {
+			return !ctx.getPackageManager()
+					.queryIntentActivities(probe, 0).isEmpty();
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	static void getTorBrowser(Context ctx) {
+		String installer = InstallSource.installerPackage(ctx);
+		if (PLAY_STORE.equals(installer)) {
+			Intent i = new Intent(Intent.ACTION_VIEW,
+					Uri.parse(TOR_BROWSER_PLAY));
+			i.setPackage(PLAY_STORE);
+			if (startExplicit(ctx, i)) return;
+			showDialog(ctx, TOR_BROWSER_PLAY_WEB, false);
+			return;
+		}
+		if (InstallSource.isFdroidClient(installer)) {
+			Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(GUARDIAN_REPO));
+			List<String> clients = new ArrayList<>();
+			clients.add(installer);
+			for (String pkg : InstallSource.FDROID_CLIENTS) {
+				if (!clients.contains(pkg)) clients.add(pkg);
+			}
+			for (String pkg : clients) {
+				i.setPackage(pkg);
+				if (startExplicit(ctx, i)) return;
+			}
+			showDialog(ctx, GUARDIAN_PAGE, false);
+			return;
+		}
+		showDialog(ctx, TOR_BROWSER_DOWNLOAD, false);
+	}
+
+	private static boolean startExplicit(Context ctx, Intent intent) {
+		String pkg = intent.getPackage();
+		if (pkg == null || !handles(ctx, pkg, intent)) return false;
+		try {
+			Intent i = new Intent(intent);
+			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			ctx.startActivity(i);
+			return true;
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
 	private static void launchSystemBrowser(Context ctx, String url) {
 		if (webHost(url) == null) {
 			Toast.makeText(ctx, R.string.link_unsupported,
@@ -105,6 +225,8 @@ public final class BrowserGuard {
 			i.addCategory(Intent.CATEGORY_BROWSABLE);
 			i.setSelector(null);
 			i.setComponent(null);
+			String tor = torBrowserPackage(ctx);
+			if (tor != null) i.setPackage(tor);
 			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			ctx.startActivity(i);
 		} catch (RuntimeException e) {

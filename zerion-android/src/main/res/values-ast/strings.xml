@@ -286,6 +286,11 @@
 	<string name="browser_warning_open">Abrir de toes formes</string>
 	<string name="browser_warning_copy">Copiar l\'enllaz</string>
 	<string name="browser_warning_link_copied">Copióse l\'enllaz</string>
+	<string name="browser_tor_title">¿Abrir en Tor Browser?</string>
+	<string name="browser_tor_message">Esti enllaz ábrese en Tor Browser. La conexón queda dientro de Tor.</string>
+	<string name="browser_tor_open">Abrir en Tor Browser</string>
+	<string name="browser_tor_install_hint">Instala Tor Browser p\'abrir enllaces ensin salir de Tor.</string>
+	<string name="browser_tor_get">Consiguir Tor Browser</string>
 	<string name="quick_reply_not_sent">Nun s\'unvió la rempuesta. Abri la charra pa volver tentalo.</string>
 	<string name="link_unsupported">Enllaz non compatible</string>
 	<string name="settings_support_summary">Ayuda a que Zerion siga siendo de baldre y priváu</string>

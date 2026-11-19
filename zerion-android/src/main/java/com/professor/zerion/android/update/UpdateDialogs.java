@@ -1,13 +1,11 @@
 package com.professor.zerion.android.update;
 
-import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.widget.Toast;
 
 import com.professor.zerion.R;
 import com.professor.zerion.android.security.SecureAlertDialogBuilder;
+import com.professor.zerion.android.util.BrowserGuard;
 import com.professor.zerion.android.util.SecureClipboard;
 
 import org.briarproject.nullsafety.NotNullByDefault;
@@ -69,14 +67,7 @@ public final class UpdateDialogs {
 	}
 
 	private static void open(Context ctx, String url) {
-		try {
-			Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-			i.addCategory(Intent.CATEGORY_BROWSABLE);
-			ctx.startActivity(i);
-		} catch (ActivityNotFoundException e) {
-			Toast.makeText(ctx, R.string.updates_no_browser,
-					Toast.LENGTH_LONG).show();
-		}
+		BrowserGuard.openUrl(ctx, url);
 	}
 
 	private static void copy(Context ctx, String url) {

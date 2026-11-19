@@ -842,6 +842,11 @@
 	<string name="browser_warning_open">לפתוח בכל זאת</string>
 	<string name="browser_warning_copy">העתקת הקישור</string>
 	<string name="browser_warning_link_copied">הקישור הועתק</string>
+	<string name="browser_tor_title">לפתוח ב-Tor Browser?</string>
+	<string name="browser_tor_message">קישור זה נפתח ב-Tor Browser. החיבור שלך נשאר בתוך Tor.</string>
+	<string name="browser_tor_open">פתיחה ב-Tor Browser</string>
+	<string name="browser_tor_install_hint">התקינו את Tor Browser כדי לפתוח קישורים בלי לצאת מ-Tor.</string>
+	<string name="browser_tor_get">קבלת Tor Browser</string>
 	<string name="quick_reply_not_sent">התשובה שלך לא נשלחה. יש לפתוח את השיחה כדי לנסות שוב.</string>
 	<string name="link_unsupported">קישור לא נתמך</string>
 	<string name="settings_support_summary">עזרה לשמור על Zerion חינמי ופרטי</string>

@@ -857,6 +857,11 @@
 	<string name="browser_warning_open">Opna samt</string>
 	<string name="browser_warning_copy">Afrita tengil</string>
 	<string name="browser_warning_link_copied">Tengill afritaður</string>
+	<string name="browser_tor_title">Opna í Tor Browser?</string>
+	<string name="browser_tor_message">Þessi tengill opnast í Tor Browser. Tengingin þín helst innan Tor.</string>
+	<string name="browser_tor_open">Opna í Tor Browser</string>
+	<string name="browser_tor_install_hint">Settu upp Tor Browser til að opna tengla án þess að fara út úr Tor.</string>
+	<string name="browser_tor_get">Sækja Tor Browser</string>
 	<string name="quick_reply_not_sent">Svarið þitt var ekki sent. Opnaðu spjallið til að reyna aftur.</string>
 	<string name="link_unsupported">Tengill ekki studdur</string>
 	<string name="settings_support_summary">Hjálpaðu til við að halda Zerion ókeypis og persónuverndandi</string>

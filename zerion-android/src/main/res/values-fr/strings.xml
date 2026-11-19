@@ -510,6 +510,11 @@ copies des messages que vous envoyez.
 	<string name="browser_warning_open">Ouvrir quand même</string>
 	<string name="browser_warning_copy">Copier le lien</string>
 	<string name="browser_warning_link_copied">Lien copié</string>
+	<string name="browser_tor_title">Ouvrir dans Tor Browser ?</string>
+	<string name="browser_tor_message">Ce lien s\'ouvre dans Tor Browser. Votre connexion reste dans Tor.</string>
+	<string name="browser_tor_open">Ouvrir dans Tor Browser</string>
+	<string name="browser_tor_install_hint">Installez Tor Browser pour ouvrir les liens sans quitter Tor.</string>
+	<string name="browser_tor_get">Obtenir Tor Browser</string>
 	<string name="quick_reply_not_sent">Votre réponse n\'a pas été envoyée. Ouvrez la discussion pour réessayer.</string>
 	<string name="link_unsupported">Lien non pris en charge</string>
 	<string name="settings_support_summary">Aidez à garder Zerion gratuit et privé</string>

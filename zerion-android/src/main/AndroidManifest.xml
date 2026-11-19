@@ -761,6 +761,14 @@
 
 	<queries>
 		<package android:name="info.guardianproject.ripple" />
+		<package android:name="org.torproject.torbrowser" />
+		<package android:name="org.torproject.torbrowser_alpha" />
+		<package android:name="com.android.vending" />
+		<package android:name="org.fdroid.fdroid" />
+		<package android:name="org.fdroid.basic" />
+		<package android:name="com.looker.droidify" />
+		<package android:name="com.machiav3lli.fdroid" />
+		<package android:name="eu.bubu1.fdroidclassic" />
 
 		<intent>
 			<action android:name="android.intent.action.VIEW" />

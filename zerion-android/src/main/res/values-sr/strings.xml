@@ -683,6 +683,11 @@
 	<string name="browser_warning_open">Ipak otvori</string>
 	<string name="browser_warning_copy">Kopiraj link</string>
 	<string name="browser_warning_link_copied">Link je kopiran</string>
+	<string name="browser_tor_title">Otvoriti u Tor Browseru?</string>
+	<string name="browser_tor_message">Ovaj link se otvara u Tor Browseru. Vaša veza ostaje unutar Tora.</string>
+	<string name="browser_tor_open">Otvori u Tor Browseru</string>
+	<string name="browser_tor_install_hint">Instalirajte Tor Browser da otvarate linkove bez napuštanja Tora.</string>
+	<string name="browser_tor_get">Nabavi Tor Browser</string>
 	<string name="quick_reply_not_sent">Tvoj odgovor nije poslat. Otvori razgovor da pokušaš ponovo.</string>
 	<string name="link_unsupported">Nepodržan link</string>
 	<string name="settings_support_summary">Pomozi da Zerion ostane besplatan i privatan</string>

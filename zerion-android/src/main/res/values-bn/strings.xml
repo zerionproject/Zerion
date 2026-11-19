@@ -783,6 +783,11 @@
 	<string name="browser_warning_open">তবুও খুলুন</string>
 	<string name="browser_warning_copy">লিংক কপি করুন</string>
 	<string name="browser_warning_link_copied">লিংক কপি করা হয়েছে</string>
+	<string name="browser_tor_title">Tor Browser-এ খুলবেন?</string>
+	<string name="browser_tor_message">এই লিংক Tor Browser-এ খোলা হবে। আপনার সংযোগ Tor-এর ভেতরেই থাকবে।</string>
+	<string name="browser_tor_open">Tor Browser-এ খুলুন</string>
+	<string name="browser_tor_install_hint">Tor ছেড়ে না গিয়ে লিংক খুলতে Tor Browser ইনস্টল করুন।</string>
+	<string name="browser_tor_get">Tor Browser নিন</string>
 	<string name="quick_reply_not_sent">আপনার উত্তর পাঠানো হয়নি। আবার চেষ্টা করতে চ্যাট খুলুন।</string>
 	<string name="link_unsupported">অসমর্থিত লিংক</string>
 	<string name="settings_support_summary">Zerion-কে বিনামূল্যে ও গোপনীয় রাখতে সাহায্য করুন</string>

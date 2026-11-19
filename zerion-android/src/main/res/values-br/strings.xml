@@ -330,6 +330,11 @@
 	<string name="browser_warning_open">Digeriñ memes tra</string>
 	<string name="browser_warning_copy">Eilañ an ere</string>
 	<string name="browser_warning_link_copied">Ere eilet</string>
+	<string name="browser_tor_title">Digeriñ e Tor Browser?</string>
+	<string name="browser_tor_message">An ere-mañ a vo digoret e Tor Browser. Ho kevreadenn a chom e-barzh Tor.</string>
+	<string name="browser_tor_open">Digeriñ e Tor Browser</string>
+	<string name="browser_tor_install_hint">Staliit Tor Browser evit digeriñ ereoù hep kuitaat Tor.</string>
+	<string name="browser_tor_get">Kaout Tor Browser</string>
 	<string name="quick_reply_not_sent">N\'eo ket bet kaset ho respont. Digorit ar gaozeadenn evit klask en-dro.</string>
 	<string name="link_unsupported">Ere n\'eo ket skoret</string>
 	<string name="settings_support_summary">Sikourit Zerion da chom digoust ha prevez</string>

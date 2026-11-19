@@ -443,6 +443,11 @@
 	<string name="browser_warning_open">Buka juga</string>
 	<string name="browser_warning_copy">Salin pautan</string>
 	<string name="browser_warning_link_copied">Pautan disalin</string>
+	<string name="browser_tor_title">Buka dalam Tor Browser?</string>
+	<string name="browser_tor_message">Pautan ini dibuka dalam Tor Browser. Sambungan anda kekal di dalam Tor.</string>
+	<string name="browser_tor_open">Buka dalam Tor Browser</string>
+	<string name="browser_tor_install_hint">Pasang Tor Browser untuk membuka pautan tanpa meninggalkan Tor.</string>
+	<string name="browser_tor_get">Dapatkan Tor Browser</string>
 	<string name="quick_reply_not_sent">Balasan anda tidak dihantar. Buka perbualan untuk mencuba lagi.</string>
 	<string name="link_unsupported">Pautan tidak disokong</string>
 	<string name="settings_support_summary">Bantu Zerion kekal percuma dan peribadi</string>

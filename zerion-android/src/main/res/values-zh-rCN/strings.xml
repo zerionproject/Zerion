@@ -530,6 +530,11 @@
 	<string name="browser_warning_open">仍要打开</string>
 	<string name="browser_warning_copy">复制链接</string>
 	<string name="browser_warning_link_copied">链接已复制</string>
+	<string name="browser_tor_title">在 Tor Browser 中打开？</string>
+	<string name="browser_tor_message">此链接将在 Tor Browser 中打开。您的连接始终留在 Tor 内。</string>
+	<string name="browser_tor_open">在 Tor Browser 中打开</string>
+	<string name="browser_tor_install_hint">安装 Tor Browser，即可在不离开 Tor 的情况下打开链接。</string>
+	<string name="browser_tor_get">获取 Tor Browser</string>
 	<string name="quick_reply_not_sent">你的回复未发送。请打开聊天重试。</string>
 	<string name="link_unsupported">不支持的链接</string>
 	<string name="settings_support_summary">帮助 Zerion 保持免费和私密</string>

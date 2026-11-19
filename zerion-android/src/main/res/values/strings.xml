@@ -17,6 +17,11 @@
 	<string name="browser_warning_open">Open anyway</string>
 	<string name="browser_warning_copy">Copy link</string>
 	<string name="browser_warning_link_copied">Link copied</string>
+	<string name="browser_tor_title">Open in Tor Browser?</string>
+	<string name="browser_tor_message">This link opens in Tor Browser. Your connection stays inside Tor.</string>
+	<string name="browser_tor_open">Open in Tor Browser</string>
+	<string name="browser_tor_install_hint">Install Tor Browser to open links without leaving Tor.</string>
+	<string name="browser_tor_get">Get Tor Browser</string>
 	<string name="quick_reply_not_sent">Your reply was not sent. Open the chat to try again.</string>
 	<string name="link_unsupported">Unsupported link</string>
 	<string name="settings_support_summary">Help keep Zerion free and private</string>

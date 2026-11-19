@@ -774,6 +774,11 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="browser_warning_open">Obre igualment</string>
 	<string name="browser_warning_copy">Copia l\'enllaç</string>
 	<string name="browser_warning_link_copied">S\'ha copiat l\'enllaç</string>
+	<string name="browser_tor_title">Vols obrir-ho al Tor Browser?</string>
+	<string name="browser_tor_message">Aquest enllaç s\'obre al Tor Browser. La connexió es manté dins de Tor.</string>
+	<string name="browser_tor_open">Obre al Tor Browser</string>
+	<string name="browser_tor_install_hint">Instal·la el Tor Browser per obrir enllaços sense sortir de Tor.</string>
+	<string name="browser_tor_get">Obtén el Tor Browser</string>
 	<string name="quick_reply_not_sent">No s\'ha enviat la resposta. Obre el xat per tornar-ho a provar.</string>
 	<string name="link_unsupported">Enllaç no compatible</string>
 	<string name="settings_support_summary">Ajuda a mantenir Zerion gratuït i privat</string>

@@ -902,6 +902,11 @@
 	<string name="browser_warning_open">Deschideți oricum</string>
 	<string name="browser_warning_copy">Copiați linkul</string>
 	<string name="browser_warning_link_copied">Link copiat</string>
+	<string name="browser_tor_title">Deschideți în Tor Browser?</string>
+	<string name="browser_tor_message">Acest link se deschide în Tor Browser. Conexiunea dumneavoastră rămâne în Tor.</string>
+	<string name="browser_tor_open">Deschideți în Tor Browser</string>
+	<string name="browser_tor_install_hint">Instalați Tor Browser pentru a deschide linkuri fără a părăsi Tor.</string>
+	<string name="browser_tor_get">Obțineți Tor Browser</string>
 	<string name="quick_reply_not_sent">Răspunsul nu a fost trimis. Deschideți conversația pentru a încerca din nou.</string>
 	<string name="link_unsupported">Link neacceptat</string>
 	<string name="settings_support_summary">Ajutați ca Zerion să rămână gratuit și privat</string>

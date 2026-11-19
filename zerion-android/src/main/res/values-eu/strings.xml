@@ -692,6 +692,11 @@
 	<string name="browser_warning_open">Ireki hala ere</string>
 	<string name="browser_warning_copy">Kopiatu esteka</string>
 	<string name="browser_warning_link_copied">Esteka kopiatu da</string>
+	<string name="browser_tor_title">Tor Browser-en ireki?</string>
+	<string name="browser_tor_message">Esteka hau Tor Browser-en irekiko da. Zure konexioa Tor barruan geratzen da.</string>
+	<string name="browser_tor_open">Ireki Tor Browser-en</string>
+	<string name="browser_tor_install_hint">Instalatu Tor Browser estekak Tor utzi gabe irekitzeko.</string>
+	<string name="browser_tor_get">Eskuratu Tor Browser</string>
 	<string name="quick_reply_not_sent">Ez da zure erantzuna bidali. Ireki txata berriro saiatzeko.</string>
 	<string name="link_unsupported">Onartzen ez den esteka</string>
 	<string name="settings_support_summary">Lagundu Zerion doakoa eta pribatua izaten</string>

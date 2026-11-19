@@ -843,6 +843,11 @@
 	<string name="browser_warning_open">Abrir igualmente</string>
 	<string name="browser_warning_copy">Copiar ligazón</string>
 	<string name="browser_warning_link_copied">Ligazón copiada</string>
+	<string name="browser_tor_title">Abrir en Tor Browser?</string>
+	<string name="browser_tor_message">Esta ligazón ábrese en Tor Browser. A túa conexión mantense dentro de Tor.</string>
+	<string name="browser_tor_open">Abrir en Tor Browser</string>
+	<string name="browser_tor_install_hint">Instala Tor Browser para abrir ligazóns sen saír de Tor.</string>
+	<string name="browser_tor_get">Obter Tor Browser</string>
 	<string name="quick_reply_not_sent">A túa resposta non se enviou. Abre o chat para tentalo de novo.</string>
 	<string name="link_unsupported">Ligazón non compatible</string>
 	<string name="settings_support_summary">Axuda a manter Zerion gratuíto e privado</string>

@@ -827,6 +827,11 @@
 	<string name="browser_warning_open">फिर भी खोलें</string>
 	<string name="browser_warning_copy">लिंक कॉपी करें</string>
 	<string name="browser_warning_link_copied">लिंक कॉपी किया गया</string>
+	<string name="browser_tor_title">Tor Browser में खोलें?</string>
+	<string name="browser_tor_message">यह लिंक Tor Browser में खुलता है। आपका कनेक्शन Tor के अंदर रहता है।</string>
+	<string name="browser_tor_open">Tor Browser में खोलें</string>
+	<string name="browser_tor_install_hint">Tor से बाहर निकले बिना लिंक खोलने के लिए Tor Browser इंस्टॉल करें।</string>
+	<string name="browser_tor_get">Tor Browser पाएँ</string>
 	<string name="quick_reply_not_sent">आपका जवाब नहीं भेजा गया। फिर से कोशिश करने के लिए चैट खोलें।</string>
 	<string name="link_unsupported">असमर्थित लिंक</string>
 	<string name="settings_support_summary">Zerion को मुफ़्त और निजी बनाए रखने में मदद करें</string>
