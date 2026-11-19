@@ -490,6 +490,11 @@
 	<string name="browser_warning_open">仍要開啟</string>
 	<string name="browser_warning_copy">複製連結</string>
 	<string name="browser_warning_link_copied">已複製連結</string>
+	<string name="browser_tor_title">在 Tor Browser 中開啟？</string>
+	<string name="browser_tor_message">此連結將在 Tor Browser 中開啟。您的連線始終留在 Tor 內。</string>
+	<string name="browser_tor_open">在 Tor Browser 中開啟</string>
+	<string name="browser_tor_install_hint">安裝 Tor Browser，即可在不離開 Tor 的情況下開啟連結。</string>
+	<string name="browser_tor_get">取得 Tor Browser</string>
 	<string name="quick_reply_not_sent">您的回覆未傳送。請開啟聊天再試一次。</string>
 	<string name="link_unsupported">不支援的連結</string>
 	<string name="settings_support_summary">協助讓 Zerion 保持免費與私密</string>

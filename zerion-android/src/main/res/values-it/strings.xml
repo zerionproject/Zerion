@@ -507,6 +507,11 @@
 	<string name="browser_warning_open">Apri comunque</string>
 	<string name="browser_warning_copy">Copia link</string>
 	<string name="browser_warning_link_copied">Link copiato</string>
+	<string name="browser_tor_title">Aprire in Tor Browser?</string>
+	<string name="browser_tor_message">Questo link si apre in Tor Browser. La tua connessione resta dentro Tor.</string>
+	<string name="browser_tor_open">Apri in Tor Browser</string>
+	<string name="browser_tor_install_hint">Installa Tor Browser per aprire i link senza uscire da Tor.</string>
+	<string name="browser_tor_get">Scarica Tor Browser</string>
 	<string name="quick_reply_not_sent">La tua risposta non è stata inviata. Apri la chat per riprovare.</string>
 	<string name="link_unsupported">Link non supportato</string>
 	<string name="settings_support_summary">Aiuta a mantenere Zerion gratuito e privato</string>

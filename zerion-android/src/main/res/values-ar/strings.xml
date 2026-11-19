@@ -574,6 +574,11 @@
 	<string name="browser_warning_open">فتح على أي حال</string>
 	<string name="browser_warning_copy">نسخ الرابط</string>
 	<string name="browser_warning_link_copied">تم نسخ الرابط</string>
+	<string name="browser_tor_title">فتح في Tor Browser؟</string>
+	<string name="browser_tor_message">يُفتح هذا الرابط في Tor Browser. يبقى اتصالك داخل Tor.</string>
+	<string name="browser_tor_open">فتح في Tor Browser</string>
+	<string name="browser_tor_install_hint">ثبّت Tor Browser لفتح الروابط دون مغادرة Tor.</string>
+	<string name="browser_tor_get">الحصول على Tor Browser</string>
 	<string name="quick_reply_not_sent">لم يُرسَل ردك. افتح المحادثة لتحاول مرة أخرى.</string>
 	<string name="link_unsupported">رابط غير مدعوم</string>
 	<string name="settings_support_summary">ساعد في إبقاء Zerion مجانيًا وخاصًا</string>

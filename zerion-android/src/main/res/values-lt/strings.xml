@@ -919,6 +919,11 @@
 	<string name="browser_warning_open">Vis tiek atidaryti</string>
 	<string name="browser_warning_copy">Kopijuoti nuorodą</string>
 	<string name="browser_warning_link_copied">Nuoroda nukopijuota</string>
+	<string name="browser_tor_title">Atidaryti Tor Browser naršyklėje?</string>
+	<string name="browser_tor_message">Ši nuoroda atidaroma Tor Browser naršyklėje. Jūsų ryšys lieka Tor tinkle.</string>
+	<string name="browser_tor_open">Atidaryti Tor Browser naršyklėje</string>
+	<string name="browser_tor_install_hint">Įdiekite Tor Browser, kad atidarytumėte nuorodas nepalikdami Tor.</string>
+	<string name="browser_tor_get">Gauti Tor Browser</string>
 	<string name="quick_reply_not_sent">Atsakymas neišsiųstas. Atidarykite pokalbį ir bandykite dar kartą.</string>
 	<string name="link_unsupported">Nepalaikoma nuoroda</string>
 	<string name="settings_support_summary">Padėkite Zerion išlikti nemokamai ir privačiai</string>

@@ -884,6 +884,11 @@ Vigyázat: Ez végleg törli az identitásait, kapcsolatait és üzeneteit</stri
 	<string name="browser_warning_open">Megnyitás mégis</string>
 	<string name="browser_warning_copy">Link másolása</string>
 	<string name="browser_warning_link_copied">Link másolva</string>
+	<string name="browser_tor_title">Megnyitja a Tor Browserben?</string>
+	<string name="browser_tor_message">Ez a link a Tor Browserben nyílik meg. A kapcsolata a Toron belül marad.</string>
+	<string name="browser_tor_open">Megnyitás a Tor Browserben</string>
+	<string name="browser_tor_install_hint">Telepítse a Tor Browsert, hogy a linkeket a Tor elhagyása nélkül nyissa meg.</string>
+	<string name="browser_tor_get">Tor Browser letöltése</string>
 	<string name="quick_reply_not_sent">A válasz nem lett elküldve. Nyissa meg a csevegést, és próbálja újra.</string>
 	<string name="link_unsupported">Nem támogatott link</string>
 	<string name="settings_support_summary">Segítsen, hogy a Zerion ingyenes és privát maradjon</string>

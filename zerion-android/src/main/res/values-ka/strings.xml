@@ -744,6 +744,11 @@
 	<string name="browser_warning_open">მაინც გახსნა</string>
 	<string name="browser_warning_copy">ბმულის კოპირება</string>
 	<string name="browser_warning_link_copied">ბმული დაკოპირდა</string>
+	<string name="browser_tor_title">გაიხსნას Tor Browser-ში?</string>
+	<string name="browser_tor_message">ეს ბმული იხსნება Tor Browser-ში. თქვენი კავშირი რჩება Tor-ის შიგნით.</string>
+	<string name="browser_tor_open">გახსნა Tor Browser-ში</string>
+	<string name="browser_tor_install_hint">დააყენეთ Tor Browser, რომ ბმულები Tor-ის დატოვების გარეშე გახსნათ.</string>
+	<string name="browser_tor_get">Tor Browser-ის მიღება</string>
 	<string name="quick_reply_not_sent">თქვენი პასუხი არ გაიგზავნა. ხელახლა საცდელად გახსენით ჩატი.</string>
 	<string name="link_unsupported">მხარდაუჭერელი ბმული</string>
 	<string name="settings_support_summary">დაეხმარეთ Zerion-ს, დარჩეს უფასო და კონფიდენციალური</string>

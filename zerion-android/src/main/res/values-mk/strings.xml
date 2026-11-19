@@ -816,6 +816,11 @@
 	<string name="browser_warning_open">Сепак отвори</string>
 	<string name="browser_warning_copy">Копирај го линкот</string>
 	<string name="browser_warning_link_copied">Линкот е копиран</string>
+	<string name="browser_tor_title">Да се отвори во Tor Browser?</string>
+	<string name="browser_tor_message">Овој линк се отвора во Tor Browser. Вашата врска останува во Tor.</string>
+	<string name="browser_tor_open">Отвори во Tor Browser</string>
+	<string name="browser_tor_install_hint">Инсталирајте Tor Browser за да отворате линкови без да го напуштите Tor.</string>
+	<string name="browser_tor_get">Преземи Tor Browser</string>
 	<string name="quick_reply_not_sent">Твојот одговор не е испратен. Отвори го разговорот за да се обидеш повторно.</string>
 	<string name="link_unsupported">Неподдржан линк</string>
 	<string name="settings_support_summary">Помогни Zerion да остане бесплатен и приватен</string>

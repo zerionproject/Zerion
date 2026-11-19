@@ -880,6 +880,11 @@
 	<string name="browser_warning_open">Åpne likevel</string>
 	<string name="browser_warning_copy">Kopier lenke</string>
 	<string name="browser_warning_link_copied">Lenken er kopiert</string>
+	<string name="browser_tor_title">Åpne i Tor Browser?</string>
+	<string name="browser_tor_message">Denne lenken åpnes i Tor Browser. Forbindelsen din holder seg innenfor Tor.</string>
+	<string name="browser_tor_open">Åpne i Tor Browser</string>
+	<string name="browser_tor_install_hint">Installer Tor Browser for å åpne lenker uten å forlate Tor.</string>
+	<string name="browser_tor_get">Hent Tor Browser</string>
 	<string name="quick_reply_not_sent">Svaret ble ikke sendt. Åpne chatten for å prøve igjen.</string>
 	<string name="link_unsupported">Lenken støttes ikke</string>
 	<string name="settings_support_summary">Hjelp til med å holde Zerion gratis og privat</string>

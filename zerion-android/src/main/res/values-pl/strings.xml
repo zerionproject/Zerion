@@ -913,6 +913,11 @@
 	<string name="browser_warning_open">Otwórz mimo to</string>
 	<string name="browser_warning_copy">Kopiuj link</string>
 	<string name="browser_warning_link_copied">Skopiowano link</string>
+	<string name="browser_tor_title">Otworzyć w Tor Browser?</string>
+	<string name="browser_tor_message">Ten link otworzy się w Tor Browser. Twoje połączenie pozostaje w sieci Tor.</string>
+	<string name="browser_tor_open">Otwórz w Tor Browser</string>
+	<string name="browser_tor_install_hint">Zainstaluj Tor Browser, aby otwierać linki bez opuszczania sieci Tor.</string>
+	<string name="browser_tor_get">Pobierz Tor Browser</string>
 	<string name="quick_reply_not_sent">Nie wysłano odpowiedzi. Otwórz czat, aby spróbować ponownie.</string>
 	<string name="link_unsupported">Nieobsługiwany link</string>
 	<string name="settings_support_summary">Pomóż, by Zerion pozostał darmowy i prywatny</string>

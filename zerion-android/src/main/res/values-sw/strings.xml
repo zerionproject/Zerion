@@ -808,6 +808,11 @@ Umepoteza nenosiri.</string>
 	<string name="browser_warning_open">Fungua hata hivyo</string>
 	<string name="browser_warning_copy">Nakili kiungo</string>
 	<string name="browser_warning_link_copied">Kiungo kimenakiliwa</string>
+	<string name="browser_tor_title">Fungua kwenye Tor Browser?</string>
+	<string name="browser_tor_message">Kiungo hiki hufunguliwa kwenye Tor Browser. Muunganisho wako unabaki ndani ya Tor.</string>
+	<string name="browser_tor_open">Fungua kwenye Tor Browser</string>
+	<string name="browser_tor_install_hint">Sakinisha Tor Browser ili kufungua viungo bila kuondoka Tor.</string>
+	<string name="browser_tor_get">Pata Tor Browser</string>
 	<string name="quick_reply_not_sent">Jibu lako halikutumwa. Fungua gumzo ili ujaribu tena.</string>
 	<string name="link_unsupported">Kiungo kisichotumika</string>
 	<string name="settings_support_summary">Saidia Zerion ibaki bila malipo na ya faragha</string>

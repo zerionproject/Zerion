@@ -743,6 +743,11 @@
 	<string name="browser_warning_open">ဘာပဲဖြစ်ဖြစ် ဖွင့်မည်</string>
 	<string name="browser_warning_copy">လင့်ခ် မိတ္တူကူးရန်</string>
 	<string name="browser_warning_link_copied">လင့်ခ်ကို မိတ္တူကူးပြီးပါပြီ</string>
+	<string name="browser_tor_title">Tor Browser တွင် ဖွင့်မလား?</string>
+	<string name="browser_tor_message">ဤလင့်ခ်ကို Tor Browser တွင် ဖွင့်ပါမည်။ သင့်ချိတ်ဆက်မှုသည် Tor အတွင်းမှာပင် ရှိနေပါမည်။</string>
+	<string name="browser_tor_open">Tor Browser တွင် ဖွင့်မည်</string>
+	<string name="browser_tor_install_hint">Tor မှ မထွက်ဘဲ လင့်ခ်များ ဖွင့်ရန် Tor Browser ကို ထည့်သွင်းပါ။</string>
+	<string name="browser_tor_get">Tor Browser ရယူရန်</string>
 	<string name="quick_reply_not_sent">သင့်ပြန်စာကို ပို့၍ မရခဲ့ပါ။ ထပ်ကြိုးစားရန် ချတ်ကို ဖွင့်ပါ။</string>
 	<string name="link_unsupported">ပံ့ပိုးမထားသော လင့်ခ်</string>
 	<string name="settings_support_summary">Zerion ကို အခမဲ့နှင့် ကိုယ်ရေးလုံခြုံစွာ ဆက်ရှိနေစေရန် ကူညီပါ</string>

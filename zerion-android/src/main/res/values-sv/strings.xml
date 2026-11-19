@@ -877,6 +877,11 @@
 	<string name="browser_warning_open">Öppna ändå</string>
 	<string name="browser_warning_copy">Kopiera länk</string>
 	<string name="browser_warning_link_copied">Länken har kopierats</string>
+	<string name="browser_tor_title">Öppna i Tor Browser?</string>
+	<string name="browser_tor_message">Den här länken öppnas i Tor Browser. Din anslutning stannar inom Tor.</string>
+	<string name="browser_tor_open">Öppna i Tor Browser</string>
+	<string name="browser_tor_install_hint">Installera Tor Browser för att öppna länkar utan att lämna Tor.</string>
+	<string name="browser_tor_get">Hämta Tor Browser</string>
 	<string name="quick_reply_not_sent">Svaret skickades inte. Öppna chatten för att försöka igen.</string>
 	<string name="link_unsupported">Länken stöds inte</string>
 	<string name="settings_support_summary">Hjälp till att hålla Zerion gratis och privat</string>

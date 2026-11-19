@@ -773,6 +773,11 @@
 	<string name="browser_warning_open">Отвори въпреки това</string>
 	<string name="browser_warning_copy">Копирай линка</string>
 	<string name="browser_warning_link_copied">Линкът е копиран</string>
+	<string name="browser_tor_title">Да се отвори ли в Tor Browser?</string>
+	<string name="browser_tor_message">Този линк се отваря в Tor Browser. Връзката ви остава в Tor.</string>
+	<string name="browser_tor_open">Отвори в Tor Browser</string>
+	<string name="browser_tor_install_hint">Инсталирайте Tor Browser, за да отваряте линкове, без да напускате Tor.</string>
+	<string name="browser_tor_get">Изтегли Tor Browser</string>
 	<string name="quick_reply_not_sent">Отговорът ти не беше изпратен. Отвори разговора, за да опиташ отново.</string>
 	<string name="link_unsupported">Неподдържан линк</string>
 	<string name="settings_support_summary">Помогни Zerion да остане безплатен и поверителен</string>

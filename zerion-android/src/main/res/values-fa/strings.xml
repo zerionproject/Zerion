@@ -771,6 +771,11 @@
 	<string name="browser_warning_open">در هر صورت باز شود</string>
 	<string name="browser_warning_copy">کپی پیوند</string>
 	<string name="browser_warning_link_copied">پیوند کپی شد</string>
+	<string name="browser_tor_title">در Tor Browser باز شود؟</string>
+	<string name="browser_tor_message">این پیوند در Tor Browser باز می‌شود. اتصال شما درون Tor می‌ماند.</string>
+	<string name="browser_tor_open">در Tor Browser باز شود</string>
+	<string name="browser_tor_install_hint">برای باز کردن پیوندها بدون خروج از Tor، Tor Browser را نصب کنید.</string>
+	<string name="browser_tor_get">دریافت Tor Browser</string>
 	<string name="quick_reply_not_sent">پاسخ شما ارسال نشد. برای تلاش دوباره، گفتگو را باز کنید.</string>
 	<string name="link_unsupported">پیوند پشتیبانی‌نشده</string>
 	<string name="settings_support_summary">به رایگان و خصوصی ماندن Zerion کمک کنید</string>

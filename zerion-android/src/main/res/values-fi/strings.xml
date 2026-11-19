@@ -710,6 +710,11 @@
 	<string name="browser_warning_open">Avaa silti</string>
 	<string name="browser_warning_copy">Kopioi linkki</string>
 	<string name="browser_warning_link_copied">Linkki kopioitu</string>
+	<string name="browser_tor_title">Avataanko Tor Browserissa?</string>
+	<string name="browser_tor_message">Tämä linkki avautuu Tor Browserissa. Yhteytesi pysyy Torin sisällä.</string>
+	<string name="browser_tor_open">Avaa Tor Browserissa</string>
+	<string name="browser_tor_install_hint">Asenna Tor Browser avataksesi linkit poistumatta Torista.</string>
+	<string name="browser_tor_get">Hanki Tor Browser</string>
 	<string name="quick_reply_not_sent">Vastaustasi ei lähetetty. Avaa keskustelu ja yritä uudelleen.</string>
 	<string name="link_unsupported">Linkkiä ei tueta</string>
 	<string name="settings_support_summary">Auta pitämään Zerion ilmaisena ja yksityisenä</string>

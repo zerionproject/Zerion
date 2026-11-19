@@ -617,6 +617,11 @@
 	<string name="browser_warning_open">Yenə də aç</string>
 	<string name="browser_warning_copy">Keçidi kopyala</string>
 	<string name="browser_warning_link_copied">Keçid kopyalandı</string>
+	<string name="browser_tor_title">Tor Browser-də açılsın?</string>
+	<string name="browser_tor_message">Bu keçid Tor Browser-də açılır. Bağlantınız Tor daxilində qalır.</string>
+	<string name="browser_tor_open">Tor Browser-də aç</string>
+	<string name="browser_tor_install_hint">Keçidləri Tor-dan çıxmadan açmaq üçün Tor Browser quraşdırın.</string>
+	<string name="browser_tor_get">Tor Browser əldə et</string>
 	<string name="quick_reply_not_sent">Cavabınız göndərilmədi. Yenidən cəhd etmək üçün söhbəti açın.</string>
 	<string name="link_unsupported">Dəstəklənməyən keçid</string>
 	<string name="settings_support_summary">Zerion-un pulsuz və məxfi qalmasına kömək edin</string>

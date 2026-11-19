@@ -454,6 +454,11 @@
 	<string name="browser_warning_open">그래도 열기</string>
 	<string name="browser_warning_copy">링크 복사</string>
 	<string name="browser_warning_link_copied">링크가 복사되었습니다</string>
+	<string name="browser_tor_title">Tor Browser에서 여시겠습니까?</string>
+	<string name="browser_tor_message">이 링크는 Tor Browser에서 열립니다. 연결은 Tor 안에 머무릅니다.</string>
+	<string name="browser_tor_open">Tor Browser에서 열기</string>
+	<string name="browser_tor_install_hint">Tor를 벗어나지 않고 링크를 열려면 Tor Browser를 설치하세요.</string>
+	<string name="browser_tor_get">Tor Browser 받기</string>
 	<string name="quick_reply_not_sent">답장을 보내지 못했습니다. 채팅을 열어 다시 시도하세요.</string>
 	<string name="link_unsupported">지원되지 않는 링크</string>
 	<string name="settings_support_summary">Zerion을 무료로, 사생활을 지키도록 도와주세요</string>

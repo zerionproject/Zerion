@@ -519,6 +519,11 @@
 	<string name="browser_warning_open">それでも開く</string>
 	<string name="browser_warning_copy">リンクをコピー</string>
 	<string name="browser_warning_link_copied">リンクをコピーしました</string>
+	<string name="browser_tor_title">Tor Browser で開きますか？</string>
+	<string name="browser_tor_message">このリンクは Tor Browser で開きます。接続は Tor の中にとどまります。</string>
+	<string name="browser_tor_open">Tor Browser で開く</string>
+	<string name="browser_tor_install_hint">Tor から出ずにリンクを開くには Tor Browser をインストールしてください。</string>
+	<string name="browser_tor_get">Tor Browser を入手</string>
 	<string name="quick_reply_not_sent">返信を送信できませんでした。チャットを開いてもう一度お試しください。</string>
 	<string name="link_unsupported">対応していないリンク</string>
 	<string name="settings_support_summary">Zerion の無料とプライバシーの維持に協力する</string>
