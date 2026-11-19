@@ -165,6 +165,7 @@ public interface ActivityComponent {
 	void inject(com.professor.zerion.android.vault.ui.VaultDocumentsFragment fragment);
 
 	void inject(com.professor.zerion.android.vault.ui.VaultPasswordsFragment fragment);
+	void inject(com.professor.zerion.android.vault.ui.VaultBookmarksFragment fragment);
 
 	void inject(com.professor.zerion.android.vault.ui.VaultWalletFragment fragment);
 
