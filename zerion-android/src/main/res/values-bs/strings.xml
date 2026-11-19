@@ -99,11 +99,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion ponovo iscrtava svaku stranicu kao sliku, pa ne ostaju nikakve skrivene informacije. Tekst u sačuvanoj kopiji nije moguće označiti. Druge aplikacije će je moći otvoriti.</string>
 	<string name="save_file_cleaning">Uklanjanje skrivenih informacija…</string>
 	<string name="clean_file_title">Očisti datoteku</string>
-	<string name="clean_file_intro">Odaberite bilo koju datoteku. Zerion uklanja skrivene informacije kao što su lokacija, podaci o uređaju, autor i datumi, a zatim čistu kopiju dijelite ili spremate. Izvorna datoteka se ne mijenja.</string>
+	<string name="clean_file_intro">Odaberite bilo koju datoteku. Zerion uklanja skrivene informacije kao što su lokacija, podaci o uređaju, autor i datumi, a zatim čistu kopiju dijelite ili spremate. Ekran s rezultatom kaže šta je uklonjeno i šta datoteka ove vrste zadržava. Izvorna datoteka se ne mijenja.</string>
 	<string name="clean_file_choose">Odaberi datoteku</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Čista kopija: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Svojstva dokumenta su uklonjena. Komentari, praćene izmjene i slike unutar datoteke su zadržani.</string>
+	<string name="clean_file_done_office">Svojstva dokumenta, prilagođena svojstva i podaci, lista autora i sačuvana putanja datoteke su uklonjeni. Imena i datumi unutar komentara i praćenih izmjena, te podaci o lokaciji unutar ugrađenih slika, su zadržani.</string>
 	<string name="clean_file_done_image">Ponovo kodirano bez metapodataka.</string>
 	<string name="clean_file_done_media">Ponovo zapakirano bez metapodataka.</string>
 	<string name="clean_file_done_pdf">Ponovo iscrtano stranicu po stranicu; tekstualni sloj, veze i obrasci se gube.</string>

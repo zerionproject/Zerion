@@ -180,11 +180,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion torna a dibuixar cada pàgina com una imatge, així que no es conserva cap informació oculta. El text de la còpia desada no es pot seleccionar. Les altres aplicacions la podran obrir.</string>
 	<string name="save_file_cleaning">S\'està eliminant la informació oculta…</string>
 	<string name="clean_file_title">Neteja un fitxer</string>
-	<string name="clean_file_intro">Trieu qualsevol fitxer. Zerion elimina la informació oculta com la ubicació, els detalls del dispositiu, l\'autor i les dates, i després compartiu o deseu la còpia neta. El fitxer original no es modifica.</string>
+	<string name="clean_file_intro">Trieu qualsevol fitxer. Zerion elimina la informació oculta com la ubicació, els detalls del dispositiu, l\'autor i les dates, i després compartiu o deseu la còpia neta. La pantalla de resultat diu què s\'ha eliminat i què conserva un fitxer d\'aquest tipus. El fitxer original no es modifica.</string>
 	<string name="clean_file_choose">Tria un fitxer</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Còpia neta: %1$s, %2$s</string>
-	<string name="clean_file_done_office">S\'han eliminat les propietats del document. Es conserven els comentaris, els canvis registrats i les imatges de dins del fitxer.</string>
+	<string name="clean_file_done_office">S\'han eliminat les propietats del document, les propietats i les dades personalitzades, la llista d\'autors i el camí del fitxer desat. Es conserven els noms i les dates de dins dels comentaris i dels canvis registrats, i les dades d\'ubicació de dins de les imatges incrustades.</string>
 	<string name="clean_file_done_image">Recodificat sense metadades.</string>
 	<string name="clean_file_done_media">Reempaquetat sense metadades.</string>
 	<string name="clean_file_done_pdf">Redibuixat pàgina a pàgina; es perden la capa de text, els enllaços i els formularis.</string>

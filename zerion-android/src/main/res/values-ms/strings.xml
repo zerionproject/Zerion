@@ -1219,11 +1219,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion melukis semula setiap halaman sebagai imej, jadi tiada maklumat tersembunyi yang dikekalkan. Teks dalam salinan yang disimpan tidak boleh dipilih. Aplikasi lain akan dapat membukanya.</string>
 	<string name="save_file_cleaning">Membuang maklumat tersembunyi…</string>
 	<string name="clean_file_title">Bersihkan fail</string>
-	<string name="clean_file_intro">Pilih mana-mana fail. Zerion membuang maklumat tersembunyi seperti lokasi, butiran peranti, pengarang dan tarikh, kemudian anda berkongsi atau menyimpan salinan bersih itu. Fail asal tidak diubah.</string>
+	<string name="clean_file_intro">Pilih mana-mana fail. Zerion membuang maklumat tersembunyi seperti lokasi, butiran peranti, pengarang dan tarikh, kemudian anda berkongsi atau menyimpan salinan bersih itu. Skrin hasil memberitahu apa yang dibuang dan apa yang dikekalkan oleh fail jenis ini. Fail asal tidak diubah.</string>
 	<string name="clean_file_choose">Pilih fail</string>
 	<string name="clean_file_original">Asal: %1$s, %2$s</string>
 	<string name="clean_file_result">Salinan bersih: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Sifat dokumen dibuang. Komen, perubahan yang dijejaki dan gambar di dalam fail dikekalkan.</string>
+	<string name="clean_file_done_office">Sifat dokumen, sifat dan data tersuai, senarai pengarang dan laluan fail yang disimpan dibuang. Nama dan tarikh di dalam komen dan perubahan yang dijejaki, serta data lokasi di dalam gambar terbenam, dikekalkan.</string>
 	<string name="clean_file_done_image">Dikodkan semula tanpa metadata.</string>
 	<string name="clean_file_done_media">Dibungkus semula tanpa metadata.</string>
 	<string name="clean_file_done_pdf">Dilukis semula halaman demi halaman; lapisan teks, pautan dan borang hilang.</string>

@@ -179,11 +179,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion 会将每一页重新绘制为图片，因此不会保留任何隐藏信息。保存的副本中的文字无法选择。其他应用将可以打开它。</string>
 	<string name="save_file_cleaning">正在移除隐藏信息…</string>
 	<string name="clean_file_title">清理文件</string>
-	<string name="clean_file_intro">选择任意文件。Zerion 会移除位置、设备信息、作者和日期等隐藏信息，之后您可以分享或保存干净的副本。原始文件不会被更改。</string>
+	<string name="clean_file_intro">选择任意文件。Zerion 会移除位置、设备信息、作者和日期等隐藏信息，之后您可以分享或保存干净的副本。结果屏幕会说明移除了什么，以及此类文件会保留什么。原始文件不会被更改。</string>
 	<string name="clean_file_choose">选择文件</string>
 	<string name="clean_file_original">原始文件：%1$s，%2$s</string>
 	<string name="clean_file_result">干净副本：%1$s，%2$s</string>
-	<string name="clean_file_done_office">已移除文档属性。文件中的批注、修订记录和图片会保留。</string>
+	<string name="clean_file_done_office">已移除文档属性、自定义属性和数据、作者列表以及保存的文件路径。批注和修订记录中的姓名和日期，以及嵌入图片中的位置数据会保留。</string>
 	<string name="clean_file_done_image">已重新编码，不含元数据。</string>
 	<string name="clean_file_done_media">已重新封装，不含元数据。</string>
 	<string name="clean_file_done_pdf">已逐页重新绘制；文本层、链接和表单会丢失。</string>

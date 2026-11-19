@@ -194,11 +194,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion kiekvieną puslapį iš naujo nupiešia kaip atvaizdą, todėl neišlieka jokios paslėptos informacijos. Įrašytoje kopijoje teksto pažymėti negalima. Kitos programėlės galės ją atverti.</string>
 	<string name="save_file_cleaning">Šalinama paslėpta informacija…</string>
 	<string name="clean_file_title">Išvalyti failą</string>
-	<string name="clean_file_intro">Pasirinkite bet kurį failą. Zerion pašalina paslėptą informaciją, pavyzdžiui, vietą, įrenginio duomenis, autorių ir datas, o tada švarią kopiją bendrinate arba įrašote. Pradinis failas nekeičiamas.</string>
+	<string name="clean_file_intro">Pasirinkite bet kurį failą. Zerion pašalina paslėptą informaciją, pavyzdžiui, vietą, įrenginio duomenis, autorių ir datas, o tada švarią kopiją bendrinate arba įrašote. Rezultato ekranas nurodo, kas pašalinta ir ką šio tipo failas išsaugo. Pradinis failas nekeičiamas.</string>
 	<string name="clean_file_choose">Pasirinkti failą</string>
 	<string name="clean_file_original">Originalas: %1$s, %2$s</string>
 	<string name="clean_file_result">Švari kopija: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Dokumento ypatybės pašalintos. Komentarai, sekami pakeitimai ir faile esantys paveikslėliai išsaugomi.</string>
+	<string name="clean_file_done_office">Dokumento ypatybės, pasirinktinės ypatybės ir duomenys, autorių sąrašas ir įrašyto failo kelias pašalinti. Komentaruose ir sekamuose pakeitimuose esantys vardai ir datos bei įterptuose paveikslėliuose esantys vietos duomenys išsaugomi.</string>
 	<string name="clean_file_done_image">Perkoduota be metaduomenų.</string>
 	<string name="clean_file_done_media">Perpakuota be metaduomenų.</string>
 	<string name="clean_file_done_pdf">Perpiešta puslapis po puslapio; teksto sluoksnis, nuorodos ir formos prarandami.</string>

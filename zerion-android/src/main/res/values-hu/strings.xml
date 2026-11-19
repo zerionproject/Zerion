@@ -180,11 +180,11 @@
 	<string name="dialog_message_save_clean_pdf">A Zerion minden oldalt képként újrarajzol, így nem marad meg rejtett információ. A mentett másolatban a szöveg nem jelölhető ki. Más alkalmazások is meg tudják majd nyitni.</string>
 	<string name="save_file_cleaning">Rejtett információk eltávolítása…</string>
 	<string name="clean_file_title">Fájl tisztítása</string>
-	<string name="clean_file_intro">Válasszon ki egy tetszőleges fájlt. A Zerion eltávolítja a rejtett információkat, például a helyet, az eszköz adatait, a szerzőt és a dátumokat, majd a tiszta másolatot megoszthatja vagy elmentheti. Az eredeti fájl nem változik.</string>
+	<string name="clean_file_intro">Válasszon ki egy tetszőleges fájlt. A Zerion eltávolítja a rejtett információkat, például a helyet, az eszköz adatait, a szerzőt és a dátumokat, majd a tiszta másolatot megoszthatja vagy elmentheti. Az eredményképernyő megmondja, mi lett eltávolítva, és mit tart meg egy ilyen típusú fájl. Az eredeti fájl nem változik.</string>
 	<string name="clean_file_choose">Fájl kiválasztása</string>
 	<string name="clean_file_original">Eredeti: %1$s, %2$s</string>
 	<string name="clean_file_result">Tiszta másolat: %1$s, %2$s</string>
-	<string name="clean_file_done_office">A dokumentum tulajdonságai eltávolítva. A fájlban lévő megjegyzések, nyomon követett változások és képek megmaradnak.</string>
+	<string name="clean_file_done_office">A dokumentum tulajdonságai, az egyéni tulajdonságok és adatok, a szerzők listája és a mentett fájl elérési útja eltávolítva. A megjegyzésekben és a nyomon követett változásokban lévő nevek és dátumok, valamint a beágyazott képekben lévő helyadatok megmaradnak.</string>
 	<string name="clean_file_done_image">Újrakódolva metaadatok nélkül.</string>
 	<string name="clean_file_done_media">Újracsomagolva metaadatok nélkül.</string>
 	<string name="clean_file_done_pdf">Oldalanként újrarajzolva; a szövegréteg, a hivatkozások és az űrlapok elvesznek.</string>

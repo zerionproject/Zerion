@@ -194,11 +194,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion každú stranu znova vykreslí ako obrázok, takže nezostanú žiadne skryté informácie. Text v uloženej kópii nebude možné označiť. Ostatné aplikácie ju budú môcť otvoriť.</string>
 	<string name="save_file_cleaning">Odstraňujú sa skryté informácie…</string>
 	<string name="clean_file_title">Vyčistiť súbor</string>
-	<string name="clean_file_intro">Vyberte ľubovoľný súbor. Zerion odstráni skryté informácie, ako je poloha, údaje o zariadení, autor a dátumy, a potom čistú kópiu zdieľate alebo uložíte. Pôvodný súbor sa nemení.</string>
+	<string name="clean_file_intro">Vyberte ľubovoľný súbor. Zerion odstráni skryté informácie, ako je poloha, údaje o zariadení, autor a dátumy, a potom čistú kópiu zdieľate alebo uložíte. Obrazovka s výsledkom hovorí, čo bolo odstránené a čo súbor tohto typu zachováva. Pôvodný súbor sa nemení.</string>
 	<string name="clean_file_choose">Vybrať súbor</string>
 	<string name="clean_file_original">Originál: %1$s, %2$s</string>
 	<string name="clean_file_result">Čistá kópia: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Vlastnosti dokumentu boli odstránené. Komentáre, sledované zmeny a obrázky vo vnútri súboru zostávajú.</string>
+	<string name="clean_file_done_office">Vlastnosti dokumentu, vlastné vlastnosti a údaje, zoznam autorov a uložená cesta k súboru boli odstránené. Mená a dátumy vo vnútri komentárov a sledovaných zmien a údaje o polohe vo vnútri vložených obrázkov zostávajú.</string>
 	<string name="clean_file_done_image">Prekódované bez metadát.</string>
 	<string name="clean_file_done_media">Prebalené bez metadát.</string>
 	<string name="clean_file_done_pdf">Prekreslené strana po strane; textová vrstva, odkazy a formuláre sa stratia.</string>

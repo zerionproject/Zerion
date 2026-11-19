@@ -1428,11 +1428,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion piirtää jokaisen sivun uudelleen kuvaksi, joten piilotettuja tietoja ei jää. Tallennetun kopion tekstiä ei voi valita. Muut sovellukset voivat avata sen.</string>
 	<string name="save_file_cleaning">Poistetaan piilotettuja tietoja…</string>
 	<string name="clean_file_title">Puhdista tiedosto</string>
-	<string name="clean_file_intro">Valitse mikä tahansa tiedosto. Zerion poistaa piilotetut tiedot, kuten sijainnin, laitetiedot, tekijän ja päivämäärät, ja sen jälkeen jaat tai tallennat puhtaan kopion. Alkuperäinen tiedosto ei muutu.</string>
+	<string name="clean_file_intro">Valitse mikä tahansa tiedosto. Zerion poistaa piilotetut tiedot, kuten sijainnin, laitetiedot, tekijän ja päivämäärät, ja sen jälkeen jaat tai tallennat puhtaan kopion. Tulosnäyttö kertoo, mitä poistettiin ja mitä tämän tyypin tiedosto säilyttää. Alkuperäinen tiedosto ei muutu.</string>
 	<string name="clean_file_choose">Valitse tiedosto</string>
 	<string name="clean_file_original">Alkuperäinen: %1$s, %2$s</string>
 	<string name="clean_file_result">Puhdas kopio: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Asiakirjan ominaisuudet poistettu. Kommentit, seuratut muutokset ja tiedoston sisällä olevat kuvat säilyvät.</string>
+	<string name="clean_file_done_office">Asiakirjan ominaisuudet, mukautetut ominaisuudet ja tiedot, tekijäluettelo ja tallennettu tiedostopolku poistettu. Kommenttien ja seurattujen muutosten sisältämät nimet ja päivämäärät sekä upotettujen kuvien sijaintitiedot säilyvät.</string>
 	<string name="clean_file_done_image">Koodattu uudelleen ilman metatietoja.</string>
 	<string name="clean_file_done_media">Pakattu uudelleen ilman metatietoja.</string>
 	<string name="clean_file_done_pdf">Piirretty uudelleen sivu sivulta; tekstitaso, linkit ja lomakkeet menetetään.</string>

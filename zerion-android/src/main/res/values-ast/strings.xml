@@ -1027,11 +1027,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion redibuxa cada páxina como una imaxe, asina que nun se caltién nenguna información anubrida. El testu de la copia guardada nun se pue seleicionar. Les otres aplicaciones van poder abrila.</string>
 	<string name="save_file_cleaning">Quitando la información anubrida…</string>
 	<string name="clean_file_title">Llimpiar un ficheru</string>
-	<string name="clean_file_intro">Escueyi cualquier ficheru. Zerion quita la información anubrida como la ubicación, los detalles del dispositivu, l\'autor y les feches, y dempués compartes o guardes la copia llimpia. El ficheru orixinal nun camuda.</string>
+	<string name="clean_file_intro">Escueyi cualquier ficheru. Zerion quita la información anubrida como la ubicación, los detalles del dispositivu, l\'autor y les feches, y dempués compartes o guardes la copia llimpia. La pantalla de resultáu diz lo que se quitó y lo que caltién un ficheru d\'esti tipu. El ficheru orixinal nun camuda.</string>
 	<string name="clean_file_choose">Escoyer ficheru</string>
 	<string name="clean_file_original">Orixinal: %1$s, %2$s</string>
 	<string name="clean_file_result">Copia llimpia: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Quitáronse les propiedaes del documentu. Caltiénense los comentarios, los cambeos rexistraos y les imáxenes de dientro del ficheru.</string>
+	<string name="clean_file_done_office">Quitáronse les propiedaes del documentu, les propiedaes y los datos personalizaos, la llista d\'autores y la ruta del ficheru guardáu. Caltiénense los nomes y les feches de dientro de los comentarios y los cambeos rexistraos, y los datos d\'ubicación de dientro de les imáxenes incrustaes.</string>
 	<string name="clean_file_done_image">Recodificóse ensin metadatos.</string>
 	<string name="clean_file_done_media">Reempaquetóse ensin metadatos.</string>
 	<string name="clean_file_done_pdf">Redibuxóse páxina a páxina; piérdense la capa de testu, los enllaces y los formularios.</string>

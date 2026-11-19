@@ -112,11 +112,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion hər səhifəni şəkil kimi yenidən çəkir, ona görə heç bir gizli məlumat qalmır. Saxlanılan nüsxədəki mətn seçilə bilməz. Digər tətbiqlər onu aça biləcək.</string>
 	<string name="save_file_cleaning">Gizli məlumatlar silinir…</string>
 	<string name="clean_file_title">Faylı təmizlə</string>
-	<string name="clean_file_intro">İstənilən faylı seçin. Zerion məkan, cihaz məlumatları, müəllif və tarixlər kimi gizli məlumatları silir, sonra təmiz nüsxəni paylaşır və ya saxlayırsınız. Orijinal fayl dəyişmir.</string>
+	<string name="clean_file_intro">İstənilən faylı seçin. Zerion məkan, cihaz məlumatları, müəllif və tarixlər kimi gizli məlumatları silir, sonra təmiz nüsxəni paylaşır və ya saxlayırsınız. Nəticə ekranı nəyin silindiyini və bu tip faylda nəyin saxlanıldığını göstərir. Orijinal fayl dəyişmir.</string>
 	<string name="clean_file_choose">Fayl seç</string>
 	<string name="clean_file_original">Orijinal: %1$s, %2$s</string>
 	<string name="clean_file_result">Təmiz nüsxə: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Sənəd xüsusiyyətləri silindi. Fayl içindəki şərhlər, izlənən dəyişikliklər və şəkillər saxlanılır.</string>
+	<string name="clean_file_done_office">Sənəd xüsusiyyətləri, fərdi xüsusiyyətlər və məlumatlar, müəllif siyahısı və saxlanılan fayl yolu silindi. Şərhlər və izlənən dəyişikliklər içindəki adlar və tarixlər, həmçinin daxil edilmiş şəkillərdəki məkan məlumatları saxlanılır.</string>
 	<string name="clean_file_done_image">Metaməlumat olmadan yenidən kodlandı.</string>
 	<string name="clean_file_done_media">Metaməlumat olmadan yenidən paketləndi.</string>
 	<string name="clean_file_done_pdf">Səhifə-səhifə yenidən çəkildi; mətn qatı, keçidlər və formalar itir.</string>

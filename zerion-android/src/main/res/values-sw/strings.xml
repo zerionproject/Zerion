@@ -142,11 +142,11 @@ Umepoteza nenosiri.</string>
 	<string name="dialog_message_save_clean_pdf">Zerion huchora upya kila ukurasa kama taswira, kwa hivyo hakuna taarifa zilizofichwa zinazobaki. Maandishi katika nakala iliyohifadhiwa hayawezi kuchaguliwa. Programu nyingine zitaweza kuifungua.</string>
 	<string name="save_file_cleaning">Inaondoa taarifa zilizofichwa…</string>
 	<string name="clean_file_title">Safisha faili</string>
-	<string name="clean_file_intro">Chagua faili yoyote. Zerion huondoa taarifa zilizofichwa kama mahali, maelezo ya kifaa, mwandishi na tarehe, kisha unashiriki au kuhifadhi nakala safi. Faili asili haibadilishwi.</string>
+	<string name="clean_file_intro">Chagua faili yoyote. Zerion huondoa taarifa zilizofichwa kama mahali, maelezo ya kifaa, mwandishi na tarehe, kisha unashiriki au kuhifadhi nakala safi. Skrini ya matokeo inasema kilichoondolewa na kile faili ya aina hii inachohifadhi. Faili asili haibadilishwi.</string>
 	<string name="clean_file_choose">Chagua faili</string>
 	<string name="clean_file_original">Asili: %1$s, %2$s</string>
 	<string name="clean_file_result">Nakala safi: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Sifa za hati zimeondolewa. Maoni, mabadiliko yanayofuatiliwa na picha ndani ya faili zimehifadhiwa.</string>
+	<string name="clean_file_done_office">Sifa za hati, sifa na data maalum, orodha ya waandishi na njia ya faili iliyohifadhiwa zimeondolewa. Majina na tarehe ndani ya maoni na mabadiliko yanayofuatiliwa, na data ya mahali ndani ya picha zilizopachikwa, zimehifadhiwa.</string>
 	<string name="clean_file_done_image">Imesimbwa upya bila metadata.</string>
 	<string name="clean_file_done_media">Imefungwa upya bila metadata.</string>
 	<string name="clean_file_done_pdf">Imechorwa upya ukurasa kwa ukurasa; safu ya maandishi, viungo na fomu zinapotea.</string>

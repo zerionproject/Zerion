@@ -147,11 +147,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion משרטט מחדש כל עמוד כתמונה, כך שלא נשאר מידע מוסתר. לא ניתן לבחור את הטקסט בעותק השמור. יישומים אחרים יוכלו לפתוח אותו.</string>
 	<string name="save_file_cleaning">מסיר את המידע המוסתר…</string>
 	<string name="clean_file_title">ניקוי קובץ</string>
-	<string name="clean_file_intro">בחרו קובץ כלשהו. Zerion מסיר מידע מוסתר כמו מיקום, פרטי מכשיר, מחבר ותאריכים, ואחר כך משתפים או שומרים את העותק הנקי. הקובץ המקורי אינו משתנה.</string>
+	<string name="clean_file_intro">בחרו קובץ כלשהו. Zerion מסיר מידע מוסתר כמו מיקום, פרטי מכשיר, מחבר ותאריכים, ואחר כך משתפים או שומרים את העותק הנקי. מסך התוצאה מציין מה הוסר ומה נשמר בקובץ מסוג זה. הקובץ המקורי אינו משתנה.</string>
 	<string name="clean_file_choose">בחירת קובץ</string>
 	<string name="clean_file_original">מקור: %1$s, %2$s</string>
 	<string name="clean_file_result">עותק נקי: %1$s, %2$s</string>
-	<string name="clean_file_done_office">מאפייני המסמך הוסרו. הערות, שינויים במעקב ותמונות בתוך הקובץ נשמרים.</string>
+	<string name="clean_file_done_office">מאפייני המסמך, מאפיינים ונתונים מותאמים אישית, רשימת המחברים ונתיב הקובץ השמור הוסרו. שמות ותאריכים בתוך הערות ושינויים במעקב, ונתוני המיקום בתוך תמונות משובצות, נשמרים.</string>
 	<string name="clean_file_done_image">קודד מחדש ללא מטא-נתונים.</string>
 	<string name="clean_file_done_media">נארז מחדש ללא מטא-נתונים.</string>
 	<string name="clean_file_done_pdf">צויר מחדש עמוד אחר עמוד; שכבת הטקסט, הקישורים והטפסים אובדים.</string>

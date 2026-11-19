@@ -175,11 +175,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion teiknar hverja síðu upp á nýtt sem mynd, svo engar faldar upplýsingar verða eftir. Ekki er hægt að velja texta í vistaða afritinu. Önnur forrit munu geta opnað það.</string>
 	<string name="save_file_cleaning">Fjarlægi faldar upplýsingar…</string>
 	<string name="clean_file_title">Hreinsa skrá</string>
-	<string name="clean_file_intro">Veldu hvaða skrá sem er. Zerion fjarlægir faldar upplýsingar eins og staðsetningu, upplýsingar um tækið, höfund og dagsetningar, og síðan deilir þú eða vistar hreina eintakið. Upprunalega skráin breytist ekki.</string>
+	<string name="clean_file_intro">Veldu hvaða skrá sem er. Zerion fjarlægir faldar upplýsingar eins og staðsetningu, upplýsingar um tækið, höfund og dagsetningar, og síðan deilir þú eða vistar hreina eintakið. Niðurstöðuskjárinn segir hvað var fjarlægt og hvað skrá af þessari gerð heldur. Upprunalega skráin breytist ekki.</string>
 	<string name="clean_file_choose">Velja skrá</string>
 	<string name="clean_file_original">Upprunaleg: %1$s, %2$s</string>
 	<string name="clean_file_result">Hreint eintak: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Eiginleikar skjalsins fjarlægðir. Athugasemdir, raktar breytingar og myndir inni í skránni eru geymdar.</string>
+	<string name="clean_file_done_office">Eiginleikar skjalsins, sérsniðnir eiginleikar og gögn, höfundalistinn og vistaða skráarslóðin fjarlægð. Nöfn og dagsetningar inni í athugasemdum og röktum breytingum, og staðsetningargögn inni í innfelldum myndum, eru geymd.</string>
 	<string name="clean_file_done_image">Endurkóðað án lýsigagna.</string>
 	<string name="clean_file_done_media">Endurpakkað án lýsigagna.</string>
 	<string name="clean_file_done_pdf">Endurteiknað síðu fyrir síðu; textalag, tenglar og eyðublöð glatast.</string>

@@ -142,11 +142,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion tekent elke pagina opnieuw als afbeelding, zodat er geen verborgen informatie overblijft. Tekst in de opgeslagen kopie kan niet worden geselecteerd. Andere apps kunnen deze openen.</string>
 	<string name="save_file_cleaning">Verborgen informatie verwijderen…</string>
 	<string name="clean_file_title">Een bestand opschonen</string>
-	<string name="clean_file_intro">Kies een willekeurig bestand. Zerion verwijdert verborgen informatie zoals locatie, apparaatgegevens, auteur en datums, daarna deel of bewaar je de schone kopie. Het originele bestand verandert niet.</string>
+	<string name="clean_file_intro">Kies een willekeurig bestand. Zerion verwijdert verborgen informatie zoals locatie, apparaatgegevens, auteur en datums, daarna deel of bewaar je de schone kopie. Het resultaatscherm zegt wat is verwijderd en wat een bestand van dit type behoudt. Het originele bestand verandert niet.</string>
 	<string name="clean_file_choose">Bestand kiezen</string>
 	<string name="clean_file_original">Origineel: %1$s, %2$s</string>
 	<string name="clean_file_result">Schone kopie: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Documenteigenschappen verwijderd. Opmerkingen, bijgehouden wijzigingen en afbeeldingen in het bestand blijven behouden.</string>
+	<string name="clean_file_done_office">Documenteigenschappen, aangepaste eigenschappen en gegevens, de auteurslijst en het opgeslagen bestandspad verwijderd. Namen en datums in opmerkingen en bijgehouden wijzigingen, en de locatiegegevens in ingesloten afbeeldingen, blijven behouden.</string>
 	<string name="clean_file_done_image">Opnieuw gecodeerd zonder metadata.</string>
 	<string name="clean_file_done_media">Opnieuw verpakt zonder metadata.</string>
 	<string name="clean_file_done_pdf">Pagina voor pagina opnieuw getekend; tekstlaag, koppelingen en formulieren gaan verloren.</string>

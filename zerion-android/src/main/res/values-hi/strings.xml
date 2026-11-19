@@ -118,11 +118,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion हर पेज को एक चित्र के रूप में दोबारा बनाता है, इसलिए कोई छिपी जानकारी नहीं रहती। सेव की गई कॉपी में टेक्स्ट चुना नहीं जा सकेगा। दूसरे ऐप इसे खोल सकेंगे।</string>
 	<string name="save_file_cleaning">छिपी जानकारी हटाई जा रही है…</string>
 	<string name="clean_file_title">फ़ाइल साफ़ करें</string>
-	<string name="clean_file_intro">कोई भी फ़ाइल चुनें। Zerion स्थान, डिवाइस विवरण, लेखक और तारीखों जैसी छिपी जानकारी हटा देता है, फिर आप साफ़ प्रति साझा करें या सहेजें। मूल फ़ाइल नहीं बदलती।</string>
+	<string name="clean_file_intro">कोई भी फ़ाइल चुनें। Zerion स्थान, डिवाइस विवरण, लेखक और तारीखों जैसी छिपी जानकारी हटा देता है, फिर आप साफ़ प्रति साझा करें या सहेजें। परिणाम स्क्रीन बताती है कि क्या हटाया गया और इस प्रकार की फ़ाइल में क्या बचा रहता है। मूल फ़ाइल नहीं बदलती।</string>
 	<string name="clean_file_choose">फ़ाइल चुनें</string>
 	<string name="clean_file_original">मूल: %1$s, %2$s</string>
 	<string name="clean_file_result">साफ़ प्रति: %1$s, %2$s</string>
-	<string name="clean_file_done_office">दस्तावेज़ गुण हटा दिए गए। फ़ाइल के भीतर टिप्पणियाँ, ट्रैक किए गए बदलाव और चित्र रखे गए हैं।</string>
+	<string name="clean_file_done_office">दस्तावेज़ गुण, कस्टम गुण और डेटा, लेखक सूची और सहेजा गया फ़ाइल पथ हटा दिए गए। टिप्पणियों और ट्रैक किए गए बदलावों के भीतर के नाम और तारीखें, और एम्बेड किए गए चित्रों के भीतर का स्थान डेटा रखे गए हैं।</string>
 	<string name="clean_file_done_image">मेटाडेटा के बिना फिर से एन्कोड किया गया।</string>
 	<string name="clean_file_done_media">मेटाडेटा के बिना फिर से पैक किया गया।</string>
 	<string name="clean_file_done_pdf">पृष्ठ दर पृष्ठ फिर से बनाया गया; टेक्स्ट परत, लिंक और फ़ॉर्म खो जाते हैं।</string>

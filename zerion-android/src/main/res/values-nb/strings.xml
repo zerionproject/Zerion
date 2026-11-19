@@ -180,11 +180,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion tegner hver side på nytt som et bilde, så ingen skjult informasjon blir igjen. Tekst i den lagrede kopien kan ikke merkes. Andre apper vil kunne åpne den.</string>
 	<string name="save_file_cleaning">Fjerner skjult informasjon…</string>
 	<string name="clean_file_title">Rens en fil</string>
-	<string name="clean_file_intro">Velg en hvilken som helst fil. Zerion fjerner skjult informasjon som posisjon, enhetsdetaljer, forfatter og datoer, og deretter deler eller lagrer du den rene kopien. Originalfilen endres ikke.</string>
+	<string name="clean_file_intro">Velg en hvilken som helst fil. Zerion fjerner skjult informasjon som posisjon, enhetsdetaljer, forfatter og datoer, og deretter deler eller lagrer du den rene kopien. Resultatskjermen sier hva som ble fjernet og hva en fil av denne typen beholder. Originalfilen endres ikke.</string>
 	<string name="clean_file_choose">Velg fil</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Ren kopi: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Dokumentegenskaper fjernet. Kommentarer, sporede endringer og bilder i filen beholdes.</string>
+	<string name="clean_file_done_office">Dokumentegenskaper, egendefinerte egenskaper og data, forfatterlisten og den lagrede filbanen fjernet. Navn og datoer i kommentarer og sporede endringer, og posisjonsdataene i innebygde bilder, beholdes.</string>
 	<string name="clean_file_done_image">Kodet på nytt uten metadata.</string>
 	<string name="clean_file_done_media">Pakket på nytt uten metadata.</string>
 	<string name="clean_file_done_pdf">Tegnet på nytt side for side; tekstlag, lenker og skjemaer går tapt.</string>

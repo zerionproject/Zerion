@@ -1196,11 +1196,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion redraws every page as an image, so no hidden data is kept. Text in the saved copy cannot be selected. Other apps will be able to open it.</string>
 	<string name="save_file_cleaning">Removing hidden data…</string>
 	<string name="clean_file_title">Clean a file</string>
-	<string name="clean_file_intro">Choose any file. Zerion removes hidden information such as location, device details, author and dates, then you share or save the clean copy. The original file is not changed.</string>
+	<string name="clean_file_intro">Choose any file. Zerion removes hidden information such as location, device details, author and dates, then you share or save the clean copy. The result screen says what was removed and what a file of this type keeps. The original file is not changed.</string>
 	<string name="clean_file_choose">Choose file</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Clean copy: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Document properties removed. Comments, tracked changes and pictures inside the file are kept.</string>
+	<string name="clean_file_done_office">Document properties, custom properties and data, the author list and the saved file path removed. Names and dates inside comments and tracked changes, and the location data inside embedded pictures, are kept.</string>
 	<string name="clean_file_done_image">Re-encoded without metadata.</string>
 	<string name="clean_file_done_media">Remuxed without metadata.</string>
 	<string name="clean_file_done_pdf">Redrawn page by page; text layer, links and forms are lost.</string>

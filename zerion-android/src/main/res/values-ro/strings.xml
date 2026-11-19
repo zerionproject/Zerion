@@ -189,11 +189,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion redesenează fiecare pagină ca imagine, așa că nu se păstrează nicio informație ascunsă. Textul din copia salvată nu poate fi selectat. Alte aplicații o vor putea deschide.</string>
 	<string name="save_file_cleaning">Se elimină informațiile ascunse…</string>
 	<string name="clean_file_title">Curățați un fișier</string>
-	<string name="clean_file_intro">Alegeți orice fișier. Zerion elimină informațiile ascunse, precum locația, detaliile dispozitivului, autorul și datele, apoi partajați sau salvați copia curată. Fișierul original nu este modificat.</string>
+	<string name="clean_file_intro">Alegeți orice fișier. Zerion elimină informațiile ascunse, precum locația, detaliile dispozitivului, autorul și datele, apoi partajați sau salvați copia curată. Ecranul cu rezultatul spune ce a fost eliminat și ce păstrează un fișier de acest tip. Fișierul original nu este modificat.</string>
 	<string name="clean_file_choose">Alegeți fișierul</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Copie curată: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Proprietățile documentului au fost eliminate. Comentariile, modificările urmărite și imaginile din fișier sunt păstrate.</string>
+	<string name="clean_file_done_office">Proprietățile documentului, proprietățile și datele personalizate, lista autorilor și calea fișierului salvat au fost eliminate. Numele și datele din comentarii și din modificările urmărite, precum și datele de locație din imaginile încorporate, sunt păstrate.</string>
 	<string name="clean_file_done_image">Recodificat fără metadate.</string>
 	<string name="clean_file_done_media">Reîmpachetat fără metadate.</string>
 	<string name="clean_file_done_pdf">Redesenat pagină cu pagină; stratul de text, linkurile și formularele se pierd.</string>

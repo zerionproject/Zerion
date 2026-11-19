@@ -189,11 +189,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion ridisegna ogni pagina come immagine, quindi non viene conservata alcuna informazione nascosta. Il testo nella copia salvata non può essere selezionato. Le altre app potranno aprirla.</string>
 	<string name="save_file_cleaning">Rimozione delle informazioni nascoste…</string>
 	<string name="clean_file_title">Pulisci un file</string>
-	<string name="clean_file_intro">Scegli un file qualsiasi. Zerion rimuove le informazioni nascoste come posizione, dettagli del dispositivo, autore e date, poi condividi o salvi la copia pulita. Il file originale non viene modificato.</string>
+	<string name="clean_file_intro">Scegli un file qualsiasi. Zerion rimuove le informazioni nascoste come posizione, dettagli del dispositivo, autore e date, poi condividi o salvi la copia pulita. La schermata del risultato dice cosa è stato rimosso e cosa conserva un file di questo tipo. Il file originale non viene modificato.</string>
 	<string name="clean_file_choose">Scegli file</string>
 	<string name="clean_file_original">Originale: %1$s, %2$s</string>
 	<string name="clean_file_result">Copia pulita: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Proprietà del documento rimosse. Commenti, revisioni e immagini all\'interno del file vengono conservati.</string>
+	<string name="clean_file_done_office">Proprietà del documento, proprietà e dati personalizzati, elenco degli autori e percorso del file salvato rimossi. Nomi e date all\'interno di commenti e revisioni, e i dati di posizione all\'interno delle immagini incorporate, vengono conservati.</string>
 	<string name="clean_file_done_image">Ricodificato senza metadati.</string>
 	<string name="clean_file_done_media">Reimpacchettato senza metadati.</string>
 	<string name="clean_file_done_pdf">Ridisegnato pagina per pagina; il livello di testo, i link e i moduli vengono persi.</string>

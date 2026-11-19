@@ -190,11 +190,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion rysuje każdą stronę na nowo jako obraz, więc nie pozostają żadne ukryte informacje. Tekstu w zapisanej kopii nie można zaznaczyć. Inne aplikacje będą mogły ją otworzyć.</string>
 	<string name="save_file_cleaning">Usuwanie ukrytych informacji…</string>
 	<string name="clean_file_title">Wyczyść plik</string>
-	<string name="clean_file_intro">Wybierz dowolny plik. Zerion usuwa ukryte informacje, takie jak lokalizacja, dane urządzenia, autor i daty, a następnie czystą kopię udostępniasz lub zapisujesz. Oryginalny plik nie jest zmieniany.</string>
+	<string name="clean_file_intro">Wybierz dowolny plik. Zerion usuwa ukryte informacje, takie jak lokalizacja, dane urządzenia, autor i daty, a następnie czystą kopię udostępniasz lub zapisujesz. Ekran wyniku mówi, co zostało usunięte i co plik tego typu zachowuje. Oryginalny plik nie jest zmieniany.</string>
 	<string name="clean_file_choose">Wybierz plik</string>
 	<string name="clean_file_original">Oryginał: %1$s, %2$s</string>
 	<string name="clean_file_result">Czysta kopia: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Właściwości dokumentu usunięte. Komentarze, śledzone zmiany i obrazy wewnątrz pliku zostają zachowane.</string>
+	<string name="clean_file_done_office">Właściwości dokumentu, właściwości i dane niestandardowe, lista autorów i zapisana ścieżka pliku usunięte. Nazwiska i daty wewnątrz komentarzy i śledzonych zmian oraz dane lokalizacji wewnątrz osadzonych obrazów zostają zachowane.</string>
 	<string name="clean_file_done_image">Przekodowano bez metadanych.</string>
 	<string name="clean_file_done_media">Przepakowano bez metadanych.</string>
 	<string name="clean_file_done_pdf">Narysowano ponownie strona po stronie; warstwa tekstu, odsyłacze i formularze zostają utracone.</string>

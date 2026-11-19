@@ -173,11 +173,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion は各ページを画像として描き直すため、隠れた情報は残りません。保存したコピーのテキストは選択できません。他のアプリから開けるようになります。</string>
 	<string name="save_file_cleaning">隠れた情報を削除しています…</string>
 	<string name="clean_file_title">ファイルをクリーンにする</string>
-	<string name="clean_file_intro">任意のファイルを選びます。Zerion が位置情報、端末情報、作成者、日付などの隠れた情報を取り除き、その後クリーンなコピーを共有または保存できます。元のファイルは変更されません。</string>
+	<string name="clean_file_intro">任意のファイルを選びます。Zerion が位置情報、端末情報、作成者、日付などの隠れた情報を取り除き、その後クリーンなコピーを共有または保存できます。結果画面には、何が取り除かれ、この種類のファイルに何が残るかが表示されます。元のファイルは変更されません。</string>
 	<string name="clean_file_choose">ファイルを選択</string>
 	<string name="clean_file_original">元のファイル: %1$s、%2$s</string>
 	<string name="clean_file_result">クリーンなコピー: %1$s、%2$s</string>
-	<string name="clean_file_done_office">文書のプロパティを削除しました。ファイル内のコメント、変更履歴、画像は残ります。</string>
+	<string name="clean_file_done_office">文書のプロパティ、ユーザー設定のプロパティとデータ、作成者一覧、保存されたファイルパスを削除しました。コメントと変更履歴の中の名前と日付、および埋め込み画像の中の位置情報は残ります。</string>
 	<string name="clean_file_done_image">メタデータなしで再エンコードしました。</string>
 	<string name="clean_file_done_media">メタデータなしで再多重化しました。</string>
 	<string name="clean_file_done_pdf">ページごとに再描画しました。テキスト層、リンク、フォームは失われます。</string>

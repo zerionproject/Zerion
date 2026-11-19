@@ -1080,11 +1080,11 @@
 	<string name="dialog_message_save_clean_pdf">Adtresañ a ra Zerion pep pajenn evel ur skeudenn, setu ne chom titour kuzh ebet. N\'haller ket diuzañ an destenn en eilad enrollet. An arloadoù all a c\'hallo digeriñ anezhañ.</string>
 	<string name="save_file_cleaning">O tilemel an titouroù kuzh…</string>
 	<string name="clean_file_title">Naetaat ur restr</string>
-	<string name="clean_file_intro">Dibabit ur restr bennak. Zerion a lam an titouroù kuzhet evel al lec\'hiadur, munudoù an trobarzhell, an aozer hag an deiziadoù, ha goude e rannit pe e enrollit an eilskrid naet. Ne vez ket kemmet ar restr orin.</string>
+	<string name="clean_file_intro">Dibabit ur restr bennak. Zerion a lam an titouroù kuzhet evel al lec\'hiadur, munudoù an trobarzhell, an aozer hag an deiziadoù, ha goude e rannit pe e enrollit an eilskrid naet. Skramm an disoc\'h a lavar petra zo bet lamet ha petra a vez miret gant ur restr eus an doare-se. Ne vez ket kemmet ar restr orin.</string>
 	<string name="clean_file_choose">Dibab ur restr</string>
 	<string name="clean_file_original">Orin: %1$s, %2$s</string>
 	<string name="clean_file_result">Eilskrid naet: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Lamet eo bet perzhioù an teul. Miret eo an evezhiadennoù, ar c\'hemmoù heuliet hag ar skeudennoù e-barzh ar restr.</string>
+	<string name="clean_file_done_office">Lamet eo bet perzhioù an teul, ar perzhioù hag ar roadennoù personelaet, roll an aozerien hag hent ar restr enrollet. Miret eo an anvioù hag an deiziadoù e-barzh an evezhiadennoù hag ar c\'hemmoù heuliet, hag ar roadennoù lec\'hiadur e-barzh ar skeudennoù enframmet.</string>
 	<string name="clean_file_done_image">Adenkodet hep metaroadennoù.</string>
 	<string name="clean_file_done_media">Adpakadet hep metaroadennoù.</string>
 	<string name="clean_file_done_pdf">Adtreset pajenn ha pajenn; kollet eo ar gwiskad testenn, al liammoù hag ar furmskridoù.</string>

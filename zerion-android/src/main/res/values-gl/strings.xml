@@ -168,11 +168,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion volve debuxar cada páxina como unha imaxe, así que non se conserva ningunha información oculta. O texto da copia gardada non se pode seleccionar. Outras apps poderán abrila.</string>
 	<string name="save_file_cleaning">Eliminando a información oculta…</string>
 	<string name="clean_file_title">Limpar un ficheiro</string>
-	<string name="clean_file_intro">Escolle calquera ficheiro. Zerion elimina a información oculta como a localización, os detalles do dispositivo, o autor e as datas, e despois compartes ou gardas a copia limpa. O ficheiro orixinal non se modifica.</string>
+	<string name="clean_file_intro">Escolle calquera ficheiro. Zerion elimina a información oculta como a localización, os detalles do dispositivo, o autor e as datas, e despois compartes ou gardas a copia limpa. A pantalla de resultado di que se eliminou e que conserva un ficheiro deste tipo. O ficheiro orixinal non se modifica.</string>
 	<string name="clean_file_choose">Escoller ficheiro</string>
 	<string name="clean_file_original">Orixinal: %1$s, %2$s</string>
 	<string name="clean_file_result">Copia limpa: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Elimináronse as propiedades do documento. Consérvanse os comentarios, os cambios rexistrados e as imaxes dentro do ficheiro.</string>
+	<string name="clean_file_done_office">Elimináronse as propiedades do documento, as propiedades e os datos personalizados, a lista de autores e a ruta do ficheiro gardado. Consérvanse os nomes e as datas dentro dos comentarios e dos cambios rexistrados, e os datos de localización dentro das imaxes incrustadas.</string>
 	<string name="clean_file_done_image">Recodificado sen metadatos.</string>
 	<string name="clean_file_done_media">Reempaquetado sen metadatos.</string>
 	<string name="clean_file_done_pdf">Redebuxado páxina a páxina; pérdense a capa de texto, as ligazóns e os formularios.</string>

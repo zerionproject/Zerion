@@ -204,11 +204,11 @@
 	<string name="dialog_message_save_clean_pdf">يعيد Zerion رسم كل صفحة كصورة، لذا لا تبقى أي معلومات مخفية. لا يمكن تحديد النص في النسخة المحفوظة. ستتمكن التطبيقات الأخرى من فتحها.</string>
 	<string name="save_file_cleaning">جارٍ إزالة المعلومات المخفية…</string>
 	<string name="clean_file_title">تنظيف ملف</string>
-	<string name="clean_file_intro">اختر أي ملف. يزيل Zerion المعلومات المخفية مثل الموقع وتفاصيل الجهاز والمؤلف والتواريخ، ثم تشارك النسخة النظيفة أو تحفظها. الملف الأصلي لا يتغير.</string>
+	<string name="clean_file_intro">اختر أي ملف. يزيل Zerion المعلومات المخفية مثل الموقع وتفاصيل الجهاز والمؤلف والتواريخ، ثم تشارك النسخة النظيفة أو تحفظها. تعرض شاشة النتيجة ما تمت إزالته وما يبقى في ملف من هذا النوع. الملف الأصلي لا يتغير.</string>
 	<string name="clean_file_choose">اختيار ملف</string>
 	<string name="clean_file_original">الأصل: %1$s، %2$s</string>
 	<string name="clean_file_result">النسخة النظيفة: %1$s، %2$s</string>
-	<string name="clean_file_done_office">تمت إزالة خصائص المستند. يتم الاحتفاظ بالتعليقات والتغييرات المتعقبة والصور داخل الملف.</string>
+	<string name="clean_file_done_office">تمت إزالة خصائص المستند والخصائص والبيانات المخصصة وقائمة المؤلفين ومسار الملف المحفوظ. يتم الاحتفاظ بالأسماء والتواريخ داخل التعليقات والتغييرات المتعقبة، وببيانات الموقع داخل الصور المضمنة.</string>
 	<string name="clean_file_done_image">أعيد ترميزه بدون بيانات وصفية.</string>
 	<string name="clean_file_done_media">أعيد تجميعه بدون بيانات وصفية.</string>
 	<string name="clean_file_done_pdf">أعيد رسمه صفحة بصفحة؛ تُفقد طبقة النص والروابط والنماذج.</string>

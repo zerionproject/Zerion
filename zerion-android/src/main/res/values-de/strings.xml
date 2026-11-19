@@ -186,11 +186,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion zeichnet jede Seite als Bild neu, daher bleiben keine versteckten Informationen erhalten. Text in der gespeicherten Kopie lässt sich nicht markieren. Andere Apps können sie öffnen.</string>
 	<string name="save_file_cleaning">Versteckte Informationen werden entfernt…</string>
 	<string name="clean_file_title">Datei bereinigen</string>
-	<string name="clean_file_intro">Wähle eine beliebige Datei. Zerion entfernt versteckte Informationen wie Standort, Gerätedetails, Autor und Datumsangaben, danach teilst oder speicherst du die bereinigte Kopie. Die Originaldatei bleibt unverändert.</string>
+	<string name="clean_file_intro">Wähle eine beliebige Datei. Zerion entfernt versteckte Informationen wie Standort, Gerätedetails, Autor und Datumsangaben, danach teilst oder speicherst du die bereinigte Kopie. Der Ergebnisbildschirm sagt, was entfernt wurde und was eine Datei dieses Typs behält. Die Originaldatei bleibt unverändert.</string>
 	<string name="clean_file_choose">Datei wählen</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Bereinigte Kopie: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Dokumenteigenschaften entfernt. Kommentare, nachverfolgte Änderungen und Bilder in der Datei bleiben erhalten.</string>
+	<string name="clean_file_done_office">Dokumenteigenschaften, benutzerdefinierte Eigenschaften und Daten, die Autorenliste und der gespeicherte Dateipfad entfernt. Namen und Datumsangaben in Kommentaren und nachverfolgten Änderungen sowie die Standortdaten in eingebetteten Bildern bleiben erhalten.</string>
 	<string name="clean_file_done_image">Ohne Metadaten neu kodiert.</string>
 	<string name="clean_file_done_media">Ohne Metadaten neu verpackt.</string>
 	<string name="clean_file_done_pdf">Seite für Seite neu gezeichnet; Textebene, Links und Formulare gehen verloren.</string>

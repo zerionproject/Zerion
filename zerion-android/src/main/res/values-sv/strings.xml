@@ -180,11 +180,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion ritar om varje sida som en bild, så ingen dold information finns kvar. Text i den sparade kopian kan inte markeras. Andra appar kommer att kunna öppna den.</string>
 	<string name="save_file_cleaning">Tar bort dold information…</string>
 	<string name="clean_file_title">Rensa en fil</string>
-	<string name="clean_file_intro">Välj vilken fil som helst. Zerion tar bort dold information som plats, enhetsuppgifter, författare och datum, och sedan delar eller sparar du den rena kopian. Originalfilen ändras inte.</string>
+	<string name="clean_file_intro">Välj vilken fil som helst. Zerion tar bort dold information som plats, enhetsuppgifter, författare och datum, och sedan delar eller sparar du den rena kopian. Resultatskärmen säger vad som togs bort och vad en fil av den här typen behåller. Originalfilen ändras inte.</string>
 	<string name="clean_file_choose">Välj fil</string>
 	<string name="clean_file_original">Original: %1$s, %2$s</string>
 	<string name="clean_file_result">Ren kopia: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Dokumentegenskaper borttagna. Kommentarer, spårade ändringar och bilder i filen behålls.</string>
+	<string name="clean_file_done_office">Dokumentegenskaper, anpassade egenskaper och data, författarlistan och den sparade filsökvägen borttagna. Namn och datum i kommentarer och spårade ändringar, och platsdata i inbäddade bilder, behålls.</string>
 	<string name="clean_file_done_image">Omkodad utan metadata.</string>
 	<string name="clean_file_done_media">Ompaketerad utan metadata.</string>
 	<string name="clean_file_done_pdf">Omritad sida för sida; textlager, länkar och formulär går förlorade.</string>

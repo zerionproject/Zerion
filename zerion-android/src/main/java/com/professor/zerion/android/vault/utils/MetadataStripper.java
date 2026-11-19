@@ -674,12 +674,109 @@ public class MetadataStripper {
 		return ByteBuffer.allocate((int) sampleSize);
 	}
 
-	static final String OFFICE_PROPERTY_OVERRIDES =
-			"(?is)<(?:\\w+:)?Override[^>]*PartName=[\"']/docProps/[^\"']*[\"']"
-					+ "[^>]*(?:/>|>\\s*</(?:\\w+:)?Override>)";
-	static final String OFFICE_PROPERTY_RELATIONSHIPS =
-			"(?is)<(?:\\w+:)?Relationship[^>]*Target=[\"']/?docProps/[^\"']*"
-					+ "[\"'][^>]*(?:/>|>\\s*</(?:\\w+:)?Relationship>)";
+	static final java.util.regex.Pattern OFFICE_OVERRIDE =
+			java.util.regex.Pattern.compile(
+					"(?is)<(?:\\w+:)?Override\\b[^>]*(?:/>|>\\s*</(?:\\w+:)?Override>)");
+	static final java.util.regex.Pattern OFFICE_RELATIONSHIP =
+			java.util.regex.Pattern.compile(
+					"(?is)<(?:\\w+:)?Relationship\\b[^>]*"
+							+ "(?:/>|>\\s*</(?:\\w+:)?Relationship>)");
+	static final java.util.regex.Pattern OFFICE_PART_NAME =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bPartName\\s*=\\s*[\"']([^\"']*)[\"']");
+	static final java.util.regex.Pattern OFFICE_TARGET =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bTarget\\s*=\\s*[\"']([^\"']*)[\"']");
+	static final java.util.regex.Pattern OFFICE_EXTERNAL_TARGET =
+			java.util.regex.Pattern.compile(
+					"(?is)\\bTargetMode\\s*=\\s*[\"']External[\"']");
+	static final java.util.regex.Pattern OFFICE_ABS_PATH =
+			java.util.regex.Pattern.compile(
+					"(?is)<(?:\\w+:)?absPath\\b[^>]*/>");
+
+	static boolean isRemovedOfficePart(String lowerName) {
+		return lowerName.startsWith("docprops/")
+				|| lowerName.startsWith("customxml/")
+				|| lowerName.endsWith("/core.xml")
+				|| lowerName.endsWith("/app.xml")
+				|| lowerName.endsWith("/custom.xml")
+				|| lowerName.equals("word/people.xml")
+				|| lowerName.equals("ppt/commentauthors.xml");
+	}
+
+	static boolean isOfficeRelationships(String lowerName) {
+		return lowerName.endsWith(".rels") && (lowerName.startsWith("_rels/")
+				|| lowerName.contains("/_rels/"));
+	}
+
+	static String resolveOfficePart(String relsName, String target) {
+		String t = target;
+		int query = t.indexOf('?');
+		if (query >= 0) t = t.substring(0, query);
+		int fragment = t.indexOf('#');
+		if (fragment >= 0) t = t.substring(0, fragment);
+		t = t.replace('\\', '/');
+		String path;
+		if (t.startsWith("/")) {
+			path = t.substring(1);
+		} else {
+			int rels = relsName.toLowerCase(java.util.Locale.ROOT)
+					.lastIndexOf("_rels/");
+			String dir = rels < 0 ? "" : relsName.substring(0, rels);
+			path = dir + t;
+		}
+		java.util.ArrayDeque<String> parts = new java.util.ArrayDeque<>();
+		for (String s : path.split("/")) {
+			if (s.isEmpty() || s.equals(".")) continue;
+			if (s.equals("..")) {
+				if (!parts.isEmpty()) parts.removeLast();
+				continue;
+			}
+			parts.addLast(s);
+		}
+		StringBuilder b = new StringBuilder();
+		for (String s : parts) {
+			if (b.length() > 0) b.append('/');
+			b.append(s);
+		}
+		return b.toString().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	static String cleanOfficeContentTypes(String xml) {
+		java.util.regex.Matcher m = OFFICE_OVERRIDE.matcher(xml);
+		StringBuffer out = new StringBuffer(xml.length());
+		while (m.find()) {
+			java.util.regex.Matcher name = OFFICE_PART_NAME.matcher(m.group());
+			boolean drop = name.find() && isRemovedOfficePart(
+					resolveOfficePart("", name.group(1)));
+			m.appendReplacement(out, drop ? ""
+					: java.util.regex.Matcher.quoteReplacement(m.group()));
+		}
+		m.appendTail(out);
+		return out.toString();
+	}
+
+	static String cleanOfficeRelationships(String relsName, String xml) {
+		java.util.regex.Matcher m = OFFICE_RELATIONSHIP.matcher(xml);
+		StringBuffer out = new StringBuffer(xml.length());
+		while (m.find()) {
+			String element = m.group();
+			boolean drop = false;
+			if (!OFFICE_EXTERNAL_TARGET.matcher(element).find()) {
+				java.util.regex.Matcher target = OFFICE_TARGET.matcher(element);
+				drop = target.find() && isRemovedOfficePart(
+						resolveOfficePart(relsName, target.group(1)));
+			}
+			m.appendReplacement(out, drop ? ""
+					: java.util.regex.Matcher.quoteReplacement(element));
+		}
+		m.appendTail(out);
+		return out.toString();
+	}
+
+	static String cleanOfficeWorkbook(String xml) {
+		return OFFICE_ABS_PATH.matcher(xml).replaceAll("");
+	}
 
 	private byte[] stripOfficeMetadata(byte[] officeData) throws IOException {
 		if (officeData.length < 4 || officeData[0] != 'P' || officeData[1]
@@ -701,11 +798,7 @@ public class MetadataStripper {
 			while ((e = zin.getNextEntry()) != null) {
 				String n = e.getName();
 				String lower = n.toLowerCase(java.util.Locale.ROOT);
-				if (lower.startsWith("docprops/") || lower.endsWith("/core.xml")
-						|| lower.endsWith("/app.xml")
-						|| lower.endsWith("/custom.xml")) {
-					continue;
-				}
+				if (isRemovedOfficePart(lower)) continue;
 				if (lower.equals("[content_types].xml")) contentTypes = true;
 				if (lower.startsWith("word/") || lower.startsWith("xl/")
 						|| lower.startsWith("ppt/")) {
@@ -714,17 +807,19 @@ public class MetadataStripper {
 				java.util.zip.ZipEntry out =
 						new java.util.zip.ZipEntry(n);
 				zout.putNextEntry(out);
-				if (lower.equals("[content_types].xml")
-						|| lower.equals("_rels/.rels")) {
+				boolean isContentTypes = lower.equals("[content_types].xml");
+				boolean isRels = isOfficeRelationships(lower);
+				boolean isWorkbook = lower.equals("xl/workbook.xml");
+				if (isContentTypes || isRels || isWorkbook) {
 					java.io.ByteArrayOutputStream part =
 							new java.io.ByteArrayOutputStream();
 					int read;
 					while ((read = zin.read(buf)) > 0) part.write(buf, 0, read);
 					String xml = new String(part.toByteArray(),
 							StandardCharsets.UTF_8);
-					xml = xml.replaceAll(lower.equals("_rels/.rels")
-							? OFFICE_PROPERTY_RELATIONSHIPS
-							: OFFICE_PROPERTY_OVERRIDES, "");
+					if (isContentTypes) xml = cleanOfficeContentTypes(xml);
+					else if (isRels) xml = cleanOfficeRelationships(n, xml);
+					else xml = cleanOfficeWorkbook(xml);
 					zout.write(xml.getBytes(StandardCharsets.UTF_8));
 				} else {
 					int read;

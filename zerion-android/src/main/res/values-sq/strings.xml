@@ -185,11 +185,11 @@ dhe s’mund të hapet me këtë version.\n\nJu lutemi, përmirësojeni me versi
 	<string name="dialog_message_save_clean_pdf">Zerion-i e rivizaton çdo faqe si figurë, ndaj nuk mbetet asnjë e dhënë e fshehur. Teksti në kopjen e ruajtur nuk mund të përzgjidhet. Aplikacionet e tjera do të mund ta hapin.</string>
 	<string name="save_file_cleaning">Po hiqen të dhënat e fshehura…</string>
 	<string name="clean_file_title">Pastro një skedar</string>
-	<string name="clean_file_intro">Zgjidhni çfarëdo skedari. Zerion heq informacionin e fshehur si vendndodhjen, të dhënat e pajisjes, autorin dhe datat, pastaj ju ndani ose ruani kopjen e pastër. Skedari origjinal nuk ndryshohet.</string>
+	<string name="clean_file_intro">Zgjidhni çfarëdo skedari. Zerion heq informacionin e fshehur si vendndodhjen, të dhënat e pajisjes, autorin dhe datat, pastaj ju ndani ose ruani kopjen e pastër. Ekrani i rezultatit tregon çfarë u hoq dhe çfarë ruan një skedar i këtij lloji. Skedari origjinal nuk ndryshohet.</string>
 	<string name="clean_file_choose">Zgjidh skedarin</string>
 	<string name="clean_file_original">Origjinali: %1$s, %2$s</string>
 	<string name="clean_file_result">Kopja e pastër: %1$s, %2$s</string>
-	<string name="clean_file_done_office">Vetitë e dokumentit u hoqën. Komentet, ndryshimet e gjurmuara dhe figurat brenda skedarit ruhen.</string>
+	<string name="clean_file_done_office">Vetitë e dokumentit, vetitë dhe të dhënat e personalizuara, lista e autorëve dhe shtegu i skedarit të ruajtur u hoqën. Emrat dhe datat brenda komenteve dhe ndryshimeve të gjurmuara, si dhe të dhënat e vendndodhjes brenda figurave të ngulitura, ruhen.</string>
 	<string name="clean_file_done_image">Rikoduar pa metadata.</string>
 	<string name="clean_file_done_media">Ripaketuar pa metadata.</string>
 	<string name="clean_file_done_pdf">Rivizatuar faqe pas faqeje; shtresa e tekstit, lidhjet dhe formularët humbasin.</string>

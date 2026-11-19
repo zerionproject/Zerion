@@ -142,11 +142,11 @@
 	<string name="dialog_message_save_clean_pdf">Zerion은 모든 페이지를 이미지로 다시 그리므로 숨겨진 정보가 남지 않습니다. 저장된 사본의 텍스트는 선택할 수 없습니다. 다른 앱에서 열 수 있게 됩니다.</string>
 	<string name="save_file_cleaning">숨겨진 정보 제거 중…</string>
 	<string name="clean_file_title">파일 정리</string>
-	<string name="clean_file_intro">아무 파일이나 선택하세요. Zerion이 위치, 기기 정보, 작성자, 날짜 같은 숨은 정보를 제거하고, 그다음 깨끗한 복사본을 공유하거나 저장합니다. 원본 파일은 바뀌지 않습니다.</string>
+	<string name="clean_file_intro">아무 파일이나 선택하세요. Zerion이 위치, 기기 정보, 작성자, 날짜 같은 숨은 정보를 제거하고, 그다음 깨끗한 복사본을 공유하거나 저장합니다. 결과 화면은 무엇이 제거되었고 이 유형의 파일에 무엇이 남는지 알려 줍니다. 원본 파일은 바뀌지 않습니다.</string>
 	<string name="clean_file_choose">파일 선택</string>
 	<string name="clean_file_original">원본: %1$s, %2$s</string>
 	<string name="clean_file_result">깨끗한 복사본: %1$s, %2$s</string>
-	<string name="clean_file_done_office">문서 속성을 제거했습니다. 파일 안의 댓글, 변경 내용 추적, 그림은 유지됩니다.</string>
+	<string name="clean_file_done_office">문서 속성, 사용자 지정 속성과 데이터, 작성자 목록, 저장된 파일 경로를 제거했습니다. 댓글과 변경 내용 추적 안의 이름과 날짜, 그리고 포함된 그림 안의 위치 데이터는 유지됩니다.</string>
 	<string name="clean_file_done_image">메타데이터 없이 다시 인코딩했습니다.</string>
 	<string name="clean_file_done_media">메타데이터 없이 다시 다중화했습니다.</string>
 	<string name="clean_file_done_pdf">페이지별로 다시 그렸습니다. 텍스트 레이어, 링크, 양식은 사라집니다.</string>
