@@ -509,6 +509,10 @@ public class NavDrawerActivity extends ZerionActivity implements
 			} else if (id == R.id.action_lock) {
 				lockApp();
 				return true;
+			} else if (id == R.id.action_clean_file) {
+				startActivity(new Intent(this, com.professor.zerion.android
+						.attachment.CleanFileActivity.class));
+				return true;
 			} else if (id == R.id.action_sign_out) {
 				signOut();
 				return true;

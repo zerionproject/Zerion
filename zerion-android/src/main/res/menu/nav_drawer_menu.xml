@@ -12,6 +12,10 @@
 		android:visible="false" />
 
 	<item
+		android:id="@+id/action_clean_file"
+		android:title="@string/clean_file_title" />
+
+	<item
 		android:id="@+id/action_sign_out"
 		android:title="@string/sign_out_button" />
 

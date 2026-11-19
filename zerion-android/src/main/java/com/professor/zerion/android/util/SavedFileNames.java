@@ -61,6 +61,12 @@ public final class SavedFileNames {
 				return "wav";
 			case "text/plain":
 				return "txt";
+			case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+				return "docx";
+			case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+				return "xlsx";
+			case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+				return "pptx";
 			default:
 				break;
 		}

@@ -1,0 +1,65 @@
+package com.professor.zerion.android.util;
+
+import android.content.Context;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+@RunWith(AndroidJUnit4.class)
+@Config(sdk = 29)
+public class CleanShareCacheTest {
+
+	private static File touch(File dir, String name) throws IOException {
+		dir.mkdirs();
+		File f = new File(dir, name);
+		try (FileOutputStream out = new FileOutputStream(f)) {
+			out.write(new byte[] {1, 2, 3});
+		}
+		return f;
+	}
+
+	@Test
+	public void theShareDirectoryIsNamedOnce() {
+		assertEquals("clean_share", CacheSweeper.CLEAN_SHARE_DIR);
+	}
+
+	@Test
+	public void theSweepEmptiesTheShareDirectory() throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File dir = new File(ctx.getCacheDir(), CacheSweeper.CLEAN_SHARE_DIR);
+		File shared = touch(dir, "Image 2026-11-19_101500.jpg");
+		File stays = touch(ctx.getCacheDir(), "unrelated.bin");
+		CacheSweeper.sweep(ctx);
+		assertFalse(shared.exists());
+		assertFalse(dir.exists());
+		assertTrue(stays.exists());
+	}
+
+	@Test
+	public void atStartACopyLeftByAnEarlierProcessIsSweptAndAFreshOneKept()
+			throws Exception {
+		Context ctx = RuntimeEnvironment.getApplication();
+		File dir = new File(ctx.getCacheDir(), CacheSweeper.CLEAN_SHARE_DIR);
+		long start = System.currentTimeMillis();
+		File old = touch(dir, "old.pdf");
+		assertTrue(old.setLastModified(start - 60_000L));
+		File fresh = touch(dir, "fresh.pdf");
+		assertTrue(fresh.setLastModified(start + 60_000L));
+		CacheSweeper.sweepLeftovers(ctx, start);
+		assertFalse("a copy from before this process is swept", old.exists());
+		assertTrue("a copy this process wrote is kept for its reader",
+				fresh.exists());
+	}
+}
