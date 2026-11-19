@@ -2295,6 +2295,10 @@
 	<plurals name="grouptr_reach_banner">
 		<item quantity="other">%d ahli bukan kenalan anda dan tidak menerima hantaran anda. Ketik untuk butiran.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Tambah kenalan</string>
+	<string name="grouptr_team_help_title">Sediakan pasukan</string>
+	<string name="grouptr_team_help_text">Seorang mencipta kumpulan dan menjadi pemiliknya.\n\nPemilik kumpulan membuat satu pautan jemputan di Pautan jemputan (ia kekal sama sehingga dibuang) dan berkongsinya dengan pasukan. Semua orang membuka Tambah kenalan, menampal pautan dan menghantar permintaan; pemilik kumpulan menerima setiap satu.\n\nKemudian pemilik kumpulan menjemput semua ahli ke kumpulan.\n\nAhli yang bukan kenalan antara satu sama lain menerima hantaran melalui telefon pemilik kumpulan apabila ia dalam talian. Sehingga itu hantaran menunggu di telefon pengirim; tiada apa-apa disimpan di pelayan.\n\nAhli boleh menambah satu sama lain sebagai kenalan untuk penghantaran terus dan panggilan.\n\nHad: satu kumpulan memuatkan sehingga 256 ahli, satu telefon menyimpan sehingga 200 kenalan dengan sambungan peribadi, dan telefon pemilik pasukan besar perlu kerap dalam talian.</string>
+	<string name="contact_connection_auth_full">Peranti ini tidak boleh menyimpan lebih daripada 200 kenalan dengan sambungan peribadi.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="other">Tidak dihantar kepada %d ahli: aplikasi mereka terlalu lama untuk hantaran sebesar ini.</item>
 	</plurals>

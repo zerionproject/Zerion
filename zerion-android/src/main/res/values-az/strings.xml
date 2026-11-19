@@ -2218,6 +2218,10 @@
 		<item quantity="one">%d üzv kontaktınız deyil və paylaşımlarınızı almır. Ətraflı məlumat üçün toxunun.</item>
 		<item quantity="other">%d üzv kontaktınız deyil və paylaşımlarınızı almır. Ətraflı məlumat üçün toxunun.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Kontankt əlavə et</string>
+	<string name="grouptr_team_help_title">Komanda qurun</string>
+	<string name="grouptr_team_help_text">Bir nəfər qrupu yaradır və onun sahibi olur.\n\nQrup sahibi Dəvət linkləri bölməsində bir dəvət linki yaradır (silinənə qədər dəyişmir) və onu komanda ilə paylaşır. Hər kəs Kontakt əlavə et bölməsini açır, linki yapışdırır və sorğu göndərir; qrup sahibi hər birini qəbul edir.\n\nSonra qrup sahibi bütün üzvləri qrupa dəvət edir.\n\nBir-birinin kontaktı olmayan üzvlər paylaşımları qrup sahibinin telefonu onlayn olduqda onun vasitəsilə alır. O vaxta qədər paylaşım göndərənin telefonunda gözləyir; heç bir serverdə heç nə saxlanmır.\n\nÜzvlər birbaşa çatdırılma və zənglər üçün bir-birini kontakt kimi əlavə edə bilər.\n\nLimitlər: bir qrupda ən çox 256 üzv olur, bir telefon şəxsi bağlantı ilə ən çox 200 kontakt saxlayır və böyük komandanın qrup sahibinin telefonu tez-tez onlayn olmalıdır.</string>
+	<string name="contact_connection_auth_full">Bu cihaz şəxsi bağlantı ilə 200-dən çox kontakt saxlaya bilməz.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">%d üzvə göndərilmədi: onun tətbiqi bu qədər böyük paylaşımlar üçün çox köhnədir.</item>
 		<item quantity="other">%d üzvə göndərilmədi: onların tətbiqi bu qədər böyük paylaşımlar üçün çox köhnədir.</item>

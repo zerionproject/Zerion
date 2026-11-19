@@ -2421,6 +2421,10 @@
 		<item quantity="few">%d membri nu sunt contactele dvs. și nu vă primesc postările. Atingeți pentru detalii.</item>
 		<item quantity="other">%d de membri nu sunt contactele dvs. și nu vă primesc postările. Atingeți pentru detalii.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Adaugați contact</string>
+	<string name="grouptr_team_help_title">Configurarea unei echipe</string>
+	<string name="grouptr_team_help_text">O persoană creează grupul și este proprietarul lui.\n\nProprietarul grupului creează un link de invitație în Linkuri de invitație (rămâne același până este eliminat) și îl partajează cu echipa. Fiecare deschide Adaugați contact, lipește linkul și trimite o cerere; proprietarul grupului o acceptă pe fiecare.\n\nApoi proprietarul grupului invită toți membrii în grup.\n\nMembrii care nu sunt contacte unul altuia primesc postările prin telefonul proprietarului grupului de fiecare dată când acesta este online. Până atunci postarea așteaptă pe telefonul expeditorului; nimic nu este stocat pe un server.\n\nMembrii se pot adăuga unul pe altul ca contacte pentru livrare directă și apeluri.\n\nLimite: un grup are până la 256 de membri, un telefon păstrează până la 200 de contacte cu conexiune privată, iar telefonul proprietarului unei echipe mari ar trebui să fie des online.</string>
+	<string name="contact_connection_auth_full">Acest dispozitiv nu poate păstra mai mult de 200 de contacte cu conexiune privată.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nu a fost trimisă către %d membru: aplicația acestuia este prea veche pentru postări atât de mari.</item>
 		<item quantity="few">Nu a fost trimisă către %d membri: aplicația lor este prea veche pentru postări atât de mari.</item>

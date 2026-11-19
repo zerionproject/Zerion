@@ -2263,6 +2263,10 @@
 	<plurals name="grouptr_reach_banner">
 		<item quantity="other">%d 名成员不是你的联系人，收不到你的消息。点按查看详情。</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">添加联系人</string>
+	<string name="grouptr_team_help_title">建立团队</string>
+	<string name="grouptr_team_help_text">由一个人创建群组，并成为群主。\n\n群主在“邀请链接”中创建一个邀请链接（在移除之前保持不变），并分享给团队。每个人打开“添加联系人”，粘贴链接并发送请求；群主逐一接受。\n\n然后群主邀请所有成员加入群组。\n\n彼此不是联系人的成员，会在群主的手机在线时通过群主的手机收到帖子。在此之前，帖子保留在发送者的手机上等待；服务器上不存储任何内容。\n\n成员可以互相添加为联系人，以便直接送达和通话。\n\n限制：一个群组最多 256 名成员，一部手机最多保留 200 个具有私密连接的联系人，大团队群主的手机应经常在线。</string>
+	<string name="contact_connection_auth_full">此设备最多只能保留 200 个具有私密连接的联系人。</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="other">未发送给 %d 名成员：他们的应用版本过旧，无法接收这么大的消息。</item>
 	</plurals>

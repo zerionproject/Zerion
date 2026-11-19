@@ -2395,6 +2395,10 @@
 		<item quantity="one">%d medlem er ikke kontakten din og får ikke innleggene dine. Trykk for detaljer.</item>
 		<item quantity="other">%d medlemmer er ikke kontaktene dine og får ikke innleggene dine. Trykk for detaljer.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Legg til kontakt</string>
+	<string name="grouptr_team_help_title">Sett opp et team</string>
+	<string name="grouptr_team_help_text">En person oppretter gruppen og er gruppeeieren.\n\nGruppeeieren lager én invitasjonslenke under Invitasjonslenker (den forblir den samme til den fjernes) og deler den med teamet. Alle åpner Legg til kontakt, limer inn lenken og sender en forespørsel; gruppeeieren godtar hver av dem.\n\nDeretter inviterer gruppeeieren alle medlemmene til gruppen.\n\nMedlemmer som ikke er hverandres kontakter, får innleggene via gruppeeierens telefon når den er på nett. Til da venter innlegget på avsenderens telefon; ingenting lagres på en server.\n\nMedlemmer kan legge til hverandre som kontakter for direkte levering og samtaler.\n\nGrenser: en gruppe har opptil 256 medlemmer, én telefon holder opptil 200 kontakter med privat forbindelse, og telefonen til eieren av et stort team bør ofte være på nett.</string>
+	<string name="contact_connection_auth_full">Denne enheten kan ikke holde mer enn 200 kontakter med privat forbindelse.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Ikke sendt til %d medlem: appen til dette medlemmet er for gammel for så store innlegg.</item>
 		<item quantity="other">Ikke sendt til %d medlemmer: appene deres er for gamle for så store innlegg.</item>

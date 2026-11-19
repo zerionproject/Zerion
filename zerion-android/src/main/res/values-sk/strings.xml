@@ -2450,6 +2450,10 @@
 		<item quantity="many">%d členov nie je vašimi kontaktmi a nedostáva vaše príspevky. Ťuknite a zobrazte podrobnosti.</item>
 		<item quantity="other">%d členov nie je vašimi kontaktmi a nedostáva vaše príspevky. Ťuknite a zobrazte podrobnosti.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Pridať kontakt</string>
+	<string name="grouptr_team_help_title">Nastavenie tímu</string>
+	<string name="grouptr_team_help_text">Jedna osoba vytvorí skupinu a je jej vlastníkom.\n\nVlastník skupiny vytvorí v časti Odkazy pozvánok jeden odkaz (zostáva rovnaký, kým sa neodstráni) a zdieľa ho s tímom. Každý otvorí Pridať kontakt, vloží odkaz a odošle žiadosť; vlastník skupiny každú prijme.\n\nPotom vlastník skupiny pozve všetkých členov do skupiny.\n\nČlenovia, ktorí nie sú navzájom kontaktmi, dostávajú príspevky cez telefón vlastníka skupiny, kedykoľvek je online. Dovtedy príspevok čaká na telefóne odosielateľa; na žiadnom serveri sa nič neukladá.\n\nČlenovia si môžu navzájom pridať kontakty pre priame doručenie a hovory.\n\nLimity: skupina má až 256 členov, jeden telefón drží až 200 kontaktov so súkromným spojením a telefón vlastníka veľkého tímu by mal byť často online.</string>
+	<string name="contact_connection_auth_full">Toto zariadenie nemôže držať viac ako 200 kontaktov so súkromným spojením.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Neodoslané %d členovi: má príliš starú aplikáciu na takto veľké príspevky.</item>
 		<item quantity="few">Neodoslané %d členom: majú príliš starú aplikáciu na takto veľké príspevky.</item>

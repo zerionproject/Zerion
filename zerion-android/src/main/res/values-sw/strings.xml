@@ -2384,6 +2384,10 @@ Umepoteza nenosiri.</string>
 		<item quantity="one">Mwanachama %d si mtu unayewasiliana naye na hapokei machapisho yako. Gusa kwa maelezo.</item>
 		<item quantity="other">Wanachama %d si watu unaowasiliana nao na hawapokei machapisho yako. Gusa kwa maelezo.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Ongeza mawasiliano</string>
+	<string name="grouptr_team_help_title">Kuanzisha timu</string>
+	<string name="grouptr_team_help_text">Mtu mmoja huunda kikundi na ndiye mmiliki wake.\n\nMmiliki wa kikundi huunda kiungo kimoja cha mwaliko chini ya Viungo vya mwaliko (hubaki vilevile hadi kiondolewe) na kukishiriki na timu. Kila mtu hufungua Ongeza mawasiliano, hubandika kiungo na kutuma ombi; mmiliki wa kikundi hukubali kila moja.\n\nKisha mmiliki wa kikundi huwaalika wanachama wote kwenye kikundi.\n\nWanachama ambao si mawasiliano wao kwa wao hupokea machapisho kupitia simu ya mmiliki wa kikundi wakati wowote ikiwa mtandaoni. Hadi wakati huo chapisho husubiri kwenye simu ya mtumaji; hakuna kinachohifadhiwa kwenye seva.\n\nWanachama wanaweza kuongezana kama mawasiliano kwa utoaji wa moja kwa moja na simu.\n\nMipaka: kikundi kina hadi wanachama 256, simu moja huhifadhi hadi mawasiliano 200 yenye muunganisho wa faragha, na simu ya mmiliki wa timu kubwa inapaswa kuwa mtandaoni mara kwa mara.</string>
+	<string name="contact_connection_auth_full">Kifaa hiki hakiwezi kuhifadhi zaidi ya mawasiliano 200 yenye muunganisho wa faragha.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Halijatumwa kwa mwanachama %d: programu yake ni ya zamani mno kwa machapisho makubwa hivi.</item>
 		<item quantity="other">Halijatumwa kwa wanachama %d: programu zao ni za zamani mno kwa machapisho makubwa hivi.</item>

@@ -2390,6 +2390,10 @@
 		<item quantity="one">%d meðlimur er ekki tengiliður þinn og fær ekki færslurnar þínar. Ýttu til að sjá nánar.</item>
 		<item quantity="other">%d meðlimir eru ekki tengiliðir þínir og fá ekki færslurnar þínar. Ýttu til að sjá nánar.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Bæta við tengilið</string>
+	<string name="grouptr_team_help_title">Setja upp teymi</string>
+	<string name="grouptr_team_help_text">Ein manneskja býr til hópinn og er eigandi hans.\n\nEigandi hópsins býr til einn boðstengil undir Boðstenglar (hann helst óbreyttur þar til hann er fjarlægður) og deilir honum með teyminu. Allir opna Bæta við tengilið, líma tengilinn og senda beiðni; eigandi hópsins samþykkir hverja og eina.\n\nSíðan býður eigandi hópsins öllum meðlimum í hópinn.\n\nMeðlimir sem eru ekki tengiliðir hver annars fá færslurnar í gegnum síma eiganda hópsins hvenær sem hann er nettengdur. Þangað til bíður færslan í síma sendanda; ekkert er geymt á netþjóni.\n\nMeðlimir geta bætt hver öðrum við sem tengiliðum fyrir beina afhendingu og símtöl.\n\nTakmörk: hópur hefur allt að 256 meðlimi, einn sími geymir allt að 200 tengiliði með einkatengingu, og sími eiganda stórs teymis ætti að vera oft nettengdur.</string>
+	<string name="contact_connection_auth_full">Þetta tæki getur ekki geymt fleiri en 200 tengiliði með einkatengingu.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Ekki sent til %d meðlims: forritið hjá viðkomandi er of gamalt fyrir svona stórar færslur.</item>
 		<item quantity="other">Ekki sent til %d meðlima: forritið hjá þeim er of gamalt fyrir svona stórar færslur.</item>

@@ -2251,6 +2251,10 @@
 	<plurals name="grouptr_reach_banner">
 		<item quantity="other">구성원 %d명이 내 연락처가 아니므로 내 게시물을 받지 못합니다. 자세히 보려면 누르세요.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">연락처 추가하기</string>
+	<string name="grouptr_team_help_title">팀 설정하기</string>
+	<string name="grouptr_team_help_text">한 사람이 그룹을 만들고 그룹 소유자가 됩니다.\n\n그룹 소유자는 초대 링크에서 초대 링크를 하나 만들고(삭제할 때까지 그대로 유지됨) 팀에 공유합니다. 모두가 연락처 추가하기를 열어 링크를 붙여 넣고 요청을 보내면, 그룹 소유자가 각 요청을 수락합니다.\n\n그다음 그룹 소유자가 모든 구성원을 그룹에 초대합니다.\n\n서로 연락처가 아닌 구성원은 그룹 소유자의 휴대폰이 온라인일 때 그 휴대폰을 통해 게시물을 받습니다. 그때까지 게시물은 보낸 사람의 휴대폰에서 대기하며, 서버에는 아무것도 저장되지 않습니다.\n\n구성원은 직접 전달과 통화를 위해 서로를 연락처로 추가할 수 있습니다.\n\n한도: 그룹은 최대 256명, 휴대폰 한 대는 비공개 연결의 연락처를 최대 200개까지 보관하며, 큰 팀의 그룹 소유자 휴대폰은 자주 온라인 상태여야 합니다.</string>
+	<string name="contact_connection_auth_full">이 기기는 비공개 연결의 연락처를 200개 이상 보관할 수 없습니다.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="other">구성원 %d명에게 보내지 않았습니다. 해당 구성원의 앱이 너무 오래되어 이렇게 큰 게시물을 받을 수 없습니다.</item>
 	</plurals>

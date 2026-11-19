@@ -1844,6 +1844,10 @@
 	</plurals>
 	<string name="grouptr_reach_title">Wie je berichten bereiken</string>
 	<string name="grouptr_reach_explanation">Groepsberichten gaan rechtstreeks tussen leden die elkaars contact zijn, en leden sturen berichten niet door. Deze leden zijn geen contact van je, dus zij krijgen je berichten niet en jij krijgt die van hen niet:\n\n%1$s\n\nVoeg ze toe als contact om ze te bereiken.</string>
+	<string name="grouptr_reach_add_contact">Contact toevoegen</string>
+	<string name="grouptr_team_help_title">Een team opzetten</string>
+	<string name="grouptr_team_help_text">Eén persoon maakt de groep en is de groepseigenaar.\n\nDe groepseigenaar maakt onder Uitnodigingslinks één uitnodigingslink (die blijft gelijk tot hij wordt verwijderd) en deelt die met het team. Iedereen opent Contact toevoegen, plakt de link en stuurt een verzoek; de groepseigenaar accepteert elk verzoek.\n\nDaarna nodigt de groepseigenaar alle leden uit in de groep.\n\nLeden die geen contacten van elkaar zijn, krijgen de berichten via de telefoon van de groepseigenaar zodra die online is. Tot dan wacht een bericht op de telefoon van de afzender; er wordt niets op een server opgeslagen.\n\nLeden kunnen elkaar als contact toevoegen voor directe bezorging en gesprekken.\n\nGrenzen: een groep heeft maximaal 256 leden, één telefoon houdt maximaal 200 contacten met een privéverbinding, en de telefoon van de groepseigenaar van een groot team hoort vaak online te zijn.</string>
+	<string name="contact_connection_auth_full">Dit apparaat kan niet meer dan 200 contacten met een privéverbinding houden.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Niet verzonden naar %d lid: die app is te oud voor zulke grote berichten.</item>
 		<item quantity="other">Niet verzonden naar %d leden: hun app is te oud voor zulke grote berichten.</item>

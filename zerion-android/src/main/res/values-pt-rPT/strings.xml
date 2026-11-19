@@ -2429,6 +2429,10 @@ O teu contacto também pode alterar esta configuração para ambos.</string>
 		<item quantity="many">%d membros não são seus contactos e não recebem as suas mensagens. Toque para ver detalhes.</item>
 		<item quantity="other">%d membros não são seus contactos e não recebem as suas mensagens. Toque para ver detalhes.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Adicionar contacto</string>
+	<string name="grouptr_team_help_title">Configurar uma equipa</string>
+	<string name="grouptr_team_help_text">Uma pessoa cria o grupo e é o seu proprietário.\n\nO proprietário do grupo cria uma ligação de convite em Ligações de convite (mantém-se igual até ser removida) e partilha-a com a equipa. Cada um abre Adicionar contacto, cola a ligação e envia um pedido; o proprietário do grupo aceita cada um.\n\nDepois o proprietário do grupo convida todos os membros para o grupo.\n\nMembros que não são contactos entre si recebem as publicações através do telemóvel do proprietário do grupo sempre que este estiver online. Até então a publicação aguarda no telemóvel do remetente; nada é guardado num servidor.\n\nOs membros podem adicionar-se uns aos outros como contactos para entrega direta e chamadas.\n\nLimites: um grupo tem até 256 membros, um telemóvel mantém até 200 contactos com ligação privada, e o telemóvel do proprietário de uma equipa grande deve estar online com frequência.</string>
+	<string name="contact_connection_auth_full">Este dispositivo não pode manter mais de 200 contactos com ligação privada.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Não enviada a %d membro: a respetiva aplicação é demasiado antiga para mensagens tão grandes.</item>
 		<item quantity="many">Não enviada a %d membros: as respetivas aplicações são demasiado antigas para mensagens tão grandes.</item>

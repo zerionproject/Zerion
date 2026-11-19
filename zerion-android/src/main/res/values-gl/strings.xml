@@ -2386,6 +2386,10 @@
 		<item quantity="one">%d membro non é contacto teu e non recibe as túas publicacións. Toca para ver os detalles.</item>
 		<item quantity="other">%d membros non son contactos teus e non reciben as túas publicacións. Toca para ver os detalles.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Engadir contacto</string>
+	<string name="grouptr_team_help_title">Configurar un equipo</string>
+	<string name="grouptr_team_help_text">Unha persoa crea o grupo e é a súa propietaria.\n\nO propietario do grupo crea unha ligazón de invitación en Ligazóns de invitación (mantense igual ata que se elimina) e compártea co equipo. Cada un abre Engadir contacto, pega a ligazón e envía unha solicitude; o propietario do grupo acepta cada unha.\n\nDespois o propietario do grupo invita a todos os membros ao grupo.\n\nOs membros que non son contactos entre si reciben as publicacións a través do teléfono do propietario do grupo sempre que estea en liña. Ata entón a publicación espera no teléfono do remitente; non se garda nada en ningún servidor.\n\nOs membros poden engadirse entre si como contactos para a entrega directa e as chamadas.\n\nLímites: un grupo ten ata 256 membros, un teléfono garda ata 200 contactos con conexión privada, e o teléfono do propietario dun equipo grande debería estar en liña con frecuencia.</string>
+	<string name="contact_connection_auth_full">Este dispositivo non pode gardar máis de 200 contactos con conexión privada.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Non se enviou a %d membro: a súa aplicación é demasiado antiga para publicacións tan grandes.</item>
 		<item quantity="other">Non se enviou a %d membros: as súas aplicacións son demasiado antigas para publicacións tan grandes.</item>

@@ -2393,6 +2393,10 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 		<item quantity="one">%d anëtar nuk është kontakti yt dhe nuk i merr postimet e tua. Prek për hollësi.</item>
 		<item quantity="other">%d anëtarë nuk janë kontaktet e tua dhe nuk i marrin postimet e tua. Prek për hollësi.</item>
 	</plurals>
+	<string name="grouptr_reach_add_contact">Shtoni kontakt</string>
+	<string name="grouptr_team_help_title">Ngritja e një ekipi</string>
+	<string name="grouptr_team_help_text">Një person e krijon grupin dhe është pronari i tij.\n\nPronari i grupit krijon një lidhje ftese te Lidhjet e ftesës (mbetet e njëjtë derisa të hiqet) dhe e ndan me ekipin. Secili hap Shtoni kontakt, ngjit lidhjen dhe dërgon një kërkesë; pronari i grupit pranon secilën.\n\nPastaj pronari i grupit fton të gjithë anëtarët në grup.\n\nAnëtarët që nuk janë kontakte të njëri-tjetrit marrin postimet përmes telefonit të pronarit të grupit sa herë që ai është në linjë. Deri atëherë postimi pret në telefonin e dërguesit; asgjë nuk ruhet në server.\n\nAnëtarët mund të shtojnë njëri-tjetrin si kontakte për dërgim të drejtpërdrejtë dhe thirrje.\n\nKufijtë: një grup ka deri në 256 anëtarë, një telefon mban deri në 200 kontakte me lidhje private, dhe telefoni i pronarit të një ekipi të madh duhet të jetë shpesh në linjë.</string>
+	<string name="contact_connection_auth_full">Kjo pajisje nuk mund të mbajë më shumë se 200 kontakte me lidhje private.</string>
 	<plurals name="grouptr_post_not_sent_older">
 		<item quantity="one">Nuk iu dërgua %d anëtari: aplikacioni i tij është shumë i vjetër për postime kaq të mëdha.</item>
 		<item quantity="other">Nuk iu dërgua %d anëtarëve: aplikacioni i tyre është shumë i vjetër për postime kaq të mëdha.</item>
