@@ -55,7 +55,7 @@
 
         <ImageView
             android:id="@+id/bookmark_options"
-            android:contentDescription="@string/vault_bookmark_options"
+            android:contentDescription="@string/selection_more_description"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@drawable/ic_more_vert"

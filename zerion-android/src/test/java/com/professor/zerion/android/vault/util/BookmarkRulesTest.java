@@ -75,14 +75,14 @@ public class BookmarkRulesTest {
 		assertNull(BookmarkRules.host("https://exam_ple.org/"));
 		assertNull(BookmarkRules.host("https://.example.org/"));
 		assertNull(BookmarkRules.host("https://example..org/"));
-		assertNull(BookmarkRules.host("https://exam​ple.org/"));
-		assertNull(BookmarkRules.host("https://‮example.org/"));
+		assertNull(BookmarkRules.host("https://exam\u200Bple.org/"));
+		assertNull(BookmarkRules.host("https://\u202Eexample.org/"));
 	}
 
 	@Test
 	public void titlesLoseFormattingAndControlCharacters() {
 		assertEquals("My bank", BookmarkRules.cleanTitle(
-				"‮My​ bank‏"));
+				"\u202EMy\u200B bank\u200F"));
 		assertEquals("a b", BookmarkRules.cleanTitle("  a \n\t b  "));
 		assertEquals("", BookmarkRules.cleanTitle(null));
 	}
@@ -90,7 +90,7 @@ public class BookmarkRulesTest {
 	@Test
 	public void aTitleOfOnlyFormattingCharactersIsRefused() {
 		assertFalse(BookmarkRules.validTitle(BookmarkRules.cleanTitle(
-				"‮​‏ ⁦")));
+				"\u202E\u200B\u200F \u2066")));
 		assertFalse(BookmarkRules.validTitle(BookmarkRules.cleanTitle("   ")));
 		assertFalse(BookmarkRules.validTitle(BookmarkRules.cleanTitle("")));
 		assertTrue(BookmarkRules.validTitle(BookmarkRules.cleanTitle("x")));
