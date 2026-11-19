@@ -68,12 +68,13 @@ public final class BrowserGuard {
 	private static void showDialog(Context ctx, String url,
 			boolean offerInstall) {
 		SecureAlertDialogBuilder b = new SecureAlertDialogBuilder(ctx);
-		if (torBrowserPackage(ctx) != null) {
+		String tor = torBrowserPackage(ctx);
+		if (tor != null) {
 			b.setTitle(R.string.browser_tor_title)
 					.setMessage(ctx.getString(R.string.browser_tor_message)
 							+ "\n\n" + shown(url))
 					.setPositiveButton(R.string.browser_tor_open,
-							(d, w) -> launchSystemBrowser(ctx, url))
+							(d, w) -> launchSystemBrowser(ctx, url, tor))
 					.setNegativeButton(android.R.string.cancel, null);
 		} else {
 			String message = ctx.getString(R.string.browser_warning_message);
@@ -84,7 +85,7 @@ public final class BrowserGuard {
 			b.setTitle(R.string.browser_warning_title)
 					.setMessage(message + "\n\n" + shown(url))
 					.setPositiveButton(R.string.browser_warning_open,
-							(d, w) -> launchSystemBrowser(ctx, url));
+							(d, w) -> launchSystemBrowser(ctx, url, null));
 			if (offerInstall) {
 				b.setNegativeButton(R.string.browser_tor_get,
 						(d, w) -> getTorBrowser(ctx));
@@ -213,21 +214,33 @@ public final class BrowserGuard {
 		}
 	}
 
-	private static void launchSystemBrowser(Context ctx, String url) {
+	private static void launchSystemBrowser(Context ctx, String url,
+			@Nullable String promised) {
 		if (webHost(url) == null) {
 			Toast.makeText(ctx, R.string.link_unsupported,
 					Toast.LENGTH_SHORT).show();
 			return;
 		}
+		Intent i;
 		try {
-			Intent i = new Intent(Intent.ACTION_VIEW,
+			i = new Intent(Intent.ACTION_VIEW,
 					Uri.parse(url).normalizeScheme());
-			i.addCategory(Intent.CATEGORY_BROWSABLE);
-			i.setSelector(null);
-			i.setComponent(null);
-			String tor = torBrowserPackage(ctx);
-			if (tor != null) i.setPackage(tor);
-			i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		} catch (RuntimeException e) {
+			Toast.makeText(ctx, R.string.link_unsupported,
+					Toast.LENGTH_SHORT).show();
+			return;
+		}
+		i.addCategory(Intent.CATEGORY_BROWSABLE);
+		i.setSelector(null);
+		i.setComponent(null);
+		if (promised != null && !handles(ctx, promised, i)) {
+			showDialog(ctx, url, true);
+			return;
+		}
+		String tor = promised != null ? promised : torBrowserPackage(ctx);
+		if (tor != null) i.setPackage(tor);
+		i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		try {
 			ctx.startActivity(i);
 		} catch (RuntimeException e) {
 			Toast.makeText(ctx, R.string.updates_no_browser,

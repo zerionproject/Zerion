@@ -25,6 +25,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -145,6 +146,39 @@ public class BrowserGuardTorBrowserTest {
 		assertNull(i.getSelector());
 		assertNull(i.getComponent());
 		assertTrue(i.hasCategory(Intent.CATEGORY_BROWSABLE));
+		assertEquals("https://example.org/page", i.getDataString());
+	}
+
+	@Test
+	public void aTorBrowserRemovedAfterTheDialogIsNotReplacedByAnotherBrowser() {
+		FragmentActivity a = host();
+		installViewer(a, "com.example.browser", "http", "https");
+		installTorBrowser(a, BrowserGuard.TOR_BROWSER);
+		AlertDialog d = dialog(a, "https://example.org/page");
+		assertEquals(a.getString(R.string.browser_tor_open),
+				button(d, DialogInterface.BUTTON_POSITIVE));
+		shadowOf(a.getPackageManager()).removeActivity(new ComponentName(
+				BrowserGuard.TOR_BROWSER, BrowserGuard.TOR_BROWSER + ".Main"));
+		assertNull(BrowserGuard.torBrowserPackage(a));
+		assertNull("no implicit intent is started",
+				click(a, d, DialogInterface.BUTTON_POSITIVE));
+		AlertDialog warning = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull(warning);
+		assertNotSame(d, warning);
+		assertTrue(warning.isShowing());
+		String text = message(warning);
+		assertTrue(text, text.contains(
+				a.getString(R.string.browser_warning_message)));
+		assertTrue(text, text.contains(
+				a.getString(R.string.browser_tor_install_hint)));
+		assertTrue(text, text.endsWith("https://example.org/page"));
+		assertEquals(a.getString(R.string.browser_warning_open),
+				button(warning, DialogInterface.BUTTON_POSITIVE));
+		assertEquals(a.getString(R.string.browser_tor_get),
+				button(warning, DialogInterface.BUTTON_NEGATIVE));
+		Intent i = click(a, warning, DialogInterface.BUTTON_POSITIVE);
+		assertNotNull(i);
+		assertNull(i.getPackage());
 		assertEquals("https://example.org/page", i.getDataString());
 	}
 
