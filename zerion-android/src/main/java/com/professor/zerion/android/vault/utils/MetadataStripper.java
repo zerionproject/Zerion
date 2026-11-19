@@ -102,6 +102,20 @@ public class MetadataStripper {
 		}
 	}
 
+	public byte[] stripOfficeMetadataOrThrow(byte[] officeData)
+			throws com.professor.zerion.android.attachment
+			.MediaRefusedException {
+		try {
+			return stripOfficeMetadata(officeData);
+		} catch (IOException | RuntimeException e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.cannotClean(new IOException(e));
+		} catch (OutOfMemoryError e) {
+			throw com.professor.zerion.android.attachment
+					.MediaRefusedException.tooLarge("file too large to clean");
+		}
+	}
+
 	static final String UNKNOWN_TYPE = "application/octet-stream";
 
 	static boolean isPlainText(byte[] data) {
