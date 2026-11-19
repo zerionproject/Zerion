@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="?attr/zerionColorBackground"
+	android:fitsSystemWindows="true"
+	android:orientation="vertical">
+
+	<include layout="@layout/toolbar" />
+
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1">
+
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingHorizontal="20dp"
+			android:paddingTop="16dp"
+			android:paddingBottom="24dp">
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="@string/clean_file_intro"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp" />
+
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/cleanFileChoose"
+				style="@style/Zerion.Button.Primary"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="16dp"
+				android:text="@string/clean_file_choose" />
+
+			<TextView
+				android:id="@+id/cleanFileName"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="24dp"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="15sp"
+				android:textStyle="bold"
+				android:visibility="gone" />
+
+			<TextView
+				android:id="@+id/cleanFileOriginal"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="4dp"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="13sp"
+				android:visibility="gone" />
+
+			<com.google.android.material.progressindicator.CircularProgressIndicator
+				android:id="@+id/cleanFileProgress"
+				style="@style/Zerion.Progress.Circular"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_gravity="center_horizontal"
+				android:layout_marginTop="24dp"
+				android:indeterminate="true"
+				android:visibility="gone" />
+
+			<TextView
+				android:id="@+id/cleanFileResult"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="16dp"
+				android:accessibilityLiveRegion="polite"
+				android:textColor="@color/zerion_text_primary"
+				android:textSize="14sp"
+				android:visibility="gone" />
+
+			<TextView
+				android:id="@+id/cleanFileExplanation"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="4dp"
+				android:textColor="@color/zerion_text_secondary"
+				android:textSize="13sp"
+				android:visibility="gone" />
+
+			<LinearLayout
+				android:id="@+id/cleanFileActions"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="16dp"
+				android:orientation="horizontal"
+				android:visibility="gone">
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/cleanFileShare"
+					style="@style/Zerion.Button.Primary"
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_marginEnd="8dp"
+					android:layout_weight="1"
+					android:text="@string/share_button" />
+
+				<com.google.android.material.button.MaterialButton
+					android:id="@+id/cleanFileSave"
+					style="@style/Zerion.Button.Outlined"
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:text="@string/save_file" />
+
+			</LinearLayout>
+
+		</LinearLayout>
+
+	</ScrollView>
+
+</LinearLayout>

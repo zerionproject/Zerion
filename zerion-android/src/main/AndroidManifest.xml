@@ -723,6 +723,14 @@
 		</service>
 
 		<activity
+			android:name=".android.attachment.CleanFileActivity"
+			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection"
+			android:exported="false"
+			android:label="@string/clean_file_title"
+			android:parentActivityName="com.professor.zerion.android.navdrawer.NavDrawerActivity"
+			android:theme="@style/ZerionTheme.NoActionBar" />
+
+		<activity
 			android:name=".android.attachment.SaveCleanCopyActivity"
 			android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density|fontScale|locale|layoutDirection"
 			android:excludeFromRecents="true"

@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @NotNullByDefault
 public final class CacheSweeper {
 
+	public static final String CLEAN_SHARE_DIR = "clean_share";
+
 	private static final String[] TEMP_FILE_PREFIXES = {
 			"vault_pdf_",
 			"vview",
@@ -33,6 +35,7 @@ public final class CacheSweeper {
 	private static final String[] TEMP_DIRS = {
 			"vault_share",
 			"zenc_share",
+			CLEAN_SHARE_DIR,
 			"media_docs",
 			"camera_photos",
 			"grouptr_view",
@@ -58,6 +61,7 @@ public final class CacheSweeper {
 	private static final String[] HANDOFF_CACHE_DIRS = {
 			"vault_share",
 			"zenc_share",
+			CLEAN_SHARE_DIR,
 			"camera_photos",
 			ExternalHandoff.DIR,
 	};
