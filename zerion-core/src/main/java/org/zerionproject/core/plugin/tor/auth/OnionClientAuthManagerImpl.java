@@ -545,12 +545,16 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 
 	private boolean hasRoomFor(Transaction txn, OnionAuthRecord r)
 			throws DbException {
-		if (r.authorizesPeer()) return true;
+		return r.authorizesPeer()
+				|| countAuthorizing(txn) < MAX_AUTHORIZED_CLIENTS;
+	}
+
+	private int countAuthorizing(Transaction txn) throws DbException {
 		int authorizing = 0;
-		for (OnionAuthRecord other : store.loadAll(txn)) {
-			if (other.authorizesPeer()) authorizing++;
+		for (OnionAuthRecord r : store.loadAll(txn)) {
+			if (r.authorizesPeer()) authorizing++;
 		}
-		return authorizing < MAX_AUTHORIZED_CLIENTS;
+		return authorizing;
 	}
 
 	private void refuseForCapacity(Transaction txn, OnionAuthRecord r)
@@ -1017,6 +1021,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					.TransportProperties> remote = transportPropertyManager
 					.get().getRemoteProperties(TorConstants.ID);
 			db.transaction(false, txn -> {
+				int authorizing = -1;
 				for (Map.Entry<ContactId, org.zerionproject.core.api.properties
 						.TransportProperties> e : remote.entrySet()) {
 					String v = e.getValue().get(
@@ -1025,7 +1030,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					OnionAuthRecord r = store.load(txn, e.getKey());
 					if (r.state != LEGACY) continue;
 					if (hooks.skipsNewNegotiations(txn)) continue;
-					if (!hasRoomFor(txn, r)) {
+					if (authorizing < 0) authorizing = countAuthorizing(txn);
+					if (authorizing >= MAX_AUTHORIZED_CLIENTS) {
 						refuseForCapacity(txn, r);
 						continue;
 					}
