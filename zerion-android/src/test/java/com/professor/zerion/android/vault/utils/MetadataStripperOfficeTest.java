@@ -348,4 +348,85 @@ public class MetadataStripperOfficeTest {
 		assertEquals(WORKBOOK_BEFORE + WORKBOOK_AFTER,
 				text(out, "xl/workbook.xml"));
 	}
+
+	@Test
+	public void everyEntryOfTheCleanCopyIsDatedTheFirstOf1980()
+			throws Exception {
+		byte[] clean = clean(zip(docx()));
+		java.util.Calendar expected =
+				new java.util.GregorianCalendar(1980, 0, 1, 0, 0, 0);
+		int entries = 0;
+		try (ZipInputStream zin =
+				new ZipInputStream(new ByteArrayInputStream(clean))) {
+			ZipEntry e;
+			while ((e = zin.getNextEntry()) != null) {
+				entries++;
+				java.util.Calendar got = java.util.Calendar.getInstance();
+				got.setTimeInMillis(e.getTime());
+				assertEquals(e.getName(), expected.get(java.util.Calendar.YEAR),
+						got.get(java.util.Calendar.YEAR));
+				assertEquals(e.getName(), 0,
+						got.get(java.util.Calendar.DAY_OF_YEAR) - 1);
+				assertEquals(e.getName(), 0,
+						got.get(java.util.Calendar.HOUR_OF_DAY));
+			}
+		}
+		assertTrue(entries > 0);
+	}
+
+	@Test
+	public void aContentTypesPartOverFourMegabytesIsRefused()
+			throws Exception {
+		Map<String, String> parts = docx();
+		StringBuilder big = new StringBuilder(parts.get("[Content_Types].xml"));
+		String filler = "<Default Extension=\"x\" ContentType=\"a/b\"/>";
+		while (big.length() < 4 * 1024 * 1024 + 1024) big.append(filler);
+		parts.put("[Content_Types].xml", big.toString());
+		try {
+			clean(zip(parts));
+			org.junit.Assert.fail();
+		} catch (com.professor.zerion.android.attachment
+				.MediaRefusedException expected) {
+		}
+	}
+
+	@Test
+	public void aDocumentWithTooManyPartsIsRefused() throws Exception {
+		Map<String, String> parts = docx();
+		for (int i = 0; i <= 10_000; i++) {
+			parts.put("word/media/image" + i + ".bin", "x");
+		}
+		try {
+			clean(zip(parts));
+			org.junit.Assert.fail();
+		} catch (com.professor.zerion.android.attachment
+				.MediaRefusedException expected) {
+		}
+	}
+
+	@Test
+	public void manyUnclosedOverrideTagsAreCleanedInLinearTime() {
+		StringBuilder b = new StringBuilder("<Types>");
+		for (int i = 0; i < 200_000; i++) b.append("<Override ");
+		b.append("</Types>");
+		String xml = b.toString();
+		long start = System.nanoTime();
+		String out = MetadataStripper.cleanOfficeContentTypes(xml);
+		long ms = (System.nanoTime() - start) / 1_000_000;
+		assertEquals(xml, out);
+		assertTrue("took " + ms + " ms", ms < 5_000);
+	}
+
+	@Test
+	public void elementRemovalKeepsEverythingAroundTheElement() {
+		String xml = "<r><a:Override PartName=\"/docProps/core.xml\"/>"
+				+ "<Override PartName=\"/word/document.xml\"/>"
+				+ "<Override PartName=\"/docProps/app.xml\"></Override>"
+				+ "<Override PartName=\"/docProps/x.xml\">keep</Override>"
+				+ "<!-- <Override PartName=\"/docProps/core.xml\"/> --></r>";
+		assertEquals("<r><Override PartName=\"/word/document.xml\"/>"
+						+ "<Override PartName=\"/docProps/x.xml\">keep</Override>"
+						+ "<!-- <Override PartName=\"/docProps/core.xml\"/> --></r>",
+				MetadataStripper.cleanOfficeContentTypes(xml));
+	}
 }

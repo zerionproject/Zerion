@@ -35,8 +35,9 @@ public class BookmarkRulesTest {
 		assertEquals("example.org",
 				BookmarkRules.host("HTTP://Example.ORG/path?q=1#frag"));
 		assertEquals("example.org", BookmarkRules.host("https://example.org:8443/"));
-		assertEquals("example.org",
-				BookmarkRules.host("https://user:secret@example.org/"));
+		assertNull(BookmarkRules.host("https://user:pw@example.org/"));
+		assertNull(BookmarkRules.host("https://bank.example@evil.com/"));
+		assertNull(BookmarkRules.host("https://user:secret@example.org/"));
 		assertEquals("[2001:db8::1]",
 				BookmarkRules.host("http://[2001:db8::1]:8080/x"));
 	}

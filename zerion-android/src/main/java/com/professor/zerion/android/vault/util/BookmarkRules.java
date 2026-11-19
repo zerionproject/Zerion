@@ -68,8 +68,8 @@ public final class BookmarkRules {
 			end++;
 		}
 		String authority = url.substring(start, end);
-		if (authority.isEmpty()) return null;
-		String host = authority.substring(authority.lastIndexOf('@') + 1);
+		if (authority.isEmpty() || authority.indexOf('@') >= 0) return null;
+		String host = authority;
 		if (host.startsWith("[")) {
 			int close = host.indexOf(']');
 			if (close < 2) return null;

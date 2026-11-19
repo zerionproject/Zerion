@@ -74,18 +74,34 @@ public final class CleanFilePolicy {
 		return OFFICE_PREFIX;
 	}
 
+	static final int MAX_ENTRIES = 10_000;
+	static final long MAX_INFLATED = 512L * 1024 * 1024;
+
 	private static int parts(byte[] data) {
 		if (!isZip(data)) return 0;
 		int found = 0;
 		try (ZipInputStream zin =
 				new ZipInputStream(new ByteArrayInputStream(data))) {
 			ZipEntry e;
+			int entries = 0;
+			long inflated = 0;
+			byte[] buf = new byte[8192];
+			int main = WORD_PART | SHEET_PART | SLIDES_PART;
 			while ((e = zin.getNextEntry()) != null) {
+				if (++entries > MAX_ENTRIES) return 0;
 				String lower = e.getName().toLowerCase(Locale.ROOT);
 				if (lower.equals(CONTENT_TYPES)) found |= CONTENT_TYPES_PART;
 				else if (lower.startsWith("word/")) found |= WORD_PART;
 				else if (lower.startsWith("xl/")) found |= SHEET_PART;
 				else if (lower.startsWith("ppt/")) found |= SLIDES_PART;
+				if ((found & CONTENT_TYPES_PART) != 0 && (found & main) != 0) {
+					break;
+				}
+				int read;
+				while ((read = zin.read(buf)) > 0) {
+					inflated += read;
+					if (inflated > MAX_INFLATED) return 0;
+				}
 			}
 		} catch (IOException | RuntimeException e) {
 			return 0;

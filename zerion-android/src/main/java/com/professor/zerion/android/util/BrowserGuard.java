@@ -113,8 +113,10 @@ public final class BrowserGuard {
 		if (user < start) user = start;
 		int port = url.lastIndexOf(':', end - 1);
 		if (port < user) port = end;
-		if (url.substring(user, port).equalsIgnoreCase(host)) return clean;
-		return DisplayNames.clean(url.substring(0, user) + host
+		if (user == start && url.substring(user, port).equalsIgnoreCase(host)) {
+			return clean;
+		}
+		return DisplayNames.clean(url.substring(0, start) + host
 				+ url.substring(port));
 	}
 
