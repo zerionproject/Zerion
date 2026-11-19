@@ -25,6 +25,7 @@ import org.zerionproject.core.api.plugin.OnionClientAuthManager;
 import org.zerionproject.core.api.plugin.OnionTargets;
 import org.zerionproject.core.api.plugin.TorConstants;
 import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
+import org.zerionproject.core.api.plugin.event.OnionClientAuthCapacityEvent;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
 import org.zerionproject.core.api.properties.event.RemoteTransportPropertiesUpdatedEvent;
 import org.zerionproject.core.api.sync.Group;
@@ -126,6 +127,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 	private final Map<ContactId, Long> seenWritten = new ConcurrentHashMap<>();
 	private final Map<ContactId, Long> contactWritten =
 			new ConcurrentHashMap<>();
+	private final Set<ContactId> capacityRefused =
+			ConcurrentHashMap.newKeySet();
 	private final java.security.SecureRandom rotationRandom =
 			new java.security.SecureRandom();
 
@@ -401,6 +404,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		OnionAuthRecord r = store.load(txn, c.getId());
 		if (r.state != LEGACY) store.clear(txn, c.getId());
 		cache.remove(c.getId());
+		capacityRefused.remove(c.getId());
 	}
 
 	@Override
@@ -408,6 +412,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			throws DbException {
 		Group g = getContactGroup(c);
 		if (db.containsGroup(txn, g.getId())) db.removeGroup(txn, g);
+		capacityRefused.remove(c.getId());
 		OnionAuthRecord r = store.load(txn, c.getId());
 		if (r.state == LEGACY) {
 			cache.remove(c.getId());
@@ -510,6 +515,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				&& now - r.rekeyedMs < REKEY_INTERVAL_MS) {
 			return;
 		}
+		if (!hasRoomFor(txn, r)) {
+			refuseForCapacity(txn, r);
+			return;
+		}
 		if (r.state == LEGACY) {
 			if (hooks.skipsNewNegotiations(txn)) return;
 			startNegotiation(txn, r);
@@ -530,7 +539,30 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 		store.save(txn, r);
 		cache(r);
 		ContactId id = r.contactId;
+		capacityRefused.remove(id);
 		txn.attach(() -> ioExecutor.execute(() -> authorize(id)));
+	}
+
+	private boolean hasRoomFor(Transaction txn, OnionAuthRecord r)
+			throws DbException {
+		if (r.authorizesPeer()) return true;
+		int authorizing = 0;
+		for (OnionAuthRecord other : store.loadAll(txn)) {
+			if (other.authorizesPeer()) authorizing++;
+		}
+		return authorizing < MAX_AUTHORIZED_CLIENTS;
+	}
+
+	private void refuseForCapacity(Transaction txn, OnionAuthRecord r)
+			throws DbException {
+		ContactId c = r.contactId;
+		if (r.state == AUTH_NEGOTIATING && !r.authorizesPeer()) {
+			store.clear(txn, c);
+			cache.remove(c);
+		}
+		if (capacityRefused.add(c)) {
+			txn.attach(new OnionClientAuthCapacityEvent(c));
+		}
 	}
 
 	private void startRekey(Transaction txn, OnionAuthRecord r,
@@ -918,7 +950,8 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			ServiceRecord svc = store.loadService(txn);
 			return new OnionAuthDiagnostics(r.state, r.commitSent, r.repairs,
 					r.rekeying, r.silenceRepairs, r.openDials, svc.gen,
-					r.peerGen, holdsOldAddress(txn, r, svc));
+					r.peerGen, holdsOldAddress(txn, r, svc),
+					capacityRefused.contains(c));
 		});
 	}
 
@@ -992,6 +1025,10 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 					OnionAuthRecord r = store.load(txn, e.getKey());
 					if (r.state != LEGACY) continue;
 					if (hooks.skipsNewNegotiations(txn)) continue;
+					if (!hasRoomFor(txn, r)) {
+						refuseForCapacity(txn, r);
+						continue;
+					}
 					startNegotiation(txn, r);
 					sendOffer(txn, r);
 				}
@@ -1104,9 +1141,6 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 				db.transaction(false, txn -> store.saveService(txn, svc));
 			}
 			return false;
-		}
-		if (keys.size() > MAX_AUTHORIZED_CLIENTS) {
-			throw new OnionServiceControl.CapacityException();
 		}
 		Set<String> keySet = keySet(keys);
 		try {
@@ -1477,6 +1511,7 @@ public class OnionClientAuthManagerImpl implements OnionClientAuthManager,
 			tickUnguarded();
 		} catch (RuntimeException ignored) {
 		}
+		if (!capacityRefused.isEmpty()) evaluateOffers();
 	}
 
 	private void tickUnguarded() {

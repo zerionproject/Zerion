@@ -269,7 +269,8 @@ public class ContactConnectionDiagnosticsImpl
 			case AUTH_NEGOTIATING:
 				return Authorization.SETTING_UP;
 			default:
-				return Authorization.NOT_SUPPORTED;
+				return a.isHeldByCapacity() ? Authorization.FULL
+						: Authorization.NOT_SUPPORTED;
 		}
 	}
 }

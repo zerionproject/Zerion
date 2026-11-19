@@ -56,7 +56,8 @@ public final class ContactConnectionSnapshot {
 		ACTIVE,
 		RENEWING,
 		REACHING,
-		REVOKED
+		REVOKED,
+		FULL
 	}
 
 	private final Tor tor;

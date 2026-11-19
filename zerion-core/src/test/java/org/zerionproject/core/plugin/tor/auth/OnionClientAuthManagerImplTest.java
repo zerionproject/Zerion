@@ -16,6 +16,7 @@ import org.zerionproject.core.api.db.EventAction;
 import org.zerionproject.core.api.identity.Author;
 import org.zerionproject.core.api.identity.AuthorId;
 import org.zerionproject.core.api.plugin.event.ConnectionOpenedEvent;
+import org.zerionproject.core.api.plugin.event.OnionClientAuthCapacityEvent;
 import org.zerionproject.core.api.sync.event.MessageAddedEvent;
 import org.zerionproject.core.api.db.Metadata;
 import org.zerionproject.core.api.db.TaskAction;
@@ -107,6 +108,8 @@ public class OnionClientAuthManagerImplTest {
 	private final Map<ContactId, TransportProperties> remote = new HashMap<>();
 	private final Map<ContactId, List<OnionAuthRecords.Record>> sent =
 			new HashMap<>();
+	private final List<org.zerionproject.core.api.event.Event> events =
+			Collections.synchronizedList(new ArrayList<>());
 
 	private OnionClientAuthManagerImpl manager;
 	private boolean deferring = false;
@@ -359,6 +362,19 @@ public class OnionClientAuthManagerImplTest {
 			will(returnValue(null));
 			allowing(eventBus).broadcast(with(any(
 					org.zerionproject.core.api.event.Event.class)));
+			will(new Action() {
+				@Override
+				public Object invoke(Invocation invocation) {
+					events.add((org.zerionproject.core.api.event.Event)
+							invocation.getParameter(0));
+					return null;
+				}
+
+				@Override
+				public void describeTo(org.hamcrest.Description d) {
+					d.appendText("records a broadcast event");
+				}
+			});
 			allowing(transportPropertyManager).getRemoteProperties(
 					TorConstants.ID);
 			will(new Action() {
@@ -394,13 +410,14 @@ public class OnionClientAuthManagerImplTest {
 		manager.attachTor(control, 4444, dialed::add);
 	}
 
-	private static void commit(Transaction txn) {
+	private void commit(Transaction txn) {
 		List<CommitAction> actions = txn.getActions();
 		if (actions == null) return;
 		for (CommitAction a : actions) {
 			a.accept(new CommitAction.Visitor() {
 				@Override
 				public void visit(EventAction eventAction) {
+					eventBus.broadcast(eventAction.getEvent());
 				}
 
 				@Override
@@ -2258,5 +2275,172 @@ public class OnionClientAuthManagerImplTest {
 		assertEquals(before + 1, publishes());
 		assertTrue(control.authorizes(onion, peerPub(13)));
 		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+	}
+
+	private int seeded = 0;
+
+	private List<ContactId> seedAuthorizedContacts(int n) throws Exception {
+		List<ContactId> ids = new ArrayList<>();
+		for (int i = 0; i < n; i++) {
+			ContactId id = new ContactId(10_000 + seeded++);
+			OnionAuthRecord r = new OnionAuthRecord(id);
+			r.state = State.AUTH_REQUIRED;
+			byte[] pub = new byte[32];
+			random.nextBytes(pub);
+			r.peerPublicKey = pub;
+			r.peerOnion = PEER_ONION_2;
+			r.commitSent = true;
+			r.peerCommitReceived = true;
+			r.commitResent = true;
+			r.nextRepairMs = Long.MAX_VALUE;
+			r.lastSeenMs = now.get();
+			store.save(null, r);
+			ids.add(id);
+		}
+		return ids;
+	}
+
+	private int capacityEvents(ContactId c) {
+		int n = 0;
+		synchronized (events) {
+			for (org.zerionproject.core.api.event.Event e : events) {
+				if (e instanceof OnionClientAuthCapacityEvent
+						&& ((OnionClientAuthCapacityEvent) e).getContactId()
+						.equals(c)) {
+					n++;
+				}
+			}
+		}
+		return n;
+	}
+
+	@Test
+	public void testTheTwoHundredthContactIsAuthorizedAndPublished()
+			throws Exception {
+		seedAuthorizedContacts(OnionClientAuthManagerImpl
+				.MAX_AUTHORIZED_CLIENTS - 1);
+		peerAdvertisesSupport(c1);
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		String onion = service().onion;
+		assertNotNull(onion);
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS,
+				control.keysByOnion.get(onion).size());
+		assertFalse(manager.diagnostics(c1.getId()).isHeldByCapacity());
+		assertEquals(0, capacityEvents(c1.getId()));
+	}
+
+	@Test
+	public void testTheTwoHundredAndFirstContactIsRefusedAndTheOthersStayPublished()
+			throws Exception {
+		seedAuthorizedContacts(OnionClientAuthManagerImpl
+				.MAX_AUTHORIZED_CLIENTS);
+		manager.detachTor();
+		manager.attachTor(control, 4444, dialed::add);
+		String onion = service().onion;
+		assertNotNull(onion);
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS,
+				control.keysByOnion.get(onion).size());
+		int before = publishes();
+		peerAdvertisesSupport(c1);
+		assertEquals(State.LEGACY, record(c1).state);
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_OFFER));
+		assertTrue(manager.diagnostics(c1.getId()).isHeldByCapacity());
+		assertEquals(1, capacityEvents(c1.getId()));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertEquals(State.LEGACY, record(c1).state);
+		assertNull(record(c1).peerPublicKey);
+		assertFalse(control.authorizes(onion, peerPub(1)));
+		assertFalse(control.commands.contains("CRED " + PEER_ONION));
+		assertNull(lastSent(c1, OnionAuthRecords.TYPE_READY));
+		assertEquals(onion, service().onion);
+		assertTrue(published(onion));
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS,
+				control.keysByOnion.get(onion).size());
+		assertEquals(before, publishes());
+		assertEquals(1, capacityEvents(c1.getId()));
+		assertNull(manager.getDialOnion(c1.getId()));
+		assertTrue(manager.acceptsInbound(c1.getId(), false));
+	}
+
+	@Test
+	public void testAnOfferThatArrivesAfterTheSetFilledUpIsRefused()
+			throws Exception {
+		seedAuthorizedContacts(OnionClientAuthManagerImpl
+				.MAX_AUTHORIZED_CLIENTS - 1);
+		peerAdvertisesSupport(c1);
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		assertNotNull(lastSent(c1, OnionAuthRecords.TYPE_OFFER));
+		seedAuthorizedContacts(1);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		assertEquals(State.LEGACY, record(c1).state);
+		assertNull(record(c1).peerPublicKey);
+		assertNull(record(c1).dialPrivateKey);
+		assertTrue(manager.diagnostics(c1.getId()).isHeldByCapacity());
+		assertEquals(1, capacityEvents(c1.getId()));
+		String onion = service().onion;
+		if (onion != null) assertFalse(control.authorizes(onion, peerPub(1)));
+	}
+
+	@Test
+	public void testARefusedContactIsTakenOnceAnotherContactIsGone()
+			throws Exception {
+		List<ContactId> seeded = seedAuthorizedContacts(
+				OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS);
+		peerAdvertisesSupport(c1);
+		assertEquals(State.LEGACY, record(c1).state);
+		assertTrue(manager.diagnostics(c1.getId()).isHeldByCapacity());
+		manager.tickForTest();
+		assertEquals(State.LEGACY, record(c1).state);
+		assertEquals(1, capacityEvents(c1.getId()));
+		store.clear(null, seeded.get(0));
+		manager.tickForTest();
+		assertEquals(State.AUTH_NEGOTIATING, record(c1).state);
+		assertNotNull(lastSent(c1, OnionAuthRecords.TYPE_OFFER));
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(1)));
+		String onion = service().onion;
+		assertNotNull(onion);
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS,
+				control.keysByOnion.get(onion).size());
+		assertFalse(manager.diagnostics(c1.getId()).isHeldByCapacity());
+	}
+
+	@Test
+	public void testAStoredSetAboveTheCapIsStillRepublished()
+			throws Exception {
+		seedAuthorizedContacts(OnionClientAuthManagerImpl
+				.MAX_AUTHORIZED_CLIENTS + 1);
+		manager.detachTor();
+		manager.attachTor(control, 4444, dialed::add);
+		String onion = service().onion;
+		assertNotNull(onion);
+		assertTrue(published(onion));
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS + 1,
+				control.keysByOnion.get(onion).size());
+		peerAdvertisesSupport(c1);
+		assertEquals(State.LEGACY, record(c1).state);
+		assertTrue(manager.diagnostics(c1.getId()).isHeldByCapacity());
+	}
+
+	@Test
+	public void testARenewalOfTheTwoHundredthKeyIsNotRefused()
+			throws Exception {
+		seedAuthorizedContacts(OnionClientAuthManagerImpl
+				.MAX_AUTHORIZED_CLIENTS - 1);
+		activate(c1, g1, PEER_ONION, peerPub(1));
+		String onion = service().onion;
+		assertEquals(State.AUTH_REQUIRED, record(c1).state);
+		now.addAndGet(OnionClientAuthManagerImpl.REKEY_INTERVAL_MS);
+		receive(c1, g1, OnionAuthRecords.offer(1, PEER_ONION, peerPub(2)));
+		assertTrue(record(c1).rekeying);
+		assertArrayEquals(peerPub(2), record(c1).peerPublicKey);
+		assertTrue(control.authorizes(onion, peerPub(2)));
+		assertTrue(control.authorizes(onion, peerPub(1)));
+		assertEquals(OnionClientAuthManagerImpl.MAX_AUTHORIZED_CLIENTS + 1,
+				control.keysByOnion.get(onion).size());
+		assertFalse(manager.diagnostics(c1.getId()).isHeldByCapacity());
+		assertEquals(0, capacityEvents(c1.getId()));
 	}
 }

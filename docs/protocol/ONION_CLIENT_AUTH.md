@@ -665,8 +665,22 @@ confirmed on a device:
 - Capacity is bounded by the descriptor size limit (50 000 bytes); each
   authorized client adds one padded `auth-client` line to the
   superencrypted layer, which gives room for several hundred clients, far
-  above any contact list here. The implementation caps the set and refuses
-  beyond the cap rather than let Tor fail the upload.
+  above any contact list here. The implementation caps the set at 200
+  contacts (`MAX_AUTHORIZED_CLIENTS`) and enforces the cap where a
+  contact's key is admitted, not at publish time: a peer's `AUTH_OFFER`
+  for a contact that does not yet authorize a key, and the start of a
+  negotiation with a contact that advertises support, are refused while
+  200 contacts already authorize a key. The refused contact stays on the
+  open address (state `LEGACY`), no offer is sent to it, an
+  `OnionClientAuthCapacityEvent` names it, and its connection details
+  show "This device cannot hold more than 200 contacts with a private
+  connection." The service is republished for the 200 as before; a
+  republish is never skipped for the size of the set, and a stored set
+  above the cap (a key change briefly holds two keys for one contact) is
+  published in full. Once a contact is removed, the next tick or the next
+  remote property update offers the private connection to a refused
+  contact again. Up to 3.0.18 the cap was checked at publish time and a
+  set above it left the service unpublished without a word.
 - `DEL_ONION` removes the service from this Tor instance and does not close
   existing connections (control specification); section 7 closes them.
 - `ONION_CLIENT_AUTH_ADD <56-char address> x25519:<base64 private key>`
