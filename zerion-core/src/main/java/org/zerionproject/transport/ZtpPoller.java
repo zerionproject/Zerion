@@ -76,6 +76,7 @@ public class ZtpPoller implements EventListener {
 	private final Map<Integer, ReachOut> reachOuts = new ConcurrentHashMap<>();
 	private final Map<Integer, Long> slowReachOutAt = new ConcurrentHashMap<>();
 	private final Map<Integer, Long> connectedSince = new ConcurrentHashMap<>();
+	private final Set<Integer> quietWaited = ConcurrentHashMap.newKeySet();
 	private volatile long arrivedFrom = 0;
 	private volatile long arrivedUntil = 0;
 	private volatile boolean arrivedRefreshed = false;
@@ -151,9 +152,11 @@ public class ZtpPoller implements EventListener {
 
 	/**
 	 * Tells the poller whether the device is quiet: the app is in the
-	 * background and nothing holds the Tor wake lock. While it is, a contact
-	 * that has not been connected for {@link #QUIET_OFFLINE_MS} is retried at
-	 * the slow cadence so that failing dials do not keep the device awake.
+	 * background, no call runs and no connection carries data. The check is
+	 * sampled before each dial; while it is true, a contact that has not been
+	 * connected for {@link #QUIET_OFFLINE_MS} is retried at the slow cadence
+	 * so that failing dials do not keep the device awake. The slow waits are
+	 * dropped on the first poll after the device stops being quiet.
 	 */
 	public void setQuietCheck(java.util.function.BooleanSupplier quiet) {
 		this.quiet = quiet;
@@ -215,6 +218,10 @@ public class ZtpPoller implements EventListener {
 
 	private void pollAll() {
 		if (!running) return;
+		if (!quietWaited.isEmpty() && !quiet.getAsBoolean()) {
+			for (Integer contactId : quietWaited) nextDialAt.remove(contactId);
+			quietWaited.clear();
+		}
 		if (transport.isNetworkDegraded()) {
 			long now = clock.getAsLong();
 			if (now >= nextRestartAt) {
@@ -348,6 +355,7 @@ public class ZtpPoller implements EventListener {
 			if (!running) return;
 			if (!connecting.add(contactId)) return;
 			boolean dialed = false;
+			boolean wasQuiet = false;
 			OverlayTransport.DialResult result =
 					OverlayTransport.DialResult.NOT_CONNECTED;
 			String address = null;
@@ -357,12 +365,14 @@ public class ZtpPoller implements EventListener {
 				dialed = true;
 				boolean fast = failStreak.getOrDefault(contactId, 0)
 						< FAST_DIAL_BURST;
+				wasQuiet = quiet.getAsBoolean();
 				result = transport.dial(contactId, address, fast, open);
 			} catch (Exception e) {
 			} finally {
 				connecting.remove(contactId);
 				if (dialed && result.isAttempted()) {
-					recordDialOutcome(contactId, result.getSessionMs(), epoch);
+					recordDialOutcome(contactId, result.getSessionMs(), epoch,
+							wasQuiet);
 					reportPendingOnionOutcome(contact.getId(), address,
 							result.isAuthenticated());
 				} else if (dialed) {
@@ -396,13 +406,20 @@ public class ZtpPoller implements EventListener {
 		}
 	}
 
-	private void recordDialOutcome(int contactId, long sessionMs, long epoch) {
+	/**
+	 * @param wasQuiet the quiet check sampled before the dial started, since
+	 * the dial itself and the Tor events it causes would otherwise make the
+	 * device look busy
+	 */
+	private void recordDialOutcome(int contactId, long sessionMs, long epoch,
+			boolean wasQuiet) {
 		boolean connected = sessionMs >= MIN_CONNECTED_MS
 				&& !stalled.test(contactId);
 		long now = clock.getAsLong();
 		if (connected) {
 			failStreak.remove(contactId);
 			nextDialAt.remove(contactId);
+			quietWaited.remove(contactId);
 			lastConnectedAt.put(contactId, now);
 			refreshOwed.put(contactId, new DropRefresh());
 		} else if (backoffEpoch.get() == epoch) {
@@ -412,8 +429,9 @@ public class ZtpPoller implements EventListener {
 				nextDialAt.remove(contactId);
 				return;
 			}
-			boolean slow = isLongOffline(contactId, now)
-					|| isQuietOffline(contactId, now);
+			boolean quietOffline = isQuietOffline(contactId, now, wasQuiet);
+			boolean slow = isLongOffline(contactId, now) || quietOffline;
+			if (quietOffline) quietWaited.add(contactId);
 			nextDialAt.put(contactId,
 					now + (slow ? slowWait() : backoff(streak)));
 		}
@@ -434,9 +452,9 @@ public class ZtpPoller implements EventListener {
 		return now - lastSeen(contactId) >= LONG_OFFLINE_MS;
 	}
 
-	private boolean isQuietOffline(int contactId, long now) {
-		return quiet.getAsBoolean()
-				&& now - lastSeen(contactId) >= QUIET_OFFLINE_MS;
+	private boolean isQuietOffline(int contactId, long now,
+			boolean wasQuiet) {
+		return wasQuiet && now - lastSeen(contactId) >= QUIET_OFFLINE_MS;
 	}
 
 	private long lastSeen(int contactId) {
@@ -491,6 +509,7 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private void forget(int contactId) {
+		quietWaited.remove(contactId);
 		nextDialAt.remove(contactId);
 		failStreak.remove(contactId);
 		lastConnectedAt.remove(contactId);

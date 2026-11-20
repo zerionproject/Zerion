@@ -39,7 +39,6 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	public static final int SPARSE_READ_TIMEOUT_MS = 90_000;
 	public static final int SPARSE_REFRESH_RECV_FRAMES = 16;
 	static final long SPARSE_WAIT_CHUNK_MS = 250L;
-	static final long MAX_KEEPALIVE_GAP_MS = 60 * 60_000L;
 
 	private static final AtomicLong NEXT_SESSION_ID = new AtomicLong();
 
@@ -142,7 +141,6 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		if (lastSentAt == NEVER) return true;
 		if (receivedSinceSend >= SPARSE_REFRESH_RECV_FRAMES) return true;
 		if (now < lastSentAt) return true;
-		if (now - lastSentAt > MAX_KEEPALIVE_GAP_MS) return true;
 		return now >= keepaliveSlot(lastSentAt, periodMs);
 	}
 

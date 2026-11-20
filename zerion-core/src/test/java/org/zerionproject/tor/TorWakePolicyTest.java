@@ -490,19 +490,40 @@ public class TorWakePolicyTest {
 	}
 
 	@Test
-	public void quietMirrorsTheReleasedLock() {
-		assertTrue(policy.isQuiet());
+	public void quietMeansNoPersonNoCallNoKeepAwakeAndNoConnectionData() {
+		assertFalse("network disabled", policy.isQuiet());
 		policy.onStarting();
 		assertFalse(policy.isQuiet());
 		policy.onStartFinished();
 		policy.onNetworkEnabled(true);
 		policy.onBootstrapProgress(100);
-		advance(NETWORK_ENABLED_HOLD_MS + BOOTSTRAP_GRACE_MS);
-		assertTrue(policy.isQuiet());
+		assertTrue("bootstrap and the enable window do not count",
+				policy.isQuiet());
+		assertTrue("quiet even while the lock is held", lock.held);
 		policy.setForeground(true);
 		assertFalse("the foreground is not quiet", policy.isQuiet());
 		policy.setForeground(false);
 		assertTrue(policy.isQuiet());
+		policy.setCallInProgress(true);
+		assertFalse(policy.isQuiet());
+		policy.setCallInProgress(false);
+		policy.setKeepAwake(true);
+		assertFalse(policy.isQuiet());
+		policy.setKeepAwake(false);
+		assertTrue(policy.isQuiet());
+		policy.noteActivity(Activity.CONNECTION_ATTEMPT);
+		policy.onTorEvent();
+		policy.onDescriptorUpload(ONION);
+		assertTrue("a dial and Tor's own events do not count",
+				policy.isQuiet());
+		policy.noteActivity(Activity.CONNECTION_DATA);
+		assertFalse("connection data counts", policy.isQuiet());
+		advance(CONNECTION_HOLD_MS);
+		assertTrue(policy.isQuiet());
+		policy.onStopping();
+		assertFalse(policy.isQuiet());
+		policy.onStopped();
+		assertFalse("no network after stop", policy.isQuiet());
 	}
 
 	private static class FakeLock implements TorWakePolicy.Lock {

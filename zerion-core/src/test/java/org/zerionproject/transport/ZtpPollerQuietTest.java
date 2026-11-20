@@ -17,6 +17,8 @@ import org.zerionproject.core.api.plugin.TransportId;
 import org.zerionproject.core.api.properties.TransportProperties;
 import org.zerionproject.core.api.properties.TransportPropertyManager;
 import org.zerionproject.core.api.system.TaskScheduler;
+import org.zerionproject.tor.TorActivitySink.Activity;
+import org.zerionproject.tor.TorWakePolicy;
 
 import java.util.Collections;
 import java.util.concurrent.Executor;
@@ -83,6 +85,8 @@ public class ZtpPollerQuietTest {
 	private final AtomicLong now = new AtomicLong(1_800_000_000_000L);
 	private final AtomicBoolean quiet = new AtomicBoolean(false);
 	private volatile long dialResult = OverlayTransport.DIAL_NOT_CONNECTED;
+	private volatile Runnable duringDial = () -> {
+	};
 	private final OverlayTransport transport = new OverlayTransport() {
 		@Override
 		public TransportId getTransportId() {
@@ -98,6 +102,7 @@ public class ZtpPollerQuietTest {
 		public DialResult dial(int contactId, String peerAddress,
 				boolean fast) {
 			dials.incrementAndGet();
+			duringDial.run();
 			long ms = dialResult;
 			return new DialResult(ms != DIAL_NOT_CONNECTED, ms);
 		}
@@ -201,6 +206,67 @@ public class ZtpPollerQuietTest {
 				dials.get());
 		assertTrue("a contact connected minutes ago is retried quickly",
 				sweepsOver(QUICK, 5_000L) >= 3);
+	}
+
+	@Test
+	public void aRealPolicyStaysQuietThroughTheDialAndItsTorEvents() {
+		TaskScheduler noScheduler = new TaskScheduler() {
+			@Override
+			public Cancellable schedule(Runnable task, Executor executor,
+					long delay, TimeUnit unit) {
+				return () -> {
+				};
+			}
+
+			@Override
+			public Cancellable scheduleWithFixedDelay(Runnable task,
+					Executor executor, long delay, long interval,
+					TimeUnit unit) {
+				return () -> {
+				};
+			}
+		};
+		TorWakePolicy policy =
+				new TorWakePolicy(noScheduler, Runnable::run, now::get);
+		policy.onNetworkEnabled(true);
+		policy.onBootstrapProgress(100);
+		poller.setQuietCheck(policy::isQuiet);
+		duringDial = () -> {
+			policy.noteActivity(Activity.CONNECTION_ATTEMPT);
+			policy.onTorEvent();
+			policy.onDescriptorUpload("a");
+			policy.onDescriptorUploadFinished("a");
+		};
+		now.addAndGet(ZtpPoller.QUIET_OFFLINE_MS);
+		scheduler.runSweep();
+		assertEquals(1, dials.get());
+		assertTrue("the policy is quiet in the background", policy.isQuiet());
+		assertEquals("a failed dial to an unreached contact waits minutes",
+				0, sweepsOver(ZtpPoller.SLOW_REACH_OUT_MS - 5_000L, 5_000L));
+		assertEquals(1, sweepsOver(
+				ZtpPoller.SLOW_REACH_OUT_JITTER_MS + 10_000L, 5_000L));
+
+		policy.setForeground(true);
+		scheduler.runSweep();
+		long longestQuick = ZtpPoller.MAX_BACKOFF_MS + ZtpPoller.MAX_BACKOFF_MS / 5;
+		assertTrue("in the foreground the retries are quick again, even with"
+						+ " the fail streak at its longest backoff",
+				sweepsOver(4 * longestQuick, 5_000L) >= 3);
+	}
+
+	@Test
+	public void aSlowWaitedContactIsDialledOnTheFirstSweepAfterQuietEnds() {
+		quiet.set(true);
+		now.addAndGet(ZtpPoller.QUIET_OFFLINE_MS);
+		scheduler.runSweep();
+		assertEquals(1, dials.get());
+		assertEquals("the slow wait is in force", 0,
+				sweepsOver(60_000L, 5_000L));
+		quiet.set(false);
+		now.addAndGet(5_000L);
+		scheduler.runSweep();
+		assertEquals("the first sweep after quiet ended dials", 2,
+				dials.get());
 	}
 
 	@Test

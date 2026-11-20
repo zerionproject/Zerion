@@ -157,13 +157,19 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	/**
-	 * True while the lock is released: nothing Tor or a connection is doing
-	 * asks for the device to stay awake, and the app is not in the
-	 * foreground.
+	 * True while nothing a person is doing asks for the device to stay
+	 * awake: the network is enabled, Tor is neither starting nor stopping,
+	 * the app is not in the foreground, no call runs, the "Stay awake for
+	 * Tor" setting is off and no connection has carried or queued a record
+	 * in the last {@link #CONNECTION_HOLD_MS}. A dial in progress and Tor's
+	 * own control events do not count, so a dial that fails does not make
+	 * the device look busy to the poller that decides how soon to retry.
 	 */
 	public boolean isQuiet() {
 		synchronized (lock) {
-			return !held;
+			return networkEnabled && !starting && !stopping && !foreground
+					&& !callInProgress && !keepAwake
+					&& clock.getAsLong() >= connectionUntil;
 		}
 	}
 

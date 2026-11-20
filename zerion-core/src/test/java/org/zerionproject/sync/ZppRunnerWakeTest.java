@@ -120,14 +120,12 @@ public class ZppRunnerWakeTest {
 		Thread t = run(runner, conn);
 		try {
 			await(() -> conn.sent.size() == 1, "the link parameters frame");
-			Thread.sleep(700);
-			assertEquals("awake with a frozen clock, nothing is due", 1,
-					conn.sent.size());
+			holds(() -> conn.sent.size() == 1, 700,
+					"awake with a frozen clock, nothing is due");
 			now.addAndGet(40_000);
 			await(() -> conn.sent.size() == 2, "the keepalive after waking");
-			Thread.sleep(1_000);
-			assertEquals("exactly one keepalive for the whole sleep", 2,
-					conn.sent.size());
+			holds(() -> conn.sent.size() == 2, 1_000,
+					"exactly one keepalive for the whole sleep");
 			assertTrue(ZmmRecord.isCover(conn.sent.get(1)));
 		} finally {
 			conn.end();
@@ -151,10 +149,10 @@ public class ZppRunnerWakeTest {
 		assertTrue("backwards jump", ZppConnectionRunnerImpl.sparseFrameDue(
 				sentAt, 0, sentAt - 1,
 				ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_MS));
-		assertTrue("jump of more than an hour",
+		assertTrue("an hour ahead is past the slot",
 				ZppConnectionRunnerImpl.sparseFrameDue(sentAt, 0,
-						sentAt + ZppConnectionRunnerImpl.MAX_KEEPALIVE_GAP_MS
-								+ 1, ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_MS));
+						sentAt + 60 * 60_000L,
+						ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_MS));
 	}
 
 	@Test(timeout = 30_000)
@@ -167,18 +165,13 @@ public class ZppRunnerWakeTest {
 			await(() -> conn.sent.size() == 1, "the link parameters frame");
 			conn.deliver(ZmmRecord.cover());
 			await(() -> events.contains("recv-cover"), "the cover frame");
-			Thread.sleep(300);
-			List<String> afterCover = new ArrayList<>(events.subList(
-					events.indexOf("recv-cover") + 1, events.size()));
-			assertFalse("a received cover frame does not pulse " + afterCover,
-					afterCover.contains("CONNECTION_DATA"));
+			holds(() -> !afterEvent("recv-cover").contains("CONNECTION_DATA"),
+					300, "a received cover frame does not pulse");
 			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_TEXT,
 					"hi".getBytes(StandardCharsets.UTF_8)));
 			await(() -> events.contains("delivered"), "the text record");
-			List<String> afterReal = new ArrayList<>(events.subList(
-					events.indexOf("recv-real") + 1, events.size()));
-			assertTrue("a received record pulses " + afterReal,
-					afterReal.contains("CONNECTION_DATA"));
+			await(() -> afterEvent("recv-real").contains("CONNECTION_DATA"),
+					"the pulse for a received record");
 		} finally {
 			conn.end();
 			t.join(AWAIT_MS);
@@ -225,6 +218,14 @@ public class ZppRunnerWakeTest {
 		assertFalse(t.isAlive());
 	}
 
+	private List<String> afterEvent(String event) {
+		synchronized (events) {
+			int i = events.indexOf(event);
+			if (i < 0) return Collections.emptyList();
+			return new ArrayList<>(events.subList(i + 1, events.size()));
+		}
+	}
+
 	private int count(String event) {
 		int n = 0;
 		synchronized (events) {
@@ -262,6 +263,21 @@ public class ZppRunnerWakeTest {
 			Thread.sleep(5);
 		}
 		fail("timed out waiting for " + what);
+	}
+
+	/**
+	 * Checks that the condition stays true for the given time, failing as
+	 * soon as it does not; the time is a lower bound that a slow runner only
+	 * stretches.
+	 */
+	private static void holds(BooleanSupplier condition, long ms,
+			String what) throws InterruptedException {
+		long deadline = System.currentTimeMillis() + ms;
+		while (System.currentTimeMillis() < deadline) {
+			assertTrue(what, condition.getAsBoolean());
+			Thread.sleep(20);
+		}
+		assertTrue(what, condition.getAsBoolean());
 	}
 
 	private static class MemStore implements StreamCounterStore {

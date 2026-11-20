@@ -351,10 +351,10 @@ a keepalive slot is due on a clock that keeps running while the device
 sleeps and waits in chunks of at most 250 ms of awake time, so whenever the
 kernel wakes (Tor's own link padding does that every 9 to 14 s) the sender
 re-reads the clock and sends the keepalive as soon as a period of wall time
-has passed. A phone that slept through a slot therefore sends its keepalive
-right after it wakes and keeps its links, instead of the other phone closing
-the connection at its 90 s read timeout. A clock that jumped backwards or
-by more than an hour counts as due at once. A contact that cannot be
+has passed. The keepalive of a phone that slept through a slot is therefore
+sent on its next wakeup, so that the link is meant to survive a sleeping
+phone instead of being closed by the other phone at its 90 s read timeout.
+A clock that jumped backwards counts as due at once. A contact that cannot be
 reached is retried at the slow cadence (about every five minutes,
 `ZtpPoller`) while the device is quiet (lock released, app in the
 background) and that contact has not been connected for five minutes, so
