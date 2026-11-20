@@ -6,6 +6,9 @@ import android.content.Context;
 import com.professor.zerion.R;
 import com.professor.zerion.android.vault.VaultManager;
 import com.professor.zerion.android.vault.crypto.ProtectedNoteCodec;
+import com.professor.zerion.android.vault.keepass.KdbxException;
+import com.professor.zerion.android.vault.keepass.KdbxReader;
+import com.professor.zerion.android.vault.keepass.KeePassImport;
 import com.professor.zerion.android.vault.model.PasswordEntry;
 import com.professor.zerion.android.vault.model.PasswordEntryCodec;
 import com.professor.zerion.android.vault.model.VaultItem;
@@ -2111,6 +2114,85 @@ public class VaultViewModel extends AndroidViewModel {
 				isLoading.postValue(false);
 			}
 		});
+	}
+
+	public void importKeePass(byte[] file, @Nullable char[] password,
+			@Nullable byte[] keyFile) {
+		if (!vaultManager.isUnlocked()) {
+			wipeKeePassInput(file, password, keyFile);
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
+			return;
+		}
+		isLoading.postValue(true);
+		CRYPTO_EXECUTOR.execute(() -> {
+			KeePassImport.Result result;
+			try {
+				KdbxReader.Document document =
+						KdbxReader.read(file, password, keyFile);
+				result = KeePassImport.map(document,
+						text(R.string.vault_keepass_untitled));
+			} catch (KdbxException e) {
+				errorMessage.postValue(text(keePassErrorText(e.reason)));
+				isLoading.postValue(false);
+				return;
+			} catch (RuntimeException e) {
+				errorMessage.postValue(text(R.string.vault_keepass_open_failed));
+				isLoading.postValue(false);
+				return;
+			} finally {
+				wipeKeePassInput(file, password, keyFile);
+			}
+			dbExecutor.execute(() -> storeKeePassImport(result));
+		});
+	}
+
+	private void storeKeePassImport(KeePassImport.Result result) {
+		int imported = 0;
+		try {
+			for (KeePassImport.Password entry : result.passwords) {
+				byte[] content = PasswordEntryCodec.encode(entry.title,
+						entry.username, entry.password, entry.url, entry.notes);
+				try {
+					vaultManager.addItem(VaultItem.ItemType.PASSWORD,
+							entry.title, content);
+				} finally {
+					Arrays.fill(content, (byte) 0);
+				}
+				imported++;
+			}
+			successMessage.postValue(result.skipped > 0
+					? getApplication().getString(
+							R.string.vault_keepass_imported_skipped, imported,
+							result.skipped)
+					: getApplication().getString(
+							R.string.vault_keepass_imported, imported));
+		} catch (SecurityException e) {
+			errorMessage.postValue(text(R.string.vault_locked));
+		} catch (Exception e) {
+			errorMessage.postValue(text(R.string.vault_msg_save_password_failed));
+		} finally {
+			if (imported > 0) loadVaultItems();
+			isLoading.postValue(false);
+		}
+	}
+
+	@StringRes
+	static int keePassErrorText(KdbxException.Reason reason) {
+		switch (reason) {
+			case UNSUPPORTED:
+				return R.string.vault_keepass_unsupported;
+			case TOO_LARGE:
+				return R.string.vault_keepass_too_large;
+			default:
+				return R.string.vault_keepass_open_failed;
+		}
+	}
+
+	private static void wipeKeePassInput(byte[] file, @Nullable char[] password,
+			@Nullable byte[] keyFile) {
+		Arrays.fill(file, (byte) 0);
+		if (password != null) Arrays.fill(password, '\0');
+		if (keyFile != null) Arrays.fill(keyFile, (byte) 0);
 	}
 
 	public void getPassword(String itemId, PasswordCallback callback) {

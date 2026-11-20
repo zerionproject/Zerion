@@ -9,7 +9,10 @@ import android.view.ViewGroup;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,6 +24,7 @@ import com.professor.zerion.R;
 import com.professor.zerion.android.AppModule;
 import com.professor.zerion.android.activity.ActivityComponent;
 import com.professor.zerion.android.fragment.BaseFragment;
+import com.professor.zerion.android.vault.keepass.KdbxReader;
 import com.professor.zerion.android.vault.model.VaultItem;
 import com.professor.zerion.android.vault.ui.adapters.VaultPasswordsAdapter;
 import com.professor.zerion.android.vault.util.VaultSearch;
@@ -28,8 +32,12 @@ import com.professor.zerion.android.vault.util.VaultSearch;
 import org.briarproject.nullsafety.MethodsNotNullByDefault;
 import org.briarproject.nullsafety.ParametersNotNullByDefault;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -57,11 +65,23 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private VaultPasswordsAdapter adapter;
 	private EditText vaultSearchInput;
 	private TextView vaultSortButton;
+	private ImageButton vaultMoreButton;
+	private ProgressBar importProgress;
 	private final List<VaultItem> allItems = new ArrayList<>();
 	private String searchQuery = "";
 	private int sortMode;
 	@Nullable
 	private androidx.appcompat.app.AlertDialog passwordDialog;
+	@Nullable
+	private androidx.appcompat.app.AlertDialog importDialog;
+	@Nullable
+	private byte[] pendingDatabase;
+	private String pendingDatabaseName = "";
+	@Nullable
+	private byte[] pendingKeyFile;
+
+	private static final int REQUEST_KEEPASS_FILE = 1101;
+	private static final int REQUEST_KEEPASS_KEY_FILE = 1102;
 
 	public static VaultPasswordsFragment newInstance() {
 		return new VaultPasswordsFragment();
@@ -83,6 +103,8 @@ public class VaultPasswordsFragment extends BaseFragment {
 		fabAdd = view.findViewById(R.id.fab_add);
 		vaultSearchInput = view.findViewById(R.id.vault_search_input);
 		vaultSortButton = view.findViewById(R.id.vault_sort_button);
+		vaultMoreButton = view.findViewById(R.id.vault_more_button);
+		importProgress = view.findViewById(R.id.import_progress);
 
 		return view;
 	}
@@ -274,6 +296,198 @@ public class VaultPasswordsFragment extends BaseFragment {
 
 	private void setupClickListeners() {
 		fabAdd.setOnClickListener(v -> showAddPasswordDialog());
+		vaultMoreButton.setOnClickListener(this::showMoreMenu);
+	}
+
+	private void showMoreMenu(View anchor) {
+		PopupMenu popup = new PopupMenu(requireContext(), anchor);
+		popup.getMenuInflater().inflate(R.menu.vault_passwords_more,
+				popup.getMenu());
+		popup.setOnMenuItemClickListener(item -> {
+			if (item.getItemId() == R.id.action_import_keepass) {
+				pickFile(REQUEST_KEEPASS_FILE);
+				return true;
+			}
+			return false;
+		});
+		popup.show();
+	}
+
+	private void pickFile(int requestCode) {
+		android.content.Intent intent = new android.content.Intent(
+				android.content.Intent.ACTION_OPEN_DOCUMENT);
+		intent.setType("*/*");
+		intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+		startActivityForResult(intent, requestCode);
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode,
+			@Nullable android.content.Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != REQUEST_KEEPASS_FILE
+				&& requestCode != REQUEST_KEEPASS_KEY_FILE) {
+			return;
+		}
+		if (resultCode != android.app.Activity.RESULT_OK || data == null) return;
+		android.net.Uri uri = com.professor.zerion.android.util.PickedUris
+				.accept(requireContext(), data.getData());
+		if (uri == null) return;
+		long cap = requestCode == REQUEST_KEEPASS_FILE
+				? KdbxReader.MAX_FILE_BYTES : KdbxReader.MAX_KEY_FILE_BYTES;
+		byte[] content;
+		try {
+			content = readLimited(uri, cap);
+		} catch (TooLargeException e) {
+			showSnackbar(getString(R.string.vault_keepass_too_large));
+			return;
+		} catch (IOException | RuntimeException e) {
+			showSnackbar(getString(R.string.vault_keepass_read_failed));
+			return;
+		}
+		String name = displayName(uri);
+		if (requestCode == REQUEST_KEEPASS_FILE) {
+			clearPendingImport();
+			pendingDatabase = content;
+			pendingDatabaseName = name;
+			showImportDialog();
+		} else {
+			if (pendingKeyFile != null) Arrays.fill(pendingKeyFile, (byte) 0);
+			pendingKeyFile = content;
+			if (importDialog != null && importDialog.isShowing()) {
+				TextView button = importDialog.findViewById(
+						R.id.keepass_key_file_button);
+				if (button != null) button.setText(name);
+			}
+		}
+	}
+
+	private static final class TooLargeException extends IOException {
+	}
+
+	private byte[] readLimited(android.net.Uri uri, long cap)
+			throws IOException {
+		android.content.ContentResolver resolver =
+				requireContext().getContentResolver();
+		long declared = -1;
+		try (android.database.Cursor c = resolver.query(uri,
+				new String[] {android.provider.OpenableColumns.SIZE},
+				null, null, null)) {
+			if (c != null && c.moveToFirst() && !c.isNull(0)) {
+				declared = c.getLong(0);
+			}
+		} catch (RuntimeException ignored) {
+		}
+		if (declared > cap) throw new TooLargeException();
+		InputStream in = resolver.openInputStream(uri);
+		if (in == null) throw new IOException("not readable");
+		try (InputStream source = in) {
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			byte[] buf = new byte[64 * 1024];
+			int n;
+			while ((n = source.read(buf)) != -1) {
+				if (out.size() + (long) n > cap) {
+					Arrays.fill(buf, (byte) 0);
+					throw new TooLargeException();
+				}
+				out.write(buf, 0, n);
+			}
+			Arrays.fill(buf, (byte) 0);
+			return out.toByteArray();
+		}
+	}
+
+	private String displayName(android.net.Uri uri) {
+		String result = null;
+		if ("content".equals(uri.getScheme())) {
+			try (android.database.Cursor c = requireContext().getContentResolver()
+					.query(uri, new String[] {
+							android.provider.OpenableColumns.DISPLAY_NAME},
+							null, null, null)) {
+				if (c != null && c.moveToFirst() && !c.isNull(0)) {
+					result = c.getString(0);
+				}
+			} catch (RuntimeException ignored) {
+			}
+		}
+		if (result == null) {
+			result = uri.getLastPathSegment();
+		}
+		if (result == null) return "";
+		return result.replace('\n', ' ').trim();
+	}
+
+	private void showImportDialog() {
+		if (pendingDatabase == null) return;
+		View dialogView = LayoutInflater.from(requireContext())
+				.inflate(R.layout.dialog_import_keepass, null);
+		TextView fileName = dialogView.findViewById(R.id.keepass_file_name);
+		TextInputEditText passwordInput =
+				dialogView.findViewById(R.id.keepass_password);
+		TextView keyFileButton =
+				dialogView.findViewById(R.id.keepass_key_file_button);
+		fileName.setText(pendingDatabaseName);
+		keyFileButton.setOnClickListener(v -> pickFile(REQUEST_KEEPASS_KEY_FILE));
+		if (importDialog != null && importDialog.isShowing()) {
+			importDialog.dismiss();
+		}
+		androidx.appcompat.app.AlertDialog dialog =
+				new SecureAlertDialogBuilder(requireContext())
+						.fitAboveKeyboard()
+						.setTitle(R.string.vault_keepass_import_action)
+						.setView(dialogView)
+						.setPositiveButton(R.string.vault_keepass_import_button,
+								null)
+						.setNegativeButton(android.R.string.cancel,
+								(d, which) -> clearPendingImport())
+						.setOnDismissListener(d -> {
+							passwordInput.setText("");
+							importDialog = null;
+						})
+						.create();
+		dialog.setOnShowListener(d -> dialog.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(v -> {
+					char[] password = readChars(passwordInput);
+					if (password.length == 0 && pendingKeyFile == null) {
+						showSnackbar(getString(R.string.vault_keepass_need_key));
+						return;
+					}
+					byte[] database = pendingDatabase;
+					byte[] keyFile = pendingKeyFile;
+					pendingDatabase = null;
+					pendingKeyFile = null;
+					pendingDatabaseName = "";
+					passwordInput.setText("");
+					dialog.dismiss();
+					if (database != null) {
+						viewModel.importKeePass(database, password, keyFile);
+					}
+				}));
+		dialog.getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		importDialog = dialog;
+		dialog.show();
+	}
+
+	private static char[] readChars(EditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
+	}
+
+	private void clearPendingImport() {
+		if (pendingDatabase != null) Arrays.fill(pendingDatabase, (byte) 0);
+		if (pendingKeyFile != null) Arrays.fill(pendingKeyFile, (byte) 0);
+		pendingDatabase = null;
+		pendingKeyFile = null;
+		pendingDatabaseName = "";
 	}
 
 	private void showAddPasswordDialog() {
@@ -413,6 +627,22 @@ public class VaultPasswordsFragment extends BaseFragment {
 			}
 		});
 
+		viewModel.getIsLoading().observe(getViewLifecycleOwner(), loading ->
+				importProgress.setVisibility(Boolean.TRUE.equals(loading)
+						? View.VISIBLE : View.GONE));
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), msg -> {
+			if (msg != null && !msg.isEmpty()) {
+				showSnackbar(msg);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), msg -> {
+			if (msg != null && !msg.isEmpty()) {
+				showSnackbar(msg);
+				viewModel.clearMessages();
+			}
+		});
+
 		viewModel.loadVaultItems();
 	}
 
@@ -434,6 +664,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 			passwordDialog.dismiss();
 		}
 		passwordDialog = null;
+		if (importDialog != null && importDialog.isShowing()) {
+			importDialog.dismiss();
+		}
+		importDialog = null;
+		clearPendingImport();
 	}
 
 	private void showSnackbar(CharSequence message) {
