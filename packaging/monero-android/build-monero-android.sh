@@ -462,8 +462,20 @@ ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   ${DEPS}/lib/libunbound.a ${DEPS}/lib/libexpat.a ${DEPS}/lib/libiconv.a \
   ${DEPS}/lib/libssl.a ${DEPS}/lib/libcrypto.a \
   -llog -latomic -static-libstdc++ \
+  -Wl,--version-script=/build/jni/zmonero.map -Wl,--exclude-libs,ALL \
   -o ${OUT}/libzmonero.so
 ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
+# The version script keeps every symbol of the statically linked archives
+# (OpenSSL, Boost, libsodium, unbound, expat, the C++ runtime and Monero
+# itself) local, so only the JNI entry points are exported and no other
+# library in the process can resolve or interpose those symbols. The build
+# refuses a library that exports anything else.
+EXPORTED=$(${TC}/bin/llvm-nm -D --defined-only ${OUT}/libzmonero.so | awk '{print $3}')
+OTHER=$(echo "${EXPORTED}" | grep -v -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' | grep -c . || true)
+JNI_COUNT=$(echo "${EXPORTED}" | grep -c -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' || true)
+[ "${OTHER}" = "0" ] || { echo "libzmonero.so exports ${OTHER} symbols outside the JNI surface"; echo "${EXPORTED}" | grep -v -E '^(JNI_OnLoad|JNI_OnUnload|Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_)' | head -20; exit 5; }
+[ "${JNI_COUNT}" -ge 1 ] || { echo "libzmonero.so exports no JNI entry point"; exit 5; }
+echo "exports: ${JNI_COUNT} JNI entry points, nothing else"
 # Fingerprint of this build: tools, host facts, the optional Monero features
 # CMake settled on, and the SHA-256 of every archive that went into the link.
 # A host whose library differs from the pinned value can be compared with the
@@ -474,6 +486,7 @@ ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
   echo "host $(uname -srm) nproc=$(nproc) umask=$(umask)"
   echo "tools cmake=$(cmake --version | head -1 | cut -d' ' -f3) make=$(make --version | head -1 | cut -d' ' -f3) perl=$(perl -e 'print $^V') git=$(git --version | cut -d' ' -f3) $(python3 --version 2>&1)"
   echo "clang $(${CXX} --version | head -1)"
+  echo "map jni/zmonero.map $(sha256sum /build/jni/zmonero.map | cut -d' ' -f1)"
   grep -E '^(HIDAPI|Readline|Backtrace|CCACHE|LRELEASE|USE_READLINE|USE_CCACHE|STACK_TRACE|ARCH|BUILD_TAG)[A-Za-z_]*:' ${MB}/CMakeCache.txt | LC_ALL=C sort | sed 's/^/monero-cmake /' || true
   for a in $(cd ${DEPS}/lib && ls *.a | LC_ALL=C sort); do
     echo "dep ${a} $(sha256sum ${DEPS}/lib/${a} | cut -d' ' -f1)"

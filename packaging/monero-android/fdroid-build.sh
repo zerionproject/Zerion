@@ -36,6 +36,7 @@ export MONERO_COMMIT=85f036ba7019cd36f08e8a38a27c37ea7b522618
 WORK=/build
 mkdir -p "${WORK}/jni"
 install -m644 "${HERE}/jni/zmonero.cpp" "${WORK}/jni/zmonero.cpp"
+install -m644 "${HERE}/jni/zmonero.map" "${WORK}/jni/zmonero.map"
 install -m755 "${HERE}/build-monero-android.sh" "${WORK}/build-monero-android.sh"
 
 cd "${WORK}"

@@ -70,6 +70,7 @@ ${CXX} -shared -fPIC -O2 -fvisibility=hidden -std=c++17 \
   ${DEPS}/lib/libunbound.a ${DEPS}/lib/libexpat.a ${DEPS}/lib/libiconv.a \
   ${DEPS}/lib/libssl.a ${DEPS}/lib/libcrypto.a \
   -llog -latomic -static-libstdc++ \
+  -Wl,--version-script=/build/jni/zmonero.map -Wl,--exclude-libs,ALL \
   -o ${OUT}/libzmonero.so
 ${STRIP} --strip-unneeded ${OUT}/libzmonero.so
 echo "=== RESULT ${ABI} ==="

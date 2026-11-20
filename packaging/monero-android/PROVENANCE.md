@@ -165,6 +165,19 @@ Notes recorded during bring-up:
   the header check alone (the body cannot exceed the declared length); the
   running check is what stops a chunked or connection-close body. The build
   asserts all four patches are present exactly once and fails otherwise.
+- Only the JNI entry points are exported. The link uses the version script
+  `jni/zmonero.map` (global: `JNI_OnLoad` and the
+  `Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_*`
+  functions; local: everything else) together with `-Wl,--exclude-libs,ALL`,
+  so every symbol of the statically linked archives (OpenSSL, Boost,
+  libsodium, unbound, expat, the C++ runtime and Monero itself) stays local:
+  no other library in the process can resolve or interpose those symbols, and
+  the dynamic symbol table shrinks from about 29 800 entries to the 54 JNI
+  entry points. The build reads the exports back with `llvm-nm -D
+  --defined-only` and fails on anything outside that set; `verify-exports.sh`
+  runs the same check on the shipped libraries, and the map's SHA-256 is
+  recorded in `buildinfo.txt`. Builds before 2026-11-20 exported the archives'
+  symbols as well (see the superseded hashes below).
 - The C++ runtime is linked statically (`-static-libstdc++`) so `libzmonero.so`
   is self-contained: its only dynamic dependencies are Android-system libraries
   (`liblog.so`, `libm.so`, `libdl.so`, `libc.so`) - no `libc++_shared.so`.
@@ -196,7 +209,38 @@ features CMake settled on and the SHA-256 of every archive in the link), and
 the Gradle gate prints that file when it refuses a library, so a host that
 builds different bytes can be compared with the reference stage by stage.
 
-## Accepted hashes (per-request HTTP body caps, 2026-11-19)
+## Accepted hashes (JNI-only exports, 2026-11-20)
+
+These are the values the Gradle gate enforces since the link step gained the
+version script `jni/zmonero.map` and `-Wl,--exclude-libs,ALL` (build flags
+above). Nothing else in the recipe changed: the Monero commit, the four epee
+patches, the shim, the dependency pins, the NDK, the base image and the
+snapshot package versions are the same, and every dependency archive (`dep`
+lines of `buildinfo.txt`) hashes exactly as in the previous build. The
+dynamic symbol table now holds exactly the 54 `Java_` and `JNI_` entry points
+of the previous builds and nothing else; the library embeds
+`0.18.5.4-release`, the two cap messages and `OpenSSL 3.5.9 29 Sep 2026`. The
+ELF facts are unchanged: four LOAD segments aligned to 16 KB on arm64-v8a
+(4 KB on armeabi-v7a), `BIND_NOW`, and only `liblog.so`, `libm.so`,
+`libdl.so` and `libc.so` as `NEEDED`.
+
+Produced in two independent environments that agree byte for byte: the
+pinned image of this directory's Dockerfile (`docker build -t
+zerion-monero-build:v0.18.5.4-exports .`, one fresh container per ABI, each
+from an empty `/build`, as the `builder` user) and F-Droid's
+`registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` image, prepared
+as the recipe's `sudo` step prepares it, where `fdroid-build.sh` ran as
+`vagrant` with NDK r27b under `/opt/android-sdk/ndk/27.1.12297006`.
+
+- **libzmonero.so arm64-v8a SHA-256:
+  `e0336d5dbc98def490c1d2a689adf86b372bc36470c22e0eeea40729f11192e1`**
+- **libzmonero.so armeabi-v7a SHA-256:
+  `6d870954fe3ed3fa090686250b96948f3bd305ad328b0cd5f8d5462255c411f9`**
+
+They supersede `92c826d0…` / `e2c49fcd…` (per-request caps, archive symbols
+still exported), listed below for the record.
+
+## Previous hashes (per-request HTTP body caps, 2026-11-19)
 
 These are the values the Gradle gate enforces since the epee patch set grew
 from two pieces to four (build flags above): the response body cap is now

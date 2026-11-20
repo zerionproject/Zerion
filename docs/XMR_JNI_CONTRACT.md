@@ -149,7 +149,12 @@ calls with the interrupt lock for the cross-thread signals.
 `libzmonero.so` is built reproducibly from the pinned Monero source in a pinned
 Docker image; the shipped per-ABI SHA-256 hashes are recorded in
 `packaging/monero-android/PROVENANCE.md`. The library links 16 KB-page-aligned on
-arm64 (`-Wl,-z,max-page-size=16384`), verified with `llvm-readelf -l`. Removing
+arm64 (`-Wl,-z,max-page-size=16384`), verified with `llvm-readelf -l`, and
+exports only the JNI entry points (`jni/zmonero.map` with
+`-Wl,--exclude-libs,ALL`; the build and `verify-exports.sh` check the dynamic
+symbol table with `llvm-nm -D --defined-only`), so the statically linked
+OpenSSL, Boost, libsodium and Monero symbols are not visible to any other
+library in the process. Removing
 developer comments from `zmonero.cpp` produces a byte-identical library (the
 compiler discards comments), so the recorded hashes are unaffected by
 documentation changes. The link-only rebuild (`relink.sh`) reproduces the exact

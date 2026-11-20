@@ -58,6 +58,7 @@ ENV MONERO_COMMIT=85f036ba7019cd36f08e8a38a27c37ea7b522618
 WORKDIR /build
 COPY build-monero-android.sh /build/build-monero-android.sh
 COPY jni/zmonero.cpp /build/jni/zmonero.cpp
+COPY jni/zmonero.map /build/jni/zmonero.map
 RUN chmod +x /build/build-monero-android.sh
 
 # The build runs as an unprivileged user that owns only /build; the NDK, the

@@ -3,8 +3,8 @@ def moneroJniDir = { -> file("${projectDir}/src/main/jniLibs") }
 def moneroExpectedLib = 'libzmonero.so'
 def moneroKnownLibs = [moneroExpectedLib, 'libpayjoin_ffi.so'] as Set
 def moneroAccepted = [
-    'arm64-v8a'  : '92c826d09da094e937213b765aff9070b89da87a342b397831770d96c265a201',
-    'armeabi-v7a': 'e2c49fcd9f62b7c5c679352c9607dfa0b324314b3ded39101ba3256c292c1fbc',
+    'arm64-v8a'  : 'e0336d5dbc98def490c1d2a689adf86b372bc36470c22e0eeea40729f11192e1',
+    'armeabi-v7a': '6d870954fe3ed3fa090686250b96948f3bd305ad328b0cd5f8d5462255c411f9',
 ]
 
 def moneroSha256Of = { File f ->

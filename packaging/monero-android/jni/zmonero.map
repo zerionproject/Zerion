@@ -1,0 +1,14 @@
+/* Linker version script for libzmonero.so: only the JNI entry points are
+   exported. Everything the wallet library links statically (OpenSSL, Boost,
+   libsodium, unbound, expat, libzmq, the C++ runtime and Monero itself) stays
+   local, so no other library in the process can resolve or interpose those
+   symbols and the dynamic symbol table shrinks from about 29,000 entries to
+   the JNI surface. Used together with -Wl,--exclude-libs,ALL (see
+   build-monero-android.sh). */
+{
+  global:
+    JNI_OnLoad;
+    Java_com_professor_zerion_android_vault_wallet_xmr_NativeMonero_*;
+  local:
+    *;
+};
