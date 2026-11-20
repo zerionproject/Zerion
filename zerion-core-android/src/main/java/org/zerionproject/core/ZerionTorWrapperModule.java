@@ -1,6 +1,7 @@
 package org.zerionproject.core;
 
 import android.app.Application;
+import android.os.SystemClock;
 
 import org.briarproject.android.dontkillmelib.wakelock.AndroidWakeLockManager;
 import org.zerionproject.tor.TorBinaryPins;
@@ -15,6 +16,7 @@ import org.zerionproject.core.api.plugin.TorDirectory;
 import org.zerionproject.core.api.plugin.OnionTargetFactory;
 import org.zerionproject.core.api.plugin.TorSocksPath;
 import org.zerionproject.core.api.plugin.TorSocksPort;
+import org.zerionproject.core.api.system.TaskScheduler;
 import org.zerionproject.core.socks.LocalSockets;
 import org.zerionproject.core.socks.UnixOnionTargetFactory;
 import org.zerionproject.transport.TorControlSocketFactory;
@@ -51,6 +53,14 @@ public class ZerionTorWrapperModule {
 				processWatch);
 		tor.setStateStore(stateStore);
 		return tor;
+	}
+
+	@Provides
+	@Singleton
+	TorWakePolicy provideTorWakePolicy(TaskScheduler taskScheduler,
+			@IoExecutor Executor ioExecutor) {
+		return new TorWakePolicy(taskScheduler, ioExecutor,
+				SystemClock::elapsedRealtime);
 	}
 
 	static String controlSocketPath(String socksPath) {

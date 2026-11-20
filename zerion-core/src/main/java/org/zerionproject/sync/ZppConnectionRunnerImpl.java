@@ -38,6 +38,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	public static final long SPARSE_KEEPALIVE_MS = 30_000L;
 	public static final int SPARSE_READ_TIMEOUT_MS = 90_000;
 	public static final int SPARSE_REFRESH_RECV_FRAMES = 16;
+	static final long SPARSE_WAIT_CHUNK_MS = 250L;
+	static final long MAX_KEEPALIVE_GAP_MS = 60 * 60_000L;
 
 	private static final AtomicLong NEXT_SESSION_ID = new AtomicLong();
 
@@ -139,6 +141,8 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			long now, long periodMs) {
 		if (lastSentAt == NEVER) return true;
 		if (receivedSinceSend >= SPARSE_REFRESH_RECV_FRAMES) return true;
+		if (now < lastSentAt) return true;
+		if (now - lastSentAt > MAX_KEEPALIVE_GAP_MS) return true;
 		return now >= keepaliveSlot(lastSentAt, periodMs);
 	}
 
@@ -503,6 +507,13 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			}
 		}
 
+		/**
+		 * Waits until the deadline on the injected clock, re-reading it at
+		 * least every {@link #SPARSE_WAIT_CHUNK_MS}: the monitor wait itself
+		 * counts only time the device is awake, while the clock keeps going
+		 * through a sleep, so after a sleep the keepalive goes out as soon
+		 * as the thread runs again instead of a full period later.
+		 */
 		void awaitSparse(AtomicBoolean running, long deadline)
 				throws InterruptedException {
 			synchronized (lock) {
@@ -513,7 +524,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					}
 					long remaining = deadline - clock.getAsLong();
 					if (remaining <= 0) return;
-					lock.wait(remaining);
+					lock.wait(Math.min(remaining, SPARSE_WAIT_CHUNK_MS));
 				}
 			}
 		}

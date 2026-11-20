@@ -23,6 +23,17 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * the "Stay awake for Tor" setting is on. Otherwise it is released so the
  * device can suspend, and a heartbeat takes it briefly every ten minutes so
  * the timers inside Tor get to run.
+ * <p>
+ * Clock contract: the injected clock returns milliseconds and must keep
+ * advancing while the device is suspended (on Android
+ * {@code SystemClock.elapsedRealtime()}), otherwise a window that started
+ * before a sleep would outlive it. The default clock, based on
+ * {@code System.nanoTime()}, is for tests and for platforms that do not
+ * suspend.
+ * <p>
+ * Every call into the wake lock and the task scheduler is guarded, so an
+ * exception there (for example after shutdown) never reaches the caller,
+ * which may be the Tor control connection's parse thread.
  */
 @ThreadSafe
 @NotNullByDefault
@@ -39,8 +50,10 @@ public class TorWakePolicy implements TorActivitySink {
 	static final long BOOTSTRAP_GRACE_MS = 60_000;
 	static final long BOOTSTRAP_HOLD_CAP_MS = 10 * 60_000;
 	static final long PUBLISH_CAP_MS = 120_000;
+	static final long PUBLISH_BURST_CEILING_MS = 300_000;
 	static final long TOR_EVENT_HOLD_MS = 30_000;
 	static final long CONNECTION_HOLD_MS = 60_000;
+	static final long DIAL_HOLD_MS = 15_000;
 	static final long HEARTBEAT_INTERVAL_MS = 10 * 60_000;
 	static final long HEARTBEAT_HOLD_MS = 5_000;
 
@@ -83,6 +96,10 @@ public class TorWakePolicy implements TorActivitySink {
 	@GuardedBy("lock")
 	private long connectionUntil = NEVER;
 	@GuardedBy("lock")
+	private long dialUntil = NEVER;
+	@GuardedBy("lock")
+	private long publishBurstStart = NEVER;
+	@GuardedBy("lock")
 	private long publishCapUntil = NEVER;
 	@GuardedBy("lock")
 	private long heartbeatUntil = NEVER;
@@ -108,20 +125,45 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	/**
-	 * Hands the policy the wake lock it drives. Until a lock is attached the
-	 * policy only keeps its bookkeeping.
+	 * Hands the policy the wake lock it drives, replacing any earlier one.
+	 * If the policy currently holds the lock, the earlier lock is released
+	 * and the new one acquired. Until a lock is attached the policy only
+	 * keeps its bookkeeping.
 	 */
 	public void attachLock(Lock wakeLock) {
 		synchronized (lock) {
-			if (this.wakeLock != null) throw new IllegalStateException();
+			Lock old = this.wakeLock;
 			this.wakeLock = wakeLock;
-			if (held) wakeLock.acquire();
+			if (!held) return;
+			if (old != null) {
+				try {
+					old.release();
+				} catch (RuntimeException ignored) {
+				}
+			}
+			try {
+				wakeLock.acquire();
+			} catch (RuntimeException e) {
+				held = false;
+				evaluate();
+			}
 		}
 	}
 
 	public boolean isHeld() {
 		synchronized (lock) {
 			return held;
+		}
+	}
+
+	/**
+	 * True while the lock is released: nothing Tor or a connection is doing
+	 * asks for the device to stay awake, and the app is not in the
+	 * foreground.
+	 */
+	public boolean isQuiet() {
+		synchronized (lock) {
+			return !held;
 		}
 	}
 
@@ -140,25 +182,27 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	public void onNetworkEnabled(boolean enabled) {
+	/**
+	 * @return true if this call changed the network from disabled to enabled
+	 */
+	public boolean onNetworkEnabled(boolean enabled) {
 		synchronized (lock) {
+			boolean changed = false;
 			if (enabled) {
 				if (!networkEnabled) {
 					networkEnabled = true;
 					networkEnabledAt = clock.getAsLong();
 					bootstrapping = bootstrapPercentage < 100;
+					changed = true;
 				}
-				if (heartbeatTask == null) {
-					heartbeatTask = scheduler.scheduleWithFixedDelay(
-							this::heartbeat, executor, HEARTBEAT_INTERVAL_MS,
-							HEARTBEAT_INTERVAL_MS, MILLISECONDS);
-				}
+				startHeartbeat();
 			} else {
 				networkEnabled = false;
 				clearWindows();
 				cancelHeartbeat();
 			}
 			evaluate();
+			return changed;
 		}
 	}
 
@@ -194,7 +238,9 @@ public class TorWakePolicy implements TorActivitySink {
 			long now = clock.getAsLong();
 			Integer count = uploadsInFlight.get(onion);
 			uploadsInFlight.put(onion, count == null ? 1 : count + 1);
-			if (now >= publishCapUntil) publishCapUntil = now + PUBLISH_CAP_MS;
+			if (publishBurstStart == NEVER) publishBurstStart = now;
+			publishCapUntil = Math.min(now + PUBLISH_CAP_MS,
+					publishBurstStart + PUBLISH_BURST_CEILING_MS);
 			evaluate();
 		}
 	}
@@ -206,7 +252,7 @@ public class TorWakePolicy implements TorActivitySink {
 				if (count <= 1) uploadsInFlight.remove(onion);
 				else uploadsInFlight.put(onion, count - 1);
 			}
-			if (uploadsInFlight.isEmpty()) publishCapUntil = NEVER;
+			if (uploadsInFlight.isEmpty()) clearPublish();
 			evaluate();
 		}
 	}
@@ -234,7 +280,12 @@ public class TorWakePolicy implements TorActivitySink {
 	@Override
 	public void noteActivity(Activity activity) {
 		synchronized (lock) {
-			connectionUntil = clock.getAsLong() + CONNECTION_HOLD_MS;
+			long now = clock.getAsLong();
+			if (activity == Activity.CONNECTION_ATTEMPT) {
+				dialUntil = now + DIAL_HOLD_MS;
+			} else {
+				connectionUntil = now + CONNECTION_HOLD_MS;
+			}
 			evaluate();
 		}
 	}
@@ -262,9 +313,12 @@ public class TorWakePolicy implements TorActivitySink {
 
 	private void heartbeat() {
 		synchronized (lock) {
-			if (!networkEnabled || held) return;
-			heartbeatUntil = clock.getAsLong() + HEARTBEAT_HOLD_MS;
-			evaluate();
+			try {
+				if (!networkEnabled || held) return;
+				heartbeatUntil = clock.getAsLong() + HEARTBEAT_HOLD_MS;
+				evaluate();
+			} catch (RuntimeException ignored) {
+			}
 		}
 	}
 
@@ -276,13 +330,31 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	@GuardedBy("lock")
+	private void startHeartbeat() {
+		if (heartbeatTask != null) return;
+		try {
+			heartbeatTask = scheduler.scheduleWithFixedDelay(this::heartbeat,
+					executor, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS,
+					MILLISECONDS);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@GuardedBy("lock")
 	private void clearWindows() {
 		bootstrapping = false;
 		bootstrapGraceUntil = NEVER;
 		torEventUntil = NEVER;
 		connectionUntil = NEVER;
-		publishCapUntil = NEVER;
+		dialUntil = NEVER;
 		heartbeatUntil = NEVER;
+		clearPublish();
+	}
+
+	@GuardedBy("lock")
+	private void clearPublish() {
+		publishBurstStart = NEVER;
+		publishCapUntil = NEVER;
 		uploadsInFlight.clear();
 	}
 
@@ -291,34 +363,42 @@ public class TorWakePolicy implements TorActivitySink {
 		Cancellable task = heartbeatTask;
 		if (task != null) {
 			heartbeatTask = null;
-			task.cancel();
+			try {
+				task.cancel();
+			} catch (RuntimeException ignored) {
+			}
 		}
 	}
 
 	@GuardedBy("lock")
 	private void evaluate() {
 		long now = clock.getAsLong();
-		if (publishCapUntil != NEVER && now >= publishCapUntil) {
-			publishCapUntil = NEVER;
-			uploadsInFlight.clear();
-		}
+		if (publishCapUntil != NEVER && now >= publishCapUntil) clearPublish();
 		boolean want = shouldHold(now);
 		if (want != held) {
-			held = want;
 			Lock l = wakeLock;
-			if (l != null) {
-				if (want) l.acquire();
-				else l.release();
+			if (l == null) {
+				held = want;
+			} else {
+				try {
+					if (want) l.acquire();
+					else l.release();
+					held = want;
+				} catch (RuntimeException ignored) {
+				}
 			}
 		}
 		if (!held) return;
 		long deadline = nextDeadline(now);
 		if (deadline == NEVER) return;
 		if (checkPending && deadline >= checkDueAt) return;
-		checkPending = true;
-		checkDueAt = deadline;
-		scheduler.schedule(this::check, executor,
-				Math.max(1, deadline - now), MILLISECONDS);
+		try {
+			scheduler.schedule(this::check, executor,
+					Math.max(1, deadline - now), MILLISECONDS);
+			checkPending = true;
+			checkDueAt = deadline;
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@GuardedBy("lock")
@@ -335,6 +415,7 @@ public class TorWakePolicy implements TorActivitySink {
 		if (!uploadsInFlight.isEmpty() && now < publishCapUntil) return true;
 		if (now < torEventUntil) return true;
 		if (now < connectionUntil) return true;
+		if (now < dialUntil) return true;
 		return now < heartbeatUntil;
 	}
 
@@ -356,6 +437,7 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 		deadline = earliest(deadline, now, torEventUntil);
 		deadline = earliest(deadline, now, connectionUntil);
+		deadline = earliest(deadline, now, dialUntil);
 		deadline = earliest(deadline, now, heartbeatUntil);
 		return deadline;
 	}

@@ -104,7 +104,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 	private final org.zerionproject.sync.ZppPacingPolicy pacingPolicy;
 	@Nullable
 	private final TorWakePolicy wakePolicy;
-	private final EventListener torSettingsListener = e -> {
+	final EventListener torSettingsListener = e -> {
 		if (isTorSettingsChange(e)) {
 			entryRelay.clear();
 			Settings settings = ((SettingsUpdatedEvent) e).getSettings();
@@ -427,10 +427,12 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 
 	private void applyKeepAwake(Settings settings) {
 		TorWakePolicy policy = wakePolicy;
-		if (policy == null) return;
-		policy.setKeepAwake(settings.getBoolean(
-				TorConstants.PREF_TOR_KEEP_AWAKE,
-				TorConstants.DEFAULT_PREF_TOR_KEEP_AWAKE));
+		if (policy != null) policy.setKeepAwake(wantsKeepAwake(settings));
+	}
+
+	static boolean wantsKeepAwake(Settings settings) {
+		return settings.getBoolean(TorConstants.PREF_TOR_KEEP_AWAKE,
+				TorConstants.DEFAULT_PREF_TOR_KEEP_AWAKE);
 	}
 
 	static boolean isTorSettingsChange(Event e) {

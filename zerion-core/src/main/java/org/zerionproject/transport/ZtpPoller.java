@@ -48,6 +48,7 @@ public class ZtpPoller implements EventListener {
 	static final int REFRESH_AFTER_FAILURES = 2;
 	static final long MIN_REFRESH_INTERVAL_MS = 2 * 60_000L;
 	static final long LONG_OFFLINE_MS = 30 * 60_000L;
+	static final long QUIET_OFFLINE_MS = 5 * 60_000L;
 	static final int REFRESHES_PER_DROP = 2;
 	static final long SECOND_REFRESH_AFTER_MS = 2 * 60_000L;
 	static final long ARRIVAL_REFRESH_DELAY_MS = 60_000L;
@@ -80,6 +81,7 @@ public class ZtpPoller implements EventListener {
 	private volatile boolean arrivedRefreshed = false;
 	private volatile long startedAt = 0;
 	private volatile java.util.function.IntPredicate connected = c -> false;
+	private volatile java.util.function.BooleanSupplier quiet = () -> false;
 	private volatile long lastRefreshAt = 0;
 	volatile java.util.function.LongSupplier clock =
 			() -> System.nanoTime() / 1_000_000L;
@@ -146,6 +148,16 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private volatile java.util.function.IntPredicate stalled = c -> false;
+
+	/**
+	 * Tells the poller whether the device is quiet: the app is in the
+	 * background and nothing holds the Tor wake lock. While it is, a contact
+	 * that has not been connected for {@link #QUIET_OFFLINE_MS} is retried at
+	 * the slow cadence so that failing dials do not keep the device awake.
+	 */
+	public void setQuietCheck(java.util.function.BooleanSupplier quiet) {
+		this.quiet = quiet;
+	}
 
 	public void setStallCheck(java.util.function.IntPredicate stalled) {
 		this.stalled = stalled;
@@ -400,8 +412,10 @@ public class ZtpPoller implements EventListener {
 				nextDialAt.remove(contactId);
 				return;
 			}
-			nextDialAt.put(contactId, now + (isLongOffline(contactId, now)
-					? slowWait() : backoff(streak)));
+			boolean slow = isLongOffline(contactId, now)
+					|| isQuietOffline(contactId, now);
+			nextDialAt.put(contactId,
+					now + (slow ? slowWait() : backoff(streak)));
 		}
 	}
 
@@ -417,10 +431,18 @@ public class ZtpPoller implements EventListener {
 	}
 
 	private boolean isLongOffline(int contactId, long now) {
+		return now - lastSeen(contactId) >= LONG_OFFLINE_MS;
+	}
+
+	private boolean isQuietOffline(int contactId, long now) {
+		return quiet.getAsBoolean()
+				&& now - lastSeen(contactId) >= QUIET_OFFLINE_MS;
+	}
+
+	private long lastSeen(int contactId) {
 		Long last = lastConnectedAt.get(contactId);
 		if (last == null) last = addedAt.get(contactId);
-		long since = last == null ? startedAt : last;
-		return now - since >= LONG_OFFLINE_MS;
+		return last == null ? startedAt : last;
 	}
 
 	private boolean refreshPeerDescriptors(int contactId, long now) {

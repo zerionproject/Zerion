@@ -23,9 +23,11 @@ import static org.junit.Assert.assertTrue;
 import static org.zerionproject.tor.TorWakePolicy.BOOTSTRAP_GRACE_MS;
 import static org.zerionproject.tor.TorWakePolicy.BOOTSTRAP_HOLD_CAP_MS;
 import static org.zerionproject.tor.TorWakePolicy.CONNECTION_HOLD_MS;
+import static org.zerionproject.tor.TorWakePolicy.DIAL_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.HEARTBEAT_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.HEARTBEAT_INTERVAL_MS;
 import static org.zerionproject.tor.TorWakePolicy.NETWORK_ENABLED_HOLD_MS;
+import static org.zerionproject.tor.TorWakePolicy.PUBLISH_BURST_CEILING_MS;
 import static org.zerionproject.tor.TorWakePolicy.PUBLISH_CAP_MS;
 import static org.zerionproject.tor.TorWakePolicy.TOR_EVENT_HOLD_MS;
 
@@ -349,16 +351,177 @@ public class TorWakePolicyTest {
 		assertEquals(2, lock.releases.get());
 	}
 
-	private static final class FakeLock implements TorWakePolicy.Lock {
+	@Test
+	public void aDialHoldsFor15sOnly() {
+		settle();
+		policy.noteActivity(Activity.CONNECTION_ATTEMPT);
+		assertTrue(lock.held);
+		advance(DIAL_HOLD_MS - 1);
+		assertTrue(lock.held);
+		advance(1);
+		assertFalse(lock.held);
+		policy.noteActivity(Activity.CONNECTION_ATTEMPT);
+		policy.noteActivity(Activity.SYNC_PENDING);
+		advance(DIAL_HOLD_MS);
+		assertTrue("queued records hold for the full 60 s", lock.held);
+		advance(CONNECTION_HOLD_MS - DIAL_HOLD_MS);
+		assertFalse(lock.held);
+	}
+
+	@Test
+	public void anAcquireThatThrowsLeavesHeldFalseAndTheNextEventRetries() {
+		settle();
+		lock.failNextAcquires = 1;
+		policy.onTorEvent();
+		assertFalse("the failed acquire is not recorded as held",
+				policy.isHeld());
+		assertFalse(lock.held);
+		assertEquals(1, lock.failedAcquires);
+		policy.onTorEvent();
+		assertTrue(policy.isHeld());
+		assertTrue(lock.held);
+		advance(TOR_EVENT_HOLD_MS);
+		assertFalse(lock.held);
+		assertEquals(lock.acquires.get(), lock.releases.get());
+	}
+
+	@Test
+	public void aSecondAttachLockReplacesAndRebalances() {
+		settle();
+		policy.setForeground(true);
+		assertTrue(lock.held);
+		FakeLock replacement = new FakeLock();
+		policy.attachLock(replacement);
+		assertFalse("the old lock was released", lock.held);
+		assertTrue("the new lock was acquired", replacement.held);
+		assertEquals(lock.acquires.get(), lock.releases.get());
+		policy.setForeground(false);
+		assertFalse(replacement.held);
+		assertEquals(1, replacement.acquires.get());
+		assertEquals(1, replacement.releases.get());
+		FakeLock third = new FakeLock();
+		policy.attachLock(third);
+		assertFalse("attaching while released acquires nothing", third.held);
+		assertEquals(0, third.acquires.get());
+	}
+
+	@Test
+	public void aCheckThatFiresEarlyReschedulesOnceWithoutLooping() {
+		settle();
+		policy.onTorEvent();
+		assertEquals(1, scheduler.pendingOneShots());
+		scheduler.fireEarliestWithoutAdvancing();
+		assertTrue("still inside the window", lock.held);
+		assertEquals("one reschedule", 1, scheduler.pendingOneShots());
+		scheduler.fireEarliestWithoutAdvancing();
+		assertEquals(1, scheduler.pendingOneShots());
+		advance(TOR_EVENT_HOLD_MS);
+		assertFalse(lock.held);
+		assertEquals(0, scheduler.pendingOneShots());
+	}
+
+	@Test
+	public void enablingTheNetworkTwiceKeepsTheWindowAndOneHeartbeat() {
+		assertTrue(policy.onNetworkEnabled(true));
+		policy.onBootstrapProgress(100);
+		advance(60_000);
+		assertFalse("already enabled", policy.onNetworkEnabled(true));
+		assertEquals(1, scheduler.recurring());
+		advance(NETWORK_ENABLED_HOLD_MS - 60_000);
+		assertFalse("the 90 s window was not restarted", lock.held);
+		policy.onNetworkEnabled(false);
+		assertTrue(policy.onNetworkEnabled(true));
+		assertTrue(lock.held);
+		assertEquals(1, scheduler.recurring());
+	}
+
+	@Test
+	public void theHeartbeatIsSkippedWhileHeldAndResumesAfterwards() {
+		policy.onNetworkEnabled(true);
+		long enabledAt = now.get();
+		policy.onBootstrapProgress(100);
+		advance(NETWORK_ENABLED_HOLD_MS + BOOTSTRAP_GRACE_MS);
+		policy.setForeground(true);
+		int acquires = lock.acquires.get();
+		scheduler.advanceTo(enabledAt + HEARTBEAT_INTERVAL_MS + 1);
+		assertEquals("no extra acquire while already held", acquires,
+				lock.acquires.get());
+		policy.setForeground(false);
+		assertFalse(lock.held);
+		scheduler.advanceTo(enabledAt + 2 * HEARTBEAT_INTERVAL_MS);
+		assertTrue("the heartbeat resumed", lock.held);
+		advance(HEARTBEAT_HOLD_MS);
+		assertFalse(lock.held);
+	}
+
+	@Test
+	public void aStaleCheckAfterStopIsANoOp() {
+		settle();
+		policy.onTorEvent();
+		assertTrue(lock.held);
+		policy.onStopping();
+		policy.onStopped();
+		assertFalse(lock.held);
+		int acquires = lock.acquires.get();
+		advance(TOR_EVENT_HOLD_MS + 1);
+		assertFalse(lock.held);
+		assertEquals(acquires, lock.acquires.get());
+		assertEquals(lock.acquires.get(), lock.releases.get());
+	}
+
+	@Test
+	public void thePublishCapExtendsPerUploadUpToTheCeiling() {
+		settle();
+		long start = now.get();
+		policy.onDescriptorUpload(ONION);
+		advance(100_000);
+		policy.onDescriptorUpload(ONION);
+		advance(PUBLISH_CAP_MS - 1);
+		assertTrue("the second upload extended the cap", lock.held);
+		policy.onDescriptorUpload(ONION);
+		scheduler.advanceTo(start + PUBLISH_BURST_CEILING_MS - 1);
+		assertTrue(lock.held);
+		advance(1);
+		assertFalse("the burst ceiling released it", lock.held);
+		policy.onDescriptorUpload(ONION);
+		assertTrue("a new burst starts after the ceiling", lock.held);
+		policy.onDescriptorUploadFinished(ONION);
+		assertFalse(lock.held);
+	}
+
+	@Test
+	public void quietMirrorsTheReleasedLock() {
+		assertTrue(policy.isQuiet());
+		policy.onStarting();
+		assertFalse(policy.isQuiet());
+		policy.onStartFinished();
+		policy.onNetworkEnabled(true);
+		policy.onBootstrapProgress(100);
+		advance(NETWORK_ENABLED_HOLD_MS + BOOTSTRAP_GRACE_MS);
+		assertTrue(policy.isQuiet());
+		policy.setForeground(true);
+		assertFalse("the foreground is not quiet", policy.isQuiet());
+		policy.setForeground(false);
+		assertTrue(policy.isQuiet());
+	}
+
+	private static class FakeLock implements TorWakePolicy.Lock {
 
 		final AtomicInteger acquires = new AtomicInteger();
 		final AtomicInteger releases = new AtomicInteger();
 		volatile boolean held = false;
+		volatile int failNextAcquires = 0;
+		volatile int failedAcquires = 0;
 		private int depth = 0;
 		private int max = 0;
 
 		@Override
 		public synchronized void acquire() {
+			if (failNextAcquires > 0) {
+				failNextAcquires--;
+				failedAcquires++;
+				throw new IllegalStateException("acquire refused");
+			}
 			acquires.incrementAndGet();
 			depth++;
 			if (depth > max) max = depth;
@@ -403,6 +566,30 @@ public class TorWakePolicyTest {
 					MILLISECONDS.convert(interval, unit));
 			tasks.add(d);
 			return d;
+		}
+
+		synchronized int pendingOneShots() {
+			int n = 0;
+			for (Due d : tasks) if (!d.cancelled.get() && d.interval == 0) n++;
+			return n;
+		}
+
+		synchronized int recurring() {
+			int n = 0;
+			for (Due d : tasks) if (!d.cancelled.get() && d.interval > 0) n++;
+			return n;
+		}
+
+		void fireEarliestWithoutAdvancing() {
+			Due next = null;
+			synchronized (this) {
+				for (Due d : tasks) {
+					if (d.cancelled.get() || d.interval > 0) continue;
+					if (next == null || d.dueAt < next.dueAt) next = d;
+				}
+				if (next != null) tasks.remove(next);
+			}
+			if (next != null) next.executor.execute(next.task);
 		}
 
 		void advanceTo(long target) {

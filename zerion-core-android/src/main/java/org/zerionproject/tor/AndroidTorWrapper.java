@@ -120,11 +120,11 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 
 	@Override
 	public void enableNetwork(boolean enable) throws IOException {
-		if (enable) wakePolicy.onNetworkEnabled(true);
+		boolean enabledHere = enable && wakePolicy.onNetworkEnabled(true);
 		try {
 			super.enableNetwork(enable);
 		} catch (IOException | RuntimeException e) {
-			if (enable) wakePolicy.onNetworkEnabled(false);
+			if (enabledHere) wakePolicy.onNetworkEnabled(false);
 			throw e;
 		} finally {
 			if (!enable) wakePolicy.onNetworkEnabled(false);
@@ -143,22 +143,34 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 
 	@Override
 	protected void onTorControlActivity() {
-		wakePolicy.onTorEvent();
+		try {
+			wakePolicy.onTorEvent();
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Override
 	protected void onBootstrapProgress(int percentage) {
-		wakePolicy.onBootstrapProgress(percentage);
+		try {
+			wakePolicy.onBootstrapProgress(percentage);
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Override
 	protected void onHsDescriptorUpload(String onion) {
-		wakePolicy.onDescriptorUpload(onion);
+		try {
+			wakePolicy.onDescriptorUpload(onion);
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Override
 	protected void onHsDescriptorUploadFinished(String onion) {
-		wakePolicy.onDescriptorUploadFinished(onion);
+		try {
+			wakePolicy.onDescriptorUploadFinished(onion);
+		} catch (RuntimeException ignored) {
+		}
 	}
 
 	@Override
