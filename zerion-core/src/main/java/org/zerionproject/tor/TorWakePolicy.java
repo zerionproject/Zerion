@@ -52,6 +52,7 @@ public class TorWakePolicy implements TorActivitySink {
 	static final long PUBLISH_CAP_MS = 120_000;
 	static final long PUBLISH_BURST_CEILING_MS = 300_000;
 	static final long TOR_EVENT_HOLD_MS = 30_000;
+	static final long CIRCUIT_EVENT_HOLD_MS = 5_000;
 	static final long CONNECTION_HOLD_MS = 60_000;
 	static final long DIAL_HOLD_MS = 15_000;
 	static final long HEARTBEAT_INTERVAL_MS = 10 * 60_000;
@@ -93,6 +94,8 @@ public class TorWakePolicy implements TorActivitySink {
 	private long bootstrapGraceUntil = NEVER;
 	@GuardedBy("lock")
 	private long torEventUntil = NEVER;
+	@GuardedBy("lock")
+	private long circuitEventUntil = NEVER;
 	@GuardedBy("lock")
 	private long connectionUntil = NEVER;
 	@GuardedBy("lock")
@@ -229,12 +232,26 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	/**
-	 * A circuit, stream, relay connection or descriptor event arrived over
-	 * the control connection.
+	 * A stream, relay connection or descriptor event arrived over the
+	 * control connection.
 	 */
 	public void onTorEvent() {
 		synchronized (lock) {
 			torEventUntil = clock.getAsLong() + TOR_EVENT_HOLD_MS;
+			evaluate();
+		}
+	}
+
+	/**
+	 * A circuit was launched, extended or built. Tor builds spare circuits
+	 * for itself about once a minute while it is in use, so a circuit event
+	 * holds the lock only for the few seconds in which the next hop, or the
+	 * rendezvous that follows a built circuit, would otherwise find the
+	 * device asleep.
+	 */
+	public void onCircuitEvent() {
+		synchronized (lock) {
+			circuitEventUntil = clock.getAsLong() + CIRCUIT_EVENT_HOLD_MS;
 			evaluate();
 		}
 	}
@@ -351,6 +368,7 @@ public class TorWakePolicy implements TorActivitySink {
 		bootstrapping = false;
 		bootstrapGraceUntil = NEVER;
 		torEventUntil = NEVER;
+		circuitEventUntil = NEVER;
 		connectionUntil = NEVER;
 		dialUntil = NEVER;
 		heartbeatUntil = NEVER;
@@ -420,6 +438,7 @@ public class TorWakePolicy implements TorActivitySink {
 		if (now < bootstrapGraceUntil) return true;
 		if (!uploadsInFlight.isEmpty() && now < publishCapUntil) return true;
 		if (now < torEventUntil) return true;
+		if (now < circuitEventUntil) return true;
 		if (now < connectionUntil) return true;
 		if (now < dialUntil) return true;
 		return now < heartbeatUntil;
@@ -442,6 +461,7 @@ public class TorWakePolicy implements TorActivitySink {
 			deadline = earliest(deadline, now, publishCapUntil);
 		}
 		deadline = earliest(deadline, now, torEventUntil);
+		deadline = earliest(deadline, now, circuitEventUntil);
 		deadline = earliest(deadline, now, connectionUntil);
 		deadline = earliest(deadline, now, dialUntil);
 		deadline = earliest(deadline, now, heartbeatUntil);
