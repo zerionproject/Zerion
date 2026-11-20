@@ -1232,6 +1232,8 @@
 	<string name="tor_network_setting_never">Nun coneutase a internet</string>
 	<string name="cover_traffic_title">Tráficu de cobertura</string>
 	<string name="cover_traffic_summary">Caltién cada conexón ocupada con datos falsos, de mou que la to rede nun pue saber cuándo envies o recibes. Hasta unos 200 MB de datos al día por cada contautu coneutáu, tamién con datos móviles. Funciona cuando los dos contautos lu tienen activáu.</string>
+	<string name="keep_awake_title">Caltener el dispositivu espiertu pa Tor</string>
+	<string name="keep_awake_summary">Caltién el procesador espiertu tol tiempu pa que Tor reaccione al intre. Gasta muncha más batería.</string>
 	<string name="tor_network_setting_summary">Automáticu: %1$s (en %2$s)</string>
 	<string name="tor_mobile_data_title">Usar datos móviles</string>
 	<string name="tor_mobile_data_summary">Permitir conexones pela rede móvil</string>

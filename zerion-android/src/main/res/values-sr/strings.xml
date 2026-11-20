@@ -1545,6 +1545,8 @@
 	<string name="tor_network_setting_never">Ne povezuj se na internet</string>
 	<string name="cover_traffic_title">Прикривени саобраћај</string>
 	<string name="cover_traffic_summary">Држи сваку везу заузетом лажним подацима, тако да ваша мрежа не може знати када шаљете или примате. До око 200 MB података дневно за сваки повезани контакт, и преко мобилних података. Ради када га оба контакта укључе.</string>
+	<string name="keep_awake_title">Остани будан за Tor</string>
+	<string name="keep_awake_summary">Држи процесор стално будним да Tor одмах реагује. Троши много више батерије.</string>
 	<string name="tor_mobile_data_summary">Dozvoli veze preko mobilne mreže</string>
 	<string name="backup_settings_title">Rezervna kopija i prenos</string>
 	<string name="backup_settings_summary">Premesti svoj nalog na drugi telefon</string>

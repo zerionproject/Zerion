@@ -109,6 +109,8 @@ public interface AndroidComponent
 
 	PluginManager pluginManager();
 
+	org.zerionproject.tor.TorWakePolicy torWakePolicy();
+
 	EventBus eventBus();
 
 	AndroidNotificationManager androidNotificationManager();

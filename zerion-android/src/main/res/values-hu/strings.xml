@@ -366,6 +366,8 @@ Kérjük frissítsen a legutolsó verzióra és próbálja újra.</string>
   <string name="tor_network_setting_never">Ne csatlakozzon az internethez</string>
 	<string name="cover_traffic_title">Fedőforgalom</string>
 	<string name="cover_traffic_summary">Minden kapcsolatot kitöltő adatokkal tart elfoglalva, így a hálózatod nem tudja megállapítani, mikor küldesz vagy fogadsz. Naponta legfeljebb körülbelül 200 MB adat minden kapcsolódott partnerre, mobiladaton is. Akkor működik, ha mindkét partner bekapcsolta.</string>
+	<string name="keep_awake_title">Ébren maradás a Torhoz</string>
+	<string name="keep_awake_summary">Folyamatosan ébren tartja a processzort, hogy a Tor azonnal reagáljon. Sokkal több akkumulátort használ.</string>
   
   <string name="tor_network_setting_summary">Automatikus: %1$s ( %2$s)</string>
   <string name="tor_mobile_data_title">Mobil adat használata</string>

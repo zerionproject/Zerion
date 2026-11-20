@@ -4,7 +4,11 @@ import org.zerionproject.core.api.contact.ContactManager;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
+import org.zerionproject.core.api.lifecycle.IoExecutor;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.core.api.system.TaskScheduler;
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.crypto.SettingsStreamCounterStore;
 import org.zerionproject.crypto.StreamCounterContactHook;
@@ -19,6 +23,7 @@ import org.zerionproject.sync.ZppConnectionRunnerImpl;
 import org.zerionproject.sync.ZppRecordSink;
 import org.zerionproject.wire.ZwfStreamCounter;
 
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -93,10 +98,24 @@ public class ZerionTransportModule {
 
 	@Provides
 	@Singleton
+	TorWakePolicy provideTorWakePolicy(TaskScheduler taskScheduler,
+			@IoExecutor Executor ioExecutor) {
+		return new TorWakePolicy(taskScheduler, ioExecutor);
+	}
+
+	@Provides
+	TorActivitySink provideTorActivitySink(TorWakePolicy wakePolicy) {
+		return wakePolicy;
+	}
+
+	@Provides
+	@Singleton
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry,
-			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
-		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy);
+			org.zerionproject.sync.ZppPacingPolicy pacingPolicy,
+			TorActivitySink activity) {
+		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy,
+				activity);
 	}
 
 	@Provides

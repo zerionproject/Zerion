@@ -1,5 +1,7 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorActivitySink.Activity;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
 import org.zerionproject.tor.TorWrapper.TorState;
@@ -129,6 +131,7 @@ public class ZtpTorTransport implements OverlayTransport {
 	private volatile Runnable torReconfiguredListener;
 	@Nullable
 	private volatile DialListener dialListener;
+	private volatile TorActivitySink activity = TorActivitySink.NONE;
 
 	public interface DialListener {
 		void dialSucceeded(int contactId, String onion);
@@ -136,6 +139,10 @@ public class ZtpTorTransport implements OverlayTransport {
 
 	public void setDialListener(@Nullable DialListener listener) {
 		this.dialListener = listener;
+	}
+
+	public void setActivitySink(TorActivitySink activity) {
+		this.activity = activity;
 	}
 
 	public ZtpTorTransport(TorWrapper tor, SocketFactory socketFactory,
@@ -478,6 +485,7 @@ public class ZtpTorTransport implements OverlayTransport {
 				}
 				continue;
 			}
+			activity.noteActivity(Activity.CONNECTION_ATTEMPT);
 			if (!budget.inbound.tryAcquire()) {
 				closeQuietly(socket);
 				continue;
@@ -638,6 +646,7 @@ public class ZtpTorTransport implements OverlayTransport {
 		}
 		SocketFactory factory = fast ? fastSocketFactory : socketFactory;
 		Socket socket;
+		activity.noteActivity(Activity.CONNECTION_ATTEMPT);
 		try {
 			socket = factory.createSocket(peerOnion + ".onion",
 					REMOTE_ONION_PORT);

@@ -305,6 +305,46 @@ without a post-quantum secret (the opening sentinel of a stream), so the rule
 that application data travels only in post-quantum frames holds on receipt, not
 only at the sender.
 
+### Power: when the device may sleep
+
+Since 3.0.19 the Tor wake lock is no longer held for as long as the network
+is enabled. `TorWakePolicy` (zerion-core, `org.zerionproject.tor`) owns the
+lock and holds it only while one of these is true:
+
+- Tor is starting, stopping or bootstrapping, for 90 s after the network is
+  enabled and for 60 s after bootstrap reaches 100 % (a bootstrap that never
+  completes holds the lock for at most 10 minutes after the network was
+  enabled; Tor's own retries then show up as events below).
+- An onion service descriptor is being published: from `HS_DESC UPLOAD` until
+  `UPLOADED` or `FAILED` for every upload of that onion, at most 120 s.
+- A Tor control event arrived in the last 30 s: `CIRC` LAUNCHED, EXTENDED or
+  BUILT, `STREAM` NEW or SUCCEEDED, `ORCONN` LAUNCHED or CONNECTED, or any
+  `HS_DESC` event. This is what keeps incoming connections reliable: the
+  first packet wakes the kernel, Tor reports the rendezvous circuit over the
+  local control socket, and the policy takes the lock within milliseconds
+  while the circuit and the ZWF handshake complete.
+- A connection to a contact did work in the last 60 s: a frame other than a
+  cover or keepalive frame was sent or received, a record was queued, a dial
+  was started or a connection was accepted (`ZppConnectionRunnerImpl`,
+  `ZtpTorTransport`). A connection running the paced cover-traffic cadence
+  counts as continuous work, so with "Cover traffic" on the processor stays
+  awake while such a connection is open, as it did up to 3.0.18.
+- A call is in progress, or the app is in the foreground, with the network
+  enabled.
+- The setting "Stay awake for Tor" (`PREF_TOR_KEEP_AWAKE`, off by default) is
+  on, which restores the permanent lock of 3.0.18.
+
+While the lock is released a heartbeat on the alarm-driven task scheduler
+takes it for 5 s every 10 minutes so Tor's timers (link keepalives, circuit
+rotation, descriptor refresh) get to run; if Tor reports events in that
+window the 30 s rule above applies. The policy never stops Tor and changes
+no Tor setting; connection padding stays as the cover-traffic setting
+decides. The trade-off: the sparse 30 s keepalive of an idle connection is
+not sent while the device sleeps, so the other phone may close that
+connection after its 90 s read timeout. Both sides reconnect at the next
+poll or as soon as either has something to send; an incoming dial from a
+contact wakes this device as described above.
+
 ## Application records: ZMM
 
 The records carried inside ZWF frames are ZMM records with a small header:

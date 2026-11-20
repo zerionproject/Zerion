@@ -381,6 +381,8 @@
   <string name="tor_network_setting_never">Nie łącz się z internetem</string>
 	<string name="cover_traffic_title">Ruch maskujący</string>
 	<string name="cover_traffic_summary">Utrzymuje każde połączenie zajęte danymi wypełniającymi, więc twoja sieć nie może rozpoznać, kiedy wysyłasz lub odbierasz. Do około 200 MB danych dziennie na każdy połączony kontakt, także przez dane mobilne. Działa, gdy oba kontakty mają to włączone.</string>
+	<string name="keep_awake_title">Nie usypiaj dla Tora</string>
+	<string name="keep_awake_summary">Utrzymuje procesor stale w stanie czuwania, aby Tor reagował od razu. Zużywa znacznie więcej baterii.</string>
   
   <string name="tor_network_setting_summary">Automatycznie: %1$s (za %2$s)</string>
   <string name="tor_mobile_data_title">Używaj danych komórkowych</string>

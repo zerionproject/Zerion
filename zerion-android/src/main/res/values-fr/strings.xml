@@ -376,6 +376,8 @@
   <string name="tor_network_setting_never">Ne pas se connecter à Internet</string>
 	<string name="cover_traffic_title">Trafic de couverture</string>
 	<string name="cover_traffic_summary">Occupe chaque connexion avec des données factices, pour que votre réseau ne puisse pas savoir quand vous envoyez ou recevez. Jusqu\'à environ 200 Mo de données par jour pour chaque contact connecté, aussi en données mobiles. Fonctionne quand les deux contacts l\'ont activé.</string>
+	<string name="keep_awake_title">Rester éveillé pour Tor</string>
+	<string name="keep_awake_summary">Garde le processeur éveillé en permanence pour que Tor réagisse aussitôt. Consomme beaucoup plus de batterie.</string>
   
   <string name="tor_network_setting_summary">Automatique : %1$s (en %2$s)</string>
   <string name="tor_mobile_data_title">Utiliser les données mobiles</string>

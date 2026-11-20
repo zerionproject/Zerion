@@ -25,6 +25,8 @@ public interface TorConstants {
 	String PREF_TOR_DEBUG_COUNTRY = "debugCountry";
 	String PREF_TOR_COVER_TRAFFIC = "coverTraffic";
 	boolean DEFAULT_PREF_TOR_COVER_TRAFFIC = false;
+	String PREF_TOR_KEEP_AWAKE = "keepAwake";
+	boolean DEFAULT_PREF_TOR_KEEP_AWAKE = false;
 	int HELPER_TRANSPORTS_ASK = 0;
 	int HELPER_TRANSPORTS_USE = 1;
 	int HELPER_TRANSPORTS_OFF = 2;

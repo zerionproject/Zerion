@@ -1463,6 +1463,8 @@
 	<string name="tor_network_setting_never">Se connectar pas a Internet</string>
 	<string name="cover_traffic_title">Trafic de cobertura</string>
 	<string name="cover_traffic_summary">Manten cada connexion ocupada amb de donadas fictívias, de biais que vòstra ret pòt pas saber quand mandatz o recebètz. Fins a environ 200 Mo de donadas per jorn per cada contacte connectat, tanben en donadas mobilas. Fonciona quand los dos contactes l\'an activat.</string>
+	<string name="keep_awake_title">Demorar revelhat per Tor</string>
+	<string name="keep_awake_summary">Manten lo processador revelhat tot lo temps per que Tor reagisca sul pic. Consomís fòrça mai de batariá.</string>
 	<string name="tor_mobile_data_summary">Autorizar las connexions via la ret mobila</string>
 	<string name="backup_settings_title">Salvagarda e transferiment</string>
 	<string name="backup_settings_summary">Desplaçar vòstre compte cap a un autre telefòn</string>

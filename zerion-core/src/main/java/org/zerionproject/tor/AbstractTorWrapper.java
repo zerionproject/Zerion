@@ -56,6 +56,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	private static final String[] EVENTS = {
 			"CIRC",
+			"STREAM",
 			"ORCONN",
 			"STATUS_GENERAL",
 			"STATUS_CLIENT",
@@ -264,7 +265,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 			String info = connection.getInfo("status/bootstrap-phase");
 			if (info != null && info.contains("PROGRESS=")) {
-				state.setBootstrapPercentage(parseBootstrapPercentage(info));
+				int percentage = parseBootstrapPercentage(info);
+				state.setBootstrapPercentage(percentage);
+				onBootstrapProgress(percentage);
 			}
 			info = connection.getInfo("status/circuit-established");
 			if ("1".equals(info)) state.setCircuitBuilt(true);
@@ -541,16 +544,26 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	@Override
 	public void circuitStatus(String status, String id, String path) {
 		if (status.equals("BUILT")) state.setCircuitBuilt(true);
+		if (status.equals("LAUNCHED") || status.equals("BUILT")
+				|| status.equals("EXTENDED")) {
+			onTorControlActivity();
+		}
 	}
 
 	@Override
 	public void streamStatus(String status, String id, String target) {
+		if (status.equals("NEW") || status.equals("SUCCEEDED")) {
+			onTorControlActivity();
+		}
 	}
 
 	@Override
 	public void orConnStatus(String status, String orName) {
 		if (status.equals("CONNECTED")) state.onOrConnectionConnected();
 		else if (status.equals("CLOSED")) state.onOrConnectionClosed();
+		if (status.equals("CONNECTED") || status.equals("LAUNCHED")) {
+			onTorControlActivity();
+		}
 		if (status.equals("CONNECTED") || status.equals("FAILED")) {
 			String fingerprint = BridgeLines.relayFingerprint(orName);
 			if (fingerprint != null) {
@@ -602,15 +615,51 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private void handleHsDescriptor(String msg) {
 		String[] parts = msg.split(" ");
 		String action = parts[0];
+		onTorControlActivity();
 		if (action.equals("UPLOADED")) {
-			if (parts.length >= 2) state.onHsDescriptorUploaded(parts[1]);
+			if (parts.length >= 2) {
+				state.onHsDescriptorUploaded(parts[1]);
+				onHsDescriptorUploadFinished(parts[1]);
+			}
 		} else if (action.equals("RECEIVED")) {
 			state.onHsDirectoryAnswer();
 		} else if (action.equals("REQUESTED") || action.equals("UPLOAD")) {
 			state.onHsDirectoryRequest();
-		} else if (action.equals("FAILED") && isHsDirectoryReply(parts)) {
-			state.onHsDirectoryAnswer();
+			if (action.equals("UPLOAD") && parts.length >= 2) {
+				onHsDescriptorUpload(parts[1]);
+			}
+		} else if (action.equals("FAILED")) {
+			if (isHsDirectoryReply(parts)) state.onHsDirectoryAnswer();
+			if (parts.length >= 2) onHsDescriptorUploadFinished(parts[1]);
 		}
+	}
+
+	/**
+	 * Called on the control connection thread for every circuit, stream,
+	 * relay connection or descriptor event that shows Tor is doing work.
+	 */
+	protected void onTorControlActivity() {
+	}
+
+	/**
+	 * Called on the control connection thread when Tor reports bootstrap
+	 * progress, and once after the control connection opens.
+	 */
+	protected void onBootstrapProgress(int percentage) {
+	}
+
+	/**
+	 * Called on the control connection thread when Tor starts uploading a
+	 * descriptor of the given onion service to a directory.
+	 */
+	protected void onHsDescriptorUpload(String onion) {
+	}
+
+	/**
+	 * Called on the control connection thread when an upload of the given
+	 * onion service's descriptor to a directory has succeeded or failed.
+	 */
+	protected void onHsDescriptorUploadFinished(String onion) {
 	}
 
 	private static boolean isHsDirectoryReply(String[] parts) {
@@ -626,7 +675,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	private void handleClientStatus(String msg) {
 		if (msg.startsWith("BOOTSTRAP PROGRESS=")) {
-			state.setBootstrapPercentage(parseBootstrapPercentage(msg));
+			int percentage = parseBootstrapPercentage(msg);
+			state.setBootstrapPercentage(percentage);
+			onBootstrapProgress(percentage);
 		} else if (msg.startsWith("CIRCUIT_ESTABLISHED")) {
 			state.setCircuitBuilt(true);
 		} else if (msg.startsWith("CIRCUIT_NOT_ESTABLISHED")) {

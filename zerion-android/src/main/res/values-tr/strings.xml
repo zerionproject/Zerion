@@ -367,6 +367,8 @@
   <string name="tor_network_setting_never">İnternet bağlantısı kurulmasın</string>
 	<string name="cover_traffic_title">Örtü trafiği</string>
 	<string name="cover_traffic_summary">Her bağlantıyı sahte verilerle meşgul tutar, böylece ağınız ne zaman gönderip aldığınızı bilemez. Bağlı her kişi için günde yaklaşık 200 MB\'a kadar veri, mobil veride de. İki kişi de açtığında çalışır.</string>
+	<string name="keep_awake_title">Tor için uyanık kal</string>
+	<string name="keep_awake_summary">İşlemciyi her zaman uyanık tutar, böylece Tor hemen tepki verir. Çok daha fazla pil kullanır.</string>
   
   <string name="tor_network_setting_summary">Otomatik: %1$s (%2$s içinde)</string>
   <string name="tor_mobile_data_title">Mobil veri kullanılsın</string>
