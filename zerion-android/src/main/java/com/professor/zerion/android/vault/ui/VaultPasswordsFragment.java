@@ -9,7 +9,10 @@ import android.view.ViewGroup;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -57,11 +60,18 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private VaultPasswordsAdapter adapter;
 	private EditText vaultSearchInput;
 	private TextView vaultSortButton;
+	private ImageButton vaultMoreButton;
+	private ProgressBar importProgress;
 	private final List<VaultItem> allItems = new ArrayList<>();
 	private String searchQuery = "";
 	private int sortMode;
 	@Nullable
 	private androidx.appcompat.app.AlertDialog passwordDialog;
+	@Nullable
+	private androidx.appcompat.app.AlertDialog importDialog;
+
+	private static final int REQUEST_KEEPASS_FILE = 1101;
+	private static final int REQUEST_KEEPASS_KEY_FILE = 1102;
 
 	public static VaultPasswordsFragment newInstance() {
 		return new VaultPasswordsFragment();
@@ -83,6 +93,8 @@ public class VaultPasswordsFragment extends BaseFragment {
 		fabAdd = view.findViewById(R.id.fab_add);
 		vaultSearchInput = view.findViewById(R.id.vault_search_input);
 		vaultSortButton = view.findViewById(R.id.vault_sort_button);
+		vaultMoreButton = view.findViewById(R.id.vault_more_button);
+		importProgress = view.findViewById(R.id.import_progress);
 
 		return view;
 	}
@@ -274,6 +286,101 @@ public class VaultPasswordsFragment extends BaseFragment {
 
 	private void setupClickListeners() {
 		fabAdd.setOnClickListener(v -> showAddPasswordDialog());
+		vaultMoreButton.setOnClickListener(this::showMoreMenu);
+	}
+
+	private void showMoreMenu(View anchor) {
+		PopupMenu popup = new PopupMenu(requireContext(), anchor);
+		popup.getMenuInflater().inflate(R.menu.vault_passwords_more,
+				popup.getMenu());
+		popup.setOnMenuItemClickListener(item -> {
+			if (item.getItemId() == R.id.action_import_keepass) {
+				pickFile(REQUEST_KEEPASS_FILE);
+				return true;
+			}
+			return false;
+		});
+		popup.show();
+	}
+
+	private void pickFile(int requestCode) {
+		android.content.Intent intent = new android.content.Intent(
+				android.content.Intent.ACTION_OPEN_DOCUMENT);
+		intent.setType("*/*");
+		intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+		if (getActivity() instanceof VaultActivity) {
+			((VaultActivity) getActivity()).setExpectingChildResult();
+		}
+		startActivityForResult(intent, requestCode);
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode,
+			@Nullable android.content.Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode != REQUEST_KEEPASS_FILE
+				&& requestCode != REQUEST_KEEPASS_KEY_FILE) {
+			return;
+		}
+		if (resultCode != android.app.Activity.RESULT_OK || data == null) return;
+		android.net.Uri uri = com.professor.zerion.android.util.PickedUris
+				.accept(requireContext(), data.getData());
+		if (uri == null) return;
+		viewModel.readKeePassFile(uri, requestCode == REQUEST_KEEPASS_KEY_FILE);
+	}
+
+	private void showImportDialog(String databaseName) {
+		if (importDialog != null && importDialog.isShowing()) return;
+		View dialogView = LayoutInflater.from(requireContext())
+				.inflate(R.layout.dialog_import_keepass, null);
+		TextView fileName = dialogView.findViewById(R.id.keepass_file_name);
+		TextInputEditText passwordInput =
+				dialogView.findViewById(R.id.keepass_password);
+		TextView keyFileButton =
+				dialogView.findViewById(R.id.keepass_key_file_button);
+		fileName.setText(databaseName);
+		String keyFileName = viewModel.getKeePassKeyFileName().getValue();
+		if (keyFileName != null) keyFileButton.setText(keyFileName);
+		keyFileButton.setOnClickListener(v -> pickFile(REQUEST_KEEPASS_KEY_FILE));
+		androidx.appcompat.app.AlertDialog dialog =
+				new SecureAlertDialogBuilder(requireContext())
+						.fitAboveKeyboard()
+						.setTitle(R.string.vault_keepass_import_action)
+						.setView(dialogView)
+						.setPositiveButton(R.string.vault_keepass_import_button,
+								null)
+						.setNegativeButton(android.R.string.cancel, null)
+						.setOnDismissListener(d -> {
+							passwordInput.setText("");
+							importDialog = null;
+							viewModel.cancelKeePassImport();
+						})
+						.create();
+		dialog.setOnShowListener(d -> dialog.getButton(
+				androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+				.setOnClickListener(v -> {
+					char[] password = readChars(passwordInput);
+					if (password.length == 0 && !viewModel.hasKeePassKeyFile()) {
+						showSnackbar(getString(R.string.vault_keepass_need_key));
+						return;
+					}
+					passwordInput.setText("");
+					viewModel.importKeePass(password);
+					dialog.dismiss();
+				}));
+		dialog.getWindow().setFlags(
+				android.view.WindowManager.LayoutParams.FLAG_SECURE,
+				android.view.WindowManager.LayoutParams.FLAG_SECURE);
+		importDialog = dialog;
+		dialog.show();
+	}
+
+	private static char[] readChars(EditText input) {
+		android.text.Editable e = input.getText();
+		if (e == null) return new char[0];
+		char[] out = new char[e.length()];
+		e.getChars(0, e.length(), out, 0);
+		return out;
 	}
 
 	private void showAddPasswordDialog() {
@@ -413,6 +520,44 @@ public class VaultPasswordsFragment extends BaseFragment {
 			}
 		});
 
+		viewModel.getIsLoading().observe(getViewLifecycleOwner(), loading ->
+				importProgress.setVisibility(Boolean.TRUE.equals(loading)
+						? View.VISIBLE : View.GONE));
+		viewModel.getProgressPercent().observe(getViewLifecycleOwner(), pct -> {
+			int value = pct == null ? 0 : pct;
+			importProgress.setIndeterminate(value <= 0);
+			if (value > 0) importProgress.setProgress(value);
+		});
+		viewModel.getKeePassDatabaseName().observe(getViewLifecycleOwner(),
+				name -> {
+					if (name != null) {
+						showImportDialog(name);
+					} else if (importDialog != null && importDialog.isShowing()) {
+						importDialog.dismiss();
+					}
+				});
+		viewModel.getKeePassKeyFileName().observe(getViewLifecycleOwner(),
+				name -> {
+					if (importDialog == null || !importDialog.isShowing()) return;
+					TextView button = importDialog.findViewById(
+							R.id.keepass_key_file_button);
+					if (button == null) return;
+					if (name != null) button.setText(name);
+					else button.setText(R.string.vault_keepass_key_file);
+				});
+		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), msg -> {
+			if (msg != null && !msg.isEmpty()) {
+				showSnackbar(msg);
+				viewModel.clearMessages();
+			}
+		});
+		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), msg -> {
+			if (msg != null && !msg.isEmpty()) {
+				showSnackbar(msg);
+				viewModel.clearMessages();
+			}
+		});
+
 		viewModel.loadVaultItems();
 	}
 
@@ -434,6 +579,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 			passwordDialog.dismiss();
 		}
 		passwordDialog = null;
+		if (importDialog != null) {
+			importDialog.setOnDismissListener(null);
+			if (importDialog.isShowing()) importDialog.dismiss();
+		}
+		importDialog = null;
 	}
 
 	private void showSnackbar(CharSequence message) {

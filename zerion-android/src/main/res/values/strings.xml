@@ -2118,6 +2118,20 @@
 	<string name="vault_bookmark_deleted">Bookmark deleted</string>
 	<string name="vault_bookmark_load_failed">Could not load bookmark</string>
 	<string name="vault_bookmark_save_failed">Could not save bookmark</string>
+	<string name="vault_keepass_import_action">Import from KeePass</string>
+	<string name="vault_keepass_import_button">Import</string>
+	<string name="vault_keepass_password_hint">Master password</string>
+	<string name="vault_keepass_key_file">Key file</string>
+	<string name="vault_keepass_need_key">Enter the password or choose a key file</string>
+	<string name="vault_keepass_imported">Passwords imported: %1$d</string>
+	<string name="vault_keepass_imported_skipped">Passwords imported: %1$d, skipped: %2$d</string>
+	<string name="vault_keepass_open_failed">Could not open the KeePass file. Check the password and key file.</string>
+	<string name="vault_keepass_unsupported">This file is not a supported KeePass database. KDBX 3.1 and 4 files can be imported.</string>
+	<string name="vault_keepass_too_large">This file is too large to import.</string>
+	<string name="vault_keepass_read_failed">Could not read the file.</string>
+	<string name="vault_keepass_untitled">Untitled</string>
+	<string name="vault_keepass_folder">Folder</string>
+	<string name="vault_keepass_imported_partial">Passwords imported: %1$d of %2$d</string>
 
 	<string name="wallet">Wallet</string>
 	<string name="wallet_card_title">Wallet</string>
