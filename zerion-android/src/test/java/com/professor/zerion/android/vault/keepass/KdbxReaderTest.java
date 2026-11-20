@@ -5,6 +5,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.junit.Test;
 
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -288,10 +289,52 @@ public class KdbxReaderTest {
 
 	@Test
 	public void trailingDataAfterTheLastBlockIsCorrupted() throws Exception {
-		byte[] file = load(KdbxFixtures.V4_ARGON2D);
-		byte[] longer = Arrays.copyOf(file, file.length + 7);
+		for (String fixture : new String[] {KdbxFixtures.V4_ARGON2D,
+				KdbxFixtures.V4_ARGON2ID_CHACHA20, KdbxFixtures.V4_TWOFISH,
+				KdbxFixtures.V4_NOCOMPRESS}) {
+			byte[] file = load(fixture);
+			byte[] longer = Arrays.copyOf(file, file.length + 7);
+			assertEquals(fixture, KdbxException.Reason.CORRUPTED,
+					reasonOf(longer, password(), null));
+		}
+		for (String fixture : new String[] {KdbxFixtures.V3_AESKDF_SALSA20,
+				KdbxFixtures.V3_CHACHA20}) {
+			byte[] file = load(fixture);
+			byte[] longer = Arrays.copyOf(file, file.length + 16);
+			KdbxException.Reason reason = reasonOf(longer, password(), null);
+			assertTrue(fixture, reason == KdbxException.Reason.CORRUPTED
+					|| reason == KdbxException.Reason.WRONG_KEY);
+		}
+	}
+
+	@Test
+	public void xmlMustStartWithAnAngleBracketInUtf8() throws Exception {
+		String doc = "<KeePassFile><Meta/><Root><Group><UUID>r</UUID>"
+				+ "<Name>Root</Name></Group></Root></KeePassFile>";
+		byte[] utf8Bom = KdbxBytes.concat(new byte[] {(byte) 0xEF, (byte) 0xBB,
+				(byte) 0xBF}, doc.getBytes(StandardCharsets.UTF_8));
+		assertEquals(0, KdbxReader.parseXml(utf8Bom, salsa()).entries.size());
 		assertEquals(KdbxException.Reason.CORRUPTED,
-				reasonOf(longer, password(), null));
+				parseBytesReason(doc.getBytes(StandardCharsets.UTF_16)));
+		assertEquals(KdbxException.Reason.CORRUPTED,
+				parseBytesReason(doc.getBytes(StandardCharsets.UTF_16LE)));
+		assertEquals(KdbxException.Reason.CORRUPTED,
+				parseBytesReason(doc.getBytes(StandardCharsets.UTF_16BE)));
+		assertEquals(KdbxException.Reason.CORRUPTED,
+				parseBytesReason(("  " + doc).getBytes(StandardCharsets.UTF_8)));
+		byte[] utf32 = KdbxBytes.concat(new byte[] {0, 0, (byte) 0xFE,
+				(byte) 0xFF}, doc.getBytes(StandardCharsets.UTF_8));
+		assertEquals(KdbxException.Reason.CORRUPTED, parseBytesReason(utf32));
+	}
+
+	private static KdbxException.Reason parseBytesReason(byte[] xml) {
+		try {
+			KdbxReader.parseXml(xml, salsa());
+		} catch (KdbxException e) {
+			return e.reason;
+		}
+		fail("accepted");
+		throw new AssertionError();
 	}
 
 	@Test
@@ -597,14 +640,16 @@ public class KdbxReaderTest {
 		String xml = "<KeePassFile><Meta><HeaderHash>%s</HeaderHash></Meta>"
 				+ "<Root><Group><UUID>r</UUID><Name>Root</Name></Group></Root>"
 				+ "</KeePassFile>";
-		KdbxReader.parseXml(KdbxStreams.bytes(String.format(xml, good)
-				.getBytes(StandardCharsets.UTF_8), 0), salsa(), expected);
+		InputStream fine = KdbxStreams.bytes(String.format(xml, good)
+				.getBytes(StandardCharsets.UTF_8), 0);
+		KdbxReader.parseXml(fine, fine, salsa(), expected);
 		byte[] other = expected.clone();
 		other[0] ^= 1;
 		try {
-			KdbxReader.parseXml(KdbxStreams.bytes(String.format(xml,
+			InputStream bad = KdbxStreams.bytes(String.format(xml,
 					Base64.getEncoder().encodeToString(other))
-					.getBytes(StandardCharsets.UTF_8), 0), salsa(), expected);
+					.getBytes(StandardCharsets.UTF_8), 0);
+			KdbxReader.parseXml(bad, bad, salsa(), expected);
 			fail("accepted");
 		} catch (KdbxException e) {
 			assertEquals(KdbxException.Reason.CORRUPTED, e.reason);

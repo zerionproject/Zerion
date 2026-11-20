@@ -2171,6 +2171,11 @@ public class VaultViewModel extends AndroidViewModel {
 					content = KdbxReader.readLimited(source, declared, cap);
 				}
 				synchronized (keePassLock) {
+					if (!vaultManager.isUnlocked()) {
+						Arrays.fill(content, (byte) 0);
+						wipeKeePassPending();
+						return;
+					}
 					if (keyFile) {
 						if (keePassDatabase == null) {
 							Arrays.fill(content, (byte) 0);
@@ -2290,8 +2295,6 @@ public class VaultViewModel extends AndroidViewModel {
 							result.skipped)
 					: getApplication().getString(
 							R.string.vault_keepass_imported, imported));
-		} catch (SecurityException e) {
-			errorMessage.postValue(text(R.string.vault_locked));
 		} catch (Exception e) {
 			errorMessage.postValue(getApplication().getString(
 					R.string.vault_keepass_imported_partial, imported, total));

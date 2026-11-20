@@ -115,6 +115,31 @@ public class KdbxStreamsTest {
 	}
 
 	@Test
+	public void wipingBufferGrowsZeroesAndCaps() throws Exception {
+		KdbxStreams.WipingBuffer buffer = new KdbxStreams.WipingBuffer(4, 10);
+		byte[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+		buffer.write(data, 0, 3);
+		buffer.write(data, 3, 9);
+		assertEquals(10, buffer.size());
+		assertArrayEquals(Arrays.copyOf(data, 10), buffer.toByteArray());
+		buffer.wipe();
+		assertEquals(0, buffer.size());
+		assertArrayEquals(new byte[0], buffer.toByteArray());
+	}
+
+	@Test
+	public void drainReadsToTheEnd() throws Exception {
+		byte[] a = "block".getBytes(StandardCharsets.UTF_8);
+		byte[] stream = KdbxBytes.concat(hashedBlocks(a), new byte[] {9});
+		ByteArrayInputStream in = new ByteArrayInputStream(stream);
+		KdbxStreams.HashedBlockInputStream blocks =
+				new KdbxStreams.HashedBlockInputStream(in);
+		KdbxStreams.drain(blocks);
+		assertEquals(9, in.read());
+		assertEquals(-1, in.read());
+	}
+
+	@Test
 	public void limitedStreamStopsAtTheCap() throws Exception {
 		byte[] data = new byte[100];
 		assertArrayEquals(data, drain(new KdbxStreams.LimitedInputStream(

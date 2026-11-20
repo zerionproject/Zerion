@@ -269,6 +269,37 @@ public class KeePassImportViewModelTest {
 	}
 
 	@Test
+	public void aFileReadWhileTheVaultIsLockedIsDropped() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		Uri db = Uri.parse("content://test/db.kdbx");
+		shadowOf(rig.app.getContentResolver()).registerInputStream(db,
+				new ByteArrayInputStream(fixture("kdbx4_simple.kdbx")));
+		rig.vault.unlocked = false;
+		vm.readKeePassFile(db, false);
+		VaultViewModelRig.settle();
+		assertNull(vm.getKeePassDatabaseName().getValue());
+		assertEquals(text(rig, R.string.vault_msg_unlock_first),
+				vm.getErrorMessage().getValue());
+	}
+
+	@Test
+	public void lockMidStoreReportsThePartialCount() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		AtomicInteger calls = new AtomicInteger();
+		doAnswer(a -> {
+			if (calls.incrementAndGet() == 2) throw new SecurityException("locked");
+			return rig.vault.manager.addMediaItem(a.getArgument(0),
+					a.getArgument(1), a.getArgument(2), null);
+		}).when(rig.vault.manager).addItem(any(), anyString(), any());
+		VaultViewModel vm = rig.newModel();
+		vm.importKeePass(fixture("kdbx4_simple.kdbx"), PASSWORD.clone(), null);
+		VaultViewModelRig.settle();
+		assertEquals(text(rig, R.string.vault_keepass_imported_partial, 1, 2),
+				vm.getErrorMessage().getValue());
+	}
+
+	@Test
 	public void lockingTheVaultDropsThePickedFiles() throws Exception {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();

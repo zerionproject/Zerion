@@ -5,7 +5,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -51,12 +50,13 @@ final class KdbxDocumentHandler extends DefaultHandler {
 		private final boolean store;
 		private final StringBuilder pending = new StringBuilder(BASE64_CHUNK);
 		@Nullable
-		private final ByteArrayOutputStream plain;
+		private final KdbxStreams.WipingBuffer plain;
 		private boolean padded = false;
 
 		ProtectedDecoder(boolean store) {
 			this.store = store;
-			this.plain = store ? new ByteArrayOutputStream() : null;
+			this.plain = store ? new KdbxStreams.WipingBuffer(64,
+					MAX_VALUE_CHARS) : null;
 		}
 
 		void append(char[] ch, int start, int length) throws SAXException {
@@ -101,7 +101,7 @@ final class KdbxDocumentHandler extends DefaultHandler {
 			byte[] bytes = plain.toByteArray();
 			String value = new String(bytes, StandardCharsets.UTF_8);
 			KdbxBytes.wipe(bytes);
-			plain.reset();
+			plain.wipe();
 			return value;
 		}
 	}

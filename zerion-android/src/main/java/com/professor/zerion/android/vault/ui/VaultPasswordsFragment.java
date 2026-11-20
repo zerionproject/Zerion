@@ -69,7 +69,6 @@ public class VaultPasswordsFragment extends BaseFragment {
 	private androidx.appcompat.app.AlertDialog passwordDialog;
 	@Nullable
 	private androidx.appcompat.app.AlertDialog importDialog;
-	private boolean tearingDown = false;
 
 	private static final int REQUEST_KEEPASS_FILE = 1101;
 	private static final int REQUEST_KEEPASS_KEY_FILE = 1102;
@@ -354,7 +353,7 @@ public class VaultPasswordsFragment extends BaseFragment {
 						.setOnDismissListener(d -> {
 							passwordInput.setText("");
 							importDialog = null;
-							if (!tearingDown) viewModel.cancelKeePassImport();
+							viewModel.cancelKeePassImport();
 						})
 						.create();
 		dialog.setOnShowListener(d -> dialog.getButton(
@@ -580,12 +579,11 @@ public class VaultPasswordsFragment extends BaseFragment {
 			passwordDialog.dismiss();
 		}
 		passwordDialog = null;
-		tearingDown = true;
-		if (importDialog != null && importDialog.isShowing()) {
-			importDialog.dismiss();
+		if (importDialog != null) {
+			importDialog.setOnDismissListener(null);
+			if (importDialog.isShowing()) importDialog.dismiss();
 		}
 		importDialog = null;
-		tearingDown = false;
 	}
 
 	private void showSnackbar(CharSequence message) {

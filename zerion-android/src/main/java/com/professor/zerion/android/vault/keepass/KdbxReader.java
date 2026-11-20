@@ -103,7 +103,7 @@ public final class KdbxReader {
 			InputStream blocks = new KdbxStreams.HmacBlockInputStream(file,
 					pos + 64, hmacBase);
 			try (InputStream plain = payload(header, masterKey, blocks)) {
-				return parseInnerHeaderAndXml(plain);
+				return parseInnerHeaderAndXml(plain, blocks);
 			} catch (IOException e) {
 				throw KdbxStreams.unwrap(e, KdbxException.Reason.CORRUPTED,
 						KdbxException.Reason.CORRUPTED);
@@ -136,22 +136,29 @@ public final class KdbxReader {
 		}
 		byte[] masterKey = KdbxBytes.sha256(header.masterSeed, transformed);
 		KdbxBytes.wipe(transformed);
-		try (InputStream decrypted = KdbxStreams.decrypting(header, masterKey,
-				KdbxStreams.bytes(file, pos))) {
-			byte[] start;
-			try {
-				start = KdbxStreams.readFully(decrypted, 32);
-			} catch (IOException e) {
-				throw KdbxException.wrongKey("stream start");
-			}
-			if (!KdbxBytes.constantTimeEquals(start, streamStartBytes)) {
-				throw KdbxException.wrongKey("stream start");
-			}
-			InputStream blocks = new KdbxStreams.HashedBlockInputStream(decrypted);
-			InputStream xml = header.gzip ? gunzip(blocks) : blocks;
+		InputStream decrypted = KdbxStreams.decrypting(header, masterKey,
+				KdbxStreams.bytes(file, pos));
+		byte[] start;
+		try {
+			start = KdbxStreams.readFully(decrypted, 32);
+		} catch (IOException e) {
+			KdbxBytes.wipe(masterKey);
+			throw KdbxException.wrongKey("stream start");
+		}
+		if (!KdbxBytes.constantTimeEquals(start, streamStartBytes)) {
+			KdbxBytes.wipe(masterKey);
+			throw KdbxException.wrongKey("stream start");
+		}
+		InputStream blocks = new KdbxStreams.HashedBlockInputStream(decrypted);
+		try (InputStream xml = header.gzip ? gunzip(blocks) : blocks) {
 			KdbxInnerStream inner = KdbxInnerStream.create(
 					header.innerRandomStreamId, protectedStreamKey);
-			return parseXml(xml, inner, KdbxBytes.sha256(header.rawBytes(file)));
+			Document document = parseXml(xml, blocks, inner,
+					KdbxBytes.sha256(header.rawBytes(file)));
+			if (decrypted.read() >= 0) {
+				throw KdbxException.corrupted("trailing data");
+			}
+			return document;
 		} catch (IOException e) {
 			throw KdbxStreams.unwrap(e, KdbxException.Reason.WRONG_KEY,
 					KdbxException.Reason.CORRUPTED);
@@ -171,8 +178,8 @@ public final class KdbxReader {
 				new GZIPInputStream(compressed, 64 * 1024), MAX_PAYLOAD_BYTES);
 	}
 
-	private static Document parseInnerHeaderAndXml(InputStream in)
-			throws KdbxException, IOException {
+	private static Document parseInnerHeaderAndXml(InputStream in,
+			InputStream blocks) throws KdbxException, IOException {
 		int streamId = -1;
 		byte[] streamKey = null;
 		int binaries = 0;
@@ -217,14 +224,15 @@ public final class KdbxReader {
 		}
 		KdbxInnerStream inner = KdbxInnerStream.create(streamId, streamKey);
 		KdbxBytes.wipe(streamKey);
-		return parseXml(in, inner, null);
+		return parseXml(in, blocks, inner, null);
 	}
 
-	static Document parseXml(InputStream xml, KdbxInnerStream inner,
-			@Nullable byte[] expectedHeaderHash)
+	static Document parseXml(InputStream xml, InputStream blocks,
+			KdbxInnerStream inner, @Nullable byte[] expectedHeaderHash)
 			throws KdbxException, IOException {
 		KdbxDocumentHandler handler = new KdbxDocumentHandler(inner);
 		KdbxXml.parse(new KdbxStreams.DeclarationScanInputStream(xml), handler);
+		KdbxStreams.drain(blocks);
 		String storedHash = handler.headerHash();
 		if (expectedHeaderHash != null && storedHash != null) {
 			checkHeaderHash(storedHash, expectedHeaderHash);
@@ -236,7 +244,8 @@ public final class KdbxReader {
 	static Document parseXml(byte[] xml, KdbxInnerStream inner)
 			throws KdbxException {
 		try {
-			return parseXml(KdbxStreams.bytes(xml, 0), inner, null);
+			InputStream in = KdbxStreams.bytes(xml, 0);
+			return parseXml(in, in, inner, null);
 		} catch (IOException e) {
 			throw KdbxStreams.unwrap(e, KdbxException.Reason.CORRUPTED,
 					KdbxException.Reason.CORRUPTED);

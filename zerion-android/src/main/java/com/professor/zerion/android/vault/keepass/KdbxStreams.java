@@ -46,7 +46,8 @@ final class KdbxStreams {
 		if (e instanceof InvalidCipherTextIOException) {
 			return new KdbxException(onCipherText, "cipher text");
 		}
-		return new KdbxException(otherwise, "stream");
+		return new KdbxException(otherwise, "stream " + e.getClass().getSimpleName()
+				+ " " + e.getMessage());
 	}
 
 	static void readFully(InputStream in, byte[] buf, int off, int len)
@@ -54,7 +55,7 @@ final class KdbxStreams {
 		int done = 0;
 		while (done < len) {
 			int n = in.read(buf, off + done, len - done);
-			if (n < 0) throw new EOFException();
+			if (n < 0) throw new EOFException(done + " of " + len);
 			done += n;
 		}
 	}
@@ -76,8 +77,51 @@ final class KdbxStreams {
 		Arrays.fill(sink, (byte) 0);
 	}
 
-	static boolean atEnd(InputStream in) throws IOException {
-		return in.read() < 0;
+	static void drain(InputStream in) throws IOException {
+		byte[] sink = new byte[64 * 1024];
+		while (in.read(sink) >= 0) {
+		}
+		Arrays.fill(sink, (byte) 0);
+	}
+
+	static final class WipingBuffer {
+
+		private final int cap;
+		private byte[] buf;
+		private int count = 0;
+
+		WipingBuffer(int initial, int cap) {
+			this.cap = cap;
+			this.buf = new byte[Math.min(initial, cap)];
+		}
+
+		int size() {
+			return count;
+		}
+
+		void write(byte[] data, int off, int len) {
+			int room = Math.min(len, cap - count);
+			if (room <= 0) return;
+			if (count + room > buf.length) {
+				int grown = (int) Math.min(cap,
+						Math.max((long) buf.length * 2, (long) count + room));
+				byte[] bigger = new byte[grown];
+				System.arraycopy(buf, 0, bigger, 0, count);
+				Arrays.fill(buf, (byte) 0);
+				buf = bigger;
+			}
+			System.arraycopy(data, off, buf, count, room);
+			count += room;
+		}
+
+		byte[] toByteArray() {
+			return Arrays.copyOf(buf, count);
+		}
+
+		void wipe() {
+			Arrays.fill(buf, (byte) 0);
+			count = 0;
+		}
 	}
 
 	static byte[] readAll(InputStream in, long declaredSize, int cap)
@@ -192,7 +236,9 @@ final class KdbxStreams {
 		private static final byte[] DOCTYPE = "<!DOCTYPE".getBytes();
 		private static final byte[] ENTITY = "<!ENTITY".getBytes();
 		private final byte[] window = new byte[DOCTYPE.length];
+		private final byte[] head = new byte[4];
 		private int filled = 0;
+		private int headCount = 0;
 
 		DeclarationScanInputStream(InputStream in) {
 			super(in);
@@ -213,6 +259,10 @@ final class KdbxStreams {
 		}
 
 		private void scan(byte b) throws IOException {
+			if (headCount < head.length) {
+				head[headCount++] = b;
+				if (headCount == head.length) checkHead();
+			}
 			System.arraycopy(window, 1, window, 0, window.length - 1);
 			window[window.length - 1] = b;
 			if (filled < window.length) filled++;
@@ -230,8 +280,22 @@ final class KdbxStreams {
 			return true;
 		}
 
+		private void checkHead() throws IOException {
+			int start = 0;
+			if ((head[0] & 0xFF) == 0xEF && (head[1] & 0xFF) == 0xBB
+					&& (head[2] & 0xFF) == 0xBF) {
+				start = 3;
+			}
+			if (head[start] != '<') refuse();
+			if (start + 1 < head.length && head[start + 1] == 0) refuse();
+		}
+
 		private static void refuse() throws IOException {
 			throw new KdbxIOException(KdbxException.corrupted("xml declaration"));
+		}
+
+		@Override
+		public void close() {
 		}
 
 		@Override
