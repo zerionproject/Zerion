@@ -207,6 +207,8 @@ public class VoiceCallService extends Service implements EventListener {
 	@Nullable
 	private com.professor.zerion.android.api.AndroidNotificationManager
 			notifications;
+	@Nullable
+	private org.zerionproject.tor.TorWakePolicy torWakePolicy;
 	private EventBus eventBus;
 	private PluginManager pluginManager;
 	private Executor dbExecutor;
@@ -287,6 +289,8 @@ public class VoiceCallService extends Service implements EventListener {
 		connectionManager = component.voiceCallConnectionManager();
 		voiceCallCrypto = component.voiceCallCrypto();
 		notifications = component.androidNotificationManager();
+		torWakePolicy = component.torWakePolicy();
+		torWakePolicy.setCallInProgress(true);
 
 		audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
@@ -2132,6 +2136,7 @@ public class VoiceCallService extends Service implements EventListener {
 	public void onDestroy() {
 		super.onDestroy();
 		if (notifications != null) notifications.callServiceStopped();
+		if (torWakePolicy != null) torWakePolicy.setCallInProgress(false);
 		synchronized (streamLock) {
 			isShuttingDown = true;
 		}

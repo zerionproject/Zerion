@@ -1432,6 +1432,8 @@
 	<string name="tor_network_setting_never">İnternetə qoşulma</string>
 	<string name="cover_traffic_title">Örtük trafiki</string>
 	<string name="cover_traffic_summary">Hər bağlantını saxta məlumatlarla məşğul saxlayır, beləliklə şəbəkəniz nə vaxt göndərdiyinizi və ya aldığınızı bilə bilməz. Hər qoşulmuş kontakt üçün gündə təxminən 200 MB-a qədər məlumat, mobil məlumatda da. Hər iki kontakt aktiv etdikdə işləyir.</string>
+	<string name="keep_awake_title">Tor üçün oyaq qal</string>
+	<string name="keep_awake_summary">Prosessoru hər zaman oyaq saxlayır ki, Tor dərhal cavab versin. Daha çox batareya işlədir.</string>
 	<string name="tor_network_setting_summary">Avtomatik: %1$s (ölkə: %2$s)</string>
 	<string name="tor_mobile_data_summary">Mobil şəbəkə üzərindən bağlantılara icazə ver</string>
 	<string name="backup_settings_title">Ehtiyat nüsxə və köçürmə</string>

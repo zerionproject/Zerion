@@ -1488,6 +1488,8 @@
 	<string name="tor_network_setting_never">Ez konektatu Internetera</string>
 	<string name="cover_traffic_title">Estalketa-trafikoa</string>
 	<string name="cover_traffic_summary">Konexio bakoitza datu faltsuekin lanpetuta mantentzen du, zure sareak ez dezan jakin noiz bidaltzen edo jasotzen duzun. Egunean 200 MB inguru datu gehienez konektatutako kontaktu bakoitzeko, datu mugikorrekin ere. Bi kontaktuek aktibatuta dutenean funtzionatzen du.</string>
+	<string name="keep_awake_title">Esna egon Tor-entzat</string>
+	<string name="keep_awake_summary">Prozesadorea beti esna mantentzen du, Tor berehala erantzun dezan. Bateria askoz gehiago erabiltzen du.</string>
 	<string name="tor_mobile_data_summary">Baimendu sare mugikorreko konexioak</string>
 	<string name="backup_settings_title">Babeskopia eta transferentzia</string>
 	<string name="backup_settings_summary">Eraman zure kontua beste telefono batera</string>

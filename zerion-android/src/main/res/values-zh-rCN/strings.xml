@@ -359,6 +359,8 @@
   <string name="tor_network_setting_never">不连接到互联网</string>
 	<string name="cover_traffic_title">掩护流量</string>
 	<string name="cover_traffic_summary">用填充数据让每个连接持续处于忙碌状态，使你的网络无法得知你何时发送或接收。每个已连接的联系人每天最多约 200 MB 数据，使用移动数据时也是如此。双方联系人都开启时才生效。</string>
+	<string name="keep_awake_title">为 Tor 保持唤醒</string>
+	<string name="keep_awake_summary">让处理器始终保持唤醒，以便 Tor 立即响应。耗电量大幅增加。</string>
   
   <string name="tor_network_setting_summary">自动选择：%1$s（在 %2$s）</string>
   <string name="tor_mobile_data_title">使用移动数据</string>

@@ -367,6 +367,8 @@
   <string name="tor_network_setting_never">ইন্টারনেটে সংযোগ স্থাপন করবেন না</string>
 	<string name="cover_traffic_title">কভার ট্রাফিক</string>
 	<string name="cover_traffic_summary">প্রতিটি সংযোগকে নকল ডেটা দিয়ে ব্যস্ত রাখে, তাই আপনার নেটওয়ার্ক বুঝতে পারে না আপনি কখন পাঠান বা পান। প্রতিটি সংযুক্ত পরিচিতির জন্য দিনে প্রায় 200 MB পর্যন্ত ডেটা, মোবাইল ডেটাতেও। দুই পরিচিতিই চালু করলে কাজ করে।</string>
+	<string name="keep_awake_title">Tor-এর জন্য জাগ্রত থাকুন</string>
+	<string name="keep_awake_summary">প্রসেসরকে সব সময় জাগ্রত রাখে, যাতে Tor সঙ্গে সঙ্গে সাড়া দেয়। অনেক বেশি ব্যাটারি খরচ করে।</string>
   
   <string name="tor_network_setting_summary">স্বয়ংক্রিয়: %1$s (%2$s)</string>
   <string name="tor_mobile_data_title">মোবাইল ডেটা ব্যবহার করুন</string>

@@ -382,6 +382,8 @@
   <string name="tor_network_setting_never">Не з\'єднуватися з інтернетом</string>
 	<string name="cover_traffic_title">Маскувальний трафік</string>
 	<string name="cover_traffic_summary">Тримає кожне з\'єднання зайнятим фіктивними даними, щоб ваша мережа не могла дізнатися, коли ви надсилаєте чи отримуєте. До близько 200 МБ даних на день на кожний підключений контакт, також через мобільні дані. Працює, коли обидва контакти його увімкнули.</string>
+	<string name="keep_awake_title">Не спати заради Tor</string>
+	<string name="keep_awake_summary">Тримає процесор постійно активним, щоб Tor реагував одразу. Витрачає набагато більше заряду батареї.</string>
   
   <string name="tor_network_setting_summary">Автоматично: %1$s (через %2$s)</string>
   <string name="tor_mobile_data_title">Використовувати мобільну мережу</string>

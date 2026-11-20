@@ -349,6 +349,8 @@
   <string name="tor_network_setting_never">Ekki tengjast við internetið</string>
 	<string name="cover_traffic_title">Hjúpumferð</string>
 	<string name="cover_traffic_summary">Heldur hverri tengingu upptekinni með gervigögnum, svo netið þitt getur ekki séð hvenær þú sendir eða tekur á móti. Allt að um 200 MB af gögnum á dag fyrir hvern tengdan tengilið, einnig á farsímagögnum. Virkar þegar báðir tengiliðir hafa kveikt á því.</string>
+	<string name="keep_awake_title">Halda vöku fyrir Tor</string>
+	<string name="keep_awake_summary">Heldur örgjörvanum alltaf vakandi svo Tor svari strax. Notar mun meiri rafhlöðu.</string>
   
   <string name="tor_network_setting_summary">Sjálfvirkt: %1$s (eftir %2$s)</string>
   <string name="tor_mobile_data_title">Nota farsímagagnasamband</string>

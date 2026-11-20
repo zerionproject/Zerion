@@ -39,27 +39,41 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	static final String LYREBIRD_LIB_NAME = "liblyrebird.so";
 
 	private final Application app;
-	private final AndroidWakeLock wakeLock;
+	private final TorWakePolicy wakePolicy;
 	private final File torLib, lyrebirdLib;
 
 	public AndroidTorWrapper(Application app,
-			AndroidWakeLockManager wakeLockManager, Executor ioExecutor,
-			Executor eventExecutor, String architecture, File torDirectory,
-			int torSocksPort, int torControlPort,
+			AndroidWakeLockManager wakeLockManager, TorWakePolicy wakePolicy,
+			Executor ioExecutor, Executor eventExecutor, String architecture,
+			File torDirectory, int torSocksPort, int torControlPort,
 			TorBinaryVerifier verifier) {
-		this(app, wakeLockManager, ioExecutor, eventExecutor, architecture,
-				torDirectory, torSocksPort, torControlPort, null, verifier);
+		this(app, wakeLockManager, wakePolicy, ioExecutor, eventExecutor,
+				architecture, torDirectory, torSocksPort, torControlPort, null,
+				verifier);
 	}
 
 	public AndroidTorWrapper(Application app,
-			AndroidWakeLockManager wakeLockManager, Executor ioExecutor,
-			Executor eventExecutor, String architecture, File torDirectory,
-			int torSocksPort, int torControlPort,
+			AndroidWakeLockManager wakeLockManager, TorWakePolicy wakePolicy,
+			Executor ioExecutor, Executor eventExecutor, String architecture,
+			File torDirectory, int torSocksPort, int torControlPort,
 			@Nullable String controlSocketPath, TorBinaryVerifier verifier) {
 		super(ioExecutor, eventExecutor, architecture, torDirectory,
 				torSocksPort, torControlPort, controlSocketPath, verifier);
 		this.app = app;
-		wakeLock = wakeLockManager.createWakeLock("TorPlugin");
+		this.wakePolicy = wakePolicy;
+		AndroidWakeLock wakeLock = wakeLockManager.createWakeLock("TorPlugin");
+		wakePolicy.attachLock(new TorWakePolicy.Lock() {
+
+			@Override
+			public void acquire() {
+				wakeLock.acquire();
+			}
+
+			@Override
+			public void release() {
+				wakeLock.release();
+			}
+		});
 		String nativeLibDir = app.getApplicationInfo().nativeLibraryDir;
 		torLib = new File(nativeLibDir, TOR_LIB_NAME);
 		lyrebirdLib = new File(nativeLibDir, LYREBIRD_LIB_NAME);
@@ -95,21 +109,67 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	}
 
 	@Override
+	public void start() throws IOException, InterruptedException {
+		wakePolicy.onStarting();
+		try {
+			super.start();
+		} finally {
+			wakePolicy.onStartFinished();
+		}
+	}
+
+	@Override
 	public void enableNetwork(boolean enable) throws IOException {
-		if (enable) wakeLock.acquire();
+		boolean enabledHere = enable && wakePolicy.onNetworkEnabled(true);
 		try {
 			super.enableNetwork(enable);
+		} catch (IOException | RuntimeException e) {
+			if (enabledHere) wakePolicy.onNetworkEnabled(false);
+			throw e;
 		} finally {
-			if (!enable) wakeLock.release();
+			if (!enable) wakePolicy.onNetworkEnabled(false);
 		}
 	}
 
 	@Override
 	public void stop() throws IOException, InterruptedException {
+		wakePolicy.onStopping();
 		try {
 			super.stop();
 		} finally {
-			wakeLock.release();
+			wakePolicy.onStopped();
+		}
+	}
+
+	@Override
+	protected void onTorControlActivity() {
+		try {
+			wakePolicy.onTorEvent();
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Override
+	protected void onBootstrapProgress(int percentage) {
+		try {
+			wakePolicy.onBootstrapProgress(percentage);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Override
+	protected void onHsDescriptorUpload(String onion) {
+		try {
+			wakePolicy.onDescriptorUpload(onion);
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Override
+	protected void onHsDescriptorUploadFinished(String onion) {
+		try {
+			wakePolicy.onDescriptorUploadFinished(onion);
+		} catch (RuntimeException ignored) {
 		}
 	}
 

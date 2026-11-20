@@ -1461,6 +1461,8 @@
 	<string name="tor_network_setting_never">Don\'t connect to the Internet</string>
 	<string name="cover_traffic_title">Cover traffic</string>
 	<string name="cover_traffic_summary">Keeps every connection busy with dummy data, so your network cannot tell when you send or receive. Up to about 200 MB of data a day for each connected contact, also on mobile data. Works when both contacts have it on.</string>
+	<string name="keep_awake_title">Stay awake for Tor</string>
+	<string name="keep_awake_summary">Keeps the processor awake all the time so Tor reacts at once. Uses much more battery.</string>
 	<string name="tor_network_setting_summary">Automatic: %1$s (in %2$s)</string>
 	<string name="tor_mobile_data_title">Use mobile data</string>
 	<string name="tor_mobile_data_summary">Allow connections over cellular network</string>

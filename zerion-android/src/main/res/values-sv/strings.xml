@@ -362,6 +362,8 @@
   <string name="tor_network_setting_never">Anslut inte till internet</string>
 	<string name="cover_traffic_title">Täcktrafik</string>
 	<string name="cover_traffic_summary">Håller varje anslutning upptagen med fylldata, så att ditt nätverk inte kan se när du skickar eller tar emot. Upp till ungefär 200 MB data per dag för varje ansluten kontakt, även på mobildata. Fungerar när båda kontakterna har slagit på det.</string>
+	<string name="keep_awake_title">Håll dig vaken för Tor</string>
+	<string name="keep_awake_summary">Håller processorn vaken hela tiden så att Tor reagerar genast. Använder mycket mer batteri.</string>
   
   <string name="tor_network_setting_summary">Automatisk: %1$s (i %2$s)</string>
   <string name="tor_mobile_data_title">Använd mobildata</string>

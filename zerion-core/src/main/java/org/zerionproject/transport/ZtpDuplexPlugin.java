@@ -3,6 +3,7 @@ package org.zerionproject.transport;
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.zerionproject.tor.TorWrapper;
 import org.zerionproject.tor.TorWrapper.HiddenServiceProperties;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.tor.TorWrapper.Observer;
 import org.zerionproject.tor.TorWrapper.TorState;
 import org.zerionproject.core.api.contact.ContactId;
@@ -101,10 +102,14 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			() -> System.nanoTime() / 1_000_000L;
 	@Nullable
 	private final org.zerionproject.sync.ZppPacingPolicy pacingPolicy;
-	private final EventListener torSettingsListener = e -> {
+	@Nullable
+	private final TorWakePolicy wakePolicy;
+	final EventListener torSettingsListener = e -> {
 		if (isTorSettingsChange(e)) {
 			entryRelay.clear();
-			applyCoverTraffic(((SettingsUpdatedEvent) e).getSettings());
+			Settings settings = ((SettingsUpdatedEvent) e).getSettings();
+			applyCoverTraffic(settings);
+			applyKeepAwake(settings);
 		}
 	};
 
@@ -133,7 +138,25 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
 					onionClientAuth,
 			@Nullable org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
+		this(ioExecutor, wakefulIoExecutor, taskScheduler, socketFactory, tor,
+				transport, poller, torRendezvousCrypto, callback,
+				b4OnionRotation, eventBus, onionServiceControl,
+				onionClientAuth, pacingPolicy, null);
+	}
+
+	ZtpDuplexPlugin(Executor ioExecutor, Executor wakefulIoExecutor,
+			TaskScheduler taskScheduler, SocketFactory socketFactory,
+			TorWrapper tor,
+			ZtpTorTransport transport, ZtpPoller poller,
+			TorRendezvousCrypto torRendezvousCrypto, PluginCallback callback,
+			B4OnionRotation b4OnionRotation, EventBus eventBus,
+			TorOnionServiceControl onionServiceControl,
+			org.zerionproject.core.plugin.tor.auth.OnionClientAuthManagerImpl
+					onionClientAuth,
+			@Nullable org.zerionproject.sync.ZppPacingPolicy pacingPolicy,
+			@Nullable TorWakePolicy wakePolicy) {
 		this.pacingPolicy = pacingPolicy;
+		this.wakePolicy = wakePolicy;
 		this.eventBus = eventBus;
 		this.onionServiceControl = onionServiceControl;
 		this.onionClientAuth = onionClientAuth;
@@ -254,6 +277,7 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 			throw new PluginException();
 		}
 		applyCoverTraffic(settings);
+		applyKeepAwake(settings);
 		@Nullable String privateKey = settings.get(HS_PRIVATE_KEY_V3);
 		HiddenServiceProperties hs;
 		try {
@@ -399,6 +423,16 @@ class ZtpDuplexPlugin implements DuplexPlugin, ChannelOnionAdapter,
 		org.zerionproject.sync.ZppPacingPolicy policy = pacingPolicy;
 		if (policy != null) policy.setCoverTraffic(cover);
 		transport.setReducedConnectionPadding(!cover);
+	}
+
+	private void applyKeepAwake(Settings settings) {
+		TorWakePolicy policy = wakePolicy;
+		if (policy != null) policy.setKeepAwake(wantsKeepAwake(settings));
+	}
+
+	static boolean wantsKeepAwake(Settings settings) {
+		return settings.getBoolean(TorConstants.PREF_TOR_KEEP_AWAKE,
+				TorConstants.DEFAULT_PREF_TOR_KEEP_AWAKE);
 	}
 
 	static boolean isTorSettingsChange(Event e) {

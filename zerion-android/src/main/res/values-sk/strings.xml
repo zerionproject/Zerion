@@ -385,6 +385,8 @@
   <string name="tor_network_setting_never">Nepripájať sa k internetu</string>
 	<string name="cover_traffic_title">Krycia prevádzka</string>
 	<string name="cover_traffic_summary">Udržiava každé spojenie vyťažené falošnými dátami, takže vaša sieť nezistí, kedy odosielate alebo prijímate. Až asi 200 MB dát denne na každý pripojený kontakt, aj cez mobilné dáta. Funguje, keď ho majú zapnuté obaja kontakty.</string>
+	<string name="keep_awake_title">Zostať bdelý pre Tor</string>
+	<string name="keep_awake_summary">Udržuje procesor stále v bdelom stave, aby Tor reagoval okamžite. Spotrebuje oveľa viac batérie.</string>
   
   <string name="tor_network_setting_summary">Automaticky: %1$s (v %2$s)</string>
   <string name="tor_mobile_data_title">Použiť mobilné dáta</string>

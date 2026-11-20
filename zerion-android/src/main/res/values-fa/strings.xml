@@ -360,6 +360,8 @@
   <string name="tor_network_setting_never">به اینترنت وصل نشو</string>
 	<string name="cover_traffic_title">ترافیک پوششی</string>
 	<string name="cover_traffic_summary">هر اتصال را با داده‌های ساختگی مشغول نگه می‌دارد، تا شبکه شما نتواند بفهمد کی می‌فرستید یا می‌گیرید. تا حدود 200 مگابایت داده در روز برای هر مخاطب متصل، در داده همراه هم. وقتی کار می‌کند که هر دو مخاطب آن را روشن کرده باشند.</string>
+	<string name="keep_awake_title">بیدار ماندن برای Tor</string>
+	<string name="keep_awake_summary">پردازنده را همیشه بیدار نگه می‌دارد تا Tor فوراً پاسخ دهد. باتری بسیار بیشتری مصرف می‌کند.</string>
   
   <string name="tor_network_setting_summary">خودکار: %1$s(در %2$s)</string>
   <string name="tor_mobile_data_title">استفاده از داده موبایل</string>

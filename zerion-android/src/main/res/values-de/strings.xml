@@ -369,6 +369,8 @@
   <string name="tor_network_setting_never">Keine Verbindung zum Internet herstellen</string>
 	<string name="cover_traffic_title">Tarnverkehr</string>
 	<string name="cover_traffic_summary">Hält jede Verbindung mit Fülldaten beschäftigt, damit dein Netz nicht erkennen kann, wann du sendest oder empfängst. Bis zu etwa 200 MB Daten pro Tag für jeden verbundenen Kontakt, auch über mobile Daten. Wirkt, wenn beide Kontakte es eingeschaltet haben.</string>
+	<string name="keep_awake_title">Für Tor wach bleiben</string>
+	<string name="keep_awake_summary">Hält den Prozessor dauerhaft wach, damit Tor sofort reagiert. Verbraucht deutlich mehr Akku.</string>
   
   <string name="tor_network_setting_summary">Automatisch: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Mobile Daten benutzen</string>

@@ -92,6 +92,7 @@ public class ZerionApplicationImpl extends Application
 		public void onActivityStarted(@NonNull android.app.Activity a) {
 			if (startedActivities.getAndIncrement() == 0) {
 				applyWhileOpenMode(true);
+				setTorForeground(true);
 			}
 		}
 
@@ -99,6 +100,7 @@ public class ZerionApplicationImpl extends Application
 		public void onActivityStopped(@NonNull android.app.Activity a) {
 			if (startedActivities.decrementAndGet() == 0) {
 				applyWhileOpenMode(false);
+				setTorForeground(false);
 			}
 		}
 
@@ -123,6 +125,13 @@ public class ZerionApplicationImpl extends Application
 
 		@Override
 		public void onActivityDestroyed(@NonNull android.app.Activity a) {
+		}
+	}
+
+	private void setTorForeground(boolean appInForeground) {
+		AndroidComponent component = applicationComponent;
+		if (component != null) {
+			component.torWakePolicy().setForeground(appInForeground);
 		}
 	}
 

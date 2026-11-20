@@ -5,6 +5,8 @@ import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.crypto.pcs.Mode3FullRatchet;
 import org.zerionproject.core.api.crypto.pcs.PcsRatchet;
 import org.zerionproject.core.api.lifecycle.LifecycleManager;
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorWakePolicy;
 import org.zerionproject.core.crypto.AuthenticatedCipher;
 import org.zerionproject.crypto.SettingsStreamCounterStore;
 import org.zerionproject.crypto.StreamCounterContactHook;
@@ -92,11 +94,18 @@ public class ZerionTransportModule {
 	}
 
 	@Provides
+	TorActivitySink provideTorActivitySink(TorWakePolicy wakePolicy) {
+		return wakePolicy;
+	}
+
+	@Provides
 	@Singleton
 	ZppConnectionRunner provideConnectionRunner(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry,
-			org.zerionproject.sync.ZppPacingPolicy pacingPolicy) {
-		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy);
+			org.zerionproject.sync.ZppPacingPolicy pacingPolicy,
+			TorActivitySink activity) {
+		return new ZppConnectionRunnerImpl(recordSink, registry, pacingPolicy,
+				activity);
 	}
 
 	@Provides

@@ -376,6 +376,8 @@
   <string name="tor_network_setting_never">Nu vă conectați la internet</string>
 	<string name="cover_traffic_title">Trafic de acoperire</string>
 	<string name="cover_traffic_summary">Menține fiecare conexiune ocupată cu date fictive, astfel încât rețeaua ta nu poate afla când trimiți sau primești. Până la aproximativ 200 MB de date pe zi pentru fiecare contact conectat, și pe date mobile. Funcționează când ambele contacte îl au activat.</string>
+	<string name="keep_awake_title">Rămâi treaz pentru Tor</string>
+	<string name="keep_awake_summary">Menține procesorul mereu treaz, ca Tor să reacționeze imediat. Consumă mult mai multă baterie.</string>
   
   <string name="tor_network_setting_summary">Automat: %1$s (în %2$s)</string>
   <string name="tor_mobile_data_title">Utilizați date mobile</string>

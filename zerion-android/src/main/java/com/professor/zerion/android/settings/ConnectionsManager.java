@@ -14,9 +14,11 @@ import androidx.lifecycle.MutableLiveData;
 
 import static org.zerionproject.core.api.plugin.Plugin.PREF_PLUGIN_ENABLE;
 import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_PREF_TOR_COVER_TRAFFIC;
+import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_PREF_TOR_KEEP_AWAKE;
 import static org.zerionproject.core.api.plugin.TorConstants.DEFAULT_PREF_TOR_NETWORK;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_COVER_TRAFFIC;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_KEEP_AWAKE;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 import static com.professor.zerion.android.settings.SettingsViewModel.TOR_NAMESPACE;
 
@@ -35,6 +37,8 @@ class ConnectionsManager {
 	private final MutableLiveData<String> debugCountry =
 			new MutableLiveData<>();
 	private final MutableLiveData<Boolean> coverTraffic =
+			new MutableLiveData<>();
+	private final MutableLiveData<Boolean> keepAwake =
 			new MutableLiveData<>();
 
 	ConnectionsManager(Application app, SettingsManager settingsManager,
@@ -61,10 +65,16 @@ class ConnectionsManager {
 				settings.get(TorConstants.PREF_TOR_DEBUG_COUNTRY));
 		coverTraffic.postValue(settings.getBoolean(PREF_TOR_COVER_TRAFFIC,
 				DEFAULT_PREF_TOR_COVER_TRAFFIC));
+		keepAwake.postValue(settings.getBoolean(PREF_TOR_KEEP_AWAKE,
+				DEFAULT_PREF_TOR_KEEP_AWAKE));
 	}
 
 	LiveData<Boolean> coverTraffic() {
 		return coverTraffic;
+	}
+
+	LiveData<Boolean> keepAwake() {
+		return keepAwake;
 	}
 
 	LiveData<Integer> helperTransports() {

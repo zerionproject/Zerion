@@ -364,6 +364,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
   <string name="tor_network_setting_never">No connectis a Internet</string>
 	<string name="cover_traffic_title">Tràfic de cobertura</string>
 	<string name="cover_traffic_summary">Manté cada connexió ocupada amb dades fictícies, de manera que la vostra xarxa no pot saber quan envieu o rebeu. Fins a uns 200 MB de dades al dia per cada contacte connectat, també amb dades mòbils. Funciona quan els dos contactes el tenen activat.</string>
+	<string name="keep_awake_title">Mantén-te despert per al Tor</string>
+	<string name="keep_awake_summary">Manté el processador despert tot el temps perquè el Tor reaccioni de seguida. Gasta molta més bateria.</string>
   
   <string name="tor_network_setting_summary">Automàtic: %1$s (a %2$s)</string>
   <string name="tor_mobile_data_title">Usa dades mòbils</string>

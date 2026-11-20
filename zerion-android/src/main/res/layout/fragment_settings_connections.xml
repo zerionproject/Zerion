@@ -280,6 +280,40 @@
 			</LinearLayout>
 
 			<LinearLayout
+				android:id="@+id/keep_awake_card"
+				style="@style/Zerion.Settings.Row">
+
+				<ImageView
+					style="@style/Zerion.Settings.Row.Icon"
+					android:src="@drawable/transport_tor"
+					android:importantForAccessibility="no" />
+
+				<LinearLayout
+					android:layout_width="0dp"
+					android:layout_height="wrap_content"
+					android:layout_weight="1"
+					android:orientation="vertical">
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Title"
+						android:text="@string/keep_awake_title" />
+
+					<TextView
+						style="@style/Zerion.Settings.Row.Summary"
+						android:text="@string/keep_awake_summary" />
+
+				</LinearLayout>
+
+				<com.google.android.material.switchmaterial.SwitchMaterial
+					android:id="@+id/keep_awake_switch"
+					android:contentDescription="@string/keep_awake_title"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:checked="false" />
+
+			</LinearLayout>
+
+			<LinearLayout
 				android:id="@+id/custom_bridges_card"
 				style="@style/Zerion.Settings.Row.Clickable">
 

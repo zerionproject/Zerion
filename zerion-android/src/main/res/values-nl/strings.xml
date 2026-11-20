@@ -313,6 +313,8 @@
   <string name="tor_network_setting_never">Verbind niet met het internet</string>
 	<string name="cover_traffic_title">Dekverkeer</string>
 	<string name="cover_traffic_summary">Houdt elke verbinding bezig met vulgegevens, zodat je netwerk niet kan zien wanneer je verzendt of ontvangt. Tot ongeveer 200 MB aan gegevens per dag voor elk verbonden contact, ook via mobiele data. Werkt wanneer beide contacten het hebben ingeschakeld.</string>
+	<string name="keep_awake_title">Wakker blijven voor Tor</string>
+	<string name="keep_awake_summary">Houdt de processor altijd wakker zodat Tor meteen reageert. Gebruikt veel meer batterij.</string>
   
   <string name="tor_network_setting_summary">Automatisch: %1$s (in %2$s)</string>
   <string name="tor_mobile_data_title">Gebruik mobiele data</string>

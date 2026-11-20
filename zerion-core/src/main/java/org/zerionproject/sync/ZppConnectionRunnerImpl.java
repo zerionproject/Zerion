@@ -2,6 +2,8 @@ package org.zerionproject.sync;
 
 import org.zerionproject.message.ZmmConstants;
 import org.zerionproject.message.ZmmRecord;
+import org.zerionproject.tor.TorActivitySink;
+import org.zerionproject.tor.TorActivitySink.Activity;
 import org.zerionproject.transport.ZppConnectionRunner;
 import org.zerionproject.transport.ZtpReadTimeoutControl;
 import org.zerionproject.transport.ZwfControlHandler;
@@ -36,6 +38,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	public static final long SPARSE_KEEPALIVE_MS = 30_000L;
 	public static final int SPARSE_READ_TIMEOUT_MS = 90_000;
 	public static final int SPARSE_REFRESH_RECV_FRAMES = 16;
+	static final long SPARSE_WAIT_CHUNK_MS = 250L;
 
 	private static final AtomicLong NEXT_SESSION_ID = new AtomicLong();
 
@@ -43,6 +46,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 	private final ZppConnectionRegistry registry;
 	private final ZppPacing pacing;
 	private final LongSupplier now;
+	private final TorActivitySink activity;
 	private final SecureRandom random = new SecureRandom();
 	private final Map<Integer, Long> openingWindows =
 			new ConcurrentHashMap<>();
@@ -74,13 +78,27 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 		this(recordSink, registry, pacing, System::currentTimeMillis);
 	}
 
+	public ZppConnectionRunnerImpl(ZppRecordSink recordSink,
+			ZppConnectionRegistry registry, ZppPacing pacing,
+			TorActivitySink activity) {
+		this(recordSink, registry, pacing, System::currentTimeMillis,
+				activity);
+	}
+
 	ZppConnectionRunnerImpl(ZppRecordSink recordSink,
 			ZppConnectionRegistry registry, ZppPacing pacing,
 			LongSupplier now) {
+		this(recordSink, registry, pacing, now, TorActivitySink.NONE);
+	}
+
+	ZppConnectionRunnerImpl(ZppRecordSink recordSink,
+			ZppConnectionRegistry registry, ZppPacing pacing,
+			LongSupplier now, TorActivitySink activity) {
 		this.recordSink = recordSink;
 		this.registry = registry;
 		this.pacing = pacing;
 		this.now = now;
+		this.activity = activity;
 	}
 
 	boolean grantsOpeningWindow(int contactId, long at) {
@@ -122,6 +140,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			long now, long periodMs) {
 		if (lastSentAt == NEVER) return true;
 		if (receivedSinceSend >= SPARSE_REFRESH_RECV_FRAMES) return true;
+		if (now < lastSentAt) return true;
 		return now >= keepaliveSlot(lastSentAt, periodMs);
 	}
 
@@ -224,6 +243,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					}
 				}
 				if (record.length < 2 || ZmmRecord.isCover(record)) continue;
+				activity.noteActivity(Activity.CONNECTION_DATA);
 				if (!connection.lastFrameCarriedPqSecret()) continue;
 				int type = ZmmRecord.getType(record);
 				if (type == ZmmConstants.TYPE_ROOT_EVOLUTION) {
@@ -296,6 +316,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 							ZppLinkParams.encode(localCover)));
 				}
 				boolean dense = link.dense(localCover);
+				if (scheduler.getQueueDepth() > 0) {
+					activity.noteActivity(Activity.SYNC_PENDING);
+				}
 				if (!dense && !timeoutRaised && link.peerTolerant()
 						&& readTimeout != null) {
 					timeoutRaised = true;
@@ -306,7 +329,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 				}
 				if (dense) {
 					scheduler.setWakeOnAnyEnqueue(false);
+					activity.noteActivity(Activity.COVER_TRAFFIC);
 					boolean realSent = scheduler.tick();
+					if (realSent) activity.noteActivity(Activity.CONNECTION_DATA);
 					long sentAt = now.getAsLong();
 					lastSentAt = sentAt;
 					receivedSinceSend.set(0);
@@ -327,6 +352,9 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					boolean due = sparseFrameDue(lastSentAt,
 							receivedSinceSend.get(), now.getAsLong(), period);
 					ZppSendScheduler.Sent sent = scheduler.tickSparse(due);
+					if (sent == ZppSendScheduler.Sent.REAL) {
+						activity.noteActivity(Activity.CONNECTION_DATA);
+					}
 					long sentAt = now.getAsLong();
 					if (sent != ZppSendScheduler.Sent.NONE) {
 						lastSentAt = sentAt;
@@ -477,6 +505,13 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 			}
 		}
 
+		/**
+		 * Waits until the deadline on the injected clock, re-reading it at
+		 * least every {@link #SPARSE_WAIT_CHUNK_MS}: the monitor wait itself
+		 * counts only time the device is awake, while the clock keeps going
+		 * through a sleep, so after a sleep the keepalive goes out as soon
+		 * as the thread runs again instead of a full period later.
+		 */
 		void awaitSparse(AtomicBoolean running, long deadline)
 				throws InterruptedException {
 			synchronized (lock) {
@@ -487,7 +522,7 @@ public class ZppConnectionRunnerImpl implements ZppConnectionRunner {
 					}
 					long remaining = deadline - clock.getAsLong();
 					if (remaining <= 0) return;
-					lock.wait(remaining);
+					lock.wait(Math.min(remaining, SPARSE_WAIT_CHUNK_MS));
 				}
 			}
 		}

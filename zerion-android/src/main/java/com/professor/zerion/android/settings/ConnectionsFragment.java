@@ -44,6 +44,7 @@ import static com.professor.zerion.android.AppModule.getAndroidComponent;
 import org.zerionproject.core.api.plugin.TorConstants;
 
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_COVER_TRAFFIC;
+import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_KEEP_AWAKE;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_CUSTOM_BRIDGES;
 import static org.zerionproject.core.api.plugin.TorConstants.PREF_TOR_NETWORK;
 
@@ -98,6 +99,7 @@ public class ConnectionsFragment extends Fragment {
 	private SwitchMaterial meshPauseSwitch;
 	private SwitchMaterial offlineModeSwitch;
 	private SwitchMaterial coverTrafficSwitch;
+	private SwitchMaterial keepAwakeSwitch;
 	private boolean enableMeshForOffline = false;
 
 	private final ActivityResultLauncher<String[]> meshPermissionLauncher =
@@ -158,6 +160,13 @@ public class ConnectionsFragment extends Fragment {
 		coverTrafficSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
 			if (buttonView.isPressed()) {
 				connectionsManager.torStore.putBoolean(PREF_TOR_COVER_TRAFFIC,
+						isChecked);
+			}
+		});
+		keepAwakeSwitch = view.findViewById(R.id.keep_awake_switch);
+		keepAwakeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+			if (buttonView.isPressed()) {
+				connectionsManager.torStore.putBoolean(PREF_TOR_KEEP_AWAKE,
 						isChecked);
 			}
 		});
@@ -589,6 +598,12 @@ public class ConnectionsFragment extends Fragment {
 				enabled -> {
 					if (coverTrafficSwitch.isPressed()) return;
 					coverTrafficSwitch.setChecked(Boolean.TRUE.equals(enabled));
+				});
+
+		connectionsManager.keepAwake().observe(getViewLifecycleOwner(),
+				enabled -> {
+					if (keepAwakeSwitch.isPressed()) return;
+					keepAwakeSwitch.setChecked(Boolean.TRUE.equals(enabled));
 				});
 
 		connectionsManager.customBridges().observe(getViewLifecycleOwner(),
