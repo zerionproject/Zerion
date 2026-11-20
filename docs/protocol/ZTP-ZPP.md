@@ -318,14 +318,19 @@ lock and holds it only while one of these is true:
 - An onion service descriptor is being published: from `HS_DESC UPLOAD` until
   `UPLOADED` or `FAILED` for every upload of that onion, at most 120 s after
   the last upload started and 300 s for one burst of uploads.
-- A Tor control event arrived in the last 30 s: `CIRC` LAUNCHED, EXTENDED or
-  BUILT, `STREAM` NEW or SUCCEEDED, `ORCONN` LAUNCHED or CONNECTED, or any
-  `HS_DESC` event. This is how an incoming connection gets through while the
+- A Tor control event arrived in the last 30 s: `STREAM` NEW or SUCCEEDED,
+  `ORCONN` LAUNCHED or CONNECTED, or any `HS_DESC` event; or a `CIRC`
+  LAUNCHED, EXTENDED or BUILT event arrived in the last 5 s. The short
+  circuit window is how an incoming connection gets through while the
   device is otherwise asleep: the first packet wakes the kernel, Tor reports
-  the rendezvous circuit over the local control socket, and the policy takes
-  the lock while the circuit and the ZWF handshake complete. The first
-  message after a quiet period can take a few seconds longer than it did
-  with the permanent lock.
+  the rendezvous circuit over the local control socket, and the policy keeps
+  the device awake between the hops and until the accepted connection takes
+  over (the 15 s dial window below). It is short because Tor builds spare
+  circuits for itself about once a minute while it is in use; a 30 s hold
+  for those kept the processor awake about half the time on a phone with
+  one connected contact (measured on a Moto g06 power during the 3.0.19
+  candidates). The first message after a quiet period can take a few
+  seconds longer than it did with the permanent lock.
 - A connection to a contact did work in the last 60 s: a frame other than a
   cover or keepalive frame was sent or received or a record was queued
   (`ZppConnectionRunnerImpl`); or a dial was started or a connection was

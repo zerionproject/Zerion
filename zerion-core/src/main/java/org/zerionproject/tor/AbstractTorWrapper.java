@@ -546,7 +546,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		if (status.equals("BUILT")) state.setCircuitBuilt(true);
 		if (status.equals("LAUNCHED") || status.equals("BUILT")
 				|| status.equals("EXTENDED")) {
-			onTorControlActivity();
+			onTorCircuitActivity();
 		}
 	}
 
@@ -635,10 +635,18 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	/**
-	 * Called on the control connection thread for every circuit, stream,
-	 * relay connection or descriptor event that shows Tor is doing work.
+	 * Called on the control connection thread for every stream, relay
+	 * connection or descriptor event that shows Tor is doing work.
 	 */
 	protected void onTorControlActivity() {
+	}
+
+	/**
+	 * Called on the control connection thread when a circuit is launched,
+	 * extended or built. Kept apart from the other events because Tor builds
+	 * spare circuits for itself about once a minute while it is in use.
+	 */
+	protected void onTorCircuitActivity() {
 	}
 
 	/**

@@ -29,6 +29,7 @@ import static org.zerionproject.tor.TorWakePolicy.HEARTBEAT_INTERVAL_MS;
 import static org.zerionproject.tor.TorWakePolicy.NETWORK_ENABLED_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.PUBLISH_BURST_CEILING_MS;
 import static org.zerionproject.tor.TorWakePolicy.PUBLISH_CAP_MS;
+import static org.zerionproject.tor.TorWakePolicy.CIRCUIT_EVENT_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.TOR_EVENT_HOLD_MS;
 
 public class TorWakePolicyTest {
@@ -118,6 +119,23 @@ public class TorWakePolicyTest {
 		assertTrue("each event re-arms the window", lock.held);
 		advance(1);
 		assertFalse(lock.held);
+		assertEquals(2, lock.acquires.get());
+		assertEquals(2, lock.releases.get());
+	}
+
+	@Test
+	public void aCircuitEventHoldsForFiveSecondsOnly() {
+		settle();
+		policy.onCircuitEvent();
+		assertTrue(lock.held);
+		advance(CIRCUIT_EVENT_HOLD_MS - 1);
+		assertTrue(lock.held);
+		policy.onCircuitEvent();
+		advance(CIRCUIT_EVENT_HOLD_MS - 1);
+		assertTrue("each circuit event re-arms the short window", lock.held);
+		advance(1);
+		assertFalse(lock.held);
+		assertTrue(CIRCUIT_EVENT_HOLD_MS < TOR_EVENT_HOLD_MS);
 		assertEquals(2, lock.acquires.get());
 		assertEquals(2, lock.releases.get());
 	}

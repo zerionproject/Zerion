@@ -150,6 +150,14 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	}
 
 	@Override
+	protected void onTorCircuitActivity() {
+		try {
+			wakePolicy.onCircuitEvent();
+		} catch (RuntimeException ignored) {
+		}
+	}
+
+	@Override
 	protected void onBootstrapProgress(int percentage) {
 		try {
 			wakePolicy.onBootstrapProgress(percentage);

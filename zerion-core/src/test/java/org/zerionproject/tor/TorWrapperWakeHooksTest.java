@@ -36,6 +36,11 @@ public class TorWrapperWakeHooksTest {
 		}
 
 		@Override
+		protected void onTorCircuitActivity() {
+			hooks.add("circuit");
+		}
+
+		@Override
 		protected void onBootstrapProgress(int percentage) {
 			hooks.add("bootstrap:" + percentage);
 		}
@@ -63,18 +68,24 @@ public class TorWrapperWakeHooksTest {
 	}
 
 	@Test
-	public void circuitStreamAndRelayEventsCountAsActivity()
-			throws IOException {
+	public void streamAndRelayEventsCountAsActivity() throws IOException {
 		RecordingTorWrapper tor = new RecordingTorWrapper();
-		tor.circuitStatus("LAUNCHED", "1", "");
-		tor.circuitStatus("EXTENDED", "1", "$A");
-		tor.circuitStatus("BUILT", "1", "$A,$B,$C");
 		tor.streamStatus("NEW", "1", "x.onion:80");
 		tor.streamStatus("SUCCEEDED", "1", "x.onion:80");
 		tor.orConnStatus("LAUNCHED", "$A");
 		tor.orConnStatus("CONNECTED", "$A");
-		assertEquals(7, hooks.size());
+		assertEquals(4, hooks.size());
 		for (String h : hooks) assertEquals("activity", h);
+	}
+
+	@Test
+	public void circuitEventsReachTheCircuitHookOnly() throws IOException {
+		RecordingTorWrapper tor = new RecordingTorWrapper();
+		tor.circuitStatus("LAUNCHED", "1", "");
+		tor.circuitStatus("EXTENDED", "1", "$A");
+		tor.circuitStatus("BUILT", "1", "$A,$B,$C");
+		assertEquals(3, hooks.size());
+		for (String h : hooks) assertEquals("circuit", h);
 	}
 
 	@Test
