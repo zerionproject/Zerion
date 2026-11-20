@@ -2128,6 +2128,8 @@
 	<string name="vault_keepass_too_large">Šis failas per didelis importuoti.</string>
 	<string name="vault_keepass_read_failed">Nepavyko perskaityti failo.</string>
 	<string name="vault_keepass_untitled">Be pavadinimo</string>
+	<string name="vault_keepass_folder">Aplankas</string>
+	<string name="vault_keepass_imported_partial">Importuoti slaptažodžiai: %1$d iš %2$d</string>
 	<string name="wallet">Piniginė</string>
 	<string name="wallet_choose_coin">Pasirinkite kriptovaliutą</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

@@ -1622,6 +1622,8 @@
 	<string name="vault_keepass_too_large">이 파일은 너무 커서 가져올 수 없습니다.</string>
 	<string name="vault_keepass_read_failed">파일을 읽을 수 없습니다.</string>
 	<string name="vault_keepass_untitled">제목 없음</string>
+	<string name="vault_keepass_folder">폴더</string>
+	<string name="vault_keepass_imported_partial">가져온 비밀번호: %2$d개 중 %1$d개</string>
 	<string name="wallet_card_title">지갑</string>
 	<string name="wallet_card_summary">Tor를 통한 Bitcoin</string>
 	<string name="wallet_empty">아직 지갑이 없습니다</string>

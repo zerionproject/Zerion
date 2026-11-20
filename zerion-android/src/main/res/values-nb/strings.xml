@@ -2095,6 +2095,8 @@
 	<string name="vault_keepass_too_large">Denne filen er for stor til å importeres.</string>
 	<string name="vault_keepass_read_failed">Kunne ikke lese filen.</string>
 	<string name="vault_keepass_untitled">Uten tittel</string>
+	<string name="vault_keepass_folder">Mappe</string>
+	<string name="vault_keepass_imported_partial">Importerte passord: %1$d av %2$d</string>
 	<string name="wallet">Lommebok</string>
 	<string name="wallet_choose_coin">Velg kryptovaluta</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

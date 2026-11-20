@@ -2020,6 +2020,8 @@
 	<string name="vault_keepass_too_large">Tento soubor je pro import příliš velký.</string>
 	<string name="vault_keepass_read_failed">Soubor se nepodařilo přečíst.</string>
 	<string name="vault_keepass_untitled">Bez názvu</string>
+	<string name="vault_keepass_folder">Složka</string>
+	<string name="vault_keepass_imported_partial">Importovaná hesla: %1$d z %2$d</string>
 	<string name="wallet">Peněženka</string>
 	<string name="wallet_choose_coin">Vyberte kryptoměnu</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

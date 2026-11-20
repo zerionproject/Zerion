@@ -2128,6 +2128,8 @@
 	<string name="vault_keepass_too_large">Ten plik jest zbyt duży, aby go zaimportować.</string>
 	<string name="vault_keepass_read_failed">Nie można odczytać pliku.</string>
 	<string name="vault_keepass_untitled">Bez tytułu</string>
+	<string name="vault_keepass_folder">Folder</string>
+	<string name="vault_keepass_imported_partial">Zaimportowane hasła: %1$d z %2$d</string>
 	<string name="wallet">Portfel</string>
 	<string name="wallet_choose_coin">Wybierz kryptowalutę</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

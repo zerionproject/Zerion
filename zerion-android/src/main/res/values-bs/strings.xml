@@ -1905,6 +1905,8 @@
 	<string name="vault_keepass_too_large">Ova datoteka je prevelika za uvoz.</string>
 	<string name="vault_keepass_read_failed">Nije moguće pročitati datoteku.</string>
 	<string name="vault_keepass_untitled">Bez naslova</string>
+	<string name="vault_keepass_folder">Mapa</string>
+	<string name="vault_keepass_imported_partial">Uvezene lozinke: %1$d od %2$d</string>
 	<string name="wallet">Novčanik</string>
 	<string name="wallet_choose_coin">Odaberi kriptovalutu</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

@@ -1654,6 +1654,8 @@
 	<string name="vault_keepass_too_large">Diese Datei ist zu groß für den Import.</string>
 	<string name="vault_keepass_read_failed">Die Datei konnte nicht gelesen werden.</string>
 	<string name="vault_keepass_untitled">Ohne Titel</string>
+	<string name="vault_keepass_folder">Ordner</string>
+	<string name="vault_keepass_imported_partial">Importierte Passwörter: %1$d von %2$d</string>
 	<string name="wallet_card_title">Wallet</string>
 	<string name="wallet_card_summary">Bitcoin über Tor</string>
 	<string name="wallet_empty">Noch keine Wallets</string>

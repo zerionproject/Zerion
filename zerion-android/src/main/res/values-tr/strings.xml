@@ -2097,6 +2097,8 @@
 	<string name="vault_keepass_too_large">Bu dosya içe aktarmak için çok büyük.</string>
 	<string name="vault_keepass_read_failed">Dosya okunamadı.</string>
 	<string name="vault_keepass_untitled">Başlıksız</string>
+	<string name="vault_keepass_folder">Klasör</string>
+	<string name="vault_keepass_imported_partial">İçe aktarılan parolalar: %1$d / %2$d</string>
 	<string name="wallet">Cüzdan</string>
 	<string name="wallet_choose_coin">Kripto para seçin</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

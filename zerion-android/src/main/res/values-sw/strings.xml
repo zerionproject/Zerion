@@ -2068,6 +2068,8 @@ Umepoteza nenosiri.</string>
 	<string name="vault_keepass_too_large">Faili hii ni kubwa mno kuletwa.</string>
 	<string name="vault_keepass_read_failed">Faili haikuweza kusomwa.</string>
 	<string name="vault_keepass_untitled">Bila kichwa</string>
+	<string name="vault_keepass_folder">Folda</string>
+	<string name="vault_keepass_imported_partial">Manenosiri yaliyoletwa: %1$d kati ya %2$d</string>
 	<string name="wallet">Pochi</string>
 	<string name="wallet_choose_coin">Chagua sarafu ya kidijitali</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

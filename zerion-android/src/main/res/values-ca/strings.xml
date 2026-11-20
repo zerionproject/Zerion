@@ -1987,6 +1987,8 @@ Així que l\'actualitzi li veureu una icona diferent .</string>
 	<string name="vault_keepass_too_large">Aquest fitxer és massa gran per importar-lo.</string>
 	<string name="vault_keepass_read_failed">No s\'ha pogut llegir el fitxer.</string>
 	<string name="vault_keepass_untitled">Sense títol</string>
+	<string name="vault_keepass_folder">Carpeta</string>
+	<string name="vault_keepass_imported_partial">Contrasenyes importades: %1$d de %2$d</string>
 	<string name="wallet">Moneder</string>
 	<string name="wallet_choose_coin">Tria una criptomoneda</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

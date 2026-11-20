@@ -2076,6 +2076,8 @@
 	<string name="vault_keepass_too_large">Оваа датотека е преголема за увоз.</string>
 	<string name="vault_keepass_read_failed">Датотеката не може да се прочита.</string>
 	<string name="vault_keepass_untitled">Без наслов</string>
+	<string name="vault_keepass_folder">Папка</string>
+	<string name="vault_keepass_imported_partial">Увезени лозинки: %1$d од %2$d</string>
 	<string name="wallet">Паричник</string>
 	<string name="wallet_choose_coin">Избери криптовалута</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

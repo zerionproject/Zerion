@@ -1962,6 +1962,8 @@
 	<string name="vault_keepass_too_large">ეს ფაილი იმპორტისთვის ძალიან დიდია.</string>
 	<string name="vault_keepass_read_failed">ფაილის წაკითხვა ვერ მოხერხდა.</string>
 	<string name="vault_keepass_untitled">უსათაურო</string>
+	<string name="vault_keepass_folder">საქაღალდე</string>
+	<string name="vault_keepass_imported_partial">იმპორტირებული პაროლები: %1$d / %2$d</string>
 	<string name="wallet">საფულე</string>
 	<string name="wallet_card_title">საფულე</string>
 	<string name="wallet_card_summary">Bitcoin Tor-ით</string>

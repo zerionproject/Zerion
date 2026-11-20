@@ -1945,6 +1945,8 @@
 	<string name="vault_keepass_too_large">Aqueste fichièr es tròp gròs per èsser importat.</string>
 	<string name="vault_keepass_read_failed">Impossible de legir lo fichièr.</string>
 	<string name="vault_keepass_untitled">Sens títol</string>
+	<string name="vault_keepass_folder">Dorsièr</string>
+	<string name="vault_keepass_imported_partial">Senhals importats : %1$d sus %2$d</string>
 	<string name="wallet">Portafuèlha</string>
 	<string name="wallet_card_title">Portafuèlha</string>
 	<string name="wallet_card_summary">Bitcoin via Tor</string>

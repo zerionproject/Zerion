@@ -1824,6 +1824,8 @@
 	<string name="vault_keepass_too_large">Re vras eo ar restr-mañ da vezañ enporzhiet.</string>
 	<string name="vault_keepass_read_failed">N\'haller ket lenn ar restr.</string>
 	<string name="vault_keepass_untitled">Hep titl</string>
+	<string name="vault_keepass_folder">Teuliad</string>
+	<string name="vault_keepass_imported_partial">Gerioù-tremen enporzhiet: %1$d eus %2$d</string>
 	<string name="wallet">Yalc\'h</string>
 	<string name="wallet_card_title">Yalc\'h</string>
 	<string name="wallet_card_summary">Bitcoin dre Tor</string>

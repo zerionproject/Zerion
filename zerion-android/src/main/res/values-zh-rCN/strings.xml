@@ -1643,6 +1643,8 @@
 	<string name="vault_keepass_too_large">此文件太大，无法导入。</string>
 	<string name="vault_keepass_read_failed">无法读取文件。</string>
 	<string name="vault_keepass_untitled">无标题</string>
+	<string name="vault_keepass_folder">文件夹</string>
+	<string name="vault_keepass_imported_partial">已导入密码：%1$d / %2$d</string>
 	<string name="wallet_card_title">钱包</string>
 	<string name="wallet_card_summary">通过 Tor 使用 Bitcoin</string>
 	<string name="wallet_empty">暂无钱包</string>

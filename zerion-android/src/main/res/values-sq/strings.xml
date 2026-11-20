@@ -2093,6 +2093,8 @@ Këtë rregullim mund ta ndryshojë edhe kontakti juaj, për të dy ju.</string>
 	<string name="vault_keepass_too_large">Ky skedar është shumë i madh për t\'u importuar.</string>
 	<string name="vault_keepass_read_failed">Skedari nuk mund të lexohet.</string>
 	<string name="vault_keepass_untitled">Pa titull</string>
+	<string name="vault_keepass_folder">Dosja</string>
+	<string name="vault_keepass_imported_partial">Fjalëkalime të importuara: %1$d nga %2$d</string>
 	<string name="wallet">Portofoli</string>
 	<string name="wallet_choose_coin">Zgjidh kriptomonedhën</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

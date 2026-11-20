@@ -1988,6 +1988,8 @@
 	<string name="vault_keepass_too_large">এই ফাইলটি আমদানির জন্য অনেক বড়।</string>
 	<string name="vault_keepass_read_failed">ফাইলটি পড়া যায়নি।</string>
 	<string name="vault_keepass_untitled">শিরোনামহীন</string>
+	<string name="vault_keepass_folder">ফোল্ডার</string>
+	<string name="vault_keepass_imported_partial">আমদানি করা পাসওয়ার্ড: %2$d টির মধ্যে %1$d</string>
 	<string name="wallet">ওয়ালেট</string>
 	<string name="wallet_choose_coin">ক্রিপ্টোকারেন্সি বেছে নিন</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

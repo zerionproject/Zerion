@@ -1725,6 +1725,7 @@ public class VaultViewModel extends AndroidViewModel {
 			bookmarkUrls.clear();
 			plainPasswordIds.clear();
 		}
+		cancelKeePassImport();
 		bookmarks.postValue(new HashMap<>());
 		vaultItems.postValue(new ArrayList<>());
 		errorMessage.postValue(null);
@@ -2116,7 +2117,127 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	public void importKeePass(byte[] file, @Nullable char[] password,
+	private final Object keePassLock = new Object();
+	@Nullable
+	private byte[] keePassDatabase;
+	@Nullable
+	private byte[] keePassKeyFile;
+	private final MutableLiveData<String> keePassDatabaseName =
+			new MutableLiveData<>(null);
+	private final MutableLiveData<String> keePassKeyFileName =
+			new MutableLiveData<>(null);
+
+	public LiveData<String> getKeePassDatabaseName() {
+		return keePassDatabaseName;
+	}
+
+	public LiveData<String> getKeePassKeyFileName() {
+		return keePassKeyFileName;
+	}
+
+	public void readKeePassFile(android.net.Uri uri, boolean keyFile) {
+		if (!vaultManager.isUnlocked()) {
+			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
+			return;
+		}
+		isLoading.postValue(true);
+		CRYPTO_EXECUTOR.execute(() -> {
+			try {
+				int cap = keyFile ? KdbxReader.MAX_KEY_FILE_BYTES
+						: KdbxReader.MAX_FILE_BYTES;
+				android.content.ContentResolver resolver =
+						getApplication().getContentResolver();
+				long declared = -1;
+				String name = "";
+				try (android.database.Cursor c = resolver.query(uri,
+						new String[] {android.provider.OpenableColumns.SIZE,
+								android.provider.OpenableColumns.DISPLAY_NAME},
+						null, null, null)) {
+					if (c != null && c.moveToFirst()) {
+						if (!c.isNull(0)) declared = c.getLong(0);
+						if (!c.isNull(1)) name = c.getString(1);
+					}
+				} catch (RuntimeException ignored) {
+				}
+				if (name.isEmpty()) {
+					String segment = uri.getLastPathSegment();
+					name = segment == null ? "" : segment;
+				}
+				name = name.replace('\n', ' ').trim();
+				byte[] content;
+				java.io.InputStream in = resolver.openInputStream(uri);
+				if (in == null) throw new java.io.IOException("not readable");
+				try (java.io.InputStream source = in) {
+					content = KdbxReader.readLimited(source, declared, cap);
+				}
+				synchronized (keePassLock) {
+					if (keyFile) {
+						if (keePassDatabase == null) {
+							Arrays.fill(content, (byte) 0);
+							return;
+						}
+						if (keePassKeyFile != null) {
+							Arrays.fill(keePassKeyFile, (byte) 0);
+						}
+						keePassKeyFile = content;
+						keePassKeyFileName.postValue(name);
+					} else {
+						wipeKeePassPending();
+						keePassDatabase = content;
+						keePassDatabaseName.postValue(name);
+					}
+				}
+			} catch (KdbxException e) {
+				errorMessage.postValue(text(keePassErrorText(e.reason)));
+			} catch (Exception | OutOfMemoryError e) {
+				errorMessage.postValue(text(R.string.vault_keepass_read_failed));
+			} finally {
+				isLoading.postValue(false);
+			}
+		});
+	}
+
+	public void cancelKeePassImport() {
+		synchronized (keePassLock) {
+			wipeKeePassPending();
+		}
+		keePassDatabaseName.postValue(null);
+		keePassKeyFileName.postValue(null);
+	}
+
+	private void wipeKeePassPending() {
+		if (keePassDatabase != null) Arrays.fill(keePassDatabase, (byte) 0);
+		if (keePassKeyFile != null) Arrays.fill(keePassKeyFile, (byte) 0);
+		keePassDatabase = null;
+		keePassKeyFile = null;
+	}
+
+	public boolean hasKeePassKeyFile() {
+		synchronized (keePassLock) {
+			return keePassKeyFile != null;
+		}
+	}
+
+	public void importKeePass(char[] password) {
+		byte[] file;
+		byte[] keyFile;
+		synchronized (keePassLock) {
+			file = keePassDatabase;
+			keyFile = keePassKeyFile;
+			keePassDatabase = null;
+			keePassKeyFile = null;
+		}
+		keePassDatabaseName.postValue(null);
+		keePassKeyFileName.postValue(null);
+		if (file == null) {
+			Arrays.fill(password, '\0');
+			if (keyFile != null) Arrays.fill(keyFile, (byte) 0);
+			return;
+		}
+		importKeePass(file, password, keyFile);
+	}
+
+	void importKeePass(byte[] file, @Nullable char[] password,
 			@Nullable byte[] keyFile) {
 		if (!vaultManager.isUnlocked()) {
 			wipeKeePassInput(file, password, keyFile);
@@ -2129,8 +2250,9 @@ public class VaultViewModel extends AndroidViewModel {
 			try {
 				KdbxReader.Document document =
 						KdbxReader.read(file, password, keyFile);
-				result = KeePassImport.map(document,
-						text(R.string.vault_keepass_untitled));
+				result = KeePassImport.map(document, new KeePassImport.Labels(
+						text(R.string.vault_keepass_untitled),
+						text(R.string.vault_keepass_folder)));
 			} catch (KdbxException e) {
 				errorMessage.postValue(text(keePassErrorText(e.reason)));
 				isLoading.postValue(false);
@@ -2148,6 +2270,7 @@ public class VaultViewModel extends AndroidViewModel {
 
 	private void storeKeePassImport(KeePassImport.Result result) {
 		int imported = 0;
+		int total = result.passwords.size();
 		try {
 			for (KeePassImport.Password entry : result.passwords) {
 				byte[] content = PasswordEntryCodec.encode(entry.title,
@@ -2159,6 +2282,7 @@ public class VaultViewModel extends AndroidViewModel {
 					Arrays.fill(content, (byte) 0);
 				}
 				imported++;
+				progressPercent.postValue((int) (100L * imported / total));
 			}
 			successMessage.postValue(result.skipped > 0
 					? getApplication().getString(
@@ -2169,9 +2293,11 @@ public class VaultViewModel extends AndroidViewModel {
 		} catch (SecurityException e) {
 			errorMessage.postValue(text(R.string.vault_locked));
 		} catch (Exception e) {
-			errorMessage.postValue(text(R.string.vault_msg_save_password_failed));
+			errorMessage.postValue(getApplication().getString(
+					R.string.vault_keepass_imported_partial, imported, total));
 		} finally {
 			if (imported > 0) loadVaultItems();
+			progressPercent.postValue(0);
 			isLoading.postValue(false);
 		}
 	}

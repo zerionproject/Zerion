@@ -1667,6 +1667,8 @@
 	<string name="vault_keepass_too_large">Этот файл слишком большой для импорта.</string>
 	<string name="vault_keepass_read_failed">Не удалось прочитать файл.</string>
 	<string name="vault_keepass_untitled">Без названия</string>
+	<string name="vault_keepass_folder">Папка</string>
+	<string name="vault_keepass_imported_partial">Импортировано паролей: %1$d из %2$d</string>
 	<string name="wallet_card_title">Кошелёк</string>
 	<string name="wallet_card_summary">Bitcoin через Tor</string>
 	<string name="wallet_empty">Кошельков пока нет</string>

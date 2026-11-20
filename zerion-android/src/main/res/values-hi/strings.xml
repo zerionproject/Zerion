@@ -2088,6 +2088,8 @@
 	<string name="vault_keepass_too_large">यह फ़ाइल आयात के लिए बहुत बड़ी है।</string>
 	<string name="vault_keepass_read_failed">फ़ाइल पढ़ी नहीं जा सकी।</string>
 	<string name="vault_keepass_untitled">बिना शीर्षक</string>
+	<string name="vault_keepass_folder">फ़ोल्डर</string>
+	<string name="vault_keepass_imported_partial">आयातित पासवर्ड: %2$d में से %1$d</string>
 	<string name="wallet">वॉलेट</string>
 	<string name="wallet_choose_coin">क्रिप्टोकरेंसी चुनें</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

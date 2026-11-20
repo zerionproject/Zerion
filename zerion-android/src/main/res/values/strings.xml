@@ -2130,6 +2130,8 @@
 	<string name="vault_keepass_too_large">This file is too large to import.</string>
 	<string name="vault_keepass_read_failed">Could not read the file.</string>
 	<string name="vault_keepass_untitled">Untitled</string>
+	<string name="vault_keepass_folder">Folder</string>
+	<string name="vault_keepass_imported_partial">Passwords imported: %1$d of %2$d</string>
 
 	<string name="wallet">Wallet</string>
 	<string name="wallet_card_title">Wallet</string>

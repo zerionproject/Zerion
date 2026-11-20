@@ -2092,6 +2092,8 @@
 	<string name="vault_keepass_too_large">Den här filen är för stor för att importeras.</string>
 	<string name="vault_keepass_read_failed">Filen kunde inte läsas.</string>
 	<string name="vault_keepass_untitled">Namnlös</string>
+	<string name="vault_keepass_folder">Mapp</string>
+	<string name="vault_keepass_imported_partial">Importerade lösenord: %1$d av %2$d</string>
 	<string name="wallet">Plånbok</string>
 	<string name="wallet_choose_coin">Välj kryptovaluta</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

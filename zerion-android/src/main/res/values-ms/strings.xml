@@ -1991,6 +1991,8 @@
 	<string name="vault_keepass_too_large">Fail ini terlalu besar untuk diimport.</string>
 	<string name="vault_keepass_read_failed">Fail tidak dapat dibaca.</string>
 	<string name="vault_keepass_untitled">Tanpa tajuk</string>
+	<string name="vault_keepass_folder">Folder</string>
+	<string name="vault_keepass_imported_partial">Kata laluan diimport: %1$d daripada %2$d</string>
 	<string name="wallet">Dompet</string>
 	<string name="wallet_choose_coin">Pilih mata wang kripto</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

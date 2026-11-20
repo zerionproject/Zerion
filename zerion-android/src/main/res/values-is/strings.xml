@@ -2090,6 +2090,8 @@
 	<string name="vault_keepass_too_large">Þessi skrá er of stór til að flytja inn.</string>
 	<string name="vault_keepass_read_failed">Ekki tókst að lesa skrána.</string>
 	<string name="vault_keepass_untitled">Án titils</string>
+	<string name="vault_keepass_folder">Mappa</string>
+	<string name="vault_keepass_imported_partial">Innflutt lykilorð: %1$d af %2$d</string>
 	<string name="wallet">Veski</string>
 	<string name="wallet_choose_coin">Veldu rafmynt</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

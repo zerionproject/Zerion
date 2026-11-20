@@ -1740,6 +1740,8 @@
 	<string name="vault_keepass_too_large">Dit bestand is te groot om te importeren.</string>
 	<string name="vault_keepass_read_failed">Het bestand kon niet worden gelezen.</string>
 	<string name="vault_keepass_untitled">Zonder titel</string>
+	<string name="vault_keepass_folder">Map</string>
+	<string name="vault_keepass_imported_partial">Geïmporteerde wachtwoorden: %1$d van %2$d</string>
 	<string name="wallet_card_title">Portemonnee</string>
 	<string name="wallet_card_summary">Bitcoin via Tor</string>
 	<string name="wallet_empty">Nog geen portemonnees</string>

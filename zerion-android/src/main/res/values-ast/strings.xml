@@ -1783,6 +1783,8 @@
 	<string name="vault_keepass_too_large">Esti ficheru ye grande de más pa importalu.</string>
 	<string name="vault_keepass_read_failed">Nun se pudo lleer el ficheru.</string>
 	<string name="vault_keepass_untitled">Ensin títulu</string>
+	<string name="vault_keepass_folder">Carpeta</string>
+	<string name="vault_keepass_imported_partial">Contraseñes importaes: %1$d de %2$d</string>
 	<string name="wallet">Cartera</string>
 	<string name="wallet_card_title">Cartera</string>
 	<string name="wallet_card_summary">Bitcoin per Tor</string>

@@ -2066,6 +2066,8 @@
 	<string name="vault_keepass_too_large">Tämä tiedosto on liian suuri tuotavaksi.</string>
 	<string name="vault_keepass_read_failed">Tiedostoa ei voitu lukea.</string>
 	<string name="vault_keepass_untitled">Nimetön</string>
+	<string name="vault_keepass_folder">Kansio</string>
+	<string name="vault_keepass_imported_partial">Tuodut salasanat: %1$d / %2$d</string>
 	<string name="wallet">Lompakko</string>
 	<string name="wallet_choose_coin">Valitse kryptovaluutta</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

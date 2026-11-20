@@ -2110,6 +2110,8 @@
 	<string name="vault_keepass_too_large">Acest fișier este prea mare pentru a fi importat.</string>
 	<string name="vault_keepass_read_failed">Fișierul nu a putut fi citit.</string>
 	<string name="vault_keepass_untitled">Fără titlu</string>
+	<string name="vault_keepass_folder">Dosar</string>
+	<string name="vault_keepass_imported_partial">Parole importate: %1$d din %2$d</string>
 	<string name="wallet">Portofel</string>
 	<string name="wallet_choose_coin">Alegeți criptomoneda</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

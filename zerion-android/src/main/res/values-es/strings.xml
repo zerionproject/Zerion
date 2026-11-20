@@ -1663,6 +1663,8 @@
 	<string name="vault_keepass_too_large">Este archivo es demasiado grande para importarlo.</string>
 	<string name="vault_keepass_read_failed">No se pudo leer el archivo.</string>
 	<string name="vault_keepass_untitled">Sin título</string>
+	<string name="vault_keepass_folder">Carpeta</string>
+	<string name="vault_keepass_imported_partial">Contraseñas importadas: %1$d de %2$d</string>
 	<string name="wallet_card_title">Monedero</string>
 	<string name="wallet_card_summary">Bitcoin a través de Tor</string>
 	<string name="wallet_empty">Aún no hay monederos</string>

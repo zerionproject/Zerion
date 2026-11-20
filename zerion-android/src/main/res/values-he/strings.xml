@@ -2101,6 +2101,8 @@
 	<string name="vault_keepass_too_large">הקובץ הזה גדול מדי לייבוא.</string>
 	<string name="vault_keepass_read_failed">לא ניתן לקרוא את הקובץ.</string>
 	<string name="vault_keepass_untitled">ללא כותרת</string>
+	<string name="vault_keepass_folder">תיקייה</string>
+	<string name="vault_keepass_imported_partial">סיסמאות שיובאו: %1$d מתוך %2$d</string>
 	<string name="wallet">ארנק</string>
 	<string name="wallet_choose_coin">בחירת מטבע קריפטו</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

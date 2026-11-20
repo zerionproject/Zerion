@@ -1215,6 +1215,8 @@
 	<string name="vault_keepass_too_large">Este archivo es demasiado grande para importarlo.</string>
 	<string name="vault_keepass_read_failed">No se pudo leer el archivo.</string>
 	<string name="vault_keepass_untitled">Sin título</string>
+	<string name="vault_keepass_folder">Carpeta</string>
+	<string name="vault_keepass_imported_partial">Contraseñas importadas: %1$d de %2$d</string>
 	<string name="grouptr_reach_add_contact">Añadir el contacto</string>
 	<string name="grouptr_team_help_title">Configurar un equipo</string>
 	<string name="grouptr_team_help_text">Una persona crea el grupo y es su propietario.\n\nEl propietario del grupo crea un enlace de invitación en Enlaces de invitación (se mantiene igual hasta que se elimina) y lo comparte con el equipo. Cada uno abre Añadir el contacto, pega el enlace y envía una solicitud; el propietario del grupo acepta cada una.\n\nDespués el propietario del grupo invita a todos los miembros al grupo.\n\nLos miembros que no son contactos entre sí reciben las publicaciones a través del teléfono del propietario del grupo siempre que esté en línea. Hasta entonces la publicación espera en el teléfono del remitente; no se guarda nada en ningún servidor.\n\nLos miembros pueden añadirse entre sí como contactos para la entrega directa y las llamadas.\n\nLímites: un grupo tiene hasta 256 miembros, un teléfono guarda hasta 200 contactos con conexión privada, y el teléfono del propietario de un equipo grande debería estar en línea con frecuencia.</string>

@@ -1640,6 +1640,8 @@
 	<string name="vault_keepass_too_large">このファイルは大きすぎてインポートできません。</string>
 	<string name="vault_keepass_read_failed">ファイルを読み取れませんでした。</string>
 	<string name="vault_keepass_untitled">無題</string>
+	<string name="vault_keepass_folder">フォルダー</string>
+	<string name="vault_keepass_imported_partial">インポートしたパスワード: %2$d 件中 %1$d 件</string>
 	<string name="wallet_card_title">ウォレット</string>
 	<string name="wallet_card_summary">Tor経由のBitcoin</string>
 	<string name="wallet_empty">ウォレットがまだありません</string>

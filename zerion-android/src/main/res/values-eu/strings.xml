@@ -1969,6 +1969,8 @@
 	<string name="vault_keepass_too_large">Fitxategi hau handiegia da inportatzeko.</string>
 	<string name="vault_keepass_read_failed">Ezin izan da fitxategia irakurri.</string>
 	<string name="vault_keepass_untitled">Izengabea</string>
+	<string name="vault_keepass_folder">Karpeta</string>
+	<string name="vault_keepass_imported_partial">Inportatutako pasahitzak: %1$d / %2$d</string>
 	<string name="wallet">Diruzorroa</string>
 	<string name="wallet_choose_coin">Aukeratu kriptomoneta</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>

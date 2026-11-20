@@ -2128,6 +2128,8 @@
 	<string name="vault_keepass_too_large">Tento súbor je na import príliš veľký.</string>
 	<string name="vault_keepass_read_failed">Súbor sa nepodarilo prečítať.</string>
 	<string name="vault_keepass_untitled">Bez názvu</string>
+	<string name="vault_keepass_folder">Priečinok</string>
+	<string name="vault_keepass_imported_partial">Importované heslá: %1$d z %2$d</string>
 	<string name="wallet">Peňaženka</string>
 	<string name="wallet_choose_coin">Vyberte kryptomenu</string>
 	<string name="wallet_coin_bitcoin">Bitcoin (BTC)</string>
