@@ -1,5 +1,7 @@
 package com.professor.zerion.android.vault.keepass;
 
+import com.professor.zerion.android.vault.util.BookmarkRules;
+
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.ArrayList;
@@ -14,9 +16,18 @@ import javax.annotation.Nullable;
 @NotNullByDefault
 public final class KeePassImport {
 
-	public static final int MAX_TITLE_LENGTH = 100;
-	public static final String FOLDER_PREFIX = "Folder: ";
+	public static final int MAX_TITLE_LENGTH = BookmarkRules.MAX_TITLE_LENGTH;
 	public static final String FOLDER_SEPARATOR = " / ";
+
+	public static final class Labels {
+		public final String untitled;
+		public final String folder;
+
+		public Labels(String untitled, String folder) {
+			this.untitled = untitled;
+			this.folder = folder;
+		}
+	}
 
 	public static final class Password {
 		public final String title;
@@ -52,16 +63,16 @@ public final class KeePassImport {
 	private KeePassImport() {
 	}
 
-	public static Result map(KdbxReader.Document document, String untitled) {
+	public static Result map(KdbxReader.Document document, Labels labels) {
 		List<Password> out = new ArrayList<>();
 		Set<List<String>> seen = new HashSet<>();
-		int skipped = document.historyEntries;
+		int skipped = document.skippedEntries;
 		for (KdbxEntry entry : document.entries) {
 			if (entry.inRecycleBin) {
 				skipped++;
 				continue;
 			}
-			Password mapped = map(entry, untitled);
+			Password mapped = map(entry, labels);
 			if (mapped == null) {
 				skipped++;
 				continue;
@@ -76,8 +87,9 @@ public final class KeePassImport {
 	}
 
 	@Nullable
-	static Password map(KdbxEntry entry, String untitled) {
-		String title = singleLine(entry.string(KdbxEntry.KEY_TITLE));
+	static Password map(KdbxEntry entry, Labels labels) {
+		String title = BookmarkRules.cleanTitle(
+				singleLine(entry.string(KdbxEntry.KEY_TITLE)));
 		String username = singleLine(entry.string(KdbxEntry.KEY_USERNAME));
 		String password = entry.string(KdbxEntry.KEY_PASSWORD);
 		String url = singleLine(entry.string(KdbxEntry.KEY_URL));
@@ -87,14 +99,14 @@ public final class KeePassImport {
 		}
 		if (title.isEmpty()) {
 			String host = host(url);
-			title = host == null ? untitled : host;
+			title = host == null ? labels.untitled : host;
 		}
 		if (title.length() > MAX_TITLE_LENGTH) {
 			title = title.substring(0, MAX_TITLE_LENGTH).trim();
 		}
 		StringBuilder notes = new StringBuilder();
 		if (!entry.groupPath.isEmpty()) {
-			notes.append(FOLDER_PREFIX);
+			notes.append(labels.folder).append(": ");
 			boolean first = true;
 			for (String name : entry.groupPath) {
 				if (!first) notes.append(FOLDER_SEPARATOR);

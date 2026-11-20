@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.professor.zerion.android.vault.keepass.KdbxFixtures.LABELS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -23,7 +24,7 @@ public class KeePassImportTest {
 	}
 
 	private static KdbxReader.Document document(KdbxEntry... entries) {
-		return new KdbxReader.Document(Arrays.asList(entries), 0);
+		return new KdbxReader.Document(Arrays.asList(entries), 0, 0);
 	}
 
 	@Test
@@ -32,17 +33,29 @@ public class KeePassImportTest {
 				"Title", "db01", "UserName", "root", "Password", "pw",
 				"URL", "", "Notes", "Postgres", "Port", "5432",
 				"otp", "otpauth://totp/a?secret=B");
-		KeePassImport.Password p = KeePassImport.map(e, "Untitled");
+		KeePassImport.Password p = KeePassImport.map(e, LABELS);
 		assertEquals("db01", p.title);
 		assertEquals("Folder: Work / Servers\nPostgres\nPort: 5432\n"
 				+ "otp: otpauth://totp/a?secret=B", p.notes);
 	}
 
 	@Test
+	public void folderLabelComesFromTheCaller() {
+		KdbxEntry e = entry(Arrays.asList("Werk"), false, false,
+				"Title", "x", "Password", "p");
+		KeePassImport.Labels dutch = new KeePassImport.Labels("Zonder titel",
+				"Map");
+		assertEquals("Map: Werk", KeePassImport.map(e, dutch).notes);
+		KdbxEntry noTitle = entry(Collections.<String>emptyList(), false,
+				false, "Password", "p");
+		assertEquals("Zonder titel", KeePassImport.map(noTitle, dutch).title);
+	}
+
+	@Test
 	public void rootEntriesHaveNoFolderLine() {
 		KdbxEntry e = entry(Collections.<String>emptyList(), false, false,
 				"Title", "Mail", "Password", "pw", "Notes", "  hello  ");
-		assertEquals("hello", KeePassImport.map(e, "Untitled").notes);
+		assertEquals("hello", KeePassImport.map(e, LABELS).notes);
 	}
 
 	@Test
@@ -51,21 +64,39 @@ public class KeePassImportTest {
 				"Title", " ", "UserName", "u", "URL",
 				"https://user:pw@login.example.net:8443/path?q=1#f");
 		assertEquals("login.example.net",
-				KeePassImport.map(withUrl, "Untitled").title);
+				KeePassImport.map(withUrl, LABELS).title);
 		KdbxEntry noUrl = entry(Collections.<String>emptyList(), false, false,
 				"UserName", "u", "Password", "p");
-		assertEquals("Untitled", KeePassImport.map(noUrl, "Untitled").title);
+		assertEquals("Untitled", KeePassImport.map(noUrl, LABELS).title);
 		KdbxEntry bareHost = entry(Collections.<String>emptyList(), false,
 				false, "URL", "example.org");
 		assertEquals("example.org",
-				KeePassImport.map(bareHost, "Untitled").title);
+				KeePassImport.map(bareHost, LABELS).title);
+	}
+
+	@Test
+	public void invisibleTitleFallsBackLikeAnEmptyOne() {
+		String invisible = new String(new char[] {(char) 0x200B,
+				(char) 0x200E, (char) 0x2063, ' ', (char) 0x202E});
+		KdbxEntry withUrl = entry(Collections.<String>emptyList(), false, false,
+				"Title", invisible, "Password", "p", "URL",
+				"https://host.example.org/");
+		assertEquals("host.example.org",
+				KeePassImport.map(withUrl, LABELS).title);
+		KdbxEntry alone = entry(Collections.<String>emptyList(), false, false,
+				"Title", invisible);
+		assertNull(KeePassImport.map(alone, LABELS));
+		KdbxEntry mixed = entry(Collections.<String>emptyList(), false, false,
+				"Title", (char) 0x202E + "ab" + (char) 0x200B + "c",
+				"Password", "p");
+		assertEquals("abc", KeePassImport.map(mixed, LABELS).title);
 	}
 
 	@Test
 	public void entriesWithoutTitleUserPasswordOrUrlAreDropped() {
 		KdbxEntry e = entry(Collections.<String>emptyList(), false, true,
 				"Title", "", "Notes", "only notes and a file", "Custom", "x");
-		assertNull(KeePassImport.map(e, "Untitled"));
+		assertNull(KeePassImport.map(e, LABELS));
 	}
 
 	@Test
@@ -75,7 +106,7 @@ public class KeePassImportTest {
 		KdbxEntry e = entry(Collections.<String>emptyList(), false, false,
 				"Title", b.toString(), "Password", "p");
 		assertEquals(KeePassImport.MAX_TITLE_LENGTH,
-				KeePassImport.map(e, "Untitled").title.length());
+				KeePassImport.map(e, LABELS).title.length());
 	}
 
 	@Test
@@ -83,7 +114,7 @@ public class KeePassImportTest {
 		KdbxEntry e = entry(Arrays.asList("A\nB"), false, false,
 				"Title", "two\nlines", "UserName", "u\r\nv", "Password",
 				"keep\nlines", "URL", "https://x.org/\n");
-		KeePassImport.Password p = KeePassImport.map(e, "Untitled");
+		KeePassImport.Password p = KeePassImport.map(e, LABELS);
 		assertEquals("two lines", p.title);
 		assertEquals("u  v", p.username);
 		assertEquals("keep\nlines", p.password);
@@ -92,7 +123,7 @@ public class KeePassImportTest {
 	}
 
 	@Test
-	public void recycleBinDuplicatesAndEmptyEntriesAreCountedAsSkipped() {
+	public void skippedCountsBinDuplicatesEmptyAndOversizedButNotHistory() {
 		KdbxEntry keep = entry(Collections.<String>emptyList(), false, false,
 				"Title", "A", "Password", "1");
 		KdbxEntry same = entry(Collections.<String>emptyList(), false, false,
@@ -104,12 +135,12 @@ public class KeePassImportTest {
 		KdbxEntry empty = entry(Collections.<String>emptyList(), false, false,
 				"Title", "", "Notes", "n");
 		KdbxReader.Document doc = new KdbxReader.Document(
-				Arrays.asList(keep, same, other, binned, empty), 4);
-		KeePassImport.Result result = KeePassImport.map(doc, "Untitled");
+				Arrays.asList(keep, same, other, binned, empty), 4, 2);
+		KeePassImport.Result result = KeePassImport.map(doc, LABELS);
 		assertEquals(2, result.passwords.size());
 		assertEquals("1", result.passwords.get(0).password);
 		assertEquals("2", result.passwords.get(1).password);
-		assertEquals(4 + 1 + 1 + 1, result.skipped);
+		assertEquals(2 + 1 + 1 + 1, result.skipped);
 	}
 
 	@Test
@@ -124,7 +155,7 @@ public class KeePassImportTest {
 
 	@Test
 	public void emptyDocumentImportsNothing() {
-		KeePassImport.Result result = KeePassImport.map(document(), "Untitled");
+		KeePassImport.Result result = KeePassImport.map(document(), LABELS);
 		assertEquals(0, result.passwords.size());
 		assertEquals(0, result.skipped);
 	}

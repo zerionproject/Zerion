@@ -89,6 +89,20 @@ final class KdbxBytes {
 		}
 	}
 
+	static byte[] hmacSha256Range(byte[] key, byte[] prefix1, byte[] prefix2,
+			byte[] data, int off, int len) {
+		try {
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(new SecretKeySpec(key, "HmacSHA256"));
+			mac.update(prefix1);
+			mac.update(prefix2);
+			mac.update(data, off, len);
+			return mac.doFinal();
+		} catch (java.security.GeneralSecurityException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	static boolean constantTimeEquals(byte[] a, byte[] b) {
 		if (a.length != b.length) return false;
 		int result = 0;

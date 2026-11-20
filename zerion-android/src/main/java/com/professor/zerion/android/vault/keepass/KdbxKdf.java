@@ -24,7 +24,8 @@ final class KdbxKdf {
 
 	static final long MAX_AES_ROUNDS = 100_000_000L;
 	static final long MIN_ARGON2_MEMORY = 8 * 1024L;
-	static final long MAX_ARGON2_MEMORY = 1024L * 1024 * 1024;
+	static final long MAX_ARGON2_MEMORY = 256L * 1024 * 1024;
+	static final long MAX_ARGON2_WORK_KIB = (MAX_ARGON2_MEMORY / 1024) * 64;
 	static final long MAX_ARGON2_ITERATIONS = 1000;
 	static final long MAX_ARGON2_PARALLELISM = 32;
 	static final int MIN_ARGON2_SALT = 8;
@@ -86,9 +87,10 @@ final class KdbxKdf {
 			if (version != 0x13 && version != 0x10) {
 				throw KdbxException.unsupported("argon2 version");
 			}
-			if (memory < 0 || memory > MAX_ARGON2_MEMORY
+			if (memory < 0 || memory > maxArgon2Memory()
 					|| iterations < 0 || iterations > MAX_ARGON2_ITERATIONS
-					|| parallelism > MAX_ARGON2_PARALLELISM) {
+					|| parallelism > MAX_ARGON2_PARALLELISM
+					|| (memory / 1024) * iterations > MAX_ARGON2_WORK_KIB) {
 				throw KdbxException.tooLarge("argon2 parameters");
 			}
 			if (memory < MIN_ARGON2_MEMORY || iterations < 1
@@ -102,6 +104,11 @@ final class KdbxKdf {
 	}
 
 	private KdbxKdf() {
+	}
+
+	static long maxArgon2Memory() {
+		long half = Runtime.getRuntime().maxMemory() / 2;
+		return Math.min(MAX_ARGON2_MEMORY, half);
 	}
 
 	static byte[] compositeKey(@Nullable char[] password,

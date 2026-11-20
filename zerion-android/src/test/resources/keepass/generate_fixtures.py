@@ -31,7 +31,8 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__fi
 
 
 def fill(kp):
-    """Adds the shared content. Expected import: 9 passwords, 6 skipped."""
+    """Adds the shared content. Expected import: 9 passwords, 4 skipped
+    (the two history versions are not imported and not counted)."""
     root = kp.root_group
     kp.add_entry(root, "Email", "alice", "pw-email-1",
                  url="https://mail.example.org", notes="Main mailbox")
@@ -66,14 +67,22 @@ def fill(kp):
     kp.add_entry(root, "", "", "", force_creation=True)
 
 
+def fill_simple(kp):
+    """Two plain entries, nothing skipped."""
+    root = kp.root_group
+    kp.add_entry(root, "One", "u1", "pw-one", url="https://one.example.org")
+    kp.add_entry(root, "Two", "u2", "pw-two")
+
+
 def kdf_item(type_id, key, value, last):
     return Container(type=type_id, key=key, value=value,
                      next_byte=0 if last else 1)
 
 
-def set_argon2(kp, uuid_name):
+def set_argon2(kp, uuid_name, version=0x13):
     d = kp.kdbx.header.value.dynamic_header.kdf_parameters.data.dict
     d["$UUID"].value = kdf_uuids[uuid_name]
+    d["V"].value = version
     d["M"].value = ARGON2_MEMORY
     d["I"].value = ARGON2_ITERATIONS
     d["P"].value = ARGON2_PARALLELISM
@@ -108,7 +117,8 @@ def make_version3(kp, cipher="aes256"):
     dynamic["master_seed"] = Container(id="master_seed", data=os.urandom(32))
     dynamic["transform_seed"] = Container(id="transform_seed", data=os.urandom(32))
     dynamic["transform_rounds"] = Container(id="transform_rounds", data=AES_ROUNDS)
-    dynamic["encryption_iv"] = Container(id="encryption_iv", data=os.urandom(16))
+    dynamic["encryption_iv"] = Container(
+        id="encryption_iv", data=os.urandom(12 if cipher == "chacha20" else 16))
     dynamic["protected_stream_key"] = Container(id="protected_stream_key",
                                                 data=os.urandom(32))
     dynamic["stream_start_bytes"] = Container(id="stream_start_bytes",
@@ -141,13 +151,14 @@ def write(kp, name, keyfile=None):
         name, size, count, check.version, check.kdf_algorithm))
 
 
-def build(name, configure, keyfile=None, version3=False):
+def build(name, configure, keyfile=None, version3=False, cipher3="aes256",
+          content=fill):
     kp, tmp = new_database(keyfile)
     try:
         if version3:
-            make_version3(kp)
+            make_version3(kp, cipher3)
         configure(kp)
-        fill(kp)
+        content(kp)
         write(kp, name, keyfile)
     finally:
         os.remove(tmp)
@@ -173,12 +184,22 @@ def write_keyfiles():
     xml_path = os.path.join(OUT, "keyfile_v2.keyx")
     with open(xml_path, "w", newline="\n") as f:
         f.write(xml)
-    return raw, xml_path
+    v1 = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        "<KeyFile>\n"
+        "\t<Meta>\n\t\t<Version>1.00</Version>\n\t</Meta>\n"
+        "\t<Key>\n\t\t<Data>%s</Data>\n\t</Key>\n"
+        "</KeyFile>\n" % base64.b64encode(bytes(range(40, 72))).decode()
+    )
+    v1_path = os.path.join(OUT, "keyfile_v1.key")
+    with open(v1_path, "w", newline="\n") as f:
+        f.write(v1)
+    return raw, xml_path, v1_path
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    raw_key, xml_key = write_keyfiles()
+    raw_key, xml_key, v1_key = write_keyfiles()
     build("kdbx4_argon2d_aes_chacha20.kdbx", lambda kp: set_argon2(kp, "argon2"))
     build("kdbx4_argon2id_chacha20.kdbx",
           lambda kp: (set_argon2(kp, "argon2id"), set_cipher(kp, "chacha20")))
@@ -191,7 +212,14 @@ def main():
           keyfile=raw_key)
     build("kdbx4_keyfile_xml2.kdbx", lambda kp: set_argon2(kp, "argon2"),
           keyfile=xml_key)
+    build("kdbx4_keyfile_xml1.kdbx", lambda kp: set_argon2(kp, "argon2"),
+          keyfile=v1_key)
+    build("kdbx4_argon2d_v10.kdbx", lambda kp: set_argon2(kp, "argon2", 0x10))
+    build("kdbx4_simple.kdbx", lambda kp: set_argon2(kp, "argon2"),
+          content=fill_simple)
     build("kdbx3_aeskdf_salsa20.kdbx", lambda kp: None, version3=True)
+    build("kdbx3_chacha20.kdbx", lambda kp: None, version3=True,
+          cipher3="chacha20")
 
 
 if __name__ == "__main__":

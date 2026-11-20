@@ -2,6 +2,7 @@ package com.professor.zerion.android.vault.keepass;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -11,8 +12,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
-
-import org.xml.sax.helpers.DefaultHandler;
 
 @NotNullByDefault
 final class KdbxXml {
@@ -47,14 +46,25 @@ final class KdbxXml {
 		if (containsDeclaration(xml)) {
 			throw KdbxException.corrupted("xml declaration");
 		}
+		try {
+			parse(new ByteArrayInputStream(xml), handler);
+		} catch (IOException e) {
+			throw KdbxException.corrupted("xml");
+		}
+	}
+
+	static void parse(InputStream xml, DefaultHandler handler)
+			throws KdbxException, IOException {
 		SAXParser parser = newParser();
-		try (InputStream in = new ByteArrayInputStream(xml)) {
-			parser.parse(in, handler);
+		try {
+			parser.parse(xml, handler);
 		} catch (SAXException e) {
 			Throwable cause = e.getException();
+			if (cause == null) cause = e.getCause();
 			if (cause instanceof KdbxException) throw (KdbxException) cause;
+			if (cause instanceof IOException) throw (IOException) cause;
 			throw KdbxException.corrupted("xml");
-		} catch (IOException | RuntimeException e) {
+		} catch (RuntimeException e) {
 			throw KdbxException.corrupted("xml");
 		}
 	}

@@ -17,9 +17,16 @@ final class KdbxFixtures {
 	static final String V4_NOCOMPRESS = "kdbx4_nocompress.kdbx";
 	static final String V4_KEYFILE_RAW = "kdbx4_keyfile_raw.kdbx";
 	static final String V4_KEYFILE_XML2 = "kdbx4_keyfile_xml2.kdbx";
+	static final String V4_KEYFILE_XML1 = "kdbx4_keyfile_xml1.kdbx";
+	static final String V4_ARGON2D_V10 = "kdbx4_argon2d_v10.kdbx";
+	static final String V4_SIMPLE = "kdbx4_simple.kdbx";
 	static final String V3_AESKDF_SALSA20 = "kdbx3_aeskdf_salsa20.kdbx";
+	static final String V3_CHACHA20 = "kdbx3_chacha20.kdbx";
 	static final String KEYFILE_RAW = "keyfile_raw.key";
 	static final String KEYFILE_XML2 = "keyfile_v2.keyx";
+	static final String KEYFILE_XML1 = "keyfile_v1.key";
+	static final KeePassImport.Labels LABELS =
+			new KeePassImport.Labels(UNTITLED, "Folder");
 
 	private KdbxFixtures() {
 	}

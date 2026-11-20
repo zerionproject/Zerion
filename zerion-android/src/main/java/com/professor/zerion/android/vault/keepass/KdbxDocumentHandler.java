@@ -5,6 +5,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -19,11 +20,13 @@ import javax.annotation.Nullable;
 final class KdbxDocumentHandler extends DefaultHandler {
 
 	static final int MAX_DEPTH = 64;
-	static final int MAX_ENTRIES = 50_000;
+	static final int MAX_ENTRIES = 10_000;
 	static final int MAX_ENTRY_ELEMENTS = 500_000;
 	static final int MAX_GROUPS = 10_000;
 	static final int MAX_VALUE_CHARS = 1024 * 1024;
+	static final int MAX_SMALL_TEXT = 4096;
 	static final int MAX_STRINGS_PER_ENTRY = 1000;
+	private static final int BASE64_CHUNK = 4096;
 
 	private static final class Group {
 		@Nullable
@@ -36,9 +39,70 @@ final class KdbxDocumentHandler extends DefaultHandler {
 		final Map<String, String> strings = new LinkedHashMap<>();
 		final boolean history;
 		boolean hasBinary = false;
+		boolean oversized = false;
 
 		Entry(boolean history) {
 			this.history = history;
+		}
+	}
+
+	private final class ProtectedDecoder {
+
+		private final boolean store;
+		private final StringBuilder pending = new StringBuilder(BASE64_CHUNK);
+		@Nullable
+		private final ByteArrayOutputStream plain;
+		private boolean padded = false;
+
+		ProtectedDecoder(boolean store) {
+			this.store = store;
+			this.plain = store ? new ByteArrayOutputStream() : null;
+		}
+
+		void append(char[] ch, int start, int length) throws SAXException {
+			for (int i = 0; i < length; i++) {
+				char c = ch[start + i];
+				if (Character.isWhitespace(c)) continue;
+				if (c == '=') {
+					padded = true;
+					continue;
+				}
+				if (padded) throw fail(KdbxException.corrupted("protected value"));
+				pending.append(c);
+				if (pending.length() >= BASE64_CHUNK) flush(false);
+			}
+		}
+
+		private void flush(boolean last) throws SAXException {
+			int usable = last ? pending.length()
+					: pending.length() - pending.length() % 4;
+			if (usable == 0) return;
+			byte[] encrypted;
+			try {
+				encrypted = java.util.Base64.getDecoder()
+						.decode(pending.substring(0, usable));
+			} catch (IllegalArgumentException e) {
+				throw fail(KdbxException.corrupted("protected value"));
+			}
+			pending.delete(0, usable);
+			byte[] decrypted = innerStream.process(encrypted);
+			KdbxBytes.wipe(encrypted);
+			if (plain != null && plain.size() < MAX_VALUE_CHARS) {
+				int room = Math.min(decrypted.length,
+						MAX_VALUE_CHARS - plain.size());
+				plain.write(decrypted, 0, room);
+			}
+			KdbxBytes.wipe(decrypted);
+		}
+
+		String finish() throws SAXException {
+			flush(true);
+			if (plain == null) return "";
+			byte[] bytes = plain.toByteArray();
+			String value = new String(bytes, StandardCharsets.UTF_8);
+			KdbxBytes.wipe(bytes);
+			plain.reset();
+			return value;
 		}
 	}
 
@@ -51,13 +115,18 @@ final class KdbxDocumentHandler extends DefaultHandler {
 
 	private boolean sawRoot = false;
 	private boolean collecting = false;
-	private boolean valueProtected = false;
+	private int textCap = MAX_SMALL_TEXT;
+	@Nullable
+	private ProtectedDecoder decoder = null;
 	private int entryElements = 0;
 	private int groupCount = 0;
 	private int historyEntries = 0;
+	private int skippedEntries = 0;
 	private boolean recycleBinEnabled = false;
 	@Nullable
 	private String recycleBinUuid = null;
+	@Nullable
+	private String headerHash = null;
 	@Nullable
 	private String stringKey = null;
 	@Nullable
@@ -75,9 +144,25 @@ final class KdbxDocumentHandler extends DefaultHandler {
 		return historyEntries;
 	}
 
+	int skippedEntries() {
+		return skippedEntries;
+	}
+
+	@Nullable
+	String headerHash() {
+		return headerHash;
+	}
+
+	private boolean inEntryString(@Nullable String parent) {
+		return "String".equals(parent) && !entryStack.isEmpty();
+	}
+
 	@Override
 	public void startElement(String uri, String localName, String qName,
 			Attributes attributes) throws SAXException {
+		if (decoder != null) {
+			throw fail(KdbxException.corrupted("protected value"));
+		}
 		if (path.isEmpty()) {
 			if (!"KeePassFile".equals(qName)) {
 				throw fail(KdbxException.corrupted("root element"));
@@ -91,6 +176,12 @@ final class KdbxDocumentHandler extends DefaultHandler {
 		path.push(qName);
 		text.setLength(0);
 		collecting = false;
+		textCap = MAX_SMALL_TEXT;
+		if ("True".equalsIgnoreCase(attributes.getValue("Protected"))) {
+			decoder = new ProtectedDecoder(
+					"Value".equals(qName) && inEntryString(parent));
+			return;
+		}
 		switch (qName) {
 			case "Group":
 				if (!"Root".equals(parent) && !"Group".equals(parent)) break;
@@ -107,8 +198,9 @@ final class KdbxDocumentHandler extends DefaultHandler {
 				if (++entryElements > MAX_ENTRY_ELEMENTS) {
 					throw fail(KdbxException.tooLarge("entries"));
 				}
-				boolean history = "History".equals(parent) || !entryStack.isEmpty();
-				if (!history && entries.size() >= MAX_ENTRIES) {
+				boolean history = "History".equals(parent)
+						|| !entryStack.isEmpty();
+				if (!history && entries.size() + skippedEntries >= MAX_ENTRIES) {
 					throw fail(KdbxException.tooLarge("entries"));
 				}
 				entryStack.push(new Entry(history));
@@ -120,13 +212,11 @@ final class KdbxDocumentHandler extends DefaultHandler {
 				}
 				break;
 			case "Key":
-				collecting = "String".equals(parent) && !entryStack.isEmpty();
+				collecting = inEntryString(parent);
 				break;
 			case "Value":
-				valueProtected = "True".equalsIgnoreCase(
-						attributes.getValue("Protected"));
-				collecting = valueProtected
-						|| ("String".equals(parent) && !entryStack.isEmpty());
+				collecting = inEntryString(parent);
+				textCap = MAX_VALUE_CHARS;
 				break;
 			case "Binary":
 				if ("Entry".equals(parent) && !entryStack.isEmpty()) {
@@ -140,6 +230,7 @@ final class KdbxDocumentHandler extends DefaultHandler {
 				break;
 			case "RecycleBinEnabled":
 			case "RecycleBinUUID":
+			case "HeaderHash":
 				collecting = "Meta".equals(parent);
 				break;
 			default:
@@ -150,11 +241,14 @@ final class KdbxDocumentHandler extends DefaultHandler {
 	@Override
 	public void characters(char[] ch, int start, int length)
 			throws SAXException {
-		if (!collecting) return;
-		if (text.length() + length > MAX_VALUE_CHARS) {
-			throw fail(KdbxException.corrupted("value size"));
+		if (decoder != null) {
+			decoder.append(ch, start, length);
+			return;
 		}
-		text.append(ch, start, length);
+		if (!collecting) return;
+		int room = textCap - text.length();
+		if (room <= 0) return;
+		text.append(ch, start, Math.min(length, room));
 	}
 
 	@Override
@@ -162,16 +256,17 @@ final class KdbxDocumentHandler extends DefaultHandler {
 			throws SAXException {
 		path.pop();
 		String parent = path.peek();
+		if (decoder != null) {
+			String value = decoder.finish();
+			if (decoder.store) stringValue = value;
+			decoder = null;
+			collecting = false;
+			text.setLength(0);
+			return;
+		}
 		switch (qName) {
 			case "Value":
-				if (collecting) {
-					String value = valueProtected ? unprotect(text.toString())
-							: text.toString();
-					if ("String".equals(parent) && !entryStack.isEmpty()) {
-						stringValue = value;
-					}
-				}
-				valueProtected = false;
+				if (collecting) stringValue = text.toString();
 				break;
 			case "Key":
 				if (collecting) stringKey = text.toString();
@@ -181,10 +276,11 @@ final class KdbxDocumentHandler extends DefaultHandler {
 					Entry entry = entryStack.peek();
 					if (stringKey != null && !entry.history) {
 						if (entry.strings.size() >= MAX_STRINGS_PER_ENTRY) {
-							throw fail(KdbxException.corrupted("entry strings"));
+							entry.oversized = true;
+						} else {
+							entry.strings.put(stringKey,
+									stringValue == null ? "" : stringValue);
 						}
-						entry.strings.put(stringKey,
-								stringValue == null ? "" : stringValue);
 					}
 					stringKey = null;
 					stringValue = null;
@@ -196,6 +292,8 @@ final class KdbxDocumentHandler extends DefaultHandler {
 				Entry done = entryStack.pop();
 				if (done.history) {
 					historyEntries++;
+				} else if (done.oversized) {
+					skippedEntries++;
 				} else {
 					entries.add(new KdbxEntry(done.strings, groupPathForEntry(),
 							currentGroupInRecycleBin(), done.hasBinary));
@@ -222,11 +320,15 @@ final class KdbxDocumentHandler extends DefaultHandler {
 				break;
 			case "RecycleBinEnabled":
 				if (collecting) {
-					recycleBinEnabled = "True".equalsIgnoreCase(text.toString().trim());
+					recycleBinEnabled = "True".equalsIgnoreCase(
+							text.toString().trim());
 				}
 				break;
 			case "RecycleBinUUID":
 				if (collecting) recycleBinUuid = text.toString().trim();
+				break;
+			case "HeaderHash":
+				if (collecting) headerHash = text.toString().trim();
 				break;
 			default:
 				break;
@@ -257,25 +359,6 @@ final class KdbxDocumentHandler extends DefaultHandler {
 	private boolean currentGroupInRecycleBin() {
 		Group group = groups.peek();
 		return group != null && group.inRecycleBin;
-	}
-
-	private String unprotect(String base64) throws SAXException {
-		StringBuilder compact = new StringBuilder(base64.length());
-		for (int i = 0; i < base64.length(); i++) {
-			char c = base64.charAt(i);
-			if (!Character.isWhitespace(c)) compact.append(c);
-		}
-		byte[] encrypted;
-		try {
-			encrypted = java.util.Base64.getDecoder().decode(compact.toString());
-		} catch (IllegalArgumentException e) {
-			throw fail(KdbxException.corrupted("protected value"));
-		}
-		byte[] plain = innerStream.process(encrypted);
-		KdbxBytes.wipe(encrypted);
-		String value = new String(plain, StandardCharsets.UTF_8);
-		KdbxBytes.wipe(plain);
-		return value;
 	}
 
 	private static SAXException fail(KdbxException e) {

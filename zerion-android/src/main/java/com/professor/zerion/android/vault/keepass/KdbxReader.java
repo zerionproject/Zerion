@@ -2,25 +2,13 @@ package com.professor.zerion.android.vault.keepass;
 
 import org.briarproject.nullsafety.NotNullByDefault;
 
-import org.bouncycastle.crypto.BlockCipher;
-import org.bouncycastle.crypto.engines.ChaCha7539Engine;
-import org.bouncycastle.crypto.engines.TwofishEngine;
-import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.ParametersWithIV;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import javax.annotation.Nullable;
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 @NotNullByDefault
 public final class KdbxReader {
@@ -28,7 +16,7 @@ public final class KdbxReader {
 	public static final int MAX_FILE_BYTES = 64 * 1024 * 1024;
 	public static final int MAX_KEY_FILE_BYTES = 16 * 1024 * 1024;
 	static final int MAX_BLOCK_BYTES = 16 * 1024 * 1024;
-	static final int MAX_PAYLOAD_BYTES = 256 * 1024 * 1024;
+	static final long MAX_PAYLOAD_BYTES = 256L * 1024 * 1024;
 	static final int MAX_INNER_BINARIES = 10_000;
 
 	private static final int INNER_END = 0;
@@ -39,26 +27,28 @@ public final class KdbxReader {
 	public static final class Document {
 		public final List<KdbxEntry> entries;
 		public final int historyEntries;
+		public final int skippedEntries;
 
-		Document(List<KdbxEntry> entries, int historyEntries) {
+		Document(List<KdbxEntry> entries, int historyEntries,
+				int skippedEntries) {
 			this.entries = entries;
 			this.historyEntries = historyEntries;
-		}
-	}
-
-	private static final class Buffer extends ByteArrayOutputStream {
-
-		Buffer(int size) {
-			super(size);
-		}
-
-		void wipe() {
-			Arrays.fill(buf, (byte) 0);
-			count = 0;
+			this.skippedEntries = skippedEntries;
 		}
 	}
 
 	private KdbxReader() {
+	}
+
+	public static byte[] readLimited(InputStream in, long declaredSize,
+			int cap) throws KdbxException, IOException {
+		try {
+			return KdbxStreams.readAll(in, declaredSize, cap);
+		} catch (KdbxStreams.KdbxIOException e) {
+			throw e.reason;
+		} catch (OutOfMemoryError e) {
+			throw KdbxException.tooLarge("memory");
+		}
 	}
 
 	public static Document read(byte[] file, @Nullable char[] password,
@@ -84,7 +74,8 @@ public final class KdbxReader {
 		if (file.length < pos + 64) throw KdbxException.corrupted("file end");
 		byte[] rawHeader = header.rawBytes(file);
 		byte[] storedHash = Arrays.copyOfRange(file, pos, pos + 32);
-		if (!KdbxBytes.constantTimeEquals(KdbxBytes.sha256(rawHeader), storedHash)) {
+		if (!KdbxBytes.constantTimeEquals(KdbxBytes.sha256(rawHeader),
+				storedHash)) {
 			throw KdbxException.corrupted("header hash");
 		}
 		KdbxKdf.Params kdf = header.kdf;
@@ -100,26 +91,26 @@ public final class KdbxReader {
 		byte[] hmacBase = KdbxBytes.sha512(header.masterSeed, transformed,
 				new byte[] {1});
 		KdbxBytes.wipe(transformed);
-		byte[] plain = null;
-		byte[] payload = null;
 		try {
-			byte[] headerHmacKey = KdbxBytes.sha512(KdbxBytes.u64le(-1L), hmacBase);
+			byte[] headerHmacKey = KdbxBytes.sha512(KdbxBytes.u64le(-1L),
+					hmacBase);
 			byte[] headerHmac = KdbxBytes.hmacSha256(headerHmacKey, rawHeader);
 			KdbxBytes.wipe(headerHmacKey);
 			byte[] storedHmac = Arrays.copyOfRange(file, pos + 32, pos + 64);
 			if (!KdbxBytes.constantTimeEquals(headerHmac, storedHmac)) {
 				throw KdbxException.wrongKey("header hmac");
 			}
-			byte[] encrypted = readHmacBlocks(file, pos + 64, hmacBase);
-			plain = decrypt(header, masterKey, encrypted, false);
-			KdbxBytes.wipe(encrypted);
-			payload = header.gzip ? gunzip(plain) : plain;
-			return parseInnerHeaderAndXml(payload);
+			InputStream blocks = new KdbxStreams.HmacBlockInputStream(file,
+					pos + 64, hmacBase);
+			try (InputStream plain = payload(header, masterKey, blocks)) {
+				return parseInnerHeaderAndXml(plain);
+			} catch (IOException e) {
+				throw KdbxStreams.unwrap(e, KdbxException.Reason.CORRUPTED,
+						KdbxException.Reason.CORRUPTED);
+			}
 		} finally {
 			KdbxBytes.wipe(masterKey);
 			KdbxBytes.wipe(hmacBase);
-			if (plain != null) KdbxBytes.wipe(plain);
-			if (payload != null) KdbxBytes.wipe(payload);
 		}
 	}
 
@@ -145,262 +136,125 @@ public final class KdbxReader {
 		}
 		byte[] masterKey = KdbxBytes.sha256(header.masterSeed, transformed);
 		KdbxBytes.wipe(transformed);
-		byte[] plain = null;
-		byte[] blocks = null;
-		byte[] payload = null;
-		try {
-			byte[] encrypted = Arrays.copyOfRange(file, pos, file.length);
-			plain = decrypt(header, masterKey, encrypted, true);
-			if (plain.length < 32) throw KdbxException.wrongKey("stream start");
-			byte[] start = Arrays.copyOf(plain, 32);
+		try (InputStream decrypted = KdbxStreams.decrypting(header, masterKey,
+				KdbxStreams.bytes(file, pos))) {
+			byte[] start;
+			try {
+				start = KdbxStreams.readFully(decrypted, 32);
+			} catch (IOException e) {
+				throw KdbxException.wrongKey("stream start");
+			}
 			if (!KdbxBytes.constantTimeEquals(start, streamStartBytes)) {
 				throw KdbxException.wrongKey("stream start");
 			}
-			blocks = readHashedBlocks(plain, 32);
-			payload = header.gzip ? gunzip(blocks) : blocks;
+			InputStream blocks = new KdbxStreams.HashedBlockInputStream(decrypted);
+			InputStream xml = header.gzip ? gunzip(blocks) : blocks;
 			KdbxInnerStream inner = KdbxInnerStream.create(
 					header.innerRandomStreamId, protectedStreamKey);
-			return parseXml(payload, inner);
+			return parseXml(xml, inner, KdbxBytes.sha256(header.rawBytes(file)));
+		} catch (IOException e) {
+			throw KdbxStreams.unwrap(e, KdbxException.Reason.WRONG_KEY,
+					KdbxException.Reason.CORRUPTED);
 		} finally {
 			KdbxBytes.wipe(masterKey);
-			if (plain != null) KdbxBytes.wipe(plain);
-			if (blocks != null) KdbxBytes.wipe(blocks);
-			if (payload != null) KdbxBytes.wipe(payload);
 		}
 	}
 
-	private static byte[] readHmacBlocks(byte[] file, int start, byte[] hmacBase)
-			throws KdbxException {
-		Buffer out = new Buffer(Math.max(16, file.length - start));
-		int pos = start;
-		long index = 0;
-		while (true) {
-			if (file.length - pos < 36) throw KdbxException.corrupted("block header");
-			byte[] mac = Arrays.copyOfRange(file, pos, pos + 32);
-			int len = KdbxBytes.i32(file, pos + 32);
-			pos += 36;
-			if (len < 0 || len > MAX_BLOCK_BYTES) {
-				throw KdbxException.corrupted("block size");
-			}
-			if (len > file.length - pos) throw KdbxException.corrupted("block data");
-			if (out.size() + (long) len > MAX_PAYLOAD_BYTES) {
-				throw KdbxException.tooLarge("payload");
-			}
-			byte[] indexBytes = KdbxBytes.u64le(index);
-			byte[] blockKey = KdbxBytes.sha512(indexBytes, hmacBase);
-			byte[] data = Arrays.copyOfRange(file, pos, pos + len);
-			byte[] expected = KdbxBytes.hmacSha256(blockKey, indexBytes,
-					KdbxBytes.i32le(len), data);
-			KdbxBytes.wipe(blockKey);
-			if (!KdbxBytes.constantTimeEquals(expected, mac)) {
-				out.wipe();
-				throw KdbxException.corrupted("block hmac");
-			}
-			pos += len;
-			if (len == 0) break;
-			out.write(data, 0, len);
-			KdbxBytes.wipe(data);
-			index++;
-		}
-		if (pos != file.length) {
-			out.wipe();
-			throw KdbxException.corrupted("trailing data");
-		}
-		byte[] result = out.toByteArray();
-		out.wipe();
-		return result;
+	private static InputStream payload(KdbxHeader header, byte[] masterKey,
+			InputStream blocks) throws IOException {
+		InputStream decrypted = KdbxStreams.decrypting(header, masterKey, blocks);
+		return header.gzip ? gunzip(decrypted) : decrypted;
 	}
 
-	private static byte[] readHashedBlocks(byte[] plain, int start)
-			throws KdbxException {
-		Buffer out = new Buffer(Math.max(16, plain.length - start));
-		int pos = start;
-		long expectedIndex = 0;
-		byte[] zeros = new byte[32];
-		while (true) {
-			if (plain.length - pos < 40) throw KdbxException.corrupted("block header");
-			long index = KdbxBytes.u32(plain, pos);
-			byte[] hash = Arrays.copyOfRange(plain, pos + 4, pos + 36);
-			int len = KdbxBytes.i32(plain, pos + 36);
-			pos += 40;
-			if (index != expectedIndex) throw KdbxException.corrupted("block index");
-			if (len < 0 || len > MAX_BLOCK_BYTES) {
-				throw KdbxException.corrupted("block size");
-			}
-			if (len > plain.length - pos) throw KdbxException.corrupted("block data");
-			if (out.size() + (long) len > MAX_PAYLOAD_BYTES) {
-				throw KdbxException.tooLarge("payload");
-			}
-			if (len == 0) {
-				if (!KdbxBytes.constantTimeEquals(hash, zeros)) {
-					out.wipe();
-					throw KdbxException.corrupted("final block");
-				}
-				break;
-			}
-			byte[] actual = KdbxBytes.sha256(Arrays.copyOfRange(plain, pos, pos + len));
-			if (!KdbxBytes.constantTimeEquals(actual, hash)) {
-				out.wipe();
-				throw KdbxException.corrupted("block hash");
-			}
-			out.write(plain, pos, len);
-			pos += len;
-			expectedIndex++;
-		}
-		byte[] result = out.toByteArray();
-		out.wipe();
-		return result;
+	private static InputStream gunzip(InputStream compressed) throws IOException {
+		return new KdbxStreams.LimitedInputStream(
+				new GZIPInputStream(compressed, 64 * 1024), MAX_PAYLOAD_BYTES);
 	}
 
-	private static byte[] decrypt(KdbxHeader header, byte[] key, byte[] data,
-			boolean keyCheck) throws KdbxException {
-		KdbxException.Reason onFailure = keyCheck
-				? KdbxException.Reason.WRONG_KEY : KdbxException.Reason.CORRUPTED;
-		switch (header.cipher) {
-			case CHACHA20: {
-				ChaCha7539Engine engine = new ChaCha7539Engine();
-				engine.init(false, new ParametersWithIV(new KeyParameter(key),
-						header.encryptionIv));
-				byte[] out = new byte[data.length];
-				engine.processBytes(data, 0, data.length, out, 0);
-				return out;
-			}
-			case AES_CBC: {
-				if (data.length == 0 || data.length % 16 != 0) {
-					throw new KdbxException(onFailure, "cipher text length");
-				}
-				try {
-					Cipher aes = Cipher.getInstance("AES/CBC/NoPadding");
-					aes.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"),
-							new IvParameterSpec(header.encryptionIv));
-					byte[] padded = aes.doFinal(data);
-					return unpad(padded, onFailure);
-				} catch (GeneralSecurityException e) {
-					throw new KdbxException(onFailure, "aes");
-				}
-			}
-			case TWOFISH_CBC: {
-				if (data.length == 0 || data.length % 16 != 0) {
-					throw new KdbxException(onFailure, "cipher text length");
-				}
-				BlockCipher cbc = CBCBlockCipher.newInstance(new TwofishEngine());
-				cbc.init(false, new ParametersWithIV(new KeyParameter(key),
-						header.encryptionIv));
-				byte[] padded = new byte[data.length];
-				for (int off = 0; off < data.length; off += 16) {
-					cbc.processBlock(data, off, padded, off);
-				}
-				return unpad(padded, onFailure);
-			}
-			default:
-				throw KdbxException.unsupported("cipher");
-		}
-	}
-
-	private static byte[] unpad(byte[] padded, KdbxException.Reason onFailure)
-			throws KdbxException {
-		int pad = padded[padded.length - 1] & 0xFF;
-		int bad = 0;
-		if (pad < 1 || pad > 16 || pad > padded.length) bad = 1;
-		int check = bad == 1 ? 1 : pad;
-		for (int i = 0; i < 16; i++) {
-			int idx = padded.length - 1 - i;
-			int inRange = i < check ? 1 : 0;
-			int differs = idx >= 0 && (padded[idx] & 0xFF) != pad ? 1 : 0;
-			bad |= inRange & differs;
-		}
-		if (bad != 0) {
-			KdbxBytes.wipe(padded);
-			throw new KdbxException(onFailure, "padding");
-		}
-		byte[] out = Arrays.copyOf(padded, padded.length - pad);
-		KdbxBytes.wipe(padded);
-		return out;
-	}
-
-	private static byte[] gunzip(byte[] compressed) throws KdbxException {
-		Buffer out = new Buffer(Math.min(MAX_PAYLOAD_BYTES,
-				Math.max(1024, compressed.length * 4)));
-		try (GZIPInputStream in = new GZIPInputStream(
-				new ByteArrayInputStream(compressed), 64 * 1024)) {
-			byte[] buf = new byte[64 * 1024];
-			int n;
-			while ((n = in.read(buf)) != -1) {
-				if (out.size() + (long) n > MAX_PAYLOAD_BYTES) {
-					out.wipe();
-					throw KdbxException.tooLarge("decompressed payload");
-				}
-				out.write(buf, 0, n);
-			}
-			KdbxBytes.wipe(buf);
-		} catch (IOException e) {
-			out.wipe();
-			throw KdbxException.corrupted("gzip");
-		}
-		byte[] result = out.toByteArray();
-		out.wipe();
-		return result;
-	}
-
-	private static Document parseInnerHeaderAndXml(byte[] payload)
-			throws KdbxException {
-		int pos = 0;
+	private static Document parseInnerHeaderAndXml(InputStream in)
+			throws KdbxException, IOException {
 		int streamId = -1;
 		byte[] streamKey = null;
 		int binaries = 0;
 		while (true) {
-			if (payload.length - pos < 5) throw KdbxException.corrupted("inner header");
-			int id = payload[pos] & 0xFF;
-			int len = KdbxBytes.i32(payload, pos + 1);
-			pos += 5;
-			if (len < 0 || len > payload.length - pos) {
-				throw KdbxException.corrupted("inner field size");
-			}
+			byte[] head = KdbxStreams.readFully(in, 5);
+			int id = head[0] & 0xFF;
+			int len = KdbxBytes.i32(head, 1);
+			if (len < 0) throw KdbxException.corrupted("inner field size");
 			if (id == INNER_END) {
-				pos += len;
+				KdbxStreams.skipFully(in, len);
 				break;
 			}
 			switch (id) {
-				case INNER_STREAM_ID:
+				case INNER_STREAM_ID: {
 					if (streamId >= 0 || len != 4) {
 						throw KdbxException.corrupted("inner stream id");
 					}
-					streamId = (int) KdbxBytes.u32(payload, pos);
+					byte[] value = KdbxStreams.readFully(in, 4);
+					streamId = (int) KdbxBytes.u32(value, 0);
 					KdbxInnerStream.requireSupported(streamId);
 					break;
+				}
 				case INNER_STREAM_KEY:
 					if (streamKey != null || len < 16 || len > 64) {
 						throw KdbxException.corrupted("inner stream key");
 					}
-					streamKey = Arrays.copyOfRange(payload, pos, pos + len);
+					streamKey = KdbxStreams.readFully(in, len);
 					break;
 				case INNER_BINARY:
 					if (len < 1) throw KdbxException.corrupted("inner binary");
 					if (++binaries > MAX_INNER_BINARIES) {
 						throw KdbxException.tooLarge("binaries");
 					}
+					KdbxStreams.skipFully(in, len);
 					break;
 				default:
 					throw KdbxException.unsupported("inner field " + id);
 			}
-			pos += len;
 		}
 		if (streamId < 0 || streamKey == null) {
 			throw KdbxException.corrupted("inner header incomplete");
 		}
 		KdbxInnerStream inner = KdbxInnerStream.create(streamId, streamKey);
 		KdbxBytes.wipe(streamKey);
-		return parseXml(Arrays.copyOfRange(payload, pos, payload.length), inner);
+		return parseXml(in, inner, null);
+	}
+
+	static Document parseXml(InputStream xml, KdbxInnerStream inner,
+			@Nullable byte[] expectedHeaderHash)
+			throws KdbxException, IOException {
+		KdbxDocumentHandler handler = new KdbxDocumentHandler(inner);
+		KdbxXml.parse(new KdbxStreams.DeclarationScanInputStream(xml), handler);
+		String storedHash = handler.headerHash();
+		if (expectedHeaderHash != null && storedHash != null) {
+			checkHeaderHash(storedHash, expectedHeaderHash);
+		}
+		return new Document(handler.entries(), handler.historyEntries(),
+				handler.skippedEntries());
 	}
 
 	static Document parseXml(byte[] xml, KdbxInnerStream inner)
 			throws KdbxException {
-		KdbxDocumentHandler handler = new KdbxDocumentHandler(inner);
 		try {
-			KdbxXml.parse(xml, handler);
+			return parseXml(KdbxStreams.bytes(xml, 0), inner, null);
+		} catch (IOException e) {
+			throw KdbxStreams.unwrap(e, KdbxException.Reason.CORRUPTED,
+					KdbxException.Reason.CORRUPTED);
 		} finally {
 			KdbxBytes.wipe(xml);
 		}
-		return new Document(handler.entries(), handler.historyEntries());
+	}
+
+	static void checkHeaderHash(String storedBase64, byte[] expected)
+			throws KdbxException {
+		byte[] stored;
+		try {
+			stored = java.util.Base64.getDecoder().decode(storedBase64.trim());
+		} catch (IllegalArgumentException e) {
+			throw KdbxException.corrupted("header hash text");
+		}
+		if (!KdbxBytes.constantTimeEquals(stored, expected)) {
+			throw KdbxException.corrupted("header hash");
+		}
 	}
 }
