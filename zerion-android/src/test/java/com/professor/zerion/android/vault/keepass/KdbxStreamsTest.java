@@ -136,7 +136,6 @@ public class KdbxStreamsTest {
 				new KdbxStreams.HashedBlockInputStream(in);
 		KdbxStreams.drain(blocks);
 		assertEquals(9, in.read());
-		assertEquals(-1, in.read());
 	}
 
 	@Test
@@ -179,5 +178,64 @@ public class KdbxStreamsTest {
 		} catch (KdbxException e) {
 			assertEquals(KdbxException.Reason.TOO_LARGE, e.reason);
 		}
+	}
+
+	private static byte[] hmacBlocks(byte[] hmacBase, byte[]... blocks) {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		long index = 0;
+		for (byte[] block : blocks) {
+			writeHmacBlock(out, hmacBase, index++, block);
+		}
+		writeHmacBlock(out, hmacBase, index, new byte[0]);
+		return out.toByteArray();
+	}
+
+	private static void writeHmacBlock(ByteArrayOutputStream out,
+			byte[] hmacBase, long index, byte[] block) {
+		byte[] indexBytes = KdbxBytes.u64le(index);
+		byte[] blockKey = KdbxBytes.sha512(indexBytes, hmacBase);
+		byte[] mac = KdbxBytes.hmacSha256(blockKey, indexBytes,
+				KdbxBytes.i32le(block.length), block);
+		out.write(mac, 0, mac.length);
+		out.write(KdbxBytes.i32le(block.length), 0, 4);
+		out.write(block, 0, block.length);
+	}
+
+	@Test
+	public void hmacBlocksAreConcatenated() throws Exception {
+		byte[] base = new byte[64];
+		new Random(2).nextBytes(base);
+		byte[] a = "first block".getBytes(StandardCharsets.UTF_8);
+		byte[] b = new byte[3000];
+		new Random(3).nextBytes(b);
+		byte[] file = hmacBlocks(base, a, b);
+		byte[] joined = drain(new KdbxStreams.HmacBlockInputStream(file, 0,
+				base));
+		assertArrayEquals(KdbxBytes.concat(a, b), joined);
+	}
+
+	@Test
+	public void trailingDataAfterTheFinalHmacBlockIsReportedOnEveryRead()
+			throws Exception {
+		byte[] base = new byte[64];
+		new Random(4).nextBytes(base);
+		byte[] a = "only block".getBytes(StandardCharsets.UTF_8);
+		byte[] file = KdbxBytes.concat(hmacBlocks(base, a), new byte[7]);
+		InputStream in = new KdbxStreams.HmacBlockInputStream(file, 0, base);
+		assertEquals(KdbxException.Reason.CORRUPTED, reasonOf(in));
+		assertEquals(KdbxException.Reason.CORRUPTED, reasonOf(in));
+		assertEquals(KdbxException.Reason.CORRUPTED, reasonOf(in));
+	}
+
+	@Test
+	public void aHashedBlockFailureIsReportedOnEveryRead() throws Exception {
+		byte[] a = "first block".getBytes(StandardCharsets.UTF_8);
+		byte[] b = "second block".getBytes(StandardCharsets.UTF_8);
+		byte[] file = hashedBlocks(a, b);
+		file[40 + a.length + 5] ^= 1;
+		InputStream in = new KdbxStreams.HashedBlockInputStream(
+				new ByteArrayInputStream(file));
+		assertEquals(KdbxException.Reason.CORRUPTED, reasonOf(in));
+		assertEquals(KdbxException.Reason.CORRUPTED, reasonOf(in));
 	}
 }

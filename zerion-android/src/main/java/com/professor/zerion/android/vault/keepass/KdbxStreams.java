@@ -321,6 +321,15 @@ final class KdbxStreams {
 		private int blockEnd = 0;
 		private boolean finished = false;
 
+		/**
+		 * The first failure of this stream. A reader above it can swallow the
+		 * exception, as the gzip reader does when it probes for a second
+		 * member after the compressed data, so every later read throws the
+		 * same failure again and the drain after parsing still sees it.
+		 */
+		@Nullable
+		private IOException failure = null;
+
 		HmacBlockInputStream(byte[] file, int start, byte[] hmacBase) {
 			this.file = file;
 			this.pos = start;
@@ -328,6 +337,16 @@ final class KdbxStreams {
 		}
 
 		private boolean nextBlock() throws IOException {
+			if (failure != null) throw failure;
+			try {
+				return readNextBlock();
+			} catch (IOException e) {
+				failure = e;
+				throw e;
+			}
+		}
+
+		private boolean readNextBlock() throws IOException {
 			if (finished) return false;
 			if (file.length - pos < 36) throw corrupted("block header");
 			byte[] mac = Arrays.copyOfRange(file, pos, pos + 32);
@@ -394,11 +413,30 @@ final class KdbxStreams {
 		private int blockPos = 0;
 		private boolean finished = false;
 
+		/**
+		 * The first failure of this stream. A reader above it can swallow the
+		 * exception, as the gzip reader does when it probes for a second
+		 * member after the compressed data, so every later read throws the
+		 * same failure again and the drain after parsing still sees it.
+		 */
+		@Nullable
+		private IOException failure = null;
+
 		HashedBlockInputStream(InputStream in) {
 			this.in = in;
 		}
 
 		private boolean nextBlock() throws IOException {
+			if (failure != null) throw failure;
+			try {
+				return readNextBlock();
+			} catch (IOException e) {
+				failure = e;
+				throw e;
+			}
+		}
+
+		private boolean readNextBlock() throws IOException {
 			if (finished) return false;
 			if (block != null) KdbxBytes.wipe(block);
 			block = null;
