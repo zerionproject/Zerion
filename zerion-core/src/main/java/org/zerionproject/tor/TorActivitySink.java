@@ -13,7 +13,9 @@ public interface TorActivitySink {
 
 		SYNC_PENDING,
 
-		COVER_TRAFFIC
+		COVER_TRAFFIC,
+
+		KEEPALIVE
 	}
 
 	void noteActivity(Activity activity);

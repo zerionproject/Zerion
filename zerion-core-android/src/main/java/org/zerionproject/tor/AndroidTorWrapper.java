@@ -150,9 +150,9 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	}
 
 	@Override
-	protected void onTorCircuitActivity() {
+	protected void onTorBriefActivity() {
 		try {
-			wakePolicy.onCircuitEvent();
+			wakePolicy.onBriefTorEvent();
 		} catch (RuntimeException ignored) {
 		}
 	}
