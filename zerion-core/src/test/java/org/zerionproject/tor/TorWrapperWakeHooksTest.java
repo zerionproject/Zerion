@@ -36,8 +36,8 @@ public class TorWrapperWakeHooksTest {
 		}
 
 		@Override
-		protected void onTorCircuitActivity() {
-			hooks.add("circuit");
+		protected void onTorBriefActivity() {
+			hooks.add("brief");
 		}
 
 		@Override
@@ -68,24 +68,24 @@ public class TorWrapperWakeHooksTest {
 	}
 
 	@Test
-	public void streamAndRelayEventsCountAsActivity() throws IOException {
+	public void relayConnectionEventsCountAsActivity() throws IOException {
 		RecordingTorWrapper tor = new RecordingTorWrapper();
-		tor.streamStatus("NEW", "1", "x.onion:80");
-		tor.streamStatus("SUCCEEDED", "1", "x.onion:80");
 		tor.orConnStatus("LAUNCHED", "$A");
 		tor.orConnStatus("CONNECTED", "$A");
-		assertEquals(4, hooks.size());
-		for (String h : hooks) assertEquals("activity", h);
+		assertEquals(Arrays.asList("activity", "activity"), hooks);
 	}
 
 	@Test
-	public void circuitEventsReachTheCircuitHookOnly() throws IOException {
+	public void circuitAndStreamEventsReachTheBriefHookOnly()
+			throws IOException {
 		RecordingTorWrapper tor = new RecordingTorWrapper();
 		tor.circuitStatus("LAUNCHED", "1", "");
 		tor.circuitStatus("EXTENDED", "1", "$A");
 		tor.circuitStatus("BUILT", "1", "$A,$B,$C");
-		assertEquals(3, hooks.size());
-		for (String h : hooks) assertEquals("circuit", h);
+		tor.streamStatus("NEW", "1", "x.onion:80");
+		tor.streamStatus("SUCCEEDED", "1", "x.onion:80");
+		assertEquals(5, hooks.size());
+		for (String h : hooks) assertEquals("brief", h);
 	}
 
 	@Test
@@ -113,10 +113,10 @@ public class TorWrapperWakeHooksTest {
 		tor.unrecognized("HS_DESC",
 				"REQUESTED " + ONION + " NO_AUTH $HSDIR DESCID");
 		assertEquals(Arrays.asList(
-				"activity", "upload:" + ONION,
-				"activity", "finished:" + ONION,
-				"activity", "finished:" + ONION,
-				"activity"), hooks);
+				"brief", "upload:" + ONION,
+				"brief", "finished:" + ONION,
+				"brief", "finished:" + ONION,
+				"brief"), hooks);
 	}
 
 	@Test

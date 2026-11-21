@@ -52,7 +52,8 @@ public class TorWakePolicy implements TorActivitySink {
 	static final long PUBLISH_CAP_MS = 120_000;
 	static final long PUBLISH_BURST_CEILING_MS = 300_000;
 	static final long TOR_EVENT_HOLD_MS = 30_000;
-	static final long CIRCUIT_EVENT_HOLD_MS = 5_000;
+	static final long BRIEF_EVENT_HOLD_MS = 5_000;
+	static final long KEEPALIVE_HOLD_MS = 2_000;
 	static final long CONNECTION_HOLD_MS = 60_000;
 	static final long DIAL_HOLD_MS = 15_000;
 	static final long HEARTBEAT_INTERVAL_MS = 10 * 60_000;
@@ -95,7 +96,9 @@ public class TorWakePolicy implements TorActivitySink {
 	@GuardedBy("lock")
 	private long torEventUntil = NEVER;
 	@GuardedBy("lock")
-	private long circuitEventUntil = NEVER;
+	private long briefEventUntil = NEVER;
+	@GuardedBy("lock")
+	private long keepaliveUntil = NEVER;
 	@GuardedBy("lock")
 	private long connectionUntil = NEVER;
 	@GuardedBy("lock")
@@ -112,7 +115,10 @@ public class TorWakePolicy implements TorActivitySink {
 	@Nullable
 	private Cancellable heartbeatTask = null;
 	@GuardedBy("lock")
-	private boolean checkPending = false;
+	@Nullable
+	private Cancellable checkTask = null;
+	@GuardedBy("lock")
+	private long checkGeneration = 0;
 	@GuardedBy("lock")
 	private long checkDueAt = NEVER;
 
@@ -164,9 +170,10 @@ public class TorWakePolicy implements TorActivitySink {
 	 * awake: the network is enabled, Tor is neither starting nor stopping,
 	 * the app is not in the foreground, no call runs, the "Stay awake for
 	 * Tor" setting is off and no connection has carried or queued a record
-	 * in the last {@link #CONNECTION_HOLD_MS}. A dial in progress and Tor's
-	 * own control events do not count, so a dial that fails does not make
-	 * the device look busy to the poller that decides how soon to retry.
+	 * in the last {@link #CONNECTION_HOLD_MS}. A dial in progress, Tor's
+	 * own control events and a keepalive echo do not count, so a dial that
+	 * fails does not make the device look busy to the poller that decides
+	 * how soon to retry.
 	 */
 	public boolean isQuiet() {
 		synchronized (lock) {
@@ -232,8 +239,9 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	/**
-	 * A stream, relay connection or descriptor event arrived over the
-	 * control connection.
+	 * A relay connection event arrived over the control connection: Tor is
+	 * opening or has opened a connection to a guard or bridge, which takes
+	 * several round trips that Tor drives from its own timers.
 	 */
 	public void onTorEvent() {
 		synchronized (lock) {
@@ -243,15 +251,18 @@ public class TorWakePolicy implements TorActivitySink {
 	}
 
 	/**
-	 * A circuit was launched, extended or built. Tor builds spare circuits
-	 * for itself about once a minute while it is in use, so a circuit event
-	 * holds the lock only for the few seconds in which the next hop, or the
-	 * rendezvous that follows a built circuit, would otherwise find the
-	 * device asleep.
+	 * A circuit, stream or descriptor event arrived over the control
+	 * connection. The steps that follow such an event are replies to packets
+	 * that have just woken the device, so the hold only has to bridge the
+	 * gap to the next step: a few seconds. Tor's own timer-driven retries
+	 * wait for the next wakeup or the heartbeat. Tor builds spare circuits
+	 * for itself about once a minute while it is in use, and every dial of
+	 * the app produces stream and descriptor events of its own, so a longer
+	 * hold here kept the processor awake about half the time.
 	 */
-	public void onCircuitEvent() {
+	public void onBriefTorEvent() {
 		synchronized (lock) {
-			circuitEventUntil = clock.getAsLong() + CIRCUIT_EVENT_HOLD_MS;
+			briefEventUntil = clock.getAsLong() + BRIEF_EVENT_HOLD_MS;
 			evaluate();
 		}
 	}
@@ -306,6 +317,8 @@ public class TorWakePolicy implements TorActivitySink {
 			long now = clock.getAsLong();
 			if (activity == Activity.CONNECTION_ATTEMPT) {
 				dialUntil = now + DIAL_HOLD_MS;
+			} else if (activity == Activity.KEEPALIVE) {
+				keepaliveUntil = now + KEEPALIVE_HOLD_MS;
 			} else {
 				connectionUntil = now + CONNECTION_HOLD_MS;
 			}
@@ -345,10 +358,28 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	private void check() {
+	/**
+	 * Runs a scheduled check. A check that was cancelled after it had
+	 * already been handed to its executor still runs; it must not clear the
+	 * reference to a newer check, so the reference is cleared only by the
+	 * generation that set it.
+	 */
+	private void check(long generation) {
 		synchronized (lock) {
-			checkPending = false;
+			if (generation == checkGeneration) checkTask = null;
 			evaluate();
+		}
+	}
+
+	@GuardedBy("lock")
+	private void cancelCheck() {
+		Cancellable task = checkTask;
+		checkTask = null;
+		checkGeneration++;
+		if (task == null) return;
+		try {
+			task.cancel();
+		} catch (RuntimeException ignored) {
 		}
 	}
 
@@ -368,7 +399,8 @@ public class TorWakePolicy implements TorActivitySink {
 		bootstrapping = false;
 		bootstrapGraceUntil = NEVER;
 		torEventUntil = NEVER;
-		circuitEventUntil = NEVER;
+		briefEventUntil = NEVER;
+		keepaliveUntil = NEVER;
 		connectionUntil = NEVER;
 		dialUntil = NEVER;
 		heartbeatUntil = NEVER;
@@ -412,15 +444,29 @@ public class TorWakePolicy implements TorActivitySink {
 				}
 			}
 		}
-		if (!held) return;
+		if (!held) {
+			cancelCheck();
+			return;
+		}
 		long deadline = nextDeadline(now);
-		if (deadline == NEVER) return;
-		if (checkPending && deadline >= checkDueAt) return;
+		if (deadline == NEVER) {
+			cancelCheck();
+			return;
+		}
+		if (checkTask != null && deadline >= checkDueAt) return;
 		try {
-			scheduler.schedule(this::check, executor,
+			Cancellable previous = checkTask;
+			long generation = checkGeneration + 1;
+			checkTask = scheduler.schedule(() -> check(generation), executor,
 					Math.max(1, deadline - now), MILLISECONDS);
-			checkPending = true;
+			checkGeneration = generation;
 			checkDueAt = deadline;
+			if (previous != null) {
+				try {
+					previous.cancel();
+				} catch (RuntimeException ignored) {
+				}
+			}
 		} catch (RuntimeException ignored) {
 		}
 	}
@@ -438,7 +484,8 @@ public class TorWakePolicy implements TorActivitySink {
 		if (now < bootstrapGraceUntil) return true;
 		if (!uploadsInFlight.isEmpty() && now < publishCapUntil) return true;
 		if (now < torEventUntil) return true;
-		if (now < circuitEventUntil) return true;
+		if (now < briefEventUntil) return true;
+		if (now < keepaliveUntil) return true;
 		if (now < connectionUntil) return true;
 		if (now < dialUntil) return true;
 		return now < heartbeatUntil;
@@ -461,7 +508,8 @@ public class TorWakePolicy implements TorActivitySink {
 			deadline = earliest(deadline, now, publishCapUntil);
 		}
 		deadline = earliest(deadline, now, torEventUntil);
-		deadline = earliest(deadline, now, circuitEventUntil);
+		deadline = earliest(deadline, now, briefEventUntil);
+		deadline = earliest(deadline, now, keepaliveUntil);
 		deadline = earliest(deadline, now, connectionUntil);
 		deadline = earliest(deadline, now, dialUntil);
 		deadline = earliest(deadline, now, heartbeatUntil);

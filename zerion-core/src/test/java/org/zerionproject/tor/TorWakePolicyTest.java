@@ -22,14 +22,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.tor.TorWakePolicy.BOOTSTRAP_GRACE_MS;
 import static org.zerionproject.tor.TorWakePolicy.BOOTSTRAP_HOLD_CAP_MS;
+import static org.zerionproject.tor.TorWakePolicy.BRIEF_EVENT_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.CONNECTION_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.DIAL_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.HEARTBEAT_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.HEARTBEAT_INTERVAL_MS;
+import static org.zerionproject.tor.TorWakePolicy.KEEPALIVE_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.NETWORK_ENABLED_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.PUBLISH_BURST_CEILING_MS;
 import static org.zerionproject.tor.TorWakePolicy.PUBLISH_CAP_MS;
-import static org.zerionproject.tor.TorWakePolicy.CIRCUIT_EVENT_HOLD_MS;
 import static org.zerionproject.tor.TorWakePolicy.TOR_EVENT_HOLD_MS;
 
 public class TorWakePolicyTest {
@@ -124,19 +125,95 @@ public class TorWakePolicyTest {
 	}
 
 	@Test
-	public void aCircuitEventHoldsForFiveSecondsOnly() {
+	public void aBriefTorEventHoldsForFiveSecondsOnly() {
 		settle();
-		policy.onCircuitEvent();
+		policy.onBriefTorEvent();
 		assertTrue(lock.held);
-		advance(CIRCUIT_EVENT_HOLD_MS - 1);
+		advance(BRIEF_EVENT_HOLD_MS - 1);
 		assertTrue(lock.held);
-		policy.onCircuitEvent();
-		advance(CIRCUIT_EVENT_HOLD_MS - 1);
-		assertTrue("each circuit event re-arms the short window", lock.held);
+		policy.onBriefTorEvent();
+		advance(BRIEF_EVENT_HOLD_MS - 1);
+		assertTrue("each brief event re-arms the short window", lock.held);
 		advance(1);
 		assertFalse(lock.held);
-		assertTrue(CIRCUIT_EVENT_HOLD_MS < TOR_EVENT_HOLD_MS);
+		assertTrue(BRIEF_EVENT_HOLD_MS < TOR_EVENT_HOLD_MS);
 		assertEquals(2, lock.acquires.get());
+		assertEquals(2, lock.releases.get());
+	}
+
+	@Test
+	public void aBriefEventInsideARelayEventWindowDoesNotShortenIt() {
+		settle();
+		policy.onTorEvent();
+		advance(TOR_EVENT_HOLD_MS - 2 * BRIEF_EVENT_HOLD_MS);
+		policy.onBriefTorEvent();
+		advance(BRIEF_EVENT_HOLD_MS);
+		assertTrue("the 30 s window still runs", lock.held);
+		advance(BRIEF_EVENT_HOLD_MS - 1);
+		assertTrue(lock.held);
+		advance(1);
+		assertFalse(lock.held);
+		assertEquals(2, lock.acquires.get());
+		assertEquals(2, lock.releases.get());
+	}
+
+	@Test
+	public void aShortWindowInsideALongerOneKeepsOneScheduledCheck() {
+		settle();
+		policy.onTorEvent();
+		assertEquals(1, scheduler.pendingOneShots());
+		policy.onBriefTorEvent();
+		assertEquals("the earlier check replaces the later one",
+				1, scheduler.pendingOneShots());
+		advance(BRIEF_EVENT_HOLD_MS);
+		assertTrue("the 30 s window still runs", lock.held);
+		assertEquals("one check for the rest of the window",
+				1, scheduler.pendingOneShots());
+		policy.noteActivity(Activity.KEEPALIVE);
+		assertEquals(1, scheduler.pendingOneShots());
+		advance(TOR_EVENT_HOLD_MS - BRIEF_EVENT_HOLD_MS);
+		assertFalse(lock.held);
+		assertEquals(0, scheduler.pendingOneShots());
+	}
+
+	@Test
+	public void disablingTheNetworkOrStoppingClosesTheShortWindows() {
+		settle();
+		policy.onBriefTorEvent();
+		policy.noteActivity(Activity.KEEPALIVE);
+		assertTrue(lock.held);
+		policy.onNetworkEnabled(false);
+		assertFalse(lock.held);
+		advance(BRIEF_EVENT_HOLD_MS);
+		assertFalse("the scheduled check finds nothing to hold", lock.held);
+		policy.onNetworkEnabled(true);
+		advance(NETWORK_ENABLED_HOLD_MS);
+		assertFalse(lock.held);
+		policy.onBriefTorEvent();
+		policy.noteActivity(Activity.KEEPALIVE);
+		assertTrue(lock.held);
+		policy.onStopping();
+		policy.onStopped();
+		assertFalse(lock.held);
+		advance(BRIEF_EVENT_HOLD_MS);
+		assertFalse(lock.held);
+		assertEquals(lock.acquires.get(), lock.releases.get());
+	}
+
+	@Test
+	public void aKeepaliveEchoHoldsForTwoSecondsAndLeavesTheDeviceQuiet() {
+		settle();
+		assertTrue(policy.isQuiet());
+		policy.noteActivity(Activity.KEEPALIVE);
+		assertTrue(lock.held);
+		assertTrue("a keepalive is not connection data", policy.isQuiet());
+		advance(KEEPALIVE_HOLD_MS - 1);
+		assertTrue(lock.held);
+		advance(1);
+		assertFalse(lock.held);
+		assertTrue(KEEPALIVE_HOLD_MS < BRIEF_EVENT_HOLD_MS);
+		assertEquals("one for the start, one for the echo",
+				2, lock.acquires.get());
 		assertEquals(2, lock.releases.get());
 	}
 
@@ -298,8 +375,13 @@ public class TorWakePolicyTest {
 		advance(20_000);
 		policy.onBootstrapProgress(100);
 		policy.onTorEvent();
+		policy.onBriefTorEvent();
 		advance(5 * 60_000);
 		policy.noteActivity(Activity.CONNECTION_ATTEMPT);
+		policy.noteActivity(Activity.KEEPALIVE);
+		advance(KEEPALIVE_HOLD_MS);
+		policy.onBriefTorEvent();
+		policy.noteActivity(Activity.KEEPALIVE);
 		policy.setForeground(true);
 		policy.setForeground(false);
 		advance(15 * 60_000);
@@ -531,6 +613,7 @@ public class TorWakePolicyTest {
 		assertTrue(policy.isQuiet());
 		policy.noteActivity(Activity.CONNECTION_ATTEMPT);
 		policy.onTorEvent();
+		policy.onBriefTorEvent();
 		policy.onDescriptorUpload(ONION);
 		assertTrue("a dial and Tor's own events do not count",
 				policy.isQuiet());

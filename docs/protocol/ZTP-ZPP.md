@@ -318,19 +318,26 @@ lock and holds it only while one of these is true:
 - An onion service descriptor is being published: from `HS_DESC UPLOAD` until
   `UPLOADED` or `FAILED` for every upload of that onion, at most 120 s after
   the last upload started and 300 s for one burst of uploads.
-- A Tor control event arrived in the last 30 s: `STREAM` NEW or SUCCEEDED,
-  `ORCONN` LAUNCHED or CONNECTED, or any `HS_DESC` event; or a `CIRC`
-  LAUNCHED, EXTENDED or BUILT event arrived in the last 5 s. The short
-  circuit window is how an incoming connection gets through while the
-  device is otherwise asleep: the first packet wakes the kernel, Tor reports
-  the rendezvous circuit over the local control socket, and the policy keeps
-  the device awake between the hops and until the accepted connection takes
-  over (the 15 s dial window below). It is short because Tor builds spare
-  circuits for itself about once a minute while it is in use; a 30 s hold
-  for those kept the processor awake about half the time on a phone with
-  one connected contact (measured on a Moto g06 power during the 3.0.19
-  candidates). The first message after a quiet period can take a few
+- Tor reported a relay connection (`ORCONN` LAUNCHED or CONNECTED) in the
+  last 30 s, or a circuit, stream or descriptor event (`CIRC` LAUNCHED,
+  EXTENDED or BUILT, `STREAM` NEW or SUCCEEDED, any `HS_DESC` event) in the
+  last 5 s. The 5 s window is how an incoming connection gets through while
+  the device is otherwise asleep: the first packet wakes the kernel, Tor
+  reports the rendezvous circuit over the local control socket, and the
+  policy keeps the device awake for 5 s after each hop, normally long enough
+  for the rendezvous and the client's first cell to arrive; the accepted
+  connection then holds it (the 15 s dial window below). It is short because
+  each hop and the rendezvous are replies to packets that have just woken
+  the device (Tor's own retries after a timeout wait for the next wakeup or
+  the heartbeat), and because these events are frequent: Tor builds spare
+  circuits for itself about once a minute while it is in use and every dial
+  produces stream and descriptor events. A 30 s hold for them kept the
+  processor awake 38 to 67 % of the time on a Moto g06 power during the
+  3.0.19 candidates. The first message after a quiet period can take a few
   seconds longer than it did with the permanent lock.
+- A frame from a contact on the sparse cadence arrived in the last 2 s while
+  at least half a keepalive period had passed since this side's own last
+  frame (the echo described below).
 - A connection to a contact did work in the last 60 s: a frame other than a
   cover or keepalive frame was sent or received or a record was queued
   (`ZppConnectionRunnerImpl`); or a dial was started or a connection was
@@ -347,7 +354,7 @@ lock and holds it only while one of these is true:
 While the lock is released a heartbeat on the alarm-driven task scheduler
 takes it for 5 s about every 10 to 15 minutes, longer in standby, so Tor's
 timers (link keepalives, circuit rotation, descriptor refresh) get to run;
-if Tor reports events in that window the 30 s rule above applies. The
+if Tor reports events in that window the 30 s or 5 s rule above applies. The
 policy never stops Tor and changes no Tor setting; connection padding stays
 as the cover-traffic setting decides.
 
@@ -356,14 +363,24 @@ a keepalive slot is due on a clock that keeps running while the device
 sleeps and waits in chunks of at most 250 ms of awake time, so whenever the
 kernel wakes (Tor's own link padding does that every 9 to 14 s) the sender
 re-reads the clock and sends the keepalive as soon as a period of wall time
-has passed. The keepalive of a phone that slept through a slot is therefore
-sent on its next wakeup, so that the link is meant to survive a sleeping
-phone instead of being closed by the other phone at its 90 s read timeout.
-A clock that jumped backwards counts as due at once. A contact that cannot be
-reached is retried at the slow cadence (about every five minutes,
-`ZtpPoller`) while the device is quiet (lock released, app in the
-background) and that contact has not been connected for five minutes, so
-failing dials do not keep the device awake. The saving depends on the
+has passed. A wakeup for a single packet can be shorter than that wait, so
+the receiving side also answers at once: when a frame arrives from a
+contact on the sparse cadence and at least half a keepalive period has
+passed since this side's last frame, the reader marks a keepalive due,
+takes the wake lock for 2 s and wakes the sender, which sends the keepalive
+(or a queued record) while the packet that woke the device still has it
+awake. Two phones settle on one exchange per period, since the side that
+just sent does not answer again within half a period. The keepalive of a
+phone that slept through a slot is therefore sent on its next wakeup or on
+the next frame from the contact, so that the link is designed to survive a
+sleeping phone instead of being closed by the other phone at its 90 s read
+timeout. A contact on the legacy cadence (3.0.18 and older) is not
+answered this way: its 20 s read timeout is lost by any sleep of that
+length regardless. A clock that jumped backwards counts as due at once. A
+contact that cannot be reached is retried at the slow cadence (about every
+five minutes, `ZtpPoller`) while the device is quiet (lock released, app in
+the background) and that contact has not been connected for five minutes,
+so failing dials do not keep the device awake. The saving depends on the
 exemption from battery optimisation the app asks for; without it the system
 limits network access in standby regardless of this policy.
 

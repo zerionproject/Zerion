@@ -546,14 +546,14 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		if (status.equals("BUILT")) state.setCircuitBuilt(true);
 		if (status.equals("LAUNCHED") || status.equals("BUILT")
 				|| status.equals("EXTENDED")) {
-			onTorCircuitActivity();
+			onTorBriefActivity();
 		}
 	}
 
 	@Override
 	public void streamStatus(String status, String id, String target) {
 		if (status.equals("NEW") || status.equals("SUCCEEDED")) {
-			onTorControlActivity();
+			onTorBriefActivity();
 		}
 	}
 
@@ -615,7 +615,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	private void handleHsDescriptor(String msg) {
 		String[] parts = msg.split(" ");
 		String action = parts[0];
-		onTorControlActivity();
+		onTorBriefActivity();
 		if (action.equals("UPLOADED")) {
 			if (parts.length >= 2) {
 				state.onHsDescriptorUploaded(parts[1]);
@@ -635,18 +635,20 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 	}
 
 	/**
-	 * Called on the control connection thread for every stream, relay
-	 * connection or descriptor event that shows Tor is doing work.
+	 * Called on the control connection thread when Tor launches or has
+	 * opened a connection to a relay.
 	 */
 	protected void onTorControlActivity() {
 	}
 
 	/**
-	 * Called on the control connection thread when a circuit is launched,
-	 * extended or built. Kept apart from the other events because Tor builds
-	 * spare circuits for itself about once a minute while it is in use.
+	 * Called on the control connection thread for every circuit, stream and
+	 * descriptor event that shows Tor is doing work. Kept apart from the
+	 * relay connection events because these are frequent: Tor builds spare
+	 * circuits for itself about once a minute while it is in use, and every
+	 * dial produces stream and descriptor events.
 	 */
-	protected void onTorCircuitActivity() {
+	protected void onTorBriefActivity() {
 	}
 
 	/**

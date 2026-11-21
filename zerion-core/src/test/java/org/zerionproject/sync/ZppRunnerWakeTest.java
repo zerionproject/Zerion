@@ -33,12 +33,16 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_LEGACY_MS;
+import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_MS;
+import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_REFRESH_RECV_FRAMES;
 
 /**
  * The sparse sender's keepalive must survive a sleeping device, and only
@@ -139,6 +143,239 @@ public class ZppRunnerWakeTest {
 		assertFalse("the keepalive did not",
 				events.subList(cover + 1, events.size())
 						.contains("CONNECTION_DATA"));
+	}
+
+	@Test(timeout = 30_000)
+	public void aTolerantPeerFrameHalfAPeriodAfterOurLastFrameIsAnsweredAtOnce()
+			throws Exception {
+		long opened = now.get();
+		assertFalse("half a period after the opening frame is not a slot",
+				ZppConnectionRunnerImpl.sparseFrameDue(opened, 0,
+						opened + SPARSE_KEEPALIVE_MS / 2, SPARSE_KEEPALIVE_MS));
+		ScriptedConnection conn = connection();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				registry, new ZppPacingPolicy(), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(tolerantPeerParams());
+			conn.deliver(ZmmRecord.cover());
+			await(() -> events.contains("recv-cover"), "the first cover frame");
+			holds(() -> conn.sent.size() == 1, 700,
+					"a frame right after our own is not answered");
+			assertFalse(events.contains("KEEPALIVE"));
+			now.addAndGet(SPARSE_KEEPALIVE_LEGACY_MS / 2);
+			conn.deliver(ZmmRecord.cover());
+			holds(() -> conn.sent.size() == 1, 700,
+					"half the legacy period is not half the sparse period");
+			now.addAndGet(SPARSE_KEEPALIVE_MS / 2 - SPARSE_KEEPALIVE_LEGACY_MS / 2);
+			conn.deliver(ZmmRecord.cover());
+			await(() -> conn.sent.size() == 2, "the echoed keepalive");
+			assertTrue(ZmmRecord.isCover(conn.sent.get(1)));
+			await(() -> events.contains("KEEPALIVE"),
+					"the echo takes the wake lock briefly");
+			assertTrue("the lock is taken before the echo leaves",
+					events.indexOf("KEEPALIVE")
+							< events.lastIndexOf("sent-cover"));
+			holds(() -> conn.sent.size() == 2, 700,
+					"one answer per received frame at most");
+			conn.deliver(ZmmRecord.cover());
+			holds(() -> conn.sent.size() == 2, 700,
+					"the next frame within half a period is not answered");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+		assertFalse("an echo is not connection data",
+				afterEvent("recv-cover").contains("CONNECTION_DATA"));
+	}
+
+	@Test
+	public void theSenderJudgesAnEchoAgainstItsOwnLastFrame() {
+		long period = SPARSE_KEEPALIVE_MS;
+		long opened = 1_700_000_000_000L;
+		long later = opened + period / 2;
+		assertFalse("not a slot, so only the echo could make it due",
+				ZppConnectionRunnerImpl.sparseFrameDue(opened, 0, later,
+						period));
+		assertTrue("the reader's echo stands when nothing was sent since",
+				ZppConnectionRunnerImpl.sparseSendDue(opened, 0, later,
+						period, true));
+		assertFalse("a frame that just went out cancels the echo",
+				ZppConnectionRunnerImpl.sparseSendDue(later, 0, later,
+						period, true));
+		assertFalse("no echo, no slot: nothing",
+				ZppConnectionRunnerImpl.sparseSendDue(opened, 0, later,
+						period, false));
+		assertTrue("a slot is due with or without an echo",
+				ZppConnectionRunnerImpl.sparseSendDue(opened, 0,
+						opened + 2 * period, period, false));
+	}
+
+	@Test(timeout = 30_000)
+	public void aLegacyPeerIsNotEchoed() throws Exception {
+		ScriptedConnection conn = connection();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				registry, new ZppPacingPolicy(), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			now.addAndGet(SPARSE_KEEPALIVE_LEGACY_MS / 2);
+			conn.deliver(ZmmRecord.cover());
+			await(() -> events.contains("recv-cover"), "the cover frame");
+			holds(() -> conn.sent.size() == 1, 700,
+					"a peer that never announced the sparse cadence");
+			assertFalse(events.contains("KEEPALIVE"));
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 30_000)
+	public void aRefreshThatIsDueAndAnEchoInTheSameFrameSendOneFrame()
+			throws Exception {
+		long opened = now.get();
+		assertFalse("half a period after the opening frame is not a slot",
+				ZppConnectionRunnerImpl.sparseFrameDue(opened,
+						SPARSE_REFRESH_RECV_FRAMES - 1,
+						opened + SPARSE_KEEPALIVE_MS / 2, SPARSE_KEEPALIVE_MS));
+		ScriptedConnection conn = connection();
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				registry, new ZppPacingPolicy(), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(tolerantPeerParams());
+			for (int i = 1; i < SPARSE_REFRESH_RECV_FRAMES - 1; i++) {
+				conn.deliver(ZmmRecord.cover());
+			}
+			await(() -> count("recv-cover") == SPARSE_REFRESH_RECV_FRAMES - 2,
+					"the frames before the refresh");
+			holds(() -> conn.sent.size() == 1, 300, "nothing due yet");
+			now.addAndGet(SPARSE_KEEPALIVE_MS / 2);
+			conn.deliver(ZmmRecord.cover());
+			await(() -> conn.sent.size() == 2,
+					"the frame for the refresh and the echo");
+			holds(() -> conn.sent.size() == 2, 1_000,
+					"the refresh and the echo together send one frame");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_TEXT,
+					"hi".getBytes(StandardCharsets.UTF_8)));
+			await(() -> events.contains("delivered"), "the text record");
+			holds(() -> conn.sent.size() == 2, 700,
+					"a record right after our own frame is not answered");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+		assertEquals("exactly one echo was noted",
+				1, count("KEEPALIVE"));
+	}
+
+	@Test(timeout = 30_000)
+	public void aRecordQueuedInSparseModeGoesOutAtOnceWithoutACoverFrame()
+			throws Exception {
+		ScriptedConnection conn = connection();
+		AtomicReference<ZppSendScheduler> captured = new AtomicReference<>();
+		ZppConnectionRegistry capturing = new ZppConnectionRegistry() {
+			@Override
+			public void onConnectionOpened(int contactId,
+					ZppSendScheduler scheduler, int maxRecordBytes) {
+				captured.set(scheduler);
+			}
+
+			@Override
+			public void onConnectionClosed(int contactId,
+					ZppSendScheduler scheduler) {
+			}
+		};
+		ZppConnectionRunnerImpl runner = new ZppConnectionRunnerImpl(records,
+				capturing, new ZppPacingPolicy(), now::get, sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> conn.sent.size() == 1, "the link parameters frame");
+			conn.deliver(tolerantPeerParams());
+			await(() -> captured.get() != null, "the scheduler");
+			captured.get().enqueueControl(ZmmRecord.encode(
+					ZmmConstants.TYPE_TEXT,
+					"queued".getBytes(StandardCharsets.UTF_8)));
+			await(() -> conn.sent.size() == 2, "the queued record");
+			assertFalse("the queued record went out, not a cover frame",
+					ZmmRecord.isCover(conn.sent.get(1)));
+			holds(() -> conn.sent.size() == 2, 700,
+					"no cover frame follows the record");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	@Test(timeout = 30_000)
+	public void aDenseConnectionNeverEchoes() throws Exception {
+		ScriptedConnection conn = connection();
+		ZppConnectionRunnerImpl runner =
+				new ZppConnectionRunnerImpl(records, registry, densePacing(),
+						sink);
+		Thread t = run(runner, conn);
+		try {
+			await(() -> count("sent-cover") >= 1, "cover frames");
+			conn.deliver(ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+					ZppLinkParams.encode(true)));
+			await(() -> events.contains("recv-real"), "the peer parameters");
+			conn.deliver(ZmmRecord.cover());
+			await(() -> events.contains("recv-cover"), "a received frame");
+			holds(() -> !events.contains("KEEPALIVE"), 500,
+					"a dense connection to a tolerant peer does not echo");
+		} finally {
+			conn.end();
+			t.join(AWAIT_MS);
+		}
+		assertFalse(t.isAlive());
+	}
+
+	private static byte[] tolerantPeerParams() {
+		return ZmmRecord.encode(ZmmConstants.TYPE_LINK_PARAMS,
+				ZppLinkParams.encode(false));
+	}
+
+	private static ZppPacing densePacing() {
+		return new ZppPacing() {
+			@Override
+			public long activeIntervalMs() {
+				return 5;
+			}
+
+			@Override
+			public long idleIntervalMs() {
+				return 5;
+			}
+
+			@Override
+			public long idleAfterMs() {
+				return Long.MAX_VALUE;
+			}
+
+			@Override
+			public boolean coverTraffic() {
+				return true;
+			}
+		};
+	}
+
+	@Test
+	public void echoIsWantedHalfAPeriodAfterOurLastFrameOrOnAClockJump() {
+		long period = SPARSE_KEEPALIVE_MS;
+		assertFalse(ZppConnectionRunnerImpl.echoWanted(
+				ZppConnectionRunnerImpl.NEVER, 1_000, period));
+		assertFalse(ZppConnectionRunnerImpl.echoWanted(
+				1_000, 1_000 + period / 2 - 1, period));
+		assertTrue(ZppConnectionRunnerImpl.echoWanted(
+				1_000, 1_000 + period / 2, period));
+		assertTrue(ZppConnectionRunnerImpl.echoWanted(1_000, 999, period));
 	}
 
 	@Test
