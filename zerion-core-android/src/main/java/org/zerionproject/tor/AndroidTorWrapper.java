@@ -174,9 +174,10 @@ public class AndroidTorWrapper extends AbstractTorWrapper {
 	}
 
 	@Override
-	protected void onHsDescriptorUploadFinished(String onion) {
+	protected void onHsDescriptorUploadFinished(String onion,
+			boolean uploaded) {
 		try {
-			wakePolicy.onDescriptorUploadFinished(onion);
+			wakePolicy.onDescriptorUploadFinished(onion, uploaded);
 		} catch (RuntimeException ignored) {
 		}
 	}

@@ -235,7 +235,7 @@ public class ZtpPollerQuietTest {
 			policy.noteActivity(Activity.CONNECTION_ATTEMPT);
 			policy.onTorEvent();
 			policy.onDescriptorUpload("a");
-			policy.onDescriptorUploadFinished("a");
+			policy.onDescriptorUploadFinished("a", true);
 		};
 		now.addAndGet(ZtpPoller.QUIET_OFFLINE_MS);
 		scheduler.runSweep();

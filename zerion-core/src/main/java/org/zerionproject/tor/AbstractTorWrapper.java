@@ -355,7 +355,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		append(strb, "CookieAuthentication", 1);
 		append(strb, "DataDirectory", dataDirectory.getAbsolutePath());
 		append(strb, "DisableNetwork", 1);
-		append(strb, "AvoidDiskWrites", 1);
+		append(strb, "AvoidDiskWrites", 0);
 		append(strb, "SafeSocks", 1);
 		if (unixControl == null) {
 			strb.append("SocksPort ").append(torSocksPort);
@@ -619,7 +619,7 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 		if (action.equals("UPLOADED")) {
 			if (parts.length >= 2) {
 				state.onHsDescriptorUploaded(parts[1]);
-				onHsDescriptorUploadFinished(parts[1]);
+				onHsDescriptorUploadFinished(parts[1], true);
 			}
 		} else if (action.equals("RECEIVED")) {
 			state.onHsDirectoryAnswer();
@@ -630,7 +630,9 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 			}
 		} else if (action.equals("FAILED")) {
 			if (isHsDirectoryReply(parts)) state.onHsDirectoryAnswer();
-			if (parts.length >= 2) onHsDescriptorUploadFinished(parts[1]);
+			if (parts.length >= 2) {
+				onHsDescriptorUploadFinished(parts[1], false);
+			}
 		}
 	}
 
@@ -667,9 +669,11 @@ abstract class AbstractTorWrapper implements EventHandler, TorWrapper {
 
 	/**
 	 * Called on the control connection thread when an upload of the given
-	 * onion service's descriptor to a directory has succeeded or failed.
+	 * onion service's descriptor to a directory has finished; {@code uploaded}
+	 * is true if the directory accepted it.
 	 */
-	protected void onHsDescriptorUploadFinished(String onion) {
+	protected void onHsDescriptorUploadFinished(String onion,
+			boolean uploaded) {
 	}
 
 	private static boolean isHsDirectoryReply(String[] parts) {

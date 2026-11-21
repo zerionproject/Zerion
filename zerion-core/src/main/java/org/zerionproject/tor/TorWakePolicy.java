@@ -5,7 +5,9 @@ import org.zerionproject.core.api.Cancellable;
 import org.zerionproject.core.api.system.TaskScheduler;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.LongSupplier;
 
@@ -111,6 +113,8 @@ public class TorWakePolicy implements TorActivitySink {
 	private long heartbeatUntil = NEVER;
 	@GuardedBy("lock")
 	private final Map<String, Integer> uploadsInFlight = new HashMap<>();
+	@GuardedBy("lock")
+	private final Set<String> confirmedOnions = new HashSet<>();
 	@GuardedBy("lock")
 	@Nullable
 	private Cancellable heartbeatTask = null;
@@ -267,8 +271,25 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
+	/**
+	 * Tor has started uploading a descriptor of the given onion service to a
+	 * directory. The lock is held for the uploads of an onion until the first
+	 * burst of them in which one succeeded has finished since the network was
+	 * enabled: until then nobody can reach the service, and the device may
+	 * have gone to sleep right after publishing it. Tor refreshes every
+	 * published descriptor about once an hour and whenever an introduction
+	 * point changes, and each invite-link inbox is an onion of its own, so
+	 * later uploads count only as the brief descriptor events they are: the
+	 * old descriptor stays valid, and Tor finishes a refresh within seconds
+	 * while the device is awake. A directory that never answers would
+	 * otherwise hold the lock for the whole publish cap on every refresh.
+	 */
 	public void onDescriptorUpload(String onion) {
 		synchronized (lock) {
+			if (confirmedOnions.contains(onion)
+					&& !uploadsInFlight.containsKey(onion)) {
+				return;
+			}
 			long now = clock.getAsLong();
 			Integer count = uploadsInFlight.get(onion);
 			uploadsInFlight.put(onion, count == null ? 1 : count + 1);
@@ -279,8 +300,9 @@ public class TorWakePolicy implements TorActivitySink {
 		}
 	}
 
-	public void onDescriptorUploadFinished(String onion) {
+	public void onDescriptorUploadFinished(String onion, boolean uploaded) {
 		synchronized (lock) {
+			if (uploaded) confirmedOnions.add(onion);
 			Integer count = uploadsInFlight.get(onion);
 			if (count != null) {
 				if (count <= 1) uploadsInFlight.remove(onion);
@@ -404,6 +426,7 @@ public class TorWakePolicy implements TorActivitySink {
 		connectionUntil = NEVER;
 		dialUntil = NEVER;
 		heartbeatUntil = NEVER;
+		confirmedOnions.clear();
 		clearPublish();
 	}
 
