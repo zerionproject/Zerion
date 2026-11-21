@@ -237,9 +237,9 @@ public class TorWakePolicyTest {
 		policy.onDescriptorUpload(ONION);
 		assertTrue(lock.held);
 		advance(10_000);
-		policy.onDescriptorUploadFinished(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
 		assertTrue("one upload still in flight", lock.held);
-		policy.onDescriptorUploadFinished(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
 		assertFalse(lock.held);
 	}
 
@@ -256,10 +256,75 @@ public class TorWakePolicyTest {
 	}
 
 	@Test
+	public void aConfirmedOnionIsNotHeldForLaterUploads() {
+		settle();
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
+		assertFalse(lock.held);
+		policy.onDescriptorUpload(ONION);
+		assertFalse("a refresh of a published onion is not held", lock.held);
+		policy.onDescriptorUploadFinished(ONION, true);
+		assertFalse(lock.held);
+		assertEquals(lock.acquires.get(), lock.releases.get());
+	}
+
+	@Test
+	public void anUploadThatJoinsTheFirstBurstAfterASuccessStillCounts() {
+		settle();
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
+		assertTrue(lock.held);
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
+		assertTrue("the upload that joined the burst is in flight", lock.held);
+		policy.onDescriptorUploadFinished(ONION, true);
+		assertFalse(lock.held);
+		policy.onDescriptorUpload(ONION);
+		assertFalse("the burst has finished, a refresh is not held", lock.held);
+	}
+
+	@Test
+	public void aFailedUploadDoesNotConfirmTheOnion() {
+		settle();
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, false);
+		assertFalse(lock.held);
+		policy.onDescriptorUpload(ONION);
+		assertTrue("the onion is still unpublished", lock.held);
+	}
+
+	@Test
+	public void eachOnionIsConfirmedSeparately() {
+		settle();
+		String other = "b" + ONION.substring(1);
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
+		policy.onDescriptorUpload(other);
+		assertTrue("the first publish of another onion is held", lock.held);
+		policy.onDescriptorUploadFinished(other, true);
+		assertFalse(lock.held);
+	}
+
+	@Test
+	public void disablingTheNetworkForgetsConfirmedOnions() {
+		settle();
+		policy.onDescriptorUpload(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
+		policy.onNetworkEnabled(false);
+		policy.onNetworkEnabled(true);
+		policy.onBootstrapProgress(100);
+		advance(NETWORK_ENABLED_HOLD_MS + BOOTSTRAP_GRACE_MS);
+		assertFalse(lock.held);
+		policy.onDescriptorUpload(ONION);
+		assertTrue("the first publish after a reconnect is held", lock.held);
+	}
+
+	@Test
 	public void anUnknownOnionFinishingDoesNotRelease() {
 		settle();
 		policy.onDescriptorUpload(ONION);
-		policy.onDescriptorUploadFinished("b" + ONION.substring(1));
+		policy.onDescriptorUploadFinished("b" + ONION.substring(1), true);
 		assertTrue(lock.held);
 	}
 
@@ -585,7 +650,7 @@ public class TorWakePolicyTest {
 		assertFalse("the burst ceiling released it", lock.held);
 		policy.onDescriptorUpload(ONION);
 		assertTrue("a new burst starts after the ceiling", lock.held);
-		policy.onDescriptorUploadFinished(ONION);
+		policy.onDescriptorUploadFinished(ONION, true);
 		assertFalse(lock.held);
 	}
 

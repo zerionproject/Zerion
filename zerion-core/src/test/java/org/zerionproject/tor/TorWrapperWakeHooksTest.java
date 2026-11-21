@@ -51,8 +51,9 @@ public class TorWrapperWakeHooksTest {
 		}
 
 		@Override
-		protected void onHsDescriptorUploadFinished(String onion) {
-			hooks.add("finished:" + onion);
+		protected void onHsDescriptorUploadFinished(String onion,
+				boolean uploaded) {
+			hooks.add("finished:" + onion + (uploaded ? ":ok" : ":failed"));
 		}
 	}
 
@@ -114,8 +115,8 @@ public class TorWrapperWakeHooksTest {
 				"REQUESTED " + ONION + " NO_AUTH $HSDIR DESCID");
 		assertEquals(Arrays.asList(
 				"brief", "upload:" + ONION,
-				"brief", "finished:" + ONION,
-				"brief", "finished:" + ONION,
+				"brief", "finished:" + ONION + ":ok",
+				"brief", "finished:" + ONION + ":failed",
 				"brief"), hooks);
 	}
 

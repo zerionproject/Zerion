@@ -315,9 +315,17 @@ lock and holds it only while one of these is true:
   enabled and for 60 s after bootstrap reaches 100 % (a bootstrap that never
   completes holds the lock for at most 10 minutes after the network was
   enabled; Tor's own retries then show up as events below).
-- An onion service descriptor is being published: from `HS_DESC UPLOAD` until
-  `UPLOADED` or `FAILED` for every upload of that onion, at most 120 s after
-  the last upload started and 300 s for one burst of uploads.
+- An onion service's descriptor is being published for the first time since
+  the network was enabled: from `HS_DESC UPLOAD` until `UPLOADED` or `FAILED`
+  for every upload of that onion, at most 120 s after the last upload started
+  and 300 s for one burst of uploads. Once one upload of an onion has
+  succeeded, its later uploads count as descriptor events under the 5 s rule
+  below only. Tor refreshes every published descriptor about once an hour
+  (two descriptors to eight directories each, done within a few seconds)
+  and after an introduction point changes, and the main onion and every
+  invite-link inbox are onions of their own; the old descriptor stays valid
+  meanwhile, so holding the device for each refresh kept it awake for
+  minutes at a time without anyone needing it.
 - Tor reported a relay connection (`ORCONN` LAUNCHED or CONNECTED) in the
   last 30 s, or a circuit, stream or descriptor event (`CIRC` LAUNCHED,
   EXTENDED or BUILT, `STREAM` NEW or SUCCEEDED, any `HS_DESC` event) in the
@@ -357,6 +365,17 @@ timers (link keepalives, circuit rotation, descriptor refresh) get to run;
 if Tor reports events in that window the 30 s or 5 s rule above applies. The
 policy never stops Tor and changes no Tor setting; connection padding stays
 as the cover-traffic setting decides.
+
+Tor is run with `AvoidDiskWrites 0` since 3.0.19, so it writes its state file
+(guards, bridges, and the circuit build times it has learned) when they
+change, not only on a clean stop; `TorStatePersistence` imports that file on
+the next start. With the file written only on a clean stop, a Tor that the
+system had killed started its circuit build timeout learning from zero every
+time: until it has measured 100 circuits it launches a test circuit every
+10 s whenever fewer than 10 unused circuits are open and closes an unused
+circuit after 3 minutes, which on a sleeping phone meant a circuit build,
+and about 8 s of wake lock, every minute for the first hour or more after
+each start.
 
 Keepalives are timed by the wall clock. The sparse sender measures whether
 a keepalive slot is due on a clock that keeps running while the device
