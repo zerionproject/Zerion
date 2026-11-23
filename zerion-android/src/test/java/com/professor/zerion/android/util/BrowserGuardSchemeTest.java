@@ -134,7 +134,8 @@ public class BrowserGuardSchemeTest {
 		android.widget.TextView message =
 				d.findViewById(android.R.id.message);
 		String text = message.getText().toString();
-		assertTrue(text, text.endsWith("https://xn--ypal-43d9g.com/login"));
+		assertTrue(text, text.endsWith("https://xn--ypal-43d9g.com/login\n"
+				+ a.getString(R.string.link_host_other_alphabet)));
 		Intent i = openAndConfirm(a, "https://\u0440\u0430ypal.com/login");
 		assertNotNull(i);
 		assertEquals("https://\u0440\u0430ypal.com/login", i.getDataString());
@@ -156,6 +157,36 @@ public class BrowserGuardSchemeTest {
 		openAndConfirm(a, "https://example.org/");
 		assertEquals(a.getString(R.string.updates_no_browser),
 				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+	}
+
+	@Test
+	public void aHostWithLettersFromAnotherAlphabetIsRecognised() {
+		assertTrue(BrowserGuard.hasOtherAlphabet("xn--ypal-43d9g.com"));
+		assertTrue(BrowserGuard.hasOtherAlphabet("www.xn--80ak6aa92e.com"));
+		assertFalse(BrowserGuard.hasOtherAlphabet("example.org"));
+		assertFalse(BrowserGuard.hasOtherAlphabet("xn.example.org"));
+		assertFalse(BrowserGuard.hasOtherAlphabet(null));
+	}
+
+	@Test
+	public void theWarningNamesAHostWrittenInAnotherAlphabet() {
+		FragmentActivity a = host();
+		BrowserGuard.openUrl(a, "https://\u0440\u0430ypal.com/login");
+		shadowOf(Looper.getMainLooper()).idle();
+		AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+		android.widget.TextView message =
+				d.findViewById(android.R.id.message);
+		String text = message.getText().toString();
+		assertTrue(text, text.contains("https://xn--ypal-43d9g.com/login\n"
+				+ a.getString(R.string.link_host_other_alphabet)));
+		d.dismiss();
+		BrowserGuard.openUrl(a, "https://example.org/login");
+		shadowOf(Looper.getMainLooper()).idle();
+		d = (AlertDialog) ShadowDialog.getLatestDialog();
+		message = d.findViewById(android.R.id.message);
+		text = message.getText().toString();
+		assertFalse(text,
+				text.contains(a.getString(R.string.link_host_other_alphabet)));
 	}
 
 	@Test

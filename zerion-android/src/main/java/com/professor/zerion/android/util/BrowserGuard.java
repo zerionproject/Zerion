@@ -72,7 +72,7 @@ public final class BrowserGuard {
 		if (tor != null) {
 			b.setTitle(R.string.browser_tor_title)
 					.setMessage(ctx.getString(R.string.browser_tor_message)
-							+ "\n\n" + shown(url))
+							+ "\n\n" + shownWithNote(ctx, url))
 					.setPositiveButton(R.string.browser_tor_open,
 							(d, w) -> launchSystemBrowser(ctx, url, tor))
 					.setNegativeButton(android.R.string.cancel, null);
@@ -83,7 +83,7 @@ public final class BrowserGuard {
 						+ ctx.getString(R.string.browser_tor_install_hint);
 			}
 			b.setTitle(R.string.browser_warning_title)
-					.setMessage(message + "\n\n" + shown(url))
+					.setMessage(message + "\n\n" + shownWithNote(ctx, url))
 					.setPositiveButton(R.string.browser_warning_open,
 							(d, w) -> launchSystemBrowser(ctx, url, null));
 			if (offerInstall) {
@@ -97,6 +97,29 @@ public final class BrowserGuard {
 						(d, w) -> copyToClipboard(ctx, url))
 				.setCancelable(true)
 				.show();
+	}
+
+	/**
+	 * The link as {@link #shown(String)}, followed by a note when its host
+	 * has a label in the plain xn-- form, so a lookalike written in another
+	 * alphabet is named as such and not only spelled out.
+	 */
+	public static String shownWithNote(Context ctx, String url) {
+		String text = shown(url);
+		if (!hasOtherAlphabet(webHost(url))) return text;
+		return text + "\n" + ctx.getString(R.string.link_host_other_alphabet);
+	}
+
+	/**
+	 * Whether a host in its ASCII form carries a label that stands for
+	 * letters outside ASCII (an internationalised label starts with xn--).
+	 */
+	public static boolean hasOtherAlphabet(@Nullable String host) {
+		if (host == null) return false;
+		for (String label : host.split("\\.")) {
+			if (label.startsWith("xn--")) return true;
+		}
+		return false;
 	}
 
 	public static String shown(String url) {

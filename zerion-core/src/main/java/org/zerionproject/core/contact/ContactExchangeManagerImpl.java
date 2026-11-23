@@ -37,6 +37,7 @@ import org.zerionproject.core.api.system.Clock;
 import org.zerionproject.core.api.transport.StreamReaderFactory;
 import org.zerionproject.core.api.transport.StreamWriter;
 import org.zerionproject.core.api.transport.StreamWriterFactory;
+import org.zerionproject.transport.RootKeyStore;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.io.EOFException;
@@ -307,7 +308,7 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 			Contact contact = addContact(p, remoteInfo.author, localAuthor,
 					rootKey, timestamp, alice, verified, remoteInfo.properties,
 					staticPqBound, remoteTagForm, remoteInfo.mlDsaSigPubKey,
-					remoteReplacesKeys);
+					remoteReplacesKeys, keySeparated);
 
 			return contact;
 		} finally {
@@ -448,13 +449,20 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				hybridSignature);
 	}
 
+	/**
+	 * Adds the contact. A peer that negotiated key separation runs 3.0.19 or
+	 * later and therefore insists on root evolution; that is recorded from
+	 * the pairing on, so a connection whose first greeting never arrives
+	 * counts as a renewal that did not happen from the very first connection,
+	 * instead of only after a greeting has once been seen.
+	 */
 	private Contact addContact(@Nullable PendingContactId pendingContactId,
 			Author remoteAuthor, LocalAuthor localAuthor, SecretKey rootKey,
 			long timestamp, boolean alice, boolean verified,
 			Map<TransportId, TransportProperties> remoteProperties,
 			boolean b3SlotPresent, boolean identityUnproven,
 			@Nullable byte[] peerMlDsaSigPubKey,
-			@Nullable Boolean peerReplacesKeys)
+			@Nullable Boolean peerReplacesKeys, boolean peerRenewsKeys)
 			throws DbException, FormatException {
 		try {
 			Transaction txn = db.startTransaction(false);
@@ -489,6 +497,13 @@ class ContactExchangeManagerImpl implements ContactExchangeManager {
 				b3.put(B3_SLOT_PRESENT_KEY_PREFIX + contactId.getInt(),
 						b3SlotPresent ? "1" : "0");
 				settingsManager.mergeSettings(txn, b3, B3_SETTINGS_NAMESPACE);
+				if (peerRenewsKeys) {
+					Settings renews = new Settings();
+					renews.putBoolean(RootKeyStore.ENFORCES_KEY_PREFIX
+							+ contactId.getInt(), true);
+					settingsManager.mergeSettings(txn, renews,
+							RootKeyStore.SETTINGS_NAMESPACE);
+				}
 				Contact contact = contactManager.getContact(txn, contactId);
 				db.commitTransaction(txn);
 				return contact;
