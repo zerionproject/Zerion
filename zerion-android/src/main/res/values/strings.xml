@@ -24,6 +24,8 @@
 	<string name="browser_tor_get">Get Tor Browser</string>
 	<string name="quick_reply_not_sent">Your reply was not sent. Open the chat to try again.</string>
 	<string name="link_unsupported">Unsupported link</string>
+	<string name="link_host_other_alphabet">The address uses letters from another alphabet.</string>
+	<string name="link_host_other_alphabet_mark">(letters from another alphabet)</string>
 	<string name="settings_support_summary">Help keep Zerion free and private</string>
 
 	<string name="setup_title">Welcome to Zerion</string>

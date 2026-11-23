@@ -406,7 +406,10 @@ abstract class ConversationItemViewHolder extends ViewHolder {
 
 	static String previewDomainLabel(Context ctx, String url) {
 		String host = BrowserGuard.webHost(url);
-		return host == null ? ctx.getString(R.string.link_unsupported) : host;
+		if (host == null) return ctx.getString(R.string.link_unsupported);
+		if (!BrowserGuard.hasOtherAlphabet(host)) return host;
+		return host + " "
+				+ ctx.getString(R.string.link_host_other_alphabet_mark);
 	}
 
 	void bindReplyContext(ConversationItem item) {

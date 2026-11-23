@@ -135,6 +135,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertTrue(bobFinished.await(TIMEOUT, MILLISECONDS));
 		assertContacts(verified, false);
 		assertNoPendingContacts();
+		assertKnownToRenewKeys(alice, false);
+		assertKnownToRenewKeys(bob, false);
 	}
 
 	@Test
@@ -222,6 +224,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertNoPendingContacts();
 		assertStoredRoot(alice, aliceRoot);
 		assertStoredRoot(bob, bobRoot);
+		assertKnownToRenewKeys(alice, true);
+		assertKnownToRenewKeys(bob, true);
 	}
 
 	@Test
@@ -355,6 +359,8 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 		assertContacts(true, false);
 		assertStoredRoot(alice, aliceRoot);
 		assertStoredRoot(bob, bobRoot);
+		assertKnownToRenewKeys(alice, true);
+		assertKnownToRenewKeys(bob, true);
 	}
 
 	@Test
@@ -469,6 +475,17 @@ public class ContactExchangeIntegrationTest extends BrambleTestCase {
 								org.zerionproject.core.api.transport
 										.StreamWriterFactory.class, keysUsed),
 				d.getSettingsManager());
+	}
+
+	private static void assertKnownToRenewKeys(
+			ContactExchangeIntegrationTestComponent device, boolean expected)
+			throws Exception {
+		Contact c = device.getContactManager().getContacts().iterator().next();
+		assertEquals(expected, device.getSettingsManager()
+				.getSettings(org.zerionproject.transport.RootKeyStore
+						.SETTINGS_NAMESPACE)
+				.getBoolean(org.zerionproject.transport.RootKeyStore
+						.ENFORCES_KEY_PREFIX + c.getId().getInt(), false));
 	}
 
 	private static void assertStoredRoot(

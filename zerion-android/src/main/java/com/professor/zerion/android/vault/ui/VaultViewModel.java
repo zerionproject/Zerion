@@ -1969,36 +1969,6 @@ public class VaultViewModel extends AndroidViewModel {
 		});
 	}
 
-	public void addDocument(String fileName, byte[] content) {
-		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
-			return;
-		}
-		if (fileName == null || fileName.trim().isEmpty()) {
-			errorMessage.postValue(text(R.string.vault_msg_file_name_empty));
-			return;
-		}
-		if (content == null || content.length == 0) {
-			errorMessage.postValue(text(R.string.vault_msg_file_empty));
-			return;
-		}
-
-		isLoading.postValue(true);
-		dbExecutor.execute(() -> {
-			try {
-				VaultItem item = vaultManager.addItem(VaultItem.ItemType.DOCUMENT, fileName, content);
-				loadVaultItems();
-				isLoading.postValue(false);
-			} catch (SecurityException e) {
-				errorMessage.postValue(text(R.string.vault_locked));
-				isLoading.postValue(false);
-			} catch (Exception e) {
-				errorMessage.postValue(text(R.string.vault_msg_add_document_failed));
-				isLoading.postValue(false);
-			}
-		});
-	}
-
 	public void addDocumentWithPassword(String fileName, byte[] content, @Nullable char[] extraPassword) {
 		addDocumentWithPassword(fileName, content, "text/plain", extraPassword);
 	}
