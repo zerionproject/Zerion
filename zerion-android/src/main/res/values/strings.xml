@@ -78,7 +78,7 @@
 	<string name="settings_section_mesh">OFFLINE MESH</string>
 	<string name="mesh_toggle_title">Offline mesh</string>
 	<string name="mesh_toggle_summary">Reach nearby contacts with no internet, over Bluetooth</string>
-	<string name="mesh_info_message">Messages are sealed to the recipient and pass from phone to phone over Bluetooth. Turning this on requests Bluetooth and nearby-device permissions. With Contacts only, your phone links only with your contacts\' phones, and its Bluetooth signal carries no fixed mark of Zerion. For that, a contact needs Zerion 3.0.19 or newer, and the two of you must have been online at the same time once since updating.</string>
+	<string name="mesh_info_message">Messages are sealed to the recipient and pass from phone to phone over Bluetooth. Turning this on requests Bluetooth and nearby-device permissions. With Contacts only, your phone links only with your contacts\' phones; to anyone else its Bluetooth signal is an unnamed device whose changing identifier only your contacts can recognise. For that, a contact needs Zerion 3.0.19 or newer, and the two of you must have been online at the same time once since updating.</string>
 	<string name="mesh_reach_title">Mesh links with</string>
 	<string name="mesh_reach_contacts">Contacts only</string>
 	<string name="mesh_reach_everyone">Every Zerion phone nearby</string>

@@ -333,6 +333,9 @@ A version 2 root stored by an earlier release is promoted, matched or
 replaced as before: its pending-root id is still the version 2 one, so a
 HELLO from either release proves it, and an INIT that replaces it may be
 version 3. The next evolution after both sides run 3.0.19 is version 3.
+Version 2 is kept for one more release: the release after 3.0.19 refuses
+an evolution record below version 3, so a contact on an earlier release
+has to update before the two can keep a connection.
 `RootEvolutionVersionTest` cuts an evolution at every step for every pairing
 of current and earlier peers, and updates one side or the other in the
 middle of an interrupted version 2 evolution.

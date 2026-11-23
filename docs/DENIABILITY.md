@@ -169,4 +169,7 @@ key, so the tool cannot fall behind the production code unnoticed:
   the limits in the whitepaper, not by deniable authentication.
 - **Signed records stay signed.** Group, channel and legacy records listed
   above are provable, and so are records exchanged with phones on versions
-  before the tagged forms were introduced.
+  before the tagged forms were introduced. The release after 3.0.19 no
+  longer produces or accepts the signed pairing record, prekey bundle and
+  mesh envelope, so from then on only group, channel and introduction
+  records are signed.

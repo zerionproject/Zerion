@@ -263,6 +263,8 @@ with a peer that does not support the change.
 | 3.0.19 | Android 3.0.11 and earlier (minor version 2, BQP version 4) | refused, as by every release since 3.0.12 | refused (BQP version 4) |
 | 3.0.19 | iOS, desktop | refused: they announce handshake minor version 2, below the minimum of 4 that Android has required since 3.0.12, so this change does not affect them | iOS has no BQP implementation in its repository (checked at commit `cfa4742`); the desktop branch speaks BQP version 4, which is refused |
 
+The earlier forms are kept for one more release. The release after 3.0.19 refuses a pairing with a peer below link-handshake minor version 5 or a nearby pairing without the key-separation marker, an evolution record below version 3, and the signed forms of the prekey bundle and the mesh envelope, so a phone below 3.0.19 has to update before it can pair with, or keep a connection to, a phone on that release.
+
 The contact exchange learns the decision from the key agreement
 (`HandshakeResult.isKeySeparated`, `KeyAgreementResult.isKeySeparated`),
 sends the tag form with separated keys and the signature form otherwise. Contacts added before 3.0.19 keep their stored
