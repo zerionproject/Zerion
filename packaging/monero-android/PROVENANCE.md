@@ -80,12 +80,15 @@ become the expected gate on subsequent builds.
 ```
 cd packaging/monero-android
 docker build -t zerion-monero-build:v0.18.5.4 .
-docker run --rm -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
-docker run --rm -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=arm64-v8a   -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
+docker run --rm --cap-drop=ALL --security-opt=no-new-privileges -e ABI=armeabi-v7a -v "$PWD/out:/build/out" zerion-monero-build:v0.18.5.4
 # artifacts: out/<abi>/libzmonero.so (+ .sha256, SOURCES.sha256)
 ```
 
-The container runs as the unprivileged user `builder` (uid 1000), not as root.
+The container runs as the unprivileged user `builder` (uid 1000), not as root,
+and is started with every Linux capability dropped and without the right to
+gain new privileges; the build needs neither. The arm64-v8a library built
+with the two flags on 2026-11-23 was byte-identical to the pinned one.
 On a Linux host, create `out` first and make it writable by uid 1000; Docker
 Desktop maps the mount for you.
 

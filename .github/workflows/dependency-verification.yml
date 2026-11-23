@@ -78,6 +78,7 @@ jobs:
           bash -n scripts/fdroid-reference-build.sh
           python3 -m py_compile scripts/check-docs.py scripts/check-version.py \
             scripts/check-channels.py scripts/fdroid-metadata.py \
+            scripts/fdroid_metadata_test.py \
             scripts/render-release-refs.py scripts/compare-bundle-apk.py
           bash -n scripts/sign-release.sh
           for f in zerion-core-android/src/main/resources/org/zerionproject/tor/binaries.sha256 \
