@@ -36,6 +36,7 @@ public class VaultManager
 		implements com.professor.zerion.android.vault.wallet.xmr.VaultGate {
 	public static final String TOO_MANY_ATTEMPTS = "Too many failed attempts";
 	public static final String UNLOCK_FIRST = "Please unlock your vault first";
+	public static final int MIN_PASSWORD_LENGTH = 8;
 	private static final String HEADER_FILE = "vault.header";
 	private static final String HEADER_NEW_FILE = "vault.header.new";
 	private static final String KDF_TRIAL_FILE = "kdf.trial";
@@ -614,10 +615,17 @@ public class VaultManager
 
 		final byte[] masterKey;
 		final boolean legacyForm;
+		final boolean clearedForm;
 
 		OpenedVault(byte[] masterKey, boolean legacyForm) {
+			this(masterKey, legacyForm, false);
+		}
+
+		OpenedVault(byte[] masterKey, boolean legacyForm,
+				boolean clearedForm) {
 			this.masterKey = masterKey;
 			this.legacyForm = legacyForm;
+			this.clearedForm = clearedForm;
 		}
 	}
 
@@ -636,6 +644,30 @@ public class VaultManager
 			java.util.Arrays.fill(normal, '\0');
 			if (legacy != null) java.util.Arrays.fill(legacy, '\0');
 		}
+	}
+
+	@Nullable
+	private OpenedVault openForUnlock(VaultHeader header, char[] typed)
+			throws Exception {
+		OpenedVault opened = openWithEitherForm(header, typed);
+		if (opened != null || !canBeSet(typed)) return opened;
+		char[] zeros = new char[typed.length];
+		try {
+			byte[] master = openMasterKey(header, new char[0]);
+			if (master == null) master = openMasterKey(header, zeros);
+			return master == null ? null
+					: new OpenedVault(master, false, true);
+		} finally {
+			java.util.Arrays.fill(zeros, '\0');
+		}
+	}
+
+	private static boolean canBeSet(char[] typed) {
+		if (typed.length < MIN_PASSWORD_LENGTH) return false;
+		char[] normal = PasswordNormalizer.normalize(typed);
+		boolean kept = normal.length > 0;
+		java.util.Arrays.fill(normal, '\0');
+		return kept;
 	}
 
 	boolean needsRewrap(VaultHeader header, boolean legacyForm) {
@@ -671,10 +703,24 @@ public class VaultManager
 				&& old.version >= VaultHeader.VERSION_KEYSTORE_FACTOR;
 		List<Argon2.Argon2Params> candidates =
 				rewrapCandidates(old, upgradeOnly);
-		if (candidates.isEmpty()) {
+		if (candidates.isEmpty()
+				|| !resealUnderTyped(masterKey, typed, candidates)) {
 			if (upgradeOnly) tierUpgradeFailed = true;
-			return;
 		}
+	}
+
+	private boolean resealClearedForm(byte[] masterKey, char[] typed) {
+		try {
+			return resealUnderTyped(masterKey, typed,
+					passwordChangeCandidates(currentHeader));
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
+
+	private boolean resealUnderTyped(byte[] masterKey, char[] typed,
+			List<Argon2.Argon2Params> candidates) {
+		VaultHeader old = currentHeader;
 		char[] password = PasswordNormalizer.normalize(typed);
 		int slot = old.version < VaultHeader.VERSION_KEYSTORE_FACTOR
 				? VaultKeystore.SLOT_A : VaultKeystore.otherSlot(old.keySlot);
@@ -685,9 +731,10 @@ public class VaultManager
 			fileIO.writeSecure(HEADER_FILE, header.toBytes());
 			currentHeader = header;
 			deleteKeysNotNamedBy(header);
+			return true;
 		} catch (Exception | OutOfMemoryError e) {
-			if (upgradeOnly) tierUpgradeFailed = true;
 			reloadHeaderAfterFailedWrite();
+			return false;
 		} finally {
 			java.util.Arrays.fill(password, '\0');
 		}
@@ -798,8 +845,13 @@ public class VaultManager
 				loadVaultHeader();
 			}
 
-			OpenedVault opened = openWithEitherForm(currentHeader, password);
+			OpenedVault opened = openForUnlock(currentHeader, password);
 			if (opened == null) {
+				return registerFailedUnlock();
+			}
+			if (opened.clearedForm
+					&& !resealClearedForm(opened.masterKey, password)) {
+				SecureMemory.shred(opened.masterKey);
 				return registerFailedUnlock();
 			}
 			byte[] previous = this.vaultMasterKey;
@@ -807,10 +859,13 @@ public class VaultManager
 			if (previous != null && previous != opened.masterKey) {
 				SecureMemory.shred(previous);
 			}
-			if (needsRewrap(currentHeader, opened.legacyForm)) {
-				rewrapHeader(opened.masterKey, password, opened.legacyForm);
-			} else {
-				deleteKeysNotNamedBy(currentHeader);
+			if (!opened.clearedForm) {
+				if (needsRewrap(currentHeader, opened.legacyForm)) {
+					rewrapHeader(opened.masterKey, password,
+							opened.legacyForm);
+				} else {
+					deleteKeysNotNamedBy(currentHeader);
+				}
 			}
 			if (currentHeader == null) {
 				try {

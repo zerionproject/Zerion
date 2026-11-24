@@ -867,7 +867,8 @@ public class VaultKdfTierUpgradeTest {
 		} catch (SecurityException e) {
 			throttled = "throttled";
 		}
-		assertEquals("refused [256 MiB t=3], counted: throttled",
+		assertEquals("refused [256 MiB t=3, 256 MiB t=3, 256 MiB t=3],"
+						+ " counted: throttled",
 				(wrong ? "opened" : "refused") + " " + wrongDerivations
 						+ ", counted: " + throttled);
 	}

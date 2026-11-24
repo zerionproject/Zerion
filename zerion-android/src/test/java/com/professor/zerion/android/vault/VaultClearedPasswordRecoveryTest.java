@@ -1,0 +1,618 @@
+package com.professor.zerion.android.vault;
+
+import android.app.Application;
+
+import com.professor.zerion.android.security.TestAndroidKeyStore;
+import com.professor.zerion.android.util.ClearableClipboardShadow;
+import com.professor.zerion.android.vault.crypto.Argon2;
+import com.professor.zerion.android.vault.crypto.VaultCrypto;
+import com.professor.zerion.android.vault.crypto.VaultKdfTier;
+import com.professor.zerion.android.vault.crypto.VaultKeystore;
+import com.professor.zerion.android.vault.model.VaultHeader;
+import com.professor.zerion.android.vault.model.VaultItem;
+import com.professor.zerion.android.vault.storage.VaultLocation;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSystemClock;
+import org.zerionproject.core.account.PasswordNormalizer;
+
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.security.KeyStore;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.zerionproject.core.util.IoUtils.deleteFileOrDir;
+
+@RunWith(AndroidJUnit4.class)
+@Config(sdk = 29, shadows = {ClearableClipboardShadow.class,
+		FailingDirectorySyncShadow.class})
+public class VaultClearedPasswordRecoveryTest {
+
+	static {
+		TestAndroidKeyStore.register();
+	}
+
+	private static final String ALIAS = "zerion_vault_master_key_test";
+	private static final char[] PASSWORD = "vault password 4&Rt".toCharArray();
+	private static final char[] CHOSEN = "Vaultnew67890".toCharArray();
+	private static final char[] SAME_LENGTH = "Wrongpass1234".toCharArray();
+	private static final char[] LONGER =
+			"another password 7#Kp".toCharArray();
+	private static final char[] MINIMUM = "Eight8&x".toCharArray();
+	private static final char[] SHORT = "Seven7&".toCharArray();
+	private static final char[] NEW_PASSWORD =
+			"other vault password 6*Ux".toCharArray();
+	private static final byte[] BIOMETRIC_SALT = {1, 2, 3, 4, 5, 6, 7, 8, 9,
+			10, 11, 12, 13, 14, 15, 16};
+	private static final long CREATED = 1_700_000_000_000L;
+	private static final Argon2.Argon2Params A = VaultKdfTier.TIER_A;
+	private static final Argon2.Argon2Params C = VaultKdfTier.TIER_C;
+
+	private final Application app = RuntimeEnvironment.getApplication();
+	private final List<String> derivations = new ArrayList<>();
+	private boolean sealFails = false;
+	private boolean syncFailsAtSeal = false;
+	private boolean clearedFormTried = false;
+	private File dir;
+
+	private final VaultManager.PasswordKdf kdf = (password, salt, params) -> {
+		derivations.add(form(password));
+		if (cleared(password)) {
+			clearedFormTried = true;
+		} else if (clearedFormTried) {
+			if (sealFails) throw new OutOfMemoryError("injected");
+			if (syncFailsAtSeal) FailingDirectorySyncShadow.fail = true;
+		}
+		return fakeDerive(password, salt, params);
+	};
+
+	private static boolean cleared(char[] password) {
+		for (char c : password) {
+			if (c != 0) return false;
+		}
+		return true;
+	}
+
+	private static String form(char[] password) {
+		if (password.length == 0) return "empty";
+		return cleared(password) ? "zeros " + password.length : "typed";
+	}
+
+	private static byte[] fakeDerive(char[] password, byte[] salt,
+			Argon2.Argon2Params params) {
+		try {
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(new SecretKeySpec(salt, "HmacSHA256"));
+			mac.update(new String(password).getBytes(StandardCharsets.UTF_8));
+			return mac.doFinal(params.toBytes());
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	@Before
+	public void setUp() throws Exception {
+		dir = Files.createTempDirectory("vault-cleared-password").toFile();
+		FailingDirectorySyncShadow.fail = false;
+		clearKeyStore();
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		FailingDirectorySyncShadow.fail = false;
+		clearKeyStore();
+		deleteFileOrDir(dir);
+	}
+
+	private static void clearKeyStore() throws Exception {
+		KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+		ks.load(null);
+		for (String alias : Collections.list(ks.aliases())) {
+			ks.deleteEntry(alias);
+		}
+	}
+
+	private static List<String> aliases() throws Exception {
+		KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+		ks.load(null);
+		List<String> out = new ArrayList<>(Collections.list(ks.aliases()));
+		Collections.sort(out);
+		return out;
+	}
+
+	private File vaultDir() {
+		return new File(dir, "vault");
+	}
+
+	private VaultLocation location() {
+		File vaultDir = vaultDir();
+		return new VaultLocation() {
+			@Override
+			public boolean isAvailable() {
+				return true;
+			}
+
+			@Override
+			public File directory() {
+				return vaultDir;
+			}
+
+			@Override
+			public String keyAlias() {
+				return ALIAS;
+			}
+
+			@Override
+			public List<File> allVaultDirectories() {
+				return Collections.singletonList(vaultDir);
+			}
+
+			@Override
+			public void onUnlocked() {
+			}
+		};
+	}
+
+	private VaultManager phone(Argon2.Argon2Params tier) {
+		return new VaultManager(app, location(), kdf, () -> tier);
+	}
+
+	private VaultManager process() {
+		return phone(C);
+	}
+
+	private void startOver() throws Exception {
+		deleteFileOrDir(vaultDir());
+		clearKeyStore();
+	}
+
+	private void sealUnderTheEmptyPassword() throws Exception {
+		sealUnderTheEmptyPassword(C);
+	}
+
+	private void sealUnderTheEmptyPassword(Argon2.Argon2Params params)
+			throws Exception {
+		VaultCrypto crypto = new VaultCrypto();
+		VaultKeystore keystore = new VaultKeystore(app, location());
+		int slot = VaultKeystore.SLOT_A;
+		keystore.createSlot(slot);
+		byte[] secret = crypto.generateKey();
+		byte[] wrapped = keystore.wrapSecret(secret, keystore.wrapKey(slot));
+		byte[] salt = new Argon2().generateSalt();
+		byte[] hashed = keystore.hmac(slot,
+				fakeDerive(new char[0], salt, params));
+		byte[] kek = crypto.hkdfSha256(crypto.xor(hashed, secret), salt,
+				"vault kek v2", 32);
+		byte[] master = crypto.generateKey();
+		byte[] label = "zerion-vault-master-v2".getBytes(
+				StandardCharsets.UTF_8);
+		byte[] aad = Arrays.copyOf(label, label.length + salt.length);
+		System.arraycopy(salt, 0, aad, label.length, salt.length);
+		VaultHeader header = VaultHeader.createKeystoreFactor(salt,
+				params.memoryKb, params.iterations, wrapped, BIOMETRIC_SALT,
+				crypto.computePasswordVerificationMac(master), CREATED, slot,
+				crypto.encrypt(master, kek, aad).toBytes());
+		store(header, crypto, master);
+	}
+
+	private void sealUnderZeros(int typedLength) throws Exception {
+		VaultCrypto crypto = new VaultCrypto();
+		VaultKeystore keystore = new VaultKeystore(app, location());
+		SecretKey legacyKey = keystore.getOrCreateVaultKey();
+		byte[] secret = crypto.generateKey();
+		byte[] wrapped = keystore.wrapSecret(secret, legacyKey);
+		byte[] salt = new Argon2().generateSalt();
+		byte[] master = crypto.hkdfSha256(crypto.xor(
+				fakeDerive(new char[typedLength], salt, C), secret), salt,
+				"vault master", 32);
+		VaultHeader header = VaultHeader.createNew(salt, C.memoryKb,
+				C.iterations, wrapped, BIOMETRIC_SALT,
+				crypto.computePasswordVerificationMac(master));
+		store(header, crypto, master);
+	}
+
+	private void store(VaultHeader header, VaultCrypto crypto, byte[] master)
+			throws Exception {
+		File vaultDir = vaultDir();
+		assertTrue(new File(vaultDir, "items").mkdirs());
+		Files.write(headerFile().toPath(), header.toBytes());
+		byte[] content = "kept".getBytes(StandardCharsets.UTF_8);
+		byte[] itemKey = crypto.generateKey();
+		byte[] encContent = crypto.encrypt(content, itemKey,
+				"Testnote".getBytes(StandardCharsets.UTF_8)).toBytes();
+		byte[] encKey = crypto.encrypt(itemKey, master, new byte[0]).toBytes();
+		VaultItem item = VaultItem.createNew(VaultItem.ItemType.NOTE,
+				"Testnote", content.length, encKey, crypto.generateNonce());
+		File itemDir = new File(new File(vaultDir, "items"), item.id);
+		assertTrue(itemDir.mkdirs());
+		byte[] padded = new byte[4096];
+		padded[0] = (byte) (encContent.length >> 24);
+		padded[1] = (byte) (encContent.length >> 16);
+		padded[2] = (byte) (encContent.length >> 8);
+		padded[3] = (byte) encContent.length;
+		System.arraycopy(encContent, 0, padded, 4, encContent.length);
+		Files.write(new File(itemDir, "content.bin").toPath(), padded);
+		Files.write(new File(itemDir, "header.bin").toPath(),
+				crypto.encrypt(item.serializeMetadata(), master,
+						item.id.getBytes()).toBytes());
+	}
+
+	private File headerFile() {
+		return new File(vaultDir(), "vault.header");
+	}
+
+	private byte[] headerBytes() throws Exception {
+		return Files.readAllBytes(headerFile().toPath());
+	}
+
+	private VaultHeader header() throws Exception {
+		return VaultHeader.fromBytes(headerBytes());
+	}
+
+	private static String label(VaultHeader h) {
+		return "version " + h.version + ", " + h.kdfMemoryKb / 1024
+				+ " MiB t=" + h.kdfIterations;
+	}
+
+	private int failures() throws Exception {
+		File f = new File(vaultDir(), "unlock.throttle");
+		if (!f.exists() || f.length() == 0) return 0;
+		String state = new String(Files.readAllBytes(f.toPath()),
+				StandardCharsets.UTF_8);
+		return Integer.parseInt(state.split(",", -1)[1]);
+	}
+
+	private void nextAttempt() {
+		ShadowSystemClock.advanceBy(Duration.ofSeconds(30));
+		FailingDirectorySyncShadow.fail = false;
+		clearedFormTried = false;
+		derivations.clear();
+	}
+
+	private String attempt(VaultManager m, char[] typed) throws Exception {
+		nextAttempt();
+		return m.unlockVault(typed.clone()) ? "opens" : "refused";
+	}
+
+	private String attempt(char[] typed) throws Exception {
+		return attempt(process(), typed);
+	}
+
+	private boolean check(char[] typed) {
+		nextAttempt();
+		return process().verifyMasterPassword(typed.clone());
+	}
+
+	private static String note(VaultManager m) throws Exception {
+		List<VaultItem> items = m.listItems();
+		assertEquals(1, items.size());
+		return items.get(0).name + " " + new String(
+				m.getItemContent(items.get(0).id), StandardCharsets.UTF_8);
+	}
+
+	@Test
+	public void theClearedFormsAreWhatTheOldReleasesFedTheKeyDerivation() {
+		assertEquals(0, PasswordNormalizer.normalize(
+				new char[CHOSEN.length]).length);
+		Argon2.Argon2Params small = new Argon2.Argon2Params(
+				Argon2.MIN_MEMORY_KB, 1, 1, 32);
+		byte[] salt = new byte[16];
+		Arrays.fill(salt, (byte) 7);
+		Argon2 argon2 = new Argon2();
+		assertArrayEquals(
+				Argon2.deriveKeyBouncyCastle(new byte[0], salt, small),
+				argon2.deriveKey(new char[0], salt, small));
+		assertArrayEquals(
+				Argon2.deriveKeyBouncyCastle(new byte[CHOSEN.length], salt,
+						small),
+				argon2.deriveKey(new char[CHOSEN.length], salt, small));
+	}
+
+	@Test
+	public void aVaultSealedUnderTheEmptyPasswordOpensAndIsSealedAgain()
+			throws Exception {
+		sealUnderTheEmptyPassword();
+		byte[] before = headerBytes();
+		VaultManager m = process();
+
+		assertEquals("opens", attempt(m, CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "empty", "typed"), derivations);
+		assertTrue(m.isUnlocked());
+		assertEquals("Testnote kept", note(m));
+		assertEquals(0, failures());
+		assertFalse(Arrays.equals(before, headerBytes()));
+		VaultHeader after = header();
+		assertEquals("version 2, 256 MiB t=3", label(after));
+		assertEquals(VaultKeystore.SLOT_B, after.keySlot);
+		assertArrayEquals(BIOMETRIC_SALT, after.biometricTokenSalt);
+		assertEquals(CREATED, after.createdTimestamp);
+		assertEquals(2, aliases().size());
+		m.lockVault();
+
+		VaultManager later = process();
+		assertEquals("opens", attempt(later, CHOSEN));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals("Testnote kept", note(later));
+		assertTrue(check(CHOSEN));
+		assertEquals("refused", attempt(new char[0]));
+		assertEquals("refused", attempt(new char[CHOSEN.length]));
+		assertEquals("refused", attempt(SAME_LENGTH));
+		assertEquals("refused", attempt(LONGER));
+		assertEquals("opens", attempt(CHOSEN));
+	}
+
+	@Test
+	public void aVaultSealedUnderZerosOpensAndIsSealedAgain()
+			throws Exception {
+		sealUnderZeros(CHOSEN.length);
+		byte[] before = headerBytes();
+		long created = header().createdTimestamp;
+		assertEquals(Collections.singletonList(ALIAS), aliases());
+		VaultManager m = process();
+
+		assertEquals("opens", attempt(m, CHOSEN));
+
+		assertEquals(Arrays.asList("typed", "empty",
+				"zeros " + CHOSEN.length, "typed"), derivations);
+		assertTrue(m.isUnlocked());
+		assertEquals("Testnote kept", note(m));
+		assertEquals(0, failures());
+		assertFalse(Arrays.equals(before, headerBytes()));
+		VaultHeader after = header();
+		assertEquals("version 2, 256 MiB t=3", label(after));
+		assertEquals(VaultKeystore.SLOT_A, after.keySlot);
+		assertArrayEquals(BIOMETRIC_SALT, after.biometricTokenSalt);
+		assertEquals(created, after.createdTimestamp);
+		assertEquals(2, aliases().size());
+		assertFalse(aliases().contains(ALIAS));
+		m.lockVault();
+
+		VaultManager later = process();
+		assertEquals("opens", attempt(later, CHOSEN));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals("Testnote kept", note(later));
+		assertTrue(check(CHOSEN));
+		assertEquals("refused", attempt(new char[0]));
+		assertEquals("refused", attempt(new char[CHOSEN.length]));
+		assertEquals("refused", attempt(SAME_LENGTH));
+		assertEquals("refused", attempt(LONGER));
+		assertEquals("opens", attempt(CHOSEN));
+	}
+
+	@Test
+	public void untilSealedAgainTheEmptyFormOpensForAnyPasswordOfTheMinimumLength()
+			throws Exception {
+		assertEquals(VaultManager.MIN_PASSWORD_LENGTH, MINIMUM.length);
+		char[][] typed = {CHOSEN, SAME_LENGTH, LONGER, MINIMUM};
+		for (char[] password : typed) {
+			startOver();
+			sealUnderTheEmptyPassword();
+			assertEquals("opens", attempt(password));
+			assertEquals(Arrays.asList("typed", "empty", "typed"),
+					derivations);
+			assertEquals("opens", attempt(password));
+			assertEquals(Collections.singletonList("typed"), derivations);
+			assertEquals("refused", attempt(new char[0]));
+		}
+	}
+
+	@Test
+	public void untilSealedAgainTheZeroFormOpensOnlyForAPasswordOfItsLength()
+			throws Exception {
+		sealUnderZeros(CHOSEN.length);
+		byte[] before = headerBytes();
+		assertEquals("refused", attempt(LONGER));
+		assertEquals(Arrays.asList("typed", "empty",
+				"zeros " + LONGER.length), derivations);
+		assertEquals(1, failures());
+		assertEquals("refused", attempt(MINIMUM));
+		assertArrayEquals(before, headerBytes());
+
+		assertEquals("opens", attempt(SAME_LENGTH));
+		assertEquals("opens", attempt(SAME_LENGTH));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals("refused", attempt(CHOSEN));
+	}
+
+	@Test
+	public void aPasswordShorterThanTheMinimumNeverTriesTheClearedForms()
+			throws Exception {
+		assertEquals(VaultManager.MIN_PASSWORD_LENGTH - 1, SHORT.length);
+		sealUnderTheEmptyPassword();
+		byte[] before = headerBytes();
+		assertEquals("refused", attempt(SHORT));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+
+		startOver();
+		sealUnderZeros(SHORT.length);
+		before = headerBytes();
+		assertEquals("refused", attempt(SHORT));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void aPasswordThatIsEmptyInItsNormalFormNeverTriesTheZeroForm()
+			throws Exception {
+		char[] invisible = new char[CHOSEN.length];
+		Arrays.fill(invisible, (char) 0x200B);
+		sealUnderZeros(invisible.length);
+		byte[] before = headerBytes();
+
+		assertEquals("refused", attempt(invisible));
+
+		assertEquals(Arrays.asList("empty", "typed"), derivations);
+		assertEquals(1, failures());
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void anUnaffectedVaultOpensForNothingButItsPassword()
+			throws Exception {
+		VaultManager first = process();
+		first.createVault(PASSWORD.clone());
+		first.addItem(VaultItem.ItemType.NOTE, "Testnote",
+				"kept".getBytes(StandardCharsets.UTF_8));
+		first.lockVault();
+		byte[] before = headerBytes();
+		List<String> keys = aliases();
+
+		assertEquals("refused", attempt(LONGER));
+		assertEquals(Arrays.asList("typed", "empty",
+				"zeros " + LONGER.length), derivations);
+		assertEquals(1, failures());
+		assertEquals("refused", attempt(new char[0]));
+		assertEquals(Collections.singletonList("empty"), derivations);
+		assertEquals(2, failures());
+		assertEquals("refused", attempt(new char[PASSWORD.length]));
+		assertEquals(Arrays.asList("empty", "zeros " + PASSWORD.length),
+				derivations);
+		assertEquals(3, failures());
+		assertEquals("refused", attempt(SHORT));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(4, failures());
+		assertFalse(check(LONGER));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(5, failures());
+		assertArrayEquals(before, headerBytes());
+		assertEquals(keys, aliases());
+
+		VaultManager m = process();
+		assertEquals("opens", attempt(m, PASSWORD));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(0, failures());
+		assertEquals("Testnote kept", note(m));
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void checkingAPasswordNeverUsesTheClearedForms() throws Exception {
+		sealUnderTheEmptyPassword();
+		byte[] before = headerBytes();
+		assertFalse(check(CHOSEN));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(1, failures());
+		assertFalse(check(LONGER));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertArrayEquals(before, headerBytes());
+
+		startOver();
+		sealUnderZeros(CHOSEN.length);
+		before = headerBytes();
+		assertFalse(check(CHOSEN));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals(1, failures());
+		assertFalse(check(SAME_LENGTH));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertArrayEquals(before, headerBytes());
+	}
+
+	@Test
+	public void aPasswordChangeWorksOnAVaultThatWasSealedAgain()
+			throws Exception {
+		sealUnderTheEmptyPassword();
+		VaultManager m = process();
+		assertEquals("opens", attempt(m, CHOSEN));
+		nextAttempt();
+		assertThrows(SecurityException.class, () ->
+				m.changePassword(SAME_LENGTH.clone(), NEW_PASSWORD.clone()));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		nextAttempt();
+
+		m.changePassword(CHOSEN.clone(), NEW_PASSWORD.clone());
+
+		assertEquals("Testnote kept", note(m));
+		assertArrayEquals(BIOMETRIC_SALT, header().biometricTokenSalt);
+		assertEquals("refused", attempt(CHOSEN));
+		VaultManager later = process();
+		assertEquals("opens", attempt(later, NEW_PASSWORD));
+		assertEquals("Testnote kept", note(later));
+	}
+
+	@Test
+	public void aSealThatFailsLeavesTheVaultClosedAndUnchanged()
+			throws Exception {
+		for (int form = 0; form < 2; form++) {
+			startOver();
+			if (form == 0) sealUnderTheEmptyPassword();
+			else sealUnderZeros(CHOSEN.length);
+			byte[] before = headerBytes();
+			List<String> keys = aliases();
+			VaultManager m = process();
+			sealFails = true;
+
+			assertEquals("refused", attempt(m, CHOSEN));
+
+			assertFalse(m.isUnlocked());
+			assertThrows(SecurityException.class, m::listItems);
+			assertEquals(1, failures());
+			assertArrayEquals(before, headerBytes());
+			assertEquals(keys, aliases());
+
+			sealFails = false;
+			assertEquals("opens", attempt(m, CHOSEN));
+			assertEquals("Testnote kept", note(m));
+			assertEquals("version 2, 256 MiB t=3", label(header()));
+		}
+	}
+
+	@Test
+	public void aVaultIsNotOpenedWhenTheNewHeaderIsNotConfirmedOnDisk()
+			throws Exception {
+		sealUnderTheEmptyPassword();
+		VaultManager m = process();
+		syncFailsAtSeal = true;
+
+		assertEquals("refused", attempt(m, LONGER));
+
+		assertFalse(m.isUnlocked());
+		assertThrows(SecurityException.class, m::listItems);
+		assertEquals(1, failures());
+		syncFailsAtSeal = false;
+		assertEquals("refused", attempt(CHOSEN));
+		assertEquals("refused", attempt(new char[0]));
+		VaultManager later = process();
+		assertEquals("opens", attempt(later, LONGER));
+		assertEquals(Collections.singletonList("typed"), derivations);
+		assertEquals("Testnote kept", note(later));
+		assertEquals(2, aliases().size());
+	}
+
+	@Test
+	public void theNewSealNeverWeakensTheKeyDerivation() throws Exception {
+		sealUnderTheEmptyPassword(C);
+		assertEquals("opens", attempt(phone(A), CHOSEN));
+		assertEquals("version 2, 1024 MiB t=1", label(header()));
+
+		startOver();
+		sealUnderTheEmptyPassword(A);
+		assertEquals("opens", attempt(phone(C), CHOSEN));
+		assertEquals("version 2, 1024 MiB t=1", label(header()));
+		assertEquals("opens", attempt(phone(C), CHOSEN));
+	}
+}
