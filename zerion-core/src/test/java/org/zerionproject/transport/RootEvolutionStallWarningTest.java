@@ -1,8 +1,18 @@
 package org.zerionproject.transport;
 
+import org.zerionproject.core.api.connection.ConnectionRegistry;
 import org.zerionproject.core.api.contact.ContactId;
 import org.zerionproject.core.api.crypto.SecretKey;
+import org.zerionproject.core.api.event.Event;
+import org.zerionproject.core.api.event.EventBus;
+import org.zerionproject.core.api.event.EventListener;
+import org.zerionproject.core.api.plugin.PluginConfig;
 import org.zerionproject.core.api.plugin.TorConstants;
+import org.zerionproject.core.api.plugin.TransportId;
+import org.zerionproject.core.api.plugin.duplex.DuplexPluginFactory;
+import org.zerionproject.core.api.plugin.event.TransportInactiveEvent;
+import org.zerionproject.core.api.plugin.simplex.SimplexPluginFactory;
+import org.zerionproject.core.api.sync.Priority;
 import org.zerionproject.transport.RootEvolutionTestBed.Device;
 import org.zerionproject.transport.RootEvolutionTestBed.Hold;
 import org.zerionproject.transport.RootEvolutionTestBed.Live;
@@ -12,6 +22,13 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -21,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_CONNECTIONS;
 import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS;
 import static org.zerionproject.transport.RootEvolutionManager.NOT_RENEWING_AFTER_MS;
+import static org.zerionproject.transport.RootEvolutionManager.PEER_PAUSE_MEMORY_MS;
 import static org.zerionproject.transport.RootEvolutionRecord.FLAG_ENFORCES_EVOLUTION;
 import static org.zerionproject.transport.RootEvolutionRecord.FLAG_EVOLUTION_PAUSED;
 import static org.zerionproject.transport.RootEvolutionRecord.KIND_HELLO;
@@ -131,6 +149,88 @@ public class RootEvolutionStallWarningTest {
 	private static SessionConnection session(RootEvolution evolution) {
 		return new SessionConnection(new ByteArrayInputStream(new byte[0]),
 				new ByteArrayOutputStream(), evolution);
+	}
+
+	private static SessionConnection session(RootEvolution evolution,
+			AtomicBoolean closed) {
+		return new SessionConnection(new ByteArrayInputStream(new byte[0]),
+				new ByteArrayOutputStream() {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				}, evolution);
+	}
+
+	private static ConnectionRegistry registry() throws Exception {
+		Constructor<?> c = Class.forName(
+				"org.zerionproject.core.connection.ConnectionRegistryImpl")
+				.getDeclaredConstructor(EventBus.class, PluginConfig.class);
+		c.setAccessible(true);
+		return (ConnectionRegistry) c.newInstance(new EventBus() {
+			@Override
+			public void addListener(EventListener l) {
+			}
+
+			@Override
+			public void removeListener(EventListener l) {
+			}
+
+			@Override
+			public void broadcast(Event e) {
+			}
+		}, new PluginConfig() {
+			@Override
+			public Collection<DuplexPluginFactory> getDuplexFactories() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public Collection<SimplexPluginFactory> getSimplexFactories() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public boolean shouldPoll() {
+				return false;
+			}
+
+			@Override
+			public Map<TransportId, List<TransportId>>
+					getTransportPreferences() {
+				return Collections.emptyMap();
+			}
+		});
+	}
+
+	private static Priority priority(int fill) {
+		byte[] nonce = new byte[16];
+		Arrays.fill(nonce, (byte) fill);
+		return new Priority(nonce);
+	}
+
+	private RootEvolutionManager aliceKnowsThatBobRenews() {
+		RootEvolutionManager m = manager(alice);
+		m.evolved(BOB);
+		alice.store.setPeerEvolves(BOB);
+		alice.store.setPeerEnforces(BOB, true);
+		return m;
+	}
+
+	private static void greetedAndEnded(RootEvolutionManager m, int flags) {
+		RootEvolution greeted = new RootEvolution(m, BOB, true);
+		greeted.start(silent());
+		greeted.onPeerStreamAuthenticated(0);
+		greeted.onRecord(greeting(flags));
+		greeted.close();
+	}
+
+	private static void endedBeforeTheGreeting(RootEvolutionManager m) {
+		RootEvolution ungreeted = new RootEvolution(m, BOB, true);
+		ungreeted.start(silent());
+		ungreeted.onPeerStreamAuthenticated(0);
+		ungreeted.close();
 	}
 
 	private static int greetingsHandledBy(Device d) {
@@ -618,6 +718,189 @@ public class RootEvolutionStallWarningTest {
 			assertFalse(bob.store.isNotRenewing(ALICE));
 		}
 		assertEquals(4, alice.keys().getEpoch());
+	}
+
+	@Test
+	public void aPeerThatSaidItIsPausedIsNotCountedWhenLaterConnectionsEndBeforeItsGreeting() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);
+		alice.store.markOutOfSync(BOB, true);
+		for (int i = 1; i <= 3; i++) {
+			bed.clock.addAndGet(NOT_RENEWING_AFTER_MS / 2 + 1);
+			endedBeforeTheGreeting(m);
+			assertEquals("connection " + i + " to a paused peer was counted",
+					0, alice.store.stalls(BOB)[0]);
+			assertTrue("a connection without a greeting cleared the out of"
+					+ " sync mark", alice.store.isOutOfSync(BOB));
+		}
+		assertFalse(alice.store.isNotRenewing(BOB));
+		assertEquals(0, alice.store.notRenewingRaised.get());
+
+		alice.store.renewed(BOB, bed.clock.get());
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION);
+		assertEquals("a greeting on which no renewal was due was counted", 0,
+				alice.store.stalls(BOB)[0]);
+		endedBeforeTheGreeting(m);
+		assertEquals("a peer that said it is no longer paused was still"
+				+ " excused", 1, alice.store.stalls(BOB)[0]);
+	}
+
+	@Test
+	public void aPeersPauseIsRememberedForTheLengthOfAPauseAndNoLonger() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);
+		bed.clock.addAndGet(PEER_PAUSE_MEMORY_MS - 1);
+		endedBeforeTheGreeting(m);
+		assertEquals(0, alice.store.stalls(BOB)[0]);
+		assertEquals(1, m.peerPausesRemembered());
+		bed.clock.addAndGet(1);
+		endedBeforeTheGreeting(m);
+		assertEquals("a peer was excused after the length of a pause", 1,
+				alice.store.stalls(BOB)[0]);
+		assertEquals("a pause that is over stayed in memory", 0,
+				m.peerPausesRemembered());
+		endedBeforeTheGreeting(m);
+		assertEquals(2, alice.store.stalls(BOB)[0]);
+	}
+
+	@Test
+	public void aClockThatGoesBackEndsWhatIsRememberedOfAPeersPause() {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);
+		bed.clock.addAndGet(-LONG_MS);
+		endedBeforeTheGreeting(m);
+		assertEquals("a clock set back to before the greeting kept the peer"
+				+ " excused", 1, alice.store.stalls(BOB)[0]);
+		assertEquals(0, m.peerPausesRemembered());
+
+		greetedAndEnded(m, FLAG_ENFORCES_EVOLUTION | FLAG_EVOLUTION_PAUSED);
+		bed.clock.addAndGet(10 * LONG_MS);
+		endedBeforeTheGreeting(m);
+		assertEquals(1, alice.store.stalls(BOB)[0]);
+		bed.clock.addAndGet(-5 * LONG_MS);
+		endedBeforeTheGreeting(m);
+		assertEquals("a clock set back after the greeting made the peer's"
+				+ " pause last longer", 2, alice.store.stalls(BOB)[0]);
+		assertEquals(0, m.peerPausesRemembered());
+	}
+
+	@Test
+	public void aPausedSideClearsTheOutOfSyncMarkOnlyOnThePeersGreeting() {
+		RootEvolutionManager m = manager(alice);
+		m.evolved(BOB);
+		alice.store.setPeerEvolves(BOB);
+		bed.passTime();
+		alice.store.paused = true;
+		for (boolean renews : new boolean[] {false, true}) {
+			if (renews) alice.store.setPeerEnforces(BOB, true);
+			alice.store.markOutOfSync(BOB, true);
+			RootEvolution ungreeted = new RootEvolution(m, BOB, true);
+			ungreeted.start(silent());
+			assertFalse("a paused side waited for the greeting",
+					ungreeted.holdsUserRecords());
+			ungreeted.onPeerStreamAuthenticated(0);
+			ungreeted.close();
+			assertTrue("a paused side cleared the out of sync mark without"
+					+ " the peer's greeting", alice.store.isOutOfSync(BOB));
+			assertEquals("a paused side counted a connection", 0,
+					alice.store.stalls(BOB)[0]);
+			greetedAndEnded(m, renews ? FLAG_ENFORCES_EVOLUTION : 0);
+			assertFalse("a paused side that got the peer's greeting is in"
+					+ " sync", alice.store.isOutOfSync(BOB));
+			assertEquals("a paused side counted a connection", 0,
+					alice.store.stalls(BOB)[0]);
+		}
+		assertFalse(alice.store.isNotRenewing(BOB));
+	}
+
+	@Test
+	public void aContactThatNeverGreetedIsInSyncOnceItsStreamAuthenticates() {
+		RootEvolutionManager m = manager(alice);
+		assertEquals(0, alice.keys().getEpoch());
+		for (boolean paused : new boolean[] {false, true}) {
+			alice.store.paused = paused;
+			alice.store.markOutOfSync(BOB, true);
+			RootEvolution unauthenticated = new RootEvolution(m, BOB, true);
+			unauthenticated.start(silent());
+			assertFalse(unauthenticated.holdsUserRecords());
+			unauthenticated.close();
+			assertTrue("a connection on which nothing authenticated cleared"
+					+ " the out of sync mark", alice.store.isOutOfSync(BOB));
+			endedBeforeTheGreeting(m);
+			assertFalse("with a contact that never greeted, a connection"
+							+ " that authenticates is all there is",
+					alice.store.isOutOfSync(BOB));
+			assertEquals(0, alice.store.stalls(BOB)[0]);
+		}
+		assertFalse(alice.store.peerEvolves(BOB));
+		assertFalse(alice.store.peerEnforces(BOB));
+	}
+
+	@Test
+	public void theLowerOfTwoDialsClosedByTheRegistryIsNotCountedForAPeerThatRenews()
+			throws Exception {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		for (boolean lowerFirst : new boolean[] {true, false}) {
+			ConnectionRegistry registry = registry();
+			AtomicBoolean lowerClosed = new AtomicBoolean();
+			AtomicBoolean survivorClosed = new AtomicBoolean();
+			RootEvolution lower = new RootEvolution(m, BOB, true);
+			RootEvolution survivor = new RootEvolution(m, BOB, true);
+			SessionConnection lowerSession = session(lower, lowerClosed);
+			SessionConnection survivorSession =
+					session(survivor, survivorClosed);
+			lower.start(silent());
+			survivor.start(silent());
+			lower.onPeerStreamAuthenticated(0);
+			survivor.onPeerStreamAuthenticated(0);
+			if (lowerFirst) {
+				registry.registerOutgoingConnection(BOB, TorConstants.ID,
+						lowerSession, priority(1));
+			}
+			registry.registerOutgoingConnection(BOB, TorConstants.ID,
+					survivorSession, priority(2));
+			if (!lowerFirst) {
+				registry.registerOutgoingConnection(BOB, TorConstants.ID,
+						lowerSession, priority(1));
+			}
+			assertTrue("the registry kept the lower of two dials",
+					lowerClosed.get());
+			assertFalse(survivorClosed.get());
+			lower.close();
+			registry.unregisterConnection(BOB, TorConstants.ID, lowerSession,
+					false, false);
+			survivor.onRecord(greeting(FLAG_ENFORCES_EVOLUTION));
+			assertFalse("no evolution is due", survivor.holdsUserRecords());
+			survivor.close();
+			registry.unregisterConnection(BOB, TorConstants.ID,
+					survivorSession, false, false);
+			assertEquals("the dial the registry closed as the lower of two"
+							+ " was counted when the surviving one ended", 0,
+					alice.store.stalls(BOB)[0]);
+		}
+		assertFalse(alice.store.isNotRenewing(BOB));
+	}
+
+	@Test
+	public void aConnectionTheRegistryClosedWithItsTransportIsCountedAsBefore()
+			throws Exception {
+		RootEvolutionManager m = aliceKnowsThatBobRenews();
+		ConnectionRegistry registry = registry();
+		AtomicBoolean closed = new AtomicBoolean();
+		RootEvolution only = new RootEvolution(m, BOB, true);
+		SessionConnection session = session(only, closed);
+		only.start(silent());
+		only.onPeerStreamAuthenticated(0);
+		registry.registerOutgoingConnection(BOB, TorConstants.ID, session,
+				priority(1));
+		assertFalse(closed.get());
+		((EventListener) registry).eventOccurred(
+				new TransportInactiveEvent(TorConstants.ID));
+		assertTrue(closed.get());
+		only.close();
+		assertEquals("a connection closed for another reason than being"
+						+ " redundant was not counted", 1,
+				alice.store.stalls(BOB)[0]);
 	}
 
 	private static SecretKey copy(SecretKey k) {

@@ -53,6 +53,8 @@ public class RootEvolutionManager {
 
 	public static final int NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS = 2;
 
+	public static final long PEER_PAUSE_MEMORY_MS = 24 * 60 * 60_000L;
+
 	public interface PeerIdentity {
 
 		boolean knowsPeerKey(ContactId c);
@@ -61,6 +63,25 @@ public class RootEvolutionManager {
 		byte[][] ownKeyAndSignature();
 
 		void learnPeerKey(ContactId c, byte[] mlDsaKey, byte[] signature);
+	}
+
+	private static final class PeerPause {
+
+		private final long saidAt;
+		private final long seenAt;
+
+		private PeerPause(long saidAt, long seenAt) {
+			this.saidAt = saidAt;
+			this.seenAt = seenAt;
+		}
+
+		private boolean holdsAt(long now) {
+			return now >= seenAt && now - saidAt < PEER_PAUSE_MEMORY_MS;
+		}
+
+		private PeerPause seenAt(long now) {
+			return new PeerPause(saidAt, now);
+		}
 	}
 
 	private static final PeerIdentity NO_IDENTITY = new PeerIdentity() {
@@ -101,6 +122,8 @@ public class RootEvolutionManager {
 	private final Map<Integer, Long> stalledAt = new ConcurrentHashMap<>();
 	private final Set<Integer> stalledBeside =
 			ConcurrentHashMap.newKeySet();
+	private final Map<Integer, PeerPause> peerPauses =
+			new ConcurrentHashMap<>();
 	private final ScheduledThreadPoolExecutor timer = newTimer();
 	@Nullable
 	private volatile byte[][] identityRecords;
@@ -259,6 +282,27 @@ public class RootEvolutionManager {
 		stalledBeside.add(c.getInt());
 	}
 
+	void peerGreeted(ContactId c, boolean paused) {
+		long now = now();
+		peerPauses.values().removeIf(p -> !p.holdsAt(now));
+		if (paused) peerPauses.put(c.getInt(), new PeerPause(now, now));
+		else peerPauses.remove(c.getInt());
+	}
+
+	void peerRenews(ContactId c) {
+		peerPauses.remove(c.getInt());
+	}
+
+	boolean peerPauseRemembered(ContactId c) {
+		long now = now();
+		return peerPauses.computeIfPresent(c.getInt(),
+				(k, p) -> p.holdsAt(now) ? p.seenAt(now) : null) != null;
+	}
+
+	int peerPausesRemembered() {
+		return peerPauses.size();
+	}
+
 	void connectionEnded(ContactId c, boolean renewalOutstanding) {
 		connectionEnded(c, true, renewalOutstanding);
 	}
@@ -364,6 +408,7 @@ public class RootEvolutionManager {
 		lastEvolution.put(c.getInt(), now);
 		stalledAt.remove(c.getInt());
 		stalledBeside.remove(c.getInt());
+		peerPauses.remove(c.getInt());
 		store.renewed(c, now);
 		Set<RootEvolution> set = watchers.get(c.getInt());
 		if (set == null) return;

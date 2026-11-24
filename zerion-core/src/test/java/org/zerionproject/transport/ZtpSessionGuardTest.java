@@ -202,11 +202,21 @@ public class ZtpSessionGuardTest {
 	}
 
 	@Test
-	public void aSessionClosedForAnotherReasonIsNotToldItIsRedundant() {
+	public void aSessionInterruptedAsTheLowerOfTwoIsToldItIsRedundantBeforeItsStreamsClose() {
 		List<String> steps = new ArrayList<>();
 		SessionConnection interrupted = recording(steps);
 		interrupted.interruptOutgoingSession();
+		assertEquals(Arrays.asList("redundant", "closed"), steps);
 		interrupted.forceClose();
+		assertEquals(Arrays.asList("redundant", "closed"), steps);
+	}
+
+	@Test
+	public void aSessionClosedForAnotherReasonIsNotToldItIsRedundant() {
+		List<String> steps = new ArrayList<>();
+		SessionConnection closed = recording(steps);
+		closed.forceClose();
+		closed.forceClose();
 		assertEquals(Collections.singletonList("closed"), steps);
 	}
 }
