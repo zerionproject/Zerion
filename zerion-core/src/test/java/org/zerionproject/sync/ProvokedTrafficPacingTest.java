@@ -1,6 +1,7 @@
 package org.zerionproject.sync;
 
 import org.zerionproject.core.api.contact.ContactId;
+import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.crypto.CryptoComponent;
 import org.zerionproject.core.api.db.DatabaseComponent;
 import org.zerionproject.core.api.db.Transaction;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 
 public class ProvokedTrafficPacingTest {
@@ -110,8 +113,8 @@ public class ProvokedTrafficPacingTest {
 				(proxy, method, args) -> null);
 		ContactId c = new ContactId(1);
 		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
-		localMessages.noteLocal(fresh.getId());
-		localMessages.noteLocal(old.getId());
+		localMessages.noteUserMessage(fresh.getId());
+		localMessages.noteUserMessage(old.getId());
 		ZppOutgoingSource source = new ZppOutgoingSource(db, Runnable::run,
 				bus, tasks, clock, codec(), c, 60_000, 1_600, scheduler,
 				localMessages);
@@ -129,13 +132,78 @@ public class ProvokedTrafficPacingTest {
 		Message own = new Message(new MessageId(getRandomId()), g,
 				NOW - 1_000, new byte[10]);
 		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
-		localMessages.noteLocal(own.getId());
+		localMessages.noteUserMessage(own.getId());
 		ZppOutgoingSource source = new ZppOutgoingSource(null, Runnable::run,
 				null, null, null, null, new ContactId(1), 60_000, 1_600,
 				new ZppSendScheduler(r -> {
 				}, () -> true), localMessages);
 		assertEquals(true, source.isFresh(own, NOW));
 		assertEquals(false, source.isFresh(relayed, NOW));
+	}
+
+	@Test
+	public void aLocalMessageNobodyMarkedAsTheUsersIsNotFresh() {
+		GroupId g = new GroupId(getRandomId());
+		Message automatic = new Message(new MessageId(getRandomId()), g,
+				NOW - 1_000, new byte[10]);
+		Message chosen = new Message(new MessageId(getRandomId()), g,
+				NOW - 1_000, new byte[10]);
+		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
+		localMessages.noteUserMessage(chosen.getId());
+		ZppOutgoingSource source = new ZppOutgoingSource(null, Runnable::run,
+				null, null, null, null, new ContactId(1), 60_000, 1_600,
+				new ZppSendScheduler(r -> {
+				}, () -> true), localMessages);
+		assertFalse("an unmarked local message is not fresh",
+				source.isFresh(automatic, NOW));
+		assertTrue("a marked one is", source.isFresh(chosen, NOW));
+	}
+
+	@Test
+	public void onlyTheFirstSendOfAMarkedMessageOpensTheWindow() {
+		GroupId g = new GroupId(getRandomId());
+		Message chosen = new Message(new MessageId(getRandomId()), g,
+				NOW - 1_000, new byte[10]);
+		Message automatic = new Message(new MessageId(getRandomId()), g,
+				NOW - 1_000, new byte[10]);
+		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
+		localMessages.noteUserMessage(chosen.getId());
+		ZppOutgoingSource source = new ZppOutgoingSource(null, Runnable::run,
+				null, null, null, null, new ContactId(1), 60_000, 1_600,
+				new ZppSendScheduler(r -> {
+				}, () -> true), localMessages);
+		long[] now = {NOW};
+		ZppConnectionRunnerImpl.SlotClock clock =
+				new ZppConnectionRunnerImpl.SlotClock(() -> now[0], 0L);
+		ZppConnectionRunnerImpl.ReceiveActivityGate gate =
+				new ZppConnectionRunnerImpl.ReceiveActivityGate(() -> now[0],
+						10_000L, 60_000L);
+
+		ZppConnectionRunnerImpl.afterFrame(clock, gate, true,
+				source.isFresh(automatic, now[0]), now[0]);
+		assertEquals("an unmarked message leaves the window closed", 0L,
+				clock.lastRealMs);
+
+		now[0] += 1_000;
+		ZppConnectionRunnerImpl.afterFrame(clock, gate, true,
+				source.isFresh(chosen, now[0]), now[0]);
+		assertEquals("the first send of a marked message opens it", now[0],
+				clock.lastRealMs);
+		long opened = now[0];
+
+		now[0] += 1_000;
+		ZppConnectionRunnerImpl.afterFrame(clock, gate, true,
+				source.isFresh(chosen, now[0]), now[0]);
+		assertEquals("a resend of the same message does not extend it",
+				opened, clock.lastRealMs);
+	}
+
+	@Test
+	public void theRegistryOfUserMessagesListensToNoEvent() {
+		assertFalse("only an explicit mark enters a message",
+				EventListener.class.isAssignableFrom(LocalMessageLog.class));
+		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
+		assertFalse(localMessages.isRecentLocal(new MessageId(getRandomId())));
 	}
 
 	private static ZmmSyncCodec codec() throws Exception {

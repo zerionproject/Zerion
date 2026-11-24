@@ -160,7 +160,8 @@ public class IntroductionSessionSenderTest extends BrambleMockTestCase {
 				messageParser, context.mock(SessionEncoder.class),
 				sessionParser, introducerEngine, introduceeEngine, null,
 				context.mock(IdentityManager.class),
-				context.mock(AuthorManager.class));
+				context.mock(AuthorManager.class), id -> {
+				});
 	}
 
 	private void expectStoredSession(

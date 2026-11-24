@@ -1,10 +1,7 @@
 package org.zerionproject.sync;
 
-import org.zerionproject.core.api.event.Event;
-import org.zerionproject.core.api.event.EventBus;
-import org.zerionproject.core.api.event.EventListener;
 import org.zerionproject.core.api.sync.MessageId;
-import org.zerionproject.core.api.sync.event.MessageAddedEvent;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.briarproject.nullsafety.NotNullByDefault;
 
 import java.util.Iterator;
@@ -16,10 +13,18 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+/**
+ * The registry of fresh messages the user chose to send. Only the clients
+ * that create a message on behalf of a user action enter it here; nothing is
+ * entered from database events, so a message a client adds automatically
+ * while handling a record the peer sent is never fresh and never opens the
+ * active cadence. An entry lives for a day or until the message first leaves
+ * for a contact. The registry is kept in memory only.
+ */
 @ThreadSafe
 @Singleton
 @NotNullByDefault
-public class LocalMessageLog implements EventListener {
+public class LocalMessageLog implements UserMessageMarker {
 
 	public static final long FRESH_MESSAGE_MS = 24 * 60 * 60_000L;
 	private static final int MAX_ENTRIES = 1024;
@@ -28,9 +33,8 @@ public class LocalMessageLog implements EventListener {
 	private final Map<MessageId, Long> added = new LinkedHashMap<>();
 
 	@Inject
-	public LocalMessageLog(EventBus eventBus) {
+	public LocalMessageLog() {
 		this(System::currentTimeMillis);
-		eventBus.addListener(this);
 	}
 
 	public LocalMessageLog(LongSupplier clock) {
@@ -38,14 +42,7 @@ public class LocalMessageLog implements EventListener {
 	}
 
 	@Override
-	public void eventOccurred(Event e) {
-		if (e instanceof MessageAddedEvent) {
-			MessageAddedEvent m = (MessageAddedEvent) e;
-			if (m.getContactId() == null) noteLocal(m.getMessage().getId());
-		}
-	}
-
-	public synchronized void noteLocal(MessageId id) {
+	public synchronized void noteUserMessage(MessageId id) {
 		long now = clock.getAsLong();
 		expire(now);
 		added.remove(id);

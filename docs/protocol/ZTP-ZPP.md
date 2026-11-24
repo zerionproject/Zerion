@@ -150,9 +150,10 @@ Timing (`ZppPacingPolicy`, `ZppConnectionRunnerImpl`):
 - Two constant base intervals. The active interval, 750 ms, applies while
   anything is queued, for two minutes after a connection opens (from 3.0.19
   only when no connection to that contact opened at the active rate in the
-  last ten minutes), and for two minutes after this side's own last message
-  and after a received message that counts as activity. The idle interval,
-  4 s, applies otherwise, the same on every network type.
+  last ten minutes), for two minutes after the first send of a message this
+  side's user chose to send, and for two minutes after a received message
+  that counts as activity. The idle interval, 4 s, applies otherwise, the
+  same on every network type.
 - Each interval adds uniform zero-mean jitter of up to one third of its length.
 - Activity shortens a pending idle wait to the jittered active spacing, never
   below 500 ms after the previous frame as the application hands it to Tor, so
@@ -182,16 +183,25 @@ What this hides and what it does not: within a rate, an observer cannot tell
 which frames carried data. The switch from the idle to the active rate, and
 back after two quiet minutes, reveals the coarse onset and end of activity, and
 because the active rate lasts while records are queued, the length of an active
-period gives a rough bound on how much was sent. Only messages
-this side created start or extend the two-minute window, and only when they
-leave for the first time; that includes automatic ones such as address
-updates and typing notices. Acknowledgements, offers and requests the peer's
-records provoke, and resends of messages the peer asks for again, do not, and
-from 3.0.19 neither do the records of the root key evolution (up to 3.0.18
-every such record opened the window, so every connection and every hourly
-renewal did), but the active interval applies while anything is queued, so a
-backlog of them drains at it, and a record that is queued during an idle wait
-shortens that one wait to the active spacing. A received message counts as
+period gives a rough bound on how much was sent. Only a message the user
+chose to send starts or extends the two-minute window, and only when it
+leaves for the first time: a private message with its attachments, an edit, a
+reaction, a deletion for everyone, a pin, a group post, a group invite or its
+answer, a change the group owner makes, the introduction a user starts. The
+client that creates a message on behalf of such a user action says so when it
+stores the message; every other local message is taken as automatic and does
+not count. That covers address updates, typing notices, receipts, key and
+version updates, avatar re-sends, settings a group member passes on, relayed
+copies and every record a client creates while handling something the peer
+sent, so a contact who can make this side answer on its own cannot open the
+window (from 3.0.19; before, every message this side created counted).
+Acknowledgements, offers and requests the peer's records provoke, and resends
+of messages the peer asks for again, do not count either, and from 3.0.19
+neither do the records of the root key evolution (up to 3.0.18 every such
+record opened the window, so every connection and every hourly renewal did),
+but the active interval applies while anything is queued, so a backlog of
+them drains at it, and a record that is queued during an idle wait shortens
+that one wait to the active spacing. A received message counts as
 activity within ten minutes of
 this side's own last message and otherwise at most once per ten minutes.
 From 3.0.19 that ration, and the active window a connection opens with, are

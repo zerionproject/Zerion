@@ -123,7 +123,8 @@ final class GroupTrPostRemovals {
 				byte[] pubKey) throws DbException;
 
 		void dispatchRecord(Transaction txn, Contact c, long timestamp,
-				BdfList body, BdfDictionary meta) throws DbException;
+				BdfList body, BdfDictionary meta, boolean userAction)
+				throws DbException;
 
 		void relayThroughCreator(Transaction txn, GroupTrState s,
 				byte[] localPub, BdfList record, long timestamp)
@@ -393,7 +394,7 @@ final class GroupTrPostRemovals {
 						for (int i = 0; i < records.size(); i++) {
 							host.dispatchRecord(txn, c, timestamp, records.get(i),
 									recordMetadata(groupId, targets.get(i),
-											timestamp));
+											timestamp), true);
 						}
 					}
 					for (BdfList record : records) {
@@ -468,7 +469,7 @@ final class GroupTrPostRemovals {
 						host.dispatchRecord(txn, c, now, BdfList.of(
 								(long) MessageTypes.GROUP_POST_DELETE, groupId,
 								epoch, localPub, target, timestamp, sig),
-								recordMetadata(groupId, target, timestamp));
+								recordMetadata(groupId, target, timestamp), false);
 					}
 				});
 			} finally {

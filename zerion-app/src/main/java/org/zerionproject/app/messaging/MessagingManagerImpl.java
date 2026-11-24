@@ -31,6 +31,7 @@ import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.InvalidMessageException;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.sync.event.MessagesSentEvent;
 import org.zerionproject.core.api.sync.event.MessagesAckedEvent;
 import org.zerionproject.core.api.sync.MessageStatus;
@@ -174,6 +175,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 	private final PrivateMessageValidator privateMessageValidator;
 	private final CryptoComponent crypto;
 	private final Clock clock;
+	private final UserMessageMarker userMessages;
 
 	MessagingManagerImpl(
 			DatabaseComponent db,
@@ -187,11 +189,11 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			StreamingAttachmentWriter streamingAttachmentWriter,
 			IdentityManager identityManager,
 			PrivateMessageValidator privateMessageValidator,
-			CryptoComponent crypto) {
+			CryptoComponent crypto, UserMessageMarker userMessages) {
 		this(db, clientHelper, clientVersioningManager, metadataParser,
 				conversationManager, messageTracker, contactGroupFactory,
 				autoDeleteManager, streamingAttachmentWriter, identityManager,
-				privateMessageValidator, crypto, new Clock() {
+				privateMessageValidator, crypto, userMessages, new Clock() {
 					@Override
 					public long currentTimeMillis() {
 						return System.currentTimeMillis();
@@ -219,6 +221,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			IdentityManager identityManager,
 			PrivateMessageValidator privateMessageValidator,
 			CryptoComponent crypto,
+			UserMessageMarker userMessages,
 			Clock clock) {
 		this.db = db;
 		this.clientHelper = clientHelper;
@@ -233,6 +236,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		this.privateMessageValidator = privateMessageValidator;
 		this.crypto = crypto;
 		this.clock = clock;
+		this.userMessages = userMessages;
 	}
 
 	@Override
@@ -807,6 +811,10 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			}
 			clientHelper.addLocalMessage(txn, m.getMessage(), meta, shared,
 					false);
+			userMessages.noteUserMessage(m.getMessage().getId());
+			for (AttachmentHeader a : m.getAttachmentHeaders()) {
+				userMessages.noteUserMessage(a.getMessageId());
+			}
 			if (timer != NO_AUTO_DELETE_TIMER) {
 				db.setCleanupTimerDuration(txn, m.getMessage().getId(), timer);
 			}
@@ -1032,6 +1040,8 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				pmMeta.put(MSG_KEY_ATTACHMENT_HEADERS, attachmentList);
 				pmMeta.put(MSG_KEY_MESH_STATE, MESH_STATE_SENT);
 				clientHelper.addLocalMessage(txn, pm, pmMeta, false, false);
+				userMessages.noteUserMessage(att.getId());
+				userMessages.noteUserMessage(pm.getId());
 
 				AttachmentHeader header = new AttachmentHeader(groupId,
 						att.getId(), contentType);
@@ -2145,6 +2155,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 						targetMessageId.getBytes());
 				meta.put(MSG_KEY_REACTION_EMOJI, emoji);
 				clientHelper.addLocalMessage(txn, m, meta, true, false);
+				userMessages.noteUserMessage(m.getId());
 				ReactionReceivedEvent event = new ReactionReceivedEvent(
 						contactId, targetMessageId, emoji, true);
 				txn.attach(event);
@@ -2174,6 +2185,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		meta.put(MSG_KEY_TARGET_MESSAGE_ID, targetMessageId.getBytes());
 		meta.put(MSG_KEY_REACTION_EMOJI, emoji);
 		clientHelper.addLocalMessage(txn, m, meta, true, false);
+		userMessages.noteUserMessage(m.getId());
 		db.setCleanupTimerDuration(txn, m.getId(), REACTION_REMOVAL_KEPT_MS);
 		return true;
 	}
@@ -2684,9 +2696,15 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		return false;
 	}
 
+	/**
+	 * Adds a control record for the contact. Only a record the user asked
+	 * for, such as an edit, a deletion or a pin, is marked as a user message
+	 * and may open the active cadence; a record this side creates because of
+	 * something it received is not.
+	 */
 	private MessageId addLocalControlMessage(Transaction txn, GroupId g,
-			long timestamp, BdfList body, int type, @Nullable MessageId target)
-			throws DbException, FormatException {
+			long timestamp, BdfList body, int type, @Nullable MessageId target,
+			boolean userAction) throws DbException, FormatException {
 		Message m = clientHelper.createMessage(g, timestamp, body);
 		BdfDictionary meta = new BdfDictionary();
 		meta.put(MSG_KEY_TIMESTAMP, timestamp);
@@ -2697,6 +2715,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			meta.put(MSG_KEY_TARGET_MESSAGE_ID, target.getBytes());
 		}
 		clientHelper.addLocalMessage(txn, m, meta, true, false);
+		if (userAction) userMessages.noteUserMessage(m.getId());
 		db.setCleanupTimerDuration(txn, m.getId(), CONTROL_KEPT_AFTER_ACK_MS);
 		return m.getId();
 	}
@@ -2764,7 +2783,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					edit.add(salt);
 				}
 				addLocalControlMessage(txn, g, editedAt, edit,
-						MessageTypes.MESSAGE_EDIT, target);
+						MessageTypes.MESSAGE_EDIT, target, true);
 				BdfDictionary update = new BdfDictionary();
 				update.put(MSG_KEY_EDITED_TEXT, text);
 				update.put(MSG_KEY_EDITED_AT, editedAt);
@@ -2822,7 +2841,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 					addLocalControlMessage(txn, g, timestamp,
 							BdfList.of(MessageTypes.MESSAGE_DELETE,
 									id.getBytes()),
-							MessageTypes.MESSAGE_DELETE, id);
+							MessageTypes.MESSAGE_DELETE, id, true);
 				}
 				deleteMessages(txn, g, toDelete);
 				return everyone;
@@ -2863,7 +2882,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 						>= PIN_MIN_VERSION) {
 					record = addLocalControlMessage(txn, g, timestamp,
 							BdfList.of(MessageTypes.MESSAGE_PIN, m.getBytes()),
-							MessageTypes.MESSAGE_PIN, m);
+							MessageTypes.MESSAGE_PIN, m, true);
 				}
 				boolean told = record != null;
 				storePinnedMessage(txn, g, m, true, timestamp, record);
@@ -2890,7 +2909,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				if (told) {
 					record = addLocalControlMessage(txn, g, timestamp,
 							BdfList.of(MessageTypes.MESSAGE_PIN, NULL_VALUE),
-							MessageTypes.MESSAGE_PIN, null);
+							MessageTypes.MESSAGE_PIN, null, true);
 				}
 				markUnpinned(txn, g, timestamp, record);
 				txn.attach(new PinnedMessageChangedEvent(c, null, true));
@@ -3184,7 +3203,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 				markViewOnceOpened(txn, g, m, meta);
 				addLocalControlMessage(txn, g, System.currentTimeMillis(),
 						BdfList.of(MessageTypes.VIEW_ONCE_OPENED, m.getBytes()),
-						MessageTypes.VIEW_ONCE_OPENED, m);
+						MessageTypes.VIEW_ONCE_OPENED, m, false);
 				txn.attach(new ViewOnceOpenedEvent(c, m, false));
 				return new ViewOnceMedia(h.getContentType(), data);
 			} catch (FormatException e) {
@@ -3801,6 +3820,7 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 			}
 			meta.put(MSG_KEY_HAS_PREVIEW_IMAGE, preview.hasImage());
 			clientHelper.addLocalMessage(txn, m, meta, true, false);
+			userMessages.noteUserMessage(m.getId());
 			PrivateMessageHeader header = new PrivateMessageHeader(
 					m.getId(), groupId, timestamp, true, true,
 					false, false, text != null,

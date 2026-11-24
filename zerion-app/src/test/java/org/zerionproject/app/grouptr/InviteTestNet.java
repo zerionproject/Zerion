@@ -197,7 +197,9 @@ final class InviteTestNet {
 									((Runnable) a[0]).run();
 								}
 								return null;
-							}));
+							}),
+					id -> {
+				});
 		}
 
 		void runScheduled() {

@@ -96,7 +96,7 @@ public class ZppBulkLaneTest {
 						new MessageId(getRandomId()), g,
 						NOW - 15 * 60_000L, new byte[10]);
 		LocalMessageLog localMessages = new LocalMessageLog(() -> NOW);
-		localMessages.noteLocal(old.getId());
+		localMessages.noteUserMessage(old.getId());
 		ZppOutgoingSource source = new ZppOutgoingSource(null, Runnable::run,
 				null, null, null, null,
 				new org.zerionproject.core.api.contact.ContactId(1), 60_000,
@@ -112,7 +112,7 @@ public class ZppBulkLaneTest {
 		long[] now = {NOW};
 		LocalMessageLog log = new LocalMessageLog(() -> now[0]);
 		MessageId id = new MessageId(getRandomId());
-		log.noteLocal(id);
+		log.noteUserMessage(id);
 		now[0] = NOW + LocalMessageLog.FRESH_MESSAGE_MS + 1;
 		assertFalse(log.takeFirstSend(id));
 	}

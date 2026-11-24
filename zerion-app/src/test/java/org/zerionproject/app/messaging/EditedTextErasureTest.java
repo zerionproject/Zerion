@@ -874,7 +874,8 @@ public class EditedTextErasureTest extends BrambleTestCase {
 				c.getMetadataParser(), c.getConversationManager(),
 				c.getMessageTracker(), c.getContactGroupFactory(),
 				c.getAutoDeleteManager(), c.getStreamingAttachmentWriter(),
-				c.getIdentityManager(), d.validator, c.getCryptoComponent());
+				c.getIdentityManager(), d.validator, c.getCryptoComponent(), id -> {
+				});
 	}
 
 	private static BdfList text(String text) {
@@ -1119,7 +1120,8 @@ public class EditedTextErasureTest extends BrambleTestCase {
 				c.getConversationManager(), c.getMessageTracker(),
 				c.getContactGroupFactory(), c.getAutoDeleteManager(),
 				c.getStreamingAttachmentWriter(), c.getIdentityManager(),
-				d.validator, c.getCryptoComponent());
+				d.validator, c.getCryptoComponent(), id -> {
+				});
 		d.db.transaction(false, opener::onDatabaseOpened);
 	}
 

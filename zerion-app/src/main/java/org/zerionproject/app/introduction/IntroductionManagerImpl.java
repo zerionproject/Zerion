@@ -26,6 +26,7 @@ import org.zerionproject.core.api.sync.GroupId;
 import org.zerionproject.core.api.sync.Message;
 import org.zerionproject.core.api.sync.MessageId;
 import org.zerionproject.core.api.sync.MessageStatus;
+import org.zerionproject.core.api.sync.UserMessageMarker;
 import org.zerionproject.core.api.versioning.ClientVersioningManager;
 import org.zerionproject.core.api.versioning.ClientVersioningManager.ClientVersioningHook;
 import org.zerionproject.app.api.autodelete.event.ConversationMessagesDeletedEvent;
@@ -90,6 +91,7 @@ class IntroductionManagerImpl extends ConversationClientImpl
 	private final IntroductionCrypto crypto;
 	private final IdentityManager identityManager;
 	private final AuthorManager authorManager;
+	private final UserMessageMarker userMessages;
 
 	private final Group localGroup;
 
@@ -109,7 +111,8 @@ class IntroductionManagerImpl extends ConversationClientImpl
 			IntroduceeProtocolEngine introduceeEngine,
 			IntroductionCrypto crypto,
 			IdentityManager identityManager,
-			AuthorManager authorManager) {
+			AuthorManager authorManager,
+			UserMessageMarker userMessages) {
 		super(db, clientHelper, metadataParser, messageTracker);
 		this.clientVersioningManager = clientVersioningManager;
 		this.contactGroupFactory = contactGroupFactory;
@@ -122,6 +125,7 @@ class IntroductionManagerImpl extends ConversationClientImpl
 		this.crypto = crypto;
 		this.identityManager = identityManager;
 		this.authorManager = authorManager;
+		this.userMessages = userMessages;
 		this.localGroup =
 				contactGroupFactory.createLocalGroup(CLIENT_ID, MAJOR_VERSION);
 	}
@@ -363,11 +367,27 @@ class IntroductionManagerImpl extends ConversationClientImpl
 				session = sessionParser.parseIntroducerSession(ss.bdfSession);
 				storageId = ss.storageId;
 			}
+			boolean requesting = session.getState() == START;
 			session = introducerEngine.onRequestAction(txn, session, text);
+			if (requesting) {
+				noteUserMessage(
+						session.getIntroduceeA().getLastLocalMessageId());
+				noteUserMessage(
+						session.getIntroduceeB().getLastLocalMessageId());
+			}
 			storeSession(txn, storageId, session);
 		} catch (FormatException e) {
 			throw new DbException(e);
 		}
+	}
+
+	/**
+	 * The two request messages of an introduction the user starts are user
+	 * messages for the cover traffic scheduler. Every later step of the
+	 * protocol is an answer to something a contact sent and is not.
+	 */
+	private void noteUserMessage(@Nullable MessageId id) {
+		if (id != null) userMessages.noteUserMessage(id);
 	}
 
 	@Override

@@ -95,8 +95,8 @@ class GroupTrMemberInvites {
 
 		GroupTrKeys keys();
 
-		void dispatch(Transaction txn, Contact c, long timestamp, BdfList body)
-				throws DbException;
+		void dispatch(Transaction txn, Contact c, long timestamp, BdfList body,
+				boolean userAction) throws DbException;
 
 		byte[] sign(GroupTrState s, String label, byte[] signed)
 				throws DbException;
@@ -457,14 +457,15 @@ class GroupTrMemberInvites {
 				throw new GroupTrAuthException(
 						GroupTrAuthException.Reason.NOT_CREATOR);
 			}
-			return publishPermissions(s, allowed ? MEMBERS_MAY_INVITE : 0L);
+			return publishPermissions(s, allowed ? MEMBERS_MAY_INVITE : 0L,
+					true);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private int publishPermissions(GroupTrState s, long flags)
-			throws DbException {
+	private int publishPermissions(GroupTrState s, long flags,
+			boolean userAction) throws DbException {
 		byte[] groupId = s.getGroupId();
 		byte[] localPub = host.localKey(s);
 		Permissions current = loadPermissions(groupId);
@@ -482,7 +483,7 @@ class GroupTrMemberInvites {
 		}
 		int skipped = db.transactionWithResult(false, txn -> {
 			storePermissions(txn, groupId, next);
-			return sendPermissions(txn, s, next, to, now);
+			return sendPermissions(txn, s, next, to, now, userAction);
 		});
 		announceUpdated(groupId);
 		return skipped;
@@ -525,14 +526,14 @@ class GroupTrMemberInvites {
 				return 0;
 			}
 			return publishGrant(s, memberPubKey,
-					granted ? GRANT_MAY_ADD_MEMBERS : 0L);
+					granted ? GRANT_MAY_ADD_MEMBERS : 0L, true);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private int publishGrant(GroupTrState s, byte[] memberPubKey, long flags)
-			throws DbException {
+	private int publishGrant(GroupTrState s, byte[] memberPubKey, long flags,
+			boolean userAction) throws DbException {
 		byte[] groupId = s.getGroupId();
 		Permissions current = loadGrant(groupId, memberPubKey);
 		long now = clock.currentTimeMillis();
@@ -543,21 +544,22 @@ class GroupTrMemberInvites {
 		Permissions next = new Permissions(flags, ts, sig);
 		int skipped = db.transactionWithResult(false, txn -> {
 			storeGrant(txn, groupId, memberPubKey, next);
-			return sendGrant(txn, s, memberPubKey, next, now) ? 0 : 1;
+			return sendGrant(txn, s, memberPubKey, next, now, userAction)
+					? 0 : 1;
 		});
 		announceUpdated(groupId);
 		return skipped;
 	}
 
 	private boolean sendGrant(Transaction txn, GroupTrState s,
-			byte[] memberPubKey, Permissions g, long timestamp)
-			throws DbException {
+			byte[] memberPubKey, Permissions g, long timestamp,
+			boolean userAction) throws DbException {
 		byte[] groupId = s.getGroupId();
 		Contact c = host.findContact(txn, s, memberPubKey);
 		if (c == null || !supportsGrants(txn, c)) return false;
 		host.dispatch(txn, c, timestamp, BdfList.of(
 				(long) MessageTypes.GROUP_INVITER_GRANT, groupId, memberPubKey,
-				g.flags, g.timestamp, g.sig));
+				g.flags, g.timestamp, g.sig), userAction);
 		return true;
 	}
 
@@ -577,7 +579,7 @@ class GroupTrMemberInvites {
 				continue;
 			}
 			if (!listed(s, memberPub)) continue;
-			publishGrant(s, memberPub, g.flags);
+			publishGrant(s, memberPub, g.flags, false);
 		}
 	}
 
@@ -664,7 +666,7 @@ class GroupTrMemberInvites {
 		if (!Arrays.equals(host.localKey(s), s.getCreatorPubKey())) {
 			return false;
 		}
-		publishPermissions(s, p.flags);
+		publishPermissions(s, p.flags, false);
 		return true;
 	}
 
@@ -679,7 +681,7 @@ class GroupTrMemberInvites {
 		if (p == null) return;
 		long now = clock.currentTimeMillis();
 		db.transaction(false, txn -> sendPermissions(txn, s, p,
-				Collections.singletonList(addedPubKey), now));
+				Collections.singletonList(addedPubKey), now, false));
 	}
 
 	void onClientVersionUpdated(ContactId contactId, int minorVersion) {
@@ -699,12 +701,12 @@ class GroupTrMemberInvites {
 					if (g != null && minorVersion
 							>= MessagingManager.GROUP_INVITER_GRANTS_MIN_VERSION) {
 						db.transaction(false, txn -> sendGrant(txn, s,
-								memberPub, g, now));
+								memberPub, g, now, false));
 					}
 					Permissions p = loadPermissions(s.getGroupId());
 					if (p == null) continue;
 					db.transaction(false, txn -> sendPermissions(txn, s, p,
-							Collections.singletonList(memberPub), now));
+							Collections.singletonList(memberPub), now, false));
 				} finally {
 					lock.unlock();
 				}
@@ -950,7 +952,7 @@ class GroupTrMemberInvites {
 					p.timestamp, p.sig, now, sig);
 			if (offered != null) body.add(offered.toList());
 			db.transaction(false, txn -> {
-				host.dispatch(txn, invitee, now, body);
+				host.dispatch(txn, invitee, now, body, true);
 				settingsManager.deleteSettings(txn, nsOf(groupId), expired);
 				storeSent(txn, groupId, inviteeHex,
 						new SentInvite(contactId.getInt(), now, -1L));
@@ -1153,7 +1155,7 @@ class GroupTrMemberInvites {
 							groupId, o.inviterPubKey, now, incognitoName, sig);
 			if (existing != null) host.removeFromDevice(groupId);
 			db.transaction(false, txn -> host.dispatch(txn, inviter, now,
-					body));
+					body, true));
 			List<GroupTrMember> members = new ArrayList<>(3);
 			members.add(new GroupTrMember(o.creatorPubKey, o.creatorName,
 					now, 0L, MemberRole.CREATOR, o.creatorMlDsaPubKey));
@@ -1220,7 +1222,8 @@ class GroupTrMemberInvites {
 						groupId, o.inviterPubKey, now, incognitoName, sig,
 						binding.toList(), tag);
 		if (existing != null) host.removeFromDevice(groupId);
-		db.transaction(false, txn -> host.dispatch(txn, inviter, now, body));
+		db.transaction(false, txn -> host.dispatch(txn, inviter, now, body,
+				true));
 		List<GroupTrMember> members = new ArrayList<>(3);
 		members.add(new GroupTrMember(o.creatorPubKey, o.creatorName,
 				now, 0L, MemberRole.CREATOR, o.creatorMlDsaPubKey));
@@ -1270,7 +1273,7 @@ class GroupTrMemberInvites {
 					(long) MessageTypes.GROUPTR_MEMBER_INVITE_DECLINE, groupId,
 					o.inviterPubKey, now, sig);
 			db.transaction(false, txn -> host.dispatch(txn, inviter, now,
-					body));
+					body, true));
 		} finally {
 			lock.unlock();
 		}
@@ -1370,7 +1373,7 @@ class GroupTrMemberInvites {
 				Contact creator = host.findContact(txn, s,
 						s.getCreatorPubKey());
 				if (creator == null) return;
-				host.dispatch(txn, creator, now, body);
+				host.dispatch(txn, creator, now, body, false);
 				if (!inviteeHex.equals(identityHex)) {
 					settingsManager.deleteSettings(txn, nsOf(groupId),
 							Collections.singletonList(
@@ -1705,7 +1708,7 @@ class GroupTrMemberInvites {
 				}
 				boolean room = admitted.size() < MAX_ADMITTED_PER_GROUP;
 				db.transaction(false, txn -> {
-					host.dispatch(txn, invitee, now, body);
+					host.dispatch(txn, invitee, now, body, false);
 					settingsManager.deleteSettings(txn, nsOf(groupId),
 							Collections.singletonList(
 									K_SENT_PREFIX + inviteeHex));
@@ -1738,7 +1741,7 @@ class GroupTrMemberInvites {
 				db.transaction(false, txn -> {
 					if (invitee != null && same) {
 						host.dispatch(txn, invitee, now,
-								listed ? body : withoutSecret);
+								listed ? body : withoutSecret, false);
 						if (listed && secretSeq >= 0L) {
 							Settings out = new Settings();
 							out.putLong(K_FORWARDED_SECRET_PREFIX + inviteeHex,
@@ -1806,7 +1809,7 @@ class GroupTrMemberInvites {
 					continue;
 				}
 				db.transaction(false, txn ->
-						host.dispatch(txn, invitee, now, body));
+						host.dispatch(txn, invitee, now, body, false));
 			}
 		} catch (DbException ex) {
 		} finally {
@@ -1829,7 +1832,9 @@ class GroupTrMemberInvites {
 			db.transaction(false, txn -> {
 				Contact creator = host.findContact(txn, s,
 						s.getCreatorPubKey());
-				if (creator != null) host.dispatch(txn, creator, now, body);
+				if (creator != null) {
+					host.dispatch(txn, creator, now, body, false);
+				}
 			});
 		} catch (DbException ex) {
 		} finally {
@@ -1897,8 +1902,8 @@ class GroupTrMemberInvites {
 	}
 
 	private int sendPermissions(Transaction txn, GroupTrState s,
-			Permissions p, Collection<byte[]> to, long timestamp)
-			throws DbException {
+			Permissions p, Collection<byte[]> to, long timestamp,
+			boolean userAction) throws DbException {
 		BdfList record = BdfList.of((long) MessageTypes.GROUP_PERMISSIONS,
 				s.getGroupId(), p.flags, p.timestamp, p.sig);
 		int skipped = 0;
@@ -1909,7 +1914,7 @@ class GroupTrMemberInvites {
 				skipped++;
 				continue;
 			}
-			host.dispatch(txn, c, timestamp, record);
+			host.dispatch(txn, c, timestamp, record, userAction);
 		}
 		return skipped;
 	}

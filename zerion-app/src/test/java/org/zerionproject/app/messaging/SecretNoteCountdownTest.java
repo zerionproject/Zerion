@@ -149,7 +149,8 @@ public class SecretNoteCountdownTest extends BrambleTestCase {
 				c.getConversationManager(), c.getMessageTracker(),
 				c.getContactGroupFactory(), c.getAutoDeleteManager(),
 				c.getStreamingAttachmentWriter(), c.getIdentityManager(),
-				validator, c.getCryptoComponent(), c.getClock());
+				validator, c.getCryptoComponent(), id -> {
+				}, c.getClock());
 	}
 
 	@Test
