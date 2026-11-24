@@ -1,8 +1,11 @@
 package com.professor.zerion.android.vault.ui;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Looper;
+import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
@@ -21,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.fakes.RoboMenu;
 import org.robolectric.fakes.RoboMenuItem;
 import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowToast;
@@ -47,6 +51,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(AndroidJUnit4.class)
@@ -57,7 +63,10 @@ public class SecureNoteSaveTest {
 	private static final String PROTECTED_TITLE =
 			ProtectedNoteCodec.TITLE_PREFIX + "Diary";
 
+	private static final String NOTE_PASSWORD = "open sesame";
+
 	private static VaultViewModel model;
+	private static Runnable duringTheRebuild;
 
 	static {
 		TestAndroidKeyStore.register();
@@ -68,6 +77,11 @@ public class SecureNoteSaveTest {
 
 		@Override
 		protected void onCreate(Bundle savedInstanceState) {
+			Runnable betweenTheScreens = duringTheRebuild;
+			duringTheRebuild = null;
+			if (savedInstanceState != null && betweenTheScreens != null) {
+				betweenTheScreens.run();
+			}
 			setTheme(R.style.ZerionTheme_NoActionBar);
 			new ViewModelProvider(this, new ViewModelProvider.Factory() {
 				@NonNull
@@ -117,6 +131,7 @@ public class SecureNoteSaveTest {
 	@After
 	public void tearDown() {
 		model = null;
+		duringTheRebuild = null;
 	}
 
 	private static void idle() {
@@ -205,6 +220,63 @@ public class SecureNoteSaveTest {
 		title(screen).setText(title);
 		text(screen).setText(text);
 		return screen;
+	}
+
+	private VaultItem storedProtectedNote() throws Exception {
+		VaultItem note = rig.vault.manager.addItem(VaultItem.ItemType.NOTE,
+				PROTECTED_TITLE, ProtectedNoteCodec.seal("dear diary",
+						NOTE_PASSWORD.toCharArray()));
+		model.loadVaultItems();
+		runTheBackground();
+		return note;
+	}
+
+	private SecureNoteFragment rebuilt() {
+		controller.recreate();
+		host = controller.get();
+		return shown();
+	}
+
+	private Menu toolbar(SecureNoteFragment screen) {
+		Menu menu = new RoboMenu(host);
+		screen.onCreateOptionsMenu(menu, host.getMenuInflater());
+		return menu;
+	}
+
+	private static boolean canBeTapped(Menu menu) {
+		return menu.findItem(R.id.action_save_note).isEnabled();
+	}
+
+	private static void saveFromTheToolbar(SecureNoteFragment screen) {
+		screen.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_save_note));
+		idle();
+	}
+
+	private static boolean isLocked(SecureNoteFragment screen) {
+		return ((SwitchMaterial) screen.requireView()
+				.findViewById(R.id.lock_note_switch)).isChecked();
+	}
+
+	private static AlertDialog askedForThePassword() {
+		idle();
+		AlertDialog asked = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull("no password was asked for", asked);
+		assertTrue(asked.isShowing());
+		return asked;
+	}
+
+	private static void answer(AlertDialog asked, String password) {
+		ViewGroup custom = asked.findViewById(androidx.appcompat.R.id.custom);
+		((EditText) custom.getChildAt(0)).setText(password);
+		asked.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+		idle();
+	}
+
+	private void assertOnlyTheStoredNote(VaultItem note, byte[] content) {
+		assertEquals(1, rig.vault.size());
+		assertEquals(note.id, rig.vault.list().get(0).id);
+		assertArrayEquals(content, rig.vault.raw(note.id));
 	}
 
 	@Test
@@ -436,5 +508,330 @@ public class SecureNoteSaveTest {
 
 		assertFalse(isOpen());
 		assertEquals(1, rig.vault.size());
+	}
+
+	@Test
+	public void aNewNoteCanBeSavedAtOnce() throws Exception {
+		SecureNoteFragment screen = newNote("Groceries", "milk");
+		Menu menu = toolbar(screen);
+
+		assertTrue(saveButton(screen).isEnabled());
+		assertTrue(canBeTapped(menu));
+		saveFromTheToolbar(screen);
+		pass(1000);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("milk"),
+				rig.vault.raw(rig.vault.named("Groceries").id));
+	}
+
+	@Test
+	public void saveTappedWhileANoteStillLoadsStoresAndRemovesNothing()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedNote();
+		SecureNoteFragment screen = show(old.id);
+		Menu menu = toolbar(screen);
+		assertEquals("the content arrived before the vault was read", 1,
+				queued.size());
+		assertEquals("Groceries", title(screen).getText().toString());
+		assertEquals("", text(screen).getText().toString());
+
+		save(screen);
+		saveFromTheToolbar(screen);
+
+		assertEquals("an empty note was handed over to be stored", 1,
+				queued.size());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertOnlyTheStoredNote(old, bytes("milk"));
+		assertFalse("the save button can be tapped before the note is there",
+				saveButton(screen).isEnabled());
+		assertFalse("the toolbar can save before the note is there",
+				canBeTapped(menu));
+
+		screen.onOptionsItemSelected(
+				new RoboMenuItem(R.id.action_delete_note));
+		assertNotNull("the note cannot be deleted while it loads",
+				ShadowDialog.getLatestDialog());
+		ShadowDialog.getLatestDialog().dismiss();
+
+		runTheBackground();
+
+		assertEquals("milk", text(screen).getText().toString());
+		assertTrue(saveButton(screen).isEnabled());
+		assertTrue(canBeTapped(menu));
+		assertOnlyTheStoredNote(old, bytes("milk"));
+
+		text(screen).setText("bread");
+		save(screen);
+		runTheBackground();
+		pass(1000);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("bread"),
+				rig.vault.raw(rig.vault.named("Groceries").id));
+	}
+
+	@Test
+	public void saveTappedWhileAProtectedNoteIsOpenedStoresAndRemovesNothing()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedProtectedNote();
+		byte[] sealed = rig.vault.raw(old.id);
+		SecureNoteFragment screen = show(old.id);
+		Menu menu = toolbar(screen);
+		runTheBackground();
+		AlertDialog asked = askedForThePassword();
+
+		save(screen);
+		saveFromTheToolbar(screen);
+		assertTrue(queued.isEmpty());
+
+		answer(asked, NOTE_PASSWORD);
+		assertEquals(1, queued.size());
+		assertEquals("Diary", title(screen).getText().toString());
+		assertEquals("", text(screen).getText().toString());
+		assertFalse(isLocked(screen));
+
+		save(screen);
+		saveFromTheToolbar(screen);
+
+		assertEquals("an empty note was handed over to be stored", 1,
+				queued.size());
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertOnlyTheStoredNote(old, sealed);
+		assertFalse("the save button can be tapped before the note opened",
+				saveButton(screen).isEnabled());
+		assertFalse("the toolbar can save before the note opened",
+				canBeTapped(menu));
+
+		runTheBackground();
+
+		assertEquals("dear diary", text(screen).getText().toString());
+		assertTrue(isLocked(screen));
+		assertTrue(saveButton(screen).isEnabled());
+		assertTrue(canBeTapped(menu));
+		assertOnlyTheStoredNote(old, sealed);
+
+		text(screen).setText("second entry");
+		protect(screen, NOTE_PASSWORD);
+		save(screen);
+		runTheBackground();
+		pass(1000);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named(PROTECTED_TITLE);
+		assertNotNull(now);
+		assertNotEquals(old.id, now.id);
+		assertArrayEquals(bytes("second entry"), ProtectedNoteCodec.open(
+				rig.vault.raw(now.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aWrongNotePasswordLeavesTheNoteUntouchedAndSaveRefused()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedProtectedNote();
+		byte[] sealed = rig.vault.raw(old.id);
+		SecureNoteFragment screen = show(old.id);
+		Menu menu = toolbar(screen);
+		runTheBackground();
+		AlertDialog asked = askedForThePassword();
+
+		answer(asked, "open says me");
+		runTheBackground();
+
+		AlertDialog again = askedForThePassword();
+		assertNotEquals("the password was not asked for again", asked,
+				again);
+		assertEquals("", text(screen).getText().toString());
+		save(screen);
+		saveFromTheToolbar(screen);
+
+		assertTrue("an empty note was handed over to be stored",
+				queued.isEmpty());
+		assertFalse(saveButton(screen).isEnabled());
+		assertFalse(canBeTapped(menu));
+		verify(rig.vault.manager, never()).deleteItem(anyString());
+		assertOnlyTheStoredNote(old, sealed);
+		assertArrayEquals(bytes("dear diary"), ProtectedNoteCodec.open(
+				rig.vault.raw(old.id), NOTE_PASSWORD.toCharArray()));
+	}
+
+	@Test
+	public void aScreenRebuiltDuringASaveThatFailsGetsItsTextBack()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedNote();
+		SecureNoteFragment first = show(old.id);
+		runTheBackground();
+		title(first).setText("Shopping");
+		text(first).setText("bread");
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		save(first);
+		assertEquals(1, queued.size());
+
+		SecureNoteFragment screen = rebuilt();
+		assertNotNull(screen);
+		assertFalse(saveButton(screen).isEnabled());
+		assertFalse(text(screen).isEnabled());
+		save(screen);
+		assertEquals(1, queued.size());
+
+		runTheBackground();
+		pass(1000);
+
+		assertTrue("the typed text was thrown away", isOpen());
+		assertEquals("Shopping", title(screen).getText().toString());
+		assertEquals("bread", text(screen).getText().toString());
+		assertTrue(text(screen).isEnabled());
+		assertTrue(saveButton(screen).isEnabled());
+		assertOnlyTheStoredNote(old, bytes("milk"));
+
+		back();
+
+		AlertDialog unsaved = (AlertDialog) ShadowDialog.getLatestDialog();
+		assertNotNull("the text counts as saved", unsaved);
+		assertTrue(unsaved.isShowing());
+		assertTrue(isOpen());
+	}
+
+	@Test
+	public void aProtectedNoteRebuiltDuringAFailedSaveStaysProtected()
+			throws Exception {
+		saveInTheBackground();
+		SecureNoteFragment first = newNote("Diary", "dear diary");
+		protect(first, NOTE_PASSWORD);
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		save(first);
+
+		SecureNoteFragment screen = rebuilt();
+		runTheBackground();
+		pass(1000);
+
+		assertTrue(isOpen());
+		assertEquals("Diary", title(screen).getText().toString());
+		assertEquals("dear diary", text(screen).getText().toString());
+		assertTrue("the note would now be stored without its password",
+				isLocked(screen));
+
+		save(screen);
+
+		assertTrue("the note was handed over without a password",
+				queued.isEmpty());
+		assertEquals(0, rig.vault.size());
+	}
+
+	@Test
+	public void aSaveThatFailsWhileTheScreenIsRebuiltIsNotMissed()
+			throws Exception {
+		saveInTheBackground();
+		SecureNoteFragment first = newNote("Groceries", "milk");
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		save(first);
+		duringTheRebuild = () -> queued.remove(0).run();
+
+		SecureNoteFragment screen = rebuilt();
+		pass(1000);
+
+		assertNull("the save did not finish between the two screens",
+				duringTheRebuild);
+		assertTrue(queued.isEmpty());
+		assertTrue(isOpen());
+		assertEquals("Groceries", title(screen).getText().toString());
+		assertEquals("milk", text(screen).getText().toString());
+		assertTrue(saveButton(screen).isEnabled());
+		back();
+		assertNotNull("the text counts as saved",
+				ShadowDialog.getLatestDialog());
+	}
+
+	@Test
+	public void aSaveStoredWhileTheScreenIsRebuiltStillClosesIt()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedNote();
+		SecureNoteFragment first = show(old.id);
+		runTheBackground();
+		text(first).setText("bread");
+		save(first);
+		duringTheRebuild = () -> queued.remove(0).run();
+
+		rebuilt();
+		pass(1000);
+
+		assertNull("the save did not finish between the two screens",
+				duringTheRebuild);
+		assertFalse("the screen stayed open on a note that is stored",
+				isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("bread"),
+				rig.vault.raw(rig.vault.named("Groceries").id));
+	}
+
+	@Test
+	public void aScreenRebuiltWhileItClosesAfterASaveStillCloses()
+			throws Exception {
+		SecureNoteFragment first = newNote("Groceries", "milk");
+		long request = model.newNoteSaveRequest() + 1;
+		saveButton(first).performClick();
+		for (int task = 0; task < 50 && model.isNoteSavePending(request);
+				task++) {
+			shadowOf(Looper.getMainLooper()).runOneTask();
+		}
+		assertFalse("the screen never took the result of its save",
+				model.isNoteSavePending(request));
+		assertEquals(1, rig.vault.size());
+		assertNotNull("the screen closed before it could be rebuilt",
+				host.getSupportFragmentManager().findFragmentByTag(TAG));
+
+		controller.recreate();
+		host = controller.get();
+		pass(1000);
+
+		assertFalse("the screen stayed open on a note that is stored",
+				isOpen());
+		assertEquals(1, rig.vault.size());
+	}
+
+	@Test
+	public void aRebuiltScreenWithoutItsTextShowsTheStoredNoteAgain()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = storedNote();
+		SecureNoteFragment first = show(old.id);
+		runTheBackground();
+		text(first).setText("bread");
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		save(first);
+		SecureNoteFragment screen = rebuilt();
+
+		model.clearSensitiveMemory();
+		model.loadVaultItems();
+		runTheBackground();
+		assertFalse("an editor without the text of the note can save",
+				saveButton(screen).isEnabled());
+		save(screen);
+		runTheBackground();
+		pass(1000);
+
+		assertTrue(isOpen());
+		assertEquals("Groceries", title(screen).getText().toString());
+		assertEquals("milk", text(screen).getText().toString());
+		assertTrue(saveButton(screen).isEnabled());
+		assertOnlyTheStoredNote(old, bytes("milk"));
+
+		back();
+
+		assertNull("a note nobody changed asks before leaving",
+				ShadowDialog.getLatestDialog());
+		assertFalse(isOpen());
 	}
 }

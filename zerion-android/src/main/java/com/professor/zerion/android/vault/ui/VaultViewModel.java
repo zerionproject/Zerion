@@ -97,17 +97,17 @@ public class VaultViewModel extends AndroidViewModel {
 	private final MutableLiveData<Integer> progressPercent = new MutableLiveData<>(0);
 	private final MutableLiveData<String> progressMessage = new MutableLiveData<>();
 	private static final int EARLIER_VERSION_REMOVAL_ATTEMPTS = 2;
+	private static final long NOT_FROM_THE_EDITOR = 0L;
 	private final MutableLiveData<Event<DocumentSaveResult>> documentSaveResult =
 			new MutableLiveData<>();
 	private final Map<String, String> replacedDocuments =
 			new java.util.concurrent.ConcurrentHashMap<>();
-	private volatile boolean editorSaveRunning = false;
+	private final SaveLedger<DocumentSaveResult> documentSaves =
+			new SaveLedger<>();
 	private final MutableLiveData<Event<NoteSaveResult>> noteSaveResult =
 			new MutableLiveData<>();
-	private final java.util.concurrent.atomic.AtomicLong noteSaveRequests =
-			new java.util.concurrent.atomic.AtomicLong();
-	private final Set<Long> noteSavesRunning =
-			java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private final SaveLedger<NoteSaveResult> noteSaves = new SaveLedger<>();
+	private final Map<Long, UnsavedNote> unsavedNotes = new HashMap<>();
 
 	private static final Executor WALLET_EXECUTOR =
 			Executors.newSingleThreadExecutor();
@@ -1738,6 +1738,7 @@ public class VaultViewModel extends AndroidViewModel {
 			plainPasswordIds.clear();
 		}
 		cancelKeePassImport();
+		wipeUnsavedNotes();
 		bookmarks.postValue(new HashMap<>());
 		vaultItems.postValue(new ArrayList<>());
 		errorMessage.postValue(null);
@@ -1988,7 +1989,20 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public boolean isEditorSaveRunning() {
-		return editorSaveRunning;
+		return documentSaves.isAnyRunning();
+	}
+
+	public long newDocumentSaveRequest() {
+		return documentSaves.newRequest();
+	}
+
+	public boolean isDocumentSavePending(long request) {
+		return documentSaves.isPending(request);
+	}
+
+	@Nullable
+	public DocumentSaveResult takeDocumentSaveResult(long request) {
+		return documentSaves.take(request);
 	}
 
 	public String latestDocumentId(String itemId) {
@@ -2001,19 +2015,22 @@ public class VaultViewModel extends AndroidViewModel {
 		return latest;
 	}
 
-	public void addDocumentWithPassword(String fileName, byte[] content, @Nullable char[] extraPassword) {
-		editorSaveRunning = true;
-		storeDocument(fileName, content, "text/plain", extraPassword, true);
+	public void addDocumentWithPassword(long request, String fileName,
+			byte[] content, @Nullable char[] extraPassword) {
+		documentSaves.started(request);
+		storeDocument(request, fileName, content, "text/plain",
+				extraPassword);
 	}
 
 	public void addDocumentWithPassword(String fileName, byte[] content,
 			@Nullable String mimeType, @Nullable char[] extraPassword) {
-		storeDocument(fileName, content, mimeType, extraPassword, false);
+		storeDocument(NOT_FROM_THE_EDITOR, fileName, content, mimeType,
+				extraPassword);
 	}
 
-	private void storeDocument(String fileName, byte[] content,
-			@Nullable String mimeType, @Nullable char[] extraPassword,
-			boolean fromEditor) {
+	private void storeDocument(long fromEditor, String fileName,
+			byte[] content, @Nullable String mimeType,
+			@Nullable char[] extraPassword) {
 		int refusal = documentRefusal(fileName, content);
 		if (refusal != 0) {
 			wipe(content, extraPassword);
@@ -2065,31 +2082,34 @@ public class VaultViewModel extends AndroidViewModel {
 		}
 	}
 
-	public void updateDocument(String itemId, String fileName, byte[] content) {
-		replaceDocument(itemId, fileName, content, null, false);
+	public void updateDocument(long request, String itemId, String fileName,
+			byte[] content) {
+		replaceDocument(request, itemId, fileName, content, null, false);
 	}
 
-	public void updateProtectedDocument(String itemId, String fileName,
-			byte[] content, char[] currentPassword) {
-		replaceDocument(itemId, fileName, content, currentPassword, true);
+	public void updateProtectedDocument(long request, String itemId,
+			String fileName, byte[] content, char[] currentPassword) {
+		replaceDocument(request, itemId, fileName, content, currentPassword,
+				true);
 	}
 
-	public void replaceDocumentWithPassword(String itemId, String fileName,
-			byte[] content, char[] newPassword) {
-		replaceDocument(itemId, fileName, content, newPassword, false);
+	public void replaceDocumentWithPassword(long request, String itemId,
+			String fileName, byte[] content, char[] newPassword) {
+		replaceDocument(request, itemId, fileName, content, newPassword,
+				false);
 	}
 
-	private void replaceDocument(String itemId, String fileName,
-			byte[] content, @Nullable char[] password,
+	private void replaceDocument(long request, String itemId,
+			String fileName, byte[] content, @Nullable char[] password,
 			boolean passwordMustOpenTheOriginal) {
-		editorSaveRunning = true;
+		documentSaves.started(request);
 		int refusal = documentRefusal(fileName, content);
 		if (refusal == 0 && (itemId == null || itemId.trim().isEmpty())) {
 			refusal = R.string.vault_msg_invalid_document;
 		}
 		if (refusal != 0) {
 			wipe(content, password);
-			reportDocumentSave(true, documentSave(
+			reportDocumentSave(request, documentSave(
 					DocumentSaveResult.Outcome.FAILED, refusal, null));
 			return;
 		}
@@ -2104,7 +2124,7 @@ public class VaultViewModel extends AndroidViewModel {
 						usablePassword, passwordMustOpenTheOriginal);
 			} finally {
 				wipe(content, password);
-				reportDocumentSave(true, result != null ? result
+				reportDocumentSave(request, result != null ? result
 						: documentSave(DocumentSaveResult.Outcome.FAILED,
 								R.string.vault_msg_update_document_failed,
 								null));
@@ -2200,15 +2220,15 @@ public class VaultViewModel extends AndroidViewModel {
 		return new DocumentSaveResult(outcome, text(message), itemId);
 	}
 
-	private void reportDocumentSave(boolean toEditor,
+	private void reportDocumentSave(long fromEditor,
 			DocumentSaveResult result) {
 		if (result.outcome == DocumentSaveResult.Outcome.SAVED) {
 			successMessage.postValue(result.message);
 		} else {
 			errorMessage.postValue(result.message);
 		}
-		if (toEditor) {
-			editorSaveRunning = false;
+		if (fromEditor != NOT_FROM_THE_EDITOR) {
+			documentSaves.finished(fromEditor, result);
 			documentSaveResult.postValue(new Event<>(result));
 		}
 	}
@@ -2490,17 +2510,114 @@ public class VaultViewModel extends AndroidViewModel {
 		return noteSaveResult;
 	}
 
+	public interface UnsavedNoteReceiver {
+		void putBack(char[] title, char[] content, boolean passwordProtected);
+	}
+
+	private static final class UnsavedNote {
+
+		final char[] title;
+		final char[] content;
+		final boolean passwordProtected;
+
+		UnsavedNote(String title, String content,
+				boolean passwordProtected) {
+			this.title = title.toCharArray();
+			this.content = content.toCharArray();
+			this.passwordProtected = passwordProtected;
+		}
+
+		void wipe() {
+			Arrays.fill(title, '\0');
+			Arrays.fill(content, '\0');
+		}
+	}
+
 	public boolean isNoteSaveRunning(long request) {
-		return noteSavesRunning.contains(request);
+		return noteSaves.isRunning(request);
+	}
+
+	public boolean isNoteSavePending(long request) {
+		return noteSaves.isPending(request);
 	}
 
 	public long newNoteSaveRequest() {
-		return noteSaveRequests.incrementAndGet();
+		return noteSaves.newRequest();
+	}
+
+	@Nullable
+	public NoteSaveResult takeNoteSaveResult(long request,
+			UnsavedNoteReceiver unsaved) {
+		NoteSaveResult result = noteSaves.take(request);
+		if (result == null) {
+			return null;
+		}
+		UnsavedNote kept;
+		synchronized (unsavedNotes) {
+			kept = unsavedNotes.remove(request);
+		}
+		if (kept != null) {
+			try {
+				if (!result.isStored()) {
+					unsaved.putBack(kept.title, kept.content,
+							kept.passwordProtected);
+				}
+			} finally {
+				kept.wipe();
+			}
+		}
+		return result;
+	}
+
+	private void startNoteSave(long request, String title, String content,
+			boolean passwordProtected) {
+		noteSaves.started(request);
+		UnsavedNote kept = new UnsavedNote(title, content, passwordProtected);
+		UnsavedNote earlier;
+		synchronized (unsavedNotes) {
+			earlier = unsavedNotes.put(request, kept);
+		}
+		if (earlier != null) {
+			earlier.wipe();
+		}
+	}
+
+	private void wipeUnsavedNote(long request) {
+		UnsavedNote kept;
+		synchronized (unsavedNotes) {
+			kept = unsavedNotes.remove(request);
+		}
+		if (kept != null) {
+			kept.wipe();
+		}
+	}
+
+	private void wipeUnsavedNotesWithoutASave() {
+		synchronized (unsavedNotes) {
+			java.util.Iterator<Map.Entry<Long, UnsavedNote>> kept =
+					unsavedNotes.entrySet().iterator();
+			while (kept.hasNext()) {
+				Map.Entry<Long, UnsavedNote> next = kept.next();
+				if (!noteSaves.isPending(next.getKey())) {
+					next.getValue().wipe();
+					kept.remove();
+				}
+			}
+		}
+	}
+
+	private void wipeUnsavedNotes() {
+		synchronized (unsavedNotes) {
+			for (UnsavedNote kept : unsavedNotes.values()) {
+				kept.wipe();
+			}
+			unsavedNotes.clear();
+		}
 	}
 
 	public void saveNote(long request, String title, String content,
 			@Nullable String existingId) {
-		noteSavesRunning.add(request);
+		startNoteSave(request, title, content, false);
 		int refusal = !vaultManager.isUnlocked()
 				? R.string.vault_msg_unlock_first
 				: title.trim().isEmpty()
@@ -2550,7 +2667,7 @@ public class VaultViewModel extends AndroidViewModel {
 			String content, char[] password,
 			@Nullable String existingNoteId) {
 		char[] ownPassword = takeOver(password);
-		noteSavesRunning.add(request);
+		startNoteSave(request, title, content, true);
 		if (!vaultManager.isUnlocked()) {
 			Arrays.fill(ownPassword, '\0');
 			reportNoteSave(noteSave(request, NoteSaveResult.Outcome.FAILED,
@@ -2613,7 +2730,11 @@ public class VaultViewModel extends AndroidViewModel {
 		} else {
 			errorMessage.postValue(result.message);
 		}
-		noteSavesRunning.remove(result.request);
+		if (result.isStored()) {
+			wipeUnsavedNote(result.request);
+		}
+		noteSaves.finished(result.request, result);
+		wipeUnsavedNotesWithoutASave();
 		noteSaveResult.postValue(new Event<>(result));
 	}
 
@@ -3010,8 +3131,10 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void changePassword(char[] currentPassword, char[] newPassword) {
-		char[] ownCurrent = takeOver(currentPassword);
-		char[] ownNew = takeOver(newPassword);
+		char[] ownCurrent = currentPassword.clone();
+		char[] ownNew = newPassword.clone();
+		Arrays.fill(currentPassword, '\0');
+		Arrays.fill(newPassword, '\0');
 		int refusal = !vaultManager.vaultExists()
 				? R.string.vault_msg_no_vault
 				: !vaultManager.isUnlocked()

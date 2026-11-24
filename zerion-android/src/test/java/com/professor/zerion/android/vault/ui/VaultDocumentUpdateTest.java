@@ -94,7 +94,8 @@ public class VaultDocumentUpdateTest {
 						anyString(), any(), any(), any());
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		assertEquals(1, rig.vault.size());
@@ -119,7 +120,8 @@ public class VaultDocumentUpdateTest {
 						anyString(), any(), any(), any());
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		assertEquals(1, rig.vault.size());
@@ -136,7 +138,8 @@ public class VaultDocumentUpdateTest {
 						anyString(), any(), any(), any());
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		DocumentSaveResult result = result(vm);
@@ -157,7 +160,8 @@ public class VaultDocumentUpdateTest {
 		VaultViewModel vm = rig.newModel();
 		rig.vault.unlocked = false;
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		DocumentSaveResult result = result(vm);
@@ -175,7 +179,8 @@ public class VaultDocumentUpdateTest {
 		VaultItem old = existing(rig);
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		assertEquals(1, rig.vault.size());
@@ -200,7 +205,8 @@ public class VaultDocumentUpdateTest {
 		VaultItem old = existing(rig);
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		VaultItem now = rig.vault.named("notes.txt");
@@ -225,11 +231,13 @@ public class VaultDocumentUpdateTest {
 		VaultItem first = existing(rig);
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(first.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				first.id, "notes.txt", bytes("second draft"));
 		idle();
 		String second = result(vm).itemId;
 		assertNotNull(second);
-		vm.updateDocument(second, "notes.txt", bytes("third draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				second, "notes.txt", bytes("third draft"));
 		idle();
 		String third = result(vm).itemId;
 
@@ -246,7 +254,8 @@ public class VaultDocumentUpdateTest {
 		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		verify(rig.vault.manager, times(2)).deleteItem(old.id);
@@ -269,7 +278,8 @@ public class VaultDocumentUpdateTest {
 		rig.vault.deleteFailures.add(new SecurityException("locked"));
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		verify(rig.vault.manager, times(2)).deleteItem(old.id);
@@ -304,7 +314,8 @@ public class VaultDocumentUpdateTest {
 		VaultItem old = existingProtected(rig);
 		VaultViewModel vm = rig.newModel();
 
-		vm.updateDocument(old.id, "notes.txt", bytes("second draft"));
+		vm.updateDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", bytes("second draft"));
 		idle();
 
 		DocumentSaveResult result = result(vm);
@@ -330,7 +341,8 @@ public class VaultDocumentUpdateTest {
 		char[] typed = "open sesame".toCharArray();
 		byte[] text = bytes("second draft");
 
-		vm.updateProtectedDocument(old.id, "notes.txt", text, typed);
+		vm.updateProtectedDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt", text, typed);
 		idle();
 
 		DocumentSaveResult result = result(vm);
@@ -358,7 +370,8 @@ public class VaultDocumentUpdateTest {
 		VaultViewModel vm = rig.newModel();
 		char[] typed = "open says me".toCharArray();
 
-		vm.updateProtectedDocument(old.id, "notes.txt",
+		vm.updateProtectedDocument(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt",
 				bytes("second draft"), typed);
 		idle();
 
@@ -385,7 +398,8 @@ public class VaultDocumentUpdateTest {
 		VaultViewModel vm = rig.newModel();
 		char[] chosen = "new secret".toCharArray();
 
-		vm.replaceDocumentWithPassword(old.id, "notes.txt",
+		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt",
 				bytes("second draft"), chosen);
 		idle();
 
@@ -414,7 +428,8 @@ public class VaultDocumentUpdateTest {
 		VaultItem old = existingProtected(rig);
 		VaultViewModel vm = rig.newModel();
 
-		vm.replaceDocumentWithPassword(old.id, "notes.txt",
+		vm.replaceDocumentWithPassword(vm.newDocumentSaveRequest(),
+				old.id, "notes.txt",
 				bytes("second draft"), "new secret".toCharArray());
 		idle();
 
@@ -432,7 +447,8 @@ public class VaultDocumentUpdateTest {
 		VaultViewModelRig rig = new VaultViewModelRig();
 		VaultViewModel vm = rig.newModel();
 
-		vm.addDocumentWithPassword("fresh.txt", bytes("hello"), null);
+		vm.addDocumentWithPassword(vm.newDocumentSaveRequest(),
+				"fresh.txt", bytes("hello"), null);
 		idle();
 
 		VaultItem stored = rig.vault.named("fresh.txt");
@@ -455,7 +471,8 @@ public class VaultDocumentUpdateTest {
 		VaultViewModel vm = rig.newModel();
 		char[] chosen = "new secret".toCharArray();
 
-		vm.addDocumentWithPassword("fresh.txt", bytes("hello"), chosen);
+		vm.addDocumentWithPassword(vm.newDocumentSaveRequest(),
+				"fresh.txt", bytes("hello"), chosen);
 		idle();
 
 		DocumentSaveResult result = result(vm);

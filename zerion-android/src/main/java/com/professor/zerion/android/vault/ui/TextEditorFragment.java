@@ -42,7 +42,8 @@ public class TextEditorFragment extends BaseFragment {
 	private static final String ARG_INITIAL_CONTENT = "initial_content";
 	private static final String ARG_IS_EDIT_MODE = "is_edit_mode";
 	private static final String ARG_ITEM_ID = "item_id";
-	private static final String STATE_SAVE_IN_FLIGHT = "save_in_flight";
+	private static final String STATE_SAVE_REQUEST = "save_request";
+	private static final long NO_SAVE = 0L;
 	private static final String TAG_NEW_PASSWORD_DIALOG = "password_dialog";
 	private static final String TAG_DOCUMENT_PASSWORD_DIALOG =
 			"document_password_dialog";
@@ -64,7 +65,7 @@ public class TextEditorFragment extends BaseFragment {
 	private boolean isEditMode = false;
 	private String itemId;
 	private boolean hasUnsavedChanges = false;
-	private boolean saveInFlight = false;
+	private long saveRequest = NO_SAVE;
 	private boolean isMonospace = true;
 
 	public static TextEditorFragment newInstance() {
@@ -103,15 +104,15 @@ public class TextEditorFragment extends BaseFragment {
 			itemId = getArguments().getString(ARG_ITEM_ID);
 		}
 		if (savedInstanceState != null) {
-			saveInFlight = savedInstanceState.getBoolean(
-					STATE_SAVE_IN_FLIGHT, false);
+			saveRequest = savedInstanceState.getLong(STATE_SAVE_REQUEST,
+					NO_SAVE);
 		}
 
 		requireActivity().getOnBackPressedDispatcher().addCallback(this,
 				new OnBackPressedCallback(true) {
 					@Override
 					public void handleOnBackPressed() {
-						if (saveInFlight) {
+						if (isSaving()) {
 							return;
 						}
 						if (hasUnsavedChanges) {
@@ -127,7 +128,7 @@ public class TextEditorFragment extends BaseFragment {
 	@Override
 	public void onSaveInstanceState(@NonNull Bundle outState) {
 		super.onSaveInstanceState(outState);
-		outState.putBoolean(STATE_SAVE_IN_FLIGHT, saveInFlight);
+		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
 	}
 
 	@Override
@@ -161,11 +162,18 @@ public class TextEditorFragment extends BaseFragment {
 		setupEditorFeatures();
 		loadInitialContent();
 
-		saveInFlight = saveInFlight && (viewModel.isEditorSaveRunning()
-				|| hasWaitingSaveResult());
-		setEditingEnabled(!saveInFlight);
+		if (isSaving() && !viewModel.isDocumentSavePending(saveRequest)) {
+			saveRequest = NO_SAVE;
+		}
+		setEditingEnabled(!isSaving());
 		viewModel.getDocumentSaveResult().observe(getViewLifecycleOwner(),
-				this::onDocumentSaveResult);
+				finished -> collectSaveResult());
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		requireView().post(this::collectSaveResult);
 	}
 
 	private void setupToolbar() {
@@ -179,7 +187,7 @@ public class TextEditorFragment extends BaseFragment {
 		}
 
 		toolbar.setNavigationOnClickListener(v -> {
-			if (saveInFlight) {
+			if (isSaving()) {
 				return;
 			}
 			if (hasUnsavedChanges) {
@@ -269,27 +277,28 @@ public class TextEditorFragment extends BaseFragment {
 	}
 
 	private void saveDocument() {
-		if (saveInFlight) {
+		if (isSaving()) {
 			return;
 		}
 		String name = checkedName();
 		if (name == null) {
 			return;
 		}
-		beginSave();
-		savePlain(name, contentBytes());
+		byte[] contentBytes = contentBytes();
+		savePlain(beginSave(), name, contentBytes);
 	}
 
-	private void savePlain(String name, byte[] contentBytes) {
+	private void savePlain(long request, String name, byte[] contentBytes) {
 		if (isEditMode && itemId != null) {
-			viewModel.updateDocument(itemId, name, contentBytes);
+			viewModel.updateDocument(request, itemId, name, contentBytes);
 		} else {
-			viewModel.addDocumentWithPassword(name, contentBytes, null);
+			viewModel.addDocumentWithPassword(request, name, contentBytes,
+					null);
 		}
 	}
 
 	private void saveDocumentWithPassword() {
-		if (saveInFlight) {
+		if (isSaving()) {
 			return;
 		}
 		String name = checkedName();
@@ -306,20 +315,20 @@ public class TextEditorFragment extends BaseFragment {
 		dialog.setCallback(new DocumentPasswordDialog.PasswordCallback() {
 			@Override
 			public void onPasswordEntered(@Nullable char[] password) {
-				if (saveInFlight || getView() == null) {
+				if (isSaving() || getView() == null) {
 					wipe(password);
 					return;
 				}
 				byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-				beginSave();
+				long request = beginSave();
 				if (password == null) {
-					savePlain(name, contentBytes);
+					savePlain(request, name, contentBytes);
 				} else if (isEditMode && itemId != null) {
-					viewModel.replaceDocumentWithPassword(itemId, name,
-							contentBytes, password);
+					viewModel.replaceDocumentWithPassword(request, itemId,
+							name, contentBytes, password);
 				} else {
-					viewModel.addDocumentWithPassword(name, contentBytes,
-							password);
+					viewModel.addDocumentWithPassword(request, name,
+							contentBytes, password);
 				}
 			}
 
@@ -352,23 +361,27 @@ public class TextEditorFragment extends BaseFragment {
 	}
 
 	private void saveProtectedDocument(char[] password) {
-		String name = saveInFlight || getView() == null || itemId == null
+		String name = isSaving() || getView() == null || itemId == null
 				? null : checkedName();
 		if (name == null) {
 			wipe(password);
 			return;
 		}
-		beginSave();
-		viewModel.updateProtectedDocument(itemId, name, contentBytes(),
-				password);
+		byte[] contentBytes = contentBytes();
+		viewModel.updateProtectedDocument(beginSave(), itemId, name,
+				contentBytes, password);
 	}
 
-	private void onDocumentSaveResult(Event<DocumentSaveResult> event) {
-		DocumentSaveResult result = event.getIfNotHandled();
-		if (result == null || !saveInFlight) {
+	private void collectSaveResult() {
+		if (!isSaving() || !isResumed()) {
 			return;
 		}
-		saveInFlight = false;
+		DocumentSaveResult result =
+				viewModel.takeDocumentSaveResult(saveRequest);
+		if (result == null) {
+			return;
+		}
+		saveRequest = NO_SAVE;
 		setEditingEnabled(true);
 
 		if (result.isStored()) {
@@ -394,15 +407,14 @@ public class TextEditorFragment extends BaseFragment {
 		}
 	}
 
-	private boolean hasWaitingSaveResult() {
-		Event<DocumentSaveResult> latest =
-				viewModel.getDocumentSaveResult().getValue();
-		return latest != null && !latest.isHandled();
+	private boolean isSaving() {
+		return saveRequest != NO_SAVE;
 	}
 
-	private void beginSave() {
-		saveInFlight = true;
+	private long beginSave() {
+		saveRequest = viewModel.newDocumentSaveRequest();
 		setEditingEnabled(false);
+		return saveRequest;
 	}
 
 	private void setEditingEnabled(boolean enabled) {

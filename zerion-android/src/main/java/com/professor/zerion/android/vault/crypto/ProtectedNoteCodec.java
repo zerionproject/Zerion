@@ -33,6 +33,7 @@ public final class ProtectedNoteCodec {
 
 	public static byte[] seal(String content, char[] password)
 			throws Exception {
+		NewPassword.requireTypable(password);
 		byte[] salt = new byte[V2_SALT_BYTES];
 		new SecureRandom().nextBytes(salt);
 		byte[] passwordKey = null;
