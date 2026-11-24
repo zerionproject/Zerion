@@ -192,9 +192,11 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 		viewModel.getVaultItems().observe(getViewLifecycleOwner(), items -> {
 			if (items != null) {
 				if (documentLoadStarted) return;
+				showLatestSavedVersion();
 				for (com.professor.zerion.android.vault.model.VaultItem item : items) {
 					if (item.id.equals(itemId)) {
 						documentLoadStarted = true;
+						showItemName(item.name);
 						if (item.hasExtraPassword) {
 							showPasswordDialog();
 						} else {
@@ -208,6 +210,24 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 						getString(R.string.vault_doc_not_found_message));
 			}
 		});
+	}
+
+	private void showLatestSavedVersion() {
+		if (itemId == null) return;
+		String latest = viewModel.latestDocumentId(itemId);
+		if (latest.equals(itemId)) return;
+		itemId = latest;
+		if (getArguments() != null) {
+			getArguments().putString(ARG_ITEM_ID, latest);
+		}
+	}
+
+	private void showItemName(String name) {
+		itemName = name;
+		toolbar.setTitle(name);
+		if (getArguments() != null) {
+			getArguments().putString(ARG_ITEM_NAME, name);
+		}
 	}
 
 	private void showPasswordDialog() {
@@ -528,6 +548,7 @@ public class VaultDocumentViewerFragment extends BaseFragment {
 	public void onDestroyView() {
 		super.onDestroyView();
 
+		documentLoadStarted = false;
 		cleanupSecurely();
 	}
 

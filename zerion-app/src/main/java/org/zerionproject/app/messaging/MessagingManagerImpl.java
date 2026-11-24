@@ -2696,12 +2696,6 @@ class MessagingManagerImpl implements MessagingManager, IncomingMessageHook,
 		return false;
 	}
 
-	/**
-	 * Adds a control record for the contact. Only a record the user asked
-	 * for, such as an edit, a deletion or a pin, is marked as a user message
-	 * and may open the active cadence; a record this side creates because of
-	 * something it received is not.
-	 */
 	private MessageId addLocalControlMessage(Transaction txn, GroupId g,
 			long timestamp, BdfList body, int type, @Nullable MessageId target,
 			boolean userAction) throws DbException, FormatException {

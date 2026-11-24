@@ -90,11 +90,6 @@ public class ContactRequestReceiver {
 		this.flags = new PendingContactFlags(db);
 	}
 
-	/**
-	 * The pairing of an accepted request ran, but the sender is already a
-	 * contact and the add was refused: the request is kept under the name
-	 * the user gave, as "Already a contact", until it is dismissed.
-	 */
 	void alreadyContact(Transaction txn, PendingContactId p,
 			@Nullable String alias) throws DbException {
 		for (IncomingRequest r : db.getIncomingRequests(txn)) {

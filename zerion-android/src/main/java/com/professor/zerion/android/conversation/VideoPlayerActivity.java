@@ -638,6 +638,7 @@ public class VideoPlayerActivity extends ZerionActivity
 				return;
 			}
 			ExternalHandoff.openCopy(this, ioExecutor, data, type,
+					() -> toast(R.string.video_playback_error),
 					() -> toast(R.string.media_document_no_app));
 		}, R.string.video_playback_error);
 	}

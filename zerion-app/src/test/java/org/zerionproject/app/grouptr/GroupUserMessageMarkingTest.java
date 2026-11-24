@@ -19,12 +19,6 @@ import static org.zerionproject.app.grouptr.GroupTrTestNode.creator;
 import static org.zerionproject.app.grouptr.GroupTrTestNode.member;
 import static org.zerionproject.core.test.TestUtils.getRandomId;
 
-/**
- * Only a group record the user asked for is marked as a user message for the
- * cover traffic scheduler. A record this side creates on its own, such as a
- * setting passed on with a post or an answer to a member who is behind, is
- * not, so a contact cannot open this side's active cadence by sending.
- */
 public class GroupUserMessageMarkingTest {
 
 	private static final long EPOCH = 5L;

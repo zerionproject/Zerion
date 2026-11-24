@@ -4312,16 +4312,6 @@ class GroupTrManagerImpl
 		}
 	}
 
-	/**
-	 * Hands the creator-signed settings record this device holds to the
-	 * fellow members it has not been sent to yet, or to the one contact
-	 * given, and remembers per contact that the held record was sent
-	 * (settings key settingsSentTo: the record's timestamp followed by the
-	 * contact ids; ids of contacts that are no longer members drop out when
-	 * the note is written). The contact the record came from counts as
-	 * sent. The creator's device hands nothing on; it sends its own record
-	 * when it sets the timer.
-	 */
 	private void handSettingsOn(GroupTrState s, @Nullable ContactId only,
 			@Nullable ContactId cameFrom) {
 		try {
@@ -4381,10 +4371,6 @@ class GroupTrManagerImpl
 		}
 	}
 
-	/**
-	 * The contact ids the held settings record was sent to, empty when the
-	 * note belongs to an earlier record.
-	 */
 	private static java.util.Set<Integer> settingsSentTo(Settings current,
 			long held) {
 		java.util.Set<Integer> out = new java.util.HashSet<>();
@@ -6662,13 +6648,6 @@ class GroupTrManagerImpl
 		}
 	}
 
-	/**
-	 * Stores one copy of a group record for a contact. The caller says
-	 * whether the record is a user action, such as a post, an invite or a
-	 * change the owner made; only such a record may open the active send
-	 * cadence. Records created while handling an incoming record, passed on
-	 * settings, relayed copies and key material are never user actions.
-	 */
 	private void dispatchToContact(Transaction txn, Contact c,
 			long timestamp, BdfList body, boolean userAction)
 			throws DbException {

@@ -137,14 +137,6 @@ public class RootKeyStore {
 		return storePending(c, fromEpoch, pending, null, null, confirmed);
 	}
 
-	/**
-	 * Stores a pending root. A version 3 root comes with its confirmation
-	 * key and its pending-id key, which are kept in the pending row (the
-	 * chain key and the private key columns, which no other reader of that
-	 * row uses) so that later connections can make and check the id and the
-	 * DONE without the material of the evolution. A version 2 root comes
-	 * with neither.
-	 */
 	public boolean storePending(ContactId c, long fromEpoch,
 			SecretKey pending, @Nullable SecretKey pendingConfirmKey,
 			@Nullable SecretKey pendingIdKey, boolean confirmed)
@@ -418,10 +410,6 @@ public class RootKeyStore {
 				null, null, true, null);
 	}
 
-	/**
-	 * Carries the pending-id key into the private key column of the pending
-	 * row. Only the bytes are stored; the type is not.
-	 */
 	private static final class StoredKey implements PrivateKey {
 
 		private final byte[] bytes;

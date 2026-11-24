@@ -25,13 +25,6 @@ public final class ContactRootKeys {
 		this(epoch, current, pending, null, null, pendingConfirmed);
 	}
 
-	/**
-	 * A version 3 pending root carries both a confirmation key and a
-	 * pending-id key of its own; a version 2 pending root carries neither
-	 * and derives both from the pending root as earlier releases do. A
-	 * pending root with only one of the two keys is not a form either
-	 * version produces and is refused.
-	 */
 	public ContactRootKeys(long epoch, SecretKey current,
 			@Nullable SecretKey pending, @Nullable SecretKey pendingConfirmKey,
 			@Nullable SecretKey pendingIdKey, boolean pendingConfirmed) {
@@ -100,10 +93,6 @@ public final class ContactRootKeys {
 		return null;
 	}
 
-	/**
-	 * Zeroises every key this object holds. The store hands out copies, so
-	 * clearing them leaves the stored keys intact.
-	 */
 	public void clear() {
 		current.clear();
 		if (pending != null) pending.clear();

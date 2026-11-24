@@ -413,6 +413,7 @@ public class ImageActivity extends ZerionActivity
 
 	private void handOff(byte[] copy, String type) {
 		ExternalHandoff.openCopy(this, ioExecutor, copy, type,
+				() -> showError(R.string.media_document_open_failed),
 				() -> showError(R.string.media_document_no_app));
 	}
 

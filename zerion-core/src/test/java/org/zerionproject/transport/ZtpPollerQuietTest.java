@@ -32,11 +32,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.zerionproject.core.test.TestUtils.getContact;
 
-/**
- * While the device is quiet (Tor wake lock released, app in the background)
- * a contact that has not been connected for five minutes is retried at the
- * slow cadence, so failing dials do not keep the device awake.
- */
 public class ZtpPollerQuietTest {
 
 	private static final TransportId ID = new TransportId("t");

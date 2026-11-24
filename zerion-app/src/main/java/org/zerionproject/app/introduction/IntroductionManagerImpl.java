@@ -381,11 +381,6 @@ class IntroductionManagerImpl extends ConversationClientImpl
 		}
 	}
 
-	/**
-	 * The two request messages of an introduction the user starts are user
-	 * messages for the cover traffic scheduler. Every later step of the
-	 * protocol is an answer to something a contact sent and is not.
-	 */
 	private void noteUserMessage(@Nullable MessageId id) {
 		if (id != null) userMessages.noteUserMessage(id);
 	}

@@ -67,10 +67,6 @@ final class RequestPlaintext {
 				timestamp, senderTag, false);
 	}
 
-	/**
-	 * A request; reconnect says that the sender is already a contact of the
-	 * receiver and wants to replace the keys of that contact.
-	 */
 	static RequestPlaintext request(byte[] requestId, byte[] linkId,
 			byte[] oneTimeLink, byte[] pop, String name, @Nullable String note,
 			long timestamp, byte[] senderTag, boolean reconnect) {

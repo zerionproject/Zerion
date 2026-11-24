@@ -150,14 +150,6 @@ public class ZtpPoller implements EventListener {
 
 	private volatile java.util.function.IntPredicate stalled = c -> false;
 
-	/**
-	 * Tells the poller whether the device is quiet: the app is in the
-	 * background, no call runs and no connection carries data. The check is
-	 * sampled before each dial; while it is true, a contact that has not been
-	 * connected for {@link #QUIET_OFFLINE_MS} is retried at the slow cadence
-	 * so that failing dials do not keep the device awake. The slow waits are
-	 * dropped on the first poll after the device stops being quiet.
-	 */
 	public void setQuietCheck(java.util.function.BooleanSupplier quiet) {
 		this.quiet = quiet;
 	}
@@ -406,11 +398,6 @@ public class ZtpPoller implements EventListener {
 		}
 	}
 
-	/**
-	 * @param wasQuiet the quiet check sampled before the dial started, since
-	 * the dial itself and the Tor events it causes would otherwise make the
-	 * device look busy
-	 */
 	private void recordDialOutcome(int contactId, long sessionMs, long epoch,
 			boolean wasQuiet) {
 		boolean connected = sessionMs >= MIN_CONNECTED_MS

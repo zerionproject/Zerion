@@ -7,11 +7,6 @@ import org.zerionproject.core.api.settings.Settings;
 import org.zerionproject.core.util.StringUtils;
 import org.briarproject.nullsafety.NotNullByDefault;
 
-/**
- * Remembers, per request id, that a request asks to reconnect with someone
- * who is already a contact: on the sender's side because the user started it
- * from Re-add contact, on the receiver's side because the request said so.
- */
 @NotNullByDefault
 final class ReconnectMarks {
 

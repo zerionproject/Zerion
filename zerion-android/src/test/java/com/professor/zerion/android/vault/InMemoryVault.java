@@ -25,6 +25,8 @@ public final class InMemoryVault {
 	public volatile long lockGeneration = 1;
 	public final List<Runnable> lockListeners =
 			new java.util.concurrent.CopyOnWriteArrayList<>();
+	public final java.util.Queue<Exception> deleteFailures =
+			new java.util.concurrent.ConcurrentLinkedQueue<>();
 
 	private final Map<String, VaultItem> items = new LinkedHashMap<>();
 	private final Map<String, byte[]> contents = new HashMap<>();
@@ -54,6 +56,9 @@ public final class InMemoryVault {
 		when(manager.addItemWithPassword(any(), anyString(), any(), any()))
 				.thenAnswer(a -> add(a.getArgument(0), a.getArgument(1),
 						a.getArgument(2), a.getArgument(3)));
+		when(manager.addMediaItemWithPassword(any(), anyString(), any(),
+				any(), any())).thenAnswer(a -> add(a.getArgument(0),
+				a.getArgument(1), a.getArgument(2), a.getArgument(4)));
 		when(manager.getItemContent(anyString())).thenAnswer(a ->
 				content(a.getArgument(0), null, false));
 		when(manager.loadDocumentContentSecure(anyString())).thenAnswer(a ->
@@ -64,6 +69,8 @@ public final class InMemoryVault {
 		when(manager.itemHasExtraPassword(anyString())).thenAnswer(a ->
 				hasPassword(a.getArgument(0)));
 		doAnswer(a -> {
+			Exception failure = deleteFailures.poll();
+			if (failure != null) throw failure;
 			remove(a.getArgument(0));
 			return null;
 		}).when(manager).deleteItem(anyString());

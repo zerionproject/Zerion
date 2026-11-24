@@ -99,21 +99,12 @@ public final class BrowserGuard {
 				.show();
 	}
 
-	/**
-	 * The link as {@link #shown(String)}, followed by a note when its host
-	 * has a label in the plain xn-- form, so a lookalike written in another
-	 * alphabet is named as such and not only spelled out.
-	 */
 	public static String shownWithNote(Context ctx, String url) {
 		String text = shown(url);
 		if (!hasOtherAlphabet(webHost(url))) return text;
 		return text + "\n" + ctx.getString(R.string.link_host_other_alphabet);
 	}
 
-	/**
-	 * Whether a host in its ASCII form carries a label that stands for
-	 * letters outside ASCII (an internationalised label starts with xn--).
-	 */
 	public static boolean hasOtherAlphabet(@Nullable String host) {
 		if (host == null) return false;
 		for (String label : host.split("\\.")) {

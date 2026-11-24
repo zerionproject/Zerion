@@ -13,14 +13,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-/**
- * The registry of fresh messages the user chose to send. Only the clients
- * that create a message on behalf of a user action enter it here; nothing is
- * entered from database events, so a message a client adds automatically
- * while handling a record the peer sent is never fresh and never opens the
- * active cadence. An entry lives for a day or until the message first leaves
- * for a contact. The registry is kept in memory only.
- */
 @ThreadSafe
 @Singleton
 @NotNullByDefault

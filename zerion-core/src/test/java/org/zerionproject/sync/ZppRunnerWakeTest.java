@@ -44,10 +44,6 @@ import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_LE
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_KEEPALIVE_MS;
 import static org.zerionproject.sync.ZppConnectionRunnerImpl.SPARSE_REFRESH_RECV_FRAMES;
 
-/**
- * The sparse sender's keepalive must survive a sleeping device, and only
- * frames that carry something may wake the Tor wake policy.
- */
 public class ZppRunnerWakeTest {
 
 	private static final long AWAIT_MS = 10_000;
@@ -502,11 +498,6 @@ public class ZppRunnerWakeTest {
 		fail("timed out waiting for " + what);
 	}
 
-	/**
-	 * Checks that the condition stays true for the given time, failing as
-	 * soon as it does not; the time is a lower bound that a slow runner only
-	 * stretches.
-	 */
 	private static void holds(BooleanSupplier condition, long ms,
 			String what) throws InterruptedException {
 		long deadline = System.currentTimeMillis() + ms;

@@ -273,12 +273,6 @@ public class SendInviteController {
 		}
 	}
 
-	/**
-	 * The screen was opened from Re-add contact: a request sent from it
-	 * tells the receiver that the sender is already their contact, and a
-	 * pasted link pairs as a re-add, so the pairing may replace an existing
-	 * contact's keys.
-	 */
 	@UiThread
 	public void setReAdd(boolean reAdd) {
 		this.reAdd = reAdd;
