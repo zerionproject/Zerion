@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -66,6 +67,20 @@ public class MeshControllerSettingsTest {
 		controller.setPauseWhenScreenOff(true);
 		assertTrue(controller.isPauseWhenScreenOff());
 		verify(meshManager).setPauseWhenScreenOff(true);
+	}
+
+	@Test
+	public void theMeshLinksWithContactsOnlyUntilTheUserOpensIt()
+			throws Exception {
+		assertNull("no stored choice before the user makes one",
+				settings.getSettings(MeshController.MESH_NAMESPACE)
+						.get(MeshController.PREF_MESH_OPEN));
+		assertFalse(controller.isOpenMesh());
+		controller.setOpenMesh(true);
+		assertTrue(controller.isOpenMesh());
+		verify(meshManager).restart();
+		controller.setOpenMesh(false);
+		assertFalse(controller.isOpenMesh());
 	}
 
 	@Test
