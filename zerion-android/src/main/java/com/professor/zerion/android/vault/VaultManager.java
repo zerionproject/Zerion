@@ -17,6 +17,7 @@ import javax.crypto.SecretKey;
 import javax.inject.Inject;
 
 import com.professor.zerion.android.vault.crypto.Argon2;
+import com.professor.zerion.android.vault.crypto.NewPassword;
 import com.professor.zerion.android.vault.crypto.VaultCrypto;
 import com.professor.zerion.android.vault.crypto.VaultKdfTier;
 import com.professor.zerion.android.vault.crypto.VaultKeystore;
@@ -196,6 +197,7 @@ public class VaultManager
 		if (vaultExists()) {
 			throw new IllegalStateException("Vault already exists");
 		}
+		NewPassword.requireTypable(typed);
 		char[] password = PasswordNormalizer.normalize(typed);
 		byte[] masterKey = crypto.generateKey();
 		try {
@@ -998,6 +1000,9 @@ public class VaultManager
 	private synchronized VaultItem addItemInternal(VaultItem.ItemType type, String name, byte[] content,
 			char[] extraPassword) throws Exception {
 		requireUnlocked();
+		if (extraPassword != null) {
+			NewPassword.requireTypable(extraPassword);
+		}
 
 		byte[] itemKey = null;
 		byte[] passwordKey = null;
@@ -1432,6 +1437,7 @@ public class VaultManager
 		if (!isUnlocked || vaultMasterKey == null) {
 			throw new SecurityException(UNLOCK_FIRST);
 		}
+		NewPassword.requireTypable(newPassword);
 		if (!verifyPassword(oldPassword)) {
 			throw new SecurityException("Invalid current password");
 		}

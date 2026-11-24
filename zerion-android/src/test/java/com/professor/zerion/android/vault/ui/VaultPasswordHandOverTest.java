@@ -207,4 +207,26 @@ public class VaultPasswordHandOverTest {
 				vm.getErrorMessage().getValue());
 		verify(rig.vault.manager, never()).changePassword(any(), any());
 	}
+
+	@Test
+	public void oneArrayHandedOverForBothPasswordsIsUsedForBoth()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = queuedModel(rig);
+		List<String> received = new ArrayList<>();
+		doAnswer(a -> {
+			char[] current = a.getArgument(0);
+			char[] next = a.getArgument(1);
+			received.add(new String(current) + " -> " + new String(next));
+			return null;
+		}).when(rig.vault.manager).changePassword(any(), any());
+		char[] both = "same pass 3#Cc".toCharArray();
+
+		vm.changePassword(both, both);
+		assertArrayEquals(new char[both.length], both);
+		runTheBackground();
+
+		assertEquals("the vault was given a wiped password",
+				Arrays.asList("same pass 3#Cc -> same pass 3#Cc"), received);
+	}
 }

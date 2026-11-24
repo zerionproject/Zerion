@@ -30,6 +30,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.arch.core.executor.ArchTaskExecutor;
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
@@ -57,6 +58,7 @@ public class TextEditorSaveTest {
 	private static final String TAG = "editor";
 
 	private static VaultViewModel model;
+	private static Runnable duringTheRebuild;
 
 	static {
 		TestAndroidKeyStore.register();
@@ -67,6 +69,11 @@ public class TextEditorSaveTest {
 
 		@Override
 		protected void onCreate(Bundle savedInstanceState) {
+			Runnable betweenTheScreens = duringTheRebuild;
+			duringTheRebuild = null;
+			if (savedInstanceState != null && betweenTheScreens != null) {
+				betweenTheScreens.run();
+			}
 			setTheme(R.style.ZerionTheme_NoActionBar);
 			super.onCreate(savedInstanceState);
 			FrameLayout frame = new FrameLayout(this);
@@ -129,6 +136,7 @@ public class TextEditorSaveTest {
 	@After
 	public void tearDown() {
 		model = null;
+		duringTheRebuild = null;
 	}
 
 	private static void idle() {
@@ -147,6 +155,18 @@ public class TextEditorSaveTest {
 	private void runTheBackground() {
 		while (!queued.isEmpty()) queued.remove(0).run();
 		idle();
+	}
+
+	private static void resultsArriveThroughTheMainLooper() {
+		ArchTaskExecutor.getInstance().setDelegate(null);
+	}
+
+	private Editor rebuilt() {
+		controller.recreate();
+		host = controller.get();
+		idle();
+		return (Editor) host.getSupportFragmentManager()
+				.findFragmentByTag(TAG);
 	}
 
 	private VaultItem stored() throws Exception {
@@ -315,7 +335,8 @@ public class TextEditorSaveTest {
 	@Test
 	public void aResultLeftByAnEarlierEditorDoesNotCloseTheNextOne()
 			throws Exception {
-		model.addDocumentWithPassword("earlier.txt", bytes("text"), null);
+		model.addDocumentWithPassword(model.newDocumentSaveRequest(),
+				"earlier.txt", bytes("text"), null);
 		idle();
 		assertNotNull(model.getDocumentSaveResult().getValue());
 
@@ -461,5 +482,110 @@ public class TextEditorSaveTest {
 		assertArrayEquals(bytes("second draft"),
 				rig.vault.manager.getItemContentWithPassword(now.id,
 						"open sesame".toCharArray()));
+	}
+
+	@Test
+	public void anEditorRebuiltDuringASaveStaysHeldUntilTheResult()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = stored();
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		save(first);
+
+		Editor editor = rebuilt();
+
+		assertNotNull(editor);
+		assertFalse(text(editor).isEnabled());
+		assertFalse(editor.requireView().findViewById(R.id.fab_save)
+				.isEnabled());
+		save(editor);
+		assertEquals("a second tap started a second save", 1, queued.size());
+
+		runTheBackground();
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.raw(rig.vault.named("notes.txt").id));
+	}
+
+	@Test
+	public void aSaveStoredWhileTheEditorIsRebuiltStillClosesIt()
+			throws Exception {
+		resultsArriveThroughTheMainLooper();
+		saveInTheBackground();
+		VaultItem old = stored();
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		save(first);
+		duringTheRebuild = () -> queued.remove(0).run();
+
+		rebuilt();
+
+		assertNull("the save did not finish between the two screens",
+				duringTheRebuild);
+		assertTrue(queued.isEmpty());
+		assertFalse("the editor stayed open on a text that is stored",
+				isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.raw(rig.vault.named("notes.txt").id));
+	}
+
+	@Test
+	public void aSaveThatFailsWhileTheEditorIsRebuiltIsNotMissed()
+			throws Exception {
+		resultsArriveThroughTheMainLooper();
+		saveInTheBackground();
+		VaultItem old = stored();
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addMediaItemWithPassword(any(),
+						anyString(), any(), any(), any());
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		long request = model.newDocumentSaveRequest() + 1;
+		save(first);
+		duringTheRebuild = () -> queued.remove(0).run();
+
+		Editor editor = rebuilt();
+
+		assertNull("the save did not finish between the two screens",
+				duringTheRebuild);
+		assertTrue(isOpen());
+		assertEquals("second draft", text(editor).getText().toString());
+		assertTrue(text(editor).isEnabled());
+		assertTrue(editor.requireView().findViewById(R.id.fab_save)
+				.isEnabled());
+		assertFalse("the editor never took the result of its save",
+				model.isDocumentSavePending(request));
+		assertArrayEquals(bytes("first draft"), rig.vault.raw(old.id));
+
+		host.getOnBackPressedDispatcher().onBackPressed();
+		AlertDialog unsaved = dialog();
+		assertNotNull("the text counts as saved", unsaved);
+		assertTrue(unsaved.isShowing());
+		assertTrue(isOpen());
+	}
+
+	@Test
+	public void aResultWaitingForARebuiltEditorClosesItOnceItIsShown()
+			throws Exception {
+		saveInTheBackground();
+		VaultItem old = stored();
+		Editor first = editing(old);
+		text(first).setText("second draft");
+		save(first);
+		duringTheRebuild = () -> queued.remove(0).run();
+
+		rebuilt();
+
+		assertNull("the save did not finish between the two screens",
+				duringTheRebuild);
+		assertFalse("the editor stayed open on a text that is stored",
+				isOpen());
+		assertEquals(1, rig.vault.size());
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.raw(rig.vault.named("notes.txt").id));
 	}
 }

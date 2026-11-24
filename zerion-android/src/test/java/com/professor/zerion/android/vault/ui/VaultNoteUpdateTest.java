@@ -13,6 +13,9 @@ import org.mockito.InOrder;
 import org.robolectric.annotation.Config;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.LiveData;
@@ -337,5 +340,114 @@ public class VaultNoteUpdateTest {
 		assertFalse(vm.isNoteSaveRunning(request));
 		assertEquals(request, result(vm).request);
 		assertEquals(1, rig.vault.size());
+	}
+
+	private static VaultViewModel.UnsavedNoteReceiver into(
+			List<String> handedBack, List<char[]> arrays) {
+		return (title, content, passwordProtected) -> {
+			handedBack.add(new String(title) + " / " + new String(content)
+					+ (passwordProtected ? " / protected" : " / plain"));
+			arrays.add(title);
+			arrays.add(content);
+		};
+	}
+
+	@Test
+	public void theTextOfAFailedSaveIsHandedBackOnceAndThenWiped()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		List<String> handedBack = new ArrayList<>();
+		List<char[]> arrays = new ArrayList<>();
+		long request = vm.newNoteSaveRequest();
+
+		vm.saveNote(request, "Groceries", "milk", null);
+		idle();
+
+		assertFalse(vm.isNoteSaveRunning(request));
+		assertTrue("the result is gone before the screen took it",
+				vm.isNoteSavePending(request));
+		NoteSaveResult result = vm.takeNoteSaveResult(request,
+				into(handedBack, arrays));
+		assertNotNull(result);
+		assertEquals(request, result.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertEquals(Arrays.asList("Groceries / milk / plain"), handedBack);
+		for (char[] kept : arrays) {
+			assertArrayEquals("the text was left in memory",
+					new char[kept.length], kept);
+		}
+		assertFalse(vm.isNoteSavePending(request));
+		assertNull("the result was handed out twice",
+				vm.takeNoteSaveResult(request, into(handedBack, arrays)));
+		assertEquals(1, handedBack.size());
+	}
+
+	@Test
+	public void aStoredSaveHandsNoTextBack() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		List<String> handedBack = new ArrayList<>();
+		long request = vm.newNoteSaveRequest();
+
+		vm.saveNote(request, "Groceries", "milk", null);
+		idle();
+
+		NoteSaveResult result = vm.takeNoteSaveResult(request,
+				into(handedBack, new ArrayList<>()));
+		assertNotNull(result);
+		assertEquals(NoteSaveResult.Outcome.SAVED, result.outcome);
+		assertTrue(handedBack.isEmpty());
+	}
+
+	@Test
+	public void lockingTheVaultDropsTheTextOfAFailedSave() throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		List<String> handedBack = new ArrayList<>();
+		long request = vm.newNoteSaveRequest();
+		vm.saveNoteWithPassword(request, "Diary", "dear diary",
+				"pw".toCharArray(), null);
+		idle();
+
+		rig.vault.unlocked = false;
+		rig.vault.runLockListeners();
+
+		NoteSaveResult result = vm.takeNoteSaveResult(request,
+				into(handedBack, new ArrayList<>()));
+		assertNotNull(result);
+		assertEquals(NoteSaveResult.Outcome.FAILED, result.outcome);
+		assertTrue("the text outlived the lock", handedBack.isEmpty());
+	}
+
+	@Test
+	public void aResultNobodyTakesIsForgottenTogetherWithItsText()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		List<String> handedBack = new ArrayList<>();
+		long first = vm.newNoteSaveRequest();
+		vm.saveNote(first, "Groceries", "milk", null);
+		long last = first;
+		for (int later = 0; later < SaveLedger.KEPT_RESULTS; later++) {
+			last = vm.newNoteSaveRequest();
+			vm.saveNote(last, "Later", "text", null);
+		}
+		idle();
+
+		assertFalse(vm.isNoteSavePending(first));
+		assertNull(vm.takeNoteSaveResult(first,
+				into(handedBack, new ArrayList<>())));
+		assertTrue(handedBack.isEmpty());
+		assertTrue(vm.isNoteSavePending(last));
+		assertNotNull(vm.takeNoteSaveResult(last,
+				into(handedBack, new ArrayList<>())));
+		assertEquals(Arrays.asList("Later / text / plain"), handedBack);
 	}
 }

@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 
 public class ProtectedNoteCodecTest {
 
@@ -88,5 +89,39 @@ public class ProtectedNoteCodecTest {
 		System.arraycopy(ct, 0, blob, 45, ct.length);
 		assertArrayEquals("v2 body".getBytes(StandardCharsets.UTF_8),
 				ProtectedNoteCodec.open(blob, "v2 password".toCharArray()));
+	}
+
+	@Test
+	public void aNoteIsNotSealedUnderAPasswordThatCannotBeTyped() {
+		assertThrows(IllegalArgumentException.class, () ->
+				ProtectedNoteCodec.seal("note body", new char[8]));
+		assertThrows(IllegalArgumentException.class, () ->
+				ProtectedNoteCodec.seal("note body",
+						new char[] {'p', 'w', 0, 'x'}));
+	}
+
+	@Test
+	public void aNoteSealedUnderSuchAPasswordEarlierStillOpens()
+			throws Exception {
+		char[] password = {'p', 'w', 0, 'x'};
+		byte[] salt = new byte[32];
+		new SecureRandom().nextBytes(salt);
+		byte[] iv = new byte[12];
+		new SecureRandom().nextBytes(iv);
+		byte[] key = Argon2.deriveKeyBouncyCastle(
+				new String(password).getBytes(StandardCharsets.UTF_8), salt,
+				new Argon2.Argon2Params(262144, 3, 1, 32));
+		Cipher c = Cipher.getInstance("AES/GCM/NoPadding");
+		c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),
+				new GCMParameterSpec(128, iv));
+		byte[] ct = c.doFinal("old body".getBytes(StandardCharsets.UTF_8));
+		byte[] blob = new byte[45 + ct.length];
+		blob[0] = 0x02;
+		System.arraycopy(salt, 0, blob, 1, 32);
+		System.arraycopy(iv, 0, blob, 33, 12);
+		System.arraycopy(ct, 0, blob, 45, ct.length);
+
+		assertArrayEquals("old body".getBytes(StandardCharsets.UTF_8),
+				ProtectedNoteCodec.open(blob, password));
 	}
 }
