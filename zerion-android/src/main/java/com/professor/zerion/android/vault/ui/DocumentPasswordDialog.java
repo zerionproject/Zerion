@@ -124,6 +124,14 @@ public class DocumentPasswordDialog extends DialogFragment {
 							? readChars(confirmPasswordInput)
 							: password;
 
+					if (callback == null) {
+						java.util.Arrays.fill(password, '\0');
+						java.util.Arrays.fill(confirmPassword, '\0');
+						passwordInput.setText("");
+						confirmPasswordInput.setText("");
+						return;
+					}
+
 					if (!allowEmpty && password.length == 0) {
 						java.util.Arrays.fill(password, '\0');
 						if (confirmMode) {

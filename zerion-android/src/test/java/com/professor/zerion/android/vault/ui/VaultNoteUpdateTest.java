@@ -21,9 +21,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static com.professor.zerion.android.vault.ui.VaultViewModelRig.await;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,7 +61,7 @@ public class VaultNoteUpdateTest {
 
 	private static VaultItem plainNote(VaultViewModelRig rig, VaultViewModel vm)
 			throws Exception {
-		vm.saveNote("Groceries", "milk", null);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "milk", null);
 		idle();
 		VaultItem note = rig.vault.named("Groceries");
 		assertNotNull(note);
@@ -70,7 +72,8 @@ public class VaultNoteUpdateTest {
 
 	private static VaultItem protectedNote(VaultViewModelRig rig,
 			VaultViewModel vm) throws Exception {
-		vm.saveNoteWithPassword("Diary", "dear diary", "pw".toCharArray(),
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"dear diary", "pw".toCharArray(),
 				null);
 		idle();
 		VaultItem note = rig.vault.named(PROTECTED_TITLE);
@@ -95,7 +98,8 @@ public class VaultNoteUpdateTest {
 		VaultViewModel vm = rig.newModel();
 		VaultItem old = plainNote(rig, vm);
 
-		vm.saveNote("Groceries", "bread", old.id);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "bread",
+				old.id);
 		idle();
 
 		InOrder order = inOrder(rig.vault.manager);
@@ -121,7 +125,8 @@ public class VaultNoteUpdateTest {
 		doThrow(new java.io.IOException("disk full"))
 				.when(rig.vault.manager).addItem(any(), anyString(), any());
 
-		vm.saveNote("Groceries", "bread", old.id);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "bread",
+				old.id);
 		idle();
 
 		verify(rig.vault.manager, never()).deleteItem(anyString());
@@ -142,7 +147,8 @@ public class VaultNoteUpdateTest {
 		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
 		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
 
-		vm.saveNote("Groceries", "bread", old.id);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "bread",
+				old.id);
 		idle();
 
 		verify(rig.vault.manager, times(2)).deleteItem(old.id);
@@ -162,7 +168,8 @@ public class VaultNoteUpdateTest {
 		VaultItem old = plainNote(rig, vm);
 		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
 
-		vm.saveNote("Groceries", "bread", old.id);
+		vm.saveNote(vm.newNoteSaveRequest(), "Groceries", "bread",
+				old.id);
 		idle();
 
 		verify(rig.vault.manager, times(2)).deleteItem(old.id);
@@ -180,7 +187,8 @@ public class VaultNoteUpdateTest {
 		VaultItem old = protectedNote(rig, vm);
 		char[] typed = "pw".toCharArray();
 
-		vm.saveNoteWithPassword("Diary", "second entry", typed, old.id);
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"second entry", typed, old.id);
 		idle();
 
 		InOrder order = inOrder(rig.vault.manager);
@@ -208,7 +216,8 @@ public class VaultNoteUpdateTest {
 		doThrow(new java.io.IOException("disk full"))
 				.when(rig.vault.manager).addItem(any(), anyString(), any());
 
-		vm.saveNoteWithPassword("Diary", "second entry", "pw".toCharArray(),
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"second entry", "pw".toCharArray(),
 				old.id);
 		idle();
 
@@ -230,7 +239,8 @@ public class VaultNoteUpdateTest {
 		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
 		rig.vault.deleteFailures.add(new SecurityException("locked"));
 
-		vm.saveNoteWithPassword("Diary", "second entry", "pw".toCharArray(),
+		vm.saveNoteWithPassword(vm.newNoteSaveRequest(), "Diary",
+				"second entry", "pw".toCharArray(),
 				old.id);
 		idle();
 
@@ -241,5 +251,91 @@ public class VaultNoteUpdateTest {
 				R.string.vault_msg_saved_earlier_version_kept),
 				vm.getErrorMessage().getValue());
 		assertNull(vm.getSuccessMessage().getValue());
+	}
+
+	private static NoteSaveResult result(VaultViewModel vm) {
+		Event<NoteSaveResult> latest = vm.getNoteSaveResult().getValue();
+		assertNotNull("the save ended without a result", latest);
+		NoteSaveResult result = latest.getIfNotHandled();
+		assertNotNull("the result was already taken", result);
+		return result;
+	}
+
+	@Test
+	public void everyNoteSaveEndsInAResultForItsOwnRequest()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		VaultViewModel vm = rig.newModel();
+
+		long first = vm.newNoteSaveRequest();
+		vm.saveNote(first, "Groceries", "milk", null);
+		idle();
+		NoteSaveResult stored = result(vm);
+		assertEquals(first, stored.request);
+		assertEquals(NoteSaveResult.Outcome.SAVED, stored.outcome);
+		assertTrue(stored.isStored());
+		assertEquals(rig.app.getString(R.string.vault_msg_saved),
+				stored.message);
+
+		VaultItem old = rig.vault.named("Groceries");
+		assertNotNull(old);
+		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
+		rig.vault.deleteFailures.add(new java.io.IOException("busy"));
+		long second = vm.newNoteSaveRequest();
+		assertNotEquals(first, second);
+		vm.saveNote(second, "Groceries", "bread", old.id);
+		idle();
+		NoteSaveResult kept = result(vm);
+		assertEquals(second, kept.request);
+		assertEquals(NoteSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT,
+				kept.outcome);
+		assertTrue(kept.isStored());
+		assertEquals(rig.app.getString(
+				R.string.vault_msg_saved_earlier_version_kept),
+				kept.message);
+
+		long third = vm.newNoteSaveRequest();
+		vm.saveNote(third, " ", "eggs", null);
+		idle();
+		NoteSaveResult untitled = result(vm);
+		assertEquals(third, untitled.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, untitled.outcome);
+		assertEquals(rig.app.getString(R.string.vault_msg_note_title_empty),
+				untitled.message);
+
+		doThrow(new java.io.IOException("disk full"))
+				.when(rig.vault.manager).addItem(any(), anyString(), any());
+		long fourth = vm.newNoteSaveRequest();
+		vm.saveNote(fourth, "Groceries", "eggs", null);
+		idle();
+		NoteSaveResult failed = result(vm);
+		assertEquals(fourth, failed.request);
+		assertEquals(NoteSaveResult.Outcome.FAILED, failed.outcome);
+		assertFalse(failed.isStored());
+		assertEquals(rig.app.getString(R.string.vault_msg_storage_error),
+				failed.message);
+		assertEquals(2, rig.vault.size());
+	}
+
+	@Test
+	public void aNoteSaveCountsAsRunningUntilItsResultIsOut()
+			throws Exception {
+		VaultViewModelRig rig = new VaultViewModelRig();
+		java.util.List<Runnable> queued = new java.util.ArrayList<>();
+		VaultViewModel vm = new VaultViewModel(rig.app, rig.vault.manager,
+				queued::add, rig.store, rig.gate);
+		long request = vm.newNoteSaveRequest();
+		assertFalse(vm.isNoteSaveRunning(request));
+
+		vm.saveNote(request, "Groceries", "milk", null);
+
+		assertTrue(vm.isNoteSaveRunning(request));
+		assertNull(vm.getNoteSaveResult().getValue());
+		assertEquals(0, rig.vault.size());
+		while (!queued.isEmpty()) queued.remove(0).run();
+		idle();
+		assertFalse(vm.isNoteSaveRunning(request));
+		assertEquals(request, result(vm).request);
+		assertEquals(1, rig.vault.size());
 	}
 }

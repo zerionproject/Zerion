@@ -408,6 +408,11 @@ public class VaultActivity extends ZerionActivity implements BaseFragment.BaseFr
 	public void onBackPressed() {
 		try {
 			androidx.fragment.app.FragmentManager fm = getSupportFragmentManager();
+			Fragment shown = fm.findFragmentById(R.id.vault_container);
+			if (shown instanceof SecureNoteFragment
+					&& ((SecureNoteFragment) shown).onBackPressed()) {
+				return;
+			}
 			if (fm.getBackStackEntryCount() > 0) {
 				fm.popBackStack();
 			} else {

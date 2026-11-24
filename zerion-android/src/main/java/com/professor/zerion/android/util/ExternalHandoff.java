@@ -60,6 +60,12 @@ public final class ExternalHandoff {
 		void revoke(Context ctx, Uri uri);
 	}
 
+	private enum Launch {
+		STARTED,
+		SUPERSEDED,
+		NOT_OPENED
+	}
+
 	static final class Prepared {
 
 		final byte[] content;
@@ -191,9 +197,10 @@ public final class ExternalHandoff {
 			}
 			activity.runOnUiThread(() -> {
 				if (activity.isFinishing() || activity.isDestroyed()) {
-					end(app);
-				} else if (!launch(activity, file, shown)) {
-					end(app);
+					endIfStaged(app, file);
+				} else if (launchStaged(activity, file, shown)
+						== Launch.NOT_OPENED) {
+					endIfStaged(app, file);
 					onNoApp.run();
 				}
 			});
@@ -239,34 +246,48 @@ public final class ExternalHandoff {
 	}
 
 	static boolean launch(Activity activity, File file, String type) {
+		return launchStaged(activity, file, type) == Launch.STARTED;
+	}
+
+	private static Launch launchStaged(Activity activity, File file,
+			String type) {
+		synchronized (LOCK) {
+			if (!file.equals(staged)) return Launch.SUPERSEDED;
+		}
 		Uri uri;
 		try {
 			uri = FileProvider.getUriForFile(activity,
 					activity.getPackageName() + ".fileprovider", file);
 		} catch (IllegalArgumentException e) {
-			return false;
+			return Launch.NOT_OPENED;
 		}
 		Intent view = new Intent(Intent.ACTION_VIEW);
 		view.setDataAndType(uri, type);
 		view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 		synchronized (LOCK) {
-			if (!file.equals(staged) || !type.equals(stagedType)) return false;
+			if (!file.equals(staged)) return Launch.SUPERSEDED;
+			if (!type.equals(stagedType)) return Launch.NOT_OPENED;
 			granted = uri;
 			away = false;
 		}
 		watch(activity.getApplication());
 		try {
 			activity.startActivity(view);
-			return true;
+			return Launch.STARTED;
 		} catch (ActivityNotFoundException | SecurityException e) {
-			return false;
+			return Launch.NOT_OPENED;
 		}
 	}
 
 	public static void end(Context ctx) {
+		endIfStaged(ctx, null);
+	}
+
+	private static void endIfStaged(Context ctx, @Nullable File only) {
 		File file;
 		Uri uri;
 		synchronized (LOCK) {
+			if (only != null && !only.equals(staged)) return;
 			file = staged;
 			uri = granted;
 			staged = null;
