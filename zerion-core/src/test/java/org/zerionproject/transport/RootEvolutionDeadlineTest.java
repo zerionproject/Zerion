@@ -242,7 +242,7 @@ public class RootEvolutionDeadlineTest {
 		Device b = bed.new Device("bob", BOB_SEES_ALICE, false,
 				new ContactRootKeys(3, copy(root), null, false), true);
 		manager(a).setTimings(SHORT_MS, LONG_MS);
-		manager(b).setTimings(SHORT_MS, LONG_MS);
+		manager(b).setTimings(PATIENT_MS, LONG_MS);
 		assertFalse(a.store.peerEnforces(BOB));
 		assertFalse(a.store.peerEvolves(BOB));
 		a.store.markOutOfSync(BOB, true);
@@ -256,7 +256,7 @@ public class RootEvolutionDeadlineTest {
 			assertEquals(0, a.received.size());
 			assertEquals(0, a.connections.get());
 			assertEquals(3, a.keys().getEpoch());
-			assertEquals("a connection that authenticated but never greeted"
+			assertEquals("a hold that ran to its deadline without a greeting"
 					+ " was not counted", round + 1, a.store.stalls(BOB)[0]);
 			assertTrue("a connection without a greeting cleared the out of"
 					+ " sync mark", a.store.isOutOfSync(BOB));
@@ -270,6 +270,37 @@ public class RootEvolutionDeadlineTest {
 		assertTrue(RootEvolutionTestBed.sameRoot(a, b));
 		assertEquals(0, a.store.stalls(BOB)[0]);
 		assertFalse(a.store.isOutOfSync(BOB));
+	}
+
+	@Test(timeout = 120_000)
+	public void anEarlyEndWithoutAGreetingFromAPeerNotKnownToRenewIsNotCounted()
+			throws Exception {
+		SecretKey root = bed.randomKey();
+		Device a = bed.new Device("alice", ALICE_SEES_BOB, true,
+				new ContactRootKeys(3, copy(root), null, false), true);
+		Device b = bed.new Device("bob", BOB_SEES_ALICE, false,
+				new ContactRootKeys(3, copy(root), null, false), true);
+		manager(a).setTimings(PATIENT_MS, LONG_MS);
+		manager(b).setTimings(PATIENT_MS, LONG_MS);
+		assertFalse(a.store.peerEnforces(BOB));
+		a.store.markOutOfSync(BOB, true);
+		for (int round = 0; round < 3; round++) {
+			int before = a.authenticatedStreams.get();
+			b.withheld = KIND_HELLO;
+			Live live = bed.new Live(a, b);
+			assertTrue("bob's stream never authenticated", live.await(
+					() -> a.authenticatedStreams.get() > before, 20_000));
+			assertTrue(live.isOpen());
+			live.close();
+			b.withheld = 0;
+			assertEquals("alice sent to a peer whose greeting was withheld",
+					0, b.received.size());
+			assertEquals("a connection that ended before the greeting was"
+					+ " overdue was counted", 0, a.store.stalls(BOB)[0]);
+			assertTrue("a connection without a greeting cleared the out of"
+					+ " sync mark", a.store.isOutOfSync(BOB));
+		}
+		assertFalse(a.store.isNotRenewing(BOB));
 	}
 
 	@Test(timeout = 120_000)

@@ -247,11 +247,13 @@ cannot change its flags.
   started. Records are not even taken from the store
   before that, so nothing is marked as sent that never left. A party that
   holds back one direction from the first frame therefore stops both. Such a
-  connection, if the peer's stream authenticated on it, counts as a stalled
-  connection (see "Renewal that does not complete") whether or not the peer
-  ever sent flag `0x04`: the greeting was owed, and without it the connection
-  says nothing about the peer's keys, so it does not clear the out-of-sync
-  mark either. A HELLO without the flag releases the hold and is no stall.
+  connection, if the peer's stream authenticated on it and this side did not
+  close it as redundant, counts as a stalled connection (see "Renewal that
+  does not complete") when the peer waits for evolutions, and for a peer not
+  known to wait only when the hold ran to its deadline. In neither case does
+  it clear the out-of-sync mark: without the greeting the connection says
+  nothing about the peer's keys. A HELLO without the flag releases the hold
+  and is no stall.
 - **Due.** An evolution with a contact is due when
   `MIN_EVOLUTION_INTERVAL_MS` (ten minutes) or more have passed since this
   side last made a new root current with that contact, when it never did, or
@@ -399,11 +401,14 @@ an evolution completes or a connection on which no evolution was due
 authenticates (see "Renewal that does not complete"). Beside this mark each
 side keeps a run of connections on which the peer authenticated but no due
 renewal completed, or on which the peer's HELLO never arrived while records
-were held for it; the run raises the not-renewing notice after six such
-connections in a row, after three of them with an hour or more between the
-first and now, or after two of them with a day or more between the first and
-now, and a connection of that run never clears the out-of-sync mark. The
-rules are in "Renewal that does not complete". A new link
+were held for it; when such a connection is counted, the run raises the
+not-renewing notice if it then holds six in a row, three or more with an
+hour or more between the first and the one just counted, or two or more with
+a day or more between the first and the one just counted. A connection on
+which the HELLO never arrived or a due renewal stayed outstanding never
+clears the out-of-sync mark, whether or not it is counted. The rules, and
+the connections that are not counted, are in "Renewal that does not
+complete". A new link
 exchange between the two re-keys the existing contact in place
 (`ContactManagerImpl.rekeyContact`): the pairing root and the evolved roots
 are replaced by the new root and the contact, its history and its
@@ -456,43 +461,72 @@ table beside the other evolution state (`RootKeyStore`, keys `stalls.`,
 
 - how many connections in a row ended with an evolution outstanding. A
   connection counts when the peer's stream, or a record from it, had
-  authenticated on it; no other connection to the contact was open; and
-  either this side was still waiting for a due evolution to complete when
-  the connection ended and the peer is one that waits for evolutions (it
-  once sent flag `0x04`), or this side was still holding its records for
-  the peer's HELLO, which never arrived. The second case counts whatever the
-  peer promised: records are held for a HELLO only from a contact that is
-  known to greet (its root has evolved, or it sent a HELLO before), so the
-  greeting was owed, and a party that lets the connection authenticate and
-  holds back the greeting must not be able to keep such a contact silent
-  with nothing shown. A peer that greeted without the flag (an earlier
-  release) releases the hold and is not counted, as before. The dialler
-  counts it when its connection ends, the responder when its own does, so
-  both sides count.
+  authenticated on it; no other connection to the contact was open; this
+  side did not close it as redundant; and one of the following holds:
+  - the peer is one that waits for evolutions (it once sent flag `0x04`, or
+    the pairing recorded it) and this side was still waiting, when the
+    connection ended, for the peer's HELLO or for a due evolution to
+    complete;
+  - the peer is not known to wait for evolutions and this side's hold for
+    the peer's HELLO ran to its deadline (`EVOLUTION_DEADLINE_MS`, 30
+    seconds) without a HELLO, so that the deadline closed the connection.
+
+  The dialler counts it when its connection ends, the responder when its own
+  does, so both sides count.
 - when the first connection of the current run ended.
 
-The contact is marked as not renewing (`ContactKeyRenewalEvent`) by any of
-three rules:
+Two kinds of connection are not counted although the peer authenticated and
+no HELLO arrived:
 
-1. the run reaches `NOT_RENEWING_AFTER_CONNECTIONS` (6) connections;
-2. the run holds at least `NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS` (3)
-   connections and `NOT_RENEWING_AFTER_MS` (one hour) or more has passed
-   since the first one of the run ended;
-3. the run holds at least `NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS` (2)
-   connections and `NOT_RENEWING_AFTER_LONG_MS` (24 hours) or more has
-   passed since the first one of the run ended.
+- **A connection this side closed as redundant.** When both sides dial at
+  the same moment, each side keeps the connection Alice dialled and closes
+  the other one as soon as a first frame shows which is which
+  (`ZtpConnectionHandlerImpl.sessionLiveClosingRedundant`). The peer's stream
+  authenticates on its first frame, while its HELLO leaves only after the
+  first round trip, so the closed connection has usually authenticated and
+  not greeted. It is not counted for any kind of peer, neither by itself nor
+  when the surviving connection ends, and without a greeting it does not
+  clear the out-of-sync mark.
+- **A missing greeting from a phone not known to renew, unless the hold ran
+  to its deadline.** Records are held for the HELLO of every contact that is
+  known to greet, earlier releases included, and any connection can drop
+  between the first frame and the HELLO that follows it. Such a drop is not
+  counted for a peer that never promised to wait for evolutions; a hold that
+  lasted the full 30 seconds without a greeting is. A peer that greeted
+  without the flag releases the hold and is not counted, as before.
+
+The contact is marked as not renewing (`ContactKeyRenewalEvent`) when a
+connection is counted and the run, that connection included, then meets any
+of three rules:
+
+1. six in a row: the run holds `NOT_RENEWING_AFTER_CONNECTIONS` (6)
+   connections;
+2. three with an hour or more between the first and the third or a later
+   one: the run holds at least `NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS` (3)
+   connections and `NOT_RENEWING_AFTER_MS` (one hour) or more lies between
+   the end of the first one and the end of the one just counted;
+3. two with a day or more between the first and the second or a later one:
+   the run holds at least `NOT_RENEWING_AFTER_LONG_MS_MIN_CONNECTIONS` (2)
+   connections and `NOT_RENEWING_AFTER_LONG_MS` (24 hours) or more lies
+   between the end of the first one and the end of the one just counted.
 
 One stalled connection can be a dropped network; two stalled connections a
 day apart with no renewal between them are a pattern, since a pair that is
 online together renews within seconds, so the third rule covers a contact
-that connects rarely and is cut each time. The rules are checked when a
-stalled connection is counted and again when a connection to the contact
-starts and records are held for its HELLO (`RootEvolutionManager.holdStarted`),
-so a notice that is due by time appears at the next connection without
-waiting for yet another stalled one; the start of a connection counts
-nothing. The conversation and the contact's details then say that the
-connection keys are not being renewed, that a poor network can cause it, and
-offer to re-add the contact. The run and the mark are cleared only by a
+that connects rarely and is cut each time. The rules are evaluated only when
+a stalled connection is counted. Time that passes raises nothing, and
+nothing is evaluated when a connection starts or while it is open: a run
+that is old enough for the hour or the day rule waits for the next
+connection, and if that connection renews, the run is cleared and no notice
+appears. Three drops within a minute followed by a quiet hour therefore show
+nothing until a fourth connection stalls, and two drops at the same time
+followed by a quiet day show nothing until a third connection stalls. A peer
+that is paused after a backup says so in its HELLO, which releases the hold:
+its connections are not counted and raise nothing for as long as the pause
+lasts. Once the contact is marked, the conversation and the contact's
+details say that the connection keys are not being renewed, that a poor
+network can cause it, and offer to re-add the contact. The run and the mark
+are cleared only by a
 completed evolution with the contact (`RootKeyStore.renewed`, which also
 clears the out-of-sync mark, since a completed evolution proves that the peer
 holds the root), by re-keying the contact or by removing it, so a contact
@@ -505,7 +539,7 @@ own state, so a group of overlapping connections counts at most once; a
 connection closed twice counts once. If the stored run cannot be read the
 connection is not counted. A clock that jumps forward between two stalled
 connections brings the notice forward; a clock that went back starts the run
-again, and raises nothing at the start of a connection.
+again.
 
 The out-of-sync mark is no longer cleared by a dial that merely
 authenticated. It clears when an evolution completes, or when a connection on
@@ -521,22 +555,36 @@ still ended by a dial that authenticates, so the mark is not raised by
 failures spread over authenticated connections; the run of stalled
 connections covers those.
 
-What this does not give: six connections, or three within an hour, or two a
-day apart, of a network that cuts every connection between the HELLO and the
-DONE show the notice too; the notice names that cause and goes away at the
-next completed evolution. With a peer on 3.0.15 to 3.0.18, which cannot say
-that it is paused, no run is kept for a due evolution that did not complete
-and an authenticated connection on which its HELLO arrived still clears the
+What this does not give: six connections in a row, or three with an hour or
+more between the first and the third or a later one, or two with a day or
+more between the first and the second or a later one, of a network that cuts
+every connection between the first frame and the DONE show the notice too;
+the notice names that cause and goes away at the next completed evolution.
+Between two sides that wait for evolutions a connection that authenticated
+and ended before the HELLO arrived is counted whatever ended it, the other
+side's close of a redundant connection included, unless this side closed it
+as redundant. With a peer on 3.0.15 to 3.0.18, which cannot say that it is
+paused, no run is kept for a due evolution that did not complete and an
+authenticated connection on which its HELLO arrived still clears the
 out-of-sync mark, as before, so that part of the notice needs both sides on
-3.0.19; only a connection on which such a peer's HELLO never arrived is
-counted. A party holding the root and active on the connection can run the
-evolution with each side, as before, and causes no notice.
+3.0.19. Toward such a peer, and toward any contact not yet known to wait for
+evolutions, a missing HELLO is counted only when this side's hold ran to its
+deadline: a party that lets such a connection authenticate, withholds the
+HELLO and cuts the connection before the 30 seconds are over is not counted.
+No record is sent on such a connection, the out-of-sync mark is not cleared
+by it, and the contact shows as not reached. A party holding the root and
+active on the connection can run the evolution with each side, as before,
+and causes no notice.
 `RootEvolutionStallWarningTest` runs the stalled connections against the
-real connection code on both sides, the hour and the day bounds, the notice
-raised at the start of a connection, a paused and a not-due connection, an
-earlier release, a withheld greeting and the unauthenticated and parallel
-cases; `RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
-counting and the stored state.
+real connection code on both sides, the hour and the day bounds counted at
+the stalled connection that reaches them, a run that is old enough and
+raises nothing when a connection starts or renews, a paused peer and a
+not-due connection, an earlier release, a withheld greeting that is counted
+at the deadline and not before for a peer not known to renew, a connection
+this side closed as redundant for both kinds of peer, and the
+unauthenticated and parallel cases; `RootEvolutionDeadlineTest`,
+`RootEvolutionManagerTest` and `RootKeyStoreDatabaseTest` cover the
+deadline, the counting and the stored state.
 
 ## Compatibility
 
@@ -627,10 +675,11 @@ and import screens say what a late restore means.
   the 30 second limits and is then retried, where 3.0.18 delivered slowly.
 - A pair whose connections authenticate but never complete a due evolution
   is shown as not renewing after six such connections in a row, after three
-  of them with an hour or more between the first and now, or after two of
-  them with a day or more between the first and now, not before; until then,
-  and toward earlier releases whose greeting arrives, the only sign is that
-  records do not flow.
+  of them with an hour or more between the first and the third or a later
+  one, or after two of them with a day or more between the first and the
+  second or a later one, not before, and only when such a connection is
+  counted; until then, and toward earlier releases whose greeting arrives,
+  the only sign is that records do not flow.
 - A paused side keeps its roots for 24 hours after a copy of the account is
   made, and each new copy starts that time again. Someone who can make a
   backup on the device already holds everything on it.

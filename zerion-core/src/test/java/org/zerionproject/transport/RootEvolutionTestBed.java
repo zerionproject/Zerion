@@ -267,6 +267,7 @@ final class RootEvolutionTestBed {
 				new java.util.concurrent.ConcurrentHashMap<>();
 		private final java.util.Set<Integer> notRenewing =
 				java.util.concurrent.ConcurrentHashMap.newKeySet();
+		final AtomicInteger notRenewingRaised = new AtomicInteger();
 
 		@Override
 		public long[] stalls(ContactId c) {
@@ -281,8 +282,12 @@ final class RootEvolutionTestBed {
 
 		@Override
 		public void markNotRenewing(ContactId c, boolean flag) {
-			if (flag) notRenewing.add(c.getInt());
-			else notRenewing.remove(c.getInt());
+			if (flag) {
+				notRenewingRaised.incrementAndGet();
+				notRenewing.add(c.getInt());
+			} else {
+				notRenewing.remove(c.getInt());
+			}
 		}
 
 		@Override
@@ -354,6 +359,7 @@ final class RootEvolutionTestBed {
 		final List<String> received =
 				Collections.synchronizedList(new ArrayList<>());
 		final AtomicInteger connections = new AtomicInteger();
+		final AtomicInteger authenticatedStreams = new AtomicInteger();
 		@Nullable
 		volatile Cut cut;
 		@Nullable
@@ -605,6 +611,12 @@ final class RootEvolutionTestBed {
 				@Override
 				public void onPeerStreamAuthenticated(long epoch) {
 					inner.onPeerStreamAuthenticated(epoch);
+					device.authenticatedStreams.incrementAndGet();
+				}
+
+				@Override
+				public void closingAsRedundant() {
+					inner.closingAsRedundant();
 				}
 
 				@Override

@@ -84,6 +84,12 @@ public class RootEvolutionManagerTest {
 		for (int i = 0; i < RootEvolutionManager.OUT_OF_SYNC_AFTER - 1; i++) {
 			manager.dialEnded(contact, false);
 		}
+		manager.connectionEnded(contact, false, false);
+		assertTrue("a connection that did not confirm the peer's keys"
+				+ " cleared the mark", store.isOutOfSync(contact));
+		manager.connectionEnded(contact, true, true);
+		assertTrue("a stalled connection cleared the mark",
+				store.isOutOfSync(contact));
 		manager.connectionEnded(contact, false);
 		assertFalse("a connection on which no renewal was outstanding",
 				store.isOutOfSync(contact));
@@ -159,59 +165,59 @@ public class RootEvolutionManagerTest {
 	}
 
 	@Test
-	public void aRenewalOutstandingForADayIsNoticedWhenAConnectionStarts() {
-		manager.holdStarted(contact);
-		assertFalse("nothing counted yet", store.isNotRenewing(contact));
+	public void twoStallsAtOnceRaiseNothingUntilAThirdIsCountedADayLater() {
 		manager.connectionEnded(contact, true);
-		clock.addAndGet(1_000);
 		manager.connectionEnded(contact, true);
 		assertEquals(2, store.stalls(contact)[0]);
-		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS
-				- 1_001);
-		manager.holdStarted(contact);
-		assertFalse("a day has not passed since the first stall",
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		assertFalse("time alone raised the warning",
 				store.isNotRenewing(contact));
-		clock.addAndGet(1);
-		manager.holdStarted(contact);
-		assertTrue("a day since the first of two stalls, noticed at the start"
-				+ " of a connection", store.isNotRenewing(contact));
-		assertEquals("the start of a connection counts nothing", 2,
-				store.stalls(contact)[0]);
-		assertEquals(1_000_000L, store.stalls(contact)[1]);
+		manager.connectionEnded(contact, false);
+		assertFalse("a connection with nothing outstanding raised the"
+				+ " warning", store.isNotRenewing(contact));
+		assertEquals(2, store.stalls(contact)[0]);
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertEquals(3, store.stalls(contact)[0]);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void threeStallsInAMinuteAndAQuietHourRaiseNothingUntilAFourthIsCounted() {
+		for (int i = 0; i < RootEvolutionManager
+				.NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS; i++) {
+			manager.connectionEnded(contact, true);
+			clock.addAndGet(20_000);
+		}
+		assertFalse(store.isNotRenewing(contact));
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_MS);
+		manager.connectionEnded(contact, false);
+		assertFalse(store.isNotRenewing(contact));
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertTrue(store.isNotRenewing(contact));
+	}
+
+	@Test
+	public void aRenewalAfterTwoOldStallsLeavesNothingToRaise() {
+		manager.connectionEnded(contact, true);
+		manager.connectionEnded(contact, true);
+		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
+		manager.evolved(contact);
+		assertEquals(0, store.stalls(contact)[0]);
+		assertEquals(0, store.notRenewingRaised.get());
+		manager.connectionEnded(contact, true);
+		assertEquals(1, store.stalls(contact)[0]);
+		assertFalse(store.isNotRenewing(contact));
 	}
 
 	@Test
 	public void oneStallIsNeverEnoughHoweverLongAgo() {
 		manager.connectionEnded(contact, true);
 		clock.addAndGet(30 * RootEvolutionManager.NOT_RENEWING_AFTER_LONG_MS);
-		manager.holdStarted(contact);
+		manager.connectionEnded(contact, false);
 		assertFalse(store.isNotRenewing(contact));
 		assertEquals(1, store.stalls(contact)[0]);
-	}
-
-	@Test
-	public void theHourRuleIsAlsoCheckedWhenAConnectionStarts() {
-		for (int i = 0; i < RootEvolutionManager
-				.NOT_RENEWING_AFTER_MS_MIN_CONNECTIONS; i++) {
-			manager.connectionEnded(contact, true);
-			clock.addAndGet(1_000);
-		}
-		manager.holdStarted(contact);
-		assertFalse(store.isNotRenewing(contact));
-		clock.addAndGet(RootEvolutionManager.NOT_RENEWING_AFTER_MS);
-		manager.holdStarted(contact);
-		assertTrue(store.isNotRenewing(contact));
-	}
-
-	@Test
-	public void aStartAfterAClockThatWentBackRaisesNothing() {
-		manager.connectionEnded(contact, true);
-		clock.addAndGet(1_000);
-		manager.connectionEnded(contact, true);
-		clock.addAndGet(-2_000);
-		manager.holdStarted(contact);
-		assertFalse(store.isNotRenewing(contact));
-		assertEquals(2, store.stalls(contact)[0]);
 	}
 
 	@Test
