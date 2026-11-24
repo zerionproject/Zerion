@@ -37,6 +37,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
@@ -445,5 +446,82 @@ public class ExternalHandoffTest {
 		assertEquals(Arrays.asList("program"), refused);
 		assertEquals(Arrays.asList("video"), noApp);
 		assertNull(ExternalHandoff.current());
+	}
+
+	private static final Executor OFF_THE_SCREEN_THREAD = task -> {
+		Thread worker = new Thread(task);
+		worker.start();
+		try {
+			worker.join();
+		} catch (InterruptedException e) {
+			throw new AssertionError(e);
+		}
+	};
+
+	private static List<Intent> viewsStartedBy(
+			ChannelAttachmentHandoffTest.HandoffFeed screen) {
+		List<Intent> views = new ArrayList<>();
+		Intent i;
+		while ((i = shadowOf(screen).getNextStartedActivity()) != null) {
+			if (Intent.ACTION_VIEW.equals(i.getAction())) views.add(i);
+		}
+		return views;
+	}
+
+	@Test
+	public void aCopyReplacedBeforeItOpensEndsWithoutAMessage()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		List<String> refused = new ArrayList<>();
+		List<String> noApp = new ArrayList<>();
+
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, video(), "video/mp4",
+				() -> refused.add("first"), () -> noApp.add("first"));
+		File first = ExternalHandoff.current();
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, jpeg(), "image/jpeg",
+				() -> refused.add("second"), () -> noApp.add("second"));
+		File second = ExternalHandoff.current();
+		assertNotNull(first);
+		assertNotNull(second);
+		assertNotEquals(first, second);
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertTrue("the replaced copy was reported as a failure: " + noApp,
+				noApp.isEmpty());
+		assertTrue(refused.isEmpty());
+		List<Intent> views = viewsStartedBy(s);
+		assertEquals("the copy that replaced it did not open", 1,
+				views.size());
+		assertEquals("image/jpeg", views.get(0).getType());
+		assertEquals(second, ExternalHandoff.current());
+		assertTrue(second.exists());
+		assertFalse(first.exists());
+	}
+
+	@Test
+	public void aReplacedCopyStaysSilentWhenItsReplacementFindsNoApp()
+			throws Exception {
+		ExternalHandoff.cleaner = ExternalHandoff.AS_IS;
+		ChannelAttachmentHandoffTest.HandoffFeed s = screen().get();
+		shadowOf((Application) ctx).checkActivities(true);
+		List<String> refused = new ArrayList<>();
+		List<String> noApp = new ArrayList<>();
+
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, video(), "video/mp4",
+				() -> refused.add("first"), () -> noApp.add("first"));
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, jpeg(), "image/jpeg",
+				() -> refused.add("second"), () -> noApp.add("second"));
+		ExternalHandoff.open(s, OFF_THE_SCREEN_THREAD, dex(), "audio/mpeg",
+				() -> refused.add("third"), () -> noApp.add("third"));
+		shadowOf(Looper.getMainLooper()).idle();
+
+		assertEquals(Arrays.asList("second"), noApp);
+		assertEquals(Arrays.asList("third"), refused);
+		assertTrue(viewsStartedBy(s).isEmpty());
+		assertNull(ExternalHandoff.current());
+		String[] left = dir().list();
+		assertTrue("a copy was left: " + Arrays.toString(left),
+				left == null || left.length == 0);
 	}
 }

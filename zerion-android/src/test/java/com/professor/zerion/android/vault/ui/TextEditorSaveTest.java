@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.fakes.RoboMenuItem;
 import org.robolectric.shadows.ShadowDialog;
@@ -111,6 +112,7 @@ public class TextEditorSaveTest {
 			new InstantTaskExecutorRule();
 
 	private VaultViewModelRig rig;
+	private ActivityController<Host> controller;
 	private Host host;
 	private final List<Runnable> queued = new ArrayList<>();
 
@@ -119,7 +121,8 @@ public class TextEditorSaveTest {
 		ShadowDialog.reset();
 		rig = new VaultViewModelRig();
 		model = rig.newModel();
-		host = Robolectric.buildActivity(Host.class).setup().get();
+		controller = Robolectric.buildActivity(Host.class).setup();
+		host = controller.get();
 		idle();
 	}
 
@@ -415,5 +418,48 @@ public class TextEditorSaveTest {
 		assertEquals(rig.app.getString(
 				R.string.vault_msg_saved_earlier_version_kept),
 				org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+	}
+
+	@Test
+	public void aPasswordDialogRebuiltWithTheScreenClosesAndSaveAsksAgain()
+			throws Exception {
+		VaultItem old = storedWithPassword();
+		Editor editor = editing(old);
+		text(editor).setText("second draft");
+		save(editor);
+		assertNotNull(dialog());
+
+		controller.recreate();
+		host = controller.get();
+		AlertDialog rebuilt = dialog();
+		assertNotNull(rebuilt);
+		assertTrue(rebuilt.isShowing());
+		answer(rebuilt, "open sesame", null);
+
+		assertFalse("a dialog nobody answers stays open",
+				rebuilt.isShowing());
+		assertNull(host.getSupportFragmentManager()
+				.findFragmentByTag("document_password_dialog"));
+		assertTrue(isOpen());
+		verify(rig.vault.manager, never()).addMediaItemWithPassword(any(),
+				anyString(), any(), any(), any());
+		assertEquals(1, rig.vault.size());
+
+		Editor again = (Editor) host.getSupportFragmentManager()
+				.findFragmentByTag(TAG);
+		assertEquals("second draft", text(again).getText().toString());
+		save(again);
+		AlertDialog asked = dialog();
+		assertNotSame(rebuilt, asked);
+		assertTrue(asked.isShowing());
+		answer(asked, "open sesame", null);
+
+		assertFalse(isOpen());
+		assertEquals(1, rig.vault.size());
+		VaultItem now = rig.vault.named("notes.txt");
+		assertNotNull(now);
+		assertArrayEquals(bytes("second draft"),
+				rig.vault.manager.getItemContentWithPassword(now.id,
+						"open sesame".toCharArray()));
 	}
 }

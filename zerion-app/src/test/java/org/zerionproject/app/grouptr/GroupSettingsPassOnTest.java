@@ -874,6 +874,78 @@ public class GroupSettingsPassOnTest {
 		assertEquals(DAY, node.group(groupId).getDefaultAutoDeleteTimerMs());
 	}
 
+	@Test
+	public void aMemberWhoseOwnCopyArrivesFirstIsNotSentOurs()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		ContactId b = node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		assertEquals("10", sentToNote(node));
+		int checks = node.signatureChecks();
+
+		settings(node, a, DAY, 10L, SIG.clone());
+
+		assertEquals("the member that handed over the same record is noted",
+				"10:" + a.getInt(), sentToNote(node));
+		assertEquals("noting the member costs no signature check", checks,
+				node.signatureChecks());
+		int writes = node.writeTxns();
+		settings(node, a, DAY, 10L, SIG.clone());
+		assertEquals("a member already noted is written again", writes,
+				node.writeTxns());
+
+		connected(node, a);
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+
+		assertEquals("a member that holds the setting was sent it back", 0,
+				recordsTo(node, a, 46L).size());
+		assertEquals(1, recordsTo(node, b, 46L).size());
+		assertEquals("10:" + a.getInt() + "," + b.getInt(),
+				sentToNote(node));
+	}
+
+	@Test
+	public void aCopyWithADifferentSignatureNotesNobody() throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		ContactId a = node.addContact(aKey);
+		node.addContact(bKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+		byte[] another = SIG.clone();
+		another[another.length - 1] ^= 1;
+		int writes = node.writeTxns();
+
+		settings(node, a, DAY, 10L, another);
+		settings(node, a, DAY, 10L, new byte[0]);
+		settings(node, a, HOUR, 10L, SIG.clone());
+
+		assertEquals("10", sentToNote(node));
+		assertEquals(writes, node.writeTxns());
+		later(node, GroupTrManagerImpl.SETTINGS_PASS_MAX_DELAY_MS);
+		assertEquals("a member not known to hold the setting is sent it", 1,
+				recordsTo(node, a, 46L).size());
+	}
+
+	@Test
+	public void theOwnerAndAnOutsiderAreNeverNotedAsHoldingTheSetting()
+			throws Exception {
+		GroupTrTestNode node = memberDevice();
+		node.deferTimers = true;
+		ContactId fromCreator = node.addContact(creatorKey);
+		node.addContact(aKey);
+		ContactId outsider = node.addContact(outsiderKey);
+		settings(node, fromCreator, DAY, 10L, SIG);
+
+		settings(node, fromCreator, DAY, 10L, SIG.clone());
+		settings(node, outsider, DAY, 10L, SIG.clone());
+
+		assertEquals("10", sentToNote(node));
+	}
+
 	private static void later(GroupTrTestNode node, long ms) {
 		node.now += ms;
 		node.runDueTimers();

@@ -4078,6 +4078,11 @@ class GroupTrManagerImpl
 					if (fromCreator && !pendingSettings(current).isEmpty()) {
 						applyConfirmedSettingsLater(s.getGroupId());
 					}
+					if (!fromCreator && isHeldSettingsSignature(current,
+							e.getRecordSig())) {
+						noteSettingsHeldBy(s, current, held,
+								e.getContactId());
+					}
 					return;
 				}
 			}
@@ -4454,6 +4459,50 @@ class GroupTrManagerImpl
 					}
 					dispatchToContact(txn, c, now, record, false);
 					keep.add(id);
+				}
+				String value = sentToValue(held, keep);
+				if (value.equals(noted)) return;
+				Settings mark = new Settings();
+				mark.put(GroupTrConstants.S_SETTINGS_SENT_TO, value);
+				settingsManager.mergeSettings(txn, mark, ns);
+			});
+		} catch (DbException | RuntimeException ex) {
+		}
+	}
+
+	private static boolean isHeldSettingsSignature(Settings current,
+			byte[] received) {
+		String hex = current.get(GroupTrConstants.S_SETTINGS_SIG);
+		if (hex == null) return false;
+		byte[] stored;
+		try {
+			stored = fromHexString(hex);
+		} catch (FormatException | RuntimeException ex) {
+			return false;
+		}
+		return java.security.MessageDigest.isEqual(stored, received);
+	}
+
+	private void noteSettingsHeldBy(GroupTrState s, Settings current,
+			long held, ContactId holder) {
+		java.util.Set<Integer> sent = settingsSentTo(current, held);
+		if (sent.contains(holder.getInt())) return;
+		String ns = nsOf(s.getGroupId());
+		String noted = current.get(GroupTrConstants.S_SETTINGS_SENT_TO);
+		try {
+			db.transaction(false, txn -> {
+				Reach reach = reach(txn, s);
+				java.util.TreeSet<Integer> keep = new java.util.TreeSet<>();
+				for (GroupTrMember m : s.getMembers()) {
+					if (Arrays.equals(m.getPubKey(), s.getCreatorPubKey())) {
+						continue;
+					}
+					Contact c = reach.contact(m.getPubKey());
+					if (c == null) continue;
+					int id = c.getId().getInt();
+					if (sent.contains(id) || holder.equals(c.getId())) {
+						keep.add(id);
+					}
 				}
 				String value = sentToValue(held, keep);
 				if (value.equals(noted)) return;

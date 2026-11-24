@@ -102,6 +102,12 @@ public class VaultViewModel extends AndroidViewModel {
 	private final Map<String, String> replacedDocuments =
 			new java.util.concurrent.ConcurrentHashMap<>();
 	private volatile boolean editorSaveRunning = false;
+	private final MutableLiveData<Event<NoteSaveResult>> noteSaveResult =
+			new MutableLiveData<>();
+	private final java.util.concurrent.atomic.AtomicLong noteSaveRequests =
+			new java.util.concurrent.atomic.AtomicLong();
+	private final Set<Long> noteSavesRunning =
+			java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	private static final Executor WALLET_EXECUTOR =
 			Executors.newSingleThreadExecutor();
@@ -2480,13 +2486,28 @@ public class VaultViewModel extends AndroidViewModel {
 		void onError(String error);
 	}
 
-	public void saveNote(String title, String content, @Nullable String existingId) {
-		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
-			return;
-		}
-		if (title.trim().isEmpty()) {
-			errorMessage.postValue(text(R.string.vault_msg_note_title_empty));
+	public LiveData<Event<NoteSaveResult>> getNoteSaveResult() {
+		return noteSaveResult;
+	}
+
+	public boolean isNoteSaveRunning(long request) {
+		return noteSavesRunning.contains(request);
+	}
+
+	public long newNoteSaveRequest() {
+		return noteSaveRequests.incrementAndGet();
+	}
+
+	public void saveNote(long request, String title, String content,
+			@Nullable String existingId) {
+		noteSavesRunning.add(request);
+		int refusal = !vaultManager.isUnlocked()
+				? R.string.vault_msg_unlock_first
+				: title.trim().isEmpty()
+				? R.string.vault_msg_note_title_empty : 0;
+		if (refusal != 0) {
+			reportNoteSave(noteSave(request,
+					NoteSaveResult.Outcome.FAILED, refusal));
 			return;
 		}
 
@@ -2494,66 +2515,112 @@ public class VaultViewModel extends AndroidViewModel {
 
 		dbExecutor.execute(() -> {
 			byte[] contentBytes = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+			NoteSaveResult result = null;
 			try {
-				vaultManager.addItem(
-						VaultItem.ItemType.NOTE,
-						title,
-						contentBytes
-				);
-
-				reportNoteSaved(existingId);
-
-			} catch (SecurityException e) {
-				errorMessage.postValue(text(R.string.vault_msg_security_error));
-			} catch (IOException e) {
-				errorMessage.postValue(text(R.string.vault_msg_storage_error));
-			} catch (Exception e) {
-				errorMessage.postValue(text(R.string.vault_msg_save_note_failed));
+				result = storeNoteNow(request, title, contentBytes,
+						existingId);
 			} finally {
 				Arrays.fill(contentBytes, (byte) 0);
+				reportNoteSave(result != null ? result
+						: noteSave(request, NoteSaveResult.Outcome.FAILED,
+								R.string.vault_msg_save_note_failed));
 				isLoading.postValue(false);
 			}
 		});
 	}
 
-	public void saveNoteWithPassword(String title, String content, char[] password,
+	private NoteSaveResult storeNoteNow(long request, String title,
+			byte[] content, @Nullable String earlierVersionId) {
+		try {
+			vaultManager.addItem(VaultItem.ItemType.NOTE, title, content);
+		} catch (SecurityException e) {
+			return noteSave(request, NoteSaveResult.Outcome.FAILED,
+					R.string.vault_msg_security_error);
+		} catch (IOException e) {
+			return noteSave(request, NoteSaveResult.Outcome.FAILED,
+					R.string.vault_msg_storage_error);
+		} catch (Exception e) {
+			return noteSave(request, NoteSaveResult.Outcome.FAILED,
+					R.string.vault_msg_save_note_failed);
+		}
+		return noteStored(request, earlierVersionId);
+	}
+
+	public void saveNoteWithPassword(long request, String title,
+			String content, char[] password,
 			@Nullable String existingNoteId) {
+		char[] ownPassword = takeOver(password);
+		noteSavesRunning.add(request);
 		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
-			java.util.Arrays.fill(password, '\0');
+			Arrays.fill(ownPassword, '\0');
+			reportNoteSave(noteSave(request, NoteSaveResult.Outcome.FAILED,
+					R.string.vault_msg_unlock_first));
 			return;
 		}
 		isLoading.postValue(true);
 
 		dbExecutor.execute(() -> {
-			char[] passwordChars = password;
+			NoteSaveResult result = null;
 			try {
-				byte[] combined = ProtectedNoteCodec.seal(content,
-						passwordChars);
-
-				String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX + title;
-				vaultManager.addItem(VaultItem.ItemType.NOTE, protectedTitle, combined);
-
-				reportNoteSaved(existingNoteId);
-
-			} catch (Exception e) {
-				errorMessage.postValue(text(R.string.vault_msg_save_note_failed));
+				result = storeProtectedNoteNow(request, title, content,
+						ownPassword, existingNoteId);
 			} finally {
-				Arrays.fill(passwordChars, '\0');
+				Arrays.fill(ownPassword, '\0');
+				reportNoteSave(result != null ? result
+						: noteSave(request, NoteSaveResult.Outcome.FAILED,
+								R.string.vault_msg_save_note_failed));
 				isLoading.postValue(false);
 			}
 		});
 	}
 
-	private void reportNoteSaved(@Nullable String earlierVersionId) {
-		if (earlierVersionId == null
-				|| removeEarlierVersion(earlierVersionId)) {
-			successMessage.postValue(text(R.string.vault_msg_saved));
-		} else {
-			errorMessage.postValue(text(
-					R.string.vault_msg_saved_earlier_version_kept));
+	private NoteSaveResult storeProtectedNoteNow(long request, String title,
+			String content, char[] password,
+			@Nullable String earlierVersionId) {
+		try {
+			byte[] combined = ProtectedNoteCodec.seal(content, password);
+
+			String protectedTitle = ProtectedNoteCodec.TITLE_PREFIX + title;
+			vaultManager.addItem(VaultItem.ItemType.NOTE, protectedTitle, combined);
+		} catch (Exception e) {
+			return noteSave(request, NoteSaveResult.Outcome.FAILED,
+					R.string.vault_msg_save_note_failed);
 		}
-		loadVaultItems();
+		return noteStored(request, earlierVersionId);
+	}
+
+	private NoteSaveResult noteStored(long request,
+			@Nullable String earlierVersionId) {
+		boolean replaced = earlierVersionId == null
+				|| removeEarlierVersion(earlierVersionId);
+		readVaultItems();
+		return replaced
+				? noteSave(request, NoteSaveResult.Outcome.SAVED,
+						R.string.vault_msg_saved)
+				: noteSave(request,
+						NoteSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT,
+						R.string.vault_msg_saved_earlier_version_kept);
+	}
+
+	private NoteSaveResult noteSave(long request,
+			NoteSaveResult.Outcome outcome, @StringRes int message) {
+		return new NoteSaveResult(request, outcome, text(message));
+	}
+
+	private void reportNoteSave(NoteSaveResult result) {
+		if (result.outcome == NoteSaveResult.Outcome.SAVED) {
+			successMessage.postValue(result.message);
+		} else {
+			errorMessage.postValue(result.message);
+		}
+		noteSavesRunning.remove(result.request);
+		noteSaveResult.postValue(new Event<>(result));
+	}
+
+	private static char[] takeOver(char[] handedOver) {
+		char[] own = handedOver.clone();
+		Arrays.fill(handedOver, '\0');
+		return own;
 	}
 
 	public LiveData<String> loadNoteContent(String noteId) {
@@ -2943,19 +3010,23 @@ public class VaultViewModel extends AndroidViewModel {
 	}
 
 	public void changePassword(char[] currentPassword, char[] newPassword) {
-		if (!vaultManager.vaultExists()) {
-			errorMessage.postValue(text(R.string.vault_msg_no_vault));
-			return;
-		}
-		if (!vaultManager.isUnlocked()) {
-			errorMessage.postValue(text(R.string.vault_msg_unlock_first));
+		char[] ownCurrent = takeOver(currentPassword);
+		char[] ownNew = takeOver(newPassword);
+		int refusal = !vaultManager.vaultExists()
+				? R.string.vault_msg_no_vault
+				: !vaultManager.isUnlocked()
+				? R.string.vault_msg_unlock_first : 0;
+		if (refusal != 0) {
+			Arrays.fill(ownCurrent, '\0');
+			Arrays.fill(ownNew, '\0');
+			errorMessage.postValue(text(refusal));
 			return;
 		}
 		isLoading.postValue(true);
 
 		dbExecutor.execute(() -> {
 			try {
-				vaultManager.changePassword(currentPassword, newPassword);
+				vaultManager.changePassword(ownCurrent, ownNew);
 				successMessage.postValue(text(R.string.vault_settings_password_changed));
 			} catch (SecurityException e) {
 				String m = e.getMessage();
@@ -2968,8 +3039,8 @@ public class VaultViewModel extends AndroidViewModel {
 			} catch (Exception e) {
 				errorMessage.postValue(text(R.string.vault_msg_change_password_failed));
 			} finally {
-				Arrays.fill(currentPassword, '\0');
-				Arrays.fill(newPassword, '\0');
+				Arrays.fill(ownCurrent, '\0');
+				Arrays.fill(ownNew, '\0');
 				isLoading.postValue(false);
 			}
 		});

@@ -39,6 +39,8 @@ import androidx.lifecycle.ViewModelProvider;
 public class SecureNoteFragment extends BaseFragment {
 
 	private static final String ARG_NOTE_ID = "note_id";
+	private static final String STATE_SAVE_REQUEST = "save_request";
+	private static final long NO_SAVE = 0L;
 
 	private VaultViewModel viewModel;
 	private String noteId;
@@ -56,9 +58,8 @@ public class SecureNoteFragment extends BaseFragment {
 	private FrameLayout progressOverlay;
 
 	private boolean hasChanges = false;
-	@Nullable
-	private char[] notePassword = null;
-	private boolean isSaving = false;
+	private long saveRequest = NO_SAVE;
+	private boolean leavingAfterSave = false;
 	private boolean isLoading = false;
 	private boolean contentLoaded = false;
 	private int loadRetryCount = 0;
@@ -83,6 +84,16 @@ public class SecureNoteFragment extends BaseFragment {
 		if (getArguments() != null) {
 			noteId = getArguments().getString(ARG_NOTE_ID);
 		}
+		if (savedInstanceState != null) {
+			saveRequest = savedInstanceState.getLong(STATE_SAVE_REQUEST,
+					NO_SAVE);
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putLong(STATE_SAVE_REQUEST, saveRequest);
 	}
 
 	@Override
@@ -133,9 +144,19 @@ public class SecureNoteFragment extends BaseFragment {
 
 		setupTextWatchers();
 		setupListeners();
+
+		if (saveRequest != NO_SAVE
+				&& !viewModel.isNoteSaveRunning(saveRequest)
+				&& !hasWaitingSaveResult()) {
+			saveRequest = NO_SAVE;
+		}
+		if (saveRequest != NO_SAVE) {
+			contentLoaded = true;
+			holdForSave();
+		}
 		observeViewModel();
 
-		if (noteId != null) {
+		if (noteId != null && saveRequest == NO_SAVE) {
 			loadNote();
 		}
 	}
@@ -197,10 +218,6 @@ public class SecureNoteFragment extends BaseFragment {
 			notePasswordLayout.setVisibility(isChecked ? View.VISIBLE : View.GONE);
 			if (!isChecked) {
 				notePasswordInput.setText("");
-				if (notePassword != null) {
-					java.util.Arrays.fill(notePassword, '\0');
-				}
-				notePassword = null;
 			}
 		});
 
@@ -256,8 +273,10 @@ public class SecureNoteFragment extends BaseFragment {
 
 		UiUtils.observeOnce(viewModel.loadNoteContent(noteId), getViewLifecycleOwner(), content -> {
 			isLoading = false;
-			progressOverlay.setVisibility(View.GONE);
-			setInputsEnabled(true);
+			if (!isHeldForSave()) {
+				progressOverlay.setVisibility(View.GONE);
+				setInputsEnabled(true);
+			}
 
 			if (content != null) {
 				if (content.equals("__PASSWORD_REQUIRED__")) {
@@ -339,7 +358,7 @@ public class SecureNoteFragment extends BaseFragment {
 	}
 
 	private void saveNote() {
-		if (isSaving) {
+		if (isHeldForSave()) {
 			return;
 		}
 
@@ -353,8 +372,9 @@ public class SecureNoteFragment extends BaseFragment {
 			return;
 		}
 
+		char[] password = null;
 		if (lockNoteSwitch.isChecked()) {
-			char[] password = readChars(notePasswordInput);
+			password = readChars(notePasswordInput);
 			if (password.length == 0) {
 				notePasswordLayout.setError(getString(
 						R.string.vault_error_password_empty));
@@ -366,34 +386,67 @@ public class SecureNoteFragment extends BaseFragment {
 						R.string.vault_error_password_short));
 				return;
 			}
-			if (notePassword != null) {
-				java.util.Arrays.fill(notePassword, '\0');
-			}
-			notePassword = password;
 		}
 
-		isSaving = true;
-		contentLoaded = false;
 		loadRetryCount = 0;
+		saveRequest = viewModel.newNoteSaveRequest();
+		holdForSave();
 
-		progressOverlay.setVisibility(View.VISIBLE);
-		setInputsEnabled(false);
-		saveFab.setEnabled(false);
-
-		if (notePassword != null) {
-			viewModel.saveNoteWithPassword(title, content, notePassword, noteId);
+		if (password != null) {
+			viewModel.saveNoteWithPassword(saveRequest, title, content,
+					password, noteId);
 		} else {
-			viewModel.saveNote(title, content, noteId);
+			viewModel.saveNote(saveRequest, title, content, noteId);
 		}
-		hasChanges = false;
+	}
 
-		mainHandler.postDelayed(() -> {
-			isSaving = false;
-			saveFab.setEnabled(true);
-		}, 2000);
+	private boolean isHeldForSave() {
+		return saveRequest != NO_SAVE || leavingAfterSave;
+	}
+
+	private void holdForSave() {
+		progressOverlay.setVisibility(View.VISIBLE);
+		setEditingEnabled(false);
+	}
+
+	private boolean hasWaitingSaveResult() {
+		Event<NoteSaveResult> latest =
+				viewModel.getNoteSaveResult().getValue();
+		return latest != null && !latest.isHandled();
+	}
+
+	private void onNoteSaveResult(Event<NoteSaveResult> event) {
+		NoteSaveResult result = event.getIfNotHandled();
+		if (result == null || saveRequest == NO_SAVE
+				|| result.request != saveRequest) {
+			return;
+		}
+		saveRequest = NO_SAVE;
+
+		if (result.isStored()) {
+			hasChanges = false;
+			if (result.outcome
+					== NoteSaveResult.Outcome.SAVED_EARLIER_VERSION_KEPT) {
+				viewModel.clearMessages();
+				Toast.makeText(requireContext(), result.message,
+						Toast.LENGTH_LONG).show();
+			}
+			closeAfterSave();
+			return;
+		}
+
+		hasChanges = true;
+		progressOverlay.setVisibility(View.GONE);
+		setEditingEnabled(true);
+		viewModel.clearMessages();
+		showSnackbar(result.message, com.google.android.material.snackbar
+				.Snackbar.LENGTH_LONG);
 	}
 
 	private void deleteNote() {
+		if (isHeldForSave()) {
+			return;
+		}
 		if (noteId == null) {
 			if (isAdded() && getActivity() != null) {
 				requireActivity().getOnBackPressedDispatcher().onBackPressed();
@@ -416,53 +469,43 @@ public class SecureNoteFragment extends BaseFragment {
 
 	private void observeViewModel() {
 		viewModel.getIsLoading().observe(getViewLifecycleOwner(), isLoading -> {
-			if (!isSaving && !this.isLoading) {
+			if (!isHeldForSave() && !this.isLoading) {
 				progressOverlay.setVisibility(isLoading ? View.VISIBLE : View.GONE);
 				setInputsEnabled(!isLoading);
 			}
 		});
 
 		viewModel.getErrorMessage().observe(getViewLifecycleOwner(), error -> {
-			if (error != null && !error.isEmpty()) {
-				boolean wasSaving = isSaving;
-				isSaving = false;
+			if (error != null && !error.isEmpty() && !isHeldForSave()) {
 				progressOverlay.setVisibility(View.GONE);
 				setInputsEnabled(true);
 				saveFab.setEnabled(true);
-
-				if (wasSaving && viewModel.isMessage(error,
-						R.string.vault_msg_saved_earlier_version_kept)) {
-					closeAfterSave();
-					return;
-				}
-				if (wasSaving) {
-					hasChanges = true;
-				}
 
 				showSnackbar(error, com.google.android.material.snackbar.Snackbar
 						.LENGTH_LONG);
 			}
 		});
 
-		viewModel.getSuccessMessage().observe(getViewLifecycleOwner(), success -> {
-			if (viewModel.isMessage(success, R.string.vault_msg_saved)) {
-				if (!isSaving) {
-					return;
-				}
-
-				isSaving = false;
-
-				closeAfterSave();
-			}
-		});
+		viewModel.getNoteSaveResult().observe(getViewLifecycleOwner(),
+				this::onNoteSaveResult);
 	}
 
 	private void closeAfterSave() {
-		mainHandler.postDelayed(() -> {
-			if (isAdded() && getActivity() != null) {
-				requireActivity().getOnBackPressedDispatcher().onBackPressed();
-			}
-		}, 300);
+		leavingAfterSave = true;
+		mainHandler.postDelayed(this::leaveAfterSave, 300);
+	}
+
+	private void leaveAfterSave() {
+		if (isAdded() && getActivity() != null) {
+			requireActivity().getOnBackPressedDispatcher().onBackPressed();
+		}
+	}
+
+	private void setEditingEnabled(boolean enabled) {
+		setInputsEnabled(enabled);
+		lockNoteSwitch.setEnabled(enabled);
+		notePasswordInput.setEnabled(enabled);
+		saveFab.setEnabled(enabled);
 	}
 
 	private void setInputsEnabled(boolean enabled) {
@@ -507,7 +550,11 @@ public class SecureNoteFragment extends BaseFragment {
 	public void onResume() {
 		super.onResume();
 
-		if (contentLoaded) {
+		if (leavingAfterSave) {
+			mainHandler.post(this::leaveAfterSave);
+			return;
+		}
+		if (contentLoaded || saveRequest != NO_SAVE) {
 			return;
 		}
 		if (isLoading) {
@@ -532,6 +579,9 @@ public class SecureNoteFragment extends BaseFragment {
 	public boolean onBackPressed() {
 		if (!isResumed() || isShowingUnsavedDialog) {
 			return false;
+		}
+		if (saveRequest != NO_SAVE) {
+			return true;
 		}
 
 		if (hasChanges) {
